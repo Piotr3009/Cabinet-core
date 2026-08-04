@@ -36,7 +36,6 @@ const PROFILE = DEFAULT_CABINET_PROFILE;
 // Assertions the fixtures themselves cannot satisfy — each one has a BLOCKERS.md
 // entry. Listed by "<case id>::<path>" so nothing can be silenced by accident.
 const KNOWN_FIXTURE_CONFLICTS = new Set([
-  'W-B::totals.panels_true_incl_railpart',
 ]);
 
 // ─── helpers ───

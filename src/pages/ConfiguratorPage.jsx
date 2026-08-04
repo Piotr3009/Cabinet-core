@@ -3,6 +3,7 @@ import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
+import AddItemsModal from '../components/AddItemsModal.jsx';
 import Toast from '../components/Toast.jsx';
 import Scene from '../3d/Scene.jsx';
 import { useUiStore } from '../stores/uiStore.js';
@@ -14,6 +15,8 @@ export default function ConfiguratorPage() {
   const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
   const modal = useUiStore((s) => s.modal);
   const units = useProjectStore((s) => s.units);
+  const selectedUnitId = useUiStore((s) => s.selectedUnitId);
+  const selectedUnit = units.find((u) => u.id === selectedUnitId) || null;
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);
@@ -38,6 +41,7 @@ export default function ConfiguratorPage() {
         <LibraryPanel />
         {rightPanelOpen && <RightPanel />}
         {modal === 'room' && <RoomModal />}
+        {modal === 'add-items' && selectedUnit && <AddItemsModal unit={selectedUnit} />}
         <Toast />
       </div>
     </div>

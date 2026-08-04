@@ -50,10 +50,13 @@ export default function Scene({ onCaptureReady }) {
   const units = useProjectStore((s) => s.units);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const allResults = useProjectStore((s) => s.allResults);
+  const moveShelf = useProjectStore((s) => s.moveShelf);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const clearSelection = useUiStore((s) => s.clearSelection);
   const snapStep = useUiStore((s) => s.snapStep);
+  const shelfDrag = useUiStore((s) => s.dragging);
+  const setShelfDrag = useUiStore((s) => s.setDragging);
 
   const wallWidthMm = room.walls[0]?.width ?? 4000;
   const results = allResults();
@@ -85,6 +88,9 @@ export default function Scene({ onCaptureReady }) {
           snapStep={snapStep}
           onSelect={() => selectUnit(unit.id)}
           onMove={(x, step) => moveUnit(unit.id, x, step)}
+          onMoveShelf={(itemId, pos, step) => moveShelf(unit.id, itemId, pos, step)}
+          onShelfDragState={setShelfDrag}
+          shelfDrag={shelfDrag}
           orbitRef={orbitRef}
         />
       ))}

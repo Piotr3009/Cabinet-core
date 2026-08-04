@@ -10,7 +10,8 @@ import DimLabel from './DimLabel.jsx';
 // says (CLAUDE.md phase 2). Nothing here re-derives a dimension.
 
 export default function UnitView({
-  unit, result, wallWidthMm, selected, snapStep, onSelect, onMove, orbitRef, showLabels = true,
+  unit, result, wallWidthMm, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
+  orbitRef, showLabels = true, shelfDrag = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -70,26 +71,85 @@ export default function UnitView({
   const originX = mm(unit.position.x_mm - wallWidthMm / 2);
   const originY = mm(legHeight);
 
+  // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
+  // clamping and snapping live in the store so the rules stay in one place.
+  const startShelfDrag = useCallback((e, itemId, currentPosMm) => {
+    if (!itemId || !onMoveShelf) return;
+    e.stopPropagation();
+    onSelect();
+    const hit = pointerToPlane(e.clientX, e.clientY);
+    if (!hit) return;
+    // Keep the grab point: the shelf must not jump to the cursor on mouse-down.
+    const grabDelta = currentPosMm - (hit.y - originY) / MM;
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+
+    const move = (ev) => {
+      const p = pointerToPlane(ev.clientX, ev.clientY);
+      if (!p) return;
+      const posMm = (p.y - originY) / MM + grabDelta;
+      const state = onMoveShelf(itemId, posMm, snapStep);
+      if (state && onShelfDragState) onShelfDragState({ unitId: unit.id, itemId, ...state });
+    };
+    const up = () => {
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      if (onShelfDragState) onShelfDragState(null);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onMoveShelf, onSelect, pointerToPlane, originY, orbitRef, snapStep, onShelfDragState, unit.id]);
+
   return (
-    <group position={[originX, originY, 0]} onPointerDown={startDrag}>
-      {result.panels.filter((p) => p.box).map((p) => (
-        <mesh
-          key={p.id}
-          position={[mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
-          <meshStandardMaterial
-            color={colorForRole(p.role)}
-            roughness={0.72}
-            metalness={0.02}
-            transparent={p.role === 'front'}
-            opacity={p.role === 'front' ? 0.93 : 1}
-          />
-          <Edges threshold={15} color={selected ? COLORS.gold : edgeColorForRole(p.role)} />
-        </mesh>
-      ))}
+    <group position={[originX, originY, 0]}>
+      {result.panels.filter((p) => p.box).map((p) => {
+        const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
+        const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
+        return (
+          <mesh
+            key={p.id}
+            position={[mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]}
+            castShadow
+            receiveShadow
+            onPointerDown={shelfId ? (e) => startShelfDrag(e, shelfId, p.box.y) : startDrag}
+            onPointerOver={shelfId ? () => { document.body.style.cursor = 'ns-resize'; } : undefined}
+            onPointerOut={shelfId ? () => { document.body.style.cursor = ''; } : undefined}
+          >
+            <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
+            <meshStandardMaterial
+              color={beingDragged ? COLORS.goldSoft : colorForRole(p.role)}
+              roughness={0.72}
+              metalness={0.02}
+              transparent={p.role === 'front'}
+              opacity={p.role === 'front' ? 0.93 : 1}
+            />
+            <Edges threshold={15} color={selected || beingDragged ? COLORS.gold : edgeColorForRole(p.role)} />
+          </mesh>
+        );
+      })}
+
+      {/* live dimension while a shelf is being dragged (SPEC 4.8) */}
+      {shelfDrag && shelfDrag.unitId === unit.id && (
+        <>
+          {shelfDrag.below != null && (
+            <DimLabel
+              position={[mm(W / 2), mm((shelfDrag.below + shelfDrag.pos) / 2), mm(D) + 0.06]}
+              text={`${Math.round(shelfDrag.pos - shelfDrag.below)}`}
+              tone="gold"
+            />
+          )}
+          {shelfDrag.above != null && (
+            <DimLabel
+              position={[mm(W / 2), mm((shelfDrag.above + shelfDrag.pos) / 2), mm(D) + 0.06]}
+              text={`${Math.round(shelfDrag.above - shelfDrag.pos)}`}
+              tone="gold"
+            />
+          )}
+          <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={`${Math.round(shelfDrag.pos)} mm`} tone="gold" />
+        </>
+      )}
 
       {/* hanging rail — hardware, not a cut piece */}
       {result.assemblies.rail && (

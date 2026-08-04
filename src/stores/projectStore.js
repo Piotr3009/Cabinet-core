@@ -251,11 +251,15 @@ export function shelfDragBounds(unit, itemId, profile) {
   const pos = self?.pos_mm ?? limits.min;
   const below = shelves.filter((y) => y <= pos).pop();
   const above = shelves.find((y) => y > pos);
+  const G = unit.params.board_t ?? profile.board.thickness;
   return {
     min: Math.max(limits.min, below != null ? below + gap : limits.min),
     max: Math.min(limits.max, above != null ? above - gap : limits.max),
-    below: below ?? limits.drawerTop ?? null,
-    above: above ?? null,
+    // Reference faces for the live dimension: the neighbouring shelf if there
+    // is one, otherwise the drawer partition / base panel below and the top
+    // panel above — so the readout is never blank.
+    below: below ?? limits.drawerTop ?? G,
+    above: above ?? unit.params.height - G,
   };
 }
 

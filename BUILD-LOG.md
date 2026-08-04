@@ -102,3 +102,43 @@ lewej krawędzi, pod panelem Library).
 **Werdykt.** Zweryfikowane realnym uruchomieniem w Chromium (Playwright):
 scena renderuje się bez błędów w konsoli, szafa stoi przy ścianie, etykiety
 czytelne, `npm run build` przechodzi.
+
+---
+
+## Faza 3 — Edycja wnętrza — ✅ ZIELONA
+
+**Co powstało.** Klik w szafę → zaznaczenie + **złoty outline** wokół korpusu.
+Prawy panel: parametry korpusu (W/H/D, grubość płyty/frontu, typ frontu S/H/F,
+strona zawiasu — blokowana przy 2 drzwiach) + przycisk **„+ Add items"** →
+modal: **Drawers** (ilość, mount overlay aktywny / inset wyszarzony „soon" —
+BLOCKERS #6), **Shelves**, **Hanger rail** (wysokość), **Pull-down rail**
+(„soon"). Szuflady wstawiane od dołu stosem wg reguł silnika; wieniec
+(partition) nad stosem jest wystawiany automatycznie i pokazany na liście jako
+pozycja zablokowana — to realizacja twardej reguły SPEC 4.7.
+
+**Półki.** [+] dodaje i rozkłada równomiernie, [×] usuwa, pozycję można wpisać
+liczbą albo **przeciągnąć pionowo w 3D**: kursor `ns-resize`, półka podświetla
+się złotem, a obok pojawiają się **żywe wymiary** — odległość do sąsiada niżej
+(albo do wieńca/dna), do sąsiada wyżej (albo do wieńca górnego) oraz pozycja
+bezwzględna. Snap `round(raw/step)*step` krokiem z Library (0.5 / 1 / 32 mm),
+kolizje: minimalny prześwit od sąsiadów, zakaz wejścia w strefę szuflad, zakaz
+wyjścia poza dno/wieniec. Cała logika ograniczeń siedzi w store
+(`shelfLimits` / `shelfDragBounds` / `validateUnit`), nie w komponencie 3D.
+Typ półki fixed / pull-out do wyboru (pull-out trafia do BOM jako pozycja z
+prowadnicami).
+
+**Model danych.** `sections[].items[]` dokładnie wg SPEC 5: `{ kind, pos_mm,
+variant, mount }`. Silnik przyjmuje ALBO liczniki (fixtures), ALBO pozycyjne
+itemy (edytor) — dlatego fixtures dalej przechodzą bez zmian, a przeciągnięta
+półka realnie przesuwa swój rząd otworów (`shelfHoles.followPositions`).
+
+**Znaleziony i naprawiony błąd.** Przeciąganie półki w ogóle nie działało:
+handler `onPointerDown` wisiał na `<group>` całej szafy ORAZ na meshu półki,
+a R3F wysyła oba przy tej samej odległości trafienia — ten, który wykonał się
+pierwszy, `stopPropagation()` kasował drugi. Handlery przeniesione na
+poszczególne meshe (półka → drag pionowy, reszta → przesuw jednostki).
+Wykryte dopiero realnym testem w przeglądarce, nie z czytania kodu.
+
+**Werdykt.** Zweryfikowane w Chromium: dodanie 2 szuflad + półki, przeciągnięcie
+półki 1288 → 808 mm ze snapem i żywym wymiarem 364 mm do wieńca; zero błędów
+w konsoli. `npm test` i `npm run build` bez zmian — zielone.

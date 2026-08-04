@@ -87,10 +87,12 @@ function normalizeParams(raw, profile) {
     : 0;
   const rail = type.supports.rail ? (items.length ? Boolean(hangerFromItems) : Boolean(p.rail)) : false;
 
-  const shelfPositions = shelvesFromItems
+  // Shelves are ordered bottom-up so panel N, drill row N and item N always
+  // describe the same physical shelf after a drag reorders them.
+  const shelfItems = [...shelvesFromItems].sort((a, b) => (Number(a.pos_mm) || 0) - (Number(b.pos_mm) || 0));
+  const shelfPositions = shelfItems
     .map((i) => Number(i.pos_mm))
-    .filter((v) => Number.isFinite(v))
-    .sort((a, b) => a - b);
+    .filter((v) => Number.isFinite(v));
 
   // doors: undefined → derive from the width threshold; { count: 0 } / false → none yet
   let doorCount;
@@ -116,6 +118,7 @@ function normalizeParams(raw, profile) {
     hinge,
     doorCount,
     shelves,
+    shelfItems,
     shelfPositions,
     drawers,
     rail,
@@ -333,13 +336,13 @@ export function computeCabinet(params, profileOverride) {
 
   for (let i = 1; i <= numShelves; i += 1) {
     const y = shelfRows[i - 1] ?? (G + ((H - 2 * G) / (numShelves + 1)) * i);
-    const item = cfg.items.filter((it) => it.kind === 'shelf')[i - 1];
+    const item = cfg.shelfItems[i - 1];
     panels.push(panel({
       id: `SHELF-${i}`, part: 'SHELF', role: 'shelf', w: shelfW, h: shelfH, thickness: G,
       edgeCode: codes.right, edgeLen: metres(shelfW),
       box: { x: G + C.shelfWidthClearance / 2, y, z: G, w: shelfW, h: G, d: shelfH },
       cnc: rectGeometry(shelfW, shelfH),
-      meta: { index: i, variant: item?.variant || 'fixed' },
+      meta: { index: i, variant: item?.variant || 'fixed', itemId: item?.id || null },
     }));
   }
 

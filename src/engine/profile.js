@@ -187,6 +187,18 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 600, height: 770, depth: 558 },
   },
 
+  // ─── CNC sheet + DXF output ───
+  // Layer NAMES live in engine/cnc/layers.js (they are a machine contract, not
+  // a workshop preference). What belongs here is the sheet metrics.
+  cnc: {
+    unitNumberLayer: 'UNIT_NUMBER',  // LISP drawText layer for the part label
+    labelHeight: 40,                 // LISP drawText height on the CNC sheet
+    labelMinHeight: 6,               // …shrunk to fit a small part, never below this
+    labelFitRatio: 0.12,             // label height ≤ this × the part's short side
+    layoutGap: 50,                   // LISP `odstep` — gap between parts laid out flat
+    layoutRowWidth: 3600,            // wrap to a new row past this (preview only)
+  },
+
   // ─── Cutting-list CSV (must stay byte-identical to the LISP output) ───
   csv: {
     header: 'UNIT,PANEL,SZER,WYS,EDGE,EDG_L,SQM',
@@ -246,6 +258,7 @@ export function migrateCabinetProfile(profile) {
       rail: { ...D.wardrobe.rail, ...profile.wardrobe?.rail },
     },
     baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
+    cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },
   };

@@ -649,6 +649,9 @@ export function computeCabinet(params, profileOverride) {
   const boardEdging = boardPanels.reduce((s, x) => s + x.edging.len_m, 0);
   const frontEdging = frontPanels.reduce((s, x) => s + x.edging.len_m, 0);
 
+  const legsPerUnit = type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legsPerUnit : P.baseUnit.legsPerUnit) : 0;
+  const legHeight = type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legHeight : P.baseUnit.legHeight) : 0;
+
   const totals = {
     // LISP totalPanels convention: carcass + interior + drawer fronts,
     // door fronts counted separately, RAIL-PART not counted at all.
@@ -662,10 +665,34 @@ export function computeCabinet(params, profileOverride) {
     edging_m: roundTo(boardEdging, 6),
     edging_front_m: roundTo(frontEdging, 6),
     edging_total_m: roundTo(boardEdging + frontEdging, 6),
-    legs: type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legsPerUnit : P.baseUnit.legsPerUnit) : 0,
+    legs: legsPerUnit,
     hinges: doorCount > 0 ? centres.length * doorCount : 0,
     runner_pairs: numDrawers,
   };
+
+  // ── Hardware ───────────────────────────────────────────────────────────────
+  // QUANTITIES from the geometry, never products. Which hinge, which runner and
+  // what it costs is an ASSIGNMENT the workshop makes against its own material
+  // list (SPEC 4.12 / turn-2 task 5) — the engine only says how many are needed
+  // and to what spec. Nothing here touches the cutting list, which stays the
+  // LISP format and lists cut parts only.
+  const hardware = [];
+  const hw = (role, label, qty, unit, spec, specLabel) => {
+    if (!(qty > 0)) return;
+    hardware.push({ role, label, qty, unit, spec, spec_label: specLabel });
+  };
+
+  hw('hinges', 'Hinges', totals.hinges, 'pcs',
+    { per_door: centres.length, doors: doorCount, cup_diameter_mm: cups.diameter },
+    doorCount > 0 ? `${centres.length} per door × ${doorCount}` : '');
+  hw('runner_pairs', 'Drawer runners', numDrawers, 'pairs',
+    { length_mm: szufDl }, szufDl ? `${roundTo(szufDl, 0)} mm` : '');
+  hw('legs', 'Legs', legsPerUnit, 'pcs',
+    { height_mm: legHeight }, legHeight ? `${roundTo(legHeight, 0)} mm` : '');
+  hw('rail', 'Hanging rail', hasRail ? 1 : 0, 'pcs',
+    { length_mm: internalWidth }, `${roundTo(internalWidth, 0)} mm`);
+  hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',
+    { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
 
   // ── Derived (key names match the golden fixtures) ──────────────────────────
   const derived = {
@@ -737,6 +764,7 @@ export function computeCabinet(params, profileOverride) {
     panels,
     drills,
     drillSummary,
+    hardware,
     totals,
     csvLines: buildCsvLines(unitNum, panels, P),
     warnings,

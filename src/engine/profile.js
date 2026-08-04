@@ -93,6 +93,7 @@ export const DEFAULT_CABINET_PROFILE = {
     diameter: 7.5,
     clusterOffsets: [-50, 0, 50],   // 3 holes per row
     columnFromEdge: 70,             // x = 70 and panelWidth − 70
+    pinsPerShelf: 4,                // one pin in each corner — the hardware count
     layer: 'SHELVES_7_5MM',
     // Row spacing is (H − 2×G)/(n+1) measured over the FULL carcass height,
     // even when a drawer stack occupies the bottom (KIT_WARDROBE_FULL v1

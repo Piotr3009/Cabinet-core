@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "source": "KIT_BUD_FULL.lsp + SKYLON_COMMON.lsp (drawBUL/drawBUR/drawFRONT)",
+    "computed_by": "Claude (chat session 03-04.08.2026), formulas traced line-by-line",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. If engine output differs, the ENGINE is wrong (or file a BLOCKERS.md entry). Never edit expected values to make tests green.",
+    "units": "mm, m2, m; panel dims are WIDTH x HEIGHT as drawn in LISP CNC layout"
+  },
+  "shared_rules": {
+    "door_count": "1 door if (width - 4) <= 700, else 2 doors (threshold: width 704)",
+    "hinge_centers_base_unit": ["100", "H-300", "H-100"],
+    "hinge_drill": "each center -> 2 holes 5mm (r2.5) at center +/-16, x=37 from FRONT edge of side panel, layer HINGES_5MM",
+    "front_cups_base_unit": "Y from bottom of front: [100, Hf-297, Hf-97]; cup 35mm (r17.5) at x=21.5 from hinge edge, layer FRONT_HINGES_35MM; 2 mounting holes 3mm (r1.5) at cupX +/-9.5 toward door center (holeX), cupY +/-23, layer FRONT_HINGES_3MM",
+    "shelf_holes": "rows at y = G + i*spacing, spacing=(H-2G)/(numShelves+1); each row = cluster of 3 holes 7.5mm (r3.75) at rowY-50, rowY, rowY+50; columns x=70 and x=panelWidth-70; layer SHELVES_7_5MM",
+    "puzzle_system": "side panels are NOT rectangles: back edge has 3 slots (centers y=95, H/2, H-95; opening +/-19 at edge, widening to +/-25 at depth 10.5, full depth G; dogbone rect +/-30 x G on layer PUZZLE_DOG_BONES); top+bottom edges have sockets at x=95 and x=W-95 (width +/-25.5, with 2 holes 7.5mm at +/-24.5 on layer PUZZLE_HOLES_7_5MM); screws 3mm at x=50, mid, W-50 on layer SCREWS_3MM. Exact geometry: reference/lisp/SKYLON_COMMON.lsp drawBUL/drawBUR",
+    "edging_codes": "< left long edge, > right long edge (or front edge for TOP/BOTTOM/SHELF), ^v top+bottom, <>^v all four; EDG_L in metres",
+    "csv_header": "UNIT,PANEL,SZER,WYS,EDGE,EDG_L,SQM"
+  },
+  "cases": [
+    {
+      "id": "BUD-A",
+      "description": "Default single-door base unit, 1 shelf, hinge Left",
+      "inputs": { "type": "BUD", "width": 600, "height": 770, "depth": 558, "board_t": 18, "front_t": 25, "front_type": "S", "shelves": 1, "hinge": "L", "unit_num": "01" },
+      "derived": { "doors": 1, "internal_width": 564, "internal_depth": 540 },
+      "panels": [
+        { "id": "BUL", "w": 540, "h": 770, "qty": 1, "material_role": "board", "edging": { "code": "<", "len_m": 0.77 }, "area_m2": 0.416 },
+        { "id": "BUR", "w": 540, "h": 770, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.77 }, "area_m2": 0.416 },
+        { "id": "TOP", "w": 564, "h": 540, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.305 },
+        { "id": "BOTTOM", "w": 564, "h": 540, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.305 },
+        { "id": "BACK", "w": 600, "h": 770, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.462 },
+        { "id": "SHELF-1", "w": 560, "h": 520, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.291 },
+        { "id": "01-F", "w": 597, "h": 767, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 2.73 }, "area_m2": 0.458 }
+      ],
+      "drills": {
+        "hinge_centers": [100, 470, 670],
+        "side_hinge_holes_y": [[84, 116], [454, 486], [654, 686]],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": ["BUL"],
+        "front_cup_y": [100, 470, 670],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "shelf_row_y": [385],
+        "shelf_cluster_y": [[335, 385, 435]],
+        "shelf_hole_x": [70, 470]
+      },
+      "csv_labels": [
+        "01,BUL,540,770,<,0.77,0.416",
+        "01,BUR,540,770,>,0.77,0.416",
+        "01,TOP,564,540,>,0.56,0.305",
+        "01,BOTTOM,564,540,>,0.56,0.305",
+        "01,BACK,600,770,,0,0.462",
+        "01,SHELF-1,560,520,>,0.56,0.291",
+        "01,01-F,597,767,<>^v,2.73,0.458"
+      ],
+      "totals": { "panels_lisp": 6, "fronts": 1, "board_area_m2": 2.19, "front_area_m2": 0.458, "edging_m": 3.23 },
+      "notes": [ "totals.panels_lisp = 5 + shelves (fronts counted separately, as in LISP summary)", "legs: 4 pcs hardware per base unit (drawLegPair x2 in views) - hardware item, not a panel; qty to confirm with Piotr" ]
+    },
+    {
+      "id": "BUD-B",
+      "description": "Wide base unit crossing the 704 threshold: 2 doors, 2 shelves",
+      "inputs": { "type": "BUD", "width": 900, "height": 770, "depth": 558, "board_t": 18, "front_t": 25, "front_type": "S", "shelves": 2, "hinge": null, "unit_num": "02" },
+      "derived": { "doors": 2, "internal_width": 864, "internal_depth": 540, "door_width": 447 },
+      "panels": [
+        { "id": "BUL", "w": 540, "h": 770, "qty": 1, "material_role": "board", "edging": { "code": "<", "len_m": 0.77 }, "area_m2": 0.416 },
+        { "id": "BUR", "w": 540, "h": 770, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.77 }, "area_m2": 0.416 },
+        { "id": "TOP", "w": 864, "h": 540, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.86 }, "area_m2": 0.467 },
+        { "id": "BOTTOM", "w": 864, "h": 540, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.86 }, "area_m2": 0.467 },
+        { "id": "BACK", "w": 900, "h": 770, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.693 },
+        { "id": "SHELF-1", "w": 860, "h": 520, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.86 }, "area_m2": 0.447 },
+        { "id": "SHELF-2", "w": 860, "h": 520, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.86 }, "area_m2": 0.447 },
+        { "id": "02-FL", "w": 447, "h": 767, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 2.43 }, "area_m2": 0.343 },
+        { "id": "02-FR", "w": 447, "h": 767, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 2.43 }, "area_m2": 0.343 }
+      ],
+      "drills": {
+        "hinge_centers": [100, 470, 670],
+        "side_hinge_holes_y": [[84, 116], [454, 486], [654, 686]],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": ["BUL", "BUR"],
+        "front_cup_y": [100, 470, 670],
+        "shelf_row_y": [262.7, 507.3],
+        "shelf_cluster_y": [[212.7, 262.7, 312.7], [457.3, 507.3, 557.3]],
+        "shelf_hole_x": [70, 470]
+      },
+      "totals": { "panels_lisp": 7, "fronts": 2, "board_area_m2": 3.35, "front_area_m2": 0.686, "edging_m": 4.99 }
+    }
+  ]
+}

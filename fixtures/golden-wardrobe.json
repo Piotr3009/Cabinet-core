@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "source": "KIT_WARDROBE_FULL.lsp (constants lines 498-508, drawer logic 585-660, CNC 850-1060, CSV 1180-1260) + SKYLON_COMMON.lsp",
+    "computed_by": "Claude (chat session 03-04.08.2026)",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. Engine wrong => fix engine; blocked => BLOCKERS.md. Never edit expected values.",
+    "units": "mm, m2, m"
+  },
+  "wardrobe_constants": {
+    "legHeight": 100, "drawerSetback": 50, "drawerSideH": 164, "drawerFrontH": 200,
+    "drawerGap": 3, "drFirstAdj": 3, "szufBok": 18, "dpInset": 30, "fillerW": 30, "fillerFrontOff": 40,
+    "min_height": 1800, "defaults": { "width": 600, "height": 2150, "depth": 578, "rail_offset": 1400 }
+  },
+  "wardrobe_rules": {
+    "hinge_count_tall": "H < 1600 -> 5 hinges; H >= 1600 -> 6 hinges. Centers: [100, 100+i*spacing..., H-100]; spacing=(H-200)/4 (5 hinges) or (H-200)/5 (6 hinges)",
+    "front_cups": "cup Y list on door = SAME values as side hinge centers (wardrobe passes hingePositions directly, unlike BUD)",
+    "drawer_depth_snap": "szufMaxDl = depth - G - drawerSetback - frontT - 20; szufDl = largest of {390,440,490,540,590,640,690} <= szufMaxDl; if szufMaxDl < 390 -> drawers cancelled (WARNING)",
+    "drawer_panels": "2 doors -> DP left+right (numDrPanels=2); 1 door -> DP on hinge side only (numDrPanels=1). drawerReduction = numDrPanels * (dpInset + G)",
+    "drawer_box": "boxWidth(szufSzer) = internalW - 10 - drawerReduction; frontW = boxWidth + 4; boxFrontLen = width - 4G - 10 - drawerReduction; boxFrontH = drawerSideH - 15 - G - 1; bottom = (boxFrontLen+13) x szufDl",
+    "drawer_zone": "totalH = n*200 + (n-1)*3; partition (wieniec) bottom at G + totalH + 5; validation: totalH <= H - 2G - 200 else drawers cancelled",
+    "drawer_fronts": "front height = 200, EXCEPT first (bottom) = 197 (drFirstAdj 3); width = frontW",
+    "runners": "row Y relative to DP bottom = 38 + i*(200+3); relative to BUL/BUR bottom = G + 38 + i*203; holes 3mm at x {37, 69, 293} from front (mirrored on opposite face), layer RUNNERS_3MM",
+    "runner_sides": "1 door: DP on hinge side carries runners + opposite CARCASS side (BUR for hinge L) carries runners at runnerYRel; 2 doors: both DPs carry runners, BUL/BUR clean [VERIFY with Piotr]",
+    "rail_partition": "hasRail Y -> RAIL-PART panel internalW x internalD (rotated in layout); rail_offset input (default 1400) positions rail in views",
+    "shelf_holes_quirk": "shelf-hole spacing formula uses FULL height (H-2G)/(n+1) ignoring the drawer zone - replicate as-is v1 (CC positional shelves supersede this later)"
+  },
+  "lisp_summary_quirks": [
+    "RAIL-PART is NOT counted in LISP totalPanels nor totalSQM (but IS in CSV) - engine truth: count it; fixture totals below = full sum",
+    "LISP totalSQM uses drawerFrontH=200 for ALL drawer fronts incl. the first (real 197) - fixture totals use REAL 197",
+    "LISP totalEdging counts only BUL+BUR+TOPx2+SHELFxN (drawer/partition parts unedged in summary)"
+  ],
+  "cases": [
+    {
+      "id": "W-A",
+      "description": "Default wardrobe: 1 door hinge L, 2 internal drawers, rail @1400, 2 shelves",
+      "inputs": { "type": "WARDROBE", "width": 600, "height": 2150, "depth": 578, "board_t": 18, "front_t": 25, "front_type": "S", "drawers": 2, "rail": true, "rail_offset": 1400, "shelves": 2, "hinge": "L", "unit_num": "W01" },
+      "derived": {
+        "doors": 1, "internal_width": 564, "internal_depth": 560,
+        "numDrPanels": 1, "dp_side": "L", "drawerReduction": 48,
+        "szufMaxDl": 465, "szufDl": 440, "szufSzer": 506, "drawerFrontW": 510,
+        "drawerTotalH": 403, "partition_bottom_y": 426, "drawerPanelH": 408, "drawerPanelD": 510,
+        "boxFrontLen": 470, "boxFrontH": 130, "bottom_w": 483, "bottom_d": 440
+      },
+      "panels": [
+        { "id": "BUL", "w": 560, "h": 2150, "qty": 1, "material_role": "board", "edging": { "code": "<", "len_m": 2.15 }, "area_m2": 1.204 },
+        { "id": "BUR", "w": 560, "h": 2150, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 2.15 }, "area_m2": 1.204 },
+        { "id": "TOP", "w": 564, "h": 560, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.316 },
+        { "id": "BOTTOM", "w": 564, "h": 560, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.316 },
+        { "id": "BACK", "w": 600, "h": 2150, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 1.29 },
+        { "id": "SHELF-1", "w": 560, "h": 540, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.302 },
+        { "id": "SHELF-2", "w": 560, "h": 540, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.302 },
+        { "id": "PARTITION", "w": 564, "h": 560, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.316 },
+        { "id": "RAIL-PART", "w": 564, "h": 560, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.316 },
+        { "id": "DP-L", "w": 510, "h": 408, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.208 },
+        { "id": "FILLER", "w": 30, "h": 408, "qty": 2, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.012 },
+        { "id": "D{i}-SL/SR", "w": 440, "h": 164, "qty": 4, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.072 },
+        { "id": "D{i}-BF/BB", "w": 470, "h": 130, "qty": 4, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.061 },
+        { "id": "D{i}-DNO", "w": 483, "h": 440, "qty": 2, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.213 },
+        { "id": "W01-DF1", "w": 510, "h": 197, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 1.41 }, "area_m2": 0.1 },
+        { "id": "W01-DF2", "w": 510, "h": 200, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 1.42 }, "area_m2": 0.102 },
+        { "id": "W01-F", "w": 597, "h": 2147, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 5.49 }, "area_m2": 1.282 }
+      ],
+      "drills": {
+        "hinge_centers": [100, 490, 880, 1270, 1660, 2050],
+        "side_hinge_holes_y": [[84,116],[474,506],[864,896],[1254,1286],[1644,1676],[2034,2066]],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": ["BUL"],
+        "front_cup_y": [100, 490, 880, 1270, 1660, 2050],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "runner_rows_dp_y": [38, 241],
+        "runner_rows_carcass_y": [56, 259],
+        "runner_carcass_side": "BUR",
+        "runner_hole_x": [37, 69, 293],
+        "shelf_row_y": [722.7, 1427.3],
+        "shelf_hole_x": [70, 490]
+      },
+      "totals": {
+        "panels_lisp": 23,
+        "panels_true_incl_railpart": 24,
+        "board_area_m2": 6.757,
+        "front_area_m2": 1.484,
+        "edging_m": 6.55
+      },
+      "verify_with_piotr": [
+        "runner rows on BUR (non-hinge carcass side) at y {56, 259} x {37,69,293} - confirm vs production",
+        "RAIL-PART dims 564x560 (same as PARTITION) - confirm",
+        "first drawer front 197 vs 200 - production practice"
+      ]
+    },
+    {
+      "id": "W-B",
+      "description": "Wide wardrobe: 2 doors, 2 drawer panels (L+R), 2 drawers, rail, 2 shelves",
+      "inputs": { "type": "WARDROBE", "width": 1200, "height": 2150, "depth": 578, "board_t": 18, "front_t": 25, "front_type": "S", "drawers": 2, "rail": true, "rail_offset": 1400, "shelves": 2, "hinge": null, "unit_num": "W02" },
+      "derived": {
+        "doors": 2, "door_width": 597, "internal_width": 1164, "internal_depth": 560,
+        "numDrPanels": 2, "drawerReduction": 96,
+        "szufDl": 440, "szufSzer": 1058, "drawerFrontW": 1062,
+        "drawerTotalH": 403, "partition_bottom_y": 426, "drawerPanelH": 408, "drawerPanelD": 510,
+        "boxFrontLen": 1022, "boxFrontH": 130, "bottom_w": 1035, "bottom_d": 440
+      },
+      "panels_delta_vs_WA": [
+        { "id": "TOP/BOTTOM", "w": 1164, "h": 560, "qty": 2, "area_m2_each": 0.652 },
+        { "id": "BACK", "w": 1200, "h": 2150, "area_m2": 2.58 },
+        { "id": "SHELF-1/2", "w": 1160, "h": 540, "qty": 2, "area_m2_each": 0.626 },
+        { "id": "PARTITION", "w": 1164, "h": 560, "area_m2": 0.652 },
+        { "id": "RAIL-PART", "w": 1164, "h": 560, "area_m2": 0.652 },
+        { "id": "DP-L + DP-R", "w": 510, "h": 408, "qty": 2 },
+        { "id": "FILLER", "w": 30, "h": 408, "qty": 4 },
+        { "id": "D{i}-BF/BB", "w": 1022, "h": 130, "qty": 4 },
+        { "id": "D{i}-DNO", "w": 1035, "h": 440, "qty": 2 },
+        { "id": "W02-DF1", "w": 1062, "h": 197 },
+        { "id": "W02-DF2", "w": 1062, "h": 200 },
+        { "id": "W02-FL + W02-FR", "w": 597, "h": 2147, "qty": 2 }
+      ],
+      "drills": {
+        "hinge_centers": [100, 490, 880, 1270, 1660, 2050],
+        "hinged_sides": ["BUL", "BUR"],
+        "runner_rows_dp_y": [38, 241],
+        "runner_carcass_side": "none (both DPs carry runners) [VERIFY]",
+        "shelf_row_y": [722.7, 1427.3],
+        "shelf_hole_x": [70, 490]
+      },
+      "totals": {
+        "panels_true_incl_railpart": 29,
+        "board_area_m2": 11.044,
+        "front_area_m2": 2.985,
+        "edging_m": 8.95
+      }
+    }
+  ]
+}

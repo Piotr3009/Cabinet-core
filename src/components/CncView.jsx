@@ -31,9 +31,11 @@ export default function CncView() {
   const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
 
-  // Fall back to the only unit in the room, so the view is never blank for a
-  // one-cabinet project just because nothing was clicked.
-  const unit = units.find((u) => u.id === selectedUnitId) || (units.length === 1 ? units[0] : null);
+  // The sheet follows the selection, but nothing selected falls back to the
+  // first unit rather than showing an empty canvas — selection is view state
+  // and does not survive a reload, and "switch to CNC, see nothing" is a
+  // worse answer than "see the first unit and pick another from the toolbar".
+  const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
   const result = unit ? unitResult(unit.id) : null;
 
   const wrapRef = useRef(null);
@@ -173,22 +175,9 @@ export default function CncView() {
     }
   };
 
-  // ── empty states ──────────────────────────────────────────────────────────
-  if (!units.length) {
-    return <Empty text="Add a unit from the Library, then switch to CNC." />;
-  }
+  // ── empty state ───────────────────────────────────────────────────────────
   if (!unit) {
-    return (
-      <Empty text="Select a unit to see its CNC sheet.">
-        <div className="flex flex-wrap gap-2 justify-center mt-3">
-          {units.map((u) => (
-            <button key={u.id} type="button" className="cc-btn" onClick={() => selectUnit(u.id)}>
-              {u.params.unit_num}
-            </button>
-          ))}
-        </div>
-      </Empty>
-    );
+    return <Empty text="Add a unit from the Library, then switch to CNC." />;
   }
 
   const labelSize = LABEL_PX * mmPerPx;
@@ -223,7 +212,19 @@ export default function CncView() {
 
       {/* toolbar */}
       <div className="absolute top-3 left-3 flex items-center gap-2 bg-shell-800/95 border border-shell-600 rounded px-2 py-1.5">
-        <span className="text-xs text-gold uppercase tracking-wide">CNC · {unit.params.unit_num}</span>
+        <span className="text-xs text-gold uppercase tracking-wide">CNC</span>
+        {units.length > 1 ? (
+          // Flip between sheets without going back to 3D. Selecting here is the
+          // same selection the rest of the app uses, so nothing gets out of step.
+          <select
+            className="cc-input w-auto py-0.5" value={unit.id}
+            aria-label="Unit" onChange={(e) => selectUnit(e.target.value)}
+          >
+            {units.map((u) => <option key={u.id} value={u.id}>{u.params.unit_num}</option>)}
+          </select>
+        ) : (
+          <span className="text-xs text-ink-100">{unit.params.unit_num}</span>
+        )}
         <span className="text-[11px] text-ink-400">{result.panels.length} parts</span>
         <span className="w-px h-4 bg-shell-600" />
         <button type="button" className="cc-btn-ghost" title="Zoom out" onClick={() => zoomBy(ZOOM_STEP)}>−</button>

@@ -200,6 +200,7 @@ export const DEFAULT_CABINET_PROFILE = {
     snapSteps: [0.5, 1, 32],
     defaultSnap: 1,
     minShelfGap: 40,           // minimum clear space between neighbours
+    unitMagnet: 40,            // butt a unit against its neighbour within this
   },
 };
 

@@ -220,3 +220,26 @@ i PDF z jsPDF; szczegóły w werdykcie Fazy 4.
 badge „Mock data mode" widoczny, modal Account tłumaczy tryb, zero błędów
 w konsoli, `npm test` i `npm run build` zielone. Ścieżki z realną bazą nie były
 uruchamiane — nie ma kluczy (i SQL-a świadomie nie wykonujemy).
+
+---
+
+## Faza 6 — Drugi typ + multi-unit smoke — ✅ ZIELONA
+
+**Co powstało.** Typ **BUD** (kuchenna baza) był już w silniku od Fazy 1 i jest
+w Library od Fazy 0; tutaj doszło potwierdzenie, że architektura wielu jednostek
+faktycznie działa. Nowa jednostka dostawia się do prawej krawędzi ostatniej
+(pierwsza ląduje na środku ściany), a przy przeciąganiu działa **magnes
+jednostka-do-jednostki**: w zasięgu przyciągania krawędź ląduje **dokładnie**
+na krawędzi sąsiada.
+
+**Poprawka po teście.** Zasięg magnesu był ustawiony na jeden krok snapa
+(1 mm) — przy myszy praktycznie nie do trafienia (1 mm ≈ 0.3 px). Wyniesiony do
+profilu jako `editor.unitMagnet: 40` mm i zweryfikowany: przeciągnięcie w
+pobliże sąsiada daje x = 2300 przy szafie 1700 + 600, czyli styk co do
+milimetra.
+
+**Werdykt.** W jednym pokoju stoją szafa W01 (2150, szuflady + półka + drzwi)
+i baza 02 (770, półka + drzwi), obie przy ścianie, obie z własnym numerem i
+etykietami. BOM pokazuje obie jednostki osobnymi sekcjami, sumy się zgadzają.
+Zero błędów w konsoli. To smoke-test architektury, nie pełna kuchnia — zgodnie
+z zakresem fazy.

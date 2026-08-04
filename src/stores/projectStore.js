@@ -113,8 +113,10 @@ export const useProjectStore = create((set, get) => ({
     const wallWidth = s.project.room.walls[unit.position.wall]?.width ?? DEFAULT_ROOM.walls[0].width;
     let x = snapTo(xRaw, snapStep);
     x = clamp(x, 0, Math.max(0, wallWidth - unit.params.width));
-    // Unit-to-unit magnet: butt against a neighbour when within one snap step
-    const tolerance = Math.max(snapStep, 12);
+    // Unit-to-unit magnet: butt against a neighbour once we are close enough.
+    // One snap step is far too tight to catch with a mouse — the pull distance
+    // is its own profile value.
+    const tolerance = Math.max(snapStep, getCabinetProfile().editor.unitMagnet);
     for (const other of s.units) {
       if (other.id === unitId) continue;
       const oLeft = other.position.x_mm;

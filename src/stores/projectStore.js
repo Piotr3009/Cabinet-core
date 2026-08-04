@@ -82,10 +82,11 @@ export const useProjectStore = create((set, get) => ({
     const profile = getCabinetProfile();
     const state = get();
     const unit = newUnit(typeId, profile, state.units.length);
-    // Park it next to whatever already stands at the wall.
+    // First unit lands centred on the wall; the next ones butt onto it.
     const wallWidth = state.project.room.walls[0]?.width ?? DEFAULT_ROOM.walls[0].width;
-    const rightMost = state.units.reduce((max, u) => Math.max(max, u.position.x_mm + u.params.width), 0);
-    unit.position.x_mm = Math.min(rightMost, Math.max(0, wallWidth - unit.params.width));
+    const rightMost = state.units.reduce((max, u) => Math.max(max, u.position.x_mm + u.params.width), null);
+    const x = rightMost == null ? (wallWidth - unit.params.width) / 2 : rightMost;
+    unit.position.x_mm = Math.round(Math.min(x, Math.max(0, wallWidth - unit.params.width)));
     set((s) => ({ units: [...s.units, unit], dirty: true }));
     return unit.id;
   },

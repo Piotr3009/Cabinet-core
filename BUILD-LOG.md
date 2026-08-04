@@ -70,3 +70,35 @@ Pełna analiza + rekomendacja: **BLOCKERS #1**. Reszta W-B (wszystkie wymiary,
 dokładnie, więc sam zestaw formatek jest potwierdzony.
 
 Przy okazji wyszła rozbieżność progu drzwi 704 vs 705 mm — **BLOCKERS #2**.
+
+---
+
+## Faza 2 — Pokój + 3D — ✅ ZIELONA
+
+**Co powstało.** `src/3d/`: `Scene.jsx` (Canvas, kamera, miękkie światło,
+OrbitControls, `CaptureRig` do zrzutu dla PDF), `Room.jsx` (ściana główna
+H×W biała + podłoga; kotwica projektu, czwarta ściana świadomie nierysowana),
+`UnitView.jsx` (render **z wyjścia silnika** — każdy `panels[].box` to jeden
+box w scenie, więc widok nie przelicza ani jednego wymiaru), `DimLabel.jsx`,
+`constants.js` (jedyne miejsce z przelicznikiem mm → metry).
+
+**Etykiety wymiarów billboardowane.** Zrobione sprite'em z teksturą canvas,
+nie overlayem DOM ani `drei/Text`: sprite jest billboardem z definicji, nie
+pobiera fontu z sieci i — inaczej niż overlay HTML — **widać go na zrzucie
+WebGL**, którego używa eksport PDF. To bezpośrednia lekcja z lustrzanych
+napisów w konfiguratorze PSW (SPEC 7).
+
+**Przeciąganie.** Szafa dosunięta do ściany (tył w płaszczyźnie z = 0),
+pozycja X przeciągalna wzdłuż ściany: promień myszy przecinany z pionową
+płaszczyzną równoległą do ściany, wynik snapowany krokiem z Library
+(0.5/1/32 mm) i przycinany do szerokości ściany. Listenery na `window`, żeby
+szybki ruch myszy nie gubił przeciągania; OrbitControls wyłączane na czas drag.
+
+**Poprawki po podglądzie w przeglądarce.** Domyślny tone mapping R3F (ACES)
+zamieniał białą ścianę w szarą — ustawione `NoToneMapping` + mocniejsze
+światło ambient. Pierwsza jednostka ląduje na środku ściany (wcześniej przy
+lewej krawędzi, pod panelem Library).
+
+**Werdykt.** Zweryfikowane realnym uruchomieniem w Chromium (Playwright):
+scena renderuje się bez błędów w konsoli, szafa stoi przy ścianie, etykiety
+czytelne, `npm run build` przechodzi.

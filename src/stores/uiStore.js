@@ -31,6 +31,12 @@ export const useUiStore = create((set, get) => ({
   bomOpen: false,
   setBomOpen: (v) => set({ bomOpen: v }),
 
+  // Canvas view: the 3D room, or the flat CNC sheet of the selected unit.
+  // Both read the SAME engine output — the toggle changes nothing but the way
+  // it is drawn, so a parameter edited in 3D is already correct in CNC.
+  viewMode: '3d',                    // '3d' | 'cnc'
+  setViewMode: (mode) => set({ viewMode: mode === 'cnc' ? 'cnc' : '3d' }),
+
   // Modals
   modal: null,                       // 'add-items' | 'room' | 'auth' | 'materials' | null
   openModal: (name) => set({ modal: name }),

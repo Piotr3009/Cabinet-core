@@ -99,7 +99,7 @@ nie po kodzie MAT ani nazwie. CC trzyma UUID-y JC przy materiałach.
 - Wzory formatek zweryfikowane w kodzie 1:1 z planem założycielskim (BUD_FULL czytany w całości).
 - Wiercenia zawiasów: środki 100 / wys−300 / wys−100 od dołu boku; pary otworów = środek ±16 mm
   (84/116, 284/316). Puszki we froncie: 100, wysFront−297, wysFront−97 od dołu.
-- Reguła ilości drzwi: 1 gdy (szer−4) ≤ 700, inaczej 2 → **próg 704 mm**.
+- Reguła ilości drzwi: 1 gdy (szer−4) ≤ 700, inaczej 2 → **2 drzwi od szerokości 705 mm (704 = jeszcze 1 drzwi)**.
 - Banding per formatka z kierunkami (`<`, `>`, `^v`) i mb; CSV labels `UNIT,PANEL,SZER,WYS,EDGE,EDG_L,SQM`.
 - Warstwy CNC + dogbones: logika w `SKYLON_COMMON.lsp` — przenosimy w etapie DXF.
 

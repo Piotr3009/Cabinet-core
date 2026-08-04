@@ -60,7 +60,7 @@ Problem blokujący (niejasna logika, brak danych)? → wpis w `BLOCKERS.md` i ko
 ### Wspólne (SKYLON_COMMON + KIT_BUD_FULL)
 - Grubości: płyta 18 (opcja 22); front 18 MDF / 19 melamina / 25 shaker; typy frontu S/H/F
 - Luz drzwi (doorGap): 3; front pojedynczy = (W−3)×(H−3); podwójny = ((W−6)/2)×(H−3)
-- Próg 2 drzwi: (W−4) > 700 → 2 drzwi (czyli od W=704)
+- Próg 2 drzwi: (W−4) > 700 → 2 drzwi (czyli od W=705; przy 704 jeszcze 1 drzwi — potwierdzone przez Piotra 04.08)
 - Boki: (D−G)×H; TOP/BOTTOM: (W−2G)×(D−G); BACK: W×H; PÓŁKA: (W−2G−4)×(D−G−20)
 - Zawiasy w bokach: środki wg typu (niżej); każdy środek → 2 otwory 5 mm na środek±16, x=37 od PRZODU, warstwa HINGES_5MM
 - Puszki we froncie: 35 mm (r17.5) na x=21.5 od krawędzi zawiasowej, warstwa FRONT_HINGES_35MM;

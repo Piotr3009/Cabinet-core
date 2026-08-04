@@ -182,3 +182,41 @@ wieszak → drzwi → BOM → przypisanie materiałów → CSV + PDF. Wyeksporto
 zgadza się **wiersz w wiersz** z golden fixture W-A (BUL 560×2150 `<` 2.15
 1.204, …, W01-F 597×2147 `<>^v` 5.49 1.282). PDF: 2 strony, zrzut 3D + tabela.
 Zero błędów w konsoli.
+
+---
+
+## Faza 5 — Persystencja + eksporty — ✅ ZIELONA
+
+**`sql/001_init.sql`** — z wymaganym nagłówkiem „SQL PRZED push — uruchamia
+Piotr ręcznie w Supabase SQL Editor". Skrypt jest **idempotentny**.
+Tabele: `cc_projects` i `cc_units` dokładnie wg SPEC 5, plus `cc_materials`
+(własna lista materiałów, z kolumną `jc_uuid` — import po stronie JC
+identyfikuje pozycje po UUID stock_items, nie po kodzie MAT) i `cc_profiles`
+(profil warsztatu). Te dwie dołożone świadomie: bez nich „własna lista
+materiałów" i profil żyłyby wyłącznie w localStorage, co łamie zasadę
+„baza nad localStorage". **RLS włączone na KAŻDEJ tabeli**, polityki
+SELECT/INSERT/UPDATE/DELETE per `auth.uid()`. Dla `cc_units` własność jest
+dziedziczona z projektu rodzica przez `exists (...)`, z `WITH CHECK` również
+na UPDATE — inaczej dałoby się przepiąć swoją jednostkę do cudzego projektu.
+Na końcu pliku gotowy ręczny test izolacji tenantów.
+
+**Klient + auth.** `src/lib/cloudSync.js` — lista/odczyt/zapis/kasowanie
+projektów i minimalne auth (login / rejestracja / wylogowanie). **Każda
+funkcja degraduje się łagodnie**: brak kluczy albo nieuruchomiony SQL → wynik
+mockowy i praca leci dalej na cache w localStorage. Nic stąd nie rzuca
+wyjątkiem do UI. Zapis jednostek jest „wymień wszystkie" zamiast diffowania —
+projekt jest mały, a diff po stronie klienta to najprostszy sposób, żeby po
+cichu zgubić jednostkę.
+
+**Modal Account.** W mock-mode nie udaje logowania — tłumaczy stan i pokazuje
+dokładnie, co zrobić (`.env.example` → `.env`, potem `sql/001_init.sql`).
+Po podłączeniu kluczy: logowanie/rejestracja, zapis bieżącego projektu i lista
+projektów z chmury do otwarcia.
+
+**Eksporty** wpięte fazę wcześniej (są przyciskami BOM-u) — CSV w formacie LISP
+i PDF z jsPDF; szczegóły w werdykcie Fazy 4.
+
+**Werdykt.** Zweryfikowane w przeglądarce: aplikacja startuje bez `.env`,
+badge „Mock data mode" widoczny, modal Account tłumaczy tryb, zero błędów
+w konsoli, `npm test` i `npm run build` zielone. Ścieżki z realną bazą nie były
+uruchamiane — nie ma kluczy (i SQL-a świadomie nie wykonujemy).

@@ -4,6 +4,7 @@ import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
+import AuthModal from '../components/AuthModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
 import Toast from '../components/Toast.jsx';
 import Scene from '../3d/Scene.jsx';
@@ -58,7 +59,7 @@ export default function ConfiguratorPage() {
 
   return (
     <div className="h-full flex flex-col bg-shell-900">
-      <TopBar onExport={() => { setBomOpen(true); }} onAuth={() => notify('Accounts arrive with cloud projects — mock mode keeps everything in this browser.', 'info')} />
+      <TopBar onExport={() => { setBomOpen(true); }} onAuth={() => openModal('auth')} />
       <div className="flex-1 relative overflow-hidden">
         <div className="absolute inset-0 bg-canvas">
           <Scene onCaptureReady={onCaptureReady} />
@@ -77,6 +78,7 @@ export default function ConfiguratorPage() {
         {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} />}
         {modal === 'room' && <RoomModal />}
         {modal === 'add-items' && selectedUnit && <AddItemsModal unit={selectedUnit} />}
+        {modal === 'auth' && <AuthModal />}
         <Toast />
       </div>
     </div>

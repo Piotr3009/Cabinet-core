@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-shell-900 text-ink-50 font-sans antialiased;
+    margin: 0;
+    overflow: hidden;
+  }
+  input, select, button { font: inherit; }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type='number'] { -moz-appearance: textfield; }
+}
+
+@layer components {
+  .cc-btn {
+    @apply px-3 py-1.5 rounded text-sm border border-shell-600 bg-shell-700 text-ink-100
+           hover:bg-shell-600 hover:text-ink-50 transition-colors disabled:opacity-40
+           disabled:cursor-not-allowed disabled:hover:bg-shell-700;
+  }
+  .cc-btn-gold {
+    @apply px-3 py-1.5 rounded text-sm font-medium bg-gold text-shell-900 border border-gold
+           hover:bg-gold-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .cc-btn-ghost {
+    @apply px-2 py-1 rounded text-sm text-ink-200 hover:text-gold hover:bg-shell-700 transition-colors;
+  }
+  .cc-panel {
+    @apply bg-shell-800 border border-shell-600 rounded-lg shadow-panel;
+  }
+  .cc-input {
+    @apply w-full bg-shell-900 border border-shell-600 rounded px-2 py-1 text-sm text-ink-50
+           focus:outline-none focus:border-gold;
+  }
+  .cc-label {
+    @apply block text-[11px] uppercase tracking-wide text-ink-400 mb-1;
+  }
+  .cc-row {
+    @apply flex items-center justify-between gap-2 py-1;
+  }
+  .cc-divider { @apply border-t border-shell-600 my-3; }
+  .cc-tag {
+    @apply text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-shell-700 text-ink-400 border border-shell-600;
+  }
+}
+
+/* Thin dark scrollbars — this is a workshop tool, not a showcase */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #1a1a1a; }
+::-webkit-scrollbar-thumb { background: #3e3e42; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #55555a; }

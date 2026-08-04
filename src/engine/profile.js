@@ -209,11 +209,15 @@ export const DEFAULT_CABINET_PROFILE = {
   },
 
   // ─── Editor defaults ───
+  // The clearances the collision clamp enforces. A move STOPS at these values
+  // (src/engine/collision.js) — they are not advisory.
   editor: {
     snapSteps: [0.5, 1, 32],
     defaultSnap: 1,
-    minShelfGap: 40,           // minimum clear space between neighbours
+    minShelfGap: 40,           // minimum clear space between two shelves
+    minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
     unitMagnet: 40,            // butt a unit against its neighbour within this
+    minUnitGap: 0,             // units stand edge to edge; > 0 forces a scribe gap
   },
 };
 

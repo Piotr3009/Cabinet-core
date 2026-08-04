@@ -15,9 +15,11 @@ export default function RightPanel() {
   const clearSelection = useUiStore((s) => s.clearSelection);
 
   const units = useProjectStore((s) => s.units);
+  const room = useProjectStore((s) => s.project.room);
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   const removeItem = useProjectStore((s) => s.removeItem);
   const updateItem = useProjectStore((s) => s.updateItem);
+  const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const addItem = useProjectStore((s) => s.addItem);
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
   const removeUnit = useProjectStore((s) => s.removeUnit);
@@ -28,7 +30,7 @@ export default function RightPanel() {
   const unit = units.find((u) => u.id === selectedUnitId) || null;
   const result = unit ? unitResult(unit.id) : null;
   const type = unit ? getUnitType(unit.type) : null;
-  const issues = unit && result ? validateUnit(unit, result) : [];
+  const issues = unit && result ? validateUnit(unit, result, { room, units }) : [];
   const items = unit?.params.sections?.[0]?.items || [];
   const shelves = items.filter((i) => i.kind === 'shelf').sort((a, b) => (a.pos_mm || 0) - (b.pos_mm || 0));
   const drawers = items.filter((i) => i.kind === 'drawer');
@@ -164,9 +166,11 @@ export default function RightPanel() {
                 {shelves.map((sh, i) => (
                   <li key={sh.id} className="flex items-center gap-1 text-sm">
                     <span className="text-ink-400 w-6 text-xs">S{i + 1}</span>
+                    {/* Typed positions go through the SAME clamp as the drag —
+                        the field is not a back door around the collision rules. */}
                     <input
                       type="number" className="cc-input w-20 text-right" value={Math.round(sh.pos_mm ?? 0)}
-                      onChange={(e) => updateItem(unit.id, sh.id, { pos_mm: Number(e.target.value) })}
+                      onChange={(e) => setShelfPos(unit.id, sh.id, Number(e.target.value))}
                     />
                     <select
                       className="cc-input flex-1" value={sh.variant || 'fixed'}

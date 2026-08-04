@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import { computeCabinet } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType } from '../engine/types.js';
-import { snap as snapTo, clamp } from '../engine/format.js';
+import { snap as snapTo } from '../engine/format.js';
+import {
+  clampShelfPos, clampUnitX, firstFreeUnitX, shelfBand, shelfBounds, unitIssues, unitSpan,
+} from '../engine/collision.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -91,52 +94,59 @@ export const useProjectStore = create((set, get) => ({
     const profile = getCabinetProfile();
     const state = get();
     const unit = newUnit(typeId, profile, state.units.length);
-    // First unit lands centred on the wall; the next ones butt onto it.
+    // Centred on an empty wall, otherwise butted into the first gap it fits —
+    // a new unit never lands on top of an existing one.
     const wallWidth = state.project.room.walls[0]?.width ?? DEFAULT_ROOM.walls[0].width;
-    const rightMost = state.units.reduce((max, u) => Math.max(max, u.position.x_mm + u.params.width), null);
-    const x = rightMost == null ? (wallWidth - unit.params.width) / 2 : rightMost;
-    unit.position.x_mm = Math.round(Math.min(x, Math.max(0, wallWidth - unit.params.width)));
+    unit.position.x_mm = firstFreeUnitX({
+      width: unit.params.width,
+      wallWidth,
+      others: state.units.filter((u) => (u.position.wall ?? 0) === 0).map(unitSpan),
+    });
     set((s) => ({ units: [...s.units, unit], dirty: true }));
     return unit.id;
   },
 
   removeUnit: (unitId) => set((s) => ({ units: s.units.filter((u) => u.id !== unitId), dirty: true })),
 
-  updateUnitParams: (unitId, patch) => set((s) => ({
-    units: s.units.map((u) => {
-      if (u.id !== unitId) return u;
-      const params = { ...u.params, ...patch };
-      if (patch.width != null && params.sections?.[0]) {
-        params.sections = [{ ...params.sections[0], width_mm: patch.width }];
-      }
-      return { ...u, params };
-    }),
-    dirty: true,
-  })),
+  updateUnitParams: (unitId, patch) => {
+    set((s) => ({
+      units: s.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const params = { ...u.params, ...patch };
+        if (patch.width != null && params.sections?.[0]) {
+          params.sections = [{ ...params.sections[0], width_mm: patch.width }];
+        }
+        return { ...u, params };
+      }),
+      dirty: true,
+    }));
+    // A unit that just got wider can now stick out of the wall or into its
+    // neighbour, so re-run the same clamp the drag uses. Typing a number and
+    // dragging must not be able to reach different states.
+    if (patch.width != null) get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
+    if (patch.height != null || patch.width != null) get().reclampShelves(unitId);
+  },
 
-  /** Slide a unit along the wall, snapped, clamped, and butted against neighbours. */
+  /** Slide a unit along the wall: snapped, then hard-clamped into its free slot. */
   moveUnit: (unitId, xRaw, snapStep) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
-    if (!unit) return;
-    const wallWidth = s.project.room.walls[unit.position.wall]?.width ?? DEFAULT_ROOM.walls[0].width;
-    let x = snapTo(xRaw, snapStep);
-    x = clamp(x, 0, Math.max(0, wallWidth - unit.params.width));
-    // Unit-to-unit magnet: butt against a neighbour once we are close enough.
-    // One snap step is far too tight to catch with a mouse — the pull distance
-    // is its own profile value.
-    const tolerance = Math.max(snapStep, getCabinetProfile().editor.unitMagnet);
-    for (const other of s.units) {
-      if (other.id === unitId) continue;
-      const oLeft = other.position.x_mm;
-      const oRight = oLeft + other.params.width;
-      if (Math.abs(x - oRight) <= tolerance) x = oRight;
-      else if (Math.abs(x + unit.params.width - oLeft) <= tolerance) x = oLeft - unit.params.width;
-    }
+    if (!unit) return null;
+    const wall = unit.position.wall ?? 0;
+    const wallWidth = s.project.room.walls[wall]?.width ?? DEFAULT_ROOM.walls[0].width;
+    const result = clampUnitX({
+      x: snapTo(xRaw, snapStep),
+      current: unit.position.x_mm,
+      width: unit.params.width,
+      wallWidth,
+      others: s.units.filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wall).map(unitSpan),
+    }, getCabinetProfile());
+
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
+      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: result.x } } : u)),
       dirty: true,
     }));
+    return result;
   },
 
   // ── interior items ───────────────────────────────────────────────────────
@@ -150,6 +160,9 @@ export const useProjectStore = create((set, get) => ({
       }),
       dirty: true,
     }));
+    // A shelf added at a position someone else already occupies is a collision
+    // like any other — it goes through the same clamp.
+    if (item.kind === 'shelf' && Number.isFinite(item.pos_mm)) get().setShelfPos(unitId, id, item.pos_mm);
     return id;
   },
 
@@ -164,16 +177,23 @@ export const useProjectStore = create((set, get) => ({
       }),
       dirty: true,
     }));
+    // The drawer stack raises the floor the shelves stand on.
+    get().reclampShelves(unitId);
   },
 
-  removeItem: (unitId, itemId) => set((s) => ({
-    units: s.units.map((u) => {
-      if (u.id !== unitId) return u;
-      const section = u.params.sections[0];
-      return { ...u, params: { ...u.params, sections: [{ ...section, items: section.items.filter((i) => i.id !== itemId) }] } };
-    }),
-    dirty: true,
-  })),
+  removeItem: (unitId, itemId) => {
+    const wasDrawer = get().units.find((u) => u.id === unitId)
+      ?.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.kind === 'drawer';
+    set((s) => ({
+      units: s.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const section = u.params.sections[0];
+        return { ...u, params: { ...u.params, sections: [{ ...section, items: section.items.filter((i) => i.id !== itemId) }] } };
+      }),
+      dirty: true,
+    }));
+    if (wasDrawer) get().reclampShelves(unitId);   // the floor just dropped
+  },
 
   updateItem: (unitId, itemId, patch) => set((s) => ({
     units: s.units.map((u) => {
@@ -202,18 +222,79 @@ export const useProjectStore = create((set, get) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
       dirty: true,
     }));
+    // Even spacing can still be too tight when the band is short; the clamp has
+    // the final word, as it does for every other path.
+    get().reclampShelves(unitId);
   },
 
-  /** Drag a shelf vertically: snap, then clamp against neighbours and the zones. */
-  moveShelf: (unitId, itemId, posRaw, snapStep) => {
+  /**
+   * The ONE way a shelf position is ever written. The drag calls it, the number
+   * field in the right panel calls it, and anything added later must call it
+   * too: the clamp lives on this side of the setter, not in the caller.
+   */
+  setShelfPos: (unitId, itemId, posRaw, snapStep = 0) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
     const profile = getCabinetProfile();
-    const bounds = shelfDragBounds(unit, itemId, profile);
-    const pos = clamp(snapTo(posRaw, snapStep), bounds.min, bounds.max);
-    get().updateItem(unitId, itemId, { pos_mm: pos });
-    return { pos, ...bounds };
+    const item = unit.params.sections?.[0]?.items?.find((i) => i.id === itemId);
+    const state = clampShelfPos({
+      pos: snapTo(posRaw, snapStep),
+      current: item?.pos_mm,
+      others: otherShelfPositions(unit, itemId),
+      band: shelfBandFor(unit, profile),
+    }, profile);
+    get().updateItem(unitId, itemId, { pos_mm: state.pos });
+    return state;
+  },
+
+  /** Drag a shelf vertically. Same setter, so the drag cannot bypass the clamp. */
+  moveShelf: (unitId, itemId, posRaw, snapStep) => get().setShelfPos(unitId, itemId, posRaw, snapStep),
+
+  /**
+   * Re-clamp every shelf of a unit. Called after a carcass parameter changes:
+   * shrinking the height or adding a drawer stack moves the band the shelves
+   * are allowed to sit in, and a shelf left outside it would be an overlap
+   * nobody dragged.
+   */
+  reclampShelves: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return;
+    const profile = getCabinetProfile();
+    const band = shelfBandFor(unit, profile);
+    const items = unit.params.sections?.[0]?.items || [];
+    const shelves = items.filter((i) => i.kind === 'shelf' && Number.isFinite(i.pos_mm))
+      .sort((a, b) => a.pos_mm - b.pos_mm);
+    if (!shelves.length) return;
+
+    // Bottom-up, each shelf clamped against the ones already settled below it.
+    const settled = [];
+    const next = new Map();
+    for (const sh of shelves) {
+      const state = clampShelfPos({
+        pos: sh.pos_mm, current: sh.pos_mm, others: settled, band,
+      }, profile);
+      next.set(sh.id, state.pos);
+      settled.push(state.pos);
+    }
+    if ([...next].every(([id, pos]) => items.find((i) => i.id === id)?.pos_mm === pos)) return;
+
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            sections: [{
+              ...u.params.sections[0],
+              items: items.map((i) => (next.has(i.id) ? { ...i, pos_mm: next.get(i.id) } : i)),
+            }],
+          },
+        }
+        : u)),
+      dirty: true,
+    }));
   },
 
   // ── doors (last step) ────────────────────────────────────────────────────
@@ -239,39 +320,44 @@ export const useProjectStore = create((set, get) => ({
 useProjectStore.subscribe((state) => saveCache(state));
 
 // ─── Interior rules (shared by the store and the UI) ───
+// Thin adapters: they turn a unit into the plain numbers the pure collision
+// functions want, and nothing more. The RULES live in engine/collision.js.
+
+/** Every OTHER shelf's position in this unit. */
+function otherShelfPositions(unit, itemId) {
+  return (unit.params.sections?.[0]?.items || [])
+    .filter((i) => i.kind === 'shelf' && i.id !== itemId && Number.isFinite(i.pos_mm))
+    .map((i) => i.pos_mm);
+}
+
+/** The band this unit's shelves may live in, read off the engine result. */
+function shelfBandFor(unit, profile) {
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const result = computeCabinet(paramsForEngine(unit), profile);
+  return shelfBand({
+    height: unit.params.height,
+    boardT: G,
+    // Top face of the drawer partition when there is a stack, else the base.
+    floorY: result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : null,
+  }, profile);
+}
 
 /** The vertical band a shelf may live in: above the drawer stack, below the top. */
 export function shelfLimits(unit, profile) {
+  const band = shelfBandFor(unit, profile);
   const G = unit.params.board_t ?? profile.board.thickness;
-  const H = unit.params.height;
-  const gap = profile.editor.minShelfGap;
-  const result = computeCabinet(paramsForEngine(unit), profile);
-  const zoneTop = result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G;
-  return { min: zoneTop + gap, max: H - G - gap, drawerTop: result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : null };
+  return { ...band, drawerTop: band.floor === G ? null : band.floor };
 }
 
 /** Drag bounds for one shelf: the band, narrowed by its immediate neighbours. */
 export function shelfDragBounds(unit, itemId, profile) {
-  const limits = shelfLimits(unit, profile);
-  const gap = profile.editor.minShelfGap;
-  const shelves = unit.params.sections[0].items
-    .filter((i) => i.kind === 'shelf' && i.id !== itemId && Number.isFinite(i.pos_mm))
-    .map((i) => i.pos_mm)
-    .sort((a, b) => a - b);
-  const self = unit.params.sections[0].items.find((i) => i.id === itemId);
-  const pos = self?.pos_mm ?? limits.min;
-  const below = shelves.filter((y) => y <= pos).pop();
-  const above = shelves.find((y) => y > pos);
-  const G = unit.params.board_t ?? profile.board.thickness;
-  return {
-    min: Math.max(limits.min, below != null ? below + gap : limits.min),
-    max: Math.min(limits.max, above != null ? above - gap : limits.max),
-    // Reference faces for the live dimension: the neighbouring shelf if there
-    // is one, otherwise the drawer partition / base panel below and the top
-    // panel above — so the readout is never blank.
-    below: below ?? limits.drawerTop ?? G,
-    above: above ?? unit.params.height - G,
-  };
+  const band = shelfBandFor(unit, profile);
+  const self = unit.params.sections?.[0]?.items?.find((i) => i.id === itemId);
+  return shelfBounds({
+    pos: self?.pos_mm ?? band.min,
+    others: otherShelfPositions(unit, itemId),
+    band,
+  }, profile);
 }
 
 /**
@@ -279,10 +365,23 @@ export function shelfDragBounds(unit, itemId, profile) {
  * closed by a shelf above it. The engine always emits the PARTITION panel for
  * that, so this reports the case where the drawers were dropped instead.
  */
-export function validateUnit(unit, result) {
+export function validateUnit(unit, result, context = {}) {
   const issues = [];
   const items = unit.params.sections?.[0]?.items || [];
   const drawers = items.filter((i) => i.kind === 'drawer').length;
+
+  // Room fit. Position is hard-clamped by the setters, so what is left here is
+  // exactly what clamping CANNOT fix: a unit that does not fit the room at all
+  // and needs a number changed (CLAUDE.md task 3).
+  if (context.room) {
+    issues.push(...unitIssues({
+      unit,
+      room: context.room,
+      others: (context.units || [])
+        .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === (unit.position?.wall ?? 0))
+        .map((u) => ({ ...unitSpan(u), label: u.params?.unit_num })),
+    }));
+  }
 
   if (drawers > 0 && !result.assemblies.drawerZone) {
     issues.push({ level: 'error', message: 'Drawers do not fit this carcass — they were dropped from the cut list.' });

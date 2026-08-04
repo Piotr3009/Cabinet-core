@@ -1,0 +1,39 @@
+name: CI
+
+# The quality gate the night build runs against: the golden fixtures must stay
+# green and the Vite bundle must build. Nothing else is allowed to be "probably
+# fine" — if it is not checked here, it is not done (CLAUDE.md, task 6).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A new push to the same branch supersedes the run in flight.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: test + build (Node 22)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` (not `npm install`): the lockfile is the pinned-versions rule
+      # from CLAUDE.md, and ci fails loudly if package.json and the lock drift.
+      - run: npm ci
+
+      - run: npm test
+
+      - run: npm run build

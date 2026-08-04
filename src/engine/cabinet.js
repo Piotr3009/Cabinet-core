@@ -45,7 +45,7 @@ export function hingeCentres(height, rule, profile) {
   }
 }
 
-/** Door count from the width threshold: 1 while (W − 4) ≤ 700 → 2 from W = 704. */
+/** Door count from the width threshold: 1 while (W − 4) ≤ 700 → 2 from W = 705 (704 → 1 door). */
 export function doorCountFor(width, profile) {
   const d = profile.doors;
   return (Number(width) - d.widthDeduction) <= d.singleDoorMaxWidth ? 1 : 2;

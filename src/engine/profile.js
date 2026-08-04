@@ -50,7 +50,8 @@ export const DEFAULT_CABINET_PROFILE = {
 
   // ─── Doors / fronts ───
   doors: {
-    // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → threshold 704 mm
+    // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
+    // width 705 mm (704 is still ONE door — BLOCKERS.md #2)
     widthDeduction: 4,
     singleDoorMaxWidth: 700,
     gap: 3,                    // overlay clearance: single front = (W−gap) × (H−gap)

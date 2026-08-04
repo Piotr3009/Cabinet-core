@@ -193,7 +193,7 @@ Stock i projekty JC **nie są kopiowane** — czytane przez API na żywo.
 - Czysty moduł `engine/` — **zero importów Reacta** (wzorzec zweryfikowany w PC).
 - `profile.js` szafkowy: WSZYSTKIE liczby Skylonu jako edytowalne defaulty per warsztat —
   luzy (3 mm, doorGap), odjęcia półki (−4 / −20), środki wierceń (100/300/wys−100) i offset
-  pary (±16), próg drzwi (704), pozycje puszek, grubości (18/22, 18/19/25).
+  pary (±16), próg drzwi (2 drzwi od 705), pozycje puszek, grubości (18/22, 18/19/25).
   Formuły czytają WYŁĄCZNIE z profilu — zero gołych liczb we wzorach.
 - Konfigi typów (z diffów LISP): legs, hangers, doorExtend, dogbones (SINK), szuflady (BUDR 4:3:2)...
 - Wyjścia: `panels[]` (nazwa, szer, wys, banding z kierunkami), `drills[]`, `totals`

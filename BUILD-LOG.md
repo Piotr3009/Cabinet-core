@@ -142,3 +142,43 @@ Wykryte dopiero realnym testem w przeglądarce, nie z czytania kodu.
 **Werdykt.** Zweryfikowane w Chromium: dodanie 2 szuflad + półki, przeciągnięcie
 półki 1288 → 808 mm ze snapem i żywym wymiarem 364 mm do wieńca; zero błędów
 w konsoli. `npm test` i `npm run build` bez zmian — zielone.
+
+---
+
+## Faza 4 — Drzwi + BOM na wywołanie — ✅ ZIELONA
+
+**Drzwi jako ostatni krok.** Nowa jednostka startuje BEZ frontów
+(`params.doors: false`). Przycisk „Add doors — finish unit" liczy ilość progiem
+z profilu, ustawia zawias L/R (przy 2 drzwiach pole jest blokowane) i **zamyka
+prawy panel** oraz czyści zaznaczenie — dokładnie jak SPEC 4.10. Da się je też
+zdjąć („Remove doors").
+
+**BOM.** `src/engine/bom.js` agreguje wyjście silnika po wszystkich jednostkach:
+wiersze formatek, sumy per **rola** (side/top/bottom/back/shelf/front/drawer_box)
+i sumy globalne. Liczony **NA ŻYWO** przy każdym renderze; panel decyduje tylko
+KIEDY go pokazać (SPEC 4.11 — dzięki temu sekwencja „materiały → potem drzwi"
+nie da już BOM-u bez frontów).
+
+Panel BOM: zakładka **Parts** (formatki per jednostka: wymiary, ilość, kod
+obrzeża, m²) i **Materials** (przypisanie materiału per rola z własnej listy +
+współczynnik **yield** = zapas na odpad; obok od razu wychodzi m² do zamówienia
+i koszt). Store wzorowany na `materialAssignmentStore.js` z PC: kanoniczny
+schemat 2 (base + overrides per wariant) i płaski widok pochodny.
+**„Connect JoineryCore"** jest zaślepką z komunikatem — integracja to
+późniejsza faza (SPEC 8).
+
+**Eksporty (wpięte tutaj, bo to przyciski BOM-u).** Cutting list CSV
+**dokładnie w formacie LISP** — nagłówek `UNIT,PANEL,SZER,WYS,EDGE,EDG_L,SQM`
+i wiersze prosto z `result.csvLines`. PDF (jsPDF): zrzut 3D z `CaptureRig`
++ tabela formatek z paginacją + sekcja materiałów z yieldem i kosztem.
+Nazwy plików wg konwencji rodziny: `cabinetcore-{opis}-{DDMM}-{HHMM}.{ext}`.
+
+**Poprawka wydajności.** Pierwszy PDF ważył 4.9 MB — surowy PNG z canvasu w
+pełnej rozdzielczości. Zrzut jest teraz skalowany do 1600 px i zapisywany jako
+JPEG: **39 KB**, bez widocznej różnicy.
+
+**Werdykt.** Przejechane w Chromium end-to-end: szafa → 2 szuflady → półka →
+wieszak → drzwi → BOM → przypisanie materiałów → CSV + PDF. Wyeksportowany CSV
+zgadza się **wiersz w wiersz** z golden fixture W-A (BUL 560×2150 `<` 2.15
+1.204, …, W01-F 597×2147 `<>^v` 5.49 1.282). PDF: 2 strony, zrzut 3D + tabela.
+Zero błędów w konsoli.

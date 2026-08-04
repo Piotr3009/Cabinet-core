@@ -16,9 +16,20 @@ function CaptureRig({ onReady }) {
   const { gl, scene, camera } = useThree();
   useEffect(() => {
     if (!onReady) return undefined;
-    const capture = () => {
+    // Downscaled JPEG rather than a raw PNG read-back: the full-resolution
+    // canvas turns a 3-page PDF into a ~5 MB file for no visible gain.
+    const capture = ({ maxWidth = 1600, quality = 0.85 } = {}) => {
       gl.render(scene, camera);           // force a fresh frame before reading
-      return gl.domElement.toDataURL('image/png');
+      const src = gl.domElement;
+      const scale = Math.min(1, maxWidth / src.width);
+      const out = document.createElement('canvas');
+      out.width = Math.max(1, Math.round(src.width * scale));
+      out.height = Math.max(1, Math.round(src.height * scale));
+      const ctx = out.getContext('2d');
+      ctx.fillStyle = '#fafaf8';           // JPEG has no alpha channel
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(src, 0, 0, out.width, out.height);
+      return { dataUrl: out.toDataURL('image/jpeg', quality), width: out.width, height: out.height };
     };
     onReady(capture);
     return () => onReady(null);

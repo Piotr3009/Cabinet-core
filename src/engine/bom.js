@@ -16,6 +16,7 @@ export function buildBom(entries) {
   const units = [];
   const roleTotals = {};
   const cutRows = new Map();       // identical pieces merge across the project
+  const hardwareRows = new Map();  // …and so do identical hardware lines
 
   let pieces = 0;
   let boardArea = 0;
@@ -57,6 +58,16 @@ export function buildBom(entries) {
       else cutRows.set(key, { ...r, qty: r.qty, units: new Set([r.unit_num]) });
       if (merged) merged.units.add(r.unit_num);
     }
+
+    // Hardware merges on role AND spec: 440 mm runners and 490 mm runners are
+    // two different things to buy, even though they are one BOM role.
+    for (const h of result.hardware || []) {
+      const key = `${h.role}|${h.spec_label}`;
+      const merged = hardwareRows.get(key);
+      if (merged) { merged.qty += h.qty; merged.units.add(result.unitNum); } else {
+        hardwareRows.set(key, { ...h, qty: h.qty, units: new Set([result.unitNum]) });
+      }
+    }
   }
 
   const roles = Object.values(roleTotals).map((rt) => ({
@@ -70,6 +81,7 @@ export function buildBom(entries) {
     units,
     roles,
     cutRows: [...cutRows.values()].map((r) => ({ ...r, units: [...r.units] })),
+    hardware: [...hardwareRows.values()].map((r) => ({ ...r, units: [...r.units] })),
     totals: {
       pieces,
       board_area_m2: roundTo(boardArea, 4),
@@ -102,6 +114,29 @@ export function materialDemand(bom, assignments, materials) {
       yield: yieldCoeff,
       required_m2: roundTo(required, 3),
       cost: material?.price != null ? roundTo(required * material.price, 2) : null,
+    };
+  });
+}
+
+/**
+ * Hardware demand: the same ASSIGN pattern as the boards, but counted in
+ * pieces and pairs rather than m², and with no yield coefficient — you do not
+ * buy 15 % extra hinges to allow for offcuts.
+ *
+ * One assignment per ROLE; a role that needs two specs (440 mm and 490 mm
+ * runners in the same project) shows both lines under that one assignment, so
+ * the quantities are always right even before the products are split out
+ * (BLOCKERS.md #9).
+ */
+export function hardwareDemand(bom, assignments, materials) {
+  const byId = new Map((materials || []).map((m) => [m.id, m]));
+  return (bom.hardware || []).map((row) => {
+    const a = assignments?.[row.role];
+    const material = a?.material_id ? byId.get(a.material_id) : null;
+    return {
+      ...row,
+      material,
+      cost: material?.price != null ? roundTo(row.qty * material.price, 2) : null,
     };
   });
 }

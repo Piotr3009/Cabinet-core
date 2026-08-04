@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
-import { useMaterialAssignmentStore, BOM_ROLES } from '../stores/materialAssignmentStore.js';
-import { buildBom, materialDemand, demandCost } from '../engine/bom.js';
+import { useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES } from '../stores/materialAssignmentStore.js';
+import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
 
 // SPEC 4.11 — the BOM is computed LIVE from the current state at all times;
 // this panel only decides when to SHOW it. Exports are a snapshot of the same
@@ -23,7 +23,15 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
   const entries = useMemo(() => allResults(), [units, allResults]);
   const bom = useMemo(() => buildBom(entries), [entries]);
   const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
-  const cost = demandCost(demand);
+  const hardware = useMemo(() => hardwareDemand(bom, assignments, materials), [bom, assignments, materials]);
+  const boardCost = demandCost(demand);
+  const hwCost = demandCost(hardware);
+  const cost = boardCost == null && hwCost == null ? null : (boardCost ?? 0) + (hwCost ?? 0);
+
+  // Boards go with boards, hinges with hinges: offering the whole list for
+  // every role is how a hinge ends up assigned to the back panel.
+  const boardChoices = materials.filter((m) => m.category !== 'hardware');
+  const hardwareChoices = materials.filter((m) => m.category === 'hardware');
 
   return (
     <aside className="absolute right-0 top-0 bottom-0 w-[560px] cc-panel rounded-none border-y-0 border-r-0 z-30 flex flex-col">
@@ -64,6 +72,7 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
               One material per role. <span className="text-ink-200">Yield</span> is the waste allowance:
               1.00 orders exactly the panel area, 1.15 orders 15 % more.
             </p>
+            <div className="text-[11px] uppercase tracking-wide text-gold">Boards &amp; fronts</div>
             {BOM_ROLES.map((role) => {
               const d = demand.find((x) => x.role === role.id);
               const a = assignments[role.id] || {};
@@ -85,7 +94,7 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
                       onChange={(e) => setAssignment(role.id, e.target.value, a.yield ?? 1.0)}
                     >
                       <option value="">— not assigned —</option>
-                      {materials.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      {boardChoices.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
                     <input
                       type="number" step="0.01" min="1" className="cc-input w-20 text-right"
@@ -96,6 +105,64 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
                     <span className="text-[11px] text-ink-400 w-24 text-right">
                       {d?.required_m2 != null ? `${d.required_m2.toFixed(3)} m²` : ''}
                       {d?.cost != null ? ` · ${d.cost.toFixed(2)}` : ''}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* ── Hardware ──
+                Quantities come from the geometry, not from a product list: the
+                engine counts hinges, runner pairs, legs, rail and shelf pins,
+                and this is where the workshop says WHICH ones. No yield — you
+                do not order 15 % extra hinges for offcuts. The cutting-list CSV
+                is untouched by any of this and stays cut parts only. */}
+            <div className="text-[11px] uppercase tracking-wide text-gold pt-1">Hardware</div>
+            {HARDWARE_ROLES.map((role) => {
+              const lines = hardware.filter((h) => h.role === role.id);
+              const a = assignments[role.id] || {};
+              const qty = lines.reduce((s, h) => s + h.qty, 0);
+              const lineCost = lines.reduce((s, h) => (h.cost == null ? s : s + h.cost), 0);
+              const priced = lines.some((h) => h.cost != null);
+              const used = qty > 0;
+              return (
+                <div key={role.id} className={`p-2 rounded border ${used ? 'border-shell-600 bg-shell-700/40' : 'border-shell-600/50 opacity-50'}`}>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm text-ink-50">{role.label}</span>
+                    <span className="text-[11px] text-ink-400">{role.hint}</span>
+                    <span className="flex-1" />
+                    <span className="text-[11px] text-ink-200">
+                      {used ? `${qty} ${lines[0].unit}` : '—'}
+                      {/* One spec: say it right here. Several (440 mm and
+                          490 mm runners in the same project): break them out
+                          below, because they are separate things to buy. */}
+                      {lines.length === 1 && lines[0].spec_label ? ` · ${lines[0].spec_label}` : ''}
+                    </span>
+                  </div>
+                  {lines.length > 1 && (
+                    <ul className="text-[11px] text-ink-400 mt-0.5">
+                      {lines.map((h) => (
+                        <li key={h.spec_label} className="flex justify-between">
+                          <span>{h.spec_label || '—'}</span>
+                          <span className="tabular-nums">
+                            {h.qty} {h.unit}
+                            {h.units.length > 1 ? ` · ${h.units.length} units` : ''}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <select
+                      className="cc-input flex-1"
+                      value={a.material_id || ''}
+                      onChange={(e) => setAssignment(role.id, e.target.value, 1)}
+                    >
+                      <option value="">— not assigned —</option>
+                      {hardwareChoices.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                    <span className="text-[11px] text-ink-400 w-24 text-right">
+                      {priced ? lineCost.toFixed(2) : ''}
                     </span>
                   </div>
                 </div>
@@ -112,7 +179,9 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
           <Stat label="Fronts" value={`${bom.totals.front_area_m2.toFixed(3)} m²`} />
           <Stat label="Edging (carcass)" value={`${bom.totals.edging_m.toFixed(2)} m`} />
           <Stat label="Edging (incl. fronts)" value={`${bom.totals.edging_total_m.toFixed(2)} m`} />
-          {cost != null && <Stat label="Material cost" value={cost.toFixed(2)} accent />}
+          <Stat label="Hardware" value={`${bom.hardware.reduce((s, h) => s + h.qty, 0)} items`} />
+          {hwCost != null && <Stat label="Hardware cost" value={hwCost.toFixed(2)} />}
+          {cost != null && <Stat label="Total cost" value={cost.toFixed(2)} accent />}
         </div>
         <div className="flex gap-2">
           <button type="button" className="cc-btn flex-1" onClick={onExportCsv}>Cutting list CSV</button>

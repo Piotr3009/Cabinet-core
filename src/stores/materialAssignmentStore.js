@@ -21,7 +21,23 @@ export const BOM_ROLES = [
   { id: 'drawer_box', label: 'Drawer boxes',   hint: 'Drawer sides, front/back, bottoms' },
 ];
 
+// Hardware roles. The ENGINE decides the quantities from the geometry
+// (result.hardware); this list only says which roles exist and what they are
+// called, so the same ASSIGN pattern covers hinges the way it covers boards.
+// Counted in pieces and pairs, so no yield coefficient applies.
+export const HARDWARE_ROLES = [
+  { id: 'hinges',       label: 'Hinges',        hint: 'Per door, from the hinge rule' },
+  { id: 'runner_pairs', label: 'Drawer runners', hint: 'One pair per drawer, at the snapped length' },
+  { id: 'legs',         label: 'Legs',          hint: 'Per unit, from the profile' },
+  { id: 'rail',         label: 'Hanging rail',  hint: 'Cut to the internal width' },
+  { id: 'shelf_pins',   label: 'Shelf pins',    hint: 'Four per shelf' },
+];
+
+export const HARDWARE_ROLE_IDS = new Set(HARDWARE_ROLES.map((r) => r.id));
+
 // Sample workshop material list — this is what "Mock data mode" runs on.
+// `category` is the same vocabulary as cc_materials (board | front | edging |
+// hardware), so a real list loaded from the database drops straight in.
 export const MOCK_MATERIALS = [
   { id: 'mat_mfc18_white',  name: 'MFC White W980 18 mm',        category: 'board',  thickness: 18, unit: 'm²', price: 11.4 },
   { id: 'mat_mfc18_oak',    name: 'MFC Halifax Oak 18 mm',       category: 'board',  thickness: 18, unit: 'm²', price: 14.9 },
@@ -32,6 +48,13 @@ export const MOCK_MATERIALS = [
   { id: 'mat_mfc19_front',  name: 'Melamine front 19 mm',        category: 'front',  thickness: 19, unit: 'm²', price: 16.2 },
   { id: 'mat_hdf6_back',    name: 'HDF backing 6 mm',            category: 'board',  thickness: 6,  unit: 'm²', price: 4.6 },
   { id: 'mat_edge_abs',     name: 'ABS edging 22 × 1 mm',        category: 'edging', thickness: 1,  unit: 'm',  price: 0.55 },
+  { id: 'hw_hinge_clip',    name: 'Clip-top hinge 110° + plate', category: 'hardware', unit: 'pcs',   price: 2.35 },
+  { id: 'hw_hinge_soft',    name: 'Soft-close hinge 110° + plate', category: 'hardware', unit: 'pcs', price: 3.80 },
+  { id: 'hw_runner_bb',     name: 'Ball-bearing runner, full ext.', category: 'hardware', unit: 'pairs', price: 6.90 },
+  { id: 'hw_runner_soft',   name: 'Soft-close undermount runner', category: 'hardware', unit: 'pairs', price: 14.50 },
+  { id: 'hw_leg_100',       name: 'Adjustable leg 100 mm',       category: 'hardware', unit: 'pcs',   price: 0.95 },
+  { id: 'hw_rail_oval',     name: 'Oval hanging rail 30 × 15',   category: 'hardware', unit: 'm',     price: 4.20 },
+  { id: 'hw_shelf_pin',     name: 'Shelf pin ⌀7.5 nickel',       category: 'hardware', unit: 'pcs',   price: 0.09 },
 ];
 
 const KEY = 'cc.assignments.v2';

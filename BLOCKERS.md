@@ -146,3 +146,105 @@ Silnik **trzyma** pełną geometrię CNC: outline puzzli (punkt po punkcie, z
 drawBUL/drawBUR/drawTOP_ROT90), dogbones, sockety, wszystkie otwory z nazwami
 warstw — `panels[].cnc.{outline,pockets}` oraz `drills[]` (pole `layer`).
 Generatora `.dxf` nie ma i nie miało go być; wejdzie w Fazie D bez zmian w silniku.
+
+---
+
+# TURA 2
+
+## #8 — Dialekt DXF: R12 (POLYLINE) zamiast literalnego LWPOLYLINE
+
+**Co blokuje.** CLAUDE.md zadanie 2 mówi dwie rzeczy, które nie mogą być
+jednocześnie prawdziwe co do litery:
+
+1. „**LWPOLYLINE** zamknięta = outline; LWPOLYLINE zamknięte = pockets",
+2. „czysty JS; **wzorzec składni: `reference/production-core/dxfWriter.js`**".
+
+Ten plik jest napisany w **DXF R12 (AC1009)**, a jego nagłówek zapisuje dlaczego:
+*„An earlier AC1015 attempt died in VCarve's strict parser on the BLOCKS section
+(Piotr 02.08.2026), hence this downgrade."* R12 **nie ma encji LWPOLYLINE** —
+zamknięta polilinia zapisuje się tam jako `POLYLINE` + `VERTEX`… + `SEQEND`
+z flagą `70 = 1`.
+
+**Co zrobiłem.** Wybrałem R12, czyli wzorzec, na który CLAUDE.md wskazuje
+palcem i który **działa dziś w produkcji u Piotra** (jamby z Production Core).
+Vectric w swojej dokumentacji sam rekomenduje R12 do importu DXF. Semantycznie
+nic nie tracimy: te same punkty, ta sama flaga „zamknięta", ta sama warstwa,
+co w LWPOLYLINE, którą entmake'uje AutoLISP — tylko zapisane w dialekcie, o
+którym wiadomo, że się wczytuje.
+
+Rozważałem napisanie AC1015 z prawdziwym LWPOLYLINE. Odrzuciłem: poprawny
+AC1015 wymaga uchwytów, znaczników podklas, tablicy BLOCK_RECORD, sekcji BLOCKS
+i OBJECTS — czyli dokładnie tej maszynerii, na której poprzednia próba padła,
+a **nie mam tu VCarve, żeby zweryfikować wynik**. Wypuszczenie niesprawdzonego
+pliku w noc, po której rano jest akceptacja przy maszynie, byłoby gorsze niż
+brak pliku.
+
+**Decyzja dla Piotra.** Otwórz `W01-*.dxf` w VCarve.
+- Jeśli wchodzą — zamykamy temat, R12 zostaje.
+- Jeśli VCarve marudzi akurat na POLYLINE — powiedz, a dopiszę generator
+  AC1015/LWPOLYLINE jako drugi dialekt (przełącznik w widoku CNC). To robota na
+  pół dnia, nie przebudowa: `writeDxf()` jest już odseparowany od budowania
+  encji, więc zmienia się wyłącznie serializator.
+
+## #9 — Okucia: jedno przypisanie na ROLĘ, a nie na długość
+
+**Co to.** `runner_pairs` to jedna rola BOM, ale projekt może potrzebować
+prowadnic 440 **i** 490 (dwie szafy o różnej głębokości). BOM **liczy je
+osobno** i pokazuje jako dwie pozycje do kupienia — ilości są poprawne — ale
+przypisanie produktu jest jedno na rolę, więc obie długości wskazują na ten
+sam wpis z listy materiałów.
+
+**Co zrobiłem.** Ilości i specyfikacje są rozdzielone i widoczne, więc zamówienie
+da się złożyć poprawnie już teraz. `materialAssignmentStore` ma już mechanizm
+wariantów (`rola@wariant`), którego tu świadomie nie użyłem, żeby nie mnożyć
+kontrolek bez potrzeby.
+
+**Decyzja dla Piotra.** Czy w realnym zamówieniu prowadnice różnych długości to
+różne produkty (różne kody u dostawcy)? Jeśli tak — włączam warianty per
+długość, jedna zmiana w `BomPanel`, silnik i store są gotowe.
+
+## #10 — Origin DXF: róg nominalnego prostokąta, taby wychodzą na minus
+
+**Co to.** CLAUDE.md mówi „origin lewy-dolny róg formatki". Formatka z puzzlem
+nie jest prostokątem: tab na BUR sięga do `x = −G`, a wybieg socketu wychodzi
+6 mm poza krawędź. Origin jest więc w rogu **nominalnego prostokąta** (dokładnie
+ten układ, w którym silnik już liczy — CLAUDE.md zasada 2 mówi nie zmieniać
+formatu), a część geometrii ma współrzędne ujemne, bo fizycznie tam jest.
+`$EXTMIN/$EXTMAX` w nagłówku podają prawdziwy zasięg, więc CAM widzi to od razu.
+
+**Decyzja dla Piotra.** Jeśli wolisz, żeby cała formatka siedziała w dodatniej
+ćwiartce (zero maszyny = róg materiału), to jedna flaga — przesunięcie o bbox.
+Powiedz po otwarciu w VCarve, co jest wygodniejsze przy zerowaniu.
+
+## #11 — Obrys TOP/BOTTOM przechodzi dolną krawędź dwa razy (tak jest w LISP-ie)
+
+**Co to.** `drawTOP_ROT90` w `SKYLON_COMMON.lsp` buduje jedną polilinię, która
+najpierw jedzie dolną krawędzią gładko `(x0,y0) → (x0+szer,y0)`, obchodzi resztę
+formatki, wraca do `(x0,y0)` **i dopiero potem rysuje taby dolnej krawędzi**,
+zamykając się z powrotem do `(x0,y0)`. Dolna krawędź jest więc w ścieżce dwa
+razy. Silnik odtwarza to 1:1 (tura 1), a generator DXF przenosi wiernie.
+
+**Czego NIE zrobiłem.** Nie „poprawiłem" tego. To geometria, którą Piotr tnie od
+lat, a CLAUDE.md zasada 2 mówi wprost: nie zmieniać formatu geometrii silnika.
+
+**Decyzja dla Piotra.** Sprawdź w VCarve, czy ścieżka TOP/BOTTOM liczy się
+poprawnie. Jeśli VCarve robi z tego dziwną kompensację narzędzia — to jest
+błąd do naprawienia W LISP-ie i w silniku naraz, świadomą decyzją, nie po cichu.
+
+## #12 — `shelfHoles.spanMode: 'fullHeight'` przy zmiennych szufladach
+
+**Co to.** BLOCKERS #3 (tura 1) opisuje quirk: rozstaw rzędów otworów półkowych
+liczy się po PEŁNEJ wysokości korpusu, ignorując strefę szuflad — tak każe
+`shelf_holes_quirk` w golden fixture. Po zadaniu 4 strefa szuflad może mieć
+dowolną wysokość, więc quirk może wypchnąć rzędy jeszcze bardziej w strefę
+szuflad niż przy sztywnych 200 mm.
+
+**Co zrobiłem.** Nic — fixture jest golden, a `shelfHoles.followPositions: true`
+sprawia, że gdy użytkownik faktycznie ustawi półki (a w edytorze zawsze ustawia,
+bo clamp z zadania 3 nadaje im pozycje), otwory idą **za półkami** i quirk nie
+ma zastosowania. Dotyczy więc tylko ścieżki „gołe liczby bez pozycji", czyli
+fixtures i presetów.
+
+**Decyzja dla Piotra.** Żadna nie jest pilna. Zapisane, żeby nie zginęło:
+przełączenie `spanMode` na `'zone'` to jedna wartość w profilu, ale **zmieni
+golden fixtures**, więc wymaga Twojej świadomej zgody.

@@ -15,9 +15,12 @@ export default function RightPanel() {
   const clearSelection = useUiStore((s) => s.clearSelection);
 
   const units = useProjectStore((s) => s.units);
+  const room = useProjectStore((s) => s.project.room);
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   const removeItem = useProjectStore((s) => s.removeItem);
   const updateItem = useProjectStore((s) => s.updateItem);
+  const setShelfPos = useProjectStore((s) => s.setShelfPos);
+  const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
   const addItem = useProjectStore((s) => s.addItem);
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
   const removeUnit = useProjectStore((s) => s.removeUnit);
@@ -28,10 +31,13 @@ export default function RightPanel() {
   const unit = units.find((u) => u.id === selectedUnitId) || null;
   const result = unit ? unitResult(unit.id) : null;
   const type = unit ? getUnitType(unit.type) : null;
-  const issues = unit && result ? validateUnit(unit, result) : [];
+  const issues = unit && result ? validateUnit(unit, result, { room, units }) : [];
   const items = unit?.params.sections?.[0]?.items || [];
   const shelves = items.filter((i) => i.kind === 'shelf').sort((a, b) => (a.pos_mm || 0) - (b.pos_mm || 0));
-  const drawers = items.filter((i) => i.kind === 'drawer');
+  // Bottom-up, the same order the engine stacks them in, so D1 in this list is
+  // D1 in the cut list.
+  const drawers = items.filter((i) => i.kind === 'drawer')
+    .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
   const rail = items.find((i) => i.kind === 'hanger');
   const hasDoors = Boolean(unit?.params.doors) && unit.params.doors !== false;
 
@@ -123,6 +129,38 @@ export default function RightPanel() {
                     {result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped'}
                   </span>
                 </div>
+                {/* Height per drawer, bottom-up. The BOM, the CNC sheet and the
+                    3D view all recompute from the engine on every keystroke. */}
+                <ul className="space-y-1 mt-1">
+                  {drawers.map((dr, i) => (
+                    <li key={dr.id} className="flex items-center gap-1">
+                      <span className="text-ink-400 w-6 text-xs">D{i + 1}</span>
+                      <input
+                        type="number"
+                        min={profile.wardrobe.drawers.minFrontHeight}
+                        max={profile.wardrobe.drawers.maxFrontHeight}
+                        step={10}
+                        className="cc-input w-20 text-right"
+                        title="Drawer front height (mm)"
+                        value={Math.round(dr.height_mm ?? profile.wardrobe.drawers.frontHeight)}
+                        onChange={(e) => setDrawerHeight(unit.id, dr.id, Number(e.target.value))}
+                      />
+                      <span className="text-[11px] text-ink-400 flex-1">
+                        mm front
+                        {result.derived.drawer_box_side_h?.[i] != null
+                          && ` · box side ${Math.round(result.derived.drawer_box_side_h[i])}`}
+                      </span>
+                      <button
+                        type="button" className="cc-btn-ghost" title="Remove this drawer"
+                        onClick={() => removeItem(unit.id, dr.id)}
+                      >×</button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="cc-row text-xs text-ink-400">
+                  <span>Stack height</span>
+                  <span>{result.derived.drawerTotalH ? `${Math.round(result.derived.drawerTotalH)} mm` : '—'}</span>
+                </div>
                 <div className="cc-row text-xs text-ink-400">
                   <span>Partition (locked, required above the stack)</span>
                   <span>{result.derived.partition_bottom_y ? `${Math.round(result.derived.partition_bottom_y)} mm` : '—'}</span>
@@ -164,9 +202,11 @@ export default function RightPanel() {
                 {shelves.map((sh, i) => (
                   <li key={sh.id} className="flex items-center gap-1 text-sm">
                     <span className="text-ink-400 w-6 text-xs">S{i + 1}</span>
+                    {/* Typed positions go through the SAME clamp as the drag —
+                        the field is not a back door around the collision rules. */}
                     <input
                       type="number" className="cc-input w-20 text-right" value={Math.round(sh.pos_mm ?? 0)}
-                      onChange={(e) => updateItem(unit.id, sh.id, { pos_mm: Number(e.target.value) })}
+                      onChange={(e) => setShelfPos(unit.id, sh.id, Number(e.target.value))}
                     />
                     <select
                       className="cc-input flex-1" value={sh.variant || 'fixed'}

@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import { buildBom, materialDemand, demandCost } from '../engine/bom.js';
+import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
 import { getCabinetProfile } from '../engine/profile.js';
 
 // ─── Exports ───
@@ -7,7 +7,7 @@ import { getCabinetProfile } from '../engine/profile.js';
 // "materials first, doors after" sequence can never produce a BOM without
 // fronts.
 
-function download(filename, blob) {
+export function download(filename, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -85,7 +85,10 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
 
   const bom = buildBom(entries);
   const demand = materialDemand(bom, assignments, materials);
-  const cost = demandCost(demand);
+  const hardware = hardwareDemand(bom, assignments, materials);
+  const boardCost = demandCost(demand);
+  const hwCost = demandCost(hardware);
+  const cost = boardCost == null && hwCost == null ? null : (boardCost ?? 0) + (hwCost ?? 0);
 
   doc.setFontSize(9);
   doc.setTextColor(40);
@@ -138,29 +141,54 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     }
   }
 
-  // Materials
-  const assigned = demand.filter((d) => d.material);
-  if (assigned.length) {
+  const section = (title) => {
     if (y > pageH - margin - 30) { doc.addPage(); y = margin + 6; }
     y += 4;
     doc.setFontSize(10);
     doc.setTextColor(...gold);
-    doc.text('Materials', margin, y);
+    doc.text(title, margin, y);
     y += 5;
     doc.setFontSize(8);
     doc.setTextColor(40);
+  };
+  const line = (text) => {
+    if (y > pageH - margin - 8) { doc.addPage(); y = margin + 6; doc.setFontSize(8); doc.setTextColor(40); }
+    doc.text(text, margin, y);
+    y += 4.6;
+  };
+
+  // Materials
+  const assigned = demand.filter((d) => d.material);
+  if (assigned.length) {
+    section('Materials');
     for (const d of assigned) {
-      doc.text(
-        `${d.role} — ${d.material.name} · ${d.area_m2.toFixed(3)} m² × yield ${d.yield} = ${d.required_m2.toFixed(3)} m²`
-        + (d.cost != null ? ` · ${d.cost.toFixed(2)}` : ''),
-        margin, y,
-      );
-      y += 4.6;
+      line(`${d.role} — ${d.material.name} · ${d.area_m2.toFixed(3)} m² × yield ${d.yield} = ${d.required_m2.toFixed(3)} m²`
+        + (d.cost != null ? ` · ${d.cost.toFixed(2)}` : ''));
     }
-    if (cost != null) {
-      doc.setTextColor(...gold);
-      doc.text(`Total material cost: ${cost.toFixed(2)}`, margin, y + 1);
+  }
+
+  // Hardware — quantities from the geometry, product from the assignment.
+  // The cutting-list CSV stays the LISP format and never carries any of this.
+  if (hardware.length) {
+    section('Hardware');
+    for (const h of hardware) {
+      line(`${h.label} — ${h.qty} ${h.unit}${h.spec_label ? ` · ${h.spec_label}` : ''}`
+        + (h.material ? ` · ${h.material.name}` : ' · not assigned')
+        + (h.cost != null ? ` · ${h.cost.toFixed(2)}` : ''));
     }
+  }
+
+  if (cost != null) {
+    if (y > pageH - margin - 10) { doc.addPage(); y = margin + 6; }
+    doc.setFontSize(9);
+    doc.setTextColor(...gold);
+    doc.text(
+      `Total: ${cost.toFixed(2)}`
+      + (boardCost != null ? `  (materials ${boardCost.toFixed(2)}` : '  (')
+      + (hwCost != null ? `${boardCost != null ? ', ' : ''}hardware ${hwCost.toFixed(2)}` : '')
+      + ')',
+      margin, y + 2,
+    );
   }
 
   doc.save(exportFilename('project', 'pdf'));

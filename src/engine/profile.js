@@ -50,7 +50,8 @@ export const DEFAULT_CABINET_PROFILE = {
 
   // ─── Doors / fronts ───
   doors: {
-    // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → threshold 704 mm
+    // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
+    // width 705 mm (704 is still ONE door — BLOCKERS.md #2)
     widthDeduction: 4,
     singleDoorMaxWidth: 700,
     gap: 3,                    // overlay clearance: single front = (W−gap) × (H−gap)
@@ -92,6 +93,7 @@ export const DEFAULT_CABINET_PROFILE = {
     diameter: 7.5,
     clusterOffsets: [-50, 0, 50],   // 3 holes per row
     columnFromEdge: 70,             // x = 70 and panelWidth − 70
+    pinsPerShelf: 4,                // one pin in each corner — the hardware count
     layer: 'SHELVES_7_5MM',
     // Row spacing is (H − 2×G)/(n+1) measured over the FULL carcass height,
     // even when a drawer stack occupies the bottom (KIT_WARDROBE_FULL v1
@@ -136,8 +138,15 @@ export const DEFAULT_CABINET_PROFILE = {
     drawers: {
       maxCount: 6,
       setback: 50,             // drawer box sits 50 mm behind the carcass front
-      sideHeight: 164,         // drawer box side
-      frontHeight: 200,        // visible drawer front
+      frontHeight: 200,        // DEFAULT visible drawer front; each drawer may
+                               // carry its own height_mm (SPEC / turn-2 task 4)
+      minFrontHeight: 100,     // workshop limits on a per-drawer height; a value
+      maxFrontHeight: 600,     // outside them is clamped with a warning
+      // Drawer box side = front height − this. The LISP's fixed pair
+      // (drawerFrontH 200, drawerSideH 164) is the special case 200 − 36; with
+      // variable fronts the DELTA is the invariant, not the side height, so
+      // that is what the profile carries.
+      frontToSideDelta: 36,
       firstFrontAdjust: 3,     // bottom front is 3 mm shorter (clears the base)
       gap: 3,                  // gap between drawer fronts
       boxSideThickness: 18,
@@ -145,7 +154,7 @@ export const DEFAULT_CABINET_PROFILE = {
       frontOversize: 4,        // front W = box W + this (2 mm each side)
       boxFrontBoards: 4,       // box front/back length = W − 4×G − clearance − reduction
       boxFrontClearance: 10,
-      boxFrontHeightDeduction: 15,   // box front H = sideHeight − 15 − G − 1
+      boxFrontHeightDeduction: 15,   // box front H = box side H − 15 − G − 1
       boxFrontHeightExtra: 1,
       bottomOversize: 13,      // bottom W = box front length + this
       boxDropFromRunner: 9,    // box bottom sits this far below the runner row
@@ -186,6 +195,18 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 600, height: 770, depth: 558 },
   },
 
+  // ─── CNC sheet + DXF output ───
+  // Layer NAMES live in engine/cnc/layers.js (they are a machine contract, not
+  // a workshop preference). What belongs here is the sheet metrics.
+  cnc: {
+    unitNumberLayer: 'UNIT_NUMBER',  // LISP drawText layer for the part label
+    labelHeight: 40,                 // LISP drawText height on the CNC sheet
+    labelMinHeight: 6,               // …shrunk to fit a small part, never below this
+    labelFitRatio: 0.12,             // label height ≤ this × the part's short side
+    layoutGap: 50,                   // LISP `odstep` — gap between parts laid out flat
+    layoutRowWidth: 3600,            // wrap to a new row past this (preview only)
+  },
+
   // ─── Cutting-list CSV (must stay byte-identical to the LISP output) ───
   csv: {
     header: 'UNIT,PANEL,SZER,WYS,EDGE,EDG_L,SQM',
@@ -196,11 +217,15 @@ export const DEFAULT_CABINET_PROFILE = {
   },
 
   // ─── Editor defaults ───
+  // The clearances the collision clamp enforces. A move STOPS at these values
+  // (src/engine/collision.js) — they are not advisory.
   editor: {
     snapSteps: [0.5, 1, 32],
     defaultSnap: 1,
-    minShelfGap: 40,           // minimum clear space between neighbours
+    minShelfGap: 40,           // minimum clear space between two shelves
+    minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
     unitMagnet: 40,            // butt a unit against its neighbour within this
+    minUnitGap: 0,             // units stand edge to edge; > 0 forces a scribe gap
   },
 };
 
@@ -245,6 +270,7 @@ export function migrateCabinetProfile(profile) {
       rail: { ...D.wardrobe.rail, ...profile.wardrobe?.rail },
     },
     baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
+    cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },
   };

@@ -85,6 +85,12 @@ function normalizeParams(raw, profile) {
   const drawers = type.supports.drawers
     ? (items.length ? drawersFromItems.length : clampInt(p.drawers, 0, profile.wardrobe.drawers.maxCount))
     : 0;
+
+  // Drawers are stacked bottom-up, so drawer i's height has to belong to the
+  // same physical drawer as runner row i and drawer front i. `index` is the
+  // authority when the editor supplies it; otherwise array order stands.
+  const drawerItems = [...drawersFromItems].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
+  const drawerHeights = resolveDrawerHeights(p, drawers, drawerItems, profile, warnings);
   const rail = type.supports.rail ? (items.length ? Boolean(hangerFromItems) : Boolean(p.rail)) : false;
 
   // Shelves are ordered bottom-up so panel N, drill row N and item N always
@@ -121,11 +127,44 @@ function normalizeParams(raw, profile) {
     shelfItems,
     shelfPositions,
     drawers,
+    drawerItems,
+    drawerHeights,
     rail,
     railOffset: Number(p.rail_offset ?? profile.wardrobe.defaults.railOffset),
     items,
     warnings,
   };
+}
+
+/**
+ * One height per drawer, bottom-up.
+ *
+ * Sources, in order: the drawer item's own `height_mm` (the editor), a
+ * `drawer_heights` array on the params (fixtures and presets), then the
+ * profile default. Every drawer therefore HAS a height, and a stack where
+ * nobody set one is exactly the uniform stack the golden fixtures describe.
+ */
+function resolveDrawerHeights(p, count, drawerItems, profile, warnings) {
+  const DR = profile.wardrobe.drawers;
+  const fromParams = Array.isArray(p.drawer_heights) ? p.drawer_heights : null;
+  const out = [];
+  let clamped = false;
+  for (let i = 0; i < count; i += 1) {
+    const raw = Number(drawerItems[i]?.height_mm ?? fromParams?.[i]);
+    let h = Number.isFinite(raw) && raw > 0 ? raw : DR.frontHeight;
+    if (h < DR.minFrontHeight || h > DR.maxFrontHeight) {
+      h = Math.min(Math.max(h, DR.minFrontHeight), DR.maxFrontHeight);
+      clamped = true;
+    }
+    out.push(h);
+  }
+  if (clamped) {
+    warnings.push({
+      code: 'DRAWER_HEIGHT_CLAMPED',
+      message: `Drawer heights must be between ${DR.minFrontHeight} and ${DR.maxFrontHeight} mm — out-of-range values were pulled back in.`,
+    });
+  }
+  return out;
 }
 
 function collectItems(p) {
@@ -217,9 +256,15 @@ export function computeCabinet(params, profileOverride) {
   let szufMaxDl = null; let szufDl = null; let szufSzer = null; let drawerFrontW = null;
   let drawerTotalH = 0; let partitionY = null; let partitionCentreY = null;
   let drawerPanelH = null; let drawerPanelD = null; let fillerH = null;
-  let boxFrontLen = null; let boxFrontH = null; let bottomW = null; let bottomD = null;
+  let boxFrontLen = null; let bottomW = null; let bottomD = null;
   let boxSetback = null;
   let runnerRowsDp = []; let runnerRowsCarcass = [];
+  // Per-drawer, bottom-up. With every drawer at the profile default these are
+  // constant lists and every formula below collapses to the LISP's fixed one.
+  let drawerHeights = [];
+  let zoneOffsets = [];      // bottom of drawer i's front, relative to the stack base
+  let boxSideH = [];
+  let boxFrontHs = [];
 
   if (hasDrawers) {
     numDrPanels = doorCount === 2 ? 2 : 1;
@@ -236,7 +281,10 @@ export function computeCabinet(params, profileOverride) {
   }
 
   if (hasDrawers) {
-    drawerTotalH = numDrawers * DR.frontHeight + (numDrawers - 1) * DR.gap;
+    // totalH = Σ hᵢ + (n−1)·gap. With every hᵢ = frontHeight this is exactly
+    // the LISP's n·200 + (n−1)·3.
+    drawerHeights = cfg.drawerHeights.slice(0, numDrawers);
+    drawerTotalH = drawerHeights.reduce((s, h) => s + h, 0) + (numDrawers - 1) * DR.gap;
     if (drawerTotalH > H - 2 * G - DR.zoneHeadroom) {
       warnings.push({ code: 'DRAWERS_TOO_TALL', message: `${numDrawers} drawers do not fit below the partition — drawers dropped.` });
       hasDrawers = false;
@@ -253,16 +301,29 @@ export function computeCabinet(params, profileOverride) {
     fillerH = drawerPanelH;
     boxSetback = DR.setback + frontT;
     boxFrontLen = W - DR.boxFrontBoards * G - DR.boxFrontClearance - drawerReduction;
-    boxFrontH = DR.sideHeight - DR.boxFrontHeightDeduction - G - DR.boxFrontHeightExtra;
     bottomW = boxFrontLen + DR.bottomOversize;
     bottomD = szufDl;
+
+    // Cumulative offsets ARE the generalisation: every "i × (frontHeight + gap)"
+    // in the LISP becomes "sum of the drawers below me, plus their gaps".
+    let acc = 0;
     for (let i = 0; i < numDrawers; i += 1) {
-      const rel = i * (DR.frontHeight + DR.gap) + P.wardrobe.runners.firstRowFromBottom;
+      zoneOffsets.push(acc);
+      acc += drawerHeights[i] + DR.gap;
+      // Box side = front − frontToSideDelta; box front/back = side − 15 − G − 1,
+      // i.e. "as before, off the side" (200 → 164 → 130 with the defaults).
+      const side = drawerHeights[i] - DR.frontToSideDelta;
+      boxSideH.push(side);
+      boxFrontHs.push(side - DR.boxFrontHeightDeduction - G - DR.boxFrontHeightExtra);
+    }
+    for (let i = 0; i < numDrawers; i += 1) {
+      const rel = zoneOffsets[i] + P.wardrobe.runners.firstRowFromBottom;
       runnerRowsDp.push(rel);
       runnerRowsCarcass.push(G + rel);
     }
   } else {
     numDrawers = 0; numDrPanels = 0; dpLeft = false; dpRight = false; drawerReduction = 0;
+    drawerHeights = []; zoneOffsets = []; boxSideH = []; boxFrontHs = [];
   }
 
   // ── Hanging rail ───────────────────────────────────────────────────────────
@@ -405,28 +466,30 @@ export function computeCabinet(params, profileOverride) {
     const boxLeftX = G + (dpLeft ? DP.inset + G : 0) + (DR.boxWidthClearance / 2);
     const boxZFront = D - boxSetback;
     for (let i = 1; i <= numDrawers; i += 1) {
-      const zoneY = G + (i - 1) * (DR.frontHeight + DR.gap);
+      const zoneY = G + zoneOffsets[i - 1];
+      const sideH = boxSideH[i - 1];
+      const bfH = boxFrontHs[i - 1];
       const boxY = zoneY + P.wardrobe.runners.firstRowFromBottom - DR.boxDropFromRunner;
       const common = { thickness: DR.boxSideThickness, edgeCode: codes.none, edgeLen: 0 };
       panels.push(panel({
-        id: `D${i}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: DR.sideHeight, ...common,
-        box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: DR.sideHeight, d: szufDl },
-        cnc: rectGeometry(szufDl, DR.sideHeight), meta: { drawer: i },
+        id: `D${i}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideH, ...common,
+        box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideH, d: szufDl },
+        cnc: rectGeometry(szufDl, sideH), meta: { drawer: i },
       }));
       panels.push(panel({
-        id: `D${i}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: DR.sideHeight, ...common,
-        box: { x: boxLeftX + szufSzer - DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: DR.sideHeight, d: szufDl },
-        cnc: rectGeometry(szufDl, DR.sideHeight), meta: { drawer: i },
+        id: `D${i}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideH, ...common,
+        box: { x: boxLeftX + szufSzer - DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideH, d: szufDl },
+        cnc: rectGeometry(szufDl, sideH), meta: { drawer: i },
       }));
       panels.push(panel({
-        id: `D${i}-BF`, part: 'DRAWER-BOX-FRONT', role: 'drawer_box', w: boxFrontLen, h: boxFrontH, ...common,
-        box: { x: boxLeftX + DR.boxSideThickness, y: boxY, z: boxZFront - G, w: boxFrontLen, h: boxFrontH, d: G },
-        cnc: rectGeometry(boxFrontLen, boxFrontH), meta: { drawer: i },
+        id: `D${i}-BF`, part: 'DRAWER-BOX-FRONT', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
+        box: { x: boxLeftX + DR.boxSideThickness, y: boxY, z: boxZFront - G, w: boxFrontLen, h: bfH, d: G },
+        cnc: rectGeometry(boxFrontLen, bfH), meta: { drawer: i },
       }));
       panels.push(panel({
-        id: `D${i}-BB`, part: 'DRAWER-BOX-BACK', role: 'drawer_box', w: boxFrontLen, h: boxFrontH, ...common,
-        box: { x: boxLeftX + DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: boxFrontLen, h: boxFrontH, d: G },
-        cnc: rectGeometry(boxFrontLen, boxFrontH), meta: { drawer: i },
+        id: `D${i}-BB`, part: 'DRAWER-BOX-BACK', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
+        box: { x: boxLeftX + DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: boxFrontLen, h: bfH, d: G },
+        cnc: rectGeometry(boxFrontLen, bfH), meta: { drawer: i },
       }));
       panels.push(panel({
         id: `D${i}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: bottomW, h: bottomD, ...common,
@@ -436,9 +499,11 @@ export function computeCabinet(params, profileOverride) {
     }
 
     for (let i = 1; i <= numDrawers; i += 1) {
-      const zoneY = G + (i - 1) * (DR.frontHeight + DR.gap);
+      const zoneY = G + zoneOffsets[i - 1];
       const first = i === 1;
-      const dfH = first ? DR.frontHeight - DR.firstFrontAdjust : DR.frontHeight;
+      // The bottom front is shortened to clear the base; the rest are the
+      // drawer's own height (LISP: 200 everywhere, 197 for the first).
+      const dfH = first ? drawerHeights[0] - DR.firstFrontAdjust : drawerHeights[i - 1];
       const dfY = first ? zoneY + DR.firstFrontAdjust : zoneY;
       panels.push(panel({
         id: `${unitNum}-DF${i}`, part: 'DRAWER-FRONT', role: 'front', w: drawerFrontW, h: dfH, thickness: frontT,
@@ -621,9 +686,16 @@ export function computeCabinet(params, profileOverride) {
       drawerPanelH,
       drawerPanelD,
       boxFrontLen,
-      boxFrontH,
+      // Scalars stay the drawer-1 value so a uniform stack reads exactly as it
+      // always did; the per-drawer lists next to them are the whole truth.
+      boxFrontH: boxFrontHs[0],
       bottom_w: bottomW,
       bottom_d: bottomD,
+      drawer_heights: [...drawerHeights],
+      drawer_front_y: zoneOffsets.map((o, i) => roundTo(G + o + (i === 0 ? DR.firstFrontAdjust : 0), 4)),
+      drawer_front_h: drawerHeights.map((h, i) => roundTo(i === 0 ? h - DR.firstFrontAdjust : h, 4)),
+      drawer_box_side_h: [...boxSideH],
+      drawer_box_front_h: [...boxFrontHs],
     } : {}),
     ...(hasRail ? { rail_y: railY, rail_partition_y: railPartY } : {}),
   };
@@ -648,7 +720,7 @@ export function computeCabinet(params, profileOverride) {
   const assemblies = {
     carcass: { w: W, h: H, d: D, legHeight: type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legHeight : P.baseUnit.legHeight) : 0 },
     rail: hasRail ? { y: railY, x1: G, x2: W - G, z: D - DR.setback } : null,
-    drawerZone: hasDrawers ? { top: partitionY, count: numDrawers } : null,
+    drawerZone: hasDrawers ? { top: partitionY, count: numDrawers, heights: [...drawerHeights] } : null,
     shelves: shelfRows.map((y, i) => ({ index: i + 1, y })),
   };
 
@@ -658,7 +730,8 @@ export function computeCabinet(params, profileOverride) {
     params: {
       width: W, height: H, depth: D, board_t: G, front_t: frontT,
       front_type: cfg.frontType, hinge: cfg.hinge, doors: doorCount,
-      shelves: numShelves, drawers: numDrawers, rail: hasRail, rail_offset: cfg.railOffset,
+      shelves: numShelves, drawers: numDrawers, drawer_heights: [...drawerHeights],
+      rail: hasRail, rail_offset: cfg.railOffset,
     },
     derived,
     panels,

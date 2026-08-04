@@ -166,18 +166,46 @@ export const useProjectStore = create((set, get) => ({
     return id;
   },
 
-  addDrawers: (unitId, count, mount = 'overlay') => {
+  /**
+   * Replace the drawer stack. `heightMm` is the height every NEW drawer gets;
+   * heights already set on surviving drawers are kept, so bumping the count
+   * from 2 to 3 does not silently reset the two the user already sized.
+   */
+  addDrawers: (unitId, count, mount = 'overlay', heightMm) => {
+    const fallback = Number(heightMm) > 0
+      ? Number(heightMm)
+      : getCabinetProfile().wardrobe.drawers.frontHeight;
     set((s) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
         const kept = section.items.filter((i) => i.kind !== 'drawer');
-        const drawers = Array.from({ length: count }, (_, i) => ({ id: uid('drawer'), kind: 'drawer', index: i + 1, mount }));
+        const previous = section.items
+          .filter((i) => i.kind === 'drawer')
+          .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
+        const drawers = Array.from({ length: count }, (_, i) => ({
+          id: previous[i]?.id || uid('drawer'),
+          kind: 'drawer',
+          index: i + 1,
+          mount,
+          height_mm: Number(previous[i]?.height_mm) > 0 ? Number(previous[i].height_mm) : fallback,
+        }));
         return { ...u, params: { ...u.params, sections: [{ ...section, items: [...drawers, ...kept] }] } };
       }),
       dirty: true,
     }));
     // The drawer stack raises the floor the shelves stand on.
+    get().reclampShelves(unitId);
+  },
+
+  /** One drawer's height. Clamped by the engine, then the shelves re-settle. */
+  setDrawerHeight: (unitId, itemId, heightMm) => {
+    const DR = getCabinetProfile().wardrobe.drawers;
+    const h = Number(heightMm);
+    const clamped = Number.isFinite(h)
+      ? Math.min(Math.max(h, DR.minFrontHeight), DR.maxFrontHeight)
+      : DR.frontHeight;
+    get().updateItem(unitId, itemId, { height_mm: clamped });
     get().reclampShelves(unitId);
   },
 
@@ -188,7 +216,17 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections[0];
-        return { ...u, params: { ...u.params, sections: [{ ...section, items: section.items.filter((i) => i.id !== itemId) }] } };
+        let items = section.items.filter((i) => i.id !== itemId);
+        if (wasDrawer) {
+          // Renumber bottom-up, so drawer i keeps meaning "i-th from the floor"
+          // for the engine, the runner rows and the cut list.
+          let n = 0;
+          const order = new Map(items.filter((i) => i.kind === 'drawer')
+            .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))
+            .map((i) => [i.id, (n += 1)]));
+          items = items.map((i) => (order.has(i.id) ? { ...i, index: order.get(i.id) } : i));
+        }
+        return { ...u, params: { ...u.params, sections: [{ ...section, items }] } };
       }),
       dirty: true,
     }));

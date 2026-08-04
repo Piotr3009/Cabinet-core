@@ -137,8 +137,15 @@ export const DEFAULT_CABINET_PROFILE = {
     drawers: {
       maxCount: 6,
       setback: 50,             // drawer box sits 50 mm behind the carcass front
-      sideHeight: 164,         // drawer box side
-      frontHeight: 200,        // visible drawer front
+      frontHeight: 200,        // DEFAULT visible drawer front; each drawer may
+                               // carry its own height_mm (SPEC / turn-2 task 4)
+      minFrontHeight: 100,     // workshop limits on a per-drawer height; a value
+      maxFrontHeight: 600,     // outside them is clamped with a warning
+      // Drawer box side = front height − this. The LISP's fixed pair
+      // (drawerFrontH 200, drawerSideH 164) is the special case 200 − 36; with
+      // variable fronts the DELTA is the invariant, not the side height, so
+      // that is what the profile carries.
+      frontToSideDelta: 36,
       firstFrontAdjust: 3,     // bottom front is 3 mm shorter (clears the base)
       gap: 3,                  // gap between drawer fronts
       boxSideThickness: 18,
@@ -146,7 +153,7 @@ export const DEFAULT_CABINET_PROFILE = {
       frontOversize: 4,        // front W = box W + this (2 mm each side)
       boxFrontBoards: 4,       // box front/back length = W − 4×G − clearance − reduction
       boxFrontClearance: 10,
-      boxFrontHeightDeduction: 15,   // box front H = sideHeight − 15 − G − 1
+      boxFrontHeightDeduction: 15,   // box front H = box side H − 15 − G − 1
       boxFrontHeightExtra: 1,
       bottomOversize: 13,      // bottom W = box front length + this
       boxDropFromRunner: 9,    // box bottom sits this far below the runner row

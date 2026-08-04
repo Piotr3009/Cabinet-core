@@ -20,14 +20,16 @@ export default function AddItemsModal({ unit }) {
   const existingDrawers = items.filter((i) => i.kind === 'drawer').length;
   const hasRail = items.some((i) => i.kind === 'hanger');
 
+  const DR = profile.wardrobe.drawers;
   const [drawerCount, setDrawerCount] = useState(existingDrawers || 2);
+  const [drawerHeight, setDrawerHeight] = useState(DR.frontHeight);
   const [shelfCount, setShelfCount] = useState(1);
   const [railOffset, setRailOffset] = useState(unit.params.rail_offset ?? profile.wardrobe.defaults.railOffset);
 
   const applyDrawers = () => {
     if (!type.supports.drawers) return;
-    addDrawers(unit.id, drawerCount, 'overlay');
-    notify(`${drawerCount} drawer${drawerCount === 1 ? '' : 's'} added — the partition above them is automatic.`, 'ok');
+    addDrawers(unit.id, drawerCount, 'overlay', drawerHeight);
+    notify(`${drawerCount} × ${drawerHeight} mm drawer${drawerCount === 1 ? '' : 's'} added — the partition above them is automatic.`, 'ok');
     closeModal();
   };
 
@@ -58,11 +60,20 @@ export default function AddItemsModal({ unit }) {
         <section className={type.supports.drawers ? '' : 'opacity-40 pointer-events-none'}>
           <h3 className="text-sm text-ink-50 mb-2">Drawers {!type.supports.drawers && <span className="cc-tag ml-1">not for this type</span>}</h3>
           <div className="flex items-end gap-2">
-            <div className="w-24">
+            <div className="w-20">
               <span className="cc-label">Count</span>
               <input
-                type="number" min={1} max={profile.wardrobe.drawers.maxCount} className="cc-input"
-                value={drawerCount} onChange={(e) => setDrawerCount(Math.max(1, Math.min(profile.wardrobe.drawers.maxCount, Number(e.target.value))))}
+                type="number" min={1} max={DR.maxCount} className="cc-input"
+                value={drawerCount} onChange={(e) => setDrawerCount(Math.max(1, Math.min(DR.maxCount, Number(e.target.value))))}
+              />
+            </div>
+            <div className="w-24">
+              <span className="cc-label">Height (mm)</span>
+              <input
+                type="number" min={DR.minFrontHeight} max={DR.maxFrontHeight} step={10} className="cc-input"
+                value={drawerHeight}
+                onChange={(e) => setDrawerHeight(Number(e.target.value))}
+                onBlur={(e) => setDrawerHeight(Math.min(Math.max(Number(e.target.value) || DR.frontHeight, DR.minFrontHeight), DR.maxFrontHeight))}
               />
             </div>
             <div className="flex-1">
@@ -77,7 +88,8 @@ export default function AddItemsModal({ unit }) {
             <button type="button" className="cc-btn-gold" onClick={applyDrawers}>Add</button>
           </div>
           <p className="text-[11px] text-ink-400 mt-1.5">
-            Stacked from the bottom. A partition closes the stack automatically (SPEC 4.7).
+            Stacked from the bottom, {DR.minFrontHeight}–{DR.maxFrontHeight} mm each. Every drawer starts at this
+            height and can be changed one by one afterwards. A partition closes the stack automatically (SPEC 4.7).
           </p>
         </section>
 

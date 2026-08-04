@@ -32,7 +32,9 @@ export function exportFilename(kind, ext, now = new Date()) {
 export function buildCuttingListCsv(entries, profile = getCabinetProfile()) {
   const lines = [profile.csv.header];
   for (const { result } of entries) lines.push(...result.csvLines);
-  return lines.join('\r\n');
+  // Trailing terminator: the LISP writes every row with write-line, so the
+  // file ends with a newline and the last row is not special.
+  return `${lines.join('\r\n')}\r\n`;
 }
 
 export function exportCuttingListCsv(entries, projectName = 'project') {

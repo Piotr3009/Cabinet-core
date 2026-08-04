@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -70,7 +70,9 @@ export default function Scene({ onCaptureReady }) {
   const setShelfDrag = useUiStore((s) => s.setDragging);
 
   const wallWidthMm = room.walls[0]?.width ?? 4000;
-  const results = allResults();
+  // `units` is the subscription that drives the re-render; allResults() is a
+  // stable store function, so deriving from it alone would never update.
+  const results = useMemo(() => allResults(), [units, allResults]);
   const roomW = mm(wallWidthMm);
   const roomH = mm(room.height ?? 2500);
 

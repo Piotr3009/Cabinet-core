@@ -243,3 +243,66 @@ i baza 02 (770, półka + drzwi), obie przy ścianie, obie z własnym numerem i
 etykietami. BOM pokazuje obie jednostki osobnymi sekcjami, sumy się zgadzają.
 Zero błędów w konsoli. To smoke-test architektury, nie pełna kuchnia — zgodnie
 z zakresem fazy.
+
+---
+
+## Faza 7 — Wykończenie — ✅ ZIELONA
+
+**Przejście end-to-end w mock-mode** (skrypt Playwright, czysty localStorage,
+Chromium — 13 kroków, wszystkie PASS):
+
+| # | Krok | Wynik |
+|---|---|---|
+| 1 | start bez `.env`, badge „Mock data mode" | PASS |
+| 2 | Room setup 2600 × 3600 | PASS |
+| 3 | szafa przy ścianie | PASS (x = 1500, środek ściany) |
+| 4 | 2 szuflady + półka + wieszak | PASS |
+| 5 | przeciągnięcie półki pionowo | PASS (1288 → 832 mm) |
+| 6 | snap **32 mm** honorowany przez drag | PASS (832 % 32 = 0) |
+| 7 | drzwi jako ostatni krok, prawy panel się zamyka | PASS |
+| 8 | drzwi zapisane na jednostce | PASS (`{count: 1, hinge: "L"}`) |
+| 9 | druga jednostka dostawiona na styk | PASS (1500 + 600 = 2100) |
+| 10 | BOM pokazuje obie jednostki | PASS |
+| 11 | materiały + yield → koszt | PASS |
+| 12 | eksport CSV + PDF | PASS |
+| 13 | projekt przeżywa reload (cache) | PASS (2 jednostki) |
+
+Zero błędów w konsoli na każdym kroku. Wyeksportowany CSV zawiera obie
+jednostki, a wiersze bazy `02` zgadzają się **co do znaku** z golden fixture
+BUD-A (`02,BUL,540,770,<,0.77,0.416` …).
+
+**Zgrzyty naprawione w tej fazie.**
+- Cache do localStorage zapisywał się przy KAŻDEJ zmianie stanu — czyli w
+  trakcie przeciągania półki ~60 razy na sekundę. Zdławiony do jednego zapisu
+  na 250 ms.
+- `Scene` i `BomPanel` liczyły wynik silnika z funkcji store'a, która ma stabilną
+  referencję — czyli subskrypcja, która realnie wymusza przeliczenie (`units`),
+  wyglądała na martwy kod i mogła zostać „posprzątana" przy pierwszym refaktorze.
+  Zależność jest teraz jawna (`useMemo([units])`) i opisana komentarzem.
+- CSV kończy się teraz terminatorem linii, tak jak plik z `write-line` w LISP.
+
+**Testy.** Doszedł `test/bom.test.js` (8 dodatkowych asercji): sumy per rola
+schodzą się z sumami projektu i z fixture, role należą do siedmiu ról BOM,
+CSV wieloczęściowy trzyma format LISP, yield liczy się poprawnie, identyczne
+formatki scalają się w jeden wiersz, nazwy plików trzymają konwencję rodziny.
+Razem: **77 testów, 76 pass, 0 fail, 1 todo**.
+
+**README.md** — jak uruchomić (`npm i`, `npm run dev`, `.env` opcjonalny),
+opis flow, mapa repo, obie żelazne zasady (silnik bez Reacta, fixtures tylko do
+odczytu) i szczery zakres tego, czego świadomie NIE ma.
+
+---
+
+# DEFINICJA SUKCESU NOCY — status
+
+1. **`npm test` zielony** — ✅ 76 pass / 0 fail. Jedno `todo` to sprzeczność
+   wewnątrz fixture (BLOCKERS #1), raportowana głośno, nie wyciszona.
+2. **`npm run dev` działa bez `.env`** — ✅ zweryfikowane w Chromium.
+3. **Flow end-to-end** pokój → szafa → szuflady + półki (drag ze snapem) →
+   drzwi → BOM z materiałami → eksport CSV + PDF — ✅ przejechany, 13/13 PASS.
+4. **BUILD-LOG z werdyktem każdej fazy, problemy w BLOCKERS** — ✅ 8 faz, 7 wpisów
+   w BLOCKERS.md, nic nie zamiecione pod dywan.
+
+**Do decyzji Piotra rano:** BLOCKERS #1 (która liczba to „panels" w BOM) i #2
+(czy szafka 704 mm dostaje 1 czy 2 drzwi). Obie to jedna liczba do zmiany, nie
+przebudowa.

@@ -12,6 +12,7 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const notify = useUiStore((s) => s.notify);
   const allResults = useProjectStore((s) => s.allResults);
+  const units = useProjectStore((s) => s.units);   // the subscription that re-runs the BOM
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const setAssignment = useMaterialAssignmentStore((s) => s.setAssignment);
@@ -19,7 +20,7 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
   const jcConnected = useMaterialAssignmentStore((s) => s.jcConnected);
 
   const [tab, setTab] = useState('parts');
-  const entries = allResults();
+  const entries = useMemo(() => allResults(), [units, allResults]);
   const bom = useMemo(() => buildBom(entries), [entries]);
   const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
   const cost = demandCost(demand);

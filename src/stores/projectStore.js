@@ -59,10 +59,19 @@ function loadCache() {
   }
 }
 
+// Throttled: a shelf drag updates the store on every pointer frame, and
+// serialising the whole project 60 times a second is pure jank.
+let cacheTimer = null;
+let cachePending = null;
 function saveCache(state) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ project: state.project, units: state.units }));
-  } catch { /* quota or private mode — the DB is the real home anyway */ }
+  cachePending = { project: state.project, units: state.units };
+  if (cacheTimer) return;
+  cacheTimer = setTimeout(() => {
+    cacheTimer = null;
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cachePending));
+    } catch { /* quota or private mode — the DB is the real home anyway */ }
+  }, 250);
 }
 
 const cached = typeof localStorage !== 'undefined' ? loadCache() : null;

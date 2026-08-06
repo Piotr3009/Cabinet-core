@@ -29,6 +29,14 @@ function MovingPanel({ panel: p, front, open, colour, edgeColour, depth, ...hand
   const group = useRef(null);
   const amount = useRef(0);
 
+  // A door rotates about its hinge edge, so the mesh is offset inside a group
+  // pinned to that edge; everything else sits at its own centre.
+  const hingeAtRight = p.meta?.hinge === 'R';
+  const pivot = front === 'door'
+    ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
+    : [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)];
+  const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
+
   useFrame((_, delta) => {
     if (!group.current || !front) return;
     const target = open;
@@ -37,26 +45,20 @@ function MovingPanel({ panel: p, front, open, colour, edgeColour, depth, ...hand
       amount.current += (target - amount.current) * Math.min(1, delta * 8);
     }
     const a = amount.current;
+    // The animation is an OFFSET from where the engine put the panel, never an
+    // absolute position: writing position.z directly moved every front to
+    // z = 0, i.e. inside the carcass, and the unit rendered as an open box.
     if (front === 'drawer') {
       // Slides straight out of the carcass, most of its own depth.
-      group.current.position.z = mm(depth * 0.75) * a;
+      group.current.position.z = pivot[2] + mm(depth * 0.75) * a;
       group.current.rotation.y = 0;
     } else {
-      // Swings on the hinge side: the pivot is the group's origin, which is
-      // placed at the hinge edge below.
+      // Swings on the hinge side, about the group's origin.
       const dir = p.meta?.hinge === 'R' ? 1 : -1;
       group.current.rotation.y = dir * a * (Math.PI * 0.55);
-      group.current.position.z = 0;
+      group.current.position.z = pivot[2];
     }
   });
-
-  // A door rotates about its hinge edge, so the mesh is offset inside a group
-  // pinned to that edge; everything else sits at its own centre.
-  const hingeAtRight = p.meta?.hinge === 'R';
-  const pivot = front === 'door'
-    ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
-    : [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)];
-  const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
 
   return (
     <group ref={group} position={pivot}>
@@ -78,6 +80,7 @@ function MovingPanel({ panel: p, front, open, colour, edgeColour, depth, ...hand
 export default function UnitView({
   unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
+  frontColour = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -223,7 +226,11 @@ export default function UnitView({
             panel={p}
             front={front}
             open={front ? (openFronts?.[p.id] ?? 0) : 0}
-            colour={beingDragged ? COLORS.goldSoft : colorForRole(p.role)}
+            colour={beingDragged
+              ? COLORS.goldSoft
+              // The project's front colour is what a front is actually painted:
+              // chosen in Design Settings, resolved per unit, seen here.
+              : (p.role === 'front' && frontColour ? frontColour : colorForRole(p.role))}
             edgeColour={selected || beingDragged ? COLORS.gold : edgeColorForRole(p.role)}
             depth={D}
             onPointerDown={(e) => {

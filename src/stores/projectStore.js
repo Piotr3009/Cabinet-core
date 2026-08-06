@@ -10,6 +10,7 @@ import {
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls, wallWidth,
 } from '../engine/room.js';
+import { migrateDesign, normaliseDoorStyle, setCarcassTypeCount } from '../engine/design.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -93,8 +94,11 @@ export const useProjectStore = create((set, get) => ({
   // A cached project may predate room v2 — migrate on the way in, so an old
   // tab that reloads gets four walls instead of a crash.
   project: cached?.project
-    ? { ...cached.project, room: migrateRoom(cached.project.room) }
-    : { id: null, name: 'Untitled project', room: DEFAULT_ROOM, jc_tenant_id: null, jc_project_id: null },
+    ? { ...cached.project, room: migrateRoom(cached.project.room), design: migrateDesign(cached.project.design) }
+    : {
+      id: null, name: 'Untitled project', room: DEFAULT_ROOM, design: migrateDesign(null),
+      jc_tenant_id: null, jc_project_id: null,
+    },
   units: cached?.units || [],
   dirty: false,
 
@@ -152,10 +156,89 @@ export const useProjectStore = create((set, get) => ({
   })),
 
   loadProject: (project, units) => set({
-    project: { ...project, room: migrateRoom(project?.room) },
+    project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
     units,
     dirty: false,
   }),
+
+  // ── design settings (project level, CLAUDE.md phase 6) ───────────────────
+  // Materials, the standard front, the workshop's own door styles, the front
+  // colour and the infill width. Stored WITH the project, so opening a project
+  // opens the way it is built, not the way the last one was.
+  setDesign: (patch) => set((s) => ({
+    project: { ...s.project, design: migrateDesign({ ...s.project.design, ...patch }) },
+    dirty: true,
+  })),
+
+  setCarcassTypes: (count) => set((s) => ({
+    project: { ...s.project, design: setCarcassTypeCount(migrateDesign(s.project.design), count) },
+    dirty: true,
+  })),
+
+  setCarcassMaterial: (typeId, materialId) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    return {
+      project: {
+        ...s.project,
+        design: {
+          ...design,
+          carcass: {
+            types: design.carcass.types.map((t) => (t.id === typeId ? { ...t, material_id: materialId || null } : t)),
+          },
+        },
+      },
+      dirty: true,
+    };
+  }),
+
+  addDoorStyle: (style) => {
+    const id = style?.id || uid('ds');
+    set((s) => {
+      const design = migrateDesign(s.project.design);
+      const next = normaliseDoorStyle({ ...style, id });
+      if (!next) return {};
+      return {
+        project: { ...s.project, design: { ...design, doorStyles: [...design.doorStyles, next] } },
+        dirty: true,
+      };
+    });
+    return id;
+  },
+
+  updateDoorStyle: (id, patch) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    return {
+      project: {
+        ...s.project,
+        design: {
+          ...design,
+          doorStyles: design.doorStyles.map((st) => (st.id === id ? normaliseDoorStyle({ ...st, ...patch, id }) : st)),
+        },
+      },
+      dirty: true,
+    };
+  }),
+
+  removeDoorStyle: (id) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    return {
+      project: { ...s.project, design: { ...design, doorStyles: design.doorStyles.filter((st) => st.id !== id) } },
+      // A unit pointing at a style that no longer exists falls back to the
+      // project default rather than rendering nothing.
+      units: s.units.map((u) => (u.params.door_style_id === id
+        ? { ...u, params: { ...u.params, door_style_id: null } }
+        : u)),
+      dirty: true,
+    };
+  }),
+
+  /** Point a unit at one of the project's door styles (or back at the default). */
+  assignDoorStyle: (unitId, styleId) => set((s) => ({
+    units: s.units.map((u) => (u.id === unitId
+      ? { ...u, params: { ...u.params, door_style_id: styleId || null } }
+      : u)),
+    dirty: true,
+  })),
 
   // ── units ────────────────────────────────────────────────────────────────
   addUnit: (typeId) => {

@@ -5,6 +5,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
 import { roomWalls } from '../engine/room.js';
+import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
 
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
@@ -29,6 +30,12 @@ export default function RightPanel() {
   const setDoors = useProjectStore((s) => s.setDoors);
   const setUnitWall = useProjectStore((s) => s.setUnitWall);
   const rotateUnit = useProjectStore((s) => s.rotateUnit);
+  const assignDoorStyle = useProjectStore((s) => s.assignDoorStyle);
+  // Select the STORED value and migrate in a memo: a selector that builds a
+  // new object every call makes zustand's snapshot change on every render,
+  // which React reports as "Maximum update depth exceeded".
+  const storedDesign = useProjectStore((s) => s.project.design);
+  const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
   const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
   const walls = useMemo(() => roomWalls(room), [room]);
@@ -47,6 +54,7 @@ export default function RightPanel() {
   // A drawer unit whose stack comes from a fixed ratio (BUDR) has no editable
   // drawer heights and no removable drawers — it IS its three drawers.
   const ratioDrawers = type?.drawerStyle === 'budr';
+  const resolvedDesign = unit ? resolveUnitDesign(unit, design) : null;
   const hasDoors = Boolean(unit?.params.doors) && unit.params.doors !== false;
 
   const addDoors = () => {
@@ -139,6 +147,25 @@ export default function RightPanel() {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
+                <span className="cc-label">Door style</span>
+                <select
+                  className="cc-input"
+                  value={unit.params.door_style_id || ''}
+                  onChange={(e) => assignDoorStyle(unit.id, e.target.value || null)}
+                >
+                  <option value="">Project default</option>
+                  {design.doorStyles.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button type="button" className="cc-btn w-full" onClick={() => openModal('design')}>
+                  Design settings…
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
                 <span className="cc-label">Front type</span>
                 <select className="cc-input" value={unit.params.front_type} onChange={(e) => updateUnitParams(unit.id, { front_type: e.target.value })}>
                   {Object.entries(profile.front.types).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -156,6 +183,15 @@ export default function RightPanel() {
                 </select>
               </div>
             </div>
+
+            {resolvedDesign?.colour && (
+              <div className="cc-row text-[11px] text-ink-400">
+                <span>Front colour</span>
+                <span className="px-2 py-0.5 rounded border border-shell-600" style={{ background: resolvedDesign.colour.hex }}>
+                  {resolvedDesign.colour.name}
+                </span>
+              </div>
+            )}
 
             {/* ── per-type parameters: only the ones this kit actually has ── */}
             {(type.mount === 'wall' || type.doorExtend || unit.type === 'FRIDGE') && (

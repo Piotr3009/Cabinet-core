@@ -92,6 +92,10 @@ export default function LibraryPanel() {
           Room setup
         </button>
 
+        <button type="button" className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 text-sm text-ink-100 transition-colors" onClick={() => openModal('design')}>
+          Design settings
+        </button>
+
         <label className="flex items-center justify-between px-2 py-2 text-sm text-ink-100">
           <span>Snap</span>
           <select

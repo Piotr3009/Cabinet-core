@@ -3,6 +3,7 @@ import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
+import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
@@ -85,6 +86,7 @@ export default function ConfiguratorPage() {
         {rightPanelOpen && !bomOpen && <RightPanel />}
         {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} />}
         {modal === 'room' && <RoomModal />}
+        {modal === 'design' && <DesignSettingsModal />}
         {modal === 'add-items' && selectedUnit && <AddItemsModal unit={selectedUnit} />}
         {modal === 'auth' && <AuthModal />}
         <ContextMenu />

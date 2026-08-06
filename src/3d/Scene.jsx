@@ -6,6 +6,7 @@ import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
+import { resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 
@@ -100,6 +101,7 @@ function Lights({ roomHeight, roomWidth }) {
 export default function Scene({ onCaptureReady }) {
   const orbitRef = useRef(null);
   const room = useProjectStore((s) => s.project.room);
+  const design = useProjectStore((s) => s.project.design);
   const units = useProjectStore((s) => s.units);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const allResults = useProjectStore((s) => s.allResults);
@@ -164,6 +166,7 @@ export default function Scene({ onCaptureReady }) {
           onToggleFront={(panelId) => toggleFront(unit.id, panelId)}
           onFocus={(point, sizeMm) => focusOn([point.x, point.y, point.z], sizeMm)}
           onContextMenu={(menu) => openContextMenu({ ...menu, unitId: unit.id })}
+          frontColour={resolveUnitDesign(unit, design).colour?.hex || null}
         />
       ))}
 

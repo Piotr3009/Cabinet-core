@@ -4,7 +4,8 @@ import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { snap as snapTo } from '../engine/format.js';
 import {
-  clampShelfPos, clampUnitX, firstFreeUnitX, shelfBand, shelfBounds, unitIssues, unitSpan,
+  clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, firstFreeUnitX,
+  shelfBand, shelfBounds, unitIssues, unitSpan, wallObstacles,
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls, wallWidth,
@@ -179,23 +180,65 @@ export const useProjectStore = create((set, get) => ({
 
   removeUnit: (unitId) => set((s) => ({ units: s.units.filter((u) => u.id !== unitId), dirty: true })),
 
+  /**
+   * Edit a unit's parameters.
+   *
+   * Growing a unit is a MOVE — the far edge travels — so it stops at exactly
+   * the same barriers a drag stops at, through the same pure functions
+   * (engine/collision.js). Width stops at the neighbour or the end of the
+   * wall; depth stops at the far wall or at a unit standing in the corner it
+   * would grow into. What cannot be honoured is reported, not silently
+   * applied and not silently dropped.
+   *
+   * @returns {{applied:object, notices:string[]}}
+   */
   updateUnitParams: (unitId, patch) => {
-    set((s) => ({
-      units: s.units.map((u) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { applied: {}, notices: [] };
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    const wallIndex = unit.position.wall ?? 0;
+    const wall = walls[wallIndex] || walls[0];
+    const others = neighboursOf(s, unit).map(toObstacleUnit);
+    const notices = [];
+    const applied = { ...patch };
+
+    if (patch.width != null) {
+      const spans = wallObstacles({ wall, walls, depth: unit.params.depth, others });
+      const clamp = clampUnitWidth({
+        width: Number(patch.width) || 0, x: unit.position.x_mm, wallWidth: wall.width, others: spans,
+      }, profile);
+      applied.width = clamp.width;
+      if (clamp.blocked) notices.push(`Width limited to ${Math.round(clamp.max)} mm by ${clamp.by}.`);
+    }
+    if (patch.depth != null) {
+      const clamp = clampUnitDepth({
+        depth: Number(patch.depth) || 0,
+        x: unit.position.x_mm, width: applied.width ?? unit.params.width,
+        wall, walls, others,
+      }, profile);
+      applied.depth = clamp.depth;
+      if (clamp.blocked) notices.push(`Depth limited to ${Math.round(clamp.max)} mm by ${clamp.by}.`);
+    }
+
+    set((st) => ({
+      units: st.units.map((u) => {
         if (u.id !== unitId) return u;
-        const params = { ...u.params, ...patch };
-        if (patch.width != null && params.sections?.[0]) {
-          params.sections = [{ ...params.sections[0], width_mm: patch.width }];
+        const params = { ...u.params, ...applied };
+        if (applied.width != null && params.sections?.[0]) {
+          params.sections = [{ ...params.sections[0], width_mm: applied.width }];
         }
         return { ...u, params };
       }),
       dirty: true,
     }));
-    // A unit that just got wider can now stick out of the wall or into its
-    // neighbour, so re-run the same clamp the drag uses. Typing a number and
-    // dragging must not be able to reach different states.
-    if (patch.width != null) get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
-    if (patch.height != null || patch.width != null) get().reclampShelves(unitId);
+    // The clamp above keeps the unit inside its slot without moving it; this
+    // re-runs the position clamp anyway, so a unit that was already overlapping
+    // (an imported project, a room change) still settles legally.
+    if (applied.width != null) get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
+    if (patch.height != null || applied.width != null) get().reclampShelves(unitId);
+    return { applied, notices };
   },
 
   /** Slide a unit along the wall: snapped, then hard-clamped into its free slot. */
@@ -203,13 +246,20 @@ export const useProjectStore = create((set, get) => ({
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
-    const wall = unit.position.wall ?? 0;
+    const walls = roomWalls(s.project.room);
+    const wallIndex = unit.position.wall ?? 0;
+    const wall = walls[wallIndex] || walls[0];
+    // Obstacles include units on OTHER walls whose footprint reaches into this
+    // one's depth band — the corner case, in both senses.
+    const others = wallObstacles({
+      wall, walls, depth: unit.params.depth, others: neighboursOf(s, unit).map(toObstacleUnit),
+    });
     const result = clampUnitX({
       x: snapTo(xRaw, snapStep),
       current: unit.position.x_mm,
       width: unit.params.width,
-      wallWidth: wallWidth(s.project.room, wall),
-      others: neighboursOf(s, unit).map(unitSpan),
+      wallWidth: wall.width,
+      others,
     }, getCabinetProfile());
 
     set((st) => ({
@@ -457,11 +507,22 @@ useProjectStore.subscribe((state) => saveCache(state));
  * not an overlap, so they never constrain each other.
  */
 function neighboursOf(state, unit) {
-  const wall = unit.position?.wall ?? 0;
   const level = getUnitType(unit.type).mount;
-  return state.units.filter((u) => u.id !== unit.id
-    && (u.position?.wall ?? 0) === wall
-    && getUnitType(u.type).mount === level);
+  // Every wall, not just this one: a unit around the corner is a neighbour the
+  // moment its footprint reaches into this one's depth (engine/collision.js
+  // decides that; this only decides who is even in the running).
+  return state.units.filter((u) => u.id !== unit.id && getUnitType(u.type).mount === level);
+}
+
+/** A unit as the plain numbers engine/collision.js works with. */
+function toObstacleUnit(u) {
+  return {
+    wall: u.position?.wall ?? 0,
+    x_mm: Number(u.position?.x_mm) || 0,
+    width: Number(u.params?.width) || 0,
+    depth: Number(u.params?.depth) || 0,
+    label: u.params?.unit_num || u.id,
+  };
 }
 
 // ─── Interior rules (shared by the store and the UI) ───
@@ -520,14 +581,19 @@ export function validateUnit(unit, result, context = {}) {
   // and needs a number changed (CLAUDE.md task 3).
   if (context.room) {
     const level = getUnitType(unit.type).mount;
+    const walls = roomWalls(context.room);
+    const wallIndex = unit.position?.wall ?? 0;
+    const wall = walls[wallIndex] || walls[0];
+    const others = (context.units || [])
+      .filter((u) => u.id !== unit.id && getUnitType(u.type).mount === level)
+      .map(toObstacleUnit);
     issues.push(...unitIssues({
       unit,
-      room: context.room,
-      others: (context.units || [])
-        .filter((u) => u.id !== unit.id
-          && (u.position?.wall ?? 0) === (unit.position?.wall ?? 0)
-          && getUnitType(u.type).mount === level)
-        .map((u) => ({ ...unitSpan(u), label: u.params?.unit_num })),
+      wallWidth: wall?.width ?? 0,
+      roomHeight: context.room.height,
+      // Same wall or around the corner — both are an overlap on the floor.
+      others: wallObstacles({ wall, walls, depth: unit.params?.depth ?? 0, others })
+        .map((o) => ({ left: o.left, right: o.right, label: o.label })),
     }));
   }
 

@@ -86,6 +86,162 @@ export function unitSpan(unit) {
   return { left, right: left + (Number(unit.params?.width) || 0) };
 }
 
+// ─── Plan geometry: units on DIFFERENT walls ────────────────────────────────
+// Two units on the same wall are a one-dimensional problem. Two units meeting
+// in a CORNER are not: one stands on wall 1 and the other on wall 2, and what
+// overlaps is their footprints on the floor. Everything below turns that back
+// into the same one-dimensional problem by measuring the other unit in THIS
+// wall's frame — along the wall, and into the room.
+
+/** The four plan corners of a unit standing on `wall`. */
+export function unitFootprint({ wall, x, width, depth }) {
+  const ax = wall.along.x; const ay = wall.along.y;
+  const nx = wall.inward.x; const ny = wall.inward.y;
+  const ox = wall.start.x + ax * x;
+  const oy = wall.start.y + ay * x;
+  return [
+    { x: ox, y: oy },
+    { x: ox + ax * width, y: oy + ay * width },
+    { x: ox + ax * width + nx * depth, y: oy + ay * width + ny * depth },
+    { x: ox + nx * depth, y: oy + ny * depth },
+  ];
+}
+
+/** A plan polygon measured in one wall's frame: along the wall, into the room. */
+export function spanInWallFrame(points, wall) {
+  let uMin = Infinity; let uMax = -Infinity; let vMin = Infinity; let vMax = -Infinity;
+  for (const p of points) {
+    const dx = p.x - wall.start.x;
+    const dy = p.y - wall.start.y;
+    const u = dx * wall.along.x + dy * wall.along.y;
+    const v = dx * wall.inward.x + dy * wall.inward.y;
+    uMin = Math.min(uMin, u); uMax = Math.max(uMax, u);
+    vMin = Math.min(vMin, v); vMax = Math.max(vMax, v);
+  }
+  return { left: uMin, right: uMax, near: vMin, far: vMax };
+}
+
+/**
+ * Everything that blocks movement along `wall` for a unit `depth` deep.
+ *
+ * Same-wall neighbours are their own span. A unit on another wall counts only
+ * when it actually reaches into the depth band this unit occupies — which is
+ * exactly what happens in a corner, and never happens on the wall opposite.
+ *
+ * @param {object} args
+ *   wall     the wall being moved along (from engine/room.js roomWalls)
+ *   walls    every wall of the room
+ *   depth    the moving unit's depth
+ *   others   [{ wall: index, x_mm, width, depth, label }] — every OTHER unit
+ *            at the same mounting level
+ */
+export function wallObstacles({ wall, walls, depth, others = [] }) {
+  const out = [];
+  for (const o of others) {
+    if (o.wall === wall.index) {
+      out.push({ left: o.x_mm, right: o.x_mm + o.width, label: o.label, corner: false });
+      continue;
+    }
+    const otherWall = walls[o.wall];
+    if (!otherWall) continue;
+    const footprint = unitFootprint({ wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth });
+    const span = spanInWallFrame(footprint, wall);
+    // Behind this wall, or past the front of this unit: not in the way.
+    if (span.far <= 0 || span.near >= depth) continue;
+    if (span.right <= 0 || span.left >= wall.width) continue;
+    out.push({ left: span.left, right: span.right, label: o.label, corner: true });
+  }
+  return out;
+}
+
+/**
+ * How deep a unit may be at this spot before it runs into the far wall.
+ *
+ * A ray is cast into the room from each end of the unit's footprint; the first
+ * wall either ray meets is the limit. Exact for a rectangle and for the
+ * L-shaped rooms turn 3 introduces.
+ */
+export function maxDepthOnWall({ wall, walls, x, width }) {
+  let limit = Infinity;
+  for (const u of [x, x + width]) {
+    const px = wall.start.x + wall.along.x * u;
+    const py = wall.start.y + wall.along.y * u;
+    for (const other of walls) {
+      if (other.index === wall.index) continue;
+      const t = rayToSegment(px, py, wall.inward, other);
+      if (t != null && t > 1e-6) limit = Math.min(limit, t);
+    }
+  }
+  return Number.isFinite(limit) ? limit : 0;
+}
+
+/** Distance from (px,py) along `dir` to the segment `seg`, or null. */
+function rayToSegment(px, py, dir, seg) {
+  const sx = seg.start.x; const sy = seg.start.y;
+  const ex = seg.end.x; const ey = seg.end.y;
+  const rx = dir.x; const ry = dir.y;
+  const qx = ex - sx; const qy = ey - sy;
+  const denom = rx * qy - ry * qx;
+  if (Math.abs(denom) < 1e-9) return null;              // parallel
+  const t = ((sx - px) * qy - (sy - py) * qx) / denom;  // along the ray
+  const s = ((sx - px) * ry - (sy - py) * rx) / denom;  // along the segment
+  if (t < 0 || s < -1e-6 || s > 1 + 1e-6) return null;
+  return t;
+}
+
+// ─── Resizing a unit ───────────────────────────────────────────────────────
+// Widening is a move like any other: it has to stop at the same barriers. The
+// difference is which end moves — the position stays put and the far edge
+// travels — so it gets its own clamp rather than a re-run of clampUnitX.
+
+/**
+ * The widest this unit may be where it stands.
+ *
+ * @returns {{width:number, max:number, blocked:boolean, by:string|null}}
+ */
+export function clampUnitWidth({ width, x, wallWidth, others = [] }, profile) {
+  const clearance = profile.editor.minUnitGap;
+  let max = Math.max(0, wallWidth - x);
+  let limitedBy = 'the wall';
+
+  for (const o of others) {
+    if (o.right <= x) continue;                 // entirely to the left
+    const free = o.left - clearance - x;
+    if (free < max) { max = Math.max(0, free); limitedBy = o.label || 'a neighbour'; }
+  }
+  const next = Math.min(Number(width) || 0, max);
+  const blocked = next < (Number(width) || 0);
+  return { width: next, max, blocked, by: blocked ? limitedBy : null };
+}
+
+/**
+ * The deepest this unit may be where it stands: the room's own limit, and any
+ * unit on another wall that its footprint would grow into.
+ */
+export function clampUnitDepth({ depth, x, width, wall, walls, others = [] }, profile) {
+  const clearance = profile.editor.minUnitGap;
+  let max = maxDepthOnWall({ wall, walls, x, width });
+  let limitedBy = 'the room';
+
+  for (const o of others) {
+    if (o.wall === wall.index) continue;
+    const otherWall = walls[o.wall];
+    if (!otherWall) continue;
+    const span = spanInWallFrame(
+      unitFootprint({ wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth }),
+      wall,
+    );
+    // Only a neighbour standing in front of this unit's width can limit it.
+    if (span.right <= x || span.left >= x + width) continue;
+    if (span.far <= 0) continue;
+    const free = span.near - clearance;
+    if (free < max) { max = Math.max(0, free); limitedBy = o.label || 'a neighbour'; }
+  }
+  const next = Math.min(Number(depth) || 0, max);
+  const blocked = next < (Number(depth) || 0);
+  return { depth: next, max, blocked, by: blocked ? limitedBy : null };
+}
+
 /**
  * Where a unit actually ends up when slid along a wall.
  *
@@ -146,11 +302,13 @@ export function clampUnitX({ x, current, width, wallWidth, others = [] }, profil
  * the setters, so these are the cases clamping CANNOT fix — the unit simply
  * does not fit the room and a number has to change.
  */
-export function unitIssues({ unit, room, others = [] }) {
+export function unitIssues({ unit, wallWidth: wallW, roomHeight: roomH, others = [] }) {
   const issues = [];
-  const wall = room?.walls?.[unit.position?.wall ?? 0];
-  const wallWidth = Number(wall?.width) || 0;
-  const roomHeight = Number(room?.height) || 0;
+  // Plain numbers, not a room object: this file knows nothing about how a room
+  // is shaped, which is what lets the same rule serve a rectangle, an L and
+  // whatever comes next (engine/room.js does the shape).
+  const wallWidth = Number(wallW) || 0;
+  const roomHeight = Number(roomH) || 0;
   const w = Number(unit.params?.width) || 0;
   const h = Number(unit.params?.height) || 0;
 

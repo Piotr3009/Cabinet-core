@@ -254,7 +254,7 @@ test('unitSpan reads the footprint the clamp works on', () => {
 test('a unit taller than the room is reported, because no drag can fix it', () => {
   const issues = unitIssues({
     unit: { position: { wall: 0, x_mm: 0 }, params: { width: 600, height: 2600 } },
-    room: { height: 2500, walls: [{ width: 4000 }] },
+    wallWidth: 4000, roomHeight: 2500,
   });
   assert.equal(issues.length, 1);
   assert.equal(issues[0].code, 'UNIT_TALLER_THAN_ROOM');
@@ -265,7 +265,7 @@ test('a unit taller than the room is reported, because no drag can fix it', () =
 test('a unit wider than its wall is reported too', () => {
   const issues = unitIssues({
     unit: { position: { wall: 0, x_mm: 0 }, params: { width: 4200, height: 2000 } },
-    room: { height: 2500, walls: [{ width: 4000 }] },
+    wallWidth: 4000, roomHeight: 2500,
   });
   assert.deepEqual(issues.map((i) => i.code), ['UNIT_WIDER_THAN_WALL']);
 });
@@ -273,7 +273,7 @@ test('a unit wider than its wall is reported too', () => {
 test('a unit that fits reports nothing', () => {
   assert.deepEqual(unitIssues({
     unit: { position: { wall: 0, x_mm: 100 }, params: { width: 600, height: 2150 } },
-    room: { height: 2500, walls: [{ width: 4000 }] },
+    wallWidth: 4000, roomHeight: 2500,
     others: [U(1000, 600)],
   }), []);
 });
@@ -281,7 +281,7 @@ test('a unit that fits reports nothing', () => {
 test('touching units are legal; overlapping ones are reported', () => {
   const at = (x) => ({
     unit: { position: { wall: 0, x_mm: x }, params: { width: 600, height: 2150 } },
-    room: { height: 2500, walls: [{ width: 4000 }] },
+    wallWidth: 4000, roomHeight: 2500,
     others: [{ ...U(1200, 600), label: 'W02' }],
   });
   assert.deepEqual(unitIssues(at(1800)), [], 'flush is fine');

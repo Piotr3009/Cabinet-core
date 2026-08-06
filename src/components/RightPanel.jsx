@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore, validateUnit, shelfLimits } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
+import { roomWalls } from '../engine/room.js';
 
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
@@ -25,8 +27,10 @@ export default function RightPanel() {
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
   const removeUnit = useProjectStore((s) => s.removeUnit);
   const setDoors = useProjectStore((s) => s.setDoors);
+  const setUnitWall = useProjectStore((s) => s.setUnitWall);
   const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
+  const walls = useMemo(() => roomWalls(room), [room]);
 
   const unit = units.find((u) => u.id === selectedUnitId) || null;
   const result = unit ? unitResult(unit.id) : null;
@@ -71,10 +75,28 @@ export default function RightPanel() {
                   <span className="cc-label">{label}</span>
                   <input
                     type="number" className="cc-input" value={unit.params[key]}
-                    onChange={(e) => updateUnitParams(unit.id, { [key]: Number(e.target.value) })}
+                    onChange={(e) => {
+                      // Growing a unit is a move: it stops at the neighbour, the
+                      // end of the wall or the far side of the room, and says so.
+                      const { notices } = updateUnitParams(unit.id, { [key]: Number(e.target.value) });
+                      for (const n of notices) notify(n, 'warn');
+                    }}
                   />
                 </div>
               ))}
+            </div>
+
+            <div>
+              <span className="cc-label">Wall</span>
+              <select
+                className="cc-input"
+                value={unit.position?.wall ?? 0}
+                onChange={(e) => setUnitWall(unit.id, Number(e.target.value))}
+              >
+                {walls.map((w) => (
+                  <option key={w.index} value={w.index}>Wall {w.index + 1} · {Math.round(w.width)} mm</option>
+                ))}
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-2">

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { computeCabinet } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
-import { defaultParamsFor, getUnitType } from '../engine/types.js';
+import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { snap as snapTo } from '../engine/format.js';
 import {
   clampShelfPos, clampUnitX, firstFreeUnitX, shelfBand, shelfBounds, unitIssues, unitSpan,
@@ -21,15 +21,21 @@ export const DEFAULT_ROOM = { height: 2500, walls: [{ width: 4000 }] };
 function newUnit(typeId, profile, index) {
   const type = getUnitType(typeId);
   const params = defaultParamsFor(type.id, profile);
+  // A drawer unit IS its drawers — the LISP kit has no "how many" question, so
+  // the stack exists from the moment the unit is placed.
+  const items = type.drawerStyle === 'budr'
+    ? profile.baseDrawerUnit.ratio.map((_, i) => ({ id: uid('drawer'), kind: 'drawer', index: i + 1, mount: 'overlay' }))
+    : [];
   return {
     id: uid('u'),
     type: type.id,
     position: { wall: 0, x_mm: 0 },
     params: {
       ...params,
-      unit_num: type.id === 'WARDROBE' ? `W${String(index + 1).padStart(2, '0')}` : String(index + 1).padStart(2, '0'),
-      doors: false,                 // doors are the LAST step (SPEC 4.10)
-      sections: [{ width_mm: params.width, items: [] }],
+      unit_num: `${UNIT_NUM_PREFIX[type.id] ?? ''}${String(index + 1).padStart(2, '0')}`,
+      // Doors are the LAST step (SPEC 4.10) — except where the type has none.
+      doors: type.supports.doors ? false : null,
+      sections: [{ width_mm: params.width, items }],
       materials: {},
     },
   };
@@ -421,11 +427,17 @@ export function validateUnit(unit, result, context = {}) {
     }));
   }
 
-  if (drawers > 0 && !result.assemblies.drawerZone) {
-    issues.push({ level: 'error', message: 'Drawers do not fit this carcass — they were dropped from the cut list.' });
-  }
-  if (drawers > 0 && result.assemblies.drawerZone && !result.panels.some((p) => p.part === 'PARTITION')) {
-    issues.push({ level: 'error', message: 'A drawer stack must be closed by a shelf (partition) above it.' });
+  // SPEC 4.7 applies to an INTERNAL drawer stack (a wardrobe): it has to be
+  // closed by a partition. A drawer unit whose fronts are the face of the
+  // cabinet (BUDR) has no partition by design, so the rule does not apply.
+  const type = getUnitType(unit.type);
+  if (type.supports.partition) {
+    if (drawers > 0 && !result.assemblies.drawerZone) {
+      issues.push({ level: 'error', message: 'Drawers do not fit this carcass — they were dropped from the cut list.' });
+    }
+    if (drawers > 0 && result.assemblies.drawerZone && !result.panels.some((p) => p.part === 'PARTITION')) {
+      issues.push({ level: 'error', message: 'A drawer stack must be closed by a shelf (partition) above it.' });
+    }
   }
   const zoneTop = result.assemblies.drawerZone?.top ?? null;
   for (const item of items) {

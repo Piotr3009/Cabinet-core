@@ -1,0 +1,461 @@
+{
+  "meta": {
+    "source": "KIT_WUD_FULL.lsp (CNC dims L195-207, hangers L226-260, CSV L376-398) + SKYLON_COMMON.lsp",
+    "computed_by": "Claude (tura 3 autonomous session, 06.08.2026), formulas traced line-by-line from the LISP — NOT from the engine",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. If engine output differs, the ENGINE is wrong (or file a BLOCKERS.md entry). Never edit expected values to make tests green.",
+    "units": "mm, m2, m"
+  },
+  "wud_rules": {
+    "wall_unit": "NO legs; hung on the wall. Defaults 600 x 720 x 400",
+    "hinges": "base rule [100, H-300, H-100] (3 hinges), same as BUD",
+    "door_extend": "optional +38mm below the carcass (handleless grab edge): front H = H - 3 + 38, cups bottom offset shifts to 100+38, upper cups keep distance from the TOP of the front",
+    "hangers": "BUL: 2 holes 5mm at (sideW-21, H-53) and (sideW-53, H-53); BUR mirrored: (21, H-53), (53, H-53); layer HINGES_5MM. BACK: two 30x58 cut-outs at the top corners, layer HANGER_HOLE",
+    "csv": "same convention as BUD (BUL <, BUR >, TOP/BOTTOM >, BACK none, SHELF >, fronts <>^v)"
+  },
+  "cases": [
+    {
+      "id": "WUD-A",
+      "description": "Default wall unit 600x720x400, 1 shelf, hinge L, no extend",
+      "inputs": {
+        "type": "WUD",
+        "width": 600,
+        "height": 720,
+        "depth": 400,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "shelves": 1,
+        "door_extend": false,
+        "hinge": "L",
+        "unit_num": "WU1"
+      },
+      "derived": {
+        "doors": 1,
+        "internal_width": 564,
+        "internal_depth": 382,
+        "door_extend_mm": 0
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 382,
+          "h": 720,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 0.72
+          },
+          "area_m2": 0.275
+        },
+        {
+          "id": "BUR",
+          "w": 382,
+          "h": 720,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.72
+          },
+          "area_m2": 0.275
+        },
+        {
+          "id": "TOP",
+          "w": 564,
+          "h": 382,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.215
+        },
+        {
+          "id": "BOTTOM",
+          "w": 564,
+          "h": 382,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.215
+        },
+        {
+          "id": "BACK",
+          "w": 600,
+          "h": 720,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.432
+        },
+        {
+          "id": "SHELF-1",
+          "w": 560,
+          "h": 362,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.203
+        },
+        {
+          "id": "WU1-F",
+          "w": 597,
+          "h": 717,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.63
+          },
+          "area_m2": 0.428
+        }
+      ],
+      "drills": {
+        "hinge_centers": [
+          100,
+          420,
+          620
+        ],
+        "side_hinge_holes_y": [
+          [
+            84,
+            116
+          ],
+          [
+            404,
+            436
+          ],
+          [
+            604,
+            636
+          ]
+        ],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": [
+          "BUL"
+        ],
+        "front_cup_y": [
+          100,
+          420,
+          620
+        ],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "shelf_row_y": [
+          360
+        ],
+        "shelf_hole_x": [
+          70,
+          312
+        ],
+        "hanger_holes_bul": [
+          [
+            361,
+            667
+          ],
+          [
+            329,
+            667
+          ]
+        ],
+        "hanger_holes_bur": [
+          [
+            21,
+            667
+          ],
+          [
+            53,
+            667
+          ]
+        ],
+        "hanger_hole_d": 5
+      },
+      "back_hanger_cutouts": [
+        {
+          "x1": 0,
+          "y1": 662,
+          "x2": 30,
+          "y2": 720,
+          "layer": "HANGER_HOLE"
+        },
+        {
+          "x1": 570,
+          "y1": 662,
+          "x2": 600,
+          "y2": 720,
+          "layer": "HANGER_HOLE"
+        }
+      ],
+      "csv_labels": [
+        "WU1,BUL,382,720,<,0.72,0.275",
+        "WU1,BUR,382,720,>,0.72,0.275",
+        "WU1,TOP,564,382,>,0.56,0.215",
+        "WU1,BOTTOM,564,382,>,0.56,0.215",
+        "WU1,BACK,600,720,,0,0.432",
+        "WU1,SHELF-1,560,362,>,0.56,0.203",
+        "WU1,WU1-F,597,717,<>^v,2.63,0.428"
+      ],
+      "totals": {
+        "panels_lisp": 6,
+        "fronts": 1,
+        "board_area_m2": 1.616,
+        "front_area_m2": 0.428,
+        "edging_m": 3.128,
+        "edging_front_m": 2.628,
+        "legs": 0,
+        "hinges": 3,
+        "hangers": 2
+      }
+    },
+    {
+      "id": "WUD-B",
+      "description": "Wide wall unit 800x720x400, 2 doors, 2 shelves, door extend +38",
+      "inputs": {
+        "type": "WUD",
+        "width": 800,
+        "height": 720,
+        "depth": 400,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "shelves": 2,
+        "door_extend": true,
+        "hinge": null,
+        "unit_num": "WU2"
+      },
+      "derived": {
+        "doors": 2,
+        "internal_width": 764,
+        "internal_depth": 382,
+        "door_extend_mm": 38,
+        "door_width": 397
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 382,
+          "h": 720,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 0.72
+          },
+          "area_m2": 0.275
+        },
+        {
+          "id": "BUR",
+          "w": 382,
+          "h": 720,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.72
+          },
+          "area_m2": 0.275
+        },
+        {
+          "id": "TOP",
+          "w": 764,
+          "h": 382,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.76
+          },
+          "area_m2": 0.292
+        },
+        {
+          "id": "BOTTOM",
+          "w": 764,
+          "h": 382,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.76
+          },
+          "area_m2": 0.292
+        },
+        {
+          "id": "BACK",
+          "w": 800,
+          "h": 720,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.576
+        },
+        {
+          "id": "SHELF-1",
+          "w": 760,
+          "h": 362,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.76
+          },
+          "area_m2": 0.275
+        },
+        {
+          "id": "SHELF-2",
+          "w": 760,
+          "h": 362,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.76
+          },
+          "area_m2": 0.275
+        },
+        {
+          "id": "WU2-FL",
+          "w": 397,
+          "h": 755,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.3
+          },
+          "area_m2": 0.3
+        },
+        {
+          "id": "WU2-FR",
+          "w": 397,
+          "h": 755,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.3
+          },
+          "area_m2": 0.3
+        }
+      ],
+      "drills": {
+        "hinge_centers": [
+          100,
+          420,
+          620
+        ],
+        "side_hinge_holes_y": [
+          [
+            84,
+            116
+          ],
+          [
+            404,
+            436
+          ],
+          [
+            604,
+            636
+          ]
+        ],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": [
+          "BUL",
+          "BUR"
+        ],
+        "front_cup_y": [
+          138,
+          458,
+          658
+        ],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "shelf_row_y": [
+          246,
+          474
+        ],
+        "shelf_hole_x": [
+          70,
+          312
+        ],
+        "hanger_holes_bul": [
+          [
+            361,
+            667
+          ],
+          [
+            329,
+            667
+          ]
+        ],
+        "hanger_holes_bur": [
+          [
+            21,
+            667
+          ],
+          [
+            53,
+            667
+          ]
+        ],
+        "hanger_hole_d": 5
+      },
+      "back_hanger_cutouts": [
+        {
+          "x1": 0,
+          "y1": 662,
+          "x2": 30,
+          "y2": 720,
+          "layer": "HANGER_HOLE"
+        },
+        {
+          "x1": 770,
+          "y1": 662,
+          "x2": 800,
+          "y2": 720,
+          "layer": "HANGER_HOLE"
+        }
+      ],
+      "csv_labels": [
+        "WU2,BUL,382,720,<,0.72,0.275",
+        "WU2,BUR,382,720,>,0.72,0.275",
+        "WU2,TOP,764,382,>,0.76,0.292",
+        "WU2,BOTTOM,764,382,>,0.76,0.292",
+        "WU2,BACK,800,720,,0,0.576",
+        "WU2,SHELF-1,760,362,>,0.76,0.275",
+        "WU2,SHELF-2,760,362,>,0.76,0.275",
+        "WU2,WU2-FL,397,755,<>^v,2.30,0.300",
+        "WU2,WU2-FR,397,755,<>^v,2.30,0.300"
+      ],
+      "totals": {
+        "panels_lisp": 7,
+        "fronts": 2,
+        "board_area_m2": 2.26,
+        "front_area_m2": 0.599,
+        "edging_m": 4.488,
+        "edging_front_m": 4.608,
+        "legs": 0,
+        "hinges": 6,
+        "hangers": 2
+      }
+    }
+  ],
+  "verify_with_piotr": [
+    "hanger hole pattern 21/53 from the back edge, 53 from the top — confirm vs the hanger hardware in use",
+    "BACK hanger cut-outs 30 x 58 at the very top corners — confirm",
+    "door extend +38 shifts the BOTTOM cup to 138 but keeps top cups measured from the front top — confirm",
+    "hangers hardware qty = 2 per unit — confirm"
+  ]
+}

@@ -259,11 +259,14 @@ test('$EXTMIN / $EXTMAX state the true extents, tabs included', () => {
 });
 
 test('layer table is a machine contract: names and ACI colours are the LISP ones', () => {
-  // createCNCLayers in reference/lisp/SKYLON_COMMON.lsp.
+  // createCNCLayers in reference/lisp/SKYLON_COMMON.lsp, plus the per-kit
+  // layers: createDrawerCNCLayers in KIT_BUDR_FULL.lsp (L482-488) and the
+  // hanger cut-out layer in KIT_WUD_FULL.lsp (L192).
   const expected = {
     OUTLINE: 7, PUZZLE_SOCKET: 1, PUZZLE_DOG_BONES: 2, PUZZLE_HOLES_7_5MM: 3,
     SCREWS_3MM: 4, HINGES_5MM: 5, SHELVES_7_5MM: 6, FRONT_HINGES_35MM: 3,
     FRONT_HINGES_3MM: 30, RUNNERS_3MM: 5, UNIT_NUMBER: 94, CARCASE: 7,
+    DRAWER_RUNNER_POCKET: 1, DRAWER_BOTTOM_POCKET: 2, HANGER_HOLE: 4,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

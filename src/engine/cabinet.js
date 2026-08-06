@@ -5,15 +5,28 @@
 // the formulas — every constant is read from the profile (CLAUDE.md rules 2/3).
 //
 // The maths is traced line-by-line from the production AutoLISP:
-//   reference/lisp/SKYLON_COMMON.lsp     — puzzle joints, hinges, cups, shelves
-//   reference/lisp/KIT_BUD_FULL.lsp      — kitchen base unit
-//   reference/lisp/KIT_WARDROBE_FULL.lsp — wardrobe (drawers, drawer panel, rail)
+//   reference/lisp/SKYLON_COMMON.lsp          — puzzle joints, hinges, cups, shelves
+//   reference/lisp/KIT_BUD_FULL.lsp           — kitchen base unit
+//   reference/lisp/KIT_WARDROBE_FULL.lsp      — wardrobe (drawers, drawer panel, rail)
+//   reference/lisp/KIT_BUDR_FULL.lsp          — 3-drawer base unit (ratio 4:3:2)
+//   reference/lisp/KIT_WUD_FULL.lsp           — wall unit (hangers, door extend)
+//   reference/lisp/KIT_BUDTALL_FULL.lsp       — tall unit
+//   reference/lisp/KIT_LOW_CABINET_FULL.lsp   — low cabinet (rail)
+//   reference/lisp/KIT_SINK.lsp               — sink base (holders, inset back)
+//   reference/lisp/KIT_FRIDGE.lsp             — fridge housing (fixed panel, rails, spurs)
 // and is locked down by fixtures/golden-*.json via test/engine.test.js.
+//
+// The kits are ~86 % the same code. This file is that shared core ONCE; what
+// differs per kit is a flag in engine/types.js, never a second copy of the
+// carcass arithmetic.
 
 import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
+import { legCount, legLayout } from './legs.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
-import { sidePanelGeometry, topPanelGeometry, backPanelGeometry, rectGeometry } from './puzzle.js';
+import {
+  sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
+} from './puzzle.js';
 
 // ─── Hinge centres (SKYLON_COMMON calcHingePositions*) ───
 
@@ -23,6 +36,9 @@ export function hingeCentres(height, rule, profile) {
   switch (rule.mode) {
     case 'base':
       return [end, H - rule.secondFromTop, H - end];
+    case 'sink':
+      // KIT_SINK L323: the top hinge drops 50 mm to clear the front holder.
+      return [end, H - rule.secondFromTop, H - rule.topFromTop];
     case 'tall': {
       const inner = H < rule.sixHingeMinHeight ? rule.innerBelow : rule.innerAtOrAbove;
       const spacing = (H - 2 * end) / (inner + 1);
@@ -58,6 +74,22 @@ export function snapDrawerDepth(usableDepth, steps) {
   return best;
 }
 
+/** AutoLISP (fix (+ x 0.5)) — round half up, truncating. */
+function lispRound(value) {
+  return Math.trunc(Number(value) + 0.5);
+}
+
+/**
+ * The BUDR front stack: heights split by the profile ratio (4:3:2) over the
+ * height left once every gap is taken out. KIT_BUDR_FULL L616-619.
+ */
+export function budrFrontHeights(height, profile) {
+  const B = profile.baseDrawerUnit;
+  const total = B.ratio.reduce((s, r) => s + r, 0);
+  const available = Number(height) - B.ratio.length * B.gap;
+  return B.ratio.map((r) => lispRound((available * r) / total));
+}
+
 // ─── Parameter normalisation ───
 
 function normalizeParams(raw, profile) {
@@ -68,7 +100,7 @@ function normalizeParams(raw, profile) {
   const warnings = [];
 
   let height = Number(p.height) || 0;
-  const minHeight = type.id === 'WARDROBE' ? profile.wardrobe.minHeight : 0;
+  const minHeight = Number(readPath(profile, type.minHeightKey)) || 0;
   if (minHeight && height < minHeight) {
     warnings.push({ code: 'MIN_HEIGHT', message: `${type.label} height raised to the ${minHeight} mm minimum.` });
     height = minHeight;
@@ -81,16 +113,40 @@ function normalizeParams(raw, profile) {
   const drawersFromItems = items.filter((i) => i.kind === 'drawer');
   const hangerFromItems = items.find((i) => i.kind === 'hanger');
 
-  const shelves = items.length ? shelvesFromItems.length : clampInt(p.shelves, 0, 10);
-  const drawers = type.supports.drawers
-    ? (items.length ? drawersFromItems.length : clampInt(p.drawers, 0, profile.wardrobe.drawers.maxCount))
+  const shelves = type.supports.shelves
+    ? (items.length ? shelvesFromItems.length : clampInt(p.shelves, 0, 10))
     : 0;
+
+  // A drawer count that is not a number at all (a word, an object, an array)
+  // used to fall through clampInt as a silent zero. That is a cut list missing
+  // parts with nothing to show for it — it is a warning now (turn-2 audit).
+  // A blank field and an explicit "none" stay silent: they DO mean no drawers.
+  const drawerCountRaw = p.drawers;
+  const drawerCountBad = !items.length && !isDrawerCountUsable(drawerCountRaw);
+  if (drawerCountBad) {
+    warnings.push({
+      code: 'DRAWERS_INVALID',
+      message: `Drawer count "${describeValue(drawerCountRaw)}" is not a number — no drawers were generated.`,
+    });
+  }
+
+  let drawers = 0;
+  if (type.drawerStyle === 'budr') {
+    // KIT_BUDR_FULL is always a three-drawer unit: the ratio IS the stack.
+    drawers = profile.baseDrawerUnit.ratio.length;
+  } else if (type.supports.drawers && !drawerCountBad) {
+    drawers = items.length
+      ? drawersFromItems.length
+      : clampInt(drawerCountRaw, 0, profile.wardrobe.drawers.maxCount);
+  }
 
   // Drawers are stacked bottom-up, so drawer i's height has to belong to the
   // same physical drawer as runner row i and drawer front i. `index` is the
   // authority when the editor supplies it; otherwise array order stands.
   const drawerItems = [...drawersFromItems].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
-  const drawerHeights = resolveDrawerHeights(p, drawers, drawerItems, profile, warnings);
+  const drawerHeights = type.drawerStyle === 'budr'
+    ? budrFrontHeights(height, profile)
+    : resolveDrawerHeights(p, drawers, drawerItems, profile, warnings);
   const rail = type.supports.rail ? (items.length ? Boolean(hangerFromItems) : Boolean(p.rail)) : false;
 
   // Shelves are ordered bottom-up so panel N, drill row N and item N always
@@ -103,7 +159,9 @@ function normalizeParams(raw, profile) {
   // doors: undefined → derive from the width threshold; { count: 0 } / false → none yet
   let doorCount;
   let hinge = (p.hinge || profile.doors.defaultHinge).toUpperCase() === 'R' ? 'R' : 'L';
-  if (p.doors === false || p.doors === 0) {
+  if (!type.supports.doors) {
+    doorCount = 0;                                   // BUDR: the drawer fronts ARE the face
+  } else if (p.doors === false || p.doors === 0) {
     doorCount = 0;
   } else if (p.doors && typeof p.doors === 'object') {
     doorCount = Number.isFinite(Number(p.doors.count)) ? Number(p.doors.count) : doorCountFor(p.width, profile);
@@ -111,6 +169,16 @@ function normalizeParams(raw, profile) {
   } else {
     doorCount = doorCountFor(p.width, profile);
   }
+
+  // Wall units may run their fronts below the carcass (handleless grab edge).
+  // `true` means "the standard extend"; a number overrides it.
+  let doorExtend = 0;
+  if (type.doorExtend) {
+    if (p.door_extend === true) doorExtend = profile.wallUnit.doorExtend;
+    else if (Number.isFinite(Number(p.door_extend)) && Number(p.door_extend) > 0) doorExtend = Number(p.door_extend);
+  }
+
+  const railDefault = readPath(profile, `${type.defaultsKey}.railOffset`) ?? profile.wardrobe.defaults.railOffset;
 
   return {
     type,
@@ -123,6 +191,7 @@ function normalizeParams(raw, profile) {
     unitNum: p.unit_num == null ? '01' : String(p.unit_num),
     hinge,
     doorCount,
+    doorExtend,
     shelves,
     shelfItems,
     shelfPositions,
@@ -130,10 +199,38 @@ function normalizeParams(raw, profile) {
     drawerItems,
     drawerHeights,
     rail,
-    railOffset: Number(p.rail_offset ?? profile.wardrobe.defaults.railOffset),
+    railOffset: Number(p.rail_offset ?? railDefault),
+    fridgeH: Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
+    mountHeight: Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
     items,
     warnings,
   };
+}
+
+/**
+ * Is this drawer count something the engine can act on?
+ * A number, a numeric string, or one of the ways of saying "none". An array or
+ * an object is NOT usable even when Number() happens to coerce it ([2] → 2):
+ * the caller meant something the engine does not model, and turning that into
+ * a silent drawer count is how a stack goes missing from a cut list.
+ */
+function isDrawerCountUsable(v) {
+  if (v == null || v === false || v === 0) return true;
+  if (typeof v === 'number') return Number.isFinite(v);
+  if (typeof v === 'string') return v.trim() === '' || Number.isFinite(Number(v));
+  return false;
+}
+
+/** Resolve a dotted profile path, tolerating a missing key. */
+function readPath(profile, path) {
+  if (!path) return undefined;
+  return path.split('.').reduce((acc, key) => (acc == null ? acc : acc[key]), profile);
+}
+
+function describeValue(v) {
+  if (Array.isArray(v)) return `[${v.join(', ')}]`;
+  if (v && typeof v === 'object') return JSON.stringify(v);
+  return String(v);
 }
 
 /**
@@ -198,6 +295,13 @@ function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, m
   };
 }
 
+/** A plain part with straight machining grooves (drawer box sides). */
+function pocketedRect(w, h, pockets) {
+  const geom = rectGeometry(w, h);
+  geom.pockets = pockets;
+  return geom;
+}
+
 // ─── Main entry point ───
 
 /**
@@ -215,6 +319,9 @@ export function computeCabinet(params, profileOverride) {
   const { width: W, height: H, depth: D, G, frontT, type, unitNum } = cfg;
   const C = P.carcass;
   const codes = P.csv.codes;
+  const pz = P.puzzle;
+  const hasTopPanel = type.carcass.top === 'panel';
+  const backStyle = type.carcass.back;
 
   // ── Carcass geometry ───────────────────────────────────────────────────────
   const internalWidth = W - C.topWidthBoards * G;
@@ -226,11 +333,15 @@ export function computeCabinet(params, profileOverride) {
   const backW = W;
   const backH = H;
   const shelfW = W - C.shelfWidthBoards * G - C.shelfWidthClearance;
-  const shelfH = D - C.shelfDepthBoards * G - C.shelfDepthClearance;
+  // The sink's back panel sits 50 mm forward INSIDE the carcass, so its shelves
+  // lose that much depth plus the panel itself (KIT_SINK L425-426).
+  const SK = P.sinkUnit;
+  const shelfH = D - C.shelfDepthBoards * G - C.shelfDepthClearance
+    - (backStyle === 'inset' ? SK.backSetback + G : 0);
 
   // ── Doors ──────────────────────────────────────────────────────────────────
   const doorCount = cfg.doorCount;
-  const frontH = H - P.doors.gap;
+  const frontH = H - P.doors.gap + cfg.doorExtend;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
     : W - P.doors.gap;
@@ -240,14 +351,19 @@ export function computeCabinet(params, profileOverride) {
   const hingeRule = P.hinges.rules[type.hingeRule] || P.hinges.rules.base;
   const centres = hingeCentres(H, hingeRule, P);
   const cupOffsets = P.hinges.cups.baseOffsets;
-  const cupY = type.cupRule === 'hingeCentres'
-    ? [...centres]
-    : [cupOffsets.bottom, frontH - cupOffsets.upperFromTop, frontH - cupOffsets.topFromTop];
+  const sinkCups = P.hinges.cups.sinkOffsets;
+  let cupY;
+  if (type.cupRule === 'hingeCentres') cupY = [...centres];
+  else if (type.cupRule === 'sinkOffsets') cupY = [sinkCups.bottom, frontH - sinkCups.upperFromTop, frontH - sinkCups.topFromTop];
+  // A wall unit whose front runs below the carcass keeps the bottom cup the
+  // same distance from the CARCASS base, so it moves up the taller front.
+  else cupY = [cupOffsets.bottom + cfg.doorExtend, frontH - cupOffsets.upperFromTop, frontH - cupOffsets.topFromTop];
 
-  // ── Wardrobe drawers ───────────────────────────────────────────────────────
+  // ── Wardrobe drawers (internal, behind the doors) ──────────────────────────
   const DR = P.wardrobe.drawers;
   const DP = P.wardrobe.drawerPanel;
-  let hasDrawers = type.supports.drawers && cfg.drawers > 0;
+  const wardrobeDrawers = type.drawerStyle === 'wardrobe';
+  let hasDrawers = wardrobeDrawers && cfg.drawers > 0;
   let numDrawers = hasDrawers ? cfg.drawers : 0;
   let numDrPanels = 0;
   let dpLeft = false;
@@ -304,8 +420,8 @@ export function computeCabinet(params, profileOverride) {
     bottomW = boxFrontLen + DR.bottomOversize;
     bottomD = szufDl;
 
-    // Cumulative offsets ARE the generalisation: every "i × (frontHeight + gap)"
-    // in the LISP becomes "sum of the drawers below me, plus their gaps".
+    // Cumulative offsets ARE the generalisation: every "i × (frontHeight +
+    // gap)" in the LISP becomes "sum of the drawers below me, plus their gaps".
     let acc = 0;
     for (let i = 0; i < numDrawers; i += 1) {
       zoneOffsets.push(acc);
@@ -321,9 +437,45 @@ export function computeCabinet(params, profileOverride) {
       runnerRowsDp.push(rel);
       runnerRowsCarcass.push(G + rel);
     }
-  } else {
+  } else if (wardrobeDrawers) {
     numDrawers = 0; numDrPanels = 0; dpLeft = false; dpRight = false; drawerReduction = 0;
     drawerHeights = []; zoneOffsets = []; boxSideH = []; boxFrontHs = [];
+  }
+
+  // ── BUDR drawers (three fronts covering the whole face) ────────────────────
+  const B = P.baseDrawerUnit;
+  const budrDrawers = type.drawerStyle === 'budr';
+  let budr = null;
+  if (budrDrawers) {
+    const heights = cfg.drawerHeights;
+    const maxDl = D - G - B.depthAllowance;
+    const depth = snapDrawerDepth(maxDl, DR.depthSteps) ?? DR.depthSteps[0];
+    if (maxDl < DR.depthSteps[0]) {
+      warnings.push({
+        code: 'DRAWERS_TOO_SHALLOW',
+        message: `Cabinet too shallow for drawers (usable ${roundTo(maxDl, 1)} mm < ${DR.depthSteps[0]} mm) — the shortest runner is used.`,
+      });
+    }
+    const boxW = internalWidth - B.boxWidthClearance;
+    const frontWidth = W - B.frontWidthDeduction;
+    const sideHs = heights.map((h) => lispRound(h * B.sideRatio));
+    const boxFrontH = sideHs.map((s) => s - B.boxFrontHeightDeduction - G - B.boxFrontHeightExtra);
+    const boxLen = W - B.boxFrontBoards * G - B.boxFrontClearance;
+    // Front i's base above the carcass floor: the fronts overlay the base panel,
+    // so front 1 starts at 0 while its RUNNER row still clears the base by G
+    // (KIT_BUDR_FULL L712-714).
+    const frontY = [];
+    let acc = 0;
+    for (const h of heights) { frontY.push(acc); acc += h + B.gap; }
+    const runnerRows = frontY.map((y, i) => (i === 0 ? G : y) + B.firstRowFromBottom);
+    budr = {
+      heights, frontY, runnerRows, sideHs, boxFrontH,
+      depth, maxDl, boxW, frontWidth, boxLen,
+      bottomW: boxLen + B.bottomOversize,
+      count: heights.length,
+      stackTop: acc - B.gap,
+    };
+    numDrawers = heights.length;
   }
 
   // ── Hanging rail ───────────────────────────────────────────────────────────
@@ -339,6 +491,33 @@ export function computeCabinet(params, profileOverride) {
       railPartY = railY + RL.partitionAbove;
     }
     railPartCentreY = railPartY + G / 2;
+  }
+
+  // ── Sink / fridge zones ────────────────────────────────────────────────────
+  const sinkBack = backStyle === 'inset'
+    ? { w: W - C.topWidthBoards * G - SK.backWidthClearance, h: H - SK.backHeightDeduction - G }
+    : null;
+  const FR = P.fridgeUnit;
+  const fridge = backStyle === 'rails'
+    ? (() => {
+      const fixedPanelY = G + cfg.fridgeH;
+      const spursH = H - fixedPanelY - G;
+      return {
+        fixedPanelY,
+        spursH,
+        railH: FR.railHeight,
+        rail2Y: cfg.fridgeH / 2,
+        backTopH: spursH + G,
+        spursW: internalWidth - FR.spursWidthClearance,
+        spursPanelH: spursH - G,
+      };
+    })()
+    : null;
+  if (fridge && fridge.spursH <= G) {
+    warnings.push({
+      code: 'FRIDGE_ZONE_TOO_TALL',
+      message: `Fridge height ${roundTo(cfg.fridgeH, 0)} mm leaves no room for the spurs panel — lower it or raise the carcass.`,
+    });
   }
 
   // ── Shelf hole rows ────────────────────────────────────────────────────────
@@ -357,43 +536,152 @@ export function computeCabinet(params, profileOverride) {
     const spacing = (zoneTop - zoneBottom) / (numShelves + 1);
     for (let i = 1; i <= numShelves; i += 1) shelfRows.push(zoneBottom + spacing * i);
   }
-  const shelfHoleX = [SH.columnFromEdge, sideW - SH.columnFromEdge];
+  // The sink's back pin column moves forward — its back panel is inside the box.
+  const shelfBackColumn = backStyle === 'inset' ? SK.shelfBackColumnFromEdge : SH.columnFromEdge;
+  const shelfHoleX = [SH.columnFromEdge, sideW - shelfBackColumn];
 
   // ── Panels ─────────────────────────────────────────────────────────────────
   const panels = [];
-  const pz = P.puzzle;
+  // KIT_SINK's sides are the shared side panel with the joints it does not have
+  // switched off: no back tabs (the back is screwed in, 50 mm forward), no top
+  // sockets and no top screw row (there is no TOP panel, just two holders).
+  const sideEdges = backStyle === 'inset'
+    ? { backTabs: false, topSocket: false, topScrews: false }
+    : undefined;
 
   panels.push(panel({
     id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.left, edgeLen: metres(sideH),
     box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz }) },
+    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges }) },
   }));
   panels.push(panel({
     id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.right, edgeLen: metres(sideH),
     box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz }) },
+    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges }) },
   }));
-  const topGeom = () => ({ rotated: true, drawn_w: topH, drawn_h: topW, ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz }) });
-  panels.push(panel({
-    id: 'TOP', part: 'TOP', role: 'top', w: topW, h: topH, thickness: G,
-    edgeCode: codes.right, edgeLen: metres(topW),
-    box: { x: G, y: H - G, z: G, w: topW, h: G, d: topH },
-    cnc: topGeom(),
-  }));
+  const topGeom = (backTabs = true) => ({
+    rotated: true, drawn_w: topH, drawn_h: topW,
+    ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs }),
+  });
+  if (hasTopPanel) {
+    panels.push(panel({
+      id: 'TOP', part: 'TOP', role: 'top', w: topW, h: topH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(topW),
+      box: { x: G, y: H - G, z: G, w: topW, h: G, d: topH },
+      cnc: topGeom(),
+    }));
+  }
   panels.push(panel({
     id: 'BOTTOM', part: 'BOTTOM', role: 'bottom', w: topW, h: topH, thickness: G,
     edgeCode: codes.right, edgeLen: metres(topW),
     box: { x: G, y: 0, z: G, w: topW, h: G, d: topH },
-    cnc: topGeom(),
+    cnc: topGeom(backStyle !== 'inset'),
   }));
-  panels.push(panel({
-    id: 'BACK', part: 'BACK', role: 'back', w: backW, h: backH, thickness: G,
-    edgeCode: codes.none, edgeLen: 0,
-    box: { x: 0, y: 0, z: 0, w: backW, h: backH, d: G },
-    cnc: { rotated: false, drawn_w: backW, drawn_h: backH, ...backPanelGeometry({ w: backW, h: backH, G, puzzle: pz }) },
-  }));
+
+  if (backStyle === 'full') {
+    const backCnc = { rotated: false, drawn_w: backW, drawn_h: backH, ...backPanelGeometry({ w: backW, h: backH, G, puzzle: pz }) };
+    if (type.hangers) {
+      // Two cut-outs at the top corners take the wall bracket (KIT_WUD L258-260).
+      const HG = P.wallUnit.hangers;
+      backCnc.pockets = [
+        ...backCnc.pockets,
+        { layer: HG.cutoutLayer, x1: 0, y1: backH - HG.cutoutHeight, x2: HG.cutoutWidth, y2: backH },
+        { layer: HG.cutoutLayer, x1: backW - HG.cutoutWidth, y1: backH - HG.cutoutHeight, x2: backW, y2: backH },
+      ];
+    }
+    panels.push(panel({
+      id: 'BACK', part: 'BACK', role: 'back', w: backW, h: backH, thickness: G,
+      edgeCode: codes.none, edgeLen: 0,
+      box: { x: 0, y: 0, z: 0, w: backW, h: backH, d: G },
+      cnc: backCnc,
+    }));
+  }
+
+  // Sink: the TOP is replaced by two holders on edge, and the back moves inside.
+  if (backStyle === 'inset') {
+    panels.push(panel({
+      id: 'BACK', part: 'BACK', role: 'back', w: sinkBack.w, h: sinkBack.h, thickness: G,
+      edgeCode: codes.none, edgeLen: 0,
+      box: { x: G + C.shelfWidthClearance / 2, y: G, z: D - SK.backSetback - G, w: sinkBack.w, h: sinkBack.h, d: G },
+      cnc: rectGeometry(sinkBack.w, sinkBack.h),
+    }));
+  }
+  if (type.carcass.top === 'holders') {
+    const holderH = SK.railHeight;
+    for (const [id, label, z] of [['HOLDER-F', 'F', G], ['HOLDER-B', 'B', D - G - G]]) {
+      panels.push(panel({
+        id, part: 'HOLDER', role: 'top', w: holderH, h: internalWidth, thickness: G,
+        edgeCode: codes.none, edgeLen: 0,
+        box: { x: G, y: H - holderH, z, w: internalWidth, h: holderH, d: G },
+        cnc: rectGeometry(holderH, internalWidth),
+        meta: { side: label },
+      }));
+    }
+  }
+
+  // Fridge: fixed panel, two back rails, back-top and the spurs panel.
+  if (fridge) {
+    panels.push(panel({
+      id: 'FIXED', part: 'FIXED', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(internalWidth),
+      box: { x: G, y: fridge.fixedPanelY, z: G, w: internalWidth, h: G, d: internalDepth },
+      cnc: rectGeometry(internalDepth, internalWidth),
+    }));
+    const railSockets = (withBottom) => ({
+      bottom: [pz.tabCentresFromEnd],
+      top: [pz.tabCentresFromEnd],
+      ...(withBottom ? { left: [G + pz.tabCentresFromEnd, W - G - pz.tabCentresFromEnd] } : {}),
+    });
+    const railCnc = (withBottom) => ({
+      rotated: true, drawn_w: fridge.railH, drawn_h: W,
+      ...socketPanelGeometry({ w: fridge.railH, h: W, G, puzzle: pz, sockets: railSockets(withBottom) }),
+    });
+    panels.push(panel({
+      id: 'RAIL1', part: 'BACK-RAIL', role: 'back', w: W, h: fridge.railH, thickness: G,
+      edgeCode: codes.none, edgeLen: 0,
+      box: { x: 0, y: G, z: 0, w: W, h: fridge.railH, d: G },
+      cnc: railCnc(true),
+      meta: { index: 1 },
+    }));
+    panels.push(panel({
+      id: 'RAIL2', part: 'BACK-RAIL', role: 'back', w: W, h: fridge.railH, thickness: G,
+      edgeCode: codes.none, edgeLen: 0,
+      box: { x: 0, y: G + fridge.rail2Y - fridge.railH / 2, z: 0, w: W, h: fridge.railH, d: G },
+      cnc: railCnc(false),
+      meta: { index: 2 },
+    }));
+    const S = G / 2 + pz.centrelineExtra;
+    const backTopScrews = [
+      { x: pz.screwFromEnd, y: S }, { x: pz.screwFromEnd, y: W - S },
+      { x: fridge.backTopH - pz.screwFromEnd, y: S }, { x: fridge.backTopH - pz.screwFromEnd, y: W - S },
+      { x: fridge.backTopH - S, y: pz.screwFromEnd + G }, { x: fridge.backTopH - S, y: W - pz.screwFromEnd - G },
+      { x: G / 2, y: pz.screwFromEnd + G }, { x: G / 2, y: W / 2 }, { x: G / 2, y: W - pz.screwFromEnd - G },
+    ];
+    panels.push(panel({
+      id: 'BACK', part: 'BACK', role: 'back', w: W, h: fridge.backTopH, thickness: G,
+      edgeCode: codes.none, edgeLen: 0,
+      box: { x: 0, y: fridge.fixedPanelY, z: 0, w: W, h: fridge.backTopH, d: G },
+      cnc: {
+        rotated: true, drawn_w: fridge.backTopH, drawn_h: W,
+        ...socketPanelGeometry({
+          w: fridge.backTopH, h: W, G, puzzle: pz,
+          sockets: {
+            bottom: [pz.tabCentresFromEnd], top: [pz.tabCentresFromEnd],
+            right: [G + pz.tabCentresFromEnd, W - G - pz.tabCentresFromEnd],
+          },
+          screws: backTopScrews,
+        }),
+      },
+    }));
+    panels.push(panel({
+      id: 'SPURS', part: 'SPURS', role: 'side', w: fridge.spursW, h: fridge.spursPanelH, thickness: G,
+      edgeCode: codes.none, edgeLen: 0,
+      box: { x: G + FR.spursWidthClearance / 2, y: fridge.fixedPanelY + G, z: D - FR.spursFromFront - G, w: fridge.spursW, h: fridge.spursPanelH, d: G },
+      cnc: rectGeometry(fridge.spursPanelH, fridge.spursW),
+    }));
+  }
 
   for (let i = 1; i <= numShelves; i += 1) {
     const y = shelfRows[i - 1] ?? (G + ((H - 2 * G) / (numShelves + 1)) * i);
@@ -467,19 +755,19 @@ export function computeCabinet(params, profileOverride) {
     const boxZFront = D - boxSetback;
     for (let i = 1; i <= numDrawers; i += 1) {
       const zoneY = G + zoneOffsets[i - 1];
-      const sideH = boxSideH[i - 1];
+      const sideHeight = boxSideH[i - 1];
       const bfH = boxFrontHs[i - 1];
       const boxY = zoneY + P.wardrobe.runners.firstRowFromBottom - DR.boxDropFromRunner;
       const common = { thickness: DR.boxSideThickness, edgeCode: codes.none, edgeLen: 0 };
       panels.push(panel({
-        id: `D${i}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideH, ...common,
-        box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideH, d: szufDl },
-        cnc: rectGeometry(szufDl, sideH), meta: { drawer: i },
+        id: `D${i}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
+        box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
+        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i },
       }));
       panels.push(panel({
-        id: `D${i}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideH, ...common,
-        box: { x: boxLeftX + szufSzer - DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideH, d: szufDl },
-        cnc: rectGeometry(szufDl, sideH), meta: { drawer: i },
+        id: `D${i}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
+        box: { x: boxLeftX + szufSzer - DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
+        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i },
       }));
       panels.push(panel({
         id: `D${i}-BF`, part: 'DRAWER-BOX-FRONT', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
@@ -514,26 +802,107 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // BUDR: parts grouped by kind (all sides, then all box fronts/backs, then all
+  // bottoms, then the fronts) — the order KIT_BUDR_FULL lays out and writes.
+  if (budr) {
+    const common = { thickness: DR.boxSideThickness, edgeCode: codes.none, edgeLen: 0 };
+    const boxLeftX = G + B.boxWidthClearance / 2;
+    const boxZFront = D - frontT;
+    const sidePockets = (len) => [
+      { layer: 'DRAWER_RUNNER_POCKET', x1: 0, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth, y2: len + B.pocketOvershoot },
+      { layer: 'DRAWER_BOTTOM_POCKET', x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot },
+    ];
+    for (let i = 1; i <= budr.count; i += 1) {
+      const sh = budr.sideHs[i - 1];
+      const boxY = budr.runnerRows[i - 1];
+      for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - DR.boxSideThickness]]) {
+        panels.push(panel({
+          id: `D${i}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
+          box: { x, y: boxY, z: boxZFront - budr.depth, w: DR.boxSideThickness, h: sh, d: budr.depth },
+          // Drawn rotated: the LISP lays the side out running along the height.
+          cnc: { rotated: true, drawn_w: sh, drawn_h: budr.depth, ...pocketedRect(sh, budr.depth, sidePockets(budr.depth)) },
+          meta: { drawer: i, side: suffix === 'SL' ? 'L' : 'R' },
+        }));
+      }
+    }
+    for (let i = 1; i <= budr.count; i += 1) {
+      const bfH = budr.boxFrontH[i - 1];
+      const boxY = budr.runnerRows[i - 1];
+      for (const suffix of ['BF', 'BB']) {
+        const isFront = suffix === 'BF';
+        const geom = { rotated: true, drawn_w: bfH, drawn_h: budr.boxLen, ...rectGeometry(bfH, budr.boxLen) };
+        if (isFront) {
+          geom.holes = [
+            { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: B.boxScrewFromEdge, d: pz.screwDiameter },
+            { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: budr.boxLen - B.boxScrewFromEdge, d: pz.screwDiameter },
+          ];
+        }
+        panels.push(panel({
+          id: `D${i}-${suffix}`, part: isFront ? 'DRAWER-BOX-FRONT' : 'DRAWER-BOX-BACK', role: 'drawer_box',
+          w: budr.boxLen, h: bfH, ...common,
+          box: {
+            x: boxLeftX + DR.boxSideThickness, y: boxY,
+            z: isFront ? boxZFront - G : boxZFront - budr.depth,
+            w: budr.boxLen, h: bfH, d: G,
+          },
+          cnc: geom,
+          meta: { drawer: i },
+        }));
+      }
+    }
+    for (let i = 1; i <= budr.count; i += 1) {
+      const boxY = budr.runnerRows[i - 1];
+      const geom = rectGeometry(budr.bottomW, budr.depth);
+      geom.holes = [];
+      for (const x of [B.bottomScrewFromSide, budr.bottomW - B.bottomScrewFromSide]) {
+        for (const y of [B.bottomScrewFromEnd, budr.depth - B.bottomScrewFromEnd]) {
+          geom.holes.push({ layer: pz.layers.screw, kind: 'screw', x, y, d: pz.screwDiameter });
+        }
+      }
+      panels.push(panel({
+        id: `D${i}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: budr.bottomW, h: budr.depth, ...common,
+        box: { x: boxLeftX, y: boxY, z: boxZFront - budr.depth, w: budr.bottomW, h: G, d: budr.depth },
+        cnc: geom, meta: { drawer: i },
+      }));
+    }
+    for (let i = 1; i <= budr.count; i += 1) {
+      const fh = budr.heights[i - 1];
+      const geom = rectGeometry(budr.frontWidth, fh);
+      const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0);
+      const screwX = B.frontScrewFromSide + 2 * G + B.frontScrewExtra;
+      geom.holes = [screwX, budr.frontWidth - screwX].map((x) => ({
+        layer: B.frontScrewLayer, kind: 'front_screw', x, y: screwY, d: B.frontScrewDiameter,
+      }));
+      panels.push(panel({
+        id: `${unitNum}-F${i}`, part: 'DRAWER-FRONT', role: 'front', w: budr.frontWidth, h: fh, thickness: frontT,
+        edgeCode: codes.all, edgeLen: metres(2 * budr.frontWidth + 2 * fh),
+        box: { x: B.frontWidthDeduction / 2, y: budr.frontY[i - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
+        cnc: geom, meta: { drawer: i },
+      }));
+    }
+  }
+
   // Door fronts, always last (they close the unit — SPEC 4.10)
   const doorZ = D + P.doors.gap;
+  const doorY = -cfg.doorExtend;      // a wall-unit front may run below the box
   if (doorCount === 1) {
     panels.push(panel({
       id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
-      box: { x: P.doors.gap / 2, y: 0, z: doorZ, w: frontW, h: frontH, d: frontT },
+      box: { x: P.doors.gap / 2, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
       cnc: rectGeometry(frontW, frontH), meta: { hinge: cfg.hinge, frontType: cfg.frontType },
     }));
   } else if (doorCount === 2) {
     panels.push(panel({
       id: `${unitNum}-FL`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
-      box: { x: P.doors.gap / 2, y: 0, z: doorZ, w: frontW, h: frontH, d: frontT },
+      box: { x: P.doors.gap / 2, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
       cnc: rectGeometry(frontW, frontH), meta: { hinge: 'L', frontType: cfg.frontType },
     }));
     panels.push(panel({
       id: `${unitNum}-FR`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
-      box: { x: W - P.doors.gap / 2 - frontW, y: 0, z: doorZ, w: frontW, h: frontH, d: frontT },
+      box: { x: W - P.doors.gap / 2 - frontW, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
       cnc: rectGeometry(frontW, frontH), meta: { hinge: 'R', frontType: cfg.frontType },
     }));
   }
@@ -542,7 +911,7 @@ export function computeCabinet(params, profileOverride) {
   const drills = [];
   const addDrill = (panelId, kind, layer, x, y, d) => drills.push({ panel: panelId, kind, layer, x: roundTo(x, 4), y: roundTo(y, 4), d });
 
-  // Puzzle sockets/screws already computed with the outlines
+  // Puzzle sockets/screws and every hole a panel already carries
   for (const pnl of panels) {
     for (const hole of pnl.cnc?.holes || []) addDrill(pnl.id, hole.kind, hole.layer, hole.x, hole.y, hole.d);
   }
@@ -624,6 +993,58 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // BUDR: runners on BOTH carcass sides — there is no drawer panel and no door.
+  if (budr) {
+    runnerCarcassSide = 'both';
+    for (const sideId of ['BUL', 'BUR']) {
+      for (const rowY of budr.runnerRows) {
+        for (const px of RN.holeXPattern) {
+          const x = sideId === 'BUR' ? sideW - px : px;
+          addDrill(sideId, 'runner', RN.layer, x, rowY, RN.holeDiameter);
+        }
+      }
+    }
+  }
+
+  // Wall-unit hangers: two holes per side panel, measured off the back edge.
+  if (type.hangers) {
+    const HG = P.wallUnit.hangers;
+    for (const fromBack of HG.fromBackEdge) {
+      addDrill('BUL', 'hanger', HG.layer, sideW - fromBack, H - HG.fromTop, HG.holeDiameter);
+      addDrill('BUR', 'hanger', HG.layer, fromBack, H - HG.fromTop, HG.holeDiameter);
+    }
+  }
+
+  // Sink: holder screws at the top, back-panel screws down the middle.
+  if (backStyle === 'inset') {
+    for (const sideId of ['BUL', 'BUR']) {
+      for (const x of [G / 2, sideW - G / 2]) {
+        for (const fromTop of SK.holderScrewFromTop) {
+          addDrill(sideId, 'holder_screw', pz.layers.screw, x, H - fromTop, pz.screwDiameter);
+        }
+      }
+      const backX = sideId === 'BUR' ? SK.backScrewFromBackEdge : sideW - SK.backScrewFromBackEdge;
+      for (const y of [SK.backScrewFromEnd, H / 2, H - SK.backScrewFromEnd]) {
+        addDrill(sideId, 'back_screw', pz.layers.screw, backX, y, pz.screwDiameter);
+      }
+    }
+  }
+
+  // Fridge: spurs blocks and the fixed panel, both screwed to the sides.
+  if (fridge) {
+    for (const sideId of ['BUL', 'BUR']) {
+      const blockX = FR.blockScrewFromFront + FR.blockSize / 2 + G;
+      const x = sideId === 'BUR' ? sideW - blockX : blockX;
+      for (const off of FR.blockScrewOffsets) {
+        addDrill(sideId, 'block_screw', pz.layers.screw, x, fridge.fixedPanelY + G + off, pz.screwDiameter);
+      }
+      addDrill(sideId, 'block_screw', pz.layers.screw, x, H - FR.blockScrewFromTop, pz.screwDiameter);
+      for (const fx of [FR.fixedScrewFromEnd, sideW - FR.fixedScrewFromEnd]) {
+        addDrill(sideId, 'fixed_screw', pz.layers.screw, fx, fridge.fixedPanelY + G / 2, pz.screwDiameter);
+      }
+    }
+  }
+
   // Rail bracket + rail partitioner fixings
   if (hasRail) {
     for (const sideId of ['BUL', 'BUR']) {
@@ -632,8 +1053,10 @@ export function computeCabinet(params, profileOverride) {
         addDrill(sideId, 'rail_partition_screw', pz.layers.screw, x, railPartCentreY, RL.bracketScrewDiameter);
       }
     }
-    for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
-      addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, railPartCentreY, RL.bracketScrewDiameter);
+    if (backStyle === 'full') {
+      for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
+        addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, railPartCentreY, RL.bracketScrewDiameter);
+      }
     }
   }
 
@@ -642,23 +1065,31 @@ export function computeCabinet(params, profileOverride) {
   const frontPanels = panels.filter((x) => x.material_role === 'front');
   const drawerFrontCount = panels.filter((x) => x.part === 'DRAWER-FRONT').length;
   const doorFrontCount = panels.filter((x) => x.part === 'FRONT').length;
-  const railPartCount = hasRail ? 1 : 0;
+  // The wardrobe kit leaves RAIL-PART out of its panel count; KIT_LOW_CABINET
+  // counts it (L464-465). Per-type, because the kits genuinely disagree.
+  const railPartCount = hasRail && !type.countsRailPartInPanels ? 1 : 0;
 
   const boardArea = boardPanels.reduce((s, x) => s + x.area_m2, 0);
   const frontArea = frontPanels.reduce((s, x) => s + x.area_m2, 0);
   const boardEdging = boardPanels.reduce((s, x) => s + x.edging.len_m, 0);
   const frontEdging = frontPanels.reduce((s, x) => s + x.edging.len_m, 0);
 
-  const legsPerUnit = type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legsPerUnit : P.baseUnit.legsPerUnit) : 0;
   const legHeight = type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legHeight : P.baseUnit.legHeight) : 0;
+  const legsPerUnit = type.legs ? legCount(W, P) : 0;
+  const legs = type.legs ? legLayout({ width: W, depth: D, boardT: G, height: legHeight }, P) : null;
+
+  // Which fronts a kit folds into its panel count differs by kit, so the type
+  // says so. The invariant that DOES hold everywhere: panels_lisp + fronts
+  // covers every cut piece the kit knowingly counts.
+  const drawerFrontsInPanels = type.countsDrawerFrontsInPanels === false ? 0 : drawerFrontCount;
 
   const totals = {
     // LISP totalPanels convention: carcass + interior + drawer fronts,
     // door fronts counted separately, RAIL-PART not counted at all.
-    panels_lisp: boardPanels.length - railPartCount + drawerFrontCount,
-    panels_true_incl_railpart: boardPanels.length + drawerFrontCount,
+    panels_lisp: boardPanels.length - railPartCount + drawerFrontsInPanels,
+    panels_true_incl_railpart: boardPanels.length + drawerFrontsInPanels,
     pieces_total: panels.length,
-    fronts: doorFrontCount,
+    fronts: doorFrontCount + (drawerFrontCount - drawerFrontsInPanels),
     board_area_m2: roundTo(boardArea, 6),
     front_area_m2: roundTo(frontArea, 6),
     area_m2: roundTo(boardArea + frontArea, 6),
@@ -668,6 +1099,8 @@ export function computeCabinet(params, profileOverride) {
     legs: legsPerUnit,
     hinges: doorCount > 0 ? centres.length * doorCount : 0,
     runner_pairs: numDrawers,
+    hangers: type.hangers ? P.wallUnit.hangers.count : 0,
+    rail: hasRail ? 1 : 0,
   };
 
   // ── Hardware ───────────────────────────────────────────────────────────────
@@ -682,17 +1115,21 @@ export function computeCabinet(params, profileOverride) {
     hardware.push({ role, label, qty, unit, spec, spec_label: specLabel });
   };
 
+  const runnerLength = budr ? budr.depth : szufDl;
   hw('hinges', 'Hinges', totals.hinges, 'pcs',
     { per_door: centres.length, doors: doorCount, cup_diameter_mm: cups.diameter },
     doorCount > 0 ? `${centres.length} per door × ${doorCount}` : '');
   hw('runner_pairs', 'Drawer runners', numDrawers, 'pairs',
-    { length_mm: szufDl }, szufDl ? `${roundTo(szufDl, 0)} mm` : '');
+    { length_mm: runnerLength }, runnerLength ? `${roundTo(runnerLength, 0)} mm` : '');
   hw('legs', 'Legs', legsPerUnit, 'pcs',
-    { height_mm: legHeight }, legHeight ? `${roundTo(legHeight, 0)} mm` : '');
+    { height_mm: legHeight, corners: P.legs.cornerCount, centre: legsPerUnit > P.legs.cornerCount },
+    legHeight ? `${roundTo(legHeight, 0)} mm` : '');
   hw('rail', 'Hanging rail', hasRail ? 1 : 0, 'pcs',
     { length_mm: internalWidth }, `${roundTo(internalWidth, 0)} mm`);
   hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',
     { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
+  hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
+    { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
 
   // ── Derived (key names match the golden fixtures) ──────────────────────────
   const derived = {
@@ -700,6 +1137,7 @@ export function computeCabinet(params, profileOverride) {
     internal_width: internalWidth,
     internal_depth: internalDepth,
     ...(doorCount === 2 ? { door_width: frontW } : {}),
+    ...(cfg.doorExtend ? { door_extend_mm: cfg.doorExtend } : (type.doorExtend ? { door_extend_mm: 0 } : {})),
     ...(hasDrawers ? {
       numDrPanels,
       dp_side: numDrPanels === 1 ? (dpLeft ? 'L' : 'R') : 'LR',
@@ -724,12 +1162,36 @@ export function computeCabinet(params, profileOverride) {
       drawer_box_side_h: [...boxSideH],
       drawer_box_front_h: [...boxFrontHs],
     } : {}),
+    ...(budr ? {
+      available_h: H - B.ratio.length * B.gap,
+      front_heights: [...budr.heights],
+      szufMaxDl: budr.maxDl,
+      szufDl: budr.depth,
+      szufSzer: budr.boxW,
+      drawer_front_w: budr.frontWidth,
+      boxFrontLen: budr.boxLen,
+      drawer_box_side_h: [...budr.sideHs],
+      drawer_box_front_h: [...budr.boxFrontH],
+      bottom_w: budr.bottomW,
+      bottom_d: budr.depth,
+      drawer_front_y: [...budr.frontY],
+      drawer_heights: [...budr.heights],
+    } : {}),
     ...(hasRail ? { rail_y: railY, rail_partition_y: railPartY } : {}),
+    ...(sinkBack ? { back_w: sinkBack.w, back_h: sinkBack.h, holder_w: internalWidth, holder_h: SK.railHeight } : {}),
+    ...(fridge ? {
+      fixed_panel_y: fridge.fixedPanelY,
+      spurs_zone_h: fridge.spursH,
+      back_top_w: W,
+      back_top_h: fridge.backTopH,
+      spurs_w: fridge.spursW,
+      spurs_h: fridge.spursPanelH,
+    } : {}),
   };
 
   const drillSummary = {
-    hinge_centers: centres.map((v) => roundTo(v, 4)),
-    side_hinge_holes_y: hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))),
+    hinge_centers: doorCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
+    side_hinge_holes_y: doorCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
     hinged_sides: hingedSides,
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
@@ -738,17 +1200,67 @@ export function computeCabinet(params, profileOverride) {
     shelf_cluster_y: shelfRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row + dy, 4))),
     shelf_hole_x: shelfHoleX,
     runner_rows_dp_y: runnerRowsDp,
-    runner_rows_carcass_y: runnerRowsCarcass,
+    runner_rows_carcass_y: budr ? [...budr.runnerRows] : runnerRowsCarcass,
     runner_carcass_side: runnerCarcassSide,
     runner_hole_x: [...RN.holeXPattern],
+    ...(budr ? {
+      drawer_front_screw_x: [
+        B.frontScrewFromSide + 2 * G + B.frontScrewExtra,
+        budr.frontWidth - (B.frontScrewFromSide + 2 * G + B.frontScrewExtra),
+      ],
+      drawer_front_screw_y_per_drawer: budr.heights.map((_, i) => B.frontScrewFromBottom + (i === 0 ? G : 0)),
+    } : {}),
+    ...(type.hangers ? {
+      hanger_holes_bul: P.wallUnit.hangers.fromBackEdge.map((f) => [sideW - f, H - P.wallUnit.hangers.fromTop]),
+      hanger_holes_bur: P.wallUnit.hangers.fromBackEdge.map((f) => [f, H - P.wallUnit.hangers.fromTop]),
+      hanger_hole_d: P.wallUnit.hangers.holeDiameter,
+    } : {}),
+    ...(backStyle === 'inset' ? {
+      back_screw_x_bul: sideW - SK.backScrewFromBackEdge,
+      back_screw_y: [SK.backScrewFromEnd, H / 2, H - SK.backScrewFromEnd],
+      holder_screw_x: [G / 2, sideW - G / 2],
+      holder_screw_y: SK.holderScrewFromTop.map((f) => H - f),
+      bottom_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
+      bottom_screw_y: G / 2 + pz.centrelineExtra,
+    } : {}),
+    ...(fridge ? {
+      block_screw_x_bul: FR.blockScrewFromFront + FR.blockSize / 2 + G,
+      block_screw_y: [
+        fridge.fixedPanelY + G + FR.blockScrewOffsets[0],
+        fridge.fixedPanelY + G + FR.blockScrewOffsets[1],
+        H - FR.blockScrewFromTop,
+      ],
+      fixed_screw_x: [FR.fixedScrewFromEnd, sideW - FR.fixedScrewFromEnd],
+      fixed_screw_y: fridge.fixedPanelY + G / 2,
+    } : {}),
+    ...(hasRail ? {
+      rail_bracket_y: railY,
+      rail_partition_screw_y: railPartCentreY,
+      rail_partition_screw_x_sides: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
+      rail_partition_screw_x_back: [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd],
+    } : {}),
   };
 
   // ── Assemblies for the 3D view ─────────────────────────────────────────────
   const assemblies = {
-    carcass: { w: W, h: H, d: D, legHeight: type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legHeight : P.baseUnit.legHeight) : 0 },
+    carcass: { w: W, h: H, d: D, legHeight },
+    mount: type.mount,
+    mountHeight: type.mount === 'wall' ? cfg.mountHeight : 0,
+    legs,
     rail: hasRail ? { y: railY, x1: G, x2: W - G, z: D - DR.setback } : null,
     drawerZone: hasDrawers ? { top: partitionY, count: numDrawers, heights: [...drawerHeights] } : null,
+    drawerFronts: budr
+      ? budr.heights.map((h, i) => ({ index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth }))
+      : (hasDrawers
+        ? drawerHeights.map((h, i) => ({
+          index: i + 1,
+          y: G + zoneOffsets[i] + (i === 0 ? DR.firstFrontAdjust : 0),
+          h: i === 0 ? h - DR.firstFrontAdjust : h,
+          w: drawerFrontW,
+        }))
+        : []),
     shelves: shelfRows.map((y, i) => ({ index: i + 1, y })),
+    fridge: fridge ? { fixedPanelY: fridge.fixedPanelY, fridgeH: cfg.fridgeH } : null,
   };
 
   return {
@@ -757,8 +1269,11 @@ export function computeCabinet(params, profileOverride) {
     params: {
       width: W, height: H, depth: D, board_t: G, front_t: frontT,
       front_type: cfg.frontType, hinge: cfg.hinge, doors: doorCount,
-      shelves: numShelves, drawers: numDrawers, drawer_heights: [...drawerHeights],
+      shelves: numShelves, drawers: numDrawers, drawer_heights: [...(budr ? budr.heights : drawerHeights)],
       rail: hasRail, rail_offset: cfg.railOffset,
+      ...(type.doorExtend ? { door_extend: cfg.doorExtend } : {}),
+      ...(fridge ? { fridge_h: cfg.fridgeH } : {}),
+      ...(type.mount === 'wall' ? { mount_height: cfg.mountHeight } : {}),
     },
     derived,
     panels,

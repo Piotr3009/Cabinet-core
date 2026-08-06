@@ -108,13 +108,25 @@ function verticalSocket(centreY, edgeX, dir, G, pz, out) {
  * Side panel (BUL / BUR). w = depth − G, h = carcass height.
  * Local x = 0 is the FRONT edge; tabs sit on the BACK edge.
  * `side` 'L' keeps the LISP orientation, 'R' mirrors it (tabs run to x < 0).
+ *
+ * `edges` switches individual joints off for the types that do not have them.
+ * KIT_SINK's drawSINK_BUL is exactly this panel with the back tabs, the top
+ * sockets and the top screw row removed (there is no TOP panel and the back is
+ * screwed in from the inside), so it is a flag here rather than a second copy
+ * of 120 lines of tab arithmetic.
  */
-export function sidePanelGeometry({ w, h, G, side, puzzle: pz }) {
+export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
+  const e = {
+    backTabs: true, topSocket: true, bottomSocket: true,
+    topScrews: true, bottomScrews: true, ...(edges || {}),
+  };
   const out = { outline: [], pockets: [], holes: [] };
   const centres = tabCentres(h, pz);
   const S = G / 2 + pz.centrelineExtra;
 
-  if (side === 'R') {
+  if (!e.backTabs) {
+    out.outline.push([0, 0], [w, 0], [w, h], [0, h]);
+  } else if (side === 'R') {
     // drawBUR: rectangle drawn first, then tabs down the LEFT edge (top → bottom)
     out.outline.push([0, 0], [w, 0], [w, h], [0, h]);
     for (const c of [...centres].reverse()) out.outline.push(...tabPointsLeft(0, c, G, pz));
@@ -133,14 +145,14 @@ export function sidePanelGeometry({ w, h, G, side, puzzle: pz }) {
 
   // Sockets on the top and bottom edges (they receive the TOP/BOTTOM tabs)
   for (const cx of socketCentres(w, pz)) {
-    horizontalSocket(cx, h, +1, G, pz, out);
-    horizontalSocket(cx, 0, -1, G, pz, out);
+    if (e.topSocket) horizontalSocket(cx, h, +1, G, pz, out);
+    if (e.bottomSocket) horizontalSocket(cx, 0, -1, G, pz, out);
   }
 
   // Assembly screws along the top and bottom edges
   for (const sx of [pz.screwFromEnd, w / 2, w - pz.screwFromEnd]) {
-    out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: sx, y: h - S, d: pz.screwDiameter });
-    out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: sx, y: S, d: pz.screwDiameter });
+    if (e.topScrews) out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: sx, y: h - S, d: pz.screwDiameter });
+    if (e.bottomScrews) out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: sx, y: S, d: pz.screwDiameter });
   }
   return out;
 }
@@ -151,7 +163,7 @@ export function sidePanelGeometry({ w, h, G, side, puzzle: pz }) {
  * Tabs on three edges — both long edges (into the sides) and the back edge.
  * The remaining edge is the cabinet front and stays plain.
  */
-export function topPanelGeometry({ drawnW, drawnH, G, puzzle: pz }) {
+export function topPanelGeometry({ drawnW, drawnH, G, puzzle: pz, backTabs = true }) {
   const out = { outline: [], pockets: [], holes: [] };
   const alongDepth = socketCentres(drawnW, pz);   // t1x, t2x
   const alongWidth = socketCentres(drawnH, pz);   // t1y, t2y
@@ -159,7 +171,9 @@ export function topPanelGeometry({ drawnW, drawnH, G, puzzle: pz }) {
   out.outline.push([0, 0], [drawnW, 0], [drawnW, drawnH]);
   for (const cx of [...alongDepth].reverse()) out.outline.push(...tabPointsUp(drawnH, cx, G, pz));
   out.outline.push([0, drawnH]);
-  for (const cy of [...alongWidth].reverse()) out.outline.push(...tabPointsLeft(0, cy, G, pz));
+  // The back edge. KIT_SINK's bottom panel leaves it straight — its back is a
+  // screwed panel set 50 mm forward, so there is nothing there to receive tabs.
+  if (backTabs) for (const cy of [...alongWidth].reverse()) out.outline.push(...tabPointsLeft(0, cy, G, pz));
   out.outline.push([0, 0]);
   for (const cx of alongDepth) out.outline.push(...tabPointsDown(0, cx, G, pz));
 
@@ -167,8 +181,31 @@ export function topPanelGeometry({ drawnW, drawnH, G, puzzle: pz }) {
     out.pockets.push({ layer: pz.layers.dogbone, x1: cx - pz.dogboneHalfHeight, y1: drawnH, x2: cx + pz.dogboneHalfHeight, y2: drawnH + G });
     out.pockets.push({ layer: pz.layers.dogbone, x1: cx - pz.dogboneHalfHeight, y1: -G, x2: cx + pz.dogboneHalfHeight, y2: 0 });
   }
-  for (const cy of alongWidth) {
-    out.pockets.push({ layer: pz.layers.dogbone, x1: -G, y1: cy - pz.dogboneHalfHeight, x2: 0, y2: cy + pz.dogboneHalfHeight });
+  if (backTabs) {
+    for (const cy of alongWidth) {
+      out.pockets.push({ layer: pz.layers.dogbone, x1: -G, y1: cy - pz.dogboneHalfHeight, x2: 0, y2: cy + pz.dogboneHalfHeight });
+    }
+  }
+  return out;
+}
+
+/**
+ * A plain rectangle that RECEIVES tabs: sockets wherever the caller says.
+ * `sockets` names the edge and the centres along it, in panel-local mm:
+ *   { left: [y…], right: [y…], top: [x…], bottom: [x…] }
+ *
+ * This is the shape behind every "screwed/socketed" part — the back panel, and
+ * the fridge's two back rails and back-top panel, which are the same joint in a
+ * different place.
+ */
+export function socketPanelGeometry({ w, h, G, puzzle: pz, sockets = {}, screws = [] }) {
+  const out = { outline: [[0, 0], [w, 0], [w, h], [0, h]], pockets: [], holes: [] };
+  for (const cy of sockets.left || []) verticalSocket(cy, 0, -1, G, pz, out);
+  for (const cy of sockets.right || []) verticalSocket(cy, w, +1, G, pz, out);
+  for (const cx of sockets.top || []) horizontalSocket(cx, h, +1, G, pz, out);
+  for (const cx of sockets.bottom || []) horizontalSocket(cx, 0, -1, G, pz, out);
+  for (const s of screws) {
+    out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: s.x, y: s.y, d: pz.screwDiameter });
   }
   return out;
 }
@@ -179,20 +216,14 @@ export function topPanelGeometry({ drawnW, drawnH, G, puzzle: pz }) {
  * (matching the top/bottom-panel tabs, inset by one board thickness).
  */
 export function backPanelGeometry({ w, h, G, puzzle: pz }) {
-  const out = { outline: [[0, 0], [w, 0], [w, h], [0, h]], pockets: [], holes: [] };
   const S = G / 2 + pz.centrelineExtra;
   const sideCentres = tabCentres(h, pz);
   const e = pz.tabCentresFromEnd;
   const acrossCentres = [G + e, w - G - e];
-
-  for (const cy of sideCentres) {
-    verticalSocket(cy, 0, -1, G, pz, out);
-    verticalSocket(cy, w, +1, G, pz, out);
-  }
-  for (const cx of acrossCentres) {
-    horizontalSocket(cx, h, +1, G, pz, out);
-    horizontalSocket(cx, 0, -1, G, pz, out);
-  }
+  const out = socketPanelGeometry({
+    w, h, G, puzzle: pz,
+    sockets: { left: sideCentres, right: sideCentres, top: acrossCentres, bottom: acrossCentres },
+  });
 
   // Screws: 4 down each side edge, 3 along top and bottom
   const [t1y, t2y, t3y] = sideCentres;

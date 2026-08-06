@@ -28,6 +28,13 @@ export const CNC_LAYERS = [
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },
   { name: 'FRONT_HINGES_3MM',   aci: 30, screen: '#f783ac', label: 'Cup screws ⌀3',  kind: 'hole' },
   { name: 'UNIT_NUMBER',        aci: 94, screen: '#8d8d92', label: 'Labels',         kind: 'text' },
+  // Drawer-kit layers (KIT_BUDR_FULL createDrawerCNCLayers) — the runner and
+  // bottom grooves in a drawer box side are real machining, so they keep the
+  // names and ACI colours the kit gives them.
+  { name: 'DRAWER_RUNNER_POCKET', aci: 1, screen: '#ffa8a8', label: 'Runner groove', kind: 'pocket' },
+  { name: 'DRAWER_BOTTOM_POCKET', aci: 2, screen: '#ffe066', label: 'Bottom groove', kind: 'pocket' },
+  // Wall-unit hanger cut-outs in the back panel (KIT_WUD_FULL L192).
+  { name: 'HANGER_HOLE',        aci: 4,  screen: '#4dd4c8', label: 'Hanger cut-out', kind: 'pocket' },
   // Elevation-view outline layer. The CNC section of the LISP draws on OUTLINE,
   // the TOP/FRONT views on CARCASE; both mean "this is the edge of the part",
   // so a panel that arrives on either is drawn the same way.

@@ -10,12 +10,13 @@ import DimLabel from './DimLabel.jsx';
 // says (CLAUDE.md phase 2). Nothing here re-derives a dimension.
 
 export default function UnitView({
-  unit, result, wallWidthMm, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
+  unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const wallWidthMm = wall.width;
 
   const W = unit.params.width;
   const H = unit.params.height;
@@ -26,9 +27,21 @@ export default function UnitView({
   const isWallMounted = result.assemblies.mount === 'wall';
   const baseY = isWallMounted ? result.assemblies.mountHeight : legHeight;
 
+  // Where this unit stands: at `x_mm` along its wall, back against it, with the
+  // room centred on the world origin. Every number comes from engine/room.js,
+  // so a unit on wall 3 of an L-shaped room needs no special case here.
+  const wallStart = useMemo(() => new THREE.Vector3(
+    mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+  ), [wall.start.x, wall.start.y, roomCentre.x, roomCentre.y]);
+  const along = useMemo(() => new THREE.Vector3(wall.along.x, 0, wall.along.y), [wall.along.x, wall.along.y]);
+  const inward = useMemo(() => new THREE.Vector3(wall.inward.x, 0, wall.inward.y), [wall.inward.x, wall.inward.y]);
+
   // A vertical plane parallel to the wall, halfway into the cabinet — the ray
   // is intersected with it so the unit follows the cursor instead of itself.
-  const dragPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), -mm(D / 2)), [D]);
+  const dragPlane = useMemo(() => {
+    const point = wallStart.clone().addScaledVector(inward, mm(D / 2));
+    return new THREE.Plane().setFromNormalAndCoplanarPoint(inward, point);
+  }, [wallStart, inward, D]);
 
   const pointerToPlane = useCallback((clientX, clientY) => {
     const rect = gl.domElement.getBoundingClientRect();
@@ -44,19 +57,22 @@ export default function UnitView({
   // Listeners live on `window` (not the mesh) so a fast drag that outruns the
   // cursor does not drop; they are local closures, so removal always matches
   // the exact function that was added.
+  /** Distance of a world point along the wall, in mm from the wall's start. */
+  const alongMm = useCallback((point) => point.clone().sub(wallStart).dot(along) / MM, [wallStart, along]);
+
   const startDrag = useCallback((e) => {
     e.stopPropagation();
     onSelect();
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
-    drag.current = { offset: hit.x - mm(unit.position.x_mm - wallWidthMm / 2) };
+    drag.current = { offset: alongMm(hit) - unit.position.x_mm };
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
     const move = (ev) => {
       if (!drag.current) return;
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
-      onMove((p.x - drag.current.offset) / MM + wallWidthMm / 2, snapStep);
+      onMove(alongMm(p) - drag.current.offset, snapStep);
     };
     const up = () => {
       drag.current = null;
@@ -68,12 +84,14 @@ export default function UnitView({
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
-  }, [onSelect, pointerToPlane, unit.position.x_mm, wallWidthMm, orbitRef, onMove, snapStep]);
+  }, [onSelect, pointerToPlane, alongMm, unit.position.x_mm, orbitRef, onMove, snapStep]);
 
-  // Cabinet origin: pushed against the wall (z = 0 is the wall face), standing
-  // on its legs (or hanging at its mount height), offset along the wall by the
-  // unit position.
-  const originX = mm(unit.position.x_mm - wallWidthMm / 2);
+  // Cabinet origin: on its wall, back against it (local z = 0 is the wall
+  // face), standing on its legs or hanging at its mount height.
+  const origin = useMemo(
+    () => wallStart.clone().addScaledVector(along, mm(unit.position.x_mm)).setY(mm(baseY)),
+    [wallStart, along, unit.position.x_mm, baseY],
+  );
   const originY = mm(baseY);
 
   // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
@@ -108,7 +126,7 @@ export default function UnitView({
   }, [onMoveShelf, onSelect, pointerToPlane, originY, orbitRef, snapStep, onShelfDragState, unit.id]);
 
   return (
-    <group position={[originX, originY, 0]}>
+    <group position={origin} rotation={[0, wall.angle, 0]}>
       {result.panels.filter((p) => p.box).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;

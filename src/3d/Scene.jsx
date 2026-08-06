@@ -5,6 +5,7 @@ import { OrbitControls } from '@react-three/drei';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import { mm } from './constants.js';
+import { roomWalls, roomBounds } from '../engine/room.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 
@@ -69,11 +70,12 @@ export default function Scene({ onCaptureReady }) {
   const shelfDrag = useUiStore((s) => s.dragging);
   const setShelfDrag = useUiStore((s) => s.setDragging);
 
-  const wallWidthMm = room.walls[0]?.width ?? 4000;
   // `units` is the subscription that drives the re-render; allResults() is a
   // stable store function, so deriving from it alone would never update.
   const results = useMemo(() => allResults(), [units, allResults]);
-  const roomW = mm(wallWidthMm);
+  const walls = useMemo(() => roomWalls(room), [room]);
+  const bounds = useMemo(() => roomBounds(room), [room]);
+  const roomW = mm(bounds.width);
   const roomH = mm(room.height ?? 2500);
 
   return (
@@ -83,7 +85,7 @@ export default function Scene({ onCaptureReady }) {
       // preserveDrawingBuffer: the PDF export reads this canvas back.
       // NoToneMapping: ACES (the R3F default) turns the white walls grey.
       gl={{ preserveDrawingBuffer: true, antialias: true, toneMapping: THREE.NoToneMapping }}
-      camera={{ position: [roomW * 0.30, roomH * 0.90, roomW * 1.20], fov: 38, near: 0.05, far: 100 }}
+      camera={{ position: [0, roomH * 0.95, mm(bounds.depth) * 1.25 + roomW * 0.35], fov: 38, near: 0.05, far: 100 }}
       onPointerMissed={() => clearSelection()}
       style={{ background: '#fafaf8' }}
     >
@@ -96,7 +98,8 @@ export default function Scene({ onCaptureReady }) {
           key={unit.id}
           unit={unit}
           result={result}
-          wallWidthMm={wallWidthMm}
+          wall={walls[unit.position?.wall ?? 0] || walls[0]}
+          roomCentre={bounds.centre}
           selected={unit.id === selectedUnitId}
           snapStep={snapStep}
           onSelect={() => selectUnit(unit.id)}

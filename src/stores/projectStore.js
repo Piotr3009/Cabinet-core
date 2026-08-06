@@ -6,6 +6,9 @@ import { snap as snapTo } from '../engine/format.js';
 import {
   clampShelfPos, clampUnitX, firstFreeUnitX, shelfBand, shelfBounds, unitIssues, unitSpan,
 } from '../engine/collision.js';
+import {
+  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls, wallWidth,
+} from '../engine/room.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -16,7 +19,7 @@ const CACHE_KEY = 'cc.project.cache.v1';
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 
-export const DEFAULT_ROOM = { height: 2500, walls: [{ width: 4000 }] };
+export const DEFAULT_ROOM = ENGINE_DEFAULT_ROOM;
 
 function newUnit(typeId, profile, index) {
   const type = getUnitType(typeId);
@@ -86,14 +89,72 @@ function saveCache(state) {
 const cached = typeof localStorage !== 'undefined' ? loadCache() : null;
 
 export const useProjectStore = create((set, get) => ({
-  project: cached?.project || { id: null, name: 'Untitled project', room: DEFAULT_ROOM, jc_tenant_id: null, jc_project_id: null },
+  // A cached project may predate room v2 — migrate on the way in, so an old
+  // tab that reloads gets four walls instead of a crash.
+  project: cached?.project
+    ? { ...cached.project, room: migrateRoom(cached.project.room) }
+    : { id: null, name: 'Untitled project', room: DEFAULT_ROOM, jc_tenant_id: null, jc_project_id: null },
   units: cached?.units || [],
   dirty: false,
 
   // ── project / room ───────────────────────────────────────────────────────
   setProjectName: (name) => set((s) => ({ project: { ...s.project, name }, dirty: true })),
-  setRoom: (room) => set((s) => ({ project: { ...s.project, room: { ...s.project.room, ...room } }, dirty: true })),
-  loadProject: (project, units) => set({ project, units, dirty: false }),
+
+  /**
+   * Change the room. REFUSED when the new shape would leave a unit hanging off
+   * a wall or under a lowered ceiling: shrinking the room is the one path that
+   * can create an overlap with nobody dragging anything, so it is blocked at
+   * the setter rather than repaired afterwards (CLAUDE.md phase 3).
+   *
+   * @returns {{ok:boolean, message:string|null, blocking:Array}}
+   */
+  setRoom: (patch) => {
+    const s = get();
+    const next = migrateRoom({ ...s.project.room, ...patch });
+    const verdict = roomChangeGuard(next, s.units);
+    if (!verdict.ok) return verdict;
+    set((st) => ({ project: { ...st.project, room: next }, dirty: true }));
+    return verdict;
+  },
+
+  /** What a room change WOULD do, without doing it (live preview in the modal). */
+  previewRoom: (patch) => {
+    const s = get();
+    return roomChangeGuard(migrateRoom({ ...s.project.room, ...patch }), s.units);
+  },
+
+  addOpening: (opening) => set((s) => ({
+    project: {
+      ...s.project,
+      room: { ...s.project.room, openings: [...(s.project.room.openings || []), { id: uid('op'), ...opening }] },
+    },
+    dirty: true,
+  })),
+
+  updateOpening: (id, patch) => set((s) => ({
+    project: {
+      ...s.project,
+      room: {
+        ...s.project.room,
+        openings: (s.project.room.openings || []).map((o) => (o.id === id ? { ...o, ...patch } : o)),
+      },
+    },
+    dirty: true,
+  })),
+
+  removeOpening: (id) => set((s) => ({
+    project: {
+      ...s.project,
+      room: { ...s.project.room, openings: (s.project.room.openings || []).filter((o) => o.id !== id) },
+    },
+    dirty: true,
+  })),
+
+  loadProject: (project, units) => set({
+    project: { ...project, room: migrateRoom(project?.room) },
+    units,
+    dirty: false,
+  }),
 
   // ── units ────────────────────────────────────────────────────────────────
   addUnit: (typeId) => {
@@ -101,12 +162,16 @@ export const useProjectStore = create((set, get) => ({
     const state = get();
     const unit = newUnit(typeId, profile, state.units.length);
     // Centred on an empty wall, otherwise butted into the first gap it fits —
-    // a new unit never lands on top of an existing one.
-    const wallWidth = state.project.room.walls[0]?.width ?? DEFAULT_ROOM.walls[0].width;
+    // a new unit never lands on top of an existing one. Wall units and floor
+    // units occupy different bands of the same wall, so they are placed
+    // against their own kind only.
+    const level = getUnitType(typeId).mount;
     unit.position.x_mm = firstFreeUnitX({
       width: unit.params.width,
-      wallWidth,
-      others: state.units.filter((u) => (u.position.wall ?? 0) === 0).map(unitSpan),
+      wallWidth: wallWidth(state.project.room, 0),
+      others: state.units
+        .filter((u) => (u.position.wall ?? 0) === 0 && getUnitType(u.type).mount === level)
+        .map(unitSpan),
     });
     set((s) => ({ units: [...s.units, unit], dirty: true }));
     return unit.id;
@@ -139,13 +204,12 @@ export const useProjectStore = create((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
     const wall = unit.position.wall ?? 0;
-    const wallWidth = s.project.room.walls[wall]?.width ?? DEFAULT_ROOM.walls[0].width;
     const result = clampUnitX({
       x: snapTo(xRaw, snapStep),
       current: unit.position.x_mm,
       width: unit.params.width,
-      wallWidth,
-      others: s.units.filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wall).map(unitSpan),
+      wallWidth: wallWidth(s.project.room, wall),
+      others: neighboursOf(s, unit).map(unitSpan),
     }, getCabinetProfile());
 
     set((st) => ({
@@ -153,6 +217,30 @@ export const useProjectStore = create((set, get) => ({
       dirty: true,
     }));
     return result;
+  },
+
+  /**
+   * Move a unit to another wall. It keeps its distance from the wall start
+   * where that still fits, and is clamped into the first free slot otherwise.
+   */
+  setUnitWall: (unitId, wallIndex) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    const walls = roomWalls(s.project.room);
+    if (!unit || !walls[wallIndex]) return null;
+    const level = getUnitType(unit.type).mount;
+    const x = firstFreeUnitX({
+      width: unit.params.width,
+      wallWidth: walls[wallIndex].width,
+      others: s.units
+        .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && getUnitType(u.type).mount === level)
+        .map(unitSpan),
+    });
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { wall: wallIndex, x_mm: x } } : u)),
+      dirty: true,
+    }));
+    return { wall: wallIndex, x_mm: x };
   },
 
   // ── interior items ───────────────────────────────────────────────────────
@@ -363,6 +451,19 @@ export const useProjectStore = create((set, get) => ({
 // Cache to localStorage on every change (fallback only — the DB stays primary)
 useProjectStore.subscribe((state) => saveCache(state));
 
+/**
+ * The units a given unit can actually collide with: same wall, same mounting
+ * level. A wall unit hangs ABOVE a base unit — that is how a kitchen is built,
+ * not an overlap, so they never constrain each other.
+ */
+function neighboursOf(state, unit) {
+  const wall = unit.position?.wall ?? 0;
+  const level = getUnitType(unit.type).mount;
+  return state.units.filter((u) => u.id !== unit.id
+    && (u.position?.wall ?? 0) === wall
+    && getUnitType(u.type).mount === level);
+}
+
 // ─── Interior rules (shared by the store and the UI) ───
 // Thin adapters: they turn a unit into the plain numbers the pure collision
 // functions want, and nothing more. The RULES live in engine/collision.js.
@@ -418,11 +519,14 @@ export function validateUnit(unit, result, context = {}) {
   // exactly what clamping CANNOT fix: a unit that does not fit the room at all
   // and needs a number changed (CLAUDE.md task 3).
   if (context.room) {
+    const level = getUnitType(unit.type).mount;
     issues.push(...unitIssues({
       unit,
       room: context.room,
       others: (context.units || [])
-        .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === (unit.position?.wall ?? 0))
+        .filter((u) => u.id !== unit.id
+          && (u.position?.wall ?? 0) === (unit.position?.wall ?? 0)
+          && getUnitType(u.type).mount === level)
         .map((u) => ({ ...unitSpan(u), label: u.params?.unit_num })),
     }));
   }

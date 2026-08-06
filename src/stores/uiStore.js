@@ -37,6 +37,13 @@ export const useUiStore = create((set, get) => ({
   viewMode: '3d',                    // '3d' | 'cnc'
   setViewMode: (mode) => set({ viewMode: mode === 'cnc' ? 'cnc' : '3d' }),
 
+  // Dimensions on the 3D canvas: each unit's own W/H/D captions AND the
+  // distance arrows between units and to the walls (CLAUDE.md phase 8). One
+  // switch, because they are one thing to Piotr: "show me the numbers".
+  showDimensions: true,
+  setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
+  toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
+
   // Modals
   modal: null,                       // 'add-items' | 'room' | 'auth' | 'materials' | null
   openModal: (name) => set({ modal: name }),

@@ -4,10 +4,12 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
+import DistanceArrows from './DistanceArrows.jsx';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
 import { resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
+import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 
 // 3D scaffolding follows Production Core's rig (scene / camera / soft light /
@@ -121,12 +123,34 @@ export default function Scene({ onCaptureReady }) {
   const clearFocus = useUiStore((s) => s.clearFocus);
   const openContextMenu = useUiStore((s) => s.openContextMenu);
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
+  const showDimensions = useUiStore((s) => s.showDimensions);
+  const profile = useCabinetProfileStore((s) => s.profile);
 
   // `units` is the subscription that drives the re-render; allResults() is a
   // stable store function, so deriving from it alone would never update.
   const results = useMemo(() => allResults(), [units, allResults]);
   const walls = useMemo(() => roomWalls(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
+
+  // What the distance arrows measure. Derived from the SAME results the boxes
+  // are drawn from, so an arrow cannot describe a unit that is somewhere else —
+  // and a drag updates it frame by frame with no drag state of its own.
+  const measured = useMemo(() => results.map(({ unit, result }) => {
+    const base = result.assemblies.mount === 'wall'
+      ? (result.assemblies.mountHeight || 0)
+      : (result.assemblies.carcass.legHeight || 0);
+    return {
+      id: unit.id,
+      wall: unit.position?.wall ?? 0,
+      x_mm: Number(unit.position?.x_mm) || 0,
+      width: Number(unit.params.width) || 0,
+      depth: Number(unit.params.depth) || 0,
+      rotation: Number(unit.position?.rotation_deg) || 0,
+      level: result.assemblies.mount === 'wall' ? 'wall' : 'floor',
+      label: unit.params.unit_num,
+      y: base + profile.dimensions.height,
+    };
+  }), [results, profile.dimensions.height]);
   const roomW = mm(bounds.width);
   const roomH = mm(room.height ?? 2500);
 
@@ -147,7 +171,7 @@ export default function Scene({ onCaptureReady }) {
     >
       <color attach="background" args={['#fafaf8']} />
       <Lights roomHeight={roomH} roomWidth={roomW} />
-      <Room room={room} />
+      <Room room={room} showLabels={showDimensions} />
 
       {results.map(({ unit, result }) => (
         <UnitView
@@ -171,8 +195,13 @@ export default function Scene({ onCaptureReady }) {
           frontColour={resolveUnitDesign(unit, design).colour?.hex || null}
           onSetTopInfill={(h) => setTopInfill(unit.id, h)}
           onFillToCeiling={() => fillToCeiling(unit.id)}
+          showLabels={showDimensions}
         />
       ))}
+
+      {showDimensions && (
+        <DistanceArrows walls={walls} units={measured} roomCentre={bounds.centre} profile={profile} />
+      )}
 
       <FocusRig request={focusRequest} orbitRef={orbitRef} onDone={clearFocus} />
 

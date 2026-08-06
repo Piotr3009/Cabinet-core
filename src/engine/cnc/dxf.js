@@ -223,6 +223,54 @@ export function buildUnitDxfFiles(result, profile) {
     });
 }
 
+/**
+ * ONE DXF holding several parts, laid out exactly as the preview shows them.
+ *
+ * The arrangement is not recomputed here: it comes from the same
+ * layoutPanels() the CNC view draws with, so "what you see is what you cut" is
+ * a fact about the code, not a promise in a comment. The only thing that
+ * changes is the frame — the preview works in y-DOWN sheet coordinates (an SVG
+ * viewport) and a DXF is y-UP, so each part's placement is flipped once, as a
+ * whole, which preserves the layout exactly.
+ *
+ * @param {object} args
+ *   panels   the SELECTED parts, in cut-list order
+ *   drills   result.drills (filtered per part inside)
+ *   layout   { places, width, height } from layoutPanels()
+ *   unitNum, profile
+ */
+export function sheetEntities({ panels, drills, layout, unitNum, profile }) {
+  const byId = new Map(layout.places.map((pl) => [pl.panel.id, pl]));
+  const entities = [];
+
+  for (const panel of panels) {
+    const place = byId.get(panel.id);
+    if (!place) continue;
+    // Sheet (y-down, origin top-left) → DXF (y-up, origin bottom-left).
+    const dx = place.x - place.bounds.minX;
+    const dy = (layout.height - place.y - place.h) - place.bounds.minY;
+    for (const e of panelEntities(panel, drills, { unitNum, profile })) {
+      if (e.type === 'poly') entities.push({ ...e, pts: e.pts.map(([x, y]) => [x + dx, y + dy]) });
+      else if (e.type === 'circle') entities.push({ ...e, cx: e.cx + dx, cy: e.cy + dy });
+      else if (e.type === 'text') entities.push({ ...e, x: e.x + dx, y: e.y + dy });
+    }
+  }
+  return entities;
+}
+
+/** `{unitNum}-cnc-{preset}.dxf` — the file says what is inside it. */
+export function sheetDxfFileName(unitNum, presetId) {
+  const safe = `${unitNum}-cnc-${presetId}`.replace(/[^A-Za-z0-9._-]+/g, '_');
+  return `${safe}.dxf`;
+}
+
+/** Complete DXF text for a whole sheet of selected parts. */
+export function sheetDxf(args) {
+  const entities = sheetEntities(args);
+  const layers = layerTableFor(entities.map((e) => e.layer));
+  return writeDxf(entities, layers, entitiesExtents(entities));
+}
+
 // ─── Reading our own output back ───
 // Used by test/dxf.test.js, and small enough to keep next to the writer so the
 // two can never drift apart.

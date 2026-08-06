@@ -359,6 +359,15 @@ export const DEFAULT_CABINET_PROFILE = {
     unitMagnet: 40,            // butt a unit against its neighbour within this
     minUnitGap: 0,             // units stand edge to edge; > 0 forces a scribe gap
   },
+
+  // ─── Distance arrows on the canvas (CLAUDE.md turn 3, phase 8) ───
+  // The measurements the toolbar draws: unit to unit, and unit to wall.
+  dimensions: {
+    minGap: 2,            // below this the two things are touching, not spaced
+    arrowHead: 45,        // length of the arrow head, in room mm
+    standoff: 90,         // how far in front of the units the line is drawn
+    height: 120,          // how high above a unit's base the line floats
+  },
 };
 
 // ─── Single read point ───
@@ -423,6 +432,7 @@ export function migrateCabinetProfile(profile) {
     cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },
+    dimensions: { ...D.dimensions, ...profile.dimensions },
   };
 }
 

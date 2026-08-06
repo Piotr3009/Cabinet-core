@@ -11,6 +11,7 @@ import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
+import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
@@ -73,6 +74,7 @@ export default function ConfiguratorPage() {
           <Scene onCaptureReady={onCaptureReady} />
         </div>
         {viewMode === 'cnc' && <CncView />}
+        <CanvasToolbar />
 
         {units.length === 0 && viewMode === '3d' && (
           <div className="absolute inset-x-0 bottom-10 flex justify-center pointer-events-none">

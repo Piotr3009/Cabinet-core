@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { formatMm } from '../engine/format.js';
+import { resolveFinishes } from '../engine/design.js';
 
 // ─── Exports ───
 // An export is a SNAPSHOT of the always-live engine state (SPEC 4.11), so the
@@ -157,6 +158,16 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     doc.text(text, margin, y);
     y += 4.6;
   };
+
+  // Finish — what the job is FINISHED in. A decor is named in full and with
+  // its attribution: "EGGER H1180 ST37 Natural Halifax Oak" is what gets
+  // ordered, and the brand is not optional (BACKLOG #19).
+  const finishes = resolveFinishes(null, project?.design, getCabinetProfile());
+  if (finishes.carcass || finishes.front) {
+    section('Finish');
+    line(`Carcass — ${finishes.carcass?.label || 'not set'}${finishes.carcass?.hex ? ` · ${finishes.carcass.hex}` : ''}`);
+    line(`Fronts — ${finishes.front?.label || 'not set'}${finishes.front?.hex ? ` · ${finishes.front.hex}` : ''}`);
+  }
 
   // Materials
   const assigned = demand.filter((d) => d.material);

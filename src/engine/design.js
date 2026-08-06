@@ -8,6 +8,8 @@
 // been applied. Pure functions, so the 3D view, the BOM and a test all resolve
 // it the same way.
 
+import { decorFinish } from './decors.js';
+
 export const DESIGN_SCHEMA = 1;
 
 export const FRONT_STYLE_OPTIONS = [
@@ -215,10 +217,16 @@ export function resolveUnitDesign(unit, design) {
 
 // ─── Finishes (turn 4, BACKLOG #4) ───
 
-/** One finish out of the profile's list, or null. */
+/**
+ * One finish, by id: a manufacturer decor ("egger:H1180_37") or one of the
+ * finishes the profile ships with. Null when the id names neither — which is
+ * the case for a project saved against a decor pack this install does not have,
+ * and the callers below fall back for it exactly as they do for a finish that
+ * was removed from a profile.
+ */
 export function finishById(profile, id) {
   if (!id) return null;
-  return profile?.appearance?.finishes?.find((f) => f.id === id) || null;
+  return decorFinish(id) || profile?.appearance?.finishes?.find((f) => f.id === id) || null;
 }
 
 /**

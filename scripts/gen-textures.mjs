@@ -153,6 +153,31 @@ const DECORS = [
     poreStrength: 0.24,
     fineStrength: 0.07,
   },
+  {
+    // ─── The tint base (turn 5, BACKLOG #19) ───
+    // EGGER's own scans may NOT go on 3D geometry until there is written
+    // consent, so a woodgrain decor is rendered as OUR grain multiplied by the
+    // decor's average colour. A multiply needs a NEUTRAL, near-white base:
+    // tinting light-oak.png would apply oak twice and every decor would come
+    // out the colour of oak regardless of what was chosen.
+    //
+    // So: the same grain maths, greyscale, running from just-off-white down to
+    // a soft grey. Multiplied by #B59571 it reads as Natural Halifax Oak;
+    // multiplied by #4A3B2E it reads as a dark walnut. The figure is ours, the
+    // colour is the decor's, and no EGGER pixel is ever on a panel.
+    file: 'grain-neutral.png',
+    seed: 0x2C9A17,
+    dark: [176, 176, 176],
+    light: [255, 255, 255],
+    rings: 11,
+    ringWobble: 0.55,
+    ringStrength: 0.5,
+    ringSharpness: 2.8,
+    grainStrength: 0.38,
+    poreLines: 58,
+    poreStrength: 0.26,
+    fineStrength: 0.07,
+  },
 ];
 
 function render(decor) {

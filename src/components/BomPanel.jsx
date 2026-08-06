@@ -5,6 +5,8 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES } from '../stores/materialAssignmentStore.js';
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
 import { formatMm } from '../engine/format.js';
+import { resolveFinishes } from '../engine/design.js';
+import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 
 // SPEC 4.11 — the BOM is computed LIVE from the current state at all times;
 // this panel only decides when to SHOW it. Exports are a snapshot of the same
@@ -20,6 +22,8 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
   const setAssignment = useMaterialAssignmentStore((s) => s.setAssignment);
   const setYield = useMaterialAssignmentStore((s) => s.setYield);
   const jcConnected = useMaterialAssignmentStore((s) => s.jcConnected);
+  const design = useProjectStore((s) => s.project.design);
+  const profile = useCabinetProfileStore((s) => s.profile);
 
   const [tab, setTab] = useState('parts');
   const entries = useMemo(() => allResults(), [units, allResults]);
@@ -32,6 +36,13 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
 
   // Boards go with boards, hinges with hinges: offering the whole list for
   // every role is how a hinge ends up assigned to the back panel.
+  // The project's finishes, resolved the same way the 3D view resolves them —
+  // one unit is enough, because these two are PROJECT settings.
+  const finish = useMemo(
+    () => resolveFinishes(null, design, profile),
+    [design, profile],
+  );
+
   const boardChoices = materials.filter((m) => m.category !== 'hardware');
   const hardwareChoices = materials.filter((m) => m.category === 'hardware');
 
@@ -74,6 +85,24 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
               One material per role. <span className="text-ink-200">Yield</span> is the waste allowance:
               1.00 orders exactly the panel area, 1.15 orders 15 % more.
             </p>
+            {/* What the job is FINISHED in. A decor is named in full and with
+                its attribution — "EGGER H1180 ST37 Natural Halifax Oak" is what
+                gets ordered, and the brand is not optional (BACKLOG #19). */}
+            <div className="text-[11px] uppercase tracking-wide text-gold">Finish</div>
+            <div className="p-2 rounded border border-shell-600 bg-shell-700/40 space-y-1">
+              {[['Carcass', finish.carcass], ['Fronts', finish.front]].map(([label, f]) => (
+                <div key={label} className="flex items-baseline gap-2 text-[12px]">
+                  <span className="text-ink-400 w-16">{label}</span>
+                  <span className={f?.decor ? 'text-gold' : 'text-ink-50'}>{f?.label || '—'}</span>
+                  <span className="flex-1" />
+                  <span
+                    className="w-6 h-4 rounded border border-shell-600 shrink-0"
+                    style={{ background: f?.hex || 'transparent' }}
+                  />
+                </div>
+              ))}
+            </div>
+
             <div className="text-[11px] uppercase tracking-wide text-gold">Boards &amp; fronts</div>
             {BOM_ROLES.map((role) => {
               const d = demand.find((x) => x.role === role.id);

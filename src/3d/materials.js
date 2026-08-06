@@ -104,10 +104,19 @@ export function surfaceFor({ role, finishes, profile, frontColour = null }) {
   const paint = role === 'front' ? frontColour : null;
   const isDecor = !paint && finish?.kind === 'decor' && finish.texture;
 
+  // A TINTED decor (turn 5, BACKLOG #19) carries our own greyscale grain and
+  // the manufacturer's average colour: the multiply is the point, so the base
+  // is the decor's hex rather than white. This is what lets an EGGER woodgrain
+  // be shown in 3D at all without an EGGER pixel ever reaching the geometry —
+  // the figure is ours, only the colour is theirs. See engine/decors.js.
+  const tinted = isDecor && finish.tint;
+
   return {
-    // A decor's colour multiplies its image, so the base has to be white for
-    // the grain to come through at its own tone.
-    colour: paint ? colour(paint) : (isDecor ? shaded('#ffffff', shade) : shaded(finish?.hex, shade)),
+    // An UNtinted decor's colour multiplies its own image, so the base has to be
+    // white for that grain to come through at its own tone.
+    colour: paint
+      ? colour(paint)
+      : ((isDecor && !tinted) ? shaded('#ffffff', shade) : shaded(finish?.hex, shade)),
     texture: isDecor ? finish.texture : null,
     repeatMm: isDecor ? (finish.repeatMm || 900) : 0,
     roughness: A.sheen.roughness,

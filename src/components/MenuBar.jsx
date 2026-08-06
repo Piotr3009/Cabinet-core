@@ -81,7 +81,10 @@ function Dropdown({ items, onClose, nested = false }) {
                 item.checked ? 'text-gold' : 'text-ink-100'}`}
               onPointerEnter={() => setOpenSub(hasSub ? item.label : null)}
               onClick={() => {
-                if (hasSub) { setOpenSub(openSub === item.label ? null : item.label); return; }
+                // A submenu parent OPENS on click — it never toggles. Hovering it
+                // has already opened it by the time the click lands, so toggling
+                // would shut the submenu the pointer is sitting on.
+                if (hasSub) { setOpenSub(item.label); return; }
                 if (item.disabled) return;
                 item.run?.();
                 onClose();

@@ -1190,3 +1190,89 @@ przeciągnięcie w ścianę zatrzymuje się na 20 mm i tworzy skrobankę, odjazd
 usuwa → contour view rysuje same kontury. **410 testów, 0 fail** (11 nowych
 w `test/construction.test.js`; 3 zaktualizowane w `autoparts`/`interaction`, bo
 zachowanie zmieniło się celowo).
+
+## Faza 7 — zamknięcie — ✅ ZIELONA
+
+**`npm test`: 410 pass / 0 fail.** 357 z tury 3 (podłoga, nietknięta) + 53 nowe:
+
+| plik | co pilnuje |
+|---|---|
+| `test/item-order.test.js` (8) | dwie kolejności elementów; wiersz *i* listy = *i*-ty od góry w wyjściu silnika; auto-porządek |
+| `test/number-field.test.js` (6) | bufor pola: ta sekwencja klawiszy, która nie przechodziła; clamp raz, przy commicie |
+| `test/appearance.test.js` (9) | lista finiszy; cztery poziomy rozstrzygania; „fronty dziedziczą korpus"; migracja profilu sprzed dekorów |
+| `test/project-library.test.js` (8) | półka projektów; Recent = ostatnio OTWARTE; uszkodzona półka; scalanie z bazą |
+| `test/library-categories.test.js` (3) | każdy typ w dokładnie jednej kategorii (łapie zapomniany nowy kit) |
+| `test/panel-items.test.js` (7) | auto-porządek z odmową; equal heights; drążek między szufladami a półkami; produkt w BOM |
+| `test/construction.test.js` (11) | stop przy ścianie + magnes; ręczny cokół/top infill; end panel w BOM/CNC/footprincie; odmowa gdy się nie mieści |
+| `test/render-geometry.test.js` (+1) | szafa 1200: wcięcie 71 mm/str., DP przy bokach, front wyśrodkowany |
+
+Trzy istniejące testy **zmienione świadomie**, bo zachowanie się zmieniło:
+`autoparts` × 2 (ostrzeżenie o szerokiej szczelinie → cisza przy stopie; automaty →
+przenoszone) i `interaction` × 1 (menu kontekstowe ma teraz pozycje konstrukcyjne).
+Nic nie zostało usunięte ani wyciszone.
+
+**`npm run build`: czysty.** Tekstury trafiają do `dist/textures/`.
+
+**Przebieg end-to-end w Chromium — 26/26 PASS, zero błędów w konsoli.**
+Cała ścieżka z CLAUDE.md, w jednym przejściu na koniec, po wszystkich zmianach:
+
+1. start screen (zero `<canvas>` przed projektem) → 2. New project 3600 × 3000
+z własnym pokojem → 3. trzy jednostki z trzech kategorii Library → 4. szuflady,
+półki i drążek (z listy hardware) dodane **inline**, zero modali → 5. cokół,
+top infill i end panel — każde **bo ktoś o nie poprosił** → 6. przeciągnięcie
+w ścianę: stop 20 mm i skrobanka pojawia się sama → 7. BOM zawiera PLINTH,
+INFILL-T, INFILL-L, END-R, PARTITION, SHELF-1 oraz rolę „End panels" i linię
+„Oval hanging rail" → 8. **trzy eksporty pobrane**: `cabinetcore-cutlist-*.csv`,
+`cabinetcore-project-*.pdf`, `DR01-dxf.zip` → 9. arkusz CNC rysuje →
+10. contour view → 11. orzech + dąb → 12. Save → Close → projekt w Recent
+z „3 units" → otwarty z powrotem **z end panelem i top infillem**.
+
+Zrzuty: `f7-01-three-units`, `f7-02-items`, `f7-03-construction`,
+`f7-04-at-the-wall`, `f7-05-bom`, `f7-06-cnc`, `f7-07-contour`, `f7-08-decors`,
+`f7-09-reopened` (+ zrzuty per faza: `f1-*`, `f2-*`, `f3-*`, `f5-*`, `f6-*`) —
+w opisie PR.
+
+**Trzy bugi znalezione przez ten przebieg, nie przez testy** (i to jest argument
+za trzymaniem przebiegu w przeglądarce):
+1. **X panelu Library nic nie robił** — nagłówek jest uchwytem do przeciągania
+   i `setPointerCapture` przekierowywał `click` na nagłówek. To ten sam mechanizm,
+   który sprawiał, że panel z tury 3 był niezamykalny.
+2. **Dekor pokazywał się dopiero po reloadzie** — trzy pułapki kolejności
+   ładowania tekstur (opisane w fazie 2).
+3. **Podmenu File ▸ Export zamykało się od kliknięcia** — hover je otwierał,
+   a klik przełączał, czyli zamykał to, na co użytkownik właśnie celuje. Klik
+   w rodzica podmenu **otwiera**, nigdy nie przełącza.
+
+**BACKLOG.md**: pozycje **1–18 → TURA-4 / DONE**, każda z jednolinijkową notą, co
+konkretnie to zamknęło. Pozycja 19+ nietknięta; dopisana jedna nowa (19b: eksport
+konturów do pliku, wynikła z #18). **README** zaktualizowany: ekran startowy, menu,
+kategorie Library, panel z sekcjami, equal heights, automatyczne vs ręczne,
+contour view, `scripts/gen-textures.mjs`, liczba testów.
+
+**Zero nowych zależności** (zasada #4): `package.json` nietknięty. Tekstury drewna
+generowane własnym enkoderem PNG na `node:zlib`; sterownik przebiegu end-to-end
+(playwright-core) żyje **poza repo**, w katalogu roboczym sesji — projekt go nie
+widzi i nie potrzebuje.
+**Zero wykonanego SQL-a** (zasada #6). **Fixtures nietknięte** (zasada #1) —
+tylko czytane.
+
+---
+
+# DEFINICJA SUKCESU TURY 4 — status
+
+1. **357 starych + nowe testy — 0 fail** — ✅ **410/410**. Nowe testy dokładnie
+   tam, gdzie CLAUDE.md kazał: kolejność szuflad, bufor pól, clamp infilla, end panel.
+2. **Bugi #1 #2 naprawione; #3 rozstrzygnięte screenshotem** — ✅ #1 przez jedną
+   zapisaną konwencję (nie przez łatkę w widoku), #2 przez wzorzec użyty we
+   wszystkich polach, #3 zrzutem **i** przypiętymi liczbami, żeby nie wróciło.
+3. **Meble neutralne + orzech/dąb, kontury czarne cienkie z toggle, sheen subtelny** — ✅
+4. **Start screen + górne menu działają; Library w kategoriach z X** — ✅
+5. **Panel: accordion, equal heights, auto-porządek, drzwi otwierają się po szufladach,
+   hanger z materiałów** — ✅
+6. **Infill auto przy ścianie; plinth/top manual; end panel w BOM; contour view** — ✅
+7. **BUILD-LOG TURA 4 + BACKLOG statusy + BLOCKERS bez pytań do użytkownika** — ✅
+   BLOCKERS #18–#21 to decyzje i obserwacje, nie pytania: żadna nie czeka na
+   odpowiedź, żeby tura była skończona.
+
+**Fazy NIEROZPOCZĘTE: brak.** Wszystkie siedem wykonanych, każda z commitem
+i pushem, każda z werdyktem powyżej.

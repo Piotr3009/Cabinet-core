@@ -406,3 +406,53 @@ czyli commita z kodem, który nigdy nie miał działać.
 **Skutek.** Żaden: BUILD-LOG ma oddzielne werdykty dla obu faz, BACKLOG 7–9 mają
 status DONE osobno, a historia nie zawiera martwego kroku. Decyzja nie wymaga
 niczego od Piotra.
+
+## #19 — Ostrzeżenie „szczelina szersza niż infill" usunięte (świadoma zmiana zachowania)
+
+**Co było.** Tura 3: `sideInfill` zgłaszała każdą szczelinę do ściany szerszą niż
+ustawienie („200 mm gap on the left is wider than the 20 mm infill setting").
+Miało to sens, kiedy jednostka mogła stać płasko przy ścianie i każda szczelina
+była pomyłką.
+
+**Co jest teraz.** Po BACKLOG #15 jednostka **zatrzymuje się** 20 mm od ściany,
+więc NORMALNY stan to „stoję gdzieś w pokoju, do ściany mam 1743 mm". To nie jest
+błąd i to ostrzeżenie leciałoby przy każdym meblu, który nie stoi przy ścianie —
+czyli przy większości.
+
+**Co zostało.** Ostrzeżenie o **limicie warsztatu**: gdy ustawienie infilla jest
+większe niż `autoParts.sideInfill.maxWidth` (120 mm), jednostka staje tak daleko,
+że żadna skrobanka nie dosięga, i to jest powiedziane wprost — bo to ustawienie
+do zmiany, a nie stan mebla.
+
+**Decyzji Piotra nie wymaga.** Jeśli jednak brakuje sygnału „tu jest dziura, do
+której nie wstawiono szafki", to jest osobna funkcja (audyt ciągu), nie ostrzeżenie
+przy każdym ruchu — do wpisania do BACKLOG na życzenie.
+
+## #20 — Numeracja szuflad w panelu: D3 / D2 / D1 od góry (decyzja, nie kompromis)
+
+**Problem.** BACKLOG #1 mówi „góra listy = góra w 3D". Silnik numeruje szuflady
+**od dołu** (D1 = przy podłodze) i tego nie da się odwrócić: tak są nazwane
+formatki (`D1-SL`, `D1-DNO`), rzędy prowadnic i wiercenia, i tak mówią fixtures.
+
+**Możliwości były dwie:**
+- lista od góry z numerami silnika → czyta się **D3 / D2 / D1**;
+- lista od góry przenumerowana → górny wiersz to „D1", ale w BOM „D1" to dolna
+  szuflada.
+
+**Wybrane: pierwsze.** Druga opcja rozjeżdża panel z listą cięcia, a to kończy
+się wyciętym złym frontem. Kolejność jest 1:1 z 3D (o to był bug), a numer na
+wierszu jest tym numerem, który zobaczy warsztat.
+
+**Jeśli Piotr woli, żeby wiersze były „1, 2, 3 od góry"**, to jest zmiana o jedną
+linię w `drawerRows` — ale wtedy trzeba świadomie zdecydować, że etykieta w panelu
+NIE jest numerem z listy cięcia, i najlepiej pokazywać oba.
+
+## #21 — CI tury 4 (wciąż BLOCKERS #17: billing Actions)
+
+Nie dotykałem `ci.yml`. Stan z tury 3 nie zmienił się sam z siebie, więc jeśli
+Actions nadal nie przydziela runnera, ten PR też nie dostanie zielonego checka
+z GitHuba. Zamiast tego, lokalnie na Node 22: **`npm test` 410/410, `npm run build`
+czysty, przebieg end-to-end w Chromium 26/26, zero błędów w konsoli**. To jest to
+samo, co robi CI, plus przebieg w przeglądarce, którego CI nie robi.
+
+**Do sprawdzenia przez Piotra (bez wpływu na turę):** Settings → Billing → Actions.

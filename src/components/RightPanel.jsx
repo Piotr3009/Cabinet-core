@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
-import { useProjectStore, validateUnit, shelfLimits } from '../stores/projectStore.js';
+import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { getUnitType } from '../engine/types.js';

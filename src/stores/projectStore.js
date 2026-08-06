@@ -4,12 +4,12 @@ import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { snap as snapTo } from '../engine/format.js';
 import {
-  clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, endPanelPads, firstFreeUnitX,
+  clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, endPanelPads,
   freeSlotOnWall, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
   wallObstacles,
 } from '../engine/collision.js';
 import {
-  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls, wallWidth,
+  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls,
 } from '../engine/room.js';
 import { migrateDesign, normaliseDoorStyle, setCarcassTypeCount } from '../engine/design.js';
 import { autoPartsFor, takesPlinth, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';

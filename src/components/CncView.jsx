@@ -4,7 +4,11 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { layoutPanels, sheetPolygon, sheetRect, toSheet } from '../engine/cnc/layout.js';
 import { CNC_LAYERS, layerScreenColor } from '../engine/cnc/layers.js';
-import { exportUnitDxfZip } from '../lib/cncExport.js';
+import {
+  EXPORT_PRESETS, PART_GROUPS, exportablePanels, groupOfPanel,
+  panelIdsForPreset, presetOfSelection,
+} from '../engine/cnc/groups.js';
+import { exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
 
 // ─── CNC view ───
 // The workshop's visual check before the machine — the job AutoCAD used to do.
@@ -27,6 +31,10 @@ export default function CncView() {
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const notify = useUiStore((s) => s.notify);
+  // The parameter panel and the BOM own the right-hand edge; the export panel
+  // stands next to whichever of them is open rather than underneath it.
+  const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
+  const bomOpen = useUiStore((s) => s.bomOpen);
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
@@ -44,14 +52,61 @@ export default function CncView() {
   const [box, setBox] = useState(null);                 // viewport in sheet mm: { x, y, w }
   const [hidden, setHidden] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState({ unitId: null, known: '', ids: new Set() });
+  const [listOpen, setListOpen] = useState(true);
+
+  // ── which parts go on the sheet ───────────────────────────────────────────
+  // Everything the machine could cut, in cut-list order. The list, the picture
+  // and the exported DXF all start from this one array.
+  const cuttable = useMemo(() => (result ? exportablePanels(result.panels) : []), [result]);
+  const partsKey = useMemo(() => cuttable.map((p) => p.id).join('|'), [cuttable]);
+
+  // The selection is DERIVED, not synchronised: a part nobody has touched is
+  // in, a part that was ticked off stays off, and a part that appeared since
+  // (a drawer added, a door removed) arrives ticked. No effect, so there is no
+  // frame where the picture and the checkboxes disagree.
+  const selected = useMemo(() => {
+    if (picked.unitId !== (unit?.id ?? null)) return new Set(cuttable.map((p) => p.id));
+    const known = new Set(picked.known ? picked.known.split('|') : []);
+    const out = new Set();
+    for (const p of cuttable) if (!known.has(p.id) || picked.ids.has(p.id)) out.add(p.id);
+    return out;
+  }, [picked, unit?.id, cuttable]);
+
+  const setSelection = useCallback((ids) => {
+    setPicked({ unitId: unit?.id ?? null, known: partsKey, ids: new Set(ids) });
+  }, [unit?.id, partsKey]);
+
+  const togglePart = useCallback((id) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelection(next);
+  }, [selected, setSelection]);
+
+  const toggleGroup = useCallback((groupId) => {
+    const ids = cuttable.filter((p) => groupOfPanel(p) === groupId).map((p) => p.id);
+    const allOn = ids.every((id) => selected.has(id));
+    const next = new Set(selected);
+    for (const id of ids) { if (allOn) next.delete(id); else next.add(id); }
+    setSelection(next);
+  }, [cuttable, selected, setSelection]);
+
+  const activePreset = useMemo(
+    () => presetOfSelection(cuttable, [...selected]),
+    [cuttable, selected],
+  );
+
+  // The preview draws the SELECTED parts — and the export runs the same
+  // layout over the same array, which is what makes the file the picture.
+  const sheetPanels = useMemo(() => cuttable.filter((p) => selected.has(p.id)), [cuttable, selected]);
 
   const sheet = useMemo(() => {
-    if (!result) return null;
-    return layoutPanels(result.panels, result.drills, {
+    if (!result || !sheetPanels.length) return null;
+    return layoutPanels(sheetPanels, result.drills, {
       gap: profile.cnc.layoutGap,
       rowWidth: profile.cnc.layoutRowWidth,
     });
-  }, [result, profile.cnc.layoutGap, profile.cnc.layoutRowWidth]);
+  }, [result, sheetPanels, profile.cnc.layoutGap, profile.cnc.layoutRowWidth]);
 
   // ── viewport ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -142,17 +197,20 @@ export default function CncView() {
   };
 
   // ── layers actually present, for the legend ───────────────────────────────
+  // Counted over the parts actually on the sheet, so the legend describes the
+  // picture rather than the unit — untick the drawers and the drawer layers go.
   const layerCounts = useMemo(() => {
     const counts = new Map();
     if (!result) return counts;
+    const onSheet = new Set(sheetPanels.map((p) => p.id));
     const bump = (name, n = 1) => counts.set(name, (counts.get(name) || 0) + n);
-    for (const p of result.panels) {
-      if (p.cnc?.outline?.length >= 2) bump(p.cnc.layer || profile.puzzle.layers.outline);
+    for (const p of sheetPanels) {
+      bump(p.cnc.layer || profile.puzzle.layers.outline);
       for (const pk of p.cnc?.pockets || []) bump(pk.layer);
     }
-    for (const d of result.drills) bump(d.layer);
+    for (const d of result.drills) if (onSheet.has(d.panel)) bump(d.layer);
     return counts;
-  }, [result, profile.puzzle.layers.outline]);
+  }, [result, sheetPanels, profile.puzzle.layers.outline]);
 
   const legend = CNC_LAYERS.filter((l) => layerCounts.has(l.name));
   const toggle = (name) => setHidden((prev) => {
@@ -162,7 +220,9 @@ export default function CncView() {
   });
   const visible = (name) => !hidden.has(name);
 
-  const onDownload = async () => {
+  // The ZIP stays: one file per part is Piotr's way out when a single formatka
+  // comes back damaged and has to be re-cut on its own.
+  const onDownloadZip = async () => {
     if (!result) return;
     setBusy(true);
     try {
@@ -172,6 +232,16 @@ export default function CncView() {
       notify(err?.message || 'DXF export failed.', 'warn');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onDownloadSheet = () => {
+    if (!result) return;
+    try {
+      const { filename, parts } = exportSheetDxf(result, [...selected], profile);
+      notify(`${filename} — ${parts} parts, laid out as shown.`, 'ok');
+    } catch (err) {
+      notify(err?.message || 'DXF export failed.', 'warn');
     }
   };
 
@@ -210,6 +280,12 @@ export default function CncView() {
         </svg>
       )}
 
+      {!sheet && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <p className="text-sm text-ink-400">Nothing selected — tick a part or pick a preset.</p>
+        </div>
+      )}
+
       {/* toolbar */}
       <div className="absolute top-3 left-3 flex items-center gap-2 bg-shell-800/95 border border-shell-600 rounded px-2 py-1.5">
         <span className="text-xs text-gold uppercase tracking-wide">CNC</span>
@@ -225,15 +301,111 @@ export default function CncView() {
         ) : (
           <span className="text-xs text-ink-100">{unit.params.unit_num}</span>
         )}
-        <span className="text-[11px] text-ink-400">{result.panels.length} parts</span>
+        <span className="text-[11px] text-ink-400 tabular-nums">{selected.size} / {cuttable.length} parts</span>
         <span className="w-px h-4 bg-shell-600" />
         <button type="button" className="cc-btn-ghost" title="Zoom out" onClick={() => zoomBy(ZOOM_STEP)}>−</button>
         <button type="button" className="cc-btn-ghost" title="Zoom in" onClick={() => zoomBy(1 / ZOOM_STEP)}>+</button>
         <button type="button" className="cc-btn-ghost" title="Fit the whole sheet" onClick={fit}>Fit</button>
-        <span className="w-px h-4 bg-shell-600" />
-        <button type="button" className="cc-btn-gold" disabled={busy} onClick={onDownload}>
-          {busy ? 'Zipping…' : 'Download DXF (ZIP)'}
-        </button>
+      </div>
+
+      {/* export panel — what goes on the sheet, and how it leaves */}
+      <div
+        // top-14 keeps it clear of the canvas toolbar, which is centred over
+        // the whole canvas and would otherwise clip this panel's header.
+        className="absolute top-14 z-20 w-[268px] bg-shell-800/95 border border-shell-600 rounded flex flex-col max-h-[calc(100%-4.25rem)]"
+        // The BOM (560) and the parameter panel (310) are docked to the right
+        // edge; the export panel sits beside the open one, never under it.
+        style={{ right: (bomOpen ? 560 : (rightPanelOpen ? 310 : 0)) + 12 }}
+      >
+        <div className="flex items-center justify-between px-2.5 pt-2">
+          <span className="text-[11px] uppercase tracking-wide text-ink-400">Export</span>
+          <button
+            type="button"
+            className="text-[11px] text-ink-400 hover:text-gold"
+            onClick={() => setListOpen((v) => !v)}
+          >
+            {listOpen ? 'Hide list' : 'Show list'}
+          </button>
+        </div>
+
+        {/* presets — the four selections Piotr asked for by name */}
+        <div className="grid grid-cols-2 gap-1 px-2.5 pt-2">
+          {EXPORT_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              aria-pressed={activePreset === p.id}
+              className={`px-1.5 py-1 text-[11px] rounded border transition-colors ${activePreset === p.id
+                ? 'bg-gold text-shell-900 border-gold font-medium'
+                : 'border-shell-600 text-ink-100 hover:bg-shell-700'}`}
+              onClick={() => setSelection(panelIdsForPreset(cuttable, p.id))}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <p className="px-2.5 pt-1.5 text-[10px] text-ink-400">
+          {activePreset === 'custom' ? 'Custom selection' : 'Preset selection'} — the preview shows what will be exported.
+        </p>
+
+        {listOpen && (
+          <div className="mt-1.5 px-1.5 overflow-y-auto flex-1 min-h-0">
+            {PART_GROUPS.map((g) => {
+              const parts = cuttable.filter((p) => groupOfPanel(p) === g.id);
+              if (!parts.length) return null;
+              const on = parts.filter((p) => selected.has(p.id)).length;
+              return (
+                <div key={g.id} className="mb-1.5">
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-2 px-1 py-1 rounded hover:bg-shell-700 text-left"
+                    onClick={() => toggleGroup(g.id)}
+                    title={g.hint}
+                  >
+                    <Tick state={on === parts.length ? 'on' : (on === 0 ? 'off' : 'some')} />
+                    <span className="text-[11px] text-ink-100 flex-1 truncate">{g.label}</span>
+                    <span className="text-[10px] text-ink-400 tabular-nums">{on}/{parts.length}</span>
+                  </button>
+                  <ul>
+                    {parts.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className={`w-full flex items-center gap-2 pl-6 pr-1 py-0.5 rounded hover:bg-shell-700 text-left ${selected.has(p.id) ? '' : 'opacity-45'}`}
+                          onClick={() => togglePart(p.id)}
+                        >
+                          <Tick state={selected.has(p.id) ? 'on' : 'off'} small />
+                          <span className="text-[11px] text-ink-100 flex-1 truncate font-mono">{p.id}</span>
+                          <span className="text-[10px] text-ink-400 tabular-nums">
+                            {Math.round(p.w)}×{Math.round(p.h)}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="p-2 border-t border-shell-600 space-y-1.5">
+          <button
+            type="button"
+            className="cc-btn-gold w-full"
+            disabled={selected.size === 0}
+            onClick={onDownloadSheet}
+          >
+            Download DXF (one file)
+          </button>
+          <button type="button" className="cc-btn w-full" disabled={busy} onClick={onDownloadZip}>
+            {busy ? 'Zipping…' : 'Download ZIP (per panel)'}
+          </button>
+          <p className="text-[10px] text-ink-400 leading-snug">
+            One file: the selected parts, arranged as shown. ZIP: every part of the
+            unit in its own DXF, for re-cutting a single damaged panel.
+          </p>
+        </div>
       </div>
 
       {/* layer legend — click a row to hide that layer */}
@@ -261,6 +433,30 @@ export default function CncView() {
       </div>
     </div>
   );
+}
+
+// ─── checkbox ───
+// Drawn rather than an <input type="checkbox">: the row is the button, and a
+// real checkbox inside a button is a nested control the browser fights over.
+function Tick({ state, small = false }) {
+  const box = small ? 'w-3 h-3' : 'w-3.5 h-3.5';
+  if (state === 'on') {
+    return (
+      <span className={`${box} shrink-0 rounded-sm bg-gold border border-gold flex items-center justify-center`}>
+        <svg viewBox="0 0 10 10" className="w-2.5 h-2.5" aria-hidden="true">
+          <path d="M1.5 5.2 L4 7.5 L8.5 2.5" fill="none" stroke="#131313" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    );
+  }
+  if (state === 'some') {
+    return (
+      <span className={`${box} shrink-0 rounded-sm border border-gold flex items-center justify-center`}>
+        <span className="w-1.5 h-0.5 bg-gold" />
+      </span>
+    );
+  }
+  return <span className={`${box} shrink-0 rounded-sm border border-shell-500`} />;
 }
 
 // ─── one cut part ───

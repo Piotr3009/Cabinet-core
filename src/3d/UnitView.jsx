@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS, colorForRole, edgeColorForRole } from './constants.js';
 import DimLabel from './DimLabel.jsx';
@@ -8,23 +8,109 @@ import DimLabel from './DimLabel.jsx';
 // One unit, rendered straight from the ENGINE output: every panel record
 // carries a `box` in cabinet-local mm, so what you see is what the cut list
 // says (CLAUDE.md phase 2). Nothing here re-derives a dimension.
+//
+// Turn 3 adds the interactions on top of that, and they are all VIEW state:
+// a drawer slides out, a door swings on its hinge, the camera flies to what
+// was double-clicked. None of it reaches the engine, the BOM or the CNC sheet.
+
+/** Which kind of front this panel is, if any — that decides how it moves. */
+function frontKind(panel) {
+  if (panel.part === 'DRAWER-FRONT') return 'drawer';
+  if (panel.part === 'FRONT') return 'door';
+  return null;
+}
+
+/**
+ * One panel. Fronts animate towards their open state; everything else is a
+ * static box. The animation lives here, per panel, so opening one drawer does
+ * not re-render the rest of the unit.
+ */
+function MovingPanel({ panel: p, front, open, colour, edgeColour, depth, ...handlers }) {
+  const group = useRef(null);
+  const amount = useRef(0);
+
+  // A door rotates about its hinge edge, so the mesh is offset inside a group
+  // pinned to that edge; everything else sits at its own centre.
+  const hingeAtRight = p.meta?.hinge === 'R';
+  const pivot = front === 'door'
+    ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
+    : [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)];
+  const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
+
+  useFrame((_, delta) => {
+    if (!group.current || !front) return;
+    const target = open;
+    if (Math.abs(amount.current - target) < 0.001) { amount.current = target; } else {
+      // Frame-rate independent easing: fast at the start, settled in ~0.35 s.
+      amount.current += (target - amount.current) * Math.min(1, delta * 8);
+    }
+    const a = amount.current;
+    // The animation is an OFFSET from where the engine put the panel, never an
+    // absolute position: writing position.z directly moved every front to
+    // z = 0, i.e. inside the carcass, and the unit rendered as an open box.
+    if (front === 'drawer') {
+      // Slides straight out of the carcass, most of its own depth.
+      group.current.position.z = pivot[2] + mm(depth * 0.75) * a;
+      group.current.rotation.y = 0;
+    } else {
+      // Swings on the hinge side, about the group's origin.
+      const dir = p.meta?.hinge === 'R' ? 1 : -1;
+      group.current.rotation.y = dir * a * (Math.PI * 0.55);
+      group.current.position.z = pivot[2];
+    }
+  });
+
+  return (
+    <group ref={group} position={pivot}>
+      <mesh position={meshOffset} castShadow receiveShadow {...handlers}>
+        <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
+        <meshStandardMaterial
+          color={colour}
+          roughness={0.72}
+          metalness={0.02}
+          transparent={p.role === 'front'}
+          opacity={p.role === 'front' ? 0.93 : 1}
+        />
+        <Edges threshold={15} color={edgeColour} />
+      </mesh>
+    </group>
+  );
+}
 
 export default function UnitView({
-  unit, result, wallWidthMm, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
-  orbitRef, showLabels = true, shelfDrag = null,
+  unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
+  orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
+  frontColour = null, onSetTopInfill, onFillToCeiling,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const wallWidthMm = wall.width;
 
   const W = unit.params.width;
   const H = unit.params.height;
   const D = unit.params.depth;
   const legHeight = result.assemblies.carcass.legHeight || 0;
+  // A wall unit stands on nothing — it hangs at its mounting height. Every
+  // other type stands on its legs. Both numbers come from the engine.
+  const isWallMounted = result.assemblies.mount === 'wall';
+  const baseY = isWallMounted ? result.assemblies.mountHeight : legHeight;
+
+  // Where this unit stands: at `x_mm` along its wall, back against it, with the
+  // room centred on the world origin. Every number comes from engine/room.js,
+  // so a unit on wall 3 of an L-shaped room needs no special case here.
+  const wallStart = useMemo(() => new THREE.Vector3(
+    mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+  ), [wall.start.x, wall.start.y, roomCentre.x, roomCentre.y]);
+  const along = useMemo(() => new THREE.Vector3(wall.along.x, 0, wall.along.y), [wall.along.x, wall.along.y]);
+  const inward = useMemo(() => new THREE.Vector3(wall.inward.x, 0, wall.inward.y), [wall.inward.x, wall.inward.y]);
 
   // A vertical plane parallel to the wall, halfway into the cabinet — the ray
   // is intersected with it so the unit follows the cursor instead of itself.
-  const dragPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), -mm(D / 2)), [D]);
+  const dragPlane = useMemo(() => {
+    const point = wallStart.clone().addScaledVector(inward, mm(D / 2));
+    return new THREE.Plane().setFromNormalAndCoplanarPoint(inward, point);
+  }, [wallStart, inward, D]);
 
   const pointerToPlane = useCallback((clientX, clientY) => {
     const rect = gl.domElement.getBoundingClientRect();
@@ -40,19 +126,22 @@ export default function UnitView({
   // Listeners live on `window` (not the mesh) so a fast drag that outruns the
   // cursor does not drop; they are local closures, so removal always matches
   // the exact function that was added.
+  /** Distance of a world point along the wall, in mm from the wall's start. */
+  const alongMm = useCallback((point) => point.clone().sub(wallStart).dot(along) / MM, [wallStart, along]);
+
   const startDrag = useCallback((e) => {
     e.stopPropagation();
     onSelect();
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
-    drag.current = { offset: hit.x - mm(unit.position.x_mm - wallWidthMm / 2) };
+    drag.current = { offset: alongMm(hit) - unit.position.x_mm };
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
     const move = (ev) => {
       if (!drag.current) return;
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
-      onMove((p.x - drag.current.offset) / MM + wallWidthMm / 2, snapStep);
+      onMove(alongMm(p) - drag.current.offset, snapStep);
     };
     const up = () => {
       drag.current = null;
@@ -64,12 +153,66 @@ export default function UnitView({
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
-  }, [onSelect, pointerToPlane, unit.position.x_mm, wallWidthMm, orbitRef, onMove, snapStep]);
+  }, [onSelect, pointerToPlane, alongMm, unit.position.x_mm, orbitRef, onMove, snapStep]);
 
-  // Cabinet origin: pushed against the wall (z = 0 is the wall face), standing
-  // on its legs, offset along the wall by the unit position.
-  const originX = mm(unit.position.x_mm - wallWidthMm / 2);
-  const originY = mm(legHeight);
+  // Cabinet origin: on its wall, back against it (local z = 0 is the wall
+  // face), standing on its legs or hanging at its mount height.
+  const origin = useMemo(
+    () => wallStart.clone().addScaledVector(along, mm(unit.position.x_mm)).setY(mm(baseY)),
+    [wallStart, along, unit.position.x_mm, baseY],
+  );
+  const originY = mm(baseY);
+  // A turned unit pivots about the point where it meets the wall — the same
+  // anchor engine/collision.js rotates its footprint about, so the picture and
+  // the collision rules can never disagree about where it is.
+  //
+  // The SIGN matters and is not cosmetic: rotating about world Y takes local
+  // +X onto along·cosφ − inward·sinφ, while the footprint takes the width axis
+  // onto along·cosφ + inward·sinφ. Subtracting the angle here is what makes the
+  // two the same turn — with the sign the other way round a rotated unit swings
+  // behind the wall and disappears from the scene while the clamp thinks it is
+  // standing in the room.
+  const rotationRad = -((Number(unit.position.rotation_deg) || 0) * Math.PI) / 180;
+
+  // How tall the top infill is right now — the handle sits on top of it.
+  const topInfill = Number(unit.params.top_infill_mm) || 0;
+
+  /**
+   * Drag the top infill. The pointer's height above the unit IS the infill
+   * height, clamped by the store against the ceiling — so the piece grows
+   * under the cursor and stops when the room runs out.
+   */
+  const startTopInfillDrag = useCallback((e) => {
+    if (!onSetTopInfill) return;
+    e.stopPropagation();
+    onSelect();
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+    const unitTopY = originY + mm(H);
+
+    const move = (ev) => {
+      const p = pointerToPlane(ev.clientX, ev.clientY);
+      if (!p) return;
+      onSetTopInfill((p.y - unitTopY) / MM);
+    };
+    const up = () => {
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onSetTopInfill, onSelect, orbitRef, pointerToPlane, originY, H]);
+
+  /** World position of a panel's centre, for "fly the camera here". */
+  const panelWorldCentre = useCallback((p) => {
+    const local = new THREE.Vector3(
+      mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2),
+    );
+    local.applyAxisAngle(new THREE.Vector3(0, 1, 0), wall.angle + rotationRad);
+    return local.add(origin);
+  }, [origin, wall.angle, rotationRad]);
 
   // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
   // clamping and snapping live in the store so the rules stay in one place.
@@ -103,30 +246,43 @@ export default function UnitView({
   }, [onMoveShelf, onSelect, pointerToPlane, originY, orbitRef, snapStep, onShelfDragState, unit.id]);
 
   return (
-    <group position={[originX, originY, 0]}>
+    <group position={origin} rotation={[0, wall.angle + rotationRad, 0]}>
       {result.panels.filter((p) => p.box).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
+        const front = frontKind(p);
         return (
-          <mesh
+          <MovingPanel
             key={p.id}
-            position={[mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]}
-            castShadow
-            receiveShadow
-            onPointerDown={shelfId ? (e) => startShelfDrag(e, shelfId, p.box.y) : startDrag}
-            onPointerOver={shelfId ? () => { document.body.style.cursor = 'ns-resize'; } : undefined}
-            onPointerOut={shelfId ? () => { document.body.style.cursor = ''; } : undefined}
-          >
-            <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
-            <meshStandardMaterial
-              color={beingDragged ? COLORS.goldSoft : colorForRole(p.role)}
-              roughness={0.72}
-              metalness={0.02}
-              transparent={p.role === 'front'}
-              opacity={p.role === 'front' ? 0.93 : 1}
-            />
-            <Edges threshold={15} color={selected || beingDragged ? COLORS.gold : edgeColorForRole(p.role)} />
-          </mesh>
+            panel={p}
+            front={front}
+            open={front ? (openFronts?.[p.id] ?? 0) : 0}
+            colour={beingDragged
+              ? COLORS.goldSoft
+              // The project's front colour is what a front is actually painted:
+              // chosen in Design Settings, resolved per unit, seen here.
+              : (p.role === 'front' && frontColour ? frontColour : colorForRole(p.role))}
+            edgeColour={selected || beingDragged ? COLORS.gold : edgeColorForRole(p.role)}
+            depth={D}
+            onPointerDown={(e) => {
+              if (shelfId) { startShelfDrag(e, shelfId, p.box.y); return; }
+              startDrag(e);
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              // A front opens; anything else pulls the camera in to look at it.
+              if (front && onToggleFront) onToggleFront(p.id);
+              else if (onFocus) onFocus(panelWorldCentre(p), Math.max(p.box.w, p.box.h, p.box.d));
+            }}
+            onContextMenu={(e) => {
+              e.stopPropagation();
+              e.nativeEvent?.preventDefault?.();
+              onSelect();
+              if (onContextMenu) onContextMenu({ x: e.clientX, y: e.clientY, panelId: p.id, part: p.part });
+            }}
+            onPointerOver={shelfId ? () => { document.body.style.cursor = 'ns-resize'; } : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined)}
+            onPointerOut={(shelfId || front) ? () => { document.body.style.cursor = ''; } : undefined}
+          />
         );
       })}
 
@@ -166,13 +322,42 @@ export default function UnitView({
         </mesh>
       )}
 
-      {/* legs */}
-      {legHeight > 0 && [0, 1].map((i) => (
-        <mesh key={i} position={[i === 0 ? mm(60) : mm(W - 60), mm(-legHeight / 2), mm(D / 2)]}>
-          <boxGeometry args={[mm(78), mm(legHeight), mm(78)]} />
+      {/* legs — the engine's own layout: four in the corners, a fifth in the
+          middle over the width threshold. The view places what it is given. */}
+      {result.assemblies.legs?.positions.map((leg, i) => (
+        <mesh
+          key={`leg-${i}`}
+          position={[mm(leg.x + result.assemblies.legs.width / 2), mm(-legHeight / 2), mm(leg.z + result.assemblies.legs.width / 2)]}
+        >
+          <boxGeometry args={[mm(result.assemblies.legs.width), mm(legHeight), mm(result.assemblies.legs.width)]} />
           <meshStandardMaterial color="#4a4a4a" roughness={0.6} />
         </mesh>
       ))}
+
+      {/* Top infill: grab it and drag UP to the ceiling, or double-click it to
+          send it there. The piece itself is drawn from the engine like every
+          other panel; this is the handle on top of it. */}
+      {onSetTopInfill && (
+        <mesh
+          position={[mm(W / 2), mm(H + Math.max(topInfill, 0) + 12), mm(D - 30)]}
+          onPointerDown={startTopInfillDrag}
+          onDoubleClick={(e) => { e.stopPropagation(); onFillToCeiling?.(); }}
+          onPointerOver={() => { document.body.style.cursor = 'ns-resize'; }}
+          onPointerOut={() => { document.body.style.cursor = ''; }}
+        >
+          <boxGeometry args={[mm(Math.min(W, 240)), mm(24), mm(60)]} />
+          <meshStandardMaterial color={selected ? COLORS.gold : COLORS.rail} roughness={0.5} transparent opacity={selected ? 0.9 : 0.35} />
+        </mesh>
+      )}
+
+      {/* wall unit: the bracket line it hangs from, so it does not read as
+          floating by accident */}
+      {isWallMounted && (
+        <mesh position={[mm(W / 2), mm(H) + 0.004, mm(6)]}>
+          <boxGeometry args={[mm(W), 0.006, mm(12)]} />
+          <meshStandardMaterial color="#8d8d92" roughness={0.5} metalness={0.4} />
+        </mesh>
+      )}
 
       {/* selection outline — gold, around the whole carcass */}
       {selected && (
@@ -185,7 +370,7 @@ export default function UnitView({
 
       {showLabels && (
         <>
-          <DimLabel position={[mm(W / 2), mm(-legHeight) - 0.09, mm(D)]} text={`${Math.round(W)}`} tone={selected ? 'gold' : 'dim'} />
+          <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={`${Math.round(W)}`} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={`${Math.round(H)}`} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${Math.round(D)} deep`} tone={selected ? 'gold' : 'dim'} />
         </>

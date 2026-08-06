@@ -1,0 +1,462 @@
+{
+  "meta": {
+    "source": "KIT_SINK.lsp (constants L259-261, back L313-315, hinges L320-324, panel dims L417-434, side geometry L24-135, bottom L149-193, CSV L589-615)",
+    "computed_by": "Claude (tura 3 autonomous session, 06.08.2026), formulas traced line-by-line from the LISP — NOT from the engine",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. If engine output differs, the ENGINE is wrong (or file a BLOCKERS.md entry). Never edit expected values to make tests green.",
+    "units": "mm, m2, m"
+  },
+  "sink_rules": {
+    "no_top": "NO TOP panel — replaced by two horizontal holders (HOLDER-F, HOLDER-B) 100mm high on edge, length = internalW; CSV lists them as 100 x internalW",
+    "back": "back panel INSIDE the cabinet, 50mm forward of the rear, screwed (no puzzles): backW = W - 2G - 4, backH = H - 120 - G",
+    "sides": "plain rectangle outline (no back tenons, no top sockets); bottom puzzle sockets only; 3 bottom screws (50, mid, sideW-50) at y = G/2+0.5; 4 holder screws at x {G/2, sideW-G/2}, y {H-30, H-70}; 3 back screws at x = sideW-37 (BUL; mirrored BUR), y {100, H/2, H-100}",
+    "bottom": "tenons on TWO edges only — the two side edges (into BUL/BUR). Both the back edge (the back is a screwed panel 50 mm forward) and the front edge are straight. NOTE: the header comment above drawSINK_BOTTOM (L150) claims a front-edge tenon; the executable point list L156-159 does not draw one and the dog-bones L188-191 cover the side edges only — the geometry wins.",
+    "hinges": "top hinge 50mm lower than BUD: [100, H-300, H-150]; cups [100, frontH-297, frontH-147]",
+    "shelves": "depth reduced by backSetback + G: shelfH = D - G - 20 - 50 - G; shelf pin columns at x 70 and sideW - 120 (NOT sideW-70)",
+    "lisp_panel_count": "LISP totalPanels = 4 + 2 holders + shelves"
+  },
+  "cases": [
+    {
+      "id": "SINK-A",
+      "description": "Default sink base 600x770x558, 1 shelf, hinge L",
+      "inputs": {
+        "type": "SINK",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "shelves": 1,
+        "hinge": "L",
+        "unit_num": "S01"
+      },
+      "derived": {
+        "doors": 1,
+        "internal_width": 564,
+        "internal_depth": 540,
+        "back_w": 560,
+        "back_h": 632,
+        "holder_w": 564,
+        "holder_h": 100
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 540,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 0.77
+          },
+          "area_m2": 0.416
+        },
+        {
+          "id": "BUR",
+          "w": 540,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.77
+          },
+          "area_m2": 0.416
+        },
+        {
+          "id": "BOTTOM",
+          "w": 564,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.305
+        },
+        {
+          "id": "BACK",
+          "w": 560,
+          "h": 632,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.354
+        },
+        {
+          "id": "HOLDER-F",
+          "w": 100,
+          "h": 564,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.056
+        },
+        {
+          "id": "HOLDER-B",
+          "w": 100,
+          "h": 564,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.056
+        },
+        {
+          "id": "SHELF-1",
+          "w": 560,
+          "h": 452,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.253
+        },
+        {
+          "id": "S01-F",
+          "w": 597,
+          "h": 767,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.73
+          },
+          "area_m2": 0.458
+        }
+      ],
+      "drills": {
+        "hinge_centers": [
+          100,
+          470,
+          620
+        ],
+        "side_hinge_holes_y": [
+          [
+            84,
+            116
+          ],
+          [
+            454,
+            486
+          ],
+          [
+            604,
+            636
+          ]
+        ],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": [
+          "BUL"
+        ],
+        "front_cup_y": [
+          100,
+          470,
+          620
+        ],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "shelf_row_y": [
+          385
+        ],
+        "shelf_hole_x": [
+          70,
+          420
+        ],
+        "back_screw_x_bul": 503,
+        "back_screw_y": [
+          100,
+          385,
+          670
+        ],
+        "holder_screw_x": [
+          9,
+          531
+        ],
+        "holder_screw_y": [
+          740,
+          700
+        ],
+        "bottom_screw_x": [
+          50,
+          270,
+          490
+        ],
+        "bottom_screw_y": 9.5
+      },
+      "csv_labels": [
+        "S01,BUL,540,770,<,0.77,0.416",
+        "S01,BUR,540,770,>,0.77,0.416",
+        "S01,BOTTOM,564,540,>,0.56,0.305",
+        "S01,BACK,560,632,,0,0.354",
+        "S01,HOLDER-F,100,564,,0,0.056",
+        "S01,HOLDER-B,100,564,,0,0.056",
+        "S01,SHELF-1,560,452,>,0.56,0.253",
+        "S01,S01-F,597,767,<>^v,2.73,0.458"
+      ],
+      "totals": {
+        "panels_lisp": 7,
+        "fronts": 1,
+        "board_area_m2": 1.856,
+        "front_area_m2": 0.458,
+        "edging_m": 2.664,
+        "edging_front_m": 2.728,
+        "legs": 4,
+        "hinges": 3
+      }
+    },
+    {
+      "id": "SINK-B",
+      "description": "Wide sink base 900x770x558, 2 doors, 2 shelves",
+      "inputs": {
+        "type": "SINK",
+        "width": 900,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "shelves": 2,
+        "hinge": null,
+        "unit_num": "S02"
+      },
+      "derived": {
+        "doors": 2,
+        "internal_width": 864,
+        "internal_depth": 540,
+        "back_w": 860,
+        "back_h": 632,
+        "holder_w": 864,
+        "holder_h": 100,
+        "door_width": 447
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 540,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 0.77
+          },
+          "area_m2": 0.416
+        },
+        {
+          "id": "BUR",
+          "w": 540,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.77
+          },
+          "area_m2": 0.416
+        },
+        {
+          "id": "BOTTOM",
+          "w": 864,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.86
+          },
+          "area_m2": 0.467
+        },
+        {
+          "id": "BACK",
+          "w": 860,
+          "h": 632,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.544
+        },
+        {
+          "id": "HOLDER-F",
+          "w": 100,
+          "h": 864,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.086
+        },
+        {
+          "id": "HOLDER-B",
+          "w": 100,
+          "h": 864,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.086
+        },
+        {
+          "id": "SHELF-1",
+          "w": 860,
+          "h": 452,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.86
+          },
+          "area_m2": 0.389
+        },
+        {
+          "id": "SHELF-2",
+          "w": 860,
+          "h": 452,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.86
+          },
+          "area_m2": 0.389
+        },
+        {
+          "id": "S02-FL",
+          "w": 447,
+          "h": 767,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.43
+          },
+          "area_m2": 0.343
+        },
+        {
+          "id": "S02-FR",
+          "w": 447,
+          "h": 767,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.43
+          },
+          "area_m2": 0.343
+        }
+      ],
+      "drills": {
+        "hinge_centers": [
+          100,
+          470,
+          620
+        ],
+        "side_hinge_holes_y": [
+          [
+            84,
+            116
+          ],
+          [
+            454,
+            486
+          ],
+          [
+            604,
+            636
+          ]
+        ],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": [
+          "BUL",
+          "BUR"
+        ],
+        "front_cup_y": [
+          100,
+          470,
+          620
+        ],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "shelf_row_y": [
+          262.67,
+          507.33
+        ],
+        "shelf_hole_x": [
+          70,
+          420
+        ],
+        "back_screw_x_bul": 503,
+        "back_screw_y": [
+          100,
+          385,
+          670
+        ],
+        "holder_screw_x": [
+          9,
+          531
+        ],
+        "holder_screw_y": [
+          740,
+          700
+        ],
+        "bottom_screw_x": [
+          50,
+          270,
+          490
+        ],
+        "bottom_screw_y": 9.5
+      },
+      "csv_labels": [
+        "S02,BUL,540,770,<,0.77,0.416",
+        "S02,BUR,540,770,>,0.77,0.416",
+        "S02,BOTTOM,864,540,>,0.86,0.467",
+        "S02,BACK,860,632,,0,0.544",
+        "S02,HOLDER-F,100,864,,0,0.086",
+        "S02,HOLDER-B,100,864,,0,0.086",
+        "S02,SHELF-1,860,452,>,0.86,0.389",
+        "S02,SHELF-2,860,452,>,0.86,0.389",
+        "S02,S02-FL,447,767,<>^v,2.43,0.343",
+        "S02,S02-FR,447,767,<>^v,2.43,0.343"
+      ],
+      "totals": {
+        "panels_lisp": 8,
+        "fronts": 2,
+        "board_area_m2": 2.792,
+        "front_area_m2": 0.686,
+        "edging_m": 4.124,
+        "edging_front_m": 4.856,
+        "legs": 4,
+        "hinges": 6
+      }
+    }
+  ],
+  "verify_with_piotr": [
+    "holder screw pattern (2 per side per holder, at G/2 from the edges, 30/70 from the top) — confirm",
+    "back screws at 37mm from the back edge, y {100, H/2, H-100} — confirm",
+    "sink shelf pin back column at sideW-120 — confirm",
+    "CSV lists HOLDER rows as 100 x internalW (rotated) — confirm the saw wants them this way round",
+    "holders: edged or unedged? the kit's CSV says unedged, its summary counts 2 x internal width of edging"
+  ],
+  "lisp_summary_quirks": [
+    "KIT_SINK totalEdging (L515-520) adds 2 x szerRAIL for the two holders, but the kit's own CSV writes both HOLDER rows with EDGE='' and EDG_L=0 (L599-602). The fixture totals follow the CSV (per-panel edging), which is what the edgebander actually receives; the summary figure would be 1.128 m higher for SINK-A. Same class of internal inconsistency as golden-wardrobe.json's lisp_summary_quirks — recorded, not silently reconciled (BLOCKERS.md #13).",
+    "totalPanels (L504) = 4 + 2 holders + shelves; the fixture follows it."
+  ]
+}

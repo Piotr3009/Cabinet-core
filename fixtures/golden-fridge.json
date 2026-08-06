@@ -1,0 +1,257 @@
+{
+  "meta": {
+    "source": "KIT_FRIDGE.lsp (calcs L105-130, BUL/BUR screws L293-323, rails L338-375, back-top L377-411, spurs L413-416, CSV L524-551)",
+    "computed_by": "Claude (tura 3 autonomous session, 06.08.2026), formulas traced line-by-line from the LISP — NOT from the engine",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. If engine output differs, the ENGINE is wrong (or file a BLOCKERS.md entry). Never edit expected values to make tests green.",
+    "units": "mm, m2, m"
+  },
+  "fridge_rules": {
+    "geometry": "built-in fridge housing, defaults 600 x 2100 x 558, min height 1900 (LISP resets invalid to 2100; engine raises to 1900 with warning), fridgeH input default 1786",
+    "zones": "fixed panel at G + fridgeH (internalW x internalD, screwed, no puzzles, edged >); spursH = H - fixedPanelY - G",
+    "back": "NO full back: RAIL1 (W x 200, sockets to BUL/BUR + 2 sockets to BOTTOM) at the very bottom, RAIL2 (W x 200, sockets to BUL/BUR only) centred at fridgeH/2, BACK-TOP (W x (spursH + G), sockets to BUL/BUR + 2 sockets to TOP + screws) above the fixed panel",
+    "spurs": "SPURS panel (W - 2G - 8) x (spursH - G) on 25x25 wood blocks, 100mm from the front, plain rectangle",
+    "hinges": "always the tall rule (calcHingePositionsTall) -> 6 hinges at the 2100 default; cups = hinge centers passed through",
+    "side_screws": "per side: 3 block screws at x = 100+12.5+G (mirrored on BUR), y {fixedPanelY+G+37.5, +87.5, H-50}; 2 fixed-panel screws at x {50, sideW-50}, y = fixedPanelY + G/2",
+    "no_interior": "no shelves, no drawers, no rail — the fridge fills the lower zone"
+  },
+  "cases": [
+    {
+      "id": "FRIDGE-A",
+      "description": "Default fridge housing 600x2100x558, fridgeH 1786, hinge L",
+      "inputs": {
+        "type": "FRIDGE",
+        "width": 600,
+        "height": 2100,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "fridge_h": 1786,
+        "hinge": "L",
+        "unit_num": "F01"
+      },
+      "derived": {
+        "doors": 1,
+        "internal_width": 564,
+        "internal_depth": 540,
+        "fixed_panel_y": 1804,
+        "spurs_zone_h": 278,
+        "back_top_w": 600,
+        "back_top_h": 296,
+        "spurs_w": 556,
+        "spurs_h": 260
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 540,
+          "h": 2100,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 2.1
+          },
+          "area_m2": 1.134
+        },
+        {
+          "id": "BUR",
+          "w": 540,
+          "h": 2100,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 2.1
+          },
+          "area_m2": 1.134
+        },
+        {
+          "id": "TOP",
+          "w": 564,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.305
+        },
+        {
+          "id": "BOTTOM",
+          "w": 564,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.305
+        },
+        {
+          "id": "FIXED",
+          "w": 564,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.305
+        },
+        {
+          "id": "RAIL1",
+          "w": 600,
+          "h": 200,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.12
+        },
+        {
+          "id": "RAIL2",
+          "w": 600,
+          "h": 200,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.12
+        },
+        {
+          "id": "BACK",
+          "w": 600,
+          "h": 296,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.178
+        },
+        {
+          "id": "SPURS",
+          "w": 556,
+          "h": 260,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.145
+        },
+        {
+          "id": "F01-F",
+          "w": 597,
+          "h": 2097,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 5.39
+          },
+          "area_m2": 1.252
+        }
+      ],
+      "drills": {
+        "hinge_centers": [
+          100,
+          480,
+          860,
+          1240,
+          1620,
+          2000
+        ],
+        "side_hinge_holes_y": [
+          [
+            84,
+            116
+          ],
+          [
+            464,
+            496
+          ],
+          [
+            844,
+            876
+          ],
+          [
+            1224,
+            1256
+          ],
+          [
+            1604,
+            1636
+          ],
+          [
+            1984,
+            2016
+          ]
+        ],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": [
+          "BUL"
+        ],
+        "front_cup_y": [
+          100,
+          480,
+          860,
+          1240,
+          1620,
+          2000
+        ],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "block_screw_x_bul": 130.5,
+        "block_screw_y": [
+          1859.5,
+          1909.5,
+          2050
+        ],
+        "fixed_screw_x": [
+          50,
+          490
+        ],
+        "fixed_screw_y": 1813
+      },
+      "csv_labels": [
+        "F01,BUL,540,2100,<,2.10,1.134",
+        "F01,BUR,540,2100,>,2.10,1.134",
+        "F01,TOP,564,540,>,0.56,0.305",
+        "F01,BOTTOM,564,540,>,0.56,0.305",
+        "F01,FIXED,564,540,>,0.56,0.305",
+        "F01,RAIL1,600,200,,0,0.120",
+        "F01,RAIL2,600,200,,0,0.120",
+        "F01,BACK,600,296,,0,0.178",
+        "F01,SPURS,556,260,,0,0.145",
+        "F01,F01-F,597,2097,<>^v,5.39,1.252"
+      ],
+      "totals": {
+        "panels_lisp": 9,
+        "fronts": 1,
+        "board_area_m2": 3.744,
+        "front_area_m2": 1.252,
+        "edging_m": 5.892,
+        "edging_front_m": 5.388,
+        "legs": 4,
+        "hinges": 6
+      }
+    }
+  ],
+  "verify_with_piotr": [
+    "RAIL2 centred at fridgeH/2 (200mm strip) — confirm position",
+    "BACK-TOP overlaps the fixed panel by G (wysBACKTOP = spursH + G) — confirm",
+    "SPURS clearances: -8 width, -G height, 100mm from the front on 25x25 blocks — confirm",
+    "sides keep FULL puzzle tenons on the back edge although there is no full back panel to receive them (LISP draws standard drawBUL/drawBUR) — confirm this is intended"
+  ]
+}

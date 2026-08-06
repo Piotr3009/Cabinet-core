@@ -71,6 +71,8 @@ export const DEFAULT_CABINET_PROFILE = {
       base: { mode: 'base', secondFromTop: 300 },                 // [100, H−300, H−100]
       tall: { mode: 'tall', sixHingeMinHeight: 1600, innerBelow: 3, innerAtOrAbove: 4 },
       low:  { mode: 'low', twoHingeMaxHeight: 800, threeHingeMaxHeight: 1200, innerAtOrAbove: 2 },
+      // KIT_SINK L323: the top hinge drops 50 mm to clear the front holder.
+      sink: { mode: 'sink', secondFromTop: 300, topFromTop: 150 },
     },
     // Hinge cups drilled in the front panel
     cups: {
@@ -85,6 +87,8 @@ export const DEFAULT_CABINET_PROFILE = {
       // on the (shorter) front panel; 'hingeCentres' = KIT_WARDROBE_FULL, which
       // passes the carcass hinge centres straight through.
       baseOffsets: { bottom: 100, upperFromTop: 297, topFromTop: 97 },
+      // KIT_SINK L434 — the top cup follows its hinge 50 mm down the door.
+      sinkOffsets: { bottom: 100, upperFromTop: 297, topFromTop: 147 },
     },
   },
 
@@ -195,6 +199,134 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 600, height: 770, depth: 558 },
   },
 
+  // ─── Legs (shared rule for every standing type) ───
+  // Four in the corners; over `extraLegOverWidth` a FIFTH goes in the
+  // geometric centre of the footprint (Piotr, turn 3). The AutoLISP only ever
+  // draws a PAIR in the elevation view (drawLegPair, legW 78 inset by G) and
+  // carries no leg drilling at all, so nothing here emits holes — this is the
+  // hardware count and the 3D placement.
+  legs: {
+    cornerCount: 4,
+    extraLegOverWidth: 1000,
+    width: 78,              // LISP drawLegPair legW
+    insetFromSide: null,    // null = one board thickness, as the LISP does
+    insetFromFront: 50,
+    insetFromBack: 50,
+  },
+
+  // ─── Wall unit (KIT_WUD_FULL) ───
+  wallUnit: {
+    defaults: { width: 600, height: 720, depth: 400, mountHeight: 1500 },
+    doorExtend: 38,          // handleless grab edge: front runs this far below
+    hangers: {
+      count: 2,
+      holeDiameter: 5,
+      fromBackEdge: [21, 53],  // two holes per side panel
+      fromTop: 53,
+      layer: 'HINGES_5MM',
+      // Cut-outs in the back panel, both top corners
+      cutoutWidth: 30,
+      cutoutHeight: 58,
+      cutoutLayer: 'HANGER_HOLE',
+    },
+  },
+
+  // ─── Tall unit (KIT_BUDTALL_FULL) ───
+  tallUnit: {
+    minHeight: 1100,
+    defaults: { width: 600, height: 2100, depth: 558 },
+  },
+
+  // ─── Low cabinet (KIT_LOW_CABINET_FULL) ───
+  lowCabinet: {
+    minHeight: 300,
+    defaults: { width: 600, height: 600, depth: 578, railOffset: 200 },
+  },
+
+  // ─── Base drawer unit, 3 drawers 4:3:2 (KIT_BUDR_FULL) ───
+  baseDrawerUnit: {
+    defaults: { width: 600, height: 770, depth: 558 },
+    ratio: [4, 3, 2],           // front heights split of (H − stackGaps)
+    gap: 3,                     // between fronts, and the top clearance
+    frontWidthDeduction: 3,     // front W = W − 3 (overlay, like a single door)
+    sideRatio: 0.7,             // box side height = round(0.7 × front height)
+    boxWidthClearance: 10,      // box W = internal W − 10
+    boxFrontBoards: 4,          // box front/back length = W − 4G − 10
+    boxFrontClearance: 10,
+    boxFrontHeightDeduction: 15,
+    boxFrontHeightExtra: 1,
+    bottomOversize: 13,
+    depthAllowance: 20,         // usable depth = D − G − 20 (NOT the wardrobe rule)
+    firstRowFromBottom: 38,     // runner row above each front's base
+    frontScrewFromSide: 50,     // + 2×G + halfDiameter, see cabinet.js
+    frontScrewExtra: 3.5,
+    frontScrewFromBottom: 96.5, // + G on the bottom drawer
+    frontScrewDiameter: 3,
+    frontScrewLayer: 'FRONT_HINGES_3MM',
+    boxScrewFromEdge: 50,
+    bottomScrewFromSide: 70,
+    bottomScrewFromEnd: 9,
+    runnerPocketWidth: 15,      // DRAWER_RUNNER_POCKET strip on the box side
+    bottomPocketExtra: 1,       // DRAWER_BOTTOM_POCKET strip = G + 1 wide
+    pocketOvershoot: 10,
+  },
+
+  // ─── Sink base (KIT_SINK) ───
+  sinkUnit: {
+    defaults: { width: 600, height: 770, depth: 558 },
+    railHeight: 100,            // two holders on edge instead of a TOP panel
+    backSetback: 50,            // back panel sits this far forward, inside
+    backHeightDeduction: 120,   // back H = H − 120 − G
+    backWidthClearance: 4,      // back W = W − 2G − 4
+    backScrewFromBackEdge: 37,
+    backScrewFromEnd: 100,
+    holderScrewFromTop: [30, 70],
+    shelfBackColumnFromEdge: 120,  // shelf pin back column (not the usual 70)
+  },
+
+  // ─── Fridge housing (KIT_FRIDGE) ───
+  fridgeUnit: {
+    minHeight: 1900,
+    defaults: { width: 600, height: 2100, depth: 558, fridgeH: 1786 },
+    railHeight: 200,            // the two back strips
+    spursFromFront: 100,
+    spursWidthClearance: 8,
+    blockSize: 25,              // 25 × 25 wood blocks carrying the spurs panel
+    blockScrewFromFront: 100,
+    blockScrewOffsets: [37.5, 87.5],
+    blockScrewFromTop: 50,
+    fixedScrewFromEnd: 50,
+  },
+
+  // ─── Construction automatics (turn 3, phase 7) ───
+  // Parts nobody draws by hand: the plinth under a run of units, the scribe
+  // filler between a unit and the wall, and the panel that closes the gap
+  // between a unit and the ceiling. They are cut pieces like any other — they
+  // go in the BOM and on the CNC sheet — so their numbers live here.
+  autoParts: {
+    plinth: {
+      enabled: true,
+      // height: null = the unit's own leg height, so raising the legs raises
+      // the plinth with them instead of leaving a gap.
+      height: null,
+      setback: 50,          // recessed from the front face (toe kick)
+      thickness: null,      // null = the unit's board thickness
+    },
+    topInfill: {
+      defaultHeight: 40,    // every unit gets one the moment it is placed
+      minHeight: 10,
+      thickness: null,
+    },
+    sideInfill: {
+      // The width comes from Design Settings (project level). This is the
+      // widest gap the workshop will close with a scribe filler at all — a
+      // 200 mm "filler" is a cabinet, not a scribe.
+      maxWidth: 120,
+      minWidth: 3,
+      thickness: null,
+    },
+  },
+
   // ─── CNC sheet + DXF output ───
   // Layer NAMES live in engine/cnc/layers.js (they are a machine contract, not
   // a workshop preference). What belongs here is the sheet metrics.
@@ -227,6 +359,15 @@ export const DEFAULT_CABINET_PROFILE = {
     unitMagnet: 40,            // butt a unit against its neighbour within this
     minUnitGap: 0,             // units stand edge to edge; > 0 forces a scribe gap
   },
+
+  // ─── Distance arrows on the canvas (CLAUDE.md turn 3, phase 8) ───
+  // The measurements the toolbar draws: unit to unit, and unit to wall.
+  dimensions: {
+    minGap: 2,            // below this the two things are touching, not spaced
+    arrowHead: 45,        // length of the arrow head, in room mm
+    standoff: 90,         // how far in front of the units the line is drawn
+    height: 120,          // how high above a unit's base the line floats
+  },
 };
 
 // ─── Single read point ───
@@ -257,7 +398,8 @@ export function migrateCabinetProfile(profile) {
       ...D.hinges, ...profile.hinges,
       rules: { ...D.hinges.rules, ...profile.hinges?.rules },
       cups: { ...D.hinges.cups, ...profile.hinges?.cups,
-        baseOffsets: { ...D.hinges.cups.baseOffsets, ...profile.hinges?.cups?.baseOffsets } },
+        baseOffsets: { ...D.hinges.cups.baseOffsets, ...profile.hinges?.cups?.baseOffsets },
+        sinkOffsets: { ...D.hinges.cups.sinkOffsets, ...profile.hinges?.cups?.sinkOffsets } },
     },
     shelfHoles: { ...D.shelfHoles, ...profile.shelfHoles },
     puzzle: { ...D.puzzle, ...profile.puzzle, layers: { ...D.puzzle.layers, ...profile.puzzle?.layers } },
@@ -270,9 +412,27 @@ export function migrateCabinetProfile(profile) {
       rail: { ...D.wardrobe.rail, ...profile.wardrobe?.rail },
     },
     baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
+    legs: { ...D.legs, ...profile.legs },
+    wallUnit: {
+      ...D.wallUnit, ...profile.wallUnit,
+      defaults: { ...D.wallUnit.defaults, ...profile.wallUnit?.defaults },
+      hangers: { ...D.wallUnit.hangers, ...profile.wallUnit?.hangers },
+    },
+    tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
+    lowCabinet: { ...D.lowCabinet, ...profile.lowCabinet, defaults: { ...D.lowCabinet.defaults, ...profile.lowCabinet?.defaults } },
+    baseDrawerUnit: { ...D.baseDrawerUnit, ...profile.baseDrawerUnit, defaults: { ...D.baseDrawerUnit.defaults, ...profile.baseDrawerUnit?.defaults } },
+    sinkUnit: { ...D.sinkUnit, ...profile.sinkUnit, defaults: { ...D.sinkUnit.defaults, ...profile.sinkUnit?.defaults } },
+    fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
+    autoParts: {
+      ...D.autoParts, ...profile.autoParts,
+      plinth: { ...D.autoParts.plinth, ...profile.autoParts?.plinth },
+      topInfill: { ...D.autoParts.topInfill, ...profile.autoParts?.topInfill },
+      sideInfill: { ...D.autoParts.sideInfill, ...profile.autoParts?.sideInfill },
+    },
     cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },
+    dimensions: { ...D.dimensions, ...profile.dimensions },
   };
 }
 

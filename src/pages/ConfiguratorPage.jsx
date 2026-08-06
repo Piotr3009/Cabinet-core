@@ -3,12 +3,15 @@ import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
+import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
 import Toast from '../components/Toast.jsx';
+import ContextMenu from '../components/ContextMenu.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
+import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
@@ -71,6 +74,7 @@ export default function ConfiguratorPage() {
           <Scene onCaptureReady={onCaptureReady} />
         </div>
         {viewMode === 'cnc' && <CncView />}
+        <CanvasToolbar />
 
         {units.length === 0 && viewMode === '3d' && (
           <div className="absolute inset-x-0 bottom-10 flex justify-center pointer-events-none">
@@ -84,8 +88,10 @@ export default function ConfiguratorPage() {
         {rightPanelOpen && !bomOpen && <RightPanel />}
         {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} />}
         {modal === 'room' && <RoomModal />}
+        {modal === 'design' && <DesignSettingsModal />}
         {modal === 'add-items' && selectedUnit && <AddItemsModal unit={selectedUnit} />}
         {modal === 'auth' && <AuthModal />}
+        <ContextMenu />
         <Toast />
       </div>
     </div>

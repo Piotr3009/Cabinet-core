@@ -169,7 +169,12 @@ test('assignment prices hardware by the piece, with no yield applied', () => {
 });
 
 test('every hardware role is offered in the UI, and only hardware materials fit it', () => {
-  const bom = buildBom([entryFor('u1', { unit_num: 'W01', drawers: 2, shelves: 2, rail: true, rail_offset: 1400 })]);
+  // A wardrobe covers every role except the wall hangers, which only a wall
+  // unit has — so the project has to contain one for the check to mean anything.
+  const bom = buildBom([
+    entryFor('u1', { unit_num: 'W01', drawers: 2, shelves: 2, rail: true, rail_offset: 1400 }),
+    { unit: { id: 'u2' }, result: computeCabinet({ type: 'WUD', width: 600, height: 720, depth: 400, shelves: 1, unit_num: 'WU1' }, P) },
+  ]);
   for (const role of HARDWARE_ROLES) {
     assert.ok(bom.hardware.some((h) => h.role === role.id), `${role.id} must be reachable from a real unit`);
   }

@@ -1,11 +1,15 @@
 import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
+import DistanceArrows from './DistanceArrows.jsx';
 import { mm } from './constants.js';
+import { roomWalls, roomBounds } from '../engine/room.js';
+import { resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
+import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 
 // 3D scaffolding follows Production Core's rig (scene / camera / soft light /
@@ -37,6 +41,47 @@ function CaptureRig({ onReady }) {
   return null;
 }
 
+/**
+ * "Look at THIS." A double click asks for a point and a size; the camera and
+ * the orbit target fly there together over a few frames, so the view ends up
+ * NEAR the thing that was clicked instead of framing the middle of the room
+ * (CLAUDE.md phase 5).
+ */
+function FocusRig({ request, orbitRef, onDone }) {
+  const { camera } = useThree();
+  const flight = useRef(null);
+
+  useEffect(() => {
+    if (!request) return;
+    const target = new THREE.Vector3(...request.target);
+    // Keep the direction the user is already looking from; only close in.
+    const from = orbitRef.current?.target?.clone() ?? new THREE.Vector3();
+    const dir = camera.position.clone().sub(from);
+    if (dir.lengthSq() < 1e-6) dir.set(0, 0.4, 1);
+    dir.normalize();
+    const distance = Math.max(mm(request.radius) * 2.6, 0.7);
+    flight.current = {
+      target,
+      position: target.clone().addScaledVector(dir, distance).setY(Math.max(target.y + distance * 0.35, 0.35)),
+      t: 0,
+    };
+  }, [request, camera, orbitRef]);
+
+  useFrame((_, delta) => {
+    const f = flight.current;
+    if (!f) return;
+    f.t = Math.min(1, f.t + delta * 3);
+    const ease = 1 - (1 - f.t) ** 3;
+    camera.position.lerp(f.position, ease * 0.35);
+    if (orbitRef.current) {
+      orbitRef.current.target.lerp(f.target, ease * 0.35);
+      orbitRef.current.update();
+    }
+    if (f.t >= 1) { flight.current = null; onDone?.(); }
+  });
+  return null;
+}
+
 function Lights({ roomHeight, roomWidth }) {
   return (
     <>
@@ -58,22 +103,55 @@ function Lights({ roomHeight, roomWidth }) {
 export default function Scene({ onCaptureReady }) {
   const orbitRef = useRef(null);
   const room = useProjectStore((s) => s.project.room);
+  const design = useProjectStore((s) => s.project.design);
   const units = useProjectStore((s) => s.units);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const allResults = useProjectStore((s) => s.allResults);
   const moveShelf = useProjectStore((s) => s.moveShelf);
+  const setTopInfill = useProjectStore((s) => s.setTopInfill);
+  const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const clearSelection = useUiStore((s) => s.clearSelection);
   const snapStep = useUiStore((s) => s.snapStep);
   const shelfDrag = useUiStore((s) => s.dragging);
   const setShelfDrag = useUiStore((s) => s.setDragging);
+  const openFronts = useUiStore((s) => s.openFronts);
+  const toggleFront = useUiStore((s) => s.toggleFront);
+  const focusRequest = useUiStore((s) => s.focusRequest);
+  const focusOn = useUiStore((s) => s.focusOn);
+  const clearFocus = useUiStore((s) => s.clearFocus);
+  const openContextMenu = useUiStore((s) => s.openContextMenu);
+  const closeContextMenu = useUiStore((s) => s.closeContextMenu);
+  const showDimensions = useUiStore((s) => s.showDimensions);
+  const profile = useCabinetProfileStore((s) => s.profile);
 
-  const wallWidthMm = room.walls[0]?.width ?? 4000;
   // `units` is the subscription that drives the re-render; allResults() is a
   // stable store function, so deriving from it alone would never update.
   const results = useMemo(() => allResults(), [units, allResults]);
-  const roomW = mm(wallWidthMm);
+  const walls = useMemo(() => roomWalls(room), [room]);
+  const bounds = useMemo(() => roomBounds(room), [room]);
+
+  // What the distance arrows measure. Derived from the SAME results the boxes
+  // are drawn from, so an arrow cannot describe a unit that is somewhere else —
+  // and a drag updates it frame by frame with no drag state of its own.
+  const measured = useMemo(() => results.map(({ unit, result }) => {
+    const base = result.assemblies.mount === 'wall'
+      ? (result.assemblies.mountHeight || 0)
+      : (result.assemblies.carcass.legHeight || 0);
+    return {
+      id: unit.id,
+      wall: unit.position?.wall ?? 0,
+      x_mm: Number(unit.position?.x_mm) || 0,
+      width: Number(unit.params.width) || 0,
+      depth: Number(unit.params.depth) || 0,
+      rotation: Number(unit.position?.rotation_deg) || 0,
+      level: result.assemblies.mount === 'wall' ? 'wall' : 'floor',
+      label: unit.params.unit_num,
+      y: base + profile.dimensions.height,
+    };
+  }), [results, profile.dimensions.height]);
+  const roomW = mm(bounds.width);
   const roomH = mm(room.height ?? 2500);
 
   return (
@@ -83,20 +161,25 @@ export default function Scene({ onCaptureReady }) {
       // preserveDrawingBuffer: the PDF export reads this canvas back.
       // NoToneMapping: ACES (the R3F default) turns the white walls grey.
       gl={{ preserveDrawingBuffer: true, antialias: true, toneMapping: THREE.NoToneMapping }}
-      camera={{ position: [roomW * 0.30, roomH * 0.90, roomW * 1.20], fov: 38, near: 0.05, far: 100 }}
-      onPointerMissed={() => clearSelection()}
+      camera={{ position: [0, roomH * 0.95, mm(bounds.depth) * 1.25 + roomW * 0.35], fov: 38, near: 0.05, far: 100 }}
+      // Clicking the background clears the selection and any open menu; the
+      // orbit only ever starts from the background or a wall, because every
+      // unit mesh stops the event and takes the pointer for itself.
+      onPointerMissed={() => { clearSelection(); closeContextMenu(); }}
+      onContextMenu={(e) => e.preventDefault()}
       style={{ background: '#fafaf8' }}
     >
       <color attach="background" args={['#fafaf8']} />
       <Lights roomHeight={roomH} roomWidth={roomW} />
-      <Room room={room} />
+      <Room room={room} showLabels={showDimensions} />
 
       {results.map(({ unit, result }) => (
         <UnitView
           key={unit.id}
           unit={unit}
           result={result}
-          wallWidthMm={wallWidthMm}
+          wall={walls[unit.position?.wall ?? 0] || walls[0]}
+          roomCentre={bounds.centre}
           selected={unit.id === selectedUnitId}
           snapStep={snapStep}
           onSelect={() => selectUnit(unit.id)}
@@ -105,8 +188,22 @@ export default function Scene({ onCaptureReady }) {
           onShelfDragState={setShelfDrag}
           shelfDrag={shelfDrag}
           orbitRef={orbitRef}
+          openFronts={openFronts[unit.id]}
+          onToggleFront={(panelId) => toggleFront(unit.id, panelId)}
+          onFocus={(point, sizeMm) => focusOn([point.x, point.y, point.z], sizeMm)}
+          onContextMenu={(menu) => openContextMenu({ ...menu, unitId: unit.id })}
+          frontColour={resolveUnitDesign(unit, design).colour?.hex || null}
+          onSetTopInfill={(h) => setTopInfill(unit.id, h)}
+          onFillToCeiling={() => fillToCeiling(unit.id)}
+          showLabels={showDimensions}
         />
       ))}
+
+      {showDimensions && (
+        <DistanceArrows walls={walls} units={measured} roomCentre={bounds.centre} profile={profile} />
+      )}
+
+      <FocusRig request={focusRequest} orbitRef={orbitRef} onDone={clearFocus} />
 
       <OrbitControls
         ref={orbitRef}

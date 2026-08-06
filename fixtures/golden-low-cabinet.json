@@ -1,0 +1,361 @@
+{
+  "meta": {
+    "source": "KIT_LOW_CABINET_FULL.lsp (rail calc L232-259, shelf zone L253-259, CNC L362-454) + SKYLON_COMMON.lsp calcHingePositionsLow",
+    "computed_by": "Claude (tura 3 autonomous session, 06.08.2026), formulas traced line-by-line from the LISP — NOT from the engine",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. If engine output differs, the ENGINE is wrong (or file a BLOCKERS.md entry). Never edit expected values to make tests green.",
+    "units": "mm, m2, m"
+  },
+  "low_cabinet_rules": {
+    "geometry": "BUD carcass maths, defaults 600 x 600 x 578, min height 300 (LISP hard-exits below 300; engine raises with a MIN_HEIGHT warning)",
+    "hinges": "low rule: H < 800 -> 2 [100, H-100]; 800 <= H < 1200 -> 3 [100, H/2, H-100]; H >= 1200 -> 4 evenly spread; cups = hinge centers passed through",
+    "rail": "same maths as the wardrobe rail: railY = G + offset (default 200); partitioner 40 above; clamped so partitioner top clears H - G - 50; RAIL-PART panel = internalW x internalD",
+    "shelf_zone_quirk": "the LISP FRONT VIEW spaces shelves over the zone above the rail partitioner, but the CNC side panels (COMMON drawBUL) drill shelf rows over the FULL height — same quirk as the wardrobe (BLOCKERS #3/#12); fixture locks the CNC behaviour",
+    "lisp_panel_count": "LISP totalPanels COUNTS the rail partition (5 + shelves + 1) — the wardrobe kit does not; per-type convention recorded here",
+    "csv": "the LISP writes no CSV for this kit; engine emits the standard convention"
+  },
+  "cases": [
+    {
+      "id": "LC-A",
+      "description": "Default low cabinet 600x600x578, 1 shelf, no rail, hinge L (2 hinges)",
+      "inputs": {
+        "type": "LOW_CABINET",
+        "width": 600,
+        "height": 600,
+        "depth": 578,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "shelves": 1,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "unit_num": "LC01"
+      },
+      "derived": {
+        "doors": 1,
+        "internal_width": 564,
+        "internal_depth": 560
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 560,
+          "h": 600,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 0.6
+          },
+          "area_m2": 0.336
+        },
+        {
+          "id": "BUR",
+          "w": 560,
+          "h": 600,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.6
+          },
+          "area_m2": 0.336
+        },
+        {
+          "id": "TOP",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "BOTTOM",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "BACK",
+          "w": 600,
+          "h": 600,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.36
+        },
+        {
+          "id": "SHELF-1",
+          "w": 560,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.302
+        },
+        {
+          "id": "LC01-F",
+          "w": 597,
+          "h": 597,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.39
+          },
+          "area_m2": 0.356
+        }
+      ],
+      "drills": {
+        "hinge_centers": [
+          100,
+          500
+        ],
+        "side_hinge_holes_y": [
+          [
+            84,
+            116
+          ],
+          [
+            484,
+            516
+          ]
+        ],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": [
+          "BUL"
+        ],
+        "front_cup_y": [
+          100,
+          500
+        ],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "shelf_row_y": [
+          300
+        ],
+        "shelf_hole_x": [
+          70,
+          490
+        ]
+      },
+      "csv_note": "KIT_LOW_CABINET_FULL.lsp writes NO labels CSV — rows below are the engine convention (same codes as BUD + RAIL-PART unedged, like the wardrobe)",
+      "totals": {
+        "panels_lisp": 6,
+        "fronts": 1,
+        "board_area_m2": 1.966,
+        "front_area_m2": 0.356,
+        "edging_m": 2.888,
+        "edging_front_m": 2.388,
+        "legs": 4,
+        "hinges": 2,
+        "rail": 0
+      }
+    },
+    {
+      "id": "LC-B",
+      "description": "Low cabinet 600x900x578 with hanging rail @200, 1 shelf, hinge L (3 hinges)",
+      "inputs": {
+        "type": "LOW_CABINET",
+        "width": 600,
+        "height": 900,
+        "depth": 578,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "shelves": 1,
+        "rail": true,
+        "rail_offset": 200,
+        "hinge": "L",
+        "unit_num": "LC02"
+      },
+      "derived": {
+        "doors": 1,
+        "internal_width": 564,
+        "internal_depth": 560,
+        "rail_y": 218,
+        "rail_partition_y": 258
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 560,
+          "h": 900,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 0.9
+          },
+          "area_m2": 0.504
+        },
+        {
+          "id": "BUR",
+          "w": 560,
+          "h": 900,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.9
+          },
+          "area_m2": 0.504
+        },
+        {
+          "id": "TOP",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "BOTTOM",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "BACK",
+          "w": 600,
+          "h": 900,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.54
+        },
+        {
+          "id": "SHELF-1",
+          "w": 560,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.302
+        },
+        {
+          "id": "RAIL-PART",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "LC02-F",
+          "w": 597,
+          "h": 897,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.99
+          },
+          "area_m2": 0.536
+        }
+      ],
+      "drills": {
+        "hinge_centers": [
+          100,
+          450,
+          800
+        ],
+        "side_hinge_holes_y": [
+          [
+            84,
+            116
+          ],
+          [
+            434,
+            466
+          ],
+          [
+            784,
+            816
+          ]
+        ],
+        "side_hinge_holes_x": 37,
+        "hinged_sides": [
+          "BUL"
+        ],
+        "front_cup_y": [
+          100,
+          450,
+          800
+        ],
+        "front_cup_x_from_hinge_edge": 21.5,
+        "shelf_row_y": [
+          450
+        ],
+        "shelf_hole_x": [
+          70,
+          490
+        ],
+        "rail_bracket_y": 218,
+        "rail_partition_screw_y": 267,
+        "rail_partition_screw_x_sides": [
+          50,
+          280,
+          510
+        ],
+        "rail_partition_screw_x_back": [
+          68,
+          300,
+          532
+        ]
+      },
+      "csv_note": "KIT_LOW_CABINET_FULL.lsp writes NO labels CSV — rows below are the engine convention (same codes as BUD + RAIL-PART unedged, like the wardrobe)",
+      "totals": {
+        "panels_lisp": 7,
+        "fronts": 1,
+        "board_area_m2": 2.798,
+        "front_area_m2": 0.536,
+        "edging_m": 3.488,
+        "edging_front_m": 2.988,
+        "legs": 4,
+        "hinges": 3,
+        "rail": 1
+      }
+    }
+  ],
+  "verify_with_piotr": [
+    "LISP counts RAIL PARTITION in PANELS for this kit (unlike the wardrobe) — fixture follows the LISP; confirm which BOM convention you want project-wide (BLOCKERS #1 family)",
+    "no cutting-list CSV exists in this kit — engine emits the standard convention; confirm codes"
+  ]
+}

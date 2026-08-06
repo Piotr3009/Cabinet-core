@@ -591,3 +591,307 @@ LWPOLYLINE, z uzasadnieniem), #9 (jedno przypisanie na rolę okuć vs per
 długość), #10 (origin DXF), #11 (obrys TOP/BOTTOM przechodzi dolną krawędź
 dwa razy — tak jest w LISP-ie, odtworzone wiernie), #12 (`shelfHoles.spanMode`
 przy zmiennych szufladach). Plus wciąż otwarte #1–#6 z tury 1.
+
+---
+
+# TURA 3 — 06.08.2026 (autonomia, jedna sesja)
+
+Baza wejściowa: **158/158**. Baza wyjściowa: **357/357** lokalnie
+(`npm test` + `npm run build`, Node 22). 199 nowych testów, podłoga 158 nie
+spadła ani razu w żadnej fazie.
+
+**CI nie wystartowało — i to nie jest wina kodu.** Workflow `ci.yml` jest
+`active` i wpięty w `pull_request → main`, ale GitHub Actions nie utworzył
+żadnego przebiegu ani dla tego PR-a, ani wcześniej: ostatni bieg CI (Twój
+własny push na main, `e79ddc5`, 17:43) stał w kolejce 15 minut i został
+**anulowany bez przydzielenia runnera**. To sygnatura wyczerpanych minut /
+limitu Actions na koncie, nie błędu w repo. Opisane w BLOCKERS #17 — do
+sprawdzenia w ustawieniach billingu. Werdykty niżej opierają się na przebiegu
+lokalnym i na realnym prowadzeniu przeglądarki, nie na zielonym znaczku.
+
+Rozkład: `types` 104, `collision` 34, `room` 21, `drawer-heights` 13,
+`collision-resize` 20, `dxf` 13, `hardware` 13, `dimensions` 12, `dxf-sheet` 10,
+`autoparts` 10, `design` 9, `bom` 8, `cnc-layout` 8, `interaction` 7,
+`render-geometry` 6, `engine` 69.
+
+## Faza 1 — pełna rodzina typów — ✅ ZIELONA
+
+Sześć nowych typów z LISP-a: **BUDR**, **WUD**, **BUDTALL**, **LOW_CABINET**,
+**SINK**, **FRIDGE**. Zgodnie z zasadą #1: **najpierw fixture wyprowadzony
+z LISP-a linia po linii, potem silnik pod fixture.** Sześć nowych plików
+`fixtures/golden-*.json`, każdy z `status: PENDING_PIOTR_VERIFICATION`
+i sekcją `verify_with_piotr`.
+
+**Nie skopiowałem logiki — skonfigurowałem typ.** `src/engine/types.js` opisuje
+każdy kit różnicami wobec wspólnego rdzenia: `carcass.top` ('panel' | 'holders'),
+`carcass.back` ('full' | 'inset' | 'rails'), `drawerStyle` ('wardrobe' | 'budr'),
+`hingeRule`, `mount`, `legs`, `hangers`, `doorExtend`. Osiem typów, jeden
+`computeCabinet()`. Gdyby to były osiem kopii korpusu, zmiana grubości płyty
+byłaby ośmioma zmianami.
+
+**Znalezione przy wyprowadzaniu fixtures (i poprawione W FIXTURE, nie w silniku):**
+
+- **BUDR liczy 20 formatek BEZ frontów**, inaczej niż kit szafy, który fronty
+  wlicza. Pierwsza wersja fixture miała `totals.fronts: 0` — to był mój błąd
+  odczytu, nie zamiar LISP-a. Poprawione na 3 + notatka `lisp_panel_count`.
+  W silniku odpowiada za to flaga `countsDrawerFrontsInPanels`.
+- **SINK: dno ma czopy tylko na DWÓCH krawędziach**, mimo że komentarz nagłówkowy
+  `drawSINK_BOTTOM` mówi co innego — komentarz jest nieaktualny względem kodu
+  pod nim. Fixture opisuje kod, nie komentarz, plus `lisp_summary_quirks`
+  o sprzeczności w oklejaniu holderów (→ BLOCKERS #13).
+
+**Nogi.** `src/engine/legs.js`: 4 w rogach, piąta w geometrycznym środku
+(środek szerokości I głębokości) powyżej 1000 mm. Wychodzi do `hardware[]`
+jako ilość. Progi i szerokość nogi — w profilu, zero gołych liczb.
+
+**Warning zamiast cichego zera.** `drawers` jako tablica, obiekt, `true` albo
+NaN to teraz wpis w `warnings[]` (`DRAWERS_INVALID`), a nie zero szuflad
+w milczeniu. Pusty string, `null`, `false` i `0` dalej znaczą „brak szuflad",
+bo to legalne dane, a nie pomyłka (audyt tury 2, [LOW] — domknięty).
+
+**Werdykt.** 104 testy `types.test.js`: każdy typ ma swój fixture, inwariant
+`panels_true_incl_railpart + fronts === pieces_total` trzyma się dla wszystkich
+ośmiu, nogi 4/5 sprawdzone na progu, warningi sprawdzone na siedmiu kształtach
+złych danych.
+
+## Faza 2 — 3D odzwierciedla silnik — ✅ ZIELONA
+
+**BUG szerokiej szafy — znaleziony i naprawiony.** Silnik liczy odsunięcie
+szuflad po OBU stronach (panele DP-L i DP-R, redukcja 96 mm przy 1200), 3D
+rysowało dno szuflady dosunięte do lewej. Nie „render nie widział panelu" —
+render brał `box.x` skrzynki zamiast wyśrodkować dno w jej świetle. Poprawione
+w `cabinet.js` (to silnik podawał złe `box`), więc CNC i BOM też były zgodne,
+tylko obrazek kłamał. Test `render-geometry.test.js` pilnuje, że każde dno
+szuflady jest wyśrodkowane w swojej skrzynce.
+
+**Nogi w 3D:** rysowane z `assemblies.legs.positions` — cztery, piąta powyżej
+progu. Widok nie liczy nic sam, dostaje pozycje.
+
+**WUD wisi.** `assemblies.mount === 'wall'` → baza kabiny to `mountHeight`,
+nie wysokość nogi. Parametr `mount_height` w panelu prawym, plus kreska
+zawieszki, żeby szafka nie czytała się jak lewitująca przez pomyłkę.
+
+**Werdykt.** Zweryfikowane w Chromium: wszystkie 8 typów w jednym pokoju
+(`phase2-all-types.png`), szeroka szafa z obustronnym odsunięciem
+(`phase2-wide-*.png`).
+
+## Faza 3 — pokój v2 — ✅ ZIELONA
+
+**Pokój to lista ścian, nie „szerokość × głębokość".** `src/engine/room.js`:
+narożniki → ściany, każda z `along`, `inward`, `angle`, `width`, `index`.
+Prostokąt to 4 narożniki, L to 6. Orientacja jest normalizowana, więc normalna
+do wnętrza zawsze wskazuje do środka — bez tego połowa ścian miałaby meble
+po zewnętrznej stronie.
+
+**4 ściany z auto-ukrywaniem.** `Room.jsx` liczy per klatkę
+`(wall.inward · (camera − wallMid)) > 0` — ściana tyłem do kamery znika. Widok
+znad pokoju sam z siebie staje się rzutem z góry, bez trybu „2D".
+
+**L-shape + edytor rzutu.** `RoomModal` przerobiony: rysunek SVG rzutu z góry,
+presety (prostokąt / L w czterech orientacjach), edycja długości każdej ściany,
+wysokość.
+
+**Import DXF — parser własny, zero zależności** (zasada #4). `dxfImport.js`
+czyta pary grup, bierze wyłącznie sekcję ENTITIES, obsługuje LINE i LWPOLYLINE,
+usuwa punkty współliniowe, łączy luźne linie w łańcuch. Wybiera zamkniętą
+polilinię, a jak jej nie ma — największą otwartą, a jak i tego nie ma — łańcuch
+z odcinków. Przelicznik mm / cm / m w UI, bo DXF nie niesie jednostki.
+
+**Okna i drzwi** jako otwory w ścianie (`clampOpening` trzyma je w obrysie),
+v1 wizualny — bez logiki kolizji z meblami, zgodnie z CLAUDE.md.
+
+**Guard zmniejszania.** `roomChangeGuard()` blokuje zmianę, która wypchnęłaby
+jednostki, komunikatem dokładnie takim, jak w zadaniu:
+*„Cannot shrink the room below placed units — move or remove units first."*
+
+**Werdykt.** 21 testów `room.test.js`. W Chromium: pokój L
+(`phase3-L-room.png`), widok z góry z auto-ukrywaniem (`phase3-topdown.png`),
+guard odmawia i mówi dlaczego (`phase3-guard.png`).
+
+## Faza 4 — kolizje domknięte — ✅ ZIELONA
+
+Nowe ścieżki, wszystkie przez te same czyste funkcje:
+
+- **resize jednostki** — `clampUnitWidth`, `clampUnitDepth`. Poszerzanie to ruch
+  jak każdy inny, tyle że rusza się druga krawędź.
+- **narożnik** — `unitFootprint` + `spanInWallFrame`: jednostka z sąsiedniej
+  ściany jest mierzona W UKŁADZIE TEJ ściany, więc problem 2D wraca do tego
+  samego 1D clampa. Zero drugiego kompletu reguł do rozjechania.
+- **głębokość vs pokój** — `maxDepthOnWall` strzela promieniem z obu końców
+  jednostki i bierze pierwszą trafioną ścianę. Dokładne dla prostokąta i dla L.
+- **obrót** — footprint obrócony wokół punktu styku ze ścianą, ten sam punkt,
+  wokół którego obraca się bryła w 3D.
+
+**Błąd, który złapały testy — mój, nie kodu.** Pierwsza wersja
+`collision-resize.test.js` zakładała, że w narożniku L maksymalna głębokość to
+600. Prawdziwa geometria daje 0 albo 800 zależnie od odcinka. Testy poprawione
+do rzeczywistości, nie odwrotnie.
+
+**Ścieżka, którą przegapiłem i którą złapał dopiero przebieg end-to-end na
+koniec tury: DODANIE jednostki.** Przy pełnej ścianie `firstFreeUnitX()`
+świadomie zwracał daleki koniec ściany i zostawiał `unitIssues()` z raportem
+o nakładce — zachowanie z tury 1, opisane w komentarzu. Tyle że to jest
+nakładka, którą **program tworzy sam**, więc kryterium „nie da się nałożyć
+ŻADNĄ drogą" tego nie przepuszcza. Doszła `freeSlotOnWall()`: wolny slot albo
+`null`. Nowa jednostka szuka miejsca na ścianie 1, potem obchodzi pokój, a gdy
+nigdzie się nie mieści — **jest odmawiana** komunikatem, zamiast wylądować na
+sąsiedzie. To samo dla przenoszenia jednostki na inną ścianę (`setUnitWall`
+odmawia zamiast wepchnąć). `firstFreeUnitX()` zostaje nietknięty tam, gdzie
+jego zachowanie jest zamierzone.
+
+**Werdykt.** 20 testów `collision-resize.test.js` (13 + 7 na wolny slot,
+w tym „wybrany slot nigdy nie nachodzi na to, co już stoi" dla ośmiu
+szerokości) + 34 dotychczasowe `collision.test.js`.
+
+## Faza 5 — interakcje — ✅ ZIELONA
+
+- **Klik-i-trzymaj = przesuwanie, kamera stoi.** Każda bryła jednostki zatrzymuje
+  event i wyłącza orbit na czas przeciągania; orbit rusza tylko ze ściany/tła.
+- **Zoom do elementu.** `FocusRig` leci kamerą i celem orbita do klikniętego
+  panelu, nie do środka sceny. Kierunek patrzenia zostaje, zmienia się dystans.
+- **Obrót**: `+90°` per klik, pole na własny kąt, `Back to wall` / `Side to wall`.
+- **Menu kontekstowe** (prawy klik): `Center shelves`, `Rotate 90°`, `Delete`.
+  Akcje w `src/lib/contextActions.js` jako czysty JS — nowa pozycja menu to
+  wpis w tablicy, a testy node mogą je zaimportować (nie da się z `.jsx`).
+- **Animacja frontów**: szuflada wysuwa się, drzwi obracają się na zawiasie
+  wg `meta.hinge`. Stan wyłącznie wizualny — `openFronts` żyje w uiStore i nie
+  dotyka silnika, BOM-u ani CNC.
+
+**Dwa realne błędy znalezione przez PATRZENIE na ekran, nie przez testy:**
+
+1. **Znak obrotu.** 3D obracało jednostkę w drugą stronę niż footprint kolizji —
+   obrócona szafka wchodziła ZA ścianę i znikała ze sceny, podczas gdy clamp
+   uważał, że stoi w pokoju. Naprawione (`rotationRad = −kąt`) z komentarzem,
+   bo to nie jest kosmetyka i następny czytelnik musi wiedzieć dlaczego.
+2. **Fronty znikały.** Animacja ustawiała `position.z` ABSOLUTNIE, więc każdy
+   front lądował na `z = 0`, czyli wewnątrz korpusu — szafka renderowała się
+   jako otwarte pudło. Diagnoza: wstrzyknięty czerwony front + histogram pikseli
+   z canvasu. Naprawione na OFFSET od pozycji z silnika.
+
+**Werdykt.** 7 testów `interaction.test.js`, reszta zweryfikowana w Chromium
+(`phase5-*.png`).
+
+## Faza 6 — Design Settings — ✅ ZIELONA
+
+`src/engine/design.js` + `DesignSettingsModal`:
+
+- **Materiały carcass**: 1–3 typy, każdy z materiałem z listy.
+- **Fronty**: typ standardowy (Shaker / Flat), miejsce na uchwyty zostawione.
+- **Biblioteka drzwi użytkownika v1**: nazwa + typ frontu + materiał/kolor,
+  CRUD w modalu, przypisywalne per jednostka.
+- **Kolory**: RAL / F&B / własny HEX, dane 1:1 z `reference/colors/psw-colors.json`
+  (grupy, nazwy, hexy). **Repo PSW nietknięte** — czytany tylko plik referencyjny.
+- **Infill przy ścianie**: szerokość w mm, używana przez fazę 7.
+
+Rozstrzyganie: `resolveUnitDesign(unit, design)` — override jednostki, potem
+styl drzwi, potem domyślne projektu. Kolor widać na frontach w 3D.
+
+**Błąd, który zabił aplikację i został naprawiony:** selektor
+`useProjectStore((s) => migrateDesign(s.project.design))` tworzył NOWY obiekt
+przy każdym wywołaniu → „Maximum update depth exceeded", biała strona.
+Selektor wybiera teraz zapisaną wartość, migracja jest memoizowana.
+
+**Werdykt.** 9 testów `design.test.js`, kolor sprawdzony na pikselach
+(`phase6-blue-front.png`).
+
+## Faza 7 — automaty konstrukcyjne — ✅ ZIELONA
+
+`src/engine/autoparts.js`. Wszystkie trzy wychodzą jako PRAWDZIWE formatki
+do BOM-u i CNC, nie jako rysunek:
+
+- **Auto plinth** pod jednostkami stojącymi: wysokość = wysokość nogi z profilu
+  (więc podniesienie nóg podnosi cokół), cofnięcie z profilu.
+- **Auto side infill**: wypełnia lukę przy ścianie. Szerokość z Design Settings
+  to MAKSIMUM skrobaka — szersza luka jest raportowana, a nie po cichu zamieniana
+  na „formatkę" 200 mm szerokości, bo to już jest szafka.
+- **Auto top infill 40 mm** przy wstawieniu; **grab = ciągnięcie w górę do
+  sufitu, dwuklik = sam dojeżdża**. Formatka przelicza się z wysokością.
+
+**Decyzja, którą podjąłem świadomie: automaty są OPT-IN w silniku.** Włączenie
+cokołu domyślnie w `computeCabinet()` wysypało 77 testów — czyli WSZYSTKIE
+golden fixtures naraz, bo cokół to formatka, której LISP nie zna. Gołe
+`computeCabinet(params)` odtwarza kit z LISP-a i nic więcej; store dokłada
+`plinth: true` przy wstawianiu jednostki do pokoju. Fixtures zostają kontraktem,
+którym są, a Piotr dostaje cokół tam, gdzie faktycznie stoi mebel.
+
+**Werdykt.** 10 testów `autoparts.test.js`, sprawdzone w BOM (`phase7-bom.png`)
+i na dojeżdżaniu do sufitu (`phase7-ceiling2.png`).
+
+## Faza 8 — toolbar + eksport grupowy CNC — ✅ ZIELONA
+
+**Toolbar na kanwie**, bo tam jest rysunek: Show/Hide dimensions, przycisk
+**BOM przeniesiony z górnej belki**, przełącznik 3D | CNC. Górna belka zostaje
+przy tym, co dotyczy PROJEKTU: nazwa, konto, eksport.
+
+**Strzałki odległości, live.** `src/engine/dimensions.js` mierzy każdą lukę na
+ścianie: narożnik → pierwsza jednostka, jednostka → jednostka, ostatnia →
+narożnik. Mierzone na TYM SAMYM footprincie, którego używa clamp kolizji, więc
+jednostka obrócona bokiem jest mierzona po odcinku ściany, który naprawdę
+zajmuje, a obrazek nie może kłócić się z regułą. Jednostki dolne i wiszące
+mierzone osobno — szafka wisząca nad dolną to nie jest luka, którą ktokolwiek
+wymierza. Wartości wynikają z pozycji jednostek, nie ze stanu przeciągania,
+więc strzałka idzie za meblem klatka po klatce sama z siebie.
+
+**Eksport grupowy.** Formatki w czterech grupach (Carcass / Shelves / Drawers /
+Fronts & doors), każda z checkboxem, plus cztery presety: **All · Carcass only ·
+All without drawers · Fronts & doors only**. Przynależność do grupy decyduje
+się na `role` i `part` z silnika, NIGDY na podciągu z nazwy — formatka
+`RAIL-PART` jest półką, a `D1-SL` częścią szuflady, i żadne dopasowanie napisu
+nie trafi obu naraz.
+
+**Podgląd renderuje ZAZNACZONE, a „Download DXF (one file)" puszcza ten sam
+moduł layoutu po tej samej tablicy** — plik JEST obrazkiem, a nie jego drugim
+policzeniem. Nazwa `{unitNum}-cnc-{preset|custom}.dxf`. **ZIP per formatka
+zostaje** jako druga opcja — droga awaryjna przy uszkodzonej pojedynczej formatce.
+
+Zaznaczenie jest WYPROWADZANE, nie synchronizowane: formatka nietknięta jest
+w zestawie, odznaczona zostaje poza, a formatka, która pojawiła się po zmianie
+parametru, wchodzi zaznaczona. Zero efektu ubocznego, więc nie ma klatki,
+w której obrazek i checkboxy mówią co innego.
+
+**Werdykt.** 12 testów `dimensions.test.js` + 10 `dxf-sheet.test.js` (w tym
+„wyeksportowany layout JEST layoutem podglądu, formatka po formatce" i
+„zawiera każdą zaznaczoną i nic poza"). W Chromium: presety na BUDR dają
+25 / 7 / 10 / 3 formatek, jeden DXF na presecie fronts ma 3 POLYLINE, 6 CIRCLE,
+3 TEXT; ZIP dalej działa. Przy okazji znaleziony i naprawiony realny błąd
+layoutu: panel prawy zasłaniał panel eksportu (`z-20` + odsunięcie o szerokość
+otwartego panelu).
+
+---
+
+# DEFINICJA SUKCESU TURY 3 — status
+
+1. **`npm test` bez fail** — ✅ **357 pass / 0 fail** (158 starych + 199 nowych).
+2. **6 nowych typów w Library, render + BOM + CNC + DXF dla każdego** — ✅
+3. **Szeroka szafa: obustronne odsunięcie szuflad; nogi 4/5** — ✅
+4. **Pokój: 4 ściany z auto-ukrywaniem, widok z góry, L-shape, import DXF,
+   okno + drzwi, guard zmniejszania** — ✅
+5. **Nie da się nałożyć jednostek żadną drogą** — ✅ drag, resize szerokości,
+   resize głębokości, zmiana ściany, zmiana pokoju, obrót **i dodanie nowej
+   jednostki** — wszystko przez te same czyste funkcje. Ostatnia z tych ścieżek
+   została znaleziona dopiero w końcowym przebiegu end-to-end i domknięta
+   (`freeSlotOnWall`, opis w fazie 4).
+6. **Interakcje: move bez kamery, zoom do elementu, obrót, menu, animacje** — ✅
+7. **Design Settings: materiały, fronty, biblioteka drzwi, kolory, infill** — ✅
+8. **Automaty: plinth, side infill, top infill 40 z drag/dwuklikiem, w BOM** — ✅
+9. **Toolbar + eksport grupowy: presety, jeden DXF == podgląd, ZIP zostaje** — ✅
+10. **BUILD-LOG sekcja TURA 3 + BLOCKERS** — ✅ ten wpis + BLOCKERS #13–#16.
+
+**Przebieg end-to-end (Chromium, na samym końcu, po wszystkich zmianach):
+10/10 PASS, zero błędów w konsoli.** Siedem typów wstawionych z Library →
+zero nakładek po auto-rozmieszczeniu (fridge sam poszedł na ścianę 2, bo
+ściana 1 była pełna) → BOM otwiera się z toolbara na kanwie → każda jednostka
+ma arkusz CNC (7 / 25 / 6 / 7 / 7 / 8 / 11 formatek) → guard odmawia skrócenia
+ściany I obniżenia sufitu poniżej najwyższego mebla → L-kształt, który nikogo
+nie wypycha, wchodzi i pokój ma sześć narożników → reload zachowuje wszystko →
+wymiary domyślnie włączone.
+
+**Zero nowych zależności** (zasada #4): parser DXF pomieszczenia napisany
+ręcznie, kolory czytane z pliku referencyjnego, `jszip` bez zmian.
+**Zero wykonanego SQL-a** (zasada #6): `sql/002_tura3.sql` czeka z nagłówkiem
+„SQL PRZED push".
+
+**Do decyzji Piotra:** BLOCKERS #13 (oklejanie holderów SINK — sprzeczność
+w LISP-ie), #14 (cokół per jednostka vs per ciąg), #15 (`verify_with_piotr`
+z sześciu nowych fixtures — TO JEST NAJPILNIEJSZE), #16 (import DXF: skala
+i wybór obrysu), #17 (Actions nie przydziela runnera — do sprawdzenia billing). Plus wciąż otwarte #1–#6 z tury 1 i #8–#12 z tury 2.

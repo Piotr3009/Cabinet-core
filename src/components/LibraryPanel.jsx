@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { UNIT_TYPES, UNIT_TYPE_ORDER } from '../engine/types.js';
+import { UNIT_TYPES, UNIT_TYPE_ORDER, profilePath } from '../engine/types.js';
 
 // Floating, grab-and-move Library panel (SPEC 4.1 / section 7).
 export default function LibraryPanel() {
@@ -12,6 +12,7 @@ export default function LibraryPanel() {
   const setSnapStep = useUiStore((s) => s.setSnapStep);
   const openModal = useUiStore((s) => s.openModal);
   const selectUnit = useUiStore((s) => s.selectUnit);
+  const notify = useUiStore((s) => s.notify);
   const addUnit = useProjectStore((s) => s.addUnit);
   const units = useProjectStore((s) => s.units);
   const profile = useCabinetProfileStore((s) => s.profile);
@@ -46,8 +47,12 @@ export default function LibraryPanel() {
   }, [pos, setPos]);
 
   const handleAdd = (typeId) => {
-    const id = addUnit(typeId);
+    // A full room refuses the unit rather than stacking it on a neighbour, so
+    // the answer has to be read, not assumed.
+    const { id, error, wall } = addUnit(typeId);
+    if (error) { notify(error, 'warn'); return; }
     selectUnit(id);
+    if (wall > 0) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
   };
 
   return (
@@ -68,7 +73,9 @@ export default function LibraryPanel() {
       <div className="p-2 space-y-1">
         {UNIT_TYPE_ORDER.map((id) => {
           const t = UNIT_TYPES[id];
-          const d = id === 'WARDROBE' ? profile.wardrobe.defaults : profile.baseUnit.defaults;
+          // Each type names its own defaults block in the profile, so a new
+          // kit needs no branch here.
+          const d = profilePath(profile, t.defaultsKey) || {};
           return (
             <button
               key={id}
@@ -77,20 +84,21 @@ export default function LibraryPanel() {
               onClick={() => handleAdd(id)}
             >
               <div className="text-sm text-ink-50">{t.label}</div>
-              <div className="text-[11px] text-ink-400">{d.width} × {d.height} × {d.depth} mm</div>
+              <div className="text-[11px] text-ink-400">
+                {d.width} × {d.height} × {d.depth} mm{t.mount === 'wall' ? ' · wall' : ''}
+              </div>
             </button>
           );
         })}
-
-        <div className="w-full text-left px-2 py-2 rounded opacity-40 cursor-not-allowed" title="Full kitchen family — a later phase">
-          <div className="text-sm text-ink-200">Kitchen <span className="cc-tag ml-1">soon</span></div>
-          <div className="text-[11px] text-ink-400">BUDR / SINK / FRIDGE / TALL / LOW</div>
-        </div>
 
         <div className="cc-divider" />
 
         <button type="button" className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 text-sm text-ink-100 transition-colors" onClick={() => openModal('room')}>
           Room setup
+        </button>
+
+        <button type="button" className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 text-sm text-ink-100 transition-colors" onClick={() => openModal('design')}>
+          Design settings
         </button>
 
         <label className="flex items-center justify-between px-2 py-2 text-sm text-ink-100">

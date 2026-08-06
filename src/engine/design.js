@@ -1,0 +1,147 @@
+// ─── Design settings (project level) ───
+// What the whole project is made of and what it looks like: how many carcass
+// materials are in play, the standard front, the workshop's own door styles,
+// the front colour and the infill width (CLAUDE.md turn 3, phase 6).
+//
+// This module is the DATA and the RESOLUTION rules — what a given unit ends up
+// with once the project defaults, its door style and its own overrides have
+// been applied. Pure functions, so the 3D view, the BOM and a test all resolve
+// it the same way.
+
+export const DESIGN_SCHEMA = 1;
+
+export const FRONT_STYLE_OPTIONS = [
+  { id: 'S', label: 'Shaker' },
+  { id: 'F', label: 'Flat' },
+  // 'H' (handleless J-groove) exists in the engine profile and the LISP; it is
+  // not offered as a *standard* here until the handle work lands.
+];
+
+export const DEFAULT_DESIGN = {
+  schema: DESIGN_SCHEMA,
+  // 1–3 carcass materials. One is the common case; three is a run with a
+  // different board inside the tall units and another for the island.
+  carcass: {
+    types: [{ id: 'c1', label: 'Carcass 1', material_id: null }],
+  },
+  fronts: {
+    style: 'S',
+    // Handles are a later phase — the slot is here so the shape does not change
+    // under a saved project when they arrive.
+    handle: null,
+  },
+  // The workshop's own door styles: name + front type + material/colour. A unit
+  // points at one of these by id.
+  doorStyles: [],
+  colour: {
+    front: null,       // { hex, name, system: 'RAL' | 'F&B' | 'custom' }
+  },
+  infill: {
+    // Used by phase 7: the filler between a unit and the wall.
+    sideWidth: 20,
+  },
+};
+
+const clone = (v) => JSON.parse(JSON.stringify(v));
+
+/** Fill in anything a stored design predates, without touching user values. */
+export function migrateDesign(design) {
+  const d = design && typeof design === 'object' ? design : {};
+  const base = clone(DEFAULT_DESIGN);
+  const types = Array.isArray(d.carcass?.types) && d.carcass.types.length
+    ? d.carcass.types.slice(0, 3).map((t, i) => ({
+      id: t.id || `c${i + 1}`,
+      label: t.label || `Carcass ${i + 1}`,
+      material_id: t.material_id ?? null,
+    }))
+    : base.carcass.types;
+
+  return {
+    schema: DESIGN_SCHEMA,
+    carcass: { types },
+    fronts: {
+      style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
+      handle: d.fronts?.handle ?? null,
+    },
+    doorStyles: Array.isArray(d.doorStyles)
+      ? d.doorStyles.map((s) => normaliseDoorStyle(s)).filter(Boolean)
+      : [],
+    colour: { front: normaliseColour(d.colour?.front) },
+    infill: { sideWidth: Number(d.infill?.sideWidth) >= 0 ? Number(d.infill.sideWidth) : base.infill.sideWidth },
+  };
+}
+
+export function normaliseColour(colour) {
+  if (!colour) return null;
+  const hex = String(colour.hex || '').trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return null;
+  return {
+    hex: hex.toLowerCase(),
+    name: colour.name || hex.toLowerCase(),
+    system: ['RAL', 'F&B', 'custom'].includes(colour.system) ? colour.system : 'custom',
+  };
+}
+
+export function normaliseDoorStyle(style) {
+  if (!style?.id) return null;
+  return {
+    id: String(style.id),
+    name: String(style.name || 'Untitled style'),
+    frontType: FRONT_STYLE_OPTIONS.some((o) => o.id === style.frontType) ? style.frontType : 'S',
+    material_id: style.material_id ?? null,
+    colour: normaliseColour(style.colour),
+  };
+}
+
+/** How many carcass material types this project runs (1–3). */
+export function setCarcassTypeCount(design, count) {
+  const n = Math.min(3, Math.max(1, Math.trunc(Number(count) || 1)));
+  const types = [...design.carcass.types];
+  while (types.length < n) types.push({ id: `c${types.length + 1}`, label: `Carcass ${types.length + 1}`, material_id: null });
+  return { ...design, carcass: { types: types.slice(0, n) } };
+}
+
+/**
+ * What this unit is actually made of and what colour it is.
+ *
+ * Order, most specific first: the unit's own override, then its door style,
+ * then the project default. The engine never asks — it takes params — so this
+ * is what the UI and the 3D view call to turn "the project is Shaker in
+ * Hague Blue" into numbers and a hex.
+ */
+export function resolveUnitDesign(unit, design) {
+  const d = migrateDesign(design);
+  const styleId = unit?.params?.door_style_id || null;
+  const style = d.doorStyles.find((s) => s.id === styleId) || null;
+
+  const frontType = unit?.params?.front_type
+    || style?.frontType
+    || d.fronts.style;
+
+  const colour = normaliseColour(unit?.params?.front_colour)
+    || style?.colour
+    || d.colour.front
+    || null;
+
+  const carcassTypeId = unit?.params?.carcass_type_id || d.carcass.types[0]?.id || null;
+  const carcassType = d.carcass.types.find((t) => t.id === carcassTypeId) || d.carcass.types[0] || null;
+
+  return {
+    frontType,
+    colour,
+    doorStyle: style,
+    carcassType,
+    frontMaterialId: style?.material_id ?? null,
+    carcassMaterialId: carcassType?.material_id ?? null,
+  };
+}
+
+/**
+ * A readable name for a colour, whatever it came from. Used in the BOM and the
+ * PDF, where "#1f3a5f" alone is not an order anybody can place.
+ */
+export function colourLabel(colour) {
+  const c = normaliseColour(colour);
+  if (!c) return '—';
+  return c.system === 'custom' ? c.hex : `${c.name} (${c.system})`;
+}

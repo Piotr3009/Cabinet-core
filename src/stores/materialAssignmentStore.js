@@ -19,6 +19,9 @@ export const BOM_ROLES = [
   { id: 'shelf',      label: 'Shelves',        hint: 'Shelves, partition, rail partition' },
   { id: 'front',      label: 'Fronts',         hint: 'Doors and drawer fronts' },
   { id: 'drawer_box', label: 'Drawer boxes',   hint: 'Drawer sides, front/back, bottoms' },
+  // Turn 3: the automatics are cut pieces, so they get their own material.
+  { id: 'plinth',     label: 'Plinth',         hint: 'Toe kick under standing units' },
+  { id: 'infill',     label: 'Infill / scribe', hint: 'Fillers at the wall and up to the ceiling' },
 ];
 
 // Hardware roles. The ENGINE decides the quantities from the geometry
@@ -31,6 +34,7 @@ export const HARDWARE_ROLES = [
   { id: 'legs',         label: 'Legs',          hint: 'Per unit, from the profile' },
   { id: 'rail',         label: 'Hanging rail',  hint: 'Cut to the internal width' },
   { id: 'shelf_pins',   label: 'Shelf pins',    hint: 'Four per shelf' },
+  { id: 'hangers',      label: 'Wall hangers',  hint: 'Two per wall unit' },
 ];
 
 export const HARDWARE_ROLE_IDS = new Set(HARDWARE_ROLES.map((r) => r.id));
@@ -55,6 +59,7 @@ export const MOCK_MATERIALS = [
   { id: 'hw_leg_100',       name: 'Adjustable leg 100 mm',       category: 'hardware', unit: 'pcs',   price: 0.95 },
   { id: 'hw_rail_oval',     name: 'Oval hanging rail 30 × 15',   category: 'hardware', unit: 'm',     price: 4.20 },
   { id: 'hw_shelf_pin',     name: 'Shelf pin ⌀7.5 nickel',       category: 'hardware', unit: 'pcs',   price: 0.09 },
+  { id: 'hw_hanger_wall',   name: 'Wall unit hanger + rail plate', category: 'hardware', unit: 'pcs', price: 1.85 },
 ];
 
 const KEY = 'cc.assignments.v2';

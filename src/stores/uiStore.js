@@ -37,6 +37,13 @@ export const useUiStore = create((set, get) => ({
   viewMode: '3d',                    // '3d' | 'cnc'
   setViewMode: (mode) => set({ viewMode: mode === 'cnc' ? 'cnc' : '3d' }),
 
+  // Dimensions on the 3D canvas: each unit's own W/H/D captions AND the
+  // distance arrows between units and to the walls (CLAUDE.md phase 8). One
+  // switch, because they are one thing to Piotr: "show me the numbers".
+  showDimensions: true,
+  setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
+  toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
+
   // Modals
   modal: null,                       // 'add-items' | 'room' | 'auth' | 'materials' | null
   openModal: (name) => set({ modal: name }),
@@ -51,6 +58,32 @@ export const useUiStore = create((set, get) => ({
   // Shelf being dragged in 3D — drives the live dimension readout
   dragging: null,                    // { unitId, itemId, pos_mm, above, below }
   setDragging: (d) => set({ dragging: d }),
+
+  // Right-click menu on an item in the canvas. `actions` is built by the
+  // caller, so a new action is a list entry, not a new menu.
+  contextMenu: null,                 // { x, y, unitId, panelId, actions: [{id,label,run}] }
+  openContextMenu: (menu) => set({ contextMenu: menu }),
+  closeContextMenu: () => set({ contextMenu: null }),
+
+  // "Look at THIS" — a double click asks the camera to fly to a point in the
+  // scene rather than to the middle of the room (CLAUDE.md phase 5).
+  focusRequest: null,                // { target: [x,y,z], radius, at }
+  focusOn: (target, radius) => set({ focusRequest: { target, radius, at: Date.now() } }),
+  clearFocus: () => set({ focusRequest: null }),
+
+  // Which fronts are open, and how far (0 = shut, 1 = fully open). Purely
+  // visual: nothing here reaches the engine, the BOM or the CNC sheet.
+  openFronts: {},                    // { [unitId]: { [panelId]: 0..1 } }
+  toggleFront: (unitId, panelId) => set((s) => {
+    const unit = s.openFronts[unitId] || {};
+    const next = (unit[panelId] ?? 0) > 0.5 ? 0 : 1;
+    return { openFronts: { ...s.openFronts, [unitId]: { ...unit, [panelId]: next } } };
+  }),
+  closeAllFronts: (unitId) => set((s) => {
+    if (!unitId) return { openFronts: {} };
+    const { [unitId]: _dropped, ...rest } = s.openFronts;
+    return { openFronts: rest };
+  }),
 
   // Snap step: 1 mm default, 0.5 mm and the 32 mm system as options (SPEC 4.8)
   snapStep: loadSnap(),

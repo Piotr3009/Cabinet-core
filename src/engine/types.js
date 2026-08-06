@@ -183,6 +183,33 @@ export const UNIT_TYPES = {
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
 export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR', 'WUD', 'BUDTALL', 'LOW_CABINET', 'SINK', 'FRIDGE'];
 
+/**
+ * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
+ * and the category opens one panel with just those types in it — no categories
+ * nested inside a single long list.
+ *
+ * `soon: true` is a place already held in the menu for work that is not done:
+ * saved sets and media walls. Every type must belong to exactly one category,
+ * which test/library-categories.test.js enforces — a new kit that nobody can
+ * reach from the menu is a kit nobody can insert.
+ */
+export const UNIT_CATEGORIES = [
+  { id: 'base', label: 'Base units', types: ['BUD', 'BUDR', 'SINK', 'LOW_CABINET'] },
+  { id: 'wall', label: 'Wall units', types: ['WUD'] },
+  { id: 'tall', label: 'Tall units', types: ['BUDTALL', 'FRIDGE', 'WARDROBE'] },
+  { id: 'sets', label: 'Saved sets', types: [], soon: true },
+  { id: 'media', label: 'Media walls', types: [], soon: true },
+];
+
+export function getCategory(id) {
+  return UNIT_CATEGORIES.find((c) => c.id === id) || null;
+}
+
+/** Which category a type is filed under, or null. */
+export function categoryOf(typeId) {
+  return UNIT_CATEGORIES.find((c) => c.types.includes(typeId)) || null;
+}
+
 export function getUnitType(typeId) {
   return UNIT_TYPES[typeId] || UNIT_TYPES.WARDROBE;
 }

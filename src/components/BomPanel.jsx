@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import NumberField from './NumberField.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES } from '../stores/materialAssignmentStore.js';
@@ -96,11 +97,13 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
                       <option value="">— not assigned —</option>
                       {boardChoices.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
-                    <input
-                      type="number" step="0.01" min="1" className="cc-input w-20 text-right"
-                      title="Yield / waste allowance"
+                    <NumberField
+                      className="cc-input w-20 text-right"
+                      integer={false}
+                      min={1}
+                      title="Yield / waste allowance — Enter to apply"
                       value={a.yield ?? 1.0}
-                      onChange={(e) => setYield(role.id, Number(e.target.value) || 1)}
+                      onCommit={(v) => setYield(role.id, v || 1)}
                     />
                     <span className="text-[11px] text-ink-400 w-24 text-right">
                       {d?.required_m2 != null ? `${d.required_m2.toFixed(3)} m²` : ''}

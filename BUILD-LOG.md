@@ -895,3 +895,384 @@ ręcznie, kolory czytane z pliku referencyjnego, `jszip` bez zmian.
 w LISP-ie), #14 (cokół per jednostka vs per ciąg), #15 (`verify_with_piotr`
 z sześciu nowych fixtures — TO JEST NAJPILNIEJSZE), #16 (import DXF: skala
 i wybór obrysu), #17 (Actions nie przydziela runnera — do sprawdzenia billing). Plus wciąż otwarte #1–#6 z tury 1 i #8–#12 z tury 2.
+
+---
+
+# TURA 4 — 06.08.2026 (autonomia, jedna sesja)
+
+Baseline na wejściu: **357/357** (`npm ci` był konieczny — `node_modules` nie było
+w kontenerze, bez tego 2 suity padały na brakujących `jspdf`/`zustand`; to nie był
+regres w kodzie). Wszystkie liczby poniżej to `node --test`, nie „powinno działać".
+
+## Faza 1 — bugi #1 #2 #3 — ✅ ZIELONA
+
+**#1 Kolejność szuflad.** Sedno nie było w widoku, a w tym, że **żadna** z dwóch
+istniejących kolejności nie była nigdzie zapisana. Silnik numeruje od dołu (D1 =
+szuflada przy podłodze — tak liczy lista cięcia, rzędy prowadnic i wiercenia, i tak
+mówią fixtures, więc to nie może się ruszyć). Człowiek czyta listę od góry i tak
+samo pokazuje 3D. Nowy moduł `src/engine/items.js` jest tym jednym miejscem:
+
+- `drawersInEngineOrder` / `shelvesInEngineOrder` — od dołu, dla silnika,
+- `drawerRows` / `shelfRows` — od góry, dla panelu, **z zachowanym numerem
+  silnika** na każdym wierszu.
+
+Panel nie sortuje niczego — pyta. Stos trzech szuflad czyta się w panelu D3 / D2 /
+D1 od góry, a D1 nadal jest dolną szufladą na liście cięcia, na arkuszu CNC i przy
+pile. Alternatywa (przenumerować D1 na górę) była odrzucona świadomie: rozjechałaby
+panel z `D1-SL`/`D1-DNO` w BOM i warsztat wyciąłby zły front.
+
+Test `test/item-order.test.js` nie sprawdza „czy tablica jest odwrócona", tylko samą
+tezę 1:1: wiersz *i* listy musi być elementem o *i*-tej największej wysokości
+w wyjściu `computeCabinet` — dla szuflad zmiennej wysokości, dla BUDR-a (4:3:2,
+gdzie najwyższy front jest na dole) i dla półek.
+
+**#2 Pola liczbowe.** Przyczyna była dokładnie ta zdiagnozowana: kontrolowany
+`<input type="number">` normalizował i clampował **w każdym `onChange`**, więc
+wpisanie „250" w pole z minimum 100 szło 2 → 100 → „1002" → clamp. Wzorzec:
+`src/lib/numberField.js` (czysta logika: parsuj, zaokrąglij, clampuj — **raz**,
+przy zatwierdzeniu) + `src/components/NumberField.jsx` (bufor tekstowy, commit na
+Enter/blur, Escape przywraca). Pole jest `type="text"` + `inputMode="decimal"`
+celowo — `type="number"` dokłada drugą opinię przeglądarki o tym, co wolno wpisać,
+i to była druga połowa buga.
+
+Wymienione **wszystkie** pola liczbowe w aplikacji: prawy panel (W/H/D, obrót,
+mount height, fridge height, wysokości szuflad, pozycje półek, hanger), pokój
+(wysokość, długości ścian, okna/drzwi: x, szerokość, wysokość, parapet), Design
+Settings (infill), BOM (yield — jedyne pole nie-całkowite, `integer={false}`),
+Add items. Zero `type="number"` w `src/` po zmianie.
+
+Test `test/number-field.test.js` odtwarza dokładnie tę sekwencję klawiszy, która
+nie przechodziła, i pilnuje reguły „w trakcie pisania nie dzieje się nic".
+
+**#3 Weryfikacja wizualna — ROZSTRZYGNIĘTE, dane i render zgodne.** Szafa 1200
+z 2 szufladami internal w Chromium (`npm run dev`, zrzuty w opisie PR):
+
+- panel: `D2` nad `D1`, edycja pierwszego wiersza zmienia **górną** szufladę
+  (potwierdzone odczytem cache: `index:2 → 300`, `index:1 → 250`),
+- 3D po wysunięciu obu frontów: skrzynki wcięte symetrycznie, panele DP stoją
+  **przy bokach**, front wyśrodkowany na korpusie, zero „przekrzywienia".
+
+Liczby są teraz przypięte testem (`test/render-geometry.test.js`, nowy przypadek):
+2 drzwi → 2 panele DP → redukcja 96 → szerokość skrzynki 1058 i wcięcie
+**18 + 30 + 18 + 5 = 71 mm na stronę**, `DP-L` 30 mm od lewego boku, `DP-R` 30 mm
+od prawego, każda formatka spinająca skrzynkę wyśrodkowana. Pytanie „czy render
+zgadza się z danymi" nie wróci już do zrzutu ekranu.
+
+**Wynik fazy: 372 testy, 372 pass, 0 fail** (357 baseline + 15 nowych), build czysty,
+zero błędów w konsoli przeglądarki.
+
+## Faza 2 — wygląd 3D: neutralne materiały, cienkie czarne kontury, sheen — ✅ ZIELONA
+
+**Materiały.** Domyślnie **złamana biel #F2F0EC**, opcja **jasny szary #E8E8E6**,
+dekory **dark walnut** i **light oak**. Fronty domyślnie = korpus (to jest reguła
+„jeden materiał w całości", zapisana w `resolveFinishes`, nie w widoku). Kolejność
+rozstrzygania — od najbardziej szczegółowego: dekor typu materiału korpusu →
+projekt → profil; dla frontów: styl drzwi → projekt → **korpus**. Kolor frontu
+z Design Settings to FARBA i zakrywa dekor, dokładnie jak w warsztacie.
+
+Dekor wybiera się **per materiał** (Carcass 1/2/3 i per styl drzwi), nie per szafka —
+tak myśli warsztat („korpus 2 to ten orzechowy"). Nowy blok `profile.appearance`
+trzyma wszystkie liczby: lista finiszy, kolor i grubość kontury, sheen, contour view,
+odcienie ról, kolory okuć. Zero gołych liczb w `src/3d/`.
+
+**Tekstury.** `scripts/gen-textures.mjs` generuje `public/textures/{dark-walnut,
+light-oak}.png` — 512×512, kafelkowalne, deterministyczne (ten sam seed = te same
+bajty). Zero nowych zależności: własny enkoder PNG na `node:zlib` (~40 linii,
+IHDR/IDAT/IEND + CRC32) i seedowany szum wartościowy z owijaniem siatki. Nic nie jest
+pobierane z internetu — grafika dekoru z sieci to czyjaś licencja w komercyjnej
+aplikacji (to jest właśnie BACKLOG #19).
+
+**Kontury.** Cienkie czarne `#1A1A1A`, `lineWidth 1`, `threshold 12` — zamiast
+grubych brązowych. **Toggle „Outlines" w toolbarze, ON domyślnie**; w contour view
+przycisk jest wyłączony i mówi dlaczego (kontury SĄ tam całym rysunkiem).
+
+**Sheen ~20 %.** `meshPhysicalMaterial` z `clearcoat 0.2` nad matową płytą
+(`roughness 0.55`) — delikatny nalot lakieru, nie plastik.
+
+**Trzy pułapki kolejności ładowania tekstur** (znalezione w Chromium, wszystkie
+opisane w kodzie, bo każda wygląda identycznie: biała płyta):
+1. `useMemo` z **setterem** `useState` w tablicy zależności (setter nigdy się nie
+   zmienia) — klon tekstury na zawsze trzymał placeholder loadera;
+2. klon `Texture` startuje z `version = 0`, a three wysyła na GPU tylko teksturę
+   `version > 0` — bez `needsUpdate` na klonie obraz siedział w pamięci, a płyta
+   była biała;
+3. materiał skompilowany BEZ mapy nie dorabia sobie mapy, kiedy dekor się doczyta —
+   trzeba przebudować shader, czyli przemontować materiał (`key`). Bez tego dekor
+   wybrany przy już narysowanej scenie pokazywał się dopiero po reloadzie.
+
+Klony są cache'owane po (url, repeat), więc cały pokój orzecha to kilka uploadów,
+nie jeden na formatkę.
+
+**Werdykt.** Zweryfikowane w Chromium: trzy typy w jednym pokoju są neutralnie białe
+z cienkim czarnym konturem; toggle Outlines gasi kontury i wraca; Design Settings →
+korpus dark walnut + fronty light oak zmienia scenę **od razu**, bez reloadu; PNG
+dekoru serwowany przez aplikację (145 kB). **381 testów, 0 fail** (9 nowych
+w `test/appearance.test.js`: lista finiszy, cztery poziomy rozstrzygania, „fronty
+dziedziczą korpus", fallback nieistniejącego id, round-trip zapisu, migracja profilu
+sprzed dekorów). Build czysty, tekstury trafiają do `dist/`.
+
+## Fazy 3 + 4 — ekran startowy, górne menu, Library w kategoriach — ✅ ZIELONE
+
+**Uwaga o commicie.** Te dwie fazy to jedna zmiana konstrukcyjna: menu Library ▸
+kategorie (faza 4) JEST elementem górnej belki (faza 3), a panel Library przestaje
+być stałym meblem z Room setup / Design settings / Snap w środku, bo te przenoszą
+się do menu Settings. Rozbicie na dwa commity znaczyłoby wstawienie kodu, który
+drugi commit natychmiast usuwa. Zrobione jednym commitem, opisane tu i w BLOCKERS #18.
+
+**Ekran startowy (styl AutoCAD).** Nazwa u góry po lewej, co MOŻESZ zrobić w kolumnie
+po lewej (New project z nazwą i wymiarem pokoju, Open: All projects / Recent),
+a praca — Recent projects / All projects — wypełnia stronę. Do kanwasu wchodzi się
+**tylko przez projekt**, więc rysunek zawsze do czegoś należy.
+
+Projekty muszą gdzieś BYĆ, a mock-mode nie ma bazy — więc `src/lib/projectLibrary.js`
+to lokalna półka (localStorage) i ona karmi listę Recent. Supabase pozostaje prawdziwym
+domem, gdy jest skonfigurowany: `mergeProjectLists` zszywa obie listy po id (wiersz
+z chmury wygrywa — to ten, który przeżyje tę przeglądarkę) i każdy wiersz mówi, skąd
+jest (`local` / `cloud`). Nowy projekt dostaje pokój **od razu z formularza**, żeby
+pierwsza szafka wpadła w przestrzeń, na którą jest wyceniana, a nie w domyślne 4 × 3.
+
+**Recent = ostatnio OTWARTE**, nie ostatnio zapisane — dwa różne znaczniki
+(`opened_at` / `updated_at`), bo inaczej „ostatnie" to lista tego, co się zapisało
+w tle. Limit 5. Uszkodzona półka (nie-JSON, obcięty JSON, `projects: "nope"`) czyta
+się jako pusta i **nadal da się zapisywać** — crash przy starcie jest nieodwracalny
+dla użytkownika, pusta lista nie.
+
+**Górne menu.** Jedna belka, jeden styl (te same przyciski co Account/Export):
+**File** (New / Open / Save / Save as… / Export ▸ CSV · PDF · Unit DXF ZIP · BOM /
+Close project) · **View** (Outlines, Dimensions, 3D | CNC sheet, Contour view) ·
+**Library ▸ kategorie** · **Settings** (Design settings…, Room setup…, Snap ▸) ·
+**Database** i **Clients** — obecne, wyłączone, z tagiem „soon". Menu jest DANYMI
+(`{ label, items: [...] }`), więc „Print" w przyszłości to jeden wpis, a nie nowy
+komponent; obsługa klawiatury, hover po otwartej belce, podmenu i zamykanie już są.
+Save/Save as żyją w `src/lib/persist.js`: półka zawsze, baza gdy skonfigurowana,
+a odmowa bazy nie unieważnia zapisu — mówi, gdzie plik jednak jest.
+
+**Library w kategoriach.** Menu ▸ **Base units** (BUD, BUDR, SINK, LOW) ·
+**Wall units** (WUD) · **Tall units** (BUDTALL, FRIDGE, WARDROBE) · **Saved sets**
+(soon) · **Media walls** (soon). Klik kategorii → JEDEN pływający panel (grab&move
+zostaje) **przefiltrowany do tej kategorii**, z **przyciskiem X** i Escape. Bez
+kategorii w środku jednej listy.
+
+**Bug znaleziony przy tym w Chromium:** X w nagłówku panelu nic nie robił. Nagłówek
+jest uchwytem do przeciągania i wołał `setPointerCapture`, co przekierowywało zdarzenie
+`click` na nagłówek — przycisk nigdy nie dostawał kliknięcia. Naciśnięcie na KONTROLKĘ
+w nagłówku nie jest chwytem (`if (e.target.closest('button')) return`). Dokładnie ten
+sam mechanizm sprawiał, że panel z tury 3 był niezamykalny.
+
+**Werdykt (Chromium, 20/20 PASS).** Aplikacja otwiera się na ekranie startowym
+(zero `<canvas>` przed projektem) → New project 4200 × 3200 wchodzi do edytora
+z tym pokojem → wszystkie sześć menu na miejscu, Database/Clients wyłączone →
+Library ▸ Base units pokazuje **dokładnie** cztery typy (bez Wardrobe) → X zamyka,
+Escape zamyka → dwie jednostki wstawione z kategorii → File ▸ Save → File ▸ Close
+project wraca na start → projekt jest w Recent z „2 units" i po kliknięciu otwiera
+się z jednostkami. **392 testy, 0 fail** (11 nowych: 8 × półka projektów, 3 ×
+kategorie — w tym „każdy typ w dokładnie jednej kategorii", które łapie zapomniany
+nowy kit).
+
+## Faza 5 — prawy panel UX — ✅ ZIELONA
+
+**Wszystko zwija się w sekcje** (`Section.jsx`): Carcass · Add items · Section 1 ·
+Doors. Zamknięta sekcja **nie jest renderowana** — żadnych ukrytych inputów
+trzymających focus, żadnego mierzenia wysokości, żadnej animacji do zepsucia. Stan
+rozwinięcia siedzi w uiStore, więc pamięta się między jednostkami. Jedno się NIE
+zwija: błędy i ostrzeżenia. Ostrzeżenie za zamkniętą sekcją to ostrzeżenie, którego
+nikt nie czyta.
+
+**Add items = lista typów, ustawienia inline.** Drawers · Shelves · Hanger rail ·
+Pull-down rail (disabled „soon"). Klik typu rozwija JEGO ustawienia w tym samym
+panelu. `AddItemsModal.jsx` **usunięty** — zero osobnych modali, jak w CLAUDE.md.
+Czego kit nie obsługuje, jest pokazane wyszarzone z powodem („already fitted",
+„this kit IS its three drawers"), a nie ukryte.
+
+**Equal heights ✓ domyślnie** (BACKLOG #11): jedno pole na cały stos. Odznaczenie →
+pole per szuflada, listowane **od góry** (D3 / D2 / D1). Ponowne zaznaczenie MUSI coś
+znaczyć — bierze wysokość **dolnej** szuflady (tej, od której zaczyna oko) i rozciąga
+na stos. `setAllDrawerHeights` to jedno wywołanie, jeden clamp i jedno przeliczenie
+półek, a nie pętla po `setDrawerHeight`.
+
+**Auto-porządek** (BACKLOG #12), reguły w `engine/items.js`, wykonanie w store:
+- **półki od góry** — pierwsza na górze pasma, każda następna o `itemStackPitch`
+  niżej, nigdy bliżej niż `minShelfGap`, a gdy pełny skok już nie wchodzi — w
+  najciaśniejsze legalne miejsce. Brak miejsca → **odmowa z liczbą** („room for 2
+  of 5"), nie ciche wrzucenie na tę samą pozycję.
+- **szuflady od dołu** — silnik i tak stackuje od podłogi; półki nad nimi
+  przeliczają się przez istniejący clamp.
+- **hanger pomiędzy** — tak wysoko, jak pozwoli najniższa półka i jego własny
+  partycjoner, nad przegrodą szuflad.
+
+**Szuflady internal → drzwi się otwierają** (BACKLOG #13): po dodaniu szuflad panel
+czyta z wyniku silnika id formatek `FRONT` i woła `openFrontsFor` — istniejący
+mechanizm animacji frontów, zero nowego kodu w 3D. Widać to na zrzucie
+`f5-doors-open.png`: drzwi odchylone, w środku stos szuflad, drążek i dwie półki.
+
+**Hanger z listy materiałów** (BACKLOG #14): select z kategorii `hardware`
+(istniejący store materiałów) + pozycja **„— Connect JoineryCore for live stock
+(soon) —"** jako disabled hint. Wybrany produkt jedzie **z itemem** (`material_id`,
+`material_label`) → `paramsForEngine` → linia `rail` w `hardware[]` z nazwą pozycji:
+`564 mm · Oval hanging rail 30 × 15`. Ilość nadal pochodzi z geometrii, więc brak
+wybranego produktu daje linię z samą długością — zamówienie czeka na decyzję,
+policzenie nie.
+
+**Werdykt (Chromium, 20/20 PASS).** Sekcje zwijają się i pamiętają stan → lista typów
+z „soon" na pull-down → 3 × 220 mm dodane inline (zero modali w DOM) → Equal heights
+zaznaczone domyślnie, jedno pole ustawia cały stos na 180 → odznaczenie daje D3/D2/D1
+od góry → dwie półki wchodzą na 2092 i 1742 (od góry, bez kolizji) → drążek z listy
+hardware trafia do BOM jako „Oval hanging rail 30 × 15" → dodanie szuflad przy
+założonych drzwiach otwiera drzwi. **399 testów, 0 fail** (7 nowych w
+`test/panel-items.test.js` — reguły są w store, więc testują się w node: auto-porządek
+z odmową, equal heights z clampem, „ponowne zaznaczenie bierze dolną szufladę",
+drążek między szufladami a półkami, produkt w BOM).
+
+## Faza 6 — infill/plinth, end panel, widok konturowy — ✅ ZIELONA
+
+Trzy rzeczy, które turą 3 były jednym workiem „automaty", a nie są tym samym
+rodzajem rzeczy. Podział jest w `engine/autoparts.js`, w komentarzu na górze pliku:
+
+**#15 Side infill — AUTOMATYCZNY, bo opisuje fakt.** Jednostka **nie dojeżdża
+do ściany**: `clampUnitX` dostał `wallMargin` = szerokość infilla z Design
+Settings, a magnes zamienia stop w **lądowanie** — w promieniu `unitMagnet` unit
+siada dokładnie na stopie, więc szczelina to DOKŁADNIE 20 mm, a nie 19,4. Dlatego
+formatka, która ją zamyka, jest dokładnie tą formatką. Dojazd → infill jest;
+odjazd → nie ma. Ten sam stop obowiązuje przy **wstawianiu** i przy **zmianie
+szerokości** (rośnięcie to ruch dalszej krawędzi), więc nie da się wejść w ścianę
+żadną drogą.
+
+Zniknęło ostrzeżenie z tury 3 („szczelina szersza niż ustawienie"): przy stopie
+jednostka NORMALNIE stoi z dala od ściany, więc ten komunikat leciałby bez przerwy.
+Co zostało: ostrzeżenie o **limicie warsztatu** — ustawienie 250 mm nie jest
+skrobanką (profil kończy na 120), unit staje 250 mm od ściany i żadna formatka
+tam nie dosięga. To jest ustawienie do zmiany, więc się o tym mówi.
+
+**#16 Plinth i top infill — RĘCZNE, bo są decyzją.** `autoPartsFor` już ich nie
+wymyśla — tylko przenosi (i przycina top infill do sufitu, gdy sufit spadnie).
+Nowa jednostka nie ma ani cokołu, ani infilla: **zero wierszy w liście cięcia,
+których nikt nie zamówił**. Dodawanie z sekcji Construction w panelu i z menu
+kontekstowego. Uchwyt do przeciągania top infilla renderuje się tylko, gdy
+formatka ISTNIEJE — uchwyt do czegoś, czego nie dodano, to uchwyt do niczego.
+Drag do sufitu i dwuklik zostają bez zmian.
+
+**#17 End panel.** Formatka po ZEWNĘTRZNEJ stronie boku: `END-L`/`END-R`, rola
+`end_panel` (własna pozycja w BOM_ROLES — zwykle z materiału frontowego, nie
+z płyty korpusowej), głębokość = głębokość jednostki, wysokość **to floor**
+(mija nogi, u wiszącej schodzi od wysokości zawieszenia) albo **unit height**,
+grubość domyślnie = grubość frontów. Idzie do BOM, CSV, arkusza CNC i DXF-a tą
+samą drogą co każda inna formatka.
+
+**Kolizje są respektowane w obie strony:**
+- panel jest **częścią footprintu** (`endPanelPads` + `unitSpan`), więc sąsiada
+  nie da się wsunąć w miejsce, które panel zajmuje — clamp go zatrzymuje na
+  panelu, nie na korpusie;
+- panel, który **się nie mieści**, jest **odmawiany z liczbą i winowajcą**
+  („only 0 mm free before 02"). Dodanie go i tak byłoby nakładką, którą aplikacja
+  zrobiła sama — dokładnie to, co domknęła faza 4 tury 3. Przy ścianie wolne jest
+  tyle, ile infill (20 mm), więc 25 mm panel tam nie wejdzie: tę szczelinę już
+  zamyka skrobanka.
+
+**„Apply to all end panels" ✓** zapisuje ustawienia do PROJEKTU
+(`design.endPanel`), więc kolejny panel gdziekolwiek dziedziczy wysokość
+i grubość; edycja istniejącego przy zaznaczonym checkboxie też aktualizuje
+domyślne — to jest jedyny sposób, w jaki „wszystkie tak samo" coś znaczy.
+Opcje siedzą **w sekcji panelu**, nie w modalu — menu kontekstowe dodaje panel
+i **otwiera tę sekcję**.
+
+**#18 Contour view** (View ▸ Contour view): materiał gaśnie do 6 % krycia
+(`depthWrite` off), kontury zostają — do renderu i druku ekranem. Wymiary są
+schowane, bo przeszkadzałyby w jedynej rzeczy, po którą się ten tryb włącza.
+Przełącznik „Outlines" jest w tym trybie **wyłączony i mówi dlaczego** (kontury
+SĄ tam rysunkiem). Zero wpływu na BOM — to sposób PATRZENIA na ten sam projekt.
+
+**Werdykt (Chromium, 17/17 PASS).** Nowa jednostka bez cokołu i bez infilla →
+oba dodane z panelu (badge „PLINTH · TOP") → prawy klik daje „Add end panel",
+panel wchodzi z domyślnymi projektu i otwiera się sekcja z opcjami → zmiana na
+unit height → drugi unit: „+ Left" **odmówione** („only 0 mm free"), „+ Right"
+dziedziczy `unit/25` → END-R, END-L, PLINTH i INFILL-T są w liście cięcia →
+przeciągnięcie w ścianę zatrzymuje się na 20 mm i tworzy skrobankę, odjazd ją
+usuwa → contour view rysuje same kontury. **410 testów, 0 fail** (11 nowych
+w `test/construction.test.js`; 3 zaktualizowane w `autoparts`/`interaction`, bo
+zachowanie zmieniło się celowo).
+
+## Faza 7 — zamknięcie — ✅ ZIELONA
+
+**`npm test`: 410 pass / 0 fail.** 357 z tury 3 (podłoga, nietknięta) + 53 nowe:
+
+| plik | co pilnuje |
+|---|---|
+| `test/item-order.test.js` (8) | dwie kolejności elementów; wiersz *i* listy = *i*-ty od góry w wyjściu silnika; auto-porządek |
+| `test/number-field.test.js` (6) | bufor pola: ta sekwencja klawiszy, która nie przechodziła; clamp raz, przy commicie |
+| `test/appearance.test.js` (9) | lista finiszy; cztery poziomy rozstrzygania; „fronty dziedziczą korpus"; migracja profilu sprzed dekorów |
+| `test/project-library.test.js` (8) | półka projektów; Recent = ostatnio OTWARTE; uszkodzona półka; scalanie z bazą |
+| `test/library-categories.test.js` (3) | każdy typ w dokładnie jednej kategorii (łapie zapomniany nowy kit) |
+| `test/panel-items.test.js` (7) | auto-porządek z odmową; equal heights; drążek między szufladami a półkami; produkt w BOM |
+| `test/construction.test.js` (11) | stop przy ścianie + magnes; ręczny cokół/top infill; end panel w BOM/CNC/footprincie; odmowa gdy się nie mieści |
+| `test/render-geometry.test.js` (+1) | szafa 1200: wcięcie 71 mm/str., DP przy bokach, front wyśrodkowany |
+
+Trzy istniejące testy **zmienione świadomie**, bo zachowanie się zmieniło:
+`autoparts` × 2 (ostrzeżenie o szerokiej szczelinie → cisza przy stopie; automaty →
+przenoszone) i `interaction` × 1 (menu kontekstowe ma teraz pozycje konstrukcyjne).
+Nic nie zostało usunięte ani wyciszone.
+
+**`npm run build`: czysty.** Tekstury trafiają do `dist/textures/`.
+
+**Przebieg end-to-end w Chromium — 26/26 PASS, zero błędów w konsoli.**
+Cała ścieżka z CLAUDE.md, w jednym przejściu na koniec, po wszystkich zmianach:
+
+1. start screen (zero `<canvas>` przed projektem) → 2. New project 3600 × 3000
+z własnym pokojem → 3. trzy jednostki z trzech kategorii Library → 4. szuflady,
+półki i drążek (z listy hardware) dodane **inline**, zero modali → 5. cokół,
+top infill i end panel — każde **bo ktoś o nie poprosił** → 6. przeciągnięcie
+w ścianę: stop 20 mm i skrobanka pojawia się sama → 7. BOM zawiera PLINTH,
+INFILL-T, INFILL-L, END-R, PARTITION, SHELF-1 oraz rolę „End panels" i linię
+„Oval hanging rail" → 8. **trzy eksporty pobrane**: `cabinetcore-cutlist-*.csv`,
+`cabinetcore-project-*.pdf`, `DR01-dxf.zip` → 9. arkusz CNC rysuje →
+10. contour view → 11. orzech + dąb → 12. Save → Close → projekt w Recent
+z „3 units" → otwarty z powrotem **z end panelem i top infillem**.
+
+Zrzuty: `f7-01-three-units`, `f7-02-items`, `f7-03-construction`,
+`f7-04-at-the-wall`, `f7-05-bom`, `f7-06-cnc`, `f7-07-contour`, `f7-08-decors`,
+`f7-09-reopened` (+ zrzuty per faza: `f1-*`, `f2-*`, `f3-*`, `f5-*`, `f6-*`) —
+w opisie PR.
+
+**Trzy bugi znalezione przez ten przebieg, nie przez testy** (i to jest argument
+za trzymaniem przebiegu w przeglądarce):
+1. **X panelu Library nic nie robił** — nagłówek jest uchwytem do przeciągania
+   i `setPointerCapture` przekierowywał `click` na nagłówek. To ten sam mechanizm,
+   który sprawiał, że panel z tury 3 był niezamykalny.
+2. **Dekor pokazywał się dopiero po reloadzie** — trzy pułapki kolejności
+   ładowania tekstur (opisane w fazie 2).
+3. **Podmenu File ▸ Export zamykało się od kliknięcia** — hover je otwierał,
+   a klik przełączał, czyli zamykał to, na co użytkownik właśnie celuje. Klik
+   w rodzica podmenu **otwiera**, nigdy nie przełącza.
+
+**BACKLOG.md**: pozycje **1–18 → TURA-4 / DONE**, każda z jednolinijkową notą, co
+konkretnie to zamknęło. Pozycja 19+ nietknięta; dopisana jedna nowa (19b: eksport
+konturów do pliku, wynikła z #18). **README** zaktualizowany: ekran startowy, menu,
+kategorie Library, panel z sekcjami, equal heights, automatyczne vs ręczne,
+contour view, `scripts/gen-textures.mjs`, liczba testów.
+
+**Zero nowych zależności** (zasada #4): `package.json` nietknięty. Tekstury drewna
+generowane własnym enkoderem PNG na `node:zlib`; sterownik przebiegu end-to-end
+(playwright-core) żyje **poza repo**, w katalogu roboczym sesji — projekt go nie
+widzi i nie potrzebuje.
+**Zero wykonanego SQL-a** (zasada #6). **Fixtures nietknięte** (zasada #1) —
+tylko czytane.
+
+---
+
+# DEFINICJA SUKCESU TURY 4 — status
+
+1. **357 starych + nowe testy — 0 fail** — ✅ **410/410**. Nowe testy dokładnie
+   tam, gdzie CLAUDE.md kazał: kolejność szuflad, bufor pól, clamp infilla, end panel.
+2. **Bugi #1 #2 naprawione; #3 rozstrzygnięte screenshotem** — ✅ #1 przez jedną
+   zapisaną konwencję (nie przez łatkę w widoku), #2 przez wzorzec użyty we
+   wszystkich polach, #3 zrzutem **i** przypiętymi liczbami, żeby nie wróciło.
+3. **Meble neutralne + orzech/dąb, kontury czarne cienkie z toggle, sheen subtelny** — ✅
+4. **Start screen + górne menu działają; Library w kategoriach z X** — ✅
+5. **Panel: accordion, equal heights, auto-porządek, drzwi otwierają się po szufladach,
+   hanger z materiałów** — ✅
+6. **Infill auto przy ścianie; plinth/top manual; end panel w BOM; contour view** — ✅
+7. **BUILD-LOG TURA 4 + BACKLOG statusy + BLOCKERS bez pytań do użytkownika** — ✅
+   BLOCKERS #18–#21 to decyzje i obserwacje, nie pytania: żadna nie czeka na
+   odpowiedź, żeby tura była skończona.
+
+**Fazy NIEROZPOCZĘTE: brak.** Wszystkie siedem wykonanych, każda z commitem
+i pushem, każda z werdyktem powyżej.

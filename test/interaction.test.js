@@ -88,7 +88,38 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   const store = {};
   const wardrobe = menuActions({ unit: unitOf('WARDROBE'), panelPart: 'BUL', store });
   const ids = wardrobe.map((a) => a.id);
-  assert.deepEqual(ids, ['center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete']);
+  // Turn 4 adds the manual construction pieces here, because right-clicking the
+  // unit is where a joiner reaches for them (BACKLOG #16/#17).
+  assert.deepEqual(ids, [
+    'end-panel-L', 'end-panel-R', 'plinth-on', 'top-infill-on',
+    'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
+  ]);
+
+  // What is already fitted is offered as REMOVE, and an end panel that exists is
+  // not offered twice.
+  const dressed = menuActions({
+    unit: {
+      ...unitOf('WARDROBE'),
+      params: {
+        ...unitOf('WARDROBE').params,
+        plinth: true,
+        top_infill_mm: 40,
+        end_panels: [{ id: 'ep1', side: 'L', height: 'floor', thickness: 25 }],
+      },
+    },
+    panelPart: 'BUL',
+    store,
+  });
+  const byId = new Map(dressed.map((a) => [a.id, a]));
+  assert.equal(byId.get('end-panel-L').disabled, true, 'the left panel is already there');
+  assert.equal(byId.get('end-panel-R').disabled, false, 'and the right one is still on offer');
+  assert.ok(byId.has('plinth-off') && !byId.has('plinth-on'));
+  assert.ok(byId.has('top-infill-off') && !byId.has('top-infill-on'));
+
+  // A wall unit stands on nothing, so it is never offered a plinth.
+  const wallIds = menuActions({ unit: unitOf('WUD'), panelPart: 'BUL', store }).map((a) => a.id);
+  assert.equal(wallIds.includes('plinth-on'), false);
+  assert.ok(wallIds.includes('top-infill-on'), 'but it can still be closed up to the ceiling');
 
   // A fridge housing has no shelves, so it is not offered a shelf action.
   const fridge = menuActions({ unit: unitOf('FRIDGE'), panelPart: 'BUL', store }).map((a) => a.id);

@@ -13,6 +13,9 @@ export default function CanvasToolbar() {
   const toggleDimensions = useUiStore((s) => s.toggleDimensions);
   const bomOpen = useUiStore((s) => s.bomOpen);
   const setBomOpen = useUiStore((s) => s.setBomOpen);
+  const showOutlines = useUiStore((s) => s.showOutlines);
+  const toggleOutlines = useUiStore((s) => s.toggleOutlines);
+  const contourView = useUiStore((s) => s.contourView);
 
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-shell-800/95 border border-shell-600 rounded px-1.5 py-1 shadow-lg">
@@ -30,6 +33,27 @@ export default function CanvasToolbar() {
         title={showDimensions ? 'Hide dimensions and distance arrows' : 'Show dimensions and distance arrows'}
       >
         {showDimensions ? 'Hide dimensions' : 'Show dimensions'}
+      </button>
+
+      <span className="w-px h-4 bg-shell-600" />
+
+      {/* Thin black contours on every piece — ON by default. In contour view
+          they ARE the drawing, so the switch says so rather than pretending it
+          can turn them off. */}
+      <button
+        type="button"
+        aria-pressed={showOutlines || contourView}
+        disabled={viewMode !== '3d' || contourView}
+        className={`px-2.5 py-1 text-xs rounded transition-colors disabled:cursor-not-allowed ${
+          (showOutlines || contourView) && viewMode === '3d'
+            ? 'bg-gold text-shell-900 font-medium disabled:opacity-60'
+            : 'text-ink-100 hover:bg-shell-700 disabled:opacity-35'}`}
+        onClick={toggleOutlines}
+        title={contourView
+          ? 'Contour view draws nothing but the outlines'
+          : (showOutlines ? 'Hide the outlines' : 'Show the outlines')}
+      >
+        Outlines
       </button>
 
       <span className="w-px h-4 bg-shell-600" />

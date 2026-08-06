@@ -895,3 +895,68 @@ ręcznie, kolory czytane z pliku referencyjnego, `jszip` bez zmian.
 w LISP-ie), #14 (cokół per jednostka vs per ciąg), #15 (`verify_with_piotr`
 z sześciu nowych fixtures — TO JEST NAJPILNIEJSZE), #16 (import DXF: skala
 i wybór obrysu), #17 (Actions nie przydziela runnera — do sprawdzenia billing). Plus wciąż otwarte #1–#6 z tury 1 i #8–#12 z tury 2.
+
+---
+
+# TURA 4 — 06.08.2026 (autonomia, jedna sesja)
+
+Baseline na wejściu: **357/357** (`npm ci` był konieczny — `node_modules` nie było
+w kontenerze, bez tego 2 suity padały na brakujących `jspdf`/`zustand`; to nie był
+regres w kodzie). Wszystkie liczby poniżej to `node --test`, nie „powinno działać".
+
+## Faza 1 — bugi #1 #2 #3 — ✅ ZIELONA
+
+**#1 Kolejność szuflad.** Sedno nie było w widoku, a w tym, że **żadna** z dwóch
+istniejących kolejności nie była nigdzie zapisana. Silnik numeruje od dołu (D1 =
+szuflada przy podłodze — tak liczy lista cięcia, rzędy prowadnic i wiercenia, i tak
+mówią fixtures, więc to nie może się ruszyć). Człowiek czyta listę od góry i tak
+samo pokazuje 3D. Nowy moduł `src/engine/items.js` jest tym jednym miejscem:
+
+- `drawersInEngineOrder` / `shelvesInEngineOrder` — od dołu, dla silnika,
+- `drawerRows` / `shelfRows` — od góry, dla panelu, **z zachowanym numerem
+  silnika** na każdym wierszu.
+
+Panel nie sortuje niczego — pyta. Stos trzech szuflad czyta się w panelu D3 / D2 /
+D1 od góry, a D1 nadal jest dolną szufladą na liście cięcia, na arkuszu CNC i przy
+pile. Alternatywa (przenumerować D1 na górę) była odrzucona świadomie: rozjechałaby
+panel z `D1-SL`/`D1-DNO` w BOM i warsztat wyciąłby zły front.
+
+Test `test/item-order.test.js` nie sprawdza „czy tablica jest odwrócona", tylko samą
+tezę 1:1: wiersz *i* listy musi być elementem o *i*-tej największej wysokości
+w wyjściu `computeCabinet` — dla szuflad zmiennej wysokości, dla BUDR-a (4:3:2,
+gdzie najwyższy front jest na dole) i dla półek.
+
+**#2 Pola liczbowe.** Przyczyna była dokładnie ta zdiagnozowana: kontrolowany
+`<input type="number">` normalizował i clampował **w każdym `onChange`**, więc
+wpisanie „250" w pole z minimum 100 szło 2 → 100 → „1002" → clamp. Wzorzec:
+`src/lib/numberField.js` (czysta logika: parsuj, zaokrąglij, clampuj — **raz**,
+przy zatwierdzeniu) + `src/components/NumberField.jsx` (bufor tekstowy, commit na
+Enter/blur, Escape przywraca). Pole jest `type="text"` + `inputMode="decimal"`
+celowo — `type="number"` dokłada drugą opinię przeglądarki o tym, co wolno wpisać,
+i to była druga połowa buga.
+
+Wymienione **wszystkie** pola liczbowe w aplikacji: prawy panel (W/H/D, obrót,
+mount height, fridge height, wysokości szuflad, pozycje półek, hanger), pokój
+(wysokość, długości ścian, okna/drzwi: x, szerokość, wysokość, parapet), Design
+Settings (infill), BOM (yield — jedyne pole nie-całkowite, `integer={false}`),
+Add items. Zero `type="number"` w `src/` po zmianie.
+
+Test `test/number-field.test.js` odtwarza dokładnie tę sekwencję klawiszy, która
+nie przechodziła, i pilnuje reguły „w trakcie pisania nie dzieje się nic".
+
+**#3 Weryfikacja wizualna — ROZSTRZYGNIĘTE, dane i render zgodne.** Szafa 1200
+z 2 szufladami internal w Chromium (`npm run dev`, zrzuty w opisie PR):
+
+- panel: `D2` nad `D1`, edycja pierwszego wiersza zmienia **górną** szufladę
+  (potwierdzone odczytem cache: `index:2 → 300`, `index:1 → 250`),
+- 3D po wysunięciu obu frontów: skrzynki wcięte symetrycznie, panele DP stoją
+  **przy bokach**, front wyśrodkowany na korpusie, zero „przekrzywienia".
+
+Liczby są teraz przypięte testem (`test/render-geometry.test.js`, nowy przypadek):
+2 drzwi → 2 panele DP → redukcja 96 → szerokość skrzynki 1058 i wcięcie
+**18 + 30 + 18 + 5 = 71 mm na stronę**, `DP-L` 30 mm od lewego boku, `DP-R` 30 mm
+od prawego, każda formatka spinająca skrzynkę wyśrodkowana. Pytanie „czy render
+zgadza się z danymi" nie wróci już do zrzutu ekranu.
+
+**Wynik fazy: 372 testy, 372 pass, 0 fail** (357 baseline + 15 nowych), build czysty,
+zero błędów w konsoli przeglądarki.

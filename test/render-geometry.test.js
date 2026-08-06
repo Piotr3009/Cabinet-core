@@ -151,3 +151,64 @@ test('drawer fronts are handed to the view with position and size, per drawer', 
   const top = budr.assemblies.drawerFronts[2];
   assert.equal(top.y + top.h, 770 - P.baseDrawerUnit.gap, 'the BUDR stack reaches the top of the carcass');
 });
+
+// ─── BACKLOG #3: the wide wardrobe with internal drawers ───
+//
+// Reported as "the drawer boxes look wrong on a wide wardrobe". The numbers are
+// pinned here so the question is never asked of a screenshot again: on a 1200
+// two-door wardrobe the engine deducts a drawer panel on BOTH sides, which
+// insets the box by exactly 71 mm per side, and the two DP panels stand
+// against the carcass sides.
+//
+// A render that disagrees with these numbers is a render bug — the panel boxes
+// UnitView draws are these very boxes.
+
+test('a 1200 wardrobe with 2 internal drawers: boxes inset 71 per side, DP at the sides', () => {
+  const r = wardrobe({ width: 1200, drawers: 2 });
+  const G = P.board.thickness;
+  const DP = P.wardrobe.drawerPanel;
+  const DR = P.wardrobe.drawers;
+
+  assert.equal(r.derived.doors, 2, 'two doors, so a drawer panel on each side');
+  assert.equal(r.derived.numDrPanels, 2);
+  assert.equal(r.derived.drawerReduction, 2 * (DP.inset + G), '96 mm off the box width');
+  assert.equal(r.derived.internal_width, 1200 - 2 * G);
+  assert.equal(r.derived.szufSzer, 1164 - DR.boxWidthClearance - 96, 'box width 1058');
+
+  // The inset the report is about: 18 (side) + 30 (DP inset) + 18 (DP) + 5
+  // (half the box clearance) = 71 mm, and the same on the right.
+  const expectedInset = G + DP.inset + G + DR.boxWidthClearance / 2;
+  assert.equal(expectedInset, 71);
+  // The two box sides are the outer faces of the box: one is `inset` off the
+  // left, the other the same off the right.
+  for (const i of [1, 2]) {
+    const sl = r.panels.find((p) => p.id === `D${i}-SL`);
+    const sr = r.panels.find((p) => p.id === `D${i}-SR`);
+    assert.equal(gaps(sl.box, 1200).left, expectedInset, `D${i} box left inset`);
+    assert.equal(gaps(sr.box, 1200).right, expectedInset, `D${i} box right inset`);
+  }
+  // Everything that spans the box is centred in the carcass, on both sides.
+  for (const part of ['DRAWER-BOX-FRONT', 'DRAWER-BOX-BACK', 'DRAWER-BOTTOM']) {
+    for (const p of r.panels.filter((x) => x.part === part)) {
+      const g = gaps(p.box, 1200);
+      assert.ok(g.left >= expectedInset - 1e-6, `${p.id} left gap ${g.left} < ${expectedInset}`);
+      assert.ok(Math.abs(g.left - g.right) < 1e-6, `${p.id} is lopsided: ${g.left} vs ${g.right}`);
+    }
+  }
+
+  // The drawer panels themselves sit one inset off each carcass side, i.e.
+  // between the side and the box — not out in the middle of the unit.
+  const left = r.panels.find((p) => p.id === 'DP-L');
+  const right = r.panels.find((p) => p.id === 'DP-R');
+  assert.equal(left.box.x, G + DP.inset, 'DP-L is 30 mm off the left side');
+  assert.equal(right.box.x + right.box.w, 1200 - G - DP.inset, 'DP-R is 30 mm off the right side');
+  assert.equal(left.box.w, G);
+  assert.equal(right.box.w, G);
+
+  // The fronts stay centred on the carcass, not on the box.
+  for (const f of r.panels.filter((p) => p.part === 'DRAWER-FRONT')) {
+    const g = gaps(f.box, 1200);
+    assert.ok(Math.abs(g.left - g.right) < 1e-6, `${f.id} front is off-centre: ${g.left} vs ${g.right}`);
+    assert.equal(f.w, r.derived.szufSzer + DR.frontOversize);
+  }
+});

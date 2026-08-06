@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
 import ColourPicker from './ColourPicker.jsx';
+import NumberField from './NumberField.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
@@ -95,10 +96,11 @@ export default function DesignSettingsModal() {
             <div className="cc-divider" />
             <span className="text-xs uppercase tracking-wide text-ink-200">Infill at the wall</span>
             <div className="flex items-center gap-2">
-              <input
-                type="number" className="cc-input w-24 text-right"
+              <NumberField
+                className="cc-input w-24 text-right"
+                min={0}
                 value={Math.round(design.infill.sideWidth)}
-                onChange={(e) => setDesign({ infill: { ...design.infill, sideWidth: Number(e.target.value) } })}
+                onCommit={(v) => setDesign({ infill: { ...design.infill, sideWidth: v } })}
               />
               <span className="text-[11px] text-ink-400">mm — the filler between a unit and the wall</span>
             </div>

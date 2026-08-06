@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
+import NumberField from './NumberField.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore, shelfLimits } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -62,18 +63,16 @@ export default function AddItemsModal({ unit }) {
           <div className="flex items-end gap-2">
             <div className="w-20">
               <span className="cc-label">Count</span>
-              <input
-                type="number" min={1} max={DR.maxCount} className="cc-input"
-                value={drawerCount} onChange={(e) => setDrawerCount(Math.max(1, Math.min(DR.maxCount, Number(e.target.value))))}
+              <NumberField
+                min={1} max={DR.maxCount}
+                value={drawerCount} onCommit={setDrawerCount}
               />
             </div>
             <div className="w-24">
               <span className="cc-label">Height (mm)</span>
-              <input
-                type="number" min={DR.minFrontHeight} max={DR.maxFrontHeight} step={10} className="cc-input"
-                value={drawerHeight}
-                onChange={(e) => setDrawerHeight(Number(e.target.value))}
-                onBlur={(e) => setDrawerHeight(Math.min(Math.max(Number(e.target.value) || DR.frontHeight, DR.minFrontHeight), DR.maxFrontHeight))}
+              <NumberField
+                min={DR.minFrontHeight} max={DR.maxFrontHeight}
+                value={drawerHeight} onCommit={setDrawerHeight}
               />
             </div>
             <div className="flex-1">
@@ -101,7 +100,7 @@ export default function AddItemsModal({ unit }) {
           <div className="flex items-end gap-2">
             <div className="w-24">
               <span className="cc-label">Add</span>
-              <input type="number" min={1} max={10} className="cc-input" value={shelfCount} onChange={(e) => setShelfCount(Math.max(1, Number(e.target.value)))} />
+              <NumberField min={1} max={10} value={shelfCount} onCommit={setShelfCount} />
             </div>
             <button type="button" className="cc-btn-gold" onClick={applyShelves}>Add</button>
           </div>
@@ -116,7 +115,7 @@ export default function AddItemsModal({ unit }) {
           <div className="flex items-end gap-2">
             <div className="w-32">
               <span className="cc-label">Height (mm)</span>
-              <input type="number" className="cc-input" value={railOffset} onChange={(e) => setRailOffset(e.target.value)} />
+              <NumberField value={railOffset} onCommit={setRailOffset} />
             </div>
             <button type="button" className="cc-btn-gold" onClick={applyRail} disabled={hasRail}>Add</button>
           </div>

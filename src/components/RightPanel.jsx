@@ -6,6 +6,8 @@ import { getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
 import { roomWalls } from '../engine/room.js';
 import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
+import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
+import NumberField from './NumberField.jsx';
 
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
@@ -45,12 +47,13 @@ export default function RightPanel() {
   const type = unit ? getUnitType(unit.type) : null;
   const issues = unit && result ? validateUnit(unit, result, { room, units }) : [];
   const items = unit?.params.sections?.[0]?.items || [];
-  const shelves = items.filter((i) => i.kind === 'shelf').sort((a, b) => (a.pos_mm || 0) - (b.pos_mm || 0));
-  // Bottom-up, the same order the engine stacks them in, so D1 in this list is
-  // D1 in the cut list.
-  const drawers = items.filter((i) => i.kind === 'drawer')
-    .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
-  const rail = items.find((i) => i.kind === 'hanger');
+  // TOP-DOWN, from engine/items.js: the first row of every list below is the
+  // piece nearest the ceiling, exactly as the 3D view shows it (BACKLOG #1).
+  // Each row keeps the engine's own number, so D1 is still the bottom drawer
+  // on the cut list, on the CNC sheet and at the saw.
+  const shelves = shelfRows(items);
+  const drawers = drawerRows(items);
+  const rail = hangerOf(items);
   // A drawer unit whose stack comes from a fixed ratio (BUDR) has no editable
   // drawer heights and no removable drawers — it IS its three drawers.
   const ratioDrawers = type?.drawerStyle === 'budr';
@@ -85,12 +88,12 @@ export default function RightPanel() {
               {[['width', 'Width'], ['height', 'Height'], ['depth', 'Depth']].map(([key, label]) => (
                 <div key={key}>
                   <span className="cc-label">{label}</span>
-                  <input
-                    type="number" className="cc-input" value={unit.params[key]}
-                    onChange={(e) => {
+                  <NumberField
+                    value={unit.params[key]}
+                    onCommit={(v) => {
                       // Growing a unit is a move: it stops at the neighbour, the
                       // end of the wall or the far side of the room, and says so.
-                      const { notices } = updateUnitParams(unit.id, { [key]: Number(e.target.value) });
+                      const { notices } = updateUnitParams(unit.id, { [key]: v });
                       for (const n of notices) notify(n, 'warn');
                     }}
                   />
@@ -120,11 +123,11 @@ export default function RightPanel() {
               <div>
                 <span className="cc-label">Rotation</span>
                 <div className="flex gap-1">
-                  <input
-                    type="number" className="cc-input w-16 text-right" step={5}
+                  <NumberField
+                    className="cc-input w-16 text-right"
                     title="Angle to the wall (0 = back to wall)"
                     value={Math.round(unit.position?.rotation_deg ?? 0)}
-                    onChange={(e) => rotateUnit(unit.id, 'set', Number(e.target.value))}
+                    onCommit={(v) => rotateUnit(unit.id, 'set', v)}
                   />
                   <button type="button" className="cc-btn px-2" title="Turn 90° clockwise" onClick={() => rotateUnit(unit.id, 'step', 90)}>+90°</button>
                 </div>
@@ -205,20 +208,20 @@ export default function RightPanel() {
                 {type.mount === 'wall' && (
                   <div>
                     <span className="cc-label">Mount height</span>
-                    <input
-                      type="number" className="cc-input" title="Height of the carcass base above the floor"
+                    <NumberField
+                      title="Height of the carcass base above the floor"
                       value={Math.round(unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight)}
-                      onChange={(e) => updateUnitParams(unit.id, { mount_height: Number(e.target.value) })}
+                      onCommit={(v) => updateUnitParams(unit.id, { mount_height: v })}
                     />
                   </div>
                 )}
                 {unit.type === 'FRIDGE' && (
                   <div>
                     <span className="cc-label">Fridge height</span>
-                    <input
-                      type="number" className="cc-input" title="Inner clearance for the appliance"
+                    <NumberField
+                      title="Inner clearance for the appliance"
                       value={Math.round(unit.params.fridge_h ?? profile.fridgeUnit.defaults.fridgeH)}
-                      onChange={(e) => updateUnitParams(unit.id, { fridge_h: Number(e.target.value) })}
+                      onCommit={(v) => updateUnitParams(unit.id, { fridge_h: v })}
                     />
                   </div>
                 )}
@@ -256,36 +259,37 @@ export default function RightPanel() {
                     {result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped'}
                   </span>
                 </div>
-                {/* Height per drawer, bottom-up. The BOM, the CNC sheet and the
-                    3D view all recompute from the engine on every keystroke. */}
+                {/* Height per drawer, TOP-DOWN — the first row is the drawer
+                    nearest the ceiling, as in 3D. The label is the engine's own
+                    number (D1 = bottom), so the row and the cut list agree.
+                    The BOM, the CNC sheet and the 3D view all recompute from
+                    the engine the moment a height is committed. */}
                 <ul className="space-y-1 mt-1">
-                  {drawers.map((dr, i) => (
+                  {drawers.map(({ item: dr, num, label }) => (
                     <li key={dr.id} className="flex items-center gap-1">
-                      <span className="text-ink-400 w-6 text-xs">D{i + 1}</span>
+                      <span className="text-ink-400 w-6 text-xs">{label}</span>
                       {/* A BUDR's three fronts come from the kit's own 4:3:2
                           split of the carcass height — there is no per-drawer
                           height to set, so the engine's number is SHOWN, not
                           offered as an input that would do nothing. */}
                       {ratioDrawers ? (
                         <span className="cc-input w-20 text-right opacity-70">
-                          {Math.round(result.derived.drawer_heights?.[i] ?? 0)}
+                          {Math.round(result.derived.drawer_heights?.[num - 1] ?? 0)}
                         </span>
                       ) : (
-                        <input
-                          type="number"
+                        <NumberField
                           min={profile.wardrobe.drawers.minFrontHeight}
                           max={profile.wardrobe.drawers.maxFrontHeight}
-                          step={10}
                           className="cc-input w-20 text-right"
-                          title="Drawer front height (mm)"
+                          title="Drawer front height (mm) — Enter to apply, Escape to undo"
                           value={Math.round(dr.height_mm ?? profile.wardrobe.drawers.frontHeight)}
-                          onChange={(e) => setDrawerHeight(unit.id, dr.id, Number(e.target.value))}
+                          onCommit={(v) => setDrawerHeight(unit.id, dr.id, v)}
                         />
                       )}
                       <span className="text-[11px] text-ink-400 flex-1">
                         mm front
-                        {result.derived.drawer_box_side_h?.[i] != null
-                          && ` · box side ${Math.round(result.derived.drawer_box_side_h[i])}`}
+                        {result.derived.drawer_box_side_h?.[num - 1] != null
+                          && ` · box side ${Math.round(result.derived.drawer_box_side_h[num - 1])}`}
                       </span>
                       {!ratioDrawers && (
                         <button
@@ -318,9 +322,9 @@ export default function RightPanel() {
               <div className="cc-row text-sm">
                 <span className="text-ink-100">Hanger rail</span>
                 <div className="flex items-center gap-1">
-                  <input
-                    type="number" className="cc-input w-20 text-right" value={Math.round(rail.pos_mm)}
-                    onChange={(e) => updateItem(unit.id, rail.id, { pos_mm: Number(e.target.value) })}
+                  <NumberField
+                    className="cc-input w-20 text-right" value={Math.round(rail.pos_mm)}
+                    onCommit={(v) => updateItem(unit.id, rail.id, { pos_mm: v })}
                   />
                   <button type="button" className="cc-btn-ghost" onClick={() => removeItem(unit.id, rail.id)}>×</button>
                 </div>
@@ -346,14 +350,14 @@ export default function RightPanel() {
                 </div>
               </div>
               <ul className="space-y-1">
-                {shelves.map((sh, i) => (
+                {shelves.map(({ item: sh, label }) => (
                   <li key={sh.id} className="flex items-center gap-1 text-sm">
-                    <span className="text-ink-400 w-6 text-xs">S{i + 1}</span>
+                    <span className="text-ink-400 w-6 text-xs">{label}</span>
                     {/* Typed positions go through the SAME clamp as the drag —
                         the field is not a back door around the collision rules. */}
-                    <input
-                      type="number" className="cc-input w-20 text-right" value={Math.round(sh.pos_mm ?? 0)}
-                      onChange={(e) => setShelfPos(unit.id, sh.id, Number(e.target.value))}
+                    <NumberField
+                      className="cc-input w-20 text-right" value={Math.round(sh.pos_mm ?? 0)}
+                      onCommit={(v) => setShelfPos(unit.id, sh.id, v)}
                     />
                     <select
                       className="cc-input flex-1" value={sh.variant || 'fixed'}

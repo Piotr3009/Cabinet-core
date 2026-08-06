@@ -200,6 +200,23 @@ export const useProjectStore = create((set, get) => ({
     };
   }),
 
+  /** What a carcass material LOOKS like (turn 4): its decor, per material type. */
+  setCarcassFinish: (typeId, finishId) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    return {
+      project: {
+        ...s.project,
+        design: {
+          ...design,
+          carcass: {
+            types: design.carcass.types.map((t) => (t.id === typeId ? { ...t, finish_id: finishId || null } : t)),
+          },
+        },
+      },
+      dirty: true,
+    };
+  }),
+
   addDoorStyle: (style) => {
     const id = style?.id || uid('ds');
     set((s) => {

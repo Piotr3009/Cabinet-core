@@ -960,3 +960,53 @@ zgadza się z danymi" nie wróci już do zrzutu ekranu.
 
 **Wynik fazy: 372 testy, 372 pass, 0 fail** (357 baseline + 15 nowych), build czysty,
 zero błędów w konsoli przeglądarki.
+
+## Faza 2 — wygląd 3D: neutralne materiały, cienkie czarne kontury, sheen — ✅ ZIELONA
+
+**Materiały.** Domyślnie **złamana biel #F2F0EC**, opcja **jasny szary #E8E8E6**,
+dekory **dark walnut** i **light oak**. Fronty domyślnie = korpus (to jest reguła
+„jeden materiał w całości", zapisana w `resolveFinishes`, nie w widoku). Kolejność
+rozstrzygania — od najbardziej szczegółowego: dekor typu materiału korpusu →
+projekt → profil; dla frontów: styl drzwi → projekt → **korpus**. Kolor frontu
+z Design Settings to FARBA i zakrywa dekor, dokładnie jak w warsztacie.
+
+Dekor wybiera się **per materiał** (Carcass 1/2/3 i per styl drzwi), nie per szafka —
+tak myśli warsztat („korpus 2 to ten orzechowy"). Nowy blok `profile.appearance`
+trzyma wszystkie liczby: lista finiszy, kolor i grubość kontury, sheen, contour view,
+odcienie ról, kolory okuć. Zero gołych liczb w `src/3d/`.
+
+**Tekstury.** `scripts/gen-textures.mjs` generuje `public/textures/{dark-walnut,
+light-oak}.png` — 512×512, kafelkowalne, deterministyczne (ten sam seed = te same
+bajty). Zero nowych zależności: własny enkoder PNG na `node:zlib` (~40 linii,
+IHDR/IDAT/IEND + CRC32) i seedowany szum wartościowy z owijaniem siatki. Nic nie jest
+pobierane z internetu — grafika dekoru z sieci to czyjaś licencja w komercyjnej
+aplikacji (to jest właśnie BACKLOG #19).
+
+**Kontury.** Cienkie czarne `#1A1A1A`, `lineWidth 1`, `threshold 12` — zamiast
+grubych brązowych. **Toggle „Outlines" w toolbarze, ON domyślnie**; w contour view
+przycisk jest wyłączony i mówi dlaczego (kontury SĄ tam całym rysunkiem).
+
+**Sheen ~20 %.** `meshPhysicalMaterial` z `clearcoat 0.2` nad matową płytą
+(`roughness 0.55`) — delikatny nalot lakieru, nie plastik.
+
+**Trzy pułapki kolejności ładowania tekstur** (znalezione w Chromium, wszystkie
+opisane w kodzie, bo każda wygląda identycznie: biała płyta):
+1. `useMemo` z **setterem** `useState` w tablicy zależności (setter nigdy się nie
+   zmienia) — klon tekstury na zawsze trzymał placeholder loadera;
+2. klon `Texture` startuje z `version = 0`, a three wysyła na GPU tylko teksturę
+   `version > 0` — bez `needsUpdate` na klonie obraz siedział w pamięci, a płyta
+   była biała;
+3. materiał skompilowany BEZ mapy nie dorabia sobie mapy, kiedy dekor się doczyta —
+   trzeba przebudować shader, czyli przemontować materiał (`key`). Bez tego dekor
+   wybrany przy już narysowanej scenie pokazywał się dopiero po reloadzie.
+
+Klony są cache'owane po (url, repeat), więc cały pokój orzecha to kilka uploadów,
+nie jeden na formatkę.
+
+**Werdykt.** Zweryfikowane w Chromium: trzy typy w jednym pokoju są neutralnie białe
+z cienkim czarnym konturem; toggle Outlines gasi kontury i wraca; Design Settings →
+korpus dark walnut + fronty light oak zmienia scenę **od razu**, bez reloadu; PNG
+dekoru serwowany przez aplikację (145 kB). **381 testów, 0 fail** (9 nowych
+w `test/appearance.test.js`: lista finiszy, cztery poziomy rozstrzygania, „fronty
+dziedziczą korpus", fallback nieistniejącego id, round-trip zapisu, migracja profilu
+sprzed dekorów). Build czysty, tekstury trafiają do `dist/`.

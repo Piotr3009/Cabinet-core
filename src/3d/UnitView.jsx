@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
-import { mm, MM, COLORS, colorForRole, edgeColorForRole } from './constants.js';
+import { mm, MM, COLORS } from './constants.js';
+import { contourSurface, decorTexture, onDecorLoad, outlineFor, surfaceFor } from './materials.js';
 import DimLabel from './DimLabel.jsx';
 
 // One unit, rendered straight from the ENGINE output: every panel record
@@ -21,11 +22,34 @@ function frontKind(panel) {
 }
 
 /**
+ * A decor image scaled to THIS piece: 900 mm of grain stays 900 mm of grain
+ * whether it is a door or a drawer bottom. The clone shares the decoded image,
+ * so a whole room of walnut is still one texture on the GPU.
+ */
+function useDecor(url, wMm, hMm, repeatMm) {
+  // `tick` is the COUNTER, not the setter: keying the memo on the setter (which
+  // never changes) left every clone holding the placeholder the loader starts
+  // with, and every decor panel rendered plain white.
+  const [tick, bump] = useState(0);
+  useEffect(() => {
+    if (!url) return undefined;
+    return onDecorLoad(url, () => bump((n) => n + 1));
+  }, [url]);
+  return useMemo(
+    () => (url ? decorTexture(url, wMm / repeatMm, hMm / repeatMm) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [url, wMm, hMm, repeatMm, tick],
+  );
+}
+
+/**
  * One panel. Fronts animate towards their open state; everything else is a
  * static box. The animation lives here, per panel, so opening one drawer does
  * not re-render the rest of the unit.
  */
-function MovingPanel({ panel: p, front, open, colour, edgeColour, depth, ...handlers }) {
+function MovingPanel({
+  panel: p, front, open, surface, outline, outlines, contour, depth, ...handlers
+}) {
   const group = useRef(null);
   const amount = useRef(0);
 
@@ -60,18 +84,40 @@ function MovingPanel({ panel: p, front, open, colour, edgeColour, depth, ...hand
     }
   });
 
+  // The grain runs across the piece's own face, so it is scaled by the two
+  // dimensions the eye actually sees.
+  const decor = useDecor(surface.texture, p.box.w, Math.max(p.box.h, p.box.d), surface.repeatMm);
+  const faded = contour ? surface.opacity : (p.role === 'front' ? 0.94 : 1);
+
   return (
     <group ref={group} position={pivot}>
-      <mesh position={meshOffset} castShadow receiveShadow {...handlers}>
+      <mesh position={meshOffset} castShadow={!contour} receiveShadow={!contour} {...handlers}>
         <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
-        <meshStandardMaterial
-          color={colour}
-          roughness={0.72}
-          metalness={0.02}
-          transparent={p.role === 'front'}
-          opacity={p.role === 'front' ? 0.93 : 1}
+        {/* Physical, not standard: the ~20 % sheen is a clearcoat over a matt
+            board (profile.appearance.sheen), which is what a sprayed front
+            looks like. Nothing here is a bare number. */}
+        <meshPhysicalMaterial
+          // The key is not decoration: a material compiled WITHOUT a map does
+          // not grow one when the decor finishes loading — the shader has to be
+          // rebuilt, and remounting the material is how that is asked for. Left
+          // out, a decor chosen while the scene is already on screen showed up
+          // only after a reload.
+          key={decor ? 'decor' : 'plain'}
+          color={surface.colour}
+          map={decor}
+          roughness={surface.roughness}
+          metalness={surface.metalness}
+          clearcoat={surface.clearcoat}
+          clearcoatRoughness={surface.clearcoatRoughness}
+          transparent={faded < 1}
+          opacity={faded}
+          depthWrite={!contour}
         />
-        <Edges threshold={15} color={edgeColour} />
+        {/* Thin BLACK contours, switchable from the toolbar. In contour view
+            they are the whole picture, so they are never off there. */}
+        {(outlines || contour) && (
+          <Edges threshold={outline.threshold} color={outline.colour} lineWidth={outline.width} />
+        )}
       </mesh>
     </group>
   );
@@ -81,6 +127,7 @@ export default function UnitView({
   unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   frontColour = null, onSetTopInfill, onFillToCeiling,
+  profile, finishes, outlines = true, contour = false,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -251,18 +298,23 @@ export default function UnitView({
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
+        // What the piece is made of: the project's finishes, resolved once per
+        // unit (3d/materials.js). A front COLOUR from Design Settings is paint
+        // and covers the decor, exactly as it does in the workshop. The shelf
+        // being dragged goes gold, so the hand knows what it has hold of.
+        const surface = contour
+          ? contourSurface(profile)
+          : surfaceFor({ role: p.role, finishes, profile, frontColour });
         return (
           <MovingPanel
             key={p.id}
             panel={p}
             front={front}
             open={front ? (openFronts?.[p.id] ?? 0) : 0}
-            colour={beingDragged
-              ? COLORS.goldSoft
-              // The project's front colour is what a front is actually painted:
-              // chosen in Design Settings, resolved per unit, seen here.
-              : (p.role === 'front' && frontColour ? frontColour : colorForRole(p.role))}
-            edgeColour={selected || beingDragged ? COLORS.gold : edgeColorForRole(p.role)}
+            surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
+            outline={outlineFor(profile, { selected: selected || beingDragged, contour })}
+            outlines={outlines}
+            contour={contour}
             depth={D}
             onPointerDown={(e) => {
               if (shelfId) { startShelfDrag(e, shelfId, p.box.y); return; }
@@ -318,7 +370,7 @@ export default function UnitView({
           rotation={[0, 0, Math.PI / 2]}
         >
           <cylinderGeometry args={[mm(15), mm(15), mm(result.assemblies.rail.x2 - result.assemblies.rail.x1), 12]} />
-          <meshStandardMaterial color={COLORS.rail} roughness={0.4} metalness={0.6} />
+          <meshStandardMaterial color={profile.appearance.hardware.rail} roughness={0.4} metalness={0.6} />
         </mesh>
       )}
 
@@ -330,7 +382,7 @@ export default function UnitView({
           position={[mm(leg.x + result.assemblies.legs.width / 2), mm(-legHeight / 2), mm(leg.z + result.assemblies.legs.width / 2)]}
         >
           <boxGeometry args={[mm(result.assemblies.legs.width), mm(legHeight), mm(result.assemblies.legs.width)]} />
-          <meshStandardMaterial color="#4a4a4a" roughness={0.6} />
+          <meshStandardMaterial color={profile.appearance.hardware.leg} roughness={0.6} />
         </mesh>
       ))}
 
@@ -346,7 +398,10 @@ export default function UnitView({
           onPointerOut={() => { document.body.style.cursor = ''; }}
         >
           <boxGeometry args={[mm(Math.min(W, 240)), mm(24), mm(60)]} />
-          <meshStandardMaterial color={selected ? COLORS.gold : COLORS.rail} roughness={0.5} transparent opacity={selected ? 0.9 : 0.35} />
+          <meshStandardMaterial
+            color={selected ? COLORS.gold : profile.appearance.hardware.bracket}
+            roughness={0.5} transparent opacity={selected ? 0.9 : 0.35}
+          />
         </mesh>
       )}
 
@@ -355,7 +410,7 @@ export default function UnitView({
       {isWallMounted && (
         <mesh position={[mm(W / 2), mm(H) + 0.004, mm(6)]}>
           <boxGeometry args={[mm(W), 0.006, mm(12)]} />
-          <meshStandardMaterial color="#8d8d92" roughness={0.5} metalness={0.4} />
+          <meshStandardMaterial color={profile.appearance.hardware.bracket} roughness={0.5} metalness={0.4} />
         </mesh>
       )}
 
@@ -364,7 +419,7 @@ export default function UnitView({
         <mesh position={[mm(W / 2), mm(H / 2), mm(D / 2)]}>
           <boxGeometry args={[mm(W) + 0.006, mm(H) + 0.006, mm(D) + 0.006]} />
           <meshBasicMaterial visible={false} />
-          <Edges threshold={1} color={COLORS.gold} lineWidth={2} />
+          <Edges threshold={1} color={profile.appearance.selection.colour} lineWidth={profile.appearance.selection.width} />
         </mesh>
       )}
 

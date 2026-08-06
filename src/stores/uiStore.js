@@ -44,6 +44,18 @@ export const useUiStore = create((set, get) => ({
   setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
   toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
 
+  // Thin black contours on every piece — ON by default (turn 4, BACKLOG #5).
+  showOutlines: true,
+  setShowOutlines: (v) => set({ showOutlines: Boolean(v) }),
+  toggleOutlines: () => set((s) => ({ showOutlines: !s.showOutlines })),
+
+  // Contour view (BACKLOG #18): a presentation mode for a render or a printed
+  // screen — materials fade away, the contours stay. Nothing here reaches the
+  // BOM; it is a way of LOOKING at the same project.
+  contourView: false,
+  setContourView: (v) => set({ contourView: Boolean(v) }),
+  toggleContourView: () => set((s) => ({ contourView: !s.contourView })),
+
   // Modals
   modal: null,                       // 'add-items' | 'room' | 'auth' | 'materials' | null
   openModal: (name) => set({ modal: name }),

@@ -7,7 +7,7 @@ import UnitView from './UnitView.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
-import { resolveUnitDesign } from '../engine/design.js';
+import { resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
@@ -124,6 +124,8 @@ export default function Scene({ onCaptureReady }) {
   const openContextMenu = useUiStore((s) => s.openContextMenu);
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
   const showDimensions = useUiStore((s) => s.showDimensions);
+  const showOutlines = useUiStore((s) => s.showOutlines);
+  const contourView = useUiStore((s) => s.contourView);
   const profile = useCabinetProfileStore((s) => s.profile);
 
   // `units` is the subscription that drives the re-render; allResults() is a
@@ -195,11 +197,17 @@ export default function Scene({ onCaptureReady }) {
           frontColour={resolveUnitDesign(unit, design).colour?.hex || null}
           onSetTopInfill={(h) => setTopInfill(unit.id, h)}
           onFillToCeiling={() => fillToCeiling(unit.id)}
-          showLabels={showDimensions}
+          showLabels={showDimensions && !contourView}
+          profile={profile}
+          finishes={resolveFinishes(unit, design, profile)}
+          outlines={showOutlines}
+          contour={contourView}
         />
       ))}
 
-      {showDimensions && (
+      {/* Contour view is for a render or a printout: the numbers would be
+          in the way of the only thing it is for. */}
+      {showDimensions && !contourView && (
         <DistanceArrows walls={walls} units={measured} roomCentre={bounds.centre} profile={profile} />
       )}
 

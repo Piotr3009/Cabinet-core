@@ -22,7 +22,9 @@ export const DEFAULT_DESIGN = {
   // 1–3 carcass materials. One is the common case; three is a run with a
   // different board inside the tall units and another for the island.
   carcass: {
-    types: [{ id: 'c1', label: 'Carcass 1', material_id: null }],
+    // `finish_id` is what the board LOOKS like (turn 4); `material_id` is what
+    // it costs. A decor is chosen per material type, not per unit.
+    types: [{ id: 'c1', label: 'Carcass 1', material_id: null, finish_id: null }],
   },
   fronts: {
     style: 'S',
@@ -40,6 +42,13 @@ export const DEFAULT_DESIGN = {
     // Used by phase 7: the filler between a unit and the wall.
     sideWidth: 20,
   },
+  // Project-level appearance (turn 4). null = the profile default, and a null
+  // FRONT finish means "the same as the carcass" — which is what a workshop
+  // means by one material throughout.
+  finish: { carcass: null, front: null },
+  // Defaults the "Add end panel" action inherits (turn 4, BACKLOG #17).
+  // `thickness: null` = the project's front thickness.
+  endPanel: { height: 'floor', thickness: null, applyToAll: true },
 };
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -53,6 +62,7 @@ export function migrateDesign(design) {
       id: t.id || `c${i + 1}`,
       label: t.label || `Carcass ${i + 1}`,
       material_id: t.material_id ?? null,
+      finish_id: t.finish_id ?? null,
     }))
     : base.carcass.types;
 
@@ -68,6 +78,15 @@ export function migrateDesign(design) {
       : [],
     colour: { front: normaliseColour(d.colour?.front) },
     infill: { sideWidth: Number(d.infill?.sideWidth) >= 0 ? Number(d.infill.sideWidth) : base.infill.sideWidth },
+    finish: {
+      carcass: d.finish?.carcass ?? null,
+      front: d.finish?.front ?? null,
+    },
+    endPanel: {
+      height: d.endPanel?.height === 'unit' ? 'unit' : base.endPanel.height,
+      thickness: Number(d.endPanel?.thickness) > 0 ? Number(d.endPanel.thickness) : null,
+      applyToAll: d.endPanel?.applyToAll !== false,
+    },
   };
 }
 
@@ -89,6 +108,7 @@ export function normaliseDoorStyle(style) {
     name: String(style.name || 'Untitled style'),
     frontType: FRONT_STYLE_OPTIONS.some((o) => o.id === style.frontType) ? style.frontType : 'S',
     material_id: style.material_id ?? null,
+    finish_id: style.finish_id ?? null,
     colour: normaliseColour(style.colour),
   };
 }
@@ -97,7 +117,11 @@ export function normaliseDoorStyle(style) {
 export function setCarcassTypeCount(design, count) {
   const n = Math.min(3, Math.max(1, Math.trunc(Number(count) || 1)));
   const types = [...design.carcass.types];
-  while (types.length < n) types.push({ id: `c${types.length + 1}`, label: `Carcass ${types.length + 1}`, material_id: null });
+  while (types.length < n) {
+    types.push({
+      id: `c${types.length + 1}`, label: `Carcass ${types.length + 1}`, material_id: null, finish_id: null,
+    });
+  }
   return { ...design, carcass: { types: types.slice(0, n) } };
 }
 
@@ -134,6 +158,47 @@ export function resolveUnitDesign(unit, design) {
     frontMaterialId: style?.material_id ?? null,
     carcassMaterialId: carcassType?.material_id ?? null,
   };
+}
+
+// ─── Finishes (turn 4, BACKLOG #4) ───
+
+/** One finish out of the profile's list, or null. */
+export function finishById(profile, id) {
+  if (!id) return null;
+  return profile?.appearance?.finishes?.find((f) => f.id === id) || null;
+}
+
+/**
+ * What this unit is FINISHED in — the carcass and the fronts, resolved the same
+ * way for the 3D view, the panel and anything later.
+ *
+ * Most specific first:
+ *   carcass — the carcass type's own decor, then the project default, then the
+ *             profile default (broken white).
+ *   front   — the door style's decor, then the project default, then THE
+ *             CARCASS. "Fronts default to the carcass" is the rule from
+ *             CLAUDE.md F2, and it is expressed here rather than in the view.
+ *
+ * An id that no longer exists (a decor removed from a profile) falls back the
+ * same way instead of rendering nothing.
+ */
+export function resolveFinishes(unit, design, profile) {
+  const d = migrateDesign(design);
+  const A = profile?.appearance || {};
+  const resolved = resolveUnitDesign(unit, d);
+
+  const carcass = finishById(profile, resolved.carcassType?.finish_id)
+    || finishById(profile, d.finish.carcass)
+    || finishById(profile, A.defaultCarcassFinish)
+    || A.finishes?.[0]
+    || null;
+
+  const front = finishById(profile, resolved.doorStyle?.finish_id)
+    || finishById(profile, d.finish.front)
+    || finishById(profile, A.defaultFrontFinish)
+    || carcass;
+
+  return { carcass, front };
 }
 
 /**

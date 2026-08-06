@@ -74,6 +74,31 @@ function projectHeightParams(type, design, profile) {
   };
 }
 
+/**
+ * Put a saved set's parameters onto a freshly made unit (turn 5, BACKLOG #30).
+ *
+ * Everything about HOW the unit is built comes from the template; the things
+ * that belong to this project — its number, and fresh ids for every interior
+ * item — stay the unit's own. Without the new ids a template used twice would
+ * produce two units whose shelves share an id, and a drag on one would move the
+ * other.
+ */
+function applyTemplateParams(unit, params) {
+  const saved = JSON.parse(JSON.stringify(params));
+  const sections = (saved.sections || []).map((section) => ({
+    ...section,
+    items: (section.items || []).map((item) => ({ ...item, id: uid(item.kind || 'item') })),
+  }));
+  unit.params = {
+    ...unit.params,
+    ...saved,
+    unit_num: unit.params.unit_num,
+    end_panels: (saved.end_panels || []).map((ep) => ({ ...ep, id: uid('ep') })),
+    sections: sections.length ? sections : unit.params.sections,
+  };
+  return unit;
+}
+
 /** Interior items -> the count/flag shape the engine consumes. */
 function paramsForEngine(unit) {
   const p = unit.params;
@@ -548,10 +573,23 @@ export const useProjectStore = create((set, get) => ({
   })),
 
   // ── units ────────────────────────────────────────────────────────────────
-  addUnit: (typeId) => {
+  /**
+   * Place a unit of this type.
+   *
+   * @param {string} typeId
+   * @param {object} [opts]
+   *   params  a saved set's parameters (turn 5, BACKLOG #30). Inserting a
+   *           template is THE SAME ACT as inserting a library type — same free
+   *           slot, same collision clamp, same scribe fillers — with the
+   *           factory parameters swapped for the saved ones. It is deliberately
+   *           not a second path: a template that could land on top of a
+   *           neighbour would be exactly the bug turn 3 phase 4 closed off.
+   */
+  addUnit: (typeId, { params = null } = {}) => {
     const profile = getCabinetProfile();
     const state = get();
     const unit = newUnit(typeId, profile, state.units.length, state.project.design);
+    if (params) applyTemplateParams(unit, params);
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed

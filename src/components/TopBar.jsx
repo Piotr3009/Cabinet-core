@@ -104,7 +104,11 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
       label: 'Library',
       items: UNIT_CATEGORIES.map((c) => ({
         label: c.label,
-        hint: c.soon ? 'Coming later' : `${c.types.length} type${c.types.length === 1 ? '' : 's'}`,
+        hint: c.soon
+          ? 'Coming later'
+          : (c.saved
+            ? 'Units you have saved — right-click a unit to add one'
+            : `${c.types.length} type${c.types.length === 1 ? '' : 's'}`),
         soon: c.soon,
         disabled: c.soon,
         run: () => setLibraryCategory(c.id),

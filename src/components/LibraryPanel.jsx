@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { UNIT_TYPES, getCategory, profilePath } from '../engine/types.js';
+import { useTemplateStore } from '../stores/templateStore.js';
+import { UNIT_TYPES, getCategory, getUnitType, profilePath } from '../engine/types.js';
+import { formatMm } from '../engine/format.js';
 
 // Floating, grab-and-move Library panel (SPEC 4.1 / section 7).
 //
@@ -66,10 +68,11 @@ export default function LibraryPanel() {
   const category = getCategory(categoryId);
   if (!category) return null;
 
-  const handleAdd = (typeId) => {
+  const handleAdd = (typeId, opts) => {
     // A full room refuses the unit rather than stacking it on a neighbour, so
-    // the answer has to be read, not assumed.
-    const { id, error, wall } = addUnit(typeId);
+    // the answer has to be read, not assumed. A saved set goes through exactly
+    // this path (BACKLOG #30) — same free slot, same clamp, same fillers.
+    const { id, error, wall } = addUnit(typeId, opts);
     if (error) { notify(error, 'warn'); return; }
     selectUnit(id);
     if (wall > 0) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
@@ -100,7 +103,8 @@ export default function LibraryPanel() {
       </div>
 
       <div className="p-2 space-y-1">
-        {category.types.length === 0 && (
+        {category.saved && <SavedSets onInsert={handleAdd} />}
+        {!category.saved && category.types.length === 0 && (
           <p className="text-[11px] text-ink-400 px-2 py-3">
             Nothing here yet — {category.label.toLowerCase()} are a later phase.
           </p>
@@ -126,5 +130,92 @@ export default function LibraryPanel() {
         })}
       </div>
     </div>
+  );
+}
+
+/**
+ * Saved sets (BACKLOG #30): the workshop's own configured units.
+ *
+ * Clicking one INSERTS it through the ordinary add path, so a template can no
+ * more land on top of a neighbour than a library type can. Rename and delete
+ * live here, where the list is — a set you cannot correct is a set you stop
+ * trusting.
+ */
+function SavedSets({ onInsert }) {
+  const templates = useTemplateStore((s) => s.templates);
+  const rename = useTemplateStore((s) => s.rename);
+  const remove = useTemplateStore((s) => s.remove);
+  const notify = useUiStore((s) => s.notify);
+  const [editing, setEditing] = useState(null);   // { id, name }
+
+  if (!templates.length) {
+    return (
+      <p className="text-[11px] text-ink-400 px-2 py-3">
+        Nothing saved yet. Right-click a unit you have configured and choose
+        <span className="text-ink-200"> Save as template</span> — it lands here, ready to insert again.
+      </p>
+    );
+  }
+
+  const commitRename = () => {
+    const { ok, error } = rename(editing.id, editing.name);
+    if (error) { notify(error, 'warn'); return; }
+    if (ok) notify('Renamed.', 'ok');
+    setEditing(null);
+  };
+
+  return (
+    <ul className="space-y-1">
+      {templates.map((t) => {
+        const type = getUnitType(t.type);
+        const isEditing = editing?.id === t.id;
+        return (
+          <li key={t.id} className="rounded border border-transparent hover:border-shell-600 hover:bg-shell-700/60 transition-colors">
+            {isEditing ? (
+              <div className="flex items-center gap-1 p-1.5">
+                <input
+                  autoFocus
+                  className="cc-input flex-1"
+                  value={editing.name}
+                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitRename();
+                    if (e.key === 'Escape') setEditing(null);
+                  }}
+                />
+                <button type="button" className="cc-btn-ghost" title="Save the name" onClick={commitRename}>✓</button>
+                <button type="button" className="cc-btn-ghost" title="Keep the old name" onClick={() => setEditing(null)}>×</button>
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  className="flex-1 text-left px-2 py-2 min-w-0"
+                  title={`Insert a ${type.label} with these parameters`}
+                  onClick={() => onInsert(t.type, { params: t.params })}
+                >
+                  <div className="text-sm text-ink-50 truncate">{t.name}</div>
+                  <div className="text-[11px] text-ink-400">
+                    {type.label} · {formatMm(t.params.width)} × {formatMm(t.params.height)} × {formatMm(t.params.depth)} mm
+                  </div>
+                </button>
+                <button
+                  type="button" className="cc-btn-ghost shrink-0" title="Rename this set"
+                  onClick={() => setEditing({ id: t.id, name: t.name })}
+                >
+                  ✎
+                </button>
+                <button
+                  type="button" className="cc-btn-ghost text-status-danger shrink-0" title="Delete this set"
+                  onClick={() => { remove(t.id); notify(`“${t.name}” deleted.`, 'ok'); }}
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

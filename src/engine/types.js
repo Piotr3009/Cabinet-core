@@ -209,7 +209,10 @@ export const UNIT_CATEGORIES = [
   { id: 'base', label: 'Base units', types: ['BUD', 'BUDR', 'SINK', 'LOW_CABINET'] },
   { id: 'wall', label: 'Wall units', types: ['WUD'] },
   { id: 'tall', label: 'Tall units', types: ['BUDTALL', 'FRIDGE', 'WARDROBE'] },
-  { id: 'sets', label: 'Saved sets', types: [], soon: true },
+  // Turn 5 (BACKLOG #30): no longer a held-open place. Its contents are the
+  // workshop's OWN saved units rather than kits, so it carries no `types` —
+  // the panel reads them from the template store.
+  { id: 'sets', label: 'Saved sets', types: [], saved: true },
   { id: 'media', label: 'Media walls', types: [], soon: true },
 ];
 

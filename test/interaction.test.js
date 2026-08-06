@@ -90,8 +90,10 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   const ids = wardrobe.map((a) => a.id);
   // Turn 4 adds the manual construction pieces here, because right-clicking the
   // unit is where a joiner reaches for them (BACKLOG #16/#17).
+  // Turn 5 adds "Save as template" (BACKLOG #30) — the cabinet you have just
+  // finished configuring is where a joiner reaches for that too.
   assert.deepEqual(ids, [
-    'end-panel-L', 'end-panel-R', 'plinth-on', 'top-infill-on',
+    'end-panel-L', 'end-panel-R', 'plinth-on', 'top-infill-on', 'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
   ]);
 
@@ -138,6 +140,7 @@ test('every menu action is runnable and calls exactly its own store function', (
     rotateUnit: (id, mode, value) => called.push(['rotate', id, mode, value]),
     removeUnit: (id) => called.push(['delete', id]),
     closeAllFronts: (id) => called.push(['close', id]),
+    saveAsTemplate: (id) => called.push(['template', id]),
   };
   const actions = menuActions({ unit: unitOf('WARDROBE'), panelPart: 'DRAWER-FRONT', store });
   for (const a of actions) {
@@ -146,6 +149,7 @@ test('every menu action is runnable and calls exactly its own store function', (
     a.run();
   }
   assert.deepEqual(called, [
+    ['template', 'u1'],
     ['center', 'u1'],
     ['rotate', 'u1', 'step', 90],
     ['rotate', 'u1', 'back', 0],

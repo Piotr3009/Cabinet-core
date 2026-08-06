@@ -63,6 +63,17 @@ export function menuActions({ unit, panelPart, store }) {
       run: () => { store.addTopInfill?.(unit.id); store.openPanelSection?.('construction'); },
     });
 
+  // ── Save as template (turn 5, BACKLOG #30) ──
+  // Right-clicking the cabinet you have just finished configuring is where a
+  // joiner reaches for this. It asks for a NAME (the modal), because a library
+  // of "Wardrobe", "Wardrobe (2)" and "Wardrobe (3)" is a library nobody uses.
+  actions.push({
+    id: 'save-template',
+    label: 'Save as template',
+    hint: 'Keep these parameters in Library ▸ Saved sets, ready to insert again',
+    run: () => store.saveAsTemplate?.(unit.id),
+  });
+
   if (type.supports.shelves) {
     actions.push({
       id: 'center-shelves',

@@ -84,10 +84,12 @@ export const useUiStore = create((set, get) => ({
   addItemKind: null,                 // 'drawers' | 'shelves' | 'hanger' | null
   setAddItemKind: (kind) => set((s) => ({ addItemKind: s.addItemKind === kind ? null : kind })),
 
-  // Modals
-  modal: null,                       // 'room' | 'auth' | 'design' | 'save-as' | null
-  openModal: (name) => set({ modal: name }),
-  closeModal: () => set({ modal: null }),
+  // Modals. `modalArgs` is what the modal is ABOUT — which unit is being saved
+  // as a template, for instance — so a modal needs no store of its own.
+  modal: null,                       // 'room' | 'auth' | 'design' | 'save-as' | 'save-template' | null
+  modalArgs: null,
+  openModal: (name, args = null) => set({ modal: name, modalArgs: args }),
+  closeModal: () => set({ modal: null, modalArgs: null }),
 
   // Selection: which unit and which of its sections is highlighted
   selectedUnitId: null,

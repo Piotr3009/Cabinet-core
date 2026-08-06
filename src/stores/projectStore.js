@@ -4,7 +4,7 @@ import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { snap as snapTo } from '../engine/format.js';
 import {
-  clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, firstFreeUnitX,
+  clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, endPanelPads, firstFreeUnitX,
   freeSlotOnWall, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
   wallObstacles,
 } from '../engine/collision.js';
@@ -12,7 +12,7 @@ import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls, wallWidth,
 } from '../engine/room.js';
 import { migrateDesign, normaliseDoorStyle, setCarcassTypeCount } from '../engine/design.js';
-import { autoPartsFor, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';
+import { autoPartsFor, takesPlinth, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';
 import { drawersInEngineOrder, nextHangerOffset, nextShelfPos, shelvesInEngineOrder } from '../engine/items.js';
 
 // ─── Project state ───
@@ -352,6 +352,156 @@ export const useProjectStore = create((set, get) => ({
     return height;
   },
 
+  // ── the manual pieces (turn 4, BACKLOG #16/#17) ──────────────────────────
+  // A plinth, a top infill and an end panel are DECISIONS, not consequences of
+  // placing a unit. Each one exists from the moment it is added and not before:
+  // no ghost rows in the cut list for pieces nobody ordered.
+
+  /** @returns {boolean} false when this type cannot take a plinth at all. */
+  addPlinth: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !takesPlinth(unit.type, getCabinetProfile())) return false;
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: true } } : u)),
+      dirty: true,
+    }));
+    return true;
+  },
+
+  removePlinth: (unitId) => set((s) => ({
+    units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: false } } : u)),
+    dirty: true,
+  })),
+
+  /**
+   * Add the top infill at the profile default, clamped to whatever the room has
+   * left above the unit. Returns the height it got — 0 means the unit is already
+   * at the ceiling, and the caller says so.
+   */
+  addTopInfill: (unitId) => {
+    const profile = getCabinetProfile();
+    return get().setTopInfill(unitId, profile.autoParts.topInfill.defaultHeight);
+  },
+
+  removeTopInfill: (unitId) => set((s) => ({
+    units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, top_infill_mm: 0 } } : u)),
+    dirty: true,
+  })),
+
+  /**
+   * Add an end panel to one side of a unit.
+   *
+   * `applyToAll` ✓ writes the settings back to the PROJECT (design.endPanel), so
+   * the next end panel anywhere inherits them — which is what the checkbox in
+   * the panel promises. The panel is a cut piece the moment it exists, and the
+   * unit's footprint grows by its thickness, so the neighbour beside it is
+   * clamped out of the space it now occupies.
+   *
+   * @returns {{id:string|null, error:string|null}}
+   */
+  addEndPanel: (unitId, { side = 'L', height = null, thickness = null, applyToAll = null } = {}) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { id: null, error: 'No unit selected.' };
+    const design = migrateDesign(s.project.design);
+    const wanted = side === 'R' ? 'R' : 'L';
+    const existing = unit.params.end_panels || [];
+    if (existing.some((ep) => ep.side === wanted)) {
+      return { id: null, error: `This unit already has an end panel on the ${wanted === 'L' ? 'left' : 'right'}.` };
+    }
+
+    const profile = getCabinetProfile();
+    const settings = {
+      height: height || design.endPanel.height,
+      // "Same as the doors" is what a workshop means by a default thickness.
+      thickness: Number(thickness) > 0
+        ? Number(thickness)
+        : (Number(design.endPanel.thickness) > 0
+          ? Number(design.endPanel.thickness)
+          : (unit.params.front_t || profile.front.thickness)),
+    };
+
+    // Collisions are RESPECTED, which for a piece that appears out of nowhere
+    // means it is refused when it does not fit: adding it anyway would be an
+    // overlap the app created itself, which is exactly what turn 3 phase 4
+    // closed off. What is in the way is named, so the answer is actionable.
+    const room = freeBesideUnit(s, unit, wanted);
+    if (room.gap < settings.thickness) {
+      return {
+        id: null,
+        error: `No room for a ${Math.round(settings.thickness)} mm end panel on the `
+          + `${wanted === 'L' ? 'left' : 'right'} — only ${Math.round(room.gap)} mm free `
+          + `before ${room.by}.`,
+      };
+    }
+
+    const id = uid('ep');
+
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, end_panels: [...(u.params.end_panels || []), { id, side: wanted, ...settings }] } }
+        : u)),
+      project: applyToAll === false
+        ? st.project
+        : { ...st.project, design: migrateDesign({ ...design, endPanel: { ...settings, applyToAll: true } }) },
+      dirty: true,
+    }));
+    // The unit is wider than it was; settle it legally where it stands.
+    get().moveUnit(unitId, unit.position.x_mm, 0);
+    return { id, error: null };
+  },
+
+  removeEndPanel: (unitId, panelId) => {
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, end_panels: (u.params.end_panels || []).filter((ep) => ep.id !== panelId) } }
+        : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+  },
+
+  updateEndPanel: (unitId, panelId, patch) => {
+    set((s) => {
+      const design = migrateDesign(s.project.design);
+      const next = s.units.map((u) => (u.id === unitId
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            end_panels: (u.params.end_panels || []).map((ep) => (ep.id === panelId ? { ...ep, ...patch } : ep)),
+          },
+        }
+        : u));
+      const edited = next.find((u) => u.id === unitId)?.params.end_panels?.find((ep) => ep.id === panelId);
+      return {
+        units: next,
+        // With "apply to all" ticked, editing one panel is editing the default —
+        // that is what makes the next one match without being told again.
+        project: design.endPanel.applyToAll && edited
+          ? {
+            ...s.project,
+            design: migrateDesign({
+              ...design,
+              endPanel: { height: edited.height, thickness: edited.thickness, applyToAll: true },
+            }),
+          }
+          : s.project,
+        dirty: true,
+      };
+    });
+    get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
+  },
+
+  /** The "Apply to all end panels" checkbox itself. */
+  setEndPanelDefaults: (patch) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    return {
+      project: { ...s.project, design: migrateDesign({ ...design, endPanel: { ...design.endPanel, ...patch } }) },
+      dirty: true,
+    };
+  }),
+
   /** Double click: run the top infill all the way to the ceiling. */
   fillToCeiling: (unitId) => {
     const s = get();
@@ -393,6 +543,7 @@ export const useProjectStore = create((set, get) => ({
       const x = freeSlotOnWall({
         width: unit.params.width,
         wallWidth: wall.width,
+        wallMargin: wallMarginOf(state),
         others: state.units
           .filter((u) => (u.position.wall ?? 0) === wall.index && getUnitType(u.type).mount === level)
           .map(unitSpan),
@@ -408,8 +559,9 @@ export const useProjectStore = create((set, get) => ({
     unit.position.wall = placed.wall;
     unit.position.x_mm = placed.x;
     set((s) => ({ units: [...s.units, unit], dirty: true }));
-    // A unit arrives with its plinth, its scribe fillers and a 40 mm top
-    // infill already worked out — that is what "automatic" means.
+    // A unit arrives with its SCRIBE FILLERS worked out from where it landed.
+    // The plinth and the top infill are decisions and wait to be asked for
+    // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
     get().refreshAutoParts(unit.id);
     return { id: unit.id, error: null, wall: placed.wall };
   },
@@ -446,7 +598,14 @@ export const useProjectStore = create((set, get) => ({
     if (patch.width != null) {
       const spans = wallObstacles({ wall, walls, depth: unit.params.depth, others });
       const clamp = clampUnitWidth({
-        width: Number(patch.width) || 0, x: unit.position.x_mm, wallWidth: wall.width, others: spans,
+        width: Number(patch.width) || 0,
+        x: unit.position.x_mm,
+        wallWidth: wall.width,
+        others: spans,
+        // Growing a unit is a move of its far edge: it stops at the infill gap
+        // and carries its own end panel with it.
+        wallMargin: wallMarginOf(s),
+        padRight: endPanelPads(unit, unit.params.front_t).right,
       }, profile);
       applied.width = clamp.width;
       if (clamp.blocked) notices.push(`Width limited to ${Math.round(clamp.max)} mm by ${clamp.by}.`);
@@ -498,8 +657,17 @@ export const useProjectStore = create((set, get) => ({
     // width, so the clamp is given the FOOTPRINT — and the offset between the
     // footprint's left edge and the unit's anchor is constant during a move,
     // which is what makes this a translation of the same one clamp.
+    // End panels are part of the footprint, so the span is measured from the
+    // outside of the left panel to the outside of the right one. (A ROTATED unit
+    // with an end panel pivots about that outer corner rather than the carcass
+    // corner — a fraction of the panel thickness, and the same corner the clamp
+    // and the view both use.)
+    const pad = endPanelPads(unit, unit.params.front_t);
     const span = unitPlanSpan({
-      wall, x: unit.position.x_mm, width: unit.params.width, depth: unit.params.depth,
+      wall,
+      x: unit.position.x_mm - pad.left,
+      width: unit.params.width + pad.left + pad.right,
+      depth: unit.params.depth,
       rotation: unit.position.rotation_deg,
     });
     const lead = span.left - unit.position.x_mm;
@@ -511,6 +679,8 @@ export const useProjectStore = create((set, get) => ({
       width: footprintWidth,
       wallWidth: wall.width,
       others,
+      // The stop that makes the side infill appear (BACKLOG #15).
+      wallMargin: wallMarginOf(s),
     }, getCabinetProfile());
     const x = result.x - lead;
 
@@ -567,6 +737,7 @@ export const useProjectStore = create((set, get) => ({
     const x = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
+      wallMargin: wallMarginOf(s),
       others: s.units
         .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && getUnitType(u.type).mount === level)
         .map(unitSpan),
@@ -917,16 +1088,60 @@ function unitTopOf(unit, profile) {
   return base + (Number(unit.params.height) || 0);
 }
 
-/** A unit as the plain numbers engine/collision.js works with. */
+/**
+ * A unit as the plain numbers engine/collision.js works with — END PANELS
+ * INCLUDED, so a neighbour cannot be moved into a panel it cannot see.
+ */
 function toObstacleUnit(u) {
+  const pad = endPanelPads(u, u.params?.front_t);
   return {
     wall: u.position?.wall ?? 0,
-    x_mm: Number(u.position?.x_mm) || 0,
-    width: Number(u.params?.width) || 0,
+    x_mm: (Number(u.position?.x_mm) || 0) - pad.left,
+    width: (Number(u.params?.width) || 0) + pad.left + pad.right,
     depth: Number(u.params?.depth) || 0,
     rotation: Number(u.position?.rotation_deg) || 0,
     label: u.params?.unit_num || u.id,
   };
+}
+
+/**
+ * How much clear space there is beside a unit on one side, and what closes it.
+ * Used by the end-panel path: a masking panel that does not fit is refused
+ * rather than dropped on top of the neighbour.
+ */
+function freeBesideUnit(state, unit, side) {
+  const walls = roomWalls(state.project.room);
+  const wall = walls[unit.position?.wall ?? 0] || walls[0];
+  const span = unitSpan(unit);
+  const spans = wallObstacles({
+    wall,
+    walls,
+    depth: unit.params.depth,
+    others: neighboursOf(state, unit).map(toObstacleUnit),
+  });
+  if (side === 'L') {
+    let edge = 0;
+    let by = 'the wall';
+    for (const o of spans) {
+      if (o.right <= span.left + 1e-6 && o.right > edge) { edge = o.right; by = o.label || 'a neighbour'; }
+    }
+    return { gap: Math.max(0, span.left - edge), by };
+  }
+  let edge = wall?.width ?? 0;
+  let by = 'the wall';
+  for (const o of spans) {
+    if (o.left >= span.right - 1e-6 && o.left < edge) { edge = o.left; by = o.label || 'a neighbour'; }
+  }
+  return { gap: Math.max(0, edge - span.right), by };
+}
+
+/**
+ * How far from each end of a wall a unit must stop (BACKLOG #15). It is the
+ * project's infill width, so the gap the unit leaves IS the filler that closes
+ * it — which is what makes the filler appear by itself when the unit parks.
+ */
+function wallMarginOf(state) {
+  return Math.max(0, Number(migrateDesign(state.project.design).infill.sideWidth) || 0);
 }
 
 // ─── Interior rules (shared by the store and the UI) ───

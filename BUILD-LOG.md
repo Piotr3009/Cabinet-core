@@ -1122,3 +1122,71 @@ założonych drzwiach otwiera drzwi. **399 testów, 0 fail** (7 nowych w
 `test/panel-items.test.js` — reguły są w store, więc testują się w node: auto-porządek
 z odmową, equal heights z clampem, „ponowne zaznaczenie bierze dolną szufladę",
 drążek między szufladami a półkami, produkt w BOM).
+
+## Faza 6 — infill/plinth, end panel, widok konturowy — ✅ ZIELONA
+
+Trzy rzeczy, które turą 3 były jednym workiem „automaty", a nie są tym samym
+rodzajem rzeczy. Podział jest w `engine/autoparts.js`, w komentarzu na górze pliku:
+
+**#15 Side infill — AUTOMATYCZNY, bo opisuje fakt.** Jednostka **nie dojeżdża
+do ściany**: `clampUnitX` dostał `wallMargin` = szerokość infilla z Design
+Settings, a magnes zamienia stop w **lądowanie** — w promieniu `unitMagnet` unit
+siada dokładnie na stopie, więc szczelina to DOKŁADNIE 20 mm, a nie 19,4. Dlatego
+formatka, która ją zamyka, jest dokładnie tą formatką. Dojazd → infill jest;
+odjazd → nie ma. Ten sam stop obowiązuje przy **wstawianiu** i przy **zmianie
+szerokości** (rośnięcie to ruch dalszej krawędzi), więc nie da się wejść w ścianę
+żadną drogą.
+
+Zniknęło ostrzeżenie z tury 3 („szczelina szersza niż ustawienie"): przy stopie
+jednostka NORMALNIE stoi z dala od ściany, więc ten komunikat leciałby bez przerwy.
+Co zostało: ostrzeżenie o **limicie warsztatu** — ustawienie 250 mm nie jest
+skrobanką (profil kończy na 120), unit staje 250 mm od ściany i żadna formatka
+tam nie dosięga. To jest ustawienie do zmiany, więc się o tym mówi.
+
+**#16 Plinth i top infill — RĘCZNE, bo są decyzją.** `autoPartsFor` już ich nie
+wymyśla — tylko przenosi (i przycina top infill do sufitu, gdy sufit spadnie).
+Nowa jednostka nie ma ani cokołu, ani infilla: **zero wierszy w liście cięcia,
+których nikt nie zamówił**. Dodawanie z sekcji Construction w panelu i z menu
+kontekstowego. Uchwyt do przeciągania top infilla renderuje się tylko, gdy
+formatka ISTNIEJE — uchwyt do czegoś, czego nie dodano, to uchwyt do niczego.
+Drag do sufitu i dwuklik zostają bez zmian.
+
+**#17 End panel.** Formatka po ZEWNĘTRZNEJ stronie boku: `END-L`/`END-R`, rola
+`end_panel` (własna pozycja w BOM_ROLES — zwykle z materiału frontowego, nie
+z płyty korpusowej), głębokość = głębokość jednostki, wysokość **to floor**
+(mija nogi, u wiszącej schodzi od wysokości zawieszenia) albo **unit height**,
+grubość domyślnie = grubość frontów. Idzie do BOM, CSV, arkusza CNC i DXF-a tą
+samą drogą co każda inna formatka.
+
+**Kolizje są respektowane w obie strony:**
+- panel jest **częścią footprintu** (`endPanelPads` + `unitSpan`), więc sąsiada
+  nie da się wsunąć w miejsce, które panel zajmuje — clamp go zatrzymuje na
+  panelu, nie na korpusie;
+- panel, który **się nie mieści**, jest **odmawiany z liczbą i winowajcą**
+  („only 0 mm free before 02"). Dodanie go i tak byłoby nakładką, którą aplikacja
+  zrobiła sama — dokładnie to, co domknęła faza 4 tury 3. Przy ścianie wolne jest
+  tyle, ile infill (20 mm), więc 25 mm panel tam nie wejdzie: tę szczelinę już
+  zamyka skrobanka.
+
+**„Apply to all end panels" ✓** zapisuje ustawienia do PROJEKTU
+(`design.endPanel`), więc kolejny panel gdziekolwiek dziedziczy wysokość
+i grubość; edycja istniejącego przy zaznaczonym checkboxie też aktualizuje
+domyślne — to jest jedyny sposób, w jaki „wszystkie tak samo" coś znaczy.
+Opcje siedzą **w sekcji panelu**, nie w modalu — menu kontekstowe dodaje panel
+i **otwiera tę sekcję**.
+
+**#18 Contour view** (View ▸ Contour view): materiał gaśnie do 6 % krycia
+(`depthWrite` off), kontury zostają — do renderu i druku ekranem. Wymiary są
+schowane, bo przeszkadzałyby w jedynej rzeczy, po którą się ten tryb włącza.
+Przełącznik „Outlines" jest w tym trybie **wyłączony i mówi dlaczego** (kontury
+SĄ tam rysunkiem). Zero wpływu na BOM — to sposób PATRZENIA na ten sam projekt.
+
+**Werdykt (Chromium, 17/17 PASS).** Nowa jednostka bez cokołu i bez infilla →
+oba dodane z panelu (badge „PLINTH · TOP") → prawy klik daje „Add end panel",
+panel wchodzi z domyślnymi projektu i otwiera się sekcja z opcjami → zmiana na
+unit height → drugi unit: „+ Left" **odmówione** („only 0 mm free"), „+ Right"
+dziedziczy `unit/25` → END-R, END-L, PLINTH i INFILL-T są w liście cięcia →
+przeciągnięcie w ścianę zatrzymuje się na 20 mm i tworzy skrobankę, odjazd ją
+usuwa → contour view rysuje same kontury. **410 testów, 0 fail** (11 nowych
+w `test/construction.test.js`; 3 zaktualizowane w `autoparts`/`interaction`, bo
+zachowanie zmieniło się celowo).

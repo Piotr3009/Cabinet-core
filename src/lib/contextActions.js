@@ -13,12 +13,55 @@ import { getUnitType } from '../engine/types.js';
  * @param {object} args
  *   unit       the unit that was right-clicked
  *   panelPart  which panel of it (so a front can offer front actions)
- *   store      { redistributeShelves, rotateUnit, removeUnit, closeAllFronts }
+ *   store      { redistributeShelves, rotateUnit, removeUnit, closeAllFronts,
+ *                addEndPanel, addPlinth, removePlinth, addTopInfill,
+ *                removeTopInfill, openPanelSection }
  * @returns {Array<{id:string,label:string,hint?:string,danger?:boolean,run:Function}>}
  */
 export function menuActions({ unit, panelPart, store }) {
   const type = getUnitType(unit.type);
   const actions = [];
+
+  // ── the manual construction pieces (turn 4, BACKLOG #16/#17) ──
+  // Right-clicking a unit is where a joiner reaches for these, so they are here
+  // as well as in the panel. The OPTIONS (to the floor or to the unit height, the
+  // thickness, "apply to all") live in the panel section, which is what opens
+  // alongside — CLAUDE.md is explicit that this must not be a modal.
+  const endPanels = unit.params.end_panels || [];
+  for (const [side, label] of [['L', 'left'], ['R', 'right']]) {
+    const fitted = endPanels.some((ep) => ep.side === side);
+    actions.push({
+      id: `end-panel-${side}`,
+      label: fitted ? `End panel ${label} ✓` : `Add end panel — ${label}`,
+      hint: fitted
+        ? 'Already fitted — change or remove it in the Construction section'
+        : 'A masking panel outside this side, in the BOM like any other piece',
+      disabled: fitted,
+      run: () => {
+        if (fitted) return;
+        store.addEndPanel?.(unit.id, { side });
+        store.openPanelSection?.('construction');
+      },
+    });
+  }
+  if (type.legs && type.mount === 'floor') {
+    actions.push(unit.params.plinth
+      ? { id: 'plinth-off', label: 'Remove plinth', run: () => store.removePlinth?.(unit.id) }
+      : {
+        id: 'plinth-on',
+        label: 'Add plinth',
+        hint: 'A toe kick under this unit — manual since turn 4',
+        run: () => { store.addPlinth?.(unit.id); store.openPanelSection?.('construction'); },
+      });
+  }
+  actions.push(Number(unit.params.top_infill_mm) > 0
+    ? { id: 'top-infill-off', label: 'Remove top infill', run: () => store.removeTopInfill?.(unit.id) }
+    : {
+      id: 'top-infill-on',
+      label: 'Add top infill',
+      hint: 'Closes the gap to the ceiling — drag its handle, or double-click it to fill',
+      run: () => { store.addTopInfill?.(unit.id); store.openPanelSection?.('construction'); },
+    });
 
   if (type.supports.shelves) {
     actions.push({

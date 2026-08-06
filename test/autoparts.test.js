@@ -27,6 +27,10 @@ const partsOf = (r, part) => r.panels.filter((p) => p.part === part);
 
 // ─── they are opt-in ───
 
+// ─── manual vs automatic (turn 4, BACKLOG #15/#16) ───
+// The side infill DESCRIBES where a unit stands, so it is derived. The plinth and
+// the top infill are DECISIONS, so they are carried and never invented.
+
 test('a plain unit is still exactly the LISP kit — no extras', () => {
   const r = computeCabinet(base(), P);
   assert.equal(partsOf(r, 'PLINTH').length, 0);
@@ -99,37 +103,48 @@ const gapCase = (x, width, others = []) => sideInfill({
 }, P);
 
 test('a filler closes the gap between a unit and the wall — on the side that has one', () => {
-  // Flush left, 3400 mm of wall to the right: too big to scribe.
+  // Flush left: nothing to fill on that side, and 3400 mm to the right is not a
+  // gap at all — the unit is simply standing in the room.
   const left = gapCase(0, 600);
   assert.equal(left.left, 0, 'nothing to fill on the flush side');
   assert.equal(left.right, 0);
-  assert.match(left.notices[0], /wider than the 20 mm infill setting/);
+  assert.deepEqual(left.notices, [], 'a unit away from the wall is not a problem to report');
 
   // 12 mm off the left wall: that is a scribe.
   const scribe = gapCase(12, 600, [{ left: 612, right: 4000 }]);
   assert.equal(scribe.left, 12);
   assert.equal(scribe.right, 0, 'the neighbour closes the right side, not a filler');
 
-  // A gap on both ends of a short wall.
+  // Parked at the stop on both ends of a short wall.
   const both = sideInfill({ x: 15, width: 600, wallWidth: 630, others: [], settingWidth: 20 }, P);
   assert.equal(both.left, 15);
   assert.equal(both.right, 15);
+
+  // EXACTLY at the stop — where the clamp actually lands the unit.
+  const parked = sideInfill({ x: 20, width: 600, wallWidth: 640, others: [], settingWidth: 20 }, P);
+  assert.equal(parked.left, 20);
+  assert.equal(parked.right, 20);
 });
 
-test('a gap wider than the setting is reported, not filled with a piece that does not reach', () => {
-  const wide = sideInfill({ x: 200, width: 600, wallWidth: 800, others: [], settingWidth: 20 }, P);
-  assert.equal(wide.left, 0);
-  assert.equal(wide.notices.length, 1);
-  assert.match(wide.notices[0], /200 mm gap on the left/);
+test('a unit standing out in the room grows no filler, and no complaint either', () => {
+  // Turn 3 reported this as "a gap wider than the setting". With the turn-4 stop
+  // a unit is USUALLY not at a wall, so that notice would fire constantly.
+  const away = sideInfill({ x: 200, width: 600, wallWidth: 800, others: [], settingWidth: 20 }, P);
+  assert.equal(away.left, 0);
+  assert.equal(away.right, 0);
+  assert.deepEqual(away.notices, []);
 
-  // Raise the setting and a gap the workshop CAN scribe becomes a filler.
-  const generous = sideInfill({ x: 100, width: 600, wallWidth: 700, others: [], settingWidth: 250 }, P);
+  // Raise the setting and the same 100 mm gap IS the scribe the unit stopped at.
+  const generous = sideInfill({ x: 100, width: 600, wallWidth: 700, others: [], settingWidth: 100 }, P);
   assert.equal(generous.left, 100);
   assert.equal(generous.notices.length, 0);
 
-  // …but never past what the profile calls a scribe at all.
-  const absurd = sideInfill({ x: 300, width: 600, wallWidth: 900, others: [], settingWidth: 5000 }, P);
+  // A setting past what this workshop scribes at all: the unit stops there, no
+  // filler reaches, and THAT is worth saying — it is a setting to change.
+  const absurd = sideInfill({ x: 300, width: 600, wallWidth: 900, others: [], settingWidth: 300 }, P);
   assert.equal(absurd.left, 0, `${P.autoParts.sideInfill.maxWidth} mm is the workshop's limit`);
+  assert.equal(absurd.notices.length, 1);
+  assert.match(absurd.notices[0], /wider than the 120 mm this workshop scribes/);
 });
 
 test('the side fillers are panels on the correct side of the unit', () => {
@@ -146,7 +161,7 @@ test('the side fillers are panels on the correct side of the unit', () => {
 
 // ─── the whole thing, per unit, from the room ───
 
-test('autoPartsFor derives everything a unit needs from the room around it', () => {
+test('autoPartsFor derives the side infill and only CARRIES the manual pieces', () => {
   const design = migrateDesign({ infill: { sideWidth: 20 } });
   const unit = {
     id: 'u1', type: 'BUD', position: { wall: 0, x_mm: 12 },
@@ -155,22 +170,38 @@ test('autoPartsFor derives everything a unit needs from the room around it', () 
   const parts = autoPartsFor({
     unit, wallWidth: 632, others: [], roomHeight: 2500, design,
   }, P);
-  assert.equal(parts.plinth, true);
-  assert.equal(parts.top_infill_mm, 40);
+  // Automatic: the gap is a fact about where the unit stands.
   assert.equal(parts.side_infill_left_mm, 12);
   assert.equal(parts.side_infill_right_mm, 20);
+  // Manual: nobody asked for either of these, so neither exists (BACKLOG #16 —
+  // turn 3 created both the moment a unit was placed).
+  assert.equal(parts.plinth, false);
+  assert.equal(parts.top_infill_mm, 0);
+
+  // Asked for: carried through, and the top infill re-clamped to the room.
+  const withParts = {
+    ...unit,
+    params: { ...unit.params, plinth: true, top_infill_mm: 40 },
+  };
+  const kept = autoPartsFor({ unit: withParts, wallWidth: 632, others: [], roomHeight: 2500, design }, P);
+  assert.equal(kept.plinth, true);
+  assert.equal(kept.top_infill_mm, 40);
 
   // A wall unit measures from its mount height, not from the floor.
   const wallUnit = {
     id: 'u2', type: 'WUD', position: { wall: 0, x_mm: 0 },
-    params: { width: 600, height: 720, depth: 400, mount_height: 1500, unit_num: 'WU1' },
+    params: { width: 600, height: 720, depth: 400, mount_height: 1500, unit_num: 'WU1', top_infill_mm: 40 },
   };
   const wallParts = autoPartsFor({ unit: wallUnit, wallWidth: 4000, others: [], roomHeight: 2500, design }, P);
-  assert.equal(wallParts.plinth, false);
+  assert.equal(wallParts.plinth, false, 'a wall unit never gets a plinth, asked for or not');
   assert.equal(wallParts.top_infill_mm, 40, '1500 + 720 + 40 fits under a 2500 ceiling');
 
   const lowCeiling = autoPartsFor({ unit: wallUnit, wallWidth: 4000, others: [], roomHeight: 2240, design }, P);
   assert.equal(lowCeiling.top_infill_mm, 20, 'only what is left');
+
+  // A plinth asked for on a type that cannot have one is still refused.
+  const wallPlinth = { ...wallUnit, params: { ...wallUnit.params, plinth: true } };
+  assert.equal(autoPartsFor({ unit: wallPlinth, wallWidth: 4000, others: [], roomHeight: 2500, design }, P).plinth, false);
 });
 
 test('the automatic pieces are ordinary BOM rows, priced like any other board', () => {

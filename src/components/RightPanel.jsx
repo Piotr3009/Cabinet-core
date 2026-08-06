@@ -50,6 +50,16 @@ export default function RightPanel() {
   const setUnitWall = useProjectStore((s) => s.setUnitWall);
   const rotateUnit = useProjectStore((s) => s.rotateUnit);
   const assignDoorStyle = useProjectStore((s) => s.assignDoorStyle);
+  const addPlinth = useProjectStore((s) => s.addPlinth);
+  const removePlinth = useProjectStore((s) => s.removePlinth);
+  const addTopInfill = useProjectStore((s) => s.addTopInfill);
+  const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
+  const setTopInfill = useProjectStore((s) => s.setTopInfill);
+  const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
+  const addEndPanel = useProjectStore((s) => s.addEndPanel);
+  const removeEndPanel = useProjectStore((s) => s.removeEndPanel);
+  const updateEndPanel = useProjectStore((s) => s.updateEndPanel);
+  const setEndPanelDefaults = useProjectStore((s) => s.setEndPanelDefaults);
   // Select the STORED value and migrate in a memo: a selector that builds a
   // new object every call makes zustand's snapshot change on every render,
   // which React reports as "Maximum update depth exceeded".
@@ -474,6 +484,92 @@ export default function RightPanel() {
           )}
         </Section>
 
+        {/* ── construction: the pieces you ASK for (BACKLOG #16/#17) ── */}
+        <Section
+          title="Construction"
+          badge={constructionBadge(unit, type)}
+          open={panelOpen.construction}
+          onToggle={() => togglePanelSection('construction')}
+          hint="Plinth, top infill and end panels — added, never assumed"
+        >
+          {/* plinth */}
+          {type.legs && type.mount === 'floor' ? (
+            <div className="cc-row">
+              <div className="flex flex-col">
+                <span className="text-sm text-ink-100">Plinth</span>
+                <span className="text-[11px] text-ink-400">
+                  {unit.params.plinth
+                    ? `${Math.round(result.assemblies.carcass.legHeight)} mm, set back ${profile.autoParts.plinth.setback}`
+                    : 'not fitted'}
+                </span>
+              </div>
+              {unit.params.plinth ? (
+                <button type="button" className="cc-btn" onClick={() => removePlinth(unit.id)}>Remove</button>
+              ) : (
+                <button type="button" className="cc-btn" onClick={() => addPlinth(unit.id)}>Add plinth</button>
+              )}
+            </div>
+          ) : (
+            <p className="text-[11px] text-ink-400">This type stands on no legs — it takes no plinth.</p>
+          )}
+
+          {/* top infill */}
+          <div className="cc-row">
+            <div className="flex flex-col">
+              <span className="text-sm text-ink-100">Top infill</span>
+              <span className="text-[11px] text-ink-400">
+                {Number(unit.params.top_infill_mm) > 0 ? 'drag its handle, or double-click it to fill' : 'not fitted'}
+              </span>
+            </div>
+            {Number(unit.params.top_infill_mm) > 0 ? (
+              <div className="flex items-center gap-1">
+                <NumberField
+                  className="cc-input w-16 text-right"
+                  min={0}
+                  value={Math.round(unit.params.top_infill_mm)}
+                  onCommit={(v) => setTopInfill(unit.id, v)}
+                />
+                <button type="button" className="cc-btn px-2" title="All the way to the ceiling" onClick={() => fillToCeiling(unit.id)}>▲</button>
+                <button type="button" className="cc-btn-ghost" onClick={() => removeTopInfill(unit.id)}>×</button>
+              </div>
+            ) : (
+              <button
+                type="button" className="cc-btn"
+                onClick={() => {
+                  if (!addTopInfill(unit.id)) notify('No room between this unit and the ceiling.', 'warn');
+                }}
+              >
+                Add top infill
+              </button>
+            )}
+          </div>
+
+          {/* side infill — automatic, and says so */}
+          <div className="cc-row text-[11px] text-ink-400">
+            <span>Side infill (automatic at the wall)</span>
+            <span>
+              {[unit.params.side_infill_left_mm, unit.params.side_infill_right_mm]
+                .map((v) => (Number(v) > 0 ? `${Math.round(v)}` : '—')).join(' / ')}
+            </span>
+          </div>
+
+          <div className="cc-divider !my-2" />
+
+          {/* end panels */}
+          <EndPanels
+            unit={unit}
+            profile={profile}
+            design={design}
+            onAdd={(side) => {
+              const { error } = addEndPanel(unit.id, { side });
+              if (error) notify(error, 'warn');
+            }}
+            onUpdate={(id, patch) => updateEndPanel(unit.id, id, patch)}
+            onRemove={(id) => removeEndPanel(unit.id, id)}
+            onDefaults={setEndPanelDefaults}
+          />
+        </Section>
+
         {/* Problems are never folded away — a warning behind a closed section is
             a warning nobody reads. */}
         {issues.length > 0 && (
@@ -532,6 +628,93 @@ function PanelHeader({ title, onClose }) {
       <span className="text-xs uppercase tracking-wide text-ink-200">{title}</span>
       <span className="flex-1" />
       <button type="button" className="cc-btn-ghost" onClick={onClose} title="Close panel">×</button>
+    </div>
+  );
+}
+
+/** What this unit has been given, at a glance on the folded section header. */
+function constructionBadge(unit, type) {
+  const parts = [];
+  if (unit.params.plinth) parts.push('plinth');
+  if (Number(unit.params.top_infill_mm) > 0) parts.push('top');
+  const ends = (unit.params.end_panels || []).length;
+  if (ends) parts.push(`${ends} end`);
+  if (!parts.length) return type.legs && type.mount === 'floor' ? 'none' : '';
+  return parts.join(' · ');
+}
+
+/**
+ * End panels (BACKLOG #17). The OPTIONS live here, in the section — not in a
+ * modal: height to the floor or to the unit height, thickness (the doors' by
+ * default) and "Apply to all end panels", which makes the next one anywhere in
+ * the project inherit these settings.
+ */
+function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefaults }) {
+  const panels = unit.params.end_panels || [];
+  const has = (side) => panels.some((ep) => ep.side === side);
+  return (
+    <div className="space-y-2">
+      <div className="cc-row">
+        <span className="text-sm text-ink-100">End panels</span>
+        <div className="flex gap-1">
+          {[['L', 'Left'], ['R', 'Right']].map(([side, label]) => (
+            <button
+              key={side}
+              type="button"
+              className="cc-btn px-2"
+              disabled={has(side)}
+              title={has(side) ? 'Already fitted on this side' : `Masking panel outside the ${label.toLowerCase()} side`}
+              onClick={() => onAdd(side)}
+            >
+              + {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {panels.length === 0 && (
+        <p className="text-[11px] text-ink-400">
+          None. An end panel masks the outside of a side and is a cut piece in the BOM, the CNC sheet and the DXF.
+        </p>
+      )}
+
+      <ul className="space-y-1">
+        {panels.map((ep) => (
+          <li key={ep.id} className="flex items-center gap-1 text-sm">
+            <span className="text-ink-400 w-6 text-xs">{ep.side}</span>
+            <select
+              className="cc-input flex-1"
+              value={ep.height}
+              onChange={(e) => onUpdate(ep.id, { height: e.target.value })}
+            >
+              <option value="floor">To floor</option>
+              <option value="unit">Unit height</option>
+            </select>
+            <NumberField
+              className="cc-input w-14 text-right"
+              min={1}
+              title="Thickness (mm)"
+              value={Math.round(ep.thickness || unit.params.front_t || profile.front.thickness)}
+              onCommit={(v) => onUpdate(ep.id, { thickness: v })}
+            />
+            <button type="button" className="cc-btn-ghost" title="Remove this end panel" onClick={() => onRemove(ep.id)}>×</button>
+          </li>
+        ))}
+      </ul>
+
+      <label className="flex items-center gap-2 text-[12px] text-ink-100">
+        <input
+          type="checkbox"
+          checked={design.endPanel.applyToAll}
+          onChange={(e) => onDefaults({ applyToAll: e.target.checked })}
+        />
+        <span>Apply to all end panels</span>
+      </label>
+      <p className="text-[11px] text-ink-400">
+        Ticked, the next end panel you add anywhere in this project inherits these settings
+        (now: {design.endPanel.height === 'floor' ? 'to floor' : 'unit height'},{' '}
+        {Math.round(design.endPanel.thickness || unit.params.front_t || profile.front.thickness)} mm).
+      </p>
     </div>
   );
 }

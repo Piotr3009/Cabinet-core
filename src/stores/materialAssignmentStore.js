@@ -22,6 +22,9 @@ export const BOM_ROLES = [
   // Turn 3: the automatics are cut pieces, so they get their own material.
   { id: 'plinth',     label: 'Plinth',         hint: 'Toe kick under standing units' },
   { id: 'infill',     label: 'Infill / scribe', hint: 'Fillers at the wall and up to the ceiling' },
+  // Turn 4: a masking panel over the outside of a carcass side — usually cut
+  // from the FRONT material, which is why it is its own role and not "sides".
+  { id: 'end_panel',  label: 'End panels',     hint: 'Masking panels on the outside of a run' },
 ];
 
 // Hardware roles. The ENGINE decides the quantities from the geometry

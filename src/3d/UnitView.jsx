@@ -388,8 +388,10 @@ export default function UnitView({
 
       {/* Top infill: grab it and drag UP to the ceiling, or double-click it to
           send it there. The piece itself is drawn from the engine like every
-          other panel; this is the handle on top of it. */}
-      {onSetTopInfill && (
+          other panel; this is the handle on top of it.
+          Turn 4: the handle exists only when the PIECE does (BACKLOG #16) —
+          a handle for something nobody added is a handle for nothing. */}
+      {onSetTopInfill && topInfill > 0 && (
         <mesh
           position={[mm(W / 2), mm(H + Math.max(topInfill, 0) + 12), mm(D - 30)]}
           onPointerDown={startTopInfillDrag}

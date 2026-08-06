@@ -324,6 +324,19 @@ export const DEFAULT_CABINET_PROFILE = {
       maxWidth: 120,
       minWidth: 3,
       thickness: null,
+      // Turn 4 (BACKLOG #15): the unit STOPS one infill width from the wall, and
+      // the filler appears when it is parked there. This is how much slop counts
+      // as "parked at the stop" — the clamp lands it exactly, so 1 mm is plenty
+      // and a unit sitting out in the room grows no filler at all.
+      stopTolerance: 1,
+    },
+    endPanel: {
+      // A masking panel screwed to the outside of a carcass side. Manual, like
+      // the plinth: it exists when somebody adds it (BACKLOG #17).
+      // `thickness: null` = the project's front thickness, which is what a
+      // workshop means by "same as the doors".
+      thickness: null,
+      defaultHeight: 'floor',       // 'floor' | 'unit'
     },
   },
 
@@ -471,6 +484,7 @@ export function migrateCabinetProfile(profile) {
       plinth: { ...D.autoParts.plinth, ...profile.autoParts?.plinth },
       topInfill: { ...D.autoParts.topInfill, ...profile.autoParts?.topInfill },
       sideInfill: { ...D.autoParts.sideInfill, ...profile.autoParts?.sideInfill },
+      endPanel: { ...D.autoParts.endPanel, ...profile.autoParts?.endPanel },
     },
     appearance: {
       ...D.appearance, ...profile.appearance,

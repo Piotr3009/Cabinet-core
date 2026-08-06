@@ -13,10 +13,21 @@
 // The parsing and clamping live here as plain functions so the rule is testable
 // in node without a DOM, and so the component is only about focus and keys.
 
-/** How a committed value is shown back in the field. */
-export function formatNumber(value, { integer = true, decimals = 2 } = {}) {
+import { formatMm, snap } from '../engine/format.js';
+
+/**
+ * How a committed value is shown back in the field.
+ *
+ * Turn 5 (BACKLOG #33): a field carrying MILLIMETRES is given a `step` — half a
+ * millimetre — and is then formatted by the app's single millimetre rule, so
+ * 196.5 survives the round trip through the field instead of being flattened to
+ * 197 the moment it is committed. `integer` (no step) still means whole numbers,
+ * and `integer: false` (the BOM yield) still keeps its decimals.
+ */
+export function formatNumber(value, { integer = true, decimals = 2, step = null } = {}) {
   const n = numberOrNull(value);
   if (n == null) return '';
+  if (Number.isFinite(Number(step)) && Number(step) > 0) return formatMm(n);
   if (integer) return String(Math.round(n));
   // Trailing zeros read as noise in a field the user is about to retype.
   return String(Number(n.toFixed(decimals)));
@@ -29,14 +40,17 @@ export function formatNumber(value, { integer = true, decimals = 2 } = {}) {
  *   text      what the user typed
  *   current   the stored value, used when the text is not a number at all
  *   min,max   optional workshop limits — applied ONCE, on commit
- *   integer   round to whole mm (the default: this app measures in mm)
+ *   integer   round to whole numbers (the default when no `step` is given)
+ *   step      quantise to this many mm instead — 0.5 for every millimetre field
+ *             in the app since turn 5, so "196.5" commits as 196.5 and "249.6"
+ *             lands on the nearest half the saw can actually hold
  *   allowEmpty  an empty field means "no value" rather than "keep the old one"
  * @returns {{value:number|null, ok:boolean, clamped:boolean, reverted:boolean}}
  *   ok       the text was a usable number
  *   clamped  the number was outside [min,max] and was pulled back in
  *   reverted nothing usable was typed, so `value` is the stored one
  */
-export function commitNumber({ text, current, min, max, integer = true, allowEmpty = false }) {
+export function commitNumber({ text, current, min, max, integer = true, step = null, allowEmpty = false }) {
   const raw = String(text ?? '').trim().replace(',', '.');
 
   if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
@@ -49,7 +63,12 @@ export function commitNumber({ text, current, min, max, integer = true, allowEmp
     return { value: numberOrNull(current), ok: false, clamped: false, reverted: true };
   }
 
-  let value = integer ? Math.round(parsed) : parsed;
+  const stepMm = Number(step);
+  const quantised = Number.isFinite(stepMm) && stepMm > 0
+    ? snap(parsed, stepMm)                    // millimetres: the 0.5 grid
+    : (integer ? Math.round(parsed) : parsed);
+
+  let value = quantised;
   let clamped = false;
   if (Number.isFinite(Number(min)) && value < Number(min)) { value = Number(min); clamped = true; }
   if (Number.isFinite(Number(max)) && value > Number(max)) { value = Number(max); clamped = true; }

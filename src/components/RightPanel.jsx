@@ -8,6 +8,7 @@ import { doorCountFor } from '../engine/cabinet.js';
 import { roomWalls } from '../engine/room.js';
 import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
+import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
 import Section from './Section.jsx';
 
@@ -116,7 +117,7 @@ export default function RightPanel() {
         {/* ── carcass ── */}
         <Section
           title="Carcass"
-          badge={`${Math.round(unit.params.width)} × ${Math.round(unit.params.height)}`}
+          badge={formatMmPair(unit.params.width, unit.params.height)}
           open={panelOpen.carcass}
           onToggle={() => togglePanelSection('carcass')}
         >
@@ -152,7 +153,7 @@ export default function RightPanel() {
                 }}
               >
                 {walls.map((w) => (
-                  <option key={w.index} value={w.index}>Wall {w.index + 1} · {Math.round(w.width)} mm</option>
+                  <option key={w.index} value={w.index}>Wall {w.index + 1} · {formatMm(w.width)} mm</option>
                 ))}
               </select>
             </div>
@@ -162,7 +163,8 @@ export default function RightPanel() {
                 <NumberField
                   className="cc-input w-16 text-right"
                   title="Angle to the wall (0 = back to wall)"
-                  value={Math.round(unit.position?.rotation_deg ?? 0)}
+                  step={1}
+                  value={unit.position?.rotation_deg ?? 0}
                   onCommit={(v) => rotateUnit(unit.id, 'set', v)}
                 />
                 <button type="button" className="cc-btn px-2" title="Turn 90° clockwise" onClick={() => rotateUnit(unit.id, 'step', 90)}>+90°</button>
@@ -246,7 +248,7 @@ export default function RightPanel() {
                   <span className="cc-label">Mount height</span>
                   <NumberField
                     title="Height of the carcass base above the floor"
-                    value={Math.round(unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight)}
+                    value={unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight}
                     onCommit={(v) => updateUnitParams(unit.id, { mount_height: v })}
                   />
                 </div>
@@ -256,7 +258,7 @@ export default function RightPanel() {
                   <span className="cc-label">Fridge height</span>
                   <NumberField
                     title="Inner clearance for the appliance"
-                    value={Math.round(unit.params.fridge_h ?? profile.fridgeUnit.defaults.fridgeH)}
+                    value={unit.params.fridge_h ?? profile.fridgeUnit.defaults.fridgeH}
                     onCommit={(v) => updateUnitParams(unit.id, { fridge_h: v })}
                   />
                 </div>
@@ -367,7 +369,7 @@ export default function RightPanel() {
                     max={DR.maxFrontHeight}
                     className="cc-input w-20 text-right"
                     title="Front height for every drawer (mm) — Enter to apply"
-                    value={Math.round(drawers[0]?.item.height_mm ?? DR.frontHeight)}
+                    value={drawers[0]?.item.height_mm ?? DR.frontHeight}
                     onCommit={(v) => setAllDrawerHeights(unit.id, v)}
                   />
                   <span className="text-[11px] text-ink-400 flex-1">mm front, every drawer</span>
@@ -383,7 +385,7 @@ export default function RightPanel() {
                           offered as an input that would do nothing. */}
                       {ratioDrawers ? (
                         <span className="cc-input w-20 text-right opacity-70">
-                          {Math.round(result.derived.drawer_heights?.[num - 1] ?? 0)}
+                          {formatMm(result.derived.drawer_heights?.[num - 1] ?? 0)}
                         </span>
                       ) : (
                         <NumberField
@@ -391,14 +393,14 @@ export default function RightPanel() {
                           max={DR.maxFrontHeight}
                           className="cc-input w-20 text-right"
                           title="Drawer front height (mm) — Enter to apply, Escape to undo"
-                          value={Math.round(dr.height_mm ?? DR.frontHeight)}
+                          value={dr.height_mm ?? DR.frontHeight}
                           onCommit={(v) => setDrawerHeight(unit.id, dr.id, v)}
                         />
                       )}
                       <span className="text-[11px] text-ink-400 flex-1">
                         mm
                         {result.derived.drawer_box_side_h?.[num - 1] != null
-                          && ` · box ${Math.round(result.derived.drawer_box_side_h[num - 1])}`}
+                          && ` · box ${formatMm(result.derived.drawer_box_side_h[num - 1])}`}
                       </span>
                       {!ratioDrawers && (
                         <button
@@ -415,17 +417,17 @@ export default function RightPanel() {
                 <span>Stack height</span>
                 <span>
                   {result.derived.drawerTotalH
-                    ? `${Math.round(result.derived.drawerTotalH)} mm`
+                    ? formatMm(result.derived.drawerTotalH, { unit: true })
                     : (ratioDrawers && result.derived.front_heights
-                      ? `${Math.round(result.derived.front_heights.reduce((a, b) => a + b, 0)
-                        + (result.derived.front_heights.length - 1) * profile.baseDrawerUnit.gap)} mm`
+                      ? formatMm(result.derived.front_heights.reduce((a, b) => a + b, 0)
+                        + (result.derived.front_heights.length - 1) * profile.baseDrawerUnit.gap, { unit: true })
                       : '—')}
                 </span>
               </div>
               {result.derived.partition_bottom_y != null && (
                 <div className="cc-row text-xs text-ink-400">
                   <span>Partition (locked, required above the stack)</span>
-                  <span>{Math.round(result.derived.partition_bottom_y)} mm</span>
+                  <span>{formatMm(result.derived.partition_bottom_y, { unit: true })}</span>
                 </div>
               )}
             </div>
@@ -439,7 +441,7 @@ export default function RightPanel() {
               </div>
               <div className="flex items-center gap-1">
                 <NumberField
-                  className="cc-input w-20 text-right" value={Math.round(rail.pos_mm)}
+                  className="cc-input w-20 text-right" value={rail.pos_mm}
                   onCommit={(v) => updateItem(unit.id, rail.id, { pos_mm: v })}
                 />
                 <button type="button" className="cc-btn-ghost" onClick={() => removeItem(unit.id, rail.id)}>×</button>
@@ -466,7 +468,7 @@ export default function RightPanel() {
                     {/* Typed positions go through the SAME clamp as the drag —
                         the field is not a back door around the collision rules. */}
                     <NumberField
-                      className="cc-input w-20 text-right" value={Math.round(sh.pos_mm ?? 0)}
+                      className="cc-input w-20 text-right" value={sh.pos_mm ?? 0}
                       onCommit={(v) => setShelfPos(unit.id, sh.id, v)}
                     />
                     <select
@@ -499,7 +501,7 @@ export default function RightPanel() {
                 <span className="text-sm text-ink-100">Plinth</span>
                 <span className="text-[11px] text-ink-400">
                   {unit.params.plinth
-                    ? `${Math.round(result.assemblies.carcass.legHeight)} mm, set back ${profile.autoParts.plinth.setback}`
+                    ? `${formatMm(result.assemblies.carcass.legHeight)} mm, set back ${formatMm(profile.autoParts.plinth.setback)}`
                     : 'not fitted'}
                 </span>
               </div>
@@ -526,7 +528,7 @@ export default function RightPanel() {
                 <NumberField
                   className="cc-input w-16 text-right"
                   min={0}
-                  value={Math.round(unit.params.top_infill_mm)}
+                  value={unit.params.top_infill_mm}
                   onCommit={(v) => setTopInfill(unit.id, v)}
                 />
                 <button type="button" className="cc-btn px-2" title="All the way to the ceiling" onClick={() => fillToCeiling(unit.id)}>▲</button>
@@ -549,7 +551,7 @@ export default function RightPanel() {
             <span>Side infill (automatic at the wall)</span>
             <span>
               {[unit.params.side_infill_left_mm, unit.params.side_infill_right_mm]
-                .map((v) => (Number(v) > 0 ? `${Math.round(v)}` : '—')).join(' / ')}
+                .map((v) => (Number(v) > 0 ? formatMm(v) : '—')).join(' / ')}
             </span>
           </div>
 
@@ -694,7 +696,7 @@ function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefault
               className="cc-input w-14 text-right"
               min={1}
               title="Thickness (mm)"
-              value={Math.round(ep.thickness || unit.params.front_t || profile.front.thickness)}
+              value={ep.thickness || unit.params.front_t || profile.front.thickness}
               onCommit={(v) => onUpdate(ep.id, { thickness: v })}
             />
             <button type="button" className="cc-btn-ghost" title="Remove this end panel" onClick={() => onRemove(ep.id)}>×</button>
@@ -713,7 +715,7 @@ function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefault
       <p className="text-[11px] text-ink-400">
         Ticked, the next end panel you add anywhere in this project inherits these settings
         (now: {design.endPanel.height === 'floor' ? 'to floor' : 'unit height'},{' '}
-        {Math.round(design.endPanel.thickness || unit.params.front_t || profile.front.thickness)} mm).
+        {formatMm(design.endPanel.thickness || unit.params.front_t || profile.front.thickness)} mm).
       </p>
     </div>
   );

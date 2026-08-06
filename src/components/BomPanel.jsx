@@ -4,6 +4,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES } from '../stores/materialAssignmentStore.js';
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
+import { formatMm } from '../engine/format.js';
 
 // SPEC 4.11 — the BOM is computed LIVE from the current state at all times;
 // this panel only decides when to SHOW it. Exports are a snapshot of the same
@@ -215,8 +216,8 @@ function FragmentRows({ unit }) {
         <tr key={`${unit.unitId}-${r.id}`} className="border-b border-shell-600/40 text-ink-100">
           <td className="px-2 py-1 text-ink-400">{r.unit_num}</td>
           <td className="px-2 py-1">{r.id}</td>
-          <td className="px-2 py-1 text-right tabular-nums">{Math.round(r.w)}</td>
-          <td className="px-2 py-1 text-right tabular-nums">{Math.round(r.h)}</td>
+          <td className="px-2 py-1 text-right tabular-nums">{formatMm(r.w)}</td>
+          <td className="px-2 py-1 text-right tabular-nums">{formatMm(r.h)}</td>
           <td className="px-2 py-1 text-center">{r.qty}</td>
           <td className="px-2 py-1 text-center font-mono text-ink-400">{r.edge || '—'}</td>
           <td className="px-2 py-1 text-right tabular-nums">{r.area_m2.toFixed(3)}</td>

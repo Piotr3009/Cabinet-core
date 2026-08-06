@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { computeCabinet } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
-import { snap as snapTo } from '../engine/format.js';
+import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
   clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, endPanelPads,
   freeSlotOnWall, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
@@ -341,7 +341,7 @@ export const useProjectStore = create((set, get) => ({
     if (!unit) return 0;
     const profile = getCabinetProfile();
     const height = topInfillHeight({
-      requested: heightMm,
+      requested: snapTo(heightMm, profile.editor.mmStep),
       unitTop: unitTopOf(unit, profile),
       roomHeight: Number(s.project.room.height) || 0,
     }, profile);
@@ -429,8 +429,8 @@ export const useProjectStore = create((set, get) => ({
     if (room.gap < settings.thickness) {
       return {
         id: null,
-        error: `No room for a ${Math.round(settings.thickness)} mm end panel on the `
-          + `${wanted === 'L' ? 'left' : 'right'} — only ${Math.round(room.gap)} mm free `
+        error: `No room for a ${formatMm(settings.thickness)} mm end panel on the `
+          + `${wanted === 'L' ? 'left' : 'right'} — only ${formatMm(room.gap)} mm free `
           + `before ${room.by}.`,
       };
     }
@@ -553,7 +553,7 @@ export const useProjectStore = create((set, get) => ({
     if (!placed) {
       return {
         id: null,
-        error: `No wall has ${Math.round(unit.params.width)} mm of free space for this unit — move or remove something first.`,
+        error: `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`,
       };
     }
     unit.position.wall = placed.wall;
@@ -608,7 +608,7 @@ export const useProjectStore = create((set, get) => ({
         padRight: endPanelPads(unit, unit.params.front_t).right,
       }, profile);
       applied.width = clamp.width;
-      if (clamp.blocked) notices.push(`Width limited to ${Math.round(clamp.max)} mm by ${clamp.by}.`);
+      if (clamp.blocked) notices.push(`Width limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
     }
     if (patch.depth != null) {
       const clamp = clampUnitDepth({
@@ -617,7 +617,7 @@ export const useProjectStore = create((set, get) => ({
         wall, walls, others,
       }, profile);
       applied.depth = clamp.depth;
-      if (clamp.blocked) notices.push(`Depth limited to ${Math.round(clamp.max)} mm by ${clamp.by}.`);
+      if (clamp.blocked) notices.push(`Depth limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
     }
 
     set((st) => ({
@@ -674,7 +674,7 @@ export const useProjectStore = create((set, get) => ({
     const footprintWidth = span.right - span.left;
 
     const result = clampUnitX({
-      x: snapTo(xRaw, snapStep) + lead,
+      x: snapTo(xRaw, snapStep || getCabinetProfile().editor.mmStep) + lead,
       current: unit.position.x_mm + lead,
       width: footprintWidth,
       wallWidth: wall.width,
@@ -903,7 +903,7 @@ export const useProjectStore = create((set, get) => ({
       fallback: unit.params.rail_offset,
     }, profile);
     return get().addItem(unitId, {
-      kind: 'hanger', pos_mm: Math.round(offset), material_id: materialId, material_label: materialLabel,
+      kind: 'hanger', pos_mm: snapTo(offset, profile.editor.mmStep), material_id: materialId, material_label: materialLabel,
     });
   },
 
@@ -959,12 +959,15 @@ export const useProjectStore = create((set, get) => ({
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return;
-    const limits = shelfLimits(unit, getCabinetProfile());
+    const profile = getCabinetProfile();
+    const limits = shelfLimits(unit, profile);
     const items = unit.params.sections[0].items;
     const shelves = items.filter((i) => i.kind === 'shelf');
     const step = (limits.max - limits.min) / (shelves.length + 1);
     let n = 0;
-    const next = items.map((i) => (i.kind === 'shelf' ? { ...i, pos_mm: Math.round(limits.min + step * (++n)) } : i));
+    const next = items.map((i) => (i.kind === 'shelf'
+      ? { ...i, pos_mm: snapTo(limits.min + step * (++n), profile.editor.mmStep) }
+      : i));
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
       dirty: true,
@@ -986,7 +989,10 @@ export const useProjectStore = create((set, get) => ({
     const profile = getCabinetProfile();
     const item = unit.params.sections?.[0]?.items?.find((i) => i.id === itemId);
     const state = clampShelfPos({
-      pos: snapTo(posRaw, snapStep),
+      // A stored millimetre is ALWAYS on the workshop grid (BACKLOG #33): the
+      // drag's own snap when there is one, half a millimetre when there is not
+      // — so a shelf never ends up at 704.68231 mm however it got there.
+      pos: snapTo(posRaw, snapStep || profile.editor.mmStep),
       current: item?.pos_mm,
       others: otherShelfPositions(unit, itemId),
       band: shelfBandFor(unit, profile),
@@ -1232,7 +1238,7 @@ export function validateUnit(unit, result, context = {}) {
   for (const item of items) {
     if (item.kind !== 'shelf' || !Number.isFinite(item.pos_mm)) continue;
     if (zoneTop != null && item.pos_mm < zoneTop) {
-      issues.push({ level: 'warn', message: `A shelf sits inside the drawer zone (${Math.round(item.pos_mm)} mm) — move it above ${Math.round(zoneTop)} mm.` });
+      issues.push({ level: 'warn', message: `A shelf sits inside the drawer zone (${formatMm(item.pos_mm)} mm) — move it above ${formatMm(zoneTop)} mm.` });
     }
   }
   for (const w of result.warnings) issues.push({ level: 'warn', message: w.message });

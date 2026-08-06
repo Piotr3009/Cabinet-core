@@ -74,7 +74,7 @@ export function menuActions({ unit, panelPart, store }) {
   actions.push({
     id: 'rotate-90',
     label: 'Rotate 90°',
-    hint: `Now ${Math.round(Number(unit.position?.rotation_deg) || 0)}°`,
+    hint: `Now ${Math.round(Number(unit.position?.rotation_deg) || 0)}°`,   // degrees, not mm
     run: () => store.rotateUnit(unit.id, 'step', 90),
   });
   actions.push({ id: 'back-to-wall', label: 'Back to wall', run: () => store.rotateUnit(unit.id, 'back', 0) });

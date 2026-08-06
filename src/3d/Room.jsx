@@ -78,7 +78,7 @@ function Wall({ wall, height, openings, centre, showLabel }) {
         ))}
       </group>
       {showLabel && (
-        <DimLabel position={[midLabel[0], mm(height) + 0.12, midLabel[2]]} text={`${Math.round(wall.width)} mm`} />
+        <DimLabel position={[midLabel[0], mm(height) + 0.12, midLabel[2]]} text={formatMm(wall.width, { unit: true })} />
       )}
     </group>
   );
@@ -123,7 +123,7 @@ export default function Room({ room, showLabels = true }) {
       {showLabels && (
         <DimLabel
           position={[-mm(bounds.width) / 2 - 0.2, mm(height) / 2, -mm(bounds.depth) / 2]}
-          text={`${Math.round(height)} mm`}
+          text={formatMm(height, { unit: true })}
         />
       )}
     </group>

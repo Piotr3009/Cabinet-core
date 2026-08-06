@@ -160,7 +160,7 @@ export default function DesignSettingsModal() {
               <NumberField
                 className="cc-input w-24 text-right"
                 min={0}
-                value={Math.round(design.infill.sideWidth)}
+                value={design.infill.sideWidth}
                 onCommit={(v) => setDesign({ infill: { ...design.infill, sideWidth: v } })}
               />
               <span className="text-[11px] text-ink-400">mm — the filler between a unit and the wall</span>

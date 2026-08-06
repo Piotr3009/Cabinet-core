@@ -8,6 +8,7 @@
 // or the camera. The 3D layer draws what it is handed.
 
 import { unitPlanSpan } from './collision.js';
+import { formatMm } from './format.js';
 
 /**
  * Every gap worth an arrow, for one wall and one mounting level.
@@ -104,7 +105,11 @@ export function roomDistances({ walls = [], units = [], minGap = 2 }) {
   return out;
 }
 
-/** The measurement caption, rounded the way the cut list rounds. */
+/**
+ * The measurement caption, through the app's one millimetre rule (BACKLOG #33).
+ * A 196.5 mm gap says 196.5 — rounding it to 197 on the drawing was how a
+ * half-millimetre disappeared between the arrow and the cut list.
+ */
 export function distanceLabel(mmValue) {
-  return `${Math.round(mmValue)} mm`;
+  return formatMm(mmValue, { unit: true });
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { commitNumber, formatNumber } from '../lib/numberField.js';
+import { getCabinetProfile } from '../engine/profile.js';
 
 // ─── One numeric input, used everywhere (BACKLOG #2) ───
 //
@@ -10,6 +11,12 @@ import { commitNumber, formatNumber } from '../lib/numberField.js';
 // It is a text input on purpose: `type="number"` hands the browser a second
 // opinion about what is typeable (and hides what it rejects), which is half of
 // the original bug. `inputMode="decimal"` still brings up the numeric keypad.
+//
+// Turn 5 (BACKLOG #33): a millimetre field commits on the HALF-millimetre grid
+// and shows halves back. That is the default here, because every field in this
+// app that is not explicitly something else is millimetres — the one exception
+// in the app (the BOM yield coefficient) already passes `integer={false}`, and
+// a field that really wants whole numbers passes `step={1}`.
 
 export default function NumberField({
   value,
@@ -18,12 +25,15 @@ export default function NumberField({
   max,
   integer = true,
   decimals = 2,
+  step,
   allowEmpty = false,
   className = 'cc-input',
   onInvalid,
   ...rest
 }) {
-  const shown = formatNumber(value, { integer, decimals });
+  // `integer: false` = a plain decimal field (the yield); it takes no grid.
+  const grid = integer ? (step ?? getCabinetProfile().editor.mmStep) : null;
+  const shown = formatNumber(value, { integer, decimals, step: grid });
   const [text, setText] = useState(shown);
   const [editing, setEditing] = useState(false);
   const ref = useRef(null);
@@ -35,14 +45,14 @@ export default function NumberField({
   }, [shown, editing]);
 
   const commit = () => {
-    const result = commitNumber({ text, current: value, min, max, integer, allowEmpty });
+    const result = commitNumber({ text, current: value, min, max, integer, step: grid, allowEmpty });
     setEditing(false);
     if (result.reverted) {
       setText(shown);
       if (onInvalid) onInvalid(text);
       return;
     }
-    setText(formatNumber(result.value, { integer, decimals }));
+    setText(formatNumber(result.value, { integer, decimals, step: grid }));
     onCommit(result.value, result);
   };
 

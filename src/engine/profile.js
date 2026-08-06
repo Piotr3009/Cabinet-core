@@ -407,6 +407,11 @@ export const DEFAULT_CABINET_PROFILE = {
   editor: {
     snapSteps: [0.5, 1, 32],
     defaultSnap: 1,
+    // The precision the WORKSHOP works to (BACKLOG #33). Every millimetre field
+    // in the app commits on this grid and every millimetre on screen is shown
+    // to it, so "196.5" can be typed, seen and cut. Nothing to do with the drag
+    // snap above — that is a user preference, this is what the tool measures in.
+    mmStep: 0.5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
     unitMagnet: 40,            // butt a unit against its neighbour within this

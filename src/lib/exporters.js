@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { formatMm } from '../engine/format.js';
 
 // ─── Exports ───
 // An export is a SNAPSHOT of the always-live engine state (SPEC 4.11), so the
@@ -131,7 +132,7 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
       doc.setFontSize(8);
       for (const c of cols) {
         let v = r[c.key];
-        if (c.key === 'w' || c.key === 'h') v = Math.round(v);
+        if (c.key === 'w' || c.key === 'h') v = formatMm(v);
         else if (c.key === 'area_m2') v = v.toFixed(3);
         else if (c.key === 'edge') v = v || '';
         doc.text(String(v), c.align === 'right' ? x + c.w - 2 : x, y, { align: c.align });

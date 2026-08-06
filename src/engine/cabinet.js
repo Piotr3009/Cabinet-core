@@ -886,6 +886,55 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ── Construction automatics (turn 3, phase 7) ─────────────────────────────
+  // The plinth, the scribe fillers and the top infill are CUT PIECES, so they
+  // are emitted here and reach the BOM, the CNC sheet and the DXF the same way
+  // every other panel does. What they should be is decided by
+  // engine/autoparts.js from the room; this only builds them.
+  const AP = P.autoParts;
+  const legHeightForPlinth = type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legHeight : P.baseUnit.legHeight) : 0;
+  const plinthH = AP.plinth.height ?? legHeightForPlinth;
+  // OPT-IN, deliberately: a bare computeCabinet(params) reproduces the LISP
+  // kit and nothing else, so the golden fixtures stay the contract they are.
+  // The automatics are a PROJECT decision — the store asks for them when a
+  // unit is placed in a room (engine/autoparts.js).
+  const wantsPlinth = AP.plinth.enabled && type.legs && type.mount === 'floor'
+    && params?.plinth === true && plinthH > 0;
+  if (wantsPlinth) {
+    const t = AP.plinth.thickness ?? G;
+    panels.push(panel({
+      id: 'PLINTH', part: 'PLINTH', role: 'plinth', w: W, h: plinthH, thickness: t,
+      edgeCode: codes.topBottom, edgeLen: metres(2 * W),
+      box: { x: 0, y: -plinthH, z: AP.plinth.setback, w: W, h: plinthH, d: t },
+      cnc: rectGeometry(W, plinthH),
+    }));
+  }
+
+  const topInfillH = Number(params?.top_infill_mm) || 0;
+  if (topInfillH >= AP.topInfill.minHeight) {
+    const t = AP.topInfill.thickness ?? G;
+    panels.push(panel({
+      id: 'INFILL-T', part: 'INFILL', role: 'infill', w: W, h: topInfillH, thickness: t,
+      edgeCode: codes.topBottom, edgeLen: metres(2 * W),
+      box: { x: 0, y: H, z: D - t, w: W, h: topInfillH, d: t },
+      cnc: rectGeometry(W, topInfillH),
+      meta: { side: 'top' },
+    }));
+  }
+
+  for (const [side, key] of [['L', 'side_infill_left_mm'], ['R', 'side_infill_right_mm']]) {
+    const infillW = Number(params?.[key]) || 0;
+    if (infillW < AP.sideInfill.minWidth) continue;
+    const t = AP.sideInfill.thickness ?? G;
+    panels.push(panel({
+      id: `INFILL-${side}`, part: 'INFILL', role: 'infill', w: infillW, h: H, thickness: t,
+      edgeCode: codes.right, edgeLen: metres(H),
+      box: { x: side === 'L' ? -infillW : W, y: 0, z: D - t, w: infillW, h: H, d: t },
+      cnc: rectGeometry(infillW, H),
+      meta: { side: side === 'L' ? 'left' : 'right' },
+    }));
+  }
+
   // Door fronts, always last (they close the unit — SPEC 4.10)
   const doorZ = D + P.doors.gap;
   const doorY = -cfg.doorExtend;      // a wall-unit front may run below the box

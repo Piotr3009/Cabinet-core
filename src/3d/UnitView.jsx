@@ -80,7 +80,7 @@ function MovingPanel({ panel: p, front, open, colour, edgeColour, depth, ...hand
 export default function UnitView({
   unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
-  frontColour = null,
+  frontColour = null, onSetTopInfill, onFillToCeiling,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -173,6 +173,37 @@ export default function UnitView({
   // behind the wall and disappears from the scene while the clamp thinks it is
   // standing in the room.
   const rotationRad = -((Number(unit.position.rotation_deg) || 0) * Math.PI) / 180;
+
+  // How tall the top infill is right now — the handle sits on top of it.
+  const topInfill = Number(unit.params.top_infill_mm) || 0;
+
+  /**
+   * Drag the top infill. The pointer's height above the unit IS the infill
+   * height, clamped by the store against the ceiling — so the piece grows
+   * under the cursor and stops when the room runs out.
+   */
+  const startTopInfillDrag = useCallback((e) => {
+    if (!onSetTopInfill) return;
+    e.stopPropagation();
+    onSelect();
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+    const unitTopY = originY + mm(H);
+
+    const move = (ev) => {
+      const p = pointerToPlane(ev.clientX, ev.clientY);
+      if (!p) return;
+      onSetTopInfill((p.y - unitTopY) / MM);
+    };
+    const up = () => {
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onSetTopInfill, onSelect, orbitRef, pointerToPlane, originY, H]);
 
   /** World position of a panel's centre, for "fly the camera here". */
   const panelWorldCentre = useCallback((p) => {
@@ -302,6 +333,22 @@ export default function UnitView({
           <meshStandardMaterial color="#4a4a4a" roughness={0.6} />
         </mesh>
       ))}
+
+      {/* Top infill: grab it and drag UP to the ceiling, or double-click it to
+          send it there. The piece itself is drawn from the engine like every
+          other panel; this is the handle on top of it. */}
+      {onSetTopInfill && (
+        <mesh
+          position={[mm(W / 2), mm(H + Math.max(topInfill, 0) + 12), mm(D - 30)]}
+          onPointerDown={startTopInfillDrag}
+          onDoubleClick={(e) => { e.stopPropagation(); onFillToCeiling?.(); }}
+          onPointerOver={() => { document.body.style.cursor = 'ns-resize'; }}
+          onPointerOut={() => { document.body.style.cursor = ''; }}
+        >
+          <boxGeometry args={[mm(Math.min(W, 240)), mm(24), mm(60)]} />
+          <meshStandardMaterial color={selected ? COLORS.gold : COLORS.rail} roughness={0.5} transparent opacity={selected ? 0.9 : 0.35} />
+        </mesh>
+      )}
 
       {/* wall unit: the bracket line it hangs from, so it does not read as
           floating by accident */}

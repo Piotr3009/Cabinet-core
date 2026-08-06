@@ -298,6 +298,35 @@ export const DEFAULT_CABINET_PROFILE = {
     fixedScrewFromEnd: 50,
   },
 
+  // ─── Construction automatics (turn 3, phase 7) ───
+  // Parts nobody draws by hand: the plinth under a run of units, the scribe
+  // filler between a unit and the wall, and the panel that closes the gap
+  // between a unit and the ceiling. They are cut pieces like any other — they
+  // go in the BOM and on the CNC sheet — so their numbers live here.
+  autoParts: {
+    plinth: {
+      enabled: true,
+      // height: null = the unit's own leg height, so raising the legs raises
+      // the plinth with them instead of leaving a gap.
+      height: null,
+      setback: 50,          // recessed from the front face (toe kick)
+      thickness: null,      // null = the unit's board thickness
+    },
+    topInfill: {
+      defaultHeight: 40,    // every unit gets one the moment it is placed
+      minHeight: 10,
+      thickness: null,
+    },
+    sideInfill: {
+      // The width comes from Design Settings (project level). This is the
+      // widest gap the workshop will close with a scribe filler at all — a
+      // 200 mm "filler" is a cabinet, not a scribe.
+      maxWidth: 120,
+      minWidth: 3,
+      thickness: null,
+    },
+  },
+
   // ─── CNC sheet + DXF output ───
   // Layer NAMES live in engine/cnc/layers.js (they are a machine contract, not
   // a workshop preference). What belongs here is the sheet metrics.
@@ -385,6 +414,12 @@ export function migrateCabinetProfile(profile) {
     baseDrawerUnit: { ...D.baseDrawerUnit, ...profile.baseDrawerUnit, defaults: { ...D.baseDrawerUnit.defaults, ...profile.baseDrawerUnit?.defaults } },
     sinkUnit: { ...D.sinkUnit, ...profile.sinkUnit, defaults: { ...D.sinkUnit.defaults, ...profile.sinkUnit?.defaults } },
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
+    autoParts: {
+      ...D.autoParts, ...profile.autoParts,
+      plinth: { ...D.autoParts.plinth, ...profile.autoParts?.plinth },
+      topInfill: { ...D.autoParts.topInfill, ...profile.autoParts?.topInfill },
+      sideInfill: { ...D.autoParts.sideInfill, ...profile.autoParts?.sideInfill },
+    },
     cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },

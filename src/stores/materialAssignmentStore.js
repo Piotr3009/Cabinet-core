@@ -19,6 +19,9 @@ export const BOM_ROLES = [
   { id: 'shelf',      label: 'Shelves',        hint: 'Shelves, partition, rail partition' },
   { id: 'front',      label: 'Fronts',         hint: 'Doors and drawer fronts' },
   { id: 'drawer_box', label: 'Drawer boxes',   hint: 'Drawer sides, front/back, bottoms' },
+  // Turn 3: the automatics are cut pieces, so they get their own material.
+  { id: 'plinth',     label: 'Plinth',         hint: 'Toe kick under standing units' },
+  { id: 'infill',     label: 'Infill / scribe', hint: 'Fillers at the wall and up to the ceiling' },
 ];
 
 // Hardware roles. The ENGINE decides the quantities from the geometry

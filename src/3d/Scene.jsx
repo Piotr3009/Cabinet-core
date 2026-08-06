@@ -106,6 +106,8 @@ export default function Scene({ onCaptureReady }) {
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const allResults = useProjectStore((s) => s.allResults);
   const moveShelf = useProjectStore((s) => s.moveShelf);
+  const setTopInfill = useProjectStore((s) => s.setTopInfill);
+  const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const clearSelection = useUiStore((s) => s.clearSelection);
@@ -167,6 +169,8 @@ export default function Scene({ onCaptureReady }) {
           onFocus={(point, sizeMm) => focusOn([point.x, point.y, point.z], sizeMm)}
           onContextMenu={(menu) => openContextMenu({ ...menu, unitId: unit.id })}
           frontColour={resolveUnitDesign(unit, design).colour?.hex || null}
+          onSetTopInfill={(h) => setTopInfill(unit.id, h)}
+          onFillToCeiling={() => fillToCeiling(unit.id)}
         />
       ))}
 

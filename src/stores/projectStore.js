@@ -11,6 +11,7 @@ import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls, wallWidth,
 } from '../engine/room.js';
 import { migrateDesign, normaliseDoorStyle, setCarcassTypeCount } from '../engine/design.js';
+import { autoPartsFor, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -119,6 +120,8 @@ export const useProjectStore = create((set, get) => ({
     const verdict = roomChangeGuard(next, s.units);
     if (!verdict.ok) return verdict;
     set((st) => ({ project: { ...st.project, room: next }, dirty: true }));
+    // A lower ceiling shortens every top infill; a longer wall opens a gap.
+    get().refreshAutoParts();
     return verdict;
   },
 
@@ -165,10 +168,15 @@ export const useProjectStore = create((set, get) => ({
   // Materials, the standard front, the workshop's own door styles, the front
   // colour and the infill width. Stored WITH the project, so opening a project
   // opens the way it is built, not the way the last one was.
-  setDesign: (patch) => set((s) => ({
-    project: { ...s.project, design: migrateDesign({ ...s.project.design, ...patch }) },
-    dirty: true,
-  })),
+  setDesign: (patch) => {
+    set((s) => ({
+      project: { ...s.project, design: migrateDesign({ ...s.project.design, ...patch }) },
+      dirty: true,
+    }));
+    // The infill width lives in Design Settings, so changing it re-cuts the
+    // fillers everywhere.
+    get().refreshAutoParts();
+  },
 
   setCarcassTypes: (count) => set((s) => ({
     project: { ...s.project, design: setCarcassTypeCount(migrateDesign(s.project.design), count) },
@@ -232,6 +240,87 @@ export const useProjectStore = create((set, get) => ({
     };
   }),
 
+  // ── construction automatics (CLAUDE.md phase 7) ──────────────────────────
+  /**
+   * Re-derive the automatic parts for one unit (or all of them) from the room
+   * around it: the plinth underneath, the scribe fillers where it meets a
+   * wall, and the top infill up to the ceiling.
+   *
+   * Called wherever the geometry it depends on changes — placing, moving,
+   * resizing, turning, editing the room or the infill setting — so the extra
+   * pieces in the cut list are never stale.
+   *
+   * @returns {string[]} notices worth telling the user about
+   */
+  refreshAutoParts: (unitId = null) => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    const design = migrateDesign(s.project.design);
+    const roomHeight = Number(s.project.room.height) || 0;
+    const notices = [];
+
+    const next = s.units.map((u) => {
+      if (unitId && u.id !== unitId) return u;
+      const wall = walls[u.position?.wall ?? 0] || walls[0];
+      const level = getUnitType(u.type).mount;
+      const others = s.units
+        .filter((o) => o.id !== u.id && (o.position?.wall ?? 0) === (u.position?.wall ?? 0)
+          && getUnitType(o.type).mount === level)
+        .map(unitSpan);
+      const parts = autoPartsFor({
+        unit: u, wallWidth: wall?.width ?? 0, others, roomHeight, design,
+      }, profile);
+      notices.push(...parts.notices);
+      return {
+        ...u,
+        params: {
+          ...u.params,
+          plinth: parts.plinth,
+          top_infill_mm: parts.top_infill_mm,
+          side_infill_left_mm: parts.side_infill_left_mm,
+          side_infill_right_mm: parts.side_infill_right_mm,
+        },
+      };
+    });
+
+    set({ units: next, dirty: true });
+    return notices;
+  },
+
+  /**
+   * Drag the top infill up. `heightMm` is the height the pointer asks for; it
+   * is clamped to what is left between the unit and the ceiling.
+   */
+  setTopInfill: (unitId, heightMm) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    const height = topInfillHeight({
+      requested: heightMm,
+      unitTop: unitTopOf(unit, profile),
+      roomHeight: Number(s.project.room.height) || 0,
+    }, profile);
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, top_infill_mm: height } } : u)),
+      dirty: true,
+    }));
+    return height;
+  },
+
+  /** Double click: run the top infill all the way to the ceiling. */
+  fillToCeiling: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    return get().setTopInfill(unitId, topInfillToCeiling({
+      unitTop: unitTopOf(unit, profile),
+      roomHeight: Number(s.project.room.height) || 0,
+    }));
+  },
+
   /** Point a unit at one of the project's door styles (or back at the default). */
   assignDoorStyle: (unitId, styleId) => set((s) => ({
     units: s.units.map((u) => (u.id === unitId
@@ -258,10 +347,16 @@ export const useProjectStore = create((set, get) => ({
         .map(unitSpan),
     });
     set((s) => ({ units: [...s.units, unit], dirty: true }));
+    // A unit arrives with its plinth, its scribe fillers and a 40 mm top
+    // infill already worked out — that is what "automatic" means.
+    get().refreshAutoParts(unit.id);
     return unit.id;
   },
 
-  removeUnit: (unitId) => set((s) => ({ units: s.units.filter((u) => u.id !== unitId), dirty: true })),
+  removeUnit: (unitId) => {
+    set((s) => ({ units: s.units.filter((u) => u.id !== unitId), dirty: true }));
+    get().refreshAutoParts();
+  },
 
   /**
    * Edit a unit's parameters.
@@ -321,6 +416,7 @@ export const useProjectStore = create((set, get) => ({
     // (an imported project, a room change) still settles legally.
     if (applied.width != null) get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
     if (patch.height != null || applied.width != null) get().reclampShelves(unitId);
+    notices.push(...get().refreshAutoParts());
     return { applied, notices };
   },
 
@@ -361,6 +457,8 @@ export const useProjectStore = create((set, get) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
       dirty: true,
     }));
+    // Moving changes which gaps exist — and a gap is a filler.
+    get().refreshAutoParts();
     return { ...result, x };
   },
 
@@ -386,7 +484,8 @@ export const useProjectStore = create((set, get) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, rotation_deg: next } } : u)),
       dirty: true,
     }));
-    // Turning changes the footprint; settle it legally where it stands.
+    // Turning changes the footprint; settle it legally where it stands
+    // (moveUnit re-derives the automatics on the way through).
     get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
     return next;
   },
@@ -634,6 +733,15 @@ function neighboursOf(state, unit) {
   // moment its footprint reaches into this one's depth (engine/collision.js
   // decides that; this only decides who is even in the running).
   return state.units.filter((u) => u.id !== unit.id && getUnitType(u.type).mount === level);
+}
+
+/** Height of a unit's top above the floor — where its top infill starts. */
+function unitTopOf(unit, profile) {
+  const type = getUnitType(unit.type);
+  const base = type.mount === 'wall'
+    ? Number(unit.params.mount_height) || 0
+    : (type.legs ? (type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight) : 0);
+  return base + (Number(unit.params.height) || 0);
 }
 
 /** A unit as the plain numbers engine/collision.js works with. */

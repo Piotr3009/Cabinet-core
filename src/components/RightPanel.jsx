@@ -104,7 +104,13 @@ export default function RightPanel() {
                 <select
                   className="cc-input"
                   value={unit.position?.wall ?? 0}
-                  onChange={(e) => setUnitWall(unit.id, Number(e.target.value))}
+                  onChange={(e) => {
+                    // A full wall refuses the move; the select snaps back to
+                    // the wall the unit is actually on because it is bound to
+                    // the stored position, not to what was clicked.
+                    const moved = setUnitWall(unit.id, Number(e.target.value));
+                    if (moved?.error) notify(moved.error, 'warn');
+                  }}
                 >
                   {walls.map((w) => (
                     <option key={w.index} value={w.index}>Wall {w.index + 1} · {Math.round(w.width)} mm</option>

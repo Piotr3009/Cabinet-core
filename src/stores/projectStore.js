@@ -5,7 +5,8 @@ import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.
 import { snap as snapTo } from '../engine/format.js';
 import {
   clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, firstFreeUnitX,
-  shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan, wallObstacles,
+  freeSlotOnWall, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  wallObstacles,
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls, wallWidth,
@@ -334,23 +335,41 @@ export const useProjectStore = create((set, get) => ({
     const profile = getCabinetProfile();
     const state = get();
     const unit = newUnit(typeId, profile, state.units.length);
-    // Centred on an empty wall, otherwise butted into the first gap it fits —
+    // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
     // against their own kind only.
+    //
+    // When wall 0 is full the unit goes round the room looking for a wall with
+    // room, and when the whole room is full it is REFUSED. Dropping it on the
+    // far end of a full wall and reporting the overlap afterwards would be an
+    // overlap the app created itself (CLAUDE.md turn 3, phase 4).
     const level = getUnitType(typeId).mount;
-    unit.position.x_mm = firstFreeUnitX({
-      width: unit.params.width,
-      wallWidth: wallWidth(state.project.room, 0),
-      others: state.units
-        .filter((u) => (u.position.wall ?? 0) === 0 && getUnitType(u.type).mount === level)
-        .map(unitSpan),
-    });
+    const walls = roomWalls(state.project.room);
+    let placed = null;
+    for (const wall of walls) {
+      const x = freeSlotOnWall({
+        width: unit.params.width,
+        wallWidth: wall.width,
+        others: state.units
+          .filter((u) => (u.position.wall ?? 0) === wall.index && getUnitType(u.type).mount === level)
+          .map(unitSpan),
+      }, profile);
+      if (x != null) { placed = { wall: wall.index, x }; break; }
+    }
+    if (!placed) {
+      return {
+        id: null,
+        error: `No wall has ${Math.round(unit.params.width)} mm of free space for this unit — move or remove something first.`,
+      };
+    }
+    unit.position.wall = placed.wall;
+    unit.position.x_mm = placed.x;
     set((s) => ({ units: [...s.units, unit], dirty: true }));
     // A unit arrives with its plinth, its scribe fillers and a 40 mm top
     // infill already worked out — that is what "automatic" means.
     get().refreshAutoParts(unit.id);
-    return unit.id;
+    return { id: unit.id, error: null, wall: placed.wall };
   },
 
   removeUnit: (unitId) => {
@@ -491,8 +510,11 @@ export const useProjectStore = create((set, get) => ({
   },
 
   /**
-   * Move a unit to another wall. It keeps its distance from the wall start
-   * where that still fits, and is clamped into the first free slot otherwise.
+   * Move a unit to another wall — into a free slot, or not at all.
+   *
+   * A wall with no room for it REFUSES the move. Moving it there anyway and
+   * reporting the overlap afterwards would be an overlap the app created
+   * itself, which is exactly what phase 4 closes off.
    */
   setUnitWall: (unitId, wallIndex) => {
     const s = get();
@@ -500,18 +522,27 @@ export const useProjectStore = create((set, get) => ({
     const walls = roomWalls(s.project.room);
     if (!unit || !walls[wallIndex]) return null;
     const level = getUnitType(unit.type).mount;
-    const x = firstFreeUnitX({
+    const x = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
       others: s.units
         .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && getUnitType(u.type).mount === level)
         .map(unitSpan),
-    });
+    }, getCabinetProfile());
+    if (x == null) {
+      return {
+        wall: unit.position.wall ?? 0,
+        x_mm: unit.position.x_mm,
+        blocked: true,
+        error: `Wall ${wallIndex + 1} has no free space for this unit — move or remove something there first.`,
+      };
+    }
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { wall: wallIndex, x_mm: x } } : u)),
+      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, wall: wallIndex, x_mm: x } } : u)),
       dirty: true,
     }));
-    return { wall: wallIndex, x_mm: x };
+    get().refreshAutoParts(unitId);
+    return { wall: wallIndex, x_mm: x, blocked: false, error: null };
   },
 
   // ── interior items ───────────────────────────────────────────────────────

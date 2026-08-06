@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 
 import {
   clampUnitWidth, clampUnitDepth, clampUnitX, wallObstacles, unitFootprint,
-  spanInWallFrame, maxDepthOnWall, unitIssues,
+  spanInWallFrame, maxDepthOnWall, unitIssues, freeSlotOnWall, firstFreeUnitX,
 } from '../src/engine/collision.js';
 import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
 import { migrateRoom, roomWalls, rectCorners, lCorners } from '../src/engine/room.js';
@@ -192,4 +192,63 @@ test('validation reports a corner overlap the same way as a side-by-side one', (
   const issues = unitIssues({ unit, wallWidth: 4000, roomHeight: 2500, others });
   assert.equal(issues[0].code, 'UNIT_OVERLAP');
   assert.match(issues[0].message, /W02/);
+});
+
+// ─── Adding a unit is a path too ───
+// firstFreeUnitX() answers "where would it go", and when nothing fits it
+// answers with the far end of the wall and leaves unitIssues() to report the
+// overlap. freeSlotOnWall() is the strict version the add path uses: a free
+// slot, or null. The app must never CREATE an overlap it then complains about.
+
+test('an empty wall centres the unit', () => {
+  assert.equal(freeSlotOnWall({ width: 600, wallWidth: 4000, others: [] }, P), 1700);
+});
+
+test('a unit butts onto the end of the run', () => {
+  const others = [{ left: 0, right: 600 }, { left: 600, right: 1200 }];
+  assert.equal(freeSlotOnWall({ width: 600, wallWidth: 4000, others }, P), 1200);
+});
+
+test('a full wall returns null instead of a position that overlaps', () => {
+  // 4000 mm of wall, 3500 mm used at the right-hand end, gaps of 500 mm only.
+  const others = [
+    { left: 0, right: 600 }, { left: 600, right: 1200 },
+    { left: 1700, right: 2300 }, { left: 2300, right: 2900 }, { left: 2900, right: 3500 },
+  ];
+  assert.equal(freeSlotOnWall({ width: 600, wallWidth: 4000, others }, P), null);
+  // firstFreeUnitX still answers with the far end — that is what it is for,
+  // and it is exactly the answer the add path must NOT use.
+  assert.equal(firstFreeUnitX({ width: 600, wallWidth: 4000, others }), 3400);
+});
+
+test('a gap in the middle is used before the wall is declared full', () => {
+  const others = [{ left: 0, right: 600 }, { left: 1400, right: 4000 }];
+  assert.equal(freeSlotOnWall({ width: 600, wallWidth: 4000, others }, P), 600);
+  assert.equal(freeSlotOnWall({ width: 900, wallWidth: 4000, others }, P), null);
+});
+
+test('a unit wider than the wall never fits', () => {
+  assert.equal(freeSlotOnWall({ width: 4200, wallWidth: 4000, others: [] }, P), null);
+  assert.equal(freeSlotOnWall({ width: 0, wallWidth: 4000, others: [] }, P), null);
+});
+
+test('a scribe gap is honoured on both sides of the slot', () => {
+  const gapped = migrateCabinetProfile({ ...P, editor: { ...P.editor, minUnitGap: 10 } });
+  const others = [{ left: 0, right: 600 }, { left: 1230, right: 4000 }];
+  // 600+10 = 610, and the slot must end 10 before 1230 → 610..1220 is 610 wide.
+  assert.equal(freeSlotOnWall({ width: 600, wallWidth: 4000, others }, gapped), 610);
+  assert.equal(freeSlotOnWall({ width: 615, wallWidth: 4000, others }, gapped), null);
+});
+
+test('the slot it picks never overlaps what is already there', () => {
+  const others = [{ left: 0, right: 600 }, { left: 1400, right: 2000 }];
+  for (const width of [200, 400, 600, 795, 800, 1200, 1900, 2100]) {
+    const x = freeSlotOnWall({ width, wallWidth: 4000, others }, P);
+    if (x == null) continue;
+    for (const o of others) {
+      assert.ok(x + width <= o.left || x >= o.right,
+        `width ${width} at ${x} overlaps [${o.left},${o.right}]`);
+    }
+    assert.ok(x >= 0 && x + width <= 4000, `width ${width} at ${x} leaves the wall`);
+  }
 });

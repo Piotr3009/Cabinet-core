@@ -248,3 +248,116 @@ fixtures i presetów.
 **Decyzja dla Piotra.** Żadna nie jest pilna. Zapisane, żeby nie zginęło:
 przełączenie `spanMode` na `'zone'` to jedna wartość w profilu, ale **zmieni
 golden fixtures**, więc wymaga Twojej świadomej zgody.
+
+---
+
+# TURA 3
+
+## #13 — SINK: oklejanie holderów — CSV mówi „bez", podsumowanie mówi „2 × szerokość wewnętrzna"
+
+**Co to.** `KIT_SINK_FULL.lsp` przeczy sam sobie co do dwóch holderów (listew
+pod zlewozmywak). `totalEdging` (L515–520) dolicza im `2 × szerRAIL` obrzeża,
+natomiast własna lista formatek tego samego kitu (L599–602) wypisuje oba wiersze
+HOLDER z `EDGE=''` i `EDG_L=0`. Dla wariantu SINK-A rozjazd to **1.128 m**
+obrzeża.
+
+**Co zrobiłem.** Fixture idzie za **listą formatek**, nie za podsumowaniem —
+bo to lista trafia na oklejarkę, a podsumowanie jest liczbą na ekranie.
+Zapisane w `golden-sink.json` jako `lisp_summary_quirks`, ta sama klasa
+niezgodności co `lisp_summary_quirks` w `golden-wardrobe.json` (BLOCKERS #1).
+
+**Czego NIE zrobiłem.** Nie „uzgodniłem" tego po cichu w żadną stronę.
+
+**Decyzja dla Piotra.** Holdery przy zlewie okleja się czy nie? Jeśli tak —
+zmiana jest w fixture I w silniku naraz, świadomie. Jeśli nie — quirk zostaje
+opisany i zamykamy temat.
+
+## #14 — Cokół: per jednostka czy per ciąg?
+
+**Co to.** Faza 7 generuje cokół **per jednostka**: szafka 600 dostaje formatkę
+cokołu 600. Ciąg czterech szafek 600 daje więc cztery formatki po 600, a nie
+jedną 2400.
+
+**Dlaczego tak.** Jednostka jest w tym programie jednostką rozliczeniową —
+ma swój `unit_num`, swój ZIP, swój arkusz CNC. Cokół sklejony przez cały ciąg
+nie należałby do żadnej jednostki i nie miałby gdzie trafić w eksporcie
+per jednostka. Poza tym jednostki wolno przesuwać, a scalony cokół musiałby się
+przy każdym ruchu przeliczać między meblami.
+
+**Decyzja dla Piotra.** W warsztacie cokół tniesz na długość ciągu czy na
+jednostkę? Jeśli na ciąg — to jest nowy byt („run"), którego model danych na
+razie nie ma, i chcę to zrobić jako świadomą zmianę, a nie doklejkę.
+
+## #15 — `verify_with_piotr` z SZEŚCIU nowych fixtures — NAJPILNIEJSZE
+
+**Co to.** Zasada #1 wymaga fixture wyprowadzonego z LISP-a przed kodem —
+zrobione, sześć plików, każdy z `status: PENDING_PIOTR_VERIFICATION`. Ale
+„wyprowadzony z LISP-a" znaczy „zgodny z kodem", a nie „zgodny z tym, co
+naprawdę wyjeżdża z maszyny". Poniżej pytania, które fixtures zadają wprost.
+**Dopóki nie odpowiesz, silnik liczy sześć typów wg LISP-a, ale nikt tego nie
+potwierdził na realnym meblu.**
+
+**BUDR** (`golden-budr.json`)
+- bok skrzynki = `round(0.70 × front)` → 237 / 178 / 118 przy 770 — zgadza się
+  z prowadnicami, które kupujesz?
+- rzędy prowadnic po OBU bokach na `y {56, 379, 636}` (dolny podniesiony o G)
+- otwory na wkręty frontu na `y 96.5` (+G przy pierwszej szufladzie)
+- fronty nakładają całą wysokość — dolny startuje od 0, bez `firstFrontAdjust`
+  znanego z szafy
+
+**WUD** (`golden-wud.json`)
+- zawieszki: wzór otworów 21 / 53 od tylnej krawędzi, 53 od góry
+- wycięcia w plecach 30 × 58 w górnych narożnikach
+- `door_extend +38` przesuwa DOLNĄ puszkę na 138, górne liczone od góry frontu
+- 2 zawieszki na jednostkę
+
+**BUDTALL** (`golden-budtall.json`)
+- **rozbieżność świadoma**: przy wysokości poniżej 1100 LISP po cichu bierze
+  2100. Silnik zamiast tego podnosi do minimum 1100 i wystawia warning
+  `MIN_HEIGHT`. Ciche 2100 uznałem za pułapkę, ale to Twoja decyzja.
+
+**LOW_CABINET** (`golden-low-cabinet.json`)
+- ten kit LICZY RAIL PARTITION w PANELS (szafa nie liczy) — fixture idzie za
+  LISP-em; która konwencja BOM ma obowiązywać w całym projekcie?
+- kit nie ma własnej listy formatek CSV — silnik emituje standardową konwencję
+
+**SINK** (`golden-sink.json`)
+- wzór wkrętów holderów: 2 na stronę na holder, G/2 od krawędzi, 30 / 70 od góry
+- wkręty pleców 37 mm od krawędzi, `y {100, H/2, H−100}`
+- tylna kolumna otworów półkowych na `sideW − 120`
+- CSV podaje HOLDER jako 100 × szerokość wewnętrzna (obrócone) — piła chce tak?
+- oklejanie holderów → #13
+
+**FRIDGE** (`golden-fridge.json`)
+- RAIL2 wyśrodkowany na `fridgeH/2` (pas 200 mm)
+- BACK-TOP nachodzi na panel stały o G
+- luzy SPURS: −8 na szerokość, −G na wysokość, 100 mm od frontu na klockach 25×25
+- **boki mają PEŁNE czopy puzzla na tylnej krawędzi, mimo że nie ma pełnych
+  pleców, które by je przyjęły** (LISP rysuje standardowe `drawBUL`/`drawBUR`) —
+  to jest zamierzone czy przeoczenie w LISP-ie?
+
+**Jak odpowiedzieć.** Wystarczy „tak / nie / poprawna wartość" przy każdym
+punkcie. Po potwierdzeniu zmieniam `status` na `VERIFIED` i sekcja znika
+z fixture.
+
+## #16 — Import DXF pomieszczenia: skala i wybór obrysu
+
+**Co to.** DXF nie niesie jednostki w sposób, na którym da się polegać
+(`$INSUNITS` bywa 0 albo nieobecne). Import ma więc przełącznik mm / cm / m
+w UI i domyślnie zakłada milimetry.
+
+Drugi wybór: który obrys jest pokojem. Parser bierze **zamkniętą polilinię**,
+a gdy jej nie ma — **największą otwartą**, a gdy i tego nie ma — łańcuch
+połączonych odcinków LINE. Rzut z meblami, wymiarowaniem i tekstem da się w ten
+sposób obsłużyć tylko dlatego, że reszta encji jest ignorowana (czytana jest
+wyłącznie sekcja ENTITIES, wyłącznie LINE i LWPOLYLINE).
+
+**Czego NIE zrobiłem.** Nie ma wyboru warstwy („weź obrys z warstwy WALLS"),
+nie ma łuków (ARC) ani bloków (INSERT). Ściana po łuku nie zaimportuje się
+w ogóle — pokój jest listą odcinków prostych i to jest założenie modelu, nie
+niedoróbka parsera.
+
+**Decyzja dla Piotra.** Przyślij jeden realny DXF rzutu od architekta. Jeśli
+obrys siedzi na osobnej warstwie, dołożenie filtra warstwy to jedna pętla.
+Jeśli w rzutach bywają ściany po łuku — to jest zmiana modelu pokoju i musi
+być świadoma.

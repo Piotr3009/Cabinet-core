@@ -366,6 +366,38 @@ export function unitIssues({ unit, wallWidth: wallW, roomHeight: roomH, others =
 }
 
 /**
+ * Where a unit of `width` FITS on this wall without touching anything — or
+ * null, when it does not fit at all.
+ *
+ * The difference from firstFreeUnitX() is the null: this one never answers
+ * with a position that overlaps. It is what the "add a unit" path asks, so a
+ * new unit lands on a wall that has room or is refused outright, rather than
+ * being dropped on top of a neighbour for unitIssues() to complain about
+ * afterwards (CLAUDE.md turn 3, phase 4: no overlap by ANY path).
+ */
+export function freeSlotOnWall({ width, wallWidth, others = [] }, profile) {
+  const clearance = profile?.editor?.minUnitGap ?? 0;
+  const w = Number(width) || 0;
+  const wallMax = Math.max(0, wallWidth - w);
+  if (w <= 0 || wallWidth < w) return null;
+  if (!others.length) return Math.round(Math.max(0, (wallWidth - w) / 2));
+
+  // Butt onto the right-hand end of the run first — building a row of units is
+  // "add, add, add", the turn-1 behaviour, kept deliberately.
+  const spans = [...others].sort((a, b) => a.left - b.left);
+  const rightMost = spans.reduce((m, s) => Math.max(m, s.right), 0);
+  if (rightMost + clearance <= wallMax) return Math.round(rightMost + clearance);
+
+  let cursor = 0;
+  for (const s of spans) {
+    const gap = s.left - clearance - cursor;
+    if (gap >= w && cursor <= wallMax) return Math.round(cursor);
+    cursor = Math.max(cursor, s.right + clearance);
+  }
+  return null;
+}
+
+/**
  * Where a NEW unit of `width` lands.
  *
  * Empty wall: centred. Otherwise butted onto the right-hand end of the run, so

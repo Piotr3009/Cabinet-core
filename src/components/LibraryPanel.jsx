@@ -12,6 +12,7 @@ export default function LibraryPanel() {
   const setSnapStep = useUiStore((s) => s.setSnapStep);
   const openModal = useUiStore((s) => s.openModal);
   const selectUnit = useUiStore((s) => s.selectUnit);
+  const notify = useUiStore((s) => s.notify);
   const addUnit = useProjectStore((s) => s.addUnit);
   const units = useProjectStore((s) => s.units);
   const profile = useCabinetProfileStore((s) => s.profile);
@@ -46,8 +47,12 @@ export default function LibraryPanel() {
   }, [pos, setPos]);
 
   const handleAdd = (typeId) => {
-    const id = addUnit(typeId);
+    // A full room refuses the unit rather than stacking it on a neighbour, so
+    // the answer has to be read, not assumed.
+    const { id, error, wall } = addUnit(typeId);
+    if (error) { notify(error, 'warn'); return; }
     selectUnit(id);
+    if (wall > 0) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
   };
 
   return (

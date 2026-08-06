@@ -389,3 +389,20 @@ end-to-end w Chromium: 10/10, zero błędów w konsoli.
 darmowego planu) oraz **Settings → Actions → General** (czy Actions nie zostały
 ograniczone). Po odblokowaniu wystarczy „Re-run all jobs" na PR — nic w kodzie
 nie wymaga zmiany.
+
+# TURA 4
+
+## #18 — Fazy 3 i 4 w jednym commicie (decyzja, nie problem)
+
+**Co.** CLAUDE.md mówi „commit+push per faza". Fazy 3 (górne menu) i 4 (Library
+w kategoriach) zostały zmergowane w jeden commit.
+
+**Dlaczego.** Menu `Library ▸ kategorie` z fazy 4 jest wpisem w belce z fazy 3,
+a panel Library traci przy tym Room setup / Design settings / Snap (przechodzą do
+menu Settings). Rozbicie na dwa commity wymagałoby wstawienia w fazie 3 kodu
+(„Library ▸ Units…" otwierające pełną listę), który faza 4 natychmiast usuwa —
+czyli commita z kodem, który nigdy nie miał działać.
+
+**Skutek.** Żaden: BUILD-LOG ma oddzielne werdykty dla obu faz, BACKLOG 7–9 mają
+status DONE osobno, a historia nie zawiera martwego kroku. Decyzja nie wymaga
+niczego od Piotra.

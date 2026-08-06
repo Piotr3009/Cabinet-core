@@ -1010,3 +1010,61 @@ dekoru serwowany przez aplikację (145 kB). **381 testów, 0 fail** (9 nowych
 w `test/appearance.test.js`: lista finiszy, cztery poziomy rozstrzygania, „fronty
 dziedziczą korpus", fallback nieistniejącego id, round-trip zapisu, migracja profilu
 sprzed dekorów). Build czysty, tekstury trafiają do `dist/`.
+
+## Fazy 3 + 4 — ekran startowy, górne menu, Library w kategoriach — ✅ ZIELONE
+
+**Uwaga o commicie.** Te dwie fazy to jedna zmiana konstrukcyjna: menu Library ▸
+kategorie (faza 4) JEST elementem górnej belki (faza 3), a panel Library przestaje
+być stałym meblem z Room setup / Design settings / Snap w środku, bo te przenoszą
+się do menu Settings. Rozbicie na dwa commity znaczyłoby wstawienie kodu, który
+drugi commit natychmiast usuwa. Zrobione jednym commitem, opisane tu i w BLOCKERS #18.
+
+**Ekran startowy (styl AutoCAD).** Nazwa u góry po lewej, co MOŻESZ zrobić w kolumnie
+po lewej (New project z nazwą i wymiarem pokoju, Open: All projects / Recent),
+a praca — Recent projects / All projects — wypełnia stronę. Do kanwasu wchodzi się
+**tylko przez projekt**, więc rysunek zawsze do czegoś należy.
+
+Projekty muszą gdzieś BYĆ, a mock-mode nie ma bazy — więc `src/lib/projectLibrary.js`
+to lokalna półka (localStorage) i ona karmi listę Recent. Supabase pozostaje prawdziwym
+domem, gdy jest skonfigurowany: `mergeProjectLists` zszywa obie listy po id (wiersz
+z chmury wygrywa — to ten, który przeżyje tę przeglądarkę) i każdy wiersz mówi, skąd
+jest (`local` / `cloud`). Nowy projekt dostaje pokój **od razu z formularza**, żeby
+pierwsza szafka wpadła w przestrzeń, na którą jest wyceniana, a nie w domyślne 4 × 3.
+
+**Recent = ostatnio OTWARTE**, nie ostatnio zapisane — dwa różne znaczniki
+(`opened_at` / `updated_at`), bo inaczej „ostatnie" to lista tego, co się zapisało
+w tle. Limit 5. Uszkodzona półka (nie-JSON, obcięty JSON, `projects: "nope"`) czyta
+się jako pusta i **nadal da się zapisywać** — crash przy starcie jest nieodwracalny
+dla użytkownika, pusta lista nie.
+
+**Górne menu.** Jedna belka, jeden styl (te same przyciski co Account/Export):
+**File** (New / Open / Save / Save as… / Export ▸ CSV · PDF · Unit DXF ZIP · BOM /
+Close project) · **View** (Outlines, Dimensions, 3D | CNC sheet, Contour view) ·
+**Library ▸ kategorie** · **Settings** (Design settings…, Room setup…, Snap ▸) ·
+**Database** i **Clients** — obecne, wyłączone, z tagiem „soon". Menu jest DANYMI
+(`{ label, items: [...] }`), więc „Print" w przyszłości to jeden wpis, a nie nowy
+komponent; obsługa klawiatury, hover po otwartej belce, podmenu i zamykanie już są.
+Save/Save as żyją w `src/lib/persist.js`: półka zawsze, baza gdy skonfigurowana,
+a odmowa bazy nie unieważnia zapisu — mówi, gdzie plik jednak jest.
+
+**Library w kategoriach.** Menu ▸ **Base units** (BUD, BUDR, SINK, LOW) ·
+**Wall units** (WUD) · **Tall units** (BUDTALL, FRIDGE, WARDROBE) · **Saved sets**
+(soon) · **Media walls** (soon). Klik kategorii → JEDEN pływający panel (grab&move
+zostaje) **przefiltrowany do tej kategorii**, z **przyciskiem X** i Escape. Bez
+kategorii w środku jednej listy.
+
+**Bug znaleziony przy tym w Chromium:** X w nagłówku panelu nic nie robił. Nagłówek
+jest uchwytem do przeciągania i wołał `setPointerCapture`, co przekierowywało zdarzenie
+`click` na nagłówek — przycisk nigdy nie dostawał kliknięcia. Naciśnięcie na KONTROLKĘ
+w nagłówku nie jest chwytem (`if (e.target.closest('button')) return`). Dokładnie ten
+sam mechanizm sprawiał, że panel z tury 3 był niezamykalny.
+
+**Werdykt (Chromium, 20/20 PASS).** Aplikacja otwiera się na ekranie startowym
+(zero `<canvas>` przed projektem) → New project 4200 × 3200 wchodzi do edytora
+z tym pokojem → wszystkie sześć menu na miejscu, Database/Clients wyłączone →
+Library ▸ Base units pokazuje **dokładnie** cztery typy (bez Wardrobe) → X zamyka,
+Escape zamyka → dwie jednostki wstawione z kategorii → File ▸ Save → File ▸ Close
+project wraca na start → projekt jest w Recent z „2 units" i po kliknięciu otwiera
+się z jednostkami. **392 testy, 0 fail** (11 nowych: 8 × półka projektów, 3 ×
+kategorie — w tym „każdy typ w dokładnie jednej kategorii", które łapie zapomniany
+nowy kit).

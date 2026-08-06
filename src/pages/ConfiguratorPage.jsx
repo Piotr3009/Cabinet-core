@@ -4,8 +4,9 @@ import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
-import AddItemsModal from '../components/AddItemsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
+import AddItemsModal from '../components/AddItemsModal.jsx';
+import SaveAsModal from '../components/SaveAsModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
 import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
@@ -16,6 +17,8 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
+import { exportUnitDxfZip } from '../lib/cncExport.js';
+import { persistProject } from '../lib/persist.js';
 
 // Frozen layout (SPEC section 7):
 // topbar / floating Library / white 3D canvas / closable right parameter panel.
@@ -31,6 +34,8 @@ export default function ConfiguratorPage() {
   const units = useProjectStore((s) => s.units);
   const project = useProjectStore((s) => s.project);
   const allResults = useProjectStore((s) => s.allResults);
+  const unitResult = useProjectStore((s) => s.unitResult);
+  const markSaved = useProjectStore((s) => s.markSaved);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectedUnit = units.find((u) => u.id === selectedUnitId) || null;
 
@@ -62,9 +67,35 @@ export default function ConfiguratorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allResults, project, assignments, materials, units.length]);
 
+  /** Every cut part of the SELECTED unit, as one ZIP of DXFs (File ▸ Export). */
+  const onExportDxfZip = useCallback(async () => {
+    const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
+    if (!unit) { notify('Select a unit first — the DXF export is per unit.', 'warn'); return; }
+    try {
+      const { filename, files } = await exportUnitDxfZip(unitResult(unit.id));
+      notify(`${files.length} DXF files exported as ${filename}.`, 'ok');
+    } catch (e) {
+      notify(e.message || 'This unit has no CNC geometry to export.', 'warn');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [units, selectedUnitId, unitResult]);
+
+  /** File ▸ Save as… — a copy under a new name. */
+  const onSaveAs = useCallback(async (name) => {
+    const { project: saved, message, tone } = await persistProject({ project, units, asName: name });
+    markSaved(saved);
+    notify(message, tone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, units, markSaved]);
+
   return (
     <div className="h-full flex flex-col bg-shell-900">
-      <TopBar onExport={() => { setBomOpen(true); }} onAuth={() => openModal('auth')} />
+      <TopBar
+        onExportCsv={onExportCsv}
+        onExportPdf={onExportPdf}
+        onExportDxfZip={onExportDxfZip}
+        onAuth={() => openModal('auth')}
+      />
       <div className="flex-1 relative overflow-hidden">
         {/* The 3D scene stays MOUNTED behind the CNC view: it owns the WebGL
             context the PDF export captures, and re-initialising it on every
@@ -79,7 +110,7 @@ export default function ConfiguratorPage() {
         {units.length === 0 && viewMode === '3d' && (
           <div className="absolute inset-x-0 bottom-10 flex justify-center pointer-events-none">
             <p className="text-neutral-500 text-sm bg-white/80 px-3 py-1.5 rounded border border-neutral-200">
-              Pick a unit from the Library to start.
+              Open Library in the menu and pick a unit to start.
             </p>
           </div>
         )}
@@ -91,6 +122,7 @@ export default function ConfiguratorPage() {
         {modal === 'design' && <DesignSettingsModal />}
         {modal === 'add-items' && selectedUnit && <AddItemsModal unit={selectedUnit} />}
         {modal === 'auth' && <AuthModal />}
+        {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
         <ContextMenu />
         <Toast />
       </div>

@@ -161,7 +161,27 @@ export const useProjectStore = create((set, get) => ({
 
   loadProject: (project, units) => set({
     project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
-    units,
+    units: Array.isArray(units) ? units : [],
+    dirty: false,
+  }),
+
+  /**
+   * A blank project (turn 4: the start screen's New project).
+   *
+   * Deliberately a RESET, not a patch: an empty room, no units, no design
+   * carried over. "New" that inherits the last project's walls is how somebody
+   * quotes a kitchen against the wrong room.
+   */
+  newProject: (name = 'Untitled project') => set({
+    project: {
+      id: null,
+      name: name || 'Untitled project',
+      room: DEFAULT_ROOM,
+      design: migrateDesign(null),
+      jc_tenant_id: null,
+      jc_project_id: null,
+    },
+    units: [],
     dirty: false,
   }),
 

@@ -17,9 +17,19 @@ function loadSnap() {
 }
 
 export const useUiStore = create((set, get) => ({
-  // Floating Library panel (grab & move — SPEC 4.1)
-  libraryPos: { x: 24, y: 88 },
+  // Which screen the app is on (turn 4, BACKLOG #7). The canvas is reached
+  // THROUGH a project — start screen first, always.
+  screen: 'start',                   // 'start' | 'editor'
+  openEditor: () => set({ screen: 'editor' }),
+  goToStart: () => set({ screen: 'start', selectedUnitId: null, selectedSection: null, bomOpen: false }),
+
+  // Floating Library panel (grab & move — SPEC 4.1). Turn 4: it is opened from
+  // the Library MENU, one category at a time, and it has an X (BACKLOG #9).
+  libraryPos: { x: 24, y: 96 },
   setLibraryPos: (pos) => set({ libraryPos: pos }),
+  libraryCategory: null,             // null = the panel is closed
+  setLibraryCategory: (id) => set({ libraryCategory: id || null }),
+  closeLibrary: () => set({ libraryCategory: null }),
 
   // Right parameter panel — closes itself once doors are added (SPEC 4.10)
   rightPanelOpen: true,

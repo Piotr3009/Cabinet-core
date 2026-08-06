@@ -6,7 +6,8 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { FRONT_STYLE_OPTIONS, migrateDesign, colourLabel } from '../engine/design.js';
+import { FRONT_STYLE_OPTIONS, migrateDesign, colourLabel, projectHeights } from '../engine/design.js';
+import { HEIGHT_GROUPS } from '../engine/types.js';
 import { contrastInk } from '../lib/pswColors.js';
 
 // Design Settings — project level (CLAUDE.md phase 6).
@@ -141,6 +142,14 @@ export default function DesignSettingsModal() {
 
         <div className="cc-divider" />
 
+        {/* ── project heights (turn 5, BACKLOG #29) ──
+            A kitchen is built to ONE set of heights. These are the project's;
+            a new unit inherits the one for its kind, and changing one here
+            carries every unit that has not been given its own along with it. */}
+        <ProjectHeights />
+
+        <div className="cc-divider" />
+
         {/* ── standard front + colour ── */}
         <section className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -269,6 +278,72 @@ export default function DesignSettingsModal() {
         </section>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * Project heights (BACKLOG #29).
+ *
+ * The five numbers a workshop agrees once per job. Editing one applies it
+ * immediately to every unit that still follows the project, and SAYS how many
+ * moved — a silent edit that re-cuts nine cabinets is not something to find out
+ * about from the BOM afterwards. A unit given its own height is left alone; the
+ * panel's Reset button is how it rejoins.
+ */
+function ProjectHeights() {
+  const storedDesign = useProjectStore((s) => s.project.design);
+  const setProjectHeightsIn = useProjectStore((s) => s.setProjectHeights);
+  const units = useProjectStore((s) => s.units);
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const notify = useUiStore((s) => s.notify);
+  const heights = useMemo(() => projectHeights(storedDesign, profile), [storedDesign, profile]);
+
+  const custom = units.filter((u) => u.params.height_custom).length;
+  const limits = profile.projectHeights;
+
+  const rows = [
+    ...HEIGHT_GROUPS.map((g) => ({ key: g.id, label: g.label, hint: g.hint })),
+    { key: 'wallMount', label: 'Wall mount height', hint: 'How high a wall unit hangs' },
+    { key: 'toeKick', label: 'Toe kick height', hint: 'The legs, and the plinth that hides them' },
+  ];
+
+  const apply = (key, value) => {
+    const { moved, notices } = setProjectHeightsIn({ [key]: value });
+    for (const n of notices) notify(n, 'warn');
+    if (moved) notify(`${moved} unit${moved === 1 ? '' : 's'} followed the new height.`, 'ok');
+  };
+
+  return (
+    <section className="space-y-2">
+      <div className="cc-row">
+        <span className="text-xs uppercase tracking-wide text-ink-200">Project heights</span>
+        {custom > 0 && (
+          <span className="text-[11px] text-ink-400">
+            {custom} unit{custom === 1 ? '' : 's'} on a custom height — left alone
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {rows.map((r) => (
+          <label key={r.key} className="block">
+            <span className="cc-label">{r.label}</span>
+            <NumberField
+              className="cc-input text-right"
+              min={limits.min}
+              max={limits.max}
+              title={r.hint}
+              value={heights[r.key]}
+              onCommit={(v) => apply(r.key, v)}
+            />
+            <span className="block text-[10px] text-ink-400 mt-0.5">{r.hint}</span>
+          </label>
+        ))}
+      </div>
+      <p className="text-[11px] text-ink-400">
+        A new unit is built to the height for its kind. A low cabinet keeps its own — being lower
+        is what it is for.
+      </p>
+    </section>
   );
 }
 

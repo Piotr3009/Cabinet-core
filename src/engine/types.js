@@ -19,6 +19,9 @@
 export const UNIT_TYPES = {
   WARDROBE: {
     id: 'WARDROBE',
+    // Height group (turn 5, BACKLOG #29): which PROJECT height a new one of
+    // these inherits. null = this kit's height is its identity and is left alone.
+    heightGroup: 'tall',
     label: 'Wardrobe',
     family: 'wardrobe',
     lisp: 'KIT_WARDROBE_FULL.lsp',
@@ -38,6 +41,7 @@ export const UNIT_TYPES = {
   },
   BUD: {
     id: 'BUD',
+    heightGroup: 'base',
     label: 'Base unit',
     family: 'kitchen',
     lisp: 'KIT_BUD_FULL.lsp',
@@ -57,6 +61,7 @@ export const UNIT_TYPES = {
   },
   BUDR: {
     id: 'BUDR',
+    heightGroup: 'base',
     label: 'Base unit — 3 drawers',
     family: 'kitchen',
     lisp: 'KIT_BUDR_FULL.lsp',
@@ -81,6 +86,7 @@ export const UNIT_TYPES = {
   },
   WUD: {
     id: 'WUD',
+    heightGroup: 'wall',
     label: 'Wall unit',
     family: 'kitchen',
     lisp: 'KIT_WUD_FULL.lsp',
@@ -100,6 +106,7 @@ export const UNIT_TYPES = {
   },
   BUDTALL: {
     id: 'BUDTALL',
+    heightGroup: 'tall',
     label: 'Tall unit',
     family: 'kitchen',
     lisp: 'KIT_BUDTALL_FULL.lsp',
@@ -119,6 +126,9 @@ export const UNIT_TYPES = {
   },
   LOW_CABINET: {
     id: 'LOW_CABINET',
+    // A low cabinet that inherits the 720 mm base height is a base unit with
+    // another name; its whole point is to be lower, so it keeps its own.
+    heightGroup: null,
     label: 'Low cabinet',
     family: 'kitchen',
     lisp: 'KIT_LOW_CABINET_FULL.lsp',
@@ -141,6 +151,7 @@ export const UNIT_TYPES = {
   },
   SINK: {
     id: 'SINK',
+    heightGroup: 'base',
     label: 'Sink base',
     family: 'kitchen',
     lisp: 'KIT_SINK.lsp',
@@ -160,6 +171,7 @@ export const UNIT_TYPES = {
   },
   FRIDGE: {
     id: 'FRIDGE',
+    heightGroup: 'tall',
     label: 'Fridge housing',
     family: 'kitchen',
     lisp: 'KIT_FRIDGE.lsp',
@@ -208,6 +220,20 @@ export function getCategory(id) {
 /** Which category a type is filed under, or null. */
 export function categoryOf(typeId) {
   return UNIT_CATEGORIES.find((c) => c.types.includes(typeId)) || null;
+}
+
+/**
+ * Which PROJECT height a type inherits (turn 5, BACKLOG #29), or null when the
+ * type's own height is the point of it.
+ */
+export const HEIGHT_GROUPS = [
+  { id: 'base', label: 'Base height', hint: 'Base, drawer and sink units' },
+  { id: 'wall', label: 'Wall unit height', hint: 'Wall units' },
+  { id: 'tall', label: 'Tall height', hint: 'Tall, fridge housing and wardrobe' },
+];
+
+export function heightGroupOf(typeId) {
+  return getUnitType(typeId).heightGroup ?? null;
 }
 
 export function getUnitType(typeId) {

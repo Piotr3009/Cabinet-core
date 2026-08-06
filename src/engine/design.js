@@ -49,7 +49,14 @@ export const DEFAULT_DESIGN = {
   // Defaults the "Add end panel" action inherits (turn 4, BACKLOG #17).
   // `thickness: null` = the project's front thickness.
   endPanel: { height: 'floor', thickness: null, applyToAll: true },
+  // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
+  // which is what a project that has never opened the section means. Resolved
+  // through projectHeights() below, so a stored null and a stored number behave
+  // the same everywhere.
+  heights: { base: null, wall: null, tall: null, wallMount: null, toeKick: null },
 };
+
+export const HEIGHT_KEYS = ['base', 'wall', 'tall', 'wallMount', 'toeKick'];
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
@@ -87,7 +94,53 @@ export function migrateDesign(design) {
       thickness: Number(d.endPanel?.thickness) > 0 ? Number(d.endPanel.thickness) : null,
       applyToAll: d.endPanel?.applyToAll !== false,
     },
+    heights: Object.fromEntries(HEIGHT_KEYS.map((k) => [
+      k, Number(d.heights?.[k]) > 0 ? Number(d.heights[k]) : null,
+    ])),
   };
+}
+
+// ─── Project heights (turn 5, BACKLOG #29) ───
+
+/**
+ * The heights this project builds to: its own where it has set one, the
+ * profile's where it has not. One resolution point, so the settings panel, the
+ * "does this unit still match the project?" check and the code that places a
+ * new unit can never disagree about what "the project's tall height" is.
+ */
+export function projectHeights(design, profile) {
+  const stored = migrateDesign(design).heights;
+  const fromProfile = profile?.projectHeights || {};
+  return Object.fromEntries(HEIGHT_KEYS.map((k) => [
+    k, Number(stored[k]) > 0 ? Number(stored[k]) : Number(fromProfile[k]) || 0,
+  ]));
+}
+
+/**
+ * The height a NEW unit of this type takes, or null when the type has none —
+ * a low cabinet's height is its identity, so the project does not overrule it
+ * and the kit's own default stands.
+ *
+ * `heightGroupOf` is passed in rather than imported: engine/types.js imports
+ * nothing from here and this imports nothing from there, which keeps the two
+ * ends of the same idea from becoming a cycle.
+ */
+export function heightForGroup(group, design, profile) {
+  if (!group) return null;
+  const heights = projectHeights(design, profile);
+  return heights[group] || null;
+}
+
+/**
+ * Is this unit's height still the project's, or has it been set by hand?
+ *
+ * The FLAG is what the panel shows and what "apply the new project height"
+ * respects — a unit is custom because somebody said so, not because a number
+ * happens to differ. Without that, a unit clamped to 2140 mm by a low ceiling
+ * would look custom for ever and stop following the project.
+ */
+export function isCustomHeight(unit) {
+  return Boolean(unit?.params?.height_custom);
 }
 
 export function normaliseColour(colour) {

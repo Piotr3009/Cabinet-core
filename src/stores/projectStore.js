@@ -4,14 +4,16 @@ import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
-  clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, endPanelPads,
+  clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, endPanelPads,
   freeSlotOnWall, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
   wallObstacles,
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls,
 } from '../engine/room.js';
-import { migrateDesign, normaliseDoorStyle, setCarcassTypeCount } from '../engine/design.js';
+import {
+  HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
+} from '../engine/design.js';
 import { autoPartsFor, takesPlinth, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';
 import { drawersInEngineOrder, nextHangerOffset, nextShelfPos, shelvesInEngineOrder } from '../engine/items.js';
 
@@ -26,7 +28,7 @@ const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 
 export const DEFAULT_ROOM = ENGINE_DEFAULT_ROOM;
 
-function newUnit(typeId, profile, index) {
+function newUnit(typeId, profile, index, design) {
   const type = getUnitType(typeId);
   const params = defaultParamsFor(type.id, profile);
   // A drawer unit IS its drawers — the LISP kit has no "how many" question, so
@@ -40,12 +42,35 @@ function newUnit(typeId, profile, index) {
     position: { wall: 0, x_mm: 0, rotation_deg: 0 },
     params: {
       ...params,
+      // The unit arrives at the PROJECT's heights (turn 5, BACKLOG #29): a
+      // kitchen is built to one set of them, so a new cabinet matching the run
+      // beside it is the default and a different height is the exception.
+      ...projectHeightParams(type, design, profile),
       unit_num: `${UNIT_NUM_PREFIX[type.id] ?? ''}${String(index + 1).padStart(2, '0')}`,
       // Doors are the LAST step (SPEC 4.10) — except where the type has none.
       doors: type.supports.doors ? false : null,
       sections: [{ width_mm: params.width, items }],
       materials: {},
     },
+  };
+}
+
+/**
+ * The height parameters a unit of this type INHERITS from the project: its
+ * carcass height (when its kind has a project height at all), the toe kick it
+ * stands on, and — for a wall unit — how high it hangs.
+ *
+ * `height_custom: false` is written explicitly rather than left undefined: it
+ * is the answer to "did somebody set this by hand?", and the panel and the
+ * project-wide push both read it.
+ */
+function projectHeightParams(type, design, profile) {
+  const heights = projectHeights(design, profile);
+  const group = type.heightGroup ?? null;
+  return {
+    ...(group ? { height: heights[group], height_custom: false } : { height_custom: false }),
+    ...(type.mount === 'wall' ? { mount_height: heights.wallMount } : {}),
+    ...(type.legs ? { leg_height: heights.toeKick } : {}),
   };
 }
 
@@ -526,7 +551,7 @@ export const useProjectStore = create((set, get) => ({
   addUnit: (typeId) => {
     const profile = getCabinetProfile();
     const state = get();
-    const unit = newUnit(typeId, profile, state.units.length);
+    const unit = newUnit(typeId, profile, state.units.length, state.project.design);
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -619,6 +644,22 @@ export const useProjectStore = create((set, get) => ({
       applied.depth = clamp.depth;
       if (clamp.blocked) notices.push(`Depth limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
     }
+    if (patch.height != null) {
+      const clamp = clampUnitHeight({
+        height: Number(patch.height) || 0,
+        floorY: floorYOf(unit, applied, profile),
+        roomHeight: Number(s.project.room.height) || 0,
+        minHeight: minHeightOf(unit.type, profile),
+      });
+      applied.height = clamp.height;
+      if (clamp.blocked) notices.push(`Height limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
+      // Typing a height into the panel is the DELIBERATE exception (BACKLOG
+      // #29): from here this unit keeps its own height and stops following the
+      // project's, until Reset puts it back. The project-wide push passes the
+      // flag itself, which is how it can move a unit without claiming a joiner
+      // did it by hand.
+      if (patch.height_custom === undefined) applied.height_custom = true;
+    }
 
     set((st) => ({
       units: st.units.map((u) => {
@@ -638,6 +679,73 @@ export const useProjectStore = create((set, get) => ({
     if (patch.height != null || applied.width != null) get().reclampShelves(unitId);
     notices.push(...get().refreshAutoParts());
     return { applied, notices };
+  },
+
+  // ── project heights (turn 5, BACKLOG #29) ────────────────────────────────
+  // A kitchen is built to ONE set of heights. They live with the project, a new
+  // unit inherits the one for its kind, and changing a project height carries
+  // every unit that has not been given its own along with it.
+
+  /**
+   * Set one or more project heights and apply them.
+   *
+   * @param {object} patch  { base?, wall?, tall?, wallMount?, toeKick? } in mm
+   * @returns {{applied:object, moved:number, notices:string[]}}
+   *          `moved` is how many units followed the change, which is what the
+   *          panel says out loud — a silent edit that re-cuts nine cabinets is
+   *          not something to find out about from the BOM.
+   */
+  setProjectHeights: (patch) => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const limits = profile.projectHeights;
+    const design = migrateDesign(s.project.design);
+    const heights = { ...design.heights };
+    const applied = {};
+    for (const key of HEIGHT_KEYS) {
+      if (patch[key] == null) continue;
+      const value = Math.min(limits.max, Math.max(limits.min, Number(patch[key]) || 0));
+      heights[key] = value;
+      applied[key] = value;
+    }
+    if (!Object.keys(applied).length) return { applied: {}, moved: 0, notices: [] };
+
+    const nextDesign = migrateDesign({ ...design, heights });
+    set((st) => ({ project: { ...st.project, design: nextDesign }, dirty: true }));
+
+    const resolved = projectHeights(nextDesign, profile);
+    const notices = [];
+    let moved = 0;
+    for (const unit of get().units) {
+      const type = getUnitType(unit.type);
+      const group = type.heightGroup ?? null;
+      const changes = {};
+      // The carcass height — only for a unit that still follows the project.
+      if (group && applied[group] != null && !unit.params.height_custom) {
+        changes.height = resolved[group];
+        changes.height_custom = false;
+      }
+      if (applied.wallMount != null && type.mount === 'wall') changes.mount_height = resolved.wallMount;
+      if (applied.toeKick != null && type.legs) changes.leg_height = resolved.toeKick;
+      if (!Object.keys(changes).length) continue;
+      const result = get().updateUnitParams(unit.id, changes);
+      moved += 1;
+      for (const n of result.notices) notices.push(`${unit.params.unit_num}: ${n}`);
+    }
+    return { applied, moved, notices };
+  },
+
+  /** Put a unit back on the project's height for its kind. */
+  resetUnitHeight: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const profile = getCabinetProfile();
+    const type = getUnitType(unit.type);
+    const group = type.heightGroup ?? null;
+    if (!group) return null;
+    const height = projectHeights(s.project.design, profile)[group];
+    return get().updateUnitParams(unitId, { height, height_custom: false });
   },
 
   /** Slide a unit along the wall: snapped, then hard-clamped into its free slot. */
@@ -1077,6 +1185,29 @@ useProjectStore.subscribe((state) => saveCache(state));
  * level. A wall unit hangs ABOVE a base unit — that is how a kitchen is built,
  * not an overlap, so they never constrain each other.
  */
+/**
+ * How far off the floor this unit's carcass starts: its toe kick when it stands
+ * on legs, its mounting height when it hangs. That is what a height has to fit
+ * UNDER the ceiling on top of.
+ */
+function floorYOf(unit, applied, profile) {
+  const type = getUnitType(unit.type);
+  if (type.mount === 'wall') {
+    return Number(applied?.mount_height ?? unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight) || 0;
+  }
+  if (!type.legs) return 0;
+  const own = Number(applied?.leg_height ?? unit.params.leg_height);
+  if (Number.isFinite(own) && own >= 0) return own;
+  return type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight;
+}
+
+/** The type's own minimum height, if its kit declares one (engine/types.js). */
+function minHeightOf(typeId, profile) {
+  const key = getUnitType(typeId).minHeightKey;
+  if (!key) return 0;
+  return Number(key.split('.').reduce((acc, k) => (acc == null ? acc : acc[k]), profile)) || 0;
+}
+
 function neighboursOf(state, unit) {
   const level = getUnitType(unit.type).mount;
   // Every wall, not just this one: a unit around the corner is a neighbour the

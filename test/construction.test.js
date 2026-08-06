@@ -132,7 +132,12 @@ test('adding the plinth and the top infill makes them real; removing them makes 
   assert.equal(store().setTopInfill(id, 300), 300);
   assert.equal(partsOf(id, 'INFILL').find((p) => p.meta.side === 'top').h, 300);
   const toCeiling = store().fillToCeiling(id);
-  assert.equal(toCeiling, 2500 - (770 + P.baseUnit.legHeight));
+  // Turn 5 (BACKLOG #29): a new base unit arrives at the PROJECT's base height,
+  // not at the kit's own default — so the gap to the ceiling is measured from
+  // that. The number is read from the unit rather than written out again, so
+  // this test says "to the ceiling" and not "to 1630".
+  assert.equal(toCeiling, 2500 - (unitOf(id).params.height + P.projectHeights.toeKick));
+  assert.equal(unitOf(id).params.height, P.projectHeights.base, 'inherited, not the kit default');
 
   store().removePlinth(id);
   store().removeTopInfill(id);

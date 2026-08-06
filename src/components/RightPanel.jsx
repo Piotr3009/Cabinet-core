@@ -3,10 +3,10 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
-import { getUnitType } from '../engine/types.js';
+import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
 import { roomWalls } from '../engine/room.js';
-import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
+import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
@@ -61,6 +61,7 @@ export default function RightPanel() {
   const removeEndPanel = useProjectStore((s) => s.removeEndPanel);
   const updateEndPanel = useProjectStore((s) => s.updateEndPanel);
   const setEndPanelDefaults = useProjectStore((s) => s.setEndPanelDefaults);
+  const resetUnitHeight = useProjectStore((s) => s.resetUnitHeight);
   // Select the STORED value and migrate in a memo: a selector that builds a
   // new object every call makes zustand's snapshot change on every render,
   // which React reports as "Maximum update depth exceeded".
@@ -91,6 +92,11 @@ export default function RightPanel() {
   const hasDoors = Boolean(unit?.params.doors) && unit.params.doors !== false;
   const DR = profile.wardrobe.drawers;
   const hardware = materials.filter((m) => m.category === 'hardware');
+  // Which PROJECT height this unit follows, if its kind has one at all
+  // (BACKLOG #29). A low cabinet has none — being lower is what it is for.
+  const heightGroup = type?.heightGroup ?? null;
+  const heightGroupLabel = HEIGHT_GROUPS.find((g) => g.id === heightGroup)?.label || 'height';
+  const projectHeight = heightGroup ? projectHeights(design, profile)[heightGroup] : null;
 
   const addDoors = () => {
     const count = doorCountFor(unit.params.width, profile);
@@ -124,7 +130,17 @@ export default function RightPanel() {
           <div className="grid grid-cols-3 gap-2">
             {[['width', 'Width'], ['height', 'Height'], ['depth', 'Depth']].map(([key, label]) => (
               <div key={key}>
-                <span className="cc-label">{label}</span>
+                <span className="cc-label">
+                  {label}
+                  {/* Turn 5 (BACKLOG #29): a height typed here is a DELIBERATE
+                      exception to the project's, so the field says so and offers
+                      the way back rather than leaving the unit quietly adrift. */}
+                  {key === 'height' && heightGroup && unit.params.height_custom && (
+                    <span className="ml-1 text-gold" title={`The project builds these at ${formatMm(projectHeight)} mm`}>
+                      custom
+                    </span>
+                  )}
+                </span>
                 <NumberField
                   value={unit.params[key]}
                   onCommit={(v) => {
@@ -137,6 +153,31 @@ export default function RightPanel() {
               </div>
             ))}
           </div>
+
+          {heightGroup && (
+            <div className="cc-row text-[11px] text-ink-400">
+              <span>
+                {unit.params.height_custom
+                  ? `Project ${heightGroupLabel.toLowerCase()} is ${formatMm(projectHeight)} mm`
+                  : `Follows the project ${heightGroupLabel.toLowerCase()} (${formatMm(projectHeight)} mm)`}
+              </span>
+              <button
+                type="button"
+                className="cc-btn px-2"
+                disabled={!unit.params.height_custom}
+                title={unit.params.height_custom
+                  ? 'Put this unit back on the project height'
+                  : 'This unit is already on the project height'}
+                onClick={() => {
+                  const { notices } = resetUnitHeight(unit.id) || { notices: [] };
+                  for (const n of notices) notify(n, 'warn');
+                  notify(`Back on the project ${heightGroupLabel.toLowerCase()}.`, 'ok');
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <div>

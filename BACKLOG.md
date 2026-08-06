@@ -75,8 +75,11 @@ Status: OPEN → TURA-N (przypisane) → DONE.
 ## KOLEJKA (po turze 4)
 19b. [NOWE, MEDIUM] Widok konturowy: druk/eksport konturów do pliku (dziś tryb ekranowy).
      Wynikło z #18 — Piotr może chcieć PDF-a z samych konturów, nie zrzutu ekranu.
-19. [MEDIUM] Egger/producenci: import katalogów dekorów (infrastruktura z pkt 4 gotowa).
-    BLOKADA: licencja na grafiki w aplikacji komercyjnej — sprawdza Claude (czat).
+19. [MEDIUM] Dekory producentów — Egger UK / FINSA UK / Kronospan UK: import decor pack
+    per warsztat; paczka Skylona w przygotowaniu (86 dekorów zebrane 06.08, składanie po
+    komplecie ZIP-ów). Storage: Supabase bucket `decors` (decyzja 06.08), w repo tylko JSON
+    + miniaturki. Licencja Egger przeczytana: swatche z atrybucją 'EGGER + kod' OK;
+    tekstury 3D → pisemna zgoda PRZED sprzedażą CC / publicznym demo (mail-draft u Claude).
 20. [MEDIUM] Infille/plinth w kształcie L (przykręcane do boku) — na razie proste (decyzja Piotra).
 21. [MEDIUM] VCarve — drobiazgi do zmiany (listę poda Piotr).
 22. [MEDIUM] Rzuty z góry / dokumentacja do druku; Print w menu File.
@@ -90,3 +93,24 @@ Status: OPEN → TURA-N (przypisane) → DONE.
 JC integracja (Stock live, push BOM — endpointy tylko w czacie) · uchwyty · nesting 2D ·
 PWA/offline/ikona · tryb demo · fronty inset (czekają liczby od Piotra) · model biznesowy ·
 BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ciąg (pyt. 4 z audytu t3).
+
+## DOPISANE PO TURZE 4 (sesje czatu 05-06.08)
+28. [MEDIUM] Puzzle przy płytkich korpusach: poniżej ~260 mm głębokości dwa sockety
+    kolidują (95 od końców, ±25.5) — przełącznik w profilu: 1 socket na środku;
+    LISP tego przypadku nie znał. Fix w czacie + kontrolny DXF do VCarve.
+29. [HIGH] Wysokości na poziomie PROJEKTU (Design Settings): Base height / Wall unit
+    height / Tall height / Mount height / Toe kick height jako defaulty; jednostka
+    dziedziczy, per sztukę tylko wyjątki.
+30. [HIGH] "Save as template": skonfigurowana jednostka → zapis do Library "Saved sets".
+31. [MEDIUM] End panel: wybór boku L / P / oba (rozszerzenie #17).
+32. [LOW] Insets jednostki od sąsiada/ściany (rura, krzywa ściana) — menu kontekstowe.
+33. [CRITICAL] Precyzja 0.5 mm end-to-end: wyświetlanie/pola/snap/etykiety pokazują
+    połówki (196.5), zero Math.round na mm w UI; silnik już liczy dokładnie.
+34. [HIGH] Strzałki wymiarowe architektoniczne: cienkie linie (czerwień/granat),
+    groty kreskowe/otwarte jak na rzutach, koniec z wypełnionymi balonami;
+    BUG: groty odwrócone — naprawić.
+35. [HIGH] BUG preset CNC "Carcass only": ma znaczyć "wszystko NIE-sprayowane"
+    (korpusy, półki, skrzynki, plecy) i wykluczać widoczne/wykańczane: fronty,
+    drzwi, infille, plinth, end panele, spodnią widoczną wiszących.
+36. [MEDIUM] Menu: przycisk "Spraying" — placeholder ("coming soon"); logika
+    (finish per element, lista, m², cena) — projektujemy osobno w czacie [PARKING].

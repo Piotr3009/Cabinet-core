@@ -361,3 +361,31 @@ niedoróbka parsera.
 obrys siedzi na osobnej warstwie, dołożenie filtra warstwy to jedna pętla.
 Jeśli w rzutach bywają ściany po łuku — to jest zmiana modelu pokoju i musi
 być świadoma.
+
+## #17 — GitHub Actions nie przydziela runnera; CI tury 3 nie wystartowało
+
+**Co to.** Workflow `.github/workflows/ci.yml` jest `active` i wpięty
+w `push → main` oraz `pull_request → main`. Mimo to:
+
+- PR tury 3 (#3, utworzony 19:47, plus push na gałąź o 19:50) **nie doczekał
+  się żadnego przebiegu CI** — jedyny check na PR to „Vercel Preview Comments".
+- Ostatni bieg CI w ogóle, `run_number 3`, wywołany Twoim własnym pushem na
+  main (`e79ddc5`, 17:43), **stał w kolejce 15 minut i został anulowany** bez
+  wykonania choćby kroku `checkout` (`conclusion: cancelled`, zero failed jobs).
+
+To jest sygnatura **wyczerpanego limitu minut / wyłączonego billingu Actions**
+na koncie, a nie błędu w repo: plik workflow się nie zmienił od tury 2, kiedy
+przebiegi 1 i 2 poszły zielone w ~40 sekund.
+
+**Czego NIE zrobiłem.** Nie dotknąłem `ci.yml` — działający plik, którego
+zepsucie „na próbę" tylko zamazałoby prawdziwą przyczynę. Nie udawałem też
+w BUILD-LOG, że CI jest zielone.
+
+**Co jest zweryfikowane zamiast tego.** `npm ci && npm test && npm run build`
+lokalnie na Node 22: **357 pass / 0 fail**, build czysty. Plus przebieg
+end-to-end w Chromium: 10/10, zero błędów w konsoli.
+
+**Decyzja dla Piotra.** Sprawdź **Settings → Billing → Actions** (limit minut
+darmowego planu) oraz **Settings → Actions → General** (czy Actions nie zostały
+ograniczone). Po odblokowaniu wystarczy „Re-run all jobs" na PR — nic w kodzie
+nie wymaga zmiany.

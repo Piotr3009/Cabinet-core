@@ -596,8 +596,18 @@ przy zmiennych szufladach). Plus wciąż otwarte #1–#6 z tury 1.
 
 # TURA 3 — 06.08.2026 (autonomia, jedna sesja)
 
-Baza wejściowa: **158/158**, CI zielone. Baza wyjściowa: **357/357**, CI zielone.
-199 nowych testów, podłoga 158 nie spadła ani razu w żadnej fazie.
+Baza wejściowa: **158/158**. Baza wyjściowa: **357/357** lokalnie
+(`npm test` + `npm run build`, Node 22). 199 nowych testów, podłoga 158 nie
+spadła ani razu w żadnej fazie.
+
+**CI nie wystartowało — i to nie jest wina kodu.** Workflow `ci.yml` jest
+`active` i wpięty w `pull_request → main`, ale GitHub Actions nie utworzył
+żadnego przebiegu ani dla tego PR-a, ani wcześniej: ostatni bieg CI (Twój
+własny push na main, `e79ddc5`, 17:43) stał w kolejce 15 minut i został
+**anulowany bez przydzielenia runnera**. To sygnatura wyczerpanych minut /
+limitu Actions na koncie, nie błędu w repo. Opisane w BLOCKERS #17 — do
+sprawdzenia w ustawieniach billingu. Werdykty niżej opierają się na przebiegu
+lokalnym i na realnym prowadzeniu przeglądarki, nie na zielonym znaczku.
 
 Rozkład: `types` 104, `collision` 34, `room` 21, `drawer-heights` 13,
 `collision-resize` 20, `dxf` 13, `hardware` 13, `dimensions` 12, `dxf-sheet` 10,
@@ -884,4 +894,4 @@ ręcznie, kolory czytane z pliku referencyjnego, `jszip` bez zmian.
 **Do decyzji Piotra:** BLOCKERS #13 (oklejanie holderów SINK — sprzeczność
 w LISP-ie), #14 (cokół per jednostka vs per ciąg), #15 (`verify_with_piotr`
 z sześciu nowych fixtures — TO JEST NAJPILNIEJSZE), #16 (import DXF: skala
-i wybór obrysu). Plus wciąż otwarte #1–#6 z tury 1 i #8–#12 z tury 2.
+i wybór obrysu), #17 (Actions nie przydziela runnera — do sprawdzenia billing). Plus wciąż otwarte #1–#6 z tury 1 i #8–#12 z tury 2.

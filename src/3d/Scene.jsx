@@ -124,6 +124,7 @@ export default function Scene({ onCaptureReady }) {
   const openContextMenu = useUiStore((s) => s.openContextMenu);
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
   const showDimensions = useUiStore((s) => s.showDimensions);
+  const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
   const profile = useCabinetProfileStore((s) => s.profile);
@@ -208,7 +209,13 @@ export default function Scene({ onCaptureReady }) {
       {/* Contour view is for a render or a printout: the numbers would be
           in the way of the only thing it is for. */}
       {showDimensions && !contourView && (
-        <DistanceArrows walls={walls} units={measured} roomCentre={bounds.centre} profile={profile} />
+        <DistanceArrows
+          walls={walls}
+          units={measured}
+          roomCentre={bounds.centre}
+          profile={profile}
+          colourKey={dimensionColour}
+        />
       )}
 
       <FocusRig request={focusRequest} orbitRef={orbitRef} onDone={clearFocus} />

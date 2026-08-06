@@ -336,6 +336,7 @@ export default function CncView() {
               key={p.id}
               type="button"
               aria-pressed={activePreset === p.id}
+              title={p.hint || ''}
               className={`px-1.5 py-1 text-[11px] rounded border transition-colors ${activePreset === p.id
                 ? 'bg-gold text-shell-900 border-gold font-medium'
                 : 'border-shell-600 text-ink-100 hover:bg-shell-700'}`}
@@ -346,7 +347,10 @@ export default function CncView() {
           ))}
         </div>
         <p className="px-2.5 pt-1.5 text-[10px] text-ink-400">
-          {activePreset === 'custom' ? 'Custom selection' : 'Preset selection'} — the preview shows what will be exported.
+          {activePreset === 'custom'
+            ? 'Custom selection'
+            : (EXPORT_PRESETS.find((p) => p.id === activePreset)?.hint || 'Preset selection')}
+          {' '}— the preview shows what will be exported.
         </p>
 
         {listOpen && (

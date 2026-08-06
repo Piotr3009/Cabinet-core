@@ -421,13 +421,38 @@ export const DEFAULT_CABINET_PROFILE = {
     itemStackPitch: 350,
   },
 
-  // ─── Distance arrows on the canvas (CLAUDE.md turn 3, phase 8) ───
+  // ─── Distance arrows on the canvas (turn 3 phase 8; redrawn turn 5, #34) ───
   // The measurements the toolbar draws: unit to unit, and unit to wall.
+  //
+  // Turn 5 draws them the way a drawing office does. Filled cones pointing the
+  // wrong way are gone; what is left is a thin line, extension lines out to the
+  // faces being measured, an architectural tick across each end, and the value
+  // in the middle. Every number below is in ROOM millimetres, so the annotation
+  // scales with the drawing instead of with the camera.
   dimensions: {
     minGap: 2,            // below this the two things are touching, not spaced
-    arrowHead: 45,        // length of the arrow head, in room mm
+    arrowHead: 45,        // length of the tick / open head, in room mm
     standoff: 90,         // how far in front of the units the line is drawn
     height: 120,          // how high above a unit's base the line floats
+    // "1 px look": the thinnest bar that survives being rasterised at the
+    // distances this scene is viewed from. Thinner and the line strobes.
+    lineWeight: 3,
+    extension: 110,       // extension line, from the measured face outwards
+    extensionGap: 18,     // …starting this far off the face, as a draughtsman does
+    tickAngle: 45,        // the oblique architectural tick, in degrees
+    // How the ends are drawn: 'tick' = the 45° slash of an architectural
+    // drawing, 'open' = a two-stroke arrowhead with nothing filled in.
+    head: 'tick',
+    // Which way the value sits off the line.
+    labelOffset: 70,
+    // The two inks of a technical drawing. Navy is the default; red is the
+    // option in View ▸ Dimension colour. Nothing else on the canvas is either
+    // colour, so a measurement never reads as part of the furniture.
+    colours: {
+      navy: '#1B2A4A',
+      red: '#8C182B',
+    },
+    defaultColour: 'navy',
   },
 };
 

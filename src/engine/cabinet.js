@@ -277,12 +277,35 @@ function clampInt(value, min, max) {
 
 // ─── Panel record helper ───
 
+/**
+ * Is this piece a FINISHED surface — one the sprayer sees (BACKLOG #35)?
+ *
+ * Decided on the ROLE, never on a list of panel ids: a kit that adds a part
+ * nobody thought of gets the right answer for free, and a preset built on this
+ * flag cannot go stale the way "carcass only = these seven ids" did.
+ *
+ * Exposed (sprayed / finished): doors and drawer fronts, the scribe fillers and
+ * top infill, the plinth, and the end panels that mask a run. All of them are
+ * seen from the room.
+ *
+ * Not exposed: sides, top, bottom, back, holders, spurs, shelves, partitions
+ * and rail partitions, the drawer panel and its fillers, and every part of a
+ * drawer box. They live inside a carcass or behind a door — the workshop cuts
+ * them from finished board and they never reach the spray booth.
+ */
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel']);
+
+export function isFinishExposed(role) {
+  return FINISH_EXPOSED_ROLES.has(role);
+}
+
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
   return {
     id,
     part,
     role,
     material_role: role === 'front' ? 'front' : 'board',
+    finish_exposed: isFinishExposed(role),
     w: roundTo(w, 4),
     h: roundTo(h, 4),
     qty: 1,

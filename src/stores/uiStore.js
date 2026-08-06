@@ -54,6 +54,12 @@ export const useUiStore = create((set, get) => ({
   setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
   toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
 
+  // Which ink the distance dimensions are drawn in (turn 5, BACKLOG #34).
+  // A drawing office uses one or the other; the hexes themselves live in
+  // profile.dimensions.colours, so this is only WHICH, never what.
+  dimensionColour: 'navy',           // 'navy' | 'red'
+  setDimensionColour: (key) => set({ dimensionColour: key === 'red' ? 'red' : 'navy' }),
+
   // Thin black contours on every piece — ON by default (turn 4, BACKLOG #5).
   showOutlines: true,
   setShowOutlines: (v) => set({ showOutlines: Boolean(v) }),

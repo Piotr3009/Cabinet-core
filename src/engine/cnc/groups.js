@@ -52,15 +52,51 @@ export function groupPanels(panels) {
 }
 
 /**
+ * Is this part a finished surface? The engine stamps `finish_exposed` on every
+ * panel from its role (engine/cabinet.js); this is the reader, with the same
+ * answer for a panel that predates the flag — a project cached before turn 5
+ * must not send its doors to the machine as "not sprayed".
+ */
+export function isExposed(panel) {
+  if (typeof panel?.finish_exposed === 'boolean') return panel.finish_exposed;
+  return EXPOSED_ROLES.has(panel?.role);
+}
+
+const EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel']);
+
+/**
  * The presets, by name. Each one answers "is this part in?" — so a preset is
  * evaluated against the real parts of the real unit and cannot go stale when
  * a type adds a part nobody thought of.
+ *
+ * Turn 5 (BACKLOG #35): "Carcass only" was a lie. It selected the carcass GROUP,
+ * which put the plinth and the infills — pieces that get sprayed — on the same
+ * sheet as the boxes, and left the shelves and the drawer boxes off it. What
+ * the workshop actually wants to cut in one go is EVERYTHING THAT IS NOT
+ * SPRAYED, which is the flag above and not a group at all: carcasses, shelves,
+ * backs, partitions and rail partitions, drawer panels, fillers and drawer
+ * boxes in; doors, drawer fronts, infills, plinth and end panels out.
  */
 export const EXPORT_PRESETS = [
   { id: 'all', label: 'All', includes: () => true },
-  { id: 'carcass', label: 'Carcass only', includes: (p) => groupOfPanel(p) === 'carcass' },
-  { id: 'no-drawers', label: 'All without drawers', includes: (p) => groupOfPanel(p) !== 'drawers' },
-  { id: 'fronts', label: 'Fronts & doors only', includes: (p) => groupOfPanel(p) === 'fronts' },
+  {
+    id: 'non-sprayed',
+    label: 'Non-sprayed',
+    hint: 'Everything the spray booth never sees — carcasses, shelves, backs, drawer boxes',
+    includes: (p) => !isExposed(p),
+  },
+  {
+    id: 'sprayed',
+    label: 'Sprayed only',
+    hint: 'The finished faces — fronts, infills, plinth, end panels',
+    includes: (p) => isExposed(p),
+  },
+  {
+    id: 'fronts',
+    label: 'Fronts & doors only',
+    hint: 'Doors and drawer fronts, nothing else',
+    includes: (p) => groupOfPanel(p) === 'fronts',
+  },
 ];
 
 export function presetById(id) {
@@ -76,15 +112,22 @@ export function panelIdsForPreset(panels, presetId) {
 
 /**
  * Which preset a hand-made selection happens to be, or 'custom'.
- * The export file is named after this, so a file called "…-carcass.dxf"
- * really does contain the carcass and nothing else.
+ * The export file is named after this, so a file called "…-fronts.dxf" really
+ * does contain the fronts and nothing else.
+ *
+ * Two presets can pick the same parts out of a particular unit — a wardrobe
+ * with no plinth, no infill and no end panels has nothing sprayed except its
+ * doors, so "Sprayed only" and "Fronts & doors only" are the same sheet. The
+ * list runs widest to narrowest and the LAST match wins, so the file takes the
+ * most specific true name it can: "fronts", not "sprayed".
  */
 export function presetOfSelection(panels, selectedIds) {
   const selected = new Set(selectedIds);
+  let match = 'custom';
   for (const preset of EXPORT_PRESETS) {
     const ids = panels.filter((p) => preset.includes(p)).map((p) => p.id);
     if (ids.length !== selected.size) continue;
-    if (ids.every((id) => selected.has(id))) return preset.id;
+    if (ids.every((id) => selected.has(id))) match = preset.id;
   }
-  return 'custom';
+  return match;
 }

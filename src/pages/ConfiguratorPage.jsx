@@ -5,7 +5,6 @@ import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
-import AddItemsModal from '../components/AddItemsModal.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
 import Toast from '../components/Toast.jsx';
@@ -37,7 +36,6 @@ export default function ConfiguratorPage() {
   const unitResult = useProjectStore((s) => s.unitResult);
   const markSaved = useProjectStore((s) => s.markSaved);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
-  const selectedUnit = units.find((u) => u.id === selectedUnitId) || null;
 
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
@@ -120,7 +118,6 @@ export default function ConfiguratorPage() {
         {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} />}
         {modal === 'room' && <RoomModal />}
         {modal === 'design' && <DesignSettingsModal />}
-        {modal === 'add-items' && selectedUnit && <AddItemsModal unit={selectedUnit} />}
         {modal === 'auth' && <AuthModal />}
         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
         <ContextMenu />

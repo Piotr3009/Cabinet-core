@@ -1068,3 +1068,57 @@ project wraca na start → projekt jest w Recent z „2 units" i po kliknięciu 
 się z jednostkami. **392 testy, 0 fail** (11 nowych: 8 × półka projektów, 3 ×
 kategorie — w tym „każdy typ w dokładnie jednej kategorii", które łapie zapomniany
 nowy kit).
+
+## Faza 5 — prawy panel UX — ✅ ZIELONA
+
+**Wszystko zwija się w sekcje** (`Section.jsx`): Carcass · Add items · Section 1 ·
+Doors. Zamknięta sekcja **nie jest renderowana** — żadnych ukrytych inputów
+trzymających focus, żadnego mierzenia wysokości, żadnej animacji do zepsucia. Stan
+rozwinięcia siedzi w uiStore, więc pamięta się między jednostkami. Jedno się NIE
+zwija: błędy i ostrzeżenia. Ostrzeżenie za zamkniętą sekcją to ostrzeżenie, którego
+nikt nie czyta.
+
+**Add items = lista typów, ustawienia inline.** Drawers · Shelves · Hanger rail ·
+Pull-down rail (disabled „soon"). Klik typu rozwija JEGO ustawienia w tym samym
+panelu. `AddItemsModal.jsx` **usunięty** — zero osobnych modali, jak w CLAUDE.md.
+Czego kit nie obsługuje, jest pokazane wyszarzone z powodem („already fitted",
+„this kit IS its three drawers"), a nie ukryte.
+
+**Equal heights ✓ domyślnie** (BACKLOG #11): jedno pole na cały stos. Odznaczenie →
+pole per szuflada, listowane **od góry** (D3 / D2 / D1). Ponowne zaznaczenie MUSI coś
+znaczyć — bierze wysokość **dolnej** szuflady (tej, od której zaczyna oko) i rozciąga
+na stos. `setAllDrawerHeights` to jedno wywołanie, jeden clamp i jedno przeliczenie
+półek, a nie pętla po `setDrawerHeight`.
+
+**Auto-porządek** (BACKLOG #12), reguły w `engine/items.js`, wykonanie w store:
+- **półki od góry** — pierwsza na górze pasma, każda następna o `itemStackPitch`
+  niżej, nigdy bliżej niż `minShelfGap`, a gdy pełny skok już nie wchodzi — w
+  najciaśniejsze legalne miejsce. Brak miejsca → **odmowa z liczbą** („room for 2
+  of 5"), nie ciche wrzucenie na tę samą pozycję.
+- **szuflady od dołu** — silnik i tak stackuje od podłogi; półki nad nimi
+  przeliczają się przez istniejący clamp.
+- **hanger pomiędzy** — tak wysoko, jak pozwoli najniższa półka i jego własny
+  partycjoner, nad przegrodą szuflad.
+
+**Szuflady internal → drzwi się otwierają** (BACKLOG #13): po dodaniu szuflad panel
+czyta z wyniku silnika id formatek `FRONT` i woła `openFrontsFor` — istniejący
+mechanizm animacji frontów, zero nowego kodu w 3D. Widać to na zrzucie
+`f5-doors-open.png`: drzwi odchylone, w środku stos szuflad, drążek i dwie półki.
+
+**Hanger z listy materiałów** (BACKLOG #14): select z kategorii `hardware`
+(istniejący store materiałów) + pozycja **„— Connect JoineryCore for live stock
+(soon) —"** jako disabled hint. Wybrany produkt jedzie **z itemem** (`material_id`,
+`material_label`) → `paramsForEngine` → linia `rail` w `hardware[]` z nazwą pozycji:
+`564 mm · Oval hanging rail 30 × 15`. Ilość nadal pochodzi z geometrii, więc brak
+wybranego produktu daje linię z samą długością — zamówienie czeka na decyzję,
+policzenie nie.
+
+**Werdykt (Chromium, 20/20 PASS).** Sekcje zwijają się i pamiętają stan → lista typów
+z „soon" na pull-down → 3 × 220 mm dodane inline (zero modali w DOM) → Equal heights
+zaznaczone domyślnie, jedno pole ustawia cały stos na 180 → odznaczenie daje D3/D2/D1
+od góry → dwie półki wchodzą na 2092 i 1742 (od góry, bez kolizji) → drążek z listy
+hardware trafia do BOM jako „Oval hanging rail 30 × 15" → dodanie szuflad przy
+założonych drzwiach otwiera drzwi. **399 testów, 0 fail** (7 nowych w
+`test/panel-items.test.js` — reguły są w store, więc testują się w node: auto-porządek
+z odmową, equal heights z clampem, „ponowne zaznaczenie bierze dolną szufladę",
+drążek między szufladami a półkami, produkt w BOM).

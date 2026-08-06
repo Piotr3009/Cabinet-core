@@ -1177,8 +1177,14 @@ export function computeCabinet(params, profileOverride) {
   hw('legs', 'Legs', legsPerUnit, 'pcs',
     { height_mm: legHeight, corners: P.legs.cornerCount, centre: legsPerUnit > P.legs.cornerCount },
     legHeight ? `${roundTo(legHeight, 0)} mm` : '');
+  // The rail the workshop actually chose travels with the item (turn 4,
+  // BACKLOG #14), so the hardware line is a thing you can order and not just a
+  // length. Two different rails in one project stay two BOM rows, because the
+  // hardware merge key is role + spec label.
+  const railProduct = params?.rail_material_label ? String(params.rail_material_label) : '';
   hw('rail', 'Hanging rail', hasRail ? 1 : 0, 'pcs',
-    { length_mm: internalWidth }, `${roundTo(internalWidth, 0)} mm`);
+    { length_mm: internalWidth, material_id: params?.rail_material_id ?? null },
+    [`${roundTo(internalWidth, 0)} mm`, railProduct].filter(Boolean).join(' · '));
   hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',
     { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',

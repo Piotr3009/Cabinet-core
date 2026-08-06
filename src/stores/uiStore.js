@@ -66,8 +66,20 @@ export const useUiStore = create((set, get) => ({
   setContourView: (v) => set({ contourView: Boolean(v) }),
   toggleContourView: () => set((s) => ({ contourView: !s.contourView })),
 
+  // Which sections of the right panel are open (turn 4, BACKLOG #10). There are
+  // a lot of them now, so everything collapses — and the choice is remembered
+  // across units, because a workshop tends to work on one thing at a time.
+  panelOpen: { carcass: true, add: false, contents: true, construction: false, doors: true },
+  togglePanelSection: (id) => set((s) => ({ panelOpen: { ...s.panelOpen, [id]: !s.panelOpen[id] } })),
+  setPanelSection: (id, open) => set((s) => ({ panelOpen: { ...s.panelOpen, [id]: Boolean(open) } })),
+
+  // Which "Add items" type has its settings open. One at a time: they are
+  // alternatives, not a form to fill in top to bottom.
+  addItemKind: null,                 // 'drawers' | 'shelves' | 'hanger' | null
+  setAddItemKind: (kind) => set((s) => ({ addItemKind: s.addItemKind === kind ? null : kind })),
+
   // Modals
-  modal: null,                       // 'add-items' | 'room' | 'auth' | 'materials' | null
+  modal: null,                       // 'room' | 'auth' | 'design' | 'save-as' | null
   openModal: (name) => set({ modal: name }),
   closeModal: () => set({ modal: null }),
 
@@ -101,6 +113,18 @@ export const useUiStore = create((set, get) => ({
     const next = (unit[panelId] ?? 0) > 0.5 ? 0 : 1;
     return { openFronts: { ...s.openFronts, [unitId]: { ...unit, [panelId]: next } } };
   }),
+  /**
+   * Open a set of fronts at once — used when internal drawers are added, so the
+   * doors swing out of the way and the drawers you just asked for are visible
+   * (turn 4, BACKLOG #13). Purely visual, like every other front animation.
+   */
+  openFrontsFor: (unitId, panelIds) => set((s) => {
+    if (!unitId || !panelIds?.length) return {};
+    const unit = { ...(s.openFronts[unitId] || {}) };
+    for (const id of panelIds) unit[id] = 1;
+    return { openFronts: { ...s.openFronts, [unitId]: unit } };
+  }),
+
   closeAllFronts: (unitId) => set((s) => {
     if (!unitId) return { openFronts: {} };
     const { [unitId]: _dropped, ...rest } = s.openFronts;

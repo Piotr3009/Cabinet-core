@@ -13,6 +13,7 @@ import {
 } from '../engine/room.js';
 import { migrateDesign, normaliseDoorStyle, setCarcassTypeCount } from '../engine/design.js';
 import { autoPartsFor, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';
+import { drawersInEngineOrder, nextHangerOffset, nextShelfPos, shelvesInEngineOrder } from '../engine/items.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -60,6 +61,10 @@ function paramsForEngine(unit) {
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
     rail_offset: items.find((i) => i.kind === 'hanger')?.pos_mm ?? p.rail_offset,
+    // Which rail was chosen from the hardware list, so the BOM line names the
+    // product and not just a length (turn 4, BACKLOG #14).
+    rail_material_id: items.find((i) => i.kind === 'hanger')?.material_id ?? null,
+    rail_material_label: items.find((i) => i.kind === 'hanger')?.material_label ?? null,
   };
 }
 
@@ -629,6 +634,106 @@ export const useProjectStore = create((set, get) => ({
     }));
     // The drawer stack raises the floor the shelves stand on.
     get().reclampShelves(unitId);
+  },
+
+  /**
+   * One height for the WHOLE stack (turn 4, BACKLOG #11: "Equal heights" ✓).
+   * One call, one clamp, one re-settle of the shelves above — rather than the UI
+   * looping over setDrawerHeight and re-running the shelf clamp per drawer.
+   */
+  setAllDrawerHeights: (unitId, heightMm) => {
+    const DR = getCabinetProfile().wardrobe.drawers;
+    const h = Number(heightMm);
+    const clamped = Number.isFinite(h)
+      ? Math.min(Math.max(h, DR.minFrontHeight), DR.maxFrontHeight)
+      : DR.frontHeight;
+    set((s) => ({
+      units: s.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const section = u.params.sections?.[0];
+        if (!section) return u;
+        return {
+          ...u,
+          params: {
+            ...u.params,
+            drawer_equal_heights: true,
+            sections: [{
+              ...section,
+              items: section.items.map((i) => (i.kind === 'drawer' ? { ...i, height_mm: clamped } : i)),
+            }],
+          },
+        };
+      }),
+      dirty: true,
+    }));
+    get().reclampShelves(unitId);
+    return clamped;
+  },
+
+  /** ✓ = one height for every drawer; unticked = a field per drawer. */
+  setDrawerEqualHeights: (unitId, equal) => {
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, drawer_equal_heights: Boolean(equal) } }
+        : u)),
+      dirty: true,
+    }));
+    // Ticking it back on has to MEAN something: the bottom drawer's height (the
+    // one the eye starts from) becomes the height of the stack.
+    if (equal) {
+      const unit = get().units.find((u) => u.id === unitId);
+      const bottom = drawersInEngineOrder(unit?.params.sections?.[0]?.items || [])[0];
+      if (bottom) get().setAllDrawerHeights(unitId, bottom.height_mm ?? getCabinetProfile().wardrobe.drawers.frontHeight);
+    }
+  },
+
+  /**
+   * Add `count` shelves, each in the topmost free slot (turn 4, BACKLOG #12):
+   * shelves fill from the TOP down and never land on one another. Returns how
+   * many actually fitted, so the caller can say "no room for the rest" instead
+   * of silently dropping them.
+   */
+  addShelves: (unitId, count = 1) => {
+    const profile = getCabinetProfile();
+    let added = 0;
+    for (let i = 0; i < Math.max(1, Math.trunc(count)); i += 1) {
+      const unit = get().units.find((u) => u.id === unitId);
+      if (!unit) break;
+      const items = unit.params.sections?.[0]?.items || [];
+      const pos = nextShelfPos({
+        band: shelfLimits(unit, profile),
+        positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
+      }, profile);
+      if (pos == null) break;
+      get().addItem(unitId, { kind: 'shelf', variant: 'fixed', pos_mm: pos });
+      added += 1;
+    }
+    return { added, requested: Math.max(1, Math.trunc(count)) };
+  },
+
+  /**
+   * Add the hanging rail, as high as it can go under the lowest shelf and clear
+   * of the drawer stack below it (BACKLOG #12: "hangers in between"). The chosen
+   * hardware travels with the item, so the BOM names the product.
+   */
+  addHangerRail: (unitId, { materialId = null, materialLabel = null } = {}) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const items = unit.params.sections?.[0]?.items || [];
+    if (items.some((i) => i.kind === 'hanger')) return null;
+    const result = computeCabinet(paramsForEngine(unit), profile);
+    const G = unit.params.board_t ?? profile.board.thickness;
+    const zoneBase = result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G;
+    const offset = nextHangerOffset({
+      band: shelfLimits(unit, profile),
+      positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
+      zoneBase,
+      fallback: unit.params.rail_offset,
+    }, profile);
+    return get().addItem(unitId, {
+      kind: 'hanger', pos_mm: Math.round(offset), material_id: materialId, material_label: materialLabel,
+    });
   },
 
   /** One drawer's height. Clamped by the engine, then the shelves re-settle. */

@@ -17,9 +17,19 @@ function loadSnap() {
 }
 
 export const useUiStore = create((set, get) => ({
-  // Floating Library panel (grab & move — SPEC 4.1)
-  libraryPos: { x: 24, y: 88 },
+  // Which screen the app is on (turn 4, BACKLOG #7). The canvas is reached
+  // THROUGH a project — start screen first, always.
+  screen: 'start',                   // 'start' | 'editor'
+  openEditor: () => set({ screen: 'editor' }),
+  goToStart: () => set({ screen: 'start', selectedUnitId: null, selectedSection: null, bomOpen: false }),
+
+  // Floating Library panel (grab & move — SPEC 4.1). Turn 4: it is opened from
+  // the Library MENU, one category at a time, and it has an X (BACKLOG #9).
+  libraryPos: { x: 24, y: 96 },
   setLibraryPos: (pos) => set({ libraryPos: pos }),
+  libraryCategory: null,             // null = the panel is closed
+  setLibraryCategory: (id) => set({ libraryCategory: id || null }),
+  closeLibrary: () => set({ libraryCategory: null }),
 
   // Right parameter panel — closes itself once doors are added (SPEC 4.10)
   rightPanelOpen: true,
@@ -44,8 +54,32 @@ export const useUiStore = create((set, get) => ({
   setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
   toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
 
+  // Thin black contours on every piece — ON by default (turn 4, BACKLOG #5).
+  showOutlines: true,
+  setShowOutlines: (v) => set({ showOutlines: Boolean(v) }),
+  toggleOutlines: () => set((s) => ({ showOutlines: !s.showOutlines })),
+
+  // Contour view (BACKLOG #18): a presentation mode for a render or a printed
+  // screen — materials fade away, the contours stay. Nothing here reaches the
+  // BOM; it is a way of LOOKING at the same project.
+  contourView: false,
+  setContourView: (v) => set({ contourView: Boolean(v) }),
+  toggleContourView: () => set((s) => ({ contourView: !s.contourView })),
+
+  // Which sections of the right panel are open (turn 4, BACKLOG #10). There are
+  // a lot of them now, so everything collapses — and the choice is remembered
+  // across units, because a workshop tends to work on one thing at a time.
+  panelOpen: { carcass: true, add: false, contents: true, construction: false, doors: true },
+  togglePanelSection: (id) => set((s) => ({ panelOpen: { ...s.panelOpen, [id]: !s.panelOpen[id] } })),
+  setPanelSection: (id, open) => set((s) => ({ panelOpen: { ...s.panelOpen, [id]: Boolean(open) } })),
+
+  // Which "Add items" type has its settings open. One at a time: they are
+  // alternatives, not a form to fill in top to bottom.
+  addItemKind: null,                 // 'drawers' | 'shelves' | 'hanger' | null
+  setAddItemKind: (kind) => set((s) => ({ addItemKind: s.addItemKind === kind ? null : kind })),
+
   // Modals
-  modal: null,                       // 'add-items' | 'room' | 'auth' | 'materials' | null
+  modal: null,                       // 'room' | 'auth' | 'design' | 'save-as' | null
   openModal: (name) => set({ modal: name }),
   closeModal: () => set({ modal: null }),
 
@@ -79,6 +113,18 @@ export const useUiStore = create((set, get) => ({
     const next = (unit[panelId] ?? 0) > 0.5 ? 0 : 1;
     return { openFronts: { ...s.openFronts, [unitId]: { ...unit, [panelId]: next } } };
   }),
+  /**
+   * Open a set of fronts at once — used when internal drawers are added, so the
+   * doors swing out of the way and the drawers you just asked for are visible
+   * (turn 4, BACKLOG #13). Purely visual, like every other front animation.
+   */
+  openFrontsFor: (unitId, panelIds) => set((s) => {
+    if (!unitId || !panelIds?.length) return {};
+    const unit = { ...(s.openFronts[unitId] || {}) };
+    for (const id of panelIds) unit[id] = 1;
+    return { openFronts: { ...s.openFronts, [unitId]: unit } };
+  }),
+
   closeAllFronts: (unitId) => set((s) => {
     if (!unitId) return { openFronts: {} };
     const { [unitId]: _dropped, ...rest } = s.openFronts;

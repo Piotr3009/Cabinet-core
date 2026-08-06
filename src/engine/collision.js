@@ -80,10 +80,33 @@ export function clampShelfPos({ pos, current, others, band }, profile) {
 
 // ─── Units on a wall ───────────────────────────────────────────────────────
 
-/** [left, right) footprint of a unit along its wall. */
+/**
+ * How far a unit's END PANELS stick out past its carcass, per side (turn 4,
+ * BACKLOG #17). An end panel is screwed to the OUTSIDE of the carcass side, so
+ * it is part of the unit's footprint: a neighbour that ignored it would be
+ * standing in it.
+ */
+export function endPanelPads(unit, fallbackThickness = 0) {
+  const out = { left: 0, right: 0 };
+  for (const ep of unit?.params?.end_panels || []) {
+    const t = Number(ep?.thickness) > 0 ? Number(ep.thickness) : Number(fallbackThickness) || 0;
+    if (ep?.side === 'L') out.left = Math.max(out.left, t);
+    if (ep?.side === 'R') out.right = Math.max(out.right, t);
+  }
+  return out;
+}
+
+/**
+ * [left, right) footprint of a unit along its wall, END PANELS INCLUDED.
+ *
+ * Every "where does this unit fit" question goes through here, so an end panel
+ * is respected by placing, moving and resizing without any of them knowing what
+ * an end panel is.
+ */
 export function unitSpan(unit) {
-  const left = Number(unit.position?.x_mm) || 0;
-  return { left, right: left + (Number(unit.params?.width) || 0) };
+  const pad = endPanelPads(unit, unit?.params?.front_t);
+  const left = (Number(unit.position?.x_mm) || 0) - pad.left;
+  return { left, right: left + (Number(unit.params?.width) || 0) + pad.left + pad.right };
 }
 
 // ─── Plan geometry: units on DIFFERENT walls ────────────────────────────────
@@ -221,16 +244,24 @@ function rayToSegment(px, py, dir, seg) {
 /**
  * The widest this unit may be where it stands.
  *
+ * `wallMargin` is the scribe gap the unit must leave at the end of the wall
+ * (turn 4: the side-infill stop), and `padRight` is its own end panel, which
+ * travels with the far edge as it grows.
+ *
  * @returns {{width:number, max:number, blocked:boolean, by:string|null}}
  */
-export function clampUnitWidth({ width, x, wallWidth, others = [] }, profile) {
+export function clampUnitWidth({
+  width, x, wallWidth, others = [], wallMargin = 0, padRight = 0,
+}, profile) {
   const clearance = profile.editor.minUnitGap;
-  let max = Math.max(0, wallWidth - x);
-  let limitedBy = 'the wall';
+  const margin = Math.max(0, Number(wallMargin) || 0);
+  const pad = Math.max(0, Number(padRight) || 0);
+  let max = Math.max(0, wallWidth - x - margin - pad);
+  let limitedBy = margin > 0 ? 'the infill at the wall' : 'the wall';
 
   for (const o of others) {
     if (o.right <= x) continue;                 // entirely to the left
-    const free = o.left - clearance - x;
+    const free = o.left - clearance - x - pad;
     if (free < max) { max = Math.max(0, free); limitedBy = o.label || 'a neighbour'; }
   }
   const next = Math.min(Number(width) || 0, max);
@@ -286,15 +317,26 @@ export function clampUnitDepth({ depth, x, width, wall, walls, others = [] }, pr
  *   width      the unit's width
  *   wallWidth  the wall it stands on
  *   others     [{left,right}] footprints of the OTHER units on the same wall
+ *   wallMargin the gap the unit must leave at EACH end of the wall. Turn 4: a
+ *              unit does not travel all the way to the wall any more — it stops
+ *              one infill width short, and the filler that closes that gap
+ *              appears by itself (BACKLOG #15). The magnet makes the stop a
+ *              landing: within `unitMagnet` of it the unit sits exactly there,
+ *              so the gap is EXACTLY the infill width and not 19.4 mm.
  */
-export function clampUnitX({ x, current, width, wallWidth, others = [] }, profile) {
+export function clampUnitX({ x, current, width, wallWidth, others = [], wallMargin = 0 }, profile) {
   const magnet = profile.editor.unitMagnet;
   const clearance = profile.editor.minUnitGap;
+  const margin = Math.max(0, Number(wallMargin) || 0);
 
-  const wallMax = Math.max(0, wallWidth - width);
-  const here = clampTo(current ?? x, 0, wallMax);
+  // A wall too short for the unit plus its two margins keeps the unit inside the
+  // wall and gives up the margins: the alternative is a clamp with no legal
+  // position at all.
+  const wallMax = Math.max(0, wallWidth - width - margin);
+  const wallMin = Math.min(margin, wallMax);
+  const here = clampTo(current ?? x, wallMin, wallMax);
 
-  let low = 0;
+  let low = wallMin;
   let high = wallMax;
   for (const o of others) {
     // Which side an obstacle is on is decided on the RAW footprints: a unit
@@ -375,20 +417,24 @@ export function unitIssues({ unit, wallWidth: wallW, roomHeight: roomH, others =
  * being dropped on top of a neighbour for unitIssues() to complain about
  * afterwards (CLAUDE.md turn 3, phase 4: no overlap by ANY path).
  */
-export function freeSlotOnWall({ width, wallWidth, others = [] }, profile) {
+export function freeSlotOnWall({ width, wallWidth, others = [], wallMargin = 0 }, profile) {
   const clearance = profile?.editor?.minUnitGap ?? 0;
   const w = Number(width) || 0;
-  const wallMax = Math.max(0, wallWidth - w);
+  // The same stop a drag obeys (BACKLOG #15): a unit is never PLACED flush
+  // against the wall either, or its first drag would jump it off the wall.
+  const margin = Math.max(0, Number(wallMargin) || 0);
+  const wallMax = Math.max(0, wallWidth - w - margin);
+  const wallMin = Math.min(margin, wallMax);
   if (w <= 0 || wallWidth < w) return null;
-  if (!others.length) return Math.round(Math.max(0, (wallWidth - w) / 2));
+  if (!others.length) return Math.round(Math.max(wallMin, (wallWidth - w) / 2));
 
   // Butt onto the right-hand end of the run first — building a row of units is
   // "add, add, add", the turn-1 behaviour, kept deliberately.
   const spans = [...others].sort((a, b) => a.left - b.left);
-  const rightMost = spans.reduce((m, s) => Math.max(m, s.right), 0);
+  const rightMost = spans.reduce((m, s) => Math.max(m, s.right), wallMin);
   if (rightMost + clearance <= wallMax) return Math.round(rightMost + clearance);
 
-  let cursor = 0;
+  let cursor = wallMin;
   for (const s of spans) {
     const gap = s.left - clearance - cursor;
     if (gap >= w && cursor <= wallMax) return Math.round(cursor);

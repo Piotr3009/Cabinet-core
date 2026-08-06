@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import Modal from './Modal.jsx';
+import NumberField from './NumberField.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import {
@@ -208,9 +209,9 @@ export default function RoomModal() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="cc-label">Room height (mm)</span>
-              <input
-                type="number" className="cc-input" value={draft.height}
-                onChange={(e) => patch({ height: Number(e.target.value) || draft.height })}
+              <NumberField
+                value={draft.height}
+                onCommit={(v) => patch({ height: v || draft.height })}
               />
             </div>
             <div className="flex items-end">
@@ -255,9 +256,9 @@ export default function RoomModal() {
               <li key={w.index} className="border border-shell-600 rounded p-2 space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-ink-100 w-12">Wall {w.index + 1}</span>
-                  <input
-                    type="number" className="cc-input w-24 text-right" value={Math.round(w.width)}
-                    onChange={(e) => setWallLength(w.index, e.target.value)}
+                  <NumberField
+                    className="cc-input w-24 text-right" value={Math.round(w.width)}
+                    onCommit={(v) => setWallLength(w.index, v)}
                   />
                   <span className="text-[11px] text-ink-400 flex-1">mm</span>
                   <button type="button" className="cc-btn px-2" title="Insert window" onClick={() => addOpening('window', w.index)}>+ Window</button>
@@ -268,21 +269,21 @@ export default function RoomModal() {
                   <div key={o.id} className="flex items-center gap-1 text-[11px] text-ink-300">
                     <span className="w-12 capitalize">{o.kind}</span>
                     <label className="flex items-center gap-1">from
-                      <input type="number" className="cc-input w-16 text-right" value={Math.round(o.x_mm)}
-                        onChange={(e) => updateOpening(o.id, { x_mm: Number(e.target.value) })} />
+                      <NumberField className="cc-input w-16 text-right" value={Math.round(o.x_mm)}
+                        onCommit={(v) => updateOpening(o.id, { x_mm: v })} />
                     </label>
                     <label className="flex items-center gap-1">w
-                      <input type="number" className="cc-input w-16 text-right" value={Math.round(o.width)}
-                        onChange={(e) => updateOpening(o.id, { width: Number(e.target.value) })} />
+                      <NumberField className="cc-input w-16 text-right" value={Math.round(o.width)}
+                        onCommit={(v) => updateOpening(o.id, { width: v })} />
                     </label>
                     <label className="flex items-center gap-1">h
-                      <input type="number" className="cc-input w-16 text-right" value={Math.round(o.height)}
-                        onChange={(e) => updateOpening(o.id, { height: Number(e.target.value) })} />
+                      <NumberField className="cc-input w-16 text-right" value={Math.round(o.height)}
+                        onCommit={(v) => updateOpening(o.id, { height: v })} />
                     </label>
                     {o.kind === 'window' && (
                       <label className="flex items-center gap-1">sill
-                        <input type="number" className="cc-input w-14 text-right" value={Math.round(o.sill)}
-                          onChange={(e) => updateOpening(o.id, { sill: Number(e.target.value) })} />
+                        <NumberField className="cc-input w-14 text-right" value={Math.round(o.sill)}
+                          onCommit={(v) => updateOpening(o.id, { sill: v })} />
                       </label>
                     )}
                     <button type="button" className="cc-btn-ghost" onClick={() => removeOpening(o.id)}>×</button>

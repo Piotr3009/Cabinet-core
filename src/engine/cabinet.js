@@ -922,6 +922,33 @@ export function computeCabinet(params, profileOverride) {
     }));
   }
 
+  // End panels (turn 4, BACKLOG #17): a masking panel on the OUTSIDE of a
+  // carcass side. A cut piece like any other, so it reaches the BOM, the CNC
+  // sheet and the DXF by the same route — and it exists only because somebody
+  // added it (`params.end_panels`), never automatically.
+  const EP = AP.endPanel;
+  // "To the floor" means down to the floor: past the legs on a standing unit,
+  // and all the way down from a wall unit's mounting height.
+  const dropToFloor = type.mount === 'wall' ? cfg.mountHeight : legHeightForPlinth;
+  const endPanels = Array.isArray(params?.end_panels) ? params.end_panels : [];
+  for (const ep of endPanels) {
+    const side = ep?.side === 'R' ? 'R' : 'L';
+    const t = Number(ep?.thickness) > 0 ? Number(ep.thickness) : (EP.thickness ?? frontT);
+    const toFloor = (ep?.height || EP.defaultHeight) === 'floor';
+    const drop = toFloor ? Math.max(0, dropToFloor) : 0;
+    const panelH = H + drop;
+    if (panelH <= 0 || t <= 0) continue;
+    panels.push(panel({
+      id: `END-${side}`, part: 'END-PANEL', role: 'end_panel', w: D, h: panelH, thickness: t,
+      edgeCode: codes.all, edgeLen: metres(2 * D + 2 * panelH),
+      // `drop > 0 ? -drop : 0` and not `-drop`: negative zero is a real value in
+      // JS and a box.y of -0 fails an === check downstream for no reason.
+      box: { x: side === 'L' ? -t : W, y: drop > 0 ? -drop : 0, z: 0, w: t, h: panelH, d: D },
+      cnc: rectGeometry(D, panelH),
+      meta: { side: side === 'L' ? 'left' : 'right', height: toFloor ? 'floor' : 'unit' },
+    }));
+  }
+
   for (const [side, key] of [['L', 'side_infill_left_mm'], ['R', 'side_infill_right_mm']]) {
     const infillW = Number(params?.[key]) || 0;
     if (infillW < AP.sideInfill.minWidth) continue;
@@ -1177,8 +1204,14 @@ export function computeCabinet(params, profileOverride) {
   hw('legs', 'Legs', legsPerUnit, 'pcs',
     { height_mm: legHeight, corners: P.legs.cornerCount, centre: legsPerUnit > P.legs.cornerCount },
     legHeight ? `${roundTo(legHeight, 0)} mm` : '');
+  // The rail the workshop actually chose travels with the item (turn 4,
+  // BACKLOG #14), so the hardware line is a thing you can order and not just a
+  // length. Two different rails in one project stay two BOM rows, because the
+  // hardware merge key is role + spec label.
+  const railProduct = params?.rail_material_label ? String(params.rail_material_label) : '';
   hw('rail', 'Hanging rail', hasRail ? 1 : 0, 'pcs',
-    { length_mm: internalWidth }, `${roundTo(internalWidth, 0)} mm`);
+    { length_mm: internalWidth, material_id: params?.rail_material_id ?? null },
+    [`${roundTo(internalWidth, 0)} mm`, railProduct].filter(Boolean).join(' · '));
   hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',
     { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',

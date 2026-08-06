@@ -41,34 +41,70 @@ the tables are not there yet.
 
 ## The flow
 
+0. **Start screen** — the app opens on it: name a new project (and the room it
+   is quoted for), open one you saved, or click one of the last five you had
+   open. The canvas is only ever reached THROUGH a project. Without Supabase
+   keys projects live on the local shelf, which is what makes Mock data mode a
+   working app rather than a demo.
+0b. **The menu bar** — one bar, one style: **File** (New / Open / Save / Save
+   as / Export ▸ CSV · PDF · unit DXF ZIP · BOM / Close project) · **View**
+   (Outlines, Dimensions, 3D | CNC sheet, Contour view) · **Library ▸**
+   categories · **Settings** (Design settings, Room setup, Snap) · **Database**
+   and **Clients**, held open and marked *soon*. Account and Export stay on the
+   right.
 1. **Room setup** — a room is a list of walls, drawn as a top-view plan you can
    edit: rectangle or L-shape, per-wall lengths, ceiling height, windows and
    doors. A DXF floor plan can be imported (LINE / LWPOLYLINE, parsed in-house).
    Walls facing away from the camera hide themselves, so looking down at the
    room IS the plan view. Shrinking a room below the units standing in it is
    refused, with the reason.
-2. **Library** — eight unit types: Wardrobe, Base unit, Base unit with 3 drawers
-   (BUDR), Wall unit (WUD), Tall unit, Low cabinet, Sink base and Fridge
-   housing. Drop one at the wall; drag it along the wall, snapped to
-   0.5 / 1 / 32 mm, magnetically butting against neighbours. A full wall sends
-   the unit round the room to one with space, and a full room declines it.
+2. **Library** — opened from the menu, **one category at a time**: Base units
+   (BUD, BUDR, Sink, Low cabinet), Wall units (WUD), Tall units (Tall, Fridge,
+   Wardrobe), plus Saved sets and Media walls held open for later. The panel
+   still floats and moves, and now closes with an X or Escape. Drop a unit at
+   the wall; drag it along the wall, snapped to 0.5 / 1 / 32 mm, magnetically
+   butting against neighbours. A full wall sends the unit round the room to one
+   with space, and a full room declines it. A unit **stops one infill width
+   short of the wall** rather than reaching it (see Automatics).
 3. **Select a unit** — the right panel holds the carcass parameters, the wall it
    stands on, its rotation, and its door style.
-4. **+ Add items** — drawers (stacked from the bottom, the partition above them
-   is automatic), shelves, hanger rail.
-5. **Shelves** — `[+]` / `[×]`, type a position, or drag one vertically in 3D
-   with a live dimension to its neighbours.
-5b. **Drawer heights** — every drawer carries its own front height (default
-   200 mm); the box parts, runner rows, partition and BOM follow it live.
+4. **Add items** — a list of types whose settings open **inline in the panel**,
+   never in a window: drawers (stacked from the bottom, the partition above them
+   is automatic, and the doors swing open so you can see them), shelves (filled
+   from the top down, never onto one that is already there) and the hanger rail
+   (hung as high as the lowest shelf allows, and chosen from your hardware list
+   so the BOM names the product). Every section of the panel folds.
+5. **Shelves** — add, type a position, press Even to space them out, or drag one
+   vertically in 3D with a live dimension to its neighbours.
+5b. **Drawer heights** — **Equal heights** is ticked by default: one field for
+   the whole stack. Untick it for a field per drawer, listed TOP-DOWN like the
+   3D view, each row carrying the engine's own number (D1 is the bottom drawer
+   everywhere — on the cut list, on the CNC sheet and at the saw). The box
+   parts, runner rows, partition and BOM follow live.
 6. **Doors last** — "Add doors — finish unit" closes the panel.
 6b. **Design Settings** — project-level: one to three carcass materials, the
    standard front type, your own door-style library, and the front colour from
    the RAL / Farrow & Ball lists or a hex of your own. The colour shows on the
    fronts in 3D. The scribe-infill width is set here and used by the automatics.
-6c. **Automatics** — a unit placed in the room arrives with its plinth, its
-   scribe fillers at the wall and a 40 mm top infill already worked out. Grab
-   the infill and drag it up to the ceiling, or double-click it to send it
-   there. All three are real cut parts in the BOM and on the CNC sheet.
+6c. **Finish** — the carcass is broken white by default, with light grey and two
+   wood decors (dark walnut, light oak) as alternatives. Fronts default to the
+   carcass; a decor is chosen per material, and a front COLOUR is paint that
+   covers it. The decor images are generated locally by
+   `node scripts/gen-textures.mjs` — nothing is downloaded, so no third-party
+   artwork licence rides along in the app. Contours are thin and black with an
+   **Outlines** switch, and the sheen is a 20 % clearcoat over a matt board.
+6d. **Automatic vs asked-for** — the **side infill** is automatic because it
+   describes a fact: a unit stops one infill width from the wall (the width from
+   Design Settings), so parking it there produces the filler that closes the gap
+   and driving away removes it again. The **plinth**, the **top infill** and
+   **end panels** are decisions: they are added from the Construction section or
+   the right-click menu, and until then they do not exist — not in 3D, not in
+   the BOM, not in the DXF. An end panel is a cut piece outside a carcass side
+   (to the floor or to the unit height, front thickness by default, "apply to
+   all" so the next one matches); it is part of the unit's footprint, and one
+   that does not fit is refused with the gap and the culprit named.
+6e. **Contour view** — View ▸ Contour view fades the material out and leaves the
+   outlines, for a render or a printed screen. It changes nothing in the BOM.
 7. **CNC view** — the **3D | CNC** switch on the canvas toolbar lays every cut
    part of the selected unit out flat, drawn from the engine's own CNC geometry: puzzle
    outlines, dog-bone and socket pockets, every hole, one colour per layer with
@@ -91,10 +127,16 @@ the tables are not there yet.
 Click and hold a unit to slide it along its wall — the camera does not move;
 the orbit only starts from a wall or the background. Double-click a part to fly
 the camera to it, or a front to open it: drawers slide out, doors swing on the
-hinge the engine gave them. Right-click a unit for Center shelves, Rotate 90°
-and Delete. The canvas toolbar carries Show/Hide dimensions, the BOM and the
-3D | CNC switch; with dimensions on, arrows measure every gap between units and
-from each unit to the wall, live while you drag.
+hinge the engine gave them. Right-click a unit for the end panels, the plinth,
+the top infill, Center shelves, Rotate 90° and Delete; what is already fitted is
+offered as "remove", and what will not fit says so. The canvas toolbar carries
+Show/Hide dimensions, **Outlines**, the BOM and the 3D | CNC switch; with
+dimensions on, arrows measure every gap between units and from each unit to the
+wall, live while you drag.
+
+Every numeric field in the app holds TEXT while you type it and commits on Enter
+or blur, with Escape putting the stored value back. Nothing is parsed, rounded or
+clamped mid-word — which is what made drawer heights untypeable before turn 4.
 
 ### Collisions
 
@@ -118,6 +160,8 @@ in `profile.editor`.
 src/engine/      pure calculation — no React, no stores, no bare numbers
   profile.js       every workshop constant as an editable default
   cabinet.js       computeCabinet(params, profile) -> panels/drills/totals/csv
+  items.js         the ONE written-down order of interior items, and where a
+                   new one is placed so it cannot collide
   puzzle.js        Skylon puzzle joint geometry, 1:1 from SKYLON_COMMON.lsp
   bom.js           aggregation across units, material + hardware demand
   collision.js     hard clamps: shelf/shelf, shelf/zone, unit/unit, unit/wall,
@@ -126,8 +170,10 @@ src/engine/      pure calculation — no React, no stores, no bare numbers
   legs.js          leg layout: four corners, a fifth over the width threshold
   room.js          rooms as a list of walls; rectangle and L; openings; guard
   dxfImport.js     in-house DXF reader for an imported floor plan
-  design.js        project design settings: materials, fronts, colours, styles
-  autoparts.js     plinth, side infill and top infill as real cut parts
+  design.js        project design settings: materials, fronts, colours, styles,
+                   finishes (which decor a piece wears) and end-panel defaults
+  autoparts.js     the side infill (automatic, from the room) and the plinth /
+                   top infill (manual — carried, never invented)
   dimensions.js    the distances the canvas draws: unit-to-unit, unit-to-wall
   format.js        AutoLISP-compatible rounding
   cnc/layers.js    CNC layer names + colours — a contract with the machine
@@ -138,7 +184,11 @@ src/stores/      Zustand: project, ui, workshop profile, material assignments
 src/3d/          R3F scene, room, unit rendering, billboarded labels
 src/components/  shell UI, panels, modals
 src/pages/       the configurator page
-src/lib/         Supabase client (mock-mode aware), cloud sync, exporters
+src/lib/         Supabase client (mock-mode aware), cloud sync, exporters,
+                 the local project shelf, saving, and the numeric-field rule
+scripts/         gen-textures.mjs — the wood decors, generated (own PNG encoder,
+                 zero dependencies, deterministic output)
+public/textures/ the generated decor images
 sql/             schema + RLS — run by hand
 test/            node:test against fixtures/golden-*.json
 fixtures/        golden values from production LISP — READ ONLY
@@ -175,7 +225,8 @@ section: derived from the code is not the same as confirmed on a real cabinet
 
 `BUILD-LOG.md` has a verdict per phase of every turn; `BLOCKERS.md` has the open
 questions. CI runs `npm ci && npm test && npm run build` on Node 22 for every
-push and pull request to main. **357 tests, 0 failing.**
+push and pull request to main. **410 tests, 0 failing** (`npm test`), plus a
+26-step end-to-end run in Chromium at the end of every turn.
 
 DXF is written as **R12 (AC1009)**, following the writer that is in production
 at the workshop today — R12 has no LWPOLYLINE, so a closed polyline is
@@ -183,7 +234,10 @@ at the workshop today — R12 has no LWPOLYLINE, so a closed polyline is
 to do if VCarve disagrees, is `BLOCKERS.md` #8.
 
 Deliberately **not** in this build: inset drawer fronts (no deductions yet),
-handles, a technical DXF/SVG drawing of the room, nesting, a project-wide
-export, and the JoineryCore integration — `jc_uuid` is in the schema and stays
-unused. Windows and doors in walls are visual only; they do not yet take part
-in collision.
+handles, a pull-down rail, saved sets and media walls (both held open in the
+Library menu), manufacturer decor catalogues (the finish infrastructure is
+ready — the open question is the artwork licence), a technical DXF/SVG drawing
+of the room, nesting, a project-wide export, and the JoineryCore integration —
+`jc_uuid` is in the schema, and Database / Clients are places in the menu with
+nothing behind them yet. Windows and doors in walls are visual only; they do not
+yet take part in collision.

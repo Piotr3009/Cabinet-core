@@ -1,7 +1,21 @@
 // ─── Construction automatics ───
-// The pieces nobody draws by hand but everybody cuts: the plinth under a
-// standing unit, the scribe filler between a unit and the wall, and the panel
-// that closes the gap up to the ceiling (CLAUDE.md turn 3, phase 7).
+// The pieces nobody draws by hand but everybody cuts: the scribe filler between
+// a unit and the wall, the plinth under a standing unit, and the panel that
+// closes the gap up to the ceiling (CLAUDE.md turn 3, phase 7).
+//
+// TURN 4 SPLITS THEM IN TWO (BACKLOG #15/#16), because they are not the same
+// kind of thing:
+//
+//   AUTOMATIC — the side infill. It describes the gap between a unit and the
+//   wall, and that gap is a FACT about where the unit is standing. A unit now
+//   stops one infill width short of the wall, so parking it there produces the
+//   filler and driving it away removes it again.
+//
+//   MANUAL — the plinth and the top infill. Whether a run gets a plinth, and
+//   whether the gap to the ceiling is closed, is a DECISION. Turn 3 made both
+//   the moment a unit was placed, which put pieces in the cut list that nobody
+//   had asked for. They are added from the panel or the right-click menu now,
+//   and until then they do not exist: not in 3D, not in the BOM, not in the DXF.
 //
 // This module decides WHAT a unit should have, from the room around it. The
 // pieces themselves are emitted by computeCabinet, so they arrive in the BOM,
@@ -42,10 +56,17 @@ export function topInfillToCeiling({ unitTop, roomHeight }) {
 /**
  * The gap on each side of a unit, and whether a scribe filler closes it.
  *
- * A filler fills the gap it is there for; the Design Settings width is the
- * WIDEST gap the workshop will close that way. Anything wider is not a scribe
- * — it is a missing cabinet — so it is reported instead of being papered over
- * with a filler that does not reach.
+ * Turn 4: a filler exists only where the unit is parked AT ITS STOP against the
+ * wall — the clamp keeps it exactly `settingWidth` away, so the gap it leaves is
+ * exactly the piece that closes it. A unit standing further out in the room has
+ * a gap that is not a scribe at all; it gets no filler and, deliberately, no
+ * complaint about it either. That WAS a notice in turn 3, when a unit could sit
+ * flush against the wall and any gap was a mistake; with the stop it would fire
+ * for every unit standing anywhere but at a wall.
+ *
+ * What is still worth saying: the workshop's own limit. A 250 mm setting cannot
+ * be scribed, so the unit stops 250 mm out and no filler reaches — that is
+ * reported, because it is a setting to change.
  *
  * @param {object} args
  *   x, width       the unit on its wall
@@ -55,7 +76,8 @@ export function topInfillToCeiling({ unitTop, roomHeight }) {
  */
 export function sideInfill({ x, width, wallWidth, others = [], settingWidth }, profile) {
   const S = profile.autoParts.sideInfill;
-  const maxWidth = Math.min(Number(settingWidth) || 0, S.maxWidth);
+  const setting = Math.max(0, Number(settingWidth) || 0);
+  const maxWidth = Math.min(setting, S.maxWidth);
   const notices = [];
 
   const gapTo = (side) => {
@@ -74,8 +96,10 @@ export function sideInfill({ x, width, wallWidth, others = [], settingWidth }, p
     const { gap, againstWall } = gapTo(side);
     if (!againstWall) continue;                    // a neighbour closes it, not a filler
     if (gap < S.minWidth) continue;                // flush, or close enough to scribe out
+    // Parked out in the room rather than at the stop: not a scribe, not an error.
+    if (gap > setting + S.stopTolerance) continue;
     if (gap > maxWidth) {
-      notices.push(`${Math.round(gap)} mm gap on the ${side} is wider than the ${Math.round(maxWidth)} mm infill setting — leave it, or add a unit.`);
+      notices.push(`The ${Math.round(setting)} mm infill setting is wider than the ${Math.round(S.maxWidth)} mm this workshop scribes — the ${Math.round(gap)} mm gap on the ${side} stays open.`);
       continue;
     }
     out[side] = Math.round(gap * 100) / 100;
@@ -87,6 +111,12 @@ export function sideInfill({ x, width, wallWidth, others = [], settingWidth }, p
  * Everything the automatics want for one unit, given the room around it.
  * The store writes these onto the unit's params; the engine turns them into
  * panels.
+ *
+ * The side infill is DERIVED — it is recomputed from where the unit stands. The
+ * plinth and the top infill are DECISIONS and are only ever carried through:
+ * this function never invents one, and never throws one away either. That is
+ * the whole of BACKLOG #16, expressed where the rule belongs rather than as an
+ * `if` in the store.
  */
 export function autoPartsFor({ unit, wallWidth, others, roomHeight, design }, profile) {
   const type = getUnitType(unit.type);
@@ -101,11 +131,16 @@ export function autoPartsFor({ unit, wallWidth, others, roomHeight, design }, pr
     x, width, wallWidth, others, settingWidth: design?.infill?.sideWidth,
   }, profile);
 
+  // Manual, and only ever re-clamped: a top infill that was added shrinks when
+  // the ceiling drops, and one that was never added stays absent.
+  const wanted = Number(unit.params.top_infill_mm) || 0;
+  const topInfill = wanted > 0
+    ? topInfillHeight({ requested: wanted, unitTop: base + height, roomHeight }, profile)
+    : 0;
+
   return {
-    plinth: takesPlinth(unit.type, profile),
-    top_infill_mm: topInfillHeight({
-      requested: unit.params.top_infill_mm, unitTop: base + height, roomHeight,
-    }, profile),
+    plinth: unit.params.plinth === true && takesPlinth(unit.type, profile),
+    top_infill_mm: topInfill,
     side_infill_left_mm: side.left,
     side_infill_right_mm: side.right,
     notices: side.notices,

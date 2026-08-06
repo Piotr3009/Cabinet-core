@@ -13,10 +13,18 @@ export default function ContextMenu() {
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
   const closeAllFronts = useUiStore((s) => s.closeAllFronts);
   const clearSelection = useUiStore((s) => s.clearSelection);
+  const setPanelSection = useUiStore((s) => s.setPanelSection);
+  const openRightPanel = useUiStore((s) => s.openRightPanel);
+  const notify = useUiStore((s) => s.notify);
   const units = useProjectStore((s) => s.units);
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
   const rotateUnit = useProjectStore((s) => s.rotateUnit);
   const removeUnit = useProjectStore((s) => s.removeUnit);
+  const addEndPanel = useProjectStore((s) => s.addEndPanel);
+  const addPlinth = useProjectStore((s) => s.addPlinth);
+  const removePlinth = useProjectStore((s) => s.removePlinth);
+  const addTopInfill = useProjectStore((s) => s.addTopInfill);
+  const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
 
   const unit = units.find((u) => u.id === menu?.unitId) || null;
 
@@ -24,9 +32,27 @@ export default function ContextMenu() {
     ? menuActions({
       unit,
       panelPart: menu.part,
-      store: { redistributeShelves, rotateUnit, removeUnit, closeAllFronts },
+      store: {
+        redistributeShelves,
+        rotateUnit,
+        removeUnit,
+        closeAllFronts,
+        addEndPanel: (unitId, opts) => {
+          const { error } = addEndPanel(unitId, opts) || {};
+          if (error) notify(error, 'warn');
+        },
+        addPlinth: (unitId) => { if (!addPlinth(unitId)) notify('This type stands on no legs — it takes no plinth.', 'warn'); },
+        removePlinth,
+        addTopInfill: (unitId) => {
+          if (!addTopInfill(unitId)) notify('No room between this unit and the ceiling.', 'warn');
+        },
+        removeTopInfill,
+        // The options for what was just added are in the panel, not in a modal.
+        openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
+      },
     })
-    : []), [unit, menu, redistributeShelves, rotateUnit, removeUnit, closeAllFronts]);
+    : []), [unit, menu, redistributeShelves, rotateUnit, removeUnit, closeAllFronts,
+    addEndPanel, addPlinth, removePlinth, addTopInfill, removeTopInfill, notify, openRightPanel, setPanelSection]);
 
   useEffect(() => {
     if (!menu) return undefined;
@@ -59,7 +85,9 @@ export default function ContextMenu() {
         <button
           key={a.id}
           type="button"
-          className={`w-full text-left px-3 py-1.5 text-sm hover:bg-shell-700 transition-colors ${
+          disabled={a.disabled}
+          className={`w-full text-left px-3 py-1.5 text-sm transition-colors disabled:opacity-40
+            disabled:cursor-not-allowed hover:enabled:bg-shell-700 ${
             a.danger ? 'text-status-danger' : 'text-ink-100'}`}
           title={a.hint || ''}
           onClick={() => {

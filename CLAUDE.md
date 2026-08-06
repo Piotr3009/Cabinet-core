@@ -1,151 +1,99 @@
-# CLAUDE.md — Cabinet Core — TURA 3
+# CLAUDE.md — Cabinet Core — TURA 4
 
 ## Kontekst
+Tury 1–3 zmergowane. Baseline: **357/357 testów** — podłoga, nigdy mniej. Tura 4 = wygląd
+(neutralne materiały, cienkie kontury), szkielet aplikacji (ekran startowy, górne menu)
+i UX prawego panelu + 2 bugi. Pełny rejestr: `BACKLOG.md` (pozycje 1–18 = ta tura;
+19+ NIE RUSZAJ). Właściciel: Piotr — nie-programista. Wzorce: `reference/`.
 
-Tura 1 (MVP, fazy 0–7) i tura 2 (widok CNC, DXF+ZIP, kolizje, wysokości szuflad, hardware,
-CI) są ZAKOŃCZONE i zmergowane. Baseline: **158/158 testów zielonych, CI aktywne** — to podłoga,
-nigdy mniej. Ten plik opisuje TURĘ 3: rozbudowę do pełnej rodziny szafek z LISP + pokój v2
-+ interakcje + ustawienia projektowania + eksport grupowy CNC.
+## TRYB: PEŁNA AUTONOMIA — ZERO PYTAŃ
+- Wykonuj fazy po kolei, bez czekania. Commit+push per faza, werdykty → BUILD-LOG.md
+  (sekcja TURA 4), problemy → BLOCKERS.md. Nowa gałąź `claude/...`, PR do main.
+- **Nie zadawaj użytkownikowi ŻADNYCH pytań.** Wątpliwość → wybierz rozsądnie, odnotuj
+  w BLOCKERS, jedź dalej. **Nie proponuj subskrypcji PR ani "pilnowania"** — kończysz
+  raportem i tyle. Zasada "czysto albo wcale": brak czasu → fazy NIEROZPOCZĘTE do BLOCKERS.
 
-**Właściciel:** Piotr — nie jest programistą. **Matematyka:** `reference/lisp/`.
-**Kolory:** `reference/colors/psw-colors.json` (wyekstrahowane 1:1 z PSW — NIE dotykasz repo PSW).
-**Wzorce:** `reference/production-core/`. **Spec:** `SPEC.md` (uwaga: fazy tej tury NADPISUJĄ
-decyzję "max 3 ściany" z SPEC 4.2 — nowa decyzja Piotra: 4 ściany z auto-ukrywaniem).
-
-## TRYB PRACY: AUTONOMIA (1–2 SESJE)
-
-Fazy w twardej kolejności, bez pytań. Commit+push per faza, werdykt do `BUILD-LOG.md`
-(sekcja TURA 3), problemy do `BLOCKERS.md`. Nowa gałąź `claude/...`, PR do main.
-
-**ZASADA "CZYSTO ALBO WCALE":** jeśli sesja się kończy, NIE zostawiaj zadań w połowie —
-niedotknięte fazy wpisz do BLOCKERS jako `NOT STARTED (tura 3, faza N)`. Druga sesja rusza
-z tego samego pliku: przeczytaj BUILD-LOG + BLOCKERS i kontynuuj od pierwszej nierozpoczętej fazy.
-
-## ŻELAZNE ZASADY
-
-1. **FIXTURES NIETYKALNE** — dotychczasowe bez zmian. NOWE typy: NAJPIERW wyprowadź fixture
-   z LISP-a linia-po-linii (jak `fixtures/golden-bud.json` — ten sam format, meta
-   `status: PENDING_PIOTR_VERIFICATION`, sekcja `verify_with_piotr` z kluczowymi liczbami),
-   ZAPISZ fixture, DOPIERO POTEM koduj silnik pod ten fixture. Silnik się nie zgadza →
-   naprawiasz silnik. Fixture wyprowadzony ≠ fixture dopasowany do silnika.
-2. `src/engine/` czysty JS, zero Reacta. Zero gołych liczb — wszystko do `profile.js`.
-3. JavaScript, nie TS. Kod i copy UI po angielsku.
-4. **Zero nowych zależności** (jszip już jest). Import DXF pomieszczenia: parsuj tekst
-   sam (LINE/LWPOLYLINE z sekcji ENTITIES wystarczy). Czegoś się nie da → BLOCKERS, nie npm install.
-5. Mock-mode działa bez `.env`. Baza nad localStorage. Nie dotykasz innych repo.
-6. Model danych jednostek/pokoju może wymagać rozszerzeń — dopisz migrację do
-   `sql/002_tura3.sql` (nagłówek "SQL PRZED push"), NIE wykonuj.
+## ŻELAZNE ZASADY (bez zmian)
+Fixtures nietykalne · engine czysty JS bez Reacta · zero gołych liczb (wszystko profile.js)
+· JS nie TS · **zero nowych zależności** (tekstury drewna: wygeneruj proceduralnie do plików
+PNG w /public/textures — canvas/skrypt node, słoje + szum; NIE pobieraj z internetu) ·
+mock-mode działa bez .env · kod i copy UI po angielsku · nie dotykasz innych repo.
 
 ## FAZY
 
-### FAZA 1 — Silnik: pełna rodzina typów [CRITICAL]
+### F1 — BUGI [CRITICAL] (BACKLOG 1–3)
+- **#1 Kolejność szuflad**: góra listy w panelu = góra w 3D (dziś odwrotnie). Wyrównaj
+  konwencję w JEDNYM miejscu (store/engine order), nie łataj w widoku. Test.
+- **#2 Pola liczbowe**: kontrolowane inputy normalizują per klawisz (RightPanel ~281) —
+  nie da się wpisać wartości. Fix wzorcem: lokalny bufor tekstowy, commit+clamp na
+  Enter/blur, Escape=przywróć. Zastosuj do WSZYSTKICH pól liczbowych (szuflady, wymiary,
+  mount height, pokój). Test logiki bufora.
+- **#3 Weryfikacja wizualna**: szafa 1200 + 2 szuflady internal w Chromium — screenshot;
+  skrzynki mają być wcięte ~71 mm/str., DP przy bokach (dane silnika są poprawne —
+  sprawdzono). Rozjazd render↔dane → napraw render; zgodne → odnotuj DONE w BLOCKERS #3.
 
-Nowe typy z LISP (kolejność wg wartości): **BUDR** (baza 3 szuflady, ratio 4:3:2 —
-KIT_BUDR_FULL.lsp), **WUD** (wisząca: bez nóg, zawieszki, doorExtend — KIT_WUD_FULL.lsp),
-**BUDTALL**, **LOW_CABINET**, **SINK**, **FRIDGE**. Dla każdego: diff LISP-a względem
-BUD/WARDROBE (rdzeń wspólny ~86% — NIE kopiuj logiki, konfiguruj typ), stałe do profilu,
-fixture per typ (zasada #1), testy. Wzorzec konfigów typów już istnieje w silniku.
+### F2 — Wygląd 3D (BACKLOG 4–6)
+- Default korpus: złamana biel #F2F0EC; opcja jasny szary #E8E8E6. Fronty default = korpus.
+  Dekory: dark walnut + light oak (tekstury proceduralne → /public/textures, ładowane
+  przez loader z Design Settings; dekor wybieralny per materiał).
+- Kontury: cienkie CZARNE (#1A1A1A, ~1px look — edges geometry/thin lines zamiast obecnych
+  grubych brązowych); **toggle "Outlines" w toolbarze** (ON default).
+- Sheen ~20%: roughness/clearcoat delikatnie (wzór: szkło/ramy w PSW look) — subtelnie,
+  nie plastik. Kanwas/ściany bez zmian.
 
-Dodatkowo w silniku:
-- **Nogi:** reguła z LISP + Piotra: 4 w rogach; szerokość > 1000 mm → +1 noga w geometrycznym
-  środku (środek szerokości i głębokości) = 5. Do profilu + `hardware[]` (qty) + wiercenia jeśli LISP je ma.
-- **Warning na zły format szuflad**: `drawers` nie-liczba/nie-obsługiwany kształt →
-  `warnings[]` wpis, nie cicha zerowa ilość (audyt tury 2, [LOW]).
+### F3 — Ekran startowy + górne menu (BACKLOG 7–8)
+- Start screen (styl AutoCAD): logo, **New Project**, **Open** (lista z Supabase/mock),
+  **Recent** (ostatnie 5, klik otwiera). Wejście do kanwasu dopiero z projektu.
+- Górny pasek menu (lewa strona): **File** (New / Open / Save / Save as / Export ▸ [istniejące
+  eksporty] ) · **View** (Outlines, Dimensions, 3D|CNC, Contour view — patrz F6) · **Library** ▸
+  kategorie · **Settings** (Design Settings) · **Database** (disabled, "soon") · **Clients**
+  (disabled, "soon"). Styl przycisków = obecne Account/Export (złoty akcent, te same kształty).
+  Stary rozrzut przycisków sprzątnij — jedna spójna belka; Account/Export zostają po prawej.
 
-### FAZA 2 — 3D: zgodność renderu z silnikiem [CRITICAL]
+### F4 — Library z kategoriami (BACKLOG 9)
+Menu Library ▸ rozwijane kategorie: **Base units** (BUD, BUDR, SINK, LOW) · **Wall units**
+(WUD) · **Tall units** (BUDTALL, FRIDGE, WARDROBE) · **Saved sets** (pusta lista + "soon") ·
+**Media walls** ("soon"). Klik kategorii → JEDEN modal (obecny, przefiltrowany do kategorii);
+modal: grab&move zostaje + **przycisk X** (zamknij). Bez kategorii w środku jednej listy.
 
-- **BUG: szeroka szafa (2 drzwi)** — silnik liczy odsunięcie szuflad po OBU stronach
-  (drawer panele L+R, redukcja 96 przy 1200), ale 3D tego nie pokazuje. Render MA
-  odzwierciedlać silnik 1:1 (pozycje/szerokości skrzynek, DP przy obu bokach).
-- **Nogi w 3D:** 4 (nie 2), piąta środkowa gdy >1000 mm; wysokość z profilu (100).
-- Render nowych typów z Fazy 1 (WUD wisi na ścianie na wysokości montażowej — parametr).
+### F5 — Prawy panel UX (BACKLOG 10–14)
+- **Add items = lista typów** (Drawers / Shelves / Hanger rail / Pull-down"soon"); klik typu →
+  **zwijana sekcja** ustawień (accordion) inline — ŻADNYCH osobnych modali. Dużo sekcji =
+  wszystko zwijalne.
+- **Equal heights**: checkbox ✓ default (jedno pole dla wszystkich szuflad); odznaczony →
+  pole per szuflada (kolejność jak w 3D — po F1#1).
+- **Auto-porządek przy dodawaniu**: półki układają się od góry, szuflady od dołu, hanger
+  pomiędzy (nowe itemy nie kolidują z istniejącymi — użyj istniejących clampów).
+- **Szuflady internal dodane → drzwi jednostki animowanie się otwierają** (pokaż wnętrze;
+  istniejący mechanizm animacji frontów).
+- **Add hanger rail → wybór z listy materiałów** kategorii hardware (istniejący store
+  materiałów); pozycja "Connect JoineryCore" jako disabled hint. Wybrany hanger → hardware[]
+  w BOM z nazwą pozycji.
 
-### FAZA 3 — Pokój v2 [CRITICAL]
+### F6 — Infille/plinth zachowanie + end panel + widok konturowy (BACKLOG 15–18)
+- **Side infill**: jednostka NIE dojeżdża do ściany — clamp stop w odległości infillWidth
+  (Design Settings); przy dojechaniu do stopu infill **pojawia się automatycznie**
+  (formatka w BOM); odjazd → znika. Test clampa.
+- **Plinth + top infill: manual** — usuwasz auto-tworzenie z tury 3; dodawanie z prawego
+  panelu / menu kontekstowego ("Add plinth", "Add top infill"); dopiero po dodaniu są
+  widoczne i w BOM. Top infill: default 40, drag do sufitu i dwuklik zostają.
+- **Right-click → "Add end panel"**: opcje w sekcji (nie modal): height = **to floor / unit
+  height**; thickness default = front_t z Design Settings; checkbox **"Apply to all end
+  panels"** ✓ → kolejne dodania dziedziczą ustawienia. Panel = formatka (BOM/CNC/DXF),
+  po zewnętrznej stronie boku, kolizje respektowane.
+- **Contour view** (View ▸ Contour): tryb prezentacyjny — materiały wygaszone/przezroczyste,
+  same czyste kontury (do renderu i druku ekranem). Przełącznik, bez wpływu na BOM.
 
-- **4 ściany** zamiast 3; ściany tyłem do kamery **auto-znikają** (culling po kierunku
-  kamery) → naturalny widok z góry przy kamerze znad pokoju.
-- **Kształt L** — pokój jako lista ścian (prostokąt = szczególny przypadek); modal
-  pomieszczenia: edycja rzutu z góry (rysowanie/edycja ścian), wymiary.
-- **Import DXF rzutu**: upload → parser (LINE/LWPOLYLINE) → propozycja ścian na podglądzie →
-  użytkownik potwierdza/koryguje → pokój utworzony.
-- **Okna i drzwi w ścianach**: "Insert window" / "Insert door" — automatyczne wstawienie
-  z edycją pozycji/wymiarów; wizualne otwory w ścianie (v1: wizualizacja, bez logiki kolizji z meblami).
-- **Guard zmniejszania pokoju**: jeśli nowy wymiar/kształt spowodowałby kolizję lub
-  wypchnięcie jednostek → BLOKADA zmiany + komunikat (EN):
-  "Cannot shrink the room below placed units — move or remove units first."
+### F7 — Zamknięcie
+E2E w Chromium (start screen → new project → jednostka → items → end panel → infill przy
+ścianie → BOM → eksporty), screenshoty do BUILD-LOG; `npm test` + build; BACKLOG.md:
+pozycjom 1–18 ustaw status TURA-4/DONE (albo NIEROZPOCZĘTE w BLOCKERS); README aktualizacja.
 
-### FAZA 4 — Kolizje: absolutne domknięcie [CRITICAL]
-
-Zakaz nakładania jednostek KAŻDĄ drogą: drag, zmiana szerokości/głębokości jednostki
-(clamp/blokada z komunikatem), zmiana pokoju (Faza 3), przyszłe ścieżki — wszystko przez
-te same czyste funkcje clampujące. Testy na nowe ścieżki (resize jednostki obok sąsiada,
-resize przy ścianie, L-shape narożnik).
-
-### FAZA 5 — Interakcje [HIGH]
-
-- **Klik-i-trzymaj na elemencie = przesuwanie** (jednostka wzdłuż ściany / półka pionowo)
-  bez ruchu kamery; orbit kamery TYLKO gdy start na ścianie/tle.
-- **Zoom do elementu**: dwuklik/klik fokusuje kamerę BLISKO klikniętego elementu (nie środek sceny).
-- **Obrót**: przycisk w panelu itemu — każde kliknięcie +90°; pole na własny kąt;
-  przyciski "Back to wall" / "Side to wall".
-- **Prawy klik na item → menu kontekstowe**: min. "Center shelves" (równe rozstawy),
-  "Rotate 90°", "Delete"; architektura pod kolejne akcje.
-- **Animacja otwierania/zamykania**: klik na front szuflady = wysuwa/chowa (animowane),
-  klik na drzwi = otwiera/zamyka na zawiasach (kierunek wg hinge). Stan wizualny,
-  nie wpływa na BOM/CNC.
-
-### FAZA 6 — Modal "Design Settings" (poziom projektu) [HIGH]
-
-- **Materiały carcass**: liczba typów (1–3) + przypisanie materiału per typ (z listy materiałów).
-- **Fronty**: typ standardowy (Shaker / Flat; uchwyty — later, zostaw miejsce).
-- **Biblioteka drzwi użytkownika v1**: zapisywane style = nazwa + typ frontu + materiał/kolor;
-  przypisywalne do jednostek; CRUD w modalu.
-- **Kolory frontów**: wybór RAL / F&B / własny HEX. Dane z `reference/colors/psw-colors.json`
-  (grupy, nazwy, hexy — użyj 1:1; UI wzorowane na dropdownach z grupami). Wybrany kolor
-  widoczny w 3D na frontach.
-- **Infill przy ścianie**: ustawienie szerokości w mm (używane w Fazie 7).
-- Ustawienia trzymane per projekt (store + persystencja + mock).
-
-### FAZA 7 — Automaty konstrukcyjne [HIGH]
-
-- **Auto plinth (cokół)**: generowany pod jednostkami stojącymi (wysokość = legHeight z profilu,
-  cofnięcie z profilu); panel w BOM/CNC jako formatka.
-- **Auto side infill**: gdy jednostka stoi przy ścianie z luzem — wypełnienie o szerokości
-  z Design Settings; formatka w BOM.
-- **Auto top infill**: przy wstawianiu jednostki od razu top infill **40 mm** (default
-  w profilu); **grab = przeciąganie w górę aż do sufitu; dwuklik = sam dojeżdża do sufitu**;
-  formatka w BOM przelicza się z wysokością.
-
-### FAZA 8 — Toolbar wizualizatora + eksport grupowy CNC [HIGH]
-
-- **Toolbar na górze kanwasu**: Show/Hide dimensions; strzałki odległości **między
-  jednostkami** i **od jednostki do ściany** (linie z grotami + wartość mm, live przy
-  przeciąganiu); przycisk **BOM przeniesiony tutaj**; przełącznik 3D | CNC zostaje.
-- **Eksport grupowy CNC**: w widoku CNC lista formatek z checkboxami, grupy:
-  Carcass / Shelves / Drawers / Fronts & Doors; presety: **All · Carcass only ·
-  All without drawers · Fronts & doors only**; podgląd renderuje ZAZNACZONE.
-- **"Download DXF (one file)"**: JEDEN plik DXF z zaznaczonymi formatkami rozłożonymi
-  DOKŁADNIE jak w podglądzie (ten sam moduł layoutu — czyste funkcje już są);
-  nazwa `{unitNum}-cnc-{preset|custom}.dxf`. Test: parsowanie własnego outputu
-  (encje per warstwa == suma z silnika dla zaznaczonych).
-- **ZIP per-formatka ZOSTAJE** jako druga opcja ("Download ZIP (per panel)") — droga
-  awaryjna Piotra przy uszkodzonej pojedynczej formatce.
-
-## POZA ZAKRESEM (nie ruszaj)
-
-Rysunek techniczny pomieszczenia DXF/SVG (TODO na później), uchwyty, integracja JC,
-eksport all-projektowy, nesting, PWA, auto-propozycje pozycji przy grab.
-
-## DEFINICJA SUKCESU TURY 3
-
-1. `npm test`: 158 starych + nowe (typy×fixtures, kolizje-resize, dxf-grupowy, clamp pokoju) — 0 fail.
-2. 6 nowych typów w Library, konfigurowalne, render + BOM + CNC + DXF działają dla każdego.
-3. Szeroka szafa: 3D pokazuje obustronne odsunięcie szuflad; nogi 4/5 poprawnie.
-4. Pokój: 4 ściany z auto-ukrywaniem, widok z góry, L-shape, import DXF, okno+drzwi, guard zmniejszania.
-5. Nie da się nałożyć jednostek ŻADNĄ drogą (drag, resize, pokój).
-6. Interakcje: move-bez-kamery, zoom-do-elementu, obrót 90°/kąt/align, menu kontekstowe, animacje frontów.
-7. Design Settings: materiały, fronty, biblioteka drzwi, kolory RAL/F&B/hex widoczne w 3D, infill mm.
-8. Automaty: plinth, side infill, top infill 40 z drag/dwuklikiem — wszystkie w BOM.
-9. Toolbar: wymiary on/off, strzałki odległości live, BOM na górze; eksport grupowy:
-   presety + jeden DXF == podgląd, ZIP per panel zostaje.
-10. BUILD-LOG sekcja TURA 3 + BLOCKERS (w tym NOT STARTED, jeśli sesja się skończy).
+## DEFINICJA SUKCESU
+1. 357 starych + nowe testy (kolejność szuflad, bufor pól, clamp infilla, end panel) — 0 fail.
+2. Bugi #1 #2 naprawione; #3 rozstrzygnięte screenshotem.
+3. Meble neutralne + orzech/dąb, kontury czarne cienkie z toggle, sheen subtelny.
+4. Start screen + górne menu działają; Library w kategoriach z X.
+5. Panel: accordion, equal heights, auto-porządek, drzwi otwierają się po szufladach, hanger z materiałów.
+6. Infill auto przy ścianie; plinth/top manual; end panel w BOM; contour view.
+7. BUILD-LOG TURA 4 + BACKLOG statusy + BLOCKERS bez pytań do użytkownika.

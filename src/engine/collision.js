@@ -93,18 +93,34 @@ export function unitSpan(unit) {
 // into the same one-dimensional problem by measuring the other unit in THIS
 // wall's frame — along the wall, and into the room.
 
-/** The four plan corners of a unit standing on `wall`. */
-export function unitFootprint({ wall, x, width, depth }) {
+/**
+ * The four plan corners of a unit standing on `wall`.
+ *
+ * `rotation` (degrees, clockwise seen from above) turns the unit about the
+ * point where it meets the wall — 0 is back-to-wall, 90 is side-to-wall. The
+ * footprint is what every collision question is asked about, so a rotated unit
+ * needs no separate rules: it is just a different rectangle.
+ */
+export function unitFootprint({ wall, x, width, depth, rotation = 0 }) {
   const ax = wall.along.x; const ay = wall.along.y;
   const nx = wall.inward.x; const ny = wall.inward.y;
   const ox = wall.start.x + ax * x;
   const oy = wall.start.y + ay * x;
-  return [
-    { x: ox, y: oy },
-    { x: ox + ax * width, y: oy + ay * width },
-    { x: ox + ax * width + nx * depth, y: oy + ay * width + ny * depth },
-    { x: ox + nx * depth, y: oy + ny * depth },
-  ];
+  const rad = (Number(rotation) || 0) * Math.PI / 180;
+  const cos = Math.cos(rad); const sin = Math.sin(rad);
+  // Local (u along the wall, v into the room) → plan, with the rotation applied
+  // in the local frame first.
+  const place = (u, v) => {
+    const ru = u * cos - v * sin;
+    const rv = u * sin + v * cos;
+    return { x: ox + ax * ru + nx * rv, y: oy + ay * ru + ny * rv };
+  };
+  return [place(0, 0), place(width, 0), place(width, depth), place(0, depth)];
+}
+
+/** A unit's own span in its wall's frame, rotation included. */
+export function unitPlanSpan({ wall, x, width, depth, rotation = 0 }) {
+  return spanInWallFrame(unitFootprint({ wall, x, width, depth, rotation }), wall);
 }
 
 /** A plan polygon measured in one wall's frame: along the wall, into the room. */
@@ -138,14 +154,22 @@ export function spanInWallFrame(points, wall) {
 export function wallObstacles({ wall, walls, depth, others = [] }) {
   const out = [];
   for (const o of others) {
-    if (o.wall === wall.index) {
+    if (o.wall === wall.index && !o.rotation) {
       out.push({ left: o.x_mm, right: o.x_mm + o.width, label: o.label, corner: false });
       continue;
     }
     const otherWall = walls[o.wall];
     if (!otherWall) continue;
-    const footprint = unitFootprint({ wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth });
+    const footprint = unitFootprint({
+      wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth, rotation: o.rotation,
+    });
     const span = spanInWallFrame(footprint, wall);
+    if (o.wall === wall.index) {
+      // A rotated neighbour on THIS wall: its footprint is what counts, not
+      // its nominal width.
+      out.push({ left: span.left, right: span.right, label: o.label, corner: false });
+      continue;
+    }
     // Behind this wall, or past the front of this unit: not in the way.
     if (span.far <= 0 || span.near >= depth) continue;
     if (span.right <= 0 || span.left >= wall.width) continue;
@@ -224,11 +248,11 @@ export function clampUnitDepth({ depth, x, width, wall, walls, others = [] }, pr
   let limitedBy = 'the room';
 
   for (const o of others) {
-    if (o.wall === wall.index) continue;
+    if (o.wall === wall.index && !o.rotation) continue;
     const otherWall = walls[o.wall];
     if (!otherWall) continue;
     const span = spanInWallFrame(
-      unitFootprint({ wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth }),
+      unitFootprint({ wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth, rotation: o.rotation }),
       wall,
     );
     // Only a neighbour standing in front of this unit's width can limit it.

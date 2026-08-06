@@ -52,6 +52,32 @@ export const useUiStore = create((set, get) => ({
   dragging: null,                    // { unitId, itemId, pos_mm, above, below }
   setDragging: (d) => set({ dragging: d }),
 
+  // Right-click menu on an item in the canvas. `actions` is built by the
+  // caller, so a new action is a list entry, not a new menu.
+  contextMenu: null,                 // { x, y, unitId, panelId, actions: [{id,label,run}] }
+  openContextMenu: (menu) => set({ contextMenu: menu }),
+  closeContextMenu: () => set({ contextMenu: null }),
+
+  // "Look at THIS" — a double click asks the camera to fly to a point in the
+  // scene rather than to the middle of the room (CLAUDE.md phase 5).
+  focusRequest: null,                // { target: [x,y,z], radius, at }
+  focusOn: (target, radius) => set({ focusRequest: { target, radius, at: Date.now() } }),
+  clearFocus: () => set({ focusRequest: null }),
+
+  // Which fronts are open, and how far (0 = shut, 1 = fully open). Purely
+  // visual: nothing here reaches the engine, the BOM or the CNC sheet.
+  openFronts: {},                    // { [unitId]: { [panelId]: 0..1 } }
+  toggleFront: (unitId, panelId) => set((s) => {
+    const unit = s.openFronts[unitId] || {};
+    const next = (unit[panelId] ?? 0) > 0.5 ? 0 : 1;
+    return { openFronts: { ...s.openFronts, [unitId]: { ...unit, [panelId]: next } } };
+  }),
+  closeAllFronts: (unitId) => set((s) => {
+    if (!unitId) return { openFronts: {} };
+    const { [unitId]: _dropped, ...rest } = s.openFronts;
+    return { openFronts: rest };
+  }),
+
   // Snap step: 1 mm default, 0.5 mm and the 32 mm system as options (SPEC 4.8)
   snapStep: loadSnap(),
   setSnapStep: (step) => {

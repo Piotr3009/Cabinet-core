@@ -5,7 +5,7 @@ import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.
 import { snap as snapTo } from '../engine/format.js';
 import {
   clampShelfPos, clampUnitDepth, clampUnitWidth, clampUnitX, firstFreeUnitX,
-  shelfBand, shelfBounds, unitIssues, unitSpan, wallObstacles,
+  shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan, wallObstacles,
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls, wallWidth,
@@ -33,7 +33,7 @@ function newUnit(typeId, profile, index) {
   return {
     id: uid('u'),
     type: type.id,
-    position: { wall: 0, x_mm: 0 },
+    position: { wall: 0, x_mm: 0, rotation_deg: 0 },
     params: {
       ...params,
       unit_num: `${UNIT_NUM_PREFIX[type.id] ?? ''}${String(index + 1).padStart(2, '0')}`,
@@ -254,19 +254,58 @@ export const useProjectStore = create((set, get) => ({
     const others = wallObstacles({
       wall, walls, depth: unit.params.depth, others: neighboursOf(s, unit).map(toObstacleUnit),
     });
+    // A rotated unit covers a different stretch of wall than its nominal
+    // width, so the clamp is given the FOOTPRINT — and the offset between the
+    // footprint's left edge and the unit's anchor is constant during a move,
+    // which is what makes this a translation of the same one clamp.
+    const span = unitPlanSpan({
+      wall, x: unit.position.x_mm, width: unit.params.width, depth: unit.params.depth,
+      rotation: unit.position.rotation_deg,
+    });
+    const lead = span.left - unit.position.x_mm;
+    const footprintWidth = span.right - span.left;
+
     const result = clampUnitX({
-      x: snapTo(xRaw, snapStep),
-      current: unit.position.x_mm,
-      width: unit.params.width,
+      x: snapTo(xRaw, snapStep) + lead,
+      current: unit.position.x_mm + lead,
+      width: footprintWidth,
       wallWidth: wall.width,
       others,
     }, getCabinetProfile());
+    const x = result.x - lead;
 
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: result.x } } : u)),
+      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
       dirty: true,
     }));
-    return result;
+    return { ...result, x };
+  },
+
+  /**
+   * Turn a unit. `mode` 'step' adds 90° per click (the button), 'set' takes an
+   * exact angle (the field), 'back' and 'side' are the two alignments Piotr
+   * asked for. The result goes straight back through the position clamp, so a
+   * turn can no more create an overlap than a drag can.
+   */
+  rotateUnit: (unitId, mode = 'step', value = 90) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const current = Number(unit.position.rotation_deg) || 0;
+    let next = current;
+    if (mode === 'step') next = current + (Number(value) || 90);
+    else if (mode === 'set') next = Number(value) || 0;
+    else if (mode === 'back') next = 0;
+    else if (mode === 'side') next = 90;
+    next = ((next % 360) + 360) % 360;
+
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, rotation_deg: next } } : u)),
+      dirty: true,
+    }));
+    // Turning changes the footprint; settle it legally where it stands.
+    get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
+    return next;
   },
 
   /**
@@ -521,6 +560,7 @@ function toObstacleUnit(u) {
     x_mm: Number(u.position?.x_mm) || 0,
     width: Number(u.params?.width) || 0,
     depth: Number(u.params?.depth) || 0,
+    rotation: Number(u.position?.rotation_deg) || 0,
     label: u.params?.unit_num || u.id,
   };
 }

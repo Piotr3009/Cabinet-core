@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS, colorForRole, edgeColorForRole } from './constants.js';
 import DimLabel from './DimLabel.jsx';
@@ -8,10 +8,76 @@ import DimLabel from './DimLabel.jsx';
 // One unit, rendered straight from the ENGINE output: every panel record
 // carries a `box` in cabinet-local mm, so what you see is what the cut list
 // says (CLAUDE.md phase 2). Nothing here re-derives a dimension.
+//
+// Turn 3 adds the interactions on top of that, and they are all VIEW state:
+// a drawer slides out, a door swings on its hinge, the camera flies to what
+// was double-clicked. None of it reaches the engine, the BOM or the CNC sheet.
+
+/** Which kind of front this panel is, if any — that decides how it moves. */
+function frontKind(panel) {
+  if (panel.part === 'DRAWER-FRONT') return 'drawer';
+  if (panel.part === 'FRONT') return 'door';
+  return null;
+}
+
+/**
+ * One panel. Fronts animate towards their open state; everything else is a
+ * static box. The animation lives here, per panel, so opening one drawer does
+ * not re-render the rest of the unit.
+ */
+function MovingPanel({ panel: p, front, open, colour, edgeColour, depth, ...handlers }) {
+  const group = useRef(null);
+  const amount = useRef(0);
+
+  useFrame((_, delta) => {
+    if (!group.current || !front) return;
+    const target = open;
+    if (Math.abs(amount.current - target) < 0.001) { amount.current = target; } else {
+      // Frame-rate independent easing: fast at the start, settled in ~0.35 s.
+      amount.current += (target - amount.current) * Math.min(1, delta * 8);
+    }
+    const a = amount.current;
+    if (front === 'drawer') {
+      // Slides straight out of the carcass, most of its own depth.
+      group.current.position.z = mm(depth * 0.75) * a;
+      group.current.rotation.y = 0;
+    } else {
+      // Swings on the hinge side: the pivot is the group's origin, which is
+      // placed at the hinge edge below.
+      const dir = p.meta?.hinge === 'R' ? 1 : -1;
+      group.current.rotation.y = dir * a * (Math.PI * 0.55);
+      group.current.position.z = 0;
+    }
+  });
+
+  // A door rotates about its hinge edge, so the mesh is offset inside a group
+  // pinned to that edge; everything else sits at its own centre.
+  const hingeAtRight = p.meta?.hinge === 'R';
+  const pivot = front === 'door'
+    ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
+    : [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)];
+  const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
+
+  return (
+    <group ref={group} position={pivot}>
+      <mesh position={meshOffset} castShadow receiveShadow {...handlers}>
+        <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
+        <meshStandardMaterial
+          color={colour}
+          roughness={0.72}
+          metalness={0.02}
+          transparent={p.role === 'front'}
+          opacity={p.role === 'front' ? 0.93 : 1}
+        />
+        <Edges threshold={15} color={edgeColour} />
+      </mesh>
+    </group>
+  );
+}
 
 export default function UnitView({
   unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
-  orbitRef, showLabels = true, shelfDrag = null,
+  orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -93,6 +159,26 @@ export default function UnitView({
     [wallStart, along, unit.position.x_mm, baseY],
   );
   const originY = mm(baseY);
+  // A turned unit pivots about the point where it meets the wall — the same
+  // anchor engine/collision.js rotates its footprint about, so the picture and
+  // the collision rules can never disagree about where it is.
+  //
+  // The SIGN matters and is not cosmetic: rotating about world Y takes local
+  // +X onto along·cosφ − inward·sinφ, while the footprint takes the width axis
+  // onto along·cosφ + inward·sinφ. Subtracting the angle here is what makes the
+  // two the same turn — with the sign the other way round a rotated unit swings
+  // behind the wall and disappears from the scene while the clamp thinks it is
+  // standing in the room.
+  const rotationRad = -((Number(unit.position.rotation_deg) || 0) * Math.PI) / 180;
+
+  /** World position of a panel's centre, for "fly the camera here". */
+  const panelWorldCentre = useCallback((p) => {
+    const local = new THREE.Vector3(
+      mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2),
+    );
+    local.applyAxisAngle(new THREE.Vector3(0, 1, 0), wall.angle + rotationRad);
+    return local.add(origin);
+  }, [origin, wall.angle, rotationRad]);
 
   // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
   // clamping and snapping live in the store so the rules stay in one place.
@@ -126,30 +212,39 @@ export default function UnitView({
   }, [onMoveShelf, onSelect, pointerToPlane, originY, orbitRef, snapStep, onShelfDragState, unit.id]);
 
   return (
-    <group position={origin} rotation={[0, wall.angle, 0]}>
+    <group position={origin} rotation={[0, wall.angle + rotationRad, 0]}>
       {result.panels.filter((p) => p.box).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
+        const front = frontKind(p);
         return (
-          <mesh
+          <MovingPanel
             key={p.id}
-            position={[mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]}
-            castShadow
-            receiveShadow
-            onPointerDown={shelfId ? (e) => startShelfDrag(e, shelfId, p.box.y) : startDrag}
-            onPointerOver={shelfId ? () => { document.body.style.cursor = 'ns-resize'; } : undefined}
-            onPointerOut={shelfId ? () => { document.body.style.cursor = ''; } : undefined}
-          >
-            <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
-            <meshStandardMaterial
-              color={beingDragged ? COLORS.goldSoft : colorForRole(p.role)}
-              roughness={0.72}
-              metalness={0.02}
-              transparent={p.role === 'front'}
-              opacity={p.role === 'front' ? 0.93 : 1}
-            />
-            <Edges threshold={15} color={selected || beingDragged ? COLORS.gold : edgeColorForRole(p.role)} />
-          </mesh>
+            panel={p}
+            front={front}
+            open={front ? (openFronts?.[p.id] ?? 0) : 0}
+            colour={beingDragged ? COLORS.goldSoft : colorForRole(p.role)}
+            edgeColour={selected || beingDragged ? COLORS.gold : edgeColorForRole(p.role)}
+            depth={D}
+            onPointerDown={(e) => {
+              if (shelfId) { startShelfDrag(e, shelfId, p.box.y); return; }
+              startDrag(e);
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              // A front opens; anything else pulls the camera in to look at it.
+              if (front && onToggleFront) onToggleFront(p.id);
+              else if (onFocus) onFocus(panelWorldCentre(p), Math.max(p.box.w, p.box.h, p.box.d));
+            }}
+            onContextMenu={(e) => {
+              e.stopPropagation();
+              e.nativeEvent?.preventDefault?.();
+              onSelect();
+              if (onContextMenu) onContextMenu({ x: e.clientX, y: e.clientY, panelId: p.id, part: p.part });
+            }}
+            onPointerOver={shelfId ? () => { document.body.style.cursor = 'ns-resize'; } : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined)}
+            onPointerOut={(shelfId || front) ? () => { document.body.style.cursor = ''; } : undefined}
+          />
         );
       })}
 

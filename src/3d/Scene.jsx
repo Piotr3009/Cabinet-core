@@ -1,6 +1,6 @@
 import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
@@ -38,6 +38,47 @@ function CaptureRig({ onReady }) {
   return null;
 }
 
+/**
+ * "Look at THIS." A double click asks for a point and a size; the camera and
+ * the orbit target fly there together over a few frames, so the view ends up
+ * NEAR the thing that was clicked instead of framing the middle of the room
+ * (CLAUDE.md phase 5).
+ */
+function FocusRig({ request, orbitRef, onDone }) {
+  const { camera } = useThree();
+  const flight = useRef(null);
+
+  useEffect(() => {
+    if (!request) return;
+    const target = new THREE.Vector3(...request.target);
+    // Keep the direction the user is already looking from; only close in.
+    const from = orbitRef.current?.target?.clone() ?? new THREE.Vector3();
+    const dir = camera.position.clone().sub(from);
+    if (dir.lengthSq() < 1e-6) dir.set(0, 0.4, 1);
+    dir.normalize();
+    const distance = Math.max(mm(request.radius) * 2.6, 0.7);
+    flight.current = {
+      target,
+      position: target.clone().addScaledVector(dir, distance).setY(Math.max(target.y + distance * 0.35, 0.35)),
+      t: 0,
+    };
+  }, [request, camera, orbitRef]);
+
+  useFrame((_, delta) => {
+    const f = flight.current;
+    if (!f) return;
+    f.t = Math.min(1, f.t + delta * 3);
+    const ease = 1 - (1 - f.t) ** 3;
+    camera.position.lerp(f.position, ease * 0.35);
+    if (orbitRef.current) {
+      orbitRef.current.target.lerp(f.target, ease * 0.35);
+      orbitRef.current.update();
+    }
+    if (f.t >= 1) { flight.current = null; onDone?.(); }
+  });
+  return null;
+}
+
 function Lights({ roomHeight, roomWidth }) {
   return (
     <>
@@ -69,6 +110,13 @@ export default function Scene({ onCaptureReady }) {
   const snapStep = useUiStore((s) => s.snapStep);
   const shelfDrag = useUiStore((s) => s.dragging);
   const setShelfDrag = useUiStore((s) => s.setDragging);
+  const openFronts = useUiStore((s) => s.openFronts);
+  const toggleFront = useUiStore((s) => s.toggleFront);
+  const focusRequest = useUiStore((s) => s.focusRequest);
+  const focusOn = useUiStore((s) => s.focusOn);
+  const clearFocus = useUiStore((s) => s.clearFocus);
+  const openContextMenu = useUiStore((s) => s.openContextMenu);
+  const closeContextMenu = useUiStore((s) => s.closeContextMenu);
 
   // `units` is the subscription that drives the re-render; allResults() is a
   // stable store function, so deriving from it alone would never update.
@@ -86,7 +134,11 @@ export default function Scene({ onCaptureReady }) {
       // NoToneMapping: ACES (the R3F default) turns the white walls grey.
       gl={{ preserveDrawingBuffer: true, antialias: true, toneMapping: THREE.NoToneMapping }}
       camera={{ position: [0, roomH * 0.95, mm(bounds.depth) * 1.25 + roomW * 0.35], fov: 38, near: 0.05, far: 100 }}
-      onPointerMissed={() => clearSelection()}
+      // Clicking the background clears the selection and any open menu; the
+      // orbit only ever starts from the background or a wall, because every
+      // unit mesh stops the event and takes the pointer for itself.
+      onPointerMissed={() => { clearSelection(); closeContextMenu(); }}
+      onContextMenu={(e) => e.preventDefault()}
       style={{ background: '#fafaf8' }}
     >
       <color attach="background" args={['#fafaf8']} />
@@ -108,8 +160,14 @@ export default function Scene({ onCaptureReady }) {
           onShelfDragState={setShelfDrag}
           shelfDrag={shelfDrag}
           orbitRef={orbitRef}
+          openFronts={openFronts[unit.id]}
+          onToggleFront={(panelId) => toggleFront(unit.id, panelId)}
+          onFocus={(point, sizeMm) => focusOn([point.x, point.y, point.z], sizeMm)}
+          onContextMenu={(menu) => openContextMenu({ ...menu, unitId: unit.id })}
         />
       ))}
+
+      <FocusRig request={focusRequest} orbitRef={orbitRef} onDone={clearFocus} />
 
       <OrbitControls
         ref={orbitRef}

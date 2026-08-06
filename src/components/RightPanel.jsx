@@ -28,6 +28,7 @@ export default function RightPanel() {
   const removeUnit = useProjectStore((s) => s.removeUnit);
   const setDoors = useProjectStore((s) => s.setDoors);
   const setUnitWall = useProjectStore((s) => s.setUnitWall);
+  const rotateUnit = useProjectStore((s) => s.rotateUnit);
   const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
   const walls = useMemo(() => roomWalls(room), [room]);
@@ -43,6 +44,9 @@ export default function RightPanel() {
   const drawers = items.filter((i) => i.kind === 'drawer')
     .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
   const rail = items.find((i) => i.kind === 'hanger');
+  // A drawer unit whose stack comes from a fixed ratio (BUDR) has no editable
+  // drawer heights and no removable drawers — it IS its three drawers.
+  const ratioDrawers = type?.drawerStyle === 'budr';
   const hasDoors = Boolean(unit?.params.doors) && unit.params.doors !== false;
 
   const addDoors = () => {
@@ -86,17 +90,36 @@ export default function RightPanel() {
               ))}
             </div>
 
-            <div>
-              <span className="cc-label">Wall</span>
-              <select
-                className="cc-input"
-                value={unit.position?.wall ?? 0}
-                onChange={(e) => setUnitWall(unit.id, Number(e.target.value))}
-              >
-                {walls.map((w) => (
-                  <option key={w.index} value={w.index}>Wall {w.index + 1} · {Math.round(w.width)} mm</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="cc-label">Wall</span>
+                <select
+                  className="cc-input"
+                  value={unit.position?.wall ?? 0}
+                  onChange={(e) => setUnitWall(unit.id, Number(e.target.value))}
+                >
+                  {walls.map((w) => (
+                    <option key={w.index} value={w.index}>Wall {w.index + 1} · {Math.round(w.width)} mm</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <span className="cc-label">Rotation</span>
+                <div className="flex gap-1">
+                  <input
+                    type="number" className="cc-input w-16 text-right" step={5}
+                    title="Angle to the wall (0 = back to wall)"
+                    value={Math.round(unit.position?.rotation_deg ?? 0)}
+                    onChange={(e) => rotateUnit(unit.id, 'set', Number(e.target.value))}
+                  />
+                  <button type="button" className="cc-btn px-2" title="Turn 90° clockwise" onClick={() => rotateUnit(unit.id, 'step', 90)}>+90°</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-1">
+              <button type="button" className="cc-btn flex-1" onClick={() => rotateUnit(unit.id, 'back')}>Back to wall</button>
+              <button type="button" className="cc-btn flex-1" onClick={() => rotateUnit(unit.id, 'side')}>Side to wall</button>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -197,31 +220,50 @@ export default function RightPanel() {
                   {drawers.map((dr, i) => (
                     <li key={dr.id} className="flex items-center gap-1">
                       <span className="text-ink-400 w-6 text-xs">D{i + 1}</span>
-                      <input
-                        type="number"
-                        min={profile.wardrobe.drawers.minFrontHeight}
-                        max={profile.wardrobe.drawers.maxFrontHeight}
-                        step={10}
-                        className="cc-input w-20 text-right"
-                        title="Drawer front height (mm)"
-                        value={Math.round(dr.height_mm ?? profile.wardrobe.drawers.frontHeight)}
-                        onChange={(e) => setDrawerHeight(unit.id, dr.id, Number(e.target.value))}
-                      />
+                      {/* A BUDR's three fronts come from the kit's own 4:3:2
+                          split of the carcass height — there is no per-drawer
+                          height to set, so the engine's number is SHOWN, not
+                          offered as an input that would do nothing. */}
+                      {ratioDrawers ? (
+                        <span className="cc-input w-20 text-right opacity-70">
+                          {Math.round(result.derived.drawer_heights?.[i] ?? 0)}
+                        </span>
+                      ) : (
+                        <input
+                          type="number"
+                          min={profile.wardrobe.drawers.minFrontHeight}
+                          max={profile.wardrobe.drawers.maxFrontHeight}
+                          step={10}
+                          className="cc-input w-20 text-right"
+                          title="Drawer front height (mm)"
+                          value={Math.round(dr.height_mm ?? profile.wardrobe.drawers.frontHeight)}
+                          onChange={(e) => setDrawerHeight(unit.id, dr.id, Number(e.target.value))}
+                        />
+                      )}
                       <span className="text-[11px] text-ink-400 flex-1">
                         mm front
                         {result.derived.drawer_box_side_h?.[i] != null
                           && ` · box side ${Math.round(result.derived.drawer_box_side_h[i])}`}
                       </span>
-                      <button
-                        type="button" className="cc-btn-ghost" title="Remove this drawer"
-                        onClick={() => removeItem(unit.id, dr.id)}
-                      >×</button>
+                      {!ratioDrawers && (
+                        <button
+                          type="button" className="cc-btn-ghost" title="Remove this drawer"
+                          onClick={() => removeItem(unit.id, dr.id)}
+                        >×</button>
+                      )}
                     </li>
                   ))}
                 </ul>
                 <div className="cc-row text-xs text-ink-400">
                   <span>Stack height</span>
-                  <span>{result.derived.drawerTotalH ? `${Math.round(result.derived.drawerTotalH)} mm` : '—'}</span>
+                  <span>
+                    {result.derived.drawerTotalH
+                      ? `${Math.round(result.derived.drawerTotalH)} mm`
+                      : (ratioDrawers && result.derived.front_heights
+                        ? `${Math.round(result.derived.front_heights.reduce((a, b) => a + b, 0)
+                          + (result.derived.front_heights.length - 1) * profile.baseDrawerUnit.gap)} mm`
+                        : '—')}
+                  </span>
                 </div>
                 <div className="cc-row text-xs text-ink-400">
                   <span>Partition (locked, required above the stack)</span>

@@ -7,6 +7,7 @@ import AddItemsModal from '../components/AddItemsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
 import Toast from '../components/Toast.jsx';
+import ContextMenu from '../components/ContextMenu.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import { useUiStore } from '../stores/uiStore.js';
@@ -86,6 +87,7 @@ export default function ConfiguratorPage() {
         {modal === 'room' && <RoomModal />}
         {modal === 'add-items' && selectedUnit && <AddItemsModal unit={selectedUnit} />}
         {modal === 'auth' && <AuthModal />}
+        <ContextMenu />
         <Toast />
       </div>
     </div>

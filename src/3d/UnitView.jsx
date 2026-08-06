@@ -21,6 +21,10 @@ export default function UnitView({
   const H = unit.params.height;
   const D = unit.params.depth;
   const legHeight = result.assemblies.carcass.legHeight || 0;
+  // A wall unit stands on nothing — it hangs at its mounting height. Every
+  // other type stands on its legs. Both numbers come from the engine.
+  const isWallMounted = result.assemblies.mount === 'wall';
+  const baseY = isWallMounted ? result.assemblies.mountHeight : legHeight;
 
   // A vertical plane parallel to the wall, halfway into the cabinet — the ray
   // is intersected with it so the unit follows the cursor instead of itself.
@@ -67,9 +71,10 @@ export default function UnitView({
   }, [onSelect, pointerToPlane, unit.position.x_mm, wallWidthMm, orbitRef, onMove, snapStep]);
 
   // Cabinet origin: pushed against the wall (z = 0 is the wall face), standing
-  // on its legs, offset along the wall by the unit position.
+  // on its legs (or hanging at its mount height), offset along the wall by the
+  // unit position.
   const originX = mm(unit.position.x_mm - wallWidthMm / 2);
-  const originY = mm(legHeight);
+  const originY = mm(baseY);
 
   // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
   // clamping and snapping live in the store so the rules stay in one place.
@@ -166,13 +171,26 @@ export default function UnitView({
         </mesh>
       )}
 
-      {/* legs */}
-      {legHeight > 0 && [0, 1].map((i) => (
-        <mesh key={i} position={[i === 0 ? mm(60) : mm(W - 60), mm(-legHeight / 2), mm(D / 2)]}>
-          <boxGeometry args={[mm(78), mm(legHeight), mm(78)]} />
+      {/* legs — the engine's own layout: four in the corners, a fifth in the
+          middle over the width threshold. The view places what it is given. */}
+      {result.assemblies.legs?.positions.map((leg, i) => (
+        <mesh
+          key={`leg-${i}`}
+          position={[mm(leg.x + result.assemblies.legs.width / 2), mm(-legHeight / 2), mm(leg.z + result.assemblies.legs.width / 2)]}
+        >
+          <boxGeometry args={[mm(result.assemblies.legs.width), mm(legHeight), mm(result.assemblies.legs.width)]} />
           <meshStandardMaterial color="#4a4a4a" roughness={0.6} />
         </mesh>
       ))}
+
+      {/* wall unit: the bracket line it hangs from, so it does not read as
+          floating by accident */}
+      {isWallMounted && (
+        <mesh position={[mm(W / 2), mm(H) + 0.004, mm(6)]}>
+          <boxGeometry args={[mm(W), 0.006, mm(12)]} />
+          <meshStandardMaterial color="#8d8d92" roughness={0.5} metalness={0.4} />
+        </mesh>
+      )}
 
       {/* selection outline — gold, around the whole carcass */}
       {selected && (
@@ -185,7 +203,7 @@ export default function UnitView({
 
       {showLabels && (
         <>
-          <DimLabel position={[mm(W / 2), mm(-legHeight) - 0.09, mm(D)]} text={`${Math.round(W)}`} tone={selected ? 'gold' : 'dim'} />
+          <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={`${Math.round(W)}`} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={`${Math.round(H)}`} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${Math.round(D)} deep`} tone={selected ? 'gold' : 'dim'} />
         </>

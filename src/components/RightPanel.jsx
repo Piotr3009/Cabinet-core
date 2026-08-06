@@ -112,13 +112,53 @@ export default function RightPanel() {
               </div>
             </div>
 
+            {/* ── per-type parameters: only the ones this kit actually has ── */}
+            {(type.mount === 'wall' || type.doorExtend || unit.type === 'FRIDGE') && (
+              <div className="grid grid-cols-2 gap-2">
+                {type.mount === 'wall' && (
+                  <div>
+                    <span className="cc-label">Mount height</span>
+                    <input
+                      type="number" className="cc-input" title="Height of the carcass base above the floor"
+                      value={Math.round(unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight)}
+                      onChange={(e) => updateUnitParams(unit.id, { mount_height: Number(e.target.value) })}
+                    />
+                  </div>
+                )}
+                {unit.type === 'FRIDGE' && (
+                  <div>
+                    <span className="cc-label">Fridge height</span>
+                    <input
+                      type="number" className="cc-input" title="Inner clearance for the appliance"
+                      value={Math.round(unit.params.fridge_h ?? profile.fridgeUnit.defaults.fridgeH)}
+                      onChange={(e) => updateUnitParams(unit.id, { fridge_h: Number(e.target.value) })}
+                    />
+                  </div>
+                )}
+                {type.doorExtend && (
+                  <label className="flex items-end gap-2 pb-1 text-sm text-ink-100">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(unit.params.door_extend)}
+                      onChange={(e) => updateUnitParams(unit.id, { door_extend: e.target.checked })}
+                    />
+                    <span>Door extend +{profile.wallUnit.doorExtend}</span>
+                  </label>
+                )}
+              </div>
+            )}
+
             <div className="cc-divider" />
 
             {/* ── interior ── */}
             <div className="flex items-center">
               <span className="text-xs uppercase tracking-wide text-ink-200">Section 1</span>
               <span className="flex-1" />
-              <button type="button" className="cc-btn" onClick={() => openModal('add-items')}>+ Add items</button>
+              {/* A fridge housing has no interior to fit out, and a drawer unit
+                  IS its drawers — neither offers the modal. */}
+              {(type.supports.shelves || type.supports.rail) && (
+                <button type="button" className="cc-btn" onClick={() => openModal('add-items')}>+ Add items</button>
+              )}
             </div>
 
             {drawers.length > 0 && (
@@ -181,6 +221,7 @@ export default function RightPanel() {
               </div>
             )}
 
+            {type.supports.shelves && (
             <div>
               <div className="cc-row">
                 <span className="text-sm text-ink-100">Shelves ({shelves.length})</span>
@@ -221,6 +262,7 @@ export default function RightPanel() {
                 {shelves.length === 0 && <li className="text-xs text-ink-400">No shelves yet.</li>}
               </ul>
             </div>
+            )}
 
             {issues.length > 0 && (
               <ul className="space-y-1">
@@ -237,20 +279,26 @@ export default function RightPanel() {
 
             <div className="cc-divider" />
 
-            {/* ── doors: the last step ── */}
-            <div>
-              <div className="cc-row">
-                <span className="text-sm text-ink-100">Doors</span>
-                <span className="text-xs text-ink-400">
-                  {hasDoors ? `${result.derived.doors} fitted` : `${doorCountFor(unit.params.width, profile)} would fit`}
-                </span>
+            {/* ── doors: the last step (a drawer unit has none by design) ── */}
+            {type.supports.doors ? (
+              <div>
+                <div className="cc-row">
+                  <span className="text-sm text-ink-100">Doors</span>
+                  <span className="text-xs text-ink-400">
+                    {hasDoors ? `${result.derived.doors} fitted` : `${doorCountFor(unit.params.width, profile)} would fit`}
+                  </span>
+                </div>
+                {hasDoors ? (
+                  <button type="button" className="cc-btn w-full" onClick={() => setDoors(unit.id, false)}>Remove doors</button>
+                ) : (
+                  <button type="button" className="cc-btn-gold w-full" onClick={addDoors}>Add doors — finish unit</button>
+                )}
               </div>
-              {hasDoors ? (
-                <button type="button" className="cc-btn w-full" onClick={() => setDoors(unit.id, false)}>Remove doors</button>
-              ) : (
-                <button type="button" className="cc-btn-gold w-full" onClick={addDoors}>Add doors — finish unit</button>
-              )}
-            </div>
+            ) : (
+              <p className="text-xs text-ink-400">
+                {drawers.length} drawer fronts are the face of this unit — it takes no doors.
+              </p>
+            )}
 
             <div className="cc-divider" />
             <div className="flex justify-between items-center text-xs text-ink-400">

@@ -781,7 +781,10 @@ export function computeCabinet(params, profileOverride) {
       }));
       panels.push(panel({
         id: `D${i}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: bottomW, h: bottomD, ...common,
-        box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: bottomW, h: G, d: bottomD },
+        // The bottom is narrower than the box (it sits in grooves in the two
+        // sides), so it is CENTRED in it. Hanging it off the left edge made a
+        // wide unit look lopsided in 3D while the cut list was right.
+        box: { x: boxLeftX + (szufSzer - bottomW) / 2, y: boxY, z: boxZFront - szufDl, w: bottomW, h: G, d: bottomD },
         cnc: rectGeometry(bottomW, bottomD), meta: { drawer: i },
       }));
     }
@@ -861,7 +864,8 @@ export function computeCabinet(params, profileOverride) {
       }
       panels.push(panel({
         id: `D${i}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: budr.bottomW, h: budr.depth, ...common,
-        box: { x: boxLeftX, y: boxY, z: boxZFront - budr.depth, w: budr.bottomW, h: G, d: budr.depth },
+        // Centred in its box, as in the wardrobe: the bottom sits in the side grooves.
+        box: { x: boxLeftX + (budr.boxW - budr.bottomW) / 2, y: boxY, z: boxZFront - budr.depth, w: budr.bottomW, h: G, d: budr.depth },
         cnc: geom, meta: { drawer: i },
       }));
     }

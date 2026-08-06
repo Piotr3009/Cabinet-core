@@ -186,6 +186,39 @@ test('an end panel is a cut piece outside the carcass side', () => {
   assert.equal(partsOf(id, 'END-PANEL').length, 2);
 });
 
+test('Left / Right / Both — and "both" is the same act twice (BACKLOG #31)', () => {
+  const id = withUnit('BUD');
+
+  const both = store().addEndPanel(id, { side: 'B' });
+  assert.equal(both.error, null, both.error || '');
+  assert.deepEqual(both.ids.length, 2);
+  assert.deepEqual(
+    (unitOf(id).params.end_panels || []).map((ep) => ep.side).sort(),
+    ['L', 'R'],
+  );
+  // Two real cut pieces, not one piece called "both".
+  assert.equal(partsOf(id, 'END-PANEL').length, 2);
+
+  // Asking again is refused per side, and nothing is added twice.
+  const again = store().addEndPanel(id, { side: 'B' });
+  assert.equal(again.ids.length, 0);
+  assert.match(again.error, /already has an end panel/);
+  assert.equal((unitOf(id).params.end_panels || []).length, 2);
+});
+
+test('"both" fits the side that has room and says why the other did not', () => {
+  // A unit hard against the right-hand wall: the right panel has nowhere to go,
+  // the left one is fine. A silent half-success is how a unit ends up with one
+  // end panel nobody meant to leave off.
+  const id = withUnit('BUD');
+  store().moveUnit(id, 99999, 0);
+
+  const result = store().addEndPanel(id, { side: 'B' });
+  assert.equal(result.ids.length, 1, 'the left one appeared');
+  assert.deepEqual((unitOf(id).params.end_panels || []).map((ep) => ep.side), ['L']);
+  assert.match(result.error, /No room for a .* end panel on the right/);
+});
+
 test('an end panel reaches the BOM, the CNC sheet and the cutting list', () => {
   const id = withUnit('BUD');
   store().addEndPanel(id, { side: 'L' });

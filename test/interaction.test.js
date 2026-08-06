@@ -93,7 +93,7 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   // Turn 5 adds "Save as template" (BACKLOG #30) — the cabinet you have just
   // finished configuring is where a joiner reaches for that too.
   assert.deepEqual(ids, [
-    'end-panel-L', 'end-panel-R', 'plinth-on', 'top-infill-on', 'save-template',
+    'end-panel-L', 'end-panel-R', 'end-panel-B', 'plinth-on', 'top-infill-on', 'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
   ]);
 
@@ -115,6 +115,9 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   const byId = new Map(dressed.map((a) => [a.id, a]));
   assert.equal(byId.get('end-panel-L').disabled, true, 'the left panel is already there');
   assert.equal(byId.get('end-panel-R').disabled, false, 'and the right one is still on offer');
+  // "Both" stays live while EITHER side is still missing (BACKLOG #31): the
+  // store adds them one at a time, so it fits the one that is free.
+  assert.equal(byId.get('end-panel-B').disabled, false);
   assert.ok(byId.has('plinth-off') && !byId.has('plinth-on'));
   assert.ok(byId.has('top-infill-off') && !byId.has('top-infill-on'));
 

@@ -447,9 +447,29 @@ export const useProjectStore = create((set, get) => ({
    * unit's footprint grows by its thickness, so the neighbour beside it is
    * clamped out of the space it now occupies.
    *
-   * @returns {{id:string|null, error:string|null}}
+   * Turn 5 (BACKLOG #31): `side` may also be 'B' — BOTH sides. That is the same
+   * act twice and is done as exactly that, one side after the other, so each
+   * panel is refused on its own merits: on a unit with a neighbour hard against
+   * its right, "both" fits the left one and says why the right one did not.
+   * Anything else would be a second, quieter code path for the same piece.
+   *
+   * @returns {{id:string|null, ids?:string[], error:string|null}}
    */
   addEndPanel: (unitId, { side = 'L', height = null, thickness = null, applyToAll = null } = {}) => {
+    if (side === 'B') {
+      const results = ['L', 'R'].map((one) => get().addEndPanel(unitId, { side: one, height, thickness, applyToAll }));
+      const ids = results.map((r) => r.id).filter(Boolean);
+      const errors = results.map((r) => r.error).filter(Boolean);
+      return {
+        id: ids[0] ?? null,
+        ids,
+        // Both refused = the reasons, both of them. One refused = say which,
+        // because the other one DID appear and a silent half-success is how a
+        // unit ends up with one end panel nobody meant to leave off.
+        error: ids.length && !errors.length ? null : (errors.join(' ') || null),
+      };
+    }
+
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { id: null, error: 'No unit selected.' };

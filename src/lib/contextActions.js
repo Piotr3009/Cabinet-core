@@ -27,9 +27,13 @@ export function menuActions({ unit, panelPart, store }) {
   // as well as in the panel. The OPTIONS (to the floor or to the unit height, the
   // thickness, "apply to all") live in the panel section, which is what opens
   // alongside — CLAUDE.md is explicit that this must not be a modal.
+  // Turn 5 (BACKLOG #31): Left / Right / Both. "Both" is the same act twice and
+  // is done as exactly that in the store, so a unit with a neighbour hard
+  // against one side gets the panel that fits and hears why the other did not.
   const endPanels = unit.params.end_panels || [];
-  for (const [side, label] of [['L', 'left'], ['R', 'right']]) {
-    const fitted = endPanels.some((ep) => ep.side === side);
+  const fittedOn = (side) => endPanels.some((ep) => ep.side === side);
+  for (const [side, label] of [['L', 'left'], ['R', 'right'], ['B', 'both sides']]) {
+    const fitted = side === 'B' ? (fittedOn('L') && fittedOn('R')) : fittedOn(side);
     actions.push({
       id: `end-panel-${side}`,
       label: fitted ? `End panel ${label} ✓` : `Add end panel — ${label}`,

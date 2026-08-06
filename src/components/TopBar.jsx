@@ -130,6 +130,11 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
         },
       ],
     },
+    // BACKLOG #36 — the place in the menu, held open the way Database and
+    // Clients are. What goes behind it (finish per element, the list, m², the
+    // price) is still being designed with Piotr; a button that opened a
+    // half-answer would be worse than one that says "not yet".
+    { label: 'Spraying', soon: true, disabled: true, hint: 'Spray finishing — a later phase' },
     { label: 'Database', soon: true, disabled: true, hint: 'JoineryCore data — a later phase' },
     { label: 'Clients', soon: true, disabled: true, hint: 'JoineryCore clients — a later phase' },
   ];

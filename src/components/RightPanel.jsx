@@ -699,19 +699,29 @@ function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefault
     <div className="space-y-2">
       <div className="cc-row">
         <span className="text-sm text-ink-100">End panels</span>
+        {/* Left / Right / Both (turn 5, BACKLOG #31). "Both" is the existing
+            action twice, so a side that will not fit is refused on its own and
+            the other one still appears. */}
         <div className="flex gap-1">
-          {[['L', 'Left'], ['R', 'Right']].map(([side, label]) => (
-            <button
-              key={side}
-              type="button"
-              className="cc-btn px-2"
-              disabled={has(side)}
-              title={has(side) ? 'Already fitted on this side' : `Masking panel outside the ${label.toLowerCase()} side`}
-              onClick={() => onAdd(side)}
-            >
-              + {label}
-            </button>
-          ))}
+          {[['L', 'Left'], ['R', 'Right'], ['B', 'Both']].map(([side, label]) => {
+            const fitted = side === 'B' ? (has('L') && has('R')) : has(side);
+            return (
+              <button
+                key={side}
+                type="button"
+                className="cc-btn px-2"
+                disabled={fitted}
+                title={fitted
+                  ? 'Already fitted'
+                  : (side === 'B'
+                    ? 'A masking panel outside both sides'
+                    : `Masking panel outside the ${label.toLowerCase()} side`)}
+                onClick={() => onAdd(side)}
+              >
+                + {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

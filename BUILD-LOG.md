@@ -2756,3 +2756,56 @@ jako **przykręcone** do boku korpusu, a przykręcony styk to nie mitra.
 
 `test/mitre.test.js` — 9 testów, w tym „bryła jest ZAMKNIĘTA" (każda krawędź użyta
 dokładnie dwa razy — jedyny test, który łapie brakującą czapkę, zanim zobaczy ją oko).
+
+## F7 — MENU KONTEKSTOWE v2
+
+Dwie zmiany, i druga jest tą, o którą Piotr poprosił dosłownie: „**koniec biegania do
+menu**".
+
+### Kolejność
+
+Taka, po co stolarz sięga, w kolejności, w jakiej po to sięga:
+
+1. **Show all dimensions** — komplet wymiarów TEJ szafki na scenie, jako toggle
+2. **End panel — left / right / both sides**, każdy jako przełącznik
+3. **Top infill** (tylko tam, gdzie w ogóle jest, F2.7) i **Scribe fillers at the wall**
+4. **Plinth**
+5. Insets… · Save as template
+6. dopiero potem to, co przesuwa albo niszczy: Center shelves · Rotate 90° · Back to wall ·
+   Side to wall · Close all fronts · **Delete**
+
+### Przełączniki, a nie jednorazówki
+
+Menu tury 4 umiało end panel tylko DODAĆ. Zdejmowało się go, otwierając prawy panel
+i szukając wiersza. Wpis, którego da się użyć raz, jest **wpisem błędnym w połowie
+przypadków, w których się go czyta** — i to jest cała treść zgłoszenia.
+
+Każdy z tych wpisów niesie teraz `checked` i przerzuca stan. Menu pokazuje go tam, gdzie
+oko już jest: `✓` złoty przy włączonym, `·` szary przy wyłączonym. Żaden wpis nie jest już
+`disabled`, i test tego pilnuje osobno („dead entry").
+
+„Both sides" zdejmuje OBA — bo to jest ten sam akt dwa razy, dokładnie tak samo, jak
+dodanie obu nim jest.
+
+### Trzy rzeczy warte wyjaśnienia
+
+**Wymiary są PER JEDNOSTKA, nie globalnie.** `showDimensions` (toolbar) to pytanie
+projektowe: podpis W/H/D każdej szafki i odległości między nimi. To jest inne pytanie, o
+jedną szafkę: „jakie są WSZYSTKIE liczby na TEJ". Odpowiedź jest za obszerna, żeby zostawić
+ją włączoną na całą kuchnię — nad jedną szafką jest tym, czego się szuka. Etykiety liczone
+z wyjścia SILNIKA (`assemblies.shelves`, `assemblies.drawerFronts`, panele), nigdy
+wyprowadzane drugi raz: pokazane jest to, co wycięte. `ccHelper`, więc nie trafia do
+renderu.
+
+**Side infill nie jest „dodawany".** Jest WYPROWADZANY z tego, gdzie jednostka stoi
+(BACKLOG #15), więc przełącznik nie brzmi „dodaj filler", tylko „czy ta szafka w ogóle go
+bierze". Stolarz, który zamiast tego przyfuguje DRZWI, wyłącza go tu i element przestaje
+być cięty. Jednostka dalej staje tam, gdzie staje: **gdzie jest ściana, to nie jest opinia
+per szafka.**
+
+**Top infill nie pojawia się na bazie.** Ta sama bramka co w F2.7, w tym samym miejscu co
+reszta: `type.supports.topInfill`.
+
+`test/interaction.test.js` — kolejność wpisów przypięta co do jednego, plus nowy test
+„every toggle flips the way it is currently set — both ways", który przejeżdża każdy
+przełącznik w obu stanach.

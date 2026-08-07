@@ -542,6 +542,26 @@ export const useProjectStore = create((set, get) => ({
     return get().setTopInfill(unitId, profile.autoParts.topInfill.defaultHeight);
   },
 
+  /**
+   * Does this cabinet take the automatic scribe filler at all (turn 8, F7)?
+   *
+   * The side infill is DERIVED — it is a fact about where the unit is standing
+   * (BACKLOG #15) — so this is not "add one". It is the joiner saying he will
+   * scribe the DOOR instead on this cabinet, and the piece then stops being
+   * cut. The unit still stops where it stops: where the wall is is not a
+   * per-cabinet opinion.
+   */
+  setSideInfillEnabled: (unitId, enabled) => {
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, side_infill_off: !enabled } }
+        : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+    return Boolean(enabled);
+  },
+
   removeTopInfill: (unitId) => {
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, top_infill_mm: 0 } } : u)),

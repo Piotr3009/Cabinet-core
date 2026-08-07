@@ -322,6 +322,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const openContextMenu = useUiStore((s) => s.openContextMenu);
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
   const showDimensions = useUiStore((s) => s.showDimensions);
+  const unitDimensions = useUiStore((s) => s.unitDimensions);
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
@@ -446,6 +447,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // reads it: past square a door comes back towards the wall on its
           // hinge side (turn 8, CLAUDE.md F5).
           wallGaps={wallGaps[unit.id]}
+          // The right-click toggle: every number THIS cabinet has (turn 8, F7).
+          showAllDims={Boolean(unitDimensions[unit.id])}
         />
       ))}
 

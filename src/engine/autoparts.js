@@ -143,9 +143,14 @@ export function autoPartsFor({ unit, wallWidth, others, roomHeight, design }, pr
   // The unit's OWN toe kick before the profile's — see engine/runs.js unitBase.
   const base = unitBase(unit, profile);
 
-  const side = sideInfill({
-    x, width, wallWidth, others, settingWidth: design?.infill?.sideWidth,
-  }, profile);
+  // Turn 8 (CLAUDE.md F7): a cabinet may be told it takes no scribe filler at
+  // all — the joiner will scribe the door instead. The unit still stops where
+  // it stops; what stops is the PIECE.
+  const side = unit.params.side_infill_off === true
+    ? { left: 0, right: 0, notices: [] }
+    : sideInfill({
+      x, width, wallWidth, others, settingWidth: design?.infill?.sideWidth,
+    }, profile);
 
   // Manual, and only ever re-clamped: a top infill that was added shrinks when
   // the ceiling drops, and one that was never added stays absent.

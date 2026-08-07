@@ -24,6 +24,10 @@ export default function ContextMenu() {
   const addPlinth = useProjectStore((s) => s.addPlinth);
   const removePlinth = useProjectStore((s) => s.removePlinth);
   const addTopInfill = useProjectStore((s) => s.addTopInfill);
+  const removeEndPanel = useProjectStore((s) => s.removeEndPanel);
+  const setSideInfillEnabled = useProjectStore((s) => s.setSideInfillEnabled);
+  const unitDimensions = useUiStore((s) => s.unitDimensions);
+  const toggleUnitDimensions = useUiStore((s) => s.toggleUnitDimensions);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
   const openModal = useUiStore((s) => s.openModal);
 
@@ -33,21 +37,30 @@ export default function ContextMenu() {
     ? menuActions({
       unit,
       panelPart: menu.part,
+      dimensions: Boolean(unitDimensions[unit.id]),
       store: {
         redistributeShelves,
         rotateUnit,
         removeUnit,
         closeAllFronts,
+        toggleUnitDimensions,
         addEndPanel: (unitId, opts) => {
           const { error } = addEndPanel(unitId, opts) || {};
           if (error) notify(error, 'warn');
         },
+        removeEndPanel,
         addPlinth: (unitId) => { if (!addPlinth(unitId)) notify('This type stands on no legs — it takes no plinth.', 'warn'); },
         removePlinth,
         addTopInfill: (unitId) => {
           if (!addTopInfill(unitId)) notify('No room between this unit and the ceiling.', 'warn');
         },
         removeTopInfill,
+        setSideInfillEnabled: (unitId, on) => {
+          setSideInfillEnabled(unitId, on);
+          notify(on
+            ? 'Scribe fillers on for this cabinet.'
+            : 'Scribe fillers off for this cabinet — the gap beside it stays open.', 'info');
+        },
         // "Save as template" needs one thing the menu cannot give it: a NAME.
         // That is the modal's whole job (BACKLOG #30).
         saveAsTemplate: (unitId) => openModal('save-template', { unitId }),
@@ -55,9 +68,9 @@ export default function ContextMenu() {
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
       },
     })
-    : []), [unit, menu, redistributeShelves, rotateUnit, removeUnit, closeAllFronts,
-    addEndPanel, addPlinth, removePlinth, addTopInfill, removeTopInfill, notify, openRightPanel, setPanelSection,
-    openModal]);
+    : []), [unit, menu, unitDimensions, redistributeShelves, rotateUnit, removeUnit, closeAllFronts,
+    toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addTopInfill,
+    removeTopInfill, setSideInfillEnabled, notify, openRightPanel, setPanelSection, openModal]);
 
   useEffect(() => {
     if (!menu) return undefined;
@@ -101,7 +114,16 @@ export default function ContextMenu() {
             closeContextMenu();
           }}
         >
-          {a.label}
+          {/* The state, where the eye already is (turn 8, F7): a toggle that
+              does not say which way it is set is a toggle you have to try. */}
+          {a.checked === undefined
+            ? a.label
+            : (
+              <span className="flex items-center gap-1.5">
+                <span className={a.checked ? 'text-gold' : 'text-ink-400'}>{a.checked ? '✓' : '·'}</span>
+                <span>{a.label}</span>
+              </span>
+            )}
         </button>
       ))}
     </div>

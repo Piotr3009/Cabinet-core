@@ -54,6 +54,20 @@ export const useUiStore = create((set, get) => ({
   setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
   toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
 
+  // ─── One cabinet's OWN dimensions (turn 8, CLAUDE.md F7) ───
+  // `showDimensions` above is the project's: each unit's W/H/D caption and the
+  // distances between them. This is the other question a joiner asks, about one
+  // cabinet at a time — "what are all the numbers on THIS" — and the answer is
+  // too much to leave on for a whole kitchen. Per unit, toggled from the
+  // right-click menu, and view state like everything else here.
+  unitDimensions: {},                // { [unitId]: true }
+  toggleUnitDimensions: (unitId) => set((s) => {
+    if (!unitId) return {};
+    const { [unitId]: on, ...rest } = s.unitDimensions;
+    return { unitDimensions: on ? rest : { ...rest, [unitId]: true } };
+  }),
+  clearUnitDimensions: () => set({ unitDimensions: {} }),
+
   // Which ink the distance dimensions are drawn in (turn 5, BACKLOG #34).
   // A drawing office uses one or the other; the hexes themselves live in
   // profile.dimensions.colours, so this is only WHICH, never what.

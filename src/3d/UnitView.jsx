@@ -298,7 +298,7 @@ export default function UnitView({
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
   profile, finishes, outlines = true, contour = false, grounded = true, xray = false, sheen = null,
-  wallGaps = null,
+  wallGaps = null, showAllDims = false,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -429,6 +429,46 @@ export default function UnitView({
   // Where the bought hardware sits (turn 7, CLAUDE.md F3). Derived from the
   // engine's own drilling, so a hinge is drawn where the machine bores for it.
   const hardware = useMemo(() => hardwareInstances(result, profile), [result, profile]);
+
+  // ─── Every number this cabinet has (turn 8, CLAUDE.md F7) ───
+  // Built from the ENGINE's own output, never re-derived: what is shown is what
+  // is cut. Ordered the way a joiner reads a cabinet — the box, what it stands
+  // on, then what is inside it, then what finishes it.
+  const fullDimensions = useMemo(() => {
+    if (!showAllDims) return [];
+    const out = [];
+    const say = (key, at, text, tone) => out.push({
+      key, at, text, tone,
+    });
+    const front = mm(D) + 0.09;
+    say('w', [mm(W / 2), mm(isWallMounted ? -60 : -legHeight - 60), front], `W ${formatMm(W)}`);
+    say('h', [mm(W) + 0.22, mm(H / 2), front], `H ${formatMm(H)}`);
+    say('d', [mm(W / 2), mm(H) + 0.16, mm(D / 2)], `D ${formatMm(D)}`);
+    say('iw', [mm(W / 2), mm(H) + 0.09, front], `internal ${formatMm(result.derived.internal_width)}`, 'dim');
+    if (isWallMounted) {
+      say('mount', [mm(W) + 0.22, mm(-60), front], `hung at ${formatMm(result.assemblies.mountHeight)}`, 'dim');
+    } else if (legHeight > 0) {
+      say('kick', [-0.22, mm(-legHeight / 2), front], `toe kick ${formatMm(legHeight)}`, 'dim');
+    }
+    for (const shelf of result.assemblies.shelves || []) {
+      say(`shelf-${shelf.index}`, [-0.22, mm(shelf.y), front],
+        `S${shelf.index} ${formatMm(shelf.y)}${shelf.locked ? ' fixed' : ''}`, 'dim');
+    }
+    for (const df of result.assemblies.drawerFronts || []) {
+      say(`drawer-${df.index}`, [mm(W / 2), mm(df.y + df.h / 2), front + 0.02],
+        `D${df.index} ${formatMm(df.h)}`, 'dim');
+    }
+    const infillFace = result.panels.find((p) => p.part === 'INFILL' && p.meta?.side === 'top' && p.meta?.piece === 'face');
+    if (infillFace) {
+      say('top-infill', [mm(W / 2), mm(infillFace.box.y + infillFace.box.h / 2), front],
+        `infill ${formatMm(infillFace.box.h)}`, 'dim');
+    }
+    for (const ep of result.panels.filter((p) => p.part === 'END-PANEL')) {
+      say(`ep-${ep.id}`, [mm(ep.box.x + ep.box.w / 2), mm(ep.box.y + ep.box.h + 40), mm(D)],
+        `end panel ${formatMm(ep.h)}`, 'dim');
+    }
+    return out;
+  }, [showAllDims, W, H, D, isWallMounted, legHeight, result]);
 
   // ─── How far each door may swing (turn 8, CLAUDE.md F5) ───
   // Decided by what is beside the cabinet ON THE HINGE SIDE. `wallGaps` is null
@@ -802,6 +842,19 @@ export default function UnitView({
           <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${formatMm(D)} deep`} tone={selected ? 'gold' : 'dim'} />
+        </group>
+      )}
+
+      {/* ─── Every number this cabinet has (turn 8, CLAUDE.md F7) ───
+          The right-click toggle. It is per UNIT and not global for the reason
+          it is worth having at all: this much text over a whole kitchen is a
+          wall of numbers, and over ONE cabinet it is the answer to "what did I
+          set this to". Tool chrome, so it never reaches a render. */}
+      {showAllDims && !contour && (
+        <group userData={{ ccHelper: true }}>
+          {fullDimensions.map((d) => (
+            <DimLabel key={d.key} position={d.at} text={d.text} tone={d.tone || 'gold'} />
+          ))}
         </group>
       )}
     </group>

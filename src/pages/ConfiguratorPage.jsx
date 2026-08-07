@@ -93,6 +93,8 @@ export default function ConfiguratorPage() {
         onExportCsv={onExportCsv}
         onExportPdf={onExportPdf}
         onExportDxfZip={onExportDxfZip}
+        onRender={() => openModal('render')}
+        onDrawing={(kind) => openModal('drawing', { kind })}
         onAuth={() => openModal('auth')}
       />
       <div className="flex-1 relative overflow-hidden">

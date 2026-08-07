@@ -86,7 +86,8 @@ export const useUiStore = create((set, get) => ({
 
   // Modals. `modalArgs` is what the modal is ABOUT — which unit is being saved
   // as a template, for instance — so a modal needs no store of its own.
-  modal: null,                       // 'room' | 'auth' | 'design' | 'save-as' | 'save-template' | null
+  // 'room' | 'auth' | 'design' | 'save-as' | 'save-template' | 'render' | 'drawing'
+  modal: null,
   modalArgs: null,
   openModal: (name, args = null) => set({ modal: name, modalArgs: args }),
   closeModal: () => set({ modal: null, modalArgs: null }),

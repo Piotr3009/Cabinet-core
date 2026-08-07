@@ -6,6 +6,7 @@ import { mm, MM, COLORS } from './constants.js';
 import { contourSurface, decorTexture, onDecorLoad, outlineFor, surfaceFor } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import ContactShadow from './ContactShadow.jsx';
+import EdgeHandle from './EdgeHandle.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 
@@ -172,10 +173,14 @@ export default function UnitView({
   unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
+  onSetEndPanelTop, onEndPanelToCeiling,
   profile, finishes, outlines = true, contour = false, grounded = true,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
+  // Which top edge has been clicked. Purely visual: it decides which handle is
+  // lit, nothing else (CLAUDE.md F3 — "click the edge → the edge highlights").
+  const [activeEdge, setActiveEdge] = useState(null);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const wallWidthMm = wall.width;
 
@@ -270,21 +275,26 @@ export default function UnitView({
   const topInfill = Number(unit.params.top_infill_mm) || 0;
 
   /**
-   * Drag the top infill. The pointer's height above the unit IS the infill
-   * height, clamped by the store against the ceiling — so the piece grows
-   * under the cursor and stops when the room runs out.
+   * Drag something's top edge. The pointer's height above `fromMm` (a height in
+   * the unit's own frame) IS the value asked for; the store clamps it against
+   * the ceiling, so the piece grows under the cursor and stops when the room
+   * runs out.
+   *
+   * One function for the top infill and for every end panel (turn 6), because
+   * it is one gesture: a joiner closing the gap between what he built and what
+   * the builder left.
    */
-  const startTopInfillDrag = useCallback((e) => {
-    if (!onSetTopInfill) return;
+  const startHeightDrag = useCallback((e, fromMm, onValue) => {
+    if (!onValue) return;
     e.stopPropagation();
     onSelect();
     if (orbitRef?.current) orbitRef.current.enabled = false;
-    const unitTopY = originY + mm(H);
+    const fromY = originY + mm(fromMm);
 
     const move = (ev) => {
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
-      onSetTopInfill((p.y - unitTopY) / MM);
+      onValue((p.y - fromY) / MM);
     };
     const up = () => {
       if (orbitRef?.current) orbitRef.current.enabled = true;
@@ -295,7 +305,7 @@ export default function UnitView({
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
-  }, [onSetTopInfill, onSelect, orbitRef, pointerToPlane, originY, H]);
+  }, [onSelect, orbitRef, pointerToPlane, originY]);
 
   /** World position of a panel's centre, for "fly the camera here". */
   const panelWorldCentre = useCallback((p) => {
@@ -451,7 +461,7 @@ export default function UnitView({
         <mesh
           userData={{ ccHelper: true }}
           position={[mm(W / 2), mm(H + Math.max(topInfill, 0) + 12), mm(D - 30)]}
-          onPointerDown={startTopInfillDrag}
+          onPointerDown={(e) => startHeightDrag(e, H, onSetTopInfill)}
           onDoubleClick={(e) => { e.stopPropagation(); onFillToCeiling?.(); }}
           onPointerOver={() => { document.body.style.cursor = 'ns-resize'; }}
           onPointerOut={() => { document.body.style.cursor = ''; }}
@@ -463,6 +473,29 @@ export default function UnitView({
           />
         </mesh>
       )}
+
+      {/* End panels: the top edge is the control (turn 6, CLAUDE.md F3).
+          Click it to see it, drag it to place it, double-click it to send it to
+          the ceiling. The band lies ON the edge of the piece it moves — what
+          you grab is the thing that grows. */}
+      {onSetEndPanelTop && result.panels
+        .filter((p) => p.part === 'END-PANEL' && p.box && p.meta?.panelId)
+        .map((p) => (
+          <EdgeHandle
+            key={`edge-${p.id}`}
+            position={[mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h), mm(p.box.z + p.box.d / 2)]}
+            width={Math.max(p.box.w, 22)}
+            depth={p.box.d}
+            thickness={22}
+            colour={profile.appearance.selection.colour}
+            active={activeEdge === p.meta.panelId}
+            onPointerDown={(e) => {
+              setActiveEdge(p.meta.panelId);
+              startHeightDrag(e, H, (v) => onSetEndPanelTop(p.meta.panelId, v));
+            }}
+            onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge(p.meta.panelId); onEndPanelToCeiling?.(p.meta.panelId); }}
+          />
+        ))}
 
       {/* wall unit: the bracket line it hangs from, so it does not read as
           floating by accident */}

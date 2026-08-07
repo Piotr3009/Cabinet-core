@@ -316,12 +316,32 @@ export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
 }
 
+/**
+ * Is this piece cut from the FRONT material (turn 6, CLAUDE.md F3/F4)?
+ *
+ * An end panel and an infill are not carcass board. They stand in the room
+ * beside the doors, in the same plane as the doors, and a workshop cuts and
+ * sprays them out of the same sheet — CLAUDE.md says so for both, in as many
+ * words. Before turn 6 they were `board`, which meant a run with two end panels
+ * and a set of fillers ordered a sheet of carcass material nobody was going to
+ * use and under-ordered the front material.
+ *
+ * The plinth is NOT in this set and that is deliberate rather than an omission:
+ * it is sprayed (finish_exposed), but it is sprayed MDF from the board stack,
+ * and turn 6 was not asked to move it.
+ */
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill']);
+
+export function wearsFrontMaterial(role) {
+  return FRONT_MATERIAL_ROLES.has(role);
+}
+
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
   return {
     id,
     part,
     role,
-    material_role: role === 'front' ? 'front' : 'board',
+    material_role: wearsFrontMaterial(role) ? 'front' : 'board',
     finish_exposed: isFinishExposed(role),
     w: roundTo(w, 4),
     h: roundTo(h, 4),
@@ -962,11 +982,26 @@ export function computeCabinet(params, profileOverride) {
     }));
   }
 
-  // End panels (turn 4, BACKLOG #17): a masking panel on the OUTSIDE of a
-  // carcass side. A cut piece like any other, so it reaches the BOM, the CNC
-  // sheet and the DXF by the same route — and it exists only because somebody
-  // added it (`params.end_panels`), never automatically.
+  // End panels (turn 4, BACKLOG #17; rebuilt turn 6, CLAUDE.md F3): a masking
+  // panel on the OUTSIDE of a carcass side. A cut piece like any other, so it
+  // reaches the BOM, the CNC sheet and the DXF by the same route — and it
+  // exists only because somebody added it (`params.end_panels`), never
+  // automatically.
+  //
+  // TURN 6 CHANGES TWO THINGS ABOUT IT.
+  //
+  // It is FRONT material now (see wearsFrontMaterial): a panel that stands in
+  // the room next to the doors is sprayed with the doors, out of the doors'
+  // sheet.
+  //
+  // And it is as DEEP as the doors are proud. Turn 4 made it the depth of the
+  // carcass, which stops short of the door face and leaves a step you can catch
+  // a sleeve on — the whole point of the piece is that it finishes the run
+  // flush. The number is carcass depth + the door standoff + the door's own
+  // thickness, which is exactly where the AutoLISP puts the door in top view
+  // (`drawDoor` at y0 − doorGap − gruboscDrzwi, KIT_BUD_FULL L128).
   const EP = AP.endPanel;
+  const endPanelDepth = D + P.doors.gap + frontT;
   // "To the floor" means down to the floor: past the legs on a standing unit,
   // and all the way down from a wall unit's mounting height.
   const dropToFloor = type.mount === 'wall' ? cfg.mountHeight : legHeightForPlinth;
@@ -976,16 +1011,25 @@ export function computeCabinet(params, profileOverride) {
     const t = Number(ep?.thickness) > 0 ? Number(ep.thickness) : (EP.thickness ?? frontT);
     const toFloor = (ep?.height || EP.defaultHeight) === 'floor';
     const drop = toFloor ? Math.max(0, dropToFloor) : 0;
-    const panelH = H + drop;
+    // How far it runs ABOVE the carcass — dragged there, or sent to the ceiling
+    // with a double click (CLAUDE.md F3). The room's ceiling is not the
+    // engine's business; the store clamps it and passes the answer down.
+    const top = Math.max(0, Number(ep?.top_mm) || 0);
+    const panelH = H + drop + top;
     if (panelH <= 0 || t <= 0) continue;
     panels.push(panel({
-      id: `END-${side}`, part: 'END-PANEL', role: 'end_panel', w: D, h: panelH, thickness: t,
-      edgeCode: codes.all, edgeLen: metres(2 * D + 2 * panelH),
+      id: `END-${side}`, part: 'END-PANEL', role: 'end_panel', w: endPanelDepth, h: panelH, thickness: t,
+      edgeCode: codes.all, edgeLen: metres(2 * endPanelDepth + 2 * panelH),
       // `drop > 0 ? -drop : 0` and not `-drop`: negative zero is a real value in
       // JS and a box.y of -0 fails an === check downstream for no reason.
-      box: { x: side === 'L' ? -t : W, y: drop > 0 ? -drop : 0, z: 0, w: t, h: panelH, d: D },
-      cnc: rectGeometry(D, panelH),
-      meta: { side: side === 'L' ? 'left' : 'right', height: toFloor ? 'floor' : 'unit' },
+      box: { x: side === 'L' ? -t : W, y: drop > 0 ? -drop : 0, z: 0, w: t, h: panelH, d: endPanelDepth },
+      cnc: rectGeometry(endPanelDepth, panelH),
+      meta: {
+        side: side === 'L' ? 'left' : 'right',
+        height: toFloor ? 'floor' : 'unit',
+        top_mm: top,
+        panelId: ep?.id || null,
+      },
     }));
   }
 

@@ -223,6 +223,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const moveShelf = useProjectStore((s) => s.moveShelf);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
+  const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
+  const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const clearSelection = useUiStore((s) => s.clearSelection);
@@ -319,6 +321,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           frontColour={resolveUnitDesign(unit, design).colour?.hex || null}
           onSetTopInfill={(h) => setTopInfill(unit.id, h)}
           onFillToCeiling={() => fillToCeiling(unit.id)}
+          onSetEndPanelTop={(panelId, v) => setEndPanelTop(unit.id, panelId, v)}
+          onEndPanelToCeiling={(panelId) => endPanelToCeiling(unit.id, panelId)}
           showLabels={showDimensions && !contourView}
           profile={profile}
           finishes={resolveFinishes(unit, design, profile)}

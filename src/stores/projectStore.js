@@ -563,6 +563,51 @@ export const useProjectStore = create((set, get) => ({
     get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
   },
 
+  /**
+   * How far an end panel runs ABOVE the carcass (turn 6, CLAUDE.md F3).
+   *
+   * The same interaction the top infill has had since turn 3 — grab the top
+   * edge and drag, or double-click it to send it to the ceiling — because it is
+   * the same act: a joiner closing the gap between what he built and what the
+   * builder left. Clamped between the top of the unit and the ceiling, here and
+   * not in the engine: the ceiling is a property of the ROOM.
+   *
+   * @returns {number} the height it got
+   */
+  setEndPanelTop: (unitId, panelId, topMm) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    const headroom = Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile));
+    const top = Math.min(Math.max(snapTo(Number(topMm) || 0, profile.editor.mmStep), 0), headroom);
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            end_panels: (u.params.end_panels || []).map((ep) => (ep.id === panelId ? { ...ep, top_mm: top } : ep)),
+          },
+        }
+        : u)),
+      dirty: true,
+    }));
+    return top;
+  },
+
+  /** Double click on the edge: run it all the way to the ceiling. */
+  endPanelToCeiling: (unitId, panelId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    return get().setEndPanelTop(
+      unitId, panelId,
+      Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile)),
+    );
+  },
+
   /** The "Apply to all end panels" checkbox itself. */
   setEndPanelDefaults: (patch) => set((s) => {
     const design = migrateDesign(s.project.design);

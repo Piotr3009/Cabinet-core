@@ -97,14 +97,45 @@ export function endPanelPads(unit, fallbackThickness = 0) {
 }
 
 /**
- * [left, right) footprint of a unit along its wall, END PANELS INCLUDED.
+ * Deliberate clearances a unit keeps to its neighbours and to the wall behind
+ * it (turn 7, CLAUDE.md F5 / BACKLOG #32).
+ *
+ * A joiner asks for one of these when there is something in the way that is not
+ * furniture: a soil pipe in the corner, a wall that bows, a radiator bracket.
+ * It is NOT a mistake to be tidied up — it is a decision, and the collision
+ * clamp has to respect it exactly as it respects a neighbour, or the first drag
+ * will close the gap the pipe is standing in.
+ */
+export function insetPads(unit) {
+  const at = (key) => Math.max(0, Number(unit?.params?.[key]) || 0);
+  return { left: at('inset_left_mm'), right: at('inset_right_mm'), back: at('inset_back_mm') };
+}
+
+/**
+ * How much wall a unit takes up beyond its own width, per side.
+ *
+ * Two different things add to it and they add TOGETHER: an end panel, which is
+ * a piece of board bolted to the outside of the carcass, and an inset, which is
+ * air nobody may occupy. Geometrically the panel is against the carcass and the
+ * gap is outside the panel, so a unit with both keeps its neighbour one panel
+ * plus one gap away — which is what a joiner means by asking for both.
+ */
+export function footprintPads(unit, fallbackThickness = 0) {
+  const panels = endPanelPads(unit, fallbackThickness);
+  const insets = insetPads(unit);
+  return { left: panels.left + insets.left, right: panels.right + insets.right, back: insets.back };
+}
+
+/**
+ * [left, right) footprint of a unit along its wall, END PANELS AND INSETS
+ * INCLUDED.
  *
  * Every "where does this unit fit" question goes through here, so an end panel
- * is respected by placing, moving and resizing without any of them knowing what
- * an end panel is.
+ * and a deliberate gap are both respected by placing, moving and resizing
+ * without any of them knowing what either one is.
  */
 export function unitSpan(unit) {
-  const pad = endPanelPads(unit, unit?.params?.front_t);
+  const pad = footprintPads(unit, unit?.params?.front_t);
   const left = (Number(unit.position?.x_mm) || 0) - pad.left;
   return { left, right: left + (Number(unit.params?.width) || 0) + pad.left + pad.right };
 }
@@ -124,13 +155,19 @@ export function unitSpan(unit) {
  * footprint is what every collision question is asked about, so a rotated unit
  * needs no separate rules: it is just a different rectangle.
  */
-export function unitFootprint({ wall, x, width, depth, rotation = 0 }) {
+export function unitFootprint({ wall, x, width, depth, rotation = 0, backInset = 0 }) {
   const ax = wall.along.x; const ay = wall.along.y;
   const nx = wall.inward.x; const ny = wall.inward.y;
   const ox = wall.start.x + ax * x;
   const oy = wall.start.y + ay * x;
   const rad = (Number(rotation) || 0) * Math.PI / 180;
   const cos = Math.cos(rad); const sin = Math.sin(rad);
+  // A BACK INSET stands the unit off the wall (turn 7): it is measured into the
+  // room, so the footprint starts there instead of at v = 0 and every plan
+  // question — corners, depth clamps, distance arrows — answers from the real
+  // rectangle rather than from the one the unit would occupy if it were pushed
+  // back against a wall that is not straight.
+  const near = Math.max(0, Number(backInset) || 0);
   // Local (u along the wall, v into the room) → plan, with the rotation applied
   // in the local frame first.
   const place = (u, v) => {
@@ -138,12 +175,12 @@ export function unitFootprint({ wall, x, width, depth, rotation = 0 }) {
     const rv = u * sin + v * cos;
     return { x: ox + ax * ru + nx * rv, y: oy + ay * ru + ny * rv };
   };
-  return [place(0, 0), place(width, 0), place(width, depth), place(0, depth)];
+  return [place(0, near), place(width, near), place(width, near + depth), place(0, near + depth)];
 }
 
 /** A unit's own span in its wall's frame, rotation included. */
-export function unitPlanSpan({ wall, x, width, depth, rotation = 0 }) {
-  return spanInWallFrame(unitFootprint({ wall, x, width, depth, rotation }), wall);
+export function unitPlanSpan({ wall, x, width, depth, rotation = 0, backInset = 0 }) {
+  return spanInWallFrame(unitFootprint({ wall, x, width, depth, rotation, backInset }), wall);
 }
 
 /** A plan polygon measured in one wall's frame: along the wall, into the room. */
@@ -184,7 +221,7 @@ export function wallObstacles({ wall, walls, depth, others = [] }) {
     const otherWall = walls[o.wall];
     if (!otherWall) continue;
     const footprint = unitFootprint({
-      wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth, rotation: o.rotation,
+      wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth, rotation: o.rotation, backInset: o.backInset,
     });
     const span = spanInWallFrame(footprint, wall);
     if (o.wall === wall.index) {
@@ -273,23 +310,28 @@ export function clampUnitWidth({
  * The deepest this unit may be where it stands: the room's own limit, and any
  * unit on another wall that its footprint would grow into.
  */
-export function clampUnitDepth({ depth, x, width, wall, walls, others = [] }, profile) {
+export function clampUnitDepth({ depth, x, width, wall, walls, others = [], backInset = 0 }, profile) {
   const clearance = profile.editor.minUnitGap;
-  let max = maxDepthOnWall({ wall, walls, x, width });
-  let limitedBy = 'the room';
+  // A unit standing off the wall has less room in front of it, by exactly the
+  // amount it was stood off (turn 7, CLAUDE.md F5).
+  const back = Math.max(0, Number(backInset) || 0);
+  let max = Math.max(0, maxDepthOnWall({ wall, walls, x, width }) - back);
+  let limitedBy = back > 0 ? 'the room, and this unit’s back inset' : 'the room';
 
   for (const o of others) {
     if (o.wall === wall.index && !o.rotation) continue;
     const otherWall = walls[o.wall];
     if (!otherWall) continue;
     const span = spanInWallFrame(
-      unitFootprint({ wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth, rotation: o.rotation }),
+      unitFootprint({
+        wall: otherWall, x: o.x_mm, width: o.width, depth: o.depth, rotation: o.rotation, backInset: o.backInset,
+      }),
       wall,
     );
     // Only a neighbour standing in front of this unit's width can limit it.
     if (span.right <= x || span.left >= x + width) continue;
     if (span.far <= 0) continue;
-    const free = span.near - clearance;
+    const free = span.near - clearance - back;
     if (free < max) { max = Math.max(0, free); limitedBy = o.label || 'a neighbour'; }
   }
   const next = Math.min(Number(depth) || 0, max);

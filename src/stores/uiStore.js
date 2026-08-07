@@ -77,6 +77,14 @@ export const useUiStore = create((set, get) => ({
   setRealisticLighting: (v) => set({ realisticLighting: Boolean(v) }),
   toggleRealisticLighting: () => set((s) => ({ realisticLighting: !s.realisticLighting })),
 
+  // X-ray (turn 7, CLAUDE.md F3 / BACKLOG #42): look THROUGH the furniture. The
+  // board goes translucent, the contours stay, and the hardware the workshop
+  // has to buy appears where it is fitted. A way of LOOKING at the project —
+  // nothing here reaches the engine, the BOM or the CNC sheet.
+  xray: false,
+  setXray: (v) => set({ xray: Boolean(v) }),
+  toggleXray: () => set((s) => ({ xray: !s.xray })),
+
   // Contour view (BACKLOG #18): a presentation mode for a render or a printed
   // screen — materials fade away, the contours stay. Nothing here reaches the
   // BOM; it is a way of LOOKING at the same project.

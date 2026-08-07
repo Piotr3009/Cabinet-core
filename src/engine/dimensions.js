@@ -41,6 +41,9 @@ export function wallDistances({ wall, units = [], minGap = 2 }) {
         width: Number(u.width) || 0,
         depth: Number(u.depth) || 0,
         rotation: Number(u.rotation) || 0,
+        // Turn 7 (CLAUDE.md F5): a unit given a back inset stands off the wall,
+        // so the line is drawn clear of where it really is.
+        backInset: Number(u.backInset) || 0,
       });
       return { ...span, label: u.label ?? null, y: Number(u.y) || 0, id: u.id };
     })

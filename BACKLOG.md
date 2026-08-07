@@ -110,12 +110,28 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
 28. [MEDIUM] Puzzle przy płytkich korpusach: poniżej ~260 mm głębokości dwa sockety
     kolidują (95 od końców, ±25.5) — przełącznik w profilu: 1 socket na środku;
     LISP tego przypadku nie znał. Fix w czacie + kontrolny DXF do VCarve.
+    — **TURA-7 / DONE**: `profile.puzzle.singleSocketBelow = 264.5`, WYLICZONE z geometrii
+    i wyliczenie zapisane obok liczby: 190 (dwa środki po 95 od końców) + 56.5 (rozmiar
+    jednego socketu — liczą się OTWORY, ±(24.5 + 3.75) jest szersze niż ±25.5 pockietu)
+    + 18 (mostek, jedna grubość płyty). Zmiana siedzi w jednym miejscu —
+    `socketCentres()` — więc sockety boku, taby blatu, dogbones, wiercenia, DXF i podgląd
+    CNC idą za nią same. Plecy liczą swoje sockety tą samą funkcją po szerokości
+    wewnętrznej, więc wąska szafka też dostaje 1 socket i 1 tab, a nie tab bez gniazda.
+    Test przelicza próg na każdym uruchomieniu (`test/single-socket.test.js`).
+    **Kontrolny DXF do VCarve — nadal do zrobienia przez Piotra** (BLOCKERS tury 7).
 29. [HIGH] Wysokości na poziomie PROJEKTU (Design Settings): Base height / Wall unit
     height / Tall height / Mount height / Toe kick height jako defaulty; jednostka
     dziedziczy, per sztukę tylko wyjątki.
 30. [HIGH] "Save as template": skonfigurowana jednostka → zapis do Library "Saved sets".
 31. [MEDIUM] End panel: wybór boku L / P / oba (rozszerzenie #17).
 32. [LOW] Insets jednostki od sąsiada/ściany (rura, krzywa ściana) — menu kontekstowe.
+    — **TURA-7 / DONE**: `Inset left / right / back` (mm) w sekcji Construction panelu
+    jednostki, otwierane też z menu kontekstowego. `footprintPads()` dokłada inset obok
+    end panelu, więc stawianie, przesuwanie, poszerzanie, narożnik i strażnik pokoju
+    respektują go, nic o nim nie wiedząc. Back inset odsuwa jednostkę od ściany w JEDNYM
+    miejscu (`unitFootprint()` zaczyna prostokąt na v = inset), stąd idzie clamp głębokości,
+    narożnik, kanwa 3D i linia strzałek. Strzałki mierzą korpus-do-korpusu, czyli REALNY
+    dystans, a nie zmniejszony slot. Limit: `profile.editor.maxInset`.
 33. [CRITICAL] Precyzja 0.5 mm end-to-end: wyświetlanie/pola/snap/etykiety pokazują
     połówki (196.5), zero Math.round na mm w UI; silnik już liczy dokładnie.
 34. [HIGH] Strzałki wymiarowe architektoniczne: cienkie linie (czerwień/granat),
@@ -160,9 +176,19 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     — **TURA-6 / SONDA DONE**: `src/engine/drawings/` (czyste, testowane w node),
     warstwy widokowe LISP 1:1 z indeksami ACI, przekątne otwierania z `drawDoorSwingLines`,
     linia przerywana na wszystkim za frontem, wymiary architektoniczne z T5 przez `formatMm`.
-    — **DO TURY 7**: Top view i Front (carcass only) — miejsca już trzymane w menu Output;
-    dodatkowo zestawienie kilku jednostek na jednym arkuszu i wydruk całego ciągu.
-    Kalibracja wyglądu jest zrobiona — kolejne widoki to ta sama maszyneria, nie nowy styl.
+    — **TURA-7 / DONE (karta produkcyjna)**: trzy widoki na jednym arkuszu — FRONT,
+    CARCASS (no fronts), TOP — wymiarowane tak, jak mierzy warsztat: gabaryty, cokół
+    osobno, pozycje półek OD DNA (nie łańcuchem), wysokość każdej szuflady, rzędy
+    prowadnic, głębokość z frontem. Plan to rzut XZ tych samych `box` co lista cięcia,
+    w konwencji LISP-a (front szafki na dole arkusza), więc luz 3 mm pod frontem to luz
+    z profilu, nie liczba wymyślona przez rysunek. Zawias w rzucie w wymiarach
+    katalogowych (`profile.hardware`). Karta sama wybiera papier (A4/A3) i układ (rzut
+    pod elewacją / trzy w rzędzie) — ten, w którym szafka wychodzi WIĘKSZA.
+    Output ▸ Drawings: `Unit card (PDF)`, `Unit card (SVG)`, `All units (PDF)` (okładka
+    + strona na jednostkę) i `Preview…`. Wpis, który mówi „(PDF)", zapisuje PDF.
+    — **ZOSTAJE**: elewacje ścian per-projekt (cały ciąg na jednym arkuszu) — decyzja
+    zapisana w tury 7 CLAUDE.md: per-szafka najpierw, bo to dziedzictwo LISP-a i wartość
+    warsztatowa; elewacje w następnej turze.
 
 40. [MEDIUM] **Plinth w kształcie L** — wyłuskane z #20, którego infillowa połowa jest już
     zrobiona. Cokół to dziś prosty pasek cofnięty o 50 mm; w L byłby sztywniejszy i lepiej
@@ -176,12 +202,55 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     Use saved settings — zapisywalne SETY ustawień), Joinery type z podglądem (Dog
     bones), materiały carcass 1–3 + fronty, auto-fill z JC + badge "JC" albo
     "Not assigned" + assign ze stocku. Łączenie JC: API + token (tenant z tokena,
-    nigdy z listy) — SPEC sekcja 8. — TURA-7
+    nigdy z listy) — SPEC sekcja 8. — **TURA-7 / DONE (część lokalna)**:
+    `components/NewProjectFlow.jsx` — pięć kroków, wszystkie z gotową odpowiedzią, przeklik
+    na defaultach ~10 s. Numer projektu proponowany w formacie warsztatu ("K-118" → "K-119",
+    "2026/09" → "2026/10", "0009" → "0010" z zerami), nieparsowalny numer nie wywraca serii.
+    SETY USTAWIEŃ to nowy zapisywany byt (`lib/settingsSets.js` + store): CAŁY obiekt design
+    pod nazwą, bo set z materiałami bez wysokości aplikowałby się po cichu w połowie.
+    Typ projektu ustawia kategorię Library, podpowiedź zakresu i wysokości startowe
+    (kuchnia niczego nie nadpisuje — profil JEST kuchnią; szafa i vanity mają nadpisania
+    w `profile.projectTypes`). Krok „pokój" to ISTNIEJĄCY `RoomModal` (nowe propsy
+    onClose/onApplied), nie drugi edytor. Joinery type z podglądem WYPROWADZONYM
+    z `profile.puzzle`. Badge „JC" jest funkcją danych materiału (`jc_uuid` / `source`),
+    nie flagą — prawdziwy stock zapali je sam.
+    — **ZOSTAJE**: samo połączenie z JoineryCore (API + token, SPEC 8). „Select from
+    JoineryCore" jest disabled „soon", zgodnie z zakresem tury.
 42. [HIGH] X-ray mode + okucia 3D proceduralnie (zawiasy/prowadnice/nóżki/rail
     z hardware[] i wymiarów katalogowych w profilu; InstancedMesh; tylko w X-ray).
-    Wzór: WoodExpert. Bez plików 3D producentów (dane katalogowe tak, mesh nie). — TURA-7
+    Wzór: WoodExpert. Bez plików 3D producentów (dane katalogowe tak, mesh nie).
+    — **TURA-7 / DONE**: tryb X-ray w toolbarze i w View. Płyta schodzi do 20 %
+    (`profile.appearance.xray`), fronty zostają na 42 % — front to twarz szafki — kontury
+    zostają i przy tej przezroczystości TO ONE są szafką. Okucia proceduralnie:
+    `profile.hardware` (katalog, osobno od `appearance.hardware`, które jest kolorami)
+    + `engine/hardware3d.js`, które czyta pozycje z tego samego wiercenia co pliki CNC.
+    KONTRAKT TO LICZBA: `test/hardware-3d.test.js` pyta o to samo dwa razy — obraz i
+    `result.hardware` — dla każdej złotej szafki. Zawiasy i prowadnice TYLKO w X-ray;
+    nóżki jak dotąd zawsze, ale jako talerz + trzpień + stopka. InstancedMesh: pięć
+    wywołań na jednostkę niezależnie od liczby okuć. Zmierzone w Chromium, 10 szafek
+    z drzwiami, przebiegi przeplatane: **2,87 fps normalnie / 2,83 fps w X-ray** — tryb
+    nie kosztuje nic mierzalnego (liczba bezwzględna to SwiftShader, BLOCKERS #31).
 43. [LOW] Podgląd pojedynczego elementu/formatki w 3D — później.
 44. [PARKING] Upload własnych modeli 3D tenanta (GLB, Supabase Storage bucket
     `models`, RLS per tenant, limit rozmiaru) — gdy pierwszy warsztat poprosi.
 45. [PARKING] Malowane panele dolne pod wiszące (osobny element; spodnia WUD surowa —
     konstrukcja Skylon), wiąże się z finish-per-lico w #36.
+## DOPISANE W TURZE 7 (08.08)
+46. [MEDIUM] **Elewacje ścian per-projekt.** Karta produkcyjna jest per szafka (tura 7,
+    decyzja zapisana w CLAUDE.md tury 7: dziedzictwo LISP-a i wartość warsztatowa).
+    Zostaje drugi rysunek: CAŁY CIĄG na jednym arkuszu — elewacja ściany z numerami
+    jednostek, wymiarami między nimi i linią blatu. Maszyneria jest gotowa
+    (`engine/drawings/`: primitives, sheet, layers, SVG/PDF, booklet), brakuje układu.
+47. [MEDIUM] **Trzy taby na niskim korpusie.** Tura 7 rozwiązała sockety przy PŁYTKIM
+    korpusie (#28). Ta sama rodzina po drugiej osi: `tabCentres()` daje trzy taby
+    (95, H/2, H−95) po tylnej krawędzi boku, a przy wysokości poniżej ~310 mm środkowy
+    zaczyna wchodzić w skrajne (dogbone ±30). LOW_CABINET ma `minHeight: 300`, więc
+    przypadek jest osiągalny. Nie było w zakresie tury 7 — CLAUDE.md F4 mówi wyłącznie
+    o socketach — i jest wypisane, żeby nie zginęło razem z zamkniętym #28.
+48. [LOW] **Numer projektu bez unikalności.** Auto-propozycja liczy od najwyższego numeru
+    NA TEJ PÓŁCE (localStorage). Dwa stanowiska bez wspólnej bazy zaproponują ten sam
+    numer, a pole jest edytowalne, więc nic tego nie pilnuje. Gdy `cc_projects` zacznie
+    być używane, numer chce unikalnego indeksu i propozycji z bazy, nie z półki.
+49. [LOW] **Sety ustawień tylko lokalnie.** `cc.settingsSets.v1` w localStorage, bez
+    tabeli i bez pliku SQL — mock-mode ma DZIAŁAĆ, więc działa. Gdy sety mają jeździć
+    między stanowiskami: tabela + RLS + migracja, wzorem `cc_templates` (#26/sql).

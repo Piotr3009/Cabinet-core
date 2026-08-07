@@ -1857,3 +1857,303 @@ nie dlatego, że przeszkadzały:
 - `imports.test.js` — strzępi teraz literały szablonowe (zostawiając `${…}`), bo faza krawędzi
   niesie GLSL w backtickach, a GLSL ma wbudowany `clamp`, tak samo jak `engine/format.js`.
   Sprawdzone, że nadal łapie bug z tury 5: po usunięciu importu z `Room.jsx` test czerwienieje.
+
+---
+
+# TURA 7 — karta produkcyjna, New Project flow, X-ray z okuciami, płytki puzzle, insety
+
+**Gałąź:** `claude/claude-md-phase-7-7br1q7` · **Tryb:** pełna autonomia, zero pytań
+**Wynik:** `npm test` **616/616** (536 podłogi z tury 6 + 80 nowych, 0 fail),
+`npm run build` czysty, przebieg end-to-end w Chromium **16/16** bez błędu w konsoli.
+
+Pozycje BACKLOG zamknięte: **#39 (rysunki — karta) DONE**, **#41 (New Project flow) DONE
+w części lokalnej**, **#42 (X-ray + okucia) DONE**, **#28 (płytki puzzle) DONE**,
+**#32 (insety) DONE**. Nowe: **#46**–**#49**.
+
+---
+
+## F1 — DRAWINGS v1: karta produkcyjna per szafka [CRITICAL]
+
+Tura 6 narysowała JEDEN widok jako sondę stylu — właśnie po to, żeby ta tura mogła
+złożyć komplet, nie ustalając od nowa, jak wygląda rysunek. Komplet to trzy widoki
+na jednym arkuszu: **FRONT**, **CARCASS (no fronts)**, **TOP**.
+
+**Geometria zostaje silnika.** Plan to rzut XZ tych samych `box`, z których pisana jest
+lista cięcia, w konwencji AutoLISP-a: `y = głębokość − z − d`, czyli front szafki na
+DOLE arkusza, dokładnie tam, gdzie `KIT_BUD_FULL` rysuje drzwi na `(- y0 doorGap
+gruboscDrzwi)`. Skutek jest taki, że luz 3 mm między korpusem a frontem widoczny na
+rzucie to `profile.doors.gap`, a nie liczba, którą wymyślił rysunek. Test to przypina.
+
+**Co mierzy karta.** CLAUDE.md mówi „liczby, które warsztat mierzy taśmą — nie każda
+śruba", i to jest cała lista:
+
+| widok | co niesie |
+|---|---|
+| FRONT | gabaryt W, wysokość z nóżkami, cokół i korpus OSOBNO, wysokość każdej szuflady |
+| CARCASS | pozycje półek **od dna**, partition, rzędy prowadnic, wysokość korpusu |
+| TOP | głębokość, szerokość, głębokość **z frontem** (to ona decyduje, gdzie ciąg kończy przy ścianie) |
+
+Półki są mierzone **od dna, każda na swoim biegu**, a nie łańcuchem — łańcuch zbiera
+błąd każdego stopnia nad sobą, a wiertarz mierzy od spodu. Szuflady odwrotnie:
+łańcuchem, bo wysokość frontu to liczba, którą warsztat DODAJE.
+
+**Numer szuflady jest na szufladzie, nie w wymiarze.** „D1 197" to sześć znaków tam,
+gdzie linia wymiarowa ma 197 mm — i te dwie rzeczy są w tej samej proporcji przy KAŻDEJ
+skali, więc etykieta nigdy się nie mieści. W środku własnego frontu mieści się zawsze.
+Ta sama rodzina problemu, ogólnie: liczba za duża na swoją linię wymiarową jest pisana
+OBOK niej, nie w poprzek jej strzałek.
+
+**Zawias w rzucie.** AutoLISP niesie obrys prawdziwego zawiasu Bluma — siedemdziesiąt
+linii i trzydzieści łuków, dwa razy, raz odbite. To, co ten blok MÓWI, to: puszka
+wywiercona we froncie, korpus stojący za nią, ramię sięgające do płytki na boku. Karta
+rysuje to, w wymiarach katalogowych z `profile.hardware.hinge`, jedną funkcją zamiast
+dwóch odbitych kopii — strona to znak, nie drugi rysunek.
+
+**Papier i układ wybiera karta.** Nie A4 na sztywno: budowane są dwa układy (rzut pod
+elewacją — poprawny rzut trzeciego kąta — oraz trzy widoki w rzędzie) na dwóch
+arkuszach, i wygrywa ten, w którym szafka wychodzi **większa**. Remis układów bierze
+rzut (bo darmowy jest poprawny), remis arkuszy bierze A4 (bo warsztat woli mniejszy).
+Szafka dolna wychodzi **A3 pionowo, 1:10** tam, gdzie pierwsza wersja dawała 1:20.
+
+Jedna liczba kupiła cały ten stopień skali: wysokość tekstu karty to **60 mm rysunkowych**
+zamiast 90. Trzy widoki i sześć biegów wymiarów dzielą jeden arkusz, a każdy milimetr
+wysokości tekstu kosztuje około dwóch milimetrów odstępu biegów po czterech stronach
+KAŻDEGO widoku. 60 to 3 mm na papierze przy 1:20 — czyli tyle, ile biuro projektowe
+i tak stawia.
+
+**Wyjścia.** Output ▸ Drawings: `Unit card (PDF)`, `Unit card (SVG)`,
+`All units (PDF)` (okładka + strona na jednostkę) i `Preview…`. Wpis, który mówi
+„(PDF)", **zapisuje PDF** — podgląd ma własny wpis i tylko on otwiera okno. Turę 6
+zamknęły dwa miejsca trzymane otwarte („Top view", „Front (carcass only)"); tura 7 ich
+nie zamienia na dwa nowe wpisy, bo trzy widoki to JEDNA karta, a trzy osobne eksporty
+tej samej szafki to trzy rzeczy do trzymania w zgodzie.
+
+**Dwie przeprowadzki, obie z powodu.** Prymitywy rysunkowe poszły do
+`drawings/primitives.js` pod nazwy, których nic w aplikacji nie nosi (`entLine`,
+`entRect`, `entText`, `entCircle`): eksportowanie `text` i `line` z modułu silnika robi
+z tych słów pułapki dla `test/imports.test.js` w CAŁEJ aplikacji — i checker miał rację,
+nazwa tak ogólna nie ma czego szukać w eksportach. Drugie: `solid` na encji nadpisuje
+kreskowanie warstwy, i to jest to, co pozwala półce zostać zieloną i PRZESTAĆ być linią
+przerywaną, kiedy drzwi są zdjęte.
+
+---
+
+## F2 — NEW PROJECT FLOW (#41) [HIGH]
+
+Pięć kroków, i cały ich sens jest taki, że wszystkie pięć jest już odpowiedzianych:
+numer zaproponowany, nazwa i klient opcjonalne, typ to kuchnia, zakres idzie za typem,
+ustawienia to albo te projektu, albo zapisany set. Przeklik na defaultach: ~10 sekund.
+
+**Numer projektu liczy w formacie WARSZTATU, nie narzuca swojego.** Ostatni ciąg cyfr
+w najwyższym numerze na półce, plus jeden, z zerami i wszystkim dookoła: „K-118" →
+„K-119", „2026/09" → „2026/10", „0009" → „0010". Numer, którego nie da się sparsować,
+jest pomijany, nie poprawiany — i nie wywraca serii.
+
+**SETY USTAWIEŃ to nowy zapisywany byt** (`lib/settingsSets.js` + `settingsSetsStore`).
+Warsztat nie wybiera materiałów, złącza i wysokości od nowa na każdą robotę — ma dwa
+albo trzy sposoby, w jakie buduje. Set to **CAŁY** obiekt `design` pod nazwą, celowo,
+nie podzbiór: set z materiałami bez wysokości aplikowałby się po cichu w połowie, a
+pierwsze miejsce, gdzie ktoś by to zauważył, to lista cięcia. Nałożenie setu przynosi
+sposób budowania i zostawia robocie jej tożsamość: „Standard kitchen" na vanity daje
+materiały i złącze, nie zamienia roboty w kuchnię.
+
+**Typ projektu decyduje o trzech rzeczach i wszystkie są punktem startu**: kategoria
+Library, podpowiedź zakresu, wysokości. **Kuchnia nie nadpisuje niczego** — wysokości
+profilu SĄ kuchnią, a nadpisanie ich tutaj to dwa źródła jednej liczby. Nadpisania mają
+szafa (tall 2400) i vanity (base 700), obie w `profile.projectTypes` i obie wypisane
+w BLOCKERS do potwierdzenia przez Piotra.
+
+**Krok „pokój" to ISTNIEJĄCY edytor pokoju.** `RoomModal` dostał `onClose`/`onApplied`
+i jest pokazywany w miejscu — CLAUDE.md mówi „istniejący modal", a to jest jedyny
+sposób, żeby te dwa nie zaczęły się rozjeżdżać.
+
+**Joinery type z podglądem WYPROWADZONYM.** Jeden tab, jego dogbone i gniazdo, w które
+wchodzi — narysowane z `profile.puzzle`, tych samych liczb, z których cięte są pliki
+CNC. Rysunek odręczny to obrazek złącza, które ktoś zapamiętał; ten zmienia się razem
+z profilem, i tylko tak podgląd zostaje prawdziwy.
+
+**Połowa JoineryCore, która jest lokalna.** Badge „JC" jest **funkcją danych**
+materiału (`jc_uuid` albo `source: 'jc'`), nie flagą, którą ktoś ustawia — wczytanie
+prawdziwego stocku zapali badge na każdym kafelku bez zmiany czegokolwiek innego. Slot
+bez materiału zamienia sekcję w „Not assigned materials" z przyciskiem, który to
+naprawia. Samo połączenie (API + token) zostaje na później, zgodnie z zakresem.
+
+**Ekran startowy**: wymiary pokoju zniknęły (pokój ustawia się w edytorze pokoju, a nie
+mimochodem), a wiersz projektu czyta się tak, jak warsztat mówi o robocie:
+**numer · nazwa · data**.
+
+---
+
+## F3 — X-RAY + OKUCIA 3D (#42) [HIGH]
+
+Płyta schodzi do 20 %, kontury zostają — przy tej przezroczystości TO ONE są szafką —
+a fronty zostają na 42 %, bo front to twarz szafki i wygaszony tak jak boki zostawia
+jednostkę bez twarzy.
+
+Okucia proceduralnie, co do milimetra. Zero plików, nic ściąganego: **rozmiary** to
+`profile.hardware` (nowy blok — KATALOG, w odróżnieniu od `appearance.hardware`, które
+jest kolorami), **pozycje** to `engine/hardware3d.js`, który czyta je z tego samego
+wiercenia, z którego powstają pliki CNC. Zawias jest narysowany tam, gdzie maszyna
+wywierci pod niego; prowadnica tam, gdzie siedzi skrzynka, która na niej jedzie; rail
+w średnicy z profilu zamiast dosłownego `15`, które nosił widok.
+
+**Kontraktem jest LICZBA.** `hardwareInstances()` musi dać dokładnie to, co
+`result.hardware` każe zamówić, i `test/hardware-3d.test.js` pyta o to dwa razy — raz
+obrazu, raz listy zakupów — dla każdej złotej szafki. Rysunek z dwoma zawiasami na
+drzwiach, pod które lista kupuje trzy, jest gorszy niż brak rysunku, bo ktoś w niego
+uwierzy.
+
+Co się kiedy pokazuje: **zawiasy i prowadnice TYLKO w X-ray**, żeby widok roboczy został
+czysty. Nóżki jak dotąd zawsze — i są teraz talerzem, trzpieniem i stopką zamiast
+prostopadłościanu.
+
+### Wydajność — zmierzone, nie obiecane
+
+InstancedMesh na wszystkim powtarzalnym: pięć wywołań rysowania na jednostkę niezależnie
+od liczby okuć. Chromium na rasteryzatorze programowym kontenera (SwiftShader — brak
+GPU, patrz BLOCKERS #31), 10 szafek dolnych z drzwiami, przebiegi PRZEPLATANE po 5 s:
+
+| tryb | fps (średnia z 3) |
+|---|---|
+| normalny | **2,87** |
+| X-ray | **2,83** |
+
+Tryb nie kosztuje nic mierzalnego. Liczba bezwzględna to rasteryzator; pierwsze pomiary
+tej tury dawały 0,7 fps, dopóki nie okazało się, że kontener niesie czterdzieści
+osieroconych procesów Chromium z wcześniejszych przebiegów — po ich zabiciu liczby są
+powtarzalne i stabilne.
+
+---
+
+## F4 — PUZZLE: pojedynczy socket przy płytkich (#28) [MEDIUM]
+
+Każdy kit w `reference/lisp/` ma 558 albo 578 mm głębokości, więc dwa sockety po 95 od
+końców boku mają między sobą 350 mm i nikt nie musiał o tym myśleć. Przy szafce 250 mm
+głębokiej ta sama reguła przepuszcza dwa pockety — a przed nimi ich otwory ⌀7,5
+w ±24,5 — przez siebie nawzajem. To nie jest słabsze złącze, to dziura przez środek
+formatki.
+
+Poniżej `profile.puzzle.singleSocketBelow` jest **JEDEN socket na środku**. Próg jest
+wyprowadzony, a wyliczenie stoi obok liczby:
+
+```
+  190    dwa środki socketów, tabCentresFromEnd od każdego końca
++ 56.5   rozmiar jednego socketu w poprzek biegu — liczą się OTWORY, nie pocket:
+         ±(24.5 + 3.75) jest szersze niż ±25.5, a próg liczony z samego pocketu
+         zostawiłby zachodzące na siebie wiercenia przy ledwo rozjeżdżających się
+         pocketach
++ 18     minimalny mostek: jedna grubość płyty materiału
+= 264.5
+```
+
+Wszystko poniżej idzie z samej `socketCentres()`: sockety boku, taby blatu po drugiej
+stronie złącza, dogbones, dwa otwory na socket, a przez nie DXF i podgląd CNC. Sockety
+poprzeczne pleców liczą się teraz tą samą funkcją po szerokości wewnętrznej, zamiast być
+wypisane drugi raz — i to jest to, co daje WĄSKIEJ szafce jeden socket tam i jeden tab
+na blacie, zamiast taba bez gniazda.
+
+**LISP TEGO PRZYPADKU NIE ZNAŁ**, i testy tak mówią. To ta sama podstawa, na której
+stoją zmienne wysokości szuflad (tura 2, zadanie 4): tam, gdzie kity milczą, silnik
+decyduje, próg bierze się z geometrii, a test **przelicza go** — warsztat, który
+poszerzy socket i zapomni ruszyć stałą, dostaje czerwony test zamiast kolizji.
+
+Żadna złota fixture się nie ruszyła: najpłytszy kit w repo daje bok 382 mm szeroki.
+
+---
+
+## F5 — INSETS jednostki (#32) [MEDIUM]
+
+`Inset left / right / back` w milimetrach, w sekcji Construction panelu jednostki
+i otwierane z menu kontekstowego. Stolarz prosi o taki odstęp, kiedy w drodze stoi coś,
+co nie jest meblem: rura w narożniku, krzywa ściana, wspornik grzejnika. Sens jest
+w tym, że to **nie jest błąd do posprzątania** — więc clamp kolizji traktuje inset tak
+jak sąsiada: slot kurczy się dokładnie o inset, ruch tam staje i tam zostaje, choćby
+kursor jechał dalej.
+
+Robi to jedna funkcja. `footprintPads()` dokłada inset obok end panelu i wszystko, co
+już pytało „gdzie ta jednostka się mieści" — stawianie, przesuwanie, poszerzanie,
+narożnik, strażnik pokoju — respektuje insety, nie wiedząc, czym są. Dodają się celowo:
+panel jest przykręcony do korpusu, a odstęp jest na zewnątrz panelu.
+
+Back inset odsuwa jednostkę od ściany w **jednym** miejscu: `unitFootprint()` zaczyna
+prostokąt na `v = backInset` zamiast na 0. Stąd clamp głębokości traci tyle miejsca
+i mówi, co je zabrało; jednostka za narożnikiem jest mierzona na odcinku ściany, na
+którym naprawdę stoi; kanwa 3D przesuwa grupę wzdłuż wektora `inward` ściany.
+
+**Strzałki mierzą korpus-do-korpusu** i tak zostaje: dwie jednostki dosunięte tak
+blisko, jak pozwala 40 mm insetu, pokazują 40 — realny dystans, nie zmniejszony slot,
+w którym pracuje clamp. To dwa różne pytania i tura 7 zostawia je dwoma pytaniami.
+
+### Co znalazła przeglądarka
+
+Test w node przechodził, przebieg E2E nie: inset był zapisany, **szczelina się nie
+otwierała**. Przyczyna jest w tym, jak `freeBesideUnit` decydowała, po której stronie
+jest przeszkoda. Dwie szafki dosunięte na 2300, prawa dostaje 40 mm insetu z lewej —
+jej wypełniony span zaczyna się teraz na 2260, czyli WEWNĄTRZ sąsiada, więc szukanie
+„które przeszkody kończą się przed początkiem mojego spanu" nie znajduje żadnej,
+spada na ścianę i melduje 2260 mm wolnego obok jednostki, która w czymś stoi.
+
+Poprawka to jedna linia i jest w niej cała zasada: **którą stroną jest przeszkoda,
+decyduje KORPUS; jak daleko jest — wypełniony span.** Do tego `setUnitInsets` musi
+szczelinę ZROBIĆ, bo clamp pozycji celowo odmawia rozwiązywania istniejących nakładek
+(nie teleportuje jednostki) — więc jednostka wychodzi z tego, w czym stoi, o dokładnie
+tyle, o ile w tym stoi, zwykłym ruchem, i mówi, co ją zatrzymało. Regresja przypięta
+w `test/insets.test.js`.
+
+---
+
+## F6 — Zamknięcie
+
+### Przebieg E2E w Chromium — 16/16
+
+`scripts/e2e-turn7.mjs`, na tym samym sterowniku CDP co tura 6 (`scripts/cdp.mjs`),
+node 22, **zero nowych zależności**.
+
+| sprawdzone | wynik |
+|---|---|
+| flow otwiera się z zaproponowanym numerem projektu | `0001` ✅ |
+| osiem typów projektu | 8 ✅ |
+| vanity podpowiada ONE WALL (przykład z CLAUDE.md) | ✅ |
+| podgląd złącza rysuje samo złącze | ✅ |
+| ustawienia zapisane jako nazwany set i podane z powrotem | `Contract spec` ✅ |
+| kanwa 3D żyje | ✅ |
+| …i otwiera się na kategorii Library, o którą prosił typ | `BASE UNITS` ✅ |
+| jednostka przychodzi na wysokości VANITY, nie kuchni | **700 mm** ✅ |
+| 40 mm insetu otwiera 40 mm szczeliny, którą clamp trzyma | `inset 40, gap 40` ✅ |
+| X-ray rysuje się bez wywracania kanwy | ✅ |
+| karta na ekranie z trzema widokami | `FRONT / CARCASS (no fronts) / TOP` ✅ |
+| przekątne otwierania na karcie | 2 ✅ |
+| zawias na rzucie | 3 elementy ✅ |
+| karta jest wymiarowana | 54 encje DIMENSIONS ✅ |
+| karta jako SVG i PDF, booklet jako jeden dokument | 3 pliki ✅ |
+| błędy w konsoli | **zero** ✅ |
+
+Zrzuty: `docs/turn7/01`…`10`.
+
+### Liczby tury
+
+| | |
+|---|---|
+| testy | **616/616** (536 podłogi + 80 nowych, 0 fail) |
+| nowe pliki testowe | `unit-card`, `new-project`, `hardware-3d`, `single-socket`, `insets` |
+| build | czysty |
+| nowe zależności | **zero** |
+| SQL uruchomiony | **żaden** |
+| fixtures | nietknięte |
+
+**Testy z wcześniejszych tur, które musiały się zmienić** — bo tura 7 zmienia to, co
+opisywały, nie dlatego, że przeszkadzały:
+
+- `output-menu.test.js` — Drawings nie trzyma już dwóch miejsc „soon"; cały podmenu
+  jest żywy, a test pilnuje, że jedyny wpis kończący się na „…" to podgląd (wpis, który
+  mówi „(PDF)", ma zapisać PDF).
+- `interaction.test.js` — menu kontekstowe niesie `insets`, który OTWIERA sekcję
+  zamiast wozić trzy pola milimetrowe w prawym kliknięciu.
+
+**Jedna linia zgodności, żeby test mógł policzyć strony.** `jspdf` jest CJS-em: interop
+Vite oddaje konstruktor jako default, interop node'a oddaje obiekt modułu i `new` na nim
+rzuca. `lib/drawingExport.js` bierze `jsPDFDefault?.jsPDF || jsPDFDefault` — i dzięki
+temu „booklet naprawdę ma n stron, każda w rozmiarze, który wybrała karta" sprawdza test
+w node, a nie tylko przeglądarka. Sam eksport rozdzielony na `bookletDoc()` (buduje) i
+`exportBookletPdf()` (zapisuje), bo `doc.save()` sięga po system plików albo po
+przeglądarkę, a żadne z nich nie należy do testu, którego pytaniem jest liczba stron.

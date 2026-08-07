@@ -66,10 +66,49 @@ export function tabCentres(length, pz) {
   return [e, length / 2, length - e];
 }
 
-/** The two socket centres along a run of length L: 95 and L−95. */
+/**
+ * The socket centres along a run of length L.
+ *
+ * Normally two, at 95 in from each end — that is what every AutoLISP kit draws,
+ * because every AutoLISP kit is 558 or 578 deep and the question never came up.
+ *
+ * ─── Turn 7 (CLAUDE.md F4 / BACKLOG #28) ───
+ * On a SHALLOW carcass it does. A side panel is `depth − G` wide; put two
+ * sockets 95 in from each end of a 232 mm run and their pockets — and, before
+ * the pockets, their ⌀7.5 holes at ±24.5 — are cutting into each other. The
+ * result is not a weak joint, it is a hole through the middle of the panel.
+ *
+ * Below `profile.puzzle.singleSocketBelow` there is ONE socket, in the middle
+ * of the run. The threshold is derived from the socket geometry itself and the
+ * derivation is written out beside the number in profile.js.
+ *
+ * Everything downstream follows from this function alone — the side panel's
+ * sockets, the top panel's mating TABS, its dog-bone reliefs and the two holes
+ * per socket, and through them the DXF and the CNC preview. There is no second
+ * place that has to be told (turn 2's rule: the geometry is the source).
+ *
+ * The AutoLISP DID NOT KNOW THIS CASE. That is the same footing the variable
+ * drawer heights stand on (turn 2, task 4): where the kits are silent, the
+ * engine decides and says so, rather than pretending to have traced it.
+ */
 export function socketCentres(length, pz) {
   const e = pz.tabCentresFromEnd;
+  const threshold = Number(pz.singleSocketBelow) || 0;
+  if (threshold > 0 && length < threshold) return [length / 2];
   return [e, length - e];
+}
+
+/**
+ * The threshold, recomputed from the geometry it comes from.
+ *
+ * Exported so the number in the profile can be CHECKED rather than trusted: a
+ * workshop that widens the socket or moves its holes gets a threshold that
+ * moves with them, and the test says so when the stored constant stops
+ * agreeing. See the derivation in profile.js.
+ */
+export function singleSocketThreshold(pz, boardThickness) {
+  const half = Math.max(pz.socketHalfWidth, pz.socketHoleOffset + pz.socketHoleDiameter / 2);
+  return pz.tabCentresFromEnd * 2 + half * 2 + boardThickness;
 }
 
 /** Socket pocket + its two holes on a horizontal edge (top or bottom of a panel). */
@@ -218,8 +257,11 @@ export function socketPanelGeometry({ w, h, G, puzzle: pz, sockets = {}, screws 
 export function backPanelGeometry({ w, h, G, puzzle: pz }) {
   const S = G / 2 + pz.centrelineExtra;
   const sideCentres = tabCentres(h, pz);
-  const e = pz.tabCentresFromEnd;
-  const acrossCentres = [G + e, w - G - e];
+  // The back receives the top/bottom panels' BACK-EDGE tabs, and those are cut
+  // at socketCentres() over the INTERNAL width. Deriving them the same way — one
+  // function, offset by the side panel — is what makes a narrow carcass get one
+  // socket here and one tab there instead of a tab with nothing to go into.
+  const acrossCentres = socketCentres(w - 2 * G, pz).map((c) => G + c);
   const out = socketPanelGeometry({
     w, h, G, puzzle: pz,
     sockets: { left: sideCentres, right: sideCentres, top: acrossCentres, bottom: acrossCentres },
@@ -242,4 +284,57 @@ export function backPanelGeometry({ w, h, G, puzzle: pz }) {
 /** Plain rectangular outline for panels without puzzle joints. */
 export function rectGeometry(w, h, layer = 'OUTLINE') {
   return { outline: [[0, 0], [w, 0], [w, h], [0, h]], pockets: [], holes: [], layer };
+}
+
+// ─── A picture of the joint (turn 7, CLAUDE.md F2) ──────────────────────────
+
+/**
+ * ONE tab and the socket it goes into, drawn from the same numbers the cutter
+ * gets. For the joinery picker in the new-project flow: "Dog bones (Skylon
+ * puzzle)" means nothing as a phrase, and means everything as a shape.
+ *
+ * It is derived rather than illustrated on purpose. A hand-drawn diagram of a
+ * joint is a diagram of the joint SOMEBODY REMEMBERED; this one changes when
+ * `profile.puzzle` changes, which is the only way a preview can keep being
+ * true after the profile is edited.
+ *
+ * Coordinates are millimetres, origin bottom-left, y up — the same frame every
+ * other function in this file works in.
+ *
+ * @returns {{w:number, h:number, boardT:number, outline:Array, mate:object,
+ *            dogbone:object, socket:object, holes:Array}}
+ */
+export function puzzlePreview(profile) {
+  const pz = profile.puzzle;
+  const G = profile.board.thickness;
+  // Tall enough to show the tab with room around it, wide enough that the
+  // panel reads as a panel rather than as a strip.
+  const h = pz.dogboneHalfHeight * 4;
+  const w = pz.tabHalfWidth * 3;
+  const centre = h / 2;
+  const S = G / 2 + pz.centrelineExtra;
+
+  const outline = [[0, 0], [w, 0], ...tabPointsRight(w, centre, G, pz), [w, h], [0, h]];
+
+  return {
+    w: w + G + pz.socketOvershoot,
+    h,
+    boardT: G,
+    outline,
+    // The relief pocket that lets a round cutter reach into the corner — the
+    // "dog bone" the system is named after.
+    dogbone: {
+      x1: w, y1: centre - pz.dogboneHalfHeight, x2: w + G, y2: centre + pz.dogboneHalfHeight,
+    },
+    // The mating piece: its edge stands where the tab ends.
+    mate: { x1: w + G, y1: 0, x2: w + G + pz.socketOvershoot + S, y2: h },
+    // …and the pocket in it that receives the tab, with its two holes.
+    socket: {
+      x1: w + G - S, y1: centre - pz.socketHalfWidth,
+      x2: w + G + pz.socketOvershoot, y2: centre + pz.socketHalfWidth,
+    },
+    holes: [-pz.socketHoleOffset, pz.socketHoleOffset].map((dy) => ({
+      x: w + G - S + pz.socketHoleInset, y: centre + dy, d: pz.socketHoleDiameter,
+    })),
+  };
 }

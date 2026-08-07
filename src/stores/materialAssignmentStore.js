@@ -151,3 +151,50 @@ export const useMaterialAssignmentStore = create((set, get) => ({
 
   reset: () => set(project(normalize(null))),
 }));
+
+// ─── JoineryCore coupling, locally (turn 7, CLAUDE.md F2) ───
+//
+// The integration itself is a later phase — there is no JoineryCore API call
+// anywhere in this app. What turn 7 wires is the LOCAL half of it: a material
+// that came from JoineryCore carries the evidence (a `jc_uuid`, or `source:
+// 'jc'`), and everywhere a material is shown the app says so.
+//
+// It is a function of the DATA, not a flag somebody sets. The moment a real
+// stock list is loaded through `setMaterials`, every tile that has a uuid gets
+// its badge with nothing else changing — which is the point of doing it this
+// way round.
+
+/** Did this material come from JoineryCore? */
+export function isJcMaterial(material) {
+  return Boolean(material?.jc_uuid || material?.source === 'jc');
+}
+
+/** The badge a material tile shows, or null. One word: "JC". */
+export function materialBadge(material) {
+  return isJcMaterial(material) ? 'JC' : null;
+}
+
+/**
+ * What the settings screen has to say about a set of material slots.
+ *
+ * `assigned` is what it can fill in; `missing` is the slots that have nothing
+ * behind them, and the presence of any of those is what turns the section into
+ * "Not assigned materials" with a button rather than a silent set of empty
+ * tiles (CLAUDE.md F2).
+ *
+ * @param {Array} slots       [{ id, label, material_id }]
+ * @param {Array} materials   the workshop's list
+ */
+export function materialSlotState(slots = [], materials = []) {
+  const byId = new Map(materials.map((m) => [m.id, m]));
+  const rows = slots.map((slot) => {
+    const material = slot.material_id ? byId.get(slot.material_id) || null : null;
+    return { ...slot, material, badge: materialBadge(material) };
+  });
+  return {
+    rows,
+    assigned: rows.filter((r) => r.material),
+    missing: rows.filter((r) => !r.material),
+    fromJc: rows.filter((r) => r.badge).length,
+  };
+}

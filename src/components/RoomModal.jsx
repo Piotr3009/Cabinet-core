@@ -22,11 +22,21 @@ import { getCabinetProfile } from '../engine/profile.js';
 const PLAN_W = 380;
 const PLAN_H = 260;
 
-export default function RoomModal() {
+/**
+ * `onClose` / `onApplied` are for the NEW-PROJECT FLOW (turn 7, CLAUDE.md F2),
+ * which shows this same editor as a step rather than as a modal off the
+ * Settings menu — CLAUDE.md asks for "the existing modal", and this is how it
+ * stays the existing one instead of becoming a second room editor to keep in
+ * step. Left out, both fall back to what turn 3 did.
+ */
+export default function RoomModal({ onClose = null, onApplied = null }) {
   const room = useProjectStore((s) => s.project.room);
   const units = useProjectStore((s) => s.units);
   const setRoom = useProjectStore((s) => s.setRoom);
-  const closeModal = useUiStore((s) => s.closeModal);
+  // The hook is called unconditionally and the prop chosen afterwards — a hook
+  // behind an `||` is a hook that sometimes does not run.
+  const closeFromStore = useUiStore((s) => s.closeModal);
+  const closeModal = onClose || closeFromStore;
   const notify = useUiStore((s) => s.notify);
 
   const [draft, setDraft] = useState(() => migrateRoom(room));
@@ -133,6 +143,7 @@ export default function RoomModal() {
     const verdict = setRoom(draft);
     if (!verdict.ok) { notify(verdict.message, 'error'); return; }
     notify('Room updated.', 'ok');
+    if (onApplied) { onApplied(); return; }
     closeModal();
   };
 

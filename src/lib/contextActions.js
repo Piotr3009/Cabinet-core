@@ -67,6 +67,20 @@ export function menuActions({ unit, panelPart, store }) {
       run: () => { store.addTopInfill?.(unit.id); store.openPanelSection?.('construction'); },
     });
 
+  // ── Insets (turn 7, CLAUDE.md F5 / BACKLOG #32) ──
+  // The MENU opens the section; the numbers are typed in the panel, exactly as
+  // the plinth and the end panels work. A three-field form does not belong in a
+  // right-click menu, and CLAUDE.md has ruled out a modal for this family since
+  // turn 4.
+  const insets = [unit.params.inset_left_mm, unit.params.inset_right_mm, unit.params.inset_back_mm]
+    .filter((v) => Number(v) > 0).length;
+  actions.push({
+    id: 'insets',
+    label: insets ? `Insets (${insets} set)…` : 'Insets…',
+    hint: 'A deliberate gap for a pipe, a bowed wall or a bracket — the clamp respects it',
+    run: () => store.openPanelSection?.('construction'),
+  });
+
   // ── Save as template (turn 5, BACKLOG #30) ──
   // Right-clicking the cabinet you have just finished configuring is where a
   // joiner reaches for this. It asks for a NAME (the modal), because a library

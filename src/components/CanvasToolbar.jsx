@@ -16,6 +16,8 @@ export default function CanvasToolbar() {
   const showOutlines = useUiStore((s) => s.showOutlines);
   const toggleOutlines = useUiStore((s) => s.toggleOutlines);
   const contourView = useUiStore((s) => s.contourView);
+  const xray = useUiStore((s) => s.xray);
+  const toggleXray = useUiStore((s) => s.toggleXray);
 
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-shell-800/95 border border-shell-600 rounded px-1.5 py-1 shadow-lg">
@@ -54,6 +56,26 @@ export default function CanvasToolbar() {
           : (showOutlines ? 'Hide the outlines' : 'Show the outlines')}
       >
         Outlines
+      </button>
+
+      {/* X-ray (turn 7, CLAUDE.md F3): the board goes translucent and the
+          ironmongery appears. On the toolbar rather than only in the menu,
+          because it is something you flick on and off while looking at a
+          cabinet, not something you set up. */}
+      <button
+        type="button"
+        aria-pressed={xray}
+        disabled={viewMode !== '3d' || contourView}
+        className={`px-2.5 py-1 text-xs rounded transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
+          xray && viewMode === '3d'
+            ? 'bg-gold text-shell-900 font-medium'
+            : 'text-ink-100 hover:bg-shell-700'}`}
+        onClick={toggleXray}
+        title={contourView
+          ? 'Contour view already draws nothing but the outlines'
+          : 'See through the carcasses — hinges, runners and legs where they are fitted'}
+      >
+        X-ray
       </button>
 
       <span className="w-px h-4 bg-shell-600" />

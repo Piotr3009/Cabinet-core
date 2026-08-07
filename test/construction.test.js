@@ -21,6 +21,7 @@ import { clampUnitX, endPanelPads, unitSpan } from '../src/engine/collision.js';
 import { buildBom } from '../src/engine/bom.js';
 import { exportablePanels } from '../src/engine/cnc/groups.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+import { menuActions } from '../src/lib/contextActions.js';
 
 const store = () => useProjectStore.getState();
 const INFILL = 20;
@@ -122,7 +123,9 @@ test('a newly placed unit has NO plinth and NO top infill', () => {
 });
 
 test('adding the plinth and the top infill makes them real; removing them makes them gone', () => {
-  const id = withUnit('BUD');
+  // A TALL unit, because turn 8 (CLAUDE.md F2.7) closed the top infill off for
+  // base kits — see the test below. Everything else about the piece is the same.
+  const id = withUnit('BUDTALL');
 
   assert.equal(store().addPlinth(id), true);
   assert.equal(partsOf(id, 'PLINTH').length, 1);
@@ -133,16 +136,20 @@ test('adding the plinth and the top infill makes them real; removing them makes 
   const top = partsOf(id, 'INFILL').find((p) => p.meta.side === 'top');
   assert.equal(top.h, 40);
 
-  // The drag and the double-click still work on what is there.
-  assert.equal(store().setTopInfill(id, 300), 300);
-  assert.equal(partsOf(id, 'INFILL').find((p) => p.meta.side === 'top').h, 300);
+  // The drag and the double-click still work on what is there. The number is
+  // read off the room rather than written down: a tall unit leaves less air
+  // above it than a base one, and the point of the test is the mechanism.
+  const headroom = 2500 - (unitOf(id).params.height + P.projectHeights.toeKick);
+  const partWay = headroom - 50;
+  assert.equal(store().setTopInfill(id, partWay), partWay);
+  assert.equal(partsOf(id, 'INFILL').find((p) => p.meta.side === 'top').h, partWay);
   const toCeiling = store().fillToCeiling(id);
   // Turn 5 (BACKLOG #29): a new base unit arrives at the PROJECT's base height,
   // not at the kit's own default — so the gap to the ceiling is measured from
   // that. The number is read from the unit rather than written out again, so
   // this test says "to the ceiling" and not "to 1630".
   assert.equal(toCeiling, 2500 - (unitOf(id).params.height + P.projectHeights.toeKick));
-  assert.equal(unitOf(id).params.height, P.projectHeights.base, 'inherited, not the kit default');
+  assert.equal(unitOf(id).params.height, P.projectHeights.tall, 'inherited, not the kit default');
 
   store().removePlinth(id);
   store().removeTopInfill(id);
@@ -153,6 +160,30 @@ test('adding the plinth and the top infill makes them real; removing them makes 
   store().moveUnit(id, 1200, 0);
   assert.equal(unitOf(id).params.plinth, false);
   assert.equal(unitOf(id).params.top_infill_mm, 0);
+});
+
+test('a BASE unit refuses a top infill however it is asked (turn 8, F2.7)', () => {
+  // What goes on top of a base cabinet is a WORKTOP. The gap above that is
+  // where the wall units are, and closing it with a strip of 18 mm board is not
+  // a piece of joinery anybody would cut — so the question is refused rather
+  // than answered with a number, on every route into it.
+  for (const type of ['BUD', 'BUDR', 'SINK', 'LOW_CABINET']) {
+    const id = withUnit(type);
+    assert.equal(store().addTopInfill(id), 0, `${type} was offered one`);
+    assert.equal(store().setTopInfill(id, 400), 0, `${type} took one by the drag`);
+    assert.equal(store().fillToCeiling(id), 0, `${type} took one by the double click`);
+    assert.equal(unitOf(id).params.top_infill_mm ?? 0, 0);
+    assert.equal(partsOf(id, 'INFILL').filter((p) => p.meta.side === 'top').length, 0);
+    // …and the SIDE infill is untouched: a base unit at a wall has a scribe gap
+    // exactly as a tall one does.
+    assert.equal(menuActions({ unit: unitOf(id), store: {} }).some((a) => a.id.startsWith('top-infill')), false,
+      `${type} still offers it in the right-click menu`);
+  }
+  // The kits that finish below a ceiling still have it.
+  for (const type of ['WUD', 'BUDTALL', 'WARDROBE', 'FRIDGE']) {
+    const id = withUnit(type);
+    assert.ok(store().addTopInfill(id) > 0, `${type} lost it`);
+  }
 });
 
 test('a wall unit refuses a plinth however it is asked', () => {

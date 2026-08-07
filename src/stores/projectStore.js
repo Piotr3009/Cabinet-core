@@ -14,7 +14,9 @@ import {
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
 } from '../engine/design.js';
-import { autoPartsFor, takesPlinth, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';
+import {
+  autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
+} from '../engine/autoparts.js';
 import { runInfillParams, unitTop } from '../engine/runs.js';
 import { drawersInEngineOrder, nextHangerOffset, nextShelfPos, shelvesInEngineOrder } from '../engine/items.js';
 
@@ -432,6 +434,10 @@ export const useProjectStore = create((set, get) => ({
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return 0;
+    // The gate (turn 8, CLAUDE.md F2.7). What sits on top of a base unit is a
+    // worktop, so there is no gap to the ceiling for the piece to close and the
+    // question is refused rather than answered with a number.
+    if (!takesTopInfill(unit.type)) return 0;
     const profile = getCabinetProfile();
     const height = topInfillHeight({
       requested: snapTo(heightMm, profile.editor.mmStep),
@@ -818,11 +824,19 @@ export const useProjectStore = create((set, get) => ({
    *           not a second path: a template that could land on top of a
    *           neighbour would be exactly the bug turn 3 phase 4 closed off.
    */
-  addUnit: (typeId, { params = null } = {}) => {
+  addUnit: (typeId, { params = null, near = null, side = null } = {}) => {
     const profile = getCabinetProfile();
     const state = get();
     const unit = newUnit(typeId, profile, state.units.length, state.project.design);
     if (params) applyTemplateParams(unit, params);
+    // ─── Turn 8 (CLAUDE.md F2.1) ───
+    // Which unit the joiner is working beside. When there is one, the new
+    // cabinet lands in the nearest free slot on EITHER side of it — which is
+    // the whole of the "adding on the left is impossible" bug: the placement
+    // knew one direction, so the left-hand end of a run could not be reached by
+    // adding OR by dragging (a unit butted against its neighbour has nowhere to
+    // go, and a clamp that let it through would be a worse bug).
+    const beside = near ? state.units.find((u) => u.id === near) : null;
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -835,7 +849,18 @@ export const useProjectStore = create((set, get) => ({
     const level = getUnitType(typeId).mount;
     const walls = roomWalls(state.project.room);
     let placed = null;
-    for (const wall of walls) {
+    // A named neighbour decides which WALL is tried first as well as where on
+    // it: "another one beside this" cannot mean "on the wall behind you".
+    // …and when a SIDE was asked for as well, that wall is the only one tried:
+    // "put one on the left of this" is not answered by a wall round the corner.
+    const besideWall = beside ? walls[beside.position.wall ?? 0] : null;
+    const ordered = besideWall
+      ? (side
+        ? [besideWall]
+        : [besideWall, ...walls.filter((wl) => wl.index !== besideWall.index)])
+      : walls;
+    for (const wall of ordered) {
+      const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
       const x = freeSlotOnWall({
         width: unit.params.width,
         wallWidth: wall.width,
@@ -843,14 +868,16 @@ export const useProjectStore = create((set, get) => ({
         others: state.units
           .filter((u) => (u.position.wall ?? 0) === wall.index && getUnitType(u.type).mount === level)
           .map(unitSpan),
+        near: onThisWall ? unitSpan(beside) : null,
+        side: onThisWall ? side : null,
       }, profile);
       if (x != null) { placed = { wall: wall.index, x }; break; }
     }
     if (!placed) {
-      return {
-        id: null,
-        error: `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`,
-      };
+      const where = side && beside
+        ? `There is no room for ${formatMm(unit.params.width)} mm to the ${side === 'L' ? 'left' : 'right'} of ${beside.params.unit_num} — move something, or add it on the other side.`
+        : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`;
+      return { id: null, error: where };
     }
     unit.position.wall = placed.wall;
     unit.position.x_mm = placed.x;
@@ -939,6 +966,20 @@ export const useProjectStore = create((set, get) => ({
         const params = { ...u.params, ...applied };
         if (applied.width != null && params.sections?.[0]) {
           params.sections = [{ ...params.sections[0], width_mm: applied.width }];
+        }
+        // ─── Turn 8 (CLAUDE.md F2.2) ───
+        // The hinge side is stored in TWO places and the engine reads the other
+        // one. `params.hinge` is the unit's own; `params.doors` becomes an
+        // object the moment doors are fitted (`setDoors`), and
+        // normalizeParams lets `doors.hinge` override `hinge` — so once a door
+        // existed, the panel's switch wrote to a field nothing read, and Piotr
+        // watched a control do nothing.
+        //
+        // One source of truth, kept here rather than by teaching the engine to
+        // prefer the other field: the door object is what the engine is handed,
+        // so the door object has to be right.
+        if (applied.hinge != null && params.doors && typeof params.doors === 'object') {
+          params.doors = { ...params.doors, hinge: applied.hinge };
         }
         return { ...u, params };
       }),
@@ -1432,8 +1473,22 @@ export const useProjectStore = create((set, get) => ({
   },
 
   // ── doors (last step) ────────────────────────────────────────────────────
+  // The hinge side travels BOTH ways (turn 8, F2.2): fitting doors with a hinge
+  // writes it onto the unit as well, so the panel's switch and the engine's
+  // input are the same answer and cannot come apart later.
   setDoors: (unitId, doors) => set((s) => ({
-    units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, doors } } : u)),
+    units: s.units.map((u) => (u.id === unitId
+      ? {
+        ...u,
+        params: {
+          ...u.params,
+          doors,
+          ...(doors && typeof doors === 'object' && doors.hinge
+            ? { hinge: String(doors.hinge).toUpperCase() === 'R' ? 'R' : 'L' }
+            : {}),
+        },
+      }
+      : u)),
     dirty: true,
   })),
 

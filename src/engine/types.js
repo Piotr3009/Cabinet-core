@@ -15,6 +15,13 @@
  * carcass.back     — 'full' | 'inset' (SINK) | 'rails' (FRIDGE)
  * drawerStyle      — null | 'wardrobe' (internal, behind doors) | 'budr' (fronts)
  * mount            — 'floor' | 'wall'
+ *
+ * supports.topInfill (turn 8, CLAUDE.md F2.7) — is there anything ABOVE this
+ * kit for an infill to close against? For a base unit, no: what goes on top of
+ * it is a WORKTOP, not two metres of air, and offering to fill the gap to the
+ * ceiling over a base cabinet is offering to build a wall out of 18 mm board.
+ * A wall unit, a tall unit, a fridge housing and a wardrobe all finish somewhere
+ * below the ceiling, and that gap is exactly what the piece is for.
  */
 export const UNIT_TYPES = {
   WARDROBE: {
@@ -36,7 +43,7 @@ export const UNIT_TYPES = {
     drawerStyle: 'wardrobe',
     minHeightKey: 'wardrobe.minHeight',
     defaultsKey: 'wardrobe.defaults',
-    supports: { drawers: true, shelves: true, rail: true, pulldown: false, partition: true, doors: true },
+    supports: { drawers: true, shelves: true, rail: true, pulldown: false, partition: true, doors: true, topInfill: true },
     available: true,
   },
   BUD: {
@@ -56,7 +63,7 @@ export const UNIT_TYPES = {
     drawerStyle: null,
     minHeightKey: null,
     defaultsKey: 'baseUnit.defaults',
-    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true },
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
     available: true,
   },
   BUDR: {
@@ -77,7 +84,7 @@ export const UNIT_TYPES = {
     drawerStyle: 'budr',
     minHeightKey: null,
     defaultsKey: 'baseDrawerUnit.defaults',
-    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false },
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
     // KIT_BUDR_FULL counts its 20 panels WITHOUT the drawer fronts (L863) and
     // lists the three fronts separately (L882-888) — the opposite of the
     // wardrobe kit, which folds drawer fronts into totalPanels.
@@ -101,7 +108,7 @@ export const UNIT_TYPES = {
     drawerStyle: null,
     minHeightKey: null,
     defaultsKey: 'wallUnit.defaults',
-    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true },
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true },
     available: true,
   },
   BUDTALL: {
@@ -121,7 +128,7 @@ export const UNIT_TYPES = {
     drawerStyle: null,
     minHeightKey: 'tallUnit.minHeight',
     defaultsKey: 'tallUnit.defaults',
-    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true },
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true },
     available: true,
   },
   LOW_CABINET: {
@@ -143,7 +150,7 @@ export const UNIT_TYPES = {
     drawerStyle: null,
     minHeightKey: 'lowCabinet.minHeight',
     defaultsKey: 'lowCabinet.defaults',
-    supports: { drawers: false, shelves: true, rail: true, pulldown: false, partition: false, doors: true },
+    supports: { drawers: false, shelves: true, rail: true, pulldown: false, partition: false, doors: true, topInfill: false },
     // The LISP counts the rail partition in PANELS for this kit (L464-465),
     // unlike the wardrobe — recorded so the totals stay honest per type.
     countsRailPartInPanels: true,
@@ -166,7 +173,7 @@ export const UNIT_TYPES = {
     drawerStyle: null,
     minHeightKey: null,
     defaultsKey: 'sinkUnit.defaults',
-    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true },
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
     available: true,
   },
   FRIDGE: {
@@ -187,7 +194,7 @@ export const UNIT_TYPES = {
     minHeightKey: 'fridgeUnit.minHeight',
     defaultsKey: 'fridgeUnit.defaults',
     // The fridge fills the lower zone: no shelves, no drawers, no rail.
-    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true },
+    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true },
     available: true,
   },
 };

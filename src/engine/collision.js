@@ -490,7 +490,9 @@ export function unitIssues({ unit, wallWidth: wallW, roomHeight: roomH, others =
  * being dropped on top of a neighbour for unitIssues() to complain about
  * afterwards (CLAUDE.md turn 3, phase 4: no overlap by ANY path).
  */
-export function freeSlotOnWall({ width, wallWidth, others = [], wallMargin = 0 }, profile) {
+export function freeSlotOnWall({
+  width, wallWidth, others = [], wallMargin = 0, near = null, side = null,
+}, profile) {
   const clearance = profile?.editor?.minUnitGap ?? 0;
   const w = Number(width) || 0;
   // The same stop a drag obeys (BACKLOG #15): a unit is never PLACED flush
@@ -501,9 +503,51 @@ export function freeSlotOnWall({ width, wallWidth, others = [], wallMargin = 0 }
   if (w <= 0 || wallWidth < w) return null;
   if (!others.length) return Math.round(Math.max(wallMin, (wallWidth - w) / 2));
 
-  // Butt onto the right-hand end of the run first — building a row of units is
-  // "add, add, add", the turn-1 behaviour, kept deliberately.
   const spans = [...others].sort((a, b) => a.left - b.left);
+
+  // ─── Turn 8 (CLAUDE.md F2.1) — the most important bug in the list ───
+  //
+  // Piotr: a new unit ALWAYS lands to the right of the existing ones, and it
+  // cannot then be dragged left. Both halves of that are true and the second
+  // one is not a bug: a unit butted hard against its neighbour has nowhere to
+  // go left, and a clamp that let it pass through would be worse. The bug is
+  // the FIRST half — the placement had exactly one idea, "the right-hand end",
+  // so the left-hand side of a run was unreachable by any route at all.
+  //
+  // When the caller names a unit to work beside, the answer is the nearest FREE
+  // slot on EITHER side of it. `side` narrows that to one of them, for a caller
+  // that means "and on the left".
+  if (near) {
+    const anchor = typeof near === 'number'
+      ? { left: near, right: near }
+      : { left: Number(near.left) || 0, right: Number(near.right) || 0 };
+    const wanted = side === 'L' || side === 'left' ? 'L' : (side === 'R' || side === 'right' ? 'R' : null);
+    let best = null;
+    for (const slot of freeSlots(spans, { wallMin, wallMax, width: w, clearance })) {
+      // A new cabinet goes NEXT TO something, never adrift in the middle of a
+      // gap: each free stretch offers its two ends and nothing between them.
+      for (const x of new Set([slot.from, slot.to])) {
+        const right = x + w;
+        const onLeft = right <= anchor.left + 1e-6;
+        const onRight = x >= anchor.right - 1e-6;
+        if (wanted === 'L' && !onLeft) continue;
+        if (wanted === 'R' && !onRight) continue;
+        // How far this slot is from the unit we were told to work beside.
+        // Butted against it is 0, which is what "add another one here" means.
+        const distance = onLeft ? anchor.left - right : (onRight ? x - anchor.right : 0);
+        // Ties go RIGHT, so a run with room on both sides still grows the way
+        // "add, add, add" always grew.
+        if (!best || distance < best.distance - 1e-6 || (Math.abs(distance - best.distance) <= 1e-6 && onRight && !best.onRight)) {
+          best = { x, distance, onRight };
+        }
+      }
+    }
+    return best ? Math.round(best.x) : null;
+  }
+
+  // Butt onto the right-hand end of the run first — building a row of units is
+  // "add, add, add", the turn-1 behaviour, kept deliberately for a caller that
+  // names no unit to work beside.
   const rightMost = spans.reduce((m, s) => Math.max(m, s.right), wallMin);
   if (rightMost + clearance <= wallMax) return Math.round(rightMost + clearance);
 
@@ -514,6 +558,34 @@ export function freeSlotOnWall({ width, wallWidth, others = [], wallMargin = 0 }
     cursor = Math.max(cursor, s.right + clearance);
   }
   return null;
+}
+
+/**
+ * Every stretch of wall a unit `width` wide actually fits in, as the range of
+ * left-edge positions it could take there: `{ from, to }` with from ≤ to.
+ *
+ * Written out rather than folded into the search above because it is the honest
+ * shape of the question — "where is there room" — and because the placing path
+ * and anything later that asks it (a duplicate, a paste) must not each grow
+ * their own version of the arithmetic.
+ */
+export function freeSlots(spans, {
+  wallMin, wallMax, width, clearance = 0,
+}) {
+  const out = [];
+  const sorted = [...spans].sort((a, b) => a.left - b.left);
+  let cursor = wallMin;
+  const consider = (from, to) => {
+    const lo = Math.max(from, wallMin);
+    const hi = Math.min(to - width, wallMax);
+    if (hi >= lo - 1e-9) out.push({ from: lo, to: Math.max(lo, hi) });
+  };
+  for (const s of sorted) {
+    consider(cursor, s.left - clearance);
+    cursor = Math.max(cursor, s.right + clearance);
+  }
+  consider(cursor, wallMax + width);
+  return out;
 }
 
 /**

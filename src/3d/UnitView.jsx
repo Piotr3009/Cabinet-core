@@ -366,8 +366,15 @@ export default function UnitView({
   // engine's own drilling, so a hinge is drawn where the machine bores for it.
   const hardware = useMemo(() => hardwareInstances(result, profile), [result, profile]);
 
-  // How tall the top infill is right now — the handle sits on top of it.
+  // How tall the top infill is right now — the handle sits on top of it. The
+  // FACE strip is the piece the edge belongs to (there is a shelf behind it,
+  // and its top is 18 mm lower).
   const topInfill = Number(unit.params.top_infill_mm) || 0;
+  const topInfillFace = useMemo(
+    () => result.panels.find((p) => p.part === 'INFILL' && p.box
+      && p.meta?.side === 'top' && p.meta?.piece === 'face' && p.meta?.segment === 'main') || null,
+    [result.panels],
+  );
 
   /**
    * Drag something's top edge. The pointer's height above `fromMm` (a height in
@@ -544,26 +551,40 @@ export default function UnitView({
           count of what is drawn is the count of what is on order. */}
       <Hardware instances={hardware} profile={profile} xray={xray && !contour} />
 
-      {/* Top infill: grab it and drag UP to the ceiling, or double-click it to
-          send it there. The piece itself is drawn from the engine like every
-          other panel; this is the handle on top of it.
+      {/* Top infill: grab its top edge and drag UP to the ceiling, or
+          double-click it to send it there. The piece itself is drawn from the
+          engine like every other panel; this is the handle on top of it.
           Turn 4: the handle exists only when the PIECE does (BACKLOG #16) —
-          a handle for something nobody added is a handle for nothing. */}
-      {onSetTopInfill && topInfill > 0 && (
-        <mesh
-          userData={{ ccHelper: true }}
-          position={[mm(W / 2), mm(H + Math.max(topInfill, 0) + 12), mm(D - 30)]}
-          onPointerDown={(e) => startHeightDrag(e, H, onSetTopInfill)}
-          onDoubleClick={(e) => { e.stopPropagation(); onFillToCeiling?.(); }}
-          onPointerOver={() => { document.body.style.cursor = 'ns-resize'; }}
-          onPointerOut={() => { document.body.style.cursor = ''; }}
-        >
-          <boxGeometry args={[mm(Math.min(W, 240)), mm(24), mm(60)]} />
-          <meshStandardMaterial
-            color={selected ? COLORS.gold : profile.appearance.hardware.bracket}
-            roughness={0.5} transparent opacity={selected ? 0.9 : 0.35}
-          />
-        </mesh>
+          a handle for something nobody added is a handle for nothing.
+
+          ─── TURN 8 (CLAUDE.md F2.6): THE GHOST BLOCK ───
+          It used to be a 240 × 24 × 60 mm translucent grey box floating 12 mm
+          above the infill, and that is the "obcy prostopadłościan" on Piotr's
+          screenshot: a chunk of nothing, in a colour no cabinet is, hanging in
+          mid air beside the piece it belongs to.
+
+          It is the same EDGE the end panels and the fillers have used since
+          turn 6 now — invisible at rest, lit on hover, lying on the piece's own
+          top edge. One gesture, learnt once, for all three of the things that
+          finish a run against a ceiling. */}
+      {onSetTopInfill && topInfill > 0 && topInfillFace && (
+        <EdgeHandle
+          position={[
+            mm(topInfillFace.box.x + topInfillFace.box.w / 2),
+            mm(topInfillFace.box.y + topInfillFace.box.h),
+            mm(topInfillFace.box.z + topInfillFace.box.d / 2),
+          ]}
+          width={Math.max(topInfillFace.box.w, 22)}
+          depth={Math.max(topInfillFace.box.d, 22)}
+          thickness={22}
+          colour={profile.appearance.selection.colour}
+          active={activeEdge === 'top-infill'}
+          onPointerDown={(e) => {
+            setActiveEdge('top-infill');
+            startHeightDrag(e, H, onSetTopInfill);
+          }}
+          onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge('top-infill'); onFillToCeiling?.(); }}
+        />
       )}
 
       {/* End panels: the top edge is the control (turn 6, CLAUDE.md F3).

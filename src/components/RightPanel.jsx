@@ -561,12 +561,20 @@ export default function RightPanel() {
             <p className="text-[11px] text-ink-400">This type stands on no legs — it takes no plinth.</p>
           )}
 
-          {/* top infill */}
+          {/* top infill — not offered on a base unit at all (turn 8, F2.7):
+              what goes on top of a base cabinet is a worktop, so there is no gap
+              to the ceiling for the piece to close. */}
+          {!type.supports.topInfill ? (
+            <p className="text-[11px] text-ink-400">
+              A worktop goes on top of this unit — the gap above it is where the wall units are,
+              not something a top infill closes.
+            </p>
+          ) : (
           <div className="cc-row">
             <div className="flex flex-col">
               <span className="text-sm text-ink-100">Top infill</span>
               <span className="text-[11px] text-ink-400">
-                {Number(unit.params.top_infill_mm) > 0 ? 'drag its handle, or double-click it to fill' : 'not fitted'}
+                {Number(unit.params.top_infill_mm) > 0 ? 'drag its top edge, or double-click it to fill' : 'not fitted'}
               </span>
             </div>
             {Number(unit.params.top_infill_mm) > 0 ? (
@@ -591,6 +599,7 @@ export default function RightPanel() {
               </button>
             )}
           </div>
+          )}
 
           {/* side infill — automatic, and says so */}
           <div className="cc-row text-[11px] text-ink-400">

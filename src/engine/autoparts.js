@@ -33,6 +33,22 @@ export function takesPlinth(typeId, profile) {
 }
 
 /**
+ * Is there anything above this kit for a top infill to close against?
+ * (turn 8, CLAUDE.md F2.7)
+ *
+ * The answer is a property of the KIT, not of the room: what sits on top of a
+ * base unit is a worktop, and the gap above a worktop is where the wall units
+ * go. Offering to fill it is offering to build a wall out of 18 mm board, and
+ * the piece would arrive in the BOM and on the CNC sheet as if somebody meant it.
+ *
+ * The side infill has no such rule and is untouched: a base unit standing at a
+ * wall has a scribe gap beside it exactly as a tall one does.
+ */
+export function takesTopInfill(typeId) {
+  return Boolean(getUnitType(typeId).supports.topInfill);
+}
+
+/**
  * The top infill height a unit should have.
  *
  * A unit gets the profile default the moment it is placed; dragging its top
@@ -133,7 +149,12 @@ export function autoPartsFor({ unit, wallWidth, others, roomHeight, design }, pr
 
   // Manual, and only ever re-clamped: a top infill that was added shrinks when
   // the ceiling drops, and one that was never added stays absent.
-  const wanted = Number(unit.params.top_infill_mm) || 0;
+  //
+  // …and a kit that takes none never has one, however it got there — a project
+  // saved before turn 8, a template, an import. The gate is here as well as at
+  // the two doors into it, because this is the function that decides what a
+  // unit HAS (CLAUDE.md F2.7).
+  const wanted = takesTopInfill(unit.type) ? (Number(unit.params.top_infill_mm) || 0) : 0;
   const topInfill = wanted > 0
     ? topInfillHeight({ requested: wanted, unitTop: base + height, roomHeight }, profile)
     : 0;

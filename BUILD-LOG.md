@@ -2367,3 +2367,136 @@ papierze, gdzie granat jest granatem.
   a `render.exposure` równa się `studio.exposure`. Drugi test pilnuje samego rigu
   (key > 3 × ambient — dokładnie ta proporcja, którą tura 7 miała odwróconą).
 - `appearance.test.js` — kolor zaznaczenia, patrz wyżej.
+
+## F2 — SIEDEM BŁĘDÓW Z TESTÓW PIOTRA
+
+### 1. [NAJWAŻNIEJSZY] Dodawanie szafki PO LEWEJ
+
+Zgłoszenie ma dwa zdania: nowa jednostka zawsze ląduje po prawej, i nie da się jej
+przeciągnąć w lewo.
+
+**Drugie zdanie NIE jest błędem i nie wolno go „naprawić".** Szafka dobita do sąsiada
+nie ma dokąd iść w lewo, a clamp, który przepuściłby ją przez sąsiada, byłby błędem
+znacznie gorszym od zgłaszanego — dokładnie tym, który tura 3 faza 4 zamknęła. Test
+`slots-and-hinge.test.js` trzyma tę linię celowo, bo kuszący fix ją łamie.
+
+Błędem jest zdanie pierwsze. `freeSlotOnWall()` znało **jeden kierunek**, więc lewy
+koniec ciągu był nieosiągalny ŻADNĄ drogą: ani przez dodawanie (zawsze w prawo), ani
+przez przeciąganie (zablokowane, i słusznie).
+
+Co jest teraz:
+
+- `freeSlots(spans, …)` — czyste wyliczenie WSZYSTKICH wolnych odcinków ściany, jako
+  zakresów pozycji lewej krawędzi, w których jednostka się mieści;
+- `freeSlotOnWall({ …, near, side })` — kiedy wołający wskaże jednostkę, przy której
+  pracuje, odpowiedzią jest **najbliższy WOLNY slot po dowolnej jej stronie**. Kandydaci
+  to dwa końce każdego wolnego odcinka i nic pomiędzy: nowa szafka staje OBOK czegoś,
+  nigdy nie dryfuje na środku luki. Remis idzie w prawo, więc „dodaj, dodaj, dodaj"
+  dalej buduje rząd tak, jak budował od tury 1;
+- `side: 'L' | 'R'` zawęża to do jednej strony, a brak miejsca po wskazanej stronie
+  **odmawia z powodem** („no room to the left of 01") zamiast po cichu użyć drugiej
+  albo ściany za plecami;
+- panel Library pokazuje wybór strony (`◀ · auto · ▶`) tylko wtedy, gdy jest przy czym
+  stanąć — na pustej ścianie pytanie nie ma sensu, a odpowiedzią jest „na środku".
+
+Wołający to `LibraryPanel`, a jednostką, przy której się pracuje, jest **zaznaczona**.
+Ponieważ panel zaznacza świeżo dodaną, ciąg rośnie w kierunku, w którym się go buduje.
+Sprawdzone w Chromium: trzy szafki → `[1700, 2300, 2900]`, po `◀` i czwartym dodaniu →
+`[1700, 2300, 2900, 1100]`.
+
+### 2. Przełącznik drzwi L/P nie działa
+
+Strona zawiasu żyje w DWÓCH miejscach, a silnik czyta to drugie. `params.hinge` należy
+do jednostki; `params.doors` staje się OBIEKTEM w chwili montażu drzwi (`setDoors`),
+a `normalizeParams` pozwala `doors.hinge` nadpisać `hinge`. Więc od momentu, w którym
+drzwi istniały, przełącznik w panelu pisał do pola, którego nic nie czyta, i Piotr
+patrzył na kontrolkę, która nie robi nic.
+
+Jedno źródło prawdy, trzymane w store (a nie przez nauczenie silnika, żeby wolał drugie
+pole — to obiekt drzwi jest podawany silnikowi, więc to obiekt drzwi ma być poprawny).
+Synchronizacja idzie w OBIE strony: montaż drzwi z zawiasem zapisuje go też na
+jednostce, więc przełącznik pokazuje to, co szafka naprawdę ma.
+
+Test sprawdza wszystkie trzy skutki przełączenia: bok wiercony na zawiasy
+(`hinged_sides`), `meta.hinge` na froncie (o to obraca się drzwi w 3D i tak rysuje je
+karta) oraz puszka ⌀35, która przenosi się na drugą krawędź drzwi.
+
+### 3. End panel i infille nie barwiły się materiałem frontów
+
+Silnik mówi `material_role: 'front'` dla end panelu i infilla od tury 6 — widok pytał
+o `role === 'front'`, co jest prawdą dla drzwi i fałszem dla `end_panel` i `infill`.
+Naprawione w F1 razem z resztą materiałów (`surfaceFor({ materialRole })`).
+
+Uwaga ze screenshota Piotra — „end panel przy dekorze EGGER (uni) ZABARWIŁ się" — jest
+wyjaśniona tą samą przyczyną, nie drugą: przy dekorze na korpusie i niczym na frontach
+fronty **dziedziczą korpus** (`design.js`), więc obie odpowiedzi były tym samym kolorem
+i błąd był niewidoczny. Widać go dopiero, gdy fronty mają własny kolor. Cała macierz
+(kolor „This app" × dekor EGGER × end panel × infill) jest przejechana w
+`test/sheen.test.js`.
+
+### 4. EdgeHandle — niewidoczny w spoczynku
+
+Tura 6 rysowała go przy 22 % krycia ZAWSZE, dokładnie NA górnym licu elementu i tej
+samej szerokości. Wyszły z tego dwie rzeczy i Piotr zgłosił obie: **szara mgiełka** po
+górach wszystkich paneli i infilli w pokoju (stały pasek nie jest uchwytem — czyta się
+jako część mebla, czyli jako jedyna rzecz, którą uchwyt nigdy być nie może) oraz
+**z-fighting**, czyli „galareta": dwie współpłaszczyznowe powierzchnie to rzut monetą
+na piksel na klatkę.
+
+Teraz: w spoczynku **nie rysuje się nic**. Siatka dalej TAM JEST — musi, bo inaczej nie
+byłoby czego najechać — ale jest `visible={false}`, a nie `opacity 0`: niewidoczna
+siatka nie jest rysowana, sortowana ani mieszana, i **dalej łapie raycast**, więc hover
+działa, a klatka nie kosztuje nic. Kiedy się rysuje, stoi **0,6 mm NAD licem**
+i jest wcięta **1 mm na stronę** (`HANDLE_LIFT_MM` / `HANDLE_INSET_MM`), więc obie
+powierzchnie nigdy nie są współpłaszczyznowe, a obrys uchwytu nie dotyka krawędzi
+elementu pod nim.
+
+### 5. Zaznaczenie — patrz F1 ust. 7
+
+`#2B6CB0`, grubość 0,75. Strzałki zostają w granacie.
+
+### 6. „Dziwny klocek" przy top infillu
+
+Uchwyt top infilla był **prostopadłościanem 240 × 24 × 60 mm** w kolorze `bracket`,
+wiszącym 12 mm nad infillem, przy 35 % krycia. To jest ten „obcy prostopadłościan" ze
+screenshota: kawałek niczego, w kolorze, którego nie ma żadna szafka, wiszący w powietrzu
+obok elementu, do którego należy.
+
+Jest tą samą KRAWĘDZIĄ, której end panele i pionowe infille używają od tury 6 —
+niewidoczną w spoczynku, zapaloną pod kursorem, leżącą na własnym górnym licu paska
+czołowego. Jeden gest, nauczony raz, dla wszystkich trzech rzeczy, które kończą ciąg
+pod sufitem.
+
+*(Drugi podejrzany z CLAUDE.md — narożny corner-return — jest prawdziwym nakładaniem
+się pudełek i należy do F6: paski wracające za róg zachodzą na główne o kwadrat naroża.
+To nie klocek-widmo, tylko brakująca mitra, i F6 ją wycina.)*
+
+### 7. Gate: top infill niedostępny dla base units
+
+Na bazie leży **BLAT**, a szczelina nad blatem to miejsce, gdzie stoją wiszące. Domykanie
+jej paskiem 18 mm to nie jest robota, którą ktokolwiek by wyciął — a element trafiał do
+BOM-u i na arkusz CNC tak, jakby ktoś tego chciał.
+
+`supports.topInfill` per kit (`engine/types.js`) i `takesTopInfill()`
+(`engine/autoparts.js`). Bramka stoi w **trzech** miejscach, bo są trzy drogi do środka:
+`setTopInfill` (przeciąganie i pole), `menuActions` (menu kontekstowe nie pokazuje wpisu
+w ogóle) i `autoPartsFor` — ta ostatnia dlatego, że projekt zapisany przed turą 8,
+szablon albo import mogą już nieść parametr. Panel prawy mówi, dlaczego go nie ma.
+
+Dozwolony: WUD, BUDTALL, WARDROBE, FRIDGE. Niedozwolony: BUD, BUDR, SINK, LOW_CABINET.
+**Side infill bez zmian** — baza przy ścianie ma szczelinę na scribe dokładnie tak samo
+jak tall.
+
+### Liczby fazy
+
+| | |
+|---|---|
+| testy | **661/661** (nowe: `slots-and-hinge.test.js` 16) |
+| build | czysty |
+
+**Testy, które musiały się zmienić:** `run-infill`, `construction` i `autoparts` stawiały
+top infill na jednostkach BAZOWYCH. Element jest identyczny niezależnie od tego, jaki kit
+pod nim stoi — zmieniło się tylko to, które kity mogą go mieć — więc te suity stoją teraz
+na `BUDTALL`. Przy okazji dwie z nich przestały wpisywać wysokość na sztywno i czytają
+prześwit z pokoju: nad tall unitem jest go mniej niż nad bazą, a pytaniem testu jest
+mechanizm, nie liczba.

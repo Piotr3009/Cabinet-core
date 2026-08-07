@@ -58,14 +58,20 @@ export function menuActions({ unit, panelPart, store }) {
         run: () => { store.addPlinth?.(unit.id); store.openPanelSection?.('construction'); },
       });
   }
-  actions.push(Number(unit.params.top_infill_mm) > 0
-    ? { id: 'top-infill-off', label: 'Remove top infill', run: () => store.removeTopInfill?.(unit.id) }
-    : {
-      id: 'top-infill-on',
-      label: 'Add top infill',
-      hint: 'Closes the gap to the ceiling — drag its handle, or double-click it to fill',
-      run: () => { store.addTopInfill?.(unit.id); store.openPanelSection?.('construction'); },
-    });
+  // Turn 8 (CLAUDE.md F2.7): a base unit is not offered one at all. What goes on
+  // top of a base cabinet is a worktop, and the gap above THAT is where the wall
+  // units go — an entry that added a two-metre board over a base unit was an
+  // entry that could only ever be a mistake.
+  if (type.supports.topInfill) {
+    actions.push(Number(unit.params.top_infill_mm) > 0
+      ? { id: 'top-infill-off', label: 'Remove top infill', run: () => store.removeTopInfill?.(unit.id) }
+      : {
+        id: 'top-infill-on',
+        label: 'Add top infill',
+        hint: 'Closes the gap to the ceiling — drag its edge, or double-click it to fill',
+        run: () => { store.addTopInfill?.(unit.id); store.openPanelSection?.('construction'); },
+      });
+  }
 
   // ── Insets (turn 7, CLAUDE.md F5 / BACKLOG #32) ──
   // The MENU opens the section; the numbers are typed in the panel, exactly as

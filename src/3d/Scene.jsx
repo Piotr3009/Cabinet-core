@@ -244,6 +244,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
+  const xray = useUiStore((s) => s.xray);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const profile = useCabinetProfileStore((s) => s.profile);
 
@@ -332,6 +333,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           finishes={resolveFinishes(unit, design, profile)}
           outlines={showOutlines}
           contour={contourView}
+          xray={xray}
           grounded={realisticLighting}
         />
       ))}

@@ -6,10 +6,12 @@ import { mm, MM, COLORS } from './constants.js';
 import { contourSurface, decorTexture, onDecorLoad, outlineFor, surfaceFor } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import ContactShadow from './ContactShadow.jsx';
+import Hardware from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
+import { hardwareInstances } from '../engine/hardware3d.js';
 
 // One unit, rendered straight from the ENGINE output: every panel record
 // carries a `box` in cabinet-local mm, so what you see is what the cut list
@@ -83,7 +85,7 @@ function useBevel(box, profile) {
  * not re-render the rest of the unit.
  */
 function MovingPanel({
-  panel: p, front, open, surface, outline, outlines, contour, depth, profile, ...handlers
+  panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -123,7 +125,13 @@ function MovingPanel({
   // The grain runs across the piece's own face, so it is scaled by the two
   // dimensions the eye actually sees.
   const decor = useDecor(surface.texture, p.box.w, Math.max(p.box.h, p.box.d), surface.repeatMm);
-  const faded = contour ? surface.opacity : (p.role === 'front' ? 0.94 : 1);
+  // X-ray (turn 7): the board goes translucent so the inside reads, and a FRONT
+  // stays more solid than the carcass — it is the face of the cabinet, and
+  // fading it as far as the sides would leave a unit with no face at all.
+  const X = profile.appearance.xray;
+  const faded = contour
+    ? surface.opacity
+    : (xray ? (front ? X.front : X.carcass) : (p.role === 'front' ? 0.94 : 1));
 
   return (
     <group ref={group} position={pivot}>
@@ -149,11 +157,15 @@ function MovingPanel({
           clearcoatRoughness={surface.clearcoatRoughness}
           transparent={faded < 1}
           opacity={faded}
-          depthWrite={!contour}
+          // Translucent board must not write depth, or the panel nearest the
+          // camera hides everything the mode exists to show.
+          depthWrite={!contour && !xray}
         />
         {/* Thin BLACK contours, switchable from the toolbar. In contour view
             they are the whole picture, so they are never off there. */}
-        {(outlines || contour) && (
+        {/* The contours are what hold an X-ray together: with the material at
+            a fifth of its opacity, the edges ARE the cabinet. */}
+        {(outlines || contour || xray) && (
           <Edges
             threshold={outline.threshold}
             color={outline.colour}
@@ -175,7 +187,7 @@ export default function UnitView({
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
-  profile, finishes, outlines = true, contour = false, grounded = true,
+  profile, finishes, outlines = true, contour = false, grounded = true, xray = false,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -290,6 +302,10 @@ export default function UnitView({
   // The whole solid, for the selection mark: every panel this unit emits, from
   // the engine's own boxes.
   const solid = useMemo(() => solidBounds(result.panels), [result.panels]);
+
+  // Where the bought hardware sits (turn 7, CLAUDE.md F3). Derived from the
+  // engine's own drilling, so a hinge is drawn where the machine bores for it.
+  const hardware = useMemo(() => hardwareInstances(result, profile), [result, profile]);
 
   // How tall the top infill is right now — the handle sits on top of it.
   const topInfill = Number(unit.params.top_infill_mm) || 0;
@@ -406,6 +422,7 @@ export default function UnitView({
             outline={outlineFor(profile, { contour })}
             outlines={outlines}
             contour={contour}
+            xray={xray}
             depth={D}
             profile={profile}
             onPointerDown={(e) => {
@@ -451,32 +468,11 @@ export default function UnitView({
         </group>
       )}
 
-      {/* hanging rail — hardware, not a cut piece */}
-      {result.assemblies.rail && (
-        <mesh
-          position={[
-            mm((result.assemblies.rail.x1 + result.assemblies.rail.x2) / 2),
-            mm(result.assemblies.rail.y),
-            mm(result.assemblies.rail.z),
-          ]}
-          rotation={[0, 0, Math.PI / 2]}
-        >
-          <cylinderGeometry args={[mm(15), mm(15), mm(result.assemblies.rail.x2 - result.assemblies.rail.x1), 12]} />
-          <meshStandardMaterial color={profile.appearance.hardware.rail} roughness={0.4} metalness={0.6} />
-        </mesh>
-      )}
-
-      {/* legs — the engine's own layout: four in the corners, a fifth in the
-          middle over the width threshold. The view places what it is given. */}
-      {result.assemblies.legs?.positions.map((leg, i) => (
-        <mesh
-          key={`leg-${i}`}
-          position={[mm(leg.x + result.assemblies.legs.width / 2), mm(-legHeight / 2), mm(leg.z + result.assemblies.legs.width / 2)]}
-        >
-          <boxGeometry args={[mm(result.assemblies.legs.width), mm(legHeight), mm(result.assemblies.legs.width)]} />
-          <meshStandardMaterial color={profile.appearance.hardware.leg} roughness={0.6} />
-        </mesh>
-      ))}
+      {/* The bought hardware (turn 7, CLAUDE.md F3): legs and the rail always,
+          hinges and runners only in X-ray. Every position comes from
+          engine/hardware3d.js, which reads the engine's own drilling — so the
+          count of what is drawn is the count of what is on order. */}
+      <Hardware instances={hardware} profile={profile} xray={xray && !contour} />
 
       {/* Top infill: grab it and drag UP to the ceiling, or double-click it to
           send it there. The piece itself is drawn from the engine like every

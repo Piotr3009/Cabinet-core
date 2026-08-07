@@ -511,6 +511,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // Parts that are not a "finish" at all.
     hardware: { rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92' },
 
+    // ─── X-ray (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
+    // Look THROUGH the furniture: the board goes translucent, the contours
+    // stay, and the hardware the workshop has to buy appears where it is
+    // fitted. Two opacities, not one, and the difference is the whole trick —
+    // a front stays readable as a front (it is the face of the cabinet) while
+    // the carcass fades far enough back to see a hinge through it.
+    xray: { carcass: 0.2, front: 0.42 },
+
     // ─── Selection (turn 6, CLAUDE.md F5) ───
     // Turn 4 drew the selected unit's own edges in the app's gold. Two things
     // were wrong with that. The gold is the FURNITURE's colour — a brass
@@ -860,6 +868,7 @@ export function migrateCabinetProfile(profile) {
       contour: { ...D.appearance.contour, ...profile.appearance?.contour },
       shade: { ...D.appearance.shade, ...profile.appearance?.shade },
       hardware: { ...D.appearance.hardware, ...profile.appearance?.hardware },
+      xray: { ...D.appearance.xray, ...profile.appearance?.xray },
       selection: { ...D.appearance.selection, ...profile.appearance?.selection },
     },
     render: {

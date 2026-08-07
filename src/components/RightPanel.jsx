@@ -64,6 +64,7 @@ export default function RightPanel() {
   const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
   const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
   const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
+  const setUnitInsets = useProjectStore((s) => s.setUnitInsets);
   const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const resetUnitHeight = useProjectStore((s) => s.resetUnitHeight);
   // Select the STORED value and migrate in a memo: a selector that builds a
@@ -625,6 +626,22 @@ export default function RightPanel() {
 
           <div className="cc-divider !my-2" />
 
+          {/* ── deliberate clearances (turn 7, BACKLOG #32) ──
+              Not a mistake to be tidied up: a soil pipe in the corner, a wall
+              that bows, a radiator bracket. The collision clamp respects these
+              exactly as it respects a neighbour, so the next drag does not
+              close the gap the pipe is standing in. */}
+          <Insets
+            unit={unit}
+            profile={profile}
+            onSet={(patch) => {
+              const { notices } = setUnitInsets(unit.id, patch);
+              for (const n of notices) notify(n, 'warn');
+            }}
+          />
+
+          <div className="cc-divider !my-2" />
+
           {/* end panels */}
           <EndPanels
             unit={unit}
@@ -713,6 +730,48 @@ function constructionBadge(unit, type) {
   if (ends) parts.push(`${ends} end`);
   if (!parts.length) return type.legs && type.mount === 'floor' ? 'none' : '';
   return parts.join(' · ');
+}
+
+/**
+ * Inset left / right / back (turn 7, CLAUDE.md F5 / BACKLOG #32).
+ *
+ * Three millimetre fields and one line of copy, in the Construction section
+ * beside the plinth and the end panels — because it is the same KIND of thing:
+ * a decision about how this unit meets what is around it, taken at the bench.
+ */
+function Insets({ unit, profile, onSet }) {
+  const rows = [
+    ['left', 'inset_left_mm', 'Left', 'Clear of the neighbour or the corner on the left'],
+    ['right', 'inset_right_mm', 'Right', 'Clear of the neighbour or the corner on the right'],
+    ['back', 'inset_back_mm', 'Back', 'Stand it off the wall — a pipe, a bowed wall, a skirting'],
+  ];
+  const any = rows.some(([, key]) => Number(unit.params[key]) > 0);
+  return (
+    <div className="space-y-1">
+      <div className="cc-row">
+        <span className="text-sm text-ink-100">Insets</span>
+        <span className="text-[11px] text-ink-400">{any ? 'respected by the clamp' : 'none'}</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {rows.map(([side, key, label, hint]) => (
+          <label key={side} className="block">
+            <span className="cc-label">{label}</span>
+            <NumberField
+              className="cc-input text-right"
+              min={0}
+              max={profile.editor.maxInset}
+              title={hint}
+              value={Number(unit.params[key]) || 0}
+              onCommit={(v) => onSet({ [side]: v })}
+            />
+          </label>
+        ))}
+      </div>
+      <p className="text-[11px] text-ink-400">
+        A deliberate gap for something that is not furniture. The unit stops there and stays there.
+      </p>
+    </div>
+  );
 }
 
 /**

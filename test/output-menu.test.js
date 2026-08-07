@@ -48,18 +48,30 @@ test('Output carries the three groups CLAUDE.md asks for, in that order', () => 
   assert.equal(menu.items.filter((i) => i.divider).length, 3);
 });
 
-test('Drawings offers one live view and holds the place for two more', () => {
+// Turn 7 (CLAUDE.md F1) closes the two places turn 6 held open. It does NOT
+// replace them with two more menu entries: the three views are ONE card, and
+// three separate exports of the same cabinet would be three things to keep in
+// step. So the whole submenu is live, and the check is that nothing is left
+// disabled pretending to be coming.
+test('Drawings is all live now — the two held-open places are closed, not renamed', () => {
   const drawings = buildOutputMenu({}).items.find((i) => i.label === 'Drawings');
   assert.equal(drawings.items.length, DRAWING_KINDS.length);
-
-  const live = drawings.items.filter((i) => !i.disabled);
-  assert.equal(live.length, 1, 'turn 6 is a style probe: ONE view, done properly');
-  assert.equal(live[0].label, 'Front elevation (preview)');
-
-  for (const soon of drawings.items.filter((i) => i.disabled)) {
-    assert.equal(soon.soon, true, `${soon.label} is disabled and must say why`);
-    assert.equal(soon.run, undefined, 'a disabled entry carries no action to fire by accident');
+  assert.equal(drawings.items.filter((i) => i.disabled).length, 0,
+    'turn 7 draws the set — nothing in Drawings is still a promise');
+  for (const item of drawings.items) {
+    assert.equal(typeof item.run, 'function', `${item.label} does something`);
   }
+
+  const labels = drawings.items.map((i) => i.label);
+  assert.ok(labels.includes('Unit card (PDF)'), 'the card, which is what a bench is handed');
+  assert.ok(labels.includes('Unit card (SVG)'));
+  assert.ok(labels.includes('All units (PDF)'), 'and the whole project as a booklet');
+  assert.ok(labels.includes('Preview…'), 'and a way to look at it before it is a file');
+
+  // An entry that SAYS "(PDF)" writes a PDF. A menu whose export items open a
+  // preview instead is a menu that lies about what it does — the preview has
+  // its own entry, and that is the one that opens a window.
+  assert.equal(labels.filter((l) => l.endsWith('…')).length, 1);
 });
 
 test('every entry runs the handler it was given — and only that one', () => {
@@ -74,7 +86,11 @@ test('every entry runs the handler it was given — and only that one', () => {
   });
 
   for (const item of entries(menu)) item.run?.();
-  assert.deepEqual(fired, ['render', 'drawing:front-elevation', 'dxf', 'csv', 'pdf', 'bom']);
+  assert.deepEqual(fired, [
+    'render',
+    ...DRAWING_KINDS.map((d) => `drawing:${d.id}`),
+    'dxf', 'csv', 'pdf', 'bom',
+  ]);
 });
 
 test('the old export places are GONE from the top bar, not left as a second route', () => {

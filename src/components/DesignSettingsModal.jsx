@@ -7,11 +7,14 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import {
-  FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights,
+  FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights, resolveJoinery,
 } from '../engine/design.js';
 import { decorIdFromFinishId } from '../engine/decors.js';
 import DecorPicker from './DecorPicker.jsx';
+import JoineryPreview from './JoineryPreview.jsx';
 import { HEIGHT_GROUPS } from '../engine/types.js';
+import { PROJECT_TYPES } from '../engine/projectTypes.js';
+import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { contrastInk } from '../lib/pswColors.js';
 
 // Design Settings — project level (CLAUDE.md phase 6).
@@ -53,6 +56,19 @@ export default function DesignSettingsModal() {
       footer={<button type="button" className="cc-btn-gold" onClick={closeModal}>Done</button>}
     >
       <div className="space-y-5">
+        {/* ── the project itself, and the settings sets (turn 7, BACKLOG #41) ──
+            Everything the new-project flow asks for is editable here
+            afterwards, which is the promise the flow makes when it says
+            "all of it is editable". */}
+        <ProjectSection design={design} setDesign={setDesign} />
+
+        <div className="cc-divider" />
+
+        {/* ── how the carcass is held together (turn 7, CLAUDE.md F2) ── */}
+        <JoinerySection design={design} setDesign={setDesign} profile={profile} />
+
+        <div className="cc-divider" />
+
         {/* ── carcass materials ── */}
         <section className="space-y-2">
           <div className="cc-row">
@@ -324,6 +340,153 @@ export default function DesignSettingsModal() {
         </section>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * The project's own facts (turn 7, BACKLOG #41): its number, its client, what
+ * kind of job it is — and the SAVED SETS, which are how a workshop stops making
+ * the same five decisions on every job.
+ *
+ * A set is the complete design object under a name (lib/settingsSets.js). It is
+ * applied and saved from here as well as from the flow, because the moment a
+ * project is set up the way you build is usually five minutes after the flow
+ * closed, not during it.
+ */
+function ProjectSection({ design, setDesign }) {
+  const project = useProjectStore((s) => s.project);
+  const setProjectInfo = useProjectStore((s) => s.setProjectInfo);
+  const notify = useUiStore((s) => s.notify);
+  const sets = useSettingsSetsStore((s) => s.sets);
+  const applyTo = useSettingsSetsStore((s) => s.applyTo);
+  const saveSet = useSettingsSetsStore((s) => s.save);
+  const removeSet = useSettingsSetsStore((s) => s.remove);
+  const [name, setName] = useState('');
+
+  const apply = (id) => {
+    const next = applyTo(design, id);
+    if (!next) { notify('That settings set is no longer on this computer.', 'warn'); return; }
+    setDesign(next);
+    notify('Saved settings applied.', 'ok');
+  };
+
+  return (
+    <section className="space-y-2">
+      <span className="text-xs uppercase tracking-wide text-ink-200">Project</span>
+      <div className="grid grid-cols-3 gap-3">
+        <label className="block">
+          <span className="cc-label">Number</span>
+          <input
+            className="cc-input"
+            value={project.number || ''}
+            onChange={(e) => setProjectInfo({ number: e.target.value })}
+          />
+        </label>
+        <label className="block">
+          <span className="cc-label">Client</span>
+          <input
+            className="cc-input"
+            value={project.client || ''}
+            onChange={(e) => setProjectInfo({ client: e.target.value })}
+          />
+        </label>
+        <label className="block">
+          <span className="cc-label">Type</span>
+          <select
+            className="cc-input"
+            value={design.projectType || ''}
+            onChange={(e) => setDesign({ projectType: e.target.value || null })}
+          >
+            <option value="">Not set</option>
+            {PROJECT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <div className="cc-row pt-1">
+        <span className="text-[11px] text-ink-400">Saved settings sets</span>
+        <div className="flex items-center gap-1">
+          <input
+            className="cc-input w-48"
+            placeholder="Keep as…"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <button
+            type="button"
+            className="cc-btn"
+            disabled={!name.trim()}
+            onClick={() => {
+              const { replaced } = saveSet(name, design);
+              setName('');
+              notify(replaced ? 'Settings set replaced.' : 'Settings set saved.', 'ok');
+            }}
+          >
+            Save set
+          </button>
+        </div>
+      </div>
+      {sets.length === 0 ? (
+        <p className="text-[11px] text-ink-400">
+          None yet. A set is every setting on this screen under a name — the next project can start from it.
+        </p>
+      ) : (
+        <ul className="flex flex-wrap gap-1">
+          {sets.map((s) => (
+            <li key={s.id} className="flex items-center border border-shell-600 rounded">
+              <button type="button" className="px-2 py-1 text-[11px] text-ink-100 hover:text-gold" onClick={() => apply(s.id)}>
+                {s.name}
+              </button>
+              <button
+                type="button"
+                className="cc-btn-ghost text-status-danger px-1.5"
+                title="Delete this set"
+                onClick={() => removeSet(s.id)}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** Which joinery system this project is cut with, and what it looks like. */
+function JoinerySection({ design, setDesign, profile }) {
+  const joinery = resolveJoinery(design, profile);
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="space-y-2">
+      <div className="cc-row">
+        <span className="text-xs uppercase tracking-wide text-ink-200">Joinery type</span>
+        <button type="button" className="cc-btn px-2" onClick={() => setOpen((v) => !v)}>
+          {open ? 'Hide the joint' : 'Show the joint'}
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {profile.joinery.types.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            title={t.hint}
+            className={`border rounded px-3 py-2 text-left transition-colors ${joinery?.id === t.id
+              ? 'border-gold bg-shell-700'
+              : 'border-shell-600 hover:bg-shell-700'}`}
+            onClick={() => setDesign({ joinery: t.id })}
+          >
+            <span className="block text-sm text-ink-50">{t.label}</span>
+            <span className="block text-[10px] text-ink-400">{t.hint}</span>
+          </button>
+        ))}
+      </div>
+      {open && joinery && (
+        <div className="border border-shell-600 rounded p-2 bg-shell-800">
+          <JoineryPreview profile={profile} joinery={joinery} />
+        </div>
+      )}
+    </section>
   );
 }
 

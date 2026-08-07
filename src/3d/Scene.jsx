@@ -244,6 +244,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
+  const xray = useUiStore((s) => s.xray);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const profile = useCabinetProfileStore((s) => s.profile);
 
@@ -267,6 +268,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
       width: Number(unit.params.width) || 0,
       depth: Number(unit.params.depth) || 0,
       rotation: Number(unit.position?.rotation_deg) || 0,
+      // A unit stood off the wall is measured where it stands (turn 7,
+      // CLAUDE.md F5): the arrow reads the real distance, not the one it would
+      // be at if it were pushed back.
+      backInset: Math.max(0, Number(unit.params.inset_back_mm) || 0),
       level: result.assemblies.mount === 'wall' ? 'wall' : 'floor',
       label: unit.params.unit_num,
       y: base + profile.dimensions.height,
@@ -332,6 +337,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           finishes={resolveFinishes(unit, design, profile)}
           outlines={showOutlines}
           contour={contourView}
+          xray={xray}
           grounded={realisticLighting}
         />
       ))}

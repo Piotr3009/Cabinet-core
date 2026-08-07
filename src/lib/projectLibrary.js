@@ -66,6 +66,12 @@ export function saveLocalProject(storage, { project, units, at = 0, id = null })
   const row = {
     id: projectId,
     name: project?.name || 'Untitled project',
+    // Turn 7 (BACKLOG #41): the NUMBER is what a workshop calls a job, and it
+    // is on the row rather than only inside the project blob so the start
+    // screen and the next auto-number can read it without opening every
+    // project on the shelf.
+    number: project?.number ? String(project.number) : '',
+    client: project?.client ? String(project.client) : '',
     project: { ...project, id: projectId },
     units: Array.isArray(units) ? units : [],
     unit_count: Array.isArray(units) ? units.length : 0,
@@ -85,11 +91,48 @@ export function listLocalProjects(storage) {
     .map((p) => ({
       id: p.id,
       name: p.name,
+      number: p.number || p.project?.number || '',
+      client: p.client || p.project?.client || '',
       unit_count: p.unit_count ?? p.units?.length ?? 0,
       updated_at: p.updated_at || 0,
       opened_at: p.opened_at || 0,
       source: 'local',
     }));
+}
+
+// ─── Project numbers (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
+
+/**
+ * The next project number to propose.
+ *
+ * A workshop numbers its jobs, and it numbers them in its own format — "2601",
+ * "K-118", "2026/14". So this does not IMPOSE a format: it finds the last run
+ * of digits in the highest-numbered project on the shelf and adds one, keeping
+ * everything around it and the zero padding. "K-118" proposes "K-119";
+ * "2026/09" proposes "2026/10". An empty shelf gets `seed`.
+ *
+ * It is a PROPOSAL. The field is editable, and a number nobody can parse is
+ * carried through untouched rather than corrected.
+ */
+export function nextProjectNumber(storage, { seed = '0001' } = {}) {
+  const numbers = read(storage).projects
+    .map((p) => String(p.number || p.project?.number || '').trim())
+    .filter(Boolean);
+  if (!numbers.length) return seed;
+
+  // The highest by its trailing digits, then by length — so "0009" loses to
+  // "0010" and a shelf with one odd entry does not derail the sequence.
+  const best = numbers
+    .map((value) => ({ value, tail: value.match(/(\d+)(?!.*\d)/) }))
+    .filter((row) => row.tail)
+    .sort((a, b) => (Number(a.tail[1]) - Number(b.tail[1])) || (a.value.length - b.value.length))
+    .pop();
+  if (!best) return seed;
+
+  const digits = best.tail[1];
+  const next = String(Number(digits) + 1).padStart(digits.length, '0');
+  const at = best.tail.index;
+  return best.value.slice(0, at) + next + best.value.slice(at + digits.length);
 }
 
 /** The last five OPENED projects — the start screen's Recent list. */
@@ -101,6 +144,8 @@ export function recentProjects(storage, limit = RECENT_LIMIT) {
     .map((p) => ({
       id: p.id,
       name: p.name,
+      number: p.number || p.project?.number || '',
+      client: p.client || p.project?.client || '',
       unit_count: p.unit_count ?? p.units?.length ?? 0,
       opened_at: p.opened_at,
       source: 'local',
@@ -143,6 +188,8 @@ export function mergeProjectLists(local = [], cloud = []) {
     out.push({
       id: c.id,
       name: c.name || 'Untitled project',
+      number: c.number || '',
+      client: c.client || '',
       unit_count: c.unit_count ?? null,
       updated_at: Date.parse(c.updated_at || '') || 0,
       source: 'cloud',

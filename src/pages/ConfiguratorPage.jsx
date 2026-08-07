@@ -21,6 +21,9 @@ import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js
 import { exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
 import { exportUnitDxfZip } from '../lib/cncExport.js';
 import { persistProject } from '../lib/persist.js';
+import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
+import { exportBookletPdf, exportDrawingPdf, exportDrawingSvg } from '../lib/drawingExport.js';
 
 // Frozen layout (SPEC section 7):
 // topbar / floating Library / white 3D canvas / closable right parameter panel.
@@ -42,6 +45,7 @@ export default function ConfiguratorPage() {
 
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
+  const profile = useCabinetProfileStore((s) => s.profile);
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);
@@ -87,6 +91,43 @@ export default function ConfiguratorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [units, selectedUnitId, unitResult]);
 
+  /**
+   * Output ▸ Drawings (turn 7, CLAUDE.md F1).
+   *
+   * An entry that says "(PDF)" writes a PDF; the preview has its own entry and
+   * is the only one that opens a window. The SHEETS come from the engine
+   * (engine/drawings/card.js), which is the same code the preview renders, so
+   * the file and the screen cannot drift apart.
+   */
+  const onDrawing = useCallback((kind) => {
+    if (kind === 'preview' || kind === 'front-elevation') { openModal('drawing', { kind }); return; }
+    const date = new Date().toLocaleDateString();
+
+    if (kind === 'booklet') {
+      if (!guard()) return;
+      try {
+        const sheets = projectBookletSheets({ entries: allResults(), project, profile, date });
+        const { filename, pages } = exportBookletPdf(sheets, { project: project.name });
+        notify(`Saved ${filename} — ${pages} pages.`, 'ok');
+      } catch (e) {
+        notify(e.message || 'Nothing to draw yet.', 'warn');
+      }
+      return;
+    }
+
+    const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
+    if (!unit) { notify('Select a unit first — a card is of one unit.', 'warn'); return; }
+    const result = unitResult(unit.id);
+    if (!result) { notify('This unit has nothing to draw yet.', 'warn'); return; }
+    const sheet = unitCardSheet({ result, unit, project, profile, date });
+    const args = { project: project.name, unit: unit.params.unit_num, view: 'unit-card' };
+    const { filename } = kind === 'unit-card-svg'
+      ? exportDrawingSvg(sheet, args)
+      : exportDrawingPdf(sheet, args);
+    notify(`Saved ${filename}.`, 'ok');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [units, selectedUnitId, unitResult, allResults, project, profile, openModal, notify]);
+
   /** File ▸ Save as… — a copy under a new name. */
   const onSaveAs = useCallback(async (name) => {
     const { project: saved, message, tone } = await persistProject({ project, units, asName: name });
@@ -102,7 +143,7 @@ export default function ConfiguratorPage() {
         onExportPdf={onExportPdf}
         onExportDxfZip={onExportDxfZip}
         onRender={() => openModal('render')}
-        onDrawing={(kind) => openModal('drawing', { kind })}
+        onDrawing={onDrawing}
         onAuth={() => openModal('auth')}
       />
       <div className="flex-1 relative overflow-hidden">

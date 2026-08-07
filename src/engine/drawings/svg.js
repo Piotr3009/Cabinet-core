@@ -25,10 +25,12 @@ const FONT = 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helveti
 
 /**
  * @param {object} sheet   layoutSheet() output
- * @param {object} [opts]  { background }
+ * @param {object} [opts]  { background, kind } — `kind` names the drawing in
+ *                         `data-cc-drawing`, which is what a test and the
+ *                         browser both look for.
  * @returns {string} a standalone SVG document
  */
-export function sheetToSvg(sheet, { background = '#ffffff' } = {}) {
+export function sheetToSvg(sheet, { background = '#ffffff', kind = 'front-elevation' } = {}) {
   const { width, height } = sheet;
   // Y up → Y down. Everything below writes `flip(y)` and never thinks about it
   // again, which is the point of having exactly one of these.
@@ -39,12 +41,17 @@ export function sheetToSvg(sheet, { background = '#ffffff' } = {}) {
     const L = drawingLayer(e.layer);
     const stroke = `stroke="${L.colour}" stroke-width="${n(L.width)}"`;
     // A hidden line is dashed whatever layer it is on; a layer may also be
-    // dashed in its own right.
-    const dash = e.hidden || L.dash ? ` stroke-dasharray="${(L.dash || [5, 3]).join(' ')}"` : '';
+    // dashed in its own right. `solid` overrides both — the carcass-only view
+    // draws a shelf you are LOOKING AT, and a shelf you are looking at is a
+    // continuous line even though the shelf layer is a hidden-line layer
+    // (turn 7, CLAUDE.md F1).
+    const dash = !e.solid && (e.hidden || L.dash) ? ` stroke-dasharray="${(L.dash || [5, 3]).join(' ')}"` : '';
     const tag = e.meta ? ` data-cc="${esc(e.meta)}"` : '';
 
     if (e.kind === 'line') {
       parts.push(`<line x1="${n(e.x1)}" y1="${n(flip(e.y1))}" x2="${n(e.x2)}" y2="${n(flip(e.y2))}" ${stroke}${dash} stroke-linecap="round" data-layer="${e.layer}"${tag}/>`);
+    } else if (e.kind === 'circle') {
+      parts.push(`<circle cx="${n(e.cx)}" cy="${n(flip(e.cy))}" r="${n(e.r)}" fill="none" ${stroke}${dash} data-layer="${e.layer}"${tag}/>`);
     } else if (e.kind === 'rect') {
       parts.push(`<rect x="${n(e.x)}" y="${n(flip(e.y + e.h))}" width="${n(e.w)}" height="${n(e.h)}" fill="none" ${stroke}${dash} data-layer="${e.layer}"${tag}/>`);
     } else if (e.kind === 'text') {
@@ -61,7 +68,7 @@ export function sheetToSvg(sheet, { background = '#ffffff' } = {}) {
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${n(width)}mm" height="${n(height)}mm"`,
-    ` viewBox="0 0 ${n(width)} ${n(height)}" data-cc-drawing="front-elevation">`,
+    ` viewBox="0 0 ${n(width)} ${n(height)}" data-cc-drawing="${esc(kind)}">`,
     `<rect x="0" y="0" width="${n(width)}" height="${n(height)}" fill="${background}"/>`,
     ...parts,
     '</svg>',

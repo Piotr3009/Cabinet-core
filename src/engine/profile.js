@@ -120,6 +120,26 @@ export const DEFAULT_CABINET_PROFILE = {
     socketHoleOffset: 24.5,    // 2 holes per socket at ± this
     socketHoleDiameter: 7.5,
     socketHoleInset: 1,        // holes sit 1 mm inside the pocket
+    // ─── Turn 7 (CLAUDE.md F4 / BACKLOG #28) ───
+    // Below this run length the two sockets COLLIDE, and one socket goes in the
+    // middle instead. The AutoLISP never met this case — its kits are 558 and
+    // 578 deep — so there is no LISP number to trace and the threshold is
+    // DERIVED from the geometry above:
+    //
+    //   190    the two socket centres, `tabCentresFromEnd` (95) in from each end
+    // + 56.5   each socket's own footprint across the run. Not the pocket:
+    //          the HOLES are wider than it. ±max(socketHalfWidth 25.5,
+    //          socketHoleOffset 24.5 + socketHoleDiameter/2 3.75) = ±28.25,
+    //          and two of those halves is 56.5.
+    // + 18     the minimum bridge — the narrowest web of board a cutter should
+    //          be asked to leave standing between two pockets, which is one
+    //          standard board thickness (board.thickness).
+    // = 264.5
+    //
+    // A workshop on a different board or different sockets recomputes it the
+    // same way; test/single-socket.test.js recomputes it on every run, so the
+    // number and the reasoning cannot drift apart.
+    singleSocketBelow: 264.5,
     screwDiameter: 3,
     screwFromEnd: 50,          // screws at 50, mid, length−50
     centrelineExtra: 0.5,      // screw/socket centreline = G/2 + this
@@ -220,6 +240,50 @@ export const DEFAULT_CABINET_PROFILE = {
     // clamped, exactly as every other millimetre field is.
     min: 100,
     max: 3000,
+  },
+
+  // ─── Project types (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
+  // What KIND of job this is. The type is picked once, on the second screen of
+  // the new-project flow, and all it does is choose better starting points:
+  // which Library category opens first, which scope is suggested, and — where
+  // the workshop genuinely builds that kind of job to a different height —
+  // which project heights it starts from.
+  //
+  // The heights are DELIBERATELY sparse. A kitchen is the Skylon standard, so
+  // it overrides nothing; a type only appears here when there is a real reason
+  // for it to differ, and the two that do are flagged in BLOCKERS for Piotr to
+  // confirm against what the workshop actually builds. Everything is editable
+  // in Design Settings the moment the project opens — this is a starting point,
+  // not a rule.
+  //
+  // The LIST (order, labels, category, scope) is engine/projectTypes.js; the
+  // millimetres are here, because millimetres are always here.
+  projectTypes: {
+    wardrobe: { heights: { tall: 2400 } },
+    // A vanity carcass hangs or stands under a basin, and 770 + 100 legs + a
+    // top is a worktop at 890 — too high for a bathroom.
+    vanity: { heights: { base: 700 } },
+  },
+
+  // ─── Joinery (turn 7, CLAUDE.md F2) ───
+  // HOW the carcass is held together. Today there is exactly one system and it
+  // is the one the whole engine is traced from — the Skylon puzzle joint, tabs
+  // and dog-bone relief pockets, `profile.puzzle` above. It is listed rather
+  // than assumed so that the second system (dowels, CamLock, Lamello) is a
+  // profile entry and a geometry module, not a rewrite of the settings screen.
+  //
+  // `geometryKey` names the block of numbers that system's geometry reads, so a
+  // preview can draw a joint it has never heard of by looking there.
+  joinery: {
+    types: [
+      {
+        id: 'dogbone',
+        label: 'Dog bones (Skylon puzzle)',
+        hint: 'Tabs and dog-bone relief — the joint every AutoLISP kit is cut for',
+        geometryKey: 'puzzle',
+      },
+    ],
+    defaultType: 'dogbone',
   },
 
   // ─── Legs (shared rule for every standing type) ───
@@ -467,6 +531,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // Parts that are not a "finish" at all.
     hardware: { rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92' },
 
+    // ─── X-ray (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
+    // Look THROUGH the furniture: the board goes translucent, the contours
+    // stay, and the hardware the workshop has to buy appears where it is
+    // fitted. Two opacities, not one, and the difference is the whole trick —
+    // a front stays readable as a front (it is the face of the cabinet) while
+    // the carcass fades far enough back to see a hinge through it.
+    xray: { carcass: 0.2, front: 0.42 },
+
     // ─── Selection (turn 6, CLAUDE.md F5) ───
     // Turn 4 drew the selected unit's own edges in the app's gold. Two things
     // were wrong with that. The gold is the FURNITURE's colour — a brass
@@ -531,7 +603,52 @@ export const DEFAULT_CABINET_PROFILE = {
     lightScale: { ambient: 0.72, key: 1.9, fill: 1.1 },
   },
 
-  // ─── Technical drawings (turn 6, CLAUDE.md F7) ───
+  // ─── Bought hardware, to catalogue size (turn 7, CLAUDE.md F1/F3) ───
+  // Not `appearance.hardware` — that one is COLOURS. This is the CATALOGUE: the
+  // millimetres of the things a workshop buys rather than cuts, so the top view
+  // can draw a hinge and the X-ray can model one from the same numbers.
+  //
+  // Nothing here reaches the cutting list. The engine still decides HOW MANY of
+  // each and WHERE (result.hardware + result.drillSummary); this only says what
+  // one of them looks like. A workshop on a different hinge system changes these
+  // numbers and both the drawing and the 3D follow.
+  hardware: {
+    // A 35 mm cup hinge (the Blum/Hettich standard the drilling in `hinges`
+    // above is already dimensioned for — cup ⌀35, 12.5 deep, cup centre 21.5 in
+    // from the door edge).
+    hinge: {
+      cupDiameter: 35,
+      cupDepth: 12.5,
+      bossHeight: 16,        // the cup body standing proud of the door's back face
+      armLength: 62,         // cup centre → the far end of the arm, along the depth
+      armWidth: 22,          // across the door's height
+      armThickness: 11,
+      plateLength: 56,       // mounting plate on the carcass side, front to back
+      plateWidth: 34,
+      plateThickness: 12,
+    },
+    // A side-mounted runner pair: two L-profiles, one on the box and one on the
+    // carcass, at the runner rows the engine drills. `length` comes from
+    // result.hardware ('runner_pairs' → spec.length_mm), never from here.
+    runner: {
+      profileHeight: 45,     // the visible face of the profile
+      profileThickness: 12.5, // how far it stands off the panel it is screwed to
+      flangeDepth: 6,        // the return of the L
+    },
+    // An adjustable leg: a plate, a stem and a foot.
+    leg: {
+      plateThickness: 4,     // the plate screwed under the carcass; its footprint
+                             // is profile.legs.width (78), from the LISP
+      stemDiameter: 26,
+      footDiameter: 48,
+      footHeight: 8,
+    },
+    // The hanging rail. The 3D drew a ⌀30 tube with the number written into the
+    // mesh; it lives here now, with everything else that is bought and not cut.
+    rail: { diameter: 30 },
+  },
+
+  // ─── Technical drawings (turn 6, CLAUDE.md F7; turn 7, F1) ───
   // The sheet metrics for a printed elevation: what scales the workshop draws
   // at, how big the text is, and the title block that makes a printout read as
   // a drawing rather than a screenshot. Paper millimetres unless noted.
@@ -556,6 +673,54 @@ export const DEFAULT_CABINET_PROFILE = {
       labelHeight: 2.5,
       valueHeight: 3.0,
       titleHeight: 3.6,
+    },
+
+    // ─── The production card (turn 7, CLAUDE.md F1) ───
+    // Three views of one cabinet on one sheet. Every number below is in DRAWING
+    // millimetres (they travel with the geometry through the scale), except
+    // where it says otherwise.
+    unitCard: {
+      // Between two views. Wide enough that one view's dimensions never read as
+      // the neighbour's.
+      viewGap: 280,
+      // A card sets its text SMALLER than a single elevation does, and that is
+      // not a cosmetic choice: three views and six runs of dimensions have to
+      // share one sheet, and every millimetre of drawing-mm text height costs
+      // roughly two millimetres of run spacing on all four sides of every view.
+      // At 60 the whole card of a base unit fits A3 at 1:10 where 90 forced
+      // 1:20 — one whole scale step, bought by setting the numbers at 3 mm on
+      // paper instead of 4.5, which is what a drawing office sets them at
+      // anyway. The floor is still `minTextHeight`.
+      textHeight: 60,
+      unitNumberHeight: 100,
+      // The caption under each view ("FRONT", "CARCASS (no fronts)", "TOP").
+      viewLabelHeight: 75,
+      viewLabelGap: 70,
+      // Where the detailed dimensions hang. `first` is the innermost run; each
+      // further run steps out by `step`, which is what keeps a stack of shelf
+      // positions readable instead of overwritten.
+      dimFirst: 100,
+      dimStep: 125,
+      // The title block of a card carries what the workshop asks for at the
+      // bench: what it is, and what it is made of.
+      titleRows: ['CABINET CORE', 'Project', 'Unit', 'Type', 'Carcass', 'Fronts', 'Scale', 'Date'],
+      titleWidth: 108,
+      // The front gap (the 3 mm all round a front) is worth SAYING once rather
+      // than dimensioning four times — at this scale the arrow would be longer
+      // than the gap.
+      noteHeight: 55,
+    },
+
+    // ─── The project booklet (turn 7, CLAUDE.md F1) ───
+    booklet: {
+      // The cover: a list of the units in the project, so the first page
+      // answers "what is in this job".
+      titleHeight: 9,        // paper mm
+      headingHeight: 4.2,
+      rowHeight: 5.4,
+      textHeight: 3.2,
+      // Two columns once the list is longer than this.
+      rowsPerColumn: 24,
     },
   },
 
@@ -595,6 +760,11 @@ export const DEFAULT_CABINET_PROFILE = {
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
     unitMagnet: 40,            // butt a unit against its neighbour within this
     minUnitGap: 0,             // units stand edge to edge; > 0 forces a scribe gap
+    // The widest deliberate clearance a unit may be given (turn 7, BACKLOG
+    // #32). A joiner insets a cabinet to clear a soil pipe or a wall that bows;
+    // past this it is not a clearance, it is a gap you would put another
+    // cabinet in — and the app has a filler and a cabinet for that.
+    maxInset: 300,
     // Auto-order (turn 4): the gap the next shelf leaves below the last one.
     // Never allowed to close up tighter than minShelfGap — that is the clamp.
     itemStackPitch: 350,
@@ -678,6 +848,13 @@ export function migrateCabinetProfile(profile) {
     },
     baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
     projectHeights: { ...D.projectHeights, ...profile.projectHeights },
+    projectTypes: { ...D.projectTypes, ...profile.projectTypes },
+    joinery: {
+      ...D.joinery, ...profile.joinery,
+      types: Array.isArray(profile.joinery?.types) && profile.joinery.types.length
+        ? profile.joinery.types
+        : D.joinery.types,
+    },
     legs: { ...D.legs, ...profile.legs },
     wallUnit: {
       ...D.wallUnit, ...profile.wallUnit,
@@ -716,6 +893,7 @@ export function migrateCabinetProfile(profile) {
       contour: { ...D.appearance.contour, ...profile.appearance?.contour },
       shade: { ...D.appearance.shade, ...profile.appearance?.shade },
       hardware: { ...D.appearance.hardware, ...profile.appearance?.hardware },
+      xray: { ...D.appearance.xray, ...profile.appearance?.xray },
       selection: { ...D.appearance.selection, ...profile.appearance?.selection },
     },
     render: {
@@ -728,6 +906,13 @@ export function migrateCabinetProfile(profile) {
         high: { ...D.render.shadow.high, ...profile.render?.shadow?.high },
       },
     },
+    hardware: {
+      ...D.hardware, ...profile.hardware,
+      hinge: { ...D.hardware.hinge, ...profile.hardware?.hinge },
+      runner: { ...D.hardware.runner, ...profile.hardware?.runner },
+      leg: { ...D.hardware.leg, ...profile.hardware?.leg },
+      rail: { ...D.hardware.rail, ...profile.hardware?.rail },
+    },
     drawings: {
       ...D.drawings, ...profile.drawings,
       scales: Array.isArray(profile.drawings?.scales) && profile.drawings.scales.length
@@ -739,6 +924,13 @@ export function migrateCabinetProfile(profile) {
           ? profile.drawings.titleBlock.rows
           : D.drawings.titleBlock.rows,
       },
+      unitCard: {
+        ...D.drawings.unitCard, ...profile.drawings?.unitCard,
+        titleRows: Array.isArray(profile.drawings?.unitCard?.titleRows) && profile.drawings.unitCard.titleRows.length
+          ? profile.drawings.unitCard.titleRows
+          : D.drawings.unitCard.titleRows,
+      },
+      booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
     },
     cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },

@@ -56,6 +56,18 @@ export const DEFAULT_DESIGN = {
   // through projectHeights() below, so a stored null and a stored number behave
   // the same everywhere.
   heights: { base: null, wall: null, tall: null, wallMount: null, toeKick: null },
+  // ─── Turn 7 (CLAUDE.md F2 / BACKLOG #41) ───
+  // What kind of job this is, and how much of the room it covers. Both are
+  // STARTING POINTS chosen in the new-project flow and both stay editable: the
+  // type decides which Library category opens and which heights the job begins
+  // at, the scope only decides whether the flow shows Room setup on the way in.
+  // A project that never went through the flow has neither, and everything
+  // falls back exactly as it did before turn 7.
+  projectType: null,
+  scope: 'room',                 // 'room' | 'wall'
+  // How the carcass is held together (profile.joinery). null = the profile's
+  // default, which today is the only one there is.
+  joinery: null,
 };
 
 export const HEIGHT_KEYS = ['base', 'wall', 'tall', 'wallMount', 'toeKick'];
@@ -99,7 +111,24 @@ export function migrateDesign(design) {
     heights: Object.fromEntries(HEIGHT_KEYS.map((k) => [
       k, Number(d.heights?.[k]) > 0 ? Number(d.heights[k]) : null,
     ])),
+    projectType: d.projectType ? String(d.projectType) : null,
+    scope: d.scope === 'wall' ? 'wall' : 'room',
+    joinery: d.joinery ? String(d.joinery) : null,
   };
+}
+
+/**
+ * Which joinery system this project is cut with (turn 7, CLAUDE.md F2).
+ *
+ * One resolution point, so the settings screen, the preview and anything that
+ * later asks the engine "which joint" cannot disagree. A stored id that this
+ * install has never heard of falls back to the profile default rather than
+ * rendering nothing — the same rule a removed decor gets.
+ */
+export function resolveJoinery(design, profile) {
+  const types = profile?.joinery?.types || [];
+  const wanted = migrateDesign(design).joinery || profile?.joinery?.defaultType;
+  return types.find((t) => t.id === wanted) || types[0] || null;
 }
 
 // ─── Project heights (turn 5, BACKLOG #29) ───

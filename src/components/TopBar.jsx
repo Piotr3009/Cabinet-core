@@ -42,6 +42,8 @@ export default function TopBar({
   const setDimensionColour = useUiStore((s) => s.setDimensionColour);
   const toggleDimensions = useUiStore((s) => s.toggleDimensions);
   const contourView = useUiStore((s) => s.contourView);
+  const xray = useUiStore((s) => s.xray);
+  const toggleXray = useUiStore((s) => s.toggleXray);
   const toggleContourView = useUiStore((s) => s.toggleContourView);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
@@ -115,6 +117,15 @@ export default function TopBar({
           checked: realisticLighting,
           disabled: viewMode !== '3d',
           run: toggleRealisticLighting,
+        },
+        {
+          // Turn 7 (BACKLOG #42). A way of LOOKING, like Contour view beside
+          // it: nothing about it reaches the BOM or the CNC sheet.
+          label: 'X-ray',
+          hint: 'See through the carcasses. Hinges, runners and legs appear where they are fitted.',
+          checked: xray,
+          disabled: viewMode !== '3d' || contourView,
+          run: toggleXray,
         },
         {
           label: 'Contour view',

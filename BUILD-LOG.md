@@ -2809,3 +2809,62 @@ reszta: `type.supports.topInfill`.
 `test/interaction.test.js` — kolejność wpisów przypięta co do jednego, plus nowy test
 „every toggle flips the way it is currently set — both ways", który przejeżdża każdy
 przełącznik w obu stanach.
+
+## F8 — WIDOCZNOŚĆ ZŁĄCZY (DOG BONES)
+
+Złącze **jest tożsamością systemu**. WoodExpert pokazuje konfirmaty; korpus Skylona trzyma
+się na puzzlu z odciążeniem dog-bone, a klient patrzący na render nie ma jak się o tym
+dowiedzieć — korpus to sześć pudełek stykających się na niewidocznych liniach.
+
+Dwie odpowiedzi, bo są dwa pytania:
+
+| tryb | co widać | skąd |
+|---|---|---|
+| **Solid** | LINIE PODZIAŁU, które tab zostawia na styku bok↔wieniec — po dwie na socket, na obu barkach | pockets warstwy socketu |
+| **X-ray** | pełny PROFIL taba (outline), sockety i dogbony, dyskretny kolor per rodzaj | outline + pockets |
+
+W Solid to jest dyskretne celowo: nie chodzi o to, żeby wytłumaczyć złącze, tylko o to,
+żeby szafka przestała się czytać jako sześć pudełek stykających się z niczym.
+
+### Dane biorą się z pliku dla maszyny, nie z drugiego rysunku
+
+`engine/joinery.js` czyta `panel.cnc` — obrys, który jedzie frez, kieszenie, które
+zatapia. **Nic tu nie wyprowadza taba drugi raz i nic nie zostało dodane do silnika.**
+Nazwy warstw idą przez `geometryKey` systemu złącza (`profile.joinery.types[]`), a nie
+z `profile.puzzle` na sztywno — i to jest cała treść „przyszłe systemy (Cabineo) dostaną
+wizualizację automatycznie". Test wykonuje tę pośredniość: podpina wymyślony system
+`cabineo` z własnym blokiem warstw i sprawdza, że rysowanie za nim idzie, bez żadnego
+`if` w module.
+
+### Odwzorowanie ramki CNC na szafkę, i to, co je udowadnia
+
+Ramka CNC jest 2D, z (0,0) w lewym dolnym rogu nominalnego prostokąta. Na które osie
+szafki idą te dwie, jest własnością CZĘŚCI i jest wypisane, a nie zgadywane z pudełka —
+bo **dwie z sześciu są odwrócone**: LISP rysuje BUL od krawędzi PRZEDNIEJ, więc jego CNC-x
+biegnie w stronę tyłu, przeciwnie do z; BUR jest lustrem i biegnie z z.
+
+Dowodem, że jest dobrze, nie jest geometria, tylko **WIERCENIE**: otwór zawiasu jest cięty
+na `xFromFrontEdge` po obu stronach, a oba odwzorowania kładą go 37 mm od PRZODU — czyli
+tam, gdzie jest zawias. Gdyby były mapowane tak samo, jeden wylądowałby 37 mm od tyłu,
+gdzie nie ma nic. To jest test, nie komentarz.
+
+### Rysowanie
+
+`3d/JointLines.jsx`: **jedno `LineSegments` na RODZAJ**, nie na panel. Korpus ma sześć
+paneli, a projekt czterdzieści korpusów — 240 wywołań rysowania na kilkaset milimetrów
+linii to klatka wydana na włoski. Tak są cztery na jednostkę, każdy w swoim kolorze
+z profilu. Linie stoją 0,4 mm od płyty (`appearance.joinery.lift`), tą samą sztuczką
+i z tego samego powodu co uchwyt krawędzi z F2.4.
+
+Kolor obrysu to prawie-czerń, nie błękit — po pierwszym zrzucie z Chromium, na którym
+profil taba czytał się jak **znacznik zaznaczenia** (też błękit, F2.5). Socket bursztyn,
+dogbone ciemna czerwień: sąsiadujące kieszenie dwóch różnych rodzajów nie mogą być jednym
+kształtem.
+
+**Złącze NIE jest oznaczone `ccHelper`** i to jest decyzja: złącze to MEBEL i należy do
+renderu dokładnie tak, jak należy krawędź. Cały sens pokazywania go polega na tym, że
+widzi je klient.
+
+`test/joinery.test.js` — 11 testów, w tym ten, o który prosi CLAUDE.md: **liczba
+rysowanych tabów == dane cnc**, przejechana po WSZYSTKICH złotych fixtures i po każdym
+panelu każdej z nich.

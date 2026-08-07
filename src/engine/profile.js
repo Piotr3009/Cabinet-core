@@ -646,6 +646,32 @@ export const DEFAULT_CABINET_PROFILE = {
     // Parts that are not a "finish" at all.
     hardware: { rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92' },
 
+    // ─── The joint, drawn (turn 8, CLAUDE.md F8) ───
+    // The joint is the identity of the system, and a carcass that shows none is
+    // six boxes meeting at nothing. Two answers to two questions:
+    //
+    //   `solid` — the division lines a tab leaves where a side meets a wieniec.
+    //   Quiet: a shade off the board, not a diagram drawn on the furniture.
+    //
+    //   the rest — X-ray, where the question is "how is this held together" and
+    //   the answer may be as loud as it needs to be. One colour per kind, so a
+    //   socket and the relief pocket beside it are not one shape.
+    joinery: {
+      solid: '#8f8a82',
+      solidOpacity: 0.5,
+      // Near-black for the tab PROFILE: it is a cut line, it has to read
+      // against a panel at a fifth of its opacity, and it must not be mistaken
+      // for the selection mark — which is a mid blue and a dashed box, and was
+      // exactly what a blue profile line looked like.
+      outline: '#2A2A2A',
+      socket: '#B4783C',
+      dogbone: '#8C182B',
+      // Off the face, in mm. The same trick and the same reason as the edge
+      // handle's (3d/EdgeHandle.jsx): a line drawn ON a surface is a coin toss
+      // per pixel per frame.
+      lift: 0.4,
+    },
+
     // ─── X-ray (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
     // Look THROUGH the furniture: the board goes translucent, the contours
     // stay, and the hardware the workshop has to buy appears where it is
@@ -1043,6 +1069,7 @@ export function migrateCabinetProfile(profile) {
       contour: { ...D.appearance.contour, ...profile.appearance?.contour },
       shade: { ...D.appearance.shade, ...profile.appearance?.shade },
       hardware: { ...D.appearance.hardware, ...profile.appearance?.hardware },
+      joinery: { ...D.appearance.joinery, ...profile.appearance?.joinery },
       xray: { ...D.appearance.xray, ...profile.appearance?.xray },
       selection: { ...D.appearance.selection, ...profile.appearance?.selection },
     },

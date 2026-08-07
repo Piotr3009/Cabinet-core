@@ -449,6 +449,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           wallGaps={wallGaps[unit.id]}
           // The right-click toggle: every number THIS cabinet has (turn 8, F7).
           showAllDims={Boolean(unitDimensions[unit.id])}
+          // Which joint system this project is cut with — the joint drawing
+          // reads its layer names through it (turn 8, F8).
+          unitDesign={design}
         />
       ))}
 

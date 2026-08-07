@@ -10,6 +10,7 @@ import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import ContactShadow from './ContactShadow.jsx';
 import Hardware from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
+import JointLines from './JointLines.jsx';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
@@ -298,7 +299,7 @@ export default function UnitView({
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
   profile, finishes, outlines = true, contour = false, grounded = true, xray = false, sheen = null,
-  wallGaps = null, showAllDims = false,
+  wallGaps = null, showAllDims = false, unitDesign = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -723,6 +724,15 @@ export default function UnitView({
           )}
           <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={formatMm(shelfDrag.pos, { unit: true })} tone="gold" />
         </group>
+      )}
+
+      {/* ─── The joint (turn 8, CLAUDE.md F8) ───
+          Solid: the division lines a tab leaves where a side meets a wieniec.
+          X-ray: every tab profile, socket and dog bone. Both read off the CNC
+          data, so a second joint system draws itself. Not in Contour, where
+          the whole point is that everything but the silhouette goes away. */}
+      {!contour && (
+        <JointLines result={result} profile={profile} xray={xray} design={unitDesign} />
       )}
 
       {/* The bought hardware (turn 7, CLAUDE.md F3): legs and the rail always,

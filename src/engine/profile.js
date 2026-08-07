@@ -211,7 +211,7 @@ export const DEFAULT_CABINET_PROFILE = {
   // per-type `defaults` above, which stay what the AutoLISP kits ship with —
   // the kit default is the factory setting, this is the job.
   projectHeights: {
-    base: 720,
+    base: 770,
     wall: 720,
     tall: 2150,
     wallMount: 1500,

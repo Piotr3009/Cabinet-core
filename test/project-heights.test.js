@@ -42,7 +42,7 @@ const unitOf = (id) => store().units.find((u) => u.id === id);
 
 test('an untouched project builds to the profile heights', () => {
   const h = projectHeights(migrateDesign(null), P);
-  assert.equal(h.base, 720);
+  assert.equal(h.base, 770);
   assert.equal(h.wall, 720);
   assert.equal(h.tall, 2150);
   assert.equal(h.wallMount, 1500);

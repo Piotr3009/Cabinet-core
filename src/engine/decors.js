@@ -10,21 +10,34 @@
 // (EGGER General Terms for Image Use; CLAUDE.md turn 5; BACKLOG #19)
 //
 //  1. A decor image may be shown ONLY WHOLE — the thumbnail is the entire board
-//     scan reduced, which is allowed. It must never be cropped, tiled, recoloured
-//     or used as part of another image.
+//     scan reduced, which is allowed. It must never be cropped, recoloured or
+//     used as part of another image.
 //  2. Attribution is MANDATORY and must sit NEXT TO the image: the word EGGER
 //     plus the decor code and name. `decorLabel()` below is that string, and it
 //     is the only label the picker renders — there is no unattributed path.
-//  3. EGGER IMAGES MAY NOT BE USED AS 3D TEXTURES until there is written
-//     consent. That is the hard one, and it is why `finishFromDecor()` never
-//     returns a decor thumbnail as a texture:
-//        uni_colour → the flat `hex`;
-//        woodgrain  → OUR OWN procedural grain (scripts/gen-textures.mjs →
-//                     public/textures/grain-neutral.png) multiplied by `hex`.
-//     The figure on a 3D panel is ours; only the colour comes from EGGER.
-//     `test/decors.test.js` holds that line.
-//  4. Every decor is a reproduction: colour matching is only valid against the
+//  3. Every decor is a reproduction: colour matching is only valid against the
 //     original sample. The picker's footer says so.
+//
+// ─── WHAT CHANGED IN TURN 8 (Piotr's decision, 07.08.2026) ───
+//
+// Turn 5 read rule 2 of EGGER's terms as forbidding the scans as 3D textures
+// until there is written consent, and shipped OUR OWN procedural grain tinted
+// by the decor's average colour instead. Piotr has taken that decision back:
+// the full-board scans are in Supabase Storage, every woodgrain row carries a
+// `tex` URL, and a woodgrain decor is now rendered with the manufacturer's own
+// image. His words: an end to procedural wood on decors.
+//
+// The decision is HIS to make — it is his workshop, his supplier relationship
+// and his risk — and it is recorded here rather than argued with. What has NOT
+// changed is everything the licence asks of the software: the image is shown
+// whole and unedited (no crop, no recolour — `tint` is off wherever a real scan
+// is used), the attribution string is mandatory and unconditional, and the
+// reproduction note travels with it. BLOCKERS #44 carries the one thing code
+// cannot settle: the written consent for public demo and sale.
+//
+// A decor with no scan — and a build with no network — still falls back to the
+// procedural grain, so mock mode WORKS rather than showing white panels
+// (CLAUDE.md rule 7).
 // ════════════════════════════════════════════════════════════════════════════
 //
 // Pure functions plus one registry, exactly like engine/profile.js: the catalogue
@@ -40,9 +53,13 @@ export const DECOR_CATEGORIES = [
 ];
 
 /**
- * The grain a woodgrain decor is rendered with in 3D. OURS, not EGGER's — see
- * the licence note above. Greyscale and near-white, so multiplying it by the
- * decor's `hex` gives that decor's colour with our figure in it.
+ * The grain a woodgrain decor FALLS BACK to when it has no scan of its own, or
+ * when the scan cannot be fetched (mock mode, no network, a bad URL). OURS, not
+ * EGGER's. Greyscale and near-white, so multiplying it by the decor's `hex`
+ * gives that decor's colour with our figure in it.
+ *
+ * Since turn 8 this is the second choice rather than the only one — see the
+ * licence note above.
  */
 export const DECOR_GRAIN_TEXTURE = 'textures/grain-neutral.png';
 export const DECOR_GRAIN_REPEAT_MM = 900;
@@ -65,7 +82,27 @@ export function normaliseDecor(raw, { basePath = '' } = {}) {
     // file at all — it is one flat colour, and 16 needless requests on a picker
     // that opens in a modal is 16 needless requests.
     thumb: raw.thumb ? `${basePath}${String(raw.thumb)}` : null,
+    // The full-board scan (turn 8). An ABSOLUTE url — the scans live in Supabase
+    // Storage, not in the repo, so `basePath` has nothing to say about it and
+    // prefixing it would break every one of them. A row without one falls back
+    // to the procedural grain, which is why this is `null` and not `''`.
+    tex: absoluteUrl(raw.tex),
   };
+}
+
+/**
+ * The scan url, or null.
+ *
+ * Only http(s) is accepted, and that is a rule rather than tidiness: this
+ * string is handed straight to a texture loader, so a `javascript:` or `data:`
+ * value in a catalogue file must not become something the page executes or
+ * decodes. The catalogue ships in the repo today and will come from a database
+ * tomorrow; the check costs nothing and stops being optional the moment it does.
+ */
+function absoluteUrl(value) {
+  const text = String(value ?? '').trim();
+  if (!/^https?:\/\//i.test(text)) return null;
+  return text;
 }
 
 /** The shipped JSON → the catalogue. Tolerates an array or the `{decors:[…]}` shape. */
@@ -107,12 +144,23 @@ export function decorIdFromFinishId(finishId) {
  * A chosen decor as a FINISH — the shape 3d/materials.js and the panel already
  * understand (profile.appearance.finishes).
  *
- * Licence rule 3 lives here: `texture` is never the decor's own image.
- *   uni_colour → no texture at all, the flat hex;
- *   woodgrain  → our procedural grain, `tint: true` so the renderer multiplies
- *                it by the hex instead of showing it at its own (grey) tone.
+ *   uni_colour → no texture at all, the flat hex. Unchanged since turn 5: one
+ *                flat colour is what a uni colour IS, and an image of it would
+ *                be a photograph of nothing.
+ *   woodgrain  → the manufacturer's own full-board scan (turn 8, Piotr 07.08),
+ *                shown whole and unedited, so `tint` is OFF — a scan multiplied
+ *                by an average colour is a recoloured image, which is both a
+ *                licence problem and a worse picture.
+ *                With no scan, our procedural grain tinted by the hex, exactly
+ *                as turn 5 did it. `fallback` carries that second answer so the
+ *                view can drop to it when a download fails.
+ *
+ * `scanAlongGrainMm` is what one image is worth on a real board, in millimetres
+ * along the grain. It is not in this module's gift — it is a calibration, and
+ * calibrations are profile numbers — so the caller passes it in and the default
+ * only exists so a bare call in a test still produces a usable finish.
  */
-export function finishFromDecor(decor) {
+export function finishFromDecor(decor, { scanAlongGrainMm = 2800 } = {}) {
   if (!decor) return null;
   const label = decorLabel(decor);
   if (decor.category === 'uni_colour') {
@@ -124,15 +172,29 @@ export function finishFromDecor(decor) {
       decor,
     };
   }
+  const fallback = {
+    texture: DECOR_GRAIN_TEXTURE,
+    repeatMm: DECOR_GRAIN_REPEAT_MM,
+    tint: true,
+  };
+  if (!decor.tex) {
+    return {
+      id: finishIdForDecor(decor), label, kind: 'decor', hex: decor.hex, decor, ...fallback, fallback,
+    };
+  }
   return {
     id: finishIdForDecor(decor),
     label,
     kind: 'decor',
     hex: decor.hex,
-    texture: DECOR_GRAIN_TEXTURE,
-    repeatMm: DECOR_GRAIN_REPEAT_MM,
-    // The renderer multiplies the grain by `hex` rather than showing it plain.
-    tint: true,
+    texture: decor.tex,
+    // A scan is placed by its PHYSICAL size along the grain, not by a repeat
+    // length: a 720 mm door then shows the piece of board it would be cut from
+    // rather than a tile that reads as wallpaper.
+    scanAlongGrainMm,
+    // Shown whole, at its own tone — see the licence note at the top.
+    tint: false,
+    fallback,
     decor,
   };
 }
@@ -154,6 +216,21 @@ export function filterDecors(decors = [], { category = null, query = '' } = {}) 
 
 let catalogue = { meta: null, decors: [] };
 let byId = new Map();
+
+// How many millimetres of real board one scan is worth, along the grain. Pushed
+// in from profile.appearance.decor by the loader, exactly the way the profile
+// itself is pushed into the engine — so `decorFinish()` stays a plain function
+// that neither imports the profile nor reaches for a store.
+let scanAlongGrainMm = 2800;
+
+export function setDecorScale(mm) {
+  if (Number(mm) > 0) scanAlongGrainMm = Number(mm);
+  return scanAlongGrainMm;
+}
+
+export function getDecorScale() {
+  return scanAlongGrainMm;
+}
 
 export function setDecorCatalogue(next) {
   const decors = Array.isArray(next) ? next : (next?.decors || []);
@@ -179,5 +256,68 @@ export function decorById(id) {
 export function decorFinish(finishId) {
   const id = decorIdFromFinishId(finishId);
   if (!id) return null;
-  return finishFromDecor(decorById(id));
+  return finishFromDecor(decorById(id), { scanAlongGrainMm });
+}
+
+// ─── Which way the grain runs (turn 8, CLAUDE.md F1) ───
+
+/**
+ * The direction the figure runs on ONE cut piece, in millimetres of that piece.
+ *
+ * A board is cut with the grain running its LENGTH, so the grain runs along the
+ * longer of a part's two cut dimensions. That is the whole rule, and it is the
+ * rule because it is what a saw operator does — not because it is convenient.
+ *
+ * `cnc.rotated` does not enter into it and that is deliberate rather than an
+ * oversight: `rotated` says the DXF draws the part turned 90° to nest it, and
+ * the part's own `w`/`h` are already the part's, not the drawing's. A workshop
+ * that genuinely wants the figure across a piece says so on the piece
+ * (`cnc.grain`), which is the only statement that could ever beat the saw.
+ *
+ * @returns {{axis:'w'|'h', lengthMm:number, acrossMm:number}}
+ */
+export function grainRun(panel) {
+  const w = Math.abs(Number(panel?.w) || 0);
+  const h = Math.abs(Number(panel?.h) || 0);
+  const stated = panel?.cnc?.grain;
+  const axis = stated === 'w' || stated === 'h' ? stated : (w >= h ? 'w' : 'h');
+  return {
+    axis,
+    lengthMm: axis === 'w' ? w : h,
+    acrossMm: axis === 'w' ? h : w,
+  };
+}
+
+/**
+ * How to lay a scan on ONE panel's biggest face.
+ *
+ * A panel is drawn as a box, and three.js gives a box's six faces their own
+ * u/v axes: on a ±X face u runs along Z and v along Y, on ±Y u runs along X and
+ * v along Z, on ±Z u along X and v along Y. The face that MATTERS is the big
+ * one — the two edges are 18 mm of board and nobody reads the grain on them —
+ * so the mapping is worked out for that face and the edges take what falls out.
+ *
+ * `rotate` means the grain has to run along the face's U axis, which is the
+ * case turn 7 got wrong in the one place it shows most: a side panel's biggest
+ * face has u along the DEPTH and v along the HEIGHT, and turn 7 scaled the
+ * texture by the box's x and y — so every carcass side in the app had its grain
+ * lying on its side.
+ *
+ * @param {{w:number,h:number,d:number}} box  the panel's box, in mm
+ * @param {number} grainMm  the piece's length along the grain (grainRun above)
+ * @returns {{widthMm:number, heightMm:number, rotate:boolean}}
+ */
+export function decorMapping(box, grainMm) {
+  const w = Math.abs(Number(box?.w) || 0);
+  const h = Math.abs(Number(box?.h) || 0);
+  const d = Math.abs(Number(box?.d) || 0);
+  const faces = [
+    { area: h * d, widthMm: d, heightMm: h },   // ±X: u along Z, v along Y
+    { area: w * d, widthMm: w, heightMm: d },   // ±Y: u along X, v along Z
+    { area: w * h, widthMm: w, heightMm: h },   // ±Z: u along X, v along Y
+  ];
+  const face = faces.reduce((best, f) => (f.area > best.area ? f : best), faces[0]);
+  const target = Math.abs(Number(grainMm) || 0);
+  const rotate = Math.abs(face.widthMm - target) < Math.abs(face.heightMm - target);
+  return { widthMm: face.widthMm, heightMm: face.heightMm, rotate };
 }

@@ -2208,3 +2208,162 @@ i rzędy śrub biorą się z tej jednej funkcji, więc DXF i podgląd CNC idą z
 `test/low-tabs.test.js` — 8 testów, próg **przeliczany na każdym przebiegu** (jak
 w `single-socket.test.js`), plus dowód, że poniżej progu stare taby naprawdę by się
 zderzyły, plus regresja „normalny korpus ma dalej trzy taby i cztery rzędy śrub".
+
+## F1 — RENDER v2 + OŚWIETLENIE
+
+Diagnoza Piotra brzmiała: „wszystko przezroczyste, brak cienia, brak głębi, białe zlewa
+się". Cztery zdania, cztery różne przyczyny — i żadna z nich nie była kwestią gustu.
+
+### 1. „Wszystko przezroczyste" — sześć procent, za które płacił cały bufor głębi
+
+`UnitView` trzymał KAŻDY front na `opacity 0.94` w zwykłym widoku. Sześć procent
+prześwitu widać ledwo; koszt jest nieporównanie większy: materiał z `transparent: true`
+**wychodzi z kolejki nieprzezroczystej**, więc każde drzwi w pokoju były sortowane
+tyłem-do-przodu względem wszystkich innych i rysowane bez porządku głębi, na którym
+opiera się reszta sceny. Stąd „przezroczyste" jako wrażenie ogólne, a nie tylko na
+frontach.
+
+Solid jest teraz **kryjący, kropka**. `transparent` i `depthWrite` liczą się z jednej
+wartości (`translucent = faded < 1`), a półprzezroczystość należy do dwóch trybów,
+które po to istnieją: X-ray i Contour.
+
+### 2. „Brak cienia, brak głębi" — key słabszy niż fill
+
+Tura 7: **ambient 1.25, key 0.85**. Światło kluczowe słabsze od płaskiego, które ma
+pokonać, oświetla wszystko i nie kształtuje niczego. Do tego cień: kamera cienia była
+dopasowana do POKOJU z zapasem — na kuchni 4 m to bryła 8 m, a mapa 1024 na 8 metrach
+to 8 mm na teksel, czyli więcej niż szczelina między dwiema szafkami. Cień między nimi
+po prostu nie miał rozdzielczości, żeby zaistnieć.
+
+Rig studyjny ze Spraying-Calc, w `profile.appearance.studio`:
+
+| | |
+|---|---|
+| ambient | 0.2 |
+| key (z cieniem) | 1.0 |
+| fill | 0.5 |
+| rim | 0.3 |
+| ACESFilmic, exposure | 1.0 |
+
+…i kamera cienia dopasowana do **MEBLI**, nie do pokoju (`shadowPadding` 600 mm luzu,
+liczone z `furnitureBounds` po klatce, w której jednostki się narysowały). Każdy teksel
+mapy ląduje na czymś, co rzuca cień.
+
+**Ten sam rig w widoku roboczym i w renderze.** To jest osobna decyzja i ważniejsza niż
+same liczby: tura 7 oświetlała edytor inaczej niż zdjęcie i przestawiała światła
+w przebiegu przechwytującym, więc stolarz nie mógł ocenić z ekranu, co dostanie klient.
+`profile.render.lightScale` to teraz same jedynki (blok zostaje — warsztat, który chce
+mocniejszego zdjęcia, ma gałkę), a `render.exposure` równa się `studio.exposure`.
+
+### 3. Ściany, których rig studyjny nie umie oświetlić
+
+Rig na trzy światła jest zbudowany dla obiektu na tle bez szwu. Skierowany na POKÓJ
+daje szare ściany, bo ścianę oświetla głównie światło, które już się od czegoś odbiło —
+a światło kierunkowe nie ma odbić. Tura 7 odpowiadała na to ambientem 1.25, czyli
+spłaszczała meble, żeby rozjaśnić ściany.
+
+`studio.roomBounce` (0,42) to ta sama odpowiedź wycelowana tam, gdzie należy: **podłoga
+i ściany niosą ten ułamek własnego koloru jako emisję**. Meble widzą rig i nic więcej.
+Ściana za białą szafką jest biała, a modelunek na drzwiach nietknięty.
+
+### 4. Hybryda materiałów — filozofia Spraying, w trzech liczbach
+
+| | powierzchnia natryskiwana | melamina / dekor |
+|---|---|---|
+| environment (`envMapIntensity`) | **0** | 1 |
+| metalness | 0 | 0 |
+| roughness | **z suwaka Sheen** | z rodziny (`materials.melamine`) |
+| faktura | orange peel na normalnych, `normalScale` 0,1 | brak |
+
+Zero na envMapie nie jest oszczędnością, tylko regułą: **lakier w kolorze JEST tym
+kolorem**. Biały front, który podbiera odbicie stojącego obok orzechowego korpusu, nie
+jest już biały, a klient przykładający wzornik RAL do ekranu porównuje go z czymś innym,
+niż myśli. Melamina i dekory zatrzymują sondę — folia naprawdę odbija pokój i to jest
+większość tego, co odróżnia płytę od kolorowego papieru.
+
+Orange peel siedzi w tym samym shaderze co złamana krawędź z tury 6 (`3d/bevel.js`,
+uniform `ccSpray`): trzy sinusy, część styczna, komórka ~2 mm (`spray.peelMm`).
+Geometria tak gęsta kosztowałaby klatkę za coś, czego i tak nie widać z bliska
+inaczej niż jako połysk.
+
+### 5. Suwak Sheen — skala Piotra, nie suwak roughness
+
+`profile.appearance.sheenScale`: **0–25, skok 5**, domyślnie 15. Wzór ze Spraying:
+
+```
+roughness = 1 − sheen / 25
+```
+
+To jest skala, na której Piotr wycenia ludziom robotę, więc to jest skala, o którą pyta
+aplikacja. Suwak „roughness 0–1" to ta sama informacja w języku, którym w warsztacie
+nikt nie mówi. Wzór jest jedną linijką w `engine/design.js`, więc panel ustawień
+i obraz nie mogą się różnić co do tego, jak wygląda 15. Nazwy kroków są: Matt · Dead
+flat · Eggshell · Satin · Semi-gloss · Mirror.
+
+Sheen dotyczy WYŁĄCZNIE tego, co idzie do kabiny: fronty, panele boczne, infille,
+cokół. Melamina to folia i swój połysk przyniosła z płytą. Dekor na froncie też NIE jest
+natryskiem — `test/sheen.test.js` pilnuje i tego.
+
+### 6. Prawdziwe tekstury EGGER (decyzja Piotra 07.08)
+
+Tura 5 czytała warunki EGGER-a jako zakaz używania skanów w 3D bez pisemnej zgody
+i puszczała **własne proceduralne słoje tonowane średnim kolorem dekoru**. Piotr tę
+decyzję cofnął: skany są w Supabase Storage, 69 dekorów woodgrain niesie pole `tex`,
+i dekor drewnopodobny ma teraz obraz producenta. To jego relacja z dostawcą i jego
+ryzyko — zapisane, nie dyskutowane. Pisemna zgoda na publiczne demo i sprzedaż zostaje
+jako **BLOCKERS #44**.
+
+Co się NIE zmieniło: obraz jest pokazywany **w całości i bez edycji** (`tint: false` —
+tonowanie hex jest wyłączone wszędzie tam, gdzie jest prawdziwy skan), atrybucja
+„EGGER {code} {name}" jest bezwarunkowa, nota o reprodukcji jedzie z nią. Dekor bez
+skanu — i maszyna bez sieci — spada na proceduralne słoje, więc **mock-mode DZIAŁA**
+(reguła 7), a nie pokazuje 400 białych paneli.
+
+**Kierunek słojów — błąd, który było widać na każdej szafce.** Piotr: „dziś słoje leżą
+POZIOMO na bokach". Przyczyna jest w UV sześcianu: three daje ścianie ±X `u` wzdłuż Z
+i `v` wzdłuż Y, a **bok korpusu JEST ścianą ±X**. Tura 7 skalowała teksturę przez `x`
+i `y` pudełka, więc figura kładła się na boku.
+
+`engine/decors.js` niesie teraz dwie czyste funkcje, obie testowane w node:
+
+- `grainRun(panel)` — słój biegnie wzdłuż DŁUŻSZEGO wymiaru formatki, bo tak tnie się
+  płytę. `cnc.rotated` nie wchodzi w grę i to jest świadome: `rotated` mówi, że DXF
+  rysuje część obróconą dla zagnieżdżenia, a `w`/`h` części są już częścią, nie rysunkiem.
+- `decorMapping(box, grainMm)` — która ściana pudełka jest tą dużą, i czy obraz trzeba
+  obrócić o ćwierć obrotu, żeby słój poszedł wzdłuż `u`.
+
+Skala fizyczna: `appearance.decor.scanHeightMm = 2800` — **jeden skan to tyle
+milimetrów prawdziwej płyty wzdłuż słoja**, a nie długość powtórzenia. Dzięki temu
+drzwi 720 mm pokazują ten kawałek płyty, z którego byłyby wycięte, zamiast kafla, który
+czyta się jak tapeta. Szerokość liczona z proporcji zdekodowanego obrazu, `anisotropy 8`
+(bok szafki ogląda się pod kątem częściej niż na wprost, i to właśnie tam niefiltrowany
+słój zamienia się w migotanie).
+
+### 7. Zaznaczenie — granat, który na ekranie jest czarny
+
+Przy okazji F2.5, bo to ta sama rodzina: `#1B2A4A` przy szerokości 1 px na ciemnej
+kanwie czyta się jak czarny i Piotr nie odróżniał szafki zaznaczonej od niezaznaczonej.
+Znacznik to teraz czytelny średni błękit `#2B6CB0`, i **cieńszy** (0,75) — znak, który
+widać, nie musi być ciężki. STRZAŁKI zostają w granacie: rysunek drukuje się na białym
+papierze, gdzie granat jest granatem.
+
+### Liczby fazy
+
+| | |
+|---|---|
+| testy | **634/634** (nowe: `sheen.test.js` 10, przepisany `decors.test.js` 24) |
+| build | czysty |
+| nowe zależności | zero |
+
+**Testy, które musiały się zmienić — bo tura 8 zmienia to, co opisywały:**
+
+- `decors.test.js` — „żaden finish nie niesie obrazu EGGER-a" było linią tury 5.
+  Asercja się **przeniosła**, a nie zniknęła: testowane jest to, o co licencja dalej
+  prosi OPROGRAMOWANIE — obraz w całości i bez edycji (`tint: false`), atrybucja
+  bezwarunkowa, fallback dla maszyny bez sieci. Plus nowy strażnik: `tex`, które nie
+  jest adresem `https`, jest odrzucane, zanim trafi do loadera tekstur.
+- `render.test.js` — „render bierze kontrast z key light, nie z ciemnego ambientu"
+  opisywało DWA rigi. Jest jeden, więc test mówi to: `lightScale` to same jedynki,
+  a `render.exposure` równa się `studio.exposure`. Drugi test pilnuje samego rigu
+  (key > 3 × ambient — dokładnie ta proporcja, którą tura 7 miała odwróconą).
+- `appearance.test.js` — kolor zaznaczenia, patrz wyżej.

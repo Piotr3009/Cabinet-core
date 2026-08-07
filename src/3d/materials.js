@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { decorMapping, grainRun } from '../engine/decors.js';
+import { roughnessFromSheen } from '../engine/design.js';
 
 // ─── What a panel is made of, as far as the eye is concerned ───
 //
@@ -30,33 +32,49 @@ const sources = new Map();
  * `loaded` and the listener set exist because a clone taken BEFORE the image
  * arrives keeps its own upload version — the renderer would never refresh it
  * and the panel would stay blank. Callers re-clone when the load fires.
+ *
+ * `failed` is turn 8's addition and it is what keeps mock mode WORKING
+ * (CLAUDE.md rule 7): the manufacturer scans live in Supabase Storage, so a
+ * machine with no network, a bad url or a bucket that has moved must fall back
+ * to our own procedural grain rather than render 400 white panels.
  */
 export function decorSource(url) {
   if (!url) return null;
   const known = sources.get(url);
   if (known) return known;
-  const entry = { tex: null, loaded: false, listeners: new Set() };
+  const entry = {
+    tex: null, loaded: false, failed: false, listeners: new Set(),
+  };
   sources.set(url, entry);
-  entry.tex = new THREE.TextureLoader().load(url, () => {
-    entry.loaded = true;
-    for (const cb of entry.listeners) cb();
-  });
+  const notify = () => { for (const cb of entry.listeners) cb(); };
+  entry.tex = new THREE.TextureLoader().load(
+    url,
+    () => { entry.loaded = true; notify(); },
+    undefined,
+    () => { entry.failed = true; notify(); },
+  );
   entry.tex.wrapS = THREE.RepeatWrapping;
   entry.tex.wrapT = THREE.RepeatWrapping;
   entry.tex.colorSpace = THREE.SRGBColorSpace;
   return entry;
 }
 
-/** Tell me when this decor's image is ready. Returns an unsubscribe. */
+/** Tell me when this decor's image is ready — or has given up. */
 export function onDecorLoad(url, callback) {
   const entry = decorSource(url);
   if (!entry) return () => {};
-  if (entry.loaded) { callback(); return () => {}; }
+  if (entry.loaded || entry.failed) { callback(); return () => {}; }
   entry.listeners.add(callback);
   return () => entry.listeners.delete(callback);
 }
 
-// Clones keyed by url AND repeat: a room full of 600 mm doors shares one.
+/** Did this image fail to arrive? Then the caller shows the fallback. */
+export function decorFailed(url) {
+  return Boolean(url && sources.get(url)?.failed);
+}
+
+// Clones keyed by url AND the whole transform: a room full of 600 mm doors
+// shares one.
 const clones = new Map();
 
 /**
@@ -71,66 +89,167 @@ const clones = new Map();
  *   2. `needsUpdate` must be set on the clone, because three only uploads a
  *      texture whose `version > 0` — and a fresh clone starts at 0, so without
  *      this the panel is white with a perfectly good image sitting in memory.
- * Clones are cached by url AND repeat, so the extra uploads are a handful per
- * project rather than one per panel.
+ * Clones are cached by url AND transform, so the extra uploads are a handful
+ * per project rather than one per panel.
+ *
+ * @param {string} url
+ * @param {object} t   { repeatX, repeatY, rotate, anisotropy }
  */
-export function decorTexture(url, repeatX, repeatY) {
+export function decorTexture(url, { repeatX, repeatY, rotate = false, anisotropy = 8 }) {
   const entry = decorSource(url);
-  if (!entry?.loaded || !entry.tex) return null;
-  const rx = Math.round(Math.max(0.2, repeatX) * 100) / 100;
-  const ry = Math.round(Math.max(0.2, repeatY) * 100) / 100;
-  const key = `${url}|${rx}|${ry}`;
+  if (!entry?.loaded || !entry.tex || entry.failed) return null;
+  const rx = Math.round(Math.max(0.01, repeatX) * 1000) / 1000;
+  const ry = Math.round(Math.max(0.01, repeatY) * 1000) / 1000;
+  const key = `${url}|${rx}|${ry}|${rotate ? 1 : 0}|${anisotropy}`;
   const known = clones.get(key);
   if (known) return known;
   const tex = entry.tex.clone();
   tex.repeat.set(rx, ry);
+  if (rotate) {
+    // Turning the image a quarter turn is what puts the grain along the face's
+    // U axis. `center` matters: rotate about (0,0) and the whole map slides off
+    // the panel, which shows up as a piece that is the right colour and has no
+    // figure on it at all.
+    tex.center.set(0.5, 0.5);
+    tex.rotation = Math.PI / 2;
+  }
+  // A cabinet side is seen at a glancing angle far more often than face-on, and
+  // that is exactly where an unfiltered woodgrain turns into a shimmer.
+  tex.anisotropy = Math.max(1, Math.round(anisotropy));
   tex.needsUpdate = true;
   clones.set(key, tex);
   return tex;
 }
 
 /**
- * Which finish a panel role wears.
- * Fronts wear the front finish; everything else wears the carcass finish, some
- * of it a shade down so an open cabinet reads as separate pieces.
+ * Everything one panel needs to wear a decor image: which file, how it is
+ * scaled onto this piece, and whether it is turned.
  *
- * Turn 6 adds the second half of "what is this made of": not only the COLOUR
- * but the SURFACE. A melamine-faced carcass board and a two-pack sprayed door
- * are different materials and a customer can see it — melamine has a wide soft
- * highlight, lacquer a tight one you can read the window in. Which family a
- * piece is in is decided by the engine's own `finish_exposed` flag (the pieces
- * that go to the spray booth — BACKLOG #35), not by a list of panel ids here.
+ * A finish that carries `scanAlongGrainMm` is a MANUFACTURER SCAN and is placed
+ * by its physical size — one image is that many millimetres of real board along
+ * the grain, so a tall door and a drawer front cut from the same board show
+ * different parts of the same figure at the same scale.
+ *
+ * A finish that carries `repeatMm` instead is our own procedural grain, which
+ * is a TILE: it repeats every `repeatMm` in both directions, which is what turn
+ * 5 built and what a decor with no scan still falls back to.
+ *
+ * @param {object} surface  from surfaceFor()
+ * @param {object} panel    the engine's panel record (box + cut dimensions)
+ * @param {object} profile
  */
-export function surfaceFor({ role, finishExposed = false, finishes, profile, frontColour = null }) {
+export function decorPlacement(surface, panel, profile) {
+  if (!surface?.texture || !panel?.box) return null;
+  const anisotropy = profile?.appearance?.decor?.anisotropy ?? 8;
+  const { lengthMm } = grainRun(panel);
+  const map = decorMapping(panel.box, lengthMm);
+
+  if (surface.scanAlongGrainMm > 0) {
+    // The image's own proportions decide how wide that many millimetres is; the
+    // aspect is read off the decoded image, so a scan re-exported at a different
+    // shape stays physically right instead of stretching.
+    const entry = sources.get(surface.texture);
+    const img = entry?.tex?.image;
+    const aspect = img?.width && img?.height ? img.width / img.height : 1;
+    const alongMm = surface.scanAlongGrainMm;
+    const acrossMm = alongMm * aspect;
+    return map.rotate
+      // Grain along U: the image's height axis lies along the face's width.
+      ? { url: surface.texture, repeatX: map.heightMm / acrossMm, repeatY: map.widthMm / alongMm, rotate: true, anisotropy }
+      : { url: surface.texture, repeatX: map.widthMm / acrossMm, repeatY: map.heightMm / alongMm, rotate: false, anisotropy };
+  }
+
+  const tile = surface.repeatMm > 0 ? surface.repeatMm : 900;
+  return {
+    url: surface.texture,
+    repeatX: map.widthMm / tile,
+    repeatY: map.heightMm / tile,
+    rotate: map.rotate,
+    anisotropy,
+  };
+}
+
+/**
+ * Which finish a panel role wears.
+ *
+ * ─── TURN 8 (CLAUDE.md F2.3): WHICH ROLE, EXACTLY ───
+ * It used to ask `role === 'front'`, and that is the bug Piotr found: the
+ * engine's own answer to "is this cut from the front sheet" is
+ * `material_role === 'front'` (engine/cabinet.js wearsFrontMaterial), and it
+ * says yes for a door, an END PANEL and an INFILL alike — they stand in the
+ * room beside the doors and a workshop sprays them out of the same sheet.
+ * Asking for the ROLE instead meant an end panel (role `end_panel`) and a
+ * filler (role `infill`) quietly wore the CARCASS finish.
+ *
+ * That is also why the bug looked intermittent on Piotr's screenshots: with an
+ * EGGER uni decor set on the carcass and nothing set on the fronts, the fronts
+ * default to the carcass (design.js) and the two are the same colour — so the
+ * end panel looked correct. The moment a front COLOUR was picked, it did not.
+ *
+ * Turn 6's second half is unchanged: not only the COLOUR but the SURFACE. A
+ * melamine-faced carcass board and a two-pack sprayed door are different
+ * materials and a customer can see it. Which family a piece is in is decided by
+ * the engine's `finish_exposed` flag (the pieces that go to the spray booth —
+ * BACKLOG #35), not by a list of panel ids here.
+ *
+ * ─── TURN 8 (CLAUDE.md F1): THE SPRAY BOOTH'S OWN RULE ───
+ * A sprayed piece takes its roughness from the project's SHEEN (Piotr's 0–25
+ * scale) and refuses the environment probe: a sprayed colour is the colour, and
+ * a white door that picks up the walnut carcass beside it is not white any more.
+ * Melamine and decors keep the probe, because a foil board really does reflect
+ * the room and that is most of what makes one look alive.
+ */
+export function surfaceFor({
+  role, materialRole = null, finishExposed = false, finishes, profile, frontColour = null, sheen = null,
+}) {
   const A = profile.appearance;
-  const finish = role === 'front' ? finishes.front : finishes.carcass;
+  // The engine's own answer, with the role as the fallback for a caller (a test,
+  // an old cached project) that has no material_role to hand.
+  const wearsFront = materialRole ? materialRole === 'front' : role === 'front';
+  const finish = wearsFront ? finishes.front : finishes.carcass;
   const shade = A.shade[role] || 0;
   const pbr = (finishExposed ? A.materials?.lacquer : A.materials?.melamine) || A.sheen;
 
   // A front colour chosen in Design Settings is PAINT: it covers the decor,
   // exactly as it does in the workshop.
-  const paint = role === 'front' ? frontColour : null;
+  const paint = wearsFront ? frontColour : null;
   const isDecor = !paint && finish?.kind === 'decor' && finish.texture;
 
-  // A TINTED decor (turn 5, BACKLOG #19) carries our own greyscale grain and
-  // the manufacturer's average colour: the multiply is the point, so the base
-  // is the decor's hex rather than white. This is what lets an EGGER woodgrain
-  // be shown in 3D at all without an EGGER pixel ever reaching the geometry —
-  // the figure is ours, only the colour is theirs. See engine/decors.js.
+  // A TINTED decor is our own greyscale grain multiplied by the manufacturer's
+  // average colour (turn 5). A manufacturer SCAN is not tinted — it is shown at
+  // its own tone, whole, which is both the licence's rule and the better
+  // picture. Either way the base under an untinted image has to be white or the
+  // multiply darkens the figure.
   const tinted = isDecor && finish.tint;
 
+  // Is this piece coming out of the spray booth in a colour somebody chose? A
+  // sprayed DECOR is not a thing — a decor is a foil, and if a piece is exposed
+  // and wearing a decor it is a decor.
+  const sprayed = finishExposed && !isDecor;
+
   return {
-    // An UNtinted decor's colour multiplies its own image, so the base has to be
-    // white for that grain to come through at its own tone.
     colour: paint
       ? colour(paint)
       : ((isDecor && !tinted) ? shaded('#ffffff', shade) : shaded(finish?.hex, shade)),
     texture: isDecor ? finish.texture : null,
-    repeatMm: isDecor ? (finish.repeatMm || 900) : 0,
-    roughness: pbr.roughness,
+    repeatMm: isDecor ? (finish.repeatMm || 0) : 0,
+    scanAlongGrainMm: isDecor ? (finish.scanAlongGrainMm || 0) : 0,
+    // What to fall back to when the scan cannot be fetched (mock mode, no
+    // network). Null for anything that is not a scanned decor.
+    fallback: isDecor && finish.scanAlongGrainMm > 0 && finish.fallback ? finish.fallback : null,
+    fallbackHex: finish?.hex || null,
+    sprayed,
+    // Piotr's scale drives the sprayed surface; board keeps its family number.
+    roughness: sprayed && sheen != null ? roughnessFromSheen(sheen, profile) : pbr.roughness,
     clearcoat: pbr.clearcoat,
     clearcoatRoughness: pbr.clearcoatRoughness,
-    metalness: pbr.metalness,
+    metalness: sprayed ? (A.spray?.metalness ?? 0) : pbr.metalness,
+    // 0 switches the probe off for this material only — the scene keeps it for
+    // everything else.
+    envMapIntensity: sprayed ? (A.spray?.envMapIntensity ?? 0) : 1,
+    // The fine orange peel a gun leaves. A tenth of the strength the board
+    // edges are broken at, which is roughly the difference in real life.
+    normalScale: sprayed ? (A.spray?.normalScale ?? 0.1) : 1,
   };
 }
 
@@ -141,10 +260,16 @@ export function contourSurface(profile) {
     colour: colour(C.hex),
     texture: null,
     repeatMm: 0,
+    scanAlongGrainMm: 0,
+    fallback: null,
+    fallbackHex: null,
+    sprayed: false,
     roughness: 1,
     clearcoat: 0,
     clearcoatRoughness: 1,
     metalness: 0,
+    envMapIntensity: 1,
+    normalScale: 1,
     opacity: C.opacity,
   };
 }

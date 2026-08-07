@@ -125,14 +125,22 @@ test('outline, sheen and contour are profile numbers, and thin/black/subtle', ()
 
 // ─── selection (turn 6, CLAUDE.md F5) ───
 
-test('the selection is drawing-office navy, dashed and clear of the piece — not gold', () => {
+test('the selection is a LEGIBLE blue, thin and dashed — not gold, and not black', () => {
+  // Turn 6 drew it in the dimension arrows' navy, on the argument that both are
+  // the tool talking. Turn 8 takes that back on Piotr's evidence: #1B2A4A one
+  // pixel wide on a dark canvas reads as black, so a selected cabinet looked
+  // like an unselected one. The ARROWS keep the navy — a drawing is printed on
+  // white paper, where navy is navy. A mark on a screen has to be seen.
   const S = P.appearance.selection;
-  assert.equal(S.colour, P.dimensions.colours.navy,
-    'the same ink the measurements are drawn in: both are the TOOL talking');
+  assert.notEqual(S.colour, P.dimensions.colours.navy, 'the navy is for paper, not for the canvas');
   assert.notEqual(S.colour.toUpperCase(), '#AA8E68', 'gold is the furniture’s colour, not the selection’s');
+  // Legible = enough blue in it, and light enough not to sink into the canvas.
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(S.colour.slice(i, i + 2), 16));
+  assert.ok(b > 120, `${S.colour}: too dark a blue to read as blue (${b})`);
+  assert.ok(b > r + 40 && b > g + 40, 'and it is unmistakably BLUE, not a grey');
   assert.ok(S.offset >= 8 && S.offset <= 12, `CLAUDE.md F5 asks for 8–12 mm clear, not ${S.offset}`);
   assert.ok(S.dash > 0 && S.gap > 0, 'dashed, because no piece of furniture has a dashed edge');
-  assert.equal(S.width, 1, 'thin — a selection is a hairline, not a frame');
+  assert.ok(S.width > 0 && S.width <= 1, 'thinner than turn 6 — a mark you can see need not be heavy');
   assert.ok(S.hoverOpacity > 0 && S.hoverOpacity < 1, 'hover is the same mark, quieter');
 });
 

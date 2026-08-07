@@ -68,6 +68,11 @@ export const DEFAULT_DESIGN = {
   // How the carcass is held together (profile.joinery). null = the profile's
   // default, which today is the only one there is.
   joinery: null,
+  // ─── Sheen (turn 8, CLAUDE.md F1) ───
+  // How glossy the SPRAYED surfaces of this job are, on the 0–25 scale the
+  // workshop already quotes on (profile.appearance.sheenScale). null = the
+  // profile's default, exactly like every other null in this object.
+  sheen: null,
 };
 
 export const HEIGHT_KEYS = ['base', 'wall', 'tall', 'wallMount', 'toeKick'];
@@ -114,7 +119,69 @@ export function migrateDesign(design) {
     projectType: d.projectType ? String(d.projectType) : null,
     scope: d.scope === 'wall' ? 'wall' : 'room',
     joinery: d.joinery ? String(d.joinery) : null,
+    // `== null` and not a truthiness test: 0 is a legal sheen (dead matt), and
+    // Number(null) is 0, so either shortcut turns "not set" into "matt".
+    sheen: d.sheen != null && Number.isFinite(Number(d.sheen)) && Number(d.sheen) >= 0
+      ? Number(d.sheen)
+      : null,
   };
+}
+
+// ─── Sheen (turn 8, CLAUDE.md F1) ───
+// Piotr's own scale, carried over from Spraying-Calc: 0 is dead matt and 25 is
+// a mirror, in the five-point steps a lacquer is specified in. It is here and
+// not in the 3D layer because it is a PROJECT decision — "this kitchen is a
+// 15" — and because the mapping to a renderer number has to be one formula in
+// one place or the settings panel and the picture will disagree about what a 15
+// looks like.
+
+/** The values the slider may take: 0, 5, 10, 15, 20, 25 with the defaults. */
+export function sheenSteps(profile) {
+  const S = profile?.appearance?.sheenScale || { min: 0, max: 25, step: 5 };
+  const out = [];
+  for (let v = S.min; v <= S.max + 1e-9; v += S.step) out.push(Math.round(v * 100) / 100);
+  return out;
+}
+
+/** This project's sheen: its own where it has set one, the profile's where not. */
+export function projectSheen(design, profile) {
+  const S = profile?.appearance?.sheenScale || { min: 0, max: 25, step: 5, default: 15 };
+  const stored = migrateDesign(design).sheen;
+  const wanted = stored == null ? S.default : stored;
+  return clampSheen(wanted, profile);
+}
+
+/** On the scale, and on the grid: a value between two steps lands on the nearer. */
+export function clampSheen(value, profile) {
+  const S = profile?.appearance?.sheenScale || { min: 0, max: 25, step: 5, default: 15 };
+  const v = Number(value);
+  if (!Number.isFinite(v)) return S.default;
+  const snapped = S.step > 0 ? Math.round((v - S.min) / S.step) * S.step + S.min : v;
+  return Math.min(Math.max(snapped, S.min), S.max);
+}
+
+/**
+ * The Spraying formula: `roughness = 1 − sheen / max`. 0 → 1.0 (dead matt),
+ * 25 → 0.0 (a mirror), and every step in between is a twenty-fifth.
+ */
+export function roughnessFromSheen(sheen, profile) {
+  const S = profile?.appearance?.sheenScale || { min: 0, max: 25 };
+  const max = Number(S.max) || 25;
+  const v = clampSheen(sheen, profile);
+  return Math.min(1, Math.max(0, 1 - v / max));
+}
+
+/** What a sheen value is CALLED, so the slider is not six bare numbers. */
+export function sheenLabel(sheen, profile) {
+  const S = profile?.appearance?.sheenScale || { min: 0, max: 25 };
+  const v = clampSheen(sheen, profile);
+  const share = v / (Number(S.max) || 25);
+  if (share <= 0) return 'Matt';
+  if (share <= 0.25) return 'Dead flat';
+  if (share <= 0.45) return 'Eggshell';
+  if (share <= 0.65) return 'Satin';
+  if (share <= 0.85) return 'Semi-gloss';
+  return 'Mirror';
 }
 
 /**

@@ -3,7 +3,9 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
-import { contourSurface, decorTexture, onDecorLoad, outlineFor, surfaceFor } from './materials.js';
+import {
+  contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor, surfaceFor,
+} from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import ContactShadow from './ContactShadow.jsx';
 import Hardware from './Hardware.jsx';
@@ -29,24 +31,51 @@ function frontKind(panel) {
 }
 
 /**
- * A decor image scaled to THIS piece: 900 mm of grain stays 900 mm of grain
- * whether it is a door or a drawer bottom. The clone shares the decoded image,
- * so a whole room of walnut is still one texture on the GPU.
+ * A decor image laid on THIS piece.
+ *
+ * Turn 8 moved the arithmetic into 3d/materials.js `decorPlacement`, because
+ * turn 7's version was wrong in the one place it shows most. It scaled the
+ * texture by the box's x and y — but three gives a box's ±X faces a u along Z
+ * and a v along Y, and a carcass side IS a ±X face. So every side panel in the
+ * app had its grain lying on its side (Piotr: "słoje leżą POZIOMO na bokach").
+ * The placement now works out which face is the big one, which way the grain
+ * runs on the cut piece, and turns the image a quarter turn when it has to.
+ *
+ * The FALLBACK is the other half: the manufacturer scans are fetched from
+ * Supabase Storage, so a machine with no network gets our own procedural grain
+ * rather than 400 white panels. Mock mode WORKS (CLAUDE.md rule 7).
  */
-function useDecor(url, wMm, hMm, repeatMm) {
+function useDecor(surface, panel, profile) {
   // `tick` is the COUNTER, not the setter: keying the memo on the setter (which
   // never changes) left every clone holding the placeholder the loader starts
   // with, and every decor panel rendered plain white.
   const [tick, bump] = useState(0);
+  const url = surface?.texture || null;
   useEffect(() => {
     if (!url) return undefined;
     return onDecorLoad(url, () => bump((n) => n + 1));
   }, [url]);
-  return useMemo(
-    () => (url ? decorTexture(url, wMm / repeatMm, hMm / repeatMm) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [url, wMm, hMm, repeatMm, tick],
-  );
+
+  return useMemo(() => {
+    if (!url) return { map: null, tinted: false };
+    const failed = decorFailed(url);
+    // A scan that could not be fetched drops to the tinted procedural grain the
+    // decor carries for exactly this case.
+    const use = failed && surface.fallback
+      ? { ...surface, ...surface.fallback, scanAlongGrainMm: 0 }
+      : surface;
+    const placement = decorPlacement(use, panel, profile);
+    if (!placement) return { map: null, tinted: false };
+    return {
+      map: decorTexture(placement.url, placement),
+      // The fallback grain is greyscale and is MULTIPLIED by the decor's colour;
+      // a scan is shown at its own tone over white.
+      tinted: Boolean(use.tint),
+      hex: use === surface ? null : surface.fallbackHex,
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, panel.box.w, panel.box.h, panel.box.d, panel.w, panel.h,
+    surface?.scanAlongGrainMm, surface?.repeatMm, profile, tick]);
 }
 
 /**
@@ -57,10 +86,11 @@ function useDecor(url, wMm, hMm, repeatMm) {
  * bevel program once for the whole project. Resizing a panel is then a uniform
  * write, which is why dragging a shelf does not stutter.
  */
-function useBevel(box, profile) {
+function useBevel(box, profile, sprayed = false) {
   const state = useMemo(() => createBevelState(), []);
   const hook = useMemo(() => bevelHook(state), [state]);
   const B = profile.appearance.bevel;
+  const S = profile.appearance.spray || {};
 
   state.half.set(mm(box.w) / 2, mm(box.h) / 2, mm(box.d) / 2);
   state.bevel = mm(B.mm);
@@ -68,6 +98,9 @@ function useBevel(box, profile) {
   state.aoRadius = mm(B.ao.mm);
   // The RENDER turns this up (renderCapture.js); the working view stays cheap.
   if (state.ao === 0 || state.ao === undefined) state.ao = B.ao.strength;
+  // Orange peel: a sprayed piece only (turn 8, CLAUDE.md F1).
+  state.spray = sprayed ? (S.normalScale ?? 0.1) : 0;
+  state.sprayFreq = (2 * Math.PI) / Math.max(mm(S.peelMm ?? 2), 1e-6);
   syncBevelState(state);
 
   return useCallback((material) => {
@@ -89,7 +122,7 @@ function MovingPanel({
 }) {
   const group = useRef(null);
   const amount = useRef(0);
-  const bevelRef = useBevel(p.box, profile);
+  const bevelRef = useBevel(p.box, profile, surface.sprayed && !contour && !xray);
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
   // pinned to that edge; everything else sits at its own centre.
@@ -122,16 +155,25 @@ function MovingPanel({
     }
   });
 
-  // The grain runs across the piece's own face, so it is scaled by the two
-  // dimensions the eye actually sees.
-  const decor = useDecor(surface.texture, p.box.w, Math.max(p.box.h, p.box.d), surface.repeatMm);
+  // The grain runs along the piece, on the face the eye actually sees.
+  const { map: decor, tinted, hex: fallbackHex } = useDecor(surface, p, profile);
   // X-ray (turn 7): the board goes translucent so the inside reads, and a FRONT
   // stays more solid than the carcass — it is the face of the cabinet, and
   // fading it as far as the sides would leave a unit with no face at all.
+  //
+  // ─── TURN 8 (CLAUDE.md F1): SOLID MEANS SOLID ───
+  // Turn 7 left every FRONT at 0.94 in the ordinary view. That is where Piotr's
+  // "everything is transparent" came from, and it is worse than it sounds: a
+  // material with `transparent: true` leaves the opaque queue altogether, so
+  // every door in the room was sorted back-to-front against every other door
+  // and drawn without the depth ordering the rest of the scene relies on. Six
+  // per cent of see-through, bought at the price of the whole depth buffer.
+  //
+  // Solid is opaque now, full stop. Translucency belongs to the two modes that
+  // exist to be translucent.
   const X = profile.appearance.xray;
-  const faded = contour
-    ? surface.opacity
-    : (xray ? (front ? X.front : X.carcass) : (p.role === 'front' ? 0.94 : 1));
+  const faded = contour ? surface.opacity : (xray ? (front ? X.front : X.carcass) : 1);
+  const translucent = faded < 1;
 
   return (
     <group ref={group} position={pivot}>
@@ -149,17 +191,25 @@ function MovingPanel({
           // only after a reload.
           key={decor ? 'decor' : 'plain'}
           ref={bevelRef}
-          color={surface.colour}
+          // An untinted scan sits on white so the figure comes through at its
+          // own tone; a tinted procedural grain multiplies the decor's colour.
+          color={decor && tinted && fallbackHex ? fallbackHex : surface.colour}
           map={decor}
           roughness={surface.roughness}
           metalness={surface.metalness}
           clearcoat={surface.clearcoat}
           clearcoatRoughness={surface.clearcoatRoughness}
-          transparent={faded < 1}
+          // A sprayed colour is THE colour: no environment probe on it, or the
+          // room tints the lacquer and a RAL match on screen is a lie
+          // (CLAUDE.md F1, the Spraying philosophy). Melamine and decors keep
+          // the probe — a foil board really does reflect the room.
+          envMapIntensity={surface.envMapIntensity}
+          transparent={translucent}
           opacity={faded}
           // Translucent board must not write depth, or the panel nearest the
-          // camera hides everything the mode exists to show.
-          depthWrite={!contour && !xray}
+          // camera hides everything the mode exists to show. Opaque board
+          // always writes it.
+          depthWrite={!translucent}
         />
         {/* Thin BLACK contours, switchable from the toolbar. In contour view
             they are the whole picture, so they are never off there. */}
@@ -187,7 +237,7 @@ export default function UnitView({
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
-  profile, finishes, outlines = true, contour = false, grounded = true, xray = false,
+  profile, finishes, outlines = true, contour = false, grounded = true, xray = false, sheen = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -420,7 +470,18 @@ export default function UnitView({
         // being dragged goes gold, so the hand knows what it has hold of.
         const surface = contour
           ? contourSurface(profile)
-          : surfaceFor({ role: p.role, finishExposed: p.finish_exposed, finishes, profile, frontColour });
+          : surfaceFor({
+            role: p.role,
+            // The ENGINE's answer to "is this cut from the front sheet", not a
+            // guess from the role — which is what left end panels and infills
+            // wearing the carcass finish (turn 8, CLAUDE.md F2.3).
+            materialRole: p.material_role,
+            finishExposed: p.finish_exposed,
+            finishes,
+            profile,
+            frontColour,
+            sheen,
+          });
         return (
           <MovingPanel
             key={p.id}

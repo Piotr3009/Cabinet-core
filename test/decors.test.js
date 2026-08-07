@@ -3,27 +3,43 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 
 import {
-  DECOR_CATEGORIES, DECOR_DISCLAIMER, DECOR_GRAIN_TEXTURE, decorById, decorFinish,
-  decorIdFromFinishId, decorLabel, filterDecors, finishFromDecor, finishIdForDecor,
-  normaliseDecor, parseDecorCatalogue, setDecorCatalogue,
+  DECOR_CATEGORIES, DECOR_DISCLAIMER, DECOR_GRAIN_TEXTURE, decorById, decorFinish, decorMapping,
+  decorIdFromFinishId, decorLabel, filterDecors, finishFromDecor, finishIdForDecor, grainRun,
+  normaliseDecor, parseDecorCatalogue, setDecorCatalogue, setDecorScale,
 } from '../src/engine/decors.js';
 import { finishById, resolveFinishes, migrateDesign } from '../src/engine/design.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
-import { loadDecorCatalogue } from '../src/lib/decorCatalogue.js';
+import { computeCabinet } from '../src/engine/cabinet.js';
+import { DECOR_DIR, loadDecorCatalogue } from '../src/lib/decorCatalogue.js';
 
 // ─── The EGGER decor pack (BACKLOG #19, picker v1 — turn 5 F5) ───
 //
 // Two things are being tested here, and the second one is the important one.
 //
 //   1. The pack loads: 85 decors, two categories, filter and search.
-//   2. THE LICENCE HOLDS. EGGER images may be shown whole and attributed, and
-//      may NOT be used as 3D textures until there is written consent. Both of
-//      those are code paths, so both are tests — a licence that lives only in a
-//      comment is a licence one refactor away from being broken.
+//   2. THE ATTRIBUTION HOLDS. An EGGER image may be shown whole, unedited and
+//      next to the word EGGER plus the decor's code and name. That is a code
+//      path, so it is a test — a licence that lives only in a comment is a
+//      licence one refactor away from being broken.
+//
+// ─── WHAT TURN 8 CHANGED ───
+//
+// Turn 5 read the terms as forbidding the scans as 3D textures until there is
+// written consent, and this file HELD THAT LINE: it asserted that no finish
+// derived from a decor ever carried an EGGER image. Piotr took that decision
+// back on 07.08 — the scans are in Supabase Storage, every woodgrain row
+// carries a `tex` url, and a woodgrain decor is rendered with the
+// manufacturer's own image. It is his supplier relationship and his risk.
+//
+// So the assertion has moved rather than been deleted. What is tested now is
+// what the licence still asks of the SOFTWARE: the image is shown WHOLE and
+// UNEDITED (no tint, no recolour), the attribution is unconditional, and a
+// decor with no scan — or a machine with no network — falls back to our own
+// procedural grain instead of a white panel. The consent itself is BLOCKERS #44.
 
-const CATALOGUE_PATH = new URL('../public/decors/egger-decors.json', import.meta.url);
+const CATALOGUE_PATH = new URL('../public/decors/egger/egger-decors.json', import.meta.url);
 const raw = JSON.parse(readFileSync(CATALOGUE_PATH, 'utf8'));
-const { decors } = parseDecorCatalogue(raw, { basePath: '/decors/' });
+const { decors } = parseDecorCatalogue(raw, { basePath: '/decors/egger/' });
 
 test('the pack Piotr supplied is the pack the app reads', () => {
   assert.equal(decors.length, 85);
@@ -73,20 +89,32 @@ test('the reproduction note is carried verbatim', () => {
   );
 });
 
-// ─── THE LICENCE LINE: no EGGER image ever reaches 3D geometry ───
+// ─── THE SCANS (turn 8, Piotr 07.08) ───
 
-test('no finish derived from a decor carries an EGGER image as its texture', () => {
-  for (const d of decors) {
-    const finish = finishFromDecor(d);
-    if (!finish.texture) continue;
-    assert.equal(finish.texture, DECOR_GRAIN_TEXTURE,
-      `${d.id} would put a manufacturer image on a panel`);
-    assert.equal(finish.texture.includes('decor'), false, 'and it is not from the decor pack at all');
-    assert.equal(finish.texture.startsWith('textures/'), true, 'it is ours, from scripts/gen-textures.mjs');
+test('every woodgrain in the pack has a scan, and every scan is a real url', () => {
+  const wood = decors.filter((d) => d.category === 'woodgrain');
+  assert.equal(wood.length, 69, 'the 69 woodgrains CLAUDE.md counts');
+  for (const d of wood) {
+    assert.ok(d.tex, `${d.id} has no scan — it would fall back to procedural wood`);
+    assert.match(d.tex, /^https:\/\//, `${d.id}: a scan is fetched over https`);
+  }
+  // A uni colour is one flat colour and needs no image at all.
+  for (const d of decors.filter((x) => x.category === 'uni_colour')) {
+    assert.equal(d.tex, null, `${d.id}: 13 needless megabytes for a flat colour`);
   }
 });
 
-test('a uni colour is a flat colour in 3D, a woodgrain is our grain tinted', () => {
+test('a scan url that is not a url at all is refused rather than loaded', () => {
+  // This string is handed to a texture loader. A catalogue is a data file today
+  // and a database row tomorrow, and neither is a place to accept a scheme the
+  // page would execute or decode.
+  assert.equal(normaliseDecor({ id: 'a', code: 'A', tex: 'javascript:alert(1)' }).tex, null);
+  assert.equal(normaliseDecor({ id: 'a', code: 'A', tex: 'data:image/png;base64,AA' }).tex, null);
+  assert.equal(normaliseDecor({ id: 'a', code: 'A', tex: '  ' }).tex, null);
+  assert.equal(normaliseDecor({ id: 'a', code: 'A', tex: 'https://x/y.jpg' }).tex, 'https://x/y.jpg');
+});
+
+test('a uni colour is a flat colour in 3D; a woodgrain wears the maker s own board', () => {
   const uni = decors.find((d) => d.category === 'uni_colour');
   const wood = decors.find((d) => d.category === 'woodgrain');
 
@@ -95,19 +123,91 @@ test('a uni colour is a flat colour in 3D, a woodgrain is our grain tinted', () 
   assert.equal(uniFinish.texture, undefined, 'a plain colour needs no image at all');
   assert.equal(uniFinish.hex, uni.hex);
 
-  const woodFinish = finishFromDecor(wood);
+  const woodFinish = finishFromDecor(wood, { scanAlongGrainMm: 2800 });
   assert.equal(woodFinish.kind, 'decor');
-  assert.equal(woodFinish.texture, DECOR_GRAIN_TEXTURE);
-  assert.equal(woodFinish.tint, true, 'the grain is multiplied by the decor colour, not shown grey');
-  assert.equal(woodFinish.hex, wood.hex);
+  assert.equal(woodFinish.texture, wood.tex);
+  assert.equal(woodFinish.tint, false, 'shown WHOLE and unedited — a tint is a recolour');
+  assert.equal(woodFinish.scanAlongGrainMm, 2800, 'placed by physical size, not by a repeat length');
+  assert.equal(woodFinish.hex, wood.hex, 'the average colour is still carried, for the swatch and the BOM');
 });
 
-test('the tint base is a real file, and it is ours', () => {
+test('a decor with no scan still renders — our grain, tinted, exactly as in turn 5', () => {
+  const bare = normaliseDecor({ id: 'X1', code: 'X1', name: 'X1 Nowhere Oak', hex: '#B59571', category: 'woodgrain' });
+  const finish = finishFromDecor(bare);
+  assert.equal(finish.texture, DECOR_GRAIN_TEXTURE);
+  assert.equal(finish.tint, true, 'the grain is multiplied by the decor colour, not shown grey');
+  assert.equal(finish.scanAlongGrainMm, undefined, 'a tile has no physical size');
+});
+
+test('a decor WITH a scan still carries the fallback, for a machine with no network', () => {
+  // Mock mode must WORK, not warn (CLAUDE.md rule 7). The view drops to this
+  // when the download fails, so a workshop with the wifi off sees wood.
+  const wood = decors.find((d) => d.category === 'woodgrain');
+  const finish = finishFromDecor(wood);
+  assert.equal(finish.fallback.texture, DECOR_GRAIN_TEXTURE);
+  assert.equal(finish.fallback.tint, true);
+  assert.ok(finish.fallback.repeatMm > 0);
+});
+
+test('the fallback grain is a real file, and it is ours', () => {
   const file = new URL(`../public/${DECOR_GRAIN_TEXTURE}`, import.meta.url);
   assert.ok(existsSync(file), 'scripts/gen-textures.mjs has not been run');
   // Generated, not downloaded: the script that makes it is in the repo.
   const script = readFileSync(new URL('../scripts/gen-textures.mjs', import.meta.url), 'utf8');
   assert.ok(script.includes('grain-neutral.png'));
+});
+
+// ─── which way the grain runs (turn 8, CLAUDE.md F1) ───
+
+test('the grain runs along the piece — the LONGER cut dimension', () => {
+  assert.deepEqual(grainRun({ w: 560, h: 600 }), { axis: 'h', lengthMm: 600, acrossMm: 560 });
+  assert.deepEqual(grainRun({ w: 1164, h: 540 }), { axis: 'w', lengthMm: 1164, acrossMm: 540 });
+  // …unless the piece says otherwise, which is the only thing that beats a saw.
+  assert.equal(grainRun({ w: 560, h: 600, cnc: { grain: 'w' } }).axis, 'w');
+});
+
+test('a carcass SIDE gets its grain up the panel, not across it', () => {
+  // THE BUG (Piotr): "słoje leżą POZIOMO na bokach". A side panel's biggest
+  // face is a ±X face, and three gives that face a u along Z and a v along Y —
+  // so scaling the texture by the box's x and y put the figure on its side.
+  const r = computeCabinet({
+    type: 'BUD', width: 600, height: 770, depth: 558, unit_num: '01', doors: { count: 1, hinge: 'L' },
+  }, P);
+  const side = r.panels.find((p) => p.id === 'BUL');
+  const map = decorMapping(side.box, grainRun(side).lengthMm);
+  assert.equal(map.rotate, false, 'the grain is the face s V axis — up the panel');
+  assert.equal(map.heightMm, side.box.h, 'and V spans the panel height');
+  assert.equal(map.widthMm, side.box.d, 'while U spans the depth');
+});
+
+test('a top, a shelf and a drawer front get their grain across the piece', () => {
+  const r = computeCabinet({
+    type: 'BUD', width: 1200, height: 770, depth: 558, unit_num: '01', shelves: 1, doors: { count: 2 },
+  }, P);
+  for (const id of ['TOP', 'BOTTOM', 'SHELF-1']) {
+    const p = r.panels.find((x) => x.id === id);
+    const map = decorMapping(p.box, grainRun(p).lengthMm);
+    assert.equal(map.rotate, true, `${id}: a wide flat piece runs its grain along the width`);
+  }
+});
+
+test('a door runs its grain up the door', () => {
+  const r = computeCabinet({
+    type: 'BUD', width: 600, height: 770, depth: 558, unit_num: '01', doors: { count: 1, hinge: 'L' },
+  }, P);
+  const door = r.panels.find((p) => p.part === 'FRONT');
+  const map = decorMapping(door.box, grainRun(door).lengthMm);
+  assert.equal(map.rotate, false);
+  assert.equal(map.heightMm, door.box.h);
+});
+
+test('the scan scale is a profile number pushed in, not a literal in the engine', () => {
+  setDecorScale(2800);
+  setDecorCatalogue({ decors });
+  assert.equal(decorFinish('egger:H1180_37').scanAlongGrainMm, 2800);
+  setDecorScale(2070);
+  assert.equal(decorFinish('egger:H1180_37').scanAlongGrainMm, 2070);
+  setDecorScale(P.appearance.decor.scanHeightMm);
 });
 
 // ─── choosing one ───
@@ -181,8 +281,21 @@ test('a broken row is dropped rather than rendered as an empty tile', () => {
 });
 
 test('thumbnail urls are built from the base the app is served under', () => {
-  const at = parseDecorCatalogue(raw, { basePath: '/sub/decors/' }).decors[0];
-  assert.ok(at.thumb.startsWith('/sub/decors/thumbs/'));
+  const at = parseDecorCatalogue(raw, { basePath: '/sub/decors/egger/' }).decors[0];
+  assert.ok(at.thumb.startsWith('/sub/decors/egger/thumbs/'));
+  // …and a SCAN is not, because it is not in public/ at all: it is an absolute
+  // Supabase url, and prefixing it would break every one of the 69.
+  const wood = parseDecorCatalogue(raw, { basePath: '/sub/decors/egger/' }).decors
+    .find((d) => d.category === 'woodgrain');
+  assert.match(wood.tex, /^https:\/\//);
+});
+
+test('the loader looks in the folder the pack actually lives in', () => {
+  // Turn 8 moved the pack from public/decors/ into public/decors/egger/, which
+  // is the layout main already carries. A loader pointing at the old flat path
+  // is a picker that opens empty.
+  assert.equal(DECOR_DIR, 'decors/egger/');
+  assert.ok(existsSync(new URL(`../public/${DECOR_DIR}egger-decors.json`, import.meta.url)));
 });
 
 // ─── loading ───

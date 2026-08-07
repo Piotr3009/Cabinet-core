@@ -500,6 +500,76 @@ export const DEFAULT_CABINET_PROFILE = {
     // Kept as the fallback a piece takes when it belongs to no finish family.
     sheen: { roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.35, metalness: 0.0 },
 
+    // ─── The sheen SCALE (turn 8, CLAUDE.md F1) ───
+    // Piotr already has this scale in Spraying-Calc and quotes people on it, so
+    // the app uses HIS numbers rather than a roughness slider nobody in a
+    // workshop has ever been asked for: 0 is dead matt, 25 is a mirror, and the
+    // steps are the five-point ones a lacquer is specified in.
+    //
+    //     roughness = 1 − sheen / max
+    //
+    // 15 is the default because that is a two-pack satin (roughness 0.4) —
+    // within a step of the 0.3 turn 6 chose for `materials.lacquer` by eye, and
+    // ON the grid a sprayer actually orders from.
+    sheenScale: { min: 0, max: 25, step: 5, default: 15 },
+
+    // ─── Sprayed surfaces (turn 8, CLAUDE.md F1) ───
+    // The Spraying philosophy, in three numbers: A SPRAYED COLOUR IS THE COLOUR.
+    // Nothing in the room may tint it, so the environment probe is switched OFF
+    // for a sprayed piece — a white lacquer door that picks up the walnut carcass
+    // beside it is not white any more, and a client matching a RAL chip against
+    // the screen is being lied to. What is left is the surface itself: the fine
+    // orange peel a gun leaves, done on the normals at a tenth of the strength
+    // the board edges use.
+    // `peelMm` is the size of one orange-peel cell — the gun leaves a texture
+    // between about one and three millimetres, and it is the reason a sprayed
+    // white door does not read as a white rectangle even in flat light.
+    spray: { envMapIntensity: 0, normalScale: 0.1, metalness: 0, peelMm: 2 },
+
+    // ─── Manufacturer decor textures (turn 8, Piotr 07.08) ───
+    // The full-board scans that ship with the decor pack (`tex` in the JSON).
+    // `scanHeightMm` is what one image is worth on a real board — the scan is a
+    // full sheet along the grain — so a 720 mm door shows the part of the board
+    // it would be cut from instead of a repeat that reads as wallpaper.
+    decor: { scanHeightMm: 2800, anisotropy: 8 },
+
+    // ─── The studio rig (turn 8, CLAUDE.md F1 — from Spraying-Calc) ───
+    // Turn 7's answer to "the white walls must stay white" was an ambient at
+    // 1.25 with a key at 0.85, and Piotr's verdict on it is the reason this
+    // block exists: "no shadow, no depth, white runs into white". A light that
+    // is weaker than the fill it is meant to beat cannot model anything.
+    //
+    // So the balance is inverted to the one a photographer uses, and it is the
+    // SAME rig in the working view and in a still: what the joiner is looking at
+    // while he works is what the customer will be shown. ACES holds the
+    // highlights at both ends of it.
+    //
+    // `shadowPadding` is room millimetres of margin around the furniture: the
+    // key light's shadow camera is fitted to the CABINETS rather than to the
+    // room, so every texel of the map lands on something that casts a shadow
+    // instead of on four metres of empty floor.
+    studio: {
+      ambient: 0.2,
+      key: 1.0,
+      fill: 0.5,
+      rim: 0.3,
+      exposure: 1.0,
+      shadowPadding: 600,
+      // ─── The bounce the rig cannot produce ───
+      // A three-light studio rig is built for a subject on a seamless backdrop.
+      // Point it at a ROOM and the walls come out grey, because most of what
+      // lights a real wall is light that has already bounced off the floor, the
+      // ceiling and the wall opposite — and a directional light has no bounce.
+      //
+      // Turn 7 answered that with an ambient at 1.25, which lit the walls and
+      // flattened the furniture with them. This is the same answer aimed only
+      // where it belongs: the ROOM's own surfaces carry this fraction of their
+      // colour as emission. The furniture sees the studio rig and nothing else,
+      // so the modelling on a white door is untouched and the wall behind it is
+      // still white.
+      roomBounce: 0.42,
+    },
+
     // ─── PBR per finish family (turn 6, CLAUDE.md F2) ───
     // Turn 4 gave every piece the same 20 % sheen, which is why a melamine
     // carcass and a sprayed door looked like the same material with two
@@ -571,8 +641,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // `offset` is in millimetres of ROOM, so the gap stays 10 mm of furniture
     // whatever the camera is doing.
     selection: {
-      colour: '#1B2A4A',        // the same navy the dimension arrows use
-      width: 1,
+      // ─── Turn 8 (CLAUDE.md F2.5) ───
+      // It WAS the dimension arrows' navy (#1B2A4A). On paper that is a colour;
+      // on a screen, one pixel wide against a dark canvas, it is black — Piotr
+      // could not tell a selected cabinet from an unselected one. The mark is a
+      // legible mid blue now, and thinner, because a mark you can see does not
+      // need to be heavy. The ARROWS keep the navy: they are a drawing.
+      colour: '#2B6CB0',
+      width: 0.75,
       offset: 10,               // clear of the solid — CLAUDE.md asks for 8–12
       dash: 34,
       gap: 20,
@@ -608,18 +684,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // framing fits the box's own corners, so this is real breathing room and
     // not slack in the fit.
     margin: 1.1,
-    // ACES needs a little more light through it than the flat working view.
-    exposure: 1.05,
-    // How the lights are scaled for a still: contrast comes from RAISING THE
-    // KEY, not from crushing the ambient.
+    // ─── Turn 8 (CLAUDE.md F1) ───
+    // The exposure the STUDIO RIG is balanced at — `appearance.studio.exposure`
+    // — and no longer a second number for the still. Turn 7 ran the working view
+    // flat and untone-mapped and had to raise the exposure to compensate when
+    // ACES came in for a render; the working view is tone-mapped now, so there
+    // is nothing left to compensate for.
+    exposure: 1.0,
+    // …and for the same reason there is nothing left to rebalance. Turn 7 lit
+    // the editor one way and the still another, which meant a joiner could not
+    // judge from the screen what the customer would be sent. The rig is one rig
+    // now (3d/Scene.jsx Lights), so these are all 1 and the render's contrast
+    // comes from the same key light the editor is showing.
     //
-    // That distinction is the whole of this line. The furniture is lit by the
-    // lights AND the environment probe; the room is lit by the lights alone
-    // (its walls are Lambert, so the probe never reaches them — see Room.jsx).
-    // Pull the ambient down far and the two come apart: the cabinets stay
-    // bright and the white walls behind them go grey, which is a render that
-    // looks like it was taken in a basement.
-    lightScale: { ambient: 0.72, key: 1.9, fill: 1.1 },
+    // Kept as a block rather than deleted: a workshop that wants a punchier
+    // still than its working view has the knob, and the render pass still reads
+    // it. It just has nothing to say by default.
+    lightScale: { ambient: 1, key: 1, fill: 1, rim: 1 },
   },
 
   // ─── Bought hardware, to catalogue size (turn 7, CLAUDE.md F1/F3) ───
@@ -899,6 +980,10 @@ export function migrateCabinetProfile(profile) {
       finishes: mergeFinishes(D.appearance.finishes, profile.appearance?.finishes),
       outline: { ...D.appearance.outline, ...profile.appearance?.outline },
       sheen: { ...D.appearance.sheen, ...profile.appearance?.sheen },
+      sheenScale: { ...D.appearance.sheenScale, ...profile.appearance?.sheenScale },
+      spray: { ...D.appearance.spray, ...profile.appearance?.spray },
+      decor: { ...D.appearance.decor, ...profile.appearance?.decor },
+      studio: { ...D.appearance.studio, ...profile.appearance?.studio },
       materials: {
         melamine: { ...D.appearance.materials.melamine, ...profile.appearance?.materials?.melamine },
         lacquer: { ...D.appearance.materials.lacquer, ...profile.appearance?.materials?.lacquer },

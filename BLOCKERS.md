@@ -776,3 +776,37 @@ styl. **BACKLOG #46**.
 Bez zmian względem #29, #34. Tura 7 nie dodała żadnego pliku SQL i nie uruchomiła
 żadnego z istniejących (`sql/002_tura3.sql`, `sql/003_tura5.sql`). Karta produkcyjna,
 flow, X-ray, sockety i insety są w całości lokalne — nic z tej tury nie potrzebuje bazy.
+
+---
+
+# TURA 8
+
+## #44 — Skany EGGER w 3D: decyzja jest Piotra, zgody pisemnej nadal nie ma
+
+Tura 5 czytała *EGGER General Terms for Image Use* jako zakaz używania skanów płyt
+jako tekstur 3D bez pisemnej zgody i zbudowała wokół tego cały mechanizm: własne
+proceduralne słoje tonowane średnim kolorem dekoru, plus test, który tej linii
+pilnował. CLAUDE.md tury 8 tę decyzję **cofa** — „decyzja Piotra 07.08, koniec
+proceduralnego drewna na dekorach" — i tak jest zrobione: 69 skanów z Supabase
+Storage, dekor woodgrain nosi obraz producenta.
+
+**To jest decyzja Piotra i została wykonana bez dyskusji.** To jego relacja
+z dostawcą, jego warsztat i jego ryzyko. Co można było zrobić kodem, zostało zrobione:
+
+- obraz pokazywany **w całości i bez edycji** — `tint: false` wszędzie, gdzie jest
+  prawdziwy skan, więc nic go nie przebarwia ani nie kadruje;
+- atrybucja „EGGER {code} {name}" **bezwarunkowa** — nie ma ścieżki, która rysuje
+  dekor bez niej;
+- nota o reprodukcji jedzie z nią;
+- skan spoza `https://` jest odrzucany, zanim trafi do loadera tekstur.
+
+**Czego kod nie załatwi:** samej zgody. `meta.tex_note` w pliku dekorów mówi to
+wprost — „Public demo/sale of CC still requires written EGGER consent". Dopóki jej
+nie ma, wersja publiczna (demo dla klientów spoza warsztatu, sprzedaż aplikacji)
+stoi na tej samej pozycji co przed turą 8. Do wewnętrznej pracy warsztatu Piotra
+zmiana jest zrobiona i działa.
+
+**Co Piotr powinien zrobić:** napisać do EGGER-a o zgodę na użycie skanów dekorów
+jako tekstur 3D w oprogramowaniu, z atrybucją. Jeśli odpowiedź będzie odmowna,
+powrót jest jedną linijką — `finishFromDecor()` ma fallback proceduralny na miejscu
+i pokryty testem, bo jest używany dla dekorów bez skanu i dla maszyn bez sieci.

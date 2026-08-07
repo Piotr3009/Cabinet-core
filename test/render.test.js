@@ -276,17 +276,32 @@ test('"current view" means the live camera, and says so', () => {
 
 // ─── the working view is not allowed to get expensive ───
 
-test('a render gets its contrast from the key light, not from a dark ambient', () => {
-  // The trap this pins. The furniture is lit by the lights AND the environment
-  // probe; the room is lit by the lights alone, because its walls are Lambert
-  // and the probe never reaches them (3d/Room.jsx — a deliberate performance
-  // decision). Pull the ambient down hard for a render and the two come apart:
-  // bright cabinets in front of grey walls, which is a picture taken in a
-  // basement. Contrast has to come from the key.
+test('the still is lit by the SAME rig the editor is showing (turn 8, F1)', () => {
+  // Turn 7 lit the editor one way and the render another, and rebalanced the
+  // lights in the capture pass to get from one to the other. Piotr's report is
+  // what ends that: a joiner who cannot judge the picture from the screen he is
+  // working on has to render to find out what he built.
+  //
+  // So there is one rig, and `lightScale` — which still exists, for a workshop
+  // that wants a punchier still — has nothing to say by default.
   const L = P.render.lightScale;
-  assert.ok(L.key > 1.2, 'the key light carries the modelling in a still');
-  assert.ok(L.ambient > 0.6, `ambient ×${L.ambient} would grey out the room behind the furniture`);
-  assert.ok(L.key / L.ambient > 1.8, 'and the ratio is what makes a still look different from the editor');
+  for (const [role, scale] of Object.entries(L)) {
+    assert.equal(scale, 1, `${role} is rebalanced ×${scale} — the render would not match the view`);
+  }
+  assert.equal(P.render.exposure, P.appearance.studio.exposure,
+    'and the still is exposed exactly as the working view is');
+});
+
+test('the studio rig is a key light that can actually model something', () => {
+  // The whole of Piotr's verdict on turn 7 — "no shadow, no depth, white runs
+  // into white" — is this ratio. Turn 7 ran ambient 1.25 against key 0.85: a
+  // key light weaker than the flat light it has to beat lights everything and
+  // shapes nothing.
+  const S = P.appearance.studio;
+  assert.ok(S.key > S.ambient * 3, `key ${S.key} against ambient ${S.ambient} cannot cast a readable shadow`);
+  assert.ok(S.fill > 0 && S.fill < S.key, 'the fill models the shadow side without erasing the shadow');
+  assert.ok(S.rim > 0, 'and the rim is what separates a white cabinet from a white wall');
+  assert.ok(S.shadowPadding > 0, 'the shadow camera is fitted to the furniture, with a margin');
 });
 
 test('the editor keeps the cheap settings; the render is where the cost is', () => {

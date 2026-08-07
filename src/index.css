@@ -52,3 +52,14 @@
 ::-webkit-scrollbar-track { background: #1a1a1a; }
 ::-webkit-scrollbar-thumb { background: #3e3e42; border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: #55555a; }
+
+/* The drawing preview (turn 6, CLAUDE.md F7): white paper, and the sheet
+   scaled to whatever room the modal has. The SVG carries its size in real
+   millimetres, so without this it renders at its true paper size and a 420 mm
+   A3 sheet overflows the panel. */
+.cc-drawing svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 46vh;
+}

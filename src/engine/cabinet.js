@@ -316,12 +316,32 @@ export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
 }
 
+/**
+ * Is this piece cut from the FRONT material (turn 6, CLAUDE.md F3/F4)?
+ *
+ * An end panel and an infill are not carcass board. They stand in the room
+ * beside the doors, in the same plane as the doors, and a workshop cuts and
+ * sprays them out of the same sheet — CLAUDE.md says so for both, in as many
+ * words. Before turn 6 they were `board`, which meant a run with two end panels
+ * and a set of fillers ordered a sheet of carcass material nobody was going to
+ * use and under-ordered the front material.
+ *
+ * The plinth is NOT in this set and that is deliberate rather than an omission:
+ * it is sprayed (finish_exposed), but it is sprayed MDF from the board stack,
+ * and turn 6 was not asked to move it.
+ */
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill']);
+
+export function wearsFrontMaterial(role) {
+  return FRONT_MATERIAL_ROLES.has(role);
+}
+
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
   return {
     id,
     part,
     role,
-    material_role: role === 'front' ? 'front' : 'board',
+    material_role: wearsFrontMaterial(role) ? 'front' : 'board',
     finish_exposed: isFinishExposed(role),
     w: roundTo(w, 4),
     h: roundTo(h, 4),
@@ -332,6 +352,28 @@ function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, m
     box: box || null,
     cnc: cnc || null,
     ...(meta ? { meta } : {}),
+  };
+}
+
+/**
+ * A run of ONE: a unit closing itself, which is what a lone cabinet is and what
+ * a bare computeCabinet() call gets. Same geometry as a run of six, both ends
+ * treated as "wall" — a single unit with nothing beside it has nothing to turn
+ * a corner around, and the store overrides this the moment there is a room to
+ * ask about (engine/runs.js).
+ */
+function soloRun(faceH, width, autoParts) {
+  if (!(faceH >= autoParts.topInfill.minHeight)) return null;
+  return {
+    role: 'owner',
+    offset: 0,
+    length: width,
+    faceH,
+    shelfDepth: autoParts.topInfill.shelfDepth,
+    thickness: autoParts.topInfill.thickness,
+    ends: { left: 'wall', right: 'wall' },
+    returns: { left: null, right: null },
+    unitIds: null,
   };
 }
 
@@ -950,23 +992,110 @@ export function computeCabinet(params, profileOverride) {
     }));
   }
 
-  const topInfillH = Number(params?.top_infill_mm) || 0;
-  if (topInfillH >= AP.topInfill.minHeight) {
-    const t = AP.topInfill.thickness ?? G;
+  // ── Top infill: ONE element for the whole run (turn 6, CLAUDE.md F4) ──────
+  //
+  // Section: a face strip standing on the units and a shelf running back off
+  // the top of it, mitred at 45° and glued into an L. What arrives here is
+  // engine/runs.js's answer for the RUN — its length, its two end conditions
+  // and any returns — resolved from the room and written onto the run's first
+  // unit. A unit in the middle of a run carries `{ role: 'member' }` and emits
+  // nothing, because the long piece over its head belongs to the run.
+  //
+  // With no run information at all (a bare computeCabinet call, a fixture, a
+  // test), a unit is a run of one and closes itself. That is the same geometry,
+  // not a second kind of top infill — there is only one.
+  const run = params?.run_top_infill;
+  const runInfill = run && typeof run === 'object' && run.role === 'member'
+    ? null
+    : (run && run.role === 'owner' ? run : soloRun(Number(params?.top_infill_mm) || 0, W, AP));
+  if (runInfill) {
+    const t = runInfill.thickness ?? AP.topInfill.thickness ?? G;
+    const faceH = runInfill.faceH;
+    const shelfDepth = runInfill.shelfDepth ?? AP.topInfill.shelfDepth;
+    const x0 = runInfill.offset || 0;
+    const len = runInfill.length;
+    // The face is flush with the doors, exactly as the end panel is (F3) — the
+    // three pieces that finish a run stand in ONE plane or the run has a step
+    // in it.
+    const faceZ = D + P.doors.gap + frontT;
+    const ends = runInfill.ends || { left: 'wall', right: 'wall' };
+    // A 45° cut on the long edge of both strips is what makes the L; a 45° cut
+    // on an END is the picture-frame corner where the piece turns.
+    const mitre = (open) => ['long', ...(open ? ['end'] : [])];
+
     panels.push(panel({
-      id: 'INFILL-T', part: 'INFILL', role: 'infill', w: W, h: topInfillH, thickness: t,
-      edgeCode: codes.topBottom, edgeLen: metres(2 * W),
-      box: { x: 0, y: H, z: D - t, w: W, h: topInfillH, d: t },
-      cnc: rectGeometry(W, topInfillH),
-      meta: { side: 'top' },
+      id: 'INFILL-T-FACE', part: 'INFILL', role: 'infill', w: len, h: faceH, thickness: t,
+      // One long edge is glued into the mitre and takes no banding; the other
+      // is the visible bottom edge and does. The LISP code vocabulary has no
+      // "one long edge", so the code names the pair and the LENGTH says one.
+      edgeCode: codes.topBottom, edgeLen: metres(len),
+      box: { x: x0, y: H, z: faceZ - t, w: len, h: faceH, d: t },
+      cnc: rectGeometry(len, faceH),
+      meta: {
+        side: 'top', piece: 'face', segment: 'main', ends,
+        mitre_45: [...new Set([...mitre(ends.left === 'open'), ...mitre(ends.right === 'open')])],
+        units: runInfill.unitIds || null,
+      },
     }));
+    panels.push(panel({
+      id: 'INFILL-T-SHELF', part: 'INFILL', role: 'infill', w: len, h: shelfDepth, thickness: t,
+      edgeCode: codes.topBottom, edgeLen: metres(len),
+      box: { x: x0, y: H + faceH - t, z: faceZ - t - shelfDepth, w: len, h: t, d: shelfDepth },
+      cnc: rectGeometry(len, shelfDepth),
+      meta: {
+        side: 'top', piece: 'shelf', segment: 'main', ends,
+        mitre_45: [...new Set([...mitre(ends.left === 'open'), ...mitre(ends.right === 'open')])],
+        units: runInfill.unitIds || null,
+      },
+    }));
+
+    // The OPEN end (the fourth condition): the element mitres at 45° in plan
+    // and carries on along the side of the end cabinet to the back wall — a
+    // picture-frame corner made of two strips, which is the only way to finish
+    // an end that has nothing to finish against.
+    for (const [side, returnDepth] of Object.entries(runInfill.returns || {})) {
+      if (!(Number(returnDepth) > 0)) continue;
+      const outer = side === 'left' ? x0 : x0 + len;      // the corner, in plan
+      const xFace = side === 'left' ? outer : outer - t;
+      const xShelf = side === 'left' ? outer + t : outer - t - shelfDepth;
+      const tag = side === 'left' ? 'L' : 'R';
+      panels.push(panel({
+        id: `INFILL-T${tag}-FACE`, part: 'INFILL', role: 'infill', w: returnDepth, h: faceH, thickness: t,
+        edgeCode: codes.topBottom, edgeLen: metres(returnDepth),
+        box: { x: xFace, y: H, z: faceZ - returnDepth, w: t, h: faceH, d: returnDepth },
+        cnc: rectGeometry(returnDepth, faceH),
+        meta: { side: 'top', piece: 'face', segment: `return-${side}`, mitre_45: ['long', 'end'] },
+      }));
+      panels.push(panel({
+        id: `INFILL-T${tag}-SHELF`, part: 'INFILL', role: 'infill', w: returnDepth, h: shelfDepth, thickness: t,
+        edgeCode: codes.topBottom, edgeLen: metres(returnDepth),
+        box: { x: xShelf, y: H + faceH - t, z: faceZ - returnDepth, w: shelfDepth, h: t, d: returnDepth },
+        cnc: rectGeometry(returnDepth, shelfDepth),
+        meta: { side: 'top', piece: 'shelf', segment: `return-${side}`, mitre_45: ['long', 'end'] },
+      }));
+    }
   }
 
-  // End panels (turn 4, BACKLOG #17): a masking panel on the OUTSIDE of a
-  // carcass side. A cut piece like any other, so it reaches the BOM, the CNC
-  // sheet and the DXF by the same route — and it exists only because somebody
-  // added it (`params.end_panels`), never automatically.
+  // End panels (turn 4, BACKLOG #17; rebuilt turn 6, CLAUDE.md F3): a masking
+  // panel on the OUTSIDE of a carcass side. A cut piece like any other, so it
+  // reaches the BOM, the CNC sheet and the DXF by the same route — and it
+  // exists only because somebody added it (`params.end_panels`), never
+  // automatically.
+  //
+  // TURN 6 CHANGES TWO THINGS ABOUT IT.
+  //
+  // It is FRONT material now (see wearsFrontMaterial): a panel that stands in
+  // the room next to the doors is sprayed with the doors, out of the doors'
+  // sheet.
+  //
+  // And it is as DEEP as the doors are proud. Turn 4 made it the depth of the
+  // carcass, which stops short of the door face and leaves a step you can catch
+  // a sleeve on — the whole point of the piece is that it finishes the run
+  // flush. The number is carcass depth + the door standoff + the door's own
+  // thickness, which is exactly where the AutoLISP puts the door in top view
+  // (`drawDoor` at y0 − doorGap − gruboscDrzwi, KIT_BUD_FULL L128).
   const EP = AP.endPanel;
+  const endPanelDepth = D + P.doors.gap + frontT;
   // "To the floor" means down to the floor: past the legs on a standing unit,
   // and all the way down from a wall unit's mounting height.
   const dropToFloor = type.mount === 'wall' ? cfg.mountHeight : legHeightForPlinth;
@@ -976,30 +1105,82 @@ export function computeCabinet(params, profileOverride) {
     const t = Number(ep?.thickness) > 0 ? Number(ep.thickness) : (EP.thickness ?? frontT);
     const toFloor = (ep?.height || EP.defaultHeight) === 'floor';
     const drop = toFloor ? Math.max(0, dropToFloor) : 0;
-    const panelH = H + drop;
+    // How far it runs ABOVE the carcass — dragged there, or sent to the ceiling
+    // with a double click (CLAUDE.md F3). The room's ceiling is not the
+    // engine's business; the store clamps it and passes the answer down.
+    const top = Math.max(0, Number(ep?.top_mm) || 0);
+    const panelH = H + drop + top;
     if (panelH <= 0 || t <= 0) continue;
     panels.push(panel({
-      id: `END-${side}`, part: 'END-PANEL', role: 'end_panel', w: D, h: panelH, thickness: t,
-      edgeCode: codes.all, edgeLen: metres(2 * D + 2 * panelH),
+      id: `END-${side}`, part: 'END-PANEL', role: 'end_panel', w: endPanelDepth, h: panelH, thickness: t,
+      edgeCode: codes.all, edgeLen: metres(2 * endPanelDepth + 2 * panelH),
       // `drop > 0 ? -drop : 0` and not `-drop`: negative zero is a real value in
       // JS and a box.y of -0 fails an === check downstream for no reason.
-      box: { x: side === 'L' ? -t : W, y: drop > 0 ? -drop : 0, z: 0, w: t, h: panelH, d: D },
-      cnc: rectGeometry(D, panelH),
-      meta: { side: side === 'L' ? 'left' : 'right', height: toFloor ? 'floor' : 'unit' },
+      box: { x: side === 'L' ? -t : W, y: drop > 0 ? -drop : 0, z: 0, w: t, h: panelH, d: endPanelDepth },
+      cnc: rectGeometry(endPanelDepth, panelH),
+      meta: {
+        side: side === 'L' ? 'left' : 'right',
+        height: toFloor ? 'floor' : 'unit',
+        top_mm: top,
+        panelId: ep?.id || null,
+      },
     }));
   }
 
-  for (const [side, key] of [['L', 'side_infill_left_mm'], ['R', 'side_infill_right_mm']]) {
+  // ── Vertical infill: an L in section (turn 6, CLAUDE.md F4 / BACKLOG #20) ──
+  //
+  // Arm B closes the gap in the plane of the doors — the same plane as the end
+  // panel and the top infill's face, so the three pieces that finish a run
+  // stand on one line. Arm A is screwed to the carcass side and runs back,
+  // which is what holds the thing and what stops a scribe strip flexing.
+  //
+  // Turn 4's version was a flat strip on `decision by Piotr` (BACKLOG #20 says
+  // so); turn 6 is the realisation of it.
+  //
+  // It runs to the FLOOR by default on a standing unit — a filler that stops at
+  // the carcass base leaves a slot beside the plinth — and its top edge is
+  // draggable exactly like an end panel's (F3).
+  const SI = AP.sideInfill;
+  const infillFaceZ = D + P.doors.gap + frontT;
+  for (const [side, key, topKey] of [
+    ['L', 'side_infill_left_mm', 'side_infill_left_top_mm'],
+    ['R', 'side_infill_right_mm', 'side_infill_right_top_mm'],
+  ]) {
     const infillW = Number(params?.[key]) || 0;
-    if (infillW < AP.sideInfill.minWidth) continue;
-    const t = AP.sideInfill.thickness ?? G;
+    if (infillW < SI.minWidth) continue;
+    const t = SI.thickness ?? G;
+    const above = Math.max(0, Number(params?.[topKey]) || 0);
+    const below = type.mount === 'wall' ? 0 : Math.max(0, legHeightForPlinth);
+    const h = H + above + below;
+    const y = below > 0 ? -below : 0;
+    const isLeft = side === 'L';
+    const label = isLeft ? 'left' : 'right';
+
+    // Arm B — the face. Spans the gap, flush with the door line.
     panels.push(panel({
-      id: `INFILL-${side}`, part: 'INFILL', role: 'infill', w: infillW, h: H, thickness: t,
-      edgeCode: codes.right, edgeLen: metres(H),
-      box: { x: side === 'L' ? -infillW : W, y: 0, z: D - t, w: infillW, h: H, d: t },
-      cnc: rectGeometry(infillW, H),
-      meta: { side: side === 'L' ? 'left' : 'right' },
+      id: `INFILL-${side}-FACE`, part: 'INFILL', role: 'infill', w: infillW, h, thickness: t,
+      edgeCode: codes.right, edgeLen: metres(h),
+      box: { x: isLeft ? -infillW : W, y, z: infillFaceZ - t, w: infillW, h, d: t },
+      cnc: rectGeometry(infillW, h),
+      meta: { side: label, piece: 'face', shape: infillW >= SI.minLWidth ? 'L' : 'strip' },
     }));
+
+    // Arm A — the return, screwed to the carcass side, behind the face.
+    // Only when the gap is wider than the board: an 18 mm return will not go
+    // into a 12 mm gap, and a workshop cutting a 12 mm filler cuts a strip.
+    if (infillW >= SI.minLWidth) {
+      const armDepth = SI.returnDepth;
+      panels.push(panel({
+        id: `INFILL-${side}-ARM`, part: 'INFILL', role: 'infill', w: armDepth, h, thickness: t,
+        edgeCode: codes.none, edgeLen: 0,
+        box: {
+          x: isLeft ? -t : W, y,
+          z: infillFaceZ - t - armDepth, w: t, h, d: armDepth,
+        },
+        cnc: rectGeometry(armDepth, h),
+        meta: { side: label, piece: 'arm', shape: 'L' },
+      }));
+    }
   }
 
   // Door fronts, always last (they close the unit — SPEC 4.10)

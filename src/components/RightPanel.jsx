@@ -61,6 +61,10 @@ export default function RightPanel() {
   const removeEndPanel = useProjectStore((s) => s.removeEndPanel);
   const updateEndPanel = useProjectStore((s) => s.updateEndPanel);
   const setEndPanelDefaults = useProjectStore((s) => s.setEndPanelDefaults);
+  const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
+  const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
+  const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
+  const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const resetUnitHeight = useProjectStore((s) => s.resetUnitHeight);
   // Select the STORED value and migrate in a memo: a selector that builds a
   // new object every call makes zustand's snapshot change on every render,
@@ -595,6 +599,29 @@ export default function RightPanel() {
                 .map((v) => (Number(v) > 0 ? formatMm(v) : '—')).join(' / ')}
             </span>
           </div>
+          {/* …but how far UP it goes is a decision, exactly as it is for an end
+              panel (turn 6, CLAUDE.md F4). Grab its top edge in 3D, or type it. */}
+          {[['L', 'side_infill_left_mm', 'side_infill_left_top_mm', 'Left'],
+            ['R', 'side_infill_right_mm', 'side_infill_right_top_mm', 'Right']]
+            .filter(([, widthKey]) => Number(unit.params[widthKey]) > 0)
+            .map(([side, widthKey, topKey, label]) => (
+              <div key={side} className="flex items-center gap-1 text-[11px] text-ink-400 pl-3">
+                <span className="flex-1">{label} filler, above unit</span>
+                <NumberField
+                  className="cc-input w-16 text-right"
+                  min={0}
+                  title="How far this filler runs above the carcass (mm)"
+                  value={Number(unit.params[topKey]) || 0}
+                  onCommit={(v) => setSideInfillTop(unit.id, side, v)}
+                />
+                <button
+                  type="button" className="cc-btn px-2" title="All the way to the ceiling"
+                  onClick={() => sideInfillToCeiling(unit.id, side)}
+                >
+                  ▲
+                </button>
+              </div>
+            ))}
 
           <div className="cc-divider !my-2" />
 
@@ -610,6 +637,8 @@ export default function RightPanel() {
             onUpdate={(id, patch) => updateEndPanel(unit.id, id, patch)}
             onRemove={(id) => removeEndPanel(unit.id, id)}
             onDefaults={setEndPanelDefaults}
+            onSetTop={(id, v) => setEndPanelTop(unit.id, id, v)}
+            onToCeiling={(id) => endPanelToCeiling(unit.id, id)}
           />
         </Section>
 
@@ -692,7 +721,7 @@ function constructionBadge(unit, type) {
  * default) and "Apply to all end panels", which makes the next one anywhere in
  * the project inherit these settings.
  */
-function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefaults }) {
+function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefaults, onSetTop, onToCeiling }) {
   const panels = unit.params.end_panels || [];
   const has = (side) => panels.some((ep) => ep.side === side);
   return (
@@ -733,24 +762,46 @@ function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefault
 
       <ul className="space-y-1">
         {panels.map((ep) => (
-          <li key={ep.id} className="flex items-center gap-1 text-sm">
-            <span className="text-ink-400 w-6 text-xs">{ep.side}</span>
-            <select
-              className="cc-input flex-1"
-              value={ep.height}
-              onChange={(e) => onUpdate(ep.id, { height: e.target.value })}
-            >
-              <option value="floor">To floor</option>
-              <option value="unit">Unit height</option>
-            </select>
-            <NumberField
-              className="cc-input w-14 text-right"
-              min={1}
-              title="Thickness (mm)"
-              value={ep.thickness || unit.params.front_t || profile.front.thickness}
-              onCommit={(v) => onUpdate(ep.id, { thickness: v })}
-            />
-            <button type="button" className="cc-btn-ghost" title="Remove this end panel" onClick={() => onRemove(ep.id)}>×</button>
+          <li key={ep.id} className="space-y-1">
+            <div className="flex items-center gap-1 text-sm">
+              <span className="text-ink-400 w-6 text-xs">{ep.side}</span>
+              <select
+                className="cc-input flex-1"
+                value={ep.height}
+                onChange={(e) => onUpdate(ep.id, { height: e.target.value })}
+              >
+                <option value="floor">To floor</option>
+                <option value="unit">Unit height</option>
+              </select>
+              <NumberField
+                className="cc-input w-14 text-right"
+                min={1}
+                title="Thickness (mm)"
+                value={ep.thickness || unit.params.front_t || profile.front.thickness}
+                onCommit={(v) => onUpdate(ep.id, { thickness: v })}
+              />
+              <button type="button" className="cc-btn-ghost" title="Remove this end panel" onClick={() => onRemove(ep.id)}>×</button>
+            </div>
+            {/* Turn 6 (CLAUDE.md F3): how far it runs ABOVE the unit. The edge
+                in 3D is the natural control — grab it, or double-click it for
+                the ceiling — and this is the same number for anyone who would
+                rather type it. */}
+            <div className="flex items-center gap-1 text-[11px] text-ink-400 pl-7">
+              <span className="flex-1">Above unit</span>
+              <NumberField
+                className="cc-input w-16 text-right"
+                min={0}
+                title="How far this panel runs above the carcass (mm)"
+                value={Number(ep.top_mm) || 0}
+                onCommit={(v) => onSetTop(ep.id, v)}
+              />
+              <button
+                type="button" className="cc-btn px-2" title="All the way to the ceiling"
+                onClick={() => onToCeiling(ep.id)}
+              >
+                ▲
+              </button>
+            </div>
           </li>
         ))}
       </ul>

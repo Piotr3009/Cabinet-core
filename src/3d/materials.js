@@ -93,11 +93,19 @@ export function decorTexture(url, repeatX, repeatY) {
  * Which finish a panel role wears.
  * Fronts wear the front finish; everything else wears the carcass finish, some
  * of it a shade down so an open cabinet reads as separate pieces.
+ *
+ * Turn 6 adds the second half of "what is this made of": not only the COLOUR
+ * but the SURFACE. A melamine-faced carcass board and a two-pack sprayed door
+ * are different materials and a customer can see it — melamine has a wide soft
+ * highlight, lacquer a tight one you can read the window in. Which family a
+ * piece is in is decided by the engine's own `finish_exposed` flag (the pieces
+ * that go to the spray booth — BACKLOG #35), not by a list of panel ids here.
  */
-export function surfaceFor({ role, finishes, profile, frontColour = null }) {
+export function surfaceFor({ role, finishExposed = false, finishes, profile, frontColour = null }) {
   const A = profile.appearance;
   const finish = role === 'front' ? finishes.front : finishes.carcass;
   const shade = A.shade[role] || 0;
+  const pbr = (finishExposed ? A.materials?.lacquer : A.materials?.melamine) || A.sheen;
 
   // A front colour chosen in Design Settings is PAINT: it covers the decor,
   // exactly as it does in the workshop.
@@ -119,10 +127,10 @@ export function surfaceFor({ role, finishes, profile, frontColour = null }) {
       : ((isDecor && !tinted) ? shaded('#ffffff', shade) : shaded(finish?.hex, shade)),
     texture: isDecor ? finish.texture : null,
     repeatMm: isDecor ? (finish.repeatMm || 900) : 0,
-    roughness: A.sheen.roughness,
-    clearcoat: A.sheen.clearcoat,
-    clearcoatRoughness: A.sheen.clearcoatRoughness,
-    metalness: A.sheen.metalness,
+    roughness: pbr.roughness,
+    clearcoat: pbr.clearcoat,
+    clearcoatRoughness: pbr.clearcoatRoughness,
+    metalness: pbr.metalness,
   };
 }
 
@@ -141,10 +149,18 @@ export function contourSurface(profile) {
   };
 }
 
-/** The outline every piece is drawn with — thin and black (BACKLOG #5). */
-export function outlineFor(profile, { selected = false, contour = false } = {}) {
+/**
+ * The outline every piece is drawn with — thin and black (BACKLOG #5).
+ *
+ * Turn 6 (CLAUDE.md F5) took the SELECTION out of here. Turn 4 recoloured the
+ * selected unit's own edges, which made the selection a property of the object
+ * rather than a mark on top of it — and in the app's gold, which is a furniture
+ * colour. A cabinet's edges are black because a cabinet's edges are black,
+ * selected or not; the mark that says "this one" is a separate dashed box
+ * (3d/SelectionOutline.jsx).
+ */
+export function outlineFor(profile, { contour = false } = {}) {
   const A = profile.appearance;
-  if (selected) return { colour: A.selection.colour, width: A.selection.width, threshold: A.outline.threshold };
   return {
     colour: contour ? A.contour.outline : A.outline.colour,
     width: A.outline.width,

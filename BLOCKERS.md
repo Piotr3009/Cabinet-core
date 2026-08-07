@@ -579,3 +579,83 @@ Tabela `cc_templates` (+ RLS + unikalny indeks po `lower(name)`) leży jako plik
 zgodnie z CLAUDE.md. Do czasu uruchomienia zapisane komplety siedzą w
 `localStorage` (`cc.templates.v1`) i **działają w pełni** — mock-mode jest
 działającą aplikacją, nie demem. To samo dotyczy `sql/002_tura3.sql` (BACKLOG #26).
+
+---
+
+# TURA 6
+
+## #30 — E2E jest w repo teraz (odpowiedź na #27, wybrana wersja B)
+
+BLOCKERS #27 zostawiał Piotrowi wybór: Playwright do `devDependencies` (złamanie
+reguły „zero nowych zależności") albo sterownik CDP jako kod w repo. Tura 6
+wybrała **drugie** — `scripts/cdp.mjs` + `scripts/e2e-turn6.mjs`, node 22,
+wbudowany `WebSocket`, zero zależności.
+
+**Dlaczego nie zostawiłem tego znów w scratchpadzie.** Tura 5 pokazała, że
+przeglądarka znajduje rzeczy, których nie znajdzie ani `npm test`, ani `npm run
+build`. Tura 6 to potwierdziła dwa razy: kontur w renderze (drei rysuje grubą
+linię jako `LineSegments2`, czyli **Mesh**, więc test „to nie jest linia" go
+przepuścił) i ściana zasłaniająca kadr (auto-chowanie ścian liczy się co klatkę
+dla kamery EDYTORA, a render patrzy własną). Narzędzie, które łapie takie rzeczy,
+nie powinno ginąć razem z sesją.
+
+**To nadal nie jest w CI** — CI nie ma runnera (#28). Uruchamia się ręcznie:
+`npm run build && npm run preview -- --port 4173`, potem `node scripts/e2e-turn6.mjs`.
+
+## #31 — Sonda środowiskowa kosztuje, i ma przełącznik
+
+CLAUDE.md wymaga w widoku roboczym „taniego liftingu (environment + cienie
+kontaktowe + fazy)" **bez odczuwalnego spadku wydajności**. Zmierzone w Chromium
+na rasteryzatorze programowym (SwiftShader — kontener nie ma GPU), 8 szafek z
+drzwiami, przebiegi przeplatane A/B:
+
+| konfiguracja | fps |
+|---|---|
+| tura 5 (stan wyjściowy) | **5,6** |
+| tura 6, wszystko włączone | **3,4** |
+| tura 6, View ▸ Realistic lighting **wyłączone** | **5,9** |
+
+Cała różnica to sonda IBL: próbkowana dla każdego oświetlonego piksela każdej
+formatki. Fazy krawędzi, cienie kontaktowe i miękkie cienie są **darmowe** —
+z wyłączoną sondą scena jest szybsza niż w turze 5, bo ściany i podłoga
+przeszły na `meshLambertMaterial` i wypadły ze ścieżki IBL (`scene.environment`
+dociera wyłącznie do `MeshStandardMaterial`).
+
+**Co zrobiłem i czego nie rozstrzygam.** Sonda jest ON domyślnie, bo to jest
+większość tego, po co jest tura 6, a na prawdziwym GPU jej koszt to błąd
+zaokrąglenia. Przełącznik jest w View, żeby słabsza maszyna miała wyjście.
+Render **zawsze** zapala oświetlenie z powrotem, niezależnie od przełącznika.
+Czy default ma zostać ON — to obserwacja dla Piotra na jego sprzęcie, nie pytanie
+blokujące.
+
+## #32 — Zmiany, które przesuwają liczby w BOM (świadome)
+
+Dwie rzeczy z tury 6 zmieniają istniejące wyniki, obie na wprost z CLAUDE.md:
+
+1. **End panel i infille liczą się do arkusza FRONTÓW**, nie do płyty korpusowej
+   (`material_role: 'front'`). Do tury 5 ciąg z dwoma end panelami zamawiał płytę
+   korpusową, której nikt nie miał zużyć, i zamawiał za mało materiału frontowego.
+   **Plinth zostaje na płycie** — jest lakierowany, ale to lakierowany MDF ze
+   stosu płytowego, i CLAUDE.md nie kazał go ruszać.
+2. **Top infill to jedna formatka na ciąg**, nie po jednej na szafkę. Ciąg
+   3 × 600 mm miał do tej pory trzy wiersze po 600; ma jeden 1800. Suma metrów
+   bieżących jest podobna, ale **liczba pozycji na liście cięcia spada** — i to
+   jest cel, nie efekt uboczny.
+
+Oklejanie mitrowanych pasków: krawędź wchodząca w mitrę jest klejona, więc nie
+dostaje obrzeża. Słownik kodów z LISP-a nie zna „jednej krawędzi wzdłuż", więc
+kod mówi `^v`, a długość mówi jedną długość. Do przemyślenia, jeśli kiedyś
+słownik będzie poszerzany — nie zmieniałem formatu CSV.
+
+## #33 — Plinth w kształcie L nie został zrobiony
+
+BACKLOG #20 mówi „infille/plinth w kształcie L". CLAUDE.md F4 opisuje wyłącznie
+infille — pionowy L i top infill — i nie wspomina o cokole ani słowem. Zrobiłem
+to, co jest w CLAUDE.md, a plinth wydzieliłem do **BACKLOG #40**, żeby nie
+zniknął razem z zamkniętym #20. Nie jest to pytanie: to zapisane pominięcie.
+
+## #34 — `sql/` wciąż nieuruchomione
+
+Bez zmian względem #29 i BACKLOG #26. Tura 6 nie dodała żadnego pliku SQL i nie
+uruchomiła żadnego z istniejących. Render, rysunki i infille są w całości
+lokalne — nic z tej tury nie potrzebuje bazy.

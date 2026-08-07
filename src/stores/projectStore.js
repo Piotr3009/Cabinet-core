@@ -15,6 +15,7 @@ import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
 } from '../engine/design.js';
 import { autoPartsFor, takesPlinth, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';
+import { runInfillParams, unitTop } from '../engine/runs.js';
 import { drawersInEngineOrder, nextHangerOffset, nextShelfPos, shelvesInEngineOrder } from '../engine/items.js';
 
 // ─── Project state ───
@@ -377,7 +378,30 @@ export const useProjectStore = create((set, get) => ({
       };
     });
 
-    set({ units: next, dirty: true });
+    // The RUN is decided last and always across ALL units, whatever one unit
+    // was asked about (turn 6, CLAUDE.md F4). The top infill is one piece for a
+    // whole run: moving one cabinet changes the length of the piece over its
+    // neighbours' heads, and a per-unit refresh that skipped them would leave
+    // the run's own element describing a run that no longer exists.
+    const runParams = runInfillParams(next, {
+      walls,
+      roomHeight,
+      frontFaceDepthOf: (u) => (Number(u.params?.depth) || 0)
+        + profile.doors.gap
+        + (Number(u.params?.front_t) || profile.front.thickness),
+    }, profile);
+
+    set({
+      units: next.map((u) => {
+        const run = runParams.get(u.id) ?? null;
+        // Reference equality matters here: this runs on every drag frame, and
+        // writing a fresh object each time would re-render every unit in the
+        // scene for a run nobody touched.
+        if (sameRun(u.params.run_top_infill, run)) return u;
+        return { ...u, params: { ...u.params, run_top_infill: run } };
+      }),
+      dirty: true,
+    });
     return notices;
   },
 
@@ -399,6 +423,12 @@ export const useProjectStore = create((set, get) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, top_infill_mm: height } } : u)),
       dirty: true,
     }));
+    // Turn 6: the top infill is ONE piece for the whole RUN (engine/runs.js), so
+    // asking for one over this cabinet decides the length of the piece over its
+    // neighbours' heads too. Without this the run is recomputed only on the next
+    // move, and a unit that has never been dragged closes itself with a 600 mm
+    // offcut inside the long piece.
+    get().refreshAutoParts();
     return height;
   },
 
@@ -433,10 +463,15 @@ export const useProjectStore = create((set, get) => ({
     return get().setTopInfill(unitId, profile.autoParts.topInfill.defaultHeight);
   },
 
-  removeTopInfill: (unitId) => set((s) => ({
-    units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, top_infill_mm: 0 } } : u)),
-    dirty: true,
-  })),
+  removeTopInfill: (unitId) => {
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, top_infill_mm: 0 } } : u)),
+      dirty: true,
+    }));
+    // The piece belongs to the RUN, so taking it off one cabinet is a decision
+    // about the run — which, on a run of one, is what makes it disappear.
+    get().refreshAutoParts();
+  },
 
   /**
    * Add an end panel to one side of a unit.
@@ -561,6 +596,91 @@ export const useProjectStore = create((set, get) => ({
       };
     });
     get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
+  },
+
+  /**
+   * How far an end panel runs ABOVE the carcass (turn 6, CLAUDE.md F3).
+   *
+   * The same interaction the top infill has had since turn 3 — grab the top
+   * edge and drag, or double-click it to send it to the ceiling — because it is
+   * the same act: a joiner closing the gap between what he built and what the
+   * builder left. Clamped between the top of the unit and the ceiling, here and
+   * not in the engine: the ceiling is a property of the ROOM.
+   *
+   * @returns {number} the height it got
+   */
+  setEndPanelTop: (unitId, panelId, topMm) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    const headroom = Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile));
+    const top = Math.min(Math.max(snapTo(Number(topMm) || 0, profile.editor.mmStep), 0), headroom);
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            end_panels: (u.params.end_panels || []).map((ep) => (ep.id === panelId ? { ...ep, top_mm: top } : ep)),
+          },
+        }
+        : u)),
+      dirty: true,
+    }));
+    // An end panel that reaches the CEILING is one of the four things a run's
+    // top infill can finish against (engine/runs.js), so moving this edge can
+    // change the length of a piece three cabinets away.
+    get().refreshAutoParts();
+    return top;
+  },
+
+  /**
+   * How far a vertical L-infill runs above the carcass (turn 6, CLAUDE.md F4).
+   *
+   * Same gesture as the end panel's, deliberately: a filler and a masking panel
+   * finish at the same line, and a joiner who has learnt one edge has learnt
+   * both. `side` is 'L' or 'R'.
+   */
+  setSideInfillTop: (unitId, side, topMm) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    const headroom = Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile));
+    const top = Math.min(Math.max(snapTo(Number(topMm) || 0, profile.editor.mmStep), 0), headroom);
+    const key = side === 'R' ? 'side_infill_right_top_mm' : 'side_infill_left_top_mm';
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, [key]: top } } : u)),
+      dirty: true,
+    }));
+    // A filler taken to the ceiling changes nothing about the RUN — but one
+    // taken back down can. Cheap, and it keeps the two in step.
+    get().refreshAutoParts();
+    return top;
+  },
+
+  sideInfillToCeiling: (unitId, side) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    return get().setSideInfillTop(
+      unitId, side,
+      Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile)),
+    );
+  },
+
+  /** Double click on the edge: run it all the way to the ceiling. */
+  endPanelToCeiling: (unitId, panelId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    return get().setEndPanelTop(
+      unitId, panelId,
+      Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile)),
+    );
   },
 
   /** The "Apply to all end panels" checkbox itself. */
@@ -1275,12 +1395,24 @@ function neighboursOf(state, unit) {
 }
 
 /** Height of a unit's top above the floor — where its top infill starts. */
-function unitTopOf(unit, profile) {
-  const type = getUnitType(unit.type);
-  const base = type.mount === 'wall'
-    ? Number(unit.params.mount_height) || 0
-    : (type.legs ? (type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight) : 0);
-  return base + (Number(unit.params.height) || 0);
+const unitTopOf = unitTop;
+
+/**
+ * Are these two run descriptions the same piece of wood?
+ *
+ * Compared field by field rather than by JSON, because this is called on every
+ * frame of a drag: a fresh object written each time would re-render every unit
+ * in the scene for a run nobody has touched.
+ */
+function sameRun(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.role !== b.role) return false;
+  if (a.role === 'member') return a.ownerId === b.ownerId;
+  return a.offset === b.offset && a.length === b.length && a.faceH === b.faceH
+    && a.shelfDepth === b.shelfDepth
+    && a.ends?.left === b.ends?.left && a.ends?.right === b.ends?.right
+    && a.returns?.left === b.returns?.left && a.returns?.right === b.returns?.right;
 }
 
 /**

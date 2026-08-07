@@ -97,12 +97,24 @@ function availableIn(text) {
  * Comments, string literals and the import statements themselves are not USES.
  * A word inside a comment proves nothing, and `import { snap as snapTo }` names
  * `snap` without the file ever calling it.
+ *
+ * Turn 6 adds template literals to that list, and only just in time: the edge
+ * bevel (3d/bevel.js) carries GLSL in backticks, GLSL has a builtin called
+ * `clamp`, and so does engine/format.js. The checker read the shader as
+ * JavaScript and reported a missing import for a function the file never calls.
+ * Stripping a template WHOLE would be the wrong fix — half the components build
+ * a className out of `${...}` holes with real code in them — so the static text
+ * goes and the interpolations stay.
  */
 function stripNonCode(text) {
   return text
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/^\s*\/\/.*$/gm, ' ')
     .replace(/^\s*import\s[\s\S]*?from\s*['"][^'"]*['"];?/gm, ' ')
+    .replace(/`(?:\\.|\$\{[^{}]*\}|[^\\`])*`/g, (literal) => {
+      const holes = [...literal.matchAll(/\$\{([^{}]*)\}/g)].map((m) => m[1]);
+      return holes.length ? `(${holes.join(' , ')})` : "''";
+    })
     .replace(/(['"])(?:\\.|(?!\1)[^\\\n])*\1/g, "''");
 }
 

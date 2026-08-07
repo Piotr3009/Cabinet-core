@@ -5,13 +5,25 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import MockModeBadge from './MockModeBadge.jsx';
 import MenuBar from './MenuBar.jsx';
 import { UNIT_CATEGORIES } from '../engine/types.js';
+import { buildOutputMenu } from '../lib/outputMenu.js';
 import { persistProject } from '../lib/persist.js';
 
 // Frozen layout, SPEC section 7: logo in gold, project name, gold Export button.
 // Turn 4 (BACKLOG #8) puts the classic menu bar in between: File · View ·
 // Library · Settings · Database · Clients on the left, Account and Export
 // staying on the right where they were.
-export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAuth }) {
+//
+// Turn 6 adds OUTPUT (CLAUDE.md F1) and it is not another menu — it is THE
+// menu for everything that leaves the app. Turn 4 scattered the exports into
+// File ▸ Export because that is where a file menu usually keeps them; turn 6
+// has a render, three drawings and three machine files to offer, and "where do
+// I get a picture of this?" is not a question about files. So File goes back to
+// being about the PROJECT, and everything that produces an artefact — a render,
+// a drawing, a cut list, a DXF, a PDF — is in one place, in the order a
+// workshop meets them: show the client, draw it, cut it.
+export default function TopBar({
+  onExportCsv, onExportPdf, onExportDxfZip, onRender, onDrawing, onAuth,
+}) {
   const name = useProjectStore((s) => s.project.name);
   const project = useProjectStore((s) => s.project);
   const units = useProjectStore((s) => s.units);
@@ -31,6 +43,8 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
   const toggleDimensions = useUiStore((s) => s.toggleDimensions);
   const contourView = useUiStore((s) => s.contourView);
   const toggleContourView = useUiStore((s) => s.toggleContourView);
+  const realisticLighting = useUiStore((s) => s.realisticLighting);
+  const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
   const bomOpen = useUiStore((s) => s.bomOpen);
@@ -57,20 +71,20 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
         { label: 'Save', hint: dirty ? 'Unsaved changes' : 'Up to date', run: save },
         { label: 'Save as…', run: () => openModal('save-as') },
         { divider: true },
-        {
-          label: 'Export',
-          items: [
-            { label: 'Cutting list CSV', run: onExportCsv },
-            { label: 'Project PDF', run: onExportPdf },
-            { label: 'Unit DXF (ZIP)', hint: 'Every cut part of the selected unit', run: onExportDxfZip },
-            { divider: true },
-            { label: 'Bill of materials…', hint: 'Live BOM, with the export buttons', run: () => setBomOpen(true) },
-          ],
-        },
-        { divider: true },
         { label: 'Close project', run: goToStart },
       ],
     },
+    // ── Output (turn 6, CLAUDE.md F1) ── built by lib/outputMenu.js, so its
+    // shape is a thing a node test can look at rather than a thing inside a
+    // component nobody mounts.
+    buildOutputMenu({
+      onRender,
+      onDrawing,
+      onExportDxf: onExportDxfZip,
+      onExportCsv,
+      onExportPdf,
+      onOpenBom: () => setBomOpen(true),
+    }),
     {
       label: 'View',
       items: [
@@ -91,6 +105,17 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
         { label: '3D', checked: viewMode === '3d', run: () => setViewMode('3d') },
         { label: 'CNC sheet', checked: viewMode === 'cnc', run: () => setViewMode('cnc') },
         { divider: true },
+        {
+          // Turn 6. The one part of the new lifting that is not free: the room
+          // probe is sampled for every lit pixel of every panel. On by default;
+          // here so a machine with no GPU worth the name has a way out. A
+          // RENDER lights itself properly whatever this says.
+          label: 'Realistic lighting',
+          hint: 'Environment reflections and contact shadows. Turn it off if the view feels heavy — a render is unaffected.',
+          checked: realisticLighting,
+          disabled: viewMode !== '3d',
+          run: toggleRealisticLighting,
+        },
         {
           label: 'Contour view',
           hint: 'Presentation mode — outlines only. Changes nothing in the BOM.',

@@ -42,7 +42,11 @@ export default function DrawingModal() {
 
   const requested = modalArgs?.kind === 'front-elevation' ? 'front-elevation' : 'unit-card';
   const [kind, setKind] = useState(requested);
-  const [format, setFormat] = useState('A4');
+  // 'auto' is the default and it is not laziness: a card chooses between two
+  // arrangements AND two paper sizes to draw the cabinet as big as it will go
+  // (engine/drawings/card.js). Forcing A4 here would throw that away and hand a
+  // base unit back at 1:20 when A3 draws it at 1:10.
+  const [format, setFormat] = useState('auto');
 
   const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
   const date = useMemo(() => new Date().toLocaleDateString(), []);
@@ -59,7 +63,9 @@ export default function DrawingModal() {
       });
       return layoutSheet({
         drawing,
-        format,
+        // The single elevation has no arrangement to choose, so 'auto' means
+        // the smaller sheet: A4 unless the drawing will not fit on it.
+        format: format === 'auto' ? 'A4' : format,
         title: { project: project?.name, unit: unit.params.unit_num, view: 'Front elevation', date },
         profile,
       });
@@ -126,7 +132,8 @@ export default function DrawingModal() {
             <div className="flex flex-col">
               <span className="text-sm text-ink-100">{unit.params.unit_num}</span>
               <span className="text-[11px] text-ink-400">
-                Drawn at {sheet ? scaleLabel(sheet.scale) : '—'} — the largest standard scale that fits
+                {sheet ? `${sheet.format.id} ${sheet.format.orientation}, drawn at ${scaleLabel(sheet.scale)}` : '—'}
+                {' '}— the largest standard scale that fits
               </span>
             </div>
             <div className="flex gap-1">
@@ -141,10 +148,11 @@ export default function DrawingModal() {
                 </button>
               ))}
               <span className="w-px bg-shell-600 mx-1" />
-              {Object.values(PAGE_FORMATS).map((f) => (
+              {[{ id: 'auto', label: 'Auto' }, ...Object.values(PAGE_FORMATS)].map((f) => (
                 <button
                   key={f.id}
                   type="button"
+                  title={f.id === 'auto' ? 'The smaller sheet, unless the bigger one draws it bigger' : ''}
                   className={`cc-btn px-2 ${format === f.id ? 'border-gold text-gold' : ''}`}
                   onClick={() => setFormat(f.id)}
                 >

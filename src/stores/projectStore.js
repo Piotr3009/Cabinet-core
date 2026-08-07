@@ -737,12 +737,37 @@ export const useProjectStore = create((set, get) => ({
     }));
 
     const notices = [];
-    // The unit is now wider in plan than it was; settle it legally where it
-    // stands, and let the depth clamp have its say about the back inset —
-    // asking for 200 mm off a wall in a room with 30 mm to spare is a request
-    // the room answers, not one this setter grants.
-    const result = get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
-    if (result?.blocked) notices.push('This unit has no room to move — the inset is set, but check what is beside it.');
+
+    // The unit is now WIDER IN PLAN where it already stands, and a unit butted
+    // against its neighbour is suddenly 40 mm inside it. No drag can produce
+    // that state, so the position clamp deliberately refuses to resolve it (it
+    // will not teleport a unit out of an overlap) — which means asking for an
+    // inset and leaving it at that would record the number and open no gap.
+    //
+    // So the gap is MADE: the unit moves out of what it is now standing in, by
+    // exactly the amount it is standing in it, through the ordinary move. It
+    // goes as far as the room allows and says what stopped it.
+    const settle = (side) => {
+      const now = get().units.find((u) => u.id === unitId);
+      if (!now) return;
+      const room = freeBesideUnit(get(), now, side);
+      if (room.raw >= -1e-6) return;
+      const shift = side === 'L' ? -room.raw : room.raw;
+      const moved = get().moveUnit(unitId, now.position.x_mm + shift, 0);
+      const still = freeBesideUnit(get(), get().units.find((u) => u.id === unitId), side);
+      if (still.raw < -1e-6) {
+        notices.push(`Only ${formatMm(Math.max(0, shift + still.raw))} mm of the `
+          + `${side === 'L' ? 'left' : 'right'} inset fits — ${room.by} is in the way.`);
+      } else if (moved?.blocked) {
+        notices.push(`This unit could not move clear of ${room.by}.`);
+      }
+    };
+    settle('L');
+    settle('R');
+
+    // …and the depth clamp has its say about the back inset: asking for 200 mm
+    // off a wall in a room with 30 mm to spare is a request the ROOM answers,
+    // not one this setter grants.
     if (applied.inset_back_mm != null) {
       const depth = get().updateUnitParams(unitId, { depth: unit.params.depth });
       notices.push(...depth.notices);
@@ -1519,20 +1544,37 @@ function freeBesideUnit(state, unit, side) {
     depth: unit.params.depth,
     others: neighboursOf(state, unit).map(toObstacleUnit),
   });
+  // WHICH SIDE an obstacle is on is decided on the CARCASS, and how far away it
+  // is on the padded span. That distinction is what lets this report a negative
+  // gap at all: read the side off the padded span too and a neighbour the unit
+  // has just grown into stops counting as a left-hand neighbour, the search
+  // falls back to the wall, and the answer comes out large and positive — which
+  // is the opposite of the truth.
+  const carcass = {
+    left: Number(unit.position?.x_mm) || 0,
+    right: (Number(unit.position?.x_mm) || 0) + (Number(unit.params?.width) || 0),
+  };
+
   if (side === 'L') {
     let edge = 0;
     let by = 'the wall';
     for (const o of spans) {
-      if (o.right <= span.left + 1e-6 && o.right > edge) { edge = o.right; by = o.label || 'a neighbour'; }
+      if (o.right <= carcass.left + 1e-6 && o.right > edge) { edge = o.right; by = o.label || 'a neighbour'; }
     }
-    return { gap: Math.max(0, span.left - edge), by };
+    // `raw` may be NEGATIVE — the unit is standing in something. That is not a
+    // case any drag can produce (the clamp stops first), but GROWING AN INSET
+    // is: the footprint gets wider where the unit already stands, and turn 7
+    // needs to know by how much so it can move it out (setUnitInsets).
+    const raw = span.left - edge;
+    return { gap: Math.max(0, raw), raw, by };
   }
   let edge = wall?.width ?? 0;
   let by = 'the wall';
   for (const o of spans) {
-    if (o.left >= span.right - 1e-6 && o.left < edge) { edge = o.left; by = o.label || 'a neighbour'; }
+    if (o.left >= carcass.right - 1e-6 && o.left < edge) { edge = o.left; by = o.label || 'a neighbour'; }
   }
-  return { gap: Math.max(0, edge - span.right), by };
+  const raw = edge - span.right;
+  return { gap: Math.max(0, raw), raw, by };
 }
 
 /**

@@ -29,7 +29,7 @@ import { CARD_ARRANGEMENTS, buildUnitCard } from '../src/engine/drawings/unitCar
 import { projectBookletSheets, unitCardSheet } from '../src/engine/drawings/card.js';
 import { buildCoverSheet } from '../src/engine/drawings/cover.js';
 import { sheetToSvg } from '../src/engine/drawings/svg.js';
-import { bookletFilename, drawingFilename } from '../src/lib/drawingExport.js';
+import { bookletDoc, bookletFilename, drawingFilename } from '../src/lib/drawingExport.js';
 import { formatMm } from '../src/engine/format.js';
 
 const base = (extra = {}) => computeCabinet({
@@ -396,6 +396,34 @@ test('a cover with more units than one column holds splits into two', () => {
   assert.equal(numbers.length, 40, 'every unit is listed');
   const columns = new Set(numbers.map((e) => Math.round(e.x)));
   assert.equal(columns.size, 2, 'in two columns — a cover that runs onto page two is not a cover');
+});
+
+test('the booklet really is a multi-page PDF, at the sizes the cards chose', () => {
+  const entries = [
+    { unit: storeUnit(base()), result: base() },
+    { unit: storeUnit(wardrobe(), 'WARDROBE'), result: wardrobe() },
+    { unit: storeUnit(budr(), 'BUDR'), result: budr() },
+  ];
+  const sheets = projectBookletSheets({
+    entries, project: { name: 'Hampstead kitchen' }, profile: P, date: '07/08/2026',
+  });
+  const doc = bookletDoc(sheets);
+
+  assert.equal(doc.getNumberOfPages(), entries.length + 1, 'a cover and a page per unit');
+  // The document is built in millimetres, so its page sizes read in
+  // millimetres — the same numbers the sheets carry.
+  sheets.forEach((sheet, i) => {
+    doc.setPage(i + 1);
+    const size = doc.internal.pageSize;
+    assert.ok(Math.abs(size.getWidth() - sheet.width) < 0.5,
+      `page ${i + 1} is ${sheet.width} mm wide — got ${size.getWidth()}`);
+    assert.ok(Math.abs(size.getHeight() - sheet.height) < 0.5,
+      `page ${i + 1} is ${sheet.height} mm tall — got ${size.getHeight()}`);
+  });
+
+  // A project with nothing in it is refused with something a person can read,
+  // rather than producing a one-page document of a cover for no cabinets.
+  assert.throws(() => bookletDoc([]), /nothing to draw/i);
 });
 
 test('the files are named like everything else this app writes', () => {

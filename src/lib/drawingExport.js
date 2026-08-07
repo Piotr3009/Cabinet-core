@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import jsPDFDefault from 'jspdf';
 import { drawingLayer } from '../engine/drawings/layers.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
 import { slug } from '../engine/render.js';
@@ -18,6 +18,15 @@ import { download } from './exporters.js';
 // function with a list instead of a sheet. There is no second renderer for it —
 // `drawSheet` below draws one page and the booklet calls it n times, so a
 // booklet page cannot come out looking different from the single card.
+
+/**
+ * jsPDF ships CJS. Vite's interop hands back the constructor as the default
+ * export; node's hands back the module object, and `new` on that throws. One
+ * line, so a node test can count the pages of a booklet — which is the only way
+ * "the PDF really is n pages long" gets checked by anything other than a
+ * browser.
+ */
+const jsPDF = jsPDFDefault?.jsPDF || jsPDFDefault;
 
 /** `{project}-{unit}-{view}.{ext}` — the same naming family as a render. */
 export function drawingFilename({ project, unit, view = 'front-elevation', ext = 'svg' }) {
@@ -62,6 +71,20 @@ export function exportDrawingPdf(sheet, { project, unit, view = 'front-elevation
  * @returns {{filename:string, doc:object, pages:number}}
  */
 export function exportBookletPdf(sheets, { project }) {
+  const doc = bookletDoc(sheets);
+  const filename = bookletFilename({ project });
+  doc.save(filename);
+  return { filename, doc, pages: doc.getNumberOfPages() };
+}
+
+/**
+ * The document itself, without writing it anywhere.
+ *
+ * Split out from the export so a node test can count the pages: `doc.save()`
+ * reaches for a filesystem or a browser download, and neither belongs in a
+ * test whose question is "did the booklet come out n pages long".
+ */
+export function bookletDoc(sheets) {
   const pages = sheets.filter(Boolean);
   if (!pages.length) throw new Error('There is nothing to draw yet — add a unit first.');
 
@@ -72,10 +95,7 @@ export function exportBookletPdf(sheets, { project }) {
     }
     drawSheet(doc, sheet);
   });
-
-  const filename = bookletFilename({ project });
-  doc.save(filename);
-  return { filename, doc, pages: pages.length };
+  return doc;
 }
 
 function newDoc(sheet) {

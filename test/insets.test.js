@@ -204,6 +204,32 @@ test('an arrow is drawn clear of a unit standing off the wall', () => {
   assert.equal(between.depth, 678, 'but the line clears the deeper of the two, where it really is');
 });
 
+// ─── the case a browser found ───────────────────────────────────────────────
+
+test('WHICH side an obstacle is on is decided on the carcass, not on the padded span', () => {
+  // The bug this pins, found by the turn-7 end-to-end run: two units butted at
+  // 2300, then the right-hand one is given a 40 mm left inset. Its padded span
+  // now starts at 2260 — INSIDE the neighbour — and any search that asks "which
+  // obstacles finish before my span starts" finds none, falls back to the wall,
+  // and reports 2260 mm of clear space beside a unit that is standing in
+  // something. The inset was recorded and no gap opened.
+  //
+  // The fix is one line and this is the shape of it: the SIDE comes from the
+  // carcass, the DISTANCE from the padded span.
+  const me = unit({ inset_left_mm: 40 }, { x_mm: 2300 });
+  const neighbour = { left: 1700, right: 2300, label: '01' };
+  const span = unitSpan(me);
+  const carcass = { left: me.position.x_mm, right: me.position.x_mm + me.params.width };
+
+  assert.equal(span.left, 2260, 'the padded span starts inside the neighbour');
+  assert.ok(!(neighbour.right <= span.left), 'so a span-based side test loses it');
+  assert.ok(neighbour.right <= carcass.left, '…and a carcass-based one does not');
+
+  // Measured properly, the answer is the overlap: −40, which is exactly how far
+  // the unit has to move for the gap to be real.
+  assert.equal(span.left - neighbour.right, -40);
+});
+
 // ─── the limit ──────────────────────────────────────────────────────────────
 
 test('there is a limit, and it is in the profile', () => {

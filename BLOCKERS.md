@@ -659,3 +659,120 @@ zniknął razem z zamkniętym #20. Nie jest to pytanie: to zapisane pominięcie.
 Bez zmian względem #29 i BACKLOG #26. Tura 6 nie dodała żadnego pliku SQL i nie
 uruchomiła żadnego z istniejących. Render, rysunki i infille są w całości
 lokalne — nic z tej tury nie potrzebuje bazy.
+
+---
+
+# TURA 7
+
+## #35 — Dwie wysokości startowe, które są MOJE, nie z LISP-a
+
+CLAUDE.md F2 każe typowi projektu ustawiać „defaulty wysokości projektu". Kuchnia
+nie nadpisuje niczego i to jest bezpieczne: wysokości w `profile.projectHeights`
+**są** kuchnią, a nadpisanie ich w drugim miejscu byłoby dwoma źródłami jednej liczby.
+
+Dwie liczby są jednak nowe i nie ma ich w żadnym kicie:
+
+| typ | co ustawia | dlaczego tak |
+|---|---|---|
+| Wardrobe | `tall: 2400` | zabudowana szafa idzie wyżej niż 2150 wolnostojącej |
+| Vanity | `base: 700` | 770 korpusu + 100 nóżek + blat to umywalka na 890 |
+
+Obie siedzą w `profile.projectTypes` — jedno miejsce, jeden plik. Obie są PUNKTEM
+STARTU: Design Settings ▸ Project heights nadpisuje je w sekundę i wtedy cały projekt
+idzie za tym.
+
+**Co Piotr powinien sprawdzić:** czy warsztat buduje szafy na 2400 i umywalki na 700
+korpusu. Jeśli nie — dwie liczby w `profile.projectTypes`, i nic więcej.
+
+## #36 — Kontrolny DXF do VCarve dla pojedynczego socketu — NIE zrobiony
+
+BACKLOG #28 kończy się słowami „Fix w czacie + **kontrolny DXF do VCarve**". Fix jest
+zrobiony i przypięty testami, które PRZELICZAJĄ próg (264,5 mm) z geometrii socketu;
+DXF wychodzi z tych samych danych co zawsze, bo zmiana siedzi w `socketCentres()`
+i nic poniżej nie zostało pouczone osobno.
+
+Czego NIE mogę zrobić: otworzyć tego pliku w VCarve i zobaczyć, że ścieżka narzędzia
+jest taka, jakiej warsztat oczekuje. To jest sprawdzenie na maszynie, nie w node.
+
+**Jak to zrobić:** postaw szafkę o głębokości poniżej 264,5 + 18 mm (np. **250 mm**),
+Output ▸ CNC / DXF, otwórz `BUL`/`TOP` w VCarve. Spodziewane: jeden pocket na środku
+krawędzi zamiast dwóch, dwa otwory ⌀7,5 zamiast czterech, jeden tab na blacie w tym
+samym miejscu.
+
+## #37 — Trzy taby na NISKIM korpusie: ta sama rodzina, nie zrobione
+
+Tura 7 rozwiązała sockety przy PŁYTKIM korpusie. Po drugiej osi jest bliźniak:
+`tabCentres()` daje trzy taby po tylnej krawędzi boku (95, H/2, H−95), a przy wysokości
+poniżej ~310 mm środkowy zaczyna wchodzić w skrajne — dogbone to ±30 wokół każdego
+środka, więc skrajny sięga 125, a środkowy zaczyna się na H/2 − 30.
+
+`LOW_CABINET` ma `minHeight: 300`, więc przypadek jest osiągalny z UI.
+
+**Nie zrobiłem tego**, bo CLAUDE.md F4 mówi wyłącznie o socketach i wyłącznie o
+szerokości boku. To jest zapisane pominięcie, nie przeoczenie — wypisane też jako
+**BACKLOG #47**, żeby nie zginęło razem z zamkniętym #28.
+
+## #38 — Numer projektu nie jest unikalny, i nic tego nie pilnuje
+
+Auto-propozycja liczy od najwyższego numeru **na tej półce** (localStorage). Dwa
+stanowiska bez wspólnej bazy zaproponują ten sam numer; pole jest edytowalne, więc
+Piotr może wpisać co chce, i nic nie sprawdza, czy taki numer już istnieje.
+
+To jest w porządku dopóki `cc_projects` nie jest używane. Kiedy będzie: numer chce
+unikalnego indeksu i propozycji z BAZY, nie z półki (**BACKLOG #48**).
+
+## #39 — Sety ustawień żyją tylko na tym komputerze
+
+`cc.settingsSets.v1` w localStorage, bez tabeli i **bez pliku SQL**. Mock-mode ma
+DZIAŁAĆ, a nie ostrzegać (CLAUDE.md reguła 7), więc sety działają w pełni — po prostu
+nie jeżdżą między stanowiskami.
+
+Kiedy mają jeździć: tabela + RLS + migracja, dokładnie wzorem `cc_templates`
+(`sql/003_tura5.sql`, wciąż nieuruchomiony — patrz #29/#34). Tura 7 **nie dodała
+żadnego pliku SQL i nie uruchomiła żadnego istniejącego**.
+
+## #40 — „Select from JoineryCore" jest disabled, i tak miało być
+
+CLAUDE.md F2 mówi wprost: przycisk klienta z JoineryCore **disabled „soon"**. Zrobiona
+jest LOKALNA połowa sprzężenia i ona jest prawdziwa: badge „JC" to funkcja danych
+materiału (`jc_uuid` albo `source: 'jc'`), nie flaga, którą ktoś ustawia — wczytanie
+prawdziwego stocku przez `setMaterials` zapali badge na każdym kafelku i nic innego się
+nie zmieni.
+
+Czego nie ma: samego połączenia (API + token, tenant z tokena, SPEC sekcja 8).
+To zostaje w **BACKLOG #41** jako część niezrobiona.
+
+## #41 — Wydajność: liczby są z rasteryzatora programowego, i to widać
+
+Kontener nie ma GPU (SwiftShader) — to samo, co BLOCKERS #31 zapisał w turze 6.
+Pomiar tury 7, 10 szafek dolnych z drzwiami, przebiegi przeplatane po 5 s:
+
+| tryb | fps (średnia z 3) |
+|---|---|
+| normalny | **2,87** |
+| X-ray | **2,83** |
+
+To, co ten pomiar udowadnia, to że **X-ray nie kosztuje nic mierzalnego** — o to prosi
+CLAUDE.md F3. Liczba bezwzględna nie mówi nic o maszynie Piotra.
+
+Warto zapisać, jak omal nie skłamała: pierwsze przebiegi dawały 0,7 fps i wyglądały
+jak regres wobec tury 6. Kontener niósł **czterdzieści osieroconych procesów Chromium**
+z wcześniejszych, przerwanych przebiegów. Po ich zabiciu liczby są stabilne i
+powtarzalne. Pomiar wydajności na współdzielonej maszynie mierzy maszynę, dopóki się
+tego nie sprawdzi.
+
+## #42 — Elewacje ścian per-projekt: świadomie NIE w tej turze
+
+CLAUDE.md F1 kończy się zapisaną decyzją: „per-szafka najpierw (dziedzictwo LISP,
+wartość warsztatowa); elewacje ścian per-projekt → następna tura". Tak jest.
+
+Maszyneria jest gotowa i to nie jest obietnica: `engine/drawings/` niesie prymitywy,
+arkusz z ramką i tabelką, warstwy, renderery SVG i PDF, wybór skali i papieru oraz
+booklet wielostronicowy. Elewacja ściany to nowy UKŁAD nad tym wszystkim, nie nowy
+styl. **BACKLOG #46**.
+
+## #43 — SQL wciąż nieuruchomione
+
+Bez zmian względem #29, #34. Tura 7 nie dodała żadnego pliku SQL i nie uruchomiła
+żadnego z istniejących (`sql/002_tura3.sql`, `sql/003_tura5.sql`). Karta produkcyjna,
+flow, X-ray, sockety i insety są w całości lokalne — nic z tej tury nie potrzebuje bazy.

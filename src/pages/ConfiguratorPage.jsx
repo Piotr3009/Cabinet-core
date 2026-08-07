@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
@@ -8,6 +8,7 @@ import AuthModal from '../components/AuthModal.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
 import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
+import RenderModal from '../components/RenderModal.jsx';
 import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import Scene from '../3d/Scene.jsx';
@@ -45,6 +46,12 @@ export default function ConfiguratorPage() {
   const captureRef = useRef(null);
   const onCaptureReady = useCallback((fn) => { captureRef.current = fn; }, []);
 
+  // …and, since turn 6, a render rig for Output ▸ Render. Kept in state rather
+  // than a ref: the modal is a child that has to RE-RENDER when the rig arrives,
+  // and a ref changing never told it anything.
+  const [renderRig, setRenderRig] = useState(null);
+  const onRenderReady = useCallback((rig) => setRenderRig(rig), []);
+
   const guard = () => {
     if (units.length === 0) { notify('Nothing to export yet — add a unit first.', 'warn'); return false; }
     return true;
@@ -66,7 +73,7 @@ export default function ConfiguratorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allResults, project, assignments, materials, units.length]);
 
-  /** Every cut part of the SELECTED unit, as one ZIP of DXFs (File ▸ Export). */
+  /** Every cut part of the SELECTED unit, as one ZIP (Output ▸ CNC / DXF). */
   const onExportDxfZip = useCallback(async () => {
     const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
     if (!unit) { notify('Select a unit first — the DXF export is per unit.', 'warn'); return; }
@@ -103,7 +110,7 @@ export default function ConfiguratorPage() {
             toggle would both lose that and cost a visible stall. CncView is
             opaque, so nothing shows through. */}
         <div className="absolute inset-0 bg-canvas">
-          <Scene onCaptureReady={onCaptureReady} />
+          <Scene onCaptureReady={onCaptureReady} onRenderReady={onRenderReady} />
         </div>
         {viewMode === 'cnc' && <CncView />}
         <CanvasToolbar />
@@ -124,6 +131,7 @@ export default function ConfiguratorPage() {
         {modal === 'auth' && <AuthModal />}
         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
         {modal === 'save-template' && <SaveTemplateModal />}
+        {modal === 'render' && <RenderModal rig={renderRig} />}
         <ContextMenu />
         <Toast />
       </div>

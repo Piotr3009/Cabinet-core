@@ -65,8 +65,18 @@ function Wall({ wall, height, openings, centre, showLabel }) {
   return (
     <group>
       <group ref={ref} position={position} rotation={[0, wall.angle, 0]}>
+        {/* Lambert, not standard, since turn 6 — and this is a PERFORMANCE
+            decision with a visual answer attached. A wall is matt white paint:
+            at roughness 0.95 and metalness 0 the standard material was already
+            computing a physically-based response to arrive at flat diffuse.
+            What it was ALSO doing, once the environment map arrived, was
+            sampling the room probe for every wall and floor pixel — and the
+            walls and the floor are most of the frame. `scene.environment`
+            reaches MeshStandardMaterial only, so this one change takes the
+            biggest surface in the scene out of the image-based lighting path
+            and leaves it looking exactly the same. */}
         <mesh geometry={geometry} receiveShadow>
-          <meshStandardMaterial color={COLORS.wall} roughness={0.95} metalness={0} side={THREE.DoubleSide} />
+          <meshLambertMaterial color={COLORS.wall} side={THREE.DoubleSide} />
         </mesh>
         {/* the opening reveals, so a hole reads as a hole and not as a gap */}
         {openings.map((o) => (
@@ -107,7 +117,7 @@ export default function Room({ room, showLabels = true }) {
   return (
     <group>
       <mesh geometry={floor} receiveShadow>
-        <meshStandardMaterial color={COLORS.floor} roughness={1} metalness={0} side={THREE.DoubleSide} />
+        <meshLambertMaterial color={COLORS.floor} side={THREE.DoubleSide} />
       </mesh>
 
       {walls.map((wall) => (

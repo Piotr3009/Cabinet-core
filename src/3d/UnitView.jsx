@@ -4,6 +4,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
 import { contourSurface, decorTexture, onDecorLoad, outlineFor, surfaceFor } from './materials.js';
+import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
+import ContactShadow from './ContactShadow.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 
@@ -44,15 +46,46 @@ function useDecor(url, wMm, hMm, repeatMm) {
 }
 
 /**
+ * The edge break on one panel (turn 6, CLAUDE.md F2).
+ *
+ * The state object is created once per panel and never replaced, so the shader
+ * hook keeps one identity for the life of the mesh and three compiles the
+ * bevel program once for the whole project. Resizing a panel is then a uniform
+ * write, which is why dragging a shelf does not stutter.
+ */
+function useBevel(box, profile) {
+  const state = useMemo(() => createBevelState(), []);
+  const hook = useMemo(() => bevelHook(state), [state]);
+  const B = profile.appearance.bevel;
+
+  state.half.set(mm(box.w) / 2, mm(box.h) / 2, mm(box.d) / 2);
+  state.bevel = mm(B.mm);
+  state.strength = B.strength;
+  state.aoRadius = mm(B.ao.mm);
+  // The RENDER turns this up (renderCapture.js); the working view stays cheap.
+  if (state.ao === 0 || state.ao === undefined) state.ao = B.ao.strength;
+  syncBevelState(state);
+
+  return useCallback((material) => {
+    if (!material) return;
+    material.userData.ccBevel = state;
+    material.onBeforeCompile = hook.onBeforeCompile;
+    material.customProgramCacheKey = hook.customProgramCacheKey;
+    material.needsUpdate = true;
+  }, [state, hook]);
+}
+
+/**
  * One panel. Fronts animate towards their open state; everything else is a
  * static box. The animation lives here, per panel, so opening one drawer does
  * not re-render the rest of the unit.
  */
 function MovingPanel({
-  panel: p, front, open, surface, outline, outlines, contour, depth, ...handlers
+  panel: p, front, open, surface, outline, outlines, contour, depth, profile, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
+  const bevelRef = useBevel(p.box, profile);
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
   // pinned to that edge; everything else sits at its own centre.
@@ -94,9 +127,10 @@ function MovingPanel({
     <group ref={group} position={pivot}>
       <mesh position={meshOffset} castShadow={!contour} receiveShadow={!contour} {...handlers}>
         <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
-        {/* Physical, not standard: the ~20 % sheen is a clearcoat over a matt
-            board (profile.appearance.sheen), which is what a sprayed front
-            looks like. Nothing here is a bare number. */}
+        {/* Physical, not standard. Turn 6: the numbers are no longer one sheen
+            for everything — a sprayed piece wears lacquer and a carcass wears
+            melamine (profile.appearance.materials), and the edges are broken
+            on the normals by the ref below. Nothing here is a bare number. */}
         <meshPhysicalMaterial
           // The key is not decoration: a material compiled WITHOUT a map does
           // not grow one when the decor finishes loading — the shader has to be
@@ -104,6 +138,7 @@ function MovingPanel({
           // out, a decor chosen while the scene is already on screen showed up
           // only after a reload.
           key={decor ? 'decor' : 'plain'}
+          ref={bevelRef}
           color={surface.colour}
           map={decor}
           roughness={surface.roughness}
@@ -117,7 +152,16 @@ function MovingPanel({
         {/* Thin BLACK contours, switchable from the toolbar. In contour view
             they are the whole picture, so they are never off there. */}
         {(outlines || contour) && (
-          <Edges threshold={outline.threshold} color={outline.colour} lineWidth={outline.width} />
+          <Edges
+            threshold={outline.threshold}
+            color={outline.colour}
+            lineWidth={outline.width}
+            // The contour is the TOOL, not the furniture: a render hides it
+            // (3d/renderCapture.js). Tagged explicitly rather than sniffed,
+            // because drei draws a fat line as a LineSegments2 — which is a
+            // Mesh, and reads as furniture to anything looking at the type.
+            userData={{ ccHelper: true }}
+          />
         )}
       </mesh>
     </group>
@@ -127,8 +171,8 @@ function MovingPanel({
 export default function UnitView({
   unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
-  frontColour = null, onSetTopInfill, onFillToCeiling,
-  profile, finishes, outlines = true, contour = false,
+  frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
+  profile, finishes, outlines = true, contour = false, grounded = true,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -294,7 +338,17 @@ export default function UnitView({
   }, [onMoveShelf, onSelect, pointerToPlane, originY, orbitRef, snapStep, onShelfDragState, unit.id]);
 
   return (
-    <group position={origin} rotation={[0, wall.angle + rotationRad, 0]}>
+    <group ref={groupRef} position={origin} rotation={[0, wall.angle + rotationRad, 0]}>
+      {/* Contact shadow (turn 6): the dark that says this cabinet is standing
+          on the floor. Only for a unit that HAS a floor under it — a wall unit
+          hangs, and a blob under it 1.5 m down would be a shadow from nothing.
+          It is in the picture but must not frame it, hence ccNoBounds. */}
+      {!isWallMounted && !contour && grounded && (
+        <group userData={{ ccNoBounds: true }}>
+          <ContactShadow width={W} depth={D} y={-legHeight} profile={profile} />
+        </group>
+      )}
+
       {result.panels.filter((p) => p.box).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
@@ -305,7 +359,7 @@ export default function UnitView({
         // being dragged goes gold, so the hand knows what it has hold of.
         const surface = contour
           ? contourSurface(profile)
-          : surfaceFor({ role: p.role, finishes, profile, frontColour });
+          : surfaceFor({ role: p.role, finishExposed: p.finish_exposed, finishes, profile, frontColour });
         return (
           <MovingPanel
             key={p.id}
@@ -317,6 +371,7 @@ export default function UnitView({
             outlines={outlines}
             contour={contour}
             depth={D}
+            profile={profile}
             onPointerDown={(e) => {
               if (shelfId) { startShelfDrag(e, shelfId, p.box.y); return; }
               startDrag(e);
@@ -341,7 +396,7 @@ export default function UnitView({
 
       {/* live dimension while a shelf is being dragged (SPEC 4.8) */}
       {shelfDrag && shelfDrag.unitId === unit.id && (
-        <>
+        <group userData={{ ccHelper: true }}>
           {shelfDrag.below != null && (
             <DimLabel
               position={[mm(W / 2), mm((shelfDrag.below + shelfDrag.pos) / 2), mm(D) + 0.06]}
@@ -357,7 +412,7 @@ export default function UnitView({
             />
           )}
           <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={formatMm(shelfDrag.pos, { unit: true })} tone="gold" />
-        </>
+        </group>
       )}
 
       {/* hanging rail — hardware, not a cut piece */}
@@ -394,6 +449,7 @@ export default function UnitView({
           a handle for something nobody added is a handle for nothing. */}
       {onSetTopInfill && topInfill > 0 && (
         <mesh
+          userData={{ ccHelper: true }}
           position={[mm(W / 2), mm(H + Math.max(topInfill, 0) + 12), mm(D - 30)]}
           onPointerDown={startTopInfillDrag}
           onDoubleClick={(e) => { e.stopPropagation(); onFillToCeiling?.(); }}
@@ -419,7 +475,7 @@ export default function UnitView({
 
       {/* selection outline — gold, around the whole carcass */}
       {selected && (
-        <mesh position={[mm(W / 2), mm(H / 2), mm(D / 2)]}>
+        <mesh userData={{ ccHelper: true }} position={[mm(W / 2), mm(H / 2), mm(D / 2)]}>
           <boxGeometry args={[mm(W) + 0.006, mm(H) + 0.006, mm(D) + 0.006]} />
           <meshBasicMaterial visible={false} />
           <Edges threshold={1} color={profile.appearance.selection.colour} lineWidth={profile.appearance.selection.width} />
@@ -427,11 +483,11 @@ export default function UnitView({
       )}
 
       {showLabels && (
-        <>
+        <group userData={{ ccHelper: true }}>
           <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${formatMm(D)} deep`} tone={selected ? 'gold' : 'dim'} />
-        </>
+        </group>
       )}
     </group>
   );

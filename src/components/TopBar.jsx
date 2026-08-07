@@ -43,6 +43,8 @@ export default function TopBar({
   const toggleDimensions = useUiStore((s) => s.toggleDimensions);
   const contourView = useUiStore((s) => s.contourView);
   const toggleContourView = useUiStore((s) => s.toggleContourView);
+  const realisticLighting = useUiStore((s) => s.realisticLighting);
+  const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
   const bomOpen = useUiStore((s) => s.bomOpen);
@@ -103,6 +105,17 @@ export default function TopBar({
         { label: '3D', checked: viewMode === '3d', run: () => setViewMode('3d') },
         { label: 'CNC sheet', checked: viewMode === 'cnc', run: () => setViewMode('cnc') },
         { divider: true },
+        {
+          // Turn 6. The one part of the new lifting that is not free: the room
+          // probe is sampled for every lit pixel of every panel. On by default;
+          // here so a machine with no GPU worth the name has a way out. A
+          // RENDER lights itself properly whatever this says.
+          label: 'Realistic lighting',
+          hint: 'Environment reflections and contact shadows. Turn it off if the view feels heavy — a render is unaffected.',
+          checked: realisticLighting,
+          disabled: viewMode !== '3d',
+          run: toggleRealisticLighting,
+        },
         {
           label: 'Contour view',
           hint: 'Presentation mode — outlines only. Changes nothing in the BOM.',

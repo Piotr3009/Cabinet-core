@@ -391,7 +391,50 @@ export const DEFAULT_CABINET_PROFILE = {
     // Thin BLACK contours — an edges pass, not the old thick brown lines.
     outline: { colour: '#1A1A1A', width: 1, threshold: 12 },
     // ~20 % sheen: a hint of clear coat over a matt board. Not plastic.
+    // Kept as the fallback a piece takes when it belongs to no finish family.
     sheen: { roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.35, metalness: 0.0 },
+
+    // ─── PBR per finish family (turn 6, CLAUDE.md F2) ───
+    // Turn 4 gave every piece the same 20 % sheen, which is why a melamine
+    // carcass and a sprayed door looked like the same material with two
+    // colours. They are not the same material and a client can see it: melamine
+    // is a matt foil with a wide, soft highlight; two-pack lacquer is a thin
+    // clear film over colour, with a tighter one you can read the room in.
+    //
+    // Which family a piece is in is NOT a list of panel ids — it is the
+    // finish_exposed flag the engine already sets (BACKLOG #35): the pieces
+    // that go to the spray booth get lacquer, everything else is board.
+    materials: {
+      melamine: { roughness: 0.58, clearcoat: 0.0, clearcoatRoughness: 0.4, metalness: 0.0 },
+      lacquer: { roughness: 0.3, clearcoat: 0.35, clearcoatRoughness: 0.12, metalness: 0.0 },
+    },
+
+    // ─── Edge break (turn 6) ───
+    // A real board edge is not a mathematical corner: the saw and the edge
+    // bander leave 0.5–1 mm of break that catches the light, and its absence is
+    // most of what makes a CG cabinet read as CG. Done on the NORMALS, in the
+    // shader — a mesh dense enough to model it would cost the whole frame rate
+    // for something under a millimetre wide (BACKLOG #37 says so explicitly).
+    //
+    // `ao` is the same trick used for the other half of the problem: panels
+    // meeting panels should darken slightly where they meet. `strength` is what
+    // the working view carries, `render` is what a render carries.
+    bevel: {
+      mm: 0.8,
+      strength: 1.0,
+      ao: { mm: 7, strength: 0.16, render: 0.3 },
+    },
+
+    // The room the furniture is lit BY. RoomEnvironment (three/examples, no
+    // download, no .hdr file — CLAUDE.md forbids both) through PMREM. The
+    // working view keeps it low so white walls stay white with no tone mapping;
+    // a render turns it up and lets ACES hold the highlights.
+    environment: { intensity: 0.5, renderIntensity: 0.85, blur: 0.05 },
+
+    // Contact shadow: the dark that says a cabinet is STANDING on the floor
+    // rather than hovering a millimetre above it. Not a shadow map — a soft
+    // footprint under the unit, which costs one transparent quad per unit.
+    contactShadow: { spread: 1.55, opacity: 0.34, softness: 0.55 },
     // Presentation mode (View ▸ Contour): the material fades out, the contour
     // stays. Changes nothing in the BOM.
     contour: { opacity: 0.06, hex: '#ffffff', outline: '#101010' },
@@ -401,6 +444,47 @@ export const DEFAULT_CABINET_PROFILE = {
     // Parts that are not a "finish" at all.
     hardware: { rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92' },
     selection: { colour: '#AA8E68', width: 2 },
+  },
+
+  // ─── Render (turn 6, CLAUDE.md F2 / BACKLOG #37) ───
+  // An OUTPUT setting, like the CNC sheet metrics below: what size the picture
+  // is, what lens it is taken with, how good the shadows are. The maths that
+  // uses them is engine/render.js; the 3D layer only points a camera.
+  render: {
+    resolutions: [
+      { id: 'preview', label: '1080p preview', long: 1920, hint: 'Quick look, a second or two' },
+      { id: '4k', label: '4K', long: 3840, hint: '3840 px on the longer side — print and proposals' },
+    ],
+    defaultResolution: 'preview',
+    // Shadow map size and softness. `high` is a render-only cost: four times
+    // the map in each direction is sixteen times the pixels, and the working
+    // view must not pay for it (CLAUDE.md: heavy things ONLY in the render).
+    shadow: {
+      normal: { label: 'Normal', mapSize: 1024, radius: 3, bias: -0.0006 },
+      high: { label: 'High', mapSize: 4096, radius: 7, bias: -0.00018 },
+    },
+    defaultShadows: 'normal',
+    // A 35 mm lens on full frame: 37.8° vertical. Wide enough to take a run of
+    // units in without the barrel distortion of a 24, close enough to keep the
+    // perspective an interior photograph has.
+    focalMm: 35,
+    sensorHeightMm: 24,
+    // Air around the subject. 1.0 = the furniture touches the frame edge; the
+    // framing fits the box's own corners, so this is real breathing room and
+    // not slack in the fit.
+    margin: 1.1,
+    // ACES needs a little more light through it than the flat working view.
+    exposure: 1.05,
+    // How the lights are scaled for a still: contrast comes from RAISING THE
+    // KEY, not from crushing the ambient.
+    //
+    // That distinction is the whole of this line. The furniture is lit by the
+    // lights AND the environment probe; the room is lit by the lights alone
+    // (its walls are Lambert, so the probe never reaches them — see Room.jsx).
+    // Pull the ambient down far and the two come apart: the cabinets stay
+    // bright and the white walls behind them go grey, which is a render that
+    // looks like it was taken in a basement.
+    lightScale: { ambient: 0.72, key: 1.9, fill: 1.1 },
   },
 
   // ─── CNC sheet + DXF output ───
@@ -547,10 +631,30 @@ export function migrateCabinetProfile(profile) {
       finishes: mergeFinishes(D.appearance.finishes, profile.appearance?.finishes),
       outline: { ...D.appearance.outline, ...profile.appearance?.outline },
       sheen: { ...D.appearance.sheen, ...profile.appearance?.sheen },
+      materials: {
+        melamine: { ...D.appearance.materials.melamine, ...profile.appearance?.materials?.melamine },
+        lacquer: { ...D.appearance.materials.lacquer, ...profile.appearance?.materials?.lacquer },
+      },
+      bevel: {
+        ...D.appearance.bevel, ...profile.appearance?.bevel,
+        ao: { ...D.appearance.bevel.ao, ...profile.appearance?.bevel?.ao },
+      },
+      environment: { ...D.appearance.environment, ...profile.appearance?.environment },
+      contactShadow: { ...D.appearance.contactShadow, ...profile.appearance?.contactShadow },
       contour: { ...D.appearance.contour, ...profile.appearance?.contour },
       shade: { ...D.appearance.shade, ...profile.appearance?.shade },
       hardware: { ...D.appearance.hardware, ...profile.appearance?.hardware },
       selection: { ...D.appearance.selection, ...profile.appearance?.selection },
+    },
+    render: {
+      ...D.render, ...profile.render,
+      resolutions: Array.isArray(profile.render?.resolutions) && profile.render.resolutions.length
+        ? profile.render.resolutions
+        : D.render.resolutions,
+      shadow: {
+        normal: { ...D.render.shadow.normal, ...profile.render?.shadow?.normal },
+        high: { ...D.render.shadow.high, ...profile.render?.shadow?.high },
+      },
     },
     cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },

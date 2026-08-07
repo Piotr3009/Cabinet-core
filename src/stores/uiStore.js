@@ -65,6 +65,18 @@ export const useUiStore = create((set, get) => ({
   setShowOutlines: (v) => set({ showOutlines: Boolean(v) }),
   toggleOutlines: () => set((s) => ({ showOutlines: !s.showOutlines })),
 
+  // Realistic lighting in the WORKING view (turn 6): the environment probe the
+  // sheen comes from, and the contact shadows that put the furniture on the
+  // floor. On by default — it is most of what turn 6 is for.
+  //
+  // It is switchable because it is the one part of the lifting that is not
+  // free: the probe is sampled for every lit pixel of every panel, and on a
+  // machine with no GPU worth the name that is felt. A render is unaffected —
+  // it turns the lighting back on for the still whatever this says.
+  realisticLighting: true,
+  setRealisticLighting: (v) => set({ realisticLighting: Boolean(v) }),
+  toggleRealisticLighting: () => set((s) => ({ realisticLighting: !s.realisticLighting })),
+
   // Contour view (BACKLOG #18): a presentation mode for a render or a printed
   // screen — materials fade away, the contours stay. Nothing here reaches the
   // BOM; it is a way of LOOKING at the same project.

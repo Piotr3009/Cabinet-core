@@ -2,9 +2,11 @@ import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
+import { captureRender, furnitureBounds } from './renderCapture.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
 import { resolveFinishes, resolveUnitDesign } from '../engine/design.js';
@@ -82,26 +84,137 @@ function FocusRig({ request, orbitRef, onDone }) {
   return null;
 }
 
-function Lights({ roomHeight, roomWidth }) {
+/**
+ * The room the furniture is lit BY (turn 6, CLAUDE.md F2 / BACKLOG #37).
+ *
+ * `RoomEnvironment` ships inside the three package — CLAUDE.md forbids a new
+ * dependency AND forbids downloading a .hdr, and this is the answer to both: a
+ * little box of emissive panels, rendered once through PMREM into a blurred
+ * cube map. What it buys is the thing flat lights cannot fake — a highlight
+ * that MOVES across a sprayed door as the camera orbits, and a soft gradient
+ * down a white side panel instead of one even tone.
+ *
+ * Built once per renderer and thrown away with it. Its intensity is a profile
+ * number and is turned up for a render.
+ */
+function Environment({ intensity, on }) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const room = new RoomEnvironment();
+    // 64, not the default 256. This is a blurred light probe of a white box —
+    // there is no detail in it to lose, and a smaller cube map is a smaller
+    // mip chain to walk for every lit pixel of every panel.
+    const target = pmrem.fromScene(room, 0.04, 0.1, 100, { size: 64 });
+    // Kept on the scene even when the working view has the lighting switched
+    // off, so a RENDER can put it back: a still is always lit properly, whatever
+    // the editor is set to (3d/renderCapture.js).
+    scene.userData.ccEnvironment = target.texture;
+    return () => {
+      scene.environment = null;
+      scene.userData.ccEnvironment = null;
+      target.dispose();
+      pmrem.dispose();
+      room.traverse((o) => {
+        o.geometry?.dispose?.();
+        const m = o.material;
+        for (const one of Array.isArray(m) ? m : [m]) one?.dispose?.();
+      });
+    };
+  }, [gl, scene]);
+
+  useEffect(() => {
+    scene.environment = on ? (scene.userData.ccEnvironment || null) : null;
+    scene.environmentIntensity = intensity;
+  }, [scene, intensity, on]);
+  return null;
+}
+
+/**
+ * Lights, rebalanced in turn 6 because the environment now does most of the
+ * work. Turn 4 ran an ambient at 1.7 to keep the walls white with no tone
+ * mapping; leaving it there on top of an environment map washes every shadow
+ * out and the furniture goes flat again. The ambient comes down, the key light
+ * goes up, and the walls stay white because the working view still does no tone
+ * mapping — that decision from turn 4 stands, and the render is where ACES
+ * comes in (renderCapture.js).
+ */
+function Lights({ roomHeight, roomWidth, shadow }) {
+  // The key light's shadow camera has to cover the room. On the default ±5
+  // frustum a 4 m kitchen has its far end outside the shadow map, which reads
+  // as "shadows work for some units and not others".
+  const reach = Math.max(roomWidth, roomHeight) * 1.4 + 2;
   return (
     <>
-      {/* Soft, flat light: white walls must read as WHITE, not as a render. */}
-      <ambientLight intensity={1.7} />
-      <hemisphereLight args={['#ffffff', '#efedea', 0.45]} />
+      {/* Tagged by ROLE, so the render can rebalance them (renderCapture.js)
+          without the capture pass having to guess which light is which. */}
+      <ambientLight userData={{ ccLight: 'ambient' }} intensity={1.25} />
+      <hemisphereLight userData={{ ccLight: 'ambient' }} args={['#ffffff', '#e8e4dd', 0.45]} />
       <directionalLight
+        userData={{ ccLight: 'key' }}
         position={[roomWidth * 0.5, roomHeight * 1.6, roomWidth * 1.1]}
-        intensity={0.35}
+        intensity={0.85}
         castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0006}
+        shadow-mapSize={[shadow.mapSize, shadow.mapSize]}
+        shadow-bias={shadow.bias}
+        shadow-radius={shadow.radius}
+        shadow-camera-left={-reach}
+        shadow-camera-right={reach}
+        shadow-camera-top={reach}
+        shadow-camera-bottom={-reach}
+        shadow-camera-near={0.1}
+        shadow-camera-far={reach * 4}
       />
-      <directionalLight position={[-roomWidth * 0.7, roomHeight * 1.1, roomWidth * 0.8]} intensity={0.22} />
+      {/* Fill from the other side, so the shadowed face is modelled rather
+          than black. No shadow of its own — two shadow maps for one visible
+          gain is exactly the kind of cost CLAUDE.md rules out of the working
+          view. */}
+      <directionalLight
+        userData={{ ccLight: 'fill' }}
+        position={[-roomWidth * 0.7, roomHeight * 1.1, roomWidth * 0.8]}
+        intensity={0.3}
+      />
     </>
   );
 }
 
-export default function Scene({ onCaptureReady }) {
+/**
+ * Hands the render pass everything it needs — the renderer, the scene, the live
+ * camera, and where the furniture actually is — without the modal knowing
+ * anything about three.js.
+ */
+function RenderRig({ onReady, unitsRef }) {
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    if (!onReady) return undefined;
+    onReady({
+      aspect: () => {
+        const el = gl.domElement;
+        const w = el.clientWidth || el.width || 16;
+        const h = el.clientHeight || el.height || 9;
+        return w / h;
+      },
+      bounds: (unitId = null) => {
+        const groups = Object.entries(unitsRef.current)
+          .filter(([id]) => !unitId || id === unitId)
+          .map(([, group]) => group)
+          .filter(Boolean);
+        return furnitureBounds(groups);
+      },
+      capture: (job) => captureRender({ gl, scene, camera }, job),
+    });
+    return () => onReady(null);
+  }, [gl, scene, camera, onReady, unitsRef]);
+  return null;
+}
+
+export default function Scene({ onCaptureReady, onRenderReady }) {
   const orbitRef = useRef(null);
+  // One entry per unit group, so the render can frame the furniture and only
+  // the furniture (and one selected unit, when one is selected).
+  const unitGroups = useRef({});
   const room = useProjectStore((s) => s.project.room);
   const design = useProjectStore((s) => s.project.design);
   const units = useProjectStore((s) => s.units);
@@ -127,6 +240,7 @@ export default function Scene({ onCaptureReady }) {
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
+  const realisticLighting = useUiStore((s) => s.realisticLighting);
   const profile = useCabinetProfileStore((s) => s.profile);
 
   // `units` is the subscription that drives the re-render; allResults() is a
@@ -159,7 +273,9 @@ export default function Scene({ onCaptureReady }) {
 
   return (
     <Canvas
-      shadows
+      // "soft" = PCFSoftShadowMap. A shadow with a hard edge under a cabinet
+      // is a shadow from a point source, and there are none in a room.
+      shadows="soft"
       dpr={[1, 2]}
       // preserveDrawingBuffer: the PDF export reads this canvas back.
       // NoToneMapping: ACES (the R3F default) turns the white walls grey.
@@ -173,7 +289,8 @@ export default function Scene({ onCaptureReady }) {
       style={{ background: '#fafaf8' }}
     >
       <color attach="background" args={['#fafaf8']} />
-      <Lights roomHeight={roomH} roomWidth={roomW} />
+      <Environment intensity={profile.appearance.environment.intensity} on={realisticLighting} />
+      <Lights roomHeight={roomH} roomWidth={roomW} shadow={profile.render.shadow.normal} />
       <Room room={room} showLabels={showDimensions} />
 
       {results.map(({ unit, result }) => (
@@ -181,6 +298,10 @@ export default function Scene({ onCaptureReady }) {
           key={unit.id}
           unit={unit}
           result={result}
+          groupRef={(group) => {
+            if (group) unitGroups.current[unit.id] = group;
+            else delete unitGroups.current[unit.id];
+          }}
           wall={walls[unit.position?.wall ?? 0] || walls[0]}
           roomCentre={bounds.centre}
           selected={unit.id === selectedUnitId}
@@ -203,19 +324,22 @@ export default function Scene({ onCaptureReady }) {
           finishes={resolveFinishes(unit, design, profile)}
           outlines={showOutlines}
           contour={contourView}
+          grounded={realisticLighting}
         />
       ))}
 
       {/* Contour view is for a render or a printout: the numbers would be
           in the way of the only thing it is for. */}
       {showDimensions && !contourView && (
-        <DistanceArrows
-          walls={walls}
-          units={measured}
-          roomCentre={bounds.centre}
-          profile={profile}
-          colourKey={dimensionColour}
-        />
+        <group userData={{ ccHelper: true }}>
+          <DistanceArrows
+            walls={walls}
+            units={measured}
+            roomCentre={bounds.centre}
+            profile={profile}
+            colourKey={dimensionColour}
+          />
+        </group>
       )}
 
       <FocusRig request={focusRequest} orbitRef={orbitRef} onDone={clearFocus} />
@@ -231,6 +355,7 @@ export default function Scene({ onCaptureReady }) {
         dampingFactor={0.12}
       />
       <CaptureRig onReady={onCaptureReady} />
+      <RenderRig onReady={onRenderReady} unitsRef={unitGroups} />
     </Canvas>
   );
 }

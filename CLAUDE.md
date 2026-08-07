@@ -10,8 +10,12 @@ menu kontekstowe v2 + **widoczność złączy (dog bones)**. Właściciel: Piotr
 Fazy po kolei, commit+push per faza, BUILD-LOG (sekcja TURA 8), problemy → BLOCKERS.
 Nowa gałąź `claude/...`, PR do main. "Czysto albo wcale".
 
-## F0 — DŁUGI Z T7
+## F0 — DŁUGI Z T7 + STAN WYJŚCIOWY
 BLOCKERS z `NOT STARTED (tura 7)` → wykonaj NAJPIERW.
+UWAGA baseline: main ma już CELOWO nowy układ dekorów (`public/decors/egger/`),
+więc `test/decors.test.js` (strażnik starej płaskiej ścieżki z T5) jest CZERWONY —
+to oczekiwane, nie regres. F1 przepina loader i ten test na nowy układ; po F1
+komplet ma być zielony. Podłoga = pozostałe suity w komplecie.
 
 ## ŻELAZNE ZASADY (bez zmian)
 Fixtures nietykalne · engine czysty JS · zero gołych liczb (profile.js) · JS nie TS ·

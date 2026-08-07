@@ -15,6 +15,7 @@ import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
+import { shelfGapLadder } from '../engine/items.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
 import {
@@ -493,26 +494,12 @@ export default function UnitView({
   const [hoverShelf, setHoverShelf] = useState(null);
   const shelfGaps = useMemo(() => {
     const G = Number(unit.params.board_t) || profile.board.thickness;
-    const shelves = result.panels
-      .filter((p) => p.part === 'SHELF' && p.box)
-      .map((p) => p.box.y)
-      .sort((a, b) => a - b);
-    if (!shelves.length) return [];
-    const floor = result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G;
-    const ceiling = H - G;
-    const faces = [floor, ...shelves.flatMap((y) => [y, y + G]), ceiling];
-    const out = [];
-    for (let i = 0; i < faces.length - 1; i += 2) {
-      if (faces[i + 1] - faces[i] > 0.5) out.push({ key: `gap-${i}`, from: faces[i], to: faces[i + 1] });
-    }
-    // "Even" is what the eye is checking for, so the readout says which gaps
-    // are the odd ones out rather than leaving six identical-looking numbers to
-    // be compared by hand.
-    const sizes = out.map((g) => g.to - g.from);
-    const largest = Math.max(...sizes);
-    const smallest = Math.min(...sizes);
-    const even = largest - smallest <= profile.editor.mmStep;
-    return out.map((g) => ({ ...g, even: even || Math.abs((g.to - g.from) - largest) < 1e-6 }));
+    return shelfGapLadder({
+      positions: result.panels.filter((p) => p.part === 'SHELF' && p.box).map((p) => p.box.y),
+      floor: result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G,
+      ceiling: H - G,
+      boardT: G,
+    }, profile.editor.mmStep).map((g, i) => ({ ...g, key: `gap-${i}` }));
   }, [result.panels, result.assemblies.drawerZone, unit.params.board_t, profile, H]);
 
   // How tall the top infill is right now — the handle sits on top of it. The
@@ -698,7 +685,7 @@ export default function UnitView({
             <DimLabel
               key={g.key}
               position={[mm(W / 2), mm((g.from + g.to) / 2), mm(D) + 0.06]}
-              text={formatMm(g.to - g.from)}
+              text={formatMm(g.size)}
               tone={g.even ? 'dim' : 'gold'}
             />
           ))}

@@ -2868,3 +2868,109 @@ widzi je klient.
 `test/joinery.test.js` — 11 testów, w tym ten, o który prosi CLAUDE.md: **liczba
 rysowanych tabów == dane cnc**, przejechana po WSZYSTKICH złotych fixtures i po każdym
 panelu każdej z nich.
+
+---
+
+## F9 — ZAMKNIĘCIE TURY
+
+### Przejście przez aplikację w prawdziwej przeglądarce
+
+`scripts/e2e-turn8.mjs` — jeden spacer przez Chromium (CDP, zero zależności, ten sam
+`scripts/cdp.mjs` co w turach 6 i 7), robiący dokładnie to, o co prosi CLAUDE.md F9,
+w tej kolejności. **14/14.**
+
+| # | co sprawdzone | wynik | faza |
+|---|---|---|---|
+| 1 | Design settings niesie suwak Sheen 0–25, skok 5 | `{min:0, max:25, step:5, value:15}` | F1 |
+| 2 | płótno otwiera się z żywym kontekstem 3D | ok | F1 |
+| 3 | trzy białe szafki, zbite w ciąg | `x = 1700, 2300, 2900` | F1 |
+| 4 | …i każda z nich stoi 10 mm od ściany | odstęp jest PROFILU, nie insetem wpisanym na jednostce | F3 |
+| 5 | **szafkę da się dodać PO LEWEJ** | `[1100, 1700, 2300, 2900]`, nowa na 1100 | **F2.1** |
+| 6 | przełącznik zawiasu przestawia zawias w OBU miejscach, które czyta silnik | `L → {hinge:'R', doors:'R'}` | F2.2 |
+| 7 | półkę da się zrobić FIX i jest PRZYKRĘCONA, nie na pinach | `{count:1, variants:['fixed']}` | F4 |
+| 8 | Tall bierze top infill, a jego otwarte końce skręcają za róg | `{top:40, ends:{left:'open', right:'open'}}` | F6 |
+| 9 | **base unitowi top infill nie jest oferowany** | gate trzyma | F2.7 |
+| 10 | jednostka przy ścianie dostaje filler zamykający szczelinę | `{left:20, right:0}` | F3 |
+| 11 | X-ray nie kładzie płótna | ok | F8 |
+| 12 | render wraca jako obraz | 1920×1142, 324 kB PNG | F1 |
+| 13 | …i ma w sobie prawdziwą rozpiętość tonalną: cień i głębię | `min 52 · max 250 · rozpiętość 198`, 404 px ciemnych | **F1** |
+| 14 | nic nie napisało błędu do konsoli | ok | — |
+
+Sprawdzenie 13 jest tym, po co ta faza w ogóle istnieje. Diagnoza Piotra brzmiała
+„brak cienia, brak głębi" — a „są światła w scenie" da się udowodnić testem
+jednostkowym i nadal mieć płaski obraz. Więc dowodem nie jest obecność świateł, tylko
+HISTOGRAM gotowego PNG-a: 404 piksele poniżej progu ciemności (jest cień), 198 stopni
+rozpiętości między najciemniejszym a najjaśniejszym (jest modelunek). Test, który da
+się przejść bez naprawienia problemu, nie jest testem.
+
+### Zrzuty
+
+| plik | co pokazuje |
+|---|---|
+| `docs/turn8/01-sheen.png` | suwak Sheen w kreatorze projektu, 0–25 co 5 |
+| `docs/turn8/02-three-white-cabinets.png` | trzy BIAŁE szafki, rozdzielone samym światłem i cieniem |
+| `docs/turn8/03-added-on-the-left.png` | czwarta szafka **po lewej** ciągu |
+| `docs/turn8/04-fix-shelf.png` | półka FIX w panelu |
+| `docs/turn8/05-mitre.png` | mitra 45° na otwartym końcu top infilla |
+| `docs/turn8/06-xray-dogbones.png` | X-ray: taby, sockety i dogbony na bokach |
+| `docs/turn8/07-render.png` | render 1920 px z cieniem klucza na całych szafkach |
+| `docs/turn8/08-final.png` | scena po całym przejściu |
+
+### Liczby tury
+
+| | |
+|---|---|
+| testy | **727 / 727**, 0 fail (podłoga z main + 8 nowych suit) |
+| nowe suity | `low-tabs` (8), `sheen` (10), `slots-and-hinge` (16), `wall-clearance` (13), `shelves-v2` (18), `behaviours` (12), `mitre` (9), `joinery` (11) |
+| E2E | **14 / 14** w Chromium |
+| build | czysty (`vite build`, 13,4 s) |
+| diff tury | 52 pliki, +5850 / −401 |
+| nowe moduły silnika | `engine/doors.js`, `engine/mitre.js`, `engine/joinery.js` |
+| nowe zależności | **0** — `package.json` bit w bit ten sam co przed turą |
+| fixtures | **0 zmian** — `git diff fixtures/` pusty |
+| SQL | nic nie dopisane, nic nie uruchomione (BLOCKERS #49) |
+
+### Co ta tura zmieniła w danych, i jak to nie zabiło fixtures
+
+Dwie rzeczy z CLAUDE.md były na kursie kolizyjnym z `fixtures/README.md` punkt 1
+(„jeśli silnik nie zgadza się z fixture, to SILNIK jest zły"):
+
+- **F4 — cofnięcie półek i partitionów o 20 mm.** LISP tego nie robi, a fixtures są
+  śladem po LISP-ie. Rozwiązane tak, jak od tury 2 rozwiązany jest cokół, top infill
+  i end panel: cofnięcie jest **decyzją PROJEKTU**, którą `paramsForEngine()` podaje
+  do silnika, a nie stałą wpisaną w `computeCabinet()`. Gołe `computeCabinet()` tnie
+  co do milimetra to, co tnie LISP; szafka postawiona w aplikacji dostaje 20 mm.
+  Obie połówki są przybite testem, więc żadnej nie da się cicho zgubić.
+- **F3 — 10 mm od ściany.** To nie jest zmiana FORMATKI, tylko POZYCJI: żadna płyta
+  nie zmienia wymiaru, zmienia się `box.z` i to, od czego liczą się strzałki, głębokość
+  end panela i zasięg top infilla. Fixtures opisują formatki i milczą o pokoju.
+
+### Stan długu
+
+`BLOCKERS.md` dostaje pięć wpisów tury 8 (**#45–#49**) obok #44 z F1: mitra tylko na
+paskach i dlaczego boczny L jej nie dostaje, pomiar wydajności z ostrzeżeniem, czego
+z niego **nie wolno** wyczytać, trzy rzeczy, których render dalej nie ma, zasięg
+migracji półek i niezmiennie nieuruchomione SQL. `BACKLOG.md` dostaje pięć pozycji
+(**#50–#54**) i cztery zamknięcia (#19 skany w 3D, #20 mitra, #42 złącza w X-ray,
+#47 trzy taby na niskim korpusie).
+
+Nie ma żadnego pytania do Piotra. Jedyna rzecz w tej turze, która wymaga JEGO ruchu,
+a nie kodu, to zgoda EGGER-a na skany (BLOCKERS #44) — decyzja o ich włączeniu jest
+jego i została wykonana bez dyskusji, a co dało się zabezpieczyć kodem (atrybucja
+bezwarunkowa, obraz nietonowany i nieskadrowany, odrzucenie adresu spoza `https://`),
+zostało zabezpieczone.
+
+### Definicja sukcesu z CLAUDE.md, punkt po punkcie
+
+| # | wymaganie | stan |
+|---|---|---|
+| 1 | podłoga testów + nowe, 0 fail; build OK | ✅ 727/727, build czysty |
+| 2 | cień klucza na całych szafkach, zero przezroczystości, widoczna głębia | ✅ F1, dowód: histogram renderu |
+| 3 | spray wierny kolorystycznie (bez envMap), melamina z envem; sheen co 5% | ✅ F1 |
+| 4 | siedem bugów F2 zamkniętych, z №1 na czele | ✅ F2 |
+| 5 | każda jednostka 10 mm od ściany; Infill OFF → boki 10 | ✅ F3 |
+| 6 | półki/partitiony −20 + wysuwalne; FIX = śruby 3 mm w osi; hover pokazuje odstępy | ✅ F4 |
+| 7 | drzwi przy ścianie ≤ 90°; wiszące równają do Tall | ✅ F5 |
+| 8 | mitra 45° widoczna w 3D; klocek-widmo zbadany i usunięty | ✅ F6 + F2.6 |
+| 9 | menu: dimensions / panele / infille ON-OFF od ręki | ✅ F7 |
+| 10 | dog bones w Solid (linie) i X-ray (pełne zarysy) | ✅ F8 |

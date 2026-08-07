@@ -12,10 +12,14 @@ import { joineryLayers, unitJointLines } from '../engine/joinery.js';
 // from the profile.
 //
 // The geometry is a reading of the CNC data (engine/joinery.js) and nothing
-// here knows what a tab is. Tagged `ccHelper`… except it is NOT: a joint is
-// FURNITURE, and it belongs in a render exactly as an edge does. What is
-// tagged is nothing at all, and that is deliberate — the whole point of showing
-// the joint is that a customer sees it.
+// here knows what a tab is.
+//
+// It carries `ccFurniture`, which is the OPPOSITE of the `ccHelper` every other
+// overlay in this app carries. The render pass hides anything made of lines,
+// because the things made of lines are the contour pass, the dimension arrows
+// and the selection box — all of them tool. A joint is not: it belongs in a
+// still exactly as an edge belongs on a board, and the whole point of drawing
+// it is that a customer sees it.
 
 const KIND_COLOUR = {
   tab: 'solid',
@@ -56,9 +60,9 @@ export default function JointLines({
   if (!geometries.length) return null;
   const opacity = xray ? 1 : profile.appearance.joinery.solidOpacity;
   return (
-    <group>
+    <group userData={{ ccFurniture: true }}>
       {geometries.map(({ kind, geometry, colour }) => (
-        <lineSegments key={kind} geometry={geometry}>
+        <lineSegments key={kind} geometry={geometry} userData={{ ccFurniture: true }}>
           <lineBasicMaterial
             color={colour}
             transparent={opacity < 1}

@@ -29,6 +29,7 @@ import { useProjectStore, paramsForEngine, migrateUnitShelves } from '../src/sto
 import { computeCabinet, isShelfLocked, shelfVariant } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+import { shelfGapLadder } from '../src/engine/items.js';
 
 const store = () => useProjectStore.getState();
 const G = P.board.thickness;
@@ -268,4 +269,36 @@ test('the setback reaches the CSV and the CNC outline, not just the picture', ()
   const shelf = r.panels.find((p) => p.part === 'SHELF');
   assert.equal(shelf.cnc.outline[2][1], shelf.h, 'the CNC outline is the piece, not the old size');
   assert.ok(r.csvLines.some((l) => l.includes(`,SHELF-1,${Math.round(shelf.w)},${Math.round(shelf.h)},`)));
+});
+
+// ─── hover: the gaps in the whole column ─────────────────────────────────────
+
+test('the hover readout measures every CLEAR opening, between faces', () => {
+  // Two shelves in a 770 carcass, 18 mm board: floor face at 18, top face at
+  // 752, so three openings — and they are measured between FACES, because the
+  // question is what fits in there.
+  const gaps = shelfGapLadder({
+    positions: [262, 506], floor: G, ceiling: 770 - G, boardT: G,
+  });
+  assert.deepEqual(gaps.map((g) => g.size), [244, 226, 228]);
+  assert.deepEqual(gaps.map((g) => [g.from, g.to]), [[18, 262], [280, 506], [524, 752]]);
+});
+
+test('…and says which ones are the odd ones out', () => {
+  const uneven = shelfGapLadder({ positions: [262, 506], floor: G, ceiling: 770 - G, boardT: G });
+  // 244 is the biggest opening; 226 and 228 are the ones a joiner is looking
+  // for, and they are the ones the readout puts in gold.
+  assert.deepEqual(uneven.map((g) => g.even), [true, false, false]);
+
+  // A stack that IS even says so all the way down.
+  // Three zero-thickness shelves at 200/400/600 in an 800 opening make FOUR
+  // even gaps: floor to the first, two between, and the last to the top.
+  const even = shelfGapLadder({ positions: [200, 400, 600], floor: 0, ceiling: 800, boardT: 0 });
+  assert.deepEqual(even.map((g) => g.size), [200, 200, 200, 200]);
+  assert.ok(even.every((g) => g.even));
+});
+
+test('no shelves, no ladder', () => {
+  assert.deepEqual(shelfGapLadder({ positions: [], floor: 18, ceiling: 752, boardT: 18 }), []);
+  assert.deepEqual(shelfGapLadder({ positions: [NaN], floor: 18, ceiling: 752, boardT: 18 }), []);
 });

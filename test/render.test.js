@@ -307,7 +307,12 @@ test('the studio rig is a key light that can actually model something', () => {
 test('the editor keeps the cheap settings; the render is where the cost is', () => {
   const A = P.appearance;
   assert.ok(A.bevel.ao.strength < A.bevel.ao.render, 'cavity darkening: cheap now, strong in a render');
-  assert.ok(A.environment.intensity < A.environment.renderIntensity, 'so does the environment');
+  // The ENVIRONMENT is no longer one of them (turn 8, F1). Turn 6 turned the
+  // probe up for a still because the working view ran flat and untone-mapped
+  // and needed the still to make up for it; the working view is tone-mapped
+  // now, and a probe turned up on top of the studio key washes out the
+  // modelling the key exists to put in. One rig means one probe.
+  assert.equal(A.environment.intensity, A.environment.renderIntensity);
   assert.ok(A.bevel.mm >= 0.5 && A.bevel.mm <= 1, 'CLAUDE.md F2: a 0.5–1 mm edge break');
   // Melamine and lacquer must be different ENOUGH to tell apart by eye — that
   // is the acceptance test in CLAUDE.md, expressed as the numbers behind it.

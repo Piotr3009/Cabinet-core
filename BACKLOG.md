@@ -84,6 +84,15 @@ Status: OPEN → TURA-N (przypisane) → DONE.
     komplecie ZIP-ów). Storage: Supabase bucket `decors` (decyzja 06.08), w repo tylko JSON
     + miniaturki. Licencja Egger przeczytana: swatche z atrybucją 'EGGER + kod' OK;
     tekstury 3D → pisemna zgoda PRZED sprzedażą CC / publicznym demo (mail-draft u Claude).
+    — **TURA-8 / DONE (skany w 3D)**: decyzja Piotra 07.08 — koniec proceduralnego drewna na
+    dekorach. 69 woodgrainów niesie pole `tex` (Supabase Storage), dekór drewnopodobny nosi
+    obraz producenta: sRGB, anisotropy 8, **skala fizyczna** (`appearance.decor.scanHeightMm`
+    = 2800 mm wzdłuż słoja — jeden skan to tyle prawdziwej płyty, a nie długość powtórzenia),
+    **kierunek słojów wzdłuż formatki** (`grainRun` + `decorMapping` w `engine/decors.js`:
+    słój biegnie wzdłuż DŁUŻSZEGO wymiaru części, bo tak tnie się płytę). Tonowanie hex OFF
+    tam, gdzie jest skan — obraz w całości i bez edycji. Dekór bez skanu i maszyna bez sieci
+    spadają na proceduralne słoje, więc mock-mode DZIAŁA. Atrybucja i nota bez zmian.
+    — **ZOSTAJE**: sama pisemna zgoda EGGER na publiczne demo i sprzedaż — **BLOCKERS #44**.
 20. [MEDIUM] Infille/plinth w kształcie L (przykręcane do boku) — na razie proste (decyzja Piotra).
     — **TURA-6 / DONE (infille)**: pionowy filler to L — ramię B zamyka szczelinę w PŁASZCZYŹNIE
     DRZWI (ta sama co end panel i czoło top infilla), ramię A przykręcone do boku korpusu, 60 mm
@@ -93,6 +102,12 @@ Status: OPEN → TURA-N (przypisane) → DONE.
     cztery zakończenia (ściana / pionowy L-infill / end panel do sufitu / otwarty koniec z mitrą
     i skrętem za narożnik). `engine/runs.js` + `test/run-infill.test.js`.
     PLINTH w L — **nie ruszany w turze 6**, zostaje w tym punkcie na później.
+    — **TURA-8 / DONE (mitra WIDOCZNA)**: tura 6 dała flagę `mitre_45` i poprawną listę cięcia;
+    3D dalej rysowało oba paski jako prostopadłościany na styk. `engine/mitre.js` tnie bryły
+    płaszczyznami 45°, więc L jest widoczną mitrą, a otwarty koniec ciągu obraca narożnik jak
+    rama obrazu — dwa pudełka w narożniku nachodziły na siebie kwadratem naroża i z-fightowały
+    przez siebie. BOM i DXF bez zmian (osobny test), bo element jest cięty do DŁUGIEGO PUNKTU,
+    a mitra to ustawienie piły. Cokół w L dalej zostaje — patrz #40.
 21. [MEDIUM] VCarve — drobiazgi do zmiany (listę poda Piotr).
 22. [MEDIUM] Rzuty z góry / dokumentacja do druku; Print w menu File.
 23. [MEDIUM] Rysunek techniczny pomieszczenia DXF/SVG (z tury 3 — odłożone).
@@ -230,6 +245,9 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     wywołań na jednostkę niezależnie od liczby okuć. Zmierzone w Chromium, 10 szafek
     z drzwiami, przebiegi przeplatane: **2,87 fps normalnie / 2,83 fps w X-ray** — tryb
     nie kosztuje nic mierzalnego (liczba bezwzględna to SwiftShader, BLOCKERS #31).
+    — **TURA-8 / DODANE**: w X-rayu są teraz także ZŁĄCZA (F8) — pełne profile tabów, sockety
+    i dogbony, czytane z `panel.cnc` przez `engine/joinery.js`. W Solid zostają dyskretne linie
+    podziału tabów. Kontrakt: liczba rysowanych tabów == dane cnc, na wszystkich fixtures.
 43. [LOW] Podgląd pojedynczego elementu/formatki w 3D — później.
 44. [PARKING] Upload własnych modeli 3D tenanta (GLB, Supabase Storage bucket
     `models`, RLS per tenant, limit rozmiaru) — gdy pierwszy warsztat poprosi.
@@ -261,3 +279,23 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
 49. [LOW] **Sety ustawień tylko lokalnie.** `cc.settingsSets.v1` w localStorage, bez
     tabeli i bez pliku SQL — mock-mode ma DZIAŁAĆ, więc działa. Gdy sety mają jeździć
     między stanowiskami: tabela + RLS + migracja, wzorem `cc_templates` (#26/sql).
+
+## DOPISANE W TURZE 8 (07.08)
+50. [MEDIUM] **Pełne UI blokady półki (`updown_locked`).** Tura 8 daje logikę, wiercenie
+    (jak FIX) i MINIMALNY toggle w wierszu półki (🔓/🔒), zgodnie z CLAUDE.md („pełne UI
+    później"). Co zostaje: powód blokady widoczny w panelu (piekarnik? przelot kabli?),
+    blokada per sekcja, i pokazanie jej w 3D czymś więcej niż brakiem kursora `ns-resize`.
+51. [MEDIUM] **Boczny infill w kształcie L nie dostał mitry.** Świadome: tura 6 opisuje
+    ramię A jako PRZYKRĘCONE do boku korpusu, a przykręcony styk to nie mitra — więc
+    `engine/mitre.js` odmawia mu cięcia i test tego pilnuje. Jeśli warsztat mitruje także
+    pionowy filler, to jest jedna linijka w `infillMitre()` plus flaga w silniku.
+52. [LOW] **Render bez blooma i bez map struktury drewna.** Zostało z #37 po turze 6 i tura 8
+    tego nie ruszała: orange peel na natrysku jest proceduralny (shader), a nie mapą. Struktura
+    porów na dekorze przyszłaby razem z mapami normalnych producenta, których w paczce nie ma.
+53. [LOW] **„Show all dimensions" to etykiety, nie linie wymiarowe.** Tura 8 daje liczby przy
+    elementach (F7), czytane z wyjścia silnika. Strzałki i linie pomocnicze w stylu T5 są
+    osobną robotą: `3d/DistanceArrows.jsx` rysuje je MIĘDZY jednostkami, nie WEWNĄTRZ jednej.
+54. [LOW] **Migracja `shelf_schema` dotyka tylko projektów wczytanych przez aplikację.**
+    `variant: 'fixed'` znaczy od tury 8 PRZYKRĘCONA, a wcześniej znaczyło tyle co „półka".
+    `migrateUnitShelves()` naprawia to na wejściu (cache i `loadProject`) i stempluje. Projekt,
+    który trafi do silnika z pominięciem store'u (import, skrypt), tej migracji nie zobaczy.

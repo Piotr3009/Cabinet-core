@@ -631,7 +631,16 @@ export const DEFAULT_CABINET_PROFILE = {
     // download, no .hdr file — CLAUDE.md forbids both) through PMREM. The
     // working view keeps it low so white walls stay white with no tone mapping;
     // a render turns it up and lets ACES hold the highlights.
-    environment: { intensity: 0.5, renderIntensity: 0.85, blur: 0.05 },
+    // ─── Turn 8 (CLAUDE.md F1) ───
+    // The two intensities are now the SAME, and that is the whole of "one rig".
+    // Turn 6 turned the probe up for a still because the working view ran flat
+    // and untone-mapped and needed the still to compensate; the working view is
+    // tone-mapped now, and a probe turned up on top of the studio key washes out
+    // exactly the modelling the key is there to put in.
+    //
+    // Kept as two numbers rather than collapsed to one: a workshop that wants a
+    // glossier still has the knob, and the render pass still reads it.
+    environment: { intensity: 0.5, renderIntensity: 0.5, blur: 0.05 },
 
     // Contact shadow: the dark that says a cabinet is STANDING on the floor
     // rather than hovering a millimetre above it. Not a shadow map — a soft

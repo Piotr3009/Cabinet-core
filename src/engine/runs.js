@@ -23,11 +23,29 @@ import { getUnitType } from './types.js';
 
 /** Height of a unit's top above the floor — where anything on top of it starts. */
 export function unitTop(unit, profile) {
+  return unitBase(unit, profile) + (Number(unit.params?.height) || 0);
+}
+
+/**
+ * How far off the FLOOR a unit's carcass starts: its mounting height when it
+ * hangs, its toe kick when it stands.
+ *
+ * ─── Turn 8 ───
+ * The toe kick is the unit's OWN (`params.leg_height`) before it is the
+ * profile's. Turn 5 made the toe kick a project height and pushed it onto every
+ * unit (BACKLOG #29), and `cabinet.js legHeightOf` has read it ever since — but
+ * this function did not, so every consumer of it was 20 mm out on a project
+ * with a 120 mm kick: which units are one RUN, how much room is left above one
+ * for a top infill, and (turn 8, F5) where a wall unit hangs to line up with
+ * the tall cabinet beside it. That last one is how it was noticed.
+ */
+export function unitBase(unit, profile) {
   const type = getUnitType(unit.type);
-  const base = type.mount === 'wall'
-    ? Number(unit.params?.mount_height) || 0
-    : (type.legs ? (type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight) : 0);
-  return base + (Number(unit.params?.height) || 0);
+  if (type.mount === 'wall') return Number(unit.params?.mount_height) || 0;
+  if (!type.legs) return 0;
+  const own = Number(unit.params?.leg_height);
+  if (Number.isFinite(own) && own >= 0) return own;
+  return type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight;
 }
 
 /** How far a unit's own end panels stick out on each side. */

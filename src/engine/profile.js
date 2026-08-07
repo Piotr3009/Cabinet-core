@@ -71,6 +71,18 @@ export const DEFAULT_CABINET_PROFILE = {
     gap: 3,                    // overlay clearance: single front = (W−gap) × (H−gap)
     doubleTotalGap: 6,         // pair of fronts = ((W − doubleTotalGap)/2) × (H − gap)
     defaultHinge: 'L',
+    // ─── How far a door opens in the 3D view (turn 8, CLAUDE.md F5) ───
+    // `openAngle` is what a door in the middle of a run swings to when you
+    // double-click it: a little past square, which is what a hinge does and
+    // what makes the inside of the cabinet readable.
+    //
+    // `openAngleAtWall` is the answer when there is a WALL on the hinge side.
+    // Past 90° a door starts to come BACK towards that wall — its free edge
+    // crosses the hinge line — so a run of cabinets in a corner would animate
+    // its end door straight through the plaster. Square is where it stops.
+    // Neither number reaches the cut list; a swing is a picture.
+    openAngle: 99,
+    openAngleAtWall: 90,
   },
 
   // ─── Hinge drilling ───

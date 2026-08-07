@@ -21,6 +21,7 @@ import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import { runInfillParams, unitTop } from '../engine/runs.js';
+import { mountHeightAlignedWith } from '../engine/doors.js';
 import { drawersInEngineOrder, nextHangerOffset, nextShelfPos, shelvesInEngineOrder } from '../engine/items.js';
 
 // ─── Project state ───
@@ -934,6 +935,16 @@ export const useProjectStore = create((set, get) => ({
     }
     unit.position.wall = placed.wall;
     unit.position.x_mm = placed.x;
+    // ─── Turn 8 (CLAUDE.md F5) ───
+    // A wall unit going in beside a TALL one hangs so that the two finish on
+    // ONE line. A kitchen whose wall units stop 80 mm below the tall cabinet
+    // next to them reads as two kitchens, and the joiner then spends the
+    // afternoon typing mount heights.
+    //
+    // It is a STARTING POINT and says so: `mount_height` stays an ordinary
+    // editable field, and the unit can be hung wherever the window allows.
+    const aligned = alignedMountFor(state, unit, placed);
+    if (aligned != null) unit.params.mount_height = aligned;
     set((s) => ({ units: [...s.units, unit], dirty: true }));
     // A unit arrives with its SCRIBE FILLERS worked out from where it landed.
     // The plinth and the top infill are decisions and wait to be asked for
@@ -1615,6 +1626,28 @@ export const useProjectStore = create((set, get) => ({
     dirty: true,
   })),
 
+  /**
+   * How much clear WALL there is beside a unit, per side — or null where what
+   * is beside it is a neighbour rather than a wall (turn 8, CLAUDE.md F5).
+   *
+   * The 3D view asks this to decide how far a door may swing: past 90° a door
+   * comes back towards the wall on its hinge side, so an end cabinet in a
+   * corner would animate its door through the plaster. A neighbour is
+   * deliberately NOT a wall here — CLAUDE.md asks about walls, and two doors
+   * opening into each other is a different question with a different answer.
+   */
+  wallGapsFor: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { left: null, right: null };
+    const out = {};
+    for (const [key, side] of [['left', 'L'], ['right', 'R']]) {
+      const free = freeBesideUnit(s, unit, side);
+      out[key] = free.by === 'the wall' ? free.gap : null;
+    }
+    return out;
+  },
+
   // ── derived ──────────────────────────────────────────────────────────────
   /** Live engine output for one unit — recomputed on every read (SPEC 4.11). */
   unitResult: (unitId) => {
@@ -1705,6 +1738,41 @@ function toObstacleUnit(u) {
     backInset: pad.back,
     label: u.params?.unit_num || u.id,
   };
+}
+
+/**
+ * Where a newly placed WALL unit should hang: level with the top of the TALL
+ * unit it has landed beside (turn 8, CLAUDE.md F5).
+ *
+ * "Beside" is measured on the wall, and a tall unit anywhere along the same
+ * stretch counts — the two are at different mounting levels, so they never
+ * overlap and the nearest one is the one the eye lines the run up against.
+ * Null when there is no tall unit on that wall, or when the wall unit is too
+ * tall to reach that line, in which case the project's own mount height stands.
+ */
+function alignedMountFor(state, unit, placed) {
+  const type = getUnitType(unit.type);
+  if (type.mount !== 'wall') return null;
+  const profile = getCabinetProfile();
+  const span = { left: placed.x, right: placed.x + (Number(unit.params.width) || 0) };
+  const talls = state.units.filter((u) => (u.position?.wall ?? 0) === placed.wall
+    && getUnitType(u.type).heightGroup === 'tall');
+  if (!talls.length) return null;
+
+  // The nearest one along the wall — measured between spans, so a tall unit the
+  // wall unit is standing directly above scores 0.
+  const distance = (u) => {
+    const s = unitSpan(u);
+    if (s.right <= span.left) return span.left - s.right;
+    if (s.left >= span.right) return s.left - span.right;
+    return 0;
+  };
+  const nearest = talls.reduce((best, u) => (distance(u) < distance(best) ? u : best), talls[0]);
+  return mountHeightAlignedWith({
+    tallTop: unitTopOf(nearest, profile),
+    unitHeight: Number(unit.params.height) || 0,
+    roomHeight: Number(state.project.room.height) || 0,
+  });
 }
 
 /**

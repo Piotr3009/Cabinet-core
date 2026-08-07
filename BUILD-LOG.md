@@ -2636,3 +2636,62 @@ Wartości: `adjustable` (default, piny) · `fixed` (przykręcona) · `pullout` (
 | testy | **690/690** (nowe: `shelves-v2.test.js` 15) |
 | fixtures | nietknięte, i pilnowane osobnym testem |
 | build | czysty |
+
+## F5 — ZACHOWANIA
+
+Żadne z tych dwóch nie dotyka cut listy. Oba są różnicą między narzędziem, które
+rysuje kuchnię, a takim, które zachowuje się jak kuchnia.
+
+### 1. Drzwi przy ścianie bocznej — max 90°
+
+Geometria jest tu zaskakująca i warto ją zapisać, bo odpowiedź wygląda na zaokrągloną,
+a nie jest. Drzwi zawieszone po lewej, otwierając się, prowadzą swoją wolną krawędź po
+łuku:
+
+```
+x(θ) = hingeX + szerokość · cos θ
+```
+
+Przy θ = 90° to jest sama oś zawiasu — drzwi stoją prostopadle do frontu i **nie zajmują
+żadnej szerokości**. Dopiero POWYŻEJ 90° cosinus robi się ujemny i wolna krawędź wraca
+NAD zawias, w stronę ściany, aż przy 180° drzwi leżą płasko na boku szafki.
+
+Czyli: **ściany nie uderza się w drodze na zewnątrz, tylko w drodze za prostą**. I dlatego
+90° z CLAUDE.md jest odpowiedzią dokładną, a nie ostrożną: to ostatni kąt, przy którym
+drzwi o dowolnej szerokości, przy szczelinie dowolnej wielkości, jeszcze się od ściany
+ODDALAJĄ.
+
+`engine/doors.js doorOpenAngle()` liczy też kąt zetknięcia dokładnie i bierze
+`min(pełny, max(90°, …))` — więc warsztat, który wpisze `openAngleAtWall: 120`, dalej nie
+dostanie drzwi w tynku, a szczelina szersza niż same drzwi (900 mm) w ogóle nie jest
+ścianą i drzwi idą na pełny kąt. Test sprawdza to „długą drogą": dla każdej szczeliny
+liczy `x(θ)` przy zwróconym kącie i pilnuje, że wolna krawędź nie przeszła za ścianę.
+
+Luz 10 mm z F3 jest w tym rachunku, bo `wallGapsFor()` mierzy od miejsca, w którym
+jednostka NAPRAWDĘ stoi. **Sąsiad to nie ściana** — CLAUDE.md pyta o ściany, a dwoje drzwi
+otwierających się w siebie to inne pytanie z inną odpowiedzią.
+
+### 2. Wiszące obok Tall
+
+Wstawiona wisząca szafka wiesza się tak, żeby jej góra była na linii góry najbliższego
+TALL unita na tej ścianie. Ciąg, w którym wiszące kończą się 80 mm poniżej stojącej obok
+słupy, czyta się jak dwie kuchnie.
+
+Jest to **punkt startu i mówi to wprost**: `mount_height` zostaje zwykłym edytowalnym
+polem. Brak talla na tej ścianie → wysokość projektu, jak dotąd. Tall na INNEJ ścianie
+nie decyduje o niczym.
+
+### Przy okazji: cokół, który nie docierał do góry
+
+Znalezione przez F5 i naprawione, bo bez tego wyrównanie było o 20 mm za nisko.
+`unitTop()` czytał wysokość nóżek Z PROFILU i ignorował tę, którą tura 5 wpycha na każdą
+jednostkę jako wysokość projektu (`params.leg_height`, BACKLOG #29). `cabinet.js` czyta ją
+od tury 5; `runs.js` nie czytał.
+
+Na projekcie z cokołem 120 mm o te same 20 mm mylili się WSZYSCY konsumenci tej funkcji:
+które jednostki są jednym ciągiem (`buildRuns` grupuje po górze), ile zostało miejsca nad
+jednostką na top infill (`autoPartsFor`), i — od tury 8 — gdzie wisi szafka obok talla.
+Teraz jest jedna funkcja `unitBase(unit, profile)`: **najpierw własny cokół jednostki,
+potem profilowy**, dokładnie jak `legHeightOf` w silniku.
+
+`test/behaviours.test.js` — 12 testów.

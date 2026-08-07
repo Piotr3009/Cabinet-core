@@ -15,6 +15,7 @@ import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { backStandoff } from '../engine/collision.js';
+import { doorOpenAngle } from '../engine/doors.js';
 
 // One unit, rendered straight from the ENGINE output: every panel record
 // carries a `box` in cabinet-local mm, so what you see is what the cut list
@@ -119,7 +120,8 @@ function useBevel(box, profile, sprayed = false) {
  * not re-render the rest of the unit.
  */
 function MovingPanel({
-  panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile, ...handlers
+  panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
+  swing = null, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -149,9 +151,12 @@ function MovingPanel({
       group.current.position.z = pivot[2] + mm(depth * 0.75) * a;
       group.current.rotation.y = 0;
     } else {
-      // Swings on the hinge side, about the group's origin.
+      // Swings on the hinge side, about the group's origin. How FAR is decided
+      // by what is beside the cabinet (turn 8, CLAUDE.md F5): a door with a
+      // wall on its hinge side stops square, because past square its free edge
+      // comes back over the hinge and into the plaster.
       const dir = p.meta?.hinge === 'R' ? 1 : -1;
-      group.current.rotation.y = dir * a * (Math.PI * 0.55);
+      group.current.rotation.y = dir * a * (swing ?? Math.PI * 0.55);
       group.current.position.z = pivot[2];
     }
   });
@@ -239,6 +244,7 @@ export default function UnitView({
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
   profile, finishes, outlines = true, contour = false, grounded = true, xray = false, sheen = null,
+  wallGaps = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -369,6 +375,20 @@ export default function UnitView({
   // Where the bought hardware sits (turn 7, CLAUDE.md F3). Derived from the
   // engine's own drilling, so a hinge is drawn where the machine bores for it.
   const hardware = useMemo(() => hardwareInstances(result, profile), [result, profile]);
+
+  // ─── How far each door may swing (turn 8, CLAUDE.md F5) ───
+  // Decided by what is beside the cabinet ON THE HINGE SIDE. `wallGaps` is null
+  // for a side whose neighbour is another cabinet rather than a wall, and a
+  // null gap means the door is free — two doors opening into each other is a
+  // different question, with a different answer, and CLAUDE.md asks about walls.
+  const swingFor = useCallback((hinge) => {
+    const gap = hinge === 'R' ? wallGaps?.right : wallGaps?.left;
+    return doorOpenAngle({
+      doorWidth: result.panels.find((p) => p.part === 'FRONT')?.w ?? W,
+      hingeOffset: profile.doors.gap / 2,
+      gapToWall: gap ?? null,
+    }, profile);
+  }, [wallGaps, result.panels, W, profile]);
 
   // ─── The gaps between the shelves (turn 8, CLAUDE.md F4) ───
   // Which shelf the cursor is on, and the whole ladder of clear openings in the
@@ -536,6 +556,7 @@ export default function UnitView({
             xray={xray}
             depth={D}
             profile={profile}
+            swing={front === 'door' ? swingFor(p.meta?.hinge) : null}
             onPointerDown={(e) => {
               // A locked shelf falls through to the UNIT drag: grabbing a
               // screwed shelf and pulling is grabbing the cabinet (turn 8, F4).

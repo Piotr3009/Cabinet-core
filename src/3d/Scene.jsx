@@ -300,6 +300,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const units = useProjectStore((s) => s.units);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const allResults = useProjectStore((s) => s.allResults);
+  const wallGapsFor = useProjectStore((s) => s.wallGapsFor);
   const moveShelf = useProjectStore((s) => s.moveShelf);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
@@ -363,6 +364,12 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const sheen = useMemo(() => projectSheen(design, profile), [design, profile]);
   const studio = profile.appearance.studio;
   const [subject, setSubject] = useState(null);
+  // Recomputed with the units, not per frame: a door swing is decided by where
+  // the cabinets stand, and that only changes when one of them moves.
+  const wallGaps = useMemo(
+    () => Object.fromEntries(units.map((u) => [u.id, wallGapsFor(u.id)])),
+    [units, wallGapsFor],
+  );
 
   return (
     <Canvas
@@ -435,6 +442,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           xray={xray}
           grounded={realisticLighting}
           sheen={sheen}
+          // How much clear WALL is beside this unit, per side. The door swing
+          // reads it: past square a door comes back towards the wall on its
+          // hinge side (turn 8, CLAUDE.md F5).
+          wallGaps={wallGaps[unit.id]}
         />
       ))}
 

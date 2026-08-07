@@ -25,6 +25,7 @@
 // Pure functions — no React, no store imports.
 
 import { getUnitType } from './types.js';
+import { unitBase } from './runs.js';
 
 /** Does this type stand on the floor and therefore get a plinth? */
 export function takesPlinth(typeId, profile) {
@@ -139,9 +140,8 @@ export function autoPartsFor({ unit, wallWidth, others, roomHeight, design }, pr
   const width = Number(unit.params.width) || 0;
   const height = Number(unit.params.height) || 0;
   const x = Number(unit.position?.x_mm) || 0;
-  const base = type.mount === 'wall'
-    ? Number(unit.params.mount_height) || 0
-    : (type.legs ? (type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight) : 0);
+  // The unit's OWN toe kick before the profile's — see engine/runs.js unitBase.
+  const base = unitBase(unit, profile);
 
   const side = sideInfill({
     x, width, wallWidth, others, settingWidth: design?.infill?.sideWidth,

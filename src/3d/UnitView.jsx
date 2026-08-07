@@ -173,7 +173,7 @@ export default function UnitView({
   unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
-  onSetEndPanelTop, onEndPanelToCeiling,
+  onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
   profile, finishes, outlines = true, contour = false, grounded = true,
 }) {
   const { camera, gl } = useThree();
@@ -496,6 +496,32 @@ export default function UnitView({
             onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge(p.meta.panelId); onEndPanelToCeiling?.(p.meta.panelId); }}
           />
         ))}
+
+      {/* Vertical L-infills get the same edge (turn 6, CLAUDE.md F4). A filler
+          and a masking panel finish on the same line, so a joiner who has
+          learnt one edge has learnt both. */}
+      {onSetSideInfillTop && result.panels
+        .filter((p) => p.part === 'INFILL' && p.box && p.meta?.piece === 'face'
+          && (p.meta.side === 'left' || p.meta.side === 'right'))
+        .map((p) => {
+          const side = p.meta.side === 'left' ? 'L' : 'R';
+          return (
+            <EdgeHandle
+              key={`edge-${p.id}`}
+              position={[mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h), mm(p.box.z + p.box.d / 2)]}
+              width={Math.max(p.box.w, 22)}
+              depth={Math.max(p.box.d, 22)}
+              thickness={22}
+              colour={profile.appearance.selection.colour}
+              active={activeEdge === p.id}
+              onPointerDown={(e) => {
+                setActiveEdge(p.id);
+                startHeightDrag(e, H, (v) => onSetSideInfillTop(side, v));
+              }}
+              onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge(p.id); onSideInfillToCeiling?.(side); }}
+            />
+          );
+        })}
 
       {/* wall unit: the bracket line it hangs from, so it does not read as
           floating by accident */}

@@ -63,6 +63,8 @@ export default function RightPanel() {
   const setEndPanelDefaults = useProjectStore((s) => s.setEndPanelDefaults);
   const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
   const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
+  const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
+  const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const resetUnitHeight = useProjectStore((s) => s.resetUnitHeight);
   // Select the STORED value and migrate in a memo: a selector that builds a
   // new object every call makes zustand's snapshot change on every render,
@@ -597,6 +599,29 @@ export default function RightPanel() {
                 .map((v) => (Number(v) > 0 ? formatMm(v) : '—')).join(' / ')}
             </span>
           </div>
+          {/* …but how far UP it goes is a decision, exactly as it is for an end
+              panel (turn 6, CLAUDE.md F4). Grab its top edge in 3D, or type it. */}
+          {[['L', 'side_infill_left_mm', 'side_infill_left_top_mm', 'Left'],
+            ['R', 'side_infill_right_mm', 'side_infill_right_top_mm', 'Right']]
+            .filter(([, widthKey]) => Number(unit.params[widthKey]) > 0)
+            .map(([side, widthKey, topKey, label]) => (
+              <div key={side} className="flex items-center gap-1 text-[11px] text-ink-400 pl-3">
+                <span className="flex-1">{label} filler, above unit</span>
+                <NumberField
+                  className="cc-input w-16 text-right"
+                  min={0}
+                  title="How far this filler runs above the carcass (mm)"
+                  value={Number(unit.params[topKey]) || 0}
+                  onCommit={(v) => setSideInfillTop(unit.id, side, v)}
+                />
+                <button
+                  type="button" className="cc-btn px-2" title="All the way to the ceiling"
+                  onClick={() => sideInfillToCeiling(unit.id, side)}
+                >
+                  ▲
+                </button>
+              </div>
+            ))}
 
           <div className="cc-divider !my-2" />
 

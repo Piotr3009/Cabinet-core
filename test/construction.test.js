@@ -94,16 +94,21 @@ test('parking a unit at the wall grows the filler; driving away removes it', () 
 test('the filler is the exact width of the gap it closes', () => {
   const id = withUnit('BUD');
   store().moveUnit(id, -2000, 0);
-  const infill = partsOf(id, 'INFILL').find((p) => p.meta.side === 'left');
+  const infill = partsOf(id, 'INFILL').find((p) => p.meta.side === 'left' && p.meta.piece === 'face');
   assert.equal(infill.w, INFILL);
-  assert.equal(infill.h, unitOf(id).params.height);
+  // Turn 6 (CLAUDE.md F4): to the FLOOR, past the legs — a filler that stops at
+  // the carcass base leaves a slot beside the plinth.
+  assert.equal(infill.h, unitOf(id).params.height + P.baseUnit.legHeight);
   assert.equal(infill.box.x, -INFILL, 'outside the carcass, against the wall');
 
-  // Change the setting and both the stop and the piece follow it.
+  // Change the setting and both the stop and the piece follow it. 40 mm is over
+  // minLWidth, so this one is a real L: a face and an arm.
   store().setDesign({ infill: { sideWidth: 40 } });
   store().moveUnit(id, -2000, 0);
   assert.equal(unitOf(id).position.x_mm, 40);
-  assert.equal(partsOf(id, 'INFILL').find((p) => p.meta.side === 'left').w, 40);
+  const left = partsOf(id, 'INFILL').filter((p) => p.meta.side === 'left');
+  assert.equal(left.find((p) => p.meta.piece === 'face').w, 40);
+  assert.equal(left.find((p) => p.meta.piece === 'arm').w, P.autoParts.sideInfill.returnDepth);
 });
 
 // ─── #16: the plinth and the top infill are asked for ───

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { forEachBevelled } from './bevel.js';
+import { wallFacesCamera } from './Room.jsx';
 
 // ─── Taking the picture (turn 6, CLAUDE.md F2) ───
 //
@@ -185,6 +186,18 @@ export function captureRender({ gl, scene, camera }, job) {
     shot.lookAt(new THREE.Vector3(...job.camera.target));
   }
   shot.updateProjectionMatrix();
+
+  // The walls the SHOT camera is behind, hidden — the same test the editor runs
+  // per frame, run once here for a different camera. Without it, framing on a
+  // unit standing at a wall puts the camera outside the room and the render
+  // comes back as a full-frame rectangle of the back of that wall.
+  scene.traverse((object) => {
+    const face = object.userData?.ccWall;
+    if (!face || !object.visible) return;
+    if (wallFacesCamera(face, shot.position)) return;
+    object.visible = false;
+    undo(() => { object.visible = true; });
+  });
 
   let out;
   try {

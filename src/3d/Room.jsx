@@ -14,6 +14,19 @@ import { formatMm } from '../engine/format.js';
 
 const V = new THREE.Vector3();
 
+/**
+ * Is this wall facing the camera, or are we standing behind it?
+ *
+ * Shared by the editor's per-frame hook and by the render pass, which looks
+ * through a camera of its own — one test, so a still can never disagree with
+ * the view it was taken from about which walls are in the way.
+ */
+export function wallFacesCamera(face, cameraPosition) {
+  if (!face) return true;
+  V.set(cameraPosition.x - face.midX, 0, cameraPosition.z - face.midZ);
+  return face.inwardX * V.x + face.inwardZ * V.z > 0;
+}
+
 /** One wall: a plane with a hole per window and per door. */
 function Wall({ wall, height, openings, centre, showLabel }) {
   const ref = useRef(null);
@@ -47,13 +60,22 @@ function Wall({ wall, height, openings, centre, showLabel }) {
   // Auto-hide: a wall the camera is BEHIND would only ever be seen from its
   // back face, so it is hidden. Done per frame against the live camera, not
   // once at mount — the whole point is that it follows the orbit.
+  //
+  // The test itself lives in `wallFacesCamera` and the numbers it needs are
+  // parked in userData, because a RENDER looks through a camera of its own
+  // (3d/renderCapture.js) and this hook would have hidden the walls for the
+  // editor's camera instead. The first render framed on a unit standing at a
+  // wall came back as a full-frame grey rectangle — the back of that wall.
+  const face = useMemo(() => ({
+    midX: mm((wall.start.x + wall.end.x) / 2 - centre.x),
+    midZ: mm((wall.start.y + wall.end.y) / 2 - centre.y),
+    inwardX: wall.inward.x,
+    inwardZ: wall.inward.y,
+  }), [wall.start.x, wall.start.y, wall.end.x, wall.end.y, wall.inward.x, wall.inward.y, centre.x, centre.y]);
+
   useFrame(({ camera }) => {
     if (!ref.current) return;
-    const midX = mm((wall.start.x + wall.end.x) / 2 - centre.x);
-    const midZ = mm((wall.start.y + wall.end.y) / 2 - centre.y);
-    V.set(camera.position.x - midX, 0, camera.position.z - midZ);
-    const facing = wall.inward.x * V.x + wall.inward.y * V.z;
-    ref.current.visible = facing > 0;
+    ref.current.visible = wallFacesCamera(face, camera.position);
   });
 
   const midLabel = [
@@ -64,7 +86,7 @@ function Wall({ wall, height, openings, centre, showLabel }) {
 
   return (
     <group>
-      <group ref={ref} position={position} rotation={[0, wall.angle, 0]}>
+      <group ref={ref} userData={{ ccWall: face }} position={position} rotation={[0, wall.angle, 0]}>
         {/* Lambert, not standard, since turn 6 — and this is a PERFORMANCE
             decision with a visual answer attached. A wall is matt white paint:
             at roughness 0.95 and metalness 0 the standard material was already

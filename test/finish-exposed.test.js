@@ -64,7 +64,8 @@ test('the named parts land on the side CLAUDE.md puts them on', () => {
   }
 
   // OUT of it
-  for (const id of ['PLINTH', 'INFILL-T', 'INFILL-L', 'END-R']) {
+  // Turn 6 (CLAUDE.md F4) splits both infills into the two strips of an L.
+  for (const id of ['PLINTH', 'INFILL-T-FACE', 'INFILL-T-SHELF', 'INFILL-L-FACE', 'END-R']) {
     const p = at(r, id);
     assert.ok(p, `${id} is missing from this unit`);
     assert.equal(p.finish_exposed, true, `${id} is a finished surface`);
@@ -87,7 +88,7 @@ test('the preset filters on the flag, not on a list of ids', () => {
   // not. Turn 4's "Carcass only" put neither on the right sheet.
   assert.equal(bare.some((id) => id.startsWith('DR01-F')), false);
   assert.ok(bare.includes('D1-DNO') && bare.includes('D1-SL'), 'the boxes come with the carcass');
-  assert.ok(sprayed.includes('PLINTH') && sprayed.includes('INFILL-T'));
+  assert.ok(sprayed.includes('PLINTH') && sprayed.includes('INFILL-T-FACE'));
   assert.ok(sprayed.some((id) => id.startsWith('DR01-F')));
   assert.equal(bare.length + sprayed.length, r.panels.length);
 });

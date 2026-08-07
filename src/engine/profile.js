@@ -336,9 +336,23 @@ export const DEFAULT_CABINET_PROFILE = {
       thickness: null,      // null = the unit's board thickness
     },
     topInfill: {
-      defaultHeight: 40,    // every unit gets one the moment it is placed
+      defaultHeight: 40,    // the visible face; "40" is what a workshop says
       minHeight: 10,
       thickness: null,
+      // ─── Turn 6 (CLAUDE.md F4 / BACKLOG #20) ───
+      // The top infill is an L in section: a face strip standing on the units
+      // and a shelf running back off the top of it, the two mitred at 45° and
+      // glued. `shelfDepth` is the horizontal leg. It is what stops the piece
+      // reading as a flap of board stuck to the front of a run — and it is what
+      // the joiner actually screws to the ceiling or the wall.
+      shelfDepth: 80,
+      // How close two units have to stand to be ONE run. The clamp lands them
+      // edge to edge, so this only absorbs the 0.5 mm grid.
+      runGap: 1,
+      // The open end turns the corner and runs back to the wall (the fourth of
+      // the four end conditions). This is the shortest return worth making;
+      // below it the mitre is longer than the piece.
+      minReturn: 60,
     },
     sideInfill: {
       // The width comes from Design Settings (project level). This is the
@@ -347,6 +361,15 @@ export const DEFAULT_CABINET_PROFILE = {
       maxWidth: 120,
       minWidth: 3,
       thickness: null,
+      // ─── Turn 6 (CLAUDE.md F4) ───
+      // The vertical filler is an L too: arm B closes the gap in the plane of
+      // the doors, arm A is screwed to the carcass side and runs back. This is
+      // how far back — enough to take two screws, not so far it fouls a hinge.
+      returnDepth: 60,
+      // An L only fits when the gap is wider than the board it is made of.
+      // Under that the piece stays a plain scribe strip, which is what a
+      // workshop would cut anyway for a 12 mm gap.
+      minLWidth: 24,
       // Turn 4 (BACKLOG #15): the unit STOPS one infill width from the wall, and
       // the filler appears when it is parked there. This is how much slop counts
       // as "parked at the stop" — the clamp lands it exactly, so 1 mm is plenty

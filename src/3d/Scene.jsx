@@ -225,6 +225,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
   const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
+  const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
+  const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const clearSelection = useUiStore((s) => s.clearSelection);
@@ -323,6 +325,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           onFillToCeiling={() => fillToCeiling(unit.id)}
           onSetEndPanelTop={(panelId, v) => setEndPanelTop(unit.id, panelId, v)}
           onEndPanelToCeiling={(panelId) => endPanelToCeiling(unit.id, panelId)}
+          onSetSideInfillTop={(side, v) => setSideInfillTop(unit.id, side, v)}
+          onSideInfillToCeiling={(side) => sideInfillToCeiling(unit.id, side)}
           showLabels={showDimensions && !contourView}
           profile={profile}
           finishes={resolveFinishes(unit, design, profile)}

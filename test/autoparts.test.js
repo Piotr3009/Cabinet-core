@@ -80,17 +80,25 @@ test('the top infill is 40 by default and never taller than the space left', () 
 });
 
 test('the top infill is a real panel, and it grows with the drag', () => {
+  // Turn 6 (CLAUDE.md F4) makes this an L in section — a face strip and a
+  // shelf, mitred together — and one element for a whole RUN. A unit on its
+  // own is a run of one, which is what a bare computeCabinet() call is, so the
+  // numbers below are that unit's own width. The four end conditions and the
+  // multi-cabinet case live in test/run-infill.test.js.
   const r = computeCabinet(base({ top_infill_mm: 40 }), P);
-  const infill = partsOf(r, 'INFILL')[0];
-  assert.equal(infill.id, 'INFILL-T');
-  assert.equal(infill.w, 600);
-  assert.equal(infill.h, 40);
-  assert.equal(infill.box.y, 770, 'it starts at the top of the carcass');
-  assert.equal(infill.role, 'infill');
+  const face = r.panels.find((p) => p.id === 'INFILL-T-FACE');
+  const shelf = r.panels.find((p) => p.id === 'INFILL-T-SHELF');
+  assert.equal(face.w, 600);
+  assert.equal(face.h, 40);
+  assert.equal(face.box.y, 770, 'it starts at the top of the carcass');
+  assert.equal(face.role, 'infill');
+  assert.equal(shelf.w, 600);
+  assert.equal(shelf.h, P.autoParts.topInfill.shelfDepth, 'the horizontal leg of the L');
 
   const taller = computeCabinet(base({ top_infill_mm: 380 }), P);
-  assert.equal(partsOf(taller, 'INFILL')[0].h, 380);
-  assert.ok(partsOf(taller, 'INFILL')[0].area_m2 > infill.area_m2, 'the BOM area follows the height');
+  const tallerFace = taller.panels.find((p) => p.id === 'INFILL-T-FACE');
+  assert.equal(tallerFace.h, 380);
+  assert.ok(tallerFace.area_m2 > face.area_m2, 'the BOM area follows the height');
 
   // Below the minimum it is not a piece at all.
   assert.equal(partsOf(computeCabinet(base({ top_infill_mm: 4 }), P), 'INFILL').length, 0);
@@ -148,15 +156,21 @@ test('a unit standing out in the room grows no filler, and no complaint either',
 });
 
 test('the side fillers are panels on the correct side of the unit', () => {
+  // Turn 6: the piece is an L where the gap is wide enough to take one, and
+  // the FACE of it is what closes the gap — same width, same side, same wall.
+  // 12 and 18 mm are both under minLWidth, so both are still plain strips;
+  // test/run-infill.test.js is where the L is checked.
   const r = computeCabinet(base({ side_infill_left_mm: 12, side_infill_right_mm: 18 }), P);
-  const left = r.panels.find((p) => p.id === 'INFILL-L');
-  const right = r.panels.find((p) => p.id === 'INFILL-R');
+  const left = r.panels.find((p) => p.id === 'INFILL-L-FACE');
+  const right = r.panels.find((p) => p.id === 'INFILL-R-FACE');
   assert.equal(left.w, 12);
-  assert.equal(left.h, 770);
+  // …and it runs to the FLOOR now, past the legs: a filler that stops at the
+  // carcass base leaves a slot beside the plinth.
+  assert.equal(left.h, 770 + P.baseUnit.legHeight);
   assert.equal(left.box.x, -12, 'outside the carcass, against the wall');
   assert.equal(right.w, 18);
   assert.equal(right.box.x, 600);
-  assert.equal(r.csvLines.filter((l) => /,INFILL-[LR],/.test(l)).length, 2);
+  assert.equal(r.csvLines.filter((l) => /,INFILL-[LR]-FACE,/.test(l)).length, 2);
 });
 
 // ─── the whole thing, per unit, from the room ───

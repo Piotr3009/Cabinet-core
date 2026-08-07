@@ -14,7 +14,7 @@
 //
 // Pure functions — no React, no store imports, no jsPDF.
 
-import { boundsOf } from './frontElevation.js';
+import { boundsOf } from './primitives.js';
 
 /** Sheet sizes. Landscape is the default; a tall subject turns the paper. */
 export const PAGE_FORMATS = {
@@ -71,19 +71,25 @@ export function scaleLabel(denominator) {
  * fills it. A drawing office turns the paper without being asked, so this does
  * too — and landscape wins a tie, because a RUN of units is wide.
  */
-export function layoutSheet({ drawing, format = 'A4', orientation = 'auto', title = {}, profile }) {
+export function layoutSheet({
+  drawing, format = 'A4', orientation = 'auto', title = {}, profile, titleRows = null, blockWidth = null,
+}) {
   if (orientation === 'auto') {
-    const landscape = layoutSheet({ drawing, format, orientation: 'landscape', title, profile });
-    const portrait = layoutSheet({ drawing, format, orientation: 'portrait', title, profile });
+    const args = { drawing, format, title, profile, titleRows, blockWidth };
+    const landscape = layoutSheet({ ...args, orientation: 'landscape' });
+    const portrait = layoutSheet({ ...args, orientation: 'portrait' });
     return portrait.scale < landscape.scale ? portrait : landscape;
   }
-  return layoutOne({ drawing, format, orientation, title, profile });
+  return layoutOne({ drawing, format, orientation, title, profile, titleRows, blockWidth });
 }
 
-function layoutOne({ drawing, format, orientation, title, profile }) {
+function layoutOne({ drawing, format, orientation, title, profile, titleRows, blockWidth }) {
   const D = profile.drawings;
   const page = pageFormat(format, orientation);
   const m = D.margin;
+  // A card's title block carries more rows than an elevation's and needs more
+  // room for a decor name; it says so rather than this file knowing about cards.
+  const rows = titleRows?.length ? titleRows : D.titleBlock.rows;
 
   // The border, and the area inside it the drawing may use. The title block
   // sits in the bottom-right corner of that area and the drawing keeps clear
@@ -91,8 +97,8 @@ function layoutOne({ drawing, format, orientation, title, profile }) {
   // make a sheet unreadable.
   const frame = { x: m, y: m, w: page.width - m * 2, h: page.height - m * 2 };
   const block = {
-    w: D.titleBlock.width,
-    h: D.titleBlock.rows.length * D.titleBlock.rowHeight,
+    w: Number(blockWidth) > 0 ? Number(blockWidth) : D.titleBlock.width,
+    h: rows.length * D.titleBlock.rowHeight,
   };
   const area = {
     w: frame.w - D.padding * 2,
@@ -121,6 +127,9 @@ function layoutOne({ drawing, format, orientation, title, profile }) {
     } else if (e.kind === 'rect') {
       const [x, y] = place(e.x, e.y);
       entities.push({ ...e, x, y, w: e.w / scale, h: e.h / scale });
+    } else if (e.kind === 'circle') {
+      const [cx, cy] = place(e.cx, e.cy);
+      entities.push({ ...e, cx, cy, r: e.r / scale });
     } else if (e.kind === 'text') {
       const [x, y] = place(e.x, e.y);
       // Text does NOT scale with the drawing: a 40 mm label at 1:20 would be
@@ -130,13 +139,13 @@ function layoutOne({ drawing, format, orientation, title, profile }) {
     }
   }
 
-  entities.push(...sheetFrame({ page, frame, block, title, scale, profile }));
+  entities.push(...sheetFrame({ page, frame, block, title, scale, profile, rows }));
 
   return { entities, width: page.width, height: page.height, scale, format: page };
 }
 
 /** The border and the title block. */
-function sheetFrame({ frame, block, title, scale, profile }) {
+function sheetFrame({ frame, block, title, scale, profile, rows }) {
   const D = profile.drawings;
   const out = [
     { kind: 'rect', layer: 'FRAME', x: frame.x, y: frame.y, w: frame.w, h: frame.h },
@@ -153,11 +162,14 @@ function sheetFrame({ frame, block, title, scale, profile }) {
     View: title.view || 'Front elevation',
     Scale: scaleLabel(scale),
     Date: title.date || '',
+    // Anything else the sheet has been asked to carry — a card names the type
+    // and both materials, and does it through the same rows rather than
+    // scattering captions across the paper.
+    ...(title.extra || {}),
   };
 
   // Rows are listed bottom-up on paper, so the first row of the config is the
   // top line of the block — which is where a title block puts the name.
-  const rows = D.titleBlock.rows;
   rows.forEach((key, i) => {
     const rowY = by + block.h - (i + 1) * D.titleBlock.rowHeight;
     if (i > 0) out.push({ kind: 'line', layer: 'FRAME_LIGHT', x1: bx, y1: rowY + D.titleBlock.rowHeight, x2: bx + block.w, y2: rowY + D.titleBlock.rowHeight });
@@ -170,7 +182,11 @@ function sheetFrame({ frame, block, title, scale, profile }) {
       });
       out.push({
         kind: 'text', layer: 'FRAME', x: bx + D.titleBlock.labelWidth, y: rowY + D.titleBlock.rowHeight / 2,
-        text: String(value), height: D.titleBlock.valueHeight, align: 'left',
+        // A decor's attributed name is long by design ("EGGER H1180 ST37
+        // Natural Halifax Oak"); the block is not going to grow to fit the
+        // longest one in the catalogue, so it is cut where it stops fitting.
+        text: fitInBlock(String(value), block.w - D.titleBlock.labelWidth - 2, D.titleBlock.valueHeight),
+        height: D.titleBlock.valueHeight, align: 'left',
       });
     } else {
       out.push({
@@ -181,6 +197,22 @@ function sheetFrame({ frame, block, title, scale, profile }) {
   });
 
   return out;
+}
+
+/**
+ * Cut a title-block value where it stops fitting.
+ *
+ * The 0.55 is the average advance of a proportional sans face as a fraction of
+ * its point size — near enough for a title block, and honest about being an
+ * estimate: nothing here can measure a glyph, because nothing here is allowed
+ * to know about a font (this file is tested in node).
+ */
+export function fitInBlock(value, widthMm, textHeight) {
+  const perChar = textHeight * 0.55;
+  const max = Math.max(4, Math.floor(widthMm / perChar));
+  if (value.length <= max) return value;
+  // ASCII: this string goes into a PDF, and jsPDF's built-in faces are WinAnsi.
+  return `${value.slice(0, max - 3)}...`;
 }
 
 /** The paper box a laid-out sheet fills — used by the tests and the preview. */

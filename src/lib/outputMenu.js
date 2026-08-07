@@ -15,15 +15,37 @@
 // Zero new logic, deliberately: every `run` below is a handler that already
 // existed and did the same thing from the old place.
 
-/** The submenu of technical drawings. One is real; the rest hold their place. */
+/**
+ * The submenu of technical drawings.
+ *
+ * Turn 6 held two places open here — "Top view" and "Front (carcass only)" —
+ * for the turn that drew them. Turn 7 draws them, and it does NOT add two more
+ * menu entries: the three views are one CARD, which is what a workshop hands to
+ * a bench, and three separate exports of the same cabinet is three things to
+ * keep in step. So the places close, and what replaces them is the card, its
+ * SVG, and the whole project as a booklet.
+ */
 export const DRAWING_KINDS = [
   {
-    id: 'front-elevation',
-    label: 'Front elevation (preview)',
-    hint: 'The selected unit, drawn the way the AutoLISP draws it',
+    id: 'preview',
+    label: 'Preview…',
+    hint: 'The card on screen, and turn 6’s single elevation beside it',
   },
-  { id: 'top-view', label: 'Top view', soon: true },
-  { id: 'front-carcass', label: 'Front (carcass only)', soon: true },
+  {
+    id: 'unit-card',
+    label: 'Unit card (PDF)',
+    hint: 'The selected unit: front, carcass and plan, dimensioned',
+  },
+  {
+    id: 'unit-card-svg',
+    label: 'Unit card (SVG)',
+    hint: 'The same card as vectors, for a drawing office',
+  },
+  {
+    id: 'booklet',
+    label: 'All units (PDF)',
+    hint: 'A cover and a page per unit — the whole project',
+  },
 ];
 
 /**

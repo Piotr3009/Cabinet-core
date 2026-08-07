@@ -34,11 +34,22 @@ export const DRAWING_LAYERS = {
   LEG_BLOCK: { aci: 8, colour: '#8A8A8A', width: 0.25 },
   // The unit's number, in the middle of the elevation. ACI 94 — green.
   UNIT_NUMBER: { aci: 94, colour: '#009A3D', width: 0.25 },
-  // Hinges. Held for the turn that draws them, so the layer list stays the
-  // LISP's list rather than "the bits turn 6 happened to need".
+  // Hinges. Held by turn 6 for the turn that drew them; turn 7's top view is
+  // that turn — a hinge on the plan, on the side the door swings from.
   HINGES: { aci: 96, colour: '#4C9A9A', width: 0.2 },
   // Measurements — see the note above.
   DIMENSIONS: { aci: 8, colour: '#1B2A4A', width: 0.25 },
+  // ─── Turn 7 (CLAUDE.md F1) ───
+  // Runners. NOT a LISP view layer: the AutoLISP's only runner layer is
+  // RUNNERS_3MM, which is a CNC drilling layer, because its elevation had no
+  // runners on it at all. The carcass-only view does, so they need an ink —
+  // teal, the same family as the hinges, because a runner is the same kind of
+  // thing: hardware, drawn where it is screwed on.
+  RUNNERS: { aci: 96, colour: '#2E7D8C', width: 0.25 },
+  // The caption under a view ("FRONT", "TOP"). Not a LISP layer either — the
+  // AutoLISP put its three views in one drawing and let the draughtsman know
+  // which was which; a printed card has to say so.
+  VIEW_TITLE: { aci: 7, colour: '#111111', width: 0.3 },
   // Not a LISP layer: the sheet itself. A drawing frame and a title block are
   // what make a printout read as a drawing rather than a screenshot, and the
   // AutoLISP never had to draw them because AutoCAD's template already did.

@@ -22,14 +22,11 @@
 // Pure functions — no React, no store imports, no jsPDF.
 
 import { formatMm } from '../format.js';
-
-/** A line, in drawing mm. */
-const line = (layer, x1, y1, x2, y2) => ({ kind: 'line', layer, x1, y1, x2, y2 });
-/** A rectangle by its lower-left corner and size. */
-const rect = (layer, x, y, w, h) => ({ kind: 'rect', layer, x, y, w: Math.abs(w), h: Math.abs(h) });
-const text = (layer, x, y, value, height, align = 'centre') => ({
-  kind: 'text', layer, x, y, text: value, height, align,
-});
+// Aliased on the way in: the exported names are long on purpose (see
+// primitives.js), and drawing code reads better with short ones.
+import {
+  boundsOf, entCircle as circle, entLine as line, entRect as rect, entText as text, moveEntities,
+} from './primitives.js';
 
 /**
  * Which layer a panel is drawn on, and whether it is a hidden line.
@@ -37,7 +34,7 @@ const text = (layer, x, y, value, height, align = 'centre') => ({
  * Decided on the ROLE, like everything else in this engine since BACKLOG #35 —
  * a kit that adds a part nobody thought of gets a sensible answer for free.
  */
-function panelStyle(panel, { width, height }) {
+export function panelStyle(panel, { width, height }) {
   if (panel.material_role === 'front') return { layer: 'DOORS', hidden: false };
   if (panel.role === 'end_panel' || panel.role === 'infill') return { layer: 'DOORS', hidden: false };
   if (panel.role === 'plinth') return { layer: 'CARCASE', hidden: false };
@@ -70,11 +67,16 @@ function panelStyle(panel, { width, height }) {
  * nobody can read. The drawer FRONTS are the face of that unit and they are
  * drawn, so nothing is lost that a joiner looks for here.
  */
-function isDrawn(panel) {
+export function isDrawn(panel) {
   if (!panel.box) return false;
   if (panel.role === 'back') return false;         // behind everything, full face
   if (panel.role === 'drawer_box') return false;
   return true;
+}
+
+/** Is this piece a FRONT — a door or a drawer front? */
+export function isFront(panel) {
+  return panel.part === 'FRONT' || panel.part === 'DRAWER-FRONT';
 }
 
 /**
@@ -97,7 +99,7 @@ export function doorSwing(box, hinge) {
 }
 
 /** The face detail of a front: shaker frame, J-groove, or nothing at all. */
-function frontDetail(box, frontType, profile) {
+export function frontDetail(box, frontType, profile) {
   if (frontType === 'S') {
     const off = profile.front.types.S.frameWidth;      // LISP `off` = 50
     if (box.w > off * 2.2 && box.h > off * 2.2) {
@@ -117,42 +119,135 @@ function frontDetail(box, frontType, profile) {
  * (BACKLOG #34): a thin line between two extension lines, an oblique tick
  * across each end instead of a filled arrowhead, and the value in the middle.
  *
+ * The SIGN of `offset` picks the side, and the two directions read the way a
+ * draughtsman means them: a horizontal dimension with a positive offset hangs
+ * BELOW what it measures (that is where an elevation's width goes), a vertical
+ * one with a positive offset stands to the RIGHT. Negative puts each on the
+ * other side — which is how a card gets shelf positions down the left and
+ * runner rows down the right without two copies of this function.
+ *
  * @param {object} args
  *   from, to      the two points being measured, in drawing mm
  *   direction     'h' | 'v'
  *   offset        how far off the measured face the dimension line sits
  *   value         the number, already a number (formatted here, once)
+ *   label         an override for the text — a value that is not a plain
+ *                 millimetre reading ("3 gap", "D1 200")
  */
-export function dimensionEntities({ from, to, direction, offset, value, textHeight }) {
+export function dimensionEntities({ from, to, direction, offset, value, textHeight, label = null }) {
   const out = [];
   const tick = textHeight * 0.9;
   const gap = textHeight * 0.4;
   const extend = textHeight * 0.7;
+  const amount = Math.abs(offset);
+  const caption = label ?? formatMm(value);
+  // Where the number goes. A draughtsman writes it in the middle of the
+  // dimension line when it fits there, and OUTSIDE the near tick when it does
+  // not — a 56 mm gap cannot hold the characters "56" at this text height, and
+  // a number printed across its own arrows is a number nobody can read. The
+  // 0.55 is the average advance of a proportional face as a fraction of its
+  // height; nothing in the engine may know about a real font.
+  const span = Math.abs(direction === 'h' ? to[0] - from[0] : to[1] - from[1]);
+  const needed = String(caption).length * textHeight * 0.55;
+  const shift = needed > span ? (span + needed) / 2 + tick * 0.5 : 0;
 
   if (direction === 'h') {
-    const y = from[1] - offset;
+    const dir = offset >= 0 ? -1 : 1;                 // positive = below
+    const y = from[1] + dir * amount;
     // Extension lines, starting clear of the face as a draughtsman leaves them.
-    out.push(line('DIMENSIONS', from[0], from[1] - gap, from[0], y - extend));
-    out.push(line('DIMENSIONS', to[0], to[1] - gap, to[0], y - extend));
+    out.push(line('DIMENSIONS', from[0], from[1] + dir * gap, from[0], y + dir * extend));
+    out.push(line('DIMENSIONS', to[0], to[1] + dir * gap, to[0], y + dir * extend));
     out.push(line('DIMENSIONS', from[0], y, to[0], y));
     for (const x of [from[0], to[0]]) {
       out.push(line('DIMENSIONS', x - tick / 2, y - tick / 2, x + tick / 2, y + tick / 2));
     }
-    out.push(text('DIMENSIONS', (from[0] + to[0]) / 2, y + textHeight * 0.45, formatMm(value), textHeight));
+    out.push(text(
+      'DIMENSIONS',
+      (from[0] + to[0]) / 2 + shift * Math.sign(to[0] - from[0] || 1),
+      y - dir * textHeight * 0.45,
+      caption,
+      textHeight,
+    ));
     return out;
   }
 
-  const x = from[0] + offset;
-  out.push(line('DIMENSIONS', from[0] + gap, from[1], x + extend, from[1]));
-  out.push(line('DIMENSIONS', to[0] + gap, to[1], x + extend, to[1]));
+  const dir = offset >= 0 ? 1 : -1;                   // positive = to the right
+  const x = from[0] + dir * amount;
+  out.push(line('DIMENSIONS', from[0] + dir * gap, from[1], x + dir * extend, from[1]));
+  out.push(line('DIMENSIONS', to[0] + dir * gap, to[1], x + dir * extend, to[1]));
   out.push(line('DIMENSIONS', x, from[1], x, to[1]));
   for (const y of [from[1], to[1]]) {
     out.push(line('DIMENSIONS', x - tick / 2, y - tick / 2, x + tick / 2, y + tick / 2));
   }
   out.push({
-    ...text('DIMENSIONS', x, (from[1] + to[1]) / 2, formatMm(value), textHeight),
+    ...text(
+      'DIMENSIONS',
+      x,
+      (from[1] + to[1]) / 2 + shift * Math.sign(to[1] - from[1] || 1),
+      caption,
+      textHeight,
+    ),
     rotate: -90,
   });
+  return out;
+}
+
+/**
+ * A stack of dimensions all measured from ONE datum — the way a workshop reads
+ * shelf positions: every one of them "from the bottom", not chained off its
+ * neighbour, because a chain accumulates the error of every step above it.
+ *
+ * Each run steps further out so they do not draw on top of one another.
+ *
+ * @param {object} args
+ *   datum      the reference coordinate (the value they are all measured from)
+ *   values     the coordinates being measured, in drawing mm
+ *   at         the fixed coordinate of the run (x for 'v', y for 'h')
+ *   direction  'h' | 'v'
+ *   first      offset of the innermost run; `step` is added per further run
+ *   sign       +1 or −1 — which side of `at` the runs hang on
+ */
+export function baselineDimensions({
+  datum, values, at, direction, first, step, sign = 1, textHeight, labels = null,
+}) {
+  const out = [];
+  const ordered = [...values]
+    .map((v, i) => ({ v, i }))
+    .filter((e) => Number.isFinite(e.v) && Math.abs(e.v - datum) > 1e-6)
+    .sort((a, b) => Math.abs(a.v - datum) - Math.abs(b.v - datum));
+
+  ordered.forEach((entry, run) => {
+    const offset = sign * (first + step * run);
+    const from = direction === 'v' ? [at, datum] : [datum, at];
+    const to = direction === 'v' ? [at, entry.v] : [entry.v, at];
+    out.push(...dimensionEntities({
+      from, to, direction, offset, value: Math.abs(entry.v - datum), textHeight,
+      label: labels ? labels[entry.i] ?? null : null,
+    }));
+  });
+  return out;
+}
+
+/**
+ * Consecutive dimensions on ONE line — a chain. The right tool for a drawer
+ * stack, where what the bench measures is each front's own height and the sum
+ * is the carcass, not a set of distances from the floor.
+ *
+ * `edges` are the boundaries: n+1 of them describe n segments.
+ */
+export function chainDimensions({ edges, at, direction, offset, textHeight, labels = null }) {
+  const out = [];
+  const sorted = [...edges].filter(Number.isFinite).sort((a, b) => a - b);
+  for (let i = 1; i < sorted.length; i += 1) {
+    const a = sorted[i - 1];
+    const b = sorted[i];
+    if (b - a <= 1e-6) continue;
+    const from = direction === 'v' ? [at, a] : [a, at];
+    const to = direction === 'v' ? [at, b] : [b, at];
+    out.push(...dimensionEntities({
+      from, to, direction, offset, value: b - a, textHeight, label: labels ? labels[i - 1] ?? null : null,
+    }));
+  }
   return out;
 }
 
@@ -166,7 +261,9 @@ export function dimensionEntities({ from, to, direction, offset, value, textHeig
  *   profile
  * @returns {{entities:Array, bounds:{x,y,w,h}, unitNum:string}}
  */
-export function buildFrontElevation(result, { unitNum, frontType, profile } = {}) {
+export function buildFrontElevation(result, {
+  unitNum, frontType, profile, overallDims = true, unitNumberHeight = null,
+} = {}) {
   const D = profile.drawings;
   const entities = [];
   const panels = result.panels.filter(isDrawn);
@@ -201,47 +298,45 @@ export function buildFrontElevation(result, { unitNum, frontType, profile } = {}
     }
   }
 
-  // ── the unit number, green, in the middle (LISP drawText UNIT_NUMBER) ──
-  entities.push(text('UNIT_NUMBER', W / 2, H / 2, String(unitNum ?? result.unitNum ?? ''), D.unitNumberHeight));
+  // ── the unit number, green, in the middle (LISP entText UNIT_NUMBER) ──
+  entities.push(text('UNIT_NUMBER', W / 2, H / 2, String(unitNum ?? result.unitNum ?? ''),
+    unitNumberHeight || D.unitNumberHeight));
 
   // ── what the drawing OCCUPIES, before the dimensions are hung off it ──
   const bounds = boundsOf(entities);
 
   // ── the two dimensions CLAUDE.md asks for: overall width below, height at
   //    the side. Both measure the whole drawn solid, which is what a joiner
-  //    takes off a drawing — end panels and infills included. ──
-  entities.push(...dimensionEntities({
-    from: [bounds.x, bounds.y],
-    to: [bounds.x + bounds.w, bounds.y],
-    direction: 'h',
-    offset: D.dimensionOffset,
-    value: bounds.w,
-    textHeight: D.textHeight,
-  }));
-  entities.push(...dimensionEntities({
-    from: [bounds.x + bounds.w, bounds.y],
-    to: [bounds.x + bounds.w, bounds.y + bounds.h],
-    direction: 'v',
-    offset: D.dimensionOffset,
-    value: bounds.h,
-    textHeight: D.textHeight,
-  }));
-
-  return { entities, bounds: boundsOf(entities), unitNum: String(unitNum ?? result.unitNum ?? '') };
-}
-
-/** The box a set of entities occupies, in drawing mm. */
-export function boundsOf(entities) {
-  let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
-  const see = (x, y) => {
-    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-  };
-  for (const e of entities) {
-    if (e.kind === 'line') { see(e.x1, e.y1); see(e.x2, e.y2); }
-    else if (e.kind === 'rect') { see(e.x, e.y); see(e.x + e.w, e.y + e.h); }
-    else if (e.kind === 'text') { see(e.x - e.height, e.y - e.height); see(e.x + e.height, e.y + e.height); }
+  //    takes off a drawing — end panels and infills included.
+  //    The unit CARD hangs its own detailed runs off the same faces and turns
+  //    these off, so a card does not carry the width twice. ──
+  if (overallDims) {
+    entities.push(...dimensionEntities({
+      from: [bounds.x, bounds.y],
+      to: [bounds.x + bounds.w, bounds.y],
+      direction: 'h',
+      offset: D.dimensionOffset,
+      value: bounds.w,
+      textHeight: D.textHeight,
+    }));
+    entities.push(...dimensionEntities({
+      from: [bounds.x + bounds.w, bounds.y],
+      to: [bounds.x + bounds.w, bounds.y + bounds.h],
+      direction: 'v',
+      offset: D.dimensionOffset,
+      value: bounds.h,
+      textHeight: D.textHeight,
+    }));
   }
-  if (!Number.isFinite(minX)) return { x: 0, y: 0, w: 1, h: 1 };
-  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+
+  return {
+    entities,
+    bounds: boundsOf(entities),
+    solid: bounds,
+    unitNum: String(unitNum ?? result.unitNum ?? ''),
+  };
 }
+
+// `boundsOf` lives in primitives.js now and is re-exported here, so a caller
+// that already imported it from the elevation keeps working.
+export { boundsOf };

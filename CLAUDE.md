@@ -1,114 +1,140 @@
-# CLAUDE.md — Cabinet Core — TURA 7
+# CLAUDE.md — Cabinet Core — TURA 8
 
 ## Kontekst
-Tury 1–6 zmergowane. Baseline: uruchom `npm test` na starcie — wynik z main po merge T6
-to PODŁOGA, nigdy mniej. Tura 7 = **Drawings v1 (karta produkcyjna per szafka)** +
-**New Project flow** + **X-ray z okuciami 3D** + dwa punkty silnikowe (#28, #32).
-Rejestr: `BACKLOG.md` (tej tury dotyczą: **39, 41, 42, 28, 32**). Właściciel: Piotr —
-nie-programista. Konwencje rysunkowe: `reference/lisp/` + sonda z T6 + zrzuty w BUILD-LOG.
+Tury 1–7 zmergowane. Baseline: `npm test` na main po merge T7 — wynik to PODŁOGA.
+Tura 8 = **światło i render v2** (recepta ze Spraying) + **7 bugów z testów Piotra** +
+odsunięcie 10 mm + półki v2 + zachowania drzwi/wiszących + **mitra 45° widoczna w 3D** +
+menu kontekstowe v2 + **widoczność złączy (dog bones)**. Właściciel: Piotr — nie-programista.
 
-## TRYB: PEŁNA AUTONOMIA — ZERO PYTAŃ (jak T4–T6)
-Fazy po kolei, commit+push per faza, BUILD-LOG.md (sekcja TURA 7), problemy/decyzje →
-BLOCKERS.md. Nowa gałąź `claude/...`, PR do main. "Czysto albo wcale".
+## TRYB: PEŁNA AUTONOMIA — ZERO PYTAŃ (jak T4–T7)
+Fazy po kolei, commit+push per faza, BUILD-LOG (sekcja TURA 8), problemy → BLOCKERS.
+Nowa gałąź `claude/...`, PR do main. "Czysto albo wcale".
 
-## F0 — DŁUGI Z T6 (jeśli są)
-Przeczytaj BLOCKERS: jeśli tura 6 zostawiła fazy `NOT STARTED` — wykonaj je NAJPIERW
-(wg CLAUDE tury 6 zapisanego w gicie: `git show <merge-T6>^:CLAUDE.md` gdy trzeba),
-dopiero potem fazy poniżej.
+## F0 — DŁUGI Z T7
+BLOCKERS z `NOT STARTED (tura 7)` → wykonaj NAJPIERW.
 
 ## ŻELAZNE ZASADY (bez zmian)
 Fixtures nietykalne · engine czysty JS · zero gołych liczb (profile.js) · JS nie TS ·
-**zero nowych zależności** (PDF: istniejący jspdf; SVG własny) · mock-mode bez .env ·
-kod i copy UI po angielsku · nie dotykasz innych repo · sql tylko jako pliki.
+zero nowych zależności · mock bez .env · kod/copy EN · nie dotykasz innych repo
+(wartości ze Spraying-Calc podane NIŻEJ — nie klonuj tamtego repo).
 
 ## FAZY
 
-### F1 — DRAWINGS v1: karta produkcyjna per szafka [CRITICAL]
-Rozwinięcie sondy z T6 (ten sam styl: warstwy/kolory z `createViewLayers`, przekątne
-drzwi z `drawDoor`, ramka+tabelka, `formatMm`). Dla jednostki — **strona A4/A3 (auto)**:
-- **Trzy widoki na stronie**: Front (kompletny) · Front carcass-only (bez frontów —
-  widoczne półki/partition/prowadnice liniami pełnymi) · Top view (jak LISP top:
-  korpus, plecy, fronty z luzem 3, zawiasy po stronie hinge).
-- **Wymiarowanie detaliczne** (strzałki architektoniczne z T5): gabaryty W×H×D,
-  pozycje półek (od dna), wysokości szuflad per szuflada, rzędy prowadnic, cokół/nogi,
-  front gaps. Zasada: liczby, które warsztat mierzy taśmą — nie każda śruba.
-- Etykieta jednostki (zielony numer), nazwa typu, materiały (carcass/front z dekorami
-  EGGER pełną nazwą), skala, ramka + tabelka (Project · Unit · Scale · Date · Cabinet Core).
-- **Wyjścia**: Output ▸ Drawings ▸ "Unit card (PDF)" i "Unit card (SVG)".
-  **Booklet projektu**: "All units (PDF)" = strona per jednostka + okładka (lista
-  jednostek, projekt, klient) — okładka [MEDIUM: jeśli czas].
-- Test: SVG karty parsowalny (3 widoki obecne, liczba przekątnych = liczba drzwi,
-  wymiary z formatMm); PDF wielostronicowy powstaje.
-- DECYZJA ZAPISANA: per-szafka najpierw (dziedzictwo LISP, wartość warsztatowa);
-  elewacje ścian per-projekt → następna tura.
+### F1 — RENDER v2 + OŚWIETLENIE [CRITICAL]
+Diagnoza Piotra: "wszystko przezroczyste, brak cienia, brak głębi, białe zlewa się".
+- **Rig studyjny (przeniesiony ze Spraying-Calc):** key DirectionalLight 1.0 **z cieniem
+  obejmującym całe szafki** (shadow camera dopasowana do sceny), fill 0.5, rim 0.3,
+  ambient 0.2; ACESFilmic, exposure 1.0. Działa w widoku roboczym I w renderze.
+- **BUG: render "przezroczysty"** — znajdź przyczynę (podejrzenia: materiały z transparent
+  po X-ray z T7 / opacity dziedziczone / brak depthWrite) i napraw: w Solid i Render
+  wszystko w pełni kryjące.
+- **Hybryda materiałów per rola:**
+  * powierzchnie SPRAYOWANE (finish_exposed z kolorem RAL/F&B/hex): **envMap OFF,
+    metalness 0, normalScale ~0.1** (delikatna faktura natrysku), roughness z sheen —
+    kolor lakieru ma być wierny (filozofia Spraying: żadne środowisko nie przebarwia)
+  * melamina/dekory (korpusy, drewnopodobne): environment ZOSTAJE (odbicia dodają życia)
+- **Suwak "Sheen" w Design Settings:** skok **co 5%**, zakres 0–25
+  (0=matt…25=mirror); mapowanie `roughness = 1 − sheen/25` (wzór ze Spraying).
+- Separacja białe-na-białym: światło+cienie+istniejące kontury mają rozdzielać
+  korpusy bez zmiany kolorów. Test wzrokowy w e2e: screenshot sceny 3 białych szafek.
+- **PRAWDZIWE TEKSTURY EGGER (decyzja Piotra 07.08 — koniec proceduralnego drewna
+  na dekorach):** dla category=woodgrain ładuj URL z pola `tex` w JSON (Supabase Storage; pełny adres w danych)
+  (69 URL-i w `public/decors/egger/egger-decors.json` — NIE generuj; nowy układ: `public/decors/egger/` z thumbs/, stare płaskie pliki usunięte): sRGB, anisotropy 8, **kierunek słojów wzdłuż
+  formatki** wg flagi grain/rotated z danych CNC (dziś słoje leżą POZIOMO na bokach —
+  błąd), skala fizyczna: wysokość skanu ≈ 2800 mm wzdłuż słoja (kalibruj wizualnie,
+  stała w profilu). Tekstura obecna → tonowanie hex OFF. Fallback (brak pliku/mock):
+  dotychczasowa proceduralna. Uni bez zmian (hex). Atrybucja "EGGER {code} {name}"
+  i notka reproduction — bez zmian, wszędzie.
 
-### F2 — NEW PROJECT FLOW (BACKLOG #41) [HIGH]
-Start screen: **usuń wymiary z kart projektów** (zostaje nazwa/numer/data). Flow:
-1. **Project info**: Project number (auto-propozycja kolejnego, edytowalny) · Name
-   (opcjonalna) · Client (opcjonalny, pole tekstowe) + przycisk "Select from
-   JoineryCore" **disabled "soon"**.
-2. **Typ projektu** — 8 kafelków: Kitchen · Wardrobe · Media wall · Sideboard ·
-   Vanity · Utility room · Hallway · Other. Typ ustawia: domyślną kategorię Library,
-   defaulty wysokości projektu, podpowiedź zakresu (Vanity → One wall).
-3. **Zakres**: "Whole room" / "One wall" + linia copy: "One wall is enough for a
-   vanity or a single run — you can add more walls later." Wybór NIE jest pułapką:
-   ściany dokładalne później (istniejący pokój v2).
-4. Whole room → **Room setup** (istniejący modal) TERAZ; One wall → pomiń.
-5. **Design Settings na start**: nagłówek z wyborem **"For this project"** vs
-   **"Use saved settings"** (lista zapisanych SETÓW USTAWIEŃ — nowy byt: zapis/odczyt
-   kompletu ustawień projektu pod nazwą; CRUD minimalny). Dalej sekcje:
-   - **Joinery type**: pozycje z profilu; dziś jedna — "Dog bones (Skylon puzzle)"
-     z podglądem po kliknięciu (mini-rysunek tabów z geometrii puzzle) — architektura
-     pod przyszłe systemy już jest w profilu.
-   - **Carcass materials 1–3** (kafelki; klik → picker kolorów/dekorów EGGER) i **Fronts**.
-   - **Sprzężenie z JC (lokalnie)**: pozycje materiałów mające `jc_uuid`/źródło JC →
-     kafelki auto-wypełnione + **badge "JC"**; brak przypisań → stan
-     "Not assigned materials" + przycisk "Assign from Materials stock" (istniejący store).
-6. **"Start designing"** → kanwas. Wszystko edytowalne później z menu — flow ma być
-   przeklikiwalny w 10 sekund na defaultach.
-Persist ustawień per projekt + mock. Testy store'ów (saved settings sets, dziedziczenie
-typu, auto-numer projektu).
+### F2 — BUGI Z TESTÓW PIOTRA [CRITICAL]
+1. **[NAJWAŻNIEJSZY] Dodawanie szafki PO LEWEJ niemożliwe** — nowa jednostka zawsze
+   ląduje po prawej istniejących i nie da się jej przeciągnąć w lewo. Fix obu ścieżek:
+   dodawanie = najbliższy WOLNY slot po dowolnej stronie (lub wskazany), przeciąganie =
+   clamp wyłącznie o realne przeszkody (wolna lewa strona → wolna droga). Testy slotów.
+2. **Przełącznik drzwi L/P nie działa w UI** — param `hinge` istnieje w silniku;
+   przełącznik w panelu ma realnie zmieniać stronę: 3D (kierunek otwierania), wiercenia,
+   drawings. Test.
+3. **End panel i INFILLE nie barwią się materiałem frontów** — silnik daje
+   `material_role: front` (zweryfikowane); render trasuje źle. Uwaga ze screenshota
+   Piotra: end panel przy dekorze EGGER (uni) ZABARWIŁ się — zbadaj więc pełną macierz
+   (kolor "This app" vs dekor EGGER × end panel vs infille) i napraw wspólną ścieżkę.
+4. **EdgeHandle:** spoczynkowo **NIEWIDOCZNY** (render tylko przy hover krawędzi /
+   active drag); pozycja NAD licem (+0.6 mm), obrys −1 mm/str. — koniec z-fightingu
+   ("galareta") i szarej mgiełki na górach paneli.
+5. **Zaznaczenie:** linia CIEŃSZA + kolor jasnoniebieski czytelny (np. #2B6CB0) —
+   granat #1B2A4A czyta się na ekranie jak czarny. Stała w profile.appearance.
+6. **"Dziwny klocek" przy top infillu** (screenshot Piotra: obcy prostopadłościan przy
+   górnym infillu) — znajdź przyczynę (podejrzani: kawałek narożny corner-return w złej
+   pozycji albo artefakt handle), napraw, test regresji na geometrii ciągu.
+7. **Gate: top infill NIEDOSTĘPNY dla base units** (góra bazy = blat, nie sufit) —
+   dozwolony dla wall/tall/wardrobe; side infill bez zmian. Walidacja + test.
 
-### F3 — X-RAY + OKUCIA 3D (BACKLOG #42) [HIGH]
-- Toolbar: tryb **X-ray** — korpusy półprzezroczyste (fronty mocniej), wnętrze czytelne;
-  kontury zostają.
-- **Okucia proceduralnie** (zero plików, wymiary katalogowe w profile.js):
-  zawias = puszka ⌀35 + ramię (pozycje z hinge_centers), prowadnice = para profili L
-  o długości z hardware[] na rzędach runners, nóżki = walec+stopka (4/5 wg reguły),
-  rail = rura ⌀ z profilu. Widoczne TYLKO w X-ray (normalny widok zostaje czysty;
-  nóżki jak dotąd zawsze).
-- Wydajność: InstancedMesh dla powtarzalnych (zawiasy, nóżki); scena 10 szafek
-  bez odczuwalnego spadku FPS.
-- Test: liczby instancji okuć == hardware[] dla fixtures (BUD-A, W-B, BUDR).
+### F3 — ODSUNIĘCIE OD ŚCIANY TYLNEJ: 10 mm WSZYSTKIE [HIGH]
+Powód (Piotr): ściany nierówne + wieszaki szafek. Stała `room.wallBackClearance = 10`
+w profilu; KAŻDA jednostka (base/wall/tall) pozycjonowana 10 od ściany tylnej.
+Konsekwencje do domknięcia: strzałki odległości, top view w drawings pokazuje szczelinę,
+głębokość end paneli i zasięg top infilla liczone od realnej pozycji, kalkulacja
+otwierania drzwi przy ścianie bocznej uwzględnia luz. **Przy Infill OFF boczny clamp
+= 10 mm** (zamiast szerokości infilla). Testy clampów i pozycji.
 
-### F4 — PUZZLE: pojedynczy socket przy płytkich (BACKLOG #28) [MEDIUM]
-Silnik: gdy szerokość boku (głębokość−G) < próg, dwa sockety (95 od końców, ±25.5)
-kolidują. Wyprowadź próg Z GEOMETRII profilu (span socketów + minimalny mostek —
-udokumentuj wyliczenie w komentarzu), stała `puzzle.singleSocketBelow` w profile.js;
-poniżej progu: **JEDEN socket na środku szerokości** (+ odpowiadający tab po drugiej
-stronie złącza, wiercenia спójne). Testy engine-derived z adnotacją "LISP tego
-przypadku nie znał" (precedens: wysokości szuflad). DXF/CNC-view łapią zmianę
-automatycznie z danych.
+### F4 — PÓŁKI v2 [HIGH]
+- **Cofnięcie 20 mm domyślnie**: półki regulowane (już tak mają z LISP), półki FIX
+  i **partitiony** — wszystkie −20 od lica; per element możliwość wysunięcia do lica
+  (stretch przedniej krawędzi / pole w panelu). **Wieńce TOP/BOTTOM zostają pełne**
+  (konstrukcja + puzzle — nie ruszać).
+- **Półka FIX → wiercenia SCREWS_3MM w OSI półki** (środek grubości, śruba w czoło) —
+  zamiast pinów 7.5; obie strony. Warstwy jak LISP. DXF/CNC-view łapią z danych. Testy.
+- **Flaga per półka `updown_locked`** (logika + wiercenia jak FIX); minimalny toggle
+  w panelu (pełne UI później).
+- **Hover na półce → wymiary odstępów** między sąsiednimi półkami (kontrola equal) —
+  etykiety stylem strzałek z T5, formatMm.
 
-### F5 — INSETS jednostki (BACKLOG #32) [MEDIUM]
-Panel jednostki / menu kontekstowe: **Inset left / right / back (mm)** — świadome
-odsunięcie od sąsiada/ściany (rura, krzywa ściana). Clampy kolizji respektują insety
-(slot pomniejszony), strzałki odległości pokazują realny dystans, back-inset odsuwa
-od ściany (unit "wisi" w głębi — pozycja Z). Testy funkcji clampujących z insetami.
+### F5 — ZACHOWANIA [MEDIUM]
+- **Drzwi przy ścianie bocznej: otwieranie max 90°**, animacja nigdy nie penetruje
+  ściany (uwzględnij 10 mm z F3). Bez ściany — pełny kąt jak dotąd.
+- **Wiszące obok Tall:** przy wstawianiu default = górna krawędź wyrównana z górą
+  Tall unita; potem swobodne ręczne przesuwanie (mount height edytowalny).
 
-### F6 — Zamknięcie
-E2E w Chromium (nowy flow od start screen → typ → one wall → settings z saved set →
-jednostka → X-ray → karta PDF), screenshoty do BUILD-LOG; `npm test` + build;
-BACKLOG statusy (39/41/42/28/32 + DONE-y); BLOCKERS bez pytań.
+### F6 — MITRA 45° WIDOCZNA W 3D [HIGH]
+Dziś paski infilli renderują się jako prostopadłościany na styk ("czoło do płyty") —
+Piotr: "nie ma opcji, będzie źle wyglądać". Zrób geometrię ze ŚCIĘTYMI krawędziami 45°
+(ExtrudeGeometry z profilu L / custom BufferGeometry): przekrój 40+~80 spotyka się
+w widocznej mitrze, narożnik otwartego końca jak rama obrazu. Dotyczy 3D (Solid/X-ray
+/Render); BOM/DXF bez zmian (flagi mitre_45 już są). Test geometrii (wierzchołki fazy).
+
+### F7 — MENU KONTEKSTOWE v2 [HIGH]
+Prawy klik na jednostce — nowa kolejność:
+1. **"Show all dimensions" — toggle ON/OFF** (komplet wymiarów tej szafki na scenie),
+2. **End panel L/P: ON/OFF** (dodaj I usuń z tego samego miejsca — koniec biegania do menu),
+3. **Infille per jednostka: ON/OFF** (side/top zgodnie z gate z F2.7),
+4. dotychczasowe akcje (Rotate, Center shelves, Delete…).
+Stan toggli widoczny (checkmark). Test store'a akcji.
+
+### F8 — WIDOCZNOŚĆ ZŁĄCZY (DOG BONES) [HIGH]
+Złącze = tożsamość systemu (wzór: WoodExpert pokazuje konfirmaty — my pokazujemy puzzle):
+- **Solid:** subtelne LINIE PODZIAŁU tabów na stykach bok↔wieniec (z `panel.cnc.outline`) —
+  dyskretne, ale jednoznaczne "to Skylon puzzle".
+- **X-ray:** pełne zarysy tabów, socketów i **dogbonów** na półprzezroczystych bokach
+  (dane z cnc outline/pockets, kolory dyskretne per typ elementu).
+- Rysowanie bierze dane z modułu złącza — przyszłe systemy (Cabineo) dostaną
+  wizualizację automatycznie. Zero zmian w silniku. Test: liczba rysowanych tabów ==
+  dane cnc dla fixtures.
+
+### F9 — Zamknięcie
+E2E (scena 3 białych szafek → render PNG z cieniem → dodaj szafkę PO LEWEJ → hinge L/P →
+półka FIX → hover-wymiary → infill stretch przy 10 mm → mitra w kadrze → X-ray z dogbonami),
+screenshoty do BUILD-LOG; `npm test` + build; BACKLOG statusy; BLOCKERS bez pytań.
 
 ## DEFINICJA SUKCESU
-1. Testy: podłoga z main + nowe (drawings-svg, saved-sets, auto-numer, instancje okuć,
-   single-socket, insety-clamp) — 0 fail; build OK.
-2. Karta produkcyjna: 3 widoki, wymiary detaliczne, ramka+tabelka; PDF per jednostka
-   i booklet działają; styl = sonda T6/LISP.
-3. Flow: od start screen do kanwasu w ≤10 s na defaultach; typy/zakres/saved sets
-   działają; materiały z JC-badge lub "Not assigned".
-4. X-ray: okucia we właściwych pozycjach (zgodne z hardware[]), płynnie przy 10 szafkach.
-5. Puzzle: płytki korpus dostaje 1 socket na środku; próg wyliczony i udokumentowany.
-6. Insety respektowane przez kolizje i strzałki.
-7. BUILD-LOG TURA 7 + BACKLOG statusy.
+1. Podłoga testów z main + nowe (sloty L/P, hinge, clamp 10, półki FIX/wiercenia,
+   updown_locked, mitra-geometria, złącza==cnc, toggles menu) — 0 fail; build OK.
+2. Render: cień kluczowy na całych szafkach, zero niechcianej przezroczystości,
+   głębokość widoczna; białe szafki rozdzielone światłem.
+3. Spray = kolor wierny (bez envMap), melamina z envem; sheen co 5% działa.
+4. Wszystkie 7 bugów F2 zamknięte (z №1 na czele).
+5. Każda jednostka 10 mm od ściany tylnej; Infill OFF → boki 10.
+6. Półki/partitiony −20 + wysuwalne; FIX = śruby 3 w osi; hover pokazuje odstępy.
+7. Drzwi przy ścianie ≤90°; wiszące równają do Tall.
+8. Mitra 45° widoczna w 3D; klocek-widmo zbadany i usunięty.
+9. Menu kontekstowe: dimensions/panele/infille ON-OFF od ręki.
+10. Dog bones widoczne w Solid (linie) i X-ray (pełne zarysy).

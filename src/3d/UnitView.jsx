@@ -16,6 +16,9 @@ import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
+import {
+  boxPolyhedron, clipAll, infillMitre, solidTriangles,
+} from '../engine/mitre.js';
 
 // One unit, rendered straight from the ENGINE output: every panel record
 // carries a `box` in cabinet-local mm, so what you see is what the cut list
@@ -81,6 +84,47 @@ function useDecor(surface, panel, profile) {
 }
 
 /**
+ * The mitred solid for one strip of a top infill (turn 8, CLAUDE.md F6), or
+ * null for every other piece — which is every piece but four per run.
+ *
+ * The geometry comes back in the UNIT's millimetres, so it is moved to sit
+ * about its own centre and the mesh is placed at that centre. Two things then
+ * carry on working with no special case: the bevel shader, which measures a
+ * fragment against the object's half-extents, and the selection box, which
+ * frames the panel boxes the engine emitted.
+ *
+ * Disposed with the panel: a BufferGeometry holds GPU buffers, and a run being
+ * dragged rebuilds these several times a second.
+ */
+function useMitre(panel) {
+  const built = useMemo(() => {
+    const spec = infillMitre(panel);
+    if (!spec) return null;
+    const solid = clipAll(boxPolyhedron(spec.box), spec.planes);
+    const tri = solidTriangles(solid);
+    const { box } = spec;
+    const cx = box.x + box.w / 2;
+    const cy = box.y + box.h / 2;
+    const cz = box.z + box.d / 2;
+    const positions = new Float32Array(tri.positions.length);
+    for (let i = 0; i < tri.positions.length; i += 3) {
+      positions[i] = mm(tri.positions[i] - cx);
+      positions[i + 1] = mm(tri.positions[i + 1] - cy);
+      positions[i + 2] = mm(tri.positions[i + 2] - cz);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(tri.normals), 3));
+    geometry.setIndex(tri.indices);
+    geometry.computeBoundingSphere();
+    return { geometry, box };
+  }, [panel]);
+
+  useEffect(() => () => built?.geometry.dispose(), [built]);
+  return built;
+}
+
+/**
  * The edge break on one panel (turn 6, CLAUDE.md F2).
  *
  * The state object is created once per panel and never replaced, so the shader
@@ -125,14 +169,20 @@ function MovingPanel({
 }) {
   const group = useRef(null);
   const amount = useRef(0);
-  const bevelRef = useBevel(p.box, profile, surface.sprayed && !contour && !xray);
+  // The mitre, when this piece has one (turn 8, CLAUDE.md F6). Its geometry is
+  // built about the piece's own centre, so the mesh sits exactly where a box
+  // would have — and the bevel shader, which measures a fragment against the
+  // half-extents of the object it is on, keeps working unchanged.
+  const mitre = useMitre(p);
+  const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
   // pinned to that edge; everything else sits at its own centre.
   const hingeAtRight = p.meta?.hinge === 'R';
+  const centre = mitre?.box || p.box;
   const pivot = front === 'door'
     ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
-    : [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)];
+    : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)];
   const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
 
   useFrame((_, delta) => {
@@ -184,7 +234,11 @@ function MovingPanel({
   return (
     <group ref={group} position={pivot}>
       <mesh position={meshOffset} castShadow={!contour} receiveShadow={!contour} {...handlers}>
-        <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
+        {/* A mitred strip carries its own geometry (turn 8, CLAUDE.md F6);
+            everything else is the box the engine emitted. */}
+        {mitre
+          ? <primitive object={mitre.geometry} attach="geometry" />
+          : <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />}
         {/* Physical, not standard. Turn 6: the numbers are no longer one sheen
             for everything — a sprayed piece wears lacquer and a carcass wears
             melamine (profile.appearance.materials), and the edges are broken

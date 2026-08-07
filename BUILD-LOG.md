@@ -2695,3 +2695,64 @@ Teraz jest jedna funkcja `unitBase(unit, profile)`: **najpierw własny cokół j
 potem profilowy**, dokładnie jak `legHeightOf` w silniku.
 
 `test/behaviours.test.js` — 12 testów.
+
+## F6 — MITRA 45° WIDOCZNA W 3D
+
+Silnik mówi `mitre_45` od tury 6 i cut lista jest poprawna; 3D rysowało oba paski jako
+prostopadłościany na styk, czoło do płyty. Werdykt Piotra: „nie ma opcji, będzie źle
+wyglądać".
+
+I to nie jest tylko kwestia złącza. Czwarty warunek końca ciągu każe elementowi
+**OBRÓCIĆ NARÓŻNIK** i pobiec do ściany — a dwa pudełka spotykające się w narożniku nie
+obracają narożnika, tylko **nachodzą na siebie kwadratem naroża** i z-fightują przez
+siebie. To jest drugi podejrzany z F2.6 („kawałek narożny corner-return w złej pozycji")
+— nie klocek-widmo, tylko brakująca mitra.
+
+### `engine/mitre.js` — czysta geometria, sprawdzalna w node
+
+Płaszczyzna 45° przez pudełko to arytmetyka, a arytmetyka należy tam, gdzie da się ją
+sprawdzić w teście, a nie okiem na ekranie. Moduł nie zna three.js:
+
+- `boxPolyhedron(box)` — 8 wierzchołków i 6 ścian, w milimetrach jednostki;
+- `chamferPlane(box, osA, znakA, osB, znakB, rozmiar)` — płaszczyzna fazy na krawędzi
+  dwóch ścian. **Równe nogi to jest ta mitra**: 45° to jedyne cięcie, którego oba boki
+  są równe, i to sprawdza test;
+- `clipPolyhedron(solid, plane)` — Sutherland–Hodgman po każdej ścianie **plus CZAPKA**.
+  Bez czapki bryła jest otwarta, a otwarta bryła renderuje się jako dziura przez szafkę,
+  czyli gorzej niż styk, który to zastępuje;
+- `solidTriangles` — trójkąty z PŁASKĄ normalną na ścianę. Płaską celowo: mitra to ostra
+  krawędź między dwiema powierzchniami i wygładzenie jej to unieważnienie całej roboty.
+  Złamanie krawędzi robi shader z tury 6, per fragment, poniżej milimetra.
+
+**Pułapka, która kosztowała sesję i jest zapisana w kodzie:** czapkę budowałem, zapamiętując
+dwa przecięcia na ścianę. Kiedy płaszczyzna przechodzi DOKŁADNIE przez wierzchołek pudełka,
+przecięcie jest jedno i czapka nigdy się nie domyka. A to nie jest przypadek brzegowy: faza
+o rozmiarze równym grubości płyty przechodzi przez narożnik KAŻDEGO paska, który tnie.
+Czapka szuka teraz **pary sąsiednich wierzchołków wyjściowych leżących NA płaszczyźnie** —
+łącznie na ścianie, której płaszczyzna tylko dotyka, nic z niej nie zabierając.
+
+### Co się dzieje z paskami
+
+**Półka „rośnie do przodu"** — a właściwie PRZESUWA się. Silnik stawia półkę ZA czołem, żeby
+pudełka stykały się bez nachodzenia (tura 6). Mitra jest odwrotna: dwa elementy cięte do
+DŁUGIEGO PUNKTU nachodzą na siebie dokładnie tym kwadratem, który zajmuje złącze, i dwa
+cięcia 45° dzielą go między siebie. Rysowana półka biegnie więc do płaszczyzny lica czoła
+i tam jest przycięta — **ta sama długość cięcia (80), ta sama zewnętrzna obwiednia,
+złącze zamiast styku**. Przekrój wychodzi 40 × 80, a nie 40 × 98, i to jest to, o co prosi
+CLAUDE.md („przekrój 40+~80 spotyka się w widocznej mitrze").
+
+**Return to to samo złącze, obrócone.** Na otwartym końcu mitrują się PARAMI: czoła między
+sobą (kwadrat = grubość) i półki między sobą (kwadrat = głębokość półki). Stąd „narożnik
+otwartego końca jak rama obrazu".
+
+### Czego to NIE dotyka
+
+BOM i DXF bez zmian — pilnuje tego osobny test. Element jest CIĘTY jako prostokąt do
+długiego punktu, a mitra jest ustawieniem piły, co `meta.mitre_45` mówi warsztatowi od
+tury 6. To jest to, jak element WYGLĄDA.
+
+Pionowy filler (arm + face) NIE dostaje mitry i to jest świadome: tura 6 opisuje ramię A
+jako **przykręcone** do boku korpusu, a przykręcony styk to nie mitra.
+
+`test/mitre.test.js` — 9 testów, w tym „bryła jest ZAMKNIĘTA" (każda krawędź użyta
+dokładnie dwa razy — jedyny test, który łapie brakującą czapkę, zanim zobaczy ją oko).

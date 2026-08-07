@@ -5,6 +5,7 @@ import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
 import { contourSurface, decorTexture, onDecorLoad, outlineFor, surfaceFor } from './materials.js';
 import DimLabel from './DimLabel.jsx';
+import { formatMm } from '../engine/format.js';
 
 // One unit, rendered straight from the ENGINE output: every panel record
 // carries a `box` in cabinet-local mm, so what you see is what the cut list
@@ -344,18 +345,18 @@ export default function UnitView({
           {shelfDrag.below != null && (
             <DimLabel
               position={[mm(W / 2), mm((shelfDrag.below + shelfDrag.pos) / 2), mm(D) + 0.06]}
-              text={`${Math.round(shelfDrag.pos - shelfDrag.below)}`}
+              text={formatMm(shelfDrag.pos - shelfDrag.below)}
               tone="gold"
             />
           )}
           {shelfDrag.above != null && (
             <DimLabel
               position={[mm(W / 2), mm((shelfDrag.above + shelfDrag.pos) / 2), mm(D) + 0.06]}
-              text={`${Math.round(shelfDrag.above - shelfDrag.pos)}`}
+              text={formatMm(shelfDrag.above - shelfDrag.pos)}
               tone="gold"
             />
           )}
-          <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={`${Math.round(shelfDrag.pos)} mm`} tone="gold" />
+          <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={formatMm(shelfDrag.pos, { unit: true })} tone="gold" />
         </>
       )}
 
@@ -427,9 +428,9 @@ export default function UnitView({
 
       {showLabels && (
         <>
-          <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={`${Math.round(W)}`} tone={selected ? 'gold' : 'dim'} />
-          <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={`${Math.round(H)}`} tone={selected ? 'gold' : 'dim'} />
-          <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${Math.round(D)} deep`} tone={selected ? 'gold' : 'dim'} />
+          <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} />
+          <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} />
+          <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${formatMm(D)} deep`} tone={selected ? 'gold' : 'dim'} />
         </>
       )}
     </group>

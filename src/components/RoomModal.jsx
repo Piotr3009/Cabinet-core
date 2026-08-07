@@ -8,6 +8,8 @@ import {
   roomChangeGuard, openingsOnWall, clampOpening, OPENING_DEFAULTS,
 } from '../engine/room.js';
 import { proposeRoomFromDxf } from '../engine/dxfImport.js';
+import { formatMm, snap } from '../engine/format.js';
+import { getCabinetProfile } from '../engine/profile.js';
 
 // Room v2 (CLAUDE.md turn 3, phase 3): the room is a list of walls, edited as a
 // PLAN. A rectangle is the four-wall case, an L is the six-wall case, and a DXF
@@ -44,9 +46,12 @@ export default function RoomModal() {
     (PLAN_H - pad * 2) / Math.max(bounds.depth, 1),
   );
   const toSvg = (c) => ({ x: pad + (c.x - bounds.minX) * scale, y: pad + (c.y - bounds.minY) * scale });
+  // Dragged corners land on the workshop grid (0.5 mm), not on whole mm: this
+  // is a room measurement like any other, and turn 5 stopped rounding those.
+  const grid = (v) => snap(v, getCabinetProfile().editor.mmStep);
   const fromSvg = (p) => ({
-    x: Math.round((p.x - pad) / scale + bounds.minX),
-    y: Math.round((p.y - pad) / scale + bounds.minY),
+    x: grid((p.x - pad) / scale + bounds.minX),
+    y: grid((p.y - pad) / scale + bounds.minY),
   });
 
   const patch = (next) => setDraft((d) => migrateRoom({ ...d, ...next }));
@@ -54,7 +59,7 @@ export default function RoomModal() {
   const setPreset = (kind) => {
     const w = Math.max(bounds.width, 1000);
     const d = Math.max(bounds.depth, 1000);
-    patch({ corners: kind === 'L' ? lCorners(w, d, Math.round(w / 3), Math.round(d / 3)) : rectCorners(w, d) });
+    patch({ corners: kind === 'L' ? lCorners(w, d, grid(w / 3), grid(d / 3)) : rectCorners(w, d) });
   };
 
   const setWallLength = (index, lengthMm) => {
@@ -65,7 +70,7 @@ export default function RoomModal() {
     const len = Math.max(100, Number(lengthMm) || 0);
     const endIndex = (index + 1) % draft.corners.length;
     const corners = draft.corners.map((c, i) => (i === endIndex
-      ? { x: Math.round(wall.start.x + wall.along.x * len), y: Math.round(wall.start.y + wall.along.y * len) }
+      ? { x: grid(wall.start.x + wall.along.x * len), y: grid(wall.start.y + wall.along.y * len) }
       : c));
     patch({ corners });
   };
@@ -79,7 +84,7 @@ export default function RoomModal() {
 
   const addCorner = (wallIndex) => {
     const w = walls[wallIndex];
-    const mid = { x: Math.round((w.start.x + w.end.x) / 2), y: Math.round((w.start.y + w.end.y) / 2) };
+    const mid = { x: grid((w.start.x + w.end.x) / 2), y: grid((w.start.y + w.end.y) / 2) };
     const corners = [...draft.corners];
     corners.splice(wallIndex + 1, 0, mid);
     patch({ corners });
@@ -170,7 +175,7 @@ export default function RoomModal() {
               return (
                 <g key={w.index}>
                   <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 4} fill="#c9c9cd" fontSize="9" textAnchor="middle">
-                    {w.index + 1}: {Math.round(w.width)}
+                    {w.index + 1}: {formatMm(w.width)}
                   </text>
                   {openingsOnWall(draft, w.index).map((o) => {
                     const t1 = o.x_mm / (w.width || 1);
@@ -257,7 +262,7 @@ export default function RoomModal() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-ink-100 w-12">Wall {w.index + 1}</span>
                   <NumberField
-                    className="cc-input w-24 text-right" value={Math.round(w.width)}
+                    className="cc-input w-24 text-right" value={w.width}
                     onCommit={(v) => setWallLength(w.index, v)}
                   />
                   <span className="text-[11px] text-ink-400 flex-1">mm</span>
@@ -269,20 +274,20 @@ export default function RoomModal() {
                   <div key={o.id} className="flex items-center gap-1 text-[11px] text-ink-300">
                     <span className="w-12 capitalize">{o.kind}</span>
                     <label className="flex items-center gap-1">from
-                      <NumberField className="cc-input w-16 text-right" value={Math.round(o.x_mm)}
+                      <NumberField className="cc-input w-16 text-right" value={o.x_mm}
                         onCommit={(v) => updateOpening(o.id, { x_mm: v })} />
                     </label>
                     <label className="flex items-center gap-1">w
-                      <NumberField className="cc-input w-16 text-right" value={Math.round(o.width)}
+                      <NumberField className="cc-input w-16 text-right" value={o.width}
                         onCommit={(v) => updateOpening(o.id, { width: v })} />
                     </label>
                     <label className="flex items-center gap-1">h
-                      <NumberField className="cc-input w-16 text-right" value={Math.round(o.height)}
+                      <NumberField className="cc-input w-16 text-right" value={o.height}
                         onCommit={(v) => updateOpening(o.id, { height: v })} />
                     </label>
                     {o.kind === 'window' && (
                       <label className="flex items-center gap-1">sill
-                        <NumberField className="cc-input w-14 text-right" value={Math.round(o.sill)}
+                        <NumberField className="cc-input w-14 text-right" value={o.sill}
                           onCommit={(v) => updateOpening(o.id, { sill: v })} />
                       </label>
                     )}

@@ -364,6 +364,37 @@ export function clampUnitX({ x, current, width, wallWidth, others = [], wallMarg
 }
 
 /**
+ * How tall this unit is allowed to be in this room (turn 5, BACKLOG #29).
+ *
+ * A project height is pushed onto every unit that has not been given one by
+ * hand, and a room with a low ceiling must not be the way that creates a unit
+ * standing through it. So the push is CLAMPED, the same way growing a unit
+ * sideways is clamped by its neighbour: it goes as far as it can and says what
+ * stopped it.
+ *
+ * @param {object} args
+ *   height     the height being asked for
+ *   floorY     how far off the floor the carcass starts — the leg height for a
+ *              standing unit, the mount height for one on the wall
+ *   roomHeight 0 = no ceiling known, so nothing to stop it
+ *   minHeight  the type's own minimum, if it has one
+ */
+export function clampUnitHeight({ height, floorY = 0, roomHeight = 0, minHeight = 0 }) {
+  const wanted = Number(height) || 0;
+  const base = Math.max(0, Number(floorY) || 0);
+  const room = Number(roomHeight) || 0;
+  const floor = Math.max(0, Number(minHeight) || 0);
+  const ceiling = room > 0 ? Math.max(floor, room - base) : Infinity;
+
+  let value = wanted;
+  let blocked = false;
+  let by = null;
+  if (value > ceiling) { value = ceiling; blocked = true; by = 'the ceiling'; }
+  if (value < floor) { value = floor; blocked = true; by = 'this type\'s minimum height'; }
+  return { height: value, max: ceiling, min: floor, blocked, by };
+}
+
+/**
  * What is wrong with this unit where it stands. Position is already clamped by
  * the setters, so these are the cases clamping CANNOT fix — the unit simply
  * does not fit the room and a number has to change.

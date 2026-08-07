@@ -6,7 +6,12 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { FRONT_STYLE_OPTIONS, migrateDesign, colourLabel } from '../engine/design.js';
+import {
+  FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights,
+} from '../engine/design.js';
+import { decorIdFromFinishId } from '../engine/decors.js';
+import DecorPicker from './DecorPicker.jsx';
+import { HEIGHT_GROUPS } from '../engine/types.js';
 import { contrastInk } from '../lib/pswColors.js';
 
 // Design Settings — project level (CLAUDE.md phase 6).
@@ -33,6 +38,9 @@ export default function DesignSettingsModal() {
   const finishes = profile.appearance.finishes;
 
   const [editing, setEditing] = useState(null);   // door style id being edited
+  // Which finish source is open, and which role the decor grid applies to.
+  const [finishTab, setFinishTab] = useState('app');   // 'app' | 'egger'
+  const [decorRole, setDecorRole] = useState('front'); // fronts are what a client picks first
 
   const boardMaterials = materials.filter((m) => m.category === 'board');
   const frontMaterials = materials.filter((m) => m.category === 'front');
@@ -96,48 +104,95 @@ export default function DesignSettingsModal() {
 
         <div className="cc-divider" />
 
-        {/* ── finishes (turn 4, BACKLOG #4) ──
+        {/* ── finishes (turn 4, BACKLOG #4; turn 5 adds the decor pack, #19) ──
             Neutral by default: broken white carcass, fronts the same. The two
-            wood decors are generated locally (scripts/gen-textures.mjs), so
-            nothing here depends on somebody else's artwork licence. */}
+            wood decors under "This app" are generated locally
+            (scripts/gen-textures.mjs). "EGGER decors" is the workshop's own
+            pack of 85 — see the licence note in engine/decors.js. */}
         <section className="space-y-2">
-          <span className="text-xs uppercase tracking-wide text-ink-200">Finish</span>
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block">
-              <span className="cc-label">Carcass</span>
-              <div className="flex items-center gap-2">
-                <select
-                  className="cc-input flex-1"
-                  value={design.finish.carcass || ''}
-                  onChange={(e) => setDesign({ finish: { ...design.finish, carcass: e.target.value || null } })}
+          <div className="cc-row">
+            <span className="text-xs uppercase tracking-wide text-ink-200">Finish</span>
+            <div className="flex gap-1">
+              {[['app', 'This app'], ['egger', 'EGGER decors']].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`cc-btn px-2 ${finishTab === id ? 'border-gold text-gold' : ''}`}
+                  onClick={() => setFinishTab(id)}
                 >
-                  <option value="">
-                    {`Default · ${finishes.find((f) => f.id === profile.appearance.defaultCarcassFinish)?.label || '—'}`}
-                  </option>
-                  {finishes.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-                </select>
-                <FinishSwatch finish={finishes.find((f) => f.id === (design.finish.carcass || profile.appearance.defaultCarcassFinish))} />
-              </div>
-            </label>
-            <label className="block">
-              <span className="cc-label">Fronts</span>
-              <div className="flex items-center gap-2">
-                <select
-                  className="cc-input flex-1"
-                  value={design.finish.front || ''}
-                  onChange={(e) => setDesign({ finish: { ...design.finish, front: e.target.value || null } })}
-                >
-                  <option value="">Same as the carcass</option>
-                  {finishes.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-                </select>
-                <FinishSwatch finish={finishes.find((f) => f.id === design.finish.front) || null} />
-              </div>
-            </label>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              ['carcass', 'Carcass', `Default · ${finishes.find((f) => f.id === profile.appearance.defaultCarcassFinish)?.label || '—'}`],
+              ['front', 'Fronts', 'Same as the carcass'],
+            ].map(([role, label, emptyLabel]) => {
+              const chosen = design.finish[role];
+              const resolved = finishById(profile, chosen)
+                || (role === 'carcass' ? finishById(profile, profile.appearance.defaultCarcassFinish) : null);
+              return (
+                <div key={role} className="space-y-1">
+                  <span className="cc-label">{label}</span>
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="cc-input flex-1"
+                      value={decorIdFromFinishId(chosen) ? '' : (chosen || '')}
+                      onChange={(e) => setDesign({ finish: { ...design.finish, [role]: e.target.value || null } })}
+                    >
+                      <option value="">{decorIdFromFinishId(chosen) ? '— an EGGER decor is chosen —' : emptyLabel}</option>
+                      {finishes.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+                    </select>
+                    <FinishSwatch finish={resolved} />
+                  </div>
+                  {/* The chosen decor's name, in full and attributed — a decor
+                      is never named anywhere in this app without "EGGER". */}
+                  {resolved?.decor && (
+                    <p className="text-[11px] text-gold truncate" title={resolved.label}>{resolved.label}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {finishTab === 'egger' && (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-ink-400">Apply the decor to</span>
+                {[['carcass', 'Carcass'], ['front', 'Fronts']].map(([role, label]) => (
+                  <button
+                    key={role}
+                    type="button"
+                    className={`cc-btn px-2 ${decorRole === role ? 'border-gold text-gold' : ''}`}
+                    onClick={() => setDecorRole(role)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <DecorPicker
+                value={design.finish[decorRole]}
+                onPick={(id) => setDesign({ finish: { ...design.finish, [decorRole]: id } })}
+                onClear={() => setDesign({ finish: { ...design.finish, [decorRole]: null } })}
+              />
+            </div>
+          )}
+
           <p className="text-[11px] text-ink-400">
             A front COLOUR (below) is paint and covers the decor, exactly as it does in the workshop.
           </p>
         </section>
+
+        <div className="cc-divider" />
+
+        {/* ── project heights (turn 5, BACKLOG #29) ──
+            A kitchen is built to ONE set of heights. These are the project's;
+            a new unit inherits the one for its kind, and changing one here
+            carries every unit that has not been given its own along with it. */}
+        <ProjectHeights />
 
         <div className="cc-divider" />
 
@@ -160,7 +215,7 @@ export default function DesignSettingsModal() {
               <NumberField
                 className="cc-input w-24 text-right"
                 min={0}
-                value={Math.round(design.infill.sideWidth)}
+                value={design.infill.sideWidth}
                 onCommit={(v) => setDesign({ infill: { ...design.infill, sideWidth: v } })}
               />
               <span className="text-[11px] text-ink-400">mm — the filler between a unit and the wall</span>
@@ -272,16 +327,91 @@ export default function DesignSettingsModal() {
   );
 }
 
-/** What the finish actually looks like — a decor shows its own image. */
+/**
+ * Project heights (BACKLOG #29).
+ *
+ * The five numbers a workshop agrees once per job. Editing one applies it
+ * immediately to every unit that still follows the project, and SAYS how many
+ * moved — a silent edit that re-cuts nine cabinets is not something to find out
+ * about from the BOM afterwards. A unit given its own height is left alone; the
+ * panel's Reset button is how it rejoins.
+ */
+function ProjectHeights() {
+  const storedDesign = useProjectStore((s) => s.project.design);
+  const setProjectHeightsIn = useProjectStore((s) => s.setProjectHeights);
+  const units = useProjectStore((s) => s.units);
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const notify = useUiStore((s) => s.notify);
+  const heights = useMemo(() => projectHeights(storedDesign, profile), [storedDesign, profile]);
+
+  const custom = units.filter((u) => u.params.height_custom).length;
+  const limits = profile.projectHeights;
+
+  const rows = [
+    ...HEIGHT_GROUPS.map((g) => ({ key: g.id, label: g.label, hint: g.hint })),
+    { key: 'wallMount', label: 'Wall mount height', hint: 'How high a wall unit hangs' },
+    { key: 'toeKick', label: 'Toe kick height', hint: 'The legs, and the plinth that hides them' },
+  ];
+
+  const apply = (key, value) => {
+    const { moved, notices } = setProjectHeightsIn({ [key]: value });
+    for (const n of notices) notify(n, 'warn');
+    if (moved) notify(`${moved} unit${moved === 1 ? '' : 's'} followed the new height.`, 'ok');
+  };
+
+  return (
+    <section className="space-y-2">
+      <div className="cc-row">
+        <span className="text-xs uppercase tracking-wide text-ink-200">Project heights</span>
+        {custom > 0 && (
+          <span className="text-[11px] text-ink-400">
+            {custom} unit{custom === 1 ? '' : 's'} on a custom height — left alone
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {rows.map((r) => (
+          <label key={r.key} className="block">
+            <span className="cc-label">{r.label}</span>
+            <NumberField
+              className="cc-input text-right"
+              min={limits.min}
+              max={limits.max}
+              title={r.hint}
+              value={heights[r.key]}
+              onCommit={(v) => apply(r.key, v)}
+            />
+            <span className="block text-[10px] text-ink-400 mt-0.5">{r.hint}</span>
+          </label>
+        ))}
+      </div>
+      <p className="text-[11px] text-ink-400">
+        A new unit is built to the height for its kind. A low cabinet keeps its own — being lower
+        is what it is for.
+      </p>
+    </section>
+  );
+}
+
+/**
+ * What the finish actually looks like. One of this app's own decors shows its
+ * generated image; a MANUFACTURER decor shows its colour only.
+ *
+ * That is the licence, not a shortcut: an EGGER image may be shown whole and
+ * with its attribution beside it, and a 28 px swatch is neither. The decor's
+ * full attributed name is printed next to this swatch, and its picture belongs
+ * in the picker where the caption is part of the same control.
+ */
 function FinishSwatch({ finish }) {
   if (!finish) return <span className="w-7 h-6 rounded border border-shell-600 opacity-30" />;
+  const ownImage = finish.texture && !finish.decor;
   return (
     <span
       className="w-7 h-6 rounded border border-shell-600 bg-cover bg-center shrink-0"
       title={finish.label}
       style={{
         background: finish.hex,
-        ...(finish.texture ? { backgroundImage: `url(${finish.texture})` } : {}),
+        ...(ownImage ? { backgroundImage: `url(${finish.texture})` } : {}),
       }}
     />
   );

@@ -8,7 +8,12 @@ import { COLORS } from './constants.js';
 // Implemented as a sprite with a canvas texture rather than DOM overlay or a
 // web font: sprites are billboards by definition, need no font download, and —
 // unlike an HTML overlay — they appear in the WebGL snapshot used for the PDF.
-export default function DimLabel({ position, text, scale = 1, tone = 'dim' }) {
+// `tone` is the two the scene has always had ('dim' for a unit's own captions,
+// 'gold' for the one being dragged). `colour` is an explicit ink and wins over
+// both — turn 5 draws the distance dimensions in the drawing-office navy or
+// red (profile.dimensions.colours), and a caption in the furniture's gold is
+// exactly what BACKLOG #34 is complaining about.
+export default function DimLabel({ position, text, scale = 1, tone = 'dim', colour = null }) {
   const texture = useMemo(() => {
     const pad = 12;
     const fontSize = 44;
@@ -20,15 +25,16 @@ export default function DimLabel({ position, text, scale = 1, tone = 'dim' }) {
     canvas.width = width;
     canvas.height = height;
 
+    const ink = colour || (tone === 'gold' ? COLORS.gold : COLORS.dim);
     const c = canvas.getContext('2d');
     c.font = `600 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
     c.fillStyle = 'rgba(255,255,255,0.92)';
-    c.strokeStyle = tone === 'gold' ? COLORS.gold : '#d0d0cc';
+    c.strokeStyle = colour || (tone === 'gold' ? COLORS.gold : '#d0d0cc');
     c.lineWidth = 2;
     roundRect(c, 1, 1, width - 2, height - 2, 8);
     c.fill();
     c.stroke();
-    c.fillStyle = tone === 'gold' ? COLORS.gold : COLORS.dim;
+    c.fillStyle = ink;
     c.textBaseline = 'middle';
     c.textAlign = 'center';
     c.fillText(text, width / 2, height / 2 + 1);
@@ -38,7 +44,7 @@ export default function DimLabel({ position, text, scale = 1, tone = 'dim' }) {
     tex.needsUpdate = true;
     tex.userData.aspect = width / height;
     return tex;
-  }, [text, tone]);
+  }, [text, tone, colour]);
 
   useEffect(() => () => texture.dispose(), [texture]);
 

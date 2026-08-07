@@ -9,6 +9,7 @@ import {
   panelIdsForPreset, presetOfSelection,
 } from '../engine/cnc/groups.js';
 import { exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
+import { formatMm, formatMmPair } from '../engine/format.js';
 
 // ─── CNC view ───
 // The workshop's visual check before the machine — the job AutoCAD used to do.
@@ -132,7 +133,7 @@ export default function CncView() {
 
   // Refit whenever the sheet itself changes shape (another unit, another
   // parameter) — but not on every re-render, or panning would fight the user.
-  const sheetKey = sheet ? `${unit?.id}|${Math.round(sheet.width)}x${Math.round(sheet.height)}` : null;
+  const sheetKey = sheet ? `${unit?.id}|${formatMmPair(sheet.width, sheet.height, 'x')}` : null;
   const lastKey = useRef(null);
   useEffect(() => {
     if (!sheetKey || size.w <= 1) return;
@@ -335,6 +336,7 @@ export default function CncView() {
               key={p.id}
               type="button"
               aria-pressed={activePreset === p.id}
+              title={p.hint || ''}
               className={`px-1.5 py-1 text-[11px] rounded border transition-colors ${activePreset === p.id
                 ? 'bg-gold text-shell-900 border-gold font-medium'
                 : 'border-shell-600 text-ink-100 hover:bg-shell-700'}`}
@@ -345,7 +347,10 @@ export default function CncView() {
           ))}
         </div>
         <p className="px-2.5 pt-1.5 text-[10px] text-ink-400">
-          {activePreset === 'custom' ? 'Custom selection' : 'Preset selection'} — the preview shows what will be exported.
+          {activePreset === 'custom'
+            ? 'Custom selection'
+            : (EXPORT_PRESETS.find((p) => p.id === activePreset)?.hint || 'Preset selection')}
+          {' '}— the preview shows what will be exported.
         </p>
 
         {listOpen && (
@@ -377,7 +382,7 @@ export default function CncView() {
                           <Tick state={selected.has(p.id) ? 'on' : 'off'} small />
                           <span className="text-[11px] text-ink-100 flex-1 truncate font-mono">{p.id}</span>
                           <span className="text-[10px] text-ink-400 tabular-nums">
-                            {Math.round(p.w)}×{Math.round(p.h)}
+                            {formatMm(p.w)}×{formatMm(p.h)}
                           </span>
                         </button>
                       </li>
@@ -476,7 +481,7 @@ function Part({ place, drills, outlineLayer, labelSize, minHoleR, visible }) {
   // A 30 mm filler therefore gets a tiny caption when the whole sheet is in
   // view and a perfectly legible one as soon as you zoom to it — which is the
   // only moment you actually need to read it.
-  const caption = `${panel.id}  ${Math.round(panel.w)}×${Math.round(panel.h)}`;
+  const caption = `${panel.id}  ${formatMmPair(panel.w, panel.h, '×')}`;
   const fitted = place.w / (caption.length * MONO_ADVANCE);
   const size = Math.min(labelSize, fitted);
   const [labelX, labelY] = [place.x + place.w / 2, place.y + place.h + size * 1.35];
@@ -520,7 +525,7 @@ function Part({ place, drills, outlineLayer, labelSize, minHoleR, visible }) {
         style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
       >
         {panel.id}
-        <tspan fill="#8f8f88">{`  ${Math.round(panel.w)}×${Math.round(panel.h)}`}</tspan>
+        <tspan fill="#8f8f88">{`  ${formatMmPair(panel.w, panel.h, '×')}`}</tspan>
       </text>
     </g>
   );

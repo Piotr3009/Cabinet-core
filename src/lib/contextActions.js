@@ -27,9 +27,13 @@ export function menuActions({ unit, panelPart, store }) {
   // as well as in the panel. The OPTIONS (to the floor or to the unit height, the
   // thickness, "apply to all") live in the panel section, which is what opens
   // alongside — CLAUDE.md is explicit that this must not be a modal.
+  // Turn 5 (BACKLOG #31): Left / Right / Both. "Both" is the same act twice and
+  // is done as exactly that in the store, so a unit with a neighbour hard
+  // against one side gets the panel that fits and hears why the other did not.
   const endPanels = unit.params.end_panels || [];
-  for (const [side, label] of [['L', 'left'], ['R', 'right']]) {
-    const fitted = endPanels.some((ep) => ep.side === side);
+  const fittedOn = (side) => endPanels.some((ep) => ep.side === side);
+  for (const [side, label] of [['L', 'left'], ['R', 'right'], ['B', 'both sides']]) {
+    const fitted = side === 'B' ? (fittedOn('L') && fittedOn('R')) : fittedOn(side);
     actions.push({
       id: `end-panel-${side}`,
       label: fitted ? `End panel ${label} ✓` : `Add end panel — ${label}`,
@@ -63,6 +67,17 @@ export function menuActions({ unit, panelPart, store }) {
       run: () => { store.addTopInfill?.(unit.id); store.openPanelSection?.('construction'); },
     });
 
+  // ── Save as template (turn 5, BACKLOG #30) ──
+  // Right-clicking the cabinet you have just finished configuring is where a
+  // joiner reaches for this. It asks for a NAME (the modal), because a library
+  // of "Wardrobe", "Wardrobe (2)" and "Wardrobe (3)" is a library nobody uses.
+  actions.push({
+    id: 'save-template',
+    label: 'Save as template',
+    hint: 'Keep these parameters in Library ▸ Saved sets, ready to insert again',
+    run: () => store.saveAsTemplate?.(unit.id),
+  });
+
   if (type.supports.shelves) {
     actions.push({
       id: 'center-shelves',
@@ -74,7 +89,7 @@ export function menuActions({ unit, panelPart, store }) {
   actions.push({
     id: 'rotate-90',
     label: 'Rotate 90°',
-    hint: `Now ${Math.round(Number(unit.position?.rotation_deg) || 0)}°`,
+    hint: `Now ${Math.round(Number(unit.position?.rotation_deg) || 0)}°`,   // degrees, not mm
     run: () => store.rotateUnit(unit.id, 'step', 90),
   });
   actions.push({ id: 'back-to-wall', label: 'Back to wall', run: () => store.rotateUnit(unit.id, 'back', 0) });

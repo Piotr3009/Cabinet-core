@@ -60,38 +60,56 @@ test('every cut part lands in exactly one group, decided on part and role', () =
 });
 
 test('the four presets select what their names say', () => {
+  // Turn 5 (BACKLOG #35): the middle two presets are now cut along the SPRAY
+  // line, not along the part groups — see the finish_exposed tests below.
   const r = wardrobeResult();
   const ids = (preset) => panelIdsForPreset(r.panels, preset);
 
   assert.equal(ids('all').length, r.panels.length);
-  assert.ok(ids('carcass').includes('BUL') && ids('carcass').includes('BACK'));
-  assert.equal(ids('carcass').some((id) => id.startsWith('D1-')), false, 'no drawer parts');
-  assert.equal(ids('carcass').some((id) => id.startsWith('SHELF')), false, 'no shelves');
 
-  const noDrawers = ids('no-drawers');
-  assert.equal(noDrawers.some((id) => /^D\d-/.test(id)), false);
-  assert.equal(noDrawers.some((id) => id.startsWith('DP-')), false);
-  assert.ok(noDrawers.includes('SHELF-1'), 'shelves stay');
-  assert.ok(noDrawers.some((id) => id.endsWith('-F')), 'doors stay');
+  const bare = ids('non-sprayed');
+  assert.ok(bare.includes('BUL') && bare.includes('BACK'), 'the carcass is in');
+  assert.ok(bare.includes('SHELF-1'), 'so are the shelves');
+  assert.ok(bare.includes('RAIL-PART'), 'and the rail partition');
+  assert.ok(bare.includes('DP-L') && bare.some((id) => id.startsWith('FILLER-')),
+    'and the drawer panel with its fillers');
+  assert.ok(bare.includes('D1-SL') && bare.includes('D1-DNO'), 'and the drawer boxes');
+  assert.equal(bare.some((id) => id.endsWith('-F') || id.includes('-DF')), false, 'no fronts');
+
+  const sprayed = ids('sprayed');
+  assert.ok(sprayed.some((id) => id.endsWith('-F')), 'the doors are here instead');
+  // Every part is in exactly one of the two — that is what makes the pair a cut
+  // of the unit rather than two overlapping opinions about it.
+  assert.equal(bare.length + sprayed.length, r.panels.length);
+  assert.equal(bare.some((id) => sprayed.includes(id)), false);
 
   const fronts = ids('fronts');
   assert.ok(fronts.length > 0);
   for (const id of fronts) {
     assert.equal(groupOfPanel(r.panels.find((p) => p.id === id)), 'fronts');
   }
-  // A drawer FRONT is a front, not a drawer part — the distinction the
-  // "all without drawers" preset lives or dies on.
+  // A drawer FRONT is a front, not a drawer part.
   assert.ok(fronts.some((id) => id.includes('-DF')));
 });
 
 test('a hand-made selection is named after the preset it matches, else custom', () => {
   const r = wardrobeResult();
   for (const preset of EXPORT_PRESETS) {
-    assert.equal(presetOfSelection(r.panels, panelIdsForPreset(r.panels, preset.id)), preset.id);
+    const ids = panelIdsForPreset(r.panels, preset.id);
+    const named = presetOfSelection(r.panels, ids);
+    // The contract is the FILE NAME being true, not the preset button being
+    // echoed back: two presets can pick the same parts out of one unit (a
+    // wardrobe with no plinth has nothing sprayed but its doors), and either
+    // name describes the sheet correctly. What must hold is that the name the
+    // file takes selects exactly what is in it.
+    assert.deepEqual(panelIdsForPreset(r.panels, named).sort(), [...ids].sort(),
+      `"${named}" must describe the same parts as "${preset.id}"`);
   }
+  assert.equal(presetOfSelection(r.panels, panelIdsForPreset(r.panels, 'non-sprayed')), 'non-sprayed');
+  assert.equal(presetOfSelection(r.panels, panelIdsForPreset(r.panels, 'all')), 'all');
   assert.equal(presetOfSelection(r.panels, ['BUL']), 'custom');
   assert.equal(presetOfSelection(r.panels, []), 'custom');
-  assert.equal(sheetDxfFileName('W01', 'carcass'), 'W01-cnc-carcass.dxf');
+  assert.equal(sheetDxfFileName('W01', 'non-sprayed'), 'W01-cnc-non-sprayed.dxf');
   assert.equal(sheetDxfFileName('W 01', 'custom'), 'W_01-cnc-custom.dxf');
 });
 

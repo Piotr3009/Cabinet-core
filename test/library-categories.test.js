@@ -33,13 +33,19 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   assert.deepEqual(getCategory('wall').types, ['WUD']);
   assert.deepEqual(getCategory('tall').types, ['BUDTALL', 'FRIDGE', 'WARDROBE']);
 
+  // Turn 5 (BACKLOG #30): Saved sets is real. It holds the workshop's OWN units
+  // rather than kits, so it lists no types and is marked `saved` — the panel
+  // reads its contents from the template store.
+  assert.equal(getCategory('sets').saved, true);
+  assert.equal(getCategory('sets').soon, undefined, 'no longer a place merely held open');
+  assert.deepEqual(getCategory('sets').types, []);
+
   // Held open, not pretended: an empty category says "soon" and is not clickable.
-  for (const id of ['sets', 'media']) {
-    assert.equal(getCategory(id).soon, true);
-    assert.deepEqual(getCategory(id).types, []);
-  }
+  assert.equal(getCategory('media').soon, true);
+  assert.deepEqual(getCategory('media').types, []);
   for (const id of ['base', 'wall', 'tall']) {
     assert.equal(getCategory(id).soon, undefined);
+    assert.equal(getCategory(id).saved, undefined);
   }
 });
 

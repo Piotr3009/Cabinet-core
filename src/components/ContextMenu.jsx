@@ -25,6 +25,7 @@ export default function ContextMenu() {
   const removePlinth = useProjectStore((s) => s.removePlinth);
   const addTopInfill = useProjectStore((s) => s.addTopInfill);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
+  const openModal = useUiStore((s) => s.openModal);
 
   const unit = units.find((u) => u.id === menu?.unitId) || null;
 
@@ -47,12 +48,16 @@ export default function ContextMenu() {
           if (!addTopInfill(unitId)) notify('No room between this unit and the ceiling.', 'warn');
         },
         removeTopInfill,
+        // "Save as template" needs one thing the menu cannot give it: a NAME.
+        // That is the modal's whole job (BACKLOG #30).
+        saveAsTemplate: (unitId) => openModal('save-template', { unitId }),
         // The options for what was just added are in the panel, not in a modal.
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
       },
     })
     : []), [unit, menu, redistributeShelves, rotateUnit, removeUnit, closeAllFronts,
-    addEndPanel, addPlinth, removePlinth, addTopInfill, removeTopInfill, notify, openRightPanel, setPanelSection]);
+    addEndPanel, addPlinth, removePlinth, addTopInfill, removeTopInfill, notify, openRightPanel, setPanelSection,
+    openModal]);
 
   useEffect(() => {
     if (!menu) return undefined;

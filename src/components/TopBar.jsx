@@ -26,6 +26,8 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
   const showOutlines = useUiStore((s) => s.showOutlines);
   const toggleOutlines = useUiStore((s) => s.toggleOutlines);
   const showDimensions = useUiStore((s) => s.showDimensions);
+  const dimensionColour = useUiStore((s) => s.dimensionColour);
+  const setDimensionColour = useUiStore((s) => s.setDimensionColour);
   const toggleDimensions = useUiStore((s) => s.toggleDimensions);
   const contourView = useUiStore((s) => s.contourView);
   const toggleContourView = useUiStore((s) => s.toggleContourView);
@@ -74,6 +76,17 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
       items: [
         { label: 'Outlines', checked: showOutlines || contourView, disabled: contourView, run: toggleOutlines },
         { label: 'Dimensions', checked: showDimensions, disabled: viewMode !== '3d' || contourView, run: toggleDimensions },
+        {
+          // Which ink the distance dimensions are drawn in (BACKLOG #34). Both
+          // are drawing-office colours; the hexes are in the profile.
+          label: 'Dimension colour',
+          disabled: viewMode !== '3d' || contourView,
+          items: Object.keys(profile.dimensions.colours).map((key) => ({
+            label: key === 'navy' ? 'Navy' : 'Red',
+            checked: dimensionColour === key,
+            run: () => setDimensionColour(key),
+          })),
+        },
         { divider: true },
         { label: '3D', checked: viewMode === '3d', run: () => setViewMode('3d') },
         { label: 'CNC sheet', checked: viewMode === 'cnc', run: () => setViewMode('cnc') },
@@ -91,7 +104,11 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
       label: 'Library',
       items: UNIT_CATEGORIES.map((c) => ({
         label: c.label,
-        hint: c.soon ? 'Coming later' : `${c.types.length} type${c.types.length === 1 ? '' : 's'}`,
+        hint: c.soon
+          ? 'Coming later'
+          : (c.saved
+            ? 'Units you have saved — right-click a unit to add one'
+            : `${c.types.length} type${c.types.length === 1 ? '' : 's'}`),
         soon: c.soon,
         disabled: c.soon,
         run: () => setLibraryCategory(c.id),
@@ -113,6 +130,11 @@ export default function TopBar({ onExportCsv, onExportPdf, onExportDxfZip, onAut
         },
       ],
     },
+    // BACKLOG #36 — the place in the menu, held open the way Database and
+    // Clients are. What goes behind it (finish per element, the list, m², the
+    // price) is still being designed with Piotr; a button that opened a
+    // half-answer would be worse than one that says "not yet".
+    { label: 'Spraying', soon: true, disabled: true, hint: 'Spray finishing — a later phase' },
     { label: 'Database', soon: true, disabled: true, hint: 'JoineryCore data — a later phase' },
     { label: 'Clients', soon: true, disabled: true, hint: 'JoineryCore clients — a later phase' },
   ];

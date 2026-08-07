@@ -6,6 +6,7 @@ import RoomModal from '../components/RoomModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
+import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
 import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
@@ -120,6 +121,7 @@ export default function ConfiguratorPage() {
         {modal === 'design' && <DesignSettingsModal />}
         {modal === 'auth' && <AuthModal />}
         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
+        {modal === 'save-template' && <SaveTemplateModal />}
         <ContextMenu />
         <Toast />
       </div>

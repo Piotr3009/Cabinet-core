@@ -199,6 +199,29 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 600, height: 770, depth: 558 },
   },
 
+  // ─── Project heights (turn 5, BACKLOG #29) ───
+  // A workshop builds a whole KITCHEN to one set of heights, not each cabinet
+  // to its own. These are where a new project starts; Design Settings ▸ Project
+  // heights then owns them per project, and a unit inherits the one for its
+  // height group (engine/types.js `heightGroup`). A unit may still be given its
+  // own height — that is a deliberate exception and the panel marks it custom.
+  //
+  // The numbers are the SKYLON standard: 720 carcass base and wall units, 2150
+  // tall, hung at 1500, on a 100 mm toe kick. They are separate from the
+  // per-type `defaults` above, which stay what the AutoLISP kits ship with —
+  // the kit default is the factory setting, this is the job.
+  projectHeights: {
+    base: 720,
+    wall: 720,
+    tall: 2150,
+    wallMount: 1500,
+    toeKick: 100,          // = legHeight; the plinth follows it
+    // What a project height is allowed to be at all. Outside this the field is
+    // clamped, exactly as every other millimetre field is.
+    min: 100,
+    max: 3000,
+  },
+
   // ─── Legs (shared rule for every standing type) ───
   // Four in the corners; over `extraLegOverWidth` a FIFTH goes in the
   // geometric centre of the footprint (Piotr, turn 3). The AutoLISP only ever
@@ -407,6 +430,11 @@ export const DEFAULT_CABINET_PROFILE = {
   editor: {
     snapSteps: [0.5, 1, 32],
     defaultSnap: 1,
+    // The precision the WORKSHOP works to (BACKLOG #33). Every millimetre field
+    // in the app commits on this grid and every millimetre on screen is shown
+    // to it, so "196.5" can be typed, seen and cut. Nothing to do with the drag
+    // snap above — that is a user preference, this is what the tool measures in.
+    mmStep: 0.5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
     unitMagnet: 40,            // butt a unit against its neighbour within this
@@ -416,13 +444,38 @@ export const DEFAULT_CABINET_PROFILE = {
     itemStackPitch: 350,
   },
 
-  // ─── Distance arrows on the canvas (CLAUDE.md turn 3, phase 8) ───
+  // ─── Distance arrows on the canvas (turn 3 phase 8; redrawn turn 5, #34) ───
   // The measurements the toolbar draws: unit to unit, and unit to wall.
+  //
+  // Turn 5 draws them the way a drawing office does. Filled cones pointing the
+  // wrong way are gone; what is left is a thin line, extension lines out to the
+  // faces being measured, an architectural tick across each end, and the value
+  // in the middle. Every number below is in ROOM millimetres, so the annotation
+  // scales with the drawing instead of with the camera.
   dimensions: {
     minGap: 2,            // below this the two things are touching, not spaced
-    arrowHead: 45,        // length of the arrow head, in room mm
+    arrowHead: 45,        // length of the tick / open head, in room mm
     standoff: 90,         // how far in front of the units the line is drawn
     height: 120,          // how high above a unit's base the line floats
+    // "1 px look": the thinnest bar that survives being rasterised at the
+    // distances this scene is viewed from. Thinner and the line strobes.
+    lineWeight: 3,
+    extension: 110,       // extension line, from the measured face outwards
+    extensionGap: 18,     // …starting this far off the face, as a draughtsman does
+    tickAngle: 45,        // the oblique architectural tick, in degrees
+    // How the ends are drawn: 'tick' = the 45° slash of an architectural
+    // drawing, 'open' = a two-stroke arrowhead with nothing filled in.
+    head: 'tick',
+    // Which way the value sits off the line.
+    labelOffset: 70,
+    // The two inks of a technical drawing. Navy is the default; red is the
+    // option in View ▸ Dimension colour. Nothing else on the canvas is either
+    // colour, so a measurement never reads as part of the furniture.
+    colours: {
+      navy: '#1B2A4A',
+      red: '#8C182B',
+    },
+    defaultColour: 'navy',
   },
 };
 
@@ -468,6 +521,7 @@ export function migrateCabinetProfile(profile) {
       rail: { ...D.wardrobe.rail, ...profile.wardrobe?.rail },
     },
     baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
+    projectHeights: { ...D.projectHeights, ...profile.projectHeights },
     legs: { ...D.legs, ...profile.legs },
     wallUnit: {
       ...D.wallUnit, ...profile.wallUnit,

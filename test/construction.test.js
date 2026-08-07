@@ -132,7 +132,12 @@ test('adding the plinth and the top infill makes them real; removing them makes 
   assert.equal(store().setTopInfill(id, 300), 300);
   assert.equal(partsOf(id, 'INFILL').find((p) => p.meta.side === 'top').h, 300);
   const toCeiling = store().fillToCeiling(id);
-  assert.equal(toCeiling, 2500 - (770 + P.baseUnit.legHeight));
+  // Turn 5 (BACKLOG #29): a new base unit arrives at the PROJECT's base height,
+  // not at the kit's own default — so the gap to the ceiling is measured from
+  // that. The number is read from the unit rather than written out again, so
+  // this test says "to the ceiling" and not "to 1630".
+  assert.equal(toCeiling, 2500 - (unitOf(id).params.height + P.projectHeights.toeKick));
+  assert.equal(unitOf(id).params.height, P.projectHeights.base, 'inherited, not the kit default');
 
   store().removePlinth(id);
   store().removeTopInfill(id);
@@ -179,6 +184,39 @@ test('an end panel is a cut piece outside the carcass side', () => {
   assert.match(store().addEndPanel(id, { side: 'R' }).error, /already has an end panel/);
   assert.equal(store().addEndPanel(id, { side: 'L' }).error, null);
   assert.equal(partsOf(id, 'END-PANEL').length, 2);
+});
+
+test('Left / Right / Both — and "both" is the same act twice (BACKLOG #31)', () => {
+  const id = withUnit('BUD');
+
+  const both = store().addEndPanel(id, { side: 'B' });
+  assert.equal(both.error, null, both.error || '');
+  assert.deepEqual(both.ids.length, 2);
+  assert.deepEqual(
+    (unitOf(id).params.end_panels || []).map((ep) => ep.side).sort(),
+    ['L', 'R'],
+  );
+  // Two real cut pieces, not one piece called "both".
+  assert.equal(partsOf(id, 'END-PANEL').length, 2);
+
+  // Asking again is refused per side, and nothing is added twice.
+  const again = store().addEndPanel(id, { side: 'B' });
+  assert.equal(again.ids.length, 0);
+  assert.match(again.error, /already has an end panel/);
+  assert.equal((unitOf(id).params.end_panels || []).length, 2);
+});
+
+test('"both" fits the side that has room and says why the other did not', () => {
+  // A unit hard against the right-hand wall: the right panel has nowhere to go,
+  // the left one is fine. A silent half-success is how a unit ends up with one
+  // end panel nobody meant to leave off.
+  const id = withUnit('BUD');
+  store().moveUnit(id, 99999, 0);
+
+  const result = store().addEndPanel(id, { side: 'B' });
+  assert.equal(result.ids.length, 1, 'the left one appeared');
+  assert.deepEqual((unitOf(id).params.end_panels || []).map((ep) => ep.side), ['L']);
+  assert.match(result.error, /No room for a .* end panel on the right/);
 });
 
 test('an end panel reaches the BOM, the CNC sheet and the cutting list', () => {

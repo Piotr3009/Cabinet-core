@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { mm, COLORS } from './constants.js';
 import DimLabel from './DimLabel.jsx';
 import { roomWalls, roomBounds, openingsOnWall } from '../engine/room.js';
+import { formatMm } from '../engine/format.js';
 
 // The room is a LIST OF WALLS (engine/room.js) — four for a rectangle, six for
 // an L. All four are drawn, and the ones the camera is behind hide themselves,
@@ -78,7 +79,7 @@ function Wall({ wall, height, openings, centre, showLabel }) {
         ))}
       </group>
       {showLabel && (
-        <DimLabel position={[midLabel[0], mm(height) + 0.12, midLabel[2]]} text={`${Math.round(wall.width)} mm`} />
+        <DimLabel position={[midLabel[0], mm(height) + 0.12, midLabel[2]]} text={formatMm(wall.width, { unit: true })} />
       )}
     </group>
   );
@@ -123,7 +124,7 @@ export default function Room({ room, showLabels = true }) {
       {showLabels && (
         <DimLabel
           position={[-mm(bounds.width) / 2 - 0.2, mm(height) / 2, -mm(bounds.depth) / 2]}
-          text={`${Math.round(height)} mm`}
+          text={formatMm(height, { unit: true })}
         />
       )}
     </group>

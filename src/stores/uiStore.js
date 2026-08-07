@@ -54,6 +54,12 @@ export const useUiStore = create((set, get) => ({
   setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
   toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
 
+  // Which ink the distance dimensions are drawn in (turn 5, BACKLOG #34).
+  // A drawing office uses one or the other; the hexes themselves live in
+  // profile.dimensions.colours, so this is only WHICH, never what.
+  dimensionColour: 'navy',           // 'navy' | 'red'
+  setDimensionColour: (key) => set({ dimensionColour: key === 'red' ? 'red' : 'navy' }),
+
   // Thin black contours on every piece — ON by default (turn 4, BACKLOG #5).
   showOutlines: true,
   setShowOutlines: (v) => set({ showOutlines: Boolean(v) }),
@@ -78,10 +84,12 @@ export const useUiStore = create((set, get) => ({
   addItemKind: null,                 // 'drawers' | 'shelves' | 'hanger' | null
   setAddItemKind: (kind) => set((s) => ({ addItemKind: s.addItemKind === kind ? null : kind })),
 
-  // Modals
-  modal: null,                       // 'room' | 'auth' | 'design' | 'save-as' | null
-  openModal: (name) => set({ modal: name }),
-  closeModal: () => set({ modal: null }),
+  // Modals. `modalArgs` is what the modal is ABOUT — which unit is being saved
+  // as a template, for instance — so a modal needs no store of its own.
+  modal: null,                       // 'room' | 'auth' | 'design' | 'save-as' | 'save-template' | null
+  modalArgs: null,
+  openModal: (name, args = null) => set({ modal: name, modalArgs: args }),
+  closeModal: () => set({ modal: null, modalArgs: null }),
 
   // Selection: which unit and which of its sections is highlighted
   selectedUnitId: null,

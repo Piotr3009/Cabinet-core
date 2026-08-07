@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { formatMm } from '../engine/format.js';
+import { resolveFinishes } from '../engine/design.js';
 
 // ─── Exports ───
 // An export is a SNAPSHOT of the always-live engine state (SPEC 4.11), so the
@@ -131,7 +133,7 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
       doc.setFontSize(8);
       for (const c of cols) {
         let v = r[c.key];
-        if (c.key === 'w' || c.key === 'h') v = Math.round(v);
+        if (c.key === 'w' || c.key === 'h') v = formatMm(v);
         else if (c.key === 'area_m2') v = v.toFixed(3);
         else if (c.key === 'edge') v = v || '';
         doc.text(String(v), c.align === 'right' ? x + c.w - 2 : x, y, { align: c.align });
@@ -156,6 +158,16 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     doc.text(text, margin, y);
     y += 4.6;
   };
+
+  // Finish — what the job is FINISHED in. A decor is named in full and with
+  // its attribution: "EGGER H1180 ST37 Natural Halifax Oak" is what gets
+  // ordered, and the brand is not optional (BACKLOG #19).
+  const finishes = resolveFinishes(null, project?.design, getCabinetProfile());
+  if (finishes.carcass || finishes.front) {
+    section('Finish');
+    line(`Carcass — ${finishes.carcass?.label || 'not set'}${finishes.carcass?.hex ? ` · ${finishes.carcass.hex}` : ''}`);
+    line(`Fronts — ${finishes.front?.label || 'not set'}${finishes.front?.hex ? ` · ${finishes.front.hex}` : ''}`);
+  }
 
   // Materials
   const assigned = demand.filter((d) => d.material);

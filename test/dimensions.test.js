@@ -119,6 +119,11 @@ test('an empty room measures nothing', () => {
 });
 
 test('distances are captioned in whole millimetres', () => {
-  assert.equal(distanceLabel(1234.4), '1234 mm');
-  assert.equal(distanceLabel(0.5), '1 mm');
+  // Turn 5 (BACKLOG #33): the caption goes through the app's one millimetre
+  // rule, so a half millimetre survives the arrow instead of being rounded off
+  // it. `test/format-mm.test.js` owns that rule; this only pins that the
+  // arrows use it.
+  assert.equal(distanceLabel(1234.4), '1234.4 mm');
+  assert.equal(distanceLabel(0.5), '0.5 mm');
+  assert.equal(distanceLabel(1234), '1234 mm');
 });

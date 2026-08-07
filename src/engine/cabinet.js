@@ -202,6 +202,11 @@ function normalizeParams(raw, profile) {
     railOffset: Number(p.rail_offset ?? railDefault),
     fridgeH: Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
     mountHeight: Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
+    // Toe kick, per unit (turn 5, BACKLOG #29). The project sets it in Design
+    // Settings and it arrives here as a parameter, so the plinth, the legs and
+    // the floor drop all follow one number instead of three copies of it. Left
+    // unset it is the profile's, which is what a bare computeCabinet() gets.
+    legHeight: legHeightOf(p, type, profile),
     items,
     warnings,
   };
@@ -219,6 +224,18 @@ function isDrawerCountUsable(v) {
   if (typeof v === 'number') return Number.isFinite(v);
   if (typeof v === 'string') return v.trim() === '' || Number.isFinite(Number(v));
   return false;
+}
+
+/**
+ * How tall this unit stands on its legs. The profile's leg height for its
+ * family unless the unit carries its own (the project's toe kick), and always
+ * 0 for a type that stands on nothing.
+ */
+function legHeightOf(p, type, profile) {
+  if (!type.legs) return 0;
+  const own = Number(p.leg_height);
+  if (Number.isFinite(own) && own >= 0) return own;
+  return type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight;
 }
 
 /** Resolve a dotted profile path, tolerating a missing key. */
@@ -277,12 +294,35 @@ function clampInt(value, min, max) {
 
 // ─── Panel record helper ───
 
+/**
+ * Is this piece a FINISHED surface — one the sprayer sees (BACKLOG #35)?
+ *
+ * Decided on the ROLE, never on a list of panel ids: a kit that adds a part
+ * nobody thought of gets the right answer for free, and a preset built on this
+ * flag cannot go stale the way "carcass only = these seven ids" did.
+ *
+ * Exposed (sprayed / finished): doors and drawer fronts, the scribe fillers and
+ * top infill, the plinth, and the end panels that mask a run. All of them are
+ * seen from the room.
+ *
+ * Not exposed: sides, top, bottom, back, holders, spurs, shelves, partitions
+ * and rail partitions, the drawer panel and its fillers, and every part of a
+ * drawer box. They live inside a carcass or behind a door — the workshop cuts
+ * them from finished board and they never reach the spray booth.
+ */
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel']);
+
+export function isFinishExposed(role) {
+  return FINISH_EXPOSED_ROLES.has(role);
+}
+
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
   return {
     id,
     part,
     role,
     material_role: role === 'front' ? 'front' : 'board',
+    finish_exposed: isFinishExposed(role),
     w: roundTo(w, 4),
     h: roundTo(h, 4),
     qty: 1,
@@ -892,7 +932,7 @@ export function computeCabinet(params, profileOverride) {
   // every other panel does. What they should be is decided by
   // engine/autoparts.js from the room; this only builds them.
   const AP = P.autoParts;
-  const legHeightForPlinth = type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legHeight : P.baseUnit.legHeight) : 0;
+  const legHeightForPlinth = cfg.legHeight;
   const plinthH = AP.plinth.height ?? legHeightForPlinth;
   // OPT-IN, deliberately: a bare computeCabinet(params) reproduces the LISP
   // kit and nothing else, so the golden fixtures stay the contract they are.
@@ -1154,7 +1194,7 @@ export function computeCabinet(params, profileOverride) {
   const boardEdging = boardPanels.reduce((s, x) => s + x.edging.len_m, 0);
   const frontEdging = frontPanels.reduce((s, x) => s + x.edging.len_m, 0);
 
-  const legHeight = type.legs ? (type.legSource === 'wardrobe' ? P.wardrobe.legHeight : P.baseUnit.legHeight) : 0;
+  const legHeight = cfg.legHeight;
   const legsPerUnit = type.legs ? legCount(W, P) : 0;
   const legs = type.legs ? legLayout({ width: W, depth: D, boardT: G, height: legHeight }, P) : null;
 

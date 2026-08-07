@@ -1569,3 +1569,291 @@ opisywały — nie dlatego, że przeszkadzały):
 - `construction.test.js` — nowa szafka dolna przychodzi na 720 mm projektu, nie na 770 mm kitu (#29).
 - `interaction.test.js` — menu kontekstowe ma dwie nowe pozycje (#30, #31).
 - `library-categories.test.js` — „Saved sets" to już nie placeholder (#30).
+
+---
+
+# TURA 6 — Output, render, infille w L, end panel v2, zaznaczenie, sonda rysunków
+
+**Gałąź:** `claude/faza-6-claude-md-nfxmji` · **Tryb:** pełna autonomia, zero pytań
+**Wynik:** `npm test` **536/536** (471 z tur 1–5 + 65 nowych, 0 fail), `npm run build` czysty,
+przebieg end-to-end w Chromium **23/23** bez jednego błędu w konsoli.
+
+Pozycje BACKLOG zamknięte lub przesunięte: **#20 (infille) DONE**, **#37 render core DONE**,
+**#39 sonda rysunków DONE**, **#17 end panel v2**. Nowe: **#39**, **#40** (plinth w L).
+
+---
+
+## Naprawa na start — cztery tury, które ten plik zgubił
+
+`BUILD-LOG.md` niósł tury 1–4 do incydentu gita między turą 4 a 5. Wróciły z commita
+`dc075b5`, dosłownie; jedyna zmiana to poziom nagłówków „DEFINICJA SUKCESU", żeby w pliku
+był jeden H1 na turę. Kolejność jest od teraz chronologiczna — dopisanie tury to
+dopisanie, nie przestawianie pliku.
+
+---
+
+## F1 — Output ▾ [HIGH]
+
+Wszystko, co **wychodzi z aplikacji**, w jednym menu, w kolejności, w jakiej warsztat
+się z tym spotyka: obraz dla klienta → rysunek na robotę → pliki dla maszyn.
+
+Trzy eksporty pod spodem to te same trzy funkcje, które wołało `File ▸ Export`.
+Przeniesione, nie przepisane — i stare miejsce **zniknęło**, zamiast zostać cichą drugą
+drogą do tego samego pliku. `File` znów jest o projekcie.
+
+Menu jest czystym builderem (`lib/outputMenu.js`), nie JSX-em, bo rzecz warta sprawdzenia
+przy PRZENOSINACH to „czy nic nie zostało po staremu" — a to potrafi sprawdzić test w node.
+`test/output-menu.test.js` czyta `TopBar.jsx` i pilnuje, że nazwy eksportów padają
+dokładnie raz.
+
+---
+
+## F2 — RENDER [CRITICAL, danie główne]
+
+Powód biznesowy z BACKLOG #37, dosłownie: nasz klient to warsztat, a warsztat pokazuje ten
+obraz **swojemu** klientowi. Obraz ma sprzedawać, nie tylko informować.
+
+Co składa się na realizm, w kolejności wagi:
+
+**Każda krawędź jest przełamana.** Cięta płyta ma 0,5–1 mm fazy z piły i okleiniarki;
+światło się na niej łapie i rysuje cienką jasną linię wzdłuż każdej krawędzi w pokoju.
+Jej brak to większość tego, co czyta się jako „render z komputera". BACKLOG #37 wprost
+zakazuje robienia tego geometrią — siatka gęsta na tyle, żeby unieść 0,8 mm na każdej
+formatce kuchni, kosztowałaby całą płynność. Więc **na normalnych, w shaderze**, liczone
+z własnych połówkowych wymiarów pudełka; `customProgramCacheKey` sprawia, że pokój z 400
+formatkami kompiluje ten shader **raz**.
+
+**Melamina to nie lakier.** Tura 4 dawała wszystkiemu jeden sheen 20 %. Płyta melaminowana
+to matowa folia z szerokim, miękkim refleksem; front lakierowany dwuskładnikowo to kolor
+pod cienkim filmem lakieru, z refleksem wąskim, w którym widać okno. To, do której rodziny
+należy formatka, mówi **silnikowa flaga `finish_exposed`** — te elementy, które jadą do
+lakierni (BACKLOG #35) — a nie lista identyfikatorów w widoku.
+
+**Mebel stoi na podłodze.** Jeden miękki quad pod jednostką, w jej własnej grupie, więc
+kręci się i jeździ razem z szafką i nie kosztuje nic na klatkę. Mapa cieni ląduje **obok**
+szafki, nigdy pod nią — dlatego szafka bez tego lewituje.
+
+**Pokój do odbicia.** `RoomEnvironment` przez PMREM przy 64 px: w paczce `three`, bez
+pobierania, bez pliku `.hdr` — CLAUDE.md zakazuje jednego i drugiego.
+
+**Kadrowanie po ROGACH, nie po kuli.** Kula to łatwa odpowiedź i zła: ciąg szafek ma
+1,8 × 0,9 × 0,6 m, więc jego kula jest dwa razy wyższa niż mebel i szafki lądują w środkowej
+jednej trzeciej pustej podłogi. Rogi kadrują to, co naprawdę jest. Stabilność przy obrocie
+— powód, dla którego kula kusi — zostaje tam, gdzie ma znaczenie: „3/4 lewo" i „3/4 prawo"
+to lustra, a pudełko jest symetryczne, więc oba wychodzą z tej samej odległości.
+
+### Wydajność widoku roboczego — zmierzona, nie obiecana
+
+SwiftShader (kontener bez GPU), 8 szafek z drzwiami, przebiegi A/B przeplatane:
+
+| konfiguracja | fps |
+|---|---|
+| tura 5 | **5,6** |
+| tura 6, wszystko włączone | **3,4** |
+| tura 6, View ▸ Realistic lighting **OFF** | **5,9** |
+
+Cała różnica to sonda IBL. Fazy, cienie kontaktowe i miękkie cienie są **darmowe** — z
+wyłączoną sondą scena jest **szybsza niż tura 5**, bo ściany i podłoga przeszły na
+`meshLambertMaterial` i wypadły ze ścieżki IBL (`scene.environment` dociera wyłącznie do
+`MeshStandardMaterial`, a ściany to matowa biała farba i wyglądają identycznie).
+Przełącznik jest w View; **render zawsze zapala oświetlenie z powrotem**.
+
+### Co znalazła przeglądarka (a nie znalazłyby testy)
+
+- **Pierwszy render 4K przyszedł z siatką narysowaną po meblu.** Kontur drei rysuje jako
+  grubą linię, czyli `LineSegments2`, czyli **Mesh** — sprawdzenie „to nie jest linia"
+  przepuściło go w całości.
+- **Render kadrowany na szafce przy ścianie wrócił jako szary prostokąt na cały ekran** —
+  tył tej ściany. Auto-chowanie ścian liczy się co klatkę dla kamery EDYTORA, a render
+  patrzy kamerą własną. Test jest teraz jedną funkcją, którą render woła dla swojej kamery.
+- **Ściany wyszły szare, kiedy render przyciszył ambient.** Mebel jest oświetlony światłami
+  **i** sondą, ściana samymi światłami — więc kontrast w kadrze bierze się z **podniesienia
+  klucza**, nie z przygaszenia ambientu. To jedna linia w profilu i test, który tego pilnuje.
+
+---
+
+## F3 — End panel v2 [HIGH]
+
+Trzy zmiany, wszystkie takie, jakie powiedziałby stolarz.
+
+**Jest tak głęboki, jak drzwi wystają.** Tura 4 dawała mu głębokość korpusu, czyli zostawiała
+go za licem drzwi o odsadzenie plus grubość frontu — próg wzdłuż boku wykończonego ciągu,
+dokładnie to, czemu ten element ma zapobiegać. Liczba to korpus + 3 + grubość frontu, i jest
+przepisana, nie wymyślona: LISP rysuje drzwi w rzucie z góry na `y0 − doorGap − gruboscDrzwi`
+(`KIT_BUD_FULL` L128). Test porównuje z **boxem drzwi**, nie z arytmetyką, więc te dwie rzeczy
+nie mogą się rozjechać.
+
+**Jest z materiału FRONTÓW.** Panel stojący w pokoju obok drzwi jest lakierowany z drzwiami,
+z ich arkusza. Do tej pory ciąg z dwoma end panelami zamawiał płytę korpusową, której nikt
+nie miał zużyć.
+
+**Górna krawędź jest sterowaniem.** Klik podświetla, grab ciągnie, dwuklik wysyła do sufitu —
+ten sam gest, który top infill ma od tury 3, bo to ta sama czynność. Wysokość jest per panel;
+„apply to all" jej nie niesie, bo linia dobrana na oko pod jednym sufitem nie jest domyślną
+wartością projektu.
+
+---
+
+## F4 — Infille w L [CRITICAL]
+
+BACKLOG #20 wisi od tury 4 z dopiskiem „na razie proste (decyzja Piotra)". To jest realizacja.
+
+**Pionowy filler to L.** Ramię B zamyka szczelinę w płaszczyźnie drzwi — tej samej, w której
+kończą end panel i czoło top infilla, więc trzy elementy wykańczające ciąg stoją na jednej
+linii zamiast na trzech. Ramię A jest przykręcone do boku korpusu i idzie 60 mm w głąb.
+Do **podłogi**, bo filler kończący się na dnie korpusu zostawia szczelinę obok cokołu.
+Szczelina węższa niż 24 mm zostaje prostym paskiem i mówi o tym: 18 mm ramienia nie wejdzie
+w 12 mm szczeliny, a udawanie inaczej to formatka, której nie da się zrobić.
+
+**Top infill to JEDEN element na cały ciąg.** Kuchnia 3,6 m zamknięta sześcioma 600-mi
+odpadkami ma pięć styków na najbardziej widocznej linii w pokoju, wszystkie na wysokości
+oczu i żaden tam, gdzie jest styk szafek. Jedna długość nie ma ani jednego. W przekroju:
+czoło 40 + półka 80, mitra 45°, sklejone w L.
+
+Tej geometrii nie może wyliczyć `computeCabinet`, który widzi zawsze jedną szafkę — więc
+liczy ją **`engine/runs.js`** z pokoju i zapisuje na pierwszej jednostce ciągu jako parametr.
+`computeCabinet` buduje ją potem jak każdą inną formatkę, czyli trafia do BOM, na arkusz CNC
+i do DXF **istniejącymi drogami**. Nie ma drugiej listy cięcia „na te długie".
+
+Ciąg pęka na: innej ścianie, innym poziomie, obróconej jednostce, **innej wysokości blatu**
+(jedna deska nie leży na dwóch poziomach) i na luce.
+
+**Cztery zakończenia** — to nie warianty jednego, to cztery różne roboty stolarskie:
+
+| koniec | co robi |
+|---|---|
+| **ściana** | kończy się na niej |
+| **pionowy L-infill** | przechodzi nad fillerem i wychodzi na ścianę — linia, którą prowadzi oko, jest nieprzerwana do narożnika pokoju |
+| **end panel do sufitu** | wchodzi w jego LICO wewnętrzne; przejście po jego wierzchu dałoby styk tam, gdzie patrzy oko |
+| **otwarty** | mitra 45° w planie i **skręt za narożnik**: element idzie dalej wzdłuż boku skrajnej szafki do ściany tylnej. Rama obrazu. |
+
+Przebieg w przeglądarce pokazuje to na żywo: ciąg 3 × 600 daje **jedną** formatkę 1800 mm
+z powrotami po obu otwartych końcach, a end panel wyciągnięty do sufitu **kasuje** powrót
+po swojej stronie.
+
+Oba infille są z materiału frontów, razem z end panelem, z tego samego powodu.
+
+---
+
+## F5 — Zaznaczenie [MEDIUM]
+
+Tura 4 zaznaczała szafkę przemalowując jej **własne** krawędzie na złoto aplikacji. Dwie
+rzeczy były z tym nie tak i to jest ta sama rzecz dwa razy: złoto to kolor MEBLA (klamka,
+rama z brązu), więc zaznaczona szafka czytała się jako szafka z czegoś innego; a rysowanie
+własnego obrysu robiło z zaznaczenia cechę obiektu zamiast znaku na nim.
+
+Zamiast tego to, co rysuje każdy CAD: cienka **przerywana** ramka w granacie biura
+projektowego — tym samym atramentem, którym ta aplikacja mierzy, bo pomiar i zaznaczenie to
+oba przypadki narzędzia mówiącego zamiast roboty — odsunięta 10 mm od bryły, po bounding
+boxie, nie po geometrii. Przerywana, bo żaden mebel nie ma przerywanej krawędzi. Bez testu
+głębokości i rysowana na końcu, bo zaznaczenie, którego trzeba szukać obracając scenę, nie
+jest zaznaczeniem.
+
+Ramka obejmuje **bryłę** z boxów silnika: drzwi wystają przed korpus, a end panel stoi obok
+niego, więc znak narysowany na korpusie przecinałby oba.
+
+Hover to ten sam znak przy jednej trzeciej krycia, opóźniony o klatkę — R3F wysyła
+`pointerout` na opuszczanej formatce **przed** `pointerover` na wchodzonej, więc bez tego
+przesunięcie kursora przez szafkę migocze raz na formatkę.
+
+`outlineFor()` nie przyjmuje już flagi `selected` w ogóle, a test podaje jej stary argument,
+żeby udowodnić, że nie ma dokąd nim trafić.
+
+---
+
+## F7 — Sonda rysunków [HIGH]
+
+**Sonda stylu**, i CLAUDE.md mówi to wprost: jakość kreski przed liczbą widoków, żeby tura 7
+miała skalibrowany wygląd, na którym zbuduje resztę kompletu.
+
+Co sprawia, że czyta się to jak rysunek Piotra, a nie jak kilka prostokątów:
+
+- **Warstwy widokowe LISP-a, razem z indeksami** (`createViewLayers`). Magentowe drzwi,
+  zielone półki, szare linie otwierania. Dwie są przetłumaczone, nie przepisane, i powód jest
+  zapisany: indeks ACI to kolor na **czarnym** ekranie, a ACI 3 na białym papierze to jasne nic.
+- **Przekątne z `drawDoorSwingLines`** — dwie linie ze środka strony ZAWIASÓW do dalekich
+  narożników, więc zbieg siedzi na zawiasach. Front szuflady nie dostaje żadnych, bo szuflada
+  się nie otwiera na zawiasach.
+- **Ramka shakera na LISP-owych 50 mm** i J-groove na jego 30.
+- **Wszystko za frontem linią przerywaną**, a KTÓRE to elementy — decyduje geometria, nie
+  lista nazw: formatka należy do skorupy korpusu, kiedy dochodzi do jednego z czterech boków.
+  Lista byłaby krótsza i byłaby zła — panel szufladowy i jego wypełniacze mają rolę `side`
+  dokładnie tak jak boki korpusu, i pierwsza wersja narysowała je jako czarne belki w poprzek
+  szafy.
+- **Ramka rysunku i tabelka.** „To ona robi jak z AutoCADa" — i robi.
+- **Skala standardowa**: 1:5, 1:10, 1:20 — nigdy 1:13,7, bo z 1:13,7 nikt nie zmierzy.
+  Największa, która się mieści, wygrywa, a tabelka mówi która.
+- **Papier obraca się sam**, kiedy tak wychodzi większy rysunek. Szafa na leżącym A3 wychodzi
+  1:20 z połową arkusza pustą; na stojącym — 1:10 i wypełnia go. Biuro projektowe obraca
+  papier bez pytania.
+- **Wymiary architektoniczne z T5**, wartości przez `formatMm`, więc 596,5 dociera na papier
+  jako 596,5.
+
+Geometria to **własne boxy silnika** rzutowane na XY — rzut z przodu JEST rzutem xy. LISP
+wyprowadza każdy prostokąt drugi raz w kodzie rysującym; tutaj rysunek nie może się nie
+zgadzać z listą cięcia co do położenia półki, a test przechodzi po każdej formatce, żeby
+to udowodnić.
+
+Całość jest czysta (`src/engine/drawings/`), więc SVG jest parsowany i sprawdzany w node;
+jsPDF zostaje w `src/lib/`, gdzie silnik go nie widzi.
+
+---
+
+## F6 — Zamknięcie
+
+### Przebieg E2E w Chromium — 23/23
+
+Sterownik jest teraz **w repo** (`scripts/cdp.mjs`, `scripts/e2e-turn6.mjs`) — to odpowiedź
+na BLOCKERS #27, wersja „kod w repo" zamiast „Playwright w devDependencies". Node 22,
+wbudowany `WebSocket` + CDP, **zero nowych zależności**.
+
+| sprawdzone | wynik |
+|---|---|
+| kanwa 3D żyje | ✅ |
+| trzy szafki z drzwiami, półką i top infillem | `01 · 13 szt · 02 · 7 · 03 · 7` ✅ |
+| fronty na dekor EGGER-owy | `dark_walnut` ✅ |
+| Output ▸ Render otwiera ustawienia | ✅ |
+| render to prawdziwy PNG | **1266 kB** ✅ |
+| 1080p = 1920 na dłuższym boku, w proporcji widoku | `1920 × 1142` ✅ |
+| nazwa pliku | `untitled-project-scene-2026-08-07.png` ✅ |
+| 4K = 3840 na dłuższym boku | `3840 × 2286` ✅ |
+| kanwa oddana w swoim rozmiarze | `1600 × 952` ✅ |
+| rzut frontowy się rysuje | 8681 znaków SVG, **1:10** ✅ |
+| przekątne otwierania z LISP-a | 2 linie ✅ |
+| co za drzwiami — linia przerywana | ✅ |
+| warstwy widokowe LISP na rysunku | `CARCASE SHELVES DOORS DOOR_SWING LEG_BLOCK UNIT_NUMBER DIMENSIONS` ✅ |
+| ramka + tabelka + skala | ✅ |
+| eksport rysunku SVG i PDF | ✅ |
+| **ciąg niesie JEDEN top infill** | `INFILL-T-FACE 1800` (nie 3 × 600) ✅ |
+| L ma półkę, otwarty koniec skręca za narożnik | `INFILL-TL-*` + `INFILL-TR-*`, po 586 mm ✅ |
+| end panel do sufitu = podłoga-sufit jedną formatką | `586 × 2500` ✅ |
+| …i ciąg kończy na nim, bez skrętu | ✅ |
+| trzy eksporty z Output | `csv`, `pdf`, `zip` ✅ |
+| błędy w konsoli | **zero** ✅ |
+
+Zrzuty: `docs/turn6/01`…`07`, plus surowe wyjścia — `render-1080p-image.png`,
+`render-4k-image.png`, `drawing-front-elevation.svg/.png`.
+
+### Liczby tury
+
+| | |
+|---|---|
+| testy | **536/536** (471 baseline + 65 nowych, 0 fail) |
+| nowe pliki testowe | `output-menu`, `render`, `end-panel`, `run-infill`, `drawings` |
+| build | czysty |
+| nowe zależności | **zero** |
+| SQL uruchomiony | **żaden** |
+| fixtures | nietknięte |
+
+**Testy z tur 1–5, które musiały się zmienić** — bo tura 6 zmienia to, co opisywały,
+nie dlatego, że przeszkadzały:
+
+- `construction.test.js` — filler idzie do podłogi (`h = wysokość + nóżki`), a szeroka
+  szczelina daje L: czoło + ramię. End panel jest głębszy o `doorGap + front_t`.
+- `autoparts.test.js` — `INFILL-T` to teraz `INFILL-T-FACE` + `INFILL-T-SHELF`,
+  `INFILL-L` to `INFILL-L-FACE` (+ `-ARM`, gdy szczelina to unosi).
+- `finish-exposed.test.js` — te same identyfikatory, po rozdzieleniu na paski L.
+- `appearance.test.js` — zaznaczenie jest granatowe i przerywane; złota nie ma na żadnym meblu.
+- `imports.test.js` — strzępi teraz literały szablonowe (zostawiając `${…}`), bo faza krawędzi
+  niesie GLSL w backtickach, a GLSL ma wbudowany `clamp`, tak samo jak `engine/format.js`.
+  Sprawdzone, że nadal łapie bug z tury 5: po usunięciu importu z `Room.jsx` test czerwienieje.

@@ -69,6 +69,10 @@ Status: OPEN → TURA-N (przypisane) → DONE.
     kolejne dodania dziedziczą. Formatka w BOM/CNC.
     — **TURA-4 / DONE**: `END-L`/`END-R`, rola `end_panel` w BOM, opcje w sekcji panelu (nie modal),
     panel jest częścią footprintu, a panel który się nie mieści jest odmawiany z liczbą.
+    — **TURA-6 / END PANEL v2 DONE**: głębokość = korpus + doorGap + grubość frontu, czyli LICO
+    z drzwiami (test porównuje z boxem drzwi, nie z arytmetyką) · materiał FRONTÓW, nie korpusu
+    (BOM liczy go do arkusza frontów) · górna krawędź interaktywna: klik podświetla, grab ciągnie,
+    dwuklik wysyła do sufitu. Wysokość nad szafką jest PER PANEL — „apply to all" jej nie niesie.
 18. [LOW] Widok konturowy/przezroczysty (render & print): same kontury, tryb prezentacyjny.
     — **TURA-4 / DONE**: View ▸ Contour view; materiał gaśnie do 6 %, kontury zostają, BOM bez zmian.
 
@@ -81,6 +85,14 @@ Status: OPEN → TURA-N (przypisane) → DONE.
     + miniaturki. Licencja Egger przeczytana: swatche z atrybucją 'EGGER + kod' OK;
     tekstury 3D → pisemna zgoda PRZED sprzedażą CC / publicznym demo (mail-draft u Claude).
 20. [MEDIUM] Infille/plinth w kształcie L (przykręcane do boku) — na razie proste (decyzja Piotra).
+    — **TURA-6 / DONE (infille)**: pionowy filler to L — ramię B zamyka szczelinę w PŁASZCZYŹNIE
+    DRZWI (ta sama co end panel i czoło top infilla), ramię A przykręcone do boku korpusu, 60 mm
+    w głąb. Do podłogi, góra interaktywna jak w end panelu. Szczelina węższa niż 24 mm zostaje
+    prostym paskiem i mówi o tym w `meta.shape` — 18 mm ramienia nie wejdzie w 12 mm szczeliny.
+    Top infill: **JEDEN element na cały ciąg**, przekrój L (czoło 40 + półka 80, mitra 45°),
+    cztery zakończenia (ściana / pionowy L-infill / end panel do sufitu / otwarty koniec z mitrą
+    i skrętem za narożnik). `engine/runs.js` + `test/run-infill.test.js`.
+    PLINTH w L — **nie ruszany w turze 6**, zostaje w tym punkcie na później.
 21. [MEDIUM] VCarve — drobiazgi do zmiany (listę poda Piotr).
 22. [MEDIUM] Rzuty z góry / dokumentacja do druku; Print w menu File.
 23. [MEDIUM] Rysunek techniczny pomieszczenia DXF/SVG (z tury 3 — odłożone).
@@ -129,6 +141,29 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     - tryb "Presentation render" + eksport obrazu w wysokiej rozdzielczości do oferty/PDF
     UWAGA: widok CNC i contour view zostają surowe — to narzędzia warsztatowe, nie prezentacja.
     Realizacja: osobna tura poświęcona wyłącznie temu (nie punkt w innej turze).
+    — **TURA-6 / RENDER CORE DONE**: Output ▸ Render — ujęcie (bieżące / Front / 3-4 L / 3-4 P /
+    Top), 1080p albo 4K (3840 px dłuższy bok), cienie normal/high, podgląd, Save PNG
+    `{project}-{unit|scene}-{data}.png`. Realizm: RoomEnvironment przez PMREM (w paczce three,
+    zero pobierania), ACESFilmic + ekspozycja, cienie kontaktowe pod jednostkami, **fazy krawędzi
+    0.8 mm na normalnych w shaderze** (nie na siatce — #37 tego wprost zakazuje), PBR per rodzina
+    (melamina ≠ lakier, decyduje `finish_exposed`), delikatne AO w narożach, kamera 35 mm.
+    **ZOSTAJE na później:** bloom, mapy normalnych struktury drewna, eksport renderu do PDF oferty.
+    Koszt: sonda środowiskowa to jedyna niedarmowa rzecz — patrz View ▸ Realistic lighting i
+    liczby w BUILD-LOG (tura 6).
 38. [PARKING] Tryb sprzedażowy / Visual CPQ (wzór: VividWorks, Supra Cabinets): publiczny
     konfigurator na stronie warsztatu, uproszczone UI dla klienta końcowego, cena na żywo,
     wycena/lead. Po MVP warsztatowym. UWAGA: publiczne demo wyzwala warunek zgody EGGER (#19).
+
+39. [HIGH] **Rysunki techniczne — pełny komplet.** Tura 6 zrobiła SONDĘ STYLU: jeden widok
+    (front elevation) narysowany jak LISP Piotra, z ramką, tabelką, skalą 1:5/1:10/1:20 i
+    eksportem SVG + PDF (A4/A3, papier obraca się sam, gdy tak wychodzi większa skala).
+    — **TURA-6 / SONDA DONE**: `src/engine/drawings/` (czyste, testowane w node),
+    warstwy widokowe LISP 1:1 z indeksami ACI, przekątne otwierania z `drawDoorSwingLines`,
+    linia przerywana na wszystkim za frontem, wymiary architektoniczne z T5 przez `formatMm`.
+    — **DO TURY 7**: Top view i Front (carcass only) — miejsca już trzymane w menu Output;
+    dodatkowo zestawienie kilku jednostek na jednym arkuszu i wydruk całego ciągu.
+    Kalibracja wyglądu jest zrobiona — kolejne widoki to ta sama maszyneria, nie nowy styl.
+
+40. [MEDIUM] **Plinth w kształcie L** — wyłuskane z #20, którego infillowa połowa jest już
+    zrobiona. Cokół to dziś prosty pasek cofnięty o 50 mm; w L byłby sztywniejszy i lepiej
+    trzymał linię przy nierównej podłodze. Nie było w zakresie tury 6.

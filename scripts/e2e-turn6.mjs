@@ -40,6 +40,28 @@ const check = (label, ok, detail = '') => {
   console.log(`${ok ? '  ok' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}`);
 };
 
+/**
+ * Open a right-panel section, if it is not already open.
+ *
+ * The panel remembers which sections are open ACROSS units, so a blind click
+ * on the header is a toggle and closes it as often as it opens it. `contains`
+ * must name a BUTTON inside the section — a marker that is only ever a span
+ * reads as "still closed" for ever, and the toggle simply flaps.
+ */
+async function section(page, header, contains) {
+  const isOpen = () => page.evaluate(
+    `return [...document.querySelectorAll('button')].some((b) => b.offsetParent && b.textContent.includes(${JSON.stringify(contains)}));`,
+  );
+  // Checked AFTER clicking as well as before: the header is a toggle, so a
+  // check made a frame too early closes the section it meant to open. Three
+  // goes, and the loop corrects itself either way round.
+  for (let i = 0; i < 3; i += 1) {
+    if (await isOpen()) return;
+    await page.click('button', header);
+    await page.sleep(350);
+  }
+}
+
 /** Open a top-bar menu and click one of its entries (hovering any submenu). */
 async function menu(page, top, path) {
   await page.click('nav[aria-label="Main menu"] > div > button', top);
@@ -70,11 +92,15 @@ try {
     await page.sleep(500);
     // A shelf, so the elevation has something BEHIND the door to draw as a
     // hidden line — which is one of the things phase 7 is checked on.
-    await page.click('button', 'Add items').catch(() => {});
-    await page.sleep(250);
+    await section(page, 'Add items', 'Shelves');
     await page.click('button', 'Shelves').catch(() => {});
     await page.sleep(250);
     await page.click('button', 'Add', { exact: true }).catch(() => {});
+    await page.sleep(350);
+    // …and a top infill, while the panel is still open. All three butt
+    // together, so the run's element has to be ONE piece across them.
+    await section(page, 'Construction', '+ Left');
+    await page.click('button', 'Add top infill').catch(() => {});
     await page.sleep(350);
     await page.click('button', 'Add doors — finish unit').catch(() => {});
     await page.sleep(400);
@@ -179,20 +205,7 @@ try {
   check('the canvas is handed back at its own size', canvasBack.w < 3840 && canvasBack.w > 100,
     `${canvasBack.w} × ${canvasBack.h}`);
 
-  // ── 3. the pieces: end panel, L infills, run ──
-  await page.evaluate(`
-    const c = document.querySelector('canvas');
-    const r = c.getBoundingClientRect();
-    const ev = (t, x, y, extra) => c.dispatchEvent(new PointerEvent(t, {
-      clientX: x, clientY: y, bubbles: true, button: 0, buttons: 1, pointerId: 1, isPrimary: true, ...extra,
-    }));
-    window.__cc = { c, r, ev };
-    return true;
-  `);
-
-  await shot(page, 'run-of-units');
-
-  // ── 4. the drawings probe ──
+  // ── 3. the drawings probe ──
   // A download is watched at the URL: jsPDF dispatches its own MouseEvent
   // rather than calling .click(), so patching the anchor sees the SVG and
   // misses the PDF.
@@ -241,6 +254,75 @@ try {
     drawn.some((t) => /svg/.test(t)) && drawn.some((t) => /pdf/.test(t)), drawn.join(', '));
   await page.click('button', 'Close');
   await page.sleep(400);
+
+  // ── 4. the pieces: one top infill for the RUN, and an end panel to the
+  //      ceiling that changes how the run ends ──
+  const runRows = async () => page.evaluate(`
+    const rows = [...document.querySelectorAll('tr')].map((tr) => [...tr.children].map((td) => td.textContent.trim()));
+    return rows.filter((r) => /^INFILL/.test(r[1] || '')).map((r) => ({ id: r[1], w: r[2], h: r[3] }));
+  `);
+
+  await page.click('button', 'BOM');
+  await page.sleep(800);
+  const beforePanel = await runRows();
+  await page.click('button', 'BOM');
+  await page.sleep(400);
+
+  const faces = beforePanel.filter((r) => r.id === 'INFILL-T-FACE');
+  check('the run carries ONE top infill, not one per cabinet', faces.length === 1,
+    beforePanel.map((r) => `${r.id} ${r.w}`).join(' | '));
+  check('and it spans the whole run', faces[0] && Number(faces[0].w) >= 1800,
+    faces[0] ? `${faces[0].w} mm across three 600 mm units` : 'no face');
+  check('the L has its shelf, and the open end turns the corner',
+    beforePanel.some((r) => r.id === 'INFILL-T-SHELF')
+    && beforePanel.some((r) => /^INFILL-TR?-|^INFILL-T[LR]-/.test(r.id) && r.id !== 'INFILL-T-FACE' && r.id !== 'INFILL-T-SHELF'),
+    beforePanel.map((r) => r.id).join(' '));
+
+  // A fourth unit, on its own, for the end-panel case: an end panel pulled to
+  // the ceiling is one of the four things a run can finish against, and the
+  // corner it would otherwise have turned should disappear.
+  await menu(page, 'Library', ['Base units']);
+  await page.click('button', 'Base unit');
+  await page.sleep(600);
+  await section(page, 'Construction', '+ Left');
+  await page.click('button', 'Add top infill');
+  await page.sleep(700);
+  await page.click('button', '+ Right');
+  await page.sleep(700);
+  await page.evaluate(`
+    const up = [...document.querySelectorAll('button')].filter((b) => b.textContent.trim() === '▲');
+    up[up.length - 1].click();
+    return up.length;
+  `);
+  await page.sleep(900);
+
+  await page.click('button', 'BOM');
+  await page.sleep(800);
+  // Scoped to the FOURTH unit's own rows: the three-unit run further along the
+  // wall has returns of its own, and they are not what this is about.
+  const afterPanel = await page.evaluate(`
+    const out = [];
+    let unit = null;
+    for (const tr of document.querySelectorAll('tr')) {
+      const head = tr.querySelector('td[colspan="7"]');
+      if (head) { unit = head.textContent.trim().split(' ')[0]; continue; }
+      const cells = [...tr.children].map((td) => td.textContent.trim());
+      if (/^(INFILL|END)-/.test(cells[1] || '')) out.push({ unit, id: cells[1], w: cells[2], h: cells[3] });
+    }
+    const last = out.length ? out[out.length - 1].unit : null;
+    return out.filter((r) => r.unit === last);
+  `);
+  await page.click('button', 'BOM');
+  await page.sleep(400);
+
+  const end = afterPanel.find((r) => r.id === 'END-R');
+  check('an end panel pulled to the ceiling is floor-to-ceiling in one piece',
+    end && Number(end.h) === 2500, end ? `${end.w} × ${end.h}` : 'no END-R');
+  check('and the run finishes ON it — no corner turned any more',
+    !afterPanel.some((r) => /^INFILL-TR-/.test(r.id)),
+    afterPanel.map((r) => r.id).join(' '));
+
+  await shot(page, 'run-of-units');
 
   // ── 5. the exports, from their new home ──
   // A download is watched at the URL, not at the anchor: jsPDF dispatches its

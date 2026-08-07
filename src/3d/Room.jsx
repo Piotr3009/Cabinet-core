@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { mm, COLORS } from './constants.js';
 import DimLabel from './DimLabel.jsx';
 import { roomWalls, roomBounds, openingsOnWall } from '../engine/room.js';
+import { formatMm } from '../engine/format.js';
 
 // The room is a LIST OF WALLS (engine/room.js) — four for a rectangle, six for
 // an L. All four are drawn, and the ones the camera is behind hide themselves,

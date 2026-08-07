@@ -456,3 +456,126 @@ czysty, przebieg end-to-end w Chromium 26/26, zero błędów w konsoli**. To jes
 samo, co robi CI, plus przebieg w przeglądarce, którego CI nie robi.
 
 **Do sprawdzenia przez Piotra (bez wpływu na turę):** Settings → Billing → Actions.
+
+---
+
+# TURA 5
+
+Nic z poniższych nie blokowało tury — wszystkie fazy F1–F7 są zrobione. To są
+**decyzje podjęte samodzielnie** (bo tryb był „zero pytań") i **jedna rzecz
+świadomie nierobiona**. Piotr może każdą z nich odwrócić; każda jest zmianą
+w jednym miejscu.
+
+## #22 — „Spodnia widoczna szafek wiszących" NIE jest w presecie Non-sprayed
+
+**Co mówi BACKLOG #35.** Preset ma wykluczać „fronty, drzwi, infille, plinth,
+end panele, **spodnią widoczną wiszących**".
+
+**Co mówi CLAUDE.md tury 5 (F2).** Lista wykluczeń: „fronty i drzwi (F/DF),
+infille, plinth, end panele, top infill". Spodniej wiszących tam nie ma.
+
+**Co zrobiłem.** Poszedłem za CLAUDE.md, bo to jest specyfikacja tej tury.
+
+**Dlaczego to nie jest przeoczenie, tylko inny model danych.** Flaga
+`finish_exposed` siedzi **na formatce**. Dno szafki wiszącej to JEDNA formatka
+o dwóch licach: górne jest wnętrzem szafki, dolne widzi cała kuchnia. „Widoczna
+spodnia" to więc nie `finish_exposed` na formatce, tylko **finish per LICO** —
+a to jest dokładnie ten model, który #36 (Spraying) ma dopiero dostać.
+Wpisanie dziś dna WUD do „sprayed" wyrzuciłoby całą formatkę z arkusza
+nie-lakierowanego, choć wycina się ją razem z korpusem — czyli zamieniłoby jeden
+zły preset na inny zły preset.
+
+**Decyzja Piotra.** Jeśli warsztat chce dziś dno WUD na arkuszu „sprayed", to
+jedna linia w `engine/cabinet.js` (`isFinishExposed` + rola/typ). Jeśli chce tego
+**dobrze**, to czeka na finish-per-lico razem z #36 — i wtedy to samo rozwiąże
+front lakierowany dwustronnie i plecy widoczne w otwartej zabudowie.
+
+## #23 — `formatMm()` siedzi w `src/engine/format.js`, nie w `src/lib/`
+
+**Co mówi CLAUDE.md (F1).** „…jedną funkcją formatującą `formatMm()` **w lib**".
+
+**Co zrobiłem.** Wsadziłem ją do `src/engine/format.js` — modułu, który JEST
+biblioteką formatowania tego projektu (`roundTo`, `rtos`, `snap`, `areaM2`).
+
+**Dlaczego.** `engine/dimensions.js` (`distanceLabel`) musi jej używać, a silnik
+nie importuje z `src/lib/` — to reguła z tury 1 i trzyma silnik czystym JS-em bez
+zależności. Gdyby `formatMm` mieszkała w `src/lib/`, silnik dostałby albo import
+w złą stronę, albo **drugą kopię reguły** — czyli dokładnie to, przed czym broni
+cała faza F1 („JEDNA funkcja").
+
+**Bez decyzji Piotra**, chyba że zależy mu na literalnej ścieżce; wtedy
+`src/lib/format.js` re-eksportujący tę samą funkcję to jedna linia — ale zostanie
+jeden punkt prawdy, nie dwa.
+
+## #24 — Base height 720 zmienia domyślną szafkę dolną (było 770)
+
+**Co się stało.** `profile.baseUnit.defaults.height` = **770** (z KIT_BUD_FULL).
+CLAUDE.md tury 5 mówi „Base height (**720**)". Nowa szafka dolna przychodzi teraz
+na 720, a nie na 770.
+
+**Dlaczego tak.** F3 mówi wprost, że to są **defaulty PROJEKTU**, i podaje liczby.
+Wysokość kitu (770) została nietknięta w profilu — to nadal ustawienie fabryczne,
+z którego liczą golden fixtures. Zmieniło się to, na czym **ląduje jednostka
+w projekcie**.
+
+**Co Piotr powinien sprawdzić.** Czy 720 to wysokość korpusu, jakiej chce warsztat
+(720 korpus + 100 nogi + blat), bo 770 + 100 = 870 to zupełnie inna kuchnia. Jeśli
+770 było celowe — Design Settings ▸ Project heights ▸ Base height, jedno pole, i
+cały projekt idzie za nim.
+
+## #25 — Niska szafka (LOW_CABINET) NIE dziedziczy wysokości projektu
+
+CLAUDE.md: „Nowa jednostka DZIEDZICZY wg swojej kategorii". LOW_CABINET siedzi
+w kategorii `base`, więc literalnie powinna przyjść na 720 mm.
+
+**Nie zrobiłem tego**, bo niska szafka na 720 mm to szafka dolna pod inną nazwą —
+cała jej tożsamość to bycie niższą (domyślnie 600). Ma `heightGroup: null` i
+zostaje przy swojej wysokości; panel nie pokazuje przy niej ani „custom", ani Reset.
+
+**Jedna linia w `engine/types.js`**, gdyby Piotr wolał literalną wersję.
+
+## #26 — Bug, którego nie znalazłyby ani testy, ani build
+
+**Co się stało.** Po sprzątnięciu `Math.round` z UI plik `src/3d/Room.jsx` dostał
+wywołania `formatMm()` i **nie dostał importu**. `npm test` był zielony (żaden test
+nie montuje komponentu Reacta). `npm run build` **też był zielony** — bundler
+traktuje nieznany wolny identyfikator jako zmienną globalną i dowiaduje się
+dopiero w runtime. Etykiety ścian zabrały ze sobą całą kanwę 3D.
+
+**Znalazła to przeglądarka**, w pierwszym przebiegu E2E fazy F7.
+
+**Co dołożyłem.** `test/imports.test.js`: dla każdego pliku w `src/` sprawdza, że
+każda nazwa eksportowana przez NASZ moduł, użyta jako goły identyfikator, jest
+zaimportowana albo zadeklarowana. Zero zależności — dlatego jest testem, a nie
+ESLintem. Sprawdziłem, że łapie dokładnie ten przypadek (usunięcie importu →
+czerwony test z nazwą pliku).
+
+**Do rozważenia przez Piotra (nie w tej turze).** To jest ~40 linii regexpów i
+robi robotę linterowi. Jeśli kiedyś reguła „zero zależności" zostanie poluzowana
+dla `devDependencies`, ESLint z `no-undef` robi to lepiej i przy okazji łapie
+resztę tej klasy błędów.
+
+## #27 — E2E jest w scratchpadzie, nie w repo
+
+Przebieg w Chromium (start → … → eksporty, 15 zrzutów w `docs/turn5/`) był
+napisany na wbudowanym `WebSocket` node 22 + CDP, żeby **nie dokładać Playwrighta**
+(reguła „zero nowych zależności"). Sterownik został poza repo, bo to narzędzie
+przebiegu, a nie kod aplikacji.
+
+**Decyzja Piotra.** Jeśli ten przebieg ma być powtarzalny w CI, to albo wchodzi
+Playwright do `devDependencies` (złamanie reguły, ale w miejscu, które nie jedzie
+do przeglądarki klienta), albo sterownik CDP ląduje w `scripts/e2e.mjs` i staje
+się kodem, który trzeba utrzymywać. Nie wybierałem za Piotra.
+
+## #28 — CI (wciąż BLOCKERS #17 / #21: billing Actions)
+
+`ci.yml` nietknięty. Jeśli Actions nadal nie przydziela runnera, ten PR też nie
+dostanie zielonego checka z GitHuba. Lokalnie, Node 22: **`npm test` 471/471,
+`npm run build` czysty, przebieg end-to-end w Chromium bez błędu w konsoli.**
+
+## #29 — `sql/003_tura5.sql` NIE został uruchomiony
+
+Tabela `cc_templates` (+ RLS + unikalny indeks po `lower(name)`) leży jako plik,
+zgodnie z CLAUDE.md. Do czasu uruchomienia zapisane komplety siedzą w
+`localStorage` (`cc.templates.v1`) i **działają w pełni** — mock-mode jest
+działającą aplikacją, nie demem. To samo dotyczy `sql/002_tura3.sql` (BACKLOG #26).

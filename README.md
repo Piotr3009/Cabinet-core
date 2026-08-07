@@ -225,18 +225,31 @@ section: derived from the code is not the same as confirmed on a real cabinet
 
 `BUILD-LOG.md` has a verdict per phase of every turn; `BLOCKERS.md` has the open
 questions. CI runs `npm ci && npm test && npm run build` on Node 22 for every
-push and pull request to main. **410 tests, 0 failing** (`npm test`), plus a
-26-step end-to-end run in Chromium at the end of every turn.
+push and pull request to main. **471 tests, 0 failing** (`npm test`), plus an
+end-to-end run in Chromium at the end of every turn.
+
+Every millimetre on screen goes through one function, `formatMm()` in
+`src/engine/format.js` — whole numbers whole, halves halved, anything else to a
+tenth. There is no `Math.round` on a millimetre outside the engine, and numeric
+fields commit on the half-millimetre grid, so 196.5 can be typed, seen and cut
+(`BACKLOG.md` #33).
 
 DXF is written as **R12 (AC1009)**, following the writer that is in production
 at the workshop today — R12 has no LWPOLYLINE, so a closed polyline is
 `POLYLINE` + `VERTEX` + `SEQEND` with the closed flag. The reasoning, and what
 to do if VCarve disagrees, is `BLOCKERS.md` #8.
 
+Manufacturer decors arrived in turn 5: the EGGER pack (85 decors) is in
+`public/decors/`, and `src/engine/decors.js` carries the licence in code rather
+than in a comment — a decor image is shown whole and always beside its
+attribution, and **never** on 3D geometry. In 3D a uni colour is its flat hex and
+a woodgrain is our own procedural grain tinted with the decor's colour, which is
+what the terms allow until there is written consent (`BACKLOG.md` #19).
+
 Deliberately **not** in this build: inset drawer fronts (no deductions yet),
-handles, a pull-down rail, saved sets and media walls (both held open in the
-Library menu), manufacturer decor catalogues (the finish infrastructure is
-ready — the open question is the artwork licence), a technical DXF/SVG drawing
+handles, a pull-down rail, media walls (held open in the Library menu), decor
+packs from other manufacturers and per-workshop decor import, spray finishing
+(a place in the menu, nothing behind it), a technical DXF/SVG drawing
 of the room, nesting, a project-wide export, and the JoineryCore integration —
 `jc_uuid` is in the schema, and Database / Clients are places in the menu with
 nothing behind them yet. Windows and doors in walls are visual only; they do not

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useTemplateStore } from '../stores/templateStore.js';
 import { UNIT_TYPES, getCategory, getUnitType, profilePath } from '../engine/types.js';
 import { formatMm } from '../engine/format.js';
+import { projectHeights } from '../engine/design.js';
 
 // Floating, grab-and-move Library panel (SPEC 4.1 / section 7).
 //
@@ -22,6 +23,8 @@ export default function LibraryPanel() {
   const addUnit = useProjectStore((s) => s.addUnit);
   const units = useProjectStore((s) => s.units);
   const profile = useCabinetProfileStore((s) => s.profile);
+  const design = useProjectStore((s) => s.project.design);
+  const heights = useMemo(() => projectHeights(design, profile), [design, profile]);
 
   const drag = useRef(null);
 
@@ -114,6 +117,10 @@ export default function LibraryPanel() {
           // Each type names its own defaults block in the profile, so a new
           // kit needs no branch here.
           const d = profilePath(profile, t.defaultsKey) || {};
+          // …but the HEIGHT it will actually arrive at is the project's, for a
+          // type that inherits one (turn 5, BACKLOG #29). Advertising the kit's
+          // 2150 and then placing a 2200 is a list that lies about its contents.
+          const height = (t.heightGroup && heights[t.heightGroup]) || d.height;
           return (
             <button
               key={id}
@@ -123,7 +130,7 @@ export default function LibraryPanel() {
             >
               <div className="text-sm text-ink-50">{t.label}</div>
               <div className="text-[11px] text-ink-400">
-                {d.width} × {d.height} × {d.depth} mm{t.mount === 'wall' ? ' · wall' : ''}
+                {formatMm(d.width)} × {formatMm(height)} × {formatMm(d.depth)} mm{t.mount === 'wall' ? ' · wall' : ''}
               </div>
             </button>
           );

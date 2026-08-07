@@ -247,6 +247,13 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     zaczyna wchodzić w skrajne (dogbone ±30). LOW_CABINET ma `minHeight: 300`, więc
     przypadek jest osiągalny. Nie było w zakresie tury 7 — CLAUDE.md F4 mówi wyłącznie
     o socketach — i jest wypisane, żeby nie zginęło razem z zamkniętym #28.
+    — **TURA-8 / DONE (F0)**: `profile.puzzle.middleTabBelow = 346`, wyprowadzone
+    z geometrii tak samo jak `singleSocketBelow`, tylko z mostkiem liczonym DWA razy
+    (środkowy tab ma dwie szczeliny do utrzymania, socket ma jedną). Poniżej progu
+    `tabCentres()` daje dwa taby. Przy okazji naprawiony `NaN`: `backPanelGeometry()`
+    destrukturyzowało trzeci środek, którego przy dwóch tabach nie ma — rzędy śrub
+    liczą się teraz z reguły („po jednej między każdą parą sąsiednich tabów").
+    `test/low-tabs.test.js` przelicza próg na każdym przebiegu.
 48. [LOW] **Numer projektu bez unikalności.** Auto-propozycja liczy od najwyższego numeru
     NA TEJ PÓŁCE (localStorage). Dwa stanowiska bez wspólnej bazy zaproponują ten sam
     numer, a pole jest edytowalne, więc nic tego nie pilnuje. Gdy `cc_projects` zacznie

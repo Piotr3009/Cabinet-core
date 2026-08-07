@@ -2157,3 +2157,54 @@ temu „booklet naprawdę ma n stron, każda w rozmiarze, który wybrała karta"
 w node, a nie tylko przeglądarka. Sam eksport rozdzielony na `bookletDoc()` (buduje) i
 `exportBookletPdf()` (zapisuje), bo `doc.save()` sięga po system plików albo po
 przeglądarkę, a żadne z nich nie należy do testu, którego pytaniem jest liczba stron.
+
+---
+
+# TURA 8 — ŚWIATŁO, RENDER v2 I SIEDEM BŁĘDÓW Z TESTÓW PIOTRA
+
+Podłoga wyjściowa: `npm test` na main po merge T7 — **601/602**, z jedyną czerwoną
+suitą `test/decors.test.js`. To jest oczekiwane i zapisane w CLAUDE.md: main niesie
+już CELOWO nowy układ dekorów (`public/decors/egger/`), a ten test pilnuje starej
+płaskiej ścieżki z T5. F1 przepina loader i ten test na nowy układ.
+
+## F0 — DŁUG Z TURY 7: trzeci tab na niskim korpusie
+
+BLOCKERS #37 kończy się słowami „**Nie zrobiłem tego**". To jedyna pozycja z listy
+niedokończonych tury 7, która jest KODEM — reszta to albo maszyna (kontrolny DXF
+w VCarve, #36), albo baza (SQL, unikalność numeru, sety — #38/#39/#43), albo rzecz
+świadomie odłożona (#40/#42). Więc to jest to, co tura 8 robi najpierw.
+
+**Problem.** `tabCentres()` daje trzy taby po tylnej krawędzi boku: 95, H/2, H−95.
+Tab to ±25, ale **dogbone wokół niego to ±30** i to on sięga dalej. Przy niskim
+korpusie środkowy dogbone wchodzi w skrajny. `LOW_CABINET.minHeight` to 300 mm,
+więc przypadek jest osiągalny z UI — przy 300 mm skrajny relief kończy się na 125,
+a środkowy zaczyna na 120. Nakładają się.
+
+**Rozwiązanie — to samo, co tura 7 zrobiła socketom, po drugiej osi.** Poniżej progu
+środkowy tab nie jest cięty i panel ma dwa. Próg jest WYPROWADZONY z geometrii:
+
+```
+  190    dwa skrajne środki, tabCentresFromEnd (95) od każdego końca
++ 120    footprint skrajnego i środkowego tabu, po obu stronach:
+         2 × 2 × max(tabHalfWidth 25, dogboneHalfHeight 30)
++  36    mostek — jedna grubość płyty po KAŻDEJ stronie środkowego tabu;
+         tu są dwie szczeliny do utrzymania, nie jedna
+= 346    profile.puzzle.middleTabBelow
+```
+
+Różnica wobec `singleSocketBelow` (264,5) jest właśnie w tym ostatnim wierszu i jest
+prawdziwa: socket ma jedną szczelinę do utrzymania, środkowy tab ma dwie.
+
+**Konsekwencja, której nie widać z progu.** `backPanelGeometry()` liczyło rzędy śrub
+przez `const [t1y, t2y, t3y] = sideCentres` — z dwoma tabami `t3y` jest `undefined`
+i cały rząd wychodzi jako `NaN`. Rzędy liczą się teraz z reguły, a nie z liczby:
+„jedna śruba od każdego końca, i po jednej MIĘDZY każdą parą sąsiednich tabów".
+Przy trzech tabach to są cztery rzędy LISP-a, przy dwóch — trzy, we właściwych
+miejscach.
+
+Nic poniżej nie zostało pouczone osobno: taby boku, ich dogbony, sockety pleców
+i rzędy śrub biorą się z tej jednej funkcji, więc DXF i podgląd CNC idą za nią same.
+
+`test/low-tabs.test.js` — 8 testów, próg **przeliczany na każdym przebiegu** (jak
+w `single-socket.test.js`), plus dowód, że poniżej progu stare taby naprawdę by się
+zderzyły, plus regresja „normalny korpus ma dalej trzy taby i cztery rzędy śrub".

@@ -140,6 +140,25 @@ export const DEFAULT_CABINET_PROFILE = {
     // same way; test/single-socket.test.js recomputes it on every run, so the
     // number and the reasoning cannot drift apart.
     singleSocketBelow: 264.5,
+    // ─── Turn 8 (F0 / BLOCKERS #37 / BACKLOG #47) ───
+    // The same family of problem on the OTHER axis. `tabCentres()` puts three
+    // tabs down the back edge of a side panel — 95 in from each end and one in
+    // the middle — and on a LOW carcass the middle one walks into the outer
+    // ones. The tab itself is ±25, but the DOG BONE around it is ±30, and it is
+    // the dog bone that has to clear:
+    //
+    //   190    the two outer centres, `tabCentresFromEnd` (95) in from each end
+    // + 120    each outer tab's own footprint plus the middle tab's, both ends:
+    //          2 × 2 × max(tabHalfWidth 25, dogboneHalfHeight 30) = 120
+    // + 36     the minimum bridge, one board thickness on EACH side of the
+    //          middle tab — there are two gaps to keep open here, not one
+    // = 346
+    //
+    // Below this the middle tab is not cut and the panel has two, exactly as it
+    // has two sockets below `singleSocketBelow`. `LOW_CABINET.minHeight` is 300,
+    // so the case is reachable from the UI. test/low-tabs.test.js recomputes the
+    // number on every run, so it and the reasoning cannot drift apart.
+    middleTabBelow: 346,
     screwDiameter: 3,
     screwFromEnd: 50,          // screws at 50, mid, length−50
     centrelineExtra: 0.5,      // screw/socket centreline = G/2 + this

@@ -1095,7 +1095,17 @@ export function computeCabinet(params, profileOverride) {
   // thickness, which is exactly where the AutoLISP puts the door in top view
   // (`drawDoor` at y0 − doorGap − gruboscDrzwi, KIT_BUD_FULL L128).
   const EP = AP.endPanel;
-  const endPanelDepth = D + P.doors.gap + frontT;
+  // ─── Turn 8 (CLAUDE.md F3) ───
+  // Every unit stands `room.wallBackClearance` off the wall behind it, so an
+  // end panel that is only as deep as "carcass + door standoff" stops that far
+  // short of the wall — and the slot is at eye level down the whole side of the
+  // run, which is the one place a masking panel exists to not have.
+  //
+  // The DELIBERATE inset (`inset_back_mm`) is deliberately NOT added: that gap
+  // holds a soil pipe or a bowed wall, and running the panel back into it is
+  // running it into the thing it was moved away from.
+  const wallGap = Math.max(0, Number(P.room?.wallBackClearance) || 0);
+  const endPanelDepth = wallGap + D + P.doors.gap + frontT;
   // "To the floor" means down to the floor: past the legs on a standing unit,
   // and all the way down from a wall unit's mounting height.
   const dropToFloor = type.mount === 'wall' ? cfg.mountHeight : legHeightForPlinth;
@@ -1116,7 +1126,16 @@ export function computeCabinet(params, profileOverride) {
       edgeCode: codes.all, edgeLen: metres(2 * endPanelDepth + 2 * panelH),
       // `drop > 0 ? -drop : 0` and not `-drop`: negative zero is a real value in
       // JS and a box.y of -0 fails an === check downstream for no reason.
-      box: { x: side === 'L' ? -t : W, y: drop > 0 ? -drop : 0, z: 0, w: t, h: panelH, d: endPanelDepth },
+      // …and it therefore STARTS at the wall, which in the unit's own frame is
+      // `wallGap` behind the carcass back.
+      box: {
+        x: side === 'L' ? -t : W,
+        y: drop > 0 ? -drop : 0,
+        z: wallGap > 0 ? -wallGap : 0,
+        w: t,
+        h: panelH,
+        d: endPanelDepth,
+      },
       cnc: rectGeometry(endPanelDepth, panelH),
       meta: {
         side: side === 'L' ? 'left' : 'right',

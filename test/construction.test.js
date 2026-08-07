@@ -207,7 +207,8 @@ test('an end panel is a cut piece outside the carcass side', () => {
   // Turn 6 (CLAUDE.md F3): as deep as the DOORS are proud, not as deep as the
   // carcass — the piece exists to finish the run flush with the door face.
   // test/end-panel.test.js is where that rule lives; this only keeps up.
-  assert.equal(ep.w, unit.params.depth + P.doors.gap + unit.params.front_t, 'flush with the door face');
+  assert.equal(ep.w, P.room.wallBackClearance + unit.params.depth + P.doors.gap + unit.params.front_t,
+    'from the wall behind it to the plane of the doors (turn 8, F3)');
   assert.equal(ep.box.x, unit.params.width, 'on the OUTSIDE of the right side');
   // "To floor" is the default: it runs past the legs, down to the floor.
   assert.equal(ep.h, unit.params.height + P.baseUnit.legHeight);

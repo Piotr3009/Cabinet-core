@@ -53,8 +53,16 @@ test('an end panel finishes in the same plane as the door, not behind it', () =>
   const ep = endPanelOf(id);
   const door = doorOf(id);
 
-  // The rule, in as many words: carcass depth + the door standoff + the door.
-  const expected = unit.params.depth + P.doors.gap + unit.params.front_t;
+  // The rule, in as many words: the gap to the wall behind it, plus the carcass
+  // depth, plus the door standoff, plus the door.
+  //
+  // Turn 8 (CLAUDE.md F3) added the first of those four. Every unit stands
+  // `room.wallBackClearance` off the wall, so a panel that is only as deep as
+  // "carcass + door" stops that far short of it — and the slot runs at eye
+  // level down the whole side of the run, which is the one thing a masking
+  // panel exists to not have.
+  const clearance = P.room.wallBackClearance;
+  const expected = clearance + unit.params.depth + P.doors.gap + unit.params.front_t;
   assert.equal(ep.box.d, expected);
   assert.equal(ep.w, expected, 'and the cut piece is that long');
 
@@ -63,7 +71,7 @@ test('an end panel finishes in the same plane as the door, not behind it', () =>
     ep.box.z + ep.box.d, door.box.z + door.box.d,
     'the end panel and the door finish on ONE plane — that is the whole point',
   );
-  assert.equal(ep.box.z, 0, 'and it starts at the wall');
+  assert.equal(ep.box.z, -clearance, 'and it starts at the WALL, not at the back of the carcass');
 });
 
 test('the edging and the CNC outline follow the new length', () => {
@@ -170,5 +178,6 @@ test('a wall unit takes one too, and "to the floor" means the floor', () => {
   const mount = Number(unit.params.mount_height);
   assert.equal(ep.box.y, -mount, 'it drops from the mounting height');
   assert.equal(ep.h, unit.params.height + mount);
-  assert.equal(ep.box.d, unit.params.depth + P.doors.gap + unit.params.front_t);
+  assert.equal(ep.box.d, P.room.wallBackClearance + unit.params.depth + P.doors.gap + unit.params.front_t,
+    'a hung unit stands off its wall too, and its end panel reaches back to it');
 });

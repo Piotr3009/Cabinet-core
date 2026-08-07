@@ -9,6 +9,7 @@ import DistanceArrows from './DistanceArrows.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
+import { backStandoff } from '../engine/collision.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -350,7 +351,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
       // A unit stood off the wall is measured where it stands (turn 7,
       // CLAUDE.md F5): the arrow reads the real distance, not the one it would
       // be at if it were pushed back.
-      backInset: Math.max(0, Number(unit.params.inset_back_mm) || 0),
+      backInset: backStandoff(unit, profile),
       level: result.assemblies.mount === 'wall' ? 'wall' : 'floor',
       label: unit.params.unit_num,
       y: base + profile.dimensions.height,

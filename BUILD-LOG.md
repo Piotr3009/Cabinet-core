@@ -2500,3 +2500,56 @@ pod nim stoi — zmieniło się tylko to, które kity mogą go mieć — więc t
 na `BUDTALL`. Przy okazji dwie z nich przestały wpisywać wysokość na sztywno i czytają
 prześwit z pokoju: nad tall unitem jest go mniej niż nad bazą, a pytaniem testu jest
 mechanizm, nie liczba.
+
+## F3 — ODSUNIĘCIE OD ŚCIANY TYLNEJ: 10 mm, WSZYSTKIE
+
+Powód Piotra jest krótki i konstrukcyjny: **ściany nie są proste, a wiszące szafki
+wiszą na wieszakach, które i tak je odsuwają**. Więc to nie jest luz, o który ktoś
+prosi per szafka — to fakt o tym, jak ten warsztat buduje, i siedzi w profilu obok
+wszystkich innych takich faktów: `profile.room.wallBackClearance = 10`.
+
+`params.inset_back_mm` z tury 7 zostaje czym był — DECYZJĄ o jednej szafce, za którą
+biegnie rura — i te dwie liczby **się dodają**. Szafka odsunięta 40 na rurę stoi 40 od
+tego miejsca, w którym stałaby normalnie, czyli 50 od ściany. Jedna funkcja,
+`backStandoff(unit, profile)`, i wszystko czyta ją zamiast składać sobie sumę.
+
+**To, co robi z tego fazę, a nie stałą, to wszystko, co musiało za nią pójść:**
+
+| co | jak |
+|---|---|
+| pozycja w 3D | `UnitView` bierze `backStandoff`, nie sam inset |
+| strzałki odległości | `Scene` mierzy od realnej pozycji, ta sama funkcja |
+| clamp głębokości | pokój 3000 → szafka może mieć 2990, i mówi, co ją zatrzymało |
+| plan / footprint kolizji | `toObstacleUnit` przez `footprintPads(…, profile)` |
+| **end panel** | głębszy o 10 i zaczyna się na ŚCIANIE (`box.z = −10`) |
+| **mitrowany return** | biegnie do ściany, nie do tyłu korpusu (`frontFaceDepthOf`) |
+| **top view** | rysuje linię ŚCIANY i szczelinę do niej |
+| **karta produkcyjna** | wymiarowuje tę szczelinę liczbą |
+| boczny clamp przy Infill OFF | 10 mm zamiast zera |
+
+**Dwie rzeczy warte wyjaśnienia, bo wyglądają na niekonsekwencje i nie są.**
+
+*End panel przechodzi przez luz przyścienny, ale NIE przez inset.* Luz to puste
+powietrze za każdą szafką i panel maskujący ma je przekryć — inaczej szczelina biegnie
+na wysokości oka przez całą głębokość ciągu, czyli dokładnie to, czego panel maskujący
+ma nie mieć. Inset 40 trzyma rurę; wpuszczenie w niego panelu to wpuszczenie go w to,
+od czego szafkę odsunięto. `test/wall-clearance.test.js` pilnuje obu stron.
+
+*Koniec ciągu przy ścianie bocznej to dalej „wall", nie „open".* Skoro przy Infill OFF
+jednostka parkuje 10 mm od ściany bocznej, `runEnd()` mogłoby uznać, że nie dobiła i że
+trzeba obrócić narożnik. Nie: 10 mm to szczelina na scribe, element z góry przechodzi
+nad nią na ścianę, a return puszczony w 10-milimetrową szparę byłby wyrobem, którego
+nikt nie zamawiał. Tolerancja „to jest ściana" obejmuje więc luz przyścienny.
+
+**Infill OFF ≠ Infill 10.** Boczny stop to 10 mm, ale filler się NIE pojawia:
+`sideInfill()` produkuje pasek tylko wtedy, gdy szczelina mieści się w ustawieniu
+projektu, a przy ustawieniu 0 nie mieści się nic. Szczelina zostaje szczeliną na
+przyfugowanie, a w cut liście nie przybywa nic.
+
+`test/wall-clearance.test.js` — 13 testów, od samej liczby (i tego, że profil sprzed
+tury 8 dostaje default zamiast wywrotki) po rysunek.
+
+**Testy, które musiały się zmienić:** `end-panel` i `construction` (głębokość panelu),
+`run-infill` (długość returnu, i „END 1" — jednostka parkuje teraz na stopie 10 mm,
+więc test czyta pozycję piecea względem ŚCIANY, a nie względem korpusu),
+`slots-and-hinge` (lewy kraniec ściany to 10, nie 0).

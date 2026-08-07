@@ -845,6 +845,26 @@ export const DEFAULT_CABINET_PROFILE = {
     codes: { left: '<', right: '>', topBottom: '^v', all: '<>^v', none: '' },
   },
 
+  // ─── The room a unit stands in (turn 8, CLAUDE.md F3) ───
+  // Not the room's SHAPE — that is the project's (engine/room.js). This is what
+  // the workshop knows about walls in general.
+  room: {
+    // EVERY unit stands this far off the wall behind it. Base, wall and tall
+    // alike, and not because anybody asked for a gap: because a wall is not
+    // flat and a hung cabinet needs somewhere for its bracket to be.
+    //
+    // Piotr's two reasons, in his order: walls are never straight, and a wall
+    // unit hangs on hooks that stand it off anyway. Ten millimetres is what the
+    // workshop builds to; a workshop with a plaster wall and a different hanger
+    // changes this number and the whole app follows it — the plan, the arrows,
+    // the drawing, the depth clamp and the door swing.
+    //
+    // It is SEPARATE from `params.inset_back_mm` (turn 7), and the two add up.
+    // That inset is a decision about ONE cabinet with a pipe behind it; this is
+    // a fact about all of them.
+    wallBackClearance: 10,
+  },
+
   // ─── Editor defaults ───
   // The clearances the collision clamp enforces. A move STOPS at these values
   // (src/engine/collision.js) — they are not advisory.
@@ -1036,6 +1056,7 @@ export function migrateCabinetProfile(profile) {
       },
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
     },
+    room: { ...D.room, ...profile.room },
     cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },

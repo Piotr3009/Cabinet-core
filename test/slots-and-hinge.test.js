@@ -135,7 +135,12 @@ test('adding beside the LEFTMOST unit builds the run leftwards', () => {
 test('"on the left" is a thing that can be asked for, and refused with a reason', () => {
   project();
   const first = store().addUnit('BUD').id;
-  store().moveUnit(first, 0, 0);
+  // Hard against the left-hand end of the wall — which since turn 8 (F3) means
+  // the wall clearance, not zero: a cabinet does not stand on a bowed wall.
+  store().moveUnit(first, -5000, 0);
+  const stop = P.room.wallBackClearance;
+  assert.equal(unitOf(first).position.x_mm, stop);
+
   const left = store().addUnit('BUD', { near: first, side: 'L' });
   assert.equal(left.id, null);
   assert.match(left.error, /left of/i, 'and it says which side it could not do');
@@ -143,7 +148,7 @@ test('"on the left" is a thing that can be asked for, and refused with a reason'
 
   const right = store().addUnit('BUD', { near: first, side: 'R' });
   assert.equal(right.error, null);
-  assert.equal(unitOf(right.id).position.x_mm, 600);
+  assert.equal(unitOf(right.id).position.x_mm, stop + 600);
 });
 
 test('a unit butted against its neighbour still cannot be dragged THROUGH it', () => {
@@ -157,7 +162,19 @@ test('a unit butted against its neighbour still cannot be dragged THROUGH it', (
   assert.equal(unitOf(b).position.x_mm, 2300, 'it stops at its neighbour, exactly');
   // …and the one that IS free on its left travels all the way to the wall.
   store().moveUnit(a, -5000, 0);
-  assert.equal(unitOf(a).position.x_mm, 0, 'a free left-hand side is a free road');
+  assert.equal(unitOf(a).position.x_mm, P.room.wallBackClearance,
+    'a free left-hand side is a free road, right down to the stop at the wall');
+});
+
+test('with the infill OFF the stop is the wall clearance, not nothing (turn 8, F3)', () => {
+  // Piotr's reason for the 10 mm is that walls are never straight. That is as
+  // true of the wall BESIDE a run as of the one behind it, so a unit with no
+  // scribe filler configured still stops short — it just stops at 10 rather
+  // than at a filler width.
+  project(0);
+  const a = store().addUnit('BUD').id;
+  store().moveUnit(a, -5000, 0);
+  assert.equal(unitOf(a).position.x_mm, P.room.wallBackClearance);
 });
 
 test('with the wall gap set, a free left-hand side stops at the infill, not before', () => {

@@ -187,6 +187,17 @@ export function buildTopView(result, { unitNum, frontType, profile, unitNumberHe
   // on the elevation.
   entities.push(rect('CARCASE', 0, 0, W, D));
 
+  // ─── The wall, and the gap to it (turn 8, CLAUDE.md F3) ───
+  // Every unit stands `room.wallBackClearance` off the wall behind it, and a
+  // plan that draws the carcass hard against nothing does not say so. The line
+  // IS the wall; the gap between it and the back of the carcass is the 10 mm,
+  // at whatever scale the card came out at, and `topDimensions` puts a number
+  // on it.
+  const clearance = Math.max(0, Number(profile.room?.wallBackClearance) || 0);
+  if (clearance > 0) {
+    entities.push(line('CARCASE', -clearance, D + clearance, W + clearance, D + clearance));
+  }
+
   // ── the face detail of a front, in section ──
   for (const p of result.panels) {
     if (!p.box || !isFront(p)) continue;

@@ -14,6 +14,7 @@ import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
+import { backStandoff } from '../engine/collision.js';
 
 // One unit, rendered straight from the ENGINE output: every panel record
 // carries a `box` in cabinet-local mm, so what you see is what the cut list
@@ -337,7 +338,10 @@ export default function UnitView({
   // it stands that far off the wall and hangs in the depth of the room. The same
   // number the collision clamp and the plan use — engine/collision.js insetPads —
   // so the picture and the rule cannot disagree about where it is.
-  const backInset = Math.max(0, Number(unit.params.inset_back_mm) || 0);
+  // Turn 8 (CLAUDE.md F3): plus the 10 mm EVERY unit stands off the wall
+  // behind it. One function, engine/collision.js, so the picture and the clamp
+  // cannot disagree about where a cabinet is.
+  const backInset = backStandoff(unit, profile);
   const origin = useMemo(
     () => wallStart.clone()
       .addScaledVector(along, mm(unit.position.x_mm))

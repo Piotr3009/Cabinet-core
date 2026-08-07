@@ -281,6 +281,22 @@ function topDimensions(result, profile) {
       textHeight: T,
     }));
   }
+  // ─── The gap to the wall (turn 8, CLAUDE.md F3) ───
+  // Ten millimetres at 1:10 is a millimetre on paper, so the LINE alone would
+  // read as a drawing error rather than as a decision. The number is what makes
+  // it a decision — and it is the number the fitter needs when he is deciding
+  // where to drill the wall.
+  const clearance = Math.max(0, Number(profile.room?.wallBackClearance) || 0);
+  if (clearance > 0) {
+    out.push(...dimensionEntities({
+      from: [0, depth],
+      to: [0, depth + clearance],
+      direction: 'v',
+      offset: -C.dimFirst,
+      value: clearance,
+      textHeight: T,
+    }));
+  }
   return out;
 }
 

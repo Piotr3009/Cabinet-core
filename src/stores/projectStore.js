@@ -5,7 +5,8 @@ import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.
 import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
   clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
-  freeSlotOnWall, insetPads, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  backStandoff, freeSlotOnWall, insetPads, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  wallClearance,
   wallObstacles,
 } from '../engine/collision.js';
 import {
@@ -407,7 +408,13 @@ export const useProjectStore = create((set, get) => ({
     const runParams = runInfillParams(next, {
       walls,
       roomHeight,
-      frontFaceDepthOf: (u) => (Number(u.params?.depth) || 0)
+      // How far a RETURN at an open end has to run to reach the wall: from the
+      // plane of the doors to the wall itself, which since turn 8 (F3) includes
+      // the 10 mm every unit stands off it. A return that stops at the carcass
+      // back stops 10 mm short of the wall, which is a gap you can see along
+      // the whole side of a run.
+      frontFaceDepthOf: (u) => wallClearance(profile)
+        + (Number(u.params?.depth) || 0)
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
     }, profile);
@@ -928,7 +935,7 @@ export const useProjectStore = create((set, get) => ({
         // Growing a unit is a move of its far edge: it stops at the infill gap
         // and carries its own end panel with it.
         wallMargin: wallMarginOf(s),
-        padRight: footprintPads(unit, unit.params.front_t).right,
+        padRight: footprintPads(unit, unit.params.front_t, profile).right,
       }, profile);
       applied.width = clamp.width;
       if (clamp.blocked) notices.push(`Width limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
@@ -938,7 +945,7 @@ export const useProjectStore = create((set, get) => ({
         depth: Number(patch.depth) || 0,
         x: unit.position.x_mm, width: applied.width ?? unit.params.width,
         wall, walls, others,
-        backInset: insetPads(unit).back,
+        backInset: backStandoff(unit, profile),
       }, profile);
       applied.depth = clamp.depth;
       if (clamp.blocked) notices.push(`Depth limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
@@ -1083,7 +1090,7 @@ export const useProjectStore = create((set, get) => ({
     // with an end panel pivots about that outer corner rather than the carcass
     // corner — a fraction of the panel thickness, and the same corner the clamp
     // and the view both use.)
-    const pad = footprintPads(unit, unit.params.front_t);
+    const pad = footprintPads(unit, unit.params.front_t, getCabinetProfile());
     const span = unitPlanSpan({
       wall,
       x: unit.position.x_mm - pad.left,
@@ -1570,7 +1577,7 @@ function sameRun(a, b) {
  * INCLUDED, so a neighbour cannot be moved into a panel it cannot see.
  */
 function toObstacleUnit(u) {
-  const pad = footprintPads(u, u.params?.front_t);
+  const pad = footprintPads(u, u.params?.front_t, getCabinetProfile());
   return {
     wall: u.position?.wall ?? 0,
     x_mm: (Number(u.position?.x_mm) || 0) - pad.left,
@@ -1638,7 +1645,18 @@ function freeBesideUnit(state, unit, side) {
  * it — which is what makes the filler appear by itself when the unit parks.
  */
 function wallMarginOf(state) {
-  return Math.max(0, Number(migrateDesign(state.project.design).infill.sideWidth) || 0);
+  const profile = getCabinetProfile();
+  const setting = Math.max(0, Number(migrateDesign(state.project.design).infill.sideWidth) || 0);
+  // ─── Turn 8 (CLAUDE.md F3) ───
+  // With the infill switched OFF a unit used to travel all the way to the side
+  // wall and stand hard against it. It cannot: the same bowed wall that makes
+  // every unit stand 10 mm off the wall BEHIND it makes it stand 10 mm off the
+  // wall BESIDE it, and a cabinet scribed to nothing does not go in.
+  //
+  // So the stop is never smaller than the wall clearance. With a real infill
+  // width set, that width still wins — it is bigger, and it is a piece.
+  if (setting >= (profile.autoParts?.sideInfill?.minWidth ?? 0) && setting > 0) return setting;
+  return wallClearance(profile);
 }
 
 // ─── Interior rules (shared by the store and the UI) ───

@@ -167,7 +167,16 @@ test('END 1 — the run reaches the WALL, and finishes on it', () => {
   store().moveUnit(ids[1], 600, 0);
 
   assert.equal(endsOf(ids[0]).left, 'wall');
-  assert.equal(panelOf(ids[0], 'INFILL-T-FACE').box.x, 0, 'it starts at the wall');
+  // Turn 8 (CLAUDE.md F3): with the infill switched off the unit's stop beside
+  // the wall is `room.wallBackClearance` rather than nothing, so it parks THERE
+  // and the run still reaches the wall — the gap is a scribe and the piece on
+  // top runs over it. In the owner's own frame the piece therefore starts a
+  // clearance to the LEFT of the carcass.
+  assert.equal(unitOf(ids[0]).position.x_mm, P.room.wallBackClearance, 'parked at the side stop');
+  assert.equal(
+    panelOf(ids[0], 'INFILL-T-FACE').box.x + unitOf(ids[0]).position.x_mm, 0,
+    'it starts at the wall',
+  );
   assert.equal(infillsOf(ids[0]).filter((p) => p.meta.segment === 'return-left').length, 0,
     'a wall needs no corner turned');
 });
@@ -209,7 +218,11 @@ test('END 4 — nothing at all: the corner is mitred and the piece turns it', ()
   assert.deepEqual(endsOf(ids[0]), { left: 'open', right: 'open' });
 
   const unit = unitOf(ids[0]);
-  const depth = unit.params.depth + P.doors.gap + unit.params.front_t;
+  // From the plane of the doors back to the WALL. Turn 8 (CLAUDE.md F3) added
+  // the last term: every unit stands `room.wallBackClearance` off the wall, so
+  // a return that stops at the carcass stops 10 mm short of it — a slot running
+  // the whole depth of the run, at eye level, on the end everybody sees.
+  const depth = P.room.wallBackClearance + unit.params.depth + P.doors.gap + unit.params.front_t;
   const main = panelOf(ids[0], 'INFILL-T-FACE');
 
   for (const [tag, side] of [['L', 'left'], ['R', 'right']]) {
@@ -220,8 +233,8 @@ test('END 4 — nothing at all: the corner is mitred and the piece turns it', ()
 
     // It runs along the SIDE of the end cabinet, back to the wall.
     assert.equal(face.w, depth, 'from the door face to the back wall');
-    assert.equal(face.box.z, 0, 'and it reaches the wall');
-    assert.equal(face.box.z + face.box.d, depth);
+    assert.equal(face.box.z, -P.room.wallBackClearance, 'and it reaches the wall behind the carcass');
+    assert.equal(face.box.z + face.box.d, depth - P.room.wallBackClearance);
     assert.equal(face.h, T.defaultHeight, 'same section as the piece it turns off');
     assert.equal(shelf.w, depth);
     assert.equal(shelf.h, T.shelfDepth);

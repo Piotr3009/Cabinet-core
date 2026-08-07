@@ -112,6 +112,32 @@ export function insetPads(unit) {
 }
 
 /**
+ * How far a unit's carcass stands off the wall behind it (turn 8, CLAUDE.md F3).
+ *
+ * Two numbers, added, and they mean different things:
+ *
+ *   `profile.room.wallBackClearance` — EVERY unit, always. Piotr's reasons are
+ *   that walls are never straight and that a wall unit hangs on brackets which
+ *   stand it off anyway. It is a fact about how this workshop builds, not a
+ *   decision anybody makes per cabinet.
+ *
+ *   `params.inset_back_mm` — a DECISION about one cabinet, taken because there
+ *   is a soil pipe or a bowed wall behind that one (turn 7, BACKLOG #32).
+ *
+ * They add because they are both real: a cabinet held 40 mm off for a pipe is
+ * 40 mm off, and it still has the 10 mm every other cabinet has behind it —
+ * which is to say the pipe clearance is measured from where the unit would
+ * otherwise stand.
+ */
+export function wallClearance(profile) {
+  return Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
+}
+
+export function backStandoff(unit, profile) {
+  return wallClearance(profile) + insetPads(unit).back;
+}
+
+/**
  * How much wall a unit takes up beyond its own width, per side.
  *
  * Two different things add to it and they add TOGETHER: an end panel, which is
@@ -120,10 +146,19 @@ export function insetPads(unit) {
  * gap is outside the panel, so a unit with both keeps its neighbour one panel
  * plus one gap away — which is what a joiner means by asking for both.
  */
-export function footprintPads(unit, fallbackThickness = 0) {
+export function footprintPads(unit, fallbackThickness = 0, profile = null) {
   const panels = endPanelPads(unit, fallbackThickness);
   const insets = insetPads(unit);
-  return { left: panels.left + insets.left, right: panels.right + insets.right, back: insets.back };
+  return {
+    left: panels.left + insets.left,
+    right: panels.right + insets.right,
+    // `back` is where the CARCASS starts, measured into the room from the wall.
+    // With a profile in hand that includes the standing clearance every unit
+    // has (turn 8, F3); without one it is the deliberate inset alone, which is
+    // what a caller with no profile — an old test, a plain geometry question —
+    // is asking about.
+    back: profile ? backStandoff(unit, profile) : insets.back,
+  };
 }
 
 /**

@@ -222,6 +222,50 @@ export const DEFAULT_CABINET_PROFILE = {
     max: 3000,
   },
 
+  // ─── Project types (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
+  // What KIND of job this is. The type is picked once, on the second screen of
+  // the new-project flow, and all it does is choose better starting points:
+  // which Library category opens first, which scope is suggested, and — where
+  // the workshop genuinely builds that kind of job to a different height —
+  // which project heights it starts from.
+  //
+  // The heights are DELIBERATELY sparse. A kitchen is the Skylon standard, so
+  // it overrides nothing; a type only appears here when there is a real reason
+  // for it to differ, and the two that do are flagged in BLOCKERS for Piotr to
+  // confirm against what the workshop actually builds. Everything is editable
+  // in Design Settings the moment the project opens — this is a starting point,
+  // not a rule.
+  //
+  // The LIST (order, labels, category, scope) is engine/projectTypes.js; the
+  // millimetres are here, because millimetres are always here.
+  projectTypes: {
+    wardrobe: { heights: { tall: 2400 } },
+    // A vanity carcass hangs or stands under a basin, and 770 + 100 legs + a
+    // top is a worktop at 890 — too high for a bathroom.
+    vanity: { heights: { base: 700 } },
+  },
+
+  // ─── Joinery (turn 7, CLAUDE.md F2) ───
+  // HOW the carcass is held together. Today there is exactly one system and it
+  // is the one the whole engine is traced from — the Skylon puzzle joint, tabs
+  // and dog-bone relief pockets, `profile.puzzle` above. It is listed rather
+  // than assumed so that the second system (dowels, CamLock, Lamello) is a
+  // profile entry and a geometry module, not a rewrite of the settings screen.
+  //
+  // `geometryKey` names the block of numbers that system's geometry reads, so a
+  // preview can draw a joint it has never heard of by looking there.
+  joinery: {
+    types: [
+      {
+        id: 'dogbone',
+        label: 'Dog bones (Skylon puzzle)',
+        hint: 'Tabs and dog-bone relief — the joint every AutoLISP kit is cut for',
+        geometryKey: 'puzzle',
+      },
+    ],
+    defaultType: 'dogbone',
+  },
+
   // ─── Legs (shared rule for every standing type) ───
   // Four in the corners; over `extraLegOverWidth` a FIFTH goes in the
   // geometric centre of the footprint (Piotr, turn 3). The AutoLISP only ever
@@ -771,6 +815,13 @@ export function migrateCabinetProfile(profile) {
     },
     baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
     projectHeights: { ...D.projectHeights, ...profile.projectHeights },
+    projectTypes: { ...D.projectTypes, ...profile.projectTypes },
+    joinery: {
+      ...D.joinery, ...profile.joinery,
+      types: Array.isArray(profile.joinery?.types) && profile.joinery.types.length
+        ? profile.joinery.types
+        : D.joinery.types,
+    },
     legs: { ...D.legs, ...profile.legs },
     wallUnit: {
       ...D.wallUnit, ...profile.wallUnit,

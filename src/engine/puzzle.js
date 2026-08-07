@@ -243,3 +243,56 @@ export function backPanelGeometry({ w, h, G, puzzle: pz }) {
 export function rectGeometry(w, h, layer = 'OUTLINE') {
   return { outline: [[0, 0], [w, 0], [w, h], [0, h]], pockets: [], holes: [], layer };
 }
+
+// ─── A picture of the joint (turn 7, CLAUDE.md F2) ──────────────────────────
+
+/**
+ * ONE tab and the socket it goes into, drawn from the same numbers the cutter
+ * gets. For the joinery picker in the new-project flow: "Dog bones (Skylon
+ * puzzle)" means nothing as a phrase, and means everything as a shape.
+ *
+ * It is derived rather than illustrated on purpose. A hand-drawn diagram of a
+ * joint is a diagram of the joint SOMEBODY REMEMBERED; this one changes when
+ * `profile.puzzle` changes, which is the only way a preview can keep being
+ * true after the profile is edited.
+ *
+ * Coordinates are millimetres, origin bottom-left, y up — the same frame every
+ * other function in this file works in.
+ *
+ * @returns {{w:number, h:number, boardT:number, outline:Array, mate:object,
+ *            dogbone:object, socket:object, holes:Array}}
+ */
+export function puzzlePreview(profile) {
+  const pz = profile.puzzle;
+  const G = profile.board.thickness;
+  // Tall enough to show the tab with room around it, wide enough that the
+  // panel reads as a panel rather than as a strip.
+  const h = pz.dogboneHalfHeight * 4;
+  const w = pz.tabHalfWidth * 3;
+  const centre = h / 2;
+  const S = G / 2 + pz.centrelineExtra;
+
+  const outline = [[0, 0], [w, 0], ...tabPointsRight(w, centre, G, pz), [w, h], [0, h]];
+
+  return {
+    w: w + G + pz.socketOvershoot,
+    h,
+    boardT: G,
+    outline,
+    // The relief pocket that lets a round cutter reach into the corner — the
+    // "dog bone" the system is named after.
+    dogbone: {
+      x1: w, y1: centre - pz.dogboneHalfHeight, x2: w + G, y2: centre + pz.dogboneHalfHeight,
+    },
+    // The mating piece: its edge stands where the tab ends.
+    mate: { x1: w + G, y1: 0, x2: w + G + pz.socketOvershoot + S, y2: h },
+    // …and the pocket in it that receives the tab, with its two holes.
+    socket: {
+      x1: w + G - S, y1: centre - pz.socketHalfWidth,
+      x2: w + G + pz.socketOvershoot, y2: centre + pz.socketHalfWidth,
+    },
+    holes: [-pz.socketHoleOffset, pz.socketHoleOffset].map((dy) => ({
+      x: w + G - S + pz.socketHoleInset, y: centre + dy, d: pz.socketHoleDiameter,
+    })),
+  };
+}

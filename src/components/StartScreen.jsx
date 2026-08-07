@@ -2,22 +2,27 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import MockModeBadge from './MockModeBadge.jsx';
-import NumberField from './NumberField.jsx';
+import NewProjectFlow from './NewProjectFlow.jsx';
 import {
   browserStorage, deleteLocalProject, listLocalProjects, loadLocalProject,
-  mergeProjectLists, recentProjects, saveLocalProject, touchLocalProject,
+  mergeProjectLists, nextProjectNumber, recentProjects, saveLocalProject, touchLocalProject,
 } from '../lib/projectLibrary.js';
 import { listProjects, loadProject as loadCloudProject } from '../lib/cloudSync.js';
 import { isMockMode } from '../lib/supabase.js';
-import {
-  DEFAULT_ROOM, DEFAULT_ROOM_DEPTH, DEFAULT_ROOM_WIDTH, rectCorners,
-} from '../engine/room.js';
+import { getProjectType } from '../engine/projectTypes.js';
+import { migrateDesign } from '../engine/design.js';
 
-// ─── Start screen (BACKLOG #7) ───
+// ─── Start screen (BACKLOG #7; turn 7, BACKLOG #41) ───
 // The AutoCAD arrangement, because that is what Piotr opens every morning:
 // the name of the thing top left, what you can DO down the left, and the work
 // you had open filling the page. The canvas is reached THROUGH a project —
 // there is no way in without one, so a drawing always belongs somewhere.
+//
+// Turn 7 changes two things. The room DIMENSIONS are gone from here — a room is
+// set up in the room editor, and asking for a width and a depth on the way past
+// was asking for two numbers nobody had yet. And a project row now reads the
+// way a workshop refers to a job: its number, its name and when it was last
+// touched, and nothing else.
 
 const stamp = (ms) => {
   if (!ms) return '';
@@ -30,14 +35,13 @@ export default function StartScreen() {
   const storage = useMemo(() => browserStorage(), []);
   const loadProject = useProjectStore((s) => s.loadProject);
   const openEditor = useUiStore((s) => s.openEditor);
+  const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
   const notify = useUiStore((s) => s.notify);
 
   const [tab, setTab] = useState('recent');       // 'recent' | 'open'
-  const [name, setName] = useState('Untitled project');
-  const [width, setWidth] = useState(DEFAULT_ROOM_WIDTH);
-  const [depth, setDepth] = useState(DEFAULT_ROOM_DEPTH);
   const [rows, setRows] = useState({ recent: [], all: [] });
   const [busy, setBusy] = useState(false);
+  const [flow, setFlow] = useState(null);         // { number } while the flow is open
 
   const refresh = useCallback(async () => {
     const local = listLocalProjects(storage);
@@ -56,19 +60,19 @@ export default function StartScreen() {
     openEditor();
   };
 
-  const onNew = () => {
-    // The room comes with the project, so the first unit lands in the space it
-    // was quoted for instead of in a 4 × 3 default.
-    const fresh = {
-      id: null,
-      name: name.trim() || 'Untitled project',
-      room: { ...DEFAULT_ROOM, corners: rectCorners(Math.max(500, width), Math.max(500, depth)) },
-      design: null,
-      jc_tenant_id: null,
-      jc_project_id: null,
-    };
-    const saved = saveLocalProject(storage, { project: fresh, units: [], at: Date.now() });
-    loadProject(saved.project, []);
+  /**
+   * "Start designing". The flow has already built the project in the store —
+   * its number, its type, its heights, its room and its settings — so this puts
+   * it on the shelf and opens the canvas on the Library category the type asks
+   * for, which is the last thing the type is for.
+   */
+  const onFlowStart = () => {
+    const { project, units } = useProjectStore.getState();
+    const saved = saveLocalProject(storage, { project, units, at: Date.now() });
+    loadProject(saved.project, units);
+    const design = migrateDesign(project.design);
+    if (design.projectType) setLibraryCategory(getProjectType(design.projectType).category);
+    setFlow(null);
     openEditor();
   };
 
@@ -99,7 +103,7 @@ export default function StartScreen() {
   const list = tab === 'recent' ? rows.recent : rows.all;
 
   return (
-    <div className="h-full w-full bg-shell-900 text-ink-50 overflow-y-auto">
+    <div className="h-full w-full bg-shell-900 text-ink-50 overflow-y-auto relative">
       <div className="max-w-[1100px] mx-auto px-8 py-10">
         <header className="flex items-baseline gap-4">
           <span className="font-semibold tracking-[0.2em] text-gold text-xl select-none">CABINET CORE</span>
@@ -115,28 +119,15 @@ export default function StartScreen() {
           <div className="space-y-4">
             <section className="cc-panel p-4 space-y-3">
               <h2 className="text-xs uppercase tracking-wide text-ink-200">New project</h2>
-              <label className="block">
-                <span className="cc-label">Name</span>
-                <input
-                  className="cc-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') onNew(); }}
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block">
-                  <span className="cc-label">Room width</span>
-                  <NumberField value={width} min={500} onCommit={setWidth} />
-                </label>
-                <label className="block">
-                  <span className="cc-label">Room depth</span>
-                  <NumberField value={depth} min={500} onCommit={setDepth} />
-                </label>
-              </div>
-              <button type="button" className="cc-btn-gold w-full" onClick={onNew}>New project</button>
+              <button
+                type="button"
+                className="cc-btn-gold w-full"
+                onClick={() => setFlow({ number: nextProjectNumber(storage) })}
+              >
+                New project
+              </button>
               <p className="text-[11px] text-ink-400">
-                Height and walls are edited later in Settings ▸ Room setup.
+                Number, type, scope, room and settings — five steps, all of them already answered.
               </p>
             </section>
 
@@ -164,7 +155,7 @@ export default function StartScreen() {
 
             {list.length === 0 ? (
               <p className="text-sm text-ink-400 py-8 text-center">
-                Nothing here yet. Name a project on the left and press New project.
+                Nothing here yet. Press New project on the left.
               </p>
             ) : (
               <ul className="divide-y divide-shell-600">
@@ -176,10 +167,11 @@ export default function StartScreen() {
                       className="w-full text-left px-2 py-2.5 hover:bg-shell-700 transition-colors flex items-center gap-3 disabled:opacity-50"
                       onClick={() => onOpen(row)}
                     >
+                      {/* Number · name · date. A workshop refers to a job by its
+                          number; how many units are in it is a question for the
+                          BOM, not for a list of projects. */}
+                      <span className="text-[11px] text-gold w-16 shrink-0 truncate">{row.number || '—'}</span>
                       <span className="text-sm text-ink-50 flex-1 truncate">{row.name}</span>
-                      <span className="text-[11px] text-ink-400">
-                        {row.unit_count != null ? `${row.unit_count} unit${row.unit_count === 1 ? '' : 's'}` : ''}
-                      </span>
                       <span className="text-[11px] text-ink-400 w-32 text-right">
                         {stamp(row.opened_at || row.updated_at)}
                       </span>
@@ -201,6 +193,14 @@ export default function StartScreen() {
           </section>
         </div>
       </div>
+
+      {flow && (
+        <NewProjectFlow
+          initialNumber={flow.number}
+          onCancel={() => setFlow(null)}
+          onStart={onFlowStart}
+        />
+      )}
     </div>
   );
 }

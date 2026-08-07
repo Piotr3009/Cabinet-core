@@ -154,7 +154,8 @@ export const useProjectStore = create((set, get) => ({
   project: cached?.project
     ? { ...cached.project, room: migrateRoom(cached.project.room), design: migrateDesign(cached.project.design) }
     : {
-      id: null, name: 'Untitled project', room: DEFAULT_ROOM, design: migrateDesign(null),
+      id: null, name: 'Untitled project', number: '', client: '',
+      room: DEFAULT_ROOM, design: migrateDesign(null),
       jc_tenant_id: null, jc_project_id: null,
     },
   units: cached?.units || [],
@@ -162,6 +163,22 @@ export const useProjectStore = create((set, get) => ({
 
   // ── project / room ───────────────────────────────────────────────────────
   setProjectName: (name) => set((s) => ({ project: { ...s.project, name }, dirty: true })),
+
+  /**
+   * The two things the new-project flow asks for that are not the name (turn 7,
+   * BACKLOG #41). The NUMBER is what a workshop calls the job — it goes on the
+   * card, on the booklet cover and in the next auto-proposal — and the CLIENT
+   * is free text until the JoineryCore client list arrives.
+   */
+  setProjectInfo: (patch) => set((s) => ({
+    project: {
+      ...s.project,
+      ...(patch.name !== undefined ? { name: patch.name } : {}),
+      ...(patch.number !== undefined ? { number: String(patch.number ?? '') } : {}),
+      ...(patch.client !== undefined ? { client: String(patch.client ?? '') } : {}),
+    },
+    dirty: true,
+  })),
 
   /**
    * Change the room. REFUSED when the new shape would leave a unit hanging off
@@ -228,12 +245,14 @@ export const useProjectStore = create((set, get) => ({
    * carried over. "New" that inherits the last project's walls is how somebody
    * quotes a kitchen against the wrong room.
    */
-  newProject: (name = 'Untitled project') => set({
+  newProject: (name = 'Untitled project', { number = '', client = '', room = null, design = null } = {}) => set({
     project: {
       id: null,
       name: name || 'Untitled project',
-      room: DEFAULT_ROOM,
-      design: migrateDesign(null),
+      number: String(number || ''),
+      client: String(client || ''),
+      room: room ? migrateRoom(room) : DEFAULT_ROOM,
+      design: migrateDesign(design),
       jc_tenant_id: null,
       jc_project_id: null,
     },

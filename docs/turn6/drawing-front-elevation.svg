@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="297mm" height="420mm"
+ viewBox="0 0 297 420" data-cc-drawing="front-elevation">
+<rect x="0" y="0" width="297" height="420" fill="#ffffff"/>
+<rect x="79.025" y="115.7" width="1.8" height="215" fill="none" stroke="#111111" stroke-width="0.35" data-layer="CARCASE"/>
+<rect x="197.225" y="115.7" width="1.8" height="215" fill="none" stroke="#111111" stroke-width="0.35" data-layer="CARCASE"/>
+<rect x="80.825" y="115.7" width="116.4" height="1.8" fill="none" stroke="#111111" stroke-width="0.35" data-layer="CARCASE"/>
+<rect x="80.825" y="328.9" width="116.4" height="1.8" fill="none" stroke="#111111" stroke-width="0.35" data-layer="CARCASE"/>
+<rect x="81.025" y="274.25" width="116" height="1.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="81.025" y="221.4" width="116" height="1.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="81.025" y="168.55" width="116" height="1.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="80.825" y="286.3" width="116.4" height="1.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="80.825" y="140.5" width="116.4" height="1.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="83.825" y="288.1" width="1.8" height="40.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="192.425" y="288.1" width="1.8" height="40.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="80.825" y="288.1" width="3" height="40.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="80.825" y="288.1" width="3" height="40.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="194.225" y="288.1" width="3" height="40.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="194.225" y="288.1" width="3" height="40.8" fill="none" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" data-layer="SHELVES"/>
+<rect x="85.925" y="308.9" width="106.2" height="19.7" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<rect x="85.925" y="288.6" width="106.2" height="20" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<rect x="79.175" y="116" width="59.7" height="214.7" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<rect x="139.175" y="116" width="59.7" height="214.7" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<rect x="79.025" y="115.7" width="120" height="215" fill="none" stroke="#111111" stroke-width="0.35" data-layer="CARCASE"/>
+<rect x="90.925" y="313.9" width="96.2" height="9.7" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<rect x="90.925" y="293.6" width="96.2" height="10" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<rect x="84.175" y="121" width="49.7" height="204.7" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<line x1="79.175" y1="223.35" x2="138.875" y2="116" stroke="#8A8A8A" stroke-width="0.2" stroke-linecap="round" data-layer="DOOR_SWING" data-cc="door-swing"/>
+<line x1="79.175" y1="223.35" x2="138.875" y2="330.7" stroke="#8A8A8A" stroke-width="0.2" stroke-linecap="round" data-layer="DOOR_SWING" data-cc="door-swing"/>
+<rect x="144.175" y="121" width="49.7" height="204.7" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<line x1="198.875" y1="223.35" x2="139.175" y2="116" stroke="#8A8A8A" stroke-width="0.2" stroke-linecap="round" data-layer="DOOR_SWING" data-cc="door-swing"/>
+<line x1="198.875" y1="223.35" x2="139.175" y2="330.7" stroke="#8A8A8A" stroke-width="0.2" stroke-linecap="round" data-layer="DOOR_SWING" data-cc="door-swing"/>
+<rect x="80.825" y="330.7" width="7.8" height="10" fill="none" stroke="#8A8A8A" stroke-width="0.25" data-layer="LEG_BLOCK"/>
+<rect x="189.425" y="330.7" width="7.8" height="10" fill="none" stroke="#8A8A8A" stroke-width="0.25" data-layer="LEG_BLOCK"/>
+<rect x="80.825" y="330.7" width="7.8" height="10" fill="none" stroke="#8A8A8A" stroke-width="0.25" data-layer="LEG_BLOCK"/>
+<rect x="189.425" y="330.7" width="7.8" height="10" fill="none" stroke="#8A8A8A" stroke-width="0.25" data-layer="LEG_BLOCK"/>
+<rect x="135.125" y="330.7" width="7.8" height="10" fill="none" stroke="#8A8A8A" stroke-width="0.25" data-layer="LEG_BLOCK"/>
+<text x="139.025" y="223.2" font-size="12" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#009A3D" text-anchor="middle" dominant-baseline="central" data-layer="UNIT_NUMBER">W01</text>
+<line x1="79.025" y1="344.3" x2="79.025" y2="361" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="199.025" y1="344.3" x2="199.025" y2="361" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="79.025" y1="354.7" x2="199.025" y2="354.7" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="74.975" y1="358.75" x2="83.075" y2="350.65" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="194.975" y1="358.75" x2="203.075" y2="350.65" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<text x="139.025" y="350.65" font-size="9" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#1B2A4A" text-anchor="middle" dominant-baseline="central" data-layer="DIMENSIONS">1200</text>
+<line x1="202.625" y1="340.7" x2="219.325" y2="340.7" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="202.625" y1="115.7" x2="219.325" y2="115.7" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="213.025" y1="340.7" x2="213.025" y2="115.7" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="208.975" y1="344.75" x2="217.075" y2="336.65" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="208.975" y1="119.75" x2="217.075" y2="111.65" stroke="#1B2A4A" stroke-width="0.25" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<text x="213.025" y="228.2" font-size="9" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#1B2A4A" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 213.025 228.2)" data-layer="DIMENSIONS">2250</text>
+<rect x="8" y="8" width="281" height="404" fill="none" stroke="#111111" stroke-width="0.5" data-layer="FRAME"/>
+<rect x="215" y="373" width="74" height="39" fill="none" stroke="#111111" stroke-width="0.5" data-layer="FRAME"/>
+<text x="252" y="376.25" font-size="3.6" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#111111" text-anchor="middle" dominant-baseline="central" letter-spacing="0.648" data-layer="FRAME">CABINET CORE</text>
+<line x1="215" y1="379.5" x2="289" y2="379.5" stroke="#444444" stroke-width="0.2" stroke-linecap="round" data-layer="FRAME_LIGHT"/>
+<text x="217" y="382.75" font-size="2.5" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#444444" text-anchor="start" dominant-baseline="central" data-layer="FRAME_LIGHT">Project</text>
+<text x="235" y="382.75" font-size="3" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#111111" text-anchor="start" dominant-baseline="central" data-layer="FRAME">Hampstead kitchen</text>
+<line x1="215" y1="386" x2="289" y2="386" stroke="#444444" stroke-width="0.2" stroke-linecap="round" data-layer="FRAME_LIGHT"/>
+<text x="217" y="389.25" font-size="2.5" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#444444" text-anchor="start" dominant-baseline="central" data-layer="FRAME_LIGHT">Unit</text>
+<text x="235" y="389.25" font-size="3" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#111111" text-anchor="start" dominant-baseline="central" data-layer="FRAME">W01</text>
+<line x1="215" y1="392.5" x2="289" y2="392.5" stroke="#444444" stroke-width="0.2" stroke-linecap="round" data-layer="FRAME_LIGHT"/>
+<text x="217" y="395.75" font-size="2.5" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#444444" text-anchor="start" dominant-baseline="central" data-layer="FRAME_LIGHT">View</text>
+<text x="235" y="395.75" font-size="3" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#111111" text-anchor="start" dominant-baseline="central" data-layer="FRAME">Front elevation</text>
+<line x1="215" y1="399" x2="289" y2="399" stroke="#444444" stroke-width="0.2" stroke-linecap="round" data-layer="FRAME_LIGHT"/>
+<text x="217" y="402.25" font-size="2.5" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#444444" text-anchor="start" dominant-baseline="central" data-layer="FRAME_LIGHT">Scale</text>
+<text x="235" y="402.25" font-size="3" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#111111" text-anchor="start" dominant-baseline="central" data-layer="FRAME">1:10</text>
+<line x1="215" y1="405.5" x2="289" y2="405.5" stroke="#444444" stroke-width="0.2" stroke-linecap="round" data-layer="FRAME_LIGHT"/>
+<text x="217" y="408.75" font-size="2.5" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#444444" text-anchor="start" dominant-baseline="central" data-layer="FRAME_LIGHT">Date</text>
+<text x="235" y="408.75" font-size="3" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#111111" text-anchor="start" dominant-baseline="central" data-layer="FRAME">07/08/2026</text>
+</svg>

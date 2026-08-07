@@ -531,6 +531,34 @@ export const DEFAULT_CABINET_PROFILE = {
     lightScale: { ambient: 0.72, key: 1.9, fill: 1.1 },
   },
 
+  // ─── Technical drawings (turn 6, CLAUDE.md F7) ───
+  // The sheet metrics for a printed elevation: what scales the workshop draws
+  // at, how big the text is, and the title block that makes a printout read as
+  // a drawing rather than a screenshot. Paper millimetres unless noted.
+  drawings: {
+    // A drawing is at 1:10 or 1:20 — never at 1:13.7. The largest that fits
+    // wins, so a 600 mm base unit comes out at 1:5 and a 3.6 m run at 1:20.
+    scales: [5, 10, 20, 25, 50],
+    margin: 8,             // border, in from the paper edge
+    padding: 6,            // inside the border, before the drawing may start
+    // In DRAWING millimetres — these are scaled down with the geometry, then
+    // held at minTextHeight so a label never becomes a smudge.
+    unitNumberHeight: 120,
+    textHeight: 90,
+    dimensionOffset: 140,
+    // …and this is paper millimetres: the floor under all of it.
+    minTextHeight: 2.4,
+    titleBlock: {
+      rows: ['CABINET CORE', 'Project', 'Unit', 'View', 'Scale', 'Date'],
+      width: 74,
+      rowHeight: 6.5,
+      labelWidth: 20,
+      labelHeight: 2.5,
+      valueHeight: 3.0,
+      titleHeight: 3.6,
+    },
+  },
+
   // ─── CNC sheet + DXF output ───
   // Layer NAMES live in engine/cnc/layers.js (they are a machine contract, not
   // a workshop preference). What belongs here is the sheet metrics.
@@ -698,6 +726,18 @@ export function migrateCabinetProfile(profile) {
       shadow: {
         normal: { ...D.render.shadow.normal, ...profile.render?.shadow?.normal },
         high: { ...D.render.shadow.high, ...profile.render?.shadow?.high },
+      },
+    },
+    drawings: {
+      ...D.drawings, ...profile.drawings,
+      scales: Array.isArray(profile.drawings?.scales) && profile.drawings.scales.length
+        ? profile.drawings.scales
+        : D.drawings.scales,
+      titleBlock: {
+        ...D.drawings.titleBlock, ...profile.drawings?.titleBlock,
+        rows: Array.isArray(profile.drawings?.titleBlock?.rows) && profile.drawings.titleBlock.rows.length
+          ? profile.drawings.titleBlock.rows
+          : D.drawings.titleBlock.rows,
       },
     },
     cnc: { ...D.cnc, ...profile.cnc },

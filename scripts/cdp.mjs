@@ -172,13 +172,18 @@ function makePage({ socket, send, consoleLines, errors }) {
      * event at the element's centre, not `.click()`: half this app listens on
      * pointerdown, and a synthetic click never produces one.
      */
-    async click(selector, text = null) {
+    async click(selector, text = null, { exact = false } = {}) {
       const box = await evaluate(`
         const nodes = [...document.querySelectorAll(${JSON.stringify(selector)})];
         const wanted = ${text === null ? 'null' : JSON.stringify(text)};
+        const exact = ${exact ? 'true' : 'false'};
+        const hit = (n) => {
+          const t = (n.textContent || '').trim();
+          return exact ? t === wanted : t.includes(wanted);
+        };
         const el = wanted === null
           ? nodes.find((n) => n.offsetParent !== null)
-          : nodes.find((n) => n.offsetParent !== null && (n.textContent || '').trim().includes(wanted));
+          : nodes.find((n) => n.offsetParent !== null && hit(n));
         if (!el) return null;
         el.scrollIntoView({ block: 'center' });
         const r = el.getBoundingClientRect();

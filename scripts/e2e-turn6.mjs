@@ -68,6 +68,14 @@ try {
     await menu(page, 'Library', ['Base units']);
     await page.click('button', label);
     await page.sleep(500);
+    // A shelf, so the elevation has something BEHIND the door to draw as a
+    // hidden line — which is one of the things phase 7 is checked on.
+    await page.click('button', 'Add items').catch(() => {});
+    await page.sleep(250);
+    await page.click('button', 'Shelves').catch(() => {});
+    await page.sleep(250);
+    await page.click('button', 'Add', { exact: true }).catch(() => {});
+    await page.sleep(350);
     await page.click('button', 'Add doors — finish unit').catch(() => {});
     await page.sleep(400);
   };
@@ -185,36 +193,60 @@ try {
   await shot(page, 'run-of-units');
 
   // ── 4. the drawings probe ──
-  await menu(page, 'Output', ['Drawings', 'Front elevation (preview)']);
-  await page.sleep(800);
-  const drawing = await page.evaluate(`
-    const svg = document.querySelector('.cc-drawing svg') || document.querySelector('svg[data-cc-drawing]');
-    if (!svg) return null;
-    const text = svg.outerHTML;
-    return {
-      swing: (text.match(/data-cc="door-swing"/g) || []).length,
-      hidden: (text.match(/stroke-dasharray/g) || []).length,
-      title: text.includes('CABINET CORE'),
-      length: text.length,
-    };
-  `);
-  check('the front elevation draws', Boolean(drawing), drawing ? `${drawing.length} chars of SVG` : 'no SVG found');
-  if (drawing) {
-    check('it carries the LISP door-swing diagonals', drawing.swing >= 2, `${drawing.swing} lines`);
-    check('it has a title block', drawing.title);
-  }
-  await shot(page, 'drawing-front-elevation');
-
-  // ── 5. the exports, from their new home ──
-  // A download is watched at the URL, not at the anchor: jsPDF dispatches its
-  // own MouseEvent rather than calling .click(), so patching the prototype sees
-  // the CSV and misses the PDF.
+  // A download is watched at the URL: jsPDF dispatches its own MouseEvent
+  // rather than calling .click(), so patching the anchor sees the SVG and
+  // misses the PDF.
   await page.evaluate(`
     window.__downloads = [];
     const make = URL.createObjectURL.bind(URL);
     URL.createObjectURL = (blob) => { window.__downloads.push(blob.type || 'blob'); return make(blob); };
     return true;
   `);
+
+  await menu(page, 'Output', ['Drawings', 'Front elevation (preview)']);
+  await page.waitFor("document.querySelector('.cc-drawing svg')", { timeout: 20000 });
+  const drawing = await page.evaluate(`
+    const svg = document.querySelector('.cc-drawing svg');
+    if (!svg) return null;
+    const text = svg.outerHTML;
+    const layers = {};
+    for (const el of svg.querySelectorAll('[data-layer]')) {
+      layers[el.dataset.layer] = (layers[el.dataset.layer] || 0) + 1;
+    }
+    return {
+      swing: (text.match(/data-cc="door-swing"/g) || []).length,
+      hidden: (text.match(/stroke-dasharray/g) || []).length,
+      title: text.includes('CABINET CORE'),
+      scale: (document.body.innerText.match(/Drawn at (1:\\d+)/) || [])[1] || null,
+      layers,
+      length: text.length,
+    };
+  `);
+  check('the front elevation draws', Boolean(drawing), drawing ? `${drawing.length} chars of SVG, ${drawing.scale}` : 'no SVG found');
+  if (drawing) {
+    check('it carries the LISP door-swing diagonals', drawing.swing >= 2, `${drawing.swing} lines`);
+    check('what is behind the doors is a hidden line', drawing.hidden >= 1, `${drawing.hidden} dashed`);
+    check('the LISP view layers are all on it', Boolean(drawing.layers.DOORS && drawing.layers.CARCASE
+      && drawing.layers.UNIT_NUMBER && drawing.layers.DIMENSIONS), Object.keys(drawing.layers).join(' '));
+    check('it has a title block and a scale', drawing.title && /^1:\d+$/.test(drawing.scale || ''), drawing.scale);
+  }
+  await shot(page, 'drawing-front-elevation');
+
+  await page.click('button', 'Export SVG');
+  await page.sleep(600);
+  await page.click('button', 'Export PDF');
+  await page.sleep(1600);
+  const drawn = await page.evaluate('return window.__downloads;');
+  check('the drawing exports as SVG and as PDF',
+    drawn.some((t) => /svg/.test(t)) && drawn.some((t) => /pdf/.test(t)), drawn.join(', '));
+  await page.click('button', 'Close');
+  await page.sleep(400);
+
+  // ── 5. the exports, from their new home ──
+  // A download is watched at the URL, not at the anchor: jsPDF dispatches its
+  // own MouseEvent rather than calling .click(), so patching the prototype sees
+  // the CSV and misses the PDF.
+  await page.evaluate('window.__downloads = []; return true;');
   const exported = [];
   for (const label of ['Cutting list CSV', 'BOM PDF', 'CNC / DXF']) {
     await menu(page, 'Output', [label]);

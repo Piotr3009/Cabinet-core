@@ -9,6 +9,7 @@ import SaveAsModal from '../components/SaveAsModal.jsx';
 import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
 import RenderModal from '../components/RenderModal.jsx';
+import DrawingModal from '../components/DrawingModal.jsx';
 import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import Scene from '../3d/Scene.jsx';
@@ -132,6 +133,7 @@ export default function ConfiguratorPage() {
         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
         {modal === 'save-template' && <SaveTemplateModal />}
         {modal === 'render' && <RenderModal rig={renderRig} />}
+        {modal === 'drawing' && <DrawingModal />}
         <ContextMenu />
         <Toast />
       </div>

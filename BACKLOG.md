@@ -167,3 +167,21 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
 40. [MEDIUM] **Plinth w kształcie L** — wyłuskane z #20, którego infillowa połowa jest już
     zrobiona. Cokół to dziś prosty pasek cofnięty o 50 mm; w L byłby sztywniejszy i lepiej
     trzymał linię przy nierównej podłodze. Nie było w zakresie tury 6.
+
+## DOPISANE 07.08 (sesja flow + WoodExpert + storage)
+41. [HIGH] New Project flow: start bez wymiarów; kroki: dane projektu (auto-numer,
+    klient opcjonalny + "Select from JoineryCore" soon), 8 typów (Kitchen/Wardrobe/
+    Media wall/Sideboard/Vanity/Utility/Hallway/Other), zakres Whole room / One wall
+    (zmienialny później), Room setup gdy pokój, Design Settings ("For this project" /
+    Use saved settings — zapisywalne SETY ustawień), Joinery type z podglądem (Dog
+    bones), materiały carcass 1–3 + fronty, auto-fill z JC + badge "JC" albo
+    "Not assigned" + assign ze stocku. Łączenie JC: API + token (tenant z tokena,
+    nigdy z listy) — SPEC sekcja 8. — TURA-7
+42. [HIGH] X-ray mode + okucia 3D proceduralnie (zawiasy/prowadnice/nóżki/rail
+    z hardware[] i wymiarów katalogowych w profilu; InstancedMesh; tylko w X-ray).
+    Wzór: WoodExpert. Bez plików 3D producentów (dane katalogowe tak, mesh nie). — TURA-7
+43. [LOW] Podgląd pojedynczego elementu/formatki w 3D — później.
+44. [PARKING] Upload własnych modeli 3D tenanta (GLB, Supabase Storage bucket
+    `models`, RLS per tenant, limit rozmiaru) — gdy pierwszy warsztat poprosi.
+45. [PARKING] Malowane panele dolne pod wiszące (osobny element; spodnia WUD surowa —
+    konstrukcja Skylon), wiąże się z finish-per-lico w #36.

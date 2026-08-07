@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 
 import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
 import { finishById, migrateDesign, resolveFinishes } from '../src/engine/design.js';
+import { outlineFor } from '../src/3d/materials.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 
 const unit = (params = {}) => ({
@@ -119,6 +120,41 @@ test('outline, sheen and contour are profile numbers, and thin/black/subtle', ()
   for (const role of roles) {
     const shade = A.shade[role] || 0;
     assert.ok(shade >= 0 && shade < 0.35, `${role} shade ${shade} is not a sensible tint`);
+  }
+});
+
+// ─── selection (turn 6, CLAUDE.md F5) ───
+
+test('the selection is drawing-office navy, dashed and clear of the piece — not gold', () => {
+  const S = P.appearance.selection;
+  assert.equal(S.colour, P.dimensions.colours.navy,
+    'the same ink the measurements are drawn in: both are the TOOL talking');
+  assert.notEqual(S.colour.toUpperCase(), '#AA8E68', 'gold is the furniture’s colour, not the selection’s');
+  assert.ok(S.offset >= 8 && S.offset <= 12, `CLAUDE.md F5 asks for 8–12 mm clear, not ${S.offset}`);
+  assert.ok(S.dash > 0 && S.gap > 0, 'dashed, because no piece of furniture has a dashed edge');
+  assert.equal(S.width, 1, 'thin — a selection is a hairline, not a frame');
+  assert.ok(S.hoverOpacity > 0 && S.hoverOpacity < 1, 'hover is the same mark, quieter');
+});
+
+test('the gold outline is gone from the app, and from every piece', () => {
+  // outlineFor no longer takes a `selected` flag at all: a cabinet's edges are
+  // black because a cabinet's edges are black, and the mark that says "this
+  // one" is a separate box.
+  const plain = outlineFor(P, {});
+  assert.equal(plain.colour, P.appearance.outline.colour);
+  assert.equal(outlineFor(P, { selected: true }).colour, P.appearance.outline.colour,
+    'passing the old flag changes nothing — there is no gold path left to reach');
+  assert.equal(outlineFor(P, { contour: true }).colour, P.appearance.contour.outline);
+
+  // And the last gold in a FURNITURE colour is gone from the profile.
+  const furniture = [
+    ...P.appearance.finishes.map((f) => f.hex),
+    P.appearance.outline.colour,
+    P.appearance.selection.colour,
+    ...Object.values(P.appearance.hardware),
+  ];
+  for (const hex of furniture) {
+    assert.notEqual(String(hex).toUpperCase(), '#AA8E68', `${hex} is the brand gold on a piece of furniture`);
   }
 });
 

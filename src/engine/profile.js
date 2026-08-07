@@ -466,7 +466,28 @@ export const DEFAULT_CABINET_PROFILE = {
     shade: { drawer_box: 0.1, back: 0.07, plinth: 0.04, infill: 0.02, end_panel: 0.02 },
     // Parts that are not a "finish" at all.
     hardware: { rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92' },
-    selection: { colour: '#AA8E68', width: 2 },
+
+    // ─── Selection (turn 6, CLAUDE.md F5) ───
+    // Turn 4 drew the selected unit's own edges in the app's gold. Two things
+    // were wrong with that. The gold is the FURNITURE's colour — a brass
+    // handle, a bronze frame — so a selected cabinet read as a cabinet made of
+    // something else; and drawing the piece's own outline meant the selection
+    // was a property of the object rather than a mark on top of it.
+    //
+    // What replaces it is what a CAD package draws: a thin DASHED box in the
+    // drawing-office navy, standing clear of the solid, following its bounding
+    // box and not its geometry. Nothing about it can be mistaken for a part.
+    // `offset` is in millimetres of ROOM, so the gap stays 10 mm of furniture
+    // whatever the camera is doing.
+    selection: {
+      colour: '#1B2A4A',        // the same navy the dimension arrows use
+      width: 1,
+      offset: 10,               // clear of the solid — CLAUDE.md asks for 8–12
+      dash: 34,
+      gap: 20,
+      // Hover is the same mark, quieter: it says "this is what you would get".
+      hoverOpacity: 0.32,
+    },
   },
 
   // ─── Render (turn 6, CLAUDE.md F2 / BACKLOG #37) ───

@@ -7,6 +7,7 @@ import { contourSurface, decorTexture, onDecorLoad, outlineFor, surfaceFor } fro
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import ContactShadow from './ContactShadow.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
+import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 
@@ -181,6 +182,21 @@ export default function UnitView({
   // Which top edge has been clicked. Purely visual: it decides which handle is
   // lit, nothing else (CLAUDE.md F3 — "click the edge → the edge highlights").
   const [activeEdge, setActiveEdge] = useState(null);
+  // Hover, debounced. R3F fires pointerout on the panel you are leaving and
+  // pointerover on the one you are entering, in that order — so sliding the
+  // cursor across a cabinet would strobe the hover mark once per panel without
+  // this. The clear is deferred by one frame and cancelled by any new enter.
+  const [hovered, setHovered] = useState(false);
+  const leaving = useRef(null);
+  const enter = useCallback(() => {
+    if (leaving.current) { cancelAnimationFrame(leaving.current); leaving.current = null; }
+    setHovered(true);
+  }, []);
+  const leave = useCallback(() => {
+    if (leaving.current) cancelAnimationFrame(leaving.current);
+    leaving.current = requestAnimationFrame(() => { leaving.current = null; setHovered(false); });
+  }, []);
+  useEffect(() => () => { if (leaving.current) cancelAnimationFrame(leaving.current); }, []);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const wallWidthMm = wall.width;
 
@@ -271,6 +287,10 @@ export default function UnitView({
   // standing in the room.
   const rotationRad = -((Number(unit.position.rotation_deg) || 0) * Math.PI) / 180;
 
+  // The whole solid, for the selection mark: every panel this unit emits, from
+  // the engine's own boxes.
+  const solid = useMemo(() => solidBounds(result.panels), [result.panels]);
+
   // How tall the top infill is right now — the handle sits on top of it.
   const topInfill = Number(unit.params.top_infill_mm) || 0;
 
@@ -348,7 +368,13 @@ export default function UnitView({
   }, [onMoveShelf, onSelect, pointerToPlane, originY, orbitRef, snapStep, onShelfDragState, unit.id]);
 
   return (
-    <group ref={groupRef} position={origin} rotation={[0, wall.angle + rotationRad, 0]}>
+    <group
+      ref={groupRef}
+      position={origin}
+      rotation={[0, wall.angle + rotationRad, 0]}
+      onPointerOver={enter}
+      onPointerOut={leave}
+    >
       {/* Contact shadow (turn 6): the dark that says this cabinet is standing
           on the floor. Only for a unit that HAS a floor under it — a wall unit
           hangs, and a blob under it 1.5 m down would be a shadow from nothing.
@@ -377,7 +403,7 @@ export default function UnitView({
             front={front}
             open={front ? (openFronts?.[p.id] ?? 0) : 0}
             surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
-            outline={outlineFor(profile, { selected: selected || beingDragged, contour })}
+            outline={outlineFor(profile, { contour })}
             outlines={outlines}
             contour={contour}
             depth={D}
@@ -532,13 +558,16 @@ export default function UnitView({
         </mesh>
       )}
 
-      {/* selection outline — gold, around the whole carcass */}
-      {selected && (
-        <mesh userData={{ ccHelper: true }} position={[mm(W / 2), mm(H / 2), mm(D / 2)]}>
-          <boxGeometry args={[mm(W) + 0.006, mm(H) + 0.006, mm(D) + 0.006]} />
-          <meshBasicMaterial visible={false} />
-          <Edges threshold={1} color={profile.appearance.selection.colour} lineWidth={profile.appearance.selection.width} />
-        </mesh>
+      {/* Selection (turn 6, CLAUDE.md F5): a thin dashed navy box standing
+          clear of the SOLID — doors stand proud of the carcass and an end panel
+          stands outside it, so a mark drawn on the carcass would cut through
+          both. Hover is the same mark, quieter. */}
+      {(selected || hovered) && !contour && (
+        <SelectionOutline
+          box={solid}
+          profile={profile}
+          opacity={selected ? 1 : profile.appearance.selection.hoverOpacity}
+        />
       )}
 
       {showLabels && (

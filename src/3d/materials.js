@@ -149,10 +149,18 @@ export function contourSurface(profile) {
   };
 }
 
-/** The outline every piece is drawn with — thin and black (BACKLOG #5). */
-export function outlineFor(profile, { selected = false, contour = false } = {}) {
+/**
+ * The outline every piece is drawn with — thin and black (BACKLOG #5).
+ *
+ * Turn 6 (CLAUDE.md F5) took the SELECTION out of here. Turn 4 recoloured the
+ * selected unit's own edges, which made the selection a property of the object
+ * rather than a mark on top of it — and in the app's gold, which is a furniture
+ * colour. A cabinet's edges are black because a cabinet's edges are black,
+ * selected or not; the mark that says "this one" is a separate dashed box
+ * (3d/SelectionOutline.jsx).
+ */
+export function outlineFor(profile, { contour = false } = {}) {
   const A = profile.appearance;
-  if (selected) return { colour: A.selection.colour, width: A.selection.width, threshold: A.outline.threshold };
   return {
     colour: contour ? A.contour.outline : A.outline.colour,
     width: A.outline.width,

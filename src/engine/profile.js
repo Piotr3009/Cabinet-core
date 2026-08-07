@@ -46,6 +46,20 @@ export const DEFAULT_CABINET_PROFILE = {
     shelfWidthClearance: 4,
     shelfDepthBoards: 1,       // shelf H = depth − 1×G − clearance
     shelfDepthClearance: 20,
+    // ─── Turn 8 (CLAUDE.md F4) ───
+    // The same 20 mm, for the pieces the AutoLISP cut FULL depth: a FIX shelf
+    // and a partition. An adjustable shelf has stood 20 mm back from the face
+    // since the LISP (the line above) and a joiner reads that gap as the front
+    // of the cabinet; a partition flush with the face beside it reads as a
+    // mistake, and it is the piece a hinge arm swings closest to.
+    //
+    // It is a DEFAULT, not a rule: every one of these pieces may be pulled out
+    // to the face on its own (`front_mm` on the item, `partition_front_mm` on
+    // the unit), because a partition under a worktop sometimes has to be.
+    //
+    // The TOP and BOTTOM stay full depth and are not in this: they carry the
+    // puzzle joint, and shortening them is shortening the carcass.
+    interiorSetback: 20,
   },
 
   // ─── Doors / fronts ───

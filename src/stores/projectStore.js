@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { computeCabinet } from '../engine/cabinet.js';
+import {
+  computeCabinet, isShelfLocked, SHELF_VARIANTS,
+} from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
@@ -111,6 +113,18 @@ function paramsForEngine(unit) {
     ...p,
     type: unit.type,
     items,
+    // ─── Turn 8 (CLAUDE.md F4) ───
+    // How far a FIX shelf and a partition stand back from the face. It is
+    // supplied HERE rather than defaulted inside computeCabinet, and that is
+    // the same rule the plinth and the top infill follow: the engine builds
+    // what a PROJECT asks for, and a bare kit call — every golden fixture — has
+    // to keep cutting exactly what the AutoLISP cuts (fixtures/README rule 1).
+    //
+    // A unit may still say otherwise for itself; this is only the floor under
+    // "nobody has said".
+    interior_setback_mm: Number.isFinite(Number(p.interior_setback_mm))
+      ? Number(p.interior_setback_mm)
+      : getCabinetProfile().carcass.interiorSetback,
     shelves: items.filter((i) => i.kind === 'shelf').length,
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
@@ -121,6 +135,38 @@ function paramsForEngine(unit) {
     rail_material_label: items.find((i) => i.kind === 'hanger')?.material_label ?? null,
   };
 }
+
+// ─── Shelf schema (turn 8, CLAUDE.md F4) ───
+// `variant: 'fixed'` used to mean nothing more than "a shelf" — it was the value
+// `addShelves` wrote and the value the panel showed for everything. It means
+// SCREWED now, so every shelf saved before turn 8 would silently become a
+// screwed one: three ⌀3 holes per side instead of a column of pins, on a
+// cabinet somebody may already have cut.
+//
+// So it is a migration with a stamp, exactly like PROFILE_SCHEMA and
+// DESIGN_SCHEMA: on the way in, a unit that has not been through it has its
+// shelves read as ADJUSTABLE, which is what they were, and is marked done.
+const SHELF_SCHEMA = 2;
+
+export function migrateUnitShelves(unit) {
+  if (!unit?.params || unit.params.shelf_schema === SHELF_SCHEMA) return unit;
+  const sections = (unit.params.sections || []).map((section) => ({
+    ...section,
+    items: (section.items || []).map((item) => (item.kind === 'shelf' && item.variant === 'fixed'
+      ? { ...item, variant: 'adjustable' }
+      : item)),
+  }));
+  return {
+    ...unit,
+    params: {
+      ...unit.params,
+      shelf_schema: SHELF_SCHEMA,
+      ...(sections.length ? { sections } : {}),
+    },
+  };
+}
+
+const migrateUnits = (units) => (Array.isArray(units) ? units.map(migrateUnitShelves) : []);
 
 function loadCache() {
   try {
@@ -161,7 +207,7 @@ export const useProjectStore = create((set, get) => ({
       room: DEFAULT_ROOM, design: migrateDesign(null),
       jc_tenant_id: null, jc_project_id: null,
     },
-  units: cached?.units || [],
+  units: migrateUnits(cached?.units),
   dirty: false,
 
   // ── project / room ───────────────────────────────────────────────────────
@@ -237,7 +283,7 @@ export const useProjectStore = create((set, get) => ({
 
   loadProject: (project, units) => set({
     project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
-    units: Array.isArray(units) ? units : [],
+    units: migrateUnits(units),
     dirty: false,
   }),
 
@@ -1305,7 +1351,10 @@ export const useProjectStore = create((set, get) => ({
         positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
       }, profile);
       if (pos == null) break;
-      get().addItem(unitId, { kind: 'shelf', variant: 'fixed', pos_mm: pos });
+      // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
+      // you can move; `fixed` means screwed now, and a shelf arriving screwed
+      // in is a decision nobody made.
+      get().addItem(unitId, { kind: 'shelf', variant: 'adjustable', pos_mm: pos });
       added += 1;
     }
     return { added, requested: Math.max(1, Math.trunc(count)) };
@@ -1417,6 +1466,19 @@ export const useProjectStore = create((set, get) => ({
     if (!unit) return null;
     const profile = getCabinetProfile();
     const item = unit.params.sections?.[0]?.items?.find((i) => i.id === itemId);
+    // ─── Turn 8 (CLAUDE.md F4) ───
+    // A LOCKED shelf does not move, and the refusal belongs here rather than in
+    // the drag: this is the one setter every path goes through, so a number
+    // typed into the panel is refused exactly as a drag is. `blocked` is the
+    // same shape the clamp returns when a shelf has nowhere to go, so the live
+    // readout in the 3D view needs no new case.
+    if (isShelfLocked(item)) {
+      const band = shelfBandFor(unit, profile);
+      const bounds = shelfBounds({ pos: item?.pos_mm ?? band.min, others: otherShelfPositions(unit, itemId), band }, profile);
+      return {
+        pos: item?.pos_mm ?? band.min, ...bounds, blocked: true, locked: true,
+      };
+    }
     const state = clampShelfPos({
       // A stored millimetre is ALWAYS on the workshop grid (BACKLOG #33): the
       // drag's own snap when there is one, half a millimetre when there is not
@@ -1432,6 +1494,60 @@ export const useProjectStore = create((set, get) => ({
 
   /** Drag a shelf vertically. Same setter, so the drag cannot bypass the clamp. */
   moveShelf: (unitId, itemId, posRaw, snapStep) => get().setShelfPos(unitId, itemId, posRaw, snapStep),
+
+  // ── shelves v2 (turn 8, CLAUDE.md F4) ────────────────────────────────────
+
+  /**
+   * How this shelf is held: on pins, screwed, or on runners.
+   *
+   * Screwing one in also fixes where it is, so the position is left exactly
+   * where it was rather than re-clamped — the whole point of the choice is that
+   * this shelf stops moving, and a setter that nudged it half a millimetre on
+   * the way would be doing the opposite of what was asked.
+   */
+  setShelfVariant: (unitId, itemId, variant) => {
+    const next = SHELF_VARIANTS.includes(variant) ? variant : 'adjustable';
+    get().updateItem(unitId, itemId, { variant: next });
+    return next;
+  },
+
+  /**
+   * "This one stays here." A shelf that is otherwise adjustable but must not be
+   * dragged — one carrying an oven, one a run of cable is stapled to. It is
+   * drilled like a FIX shelf, because that is what holding a shelf still means.
+   */
+  setShelfLocked: (unitId, itemId, locked) => {
+    get().updateItem(unitId, itemId, { updown_locked: Boolean(locked) });
+    return Boolean(locked);
+  },
+
+  /**
+   * How far this shelf's front edge stands back from the face of the carcass.
+   *
+   * `null` puts it back on the project's default (20 mm). 0 stretches it out to
+   * the face, which is what a shelf under a worktop or behind a glazed door
+   * sometimes has to do.
+   */
+  setShelfFront: (unitId, itemId, frontMm) => {
+    const profile = getCabinetProfile();
+    if (frontMm == null) { get().updateItem(unitId, itemId, { front_mm: null }); return null; }
+    const value = Math.max(0, snapTo(Number(frontMm) || 0, profile.editor.mmStep));
+    get().updateItem(unitId, itemId, { front_mm: value });
+    return value;
+  },
+
+  /** The same, for the partition and the rail partitioner of one unit. */
+  setPartitionFront: (unitId, frontMm) => {
+    const profile = getCabinetProfile();
+    const value = frontMm == null ? null : Math.max(0, snapTo(Number(frontMm) || 0, profile.editor.mmStep));
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, partition_front_mm: value } }
+        : u)),
+      dirty: true,
+    }));
+    return value;
+  },
 
   /**
    * Re-clamp every shelf of a unit. Called after a carcass parameter changes:

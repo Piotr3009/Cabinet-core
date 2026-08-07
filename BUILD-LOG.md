@@ -2553,3 +2553,86 @@ tury 8 dostaje default zamiast wywrotki) po rysunek.
 `run-infill` (długość returnu, i „END 1" — jednostka parkuje teraz na stopie 10 mm,
 więc test czyta pozycję piecea względem ŚCIANY, a nie względem korpusu),
 `slots-and-hinge` (lewy kraniec ściany to 10, nie 0).
+
+## F4 — PÓŁKI v2
+
+### 1. Cofnięcie 20 mm — i ograniczenie, które trzeba było ominąć uczciwie
+
+Półka regulowana stoi 20 mm od lica od czasów LISP-a; **półka FIX i partition** były
+cięte na pełną głębokość. Piotr chce ich wszystkich na jednej linii — i ma rację: partition
+w licu obok cofniętej półki czyta się jak pomyłka, a to on jest tym elementem, obok
+którego przechodzi ramię zawiasu.
+
+Problem: **złote fixtures TO SĄ kity AutoLISP-a**, a reguła 1 z `fixtures/README.md` jest
+absolutna — „Engine output must match. If it doesn't — the ENGINE is wrong". `PARTITION`
+i `RAIL-PART` mają w `golden-wardrobe` i `golden-low-cabinet` wpisane `h: 560`, czyli
+pełne `internalDepth`. Skrócenie ich w silniku bezwarunkowo = czerwone fixtures.
+
+Rozwiązanie jest tym samym wzorcem, którym idą cokół, top infill i end panele od tury 4:
+**cofnięcie to DECYZJA PROJEKTU, a nie zachowanie kitu.** Silnik czyta
+`params.interior_setback_mm`, a podaje go `paramsForEngine()` — adapter store'u, przez
+który przechodzi każdy odczyt każdej jednostki w projekcie. Gołe `computeCabinet()`
+(fixture, test kitu, import) dostaje 0 i dalej tnie dokładnie to, co tnie LISP. Obie
+strony tej umowy mają test.
+
+Per element: `front_mm` na półce, `partition_front_mm` na jednostce. `0` = **wysunięte do
+lica** — bo półka pod blatem albo za drzwiami szklanymi czasem musi. Przyciski w panelu
+(`⇥`) przełączają jedno w drugie.
+
+**Wieńce TOP/BOTTOM nietknięte.** Niosą puzzle; skrócenie ich to skrócenie korpusu.
+
+### 2. FIX = ŚRUBY, nie piny
+
+Półka FIX dostaje **trzy śruby ⌀3 przez każdy bok, w OSI półki** (środek grubości, śruba
+w czoło płyty), na pozycjach `[50, sideW/2, sideW−50]`, warstwa `SCREWS_3MM` — czyli
+dokładnie ten sam złącze i ta sama warstwa, których partition używa od zawsze. I **żadnych
+pinów**: kolumna otworów ⌀7,5 dla półki, która nie może się ruszyć, to otwory wywiercone
+po nic.
+
+`drillSummary` mówi teraz obie rzeczy osobno: `shelf_row_y` to dalej GDZIE są półki (tym
+wymiaruje rysunek), a `shelf_pin_row_y` / `shelf_screw_row_y` mówią, jak każda jest
+trzymana. DXF i podgląd CNC biorą to z `drills[]`, więc nie trzeba ich było uczyć niczego.
+
+### 3. `updown_locked`
+
+Półka regulowana, której nie wolno przeciągać: taka, na której stoi piekarnik, taka, do
+której przybity jest przelot kabli. Wiercenie identyczne jak FIX, bo **trzymanie półki
+w miejscu to jedno i to samo, niezależnie od powodu** — stąd jedna funkcja
+`isShelfLocked()`, a nie dwie.
+
+Odmowa ruchu siedzi w `setShelfPos`, czyli w JEDYNYM setterze, przez który przechodzi
+i przeciąganie, i wpisana liczba. Zwraca `{ blocked: true, locked: true }` — ten sam
+kształt, który clamp zwraca dla półki bez miejsca, więc odczyt w 3D nie potrzebował
+nowego przypadku. W 3D kursor nad zablokowaną półką nie obiecuje `ns-resize`, a złapanie
+jej przeciąga CAŁĄ SZAFKĘ, co jest tym, co fizycznie robisz, łapiąc przykręconą półkę.
+
+Minimalny toggle w panelu (🔓/🔒), zgodnie z CLAUDE.md („pełne UI później").
+
+### 4. Hover na półce → odstępy
+
+Pytanie brzmi „czy są równo?", a na to nie da się odpowiedzieć jedną szczeliną. Najechanie
+na DOWOLNĄ półkę wymiaruje więc **wszystkie prześwity w kolumnie** — od podłogi (albo od
+partitionu nad szufladami) do pierwszej półki, między półkami, i od ostatniej do spodu
+wieńca. Mierzone **między licami**, nie między osiami, bo stolarz pyta o światło, w które
+coś ma wejść. Szczeliny odstające od największej idą na złoto, więc stos rozjechany o 3 mm
+mówi to sam.
+
+### 5. Nazewnictwo, i migracja, której nie dało się uniknąć
+
+`variant: 'fixed'` znaczyło przedtem tyle co „półka" — to była wartość, którą `addShelves`
+wpisywał wszystkiemu. Teraz znaczy PRZYKRĘCONA, więc każda półka zapisana przed turą 8
+zamieniłaby się po cichu w przykręconą: trzy otwory ⌀3 na bok zamiast kolumny pinów,
+w szafce, którą ktoś mógł już wyciąć.
+
+Więc jest migracja ze stemplem, dokładnie jak `PROFILE_SCHEMA` i `DESIGN_SCHEMA`:
+`migrateUnitShelves()` czyta `'fixed'` jako `'adjustable'` w jednostce, która nie ma
+`shelf_schema: 2`, i stempluje. Jednostka już zmigrowana zachowuje swoje FIX-y.
+Wartości: `adjustable` (default, piny) · `fixed` (przykręcona) · `pullout` (bez zmian).
+
+### Liczby fazy
+
+| | |
+|---|---|
+| testy | **690/690** (nowe: `shelves-v2.test.js` 15) |
+| fixtures | nietknięte, i pilnowane osobnym testem |
+| build | czysty |

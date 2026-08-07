@@ -39,6 +39,10 @@ export default function RightPanel() {
   const removeItem = useProjectStore((s) => s.removeItem);
   const updateItem = useProjectStore((s) => s.updateItem);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
+  const setShelfVariant = useProjectStore((s) => s.setShelfVariant);
+  const setShelfLocked = useProjectStore((s) => s.setShelfLocked);
+  const setShelfFront = useProjectStore((s) => s.setShelfFront);
+  const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
   const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
   const setAllDrawerHeights = useProjectStore((s) => s.setAllDrawerHeights);
   const setDrawerEqualHeights = useProjectStore((s) => s.setDrawerEqualHeights);
@@ -508,26 +512,79 @@ export default function RightPanel() {
                 </button>
               </div>
               <ul className="space-y-1">
-                {shelves.map(({ item: sh, label }) => (
-                  <li key={sh.id} className="flex items-center gap-1 text-sm">
-                    <span className="text-ink-400 w-6 text-xs">{label}</span>
-                    {/* Typed positions go through the SAME clamp as the drag —
-                        the field is not a back door around the collision rules. */}
-                    <NumberField
-                      className="cc-input w-20 text-right" value={sh.pos_mm ?? 0}
-                      onCommit={(v) => setShelfPos(unit.id, sh.id, v)}
-                    />
-                    <select
-                      className="cc-input flex-1" value={sh.variant || 'fixed'}
-                      onChange={(e) => updateItem(unit.id, sh.id, { variant: e.target.value })}
-                    >
-                      <option value="fixed">Fixed</option>
-                      <option value="pullout">Pull-out</option>
-                    </select>
-                    <button type="button" className="cc-btn-ghost" onClick={() => removeItem(unit.id, sh.id)} title="Remove shelf">×</button>
-                  </li>
-                ))}
+                {shelves.map(({ item: sh, label }) => {
+                  // Turn 8 (CLAUDE.md F4): a shelf is now three questions —
+                  // where it is, how it is HELD, and how far back its front
+                  // edge stands. A screwed one, or a locked one, does not move.
+                  const locked = sh.variant === 'fixed' || sh.updown_locked === true;
+                  const toFace = Number(sh.front_mm) === 0;
+                  return (
+                    <li key={sh.id} className="flex items-center gap-1 text-sm">
+                      <span className="text-ink-400 w-6 text-xs">{label}</span>
+                      {/* Typed positions go through the SAME clamp as the drag —
+                          the field is not a back door around the collision rules,
+                          and a locked shelf refuses both. */}
+                      <NumberField
+                        className="cc-input w-16 text-right" value={sh.pos_mm ?? 0}
+                        disabled={locked}
+                        title={locked ? 'Screwed or locked — unlock it to move it' : 'Height above the carcass floor'}
+                        onCommit={(v) => setShelfPos(unit.id, sh.id, v)}
+                      />
+                      <select
+                        className="cc-input flex-1" value={sh.variant || 'adjustable'}
+                        title="How this shelf is held"
+                        onChange={(e) => setShelfVariant(unit.id, sh.id, e.target.value)}
+                      >
+                        <option value="adjustable">Adjustable</option>
+                        <option value="fixed">Fixed (screwed)</option>
+                        <option value="pullout">Pull-out</option>
+                      </select>
+                      {/* The minimal toggle CLAUDE.md asks for: full UI later. */}
+                      <button
+                        type="button"
+                        className={`cc-btn px-1.5 ${sh.updown_locked ? 'border-gold text-ink-50' : ''}`}
+                        title={sh.updown_locked
+                          ? 'Locked in place — drilled like a fixed shelf'
+                          : 'Lock this shelf where it is'}
+                        disabled={sh.variant === 'fixed'}
+                        onClick={() => setShelfLocked(unit.id, sh.id, !sh.updown_locked)}
+                      >
+                        {sh.updown_locked ? '🔒' : '🔓'}
+                      </button>
+                      <button
+                        type="button"
+                        className={`cc-btn px-1.5 ${toFace ? 'border-gold text-ink-50' : ''}`}
+                        title={toFace
+                          ? `Front edge is out at the face — click for the ${formatMm(profile.carcass.interiorSetback)} mm setback`
+                          : `Front edge is set back ${formatMm(profile.carcass.shelfDepthClearance)} mm — click to stretch it to the face`}
+                        onClick={() => setShelfFront(unit.id, sh.id, toFace ? null : 0)}
+                      >
+                        ⇥
+                      </button>
+                      <button type="button" className="cc-btn-ghost" onClick={() => removeItem(unit.id, sh.id)} title="Remove shelf">×</button>
+                    </li>
+                  );
+                })}
               </ul>
+              {/* The partition over a drawer stack is a fixed shelf too, and it
+                  is set back with them (F4) — with the same way out. */}
+              {result.panels.some((p) => p.part === 'PARTITION' || p.part === 'RAIL-PART') && (
+                <div className="cc-row text-[11px] text-ink-400">
+                  <span>Partition front edge</span>
+                  <button
+                    type="button"
+                    className={`cc-btn px-2 ${Number(unit.params.partition_front_mm) === 0 ? 'border-gold text-ink-50' : ''}`}
+                    onClick={() => setPartitionFront(
+                      unit.id,
+                      Number(unit.params.partition_front_mm) === 0 ? null : 0,
+                    )}
+                  >
+                    {Number(unit.params.partition_front_mm) === 0
+                      ? 'at the face'
+                      : `set back ${formatMm(profile.carcass.interiorSetback)}`}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </Section>

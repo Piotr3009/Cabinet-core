@@ -370,6 +370,36 @@ export default function UnitView({
   // engine's own drilling, so a hinge is drawn where the machine bores for it.
   const hardware = useMemo(() => hardwareInstances(result, profile), [result, profile]);
 
+  // ─── The gaps between the shelves (turn 8, CLAUDE.md F4) ───
+  // Which shelf the cursor is on, and the whole ladder of clear openings in the
+  // column it belongs to. Measured between FACES — the clear space a thing has
+  // to fit into — not between centre lines, because a joiner asking "will the
+  // toaster go in there" is asking about the clear space.
+  const [hoverShelf, setHoverShelf] = useState(null);
+  const shelfGaps = useMemo(() => {
+    const G = Number(unit.params.board_t) || profile.board.thickness;
+    const shelves = result.panels
+      .filter((p) => p.part === 'SHELF' && p.box)
+      .map((p) => p.box.y)
+      .sort((a, b) => a - b);
+    if (!shelves.length) return [];
+    const floor = result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G;
+    const ceiling = H - G;
+    const faces = [floor, ...shelves.flatMap((y) => [y, y + G]), ceiling];
+    const out = [];
+    for (let i = 0; i < faces.length - 1; i += 2) {
+      if (faces[i + 1] - faces[i] > 0.5) out.push({ key: `gap-${i}`, from: faces[i], to: faces[i + 1] });
+    }
+    // "Even" is what the eye is checking for, so the readout says which gaps
+    // are the odd ones out rather than leaving six identical-looking numbers to
+    // be compared by hand.
+    const sizes = out.map((g) => g.to - g.from);
+    const largest = Math.max(...sizes);
+    const smallest = Math.min(...sizes);
+    const even = largest - smallest <= profile.editor.mmStep;
+    return out.map((g) => ({ ...g, even: even || Math.abs((g.to - g.from) - largest) < 1e-6 }));
+  }, [result.panels, result.assemblies.drawerZone, unit.params.board_t, profile, H]);
+
   // How tall the top infill is right now — the handle sits on top of it. The
   // FACE strip is the piece the edge belongs to (there is a shelf behind it,
   // and its top is 18 mm lower).
@@ -507,7 +537,9 @@ export default function UnitView({
             depth={D}
             profile={profile}
             onPointerDown={(e) => {
-              if (shelfId) { startShelfDrag(e, shelfId, p.box.y); return; }
+              // A locked shelf falls through to the UNIT drag: grabbing a
+              // screwed shelf and pulling is grabbing the cabinet (turn 8, F4).
+              if (shelfId && !p.meta?.locked) { startShelfDrag(e, shelfId, p.box.y); return; }
               startDrag(e);
             }}
             onDoubleClick={(e) => {
@@ -522,11 +554,40 @@ export default function UnitView({
               onSelect();
               if (onContextMenu) onContextMenu({ x: e.clientX, y: e.clientY, panelId: p.id, part: p.part });
             }}
-            onPointerOver={shelfId ? () => { document.body.style.cursor = 'ns-resize'; } : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined)}
-            onPointerOut={(shelfId || front) ? () => { document.body.style.cursor = ''; } : undefined}
+            onPointerOver={shelfId
+              ? () => {
+                // A screwed or locked shelf does not move, so the cursor must
+                // not promise that it does (turn 8, F4).
+                document.body.style.cursor = p.meta?.locked ? 'default' : 'ns-resize';
+                setHoverShelf(shelfId);
+              }
+              : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined)}
+            onPointerOut={(shelfId || front)
+              ? () => { document.body.style.cursor = ''; if (shelfId) setHoverShelf(null); }
+              : undefined}
           />
         );
       })}
+
+      {/* ─── Hover a shelf: the gaps in the whole column (turn 8, F4) ───
+          "Are they even?" is the question a joiner asks about a set of
+          shelves, and it cannot be answered one gap at a time. Hovering ANY
+          shelf therefore measures EVERY gap in the column — floor to the first
+          shelf, shelf to shelf, and the last one to the underside of the top —
+          so a stack that is 3 mm out says so at a glance.
+          It is a readout, not a drag: nothing here writes anything. */}
+      {hoverShelf && !contour && !shelfDrag && (
+        <group userData={{ ccHelper: true }}>
+          {shelfGaps.map((g) => (
+            <DimLabel
+              key={g.key}
+              position={[mm(W / 2), mm((g.from + g.to) / 2), mm(D) + 0.06]}
+              text={formatMm(g.to - g.from)}
+              tone={g.even ? 'dim' : 'gold'}
+            />
+          ))}
+        </group>
+      )}
 
       {/* live dimension while a shelf is being dragged (SPEC 4.8) */}
       {shelfDrag && shelfDrag.unitId === unit.id && (

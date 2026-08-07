@@ -120,6 +120,26 @@ export const DEFAULT_CABINET_PROFILE = {
     socketHoleOffset: 24.5,    // 2 holes per socket at ± this
     socketHoleDiameter: 7.5,
     socketHoleInset: 1,        // holes sit 1 mm inside the pocket
+    // ─── Turn 7 (CLAUDE.md F4 / BACKLOG #28) ───
+    // Below this run length the two sockets COLLIDE, and one socket goes in the
+    // middle instead. The AutoLISP never met this case — its kits are 558 and
+    // 578 deep — so there is no LISP number to trace and the threshold is
+    // DERIVED from the geometry above:
+    //
+    //   190    the two socket centres, `tabCentresFromEnd` (95) in from each end
+    // + 56.5   each socket's own footprint across the run. Not the pocket:
+    //          the HOLES are wider than it. ±max(socketHalfWidth 25.5,
+    //          socketHoleOffset 24.5 + socketHoleDiameter/2 3.75) = ±28.25,
+    //          and two of those halves is 56.5.
+    // + 18     the minimum bridge — the narrowest web of board a cutter should
+    //          be asked to leave standing between two pockets, which is one
+    //          standard board thickness (board.thickness).
+    // = 264.5
+    //
+    // A workshop on a different board or different sockets recomputes it the
+    // same way; test/single-socket.test.js recomputes it on every run, so the
+    // number and the reasoning cannot drift apart.
+    singleSocketBelow: 264.5,
     screwDiameter: 3,
     screwFromEnd: 50,          // screws at 50, mid, length−50
     centrelineExtra: 0.5,      // screw/socket centreline = G/2 + this

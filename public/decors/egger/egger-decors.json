@@ -6,7 +6,9 @@
   "usage_in_app": "decor picker swatches + BOM material naming; NOT as 3D textures until consent",
   "note": "All decors are reproductions - colour matching only on original sample (EGGER).",
   "updated": "06.08.2026 final v1 \u2014 86 decors (6 boards Claude + 13 uni + 67 woodgrains Piotr); thumbs 256px; hex avg for all",
-  "runtime_note": "App uses: this JSON + thumbs/ (swatches, attributed) + hex (3D tint). Full scans NOT shipped in app \u2014 3D texturing of EGGER images pending written consent (BACKLOG #19)."
+  "runtime_note": "App uses: this JSON + thumbs/ (swatches, attributed) + hex (3D tint). Full scans NOT shipped in app \u2014 3D texturing of EGGER images pending written consent (BACKLOG #19).",
+  "tex_note": "Full-board scans from cdn.egger.com, downscaled to 1024px width. Physical scale (approx): image height ~= 2800 mm along grain \u2014 calibrate visually. Attribution EGGER + code/name mandatory wherever shown. Public demo/sale of CC still requires written EGGER consent (BACKLOG #19).",
+  "storage": "Full textures: Supabase Storage bucket decors/egger/ (public). Thumbs+hex: repo."
  },
  "decors": [
   {
@@ -43,7 +45,8 @@
    "source": "https://www.egger.com/en/furniture-interior-design/decors/H1180_37?country=GB",
    "hex": "#B59571",
    "category": "woodgrain",
-   "thumb": "thumbs/H1180_37.jpg"
+   "thumb": "thumbs/H1180_37.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1180_37.jpg"
   },
   {
    "id": "H1145_10",
@@ -55,7 +58,8 @@
    "source": "https://www.egger.com/en/furniture-interior-design/decors/H1145_10?country=GB",
    "hex": "#C2A485",
    "category": "woodgrain",
-   "thumb": "thumbs/H1145_10.jpg"
+   "thumb": "thumbs/H1145_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1145_10.jpg"
   },
   {
    "id": "H3325_28",
@@ -67,7 +71,8 @@
    "source": "https://www.egger.com/en/furniture-interior-design/decors/H3325_28?country=GB",
    "hex": "#635143",
    "category": "woodgrain",
-   "thumb": "thumbs/H3325_28.jpg"
+   "thumb": "thumbs/H3325_28.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3325_28.jpg"
   },
   {
    "id": "U999_12",
@@ -246,7 +251,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#413A38",
-   "thumb": "thumbs/H3190_19.jpg"
+   "thumb": "thumbs/H3190_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3190_19.jpg"
   },
   {
    "id": "H3146_19",
@@ -257,7 +263,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#AC9B8A",
-   "thumb": "thumbs/H3146_19.jpg"
+   "thumb": "thumbs/H3146_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3146_19.jpg"
   },
   {
    "id": "H1199_12",
@@ -268,7 +275,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#2F221B",
-   "thumb": "thumbs/H1199_12.jpg"
+   "thumb": "thumbs/H1199_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1199_12.jpg"
   },
   {
    "id": "H3152_19",
@@ -279,7 +287,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#E3BC95",
-   "thumb": "thumbs/H3152_19.jpg"
+   "thumb": "thumbs/H3152_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3152_19.jpg"
   },
   {
    "id": "H1487_22",
@@ -290,7 +299,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#B28F6D",
-   "thumb": "thumbs/H1487_22.jpg"
+   "thumb": "thumbs/H1487_22.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1487_22.jpg"
   },
   {
    "id": "H1303_12",
@@ -301,7 +311,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#8A6F56",
-   "thumb": "thumbs/H1303_12.jpg"
+   "thumb": "thumbs/H1303_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1303_12.jpg"
   },
   {
    "id": "H1113_10",
@@ -312,7 +323,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#AA8664",
-   "thumb": "thumbs/H1113_10.jpg"
+   "thumb": "thumbs/H1113_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1113_10.jpg"
   },
   {
    "id": "H1379_36",
@@ -323,7 +335,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#7A685A",
-   "thumb": "thumbs/H1379_36.jpg"
+   "thumb": "thumbs/H1379_36.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1379_36.jpg"
   },
   {
    "id": "H1142_36",
@@ -334,7 +347,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#BD9B77",
-   "thumb": "thumbs/H1142_36.jpg"
+   "thumb": "thumbs/H1142_36.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1142_36.jpg"
   },
   {
    "id": "H309_12",
@@ -345,7 +359,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#73523F",
-   "thumb": "thumbs/H309_12.jpg"
+   "thumb": "thumbs/H309_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H309_12.jpg"
   },
   {
    "id": "H1307_19",
@@ -356,7 +371,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#62412E",
-   "thumb": "thumbs/H1307_19.jpg"
+   "thumb": "thumbs/H1307_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1307_19.jpg"
   },
   {
    "id": "H1401_22",
@@ -367,7 +383,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#D6D0C5",
-   "thumb": "thumbs/H1401_22.jpg"
+   "thumb": "thumbs/H1401_22.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1401_22.jpg"
   },
   {
    "id": "H3860_9",
@@ -378,7 +395,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#E1D0BD",
-   "thumb": "thumbs/H3860_9.jpg"
+   "thumb": "thumbs/H3860_9.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3860_9.jpg"
   },
   {
    "id": "H3012_22",
@@ -389,7 +407,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#CBAA81",
-   "thumb": "thumbs/H3012_22.jpg"
+   "thumb": "thumbs/H3012_22.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3012_22.jpg"
   },
   {
    "id": "H3398_12",
@@ -400,7 +419,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#926740",
-   "thumb": "thumbs/H3398_12.jpg"
+   "thumb": "thumbs/H3398_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3398_12.jpg"
   },
   {
    "id": "H3154_36",
@@ -411,7 +431,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#755740",
-   "thumb": "thumbs/H3154_36.jpg"
+   "thumb": "thumbs/H3154_36.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3154_36.jpg"
   },
   {
    "id": "H3043_12",
@@ -422,7 +443,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#261916",
-   "thumb": "thumbs/H3043_12.jpg"
+   "thumb": "thumbs/H3043_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3043_12.jpg"
   },
   {
    "id": "H3198_19",
@@ -433,7 +455,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#635952",
-   "thumb": "thumbs/H3198_19.jpg"
+   "thumb": "thumbs/H3198_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3198_19.jpg"
   },
   {
    "id": "H2033_10",
@@ -444,7 +467,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#745236",
-   "thumb": "thumbs/H2033_10.jpg"
+   "thumb": "thumbs/H2033_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H2033_10.jpg"
   },
   {
    "id": "H1357_10",
@@ -455,7 +479,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#AD9781",
-   "thumb": "thumbs/H1357_10.jpg"
+   "thumb": "thumbs/H1357_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1357_10.jpg"
   },
   {
    "id": "H1313_10",
@@ -466,7 +491,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#7F736D",
-   "thumb": "thumbs/H1313_10.jpg"
+   "thumb": "thumbs/H1313_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1313_10.jpg"
   },
   {
    "id": "H3156_12",
@@ -477,7 +503,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#A08977",
-   "thumb": "thumbs/H3156_12.jpg"
+   "thumb": "thumbs/H3156_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3156_12.jpg"
   },
   {
    "id": "H3332_10",
@@ -488,7 +515,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#8D7A69",
-   "thumb": "thumbs/H3332_10.jpg"
+   "thumb": "thumbs/H3332_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3332_10.jpg"
   },
   {
    "id": "H1143_36",
@@ -499,7 +527,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#A39181",
-   "thumb": "thumbs/H1143_36.jpg"
+   "thumb": "thumbs/H1143_36.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1143_36.jpg"
   },
   {
    "id": "H3158_19",
@@ -510,7 +539,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#938173",
-   "thumb": "thumbs/H3158_19.jpg"
+   "thumb": "thumbs/H3158_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3158_19.jpg"
   },
   {
    "id": "H3349_19",
@@ -521,7 +551,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#D0B592",
-   "thumb": "thumbs/H3349_19.jpg"
+   "thumb": "thumbs/H3349_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3349_19.jpg"
   },
   {
    "id": "H1362_12",
@@ -532,7 +563,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C3A990",
-   "thumb": "thumbs/H1362_12.jpg"
+   "thumb": "thumbs/H1362_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1362_12.jpg"
   },
   {
    "id": "H1277_9",
@@ -543,7 +575,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#DCC4AB",
-   "thumb": "thumbs/H1277_9.jpg"
+   "thumb": "thumbs/H1277_9.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1277_9.jpg"
   },
   {
    "id": "H3165_12",
@@ -554,7 +587,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#DAC0A7",
-   "thumb": "thumbs/H3165_12.jpg"
+   "thumb": "thumbs/H3165_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3165_12.jpg"
   },
   {
    "id": "H1714_19",
@@ -565,7 +599,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#735034",
-   "thumb": "thumbs/H1714_19.jpg"
+   "thumb": "thumbs/H1714_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1714_19.jpg"
   },
   {
    "id": "H1636_12",
@@ -576,7 +611,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#AC7144",
-   "thumb": "thumbs/H1636_12.jpg"
+   "thumb": "thumbs/H1636_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1636_12.jpg"
   },
   {
    "id": "H3197_19",
@@ -587,7 +623,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#A09790",
-   "thumb": "thumbs/H3197_19.jpg"
+   "thumb": "thumbs/H3197_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3197_19.jpg"
   },
   {
    "id": "H3710_12",
@@ -598,7 +635,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#7A5F49",
-   "thumb": "thumbs/H3710_12.jpg"
+   "thumb": "thumbs/H3710_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3710_12.jpg"
   },
   {
    "id": "H3395_12",
@@ -609,7 +647,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#BF9361",
-   "thumb": "thumbs/H3395_12.jpg"
+   "thumb": "thumbs/H3395_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3395_12.jpg"
   },
   {
    "id": "H3131_12",
@@ -620,7 +659,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C6AE8B",
-   "thumb": "thumbs/H3131_12.jpg"
+   "thumb": "thumbs/H3131_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3131_12.jpg"
   },
   {
    "id": "H3734_9",
@@ -631,7 +671,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#8D613B",
-   "thumb": "thumbs/H3734_9.jpg"
+   "thumb": "thumbs/H3734_9.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3734_9.jpg"
   },
   {
    "id": "H3303_10",
@@ -642,7 +683,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C09E73",
-   "thumb": "thumbs/H3303_10.jpg"
+   "thumb": "thumbs/H3303_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3303_10.jpg"
   },
   {
    "id": "H3730_10",
@@ -653,7 +695,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C59F71",
-   "thumb": "thumbs/H3730_10.jpg"
+   "thumb": "thumbs/H3730_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3730_10.jpg"
   },
   {
    "id": "H3170_12",
@@ -664,7 +707,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#BEA082",
-   "thumb": "thumbs/H3170_12.jpg"
+   "thumb": "thumbs/H3170_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3170_12.jpg"
   },
   {
    "id": "H3368_9",
@@ -675,7 +719,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C59962",
-   "thumb": "thumbs/H3368_9.jpg"
+   "thumb": "thumbs/H3368_9.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3368_9.jpg"
   },
   {
    "id": "H3840_9",
@@ -686,7 +731,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#DFC099",
-   "thumb": "thumbs/H3840_9.jpg"
+   "thumb": "thumbs/H3840_9.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3840_9.jpg"
   },
   {
    "id": "H3331_10",
@@ -697,7 +743,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C2A380",
-   "thumb": "thumbs/H3331_10.jpg"
+   "thumb": "thumbs/H3331_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3331_10.jpg"
   },
   {
    "id": "H3700_10",
@@ -708,7 +755,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#B39270",
-   "thumb": "thumbs/H3700_10.jpg"
+   "thumb": "thumbs/H3700_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3700_10.jpg"
   },
   {
    "id": "H1242_10",
@@ -719,7 +767,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#CBA984",
-   "thumb": "thumbs/H1242_10.jpg"
+   "thumb": "thumbs/H1242_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1242_10.jpg"
   },
   {
    "id": "H305_12",
@@ -730,7 +779,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#BFA58C",
-   "thumb": "thumbs/H305_12.jpg"
+   "thumb": "thumbs/H305_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H305_12.jpg"
   },
   {
    "id": "H1318_10",
@@ -741,7 +791,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C0976E",
-   "thumb": "thumbs/H1318_10.jpg"
+   "thumb": "thumbs/H1318_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1318_10.jpg"
   },
   {
    "id": "H1250_36",
@@ -752,7 +803,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#D3BDA6",
-   "thumb": "thumbs/H1250_36.jpg"
+   "thumb": "thumbs/H1250_36.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1250_36.jpg"
   },
   {
    "id": "H3003_19",
@@ -763,7 +815,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#665951",
-   "thumb": "thumbs/H3003_19.jpg"
+   "thumb": "thumbs/H3003_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3003_19.jpg"
   },
   {
    "id": "H3171_12",
@@ -774,7 +827,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#B79067",
-   "thumb": "thumbs/H3171_12.jpg"
+   "thumb": "thumbs/H3171_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3171_12.jpg"
   },
   {
    "id": "H1715_12",
@@ -785,7 +839,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C59976",
-   "thumb": "thumbs/H1715_12.jpg"
+   "thumb": "thumbs/H1715_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1715_12.jpg"
   },
   {
    "id": "H3433_22",
@@ -796,7 +851,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#E8DDCC",
-   "thumb": "thumbs/H3433_22.jpg"
+   "thumb": "thumbs/H3433_22.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3433_22.jpg"
   },
   {
    "id": "H1312_10",
@@ -807,7 +863,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#C9B8A5",
-   "thumb": "thumbs/H1312_10.jpg"
+   "thumb": "thumbs/H1312_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1312_10.jpg"
   },
   {
    "id": "H1732_9",
@@ -818,7 +875,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#E8CFB0",
-   "thumb": "thumbs/H1732_9.jpg"
+   "thumb": "thumbs/H1732_9.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1732_9.jpg"
   },
   {
    "id": "H1710_10",
@@ -829,7 +887,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#CAB399",
-   "thumb": "thumbs/H1710_10.jpg"
+   "thumb": "thumbs/H1710_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1710_10.jpg"
   },
   {
    "id": "H1377_36",
@@ -840,7 +899,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#B9A08A",
-   "thumb": "thumbs/H1377_36.jpg"
+   "thumb": "thumbs/H1377_36.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1377_36.jpg"
   },
   {
    "id": "H1223_19",
@@ -851,7 +911,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#E9DBCB",
-   "thumb": "thumbs/H1223_19.jpg"
+   "thumb": "thumbs/H1223_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1223_19.jpg"
   },
   {
    "id": "H3702_10",
@@ -862,7 +923,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#624B39",
-   "thumb": "thumbs/H3702_10.jpg"
+   "thumb": "thumbs/H3702_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3702_10.jpg"
   },
   {
    "id": "H1225_12",
@@ -873,7 +935,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#F0EBE8",
-   "thumb": "thumbs/H1225_12.jpg"
+   "thumb": "thumbs/H1225_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1225_12.jpg"
   },
   {
    "id": "H3133_12",
@@ -884,7 +947,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#876C59",
-   "thumb": "thumbs/H3133_12.jpg"
+   "thumb": "thumbs/H3133_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3133_12.jpg"
   },
   {
    "id": "H1399_10",
@@ -895,7 +959,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#9B8572",
-   "thumb": "thumbs/H1399_10.jpg"
+   "thumb": "thumbs/H1399_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1399_10.jpg"
   },
   {
    "id": "H3157_12",
@@ -906,7 +971,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#D2B289",
-   "thumb": "thumbs/H3157_12.jpg"
+   "thumb": "thumbs/H3157_12.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3157_12.jpg"
   },
   {
    "id": "H1330_10",
@@ -917,7 +983,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#7B644F",
-   "thumb": "thumbs/H1330_10.jpg"
+   "thumb": "thumbs/H1330_10.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1330_10.jpg"
   },
   {
    "id": "H3430_22",
@@ -928,7 +995,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#D3C3B3",
-   "thumb": "thumbs/H3430_22.jpg"
+   "thumb": "thumbs/H3430_22.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3430_22.jpg"
   },
   {
    "id": "H3195_19",
@@ -939,7 +1007,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#ECE9E4",
-   "thumb": "thumbs/H3195_19.jpg"
+   "thumb": "thumbs/H3195_19.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3195_19.jpg"
   },
   {
    "id": "H3450_22",
@@ -950,7 +1019,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#E3D3C0",
-   "thumb": "thumbs/H3450_22.jpg"
+   "thumb": "thumbs/H3450_22.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H3450_22.jpg"
   },
   {
    "id": "H1910_9",
@@ -961,7 +1031,8 @@
    "category": "woodgrain",
    "source": "EGGER Flammex material set (Piotr)",
    "hex": "#D6A975",
-   "thumb": "thumbs/H1910_9.jpg"
+   "thumb": "thumbs/H1910_9.jpg",
+   "tex": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/decors/egger/H1910_9.jpg"
   }
  ]
 }

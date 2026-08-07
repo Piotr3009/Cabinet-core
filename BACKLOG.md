@@ -72,10 +72,6 @@ Status: OPEN → TURA-N (przypisane) → DONE.
 18. [LOW] Widok konturowy/przezroczysty (render & print): same kontury, tryb prezentacyjny.
     — **TURA-4 / DONE**: View ▸ Contour view; materiał gaśnie do 6 %, kontury zostają, BOM bez zmian.
 
-## TURA 5 — PRECYZJA + RYSUNEK TECHNICZNY + WARSZTAT — ✅ WYKONANA (07.08.2026)
-Zamknięte w tej turze: **33, 34, 35, 29, 30, 31, 36** oraz **19 → picker v1 DONE**.
-Szczegóły i zrzuty: `BUILD-LOG.md` sekcja TURA 5.
-
 ## KOLEJKA (po turze 4)
 19b. [NOWE, MEDIUM] Widok konturowy: druk/eksport konturów do pliku (dziś tryb ekranowy).
      Wynikło z #18 — Piotr może chcieć PDF-a z samych konturów, nie zrzutu ekranu.
@@ -84,13 +80,6 @@ Szczegóły i zrzuty: `BUILD-LOG.md` sekcja TURA 5.
     komplecie ZIP-ów). Storage: Supabase bucket `decors` (decyzja 06.08), w repo tylko JSON
     + miniaturki. Licencja Egger przeczytana: swatche z atrybucją 'EGGER + kod' OK;
     tekstury 3D → pisemna zgoda PRZED sprzedażą CC / publicznym demo (mail-draft u Claude).
-    — **TURA-5 / PICKER v1 DONE**: zakładka „EGGER decors" w Design Settings ▸ Finish,
-    85 dekorów z `public/decors/`, filtr Uni/Woodgrain + szukajka, miniatury `loading="lazy"`
-    (uni bez pliku), atrybucja „EGGER {kod} {nazwa}" W TYM SAMYM przycisku co obraz.
-    3D wg licencji: uni → `hex`, woodgrain → NASZA `textures/grain-neutral.png` tonowana
-    `hex` — zero obrazów EGGER na geometrii, pilnuje `test/decors.test.js` (przechodzi
-    wszystkie 85). BOM/PDF: pełna nazwa. **NADAL OTWARTE**: import per warsztat, bucket
-    `decors`, FINSA/Kronospan i pisemna zgoda na tekstury 3D.
 20. [MEDIUM] Infille/plinth w kształcie L (przykręcane do boku) — na razie proste (decyzja Piotra).
 21. [MEDIUM] VCarve — drobiazgi do zmiany (listę poda Piotr).
 22. [MEDIUM] Rzuty z góry / dokumentacja do druku; Print w menu File.
@@ -112,52 +101,34 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
 29. [HIGH] Wysokości na poziomie PROJEKTU (Design Settings): Base height / Wall unit
     height / Tall height / Mount height / Toe kick height jako defaulty; jednostka
     dziedziczy, per sztukę tylko wyjątki.
-    — **TURA-5 / DONE**: `design.heights` + `profile.projectHeights` (720/720/2150/1500/100),
-    `heightGroup` per typ w `engine/types.js`. LOW_CABINET świadomie BEZ grupy — niska
-    szafka na 720 mm to szafka dolna pod inną nazwą. Wpisana wysokość = `height_custom`
-    (znacznik „custom" + Reset); zmiana projektowej rusza tylko nie-custom, z clampem
-    sufitu, i mówi ile poszło. Przycięcie sufitem NIE robi jednostki custom. Toe kick
-    jedzie do silnika jako `leg_height` (nogi + cokół + opadnięcie z jednej liczby).
-    Test: `test/project-heights.test.js`.
 30. [HIGH] "Save as template": skonfigurowana jednostka → zapis do Library "Saved sets".
-    — **TURA-5 / DONE**: prawy klik → nazwa → `Library ▸ Saved sets` (CRUD: rename/delete).
-    Komplet = parametry BEZ pozycji, numeru i formatek skrobankowych. Wstawienie idzie
-    normalną ścieżką `addUnit` (ten sam slot, clamp i fillery; nie mieści się → odmowa
-    z liczbą), ID elementów wnętrza regenerowane. Zapis pod istniejącą nazwą PODMIENIA.
-    Persist: `cc.templates.v1` + `sql/003_tura5.sql` JAKO PLIK (nie uruchomiony).
-    Test: `test/templates.test.js`.
 31. [MEDIUM] End panel: wybór boku L / P / oba (rozszerzenie #17).
-    — **TURA-5 / DONE**: Left / Right / Both w menu kontekstowym i w sekcji Construction.
-    „Both" to istniejąca akcja ×2, więc bok bez miejsca jest odmawiany osobno, a drugi
-    panel i tak powstaje — z komunikatem, dlaczego.
 32. [LOW] Insets jednostki od sąsiada/ściany (rura, krzywa ściana) — menu kontekstowe.
 33. [CRITICAL] Precyzja 0.5 mm end-to-end: wyświetlanie/pola/snap/etykiety pokazują
     połówki (196.5), zero Math.round na mm w UI; silnik już liczy dokładnie.
-    — **TURA-5 / DONE**: jedna funkcja `formatMm()` (`engine/format.js`) dla etykiet 3D,
-    strzałek, BOM, CNC, PDF i panelu (całe → „197", połówki → „196.5", reszta → 1 miejsce).
-    Zero `Math.round` na mm poza silnikiem. `NumberField` commituje na siatce 0.5
-    (`profile.editor.mmStep`) i pokazuje połówki. Snap 0.5 ląduje DOKŁADNIE na połówce
-    (bez 196.50000000000003) — test na 400 wartościach. Test: `test/format-mm.test.js`.
 34. [HIGH] Strzałki wymiarowe architektoniczne: cienkie linie (czerwień/granat),
     groty kreskowe/otwarte jak na rzutach, koniec z wypełnionymi balonami;
     BUG: groty odwrócone — naprawić.
-    — **TURA-5 / DONE**: cienka linia + linie odnoszące + ukośny tick 45° (opcja: grot
-    OTWARTY) + wartość na środku przez `formatMm()`. Granat `#1B2A4A` domyślnie,
-    czerwień `#8C182B` w View ▸ Dimension colour; złoto zniknęło z wymiarów.
-    PRZYCZYNA odwróconych grotów: stożek three.js ma czubek pół długości od środka,
-    a stary kod stawiał środek w głąb szczeliny i tam go kierował — czubek kończył całą
-    długość ZA licem. Końce są teraz ustawiane CZUBKIEM w mierzonym punkcie.
 35. [HIGH] BUG preset CNC "Carcass only": ma znaczyć "wszystko NIE-sprayowane"
     (korpusy, półki, skrzynki, plecy) i wykluczać widoczne/wykańczane: fronty,
     drzwi, infille, plinth, end panele, spodnią widoczną wiszących.
-    — **TURA-5 / DONE**: flaga `panel.finish_exposed` w silniku, wyliczana Z ROLI (nie
-    z listy ID). Presety: All · Non-sprayed · Sprayed only · Fronts & doors only.
-    Non-sprayed i Sprayed only są rozłączne i wyczerpujące. Test flagi per typ dla
-    wszystkich 8 kitów: `test/finish-exposed.test.js`.
-    **NIEROBIONE ŚWIADOMIE**: „spodnia widoczna wiszących" — CLAUDE.md tury 5 nie
-    wymienia jej w liście wykluczeń, a dno szafki wiszącej to jedna formatka o dwóch
-    licach; osobna flaga per LICO to inny model danych (→ BLOCKERS #22).
 36. [MEDIUM] Menu: przycisk "Spraying" — placeholder ("coming soon"); logika
     (finish per element, lista, m², cena) — projektujemy osobno w czacie [PARKING].
-    — **TURA-5 / DONE (placeholder)**: pozycja „Spraying" w górnym menu, disabled,
-    ze znacznikiem SOON — jak Database i Clients. Logika nadal w [PARKING].
+
+## WIZUALIZACJA — PRIORYTET PRODUKTOWY (dopisane 07.08 po analizie VividWorks/Supra)
+37. [HIGH] **TURA WYGLĄD — render na najwyższym poziomie.** Powód biznesowy: nasz klient
+    (warsztat) pokaże ten obraz SWOJEMU klientowi jako wizualizację sprzedażową — obraz
+    musi sprzedawać, nie tylko informować. Poziom odniesienia: VividWorks/Supra Cabinets.
+    Zakres techniczny (wszystko na obecnym Three.js/R3F, zero nowych zależności):
+    - HDRI environment + tonemapping (ACES) zamiast płaskich świateł
+    - fazy krawędzi 0.5–1 mm (na shaderze/materiale, NIE na siatce — wydajność)
+    - cienie kontaktowe + miękkie cienie (mebel nie lewituje)
+    - pełne PBR per materiał: różna chropowatość lakier/melamina/drewno, clearcoat,
+      mapy normalnych dla struktury (rozwinięcie sheen z T4)
+    - AO, delikatny bloom, kamera ~35 mm z kompozycją (nie płaski widok frontalny)
+    - tryb "Presentation render" + eksport obrazu w wysokiej rozdzielczości do oferty/PDF
+    UWAGA: widok CNC i contour view zostają surowe — to narzędzia warsztatowe, nie prezentacja.
+    Realizacja: osobna tura poświęcona wyłącznie temu (nie punkt w innej turze).
+38. [PARKING] Tryb sprzedażowy / Visual CPQ (wzór: VividWorks, Supra Cabinets): publiczny
+    konfigurator na stronie warsztatu, uproszczone UI dla klienta końcowego, cena na żywo,
+    wycena/lead. Po MVP warsztatowym. UWAGA: publiczne demo wyzwala warunek zgody EGGER (#19).

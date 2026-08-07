@@ -760,6 +760,11 @@ export const DEFAULT_CABINET_PROFILE = {
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
     unitMagnet: 40,            // butt a unit against its neighbour within this
     minUnitGap: 0,             // units stand edge to edge; > 0 forces a scribe gap
+    // The widest deliberate clearance a unit may be given (turn 7, BACKLOG
+    // #32). A joiner insets a cabinet to clear a soil pipe or a wall that bows;
+    // past this it is not a clearance, it is a gap you would put another
+    // cabinet in — and the app has a filler and a cabinet for that.
+    maxInset: 300,
     // Auto-order (turn 4): the gap the next shelf leaves below the last one.
     // Never allowed to close up tighter than minShelfGap — that is the clamp.
     itemStackPitch: 350,

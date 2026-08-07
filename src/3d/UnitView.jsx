@@ -282,9 +282,18 @@ export default function UnitView({
 
   // Cabinet origin: on its wall, back against it (local z = 0 is the wall
   // face), standing on its legs or hanging at its mount height.
+  //
+  // …unless it has been given a BACK INSET (turn 7, CLAUDE.md F5), in which case
+  // it stands that far off the wall and hangs in the depth of the room. The same
+  // number the collision clamp and the plan use — engine/collision.js insetPads —
+  // so the picture and the rule cannot disagree about where it is.
+  const backInset = Math.max(0, Number(unit.params.inset_back_mm) || 0);
   const origin = useMemo(
-    () => wallStart.clone().addScaledVector(along, mm(unit.position.x_mm)).setY(mm(baseY)),
-    [wallStart, along, unit.position.x_mm, baseY],
+    () => wallStart.clone()
+      .addScaledVector(along, mm(unit.position.x_mm))
+      .addScaledVector(inward, mm(backInset))
+      .setY(mm(baseY)),
+    [wallStart, along, inward, unit.position.x_mm, baseY, backInset],
   );
   const originY = mm(baseY);
   // A turned unit pivots about the point where it meets the wall — the same

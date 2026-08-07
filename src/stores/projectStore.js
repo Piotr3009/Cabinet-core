@@ -4,8 +4,8 @@ import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
-  clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, endPanelPads,
-  freeSlotOnWall, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
+  freeSlotOnWall, insetPads, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
   wallObstacles,
 } from '../engine/collision.js';
 import {
@@ -702,6 +702,55 @@ export const useProjectStore = create((set, get) => ({
     );
   },
 
+  /**
+   * Deliberate clearances (turn 7, CLAUDE.md F5 / BACKLOG #32).
+   *
+   * `Inset left / right / back` in millimetres: the gap a joiner asks for
+   * because something that is not furniture is in the way — a soil pipe in the
+   * corner, a wall that bows, a radiator bracket. It is a DECISION, so the
+   * collision clamp respects it the way it respects a neighbour: the slot the
+   * unit may slide in shrinks by exactly the inset, and the first drag does not
+   * close the gap the pipe is standing in.
+   *
+   * A back inset stands the unit off the wall — it hangs in the depth of the
+   * room, and the plan, the depth clamp and the 3D view all take it from the
+   * same place.
+   *
+   * @returns {{applied:object, notices:string[]}}
+   */
+  setUnitInsets: (unitId, patch) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { applied: {}, notices: [] };
+    const profile = getCabinetProfile();
+    const max = profile.editor.maxInset;
+    const applied = {};
+    for (const [key, param] of [['left', 'inset_left_mm'], ['right', 'inset_right_mm'], ['back', 'inset_back_mm']]) {
+      if (patch[key] == null) continue;
+      applied[param] = Math.min(max, Math.max(0, snapTo(Number(patch[key]) || 0, profile.editor.mmStep)));
+    }
+    if (!Object.keys(applied).length) return { applied: {}, notices: [] };
+
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, ...applied } } : u)),
+      dirty: true,
+    }));
+
+    const notices = [];
+    // The unit is now wider in plan than it was; settle it legally where it
+    // stands, and let the depth clamp have its say about the back inset —
+    // asking for 200 mm off a wall in a room with 30 mm to spare is a request
+    // the room answers, not one this setter grants.
+    const result = get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
+    if (result?.blocked) notices.push('This unit has no room to move — the inset is set, but check what is beside it.');
+    if (applied.inset_back_mm != null) {
+      const depth = get().updateUnitParams(unitId, { depth: unit.params.depth });
+      notices.push(...depth.notices);
+    }
+    notices.push(...get().refreshAutoParts());
+    return { applied, notices };
+  },
+
   /** The "Apply to all end panels" checkbox itself. */
   setEndPanelDefaults: (patch) => set((s) => {
     const design = migrateDesign(s.project.design);
@@ -827,7 +876,7 @@ export const useProjectStore = create((set, get) => ({
         // Growing a unit is a move of its far edge: it stops at the infill gap
         // and carries its own end panel with it.
         wallMargin: wallMarginOf(s),
-        padRight: endPanelPads(unit, unit.params.front_t).right,
+        padRight: footprintPads(unit, unit.params.front_t).right,
       }, profile);
       applied.width = clamp.width;
       if (clamp.blocked) notices.push(`Width limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
@@ -837,6 +886,7 @@ export const useProjectStore = create((set, get) => ({
         depth: Number(patch.depth) || 0,
         x: unit.position.x_mm, width: applied.width ?? unit.params.width,
         wall, walls, others,
+        backInset: insetPads(unit).back,
       }, profile);
       applied.depth = clamp.depth;
       if (clamp.blocked) notices.push(`Depth limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
@@ -967,13 +1017,14 @@ export const useProjectStore = create((set, get) => ({
     // with an end panel pivots about that outer corner rather than the carcass
     // corner — a fraction of the panel thickness, and the same corner the clamp
     // and the view both use.)
-    const pad = endPanelPads(unit, unit.params.front_t);
+    const pad = footprintPads(unit, unit.params.front_t);
     const span = unitPlanSpan({
       wall,
       x: unit.position.x_mm - pad.left,
       width: unit.params.width + pad.left + pad.right,
       depth: unit.params.depth,
       rotation: unit.position.rotation_deg,
+      backInset: pad.back,
     });
     const lead = span.left - unit.position.x_mm;
     const footprintWidth = span.right - span.left;
@@ -1439,13 +1490,16 @@ function sameRun(a, b) {
  * INCLUDED, so a neighbour cannot be moved into a panel it cannot see.
  */
 function toObstacleUnit(u) {
-  const pad = endPanelPads(u, u.params?.front_t);
+  const pad = footprintPads(u, u.params?.front_t);
   return {
     wall: u.position?.wall ?? 0,
     x_mm: (Number(u.position?.x_mm) || 0) - pad.left,
     width: (Number(u.params?.width) || 0) + pad.left + pad.right,
     depth: Number(u.params?.depth) || 0,
     rotation: Number(u.position?.rotation_deg) || 0,
+    // A unit stood off the wall occupies a different band of the floor, which
+    // is exactly what decides whether it fouls the one round the corner.
+    backInset: pad.back,
     label: u.params?.unit_num || u.id,
   };
 }

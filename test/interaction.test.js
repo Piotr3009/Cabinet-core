@@ -92,8 +92,10 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   // unit is where a joiner reaches for them (BACKLOG #16/#17).
   // Turn 5 adds "Save as template" (BACKLOG #30) — the cabinet you have just
   // finished configuring is where a joiner reaches for that too.
+  // Turn 7 adds "Insets…" (BACKLOG #32), which OPENS the section rather than
+  // carrying three millimetre fields in a right-click menu.
   assert.deepEqual(ids, [
-    'end-panel-L', 'end-panel-R', 'end-panel-B', 'plinth-on', 'top-infill-on', 'save-template',
+    'end-panel-L', 'end-panel-R', 'end-panel-B', 'plinth-on', 'top-infill-on', 'insets', 'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
   ]);
 

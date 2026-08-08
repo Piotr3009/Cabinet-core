@@ -442,21 +442,13 @@ export default function UnitView({
 
     const move = (ev) => {
       if (!drag.current) return;
-      // ─── Turn 11 (CLAUDE.md F4.1): round the corner ───
-      // Where is the hand? If it has crossed in front of ANOTHER wall, the
-      // cabinet is re-homed there — the same placement maths, the same clamp,
-      // the same gap rules; it is re-parenting and not new geometry. While the
-      // hand is still in front of this wall (which is all of the time, on a
-      // single-wall job) nothing about the old drag changes.
-      const floor = walls && onMoveToWall ? pointerToFloor(ev.clientX, ev.clientY) : null;
-      const home = floor ? wallAtPoint(walls, floor) : null;
-      if (home && home.index !== (unit.position.wall ?? 0)) {
-        // Under the CURSOR, not at the end of the wall: the unit arrives where
-        // the hand is, centred on it, which is where a person expects the thing
-        // they are carrying to land.
-        onMoveToWall(home.index, home.along - W / 2, snapStep);
-        return;
-      }
+      // ─── Cross-wall drag REMOVED (owner verdict, 08.08) ───
+      // Turn 11 re-homed a unit to whatever wall the floor ray said the hand
+      // was in front of. With a perspective camera the drag plane and the
+      // floor ray disagree by design, so near a corner a few pixels of motion
+      // read as another wall and the cabinet teleported across the room —
+      // "ledwo dotknę i jest na drugiej ścianie". Dragging now NEVER changes
+      // the wall; the deliberate path is the Wall dropdown in the right panel.
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
       onMove(alongMm(p) - drag.current.offset, snapStep);

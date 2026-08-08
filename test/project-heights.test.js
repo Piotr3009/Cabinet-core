@@ -85,10 +85,20 @@ test('a new unit is built to the project height for its KIND', () => {
 
   const wall = unitOf(add('WUD'));
   assert.equal(wall.params.height, 700);
-  assert.equal(wall.params.mount_height, 1450, 'and it hangs where the project says');
+  // Turn 8 (CLAUDE.md F5): there are TALL units on this wall already, so the
+  // wall unit hangs level with their tops rather than at the project's mount
+  // height — a run whose wall units stop short of the tall cabinet beside them
+  // reads as two kitchens. 2200 carcass + 120 toe kick, less its own 700.
+  assert.equal(wall.params.mount_height, 2200 + 120 - 700, 'lined up with the tall unit beside it');
 
   // The one that keeps its own: a low cabinet is low by definition.
   assert.equal(unitOf(add('LOW_CABINET')).params.height, P.lowCabinet.defaults.height);
+});
+
+test('with no tall unit beside it, a wall unit hangs where the project says', () => {
+  project({ heights: { wall: 700, wallMount: 1450 } });
+  const wall = unitOf(add('WUD'));
+  assert.equal(wall.params.mount_height, 1450);
 });
 
 test('the toe kick reaches the legs, the plinth and the floor drop', () => {

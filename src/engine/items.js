@@ -87,6 +87,47 @@ export function nextShelfPos({ band, positions = [] }, profile) {
 }
 
 /**
+ * Every CLEAR OPENING in a column of shelves (turn 8, CLAUDE.md F4).
+ *
+ * The question a joiner asks about a set of shelves is "are they even?", and
+ * that cannot be answered one gap at a time — so hovering any shelf measures
+ * all of them: floor to the first, shelf to shelf, and the last one to the
+ * underside of the top.
+ *
+ * Measured between FACES, not centre lines. A joiner asking whether the toaster
+ * goes in there is asking about the clear space, and a ladder of centre-line
+ * distances is a ladder of numbers that are all one board thickness wrong.
+ *
+ * `even` marks the gaps that are as big as the biggest — so a stack that is 3 mm
+ * out says which one is the odd one, instead of leaving six similar numbers to
+ * be compared by eye, which is the thing the readout exists to replace.
+ *
+ * @param {object} args
+ *   positions  each shelf's underside, in cabinet mm
+ *   floor      the top face of whatever closes the space below
+ *   ceiling    the underside of the top panel
+ *   boardT     shelf thickness
+ * @returns {Array<{from:number, to:number, size:number, even:boolean}>}
+ */
+export function shelfGapLadder({
+  positions = [], floor = 0, ceiling = 0, boardT = 18,
+}, tolerance = 0.5) {
+  const shelves = positions.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!shelves.length) return [];
+  const faces = [floor, ...shelves.flatMap((y) => [y, y + boardT]), ceiling];
+  const gaps = [];
+  for (let i = 0; i < faces.length - 1; i += 2) {
+    const size = faces[i + 1] - faces[i];
+    if (size > tolerance) gaps.push({ from: faces[i], to: faces[i + 1], size });
+  }
+  if (!gaps.length) return [];
+  const largest = Math.max(...gaps.map((g) => g.size));
+  const smallest = Math.min(...gaps.map((g) => g.size));
+  const allEven = largest - smallest <= tolerance;
+  return gaps.map((g) => ({ ...g, even: allEven || Math.abs(g.size - largest) <= tolerance }));
+}
+
+/**
  * The hanger rail's offset above the zone it hangs in (the drawer partition
  * when there is a stack, otherwise the base panel) — which is what the engine
  * means by `rail_offset`.

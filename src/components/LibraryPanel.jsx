@@ -19,6 +19,7 @@ export default function LibraryPanel() {
   const categoryId = useUiStore((s) => s.libraryCategory);
   const closeLibrary = useUiStore((s) => s.closeLibrary);
   const selectUnit = useUiStore((s) => s.selectUnit);
+  const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const notify = useUiStore((s) => s.notify);
   const addUnit = useProjectStore((s) => s.addUnit);
   const units = useProjectStore((s) => s.units);
@@ -27,6 +28,10 @@ export default function LibraryPanel() {
   const heights = useMemo(() => projectHeights(design, profile), [design, profile]);
 
   const drag = useRef(null);
+  // Which side of the selected unit the next one goes on (turn 8, CLAUDE.md
+  // F2.1). null = whichever side has room — which is what a joiner means most
+  // of the time, and what makes "add, add, add" still build a row.
+  const [placeSide, setPlaceSide] = useState(null);
 
   const onPointerDown = useCallback((e) => {
     // A press on a CONTROL in the header is not a grab. Without this the header
@@ -69,13 +74,19 @@ export default function LibraryPanel() {
   }, [categoryId, closeLibrary]);
 
   const category = getCategory(categoryId);
+  const selected = units.find((u) => u.id === selectedUnitId) || null;
   if (!category) return null;
 
   const handleAdd = (typeId, opts) => {
     // A full room refuses the unit rather than stacking it on a neighbour, so
     // the answer has to be read, not assumed. A saved set goes through exactly
     // this path (BACKLOG #30) — same free slot, same clamp, same fillers.
-    const { id, error, wall } = addUnit(typeId, opts);
+    //
+    // Turn 8 (CLAUDE.md F2.1): the SELECTED unit is what the new one is placed
+    // beside, on whichever side has room. Adding then works the way a joiner
+    // works — "and another one here" — instead of always extending the run to
+    // the right, which is what made the left-hand end unreachable.
+    const { id, error, wall } = addUnit(typeId, { near: selectedUnitId, side: placeSide, ...opts });
     if (error) { notify(error, 'warn'); return; }
     selectUnit(id);
     if (wall > 0) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
@@ -104,6 +115,28 @@ export default function LibraryPanel() {
           ×
         </button>
       </div>
+
+      {/* Which side of the selected unit the next one lands on (turn 8, F2.1).
+          Only shown when there IS a unit to be beside — on an empty wall the
+          question has no meaning and the answer is "in the middle". */}
+      {selectedUnitId && (
+        <div className="flex items-center gap-1 px-3 py-1.5 border-b border-shell-600">
+          <span className="text-[11px] text-ink-400 flex-1">Place beside {selected?.params.unit_num || 'the selection'}</span>
+          {[['L', '◀', 'On its left'], [null, 'auto', 'Whichever side has room'], ['R', '▶', 'On its right']].map(
+            ([value, label, title]) => (
+              <button
+                key={label}
+                type="button"
+                title={title}
+                className={`cc-btn px-1.5 py-0.5 text-[11px] ${placeSide === value ? 'border-gold text-ink-50' : ''}`}
+                onClick={() => setPlaceSide(value)}
+              >
+                {label}
+              </button>
+            ),
+          )}
+        </div>
+      )}
 
       <div className="p-2 space-y-1">
         {category.saved && <SavedSets onInsert={handleAdd} />}

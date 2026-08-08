@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
 import RoomModal from './RoomModal.jsx';
 import JoineryPreview from './JoineryPreview.jsx';
+import SheenSlider from './SheenSlider.jsx';
 import DecorPicker from './DecorPicker.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
@@ -363,6 +364,14 @@ function DesignStep({ design, profile, notify }) {
           <button type="button" className="cc-btn" disabled={!setName.trim()} onClick={keepAsSet}>Save set</button>
         </div>
       </section>
+
+      <div className="cc-divider" />
+
+      {/* ── sheen (turn 8, CLAUDE.md F1) ──
+          Here as well as in Design settings, and for the reason the whole step
+          exists: how glossy the fronts are is a question a client answers at
+          the quote, not one a joiner discovers in a modal afterwards. */}
+      <SheenSlider design={design} setDesign={setDesign} profile={profile} />
 
       <div className="cc-divider" />
 

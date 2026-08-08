@@ -46,6 +46,20 @@ export const DEFAULT_CABINET_PROFILE = {
     shelfWidthClearance: 4,
     shelfDepthBoards: 1,       // shelf H = depth − 1×G − clearance
     shelfDepthClearance: 20,
+    // ─── Turn 8 (CLAUDE.md F4) ───
+    // The same 20 mm, for the pieces the AutoLISP cut FULL depth: a FIX shelf
+    // and a partition. An adjustable shelf has stood 20 mm back from the face
+    // since the LISP (the line above) and a joiner reads that gap as the front
+    // of the cabinet; a partition flush with the face beside it reads as a
+    // mistake, and it is the piece a hinge arm swings closest to.
+    //
+    // It is a DEFAULT, not a rule: every one of these pieces may be pulled out
+    // to the face on its own (`front_mm` on the item, `partition_front_mm` on
+    // the unit), because a partition under a worktop sometimes has to be.
+    //
+    // The TOP and BOTTOM stay full depth and are not in this: they carry the
+    // puzzle joint, and shortening them is shortening the carcass.
+    interiorSetback: 20,
   },
 
   // ─── Doors / fronts ───
@@ -57,6 +71,18 @@ export const DEFAULT_CABINET_PROFILE = {
     gap: 3,                    // overlay clearance: single front = (W−gap) × (H−gap)
     doubleTotalGap: 6,         // pair of fronts = ((W − doubleTotalGap)/2) × (H − gap)
     defaultHinge: 'L',
+    // ─── How far a door opens in the 3D view (turn 8, CLAUDE.md F5) ───
+    // `openAngle` is what a door in the middle of a run swings to when you
+    // double-click it: a little past square, which is what a hinge does and
+    // what makes the inside of the cabinet readable.
+    //
+    // `openAngleAtWall` is the answer when there is a WALL on the hinge side.
+    // Past 90° a door starts to come BACK towards that wall — its free edge
+    // crosses the hinge line — so a run of cabinets in a corner would animate
+    // its end door straight through the plaster. Square is where it stops.
+    // Neither number reaches the cut list; a swing is a picture.
+    openAngle: 99,
+    openAngleAtWall: 90,
   },
 
   // ─── Hinge drilling ───
@@ -140,6 +166,25 @@ export const DEFAULT_CABINET_PROFILE = {
     // same way; test/single-socket.test.js recomputes it on every run, so the
     // number and the reasoning cannot drift apart.
     singleSocketBelow: 264.5,
+    // ─── Turn 8 (F0 / BLOCKERS #37 / BACKLOG #47) ───
+    // The same family of problem on the OTHER axis. `tabCentres()` puts three
+    // tabs down the back edge of a side panel — 95 in from each end and one in
+    // the middle — and on a LOW carcass the middle one walks into the outer
+    // ones. The tab itself is ±25, but the DOG BONE around it is ±30, and it is
+    // the dog bone that has to clear:
+    //
+    //   190    the two outer centres, `tabCentresFromEnd` (95) in from each end
+    // + 120    each outer tab's own footprint plus the middle tab's, both ends:
+    //          2 × 2 × max(tabHalfWidth 25, dogboneHalfHeight 30) = 120
+    // + 36     the minimum bridge, one board thickness on EACH side of the
+    //          middle tab — there are two gaps to keep open here, not one
+    // = 346
+    //
+    // Below this the middle tab is not cut and the panel has two, exactly as it
+    // has two sockets below `singleSocketBelow`. `LOW_CABINET.minHeight` is 300,
+    // so the case is reachable from the UI. test/low-tabs.test.js recomputes the
+    // number on every run, so it and the reasoning cannot drift apart.
+    middleTabBelow: 346,
     screwDiameter: 3,
     screwFromEnd: 50,          // screws at 50, mid, length−50
     centrelineExtra: 0.5,      // screw/socket centreline = G/2 + this
@@ -481,6 +526,76 @@ export const DEFAULT_CABINET_PROFILE = {
     // Kept as the fallback a piece takes when it belongs to no finish family.
     sheen: { roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.35, metalness: 0.0 },
 
+    // ─── The sheen SCALE (turn 8, CLAUDE.md F1) ───
+    // Piotr already has this scale in Spraying-Calc and quotes people on it, so
+    // the app uses HIS numbers rather than a roughness slider nobody in a
+    // workshop has ever been asked for: 0 is dead matt, 25 is a mirror, and the
+    // steps are the five-point ones a lacquer is specified in.
+    //
+    //     roughness = 1 − sheen / max
+    //
+    // 15 is the default because that is a two-pack satin (roughness 0.4) —
+    // within a step of the 0.3 turn 6 chose for `materials.lacquer` by eye, and
+    // ON the grid a sprayer actually orders from.
+    sheenScale: { min: 0, max: 25, step: 5, default: 15 },
+
+    // ─── Sprayed surfaces (turn 8, CLAUDE.md F1) ───
+    // The Spraying philosophy, in three numbers: A SPRAYED COLOUR IS THE COLOUR.
+    // Nothing in the room may tint it, so the environment probe is switched OFF
+    // for a sprayed piece — a white lacquer door that picks up the walnut carcass
+    // beside it is not white any more, and a client matching a RAL chip against
+    // the screen is being lied to. What is left is the surface itself: the fine
+    // orange peel a gun leaves, done on the normals at a tenth of the strength
+    // the board edges use.
+    // `peelMm` is the size of one orange-peel cell — the gun leaves a texture
+    // between about one and three millimetres, and it is the reason a sprayed
+    // white door does not read as a white rectangle even in flat light.
+    spray: { envMapIntensity: 0, normalScale: 0.1, metalness: 0, peelMm: 2 },
+
+    // ─── Manufacturer decor textures (turn 8, Piotr 07.08) ───
+    // The full-board scans that ship with the decor pack (`tex` in the JSON).
+    // `scanHeightMm` is what one image is worth on a real board — the scan is a
+    // full sheet along the grain — so a 720 mm door shows the part of the board
+    // it would be cut from instead of a repeat that reads as wallpaper.
+    decor: { scanHeightMm: 2800, anisotropy: 8 },
+
+    // ─── The studio rig (turn 8, CLAUDE.md F1 — from Spraying-Calc) ───
+    // Turn 7's answer to "the white walls must stay white" was an ambient at
+    // 1.25 with a key at 0.85, and Piotr's verdict on it is the reason this
+    // block exists: "no shadow, no depth, white runs into white". A light that
+    // is weaker than the fill it is meant to beat cannot model anything.
+    //
+    // So the balance is inverted to the one a photographer uses, and it is the
+    // SAME rig in the working view and in a still: what the joiner is looking at
+    // while he works is what the customer will be shown. ACES holds the
+    // highlights at both ends of it.
+    //
+    // `shadowPadding` is room millimetres of margin around the furniture: the
+    // key light's shadow camera is fitted to the CABINETS rather than to the
+    // room, so every texel of the map lands on something that casts a shadow
+    // instead of on four metres of empty floor.
+    studio: {
+      ambient: 0.2,
+      key: 1.0,
+      fill: 0.5,
+      rim: 0.3,
+      exposure: 1.0,
+      shadowPadding: 600,
+      // ─── The bounce the rig cannot produce ───
+      // A three-light studio rig is built for a subject on a seamless backdrop.
+      // Point it at a ROOM and the walls come out grey, because most of what
+      // lights a real wall is light that has already bounced off the floor, the
+      // ceiling and the wall opposite — and a directional light has no bounce.
+      //
+      // Turn 7 answered that with an ambient at 1.25, which lit the walls and
+      // flattened the furniture with them. This is the same answer aimed only
+      // where it belongs: the ROOM's own surfaces carry this fraction of their
+      // colour as emission. The furniture sees the studio rig and nothing else,
+      // so the modelling on a white door is untouched and the wall behind it is
+      // still white.
+      roomBounce: 0.42,
+    },
+
     // ─── PBR per finish family (turn 6, CLAUDE.md F2) ───
     // Turn 4 gave every piece the same 20 % sheen, which is why a melamine
     // carcass and a sprayed door looked like the same material with two
@@ -516,7 +631,16 @@ export const DEFAULT_CABINET_PROFILE = {
     // download, no .hdr file — CLAUDE.md forbids both) through PMREM. The
     // working view keeps it low so white walls stay white with no tone mapping;
     // a render turns it up and lets ACES hold the highlights.
-    environment: { intensity: 0.5, renderIntensity: 0.85, blur: 0.05 },
+    // ─── Turn 8 (CLAUDE.md F1) ───
+    // The two intensities are now the SAME, and that is the whole of "one rig".
+    // Turn 6 turned the probe up for a still because the working view ran flat
+    // and untone-mapped and needed the still to compensate; the working view is
+    // tone-mapped now, and a probe turned up on top of the studio key washes out
+    // exactly the modelling the key is there to put in.
+    //
+    // Kept as two numbers rather than collapsed to one: a workshop that wants a
+    // glossier still has the knob, and the render pass still reads it.
+    environment: { intensity: 0.5, renderIntensity: 0.5, blur: 0.05 },
 
     // Contact shadow: the dark that says a cabinet is STANDING on the floor
     // rather than hovering a millimetre above it. Not a shadow map — a soft
@@ -530,6 +654,32 @@ export const DEFAULT_CABINET_PROFILE = {
     shade: { drawer_box: 0.1, back: 0.07, plinth: 0.04, infill: 0.02, end_panel: 0.02 },
     // Parts that are not a "finish" at all.
     hardware: { rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92' },
+
+    // ─── The joint, drawn (turn 8, CLAUDE.md F8) ───
+    // The joint is the identity of the system, and a carcass that shows none is
+    // six boxes meeting at nothing. Two answers to two questions:
+    //
+    //   `solid` — the division lines a tab leaves where a side meets a wieniec.
+    //   Quiet: a shade off the board, not a diagram drawn on the furniture.
+    //
+    //   the rest — X-ray, where the question is "how is this held together" and
+    //   the answer may be as loud as it needs to be. One colour per kind, so a
+    //   socket and the relief pocket beside it are not one shape.
+    joinery: {
+      solid: '#8f8a82',
+      solidOpacity: 0.5,
+      // Near-black for the tab PROFILE: it is a cut line, it has to read
+      // against a panel at a fifth of its opacity, and it must not be mistaken
+      // for the selection mark — which is a mid blue and a dashed box, and was
+      // exactly what a blue profile line looked like.
+      outline: '#2A2A2A',
+      socket: '#B4783C',
+      dogbone: '#8C182B',
+      // Off the face, in mm. The same trick and the same reason as the edge
+      // handle's (3d/EdgeHandle.jsx): a line drawn ON a surface is a coin toss
+      // per pixel per frame.
+      lift: 0.4,
+    },
 
     // ─── X-ray (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
     // Look THROUGH the furniture: the board goes translucent, the contours
@@ -552,8 +702,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // `offset` is in millimetres of ROOM, so the gap stays 10 mm of furniture
     // whatever the camera is doing.
     selection: {
-      colour: '#1B2A4A',        // the same navy the dimension arrows use
-      width: 1,
+      // ─── Turn 8 (CLAUDE.md F2.5) ───
+      // It WAS the dimension arrows' navy (#1B2A4A). On paper that is a colour;
+      // on a screen, one pixel wide against a dark canvas, it is black — Piotr
+      // could not tell a selected cabinet from an unselected one. The mark is a
+      // legible mid blue now, and thinner, because a mark you can see does not
+      // need to be heavy. The ARROWS keep the navy: they are a drawing.
+      colour: '#2B6CB0',
+      width: 0.75,
       offset: 10,               // clear of the solid — CLAUDE.md asks for 8–12
       dash: 34,
       gap: 20,
@@ -589,18 +745,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // framing fits the box's own corners, so this is real breathing room and
     // not slack in the fit.
     margin: 1.1,
-    // ACES needs a little more light through it than the flat working view.
-    exposure: 1.05,
-    // How the lights are scaled for a still: contrast comes from RAISING THE
-    // KEY, not from crushing the ambient.
+    // ─── Turn 8 (CLAUDE.md F1) ───
+    // The exposure the STUDIO RIG is balanced at — `appearance.studio.exposure`
+    // — and no longer a second number for the still. Turn 7 ran the working view
+    // flat and untone-mapped and had to raise the exposure to compensate when
+    // ACES came in for a render; the working view is tone-mapped now, so there
+    // is nothing left to compensate for.
+    exposure: 1.0,
+    // …and for the same reason there is nothing left to rebalance. Turn 7 lit
+    // the editor one way and the still another, which meant a joiner could not
+    // judge from the screen what the customer would be sent. The rig is one rig
+    // now (3d/Scene.jsx Lights), so these are all 1 and the render's contrast
+    // comes from the same key light the editor is showing.
     //
-    // That distinction is the whole of this line. The furniture is lit by the
-    // lights AND the environment probe; the room is lit by the lights alone
-    // (its walls are Lambert, so the probe never reaches them — see Room.jsx).
-    // Pull the ambient down far and the two come apart: the cabinets stay
-    // bright and the white walls behind them go grey, which is a render that
-    // looks like it was taken in a basement.
-    lightScale: { ambient: 0.72, key: 1.9, fill: 1.1 },
+    // Kept as a block rather than deleted: a workshop that wants a punchier
+    // still than its working view has the knob, and the render pass still reads
+    // it. It just has nothing to say by default.
+    lightScale: { ambient: 1, key: 1, fill: 1, rim: 1 },
   },
 
   // ─── Bought hardware, to catalogue size (turn 7, CLAUDE.md F1/F3) ───
@@ -745,6 +906,26 @@ export const DEFAULT_CABINET_PROFILE = {
     codes: { left: '<', right: '>', topBottom: '^v', all: '<>^v', none: '' },
   },
 
+  // ─── The room a unit stands in (turn 8, CLAUDE.md F3) ───
+  // Not the room's SHAPE — that is the project's (engine/room.js). This is what
+  // the workshop knows about walls in general.
+  room: {
+    // EVERY unit stands this far off the wall behind it. Base, wall and tall
+    // alike, and not because anybody asked for a gap: because a wall is not
+    // flat and a hung cabinet needs somewhere for its bracket to be.
+    //
+    // Piotr's two reasons, in his order: walls are never straight, and a wall
+    // unit hangs on hooks that stand it off anyway. Ten millimetres is what the
+    // workshop builds to; a workshop with a plaster wall and a different hanger
+    // changes this number and the whole app follows it — the plan, the arrows,
+    // the drawing, the depth clamp and the door swing.
+    //
+    // It is SEPARATE from `params.inset_back_mm` (turn 7), and the two add up.
+    // That inset is a decision about ONE cabinet with a pipe behind it; this is
+    // a fact about all of them.
+    wallBackClearance: 10,
+  },
+
   // ─── Editor defaults ───
   // The clearances the collision clamp enforces. A move STOPS at these values
   // (src/engine/collision.js) — they are not advisory.
@@ -880,6 +1061,10 @@ export function migrateCabinetProfile(profile) {
       finishes: mergeFinishes(D.appearance.finishes, profile.appearance?.finishes),
       outline: { ...D.appearance.outline, ...profile.appearance?.outline },
       sheen: { ...D.appearance.sheen, ...profile.appearance?.sheen },
+      sheenScale: { ...D.appearance.sheenScale, ...profile.appearance?.sheenScale },
+      spray: { ...D.appearance.spray, ...profile.appearance?.spray },
+      decor: { ...D.appearance.decor, ...profile.appearance?.decor },
+      studio: { ...D.appearance.studio, ...profile.appearance?.studio },
       materials: {
         melamine: { ...D.appearance.materials.melamine, ...profile.appearance?.materials?.melamine },
         lacquer: { ...D.appearance.materials.lacquer, ...profile.appearance?.materials?.lacquer },
@@ -893,6 +1078,7 @@ export function migrateCabinetProfile(profile) {
       contour: { ...D.appearance.contour, ...profile.appearance?.contour },
       shade: { ...D.appearance.shade, ...profile.appearance?.shade },
       hardware: { ...D.appearance.hardware, ...profile.appearance?.hardware },
+      joinery: { ...D.appearance.joinery, ...profile.appearance?.joinery },
       xray: { ...D.appearance.xray, ...profile.appearance?.xray },
       selection: { ...D.appearance.selection, ...profile.appearance?.selection },
     },
@@ -932,6 +1118,7 @@ export function migrateCabinetProfile(profile) {
       },
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
     },
+    room: { ...D.room, ...profile.room },
     cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },

@@ -23,11 +23,29 @@ import { getUnitType } from './types.js';
 
 /** Height of a unit's top above the floor — where anything on top of it starts. */
 export function unitTop(unit, profile) {
+  return unitBase(unit, profile) + (Number(unit.params?.height) || 0);
+}
+
+/**
+ * How far off the FLOOR a unit's carcass starts: its mounting height when it
+ * hangs, its toe kick when it stands.
+ *
+ * ─── Turn 8 ───
+ * The toe kick is the unit's OWN (`params.leg_height`) before it is the
+ * profile's. Turn 5 made the toe kick a project height and pushed it onto every
+ * unit (BACKLOG #29), and `cabinet.js legHeightOf` has read it ever since — but
+ * this function did not, so every consumer of it was 20 mm out on a project
+ * with a 120 mm kick: which units are one RUN, how much room is left above one
+ * for a top infill, and (turn 8, F5) where a wall unit hangs to line up with
+ * the tall cabinet beside it. That last one is how it was noticed.
+ */
+export function unitBase(unit, profile) {
   const type = getUnitType(unit.type);
-  const base = type.mount === 'wall'
-    ? Number(unit.params?.mount_height) || 0
-    : (type.legs ? (type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight) : 0);
-  return base + (Number(unit.params?.height) || 0);
+  if (type.mount === 'wall') return Number(unit.params?.mount_height) || 0;
+  if (!type.legs) return 0;
+  const own = Number(unit.params?.leg_height);
+  if (Number.isFinite(own) && own >= 0) return own;
+  return type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight;
 }
 
 /** How far a unit's own end panels stick out on each side. */
@@ -122,9 +140,17 @@ export function runEnd(run, side, { wallWidth, roomHeight }, profile) {
   const outerEdge = side === 'left' ? span.left : span.right;
   const wallAt = side === 'left' ? 0 : (Number(wallWidth) || 0);
   const tolerance = profile.autoParts.topInfill.runGap;
+  // ─── Turn 8 (CLAUDE.md F3) ───
+  // A unit never stands hard against a wall any more — the same bowed wall that
+  // puts 10 mm behind every cabinet puts 10 mm beside the end one, and with the
+  // infill switched off that stop is exactly `room.wallBackClearance`. A run
+  // parked there HAS reached the wall: the gap is a scribe, the piece on top
+  // runs over it, and calling the end "open" would turn the corner and run a
+  // return down a 10 mm slot.
+  const atWall = tolerance + Math.max(0, Number(profile.room?.wallBackClearance) || 0);
 
   // 1 — the wall itself.
-  if (Math.abs(outerEdge - wallAt) <= tolerance) return { kind: 'wall', x: wallAt };
+  if (Math.abs(outerEdge - wallAt) <= atWall) return { kind: 'wall', x: wallAt };
 
   // 2 — a vertical L-infill, which closes the gap to the wall. The element runs
   //     over it and finishes on the wall, which is what "ends on it" means for

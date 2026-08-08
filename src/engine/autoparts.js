@@ -25,11 +25,28 @@
 // Pure functions — no React, no store imports.
 
 import { getUnitType } from './types.js';
+import { unitBase } from './runs.js';
 
 /** Does this type stand on the floor and therefore get a plinth? */
 export function takesPlinth(typeId, profile) {
   const type = getUnitType(typeId);
   return Boolean(profile.autoParts.plinth.enabled && type.legs && type.mount === 'floor');
+}
+
+/**
+ * Is there anything above this kit for a top infill to close against?
+ * (turn 8, CLAUDE.md F2.7)
+ *
+ * The answer is a property of the KIT, not of the room: what sits on top of a
+ * base unit is a worktop, and the gap above a worktop is where the wall units
+ * go. Offering to fill it is offering to build a wall out of 18 mm board, and
+ * the piece would arrive in the BOM and on the CNC sheet as if somebody meant it.
+ *
+ * The side infill has no such rule and is untouched: a base unit standing at a
+ * wall has a scribe gap beside it exactly as a tall one does.
+ */
+export function takesTopInfill(typeId) {
+  return Boolean(getUnitType(typeId).supports.topInfill);
 }
 
 /**
@@ -123,17 +140,26 @@ export function autoPartsFor({ unit, wallWidth, others, roomHeight, design }, pr
   const width = Number(unit.params.width) || 0;
   const height = Number(unit.params.height) || 0;
   const x = Number(unit.position?.x_mm) || 0;
-  const base = type.mount === 'wall'
-    ? Number(unit.params.mount_height) || 0
-    : (type.legs ? (type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight) : 0);
+  // The unit's OWN toe kick before the profile's — see engine/runs.js unitBase.
+  const base = unitBase(unit, profile);
 
-  const side = sideInfill({
-    x, width, wallWidth, others, settingWidth: design?.infill?.sideWidth,
-  }, profile);
+  // Turn 8 (CLAUDE.md F7): a cabinet may be told it takes no scribe filler at
+  // all — the joiner will scribe the door instead. The unit still stops where
+  // it stops; what stops is the PIECE.
+  const side = unit.params.side_infill_off === true
+    ? { left: 0, right: 0, notices: [] }
+    : sideInfill({
+      x, width, wallWidth, others, settingWidth: design?.infill?.sideWidth,
+    }, profile);
 
   // Manual, and only ever re-clamped: a top infill that was added shrinks when
   // the ceiling drops, and one that was never added stays absent.
-  const wanted = Number(unit.params.top_infill_mm) || 0;
+  //
+  // …and a kit that takes none never has one, however it got there — a project
+  // saved before turn 8, a template, an import. The gate is here as well as at
+  // the two doors into it, because this is the function that decides what a
+  // unit HAS (CLAUDE.md F2.7).
+  const wanted = takesTopInfill(unit.type) ? (Number(unit.params.top_infill_mm) || 0) : 0;
   const topInfill = wanted > 0
     ? topInfillHeight({ requested: wanted, unitTop: base + height, roomHeight }, profile)
     : 0;

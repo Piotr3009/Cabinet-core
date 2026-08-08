@@ -193,13 +193,23 @@ test('autoPartsFor derives the side infill and only CARRIES the manual pieces', 
   assert.equal(parts.top_infill_mm, 0);
 
   // Asked for: carried through, and the top infill re-clamped to the room.
-  const withParts = {
-    ...unit,
-    params: { ...unit.params, plinth: true, top_infill_mm: 40 },
+  // On a TALL unit — turn 8 (CLAUDE.md F2.7) closed the top infill off for base
+  // kits, because what goes on top of a base cabinet is a worktop and the gap
+  // above THAT is where the wall units are.
+  const tall = {
+    id: 'u3', type: 'BUDTALL', position: { wall: 0, x_mm: 12 },
+    params: { width: 600, height: 2100, depth: 558, unit_num: 'T01', plinth: true, top_infill_mm: 40 },
   };
-  const kept = autoPartsFor({ unit: withParts, wallWidth: 632, others: [], roomHeight: 2500, design }, P);
+  const kept = autoPartsFor({ unit: tall, wallWidth: 632, others: [], roomHeight: 2500, design }, P);
   assert.equal(kept.plinth, true);
   assert.equal(kept.top_infill_mm, 40);
+
+  // …and the gate holds however the parameter got onto a base unit — a project
+  // saved before turn 8, a template, an import.
+  const baseWithOne = { ...unit, params: { ...unit.params, plinth: true, top_infill_mm: 40 } };
+  const gated = autoPartsFor({ unit: baseWithOne, wallWidth: 632, others: [], roomHeight: 2500, design }, P);
+  assert.equal(gated.plinth, true, 'a plinth is still a base unit’s to have');
+  assert.equal(gated.top_infill_mm, 0, 'the top infill is not');
 
   // A wall unit measures from its mount height, not from the floor.
   const wallUnit = {

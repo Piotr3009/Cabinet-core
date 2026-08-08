@@ -88,19 +88,30 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   const store = {};
   const wardrobe = menuActions({ unit: unitOf('WARDROBE'), panelPart: 'BUL', store });
   const ids = wardrobe.map((a) => a.id);
-  // Turn 4 adds the manual construction pieces here, because right-clicking the
-  // unit is where a joiner reaches for them (BACKLOG #16/#17).
-  // Turn 5 adds "Save as template" (BACKLOG #30) — the cabinet you have just
-  // finished configuring is where a joiner reaches for that too.
-  // Turn 7 adds "Insets…" (BACKLOG #32), which OPENS the section rather than
-  // carrying three millimetre fields in a right-click menu.
+  // Turn 4 added the manual construction pieces here, because right-clicking
+  // the unit is where a joiner reaches for them (BACKLOG #16/#17); turn 5 added
+  // "Save as template" (#30); turn 7 added "Insets…" (#32), which OPENS the
+  // section rather than carrying three millimetre fields in a right-click menu.
+  //
+  // Turn 8 (CLAUDE.md F7) rewrites the ORDER and turns the construction entries
+  // into TOGGLES. The order is what a joiner reaches for, in the order he
+  // reaches for it: show me this cabinet's numbers, put a panel on that side,
+  // close that gap — and only then the things that move or destroy it.
   assert.deepEqual(ids, [
-    'end-panel-L', 'end-panel-R', 'end-panel-B', 'plinth-on', 'top-infill-on', 'insets', 'save-template',
+    'dimensions',
+    'end-panel-L', 'end-panel-R', 'end-panel-B',
+    'top-infill', 'side-infill',
+    'plinth',
+    'insets', 'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
   ]);
 
-  // What is already fitted is offered as REMOVE, and an end panel that exists is
-  // not offered twice.
+  // Nothing is DISABLED any more, and that is the point of the rewrite: turn 4's
+  // menu could only ever ADD an end panel, so half the time it was read it was
+  // the wrong entry and removing one meant going to the panel. Every one of
+  // these says what the state IS and flips it.
+  for (const a of wardrobe) assert.notEqual(a.disabled, true, `${a.id} is a dead entry`);
+
   const dressed = menuActions({
     unit: {
       ...unitOf('WARDROBE'),
@@ -112,21 +123,32 @@ test('the menu offers what the unit has, and always offers the basics', () => {
       },
     },
     panelPart: 'BUL',
+    dimensions: true,
     store,
   });
   const byId = new Map(dressed.map((a) => [a.id, a]));
-  assert.equal(byId.get('end-panel-L').disabled, true, 'the left panel is already there');
-  assert.equal(byId.get('end-panel-R').disabled, false, 'and the right one is still on offer');
-  // "Both" stays live while EITHER side is still missing (BACKLOG #31): the
-  // store adds them one at a time, so it fits the one that is free.
-  assert.equal(byId.get('end-panel-B').disabled, false);
-  assert.ok(byId.has('plinth-off') && !byId.has('plinth-on'));
-  assert.ok(byId.has('top-infill-off') && !byId.has('top-infill-on'));
+  assert.equal(byId.get('dimensions').checked, true);
+  assert.equal(byId.get('end-panel-L').checked, true, 'the left panel is there, and says so');
+  assert.equal(byId.get('end-panel-R').checked, false);
+  // "Both" is ticked only when BOTH are there (BACKLOG #31): the store adds them
+  // one at a time, so a half-fitted pair still offers to finish the job.
+  assert.equal(byId.get('end-panel-B').checked, false);
+  assert.equal(byId.get('plinth').checked, true);
+  assert.equal(byId.get('top-infill').checked, true);
+  // The scribe fillers are ON unless somebody turned them off — they are
+  // derived from where the unit stands, not added (BACKLOG #15).
+  assert.equal(byId.get('side-infill').checked, true);
 
   // A wall unit stands on nothing, so it is never offered a plinth.
   const wallIds = menuActions({ unit: unitOf('WUD'), panelPart: 'BUL', store }).map((a) => a.id);
-  assert.equal(wallIds.includes('plinth-on'), false);
-  assert.ok(wallIds.includes('top-infill-on'), 'but it can still be closed up to the ceiling');
+  assert.equal(wallIds.includes('plinth'), false);
+  assert.ok(wallIds.includes('top-infill'), 'but it can still be closed up to the ceiling');
+
+  // …and a BASE unit is not offered a top infill at all (turn 8, F2.7): what
+  // goes on top of it is a worktop.
+  const baseIds = menuActions({ unit: unitOf('BUD'), panelPart: 'BUL', store }).map((a) => a.id);
+  assert.equal(baseIds.includes('top-infill'), false);
+  assert.ok(baseIds.includes('side-infill'), 'the scribe filler beside it is untouched');
 
   // A fridge housing has no shelves, so it is not offered a shelf action.
   const fridge = menuActions({ unit: unitOf('FRIDGE'), panelPart: 'BUL', store }).map((a) => a.id);
@@ -136,6 +158,62 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   // Right-clicking a front also offers to shut everything again.
   const onFront = menuActions({ unit: unitOf('WARDROBE'), panelPart: 'FRONT', store }).map((a) => a.id);
   assert.ok(onFront.includes('close-fronts'));
+});
+
+test('every toggle flips the way it is currently set — both ways', () => {
+  const called = [];
+  const store = {
+    toggleUnitDimensions: (id) => called.push(['dims', id]),
+    addEndPanel: (id, o) => called.push(['ep+', o.side]),
+    removeEndPanel: (id, epId) => called.push(['ep-', epId]),
+    addTopInfill: () => called.push(['top+']),
+    removeTopInfill: () => called.push(['top-']),
+    addPlinth: () => called.push(['plinth+']),
+    removePlinth: () => called.push(['plinth-']),
+    setSideInfillEnabled: (id, on) => called.push(['side', on]),
+    openPanelSection: () => {},
+  };
+  const bare = unitOf('WARDROBE');
+  const run = (unit, id, dimensions = false) => menuActions({
+    unit, panelPart: 'BUL', dimensions, store,
+  }).find((a) => a.id === id).run();
+
+  // Nothing fitted: every one of them ADDS.
+  run(bare, 'end-panel-L');
+  run(bare, 'top-infill');
+  run(bare, 'plinth');
+  run(bare, 'side-infill');
+  run(bare, 'dimensions');
+  // …and the filler switch turns them OFF, because on a bare unit they are on:
+  // the side infill is derived from where the cabinet stands (BACKLOG #15), so
+  // the question is never "add one", it is "does this cabinet take one".
+  assert.deepEqual(called, [['ep+', 'L'], ['top+'], ['plinth+'], ['side', false], ['dims', 'u1']]);
+
+  // Everything fitted: every one of them TAKES IT OFF. This is the half turn 4
+  // did not have, and the reason a joiner had to go to the panel.
+  called.length = 0;
+  const fitted = {
+    ...bare,
+    params: {
+      ...bare.params,
+      plinth: true,
+      top_infill_mm: 40,
+      side_infill_off: true,
+      end_panels: [{ id: 'ep1', side: 'L' }, { id: 'ep2', side: 'R' }],
+    },
+  };
+  run(fitted, 'end-panel-L');
+  run(fitted, 'top-infill');
+  run(fitted, 'plinth');
+  run(fitted, 'side-infill');
+  assert.deepEqual(called, [['ep-', 'ep1'], ['top-'], ['plinth-'], ['side', true]],
+    'and the filler switch turns them back ON, because this one had them off');
+
+  // "Both sides" takes BOTH off, which is the same act twice — exactly as
+  // adding both is.
+  called.length = 0;
+  run(fitted, 'end-panel-B');
+  assert.deepEqual(called, [['ep-', 'ep1'], ['ep-', 'ep2']]);
 });
 
 test('every menu action is runnable and calls exactly its own store function', () => {
@@ -153,6 +231,9 @@ test('every menu action is runnable and calls exactly its own store function', (
     assert.equal(typeof a.label, 'string');
     a.run();
   }
+  // Only the functions this store HAS are recorded; the toggles above are
+  // covered by their own test. What this one holds is that every entry is
+  // runnable and none of them reaches for somebody else's store function.
   assert.deepEqual(called, [
     ['template', 'u1'],
     ['center', 'u1'],

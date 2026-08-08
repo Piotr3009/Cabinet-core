@@ -55,6 +55,8 @@ uniform float ccBevel;
 uniform float ccBevelStrength;
 uniform float ccAoRadius;
 uniform float ccAo;
+uniform float ccSpray;
+uniform float ccSprayFreq;
 
 // Distance from this fragment to each of the three face pairs, and a mask that
 // is 1 on the axis whose face we are standing on.
@@ -80,6 +82,26 @@ const FRAG_NORMAL = /* glsl */`
   // 1 hard against an edge, 0 once past the break.
   vec3 ccRoll = (1.0 - ccFace) * (1.0 - smoothstep(0.0, max(ccBevel, 1e-6), ccDist));
   vec3 ccBentObj = normalize(ccFaceNormal + ccRoll * ccSign * ccBevelStrength);
+  // ─── Orange peel (turn 8, CLAUDE.md F1) ───
+  // A sprayed surface is not optically flat. The gun leaves a fine cellular
+  // texture a millimetre or two across, and it is most of the difference
+  // between a lacquered door and a rectangle of colour — especially on white,
+  // where there is nothing else for the light to catch. Done on the normals for
+  // exactly the reason the edge break above is: geometry this fine would cost
+  // the frame rate and could not be seen anyway.
+  //
+  // Only the TANGENTIAL part is used, so the face still faces the way it faces
+  // and the piece keeps its silhouette.
+  if (ccSpray > 0.0) {
+    vec3 ccSp = vCcLocal * ccSprayFreq;
+    vec3 ccWob = vec3(
+      sin(ccSp.y + ccSp.z * 1.7),
+      sin(ccSp.z + ccSp.x * 1.3),
+      sin(ccSp.x + ccSp.y * 1.9)
+    );
+    ccWob -= ccBentObj * dot(ccWob, ccBentObj);
+    ccBentObj = normalize(ccBentObj + ccWob * ccSpray);
+  }
   vec3 ccBent = normalize(vCcAxX * ccBentObj.x + vCcAxY * ccBentObj.y + vCcAxZ * ccBentObj.z);
   normal = ccBent;
   nonPerturbedNormal = ccBent;
@@ -109,6 +131,9 @@ export function createBevelState() {
     strength: 1,
     aoRadius: 0.007,
     ao: 0.16,
+    // 0 = board. A sprayed piece turns this up (3d/materials.js `sprayed`).
+    spray: 0,
+    sprayFreq: 3141,
     uniforms: null,
   };
 }
@@ -122,6 +147,8 @@ export function syncBevelState(state) {
   u.ccBevelStrength.value = state.strength;
   u.ccAoRadius.value = state.aoRadius;
   u.ccAo.value = state.ao;
+  u.ccSpray.value = state.spray;
+  u.ccSprayFreq.value = state.sprayFreq;
 }
 
 /**
@@ -142,6 +169,8 @@ export function bevelHook(state) {
     shader.uniforms.ccBevelStrength = { value: state.strength };
     shader.uniforms.ccAoRadius = { value: state.aoRadius };
     shader.uniforms.ccAo = { value: state.ao };
+    shader.uniforms.ccSpray = { value: state.spray };
+    shader.uniforms.ccSprayFreq = { value: state.sprayFreq };
     state.uniforms = shader.uniforms;
     state.renderer = renderer || null;
 

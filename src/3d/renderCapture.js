@@ -28,6 +28,9 @@ export const HELPER_FLAG = 'ccHelper';
 /** …and this marks something that IS in the picture but must not frame it. */
 export const NO_BOUNDS_FLAG = 'ccNoBounds';
 
+/** …and this one marks a LINE that is furniture rather than tool (turn 8, F8). */
+export const FURNITURE_FLAG = 'ccFurniture';
+
 /**
  * A helper, an outline pass, or a billboarded label — all of it tool chrome.
  *
@@ -37,6 +40,13 @@ export const NO_BOUNDS_FLAG = 'ccNoBounds';
  * frame drawn over the furniture.
  */
 function isChrome(object) {
+  // ─── Turn 8 (CLAUDE.md F8) ───
+  // The joint is drawn as line segments and is NOT chrome: it is furniture, it
+  // belongs in a still exactly as an edge belongs on a board, and the whole
+  // point of drawing it is that a customer sees it. Everything else made of
+  // lines still is chrome — the contour pass, the dimension arrows, the
+  // selection box — so the flag is on the thing that is the exception.
+  if (object.userData?.[FURNITURE_FLAG]) return false;
   return Boolean(object.userData?.[HELPER_FLAG])
     || object.isLineSegments || object.isLine || object.isSprite
     || object.isLineSegments2 || object.isLine2;

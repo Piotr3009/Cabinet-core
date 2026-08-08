@@ -27,8 +27,26 @@ export function wallFacesCamera(face, cameraPosition) {
   return face.inwardX * V.x + face.inwardZ * V.z > 0;
 }
 
+/**
+ * The bounced light a studio rig has no way to produce (turn 8, CLAUDE.md F1).
+ *
+ * The walls and the floor are the only surfaces in the scene that are not
+ * furniture, and they are the only ones that need this: a wall is lit almost
+ * entirely by light that has already been somewhere else. Carried as emission
+ * on the room's own materials rather than as an ambient light, because an
+ * ambient big enough to whiten a wall is an ambient big enough to flatten every
+ * cabinet in front of it — which is exactly what turn 7 did and what Piotr
+ * reported.
+ */
+function bounce(hex, profile) {
+  const amount = profile?.appearance?.studio?.roomBounce ?? 0;
+  return new THREE.Color(hex).multiplyScalar(Math.max(0, Math.min(1, amount)));
+}
+
 /** One wall: a plane with a hole per window and per door. */
-function Wall({ wall, height, openings, centre, showLabel }) {
+function Wall({
+  wall, height, openings, centre, showLabel, profile,
+}) {
   const ref = useRef(null);
 
   const geometry = useMemo(() => {
@@ -98,7 +116,11 @@ function Wall({ wall, height, openings, centre, showLabel }) {
             biggest surface in the scene out of the image-based lighting path
             and leaves it looking exactly the same. */}
         <mesh geometry={geometry} receiveShadow>
-          <meshLambertMaterial color={COLORS.wall} side={THREE.DoubleSide} />
+          <meshLambertMaterial
+            color={COLORS.wall}
+            emissive={bounce(COLORS.wall, profile)}
+            side={THREE.DoubleSide}
+          />
         </mesh>
         {/* the opening reveals, so a hole reads as a hole and not as a gap */}
         {openings.map((o) => (
@@ -117,7 +139,7 @@ function Wall({ wall, height, openings, centre, showLabel }) {
   );
 }
 
-export default function Room({ room, showLabels = true }) {
+export default function Room({ room, showLabels = true, profile = null }) {
   const walls = useMemo(() => roomWalls(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
   const height = room.height ?? 2500;
@@ -139,7 +161,11 @@ export default function Room({ room, showLabels = true }) {
   return (
     <group>
       <mesh geometry={floor} receiveShadow>
-        <meshLambertMaterial color={COLORS.floor} side={THREE.DoubleSide} />
+        <meshLambertMaterial
+          color={COLORS.floor}
+          emissive={bounce(COLORS.floor, profile)}
+          side={THREE.DoubleSide}
+        />
       </mesh>
 
       {walls.map((wall) => (
@@ -150,6 +176,7 @@ export default function Room({ room, showLabels = true }) {
           openings={openingsOnWall(room, wall.index)}
           centre={bounds.centre}
           showLabel={showLabels}
+          profile={profile}
         />
       ))}
 

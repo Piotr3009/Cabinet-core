@@ -3,15 +3,24 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
-import { contourSurface, decorTexture, onDecorLoad, outlineFor, surfaceFor } from './materials.js';
+import {
+  contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor, surfaceFor,
+} from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import ContactShadow from './ContactShadow.jsx';
 import Hardware from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
+import JointLines from './JointLines.jsx';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
+import { shelfGapLadder } from '../engine/items.js';
+import { backStandoff } from '../engine/collision.js';
+import { doorOpenAngle } from '../engine/doors.js';
+import {
+  boxPolyhedron, clipAll, infillMitre, solidTriangles,
+} from '../engine/mitre.js';
 
 // One unit, rendered straight from the ENGINE output: every panel record
 // carries a `box` in cabinet-local mm, so what you see is what the cut list
@@ -29,24 +38,92 @@ function frontKind(panel) {
 }
 
 /**
- * A decor image scaled to THIS piece: 900 mm of grain stays 900 mm of grain
- * whether it is a door or a drawer bottom. The clone shares the decoded image,
- * so a whole room of walnut is still one texture on the GPU.
+ * A decor image laid on THIS piece.
+ *
+ * Turn 8 moved the arithmetic into 3d/materials.js `decorPlacement`, because
+ * turn 7's version was wrong in the one place it shows most. It scaled the
+ * texture by the box's x and y — but three gives a box's ±X faces a u along Z
+ * and a v along Y, and a carcass side IS a ±X face. So every side panel in the
+ * app had its grain lying on its side (Piotr: "słoje leżą POZIOMO na bokach").
+ * The placement now works out which face is the big one, which way the grain
+ * runs on the cut piece, and turns the image a quarter turn when it has to.
+ *
+ * The FALLBACK is the other half: the manufacturer scans are fetched from
+ * Supabase Storage, so a machine with no network gets our own procedural grain
+ * rather than 400 white panels. Mock mode WORKS (CLAUDE.md rule 7).
  */
-function useDecor(url, wMm, hMm, repeatMm) {
+function useDecor(surface, panel, profile) {
   // `tick` is the COUNTER, not the setter: keying the memo on the setter (which
   // never changes) left every clone holding the placeholder the loader starts
   // with, and every decor panel rendered plain white.
   const [tick, bump] = useState(0);
+  const url = surface?.texture || null;
   useEffect(() => {
     if (!url) return undefined;
     return onDecorLoad(url, () => bump((n) => n + 1));
   }, [url]);
-  return useMemo(
-    () => (url ? decorTexture(url, wMm / repeatMm, hMm / repeatMm) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [url, wMm, hMm, repeatMm, tick],
-  );
+
+  return useMemo(() => {
+    if (!url) return { map: null, tinted: false };
+    const failed = decorFailed(url);
+    // A scan that could not be fetched drops to the tinted procedural grain the
+    // decor carries for exactly this case.
+    const use = failed && surface.fallback
+      ? { ...surface, ...surface.fallback, scanAlongGrainMm: 0 }
+      : surface;
+    const placement = decorPlacement(use, panel, profile);
+    if (!placement) return { map: null, tinted: false };
+    return {
+      map: decorTexture(placement.url, placement),
+      // The fallback grain is greyscale and is MULTIPLIED by the decor's colour;
+      // a scan is shown at its own tone over white.
+      tinted: Boolean(use.tint),
+      hex: use === surface ? null : surface.fallbackHex,
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, panel.box.w, panel.box.h, panel.box.d, panel.w, panel.h,
+    surface?.scanAlongGrainMm, surface?.repeatMm, profile, tick]);
+}
+
+/**
+ * The mitred solid for one strip of a top infill (turn 8, CLAUDE.md F6), or
+ * null for every other piece — which is every piece but four per run.
+ *
+ * The geometry comes back in the UNIT's millimetres, so it is moved to sit
+ * about its own centre and the mesh is placed at that centre. Two things then
+ * carry on working with no special case: the bevel shader, which measures a
+ * fragment against the object's half-extents, and the selection box, which
+ * frames the panel boxes the engine emitted.
+ *
+ * Disposed with the panel: a BufferGeometry holds GPU buffers, and a run being
+ * dragged rebuilds these several times a second.
+ */
+function useMitre(panel) {
+  const built = useMemo(() => {
+    const spec = infillMitre(panel);
+    if (!spec) return null;
+    const solid = clipAll(boxPolyhedron(spec.box), spec.planes);
+    const tri = solidTriangles(solid);
+    const { box } = spec;
+    const cx = box.x + box.w / 2;
+    const cy = box.y + box.h / 2;
+    const cz = box.z + box.d / 2;
+    const positions = new Float32Array(tri.positions.length);
+    for (let i = 0; i < tri.positions.length; i += 3) {
+      positions[i] = mm(tri.positions[i] - cx);
+      positions[i + 1] = mm(tri.positions[i + 1] - cy);
+      positions[i + 2] = mm(tri.positions[i + 2] - cz);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(tri.normals), 3));
+    geometry.setIndex(tri.indices);
+    geometry.computeBoundingSphere();
+    return { geometry, box };
+  }, [panel]);
+
+  useEffect(() => () => built?.geometry.dispose(), [built]);
+  return built;
 }
 
 /**
@@ -57,10 +134,11 @@ function useDecor(url, wMm, hMm, repeatMm) {
  * bevel program once for the whole project. Resizing a panel is then a uniform
  * write, which is why dragging a shelf does not stutter.
  */
-function useBevel(box, profile) {
+function useBevel(box, profile, sprayed = false) {
   const state = useMemo(() => createBevelState(), []);
   const hook = useMemo(() => bevelHook(state), [state]);
   const B = profile.appearance.bevel;
+  const S = profile.appearance.spray || {};
 
   state.half.set(mm(box.w) / 2, mm(box.h) / 2, mm(box.d) / 2);
   state.bevel = mm(B.mm);
@@ -68,6 +146,9 @@ function useBevel(box, profile) {
   state.aoRadius = mm(B.ao.mm);
   // The RENDER turns this up (renderCapture.js); the working view stays cheap.
   if (state.ao === 0 || state.ao === undefined) state.ao = B.ao.strength;
+  // Orange peel: a sprayed piece only (turn 8, CLAUDE.md F1).
+  state.spray = sprayed ? (S.normalScale ?? 0.1) : 0;
+  state.sprayFreq = (2 * Math.PI) / Math.max(mm(S.peelMm ?? 2), 1e-6);
   syncBevelState(state);
 
   return useCallback((material) => {
@@ -85,18 +166,25 @@ function useBevel(box, profile) {
  * not re-render the rest of the unit.
  */
 function MovingPanel({
-  panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile, ...handlers
+  panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
+  swing = null, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
-  const bevelRef = useBevel(p.box, profile);
+  // The mitre, when this piece has one (turn 8, CLAUDE.md F6). Its geometry is
+  // built about the piece's own centre, so the mesh sits exactly where a box
+  // would have — and the bevel shader, which measures a fragment against the
+  // half-extents of the object it is on, keeps working unchanged.
+  const mitre = useMitre(p);
+  const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
   // pinned to that edge; everything else sits at its own centre.
   const hingeAtRight = p.meta?.hinge === 'R';
+  const centre = mitre?.box || p.box;
   const pivot = front === 'door'
     ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
-    : [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)];
+    : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)];
   const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
 
   useFrame((_, delta) => {
@@ -115,28 +203,44 @@ function MovingPanel({
       group.current.position.z = pivot[2] + mm(depth * 0.75) * a;
       group.current.rotation.y = 0;
     } else {
-      // Swings on the hinge side, about the group's origin.
+      // Swings on the hinge side, about the group's origin. How FAR is decided
+      // by what is beside the cabinet (turn 8, CLAUDE.md F5): a door with a
+      // wall on its hinge side stops square, because past square its free edge
+      // comes back over the hinge and into the plaster.
       const dir = p.meta?.hinge === 'R' ? 1 : -1;
-      group.current.rotation.y = dir * a * (Math.PI * 0.55);
+      group.current.rotation.y = dir * a * (swing ?? Math.PI * 0.55);
       group.current.position.z = pivot[2];
     }
   });
 
-  // The grain runs across the piece's own face, so it is scaled by the two
-  // dimensions the eye actually sees.
-  const decor = useDecor(surface.texture, p.box.w, Math.max(p.box.h, p.box.d), surface.repeatMm);
+  // The grain runs along the piece, on the face the eye actually sees.
+  const { map: decor, tinted, hex: fallbackHex } = useDecor(surface, p, profile);
   // X-ray (turn 7): the board goes translucent so the inside reads, and a FRONT
   // stays more solid than the carcass — it is the face of the cabinet, and
   // fading it as far as the sides would leave a unit with no face at all.
+  //
+  // ─── TURN 8 (CLAUDE.md F1): SOLID MEANS SOLID ───
+  // Turn 7 left every FRONT at 0.94 in the ordinary view. That is where Piotr's
+  // "everything is transparent" came from, and it is worse than it sounds: a
+  // material with `transparent: true` leaves the opaque queue altogether, so
+  // every door in the room was sorted back-to-front against every other door
+  // and drawn without the depth ordering the rest of the scene relies on. Six
+  // per cent of see-through, bought at the price of the whole depth buffer.
+  //
+  // Solid is opaque now, full stop. Translucency belongs to the two modes that
+  // exist to be translucent.
   const X = profile.appearance.xray;
-  const faded = contour
-    ? surface.opacity
-    : (xray ? (front ? X.front : X.carcass) : (p.role === 'front' ? 0.94 : 1));
+  const faded = contour ? surface.opacity : (xray ? (front ? X.front : X.carcass) : 1);
+  const translucent = faded < 1;
 
   return (
     <group ref={group} position={pivot}>
       <mesh position={meshOffset} castShadow={!contour} receiveShadow={!contour} {...handlers}>
-        <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
+        {/* A mitred strip carries its own geometry (turn 8, CLAUDE.md F6);
+            everything else is the box the engine emitted. */}
+        {mitre
+          ? <primitive object={mitre.geometry} attach="geometry" />
+          : <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />}
         {/* Physical, not standard. Turn 6: the numbers are no longer one sheen
             for everything — a sprayed piece wears lacquer and a carcass wears
             melamine (profile.appearance.materials), and the edges are broken
@@ -149,17 +253,25 @@ function MovingPanel({
           // only after a reload.
           key={decor ? 'decor' : 'plain'}
           ref={bevelRef}
-          color={surface.colour}
+          // An untinted scan sits on white so the figure comes through at its
+          // own tone; a tinted procedural grain multiplies the decor's colour.
+          color={decor && tinted && fallbackHex ? fallbackHex : surface.colour}
           map={decor}
           roughness={surface.roughness}
           metalness={surface.metalness}
           clearcoat={surface.clearcoat}
           clearcoatRoughness={surface.clearcoatRoughness}
-          transparent={faded < 1}
+          // A sprayed colour is THE colour: no environment probe on it, or the
+          // room tints the lacquer and a RAL match on screen is a lie
+          // (CLAUDE.md F1, the Spraying philosophy). Melamine and decors keep
+          // the probe — a foil board really does reflect the room.
+          envMapIntensity={surface.envMapIntensity}
+          transparent={translucent}
           opacity={faded}
           // Translucent board must not write depth, or the panel nearest the
-          // camera hides everything the mode exists to show.
-          depthWrite={!contour && !xray}
+          // camera hides everything the mode exists to show. Opaque board
+          // always writes it.
+          depthWrite={!translucent}
         />
         {/* Thin BLACK contours, switchable from the toolbar. In contour view
             they are the whole picture, so they are never off there. */}
@@ -187,7 +299,8 @@ export default function UnitView({
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
-  profile, finishes, outlines = true, contour = false, grounded = true, xray = false,
+  profile, finishes, outlines = true, contour = false, grounded = true, xray = false, sheen = null,
+  wallGaps = null, showAllDims = false, unitDesign = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -287,7 +400,10 @@ export default function UnitView({
   // it stands that far off the wall and hangs in the depth of the room. The same
   // number the collision clamp and the plan use — engine/collision.js insetPads —
   // so the picture and the rule cannot disagree about where it is.
-  const backInset = Math.max(0, Number(unit.params.inset_back_mm) || 0);
+  // Turn 8 (CLAUDE.md F3): plus the 10 mm EVERY unit stands off the wall
+  // behind it. One function, engine/collision.js, so the picture and the clamp
+  // cannot disagree about where a cabinet is.
+  const backInset = backStandoff(unit, profile);
   const origin = useMemo(
     () => wallStart.clone()
       .addScaledVector(along, mm(unit.position.x_mm))
@@ -316,8 +432,85 @@ export default function UnitView({
   // engine's own drilling, so a hinge is drawn where the machine bores for it.
   const hardware = useMemo(() => hardwareInstances(result, profile), [result, profile]);
 
-  // How tall the top infill is right now — the handle sits on top of it.
+  // ─── Every number this cabinet has (turn 8, CLAUDE.md F7) ───
+  // Built from the ENGINE's own output, never re-derived: what is shown is what
+  // is cut. Ordered the way a joiner reads a cabinet — the box, what it stands
+  // on, then what is inside it, then what finishes it.
+  const fullDimensions = useMemo(() => {
+    if (!showAllDims) return [];
+    const out = [];
+    const say = (key, at, text, tone) => out.push({
+      key, at, text, tone,
+    });
+    const front = mm(D) + 0.09;
+    say('w', [mm(W / 2), mm(isWallMounted ? -60 : -legHeight - 60), front], `W ${formatMm(W)}`);
+    say('h', [mm(W) + 0.22, mm(H / 2), front], `H ${formatMm(H)}`);
+    say('d', [mm(W / 2), mm(H) + 0.16, mm(D / 2)], `D ${formatMm(D)}`);
+    say('iw', [mm(W / 2), mm(H) + 0.09, front], `internal ${formatMm(result.derived.internal_width)}`, 'dim');
+    if (isWallMounted) {
+      say('mount', [mm(W) + 0.22, mm(-60), front], `hung at ${formatMm(result.assemblies.mountHeight)}`, 'dim');
+    } else if (legHeight > 0) {
+      say('kick', [-0.22, mm(-legHeight / 2), front], `toe kick ${formatMm(legHeight)}`, 'dim');
+    }
+    for (const shelf of result.assemblies.shelves || []) {
+      say(`shelf-${shelf.index}`, [-0.22, mm(shelf.y), front],
+        `S${shelf.index} ${formatMm(shelf.y)}${shelf.locked ? ' fixed' : ''}`, 'dim');
+    }
+    for (const df of result.assemblies.drawerFronts || []) {
+      say(`drawer-${df.index}`, [mm(W / 2), mm(df.y + df.h / 2), front + 0.02],
+        `D${df.index} ${formatMm(df.h)}`, 'dim');
+    }
+    const infillFace = result.panels.find((p) => p.part === 'INFILL' && p.meta?.side === 'top' && p.meta?.piece === 'face');
+    if (infillFace) {
+      say('top-infill', [mm(W / 2), mm(infillFace.box.y + infillFace.box.h / 2), front],
+        `infill ${formatMm(infillFace.box.h)}`, 'dim');
+    }
+    for (const ep of result.panels.filter((p) => p.part === 'END-PANEL')) {
+      say(`ep-${ep.id}`, [mm(ep.box.x + ep.box.w / 2), mm(ep.box.y + ep.box.h + 40), mm(D)],
+        `end panel ${formatMm(ep.h)}`, 'dim');
+    }
+    return out;
+  }, [showAllDims, W, H, D, isWallMounted, legHeight, result]);
+
+  // ─── How far each door may swing (turn 8, CLAUDE.md F5) ───
+  // Decided by what is beside the cabinet ON THE HINGE SIDE. `wallGaps` is null
+  // for a side whose neighbour is another cabinet rather than a wall, and a
+  // null gap means the door is free — two doors opening into each other is a
+  // different question, with a different answer, and CLAUDE.md asks about walls.
+  const swingFor = useCallback((hinge) => {
+    const gap = hinge === 'R' ? wallGaps?.right : wallGaps?.left;
+    return doorOpenAngle({
+      doorWidth: result.panels.find((p) => p.part === 'FRONT')?.w ?? W,
+      hingeOffset: profile.doors.gap / 2,
+      gapToWall: gap ?? null,
+    }, profile);
+  }, [wallGaps, result.panels, W, profile]);
+
+  // ─── The gaps between the shelves (turn 8, CLAUDE.md F4) ───
+  // Which shelf the cursor is on, and the whole ladder of clear openings in the
+  // column it belongs to. Measured between FACES — the clear space a thing has
+  // to fit into — not between centre lines, because a joiner asking "will the
+  // toaster go in there" is asking about the clear space.
+  const [hoverShelf, setHoverShelf] = useState(null);
+  const shelfGaps = useMemo(() => {
+    const G = Number(unit.params.board_t) || profile.board.thickness;
+    return shelfGapLadder({
+      positions: result.panels.filter((p) => p.part === 'SHELF' && p.box).map((p) => p.box.y),
+      floor: result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G,
+      ceiling: H - G,
+      boardT: G,
+    }, profile.editor.mmStep).map((g, i) => ({ ...g, key: `gap-${i}` }));
+  }, [result.panels, result.assemblies.drawerZone, unit.params.board_t, profile, H]);
+
+  // How tall the top infill is right now — the handle sits on top of it. The
+  // FACE strip is the piece the edge belongs to (there is a shelf behind it,
+  // and its top is 18 mm lower).
   const topInfill = Number(unit.params.top_infill_mm) || 0;
+  const topInfillFace = useMemo(
+    () => result.panels.find((p) => p.part === 'INFILL' && p.box
+      && p.meta?.side === 'top' && p.meta?.piece === 'face' && p.meta?.segment === 'main') || null,
+    [result.panels],
+  );
 
   /**
    * Drag something's top edge. The pointer's height above `fromMm` (a height in
@@ -420,7 +613,18 @@ export default function UnitView({
         // being dragged goes gold, so the hand knows what it has hold of.
         const surface = contour
           ? contourSurface(profile)
-          : surfaceFor({ role: p.role, finishExposed: p.finish_exposed, finishes, profile, frontColour });
+          : surfaceFor({
+            role: p.role,
+            // The ENGINE's answer to "is this cut from the front sheet", not a
+            // guess from the role — which is what left end panels and infills
+            // wearing the carcass finish (turn 8, CLAUDE.md F2.3).
+            materialRole: p.material_role,
+            finishExposed: p.finish_exposed,
+            finishes,
+            profile,
+            frontColour,
+            sheen,
+          });
         return (
           <MovingPanel
             key={p.id}
@@ -434,8 +638,11 @@ export default function UnitView({
             xray={xray}
             depth={D}
             profile={profile}
+            swing={front === 'door' ? swingFor(p.meta?.hinge) : null}
             onPointerDown={(e) => {
-              if (shelfId) { startShelfDrag(e, shelfId, p.box.y); return; }
+              // A locked shelf falls through to the UNIT drag: grabbing a
+              // screwed shelf and pulling is grabbing the cabinet (turn 8, F4).
+              if (shelfId && !p.meta?.locked) { startShelfDrag(e, shelfId, p.box.y); return; }
               startDrag(e);
             }}
             onDoubleClick={(e) => {
@@ -450,11 +657,40 @@ export default function UnitView({
               onSelect();
               if (onContextMenu) onContextMenu({ x: e.clientX, y: e.clientY, panelId: p.id, part: p.part });
             }}
-            onPointerOver={shelfId ? () => { document.body.style.cursor = 'ns-resize'; } : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined)}
-            onPointerOut={(shelfId || front) ? () => { document.body.style.cursor = ''; } : undefined}
+            onPointerOver={shelfId
+              ? () => {
+                // A screwed or locked shelf does not move, so the cursor must
+                // not promise that it does (turn 8, F4).
+                document.body.style.cursor = p.meta?.locked ? 'default' : 'ns-resize';
+                setHoverShelf(shelfId);
+              }
+              : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined)}
+            onPointerOut={(shelfId || front)
+              ? () => { document.body.style.cursor = ''; if (shelfId) setHoverShelf(null); }
+              : undefined}
           />
         );
       })}
+
+      {/* ─── Hover a shelf: the gaps in the whole column (turn 8, F4) ───
+          "Are they even?" is the question a joiner asks about a set of
+          shelves, and it cannot be answered one gap at a time. Hovering ANY
+          shelf therefore measures EVERY gap in the column — floor to the first
+          shelf, shelf to shelf, and the last one to the underside of the top —
+          so a stack that is 3 mm out says so at a glance.
+          It is a readout, not a drag: nothing here writes anything. */}
+      {hoverShelf && !contour && !shelfDrag && (
+        <group userData={{ ccHelper: true }}>
+          {shelfGaps.map((g) => (
+            <DimLabel
+              key={g.key}
+              position={[mm(W / 2), mm((g.from + g.to) / 2), mm(D) + 0.06]}
+              text={formatMm(g.size)}
+              tone={g.even ? 'dim' : 'gold'}
+            />
+          ))}
+        </group>
+      )}
 
       {/* live dimension while a shelf is being dragged (SPEC 4.8) */}
       {shelfDrag && shelfDrag.unitId === unit.id && (
@@ -477,32 +713,55 @@ export default function UnitView({
         </group>
       )}
 
+      {/* ─── The joint (turn 8, CLAUDE.md F8) ───
+          Solid: the division lines a tab leaves where a side meets a wieniec.
+          X-ray: every tab profile, socket and dog bone. Both read off the CNC
+          data, so a second joint system draws itself. Not in Contour, where
+          the whole point is that everything but the silhouette goes away. */}
+      {!contour && (
+        <JointLines result={result} profile={profile} xray={xray} design={unitDesign} />
+      )}
+
       {/* The bought hardware (turn 7, CLAUDE.md F3): legs and the rail always,
           hinges and runners only in X-ray. Every position comes from
           engine/hardware3d.js, which reads the engine's own drilling — so the
           count of what is drawn is the count of what is on order. */}
       <Hardware instances={hardware} profile={profile} xray={xray && !contour} />
 
-      {/* Top infill: grab it and drag UP to the ceiling, or double-click it to
-          send it there. The piece itself is drawn from the engine like every
-          other panel; this is the handle on top of it.
+      {/* Top infill: grab its top edge and drag UP to the ceiling, or
+          double-click it to send it there. The piece itself is drawn from the
+          engine like every other panel; this is the handle on top of it.
           Turn 4: the handle exists only when the PIECE does (BACKLOG #16) —
-          a handle for something nobody added is a handle for nothing. */}
-      {onSetTopInfill && topInfill > 0 && (
-        <mesh
-          userData={{ ccHelper: true }}
-          position={[mm(W / 2), mm(H + Math.max(topInfill, 0) + 12), mm(D - 30)]}
-          onPointerDown={(e) => startHeightDrag(e, H, onSetTopInfill)}
-          onDoubleClick={(e) => { e.stopPropagation(); onFillToCeiling?.(); }}
-          onPointerOver={() => { document.body.style.cursor = 'ns-resize'; }}
-          onPointerOut={() => { document.body.style.cursor = ''; }}
-        >
-          <boxGeometry args={[mm(Math.min(W, 240)), mm(24), mm(60)]} />
-          <meshStandardMaterial
-            color={selected ? COLORS.gold : profile.appearance.hardware.bracket}
-            roughness={0.5} transparent opacity={selected ? 0.9 : 0.35}
-          />
-        </mesh>
+          a handle for something nobody added is a handle for nothing.
+
+          ─── TURN 8 (CLAUDE.md F2.6): THE GHOST BLOCK ───
+          It used to be a 240 × 24 × 60 mm translucent grey box floating 12 mm
+          above the infill, and that is the "obcy prostopadłościan" on Piotr's
+          screenshot: a chunk of nothing, in a colour no cabinet is, hanging in
+          mid air beside the piece it belongs to.
+
+          It is the same EDGE the end panels and the fillers have used since
+          turn 6 now — invisible at rest, lit on hover, lying on the piece's own
+          top edge. One gesture, learnt once, for all three of the things that
+          finish a run against a ceiling. */}
+      {onSetTopInfill && topInfill > 0 && topInfillFace && (
+        <EdgeHandle
+          position={[
+            mm(topInfillFace.box.x + topInfillFace.box.w / 2),
+            mm(topInfillFace.box.y + topInfillFace.box.h),
+            mm(topInfillFace.box.z + topInfillFace.box.d / 2),
+          ]}
+          width={Math.max(topInfillFace.box.w, 22)}
+          depth={Math.max(topInfillFace.box.d, 22)}
+          thickness={22}
+          colour={profile.appearance.selection.colour}
+          active={activeEdge === 'top-infill'}
+          onPointerDown={(e) => {
+            setActiveEdge('top-infill');
+            startHeightDrag(e, H, onSetTopInfill);
+          }}
+          onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge('top-infill'); onFillToCeiling?.(); }}
+        />
       )}
 
       {/* End panels: the top edge is the control (turn 6, CLAUDE.md F3).
@@ -580,6 +839,19 @@ export default function UnitView({
           <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} />
           <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${formatMm(D)} deep`} tone={selected ? 'gold' : 'dim'} />
+        </group>
+      )}
+
+      {/* ─── Every number this cabinet has (turn 8, CLAUDE.md F7) ───
+          The right-click toggle. It is per UNIT and not global for the reason
+          it is worth having at all: this much text over a whole kitchen is a
+          wall of numbers, and over ONE cabinet it is the answer to "what did I
+          set this to". Tool chrome, so it never reaches a render. */}
+      {showAllDims && !contour && (
+        <group userData={{ ccHelper: true }}>
+          {fullDimensions.map((d) => (
+            <DimLabel key={d.key} position={d.at} text={d.text} tone={d.tone || 'gold'} />
+          ))}
         </group>
       )}
     </group>

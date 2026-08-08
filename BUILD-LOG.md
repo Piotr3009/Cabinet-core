@@ -2157,3 +2157,820 @@ temu „booklet naprawdę ma n stron, każda w rozmiarze, który wybrała karta"
 w node, a nie tylko przeglądarka. Sam eksport rozdzielony na `bookletDoc()` (buduje) i
 `exportBookletPdf()` (zapisuje), bo `doc.save()` sięga po system plików albo po
 przeglądarkę, a żadne z nich nie należy do testu, którego pytaniem jest liczba stron.
+
+---
+
+# TURA 8 — ŚWIATŁO, RENDER v2 I SIEDEM BŁĘDÓW Z TESTÓW PIOTRA
+
+Podłoga wyjściowa: `npm test` na main po merge T7 — **601/602**, z jedyną czerwoną
+suitą `test/decors.test.js`. To jest oczekiwane i zapisane w CLAUDE.md: main niesie
+już CELOWO nowy układ dekorów (`public/decors/egger/`), a ten test pilnuje starej
+płaskiej ścieżki z T5. F1 przepina loader i ten test na nowy układ.
+
+## F0 — DŁUG Z TURY 7: trzeci tab na niskim korpusie
+
+BLOCKERS #37 kończy się słowami „**Nie zrobiłem tego**". To jedyna pozycja z listy
+niedokończonych tury 7, która jest KODEM — reszta to albo maszyna (kontrolny DXF
+w VCarve, #36), albo baza (SQL, unikalność numeru, sety — #38/#39/#43), albo rzecz
+świadomie odłożona (#40/#42). Więc to jest to, co tura 8 robi najpierw.
+
+**Problem.** `tabCentres()` daje trzy taby po tylnej krawędzi boku: 95, H/2, H−95.
+Tab to ±25, ale **dogbone wokół niego to ±30** i to on sięga dalej. Przy niskim
+korpusie środkowy dogbone wchodzi w skrajny. `LOW_CABINET.minHeight` to 300 mm,
+więc przypadek jest osiągalny z UI — przy 300 mm skrajny relief kończy się na 125,
+a środkowy zaczyna na 120. Nakładają się.
+
+**Rozwiązanie — to samo, co tura 7 zrobiła socketom, po drugiej osi.** Poniżej progu
+środkowy tab nie jest cięty i panel ma dwa. Próg jest WYPROWADZONY z geometrii:
+
+```
+  190    dwa skrajne środki, tabCentresFromEnd (95) od każdego końca
++ 120    footprint skrajnego i środkowego tabu, po obu stronach:
+         2 × 2 × max(tabHalfWidth 25, dogboneHalfHeight 30)
++  36    mostek — jedna grubość płyty po KAŻDEJ stronie środkowego tabu;
+         tu są dwie szczeliny do utrzymania, nie jedna
+= 346    profile.puzzle.middleTabBelow
+```
+
+Różnica wobec `singleSocketBelow` (264,5) jest właśnie w tym ostatnim wierszu i jest
+prawdziwa: socket ma jedną szczelinę do utrzymania, środkowy tab ma dwie.
+
+**Konsekwencja, której nie widać z progu.** `backPanelGeometry()` liczyło rzędy śrub
+przez `const [t1y, t2y, t3y] = sideCentres` — z dwoma tabami `t3y` jest `undefined`
+i cały rząd wychodzi jako `NaN`. Rzędy liczą się teraz z reguły, a nie z liczby:
+„jedna śruba od każdego końca, i po jednej MIĘDZY każdą parą sąsiednich tabów".
+Przy trzech tabach to są cztery rzędy LISP-a, przy dwóch — trzy, we właściwych
+miejscach.
+
+Nic poniżej nie zostało pouczone osobno: taby boku, ich dogbony, sockety pleców
+i rzędy śrub biorą się z tej jednej funkcji, więc DXF i podgląd CNC idą za nią same.
+
+`test/low-tabs.test.js` — 8 testów, próg **przeliczany na każdym przebiegu** (jak
+w `single-socket.test.js`), plus dowód, że poniżej progu stare taby naprawdę by się
+zderzyły, plus regresja „normalny korpus ma dalej trzy taby i cztery rzędy śrub".
+
+## F1 — RENDER v2 + OŚWIETLENIE
+
+Diagnoza Piotra brzmiała: „wszystko przezroczyste, brak cienia, brak głębi, białe zlewa
+się". Cztery zdania, cztery różne przyczyny — i żadna z nich nie była kwestią gustu.
+
+### 1. „Wszystko przezroczyste" — sześć procent, za które płacił cały bufor głębi
+
+`UnitView` trzymał KAŻDY front na `opacity 0.94` w zwykłym widoku. Sześć procent
+prześwitu widać ledwo; koszt jest nieporównanie większy: materiał z `transparent: true`
+**wychodzi z kolejki nieprzezroczystej**, więc każde drzwi w pokoju były sortowane
+tyłem-do-przodu względem wszystkich innych i rysowane bez porządku głębi, na którym
+opiera się reszta sceny. Stąd „przezroczyste" jako wrażenie ogólne, a nie tylko na
+frontach.
+
+Solid jest teraz **kryjący, kropka**. `transparent` i `depthWrite` liczą się z jednej
+wartości (`translucent = faded < 1`), a półprzezroczystość należy do dwóch trybów,
+które po to istnieją: X-ray i Contour.
+
+### 2. „Brak cienia, brak głębi" — key słabszy niż fill
+
+Tura 7: **ambient 1.25, key 0.85**. Światło kluczowe słabsze od płaskiego, które ma
+pokonać, oświetla wszystko i nie kształtuje niczego. Do tego cień: kamera cienia była
+dopasowana do POKOJU z zapasem — na kuchni 4 m to bryła 8 m, a mapa 1024 na 8 metrach
+to 8 mm na teksel, czyli więcej niż szczelina między dwiema szafkami. Cień między nimi
+po prostu nie miał rozdzielczości, żeby zaistnieć.
+
+Rig studyjny ze Spraying-Calc, w `profile.appearance.studio`:
+
+| | |
+|---|---|
+| ambient | 0.2 |
+| key (z cieniem) | 1.0 |
+| fill | 0.5 |
+| rim | 0.3 |
+| ACESFilmic, exposure | 1.0 |
+
+…i kamera cienia dopasowana do **MEBLI**, nie do pokoju (`shadowPadding` 600 mm luzu,
+liczone z `furnitureBounds` po klatce, w której jednostki się narysowały). Każdy teksel
+mapy ląduje na czymś, co rzuca cień.
+
+**Ten sam rig w widoku roboczym i w renderze.** To jest osobna decyzja i ważniejsza niż
+same liczby: tura 7 oświetlała edytor inaczej niż zdjęcie i przestawiała światła
+w przebiegu przechwytującym, więc stolarz nie mógł ocenić z ekranu, co dostanie klient.
+`profile.render.lightScale` to teraz same jedynki (blok zostaje — warsztat, który chce
+mocniejszego zdjęcia, ma gałkę), a `render.exposure` równa się `studio.exposure`.
+
+### 3. Ściany, których rig studyjny nie umie oświetlić
+
+Rig na trzy światła jest zbudowany dla obiektu na tle bez szwu. Skierowany na POKÓJ
+daje szare ściany, bo ścianę oświetla głównie światło, które już się od czegoś odbiło —
+a światło kierunkowe nie ma odbić. Tura 7 odpowiadała na to ambientem 1.25, czyli
+spłaszczała meble, żeby rozjaśnić ściany.
+
+`studio.roomBounce` (0,42) to ta sama odpowiedź wycelowana tam, gdzie należy: **podłoga
+i ściany niosą ten ułamek własnego koloru jako emisję**. Meble widzą rig i nic więcej.
+Ściana za białą szafką jest biała, a modelunek na drzwiach nietknięty.
+
+### 4. Hybryda materiałów — filozofia Spraying, w trzech liczbach
+
+| | powierzchnia natryskiwana | melamina / dekor |
+|---|---|---|
+| environment (`envMapIntensity`) | **0** | 1 |
+| metalness | 0 | 0 |
+| roughness | **z suwaka Sheen** | z rodziny (`materials.melamine`) |
+| faktura | orange peel na normalnych, `normalScale` 0,1 | brak |
+
+Zero na envMapie nie jest oszczędnością, tylko regułą: **lakier w kolorze JEST tym
+kolorem**. Biały front, który podbiera odbicie stojącego obok orzechowego korpusu, nie
+jest już biały, a klient przykładający wzornik RAL do ekranu porównuje go z czymś innym,
+niż myśli. Melamina i dekory zatrzymują sondę — folia naprawdę odbija pokój i to jest
+większość tego, co odróżnia płytę od kolorowego papieru.
+
+Orange peel siedzi w tym samym shaderze co złamana krawędź z tury 6 (`3d/bevel.js`,
+uniform `ccSpray`): trzy sinusy, część styczna, komórka ~2 mm (`spray.peelMm`).
+Geometria tak gęsta kosztowałaby klatkę za coś, czego i tak nie widać z bliska
+inaczej niż jako połysk.
+
+### 5. Suwak Sheen — skala Piotra, nie suwak roughness
+
+`profile.appearance.sheenScale`: **0–25, skok 5**, domyślnie 15. Wzór ze Spraying:
+
+```
+roughness = 1 − sheen / 25
+```
+
+To jest skala, na której Piotr wycenia ludziom robotę, więc to jest skala, o którą pyta
+aplikacja. Suwak „roughness 0–1" to ta sama informacja w języku, którym w warsztacie
+nikt nie mówi. Wzór jest jedną linijką w `engine/design.js`, więc panel ustawień
+i obraz nie mogą się różnić co do tego, jak wygląda 15. Nazwy kroków są: Matt · Dead
+flat · Eggshell · Satin · Semi-gloss · Mirror.
+
+Sheen dotyczy WYŁĄCZNIE tego, co idzie do kabiny: fronty, panele boczne, infille,
+cokół. Melamina to folia i swój połysk przyniosła z płytą. Dekor na froncie też NIE jest
+natryskiem — `test/sheen.test.js` pilnuje i tego.
+
+### 6. Prawdziwe tekstury EGGER (decyzja Piotra 07.08)
+
+Tura 5 czytała warunki EGGER-a jako zakaz używania skanów w 3D bez pisemnej zgody
+i puszczała **własne proceduralne słoje tonowane średnim kolorem dekoru**. Piotr tę
+decyzję cofnął: skany są w Supabase Storage, 69 dekorów woodgrain niesie pole `tex`,
+i dekor drewnopodobny ma teraz obraz producenta. To jego relacja z dostawcą i jego
+ryzyko — zapisane, nie dyskutowane. Pisemna zgoda na publiczne demo i sprzedaż zostaje
+jako **BLOCKERS #44**.
+
+Co się NIE zmieniło: obraz jest pokazywany **w całości i bez edycji** (`tint: false` —
+tonowanie hex jest wyłączone wszędzie tam, gdzie jest prawdziwy skan), atrybucja
+„EGGER {code} {name}" jest bezwarunkowa, nota o reprodukcji jedzie z nią. Dekor bez
+skanu — i maszyna bez sieci — spada na proceduralne słoje, więc **mock-mode DZIAŁA**
+(reguła 7), a nie pokazuje 400 białych paneli.
+
+**Kierunek słojów — błąd, który było widać na każdej szafce.** Piotr: „dziś słoje leżą
+POZIOMO na bokach". Przyczyna jest w UV sześcianu: three daje ścianie ±X `u` wzdłuż Z
+i `v` wzdłuż Y, a **bok korpusu JEST ścianą ±X**. Tura 7 skalowała teksturę przez `x`
+i `y` pudełka, więc figura kładła się na boku.
+
+`engine/decors.js` niesie teraz dwie czyste funkcje, obie testowane w node:
+
+- `grainRun(panel)` — słój biegnie wzdłuż DŁUŻSZEGO wymiaru formatki, bo tak tnie się
+  płytę. `cnc.rotated` nie wchodzi w grę i to jest świadome: `rotated` mówi, że DXF
+  rysuje część obróconą dla zagnieżdżenia, a `w`/`h` części są już częścią, nie rysunkiem.
+- `decorMapping(box, grainMm)` — która ściana pudełka jest tą dużą, i czy obraz trzeba
+  obrócić o ćwierć obrotu, żeby słój poszedł wzdłuż `u`.
+
+Skala fizyczna: `appearance.decor.scanHeightMm = 2800` — **jeden skan to tyle
+milimetrów prawdziwej płyty wzdłuż słoja**, a nie długość powtórzenia. Dzięki temu
+drzwi 720 mm pokazują ten kawałek płyty, z którego byłyby wycięte, zamiast kafla, który
+czyta się jak tapeta. Szerokość liczona z proporcji zdekodowanego obrazu, `anisotropy 8`
+(bok szafki ogląda się pod kątem częściej niż na wprost, i to właśnie tam niefiltrowany
+słój zamienia się w migotanie).
+
+### 7. Zaznaczenie — granat, który na ekranie jest czarny
+
+Przy okazji F2.5, bo to ta sama rodzina: `#1B2A4A` przy szerokości 1 px na ciemnej
+kanwie czyta się jak czarny i Piotr nie odróżniał szafki zaznaczonej od niezaznaczonej.
+Znacznik to teraz czytelny średni błękit `#2B6CB0`, i **cieńszy** (0,75) — znak, który
+widać, nie musi być ciężki. STRZAŁKI zostają w granacie: rysunek drukuje się na białym
+papierze, gdzie granat jest granatem.
+
+### Liczby fazy
+
+| | |
+|---|---|
+| testy | **634/634** (nowe: `sheen.test.js` 10, przepisany `decors.test.js` 24) |
+| build | czysty |
+| nowe zależności | zero |
+
+**Testy, które musiały się zmienić — bo tura 8 zmienia to, co opisywały:**
+
+- `decors.test.js` — „żaden finish nie niesie obrazu EGGER-a" było linią tury 5.
+  Asercja się **przeniosła**, a nie zniknęła: testowane jest to, o co licencja dalej
+  prosi OPROGRAMOWANIE — obraz w całości i bez edycji (`tint: false`), atrybucja
+  bezwarunkowa, fallback dla maszyny bez sieci. Plus nowy strażnik: `tex`, które nie
+  jest adresem `https`, jest odrzucane, zanim trafi do loadera tekstur.
+- `render.test.js` — „render bierze kontrast z key light, nie z ciemnego ambientu"
+  opisywało DWA rigi. Jest jeden, więc test mówi to: `lightScale` to same jedynki,
+  a `render.exposure` równa się `studio.exposure`. Drugi test pilnuje samego rigu
+  (key > 3 × ambient — dokładnie ta proporcja, którą tura 7 miała odwróconą).
+- `appearance.test.js` — kolor zaznaczenia, patrz wyżej.
+
+## F2 — SIEDEM BŁĘDÓW Z TESTÓW PIOTRA
+
+### 1. [NAJWAŻNIEJSZY] Dodawanie szafki PO LEWEJ
+
+Zgłoszenie ma dwa zdania: nowa jednostka zawsze ląduje po prawej, i nie da się jej
+przeciągnąć w lewo.
+
+**Drugie zdanie NIE jest błędem i nie wolno go „naprawić".** Szafka dobita do sąsiada
+nie ma dokąd iść w lewo, a clamp, który przepuściłby ją przez sąsiada, byłby błędem
+znacznie gorszym od zgłaszanego — dokładnie tym, który tura 3 faza 4 zamknęła. Test
+`slots-and-hinge.test.js` trzyma tę linię celowo, bo kuszący fix ją łamie.
+
+Błędem jest zdanie pierwsze. `freeSlotOnWall()` znało **jeden kierunek**, więc lewy
+koniec ciągu był nieosiągalny ŻADNĄ drogą: ani przez dodawanie (zawsze w prawo), ani
+przez przeciąganie (zablokowane, i słusznie).
+
+Co jest teraz:
+
+- `freeSlots(spans, …)` — czyste wyliczenie WSZYSTKICH wolnych odcinków ściany, jako
+  zakresów pozycji lewej krawędzi, w których jednostka się mieści;
+- `freeSlotOnWall({ …, near, side })` — kiedy wołający wskaże jednostkę, przy której
+  pracuje, odpowiedzią jest **najbliższy WOLNY slot po dowolnej jej stronie**. Kandydaci
+  to dwa końce każdego wolnego odcinka i nic pomiędzy: nowa szafka staje OBOK czegoś,
+  nigdy nie dryfuje na środku luki. Remis idzie w prawo, więc „dodaj, dodaj, dodaj"
+  dalej buduje rząd tak, jak budował od tury 1;
+- `side: 'L' | 'R'` zawęża to do jednej strony, a brak miejsca po wskazanej stronie
+  **odmawia z powodem** („no room to the left of 01") zamiast po cichu użyć drugiej
+  albo ściany za plecami;
+- panel Library pokazuje wybór strony (`◀ · auto · ▶`) tylko wtedy, gdy jest przy czym
+  stanąć — na pustej ścianie pytanie nie ma sensu, a odpowiedzią jest „na środku".
+
+Wołający to `LibraryPanel`, a jednostką, przy której się pracuje, jest **zaznaczona**.
+Ponieważ panel zaznacza świeżo dodaną, ciąg rośnie w kierunku, w którym się go buduje.
+Sprawdzone w Chromium: trzy szafki → `[1700, 2300, 2900]`, po `◀` i czwartym dodaniu →
+`[1700, 2300, 2900, 1100]`.
+
+### 2. Przełącznik drzwi L/P nie działa
+
+Strona zawiasu żyje w DWÓCH miejscach, a silnik czyta to drugie. `params.hinge` należy
+do jednostki; `params.doors` staje się OBIEKTEM w chwili montażu drzwi (`setDoors`),
+a `normalizeParams` pozwala `doors.hinge` nadpisać `hinge`. Więc od momentu, w którym
+drzwi istniały, przełącznik w panelu pisał do pola, którego nic nie czyta, i Piotr
+patrzył na kontrolkę, która nie robi nic.
+
+Jedno źródło prawdy, trzymane w store (a nie przez nauczenie silnika, żeby wolał drugie
+pole — to obiekt drzwi jest podawany silnikowi, więc to obiekt drzwi ma być poprawny).
+Synchronizacja idzie w OBIE strony: montaż drzwi z zawiasem zapisuje go też na
+jednostce, więc przełącznik pokazuje to, co szafka naprawdę ma.
+
+Test sprawdza wszystkie trzy skutki przełączenia: bok wiercony na zawiasy
+(`hinged_sides`), `meta.hinge` na froncie (o to obraca się drzwi w 3D i tak rysuje je
+karta) oraz puszka ⌀35, która przenosi się na drugą krawędź drzwi.
+
+### 3. End panel i infille nie barwiły się materiałem frontów
+
+Silnik mówi `material_role: 'front'` dla end panelu i infilla od tury 6 — widok pytał
+o `role === 'front'`, co jest prawdą dla drzwi i fałszem dla `end_panel` i `infill`.
+Naprawione w F1 razem z resztą materiałów (`surfaceFor({ materialRole })`).
+
+Uwaga ze screenshota Piotra — „end panel przy dekorze EGGER (uni) ZABARWIŁ się" — jest
+wyjaśniona tą samą przyczyną, nie drugą: przy dekorze na korpusie i niczym na frontach
+fronty **dziedziczą korpus** (`design.js`), więc obie odpowiedzi były tym samym kolorem
+i błąd był niewidoczny. Widać go dopiero, gdy fronty mają własny kolor. Cała macierz
+(kolor „This app" × dekor EGGER × end panel × infill) jest przejechana w
+`test/sheen.test.js`.
+
+### 4. EdgeHandle — niewidoczny w spoczynku
+
+Tura 6 rysowała go przy 22 % krycia ZAWSZE, dokładnie NA górnym licu elementu i tej
+samej szerokości. Wyszły z tego dwie rzeczy i Piotr zgłosił obie: **szara mgiełka** po
+górach wszystkich paneli i infilli w pokoju (stały pasek nie jest uchwytem — czyta się
+jako część mebla, czyli jako jedyna rzecz, którą uchwyt nigdy być nie może) oraz
+**z-fighting**, czyli „galareta": dwie współpłaszczyznowe powierzchnie to rzut monetą
+na piksel na klatkę.
+
+Teraz: w spoczynku **nie rysuje się nic**. Siatka dalej TAM JEST — musi, bo inaczej nie
+byłoby czego najechać — ale jest `visible={false}`, a nie `opacity 0`: niewidoczna
+siatka nie jest rysowana, sortowana ani mieszana, i **dalej łapie raycast**, więc hover
+działa, a klatka nie kosztuje nic. Kiedy się rysuje, stoi **0,6 mm NAD licem**
+i jest wcięta **1 mm na stronę** (`HANDLE_LIFT_MM` / `HANDLE_INSET_MM`), więc obie
+powierzchnie nigdy nie są współpłaszczyznowe, a obrys uchwytu nie dotyka krawędzi
+elementu pod nim.
+
+### 5. Zaznaczenie — patrz F1 ust. 7
+
+`#2B6CB0`, grubość 0,75. Strzałki zostają w granacie.
+
+### 6. „Dziwny klocek" przy top infillu
+
+Uchwyt top infilla był **prostopadłościanem 240 × 24 × 60 mm** w kolorze `bracket`,
+wiszącym 12 mm nad infillem, przy 35 % krycia. To jest ten „obcy prostopadłościan" ze
+screenshota: kawałek niczego, w kolorze, którego nie ma żadna szafka, wiszący w powietrzu
+obok elementu, do którego należy.
+
+Jest tą samą KRAWĘDZIĄ, której end panele i pionowe infille używają od tury 6 —
+niewidoczną w spoczynku, zapaloną pod kursorem, leżącą na własnym górnym licu paska
+czołowego. Jeden gest, nauczony raz, dla wszystkich trzech rzeczy, które kończą ciąg
+pod sufitem.
+
+*(Drugi podejrzany z CLAUDE.md — narożny corner-return — jest prawdziwym nakładaniem
+się pudełek i należy do F6: paski wracające za róg zachodzą na główne o kwadrat naroża.
+To nie klocek-widmo, tylko brakująca mitra, i F6 ją wycina.)*
+
+### 7. Gate: top infill niedostępny dla base units
+
+Na bazie leży **BLAT**, a szczelina nad blatem to miejsce, gdzie stoją wiszące. Domykanie
+jej paskiem 18 mm to nie jest robota, którą ktokolwiek by wyciął — a element trafiał do
+BOM-u i na arkusz CNC tak, jakby ktoś tego chciał.
+
+`supports.topInfill` per kit (`engine/types.js`) i `takesTopInfill()`
+(`engine/autoparts.js`). Bramka stoi w **trzech** miejscach, bo są trzy drogi do środka:
+`setTopInfill` (przeciąganie i pole), `menuActions` (menu kontekstowe nie pokazuje wpisu
+w ogóle) i `autoPartsFor` — ta ostatnia dlatego, że projekt zapisany przed turą 8,
+szablon albo import mogą już nieść parametr. Panel prawy mówi, dlaczego go nie ma.
+
+Dozwolony: WUD, BUDTALL, WARDROBE, FRIDGE. Niedozwolony: BUD, BUDR, SINK, LOW_CABINET.
+**Side infill bez zmian** — baza przy ścianie ma szczelinę na scribe dokładnie tak samo
+jak tall.
+
+### Liczby fazy
+
+| | |
+|---|---|
+| testy | **661/661** (nowe: `slots-and-hinge.test.js` 16) |
+| build | czysty |
+
+**Testy, które musiały się zmienić:** `run-infill`, `construction` i `autoparts` stawiały
+top infill na jednostkach BAZOWYCH. Element jest identyczny niezależnie od tego, jaki kit
+pod nim stoi — zmieniło się tylko to, które kity mogą go mieć — więc te suity stoją teraz
+na `BUDTALL`. Przy okazji dwie z nich przestały wpisywać wysokość na sztywno i czytają
+prześwit z pokoju: nad tall unitem jest go mniej niż nad bazą, a pytaniem testu jest
+mechanizm, nie liczba.
+
+## F3 — ODSUNIĘCIE OD ŚCIANY TYLNEJ: 10 mm, WSZYSTKIE
+
+Powód Piotra jest krótki i konstrukcyjny: **ściany nie są proste, a wiszące szafki
+wiszą na wieszakach, które i tak je odsuwają**. Więc to nie jest luz, o który ktoś
+prosi per szafka — to fakt o tym, jak ten warsztat buduje, i siedzi w profilu obok
+wszystkich innych takich faktów: `profile.room.wallBackClearance = 10`.
+
+`params.inset_back_mm` z tury 7 zostaje czym był — DECYZJĄ o jednej szafce, za którą
+biegnie rura — i te dwie liczby **się dodają**. Szafka odsunięta 40 na rurę stoi 40 od
+tego miejsca, w którym stałaby normalnie, czyli 50 od ściany. Jedna funkcja,
+`backStandoff(unit, profile)`, i wszystko czyta ją zamiast składać sobie sumę.
+
+**To, co robi z tego fazę, a nie stałą, to wszystko, co musiało za nią pójść:**
+
+| co | jak |
+|---|---|
+| pozycja w 3D | `UnitView` bierze `backStandoff`, nie sam inset |
+| strzałki odległości | `Scene` mierzy od realnej pozycji, ta sama funkcja |
+| clamp głębokości | pokój 3000 → szafka może mieć 2990, i mówi, co ją zatrzymało |
+| plan / footprint kolizji | `toObstacleUnit` przez `footprintPads(…, profile)` |
+| **end panel** | głębszy o 10 i zaczyna się na ŚCIANIE (`box.z = −10`) |
+| **mitrowany return** | biegnie do ściany, nie do tyłu korpusu (`frontFaceDepthOf`) |
+| **top view** | rysuje linię ŚCIANY i szczelinę do niej |
+| **karta produkcyjna** | wymiarowuje tę szczelinę liczbą |
+| boczny clamp przy Infill OFF | 10 mm zamiast zera |
+
+**Dwie rzeczy warte wyjaśnienia, bo wyglądają na niekonsekwencje i nie są.**
+
+*End panel przechodzi przez luz przyścienny, ale NIE przez inset.* Luz to puste
+powietrze za każdą szafką i panel maskujący ma je przekryć — inaczej szczelina biegnie
+na wysokości oka przez całą głębokość ciągu, czyli dokładnie to, czego panel maskujący
+ma nie mieć. Inset 40 trzyma rurę; wpuszczenie w niego panelu to wpuszczenie go w to,
+od czego szafkę odsunięto. `test/wall-clearance.test.js` pilnuje obu stron.
+
+*Koniec ciągu przy ścianie bocznej to dalej „wall", nie „open".* Skoro przy Infill OFF
+jednostka parkuje 10 mm od ściany bocznej, `runEnd()` mogłoby uznać, że nie dobiła i że
+trzeba obrócić narożnik. Nie: 10 mm to szczelina na scribe, element z góry przechodzi
+nad nią na ścianę, a return puszczony w 10-milimetrową szparę byłby wyrobem, którego
+nikt nie zamawiał. Tolerancja „to jest ściana" obejmuje więc luz przyścienny.
+
+**Infill OFF ≠ Infill 10.** Boczny stop to 10 mm, ale filler się NIE pojawia:
+`sideInfill()` produkuje pasek tylko wtedy, gdy szczelina mieści się w ustawieniu
+projektu, a przy ustawieniu 0 nie mieści się nic. Szczelina zostaje szczeliną na
+przyfugowanie, a w cut liście nie przybywa nic.
+
+`test/wall-clearance.test.js` — 13 testów, od samej liczby (i tego, że profil sprzed
+tury 8 dostaje default zamiast wywrotki) po rysunek.
+
+**Testy, które musiały się zmienić:** `end-panel` i `construction` (głębokość panelu),
+`run-infill` (długość returnu, i „END 1" — jednostka parkuje teraz na stopie 10 mm,
+więc test czyta pozycję piecea względem ŚCIANY, a nie względem korpusu),
+`slots-and-hinge` (lewy kraniec ściany to 10, nie 0).
+
+## F4 — PÓŁKI v2
+
+### 1. Cofnięcie 20 mm — i ograniczenie, które trzeba było ominąć uczciwie
+
+Półka regulowana stoi 20 mm od lica od czasów LISP-a; **półka FIX i partition** były
+cięte na pełną głębokość. Piotr chce ich wszystkich na jednej linii — i ma rację: partition
+w licu obok cofniętej półki czyta się jak pomyłka, a to on jest tym elementem, obok
+którego przechodzi ramię zawiasu.
+
+Problem: **złote fixtures TO SĄ kity AutoLISP-a**, a reguła 1 z `fixtures/README.md` jest
+absolutna — „Engine output must match. If it doesn't — the ENGINE is wrong". `PARTITION`
+i `RAIL-PART` mają w `golden-wardrobe` i `golden-low-cabinet` wpisane `h: 560`, czyli
+pełne `internalDepth`. Skrócenie ich w silniku bezwarunkowo = czerwone fixtures.
+
+Rozwiązanie jest tym samym wzorcem, którym idą cokół, top infill i end panele od tury 4:
+**cofnięcie to DECYZJA PROJEKTU, a nie zachowanie kitu.** Silnik czyta
+`params.interior_setback_mm`, a podaje go `paramsForEngine()` — adapter store'u, przez
+który przechodzi każdy odczyt każdej jednostki w projekcie. Gołe `computeCabinet()`
+(fixture, test kitu, import) dostaje 0 i dalej tnie dokładnie to, co tnie LISP. Obie
+strony tej umowy mają test.
+
+Per element: `front_mm` na półce, `partition_front_mm` na jednostce. `0` = **wysunięte do
+lica** — bo półka pod blatem albo za drzwiami szklanymi czasem musi. Przyciski w panelu
+(`⇥`) przełączają jedno w drugie.
+
+**Wieńce TOP/BOTTOM nietknięte.** Niosą puzzle; skrócenie ich to skrócenie korpusu.
+
+### 2. FIX = ŚRUBY, nie piny
+
+Półka FIX dostaje **trzy śruby ⌀3 przez każdy bok, w OSI półki** (środek grubości, śruba
+w czoło płyty), na pozycjach `[50, sideW/2, sideW−50]`, warstwa `SCREWS_3MM` — czyli
+dokładnie ten sam złącze i ta sama warstwa, których partition używa od zawsze. I **żadnych
+pinów**: kolumna otworów ⌀7,5 dla półki, która nie może się ruszyć, to otwory wywiercone
+po nic.
+
+`drillSummary` mówi teraz obie rzeczy osobno: `shelf_row_y` to dalej GDZIE są półki (tym
+wymiaruje rysunek), a `shelf_pin_row_y` / `shelf_screw_row_y` mówią, jak każda jest
+trzymana. DXF i podgląd CNC biorą to z `drills[]`, więc nie trzeba ich było uczyć niczego.
+
+### 3. `updown_locked`
+
+Półka regulowana, której nie wolno przeciągać: taka, na której stoi piekarnik, taka, do
+której przybity jest przelot kabli. Wiercenie identyczne jak FIX, bo **trzymanie półki
+w miejscu to jedno i to samo, niezależnie od powodu** — stąd jedna funkcja
+`isShelfLocked()`, a nie dwie.
+
+Odmowa ruchu siedzi w `setShelfPos`, czyli w JEDYNYM setterze, przez który przechodzi
+i przeciąganie, i wpisana liczba. Zwraca `{ blocked: true, locked: true }` — ten sam
+kształt, który clamp zwraca dla półki bez miejsca, więc odczyt w 3D nie potrzebował
+nowego przypadku. W 3D kursor nad zablokowaną półką nie obiecuje `ns-resize`, a złapanie
+jej przeciąga CAŁĄ SZAFKĘ, co jest tym, co fizycznie robisz, łapiąc przykręconą półkę.
+
+Minimalny toggle w panelu (🔓/🔒), zgodnie z CLAUDE.md („pełne UI później").
+
+### 4. Hover na półce → odstępy
+
+Pytanie brzmi „czy są równo?", a na to nie da się odpowiedzieć jedną szczeliną. Najechanie
+na DOWOLNĄ półkę wymiaruje więc **wszystkie prześwity w kolumnie** — od podłogi (albo od
+partitionu nad szufladami) do pierwszej półki, między półkami, i od ostatniej do spodu
+wieńca. Mierzone **między licami**, nie między osiami, bo stolarz pyta o światło, w które
+coś ma wejść. Szczeliny odstające od największej idą na złoto, więc stos rozjechany o 3 mm
+mówi to sam.
+
+### 5. Nazewnictwo, i migracja, której nie dało się uniknąć
+
+`variant: 'fixed'` znaczyło przedtem tyle co „półka" — to była wartość, którą `addShelves`
+wpisywał wszystkiemu. Teraz znaczy PRZYKRĘCONA, więc każda półka zapisana przed turą 8
+zamieniłaby się po cichu w przykręconą: trzy otwory ⌀3 na bok zamiast kolumny pinów,
+w szafce, którą ktoś mógł już wyciąć.
+
+Więc jest migracja ze stemplem, dokładnie jak `PROFILE_SCHEMA` i `DESIGN_SCHEMA`:
+`migrateUnitShelves()` czyta `'fixed'` jako `'adjustable'` w jednostce, która nie ma
+`shelf_schema: 2`, i stempluje. Jednostka już zmigrowana zachowuje swoje FIX-y.
+Wartości: `adjustable` (default, piny) · `fixed` (przykręcona) · `pullout` (bez zmian).
+
+### Liczby fazy
+
+| | |
+|---|---|
+| testy | **690/690** (nowe: `shelves-v2.test.js` 15) |
+| fixtures | nietknięte, i pilnowane osobnym testem |
+| build | czysty |
+
+## F5 — ZACHOWANIA
+
+Żadne z tych dwóch nie dotyka cut listy. Oba są różnicą między narzędziem, które
+rysuje kuchnię, a takim, które zachowuje się jak kuchnia.
+
+### 1. Drzwi przy ścianie bocznej — max 90°
+
+Geometria jest tu zaskakująca i warto ją zapisać, bo odpowiedź wygląda na zaokrągloną,
+a nie jest. Drzwi zawieszone po lewej, otwierając się, prowadzą swoją wolną krawędź po
+łuku:
+
+```
+x(θ) = hingeX + szerokość · cos θ
+```
+
+Przy θ = 90° to jest sama oś zawiasu — drzwi stoją prostopadle do frontu i **nie zajmują
+żadnej szerokości**. Dopiero POWYŻEJ 90° cosinus robi się ujemny i wolna krawędź wraca
+NAD zawias, w stronę ściany, aż przy 180° drzwi leżą płasko na boku szafki.
+
+Czyli: **ściany nie uderza się w drodze na zewnątrz, tylko w drodze za prostą**. I dlatego
+90° z CLAUDE.md jest odpowiedzią dokładną, a nie ostrożną: to ostatni kąt, przy którym
+drzwi o dowolnej szerokości, przy szczelinie dowolnej wielkości, jeszcze się od ściany
+ODDALAJĄ.
+
+`engine/doors.js doorOpenAngle()` liczy też kąt zetknięcia dokładnie i bierze
+`min(pełny, max(90°, …))` — więc warsztat, który wpisze `openAngleAtWall: 120`, dalej nie
+dostanie drzwi w tynku, a szczelina szersza niż same drzwi (900 mm) w ogóle nie jest
+ścianą i drzwi idą na pełny kąt. Test sprawdza to „długą drogą": dla każdej szczeliny
+liczy `x(θ)` przy zwróconym kącie i pilnuje, że wolna krawędź nie przeszła za ścianę.
+
+Luz 10 mm z F3 jest w tym rachunku, bo `wallGapsFor()` mierzy od miejsca, w którym
+jednostka NAPRAWDĘ stoi. **Sąsiad to nie ściana** — CLAUDE.md pyta o ściany, a dwoje drzwi
+otwierających się w siebie to inne pytanie z inną odpowiedzią.
+
+### 2. Wiszące obok Tall
+
+Wstawiona wisząca szafka wiesza się tak, żeby jej góra była na linii góry najbliższego
+TALL unita na tej ścianie. Ciąg, w którym wiszące kończą się 80 mm poniżej stojącej obok
+słupy, czyta się jak dwie kuchnie.
+
+Jest to **punkt startu i mówi to wprost**: `mount_height` zostaje zwykłym edytowalnym
+polem. Brak talla na tej ścianie → wysokość projektu, jak dotąd. Tall na INNEJ ścianie
+nie decyduje o niczym.
+
+### Przy okazji: cokół, który nie docierał do góry
+
+Znalezione przez F5 i naprawione, bo bez tego wyrównanie było o 20 mm za nisko.
+`unitTop()` czytał wysokość nóżek Z PROFILU i ignorował tę, którą tura 5 wpycha na każdą
+jednostkę jako wysokość projektu (`params.leg_height`, BACKLOG #29). `cabinet.js` czyta ją
+od tury 5; `runs.js` nie czytał.
+
+Na projekcie z cokołem 120 mm o te same 20 mm mylili się WSZYSCY konsumenci tej funkcji:
+które jednostki są jednym ciągiem (`buildRuns` grupuje po górze), ile zostało miejsca nad
+jednostką na top infill (`autoPartsFor`), i — od tury 8 — gdzie wisi szafka obok talla.
+Teraz jest jedna funkcja `unitBase(unit, profile)`: **najpierw własny cokół jednostki,
+potem profilowy**, dokładnie jak `legHeightOf` w silniku.
+
+`test/behaviours.test.js` — 12 testów.
+
+## F6 — MITRA 45° WIDOCZNA W 3D
+
+Silnik mówi `mitre_45` od tury 6 i cut lista jest poprawna; 3D rysowało oba paski jako
+prostopadłościany na styk, czoło do płyty. Werdykt Piotra: „nie ma opcji, będzie źle
+wyglądać".
+
+I to nie jest tylko kwestia złącza. Czwarty warunek końca ciągu każe elementowi
+**OBRÓCIĆ NARÓŻNIK** i pobiec do ściany — a dwa pudełka spotykające się w narożniku nie
+obracają narożnika, tylko **nachodzą na siebie kwadratem naroża** i z-fightują przez
+siebie. To jest drugi podejrzany z F2.6 („kawałek narożny corner-return w złej pozycji")
+— nie klocek-widmo, tylko brakująca mitra.
+
+### `engine/mitre.js` — czysta geometria, sprawdzalna w node
+
+Płaszczyzna 45° przez pudełko to arytmetyka, a arytmetyka należy tam, gdzie da się ją
+sprawdzić w teście, a nie okiem na ekranie. Moduł nie zna three.js:
+
+- `boxPolyhedron(box)` — 8 wierzchołków i 6 ścian, w milimetrach jednostki;
+- `chamferPlane(box, osA, znakA, osB, znakB, rozmiar)` — płaszczyzna fazy na krawędzi
+  dwóch ścian. **Równe nogi to jest ta mitra**: 45° to jedyne cięcie, którego oba boki
+  są równe, i to sprawdza test;
+- `clipPolyhedron(solid, plane)` — Sutherland–Hodgman po każdej ścianie **plus CZAPKA**.
+  Bez czapki bryła jest otwarta, a otwarta bryła renderuje się jako dziura przez szafkę,
+  czyli gorzej niż styk, który to zastępuje;
+- `solidTriangles` — trójkąty z PŁASKĄ normalną na ścianę. Płaską celowo: mitra to ostra
+  krawędź między dwiema powierzchniami i wygładzenie jej to unieważnienie całej roboty.
+  Złamanie krawędzi robi shader z tury 6, per fragment, poniżej milimetra.
+
+**Pułapka, która kosztowała sesję i jest zapisana w kodzie:** czapkę budowałem, zapamiętując
+dwa przecięcia na ścianę. Kiedy płaszczyzna przechodzi DOKŁADNIE przez wierzchołek pudełka,
+przecięcie jest jedno i czapka nigdy się nie domyka. A to nie jest przypadek brzegowy: faza
+o rozmiarze równym grubości płyty przechodzi przez narożnik KAŻDEGO paska, który tnie.
+Czapka szuka teraz **pary sąsiednich wierzchołków wyjściowych leżących NA płaszczyźnie** —
+łącznie na ścianie, której płaszczyzna tylko dotyka, nic z niej nie zabierając.
+
+### Co się dzieje z paskami
+
+**Półka „rośnie do przodu"** — a właściwie PRZESUWA się. Silnik stawia półkę ZA czołem, żeby
+pudełka stykały się bez nachodzenia (tura 6). Mitra jest odwrotna: dwa elementy cięte do
+DŁUGIEGO PUNKTU nachodzą na siebie dokładnie tym kwadratem, który zajmuje złącze, i dwa
+cięcia 45° dzielą go między siebie. Rysowana półka biegnie więc do płaszczyzny lica czoła
+i tam jest przycięta — **ta sama długość cięcia (80), ta sama zewnętrzna obwiednia,
+złącze zamiast styku**. Przekrój wychodzi 40 × 80, a nie 40 × 98, i to jest to, o co prosi
+CLAUDE.md („przekrój 40+~80 spotyka się w widocznej mitrze").
+
+**Return to to samo złącze, obrócone.** Na otwartym końcu mitrują się PARAMI: czoła między
+sobą (kwadrat = grubość) i półki między sobą (kwadrat = głębokość półki). Stąd „narożnik
+otwartego końca jak rama obrazu".
+
+### Czego to NIE dotyka
+
+BOM i DXF bez zmian — pilnuje tego osobny test. Element jest CIĘTY jako prostokąt do
+długiego punktu, a mitra jest ustawieniem piły, co `meta.mitre_45` mówi warsztatowi od
+tury 6. To jest to, jak element WYGLĄDA.
+
+Pionowy filler (arm + face) NIE dostaje mitry i to jest świadome: tura 6 opisuje ramię A
+jako **przykręcone** do boku korpusu, a przykręcony styk to nie mitra.
+
+`test/mitre.test.js` — 9 testów, w tym „bryła jest ZAMKNIĘTA" (każda krawędź użyta
+dokładnie dwa razy — jedyny test, który łapie brakującą czapkę, zanim zobaczy ją oko).
+
+## F7 — MENU KONTEKSTOWE v2
+
+Dwie zmiany, i druga jest tą, o którą Piotr poprosił dosłownie: „**koniec biegania do
+menu**".
+
+### Kolejność
+
+Taka, po co stolarz sięga, w kolejności, w jakiej po to sięga:
+
+1. **Show all dimensions** — komplet wymiarów TEJ szafki na scenie, jako toggle
+2. **End panel — left / right / both sides**, każdy jako przełącznik
+3. **Top infill** (tylko tam, gdzie w ogóle jest, F2.7) i **Scribe fillers at the wall**
+4. **Plinth**
+5. Insets… · Save as template
+6. dopiero potem to, co przesuwa albo niszczy: Center shelves · Rotate 90° · Back to wall ·
+   Side to wall · Close all fronts · **Delete**
+
+### Przełączniki, a nie jednorazówki
+
+Menu tury 4 umiało end panel tylko DODAĆ. Zdejmowało się go, otwierając prawy panel
+i szukając wiersza. Wpis, którego da się użyć raz, jest **wpisem błędnym w połowie
+przypadków, w których się go czyta** — i to jest cała treść zgłoszenia.
+
+Każdy z tych wpisów niesie teraz `checked` i przerzuca stan. Menu pokazuje go tam, gdzie
+oko już jest: `✓` złoty przy włączonym, `·` szary przy wyłączonym. Żaden wpis nie jest już
+`disabled`, i test tego pilnuje osobno („dead entry").
+
+„Both sides" zdejmuje OBA — bo to jest ten sam akt dwa razy, dokładnie tak samo, jak
+dodanie obu nim jest.
+
+### Trzy rzeczy warte wyjaśnienia
+
+**Wymiary są PER JEDNOSTKA, nie globalnie.** `showDimensions` (toolbar) to pytanie
+projektowe: podpis W/H/D każdej szafki i odległości między nimi. To jest inne pytanie, o
+jedną szafkę: „jakie są WSZYSTKIE liczby na TEJ". Odpowiedź jest za obszerna, żeby zostawić
+ją włączoną na całą kuchnię — nad jedną szafką jest tym, czego się szuka. Etykiety liczone
+z wyjścia SILNIKA (`assemblies.shelves`, `assemblies.drawerFronts`, panele), nigdy
+wyprowadzane drugi raz: pokazane jest to, co wycięte. `ccHelper`, więc nie trafia do
+renderu.
+
+**Side infill nie jest „dodawany".** Jest WYPROWADZANY z tego, gdzie jednostka stoi
+(BACKLOG #15), więc przełącznik nie brzmi „dodaj filler", tylko „czy ta szafka w ogóle go
+bierze". Stolarz, który zamiast tego przyfuguje DRZWI, wyłącza go tu i element przestaje
+być cięty. Jednostka dalej staje tam, gdzie staje: **gdzie jest ściana, to nie jest opinia
+per szafka.**
+
+**Top infill nie pojawia się na bazie.** Ta sama bramka co w F2.7, w tym samym miejscu co
+reszta: `type.supports.topInfill`.
+
+`test/interaction.test.js` — kolejność wpisów przypięta co do jednego, plus nowy test
+„every toggle flips the way it is currently set — both ways", który przejeżdża każdy
+przełącznik w obu stanach.
+
+## F8 — WIDOCZNOŚĆ ZŁĄCZY (DOG BONES)
+
+Złącze **jest tożsamością systemu**. WoodExpert pokazuje konfirmaty; korpus Skylona trzyma
+się na puzzlu z odciążeniem dog-bone, a klient patrzący na render nie ma jak się o tym
+dowiedzieć — korpus to sześć pudełek stykających się na niewidocznych liniach.
+
+Dwie odpowiedzi, bo są dwa pytania:
+
+| tryb | co widać | skąd |
+|---|---|---|
+| **Solid** | LINIE PODZIAŁU, które tab zostawia na styku bok↔wieniec — po dwie na socket, na obu barkach | pockets warstwy socketu |
+| **X-ray** | pełny PROFIL taba (outline), sockety i dogbony, dyskretny kolor per rodzaj | outline + pockets |
+
+W Solid to jest dyskretne celowo: nie chodzi o to, żeby wytłumaczyć złącze, tylko o to,
+żeby szafka przestała się czytać jako sześć pudełek stykających się z niczym.
+
+### Dane biorą się z pliku dla maszyny, nie z drugiego rysunku
+
+`engine/joinery.js` czyta `panel.cnc` — obrys, który jedzie frez, kieszenie, które
+zatapia. **Nic tu nie wyprowadza taba drugi raz i nic nie zostało dodane do silnika.**
+Nazwy warstw idą przez `geometryKey` systemu złącza (`profile.joinery.types[]`), a nie
+z `profile.puzzle` na sztywno — i to jest cała treść „przyszłe systemy (Cabineo) dostaną
+wizualizację automatycznie". Test wykonuje tę pośredniość: podpina wymyślony system
+`cabineo` z własnym blokiem warstw i sprawdza, że rysowanie za nim idzie, bez żadnego
+`if` w module.
+
+### Odwzorowanie ramki CNC na szafkę, i to, co je udowadnia
+
+Ramka CNC jest 2D, z (0,0) w lewym dolnym rogu nominalnego prostokąta. Na które osie
+szafki idą te dwie, jest własnością CZĘŚCI i jest wypisane, a nie zgadywane z pudełka —
+bo **dwie z sześciu są odwrócone**: LISP rysuje BUL od krawędzi PRZEDNIEJ, więc jego CNC-x
+biegnie w stronę tyłu, przeciwnie do z; BUR jest lustrem i biegnie z z.
+
+Dowodem, że jest dobrze, nie jest geometria, tylko **WIERCENIE**: otwór zawiasu jest cięty
+na `xFromFrontEdge` po obu stronach, a oba odwzorowania kładą go 37 mm od PRZODU — czyli
+tam, gdzie jest zawias. Gdyby były mapowane tak samo, jeden wylądowałby 37 mm od tyłu,
+gdzie nie ma nic. To jest test, nie komentarz.
+
+### Rysowanie
+
+`3d/JointLines.jsx`: **jedno `LineSegments` na RODZAJ**, nie na panel. Korpus ma sześć
+paneli, a projekt czterdzieści korpusów — 240 wywołań rysowania na kilkaset milimetrów
+linii to klatka wydana na włoski. Tak są cztery na jednostkę, każdy w swoim kolorze
+z profilu. Linie stoją 0,4 mm od płyty (`appearance.joinery.lift`), tą samą sztuczką
+i z tego samego powodu co uchwyt krawędzi z F2.4.
+
+Kolor obrysu to prawie-czerń, nie błękit — po pierwszym zrzucie z Chromium, na którym
+profil taba czytał się jak **znacznik zaznaczenia** (też błękit, F2.5). Socket bursztyn,
+dogbone ciemna czerwień: sąsiadujące kieszenie dwóch różnych rodzajów nie mogą być jednym
+kształtem.
+
+**Złącze NIE jest oznaczone `ccHelper`** i to jest decyzja: złącze to MEBEL i należy do
+renderu dokładnie tak, jak należy krawędź. Cały sens pokazywania go polega na tym, że
+widzi je klient.
+
+`test/joinery.test.js` — 11 testów, w tym ten, o który prosi CLAUDE.md: **liczba
+rysowanych tabów == dane cnc**, przejechana po WSZYSTKICH złotych fixtures i po każdym
+panelu każdej z nich.
+
+---
+
+## F9 — ZAMKNIĘCIE TURY
+
+### Przejście przez aplikację w prawdziwej przeglądarce
+
+`scripts/e2e-turn8.mjs` — jeden spacer przez Chromium (CDP, zero zależności, ten sam
+`scripts/cdp.mjs` co w turach 6 i 7), robiący dokładnie to, o co prosi CLAUDE.md F9,
+w tej kolejności. **14/14.**
+
+| # | co sprawdzone | wynik | faza |
+|---|---|---|---|
+| 1 | Design settings niesie suwak Sheen 0–25, skok 5 | `{min:0, max:25, step:5, value:15}` | F1 |
+| 2 | płótno otwiera się z żywym kontekstem 3D | ok | F1 |
+| 3 | trzy białe szafki, zbite w ciąg | `x = 1700, 2300, 2900` | F1 |
+| 4 | …i każda z nich stoi 10 mm od ściany | odstęp jest PROFILU, nie insetem wpisanym na jednostce | F3 |
+| 5 | **szafkę da się dodać PO LEWEJ** | `[1100, 1700, 2300, 2900]`, nowa na 1100 | **F2.1** |
+| 6 | przełącznik zawiasu przestawia zawias w OBU miejscach, które czyta silnik | `L → {hinge:'R', doors:'R'}` | F2.2 |
+| 7 | półkę da się zrobić FIX i jest PRZYKRĘCONA, nie na pinach | `{count:1, variants:['fixed']}` | F4 |
+| 8 | Tall bierze top infill, a jego otwarte końce skręcają za róg | `{top:40, ends:{left:'open', right:'open'}}` | F6 |
+| 9 | **base unitowi top infill nie jest oferowany** | gate trzyma | F2.7 |
+| 10 | jednostka przy ścianie dostaje filler zamykający szczelinę | `{left:20, right:0}` | F3 |
+| 11 | X-ray nie kładzie płótna | ok | F8 |
+| 12 | render wraca jako obraz | 1920×1142, 324 kB PNG | F1 |
+| 13 | …i ma w sobie prawdziwą rozpiętość tonalną: cień i głębię | `min 52 · max 250 · rozpiętość 198`, 404 px ciemnych | **F1** |
+| 14 | nic nie napisało błędu do konsoli | ok | — |
+
+Sprawdzenie 13 jest tym, po co ta faza w ogóle istnieje. Diagnoza Piotra brzmiała
+„brak cienia, brak głębi" — a „są światła w scenie" da się udowodnić testem
+jednostkowym i nadal mieć płaski obraz. Więc dowodem nie jest obecność świateł, tylko
+HISTOGRAM gotowego PNG-a: 404 piksele poniżej progu ciemności (jest cień), 198 stopni
+rozpiętości między najciemniejszym a najjaśniejszym (jest modelunek). Test, który da
+się przejść bez naprawienia problemu, nie jest testem.
+
+### Zrzuty
+
+| plik | co pokazuje |
+|---|---|
+| `docs/turn8/01-sheen.png` | suwak Sheen w kreatorze projektu, 0–25 co 5 |
+| `docs/turn8/02-three-white-cabinets.png` | trzy BIAŁE szafki, rozdzielone samym światłem i cieniem |
+| `docs/turn8/03-added-on-the-left.png` | czwarta szafka **po lewej** ciągu |
+| `docs/turn8/04-fix-shelf.png` | półka FIX w panelu |
+| `docs/turn8/05-mitre.png` | mitra 45° na otwartym końcu top infilla |
+| `docs/turn8/06-xray-dogbones.png` | X-ray: taby, sockety i dogbony na bokach |
+| `docs/turn8/07-render.png` | render 1920 px z cieniem klucza na całych szafkach |
+| `docs/turn8/08-final.png` | scena po całym przejściu |
+
+### Liczby tury
+
+| | |
+|---|---|
+| testy | **727 / 727**, 0 fail (podłoga z main + 8 nowych suit) |
+| nowe suity | `low-tabs` (8), `sheen` (10), `slots-and-hinge` (16), `wall-clearance` (13), `shelves-v2` (18), `behaviours` (12), `mitre` (9), `joinery` (11) |
+| E2E | **14 / 14** w Chromium |
+| build | czysty (`vite build`, 13,4 s) |
+| diff tury | 52 pliki, +5850 / −401 |
+| nowe moduły silnika | `engine/doors.js`, `engine/mitre.js`, `engine/joinery.js` |
+| nowe zależności | **0** — `package.json` bit w bit ten sam co przed turą |
+| fixtures | **0 zmian** — `git diff fixtures/` pusty |
+| SQL | nic nie dopisane, nic nie uruchomione (BLOCKERS #49) |
+
+### Co ta tura zmieniła w danych, i jak to nie zabiło fixtures
+
+Dwie rzeczy z CLAUDE.md były na kursie kolizyjnym z `fixtures/README.md` punkt 1
+(„jeśli silnik nie zgadza się z fixture, to SILNIK jest zły"):
+
+- **F4 — cofnięcie półek i partitionów o 20 mm.** LISP tego nie robi, a fixtures są
+  śladem po LISP-ie. Rozwiązane tak, jak od tury 2 rozwiązany jest cokół, top infill
+  i end panel: cofnięcie jest **decyzją PROJEKTU**, którą `paramsForEngine()` podaje
+  do silnika, a nie stałą wpisaną w `computeCabinet()`. Gołe `computeCabinet()` tnie
+  co do milimetra to, co tnie LISP; szafka postawiona w aplikacji dostaje 20 mm.
+  Obie połówki są przybite testem, więc żadnej nie da się cicho zgubić.
+- **F3 — 10 mm od ściany.** To nie jest zmiana FORMATKI, tylko POZYCJI: żadna płyta
+  nie zmienia wymiaru, zmienia się `box.z` i to, od czego liczą się strzałki, głębokość
+  end panela i zasięg top infilla. Fixtures opisują formatki i milczą o pokoju.
+
+### Stan długu
+
+`BLOCKERS.md` dostaje pięć wpisów tury 8 (**#45–#49**) obok #44 z F1: mitra tylko na
+paskach i dlaczego boczny L jej nie dostaje, pomiar wydajności z ostrzeżeniem, czego
+z niego **nie wolno** wyczytać, trzy rzeczy, których render dalej nie ma, zasięg
+migracji półek i niezmiennie nieuruchomione SQL. `BACKLOG.md` dostaje pięć pozycji
+(**#50–#54**) i cztery zamknięcia (#19 skany w 3D, #20 mitra, #42 złącza w X-ray,
+#47 trzy taby na niskim korpusie).
+
+Nie ma żadnego pytania do Piotra. Jedyna rzecz w tej turze, która wymaga JEGO ruchu,
+a nie kodu, to zgoda EGGER-a na skany (BLOCKERS #44) — decyzja o ich włączeniu jest
+jego i została wykonana bez dyskusji, a co dało się zabezpieczyć kodem (atrybucja
+bezwarunkowa, obraz nietonowany i nieskadrowany, odrzucenie adresu spoza `https://`),
+zostało zabezpieczone.
+
+### Definicja sukcesu z CLAUDE.md, punkt po punkcie
+
+| # | wymaganie | stan |
+|---|---|---|
+| 1 | podłoga testów + nowe, 0 fail; build OK | ✅ 727/727, build czysty |
+| 2 | cień klucza na całych szafkach, zero przezroczystości, widoczna głębia | ✅ F1, dowód: histogram renderu |
+| 3 | spray wierny kolorystycznie (bez envMap), melamina z envem; sheen co 5% | ✅ F1 |
+| 4 | siedem bugów F2 zamkniętych, z №1 na czele | ✅ F2 |
+| 5 | każda jednostka 10 mm od ściany; Infill OFF → boki 10 | ✅ F3 |
+| 6 | półki/partitiony −20 + wysuwalne; FIX = śruby 3 mm w osi; hover pokazuje odstępy | ✅ F4 |
+| 7 | drzwi przy ścianie ≤ 90°; wiszące równają do Tall | ✅ F5 |
+| 8 | mitra 45° widoczna w 3D; klocek-widmo zbadany i usunięty | ✅ F6 + F2.6 |
+| 9 | menu: dimensions / panele / infille ON-OFF od ręki | ✅ F7 |
+| 10 | dog bones w Solid (linie) i X-ray (pełne zarysy) | ✅ F8 |

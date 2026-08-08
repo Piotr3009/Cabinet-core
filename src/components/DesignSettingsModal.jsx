@@ -16,6 +16,7 @@ import { HEIGHT_GROUPS } from '../engine/types.js';
 import { PROJECT_TYPES } from '../engine/projectTypes.js';
 import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { contrastInk } from '../lib/pswColors.js';
+import SheenSlider from './SheenSlider.jsx';
 
 // Design Settings — project level (CLAUDE.md phase 6).
 // How many carcass materials the job runs, what the standard front is, the
@@ -238,12 +239,13 @@ export default function DesignSettingsModal() {
             </div>
           </div>
 
-          <div>
+          <div className="space-y-3">
             <ColourPicker
               label="Front colour"
               value={design.colour.front}
               onChange={(c) => setDesign({ colour: { ...design.colour, front: c } })}
             />
+            <SheenSlider design={design} setDesign={setDesign} profile={profile} />
           </div>
         </section>
 

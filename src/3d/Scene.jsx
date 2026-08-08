@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -9,7 +9,8 @@ import DistanceArrows from './DistanceArrows.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
-import { resolveFinishes, resolveUnitDesign } from '../engine/design.js';
+import { backStandoff } from '../engine/collision.js';
+import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
@@ -133,29 +134,73 @@ function Environment({ intensity, on }) {
 }
 
 /**
- * Lights, rebalanced in turn 6 because the environment now does most of the
- * work. Turn 4 ran an ambient at 1.7 to keep the walls white with no tone
- * mapping; leaving it there on top of an environment map washes every shadow
- * out and the furniture goes flat again. The ambient comes down, the key light
- * goes up, and the walls stay white because the working view still does no tone
- * mapping — that decision from turn 4 stands, and the render is where ACES
- * comes in (renderCapture.js).
+ * ─── The studio rig (turn 8, CLAUDE.md F1 — carried over from Spraying-Calc) ──
+ *
+ * Piotr's verdict on turn 7's lighting was three words long: no shadow, no
+ * depth, white runs into white. He was right, and the cause was arithmetic
+ * rather than taste — turn 7 ran an AMBIENT at 1.25 with a KEY at 0.85, and a
+ * key light weaker than the flat light it is meant to beat cannot model
+ * anything. Everything was lit; nothing was shaped.
+ *
+ * So the balance is inverted to the one a photographer uses — key 1.0, fill
+ * 0.5, rim 0.3, ambient 0.2 — and, crucially, IT IS THE SAME RIG IN BOTH
+ * PLACES. Turn 7 lit the editor one way and the still another, so a joiner
+ * could not tell from the screen what the customer would be sent. What you see
+ * while you work is the picture.
+ *
+ * The other half of "no shadow" is the shadow CAMERA. It used to be fitted to
+ * the room and a bit over: on a 4 m kitchen that is an 8 m frustum, and a 1024
+ * map across 8 m is 8 mm per texel — wider than the gap between two cabinets,
+ * so the shadow between them simply is not resolved. It is fitted to the
+ * FURNITURE now, with `studio.shadowPadding` of margin, so every texel lands on
+ * something that casts a shadow.
  */
-function Lights({ roomHeight, roomWidth, shadow }) {
-  // The key light's shadow camera has to cover the room. On the default ±5
-  // frustum a 4 m kitchen has its far end outside the shadow map, which reads
-  // as "shadows work for some units and not others".
-  const reach = Math.max(roomWidth, roomHeight) * 1.4 + 2;
+function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
+  const key = useRef(null);
+  // The box the shadow map has to cover, in scene units. Falls back to the room
+  // when there is no furniture yet — an empty room casts nothing, but the
+  // camera still has to be valid.
+  const fit = useMemo(() => {
+    const pad = mm(studio.shadowPadding);
+    if (!subject) {
+      const reach = Math.max(roomWidth, roomHeight) * 0.75 + pad;
+      return { centre: [0, roomHeight * 0.4, 0], radius: reach };
+    }
+    const centre = [0, 1, 2].map((i) => (subject.min[i] + subject.max[i]) / 2);
+    const half = [0, 1, 2].map((i) => (subject.max[i] - subject.min[i]) / 2 + pad);
+    // A directional light's frustum is square in its own frame; the safe square
+    // is the half-diagonal, so the box fits from whatever angle the light is at.
+    return { centre, radius: Math.hypot(half[0], half[1], half[2]) };
+  }, [subject, roomWidth, roomHeight, studio.shadowPadding]);
+
+  // The light's TARGET has to be in the scene graph for three to use it, and it
+  // has to be where the furniture is or the frustum is centred on the room's
+  // origin and the cabinets stand at its edge.
+  const target = useMemo(() => new THREE.Object3D(), []);
+  useEffect(() => {
+    target.position.set(...fit.centre);
+    target.updateMatrixWorld();
+    if (key.current) {
+      key.current.target = target;
+      key.current.shadow.camera.updateProjectionMatrix();
+    }
+  }, [target, fit]);
+
+  const reach = fit.radius;
+  const distance = Math.max(reach * 2.2, roomHeight * 1.6);
+
   return (
     <>
-      {/* Tagged by ROLE, so the render can rebalance them (renderCapture.js)
-          without the capture pass having to guess which light is which. */}
-      <ambientLight userData={{ ccLight: 'ambient' }} intensity={1.25} />
-      <hemisphereLight userData={{ ccLight: 'ambient' }} args={['#ffffff', '#e8e4dd', 0.45]} />
+      {/* Tagged by ROLE, so a render can still rebalance them
+          (renderCapture.js) without the capture pass guessing which is which.
+          By default it does not: profile.render.lightScale is all 1s now. */}
+      <ambientLight userData={{ ccLight: 'ambient' }} intensity={studio.ambient} />
+      <primitive object={target} />
       <directionalLight
+        ref={key}
         userData={{ ccLight: 'key' }}
-        position={[roomWidth * 0.5, roomHeight * 1.6, roomWidth * 1.1]}
-        intensity={0.85}
+        position={[fit.centre[0] + distance * 0.55, fit.centre[1] + distance * 0.85, fit.centre[2] + distance * 0.7]}
+        intensity={studio.key}
         castShadow
         shadow-mapSize={[shadow.mapSize, shadow.mapSize]}
         shadow-bias={shadow.bias}
@@ -164,8 +209,8 @@ function Lights({ roomHeight, roomWidth, shadow }) {
         shadow-camera-right={reach}
         shadow-camera-top={reach}
         shadow-camera-bottom={-reach}
-        shadow-camera-near={0.1}
-        shadow-camera-far={reach * 4}
+        shadow-camera-near={0.05}
+        shadow-camera-far={distance * 3}
       />
       {/* Fill from the other side, so the shadowed face is modelled rather
           than black. No shadow of its own — two shadow maps for one visible
@@ -173,11 +218,29 @@ function Lights({ roomHeight, roomWidth, shadow }) {
           view. */}
       <directionalLight
         userData={{ ccLight: 'fill' }}
-        position={[-roomWidth * 0.7, roomHeight * 1.1, roomWidth * 0.8]}
-        intensity={0.3}
+        position={[fit.centre[0] - distance * 0.8, fit.centre[1] + distance * 0.5, fit.centre[2] + distance * 0.55]}
+        intensity={studio.fill}
+      />
+      {/* Rim, from behind and above: the light that draws a bright edge down
+          the side of a white cabinet standing against a white wall. It is what
+          separates one from the next when nothing else does. */}
+      <directionalLight
+        userData={{ ccLight: 'rim' }}
+        position={[fit.centre[0] - distance * 0.3, fit.centre[1] + distance * 0.6, fit.centre[2] - distance * 0.9]}
+        intensity={studio.rim}
       />
     </>
   );
+}
+
+/** ACES, at the rig's exposure — in the working view as well as in a still. */
+function ToneMapping({ exposure }) {
+  const gl = useThree((s) => s.gl);
+  useEffect(() => {
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = exposure;
+  }, [gl, exposure]);
+  return null;
 }
 
 /**
@@ -185,6 +248,23 @@ function Lights({ roomHeight, roomWidth, shadow }) {
  * camera, and where the furniture actually is — without the modal knowing
  * anything about three.js.
  */
+/**
+ * Where the furniture is, for the key light's shadow camera (turn 8, F1).
+ *
+ * Measured after the frame the units were drawn in — the groups' world matrices
+ * do not exist before that — and only when the units change, so an orbit does
+ * not walk 400 meshes per frame.
+ */
+function ShadowFit({ signal, unitsRef, onFit }) {
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      onFit(furnitureBounds(Object.values(unitsRef.current).filter(Boolean)));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [signal, unitsRef, onFit]);
+  return null;
+}
+
 function RenderRig({ onReady, unitsRef }) {
   const { gl, scene, camera } = useThree();
   useEffect(() => {
@@ -220,6 +300,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const units = useProjectStore((s) => s.units);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const allResults = useProjectStore((s) => s.allResults);
+  const wallGapsFor = useProjectStore((s) => s.wallGapsFor);
   const moveShelf = useProjectStore((s) => s.moveShelf);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
@@ -241,6 +322,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const openContextMenu = useUiStore((s) => s.openContextMenu);
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
   const showDimensions = useUiStore((s) => s.showDimensions);
+  const unitDimensions = useUiStore((s) => s.unitDimensions);
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
@@ -271,7 +353,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
       // A unit stood off the wall is measured where it stands (turn 7,
       // CLAUDE.md F5): the arrow reads the real distance, not the one it would
       // be at if it were pushed back.
-      backInset: Math.max(0, Number(unit.params.inset_back_mm) || 0),
+      backInset: backStandoff(unit, profile),
       level: result.assemblies.mount === 'wall' ? 'wall' : 'floor',
       label: unit.params.unit_num,
       y: base + profile.dimensions.height,
@@ -279,6 +361,16 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   }), [results, profile.dimensions.height]);
   const roomW = mm(bounds.width);
   const roomH = mm(room.height ?? 2500);
+  // What the project's sprayed surfaces are polished to, on Piotr's 0–25 scale.
+  const sheen = useMemo(() => projectSheen(design, profile), [design, profile]);
+  const studio = profile.appearance.studio;
+  const [subject, setSubject] = useState(null);
+  // Recomputed with the units, not per frame: a door swing is decided by where
+  // the cabinets stand, and that only changes when one of them moves.
+  const wallGaps = useMemo(
+    () => Object.fromEntries(units.map((u) => [u.id, wallGapsFor(u.id)])),
+    [units, wallGapsFor],
+  );
 
   return (
     <Canvas
@@ -287,8 +379,11 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
       shadows="soft"
       dpr={[1, 2]}
       // preserveDrawingBuffer: the PDF export reads this canvas back.
-      // NoToneMapping: ACES (the R3F default) turns the white walls grey.
-      gl={{ preserveDrawingBuffer: true, antialias: true, toneMapping: THREE.NoToneMapping }}
+      // Tone mapping is ACES and is set by <ToneMapping> below rather than here,
+      // because it is now one setting shared with the render pass (turn 8, F1).
+      // Turn 7 ran the working view flat to keep the walls white; the price was
+      // a view that could not be trusted to predict the still.
+      gl={{ preserveDrawingBuffer: true, antialias: true }}
       camera={{ position: [0, roomH * 0.95, mm(bounds.depth) * 1.25 + roomW * 0.35], fov: 38, near: 0.05, far: 100 }}
       // Clicking the background clears the selection and any open menu; the
       // orbit only ever starts from the background or a wall, because every
@@ -298,9 +393,17 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
       style={{ background: '#fafaf8' }}
     >
       <color attach="background" args={['#fafaf8']} />
+      <ToneMapping exposure={studio.exposure} />
       <Environment intensity={profile.appearance.environment.intensity} on={realisticLighting} />
-      <Lights roomHeight={roomH} roomWidth={roomW} shadow={profile.render.shadow.normal} />
-      <Room room={room} showLabels={showDimensions} />
+      <Lights
+        roomHeight={roomH}
+        roomWidth={roomW}
+        shadow={profile.render.shadow.normal}
+        studio={studio}
+        subject={subject}
+      />
+      <ShadowFit signal={results} unitsRef={unitGroups} onFit={setSubject} />
+      <Room room={room} showLabels={showDimensions} profile={profile} />
 
       {results.map(({ unit, result }) => (
         <UnitView
@@ -339,6 +442,16 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           contour={contourView}
           xray={xray}
           grounded={realisticLighting}
+          sheen={sheen}
+          // How much clear WALL is beside this unit, per side. The door swing
+          // reads it: past square a door comes back towards the wall on its
+          // hinge side (turn 8, CLAUDE.md F5).
+          wallGaps={wallGaps[unit.id]}
+          // The right-click toggle: every number THIS cabinet has (turn 8, F7).
+          showAllDims={Boolean(unitDimensions[unit.id])}
+          // Which joint system this project is cut with — the joint drawing
+          // reads its layer names through it (turn 8, F8).
+          unitDesign={design}
         />
       ))}
 

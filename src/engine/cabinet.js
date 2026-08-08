@@ -336,6 +336,44 @@ export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
 }
 
+// ─── Shelves v2 (turn 8, CLAUDE.md F4) ───
+
+/**
+ * What KIND of shelf this is.
+ *
+ * `adjustable` — on ⌀7.5 pins, in a column of holes. The LISP's only kind, and
+ *                still the default: a shelf nobody has said anything about is a
+ *                shelf you can move.
+ * `fixed`      — SCREWED, three ⌀3 screws through each carcass side into the
+ *                shelf's own edge, on its centre line. It does not move and it
+ *                is not drilled for pins.
+ * `pullout`    — a shelf on runners. Turn 4's option, carried unchanged.
+ *
+ * Turn 7 and earlier used `fixed` as the value nobody chose, meaning nothing
+ * more than "a shelf". It cannot go on meaning that now that it means screwed,
+ * so stored projects are migrated on the way in (stores/projectStore.js).
+ */
+export const SHELF_VARIANTS = ['adjustable', 'fixed', 'pullout'];
+
+export function shelfVariant(item) {
+  const v = String(item?.variant ?? '');
+  return SHELF_VARIANTS.includes(v) ? v : 'adjustable';
+}
+
+/**
+ * Does this shelf stay where it is?
+ *
+ * Two different reasons, one answer. A FIXED shelf is screwed in, so it cannot
+ * move — that is a fact about the joinery. `updown_locked` is a joiner saying
+ * "this one stays here" about a shelf that is otherwise adjustable: a shelf
+ * carrying an oven, a shelf a run of cable is stapled to. Both come out as the
+ * same drilling and the same refusal to be dragged, which is why they are one
+ * function and not two.
+ */
+export function isShelfLocked(item) {
+  return shelfVariant(item) === 'fixed' || item?.updown_locked === true;
+}
+
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
   return {
     id,
@@ -418,8 +456,34 @@ export function computeCabinet(params, profileOverride) {
   // The sink's back panel sits 50 mm forward INSIDE the carcass, so its shelves
   // lose that much depth plus the panel itself (KIT_SINK L425-426).
   const SK = P.sinkUnit;
-  const shelfH = D - C.shelfDepthBoards * G - C.shelfDepthClearance
-    - (backStyle === 'inset' ? SK.backSetback + G : 0);
+  const sinkLoss = backStyle === 'inset' ? SK.backSetback + G : 0;
+  const shelfH = D - C.shelfDepthBoards * G - C.shelfDepthClearance - sinkLoss;
+
+  // ─── Interior setback (turn 8, CLAUDE.md F4) ───
+  //
+  // How far a FIX shelf or a partition stands back from the face of the
+  // carcass. The AutoLISP cuts both full depth; Piotr wants them on the same
+  // line as the adjustable shelves, which have stood 20 mm back since the LISP.
+  //
+  // It arrives as a PARAMETER rather than as a profile default read here, and
+  // that is deliberate: the golden fixtures are the LISP kits, called with the
+  // LISP's own inputs, and a bare `computeCabinet()` must keep cutting what the
+  // kit cuts (fixtures/README rule 1). The setback is a PROJECT decision, so
+  // the store supplies it for every unit in a project — the same route the
+  // plinth, the top infill and the end panels already take.
+  //
+  // `front_mm` on the individual piece beats it, and 0 means "out to the face".
+  // `== null` and not a truthiness test: 0 is a real answer here — it means
+  // "out to the face", which is the whole point of the override — and
+  // Number(null) is 0, so either shortcut turns "not set" into "flush".
+  const setbackOf = (value, fallback) => {
+    if (value == null) return fallback;
+    const v = Number(value);
+    return Number.isFinite(v) && v >= 0 ? v : fallback;
+  };
+  const interiorSetback = setbackOf(params?.interior_setback_mm, 0);
+  const partitionDepth = D - C.topDepthBoards * G
+    - setbackOf(params?.partition_front_mm, interiorSetback);
 
   // ── Doors ──────────────────────────────────────────────────────────────────
   const doorCount = cfg.doorCount;
@@ -768,29 +832,51 @@ export function computeCabinet(params, profileOverride) {
   for (let i = 1; i <= numShelves; i += 1) {
     const y = shelfRows[i - 1] ?? (G + ((H - 2 * G) / (numShelves + 1)) * i);
     const item = cfg.shelfItems[i - 1];
+    // Every shelf may be pulled out to the face on its own (turn 8, F4). With
+    // nothing said it is the LISP's own 20 mm, which is what a bare kit call —
+    // and every golden fixture — gets.
+    const depthHere = D - C.shelfDepthBoards * G
+      - setbackOf(item?.front_mm, C.shelfDepthClearance) - sinkLoss;
     panels.push(panel({
-      id: `SHELF-${i}`, part: 'SHELF', role: 'shelf', w: shelfW, h: shelfH, thickness: G,
+      id: `SHELF-${i}`, part: 'SHELF', role: 'shelf', w: shelfW, h: depthHere, thickness: G,
       edgeCode: codes.right, edgeLen: metres(shelfW),
-      box: { x: G + C.shelfWidthClearance / 2, y, z: G, w: shelfW, h: G, d: shelfH },
-      cnc: rectGeometry(shelfW, shelfH),
-      meta: { index: i, variant: item?.variant || 'fixed', itemId: item?.id || null },
+      box: { x: G + C.shelfWidthClearance / 2, y, z: G, w: shelfW, h: G, d: depthHere },
+      cnc: rectGeometry(shelfW, depthHere),
+      meta: {
+        index: i,
+        // Turn 8: the default is ADJUSTABLE — a shelf on pins, which is what a
+        // shelf with nothing said about it has always been. `fixed` now means
+        // SCREWED (F4), so it cannot go on being the value nobody chose.
+        variant: shelfVariant(item),
+        itemId: item?.id || null,
+        // A shelf that is screwed in, or one somebody has locked, does not move
+        // and is not drilled for pins.
+        locked: isShelfLocked(item),
+        front_mm: setbackOf(item?.front_mm, C.shelfDepthClearance),
+      },
     }));
   }
 
+  // A partition and a rail partitioner are FIX shelves in everything but name,
+  // so turn 8 (F4) sets them back on the same line as the shelves beside them.
+  // `partitionDepth` is `internalDepth` when nobody has said otherwise, which
+  // is what the AutoLISP cuts and what every golden fixture expects.
   if (hasDrawers) {
     panels.push(panel({
-      id: 'PARTITION', part: 'PARTITION', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
+      id: 'PARTITION', part: 'PARTITION', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
       edgeCode: codes.none, edgeLen: 0,
-      box: { x: G, y: partitionY, z: G, w: internalWidth, h: G, d: internalDepth },
-      cnc: rectGeometry(internalWidth, internalDepth),
+      box: { x: G, y: partitionY, z: G, w: internalWidth, h: G, d: partitionDepth },
+      cnc: rectGeometry(internalWidth, partitionDepth),
+      meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth },
     }));
   }
   if (hasRail) {
     panels.push(panel({
-      id: 'RAIL-PART', part: 'RAIL-PART', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
+      id: 'RAIL-PART', part: 'RAIL-PART', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
       edgeCode: codes.none, edgeLen: 0,
-      box: { x: G, y: railPartY, z: G, w: internalWidth, h: G, d: internalDepth },
-      cnc: rectGeometry(internalWidth, internalDepth),
+      box: { x: G, y: railPartY, z: G, w: internalWidth, h: G, d: partitionDepth },
+      cnc: rectGeometry(internalWidth, partitionDepth),
+      meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth },
     }));
   }
 
@@ -1095,7 +1181,17 @@ export function computeCabinet(params, profileOverride) {
   // thickness, which is exactly where the AutoLISP puts the door in top view
   // (`drawDoor` at y0 − doorGap − gruboscDrzwi, KIT_BUD_FULL L128).
   const EP = AP.endPanel;
-  const endPanelDepth = D + P.doors.gap + frontT;
+  // ─── Turn 8 (CLAUDE.md F3) ───
+  // Every unit stands `room.wallBackClearance` off the wall behind it, so an
+  // end panel that is only as deep as "carcass + door standoff" stops that far
+  // short of the wall — and the slot is at eye level down the whole side of the
+  // run, which is the one place a masking panel exists to not have.
+  //
+  // The DELIBERATE inset (`inset_back_mm`) is deliberately NOT added: that gap
+  // holds a soil pipe or a bowed wall, and running the panel back into it is
+  // running it into the thing it was moved away from.
+  const wallGap = Math.max(0, Number(P.room?.wallBackClearance) || 0);
+  const endPanelDepth = wallGap + D + P.doors.gap + frontT;
   // "To the floor" means down to the floor: past the legs on a standing unit,
   // and all the way down from a wall unit's mounting height.
   const dropToFloor = type.mount === 'wall' ? cfg.mountHeight : legHeightForPlinth;
@@ -1116,7 +1212,16 @@ export function computeCabinet(params, profileOverride) {
       edgeCode: codes.all, edgeLen: metres(2 * endPanelDepth + 2 * panelH),
       // `drop > 0 ? -drop : 0` and not `-drop`: negative zero is a real value in
       // JS and a box.y of -0 fails an === check downstream for no reason.
-      box: { x: side === 'L' ? -t : W, y: drop > 0 ? -drop : 0, z: 0, w: t, h: panelH, d: endPanelDepth },
+      // …and it therefore STARTS at the wall, which in the unit's own frame is
+      // `wallGap` behind the carcass back.
+      box: {
+        x: side === 'L' ? -t : W,
+        y: drop > 0 ? -drop : 0,
+        z: wallGap > 0 ? -wallGap : 0,
+        w: t,
+        h: panelH,
+        d: endPanelDepth,
+      },
       cnc: rectGeometry(endPanelDepth, panelH),
       meta: {
         side: side === 'L' ? 'left' : 'right',
@@ -1226,11 +1331,33 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
-  // Shelf pin holes — both sides carry them
+  // ─── Shelf holes, and shelf SCREWS (turn 8, CLAUDE.md F4) ───
+  //
+  // An adjustable shelf gets what it always got: a column of ⌀7.5 pin holes
+  // down each side, three per row, so it can be moved.
+  //
+  // A FIX shelf gets none of them. It is screwed — three ⌀3 screws through each
+  // carcass side, ON THE SHELF'S OWN CENTRE LINE, into the edge of the board.
+  // That is the same screw, the same layer and the same three positions the
+  // partition above a drawer stack has always used (SCREWS_3MM), because it is
+  // the same joint: this is what "fixed" means in the workshop, and pin holes
+  // for a shelf that cannot move are holes drilled for nothing.
+  const shelfPinRows = [];
+  const shelfScrewRows = [];
+  for (let i = 0; i < shelfRows.length; i += 1) {
+    (isShelfLocked(cfg.shelfItems[i]) ? shelfScrewRows : shelfPinRows).push(shelfRows[i]);
+  }
   for (const sideId of ['BUL', 'BUR']) {
-    for (const rowY of shelfRows) {
+    for (const rowY of shelfPinRows) {
       for (const dy of SH.clusterOffsets) {
         for (const x of shelfHoleX) addDrill(sideId, 'shelf', SH.layer, x, rowY + dy, SH.diameter);
+      }
+    }
+    for (const rowY of shelfScrewRows) {
+      // The centre of the board's thickness: a screw goes into the EDGE.
+      const centreY = rowY + G / 2;
+      for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
+        addDrill(sideId, 'shelf_screw', pz.layers.screw, x, centreY, pz.screwDiameter);
       }
     }
   }
@@ -1504,8 +1631,14 @@ export function computeCabinet(params, profileOverride) {
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
     front_cup_x_from_hinge_edge: cups.xFromHingeEdge,
     shelf_row_y: shelfRows.map((v) => roundTo(v, 4)),
-    shelf_cluster_y: shelfRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row + dy, 4))),
+    shelf_cluster_y: shelfPinRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row + dy, 4))),
     shelf_hole_x: shelfHoleX,
+    // Turn 8 (F4): which rows are PINNED and which are SCREWED. `shelf_row_y`
+    // stays every shelf, because it is where the shelves ARE and the drawings
+    // dimension it; these two say how each one is held.
+    shelf_pin_row_y: shelfPinRows.map((v) => roundTo(v, 4)),
+    shelf_screw_row_y: shelfScrewRows.map((v) => roundTo(v + G / 2, 4)),
+    shelf_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
     runner_rows_dp_y: runnerRowsDp,
     runner_rows_carcass_y: budr ? [...budr.runnerRows] : runnerRowsCarcass,
     runner_carcass_side: runnerCarcassSide,
@@ -1566,7 +1699,15 @@ export function computeCabinet(params, profileOverride) {
           w: drawerFrontW,
         }))
         : []),
-    shelves: shelfRows.map((y, i) => ({ index: i + 1, y })),
+    // The 3D view reads this for the hover readout: where each shelf is, how it
+    // is held, and whether it may be dragged (turn 8, F4).
+    shelves: shelfRows.map((y, i) => ({
+      index: i + 1,
+      y,
+      variant: shelfVariant(cfg.shelfItems[i]),
+      locked: isShelfLocked(cfg.shelfItems[i]),
+      itemId: cfg.shelfItems[i]?.id || null,
+    })),
     fridge: fridge ? { fixedPanelY: fridge.fixedPanelY, fridgeH: cfg.fridgeH } : null,
   };
 

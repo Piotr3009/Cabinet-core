@@ -46,11 +46,17 @@ const resultOf = (id) => computeCabinet(paramsForEngine(unitOf(id)), P);
 const panelOf = (id, panelId) => resultOf(id).panels.find((p) => p.id === panelId);
 const infillsOf = (id) => resultOf(id).panels.filter((p) => p.part === 'INFILL');
 
-/** Place `n` base units butted together, starting at `x`, and give them a top infill. */
+// TALL units, not base ones (turn 8, CLAUDE.md F2.7): a top infill closes the
+// gap between a cabinet and the CEILING, and what sits on top of a base unit is
+// a worktop. The piece is identical whichever kit is under it — only the kits
+// that can have one at all have changed.
+const TYPE = 'BUDTALL';
+
+/** Place `n` tall units butted together, starting at `x`, and give them a top infill. */
 function run(n, x = 1000) {
   const ids = [];
   for (let i = 0; i < n; i += 1) {
-    const { id, error } = store().addUnit('BUD');
+    const { id, error } = store().addUnit(TYPE);
     assert.equal(error, null, error || '');
     store().moveUnit(id, x + i * 600, 0);
     ids.push(id);
@@ -161,7 +167,16 @@ test('END 1 — the run reaches the WALL, and finishes on it', () => {
   store().moveUnit(ids[1], 600, 0);
 
   assert.equal(endsOf(ids[0]).left, 'wall');
-  assert.equal(panelOf(ids[0], 'INFILL-T-FACE').box.x, 0, 'it starts at the wall');
+  // Turn 8 (CLAUDE.md F3): with the infill switched off the unit's stop beside
+  // the wall is `room.wallBackClearance` rather than nothing, so it parks THERE
+  // and the run still reaches the wall — the gap is a scribe and the piece on
+  // top runs over it. In the owner's own frame the piece therefore starts a
+  // clearance to the LEFT of the carcass.
+  assert.equal(unitOf(ids[0]).position.x_mm, P.room.wallBackClearance, 'parked at the side stop');
+  assert.equal(
+    panelOf(ids[0], 'INFILL-T-FACE').box.x + unitOf(ids[0]).position.x_mm, 0,
+    'it starts at the wall',
+  );
   assert.equal(infillsOf(ids[0]).filter((p) => p.meta.segment === 'return-left').length, 0,
     'a wall needs no corner turned');
 });
@@ -203,7 +218,11 @@ test('END 4 — nothing at all: the corner is mitred and the piece turns it', ()
   assert.deepEqual(endsOf(ids[0]), { left: 'open', right: 'open' });
 
   const unit = unitOf(ids[0]);
-  const depth = unit.params.depth + P.doors.gap + unit.params.front_t;
+  // From the plane of the doors back to the WALL. Turn 8 (CLAUDE.md F3) added
+  // the last term: every unit stands `room.wallBackClearance` off the wall, so
+  // a return that stops at the carcass stops 10 mm short of it — a slot running
+  // the whole depth of the run, at eye level, on the end everybody sees.
+  const depth = P.room.wallBackClearance + unit.params.depth + P.doors.gap + unit.params.front_t;
   const main = panelOf(ids[0], 'INFILL-T-FACE');
 
   for (const [tag, side] of [['L', 'left'], ['R', 'right']]) {
@@ -214,8 +233,8 @@ test('END 4 — nothing at all: the corner is mitred and the piece turns it', ()
 
     // It runs along the SIDE of the end cabinet, back to the wall.
     assert.equal(face.w, depth, 'from the door face to the back wall');
-    assert.equal(face.box.z, 0, 'and it reaches the wall');
-    assert.equal(face.box.z + face.box.d, depth);
+    assert.equal(face.box.z, -P.room.wallBackClearance, 'and it reaches the wall behind the carcass');
+    assert.equal(face.box.z + face.box.d, depth - P.room.wallBackClearance);
     assert.equal(face.h, T.defaultHeight, 'same section as the piece it turns off');
     assert.equal(shelf.w, depth);
     assert.equal(shelf.h, T.shelfDepth);
@@ -249,7 +268,7 @@ test('one end open and one end walled gives one return, not two', () => {
 
 test('a gap wide enough takes an L: a face in the door plane, an arm on the carcass', () => {
   project(60);
-  const { id } = store().addUnit('BUD');
+  const { id } = store().addUnit(TYPE);
   store().moveUnit(id, -5000, 0);
 
   const unit = unitOf(id);
@@ -283,7 +302,7 @@ test('a gap wide enough takes an L: a face in the door plane, an arm on the carc
 
 test('a gap too narrow for the board stays a plain strip, and says so', () => {
   project(12);
-  const { id } = store().addUnit('BUD');
+  const { id } = store().addUnit(TYPE);
   store().moveUnit(id, -5000, 0);
 
   const face = panelOf(id, 'INFILL-L-FACE');
@@ -295,14 +314,18 @@ test('a gap too narrow for the board stays a plain strip, and says so', () => {
 
 test('a vertical filler can be pulled to the ceiling like an end panel', () => {
   project(60);
-  const { id } = store().addUnit('BUD');
+  const { id } = store().addUnit(TYPE);
   store().moveUnit(id, -5000, 0);
   const unit = unitOf(id);
   const headroom = CEILING - (unit.params.height + P.baseUnit.legHeight);
+  // Somewhere short of the ceiling — read off the room rather than written down,
+  // because the unit is a TALL one now (turn 8, F2.7) and there is less air
+  // above it than there was above a base unit.
+  const partWay = headroom - 50;
 
-  assert.equal(store().setSideInfillTop(id, 'L', 400), 400);
-  assert.equal(panelOf(id, 'INFILL-L-FACE').h, unit.params.height + P.baseUnit.legHeight + 400);
-  assert.equal(panelOf(id, 'INFILL-L-ARM').h, unit.params.height + P.baseUnit.legHeight + 400,
+  assert.equal(store().setSideInfillTop(id, 'L', partWay), partWay);
+  assert.equal(panelOf(id, 'INFILL-L-FACE').h, unit.params.height + P.baseUnit.legHeight + partWay);
+  assert.equal(panelOf(id, 'INFILL-L-ARM').h, unit.params.height + P.baseUnit.legHeight + partWay,
     'both arms of one L are one height');
 
   assert.equal(store().sideInfillToCeiling(id, 'L'), headroom);

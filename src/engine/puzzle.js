@@ -60,10 +60,37 @@ function tabPointsDown(edgeY, centreX, G, pz) {
   ];
 }
 
-/** The three tab centres along a run of length L: 95, L/2, L−95. */
+/**
+ * The tab centres along a run of length L: 95, L/2, L−95.
+ *
+ * ─── Turn 8 (F0 / BLOCKERS #37 / BACKLOG #47) ───
+ * …unless the run is too SHORT to hold three. The tab is ±`tabHalfWidth`, but
+ * the dog-bone relief around it is ±`dogboneHalfHeight` and reaches further, so
+ * the dog bone is what has to clear. Below `profile.puzzle.middleTabBelow` the
+ * middle tab is not cut and the panel has two — the same answer, on the other
+ * axis, as `socketCentres()` gives a shallow carcass.
+ *
+ * Everything downstream follows from this one function: the side panel's tabs
+ * and their dog bones, the back panel's mating sockets and its screw rows.
+ */
 export function tabCentres(length, pz) {
   const e = pz.tabCentresFromEnd;
+  const threshold = Number(pz.middleTabBelow) || 0;
+  if (threshold > 0 && length < threshold) return [e, length - e];
   return [e, length / 2, length - e];
+}
+
+/**
+ * The three-tab threshold, recomputed from the geometry it comes from — the
+ * twin of `singleSocketThreshold()` above, and exported for the same reason:
+ * the constant in the profile can be CHECKED rather than trusted.
+ *
+ * Two gaps have to stay open (middle-to-left and middle-to-right), so the
+ * bridge is counted twice where the socket rule counts it once.
+ */
+export function middleTabThreshold(pz, boardThickness) {
+  const half = Math.max(pz.tabHalfWidth, pz.dogboneHalfHeight);
+  return pz.tabCentresFromEnd * 2 + half * 4 + boardThickness * 2;
 }
 
 /**
@@ -267,9 +294,15 @@ export function backPanelGeometry({ w, h, G, puzzle: pz }) {
     sockets: { left: sideCentres, right: sideCentres, top: acrossCentres, bottom: acrossCentres },
   });
 
-  // Screws: 4 down each side edge, 3 along top and bottom
-  const [t1y, t2y, t3y] = sideCentres;
-  const sideScrewY = [pz.screwFromEnd, (t1y + t2y) / 2, (t2y + t3y) / 2, h - pz.screwFromEnd];
+  // Screws down each side edge: one in from each end, and one BETWEEN every
+  // pair of neighbouring tabs. With the LISP's three tabs that is the four rows
+  // it draws; with a low carcass's two (turn 8, F0) it is three, in the right
+  // places, because the rule is "between the tabs" and not "four of them".
+  const sideScrewY = [
+    pz.screwFromEnd,
+    ...sideCentres.slice(1).map((c, i) => (sideCentres[i] + c) / 2),
+    h - pz.screwFromEnd,
+  ];
   for (const y of sideScrewY) {
     out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: S, y, d: pz.screwDiameter });
     out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: w - S, y, d: pz.screwDiameter });

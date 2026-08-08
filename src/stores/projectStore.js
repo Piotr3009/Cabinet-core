@@ -1,11 +1,14 @@
 import { create } from 'zustand';
-import { computeCabinet } from '../engine/cabinet.js';
+import {
+  computeCabinet, isShelfLocked, SHELF_VARIANTS,
+} from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
   clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
-  freeSlotOnWall, insetPads, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  backStandoff, freeSlotOnWall, insetPads, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  wallClearance,
   wallObstacles,
 } from '../engine/collision.js';
 import {
@@ -14,8 +17,11 @@ import {
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
 } from '../engine/design.js';
-import { autoPartsFor, takesPlinth, topInfillHeight, topInfillToCeiling } from '../engine/autoparts.js';
+import {
+  autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
+} from '../engine/autoparts.js';
 import { runInfillParams, unitTop } from '../engine/runs.js';
+import { mountHeightAlignedWith } from '../engine/doors.js';
 import { drawersInEngineOrder, nextHangerOffset, nextShelfPos, shelvesInEngineOrder } from '../engine/items.js';
 
 // ─── Project state ───
@@ -108,6 +114,18 @@ function paramsForEngine(unit) {
     ...p,
     type: unit.type,
     items,
+    // ─── Turn 8 (CLAUDE.md F4) ───
+    // How far a FIX shelf and a partition stand back from the face. It is
+    // supplied HERE rather than defaulted inside computeCabinet, and that is
+    // the same rule the plinth and the top infill follow: the engine builds
+    // what a PROJECT asks for, and a bare kit call — every golden fixture — has
+    // to keep cutting exactly what the AutoLISP cuts (fixtures/README rule 1).
+    //
+    // A unit may still say otherwise for itself; this is only the floor under
+    // "nobody has said".
+    interior_setback_mm: Number.isFinite(Number(p.interior_setback_mm))
+      ? Number(p.interior_setback_mm)
+      : getCabinetProfile().carcass.interiorSetback,
     shelves: items.filter((i) => i.kind === 'shelf').length,
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
@@ -118,6 +136,38 @@ function paramsForEngine(unit) {
     rail_material_label: items.find((i) => i.kind === 'hanger')?.material_label ?? null,
   };
 }
+
+// ─── Shelf schema (turn 8, CLAUDE.md F4) ───
+// `variant: 'fixed'` used to mean nothing more than "a shelf" — it was the value
+// `addShelves` wrote and the value the panel showed for everything. It means
+// SCREWED now, so every shelf saved before turn 8 would silently become a
+// screwed one: three ⌀3 holes per side instead of a column of pins, on a
+// cabinet somebody may already have cut.
+//
+// So it is a migration with a stamp, exactly like PROFILE_SCHEMA and
+// DESIGN_SCHEMA: on the way in, a unit that has not been through it has its
+// shelves read as ADJUSTABLE, which is what they were, and is marked done.
+const SHELF_SCHEMA = 2;
+
+export function migrateUnitShelves(unit) {
+  if (!unit?.params || unit.params.shelf_schema === SHELF_SCHEMA) return unit;
+  const sections = (unit.params.sections || []).map((section) => ({
+    ...section,
+    items: (section.items || []).map((item) => (item.kind === 'shelf' && item.variant === 'fixed'
+      ? { ...item, variant: 'adjustable' }
+      : item)),
+  }));
+  return {
+    ...unit,
+    params: {
+      ...unit.params,
+      shelf_schema: SHELF_SCHEMA,
+      ...(sections.length ? { sections } : {}),
+    },
+  };
+}
+
+const migrateUnits = (units) => (Array.isArray(units) ? units.map(migrateUnitShelves) : []);
 
 function loadCache() {
   try {
@@ -158,7 +208,7 @@ export const useProjectStore = create((set, get) => ({
       room: DEFAULT_ROOM, design: migrateDesign(null),
       jc_tenant_id: null, jc_project_id: null,
     },
-  units: cached?.units || [],
+  units: migrateUnits(cached?.units),
   dirty: false,
 
   // ── project / room ───────────────────────────────────────────────────────
@@ -234,7 +284,7 @@ export const useProjectStore = create((set, get) => ({
 
   loadProject: (project, units) => set({
     project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
-    units: Array.isArray(units) ? units : [],
+    units: migrateUnits(units),
     dirty: false,
   }),
 
@@ -405,7 +455,13 @@ export const useProjectStore = create((set, get) => ({
     const runParams = runInfillParams(next, {
       walls,
       roomHeight,
-      frontFaceDepthOf: (u) => (Number(u.params?.depth) || 0)
+      // How far a RETURN at an open end has to run to reach the wall: from the
+      // plane of the doors to the wall itself, which since turn 8 (F3) includes
+      // the 10 mm every unit stands off it. A return that stops at the carcass
+      // back stops 10 mm short of the wall, which is a gap you can see along
+      // the whole side of a run.
+      frontFaceDepthOf: (u) => wallClearance(profile)
+        + (Number(u.params?.depth) || 0)
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
     }, profile);
@@ -432,6 +488,10 @@ export const useProjectStore = create((set, get) => ({
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return 0;
+    // The gate (turn 8, CLAUDE.md F2.7). What sits on top of a base unit is a
+    // worktop, so there is no gap to the ceiling for the piece to close and the
+    // question is refused rather than answered with a number.
+    if (!takesTopInfill(unit.type)) return 0;
     const profile = getCabinetProfile();
     const height = topInfillHeight({
       requested: snapTo(heightMm, profile.editor.mmStep),
@@ -480,6 +540,26 @@ export const useProjectStore = create((set, get) => ({
   addTopInfill: (unitId) => {
     const profile = getCabinetProfile();
     return get().setTopInfill(unitId, profile.autoParts.topInfill.defaultHeight);
+  },
+
+  /**
+   * Does this cabinet take the automatic scribe filler at all (turn 8, F7)?
+   *
+   * The side infill is DERIVED — it is a fact about where the unit is standing
+   * (BACKLOG #15) — so this is not "add one". It is the joiner saying he will
+   * scribe the DOOR instead on this cabinet, and the piece then stops being
+   * cut. The unit still stops where it stops: where the wall is is not a
+   * per-cabinet opinion.
+   */
+  setSideInfillEnabled: (unitId, enabled) => {
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, side_infill_off: !enabled } }
+        : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+    return Boolean(enabled);
   },
 
   removeTopInfill: (unitId) => {
@@ -818,11 +898,19 @@ export const useProjectStore = create((set, get) => ({
    *           not a second path: a template that could land on top of a
    *           neighbour would be exactly the bug turn 3 phase 4 closed off.
    */
-  addUnit: (typeId, { params = null } = {}) => {
+  addUnit: (typeId, { params = null, near = null, side = null } = {}) => {
     const profile = getCabinetProfile();
     const state = get();
     const unit = newUnit(typeId, profile, state.units.length, state.project.design);
     if (params) applyTemplateParams(unit, params);
+    // ─── Turn 8 (CLAUDE.md F2.1) ───
+    // Which unit the joiner is working beside. When there is one, the new
+    // cabinet lands in the nearest free slot on EITHER side of it — which is
+    // the whole of the "adding on the left is impossible" bug: the placement
+    // knew one direction, so the left-hand end of a run could not be reached by
+    // adding OR by dragging (a unit butted against its neighbour has nowhere to
+    // go, and a clamp that let it through would be a worse bug).
+    const beside = near ? state.units.find((u) => u.id === near) : null;
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -835,7 +923,18 @@ export const useProjectStore = create((set, get) => ({
     const level = getUnitType(typeId).mount;
     const walls = roomWalls(state.project.room);
     let placed = null;
-    for (const wall of walls) {
+    // A named neighbour decides which WALL is tried first as well as where on
+    // it: "another one beside this" cannot mean "on the wall behind you".
+    // …and when a SIDE was asked for as well, that wall is the only one tried:
+    // "put one on the left of this" is not answered by a wall round the corner.
+    const besideWall = beside ? walls[beside.position.wall ?? 0] : null;
+    const ordered = besideWall
+      ? (side
+        ? [besideWall]
+        : [besideWall, ...walls.filter((wl) => wl.index !== besideWall.index)])
+      : walls;
+    for (const wall of ordered) {
+      const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
       const x = freeSlotOnWall({
         width: unit.params.width,
         wallWidth: wall.width,
@@ -843,17 +942,29 @@ export const useProjectStore = create((set, get) => ({
         others: state.units
           .filter((u) => (u.position.wall ?? 0) === wall.index && getUnitType(u.type).mount === level)
           .map(unitSpan),
+        near: onThisWall ? unitSpan(beside) : null,
+        side: onThisWall ? side : null,
       }, profile);
       if (x != null) { placed = { wall: wall.index, x }; break; }
     }
     if (!placed) {
-      return {
-        id: null,
-        error: `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`,
-      };
+      const where = side && beside
+        ? `There is no room for ${formatMm(unit.params.width)} mm to the ${side === 'L' ? 'left' : 'right'} of ${beside.params.unit_num} — move something, or add it on the other side.`
+        : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`;
+      return { id: null, error: where };
     }
     unit.position.wall = placed.wall;
     unit.position.x_mm = placed.x;
+    // ─── Turn 8 (CLAUDE.md F5) ───
+    // A wall unit going in beside a TALL one hangs so that the two finish on
+    // ONE line. A kitchen whose wall units stop 80 mm below the tall cabinet
+    // next to them reads as two kitchens, and the joiner then spends the
+    // afternoon typing mount heights.
+    //
+    // It is a STARTING POINT and says so: `mount_height` stays an ordinary
+    // editable field, and the unit can be hung wherever the window allows.
+    const aligned = alignedMountFor(state, unit, placed);
+    if (aligned != null) unit.params.mount_height = aligned;
     set((s) => ({ units: [...s.units, unit], dirty: true }));
     // A unit arrives with its SCRIBE FILLERS worked out from where it landed.
     // The plinth and the top infill are decisions and wait to be asked for
@@ -901,7 +1012,7 @@ export const useProjectStore = create((set, get) => ({
         // Growing a unit is a move of its far edge: it stops at the infill gap
         // and carries its own end panel with it.
         wallMargin: wallMarginOf(s),
-        padRight: footprintPads(unit, unit.params.front_t).right,
+        padRight: footprintPads(unit, unit.params.front_t, profile).right,
       }, profile);
       applied.width = clamp.width;
       if (clamp.blocked) notices.push(`Width limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
@@ -911,7 +1022,7 @@ export const useProjectStore = create((set, get) => ({
         depth: Number(patch.depth) || 0,
         x: unit.position.x_mm, width: applied.width ?? unit.params.width,
         wall, walls, others,
-        backInset: insetPads(unit).back,
+        backInset: backStandoff(unit, profile),
       }, profile);
       applied.depth = clamp.depth;
       if (clamp.blocked) notices.push(`Depth limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
@@ -939,6 +1050,20 @@ export const useProjectStore = create((set, get) => ({
         const params = { ...u.params, ...applied };
         if (applied.width != null && params.sections?.[0]) {
           params.sections = [{ ...params.sections[0], width_mm: applied.width }];
+        }
+        // ─── Turn 8 (CLAUDE.md F2.2) ───
+        // The hinge side is stored in TWO places and the engine reads the other
+        // one. `params.hinge` is the unit's own; `params.doors` becomes an
+        // object the moment doors are fitted (`setDoors`), and
+        // normalizeParams lets `doors.hinge` override `hinge` — so once a door
+        // existed, the panel's switch wrote to a field nothing read, and Piotr
+        // watched a control do nothing.
+        //
+        // One source of truth, kept here rather than by teaching the engine to
+        // prefer the other field: the door object is what the engine is handed,
+        // so the door object has to be right.
+        if (applied.hinge != null && params.doors && typeof params.doors === 'object') {
+          params.doors = { ...params.doors, hinge: applied.hinge };
         }
         return { ...u, params };
       }),
@@ -1042,7 +1167,7 @@ export const useProjectStore = create((set, get) => ({
     // with an end panel pivots about that outer corner rather than the carcass
     // corner — a fraction of the panel thickness, and the same corner the clamp
     // and the view both use.)
-    const pad = footprintPads(unit, unit.params.front_t);
+    const pad = footprintPads(unit, unit.params.front_t, getCabinetProfile());
     const span = unitPlanSpan({
       wall,
       x: unit.position.x_mm - pad.left,
@@ -1257,7 +1382,10 @@ export const useProjectStore = create((set, get) => ({
         positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
       }, profile);
       if (pos == null) break;
-      get().addItem(unitId, { kind: 'shelf', variant: 'fixed', pos_mm: pos });
+      // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
+      // you can move; `fixed` means screwed now, and a shelf arriving screwed
+      // in is a decision nobody made.
+      get().addItem(unitId, { kind: 'shelf', variant: 'adjustable', pos_mm: pos });
       added += 1;
     }
     return { added, requested: Math.max(1, Math.trunc(count)) };
@@ -1369,6 +1497,19 @@ export const useProjectStore = create((set, get) => ({
     if (!unit) return null;
     const profile = getCabinetProfile();
     const item = unit.params.sections?.[0]?.items?.find((i) => i.id === itemId);
+    // ─── Turn 8 (CLAUDE.md F4) ───
+    // A LOCKED shelf does not move, and the refusal belongs here rather than in
+    // the drag: this is the one setter every path goes through, so a number
+    // typed into the panel is refused exactly as a drag is. `blocked` is the
+    // same shape the clamp returns when a shelf has nowhere to go, so the live
+    // readout in the 3D view needs no new case.
+    if (isShelfLocked(item)) {
+      const band = shelfBandFor(unit, profile);
+      const bounds = shelfBounds({ pos: item?.pos_mm ?? band.min, others: otherShelfPositions(unit, itemId), band }, profile);
+      return {
+        pos: item?.pos_mm ?? band.min, ...bounds, blocked: true, locked: true,
+      };
+    }
     const state = clampShelfPos({
       // A stored millimetre is ALWAYS on the workshop grid (BACKLOG #33): the
       // drag's own snap when there is one, half a millimetre when there is not
@@ -1384,6 +1525,60 @@ export const useProjectStore = create((set, get) => ({
 
   /** Drag a shelf vertically. Same setter, so the drag cannot bypass the clamp. */
   moveShelf: (unitId, itemId, posRaw, snapStep) => get().setShelfPos(unitId, itemId, posRaw, snapStep),
+
+  // ── shelves v2 (turn 8, CLAUDE.md F4) ────────────────────────────────────
+
+  /**
+   * How this shelf is held: on pins, screwed, or on runners.
+   *
+   * Screwing one in also fixes where it is, so the position is left exactly
+   * where it was rather than re-clamped — the whole point of the choice is that
+   * this shelf stops moving, and a setter that nudged it half a millimetre on
+   * the way would be doing the opposite of what was asked.
+   */
+  setShelfVariant: (unitId, itemId, variant) => {
+    const next = SHELF_VARIANTS.includes(variant) ? variant : 'adjustable';
+    get().updateItem(unitId, itemId, { variant: next });
+    return next;
+  },
+
+  /**
+   * "This one stays here." A shelf that is otherwise adjustable but must not be
+   * dragged — one carrying an oven, one a run of cable is stapled to. It is
+   * drilled like a FIX shelf, because that is what holding a shelf still means.
+   */
+  setShelfLocked: (unitId, itemId, locked) => {
+    get().updateItem(unitId, itemId, { updown_locked: Boolean(locked) });
+    return Boolean(locked);
+  },
+
+  /**
+   * How far this shelf's front edge stands back from the face of the carcass.
+   *
+   * `null` puts it back on the project's default (20 mm). 0 stretches it out to
+   * the face, which is what a shelf under a worktop or behind a glazed door
+   * sometimes has to do.
+   */
+  setShelfFront: (unitId, itemId, frontMm) => {
+    const profile = getCabinetProfile();
+    if (frontMm == null) { get().updateItem(unitId, itemId, { front_mm: null }); return null; }
+    const value = Math.max(0, snapTo(Number(frontMm) || 0, profile.editor.mmStep));
+    get().updateItem(unitId, itemId, { front_mm: value });
+    return value;
+  },
+
+  /** The same, for the partition and the rail partitioner of one unit. */
+  setPartitionFront: (unitId, frontMm) => {
+    const profile = getCabinetProfile();
+    const value = frontMm == null ? null : Math.max(0, snapTo(Number(frontMm) || 0, profile.editor.mmStep));
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, partition_front_mm: value } }
+        : u)),
+      dirty: true,
+    }));
+    return value;
+  },
 
   /**
    * Re-clamp every shelf of a unit. Called after a carcass parameter changes:
@@ -1432,10 +1627,46 @@ export const useProjectStore = create((set, get) => ({
   },
 
   // ── doors (last step) ────────────────────────────────────────────────────
+  // The hinge side travels BOTH ways (turn 8, F2.2): fitting doors with a hinge
+  // writes it onto the unit as well, so the panel's switch and the engine's
+  // input are the same answer and cannot come apart later.
   setDoors: (unitId, doors) => set((s) => ({
-    units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, doors } } : u)),
+    units: s.units.map((u) => (u.id === unitId
+      ? {
+        ...u,
+        params: {
+          ...u.params,
+          doors,
+          ...(doors && typeof doors === 'object' && doors.hinge
+            ? { hinge: String(doors.hinge).toUpperCase() === 'R' ? 'R' : 'L' }
+            : {}),
+        },
+      }
+      : u)),
     dirty: true,
   })),
+
+  /**
+   * How much clear WALL there is beside a unit, per side — or null where what
+   * is beside it is a neighbour rather than a wall (turn 8, CLAUDE.md F5).
+   *
+   * The 3D view asks this to decide how far a door may swing: past 90° a door
+   * comes back towards the wall on its hinge side, so an end cabinet in a
+   * corner would animate its door through the plaster. A neighbour is
+   * deliberately NOT a wall here — CLAUDE.md asks about walls, and two doors
+   * opening into each other is a different question with a different answer.
+   */
+  wallGapsFor: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { left: null, right: null };
+    const out = {};
+    for (const [key, side] of [['left', 'L'], ['right', 'R']]) {
+      const free = freeBesideUnit(s, unit, side);
+      out[key] = free.by === 'the wall' ? free.gap : null;
+    }
+    return out;
+  },
 
   // ── derived ──────────────────────────────────────────────────────────────
   /** Live engine output for one unit — recomputed on every read (SPEC 4.11). */
@@ -1515,7 +1746,7 @@ function sameRun(a, b) {
  * INCLUDED, so a neighbour cannot be moved into a panel it cannot see.
  */
 function toObstacleUnit(u) {
-  const pad = footprintPads(u, u.params?.front_t);
+  const pad = footprintPads(u, u.params?.front_t, getCabinetProfile());
   return {
     wall: u.position?.wall ?? 0,
     x_mm: (Number(u.position?.x_mm) || 0) - pad.left,
@@ -1527,6 +1758,41 @@ function toObstacleUnit(u) {
     backInset: pad.back,
     label: u.params?.unit_num || u.id,
   };
+}
+
+/**
+ * Where a newly placed WALL unit should hang: level with the top of the TALL
+ * unit it has landed beside (turn 8, CLAUDE.md F5).
+ *
+ * "Beside" is measured on the wall, and a tall unit anywhere along the same
+ * stretch counts — the two are at different mounting levels, so they never
+ * overlap and the nearest one is the one the eye lines the run up against.
+ * Null when there is no tall unit on that wall, or when the wall unit is too
+ * tall to reach that line, in which case the project's own mount height stands.
+ */
+function alignedMountFor(state, unit, placed) {
+  const type = getUnitType(unit.type);
+  if (type.mount !== 'wall') return null;
+  const profile = getCabinetProfile();
+  const span = { left: placed.x, right: placed.x + (Number(unit.params.width) || 0) };
+  const talls = state.units.filter((u) => (u.position?.wall ?? 0) === placed.wall
+    && getUnitType(u.type).heightGroup === 'tall');
+  if (!talls.length) return null;
+
+  // The nearest one along the wall — measured between spans, so a tall unit the
+  // wall unit is standing directly above scores 0.
+  const distance = (u) => {
+    const s = unitSpan(u);
+    if (s.right <= span.left) return span.left - s.right;
+    if (s.left >= span.right) return s.left - span.right;
+    return 0;
+  };
+  const nearest = talls.reduce((best, u) => (distance(u) < distance(best) ? u : best), talls[0]);
+  return mountHeightAlignedWith({
+    tallTop: unitTopOf(nearest, profile),
+    unitHeight: Number(unit.params.height) || 0,
+    roomHeight: Number(state.project.room.height) || 0,
+  });
 }
 
 /**
@@ -1583,7 +1849,18 @@ function freeBesideUnit(state, unit, side) {
  * it — which is what makes the filler appear by itself when the unit parks.
  */
 function wallMarginOf(state) {
-  return Math.max(0, Number(migrateDesign(state.project.design).infill.sideWidth) || 0);
+  const profile = getCabinetProfile();
+  const setting = Math.max(0, Number(migrateDesign(state.project.design).infill.sideWidth) || 0);
+  // ─── Turn 8 (CLAUDE.md F3) ───
+  // With the infill switched OFF a unit used to travel all the way to the side
+  // wall and stand hard against it. It cannot: the same bowed wall that makes
+  // every unit stand 10 mm off the wall BEHIND it makes it stand 10 mm off the
+  // wall BESIDE it, and a cabinet scribed to nothing does not go in.
+  //
+  // So the stop is never smaller than the wall clearance. With a real infill
+  // width set, that width still wins — it is bigger, and it is a piece.
+  if (setting >= (profile.autoParts?.sideInfill?.minWidth ?? 0) && setting > 0) return setting;
+  return wallClearance(profile);
 }
 
 // ─── Interior rules (shared by the store and the UI) ───

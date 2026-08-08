@@ -776,3 +776,125 @@ styl. **BACKLOG #46**.
 Bez zmian względem #29, #34. Tura 7 nie dodała żadnego pliku SQL i nie uruchomiła
 żadnego z istniejących (`sql/002_tura3.sql`, `sql/003_tura5.sql`). Karta produkcyjna,
 flow, X-ray, sockety i insety są w całości lokalne — nic z tej tury nie potrzebuje bazy.
+
+---
+
+# TURA 8
+
+## #44 — Skany EGGER w 3D: decyzja jest Piotra, zgody pisemnej nadal nie ma
+
+Tura 5 czytała *EGGER General Terms for Image Use* jako zakaz używania skanów płyt
+jako tekstur 3D bez pisemnej zgody i zbudowała wokół tego cały mechanizm: własne
+proceduralne słoje tonowane średnim kolorem dekoru, plus test, który tej linii
+pilnował. CLAUDE.md tury 8 tę decyzję **cofa** — „decyzja Piotra 07.08, koniec
+proceduralnego drewna na dekorach" — i tak jest zrobione: 69 skanów z Supabase
+Storage, dekor woodgrain nosi obraz producenta.
+
+**To jest decyzja Piotra i została wykonana bez dyskusji.** To jego relacja
+z dostawcą, jego warsztat i jego ryzyko. Co można było zrobić kodem, zostało zrobione:
+
+- obraz pokazywany **w całości i bez edycji** — `tint: false` wszędzie, gdzie jest
+  prawdziwy skan, więc nic go nie przebarwia ani nie kadruje;
+- atrybucja „EGGER {code} {name}" **bezwarunkowa** — nie ma ścieżki, która rysuje
+  dekor bez niej;
+- nota o reprodukcji jedzie z nią;
+- skan spoza `https://` jest odrzucany, zanim trafi do loadera tekstur.
+
+**Czego kod nie załatwi:** samej zgody. `meta.tex_note` w pliku dekorów mówi to
+wprost — „Public demo/sale of CC still requires written EGGER consent". Dopóki jej
+nie ma, wersja publiczna (demo dla klientów spoza warsztatu, sprzedaż aplikacji)
+stoi na tej samej pozycji co przed turą 8. Do wewnętrznej pracy warsztatu Piotra
+zmiana jest zrobiona i działa.
+
+**Co Piotr powinien zrobić:** napisać do EGGER-a o zgodę na użycie skanów dekorów
+jako tekstur 3D w oprogramowaniu, z atrybucją. Jeśli odpowiedź będzie odmowna,
+powrót jest jedną linijką — `finishFromDecor()` ma fallback proceduralny na miejscu
+i pokryty testem, bo jest używany dla dekorów bez skanu i dla maszyn bez sieci.
+
+## #45 — Mitra jest na PASKACH, nie na wszystkim, co ma otwarty koniec
+
+CLAUDE.md F6 mówi o infillach i tak jest zrobione: pasek dostaje ścięcie 45° tam, gdzie
+jego przekrój 40+~80 spotyka się w widocznym narożniku, i to jest ta „rama obrazu",
+o którą prosi Piotr.
+
+Czego mitra NIE dotyka, świadomie:
+
+- **infilla BOCZNEGO** — `infillMitre()` odmawia cięcia wszystkiemu, co nie jest
+  `side: 'top'`, i to jest decyzja, nie przeoczenie: tura 6 opisuje ramię A bocznego
+  L jako PRZYKRĘCONE do boku korpusu, a przykręcony styk to nie mitra. Test tego
+  pilnuje, żeby nikt nie „naprawił" tego przypadkiem. Jeśli warsztat mitruje także
+  pionowy filler — jedna linijka i flaga w silniku. **BACKLOG #51**;
+- **end paneli** — czoło end panela to płyta oklejona obrzeżem, nie mitra, i tak jest
+  w warsztacie;
+- **BOM i DXF** — bez najmniejszej zmiany. Flagi `mitre_45` były w danych od tury 3,
+  formatka jest tym samym prostokątem, a ścięcie to operacja piły, nie inny arkusz.
+  Test tego pilnuje: geometria 3D ma fazy, a `panel.w/h` po mitrze są co do milimetra
+  te same, co przed nią.
+
+## #46 — Wydajność tury 8: nadal SwiftShader, i jedna liczba, której NIE wolno porównać
+
+Kontener nie ma GPU — trzecia tura z rzędu, po #31 (tura 6) i #41 (tura 7). Pomiar
+tury 8: **10 korpusów dolnych, bez drzwi**, kolor natryskowy (bez skanów), rig
+z cieniem i linie złącza włączone, po 5 s na przebieg, po 3 przebiegi:
+
+| tryb | fps (średnia z 3) | przebiegi |
+|---|---|---|
+| Solid | **4,40** | 4,40 · 4,60 · 4,19 |
+| X-ray | **4,37** | 4,36 · 4,30 · 4,46 |
+
+Co ta liczba mówi: **X-ray dalej nie kosztuje nic mierzalnego** (różnica mniejsza niż
+rozrzut między przebiegami tego samego trybu), a rig z cieniem z F1 plus cztery
+`LineSegments` na jednostkę z F8 nie położyły klatki.
+
+Czego ta liczba NIE mówi i czego **nie wolno** z niej wyciągnąć:
+
+- to **nie jest** poprawa wobec 2,87 z tury 7. Tamten przebieg miał na szafkach DRZWI,
+  ten nie ma. Dwa różne meble, dwie różne liczby, zero wniosku;
+- **koszt skanów nie jest zmierzony** — domyślny projekt idzie w kolorze natryskowym,
+  więc przez ten pomiar nie przeszła ani jedna tekstura EGGER-a. 69 obrazów sRGB
+  z anisotropy 8 to jedyna rzecz z tej tury, która może realnie ważyć na maszynie
+  Piotra, i o niej ten pomiar milczy;
+- liczba bezwzględna z rasteryzatora programowego nie mówi nic o żadnej prawdziwej
+  maszynie.
+
+**Do zrobienia u Piotra, na jego sprzęcie:** projekt kuchni z dekorem woodgrain na
+korpusach i drzwiami, i sprawdzenie, czy scena chodzi. To jest jedyny pomiar, który
+w tej sprawie cokolwiek znaczy.
+
+## #47 — Czego render dalej nie ma
+
+Zrobione w F1 jest to, o co prosi CLAUDE.md, i nic ponad to. Brakuje trzech rzeczy,
+które przy tej okazji były na wyciągnięcie ręki i **nie zostały** wzięte, bo żadna
+nie jest w tej turze:
+
+- **bloom / rozkwit świateł** — wymaga potoku post-processingu (EffectComposer), którego
+  ta aplikacja nie ma. To nie jest zależność (three go niesie), ale to jest drugi
+  przebieg renderowania i drugie miejsce, w którym obraz może być zły. **BACKLOG #52**;
+- **mapy normalnych dla dekorów drewnopodobnych** — skan EGGER-a daje KOLOR słoja,
+  nie jego relief. Płyta melaminowa jest prawie płaska, więc brak jest uczciwy, ale
+  synchro-pory (dekory strukturalne) będą przez to wyglądały gładko. Też #52;
+- **„Show all dimensions" rysuje ETYKIETY, nie linie wymiarowe ze strzałkami** —
+  z F7 przełącznik działa i pokazuje komplet wymiarów szafki, ale w stylu etykiet,
+  nie w stylu strzałek z tury 5. **BACKLOG #53**.
+
+## #48 — Migracja półek sięga tylko tam, gdzie sięga aplikacja
+
+F4 zmieniło kształt danych półki: doszły `variant`, `updown_locked` i `front_mm`,
+a `shelf_schema: 2` odróżnia projekt po migracji od projektu sprzed niej.
+`migrateUnitShelves()` jest bezwarunkowe i idempotentne — każdy projekt, który
+przechodzi przez `projectStore`, wychodzi z niego w nowym kształcie, i dotyczy to
+zarówno cache w przeglądarce, jak i pliku wczytanego z dysku.
+
+Czego migracja NIE dotknie: **wierszy leżących w Supabase**. Nic ich nie przepisuje
+w miejscu — dostaną nowy kształt dopiero, kiedy ktoś otworzy taki projekt w aplikacji
+i go zapisze. Dla warsztatu Piotra to jest bez znaczenia (projekty i tak są otwierane),
+ale gdyby kiedyś coś czytało te wiersze POZA aplikacją, przeczyta stary kształt.
+Migracja w SQL to jedna instrukcja `UPDATE` i nie jest napisana. **BACKLOG #54**.
+
+## #49 — SQL wciąż nieuruchomione
+
+Bez zmian względem #29, #34, #43. Tura 8 nie dodała żadnego pliku SQL i nie uruchomiła
+żadnego z istniejących (`sql/002_tura3.sql`, `sql/003_tura5.sql`). Światło, materiały,
+sloty, półki, mitra, menu i złącza są w całości lokalne — nic z tej tury nie potrzebuje
+bazy. Skany dekorów są czytane z **publicznych URL-i** Supabase Storage podanych
+w danych; nie ma tu zapytania, klucza ani sesji.

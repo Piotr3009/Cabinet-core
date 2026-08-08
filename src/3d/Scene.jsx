@@ -373,6 +373,10 @@ function FloorShadow({ subject, profile }) {
     <group userData={{ ccNoBounds: true }}>
       <ContactShadows
         key={bake}
+        // drei multiplies width/height by its `scale`, DEFAULT 10 — turn 9
+        // missed it, so a 1.8 m run baked onto an 18 m canvas: the legs were
+        // two texels and the blur dissolved them. Silent on every GPU.
+        scale={1}
         frames={1}
         // A hair above the floor. Coplanar with it, the two z-fight.
         position={[fit.cx, mm(1), fit.cz]}

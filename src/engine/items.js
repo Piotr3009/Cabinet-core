@@ -72,6 +72,18 @@ export function shelfRows(items = []) {
  * slot instead; when even that is gone it returns null, so the caller reports
  * "no room" rather than stacking two shelves in one slot.
  *
+ * ─── Turn 11 (CLAUDE.md F2.3) ───
+ * This is no longer what the "Add shelves" button uses — Piotr's verdict on the
+ * top-down rule was that the shelf "lands wrong", and it does: a single shelf
+ * added to an empty wardrobe went to the very top of the drag band, 40 mm under
+ * the wieniec, which is a shelf nobody would fit there. `centredShelfPos` below
+ * is what the button calls now.
+ *
+ * The rule is KEPT because it is a different question with a different answer —
+ * "pack them in from the top" is what a run of six shelves in a pantry wants —
+ * and because throwing away a tested placement rule to add another one is how
+ * a codebase ends up with neither.
+ *
  * @param {{band:{min:number,max:number}, positions:number[]}} args
  */
 export function nextShelfPos({ band, positions = [] }, profile) {
@@ -84,6 +96,51 @@ export function nextShelfPos({ band, positions = [] }, profile) {
   if (tightest < band.min) return null;
   const wanted = Math.min(band.max, lowest - E.itemStackPitch);
   return Math.min(Math.max(wanted, band.min), tightest);
+}
+
+/**
+ * ─── Where an ADDED shelf lands (turn 11, CLAUDE.md F2.3) ───
+ *
+ * "Adding a shelf defaults to centred in its zone." Owner verdict, and the
+ * reason is what a joiner does with the first shelf in an empty carcass: he
+ * halves the opening. Turn 4's rule filled from the TOP, so shelf one went 40 mm
+ * under the top panel and every one after it walked down in 350 mm steps — a
+ * ladder nobody asked for that had to be corrected with the Even button every
+ * single time.
+ *
+ * "Its zone" is the OPENING the shelf goes into, not the whole carcass: with two
+ * shelves already fitted there are three openings, and the new one halves the
+ * biggest of them. On an empty carcass that is the whole zone, which is the
+ * simple case the verdict is about.
+ *
+ * Measured between FACES, exactly as `shelfGapLadder` measures — the shelf has a
+ * thickness, and centring its BOTTOM face in a clear opening leaves the piece
+ * one board low. What is centred is the board.
+ *
+ * @param {object} args
+ *   band       shelfBand(): { min, max, floor, ceiling }
+ *   positions  the shelves already fitted, as bottom faces
+ *   boardT     the new shelf's thickness
+ * @returns {number|null} the bottom face, or null when nothing fits
+ */
+export function centredShelfPos({ band, positions = [], boardT = 0 }, profile) {
+  const E = profile.editor;
+  const t = Math.max(0, Number(boardT) || 0);
+  const taken = positions.filter((p) => Number.isFinite(p)).sort((a, b) => a - b);
+  // floor → S1 underside, S1 top → S2 underside, … Sn top → ceiling.
+  const faces = [band.floor, ...taken.flatMap((y) => [y, y + t]), band.ceiling];
+
+  let best = null;
+  for (let i = 0; i < faces.length - 1; i += 2) {
+    const size = faces[i + 1] - faces[i];
+    if (!best || size > best.size) best = { from: faces[i], size };
+  }
+  // A shelf and the two clear openings it leaves. Below this the piece would be
+  // fitted tighter than the workshop's own minimum and the caller says "no room"
+  // rather than the clamp quietly stacking it on its neighbour.
+  if (!best || best.size < t + 2 * E.minShelfGap) return null;
+  const pos = best.from + (best.size - t) / 2;
+  return Math.min(Math.max(pos, band.min), band.max);
 }
 
 /**
@@ -121,16 +178,50 @@ export function nextShelfPos({ band, positions = [] }, profile) {
  * Pure arithmetic on four numbers: no profile, no clamp, no store. The caller
  * clamps, because the caller is the one that knows what else is in the cabinet.
  *
- * @param {{zoneBottom:number, zoneTop:number, count:number}} zone
+ * ─── TURN 11 (CLAUDE.md F2): THE BOTTOM GAP ───
+ *
+ * Piotr's screenshot after turn 9: 226.5 / 227 / 244.5. The bottom opening is
+ * still wrong, and the difference is 18 — one board thickness, which is the
+ * whole answer.
+ *
+ * The zone bounds are right (they are the LISP's own, re-checked against
+ * KIT_WARDROBE_FULL L684-692 and KIT_LOW_CABINET_FULL L253-259: the top face of
+ * whatever closes the space below, up to the underside of the top panel). The
+ * FORMULA is what is one-sided. It spaces BOTTOM FACES evenly, which is exactly
+ * what the AutoLISP does — and a shelf is not a line, it is 18 mm of board. So
+ * every opening ABOVE a shelf loses that board and the lowest one, which has no
+ * shelf under it, does not:
+ *
+ *     floor → S1        = spacing                 ← one board too big
+ *     S1+G  → S2        = spacing − G
+ *     Sn+G  → ceiling   = spacing − G
+ *
+ * `boardT` is what closes it. With `boardT` the shelves are spaced so the CLEAR
+ * OPENINGS are equal, which is the thing a joiner measures and the thing the
+ * owner verdict is about:
+ *
+ *     gap      = (zoneTop − zoneBottom − n·G) / (n + 1)
+ *     shelfY_i = zoneBottom + i·gap + (i − 1)·G
+ *
+ * It DEFAULTS TO ZERO, and that is not laziness: with `boardT` left out this is
+ * the AutoLISP's formula to the last decimal, which is what the engine's own
+ * even-spacing fallback (`assemblies.shelves`, and through it the pin drilling
+ * and every golden fixture) must keep computing. The DESIGN layer — the Even
+ * button, the store — passes the thickness; the kit does not.
+ *
+ * @param {{zoneBottom:number, zoneTop:number, count:number, boardT?:number}} zone
  * @returns {number[]} bottom faces, bottom-up, one per shelf
  */
-export function evenShelfPositions({ zoneBottom, zoneTop, count }) {
+export function evenShelfPositions({
+  zoneBottom, zoneTop, count, boardT = 0,
+}) {
   const n = Math.max(0, Math.trunc(Number(count) || 0));
   if (n <= 0) return [];
   const bottom = Number(zoneBottom) || 0;
   const top = Number(zoneTop) || 0;
-  const spacing = (top - bottom) / (n + 1);
-  return Array.from({ length: n }, (_, i) => bottom + spacing * (i + 1));
+  const t = Math.max(0, Number(boardT) || 0);
+  const gap = (top - bottom - n * t) / (n + 1);
+  return Array.from({ length: n }, (_, i) => bottom + gap * (i + 1) + t * i);
 }
 
 /**

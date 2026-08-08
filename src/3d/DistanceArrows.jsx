@@ -149,7 +149,12 @@ function Arrow({ mark, cfg, colour }) {
 
 export default function DistanceArrows({ walls, units, roomCentre, profile, colourKey }) {
   const cfg = profile.dimensions;
-  const colour = cfg.colours[colourKey] || cfg.colours[cfg.defaultColour];
+  // Turn 11 (CLAUDE.md F1.5): the fallback is the profile's own DEFAULT INK,
+  // which lives in appearance.dimensions and is red from this turn on. `cfg` is
+  // only where the two hexes are kept.
+  const colour = cfg.colours[colourKey]
+    || cfg.colours[profile?.appearance?.dimensions?.colour]
+    || Object.values(cfg.colours)[0];
   const marks = useMemo(
     () => roomDistances({ walls, units, minGap: cfg.minGap }),
     [walls, units, cfg.minGap],

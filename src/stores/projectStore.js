@@ -19,12 +19,15 @@ import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
 } from '../engine/design.js';
 import {
+  projectBoardThickness, projectDepth, projectFrontThickness, setFrontTypeCount,
+} from '../engine/projectSettings.js';
+import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import { runInfillParams, unitTop } from '../engine/runs.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
-  drawersInEngineOrder, evenShelfPositions, nextHangerOffset, nextShelfPos, shelvesInEngineOrder,
+  centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
 } from '../engine/items.js';
 
 // ─── Project state ───
@@ -81,6 +84,17 @@ function projectHeightParams(type, design, profile) {
     ...(group ? { height: heights[group], height_custom: false } : { height_custom: false }),
     ...(type.mount === 'wall' ? { mount_height: heights.wallMount } : {}),
     ...(type.legs ? { leg_height: heights.toeKick } : {}),
+    // ─── Turn 11 (CLAUDE.md F9.1/F9.3) ───
+    // The other three the project decides: how DEEP its units are, and the two
+    // boards they are cut from. A kitchen is built to one depth — a run whose
+    // cabinets are 558 and 560 has a step down the front of it — and the board
+    // follows from where the workshop said the material comes from.
+    //
+    // A WALL unit keeps its own depth: 400 is what a wall unit is, and a 558 mm
+    // one over a worktop is a cabinet you walk into.
+    ...(type.mount === 'wall' ? {} : { depth: projectDepth(design, profile) }),
+    board_t: projectBoardThickness(design, profile),
+    front_t: projectFrontThickness(design, profile),
   };
 }
 
@@ -129,6 +143,12 @@ function paramsForEngine(unit) {
     interior_setback_mm: Number.isFinite(Number(p.interior_setback_mm))
       ? Number(p.interior_setback_mm)
       : getCabinetProfile().carcass.interiorSetback,
+    // ─── Turn 11 (CLAUDE.md F3.1) ───
+    // What a project has said about ONE piece of this cabinet, keyed by the
+    // engine's own panel id. A DESIGN-layer input like the plinth and the top
+    // infill: the engine gained an input, not a formula, and a bare
+    // computeCabinet() with none of them set cuts what the AutoLISP cuts.
+    element_overrides: p.element_overrides || null,
     shelves: items.filter((i) => i.kind === 'shelf').length,
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
@@ -332,6 +352,75 @@ export const useProjectStore = create((set, get) => ({
     // fillers everywhere.
     get().refreshAutoParts();
   },
+
+  /**
+   * ─── Step 5's own setters (turn 11, CLAUDE.md F9) ───
+   *
+   * The project's default DEPTH, its board thickness and its hardware variants.
+   * Each goes through `setDesign`, so they are stored, migrated and re-derived
+   * exactly like every other project setting — and changing one AFTER units have
+   * been placed is deliberately NOT a retro-fit: those cabinets were cut to what
+   * was asked for at the time, and the panel is where one is changed.
+   */
+  setProjectDefaults: (patch) => {
+    const design = migrateDesign(get().project.design);
+    const next = {};
+    if (patch.depth !== undefined) {
+      const v = Number(patch.depth);
+      next.depth = Number.isFinite(v) && v > 0 ? snapTo(v, getCabinetProfile().editor.mmStep) : null;
+    }
+    if (patch.thickness !== undefined) next.thickness = { ...design.thickness, ...patch.thickness };
+    if (patch.hardware !== undefined) next.hardware = { ...design.hardware, ...patch.hardware };
+    if (patch.fronts !== undefined) next.fronts = { ...design.fronts, ...patch.fronts };
+    if (!Object.keys(next).length) return null;
+    get().setDesign(next);
+    return migrateDesign(get().project.design);
+  },
+
+  /** How many FRONT types this project runs (1–2, CLAUDE.md F9.2). */
+  setFrontTypes: (count) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    const profile = getCabinetProfile();
+    return {
+      project: {
+        ...s.project,
+        design: migrateDesign({
+          ...design,
+          fronts: { ...design.fronts, types: setFrontTypeCount(design.fronts.types, count, profile) },
+        }),
+      },
+      dirty: true,
+    };
+  }),
+
+  /** One front type's source, colour or assigned stock. */
+  setFrontType: (typeId, patch) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    const profile = getCabinetProfile();
+    const types = setFrontTypeCount(design.fronts.types, design.fronts.types.length || 1, profile)
+      .map((t) => (t.id === typeId ? { ...t, ...patch } : t));
+    return {
+      project: { ...s.project, design: migrateDesign({ ...design, fronts: { ...design.fronts, types } }) },
+      dirty: true,
+    };
+  }),
+
+  /** A carcass type's SOURCE — EGGER decor or sprayed (CLAUDE.md F9.2). */
+  setCarcassSource: (typeId, source) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    return {
+      project: {
+        ...s.project,
+        design: {
+          ...design,
+          carcass: {
+            types: design.carcass.types.map((t) => (t.id === typeId ? { ...t, source: source || null } : t)),
+          },
+        },
+      },
+      dirty: true,
+    };
+  }),
 
   setCarcassTypes: (count) => set((s) => ({
     project: { ...s.project, design: setCarcassTypeCount(migrateDesign(s.project.design), count) },
@@ -768,6 +857,37 @@ export const useProjectStore = create((set, get) => ({
     return top;
   },
 
+  /**
+   * ─── Pin a side infill (turn 11, CLAUDE.md F5.1) ───
+   *
+   * "Insets L/P" are gone — the owner's verdict is that the concept was broken,
+   * and this is what replaces them. The side filler already appears and
+   * disappears by itself in a unit-to-wall gap; PINNING it is the joiner saying
+   * "there is a piece here", after which it never auto-vanishes and it STRETCHES
+   * as the unit moves — past the workshop's scribe limit if it has to.
+   *
+   * It is exactly the TOP infill's strategy turned on its side, and it reuses
+   * the same code path (engine/autoparts.js `sideInfill`, engine/cabinet.js's
+   * INFILL-L / INFILL-R with their L section and mitre rules) rather than a
+   * parallel implementation — the flag changes which gaps qualify, and nothing
+   * else about the piece.
+   *
+   * `pinned === false` returns the side to automatic, which is the "Unpin"
+   * half of the menu entry.
+   */
+  setSideInfillPinned: (unitId, side, pinned) => {
+    const key = side === 'R' ? 'side_infill_right_pinned' : 'side_infill_left_pinned';
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, [key]: Boolean(pinned) } }
+        : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+    const now = get().units.find((u) => u.id === unitId);
+    return Number(now?.params?.[side === 'R' ? 'side_infill_right_mm' : 'side_infill_left_mm']) || 0;
+  },
+
   sideInfillToCeiling: (unitId, side) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
@@ -947,7 +1067,7 @@ export const useProjectStore = create((set, get) => ({
       const x = freeSlotOnWall({
         width: unit.params.width,
         wallWidth: wall.width,
-        wallMargin: wallMarginOf(state),
+        wallMargin: wallMarginOf(state, unit),
         others: state.units
           .filter((u) => (u.position.wall ?? 0) === wall.index && getUnitType(u.type).mount === level)
           .map(unitSpan),
@@ -1020,7 +1140,7 @@ export const useProjectStore = create((set, get) => ({
         others: spans,
         // Growing a unit is a move of its far edge: it stops at the infill gap
         // and carries its own end panel with it.
-        wallMargin: wallMarginOf(s),
+        wallMargin: wallMarginOf(s, unit),
         padRight: footprintPads(unit, unit.params.front_t, profile).right,
       }, profile);
       applied.width = clamp.width;
@@ -1194,8 +1314,11 @@ export const useProjectStore = create((set, get) => ({
       width: footprintWidth,
       wallWidth: wall.width,
       others,
-      // The stop that makes the side infill appear (BACKLOG #15).
-      wallMargin: wallMarginOf(s),
+      // The stop that makes the side infill appear (BACKLOG #15) — and, since
+      // turn 11 (F5.3), the 10 mm wall clearance instead for a cabinet whose
+      // filler has been switched off, because there is no piece to leave room
+      // for.
+      wallMargin: wallMarginOf(s, unit),
     }, getCabinetProfile());
     const x = result.x - lead;
 
@@ -1206,6 +1329,78 @@ export const useProjectStore = create((set, get) => ({
     // Moving changes which gaps exist — and a gap is a filler.
     get().refreshAutoParts();
     return { ...result, x };
+  },
+
+  /**
+   * ─── Re-home a unit (turn 11, CLAUDE.md F4.1) ───
+   *
+   * "Move a unit to another position/side/wall AFTER placement." Until now a
+   * placed cabinet was married to its wall: `moveUnit` slides it along, and the
+   * only way round the corner was a select box in the right-hand panel. Dragging
+   * it there is the gesture, and this is what the drag calls when the pointer
+   * has crossed onto another wall.
+   *
+   * It is RE-PARENTING and not new geometry: the wall changes, and then exactly
+   * the same clamp a slide goes through decides where on it the unit may stand
+   * (`moveUnit`), so the collision and gap rules are the ones that were already
+   * there. A wall with no room REFUSES — the unit goes back where it was, which
+   * is the same answer `setUnitWall` gives and for the same reason: an overlap
+   * the app created itself is the one thing turn 3 phase 4 closed off.
+   *
+   * @returns {{wall:number, x_mm:number, blocked:boolean, error:string|null}}
+   */
+  moveUnitToWall: (unitId, wallIndex, xRaw, snapStep = 0) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    const walls = roomWalls(s.project.room);
+    if (!unit || !walls[wallIndex]) return null;
+    const from = { wall: unit.position.wall ?? 0, x_mm: unit.position.x_mm };
+    if (wallIndex === from.wall) {
+      const moved = get().moveUnit(unitId, xRaw, snapStep);
+      return {
+        wall: from.wall, x_mm: moved?.x ?? from.x_mm, blocked: Boolean(moved?.blocked), error: null,
+      };
+    }
+
+    // Put it on the new wall first, then let the ordinary clamp settle it: the
+    // clamp reads the unit's CURRENT wall, so it has to be the new one before it
+    // can have an opinion about the neighbours there.
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, position: { ...u.position, wall: wallIndex } }
+        : u)),
+    }));
+    const moved = get().moveUnit(unitId, xRaw, snapStep);
+    const now = get().units.find((u) => u.id === unitId);
+    // Did it actually FIT? `moveUnit` clamps rather than refuses, so a wall with
+    // no free slot leaves the unit inside a neighbour — which nothing else in
+    // this app is allowed to produce. Checked against the same free-slot rule a
+    // placement uses, and put back if the answer is no.
+    const level = getUnitType(unit.type).mount;
+    const room = freeSlotOnWall({
+      width: unit.params.width,
+      wallWidth: walls[wallIndex].width,
+      wallMargin: wallMarginOf(get(), unit),
+      others: get().units
+        .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex
+          && getUnitType(u.type).mount === level)
+        .map(unitSpan),
+    }, getCabinetProfile());
+    if (room == null) {
+      set((st) => ({
+        units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, ...from } } : u)),
+      }));
+      get().refreshAutoParts();
+      return {
+        ...from,
+        blocked: true,
+        error: `Wall ${wallIndex + 1} has no free space for this unit.`,
+      };
+    }
+    get().refreshAutoParts();
+    return {
+      wall: wallIndex, x_mm: now?.position.x_mm ?? moved?.x ?? 0, blocked: false, error: null,
+    };
   },
 
   /**
@@ -1252,7 +1447,7 @@ export const useProjectStore = create((set, get) => ({
     const x = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
-      wallMargin: wallMarginOf(s),
+      wallMargin: wallMarginOf(s, unit),
       others: s.units
         .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && getUnitType(u.type).mount === level)
         .map(unitSpan),
@@ -1374,10 +1569,17 @@ export const useProjectStore = create((set, get) => ({
   },
 
   /**
-   * Add `count` shelves, each in the topmost free slot (turn 4, BACKLOG #12):
-   * shelves fill from the TOP down and never land on one another. Returns how
-   * many actually fitted, so the caller can say "no room for the rest" instead
-   * of silently dropping them.
+   * Add `count` shelves, each CENTRED in the biggest opening it can find
+   * (turn 11, CLAUDE.md F2.3). Returns how many actually fitted, so the caller
+   * can say "no room for the rest" instead of silently dropping them.
+   *
+   * Turn 4 filled from the TOP down, which is what Piotr's "today's default
+   * lands wrong" is about: the first shelf in an empty wardrobe went 40 mm under
+   * the wieniec, and every set of shelves had to be corrected with Even before
+   * it was worth looking at. Halving the opening is what a joiner does, and it
+   * still never lands one shelf on another — the biggest opening is by
+   * definition the one with the most room in it, and the clamp has the last
+   * word as it does on every other path.
    */
   addShelves: (unitId, count = 1) => {
     const profile = getCabinetProfile();
@@ -1386,9 +1588,10 @@ export const useProjectStore = create((set, get) => ({
       const unit = get().units.find((u) => u.id === unitId);
       if (!unit) break;
       const items = unit.params.sections?.[0]?.items || [];
-      const pos = nextShelfPos({
+      const pos = centredShelfPos({
         band: shelfLimits(unit, profile),
         positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
+        boardT: unit.params.board_t ?? profile.board.thickness,
       }, profile);
       if (pos == null) break;
       // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
@@ -1489,6 +1692,110 @@ export const useProjectStore = create((set, get) => ({
     });
   },
 
+  /**
+   * ─── What ONE piece of the carcass is made of (turn 11, CLAUDE.md F3.1) ───
+   *
+   * Turn 9 gave a shelf a material of its own, on its ITEM. Everything else in
+   * a cabinet is built BY the engine and has no item — so the override is keyed
+   * by the engine's own panel id (`BUL`, `TOP`, `END-R`, `INFILL-L-FACE`), which
+   * is the id the 3D view draws, the BOM prints and the CNC sheet lays out.
+   * Nothing new to keep in step.
+   *
+   * `null` puts the piece back on the project's own material, which is what
+   * "no override" means everywhere else in this app.
+   */
+  setElementOverride: (unitId, panelId, patch) => {
+    if (!panelId) return null;
+    set((s) => ({
+      units: s.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const all = { ...(u.params.element_overrides || {}) };
+        const next = { ...(all[panelId] || {}), ...patch };
+        // An override with nothing left in it is not an override: it is dropped,
+        // so a project that has been set and unset saves the same as one that
+        // was never touched.
+        if (Object.values(next).every((v) => v == null || v === '')) delete all[panelId];
+        else all[panelId] = next;
+        return {
+          ...u,
+          params: { ...u.params, element_overrides: Object.keys(all).length ? all : null },
+        };
+      }),
+      dirty: true,
+    }));
+    return get().units.find((u) => u.id === unitId)?.params.element_overrides?.[panelId] || null;
+  },
+
+  /**
+   * A vertical partition, addable like a shelf (turn 11, CLAUDE.md F3.4).
+   *
+   * The engine has taken `kind: 'partition'` items since turn 8 — this is the
+   * UI-level way in that BLOCKERS #50 was waiting for. It is placed and edited
+   * exactly as a shelf is: a position along the cabinet's WIDTH rather than its
+   * height, through the same item list and the same overrides.
+   */
+  addPartition: (unitId, xMm = null) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const G = unit.params.board_t ?? profile.board.thickness;
+    const W = Number(unit.params.width) || 0;
+    const taken = (unit.params.sections?.[0]?.items || [])
+      .filter((i) => i.kind === 'partition' && Number.isFinite(i.x_mm))
+      .map((i) => i.x_mm)
+      .sort((a, b) => a - b);
+    // Centred in the widest clear bay, exactly as an added shelf halves the
+    // biggest opening (F2.3) — the same gesture, on the other axis.
+    const faces = [G, ...taken.flatMap((x) => [x, x + G]), W - G];
+    let best = null;
+    for (let i = 0; i < faces.length - 1; i += 2) {
+      const size = faces[i + 1] - faces[i];
+      if (!best || size > best.size) best = { from: faces[i], size };
+    }
+    if (!best || best.size < G + 2 * profile.editor.minShelfGap) return null;
+    // `xMm != null` before the finite test, and not `Number.isFinite(Number(xMm))`
+    // alone: `Number(null)` is 0, so "nobody said where" would read as "hard
+    // against the left side" — the same trap CLAUDE.md rule 15 is about.
+    const wanted = xMm != null && Number.isFinite(Number(xMm))
+      ? Number(xMm)
+      : best.from + (best.size - G) / 2;
+    const x = snapTo(Math.min(Math.max(wanted, G), W - G - G), profile.editor.mmStep);
+    return get().addItem(unitId, { kind: 'partition', x_mm: x });
+  },
+
+  /**
+   * Where a vertical partition stands, along the cabinet's WIDTH.
+   *
+   * The twin of `setShelfPos` on the other axis, and the same rule: this is the
+   * ONE way the number is ever written, so the field in the panel and anything
+   * added later are clamped identically. It stops one minimum gap clear of the
+   * carcass sides and of any partition already standing beside it — a divider
+   * you could not get a hand between is not a bay.
+   */
+  setPartitionX: (unitId, itemId, xRaw) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const G = unit.params.board_t ?? profile.board.thickness;
+    const W = Number(unit.params.width) || 0;
+    const gap = profile.editor.minShelfGap;
+    const others = (unit.params.sections?.[0]?.items || [])
+      .filter((i) => i.kind === 'partition' && i.id !== itemId && Number.isFinite(i.x_mm))
+      .map((i) => Number(i.x_mm))
+      .sort((a, b) => a - b);
+    const self = Number(unit.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.x_mm) || G;
+    const below = [...others].filter((x) => x <= self).pop();
+    const above = others.find((x) => x > self);
+    const min = Math.max(G + gap, below != null ? below + gap : G + gap);
+    const max = Math.min(W - 2 * G - gap, above != null ? above - gap : W - 2 * G - gap);
+    if (max < min) return { x: self, min, max, blocked: true };
+    const x = snapTo(Math.min(Math.max(Number(xRaw) || 0, min), max), profile.editor.mmStep);
+    get().updateItem(unitId, itemId, { x_mm: x });
+    return {
+      x, min, max, blocked: false,
+    };
+  },
+
   /** One drawer's height. Clamped by the engine, then the shelves re-settle. */
   setDrawerHeight: (unitId, itemId, heightMm) => {
     const DR = getCabinetProfile().wardrobe.drawers;
@@ -1571,6 +1878,14 @@ export const useProjectStore = create((set, get) => ({
       zoneBottom: limits.floor,
       zoneTop: limits.ceiling,
       count: shelves.length,
+      // ─── Turn 11 (CLAUDE.md F2.1/F2.2) ───
+      // …and the board itself, which is what turn 9 left out. The zone was
+      // right; the arithmetic accounted a thickness at one end only, so the
+      // LOWEST opening came out one board bigger than every other one — the
+      // 244.5 against 226.5 / 227 on Piotr's screenshot. A shelf THIS unit is
+      // built from, not the profile's: a 22 mm carcass spaces its shelves for
+      // 22 mm shelves.
+      boardT: unit.params.board_t ?? profile.board.thickness,
     });
     const at = new Map(shelves.map((sh, i) => [sh.id, snapTo(positions[i], profile.editor.mmStep)]));
     const next = items.map((i) => (at.has(i.id) ? { ...i, pos_mm: at.get(i.id) } : i));
@@ -1945,8 +2260,19 @@ function freeBesideUnit(state, unit, side) {
  * project's infill width, so the gap the unit leaves IS the filler that closes
  * it — which is what makes the filler appear by itself when the unit parks.
  */
-function wallMarginOf(state) {
+function wallMarginOf(state, unit = null) {
   const profile = getCabinetProfile();
+  // ─── Turn 11 (CLAUDE.md F5.3) ───
+  // "Infill toggled OFF re-enables push to wall." It did not: the stop was a
+  // PROJECT number, so a cabinet whose filler had been switched off still parked
+  // 40 mm out with nothing in the gap — the disabled state lingered, exactly as
+  // Piotr described. The stop is what MAKES the filler (BACKLOG #15), so a
+  // cabinet that is not getting one has no reason to leave room for it.
+  //
+  // What it still cannot do is stand hard against the plaster: `wallClearance`
+  // is the 10 mm every unit keeps off a wall it is not scribed to, and that is a
+  // fact about walls rather than about fillers.
+  if (unit?.params?.side_infill_off === true) return wallClearance(profile);
   const setting = Math.max(0, Number(migrateDesign(state.project.design).infill.sideWidth) || 0);
   // ─── Turn 8 (CLAUDE.md F3) ───
   // With the infill switched OFF a unit used to travel all the way to the side

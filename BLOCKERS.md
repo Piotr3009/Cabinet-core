@@ -1055,3 +1055,74 @@ E w skrypcie mierzy teraz DELTĘ przez orbitę, a nie sumę biegu.
 **Co Piotr decyduje.** Nic dziś. Jeśli kiedyś okaże się, że przeciąganie szafki
 myszą klatkuje (BLOCKERS #52 z tury 9 mówi o tym samym z innej strony),
 odpowiedzią jest zdławienie re-renderów `FloorShadow`, a nie zmiana `frames`.
+
+## #58 — Grubość PER ELEMENT dla czterech paneli złącza (zakres F3.1)
+
+CLAUDE.md tury 11, F3.1, wymienia „thickness override" wśród pól, które ma
+dostać każdy element. Cztery z nich go NIE dostają: **bok lewy, bok prawy,
+wieniec i dno** — oraz **plecy**, które w te cztery wchodzą gniazdami.
+
+**Dlaczego to nie jest przeoczenie.** Korpus trzyma złącze puzzlowe, a jego
+geometria jest liczona z JEDNEJ grubości płyty `G` (`engine/puzzle.js`):
+czop ma szerokość `G`, jego ulga dog-bone jest wymiarowana od `G`, oś gniazda
+leży na `G/2 + centrelineExtra`, a przelot gniazda poza krawędź to
+`socketOvershoot`. Bok 22 mm w korpusie 18 mm nie jest grubszym bokiem — jest
+złączem, które się nie składa: czop wieńca jest cięty na 18, a gniazdo w boku
+wypada na osi 11,5 zamiast 9,5. To nie jest błąd, który widać na ekranie;
+to jest paczka formatek, która nie wchodzi w siebie na stole montażowym.
+
+**Co zamiast tego jest.** Panel tych elementów pokazuje pole grubości i wiąże
+je z PŁYTĄ KORPUSU (`board_t`) — bo to jest prawdziwa grubość tego kawałka —
+i pisze pod nim, dlaczego jest jedna dla wszystkich czterech. MATERIAŁ jest
+nadpisywalny dla każdego z nich bez wyjątku, bo materiał nie zmienia ani
+jednego wymiaru.
+
+**Co by trzeba zrobić.** Policzyć złącze per PARA paneli zamiast per korpus:
+`tabPoints*` i `horizontalSocket`/`verticalSocket` musiałyby brać grubość
+partnera, a nie `G`. To jest robota na własną fazę, z własnymi fixture'ami
+(dziś każdy golden fixture jest cięty z jednej płyty), i nie ma dziś zamówienia
+warsztatu, które by jej wymagało.
+
+**Co Piotr decyduje.** Czy taki przypadek w ogóle występuje — czy zdarza się
+korpus z bokami z innej płyty niż wieniec. Jeśli nie, to nie jest dług, tylko
+granica systemu i można ją zapisać w SPEC.
+
+## #59 — Pionowa przegroda nie ma jeszcze własnego wiercenia (zakres F3.4)
+
+`VPART-n` (tura 11, F3.4) jest cięty na pełną wysokość wnętrza, na głębokość
+partitionu, jednej grubości; wchodzi do BOM-u, na arkusz CNC i do DXF-a jak
+każdy inny kawałek. Nie ma **żadnych otworów**: ani kołków w bokach, ani
+konfirmatów przez wieniec i dno, ani rowka.
+
+Nie zgadywałem ich. Cała reszta wiercenia w tej aplikacji jest przepisana
+linia po linii z AutoLISP-a, a AutoLISP nie zna pionowej przegrody — więc
+wymyślenie jej mocowania byłoby pierwszą liczbą w tym silniku wziętą z
+sufitu. Przegroda jest przykręcana albo na kołki, i to jest pytanie do
+warsztatu, nie do programu.
+
+**Co Piotr decyduje.** Czym mocuje pionową przegrodę i gdzie: konfirmaty przez
+wieniec i dno (ile, w jakich odległościach), czy kołki w bokach i rowek.
+Po tej odpowiedzi geometria to kilkanaście linii obok `drawWardrobeShelfHoles*`.
+
+## #60 — Kamera „look at THIS" była martwa od tury 5 (naprawione w T11)
+
+Zapisane nie dlatego, że coś zostaje otwarte, tylko dlatego, że pułapka jest
+ogólna i wróci.
+
+`<OrbitControls target={[0, roomH * 0.45, 0]}>` wyglądało niewinnie. To jest
+PROP, a React zapisuje prop przy KAŻDYM renderze — a `Scene` renderuje się
+przy każdym zaznaczeniu, każdej klatce przeciągania i każdej zmianie półki.
+Cel orbity był więc przepisywany na środek pokoju kilkadziesiąt razy na sekundę,
+a `FocusRig` (tura 5) lerpował go w stronę klikniętego kawałka — i przegrywał.
+Dwuklik „przyleć tutaj" robił od tury 5 lekkie przybliżenie i nic więcej, i
+nikt tego nie zgłosił, bo COŚ się działo.
+
+Naprawa: cel jest ustawiany imperatywnie i tylko wtedy, gdy zmienia się POKÓJ
+(`HomeTarget` w `3d/Scene.jsx`), i komponent jest zamontowany **PO**
+`<OrbitControls>` — efekty lecą w kolejności drzewa, więc rodzeństwo
+postawione wyżej szukałoby refa, którego React jeszcze nie podpiął, i po cichu
+nie zrobiłoby nic.
+
+**Reguła na przyszłość:** każdy stan trzymany W BIBLIOTECE (cel orbity, pozycja
+kamery, uchwyt kontrolki), którego aplikacja także dotyka imperatywnie, nie
+może być podawany propem. Prop znaczy „to jest prawda przy każdym renderze".

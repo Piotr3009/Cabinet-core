@@ -3524,3 +3524,268 @@ podłoga cieplejsza) i emisje.
 **Nic nie zostało cofnięte.** Do decyzji właściciela zostaje jedno: OKO na
 finalny obraz — liczby mówią, że wszystkie pięć kryteriów jest spełnione, ale
 „ładnie" jest jego.
+
+---
+
+# TURA 11 — PACZKA CODZIENNEGO UŻYTKU (08.08.2026)
+
+Dwadzieścia cztery werdykty właściciela z żywego użycia plus krok 5 „nowego
+projektu". Baza: `main` po scaleniu T10 — **803 testy**, czysty build.
+Koniec tury: **907 testów**, czysty build, `git diff --stat fixtures/` pusty,
+`package.json` bajt w bajt, `src/engine/` bez importu Reacta i three,
+eksport CNC **bajtowo identyczny** z bazą (dowód: `verify/t11/cnc-export-identity.md`).
+
+## F0 — baza
+
+Pełna instalacja, 803/803, czysty build. Zapisane; wszystko poniżej rośnie od
+tej liczby.
+
+## F1 — zaznaczanie i interakcja
+
+**F1.1 — kliknięcie TŁA.** `onPointerMissed` na kanwie odpala się tylko wtedy,
+gdy promień nie trafia W NIC — a podłoga i ściana są czymś. Dlatego kliknięcie
+podłogi zostawiało zaznaczoną szafkę z jej kreskowanym boxem. Pokój mówi to
+teraz sam: `Room.jsx` dostał `onBackground`, obie ścieżki (pudło kanwy i własne
+powierzchnie pokoju) wołają jedną funkcję `dropSelection` w `Scene.jsx`. Tylko
+lewy przycisk — prawy otwiera menu, a orbitowanie nie może odznaczać.
+
+**F1.2 — dokładnie jedno zaznaczenie.** Kreskowany box szafki znika, gdy
+zaznaczony jest jej ELEMENT (`selected && !selectedElement` w `UnitView.jsx`).
+Razem z nim znika podświetlenie hovera: najeżdżanie na korpus szafki, w której
+się właśnie pracuje, nie jest propozycją jej zaznaczenia.
+
+**F1.3 — X-ray jako TRYB.** Dwie przyczyny, na dwóch końcach aplikacji.
+(1) Stan nie był utrwalany — cokolwiek przeładowało kartę, wracało na `false`.
+Leży teraz na tej samej półce co krok snapu (`localStorage`, `uiStore` →
+`loadFlag`/`saveFlag`). (2) OBRAZ wracał do nieprzezroczystego mimo flagi: turn
+7 przełączał `transparent` na materiale, dla którego three ma już skompilowany
+program. Klucz materiału niesie teraz przezroczystość
+(`key={decor-…}-${translucent ? 'through' : 'solid'}`) — nowy materiał to nowy
+program. To jest ta połowa „resetu", której nie widać w store.
+
+**F1.4 — menu kontekstowe.** Umieszczanie przeniesione do czystego
+`lib/menuPlacement.js`: **najpierw odbicie** (menu, które nie mieści się pod
+kursorem, otwiera się NAD nim), **potem przycięcie**. Turn 5 robił dwa
+`Math.min` przeciwko ZGADYWANEJ wysokości (`actions.length * 30 + 40`) — bez
+dolnego ograniczenia, więc na niskim ekranie wynik wychodził ujemny i menu
+gubiło GÓRĘ zamiast dołu. Komponent mierzy się teraz naprawdę
+(`useLayoutEffect` + `getBoundingClientRect`) i jest ukryty przez jedną klatkę,
+żeby nie mrugnąć poza ekranem. Nagłówek jest uchwytem — menu się przeciąga.
+9 testów, w tym przemiatanie całego ekranu 1366×640 czterema wysokościami menu.
+
+**F1.5 — wymiary na CZERWONO.** `appearance.dimensions = { colour: 'red',
+alt: 'navy' }` — KLUCZE do `dimensions.colours`, gdzie mieszkają heksy. Jeden
+dom dla wyboru, drugi dla koloru; `dimensions.defaultColour` zniknęło.
+`uiStore` czyta domyślny z profilu, a nie z własnej stałej. Podpisy W/H/D na
+szafkach też są tą samą farbą — wymiar ma jeden kolor, gdziekolwiek jest.
+Złoto zostaje ZAZNACZONEJ szafce: to nie jest wybór koloru, to odpowiedź na
+„którą trzymam".
+
+## F2 — odstępy półek: dokończone
+
+**Diagnoza.** Strefa była dobra (przeliczona ponownie z
+`KIT_WARDROBE_FULL.lsp` L684-692 i `KIT_LOW_CABINET_FULL.lsp` L253-259). Wzór
+był JEDNOSTRONNY. AutoLISP rozstawia DOLNE LICA równo, a półka to 18 mm płyty —
+więc każde światło NAD półką traci tę płytę, a jedyne, które nie ma pod sobą
+półki, nie traci. Stąd 226,5 / 227 / **244,5**: różnica to dokładnie `G`.
+
+**Poprawka.** `evenShelfPositions` przyjmuje `boardT`:
+`gap = (top − bottom − n·G) / (n+1)`, `shelfY_i = bottom + i·gap + (i−1)·G`.
+**Domyślnie 0**, i to nie jest lenistwo: bez `boardT` to jest AutoLISP co do
+przecinka, czyli to, co dalej liczy własny fallback silnika (`assemblies.shelves`,
+a przez niego wiercenie kołków i każdy golden fixture). Grubość podaje WARSTWA
+PROJEKTU — przycisk „Even", store — a nie kit.
+
+**F2.3 — dodana półka jest CENTROWANA.** `centredShelfPos` połowi największe
+istniejące światło (mierzone między LICAMI, więc centrowana jest DESKA, nie jej
+dolne lico). Turn 4 wypełniał od góry: pierwsza półka lądowała 40 mm pod
+wieńcem i każdy komplet trzeba było poprawiać „Even". Stara reguła
+(`nextShelfPos`) ZOSTAJE — „upchnij od góry" to inne pytanie z inną odpowiedzią.
+
+**Testy.** 1/2/3 półki × trzy konfiguracje (goła szafka, szafka z szufladami,
+szafka z cokołem) — WSZYSTKIE światła równe do 0,5 mm, mierzone z pudełek
+paneli silnika, nie z pozycji w store. Plus test regresji, który pokazuje, że
+stary wzór zostawia dolne światło dokładnie o jedną płytę większe.
+
+## F3 — edycja per element
+
+**F3.1 — cała szafka.** `engine/elements.js` mówi, CO jest elementem
+(`isSelectableElement`), JAK się nazywa (`elementLabel`) i CO można o nim
+powiedzieć (`elementFields`) — jedna reguła dla widoku 3D, panelu i testu.
+Mechanizm szuflady (`DP`, `FILLER`, boki pudła) elementem NIE jest: wynika ze
+stosu, a sposobem na jego zmianę jest zmiana stosu.
+
+**Nadpisanie MATERIAŁU dla każdego elementu**, kluczowane ID panelu silnika
+(`params.element_overrides` → `paramsForEngine` → jedno przejście po panelach
+w `computeCabinet`). Materiał nie zmienia ŻADNEJ geometrii i dlatego można go
+powiedzieć o czymkolwiek. **Grubość — nie dla czterech elementów złącza**;
+powód i decyzja w BLOCKERS #58.
+
+**F3.2 — panel boczny i infill osobno.** Wysokość, grubość, wysokość ponad
+szafką i materiał zniknęły z sekcji „Construction" — edytuje się je na WŁASNYM
+zaznaczeniu elementu. W panelu szafki zostaje FAKT, że kawałek istnieje.
+
+**F3.3 — dwuklik.** Otwiera kartę `ElementModal` PRZY elemencie (to samo
+`clampMenuPosition`, więc też nigdy poza ekranem) i ta karta i prawy panel
+renderują JEDEN komponent `ElementProperties` — nie mogą się rozjechać.
+Dwuklik nadal PRZYLATUJE kamerą do elementu (funkcja z tury 5).
+
+**F3.4 — PIONOWY partition.** BLOCKERS #50 z tury 9 mówił poprawnie, że tego
+w silniku NIE MA. Teraz jest: pozycja `{ kind: 'partition', x_mm }`, panel
+`VPART-n` o roli `shelf` (więc zaznacza się, grupuje i idzie na arkusz z
+półkami), `x_mm` to LEWE LICO — ta sama konwencja co `pos_mm` półki, jedna
+reguła na obie osie. Bez czopów: pudło trzyma złącze puzzlowe, a przegroda w
+środku jest przykręcana. Wiercenie do niej — BLOCKERS #59.
+
+**F3.5 — zawiasy w SOLID.** Te same instancje co X-ray
+(`engine/hardware3d.js`), w spokojniejszym tonie
+(`appearance.hardware.hinge`). Prowadnice zostają za X-rayem — siedzą w
+zamkniętym pudle szuflady. Przełącznik w grupie przełączników menu
+kontekstowego, obok „Show all dimensions".
+
+## F4 — stawianie i karmienie szafek
+
+**F4.1 — za róg.** `engine/room.js wallAtPoint` (czysta arytmetyka: przed którą
+ścianą stoi punkt i jak daleko wzdłuż niej) plus `moveUnitToWall` w store, który
+jest RE-PARENTOWANIEM: ściana się zmienia, a potem ten sam zacisk co przy
+suwaniu decyduje, gdzie na niej szafka może stanąć. Ściana bez miejsca ODMAWIA
+i szafka wraca dokładnie tam, gdzie była. W `UnitView` przeciąganie rzutuje
+kursor na PODŁOGĘ (jedna płaszczyzna dla całego pokoju) i pyta `wallAtPoint`.
+
+**F4.2 — jeden wielki „+".** Zamiast linijki szarego tekstu na dole kanwy.
+Otwiera Bibliotekę na kategorii, od której zaczyna się projekt tego typu.
+Znika, gdy pojawia się pierwsza szafka; wraca, gdy scena jest pusta.
+
+**F4.3 — wewnętrzny „+".** Tylko na AKTYWNEJ szafce, w INNYM kolorze
+(`appearance.addPlus.inner` — złoto; plusy na końcach ciągu dostały
+`appearance.addPlus.run`). Klik: szafka zostaje zaznaczona, prawy panel otwiera
+sekcję „Add items".
+
+**F4.4 — `itemsByContext`.** Dane w `profile.js` per RODZINA typu
+(`kitchen`/`wardrobe`/`default`), plus „Show all" pod listą. FILTR, nie blokada.
+
+## F5 — infill, cokół i prawdy o meblach
+
+**F5.1 — insety L/P usunięte, PRZYPINANIE w ich miejsce.** Boczny filler już
+pojawiał się i znikał sam; przypięty nie znika, gdy szafka odjedzie od ściany,
+i ROZCIĄGA się do tego, czym gap się stanie — także ponad 100 mm, bo o to
+CLAUDE.md prosi wprost. To strategia GÓRNEGO infillu, położona na bok, i używa
+tych samych ścieżek (`INFILL-L/R-FACE` + ramię L, reguły mitry). Inset TYLNY
+zostaje: to inna rzecz — szafka odsunięta od ściany po rurę.
+
+**F5.2 — domyślny infill 40 mm.** Liczba w `profile.autoParts.sideInfill.defaultWidth`;
+`DEFAULT_DESIGN` bierze ją stamtąd (reguła 2).
+
+**F5.3 — infill wyłączony = wolno dopchnąć do ściany.** `wallMarginOf` dostał
+JEDNOSTKĘ: z wyłączonymi fillerami stop to samo `wallClearance` (10 mm, bo
+ściana nie jest płaska), a nie 40 mm zostawiane na kawałek, którego nikt nie
+tnie.
+
+**F5.4 — cokół z PRZODU, w materiale frontów.** Był na `z: setback`, czyli
+50 mm od ŚCIANY — cokół przy tynku. Jest na `z: D − setback − t`. I doszedł do
+`FRONT_MATERIAL_ROLES`: stoi w pokoju pod drzwiami i jest wykańczany razem
+z nimi, ze sprayem włącznie — więc BOM liczy go z arkusza frontów, a widok 3D
+maluje go bez ani jednego wyjątku.
+
+**F5.5 — SINK stał tyłem.** Trzy miejsca, wszystkie na osi z: plecy siedziały
+50 mm za DRZWIAMI zamiast 50 mm od TYŁU (`G + backSetback`, co potwierdza
+arytmetyka półki: traci `backSetback + G`, więc jej tylna krawędź i lico pleców
+to jedna płaszczyzna); dwa holdery były zamienione miejscami (`HOLDER-F` przy
+ścianie); a półka była kotwiczona z TYŁU, więc na zlewie wisiała 88 mm przed
+licem. Półka jest teraz stawiana LICEM PRZEDNIM — na każdym innym kicie to
+dokładnie ta sama liczba (`D − 20 − (D − G − 20) = G`). **Żaden wymiar CIĘCIA
+się nie zmienił**, więc `fixtures/golden-sink.json` jest nietknięty; test
+pilnuje tego przy każdym biegu.
+
+## F6 — dog bones jako rzeczywistość
+
+`engine/socketFace.js` (czysty): kieszenie warstwy `PUZZLE_SOCKET` klipowane do
+prostokąta panelu → NACIĘCIA w krawędzi; obrys obchodzony przeciwnie do
+wskazówek z zaokrągleniem dwóch wewnętrznych naroży promieniem NARZĘDZIA
+(`profile.cnc.toolDiameter`, 8 mm). Frez o okrągłym przekroju nie sięga
+w kwadratowy narożnik — i ta zaokrąglona resztka to cała różnica między
+„odjęto prostokąt" a „to było frezowane".
+
+`3d/panelSolid.js` wytłacza ten obrys i wstawia go na miejsce pudełka. Koszt:
+geometria budowana RAZ na KONFIGURACJĘ panelu i cache'owana (LRU, 240 wpisów) —
+kuchnia z czternastu identycznych szafek buduje dwie bryły boku, a przeciąganie
+szafki nie przelicza niczego, bo w kluczu nie ma pozycji. Zdjęcia: `6a` (solid)
+i `6b` (X-ray, widać kieszeń, dwa otwory ⌀7,5 i ulgę dog-bone).
+
+## F7 — kolejność menu
+
+`File · View · Library · Settings · Database · Spraying · Output` —
+`lib/topMenu.js` jest DANYMI (`MENU_ORDER` + `orderMenus`), więc zdanie
+właściciela o miejscu „Settings" to jedna linia. Output na KOŃCU: to, co
+wychodzi z aplikacji. Database dostał rozwijane menu (Materials / Clients /
+Projects) i wchłonął dawne top-levelowe „Clients". To PRZESTAWIENIE, nie cięcie
+— test liczy, że nic nie wypadło.
+
+## F8 — CNC do użytku
+
+Arkusz pokazuje CAŁY projekt: blok na szafkę, jeden pod drugim, z numerem nad
+każdym. Drzewko checkboxów (jednostka → grupa → część) mieszka w PRAWYM PANELU;
+wejście w CNC nie zamyka Biblioteki ani panelu — OTWIERA prawy, bo tam jest
+teraz narzędzie.
+
+**Eksport nietknięty, i to jest zmierzone.** `verify/t11/cnc-export-identity.md`:
+odciski FNV-1a każdego pliku DXF dla ośmiu kitów, wzięte na bazie T10
+(commit `ccb1de1`) i na tej gałęzi — `diff` pusty. `test/cnc-export-identity.test.js`
+zamraża te odciski, spis warstw i nazwy plików, i sprawdza, że stan widoku
+(ukryte szafki) nie dociera do eksportu ani jednym bajtem.
+
+## F9 — nowy projekt: przycisk w kroku 1 i KROK 5
+
+**Krok 1.** „Import from Joinery Core" NAD numerem projektu, wyłączony z plakietką
+„soon". Mylące „Select from JoineryCore" przy polu klienta zniknęło: czytało
+się jak wybieranie klienta, a to, co ma robić, to zaimportować JOB — klienta
+i numer razem.
+
+**Krok 5 — „Project settings"** (`ProjectSettingsStep.jsx`, dane i reguły
+w `engine/projectSettings.js`): pięć domyślnych wymiarów (baza, GŁĘBOKOŚĆ
+wszystkich, tall, wall, cokół); materiały w TRZECH sekcjach — korpusy (1–3,
+EGGER/SPRAYED, kolor NAJPIERW, przypisanie MaterialStock pod nim), fronty
+(max 2, RAL/F&B/fornir/laminat/drewno z „colours soon"), osprzęt (nogi+bazy+klipsy
+→ cokół, zawiasy, prowadnice, uchwyty, obrzeże — wszystko automatyczne, użytkownik
+wybiera tylko WARIANT); grubość automatycznie ze ŹRÓDŁA (EGGER 18, fornir 19,
+laminat 18) plus selektor 18/22/25/Other; sheen i dog bones bez zmian.
+„Start designing" pyta RAZ: zapisać jako zestaw?
+
+Wszystko to jest WARSTWĄ PROJEKTU i wchodzi do silnika jako WEJŚCIA
+(`projectHeightParams` → `depth`, `board_t`, `front_t`). Goły `computeCabinet()`
+bez żadnego z tych ustawień tnie dokładnie to, co tnie AutoLISP — jest na to
+osobny test.
+
+## F10 — weryfikacja w przeglądarce (faza standardowa)
+
+`scripts/e2e-turn11.mjs`, prawdziwy Chromium, **32/32**. Skrypt MIERZY, nie tylko
+fotografuje: odstępy półek czyta z pudełek paneli silnika, szerokość
+przypiętego fillera z wyciętego kawałka, pozycję cokołu z jego `box.z`.
+15 zdjęć w `verify/t11/` plus `measurements.json`.
+
+**Znaleziona przy okazji i naprawiona: kamera „look at THIS" (tura 5) nie
+działała.** `<OrbitControls target={[0, roomH*0.45, 0]}>` to PROP, a React
+zapisuje prop przy KAŻDYM renderze — a ta scena renderuje się przy każdym
+zaznaczeniu, przeciągnięciu i półce. Cel orbity był więc bez przerwy
+przepisywany na środek pokoju i przelot kamery nie miał prawa dolecieć. Jest
+teraz imperatywny i tylko wtedy, gdy zmienia się POKÓJ (`HomeTarget`),
+zamontowany PO kontrolkach — efekty lecą w kolejności drzewa, a rodzeństwo
+postawione wyżej szukałoby refa, którego jeszcze nie ma.
+
+## Nowe pliki
+
+`src/engine/elements.js`, `src/engine/socketFace.js`,
+`src/engine/projectSettings.js`, `src/3d/panelSolid.js`,
+`src/lib/menuPlacement.js`, `src/lib/topMenu.js`,
+`src/components/ElementProperties.jsx`, `src/components/ElementModal.jsx`,
+`src/components/CncTree.jsx`, `src/components/ProjectSettingsStep.jsx`,
+`scripts/e2e-turn11.mjs`, `test/*` (5 nowych plików), `verify/t11/*`.
+
+## Nowe liczby w `profile.js`
+
+`autoParts.sideInfill.defaultWidth`, `cnc.toolDiameter`,
+`appearance.dimensions.{colour,alt}`, `appearance.addPlus.{run,inner}`,
+`appearance.hardware.hinge`, `itemsByContext.*`, `projectSettings.*`.
+Usunięte: `dimensions.defaultColour` (przeniesione do `appearance.dimensions`).
+
+**Nic nie zostało cofnięte.**

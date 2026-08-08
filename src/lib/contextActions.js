@@ -29,12 +29,13 @@ import { getUnitType } from '../engine/types.js';
  *   unit       the unit that was right-clicked
  *   panelPart  which panel of it (so a front can offer front actions)
  *   dimensions whether this unit's full dimensions are currently on the scene
+ *   hinges     whether the hinge bodies are drawn in Solid (turn 11, F3.5)
  *   store      the store functions the actions call
  * @returns {Array<{id:string,label:string,hint?:string,checked?:boolean,
  *                  danger?:boolean,disabled?:boolean,run:Function}>}
  */
 export function menuActions({
-  unit, panelPart, dimensions = false, store = {},
+  unit, panelPart, dimensions = false, hinges = false, store = {},
 }) {
   const type = getUnitType(unit.type);
   const actions = [];
@@ -48,6 +49,20 @@ export function menuActions({
     checked: Boolean(dimensions),
     hint: 'Every dimension of THIS cabinet on the scene — width, height, depth, shelves, fronts',
     run: () => store.toggleUnitDimensions?.(unit.id),
+  });
+
+  // ─── Turn 11 (CLAUDE.md F3.5): the ironmongery ───
+  // In the SAME group as the dimensions switch, because it is the same kind of
+  // question — what do I want drawn on top of the furniture — and CLAUDE.md
+  // asks for it in "the existing context-menu toggles group" by name. It is a
+  // project-wide way of looking, like X-ray, not a property of this cabinet;
+  // right-clicking a cabinet is simply where a joiner's hand already is.
+  actions.push({
+    id: 'hinges',
+    label: 'Hinges in Solid',
+    checked: Boolean(hinges),
+    hint: 'Draw the hinge bodies where they are fitted, without switching to X-ray',
+    run: () => store.toggleHinges?.(),
   });
 
   // ── 2. end panels, on and OFF, from here ──
@@ -110,10 +125,37 @@ export function menuActions({
       label: 'Scribe fillers at the wall',
       checked: !off,
       hint: off
-        ? 'Off for this cabinet — the gap beside it stays open'
+        ? 'Off for this cabinet — the gap beside it stays open, and the unit may be pushed to the wall'
         : 'On: parking this unit at the wall produces the filler that closes the gap',
       run: () => store.setSideInfillEnabled?.(unit.id, off),
     });
+
+    // ─── Pin a filler (turn 11, CLAUDE.md F5.1) ───
+    // The replacement for "Insets L/P", which the owner has ruled a broken
+    // concept. Automatic until somebody says otherwise: pinned, the piece never
+    // vanishes when the unit drives away from the wall and it stretches to
+    // whatever the gap becomes. Unpinning hands it back to the automatics.
+    //
+    // Not offered at all with the fillers switched off for this cabinet: a
+    // pinned piece on a unit that takes no pieces is a contradiction, and the
+    // switch above is the way out of it.
+    for (const [key, side, label] of [
+      ['side_infill_left_pinned', 'L', 'left'],
+      ['side_infill_right_pinned', 'R', 'right'],
+    ]) {
+      const isPinned = unit.params[key] === true;
+      const width = Number(unit.params[side === 'L' ? 'side_infill_left_mm' : 'side_infill_right_mm']) || 0;
+      actions.push({
+        id: `pin-infill-${side}`,
+        label: `Pin infill ${label}`,
+        checked: isPinned,
+        disabled: off,
+        hint: isPinned
+          ? `Pinned${width ? ` at ${Math.round(width)} mm` : ''} — click to unpin and let it come and go with the gap`
+          : 'Keep a filler on this side whatever the gap becomes — it stretches with the unit',
+        run: () => store.setSideInfillPinned?.(unit.id, side, !isPinned),
+      });
+    }
   }
 
   // ── 4. the plinth ──
@@ -133,18 +175,15 @@ export function menuActions({
   }
 
   // ── 5. everything else, as before ──
-  // Insets (turn 7, CLAUDE.md F5 / BACKLOG #32): the MENU opens the section;
-  // the numbers are typed in the panel. A three-field form does not belong in a
-  // right-click menu, and CLAUDE.md has ruled out a modal for this family since
-  // turn 4.
-  const insets = [unit.params.inset_left_mm, unit.params.inset_right_mm, unit.params.inset_back_mm]
-    .filter((v) => Number(v) > 0).length;
-  actions.push({
-    id: 'insets',
-    label: insets ? `Insets (${insets} set)…` : 'Insets…',
-    hint: 'A deliberate gap for a pipe, a bowed wall or a bracket — the clamp respects it',
-    run: () => store.openPanelSection?.('construction'),
-  });
+  //
+  // ─── TURN 11 (CLAUDE.md F5.1): INSETS ARE GONE FROM HERE ───
+  // "Insets L/P: REMOVE from the menu (owner verdict: broken concept)." A
+  // sideways inset asked the joiner to describe a gap in millimetres and then
+  // left the gap empty; what he actually wants is a PIECE in it, which is the
+  // pinned filler two entries up. The BACK inset is a different thing — a unit
+  // stood off the wall for a soil pipe — and it keeps its field in the
+  // Construction section of the right panel, where it is typed rather than
+  // reached through a menu.
 
   // Save as template (turn 5, BACKLOG #30). Right-clicking the cabinet you have
   // just finished configuring is where a joiner reaches for this. It asks for a

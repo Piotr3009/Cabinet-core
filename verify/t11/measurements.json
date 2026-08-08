@@ -1,0 +1,215 @@
+{
+  "at": "2026-08-08T22:54:30.540Z",
+  "steps": [
+    {
+      "label": "F4.2 an empty scene shows ONE big centred \"+\"",
+      "ok": true,
+      "detail": "112×112 px at 800,503"
+    },
+    {
+      "label": "…and it opens the Library",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "a unit is placed",
+      "ok": true,
+      "detail": "u_rc66shm"
+    },
+    {
+      "label": "F4.2 the big \"+\" is gone the moment a unit exists",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F2.3 an added shelf lands CENTRED in its zone",
+      "ok": true,
+      "detail": "1048 below / 1048 above"
+    },
+    {
+      "label": "F2.2 three shelves, and EVERY gap is equal",
+      "ok": true,
+      "detail": "515 / 515 / 515 / 515 mm"
+    },
+    {
+      "label": "F1.1 clicking the FLOOR drops the selection",
+      "ok": true,
+      "detail": "selected: null"
+    },
+    {
+      "label": "F1.2 selecting a shelf leaves exactly one thing selected",
+      "ok": true,
+      "detail": "element SHELF-2"
+    },
+    {
+      "label": "F3.3 double-click opens an edit modal beside the piece",
+      "ok": true,
+      "detail": "T01 · edit piece×Left sideBUL540 × 2150 · 18 mmCarcass board18 mm22 mmMaterialProject defaultCarcass 1Broken whiteThe ca"
+    },
+    {
+      "label": "F3.1 …and it is about the SIDE PANEL, with a material of its own",
+      "ok": true,
+      "detail": "T01 · edit piece×Left sideBUL540 × 2150 · 18 mmCarcass board"
+    },
+    {
+      "label": "F1.3 X-ray survives a drag AND an orbit",
+      "ok": true,
+      "detail": "xray=true"
+    },
+    {
+      "label": "F5.2 the unit parks one 40 mm infill from the wall, and the gap IS the piece",
+      "ok": true,
+      "detail": "40 mm"
+    },
+    {
+      "label": "F5.1 a PINNED filler stretches 150 mm with the unit",
+      "ok": true,
+      "detail": "40 → 190 mm, cut at 190"
+    },
+    {
+      "label": "F5.4 the plinth is at the FRONT, recessed as a toe kick",
+      "ok": true,
+      "detail": "face at 508 of a 558 mm cabinet"
+    },
+    {
+      "label": "F5.4 …and it is cut and sprayed with the FRONTS",
+      "ok": true,
+      "detail": "front, exposed=true"
+    },
+    {
+      "label": "F6 the side panel really carries socket pockets to cut",
+      "ok": true,
+      "detail": "4 sockets on BUL"
+    },
+    {
+      "label": "F8.2 entering CNC keeps the Library AND the right panel open",
+      "ok": true,
+      "detail": "library=true panel=true"
+    },
+    {
+      "label": "F8.2 …and the right panel is the checkbox tree",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F8.1 every unit is on the sheet at once",
+      "ok": true,
+      "detail": "2 units"
+    },
+    {
+      "label": "F8.1 a unit can be ticked off the sheet",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 1: \"Import from Joinery Core\", above the number, disabled with \"soon\"",
+      "ok": true,
+      "detail": "{\"disabled\":true,\"soon\":true,\"aboveNumber\":true,\"oldButton\":false}"
+    },
+    {
+      "label": "F9 …and the confusing \"Select from JoineryCore\" is gone",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 5 has its \"dimensions\" section",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 5 has its \"carcasses\" section",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 5 has its \"fronts\" section",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 5 has its \"hardware\" section",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 5 has its \"thickness\" section",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 5 has its \"sheen\" section",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 5 has its \"joinery\" section",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9 step 5 has its \"label\" section",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F9.5 Start designing asks once: save these settings as a set?",
+      "ok": true,
+      "detail": "{\"prompt\":true,\"save\":true,\"skip\":true}"
+    },
+    {
+      "label": "no console errors in the whole walk",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "measurements": {
+    "addedShelf": {
+      "y": 1066,
+      "below": 1048,
+      "above": 1048
+    },
+    "equalisedGaps": [
+      515,
+      515,
+      515,
+      515
+    ],
+    "xraySurvived": true,
+    "pinnedInfill": {
+      "atStop": 40,
+      "after": 190,
+      "cut": 190,
+      "x": 190
+    },
+    "plinth": {
+      "id": "u_506hnm0",
+      "z": 490,
+      "faceAt": 508,
+      "depth": 558,
+      "material": "front",
+      "exposed": true
+    },
+    "socketsOnSide": 4,
+    "cnc": {
+      "library": true,
+      "rightPanel": true,
+      "units": 2,
+      "tree": true,
+      "blocks": 0,
+      "hidden": 1
+    },
+    "step5": {
+      "dimensions": true,
+      "carcasses": true,
+      "fronts": true,
+      "hardware": true,
+      "thickness": true,
+      "sheen": true,
+      "joinery": true,
+      "label": true,
+      "prompt": true,
+      "save": true,
+      "skip": true
+    }
+  }
+}

@@ -1,8 +1,12 @@
-import { useEffect, useMemo } from 'react';
+import {
+  useEffect, useLayoutEffect, useMemo, useRef, useState,
+} from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { getUnitType } from '../engine/types.js';
 import { menuActions } from '../lib/contextActions.js';
+import { formatMm } from '../engine/format.js';
+import { clampMenuPosition } from '../lib/menuPlacement.js';
 
 // Right-click menu for an item in the canvas (CLAUDE.md phase 5).
 // The actions themselves live in lib/contextActions.js — this file is only
@@ -26,8 +30,11 @@ export default function ContextMenu() {
   const addTopInfill = useProjectStore((s) => s.addTopInfill);
   const removeEndPanel = useProjectStore((s) => s.removeEndPanel);
   const setSideInfillEnabled = useProjectStore((s) => s.setSideInfillEnabled);
+  const setSideInfillPinned = useProjectStore((s) => s.setSideInfillPinned);
   const unitDimensions = useUiStore((s) => s.unitDimensions);
   const toggleUnitDimensions = useUiStore((s) => s.toggleUnitDimensions);
+  const showHinges = useUiStore((s) => s.showHinges);
+  const toggleHinges = useUiStore((s) => s.toggleHinges);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
   const openModal = useUiStore((s) => s.openModal);
 
@@ -38,12 +45,14 @@ export default function ContextMenu() {
       unit,
       panelPart: menu.part,
       dimensions: Boolean(unitDimensions[unit.id]),
+      hinges: showHinges,
       store: {
         redistributeShelves,
         rotateUnit,
         removeUnit,
         closeAllFronts,
         toggleUnitDimensions,
+        toggleHinges,
         addEndPanel: (unitId, opts) => {
           const { error } = addEndPanel(unitId, opts) || {};
           if (error) notify(error, 'warn');
@@ -59,7 +68,21 @@ export default function ContextMenu() {
           setSideInfillEnabled(unitId, on);
           notify(on
             ? 'Scribe fillers on for this cabinet.'
-            : 'Scribe fillers off for this cabinet — the gap beside it stays open.', 'info');
+            : 'Scribe fillers off for this cabinet — it can be pushed to the wall.', 'info');
+        },
+        // Turn 11 (CLAUDE.md F5.1): the replacement for the insets. A pinned
+        // filler stays whatever the gap becomes, so the toast says what it IS
+        // rather than what was clicked — a pin on a unit standing in the middle
+        // of a run has nothing to fill and produces nothing, and silence there
+        // would read as a broken button.
+        setSideInfillPinned: (unitId, side, pin) => {
+          const width = setSideInfillPinned(unitId, side, pin);
+          const where = side === 'L' ? 'left' : 'right';
+          if (!pin) { notify(`The ${where} filler is automatic again.`, 'info'); return; }
+          notify(width > 0
+            ? `Filler pinned on the ${where} — ${formatMm(width)} mm, and it stretches as the unit moves.`
+            : `Pinned on the ${where}. There is no gap there yet — move the unit off the wall and the filler appears.`,
+          'info');
         },
         // "Save as template" needs one thing the menu cannot give it: a NAME.
         // That is the modal's whole job (BACKLOG #30).
@@ -68,9 +91,63 @@ export default function ContextMenu() {
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
       },
     })
-    : []), [unit, menu, unitDimensions, redistributeShelves, rotateUnit, removeUnit, closeAllFronts,
-    toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addTopInfill,
-    removeTopInfill, setSideInfillEnabled, notify, openRightPanel, setPanelSection, openModal]);
+    : []), [unit, menu, unitDimensions, showHinges, toggleHinges, redistributeShelves, rotateUnit,
+    removeUnit, closeAllFronts, toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addTopInfill,
+    removeTopInfill, setSideInfillEnabled, setSideInfillPinned, notify, openRightPanel,
+    setPanelSection, openModal]);
+
+  // ─── Placement (turn 11, CLAUDE.md F1.4a) ───
+  // Measured, then clamped by lib/menuPlacement.js. `at` is null until the
+  // first layout pass, which is what the `visibility` below is for.
+  const box = useRef(null);
+  const [at, setAt] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!menu) { setAt(null); return; }
+    const el = box.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setAt(clampMenuPosition({
+      x: menu.x,
+      y: menu.y,
+      width: rect.width,
+      height: rect.height,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+    }));
+    // `actions.length` is in the deps because a menu whose entries change is a
+    // menu of a different height, and it has to be re-placed.
+  }, [menu, actions.length]);
+
+  const startDrag = (e) => {
+    const el = box.current;
+    if (!el || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = el.getBoundingClientRect();
+    const grab = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const size = { width: rect.width, height: rect.height };
+
+    // A dragged menu goes where it is PUT — clamped to the viewport all the
+    // same, because dragging it off the screen is the bug this phase closes.
+    const move = (ev) => setAt(clampMenuPosition({
+      x: ev.clientX - grab.x,
+      y: ev.clientY - grab.y,
+      width: size.width,
+      height: size.height,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      // A dragged menu is placed by the hand, so it never flips: the pointer
+      // is holding its top-left corner and the clamp only keeps it on screen.
+      margin: 0,
+    }));
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
 
   useEffect(() => {
     if (!menu) return undefined;
@@ -86,17 +163,26 @@ export default function ContextMenu() {
 
   if (!menu || !unit) return null;
 
-  // Keep the menu on screen when the click lands near an edge.
-  const left = Math.min(menu.x, window.innerWidth - 190);
-  const top = Math.min(menu.y, window.innerHeight - (actions.length * 30 + 40));
-
   return (
     <div
+      ref={box}
       className="fixed z-50 w-[180px] cc-panel py-1"
-      style={{ left, top }}
+      // Hidden for exactly one frame: the placement has to MEASURE the menu, and
+      // a menu drawn at the raw pointer position first would flash off the
+      // bottom of a short screen before it corrected itself.
+      style={{ left: at?.left ?? menu.x, top: at?.top ?? menu.y, visibility: at ? 'visible' : 'hidden' }}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <div className="px-3 py-1 text-[11px] text-ink-400 border-b border-shell-600">
+      {/* ─── The header, and the handle (turn 11, CLAUDE.md F1.4b) ───
+          Draggable, like the Library panel: on a laptop the menu opens over the
+          very cabinet it is about, and moving it aside is how you look at the
+          thing while you choose what to do to it. Grabbing it also stops the
+          drag from reaching the canvas underneath. */}
+      <div
+        className="px-3 py-1 text-[11px] text-ink-400 border-b border-shell-600 cursor-move select-none"
+        title="Drag to move this menu"
+        onPointerDown={startDrag}
+      >
         {unit.params.unit_num} · {getUnitType(unit.type).label}
       </div>
       {actions.map((a) => (

@@ -331,6 +331,104 @@ export const DEFAULT_CABINET_PROFILE = {
     defaultType: 'dogbone',
   },
 
+  // ─── What a PROJECT is set up with (turn 11, CLAUDE.md F9) ───────────────
+  //
+  // Step 5 of the new-project flow asks a workshop how it builds THIS job, and
+  // every answer it offers is here: where a board comes from, how thick that
+  // makes it, how many types of each are in play, and which variant of each
+  // piece of ironmongery is fitted.
+  //
+  // The shape of it is the owner's: the user picks a SOURCE and a VARIANT, and
+  // everything else — the thickness, the legs and clips under a plinth, the edge
+  // banding — follows automatically from these numbers. That is what "the user
+  // only ever picks a VARIANT" means, and it is why the automatic parts are
+  // listed here rather than being decided in a component.
+  projectSettings: {
+    // A carcass board, and where it comes from. `thickness` is what that source
+    // IS: an EGGER decor board is 18, and a sprayed carcass is 18 of MDF.
+    carcassSources: [
+      { id: 'egger', label: 'EGGER decor', thickness: 18, kind: 'decor' },
+      { id: 'sprayed', label: 'Sprayed', thickness: 18, kind: 'spray' },
+    ],
+    // A front. The two sprayed systems are the colour ranges a workshop orders
+    // by name; veneer is the one that is genuinely a different thickness.
+    frontSources: [
+      { id: 'ral', label: 'RAL', thickness: 18, kind: 'spray' },
+      { id: 'fb', label: 'Farrow & Ball', thickness: 18, kind: 'spray' },
+      { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board' },
+      { id: 'laminate', label: 'Laminate', thickness: 18, kind: 'board' },
+      // The wood RANGE is a later turn's (CLAUDE.md F9.2 says so in as many
+      // words: "wood colour range comes later — leave the option present,
+      // colours coming soon"). The option is real; the colours are not yet.
+      { id: 'wood', label: 'Wood', thickness: 20, kind: 'board', coloursSoon: true },
+    ],
+    // The selector beside the automatic thickness. "Other" is not in the list —
+    // it is the absence of a choice from it, and the number is then typed.
+    boardThicknessOptions: [18, 22, 25],
+    maxCarcassTypes: 3,
+    maxFrontTypes: 2,
+    // The ironmongery. Every one of these is FITTED AUTOMATICALLY — the plinth
+    // gets its legs, bases and clips, a door gets its hinges, a drawer gets its
+    // runners, a wall unit gets its handles, and every cut edge that shows gets
+    // its banding. The only question a user is ever asked is which VARIANT, and
+    // `automat` names what the automatic then picks the concrete item from.
+    hardware: {
+      plinth: { label: 'Plinth', fits: ['legs', 'bases', 'clips'], automat: 'legs' },
+      hinges: {
+        label: 'Hinges',
+        variants: [
+          { id: 'soft-close', label: 'Soft-close' },
+          { id: 'standard', label: 'Standard' },
+        ],
+        default: 'soft-close',
+        automat: 'hinge',
+      },
+      runners: {
+        label: 'Runners',
+        variants: [
+          { id: 'soft-close', label: 'Soft-close' },
+          { id: 'push-open', label: 'Push-open' },
+        ],
+        default: 'soft-close',
+        automat: 'runner',
+      },
+      handles: {
+        label: 'Handles',
+        hint: 'Wall units',
+        variants: [
+          { id: 'j-pull', label: 'J-pull' },
+          { id: 'bar', label: 'Bar' },
+          { id: 'none', label: 'Handleless' },
+        ],
+        default: 'j-pull',
+        automat: 'handle',
+      },
+      edgeBanding: { label: 'Edge banding', auto: 'Matched to each material', automat: 'edge' },
+    },
+  },
+
+  // ─── What goes INSIDE a unit of this kind (turn 11, CLAUDE.md F4.4) ───
+  //
+  // "Add items" used to offer the same four things to every cabinet, so a
+  // kitchen base unit was asked whether it wanted a hanging rail and a wardrobe
+  // was not offered a cargo. What a workshop actually fits depends on what the
+  // cabinet IS, and that is DATA — keyed on the type's own `family`
+  // (engine/types.js), listed in the order a joiner reaches for them.
+  //
+  // It is a FILTER AND NEVER A BLOCK. The panel puts a "Show all" under the
+  // list, and everything the KIT supports is still one click away: this decides
+  // what is offered first, not what is possible. A cabinet that supports a thing
+  // the list for its family does not mention is still a cabinet that can have
+  // one, and the workshop that fits hanging rails in its pantries changes four
+  // characters here rather than arguing with a component.
+  itemsByContext: {
+    kitchen: ['shelves', 'drawers', 'partition', 'cargo', 'bins'],
+    wardrobe: ['shelves', 'hanger', 'drawers', 'partition', 'pulldown'],
+    // Anything whose family is not listed. Deliberately the plain furniture
+    // answer rather than a union of the two.
+    default: ['shelves', 'drawers', 'partition'],
+  },
+
   // ─── Legs (shared rule for every standing type) ───
   // Four in the corners; over `extraLegOverWidth` a FIFTH goes in the
   // geometric centre of the footprint (Piotr, turn 3). The AutoLISP only ever
@@ -464,9 +562,23 @@ export const DEFAULT_CABINET_PROFILE = {
       minReturn: 60,
     },
     sideInfill: {
+      // ─── Turn 11 (CLAUDE.md F5.2) ───
+      // What a NEW project's infill width starts at, and therefore how far from
+      // the wall a unit parks. Owner verdict: 40, not the 20 turn 3 shipped —
+      // 20 mm of board is a strip that flexes and a gap you cannot get a screw
+      // into, and every job was being retyped to 40 on the first day.
+      //
+      // It lives here rather than in engine/design.js because it is a NUMBER
+      // (CLAUDE.md rule 2); the DESIGN still owns the per-project value, and
+      // this is what it starts from.
+      defaultWidth: 40,
       // The width comes from Design Settings (project level). This is the
       // widest gap the workshop will close with a scribe filler at all — a
       // 200 mm "filler" is a cabinet, not a scribe.
+      //
+      // A PINNED filler (turn 11, CLAUDE.md F5.1) is deliberately not held to
+      // it: pinning is a joiner saying "there IS a piece here and it is this
+      // wide", and CLAUDE.md asks for it to stretch past 100 mm on demand.
       maxWidth: 120,
       minWidth: 3,
       thickness: null,
@@ -956,7 +1068,27 @@ export const DEFAULT_CABINET_PROFILE = {
     // separate pieces inside an open carcass instead of one flat mass.
     shade: { drawer_box: 0.1, back: 0.07, plinth: 0.04, infill: 0.02, end_panel: 0.02 },
     // Parts that are not a "finish" at all.
-    hardware: { rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92' },
+    // Parts that are not a "finish" at all. `hinge` is turn 11's (CLAUDE.md
+    // F3.5): a hinge is drawn in SOLID now, not only in X-ray, and on a broken
+    // white door a bright bracket grey reads as a smudge. This is the tone of
+    // the nickel-plated body a workshop actually screws in — dark enough to be
+    // an object, quiet enough not to be a diagram.
+    hardware: {
+      rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92', hinge: '#5b5f63',
+    },
+
+    // ─── Which ink the dimensions are written in (turn 11, CLAUDE.md F1.5) ──
+    // Owner verdict: RED by default, with the drawing-office navy as the option
+    // — the reverse of turn 5, which had it the other way round because that is
+    // what a paper drawing does. On a screen, over furniture, red is the one
+    // that reads at a glance and cannot be mistaken for a part.
+    //
+    // These are KEYS into `profile.dimensions.colours`, which is where the two
+    // hexes live: one home for the colour, one for the choice. `alt` is what
+    // View ▸ Dimension colour offers as the other one, so a workshop that adds
+    // a third ink to `colours` decides here which two are on the menu by
+    // default without touching a component.
+    dimensions: { colour: 'red', alt: 'navy' },
 
     // ─── The joint, drawn (turn 8, CLAUDE.md F8) ───
     // The joint is the identity of the system, and a carcass that shows none is
@@ -1019,6 +1151,20 @@ export const DEFAULT_CABINET_PROFILE = {
       // Hover is the same mark, quieter: it says "this is what you would get".
       hoverOpacity: 0.32,
     },
+
+    // ─── The two pluses (turn 11, CLAUDE.md F4.3) ───
+    // They ask different questions and must not look alike. The RUN plus stands
+    // in the gap at the end of a run and means "another CABINET here"; the INNER
+    // plus stands in the middle of the selected cabinet and means "something
+    // inside THIS one". Piotr asked for the second in a different colour, and he
+    // is right for a reason worth writing down: two identical discs a hand's
+    // width apart, one of which adds a wardrobe and one of which adds a shelf,
+    // is a mistake waiting for a Friday afternoon.
+    //
+    // `run` is the app's selection blue, which is where it started; `inner` is
+    // the app's gold, the colour every other "this is the thing you are working
+    // on" mark in the app already wears.
+    addPlus: { run: '#2B6CB0', inner: '#C9A227' },
   },
 
   // ─── Render (turn 6, CLAUDE.md F2 / BACKLOG #37) ───
@@ -1232,6 +1378,17 @@ export const DEFAULT_CABINET_PROFILE = {
     labelFitRatio: 0.12,             // label height ≤ this × the part's short side
     layoutGap: 50,                   // LISP `odstep` — gap between parts laid out flat
     layoutRowWidth: 3600,            // wrap to a new row past this (preview only)
+    // ─── Turn 11 (CLAUDE.md F6) ───
+    // The cutter the workshop runs these files on. It reaches the CUT LIST
+    // nowhere and the DXF nowhere — the machine's own post-processor owns the
+    // toolpath — but the SHAPE the tool leaves is visible in the furniture, and
+    // that is what F6 is about: an internal corner comes out filleted at the
+    // tool's radius, never square, and a joint drawn with square corners is a
+    // joint drawn from a drawing rather than from the part.
+    //
+    // 8 mm is the standard two-flute compression bit a board is cut with. A
+    // workshop on a 6 or a 10 changes this line and the picture follows.
+    toolDiameter: 8,
   },
 
   // ─── Cutting-list CSV (must stay byte-identical to the LISP output) ───
@@ -1350,7 +1507,9 @@ export const DEFAULT_CABINET_PROFILE = {
       navy: '#1B2A4A',
       red: '#8C182B',
     },
-    defaultColour: 'navy',
+    // WHICH of them is the default lives in `appearance.dimensions.colour`
+    // (turn 11, CLAUDE.md F1.5) — one home for the choice, this one for the
+    // hexes. It was 'navy' here; it is 'red' there.
   },
 };
 
@@ -1398,6 +1557,16 @@ export function migrateCabinetProfile(profile) {
     baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
     projectHeights: { ...D.projectHeights, ...profile.projectHeights },
     projectTypes: { ...D.projectTypes, ...profile.projectTypes },
+    projectSettings: {
+      ...D.projectSettings, ...profile.projectSettings,
+      carcassSources: mergeList(D.projectSettings.carcassSources, profile.projectSettings?.carcassSources),
+      frontSources: mergeList(D.projectSettings.frontSources, profile.projectSettings?.frontSources),
+      boardThicknessOptions: mergeList(
+        D.projectSettings.boardThicknessOptions, profile.projectSettings?.boardThicknessOptions,
+      ),
+      hardware: { ...D.projectSettings.hardware, ...profile.projectSettings?.hardware },
+    },
+    itemsByContext: { ...D.itemsByContext, ...profile.itemsByContext },
     joinery: {
       ...D.joinery, ...profile.joinery,
       types: Array.isArray(profile.joinery?.types) && profile.joinery.types.length
@@ -1466,6 +1635,8 @@ export function migrateCabinetProfile(profile) {
       joinery: { ...D.appearance.joinery, ...profile.appearance?.joinery },
       xray: { ...D.appearance.xray, ...profile.appearance?.xray },
       selection: { ...D.appearance.selection, ...profile.appearance?.selection },
+      dimensions: { ...D.appearance.dimensions, ...profile.appearance?.dimensions },
+      addPlus: { ...D.appearance.addPlus, ...profile.appearance?.addPlus },
     },
     render: {
       ...D.render, ...profile.render,
@@ -1516,6 +1687,16 @@ export function migrateCabinetProfile(profile) {
     editor: { ...D.editor, ...profile.editor },
     dimensions: { ...D.dimensions, ...profile.dimensions },
   };
+}
+
+/**
+ * A list the workshop may replace WHOLE: its own if it has one, ours otherwise.
+ * Never merged entry by entry — a workshop that has deliberately deleted an
+ * option must not have it grafted back on by an upgrade (the same rule the light
+ * arrays follow, turn 10).
+ */
+function mergeList(defaults, stored) {
+  return Array.isArray(stored) && stored.length ? stored : defaults;
 }
 
 /**

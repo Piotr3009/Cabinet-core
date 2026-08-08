@@ -6,6 +6,8 @@ import { DEFAULT_CABINET_PROFILE } from '../engine/profile.js';
 // persisted to the database — it is pure view state.
 
 const SNAP_KEY = 'cc.snapStep';
+const XRAY_KEY = 'cc.xray';
+const HINGES_KEY = 'cc.showHinges';
 
 function loadSnap() {
   try {
@@ -14,6 +16,30 @@ function loadSnap() {
   } catch {
     return DEFAULT_CABINET_PROFILE.editor.defaultSnap;
   }
+}
+
+/**
+ * A remembered on/off (turn 11, CLAUDE.md F1.3).
+ *
+ * Everything else in this store is a MOMENT — what is selected, what is being
+ * dragged, which panel is open — and is deliberately not persisted. A MODE is
+ * the other kind of thing: the joiner has said how he wants to look at the job,
+ * and nothing but him saying otherwise should change it. Private mode and a
+ * full quota are survivable; the default stands.
+ */
+function loadFlag(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw == null ? fallback : raw === '1';
+  } catch {
+    return fallback;
+  }
+}
+
+/** Writes and returns the value, so a setter can be one expression. */
+function saveFlag(key, value) {
+  try { localStorage.setItem(key, value ? '1' : '0'); } catch { /* private mode */ }
+  return value;
 }
 
 export const useUiStore = create((set, get) => ({
@@ -57,11 +83,61 @@ export const useUiStore = create((set, get) => ({
   bomOpen: false,
   setBomOpen: (v) => set({ bomOpen: v }),
 
+  // ─── What is on the CNC sheet (turn 11, CLAUDE.md F8.1) ───
+  //
+  // The sheet shows the WHOLE PROJECT now, grouped per unit, and these are the
+  // ticks that take a unit — or one part of one — off it. VIEW STATE and
+  // nothing else: not in the project, not in the database, gone on a reload.
+  //
+  // Stored as "what is HIDDEN" rather than "what is shown", and that is the same
+  // decision the CNC panel has made since turn 3 for the same reason: a part
+  // that appears because a drawer was added should arrive TICKED. Track what is
+  // shown and every new part is invisible until somebody notices.
+  cncHiddenUnits: {},                // { [unitId]: true }
+  cncHiddenParts: {},                // { [unitId]: { [panelId]: true } }
+  toggleCncUnit: (unitId) => set((s) => {
+    const { [unitId]: on, ...rest } = s.cncHiddenUnits;
+    return { cncHiddenUnits: on ? rest : { ...rest, [unitId]: true } };
+  }),
+  toggleCncPart: (unitId, panelId) => set((s) => {
+    const mine = s.cncHiddenParts[unitId] || {};
+    const { [panelId]: on, ...rest } = mine;
+    const next = on ? rest : { ...rest, [panelId]: true };
+    return {
+      cncHiddenParts: Object.keys(next).length
+        ? { ...s.cncHiddenParts, [unitId]: next }
+        : Object.fromEntries(Object.entries(s.cncHiddenParts).filter(([id]) => id !== unitId)),
+    };
+  }),
+  /** A whole group of parts at once — a preset, or a group header. */
+  setCncParts: (unitId, panelIds, shown) => set((s) => {
+    const next = { ...(s.cncHiddenParts[unitId] || {}) };
+    for (const id of panelIds) {
+      if (shown) delete next[id];
+      else next[id] = true;
+    }
+    return {
+      cncHiddenParts: Object.keys(next).length
+        ? { ...s.cncHiddenParts, [unitId]: next }
+        : Object.fromEntries(Object.entries(s.cncHiddenParts).filter(([id]) => id !== unitId)),
+    };
+  }),
+  resetCncVisibility: () => set({ cncHiddenUnits: {}, cncHiddenParts: {} }),
+
   // Canvas view: the 3D room, or the flat CNC sheet of the selected unit.
   // Both read the SAME engine output — the toggle changes nothing but the way
   // it is drawn, so a parameter edited in 3D is already correct in CNC.
+  //
+  // ─── Turn 11 (CLAUDE.md F8.2): THE PANELS STAY OPEN ───
+  // Switching to CNC closes nothing — not the Library, not the parameter panel.
+  // It OPENS the right-hand one, because in CNC that panel is the checkbox tree
+  // (components/CncTree.jsx) and a tool you have to go and find is a tool you do
+  // not use. The Library is left exactly as it was: a joiner who was halfway
+  // through picking a cabinet has not stopped being halfway through it.
   viewMode: '3d',                    // '3d' | 'cnc'
-  setViewMode: (mode) => set({ viewMode: mode === 'cnc' ? 'cnc' : '3d' }),
+  setViewMode: (mode) => set((s) => (mode === 'cnc'
+    ? { viewMode: 'cnc', rightPanelOpen: true, bomOpen: false }
+    : { viewMode: '3d', rightPanelOpen: s.rightPanelOpen })),
 
   // Dimensions on the 3D canvas: each unit's own W/H/D captions AND the
   // distance arrows between units and to the walls (CLAUDE.md phase 8). One
@@ -84,11 +160,21 @@ export const useUiStore = create((set, get) => ({
   }),
   clearUnitDimensions: () => set({ unitDimensions: {} }),
 
-  // Which ink the distance dimensions are drawn in (turn 5, BACKLOG #34).
+  // Which ink the dimensions are drawn in (turn 5, BACKLOG #34).
   // A drawing office uses one or the other; the hexes themselves live in
   // profile.dimensions.colours, so this is only WHICH, never what.
-  dimensionColour: 'navy',           // 'navy' | 'red'
-  setDimensionColour: (key) => set({ dimensionColour: key === 'red' ? 'red' : 'navy' }),
+  //
+  // ─── Turn 11 (CLAUDE.md F1.5) ───
+  // RED by default now, on the owner's verdict, and the default is READ FROM
+  // THE PROFILE (`appearance.dimensions.colour`) rather than written here — a
+  // workshop that prefers navy changes one line in profile.js and every new
+  // session starts there. `alt` beside it is the other one on the menu.
+  dimensionColour: DEFAULT_CABINET_PROFILE.appearance.dimensions.colour,
+  setDimensionColour: (key) => set((s) => ({
+    dimensionColour: Object.hasOwn(DEFAULT_CABINET_PROFILE.dimensions.colours, key)
+      ? key
+      : s.dimensionColour,
+  })),
 
   // Thin black contours on every piece — ON by default (turn 4, BACKLOG #5).
   showOutlines: true,
@@ -118,9 +204,35 @@ export const useUiStore = create((set, get) => ({
   // board goes translucent, the contours stay, and the hardware the workshop
   // has to buy appears where it is fitted. A way of LOOKING at the project —
   // nothing here reaches the engine, the BOM or the CNC sheet.
-  xray: false,
-  setXray: (v) => set({ xray: Boolean(v) }),
-  toggleXray: () => set((s) => ({ xray: !s.xray })),
+  //
+  // ─── TURN 11 (CLAUDE.md F1.3): IT IS A MODE ───
+  // Piotr: "X-ray is a MODE, not a moment" — once it is on it has to survive a
+  // unit drag, an orbit, a selection change, everything, until it is turned
+  // off. Two things were wrong and they are at opposite ends of the app.
+  //
+  //   • THE STATE was never persisted, so anything that reloaded the tab — and,
+  //     in a workshop, that includes the browser deciding to — put it back to
+  //     false with nothing said. A mode that forgets itself is a moment. It is
+  //     kept on the same shelf as the snap step now, which is the other setting
+  //     in this file that is a way of WORKING rather than a piece of the
+  //     project.
+  //   • THE PICTURE came back solid after a redraw even while this flag was
+  //     still true: the material's `transparent` was being flipped on a
+  //     material three had already compiled a program for. That half is fixed
+  //     where it is caused, in 3d/UnitView.jsx, by keying the material on its
+  //     translucency — see the note there.
+  xray: loadFlag(XRAY_KEY, false),
+  setXray: (v) => set({ xray: saveFlag(XRAY_KEY, Boolean(v)) }),
+  toggleXray: () => set((s) => ({ xray: saveFlag(XRAY_KEY, !s.xray) })),
+
+  // ─── The hinges, in Solid (turn 11, CLAUDE.md F3.5) ───
+  // A MODE like X-ray beside it, and remembered for the same reason: a joiner
+  // who wants to see the ironmongery on his cabinets wants to see it tomorrow
+  // too. On by default — the owner asked for the hinges to be visible, and a
+  // feature you have to find a switch for is a feature nobody finds.
+  showHinges: loadFlag(HINGES_KEY, true),
+  setShowHinges: (v) => set({ showHinges: saveFlag(HINGES_KEY, Boolean(v)) }),
+  toggleHinges: () => set((s) => ({ showHinges: saveFlag(HINGES_KEY, !s.showHinges) })),
 
   // Contour view (BACKLOG #18): a presentation mode for a render or a printed
   // screen — materials fade away, the contours stay. Nothing here reaches the

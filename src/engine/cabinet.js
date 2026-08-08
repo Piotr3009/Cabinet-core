@@ -326,11 +326,16 @@ export function isFinishExposed(role) {
  * and a set of fillers ordered a sheet of carcass material nobody was going to
  * use and under-ordered the front material.
  *
- * The plinth is NOT in this set and that is deliberate rather than an omission:
- * it is sprayed (finish_exposed), but it is sprayed MDF from the board stack,
- * and turn 6 was not asked to move it.
+ * ─── TURN 11 (CLAUDE.md F5.4): THE PLINTH JOINS THEM ───
+ * Turn 6 left the plinth out of this set, on the grounds that it is sprayed MDF
+ * from the board stack. Piotr's verdict is the opposite and it is his workshop:
+ * a toe kick stands in the room under the doors, in the plane the eye reads as
+ * the front of the run, and it is finished WITH the doors — spray included. So
+ * it is front material, through the ordinary pipeline, which means the BOM says
+ * so, the spray schedule counts it and the 3D view paints it without a special
+ * case anywhere.
  */
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill']);
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -782,17 +787,43 @@ export function computeCabinet(params, profileOverride) {
   }
 
   // Sink: the TOP is replaced by two holders on edge, and the back moves inside.
+  //
+  // ─── TURN 11 (CLAUDE.md F5.5): THE KIT WAS FACING THE WALL ───
+  //
+  // Piotr: "SINK cabinet is oriented backwards". It was, and in three places at
+  // once, all of them on the z axis — which in a unit's own frame runs from the
+  // wall (z = 0) to the door line (z = D):
+  //
+  //   • the back panel sat at `D − backSetback − G`, i.e. 50 mm behind the
+  //     DOORS. KIT_SINK L261 says `backSetback 50.0 ;; back panel moved forward
+  //     by 50mm` — forward FROM THE REAR. It belongs at `G + 50`, and the
+  //     arithmetic proves it: the shelf loses `backSetback + G` off its depth
+  //     (L425-426, and `sinkLoss` above), so its back edge stands at
+  //     G + 50 + G = 86 — exactly the front face of a back panel sitting at 68.
+  //     With the panel at 490 the shelves ran straight through it.
+  //
+  //   • the two holders were swapped. HOLDER-F — the FRONT holder, the one the
+  //     sink's front lip is screwed to (L345 "at top, front edge") — was at
+  //     z = G, against the wall; HOLDER-B was near the front and a board short
+  //     of the edge it names. They are on the edges now, front at D − G, back
+  //     at G, which is `G/2 from each edge` measured on the side panel (L47),
+  //     the drilling the engine already emits for them.
+  //
+  // Nothing here is a CUT dimension: every panel's w, h and edging is untouched,
+  // so fixtures/golden-sink.json — which records exactly those — is unchanged.
   if (backStyle === 'inset') {
     panels.push(panel({
       id: 'BACK', part: 'BACK', role: 'back', w: sinkBack.w, h: sinkBack.h, thickness: G,
       edgeCode: codes.none, edgeLen: 0,
-      box: { x: G + C.shelfWidthClearance / 2, y: G, z: D - SK.backSetback - G, w: sinkBack.w, h: sinkBack.h, d: G },
+      box: {
+        x: G + C.shelfWidthClearance / 2, y: G, z: G + SK.backSetback, w: sinkBack.w, h: sinkBack.h, d: G,
+      },
       cnc: rectGeometry(sinkBack.w, sinkBack.h),
     }));
   }
   if (type.carcass.top === 'holders') {
     const holderH = SK.railHeight;
-    for (const [id, label, z] of [['HOLDER-F', 'F', G], ['HOLDER-B', 'B', D - G - G]]) {
+    for (const [id, label, z] of [['HOLDER-F', 'F', D - G], ['HOLDER-B', 'B', G]]) {
       panels.push(panel({
         id, part: 'HOLDER', role: 'top', w: holderH, h: internalWidth, thickness: G,
         edgeCode: codes.none, edgeLen: 0,
@@ -884,7 +915,26 @@ export function computeCabinet(params, profileOverride) {
       // `pos_mm` is the shelf's BOTTOM face and always has been (the LISP draws
       // the board from shelfY up), so a thicker shelf grows UP from the pin row
       // it sits on rather than down through it.
-      box: { x: G + C.shelfWidthClearance / 2, y, z: G, w: shelfW, h: shelfT, d: depthHere },
+      //
+      // ─── Turn 11 (CLAUDE.md F5.5) ───
+      // The z was a flat `G` — the shelf started at the BACK of the carcass and
+      // any depth it had lost came off the FRONT. On every kit but one that is
+      // the same answer, because the only thing a shelf loses is its 20 mm
+      // setback: D − 20 − (D − G − 20) is exactly G.
+      //
+      // On the SINK it is not. That shelf also loses `backSetback + G` to the
+      // inset back panel, so anchoring it at the back left it hanging 88 mm
+      // short of the face with a slot behind the door — half of "the sink is
+      // oriented backwards". A shelf is placed by its FRONT edge, which is
+      // where a joiner measures it from and where the setback is measured to.
+      box: {
+        x: G + C.shelfWidthClearance / 2,
+        y,
+        z: D - setbackOf(item?.front_mm, C.shelfDepthClearance) - depthHere,
+        w: shelfW,
+        h: shelfT,
+        d: depthHere,
+      },
       cnc: rectGeometry(shelfW, depthHere),
       meta: {
         index: i,
@@ -916,6 +966,59 @@ export function computeCabinet(params, profileOverride) {
       meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth },
     }));
   }
+  // ─── The VERTICAL partition (turn 11, CLAUDE.md F3.4) ─────────────────────
+  //
+  // BLOCKERS #50 (turn 9) recorded, correctly, that this engine had no such
+  // thing: `PARTITION` and `RAIL-PART` are HORIZONTAL boards the engine builds
+  // from the stack under them, and `DP` is part of the drawer mechanism. A
+  // joiner dividing a 900 mm cabinet into two columns had nothing to ask for.
+  //
+  // It is an ITEM, like a shelf: the unit's own config carries `{ kind:
+  // 'partition', x_mm }` and the engine cuts what is asked for. `x_mm` is the
+  // piece's LEFT face in the cabinet's own frame, which is the same convention
+  // `pos_mm` uses for a shelf (the face the board starts at, not its centre) —
+  // one rule for both axes, so a joiner who has learnt where a shelf's number is
+  // measured from has learnt where a partition's is.
+  //
+  // It is NOT tabbed, and that is a decision rather than an omission. The puzzle
+  // joint holds the box together; a divider inside the box is screwed or pinned
+  // to the boards it stands between, which is what a workshop does and what
+  // leaves the carcass's own joint untouched. Its DRILLING is a later question
+  // and is written down as one (BLOCKERS #59).
+  //
+  // Depth follows the horizontal partition's, so the two read as one family of
+  // pieces inside the carcass and both answer to `partition_front_mm`.
+  {
+    const verticals = (cfg.items || [])
+      .filter((i) => i.kind === 'partition' && Number.isFinite(Number(i.x_mm)))
+      .sort((a, b) => Number(a.x_mm) - Number(b.x_mm));
+    const partH = H - 2 * G;
+    let n = 0;
+    for (const item of verticals) {
+      const x = Math.min(Math.max(Number(item.x_mm), G), W - 2 * G);
+      if (partH <= 0) break;
+      n += 1;
+      panels.push(panel({
+        id: `VPART-${n}`, part: 'VPART', role: 'shelf', w: partH, h: partitionDepth, thickness: G,
+        // One long edge is seen from the room when the doors are open — the same
+        // edge a shelf shows, and it is banded for the same reason.
+        edgeCode: codes.right,
+        edgeLen: metres(partH),
+        box: {
+          x, y: G, z: D - (internalDepth - partitionDepth) - partitionDepth, w: G, h: partH, d: partitionDepth,
+        },
+        cnc: rectGeometry(partH, partitionDepth),
+        meta: {
+          index: n,
+          vertical: true,
+          itemId: item.id || null,
+          x_mm: x,
+          front_mm: internalDepth - partitionDepth,
+        },
+      }));
+    }
+  }
+
   if (hasRail) {
     panels.push(panel({
       id: 'RAIL-PART', part: 'RAIL-PART', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
@@ -1119,7 +1222,20 @@ export function computeCabinet(params, profileOverride) {
     panels.push(panel({
       id: 'PLINTH', part: 'PLINTH', role: 'plinth', w: W, h: plinthH, thickness: t,
       edgeCode: codes.topBottom, edgeLen: metres(2 * W),
-      box: { x: 0, y: -plinthH, z: AP.plinth.setback, w: W, h: plinthH, d: t },
+      // ─── Turn 11 (CLAUDE.md F5.4): AT THE FRONT ───
+      // It was at `z: setback` — 50 mm in from the WALL, which is the back of
+      // the cabinet: a toe kick fitted behind the carcass, against the plaster,
+      // where nobody would ever see it or kick it. Piotr saw it in the 3D view
+      // and said so.
+      //
+      // A toe kick is a FRONT face, recessed from the door line by the same
+      // 50 mm so a boot clears it. The carcass front is at z = D, so the piece's
+      // own front face lands at D − setback and its box starts one thickness
+      // behind that. The setback number itself is unchanged — it always meant
+      // "recessed from the front", and only the sign of it was wrong.
+      box: {
+        x: 0, y: -plinthH, z: D - AP.plinth.setback - t, w: W, h: plinthH, d: t,
+      },
       cnc: rectGeometry(W, plinthH),
     }));
   }
@@ -1621,6 +1737,40 @@ export function computeCabinet(params, profileOverride) {
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
 
   // ── Derived (key names match the golden fixtures) ──────────────────────────
+  // ─── Per-element overrides (turn 11, CLAUDE.md F3.1) ───
+  //
+  // Turn 9 gave a SHELF three answers of its own — how far back it stands, how
+  // thick it is, what it is made of — and hung them on the shelf's ITEM, which
+  // is the unit's own config. Turn 11 extends the third of those to every piece
+  // in the cabinet, and there is no item to hang it on: a side panel, a top, a
+  // back, an end panel and an infill are all built BY the engine from the
+  // carcass, so what a project can say about one is keyed by the panel id the
+  // engine itself gave it.
+  //
+  // MATERIAL ONLY, deliberately, and the reason is the joint. A carcass is held
+  // together by tabs cut for a board of `board_t`: the tab's own width is G, the
+  // socket's centre line is G/2 + 0.5, and the dog-bone relief is sized off both
+  // (engine/puzzle.js). A 22 mm side in an 18 mm carcass is not a thicker side,
+  // it is a joint that does not go together — so the panel offers that piece's
+  // BOARD and says why, rather than a field that would cut wood nobody can
+  // assemble. See BLOCKERS #58. What a piece is MADE of changes no geometry at
+  // all, which is exactly why it can be said about anything.
+  //
+  // A DESIGN-layer input like every other one in this list, so a bare
+  // computeCabinet() with none of them set cuts what the AutoLISP kit cuts.
+  const elementOverrides = params?.element_overrides;
+  if (elementOverrides && typeof elementOverrides === 'object') {
+    for (const p of panels) {
+      const o = elementOverrides[p.id];
+      if (!o || (!o.material_label && !o.material_id)) continue;
+      p.meta = {
+        ...(p.meta || {}),
+        material_id: o.material_id ?? null,
+        material_label: o.material_label ? String(o.material_label) : null,
+      };
+    }
+  }
+
   const derived = {
     doors: doorCount,
     internal_width: internalWidth,

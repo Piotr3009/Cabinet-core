@@ -48,7 +48,17 @@ test('the plinth is as tall as the legs and as wide as the unit', () => {
   assert.equal(plinth.h, P.baseUnit.legHeight);
   assert.equal(plinth.role, 'plinth');
   assert.equal(plinth.box.y, -P.baseUnit.legHeight, 'it sits under the carcass, in the leg space');
-  assert.equal(plinth.box.z, P.autoParts.plinth.setback, 'recessed as a toe kick');
+  // ─── Turn 11 (CLAUDE.md F5.4) ───
+  // It used to be at `z: setback`, which in a unit's own frame is 50 mm in from
+  // the WALL — a toe kick fitted against the plaster where nobody could see it
+  // or kick it. A toe kick is a FRONT face, recessed from the door line.
+  const t = P.autoParts.plinth.thickness ?? P.board.thickness;
+  assert.equal(plinth.box.z, 558 - P.autoParts.plinth.setback - t, 'at the FRONT, recessed as a toe kick');
+  assert.equal(plinth.box.z + plinth.box.d, 558 - P.autoParts.plinth.setback,
+    'its face stands exactly the setback behind the carcass front');
+  // …and it is finished with the doors, not out of the carcass sheet (F5.4).
+  assert.equal(plinth.material_role, 'front');
+  assert.equal(plinth.finish_exposed, true);
   assert.equal(r.csvLines.filter((l) => l.includes(',PLINTH,')).length, 1, 'and it reaches the cutting list');
 
   // Raise the legs and the plinth follows — no gap, no second setting.

@@ -9,6 +9,7 @@
 // it the same way.
 
 import { decorFinish } from './decors.js';
+import { DEFAULT_CABINET_PROFILE } from './profile.js';
 
 // ─── Turn 9 (CLAUDE.md F5) ───
 // 2: the sheen scale went from 0–25 to 5–100 %. A stored 20 means "a mirror" on
@@ -40,16 +41,29 @@ export const DEFAULT_DESIGN = {
     // Handles are a later phase — the slot is here so the shape does not change
     // under a saved project when they arrive.
     handle: null,
+    // ─── Turn 11 (CLAUDE.md F9.2) ───
+    // Up to TWO front types, the twin of the 1–3 carcass types above. Each has a
+    // SOURCE (RAL / F&B / veneer / laminate / wood), a colour and, where it is a
+    // bought board, the stock it is assigned to. End panels and infills default
+    // to front type 1; a per-unit override is F3.2's separate editing.
+    types: [],
   },
   // The workshop's own door styles: name + front type + material/colour. A unit
   // points at one of these by id.
   doorStyles: [],
   colour: {
     front: null,       // { hex, name, system: 'RAL' | 'F&B' | 'custom' }
+    // Turn 11 (CLAUDE.md F9.2): "yes, carcasses can be sprayed". A carcass whose
+    // SOURCE is `sprayed` is a colour rather than a board, and this is where the
+    // colour lives — beside the front's, in the same shape, resolved the same way.
+    carcass: null,
   },
   infill: {
-    // Used by phase 7: the filler between a unit and the wall.
-    sideWidth: 20,
+    // Used by phase 7: the filler between a unit and the wall. The NUMBER lives
+    // in profile.js like every other number (CLAUDE.md rule 2) — turn 11 raised
+    // it from 20 to 40 on the owner's verdict, and taking it from there is what
+    // makes that a one-line change rather than a hunt.
+    sideWidth: DEFAULT_CABINET_PROFILE.autoParts.sideInfill.defaultWidth,
   },
   // Project-level appearance (turn 4). null = the profile default, and a null
   // FRONT finish means "the same as the carcass" — which is what a workshop
@@ -58,6 +72,17 @@ export const DEFAULT_DESIGN = {
   // Defaults the "Add end panel" action inherits (turn 4, BACKLOG #17).
   // `thickness: null` = the project's front thickness.
   endPanel: { height: 'floor', thickness: null, applyToAll: true },
+  // ─── Turn 11 (CLAUDE.md F9.1/F9.3) ───
+  // The two project-wide numbers that are not heights: the DEPTH every unit
+  // starts at, and the BOARD every carcass is cut from. `null` on both means the
+  // profile's, exactly like every other null here — `thickness.board` is the
+  // 18 / 22 / 25 selector and `thickness.custom` is the "Other" field, which
+  // wins when it is filled in.
+  depth: null,
+  thickness: { board: null, custom: null },
+  // Which VARIANT of each piece of ironmongery this job fits. The automat picks
+  // the concrete item; the user only ever picks a variant (F9.2).
+  hardware: { hinges: null, runners: null, handles: null },
   // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
   // which is what a project that has never opened the section means. Resolved
   // through projectHeights() below, so a stored null and a stored number behave
@@ -97,20 +122,42 @@ export function migrateDesign(design) {
       label: t.label || `Carcass ${i + 1}`,
       material_id: t.material_id ?? null,
       finish_id: t.finish_id ?? null,
+      // Turn 11 (CLAUDE.md F9.2): EGGER decor or SPRAYED. It is what decides the
+      // board's thickness (engine/projectSettings.js) as well as its look.
+      source: t.source ?? null,
     }))
     : base.carcass.types;
 
   return {
     schema: DESIGN_SCHEMA,
     carcass: { types },
+    depth: Number(d.depth) > 0 ? Number(d.depth) : null,
+    thickness: {
+      board: Number(d.thickness?.board) > 0 ? Number(d.thickness.board) : null,
+      custom: Number(d.thickness?.custom) > 0 ? Number(d.thickness.custom) : null,
+    },
+    hardware: {
+      hinges: d.hardware?.hinges ? String(d.hardware.hinges) : null,
+      runners: d.hardware?.runners ? String(d.hardware.runners) : null,
+      handles: d.hardware?.handles ? String(d.hardware.handles) : null,
+    },
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: d.fronts?.handle ?? null,
+      types: Array.isArray(d.fronts?.types)
+        ? d.fronts.types.slice(0, 2).map((t, i) => ({
+          id: t.id || `f${i + 1}`,
+          label: t.label || `Front ${i + 1}`,
+          source: t.source ?? null,
+          colour: normaliseColour(t.colour),
+          material_id: t.material_id ?? null,
+        }))
+        : [],
     },
     doorStyles: Array.isArray(d.doorStyles)
       ? d.doorStyles.map((s) => normaliseDoorStyle(s)).filter(Boolean)
       : [],
-    colour: { front: normaliseColour(d.colour?.front) },
+    colour: { front: normaliseColour(d.colour?.front), carcass: normaliseColour(d.colour?.carcass) },
     infill: { sideWidth: Number(d.infill?.sideWidth) >= 0 ? Number(d.infill.sideWidth) : base.infill.sideWidth },
     finish: {
       carcass: d.finish?.carcass ?? null,

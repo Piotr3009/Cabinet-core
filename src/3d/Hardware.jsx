@@ -26,8 +26,11 @@ import { mm } from './constants.js';
  *   instances  engine/hardware3d.js hardwareInstances() output
  *   profile
  *   xray       are we looking through the furniture?
+ *   hinges     draw the hinge bodies even in Solid (turn 11, CLAUDE.md F3.5)
  */
-export default function Hardware({ instances, profile, xray = false }) {
+export default function Hardware({
+  instances, profile, xray = false, hinges = false,
+}) {
   const colours = profile.appearance.hardware;
   return (
     <group userData={{ ccHardware: true }}>
@@ -35,7 +38,27 @@ export default function Hardware({ instances, profile, xray = false }) {
       {instances.rails.map((rail, i) => (
         <Rail key={`rail-${i}`} rail={rail} colour={colours.rail} />
       ))}
-      {xray && <Hinges items={instances.hinges} profile={profile} colour={colours.bracket} />}
+      {/* ─── Turn 11 (CLAUDE.md F3.5): the hinges are furniture ───
+          Owner verdict: a hinge is a thing that is FITTED, and a joiner opening
+          a door wants to see it there rather than having to switch to X-ray to
+          be told it exists. Same instances, same positions — the engine's own
+          drilling (engine/hardware3d.js) — so the count of what is drawn is
+          still the count of what is on order.
+
+          The RUNNERS stay behind X-ray: they live inside a closed drawer box
+          where nothing but an X-ray can see them anyway, and drawing eight of
+          them per stack in Solid is the wall of ironmongery this component was
+          written to avoid. The colour is `appearance.hardware.hinge` — a dark
+          hardware tone, quieter than the bright bracket grey X-ray uses,
+          because in Solid it is a small object on a white door rather than the
+          thing being explained. */}
+      {(xray || hinges) && (
+        <Hinges
+          items={instances.hinges}
+          profile={profile}
+          colour={xray ? colours.bracket : (colours.hinge || colours.bracket)}
+        />
+      )}
       {xray && <Runners items={instances.runners} profile={profile} colour={colours.bracket} />}
     </group>
   );

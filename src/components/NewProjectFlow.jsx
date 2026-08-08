@@ -1,16 +1,13 @@
 import { useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
 import RoomModal from './RoomModal.jsx';
-import JoineryPreview from './JoineryPreview.jsx';
-import SheenSlider from './SheenSlider.jsx';
-import DecorPicker from './DecorPicker.jsx';
+import ProjectSettingsStep from './ProjectSettingsStep.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
-import { isJcMaterial, materialSlotState, useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { PROJECT_TYPES, getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
-import { finishById, migrateDesign, resolveJoinery } from '../engine/design.js';
+import { migrateDesign } from '../engine/design.js';
 
 // ─── New project (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
 //
@@ -84,9 +81,29 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
     go('room');
   };
 
-  // The project is already in the store, settings and all; the start screen
-  // puts it on the shelf and opens the canvas.
-  const start = () => onStart();
+  // ─── Start designing (turn 11, CLAUDE.md F9.5) ───
+  // "ask once: 'Save these settings as a set?'". ONCE is the important word: a
+  // workshop that has just spent a minute setting the job up the way it builds
+  // is one keystroke from never having to do it again, and a workshop that does
+  // not want to is one click from the canvas. It is asked HERE and nowhere else.
+  const [asking, setAsking] = useState(false);
+  const [setName, setSetName] = useState('');
+  const saveSet = useSettingsSetsStore((s) => s.save);
+
+  const start = () => {
+    if (asking) { onStart(); return; }
+    setAsking(true);
+    setSetName(info.name.trim() || `${type.label} standard`);
+  };
+
+  const keepAndStart = () => {
+    const name = setName.trim();
+    if (name) {
+      const { replaced } = saveSet(name, design);
+      notify(replaced ? `Settings set "${name}" replaced.` : `Settings set "${name}" saved.`, 'ok');
+    }
+    onStart();
+  };
 
   const index = STEPS.indexOf(step);
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
@@ -125,7 +142,25 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
               {scope === 'room' ? 'Next — room setup' : 'Next — settings'}
             </button>
           )}
-          {step === 'settings' && <button type="button" className="cc-btn-gold" onClick={start}>Start designing</button>}
+          {step === 'settings' && !asking && (
+            <button type="button" className="cc-btn-gold" onClick={start}>Start designing</button>
+          )}
+          {step === 'settings' && asking && (
+            <>
+              <input
+                className="cc-input w-[220px]"
+                autoFocus
+                placeholder="Name this set…"
+                value={setName}
+                onChange={(e) => setSetName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') keepAndStart(); }}
+              />
+              <button type="button" className="cc-btn" onClick={() => onStart()}>No, just start</button>
+              <button type="button" className="cc-btn-gold" disabled={!setName.trim()} onClick={keepAndStart}>
+                Save set &amp; start
+              </button>
+            </>
+          )}
         </>
       )}
     >
@@ -134,6 +169,28 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
 
         {step === 'info' && (
           <section className="space-y-3">
+            {/* ─── Turn 11 (CLAUDE.md F9, step 1) ───
+                ABOVE the number, and called what it does. "Select from
+                JoineryCore" sat beside the CLIENT field, which read as a client
+                picker and confused everybody who met it: what it will actually
+                do is IMPORT the job — the client AND the number together, from
+                the system the workshop already runs its orders in. So it goes
+                where the import would land, and it says import.
+
+                Disabled with a "soon" badge: the data turn wires it, and the
+                auto-fill of client + number lands then. A button that opened a
+                half-answer would be worse than one that says "not yet". */}
+            <div>
+              <button
+                type="button"
+                className="cc-btn"
+                disabled
+                title="Pull this job's number and client straight from Joinery Core — a later phase"
+              >
+                Import from Joinery Core
+                <span className="cc-tag ml-1.5">soon</span>
+              </button>
+            </div>
             <div className="grid grid-cols-[160px_1fr] gap-3">
               <label className="block">
                 <span className="cc-label">Project number</span>
@@ -157,21 +214,18 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
                 />
               </label>
             </div>
-            <div className="flex items-end gap-2">
-              <label className="block flex-1">
-                <span className="cc-label">Client <span className="text-ink-400">(optional)</span></span>
-                <input
-                  className="cc-input"
-                  value={info.client}
-                  onChange={(e) => setInfo({ ...info, client: e.target.value })}
-                  onKeyDown={(e) => { if (e.key === 'Enter') commitInfo(); }}
-                />
-              </label>
-              <button type="button" className="cc-btn" disabled title="JoineryCore clients — a later phase">
-                Select from JoineryCore
-                <span className="cc-tag ml-1.5">soon</span>
-              </button>
-            </div>
+            <label className="block">
+              <span className="cc-label">Client <span className="text-ink-400">(optional)</span></span>
+              <input
+                className="cc-input"
+                value={info.client}
+                onChange={(e) => setInfo({ ...info, client: e.target.value })}
+                onKeyDown={(e) => { if (e.key === 'Enter') commitInfo(); }}
+              />
+              <span className="block text-[10px] text-ink-400 mt-0.5">
+                Free text for now — the import above fills it in once Joinery Core is wired.
+              </span>
+            </label>
           </section>
         )}
 
@@ -232,7 +286,17 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
           </section>
         )}
 
-        {step === 'settings' && <DesignStep design={design} profile={profile} notify={notify} />}
+        {step === 'settings' && (
+          <>
+            {asking && (
+              <p className="text-sm text-gold border border-gold/50 bg-gold/5 rounded px-3 py-2">
+                Save these settings as a set? The next job starts from it by name — or start designing
+                and this project keeps them to itself.
+              </p>
+            )}
+            <ProjectSettingsStep design={design} profile={profile} notify={notify} />
+          </>
+        )}
       </div>
     </Modal>
   );
@@ -241,7 +305,7 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
 function Steps({ current, scope }) {
   const shown = STEPS.filter((s) => s !== 'room' || scope === 'room');
   const labels = {
-    info: 'Project', type: 'Type', scope: 'Scope', room: 'Room', settings: 'Settings',
+    info: 'Project', type: 'Type', scope: 'Scope', room: 'Room', settings: 'Project settings',
   };
   return (
     <ol className="flex items-center gap-1.5 text-[11px]">
@@ -257,304 +321,5 @@ function Steps({ current, scope }) {
         </li>
       ))}
     </ol>
-  );
-}
-
-// ─── Step 5: Design settings ────────────────────────────────────────────────
-
-/**
- * "For this project" or "Use saved settings".
- *
- * A saved SET is a complete set of project settings under a name — a new thing
- * in turn 7, and the answer to the fact that a workshop has two or three ways
- * it builds rather than a fresh decision per job (lib/settingsSets.js).
- */
-function DesignStep({ design, profile, notify }) {
-  const setDesign = useProjectStore((s) => s.setDesign);
-  const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
-  const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
-  const setCarcassMaterial = useProjectStore((s) => s.setCarcassMaterial);
-  const sets = useSettingsSetsStore((s) => s.sets);
-  const applySet = useSettingsSetsStore((s) => s.applyTo);
-  const saveSet = useSettingsSetsStore((s) => s.save);
-  const materials = useMaterialAssignmentStore((s) => s.materials);
-
-  const [source, setSource] = useState('project');   // 'project' | 'saved'
-  const [setName, setSetName] = useState('');
-  const [picking, setPicking] = useState(null);       // { role } | { carcassId }
-  const [assigning, setAssigning] = useState(null);   // carcass type id
-  const [joineryOpen, setJoineryOpen] = useState(false);
-
-  const boardMaterials = materials.filter((m) => m.category === 'board');
-  const slots = materialSlotState(
-    design.carcass.types.map((t) => ({ id: t.id, label: t.label, material_id: t.material_id })),
-    materials,
-  );
-  const joinery = resolveJoinery(design, profile);
-  const missing = slots.missing;
-  const fromJc = slots.fromJc;
-
-  const useSaved = (id) => {
-    const next = applySet(design, id);
-    if (!next) { notify('That settings set is no longer on this computer.', 'warn'); return; }
-    setDesign(next);
-    notify('Saved settings applied.', 'ok');
-  };
-
-  const keepAsSet = () => {
-    const { replaced } = saveSet(setName, design);
-    setSetName('');
-    notify(replaced ? 'Settings set replaced.' : 'Settings set saved.', 'ok');
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* ── where the settings come from ── */}
-      <section className="space-y-2">
-        <div className="cc-row">
-          <span className="text-xs uppercase tracking-wide text-ink-200">Design settings</span>
-          <div className="flex gap-1">
-            {[['project', 'For this project'], ['saved', 'Use saved settings']].map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={`cc-btn px-2 ${source === id ? 'border-gold text-gold' : ''}`}
-                onClick={() => setSource(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {source === 'saved' && (
-          <div className="space-y-1">
-            {sets.length === 0 ? (
-              <p className="text-[11px] text-ink-400">
-                No saved sets yet. Set this project up the way you build, then keep it below — the next
-                job starts from it by name.
-              </p>
-            ) : (
-              <ul className="divide-y divide-shell-600 border border-shell-600 rounded">
-                {sets.map((s) => (
-                  <li key={s.id}>
-                    <button
-                      type="button"
-                      className="w-full text-left px-2 py-1.5 hover:bg-shell-700 flex items-center gap-2"
-                      onClick={() => useSaved(s.id)}
-                    >
-                      <span className="text-sm text-ink-50 flex-1 truncate">{s.name}</span>
-                      <span className="cc-tag">apply</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2">
-          <input
-            className="cc-input flex-1"
-            placeholder="Keep these settings as… (e.g. Standard kitchen)"
-            value={setName}
-            onChange={(e) => setSetName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && setName.trim()) keepAsSet(); }}
-          />
-          <button type="button" className="cc-btn" disabled={!setName.trim()} onClick={keepAsSet}>Save set</button>
-        </div>
-      </section>
-
-      <div className="cc-divider" />
-
-      {/* ── sheen (turn 8, CLAUDE.md F1) ──
-          Here as well as in Design settings, and for the reason the whole step
-          exists: how glossy the fronts are is a question a client answers at
-          the quote, not one a joiner discovers in a modal afterwards. */}
-      <SheenSlider design={design} setDesign={setDesign} profile={profile} />
-
-      <div className="cc-divider" />
-
-      {/* ── joinery ── */}
-      <section className="space-y-2">
-        <span className="text-xs uppercase tracking-wide text-ink-200">Joinery type</span>
-        <div className="flex flex-wrap gap-2">
-          {profile.joinery.types.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              title={t.hint}
-              className={`border rounded px-3 py-2 text-left transition-colors ${joinery?.id === t.id
-                ? 'border-gold bg-shell-700'
-                : 'border-shell-600 hover:bg-shell-700'}`}
-              onClick={() => { setDesign({ joinery: t.id }); setJoineryOpen((v) => !v || joinery?.id !== t.id); }}
-            >
-              <span className="block text-sm text-ink-50">{t.label}</span>
-              <span className="block text-[10px] text-ink-400">{t.hint}</span>
-            </button>
-          ))}
-        </div>
-        {joineryOpen && joinery && (
-          <div className="border border-shell-600 rounded p-2 bg-shell-800">
-            <JoineryPreview profile={profile} joinery={joinery} />
-          </div>
-        )}
-        {!joineryOpen && (
-          <p className="text-[11px] text-ink-400">Click a joinery type again to see the joint.</p>
-        )}
-      </section>
-
-      <div className="cc-divider" />
-
-      {/* ── materials ── */}
-      <section className="space-y-2">
-        <div className="cc-row">
-          <span className="text-xs uppercase tracking-wide text-ink-200">Carcass materials</span>
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] text-ink-400">types</span>
-            {[1, 2, 3].map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={`cc-btn px-2 ${design.carcass.types.length === n ? 'border-gold text-ink-50' : ''}`}
-                onClick={() => setCarcassTypes(n)}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-4 gap-2">
-          {design.carcass.types.map((t) => (
-            <MaterialTile
-              key={t.id}
-              label={t.label}
-              // The same fallback chain resolveFinishes() uses, so a tile shows
-              // what the 3D view will show rather than a grey square: this
-              // material's own decor, then the project's, then the profile's.
-              finish={finishById(profile, t.finish_id)
-                || finishById(profile, design.finish.carcass)
-                || finishById(profile, profile.appearance.defaultCarcassFinish)}
-              material={materials.find((m) => m.id === t.material_id) || null}
-              active={picking?.carcassId === t.id}
-              onPick={() => setPicking(picking?.carcassId === t.id ? null : { carcassId: t.id })}
-            />
-          ))}
-          <MaterialTile
-            label="Fronts"
-            // …and a front with no decor of its own IS the carcass, which is
-            // what a workshop means by one material throughout (CLAUDE.md F2).
-            finish={finishById(profile, design.finish.front)
-              || finishById(profile, design.finish.carcass)
-              || finishById(profile, profile.appearance.defaultCarcassFinish)}
-            material={null}
-            active={picking?.role === 'front'}
-            onPick={() => setPicking(picking?.role === 'front' ? null : { role: 'front' })}
-          />
-        </div>
-
-        {picking && (
-          <div className="border border-shell-600 rounded p-2 space-y-2">
-            <DecorPicker
-              value={picking.role === 'front' ? design.finish.front : design.carcass.types.find((t) => t.id === picking.carcassId)?.finish_id}
-              onPick={(id) => {
-                if (picking.role === 'front') setDesign({ finish: { ...design.finish, front: id } });
-                else setCarcassFinish(picking.carcassId, id);
-              }}
-              onClear={() => {
-                if (picking.role === 'front') setDesign({ finish: { ...design.finish, front: null } });
-                else setCarcassFinish(picking.carcassId, null);
-              }}
-            />
-            <div className="flex flex-wrap gap-1">
-              {profile.appearance.finishes.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  className="cc-btn px-2"
-                  onClick={() => {
-                    if (picking.role === 'front') setDesign({ finish: { ...design.finish, front: f.id } });
-                    else setCarcassFinish(picking.carcassId, f.id);
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── the JoineryCore half of it ── */}
-        {missing.length > 0 ? (
-          <div className="border border-status-warn/50 bg-status-warn/10 rounded p-2 space-y-1.5">
-            <p className="text-[11px] text-status-warn">
-              Not assigned materials — {missing.map((t) => t.label).join(', ')} has no board behind it yet.
-              The look is set; the cost is not.
-            </p>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setAssigning(assigning ? null : missing[0].id)}
-            >
-              Assign from Materials stock
-            </button>
-            {assigning && (
-              <select
-                className="cc-input"
-                value=""
-                onChange={(e) => { setCarcassMaterial(assigning, e.target.value); setAssigning(null); }}
-              >
-                <option value="">Choose a board…</option>
-                {boardMaterials.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}{isJcMaterial(m) ? ' · JC' : ''}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        ) : (
-          <p className="text-[11px] text-ink-400">
-            Every carcass material is assigned{fromJc > 0 ? ` — ${fromJc} from JoineryCore` : ''}.
-          </p>
-        )}
-      </section>
-    </div>
-  );
-}
-
-/** One material tile: what it looks like, what it is, and where it came from. */
-function MaterialTile({ label, finish, material, active, onPick }) {
-  const badge = isJcMaterial(material) ? 'JC' : null;
-  const ownImage = finish?.texture && !finish?.decor;
-  return (
-    <button
-      type="button"
-      className={`border rounded overflow-hidden text-left transition-colors ${active
-        ? 'border-gold'
-        : 'border-shell-600 hover:border-ink-400'}`}
-      onClick={onPick}
-    >
-      <span
-        className="block h-12 bg-cover bg-center"
-        style={{
-          background: finish?.hex || '#7a7a7a',
-          ...(ownImage ? { backgroundImage: `url(${finish.texture})` } : {}),
-        }}
-      />
-      <span className="block px-1.5 py-1">
-        <span className="flex items-center gap-1">
-          <span className="text-[11px] text-ink-50 flex-1 truncate">{label}</span>
-          {badge && <span className="cc-tag">{badge}</span>}
-        </span>
-        <span className="block text-[10px] text-ink-400 truncate" title={finish?.label || ''}>
-          {finish?.label || 'Project finish'}
-        </span>
-        <span className="block text-[10px] text-ink-400 truncate">
-          {material ? material.name : 'Not assigned'}
-        </span>
-      </span>
-    </button>
   );
 }

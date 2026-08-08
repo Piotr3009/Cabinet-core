@@ -88,8 +88,10 @@ test('an end panel is cut from the FRONT material, like the doors it stands besi
   assert.equal(wearsFrontMaterial('end_panel'), true);
   assert.equal(wearsFrontMaterial('infill'), true);
   assert.equal(wearsFrontMaterial('front'), true);
-  // The plinth is sprayed but is board — not moved by turn 6, deliberately.
-  assert.equal(wearsFrontMaterial('plinth'), false);
+  // Turn 11 (CLAUDE.md F5.4): the plinth joined them. Owner verdict — a toe
+  // kick stands in the room under the doors, in the plane the eye reads as the
+  // front of the run, and it is finished WITH the doors, spray included.
+  assert.equal(wearsFrontMaterial('plinth'), true);
   assert.equal(wearsFrontMaterial('side'), false);
 
   const id = withUnit('BUD');

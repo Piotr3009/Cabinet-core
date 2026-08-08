@@ -85,17 +85,34 @@ export function topInfillToCeiling({ unitTop, roomHeight }) {
  * be scribed, so the unit stops 250 mm out and no filler reaches — that is
  * reported, because it is a setting to change.
  *
+ * ─── TURN 11 (CLAUDE.md F5.1): PINNING ───
+ *
+ * `pinned` is the joiner overruling all of that for one side: "there IS a filler
+ * here". A pinned side gets the piece whatever the gap is — it does not vanish
+ * when the unit drives away from the stop, and it is not held to the workshop's
+ * scribe limit, because CLAUDE.md asks for it to stretch past 100 mm. It is the
+ * TOP infill's strategy applied sideways: automatic until somebody says
+ * otherwise, and then a decision that stays made.
+ *
+ * The one thing it cannot do is invent a gap. With a neighbour hard against
+ * that side there is nothing to fill, and a pinned filler there would be a piece
+ * cut to zero — so the wall test still stands.
+ *
  * @param {object} args
  *   x, width       the unit on its wall
  *   wallWidth      the wall it stands on
  *   others         [{left, right}] spans of the other units on that wall
  *   settingWidth   design.infill.sideWidth
+ *   pinned         { left?:boolean, right?:boolean }
  */
-export function sideInfill({ x, width, wallWidth, others = [], settingWidth }, profile) {
+export function sideInfill({
+  x, width, wallWidth, others = [], settingWidth, pinned = null,
+}, profile) {
   const S = profile.autoParts.sideInfill;
   const setting = Math.max(0, Number(settingWidth) || 0);
   const maxWidth = Math.min(setting, S.maxWidth);
   const notices = [];
+  const isPinned = (side) => Boolean(pinned?.[side]);
 
   const gapTo = (side) => {
     if (side === 'left') {
@@ -113,6 +130,10 @@ export function sideInfill({ x, width, wallWidth, others = [], settingWidth }, p
     const { gap, againstWall } = gapTo(side);
     if (!againstWall) continue;                    // a neighbour closes it, not a filler
     if (gap < S.minWidth) continue;                // flush, or close enough to scribe out
+    // A PINNED filler (turn 11, F5.1) skips both of the automatic rules below:
+    // it is a decision, so it neither vanishes when the unit drives away from
+    // the stop nor stops at the workshop's scribe limit. It stretches.
+    if (isPinned(side)) { out[side] = Math.round(gap * 100) / 100; continue; }
     // Parked out in the room rather than at the stop: not a scribe, not an error.
     if (gap > setting + S.stopTolerance) continue;
     if (gap > maxWidth) {
@@ -149,7 +170,17 @@ export function autoPartsFor({ unit, wallWidth, others, roomHeight, design }, pr
   const side = unit.params.side_infill_off === true
     ? { left: 0, right: 0, notices: [] }
     : sideInfill({
-      x, width, wallWidth, others, settingWidth: design?.infill?.sideWidth,
+      x,
+      width,
+      wallWidth,
+      others,
+      settingWidth: design?.infill?.sideWidth,
+      // Turn 11 (CLAUDE.md F5.1): the two sides a joiner has PINNED. Stored on
+      // the unit, because it is a fact about this cabinet against this wall.
+      pinned: {
+        left: unit.params.side_infill_left_pinned === true,
+        right: unit.params.side_infill_right_pinned === true,
+      },
     }, profile);
 
   // Manual, and only ever re-clamped: a top infill that was added shrinks when

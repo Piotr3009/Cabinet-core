@@ -1,0 +1,229 @@
+import { useMemo, useState } from 'react';
+import { useUiStore } from '../stores/uiStore.js';
+import { useProjectStore } from '../stores/projectStore.js';
+import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+import {
+  EXPORT_PRESETS, PART_GROUPS, exportablePanels, groupOfPanel, panelIdsForPreset,
+} from '../engine/cnc/groups.js';
+import { exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
+import { formatMm } from '../engine/format.js';
+
+// ─── What is on the sheet (turn 11, CLAUDE.md F8.1/F8.2) ────────────────────
+//
+// The CNC view shows every unit's parts at once now, grouped per unit, and this
+// is the tree that decides which of them are on it. It lives in the RIGHT PANEL
+// — CLAUDE.md F8.2 asks for it there in as many words — which is also what makes
+// "entering CNC no longer closes the panels" mean something: the panel that
+// stays open is the one you need.
+//
+// Three levels, and each is a tick: the UNIT, the part GROUP inside it, and the
+// part. Hiding is view state and nothing else (uiStore) — it is not in the
+// project and does not survive a reload.
+//
+// The DOWNLOADS are here too, and they are turn 3's functions with turn 3's
+// inputs: one unit's result and a list of panel ids. Nothing about the export
+// path changed this turn, which is what test/cnc-export-identity.test.js holds
+// it to.
+
+export default function CncTree() {
+  const units = useProjectStore((s) => s.units);
+  const unitResult = useProjectStore((s) => s.unitResult);
+  const selectedUnitId = useUiStore((s) => s.selectedUnitId);
+  const selectUnit = useUiStore((s) => s.selectUnit);
+  const notify = useUiStore((s) => s.notify);
+  const profile = useCabinetProfileStore((s) => s.profile);
+
+  const hiddenUnits = useUiStore((s) => s.cncHiddenUnits);
+  const hiddenParts = useUiStore((s) => s.cncHiddenParts);
+  const toggleCncUnit = useUiStore((s) => s.toggleCncUnit);
+  const toggleCncPart = useUiStore((s) => s.toggleCncPart);
+  const setCncParts = useUiStore((s) => s.setCncParts);
+  const resetCncVisibility = useUiStore((s) => s.resetCncVisibility);
+
+  const [open, setOpen] = useState(() => new Set());
+  const [busy, setBusy] = useState(false);
+
+  const sheets = useMemo(() => units.map((u) => {
+    const result = unitResult(u.id);
+    return { unit: u, result, parts: result ? exportablePanels(result.panels) : [] };
+  }), [units, unitResult]);
+
+  const shownIds = (unitId, parts) => parts
+    .filter((p) => !hiddenParts[unitId]?.[p.id])
+    .map((p) => p.id);
+
+  const download = (sheet, kind) => {
+    const ids = shownIds(sheet.unit.id, sheet.parts);
+    if (!ids.length) { notify('Nothing ticked on this unit.', 'warn'); return; }
+    if (kind === 'zip') {
+      setBusy(true);
+      exportUnitDxfZip(sheet.result, profile)
+        .then(({ filename, files }) => notify(`${filename} — ${files.length} DXF files.`, 'ok'))
+        .catch((e) => notify(e?.message || 'DXF export failed.', 'warn'))
+        .finally(() => setBusy(false));
+      return;
+    }
+    try {
+      const { filename, parts } = exportSheetDxf(sheet.result, ids, profile);
+      notify(`${filename} — ${parts} parts, laid out as shown.`, 'ok');
+    } catch (e) {
+      notify(e?.message || 'DXF export failed.', 'warn');
+    }
+  };
+
+  if (!units.length) {
+    return <p className="p-3 text-sm text-ink-400">Nothing to cut yet — add a unit in 3D.</p>;
+  }
+
+  return (
+    <div className="p-2.5 space-y-2">
+      <div className="cc-row">
+        <span className="text-[11px] uppercase tracking-wide text-ink-400">On the sheet</span>
+        <button type="button" className="cc-btn px-2" onClick={resetCncVisibility}>Show all</button>
+      </div>
+
+      {sheets.map((sheet) => {
+        const { unit, parts } = sheet;
+        const unitOn = !hiddenUnits[unit.id];
+        const isOpen = open.has(unit.id);
+        const on = shownIds(unit.id, parts).length;
+        return (
+          <div key={unit.id} className={`border rounded ${unit.id === selectedUnitId ? 'border-gold/60' : 'border-shell-600'}`}>
+            <div className="flex items-center gap-2 px-2 py-1.5">
+              <button
+                type="button"
+                aria-pressed={unitOn}
+                title={unitOn ? 'Take this unit off the sheet' : 'Put it back on the sheet'}
+                onClick={() => toggleCncUnit(unit.id)}
+              >
+                <Tick state={unitOn ? 'on' : 'off'} />
+              </button>
+              <button
+                type="button"
+                className="flex-1 text-left text-sm text-ink-100 truncate hover:text-gold"
+                title="Make this the unit the downloads are about"
+                onClick={() => selectUnit(unit.id)}
+              >
+                {unit.params.unit_num}
+              </button>
+              <span className="text-[10px] text-ink-400 tabular-nums">{on}/{parts.length}</span>
+              <button
+                type="button"
+                className="text-ink-400 text-[10px] w-4"
+                aria-expanded={isOpen}
+                title={isOpen ? 'Hide the parts' : 'Show the parts'}
+                onClick={() => setOpen((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(unit.id)) next.delete(unit.id); else next.add(unit.id);
+                  return next;
+                })}
+              >
+                {isOpen ? '▾' : '▸'}
+              </button>
+            </div>
+
+            {isOpen && (
+              <div className="px-1.5 pb-1.5">
+                {/* The four presets, per unit — the same selections Piotr asked
+                    for by name, now driving what is SHOWN as well as what is
+                    downloaded. They are the same `panelIdsForPreset` the export
+                    has used since turn 3. */}
+                <div className="grid grid-cols-2 gap-1 pb-1.5">
+                  {EXPORT_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      title={preset.hint || ''}
+                      className="px-1.5 py-1 text-[10px] rounded border border-shell-600 text-ink-100 hover:bg-shell-700"
+                      onClick={() => {
+                        const wanted = new Set(panelIdsForPreset(parts, preset.id));
+                        setCncParts(unit.id, parts.map((p) => p.id), false);
+                        setCncParts(unit.id, [...wanted], true);
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {PART_GROUPS.map((g) => {
+                  const mine = parts.filter((p) => groupOfPanel(p) === g.id);
+                  if (!mine.length) return null;
+                  const lit = mine.filter((p) => !hiddenParts[unit.id]?.[p.id]).length;
+                  return (
+                    <div key={g.id} className="mb-1">
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-1 py-0.5 rounded hover:bg-shell-700 text-left"
+                        title={g.hint}
+                        onClick={() => setCncParts(unit.id, mine.map((p) => p.id), lit !== mine.length)}
+                      >
+                        <Tick state={lit === mine.length ? 'on' : (lit === 0 ? 'off' : 'some')} />
+                        <span className="text-[11px] text-ink-100 flex-1 truncate">{g.label}</span>
+                        <span className="text-[10px] text-ink-400 tabular-nums">{lit}/{mine.length}</span>
+                      </button>
+                      <ul>
+                        {mine.map((p) => (
+                          <li key={p.id}>
+                            <button
+                              type="button"
+                              className={`w-full flex items-center gap-2 pl-6 pr-1 py-0.5 rounded hover:bg-shell-700 text-left ${hiddenParts[unit.id]?.[p.id] ? 'opacity-45' : ''}`}
+                              onClick={() => toggleCncPart(unit.id, p.id)}
+                            >
+                              <Tick state={hiddenParts[unit.id]?.[p.id] ? 'off' : 'on'} small />
+                              <span className="text-[11px] text-ink-100 flex-1 truncate font-mono">{p.id}</span>
+                              <span className="text-[10px] text-ink-400 tabular-nums">
+                                {formatMm(p.w)}×{formatMm(p.h)}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+
+                <div className="space-y-1 pt-1">
+                  <button type="button" className="cc-btn-gold w-full" onClick={() => download(sheet, 'sheet')}>
+                    Download DXF (one file)
+                  </button>
+                  <button type="button" className="cc-btn w-full" disabled={busy} onClick={() => download(sheet, 'zip')}>
+                    {busy ? 'Zipping…' : 'Download ZIP (per panel)'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <p className="text-[10px] text-ink-400 leading-snug">
+        Ticks change what the sheet SHOWS and what the one-file DXF contains. The per-panel ZIP is always
+        the whole unit — it is there for re-cutting one damaged formatka.
+      </p>
+    </div>
+  );
+}
+
+// Drawn rather than an <input type="checkbox">: the row is the button, and a
+// real checkbox inside a button is a nested control the browser fights over.
+function Tick({ state, small = false }) {
+  const box = small ? 'w-3 h-3' : 'w-3.5 h-3.5';
+  if (state === 'on') {
+    return (
+      <span className={`${box} shrink-0 rounded-sm bg-gold border border-gold flex items-center justify-center`}>
+        <svg viewBox="0 0 10 10" className="w-2.5 h-2.5" aria-hidden="true">
+          <path d="M1.5 5.2 L4 7.5 L8.5 2.5" fill="none" stroke="#131313" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    );
+  }
+  if (state === 'some') {
+    return (
+      <span className={`${box} shrink-0 rounded-sm border border-gold flex items-center justify-center`}>
+        <span className="w-1.5 h-0.5 bg-gold" />
+      </span>
+    );
+  }
+  return <span className={`${box} shrink-0 rounded-sm border border-shell-500`} />;
+}

@@ -307,7 +307,7 @@ export const DEFAULT_CABINET_PROFILE = {
     wardrobe: { heights: { tall: 2400 } },
     // A vanity carcass hangs or stands under a basin, and 770 + 100 legs + a
     // top is a worktop at 890 — too high for a bathroom.
-    vanity: { heights: { base: 700 } },
+    vanity: { heights: { base: 600 } },
   },
 
   // ─── Joinery (turn 7, CLAUDE.md F2) ───

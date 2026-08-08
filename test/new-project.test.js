@@ -85,7 +85,7 @@ const designWith = (patch) => migrateDesign({
   carcass: { types: [{ id: 'c1', label: 'Carcass 1', material_id: 'mat_mfc18_oak', finish_id: 'light_oak' }] },
   fronts: { style: 'F' },
   infill: { sideWidth: 35 },
-  heights: { base: 700, tall: 2400 },
+  heights: { base: 600, tall: 2400 },
   joinery: 'dogbone',
   ...patch,
 });
@@ -99,7 +99,7 @@ test('a set is the WHOLE design, saved under a name', () => {
   const back = loadSettingsSet(storage, set.id);
   assert.equal(back.design.fronts.style, 'F', 'the front style came back');
   assert.equal(back.design.infill.sideWidth, 35, '…and the infill width');
-  assert.equal(back.design.heights.base, 700, '…and the heights, which is the half a subset would have dropped');
+  assert.equal(back.design.heights.base, 600, '…and the heights, which is the half a subset would have dropped');
   assert.equal(back.design.carcass.types[0].finish_id, 'light_oak');
 });
 

@@ -78,6 +78,51 @@ export function clampShelfPos({ pos, current, others, band }, profile) {
   return { pos: clampTo(pos, bounds.min, bounds.max), ...bounds, blocked: false };
 }
 
+// ─── One element's depth (turn 9, CLAUDE.md F4) ────────────────────────────
+
+/**
+ * How far back a piece INSIDE a carcass may be set from the face of it.
+ *
+ * The number is a SETBACK, measured from the front face, because that is what
+ * the engine already takes as an input (`front_mm` on a shelf item, turn 8) and
+ * what a joiner says out loud: "that one is twenty back". So:
+ *
+ *     0            flush with the front face — the full pull-out turn 8 built
+ *     max          as far back as leaves a piece worth cutting
+ *
+ * The far end is not the back panel. A shelf dragged all the way to the
+ * construction plane behind it would be a 4 mm strip with a cut-list entry and
+ * two banded edges, so the clamp stops it `editor.minElementDepth` short — the
+ * narrowest board a workshop would still call a shelf.
+ *
+ * `backLoss` is depth the carcass has already taken off the piece before the
+ * setback is applied at all: the sink unit's back panel sits 50 mm forward
+ * INSIDE the box (KIT_SINK L425-426), and a shelf in one is that much shorter
+ * before anybody drags anything.
+ *
+ * A pure function of four numbers, like every other rule in this file: the
+ * drag, the number field in the panel and any path added later all clamp
+ * through it, so there is no second copy to drift.
+ *
+ * @param {{depth:number, boardT:number, backLoss:number}} geom
+ */
+export function elementDepthBounds({ depth, boardT, backLoss = 0 }, profile) {
+  const usable = (Number(depth) || 0) - (Number(boardT) || 0) - (Number(backLoss) || 0);
+  return {
+    min: 0,
+    max: Math.max(0, usable - profile.editor.minElementDepth),
+    // What the piece is actually cut to at each end of the range, so a readout
+    // can say "560 deep" rather than "0 back".
+    deepest: Math.max(0, usable),
+    shallowest: Math.min(profile.editor.minElementDepth, Math.max(0, usable)),
+  };
+}
+
+/** The setback a drag or a typed number ends up at. Stops at the boundary. */
+export function clampElementDepth(value, bounds) {
+  return clampTo(Number.isFinite(Number(value)) ? Number(value) : bounds.min, bounds.min, bounds.max);
+}
+
 // ─── Units on a wall ───────────────────────────────────────────────────────
 
 /**

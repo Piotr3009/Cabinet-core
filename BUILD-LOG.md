@@ -2974,3 +2974,352 @@ zostało zabezpieczone.
 | 8 | mitra 45° widoczna w 3D; klocek-widmo zbadany i usunięty | ✅ F6 + F2.6 |
 | 9 | menu: dimensions / panele / infille ON-OFF od ręki | ✅ F7 |
 | 10 | dog bones w Solid (linie) i X-ray (pełne zarysy) | ✅ F8 |
+
+---
+
+# TURA 9 — 08.08.2026 (fazy F0–F7)
+
+Sześć zgłoszeń Piotra, jedno na fazę, plus brama. Wszystkie z werdyktem
+CLAUDE.md „czysto albo wcale": nic nie zostało cofnięte, `fixtures/` bez zmiany,
+`package.json` bit w bit ten sam.
+
+**Podłoga:** 727/727 na `main`. **Po turze:** 797/797, build czysty.
+
+---
+
+## F0 — Baseline + łatka #35 (wanity 600) — ✅ ZIELONA, NIC DO ZROBIENIA
+
+`rm -rf node_modules && npm install`, `npm test` → 727/727, `npm run build` →
+czysty. Decyzja #35 **już była na `main`** (`profile.projectTypes.vanity.heights.base
+= 600`, commit „poprawka"), a `test/new-project.test.js` nigdy nie miał tej liczby
+wpisanej na sztywno — pyta o `P.projectTypes.vanity.heights.base` i sprawdza
+RELACJĘ („umywalka jest niżej niż blat"). Nie było czego łatać i nie było czego
+poprawiać w asercjach: test napisany przez wartość z profilu przeżył zmianę tej
+wartości, co jest dokładnie po to.
+
+---
+
+## F1 — [CRITICAL] Paski na frontach — ✅ ZIELONA
+
+**Diagnoza z CLAUDE.md potwierdzona w kodzie.** Ukośne paski w widoku roboczym
+i w renderze 4K to **shadow acne**, i tura 8 miała trzy z czterech klasycznych
+przyczyn naraz:
+
+| przyczyna | co było | co jest |
+|---|---|---|
+| rozdzielczość mapy | 1024 na frustum dopasowany do CAŁYCH mebli → ~5 mm/teksel na 4-metrowym ciągu | `normal.mapSize` **2048**, `high` 4096 |
+| brak `normalBias` | **nie było go w ogóle** | `normal` 0.02, `high` 0.01 |
+| preset renderu | mapa W GÓRĘ (4096), bias W DÓŁ (−0.00018) — najdroższy obraz w aplikacji był najsłabiej zabezpieczony | bias skaluje się RAZEM z mapą: −0.0002 → −0.0001 |
+| kontrast pasków | ambient 0.2 przeciw key 1.0 — każdy pasek acne wysokokontrastowy, clearcoat lakieru go podwaja | ambient **0.45**, fill **0.55**, nowe światło hemisferyczne 0.5 |
+
+**Filozofia Prime-Sash-Windows, przyjęta świadomie:** zalać scenę światłem
+wypełniającym, żeby kolor czytał się czysto z każdej strony, zostawić **dokładnie
+jedno** światło rzucające cień i posadzić mebel miękką plamą kontaktową. Key
+zostaje 1.0 i zostaje jedynym rzucającym — modelowanie kupione w turze 8 nie
+wraca do kasy; podnosi się tylko światło pod nim, żeby to, co key zostawia w
+cieniu, było nadal KOLOREM, a nie dziurą.
+
+**Hemisfera zamiast samego ambientu.** Ambient to jedna liczba z każdej strony,
+czyli jedyna rzecz, którą światło w pokoju nigdy nie jest. `studio.hemisphere`
+(niebo `#fdf6e8`, podłoga `#c8c0b0`, 0.5) kosztuje tyle co ambient — brak mapy
+cienia, brak drugiego przebiegu — i to on pozwala podnieść wypełnienie bez
+zamiany sceny we mgłę.
+
+**Cień kontaktowy przebudowany na CIĄG.** Tura 6 malowała jeden kwadrat na
+jednostkę; to, co czyta się jako „szafki lewitują", to lewitujący CIĄG, a plama
+per-szafka zostawia jasny szew na każdym styku. Teraz jest jeden drei
+`<ContactShadows>` dopasowany do tych samych granic mebli, do których dopasowany
+jest frustum światła klucza (`ShadowFit`), z `frames={1}` i React-owym `key`
+liczonym z tego dopasowania — piecze się RAZ na zmianę układu, a orbitowanie
+(czyli to, co joiner robi cały dzień) kosztuje zero. `3d/ContactShadow.jsx`
+usunięty; `appearance.contactShadow` ma trzy nowe liczby: `opacity 0.5`,
+`blur 2.5`, `farMm 400`.
+
+**Pułapka, której CLAUDE.md nie mógł przewidzieć, znaleziona przy wdrożeniu.**
+drei piecze plamę renderując CAŁĄ scenę materiałem głębi (`scene.overrideMaterial`)
+kamerą ortograficzną stojącą NA podłodze i patrzącą W GÓRĘ. To znaczy, że do
+plamy trafiłyby: podłoga (`DoubleSide`, dokładnie na płaszczyźnie bliskiej — na
+czarno przez cały kadr), ściany (0…400 mm nad podłogą), etykiety wymiarowe
+(sprite w zasięgu 400 mm od podłogi to przy szafce 770 dokładnie etykieta
+wysokości) i strzałki dystansu (120 mm nad bazą). Rozwiązane natywnym hakiem
+three 0.180: `material.allowOverride = false` na pokoju i na całym chromie
+(`Room`, `DimLabel`, `EdgeHandle`, `SelectionOutline`, `DistanceArrows`,
+`AddPlus`). Semantycznie to jest dokładnie to zdanie, które chcemy powiedzieć:
+**pokój jest tym, NA co cień pada, a narzędzie nie rzuca cienia w ogóle.**
+
+**F1.4 — spray dalej bez envMap.** Sprawdzone po edycjach przez odczytanie
+`src/3d/materials.js`: `sprayed = finishExposed && !isDecor`, a `envMapIntensity`
+= 0 dla natrysku i 1 dla płyty. Reguła hybrydowa tury 8 nietknięta; test F6
+pyta o nią jeszcze raz, bo F6 dokłada NOWĄ drogę dojścia do natrysku.
+
+**Brama fazy:** `frames={1}` sprawdzone w źródle drei (licznik `count < frames`),
+więc widok roboczy nie płaci za plamę per klatkę.
+
+---
+
+## F2 — [HIGH] „+" zamiast strzałek — ✅ ZIELONA
+
+**Werdykt właściciela wykonany: strzałki usunięte.** Był to trójstanowy przełącznik
+◀ / auto / ▶ w panelu Library (tura 8, F2.1), i powód, dla którego był mylący, jest
+wart zapisania: **kazał opisać MIEJSCE słowami, w panelu, zanim się powiedziało, o
+którą szafkę chodzi.**
+
+Pytanie jest teraz zadane odwrotnie. Każdy wolny koniec każdego ciągu nosi „+"
+stojący w szczelinie, którą wypełni; kliknięcie mówi całe zdanie naraz — TEN
+koniec TEGO ciągu — zanim biblioteka się w ogóle otworzy.
+
+- **Matematyka szczeliny jest czysta i osobno testowana:** `engine/runs.js`
+  `runEndGap()` i `addPlusPoints()`. Szczelina to ODLEGŁOŚĆ WOLNA od zewnętrznej
+  krawędzi ciągu do następnej rzeczy: sąsiada na tym samym poziomie albo ściany.
+  Mierzona przez `paddedSpan`, więc **end panel liczy się jako część szafki** —
+  szczelina mierzona do korpusu oferowałaby 18 mm, w których już coś stoi.
+- **Próg:** `profile.ui.addPlusMinGapMm = 100` (nowy blok `ui` w profilu).
+  Uzasadnienie w liczbach warsztatu: `autoParts.sideInfill.maxWidth` to 120, więc
+  wszystko węższe jest robotą fillera, nie szafki. Poniżej progu plus znika —
+  bo oferowanie miejsca, które umieszczanie odrzuci sekundę później, to
+  oferta-kłamstwo. Test pyta o próg z DWÓCH stron, w krokach 0,5 mm.
+- **Poziomy się nie blokują:** szafka wisząca nie zamyka szczeliny obok stojącej.
+- **Mechanika wstawiania NIETKNIĘTA.** `+` woła `projectStore.addUnit(typeId,
+  { near, side })` — to jest kod tury 8, `freeSlotOnWall` przyjmuje `'left'`/`'right'`
+  od tury 8. Ta faza zmieniła WYZWALACZ, nie mechanikę, i test przeprowadza
+  kliknięcie do końca: plus po lewej naprawdę stawia szafkę po lewej.
+- **Overlay reużyty, nie wymyślony:** `3d/AddPlus.jsx` to sprite z teksturą
+  z canvasu — ten sam wzorzec billboardu co `DimLabel` od tury 1. Nosi `ccHelper`,
+  więc nie wchodzi do renderu i nie rzuca cienia kontaktowego.
+- Panel Library mówi teraz ZDANIE („Adding to the left of 03"), a nie zadaje
+  pytania; otwarty z MENU zachowuje się dokładnie jak przed turą 8: obok
+  zaznaczenia, po tej stronie, gdzie jest miejsce.
+
+Wymiarowe strzałki z tury 3 (`3d/DistanceArrows.jsx`) **nietknięte** — poza
+jednym `allowOverride={false}` z F1, który nic nie rysuje.
+
+---
+
+## F3 — [HIGH] Odstępy półek — formuła LISP-a, dosłownie — ✅ ZIELONA
+
+Piotr: po wyśrodkowaniu odstępy NIE są równe. Miał rację, a przyczyna jest
+arytmetyczna: tura 8 rozkładała półki po **PASIE PRZECIĄGANIA**, a nie po
+**STREFIE PÓŁEK**.
+
+Pas to strefa zwężona o `editor.minShelfEdgeGap` (40 mm) z każdej strony — to
+odpowiedź na pytanie „jak blisko końca WOLNO przeciągnąć półkę", a nie na pytanie
+„gdzie ma stanąć równo rozłożona półka". Rozkładanie po nim robi skrajne otwory
+o dokładnie te 40 mm inne od środkowych. Nikt tego nie wymyślił — nikt tego nie
+sprawdził.
+
+Weszła arytmetyka AutoLISP-a, `KIT_WARDROBE_FULL.lsp` `drawWardrobeShelvesFront`
+(linie 133–142):
+
+```
+spacing  = (shelfZoneTop − shelfZoneBottom) / (numShelves + 1)
+shelfY_i = shelfZoneBottom + spacing · i        dla i = 1..numShelves
+```
+
+**Granice strefy to granice LISP-a** (te same linie 687–692): GÓRNA POWIERZCHNIA
+tego, co zamyka przestrzeń pod spodem — partition szuflad, partitioner railu albo
+płyta dolna — do SPODU wieńca górnego. To dokładnie `floor`/`ceiling`, które
+`engine/collision.js shelfBand()` liczy od tury 3; zmiana to podmiana `min`/`max`
+na `floor`/`ceiling` i nic więcej.
+
+**`shelfY` to SPÓD półki, nie jej oś** — CLAUDE.md kazał to potwierdzić w sekcji
+wiercenia i LISP mówi to dwa razy: rysuje płytę od `shelfY` do `shelfY + G`
+(linia 143) i wierci klaster kołków na `shelfY − 50 / shelfY / shelfY + 50`
+(linie 411–416), czyli w rzędzie, na którym półka SIEDZI. `pos_mm` znaczy tu to
+samo od tury 1, więc obie konwencje już się zgadzały i nic nie trzeba było
+przesuwać.
+
+Funkcja jest czysta i mieszka w silniku: `engine/items.js evenShelfPositions()`.
+
+**Drugi błąd, znaleziony przy okazji i naprawiony.** Tura 8 rozdawała pozycje
+w kolejności TABLICY. Półki dodają się od góry w dół (`nextShelfPos`), więc
+tablica jest MALEJĄCA — najwyższa półka dostawała najniższe miejsce i stos
+wracał odwrócony. Widać to dopiero, gdy jedna z nich była wcześniej przeciągnięta,
+i dlatego przeszło niezauważone. Teraz pozycje idą w kolejności SILNIKA
+(od dołu), czyli w tej, którą S1..Sn znaczy wszędzie indziej.
+
+Testy liczą wartości RĘCZNIE z formuły (1, 2, 3 półki; strefa z szufladami pod
+spodem), plus własność: N półek robi N+1 RÓWNYCH kroków. `fixtures/` bez zmian.
+
+---
+
+## F4 — [HIGH] Edycja per-element — ✅ ZIELONA (zakres uściślony, patrz niżej)
+
+Do tury 9 najmniejszą rzeczą, którą dało się w tej aplikacji edytować, była cała
+szafka. Półka była wierszem listy z wysokością — a odpowiedzią na „ta niesie
+mikrofalówkę, zrób ją 25 w dębie" była druga szafka.
+
+**Zaznaczenie elementu.** `uiStore.selectedElement = { unitId, elementRef }`,
+gdzie ref to **własny identyfikator panelu z silnika** (`SHELF-2`) — ten sam,
+który rysuje widok 3D, drukuje BOM i układa arkusz CNC. Zero drugiej tożsamości
+do utrzymania. Zaznaczalne jest to, co ma rolę `shelf` (SHELF, PARTITION,
+RAIL-PART) — pytanie o ROLĘ, nie lista nazw części. Podświetlenie to **ten sam
+znak, który dostaje szafka** (`SelectionOutline`, niebieska kreskowana ramka),
+narysowany wokół pudełka elementu z danych silnika. Escape cofa O JEDEN POZIOM:
+pierwszy raz gubi półkę, drugi szafkę; kliknięcie w tło dalej czyści oba naraz.
+
+**Chwyć i pociągnij w głąb.** Płaszczyzna POZIOMA na wysokości półki, trafienie
+mierzone wzdłuż własnej osi `inward` jednostki — więc szafka na ścianie 3 pokoju
+w kształcie L nie potrzebuje żadnego wyjątku. Zapisywane jest COFNIĘCIE od lica,
+czyli liczba, którą silnik już przyjmuje (`front_mm`, tura 8) i którą joiner mówi
+na głos. Klamra: `engine/collision.js elementDepthBounds()` — 0 to lico,
+a tył zatrzymuje się `editor.minElementDepth` (nowa liczba, **100 mm**) przed
+końcem, bo półka przeciągnięta do samej płaszczyzny konstrukcyjnej to 4-milimetrowy
+pasek z wpisem w liście cięcia i dwiema oklejonymi krawędziami. Sink traci swoje
+50 mm cofniętego pleców ZANIM ktokolwiek cokolwiek pociągnie.
+
+**Która oś:** półka nietknięta chodzi w GÓRĘ I W DÓŁ, jak zawsze — i to dotknięcie
+ją ZAZNACZA. Kiedy jest już zaznaczona, ten sam chwyt ciągnie ją w GŁĄB. Dzięki
+temu żaden z dwóch gestów nie potrzebuje klawisza modyfikującego; wysokość zostaje
+polem liczbowym w panelu przez cały czas, a Escape oddaje pionowy przeciąg.
+
+**Właściwości per element** w `RightPanel` (sekcja pojawia się NAD korpusem, bo
+kiedy jest, to jest to, na co joiner patrzy): wysokość, cofnięcie (z pokazaną
+głębokością CIĘCIA), grubość, materiał. Każde pole ma powrót do „bez nadpisania",
+bo „płyta korpusu" to inne zdanie niż „18" — i tylko jedno z nich idzie za
+projektem, gdy projekt się zmieni. Lista materiałów to `elementMaterialChoices()`:
+**własne płyty projektu 1–3 plus fronty**, czyli to samo źródło, z którego korzysta
+Design Settings.
+
+**Model danych — reguła `paramsForEngine()`, bez wyjątku.** Nadpisania siedzą na
+POZYCJI (`params.sections[0].items[]`), czyli w konfiguracji jednostki, i jadą do
+silnika tą samą drogą co cokół, top infill i end panele. **Silnik dostał trzy
+WEJŚCIA i zero nowych wzorów.** Gołe `computeCabinet()` bez nadpisań tnie co do
+milimetra to, co tnie kit — jest to przybite osobnym testem obok fixtures.
+
+Jedna decyzja nazewnicza warta zapisania: **cofnięcie NIE dostało drugiego pola.**
+CLAUDE.md nazywa je `depthSetbackMm`; w danych jest to `front_mm`, które od tury 8
+znaczy dokładnie to samo. Dwa pola na jedną liczbę to dwa miejsca, w których ta
+liczba może być inna. Etykieta w UI mówi „Set back", akcja store'u nazywa się
+`setElementDepth`, a pole jest jedno.
+
+**Prawda w dół rzeki.** Grubość jedzie jako `panel.thickness` i jako `box.h`
+(półka rośnie W GÓRĘ od rzędu kołków, bo `pos_mm` to spód — półka rosnąca w dół
+spadałaby z kołków, które ją trzymają). **Śruby półki PRZYKRĘCONEJ przeniosły
+się na jej WŁASNĄ oś**: 25-milimetrowa półka wiercona w osi płyty korpusu jest
+wiercona 3,5 mm obok, a na 25-milimetrowej krawędzi to różnica między śrubą
+w środku a śrubą, która ją rozłupuje. Materiał jedzie do BOM-u jako
+`material_label` — i **wszedł do klucza scalania wierszy**, bo dwie identyczne
+półki z dwóch różnych płyt to dwie linie, albo połowa z nich zostanie wycięta
+w złym arkuszu. Grupowanie CNC i rysunki biorą element **istniejącym potokiem**:
+ta sama grupa (`shelves`), ten sam outline, te same pola — inne tylko liczby.
+
+**Zakres — uczciwie.** CLAUDE.md pisze „półki (regulowane + stałe) i PIONOWE
+partitiony". W tym silniku **nie ma pionowego partitionu**: `PARTITION`
+i `RAIL-PART` to poziome płyty budowane przez silnik ze stosu szuflad pod nimi,
+a jedyna pionowa płyta wewnętrzna to `DP` (panel prowadnic), który nie jest
+elementem użytkownika. Wykonane więc: półki obu wariantów w pełni; partitiony
+zaznaczalne, podświetlane i z JEDNYM realnym nadpisaniem — cofnięciem
+(`partition_front_mm`, tura 8) — bo szerokość, wysokość i pozycja partitionu
+wynikają ze stosu i nie mają gdzie trzymać własnej wartości. Zapisane
+w **BLOCKERS #50**.
+
+---
+
+## F5 — [MEDIUM] Sheen 5–100 % co 5 — ✅ ZIELONA
+
+Skala 0–25 wyszła. Lakier zamawia się jako PROCENT połysku i tak go czyta
+lakiernik, dostawca farby i klient — a na skali tury 8 było zero, a lakieru bez
+połysku nie ma. `profile.appearance.sheenScale = { min: 5, max: 100, step: 5,
+default: 60 }`. Wzór `roughness = 1 − sheen/100` wychodzi z formuły, która już
+tam była (`1 − v/max`), więc zmieniła się LICZBA w profilu, a nie wzór
+w komponencie — 60 % to roughness 0.4, czyli dokładnie domyślny satyn tury 8
+(15 × 4).
+
+**Migracja jest jednokierunkowa i wykonuje się RAZ**, i to „raz" jest tu istotne:
+`migrateDesign()` biegnie przy KAŻDYM odczycie każdego designu w aplikacji, więc
+reguła bez wersji mnożyłaby tę samą wartość przez cztery co render, aż zatrzymałaby
+się na 100. Stąd `DESIGN_SCHEMA 1 → 2`: wartość ≤ 25 na designie sprzed schematu 2
+jest mnożona przez 4 i przycinana do [5, 100]; design ze stemplem nie jest dotykany
+nigdy więcej. 20 znaczy przeciwne końce puszki na obu skalach i **tylko stempel
+potrafi je rozróżnić**. Stare 0 idzie na 5 (×4 to 0, klamra podnosi).
+
+Przy okazji uszczelnione `setDesign()`: łata jest teraz nakładana na design
+JUŻ zmigrowany, żeby świeżo wpisane 25 nie trafiło pod regułę i nie zapisało się
+jako 100. W praktyce `loadProject`/`newProject` migrują na wejściu, ale tryb
+awarii jest tu niewidoczny i niszczący, więc nie zostawiono go na słowo honoru.
+
+Etykiety przeliczone na pasma lakiernika (Dead matt / Matt / Eggshell / Satin /
+Semi-gloss / Gloss), suwak pokazuje ćwiartki zamiast dwudziestu liczb.
+
+---
+
+## F6 — [MEDIUM] Kolory natryskowe na fronty — ✅ ZIELONA
+
+Tura 8 miała to zbudowane w połowie: `design.colour.front` docierał do widoku 3D
+(drzwi wychodziły granatowe) i **do niczego więcej** — lista cięcia, PDF i karta
+produkcyjna dalej nazywały płytę pod farbą. Na projekcie z dekorem na korpusie
+karta pisała „EGGER H1180 … / Hague", czyli dekor, z którego drzwi nie są zrobione,
+obok koloru, z którego są.
+
+Naprawa to jedno zdanie: **NATRYSK JEST WYKOŃCZENIEM.** `resolveFinishes()`
+zwraca go w slocie `front`, PRZED jakąkolwiek płytą — bo farba kryje dekor
+dokładnie tak, jak kryje go w warsztacie — a wszystko w dół rzeki i tak czyta tę
+jedną funkcję. Nazewnictwo w jednym miejscu (`sprayFinishLabel`): `RAL 3005 Wine
+Red spray`, `F&B Railings 31 spray`, `#1f3a5f spray`. Jedna konwencja, cztery
+konsumenci (BomPanel, PDF, karta jednostki, etykiety części).
+
+W UI **„Sprayed" jest trzecim ŹRÓDŁEM** obok „This app" i „EGGER decors", i
+mieszka w nim **istniejący `ColourPicker`** (RAL / F&B / hex,
+`reference/colors/psw-colors.json`, wpięty od tury 3) — żadnego nowego pickera,
+bo drugi picker to drugie miejsce, w którym numer RAL może być zły. Kontrolka
+przeniosła się tam z dna ekranu, gdzie nazywała się „Front colour" i gdzie
+człowiek szuka OSTATNIO odpowiedzi na „z czego są drzwi". Suwak sheenu został na
+miejscu — działa na każdy natryskiwany element w robocie, także cokół i end
+panele, niezależnie od tego, czy ktoś wybrał kolor frontów.
+
+Renderowanie się nie zmieniło i nie musiało: `surfaceFor()` już dawało lakier
+zabarwiony hexem i `envMapIntensity: 0`. Test pyta o to jeszcze raz, bo dochodzi
+NOWA droga dojścia do natrysku.
+
+BOM dostał kolumnę **Material** (grubość · materiał) — to widoczna połowa F6.3
+i F4.5 naraz.
+
+---
+
+## F7 — Dokumentacja + BRAMA
+
+| brama | wynik |
+|---|---|
+| `rm -rf node_modules && npm install` (pełny) | ✅ |
+| `npm test` | ✅ **797/797**, podłoga 727 + 70 nowych |
+| `npm run build` | ✅ czysty |
+| `git diff --stat fixtures/` | ✅ pusty |
+| `git diff package.json` | ✅ pusty — zero nowych zależności |
+| `grep -rn "from 'react'\|from 'three'" src/engine/` | ✅ pusty |
+
+**Nowe pliki testowe (70 testów):** `test/add-plus.test.js` (17),
+`test/element-editing.test.js` (22), `test/shelf-spacing.test.js` (13),
+`test/spray-fronts.test.js` (11), plus 7 dopisanych do `test/render.test.js`
+i przepisana `test/sheen.test.js`.
+
+**Nowy kod aplikacji:** `src/3d/AddPlus.jsx`. **Usunięty:**
+`src/3d/ContactShadow.jsx` (zastąpiony jedną plamą na ciąg).
+
+**Zmiany w istniejących testach — wszystkie jako konsekwencja zmiany, nie
+naginanie bramy:**
+- `test/render.test.js` „studio rig" — asercja `key > 3 × ambient` była PROXY
+  dla reguły, a nie regułą. Tura 9 świadomie podnosi światło płaskie (filozofia
+  PSW), a acne, które ta asercja przytrzymywała, jest naprawione tam, gdzie się
+  acne naprawia — w `normalBias`. Zapisana jest teraz REGUŁA: key bije światło
+  płaskie i jest jedynym rzucającym cień. Doszły asercje o `normalBias`
+  i o tym, że render jest MNIEJ podatny na acne niż widok roboczy, nie bardziej.
+- `test/render.test.js` „high shadows" — `>` na `>=`, bo `normal` poszło z 1024
+  na 2048.
+- `test/sheen.test.js` — cała skala się zmieniła; plik przepisany na 5–100 %
+  plus sześć nowych testów migracji.
+- `test/design.test.js` — `schema` 1 → `DESIGN_SCHEMA` (napisane przez stałą,
+  więc następny bump go nie ruszy).
+
+**Nowe liczby w `profile.js`** (rule 2 — wszystkie z komentarzem w języku warsztatu):
+`appearance.studio.hemisphere`, `render.shadow.*.normalBias`,
+`appearance.contactShadow` (przebudowane), `appearance.sheenScale` (przeskalowane),
+`ui.addPlusMinGapMm`, `editor.minElementDepth`.
+
+**BACKLOG:** dopisane **#55** (mitra ma się zatrzymywać na end panelu / infillu
+terminalnym — zaparkowane przez właściciela) i **#56** (nota do #42: X-ray do
+przeprojektowania w T10, czeka na zrzut referencyjny Piotra).
+**BLOCKERS:** **#50–#53**.
+
+Nic nie zostało cofnięte. Nie ma pytań do Piotra — jedyna rzecz, która czeka na
+JEGO ruch, a nie na kod, to zrzut referencyjny do X-raya (BACKLOG #56) i oko na
+oświetlenie z F1, o które CLAUDE.md prosi wprost („eye test jest Piotra").

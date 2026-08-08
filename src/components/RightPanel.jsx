@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
-import { useProjectStore, validateUnit } from '../stores/projectStore.js';
+import { elementDepthBoundsFor, useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
 import { roomWalls } from '../engine/room.js';
-import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
+import {
+  elementMaterialChoices, migrateDesign, projectHeights, resolveUnitDesign,
+} from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
@@ -27,6 +29,8 @@ export default function RightPanel() {
   const openModal = useUiStore((s) => s.openModal);
   const notify = useUiStore((s) => s.notify);
   const clearSelection = useUiStore((s) => s.clearSelection);
+  const selectedElement = useUiStore((s) => s.selectedElement);
+  const clearElement = useUiStore((s) => s.clearElement);
   const panelOpen = useUiStore((s) => s.panelOpen);
   const togglePanelSection = useUiStore((s) => s.togglePanelSection);
   const addItemKind = useUiStore((s) => s.addItemKind);
@@ -107,6 +111,23 @@ export default function RightPanel() {
   const heightGroupLabel = HEIGHT_GROUPS.find((g) => g.id === heightGroup)?.label || 'height';
   const projectHeight = heightGroup ? projectHeights(design, profile)[heightGroup] : null;
 
+  // ─── The selected ELEMENT (turn 9, CLAUDE.md F4) ───
+  // Resolved from the ENGINE's panel — the same id the 3D view draws, the BOM
+  // prints and the CNC sheet lays out — back to the ITEM its overrides live on.
+  // A piece with no item behind it (the partition above a drawer stack, the
+  // rail partitioner) is derived by the engine and has nowhere to keep an
+  // override, so it reads out and does not edit.
+  const element = useMemo(() => {
+    const ref = selectedElement?.unitId === unit?.id ? selectedElement.elementRef : null;
+    if (!ref || !result) return null;
+    const panel = result.panels.find((p) => p.id === ref);
+    if (!panel) return null;
+    const item = panel.meta?.itemId
+      ? items.find((i) => i.id === panel.meta.itemId) || null
+      : null;
+    return { panel, item };
+  }, [selectedElement, unit?.id, result, items]);
+
   const addDoors = () => {
     const count = doorCountFor(unit.params.width, profile);
     setDoors(unit.id, { count, hinge: unit.params.hinge || profile.doors.defaultHinge });
@@ -129,6 +150,21 @@ export default function RightPanel() {
       <PanelHeader title={`${type.label} · ${unit.params.unit_num}`} onClose={closeRightPanel} />
 
       <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
+        {/* ── the ONE piece that is selected (turn 9, CLAUDE.md F4.3) ──
+            First, above the carcass, because when it is there it is what the
+            joiner is looking at. It disappears the moment nothing is selected
+            inside the unit, so the panel is not permanently a row longer. */}
+        {element && (
+          <ElementSection
+            unit={unit}
+            element={element}
+            profile={profile}
+            design={design}
+            materials={materials}
+            onClose={clearElement}
+          />
+        )}
+
         {/* ── carcass ── */}
         <Section
           title="Carcass"
@@ -774,6 +810,182 @@ export default function RightPanel() {
         </div>
       </div>
     </aside>
+  );
+}
+
+/**
+ * ─── One piece inside the cabinet (turn 9, CLAUDE.md F4.3) ───
+ *
+ * Until turn 9 nothing INSIDE a unit was individually editable: a shelf was a
+ * row in a list with a height on it, and the answer to "make that one 25 mm in
+ * oak" was a second cabinet. Three questions are answered here, and they are
+ * the three a joiner asks about one shelf:
+ *
+ *   how far back does it stand      `front_mm`     — the same number the drag
+ *                                                    in the canvas writes
+ *   how thick is it                 `thickness_mm`
+ *   what is it made of              `material_label` / `material_id`
+ *
+ * All three live on the ITEM, which is the unit's own config, so they travel
+ * to the engine through `paramsForEngine()` exactly as the plinth and the top
+ * infill do — the engine gained three inputs and not one formula, and a bare
+ * `computeCabinet()` still cuts what the AutoLISP kit cuts.
+ *
+ * Every field clears back to "no override" rather than to a number, because
+ * "the carcass board" is a different statement from "18", and only one of them
+ * follows the project when the project changes.
+ */
+function ElementSection({
+  unit, element, profile, design, materials, onClose,
+}) {
+  const setShelfPos = useProjectStore((s) => s.setShelfPos);
+  const setElementDepth = useProjectStore((s) => s.setElementDepth);
+  const setElementThickness = useProjectStore((s) => s.setElementThickness);
+  const setElementMaterial = useProjectStore((s) => s.setElementMaterial);
+  const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
+  const { panel, item } = element;
+
+  const bounds = useMemo(() => elementDepthBoundsFor(unit, profile), [unit, profile]);
+  const choices = useMemo(
+    () => elementMaterialChoices(design, profile, materials),
+    [design, profile, materials],
+  );
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const setback = Number(panel.meta?.front_mm ?? profile.carcass.shelfDepthClearance);
+  const locked = Boolean(panel.meta?.locked);
+
+  return (
+    <section className="rounded border border-gold/60 bg-shell-700/40 p-2 space-y-2">
+      <div className="cc-row">
+        <span className="text-xs uppercase tracking-wide text-gold">{panel.id}</span>
+        <span className="text-[11px] text-ink-400 flex-1 pl-2">
+          {formatMmPair(panel.w, panel.h)} · {formatMm(panel.thickness)} mm
+        </span>
+        <button type="button" className="cc-btn-ghost" title="Deselect this piece (Esc)" onClick={onClose}>×</button>
+      </div>
+
+      {!item ? (
+        // ─── A derived piece (turn 9, CLAUDE.md F4, scope note) ───
+        // The partition above a drawer stack and the rail partitioner are built
+        // BY the engine from what is under them: their width, their height and
+        // their position all follow the stack, so there is no item to hang a
+        // thickness or a material on and inventing one would be a second place
+        // a partition's board could come from.
+        //
+        // Its DEPTH is a different matter and turn 8 already gave it one —
+        // `partition_front_mm` on the unit — because a partition under a
+        // worktop sometimes has to come out to the face. That override is the
+        // one thing offered here, on the unit rather than on the piece.
+        <div className="space-y-2">
+          <div>
+            <span className="cc-label">Set back</span>
+            <NumberField
+              className="cc-input text-right w-28"
+              min={0}
+              value={Number(panel.meta?.front_mm) || 0}
+              title="From the face of the cabinet. 0 pulls the partition out flush."
+              onCommit={(v) => setPartitionFront(unit.id, v)}
+            />
+          </div>
+          <p className="text-[11px] text-ink-400">
+            The engine builds this piece from the drawers under it — its width, its height and where it
+            sits all follow the stack. Change the stack to change the piece.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <span className="cc-label">Height</span>
+              <NumberField
+                className="cc-input text-right"
+                value={item.pos_mm ?? 0}
+                disabled={locked}
+                title={locked
+                  ? 'Screwed or locked — unlock it to move it'
+                  : 'Above the carcass floor. The same clamp the drag obeys.'}
+                onCommit={(v) => setShelfPos(unit.id, item.id, v)}
+              />
+            </div>
+            <div>
+              <span className="cc-label">Set back</span>
+              <NumberField
+                className="cc-input text-right"
+                min={bounds.min}
+                max={bounds.max}
+                value={setback}
+                title={`From the face of the cabinet. 0 is flush; ${formatMm(bounds.max)} leaves the shallowest piece worth cutting.`}
+                onCommit={(v) => setElementDepth(unit.id, item.id, v)}
+              />
+            </div>
+          </div>
+          <div className="cc-row text-[11px] text-ink-400">
+            <span>Cut {formatMm(panel.h)} mm deep</span>
+            <button
+              type="button"
+              className="cc-btn px-2"
+              title={`Back to the standard ${formatMm(profile.carcass.shelfDepthClearance)} mm setback`}
+              onClick={() => setElementDepth(unit.id, item.id, null)}
+            >
+              Standard
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <span className="cc-label">Thickness</span>
+              <NumberField
+                className="cc-input text-right"
+                min={profile.editor.mmStep}
+                value={item.thickness_mm ?? G}
+                title="This piece only. A shelf carrying a microwave is thicker than the box round it."
+                onCommit={(v) => setElementThickness(unit.id, item.id, v)}
+              />
+            </div>
+            <div>
+              <span className="cc-label">Material</span>
+              <select
+                className="cc-input"
+                value={item.material_label || ''}
+                title="This piece only — the project's own boards, and the fronts"
+                onChange={(e) => {
+                  const pick = choices.find((c) => c.material_label === e.target.value);
+                  setElementMaterial(unit.id, item.id, pick || null);
+                }}
+              >
+                <option value="">Project carcass</option>
+                {choices.map((c) => (
+                  <option key={c.key} value={c.material_label}>{c.material_label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {(item.thickness_mm != null || item.material_label) && (
+            <div className="cc-row text-[11px] text-gold">
+              <span>Overridden — this piece only</span>
+              <button
+                type="button"
+                className="cc-btn px-2"
+                title="Back to the carcass board and the project material"
+                onClick={() => {
+                  setElementThickness(unit.id, item.id, null);
+                  setElementMaterial(unit.id, item.id, null);
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          )}
+
+          <p className="text-[11px] text-ink-400">
+            {locked
+              ? 'Screwed in place. Select it and it can still be made thicker or cut from another board.'
+              : 'Selected: dragging it in the canvas now pulls it in DEPTH. Escape hands the up-and-down drag back.'}
+          </p>
+        </>
+      )}
+    </section>
   );
 }
 

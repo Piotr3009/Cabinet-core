@@ -7,12 +7,42 @@
 // Pure functions — no React, no store imports.
 
 import { roundTo } from './format.js';
+import { resolveFinishes } from './design.js';
+
+/**
+ * What ONE piece is finished in, as a name a workshop can order against
+ * (turn 9, CLAUDE.md F4.5 / F6.3).
+ *
+ * Most specific first, which is the same order every other resolution in this
+ * app runs in:
+ *
+ *   1. the PIECE's own override — a 25 mm oak shelf in a white carcass
+ *      (CLAUDE.md F4). The engine puts it on the panel's meta because that is
+ *      where the override arrived as an input;
+ *   2. otherwise the project's finish for the sheet this piece is cut from,
+ *      which is the engine's own `material_role` and not a guess from the role:
+ *      a door, an END PANEL and a FILLER all come out of the front sheet.
+ *
+ * Null when the caller gave no design to resolve against — `buildBom` is used
+ * by tests and by callers that only want quantities, and a made-up label would
+ * be worse than none.
+ */
+function partMaterialLabel(panel, finishes) {
+  const own = panel.meta?.material_label;
+  if (own) return String(own);
+  if (!finishes) return null;
+  return (panel.material_role === 'front' ? finishes.front : finishes.carcass)?.label || null;
+}
 
 /**
  * @param {Array<{unit:object, result:object}>} entries
+ * @param {object} [context]  { design, profile } — supply both and every row
+ *                            carries the finish it is cut from, resolved per
+ *                            unit so a cabinet with its own door style is
+ *                            labelled with ITS material and not the project's.
  * @returns aggregated BOM
  */
-export function buildBom(entries) {
+export function buildBom(entries, { design = null, profile = null } = {}) {
   const units = [];
   const roleTotals = {};
   const cutRows = new Map();       // identical pieces merge across the project
@@ -25,12 +55,16 @@ export function buildBom(entries) {
   let frontEdging = 0;
 
   for (const { unit, result } of entries) {
+    // Per UNIT, not per project: a cabinet on its own door style is finished in
+    // that style's material, and its cut list has to say so.
+    const finishes = design ? resolveFinishes(unit, design, profile) : null;
     const rows = result.panels.map((p) => ({
       unit_num: result.unitNum,
       id: p.id,
       part: p.part,
       role: p.role,
       material_role: p.material_role,
+      material_label: partMaterialLabel(p, finishes),
       w: p.w,
       h: p.h,
       qty: p.qty,
@@ -52,7 +86,11 @@ export function buildBom(entries) {
       rt.edging_m += r.edge_m * r.qty;
       rt.thicknesses.add(r.thickness);
 
-      const key = `${r.part}|${r.w}|${r.h}|${r.thickness}|${r.edge}`;
+      // The MATERIAL is part of the identity of a cut piece: two 560 × 500
+      // shelves the same thickness are one line only if they come off the same
+      // sheet. Without it, the 25 mm oak shelf somebody overrode (CLAUDE.md F4)
+      // would merge into the white ones and be cut in white.
+      const key = `${r.part}|${r.w}|${r.h}|${r.thickness}|${r.edge}|${r.material_label || ''}`;
       const merged = cutRows.get(key);
       if (merged) merged.qty += r.qty;
       else cutRows.set(key, { ...r, qty: r.qty, units: new Set([r.unit_num]) });

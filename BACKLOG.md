@@ -299,3 +299,23 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     `variant: 'fixed'` znaczy od tury 8 PRZYKRĘCONA, a wcześniej znaczyło tyle co „półka".
     `migrateUnitShelves()` naprawia to na wejściu (cache i `loadProject`) i stempluje. Projekt,
     który trafi do silnika z pominięciem store'u (import, skrypt), tej migracji nie zobaczy.
+
+## DOPISANE W TURZE 9 (08.08)
+55. [MEDIUM] **Mitra ciągu ma się ZATRZYMYWAĆ na end panelu / infillu terminalnym,
+    a nie owijać.** Zgłoszone przez właściciela i przez niego zaparkowane na
+    późniejszą turę — nie było w zakresie tury 9. Dziś `engine/runs.js runEnd()`
+    zna cztery warunki końcowe (`wall` / `infill` / `end-panel` / `open`) i tylko
+    `open` robi zawrót z mitrą (`runTopInfill().returns`), więc SZKIELET decyzji
+    już jest; brakuje reguły, że terminalny element ZAMYKA ciąg jako ściana,
+    a górny element kończy się na jego licu zamiast obracać za niego róg. Dotyka
+    `runEnd()`, `runTopInfill()` i `engine/mitre.js infillMitre()` — nie dotyka
+    ani formatek, ani fixtures.
+56. [NOTA do #42 — X-RAY] **Przeprojektowanie X-raya zaplanowane na TURĘ 10,
+    czeka na zrzut referencyjny właściciela.** Pozycja #42 jest zamknięta jako
+    DONE (tura 7: przezroczystość płyty, okucia; tura 8: złącza) i nie jest
+    otwierana ponownie — to, co przychodzi w T10, to zmiana WYGLĄDU, nie zakresu:
+    Piotr ma dosłać ekran referencyjny i dopiero on rozstrzyga, co znaczy „dobry
+    X-ray". Do czasu zrzutu nie ma czego kodować i świadomie nie zgadujemy.
+    Liczby, które taka zmiana ruszy, są już wszystkie w jednym miejscu
+    (`profile.appearance.xray`, `profile.appearance.joinery`), więc jest to
+    zmiana wartości plus praca nad materiałem, nie przebudowa.

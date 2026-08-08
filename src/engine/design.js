@@ -10,7 +10,14 @@
 
 import { decorFinish } from './decors.js';
 
-export const DESIGN_SCHEMA = 1;
+// ─── Turn 9 (CLAUDE.md F5) ───
+// 2: the sheen scale went from 0–25 to 5–100 %. A stored 20 means "a mirror" on
+// the old scale and "nearly dead matt" on the new one, so it cannot simply be
+// read across — it has to be MIGRATED, once, and the stamp is what makes "once"
+// true. `migrateDesign` runs on every read (it is how every consumer normalises
+// a design), so a rule with no version behind it would multiply the same value
+// by four again on every render.
+export const DESIGN_SCHEMA = 2;
 
 export const FRONT_STYLE_OPTIONS = [
   { id: 'S', label: 'Shaker' },
@@ -68,10 +75,11 @@ export const DEFAULT_DESIGN = {
   // How the carcass is held together (profile.joinery). null = the profile's
   // default, which today is the only one there is.
   joinery: null,
-  // ─── Sheen (turn 8, CLAUDE.md F1) ───
-  // How glossy the SPRAYED surfaces of this job are, on the 0–25 scale the
-  // workshop already quotes on (profile.appearance.sheenScale). null = the
-  // profile's default, exactly like every other null in this object.
+  // ─── Sheen (turn 8; rescaled turn 9, CLAUDE.md F5) ───
+  // How glossy the SPRAYED surfaces of this job are, as a PERCENTAGE of gloss —
+  // 5 % dead matt to 100 % full gloss, in fives, which is how a lacquer is
+  // ordered (profile.appearance.sheenScale). null = the profile's default,
+  // exactly like every other null in this object.
   sheen: null,
 };
 
@@ -119,25 +127,64 @@ export function migrateDesign(design) {
     projectType: d.projectType ? String(d.projectType) : null,
     scope: d.scope === 'wall' ? 'wall' : 'room',
     joinery: d.joinery ? String(d.joinery) : null,
-    // `== null` and not a truthiness test: 0 is a legal sheen (dead matt), and
-    // Number(null) is 0, so either shortcut turns "not set" into "matt".
-    sheen: d.sheen != null && Number.isFinite(Number(d.sheen)) && Number(d.sheen) >= 0
-      ? Number(d.sheen)
-      : null,
+    // `== null` and not a truthiness test: Number(null) is 0, and a shortcut
+    // that treats 0 as "not set" would also treat a real stored 0 that way.
+    sheen: migrateSheen(d),
   };
 }
 
-// ─── Sheen (turn 8, CLAUDE.md F1) ───
-// Piotr's own scale, carried over from Spraying-Calc: 0 is dead matt and 25 is
-// a mirror, in the five-point steps a lacquer is specified in. It is here and
-// not in the 3D layer because it is a PROJECT decision — "this kitchen is a
-// 15" — and because the mapping to a renderer number has to be one formula in
-// one place or the settings panel and the picture will disagree about what a 15
-// looks like.
+// ─── The sheen migration (turn 9, CLAUDE.md F5) ───
 
-/** The values the slider may take: 0, 5, 10, 15, 20, 25 with the defaults. */
+/** The old scale's top. Anything at or under it, on a pre-schema-2 design, is old. */
+const LEGACY_SHEEN_MAX = 25;
+/** 0–25 → 5–100 is exactly ×4. */
+const LEGACY_SHEEN_FACTOR = 4;
+/** The new scale, for the clamp — the same numbers profile.appearance.sheenScale ships. */
+const SHEEN_FLOOR = 5;
+const SHEEN_CEILING = 100;
+
+/**
+ * A stored sheen, on the scale this version of the app speaks.
+ *
+ * Turn 8 wrote 0–25. Turn 9 asks in per-cent of gloss, 5–100 in fives, because
+ * that is how a lacquer is specified and ordered. The two overlap — 20 is a
+ * legal value on both scales and means opposite ends of the tin — so a stored
+ * number is only safe to read once you know WHICH scale wrote it, and that is
+ * what `schema` is for.
+ *
+ * One way, silent, once. A design that has been through this carries schema 2
+ * and is never touched again, which matters because this function runs on every
+ * read of every design in the app.
+ *
+ * The old 0 (dead matt) becomes 5, the flattest lacquer anybody actually sells:
+ * ×4 is 0, and the clamp lifts it onto the scale.
+ */
+function migrateSheen(stored) {
+  const raw = stored?.sheen;
+  if (raw == null || !Number.isFinite(Number(raw)) || Number(raw) < 0) return null;
+  const value = Number(raw);
+  const legacy = Number(stored?.schema) !== DESIGN_SCHEMA && value <= LEGACY_SHEEN_MAX;
+  const scaled = legacy ? value * LEGACY_SHEEN_FACTOR : value;
+  return Math.min(Math.max(scaled, SHEEN_FLOOR), SHEEN_CEILING);
+}
+
+// ─── Sheen (turn 8; rescaled turn 9, CLAUDE.md F5) ───
+// The industry's own scale: a lacquer is specified as a PERCENTAGE of gloss,
+// 5 % dead matt to 100 % full gloss, in fives. Turn 8 ran 0–25, which is the
+// same information in a language a paint supplier does not speak — and which
+// had a 0 on it, and there is no such thing as a lacquer with no sheen at all.
+//
+// It is here and not in the 3D layer because it is a PROJECT decision — "this
+// kitchen is a 60" — and because the mapping to a renderer number has to be one
+// formula in one place, or the settings panel and the picture will disagree
+// about what a 60 looks like.
+
+const SHEEN_FALLBACK = { min: 5, max: 100, step: 5, default: 60 };
+const scaleOf = (profile) => profile?.appearance?.sheenScale || SHEEN_FALLBACK;
+
+/** The values the slider may take: 5, 10, … 100 with the defaults. */
 export function sheenSteps(profile) {
-  const S = profile?.appearance?.sheenScale || { min: 0, max: 25, step: 5 };
+  const S = scaleOf(profile);
   const out = [];
   for (let v = S.min; v <= S.max + 1e-9; v += S.step) out.push(Math.round(v * 100) / 100);
   return out;
@@ -145,7 +192,7 @@ export function sheenSteps(profile) {
 
 /** This project's sheen: its own where it has set one, the profile's where not. */
 export function projectSheen(design, profile) {
-  const S = profile?.appearance?.sheenScale || { min: 0, max: 25, step: 5, default: 15 };
+  const S = scaleOf(profile);
   const stored = migrateDesign(design).sheen;
   const wanted = stored == null ? S.default : stored;
   return clampSheen(wanted, profile);
@@ -153,7 +200,7 @@ export function projectSheen(design, profile) {
 
 /** On the scale, and on the grid: a value between two steps lands on the nearer. */
 export function clampSheen(value, profile) {
-  const S = profile?.appearance?.sheenScale || { min: 0, max: 25, step: 5, default: 15 };
+  const S = scaleOf(profile);
   const v = Number(value);
   if (!Number.isFinite(v)) return S.default;
   const snapped = S.step > 0 ? Math.round((v - S.min) / S.step) * S.step + S.min : v;
@@ -161,27 +208,37 @@ export function clampSheen(value, profile) {
 }
 
 /**
- * The Spraying formula: `roughness = 1 − sheen / max`. 0 → 1.0 (dead matt),
- * 25 → 0.0 (a mirror), and every step in between is a twenty-fifth.
+ * The Spraying formula, on the per-cent scale: `roughness = 1 − sheen / 100`.
+ * 5 → 0.95 (dead matt), 50 → 0.5, 100 → 0.0 (full gloss).
+ *
+ * Written against the scale's own `max` rather than a literal 100, because that
+ * is the number the profile carries and CLAUDE.md rule 3 puts numbers there —
+ * with the shipped scale the two are the same thing.
  */
 export function roughnessFromSheen(sheen, profile) {
-  const S = profile?.appearance?.sheenScale || { min: 0, max: 25 };
-  const max = Number(S.max) || 25;
+  const max = Number(scaleOf(profile).max) || SHEEN_FALLBACK.max;
   const v = clampSheen(sheen, profile);
   return Math.min(1, Math.max(0, 1 - v / max));
 }
 
-/** What a sheen value is CALLED, so the slider is not six bare numbers. */
+/**
+ * What a sheen value is CALLED, so a slider with twenty stops is not twenty
+ * bare numbers. The words are the ones on a lacquer data sheet, and the bands
+ * are the ones a sprayer would put them in: 5–10 dead matt, up to 25 matt,
+ * eggshell, satin, semi-gloss, and full gloss at the top.
+ *
+ * Expressed as a SHARE of the scale's own maximum, so a workshop that reshapes
+ * the scale keeps the words in proportion to it.
+ */
 export function sheenLabel(sheen, profile) {
-  const S = profile?.appearance?.sheenScale || { min: 0, max: 25 };
-  const v = clampSheen(sheen, profile);
-  const share = v / (Number(S.max) || 25);
-  if (share <= 0) return 'Matt';
-  if (share <= 0.25) return 'Dead flat';
+  const max = Number(scaleOf(profile).max) || SHEEN_FALLBACK.max;
+  const share = clampSheen(sheen, profile) / max;
+  if (share <= 0.1) return 'Dead matt';
+  if (share <= 0.25) return 'Matt';
   if (share <= 0.45) return 'Eggshell';
   if (share <= 0.65) return 'Satin';
   if (share <= 0.85) return 'Semi-gloss';
-  return 'Mirror';
+  return 'Gloss';
 }
 
 /**
@@ -338,6 +395,19 @@ export function finishById(profile, id) {
  *
  * An id that no longer exists (a decor removed from a profile) falls back the
  * same way instead of rendering nothing.
+ *
+ * ─── TURN 9 (CLAUDE.md F6): SPRAY IS A FINISH ───
+ * A sprayed colour now comes back in the `front` slot as a finish of its own,
+ * ahead of any board — because paint COVERS the decor, exactly as it does in
+ * the workshop, and because everything downstream (the BOM panel, the PDF, the
+ * unit card, the part labels) reads this one function. Turn 8 kept the two
+ * apart and made every consumer remember to ask about `design.colour.front`
+ * separately, which is why a sprayed door could be printed as its carcass decor
+ * on a drawing while the 3D view had it right.
+ *
+ * `resolveUnitDesign` already resolves the colour most-specific-first — the
+ * unit's own, then its door style's, then the project's — so a spray chosen for
+ * ONE cabinet reaches its cut list and nobody else's.
  */
 export function resolveFinishes(unit, design, profile) {
   const d = migrateDesign(design);
@@ -350,7 +420,8 @@ export function resolveFinishes(unit, design, profile) {
     || A.finishes?.[0]
     || null;
 
-  const front = finishById(profile, resolved.doorStyle?.finish_id)
+  const front = sprayFinish(resolved.colour)
+    || finishById(profile, resolved.doorStyle?.finish_id)
     || finishById(profile, d.finish.front)
     || finishById(profile, A.defaultFrontFinish)
     || carcass;
@@ -366,4 +437,86 @@ export function colourLabel(colour) {
   const c = normaliseColour(colour);
   if (!c) return '—';
   return c.system === 'custom' ? c.hex : `${c.name} (${c.system})`;
+}
+
+/**
+ * What ONE element inside a cabinet may be made of (turn 9, CLAUDE.md F4.3).
+ *
+ * Deliberately short: the project's own carcass materials, 1 to 3 of them, plus
+ * the fronts. That is the same list Design Settings offers and the same list a
+ * workshop has actually bought board for — a per-shelf free-text material would
+ * be a fourth sheet nobody ordered, appearing on a cut list.
+ *
+ * `materials` is the assignment store's plain list (id + name), passed IN so
+ * this stays a pure function of data (CLAUDE.md rule 1).
+ *
+ * @returns {Array<{key:string, material_id:string|null, material_label:string}>}
+ */
+export function elementMaterialChoices(design, profile, materials = []) {
+  const d = migrateDesign(design);
+  const byId = new Map((materials || []).map((m) => [m.id, m]));
+  const out = d.carcass.types.map((t) => ({
+    key: t.id,
+    material_id: t.material_id || null,
+    // What the workshop calls this board: its decor if one is set, otherwise
+    // the material it has been assigned, otherwise the slot's own name.
+    material_label: finishById(profile, t.finish_id)?.label
+      || byId.get(t.material_id)?.name
+      || t.label,
+  }));
+  const { front } = resolveFinishes(null, d, profile);
+  out.push({
+    key: 'front',
+    // There is no ONE front material id at project level — a front material is
+    // a property of a door style — so the LABEL is what travels. It is the
+    // label the BOM, the PDF and the unit card already print for a front.
+    material_id: null,
+    material_label: front?.label || 'Fronts',
+  });
+  return out;
+}
+
+// ─── Sprayed fronts (turn 9, CLAUDE.md F6) ──────────────────────────────────
+
+/**
+ * What a SPRAYED finish is called: "RAL 3005 Wine Red spray", "F&B Railings 31
+ * spray", or the bare hex plus "spray" for a colour somebody typed.
+ *
+ * ONE convention, and it lives here rather than in each of the four places a
+ * finish is printed — the BOM panel, the PDF, the unit card's title block and
+ * the part labels all read the finish object this produces, so none of them can
+ * invent a second way of naming the same tin of paint.
+ *
+ * The system goes in FRONT of the name because that is how it is ordered: a
+ * workshop rings a supplier and says "RAL 3005", not "3005 Wine Red, RAL".
+ */
+export function sprayFinishLabel(colour) {
+  const c = normaliseColour(colour);
+  if (!c) return null;
+  return c.system === 'custom' ? `${c.hex} spray` : `${c.system} ${c.name} spray`;
+}
+
+/**
+ * A sprayed colour, dressed as a FINISH.
+ *
+ * Turn 8 kept the two apart: `design.finish.front` was a board (a melamine or a
+ * decor) and `design.colour.front` was paint, and everything downstream had to
+ * remember to ask about both. That is why a sprayed front printed as its
+ * CARCASS decor on a unit card while the 3D view showed it correctly painted.
+ *
+ * A sprayed front is a finish like any other — it is what the piece is finished
+ * IN — so it is returned as one, and `resolveFinishes` hands it out in the
+ * `front` slot. `kind: 'spray'` is what tells a caller the difference; the
+ * absence of a `texture` is what stops it being treated as a decor.
+ */
+export function sprayFinish(colour) {
+  const c = normaliseColour(colour);
+  if (!c) return null;
+  return {
+    id: `spray:${c.hex}`,
+    label: sprayFinishLabel(c),
+    kind: 'spray',
+    hex: c.hex,
+    colour: c,
+  };
 }

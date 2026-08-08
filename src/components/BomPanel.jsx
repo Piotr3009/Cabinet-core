@@ -27,7 +27,10 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
 
   const [tab, setTab] = useState('parts');
   const entries = useMemo(() => allResults(), [units, allResults]);
-  const bom = useMemo(() => buildBom(entries), [entries]);
+  // The design and the profile go in so every row carries the finish it is cut
+  // from — a sprayed front says "RAL 3005 Wine Red spray", an overridden shelf
+  // says its own material (turn 9, CLAUDE.md F4.5 / F6.3).
+  const bom = useMemo(() => buildBom(entries, { design, profile }), [entries, design, profile]);
   const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
   const hardware = useMemo(() => hardwareDemand(bom, assignments, materials), [bom, assignments, materials]);
   const boardCost = demandCost(demand);
@@ -66,6 +69,12 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
               <tr>
                 <th className="text-left font-normal px-2 py-1.5">Unit</th>
                 <th className="text-left font-normal px-2 py-1.5">Panel</th>
+                {/* Turn 9 (CLAUDE.md F4.5 / F6.3): what this ONE piece is cut
+                    from. A 25 mm shelf somebody overrode is a 25 mm part with
+                    its own material here, and a sprayed front reads
+                    "RAL 3005 Wine Red spray" — the same words the drawing and
+                    the PDF use, because all three read one resolver. */}
+                <th className="text-left font-normal px-2 py-1.5">Material</th>
                 <th className="text-right font-normal px-2 py-1.5">W</th>
                 <th className="text-right font-normal px-2 py-1.5">H</th>
                 <th className="text-center font-normal px-2 py-1.5">Qty</th>
@@ -237,7 +246,7 @@ function FragmentRows({ unit }) {
   return (
     <>
       <tr className="bg-shell-700/60">
-        <td colSpan={7} className="px-2 py-1 text-[11px] uppercase tracking-wide text-gold">
+        <td colSpan={8} className="px-2 py-1 text-[11px] uppercase tracking-wide text-gold">
           {unit.unitNum} · {unit.type} · {unit.totals.pieces_total} pcs
         </td>
       </tr>
@@ -245,6 +254,9 @@ function FragmentRows({ unit }) {
         <tr key={`${unit.unitId}-${r.id}`} className="border-b border-shell-600/40 text-ink-100">
           <td className="px-2 py-1 text-ink-400">{r.unit_num}</td>
           <td className="px-2 py-1">{r.id}</td>
+          <td className="px-2 py-1 text-ink-400 max-w-[180px] truncate" title={r.material_label || ''}>
+            {formatMm(r.thickness)} · {r.material_label || '—'}
+          </td>
           <td className="px-2 py-1 text-right tabular-nums">{formatMm(r.w)}</td>
           <td className="px-2 py-1 text-right tabular-nums">{formatMm(r.h)}</td>
           <td className="px-2 py-1 text-center">{r.qty}</td>

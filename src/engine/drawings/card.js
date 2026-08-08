@@ -47,9 +47,13 @@ export function unitCardSheet({ result, unit, project = {}, profile, format = 'a
       // The decor's own attributed name, in full — a decor is never named
       // anywhere in this app without EGGER in front of it (engine/decors.js).
       Carcass: finishes.carcass?.label || '-',
-      Fronts: resolved.colour
-        ? `${finishes.front?.label || '-'} / ${resolved.colour.name}`
-        : (finishes.front?.label || '-'),
+      // ─── Turn 9 (CLAUDE.md F6) ───
+      // A sprayed front IS a finish now (engine/design.js `sprayFinish`), so
+      // this row is one label again: "RAL 3005 Wine Red spray". Turn 8 printed
+      // the board finish and the colour side by side because the two were kept
+      // apart, which on a decor-carcass job read as "EGGER H1180 … / Hague" —
+      // a decor the doors were not made of, next to the colour they were.
+      Fronts: finishes.front?.label || '-',
     },
   };
 

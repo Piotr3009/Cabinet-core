@@ -81,6 +81,16 @@ const FRAG_NORMAL = /* glsl */`
   vec3 ccFaceNormal = ccFace * ccSign;
   // 1 hard against an edge, 0 once past the break.
   vec3 ccRoll = (1.0 - ccFace) * (1.0 - smoothstep(0.0, max(ccBevel, 1e-6), ccDist));
+  // ─── Band limit (hotfix 08.08, second of the day) ───
+  // The roll is 0.8 mm wide. Seen from across the room that is under a pixel,
+  // and a normal that turns 90° inside one pixel does not shade as an edge —
+  // it shades as a staircase of glints, the bright cousin of the peel moiré.
+  // fwidth(ccDist) is millimetres-of-edge-distance per pixel: at 0.3 of the
+  // bevel width per pixel the roll still has ~3 px to breathe (full effect),
+  // by 1.0 it is sub-pixel and fades to a plain corner the MSAA can handle.
+  vec3 ccPxSpan = fwidth(ccDist) / max(ccBevel, 1e-6);
+  vec3 ccEdgeBand = vec3(1.0) - smoothstep(vec3(0.3), vec3(1.0), ccPxSpan);
+  ccRoll *= ccEdgeBand;
   vec3 ccBentObj = normalize(ccFaceNormal + ccRoll * ccSign * ccBevelStrength);
   // ─── Orange peel (turn 8, CLAUDE.md F1) ───
   // A sprayed surface is not optically flat. The gun leaves a fine cellular

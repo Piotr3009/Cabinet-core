@@ -635,23 +635,28 @@ export const DEFAULT_CABINET_PROFILE = {
       // warm grey a timber or a screed floor bounces back. It casts NOTHING:
       // the key is still the only shadow in the scene.
       hemisphere: { sky: '#fdf6e8', ground: '#c8c0b0', intensity: 0.5 },
-      // ─── The lights that put a SHINE on a door (hotfix 08.08) ───
+      // ─── The lights that put a SHINE on a door (hotfix 08.08, tuned same day) ───
       // PSW's gloss was never an environment map — its painted wood has none.
-      // It is a dozen close point lights whose hotspots TRAVEL across a panel
-      // as the camera orbits; that movement is what the eye reads as lacquer.
-      // Four are enough at room scale: a warm pair out front at door height,
-      // a wider pair off the shoulders. Positions are FRACTIONS of the rig's
-      // own distance from the furniture's centre (same convention as the
-      // key/fill/rim), so they scale with the job. No shadows — one shadow
-      // caster is the rule, and these are here to glint, not to model.
+      // It is close point lights whose hotspots TRAVEL across a panel as the
+      // camera orbits; that movement is what the eye reads as lacquer. Two
+      // "jupiters" high in the front corners give the top-to-bottom sheen, two
+      // soft viewer-side points carry the glint through the mirror angle.
+      //
+      // INTENSITIES ARE PHYSICAL (three r180, decay 2, candela-like): a point
+      // light fades with distance SQUARED, so the working numbers live in the
+      // teens — 0.9 here would be invisible, and 45 was measured to blow the
+      // whole scene out. Positions are FRACTIONS of the rig's own distance from
+      // the furniture's centre (same convention as the key/fill/rim), so they
+      // scale with the job. No shadows — one shadow caster is the rule, and
+      // these are here to glint, not to model.
       points: [
-        { x:  0.30, y: 0.10, z: 0.85, intensity: 0.9,  colour: '#fff8f0' },
-        { x: -0.30, y: 0.00, z: 0.85, intensity: 0.9,  colour: '#fff4e8' },
-        { x:  0.95, y: 0.30, z: 0.75, intensity: 0.65, colour: '#fff8f0' },
-        { x: -0.95, y: 0.30, z: 0.75, intensity: 0.65, colour: '#fff8f0' },
+        { x:  0.45, y: 0.50, z: 0.30, intensity: 16, colour: '#fff6ea' },
+        { x: -0.45, y: 0.50, z: 0.30, intensity: 16, colour: '#fff6ea' },
+        { x:  0.60, y: 0.45, z: 0.85, intensity: 8,  colour: '#fff8f0' },
+        { x: -0.60, y: 0.45, z: 0.85, intensity: 8,  colour: '#fff4e8' },
       ],
       // Falloff limit as a multiple of the rig distance; decay stays physical.
-      pointReach: 3,
+      pointReach: 4,
       // ─── The bounce the rig cannot produce ───
       // A three-light studio rig is built for a subject on a seamless backdrop.
       // Point it at a ROOM and the walls come out grey, because most of what

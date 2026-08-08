@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
+import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
 import {
   CAMERA_PRESETS, cameraPreset, framedCamera, lensFov, renderFilename, renderJob,
   renderSize, resolutionById, shadowQuality, slug, subjectBounds,
@@ -246,7 +246,23 @@ test('the render is the LESS acne-prone picture, not the more — turn 8 had it 
 test('the contact shadow is a run, baked once, and it knows how high to look', () => {
   const C = P.appearance.contactShadow;
   assert.ok(C.opacity > 0 && C.opacity <= 1);
-  assert.ok(C.blur > 0, 'a room has no point source in it, so no hard edge either');
+  // ─── Turn 10 (CLAUDE.md F2) ───
+  // `blur` is gone and `blurMm` is here instead, and the WHY is the whole of
+  // why turn 9's shadow dissolved: drei's blur is a fraction of the CANVAS, not
+  // a distance, so the same number is twice the softness on half a bake — and
+  // the bake is now sized to reach from the room's centre out to wherever the
+  // furniture is standing, so it is never the same size twice. Millimetres of
+  // smear divided by the canvas they are smeared across is the only form of
+  // this number that survives a different job (3d/Scene.jsx FloorShadow).
+  assert.equal(C.blur, undefined, 'a UV fraction is not a softness — see blurMm');
+  assert.ok(C.blurMm > 0, 'a room has no point source in it, so no hard edge either');
+  assert.ok(C.blurMm < 100, '…and a contact shadow is a contact shadow, not a fog bank');
+  // The bake grows with the room, so its RESOLUTION has to grow with it or a
+  // leg stops being resolved — which is exactly what turn 9's accidental 18 m
+  // canvas did to it. Both halves of that are numbers here.
+  assert.ok(C.texelMm > 0 && C.texelMm <= 8, 'a leg is 40 mm: a texel has to be a fraction of it');
+  assert.ok(C.maxResolution >= 512 && C.maxResolution <= 2048,
+    'the ceiling on a target that is allocated twice and re-baked on every layout change');
   // The shadow camera stops well below a wall unit, or a cabinet hanging at
   // 1500 mm prints a second blob on the floor under it.
   assert.ok(C.farMm > 0 && C.farMm < P.projectHeights.wallMount,
@@ -374,4 +390,188 @@ test('the editor keeps the cheap settings; the render is where the cost is', () 
   assert.ok(A.materials.melamine.roughness - A.materials.lacquer.roughness > 0.15);
   assert.equal(A.materials.melamine.clearcoat, 0, 'a melamine board has no clear coat over it');
   assert.ok(A.materials.lacquer.clearcoat > 0.2, 'a sprayed front does');
+});
+
+// ─── Turn 10 (CLAUDE.md F1/F3/F5): the rig's new SHAPE ───────────────────────
+//
+// Values are taste and are settled with screenshots (verify/t10). What is
+// tested here is the shape: that the jupiters are a LIST a workshop can grow,
+// that a stored profile can say how many it wants without an upgrade putting
+// one back, that the render pass has a knob for them like every other role,
+// and that the room's three tones exist at all. A number nobody can reach from
+// profile.js is a number that is not in profile.js.
+
+test('the jupiters are a list of spots, aimed down-across at about 45°', () => {
+  const S = P.appearance.studio;
+  assert.ok(Array.isArray(S.spots) && S.spots.length >= 2,
+    'CLAUDE.md F1.2: ship with two, in the upper front corners');
+  for (const s of S.spots) {
+    // Positions are FRACTIONS of the rig distance, the same convention the key,
+    // the fill, the rim and the points use, so the rig scales with the job.
+    for (const axis of ['x', 'y', 'z']) {
+      assert.equal(typeof s[axis], 'number', `a spot needs a ${axis}`);
+      assert.ok(Math.abs(s[axis]) <= 3, `${axis} is a fraction of the rig distance, not a metre`);
+    }
+    assert.ok(s.y > 0, 'a jupiter hangs ABOVE the furniture');
+    assert.ok(s.z > 0, '…and in FRONT of it — the owner asked for the front corners');
+    // The angle below the horizon, which is the whole of "≈45° w dół".
+    const down = (Math.atan2(s.y, Math.hypot(s.x, s.z)) * 180) / Math.PI;
+    assert.ok(down > 30 && down < 60, `aimed ${down.toFixed(1)}° down, which is not "about 45"`);
+    // Physical units (three r0.180, decay 2): an intensity of 1 at four metres
+    // is invisible. This is the band the F4 loop measured as useful.
+    assert.ok(s.intensity >= 5 && s.intensity <= 200,
+      `${s.intensity} cd at ~4 m is either invisible or a blowout`);
+    assert.ok(s.angle > 0.3 && s.angle < 1.0, 'a cone, not a hemisphere and not a laser');
+    assert.ok(s.penumbra >= 0 && s.penumbra <= 1, 'penumbra is a fraction of the cone');
+    assert.match(s.colour, /^#[0-9a-f]{6}$/i);
+    assert.equal(typeof s.castShadow, 'boolean');
+  }
+});
+
+test('the shadow budget is two casters, and who spends it is a profile decision', () => {
+  const S = P.appearance.studio;
+  assert.ok(S.shadowCasters >= 1 && S.shadowCasters <= 2,
+    'CLAUDE.md F1.4: at most two shadow casters in the whole rig');
+  assert.equal(typeof S.keyCastsShadow, 'boolean',
+    'the key keeping or losing its shadow is data — the alternative had to be tried by looking');
+  const spent = (S.keyCastsShadow ? 1 : 0) + S.spots.filter((s) => s.castShadow).length;
+  assert.ok(spent <= S.shadowCasters, `${spent} casters against a budget of ${S.shadowCasters}`);
+  assert.ok(spent >= 1, 'something has to cast, or nothing is standing on anything');
+  // Whichever loses the shadow keeps LIGHTING (F1.4) — no light is switched off
+  // to save a map.
+  for (const s of S.spots) assert.ok(s.intensity > 0);
+});
+
+/**
+ * A STORED profile, the way the store writes one: the whole thing, with one
+ * corner of it changed. `migrateCabinetProfile` deliberately throws away a
+ * fragment that carries none of the structural sections (it cannot tell a
+ * partial profile from a corrupt one), so a test that passes it four keys is
+ * testing the bail-out and not the merge.
+ */
+const stored = (patch) => migrateCabinetProfile({
+  ...P,
+  ...patch,
+  appearance: { ...P.appearance, ...patch.appearance },
+  render: { ...P.render, ...patch.render },
+});
+
+test('a workshop can change the COUNT of the lights, not just their numbers', () => {
+  // The count is half the setting — "maybe a second one lower" is a third entry
+  // in profile.js and nothing at all in a component. Merging entry by entry
+  // would silently graft the app's second spot back onto a rig somebody had
+  // deliberately cut down to one.
+  const one = stored({
+    appearance: { studio: { spots: [{ x: 0, y: 0.7, z: 0.5, intensity: 40, angle: 0.5, penumbra: 0.7, colour: '#ffffff', castShadow: false }] } },
+  });
+  assert.equal(one.appearance.studio.spots.length, 1, 'one spot means one spot');
+  assert.equal(one.appearance.studio.spots[0].intensity, 40);
+  // …and everything the entry did not mention still comes from the app.
+  assert.equal(one.appearance.studio.key, P.appearance.studio.key);
+
+  const three = stored({
+    appearance: {
+      studio: {
+        spots: [
+          ...P.appearance.studio.spots,
+          { x: 0, y: 0.25, z: 0.9, intensity: 12, angle: 0.7, penumbra: 0.9, colour: '#fff4e6', castShadow: false },
+        ],
+      },
+    },
+  });
+  assert.equal(three.appearance.studio.spots.length, 3, 'and the lower one the owner floated is four lines');
+
+  // A profile that has never heard of turn 10 takes the app's rig whole.
+  const old = stored({ appearance: { studio: { ...P.appearance.studio, ambient: 0.9, spots: undefined } } });
+  assert.deepEqual(old.appearance.studio.spots, P.appearance.studio.spots);
+  assert.equal(old.appearance.studio.ambient, 0.9, 'while still keeping what it DID say');
+
+  // Half-written entries cannot reach three.js: an intensity of undefined is a
+  // light that silently does nothing, which is the worst kind.
+  const junk = stored({
+    appearance: { studio: { spots: [{ x: 0, y: 0.6, z: 0.4 }, null, { x: 0, y: 0.6, z: 0.4, intensity: '18' }] } },
+  });
+  assert.equal(junk.appearance.studio.spots.length, 1);
+  assert.equal(junk.appearance.studio.spots[0].intensity, 18, 'and a string becomes a number');
+});
+
+test('the glints are still a list, even though this turn ships it empty', () => {
+  // CLAUDE.md F1.5: the orbit test said the spots carry the travelling
+  // highlight on their own, so the array is emptied — a DATA change. The
+  // structure has to survive it or the decision is not reversible in profile.
+  assert.ok(Array.isArray(P.appearance.studio.points));
+  const revived = stored({
+    appearance: { studio: { points: [{ x: 0.6, y: 0.45, z: 0.85, intensity: 9, colour: '#fff8f0' }] } },
+  });
+  assert.equal(revived.appearance.studio.points.length, 1);
+  assert.equal(revived.appearance.studio.points[0].intensity, 9);
+});
+
+test('the render pass has a knob for the spots, like every other role', () => {
+  // CLAUDE.md F1.6. The capture loop skips a role it does not recognise, so the
+  // rig would work without this — and that is exactly why it has to be here: a
+  // knob that exists for four of the five lights and silently not for the fifth
+  // is a trap, not a saving (3d/renderCapture.js reads it by role name).
+  const L = P.render.lightScale;
+  for (const role of ['ambient', 'key', 'fill', 'rim', 'point', 'spot']) {
+    assert.equal(typeof L[role], 'number', `no lightScale for ${role}`);
+    assert.equal(L[role], 1, 'one rig: the still is lit exactly as the working view is');
+  }
+  const tuned = stored({ render: { lightScale: { ...P.render.lightScale, spot: 1.4 } } });
+  assert.equal(tuned.render.lightScale.spot, 1.4);
+  assert.equal(tuned.render.lightScale.key, 1, 'and the others are untouched');
+  // A profile saved before the jupiters existed has five roles in its
+  // lightScale. Spread wholesale it would DELETE the sixth and leave the spots
+  // with no knob — the exact trap this phase is about, one level up.
+  const preTurn10 = stored({
+    render: { lightScale: { ambient: 1, key: 1.2, fill: 1, rim: 1, point: 1 } },
+  });
+  assert.equal(preTurn10.render.lightScale.spot, 1, 'the spot knob survives an old profile');
+  assert.equal(preTurn10.render.lightScale.key, 1.2, '…and the old profile still wins where it spoke');
+});
+
+test('the room is three tones and two emissions, and the floor is the darker one', () => {
+  // CLAUDE.md F3. "The back wall and the floor melt into one white blur" was
+  // three values inside 5 % of each other with 42 % of both nailed on as
+  // emission. Tested as an ORDER rather than as hexes, because the hexes are
+  // taste and the order is the requirement.
+  const R = P.appearance.room;
+  for (const key of ['wall', 'floor', 'background']) {
+    assert.match(R[key], /^#[0-9a-f]{6}$/i, `${key} is a colour`);
+  }
+  const lum = (hex) => {
+    const n = hex.replace('#', '');
+    return (0.299 * parseInt(n.slice(0, 2), 16)
+      + 0.587 * parseInt(n.slice(2, 4), 16)
+      + 0.114 * parseInt(n.slice(4, 6), 16)) / 255;
+  };
+  const warmth = (hex) => {
+    const n = hex.replace('#', '');
+    return parseInt(n.slice(0, 2), 16) - parseInt(n.slice(4, 6), 16);
+  };
+  assert.ok(lum(R.background) > lum(R.wall),
+    'the background is what is seen ABOVE the walls and must not read as a surface');
+  assert.ok(lum(R.wall) - lum(R.floor) > 0.02, 'a floor a workshop can tell from a wall');
+  assert.ok(lum(R.wall) - lum(R.floor) < 0.25, '…and this is a workshop tool, not a showroom render');
+  assert.ok(warmth(R.floor) > warmth(R.wall), 'the floor is the warmer one: timber, screed, tile');
+  assert.ok(lum(R.floor) > 0.7, 'still a light room — nothing here is a dark floor');
+
+  // Emission is the part of a surface that no light shapes and NO SHADOW
+  // DARKENS. The wall is lit by almost nothing else and keeps the most of it;
+  // the floor is the surface whose whole job is to receive a shadow.
+  assert.ok(R.bounce.wall > R.bounce.floor, 'the floor carries less of itself as light than the wall');
+  assert.ok(R.bounce.floor >= 0 && R.bounce.wall <= 0.5);
+  assert.ok(R.bounce.wall < P.appearance.studio.roomBounce,
+    'turn 10 takes the bounce DOWN — 0.42 of a wall no shadow can reach was most of the white blur');
+
+  // …and the drop that keeps the room out of the contact-shadow bake and the
+  // blob a hair proud of the floor (3d/Scene.jsx FloorShadow says why it has to
+  // be the room that moves and not the shadow).
+  assert.ok(R.floorOffsetMm > 0 && R.floorOffsetMm <= 2,
+    'far enough not to z-fight, near enough to be under a pixel at any orbit');
+
+  const tinted = stored({ appearance: { room: { floor: '#d8cfbe' } } });
+  assert.equal(tinted.appearance.room.floor, '#d8cfbe');
+  assert.equal(tinted.appearance.room.wall, P.appearance.room.wall, 'and the rest is still the app’s');
+  assert.deepEqual(tinted.appearance.room.bounce, P.appearance.room.bounce);
 });

@@ -22,7 +22,7 @@ import { categoryOf } from '../engine/types.js';
 // capture), not its window geometry. Preview is 3D from the start (SPEC 7).
 
 // Hands the WebGL canvas to the PDF exporter without a second render pass.
-function CaptureRig({ onReady }) {
+function CaptureRig({ onReady, background }) {
   const { gl, scene, camera } = useThree();
   useEffect(() => {
     if (!onReady) return undefined;
@@ -36,14 +36,18 @@ function CaptureRig({ onReady }) {
       out.width = Math.max(1, Math.round(src.width * scale));
       out.height = Math.max(1, Math.round(src.height * scale));
       const ctx = out.getContext('2d');
-      ctx.fillStyle = '#fafaf8';           // JPEG has no alpha channel
+      // JPEG has no alpha channel, so the sheet behind the canvas has to be
+      // painted — and it is painted the SCENE's own background (turn 10, F3),
+      // not a literal, or a workshop that retones its room gets a PDF with a
+      // hairline of the old colour around every 3D view.
+      ctx.fillStyle = background;
       ctx.fillRect(0, 0, out.width, out.height);
       ctx.drawImage(src, 0, 0, out.width, out.height);
       return { dataUrl: out.toDataURL('image/jpeg', quality), width: out.width, height: out.height };
     };
     onReady(capture);
     return () => onReady(null);
-  }, [gl, scene, camera, onReady]);
+  }, [gl, scene, camera, onReady, background]);
   return null;
 }
 
@@ -157,6 +161,20 @@ function Environment({ intensity, on }) {
  * so the shadow between them simply is not resolved. It is fitted to the
  * FURNITURE now, with `studio.shadowPadding` of margin, so every texel lands on
  * something that casts a shadow.
+ *
+ * ─── Turn 10 (CLAUDE.md F1): THE JUPITERS ───
+ *
+ * Piotr asked for the light in the language of the trade — two studio spots in
+ * the upper front corners, aimed about 45° down across the furniture. Turn 9's
+ * four point lights were the wrong instrument: a point light has no direction,
+ * so it lit the ceiling and the back wall as eagerly as the doors and left no
+ * POOL anywhere for the eye to read depth off.
+ *
+ * The spots come out of `profile.appearance.studio.spots`, which is an ARRAY
+ * because the count is half the setting — "maybe a second one lower" is four
+ * lines in profile.js and nothing at all in this file. Their positions are
+ * fractions of the rig distance, exactly as the key, fill, rim and points are,
+ * so the whole rig scales with the job instead of being tuned for one kitchen.
  */
 function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
   const key = useRef(null);
@@ -192,6 +210,24 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
   const reach = fit.radius;
   const distance = Math.max(reach * 2.2, roomHeight * 1.6);
 
+  // ─── The shadow budget (turn 10, CLAUDE.md F1.4) ───
+  // Two casters in the whole rig, counted here rather than trusted to the
+  // profile: a workshop editing `spots` by hand must not be able to hand the
+  // working view five depth passes by ticking five boxes. The key is counted
+  // first because it is the one the rest of the app is fitted around
+  // (`ShadowFit`, the frustum below), and a spot that loses its budget keeps
+  // LIGHTING — it just stops writing a map.
+  const keyCasts = studio.keyCastsShadow !== false;
+  const budget = studio.shadowCasters ?? 2;
+  const spots = useMemo(() => {
+    let left = Math.max(0, budget - (keyCasts ? 1 : 0));
+    return (studio.spots || []).map((s) => {
+      const casts = Boolean(s.castShadow) && left > 0;
+      if (casts) left -= 1;
+      return { ...s, casts };
+    });
+  }, [studio.spots, keyCasts, budget]);
+
   return (
     <>
       {/* Tagged by ROLE, so a render can still rebalance them
@@ -218,7 +254,11 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
         userData={{ ccLight: 'key' }}
         position={[fit.centre[0] + distance * 0.55, fit.centre[1] + distance * 0.85, fit.centre[2] + distance * 0.7]}
         intensity={studio.key}
-        castShadow
+        // Turn 10 (CLAUDE.md F1.4) makes this a profile decision rather than a
+        // fact of the file, because the alternative — handing the shadow to a
+        // jupiter and letting the key light only — had to be tried by LOOKING.
+        // It was, and the key won: see profile.appearance.studio.keyCastsShadow.
+        castShadow={keyCasts}
         shadow-mapSize={[shadow.mapSize, shadow.mapSize]}
         shadow-bias={shadow.bias}
         // ─── Turn 9 (CLAUDE.md F1): the stripes ───
@@ -254,11 +294,47 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
         position={[fit.centre[0] - distance * 0.3, fit.centre[1] + distance * 0.6, fit.centre[2] - distance * 0.9]}
         intensity={studio.rim}
       />
-      {/* The glints (hotfix 08.08). Point sources, so their highlights MOVE
-          across a door as the camera orbits — which is the whole difference
-          between a lacquered front and a rectangle of colour. Positions are
-          fractions of the rig distance (see profile.appearance.studio.points);
-          none casts a shadow. */}
+      {/* ─── The jupiters (turn 10, CLAUDE.md F1) ───
+          Hung in the upper front corners and aimed DOWN-ACROSS at the same fit
+          centre everything else in this rig is aimed at, so the angle below the
+          horizon is atan(y / hypot(x, z)) — 44° at the shipped numbers.
+
+          `distance` is the falloff cutoff AND, for a caster, the shadow
+          camera's far plane: three takes `light.distance` for it in
+          SpotLightShadow.updateMatrices (read before it was relied on —
+          CLAUDE.md rule 13). `decay={2}` is three's own default in r0.180 and
+          is written out anyway, because it is the reason the intensities in
+          profile are in the twenties rather than around 1. */}
+      {spots.map((s, i) => (
+        <spotLight
+          key={`ccSpot${i}`}
+          userData={{ ccLight: 'spot' }}
+          position={[
+            fit.centre[0] + distance * s.x,
+            fit.centre[1] + distance * s.y,
+            fit.centre[2] + distance * s.z,
+          ]}
+          target={target}
+          intensity={s.intensity}
+          color={s.colour}
+          angle={s.angle}
+          penumbra={s.penumbra}
+          distance={distance * (studio.spotReach ?? 4)}
+          decay={2}
+          castShadow={s.casts}
+          shadow-mapSize={[shadow.mapSize, shadow.mapSize]}
+          shadow-bias={shadow.bias}
+          shadow-normalBias={shadow.normalBias}
+          shadow-radius={shadow.radius}
+          shadow-camera-near={Math.max(0.05, distance * 0.1)}
+        />
+      ))}
+      {/* The glints (hotfix 08.08; EMPTIED turn 10, CLAUDE.md F1.5). Point
+          sources whose highlights move across a door as the camera orbits —
+          which the F4 orbit test showed the spots already do on their own, so
+          the shipped array has nothing in it. The loop stays, because the
+          decision is data: profile.appearance.studio.points says why, and one
+          line there brings them back. None casts a shadow. */}
       {(studio.points || []).map((p, i) => (
         <pointLight
           key={`ccPoint${i}`}
@@ -328,7 +404,7 @@ function AddPluses({
 }
 
 /**
- * ─── The dark under the run (turn 9, CLAUDE.md F1.3) ───
+ * ─── The dark under the run (turn 9, CLAUDE.md F1.3; REBUILT turn 10, F2) ───
  *
  * The key light comes in from off to one side, so its shadow lands BESIDE the
  * furniture and the floor between the legs stays as bright as the open room.
@@ -336,14 +412,57 @@ function AddPluses({
  * it is the wrong shadow, not a bad one.
  *
  * Turn 6 answered it with a hand-painted quad per unit. This is the same idea
- * done for the RUN: one soft blob, fitted to the same furniture bounds the key
+ * done for the RUN: one soft blob covering the same furniture bounds the key
  * light's frustum is fitted to (`ShadowFit`), so six cabinets standing side by
  * side sit in one shadow instead of six with a bright seam at every joint.
  *
- * The cost is paid ONCE. `frames={1}` bakes a single depth pass and then stops
- * for ever; the `key` below re-mounts it — and so re-bakes it — when, and only
- * when, the furniture has actually moved. Orbiting the scene, which is what a
- * joiner does all day, costs nothing at all.
+ * The cost is paid on LAYOUT, never per frame: `frames={1}` bakes one depth
+ * pass per mount and the `key` below re-mounts it only when the furniture has
+ * actually moved. Orbiting the scene, which is what a joiner does all day,
+ * costs nothing at all.
+ *
+ * ═══ TURN 10: WHY THIS IS CENTRED ON THE ROOM AND NOT ON THE FURNITURE ═══
+ *
+ * Turn 9 gave the blob `position={[cx, 1 mm, cz]}` — over the furniture, a hair
+ * above the floor — which is the obvious thing to write and is why the shadow
+ * has been INVISIBLE on every machine since. It has nothing to do with GPUs.
+ *
+ * Read drei's ContactShadows (CLAUDE.md rule 13, and this is the second time
+ * this turn that reading it was the whole job). It bakes the scene through a
+ * depth override into a render target, then blurs that target in two passes by
+ * rendering a full-size quad — `blurPlane` — through the SAME orthographic
+ * camera. `blurPlane` is created with `new THREE.Mesh(planeGeometry)` and is
+ * never added to the group, so its world matrix is the IDENTITY: it sits at the
+ * world origin, flat, whatever the group is doing. The camera, being a child of
+ * the group, goes wherever the group goes. Move the group and the two stop
+ * agreeing:
+ *
+ *   • x/z offset — the blur pass reads and writes a region displaced by exactly
+ *     (cx, cz) from the bake it is meant to be smoothing;
+ *   • y offset — worse. The camera is rotated to look UP (`rotation-x` π/2) and
+ *     drei's `near` defaults to 0, so lifting the group by a millimetre puts
+ *     the quad ONE MILLIMETRE BEHIND the near plane. It is clipped, nothing is
+ *     drawn, and the blur pass overwrites the perfectly good bake with an empty
+ *     target. Measured, not deduced: probing the target between the two calls
+ *     gives max alpha 255 before the blur and 0 after it (BUILD-LOG, F2.2).
+ *
+ * So the blob is anchored where drei needs it — the world origin, at floor
+ * level — and it is the ROOM that steps aside: `appearance.room.floorOffsetMm`
+ * drops the room's own surfaces half a millimetre so the shadow camera cannot
+ * see the floor (which would otherwise bake as one solid rectangle: three's
+ * `allowOverride = false` means "render with your OWN material", not "skip me")
+ * and so the blob is a hair proud of it instead of z-fighting with it.
+ *
+ * The price of a fixed anchor is that the canvas must now reach from the room's
+ * centre out to the furniture wherever it stands, so it is bigger than the run.
+ * Both of the things that made turn 9's 18 m canvas useless are therefore
+ * carried explicitly rather than hoped for:
+ *
+ *   • `resolution` is chosen to hold a target TEXEL SIZE in millimetres, so a
+ *     leg is the same number of texels in a 2 m vanity and a 6 m kitchen;
+ *   • `blur` is derived from `blurMm`, a real world smear, because drei's blur
+ *     is in UV units — the same number is twice the softness on half the
+ *     canvas, which is precisely how turn 9's shadow dissolved.
  */
 function FloorShadow({ subject, profile }) {
   const C = profile.appearance.contactShadow;
@@ -352,24 +471,42 @@ function FloorShadow({ subject, profile }) {
 
   const fit = useMemo(() => {
     if (!subject) return null;
+    // Centred on the world origin (see above), so the half-span is how far the
+    // furthest corner of the furniture reaches from it, plus the margin.
+    const halfW = Math.max(Math.abs(subject.min[0]), Math.abs(subject.max[0])) + pad;
+    const halfD = Math.max(Math.abs(subject.min[2]), Math.abs(subject.max[2])) + pad;
+    const width = halfW * 2;
+    const depth = halfD * 2;
+    const span = Math.max(width, depth);
+    // A power of two, because a render target that is not one is a slow path on
+    // more drivers than it is worth arguing with — the smallest that holds the
+    // asked-for texel size, and never more than the cap.
+    const wanted = span / mm(C.texelMm || 4);
+    const resolution = Math.min(
+      C.maxResolution || 1024,
+      Math.max(512, 2 ** Math.ceil(Math.log2(Math.max(1, wanted)))),
+    );
     return {
-      width: subject.max[0] - subject.min[0] + pad * 2,
-      depth: subject.max[2] - subject.min[2] + pad * 2,
-      cx: (subject.min[0] + subject.max[0]) / 2,
-      cz: (subject.min[2] + subject.max[2]) / 2,
+      width,
+      depth,
+      // drei blurs in UV: `h = blur / 256` of the canvas. Millimetres of smear
+      // divided by the canvas they are being smeared across is what keeps a
+      // 22 mm penumbra 22 mm wide on every job.
+      blur: Math.max(0.2, (mm(C.blurMm) / span) * 256),
+      resolution,
     };
-  }, [subject, pad]);
+  }, [subject, pad, C.blurMm, C.texelMm, C.maxResolution]);
   if (!fit) return null;
 
   // On the workshop's own grid, and nothing finer: the fit is measured off world
   // matrices, and a raw float would re-bake the shadow on floating-point noise.
-  const bake = [fit.width, fit.depth, fit.cx, fit.cz]
+  const bake = [fit.width, fit.depth, fit.resolution]
     .map((v) => Math.round(v / mm(step))).join('|');
 
   return (
-    // In the picture, but it must never FRAME it: the blob is half a metre wider
-    // than the furniture on every side, and a render fitted to it would put the
-    // cabinets in the middle distance of their own photograph.
+    // In the picture, but it must never FRAME it: the blob reaches half a metre
+    // past the furniture, and a render fitted to it would put the cabinets in
+    // the middle distance of their own photograph.
     <group userData={{ ccNoBounds: true }}>
       <ContactShadows
         key={bake}
@@ -378,14 +515,18 @@ function FloorShadow({ subject, profile }) {
         // two texels and the blur dissolved them. Silent on every GPU.
         scale={1}
         frames={1}
-        // A hair above the floor. Coplanar with it, the two z-fight.
-        position={[fit.cx, mm(1), fit.cz]}
+        // NO `position`. Read the essay above before adding one: the blur pass
+        // renders a quad that stays at the world origin, so a group that moves
+        // is a group whose blur pass misses — and a group that RISES is one
+        // whose blur pass is clipped by the near plane and returns an empty
+        // target. The room drops out of the way instead (Room.jsx).
         width={fit.width}
         height={fit.depth}
+        resolution={fit.resolution}
         // How high the shadow camera still sees. Past this nothing contributes,
         // so a wall unit hanging at 1500 mm prints no second blob on the floor.
         far={mm(C.farMm)}
-        blur={C.blur}
+        blur={fit.blur}
         opacity={C.opacity}
       />
     </group>
@@ -527,6 +668,12 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // What the project's sprayed surfaces are polished to, on Piotr's 0–25 scale.
   const sheen = useMemo(() => projectSheen(design, profile), [design, profile]);
   const studio = profile.appearance.studio;
+  // ─── Turn 10 (CLAUDE.md F3) ───
+  // The lightest of the room's three tones, and the only one that is not a
+  // surface: it is what is seen ABOVE the walls, so it has to sit clear of the
+  // wall or the top edge of the room disappears. A profile number for the same
+  // reason the wall and the floor are.
+  const background = profile.appearance.room?.background || '#fafaf8';
   const [subject, setSubject] = useState(null);
   // Recomputed with the units, not per frame: a door swing is decided by where
   // the cabinets stand, and that only changes when one of them moves.
@@ -553,9 +700,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
       // unit mesh stops the event and takes the pointer for itself.
       onPointerMissed={() => { clearSelection(); closeContextMenu(); }}
       onContextMenu={(e) => e.preventDefault()}
-      style={{ background: '#fafaf8' }}
+      style={{ background }}
     >
-      <color attach="background" args={['#fafaf8']} />
+      <color attach="background" args={[background]} />
       <ToneMapping exposure={studio.exposure} />
       <Environment intensity={profile.appearance.environment.intensity} on={realisticLighting} />
       <Lights
@@ -674,7 +821,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         enableDamping
         dampingFactor={0.12}
       />
-      <CaptureRig onReady={onCaptureReady} />
+      <CaptureRig onReady={onCaptureReady} background={background} />
       <RenderRig onReady={onRenderReady} unitsRef={unitGroups} />
     </Canvas>
   );

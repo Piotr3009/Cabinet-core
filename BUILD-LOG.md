@@ -3323,3 +3323,204 @@ przeprojektowania w T10, czeka na zrzut referencyjny Piotra).
 Nic nie zostało cofnięte. Nie ma pytań do Piotra — jedyna rzecz, która czeka na
 JEGO ruch, a nie na kod, to zrzut referencyjny do X-raya (BACKLOG #56) i oko na
 oświetlenie z F1, o które CLAUDE.md prosi wprost („eye test jest Piotra").
+
+---
+
+# TURA 10 — REALIZM RENDERU: ŚWIATŁO, CIEŃ I POKÓJ (08.08.2026, fazy F0–F6)
+
+Jeden podsystem, zrobiony do końca. Werdykt właściciela po turach 8–9 i dniu
+hotfixów brzmiał „realizm poszedł": cienia pod szafkami nie widać, natryskowe
+fronty czytają się jak płaski mat, a ściana i podłoga zlewają się w jedną białą
+plamę. Tura 10 nie kończy się na „kompiluje się" — kończy się na zrzutach
+z prawdziwej przeglądarki w `verify/t10/`, i to one są dowodem.
+
+**Wynik bramy:** 803/803 testów (797 + 6 nowych), build czysty, `fixtures/`
+i `package.json` nietknięte, `src/engine/` bez importu react/three, 7 zrzutów
+w `verify/t10/` + dwa pliki pomiarów.
+
+## Dwa błędy, które trzeba było ZNALEŹĆ, a nie tylko dostroić
+
+Obie regresje z F2 miały tę samą przyczynę źródłową co pułapka `scale = 10`
+z tury 9, i obie potwierdzają regułę 13 (**przeczytaj domyślne wartości
+biblioteki w JEJ ŹRÓDLE**):
+
+**1. Rozmycie zjadało wypieczony cień — na KAŻDEJ maszynie, nie tylko tutaj.**
+drei piecze cień do render targetu, a potem rozmywa go dwoma przebiegami,
+renderując pełnowymiarowy quad (`blurPlane`) TĄ SAMĄ kamerą ortograficzną.
+`blurPlane` powstaje przez `new THREE.Mesh(planeGeometry)` i **nigdy nie jest
+dodawany do grupy** — jego macierz świata to identyczność, więc leży w środku
+układu świata. Kamera jest dzieckiem grupy, więc jedzie tam, gdzie grupa.
+Tura 9 dała grupie `position={[cx, 1 mm, cz]}`:
+
+- przesunięcie x/z → przebieg rozmycia czyta i zapisuje obszar przesunięty
+  dokładnie o (cx, cz) względem wypieczonego cienia;
+- przesunięcie y → gorzej. Kamera jest obrócona tak, że patrzy DO GÓRY
+  (`rotation-x` π/2), a `near` w drei domyślnie wynosi 0 — więc podniesienie
+  grupy o milimetr stawia quad milimetr ZA płaszczyzną bliską. Jest obcinany,
+  nic się nie rysuje, a przebieg rozmycia nadpisuje zupełnie dobry wypiek
+  pustym targetem.
+
+**Zmierzone, nie wydedukowane.** Sonda w `readRenderTargetPixels` wstawiona
+lokalnie między dwa wywołania drei (nigdy nie commitowana, `node_modules` nie
+jest naszym diffem — CLAUDE.md F2.2): **max alpha 255 przed rozmyciem, 0 po
+nim.** Po naprawie: 255 przed, **185 po**. Zapis w `verify/t10/bake-probe.json`.
+
+Naprawa: plama jest zakotwiczona tam, gdzie drei jej potrzebuje — w środku
+układu świata, na poziomie podłogi — a odsuwa się POKÓJ
+(`appearance.room.floorOffsetMm`, 0,5 mm). Ceną za stałą kotwicę jest płótno
+sięgające od środka pokoju do mebla, więc oba grzechy tury 9 są teraz niesione
+jawnie: `texelMm` trzyma rozmiar teksela (a więc rozdzielczość rośnie z pokojem),
+a `blurMm` trzyma rozmycie W MILIMETRACH, bo drei liczy je jako ułamek płótna —
+ta sama liczba to dwa razy większa miękkość na dwa razy mniejszym płótnie,
+i dokładnie tak rozpuścił się cień tury 9.
+
+**2. `allowOverride = false` nie znaczy „pomiń mnie".** three (WebGLRenderer,
+linia 1987) czyta to jako „renderuj MOIM materiałem" — obiekt nadal trafia do
+przebiegu głębi, tylko ze swoim własnym, nieprzezroczystym materiałem. Podłoga
+zostawiona w polu widzenia kamery cienia zapiekłaby się jako jeden lity
+prostokąt. Dlatego pokój musi być FIZYCZNIE pod kamerą, a nie tylko oznaczony.
+
+**3. Emisja to część powierzchni, której ŻADEN cień nie przyciemni.** Tura 9
+niosła 0,42 ściany i podłogi jako emisję (`studio.roomBounce`) — czyli 42 %
+kadru, na które nie działa ani światło, ani mapa cienia. To jest arytmetyka
+stojąca za „jedną białą plamą" i za „cienia prawie nie widać". Rozbite na
+`appearance.room.bounce` per powierzchnia: ściana 0,42 → 0,18, podłoga → 0,10.
+
+## Co gdzie wylądowało
+
+**F0** — `scale={1}` był już na main (hotfix właściciela). Baseline 797/797.
+
+**F1 — jupitery.** `appearance.studio.spots`: TABLICA specyfikacji SpotLight,
+wpięta w `Lights` w `src/3d/Scene.jsx`. Pozycje jako ułamki dystansu rigu (ta
+sama konwencja co key/fill/rim), cel = środek dopasowania, więc kąt pod
+horyzontem to `atan(y / hypot(x, z))` = **44,1°** przy `(±0,50, 0,62, 0,40)` —
+„~45° w dół", o które prosił właściciel. Intensywności FIZYCZNE (three r0.180,
+decay 2): **38 i 32 kandeli**, para nierówna celowo, bo rig z dwóch identycznych
+lamp w lustrzanych pozycjach nie ma strony kluczowej. Stożek `angle` 0,62 rad,
+`penumbra` 0,68 / 0,73.
+
+- **Budżet cienia (F1.4): decyzja podjęta OKIEM — cień zostaje przy KEY.**
+  Spot zawieszony w górnym przednim narożniku rzuca cień w dół i DO TYŁU, pod
+  korpus i w ścianę, gdzie szafka i tak go zasłania: kupuje przebieg głębi
+  i nie pokazuje prawie nic. Key wchodzi z przedniej ćwiartki i kładzie cień
+  W POPRZEK otwartej podłogi obok ciągu — jedyne miejsce, gdzie go widać.
+  Obie wersje przemierzone; `shadowCasters: 2` i `keyCastsShadow: true` są
+  danymi, a `Lights` LICZY rzucających, żeby warsztat nie mógł ręcznie dać
+  widokowi roboczemu pięciu przebiegów głębi.
+- **Trzeci, niższy spot (F1.3):** wypróbowany, odrzucony — bił się z parą
+  o tę samą ścianę. To, o co naprawdę prosił obraz, to więcej penumbry na
+  parze. Tablica została tablicą, więc dopisanie go to cztery linijki
+  w `profile.js` i zero w komponencie.
+- **F1.5 — punktowe „glinty" WYGASZONE.** Test orbity (to, o co prosi
+  CLAUDE.md) uruchomiony w trzech wariantach: z czterema punktami, z dwoma
+  od strony widza i bez żadnego. Plama na drzwiach przy sheenie 90 ląduje
+  w tych samych trzech miejscach orbity i z tą samą siłą: **(0,77, 0,19) ×1,11
+  · (0,88, 0,21) ×1,19 · (0,88, 0,30) ×1,12** z pustą tablicą, wobec
+  ×1,11 / ×1,20 / ×1,13 z pełną. Wędrujący połysk nigdy nie był ich zasługą —
+  robi go hotspot spotów plus sonda otoczenia 0,25. Tablica zostaje w pliku
+  jako zakomentowany przykład, struktura nietknięta.
+- **F1.6** — spoty niosą `userData ccLight: 'spot'`, a `render.lightScale` ma
+  `spot: 1`. Dołożone też **głębokie scalanie `lightScale`** w migracji:
+  profil zapisany przed tą turą ma pięć ról i płaski spread SKASOWAŁBY szóstą.
+
+**F2 — cień podłogowy, sprawdzony od końca do końca.** Poza naprawą powyżej:
+`opacity` 0,50 → **0,62**, `farMm` 400 → **300** (400 sięgało powyżej cokołu
+i rozmazywało ciemność w kałużę szerszą od mebla), `blur` 2,5 → **`blurMm` 22**,
+`texelMm` 4, `maxResolution` 1024. Na pokoju 4 × 3 m płótno wychodzi
+1,80 × 4,18 m przy 1024², czyli **4,1 mm na teksel** — gęstość, którą tura 9
+chciała mieć. Cień key'a i plama czytają się jako JEDNO ugruntowanie: key kładzie
+kształt w bok, plama siedzi pod cokołem.
+
+**F3 — pokój, który da się przeczytać.** `appearance.room`: ściana `#f7f5f1`,
+podłoga `#e6e0d5` (cieplejsza i wyraźnie ciemniejsza), tło `#fafaf8` — trzy
+rozróżnialne wartości, tło najjaśniejsze, bo widać je NAD ścianami i nie może
+czytać się jako powierzchnia. Podłoga czytana przez `src/3d/Room.jsx` przez
+`tone()`, bez żadnego hexa w komponencie. Światło płaskie przesunięte:
+ambient 0,45 → **0,20**, hemisfera 0,50 → **0,45** — proporcja światła
+kierunkowego do bezkierunkowego idzie z 0,45 : 0,50 na 0,20 : 0,45.
+
+**F4 — PĘTLA.** `scripts/e2e-turn10.mjs` (zero zależności, przez `scripts/cdp.mjs`)
+buduje scenę standardową PRZEZ APLIKACJĘ: nowy projekt → Kuchnia → cały pokój →
+prostokąt → trzy szafki dolne z drzwiami → Ustawienia ▸ Design ▸ Natryskowe →
+RAL 3005 Wine Red → sheen. Potem fotografuje i MIERZY. Strojenie idzie przez
+`--override`, który wstrzykuje profil do `localStorage` (własna trwałość
+`cabinetProfileStore`), więc iteracja to przeładowanie strony, a nie build;
+**bieg finalny jest zawsze bez override**, więc zrzuty są z liczb, które lecą.
+
+Iteracji strojących: **11** (5 sweepów po 5 wariantów plus 6 pełnych biegów).
+Trzy z nich naprawiały nie scenę, tylko POMIAR, i to jest osobna lekcja tej tury:
+
+1. „podłoga obok ciągu w tych samych wierszach" mierzyła 0,074 różnicy przy
+   WSZYSTKICH cieniach wyłączonych — bo skos złączenia ściany z podłogą
+   przecina te wiersze i połowa „obok" była ŚCIANĄ (czyli mierzyliśmy farbę
+   z F3, nie światło). Złączenie jest teraz wykrywane per kolumna
+   i interpolowane pod ciągiem;
+2. odniesienie „otwarta podłoga" to 80. percentyl wszystkich pikseli podłogi,
+   bo cień key'a leży dokładnie tam, gdzie leżało stare odniesienie;
+3. „pod ciągiem" to LINIA COKOŁU — pierwszy piksel podłogi pod każdą kolumną
+   mebla — a nie prostokąt wierszy: ciąg widać pod kątem, więc podłoga przy
+   jego lewym końcu jest metry dalej niż przy prawym. Prostokąt raportował
+   0,006 dla plamy, która w najlepszym wierszu miała 0,065.
+
+Nasycenie HSL wyleciało jako miara „czy biel jest biała" — dla każdego odcienia
+bieli wychodzi 1,0. Zastąpione CHROMĄ (max − min kanału).
+
+**Kryteria akceptacji, bieg finalny (build czysty, bez łatki drei):**
+
+Liczby poniżej są dokładnie tym, co leży w `verify/t10/measurements.json`
+z biegu, z którego pochodzą zrzuty (**15/15**):
+
+| | mierzone | próg | wynik |
+|---|---|---|---|
+| A siedzenie | otwarta podłoga 0,894 vs linia cokołu 0,843 | Δ > 0,012 | **Δ 0,052** (najciemniejsza dziesiątka 0,254 niżej, 150 kolumn / 2400 px) |
+| B połysk, sheen 90 | (0,77 0,19) ×1,12 · (0,96 0,25) ×1,30 · (0,04 0,21) ×1,14 | trzy różne miejsca, ×>1,06 | **rozstaw 0,92 szerokości ciągu** |
+| B sheen 60 | szczyt/mediana | > 1,03 | **1,22** |
+| C złączenie | 98 % ze 100 kolumn, ściana i podłoga 0,203 od siebie | ≥ 90 %, > 0,02 | **✅** |
+| C gradient ściany | mediana −0,023 od góry ściany do złączenia | \|·\| > 0,012 | **✅** (było 0,004) |
+| C drugi kąt | 96 % z 98 kolumn, gradient −0,025 | jw. | **✅** |
+| D barwa | odcień 352,9° vs RAL 352,1° | < 12° | **0,8°**, rgb 132,47,57 |
+| D przepał | 0,11 % frontu | < 0,5 % | **✅** |
+| D biel korpusu | chroma 0,015 (płyta sama ma 0,024) | < 0,06 | **✅** |
+| E orbita | 24 → 24 wypieki przez dwie orbity i 5 s bezczynności | 0 | **✅** (bieg z sondą) |
+| E rzucający cień | 1 (DirectionalLight) | ≤ 2 | **✅** |
+| E wypiek ≠ 0 | max alpha 180/255 w środku targetu 1024² | > 4 | **✅** |
+| — still | 1920×1142, rozpiętość tonalna 191 | > 90 | **✅** — ten sam rig (reguła 16) |
+
+**Uczciwie o rozrzucie:** orbita jest sterowana syntetycznymi zdarzeniami myszy
+przez `OrbitControls` z tłumieniem, więc kamera nie ląduje co do piksela w tym
+samym miejscu w każdym biegu. Kryterium A waha się między biegami od Δ 0,05 do
+Δ 0,12 — zależnie od tego, ile podłogi przy cokole widać pod danym kątem. Próg
+0,012 jest przekroczony czterokrotnie w najgorszym zmierzonym biegu, a wszystkie
+pozostałe kryteria są stabilne co do trzeciego miejsca po przecinku.
+
+`verify/t10/`: `A-seating-3-4.png`, `B1/B2/B3-glint-sheen90.png`,
+`B4-sheen60-gradient.png`, `C-room-depth.png`, `D-render-still.png`,
+`measurements.json` (wszystkie liczby biegu finalnego), `bake-probe.json`
+(dowód z F2.2).
+
+**Uwaga o `frames={1}`.** Licznik drei to zwykłe `let count = 0` w CIELE
+komponentu, nie ref — więc „jedna klatka" znaczy „jedna na każdy re-render",
+nie „jedna na zawsze". Cały bieg kosztuje 24 wypieki (zmiany układu
+i re-rendery `FloorShadow`); **orbita kosztuje zero**, i to jest liczba, o którą
+chodzi w kryterium E. Zmierzone osobno.
+
+**F5 — testy.** 803/803. Zmieniony jeden istniejący (`test/render.test.js`,
+„contact shadow is a run") — bo `blur` przestało istnieć, a razem z nim
+przestało istnieć pojęcie miękkości bez jednostki; komentarz w teście niesie
+POWÓD. Sześć nowych, wszystkie o KSZTAŁCIE, nie o guście: spoty jako lista
+z geometrią ~45°, budżet cienia jako dane, zmiana LICZBY lamp przez
+`migrateCabinetProfile` (jeden spot zostaje jednym, trzeci przechodzi, profil
+sprzed tury bierze rig w całości, wpis bez `intensity` jest odrzucany),
+`points` jako lista mimo że tura wysyła ją pustą, `lightScale.spot` plus
+migracja starego profilu, trzy tony pokoju jako PORZĄDEK (tło > ściana > podłoga,
+podłoga cieplejsza) i emisje.
+
+**Nowe liczby w `profile.js`:** `studio.spots`, `studio.spotReach`,
+`studio.shadowCasters`, `studio.keyCastsShadow`, `appearance.room.*`
+(`wall`/`floor`/`background`/`bounce`/`floorOffsetMm`),
+`contactShadow.blurMm`/`texelMm`/`maxResolution`, `render.lightScale.spot`.
+
+**Nowe pliki:** `scripts/e2e-turn10.mjs`, `verify/t10/*`.
+**Nic nie zostało cofnięte.** Do decyzji właściciela zostaje jedno: OKO na
+finalny obraz — liczby mówią, że wszystkie pięć kryteriów jest spełnione, ale
+„ładnie" jest jego.

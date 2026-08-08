@@ -1,0 +1,438 @@
+{
+  "base": "http://127.0.0.1:4173/",
+  "override": null,
+  "hue": 352.1311475409836,
+  "steps": [
+    {
+      "label": "the canvas opens with a live 3D context",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "three base units in one run, all with doors fitted",
+      "ok": true,
+      "detail": "{\"n\":3,\"doors\":3,\"xs\":[1700,2300,2900]}"
+    },
+    {
+      "label": "the fronts are sprayed RAL 3005 Wine Red, picked in the app",
+      "ok": true,
+      "detail": "picker returned #5e2129"
+    },
+    {
+      "label": "the project sheen is 60 %",
+      "ok": true,
+      "detail": "slider reads undefined"
+    },
+    {
+      "label": "A · every unit sits in a shadow: the floor under the run is darker than the open floor",
+      "ok": true,
+      "detail": "open floor 0.894 vs the toe line 0.843 (Δ 0.0515, darkest tenth 0.2540 down, over 150 columns / 2400 px, 70.9 % of the floor shaded)"
+    },
+    {
+      "label": "C · the wall/floor junction is readable across the frame",
+      "ok": true,
+      "detail": "98 % of 100 columns, wall and floor -0.203 apart, edge step 0.203"
+    },
+    {
+      "label": "C · the wall carries a vertical gradient, not one flat value",
+      "ok": true,
+      "detail": "median gradient -0.0226 (|·| 0.0229) top-of-wall to junction"
+    },
+    {
+      "label": "D · the sprayed front is still RAL 3005: a mid-lit pixel is within tolerance of its hue",
+      "ok": true,
+      "detail": "hue 352.9° vs 352.1° (gap 0.8°), rgb 132,47,57"
+    },
+    {
+      "label": "D · nothing is blown out to pink",
+      "ok": true,
+      "detail": "0.11 % of the front"
+    },
+    {
+      "label": "D · the white carcass stays white",
+      "ok": true,
+      "detail": "mean chroma 0.015 over 3892 px (the board's own is 0.024)"
+    },
+    {
+      "label": "B · at sheen 90 the highlight patch is in three different places on the same door",
+      "ok": true,
+      "detail": "(0.77, 0.19)×1.12  (0.96, 0.25)×1.30  (0.04, 0.21)×1.14 — widest separation 0.921 of the run"
+    },
+    {
+      "label": "B · at sheen 60 a softer sheen gradient is still visible on the front",
+      "ok": true,
+      "detail": "peak/median 1.222"
+    },
+    {
+      "label": "C · …and it still reads from the second angle",
+      "ok": true,
+      "detail": "96 % of 98 columns, contrast -0.203, gradient -0.0247"
+    },
+    {
+      "label": "the still comes back with the working view’s own tonal range in it",
+      "ok": true,
+      "detail": "{\"w\":1920,\"h\":1142,\"range\":191,\"dark\":39623,\"red\":36883}"
+    },
+    {
+      "label": "nothing wrote an error to the console",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "captured": [
+    [
+      "A",
+      {
+        "ok": true,
+        "size": {
+          "w": 700,
+          "h": 417
+        },
+        "box": {
+          "x": 279,
+          "y": 177,
+          "w": 150,
+          "h": 98
+        },
+        "doorN": 9670,
+        "seating": {
+          "toeColumns": 150,
+          "toePixels": 2400,
+          "open": 0.8942274451255798,
+          "floorFloor": 0.7768588066101074,
+          "under": 0.8427464990814527,
+          "darkest": 0.6402196288108826,
+          "shadedFraction": 0.7093982960596379,
+          "delta": 0.05148094604412712
+        },
+        "glint": {
+          "u": 0.8636363636363636,
+          "v": 0.21428571428571427,
+          "peak": 0.3404324589353619,
+          "median": 0.2855781193594543,
+          "ratio": 1.1920817312577894,
+          "cells": 53
+        },
+        "depth": {
+          "columns": 100,
+          "readableFraction": 0.98,
+          "junctionStep": 0.20263922214508057,
+          "junctionContrast": -0.20263922214508057,
+          "junctionContrastAbs": 0.20263922214508057,
+          "wallLum": 0.7768588066101074,
+          "gradient": -0.022631247217456463,
+          "gradientAbs": 0.02285030369575214
+        },
+        "colour": {
+          "midRgb": [
+            132,
+            47,
+            57
+          ],
+          "midHue": 352.9266139226272,
+          "midSat": 0.47933153938575496,
+          "midLum": 0.35066570912493744,
+          "hueGap": 0.7954663816436209,
+          "blownFraction": 0.001137538779731127,
+          "whiteChroma": 0.014972895633073574,
+          "whiteN": 3892
+        }
+      }
+    ],
+    [
+      "B1",
+      {
+        "ok": true,
+        "size": {
+          "w": 700,
+          "h": 417
+        },
+        "box": {
+          "x": 271,
+          "y": 169,
+          "w": 141,
+          "h": 107
+        },
+        "doorN": 9021,
+        "seating": {
+          "toeColumns": 141,
+          "toePixels": 2397,
+          "open": 0.9064392447471619,
+          "floorFloor": 0.7768588066101074,
+          "under": 0.7976294131044254,
+          "darkest": 0.5740000009536743,
+          "shadedFraction": 0.6446583933224396,
+          "delta": 0.1088098316427365
+        },
+        "glint": {
+          "u": 0.7727272727272727,
+          "v": 0.1875,
+          "peak": 0.32995643757157406,
+          "median": 0.2945242443559121,
+          "ratio": 1.1203031461574504,
+          "cells": 48
+        },
+        "depth": {
+          "columns": 110,
+          "readableFraction": 0.9545454545454546,
+          "junctionStep": 0.17633920907974243,
+          "junctionContrast": -0.17457252740859985,
+          "junctionContrastAbs": 0.17849409580230713,
+          "wallLum": 0.8049255013465881,
+          "gradient": -0.02315343558033811,
+          "gradientAbs": 0.025076968329293292
+        },
+        "colour": {
+          "midRgb": [
+            134,
+            50,
+            60
+          ],
+          "midHue": 353.11514564282965,
+          "midSat": 0.45604715870973417,
+          "midLum": 0.36017825311942964,
+          "hueGap": 0.9839981018460549,
+          "blownFraction": 0.0012193770092007539,
+          "whiteChroma": 0.015469058379755376,
+          "whiteN": 5037
+        }
+      }
+    ],
+    [
+      "B2",
+      {
+        "ok": true,
+        "size": {
+          "w": 700,
+          "h": 417
+        },
+        "box": {
+          "x": 303,
+          "y": 182,
+          "w": 167,
+          "h": 81
+        },
+        "doorN": 10608,
+        "seating": {
+          "toeColumns": 167,
+          "toePixels": 2171,
+          "open": 0.8679490089416504,
+          "floorFloor": 0.7768588066101074,
+          "under": 0.8710686935087,
+          "darkest": 0.8086784482002258,
+          "shadedFraction": 0.7244487840323349,
+          "delta": -0.0031196845670495854
+        },
+        "glint": {
+          "u": 0.9583333333333334,
+          "v": 0.25,
+          "peak": 0.377293019422463,
+          "median": 0.2902989685535431,
+          "ratio": 1.2996705475819652,
+          "cells": 57
+        },
+        "depth": {
+          "columns": 107,
+          "readableFraction": 0.897196261682243,
+          "junctionStep": 0.20263922214508057,
+          "junctionContrast": -0.20263922214508057,
+          "junctionContrastAbs": 0.20263922214508057,
+          "wallLum": 0.7768588066101074,
+          "gradient": -0.00479458081416595,
+          "gradientAbs": 0.009024104406667344
+        },
+        "colour": {
+          "midRgb": [
+            134,
+            48,
+            58
+          ],
+          "midHue": 353.0349457713362,
+          "midSat": 0.4683522637501536,
+          "midLum": 0.3568439516381633,
+          "hueGap": 0.9037982303526064,
+          "blownFraction": 0.001414027149321267,
+          "whiteChroma": 0.013881912315487946,
+          "whiteN": 1780
+        }
+      }
+    ],
+    [
+      "B3",
+      {
+        "ok": true,
+        "size": {
+          "w": 700,
+          "h": 417
+        },
+        "box": {
+          "x": 348,
+          "y": 191,
+          "w": 180,
+          "h": 92
+        },
+        "doorN": 11924,
+        "seating": {
+          "toeColumns": 180,
+          "toePixels": 2697,
+          "open": 0.8997686505317688,
+          "floorFloor": 0.7534980177879333,
+          "under": 0.8346911215499281,
+          "darkest": 0.6210588216781616,
+          "shadedFraction": 0.6851330118654169,
+          "delta": 0.06507752898184072
+        },
+        "glint": {
+          "u": 0.038461538461538464,
+          "v": 0.21428571428571427,
+          "peak": 0.3331317712242405,
+          "median": 0.2912749974580293,
+          "ratio": 1.1437019110170705,
+          "cells": 63
+        },
+        "depth": {
+          "columns": 112,
+          "readableFraction": 0.9910714285714286,
+          "junctionStep": 0.20263922214508057,
+          "junctionContrast": -0.20263922214508057,
+          "junctionContrastAbs": 0.20263922214508057,
+          "wallLum": 0.7768588066101074,
+          "gradient": -0.011803736406214127,
+          "gradientAbs": 0.018287316821087418
+        },
+        "colour": {
+          "midRgb": [
+            133,
+            48,
+            58
+          ],
+          "midHue": 353.0040754988929,
+          "midSat": 0.4700141314588012,
+          "midLum": 0.3558357750464973,
+          "hueGap": 0.8729279579093259,
+          "blownFraction": 0.0010063737001006373,
+          "whiteChroma": 0.013950974580703783,
+          "whiteN": 3374
+        }
+      }
+    ],
+    [
+      "B4",
+      {
+        "ok": true,
+        "size": {
+          "w": 700,
+          "h": 417
+        },
+        "box": {
+          "x": 353,
+          "y": 191,
+          "w": 179,
+          "h": 97
+        },
+        "doorN": 12020,
+        "seating": {
+          "toeColumns": 179,
+          "toePixels": 2864,
+          "open": 0.9036902189254761,
+          "floorFloor": 0.7578666806221008,
+          "under": 0.8437316289286041,
+          "darkest": 0.659827470779419,
+          "shadedFraction": 0.6517871377100405,
+          "delta": 0.05995858999687198
+        },
+        "glint": {
+          "u": 0.038461538461538464,
+          "v": 0.21428571428571427,
+          "peak": 0.3479070910901734,
+          "median": 0.2846879683701055,
+          "ratio": 1.222064610183598,
+          "cells": 63
+        },
+        "depth": {
+          "columns": 110,
+          "readableFraction": 0.990909090909091,
+          "junctionStep": 0.20263922214508057,
+          "junctionContrast": -0.20263922214508057,
+          "junctionContrastAbs": 0.20263922214508057,
+          "wallLum": 0.7768588066101074,
+          "gradient": -0.013828056908789188,
+          "gradientAbs": 0.023262396626088866
+        },
+        "colour": {
+          "midRgb": [
+            132,
+            46,
+            56
+          ],
+          "midHue": 352.89819419463583,
+          "midSat": 0.48534104329925104,
+          "midLum": 0.3493903636220843,
+          "hueGap": 0.767046653652244,
+          "blownFraction": 0.0012479201331114808,
+          "whiteChroma": 0.014314202566671756,
+          "whiteN": 4110
+        }
+      }
+    ],
+    [
+      "C",
+      {
+        "ok": true,
+        "size": {
+          "w": 700,
+          "h": 417
+        },
+        "box": {
+          "x": 284,
+          "y": 190,
+          "w": 154,
+          "h": 92
+        },
+        "doorN": 10258,
+        "seating": {
+          "toeColumns": 154,
+          "toePixels": 2310,
+          "open": 0.9020705819129944,
+          "floorFloor": 0.7768588066101074,
+          "under": 0.7618659374388781,
+          "darkest": 0.5253215432167053,
+          "shadedFraction": 0.7043707909679123,
+          "delta": 0.1402046444741163
+        },
+        "glint": {
+          "u": 0.9545454545454546,
+          "v": 0.21428571428571427,
+          "peak": 0.34023197242087383,
+          "median": 0.2842033747203496,
+          "ratio": 1.1971426192797858,
+          "cells": 54
+        },
+        "depth": {
+          "columns": 98,
+          "readableFraction": 0.9591836734693877,
+          "junctionStep": 0.20263922214508057,
+          "junctionContrast": -0.20263922214508057,
+          "junctionContrastAbs": 0.20263922214508057,
+          "wallLum": 0.7768588066101074,
+          "gradient": -0.02467834695856619,
+          "gradientAbs": 0.02602415571930583
+        },
+        "colour": {
+          "midRgb": [
+            132,
+            46,
+            56
+          ],
+          "midHue": 352.93410516573925,
+          "midSat": 0.48436494170660177,
+          "midLum": 0.34963699309935214,
+          "hueGap": 0.8029576247556633,
+          "blownFraction": 0.0012673035679469683,
+          "whiteChroma": 0.014808506921699697,
+          "whiteN": 2694
+        }
+      }
+    ]
+  ]
+}

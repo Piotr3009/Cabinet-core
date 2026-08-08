@@ -87,6 +87,53 @@ export function nextShelfPos({ band, positions = [] }, profile) {
 }
 
 /**
+ * ─── Even shelf spacing — the KIT's formula, verbatim (turn 9, CLAUDE.md F3) ──
+ *
+ * Piotr's verdict on turn 8's "Even" button: after centring, the gaps are not
+ * equal. He was right, and the cause is that turn 8 spread the shelves across
+ * the DRAG BAND rather than across the shelf ZONE.
+ *
+ * The band is the zone pulled in by `editor.minShelfEdgeGap` at each end — it is
+ * how close a shelf may be dragged to the top or to the base, which is a
+ * different question from where an evenly-spaced shelf goes. Spreading over it
+ * puts the first and last shelves 40 mm nearer their neighbours than the rule
+ * intends, so the top and bottom openings come out different from the middle
+ * ones by exactly that much. Nobody invented that; it was never checked.
+ *
+ * What replaces it is the AutoLISP's own arithmetic, traced from
+ * KIT_WARDROBE_FULL.lsp `drawWardrobeShelvesFront` (lines 133-142):
+ *
+ *     spacing  = (shelfZoneTop − shelfZoneBottom) / (numShelves + 1)
+ *     shelfY_i = shelfZoneBottom + spacing · i          for i = 1..numShelves
+ *
+ * N shelves divide the zone into N+1 equal steps. The zone bounds are the ones
+ * the kit uses and the ones `engine/collision.js shelfBand` already computes:
+ * the TOP FACE of whatever closes the space below (the drawer partition, the
+ * rail partitioner, or the base panel) and the UNDERSIDE of the top panel —
+ * lines 687-692 of the same file, in the same order.
+ *
+ * `shelfY` is the shelf's BOTTOM FACE and not its centre line, and that is not
+ * an assumption: the LISP draws the board from `shelfY` to `shelfY + G`
+ * (line 143) and drills its pin cluster at `shelfY − 50 / shelfY / shelfY + 50`
+ * (lines 411-416) — the row the shelf SITS ON. It is the same convention
+ * `pos_mm` has carried here since turn 1, so the two already agree.
+ *
+ * Pure arithmetic on four numbers: no profile, no clamp, no store. The caller
+ * clamps, because the caller is the one that knows what else is in the cabinet.
+ *
+ * @param {{zoneBottom:number, zoneTop:number, count:number}} zone
+ * @returns {number[]} bottom faces, bottom-up, one per shelf
+ */
+export function evenShelfPositions({ zoneBottom, zoneTop, count }) {
+  const n = Math.max(0, Math.trunc(Number(count) || 0));
+  if (n <= 0) return [];
+  const bottom = Number(zoneBottom) || 0;
+  const top = Number(zoneTop) || 0;
+  const spacing = (top - bottom) / (n + 1);
+  return Array.from({ length: n }, (_, i) => bottom + spacing * (i + 1));
+}
+
+/**
  * Every CLEAR OPENING in a column of shelves (turn 8, CLAUDE.md F4).
  *
  * The question a joiner asks about a set of shelves is "are they even?", and

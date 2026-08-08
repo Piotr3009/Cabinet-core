@@ -120,6 +120,15 @@ function Wall({
             color={COLORS.wall}
             emissive={bounce(COLORS.wall, profile)}
             side={THREE.DoubleSide}
+            // ─── Turn 9 (CLAUDE.md F1.3) ───
+            // The contact shadow is baked by rendering the scene through a
+            // depth material (drei's <ContactShadows>). A wall is DoubleSide
+            // and stands ON the floor, so it would render into that pass from
+            // the inside and print itself along the edge of the blob. `three`
+            // has the exact hook for it: this material refuses to be swapped
+            // for a scene override. The room is what the shadow falls ON, never
+            // what casts it.
+            allowOverride={false}
           />
         </mesh>
         {/* the opening reveals, so a hole reads as a hole and not as a gap */}
@@ -128,7 +137,7 @@ function Wall({
             <edgesGeometry args={[new THREE.PlaneGeometry(mm(o.width), mm(o.height))
               .translate(mm(o.x_mm + o.width / 2), mm(o.sill + o.height / 2), 0)]}
             />
-            <lineBasicMaterial color={o.kind === 'door' ? COLORS.gold : '#9fb4c8'} />
+            <lineBasicMaterial color={o.kind === 'door' ? COLORS.gold : '#9fb4c8'} allowOverride={false} />
           </lineSegments>
         ))}
       </group>
@@ -165,6 +174,10 @@ export default function Room({ room, showLabels = true, profile = null }) {
           color={COLORS.floor}
           emissive={bounce(COLORS.floor, profile)}
           side={THREE.DoubleSide}
+          // The floor is the surface the contact shadow is PAINTED ON. Left in
+          // the depth pass it sits exactly at the shadow camera's near plane and
+          // blacks out the whole blob (turn 9, CLAUDE.md F1.3).
+          allowOverride={false}
         />
       </mesh>
 

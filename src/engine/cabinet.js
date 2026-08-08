@@ -374,6 +374,42 @@ export function isShelfLocked(item) {
   return shelfVariant(item) === 'fixed' || item?.updown_locked === true;
 }
 
+/**
+ * ─── How thick THIS shelf is (turn 9, CLAUDE.md F4) ───
+ *
+ * A cabinet is built out of one board and then a joiner says "that one carries
+ * the microwave, make it 25". Turn 8 had no way to say it: a shelf was the
+ * carcass thickness, full stop, and the answer was a second cabinet.
+ *
+ * It is an INPUT, not a formula: the piece is cut, edged, drilled and laid out
+ * by exactly the arithmetic every other shelf goes through, with a different
+ * number in it. A shelf that says nothing is the carcass board, which is what a
+ * bare `computeCabinet()` and every golden fixture get.
+ *
+ * `> 0` and not `!= null`: a zero-thickness shelf is not a thin shelf, it is a
+ * missing one, and a cut list is not the place to find that out.
+ */
+export function shelfThickness(item, boardT) {
+  const own = Number(item?.thickness_mm);
+  return Number.isFinite(own) && own > 0 ? own : boardT;
+}
+
+/**
+ * What THIS shelf is made of, when somebody has said (turn 9, CLAUDE.md F4).
+ *
+ * A label and an id, exactly as the hanger rail has carried since turn 4: the
+ * label is what the cut list prints and what a workshop orders against, the id
+ * is what a price is looked up by. Null for a shelf nobody has overridden —
+ * which then wears the project's carcass finish like every other piece of board
+ * (engine/bom.js `partMaterialLabel`).
+ */
+export function shelfMaterial(item) {
+  const label = item?.material_label;
+  const id = item?.material_id;
+  if (!label && !id) return null;
+  return { material_id: id || null, material_label: label ? String(label) : null };
+}
+
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
   return {
     id,
@@ -837,10 +873,18 @@ export function computeCabinet(params, profileOverride) {
     // and every golden fixture — gets.
     const depthHere = D - C.shelfDepthBoards * G
       - setbackOf(item?.front_mm, C.shelfDepthClearance) - sinkLoss;
+    // ─── Turn 9 (CLAUDE.md F4): this shelf's own board ───
+    // An INPUT, not a formula. The piece is cut, edged, drilled and laid out by
+    // exactly the arithmetic every other shelf goes through — the number in it
+    // is different, and only when somebody said so.
+    const shelfT = shelfThickness(item, G);
     panels.push(panel({
-      id: `SHELF-${i}`, part: 'SHELF', role: 'shelf', w: shelfW, h: depthHere, thickness: G,
+      id: `SHELF-${i}`, part: 'SHELF', role: 'shelf', w: shelfW, h: depthHere, thickness: shelfT,
       edgeCode: codes.right, edgeLen: metres(shelfW),
-      box: { x: G + C.shelfWidthClearance / 2, y, z: G, w: shelfW, h: G, d: depthHere },
+      // `pos_mm` is the shelf's BOTTOM face and always has been (the LISP draws
+      // the board from shelfY up), so a thicker shelf grows UP from the pin row
+      // it sits on rather than down through it.
+      box: { x: G + C.shelfWidthClearance / 2, y, z: G, w: shelfW, h: shelfT, d: depthHere },
       cnc: rectGeometry(shelfW, depthHere),
       meta: {
         index: i,
@@ -853,6 +897,8 @@ export function computeCabinet(params, profileOverride) {
         // and is not drilled for pins.
         locked: isShelfLocked(item),
         front_mm: setbackOf(item?.front_mm, C.shelfDepthClearance),
+        thickness_mm: shelfT,
+        ...(shelfMaterial(item) || {}),
       },
     }));
   }
@@ -1345,7 +1391,14 @@ export function computeCabinet(params, profileOverride) {
   const shelfPinRows = [];
   const shelfScrewRows = [];
   for (let i = 0; i < shelfRows.length; i += 1) {
-    (isShelfLocked(cfg.shelfItems[i]) ? shelfScrewRows : shelfPinRows).push(shelfRows[i]);
+    const item = cfg.shelfItems[i];
+    if (isShelfLocked(item)) {
+      // The screw row needs the shelf's OWN thickness, because it is drilled on
+      // that board's centre line (turn 9, CLAUDE.md F4).
+      shelfScrewRows.push({ y: shelfRows[i], thickness: shelfThickness(item, G) });
+    } else {
+      shelfPinRows.push(shelfRows[i]);
+    }
   }
   for (const sideId of ['BUL', 'BUR']) {
     for (const rowY of shelfPinRows) {
@@ -1353,9 +1406,11 @@ export function computeCabinet(params, profileOverride) {
         for (const x of shelfHoleX) addDrill(sideId, 'shelf', SH.layer, x, rowY + dy, SH.diameter);
       }
     }
-    for (const rowY of shelfScrewRows) {
-      // The centre of the board's thickness: a screw goes into the EDGE.
-      const centreY = rowY + G / 2;
+    for (const { y: rowY, thickness: rowT } of shelfScrewRows) {
+      // The centre of the board's thickness: a screw goes into the EDGE — so a
+      // shelf somebody has made 25 mm is screwed on ITS centre line and not on
+      // the carcass board's (turn 9, CLAUDE.md F4).
+      const centreY = rowY + rowT / 2;
       for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
         addDrill(sideId, 'shelf_screw', pz.layers.screw, x, centreY, pz.screwDiameter);
       }
@@ -1637,7 +1692,9 @@ export function computeCabinet(params, profileOverride) {
     // stays every shelf, because it is where the shelves ARE and the drawings
     // dimension it; these two say how each one is held.
     shelf_pin_row_y: shelfPinRows.map((v) => roundTo(v, 4)),
-    shelf_screw_row_y: shelfScrewRows.map((v) => roundTo(v + G / 2, 4)),
+    // On the SHELF's own centre line, not the carcass board's — a shelf
+    // somebody made 25 mm is screwed through its own middle (turn 9, F4).
+    shelf_screw_row_y: shelfScrewRows.map((r) => roundTo(r.y + r.thickness / 2, 4)),
     shelf_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
     runner_rows_dp_y: runnerRowsDp,
     runner_rows_carcass_y: budr ? [...budr.runnerRows] : runnerRowsCarcass,
@@ -1707,6 +1764,11 @@ export function computeCabinet(params, profileOverride) {
       variant: shelfVariant(cfg.shelfItems[i]),
       locked: isShelfLocked(cfg.shelfItems[i]),
       itemId: cfg.shelfItems[i]?.id || null,
+      // Turn 9 (CLAUDE.md F4): what this one is actually made of. The drawings
+      // and the readouts take it from here rather than assuming the carcass
+      // board, which is how a 25 mm shelf came out drawn 18 mm thick.
+      thickness: shelfThickness(cfg.shelfItems[i], G),
+      front_mm: setbackOf(cfg.shelfItems[i]?.front_mm, C.shelfDepthClearance),
     })),
     fridge: fridge ? { fixedPanelY: fridge.fixedPanelY, fridgeH: cfg.fridgeH } : null,
   };

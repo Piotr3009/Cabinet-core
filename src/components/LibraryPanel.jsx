@@ -18,6 +18,7 @@ export default function LibraryPanel() {
   const setPos = useUiStore((s) => s.setLibraryPos);
   const categoryId = useUiStore((s) => s.libraryCategory);
   const closeLibrary = useUiStore((s) => s.closeLibrary);
+  const clearLibraryInsert = useUiStore((s) => s.clearLibraryInsert);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const notify = useUiStore((s) => s.notify);
@@ -28,10 +29,18 @@ export default function LibraryPanel() {
   const heights = useMemo(() => projectHeights(design, profile), [design, profile]);
 
   const drag = useRef(null);
-  // Which side of the selected unit the next one goes on (turn 8, CLAUDE.md
-  // F2.1). null = whichever side has room — which is what a joiner means most
-  // of the time, and what makes "add, add, add" still build a row.
-  const [placeSide, setPlaceSide] = useState(null);
+  // ─── Turn 9 (CLAUDE.md F2) ───
+  // Turn 8 asked WHICH SIDE here, with a ◀ / auto / ▶ picker, and Piotr's
+  // verdict was that it is confusing — you are being asked to describe a place
+  // in words, in a panel, before you have said which cabinet you mean. The
+  // picker is gone. The place is now chosen on the CANVAS, by clicking the "+"
+  // standing in the gap it would fill (3d/AddPlus.jsx), and it arrives here
+  // already decided.
+  //
+  // Opened from the Library MENU instead, `libraryInsert` is null and adding
+  // works exactly as it did before turn 8's picker existed: beside the
+  // selection, on whichever side has room.
+  const insertAt = useUiStore((s) => s.libraryInsert);
 
   const onPointerDown = useCallback((e) => {
     // A press on a CONTROL in the header is not a grab. Without this the header
@@ -75,6 +84,9 @@ export default function LibraryPanel() {
 
   const category = getCategory(categoryId);
   const selected = units.find((u) => u.id === selectedUnitId) || null;
+  // The unit whose "+" opened this panel. It may have been deleted since —
+  // the panel is not modal — so the place is only honoured while it exists.
+  const insertBeside = insertAt ? units.find((u) => u.id === insertAt.near) || null : null;
   if (!category) return null;
 
   const handleAdd = (typeId, opts) => {
@@ -86,10 +98,24 @@ export default function LibraryPanel() {
     // beside, on whichever side has room. Adding then works the way a joiner
     // works — "and another one here" — instead of always extending the run to
     // the right, which is what made the left-hand end unreachable.
-    const { id, error, wall } = addUnit(typeId, { near: selectedUnitId, side: placeSide, ...opts });
+    //
+    // Turn 9 (CLAUDE.md F2): …unless a "+" on the canvas opened this panel, in
+    // which case the end of the run it was standing at IS the answer, and it
+    // beats the selection. Same call, same free-slot search, same collision
+    // clamp — this phase changed the trigger, not the mechanics.
+    const { id, error, wall } = addUnit(typeId, {
+      near: insertAt?.near ?? selectedUnitId,
+      side: insertAt?.side ?? null,
+      ...opts,
+    });
     if (error) { notify(error, 'warn'); return; }
     selectUnit(id);
     if (wall > 0) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
+    // The place has been used up: leaving it set would put the NEXT type on the
+    // same side of a cabinet that now has a neighbour there. The PANEL stays
+    // open, because "add, add, add" is how a run gets built — and the unit just
+    // placed is the selection now, so the next one lands beside it.
+    if (insertAt) clearLibraryInsert();
   };
 
   return (
@@ -116,24 +142,33 @@ export default function LibraryPanel() {
         </button>
       </div>
 
-      {/* Which side of the selected unit the next one lands on (turn 8, F2.1).
-          Only shown when there IS a unit to be beside — on an empty wall the
-          question has no meaning and the answer is "in the middle". */}
-      {selectedUnitId && (
+      {/* ─── Where it will land (turn 9, CLAUDE.md F2) ───
+          A statement, not a question. The ◀ / auto / ▶ picker that used to sit
+          here is gone — an explicit owner decision, and the reason is that it
+          asked you to describe a place in words before you had said which
+          cabinet you meant. The place is chosen on the CANVAS now, by clicking
+          the "+" standing in the gap it would fill, and this row only reports
+          what was clicked so a joiner can see the panel understood him.
+
+          Opened from the Library MENU there is no clicked gap, so the new unit
+          goes beside the SELECTION on whichever side has room — which is what
+          turn 8's "auto" did and what makes "add, add, add" build a run. */}
+      {(insertBeside || selected) && (
         <div className="flex items-center gap-1 px-3 py-1.5 border-b border-shell-600">
-          <span className="text-[11px] text-ink-400 flex-1">Place beside {selected?.params.unit_num || 'the selection'}</span>
-          {[['L', '◀', 'On its left'], [null, 'auto', 'Whichever side has room'], ['R', '▶', 'On its right']].map(
-            ([value, label, title]) => (
-              <button
-                key={label}
-                type="button"
-                title={title}
-                className={`cc-btn px-1.5 py-0.5 text-[11px] ${placeSide === value ? 'border-gold text-ink-50' : ''}`}
-                onClick={() => setPlaceSide(value)}
-              >
-                {label}
-              </button>
-            ),
+          <span className="text-[11px] text-ink-400 flex-1">
+            {insertBeside
+              ? `Adding to the ${insertAt.side} of ${insertBeside.params.unit_num}`
+              : `Adding beside ${selected.params.unit_num} — whichever side has room`}
+          </span>
+          {insertBeside && (
+            <button
+              type="button"
+              className="cc-btn-ghost"
+              title="Forget the place — add beside the selection instead"
+              onClick={clearLibraryInsert}
+            >
+              ×
+            </button>
           )}
         </div>
       )}

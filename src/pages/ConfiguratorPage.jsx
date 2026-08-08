@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
@@ -42,10 +42,35 @@ export default function ConfiguratorPage() {
   const unitResult = useProjectStore((s) => s.unitResult);
   const markSaved = useProjectStore((s) => s.markSaved);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
+  const selectedElement = useUiStore((s) => s.selectedElement);
+  const clearElement = useUiStore((s) => s.clearElement);
+  const clearSelection = useUiStore((s) => s.clearSelection);
 
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const profile = useCabinetProfileStore((s) => s.profile);
+
+  // ─── Escape steps back OUT (turn 9, CLAUDE.md F4.1) ───
+  // One level at a time, which is what a person expects of it: the first press
+  // drops the shelf you had hold of and leaves the cabinet selected, the second
+  // drops the cabinet. Clicking the background still clears both at once — that
+  // is a different gesture and it always meant "nothing".
+  //
+  // It is here rather than in the canvas because the keyboard belongs to the
+  // page: a joiner reaching for Escape has usually just typed a number into the
+  // right-hand panel, and the canvas does not have focus.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      // A field, a modal or a menu handles its own Escape first.
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (selectedElement) clearElement();
+      else if (selectedUnitId) clearSelection();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedElement, selectedUnitId, clearElement, clearSelection]);
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);

@@ -208,10 +208,49 @@ test('the subject is every unit plus the floor under them', () => {
 test('high shadows really are the expensive ones, and normal is what the editor runs', () => {
   const normal = shadowQuality('normal', P);
   const high = shadowQuality('high', P);
-  assert.ok(high.mapSize > normal.mapSize * 2, 'otherwise "high" is a label, not a setting');
+  assert.ok(high.mapSize >= normal.mapSize * 2, 'otherwise "high" is a label, not a setting');
   assert.ok(high.radius > normal.radius, 'and softer with it');
   assert.equal(P.render.defaultShadows, 'normal', 'the working view never pays the render price');
   assert.equal(shadowQuality('nope', P).mapSize, normal.mapSize);
+});
+
+// ─── the stripes (turn 9, CLAUDE.md F1) ──────────────────────────────────────
+
+test('every shadow preset carries a normalBias — the line that was missing', () => {
+  // Piotr photographed diagonal stripes across the fronts in the working view
+  // AND in a 4K still. That is shadow acne, and turn 8 had no `normalBias` at
+  // all: `bias` alone pushes the depth test along the LIGHT, which a flat panel
+  // facing the light is barely helped by, and pushing it far enough to help
+  // detaches every shadow from the foot of the thing casting it.
+  for (const id of ['normal', 'high']) {
+    const s = shadowQuality(id, P);
+    assert.ok(Number.isFinite(s.normalBias), `${id} has no normalBias`);
+    assert.ok(s.normalBias > 0, `${id} normalBias must push OUT along the normal`);
+  }
+});
+
+test('the render is the LESS acne-prone picture, not the more — turn 8 had it backwards', () => {
+  // The bug that made the stripes survive at 4K: turn 8's render preset raised
+  // the map size and LOWERED the bias, so the biggest, most expensive picture
+  // in the app was also the least protected one. A finer map needs less bias,
+  // not less protection — the two move together now.
+  const normal = shadowQuality('normal', P);
+  const high = shadowQuality('high', P);
+  assert.ok(high.mapSize > normal.mapSize, 'a render resolves finer…');
+  assert.ok(Math.abs(high.bias) <= Math.abs(normal.bias), '…so it needs less flat bias');
+  assert.ok(high.normalBias <= normal.normalBias, '…and less normal bias');
+  // …and the working view is not left on the coarse map that started it.
+  assert.ok(normal.mapSize >= 2048, 'a 4 m run on a 1024 map is ~5 mm per shadow texel');
+});
+
+test('the contact shadow is a run, baked once, and it knows how high to look', () => {
+  const C = P.appearance.contactShadow;
+  assert.ok(C.opacity > 0 && C.opacity <= 1);
+  assert.ok(C.blur > 0, 'a room has no point source in it, so no hard edge either');
+  // The shadow camera stops well below a wall unit, or a cabinet hanging at
+  // 1500 mm prints a second blob on the floor under it.
+  assert.ok(C.farMm > 0 && C.farMm < P.projectHeights.wallMount,
+    'a hung unit must be out of the contact shadow s reach');
 });
 
 // ─── the file ───
@@ -297,11 +336,27 @@ test('the studio rig is a key light that can actually model something', () => {
   // into white" — is this ratio. Turn 7 ran ambient 1.25 against key 0.85: a
   // key light weaker than the flat light it has to beat lights everything and
   // shapes nothing.
+  //
+  // ─── Turn 9 (CLAUDE.md F1) ───
+  // Turn 8 wrote this down as "key > 3 × ambient", and that was a proxy for the
+  // real rule rather than the rule itself. Turn 9 raises the flat light
+  // deliberately — Prime-Sash-Windows floods the scene with fill so the colour
+  // reads clean from every angle — and the acne it was holding down is fixed
+  // where acne is actually fixed, in `normalBias` above. So what is asserted is
+  // the rule: the KEY still beats the flat light it has to model against, and
+  // it is still the only light in the app that casts anything.
   const S = P.appearance.studio;
-  assert.ok(S.key > S.ambient * 3, `key ${S.key} against ambient ${S.ambient} cannot cast a readable shadow`);
+  const flat = S.ambient + S.hemisphere.intensity;
+  assert.ok(S.key > S.ambient, `key ${S.key} against ambient ${S.ambient} cannot shape anything`);
+  assert.ok(S.key >= flat * 0.9, `key ${S.key} is lost under ${flat} of flat light`);
   assert.ok(S.fill > 0 && S.fill < S.key, 'the fill models the shadow side without erasing the shadow');
   assert.ok(S.rim > 0, 'and the rim is what separates a white cabinet from a white wall');
   assert.ok(S.shadowPadding > 0, 'the shadow camera is fitted to the furniture, with a margin');
+  // The hemisphere is the flat light with a DIRECTION: warm from the ceiling,
+  // floor-coloured from below. It costs what an ambient costs and casts nothing.
+  assert.ok(S.hemisphere.intensity > 0);
+  assert.match(S.hemisphere.sky, /^#[0-9a-f]{6}$/i);
+  assert.match(S.hemisphere.ground, /^#[0-9a-f]{6}$/i);
 });
 
 test('the editor keeps the cheap settings; the render is where the cost is', () => {

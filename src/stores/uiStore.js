@@ -28,8 +28,24 @@ export const useUiStore = create((set, get) => ({
   libraryPos: { x: 24, y: 96 },
   setLibraryPos: (pos) => set({ libraryPos: pos }),
   libraryCategory: null,             // null = the panel is closed
-  setLibraryCategory: (id) => set({ libraryCategory: id || null }),
-  closeLibrary: () => set({ libraryCategory: null }),
+  setLibraryCategory: (id) => set({ libraryCategory: id || null, libraryInsert: null }),
+  closeLibrary: () => set({ libraryCategory: null, libraryInsert: null }),
+
+  // ─── Insert mode (turn 9, CLAUDE.md F2) ───
+  // The library was opened by a "+" at the end of a run rather than from the
+  // menu, so the PLACE is already decided and the only question left is which
+  // type goes there. It is carried in exactly the shape `projectStore.addUnit`
+  // takes — `{ near, side }` — because the insertion itself is turn 8's and is
+  // not being rewritten: this phase changes the trigger, not the mechanics.
+  //
+  // Cleared whenever the panel is closed or a category is chosen from the menu,
+  // so a place picked on the canvas can never outlive the click that picked it.
+  libraryInsert: null,               // { near: unitId, side: 'left' | 'right' }
+  openLibraryToInsert: (categoryId, at) => set({
+    libraryCategory: categoryId || null,
+    libraryInsert: at?.near ? { near: at.near, side: at.side === 'left' ? 'left' : 'right' } : null,
+  }),
+  clearLibraryInsert: () => set({ libraryInsert: null }),
 
   // Right parameter panel — closes itself once doors are added (SPEC 4.10)
   rightPanelOpen: true,
@@ -80,13 +96,20 @@ export const useUiStore = create((set, get) => ({
   toggleOutlines: () => set((s) => ({ showOutlines: !s.showOutlines })),
 
   // Realistic lighting in the WORKING view (turn 6): the environment probe the
-  // sheen comes from, and the contact shadows that put the furniture on the
-  // floor. On by default — it is most of what turn 6 is for.
+  // sheen comes from. On by default — it is most of what turn 6 is for.
   //
   // It is switchable because it is the one part of the lifting that is not
   // free: the probe is sampled for every lit pixel of every panel, and on a
   // machine with no GPU worth the name that is felt. A render is unaffected —
   // it turns the lighting back on for the still whatever this says.
+  //
+  // ─── Turn 9 (CLAUDE.md F1.3) ───
+  // It used to switch the CONTACT SHADOWS off with the probe, and it no longer
+  // does. The shadow is one blob for the whole run now, baked once per layout
+  // change and free to look at afterwards (3d/Scene.jsx FloorShadow) — so the
+  // performance reason this toggle exists stopped applying to it, and a joiner
+  // who turns the probe down to keep an old laptop moving keeps his furniture
+  // standing on the floor.
   realisticLighting: true,
   setRealisticLighting: (v) => set({ realisticLighting: Boolean(v) }),
   toggleRealisticLighting: () => set((s) => ({ realisticLighting: !s.realisticLighting })),
@@ -129,8 +152,36 @@ export const useUiStore = create((set, get) => ({
   // Selection: which unit and which of its sections is highlighted
   selectedUnitId: null,
   selectedSection: null,
-  selectUnit: (id) => set({ selectedUnitId: id, selectedSection: id ? 0 : null, rightPanelOpen: Boolean(id) }),
-  clearSelection: () => set({ selectedUnitId: null, selectedSection: null }),
+  selectUnit: (id) => set({
+    selectedUnitId: id,
+    selectedSection: id ? 0 : null,
+    rightPanelOpen: Boolean(id),
+    // Selecting a DIFFERENT cabinet drops whatever was selected inside the old
+    // one — an element belongs to its unit and cannot outlive the selection of
+    // it. Re-selecting the SAME unit leaves the element alone, which is what
+    // makes clicking a shelf that is already selected a no-op rather than a
+    // reset (turn 9, CLAUDE.md F4.1).
+    ...(id === get().selectedUnitId ? {} : { selectedElement: null }),
+  }),
+  clearSelection: () => set({ selectedUnitId: null, selectedSection: null, selectedElement: null }),
+
+  // ─── One ELEMENT inside a unit (turn 9, CLAUDE.md F4.1) ───
+  // Until now the smallest thing that could be selected was a whole cabinet, so
+  // nothing inside one was individually editable — a shelf was a row in a list
+  // and nothing else. This is the selection a joiner means when he points at a
+  // shelf: `{ unitId, elementRef }`, where the ref is the ENGINE's own panel id
+  // (`SHELF-2`), because that is the id the 3D view draws, the BOM prints and
+  // the CNC sheet lays out. Nothing new to keep in step.
+  //
+  // Cleared by clicking elsewhere or by Escape, exactly as a unit selection is.
+  selectedElement: null,             // { unitId, elementRef } | null
+  selectElement: (unitId, elementRef) => set({
+    selectedUnitId: unitId,
+    selectedSection: 0,
+    rightPanelOpen: true,
+    selectedElement: unitId && elementRef ? { unitId, elementRef } : null,
+  }),
+  clearElement: () => set({ selectedElement: null }),
 
   // Shelf being dragged in 3D — drives the live dimension readout
   dragging: null,                    // { unitId, itemId, pos_mm, above, below }

@@ -7,7 +7,8 @@ import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.
 import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
   clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
-  backStandoff, freeSlotOnWall, insetPads, shelfBand, shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  backStandoff, clampElementDepth, elementDepthBounds, freeSlotOnWall, insetPads, shelfBand,
+  shelfBounds, unitIssues, unitPlanSpan, unitSpan,
   wallClearance,
   wallObstacles,
 } from '../engine/collision.js';
@@ -22,7 +23,9 @@ import {
 } from '../engine/autoparts.js';
 import { runInfillParams, unitTop } from '../engine/runs.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
-import { drawersInEngineOrder, nextHangerOffset, nextShelfPos, shelvesInEngineOrder } from '../engine/items.js';
+import {
+  drawersInEngineOrder, evenShelfPositions, nextHangerOffset, nextShelfPos, shelvesInEngineOrder,
+} from '../engine/items.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -316,7 +319,13 @@ export const useProjectStore = create((set, get) => ({
   // opens the way it is built, not the way the last one was.
   setDesign: (patch) => {
     set((s) => ({
-      project: { ...s.project, design: migrateDesign({ ...s.project.design, ...patch }) },
+      // The stored design is migrated FIRST and the patch lands on the result.
+      // It is already migrated in practice (loadProject and newProject both do
+      // it), and this is still not belt-and-braces: since turn 9 the design
+      // carries a ONE-WAY migration — a sheen on the old 0–25 scale is
+      // multiplied by four — and a patch merged onto an unmigrated base would
+      // hand a freshly typed 25 to that rule and store 100 (CLAUDE.md F5).
+      project: { ...s.project, design: migrateDesign({ ...migrateDesign(s.project.design), ...patch }) },
       dirty: true,
     }));
     // The infill width lives in Design Settings, so changing it re-cuts the
@@ -1416,6 +1425,70 @@ export const useProjectStore = create((set, get) => ({
     });
   },
 
+  // ─── Per-element overrides (turn 9, CLAUDE.md F4) ───
+  //
+  // Three things a joiner says about ONE shelf: how far back it stands, how
+  // thick it is, and what it is made of. All three live on the ITEM, which is
+  // the unit's own config — so they travel through `paramsForEngine()` like
+  // every other decision this layer makes, they round-trip through save/load
+  // with the rest of the section, and a bare `computeCabinet()` with none of
+  // them set cuts exactly what the AutoLISP kit cuts (fixtures/README rule 1).
+  //
+  // The ENGINE gained no formula for any of this. It gained three inputs.
+
+  /**
+   * How far this element's front edge stands back from the face of the cabinet.
+   *
+   * The stored field is `front_mm` and has been since turn 8 — it is the same
+   * number, and giving the drag a second field to write would be two homes for
+   * one millimetre. `null` puts the piece back on the profile's default
+   * setback, which is what "no override" means everywhere else in this app.
+   *
+   * Clamped through `engine/collision.js elementDepthBounds`, so the number
+   * field in the panel and the drag in the canvas stop at the same place.
+   */
+  setElementDepth: (unitId, itemId, setbackMm) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    if (setbackMm == null) { get().updateItem(unitId, itemId, { front_mm: null }); return null; }
+    const bounds = elementDepthBoundsFor(unit, profile);
+    const value = snapTo(clampElementDepth(setbackMm, bounds), profile.editor.mmStep);
+    get().updateItem(unitId, itemId, { front_mm: value });
+    return { setback: value, ...bounds };
+  },
+
+  /**
+   * This element's own board thickness. `null` puts it back on the carcass
+   * board, which is what every shelf was before turn 9.
+   *
+   * Clamped to the profile's own board options at the bottom end only — a shelf
+   * THICKER than the carcass is the point of the feature (a 25 mm shelf under a
+   * microwave), a shelf of 0 is a missing part with a cut-list entry.
+   */
+  setElementThickness: (unitId, itemId, thicknessMm) => {
+    const profile = getCabinetProfile();
+    if (thicknessMm == null) { get().updateItem(unitId, itemId, { thickness_mm: null }); return null; }
+    const t = Number(thicknessMm);
+    if (!Number.isFinite(t) || t <= 0) return null;
+    const value = snapTo(Math.min(t, MAX_ELEMENT_THICKNESS), profile.editor.mmStep);
+    get().updateItem(unitId, itemId, { thickness_mm: value });
+    return value;
+  },
+
+  /**
+   * What this element is made of. A label and an id, the same pair the hanger
+   * rail has carried since turn 4 — the label is what the cut list prints and
+   * what a workshop orders against, the id is what a price is looked up by.
+   * `null` puts the piece back on the project's carcass material.
+   */
+  setElementMaterial: (unitId, itemId, material) => {
+    get().updateItem(unitId, itemId, {
+      material_id: material?.material_id ?? null,
+      material_label: material?.material_label ?? null,
+    });
+  },
+
   /** One drawer's height. Clamped by the engine, then the shelves re-settle. */
   setDrawerHeight: (unitId, itemId, heightMm) => {
     const DR = getCabinetProfile().wardrobe.drawers;
@@ -1463,7 +1536,26 @@ export const useProjectStore = create((set, get) => ({
     dirty: true,
   })),
 
-  /** Even out the shelves in the free zone — used by [+] / [×]. */
+  /**
+   * Even out the shelves in the free zone — the "Even" button and the
+   * right-click "Centre shelves".
+   *
+   * ─── Turn 9 (CLAUDE.md F3) ───
+   * The arithmetic is the AutoLISP's, and it lives in engine/items.js
+   * `evenShelfPositions` so there is one copy of it (KIT_WARDROBE_FULL.lsp
+   * L133-142). Two things were wrong here and both are fixed by using it:
+   *
+   *   1. the shelves were spread over the DRAG BAND (`min`..`max`) instead of
+   *      over the shelf ZONE (`floor`..`ceiling`), so the outer openings came
+   *      out `editor.minShelfEdgeGap` short of the inner ones — which is
+   *      exactly the "gaps are NOT equal" Piotr reported;
+   *   2. the positions were handed out in ARRAY order, so a shelf that had been
+   *      dragged past another one kept its place in the list and the two swapped
+   *      physical positions when the button was pressed.
+   *
+   * They are assigned bottom-up now, which is the engine's own order (S1 is the
+   * lowest shelf everywhere else in the system).
+   */
   redistributeShelves: (unitId) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
@@ -1471,12 +1563,17 @@ export const useProjectStore = create((set, get) => ({
     const profile = getCabinetProfile();
     const limits = shelfLimits(unit, profile);
     const items = unit.params.sections[0].items;
-    const shelves = items.filter((i) => i.kind === 'shelf');
-    const step = (limits.max - limits.min) / (shelves.length + 1);
-    let n = 0;
-    const next = items.map((i) => (i.kind === 'shelf'
-      ? { ...i, pos_mm: snapTo(limits.min + step * (++n), profile.editor.mmStep) }
-      : i));
+    const shelves = shelvesInEngineOrder(items);
+    const positions = evenShelfPositions({
+      // The kit's own bounds: the top face of whatever closes the space below
+      // (drawer partition, rail partitioner, or the base panel) and the
+      // underside of the top panel.
+      zoneBottom: limits.floor,
+      zoneTop: limits.ceiling,
+      count: shelves.length,
+    });
+    const at = new Map(shelves.map((sh, i) => [sh.id, snapTo(positions[i], profile.editor.mmStep)]));
+    const next = items.map((i) => (at.has(i.id) ? { ...i, pos_mm: at.get(i.id) } : i));
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
       dirty: true,
@@ -1892,6 +1989,33 @@ export function shelfLimits(unit, profile) {
   const G = unit.params.board_t ?? profile.board.thickness;
   return { ...band, drawerTop: band.floor === G ? null : band.floor };
 }
+
+/**
+ * How far back an element inside THIS unit may be set (turn 9, CLAUDE.md F4).
+ *
+ * A thin adapter, like the shelf ones above: it turns a unit into the plain
+ * numbers `engine/collision.js elementDepthBounds` wants and nothing more. The
+ * sink's back panel sits 50 mm forward INSIDE the carcass (KIT_SINK L425-426),
+ * so a shelf in one has that much less depth to give away before it stops being
+ * a shelf — the same `backLoss` the engine takes off it when it cuts it.
+ */
+export function elementDepthBoundsFor(unit, profile) {
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const inset = getUnitType(unit.type)?.carcass?.back === 'inset';
+  return elementDepthBounds({
+    depth: unit.params.depth,
+    boardT: profile.carcass.shelfDepthBoards * G,
+    backLoss: inset ? profile.sinkUnit.backSetback + G : 0,
+  }, profile);
+}
+
+/**
+ * The thickest board this app will let a piece be given. Not a workshop number
+ * and deliberately not in the profile: it is a sanity rail on a typed field, so
+ * that a slipped keystroke ("250" for "25") is refused rather than cut. The
+ * REAL limits are the workshop's board options, which the panel offers.
+ */
+const MAX_ELEMENT_THICKNESS = 100;
 
 /** Drag bounds for one shelf: the band, narrowed by its immediate neighbours. */
 export function shelfDragBounds(unit, itemId, profile) {

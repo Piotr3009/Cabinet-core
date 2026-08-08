@@ -898,3 +898,80 @@ Bez zmian względem #29, #34, #43. Tura 8 nie dodała żadnego pliku SQL i nie u
 sloty, półki, mitra, menu i złącza są w całości lokalne — nic z tej tury nie potrzebuje
 bazy. Skany dekorów są czytane z **publicznych URL-i** Supabase Storage podanych
 w danych; nie ma tu zapytania, klucza ani sesji.
+
+## #50 — W tym silniku nie ma PIONOWEGO partitionu (zakres F4)
+
+CLAUDE.md tury 9, F4, kończy się strażnikiem zakresu: „półki (regulowane + stałe)
+i pionowe partitiony". Pionowego partitionu w tym silniku **nie ma**.
+
+Co jest: `PARTITION` i `RAIL-PART` — POZIOME płyty o roli `shelf`, budowane przez
+silnik ze stosu szuflad (albo z railu) pod nimi; oraz `DP`, pionowy panel niosący
+prowadnice, który nie jest elementem użytkownika, tylko częścią mechanizmu szuflad
+i wynika z ich liczby i osadzenia.
+
+Co z tego wykonano: półki obu wariantów w pełni (cofnięcie, grubość, materiał,
+przeciąganie w głąb). Partitiony są **zaznaczalne i podświetlane** — F4.1 prosi
+o to wprost („and partitions where they render") — i dostają jedno realne
+nadpisanie, cofnięcie od lica (`partition_front_mm`, istnieje od tury 8, bo
+partition pod blatem czasem musi wyjść na lico). Grubości ani materiału NIE
+dostają, i to nie jest przeoczenie: szerokość, wysokość i pozycja partitionu
+wynikają ze stosu pod nim, więc nie ma pozycji (`items[]`), na której taka
+wartość mogłaby zamieszkać — a dopisanie jej na jednostce byłoby drugim miejscem,
+z którego bierze się płyta partitionu, obok `board_t`.
+
+Gdyby warsztat rzeczywiście chciał pionowej przegrody jako ELEMENTU (dzielić
+szafkę na dwie kolumny), to jest nowy typ pozycji w `items[]` plus formatka
+w `computeCabinet()` — czyli robota na własną fazę, nie dopisek do tej.
+
+## #51 — Zaznaczona półka nie chodzi w pionie MYSZĄ
+
+F4.2 mówi wprost: „With a shelf selected, dragging it moves it along the unit's
+depth axis". Wykonane dosłownie, i cena jest taka, że dopóki półka JEST
+zaznaczona, ten sam chwyt nie ruszy jej w górę ani w dół.
+
+Złagodzone tak, jak się dało bez łamania reguły: pierwsze dotknięcie
+niezaznaczonej półki dalej ciągnie ją w PIONIE (i przy okazji ją zaznacza), więc
+oba gesty są dostępne i żaden nie potrzebuje klawisza modyfikującego; Escape
+oddaje pionowy przeciąg; wysokość jest polem liczbowym w sekcji elementu przez
+cały czas i idzie przez tę samą klamrę co przeciąganie.
+
+Gdyby to okazało się mylące przy biurku, alternatywa jest jedna i tania: oś
+decydowana KIERUNKIEM ruchu w pierwszych kilku pikselach przeciągnięcia, zamiast
+stanem zaznaczenia. Nie zrobione, bo CLAUDE.md mówi co innego, a zgadywanie osi
+z ruchu myszy bywa gorsze niż reguła, której można się nauczyć.
+
+## #52 — Cień kontaktowy piecze się przy KAŻDEJ zmianie układu, także w trakcie przeciągania
+
+`frames={1}` plus React-owy `key` liczony z dopasowania do mebli robi dokładnie
+to, o co prosi CLAUDE.md F1.3: raz na zmianę układu, nie raz na klatkę. Orbitowanie
+— czyli to, co się w tym widoku robi najczęściej — kosztuje zero.
+
+Czego to nie omija: **przeciągania szafki**. Układ zmienia się wtedy przy każdym
+zdarzeniu wskaźnika, więc plama przepieka się z tą częstotliwością, a przepieczenie
+to nowy render target 512² plus przebieg głębi i cztery przebiegi rozmycia. To jest
+mniej więcej koszt `frames={Infinity}` przez czas trwania przeciągania — i to
+jest ŚWIADOMY wybór, bo alternatywa (kwantyzacja klucza do grubszej siatki) to
+cień, który skacze za szafką skokami zamiast za nią jechać.
+
+Gdyby to bolało na słabym GPU: najtańsze wyjście to wygaszać plamę na czas
+przeciągania i przepiec ją raz na `pointerup`. Nie zrobione, bo znikający cień
+w trakcie ruchu to dokładnie ten artefakt, którego F1 miało się pozbyć.
+
+## #53 — SQL wciąż nieuruchomione
+
+Bez zmian względem #29, #34, #43, #49. Tura 9 nie dodała żadnego pliku SQL i nie
+uruchomiła żadnego z istniejących (`sql/002_tura3.sql`, `sql/003_tura5.sql`).
+
+Wszystko, co ta tura dołożyła do DANYCH, jest lokalne i jedzie w tych samych
+JSON-ach co reszta projektu: nadpisania elementu (`thickness_mm`, `material_id`,
+`material_label`, `front_mm`) siedzą na pozycji w `params.sections[].items[]`,
+a przeskalowany sheen w `design.sheen` ze stemplem `schema: 2`. Round-trip przez
+localStorage jest przetestowany (`test/element-editing.test.js`).
+
+Co z tego wynika dla bazy — to samo, co w #48: wiersze leżące w Supabase dostaną
+nowy kształt dopiero wtedy, gdy ktoś otworzy taki projekt w aplikacji i go zapisze.
+Dla sheenu jest to szczególnie warte zapisania, bo migracja jest JEDNOKIERUNKOWA:
+projekt zapisany przez aplikację tury 9 ma `schema: 2` i już nigdy nie zostanie
+przemnożony, ale projekt czytany z bazy przez coś INNEGO niż ta aplikacja
+przeczyta 60 i nie będzie wiedział, czy to stara skala, czy nowa. Migracja w SQL
+to jedna instrukcja `UPDATE` po `schema` i nie jest napisana.

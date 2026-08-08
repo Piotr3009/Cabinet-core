@@ -8,6 +8,7 @@ import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import {
   FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights, resolveJoinery,
+  sprayFinish, sprayFinishLabel,
 } from '../engine/design.js';
 import { decorIdFromFinishId } from '../engine/decors.js';
 import DecorPicker from './DecorPicker.jsx';
@@ -42,8 +43,10 @@ export default function DesignSettingsModal() {
   const finishes = profile.appearance.finishes;
 
   const [editing, setEditing] = useState(null);   // door style id being edited
-  // Which finish source is open, and which role the decor grid applies to.
-  const [finishTab, setFinishTab] = useState('app');   // 'app' | 'egger'
+  // Which finish SOURCE is open, and which role the decor grid applies to.
+  // Turn 9 (CLAUDE.md F6) adds 'spray': a sprayed colour is a way of finishing a
+  // front, so it belongs beside the boards rather than in a corner of its own.
+  const [finishTab, setFinishTab] = useState('app');   // 'app' | 'egger' | 'spray'
   const [decorRole, setDecorRole] = useState('front'); // fronts are what a client picks first
 
   const boardMaterials = materials.filter((m) => m.category === 'board');
@@ -130,7 +133,7 @@ export default function DesignSettingsModal() {
           <div className="cc-row">
             <span className="text-xs uppercase tracking-wide text-ink-200">Finish</span>
             <div className="flex gap-1">
-              {[['app', 'This app'], ['egger', 'EGGER decors']].map(([id, label]) => (
+              {[['app', 'This app'], ['egger', 'EGGER decors'], ['spray', 'Sprayed']].map(([id, label]) => (
                 <button
                   key={id}
                   type="button"
@@ -149,8 +152,19 @@ export default function DesignSettingsModal() {
               ['front', 'Fronts', 'Same as the carcass'],
             ].map(([role, label, emptyLabel]) => {
               const chosen = design.finish[role];
-              const resolved = finishById(profile, chosen)
+              // ─── Turn 9 (CLAUDE.md F6) ───
+              // A sprayed colour on the fronts BEATS whatever board is selected
+              // here, because paint covers a decor exactly as it does in the
+              // workshop (engine/design.js `resolveFinishes`). So the row has to
+              // say so, or a job whose doors are sprayed navy reads as a job
+              // whose doors are oak with a swatch nobody can explain.
+              const spray = role === 'front' ? sprayFinish(design.colour.front) : null;
+              const resolved = spray
+                || finishById(profile, chosen)
                 || (role === 'carcass' ? finishById(profile, profile.appearance.defaultCarcassFinish) : null);
+              const placeholder = (spray && `— sprayed: ${spray.label} —`)
+                || (decorIdFromFinishId(chosen) && '— an EGGER decor is chosen —')
+                || emptyLabel;
               return (
                 <div key={role} className="space-y-1">
                   <span className="cc-label">{label}</span>
@@ -160,7 +174,7 @@ export default function DesignSettingsModal() {
                       value={decorIdFromFinishId(chosen) ? '' : (chosen || '')}
                       onChange={(e) => setDesign({ finish: { ...design.finish, [role]: e.target.value || null } })}
                     >
-                      <option value="">{decorIdFromFinishId(chosen) ? '— an EGGER decor is chosen —' : emptyLabel}</option>
+                      <option value="">{placeholder}</option>
                       {finishes.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
                     </select>
                     <FinishSwatch finish={resolved} />
@@ -169,6 +183,11 @@ export default function DesignSettingsModal() {
                       is never named anywhere in this app without "EGGER". */}
                   {resolved?.decor && (
                     <p className="text-[11px] text-gold truncate" title={resolved.label}>{resolved.label}</p>
+                  )}
+                  {spray && (
+                    <p className="text-[11px] text-gold truncate" title={spray.label}>
+                      {spray.label} — this is what the fronts are finished in
+                    </p>
                   )}
                 </div>
               );
@@ -198,8 +217,35 @@ export default function DesignSettingsModal() {
             </div>
           )}
 
+          {/* ─── Sprayed (turn 9, CLAUDE.md F6) ───
+              The third SOURCE a front can be finished from, beside this app's
+              own boards and the EGGER pack: a colour out of a spray gun. It is
+              the same ColourPicker the door styles use — RAL, Farrow & Ball, or
+              a hex somebody types (reference/colors/psw-colors.json) — because
+              a second colour picker is a second place for a RAL number to be
+              wrong. Turn 8 had this control at the bottom of the screen under
+              "Front colour", which is where a person looks LAST for the answer
+              to "what are the doors made of". */}
+          {finishTab === 'spray' && (
+            <div className="space-y-2 pt-1">
+              <ColourPicker
+                label="Sprayed front colour"
+                value={design.colour.front}
+                onChange={(c) => setDesign({ colour: { ...design.colour, front: c } })}
+              />
+              <p className="text-[11px] text-ink-400">
+                A sprayed front is lacquer over board: it takes the project sheen, and it refuses the
+                room&apos;s reflection so a RAL chip held against the screen is matched against the paint
+                and not against the carcass beside it. The cut list names it
+                {' '}<span className="text-ink-200">
+                  {sprayFinishLabel(design.colour.front) || 'RAL 3005 Wine Red spray'}
+                </span>.
+              </p>
+            </div>
+          )}
+
           <p className="text-[11px] text-ink-400">
-            A front COLOUR (below) is paint and covers the decor, exactly as it does in the workshop.
+            A front COLOUR is paint and covers the decor, exactly as it does in the workshop.
           </p>
         </section>
 
@@ -239,12 +285,12 @@ export default function DesignSettingsModal() {
             </div>
           </div>
 
+          {/* The front COLOUR moved up into the finish picker's "Sprayed"
+              source in turn 9 (CLAUDE.md F6) — it is a way of finishing a
+              front, so it belongs with the other two. The sheen stays here: it
+              applies to every sprayed piece in the job, including the plinth
+              and the end panels, whether or not a front colour was picked. */}
           <div className="space-y-3">
-            <ColourPicker
-              label="Front colour"
-              value={design.colour.front}
-              onChange={(c) => setDesign({ colour: { ...design.colour, front: c } })}
-            />
             <SheenSlider design={design} setDesign={setDesign} profile={profile} />
           </div>
         </section>

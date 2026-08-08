@@ -47,7 +47,7 @@ function Stroke({ from, to, y, weight, colour }) {
       {/* Flat in Y as well as thin in Z: a dimension line is a LINE, and a
           square-section bar catches the light like a piece of furniture. */}
       <boxGeometry args={[length, weight * 0.6, weight]} />
-      <meshBasicMaterial color={colour} toneMapped={false} />
+      <meshBasicMaterial color={colour} toneMapped={false} allowOverride={false} />
     </mesh>
   );
 }

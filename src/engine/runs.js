@@ -174,6 +174,97 @@ export function runEnd(run, side, { wallWidth, roomHeight }, profile) {
   return { kind: 'open', x: outerEdge };
 }
 
+// ─── Where a cabinet can be ADDED (turn 9, CLAUDE.md F2) ────────────────────
+
+/**
+ * The free gap at one end of a run: how much clear wall there is between the
+ * outside of the run and the next thing along — a neighbouring unit at the same
+ * level, or the wall itself.
+ *
+ * Measured off `paddedSpan`, so an END PANEL counts as part of the unit it is
+ * screwed to. A gap measured to the carcass would offer the last 18 mm of a
+ * slot that is already occupied by a masking panel.
+ *
+ * @param {object} run       one entry from buildRuns()
+ * @param {'left'|'right'} side
+ * @param {object} context   { wallWidth, others } — `others` is every unit on
+ *                           the same wall at the same level, this run included;
+ *                           its own members are skipped here.
+ * @returns {{gap:number, from:number, to:number, unit:object}}
+ */
+export function runEndGap(run, side, { wallWidth = 0, others = [] } = {}) {
+  const mine = new Set(run.units.map((u) => u.id));
+  const spans = others.filter((u) => !mine.has(u.id)).map(paddedSpan);
+  const unit = side === 'left' ? run.units[0] : run.units[run.units.length - 1];
+
+  if (side === 'left') {
+    const edge = run.left;
+    // The nearest thing standing to the LEFT of this run. Nothing there means
+    // the wall, which is at 0.
+    const blocked = spans.filter((s) => s.right <= edge + 1e-6).map((s) => s.right);
+    const from = blocked.length ? Math.max(...blocked) : 0;
+    return { gap: Math.max(0, edge - from), from, to: edge, unit };
+  }
+  const edge = run.right;
+  const blocked = spans.filter((s) => s.left >= edge - 1e-6).map((s) => s.left);
+  const to = blocked.length ? Math.min(...blocked) : (Number(wallWidth) || 0);
+  return { gap: Math.max(0, to - edge), from: edge, to, unit };
+}
+
+/**
+ * Every place the canvas offers a "+" (turn 9, CLAUDE.md F2).
+ *
+ * ─── WHY THIS EXISTS AT ALL ───
+ * Turn 8 answered "adding on the left is impossible" with a three-way side
+ * picker in the Library panel — ◀ / auto / ▶ — and Piotr's verdict on it is
+ * that it is confusing. He is right about the reason: it asks you to describe
+ * a place in words, in a panel, before you have said which cabinet you mean.
+ *
+ * So the question is asked the other way round. Every free end of every run
+ * carries a "+", and clicking it says the whole sentence at once — THIS end of
+ * THIS run — before the library has even opened. The insertion itself is turn
+ * 8's, unchanged: `projectStore.addUnit(typeId, { near, side })`.
+ *
+ * A plus appears only where a cabinet could actually go: below
+ * `profile.ui.addPlusMinGapMm` of clear room the gap is a filler's job, and
+ * offering to put a cabinet in it would be an offer the placement refuses a
+ * moment later.
+ *
+ * Pure: units in, anchors out. No React, no store, no three.js.
+ *
+ * @param {Array} units      every unit in the project
+ * @param {object} context   { walls } — engine/room.js roomWalls() output
+ * @returns {Array<{unitId:string, side:'left'|'right', wall:number, mount:string,
+ *                  x_mm:number, gap:number, top:number}>}
+ */
+export function addPlusPoints(units, { walls = [] } = {}, profile) {
+  const min = profile?.ui?.addPlusMinGapMm ?? 0;
+  const out = [];
+  for (const run of buildRuns(units, profile)) {
+    const wallWidth = walls?.[run.wall]?.width ?? 0;
+    // Same wall, same level: a wall unit and a base unit occupy different bands
+    // of the same wall and do not block each other.
+    const others = units.filter((u) => (u.position?.wall ?? 0) === run.wall
+      && getUnitType(u.type).mount === run.mount);
+    for (const side of ['left', 'right']) {
+      const { gap } = runEndGap(run, side, { wallWidth, others });
+      if (gap < min) continue;
+      out.push({
+        unitId: (side === 'left' ? run.units[0] : run.units[run.units.length - 1]).id,
+        side,
+        wall: run.wall,
+        mount: run.mount,
+        // The outside face of the run at that end — where the new cabinet's
+        // own edge will land.
+        x_mm: side === 'left' ? run.left : run.right,
+        gap,
+        top: run.top,
+      });
+    }
+  }
+  return out;
+}
+
 /**
  * The top infill for one run, or null when nobody asked for one.
  *

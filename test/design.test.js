@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import {
-  DEFAULT_DESIGN, FRONT_STYLE_OPTIONS, migrateDesign, normaliseColour, normaliseDoorStyle,
-  resolveUnitDesign, setCarcassTypeCount, colourLabel,
+  DEFAULT_DESIGN, DESIGN_SCHEMA, FRONT_STYLE_OPTIONS, migrateDesign, normaliseColour,
+  normaliseDoorStyle, resolveUnitDesign, setCarcassTypeCount, colourLabel,
 } from '../src/engine/design.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -23,7 +23,9 @@ const unit = (params = {}) => ({ id: 'u1', type: 'BUD', params: { unit_num: '01'
 
 test('a fresh project has one carcass type, a standard front and no colour', () => {
   const d = migrateDesign(null);
-  assert.equal(d.schema, 1);
+  // Turn 9 (CLAUDE.md F5) bumped it to 2 for the sheen rescale; a design is
+  // always stamped with the schema the app currently speaks.
+  assert.equal(d.schema, DESIGN_SCHEMA);
   assert.equal(d.carcass.types.length, 1);
   assert.equal(d.fronts.style, 'S');
   assert.equal(d.colour.front, null);

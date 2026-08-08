@@ -526,18 +526,20 @@ export const DEFAULT_CABINET_PROFILE = {
     // Kept as the fallback a piece takes when it belongs to no finish family.
     sheen: { roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.35, metalness: 0.0 },
 
-    // ─── The sheen SCALE (turn 8, CLAUDE.md F1) ───
-    // Piotr already has this scale in Spraying-Calc and quotes people on it, so
-    // the app uses HIS numbers rather than a roughness slider nobody in a
-    // workshop has ever been asked for: 0 is dead matt, 25 is a mirror, and the
-    // steps are the five-point ones a lacquer is specified in.
+    // ─── The sheen SCALE (turn 8; corrected turn 9, CLAUDE.md F5) ───
+    // A lacquer is specified as a PERCENTAGE of gloss, and that is the number a
+    // sprayer, a paint supplier and a customer all already use: 5 % is dead
+    // matt, 100 % is full gloss, in fives. Turn 8 ran a 0–25 scale, which is the
+    // same information in a language the industry does not speak — and it had a
+    // 0 on it, which nothing is. There is no such thing as a lacquer with no
+    // sheen at all; the flattest one anybody sells is a 5.
     //
-    //     roughness = 1 − sheen / max
+    //     roughness = 1 − sheen / 100
     //
-    // 15 is the default because that is a two-pack satin (roughness 0.4) —
-    // within a step of the 0.3 turn 6 chose for `materials.lacquer` by eye, and
-    // ON the grid a sprayer actually orders from.
-    sheenScale: { min: 0, max: 25, step: 5, default: 15 },
+    // 60 is the default: a two-pack satin at roughness 0.4. It is turn 8's own
+    // default (15) on the new scale, which is what the migration multiplies
+    // every stored value by — engine/design.js `migrateDesign`.
+    sheenScale: { min: 5, max: 100, step: 5, default: 60 },
 
     // ─── Sprayed surfaces (turn 8, CLAUDE.md F1) ───
     // The Spraying philosophy, in three numbers: A SPRAYED COLOUR IS THE COLOUR.
@@ -574,13 +576,48 @@ export const DEFAULT_CABINET_PROFILE = {
     // key light's shadow camera is fitted to the CABINETS rather than to the
     // room, so every texel of the map lands on something that casts a shadow
     // instead of on four metres of empty floor.
+    //
+    // ─── Turn 9 (CLAUDE.md F1): THE STRIPES, AND WHY THE FILL WENT UP ───
+    // Piotr's report was diagonal stripes across the fronts, in the working view
+    // and in a 4K still alike. That is SHADOW ACNE — a surface shadowing itself
+    // because the depth it is compared against was sampled at texel centres that
+    // do not line up with it — and turn 8 had three of the four classic causes
+    // at once: a shadow frustum spanning the whole run at 1024 px (~5 mm per
+    // texel on a 4 m kitchen), no `normalBias` at all, and a render preset that
+    // raised the map size while LOWERING the bias.
+    //
+    // The map size and the two bias numbers are in `render.shadow` below, where
+    // the rest of the shadow settings live. What belongs HERE is the fourth
+    // cause, which is a lighting decision rather than a shadow one: ambient 0.2
+    // against key 1.0 makes every band of acne a high-contrast band, and the
+    // clearcoat on a lacquered door doubles it.
+    //
+    // Prime-Sash-Windows is the reference for the target look, and its answer is
+    // the one adopted here: flood the scene with fill so the colour reads bright
+    // and clean from every angle, keep exactly ONE shadow-casting light, and
+    // ground the object with a soft contact blob. The key stays 1.0 and stays
+    // the only caster — the modelling turn 8 bought is not being given back —
+    // but the flat light under it is raised so that what the key leaves in
+    // shadow is still a colour rather than a hole.
     studio: {
-      ambient: 0.2,
+      ambient: 0.45,
       key: 1.0,
-      fill: 0.5,
+      fill: 0.55,
       rim: 0.3,
       exposure: 1.0,
       shadowPadding: 600,
+      // ─── The sky and the floor (turn 9, CLAUDE.md F1) ───
+      // An ambient light is one number in every direction, which is the one
+      // thing real light never is: in a room the light from above is warm
+      // daylight or a warm lamp, and the light from below has bounced off a
+      // floor and carries the floor's colour. A hemisphere costs the same as an
+      // ambient — no shadow map, no extra pass — and it is what stops a raised
+      // fill from reading as fog.
+      //
+      // `sky` is a warm off-white (a room with the lights on), `ground` is the
+      // warm grey a timber or a screed floor bounces back. It casts NOTHING:
+      // the key is still the only shadow in the scene.
+      hemisphere: { sky: '#fdf6e8', ground: '#c8c0b0', intensity: 0.5 },
       // ─── The bounce the rig cannot produce ───
       // A three-light studio rig is built for a subject on a seamless backdrop.
       // Point it at a ROOM and the walls come out grey, because most of what
@@ -642,10 +679,27 @@ export const DEFAULT_CABINET_PROFILE = {
     // glossier still has the knob, and the render pass still reads it.
     environment: { intensity: 0.5, renderIntensity: 0.5, blur: 0.05 },
 
-    // Contact shadow: the dark that says a cabinet is STANDING on the floor
-    // rather than hovering a millimetre above it. Not a shadow map — a soft
-    // footprint under the unit, which costs one transparent quad per unit.
-    contactShadow: { spread: 1.55, opacity: 0.34, softness: 0.55 },
+    // ─── Contact shadow (turn 6; rebuilt turn 9, CLAUDE.md F1.3) ───
+    // The dark that says a cabinet is STANDING on the floor rather than hovering
+    // a millimetre above it. The key light cannot give you one: it comes in from
+    // off to the side, so its shadow lands BESIDE the unit and the floor between
+    // the legs stays as bright as the open room.
+    //
+    // Turn 6 answered that with one hand-painted quad per unit. Turn 9 replaces
+    // it with drei's <ContactShadows>, fitted to the whole run from the same
+    // furniture bounds the key light's frustum uses — because the thing that
+    // reads as wrong is not one cabinet floating, it is a RUN floating, and a
+    // per-unit blob leaves a bright seam at every joint between two of them.
+    // It is rendered ONCE per layout change (`frames={1}` plus a React key), so
+    // orbiting costs nothing: the price is paid when the furniture moves.
+    //
+    //   opacity  how dark the blob is under the carcass.
+    //   blur     how far the edge of it is smeared. A room has no point source
+    //            in it, so a contact shadow has no hard edge either.
+    //   farMm    how high above the floor the shadow camera still sees. Past
+    //            this, nothing contributes — so a wall unit hanging at 1500 mm
+    //            does not print a second blob on the floor under it.
+    contactShadow: { opacity: 0.5, blur: 2.5, farMm: 400 },
     // Presentation mode (View ▸ Contour): the material fades out, the contour
     // stays. Changes nothing in the BOM.
     contour: { opacity: 0.06, hex: '#ffffff', outline: '#101010' },
@@ -728,12 +782,39 @@ export const DEFAULT_CABINET_PROFILE = {
       { id: '4k', label: '4K', long: 3840, hint: '3840 px on the longer side — print and proposals' },
     ],
     defaultResolution: 'preview',
-    // Shadow map size and softness. `high` is a render-only cost: four times
-    // the map in each direction is sixteen times the pixels, and the working
-    // view must not pay for it (CLAUDE.md: heavy things ONLY in the render).
+    // Shadow map size and softness. `high` is a render-only cost: twice the map
+    // in each direction is four times the pixels, and the working view must not
+    // pay for it (CLAUDE.md: heavy things ONLY in the render).
+    //
+    // ─── Turn 9 (CLAUDE.md F1): THE THREE NUMBERS THAT KILL THE STRIPES ───
+    //
+    //   mapSize    how many texels the key light's frustum is divided into. The
+    //              frustum is fitted to the FURNITURE (studio.shadowPadding), so
+    //              on a 4 m run 1024 was ~5 mm per texel — wider than the gap
+    //              between two cabinets. 2048 halves that for the working view;
+    //              a render doubles it again.
+    //
+    //   bias       a flat depth offset. It fixes acne and buys peter-panning
+    //              (the shadow detaching from the foot of the thing casting it)
+    //              — so it is kept SMALL and the work is done by normalBias.
+    //              Turn 8's render preset had it at −0.00018 against the working
+    //              view's −0.0006: the 4K still was the LEAST biased picture in
+    //              the app, which is exactly why the stripes survived at 4K.
+    //              It scales the other way now: a bigger map needs less bias.
+    //
+    //   normalBias the modern fix, and the one turn 8 did not have at all. It
+    //              moves the shadow lookup along the surface NORMAL rather than
+    //              along the light, so a flat panel stops sampling its own depth
+    //              without the whole shadow sliding. In world units — 0.02 is
+    //              20 mm at the working view's texel size, 0.01 at the render's
+    //              finer one, because a finer map needs less of it.
     shadow: {
-      normal: { label: 'Normal', mapSize: 1024, radius: 3, bias: -0.0006 },
-      high: { label: 'High', mapSize: 4096, radius: 7, bias: -0.00018 },
+      normal: {
+        label: 'Normal', mapSize: 2048, radius: 4, bias: -0.0002, normalBias: 0.02,
+      },
+      high: {
+        label: 'High', mapSize: 4096, radius: 7, bias: -0.0001, normalBias: 0.01,
+      },
     },
     defaultShadows: 'normal',
     // A 35 mm lens on full frame: 37.8° vertical. Wide enough to take a run of
@@ -926,6 +1007,27 @@ export const DEFAULT_CABINET_PROFILE = {
     wallBackClearance: 10,
   },
 
+  // ─── The editor's own affordances (turn 9, CLAUDE.md F2) ───
+  // Not clearances and not geometry: numbers that decide when a CONTROL is
+  // offered. They are here rather than in the component for the same reason
+  // every other number is — a workshop that wants the plus to appear sooner
+  // changes one number and the canvas and the test both follow it.
+  ui: {
+    // How much clear room there has to be at the end of a run before the "+"
+    // that adds a cabinet there is offered at all.
+    //
+    // Piotr's verdict on the arrow-based side picker was that it is confusing,
+    // so adding is a "+" standing at the free end of the run itself — you point
+    // at the gap you mean. Which means the plus has to be HONEST: offering one
+    // in a 60 mm slot is offering to put a cabinet where no cabinet goes, and
+    // the placement would refuse it a moment later.
+    //
+    // 100 mm is the narrowest gap a workshop would still call a gap rather than
+    // a scribe — `autoParts.sideInfill.maxWidth` is 120, so anything under this
+    // is a filler's job and not a cabinet's.
+    addPlusMinGapMm: 100,
+  },
+
   // ─── Editor defaults ───
   // The clearances the collision clamp enforces. A move STOPS at these values
   // (src/engine/collision.js) — they are not advisory.
@@ -949,6 +1051,16 @@ export const DEFAULT_CABINET_PROFILE = {
     // Auto-order (turn 4): the gap the next shelf leaves below the last one.
     // Never allowed to close up tighter than minShelfGap — that is the clamp.
     itemStackPitch: 350,
+    // ─── Turn 9 (CLAUDE.md F4) ───
+    // The shallowest a piece inside a carcass may be pulled back to and still
+    // be a piece. A shelf slides in DEPTH now — grab it and pull, between the
+    // face of the cabinet and the construction plane behind it — and a clamp
+    // with no floor under it would let a joiner drag a 560 mm shelf back until
+    // it was a 4 mm strip with a full cut list entry and two edges banded.
+    //
+    // 100 mm is a spice rack: the narrowest thing a workshop would still cut,
+    // edge and drill as a shelf rather than call an offcut.
+    minElementDepth: 100,
   },
 
   // ─── Distance arrows on the canvas (turn 3 phase 8; redrawn turn 5, #34) ───
@@ -1064,7 +1176,10 @@ export function migrateCabinetProfile(profile) {
       sheenScale: { ...D.appearance.sheenScale, ...profile.appearance?.sheenScale },
       spray: { ...D.appearance.spray, ...profile.appearance?.spray },
       decor: { ...D.appearance.decor, ...profile.appearance?.decor },
-      studio: { ...D.appearance.studio, ...profile.appearance?.studio },
+      studio: {
+        ...D.appearance.studio, ...profile.appearance?.studio,
+        hemisphere: { ...D.appearance.studio.hemisphere, ...profile.appearance?.studio?.hemisphere },
+      },
       materials: {
         melamine: { ...D.appearance.materials.melamine, ...profile.appearance?.materials?.melamine },
         lacquer: { ...D.appearance.materials.lacquer, ...profile.appearance?.materials?.lacquer },
@@ -1119,6 +1234,7 @@ export function migrateCabinetProfile(profile) {
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
     },
     room: { ...D.room, ...profile.room },
+    ui: { ...D.ui, ...profile.ui },
     cnc: { ...D.cnc, ...profile.cnc },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },

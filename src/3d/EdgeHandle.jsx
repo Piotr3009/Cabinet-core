@@ -74,6 +74,9 @@ export default function EdgeHandle({
         opacity={0.85}
         depthWrite={false}
         toneMapped={false}
+        // Tool, not furniture: it must not reach the contact-shadow depth pass
+        // (turn 9, CLAUDE.md F1.3).
+        allowOverride={false}
       />
       {title && <group name={title} />}
     </mesh>

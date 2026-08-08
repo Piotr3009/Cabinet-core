@@ -53,7 +53,11 @@ export default function DimLabel({ position, text, scale = 1, tone = 'dim', colo
 
   return (
     <sprite position={position} scale={[w, h, 1]} renderOrder={10}>
-      <spriteMaterial attach="material" map={texture} transparent depthTest={false} />
+      {/* `allowOverride` — a label is TOOL, and tool casts no shadow. Without
+          it the sprite renders into the contact-shadow depth pass (turn 9,
+          CLAUDE.md F1.3) and prints a small dark square on the floor beside the
+          cabinet it is measuring. */}
+      <spriteMaterial attach="material" map={texture} transparent depthTest={false} allowOverride={false} />
     </sprite>
   );
 }

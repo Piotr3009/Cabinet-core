@@ -85,7 +85,7 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     }
   }
 
-  const bom = buildBom(entries);
+  const bom = buildBom(entries, { design: project?.design, profile: getCabinetProfile() });
   const demand = materialDemand(bom, assignments, materials);
   const hardware = hardwareDemand(bom, assignments, materials);
   const boardCost = demandCost(demand);

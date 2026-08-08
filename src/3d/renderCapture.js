@@ -155,10 +155,19 @@ export function captureRender({ gl, scene, camera }, job) {
   // for, which is why a render at "high" would otherwise look identical.
   for (const light of lightsWithShadows(scene)) {
     const s = light.shadow;
-    const prev = { w: s.mapSize.x, h: s.mapSize.y, radius: s.radius, bias: s.bias };
+    const prev = {
+      w: s.mapSize.x, h: s.mapSize.y, radius: s.radius, bias: s.bias, normalBias: s.normalBias,
+    };
     s.mapSize.set(job.shadows.mapSize, job.shadows.mapSize);
     s.radius = job.shadows.radius;
     s.bias = job.shadows.bias;
+    // ─── Turn 9 (CLAUDE.md F1) ───
+    // The render swaps the whole shadow PRESET, and turn 8 swapped two thirds of
+    // it: the map size and the bias went to the render's numbers and the third
+    // number did not exist. That is why the stripes survived at 4K — a bigger
+    // map with less bias and no normal bias is a MORE acne-prone picture, not a
+    // better one. All three travel together now.
+    s.normalBias = job.shadows.normalBias ?? s.normalBias;
     s.map?.dispose();
     s.map = null;
     s.needsUpdate = true;
@@ -166,6 +175,7 @@ export function captureRender({ gl, scene, camera }, job) {
       s.mapSize.set(prev.w, prev.h);
       s.radius = prev.radius;
       s.bias = prev.bias;
+      s.normalBias = prev.normalBias;
       s.map?.dispose();
       s.map = null;
       s.needsUpdate = true;

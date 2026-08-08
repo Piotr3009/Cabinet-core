@@ -7,7 +7,6 @@ import {
   contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
-import ContactShadow from './ContactShadow.jsx';
 import Hardware from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import JointLines from './JointLines.jsx';
@@ -299,8 +298,13 @@ export default function UnitView({
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
-  profile, finishes, outlines = true, contour = false, grounded = true, xray = false, sheen = null,
+  profile, finishes, outlines = true, contour = false, xray = false, sheen = null,
   wallGaps = null, showAllDims = false, unitDesign = null,
+  // ─── One element inside this cabinet (turn 9, CLAUDE.md F4) ───
+  // `selectedElement` is the ENGINE's own panel id (`SHELF-2`) or null, which
+  // is the same id the BOM prints and the CNC sheet lays out — so there is no
+  // second identity to keep in step with it.
+  selectedElement = null, onSelectElement, onMoveElementDepth,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -428,6 +432,14 @@ export default function UnitView({
   // the engine's own boxes.
   const solid = useMemo(() => solidBounds(result.panels), [result.panels]);
 
+  // …and the box round the ONE piece that is selected inside it (turn 9, F4.1).
+  const selectedElementBox = useMemo(
+    () => (selectedElement
+      ? result.panels.find((p) => p.id === selectedElement && p.box)?.box || null
+      : null),
+    [selectedElement, result.panels],
+  );
+
   // Where the bought hardware sits (turn 7, CLAUDE.md F3). Derived from the
   // engine's own drilling, so a hinge is drawn where the machine bores for it.
   const hardware = useMemo(() => hardwareInstances(result, profile), [result, profile]);
@@ -554,6 +566,62 @@ export default function UnitView({
     return local.add(origin);
   }, [origin, wall.angle, rotationRad]);
 
+  /**
+   * ─── Grab a shelf and pull it out (turn 9, CLAUDE.md F4.2) ───
+   *
+   * The other axis. A shelf has always been draggable UP and DOWN; this is the
+   * gesture a joiner makes when he wants one further forward or further back —
+   * he takes hold of it and pulls.
+   *
+   * The plane is HORIZONTAL, at the shelf's own height, because that is the
+   * plane the piece travels in; the vertical drag uses a plane parallel to the
+   * wall for the same reason. The hit is measured along the unit's own INWARD
+   * axis, so a cabinet on wall 3 of an L-shaped room needs no special case: the
+   * arithmetic is in the unit's frame and the frame is the wall's.
+   *
+   * What is written is a SETBACK from the face, which is the number the engine
+   * already takes (`front_mm`, turn 8) and the number a joiner says out loud.
+   * The clamp and the 0.5 mm grid live in the store, with every other rule.
+   */
+  const startDepthDrag = useCallback((e, itemId, currentSetbackMm, atHeightMm) => {
+    if (!itemId || !onMoveElementDepth) return;
+    e.stopPropagation();
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(originY + mm(atHeightMm)));
+    const toPlane = (clientX, clientY) => {
+      const rect = gl.domElement.getBoundingClientRect();
+      const ndc = new THREE.Vector2(
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(ndc, camera);
+      const target = new THREE.Vector3();
+      return raycaster.ray.intersectPlane(plane, target) ? target : null;
+    };
+    // How far into the cabinet a world point is, in the unit's own millimetres.
+    const intoMm = (point) => point.clone().sub(origin).dot(inward) / MM;
+
+    const hit = toPlane(e.clientX, e.clientY);
+    if (!hit) return;
+    // Keep the grab point: the shelf must not jump to the cursor on mouse-down.
+    const grabDelta = currentSetbackMm - (D - intoMm(hit));
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+
+    const move = (ev) => {
+      const p = toPlane(ev.clientX, ev.clientY);
+      if (!p) return;
+      onMoveElementDepth(itemId, D - intoMm(p) + grabDelta);
+    };
+    const up = () => {
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onMoveElementDepth, camera, gl, raycaster, origin, originY, inward, D, orbitRef]);
+
   // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
   // clamping and snapping live in the store so the rules stay in one place.
   const startShelfDrag = useCallback((e, itemId, currentPosMm) => {
@@ -593,18 +661,25 @@ export default function UnitView({
       onPointerOver={enter}
       onPointerOut={leave}
     >
-      {/* Contact shadow (turn 6): the dark that says this cabinet is standing
-          on the floor. Only for a unit that HAS a floor under it — a wall unit
-          hangs, and a blob under it 1.5 m down would be a shadow from nothing.
-          It is in the picture but must not frame it, hence ccNoBounds. */}
-      {!isWallMounted && !contour && grounded && (
-        <group userData={{ ccNoBounds: true }}>
-          <ContactShadow width={W} depth={D} y={-legHeight} profile={profile} />
-        </group>
-      )}
+      {/* ─── Turn 9 (CLAUDE.md F1.3) ───
+          The contact shadow used to be drawn HERE, one hand-painted quad per
+          unit. It is one blob for the whole run now (3d/Scene.jsx FloorShadow),
+          fitted to the same furniture bounds the key light is fitted to —
+          because what reads as hovering is a RUN hovering, and a per-unit
+          footprint leaves a bright seam at every joint between two cabinets. */}
 
       {result.panels.filter((p) => p.box).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
+        // ─── Turn 9 (CLAUDE.md F4.1) ───
+        // What can be selected as an ELEMENT. It is the engine's own `shelf`
+        // role and not a list of part names: SHELF, PARTITION and RAIL-PART are
+        // one kind of thing to this app and always have been (they share a CNC
+        // group and a BOM role), and asking the role is how the app has decided
+        // every other "which pieces are these" question since turn 6.
+        //
+        // A partition is DERIVED — the engine builds it from the drawer stack
+        // under it — so it selects and reads out, and the panel says so.
+        const isElement = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
         // What the piece is made of: the project's finishes, resolved once per
@@ -640,9 +715,30 @@ export default function UnitView({
             profile={profile}
             swing={front === 'door' ? swingFor(p.meta?.hinge) : null}
             onPointerDown={(e) => {
-              // A locked shelf falls through to the UNIT drag: grabbing a
-              // screwed shelf and pulling is grabbing the cabinet (turn 8, F4).
-              if (shelfId && !p.meta?.locked) { startShelfDrag(e, shelfId, p.box.y); return; }
+              // ─── Turn 9 (CLAUDE.md F4.1/F4.2): which axis this drag is on ───
+              //
+              // A shelf you have not touched yet behaves as it always has —
+              // grab it and it moves UP and DOWN — and the touch also SELECTS
+              // it, which is how the properties for it appear in the panel.
+              //
+              // Once it is the selected element, the same grab pulls it in
+              // DEPTH: that is the second gesture CLAUDE.md asks for, and
+              // making it the second one means neither needs a modifier key.
+              // Escape (or clicking anything else) hands the vertical drag
+              // back, and the height is a typed field in the panel throughout.
+              //
+              // A LOCKED shelf is neither: grabbing a screwed shelf and pulling
+              // is grabbing the cabinet (turn 8, F4). It still selects, because
+              // a shelf that cannot move can still be made thicker.
+              if (isElement) {
+                const alreadyOn = selectedElement === p.id;
+                onSelectElement?.(p.id);
+                if (shelfId && alreadyOn && !p.meta?.locked) {
+                  startDepthDrag(e, shelfId, p.meta?.front_mm ?? 0, p.box.y);
+                  return;
+                }
+                if (shelfId && !p.meta?.locked) { startShelfDrag(e, shelfId, p.box.y); return; }
+              }
               startDrag(e);
             }}
             onDoubleClick={(e) => {
@@ -660,8 +756,10 @@ export default function UnitView({
             onPointerOver={shelfId
               ? () => {
                 // A screwed or locked shelf does not move, so the cursor must
-                // not promise that it does (turn 8, F4).
-                document.body.style.cursor = p.meta?.locked ? 'default' : 'ns-resize';
+                // not promise that it does (turn 8, F4). A SELECTED shelf moves
+                // in depth, so it promises the other axis (turn 9, F4.2).
+                if (p.meta?.locked) document.body.style.cursor = 'default';
+                else document.body.style.cursor = selectedElement === p.id ? 'ew-resize' : 'ns-resize';
                 setHoverShelf(shelfId);
               }
               : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined)}
@@ -832,6 +930,16 @@ export default function UnitView({
           profile={profile}
           opacity={selected ? 1 : profile.appearance.selection.hoverOpacity}
         />
+      )}
+
+      {/* ─── The selected ELEMENT (turn 9, CLAUDE.md F4.1) ───
+          The SAME mark the cabinet gets, round the piece instead of round the
+          box: a joiner who has learnt what a dashed blue outline means has
+          learnt it once. Drawn from the engine's own panel box, so a shelf
+          somebody has made 25 mm and pulled out to the face is outlined at the
+          size it will be cut. */}
+      {selectedElementBox && !contour && (
+        <SelectionOutline box={selectedElementBox} profile={profile} opacity={1} />
       )}
 
       {showLabels && (

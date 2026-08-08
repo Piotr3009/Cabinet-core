@@ -1,19 +1,22 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { ContactShadows, OrbitControls } from '@react-three/drei';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
+import AddPlus from './AddPlus.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
+import { addPlusPoints, unitBase } from '../engine/runs.js';
 import { backStandoff } from '../engine/collision.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
+import { categoryOf } from '../engine/types.js';
 
 // 3D scaffolding follows Production Core's rig (scene / camera / soft light /
 // capture), not its window geometry. Preview is 3D from the start (SPEC 7).
@@ -195,6 +198,20 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
           (renderCapture.js) without the capture pass guessing which is which.
           By default it does not: profile.render.lightScale is all 1s now. */}
       <ambientLight userData={{ ccLight: 'ambient' }} intensity={studio.ambient} />
+      {/* ─── Turn 9 (CLAUDE.md F1) ───
+          The flat light, given a direction. An ambient is one number from every
+          side, which is the one thing light in a room never is: what comes from
+          above is warm, what comes from below has bounced off the floor and
+          carries its colour. It costs exactly what an ambient costs — no shadow
+          map, no second pass — and it is what lets the fill come up far enough
+          to keep a shadowed door a COLOUR without the scene turning to fog.
+          It casts nothing: the key below is still the only shadow in the app. */}
+      <hemisphereLight
+        userData={{ ccLight: 'ambient' }}
+        color={studio.hemisphere.sky}
+        groundColor={studio.hemisphere.ground}
+        intensity={studio.hemisphere.intensity}
+      />
       <primitive object={target} />
       <directionalLight
         ref={key}
@@ -204,6 +221,14 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
         castShadow
         shadow-mapSize={[shadow.mapSize, shadow.mapSize]}
         shadow-bias={shadow.bias}
+        // ─── Turn 9 (CLAUDE.md F1): the stripes ───
+        // The line that was missing. `bias` pushes the depth comparison along
+        // the LIGHT, which fixes acne and detaches the shadow from the foot of
+        // whatever cast it; `normalBias` pushes it along the SURFACE NORMAL,
+        // which is what a flat panel needs and what stops it shadowing itself
+        // in diagonal bands. It is the modern answer to exactly the artefact
+        // Piotr photographed, and turn 8 had none of it.
+        shadow-normalBias={shadow.normalBias}
         shadow-radius={shadow.radius}
         shadow-camera-left={-reach}
         shadow-camera-right={reach}
@@ -230,6 +255,116 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
         intensity={studio.rim}
       />
     </>
+  );
+}
+
+/**
+ * ─── The pluses at the ends of the runs (turn 9, CLAUDE.md F2) ───
+ *
+ * Where they GO is `engine/runs.js addPlusPoints`, which is pure arithmetic and
+ * is tested as such. All that happens here is the last step every other
+ * annotation in this scene takes: a position along a wall, in millimetres,
+ * turned into a point in the room.
+ *
+ * The anchor is the mid-height of the END FACE of the run, standing one disc
+ * clear of it in the gap — so a plus is always in the space it would fill, and
+ * never on top of the cabinet it is offered beside.
+ */
+function AddPluses({
+  units, walls, roomCentre, profile, onPick,
+}) {
+  const points = useMemo(() => addPlusPoints(units, { walls }, profile), [units, walls, profile]);
+  const byId = useMemo(() => new Map(units.map((u) => [u.id, u])), [units]);
+  const size = mm(profile.ui.addPlusMinGapMm) * 0.9;
+
+  return points.map((point) => {
+    const unit = byId.get(point.unitId);
+    const wall = walls[point.wall] || walls[0];
+    if (!unit || !wall) return null;
+    const base = unitBase(unit, profile);
+    const height = Number(unit.params?.height) || 0;
+    // Along the wall from its start corner, out into the gap by half a disc,
+    // and forward of the cabinet's face so nothing can hide it.
+    const along = point.x_mm + (point.side === 'left' ? -1 : 1) * (profile.ui.addPlusMinGapMm * 0.45);
+    const depth = Number(unit.params?.depth) || 0;
+    const world = new THREE.Vector3(
+      mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+    )
+      .addScaledVector(new THREE.Vector3(wall.along.x, 0, wall.along.y), mm(along))
+      .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(depth / 2))
+      .setY(mm(base + height / 2));
+
+    return (
+      <AddPlus
+        key={`${point.unitId}-${point.side}`}
+        position={world.toArray()}
+        size={size}
+        colour={profile.appearance.selection.colour}
+        title={`Add a unit to the ${point.side} of ${unit.params?.unit_num ?? ''}`}
+        onClick={() => onPick(point)}
+      />
+    );
+  });
+}
+
+/**
+ * ─── The dark under the run (turn 9, CLAUDE.md F1.3) ───
+ *
+ * The key light comes in from off to one side, so its shadow lands BESIDE the
+ * furniture and the floor between the legs stays as bright as the open room.
+ * The eye reads that as hovering, and no amount of shadow-map tuning fixes it —
+ * it is the wrong shadow, not a bad one.
+ *
+ * Turn 6 answered it with a hand-painted quad per unit. This is the same idea
+ * done for the RUN: one soft blob, fitted to the same furniture bounds the key
+ * light's frustum is fitted to (`ShadowFit`), so six cabinets standing side by
+ * side sit in one shadow instead of six with a bright seam at every joint.
+ *
+ * The cost is paid ONCE. `frames={1}` bakes a single depth pass and then stops
+ * for ever; the `key` below re-mounts it — and so re-bakes it — when, and only
+ * when, the furniture has actually moved. Orbiting the scene, which is what a
+ * joiner does all day, costs nothing at all.
+ */
+function FloorShadow({ subject, profile }) {
+  const C = profile.appearance.contactShadow;
+  const pad = mm(profile.appearance.studio.shadowPadding);
+  const step = profile.editor.mmStep;
+
+  const fit = useMemo(() => {
+    if (!subject) return null;
+    return {
+      width: subject.max[0] - subject.min[0] + pad * 2,
+      depth: subject.max[2] - subject.min[2] + pad * 2,
+      cx: (subject.min[0] + subject.max[0]) / 2,
+      cz: (subject.min[2] + subject.max[2]) / 2,
+    };
+  }, [subject, pad]);
+  if (!fit) return null;
+
+  // On the workshop's own grid, and nothing finer: the fit is measured off world
+  // matrices, and a raw float would re-bake the shadow on floating-point noise.
+  const bake = [fit.width, fit.depth, fit.cx, fit.cz]
+    .map((v) => Math.round(v / mm(step))).join('|');
+
+  return (
+    // In the picture, but it must never FRAME it: the blob is half a metre wider
+    // than the furniture on every side, and a render fitted to it would put the
+    // cabinets in the middle distance of their own photograph.
+    <group userData={{ ccNoBounds: true }}>
+      <ContactShadows
+        key={bake}
+        frames={1}
+        // A hair above the floor. Coplanar with it, the two z-fight.
+        position={[fit.cx, mm(1), fit.cz]}
+        width={fit.width}
+        height={fit.depth}
+        // How high the shadow camera still sees. Past this nothing contributes,
+        // so a wall unit hanging at 1500 mm prints no second blob on the floor.
+        far={mm(C.farMm)}
+        blur={C.blur}
+        opacity={C.opacity}
+      />
+    </group>
   );
 }
 
@@ -302,6 +437,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const allResults = useProjectStore((s) => s.allResults);
   const wallGapsFor = useProjectStore((s) => s.wallGapsFor);
   const moveShelf = useProjectStore((s) => s.moveShelf);
+  const setElementDepth = useProjectStore((s) => s.setElementDepth);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
@@ -310,6 +446,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
+  const selectedElement = useUiStore((s) => s.selectedElement);
+  const selectElement = useUiStore((s) => s.selectElement);
   const clearSelection = useUiStore((s) => s.clearSelection);
   const snapStep = useUiStore((s) => s.snapStep);
   const shelfDrag = useUiStore((s) => s.dragging);
@@ -321,6 +459,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const clearFocus = useUiStore((s) => s.clearFocus);
   const openContextMenu = useUiStore((s) => s.openContextMenu);
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
+  const openLibraryToInsert = useUiStore((s) => s.openLibraryToInsert);
   const showDimensions = useUiStore((s) => s.showDimensions);
   const unitDimensions = useUiStore((s) => s.unitDimensions);
   const dimensionColour = useUiStore((s) => s.dimensionColour);
@@ -403,6 +542,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         subject={subject}
       />
       <ShadowFit signal={results} unitsRef={unitGroups} onFit={setSubject} />
+      {/* Solid and Render only. Contour is a silhouette and X-ray is a look
+          THROUGH the furniture — a shadow on the floor is furniture standing on
+          it, which is the one thing neither mode is saying. */}
+      {!contourView && !xray && <FloorShadow subject={subject} profile={profile} />}
       <Room room={room} showLabels={showDimensions} profile={profile} />
 
       {results.map(({ unit, result }) => (
@@ -441,7 +584,6 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           outlines={showOutlines}
           contour={contourView}
           xray={xray}
-          grounded={realisticLighting}
           sheen={sheen}
           // How much clear WALL is beside this unit, per side. The door swing
           // reads it: past square a door comes back towards the wall on its
@@ -452,6 +594,12 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // Which joint system this project is cut with — the joint drawing
           // reads its layer names through it (turn 8, F8).
           unitDesign={design}
+          // ─── One element inside this cabinet (turn 9, CLAUDE.md F4) ───
+          // Only ever passed to the unit the element belongs to, so a shelf
+          // called SHELF-1 in one cabinet cannot light up SHELF-1 in the next.
+          selectedElement={selectedElement?.unitId === unit.id ? selectedElement.elementRef : null}
+          onSelectElement={(panelId) => selectElement(unit.id, panelId)}
+          onMoveElementDepth={(itemId, setback) => setElementDepth(unit.id, itemId, setback)}
         />
       ))}
 
@@ -467,6 +615,27 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
             colourKey={dimensionColour}
           />
         </group>
+      )}
+
+      {/* ─── "Another one here" (turn 9, CLAUDE.md F2) ───
+          A "+" at every free end of every run, in the gap it would fill. Not in
+          Contour, which is a picture, and not while a shelf is being dragged —
+          a control that appears under a moving hand is a control you press by
+          accident. The library opens at the category the cabinet you clicked
+          beside belongs to, carrying the place with it, so a wall unit's plus
+          offers wall units. */}
+      {!contourView && !shelfDrag && (
+        <AddPluses
+          units={units}
+          walls={walls}
+          roomCentre={bounds.centre}
+          profile={profile}
+          onPick={(point) => {
+            const near = units.find((u) => u.id === point.unitId);
+            closeContextMenu();
+            openLibraryToInsert(categoryOf(near?.type)?.id || null, { near: point.unitId, side: point.side });
+          }}
+        />
       )}
 
       <FocusRig request={focusRequest} orbitRef={orbitRef} onDone={clearFocus} />

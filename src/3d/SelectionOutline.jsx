@@ -65,6 +65,9 @@ export default function SelectionOutline({ box, profile, active = true, opacity 
         opacity={opacity}
         depthTest={false}
         toneMapped={false}
+        // A mark on top of the furniture, not furniture: kept out of the
+        // contact-shadow depth pass (turn 9, CLAUDE.md F1.3).
+        allowOverride={false}
       />
     </lineSegments>
   );

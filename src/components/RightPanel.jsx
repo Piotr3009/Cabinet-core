@@ -1,18 +1,18 @@
 import { useMemo, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
-import { elementDepthBoundsFor, useProjectStore, validateUnit } from '../stores/projectStore.js';
+import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
 import { roomWalls } from '../engine/room.js';
-import {
-  elementMaterialChoices, migrateDesign, projectHeights, resolveUnitDesign,
-} from '../engine/design.js';
+import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
 import Section from './Section.jsx';
+import ElementProperties from './ElementProperties.jsx';
+import CncTree from './CncTree.jsx';
 
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
@@ -53,6 +53,7 @@ export default function RightPanel() {
   const addDrawers = useProjectStore((s) => s.addDrawers);
   const addShelves = useProjectStore((s) => s.addShelves);
   const addHangerRail = useProjectStore((s) => s.addHangerRail);
+  const addPartition = useProjectStore((s) => s.addPartition);
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
   const removeUnit = useProjectStore((s) => s.removeUnit);
   const setDoors = useProjectStore((s) => s.setDoors);
@@ -67,13 +68,8 @@ export default function RightPanel() {
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const addEndPanel = useProjectStore((s) => s.addEndPanel);
   const removeEndPanel = useProjectStore((s) => s.removeEndPanel);
-  const updateEndPanel = useProjectStore((s) => s.updateEndPanel);
   const setEndPanelDefaults = useProjectStore((s) => s.setEndPanelDefaults);
-  const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
-  const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
-  const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
   const setUnitInsets = useProjectStore((s) => s.setUnitInsets);
-  const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const resetUnitHeight = useProjectStore((s) => s.resetUnitHeight);
   // Select the STORED value and migrate in a memo: a selector that builds a
   // new object every call makes zustand's snapshot change on every render,
@@ -85,6 +81,7 @@ export default function RightPanel() {
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const walls = useMemo(() => roomWalls(room), [room]);
 
+  const viewMode = useUiStore((s) => s.viewMode);
   const unit = units.find((u) => u.id === selectedUnitId) || null;
   const result = unit ? unitResult(unit.id) : null;
   const type = unit ? getUnitType(unit.type) : null;
@@ -139,6 +136,22 @@ export default function RightPanel() {
     clearSelection();
   };
 
+  // ─── Turn 11 (CLAUDE.md F8.2) ───
+  // In the CNC view this panel is the CHECKBOX TREE: which units are on the
+  // sheet, which of their parts, and the two downloads. It is the same panel in
+  // the same place — entering CNC no longer means losing the thing you had open,
+  // it means the thing you had open becomes the tool for what you are now doing.
+  if (viewMode === 'cnc') {
+    return (
+      <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
+        <PanelHeader title="CNC sheet" onClose={closeRightPanel} />
+        <div className="flex-1 overflow-y-auto">
+          <CncTree />
+        </div>
+      </aside>
+    );
+  }
+
   if (!unit) {
     return (
       <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
@@ -158,14 +171,7 @@ export default function RightPanel() {
             joiner is looking at. It disappears the moment nothing is selected
             inside the unit, so the panel is not permanently a row longer. */}
         {element && (
-          <ElementSection
-            unit={unit}
-            element={element}
-            profile={profile}
-            design={design}
-            materials={materials}
-            onClose={clearElement}
-          />
+          <ElementSection unit={unit} element={element} onClose={clearElement} />
         )}
 
         {/* ── carcass ── */}
@@ -401,6 +407,12 @@ export default function RightPanel() {
                 const { added, requested } = addShelves(unit.id, count);
                 if (added === 0) notify('Not enough clear height for another shelf.', 'warn');
                 else if (added < requested) notify(`Room for ${added} of ${requested} shelves — the rest would not fit.`, 'warn');
+                setAddItemKind(null);
+              }}
+              onAddPartition={() => {
+                const id = addPartition(unit.id);
+                if (!id) notify('No room for another partition in this cabinet.', 'warn');
+                else notify('Vertical partition added — drag or type its position to move it.', 'ok');
                 setAddItemKind(null);
               }}
               onAddRail={(material) => {
@@ -705,29 +717,17 @@ export default function RightPanel() {
                 .map((v) => (Number(v) > 0 ? formatMm(v) : '—')).join(' / ')}
             </span>
           </div>
-          {/* …but how far UP it goes is a decision, exactly as it is for an end
-              panel (turn 6, CLAUDE.md F4). Grab its top edge in 3D, or type it. */}
-          {[['L', 'side_infill_left_mm', 'side_infill_left_top_mm', 'Left'],
-            ['R', 'side_infill_right_mm', 'side_infill_right_top_mm', 'Right']]
-            .filter(([, widthKey]) => Number(unit.params[widthKey]) > 0)
-            .map(([side, widthKey, topKey, label]) => (
-              <div key={side} className="flex items-center gap-1 text-[11px] text-ink-400 pl-3">
-                <span className="flex-1">{label} filler, above unit</span>
-                <NumberField
-                  className="cc-input w-16 text-right"
-                  min={0}
-                  title="How far this filler runs above the carcass (mm)"
-                  value={Number(unit.params[topKey]) || 0}
-                  onCommit={(v) => setSideInfillTop(unit.id, side, v)}
-                />
-                <button
-                  type="button" className="cc-btn px-2" title="All the way to the ceiling"
-                  onClick={() => sideInfillToCeiling(unit.id, side)}
-                >
-                  ▲
-                </button>
-              </div>
-            ))}
+          {/* ─── Turn 11 (CLAUDE.md F3.2) ───
+              How far the filler runs above the unit, how far the end panel does,
+              what either is made of: all of it is edited on the PIECE's OWN
+              selection now — click it in the canvas, or double-click it — and
+              not through the whole cabinet's panel. Owner verdict, in as many
+              words: "osobno, nie z całą szafką". What stays here is the fact
+              that the piece EXISTS, because that is a fact about the cabinet. */}
+          <p className="text-[11px] text-ink-400">
+            Click a filler in the canvas to set how far it runs above the unit, pin it, or cut it from
+            another board.
+          </p>
 
           <div className="cc-divider !my-2" />
 
@@ -756,11 +756,8 @@ export default function RightPanel() {
               const { error } = addEndPanel(unit.id, { side });
               if (error) notify(error, 'warn');
             }}
-            onUpdate={(id, patch) => updateEndPanel(unit.id, id, patch)}
             onRemove={(id) => removeEndPanel(unit.id, id)}
             onDefaults={setEndPanelDefaults}
-            onSetTop={(id, v) => setEndPanelTop(unit.id, id, v)}
-            onToCeiling={(id) => endPanelToCeiling(unit.id, id)}
           />
         </Section>
 
@@ -817,177 +814,32 @@ export default function RightPanel() {
 }
 
 /**
- * ─── One piece inside the cabinet (turn 9, CLAUDE.md F4.3) ───
+ * ─── One piece inside the cabinet (turn 9, F4.3; the WHOLE cabinet, turn 11 F3) ──
  *
- * Until turn 9 nothing INSIDE a unit was individually editable: a shelf was a
- * row in a list with a height on it, and the answer to "make that one 25 mm in
- * oak" was a second cabinet. Three questions are answered here, and they are
- * the three a joiner asks about one shelf:
+ * Turn 9 could edit one kind of thing: a shelf. Turn 11 edits every piece —
+ * sides, bottom, top, back, vertical partitions, end panels, infills, the
+ * fronts' hinges — and the FIELDS are decided by engine/elements.js rather than
+ * by a branch here, so the panel and the double-click modal (F3.3) render the
+ * same controls from one component and can never come apart.
  *
- *   how far back does it stand      `front_mm`     — the same number the drag
- *                                                    in the canvas writes
- *   how thick is it                 `thickness_mm`
- *   what is it made of              `material_label` / `material_id`
- *
- * All three live on the ITEM, which is the unit's own config, so they travel
- * to the engine through `paramsForEngine()` exactly as the plinth and the top
- * infill do — the engine gained three inputs and not one formula, and a bare
- * `computeCabinet()` still cuts what the AutoLISP kit cuts.
- *
- * Every field clears back to "no override" rather than to a number, because
- * "the carcass board" is a different statement from "18", and only one of them
- * follows the project when the project changes.
+ * What stays turn 9's is the shape of the thing: it is FIRST, above the carcass,
+ * because when a piece is selected it is what the joiner is looking at, and it
+ * disappears the moment nothing is selected inside the unit.
  */
-function ElementSection({
-  unit, element, profile, design, materials, onClose,
-}) {
-  const setShelfPos = useProjectStore((s) => s.setShelfPos);
-  const setElementDepth = useProjectStore((s) => s.setElementDepth);
-  const setElementThickness = useProjectStore((s) => s.setElementThickness);
-  const setElementMaterial = useProjectStore((s) => s.setElementMaterial);
-  const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
+function ElementSection({ unit, element, onClose }) {
   const { panel, item } = element;
-
-  const bounds = useMemo(() => elementDepthBoundsFor(unit, profile), [unit, profile]);
-  const choices = useMemo(
-    () => elementMaterialChoices(design, profile, materials),
-    [design, profile, materials],
-  );
-  const G = unit.params.board_t ?? profile.board.thickness;
-  const setback = Number(panel.meta?.front_mm ?? profile.carcass.shelfDepthClearance);
-  const locked = Boolean(panel.meta?.locked);
-
   return (
     <section className="rounded border border-gold/60 bg-shell-700/40 p-2 space-y-2">
       <div className="cc-row">
-        <span className="text-xs uppercase tracking-wide text-gold">{panel.id}</span>
-        <span className="text-[11px] text-ink-400 flex-1 pl-2">
-          {formatMmPair(panel.w, panel.h)} · {formatMm(panel.thickness)} mm
-        </span>
+        <span className="text-[11px] uppercase tracking-wide text-ink-400 flex-1">Selected piece</span>
         <button type="button" className="cc-btn-ghost" title="Deselect this piece (Esc)" onClick={onClose}>×</button>
       </div>
-
-      {!item ? (
-        // ─── A derived piece (turn 9, CLAUDE.md F4, scope note) ───
-        // The partition above a drawer stack and the rail partitioner are built
-        // BY the engine from what is under them: their width, their height and
-        // their position all follow the stack, so there is no item to hang a
-        // thickness or a material on and inventing one would be a second place
-        // a partition's board could come from.
-        //
-        // Its DEPTH is a different matter and turn 8 already gave it one —
-        // `partition_front_mm` on the unit — because a partition under a
-        // worktop sometimes has to come out to the face. That override is the
-        // one thing offered here, on the unit rather than on the piece.
-        <div className="space-y-2">
-          <div>
-            <span className="cc-label">Set back</span>
-            <NumberField
-              className="cc-input text-right w-28"
-              min={0}
-              value={Number(panel.meta?.front_mm) || 0}
-              title="From the face of the cabinet. 0 pulls the partition out flush."
-              onCommit={(v) => setPartitionFront(unit.id, v)}
-            />
-          </div>
-          <p className="text-[11px] text-ink-400">
-            The engine builds this piece from the drawers under it — its width, its height and where it
-            sits all follow the stack. Change the stack to change the piece.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="cc-label">Height</span>
-              <NumberField
-                className="cc-input text-right"
-                value={item.pos_mm ?? 0}
-                disabled={locked}
-                title={locked
-                  ? 'Screwed or locked — unlock it to move it'
-                  : 'Above the carcass floor. The same clamp the drag obeys.'}
-                onCommit={(v) => setShelfPos(unit.id, item.id, v)}
-              />
-            </div>
-            <div>
-              <span className="cc-label">Set back</span>
-              <NumberField
-                className="cc-input text-right"
-                min={bounds.min}
-                max={bounds.max}
-                value={setback}
-                title={`From the face of the cabinet. 0 is flush; ${formatMm(bounds.max)} leaves the shallowest piece worth cutting.`}
-                onCommit={(v) => setElementDepth(unit.id, item.id, v)}
-              />
-            </div>
-          </div>
-          <div className="cc-row text-[11px] text-ink-400">
-            <span>Cut {formatMm(panel.h)} mm deep</span>
-            <button
-              type="button"
-              className="cc-btn px-2"
-              title={`Back to the standard ${formatMm(profile.carcass.shelfDepthClearance)} mm setback`}
-              onClick={() => setElementDepth(unit.id, item.id, null)}
-            >
-              Standard
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="cc-label">Thickness</span>
-              <NumberField
-                className="cc-input text-right"
-                min={profile.editor.mmStep}
-                value={item.thickness_mm ?? G}
-                title="This piece only. A shelf carrying a microwave is thicker than the box round it."
-                onCommit={(v) => setElementThickness(unit.id, item.id, v)}
-              />
-            </div>
-            <div>
-              <span className="cc-label">Material</span>
-              <select
-                className="cc-input"
-                value={item.material_label || ''}
-                title="This piece only — the project's own boards, and the fronts"
-                onChange={(e) => {
-                  const pick = choices.find((c) => c.material_label === e.target.value);
-                  setElementMaterial(unit.id, item.id, pick || null);
-                }}
-              >
-                <option value="">Project carcass</option>
-                {choices.map((c) => (
-                  <option key={c.key} value={c.material_label}>{c.material_label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {(item.thickness_mm != null || item.material_label) && (
-            <div className="cc-row text-[11px] text-gold">
-              <span>Overridden — this piece only</span>
-              <button
-                type="button"
-                className="cc-btn px-2"
-                title="Back to the carcass board and the project material"
-                onClick={() => {
-                  setElementThickness(unit.id, item.id, null);
-                  setElementMaterial(unit.id, item.id, null);
-                }}
-              >
-                Reset
-              </button>
-            </div>
-          )}
-
-          <p className="text-[11px] text-ink-400">
-            {locked
-              ? 'Screwed in place. Select it and it can still be made thicker or cut from another board.'
-              : 'Selected: dragging it in the canvas now pulls it in DEPTH. Escape hands the up-and-down drag back.'}
-          </p>
-        </>
-      )}
+      <ElementProperties unit={unit} panel={panel} item={item} />
+      <p className="text-[11px] text-ink-400">
+        {panel.meta?.locked
+          ? 'Screwed in place. Selected, it can still be made thicker or cut from another board.'
+          : 'Double-click it in the canvas to edit it where it stands.'}
+      </p>
     </section>
   );
 }
@@ -1014,42 +866,44 @@ function constructionBadge(unit, type) {
 }
 
 /**
- * Inset left / right / back (turn 7, CLAUDE.md F5 / BACKLOG #32).
+ * Inset BACK (turn 7, CLAUDE.md F5 / BACKLOG #32; halved turn 11, F5.1).
  *
- * Three millimetre fields and one line of copy, in the Construction section
- * beside the plinth and the end panels — because it is the same KIND of thing:
- * a decision about how this unit meets what is around it, taken at the bench.
+ * ─── TURN 11: LEFT AND RIGHT ARE GONE ───
+ * Owner verdict: "Insets L/P — broken concept." He is right about why. A
+ * sideways inset asked a joiner to describe a gap in millimetres and then left
+ * the gap EMPTY: no piece, no scribe, a slot down the side of the run that the
+ * cut list said nothing about. What he actually wants beside a cabinet is a
+ * PIECE, and that is the pinned side filler — right-click ▸ Pin infill left /
+ * right (lib/contextActions.js), which stretches as the unit moves.
+ *
+ * The BACK inset survives untouched, because it is a different thing entirely: a
+ * unit stood off the wall to clear a soil pipe or a bowed wall. Nothing fills
+ * that gap; the point of it is that it stays open.
  */
 function Insets({ unit, profile, onSet }) {
-  const rows = [
-    ['left', 'inset_left_mm', 'Left', 'Clear of the neighbour or the corner on the left'],
-    ['right', 'inset_right_mm', 'Right', 'Clear of the neighbour or the corner on the right'],
-    ['back', 'inset_back_mm', 'Back', 'Stand it off the wall — a pipe, a bowed wall, a skirting'],
-  ];
-  const any = rows.some(([, key]) => Number(unit.params[key]) > 0);
+  const value = Number(unit.params.inset_back_mm) || 0;
   return (
     <div className="space-y-1">
       <div className="cc-row">
-        <span className="text-sm text-ink-100">Insets</span>
-        <span className="text-[11px] text-ink-400">{any ? 'respected by the clamp' : 'none'}</span>
+        <span className="text-sm text-ink-100">Back inset</span>
+        <span className="text-[11px] text-ink-400">{value > 0 ? 'respected by the clamp' : 'none'}</span>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        {rows.map(([side, key, label, hint]) => (
-          <label key={side} className="block">
-            <span className="cc-label">{label}</span>
-            <NumberField
-              className="cc-input text-right"
-              min={0}
-              max={profile.editor.maxInset}
-              title={hint}
-              value={Number(unit.params[key]) || 0}
-              onCommit={(v) => onSet({ [side]: v })}
-            />
-          </label>
-        ))}
+        <label className="block">
+          <span className="cc-label">Back</span>
+          <NumberField
+            className="cc-input text-right"
+            min={0}
+            max={profile.editor.maxInset}
+            title="Stand it off the wall — a pipe, a bowed wall, a skirting"
+            value={value}
+            onCommit={(v) => onSet({ back: v })}
+          />
+        </label>
       </div>
       <p className="text-[11px] text-ink-400">
-        A deliberate gap for something that is not furniture. The unit stops there and stays there.
+        A deliberate gap behind the unit for something that is not furniture. For a gap BESIDE it,
+        right-click the cabinet and pin the infill — a piece closes it, and it stretches as the unit moves.
       </p>
     </div>
   );
@@ -1061,7 +915,9 @@ function Insets({ unit, profile, onSet }) {
  * default) and "Apply to all end panels", which makes the next one anywhere in
  * the project inherit these settings.
  */
-function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefaults, onSetTop, onToCeiling }) {
+function EndPanels({
+  unit, profile, design, onAdd, onRemove, onDefaults,
+}) {
   const panels = unit.params.end_panels || [];
   const has = (side) => panels.some((ep) => ep.side === side);
   return (
@@ -1100,51 +956,32 @@ function EndPanels({ unit, profile, design, onAdd, onUpdate, onRemove, onDefault
         </p>
       )}
 
+      {/* ─── Turn 11 (CLAUDE.md F3.2) ───
+          The panel's own settings — height mode, thickness, how far above the
+          unit, what it is made of — are edited on its OWN selection: click it
+          in the canvas, or double-click it for the card beside it. Owner
+          verdict, in as many words: "osobno, nie z całą szafką".
+          What is left here is the list: which sides have one, and the way to
+          take one off, because that is a fact about the CABINET. */}
       <ul className="space-y-1">
         {panels.map((ep) => (
-          <li key={ep.id} className="space-y-1">
-            <div className="flex items-center gap-1 text-sm">
-              <span className="text-ink-400 w-6 text-xs">{ep.side}</span>
-              <select
-                className="cc-input flex-1"
-                value={ep.height}
-                onChange={(e) => onUpdate(ep.id, { height: e.target.value })}
-              >
-                <option value="floor">To floor</option>
-                <option value="unit">Unit height</option>
-              </select>
-              <NumberField
-                className="cc-input w-14 text-right"
-                min={1}
-                title="Thickness (mm)"
-                value={ep.thickness || unit.params.front_t || profile.front.thickness}
-                onCommit={(v) => onUpdate(ep.id, { thickness: v })}
-              />
-              <button type="button" className="cc-btn-ghost" title="Remove this end panel" onClick={() => onRemove(ep.id)}>×</button>
-            </div>
-            {/* Turn 6 (CLAUDE.md F3): how far it runs ABOVE the unit. The edge
-                in 3D is the natural control — grab it, or double-click it for
-                the ceiling — and this is the same number for anyone who would
-                rather type it. */}
-            <div className="flex items-center gap-1 text-[11px] text-ink-400 pl-7">
-              <span className="flex-1">Above unit</span>
-              <NumberField
-                className="cc-input w-16 text-right"
-                min={0}
-                title="How far this panel runs above the carcass (mm)"
-                value={Number(ep.top_mm) || 0}
-                onCommit={(v) => onSetTop(ep.id, v)}
-              />
-              <button
-                type="button" className="cc-btn px-2" title="All the way to the ceiling"
-                onClick={() => onToCeiling(ep.id)}
-              >
-                ▲
-              </button>
-            </div>
+          <li key={ep.id} className="flex items-center gap-2 text-sm">
+            <span className="text-ink-400 w-6 text-xs">{ep.side}</span>
+            <span className="flex-1 text-[11px] text-ink-400">
+              {ep.height === 'unit' ? 'unit height' : 'to floor'}
+              {' · '}
+              {formatMm(ep.thickness || unit.params.front_t || profile.front.thickness)} mm
+              {Number(ep.top_mm) > 0 ? ` · +${formatMm(ep.top_mm)} above` : ''}
+            </span>
+            <button type="button" className="cc-btn-ghost" title="Remove this end panel" onClick={() => onRemove(ep.id)}>×</button>
           </li>
         ))}
       </ul>
+      {panels.length > 0 && (
+        <p className="text-[11px] text-ink-400">
+          Click one in the canvas to change its height, its board or how far it runs above the unit.
+        </p>
+      )}
 
       <label className="flex items-center gap-2 text-[12px] text-ink-100">
         <input
@@ -1178,6 +1015,7 @@ function contentsBadge(drawers, shelves, rail) {
  */
 function AddItems({
   unit, type, profile, hardware, rail, openKind, onPick, onAddDrawers, onAddShelves, onAddRail,
+  onAddPartition,
 }) {
   const DR = profile.wardrobe.drawers;
   const items = unit.params.sections?.[0]?.items || [];
@@ -1188,6 +1026,11 @@ function AddItems({
   const [drawerHeight, setDrawerHeight] = useState(DR.frontHeight);
   const [shelfCount, setShelfCount] = useState(1);
   const [railMaterial, setRailMaterial] = useState(hardware.find((m) => /rail/i.test(m.name))?.id || '');
+  // ─── Turn 11 (CLAUDE.md F4.4) ───
+  // The list is FILTERED by what this kind of cabinet is for, and "Show all" is
+  // the way past the filter. Never a hard block: everything the kit supports is
+  // one click away, which is the difference between a default and a rule.
+  const [showAll, setShowAll] = useState(false);
 
   const kinds = [
     {
@@ -1197,18 +1040,34 @@ function AddItems({
       why: ratioDrawers ? 'this kit IS its three drawers' : 'not for this type',
     },
     { id: 'shelves', label: 'Shelves', disabled: !type.supports.shelves, why: 'not for this type' },
+    // Turn 11 (CLAUDE.md F3.4): the vertical partition, at last. It divides the
+    // cabinet into columns and is placed and edited exactly as a shelf is —
+    // through the same item list, on the other axis.
+    {
+      id: 'partition',
+      label: 'Vertical partition',
+      disabled: !type.supports.shelves,
+      why: 'not for this type',
+    },
     {
       id: 'hanger',
       label: 'Hanger rail',
       disabled: !type.supports.rail || Boolean(rail),
       why: rail ? 'already fitted' : 'not for this type',
     },
+    { id: 'cargo', label: 'Cargo pull-out', disabled: true, soon: true },
+    { id: 'bins', label: 'Waste bins', disabled: true, soon: true },
     { id: 'pulldown', label: 'Pull-down rail', disabled: true, soon: true },
   ];
 
+  // What this FAMILY of cabinet offers by default (profile.itemsByContext) —
+  // structure as data, so a workshop reorders its own list in profile.js.
+  const offered = profile.itemsByContext[type.family] || profile.itemsByContext.default || [];
+  const shown = showAll ? kinds : kinds.filter((k) => offered.includes(k.id));
+
   return (
     <div className="space-y-1">
-      {kinds.map((kind) => (
+      {shown.map((kind) => (
         <div key={kind.id}>
           <button
             type="button"
@@ -1275,6 +1134,19 @@ function AddItems({
                 </>
               )}
 
+              {kind.id === 'partition' && (
+                <>
+                  <button type="button" className="cc-btn-gold w-full" onClick={onAddPartition}>
+                    Add a vertical partition
+                  </button>
+                  <p className="text-[11px] text-ink-400">
+                    A full-height divider, centred in the widest bay it can find. Select it in the canvas to
+                    move it along the width or to cut it from another board — the same fields a shelf has,
+                    on the other axis.
+                  </p>
+                </>
+              )}
+
               {kind.id === 'hanger' && (
                 <>
                   <div>
@@ -1307,6 +1179,19 @@ function AddItems({
           )}
         </div>
       ))}
+
+      {/* The escape hatch, under the list, exactly where CLAUDE.md F4.4 puts
+          it. A filter you cannot see past is a block, and the owner asked for a
+          filter. */}
+      <button
+        type="button"
+        className="w-full text-left px-2 py-1 text-[11px] text-ink-400 hover:text-gold transition-colors"
+        onClick={() => setShowAll((v) => !v)}
+      >
+        {showAll
+          ? `▴ Show what a ${type.family} unit usually takes`
+          : `▾ Show all (${kinds.length - shown.length} more)`}
+      </button>
     </div>
   );
 }

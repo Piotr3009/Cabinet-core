@@ -25,6 +25,14 @@
 //
 // Every expected number below is worked out BY HAND from that formula in the
 // comment above it. Nothing is read back out of the implementation.
+//
+// ─── TURN 11 (CLAUDE.md F2) ───
+// The zone was right and the formula was one-sided: it spaces BOTTOM FACES, and
+// a shelf is 18 mm of board, so the only opening with no shelf under it came out
+// one board bigger than the rest (Piotr: 226.5 / 227 / 244.5). `boardT` closes
+// it for the DESIGN layer; omitted, this is still the AutoLISP to the last
+// decimal, which is what the engine's own fallback and every fixture need.
+// The turn-11 tests are at the foot of the file.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -166,36 +174,10 @@ test('"Even" puts the shelves exactly where the LISP would put them', () => {
 
   store().redistributeShelves(id);
 
-  const expected = evenShelfPositions({ zoneBottom: G, zoneTop: H - G, count: 3 })
-    .map((y) => Math.round(y / P.editor.mmStep) * P.editor.mmStep);
+  const expected = evenShelfPositions({
+    zoneBottom: G, zoneTop: H - G, count: 3, boardT: G,
+  }).map((y) => Math.round(y / P.editor.mmStep) * P.editor.mmStep);
   assert.deepEqual(shelfPositions(id), expected);
-});
-
-test('…and the clear openings come out even, which is the report', () => {
-  project();
-  const { id } = store().addUnit('WARDROBE');
-  const G = unitOf(id).params.board_t ?? P.board.thickness;
-  const H = unitOf(id).params.height;
-  store().addShelves(id, 3);
-  store().redistributeShelves(id);
-
-  // Between BOTTOM FACES the steps are equal by construction. What a joiner
-  // looks at is the clear opening, and that is the step less one board — the
-  // same number for every opening above the first, which is the step itself
-  // (nothing stands under the lowest shelf).
-  const ys = shelfPositions(id);
-  const step = (H - G - G) / (ys.length + 1);
-  const openings = [
-    ys[0] - G,                                    // base panel top → S1 underside
-    ...ys.slice(1).map((y, i) => y - (ys[i] + G)), // shelf to shelf
-    (H - G) - (ys[ys.length - 1] + G),            // S3 top → top panel underside
-  ];
-  for (const o of openings.slice(1)) {
-    assert.ok(Math.abs(o - openings[1]) <= P.editor.mmStep,
-      `openings ${openings.join(', ')} are not even`);
-  }
-  assert.ok(Math.abs(openings[0] - step) <= P.editor.mmStep,
-    'and the lowest one is the full step — there is no board under it');
 });
 
 test('the zone follows the drawers: shelves settle above the stack, evenly', () => {
@@ -215,6 +197,7 @@ test('the zone follows the drawers: shelves settle above the stack, evenly', () 
     zoneBottom: zone.top + G,          // the partition's TOP face
     zoneTop: unit.params.height - G,   // the underside of the top panel
     count: 2,
+    boardT: G,
   }).map((y) => Math.round(y / P.editor.mmStep) * P.editor.mmStep);
   assert.deepEqual(shelfPositions(id), expected);
   assert.ok(shelfPositions(id)[0] > zone.top, 'and no shelf is inside the drawer zone');
@@ -224,8 +207,10 @@ test('evening the shelves does not turn the stack upside down', () => {
   // The second half of the bug, and it is reachable by doing nothing but
   // pressing the two buttons in order.
   //
-  // Shelves are ADDED from the top down (engine/items.js nextShelfPos), so the
-  // stored array runs DESCENDING: items[0] is the highest shelf. Turn 8 walked
+  // Shelves are ADDED biggest-opening-first (engine/items.js centredShelfPos),
+  // so the stored array is NOT in physical order: the first shelf halves the
+  // carcass and the second halves the lower half, which puts items[0] above
+  // items[1]. Turn 8 walked
   // that array and handed out ascending positions as it went — so the highest
   // shelf was given the lowest slot and the stack came back inverted. Nothing
   // moved on screen when the shelves were still evenly spaced, which is why it
@@ -263,5 +248,179 @@ test('a shelf can never be evened on top of another one', () => {
     assert.ok(ys[i] - ys[i - 1] >= P.editor.minShelfGap - 1e-9,
       `shelves at ${ys[i - 1]} and ${ys[i]} are closer than the minimum gap`);
     assert.ok(ys[i] - ys[i - 1] > G, 'and certainly not inside one another');
+  }
+});
+
+// ─── TURN 11 (CLAUDE.md F2): ALL THE GAPS, INCLUDING THE BOTTOM ONE ─────────
+//
+// Piotr's screenshot after turn 9: 226.5 / 227 / 244.5. The zone was already
+// right; the arithmetic accounted the board at ONE END ONLY, so the opening
+// with no shelf under it came out exactly one board thickness bigger than
+// every other one — 244.5 − 226.5 = 18.
+//
+// These are the tests CLAUDE.md F2.2 asks for by name: every gap equal, to
+// 0.5 mm, for 1 / 2 / 3 shelves, in a plain cabinet, in one with drawers below
+// and in one with a plinth.
+
+/**
+ * Every CLEAR opening in the shelf column of a unit, floor to ceiling, measured
+ * between FACES — which is what a joiner puts a tape on and what the screenshot
+ * shows. Read from the ENGINE's own panel boxes, not from the stored items, so
+ * a shelf that is not where the store thinks it is cannot pass this.
+ */
+function openings(id) {
+  const unit = unitOf(id);
+  const G = unit.params.board_t ?? P.board.thickness;
+  const result = computeCabinet(paramsForEngine(unit), P);
+  const zone = result.assemblies.drawerZone;
+  const floor = zone ? zone.top + G : G;
+  const ceiling = unit.params.height - G;
+  const boards = result.panels
+    .filter((p) => p.part === 'SHELF' && p.box)
+    .map((p) => ({ from: p.box.y, to: p.box.y + p.box.h }))
+    .sort((a, b) => a.from - b.from);
+  const faces = [floor, ...boards.flatMap((b) => [b.from, b.to]), ceiling];
+  const out = [];
+  for (let i = 0; i < faces.length - 1; i += 2) out.push(faces[i + 1] - faces[i]);
+  return out;
+}
+
+function assertEvenOpenings(id, count, what) {
+  const gaps = openings(id);
+  assert.equal(gaps.length, count + 1, `${what}: ${count} shelves make ${count + 1} openings`);
+  for (const g of gaps) {
+    assert.ok(Math.abs(g - gaps[0]) <= P.editor.mmStep,
+      `${what}, ${count} shelves: openings ${gaps.map((v) => v.toFixed(1)).join(' / ')} are not equal`);
+  }
+}
+
+for (const n of [1, 2, 3]) {
+  test(`plain cabinet, ${n} shelf${n === 1 ? '' : 'ves'}: every gap equal`, () => {
+    project();
+    const { id } = store().addUnit('WARDROBE');
+    store().addShelves(id, n);
+    store().redistributeShelves(id);
+    assertEvenOpenings(id, n, 'plain cabinet');
+  });
+
+  test(`cabinet with drawers below, ${n} shelf${n === 1 ? '' : 'ves'}: every gap equal`, () => {
+    project();
+    const { id } = store().addUnit('WARDROBE');
+    store().addDrawers(id, 3);
+    store().addShelves(id, n);
+    store().redistributeShelves(id);
+    // The zone starts at the TOP FACE of the partition that closes the stack —
+    // the LISP's `shelfZoneBottom = wieniecY + G` (KIT_WARDROBE_FULL L688).
+    assertEvenOpenings(id, n, 'drawers below');
+  });
+
+  test(`cabinet with a plinth, ${n} shelf${n === 1 ? '' : 'ves'}: every gap equal`, () => {
+    project();
+    const { id } = store().addUnit('BUDTALL');
+    assert.equal(store().addPlinth(id), true, 'a tall unit stands on legs and takes a plinth');
+    store().addShelves(id, n);
+    store().redistributeShelves(id);
+    // The plinth hangs BELOW the carcass (box.y is negative) — it closes the
+    // leg space, not the inside of the box — so it must not move the zone by so
+    // much as half a millimetre. That is the other half of F2.1: the bottom
+    // bound is the cabinet floor's TOP FACE and nothing else.
+    assertEvenOpenings(id, n, 'with a plinth');
+  });
+}
+
+test('the lowest opening is no longer one board bigger than the rest', () => {
+  // The regression, stated as the number Piotr reported. Turn 9's formula is
+  // still available (boardT omitted) and still produces the fault, which is what
+  // makes this a comparison rather than an assertion about an implementation.
+  const zoneBottom = 18;
+  const zoneTop = 1020 - 18;
+  const G = 18;
+  const lisp = evenShelfPositions({ zoneBottom, zoneTop, count: 3 });
+  const fixed = evenShelfPositions({
+    zoneBottom, zoneTop, count: 3, boardT: G,
+  });
+
+  const gapsOf = (ys) => {
+    const faces = [zoneBottom, ...ys.flatMap((y) => [y, y + G]), zoneTop];
+    const out = [];
+    for (let i = 0; i < faces.length - 1; i += 2) out.push(faces[i + 1] - faces[i]);
+    return out;
+  };
+
+  const before = gapsOf(lisp);
+  assert.ok(Math.abs((before[0] - before[1]) - G) < 1e-9,
+    'the AutoLISP formula leaves the bottom opening exactly one board bigger');
+
+  const after = gapsOf(fixed);
+  for (const g of after) assert.ok(Math.abs(g - after[0]) < 1e-9, `${after.join(' / ')}`);
+  // …and the shelves still divide the SAME zone: nothing has been added to it.
+  assert.ok(fixed[0] > zoneBottom && fixed[2] + G < zoneTop);
+});
+
+test('boardT omitted is the AutoLISP, to the last decimal', () => {
+  // The engine's own even-spacing fallback calls this without a thickness, and
+  // through it the pin drilling and every golden fixture. It must not move.
+  const kit = evenShelfPositions({ zoneBottom: 18, zoneTop: 2132, count: 2 });
+  const spacing = (2132 - 18) / 3;
+  assert.ok(Math.abs(kit[0] - (18 + spacing)) < 1e-12);
+  assert.ok(Math.abs(kit[1] - (18 + spacing * 2)) < 1e-12);
+  assert.deepEqual(evenShelfPositions({ zoneBottom: 18, zoneTop: 2132, count: 2, boardT: 0 }), kit);
+});
+
+// ─── TURN 11 (CLAUDE.md F2.3): AN ADDED SHELF IS CENTRED ────────────────────
+
+test('the first shelf added halves the zone', () => {
+  project();
+  const { id } = store().addUnit('WARDROBE');
+  store().addShelves(id, 1);
+  const G = unitOf(id).params.board_t ?? P.board.thickness;
+  const H = unitOf(id).params.height;
+  const [y] = shelfPositions(id);
+  // Centred BOARD, not centred face: the two openings it leaves are equal.
+  const below = y - G;
+  const above = (H - G) - (y + G);
+  assert.ok(Math.abs(below - above) <= P.editor.mmStep,
+    `a single added shelf leaves ${below} below and ${above} above`);
+  // …and it is nowhere near the top, which is where turn 4 put it.
+  assert.ok(y < H - G - P.editor.minShelfEdgeGap * 2, 'not parked under the wieniec');
+});
+
+test('the second shelf halves the biggest opening that is left', () => {
+  project();
+  const { id } = store().addUnit('WARDROBE');
+  store().addShelves(id, 2);
+  const ys = shelfPositions(id);
+  assert.equal(ys.length, 2);
+  const G = unitOf(id).params.board_t ?? P.board.thickness;
+  assert.ok(ys[1] - (ys[0] + G) >= P.editor.minShelfGap - 1e-9, 'and never on top of the first');
+});
+
+test('an added shelf lands above the drawers, centred in what is left', () => {
+  project();
+  const { id } = store().addUnit('WARDROBE');
+  store().addDrawers(id, 3);
+  store().addShelves(id, 1);
+  const unit = unitOf(id);
+  const G = unit.params.board_t ?? P.board.thickness;
+  const result = computeCabinet(paramsForEngine(unit), P);
+  const floor = result.assemblies.drawerZone.top + G;
+  const [y] = shelfPositions(id);
+  assert.ok(y > floor, 'above the partition that closes the stack');
+  const below = y - floor;
+  const above = (unit.params.height - G) - (y + G);
+  assert.ok(Math.abs(below - above) <= P.editor.mmStep,
+    `centred in the zone above the drawers: ${below} / ${above}`);
+});
+
+test('a shelf that will not fit is refused rather than stacked', () => {
+  project();
+  const { id } = store().addUnit('LOW_CABINET');
+  // Fill it until it says no, and then check it really did say no.
+  const { added, requested } = store().addShelves(id, 20);
+  assert.ok(added < requested, 'the carcass runs out of room before 20 shelves');
+  const ys = shelfPositions(id);
+  const G = unitOf(id).params.board_t ?? P.board.thickness;
+  for (let i = 1; i < ys.length; i += 1) {
+    assert.ok(ys[i] - ys[i - 1] > G, `shelves at ${ys[i - 1]} and ${ys[i]} overlap`);
   }
 });

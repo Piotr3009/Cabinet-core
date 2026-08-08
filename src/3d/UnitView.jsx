@@ -9,12 +9,17 @@ import {
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import Hardware from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
+import AddPlus from './AddPlus.jsx';
 import JointLines from './JointLines.jsx';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { shelfGapLadder } from '../engine/items.js';
+import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
+import { isSelectableElement } from '../engine/elements.js';
+import { wallAtPoint } from '../engine/room.js';
+import { machinedPanelGeometry } from './panelSolid.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
 import {
@@ -28,6 +33,11 @@ import {
 // Turn 3 adds the interactions on top of that, and they are all VIEW state:
 // a drawer slides out, a door swings on its hinge, the camera flies to what
 // was double-clicked. None of it reaches the engine, the BOM or the CNC sheet.
+
+// The floor, as a plane: y = 0, normal up. One object for the whole app rather
+// than one per drag — it never moves, and a drag allocating a plane per frame is
+// a drag allocating a plane per frame.
+const FLOOR = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 /** Which kind of front this panel is, if any — that decides how it moves. */
 function frontKind(panel) {
@@ -166,7 +176,7 @@ function useBevel(box, profile, sprayed = false) {
  */
 function MovingPanel({
   panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
-  swing = null, ...handlers
+  swing = null, joineryLayers: layers = null, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -175,6 +185,15 @@ function MovingPanel({
   // would have — and the bevel shader, which measures a fragment against the
   // half-extents of the object it is on, keeps working unchanged.
   const mitre = useMitre(p);
+  // ─── The joint, cut into the board (turn 11, CLAUDE.md F6) ───
+  // A panel that receives tabs is extruded from its own machined outline, so a
+  // socket is a real absence in the solid rather than a rectangle drawn on it.
+  // Cached in 3d/panelSolid.js by panel CONFIGURATION, so this is a Map lookup
+  // for every carcass after the first and nothing at all per frame.
+  const machined = useMemo(
+    () => (layers && !mitre ? machinedPanelGeometry(p, layers, profile) : null),
+    [p, layers, profile, mitre],
+  );
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
@@ -235,11 +254,19 @@ function MovingPanel({
   return (
     <group ref={group} position={pivot}>
       <mesh position={meshOffset} castShadow={!contour} receiveShadow={!contour} {...handlers}>
-        {/* A mitred strip carries its own geometry (turn 8, CLAUDE.md F6);
-            everything else is the box the engine emitted. */}
+        {/* A mitred strip carries its own geometry (turn 8, CLAUDE.md F6), and
+            since turn 11 so does a panel with the joint machined into it (F6).
+            Everything else is the box the engine emitted. */}
+        {/* eslint-disable-next-line no-nested-ternary */}
         {mitre
           ? <primitive object={mitre.geometry} attach="geometry" />
-          : <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />}
+          : (machined
+            // `dispose={null}`: this geometry is SHARED — one solid serves every
+            // identical side panel in the project — so the cache owns it and a
+            // unit being deleted must not take the other thirteen carcasses'
+            // buffers with it.
+            ? <primitive object={machined} attach="geometry" dispose={null} />
+            : <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />)}
         {/* Physical, not standard. Turn 6: the numbers are no longer one sheen
             for everything — a sprayed piece wears lacquer and a carcass wears
             melamine (profile.appearance.materials), and the edges are broken
@@ -250,7 +277,16 @@ function MovingPanel({
           // rebuilt, and remounting the material is how that is asked for. Left
           // out, a decor chosen while the scene is already on screen showed up
           // only after a reload.
-          key={decor ? 'decor' : 'plain'}
+          //
+          // ─── Turn 11 (CLAUDE.md F1.3): AND ON THE TRANSLUCENCY ───
+          // The same trap, one property along, and it is the half of "X-ray
+          // resets itself" that lives in the renderer. Turning X-ray on flips
+          // `transparent` on a material three has ALREADY compiled and cached a
+          // program for; the flag is part of what that program is built for, and
+          // the way to ask for a new one is a new material. Without it the mode
+          // was on in the store and off on the screen after the next redraw —
+          // which is exactly what a mode that "resets" looks like.
+          key={`${decor ? 'decor' : 'plain'}-${translucent ? 'through' : 'solid'}`}
           ref={bevelRef}
           // An untinted scan sits on white so the figure comes through at its
           // own tone; a tinted procedural grain multiplies the decor's colour.
@@ -294,17 +330,22 @@ function MovingPanel({
 }
 
 export default function UnitView({
-  unit, result, wall, roomCentre, selected, snapStep, onSelect, onMove, onMoveShelf, onShelfDragState,
+  unit, result, wall, walls = null, roomCentre, selected, snapStep, onSelect, onMove, onMoveToWall,
+  onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
   profile, finishes, outlines = true, contour = false, xray = false, sheen = null,
+  showHinges = false,
   wallGaps = null, showAllDims = false, unitDesign = null,
   // ─── One element inside this cabinet (turn 9, CLAUDE.md F4) ───
   // `selectedElement` is the ENGINE's own panel id (`SHELF-2`) or null, which
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
-  selectedElement = null, onSelectElement, onMoveElementDepth,
+  selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onAddItems,
+  // The ink every dimension caption on this cabinet is written in (turn 11,
+  // CLAUDE.md F1.5). Null falls back to the two tones the scene has always had.
+  dimensionColour = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -371,6 +412,26 @@ export default function UnitView({
   /** Distance of a world point along the wall, in mm from the wall's start. */
   const alongMm = useCallback((point) => point.clone().sub(wallStart).dot(along) / MM, [wallStart, along]);
 
+  /**
+   * Where the pointer is standing ON THE FLOOR, in ROOM millimetres.
+   *
+   * The drag along a wall is projected onto a plane parallel to that wall; this
+   * is the other question, and it is the one that lets a cabinet go round a
+   * corner (turn 11, CLAUDE.md F4.1): the floor is one plane for the whole room,
+   * so a point on it can be asked which wall it belongs to.
+   */
+  const pointerToFloor = useCallback((clientX, clientY) => {
+    const rect = gl.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycaster.setFromCamera(ndc, camera);
+    const target = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(FLOOR, target)) return null;
+    return { x: target.x / MM + roomCentre.x, y: target.z / MM + roomCentre.y };
+  }, [camera, gl, raycaster, roomCentre.x, roomCentre.y]);
+
   const startDrag = useCallback((e) => {
     e.stopPropagation();
     onSelect();
@@ -381,6 +442,21 @@ export default function UnitView({
 
     const move = (ev) => {
       if (!drag.current) return;
+      // ─── Turn 11 (CLAUDE.md F4.1): round the corner ───
+      // Where is the hand? If it has crossed in front of ANOTHER wall, the
+      // cabinet is re-homed there — the same placement maths, the same clamp,
+      // the same gap rules; it is re-parenting and not new geometry. While the
+      // hand is still in front of this wall (which is all of the time, on a
+      // single-wall job) nothing about the old drag changes.
+      const floor = walls && onMoveToWall ? pointerToFloor(ev.clientX, ev.clientY) : null;
+      const home = floor ? wallAtPoint(walls, floor) : null;
+      if (home && home.index !== (unit.position.wall ?? 0)) {
+        // Under the CURSOR, not at the end of the wall: the unit arrives where
+        // the hand is, centred on it, which is where a person expects the thing
+        // they are carrying to land.
+        onMoveToWall(home.index, home.along - W / 2, snapStep);
+        return;
+      }
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
       onMove(alongMm(p) - drag.current.offset, snapStep);
@@ -395,7 +471,8 @@ export default function UnitView({
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
-  }, [onSelect, pointerToPlane, alongMm, unit.position.x_mm, orbitRef, onMove, snapStep]);
+  }, [onSelect, pointerToPlane, alongMm, unit.position.x_mm, unit.position.wall, orbitRef,
+    onMove, onMoveToWall, pointerToFloor, walls, snapStep, W]);
 
   // Cabinet origin: on its wall, back against it (local z = 0 is the wall
   // face), standing on its legs or hanging at its mount height.
@@ -653,6 +730,15 @@ export default function UnitView({
     window.addEventListener('pointercancel', up);
   }, [onMoveShelf, onSelect, pointerToPlane, originY, orbitRef, snapStep, onShelfDragState, unit.id]);
 
+  // Which joint system this project is cut with, as its LAYER NAMES — the same
+  // indirection engine/joinery.js has used since turn 8, so a second system
+  // arrives as a block of numbers rather than as a rewrite of the 3D view
+  // (turn 11, CLAUDE.md F6).
+  const jointLayers = useMemo(
+    () => (contour ? null : resolveJoineryLayers(profile, unitDesign?.joinery || null)),
+    [profile, unitDesign, contour],
+  );
+
   return (
     <group
       ref={groupRef}
@@ -679,7 +765,18 @@ export default function UnitView({
         //
         // A partition is DERIVED — the engine builds it from the drawer stack
         // under it — so it selects and reads out, and the panel says so.
-        const isElement = p.role === 'shelf';
+        // ─── Turn 11 (CLAUDE.md F3.1) ───
+        // Turn 9 could select one kind of thing: a piece whose engine ROLE was
+        // `shelf`. The whole cabinet is selectable now — sides, bottom, top,
+        // back, vertical partitions, end panels, infills, the fronts — through
+        // one rule in engine/elements.js, so the 3D view, the right panel and a
+        // node test all agree about what a "piece" is.
+        //
+        // What is deliberately NOT a piece is a mechanism: a drawer box's own
+        // sides, the panel that carries the runners, its fillers. Those follow
+        // the stack, and the way to change one is to change the stack.
+        const isElement = isSelectableElement(p);
+        const isShelfLike = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
         // What the piece is made of: the project's finishes, resolved once per
@@ -714,6 +811,7 @@ export default function UnitView({
             depth={D}
             profile={profile}
             swing={front === 'door' ? swingFor(p.meta?.hinge) : null}
+            joineryLayers={jointLayers}
             onPointerDown={(e) => {
               // ─── Turn 9 (CLAUDE.md F4.1/F4.2): which axis this drag is on ───
               //
@@ -733,19 +831,44 @@ export default function UnitView({
               if (isElement) {
                 const alreadyOn = selectedElement === p.id;
                 onSelectElement?.(p.id);
-                if (shelfId && alreadyOn && !p.meta?.locked) {
+                if (isShelfLike && shelfId && alreadyOn && !p.meta?.locked) {
                   startDepthDrag(e, shelfId, p.meta?.front_mm ?? 0, p.box.y);
                   return;
                 }
-                if (shelfId && !p.meta?.locked) { startShelfDrag(e, shelfId, p.box.y); return; }
+                if (isShelfLike && shelfId && !p.meta?.locked) { startShelfDrag(e, shelfId, p.box.y); return; }
               }
+              // Everything else still DRAGS THE UNIT. Selecting a side panel is
+              // how you look at that piece's properties; grabbing a side panel
+              // and pulling has meant "move this cabinet" since turn 3, and a
+              // gesture that changed meaning because a piece became selectable
+              // would be the feature breaking the app it was added to.
               startDrag(e);
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();
-              // A front opens; anything else pulls the camera in to look at it.
+              // ─── Turn 11 (CLAUDE.md F3.3) ───
+              // A double click OPENS THE PIECE: an edit modal beside it, and the
+              // right panel focused on the same thing. Single click still only
+              // selects, which is what makes the two gestures learnable.
+              //
+              // A FRONT keeps its swing as well — opening a door by
+              // double-clicking it is turn 3's and is the first thing anybody
+              // does to a cabinet — so a front does both: it swings, and its
+              // hinge side is what the modal is about.
               if (front && onToggleFront) onToggleFront(p.id);
-              else if (onFocus) onFocus(panelWorldCentre(p), Math.max(p.box.w, p.box.h, p.box.d));
+              if (isElement && onEditElement) {
+                onSelectElement?.(p.id);
+                onEditElement(p.id, { x: e.clientX, y: e.clientY });
+              }
+              // …and the camera still flies to it, which is turn 5's "look at
+              // THIS" and is not replaced by the modal: a joiner who
+              // double-clicks a piece wants to SEE it as well as edit it, and
+              // the card opens beside the piece the camera has just closed in
+              // on. A front is the exception — it swings, and flying the camera
+              // into a door that is opening is a way to see nothing.
+              if (onFocus && !front) {
+                onFocus(panelWorldCentre(p), Math.max(p.box.w, p.box.h, p.box.d));
+              }
             }}
             onContextMenu={(e) => {
               e.stopPropagation();
@@ -824,7 +947,12 @@ export default function UnitView({
           hinges and runners only in X-ray. Every position comes from
           engine/hardware3d.js, which reads the engine's own drilling — so the
           count of what is drawn is the count of what is on order. */}
-      <Hardware instances={hardware} profile={profile} xray={xray && !contour} />
+      <Hardware
+        instances={hardware}
+        profile={profile}
+        xray={xray && !contour}
+        hinges={showHinges && !contour}
+      />
 
       {/* Top infill: grab its top edge and drag UP to the ceiling, or
           double-click it to send it there. The piece itself is drawn from the
@@ -911,6 +1039,31 @@ export default function UnitView({
           );
         })}
 
+      {/* ─── The inner "+" (turn 11, CLAUDE.md F4.3) ───
+          On the ACTIVE unit only, and in a different colour from the pluses at
+          the ends of the runs (profile.appearance.addPlus): the two ask
+          different questions — that one adds a CABINET beside this one, this one
+          adds something INSIDE it — and two identical discs a hand's width apart
+          is a mistake waiting for a Friday afternoon.
+
+          It hangs in the middle of the carcass, standing just proud of the door
+          line so a closed front cannot swallow it. Clicking it leaves the unit
+          selected and opens the right panel's Add items section, which is where
+          the answer to "what goes inside" already lives.
+
+          It is hidden the moment the unit is deselected — and while a shelf is
+          being dragged, for the same reason the run pluses are: a control that
+          appears under a moving hand is a control you press by accident. */}
+      {selected && !contour && !shelfDrag && onAddItems && (
+        <AddPlus
+          position={[mm(W / 2), mm(H / 2), mm(D) + 0.12]}
+          size={mm(profile.ui.addPlusMinGapMm) * 0.8}
+          colour={profile.appearance.addPlus.inner}
+          title="Add something inside this unit"
+          onClick={onAddItems}
+        />
+      )}
+
       {/* wall unit: the bracket line it hangs from, so it does not read as
           floating by accident */}
       {isWallMounted && (
@@ -924,7 +1077,14 @@ export default function UnitView({
           clear of the SOLID — doors stand proud of the carcass and an end panel
           stands outside it, so a mark drawn on the carcass would cut through
           both. Hover is the same mark, quieter. */}
-      {(selected || hovered) && !contour && (
+      {/* ─── Turn 11 (CLAUDE.md F1.2): EXACTLY ONE THING IS SELECTED ───
+          With a shelf selected inside it, the CABINET is not selected — it is
+          the thing the shelf is in. Turn 9 drew both marks at once, so a joiner
+          editing one shelf was looking at two dashed boxes and had to work out
+          from the right-hand panel which of them the fields belonged to.
+          The hover mark goes with it: hovering the carcass of a cabinet you are
+          working inside is not an offer to select it. */}
+      {(selected || hovered) && !contour && !selectedElement && (
         <SelectionOutline
           box={solid}
           profile={profile}
@@ -942,11 +1102,16 @@ export default function UnitView({
         <SelectionOutline box={selectedElementBox} profile={profile} opacity={1} />
       )}
 
+      {/* The unit's own W / H / D. Written in the project's DIMENSION INK
+          (turn 11, CLAUDE.md F1.5) — red by default — because these are
+          dimensions and a dimension has one colour wherever it appears. The
+          SELECTED cabinet keeps the gold, which is not a colour choice: it is
+          the answer to "which one am I holding". */}
       {showLabels && (
         <group userData={{ ccHelper: true }}>
-          <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} />
-          <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} />
-          <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${formatMm(D)} deep`} tone={selected ? 'gold' : 'dim'} />
+          <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
+          <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
+          <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${formatMm(D)} deep`} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
         </group>
       )}
 
@@ -958,7 +1123,13 @@ export default function UnitView({
       {showAllDims && !contour && (
         <group userData={{ ccHelper: true }}>
           {fullDimensions.map((d) => (
-            <DimLabel key={d.key} position={d.at} text={d.text} tone={d.tone || 'gold'} />
+            <DimLabel
+              key={d.key}
+              position={d.at}
+              text={d.text}
+              tone={d.tone || 'gold'}
+              colour={d.tone === 'dim' ? dimensionColour : null}
+            />
           ))}
         </group>
       )}

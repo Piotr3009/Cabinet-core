@@ -261,3 +261,46 @@ export function validateRoomShape(corners) {
   if (Math.abs(area2(corners)) / 2 < 1e5) issues.push('The room encloses almost no floor area.');
   return issues;
 }
+
+/**
+ * ─── Which wall a point on the floor belongs to (turn 11, CLAUDE.md F4.1) ───
+ *
+ * A unit is dragged ALONG its wall, and until turn 11 that was the end of it:
+ * once placed, the only way to get a cabinet onto another wall was a select box
+ * in the right-hand panel. Dragging it round the corner is the gesture, and this
+ * is the arithmetic behind it — given a point in ROOM millimetres, which wall is
+ * it in front of, and how far along that wall?
+ *
+ * "In front of" is the inward side: a point behind a wall belongs to no wall at
+ * all, which is what stops a cabinet re-homing onto the plaster the moment the
+ * cursor overshoots. `slack` lets the pointer run a little past a wall's ends
+ * and past its face without losing it — a hand does not stop on a line.
+ *
+ * Pure arithmetic on the walls this module already builds. Returns null when the
+ * point belongs to nothing, and the caller then leaves the unit where it is.
+ *
+ * @param {Array} walls        roomWalls()
+ * @param {{x:number,y:number}} point   in room mm (the same frame as `corners`)
+ * @param {number} slack       how far past an end / behind the face still counts
+ * @returns {{index:number, along:number, distance:number}|null}
+ */
+export function wallAtPoint(walls, point, slack = 400) {
+  let best = null;
+  for (const wall of walls || []) {
+    const dx = point.x - wall.start.x;
+    const dy = point.y - wall.start.y;
+    const along = dx * wall.along.x + dy * wall.along.y;
+    const inward = dx * wall.inward.x + dy * wall.inward.y;
+    // Behind the wall, or off past its ends: not this one.
+    if (inward < -slack) continue;
+    if (along < -slack || along > wall.width + slack) continue;
+    // The nearest wall the point is in front of. Distance is measured INTO the
+    // room, so a cabinet dragged into the middle of the floor stays on the wall
+    // it is nearest to rather than jumping to whichever end it drifts past.
+    const distance = Math.abs(inward);
+    if (!best || distance < best.distance) {
+      best = { index: wall.index, along, distance };
+    }
+  }
+  return best;
+}

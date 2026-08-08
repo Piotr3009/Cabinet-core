@@ -12,10 +12,13 @@ import RenderModal from '../components/RenderModal.jsx';
 import DrawingModal from '../components/DrawingModal.jsx';
 import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
+import ElementModal from '../components/ElementModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import { useUiStore } from '../stores/uiStore.js';
+import { getProjectType } from '../engine/projectTypes.js';
+import { migrateDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
@@ -24,6 +27,39 @@ import { persistProject } from '../lib/persist.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
 import { exportBookletPdf, exportDrawingPdf, exportDrawingSvg } from '../lib/drawingExport.js';
+
+/**
+ * ─── "Add first unit" (turn 11, CLAUDE.md F4.2) ───
+ *
+ * A DOM button rather than a sprite in the scene, and deliberately: there is no
+ * furniture for it to be anchored to, the room may be any size, and a control
+ * that means "start here" belongs at the middle of the SCREEN. It opens the
+ * Library at the category this project's type starts from (engine/projectTypes),
+ * so a wardrobe job opens on tall units.
+ */
+function FirstUnitPlus() {
+  const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
+  const design = useProjectStore((s) => s.project.design);
+  const category = getProjectType(migrateDesign(design).projectType)?.category || 'base';
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+      <button
+        type="button"
+        className="pointer-events-auto w-28 h-28 rounded-full border-2 border-dashed border-gold/70
+          text-gold text-6xl leading-none flex items-center justify-center bg-white/70
+          hover:bg-gold hover:text-shell-900 hover:border-solid transition-colors shadow-lg"
+        title="Add the first unit — opens the Library"
+        aria-label="Add first unit"
+        onClick={() => setLibraryCategory(category)}
+      >
+        +
+      </button>
+      <span className="pointer-events-none mt-3 text-sm text-neutral-600 bg-white/80 px-3 py-1 rounded border border-neutral-200">
+        Add first unit
+      </span>
+    </div>
+  );
+}
 
 // Frozen layout (SPEC section 7):
 // topbar / floating Library / white 3D canvas / closable right parameter panel.
@@ -182,13 +218,17 @@ export default function ConfiguratorPage() {
         {viewMode === 'cnc' && <CncView />}
         <CanvasToolbar />
 
-        {units.length === 0 && viewMode === '3d' && (
-          <div className="absolute inset-x-0 bottom-10 flex justify-center pointer-events-none">
-            <p className="text-neutral-500 text-sm bg-white/80 px-3 py-1.5 rounded border border-neutral-200">
-              Open Library in the menu and pick a unit to start.
-            </p>
-          </div>
-        )}
+        {/* ─── An empty room asks ONE question (turn 11, CLAUDE.md F4.2) ───
+            A line of grey text at the bottom of the canvas saying "open Library
+            in the menu" is a manual, not an invitation: it tells somebody where
+            a control is instead of being one. One big plus in the middle of the
+            room, and it opens the Library — the same panel the menu opens, at
+            the category a job of this type starts from.
+
+            It disappears the moment the first unit exists, and it comes back
+            when the scene is emptied, because it is not a splash screen: it is
+            what an empty room looks like. */}
+        {units.length === 0 && viewMode === '3d' && <FirstUnitPlus />}
 
         <LibraryPanel />
         {rightPanelOpen && !bomOpen && <RightPanel />}
@@ -200,6 +240,9 @@ export default function ConfiguratorPage() {
         {modal === 'save-template' && <SaveTemplateModal />}
         {modal === 'render' && <RenderModal rig={renderRig} />}
         {modal === 'drawing' && <DrawingModal />}
+        {/* Turn 11 (CLAUDE.md F3.3): the piece you double-clicked, edited where
+            you clicked it. Not a centred dialog — see ElementModal. */}
+        {modal === 'element' && <ElementModal />}
         <ContextMenu />
         <Toast />
       </div>

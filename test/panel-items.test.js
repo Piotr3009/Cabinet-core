@@ -26,20 +26,34 @@ function withUnit(type = 'WARDROBE') {
 
 const itemsOf = (id) => store().units.find((u) => u.id === id)?.params.sections?.[0]?.items || [];
 
-test('shelves fill from the top down and never land on one another', () => {
+// ─── TURN 11 (CLAUDE.md F2.3) ───
+// This used to say "shelves fill from the TOP down" and assert that the first
+// one lands on `band.max`. Piotr's verdict killed that rule: a single shelf 40 mm
+// under the wieniec is a shelf nobody would fit, and every set of shelves had to
+// be corrected with Even before it was worth looking at. An added shelf HALVES
+// the biggest opening it can find (engine/items.js `centredShelfPos`).
+//
+// What has NOT changed, and is what this test is really for, is the second half
+// of its old name: no added item ever lands on one that is already there.
+test('an added shelf is centred in the biggest opening, and never lands on another', () => {
   const id = withUnit('WARDROBE');
-  const band = shelfLimits(store().units.find((u) => u.id === id), P);
+  const unit = store().units.find((u) => u.id === id);
+  const band = shelfLimits(unit, P);
+  const G = unit.params.board_t ?? P.board.thickness;
 
   store().addShelves(id, 1);
   let positions = shelvesInEngineOrder(itemsOf(id)).map((s) => s.pos_mm);
   assert.equal(positions.length, 1);
-  assert.equal(positions[0], band.max, 'the first shelf goes to the top of the band');
+  const below = positions[0] - band.floor;
+  const above = band.ceiling - (positions[0] + G);
+  assert.ok(Math.abs(below - above) <= P.editor.mmStep,
+    `the first shelf halves the zone — ${below} below, ${above} above`);
 
   store().addShelves(id, 2);
   positions = shelvesInEngineOrder(itemsOf(id)).map((s) => s.pos_mm);
   assert.equal(positions.length, 3);
-  // Strictly descending from the top, each at least the minimum gap below the
-  // last: that IS "no new item collides with an existing one".
+  // Ascending, each at least the minimum gap above the last: that IS "no new
+  // item collides with an existing one".
   for (let i = 1; i < positions.length; i += 1) {
     assert.ok(positions[i] - positions[i - 1] >= P.editor.minShelfGap,
       `shelves ${i} and ${i + 1} are ${positions[i] - positions[i - 1]} mm apart`);

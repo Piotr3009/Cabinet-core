@@ -68,7 +68,7 @@ function bounce(hex, profile, surface) {
 
 /** One wall: a plane with a hole per window and per door. */
 function Wall({
-  wall, height, openings, centre, showLabel, profile,
+  wall, height, openings, centre, showLabel, profile, onBackground,
 }) {
   const ref = useRef(null);
 
@@ -138,7 +138,12 @@ function Wall({
             reaches MeshStandardMaterial only, so this one change takes the
             biggest surface in the scene out of the image-based lighting path
             and leaves it looking exactly the same. */}
-        <mesh geometry={geometry} receiveShadow>
+        {/* ─── Turn 11 (CLAUDE.md F1.1) ───
+            Clicking a WALL drops the selection, exactly as clicking empty space
+            does. It did not, and the reason is easy to miss: the canvas's
+            `onPointerMissed` fires only when the ray hits NOTHING, and a wall is
+            something. So the room's own surfaces say so themselves. */}
+        <mesh geometry={geometry} receiveShadow onPointerDown={onBackground}>
           <meshLambertMaterial
             color={tone(profile, 'wall', COLORS.wall)}
             emissive={bounce(tone(profile, 'wall', COLORS.wall), profile, 'wall')}
@@ -171,7 +176,15 @@ function Wall({
   );
 }
 
-export default function Room({ room, showLabels = true, profile = null }) {
+export default function Room({
+  room, showLabels = true, profile = null, onBackground = null,
+}) {
+  // A left click on the room is a click on NOTHING: it clears the selection and
+  // shuts any open menu (turn 11, CLAUDE.md F1.1). Middle and right buttons are
+  // left alone — the right one opens a menu, and orbiting must not deselect.
+  const background = useMemo(() => (onBackground
+    ? (e) => { if (e.button === 0) onBackground(); }
+    : undefined), [onBackground]);
   const walls = useMemo(() => roomWalls(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
   const height = room.height ?? 2500;
@@ -213,7 +226,7 @@ export default function Room({ room, showLabels = true, profile = null }) {
           melt into one white blur" was Piotr's complaint and three values inside
           5 % of each other was the arithmetic behind it. The numbers are in
           profile.appearance.room; the reasoning is written down there. */}
-      <mesh geometry={floor} receiveShadow>
+      <mesh geometry={floor} receiveShadow onPointerDown={background}>
         <meshLambertMaterial
           color={tone(profile, 'floor', COLORS.floor)}
           emissive={bounce(tone(profile, 'floor', COLORS.floor), profile, 'floor')}
@@ -234,6 +247,7 @@ export default function Room({ room, showLabels = true, profile = null }) {
           centre={bounds.centre}
           showLabel={showLabels}
           profile={profile}
+          onBackground={background}
         />
       ))}
 

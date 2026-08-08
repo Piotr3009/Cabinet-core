@@ -217,6 +217,20 @@ function makePage({ socket, send, consoleLines, errors }) {
       return box;
     },
 
+    /** A real double click at a point — how the app opens a piece (turn 11). */
+    async dblclick(x, y) {
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+      for (const clickCount of [1, 2]) {
+        await send('Input.dispatchMouseEvent', {
+          type: 'mousePressed', x, y, button: 'left', clickCount, buttons: 1,
+        });
+        await send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased', x, y, button: 'left', clickCount, buttons: 0,
+        });
+      }
+      await sleep(120);
+    },
+
     async mouse(type, x, y, extra = {}) {
       await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1, buttons: 1, ...extra });
       await sleep(40);

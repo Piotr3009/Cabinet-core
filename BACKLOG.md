@@ -345,3 +345,41 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     którego już nie ma. To dług w SKRYPCIE, nie w aplikacji — te same ścieżki
     przechodzą w `scripts/e2e-turn10.mjs`. Albo go zaktualizować przy okazji,
     albo świadomie zostawić jako zapis stanu z tury 8.
+
+## TURA 11 — CO ZROBIONE, CO DOPISANE (08.08)
+
+### Zamknięte w tej turze
+- **#57 — paczka T11.** Dwadzieścia cztery punkty właściciela plus krok 5
+  „nowego projektu" spisane do CLAUDE.md jako fazy F1–F11 i wykonane w całości.
+  Nic z paczki nie zostało odłożone.
+- **#50 (BLOCKERS, tura 9) — pionowy partition.** Silnik go nie miał; ma.
+  Pozycja `{ kind: 'partition', x_mm }`, panel `VPART-n`, dodawany z „Add
+  items", przesuwany i edytowany jak półka, tylko na drugiej osi.
+- **#15 / #20 — boczny filler.** Domyślnie 40 mm, przypinany, rozciągliwy.
+  Insety L/P (dawne #32 w połowie) usunięte jako koncept.
+
+### Dopisane w turze 11
+60. [MEDIUM] **Przebudowa kategorii Biblioteki — KUCHNIA na najwyższym
+    poziomie, podkategorie DO OMÓWIENIA Z WŁAŚCICIELEM.** Dziś Biblioteka jest
+    pogrupowana po WYSOKOŚCI szafki (base / wall / tall), co jest podziałem
+    inżynierskim, a nie tym, jak stolarz myśli o zleceniu — a od tury 11
+    istnieje już drugi podział, po RODZINIE typu (`profile.itemsByContext`,
+    `kitchen` / `wardrobe`), i te dwa nie są tym samym. Właściwa struktura
+    (co jest kategorią, co podkategorią, gdzie kończy się kuchnia a zaczyna
+    garderoba) jest DECYZJĄ WŁAŚCICIELA i nie ma jej sensu zgadywać.
+    **Wyraźnie NIE wchodziło do tury 11** — CLAUDE.md F11.2 mówi to wprost.
+61. [MEDIUM] **Grubość własna dla czterech elementów złącza.** Bok, wieniec,
+    dno i plecy biorą dziś PŁYTĘ KORPUSU i panel mówi dlaczego (czop jest
+    szeroki na jedną grubość, gniazdo leży na jej osi). Warsztat, który
+    naprawdę chce 22 mm boków w 18 mm korpusie, potrzebuje złącza liczonego per
+    para paneli — to zmiana w `engine/puzzle.js`, nie w panelu. Pełny opis:
+    BLOCKERS #58.
+62. [LOW] **Wiercenie do pionowej przegrody.** `VPART-n` jest cięty, wchodzi do
+    BOM-u i na arkusz CNC, ale nie ma jeszcze własnych otworów — ani kołków w
+    bokach, ani konfirmatów. Do ustalenia z warsztatem, CZYM się ją mocuje;
+    dopiero potem geometria. BLOCKERS #59.
+63. [LOW] **`window.__cc` w produkcyjnym bundlu.** Trzy store'y wystawione na
+    `window` dla skryptu akceptacyjnego (`scripts/e2e-turn11.mjs`), żeby bieg
+    MIERZYŁ, a nie tylko fotografował. Nie ma za tym nic, do czego devtools i
+    tak by nie sięgnęły — ale gdy przyjdzie prawdziwe logowanie i dane klientów,
+    warto to schować za flagą builda.

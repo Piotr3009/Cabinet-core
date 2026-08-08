@@ -6,6 +6,7 @@ import MockModeBadge from './MockModeBadge.jsx';
 import MenuBar from './MenuBar.jsx';
 import { UNIT_CATEGORIES } from '../engine/types.js';
 import { buildOutputMenu } from '../lib/outputMenu.js';
+import { buildDatabaseMenu, orderMenus } from '../lib/topMenu.js';
 import { persistProject } from '../lib/persist.js';
 
 // Frozen layout, SPEC section 7: logo in gold, project name, gold Export button.
@@ -76,17 +77,6 @@ export default function TopBar({
         { label: 'Close project', run: goToStart },
       ],
     },
-    // ── Output (turn 6, CLAUDE.md F1) ── built by lib/outputMenu.js, so its
-    // shape is a thing a node test can look at rather than a thing inside a
-    // component nobody mounts.
-    buildOutputMenu({
-      onRender,
-      onDrawing,
-      onExportDxf: onExportDxfZip,
-      onExportCsv,
-      onExportPdf,
-      onOpenBom: () => setBomOpen(true),
-    }),
     {
       label: 'View',
       items: [
@@ -166,13 +156,34 @@ export default function TopBar({
         },
       ],
     },
-    // BACKLOG #36 — the place in the menu, held open the way Database and
-    // Clients are. What goes behind it (finish per element, the list, m², the
-    // price) is still being designed with Piotr; a button that opened a
-    // half-answer would be worse than one that says "not yet".
+    // ─── Turn 11 (CLAUDE.md F7) ───
+    // Database gains a dropdown of its own — Materials, Clients, Projects — and
+    // absorbs the top-level "Clients" entry, which was a menu with nothing
+    // behind it standing beside a menu with nothing behind it. Nothing is lost:
+    // this is a reorder, not a cull.
+    buildDatabaseMenu({
+      // The one of the three that is real today. Design Settings is where the
+      // assignment lives, so that is where the entry goes rather than to a
+      // second screen that would have to be kept in step with it.
+      onMaterials: () => openModal('design'),
+    }),
+    // BACKLOG #36 — the place in the menu, held open. What goes behind it
+    // (finish per element, the list, m², the price) is still being designed with
+    // Piotr; a button that opened a half-answer would be worse than one that
+    // says "not yet".
     { label: 'Spraying', soon: true, disabled: true, hint: 'Spray finishing — a later phase' },
-    { label: 'Database', soon: true, disabled: true, hint: 'JoineryCore data — a later phase' },
-    { label: 'Clients', soon: true, disabled: true, hint: 'JoineryCore clients — a later phase' },
+    // ── Output (turn 6, CLAUDE.md F1) ── built by lib/outputMenu.js, so its
+    // shape is a thing a node test can look at rather than a thing inside a
+    // component nobody mounts. Turn 11 moves it to the END of the bar (F7):
+    // it is what LEAVES the app, and a joiner reaches for it last.
+    buildOutputMenu({
+      onRender,
+      onDrawing,
+      onExportDxf: onExportDxfZip,
+      onExportCsv,
+      onExportPdf,
+      onOpenBom: () => setBomOpen(true),
+    }),
   ];
 
   return (
@@ -188,7 +199,9 @@ export default function TopBar({
 
       <div className="h-5 w-px bg-shell-600" />
 
-      <MenuBar menus={menus} />
+      {/* The ORDER is data (lib/topMenu.js), so the owner changing his mind
+          about where Settings sits is one line there. */}
+      <MenuBar menus={orderMenus(menus)} />
 
       <div className="h-5 w-px bg-shell-600" />
 

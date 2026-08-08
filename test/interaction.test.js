@@ -97,12 +97,21 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   // into TOGGLES. The order is what a joiner reaches for, in the order he
   // reaches for it: show me this cabinet's numbers, put a panel on that side,
   // close that gap — and only then the things that move or destroy it.
+  //
+  // Turn 11 (CLAUDE.md F5.1) makes one swap in it. "Insets…" is GONE — the owner
+  // has ruled the sideways inset a broken concept, because it described a gap
+  // and then left it empty — and in its place, beside the filler switch it
+  // belongs with, are the two PINS: a filler that never auto-vanishes and
+  // stretches with the unit. The back inset is a different thing and keeps its
+  // field in the panel.
+  // Turn 11 also adds "Hinges in Solid" (F3.5) beside the dimensions switch:
+  // the same kind of question — what do I want drawn on top of the furniture.
   assert.deepEqual(ids, [
-    'dimensions',
+    'dimensions', 'hinges',
     'end-panel-L', 'end-panel-R', 'end-panel-B',
-    'top-infill', 'side-infill',
+    'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R',
     'plinth',
-    'insets', 'save-template',
+    'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
   ]);
 

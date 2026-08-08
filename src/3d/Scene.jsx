@@ -1,4 +1,6 @@
-import { useRef, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback, useRef, useEffect, useMemo, useState,
+} from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ContactShadows, OrbitControls } from '@react-three/drei';
@@ -395,7 +397,7 @@ function AddPluses({
         key={`${point.unitId}-${point.side}`}
         position={world.toArray()}
         size={size}
-        colour={profile.appearance.selection.colour}
+        colour={profile.appearance.addPlus.run}
         title={`Add a unit to the ${point.side} of ${unit.params?.unit_num ?? ''}`}
         onClick={() => onPick(point)}
       />
@@ -533,6 +535,24 @@ function FloorShadow({ subject, profile }) {
   );
 }
 
+/**
+ * Put the orbit back in the middle of the room — once, and again only when the
+ * room itself changes (turn 11).
+ *
+ * A `target` PROP would be re-applied on every render, which is the same thing
+ * as saying the camera may never be pointed anywhere else. This is the same
+ * default, expressed as an event rather than as a fact.
+ */
+function HomeTarget({ orbitRef, height }) {
+  useEffect(() => {
+    const controls = orbitRef.current;
+    if (!controls) return;
+    controls.target.set(0, height * 0.45, 0);
+    controls.update();
+  }, [orbitRef, height]);
+  return null;
+}
+
 /** ACES, at the rig's exposure — in the working view as well as in a still. */
 function ToneMapping({ exposure }) {
   const gl = useThree((s) => s.gl);
@@ -599,6 +619,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const design = useProjectStore((s) => s.project.design);
   const units = useProjectStore((s) => s.units);
   const moveUnit = useProjectStore((s) => s.moveUnit);
+  const moveUnitToWall = useProjectStore((s) => s.moveUnitToWall);
   const allResults = useProjectStore((s) => s.allResults);
   const wallGapsFor = useProjectStore((s) => s.wallGapsFor);
   const moveShelf = useProjectStore((s) => s.moveShelf);
@@ -611,6 +632,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
+  const openRightPanel = useUiStore((s) => s.openRightPanel);
+  const setPanelSection = useUiStore((s) => s.setPanelSection);
   const selectedElement = useUiStore((s) => s.selectedElement);
   const selectElement = useUiStore((s) => s.selectElement);
   const clearSelection = useUiStore((s) => s.clearSelection);
@@ -622,6 +645,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const focusRequest = useUiStore((s) => s.focusRequest);
   const focusOn = useUiStore((s) => s.focusOn);
   const clearFocus = useUiStore((s) => s.clearFocus);
+  const openModal = useUiStore((s) => s.openModal);
+  const notify = useUiStore((s) => s.notify);
   const openContextMenu = useUiStore((s) => s.openContextMenu);
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
   const openLibraryToInsert = useUiStore((s) => s.openLibraryToInsert);
@@ -631,6 +656,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
   const xray = useUiStore((s) => s.xray);
+  const showHinges = useUiStore((s) => s.showHinges);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const profile = useCabinetProfileStore((s) => s.profile);
 
@@ -682,6 +708,20 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
     [units, wallGapsFor],
   );
 
+  // "Nothing is selected" — one function, called from the two places a click can
+  // land on nothing: empty space (the canvas's own miss) and the room's own
+  // surfaces (turn 11, CLAUDE.md F1.1).
+  const dropSelection = useCallback(() => {
+    clearSelection();
+    closeContextMenu();
+  }, [clearSelection, closeContextMenu]);
+
+  // Which ink the dimensions are drawn in (turn 11, CLAUDE.md F1.5). RED by
+  // default now — the drawing-office navy is the option, which is the reverse of
+  // turn 5. The hexes are profile.dimensions.colours; this is only WHICH.
+  const dimensionInk = profile.dimensions.colours[dimensionColour]
+    || profile.dimensions.colours[profile.appearance.dimensions.colour];
+
   return (
     <Canvas
       // "soft" = PCFSoftShadowMap. A shadow with a hard edge under a cabinet
@@ -698,7 +738,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
       // Clicking the background clears the selection and any open menu; the
       // orbit only ever starts from the background or a wall, because every
       // unit mesh stops the event and takes the pointer for itself.
-      onPointerMissed={() => { clearSelection(); closeContextMenu(); }}
+      onPointerMissed={dropSelection}
       onContextMenu={(e) => e.preventDefault()}
       style={{ background }}
     >
@@ -717,7 +757,18 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           THROUGH the furniture — a shadow on the floor is furniture standing on
           it, which is the one thing neither mode is saying. */}
       {!contourView && !xray && <FloorShadow subject={subject} profile={profile} />}
-      <Room room={room} showLabels={showDimensions} profile={profile} />
+      {/* ─── Turn 11 (CLAUDE.md F1.1) ───
+          `onPointerMissed` above only fires when the ray hits NOTHING, and the
+          floor and the walls are something — so clicking them left the last
+          cabinet selected with its dashed box on. The room clears the selection
+          itself now, and the two paths call the same function, so "click the
+          background" means one thing wherever the background happens to be. */}
+      <Room
+        room={room}
+        showLabels={showDimensions}
+        profile={profile}
+        onBackground={dropSelection}
+      />
 
       {results.map(({ unit, result }) => (
         <UnitView
@@ -729,11 +780,18 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
             else delete unitGroups.current[unit.id];
           }}
           wall={walls[unit.position?.wall ?? 0] || walls[0]}
+          // Every wall, so a drag can take the cabinet round the corner
+          // (turn 11, CLAUDE.md F4.1).
+          walls={walls}
           roomCentre={bounds.centre}
           selected={unit.id === selectedUnitId}
           snapStep={snapStep}
           onSelect={() => selectUnit(unit.id)}
           onMove={(x, step) => moveUnit(unit.id, x, step)}
+          onMoveToWall={(wallIndex, x, step) => {
+            const moved = moveUnitToWall(unit.id, wallIndex, x, step);
+            if (moved?.error) notify(moved.error, 'warn');
+          }}
           onMoveShelf={(itemId, pos, step) => moveShelf(unit.id, itemId, pos, step)}
           onShelfDragState={setShelfDrag}
           shelfDrag={shelfDrag}
@@ -755,6 +813,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           outlines={showOutlines}
           contour={contourView}
           xray={xray}
+          showHinges={showHinges}
           sheen={sheen}
           // How much clear WALL is beside this unit, per side. The door swing
           // reads it: past square a door comes back towards the wall on its
@@ -762,6 +821,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           wallGaps={wallGaps[unit.id]}
           // The right-click toggle: every number THIS cabinet has (turn 8, F7).
           showAllDims={Boolean(unitDimensions[unit.id])}
+          // The ink every dimension caption on this cabinet is written in
+          // (turn 11, CLAUDE.md F1.5) — the same one the distance arrows use,
+          // because they are one thing to a joiner: the numbers.
+          dimensionColour={dimensionInk}
           // Which joint system this project is cut with — the joint drawing
           // reads its layer names through it (turn 8, F8).
           unitDesign={design}
@@ -771,6 +834,21 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           selectedElement={selectedElement?.unitId === unit.id ? selectedElement.elementRef : null}
           onSelectElement={(panelId) => selectElement(unit.id, panelId)}
           onMoveElementDepth={(itemId, setback) => setElementDepth(unit.id, itemId, setback)}
+          // ─── Turn 11 (CLAUDE.md F3.3) ───
+          // Double-click a piece: an edit modal opens NEXT TO IT (the click
+          // point travels with the request, so the modal lands where the eye
+          // already is) and the right panel focuses on the same piece.
+          onEditElement={(panelId, at) => openModal('element', {
+            unitId: unit.id, panelId, at,
+          })}
+          // The inner "+" (turn 11, CLAUDE.md F4.3): the unit STAYS selected and
+          // the right panel opens its Add items section. Nothing about the
+          // selection changes — that is what "inner" means.
+          onAddItems={() => {
+            selectUnit(unit.id);
+            openRightPanel();
+            setPanelSection('add', true);
+          }}
         />
       ))}
 
@@ -811,16 +889,32 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
 
       <FocusRig request={focusRequest} orbitRef={orbitRef} onDone={clearFocus} />
 
+      {/* ─── Turn 11: the orbit target is set ONCE, not every render ───
+          `target={[0, roomH * 0.45, 0]}` looked harmless and was not. React
+          applies a prop on EVERY render, and this scene re-renders whenever
+          anything at all changes — a selection, a drag, a shelf. So the orbit
+          target was being written back to the middle of the room continuously,
+          and the camera fly that turn 5 built ("look at THIS", FocusRig above)
+          could never arrive: it lerped the target for a frame and the next
+          render put it back. Double-clicking a piece appeared to do nothing but
+          zoom slightly, which is exactly what it did.
+
+          It is imperative now, and only when the ROOM changes shape — which is
+          the one time "the middle of the room" has moved. */}
       <OrbitControls
         ref={orbitRef}
         makeDefault
-        target={[0, roomH * 0.45, 0]}
         minDistance={0.8}
         maxDistance={24}
         maxPolarAngle={Math.PI / 2}
         enableDamping
         dampingFactor={0.12}
       />
+      {/* AFTER the controls, deliberately: effects run in tree order, so a
+          sibling placed above would look for a ref that has not been attached
+          yet and silently do nothing — which is how the orbit ends up pointed
+          at the floor. */}
+      <HomeTarget orbitRef={orbitRef} height={roomH} />
       <CaptureRig onReady={onCaptureReady} background={background} />
       <RenderRig onReady={onRenderReady} unitsRef={unitGroups} />
     </Canvas>

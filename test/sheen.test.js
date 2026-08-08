@@ -180,7 +180,7 @@ test('a sprayed piece refuses the environment probe; board keeps it', () => {
   const s = surfaces(full(), design, { frontColour: '#f4f4f0' });
   assert.equal(s.get('01-F').envMapIntensity, 0, 'a white door must not pick up the room');
   assert.equal(s.get('01-F').metalness, 0);
-  assert.ok(s.get('01-F').normalScale > 0, 'and it carries the gun s own texture');
+  assert.equal(s.get('01-F').normalScale, 0, 'peel OFF by default — it aliased into moiré (hotfix 08.08)');
   assert.equal(s.get('BUL').envMapIntensity, 1, 'a melamine side reflects the room, and should');
 });
 

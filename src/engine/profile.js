@@ -552,7 +552,16 @@ export const DEFAULT_CABINET_PROFILE = {
     // `peelMm` is the size of one orange-peel cell — the gun leaves a texture
     // between about one and three millimetres, and it is the reason a sprayed
     // white door does not read as a white rectangle even in flat light.
-    spray: { envMapIntensity: 0, normalScale: 0.1, metalness: 0, peelMm: 2 },
+    // ─── Hotfix 08.08 (after turn 9): normalScale 0.1 → 0 ───
+    // The peel was a procedural sine at ~2 mm wavelength, evaluated per
+    // fragment. On screen a 600 mm door is a few hundred px, so one period is
+    // 1–2 px — below Nyquist — and a shader sin() has no mipmaps to hide
+    // behind. It aliased into the shimmering diagonal moiré Piotr filmed.
+    // OFF is also exactly what Prime-Sash-Windows does: painted wood there is
+    // plain colour + roughness, and that is the look. bevel.js now band-limits
+    // the peel by pixel footprint, so a workshop turning this back up gets it
+    // only where the screen can actually draw it.
+    spray: { envMapIntensity: 0, normalScale: 0, metalness: 0, peelMm: 2 },
 
     // ─── Manufacturer decor textures (turn 8, Piotr 07.08) ───
     // The full-board scans that ship with the decor pack (`tex` in the JSON).

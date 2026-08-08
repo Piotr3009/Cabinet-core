@@ -94,13 +94,21 @@ const FRAG_NORMAL = /* glsl */`
   // and the piece keeps its silhouette.
   if (ccSpray > 0.0) {
     vec3 ccSp = vCcLocal * ccSprayFreq;
+    // ─── Band limit (hotfix 08.08) ───
+    // A shader sin() cannot be mip-filtered, so past ~4 px per period it does
+    // not render as texture — it renders as moiré. fwidth() is radians of
+    // phase this fragment covers: 0.5 rad/px ≈ 12 px per period (safe),
+    // 1.5 rad/px ≈ 4 px per period (gone). Between the two the peel fades,
+    // so zooming out melts it to flat colour instead of into stripes.
+    float ccPhasePx = max(fwidth(ccSp.x), max(fwidth(ccSp.y), fwidth(ccSp.z)));
+    float ccBand = 1.0 - smoothstep(0.5, 1.5, ccPhasePx);
     vec3 ccWob = vec3(
       sin(ccSp.y + ccSp.z * 1.7),
       sin(ccSp.z + ccSp.x * 1.3),
       sin(ccSp.x + ccSp.y * 1.9)
     );
     ccWob -= ccBentObj * dot(ccWob, ccBentObj);
-    ccBentObj = normalize(ccBentObj + ccWob * ccSpray);
+    ccBentObj = normalize(ccBentObj + ccWob * (ccSpray * ccBand));
   }
   vec3 ccBent = normalize(vCcAxX * ccBentObj.x + vCcAxY * ccBentObj.y + vCcAxZ * ccBentObj.z);
   normal = ccBent;

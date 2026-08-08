@@ -124,7 +124,7 @@ test('a sprayed front is lacquer, tinted by the colour, with no environment on i
   assert.equal(s.envMapIntensity, 0);
   assert.equal(s.clearcoat, P.appearance.materials.lacquer.clearcoat, 'lacquer, not melamine');
   assert.equal(s.clearcoatRoughness, P.appearance.materials.lacquer.clearcoatRoughness);
-  assert.ok(s.normalScale > 0, 'and the orange peel a gun leaves');
+  assert.equal(s.normalScale, 0, 'peel is OFF by default — the 2 mm sine aliased into moiré (hotfix 08.08)');
 });
 
 test('the sheen slider drives a sprayed front, on the new per-cent scale (F5)', () => {

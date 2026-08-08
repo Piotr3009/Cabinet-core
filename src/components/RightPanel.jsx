@@ -118,7 +118,10 @@ export default function RightPanel() {
   // rail partitioner) is derived by the engine and has nowhere to keep an
   // override, so it reads out and does not edit.
   const element = useMemo(() => {
-    const ref = selectedElement?.unitId === unit?.id ? selectedElement.elementRef : null;
+    // Both must EXIST before their ids are compared: on a fresh project neither
+    // does, `undefined === undefined` is true, and `null.elementRef` throws.
+    const ref = selectedElement && unit && selectedElement.unitId === unit.id
+      ? selectedElement.elementRef : null;
     if (!ref || !result) return null;
     const panel = result.panels.find((p) => p.id === ref);
     if (!panel) return null;

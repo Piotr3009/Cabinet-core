@@ -1,202 +1,235 @@
-# CLAUDE.md — Cabinet Core, TURN 10: RENDER REALISM
+# CLAUDE.md — Cabinet Core, TURN 11: THE DAILY-USE BATCH
 
-One subsystem, done properly: light, shadow, and the room they live in.
-Nothing else. Read the whole file first. Full autonomy, zero questions.
-If a phase cannot land CLEAN, revert it completely and write BLOCKERS —
-"clean or not at all".
+Twenty-four owner-verdict fixes and features from live use, plus the New
+Project "Step 5 — Project settings". Read the whole file first. Full
+autonomy, zero questions. Every phase lands CLEAN or is reverted WHOLE with
+a BLOCKERS entry — "clean or not at all".
 
-## WHY THIS TURN EXISTS (read carefully — it is the brief)
+This turn follows TURN 10 (render realism). Baseline = main AFTER the T10
+merge. Record the test total you find; everything you add grows it.
 
-Turns 8–9 plus a day of hotfixes left the working view in a state the owner
-described as "realism gone". Specifically, TODAY on main:
-- The floor shadow under cabinets is missing or barely there. Root cause was
-  FOUND and is documented below (drei ContactShadows `scale` default).
-- Sprayed fronts read as flat matt. The glint machinery exists (env 0.25,
-  point lights) but the owner cannot SEE a travelling highlight.
-- The back wall and the floor melt into one white blur — the room has no
-  depth, nothing anchors the furniture.
-- The owner wants STUDIO SPOTS: lights in the upper front corners aimed
-  ~45° DOWN across the furniture (he calls them "jupiters"), possibly a
-  second one lower. Today's point lights shine level and forward — wrong
-  geometry for the look he is asking for.
-
-The deliverable of this turn is not code that compiles. It is a WORKING VIEW
-that, in screenshots taken by YOU in a real browser, shows: a soft shadow
-seating every cabinet on the floor, a highlight that travels across a
-lacquered door as the camera orbits, and a room whose wall and floor read as
-two different surfaces. The screenshots ship in the PR.
-
-## 0. IRON RULES (turns 1–9, plus this week's scars)
+## 0. IRON RULES (unchanged + this month's scars)
 
 1. Engine purity: nothing in `src/engine/` imports React or three.
-2. `profile.js` is the only home of numbers. Different workshops = different
-   NUMBERS, never different formulas. Every light value, tone, opacity and
-   angle this turn produces lives there.
-3. Golden fixtures inviolable: `git diff --stat fixtures/` empty at the end.
-4. No new dependencies. `package.json` deps byte-identical.
-5. Mock mode sacred: everything works with no `.env`.
+2. `profile.js` is the only home of numbers and of behavioural defaults.
+   Different workshops = different NUMBERS, never different formulas.
+3. Golden fixtures inviolable: `git diff --stat fixtures/` empty at end.
+4. No new dependencies; `package.json` deps byte-identical.
+5. Mock mode sacred: no `.env`, everything works.
 6. 0.5 mm precision; `formatMm()`; no `Math.round` on mm in UI.
-7. CNC view untouchable.
-8. Code and comments in English.
-9. npm discipline: any install is FULL (`rm -rf node_modules && npm install`,
-   never `--silent`). Reinstall before believing any test-count drop.
-10. GitHub Actions is red by design (billing) — ignore; the gate below rules.
-11. Open a PR at the end. Do NOT merge it.
-12. **NEW — physical light units.** three r0.180 uses physical falloff:
-    point/spot intensity is candela-like and fades with distance SQUARED
-    (decay 2). A point light at 2 m needs intensity in the TEENS to matter;
-    0.9 is invisible and ~45 blows the scene out (both measured this week).
-    Directional/ambient/hemisphere are unaffected.
-13. **NEW — read the library's defaults in its SOURCE before using a prop.**
-    This week drei's `<ContactShadows>` silently multiplied our width/height
-    by its DEFAULT `scale = 10`, turning a 1.8 m bake into an 18 m one; the
-    legs were two texels and the blur dissolved them. On every GPU. Before
-    wiring any drei/three helper, open it in `node_modules` and read the
-    defaults. Write what you found in a comment.
-14. **NEW — band-limit any high-frequency procedural detail.** The `fwidth`
-    fades in `src/3d/bevel.js` (peel + edge roll) exist because per-fragment
-    sines and sub-pixel normal rolls alias into moiré/staircases. Do not add
-    surface detail without the same treatment.
-15. **NEW — never `a?.x === b?.x` as an existence guard.** `undefined ===
-    undefined` is true; it crashed production once already.
-16. One rig: the working view and the render pass share the same lights,
-    tone mapping and exposure (turn 8 decision — keep it).
-17. Spray colour is sacred: a RAL front must stay its RAL. The environment
-    probe on sprayed pieces stays LOW (currently 0.25 of a neutral synthetic
-    RoomEnvironment) and the acceptance loop below includes a hue check.
+7. CNC EXPORT path untouchable (this turn changes the CNC *view* per F8 —
+   the exported data, grouping and files must be byte-identical).
+8. Code and comments in English. UI copy in English.
+9. npm discipline: full reinstall before believing any regression.
+10. GitHub Actions red by design — ignore; the gate rules.
+11. PR at the end, no merge.
+12. Physical light units (three r0.180): point/spot intensities are
+    candela-like, fade with distance squared.
+13. Read a library's prop DEFAULTS in its node_modules source before use
+    (the drei `scale=10` scar).
+14. Band-limit any high-frequency procedural detail (`fwidth`, see bevel.js).
+15. Never `a?.x === b?.x` as an existence guard.
+16. One rig for working view and render.
+17. Spray colour is sacred.
+18. **Browser verification is now a STANDARD phase** (F10). A feature that
+    was never seen in a browser is not done.
 
-Baseline expected on main: 797/797 tests, clean build. Today's history you
-inherit: peel disabled + band-limited (moiré fix), spray env 0.25, 4 point
-lights (values 16/16/8/8), bevel edge-roll band-limit. All of it is on main.
+## F0 — Baseline
 
-## F0 — Baseline + the fix that is already diagnosed
+Full install → full test suite green (record the count) → clean build.
 
-1. Full install, `npm test` → 797/797, `npm run build` → clean.
-2. `src/3d/Scene.jsx`, the `<ContactShadows>` inside `FloorShadow`: if it
-   does NOT already carry `scale={1}`, add it, with this comment:
-   drei multiplies width/height by its `scale` prop, DEFAULT 10 — turn 9
-   missed it, so a 1.8 m run baked onto an 18 m canvas and the blur
-   dissolved the legs. This line is the difference between a shadow and
-   nothing, on every GPU.
-   (The owner may have pushed this already as a hotfix — check first.)
-3. Re-run tests. Green before F1.
+## F1 — Selection & interaction (the daily irritations)
 
-## F1 — Lighting rig v3: the spots the owner asked for
+1. **Deselect on ANY background click.** Clicking the floor, a wall, or
+   empty space clears the unit/element selection and its dashed box. Today
+   only some surfaces do it. ESC keeps working.
+2. **Exclusive selection.** Selecting a shelf/element REMOVES the unit's
+   own highlight — exactly one thing wears the selection at a time. The
+   right panel follows whichever is selected.
+3. **X-ray is a MODE, not a moment.** Once toggled on it survives unit
+   drag, camera orbit, selection changes — everything — until toggled off.
+   Find why it resets (likely state coupled to pointer/redraw) and decouple.
+4. **The right-click context menu**: (a) never renders outside the
+   viewport — clamp/flip near edges so the whole menu is always visible on
+   low screens; (b) is draggable by its header.
+5. **Dimension labels/lines: default colour RED**, with a profile option
+   for the current blue (`appearance.dimensions.colour` + alt). Today it is
+   the reverse.
 
-All in `profile.js appearance.studio`, wired in `src/3d/Scene.jsx Lights`.
+## F2 — Shelf spacing: finish the job
 
-1. KEEP: key (1.0, the only *directional* shadow caster), fill 0.55,
-   rim 0.3, hemisphere, ambient — values may be re-balanced in F4.
-2. ADD `studio.spots`: an array of SpotLight specs. Start with TWO:
-   upper FRONT corners of the room/rig, aimed DOWN-ACROSS at the furniture
-   centre at roughly 45° — the studio-jupiter geometry the owner described.
-   Spec per spot: position as fractions of the rig distance (same convention
-   as key/fill/rim/points), `intensity` (PHYSICAL — expect tens, tune in
-   F4), `angle` (~0.5–0.7 rad), `penumbra` (~0.6–0.9, soft edge),
-   `colour`, `castShadow` (see 4). Targets: the furniture fit centre —
-   reuse the `target` object pattern the key light already uses.
-3. The owner floated "maybe a second one lower". Make the ARRAY the design:
-   he tunes count and numbers in profile without code. Ship with 2 enabled;
-   if the F4 loop clearly wants a third (lower), add it there and say so in
-   BUILD-LOG.
-4. Shadow budget: AT MOST two shadow casters in total. Options: (a) key
-   keeps the shadow, spots don't; (b) ONE spot takes over as the caster and
-   key drops `castShadow`. Decide by LOOKING in F4 — a spot shadow from
-   above-front often seats furniture better than a side key. Whichever
-   loses the shadow keeps lighting. mapSize/bias/normalBias come from the
-   existing `render.shadow` presets — reuse, do not fork.
-5. The 4 existing point lights: fold their job into the spots. Keep at most
-   the two viewer-side points at low power IF the F4 orbit test shows the
-   travelling glint needs them; otherwise empty the array (data change,
-   structure stays).
-6. renderCapture: spots get `userData ccLight: 'spot'`; add `spot: 1` to
-   `render.lightScale` (the loop there ignores unknown roles, but the knob
-   should exist like the others).
+Owner screenshot after T9's fix: gaps 226.5 / 227 / 244.5 — the BOTTOM gap
+is still wrong. The LISP formula (KIT_WARDROBE_FULL.lsp 133–142, N+1 equal
+gaps) landed in `evenShelfPositions`, so the bug is in the ZONE fed to it:
+almost certainly the bottom bound (cabinet floor top face vs plinth/base vs
+drawer top) or a thickness accounted on one end only.
 
-## F2 — The floor shadow, verified end to end
+1. Re-derive the zone bounds strictly from the LISP files (read the
+   drilling sections, not only the front-view helper) for BUD and WARDROBE.
+2. Fix at the layer that computes the zone. Add node tests asserting ALL
+   gaps equal (to 0.5 mm) for 1/2/3 shelves in: plain cabinet, cabinet
+   with drawers below, cabinet with plinth. Fixtures diff stays 0.
+3. **Adding a shelf defaults to centred** in its zone (owner verdict —
+   today's default lands wrong). Equalise action unchanged otherwise.
 
-1. After F0's `scale={1}`, tune the blob in profile (`appearance.
-   contactShadow`): the room is brighter than in turn 9, so opacity likely
-   wants 0.5 → ~0.6–0.7 and `farMm` ~250–400 so the dark hugs the legs.
-   Numbers decided by F4 screenshots, not taste-in-the-dark.
-2. VERIFY THE BAKE IS REAL in your environment before trusting your eyes:
-   drei bakes into a WebGLRenderTarget with a scene-wide depth override, and
-   at least one software-GL stack renders that bake as pure zeros while
-   drawing everything else fine. Probe once: patch (locally, never commit)
-   a `gl.readRenderTargetPixels` after the bake and log max alpha of the
-   centre region. Non-zero → your screenshots are trustworthy for shadows.
-   Zero → your environment is blind for THIS feature: say so in BLOCKERS,
-   do not fake the screenshot, and validate the blob analytically (bake
-   dimensions logged = fit dimensions) + leave the visual sign-off to the
-   owner explicitly.
-3. The key/spot shadow (F1.4) and the blob must read as ONE grounding, not
-   two competing smudges — judge in F4.
+## F3 — Per-element editing: the whole cabinet
 
-## F3 — A room you can read
+T9 gave shelves selection + overrides. Extend to the rest:
 
-The white-blur problem. All numbers in profile:
-1. Give the FLOOR its own tone, a step warmer/darker than the walls (new
-   `appearance.room` values consumed by `src/3d/Room.jsx`; if Room already
-   has colour slots, use them — do not hardcode).
-2. Re-balance flat light: today's ambient 0.45 flattens everything. Shift
-   energy from ambient toward hemisphere + the new spots so walls get a
-   GRADIENT (spot pools high, falloff low) instead of uniform white.
-   Ambient likely lands ~0.28–0.35 — F4 decides.
-3. The scene background (`#fafaf8`) vs wall vs floor: three distinguishable
-   values. Subtle — this is a workshop tool, not a showroom render.
+1. **Selectable + editable individually:** sides, bottom, top, back,
+   vertical partitions, end panels, infills, doors' hinges. Same selection
+   model (`{unitId, elementRef}`), same highlight, same right-panel
+   properties (thickness override, material override, element-appropriate
+   geometry fields). Overrides remain DESIGN-layer inputs via
+   `paramsForEngine`; bare `computeCabinet()` unchanged; BOM reflects them.
+2. **End panel and infill are edited on their OWN selection**, not through
+   the unit's panel (owner verdict: "osobno, nie z całą szafką").
+3. **Double-click** any element → opens an edit MODAL next to the element
+   AND focuses the right panel on it. Single click keeps selecting only.
+4. **Vertical partition**: addable from the unit's Add-items flow ("add
+   partition"), positioned/edited like shelves are (this unblocks the T9
+   BLOCKERS #50 gap at the UI level; engine items pattern already exists).
+5. **Hinges visible in Solid** (today X-ray only): draw the hinge bodies
+   from the same data X-ray uses, materials modest (dark hardware tone from
+   profile). Toggleable via the existing context-menu toggles group.
 
-## F4 — THE LOOP (the phase that makes this turn different)
+## F4 — Placing and feeding units
 
-Turn 8 had a browser-walk phase; turn 9 skipped it and shipped an invisible
-shadow. This phase is MANDATORY and it is where most of this turn's time
-goes.
+1. **Move a unit to another position/side/wall AFTER placement**: dragging
+   an existing unit across the run or onto another wall re-homes it (reuse
+   the placement maths `addUnit` uses; this is re-parenting, not new
+   geometry). Collision/gap rules as on insert.
+2. **Empty scene → one BIG "+" centred** ("Add first unit"): opens the
+   Library. Disappears the moment the first unit exists; returns when the
+   scene is emptied.
+3. **Inner "+" on the ACTIVE unit only** (different colour than the
+   run-end pluses — take both colours from profile): click → unit stays
+   selected and the right panel opens its **Add items** section (and the
+   same via the F3.3 modal). Hidden the moment the unit is deselected.
+4. **Add-items list filtered by context**: a data map in `profile.js`
+   (`itemsByContext`) decides what a KITCHEN unit offers by default
+   (shelves, drawers, cargo, bins…) vs a WARDROBE (shelves, hanger rail,
+   internal drawers…), with a **"Show all"** escape hatch under the list —
+   filter, never a hard block. Structure is data; do not hardcode lists in
+   components.
 
-1. Build, serve `dist`, open in a real browser (headless is fine).
-2. Build the STANDARD SCENE through the app itself: rectangle room, one run
-   of three base units on wall 1, doors fitted, fronts = Sprayed RAL 3005
-   (Wine red), carcass default, sheen 60. (The New-Project flow and the
-   Sprayed picker exist — drive them.)
-3. Capture and ITERATE profile numbers until ALL acceptance criteria hold:
-   - **A. Seating:** in a 3/4 shot, every unit sits in a soft shadow; the
-     floor between the legs is visibly darker than the open floor.
-   - **B. Travelling glint:** at sheen 90, three working-view captures along
-     an orbit show a highlight PATCH in three different places on the same
-     door. At sheen 60 a softer sheen gradient remains visible.
-   - **C. Room depth:** wall/floor junction readable across the frame; the
-     wall shows a gentle vertical gradient (spot pools), not uniform white.
-   - **D. Colour fidelity:** sample a mid-lit pixel of the sprayed front:
-     hue within a sensible tolerance of the chosen RAL hex; no pink blowout
-     anywhere (that is the overexposure signature measured this week at
-     point intensity 45). White carcass stays white.
-   - **E. Cost:** no per-frame ContactShadows bake (frames=1 + key), ≤2
-     shadow casters, no new render targets in the working loop.
-4. Save the FINAL screenshots (A, the three B frames, C) as PNGs under
-   `verify/t10/` and COMMIT them — the PR must show the result, not claim
-   it. Also record every tuned number and the reasoning in BUILD-LOG.
-5. If the browser environment cannot exercise something (see F2.2), the
-   honest sentence in BLOCKERS beats a screenshot that lies.
+## F5 — Infill, plinth, and small furniture truths
 
-## F5 — Tests
+1. **Insets L/P: REMOVE from the menu** (owner verdict: broken concept).
+   Replacement — **side infill with the top-infill strategy**: appears and
+   disappears AUTOMATICALLY in a unit-to-wall gap; right-click offers
+   "Pin infill left/right" — a pinned infill never auto-vanishes and
+   STRETCHES as the unit moves (≥100 mm too), plus "Unpin/remove" returns
+   to auto. Reuse the top-infill code paths/geometry (mitre rules etc.)
+   rather than a parallel implementation.
+2. **Infill default width 40 mm** (today 20) — one number in profile.
+3. **Infill toggled OFF (context menu) re-enables "push to wall"** for
+   that unit — today the disabled state lingers.
+4. **Plinth sits at the FRONT of the cabinet** — today it renders at the
+   back. Front face, recessed per existing LISP/profile numbers. And the
+   plinth takes the FRONT material/colour (spray included), not the
+   carcass one — through the normal materials pipeline so BOM says so too.
+5. **SINK cabinet is oriented backwards** — flip the kit's orientation so
+   its front is the front. Verify against `KIT_SINK.lsp`; fixtures diff 0
+   (if the fixture itself encodes the flipped orientation, STOP and write
+   BLOCKERS instead of touching fixtures).
 
-1. Full suite stays green (≥797). Update any test that pins values this
-   turn changes — with a comment carrying the WHY, as done for env 0.25.
-2. Add node tests for the new profile shape: `studio.spots` entries merge
-   through `migrateCabinetProfile`, `lightScale.spot` present, room tones
-   present. Values themselves are taste — test structure, not taste.
+## F6 — Dog bones as reality
 
-## F6 — Docs + FINAL GATE
+Owner verdict: stop drawing CNC layers; show the JOINT. The engine already
+computes true dog-bone sockets in `panel.cnc` (Skylon puzzle).
 
-1. BUILD-LOG: turn 10 entry — final rig values, shadow-caster decision
-   (F1.4) and why, blob numbers, room tones, loop iterations count, and the
-   verify/t10 screenshot list.
-2. BACKLOG: note that the T11 batch (24 UX/editing points + New-Project
-   step 5) is specified chat-side with the owner and lands next turn.
-3. BLOCKERS: anything reverted, plus the F2.2 environment note if it fired.
-4. Gate, in order, all mandatory:
-   - full reinstall → `npm test` all green (≥797 + new)
-   - `npm run build` clean
-   - `git diff --stat fixtures/` empty
-   - `git diff package.json` deps untouched
-   - `grep -rn "from 'react'\|from 'three'" src/engine/` empty
-   - `verify/t10/` contains the acceptance screenshots
-   - push branch, open PR, do NOT merge.
+1. In Solid and X-ray, render sockets as REAL recesses in the panel
+   volume — the rectangular pocket with round corner reliefs of the tool
+   radius, exactly as the machine leaves them. Geometry from existing cnc
+   data only; the engine and export stay untouched.
+2. Implementation is your choice (shape-with-holes extrusion per face,
+   etc.) but working-view cost stays sane: geometry built once per panel
+   config, cached, no per-frame work.
+3. A close-up screenshot of a joint goes into `verify/t11/`.
+
+## F7 — Top menu order
+
+`File · View · Library · Settings · Database · Spraying · Output` — with
+**Database** gaining a dropdown: Materials, Clients, Projects (entries may
+be disabled-"soon" consistent with today's mock state; wire what exists).
+Output moves to the END. Keep every existing menu item reachable — this is
+a reorder, not a cull. (If the owner later decides Settings moves, it is a
+one-line data change — structure the menu as data.)
+
+## F8 — CNC view usability
+
+1. **All units' parts at once** in the CNC view, grouped per unit, with
+   CHECKBOXES to hide/show any unit (and, within a unit, its parts) from
+   the view. View-state only.
+2. **Panels stay open**: entering CNC no longer closes the Library or the
+   right panel. The right panel in CNC hosts the checkbox tree.
+3. The CNC EXPORT (files, grouping, numbers) is untouched — prove it with
+   an export-diff check in tests or a hard node check in the gate.
+
+## F9 — New Project: Step 1 button + STEP 5 "Project settings"
+
+**Step 1:** above the project-number field add the button **"Import from
+Joinery Core"** — replaces the confusing "Select from Joinery Core" near
+the client field. Disabled with a "soon" badge (data turn wires it); the
+client+number auto-fill lands then. Steps 2–4 unchanged.
+
+**Step 5 (new, before "Start designing"):** the whole project's defaults —
+everything below stored per-project (design layer), pre-filled from
+profile, savable as a settings set:
+
+1. **Default dimensions:** base-unit height, ALL-units depth, tall-unit
+   height, wall-unit height, plinth height. (Profile defaults preloaded;
+   UK numbers stand.)
+2. **Materials — three separate sections:**
+   - **Carcasses (1–3 types):** per type: source EGGER decor / SPRAYED
+     (yes, carcasses can be sprayed) — colour first, then the MaterialStock
+     assignment beneath it.
+   - **Fronts (max 2 types):** per type: RAL / F&B / veneer / laminate /
+     wood (wood colour range comes later — leave the option present,
+     colours "coming soon"). End panels/infills default to FRONT TYPE 1;
+     a per-unit override already exists via F3.2's separate editing.
+   - **Hardware assignments:** legs+bases+clips → plinth; hinges (variant
+     choice: soft-close / standard — the automat picks the concrete item);
+     runners; handles → wall units; edge banding auto-assigned per
+     material. ALL of these have profile defaults and run automatically —
+     the user only ever picks a VARIANT.
+3. **Material thickness:** auto per source — EGGER 18, veneer 19,
+   laminate 18; board thickness selector 18 / 22 / 25 / **Other** (manual
+   mm input). The maths already lives in the LISP-derived engine — feed the
+   number through `paramsForEngine`, never fork formulas.
+4. **Sheen and Dog-bones sections:** exactly as they are today.
+5. On **"Start designing"** ask once: "Save these settings as a set?" —
+   into the existing settings-sets store.
+6. Layout: keep the current modal's step-by-step feel; this is ADDING a
+   step and reorganising materials into the three sections — not a
+   redesign.
+
+## F10 — BROWSER VERIFICATION (standard, mandatory)
+
+Drive the real app in a real browser. Minimum walk, screenshots to
+`verify/t11/`, committed in the PR:
+1. Empty scene big "+" → add unit → inner "+" → add shelf (lands centred)
+   → equalise 3 shelves → measure equal gaps on screen.
+2. Click floor → selection drops. Select shelf → unit highlight gone.
+   Double-click side panel → modal + right panel.
+3. X-ray on → drag unit → orbit → X-ray still on.
+4. Side infill auto-appear at wall, pin it, move unit 150 mm → infill
+   stretched. Plinth visibly at FRONT in front colour.
+5. CNC view with all units + one unit unticked; Library/right panel open.
+6. Dog-bone close-up.
+7. Step 5 walkthrough ending in the save-set prompt.
+If your environment cannot exercise something, write the honest BLOCKERS
+line instead of a screenshot that lies.
+
+## F11 — Docs + FINAL GATE
+
+1. BUILD-LOG: turn 11 entry per phase, decisions, tuned numbers.
+2. BACKLOG: mark done items; add "Library categories rework — Kitchen top
+   level, sub-categories TO BE DISCUSSED with owner" as a NEW item for a
+   future turn (explicitly NOT in this one).
+3. BLOCKERS: anything reverted or environment-limited.
+4. Gate: full reinstall → all tests green (baseline + new) → clean build →
+   fixtures diff 0 → deps untouched → engine purity grep empty → CNC
+   export identity check passes → `verify/t11/` populated → PR opened,
+   not merged.

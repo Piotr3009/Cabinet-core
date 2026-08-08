@@ -121,7 +121,8 @@ test('a sprayed front is lacquer, tinted by the colour, with no environment on i
   // The Spraying rule, unchanged since turn 8 and re-checked here because F6
   // adds a new way to reach it: a sprayed colour is the colour, so the room may
   // not tint it (CLAUDE.md F1.4 — spray stays envMap-free).
-  assert.equal(s.envMapIntensity, 0);
+  assert.equal(s.envMapIntensity, 0.25,
+    'a QUARTER of a neutral synthetic studio (hotfix 08.08) — gloss for the clearcoat, no colour the scene could lend');
   assert.equal(s.clearcoat, P.appearance.materials.lacquer.clearcoat, 'lacquer, not melamine');
   assert.equal(s.clearcoatRoughness, P.appearance.materials.lacquer.clearcoatRoughness);
   assert.equal(s.normalScale, 0, 'peel is OFF by default — the 2 mm sine aliased into moiré (hotfix 08.08)');

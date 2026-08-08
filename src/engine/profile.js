@@ -552,16 +552,24 @@ export const DEFAULT_CABINET_PROFILE = {
     // `peelMm` is the size of one orange-peel cell — the gun leaves a texture
     // between about one and three millimetres, and it is the reason a sprayed
     // white door does not read as a white rectangle even in flat light.
-    // ─── Hotfix 08.08 (after turn 9): normalScale 0.1 → 0 ───
-    // The peel was a procedural sine at ~2 mm wavelength, evaluated per
-    // fragment. On screen a 600 mm door is a few hundred px, so one period is
-    // 1–2 px — below Nyquist — and a shader sin() has no mipmaps to hide
-    // behind. It aliased into the shimmering diagonal moiré Piotr filmed.
-    // OFF is also exactly what Prime-Sash-Windows does: painted wood there is
-    // plain colour + roughness, and that is the look. bevel.js now band-limits
-    // the peel by pixel footprint, so a workshop turning this back up gets it
-    // only where the screen can actually draw it.
-    spray: { envMapIntensity: 0, normalScale: 0, metalness: 0, peelMm: 2 },
+    // ─── Sprayed surfaces (turn 8, CLAUDE.md F1; amended hotfix 08.08) ───
+    // The Spraying philosophy stands: A SPRAYED COLOUR IS THE COLOUR. Turn 8
+    // enforced it by switching the environment probe fully OFF — and that was
+    // one caution too many. The probe here is three's RoomEnvironment: a
+    // SYNTHETIC neutral grey studio, not a capture of the scene, so a white
+    // door cannot pick up the walnut carcass beside it — walnut is simply not
+    // in the map. What intensity 0 actually removed was every reflection the
+    // clearcoat had to work with, and with it the gloss the sheen slider is
+    // supposed to drive. 0.25 of a neutral studio reads as lacquer and shifts
+    // a RAL chip by nothing a spray booth could measure.
+    //
+    // normalScale 0 (hotfix 08.08, earlier the same day): the peel was a
+    // procedural sine at ~2 mm, per fragment — 1–2 px per period on screen,
+    // below Nyquist, and a shader sin() has no mipmaps. It aliased into the
+    // shimmering moiré Piotr filmed. bevel.js now band-limits it by pixel
+    // footprint, so turning it back up can no longer stripe; Spraying-Calc
+    // gets the same effect the other correct way, as a mipmapped TEXTURE.
+    spray: { envMapIntensity: 0.25, normalScale: 0, metalness: 0, peelMm: 2 },
 
     // ─── Manufacturer decor textures (turn 8, Piotr 07.08) ───
     // The full-board scans that ship with the decor pack (`tex` in the JSON).
@@ -627,6 +635,23 @@ export const DEFAULT_CABINET_PROFILE = {
       // warm grey a timber or a screed floor bounces back. It casts NOTHING:
       // the key is still the only shadow in the scene.
       hemisphere: { sky: '#fdf6e8', ground: '#c8c0b0', intensity: 0.5 },
+      // ─── The lights that put a SHINE on a door (hotfix 08.08) ───
+      // PSW's gloss was never an environment map — its painted wood has none.
+      // It is a dozen close point lights whose hotspots TRAVEL across a panel
+      // as the camera orbits; that movement is what the eye reads as lacquer.
+      // Four are enough at room scale: a warm pair out front at door height,
+      // a wider pair off the shoulders. Positions are FRACTIONS of the rig's
+      // own distance from the furniture's centre (same convention as the
+      // key/fill/rim), so they scale with the job. No shadows — one shadow
+      // caster is the rule, and these are here to glint, not to model.
+      points: [
+        { x:  0.30, y: 0.10, z: 0.85, intensity: 0.9,  colour: '#fff8f0' },
+        { x: -0.30, y: 0.00, z: 0.85, intensity: 0.9,  colour: '#fff4e8' },
+        { x:  0.95, y: 0.30, z: 0.75, intensity: 0.65, colour: '#fff8f0' },
+        { x: -0.95, y: 0.30, z: 0.75, intensity: 0.65, colour: '#fff8f0' },
+      ],
+      // Falloff limit as a multiple of the rig distance; decay stays physical.
+      pointReach: 3,
       // ─── The bounce the rig cannot produce ───
       // A three-light studio rig is built for a subject on a seamless backdrop.
       // Point it at a ROOM and the walls come out grey, because most of what
@@ -851,7 +876,7 @@ export const DEFAULT_CABINET_PROFILE = {
     // Kept as a block rather than deleted: a workshop that wants a punchier
     // still than its working view has the knob, and the render pass still reads
     // it. It just has nothing to say by default.
-    lightScale: { ambient: 1, key: 1, fill: 1, rim: 1 },
+    lightScale: { ambient: 1, key: 1, fill: 1, rim: 1, point: 1 },
   },
 
   // ─── Bought hardware, to catalogue size (turn 7, CLAUDE.md F1/F3) ───

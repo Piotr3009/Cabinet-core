@@ -254,6 +254,26 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
         position={[fit.centre[0] - distance * 0.3, fit.centre[1] + distance * 0.6, fit.centre[2] - distance * 0.9]}
         intensity={studio.rim}
       />
+      {/* The glints (hotfix 08.08). Point sources, so their highlights MOVE
+          across a door as the camera orbits — which is the whole difference
+          between a lacquered front and a rectangle of colour. Positions are
+          fractions of the rig distance (see profile.appearance.studio.points);
+          none casts a shadow. */}
+      {(studio.points || []).map((p, i) => (
+        <pointLight
+          key={`ccPoint${i}`}
+          userData={{ ccLight: 'point' }}
+          position={[
+            fit.centre[0] + distance * p.x,
+            fit.centre[1] + distance * p.y,
+            fit.centre[2] + distance * p.z,
+          ]}
+          intensity={p.intensity}
+          color={p.colour}
+          distance={distance * (studio.pointReach ?? 3)}
+          decay={2}
+        />
+      ))}
     </>
   );
 }

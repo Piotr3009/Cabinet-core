@@ -178,7 +178,8 @@ test('the pieces that go to the spray booth take the project sheen; board does n
 test('a sprayed piece refuses the environment probe; board keeps it', () => {
   const design = migrateDesign({ colour: { front: { hex: '#f4f4f0', name: 'White', system: 'RAL' } } });
   const s = surfaces(full(), design, { frontColour: '#f4f4f0' });
-  assert.equal(s.get('01-F').envMapIntensity, 0, 'a white door must not pick up the room');
+  assert.equal(s.get('01-F').envMapIntensity, 0.25,
+    'a quarter of a NEUTRAL studio (hotfix 08.08) — the room itself is not in that map, so white stays white');
   assert.equal(s.get('01-F').metalness, 0);
   assert.equal(s.get('01-F').normalScale, 0, 'peel OFF by default — it aliased into moiré (hotfix 08.08)');
   assert.equal(s.get('BUL').envMapIntensity, 1, 'a melamine side reflects the room, and should');

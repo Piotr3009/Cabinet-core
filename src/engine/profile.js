@@ -616,13 +616,46 @@ export const DEFAULT_CABINET_PROFILE = {
     // the only caster — the modelling turn 8 bought is not being given back —
     // but the flat light under it is raised so that what the key leaves in
     // shadow is still a colour rather than a hole.
+    //
+    // ─── Turn 10 (CLAUDE.md F1/F3): THE JUPITERS, AND WHY THE AMBIENT CAME DOWN ──
+    // Piotr's verdict on turn 9 plus the hotfix day was "realism gone": the room
+    // was one white blur, the fronts read as flat matt, and there was no
+    // travelling highlight to be found. Two numbers here are the answer.
+    //
+    // The first is the AMBIENT. 0.45 of light from every direction at once is
+    // 0.45 of the frame that no light can shape and no shadow can darken; on a
+    // white wall in front of a white floor it is most of what you see. It drops
+    // to 0.20 and the energy moves to the hemisphere (which at least has a top
+    // and a bottom) and to the new spots (which have a POOL and a falloff). The
+    // wall gets a gradient instead of a value: measured over a hundred columns
+    // of the working view, top of wall to skirting, it went from 0.004 of
+    // luminance (which is nothing, and is what "one white blur" means
+    // arithmetically) to 0.023 (verify/t10/measurements.json).
+    //
+    // The second is `spots` below — the studio jupiters Piotr asked for by name.
     studio: {
-      ambient: 0.45,
+      ambient: 0.2,
       key: 1.0,
       fill: 0.55,
       rim: 0.3,
       exposure: 1.0,
       shadowPadding: 600,
+      // ─── The shadow budget (turn 10, CLAUDE.md F1.4) ───
+      // At most this many lights in the whole rig own a shadow map. It is a
+      // COST rule, and the working view is where the cost is felt: every caster
+      // is a full extra depth pass over the furniture, every frame the scene is
+      // dirty. Two is the ceiling; the rig ships with one.
+      //
+      // `keyCastsShadow` is the other half of the decision CLAUDE.md F1.4 asks
+      // to be made BY LOOKING, and it was: the key keeps the shadow and the
+      // spots do not. A spot hung in the upper front corner throws its shadow
+      // down and BACKWARDS — straight under the carcass and into the wall,
+      // where the cabinet itself already hides it — so it buys a depth pass and
+      // shows almost nothing. The key comes in from the front quarter and lays
+      // its shadow ACROSS the open floor beside the run, which is the one place
+      // it can be seen. Screenshots of both are in verify/t10.
+      shadowCasters: 2,
+      keyCastsShadow: true,
       // ─── The sky and the floor (turn 9, CLAUDE.md F1) ───
       // An ambient light is one number in every direction, which is the one
       // thing real light never is: in a room the light from above is warm
@@ -634,27 +667,113 @@ export const DEFAULT_CABINET_PROFILE = {
       // `sky` is a warm off-white (a room with the lights on), `ground` is the
       // warm grey a timber or a screed floor bounces back. It casts NOTHING:
       // the key is still the only shadow in the scene.
-      hemisphere: { sky: '#fdf6e8', ground: '#c8c0b0', intensity: 0.5 },
-      // ─── The lights that put a SHINE on a door (hotfix 08.08, tuned same day) ───
-      // PSW's gloss was never an environment map — its painted wood has none.
-      // It is close point lights whose hotspots TRAVEL across a panel as the
-      // camera orbits; that movement is what the eye reads as lacquer. Two
-      // "jupiters" high in the front corners give the top-to-bottom sheen, two
-      // soft viewer-side points carry the glint through the mirror angle.
       //
-      // INTENSITIES ARE PHYSICAL (three r180, decay 2, candela-like): a point
-      // light fades with distance SQUARED, so the working numbers live in the
-      // teens — 0.9 here would be invisible, and 45 was measured to blow the
-      // whole scene out. Positions are FRACTIONS of the rig's own distance from
-      // the furniture's centre (same convention as the key/fill/rim), so they
-      // scale with the job. No shadows — one shadow caster is the rule, and
-      // these are here to glint, not to model.
-      points: [
-        { x:  0.45, y: 0.50, z: 0.30, intensity: 16, colour: '#fff6ea' },
-        { x: -0.45, y: 0.50, z: 0.30, intensity: 16, colour: '#fff6ea' },
-        { x:  0.60, y: 0.45, z: 0.85, intensity: 8,  colour: '#fff8f0' },
-        { x: -0.60, y: 0.45, z: 0.85, intensity: 8,  colour: '#fff4e8' },
+      // Turn 10 takes it DOWN with the ambient, 0.5 to 0.45, but by a quarter
+      // of the ambient's share: what matters is the ratio between the light
+      // that has a direction and the light that has none, and that has moved
+      // from 0.45 : 0.50 to 0.20 : 0.45. The room is no darker to look at — the
+      // floor still reads 0.90 of white — it simply has somewhere left to go.
+      hemisphere: { sky: '#fdf6e8', ground: '#c8c0b0', intensity: 0.45 },
+
+      // ─── The jupiters (turn 10, CLAUDE.md F1) ───
+      //
+      // Piotr described the light he wants in the language of the trade: two
+      // studio spots hung in the UPPER FRONT CORNERS, aimed roughly 45° DOWN
+      // across the furniture, and "maybe a second one lower". Turn 9's point
+      // lights were the wrong instrument for that — a point light has no
+      // direction at all, so it lights the ceiling, the back wall and the floor
+      // as happily as the doors, and there is no pool for the wall to show.
+      //
+      // A spot has a cone, and the cone is what buys BOTH of this turn's
+      // complaints at once: the pool it throws on the wall behind the run is the
+      // vertical gradient that stops the room reading as one white blur (F3),
+      // and its hotspot on a lacquered door TRAVELS as the camera orbits, which
+      // is what the eye reads as gloss (F4.B).
+      //
+      // THE GEOMETRY. `x/y/z` are fractions of the rig's own distance from the
+      // furniture's centre — the same convention the key, the fill, the rim and
+      // the points use — so the rig scales with the job instead of being tuned
+      // for one kitchen. The aim is always the fit centre, so the angle below
+      // the horizon is atan(y / hypot(x, z)): at (±0.50, 0.62, 0.40) that is
+      // atan(0.62 / 0.64) = 44.1°, which is Piotr's "~45° w dół" to within the
+      // precision the phrase carries.
+      //
+      // THE INTENSITIES ARE PHYSICAL (three r0.180, decay 2, candela-like): the
+      // light fades with distance SQUARED, and these hang ~0.88 of the rig
+      // distance out, so the useful numbers are an order up from a directional's.
+      // 38 at 3.9 m is ~2.5 of irradiance at the centre of the pool, which is
+      // the key's own order. The bracket was measured rather than guessed: at 0
+      // the wall has no gradient at all, at 300 the fronts blow out to pink
+      // (rgb 228,113,120 against a RAL 3005 that is 135,48,57) and the white
+      // carcass picks up 0.29 of chroma. See verify/t10/measurements.json.
+      //
+      // The pair is UNEQUAL — 38 and 32 — because a rig of two identical lights
+      // at mirrored positions is a rig with no key side, and a run lit dead
+      // evenly from both front corners has no modelling across its length.
+      //
+      // `angle` is the half-angle of the cone in radians; `penumbra` is how much
+      // of it is soft edge. 0.68 means the hard core is the inner third and
+      // everything outside it is gradient, which is what a real softbox does
+      // and what makes the wall pool read as light rather than as a circle.
+      // Tightening the cone instead (angle 0.55) was tried and rejected: it
+      // sharpens the pool but cuts the floor in front of the run out of it, and
+      // the toe shadow lost two thirds of its contrast.
+      //
+      // IT IS AN ARRAY BY DESIGN. Piotr tunes the COUNT and the numbers here
+      // without anybody touching a component: a third, lower spot is four lines
+      // in this file. It ships with two — the F4 loop found the third one only
+      // ever fought the first two for the same wall, and what it was really
+      // asking for was more penumbra on the pair.
+      // The COLOURS are barely warm on purpose. The hotfix's #fff6ea reads as
+      // tungsten and, poured over a broken-white carcass at this strength, took
+      // it to 0.11 of chroma — a white board that is visibly cream is a white
+      // board a client will query. At #fffaf0 the same measurement is 0.015,
+      // against the board's own 0.024: warm light, white board.
+      spots: [
+        {
+          x: 0.5, y: 0.62, z: 0.4, intensity: 38, angle: 0.62, penumbra: 0.68,
+          colour: '#fffaf0', castShadow: false,
+        },
+        {
+          x: -0.5, y: 0.62, z: 0.4, intensity: 32, angle: 0.62, penumbra: 0.73,
+          colour: '#fff8f2', castShadow: false,
+        },
       ],
+      // Falloff limit as a multiple of the rig distance, for the spots as well
+      // as the points; decay stays physical inside it. It is ALSO the spot
+      // shadow camera's far plane, because three takes `light.distance` for it
+      // (SpotLightShadow.updateMatrices) — read there before it was relied on.
+      spotReach: 4,
+      // ─── The glints: EMPTY, and that is the finding (turn 10, F1.5) ───
+      //
+      // PSW's gloss was never an environment map — its painted wood has none.
+      // It is close sources whose hotspots TRAVEL across a panel as the camera
+      // orbits; that movement is what the eye reads as lacquer, and the 08.08
+      // hotfix bought it with four point lights.
+      //
+      // CLAUDE.md F1.5 asked whether the spots could take that job over, and
+      // said to decide it by running the orbit. It was run both ways. With the
+      // four points, with the two viewer-side ones, and with none at all, the
+      // highlight patch on a sheen-90 door lands in the same three places along
+      // the orbit at the same strength — (0.77, 0.19) ×1.11, (0.88, 0.21) ×1.19,
+      // (0.88, 0.30) ×1.12 with the array empty, against ×1.11 / ×1.20 / ×1.13
+      // with it full. The travelling glint was never the points' doing: it is
+      // the spots' hotspot plus the 0.25 environment probe, and the points were
+      // two more lights per fragment for a difference in the second decimal.
+      //
+      // So the array ships EMPTY and the structure stays, which is the whole
+      // point of it being data: a workshop that wants a fifth source types one
+      // line. Kept as an example rather than deleted, so the shape is obvious.
+      // Intensities are PHYSICAL (three r0.180, decay 2, candela-like) — a
+      // point light fades with distance SQUARED, so a working value at ~5 m is
+      // in the tens; 0.9 would be invisible and 45 blows the scene out. `x/y/z`
+      // are fractions of the rig distance, as everywhere else in this block.
+      //
+      //   points: [
+      //     { x:  0.60, y: 0.45, z: 0.85, intensity: 9, colour: '#fff8f0' },
+      //     { x: -0.60, y: 0.45, z: 0.85, intensity: 9, colour: '#fff4e8' },
+      //   ],
+      points: [],
       // Falloff limit as a multiple of the rig distance; decay stays physical.
       pointReach: 4,
       // ─── The bounce the rig cannot produce ───
@@ -669,6 +788,15 @@ export const DEFAULT_CABINET_PROFILE = {
       // colour as emission. The furniture sees the studio rig and nothing else,
       // so the modelling on a white door is untouched and the wall behind it is
       // still white.
+      //
+      // ─── Turn 10: THIS NUMBER IS WHY THE FLOOR SHADOW WAS BARELY THERE ───
+      // Emission is ADDED after the lighting, so it is the one part of a
+      // surface's brightness that no shadow can take away. At 0.42 the floor
+      // carried 42 % of itself as light a shadow map cannot touch — and the
+      // contact blob, which is alpha over the top, was fighting it too. The
+      // walls still want it (they are lit by nothing else); the floor does not.
+      // So it is now a per-surface number in `appearance.room.bounce` and this
+      // one is the fallback a profile saved before turn 10 falls back to.
       roomBounce: 0.42,
     },
 
@@ -738,7 +866,89 @@ export const DEFAULT_CABINET_PROFILE = {
     //   farMm    how high above the floor the shadow camera still sees. Past
     //            this, nothing contributes — so a wall unit hanging at 1500 mm
     //            does not print a second blob on the floor under it.
-    contactShadow: { opacity: 0.5, blur: 2.5, farMm: 400 },
+    //
+    // ─── Turn 10 (CLAUDE.md F2) ───
+    // The blob was invisible on main for a reason that had nothing to do with
+    // these three numbers — drei multiplies width/height by its `scale` prop,
+    // whose DEFAULT is 10, so a 1.8 m run was being baked onto an 18 m canvas
+    // (3d/Scene.jsx FloorShadow carries the fix and the note). With the bake
+    // finally landing where the furniture is, these could be tuned by looking
+    // at it rather than in the dark:
+    //
+    //   opacity 0.5 → 0.62. The room is brighter than turn 9's and the floor's
+    //   own emission is down (studio.roomBounce → appearance.room.bounce), so
+    //   the blob has to do more of the work and can afford to.
+    //   farMm 400 → 300. 400 mm reached up past the plinth and into the carcass
+    //   sides, which smeared the dark out into a soft pool a hand's width wider
+    //   than the furniture. 300 keeps it hugging the legs, which is the whole
+    //   point of a CONTACT shadow.
+    //
+    // …and `blur` is gone, replaced by numbers that mean something:
+    //
+    //   blurMm         how far the edge of the shadow is smeared, IN
+    //                  MILLIMETRES. drei's own `blur` is in UV units — a
+    //                  fraction of the canvas — so the same number is twice the
+    //                  softness on half a canvas, and the canvas size now
+    //                  depends on where in the room the furniture is standing.
+    //                  Turn 9's 2.5 over a 1.8 m bake was 18 mm; 22 is that,
+    //                  a touch softer, and it stays 22 on a six-metre kitchen.
+    //   texelMm        how much floor one texel of the bake is worth. The bake
+    //                  is centred on the room (3d/Scene.jsx FloorShadow says
+    //                  why), so its canvas grows with the room and the
+    //                  RESOLUTION has to grow with it or a leg stops being
+    //                  resolved — which is exactly what turn 9's accidental
+    //                  18 m canvas did.
+    //   maxResolution  the ceiling on that. 1024² RGBA is 4 MB, allocated
+    //                  twice by drei and paid for on a layout change, never per
+    //                  frame. A 4 m room lands at 1024 and 4.1 mm per texel,
+    //                  which is turn 9's intended density to within a whisker.
+    contactShadow: {
+      opacity: 0.62, farMm: 300, blurMm: 22, texelMm: 4, maxResolution: 1024,
+    },
+
+    // ─── The room's own three tones (turn 10, CLAUDE.md F3) ───
+    //
+    // The complaint this answers is one sentence long: "the back wall and the
+    // floor melt into one white blur". They did, and it was not subtle — the
+    // wall was #ffffff, the floor #f2f0ec and the background #fafaf8, which is
+    // three values inside 5 % of each other, and then both room surfaces
+    // carried 42 % of themselves as emission on top of a 0.45 ambient. There
+    // was nothing left for a junction to be made of.
+    //
+    // So: THREE DISTINGUISHABLE VALUES, warm as they go down. The background is
+    // the lightest (it is the sky above the walls and it must not read as a
+    // surface), the wall sits a step under it, and the floor is a clear step
+    // darker AND warmer — a floor is timber, screed or tile, and none of them
+    // is the colour of paint. Subtle by intent: this is a workshop tool and not
+    // a showroom render, so the steps are ~4 % and ~9 % of luminance, which is
+    // enough for an edge and not enough to look art-directed.
+    //
+    // `bounce` is the emission fraction per surface (Room.jsx `bounce`), split
+    // out of `studio.roomBounce` this turn — and both halves come DOWN, because
+    // emission is the part of a surface that no light shapes and no shadow
+    // darkens, and turn 9 was carrying 0.42 of the room as exactly that.
+    //
+    // The wall's 0.42 → 0.18 is what buys criterion C: with 42 % of the wall
+    // nailed to a constant, the spot pool had 58 % of a tone-mapped near-white
+    // to work in and produced 0.004 of gradient over a hundred columns. At 0.18
+    // the same pool produces 0.023, and the wall still reads 0.78 of white —
+    // which is a white wall in a photograph, not a grey one. The floor's
+    // 0.16 → 0.10 is the same argument for criterion A: the floor is the one
+    // surface in the scene whose whole job this turn is to RECEIVE a shadow,
+    // and emission is precisely the light a shadow cannot take away.
+    room: {
+      wall: '#f7f5f1',
+      floor: '#e6e0d5',
+      background: '#fafaf8',
+      bounce: { wall: 0.18, floor: 0.1 },
+      // How far the room's own surfaces stand BELOW the furniture datum, so the
+      // contact shadow's bake camera — which must sit at the world origin at
+      // floor level, looking up — cannot see the floor, and so the blob is a
+      // hair proud of it instead of z-fighting. Half a millimetre: the app's
+      // finest unit, and a quarter of a pixel at the closest the orbit goes.
+      // The whole room moves, not just the floor, so the junction stays sealed.
+      floorOffsetMm: 0.5,
+    },
     // Presentation mode (View ▸ Contour): the material fades out, the contour
     // stays. Changes nothing in the BOM.
     contour: { opacity: 0.06, hex: '#ffffff', outline: '#101010' },
@@ -881,7 +1091,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // Kept as a block rather than deleted: a workshop that wants a punchier
     // still than its working view has the knob, and the render pass still reads
     // it. It just has nothing to say by default.
-    lightScale: { ambient: 1, key: 1, fill: 1, rim: 1, point: 1 },
+    //
+    // `spot` joins them in turn 10 with the jupiters (CLAUDE.md F1.6). The
+    // capture loop skips a role it does not recognise, so the rig would have
+    // worked without it — but a knob that exists for four of the five lights
+    // and silently not for the fifth is a trap, not a saving.
+    lightScale: {
+      ambient: 1, key: 1, fill: 1, rim: 1, point: 1, spot: 1,
+    },
   },
 
   // ─── Bought hardware, to catalogue size (turn 7, CLAUDE.md F1/F3) ───
@@ -1218,6 +1435,16 @@ export function migrateCabinetProfile(profile) {
       studio: {
         ...D.appearance.studio, ...profile.appearance?.studio,
         hemisphere: { ...D.appearance.studio.hemisphere, ...profile.appearance?.studio?.hemisphere },
+        // ─── Turn 10 (CLAUDE.md F1/F5) ───
+        // The lights that are LISTS — the jupiters and the glints — merge like
+        // the other lists in this file: a stored profile that names them wins
+        // whole, and one that has never heard of them takes the app's. Merging
+        // them entry by entry would be wrong twice over, because the COUNT is
+        // half the setting ("maybe a second one lower") and a workshop that has
+        // deliberately turned a rig down to one spot must not have a second
+        // grafted back on by an upgrade.
+        spots: mergeLightArray(D.appearance.studio.spots, profile.appearance?.studio?.spots),
+        points: mergeLightArray(D.appearance.studio.points, profile.appearance?.studio?.points),
       },
       materials: {
         melamine: { ...D.appearance.materials.melamine, ...profile.appearance?.materials?.melamine },
@@ -1229,6 +1456,10 @@ export function migrateCabinetProfile(profile) {
       },
       environment: { ...D.appearance.environment, ...profile.appearance?.environment },
       contactShadow: { ...D.appearance.contactShadow, ...profile.appearance?.contactShadow },
+      room: {
+        ...D.appearance.room, ...profile.appearance?.room,
+        bounce: { ...D.appearance.room.bounce, ...profile.appearance?.room?.bounce },
+      },
       contour: { ...D.appearance.contour, ...profile.appearance?.contour },
       shade: { ...D.appearance.shade, ...profile.appearance?.shade },
       hardware: { ...D.appearance.hardware, ...profile.appearance?.hardware },
@@ -1245,6 +1476,12 @@ export function migrateCabinetProfile(profile) {
         normal: { ...D.render.shadow.normal, ...profile.render?.shadow?.normal },
         high: { ...D.render.shadow.high, ...profile.render?.shadow?.high },
       },
+      // ─── Turn 10 (CLAUDE.md F1.6) ───
+      // Per KEY, not wholesale. A profile saved before the jupiters existed
+      // carries a `lightScale` with five roles in it, and a plain spread would
+      // let that stale block delete the sixth — leaving the spots with no knob
+      // at all, which is exactly the trap F1.6 asks to be closed.
+      lightScale: { ...D.render.lightScale, ...profile.render?.lightScale },
     },
     hardware: {
       ...D.hardware, ...profile.hardware,
@@ -1279,6 +1516,19 @@ export function migrateCabinetProfile(profile) {
     editor: { ...D.editor, ...profile.editor },
     dimensions: { ...D.dimensions, ...profile.dimensions },
   };
+}
+
+/**
+ * A rig's list of lights: the workshop's if it has one, ours otherwise
+ * (turn 10, CLAUDE.md F1). Entries are normalised so a half-written spec — a
+ * spot with no penumbra, a point with no colour — cannot reach three.js as
+ * `undefined` and light nothing.
+ */
+function mergeLightArray(defaults, stored) {
+  const list = Array.isArray(stored) ? stored : defaults;
+  return list
+    .filter((l) => l && Number.isFinite(Number(l.intensity)))
+    .map((l) => ({ ...l, intensity: Number(l.intensity) }));
 }
 
 /**

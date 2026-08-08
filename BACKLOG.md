@@ -319,3 +319,29 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     Liczby, które taka zmiana ruszy, są już wszystkie w jednym miejscu
     (`profile.appearance.xray`, `profile.appearance.joinery`), więc jest to
     zmiana wartości plus praca nad materiałem, nie przebudowa.
+
+## DOPISANE W TURZE 10 (08.08)
+57. [HIGH] **Paczka T11 — 24 punkty UX/edycji plus krok 5 „nowego projektu" —
+    jest ustalona z właścicielem po stronie czatu i wchodzi w NASTĘPNEJ turze.**
+    Zapisane tu, żeby nie zginęło między turami: zakres jest domówiony ustnie,
+    nie w tym repo, więc pierwszą czynnością T11 jest przepisanie tych 24 punktów
+    do CLAUDE.md jako fazy — nie zaczynamy ich zgadywać z pamięci. Tura 10 nie
+    dotknęła żadnego z nich świadomie: jej zakresem był JEDEN podsystem
+    (światło, cień, pokój) i nic poza nim.
+58. [MEDIUM] **`ContactShadows` z drei jest używane w konfiguracji, którą trzeba
+    respektować, i to nie jest oczywiste z jego API.** Przebieg rozmycia
+    renderuje quad, który zostaje w środku układu świata (nigdy nie jest dodany
+    do grupy), tą samą kamerą ortograficzną, która JEST dzieckiem grupy — więc
+    komponent działa poprawnie tylko wtedy, gdy jego grupa stoi w (0, ≤0, 0).
+    Tura 10 obeszła to, kotwicząc plamę w środku świata i opuszczając POKÓJ
+    o 0,5 mm (`appearance.room.floorOffsetMm`), co kosztuje płótno większe od
+    mebla. Docelowo warto rozważyć własny, ~60-linijkowy cień kontaktowy
+    (render target + materiał głębi + separowalne rozmycie napisane u nas), bo
+    wtedy płótno wraca do rozmiaru mebla, gęstość tekseli przestaje zależeć od
+    tego, gdzie w pokoju stoi ciąg, i znika 0,5 mm długu geometrycznego. Nie
+    jest to pilne — obecna wersja jest zmierzona i działa (`verify/t10`).
+59. [LOW] **`scripts/e2e-turn8.mjs` jest nieaktualny wobec tury 9.** Sprawdza
+    suwak sheenu w skali 0–25 (tura 9 przeskalowała go na 5–100 %) i klika „◀",
+    którego już nie ma. To dług w SKRYPCIE, nie w aplikacji — te same ścieżki
+    przechodzą w `scripts/e2e-turn10.mjs`. Albo go zaktualizować przy okazji,
+    albo świadomie zostawić jako zapis stanu z tury 8.

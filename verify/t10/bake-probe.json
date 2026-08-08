@@ -1,0 +1,46 @@
+{
+  "note": "CLAUDE.md turn 10 F2.2. Taken with node_modules/@react-three/drei/core/ContactShadows.js patched LOCALLY (never committed) to call window.__ccProbe/__ccProbeRaw after the depth bake and after the blur. It is the only way to see inside drei's render target, and it is what found the bug: the bake writes max alpha 255 and the blur pass then overwrites it with zeros whenever the ContactShadows group is not at the world origin. The numbers below are from the FIXED build with the same probe still in place. The screenshots in this folder come from the clean, unpatched build.",
+  "steps": [
+    {
+      "label": "E \u00b7 orbiting the scene costs no bake at all",
+      "ok": true,
+      "detail": "24 \u2192 24 across two orbits and five idle seconds"
+    },
+    {
+      "label": "E \u00b7 at most two shadow casters in the whole rig",
+      "ok": true,
+      "detail": "1: DirectionalLight"
+    },
+    {
+      "label": "E \u00b7 the bake lands non-zero alpha in this environment (CLAUDE.md F2.2)",
+      "ok": true,
+      "detail": "max alpha 180 overall / 180 in the centre of a 1024\u00d71024 target"
+    }
+  ],
+  "beforeTheFix": {
+    "bakeMaxAlpha": 255,
+    "afterBlurMaxAlpha": 0,
+    "bakeSize_m": [
+      1.8,
+      1.758
+    ],
+    "cameraWorld": [
+      0,
+      0.001,
+      -1.211
+    ]
+  },
+  "afterTheFix": {
+    "bakeMaxAlpha": 255,
+    "afterBlurMaxAlpha": 185,
+    "bakeSize_m": [
+      1.8,
+      4.18
+    ],
+    "cameraWorld": [
+      0,
+      0,
+      0
+    ]
+  }
+}

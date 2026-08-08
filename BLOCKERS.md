@@ -975,3 +975,83 @@ projekt zapisany przez aplikację tury 9 ma `schema: 2` i już nigdy nie zostani
 przemnożony, ale projekt czytany z bazy przez coś INNEGO niż ta aplikacja
 przeczyta 60 i nie będzie wiedział, czy to stara skala, czy nowa. Migracja w SQL
 to jedna instrukcja `UPDATE` po `schema` i nie jest napisana.
+
+---
+
+## #54 — Cień kontaktowy był NIEWIDOCZNY od tury 9, i nie miało to nic wspólnego z GPU
+
+**Co blokowało.** Właściciel zgłosił, że cienia pod szafkami nie ma albo
+prawie nie ma. Tura 9 zdiagnozowała jedną przyczynę (`scale` z domyślną 10
+w drei — wypiek 1,8 m rozciągnięty na 18 m) i właściciel wgrał na main
+`scale={1}` jako hotfix. To była prawdziwa przyczyna, ale nie jedyna, i po
+niej cień nadal nie istniał.
+
+**Co znalazłem (F2.2, zmierzone).** `<ContactShadows>` piecze cień do render
+targetu, a potem rozmywa go, renderując quad `blurPlane` tą samą kamerą
+ortograficzną. `blurPlane` nigdy nie trafia do grupy komponentu — jego macierz
+świata to identyczność. Kamera jest dzieckiem grupy. Tura 9 dała grupie
+`position={[cx, 1 mm, cz]}`, więc:
+
+- w x/z rozmycie czytało i pisało obszar przesunięty o (cx, cz);
+- w y — kamera patrzy DO GÓRY, a `near` w drei to domyślnie 0, więc quad
+  wylądował milimetr ZA płaszczyzną bliską, został obcięty, a przebieg rozmycia
+  nadpisał dobry wypiek pustym targetem.
+
+Sonda `gl.readRenderTargetPixels` wstawiona LOKALNIE (nigdy nie commitowana)
+między dwa wywołania drei: **max alpha 255 przed rozmyciem, 0 po nim.** Po
+naprawie 255 → **185**. `verify/t10/bake-probe.json`.
+
+**Dlaczego to jest w BLOCKERS, skoro naprawione.** Bo to jest ostrzeżenie na
+przyszłość, a nie zamknięta sprawa: **każde** przesunięcie grupy
+`<ContactShadows>` z powrotem pod mebel skasuje cień ponownie, cicho i na każdej
+maszynie. Warunek („grupa stoi w (0, ≤0, 0)") nie wynika z API drei i nie
+zgłasza się żadnym błędem. Jest opisany w `3d/Scene.jsx FloorShadow` w całości
+i zapisany w BACKLOG #58 jako kandydat na własną implementację.
+
+**Co Piotr decyduje.** Nic — chyba że BACKLOG #58 (własny cień kontaktowy,
+~60 linii) ma wejść wcześniej niż „kiedyś". Wtedy znikają dwa kompromisy:
+płótno większe od mebla i 0,5 mm, o które opuszczony jest pokój.
+
+## #55 — Sonda z F2.2 wymagała ŁATKI na `node_modules` i nie da się jej wysłać
+
+**Co blokuje.** CLAUDE.md F2.2 prosi wprost o sprawdzenie, czy wypiek cienia
+w ogóle coś zapisuje w TYM środowisku, przez `gl.readRenderTargetPixels` po
+wypieku. Nie ma na to żadnego haka publicznego: render target żyje wewnątrz
+`useMemo` komponentu drei i nie wychodzi na zewnątrz ani propsem, ani refem.
+
+**Co zrobiłem.** Jedna linia dopisana lokalnie do
+`node_modules/@react-three/drei/core/ContactShadows.js`
+(`window.__ccProbe?.(gl, renderTarget, scene)` po `gl.setRenderTarget(null)`,
+i drugi hak przed rozmyciem), zbudowane, zmierzone, **łatka cofnięta**,
+zbudowane ponownie. Zrzuty w `verify/t10/` pochodzą z BUILDU CZYSTEGO,
+nie z załatanego — dlatego bieg finalny wypisuje przy kryterium E
+„no drei probe in this build" zamiast udawać, że coś zmierzył.
+
+**Konsekwencja, o której trzeba wiedzieć.** Trzy liczby kryterium E (liczba
+wypieków, alfa wypieku, liczba świateł rzucających cień) da się odtworzyć tylko
+powtarzając łatkę. `scripts/e2e-turn10.mjs` niesie po swojej stronie cały hak
+(`PROBE`) i jest bezczynny bez niej, więc powtórka to jedna linia w drei plus
+`npm run build`. Instrukcja jest w komentarzu przy `PROBE` w skrypcie.
+
+**Czego to NIE oznacza.** Środowisko nie jest ślepe na cień — po naprawie
+sonda mierzy 185/255 alfy, a zwykły zrzut ekranu pokazuje plamę, którą widać
+gołym okiem. Sytuacja „środowisko ślepe na tę funkcję", o której mówi
+CLAUDE.md F2.2, **nie wystąpiła**, więc wizualnego podpisu nie oddaję —
+oddaję go tylko w części „czy to ładne", co i tak zawsze należy do właściciela.
+
+## #56 — `frames={1}` w drei nie znaczy „jeden wypiek na zawsze"
+
+**Co blokuje.** Licznik klatek w `<ContactShadows>` to zwykłe `let count = 0`
+w CIELE komponentu, nie `useRef`. Resetuje się przy każdym re-renderze Reacta,
+więc `frames={1}` znaczy „jeden wypiek na re-render". Komentarz w
+`3d/Scene.jsx` mówił „piecze raz i przestaje na zawsze" i to było za mocne.
+
+**Co zmierzone.** Pełny bieg akceptacyjny (trzy szafki, drzwi, kolor, dwie
+zmiany sheenu, sześć orbit): **24 wypieki**. Sama orbita, dwa przeciągnięcia
+i pięć sekund bezczynności: **0 wypieków** — i to jest liczba, o którą chodzi
+w kryterium E, bo orbitowanie jest tym, co joiner robi cały dzień. Kryterium
+E w skrypcie mierzy teraz DELTĘ przez orbitę, a nie sumę biegu.
+
+**Co Piotr decyduje.** Nic dziś. Jeśli kiedyś okaże się, że przeciąganie szafki
+myszą klatkuje (BLOCKERS #52 z tury 9 mówi o tym samym z innej strony),
+odpowiedzią jest zdławienie re-renderów `FloorShadow`, a nie zmiana `frames`.

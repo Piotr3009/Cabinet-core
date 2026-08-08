@@ -28,6 +28,19 @@ export function wallFacesCamera(face, cameraPosition) {
 }
 
 /**
+ * What the room is painted (turn 10, CLAUDE.md F3).
+ *
+ * Three tones, and they are profile numbers rather than constants, because
+ * "our floor is oak and our walls are off-white" is workshop configuration in
+ * exactly the way a carcass board is. `COLORS` stays as the fallback for a
+ * caller with no profile to hand — a test, a preview mounted before the store
+ * has loaded.
+ */
+function tone(profile, surface, fallback) {
+  return profile?.appearance?.room?.[surface] || fallback;
+}
+
+/**
  * The bounced light a studio rig has no way to produce (turn 8, CLAUDE.md F1).
  *
  * The walls and the floor are the only surfaces in the scene that are not
@@ -37,9 +50,19 @@ export function wallFacesCamera(face, cameraPosition) {
  * ambient big enough to whiten a wall is an ambient big enough to flatten every
  * cabinet in front of it — which is exactly what turn 7 did and what Piotr
  * reported.
+ *
+ * ─── Turn 10 (CLAUDE.md F2/F3): PER SURFACE, AND WHY IT MATTERS ───
+ * Emission is ADDED after the lighting. That makes it the one part of a
+ * surface's brightness a shadow map cannot darken — so a floor carrying 42 %
+ * of itself as emission is a floor on which a shadow can only ever be 58 % of
+ * a shadow. That is a large part of "the shadow under the cabinets is barely
+ * there", and it is fixed where it is caused: the WALL keeps 0.42 because a
+ * wall really is lit by nothing else, and the FLOOR drops to 0.16 because the
+ * floor's whole job this turn is to receive a shadow.
  */
-function bounce(hex, profile) {
-  const amount = profile?.appearance?.studio?.roomBounce ?? 0;
+function bounce(hex, profile, surface) {
+  const R = profile?.appearance?.room;
+  const amount = R?.bounce?.[surface] ?? profile?.appearance?.studio?.roomBounce ?? 0;
   return new THREE.Color(hex).multiplyScalar(Math.max(0, Math.min(1, amount)));
 }
 
@@ -117,8 +140,8 @@ function Wall({
             and leaves it looking exactly the same. */}
         <mesh geometry={geometry} receiveShadow>
           <meshLambertMaterial
-            color={COLORS.wall}
-            emissive={bounce(COLORS.wall, profile)}
+            color={tone(profile, 'wall', COLORS.wall)}
+            emissive={bounce(tone(profile, 'wall', COLORS.wall), profile, 'wall')}
             side={THREE.DoubleSide}
             // ─── Turn 9 (CLAUDE.md F1.3) ───
             // The contact shadow is baked by rendering the scene through a
@@ -167,12 +190,33 @@ export default function Room({ room, showLabels = true, profile = null }) {
     return geom;
   }, [room.corners, bounds.centre.x, bounds.centre.y]);
 
+  // ─── Half a millimetre down (turn 10, CLAUDE.md F2) ───
+  // The contact shadow has to be baked by a camera standing at the world
+  // origin, at floor level, looking up — that is drei's own requirement and the
+  // reason is written out in full in 3d/Scene.jsx FloorShadow. Two things
+  // follow, and they are the same thing: the room's surfaces must be BELOW that
+  // camera, or the floor bakes into the shadow as one solid rectangle (three's
+  // `allowOverride = false` means "use my own material", not "skip me"); and
+  // the blob has to be a hair proud of the floor or the two z-fight.
+  //
+  // So the room steps down rather than the shadow stepping up. It is the whole
+  // room and not just the floor, so the wall/floor junction stays sealed — a
+  // floor dropped on its own leaves a slit you can see the background through
+  // at close zoom. Half a millimetre is the app's own finest unit and is under
+  // a quarter of a pixel at the closest the orbit will go.
+  const drop = -mm(profile?.appearance?.room?.floorOffsetMm ?? 0.5);
+
   return (
-    <group>
+    <group position={[0, drop, 0]}>
+      {/* ─── The floor is a DIFFERENT SURFACE from the wall (turn 10, F3) ───
+          A step warmer and a clear step darker, because "the wall and the floor
+          melt into one white blur" was Piotr's complaint and three values inside
+          5 % of each other was the arithmetic behind it. The numbers are in
+          profile.appearance.room; the reasoning is written down there. */}
       <mesh geometry={floor} receiveShadow>
         <meshLambertMaterial
-          color={COLORS.floor}
-          emissive={bounce(COLORS.floor, profile)}
+          color={tone(profile, 'floor', COLORS.floor)}
+          emissive={bounce(tone(profile, 'floor', COLORS.floor), profile, 'floor')}
           side={THREE.DoubleSide}
           // The floor is the surface the contact shadow is PAINTED ON. Left in
           // the depth pass it sits exactly at the shadow camera's near plane and

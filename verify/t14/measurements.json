@@ -1,0 +1,350 @@
+{
+  "steps": [
+    {
+      "label": "F1.1 THE PAIR: a cabinet through a wall selects; Ctrl grows the set; a wall empties it",
+      "ok": true,
+      "detail": "{\"afterCabinet\":[\"u_vgolbnz\"],\"afterCtrl\":[\"u_vgolbnz\",\"u_4vpu90l\"],\"afterWall\":[]}"
+    },
+    {
+      "label": "F1.2 unchecking the top infill on a run MEMBER takes the run’s piece off",
+      "ok": true,
+      "detail": "{\"ids\":[\"u_0trzjg1\",\"u_kw9sklb\",\"u_lc9zf1s\"],\"before\":[true,false,false],\"after\":[false,false,false],\"removed\":3}"
+    },
+    {
+      "label": "F2 RAIL1 is flush with the bottom, RAIL2 hangs on the middle tenon, BACK reaches the top",
+      "ok": true,
+      "detail": "{\"id\":\"u_30jn02c\",\"H\":2150,\"rail1\":{\"y\":0,\"h\":200},\"rail2\":{\"y\":980,\"h\":200},\"back\":{\"y\":1804,\"h\":346},\"tabs\":[95,1075,2055]}"
+    },
+    {
+      "label": "F3.1 a wall-unit run STOPS at a tall cabinet’s ceiling-height end panel",
+      "ok": true,
+      "detail": "{\"ends\":{\"left\":\"end-panel\",\"right\":\"open\"},\"from\":1625}"
+    },
+    {
+      "label": "F3.2 a tall unit’s infill ENDS ON a side filler taken to the ceiling",
+      "ok": true,
+      "detail": "{\"before\":{\"ends\":{\"left\":\"infill\",\"right\":\"open\"},\"from\":0,\"gap\":40},\"after\":{\"ends\":{\"left\":\"infill\",\"right\":\"open\"},\"from\":40,\"gap\":40}}"
+    },
+    {
+      "label": "F4.2 the DOOR modal carries Door extend — it is a door property now",
+      "ok": true,
+      "detail": "{\"hasExtend\":true,\"checked\":false,\"label\":\"Door extend +38\",\"title\":\"CABINET COREFileViewLibrarySettingsDatabaseSprayingsoonOutputF4•Mock data modeAccountExport↶↷Hide dimensionsOutlinesX-rayBOM3DCNCParameters×Select a unit in the canvas, or open Library in the menu.WU01 · Door×DoorWU01-F597 × 717 · 25 mmHinge sideLeftRightDoor extend +38The front runs this far below the carcass — the handleless grab edge. Every door of this cabinet, because they are cut as a set.Front board18 mm19 mm25 mmMaterialProject defaultCarcass 1Broken whiteThe same fields are in the right-hand panel, which is already showing this piece.\"}"
+    },
+    {
+      "label": "F5 three wall units carry ONE board; a fourth docking EXTENDS it",
+      "ok": true,
+      "detail": "{\"three\":{\"w\":1800,\"h\":410,\"material\":\"front\"},\"four\":{\"w\":2400,\"h\":410,\"material\":\"front\"}}"
+    },
+    {
+      "label": "F6 Edit cabinet FIRST and framed, dimensions LAST, hinges gone, gold rules between the sections",
+      "ok": true,
+      "detail": "{\"entries\":[\"edit-cabinet\",\"top-infill\",\"bottom-mask\",\"end-panel-L\",\"end-panel-R\",\"end-panel-B\",\"side-infill\",\"pin-infill-L\",\"pin-infill-R\",\"add-doors\",\"unit-colour\",\"save-template\",\"center-shelves\",\"rotate-90\",\"back-to-wall\",\"side-to-wall\",\"delete\",\"dimensions\"],\"dividers\":[\"run-pieces\",\"end-panels\",\"rest\",\"dimensions\"],\"firstIsEdit\":true,\"lastIsDimensions\":true,\"hinges\":false,\"framed\":{\"border\":\"1px\",\"colour\":\"rgb(170, 142, 104)\"},\"dividerColour\":\"rgba(170, 142, 104, 0.3)\"}"
+    },
+    {
+      "label": "F7 the detail modal draws the part, and a hovered SCREWS_3MM lights up and says what it is",
+      "ok": true,
+      "detail": "{\"legend\":[\"OUTLINE\",\"PUZZLE_DOG_BONES\",\"PUZZLE_SOCKET\",\"PUZZLE_HOLES_7_5MM\",\"SCREWS_3MM\"],\"hasScrews\":true,\"at\":{\"x\":1469,\"y\":886},\"note\":\"Screws ⌀3 · ⌀3 at 50, 2140.5\",\"paths\":21,\"lit\":1,\"dimmed\":20}"
+    },
+    {
+      "label": "F8.1 the editor OPENS the doors",
+      "ok": true,
+      "detail": "{\"label\":\"Close doors\"}"
+    },
+    {
+      "label": "F8.2 a spur panel is removed as a design-layer override, and the cut list follows",
+      "ok": true,
+      "detail": "{\"took\":\"override\",\"before\":true,\"after\":false,\"removedParts\":[\"SPURS\"],\"csv\":false}"
+    },
+    {
+      "label": "F9 the eye-level pair is in the scene at 1650 mm, physical, casting nothing",
+      "ok": true,
+      "detail": "[{\"y\":1650,\"i\":12,\"shadow\":false},{\"y\":1650,\"i\":12,\"shadow\":false}]"
+    },
+    {
+      "label": "F10.2 the wall was dragged, then TYPED 202 — and it moved exactly 202",
+      "ok": true,
+      "detail": "{\"chip\":\"202 mm ⏎\",\"grew\":202,\"after\":3202}"
+    },
+    {
+      "label": "F10.3 a cabinet slid at an inserted box STOPS at it",
+      "ok": true,
+      "detail": "{\"from\":1700,\"boxX\":2800,\"stopped\":{\"id\":\"u_2iob9bc\",\"x\":2200},\"room\":[{\"id\":\"chimney\",\"x\":2800,\"y\":0,\"w\":500,\"d\":400}]}"
+    }
+  ],
+  "measurements": {
+    "pair": {
+      "afterCabinet": [
+        "u_vgolbnz"
+      ],
+      "afterCtrl": [
+        "u_vgolbnz",
+        "u_4vpu90l"
+      ],
+      "afterWall": [],
+      "aimA": {
+        "x": 786,
+        "y": 647,
+        "onScreen": true
+      },
+      "aimB": {
+        "x": 908,
+        "y": 647,
+        "onScreen": true
+      },
+      "wallAim": {
+        "x": 800,
+        "y": 181
+      }
+    },
+    "topInfillRemoval": {
+      "ids": [
+        "u_0trzjg1",
+        "u_kw9sklb",
+        "u_lc9zf1s"
+      ],
+      "before": [
+        true,
+        false,
+        false
+      ],
+      "after": [
+        false,
+        false,
+        false
+      ],
+      "removed": 3
+    },
+    "fridge": {
+      "id": "u_30jn02c",
+      "H": 2150,
+      "rail1": {
+        "y": 0,
+        "h": 200
+      },
+      "rail2": {
+        "y": 980,
+        "h": 200
+      },
+      "back": {
+        "y": 1804,
+        "h": 346
+      },
+      "tabs": [
+        95,
+        1075,
+        2055
+      ]
+    },
+    "termination": {
+      "tall": "u_ya2nsbc",
+      "a": "u_fd64u1l",
+      "b": "u_zp7th6d",
+      "edge": 1625,
+      "before": {
+        "ends": {
+          "left": "open",
+          "right": "open"
+        },
+        "from": 1625
+      },
+      "after": {
+        "ends": {
+          "left": "end-panel",
+          "right": "open"
+        },
+        "from": 1625
+      },
+      "filler": {
+        "solo": "u_m15ft61",
+        "before": {
+          "ends": {
+            "left": "infill",
+            "right": "open"
+          },
+          "from": 0,
+          "gap": 40
+        },
+        "after": {
+          "ends": {
+            "left": "infill",
+            "right": "open"
+          },
+          "from": 40,
+          "gap": 40
+        }
+      }
+    },
+    "doorModal": {
+      "hasExtend": true,
+      "checked": false,
+      "label": "Door extend +38",
+      "title": "CABINET COREFileViewLibrarySettingsDatabaseSprayingsoonOutputF4•Mock data modeAccountExport↶↷Hide dimensionsOutlinesX-rayBOM3DCNCParameters×Select a unit in the canvas, or open Library in the menu.WU01 · Door×DoorWU01-F597 × 717 · 25 mmHinge sideLeftRightDoor extend +38The front runs this far below the carcass — the handleless grab edge. Every door of this cabinet, because they are cut as a set.Front board18 mm19 mm25 mmMaterialProject defaultCarcass 1Broken whiteThe same fields are in the right-hand panel, which is already showing this piece."
+    },
+    "mask": {
+      "ids": [
+        "u_quwlunw",
+        "u_44rsoj1",
+        "u_0m51akg"
+      ],
+      "fourth": "u_4o4l00b",
+      "three": {
+        "owner": {
+          "w": 1800,
+          "h": 410,
+          "material": "front"
+        },
+        "members": [
+          null,
+          null
+        ]
+      },
+      "four": {
+        "w": 2400,
+        "h": 410,
+        "material": "front"
+      }
+    },
+    "menu": {
+      "entries": [
+        "edit-cabinet",
+        "top-infill",
+        "bottom-mask",
+        "end-panel-L",
+        "end-panel-R",
+        "end-panel-B",
+        "side-infill",
+        "pin-infill-L",
+        "pin-infill-R",
+        "add-doors",
+        "unit-colour",
+        "save-template",
+        "center-shelves",
+        "rotate-90",
+        "back-to-wall",
+        "side-to-wall",
+        "delete",
+        "dimensions"
+      ],
+      "dividers": [
+        "run-pieces",
+        "end-panels",
+        "rest",
+        "dimensions"
+      ],
+      "firstIsEdit": true,
+      "lastIsDimensions": true,
+      "hinges": false,
+      "framed": {
+        "border": "1px",
+        "colour": "rgb(170, 142, 104)"
+      },
+      "dividerColour": "rgba(170, 142, 104, 0.3)"
+    },
+    "detail": {
+      "id": "u_exg3mrm",
+      "drills": 6,
+      "legend": [
+        "OUTLINE",
+        "PUZZLE_DOG_BONES",
+        "PUZZLE_SOCKET",
+        "PUZZLE_HOLES_7_5MM",
+        "SCREWS_3MM"
+      ],
+      "hasScrews": true,
+      "at": {
+        "x": 1469,
+        "y": 886
+      },
+      "note": "Screws ⌀3 · ⌀3 at 50, 2140.5",
+      "paths": 21,
+      "lit": 1,
+      "dimmed": 20
+    },
+    "spur": {
+      "took": "override",
+      "before": true,
+      "after": false,
+      "removedParts": [
+        "SPURS"
+      ],
+      "csv": false
+    },
+    "glint": {
+      "found": [
+        {
+          "y": 1650,
+          "i": 12,
+          "shadow": false
+        },
+        {
+          "y": 1650,
+          "i": 12,
+          "shadow": false
+        }
+      ]
+    },
+    "wallTyped": {
+      "chip": "202 mm ⏎",
+      "grew": 202,
+      "before": [
+        [
+          0,
+          0
+        ],
+        [
+          4000,
+          0
+        ],
+        [
+          4000,
+          3000
+        ],
+        [
+          0,
+          3000
+        ]
+      ],
+      "after": {
+        "corners": [
+          [
+            0,
+            -202
+          ],
+          [
+            4000,
+            -202
+          ],
+          [
+            4000,
+            3000
+          ],
+          [
+            0,
+            3000
+          ]
+        ],
+        "depth": 3202
+      },
+      "afterDrag": {
+        "moved": true
+      }
+    },
+    "box": {
+      "from": 1700,
+      "boxX": 2800,
+      "stopped": {
+        "id": "u_2iob9bc",
+        "x": 2200
+      },
+      "room": [
+        {
+          "id": "chimney",
+          "x": 2800,
+          "y": 0,
+          "w": 500,
+          "d": 400
+        }
+      ]
+    }
+  }
+}

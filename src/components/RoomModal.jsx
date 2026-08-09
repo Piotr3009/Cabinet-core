@@ -134,7 +134,11 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
   const startWallDrag = (e, index) => {
     e.stopPropagation();
     const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
-    setPicked({ kind: 'wall', index });
+    // The room AS IT WAS when this wall was picked travels with the selection,
+    // not with the drag: "drag it a bit, then type 202" has to mean 202 from
+    // where it started (CLAUDE.md F10.2 and the walk step that pins it), and
+    // the hand has usually let go by the time the number is finished.
+    setPicked({ kind: 'wall', index, room: draft });
     setTyped('');
     drag.current = {
       kind: 'wall',
@@ -149,7 +153,9 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
   const startBoxDrag = (e, boxId, side) => {
     e.stopPropagation();
     const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
-    setPicked({ kind: 'box', id: boxId, side });
+    setPicked({
+      kind: 'box', id: boxId, side, boxes,
+    });
     setTyped('');
     drag.current = {
       kind: 'box',
@@ -198,13 +204,18 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
     const value = Number(raw);
     if (!picked || !Number.isFinite(value) || value === 0) return false;
     if (picked.kind === 'wall') {
-      setDraft((d) => migrateRoom({ ...d, corners: moveWall(d, picked.index, value) }));
+      setDraft((d) => migrateRoom({ ...d, corners: moveWall(picked.room || d, picked.index, value) }));
       return true;
     }
-    setDraft((d) => migrateRoom({
-      ...d,
-      boxes: roomBoxes(d).map((b) => (b.id === picked.id ? moveBoxSide(b, picked.side, value) : b)),
-    }));
+    setDraft((d) => {
+      const from = picked.boxes || roomBoxes(d);
+      const was = from.find((b) => b.id === picked.id);
+      if (!was) return d;
+      return migrateRoom({
+        ...d,
+        boxes: roomBoxes(d).map((b) => (b.id === picked.id ? moveBoxSide(was, picked.side, value) : b)),
+      });
+    });
     return true;
   }, [picked]);
 
@@ -390,7 +401,7 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
                     width={Math.abs(c.x - a.x)} height={Math.abs(c.y - a.y)}
                     fill="#3a3a3e" stroke={on ? '#C8A678' : '#6b6b70'} strokeWidth={on ? 2 : 1.2}
                     data-plan-box={b.id}
-                    onPointerDown={(e) => { e.stopPropagation(); setPicked({ kind: 'box', id: b.id, side: 'right' }); setTyped(''); }}
+                    onPointerDown={(e) => { e.stopPropagation(); setPicked({ kind: 'box', id: b.id, side: 'right', boxes }); setTyped(''); }}
                     onDoubleClick={() => removeBox(b.id)}
                   />
                   {BOX_SIDES.map((side) => {

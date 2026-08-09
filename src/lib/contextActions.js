@@ -23,7 +23,7 @@
 // flips it.
 
 import { getUnitType } from '../engine/types.js';
-import { hasTopInfill } from '../engine/runs.js';
+import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 
 // ─── TURN 13 (CLAUDE.md F5.3): THE MENU APPLIES TO THE SELECTION ───────────
 //
@@ -218,6 +218,28 @@ export function menuActions({
         run: () => each((id) => store.setSideInfillPinned?.(id, side, !isPinned)),
       });
     }
+  }
+
+  // ─── The bottom masking panel (turn 14, CLAUDE.md F5) ───
+  // The plinth's twin at the other end of the kitchen, so it sits beside it and
+  // in the same group: one board under a RUN of hanging cabinets, hiding the
+  // underside and the ten-millimetre slot behind them. Bulk like the plinth,
+  // and for the same reason — a joiner tick three wall units and asks for the
+  // board under all of them, and the run logic merges the adjacent ones itself.
+  if (type.mount === 'wall') {
+    const fitted = hasBottomMask(unit);
+    actions.push({
+      id: 'bottom-mask',
+      label: forAll('Bottom masking panel'),
+      checked: fitted,
+      hint: fitted
+        ? 'Fitted. Click to take it off — the whole run’s board goes with it'
+        : 'One board under the run, unit depth + the wall standoff, in the fronts’ material',
+      run: () => {
+        each((id) => (fitted ? store.removeBottomMask?.(id) : store.addBottomMask?.(id)));
+        if (!fitted) store.openPanelSection?.('construction');
+      },
+    });
   }
 
   // ── 4. the plinth ──

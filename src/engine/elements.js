@@ -122,6 +122,7 @@ export function elementKind(panel) {
     case 'END-PANEL': return 'end-panel';
     case 'INFILL': return 'infill';
     case 'PLINTH': return 'plinth';
+    case 'MASK': return 'masking-panel';
     case 'FRONT': return 'door';
     case 'DRAWER-FRONT': return 'drawer-front';
     default: return null;
@@ -141,6 +142,7 @@ const LABELS = {
   'end-panel': 'End panel',
   infill: 'Infill',
   plinth: 'Plinth',
+  'masking-panel': 'Bottom masking panel',
   door: 'Door',
   'drawer-front': 'Drawer front',
 };

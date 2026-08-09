@@ -707,6 +707,24 @@ export const DEFAULT_CABINET_PROFILE = {
       // and nothing about the data has to change shape.
       defaultHeightByMount: { wall: 'carcass', floor: 'floor' },
     },
+    // ─── The bottom masking panel (turn 14, CLAUDE.md F5 / BACKLOG #45) ─────
+    //
+    // The panel under a run of WALL units. The two numbers it needs are here
+    // for the reason every number is: a workshop that cuts it from 12 mm rather
+    // than from the door board changes one line.
+    //
+    // `depthExtra` is the ten millimetres the piece exists for — every cabinet
+    // in this app stands `room.wallBackClearance` off the wall, and a panel cut
+    // to the carcass depth would stop at the edge of that slot instead of
+    // hiding it. It is written as its OWN number rather than read straight off
+    // `room.wallBackClearance` at the panel-building site because they are two
+    // decisions that happen to agree today: one is how far a cabinet stands off
+    // a bowed wall, the other is how far past the carcass this board reaches.
+    mask: {
+      enabled: true,
+      thickness: null,      // null = the project's FRONT thickness (F5.2)
+      depthExtra: null,     // null = the wall standoff, which is what F5 asks for
+    },
   },
 
   // ─── Appearance (turn 4, BACKLOG #4–#6) ───

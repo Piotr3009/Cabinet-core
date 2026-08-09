@@ -37,6 +37,8 @@ export default function ContextMenu() {
   const showHinges = useUiStore((s) => s.showHinges);
   const toggleHinges = useUiStore((s) => s.toggleHinges);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
+  const addBottomMask = useProjectStore((s) => s.addBottomMask);
+  const removeBottomMask = useProjectStore((s) => s.removeBottomMask);
   const openModal = useUiStore((s) => s.openModal);
   // ─── Turn 13 (CLAUDE.md F5.3) ───
   // The menu is about the cabinet under the pointer AND about everything else
@@ -87,6 +89,11 @@ export default function ContextMenu() {
           if (!addTopInfill(unitId)) notify('No room between this unit and the ceiling.', 'warn');
         },
         removeTopInfill,
+        // Turn 14 (CLAUDE.md F5): the board under a run of wall units.
+        addBottomMask: (unitId) => {
+          if (!addBottomMask(unitId)) notify('Only a hanging cabinet has an underside to mask.', 'warn');
+        },
+        removeBottomMask,
         setSideInfillEnabled: (unitId, on) => {
           setSideInfillEnabled(unitId, on);
           notify(on
@@ -128,7 +135,8 @@ export default function ContextMenu() {
     })
     : []), [unit, menu, unitDimensions, showHinges, toggleHinges, redistributeShelves, rotateUnit,
     removeUnit, closeAllFronts, toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addTopInfill,
-    removeTopInfill, setSideInfillEnabled, setSideInfillPinned, notify, openRightPanel,
+    removeTopInfill, addBottomMask, removeBottomMask,
+    setSideInfillEnabled, setSideInfillPinned, notify, openRightPanel,
     setPanelSection, openModal]);
 
   // ─── Placement (turn 11, CLAUDE.md F1.4a) ───

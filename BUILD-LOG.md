@@ -4705,3 +4705,51 @@ którą stolarz rozpoznaje: koloru. `elementMaterialChoices` niesie teraz `hex`
 pokazuje próbkę obok listy. Tytuł okna mówi, o KTÓRY element chodzi.
 
 **Werdykt.** 1190 → **1198** testów.
+
+---
+
+## F5 — Dolny panel maskujący pod szafkami wiszącymi (#45) — ✅ ZIELONA
+
+**Co to jest.** Jedna ciągła płyta pod BIEGIEM szafek wiszących: długość = suma
+szafek biegu, głębokość = głębokość szafki + 10 mm — tych dziesięć, o które
+KAŻDA szafka w tej aplikacji stoi od ściany (`room.wallBackClearance`), więc
+płyta ZAKRYWA szczelinę, zamiast kończyć się na jej krawędzi. To jest cały powód
+istnienia tego elementu.
+
+To PLINTA z drugiego końca kuchni i CLAUDE.md mówi to wprost („run-based like
+the plinth… reuse the run logic"). Więc to dosłownie te same trzy funkcje
+(`maskSegments` / `segmentMask` / `runMaskParams`) z dwiema różnicami, które
+stolarz by nazwał: jest dla szafek WISZĄCYCH, a liczba, która nie jest jej
+długością, to GŁĘBOKOŚĆ, a nie wysokość. Reszta identyczna: decyzja per szafka,
+sąsiadujące decyzje scalone w jedną długość, bok maskujący albo przerwa kończy
+segment. Dokowanie szafki PRZEDŁUŻA płytę (test MASK-C).
+
+**Materiał: FRONT** (F5.2), tą samą rurą, którą plinta dostała w turze 11 —
+stoi w pokoju pod drzwiami, w płaszczyźnie, którą oko czyta jako front biegu, i
+jest wykańczana z nimi. **ZGŁOSZONE WŁAŚCICIELOWI: to jest założenie i jedna
+linia w `FRONT_MATERIAL_ROLES` do zmiany**, dokładnie jak prosi CLAUDE.md.
+
+**Nowa rodzina części.** `part: 'MASK'`, `role: 'mask'`, wchodzi do BOM, na
+arkusz CNC i do DXF tymi samymi trasami co każda inna formatka — nie ma drugiej
+listy cięcia. Nowe fixtures: `fixtures/golden-wall-mask.json` (sześć przypadków
+A–F). Nie ma LISP-a dla tej części, więc źródłem prawdy jest specyfikacja
+właściciela, zacytowana w pliku i rozłożona na liczby przypadek po przypadku —
+ta sama podstawa, na której od tury 2 stoją zmienne wysokości szuflad.
+`verify_with_piotr` wymienia pięć rzeczy do potwierdzenia.
+
+**Tożsamość CNC.** `scripts/cnc-fingerprint.mjs` dostał dwa nowe presety
+(`+bottom-mask`, `+bottom-mask-run-owner`), więc delta pokazuje się jako
+**314 DODANYCH linii** na nazwanych plikach, a nie chowa się za skryptem, który
+buduje tylko goły korpus. Zmienionych linii w całym raporcie: tylko FRIDGE BACK
+z F2.
+
+**Gniazdo, które ta część miała zarezerwowane.** `autoParts.endPanel
+.defaultHeightByMount` ma czwartą wartość `'extended'` opisaną w turze 13 jako
+„door/panel EXTENSION below a wall unit, parked as BACKLOG #45" — jest na
+miejscu i nietknięta; ta faza dokłada `autoParts.mask` obok niej, a nie zamiast.
+
+**Modal (F5.4).** `masking-panel` jest rodzajem DOWIESZANYM (F4), więc dwuklik
+otwiera jego własne okno; reguły zakończeń z F3 stosują się tam, gdzie płyta
+spotyka bok, bo segmentowanie czyta te same `endPanelSpread`.
+
+**Werdykt.** 1198 → **1209** testów.

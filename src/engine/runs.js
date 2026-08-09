@@ -142,6 +142,17 @@ export function hasTopInfill(unit) {
   return (Number(unit?.params?.top_infill_mm) || 0) > 0 || Boolean(unit?.params?.run_top_infill);
 }
 
+/**
+ * Is there a masking panel under this cabinet — its own, or the run's?
+ *
+ * The twin of `hasTopInfill`, and it exists for the same reason: a member of a
+ * run carries the flag but the GEOMETRY is the owner's, and a switch that reads
+ * only one of the two can show "not fitted" under a board that is there.
+ */
+export function hasBottomMask(unit) {
+  return unit?.params?.bottom_mask === true || Boolean(unit?.params?.run_mask);
+}
+
 function makeRun(units, wall, mount, profile) {
   return {
     wall: Number(wall),
@@ -592,6 +603,131 @@ export function segmentPlinth(segment) {
     length,
     unitIds: segment.map((u) => u.id),
   };
+}
+
+// ─── THE BOTTOM MASKING PANEL (turn 14, CLAUDE.md F5 / BACKLOG #45) ─────────
+//
+// What it is, in the owner's words: one continuous panel under a RUN of wall
+// units, its length the sum of the run's cabinets and its depth the unit depth
+// plus ten millimetres — the ten that every cabinet in this application stands
+// off the wall (`profile.room.wallBackClearance`), so the panel hides the slot
+// instead of stopping at the edge of it.
+//
+// It is the PLINTH, on the other end of the kitchen, and CLAUDE.md says so in
+// as many words: "run-based like the plinth… reuse the run logic". So it is
+// literally the same three functions with two differences a joiner would name:
+//
+//   IT IS FOR HANGING CABINETS. A wall unit has an underside somebody looks up
+//   at from across the room; a base unit has a worktop on it and a plinth under
+//   it, and neither is this piece.
+//
+//   IT HAS A DEPTH RATHER THAN A HEIGHT. A toe kick is a face standing on the
+//   floor; this lies flat, so the number that is not its length is how far back
+//   it reaches.
+//
+// Everything else is the plinth's: a decision per cabinet, adjacent decisions
+// merged into one length, an end panel or a gap ending the segment.
+
+/** Does this unit want a masking panel under it? */
+function wantsMask(unit) {
+  return unit?.params?.bottom_mask === true;
+}
+
+/**
+ * How far PAST the carcass the panel reaches at the back.
+ *
+ * The workshop's own number, defaulting to the wall standoff — which is what
+ * CLAUDE.md F5 asks for ("depth = unit depth + 10 mm") and why the ten is not
+ * written anywhere. Two decisions that agree today: how far a cabinet stands
+ * off a bowed wall, and how far past it this board reaches.
+ */
+export function maskDepthExtra(profile) {
+  const stated = profile?.autoParts?.mask?.depthExtra;
+  // `Number(null)` is 0, not NaN — so "nobody has said" has to be asked before
+  // the number is read, or the default silently becomes zero and the piece
+  // stops hiding the one thing it exists to hide.
+  if (stated != null && Number.isFinite(Number(stated)) && Number(stated) >= 0) return Number(stated);
+  return Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
+}
+
+/**
+ * The masking SEGMENTS of one run — the twin of `plinthSegments`.
+ *
+ * An end panel between two cabinets is a boundary for exactly the reason it is
+ * one for the toe kick: it is a piece of board standing between them, and the
+ * panel meets its inner face rather than running behind it.
+ */
+export function maskSegments(run) {
+  if (run.mount !== 'wall') return [];
+  const segments = [];
+  let current = [];
+  const close = () => { if (current.length) segments.push(current); current = []; };
+
+  for (const unit of run.units) {
+    if (!wantsMask(unit)) { close(); continue; }
+    if (current.length) {
+      const previous = current[current.length - 1];
+      const between = endPanelSpread(previous, previous.params?.front_t).right > 0
+        || endPanelSpread(unit, unit.params?.front_t).left > 0;
+      if (between) close();
+    }
+    current.push(unit);
+  }
+  close();
+  return segments;
+}
+
+/**
+ * The masking element for one segment: where it starts, how long it is, how
+ * deep, and who carries it.
+ *
+ * Measured on the CARCASSES, like the plinth and for the same reason — an end
+ * panel is the visible end of the run and the piece meets its inner face. The
+ * DEPTH is the deepest cabinet in the segment plus the wall standoff: a segment
+ * whose cabinets are not all one depth is closed by one board, and a board that
+ * is short at the back leaves the slot the piece exists to hide.
+ */
+export function segmentMask(segment, { backClearance = 0 } = {}) {
+  if (!segment.length) return null;
+  const first = segment[0];
+  const last = segment[segment.length - 1];
+  const left = Number(first.position?.x_mm) || 0;
+  const right = (Number(last.position?.x_mm) || 0) + (Number(last.params?.width) || 0);
+  const length = right - left;
+  if (length <= 0) return null;
+  const depth = segment.reduce((m, u) => Math.max(m, Number(u.params?.depth) || 0), 0)
+    + Math.max(0, Number(backClearance) || 0);
+  if (depth <= 0) return null;
+  const owner = segment[0];
+  return {
+    role: 'owner',
+    offset: left - (Number(owner.position?.x_mm) || 0),
+    length,
+    depth,
+    unitIds: segment.map((u) => u.id),
+  };
+}
+
+/**
+ * The `run_mask` value for EVERY unit — the twin of `runPlinthParams`.
+ *
+ * The owner of each segment carries the geometry; everyone else carries a note.
+ * A member with no note at all would fall back to a single-unit path and cut a
+ * second, shorter panel inside the long one, which is the trap turn 8
+ * documented for the top infill and turn 12 met again for the plinth.
+ */
+export function runMaskParams(units, profile) {
+  const clearance = maskDepthExtra(profile);
+  const out = new Map(units.map((u) => [u.id, null]));
+  for (const run of buildRuns(units, profile)) {
+    for (const segment of maskSegments(run)) {
+      const element = segmentMask(segment, { backClearance: clearance });
+      if (!element) continue;
+      out.set(segment[0].id, element);
+      for (const u of segment.slice(1)) out.set(u.id, { role: 'member', ownerId: segment[0].id });
+    }
+  }
+  return out;
 }
 
 /**

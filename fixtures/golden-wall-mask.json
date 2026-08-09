@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "source": "CLAUDE.md turn 14 F5 (BACKLOG #45). There is NO AutoLISP for this part — the Skylon kits do not cut it — so the source of truth is the owner's own specification, quoted verbatim in `rules` below and traced into numbers case by case.",
+    "computed_by": "Claude (turn 14 autonomous session, 09.08.2026), from the specification and from the profile numbers it names — NOT from the engine.",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. If engine output differs, the ENGINE is wrong (or file a BLOCKERS.md entry). Never edit expected values to make tests green.",
+    "units": "mm, m2, m"
+  },
+  "mask_rules": {
+    "spec": "One continuous panel under a RUN of wall units: length = the sum of the run's units; depth = unit depth + 10 mm (it hides the 10 mm wall standoff). Docking a unit extends it; an end panel or gap is a boundary (reuse the run logic).",
+    "length": "the sum of the segment's CARCASS widths, measured left carcass edge to right carcass edge — the plinth's rule (turn 12 F8), and for the plinth's reason: an end panel is the visible end of the run and the board meets its inner face rather than running behind it",
+    "depth": "the DEEPEST cabinet of the segment + profile.room.wallBackClearance (10). One board closes the segment, and a board that is short at the back leaves the slot the piece exists to hide",
+    "thickness": "profile.autoParts.mask.thickness ?? the project's FRONT thickness (25 by default) — F5.2 puts it through the front pipeline",
+    "material": "FRONT. The owner's assumption per F5.2, flagged in BUILD-LOG: it stands in the room under the doors, in the plane the eye reads as the front of the run, so it is finished with them. One line in engine/cabinet.js FRONT_MATERIAL_ROLES to change.",
+    "position": "y = -thickness (directly under the carcass floor); z = -10 (it starts at the wall, behind the carcass back) and runs forward to the carcass face",
+    "edging": "all four coded, LENGTH = 2 x depth + 1 x length: the two ends and the FRONT edge are seen — from the room, from below, and from the side at the end of a run. The back edge is against the wall.",
+    "boundaries": "no mask = no mask; adjacent masked wall units with no end panel between them = ONE board; an end panel or a gap starts a new segment",
+    "who": "wall-mounted kits only — a base unit has a worktop on it and a plinth under it, and neither is this piece"
+  },
+  "cases": [
+    {
+      "id": "MASK-A",
+      "description": "One wall unit, 600 x 720 x 300, front board 25, wall standoff 10",
+      "inputs": {
+        "type": "WUD",
+        "width": 600,
+        "height": 720,
+        "depth": 300,
+        "board_t": 18,
+        "front_t": 25,
+        "bottom_mask": true,
+        "unit_num": "W01"
+      },
+      "panel": {
+        "id": "MASK",
+        "part": "MASK",
+        "role": "mask",
+        "material_role": "front",
+        "finish_exposed": true,
+        "w": 600,
+        "h": 310,
+        "thickness": 25,
+        "qty": 1,
+        "edging": { "code": "<>^v", "len_m": 1.22 },
+        "area_m2": 0.186,
+        "box": { "x": 0, "y": -25, "z": -10, "w": 600, "h": 25, "d": 310 }
+      }
+    },
+    {
+      "id": "MASK-B",
+      "description": "A RUN of three 600 mm wall units butted together: ONE board of 1800, not three of 600",
+      "inputs": {
+        "type": "WUD",
+        "count": 3,
+        "width": 600,
+        "depth": 300,
+        "front_t": 25,
+        "bottom_mask": true
+      },
+      "expected": {
+        "owner_panels": 1,
+        "member_panels": 0,
+        "w": 1800,
+        "h": 310,
+        "area_m2": 0.558,
+        "edging_len_m": 2.42
+      }
+    },
+    {
+      "id": "MASK-C",
+      "description": "A fourth unit docked onto the run extends the SAME board rather than adding one",
+      "inputs": { "type": "WUD", "count": 4, "width": 600, "depth": 300, "bottom_mask": true },
+      "expected": { "owner_panels": 1, "w": 2400, "h": 310 }
+    },
+    {
+      "id": "MASK-D",
+      "description": "An END PANEL between two masked units is a boundary: two boards, and each meets the panel's inner face",
+      "inputs": {
+        "type": "WUD",
+        "count": 2,
+        "width": 600,
+        "depth": 300,
+        "bottom_mask": true,
+        "end_panel_between": { "unit": 1, "side": "R" }
+      },
+      "expected": { "segments": 2, "widths": [600, 600] }
+    },
+    {
+      "id": "MASK-E",
+      "description": "A GAP is a boundary too — the run itself breaks, so the board does",
+      "inputs": { "type": "WUD", "count": 2, "width": 600, "gap_mm": 400, "bottom_mask": true },
+      "expected": { "segments": 2, "widths": [600, 600] }
+    },
+    {
+      "id": "MASK-F",
+      "description": "A base unit is refused: it has a worktop on it and a plinth under it",
+      "inputs": { "type": "BUD", "bottom_mask": true },
+      "expected": { "panels": 0 }
+    }
+  ],
+  "verify_with_piotr": [
+    "FRONT material and therefore SPRAYED with the doors — F5.2 says the owner assumed it and may adjust",
+    "depth = the DEEPEST cabinet of the segment + 10, for a run whose cabinets are not all one depth",
+    "the board meets an end panel's INNER face (the plinth's rule) rather than running behind it",
+    "thickness = the front board (25). A workshop cutting it from 12 mm sets autoParts.mask.thickness",
+    "the back edge is left unbanded — it is against the wall"
+  ]
+}

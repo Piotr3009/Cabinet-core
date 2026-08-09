@@ -7,7 +7,7 @@ import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
 import { endPanelDrop } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
-import { hasTopInfill } from '../engine/runs.js';
+import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
@@ -64,6 +64,8 @@ export default function RightPanel() {
   const removePlinth = useProjectStore((s) => s.removePlinth);
   const addTopInfill = useProjectStore((s) => s.addTopInfill);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
+  const addBottomMask = useProjectStore((s) => s.addBottomMask);
+  const removeBottomMask = useProjectStore((s) => s.removeBottomMask);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const addEndPanel = useProjectStore((s) => s.addEndPanel);
@@ -760,6 +762,30 @@ export default function RightPanel() {
               </button>
             )}
           </div>
+          )}
+
+          {/* ─── The bottom masking panel (turn 14, CLAUDE.md F5) ───
+              The plinth's twin at the other end of the kitchen, so it is in the
+              same section: one board under a RUN of hanging cabinets, its depth
+              the unit's plus the ten millimetres they stand off the wall. */}
+          {type.mount === 'wall' && (
+            <div className="cc-row">
+              <div className="flex flex-col">
+                <span className="text-sm text-ink-100">Bottom masking panel</span>
+                <span className="text-[11px] text-ink-400">
+                  {hasBottomMask(unit)
+                    ? 'one board across the run — double-click it to edit'
+                    : 'not fitted'}
+                </span>
+              </div>
+              {hasBottomMask(unit) ? (
+                <button type="button" className="cc-btn-ghost" onClick={() => removeBottomMask(unit.id)}>×</button>
+              ) : (
+                <button type="button" className="cc-btn" onClick={() => addBottomMask(unit.id)}>
+                  Add masking panel
+                </button>
+              )}
+            </div>
           )}
 
           {/* side infill — automatic, and says so */}

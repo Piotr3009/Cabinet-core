@@ -30,6 +30,7 @@ import {
   tabCentres,
 } from './puzzle.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
+import { maskDepthExtra } from './runs.js';
 import {
   biscuitLayers, biscuitSets, markFromEnd, receiverTakesScrews,
 } from './biscuits.js';
@@ -370,7 +371,7 @@ function clampInt(value, min, max) {
  * drawer box. They live inside a carcass or behind a door — the workshop cuts
  * them from finished board and they never reach the spray booth.
  */
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel']);
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -395,7 +396,12 @@ export function isFinishExposed(role) {
  * so, the spray schedule counts it and the 3D view paints it without a special
  * case anywhere.
  */
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth']);
+// Turn 14 (CLAUDE.md F5.2) adds `mask`: the panel under a run of wall units is
+// the plinth's twin at the other end of the kitchen — it stands in the room,
+// under the doors, in the plane the eye reads as the front of the run — so it
+// goes through the FRONT pipeline exactly as the plinth was given in turn 11.
+// FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -1428,6 +1434,40 @@ export function computeCabinet(params, profileOverride) {
       },
       cnc: rectGeometry(plinthLength, plinthH),
       ...(runPlinth?.role === 'owner' ? { meta: { run: true, unitIds: runPlinth.unitIds } } : {}),
+    }));
+  }
+
+  // ── The bottom masking panel (turn 14, CLAUDE.md F5 / BACKLOG #45) ───────
+  //
+  // One continuous board under a RUN of wall units: its length the sum of the
+  // run's cabinets, its depth the unit depth plus the ten millimetres every
+  // cabinet stands off the wall — so it HIDES the standoff instead of stopping
+  // at the edge of it, which is the whole reason the piece exists.
+  //
+  // Same shape of answer as the plinth (engine/runs.js `runMaskParams`), and
+  // the same three states: an OWNER cuts the segment's length, a MEMBER cuts
+  // nothing, and no run information at all means a run of one — which is what a
+  // bare `computeCabinet(params)` sees, so every golden fixture is untouched.
+  const runMask = params?.run_mask || null;
+  const maskMember = runMask?.role === 'member';
+  const wantsMask = type.mount === 'wall' && params?.bottom_mask === true && AP.mask.enabled !== false;
+  if (wantsMask && !maskMember) {
+    const t = AP.mask.thickness ?? frontT;
+    const maskLen = runMask?.role === 'owner' ? Number(runMask.length) || W : W;
+    const maskX = runMask?.role === 'owner' ? Number(runMask.offset) || 0 : 0;
+    const wallGapMask = maskDepthExtra(P);
+    const maskD = runMask?.role === 'owner' ? Number(runMask.depth) || (D + wallGapMask) : D + wallGapMask;
+    panels.push(panel({
+      id: 'MASK', part: 'MASK', role: 'mask', w: maskLen, h: maskD, thickness: t,
+      // The two ends and the FRONT edge are seen — from the room, from below,
+      // and from the side at the end of a run. The back edge is against the
+      // wall and is the one edge nobody ever looks at.
+      edgeCode: codes.all, edgeLen: metres(2 * maskD + maskLen),
+      box: {
+        x: maskX, y: -t, z: -wallGapMask, w: maskLen, h: t, d: maskD,
+      },
+      cnc: rectGeometry(maskLen, maskD),
+      ...(runMask?.role === 'owner' ? { meta: { run: true, unitIds: runMask.unitIds } } : {}),
     }));
   }
 

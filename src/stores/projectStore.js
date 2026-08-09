@@ -28,7 +28,7 @@ import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import {
-  runInfillParams, runMemberIds, runPlinthParams, unitTop,
+  runInfillParams, runMaskParams, runMemberIds, runPlinthParams, unitTop,
 } from '../engine/runs.js';
 import { widthZones } from '../engine/zones.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
@@ -639,18 +639,28 @@ export const useProjectStore = create((set, get) => ({
     // unit — a segment is a stretch of ADJACENT PLINTHED units, so it cannot be
     // worked out until the store knows which of them have a plinth at all.
     const plinthParams = runPlinthParams(next, profile);
+    // ─── …and the MASKING PANEL, the same way (turn 14, CLAUDE.md F5) ───
+    // One board under a run of wall units, its segments decided by the same
+    // adjacency the plinth's are: docking a cabinet extends it, an end panel or
+    // a gap ends it.
+    const maskParams = runMaskParams(next, profile);
 
     set({
       units: next.map((u) => {
         const run = runParams.get(u.id) ?? null;
         const plinthRun = plinthParams.get(u.id) ?? null;
+        const maskRun = maskParams.get(u.id) ?? null;
         // Reference equality matters here: this runs on every drag frame, and
         // writing a fresh object each time would re-render every unit in the
         // scene for a run nobody touched.
-        if (sameRun(u.params.run_top_infill, run) && sameRun(u.params.run_plinth, plinthRun)) return u;
+        if (sameRun(u.params.run_top_infill, run)
+          && sameRun(u.params.run_plinth, plinthRun)
+          && sameRun(u.params.run_mask, maskRun)) return u;
         return {
           ...u,
-          params: { ...u.params, run_top_infill: run, run_plinth: plinthRun },
+          params: {
+            ...u.params, run_top_infill: run, run_plinth: plinthRun, run_mask: maskRun,
+          },
         };
       }),
       dirty: true,
@@ -773,6 +783,42 @@ export const useProjectStore = create((set, get) => ({
    * first flag does not change either — but reading the list afterwards would
    * mean reading it out of a store that is mid-edit.
    */
+  /**
+   * ─── The bottom masking panel (turn 14, CLAUDE.md F5) ───
+   *
+   * A DECISION, like the plinth and the top infill: it exists from the moment
+   * somebody adds it and not before, so no cut list carries a board nobody
+   * ordered. Only a hanging cabinet has an underside to mask.
+   *
+   * @returns {boolean} false when this kit cannot take one at all
+   */
+  addBottomMask: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || getUnitType(unit.type).mount !== 'wall') return false;
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, bottom_mask: true } } : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+    return true;
+  },
+
+  /**
+   * Take it off — and off the whole RUN, for the same reason the top infill's
+   * removal is (F1.2): the board belongs to the run, so unticking it on one
+   * cabinet of four and leaving the other three asking for it would be a menu
+   * entry that does nothing.
+   */
+  removeBottomMask: (unitId) => {
+    const ids = new Set(runMemberIds(get().units, unitId, getCabinetProfile()));
+    set((s) => ({
+      units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, bottom_mask: false } } : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+    return ids.size;
+  },
+
   removeTopInfill: (unitId) => {
     const ids = new Set(runMemberIds(get().units, unitId, getCabinetProfile()));
     set((s) => ({
@@ -2534,6 +2580,7 @@ function sameRun(a, b) {
   if (a.role !== b.role) return false;
   if (a.role === 'member') return a.ownerId === b.ownerId;
   return a.offset === b.offset && a.length === b.length && a.faceH === b.faceH
+    && a.depth === b.depth
     && a.shelfDepth === b.shelfDepth
     && a.ends?.left === b.ends?.left && a.ends?.right === b.ends?.right
     && a.returns?.left === b.returns?.left && a.returns?.right === b.returns?.right;

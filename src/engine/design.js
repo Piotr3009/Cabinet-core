@@ -82,6 +82,26 @@ export const DEFAULT_DESIGN = {
   // Defaults the "Add end panel" action inherits (turn 4, BACKLOG #17).
   // `thickness: null` = the project's front thickness.
   endPanel: { height: 'floor', thickness: null, applyToAll: true },
+  // ─── Turn 16 (CLAUDE.md F1.2): THE RUN PIECES GET A BOARD ────────────────
+  //
+  // "Infills, plinths, end panels and masking panels get a material control
+  // with a checkbox 'Same as fronts', DEFAULT ON."
+  //
+  // Four switches of ONE shape, keyed by the engine's own `role` — so the
+  // resolver (engine/materials.js) looks a piece up by the role the engine
+  // stamped on it rather than by a table of panel ids, and a fifth run piece
+  // invented in a later turn is one entry here.
+  //
+  // `sameAsFronts: true` is not "no answer": it is an ASSIGNMENT, and it says
+  // this piece comes off front type 1's board. That is what makes the CNC
+  // sheet put a plinth in the fronts' section (F2.2) rather than in a group of
+  // its own.
+  runMaterials: {
+    infill: { sameAsFronts: true, material_id: null },
+    plinth: { sameAsFronts: true, material_id: null },
+    end_panel: { sameAsFronts: true, material_id: null },
+    mask: { sameAsFronts: true, material_id: null },
+  },
   // ─── Turn 11 (CLAUDE.md F9.1/F9.3) ───
   // The two project-wide numbers that are not heights: the DEPTH every unit
   // starts at, and the BOARD every carcass is cut from. `null` on both means the
@@ -170,6 +190,7 @@ export function migrateDesign(design) {
       thickness: Number(d.endPanel?.thickness) > 0 ? Number(d.endPanel.thickness) : null,
       applyToAll: d.endPanel?.applyToAll !== false,
     },
+    runMaterials: migrateRunMaterials(d.runMaterials, base.runMaterials),
     heights: Object.fromEntries(HEIGHT_KEYS.map((k) => [
       k, Number(d.heights?.[k]) > 0 ? Number(d.heights[k]) : null,
     ])),
@@ -180,6 +201,27 @@ export function migrateDesign(design) {
     // that treats 0 as "not set" would also treat a real stored 0 that way.
     sheen: migrateSheen(d),
   };
+}
+
+/**
+ * The four run-piece switches, normalised (turn 16, CLAUDE.md F1.2).
+ *
+ * DEFAULT ON, and a stored project that predates the turn comes back with all
+ * four on — which is the truth about every job cut before it: a plinth, a
+ * filler, an end panel and a masking panel were all cut from the front sheet
+ * (engine/cabinet.js `wearsFrontMaterial`), and turning that into an explicit
+ * assignment must not move a single piece.
+ */
+function migrateRunMaterials(stored, base) {
+  const out = {};
+  for (const role of Object.keys(base)) {
+    const own = stored?.[role];
+    out[role] = {
+      sameAsFronts: own?.sameAsFronts !== false,
+      material_id: own?.material_id ?? null,
+    };
+  }
+  return out;
 }
 
 // ─── ONE FRONT COLOUR (turn 12, CLAUDE.md F1) ───────────────────────────────
@@ -482,6 +524,35 @@ export function normaliseDoorStyle(style) {
   };
 }
 
+/**
+ * Set one run piece's board (turn 16, CLAUDE.md F1.2).
+ *
+ * ONE setter for all four switches — the "one shared component, one store
+ * shape" of F1.2 expressed in the data rather than only in the UI. Ticking
+ * "Same as fronts" does NOT wipe the board underneath it: a workshop that
+ * unticks the box again gets its own choice back, which is what every other
+ * "follow the project" control in this app does.
+ *
+ * @param {object} design
+ * @param {string} role   'infill' | 'plinth' | 'end_panel' | 'mask'
+ * @param {{sameAsFronts?:boolean, material_id?:string|null}} patch
+ */
+export function withRunMaterial(design, role, patch = {}) {
+  const d = migrateDesign(design);
+  if (!Object.hasOwn(d.runMaterials, role)) return d;
+  const now = d.runMaterials[role];
+  return {
+    ...d,
+    runMaterials: {
+      ...d.runMaterials,
+      [role]: {
+        sameAsFronts: patch.sameAsFronts === undefined ? now.sameAsFronts : patch.sameAsFronts !== false,
+        material_id: patch.material_id === undefined ? now.material_id : (patch.material_id || null),
+      },
+    },
+  };
+}
+
 /** How many carcass material types this project runs (1–3). */
 export function setCarcassTypeCount(design, count) {
   const n = Math.min(3, Math.max(1, Math.trunc(Number(count) || 1)));
@@ -528,10 +599,20 @@ export function resolveUnitDesign(unit, design) {
   const frontPalette = paletteFrontTypes(d);
   const unitFrontType = frontPalette.find((t) => t.id === unit?.params?.front_type_id) || null;
 
+  // ─── Turn 16 (CLAUDE.md F1.1): A FACED FRONT TYPE IS NOT A PAINTED ONE ────
+  //
+  // Turn 15 settled this for front type 1 (`projectFrontColour`): a type that
+  // carries a FACING has no sprayed colour, full stop. The same is true of type
+  // 2 the moment it can be faced — and without this line a cabinet wearing an
+  // oak-laminate Front 2 fell through to `d.colour.front`, which is front type
+  // 1's paint, and rendered and printed as front 1's colour.
+  //
+  // A colour set on the UNIT itself still wins: that is somebody painting this
+  // one cabinet, which is a decision and not a leftover.
+  const facedType = Boolean(unitFrontType?.finish_id) && !unitFrontType?.colour;
   const colour = normaliseColour(unit?.params?.front_colour)
     || unitFrontType?.colour
-    || style?.colour
-    || d.colour.front
+    || (facedType ? null : (style?.colour || d.colour.front))
     || null;
 
   const carcassTypeId = unit?.params?.carcass_type_id || d.carcass.types[0]?.id || null;
@@ -600,13 +681,27 @@ export function projectPalette(design, profile) {
       hex: finish?.hex || null,
       finish: finish || null,
       source: t.source ?? null,
+      // Turn 16 (CLAUDE.md F1.1): the BOARD behind the look. Additive — every
+      // consumer that only wanted the swatch is untouched — and it is what
+      // makes "same material → same section" answerable from the palette
+      // (engine/materials.js).
+      material_id: t.material_id ?? null,
     });
   }
   for (const t of paletteFrontTypes(d)) {
     // A front is a COLOUR in this app — that is what turn 12 settled when it
     // made front type 1's colour the project's front colour — so the swatch is
     // the colour, and a type with none shows the project's resolved front.
-    const finish = sprayFinish(t.colour) || finishById(profile, d.finish.front);
+    //
+    // ─── Turn 16 (CLAUDE.md F1.3) ───
+    // …and a front type may now be FACED as well as painted, exactly as a
+    // carcass type has been since turn 15. Front 1's facing was already read by
+    // `resolveFinishes`; reading it here too is what stops the palette showing
+    // a laminate front as a blank swatch, and it is the same order the
+    // resolution runs in: the paint covers the board, then the facing.
+    const finish = sprayFinish(t.colour)
+      || finishById(profile, t.finish_id)
+      || finishById(profile, d.finish.front);
     out.push({
       key: `front:${t.id}`,
       kind: 'front',
@@ -615,6 +710,7 @@ export function projectPalette(design, profile) {
       hex: t.colour?.hex || finish?.hex || null,
       finish: finish || null,
       source: t.source ?? null,
+      material_id: t.material_id ?? null,
     });
   }
   return out;
@@ -719,6 +815,14 @@ export function resolveFinishes(unit, design, profile) {
     // door style — a colour chosen for ONE cabinet still covers the board, and
     // a style still beats the project default — and ahead of `finish.front`,
     // which is the old project-wide field the front types have replaced.
+    //
+    // ─── Turn 16 (CLAUDE.md F1.1) ───
+    // …and it is THIS CABINET'S front type's facing where it wears one of its
+    // own. Turn 15 read type 1 and only type 1, which was true while a second
+    // front type could carry nothing but a colour; a type that can be faced and
+    // given a board of its own has to be read for the cabinets that wear it, or
+    // a run on Front 2 renders and prints as Front 1.
+    || finishById(profile, resolved.frontTypeEntry?.finish_id)
     || finishById(profile, frontFacingFinishId(d))
     || finishById(profile, d.finish.front)
     || finishById(profile, A.defaultFrontFinish)
@@ -762,37 +866,63 @@ export function colourLabel(colour) {
  * `materials` is the assignment store's plain list (id + name), passed IN so
  * this stays a pure function of data (CLAUDE.md rule 1).
  *
- * @returns {Array<{key:string, material_id:string|null, material_label:string}>}
+ * ─── TURN 16 (CLAUDE.md F1.3): ONE ROW PER FRONT TYPE ───────────────────────
+ *
+ * It used to return ONE row for "the fronts", collapsed out of
+ * `resolveFinishes(null, …)` — so a project running two front types offered a
+ * joiner one of them and silently meant the other. A front type is a MATERIAL
+ * in this app (it carries a board and a facing of its own, F1.1), and two of
+ * them are two rows.
+ *
+ * The row is the PALETTE's row (`projectPalette` above), so the element picker
+ * and the unit picker offer the same list with the same identity — `key`,
+ * unique across both kinds. THE PICKER MATCHES ON `key` AND NEVER ON THE
+ * LABEL: two front types faced in the same board are two distinct choices with
+ * one name, and a picker keyed on the name would tick both and store neither.
+ *
+ * `label` is what the row SAYS ("Front 2 · RAL 3005 Wine Red spray") and
+ * `material_label` is what the BOM PRINTS ("RAL 3005 Wine Red spray") — the
+ * board's own name, unqualified, because a cut list orders a board and not a
+ * slot.
+ *
+ * @returns {Array<{key:string, kind:string, id:string, label:string,
+ *                  material_id:string|null, material_label:string,
+ *                  hex:string|null}>}
  */
 export function elementMaterialChoices(design, profile, materials = []) {
   const d = migrateDesign(design);
   const byId = new Map((materials || []).map((m) => [m.id, m]));
-  const out = d.carcass.types.map((t) => ({
-    key: t.id,
-    material_id: t.material_id || null,
-    // What the workshop calls this board: its decor if one is set, otherwise
-    // the material it has been assigned, otherwise the slot's own name.
-    material_label: finishById(profile, t.finish_id)?.label
-      || byId.get(t.material_id)?.name
-      || t.label,
-    // Turn 14 (CLAUDE.md F4.1): the half a joiner recognises. Additive — the
-    // id and the label, which are what the BOM and the engine read, are the
-    // ones this function has always returned.
-    hex: finishById(profile, t.finish_id)?.hex
-      || (t.source === 'sprayed' ? sprayFinish(d.colour.carcass)?.hex : null)
-      || null,
-  }));
-  const { front } = resolveFinishes(null, d, profile);
-  out.push({
-    hex: front?.hex || null,
-    key: 'front',
-    // There is no ONE front material id at project level — a front material is
-    // a property of a door style — so the LABEL is what travels. It is the
-    // label the BOM, the PDF and the unit card already print for a front.
-    material_id: null,
-    material_label: front?.label || 'Fronts',
+  return projectPalette(d, profile).map((entry) => {
+    // What the workshop calls this board: its finish if one is set (a decor, a
+    // veneer, a tin of paint), otherwise the stock it has been assigned,
+    // otherwise the slot's own name.
+    const material_label = entry.finish?.label
+      || byId.get(entry.material_id)?.name
+      || entry.label;
+    return {
+      key: entry.key,
+      kind: entry.kind,
+      id: entry.id,
+      // Qualified, because the list has to tell two types apart on the screen.
+      label: material_label === entry.label ? entry.label : `${entry.label} · ${material_label}`,
+      material_id: entry.material_id || null,
+      material_label,
+      // Turn 14 (CLAUDE.md F4.1): the half a joiner recognises.
+      hex: entry.hex || null,
+    };
   });
-  return out;
+}
+
+/**
+ * One palette row by its KEY, or null (turn 16, CLAUDE.md F1.3).
+ *
+ * The other half of "the picker matches by key": what is STORED on an element
+ * override is the key, and this is how everything downstream — the BOM, the
+ * sheet, the 3D view — turns it back into a material.
+ */
+export function paletteEntryByKey(design, profile, key) {
+  if (!key) return null;
+  return projectPalette(design, profile).find((e) => e.key === key) || null;
 }
 
 // ─── Sprayed fronts (turn 9, CLAUDE.md F6) ──────────────────────────────────

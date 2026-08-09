@@ -1,0 +1,204 @@
+{
+ "rects": {
+  "wall": {
+   "x": 643,
+   "y": 207,
+   "w": 88,
+   "h": 104
+  },
+  "base": {
+   "x": 647,
+   "y": 512,
+   "w": 86,
+   "h": 103
+  },
+  "canvas": {
+   "x": 0,
+   "y": 48,
+   "width": 1600,
+   "height": 952
+  }
+ },
+ "rows": [
+  {
+   "colour": "broken white (default)",
+   "rig": "shipped 4-point",
+   "lamps": 4,
+   "wallDoor": {
+    "mean": 244.1,
+    "top2": 244.1,
+    "p95": 244.1,
+    "contrast": 0.3
+   },
+   "baseDoor": {
+    "mean": 241.4,
+    "top2": 242.1,
+    "p95": 242.1,
+    "contrast": 1
+   },
+   "wallMinusBase": 2.7
+  },
+  {
+   "colour": "broken white (default)",
+   "rig": "eye pair raised to 1860",
+   "lamps": 4,
+   "wallDoor": {
+    "mean": 244.1,
+    "top2": 244.1,
+    "p95": 244.1,
+    "contrast": 0.3
+   },
+   "baseDoor": {
+    "mean": 241.2,
+    "top2": 242.1,
+    "p95": 242.1,
+    "contrast": 1.2
+   },
+   "wallMinusBase": 2.9
+  },
+  {
+   "colour": "broken white (default)",
+   "rig": "a wall pair at 1860, 6",
+   "lamps": 6,
+   "wallDoor": {
+    "mean": 245.1,
+    "top2": 245.1,
+    "p95": 245.1,
+    "contrast": 0
+   },
+   "baseDoor": {
+    "mean": 242.8,
+    "top2": 243.1,
+    "p95": 243.1,
+    "contrast": 1
+   },
+   "wallMinusBase": 2.3
+  },
+  {
+   "colour": "broken white (default)",
+   "rig": "a wall pair at 1860, 9",
+   "lamps": 6,
+   "wallDoor": {
+    "mean": 245.8,
+    "top2": 246.1,
+    "p95": 246.1,
+    "contrast": 1
+   },
+   "baseDoor": {
+    "mean": 243.5,
+    "top2": 244.1,
+    "p95": 244.1,
+    "contrast": 1.1
+   },
+   "wallMinusBase": 2.3
+  },
+  {
+   "colour": "broken white (default)",
+   "rig": "a wall pair at 1860, 12",
+   "lamps": 6,
+   "wallDoor": {
+    "mean": 246.1,
+    "top2": 246.1,
+    "p95": 246.1,
+    "contrast": 0
+   },
+   "baseDoor": {
+    "mean": 244,
+    "top2": 244.2,
+    "p95": 244.1,
+    "contrast": 1
+   },
+   "wallMinusBase": 2.1
+  },
+  {
+   "colour": "RAL 3005 wine red",
+   "rig": "shipped 4-point",
+   "lamps": 4,
+   "wallDoor": {
+    "mean": 115.2,
+    "top2": 120.4,
+    "p95": 119.3,
+    "contrast": 7.6
+   },
+   "baseDoor": {
+    "mean": 92.4,
+    "top2": 98,
+    "p95": 96.4,
+    "contrast": 8.2
+   },
+   "wallMinusBase": 22.8
+  },
+  {
+   "colour": "RAL 3005 wine red",
+   "rig": "eye pair raised to 1860",
+   "lamps": 4,
+   "wallDoor": {
+    "mean": 114.7,
+    "top2": 120.9,
+    "p95": 119.3,
+    "contrast": 8.4
+   },
+   "baseDoor": {
+    "mean": 91.1,
+    "top2": 96.5,
+    "p95": 95.4,
+    "contrast": 8.1
+   },
+   "wallMinusBase": 23.6
+  },
+  {
+   "colour": "RAL 3005 wine red",
+   "rig": "a wall pair at 1860, 6",
+   "lamps": 6,
+   "wallDoor": {
+    "mean": 125.3,
+    "top2": 132.1,
+    "p95": 130.8,
+    "contrast": 9.2
+   },
+   "baseDoor": {
+    "mean": 98.1,
+    "top2": 104.2,
+    "p95": 102.8,
+    "contrast": 9.2
+   },
+   "wallMinusBase": 27.2
+  },
+  {
+   "colour": "RAL 3005 wine red",
+   "rig": "a wall pair at 1860, 9",
+   "lamps": 6,
+   "wallDoor": {
+    "mean": 130,
+    "top2": 137.3,
+    "p95": 135.9,
+    "contrast": 10.4
+   },
+   "baseDoor": {
+    "mean": 100.9,
+    "top2": 107.1,
+    "p95": 105.7,
+    "contrast": 9.7
+   },
+   "wallMinusBase": 29.1
+  },
+  {
+   "colour": "RAL 3005 wine red",
+   "rig": "a wall pair at 1860, 12",
+   "lamps": 6,
+   "wallDoor": {
+    "mean": 134.3,
+    "top2": 142.2,
+    "p95": 140.5,
+    "contrast": 10.5
+   },
+   "baseDoor": {
+    "mean": 103.6,
+    "top2": 110,
+    "p95": 108.6,
+    "contrast": 9.7
+   },
+   "wallMinusBase": 30.7
+  }
+ ]
+}

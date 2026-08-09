@@ -286,3 +286,55 @@ export function renderJob({
     filename: renderFilename({ project, subject, date }),
   };
 }
+
+// ─── The editor's rig, as numbers (turn 16, CLAUDE.md F7) ───────────────────
+
+/**
+ * The lamps the element editor and the part-detail window are lit by, resolved
+ * against the window's own orbit radius.
+ *
+ * It is HERE and not in the component for the reason every number in this app
+ * is: rule 3. Both windows carried three lights as literals in their JSX, which
+ * is why the owner's "serio nic nie widać" could not be answered by turning a
+ * knob — there was no knob. Now there is one rig, in `appearance.editorRig`,
+ * and this is the arithmetic that turns its fractions into positions.
+ *
+ * Pure: give it a profile and a radius and it answers, which is what lets the
+ * browser walk MEASURE the change rather than eyeball it.
+ *
+ * @param {object} profile
+ * @param {number} radius   the window's orbit radius, in scene units (metres)
+ * @returns {{ambient:number, hemisphere:object,
+ *            lamps:Array<{id:string, position:[number,number,number], intensity:number}>}}
+ */
+export function editorRigLamps(profile = getCabinetProfile(), radius = 1) {
+  const rig = profile?.appearance?.editorRig || {};
+  const r = Number(radius) > 0 ? Number(radius) : 1;
+  const lamps = Array.isArray(rig.lamps) ? rig.lamps : [];
+  return {
+    ambient: Number(rig.ambient) || 0,
+    hemisphere: {
+      sky: rig.hemisphere?.sky || '#ffffff',
+      ground: rig.hemisphere?.ground || '#c8c2b4',
+      intensity: Number(rig.hemisphere?.intensity) || 0,
+    },
+    lamps: lamps.map((l, i) => ({
+      id: l.id || `lamp${i + 1}`,
+      position: [r * Number(l.x || 0), r * Number(l.y || 0), r * Number(l.z || 0)],
+      intensity: Number(l.intensity) || 0,
+    })),
+  };
+}
+
+/**
+ * How much light the editor rig puts out in total, as one number.
+ *
+ * The measure CLAUDE.md F7 asks to be held to ("raise its rig ~25 %"): it is
+ * the sum of every lamp plus the ambient and the hemisphere, so a turn that
+ * moves one lamp and lowers another has to say what it did to the whole.
+ */
+export function editorRigOutput(profile = getCabinetProfile()) {
+  const rig = editorRigLamps(profile, 1);
+  return rig.ambient + rig.hemisphere.intensity
+    + rig.lamps.reduce((sum, l) => sum + l.intensity, 0);
+}

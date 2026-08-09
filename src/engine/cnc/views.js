@@ -31,6 +31,8 @@
 //
 // Pure data + pure functions — no React, no store imports.
 
+import { resolvePanelMaterial } from '../materials.js';
+
 /**
  * The parts that belong to a RUN rather than to a carcass.
  *
@@ -64,38 +66,60 @@ export function cncViewById(id) {
 /**
  * Which MATERIAL a cut part is made of, as the BOM names it.
  *
- * The identity is the assignment's material id, so this answers the question a
- * machine operator is actually asking — "which board does this come off" — and
- * gives the same answer for two parts that differ only in what they are
- * sprayed. A role with nothing assigned yet is honest about it and groups by
- * the THICKNESS the engine cut the part at, which is the one fact that is
- * certainly true of it.
+ * ─── TURN 16 (CLAUDE.md F2.1): BY ASSIGNED MATERIAL, AND NOTHING ELSE ───────
  *
- * @param {object} panel        an engine panel record
- * @param {object} assignments  the flat role → { material_id } view
- * @param {Array}  materials    the workshop's material list
- * @returns {{key:string, label:string, thickness:number, assigned:boolean}}
+ * "Sheets group by ASSIGNED MATERIAL only: same material → same section,
+ * different → separate. Three materials in the project = three groups.
+ * Identity by material_id (with its label as the header, as the BOM names it)
+ * — never by colour, never by finish kind."
+ *
+ * Turn 15 asked the ASSIGNMENT STORE by BOM role, which was the best answer
+ * available at the time and is the wrong one now: that table is the purchasing
+ * layer, one row per role for the whole project, and it cannot tell a cabinet
+ * on Front 1 from a cabinet on Front 2 or know that this run's plinths come off
+ * their own board. The project's own assignment can — it is
+ * `engine/materials.js resolvePanelMaterial`, the same call the BOM, the
+ * picture and the check-out make (F1.5).
+ *
+ * A slot with no board behind it yet is honest about it and groups by what it
+ * is CALLED plus the thickness the engine cut it at, which are the facts that
+ * are certainly true of it.
+ *
+ * @param {object} panel      an engine panel record
+ * @param {object} context    { unit, design, profile, materials }
+ * @returns {{key:string, label:string, thickness:number, assigned:boolean,
+ *            material_id:string|null}}
  */
-export function materialSection(panel, { assignments = {}, materials = [] } = {}) {
+export function materialSection(panel, {
+  unit = null, design = null, profile = null, materials = [],
+} = {}) {
   const thickness = Number(panel?.thickness) || 0;
-  const id = assignments?.[panel?.role]?.material_id || null;
-  const material = id ? (materials || []).find((m) => m.id === id) || null : null;
-  if (!material) {
+  const resolved = resolvePanelMaterial(panel, unit, design, profile, materials);
+  const material = resolved.material_id
+    ? (materials || []).find((m) => m.id === resolved.material_id) || null
+    : null;
+
+  if (!resolved.assigned) {
     return {
-      key: `unassigned:${thickness}`,
-      label: thickness ? `Unassigned · ${thickness} mm` : 'Unassigned',
+      key: `unassigned:${resolved.label || ''}:${thickness}`,
+      label: `${resolved.label || 'Unassigned'}${thickness ? ` · ${thickness} mm` : ''}`,
       thickness,
       assigned: false,
+      material_id: null,
     };
   }
   return {
-    // Two roles assigned the SAME board are one section — that is the point of
-    // grouping by material — but a board cut at two thicknesses is two sections,
-    // because it is two different boards on the bed.
-    key: `${material.id}:${thickness}`,
-    label: `${material.code && material.code !== '—' ? `${material.code} · ` : ''}${material.name}`,
+    // ONE BOARD, ONE SECTION. The thickness is deliberately NOT in the key any
+    // more: a stock item has one thickness, so splitting on it could only ever
+    // split a board away from itself — which is exactly what "three materials
+    // in the project = three groups" forbids.
+    key: `mat:${resolved.material_id}`,
+    label: material
+      ? `${material.code && material.code !== '—' ? `${material.code} · ` : ''}${material.name}`
+      : (resolved.label || 'Assigned board'),
     thickness,
     assigned: true,
+    material_id: resolved.material_id,
   };
 }
 
@@ -110,13 +134,19 @@ export function materialSection(panel, { assignments = {}, materials = [] } = {}
  *
  * @param {Array} entries  [{ unit, result, panels }] — `panels` already filtered
  *                         by the checkbox tree
+ * @param {object} context { design, profile, materials } — the PROJECT's own
+ *                         assignment, which is what a section is (turn 16, F2)
  * @returns {Array<{key, label, thickness, assigned, units:[{unit, result, panels}]}>}
  */
-export function groupByMaterial(entries, { assignments = {}, materials = [] } = {}) {
+export function groupByMaterial(entries, {
+  design = null, profile = null, materials = [],
+} = {}) {
   const sections = new Map();
   for (const entry of entries) {
     for (const panel of entry.panels) {
-      const section = materialSection(panel, { assignments, materials });
+      const section = materialSection(panel, {
+        unit: entry.unit, design, profile, materials,
+      });
       let bucket = sections.get(section.key);
       if (!bucket) {
         bucket = { ...section, units: [] };

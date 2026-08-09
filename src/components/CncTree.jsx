@@ -3,7 +3,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import {
-  EXPORT_PRESETS, PART_GROUPS, exportablePanels, groupOfPanel, panelIdsForPreset,
+  VIEW_PRESETS, PART_GROUPS, exportablePanels, groupOfPanel, panelIdsForPreset,
 } from '../engine/cnc/groups.js';
 import { exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
 import { formatMm } from '../engine/format.js';
@@ -124,12 +124,18 @@ export default function CncTree() {
 
             {isOpen && (
               <div className="px-1.5 pb-1.5">
-                {/* The four presets, per unit — the same selections Piotr asked
-                    for by name, now driving what is SHOWN as well as what is
-                    downloaded. They are the same `panelIdsForPreset` the export
-                    has used since turn 3. */}
+                {/* ─── Turn 16 (CLAUDE.md F2.1) ───
+                    The SPRAYED / NON-SPRAYED pair is gone from the view: which
+                    board a part comes off is the sheet's own grouping now, and
+                    a button that sorted parts by whether they meet a spray gun
+                    was answering a question the sheet answers better. What is
+                    left is the two selections that are about the PARTS — the
+                    whole unit, and the fronts — and they are the same
+                    `panelIdsForPreset` the export has used since turn 3.
+                    Nothing about the EXPORT changed: the presets are all still
+                    in engine/cnc/groups.js and still name the files. */}
                 <div className="grid grid-cols-2 gap-1 pb-1.5">
-                  {EXPORT_PRESETS.map((preset) => (
+                  {VIEW_PRESETS.map((preset) => (
                     <button
                       key={preset.id}
                       type="button"

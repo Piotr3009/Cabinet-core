@@ -266,44 +266,58 @@ test('F9 — a view is a VIEW: it buckets parts and touches nothing else', () =>
 });
 
 test('F9.1 — the sections are one per MATERIAL, never per colour', () => {
+  // ─── Turn 16 (CLAUDE.md F2.1) ─────────────────────────────────────────────
+  // The RULE is turn 15's, word for word: one section per assigned material,
+  // identity by material and never by colour. What changed is WHOSE assignment
+  // is read. Turn 15 asked the purchasing table by BOM role — one board per
+  // role for the whole project — which cannot tell a cabinet on Front 1 from a
+  // cabinet on Front 2 and knows nothing about a plinth cut from its own board.
+  // Turn 16 asks the PROJECT's own assignment, which is the same source the
+  // BOM, the picture and the check-out read (F1.5).
   const materials = [
     { id: 'm_mdf', code: 'MDF-18', name: 'MDF 18 mm', thickness: 18 },
     { id: 'm_egger', code: 'W980 SM', name: 'MFC White 18 mm', thickness: 18 },
   ];
-  const assignments = {
-    front: { material_id: 'm_mdf' },
-    side: { material_id: 'm_egger' },
-    top: { material_id: 'm_egger' },
-  };
-  const named = (role, thickness) => materialSection({ role, thickness }, { assignments, materials });
+  const design = migrateDesign({
+    carcass: { types: [{ id: 'c1', label: 'Carcass 1', material_id: 'm_egger' }] },
+    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray', material_id: 'm_mdf' }] },
+  });
+  const named = (panel) => materialSection(panel, { unit: null, design, profile: P, materials });
 
   // Two doors off the same MDF are ONE section whatever they are sprayed: it is
   // one board on the bed of the machine.
-  assert.equal(named('front', 18).key, named('front', 18).key);
-  assert.equal(named('front', 18).label, 'MDF-18 · MDF 18 mm');
-  // Two ROLES assigned the same board are one section too.
-  assert.equal(named('side', 18).key, named('top', 18).key);
-  // …but the same board cut at two thicknesses is two, because it is two boards.
-  assert.notEqual(named('side', 18).key, named('side', 22).key);
+  assert.equal(named({ role: 'front', thickness: 18 }).key, named({ role: 'front', thickness: 22 }).key);
+  assert.equal(named({ role: 'front', thickness: 18 }).label, 'MDF-18 · MDF 18 mm');
+  // Two ROLES on the same board are one section too — a side and a top are both
+  // the carcass board.
+  assert.equal(named({ role: 'side', thickness: 18 }).key, named({ role: 'top', thickness: 18 }).key);
+  // …and the two boards are two sections.
+  assert.notEqual(named({ role: 'front', thickness: 18 }).key, named({ role: 'side', thickness: 18 }).key);
+
   // Nothing assigned yet is honest about it rather than inventing a name.
-  const open = named('back', 18);
+  const bare = migrateDesign({});
+  const open = materialSection({ role: 'back', thickness: 18 }, {
+    unit: null, design: bare, profile: P, materials,
+  });
   assert.equal(open.assigned, false);
-  assert.match(open.label, /Unassigned/);
+  assert.match(open.label, /18 mm/);
 
   const entries = [{
-    unit: { id: 'u1' },
+    unit: { id: 'u1', params: {} },
     result: {},
     panels: [
-      { id: 'D1', role: 'front', thickness: 18 },
-      { id: 'BUL', role: 'side', thickness: 18 },
-      { id: 'BACK', role: 'back', thickness: 18 },
+      { id: 'D1', role: 'front', material_role: 'front', thickness: 18 },
+      { id: 'BUL', role: 'side', material_role: 'board', thickness: 18 },
+      { id: 'PLINTH', role: 'plinth', material_role: 'front', thickness: 18 },
     ],
   }];
-  const sections = groupByMaterial(entries, { assignments, materials });
-  assert.equal(sections.length, 3);
-  // Assigned boards first; the honest "unassigned" ones last.
-  assert.equal(sections[sections.length - 1].assigned, false);
-  assert.deepEqual(sections.flatMap((s) => s.units[0].panels.map((p) => p.id)).sort(), ['BACK', 'BUL', 'D1']);
+  const sections = groupByMaterial(entries, { design, profile: P, materials });
+  // Two boards → TWO sections, and the plinth is in the fronts' one because
+  // "Same as fronts" is an ASSIGNMENT and not a display state (F2.2).
+  assert.equal(sections.length, 2);
+  const fronts = sections.find((s) => s.material_id === 'm_mdf');
+  assert.deepEqual(fronts.units[0].panels.map((p) => p.id).sort(), ['D1', 'PLINTH']);
+  assert.deepEqual(sections.flatMap((s) => s.units[0].panels.map((p) => p.id)).sort(), ['BUL', 'D1', 'PLINTH']);
 });
 
 test('F9.2 — a square per cabinet, and the run parts in a group of their own', () => {

@@ -19,6 +19,7 @@ import { hardwareInstances } from '../engine/hardware3d.js';
 import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
+import { panelFinish } from '../engine/materials.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { machinedPanelGeometry } from './panelSolid.js';
@@ -269,7 +270,20 @@ export function MovingPanel({
           of a hinge (turn 12, CLAUDE.md F6.1). Inside the group, so the swing
           is free: no second animation to keep in step with this one. */}
       {children}
-      <mesh position={meshOffset} castShadow={!contour} receiveShadow={!contour} {...handlers}>
+      {/* ─── Turn 16 (CLAUDE.md F8): THE PIECE SAYS WHICH PIECE IT IS ───
+          The wall-units-do-not-shine diagnosis has to READ the scene — "read
+          the actual door materials of a wall vs base unit from the scene" —
+          and a scene graph of anonymous meshes cannot be read. The panel id is
+          the engine's own, the same id the BOM prints and the sheet lays out,
+          so the harness names what it measured in the project's vocabulary.
+          It costs one object per mesh and reaches nothing. */}
+      <mesh
+        position={meshOffset}
+        castShadow={!contour}
+        receiveShadow={!contour}
+        userData={{ ccPanelId: p.id, ccRole: p.role, ccMaterialRole: p.material_role }}
+        {...handlers}
+      >
         {/* A mitred strip carries its own geometry (turn 8, CLAUDE.md F6), and
             since turn 11 so does a panel with the joint machined into it (F6).
             Everything else is the box the engine emitted. */}
@@ -355,7 +369,7 @@ export default function UnitView({
   unit, result, wall, walls = null, roomCentre, selected, snapStep, onSelect, onMove, onMoveToWall,
   onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
-  frontColour = null, onSetTopInfill, onFillToCeiling, groupRef = null,
+  frontColour = null, design = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
   profile, finishes, outlines = true, contour = false, xray = false, sheen = null,
   showHinges = false,
@@ -858,10 +872,20 @@ export default function UnitView({
         const isShelfLike = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
-        // What the piece is made of: the project's finishes, resolved once per
-        // unit (3d/materials.js). A front COLOUR from Design Settings is paint
-        // and covers the decor, exactly as it does in the workshop. The shelf
-        // being dragged goes gold, so the hand knows what it has hold of.
+        // ─── Turn 16 (CLAUDE.md F1.4): THIS PIECE'S OWN MATERIAL ────────────
+        //
+        // "An element override reaches the PICTURE." It did not: a per-element
+        // material choice reached the BOM and the sheet and the view went on
+        // painting the project's one front and one carcass finish, so a shelf
+        // switched to Front 2's board stayed white on screen and came out of
+        // the machine in oak (BACKLOG #75).
+        //
+        // The resolution is the ENGINE's — `panelFinish` in
+        // engine/materials.js, a pure function of (panel, unit, design,
+        // profile), tested there — and this only consumes it. With no design to
+        // hand (a preview, a test) it falls back to the pair the view has
+        // always taken, so nothing about the default picture moves.
+        const own = design ? panelFinish(p, unit, design, profile) : null;
         const surface = contour
           ? contourSurface(profile)
           : surfaceFor({
@@ -873,8 +897,12 @@ export default function UnitView({
             finishExposed: p.finish_exposed,
             finishes,
             profile,
-            frontColour,
+            // A front COLOUR is paint: it covers the decor, exactly as it does
+            // in the workshop. The piece's OWN colour where it has been given
+            // one, the unit's otherwise.
+            frontColour: own?.overridden ? (own.colour?.hex || null) : frontColour,
             sheen,
+            ...(own ? { finish: own.finish } : {}),
           });
         return (
           <MovingPanel

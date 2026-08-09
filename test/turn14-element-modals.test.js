@@ -72,7 +72,7 @@ test('F4.1 — each modal carries the fields that apply to THAT piece', () => {
   assert.deepEqual(elementFields(door, getUnitType('WUD')),
     ['hinge-side', 'door-extend', 'front-board', 'material']);
   assert.deepEqual(elementFields(ep),
-    ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'material']);
+    ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'below-unit-ep', 'material']);
   assert.deepEqual(elementFields(infill),
     ['infill-width', 'above-unit-infill', 'pin-infill', 'material']);
   assert.equal(elementLabel(ep), 'End panel — left');
@@ -139,5 +139,7 @@ test('F4.1 — the element material list is the UNIT PALETTE, and now carries it
     assert.ok(Object.hasOwn(c, 'hex'), `${c.key} has a swatch (null is an answer)`);
     assert.ok(c.material_label, 'and a name a workshop would say out loud');
   }
-  assert.ok(choices.some((c) => c.key === 'front'), 'the fronts are on the list');
+  // Turn 16 (CLAUDE.md F1.3): one row PER FRONT TYPE, each with its own key.
+  assert.ok(choices.some((c) => c.kind === 'front' && /^front:/.test(c.key)),
+    'the fronts are on the list, keyed by their type');
 });

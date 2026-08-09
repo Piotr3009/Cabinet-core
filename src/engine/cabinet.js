@@ -477,8 +477,18 @@ export function shelfThickness(item, boardT) {
 export function shelfMaterial(item) {
   const label = item?.material_label;
   const id = item?.material_id;
-  if (!label && !id) return null;
-  return { material_id: id || null, material_label: label ? String(label) : null };
+  // Turn 16 (CLAUDE.md F1.3): the palette KEY travels with the pair. It is what
+  // tells Front 1 from Front 2 when both are faced in the same board — the id
+  // and the label cannot, because both types would answer with the same two
+  // strings. A shelf saved before this turn carries no key and resolves on the
+  // pair exactly as it did (engine/materials.js `elementMaterialOverride`).
+  const key = item?.material_key;
+  if (!label && !id && !key) return null;
+  return {
+    material_id: id || null,
+    material_label: label ? String(label) : null,
+    material_key: key ? String(key) : null,
+  };
 }
 
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
@@ -1624,6 +1634,10 @@ export function computeCabinet(params, profileOverride) {
     const t = Number(ep?.thickness) > 0 ? Number(ep.thickness) : (EP.thickness ?? frontT);
     const drop = endPanelDrop({
       height: ep?.height,
+      // Turn 16 (CLAUDE.md F4.3): this panel's OWN height below the carcass,
+      // which is a different decision from the door's extend beside it and is
+      // never read from it.
+      below: ep?.below_mm,
       type,
       mountHeight: cfg.mountHeight,
       legHeight: legHeightForPlinth,
@@ -1658,6 +1672,9 @@ export function computeCabinet(params, profileOverride) {
         // its stored value claims, because that is what was cut (F4).
         height: drop > 0 ? (ep?.height || endPanelHeightDefault(type, P)) : 'carcass',
         top_mm: top,
+        // Turn 16 (F4.3): the panel's own drop, as CUT — so the properties
+        // block shows what the piece is rather than what was asked for.
+        below_mm: drop,
         panelId: ep?.id || null,
       },
     }));
@@ -2171,11 +2188,17 @@ export function computeCabinet(params, profileOverride) {
   if (elementOverrides && typeof elementOverrides === 'object') {
     for (const p of panels) {
       const o = elementOverrides[p.id];
-      if (!o || (!o.material_label && !o.material_id)) continue;
+      if (!o || (!o.material_label && !o.material_id && !o.material_key)) continue;
       p.meta = {
         ...(p.meta || {}),
         material_id: o.material_id ?? null,
         material_label: o.material_label ? String(o.material_label) : null,
+        // Turn 16 (CLAUDE.md F1.3): which PALETTE ROW was chosen. The id and
+        // the label say what the board is called; the key says which of the
+        // project's slots it came from, which is the only thing that can tell
+        // two identically-named front types apart — and it is what the 3D view
+        // resolves a surface from (F1.4).
+        material_key: o.material_key ? String(o.material_key) : null,
       };
     }
     // ─── Turn 14 (CLAUDE.md F8.2): an AUTO PART moved, or taken off ─────────

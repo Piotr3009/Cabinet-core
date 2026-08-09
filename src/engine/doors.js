@@ -85,3 +85,48 @@ export function mountHeightAlignedWith({ tallTop, unitHeight, roomHeight = 0 }) 
   if (ceiling > 0 && mount + h > ceiling) return null;
   return mount;
 }
+
+// ─── The handleless grab edge, as a number (turn 16, CLAUDE.md F4) ──────────
+
+/**
+ * How far this cabinet's doors run BELOW the carcass, in millimetres.
+ *
+ * The engine has taken either answer since turn 3 — `true` means "the
+ * workshop's number" and a millimetre value means itself (engine/cabinet.js) —
+ * and turn 16 gives the control the same two answers (F4.1: "add the NUMBER —
+ * default 38 (profile), editable"). This is the ONE reading of that field, so
+ * the panel, the multi-selection editor and a test cannot disagree about what a
+ * stored `true` means.
+ *
+ * @param {object} params   a unit's params
+ * @param {object} profile
+ * @returns {number} mm, 0 when the doors stop at the carcass
+ */
+export function doorExtendMm(params, profile) {
+  const stored = params?.door_extend;
+  if (stored === true) return Number(profile?.wallUnit?.doorExtend) || 0;
+  const own = Number(stored);
+  return Number.isFinite(own) && own > 0 ? own : 0;
+}
+
+/**
+ * A wall unit's DOOR HEIGHT: the carcass, less the door gap, plus the extend.
+ *
+ * ─── CLAUDE.md F4.3, and owner decision B ───────────────────────────────────
+ * "A wall unit's DOOR height and its masking-PANEL height are separate editable
+ * values… neither writes the other."
+ *
+ * This is the DOOR's half, written as its own function for two reasons: it is
+ * the number the panel shows beside the extend field, so a joiner can see what
+ * he is actually cutting; and having both halves as pure functions is what lets
+ * a test prove they are independent — move one and the other does not follow.
+ *
+ * Same arithmetic engine/cabinet.js cuts the front with (`H − doors.gap +
+ * doorExtend`), read from the same two places, so this cannot drift from the
+ * piece.
+ */
+export function doorHeightOf(params, profile) {
+  const h = Number(params?.height) || 0;
+  const gap = Number(profile?.doors?.gap) || 0;
+  return Math.max(0, h - gap + doorExtendMm(params, profile));
+}

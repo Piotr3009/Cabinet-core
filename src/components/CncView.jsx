@@ -7,6 +7,7 @@ import { layoutPanels, sheetPolygon, sheetRect, toSheet } from '../engine/cnc/la
 import { CNC_LAYERS, layerScreenColor } from '../engine/cnc/layers.js';
 import { exportablePanels } from '../engine/cnc/groups.js';
 import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.js';
+import { labelFit, partLabelAnchor, symbolVisible } from '../engine/cnc/annotation.js';
 import { formatMmPair } from '../engine/format.js';
 
 // ─── CNC view ───
@@ -32,8 +33,6 @@ import { formatMmPair } from '../engine/format.js';
 // non-scaling so a 3 mm screw hole is still visible when the whole sheet fits.
 
 const PADDING_MM = 120;
-const LABEL_PX = 12;
-const MIN_HOLE_PX = 1.7;   // a sub-pixel hole would simply vanish
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_MM = 40;    // hard zoom-in limit: 40 mm across the viewport
 const MAX_VIEW_MM = 60000; // hard zoom-out limit
@@ -56,8 +55,12 @@ export default function CncView() {
   const hiddenParts = useUiStore((s) => s.cncHiddenParts);
   const view = useUiStore((s) => s.cncView);
   const setCncView = useUiStore((s) => s.setCncView);
-  const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
+  // The PROJECT's own assignment is what a material section is (turn 16, F2) —
+  // the carcass types, the front types and the four run-piece switches. The
+  // purchasing table (the assignment store's role → board map) is a different
+  // question and is no longer asked here.
+  const storedDesign = useProjectStore((s) => s.project.design);
 
   const wrapRef = useRef(null);
   const svgRef = useRef(null);
@@ -117,14 +120,14 @@ export default function CncView() {
           : []),
       ];
     }
-    return groupByMaterial(entries, { assignments, materials }).map((s2) => ({
+    return groupByMaterial(entries, { design: storedDesign, profile, materials }).map((s2) => ({
       key: s2.key,
       label: s2.label,
       kind: 'material',
       assigned: s2.assigned,
       units: s2.units,
     }));
-  }, [entries, view, assignments, materials]);
+  }, [entries, view, storedDesign, profile, materials]);
 
   // ─── …and where each of them stands ─────────────────────────────────────
   // Sections run LEFT→RIGHT, which is what CLAUDE.md asks of the material view
@@ -303,9 +306,13 @@ export default function CncView() {
     return <Empty text="Add a unit from the Library, then switch to CNC." />;
   }
 
-  const labelSize = LABEL_PX * mmPerPx;
-  const minHoleR = MIN_HOLE_PX * mmPerPx;
   const partCount = blocks.reduce((n, s2) => n + s2.layout.places.length, 0);
+  // ─── Turn 16 (CLAUDE.md F3): the lettering is part of the DRAWING ────────
+  // Sheet millimetres from the profile, NOT pixels converted at the current
+  // zoom — which is what made every caption grow as the drawing shrank. The
+  // only screen-space numbers left are the two thresholds under which a thing
+  // is hidden rather than drawn on top of its neighbour.
+  const A = profile.cnc.annotation;
 
   return (
     <div ref={wrapRef} className="absolute inset-0 bg-[#131313] overflow-hidden select-none">
@@ -339,38 +346,42 @@ export default function CncView() {
                 strokeWidth={1}
                 vectorEffect="non-scaling-stroke"
               />
-              <text
+              {/* The SECTION header: which board this is, as the BOM names it
+                  (F2.1). It may run the width of its own section and no
+                  further — a header that overprints the section beside it is
+                  the same complaint as a part code that does. */}
+              <Caption
                 x={0}
                 y={-profile.cnc.layoutGap * 3.2}
-                fontSize={labelSize * 1.8}
+                text={s2.label}
+                tail={`  ${s2.blocks.reduce((n, b) => n + b.layout.places.length, 0)} parts`}
+                sizeMm={A.sectionLabelMm}
+                boxW={s2.width + profile.cnc.layoutGap * 2}
+                mmPerPx={mmPerPx}
+                minPx={A.minLabelPx}
                 fill="#e0b64a"
-                style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
-              >
-                {s2.label}
-                <tspan fill="#6f6f68">
-                  {`  ${s2.blocks.reduce((n, b) => n + b.layout.places.length, 0)} parts`}
-                </tspan>
-              </text>
+              />
               {s2.blocks.map((b) => (
                 <g key={b.unit.id} transform={`translate(0 ${b.offsetY})`}>
-                  <text
+                  <Caption
                     x={0}
                     y={-profile.cnc.layoutGap}
-                    fontSize={labelSize * 1.3}
+                    text={b.unit.params.unit_num}
+                    tail={`  ${b.layout.places.length} parts`}
+                    sizeMm={A.blockLabelMm}
+                    boxW={Math.max(b.layout.width, profile.cnc.layoutGap * 4)}
+                    mmPerPx={mmPerPx}
+                    minPx={A.minLabelPx}
                     fill={b.unit.id === selectedUnitId ? '#e0b64a' : '#9a9a92'}
-                    style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
-                  >
-                    {b.unit.params.unit_num}
-                    <tspan fill="#6f6f68">{`  ${b.layout.places.length} parts`}</tspan>
-                  </text>
+                  />
                   {b.layout.places.map((place) => (
                     <Part
                       key={place.panel.id}
                       place={place}
                       drills={b.result.drills}
                       outlineLayer={profile.puzzle.layers.outline}
-                      labelSize={labelSize}
-                      minHoleR={minHoleR}
+                      annotation={A}
+                      mmPerPx={mmPerPx}
                       visible={visible}
                     />
                   ))}
@@ -452,27 +463,67 @@ export default function CncView() {
   );
 }
 
+// ─── one caption, in the drawing's units (turn 16, CLAUDE.md F3) ───────────
+//
+// One component for every piece of text on the sheet, so there is one answer to
+// "how big, and does it fit" and not four. The arithmetic is
+// engine/cnc/annotation.js, which is where a node test can reach it.
+function Caption({
+  x, y, text, tail = '', sizeMm, boxW, mmPerPx, minPx, fill, anchor = 'start',
+}) {
+  const fitted = labelFit({
+    text: `${text}${tail}`, sizeMm, boxW, mmPerPx, minPx, fit: 'truncate',
+  });
+  if (!fitted.visible) return null;
+  // The tail (" 8 parts") is dropped first when the room runs out: the NAME is
+  // what a joiner is looking for.
+  const keepsTail = fitted.text.length >= `${text}${tail}`.length;
+  return (
+    <text
+      x={x}
+      y={y}
+      fontSize={fitted.size}
+      fill={fill}
+      textAnchor={anchor}
+      style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+    >
+      {keepsTail ? text : fitted.text}
+      {keepsTail && tail ? <tspan fill="#6f6f68">{tail}</tspan> : null}
+    </text>
+  );
+}
+
 // ─── one cut part ───
 
-// Rough advance width of the monospace face, as a fraction of the font size.
-// Only needs to be close: it decides when a label stops growing, not layout.
-const MONO_ADVANCE = 0.62;
-
-function Part({ place, drills, outlineLayer, labelSize, minHoleR, visible }) {
+function Part({
+  place, drills, outlineLayer, annotation, mmPerPx, visible,
+}) {
   const { panel } = place;
   const cnc = panel.cnc || {};
   const holes = drills.filter((d) => d.panel === panel.id);
   const oLayer = cnc.layer || outlineLayer;
 
-  // Labels are capped at the width of the part they belong to, so two parts
-  // standing side by side on the sheet can never overprint each other's label.
-  // A 30 mm filler therefore gets a tiny caption when the whole sheet is in
-  // view and a perfectly legible one as soon as you zoom to it — which is the
-  // only moment you actually need to read it.
+  // ─── Turn 16 (CLAUDE.md F3) ───
+  // The caption is a fixed height in SHEET millimetres, shrunk to fit the part
+  // it belongs to and drawn INSIDE its outline. Two parts side by side can
+  // therefore never overprint each other's label at any zoom, and a caption
+  // that would be too small to read is hidden rather than drawn.
   const caption = `${panel.id}  ${formatMmPair(panel.w, panel.h, '×')}`;
-  const fitted = place.w / (caption.length * MONO_ADVANCE);
-  const size = Math.min(labelSize, fitted);
-  const [labelX, labelY] = [place.x + place.w / 2, place.y + place.h + size * 1.35];
+  const label = labelFit({
+    text: caption,
+    sizeMm: annotation.partLabelMm,
+    boxW: place.w * 0.94,
+    boxH: place.h * 0.5,
+    mmPerPx,
+    minPx: annotation.minLabelPx,
+  });
+  const at = partLabelAnchor(place, label.size, annotation.partLabelInset);
+  // Drilling and machining marks are the drawing's own geometry now — a ⌀5 hole
+  // is five millimetres wide at every zoom, never the screen-space minimum turn
+  // 11 gave it. Under the threshold it is not drawn at all, which is what stops
+  // thirty-six of them merging into one grey smudge over a part they have grown
+  // bigger than.
+  const showSymbol = (sizeMm) => symbolVisible(sizeMm, mmPerPx, annotation.minSymbolPx);
 
   return (
     <g>
@@ -488,6 +539,7 @@ function Part({ place, drills, outlineLayer, labelSize, minHoleR, visible }) {
 
       {(cnc.pockets || []).filter((p) => visible(p.layer)).map((p, i) => {
         const r = sheetRect(place, p);
+        if (!showSymbol(Math.max(r.w, r.h))) return null;
         return (
           <rect
             key={`p${i}`} x={r.x} y={r.y} width={r.w} height={r.h}
@@ -515,23 +567,32 @@ function Part({ place, drills, outlineLayer, labelSize, minHoleR, visible }) {
 
       {holes.filter((h) => visible(h.layer)).map((h, i) => {
         const [cx, cy] = toSheet(place, h.x, h.y);
+        if (!showSymbol(h.d)) return null;
         return (
           <circle
-            key={`h${i}`} cx={cx} cy={cy} r={Math.max(h.d / 2, minHoleR)}
+            key={`h${i}`} cx={cx} cy={cy} r={h.d / 2}
             fill="none" stroke={layerScreenColor(h.layer)} strokeWidth={1} vectorEffect="non-scaling-stroke"
           />
         );
       })}
 
-      {/* id + the cut-list dimensions, so the sheet reads like the CSV */}
-      <text
-        x={labelX} y={labelY} textAnchor="middle"
-        fontSize={size} fill="#d6d6d2"
-        style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
-      >
-        {panel.id}
-        <tspan fill="#8f8f88">{`  ${formatMmPair(panel.w, panel.h, '×')}`}</tspan>
-      </text>
+      {/* id + the cut-list dimensions, so the sheet reads like the CSV — INSIDE
+          the part's own outline (F3), at a fixed size in sheet millimetres. */}
+      {label.visible && (
+        <text
+          x={at.x} y={at.y} textAnchor="middle"
+          fontSize={label.size} fill="#d6d6d2"
+          data-part-label={panel.id}
+          style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+        >
+          {label.text === caption ? (
+            <>
+              {panel.id}
+              <tspan fill="#8f8f88">{`  ${formatMmPair(panel.w, panel.h, '×')}`}</tspan>
+            </>
+          ) : label.text}
+        </text>
+      )}
     </g>
   );
 }

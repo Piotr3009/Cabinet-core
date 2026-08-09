@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import { buildUnitDxfFiles, sheetDxf, sheetDxfFileName } from '../engine/cnc/dxf.js';
 import { layoutPanels } from '../engine/cnc/layout.js';
 import { exportablePanels, presetOfSelection } from '../engine/cnc/groups.js';
+import { fileSafeName } from '../engine/naming.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { download } from './exporters.js';
 
@@ -27,7 +28,12 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile()) {
 
   // DEFLATE: the DXFs are ASCII group codes, so they compress ~10:1.
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-  const filename = `${result.unitNum}-dxf.zip`;
+  // Turn 16 (CLAUDE.md F6): a cabinet's name is the owner's now, so it may
+  // contain a space or a slash — neither of which belongs in a path a
+  // workshop's machine has to open. The DXF names inside the zip have been
+  // sanitised since turn 3 (engine/cnc/dxf.js); this is the wrapper catching
+  // up. An automatic name ("01", "WU05") passes through untouched.
+  const filename = `${fileSafeName(result.unitNum, 'unit')}-dxf.zip`;
   download(filename, blob);
   return { filename, files: files.map((f) => f.name) };
 }

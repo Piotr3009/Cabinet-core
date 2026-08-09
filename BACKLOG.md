@@ -563,3 +563,52 @@ tak, jak wpis przewidywał: warsztat mitruje pionowy filler, więc to rozszerzen
 85. [LOW] **`scripts/e2e-turn14.mjs` nie zna zmian tury 15.** To samo, co
     pozycje 66, 71 i 77: nie jest zepsuty, chodzi po swojej turze.
     `e2e-turn15.mjs` jest następcą.
+
+## TURA 16 — CO ZAMKNIĘTE, CO DOPISANE (09.08)
+
+**Zamknięte:** **#75** (kolor per ELEMENT nie przemalowywał 3D — F1.4 rozwiązuje
+to u korzenia: `engine/materials.js panelFinish` jest czystą funkcją
+`(panel, unit, design, profile)`, a widok pokoju, okno edytora i okno detalu
+tylko ją konsumują; nadpisanie jedzie kanałem `material_key`, czyli KLUCZEM
+palety, a nie samą nazwą).
+
+**Model materiału wylądował.** Płyta jest przypisana raz i czytana wszędzie:
+typ korpusu i typ frontu mają `material_id`, cztery części runu mają przełącznik
+„Same as fronts" (domyślnie ON), a jedna funkcja — `resolvePanelMaterial` —
+odpowiada BOM-owi, arkuszowi CNC, obrazkowi i bramce check-outu. Drugiej tablicy
+wyszukiwania nie ma.
+
+**Werdykty właściciela z testu oka tury 15.** Światło edytora (F7) podniesione i
+ZMIERZONE (+17 % średniej, +20 % na najciemniejszej dwudziestce, przy wyższym
+kontraście). Połysk wiszących (F8) zdiagnozowany pomiarem — materiały
+identyczne, objaw się nie reprodukuje, kandydaci na poprawkę idą w złą stronę —
+więc rig został nietknięty, a to, co pomiar naprawdę pokazał, jest w BLOCKERS
+jako osobny temat.
+
+86. [MEDIUM] **Połysk widać dopiero na kolorze, i to słabo.** Zmierzone w F8:
+    biały front przy domyślnym połysku (sheen 60) ma rozrzut specularny 0,3–1,0
+    na 255, bo dyfuzja siedzi już przy suficie zakresu — refleks nie ma gdzie
+    być jaśniejszy. Na froncie RAL 3005 rozrzut to 7,6–8,2, czyli widać, ale nie
+    jest to „drzwi na wysoki połysk". To jest osobny temat od F8 (który dotyczył
+    RÓŻNICY między wiszącymi a stojącymi) i osobna decyzja: ekspozycja / tone
+    mapping / węższe źródło światła / clearcoat na lakierze. Ławka jest gotowa —
+    `node scripts/t16-gloss-lab.mjs` mierzy dowolną parę szafek.
+87. [MEDIUM] **Sekcja materiału na arkuszu nie ma jeszcze pola przypisania.**
+    F2 grupuje po przypisanym materiale, a przypisanie zmienia się w kroku 5 /
+    Ustawieniach. Kliknięcie nagłówka sekcji („to jedzie na inną płytę") byłoby
+    naturalne i jest świadomie poza zakresem tury: F2 pyta, PO CZYM arkusz
+    grupuje, a nie skąd się to zmienia.
+88. [LOW] **`fileSafeName` czyści nazwę tylko dla ZIP-a.** Nazwy plików DXF są
+    czyszczone od tury 3 własną regułą w `engine/cnc/dxf.js` (`[^A-Za-z0-9._-]`
+    → `_`), a ZIP od tury 16 przez `engine/naming.js` (→ `-`). Dwie konwencje
+    dla tej samej nazwy w tej samej paczce; zjednoczenie ich ZMIENI nazwy
+    plików, więc jest osobną, nazwaną deltą na osobną turę — reguła 0.
+89. [LOW] **Podpisy części znikają przy pełnym oddaleniu.** F3 wybiera ukrycie
+    zamiast nachodzenia i taki jest werdykt CLAUDE.md („truncates/hides rather
+    than overlapping"), ale to znaczy, że przy całej kuchni na ekranie kody
+    części nie są rysowane wcale. Progiem jest `cnc.annotation.minLabelPx` —
+    jedna liczba w profilu — więc warsztat, który woli nieczytelne kreski od
+    braku napisu, zmienia ją bez otwierania komponentu.
+90. [LOW] **`scripts/e2e-turn15.mjs` nie zna zmian tury 16.** To samo, co
+    pozycje 66, 71, 77 i 85: nie jest zepsuty, chodzi po swojej turze.
+    `e2e-turn16.mjs` jest następcą.

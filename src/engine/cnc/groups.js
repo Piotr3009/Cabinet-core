@@ -103,6 +103,26 @@ export function presetById(id) {
   return EXPORT_PRESETS.find((p) => p.id === id) || null;
 }
 
+/**
+ * ─── Turn 16 (CLAUDE.md F2.1): THE SPRAYED/NON-SPRAYED TOGGLE GOES ──────────
+ *
+ * "Remove it from the CNC view. Sheets group by ASSIGNED MATERIAL only."
+ *
+ * It goes from the VIEW, and only from the view. The presets themselves stay
+ * exactly where they are, because they are part of the EXPORT: `sheetDxfFileName`
+ * names a file after the preset a selection happens to be, and
+ * `presetOfSelection` is what reads it — so deleting them would change what the
+ * machine's folder is called, which rule 0 forbids and
+ * test/cnc-export-identity.test.js pins to the byte.
+ *
+ * What the sheet offers a joiner is now the two things that are true of a part:
+ * the whole unit, and the fronts. Which BOARD a part comes off is the sheet's
+ * own grouping and no longer a button.
+ */
+const VIEW_PRESET_IDS = new Set(['all', 'fronts']);
+
+export const VIEW_PRESETS = EXPORT_PRESETS.filter((p) => VIEW_PRESET_IDS.has(p.id));
+
 /** The panel ids a preset selects out of this unit. */
 export function panelIdsForPreset(panels, presetId) {
   const preset = presetById(presetId);

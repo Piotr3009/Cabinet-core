@@ -72,8 +72,26 @@ export function endPanelHeightDefault(type, profile) {
 /**
  * How far BELOW the carcass this end panel runs, in mm.
  *
+ * ─── TURN 16 (CLAUDE.md F4.3, owner decision B) ─────────────────────────────
+ *
+ * "A wall unit's DOOR height and its masking-PANEL height are separate editable
+ * values — no auto-follow."
+ *
+ * `below` is the panel's own number and it is the whole of that decision: given
+ * one, it IS the drop, and the MODE is only what answers when nobody has said.
+ * It is read from the panel and from nowhere else — in particular it never
+ * looks at `door_extend`, which is the door's number for the same edge. A
+ * handleless wall unit whose doors run 38 mm below the carcass and whose end
+ * panel runs 120 mm below it is a real cabinet, and the two fields are how it
+ * is described.
+ *
+ * The CLAMP is the store's, exactly as it is for `top_mm`: how much room there
+ * is under a carcass is a question about the room and the mounting height, and
+ * the engine is not told about either.
+ *
  * @param {object} args
  *   height        what the panel says about itself, or null
+ *   below         this panel's own drop in mm, or null/0 for "use the mode"
  *   type          the unit type record
  *   mountHeight   how high a wall unit hangs (its own drop, if it ever drops)
  *   legHeight     what a standing unit stands on
@@ -81,8 +99,10 @@ export function endPanelHeightDefault(type, profile) {
  * @returns {number} millimetres, never negative
  */
 export function endPanelDrop({
-  height, type, mountHeight = 0, legHeight = 0, profile,
+  height, below = null, type, mountHeight = 0, legHeight = 0, profile,
 }) {
+  const own = Number(below);
+  if (Number.isFinite(own) && own > 0) return own;
   const stated = END_PANEL_HEIGHTS.includes(height) ? height : endPanelHeightDefault(type, profile);
   if (type?.mount === 'wall') {
     // A hanging cabinet: the panel ends WITH IT. A stored 'floor' — which is

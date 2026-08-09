@@ -1,223 +1,190 @@
-# CLAUDE.md — Cabinet Core, TURN 12: THE TESTING-SESSION VERDICTS
+# CLAUDE.md — Cabinet Core, TURN 13
 
-Everything in this file is an OWNER VERDICT from a live testing session on
-the merged turn 11. Read the whole file first. Full autonomy, zero
-questions. Every phase lands CLEAN or is reverted WHOLE with a BLOCKERS
-entry — "clean or not at all". Phases are ordered by daily pain: if the turn
-must shrink, it shrinks from the BOTTOM.
+Seven owner verdicts from live testing of turn 12, plus the partition
+fixing pattern the owner just specified (#59), plus one SPEC closure (#64).
+Read the whole file first. Full autonomy, zero questions. Clean or not at
+all; the turn shrinks from the BOTTOM if it must.
 
-Baseline: main after the turn-11 merge plus one chat hotfix (cross-wall
-drag removal in `UnitView.jsx` — verify in F0). Tests at baseline: 907.
+Baseline: main after the turn-12 merge. Tests at baseline: 1062.
 
-## 0. IRON RULES (all previous, plus one new — and it is FOREVER)
+## 0. IRON RULES
 
-1. Engine purity: nothing in `src/engine/` imports React or three.
-2. `profile.js` is the only home of numbers and behavioural defaults.
-3. Golden fixtures inviolable (`git diff --stat fixtures/` = 0). NEW golden
-   fixtures for NEW kit variants may be ADDED; existing ones never change.
-4. No new dependencies.
-5. Mock mode sacred.
-6. 0.5 mm precision; `formatMm()`; no `Math.round` on mm in UI.
-7. CNC EXPORT byte-identical for everything that exists today — re-run the
-   turn-11 fingerprint script and publish the diff (new variants get NEW
-   fingerprints, listed separately).
-8. English code/comments/UI copy.
-9. Full npm reinstalls; Actions red by design; PR, no merge.
-10. Physical light units (r0.180). 11. Read library defaults in source.
-12. Band-limit procedural detail. 13. Never `a?.x === b?.x`.
-14. One rig; spray colour sacred.
-15. **NEW, PERMANENT — THE MODAL RULE.** Every modal in this application is
-    (a) DRAGGABLE by its header, and (b) opens BESIDE the object it
-    concerns — never covering it. Implement ONCE as a shared modal shell
-    (component/hook: drag + smart placement clamped to the viewport,
-    anchored to the click/element with an offset) and route EVERY existing
-    modal through it: Design/Project settings, Render, element edit,
-    Room setup, the new ones below. The owner said "na zawsze" — treat any
-    future modal not using the shell as a bug.
-16. Browser verification is a standard phase (F11); reuse and extend
-    `scripts/e2e-*.mjs`.
+All sixteen from turn 12 stand, including THE MODAL RULE (15: every modal
+draggable + beside its object, through the shared shell). One sanctioned
+exception is defined this turn: the cabinet EDITOR window (F2) opens
+MAXIMISED by owner request — it is a workspace, not a side dialog; it keeps
+its header drag (when un-maximised), ESC and close.
+
+Fixtures: existing inviolable; NEW fixtures for NEW machining (partition
+biscuits) are ADDED. CNC identity: byte-identical everywhere EXCEPT the
+partition export, which gains drilling/biscuits this turn — a deliberate,
+documented delta (it exported nothing there before). Fingerprint both
+sides, publish in `verify/t13/cnc-export-identity.md`.
 
 ## F0 — Baseline
 
-Full install → 907/907 → clean build. Verify the cross-wall-drag removal
-is on main (`UnitView.jsx` drag handler must NOT re-home walls; the Wall
-dropdown remains the only deliberate path). If absent, apply it — the
-diagnosis comment exists in the chat hotfix; keep its wording.
+Full install → 1062/1062 → clean build.
 
-## F1 — [CRITICAL] ONE settings surface, one source of truth
+## F1 — [CRITICAL] The flickering, vanishing panel faces
 
-Turn 11's Step 5 shipped as a COPY of the old Design-settings modal.
-Consequences the owner hit within minutes: the scene ignores what the new
-menu sets (colours read from the old store), and Room setup became
-unreachable.
+Owner screenshot: looking down into wall units, the TOP panels' faces are
+partly missing and everything shimmers. Started when F6.2 (turn 12) turned
+panels with dog-bone TABS into extrusions of their own outline.
 
-1. ONE component, ONE data path. The top-bar Settings entry and the
-   New-Project Step 5 open THE SAME component bound to THE SAME design
-   store the scene reads. Delete the duplicate. If two stores/slices exist,
-   merge them with a migration for cached projects (mock/localStorage).
-2. Room setup returns: reachable from the Settings menu (and anywhere it
-   lived before) as its own modal — through the F2 shell.
-3. Hard test: set a front colour through EACH entry point → the same store
-   value changes → a node test on the store, plus the F11 walk proves the
-   scene repaints from it.
+Diagnosis FIRST. Two prime suspects, both consistent with the turn-12 F10
+lesson (`cnc.rotated` nesting):
+1. Winding/culling: an outline built in the ROTATED cnc frame and mapped
+   into the cabinet can come out with reversed winding on some kits → the
+   visible face is back-face-culled → "missing" surface from above.
+2. Coplanar caps: tab geometry whose cap lies IN the panel's face plane →
+   z-fighting → shimmer.
+AND a third symptom with the SAME root, owner-verified: since the panels
+became extrusions, TOP and BOTTOM grain runs FRONT-TO-BACK instead of
+left-to-right. The `panelPlacement` mapping for TOP/BOTTOM (joinery.js —
+CNC x along the cabinet's DEPTH) is machining truth and stays; the bug is
+that the extrusion's UVs now follow that CNC frame. THE RULE: the visual
+grain axis is a CABINET-SPACE rule, independent of nesting rotation —
+horizontal panels (TOP/BOTTOM/shelves) grain along the cabinet's X
+(left→right), vertical panels along the cabinet's height, exactly the
+pre-turn-12 look. Decouple the solid builder's UVs from the placement
+frame (or counter-rotate per placement) so world-space grain obeys it.
+Regression test: grain axis per part class across every kit and both
+nesting orientations.
+Find the actual mechanism (log normals / compare kits exactly as F10 did),
+fix at the outline→solid builder, and add a regression guard: a node test
+asserting outward-facing normals for TOP/BOTTOM faces across every kit and
+both nesting orientations, plus an e2e capture looking down into a wall
+unit in `verify/t13/`.
 
-## F2 — The modal shell (rule 15 made real)
+## F2 — The editor window, grown up
 
-Build the shared shell FIRST, then migrate every modal onto it. Placement:
-beside the anchor (element/cabinet/click point), flipped/clamped to stay
-fully on-screen (the turn-11 context-menu clamp logic is the seed —
-generalise it), draggable by header, remembers its dragged position while
-open. No modal may cover the object it edits.
+1. The Edit-cabinet window opens near-FULLSCREEN (maximised; the rule-15
+   exception above).
+2. Add PAN (drag with right/middle button or a modifier — follow the main
+   view's convention) alongside the existing orbit; today only orbit works.
+3. Clicking a part inside the editor shows **"Edit element"** — the full
+   element properties (the same override machinery), edited HERE.
+4. MAIN VIEW selection model changes accordingly (owner verdict): clicking
+   a cabinet selects the WHOLE cabinet again. Only ADDED interior items —
+   shelves, partitions, rails — stay directly clickable in the main view.
+   Carcass panels (sides, top, bottom, back) are edited exclusively
+   through the editor window. Keep the element-selection code paths — the
+   editor uses them; the main view simply stops routing carcass-panel
+   clicks to them.
 
-## F3 — Library, restructured (Kitchen)
+## F3 — Colour hierarchy: project → unit (→ element)
 
-The owner's exact list, in this order, as DATA (`profile.js` /
-library data module — components render, data decides):
+Owner set project colours in Step 5; editing ONE cabinet must offer THAT
+cabinet's colour — today it silently rewrites the whole project.
 
-1. **Door base unit** (today's BUD).
-2. **Drawer unit** — expandable group: **1×** (drawerline: one drawer over
-   a door), **2×** (two equal deep drawers), **3×** (today's BUDR), **4×**
-   (four equal). Derive 1/2/4 from the EXISTING BUD/BUDR mathematics —
-   the drawer-box maths, runner drilling and front splits the kits already
-   define, parameterised by count/heights; NO new joint formulas. Each new
-   variant gets its own NEW golden fixtures and BOM/DXF coverage. If any
-   variant needs geometry the kits do not define, ship it DISABLED with a
-   BLOCKERS entry instead of inventing.
-   The hidden cutlery drawer is NOT a library entry — it arrives via
-   editing (owner agreed).
-3. **Tall unit** (one entry — BUDTALL; the rest via editing).
-4. **Fridge unit**. 5. **DW unit** (dishwasher housing — front + gap per
-   the appliance pattern the kits/SPEC define; if no pattern exists, entry
-   DISABLED-"soon" + BLOCKERS, pattern-first rule).
-6. **Corner unit** and **L-shape unit** — entries PRESENT but
-   DISABLED-"soon": no kit/LISP defines them yet; the owner writes the
-   pattern with the assistant first (same rule as partition drilling #59).
-7. **Wall units** last (WUD).
-8. EVERY unit type opens its edit modal on DOUBLE-CLICK (F2 shell).
-   Categories beyond Kitchen stay as today (rework is a separate,
-   still-to-be-discussed item — do not touch).
+1. Fix the bug: the unit edit modal writes a UNIT-LEVEL override
+   (carcass finish, front finish per unit), never the project design.
+2. The unit picker shows ONLY the project palette — Carcass 1..3, Front
+   1..2, exactly the finishes Step 5 defined. No full colour lists. A
+   "more colours" hint points back to Settings (where the palette grows).
+3. "Reset to project" per unit. Element overrides (turn 9) sit above and
+   are untouched. BOM/labels resolve element → unit → project.
+4. Tests: override resolution order; picker offers palette only; changing
+   a unit leaves siblings alone.
 
-## F4 — The cabinet editor window (the "bomb")
+## F4 — Wall-unit end panel ends with the CABINET
 
-Right-click a unit → **"Edit cabinet"** → a NEW modal (F2 shell) hosting
-its OWN small 3D canvas with THAT unit only (same materials/profile, same
-engine result — render the existing computed panels, no re-derivation).
+Bug: a WUD end panel runs to the FLOOR. Verdict: it ends flush with the
+hanging cabinet's bottom. The only future exception is a door/panel
+EXTENSION below a wall unit (parked feature #45) — leave the data slot
+(`endPanel.height` honouring a unit-class default: WUD → 'carcass') so the
+extension can opt back into 'extended' later. Fixtures diff 0 (end panels
+are design-layer); BOM height for WUD end panels shrinks accordingly —
+that is the fix, assert it.
 
-1. An **Explode** button: the parts animate APART — each panel slides out
-   along its face normal (distance factor in profile), like the cabinet
-   was unscrewed. Toggle back to assembled.
-2. In exploded state, each part is selectable and can be ROTATED freely
-   for inspection (per-part orbit on the selected piece); selecting a part
-   shows its existing element properties (the T9/T11 editing panel —
-   reuse, do not fork) so edits made here are the same overrides.
-3. This window is a viewer+editor over existing data — the working scene,
-   engine and BOM are untouched by its existence. Cost: canvas mounts only
-   while the modal is open.
+## F5 — Multi-select and bulk actions
 
-## F5 — Interior logic: zones, partition, the golden plus
+1. **Ctrl+click** adds/removes cabinets to a selection SET (whole-unit
+   selection per F2.4). Click without Ctrl = single. Background click
+   clears (turn 11 behaviour).
+2. The right panel over a multi-selection shows the COMMON actions:
+   add shelves to all, Even/centre, and the shared property editors —
+   fields with differing values display "mixed" and only write when the
+   user sets them.
+3. The right-click CONTEXT MENU applies to the WHOLE selection: Add
+   plinth (the turn-12 run logic merges adjacent ones itself), infill
+   pin, end panels, Add doors, unit colour (F3 palette).
+4. Every bulk action is ONE undo step (single snapshot around the batch).
+5. Tests: store-level bulk ops; single-snapshot undo; mixed-value
+   detection.
 
-1. **Golden "+" opens a MODAL** (F2 shell, beside the unit): the unit's
-   edit + "what to add" menu (context-filtered items, Show-all — the F4.4
-   turn-11 data). The right panel keeps mirroring; the modal is primary.
-2. **Partition**: add a **"Centre"** button (like the shelves' Even) and a
-   DELETE path (× in panel/modal + Delete key on selection) — both missing
-   today.
-3. **Partition ↔ shelf rules** (owner-specified, exactly):
-   - a partition may terminate ON a shelf only if that shelf is **FIXED**;
-   - if that shelf has a depth setback, the partition's max depth FOLLOWS
-     the shelf's — shrink the shelf, the partition shrinks with it
-     (coupled, automatic);
-   - if the shelf is adjustable, the partition does NOT attach — show the
-     existing collision treatment instead;
-   - with a partition present, adding a shelf first asks WHICH SIDE: the
-     zones left/right of the partition highlight, the user clicks one, the
-     shelf lands and centres in THAT zone. This introduces an explicit
-     ZONE model in the interior maths — build it in the engine as pure
-     functions (it is the foundation the 2×/4× drawer stacks and future
-     interior work will stand on), tested.
+## F6 — The golden plus learns doors
 
-## F6 — Hardware you can see
+The plus-modal's add menu gains **"Add doors"** alongside items — same
+action the right panel offers, one click closer. Trivial; do not gold-plate.
 
-1. **Hinges invisible in Solid** — find why (default off? not rendering?)
-   and fix. Then make them LOOK like the kit drawings: a procedural
-   low-poly hinge — ⌀35 cup, arm, mounting plate — proportioned and
-   positioned from the SAME numbers the LISP drawings and the engine's
-   drilling already use. Instanced, a few dozen triangles each. NO
-   imported CAD models (owner agreed: Blum meshes are hundreds of edges
-   and a licensing question — out).
-2. **Dog bones, the other half**: sockets look right; the mating TABS with
-   their round reliefs on the carcass panel EDGES are not visible. Model
-   them from the same `panel.cnc` data so a joint reads as a joint in
-   Solid and X-ray. Close-up screenshot to `verify/t12/`.
+## F7 — Hinges visible by DEFAULT in Solid
 
-## F7 — Wall units must SEE tall units
+Verdict: still X-ray-only in practice. Make the Solid hinge toggle default
+ON (profile default; the toggle now exists to HIDE). If they still do not
+appear with the toggle on, the rendering is branch-bound to X-ray —
+diagnose and fix so Solid draws the same procedural hinges. e2e close-up
+in `verify/t13/` from a fresh project (no toggles touched) — that is the
+proof the DEFAULT shows them.
 
-Bug, owner-verified twice: a hanging unit ignores tall units completely —
-it drives straight through them and no alignment happens. Tall standing
-units (BUDTALL, FRIDGE, tall WARDROBE — anything whose height reaches the
-wall-unit band) join the obstacle set for wall-unit placement/drag: a
-hanging unit STOPS at a tall unit (or an end panel) exactly as at a wall.
-Engine collision layer (`engine/collision.js` family), pure + tested; the
-turn-8 "hangs align to Tall" promise becomes real behaviour.
+## F8 — Partition fixing: the BISCUIT pattern (#59, owner-specified)
 
-## F8 — Plinth per RUN (the top-infill pattern)
+The owner's workshop truth, now the reference. Implement in the engine as
+pure functions + new golden fixtures; this is the deliberate CNC delta.
 
-Owner-specified:
-- no plinth = no plinth (unchanged);
-- turning plinths on for adjacent units WITHOUT an end panel between them
-  produces **ONE continuous plinth** across 2, 3, N units — not pieces;
-- a unit pushed against a plinthed run joins it AUTOMATICALLY (the plinth
-  extends);
-- an end panel or a gap is a boundary — a new segment starts.
-Reuse the top-infill run logic (one element per run, T8) rather than a
-parallel implementation. BOM/CNC: one part per segment, summed length,
-front material as turn 11 established. New tests; fingerprints for the
-changed plinth exports listed in the F0/F12 identity report as an
-EXPECTED, explained delta (this is a deliberate behavioural change —
-document it; everything else stays byte-identical).
+1. **The standard set** (joiner biscuit set), along the joint line:
+   screw ⌀3 → 10 mm gap → **biscuit mark 70 mm** → 10 mm gap → screw ⌀3.
+   The set STARTS no closer than **50 mm from the element's edge** — never
+   less.
+2. **Count by element width:** width ≤ 700 mm → TWO sets (one at each
+   end, honouring the 50 mm rule). Width > 700 mm → add ONE more in the
+   middle = three. That is all.
+3. **The no-screw set** — the 70 mm biscuit mark alone — wherever a screw
+   would break a VISIBLE face: e.g. a partition meeting the visible top of
+   a fixed shelf must not be drilled through. Rule: a through-screw exists
+   only where the receiving face is concealed; visible face → biscuit-only
+   set in the same positions.
+4. **Where it applies:** partition-to-carcass (top and bottom joints) and
+   partition-to-fixed-shelf (the turn-12 attachment). Screw holes join the
+   existing SCREWS_3MM machining family (turn-8 conventions — same layer,
+   same sizes). The 70 mm biscuit marks go on a NEW DXF layer named
+   **`BISCUIT_4MM`** — 4 mm, matching the owner's dedicated VCarve
+   in-and-out program. Layer name exactly as written.
+5. Tests: set positions for widths 400/700/701/900 (counts 2/2/3/3), the
+   50 mm minimum, visible-face suppression of screws, layer assignment.
+   New fixtures for a partitioned cabinet's partition/carcass files;
+   everything else byte-identical in the identity report.
 
-## F9 — Undo / Redo
+## F9 — Docs + SPEC closures
 
-Ctrl+Z (+ a toolbar button) and Ctrl+Y / Ctrl+Shift+Z. Project-store
-history: snapshot on every mutating action (add/remove/move/edit/settings
-change), bounded depth (profile number, e.g. 50), survives nothing (no
-persistence — session only). Zustand snapshot pattern; selection state
-sensibly restored. Tests on the store: do → undo → redo → deep-equal.
+1. SPEC: "#64 closed 09.08 — the kit's 4:3:2 drawer split stays exactly
+   as the kit cuts it (`exact:false`); the 1 mm drift at some heights is a
+   recorded boundary, owner-confirmed."
+2. SPEC: the biscuit pattern (F8) written up as the partition-fixing
+   reference (numbers + rules), alongside a note that KIT-style reference
+   files remain the model for future patterns (#61 door split, #62 DW,
+   #63 corner/L still awaiting owner input).
+3. BUILD-LOG per phase; BLOCKERS for anything reverted.
 
-## F10 — [BUG] The back panel that turned 90°
+## F10 — Browser verification (standard)
 
-TALL/FRIDGE back panels render rotated 90° vs before (owner: "poprzednio
-było dobrze"). Chat triage already established the ENGINE geometry for
-those kits is untouched by turn 11 — the suspicion is the VISUAL layer
-(grain/orientation mapping for back panels, possibly aspect-dependent).
-Diagnose FIRST (compare kits, find the differentiator), fix at the guilty
-layer, and add a regression guard (a node test on whatever orientation
-data the fix pins, or an e2e pixel check if it is purely visual).
+Screenshots to `verify/t13/`, committed:
+1. Looking down into a wall-unit run — full top faces, no shimmer (F1).
+2. Editor maximised; view panned; a side panel in "Edit element".
+3. Main view: cabinet click selects whole unit; a shelf still directly
+   clickable.
+4. Unit colour dialog showing ONLY the project palette; one cabinet
+   recoloured, neighbours untouched.
+5. WUD end panel ending at the cabinet bottom.
+6. Ctrl+click three units → context menu → Add plinth → one plinth.
+7. Plus-modal with "Add doors"; doors added.
+8. Fresh project: hinges visible in Solid, no toggles touched.
+9. X-ray of a partitioned cabinet showing the biscuit sets (screws + 70 mm
+   marks) at correct spacing; CNC view layer `BISCUIT_4MM` present.
 
-## F11 — Browser verification (standard)
+## F11 — FINAL GATE
 
-Extend the e2e walk; screenshots to `verify/t12/`, committed:
-1. Settings via top bar AND via Step 5 → same colour lands in the scene.
-2. Any modal: opens beside its object, dragged by header, stays on-screen.
-3. Library: new order; 2× drawer unit placed; Corner shows disabled-soon.
-4. Edit-cabinet window: explode animation mid-state + one part rotated.
-5. Partition: Centre button; delete; attach to FIXED shelf and shrink the
-   shelf → partition follows; zone highlight when adding a shelf.
-6. Wall unit dragged into a tall unit → stops flush.
-7. One plinth across three units; fourth unit docks → plinth extends.
-8. Ctrl+Z after a delete → the cabinet is back.
-9. Hinges visible in Solid close-up; dog-bone tab close-up.
-10. TALL back panel grain correct again.
-
-## F12 — Docs + FINAL GATE
-
-1. BUILD-LOG per phase; SPEC gains the #58 closure line: "board thickness
-   is per CARCASS (one G per kit, front thickness separate) — the kits'
-   own boundary, owner-confirmed 08.08".
-2. BACKLOG: #59 stays open awaiting the owner's partition-drilling
-   pattern; corner/L-shape/DW patterns listed as pattern-first items.
-3. BLOCKERS for anything reverted or disabled.
-4. Gate: full reinstall → all tests green (907 + new) → clean build →
-   fixtures diff 0 (additions listed) → deps untouched → engine purity →
-   CNC identity report (byte-identical except the documented plinth
-   delta) → `verify/t12/` populated → PR opened, not merged.
+Full reinstall → all green (1062 + new) → clean build → fixtures: existing
+diff 0, additions listed → deps untouched → engine purity grep empty →
+CNC identity: byte-identical except the documented partition delta →
+`verify/t13/` populated → PR opened, not merged.

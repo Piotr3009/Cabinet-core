@@ -1560,6 +1560,16 @@ export const DEFAULT_CABINET_PROFILE = {
     // edge and drill as a shelf rather than call an offcut.
     minElementDepth: 100,
 
+    // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
+    // How far back it goes, and how long a burst of writes has to stop for
+    // before it counts as one edit. A shelf drag writes on every pointer frame;
+    // 400 ms of stillness is a hand that has let go, and it is what makes one
+    // gesture one Ctrl+Z rather than a hundred.
+    history: {
+      depth: 50,
+      coalesceMs: 400,
+    },
+
     // ─── The cabinet coming apart (turn 12, CLAUDE.md F4.1) ───
     // "Each panel slides out along its face normal … like the cabinet was
     // unscrewed." How far is a FRACTION of the cabinet's own size, not a number

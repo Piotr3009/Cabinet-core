@@ -5,6 +5,7 @@ import './index.css';
 import { useProjectStore } from './stores/projectStore.js';
 import { useUiStore } from './stores/uiStore.js';
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
+import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
 //
@@ -21,8 +22,15 @@ import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 // three stores every component in the app subscribes to, and the app has no
 // server-side authority for them to speak for.
 if (typeof window !== 'undefined') {
-  window.__cc = { project: useProjectStore, ui: useUiStore, profile: useCabinetProfileStore };
+  window.__cc = {
+    project: useProjectStore, ui: useUiStore, profile: useCabinetProfileStore, history: useHistoryStore,
+  };
 }
+
+// ─── Undo / redo (turn 12, CLAUDE.md F9) ───
+// One subscriber, started once, for the life of the tab. It watches the project
+// store rather than being called by it — see stores/historyStore.js for why.
+watchProjectHistory();
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

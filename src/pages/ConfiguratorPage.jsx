@@ -22,6 +22,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
 import { elementLabel } from '../engine/elements.js';
+import { useHistoryStore } from '../stores/historyStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
@@ -87,6 +88,8 @@ export default function ConfiguratorPage() {
   const clearSelection = useUiStore((s) => s.clearSelection);
   const removeItem = useProjectStore((s) => s.removeItem);
   const removeUnit = useProjectStore((s) => s.removeUnit);
+  const undo = useHistoryStore((s) => s.undo);
+  const redo = useHistoryStore((s) => s.redo);
 
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
@@ -107,6 +110,17 @@ export default function ConfiguratorPage() {
       // "450" into a width field is not asking for anything to be deleted.
       const tag = e.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
+      // Before everything else, because it is the one shortcut that has to work
+      // whatever is selected. Ctrl+Y and Ctrl+Shift+Z are both redo: Windows
+      // uses the first, the Mac habit is the second, and a workshop has both
+      // kinds of machine in it.
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+        if (key === 'y' || (key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
+      }
 
       if (e.key === 'Escape') {
         if (selectedElement) clearElement();
@@ -148,7 +162,7 @@ export default function ConfiguratorPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedElement, selectedUnitId, clearElement, clearSelection,
-    units, unitResult, removeItem, removeUnit, notify]);
+    units, unitResult, removeItem, removeUnit, notify, undo, redo]);
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);

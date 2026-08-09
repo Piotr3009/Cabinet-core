@@ -11,6 +11,7 @@ import { listProjects, loadProject as loadCloudProject } from '../lib/cloudSync.
 import { isMockMode } from '../lib/supabase.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
+import { useHistoryStore } from '../stores/historyStore.js';
 
 // ─── Start screen (BACKLOG #7; turn 7, BACKLOG #41) ───
 // The AutoCAD arrangement, because that is what Piotr opens every morning:
@@ -55,6 +56,10 @@ export default function StartScreen() {
   useEffect(() => { refresh(); }, [refresh]);
 
   const start = (project, units, { id = null } = {}) => {
+    // A different job: the undo stack from the last one must not reach into it
+    // (turn 12, CLAUDE.md F9 — the history survives nothing, least of all a
+    // project boundary).
+    useHistoryStore.getState().clear();
     loadProject(project, units);
     if (id) touchLocalProject(storage, id, Date.now());
     openEditor();
@@ -69,6 +74,10 @@ export default function StartScreen() {
   const onFlowStart = () => {
     const { project, units } = useProjectStore.getState();
     const saved = saveLocalProject(storage, { project, units, at: Date.now() });
+    // A different job: the undo stack from the last one must not reach into it
+    // (turn 12, CLAUDE.md F9 — the history survives nothing, least of all a
+    // project boundary).
+    useHistoryStore.getState().clear();
     loadProject(saved.project, units);
     const design = migrateDesign(project.design);
     if (design.projectType) setLibraryCategory(getProjectType(design.projectType).category);

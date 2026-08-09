@@ -8,6 +8,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { PROJECT_TYPES, getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
+import { useHistoryStore } from '../stores/historyStore.js';
 
 // ─── New project (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
 //
@@ -60,6 +61,10 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
     const name = info.name.trim() || (number ? `Project ${number}` : 'Untitled project');
     if (created) setProjectInfo({ name, number, client: info.client.trim() });
     else {
+      // A different job: the undo stack from the last one must not reach into it
+      // (turn 12, CLAUDE.md F9 — the history survives nothing, least of all a
+      // project boundary).
+      useHistoryStore.getState().clear();
       newProject(name, { number, client: info.client.trim() });
       setCreated(true);
     }

@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { isMockMode, MOCK_REASON } from '../lib/supabase.js';
 import * as cloud from '../lib/cloudSync.js';
+import { useHistoryStore } from '../stores/historyStore.js';
 
 // Minimal account panel (SPEC 9): sign in / register, then the cloud project
 // list. Without Supabase keys it explains mock mode instead of pretending.
@@ -43,6 +44,10 @@ export default function AuthModal() {
   const open = async (id) => {
     const res = await cloud.loadProject(id);
     if (!res.project) { notify('Could not open that project.', 'error'); return; }
+    // A different job: the undo stack from the last one must not reach into it
+    // (turn 12, CLAUDE.md F9 — the history survives nothing, least of all a
+    // project boundary).
+    useHistoryStore.getState().clear();
     loadProject(res.project, res.units);
     notify(`Opened “${res.project.name}”.`, 'ok');
     closeModal();

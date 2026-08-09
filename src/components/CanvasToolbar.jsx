@@ -1,4 +1,5 @@
 import { useUiStore } from '../stores/uiStore.js';
+import { useHistoryStore } from '../stores/historyStore.js';
 
 // ─── Canvas toolbar ───
 // The controls that act on the DRAWING, sitting on the drawing (CLAUDE.md turn
@@ -19,8 +20,43 @@ export default function CanvasToolbar() {
   const xray = useUiStore((s) => s.xray);
   const toggleXray = useUiStore((s) => s.toggleXray);
 
+  // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
+  // Read as LENGTHS rather than through the store's own `canUndo()`, because a
+  // selector that calls a function returns a fresh answer every render and
+  // zustand would re-render this bar on every frame of every drag.
+  const undoDepth = useHistoryStore((s) => s.past.length);
+  const redoDepth = useHistoryStore((s) => s.future.length);
+  const undo = useHistoryStore((s) => s.undo);
+  const redo = useHistoryStore((s) => s.redo);
+
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-shell-800/95 border border-shell-600 rounded px-1.5 py-1 shadow-lg">
+      {/* First on the bar, where a hand reaching for "no, not that" goes. */}
+      <button
+        type="button"
+        data-undo="1"
+        disabled={undoDepth === 0}
+        className="px-2 py-1 text-xs rounded transition-colors text-ink-100 hover:bg-shell-700
+          disabled:opacity-35 disabled:cursor-not-allowed"
+        title={undoDepth ? `Undo (Ctrl+Z) — ${undoDepth} step${undoDepth === 1 ? '' : 's'} back` : 'Nothing to undo'}
+        onClick={() => undo()}
+      >
+        ↶
+      </button>
+      <button
+        type="button"
+        data-redo="1"
+        disabled={redoDepth === 0}
+        className="px-2 py-1 text-xs rounded transition-colors text-ink-100 hover:bg-shell-700
+          disabled:opacity-35 disabled:cursor-not-allowed"
+        title={redoDepth ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
+        onClick={() => redo()}
+      >
+        ↷
+      </button>
+
+      <span className="w-px h-4 bg-shell-600" />
+
       <button
         type="button"
         aria-pressed={showDimensions}

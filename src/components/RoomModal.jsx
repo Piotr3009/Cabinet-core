@@ -1,4 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import {
+  useCallback, useEffect, useMemo, useRef, useState,
+} from 'react';
 import Modal from './Modal.jsx';
 import NumberField from './NumberField.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -7,6 +9,7 @@ import {
   migrateRoom, roomWalls, roomBounds, rectCorners, lCorners, validateRoomShape,
   roomChangeGuard, openingsOnWall, clampOpening, OPENING_DEFAULTS,
   setWallLength as setWallLengthCorners, wallsInScope, wallStub,
+  moveWall, moveBoxSide, roomBoxes, migrateBox, BOX_SIDES, MIN_BOX_SIZE,
 } from '../engine/room.js';
 import { proposeRoomFromDxf } from '../engine/dxfImport.js';
 import { formatMm, snap } from '../engine/format.js';
@@ -44,7 +47,21 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
   const notify = useUiStore((s) => s.notify);
 
   const [draft, setDraft] = useState(() => migrateRoom(room));
-  const [dragCorner, setDragCorner] = useState(null);
+  // ─── Turn 14 (CLAUDE.md F10): WHAT IS SELECTED, AND WHAT IS BEING DRAGGED ──
+  //
+  // The owner's verdict on corner-dragging: unusable, and he is describing the
+  // arithmetic rather than the mouse. A corner is a point shared by two walls,
+  // so dragging it turns BOTH of them: every angle moves at once and a right
+  // angle can only be hit by luck. What a joiner moves is a WALL.
+  //
+  // So the plan has one selection — `{ kind: 'wall'|'box', index, side }` — and
+  // one drag, and both of them go through the same engine primitive (`moveWall`
+  // / `moveBoxSide`). The drag remembers the room AS IT WAS when the hand went
+  // down and applies an ABSOLUTE offset from it, so a drag is one move rather
+  // than a hundred small ones accumulating rounding.
+  const [picked, setPicked] = useState(null);
+  const drag = useRef(null);
+  const [typed, setTyped] = useState('');
   const [importInfo, setImportInfo] = useState(null);
   const fileRef = useRef(null);
 
@@ -102,11 +119,136 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
     patch({ corners: setWallLengthCorners(draft, index, len).map((c) => ({ x: grid(c.x), y: grid(c.y) })) });
   };
 
+  // ─── Dragging a WHOLE WALL (F10.1) ───────────────────────────────────────
+  //
+  // The gesture is: grab anywhere on the wall, and it travels along its own
+  // NORMAL. The neighbours stretch to meet it and keep their own directions
+  // exactly, which is `moveWall` in the engine and is the same primitive the
+  // typed LENGTH field (F1.5a) uses — CLAUDE.md F10.5 asks for exactly that,
+  // and it is why there is no second constraint solver in this file.
+  const boxes = useMemo(() => roomBoxes(draft), [draft]);
+
+  /** How far the pointer has travelled along a wall's outward normal, in mm. */
+  const alongNormal = (wall, dxMm, dyMm) => -(dxMm * wall.inward.x + dyMm * wall.inward.y);
+
+  const startWallDrag = (e, index) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    setPicked({ kind: 'wall', index });
+    setTyped('');
+    drag.current = {
+      kind: 'wall',
+      index,
+      from: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      room: draft,
+      wall: roomWalls(draft)[index],
+    };
+    e.currentTarget.ownerSVGElement.setPointerCapture?.(e.pointerId);
+  };
+
+  const startBoxDrag = (e, boxId, side) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    setPicked({ kind: 'box', id: boxId, side });
+    setTyped('');
+    drag.current = {
+      kind: 'box',
+      id: boxId,
+      side,
+      from: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      box: boxes.find((b) => b.id === boxId) || null,
+    };
+    e.currentTarget.ownerSVGElement.setPointerCapture?.(e.pointerId);
+  };
+
+  const setBoxes = (next) => patch({ boxes: next });
+
   const onPlanPointerMove = (e) => {
-    if (dragCorner == null) return;
+    const d = drag.current;
+    if (!d) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const p = fromSvg({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    patch({ corners: draft.corners.map((c, i) => (i === dragCorner ? p : c)) });
+    const dx = ((e.clientX - rect.left) - d.from.x) / scale;
+    const dy = ((e.clientY - rect.top) - d.from.y) / scale;
+    if (d.kind === 'wall') {
+      const delta = grid(alongNormal(d.wall, dx, dy));
+      if (!delta) return;
+      patch({ corners: moveWall(d.room, d.index, delta) });
+      return;
+    }
+    if (!d.box) return;
+    const axis = d.side === 'left' || d.side === 'right' ? dx : dy;
+    const delta = grid((d.side === 'left' || d.side === 'front' ? -1 : 1) * axis);
+    setBoxes(boxes.map((b) => (b.id === d.id ? moveBoxSide(d.box, d.side, delta) : b)));
+  };
+
+  const endDrag = () => { drag.current = null; };
+
+  // ─── Typed distance, AutoCAD-style (F10.2) ───────────────────────────────
+  //
+  // "Start dragging (or select a wall), TYPE a number, Enter → the wall moves
+  // EXACTLY that many mm in the drag direction." It is the gesture every CAD
+  // package has and the reason is the owner's own: a hand cannot land on 4500,
+  // and a room is a set of numbers somebody measured on site.
+  //
+  // The DIRECTION is the drag's, and with nothing dragged it is OUTWARD, which
+  // is what "the wall moves 202" means when nobody has said which way: the room
+  // gets bigger. A minus sign is how you say the other thing, and it is typed
+  // like any other character.
+  const applyTyped = useCallback((raw) => {
+    const value = Number(raw);
+    if (!picked || !Number.isFinite(value) || value === 0) return false;
+    if (picked.kind === 'wall') {
+      setDraft((d) => migrateRoom({ ...d, corners: moveWall(d, picked.index, value) }));
+      return true;
+    }
+    setDraft((d) => migrateRoom({
+      ...d,
+      boxes: roomBoxes(d).map((b) => (b.id === picked.id ? moveBoxSide(b, picked.side, value) : b)),
+    }));
+    return true;
+  }, [picked]);
+
+  useEffect(() => {
+    if (!picked) return undefined;
+    const onKey = (ev) => {
+      // Anything typed into a real field belongs to that field.
+      const tag = ev.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (/^[0-9]$/.test(ev.key) || (ev.key === '-' && !typed) || (ev.key === '.' && !typed.includes('.'))) {
+        setTyped((t) => t + ev.key);
+        ev.preventDefault();
+        return;
+      }
+      if (ev.key === 'Backspace') { setTyped((t) => t.slice(0, -1)); ev.preventDefault(); return; }
+      if (ev.key === 'Enter' && typed) {
+        if (applyTyped(typed)) { setTyped(''); drag.current = null; }
+        ev.preventDefault();
+        return;
+      }
+      if (ev.key === 'Escape') { setTyped(''); setPicked(null); ev.preventDefault(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [picked, typed, applyTyped]);
+
+  // ─── Insert box: a chimney, a pillar, a boxed pipe (F10.3) ───────────────
+  const insertBox = () => {
+    const w = Math.max(MIN_BOX_SIZE, Math.round(bounds.width * 0.12));
+    const d = Math.max(MIN_BOX_SIZE, Math.round(bounds.depth * 0.12));
+    const box = migrateBox({
+      id: `box_${Math.random().toString(36).slice(2, 9)}`,
+      x: grid(bounds.centre.x - w / 2),
+      y: grid(bounds.centre.y - d / 2),
+      w,
+      d,
+    });
+    setBoxes([...boxes, box]);
+    setPicked({ kind: 'box', id: box.id, side: 'right' });
+  };
+
+  const removeBox = (id) => {
+    setBoxes(boxes.filter((b) => b.id !== id));
+    setPicked((p) => (p?.kind === 'box' && p.id === id ? null : p));
   };
 
   const addCorner = (wallIndex) => {
@@ -115,11 +257,6 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
     const corners = [...draft.corners];
     corners.splice(wallIndex + 1, 0, mid);
     patch({ corners });
-  };
-
-  const removeCorner = (index) => {
-    if (draft.corners.length <= 3) { notify('A room needs at least three corners.', 'warn'); return; }
-    patch({ corners: draft.corners.filter((_, i) => i !== index) });
   };
 
   const addOpening = (kind, wallIndex) => {
@@ -187,6 +324,8 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
               <div className="flex gap-1">
                 <button type="button" className="cc-btn" onClick={() => setPreset('rect')}>Rectangle</button>
                 <button type="button" className="cc-btn" onClick={() => setPreset('L')}>L-shape</button>
+                {/* F10.3: a chimney, a pillar, a boxed pipe. */}
+                <button type="button" className="cc-btn" data-insert-box="1" onClick={insertBox}>+ Box</button>
               </div>
             )}
           </div>
@@ -194,9 +333,11 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
           <svg
             width={PLAN_W} height={PLAN_H}
             className="bg-shell-900 border border-shell-600 rounded touch-none"
+            data-room-plan="1"
             onPointerMove={onPlanPointerMove}
-            onPointerUp={() => setDragCorner(null)}
-            onPointerLeave={() => setDragCorner(null)}
+            onPointerUp={endDrag}
+            onPointerLeave={endDrag}
+            onPointerDown={() => { setPicked(null); setTyped(''); }}
           >
             <polygon
               points={draft.corners.map((c) => { const p = toSvg(c); return `${p.x},${p.y}`; }).join(' ')}
@@ -234,21 +375,85 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
                 </g>
               );
             })}
-            {draft.corners.map((c, i) => {
-              const p = toSvg(c);
+            {/* ─── The BOXES (F10.3) ───
+                A chimney breast, a pillar, a boxed soil pipe. Each SIDE is
+                grabbed and moved exactly as a wall is, and typing a number
+                while one is picked moves it exactly that far. */}
+            {boxes.map((b) => {
+              const a = toSvg({ x: b.x, y: b.y });
+              const c = toSvg({ x: b.x + b.w, y: b.y + b.d });
+              const on = picked?.kind === 'box' && picked.id === b.id;
               return (
-                <circle
-                  key={i} cx={p.x} cy={p.y} r={5}
-                  fill={dragCorner === i ? '#C8A678' : '#AA8E68'} stroke="#1a1a1a"
-                  className="cursor-move"
-                  onPointerDown={() => setDragCorner(i)}
-                  onDoubleClick={() => removeCorner(i)}
+                <g key={b.id}>
+                  <rect
+                    x={Math.min(a.x, c.x)} y={Math.min(a.y, c.y)}
+                    width={Math.abs(c.x - a.x)} height={Math.abs(c.y - a.y)}
+                    fill="#3a3a3e" stroke={on ? '#C8A678' : '#6b6b70'} strokeWidth={on ? 2 : 1.2}
+                    data-plan-box={b.id}
+                    onPointerDown={(e) => { e.stopPropagation(); setPicked({ kind: 'box', id: b.id, side: 'right' }); setTyped(''); }}
+                    onDoubleClick={() => removeBox(b.id)}
+                  />
+                  {BOX_SIDES.map((side) => {
+                    const horizontal = side === 'front' || side === 'back';
+                    const x1 = side === 'right' ? c.x : a.x;
+                    const y1 = side === 'back' ? c.y : a.y;
+                    return (
+                      <line
+                        key={side}
+                        x1={horizontal ? a.x : x1}
+                        y1={horizontal ? y1 : a.y}
+                        x2={horizontal ? c.x : x1}
+                        y2={horizontal ? y1 : c.y}
+                        stroke={picked?.kind === 'box' && picked.id === b.id && picked.side === side ? '#C8A678' : 'transparent'}
+                        strokeWidth={7}
+                        className={horizontal ? 'cursor-ns-resize' : 'cursor-ew-resize'}
+                        data-box-side={`${b.id}:${side}`}
+                        onPointerDown={(e) => startBoxDrag(e, b.id, side)}
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })}
+
+            {/* ─── The WALLS, as grab bars (F10.1) ───
+                A transparent fat line on top of each wall: what you grab is the
+                wall itself, and it travels along its own normal. There are no
+                corner handles any more — a corner is shared by two walls, so
+                dragging one turns both, and that is the interaction the owner
+                has ruled unusable. */}
+            {shown.filter((w) => !w.stub).map((w) => {
+              const a = toSvg(w.start); const b = toSvg(w.end);
+              const on = picked?.kind === 'wall' && picked.index === w.index;
+              const vertical = Math.abs(b.x - a.x) < Math.abs(b.y - a.y);
+              return (
+                <line
+                  key={`grab-${w.index}`}
+                  x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                  stroke={on ? '#C8A678' : 'transparent'}
+                  strokeWidth={on ? 4 : 9}
+                  strokeLinecap="round"
+                  className={vertical ? 'cursor-ew-resize' : 'cursor-ns-resize'}
+                  data-plan-wall={w.index}
+                  onPointerDown={(e) => startWallDrag(e, w.index)}
                 />
               );
             })}
+
+            {/* The typed distance, where the eye is (F10.2). */}
+            {picked && typed && (
+              <g>
+                <rect x={PLAN_W / 2 - 46} y={6} width={92} height={20} rx={3} fill="#1a1a1a" stroke="#AA8E68" />
+                <text x={PLAN_W / 2} y={20} textAnchor="middle" fontSize="11" fill="#C8A678" data-typed-distance="1">
+                  {typed} mm ⏎
+                </text>
+              </g>
+            )}
           </svg>
           <p className="text-[11px] text-ink-400 mt-1">
-            Drag a corner to reshape. Double-click a corner to delete it. Wall numbers match the list on the right.
+            {picked
+              ? 'Drag it, or TYPE a distance in millimetres and press Enter. Escape lets go.'
+              : 'Grab a WALL and it moves along its own normal — the neighbours stretch and every angle is kept. Corners are not dragged.'}
           </p>
 
           <div className="cc-divider" />
@@ -356,6 +561,36 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
             ))}
           </ul>
 
+          {/* ─── The boxes (F10.3), as numbers ───
+              The plan is where they are DRAGGED; this is where they are typed,
+              which is the same pair of gestures every other measurement in this
+              window has. */}
+          {boxes.length > 0 && (
+            <>
+              <span className="text-xs uppercase tracking-wide text-ink-200">Boxes in the plan</span>
+              <ul className="space-y-1" data-box-list="1">
+                {boxes.map((b) => (
+                  <li key={b.id} className="border border-shell-600 rounded p-2 flex items-center gap-2">
+                    <span className="text-sm text-ink-100 w-10">Box</span>
+                    {[['x', 'X'], ['y', 'Y'], ['w', 'W'], ['d', 'D']].map(([key, label]) => (
+                      <label key={key} className="flex items-center gap-1 text-[11px] text-ink-300">
+                        {label}
+                        <NumberField
+                          className="cc-input w-16 text-right"
+                          value={b[key]}
+                          onCommit={(v) => setBoxes(boxes.map((o) => (o.id === b.id
+                            ? migrateBox({ ...o, [key]: v })
+                            : o)))}
+                        />
+                      </label>
+                    ))}
+                    <button type="button" className="cc-btn-ghost" title="Remove this box" onClick={() => removeBox(b.id)}>×</button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
           {shapeIssues.map((iss, i) => (
             <p key={i} className="text-[11px] px-2 py-1 rounded border border-status-warn/50 bg-status-warn/10 text-status-warn">{iss}</p>
           ))}
@@ -372,6 +607,7 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
           <p className="text-[11px] text-ink-400 leading-relaxed">
             Walls that face away from the camera hide themselves in the 3D view, so looking down at the room
             gives a plan view. Windows and doors are drawn as openings — they do not yet block units.
+            A BOX does: it stands floor to ceiling and a cabinet stops at it, exactly as it stops at a wall.
           </p>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { mm, COLORS } from './constants.js';
 import DimLabel from './DimLabel.jsx';
 import {
-  roomWalls, roomBounds, openingsOnWall, wallsInScope,
+  roomWalls, roomBounds, openingsOnWall, wallsInScope, roomBoxes,
 } from '../engine/room.js';
 import { formatMm } from '../engine/format.js';
 import { roomClickIsBackground } from '../lib/selection.js';
@@ -233,6 +233,7 @@ export default function Room({
   // the engine and tested there; the drawing is unchanged — a stub is a wall
   // record like any other, just a shorter one.
   const walls = useMemo(() => wallsInScope(room, scope), [room, scope]);
+  const boxes = useMemo(() => roomBoxes(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
   const height = room.height ?? 2500;
 
@@ -290,6 +291,37 @@ export default function Room({
           allowOverride={false}
         />
       </mesh>
+
+      {/* ─── The plan's own obstacles (turn 14, CLAUDE.md F10.3) ───
+          A chimney breast, a pillar, a boxed soil pipe: floor to ceiling, in
+          the room's own tone so it reads as BUILDING rather than as furniture.
+          The engine already stops a cabinet at one (engine/collision.js
+          `boxSpansOnWall`); this is where it becomes visible.
+
+          It takes no pointer handlers at all, which is deliberate: it is part
+          of the room, so clicking it must mean what clicking a wall means —
+          and with no handler the ray passes through to the floor behind, which
+          says exactly that. */}
+      {boxes.map((b) => (
+        <mesh
+          key={b.id}
+          userData={{ ccRoomBox: b.id }}
+          position={[
+            mm(b.x + b.w / 2 - bounds.centre.x),
+            mm(height / 2),
+            mm(b.y + b.d / 2 - bounds.centre.y),
+          ]}
+          receiveShadow
+          raycast={null}
+        >
+          <boxGeometry args={[mm(b.w), mm(height), mm(b.d)]} />
+          <meshLambertMaterial
+            color={tone(profile, 'wall', COLORS.wall)}
+            emissive={bounce(tone(profile, 'wall', COLORS.wall), profile, 'wall')}
+            allowOverride={false}
+          />
+        </mesh>
+      ))}
 
       {walls.map((wall) => (
         <Wall

@@ -4901,3 +4901,52 @@ nie pokazywały nic. Dopiero filtr „tylko piksele malowanego frontu" mierzy
 powierzchnię, o którą chodzi w tej fazie.
 
 **Werdykt.** 1234 → **1240** testów.
+
+---
+
+## F10 — Room setup, nowy paradygmat (duża budowa) — ✅ ZIELONA
+
+**Werdykt właściciela: ciągnięcie za narożniki jest nie do użycia** — i opisuje
+ARYTMETYKĘ, nie mysz. Narożnik to punkt WSPÓLNY dwóch ścian, więc ciągnięcie go
+zmienia KIERUNEK obu: wszystkie kąty w pomieszczeniu ruszają się naraz, a kąt
+prosty da się trafić tylko przypadkiem.
+
+To, co stolarz przesuwa, to ŚCIANA — i to jest **jeden prymityw**. `moveWall`
+odsuwa ścianę wzdłuż jej własnej normalnej i DOCINA dwóch sąsiadów tam, gdzie
+się teraz spotykają, zachowując ich kierunki co do joty. Z tego wychodzi
+wszystko:
+
+* **F10.1 przeciąganie całej ściany** — chwyt gdziekolwiek na ścianie, ruch
+  wzdłuż normalnej, sąsiedzi się rozciągają. **Uchwyty narożników ZNIKNĘŁY.**
+* **F10.2 wpisana odległość (AutoCAD)** — z zaznaczoną ścianą wpisujesz liczbę i
+  Enter: ściana idzie DOKŁADNIE tyle milimetrów. Kierunek to kierunek
+  przeciągania, a bez przeciągania — NA ZEWNĄTRZ (pokój rośnie); minus mówi
+  drugą rzecz i wpisuje się jak każdy inny znak. Przeciąganie pamięta
+  pomieszczenie z chwili, gdy ręka poszła w dół, więc wpisana liczba jest
+  BEZWZGLĘDNA, a nie doliczana do tego, co ręka już przesunęła.
+* **F1.5a wpisana DŁUGOŚĆ to ten sam prymityw** rozwiązany dla punktu
+  przecięcia — test trzyma to dosłownie: `setWallLength(r,0,4500)` daje bajt w
+  bajt to samo, co `moveWall(r,1,500)`. Gdyby to były dwie reguły, mogłyby się
+  różnić; nie mogą.
+* **F10.4 L-kształt zostaje** i podlega tej samej edycji: test przesuwa każdą z
+  sześciu ścian i sprawdza, że wszystkie sześć kątów jest nietkniętych.
+* Ruch, który wywróciłby wielokąt na drugą stronę, jest ODRZUCANY (znak pola
+  ze znakiem), a nie stosowany.
+
+**F10.3 — WSTAW BOX** (komin, słup, obudowana rura). Czysty model w silniku:
+`migrateBox` / `boxCorners` / `moveBoxSide` / `moveBox`, prostokąt zorientowany
+w osiach planu — bo to, co właściciel chce z nim robić, to „przeciągnij CAŁY
+bok" i „wpisz odległość", a jedno i drugie to jedna liczba na jednej osi.
+Boki edytuje się DOKŁADNIE tak jak ściany (na zewnątrz = dodatnio, przeciągnięty
+przez przeciwległy bok = odmowa).
+
+Box **renderuje się w 3D** od podłogi do sufitu w tonie ściany (czyta się jako
+BUDYNEK, nie jako mebel; bez handlerów wskaźnika, więc klik przechodzi na
+podłogę za nim — czyli znaczy to, co znaczy klik w ścianę) i **uczestniczy w
+kolizji jak ściany**: `boxSpansOnWall` mierzy go dokładnie tak, jak mierzy się
+jednostkę stojącą na innej ścianie — rzut na układ tej ściany, liczy się tylko
+tam, gdzie wchodzi w pas głębokości przesuwanej szafki. Widzą go OBIE ścieżki:
+zacisk przeciągania (`wallObstacles`) i WYSZUKIWANIE MIEJSCA (`freeSlotOnWall`),
+więc szafki nie da się ani wsunąć w komin, ani w nim POSTAWIĆ.
+
+**Werdykt.** 1240 → **1252** testy.

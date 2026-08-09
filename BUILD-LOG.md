@@ -4950,3 +4950,73 @@ zacisk przeciągania (`wallObstacles`) i WYSZUKIWANIE MIEJSCA (`freeSlotOnWall`)
 więc szafki nie da się ani wsunąć w komin, ani w nim POSTAWIĆ.
 
 **Werdykt.** 1240 → **1252** testy.
+
+---
+
+## F11 — Przejście w przeglądarce + dokumentacja + BRAMKA — ✅ ZIELONA (14/14)
+
+`scripts/e2e-turn14.mjs` — trzynaście punktów, które nazywa CLAUDE.md, MIERZONE,
+nie fotografowane. Trzy kroki przeszły dopiero po tym, jak najpierw pomyliło się
+samo PRZEJŚCIE, i każdy jest wart linijki:
+
+* **para F1.1 jest JEDNYM krokiem** — klik w szafkę przez ścianę zaznacza,
+  Ctrl rozszerza zbiór, klik w ścianę czyści — więc wahadło nie odbije się już
+  bez czerwonego przebiegu;
+* **WUD i FRIDGE przychodzą BEZ drzwi** (tura 13 F5.3 wiesza je świadomie), więc
+  i modal drzwi, i „Open doors" potrzebowały najpierw `addDoors`;
+* **React wyprowadza `onPointerEnter` z `pointerover`**, więc syntetyczne
+  `pointerenter` — które nie bąbelkuje — jest gestem, którego aplikacja nigdy nie
+  słyszy. Najazd na legendę jest teraz prawdziwym ruchem myszy i SCREWS_3MM
+  zapala jedną ścieżkę, przygasza dwadzieścia i wypisuje
+  „Screws ⌀3 · ⌀3 at 50, 2140.5".
+
+**Jedna poprawka produktowa wyszła z pisania przejścia.** Wpisana odległość
+liczy się od pomieszczenia z chwili, gdy ŚCIANA ZOSTAŁA WYBRANA, a nie od
+bieżącego szkicu — więc „pociągnij o 20, wpisz 202, Enter" przesuwa dokładnie o
+202, a nie o 242. Dokładnie o to prosi krok przejścia w CLAUDE.md i przejście to
+teraz mierzy: **202**.
+
+## Dokumentacja
+
+`BACKLOG`: **#45 i #55 ZAMKNIĘTE** (z opisem, co je zamknęło), zaparkowane
+**#73** przerysowanie zawiasów, **#74** wycięcia, **#75** kolor per element
+faktycznie przemalowujący 3D, **#76** box a ograniczanie GŁĘBOKOŚCI, **#77**
+skrypt tury 13 jako poprzednik. `BLOCKERS`: nic nie zostało cofnięte, więc nic
+nie dopisano.
+
+## BRAMKA — ✅ ZIELONA
+
+| brama | wynik |
+|---|---|
+| pełny reinstall (`rm -rf node_modules && npm install`) | czysty |
+| testy | **1252 / 1252** (baza tury: 1159) |
+| build | czysty |
+| istniejące fixtures | `git diff fixtures/` **pusty**; `golden-wall-mask.json` to DODANIE |
+| zależności | nietknięte (`git diff package.json package-lock.json` pusty) |
+| czystość silnika | grep po React / zustand / three / stores w `src/engine/` — pusty |
+| tożsamość CNC | opublikowana w `verify/t14/cnc-export-identity.md` + oba pliki odcisków |
+| `verify/t14/` | 13 zrzutów, `measurements.json`, pomiar świateł F9, raport CNC |
+| PR | otwarty, **nie scalony** |
+
+**Delty CNC — dwie, obie nazwane.** 21 linii ZMIENIONYCH i wszystkie to plecy
+lodówki z F2 (`FRIDGE … 01-BACK.dxf` × 7 presetów plus arkusze, które je
+zawierają) — jeden rząd gniazd na jednej formatce jednego kitu. 335 linii
+DODANYCH i wszystkie to dwa nowe presety panelu maskującego z F5. Każdy inny typ
+jednostki jest bajt w bajt taki sam na każdym presecie.
+
+Bramka F11 w CLAUDE.md wymieniała w nawiasie tylko panel maskujący; F2 jest w
+tym samym pliku nazwana poprawką KRYTYCZNĄ, a zmiana rzędu gniazd jest jej
+nieuniknioną konsekwencją — więc druga delta jest nazwana wprost tutaj i w
+raporcie, a nie po cichu wchłonięta.
+
+## Nowe pliki
+
+`src/engine/drawings/partDetail.js` · `src/components/PartDetailModal.jsx` ·
+`fixtures/golden-wall-mask.json` · `scripts/e2e-turn14.mjs` ·
+osiem plików testów `test/turn14-*.test.js` · `verify/t14/`
+
+## Nowe liczby w `profile.js`
+
+`autoParts.mask.enabled` / `thickness` / `depthExtra` (F5) ·
+`appearance.studio.points[].yMm` + para na wysokości oczu (F9).
+USUNIĘTE: `appearance.selection.hoverOpacity` (F1.4 — nieobecność jest ustawieniem).

@@ -8,6 +8,7 @@ import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
 import { useViewHandle } from '../3d/viewHandle.js';
 import EditorRig from '../3d/EditorRig.jsx';
+import { Environment } from '../3d/Scene.jsx';
 import { mm } from '../3d/constants.js';
 import { surfaceFor, outlineFor } from '../3d/materials.js';
 import { useUiStore } from '../stores/uiStore.js';
@@ -251,6 +252,20 @@ function CabinetCanvas({
           window, and it was tuned by MEASURING (verify/t16/editor-light.json)
           rather than by eye in the code. */}
       <EditorRig profile={profile} radius={radius} />
+      {/* ─── The probe the bench was missing ───
+          Every panel material carries an `envMapIntensity` — 1.0 on board,
+          0.25 on lacquer — and in this window it multiplied NOTHING, because
+          nothing ever set `scene.environment`. The main view has had the
+          RoomEnvironment probe since turn 6; the editor never did, so a whole
+          term of the lighting equation was zero here and turn 16's brighter
+          lamps could only buy back part of it. The inside faces are the proof:
+          a directional lamp outside a carcass does not reach them, and a probe
+          does. Same component, same profile number as the main view — one rig,
+          two windows, no second set of numbers to drift. */}
+      <Environment
+        intensity={profile.appearance.environment.intensity}
+        on
+      />
       <ExplodedCabinet
         unit={unit}
         panels={panels}

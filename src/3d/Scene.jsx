@@ -119,8 +119,18 @@ function FocusRig({ request, orbitRef, onDone }) {
  *
  * Built once per renderer and thrown away with it. Its intensity is a profile
  * number and is turned up for a render.
+ *
+ * ─── Exported since the editor windows need it too ───
+ * The exploded cabinet editor and the part-detail window ran WITHOUT a
+ * probe — five lamps, an ambient and a hemisphere, and `envMapIntensity`
+ * multiplying nothing. That term is a large part of the light on a panel in
+ * this view (1.0 on board, 0.25 on lacquer), so its absence read as "serio nic
+ * nie widać", and it read WORST exactly where the editor exists to be looked
+ * at: the inside faces, which no directional lamp reaches and which a probe
+ * lights by definition. It is exported rather than copied so both windows are
+ * lit by the SAME box — one rig, the standing rule.
  */
-function Environment({ intensity, on }) {
+export function Environment({ intensity, on }) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
 

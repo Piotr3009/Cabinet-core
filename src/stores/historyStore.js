@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useProjectStore } from './projectStore.js';
 import { useUiStore } from './uiStore.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { isBatching, onBatchEnd } from './historyBatch.js';
 
 // ─── Undo / Redo (turn 12, CLAUDE.md F9) ────────────────────────────────────
 //
@@ -160,8 +161,11 @@ function apply(snapshot) {
  * global stores as it found them.
  */
 let stop = null;
+let unwatchBatch = null;
 export function watchProjectHistory() {
   if (stop) return stop;
+  // One snapshot when the outermost batch closes — however many writes it made.
+  unwatchBatch = onBatchEnd(() => { if (!applying) flush(); });
   stop = useProjectStore.subscribe((state, previous) => {
     if (applying) return;
     // Only the PROJECT and its UNITS are history. `dirty` flips on every write
@@ -181,6 +185,13 @@ export function watchProjectHistory() {
       };
     }
     if (timer) clearTimeout(timer);
+    // ─── Turn 13 (CLAUDE.md F5.4): A BULK ACTION IS ONE STEP ───
+    // Six cabinets given a plinth is six `set` calls in one tick. The trailing
+    // timer would already have merged them — but only if there IS a timer, and
+    // a test sets `coalesceMs` to zero precisely so there is not. A batch is
+    // therefore declared rather than inferred: the snapshot above is kept, and
+    // the push waits for `onBatchEnd` below.
+    if (isBatching()) return;
     const { coalesceMs } = settings();
     // coalesceMs 0 is "no coalescing", which is what a test wants: the push is
     // immediate rather than a timer nobody is waiting for.
@@ -194,6 +205,8 @@ export function unwatchProjectHistory() {
   cancel();
   if (stop) stop();
   stop = null;
+  if (unwatchBatch) unwatchBatch();
+  unwatchBatch = null;
 }
 
 /** For tests: settle any burst without waiting for the timer. */

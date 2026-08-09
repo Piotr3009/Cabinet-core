@@ -38,8 +38,20 @@ export default function ContextMenu() {
   const toggleHinges = useUiStore((s) => s.toggleHinges);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
   const openModal = useUiStore((s) => s.openModal);
+  // ─── Turn 13 (CLAUDE.md F5.3) ───
+  // The menu is about the cabinet under the pointer AND about everything else
+  // that is selected. The list is resolved to real units here so the actions
+  // can read each one's own state (which side already has an end panel) rather
+  // than assuming the primary speaks for all of them.
+  const selectedUnitIds = useUiStore((s) => s.selectedUnitIds);
+  const batch = useProjectStore((s) => s.batch);
+  const addDoorsBulk = useProjectStore((s) => s.addDoorsBulk);
 
   const unit = units.find((u) => u.id === menu?.unitId) || null;
+  const selection = useMemo(
+    () => units.filter((u) => selectedUnitIds.includes(u.id)),
+    [units, selectedUnitIds],
+  );
 
   // What a modal opened FROM this menu is beside (turn 12, rule 15): the menu
   // itself, which is already standing next to the cabinet it is about. Read
@@ -50,10 +62,14 @@ export default function ContextMenu() {
   const actions = useMemo(() => (unit
     ? menuActions({
       unit,
+      selection,
       panelPart: menu.part,
       dimensions: Boolean(unitDimensions[unit.id]),
       hinges: showHinges,
       store: {
+        // F5.4: every bulk entry is one undo step, and this is the only place
+        // that promise is made.
+        batch,
         redistributeShelves,
         rotateUnit,
         removeUnit,
@@ -96,6 +112,16 @@ export default function ContextMenu() {
         saveAsTemplate: (unitId) => openModal('save-template', { unitId, anchor: menuAnchor() }),
         // Turn 12 (CLAUDE.md F4): the cabinet's own window, beside the cabinet.
         editCabinet: (unitId) => openModal('cabinet', { unitId, anchor: menuAnchor() }),
+        // ─── Turn 13 (CLAUDE.md F5.3) ───
+        // Both take the whole SELECTION, and both are one undo step of their
+        // own: the store's bulk actions batch internally, so the menu does not
+        // wrap them again.
+        addDoors: (ids) => {
+          const { fitted, already } = addDoorsBulk(ids) || {};
+          if (fitted) notify(`Doors hung on ${fitted} cabinet${fitted === 1 ? '' : 's'}.`, 'ok');
+          if (!fitted && already) notify('They already have their doors.', 'info');
+        },
+        unitColour: (ids) => openModal('unit-finish', { unitIds: ids, anchor: menuAnchor() }),
         // The options for what was just added are in the panel, not in a modal.
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
       },
@@ -191,7 +217,9 @@ export default function ContextMenu() {
         title="Drag to move this menu"
         onPointerDown={startDrag}
       >
-        {unit.params.unit_num} · {getUnitType(unit.type).label}
+        {selection.length > 1 && selection.some((u) => u.id === unit.id)
+          ? `${selection.length} cabinets selected`
+          : `${unit.params.unit_num} · ${getUnitType(unit.type).label}`}
       </div>
       {actions.map((a) => (
         <button

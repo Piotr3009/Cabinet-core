@@ -632,6 +632,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
+  const selectedUnitIds = useUiStore((s) => s.selectedUnitIds);
   const openRightPanel = useUiStore((s) => s.openRightPanel);
   const setPanelSection = useUiStore((s) => s.setPanelSection);
   const selectedElement = useUiStore((s) => s.selectedElement);
@@ -785,9 +786,13 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // (turn 11, CLAUDE.md F4.1).
           walls={walls}
           roomCentre={bounds.centre}
-          selected={unit.id === selectedUnitId}
+          // Every unit in the SET is marked, not only the primary (turn 13,
+          // F5.1) — a selection you cannot see is a selection you cannot trust.
+          selected={selectedUnitIds.includes(unit.id)}
           snapStep={snapStep}
-          onSelect={() => selectUnit(unit.id)}
+          // Turn 13 (F5.1): the modifier travels with the click — the SET is
+          // built in the store, so the canvas only has to say what happened.
+          onSelect={(opts) => selectUnit(unit.id, opts)}
           onMove={(x, step) => moveUnit(unit.id, x, step)}
           onMoveToWall={(wallIndex, x, step) => {
             const moved = moveUnitToWall(unit.id, wallIndex, x, step);

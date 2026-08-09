@@ -472,7 +472,25 @@ export function resolveUnitDesign(unit, design) {
     || style?.frontType
     || d.fronts.style;
 
+  // ─── Turn 13 (CLAUDE.md F3.1): THE UNIT LEVEL, WHICH WAS MISSING ───
+  //
+  // The owner set the project colours in step 5, then edited ONE cabinet and
+  // the whole job changed. It did, and the reason is that there was nowhere for
+  // one cabinet's answer to live on the FRONT side: the carcass had
+  // `carcass_type_id` and the front had nothing, so the only control the panel
+  // could offer was the PROJECT's — a settings dialog wearing a unit's clothes.
+  //
+  // A unit points at one of the project's front types by id, exactly as it has
+  // always pointed at one of its carcass types. Both are POINTERS INTO THE
+  // PALETTE and not colours of their own, which is what keeps "the palette
+  // grows in Settings" true: change Front 2 in Settings and every cabinet
+  // wearing Front 2 follows, which is what a workshop means by a second front
+  // material.
+  const frontPalette = paletteFrontTypes(d);
+  const unitFrontType = frontPalette.find((t) => t.id === unit?.params?.front_type_id) || null;
+
   const colour = normaliseColour(unit?.params?.front_colour)
+    || unitFrontType?.colour
     || style?.colour
     || d.colour.front
     || null;
@@ -485,9 +503,97 @@ export function resolveUnitDesign(unit, design) {
     colour,
     doorStyle: style,
     carcassType,
-    frontMaterialId: style?.material_id ?? null,
+    // Which palette entry this unit wears, or null when it simply follows the
+    // project. The picker reads it to show the tick; "Reset to project" is
+    // exactly "make this null again".
+    frontTypeEntry: unitFrontType,
+    frontMaterialId: unitFrontType?.material_id ?? style?.material_id ?? null,
     carcassMaterialId: carcassType?.material_id ?? null,
   };
+}
+
+// ─── THE PROJECT PALETTE (turn 13, CLAUDE.md F3.2) ──────────────────────────
+//
+// "The unit picker shows ONLY the project palette — Carcass 1..3, Front 1..2,
+// exactly the finishes Step 5 defined. No full colour lists."
+//
+// That is a rule about a LIST, so the list is computed here rather than
+// assembled in a component: the picker renders it, the test asserts it, and a
+// fourth carcass type invented in some later turn appears in both at once. A
+// project that has never opened step 5 still has a front — the profile's — so
+// the front side of the palette is never empty; it is the project's own answer,
+// labelled as such.
+
+/** The front types a project actually has, with an implied Front 1 when it has none. */
+function paletteFrontTypes(d) {
+  if (d.fronts.types.length) return d.fronts.types;
+  return [{
+    id: 'f1',
+    label: 'Front 1',
+    source: null,
+    colour: normaliseColour(d.colour.front),
+    material_id: null,
+  }];
+}
+
+/**
+ * The finishes a UNIT may be given: the project's own, and nothing else.
+ *
+ * @param {object} design   the stored or migrated design
+ * @param {object} profile
+ * @returns {Array<{key:string, kind:'carcass'|'front', id:string, label:string,
+ *                  hex:string|null, finish:object|null, source:string|null}>}
+ *   `key` is unique across both kinds — a carcass type and a front type may
+ *   both be called `f1` in principle, and a picker keyed on the bare id would
+ *   tick two swatches at once.
+ */
+export function projectPalette(design, profile) {
+  const d = migrateDesign(design);
+  const out = [];
+  for (const t of d.carcass.types) {
+    const finish = finishById(profile, t.finish_id)
+      || (t.source === 'sprayed' ? sprayFinish(d.colour.carcass) : null);
+    out.push({
+      key: `carcass:${t.id}`,
+      kind: 'carcass',
+      id: t.id,
+      label: t.label,
+      hex: finish?.hex || null,
+      finish: finish || null,
+      source: t.source ?? null,
+    });
+  }
+  for (const t of paletteFrontTypes(d)) {
+    // A front is a COLOUR in this app — that is what turn 12 settled when it
+    // made front type 1's colour the project's front colour — so the swatch is
+    // the colour, and a type with none shows the project's resolved front.
+    const finish = sprayFinish(t.colour) || finishById(profile, d.finish.front);
+    out.push({
+      key: `front:${t.id}`,
+      kind: 'front',
+      id: t.id,
+      label: t.label,
+      hex: t.colour?.hex || finish?.hex || null,
+      finish: finish || null,
+      source: t.source ?? null,
+    });
+  }
+  return out;
+}
+
+/**
+ * What THIS unit has been given of its own — null for a unit that follows the
+ * project, which is most of them.
+ *
+ * The panel shows "Reset to project" only when there is something to reset, and
+ * a bulk editor (F5.2) asks this of every unit in a selection to decide whether
+ * a field reads "mixed".
+ */
+export function unitFinishOverride(unit) {
+  const carcass = unit?.params?.carcass_type_id || null;
+  const front = unit?.params?.front_type_id || null;
+  if (!carcass && !front) return null;
+  return { carcass_type_id: carcass, front_type_id: front };
 }
 
 // ─── Finishes (turn 4, BACKLOG #4) ───

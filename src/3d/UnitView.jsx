@@ -454,7 +454,14 @@ export default function UnitView({
 
   const startDrag = useCallback((e) => {
     e.stopPropagation();
-    onSelect();
+    // ─── Turn 13 (CLAUDE.md F5.1): CTRL+CLICK BUILDS A SET ───
+    // With the modifier down this is not a grab, it is a tick: the cabinet
+    // joins or leaves the selection and stays exactly where it is. Letting the
+    // drag run as well would move six cabinets by the two pixels the hand
+    // wobbles while it is ticking the sixth.
+    const additive = Boolean(e.ctrlKey || e.metaKey);
+    onSelect({ additive });
+    if (additive) return;
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
     drag.current = { offset: alongMm(hit) - unit.position.x_mm };

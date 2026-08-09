@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { DEFAULT_CABINET_PROFILE } from '../engine/profile.js';
+import { applySelection, primaryOf } from '../lib/selection.js';
 
 // ─── UI state ───
 // Panel geometry, selection and the editor's snap step. Nothing here is
@@ -47,7 +48,9 @@ export const useUiStore = create((set, get) => ({
   // THROUGH a project — start screen first, always.
   screen: 'start',                   // 'start' | 'editor'
   openEditor: () => set({ screen: 'editor' }),
-  goToStart: () => set({ screen: 'start', selectedUnitId: null, selectedSection: null, bomOpen: false }),
+  goToStart: () => set({
+    screen: 'start', selectedUnitId: null, selectedUnitIds: [], selectedSection: null, bomOpen: false,
+  }),
 
   // Floating Library panel (grab & move — SPEC 4.1). Turn 4: it is opened from
   // the Library MENU, one category at a time, and it has an X (BACKLOG #9).
@@ -271,18 +274,35 @@ export const useUiStore = create((set, get) => ({
   // Selection: which unit and which of its sections is highlighted
   selectedUnitId: null,
   selectedSection: null,
-  selectUnit: (id) => set({
-    selectedUnitId: id,
-    selectedSection: id ? 0 : null,
-    rightPanelOpen: Boolean(id),
-    // Selecting a DIFFERENT cabinet drops whatever was selected inside the old
-    // one — an element belongs to its unit and cannot outlive the selection of
-    // it. Re-selecting the SAME unit leaves the element alone, which is what
-    // makes clicking a shelf that is already selected a no-op rather than a
-    // reset (turn 9, CLAUDE.md F4.1).
-    ...(id === get().selectedUnitId ? {} : { selectedElement: null }),
+  // ─── Turn 13 (CLAUDE.md F5.1): MORE THAN ONE ───
+  // The SET, of which `selectedUnitId` is the last entry — the PRIMARY, the one
+  // the hand is on and the one every single-unit panel in the app is about. The
+  // two are written together and never separately, so nothing that reads
+  // `selectedUnitId` (which is most of the app) had to learn anything new.
+  selectedUnitIds: [],
+  /**
+   * @param {string|null} id
+   * @param {object} opts  { additive } — Ctrl (or ⌘) held, F5.1
+   */
+  selectUnit: (id, { additive = false } = {}) => {
+    const next = applySelection(get().selectedUnitIds, id, additive);
+    const primary = primaryOf(next);
+    return set({
+      selectedUnitIds: next,
+      selectedUnitId: primary,
+      selectedSection: primary ? 0 : null,
+      rightPanelOpen: next.length > 0,
+      // Selecting a DIFFERENT cabinet drops whatever was selected inside the old
+      // one — an element belongs to its unit and cannot outlive the selection of
+      // it. Re-selecting the SAME unit leaves the element alone, which is what
+      // makes clicking a shelf that is already selected a no-op rather than a
+      // reset (turn 9, CLAUDE.md F4.1).
+      ...(primary === get().selectedUnitId ? {} : { selectedElement: null }),
+    });
+  },
+  clearSelection: () => set({
+    selectedUnitId: null, selectedUnitIds: [], selectedSection: null, selectedElement: null,
   }),
-  clearSelection: () => set({ selectedUnitId: null, selectedSection: null, selectedElement: null }),
 
   // ─── One ELEMENT inside a unit (turn 9, CLAUDE.md F4.1) ───
   // Until now the smallest thing that could be selected was a whole cabinet, so
@@ -296,6 +316,9 @@ export const useUiStore = create((set, get) => ({
   selectedElement: null,             // { unitId, elementRef } | null
   selectElement: (unitId, elementRef) => set({
     selectedUnitId: unitId,
+    // Pointing at a piece is pointing at ONE cabinet: a multi-selection ends
+    // here, because the properties that follow are that piece's.
+    selectedUnitIds: unitId ? [unitId] : [],
     selectedSection: 0,
     rightPanelOpen: true,
     selectedElement: unitId && elementRef ? { unitId, elementRef } : null,

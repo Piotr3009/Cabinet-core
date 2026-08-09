@@ -4632,3 +4632,39 @@ choć nawias w bramce F11 wymieniał tylko panel maskujący.
 
 **Werdykt.** 1174 → **1183** testy; dziewięć nowych zamyka ZŁĄCZE, a nie
 powtarza stałej.
+
+---
+
+## F3 — Górny wypełniacz KOŃCZY na przeszkodzie (#55 + jeden nowy przypadek) — ✅ ZIELONA
+
+Właściciel zaparkował #55 w turze 8; teraz jest żywe, a z używania aplikacji
+doszedł drugi przypadek. Oba to JEDNO zdanie: *między tym biegiem a ścianą stoi
+coś, co idzie na całą wysokość?*
+
+Tura 8 umiała zapytać o to tylko JEDNOSTKI KOŃCOWEJ BIEGU — i dlatego żaden z
+dwóch przypadków nie działał, bo w obu przeszkoda należy do kogoś innego:
+
+1. bieg szafek WISZĄCYCH zatrzymuje się na boku wysokiej szafki dociągniętym do
+   sufitu. Wysoka szafka nigdy nie będzie w tym biegu: `buildRuns` kluczuje po
+   poziomie montażu, więc nawet gdy tura 8 zrównuje im wieńce co do milimetra
+   (i tak jest — test to sprawdza), to są dwa biegi na jednej ścianie;
+2. górny wypełniacz wysokiej szafki kończy NA bocznym wypełniaczu zamiast go
+   przecinać.
+
+`ceilingVerticals(units, {roomHeight}, profile)` to odpowiedź POMIESZCZENIA:
+pionowe elementy sięgające sufitu — boki i wypełniacze boczne, obojętnie czyje —
+jako przedziały wzdłuż ściany. Element, który kończy się na własnym wieńcu, NIE
+jest na tej liście, i to zachowuje zachowanie tury 8 bez zmian: bieg opływa
+własny bok o wysokości korpusu (test END 3 tury 6 przechodzi nietknięty).
+
+Reguła w `runEnd` to teraz: 1) ściana → 2) **najbliższy pion do sufitu między
+mną a ścianą** → 3) listwa przyścienna niższa od sufitu (przechodzę PO niej do
+ściany, tura 6) → 4) otwarte, obracam narożnik. Element dobija do BLISKIEGO lica
+przeszkody: to jest lico, które widzi oko, więc przejście po jego wierzchu
+dałoby spoinę na wysokości wzroku, a przejście obok postawiłoby listwę przed
+tym, co kończy bieg.
+
+Jedna reguła, oba przypadki, w logice biegu, którą górny wypełniacz już miał —
+bez równoległej implementacji, jak prosi CLAUDE.md.
+
+**Werdykt.** 1183 → **1190** testów.

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
 import RoomModal from './RoomModal.jsx';
-import ProjectSettingsStep from './ProjectSettingsStep.jsx';
+import SettingsPanel from './SettingsPanel.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -294,7 +294,13 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
                 and this project keeps them to itself.
               </p>
             )}
-            <ProjectSettingsStep design={design} profile={profile} notify={notify} />
+            {/* ─── Turn 12 (CLAUDE.md F1) ───
+                THE SAME COMPONENT the Settings menu opens, bound to the same
+                store the scene reads. Turn 11 had a copy here, and a colour set
+                on this step never reached the furniture. Room setup is reachable
+                from it too — a wall-units job skips the room step, and this is
+                the way back to it. */}
+            <SettingsPanel onRoomSetup={() => setStep('room')} />
           </>
         )}
       </div>

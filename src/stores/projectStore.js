@@ -17,6 +17,7 @@ import {
 } from '../engine/room.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
+  withFrontColour,
 } from '../engine/design.js';
 import {
   projectBoardThickness, projectDepth, projectFrontThickness, setFrontTypeCount,
@@ -40,6 +41,30 @@ const CACHE_KEY = 'cc.project.cache.v1';
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 
 export const DEFAULT_ROOM = ENGINE_DEFAULT_ROOM;
+
+/**
+ * A design patch, merged (turn 12, CLAUDE.md F1).
+ *
+ * The stored design is migrated FIRST and the patch lands on the result. It is
+ * already migrated in practice (loadProject and newProject both do it), and
+ * this is still not belt-and-braces: since turn 9 the design carries a ONE-WAY
+ * migration — a sheen on the old 0–25 scale is multiplied by four — and a patch
+ * merged onto an unmigrated base would hand a freshly typed 25 to that rule and
+ * store 100 (CLAUDE.md F5).
+ *
+ * The FRONT COLOUR is the one field a plain merge cannot do, because it lives
+ * in two places that have to agree (engine/design.js `withFrontColour`). A
+ * patch that sets `colour.front` and says nothing about the front types is the
+ * old Design-settings shape — the sprayed-finish picker — and it is routed
+ * through the one setter so that both halves move together.
+ */
+function applyDesignPatch(stored, patch) {
+  const merged = migrateDesign({ ...migrateDesign(stored), ...patch });
+  const setsFrontColour = patch && Object.hasOwn(patch, 'colour')
+    && Object.hasOwn(patch.colour || {}, 'front')
+    && !Object.hasOwn(patch, 'fronts');
+  return setsFrontColour ? withFrontColour(merged, patch.colour.front) : merged;
+}
 
 function newUnit(typeId, profile, index, design) {
   const type = getUnitType(typeId);
@@ -345,7 +370,7 @@ export const useProjectStore = create((set, get) => ({
       // carries a ONE-WAY migration — a sheen on the old 0–25 scale is
       // multiplied by four — and a patch merged onto an unmigrated base would
       // hand a freshly typed 25 to that rule and store 100 (CLAUDE.md F5).
-      project: { ...s.project, design: migrateDesign({ ...migrateDesign(s.project.design), ...patch }) },
+      project: { ...s.project, design: applyDesignPatch(s.project.design, patch) },
       dirty: true,
     }));
     // The infill width lives in Design Settings, so changing it re-cuts the
@@ -393,17 +418,45 @@ export const useProjectStore = create((set, get) => ({
     };
   }),
 
-  /** One front type's source, colour or assigned stock. */
+  /**
+   * One front type's source, colour or assigned stock.
+   *
+   * ─── Turn 12 (CLAUDE.md F1) ───
+   * A COLOUR goes through `withFrontColour`, which is the one setter for it:
+   * turn 11 wrote it here and only here, into a field nothing in the app reads,
+   * which is why the scene ignored the new settings menu. Everything else in
+   * the patch is a plain merge, as before.
+   */
   setFrontType: (typeId, patch) => set((s) => {
     const design = migrateDesign(s.project.design);
     const profile = getCabinetProfile();
+    const { colour, ...rest } = patch || {};
     const types = setFrontTypeCount(design.fronts.types, design.fronts.types.length || 1, profile)
-      .map((t) => (t.id === typeId ? { ...t, ...patch } : t));
+      .map((t) => (t.id === typeId ? { ...t, ...rest } : t));
+    const merged = migrateDesign({ ...design, fronts: { ...design.fronts, types } });
     return {
-      project: { ...s.project, design: migrateDesign({ ...design, fronts: { ...design.fronts, types } }) },
+      project: {
+        ...s.project,
+        design: colour === undefined ? merged : withFrontColour(merged, colour, typeId),
+      },
       dirty: true,
     };
   }),
+
+  /**
+   * The project's FRONT COLOUR (turn 12, CLAUDE.md F1).
+   *
+   * The one door every colour control in the app goes through — the settings
+   * surface's front-type picker and its sprayed-finish picker are the same
+   * question asked twice, and before this they wrote to different fields.
+   */
+  setFrontColour: (colour, typeId = null) => {
+    set((s) => ({
+      project: { ...s.project, design: withFrontColour(s.project.design, colour, typeId) },
+      dirty: true,
+    }));
+    return migrateDesign(get().project.design);
+  },
 
   /** A carcass type's SOURCE — EGGER decor or sprayed (CLAUDE.md F9.2). */
   setCarcassSource: (typeId, source) => set((s) => {

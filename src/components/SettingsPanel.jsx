@@ -6,12 +6,10 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { isJcMaterial, materialSlotState, useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import {
   FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights, resolveJoinery,
-  sprayFinish, sprayFinishLabel,
 } from '../engine/design.js';
-import { decorIdFromFinishId } from '../engine/decors.js';
 import {
   carcassSources, frontSources, hardwareChoices, projectBoardThickness,
-  projectDimensions, projectFrontThickness, sourceById, thicknessForSource,
+  projectDimensions, projectFrontThickness, sourceById,
 } from '../engine/projectSettings.js';
 import { formatMm } from '../engine/format.js';
 import { PROJECT_TYPES as PROJECT_TYPE_OPTIONS } from '../engine/projectTypes.js';
@@ -83,12 +81,17 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const removeDoorStyle = useProjectStore((s) => s.removeDoorStyle);
 
   const materials = useMaterialAssignmentStore((s) => s.materials);
+  const unitCount = useProjectStore((s) => s.units.length);
 
   const [picking, setPicking] = useState(null);          // { carcassId } | null
   const [joineryOpen, setJoineryOpen] = useState(false);
-  const [finishTab, setFinishTab] = useState('app');     // 'app' | 'egger' | 'spray'
-  const [decorRole, setDecorRole] = useState('front');
   const [editingStyle, setEditingStyle] = useState(null);
+  // ── Owner, 09.08: each big section gets a red SAVE that folds it away ──
+  const [folded, setFolded] = useState({ carcass: false, fronts: false });
+  // ── The HARD gate (owner: B + hard gates): a board whose thickness differs
+  // from what the project is DRAWN at cannot be assigned silently once units
+  // exist. This holds the offered assignment while the owner decides. ──
+  const [thickGate, setThickGate] = useState(null);      // { typeId, material } | null
 
   const heights = useMemo(() => projectHeights(design, profile), [design, profile]);
   const dimensions = useMemo(
@@ -98,6 +101,25 @@ export default function SettingsPanel({ onRoomSetup = null }) {
 
   const finishes = profile.appearance.finishes;
   const boardMaterials = materials.filter((m) => m.category === 'board');
+  // What the project is DRAWN at today. Carcass 1's assigned board is the
+  // truth once one exists; before that, the soft-start Generic 18 default.
+  const carcass1Board = materials.find((m) => m.id === design.carcass.types[0]?.material_id) || null;
+  const drawnBoardT = carcass1Board?.thickness
+    ?? (design.thickness.custom ?? design.thickness.board ?? 18);
+  const assignBoard = (typeId, materialId) => {
+    const m = boardMaterials.find((x) => x.id === materialId) || null;
+    // The hard gate: units exist and the board would CHANGE the geometry.
+    if (m && unitCount > 0 && m.thickness !== drawnBoardT && typeId === design.carcass.types[0]?.id) {
+      setThickGate({ typeId, material: m });
+      return;
+    }
+    setCarcassMaterial(typeId, materialId || null);
+    // Carcass 1's board pins the project thickness — one G per project, the
+    // kit's own boundary (#58). Types 2–3 are cost lines, not geometry.
+    if (m && typeId === design.carcass.types[0]?.id) {
+      setProjectDefaults({ thickness: { board: m.thickness, custom: null } });
+    }
+  };
   const frontMaterials = materials.filter((m) => m.category === 'front');
   const slots = materialSlotState(
     design.carcass.types.map((t) => ({ id: t.id, label: t.label, material_id: t.material_id })),
@@ -166,12 +188,24 @@ export default function SettingsPanel({ onRoomSetup = null }) {
 
       <div className="cc-divider" />
 
-      {/* ── 2a. carcasses (CLAUDE.md F9.2) ── */}
+      {/* ── 2a. carcasses (CLAUDE.md F9.2; owner 09.08: hints, SAVE, fold) ── */}
       <section className="space-y-2">
         <div className="cc-row">
-          <span className="text-xs uppercase tracking-wide text-ink-200">Carcasses</span>
+          <span className="text-xs uppercase tracking-wide text-ink-200">
+            Carcasses
+            <span className="ml-2 normal-case tracking-normal text-[11px] text-ink-400">— choose material types</span>
+          </span>
+          <button
+            type="button"
+            className="cc-btn px-3"
+            style={{ borderColor: '#b03030', color: '#e05050' }}
+            title="Saves these assignments and folds the section away"
+            onClick={() => setFolded((f) => ({ ...f, carcass: true }))}
+          >
+            Save
+          </button>
           <div className="flex items-center gap-1">
-            <span className="text-[11px] text-ink-400">types</span>
+            <span className="text-[11px] text-ink-400" title="How many carcass types this project will use">types</span>
             {Array.from({ length: PS.maxCarcassTypes }, (_, i) => i + 1).map((n) => (
               <button
                 key={n}
@@ -185,6 +219,17 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           </div>
         </div>
 
+        {folded.carcass ? (
+          <div className="cc-row text-[12px] text-ink-300">
+            <span className="flex-1">
+              {design.carcass.types.map((t) => {
+                const m = materials.find((x) => x.id === t.material_id);
+                return `${t.label}: ${m ? `${m.code ? `${m.code} · ` : ''}${m.name}` : 'Generic 18 (default)'}`;
+              }).join('   ·   ')}
+            </span>
+            <button type="button" className="cc-btn px-2" onClick={() => setFolded((f) => ({ ...f, carcass: false }))}>Edit</button>
+          </div>
+        ) : (<>
         {design.carcass.types.map((t) => {
           const chosen = t.source || PS.carcassSources[0].id;
           const finish = finishById(profile, t.finish_id)
@@ -253,22 +298,66 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                 </div>
               )}
 
-              <div className="cc-row">
-                <span className="text-[11px] text-ink-400 flex-1">
-                  {materials.find((m) => m.id === t.material_id)?.name || 'No board assigned'}
-                  {isJcMaterial(materials.find((m) => m.id === t.material_id)) ? ' · JC' : ''}
-                </span>
-                <select
-                  className="cc-input w-[150px]"
-                  value={t.material_id || ''}
-                  onChange={(e) => setCarcassMaterial(t.id, e.target.value || null)}
-                >
-                  <option value="">MaterialStock…</option>
-                  {boardMaterials.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}{isJcMaterial(m) ? ' · JC' : ''}</option>
-                  ))}
-                </select>
-              </div>
+              {(() => {
+                const assigned = materials.find((m) => m.id === t.material_id) || null;
+                const gateHere = thickGate && thickGate.typeId === t.id ? thickGate : null;
+                return (
+                  <div className="space-y-1">
+                    <div className="cc-row">
+                      <span className="text-[11px] text-ink-400 flex-1">
+                        {assigned
+                          ? `${assigned.code ? `${assigned.code} · ` : ''}${assigned.name} · ${assigned.thickness} mm`
+                          : 'No board assigned — drawing on Generic 18 mm'}
+                        {isJcMaterial(assigned) ? ' · JC' : ''}
+                      </span>
+                      <select
+                        className="cc-input w-[260px]"
+                        value={t.material_id || ''}
+                        onChange={(e) => assignBoard(t.id, e.target.value || null)}
+                      >
+                        <option value="">MaterialStock…</option>
+                        <optgroup label="Generic — geometry only, assign a real board before check-out">
+                          {boardMaterials.filter((m) => m.placeholder).map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Stock">
+                          {boardMaterials.filter((m) => !m.placeholder).map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {`${m.code ? `${m.code} · ` : ''}${m.name}`}{isJcMaterial(m) ? ' · JC' : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+                    {gateHere && (
+                      /* The HARD gate, in the open (owner 09.08): the project is
+                         DRAWN at one thickness and this board is another. Nothing
+                         changes until the owner says which truth wins. */
+                      <div className="cc-row rounded border border-status-warn/60 bg-status-warn/10 px-2 py-1">
+                        <span className="text-[11px] text-status-warn flex-1">
+                          Project is drawn at {drawnBoardT} mm — {gateHere.material.name} is {gateHere.material.thickness} mm.
+                        </span>
+                        <button
+                          type="button"
+                          className="cc-btn px-2"
+                          onClick={() => {
+                            setCarcassMaterial(t.id, gateHere.material.id);
+                            setProjectDefaults({ thickness: { board: gateHere.material.thickness, custom: null } });
+                            setThickGate(null);
+                            notify(`Project recomputed at ${gateHere.material.thickness} mm`, 'warn');
+                          }}
+                        >
+                          Recompute at {gateHere.material.thickness}
+                        </button>
+                        <button type="button" className="cc-btn px-2" onClick={() => setThickGate(null)}>
+                          Keep {drawnBoardT} — pick another
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
@@ -278,6 +367,19 @@ export default function SettingsPanel({ onRoomSetup = null }) {
             {slots.missing.map((t) => t.label).join(', ')} has no board behind it yet — the look is set, the cost is not.
           </p>
         )}
+        {design.carcass.types.some((t) => materials.find((m) => m.id === t.material_id)?.placeholder) && (
+          <p className="text-[11px] text-status-warn">
+            A Generic board is a placeholder: the geometry is pinned, the cost is not — assign a real
+            board before check-out.
+          </p>
+        )}
+        <p className="text-[11px] text-ink-400">
+          Board thickness: <span className="text-ink-200">{formatMm(drawnBoardT)}</span> — from{' '}
+          {carcass1Board ? `${carcass1Board.code ? `${carcass1Board.code} · ` : ''}${carcass1Board.name}` : 'the Generic 18 default'}.
+          One board thickness per project — the kit's own boundary (#58). Changing it once cabinets
+          exist asks first, and recuts everything.
+        </p>
+        </>)}
       </section>
 
       <div className="cc-divider" />
@@ -286,8 +388,17 @@ export default function SettingsPanel({ onRoomSetup = null }) {
       <section className="space-y-2">
         <div className="cc-row">
           <span className="text-xs uppercase tracking-wide text-ink-200">Fronts</span>
+          <button
+            type="button"
+            className="cc-btn px-3"
+            style={{ borderColor: '#b03030', color: '#e05050' }}
+            title="Saves these choices and folds the section away"
+            onClick={() => setFolded((f) => ({ ...f, fronts: true }))}
+          >
+            Save
+          </button>
           <div className="flex items-center gap-1">
-            <span className="text-[11px] text-ink-400">types</span>
+            <span className="text-[11px] text-ink-400" title="How many front types this project will use">types</span>
             {Array.from({ length: PS.maxFrontTypes }, (_, i) => i + 1).map((n) => (
               <button
                 key={n}
@@ -301,6 +412,15 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           </div>
         </div>
 
+        {folded.fronts ? (
+          <div className="cc-row text-[12px] text-ink-300">
+            <span className="flex-1">
+              {frontTypes.map((t) => `${t.label}: ${t.source || 'spray'}${t.colour?.name ? ` · ${t.colour.name}` : ''}`).join('   ·   ')}
+              {`   ·   style: ${FRONT_STYLE_OPTIONS.find((o) => o.id === design.fronts.style)?.label || design.fronts.style}`}
+            </span>
+            <button type="button" className="cc-btn px-2" onClick={() => setFolded((f) => ({ ...f, fronts: false }))}>Edit</button>
+          </div>
+        ) : (<>
         <label className="block">
           <span className="cc-label">Standard front</span>
           <select
@@ -354,6 +474,10 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           names. End panels and infills are cut from it too. One cabinet&apos;s own can be changed by
           selecting the piece in the canvas.
         </p>
+        <p className="text-[11px] text-ink-400">
+          Shape only — colour lives with the front types above. Little style pictures arrive later.
+        </p>
+        </>)}
       </section>
 
       <div className="cc-divider" />
@@ -395,159 +519,7 @@ export default function SettingsPanel({ onRoomSetup = null }) {
         </p>
       </section>
 
-      <div className="cc-divider" />
 
-      {/* ── 3. material thickness (CLAUDE.md F9.3) ── */}
-      <section className="space-y-2">
-        <div className="cc-row">
-          <span className="text-xs uppercase tracking-wide text-ink-200">Material thickness</span>
-          <span className="text-[11px] text-ink-400">
-            carcass {formatMm(board)} · fronts {formatMm(frontBoard)}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          {PS.boardThicknessOptions.map((t) => (
-            <button
-              key={t}
-              type="button"
-              className={`cc-btn px-2 ${design.thickness.custom == null && board === t ? 'border-gold text-gold' : ''}`}
-              onClick={() => setProjectDefaults({ thickness: { board: t, custom: null } })}
-            >
-              {t}
-            </button>
-          ))}
-          <span className="text-[11px] text-ink-400 px-1">Other</span>
-          <NumberField
-            className="cc-input w-20 text-right"
-            min={profile.editor.mmStep}
-            value={design.thickness.custom ?? 0}
-            title="Any board this workshop actually has — typed in millimetres"
-            onCommit={(v) => setProjectDefaults({ thickness: { custom: v > 0 ? v : null } })}
-          />
-        </div>
-        <p className="text-[11px] text-ink-400">
-          Automatic from the source — EGGER {thicknessForSource(profile, 'carcass', 'egger')}, veneer{' '}
-          {thicknessForSource(profile, 'front', 'veneer')}, laminate {thicknessForSource(profile, 'front', 'laminate')} —
-          until you say otherwise here. The maths is the engine&apos;s; this only feeds it the number.
-        </p>
-      </section>
-
-      <div className="cc-divider" />
-
-      {/* ── finishes: this app's boards, the EGGER pack, or a spray gun ──
-          Turn 4 (BACKLOG #4), the decor pack turn 5 (#19), spray turn 9 (F6).
-          Kept whole from the older modal, because step 5 never had the decor
-          picker and a job finished in an EGGER decor has to be able to say so. */}
-      <section className="space-y-2">
-        <div className="cc-row">
-          <span className="text-xs uppercase tracking-wide text-ink-200">Finish</span>
-          <div className="flex gap-1">
-            {[['app', 'This app'], ['egger', 'EGGER decors'], ['spray', 'Sprayed']].map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={`cc-btn px-2 ${finishTab === id ? 'border-gold text-gold' : ''}`}
-                onClick={() => setFinishTab(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            ['carcass', 'Carcass', `Default · ${finishes.find((f) => f.id === profile.appearance.defaultCarcassFinish)?.label || '—'}`],
-            ['front', 'Fronts', 'Same as the carcass'],
-          ].map(([role, label, emptyLabel]) => {
-            const chosen = design.finish[role];
-            // A sprayed colour on the fronts BEATS whatever board is selected
-            // here, because paint covers a decor exactly as it does in the
-            // workshop (engine/design.js `resolveFinishes`).
-            const spray = role === 'front' ? sprayFinish(design.colour.front) : null;
-            const resolved = spray
-              || finishById(profile, chosen)
-              || (role === 'carcass' ? finishById(profile, profile.appearance.defaultCarcassFinish) : null);
-            const placeholder = (spray && `— sprayed: ${spray.label} —`)
-              || (decorIdFromFinishId(chosen) && '— an EGGER decor is chosen —')
-              || emptyLabel;
-            return (
-              <div key={role} className="space-y-1">
-                <span className="cc-label">{label}</span>
-                <div className="flex items-center gap-2">
-                  <select
-                    className="cc-input flex-1"
-                    value={decorIdFromFinishId(chosen) ? '' : (chosen || '')}
-                    onChange={(e) => setDesign({ finish: { ...design.finish, [role]: e.target.value || null } })}
-                  >
-                    <option value="">{placeholder}</option>
-                    {finishes.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-                  </select>
-                  <FinishSwatch finish={resolved} />
-                </div>
-                {/* A decor is never named anywhere in this app without "EGGER". */}
-                {resolved?.decor && (
-                  <p className="text-[11px] text-gold truncate" title={resolved.label}>{resolved.label}</p>
-                )}
-                {spray && (
-                  <p className="text-[11px] text-gold truncate" title={spray.label}>
-                    {spray.label} — this is what the fronts are finished in
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {finishTab === 'egger' && (
-          <div className="space-y-2 pt-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-ink-400">Apply the decor to</span>
-              {[['carcass', 'Carcass'], ['front', 'Fronts']].map(([role, label]) => (
-                <button
-                  key={role}
-                  type="button"
-                  className={`cc-btn px-2 ${decorRole === role ? 'border-gold text-gold' : ''}`}
-                  onClick={() => setDecorRole(role)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <DecorPicker
-              value={design.finish[decorRole]}
-              onPick={(id) => setDesign({ finish: { ...design.finish, [decorRole]: id } })}
-              onClear={() => setDesign({ finish: { ...design.finish, [decorRole]: null } })}
-            />
-          </div>
-        )}
-
-        {finishTab === 'spray' && (
-          <div className="space-y-2 pt-1">
-            {/* The SAME colour as front type 1 above, because it is the same
-                question — "what colour are the doors" — and turn 11's two
-                answers to it are what this phase is about. One setter
-                (`setFrontColour`), so the two controls cannot disagree. */}
-            <ColourPicker
-              label="Sprayed front colour"
-              value={design.colour.front}
-              onChange={(c) => setFrontColour(c)}
-            />
-            <p className="text-[11px] text-ink-400">
-              A sprayed front is lacquer over board: it takes the project sheen, and it refuses the
-              room&apos;s reflection so a RAL chip held against the screen is matched against the paint
-              and not against the carcass beside it. The cut list names it
-              {' '}<span className="text-ink-200">
-                {sprayFinishLabel(design.colour.front) || 'RAL 3005 Wine Red spray'}
-              </span>.
-            </p>
-          </div>
-        )}
-
-        <p className="text-[11px] text-ink-400">
-          A front COLOUR is paint and covers the decor, exactly as it does in the workshop.
-        </p>
-      </section>
 
       <div className="cc-divider" />
 

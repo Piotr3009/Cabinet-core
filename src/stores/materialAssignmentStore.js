@@ -46,11 +46,19 @@ export const HARDWARE_ROLE_IDS = new Set(HARDWARE_ROLES.map((r) => r.id));
 // `category` is the same vocabulary as cc_materials (board | front | edging |
 // hardware), so a real list loaded from the database drops straight in.
 export const MOCK_MATERIALS = [
-  { id: 'mat_mfc18_white',  name: 'MFC White W980 18 mm',        category: 'board',  thickness: 18, unit: 'm²', price: 11.4 },
-  { id: 'mat_mfc18_oak',    name: 'MFC Halifax Oak 18 mm',       category: 'board',  thickness: 18, unit: 'm²', price: 14.9 },
-  { id: 'mat_mdf18',        name: 'MDF 18 mm',                   category: 'board',  thickness: 18, unit: 'm²', price: 9.8 },
-  { id: 'mat_ply18_birch',  name: 'Birch Plywood 18 mm',         category: 'board',  thickness: 18, unit: 'm²', price: 24.5 },
-  { id: 'mat_mfc22_white',  name: 'MFC White W980 22 mm',        category: 'board',  thickness: 22, unit: 'm²', price: 13.9 },
+  // ─── Generic boards (owner's soft start, 09.08) ───
+  // A project may BEGIN on one of these — the geometry is pinned, honestly and
+  // visibly, before the real board exists in the stock. They are placeholders
+  // by name and by flag: the yellow warning stays up while one is assigned,
+  // and the future check-out/JC export refuses them (the hard gate).
+  { id: 'generic-18', code: '—', name: 'Generic board 18 mm', category: 'board', thickness: 18, unit: 'm²', price: 0, placeholder: true },
+  { id: 'generic-22', code: '—', name: 'Generic board 22 mm', category: 'board', thickness: 22, unit: 'm²', price: 0, placeholder: true },
+  { id: 'generic-25', code: '—', name: 'Generic board 25 mm', category: 'board', thickness: 25, unit: 'm²', price: 0, placeholder: true },
+  { id: 'mat_mfc18_white',  code: 'W980 SM', name: 'MFC White W980 18 mm',        category: 'board',  thickness: 18, unit: 'm²', price: 11.4 },
+  { id: 'mat_mfc18_oak',    code: 'H1180 ST37', name: 'MFC Halifax Oak 18 mm',    category: 'board',  thickness: 18, unit: 'm²', price: 14.9 },
+  { id: 'mat_mdf18',        code: 'MDF-18', name: 'MDF 18 mm',                    category: 'board',  thickness: 18, unit: 'm²', price: 9.8 },
+  { id: 'mat_ply18_birch',  code: 'BB/BB-18', name: 'Birch Plywood 18 mm',        category: 'board',  thickness: 18, unit: 'm²', price: 24.5 },
+  { id: 'mat_mfc22_white',  code: 'W980 SM', name: 'MFC White W980 22 mm',        category: 'board',  thickness: 22, unit: 'm²', price: 13.9 },
   { id: 'mat_mdf25_shaker', name: 'MDF Shaker blank 25 mm',      category: 'front',  thickness: 25, unit: 'm²', price: 27.0 },
   { id: 'mat_mfc19_front',  name: 'Melamine front 19 mm',        category: 'front',  thickness: 19, unit: 'm²', price: 16.2 },
   { id: 'mat_hdf6_back',    name: 'HDF backing 6 mm',            category: 'board',  thickness: 6,  unit: 'm²', price: 4.6 },

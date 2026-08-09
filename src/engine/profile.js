@@ -381,8 +381,10 @@ export const DEFAULT_CABINET_PROFILE = {
     // A front. The two sprayed systems are the colour ranges a workshop orders
     // by name; veneer is the one that is genuinely a different thickness.
     frontSources: [
-      { id: 'ral', label: 'RAL', thickness: 18, kind: 'spray' },
-      { id: 'fb', label: 'Farrow & Ball', thickness: 18, kind: 'spray' },
+      // Owner, 09.08: ONE spray source. RAL vs Farrow & Ball is a choice the
+      // COLOUR PICKER offers underneath (it always has), not a source button —
+      // two buttons here made the same finish look like two finishes.
+      { id: 'spray', label: 'Spray', thickness: 18, kind: 'spray' },
       { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board' },
       { id: 'laminate', label: 'Laminate', thickness: 18, kind: 'board' },
       // The wood RANGE is a later turn's (CLAUDE.md F9.2 says so in as many

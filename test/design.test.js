@@ -129,10 +129,10 @@ test('a stored design survives a round trip, and an older one is filled in', () 
   assert.equal(ancient.infill.sideWidth, DEFAULT_DESIGN.infill.sideWidth);
 });
 
-test('only the front styles the workshop can actually build are offered', () => {
-  assert.deepEqual(FRONT_STYLE_OPTIONS.map((o) => o.id), ['S', 'F']);
-  // The handleless J-groove exists in the engine but is not offered as a
-  // standard until handles land — the shape keeps a slot for it.
+test('the door-style list is the owner\'s SHAPE list (09.08) — colours never live here', () => {
+  assert.deepEqual(FRONT_STYLE_OPTIONS.map((o) => o.id), ['S', 'F', 'HJ', 'G', 'GF', 'A', 'AH']);
+  // The old engine-only 'H' id was never a stored standard; anything unknown
+  // still falls back to Shaker, exactly as before.
   assert.equal(migrateDesign({ fronts: { style: 'H' } }).fronts.style, 'S');
   assert.equal(migrateDesign(null).fronts.handle, null);
 });

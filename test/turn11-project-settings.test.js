@@ -70,9 +70,11 @@ test('a carcass comes from EGGER decor or from the spray booth', () => {
   assert.equal(sourceById(carcassSources(P), 'sprayed').kind, 'spray');
 });
 
-test('a front comes from one of the five sources, wood included', () => {
+test('a front comes from one of the FOUR sources — spray is one, not two (owner 09.08)', () => {
+  // RAL vs Farrow & Ball is the colour PICKER's question; the source is just
+  // "sprayed". Two buttons made one finish look like two.
   const ids = frontSources(P).map((s) => s.id);
-  assert.deepEqual(ids, ['ral', 'fb', 'veneer', 'laminate', 'wood']);
+  assert.deepEqual(ids, ['spray', 'veneer', 'laminate', 'wood']);
   // The option is present and its COLOURS are not — which is what F9.2 asks for.
   assert.equal(sourceById(frontSources(P), 'wood').coloursSoon, true);
 });
@@ -80,7 +82,7 @@ test('a front comes from one of the five sources, wood included', () => {
 test('at most two front types, and they start answered', () => {
   const one = setFrontTypeCount([], 1, P);
   assert.equal(one.length, 1);
-  assert.equal(one[0].source, 'ral', 'the first source is the default, not null');
+  assert.equal(one[0].source, 'spray', 'the first source is the default, not null');
 
   assert.equal(setFrontTypeCount([], 2, P).length, 2);
   assert.equal(setFrontTypeCount([], 9, P).length, P.projectSettings.maxFrontTypes, 'capped at two');
@@ -89,7 +91,7 @@ test('at most two front types, and they start answered', () => {
   // Growing keeps what is already answered.
   const grown = setFrontTypeCount([{ id: 'f1', source: 'veneer' }], 2, P);
   assert.equal(grown[0].source, 'veneer');
-  assert.equal(grown[1].source, 'ral');
+  assert.equal(grown[1].source, 'spray');
 });
 
 test('normalising a front type fills every field, so no consumer guesses', () => {

@@ -150,6 +150,26 @@ export default function Modal({
   useLayoutEffect(() => { if (!big && !at) place(); }, [big, at, place]);
   useEffect(() => { onMaximisedChange?.(big); }, [big, onMaximisedChange]);
 
+  // ─── Owner, 09.08 (Step 5 cut off): re-place when the CONTENT grows ───
+  // The window is placed once, measured at the height it opens with. A step
+  // flow then swaps in a taller step, the top stays where the short step put
+  // it, and the bottom leaves the screen — a new client never learns there
+  // are buttons down there. So: watch the card's size; while the user has not
+  // dragged it (`at.dragged`), a size change re-runs the same placement, and
+  // the clamp keeps the whole window on screen.
+  useEffect(() => {
+    const el = box.current;
+    if (!el || big) return undefined;
+    const ro = new ResizeObserver(() => {
+      if (!placedByHand()) place();
+    });
+    function placedByHand() { return Boolean(atRef.current?.dragged); }
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [big, place]);
+  const atRef = useRef(null);
+  useEffect(() => { atRef.current = at; }, [at]);
+
   // ─── (a) DRAGGABLE BY ITS HEADER ───
   // The same gesture the right-click menu has: grab the bar, and the panel goes
   // where it is put — clamped to the viewport, never flipped, because the hand

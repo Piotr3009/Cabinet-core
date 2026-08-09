@@ -21,10 +21,19 @@ import { DEFAULT_CABINET_PROFILE } from './profile.js';
 export const DESIGN_SCHEMA = 2;
 
 export const FRONT_STYLE_OPTIONS = [
+  // ─── Owner's list, 09.08: SHAPES ONLY — colour lives with the front TYPE ───
+  // above, never here. The engine cuts every one of these as the same slab
+  // today; 'S' keeps its shaker look, the rest render flat until each style's
+  // little instruction/picture arrives (owner: "będziemy później wstawiać małe
+  // instrukcje"). The ids are stable so a saved project keeps its choice when
+  // the pictures land.
   { id: 'S', label: 'Shaker' },
   { id: 'F', label: 'Flat' },
-  // 'H' (handleless J-groove) exists in the engine profile and the LISP; it is
-  // not offered as a *standard* here until the handle work lands.
+  { id: 'HJ', label: 'Handleless J-type' },
+  { id: 'G', label: 'Grooved' },
+  { id: 'GF', label: 'Grooved with frame' },
+  { id: 'A', label: 'Arched' },
+  { id: 'AH', label: 'Arched handleless' },
 ];
 
 export const DEFAULT_DESIGN = {
@@ -204,7 +213,10 @@ function coupleFrontTypes(d) {
     ? d.fronts.types.slice(0, 2).map((t, i) => ({
       id: t.id || `f${i + 1}`,
       label: t.label || `Front ${i + 1}`,
-      source: t.source ?? null,
+      // Owner, 09.08: 'ral' and 'fb' collapsed into ONE 'spray' source — the
+      // colour SYSTEM is chosen inside the picker, not by the source button.
+      // Old saved projects carry the old ids; both meant sprayed.
+      source: (t.source === 'ral' || t.source === 'fb') ? 'spray' : (t.source ?? null),
       colour: normaliseColour(t.colour),
       material_id: t.material_id ?? null,
     }))

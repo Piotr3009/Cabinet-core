@@ -201,6 +201,9 @@ export default function CncView() {
         const p = place.panel;
         bump(p.cnc.layer || profile.puzzle.layers.outline);
         for (const pk of p.cnc?.pockets || []) bump(pk.layer);
+        // Turn 13 (F8): the biscuit marks are a layer of their own, so the
+        // legend has to count them or BISCUIT_4MM never appears in it.
+        for (const mk of p.cnc?.marks || []) bump(mk.layer);
       }
       for (const d of s2.result.drills) if (onSheet.has(d.panel)) bump(d.layer);
     }
@@ -355,6 +358,23 @@ function Part({ place, drills, outlineLayer, labelSize, minHoleR, visible }) {
           <rect
             key={`p${i}`} x={r.x} y={r.y} width={r.w} height={r.h}
             fill="none" stroke={layerScreenColor(p.layer)} strokeWidth={1} vectorEffect="non-scaling-stroke"
+          />
+        );
+      })}
+
+      {/* ─── Turn 13 (CLAUDE.md F8): the biscuit marks ───
+          Drawn as the LINE the cutter runs, because that is what it is: an
+          in-and-out pass, not a pocket and not a hole. Thicker than a pocket
+          outline so a 70 mm mark reads at sheet zoom, where it is the only
+          thing in a set that has any length. */}
+      {(cnc.marks || []).filter((m) => visible(m.layer)).map((m, i) => {
+        const [x1, y1] = toSheet(place, m.from[0], m.from[1]);
+        const [x2, y2] = toSheet(place, m.to[0], m.to[1]);
+        return (
+          <line
+            key={`m${i}`} x1={x1} y1={y1} x2={x2} y2={y2}
+            stroke={layerScreenColor(m.layer)} strokeWidth={2} strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
           />
         );
       })}

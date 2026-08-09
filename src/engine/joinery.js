@@ -91,6 +91,36 @@ export function panelPlacement(panel) {
         v: [1, 0, 0],
         n: [0, panel.part === 'TOP' ? 1 : -1, 0],
       };
+    // ─── Turn 13 (CLAUDE.md F8): the two interior boards CARRY MACHINING NOW ──
+    //
+    // Until this turn a shelf and a vertical partition were rectangles with
+    // nothing on them, so neither needed a mapping. The biscuit set puts real
+    // machining on both — screws and a 70 mm mark on the board that RECEIVES a
+    // partition, and the matching mark on the partition itself — and a mapping
+    // is what lets the X-ray draw it where it will actually be cut.
+    //
+    // Both are drawn UPRIGHT by `rectGeometry`, and the frames follow from that:
+    // a shelf is `w × depth`, so its CNC x runs along the cabinet's WIDTH and
+    // its y along the DEPTH; a partition is `height × depth`, so its x runs UP.
+    // Handedness is the right one in both (u × v = −n), which is what the turn
+    // 13 F1 guard is about.
+    case 'SHELF':
+    case 'PARTITION':
+    case 'RAIL-PART':
+      // Drawn on the face a partition lands on — the TOP one.
+      return {
+        origin: [box.x, box.y + box.h, box.z],
+        u: [1, 0, 0],
+        v: [0, 0, 1],
+        n: [0, 1, 0],
+      };
+    case 'VPART':
+      return {
+        origin: [box.x, box.y, box.z],
+        u: [0, 1, 0],
+        v: [0, 0, 1],
+        n: [-1, 0, 0],
+      };
     case 'BACK':
       // ─── Turn 12 (CLAUDE.md F10): A BACK MAY BE DRAWN ROTATED ───
       //
@@ -181,7 +211,7 @@ export function socketCount(panel, layers) {
  *   lift  how far off the panel's face to draw, in mm (z-fighting)
  * @returns {Array<{kind:string, points:number[][]}>}
  */
-export function jointLines(panel, layers, { xray = false, lift = 0.4 } = {}) {
+export function jointLines(panel, layers, { xray = false, lift = 0.4, drills = [] } = {}) {
   const placement = panelPlacement(panel);
   const cnc = panel?.cnc;
   if (!placement || !cnc || !layers) return [];
@@ -209,8 +239,16 @@ export function jointLines(panel, layers, { xray = false, lift = 0.4 } = {}) {
   // ── X-RAY: the whole joint ──
   // The outline first — it carries the tab PROFILES, which is the shape the
   // system is named for and the one thing a picture of a dog bone cannot show.
+  //
+  // ─── Turn 13 (CLAUDE.md F8) ───
+  // …and ONLY when there is a profile to show. Turn 13 gave the shelf and the
+  // partition a placement, because they carry the biscuit set now — and the
+  // moment they had one, this drew their outlines too: a rectangle exactly on
+  // the board's own edges, which is nothing but a coin toss per pixel against
+  // the panel behind it. A plain rectangle is not a joint, so it is not drawn.
+  const jointed = pockets.some((p) => p.layer === layers.dogbone || p.layer === layers.socket);
   const outline = cnc.outline || [];
-  if (outline.length > 2) {
+  if (jointed && outline.length > 2) {
     out.push({
       kind: 'outline',
       points: [...outline, outline[0]].map(([x, y]) => place(placement, x, y, lift)),
@@ -221,7 +259,35 @@ export function jointLines(panel, layers, { xray = false, lift = 0.4 } = {}) {
     if (!kind) continue;
     out.push({ kind, points: pocketLoop(placement, p, lift) });
   }
+
+  // ─── Turn 13 (CLAUDE.md F8): the biscuit set, on the furniture ───
+  // The 70 mm mark as the run the cutter makes, and the ⌀3 screws that flank it
+  // as circles at the size they are bored. Read off the SAME data the DXF is
+  // written from — `cnc.marks` and `result.drills` — so what the X-ray shows and
+  // what the machine cuts cannot drift apart.
+  for (const mark of cnc.marks || []) {
+    out.push({
+      kind: 'biscuit',
+      points: [place(placement, mark.from[0], mark.from[1], lift),
+        place(placement, mark.to[0], mark.to[1], lift)],
+    });
+  }
+  for (const hole of drills) {
+    if (hole.panel !== panel.id || hole.kind !== 'biscuit_screw') continue;
+    out.push({ kind: 'screw', points: holeLoop(placement, hole, lift) });
+  }
   return out;
+}
+
+/** A drilled hole, as a ring of points at its real diameter. */
+function holeLoop(placement, hole, off, segments = 12) {
+  const r = Math.max(0, (Number(hole.d) || 0) / 2);
+  const pts = [];
+  for (let i = 0; i <= segments; i += 1) {
+    const a = (i / segments) * Math.PI * 2;
+    pts.push(place(placement, hole.x + Math.cos(a) * r, hole.y + Math.sin(a) * r, off));
+  }
+  return pts;
 }
 
 /**
@@ -231,8 +297,12 @@ export function jointLines(panel, layers, { xray = false, lift = 0.4 } = {}) {
  */
 export function unitJointLines(result, layers, opts = {}) {
   const out = [];
+  // The drilling travels with the result, not with the panel, so it is passed
+  // through here — which is also why the biscuit screws could not simply be
+  // read off `panel.cnc.holes` (turn 13, F8).
+  const drills = result?.drills || [];
   for (const panel of result?.panels || []) {
-    const lines = jointLines(panel, layers, opts);
+    const lines = jointLines(panel, layers, { ...opts, drills });
     if (lines.length) out.push({ panel: panel.id, lines });
   }
   return out;

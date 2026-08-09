@@ -15,13 +15,23 @@
 //
 // Pure data — no React, no store imports (engine rule).
 
-/** kind: how the layer is drawn — 'outline' | 'pocket' | 'hole' | 'text'. */
+/** kind: how the layer is drawn — 'outline' | 'pocket' | 'hole' | 'mark' | 'text'. */
 export const CNC_LAYERS = [
   { name: 'OUTLINE',            aci: 7,  screen: '#f0ece4', label: 'Outline',        kind: 'outline' },
   { name: 'PUZZLE_SOCKET',      aci: 1,  screen: '#ff6b6b', label: 'Puzzle socket',  kind: 'pocket' },
   { name: 'PUZZLE_DOG_BONES',   aci: 2,  screen: '#ffd166', label: 'Dog bones',      kind: 'pocket' },
   { name: 'PUZZLE_HOLES_7_5MM', aci: 3,  screen: '#8ce99a', label: 'Puzzle ⌀7.5',    kind: 'hole' },
   { name: 'SCREWS_3MM',         aci: 4,  screen: '#63e6e2', label: 'Screws ⌀3',      kind: 'hole' },
+  // ─── Turn 13 (CLAUDE.md F8 / #59): the partition biscuit ───
+  // The 70 mm marks of the owner's joiner-biscuit set. A LAYER OF ITS OWN
+  // because it is a TOOL of its own: a dedicated 4 mm in-and-out program in
+  // VCarve, matched by layer name like every other entry here. The name is
+  // written exactly as CLAUDE.md gives it and is a hard contract.
+  //
+  // ACI 40 is unused by the LISP's own table, so nothing it already draws
+  // changes colour in AutoCAD; the screen tone is a warm one, distinct from the
+  // cool ⌀3 screws it sits between so a set reads as three things.
+  { name: 'BISCUIT_4MM',        aci: 40, screen: '#ffb066', label: 'Biscuit 70 mm',  kind: 'mark' },
   { name: 'HINGES_5MM',         aci: 5,  screen: '#74a9ff', label: 'Hinges ⌀5',      kind: 'hole' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },

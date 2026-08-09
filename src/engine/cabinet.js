@@ -29,6 +29,9 @@ import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
 } from './puzzle.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
+import {
+  biscuitLayers, biscuitSets, markFromEnd, receiverTakesScrews,
+} from './biscuits.js';
 
 // ─── Hinge centres (SKYLON_COMMON calcHingePositions*) ───
 
@@ -1614,6 +1617,24 @@ export function computeCabinet(params, profileOverride) {
   const drills = [];
   const addDrill = (panelId, kind, layer, x, y, d) => drills.push({ panel: panelId, kind, layer, x: roundTo(x, 4), y: roundTo(y, 4), d });
 
+  // ─── Turn 13 (CLAUDE.md F8): a MARK is neither a hole nor a pocket ───
+  //
+  // The biscuit mark is a 70 mm run of a 4 mm cutter — an open path, which is
+  // what the owner's dedicated in-and-out program follows. `drills[]` carries
+  // circles and `cnc.pockets` carries closed rectangles, so neither can say it;
+  // this is a third channel on the panel's own CNC record, and it is ADDITIVE:
+  // a panel that has no marks has no `marks` key, so every file the app already
+  // writes is byte-for-byte what it was.
+  const BIS = biscuitLayers(P);
+  const addMark = (pnl, from, to) => {
+    const mark = {
+      layer: BIS.mark,
+      from: [roundTo(from[0], 4), roundTo(from[1], 4)],
+      to: [roundTo(to[0], 4), roundTo(to[1], 4)],
+    };
+    pnl.cnc = { ...pnl.cnc, marks: [...(pnl.cnc?.marks || []), mark] };
+  };
+
   // Puzzle sockets/screws and every hole a panel already carries
   for (const pnl of panels) {
     for (const hole of pnl.cnc?.holes || []) addDrill(pnl.id, hole.kind, hole.layer, hole.x, hole.y, hole.d);
@@ -1790,6 +1811,99 @@ export function computeCabinet(params, profileOverride) {
     if (backStyle === 'full') {
       for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
         addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, railPartCentreY, RL.bracketScrewDiameter);
+      }
+    }
+  }
+
+  // ─── PARTITION FIXING: THE BISCUIT SET (turn 13, CLAUDE.md F8 / #59) ──────
+  //
+  // BLOCKERS #59 has been open since turn 11, when the vertical partition
+  // landed with no drilling at all and the file said so in as many words: "its
+  // DRILLING is a later question and is written down as one." This is the
+  // owner's answer, and it is the app's reference pattern for a butt joint.
+  //
+  // The PATTERN — how long a set is, how many there are and where they sit — is
+  // engine/biscuits.js, pure and tested against the owner's own four widths.
+  // What is here is only the mapping from a joint to two panels' CNC frames,
+  // which is the part that has to know how each kind of board is drawn:
+  //
+  //   TOP / BOTTOM  drawn TURNED (`rotated`): CNC x runs along the cabinet's
+  //                 DEPTH from the box's z, CNC y along its WIDTH from the x.
+  //   SHELF         drawn upright: CNC x along the WIDTH, y along the DEPTH.
+  //   VPART         drawn on its side: CNC x along its HEIGHT, y along its
+  //                 DEPTH — so its two ends are at x = 0 and x = height.
+  //
+  // Both halves of a joint are set out from the SAME datum, the partition's own
+  // back edge, so the mark on the receiving board and the mark on the partition
+  // land opposite each other.
+  //
+  // ─── THE DELIBERATE CNC DELTA ───
+  // This is new machining and CLAUDE.md sanctions it by name: the partition
+  // export gains drilling and biscuits where it had nothing at all. Nothing
+  // else moves — a cabinet with no vertical partition emits not one entity of
+  // this, which is why every existing fixture and the identity fingerprint are
+  // untouched.
+  for (const vp of panels.filter((x) => x.part === 'VPART')) {
+    // Which board each end lands on. The bottom always lands on the carcass
+    // BOTTOM; the top lands on the carcass TOP unless a FIXED shelf carries it
+    // (turn 12's attachment), in which case that shelf is the receiver.
+    const carrier = vp.meta?.terminatesOn
+      ? panels.find((x) => x.part === 'SHELF' && x.meta?.itemId === vp.meta.terminatesOn)
+      : panels.find((x) => x.part === 'TOP');
+    const joints = [
+      { receiver: panels.find((x) => x.part === 'BOTTOM'), end: 'bottom' },
+      { receiver: carrier, end: 'top' },
+    ];
+
+    for (const { receiver, end } of joints) {
+      if (!receiver) continue;
+      // A through-screw exists only where the receiving face is CONCEALED. A
+      // fixed shelf's faces are what you look at with the doors open, so that
+      // joint takes the mark alone — the owner's own example (F8.3).
+      const screwed = receiverTakesScrews(receiver.part, P);
+
+      // THE JOINT LINE is where the two boards actually meet, which is their
+      // OVERLAP in depth and not simply the partition's own. A partition may be
+      // deeper than the fixed shelf it stands on (turn 12 couples the two, but a
+      // shelf carries its own setback), and a fixing set out past the end of the
+      // receiving board is a screw into air.
+      const from = Math.max(vp.box.z, receiver.box.z);
+      const to = Math.min(vp.box.z + vp.box.d, receiver.box.z + receiver.box.d);
+      const span = to - from;
+      const sets = biscuitSets({ length: span, screws: screwed, profile: P });
+      if (!sets.length) {
+        warnings.push({
+          code: 'BISCUIT_JOINT_TOO_SHORT',
+          message: `${vp.id}: a ${roundTo(span, 0)} mm joint is too short for a biscuit set — fixed by hand.`,
+        });
+        continue;
+      }
+
+      // The receiving board, in its own frame. `at` walks the joint line;
+      // `across` is the partition's centre line, which is where the screw has
+      // to be to enter the middle of its edge.
+      const turned = receiver.part === 'TOP' || receiver.part === 'BOTTOM';
+      const across = vp.box.x + G / 2 - receiver.box.x;
+      const base = from - receiver.box.z;
+      const at = (t) => (turned ? [base + t, across] : [across, base + t]);
+
+      for (const set of sets) {
+        for (const t of set.screws) {
+          const [x, y] = at(t);
+          addDrill(receiver.id, 'biscuit_screw', BIS.screw, x, y, P.biscuits.screwDiameter);
+        }
+        addMark(receiver, at(set.mark.from), at(set.mark.to));
+      }
+
+      // …and the partition's own half: the set-out transferred onto its face,
+      // set in from the end edge. No screws — the screw comes through the other
+      // board INTO this one's edge, so drilling it here is the same hole twice.
+      const endX = end === 'bottom' ? markFromEnd(P) : vp.box.h - markFromEnd(P);
+      // The SAME datum as the receiver's — the start of the overlap — so the two
+      // halves of the joint land opposite each other.
+      const own = from - vp.box.z;
+      for (const set of sets) {
+        addMark(vp, [endX, own + set.mark.from], [endX, own + set.mark.to]);
       }
     }
   }

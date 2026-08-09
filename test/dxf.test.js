@@ -262,11 +262,21 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
   // createCNCLayers in reference/lisp/SKYLON_COMMON.lsp, plus the per-kit
   // layers: createDrawerCNCLayers in KIT_BUDR_FULL.lsp (L482-488) and the
   // hanger cut-out layer in KIT_WUD_FULL.lsp (L192).
+  //
+  // ─── TURN 13 (CLAUDE.md F8 / #59): ONE NEW NAME ───
+  // BISCUIT_4MM is the first layer in this table that the LISP does not have,
+  // and it is deliberate: the owner's partition-fixing pattern is cut with a
+  // dedicated 4 mm in-and-out program in VCarve, which is matched BY LAYER NAME
+  // exactly as every other tool here is. The name is CLAUDE.md's, letter for
+  // letter, and it is as much a machine contract as the rest — ACI 40 because
+  // the LISP's own table never uses it, so nothing it already draws changes
+  // colour in AutoCAD.
   const expected = {
     OUTLINE: 7, PUZZLE_SOCKET: 1, PUZZLE_DOG_BONES: 2, PUZZLE_HOLES_7_5MM: 3,
     SCREWS_3MM: 4, HINGES_5MM: 5, SHELVES_7_5MM: 6, FRONT_HINGES_35MM: 3,
     FRONT_HINGES_3MM: 30, RUNNERS_3MM: 5, UNIT_NUMBER: 94, CARCASE: 7,
     DRAWER_RUNNER_POCKET: 1, DRAWER_BOTTOM_POCKET: 2, HANGER_HOLE: 4,
+    BISCUIT_4MM: 40,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

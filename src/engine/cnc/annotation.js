@@ -39,14 +39,21 @@ export function textWidthMm(text, sizeMm) {
  * Truncation is the middle step between "draw it" and "hide it": a part code
  * cut to `BUL…` still tells a joiner which piece he is looking at, and it still
  * cannot reach into the part beside it.
+ *
+ * `ellipsis` is the mark left where something was dropped. The screen keeps the
+ * typographic one; the DXF WRITER passes an ASCII `~`, for the reason
+ * engine/cnc/partLabel.js gives about the multiplication sign — R12 predates any
+ * agreement about what a byte above 127 means, and a label a machine mis-decodes
+ * is worse than a short one (turn 17, CLAUDE.md F1).
  */
-export function truncateToWidth(text, widthMm, sizeMm) {
+export function truncateToWidth(text, widthMm, sizeMm, ellipsis = '…') {
   const full = String(text ?? '');
   if (!full) return '';
   if (textWidthMm(full, sizeMm) <= widthMm) return full;
   const room = Math.floor(widthMm / (sizeMm * MONO_ADVANCE));
-  if (room <= 1) return '';
-  return `${full.slice(0, room - 1)}…`;
+  const tail = String(ellipsis);
+  if (room <= tail.length) return '';
+  return `${full.slice(0, room - tail.length)}${tail}`;
 }
 
 /**

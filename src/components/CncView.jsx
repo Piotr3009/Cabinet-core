@@ -8,6 +8,7 @@ import { CNC_LAYERS, layerScreenColor } from '../engine/cnc/layers.js';
 import { exportablePanels } from '../engine/cnc/groups.js';
 import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.js';
 import { labelFit, partLabelAnchor, symbolVisible } from '../engine/cnc/annotation.js';
+import { partLabelText } from '../engine/cnc/partLabel.js';
 import { formatMmPair } from '../engine/format.js';
 
 // ─── CNC view ───
@@ -378,6 +379,7 @@ export default function CncView() {
                     <Part
                       key={place.panel.id}
                       place={place}
+                      unitNum={b.unit.params.unit_num}
                       drills={b.result.drills}
                       outlineLayer={profile.puzzle.layers.outline}
                       annotation={A}
@@ -496,7 +498,7 @@ function Caption({
 // ─── one cut part ───
 
 function Part({
-  place, drills, outlineLayer, annotation, mmPerPx, visible,
+  place, unitNum, drills, outlineLayer, annotation, mmPerPx, visible,
 }) {
   const { panel } = place;
   const cnc = panel.cnc || {};
@@ -508,7 +510,13 @@ function Part({
   // it belongs to and drawn INSIDE its outline. Two parts side by side can
   // therefore never overprint each other's label at any zoom, and a caption
   // that would be too small to read is hidden rather than drawn.
-  const caption = `${panel.id}  ${formatMmPair(panel.w, panel.h, '×')}`;
+  // ─── Turn 17 (CLAUDE.md F1) ───
+  // The cabinet's number, the part code and the cut size — `F-01 BUR 597x568` —
+  // and it is the EXPORT's own formatter (engine/cnc/partLabel.js), not a second
+  // wording that happens to look similar. F1.1 asks for exactly that, and it is
+  // why the sheet now spells the size with an ASCII `x`: this string is written
+  // into a DXF R12 file as well as onto the glass.
+  const caption = partLabelText(unitNum, panel);
   const label = labelFit({
     text: caption,
     sizeMm: annotation.partLabelMm,
@@ -585,12 +593,7 @@ function Part({
           data-part-label={panel.id}
           style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
         >
-          {label.text === caption ? (
-            <>
-              {panel.id}
-              <tspan fill="#8f8f88">{`  ${formatMmPair(panel.w, panel.h, '×')}`}</tspan>
-            </>
-          ) : label.text}
+          {label.text}
         </text>
       )}
     </g>

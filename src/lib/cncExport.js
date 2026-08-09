@@ -1,7 +1,10 @@
 import JSZip from 'jszip';
-import { buildUnitDxfFiles, sheetDxf, sheetDxfFileName } from '../engine/cnc/dxf.js';
+import {
+  buildUnitDxfFiles, materialDxfFileName, materialSheetDxf, sheetDxf, sheetDxfFileName,
+} from '../engine/cnc/dxf.js';
 import { layoutPanels } from '../engine/cnc/layout.js';
 import { exportablePanels, presetOfSelection } from '../engine/cnc/groups.js';
+import { materialExportSection } from '../engine/cnc/views.js';
 import { fileSafeName } from '../engine/naming.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { download } from './exporters.js';
@@ -64,4 +67,42 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   const filename = sheetDxfFileName(result.unitNum, presetId);
   download(filename, new Blob([dxf], { type: 'application/dxf' }));
   return { filename, parts: panels.length, presetId };
+}
+
+/**
+ * ─── ONE MATERIAL, ONE EXPORT (turn 17, CLAUDE.md F2.1) ─────────────────────
+ *
+ * "Choose the material, export the lot." Every ticked part of every ticked
+ * cabinet that comes off ONE board, in one file, laid out exactly as the CNC
+ * view's section shows it — because it is the same `layoutPanels` and the same
+ * `materialSection` the sheet is drawn from.
+ *
+ * The file carries the in-part labels and NOTHING else (F2.2). The sheet's own
+ * lettering — the yellow section header, the cabinet name over each block, the
+ * part counts — stays on the glass: "żadnych innych liter bo to nam zaśmieca
+ * program w CNC."
+ *
+ * @param {Array} entries  [{ unit, result, panels }] — the ticked parts, as the
+ *                         CNC view assembles them
+ * @param {object} opts    { key, design, materials, profile }
+ */
+export function exportMaterialDxf(entries, {
+  key = 'all', design = null, materials = [], profile = getCabinetProfile(),
+} = {}) {
+  const section = materialExportSection(entries, {
+    key, design, profile, materials,
+  });
+  if (!section || !section.blocks.length) throw new Error('Nothing on the sheet for that material.');
+
+  const dxf = materialSheetDxf({
+    blocks: section.blocks, gap: profile.cnc.layoutGap, profile,
+  });
+  const filename = materialDxfFileName(section.label);
+  download(filename, new Blob([dxf], { type: 'application/dxf' }));
+  return {
+    filename,
+    label: section.label,
+    parts: section.blocks.reduce((n, b) => n + b.panels.length, 0),
+    units: section.blocks.length,
+  };
 }

@@ -608,6 +608,20 @@ export const DEFAULT_CABINET_PROFILE = {
     runnerPocketWidth: 15,      // DRAWER_RUNNER_POCKET strip on the box side
     bottomPocketExtra: 1,       // DRAWER_BOTTOM_POCKET strip = G + 1 wide
     pocketOvershoot: 10,
+    // ─── Turn 17 (CLAUDE.md F4.3): THE POCKETS ARE CUTS, AND CUTS HAVE DEPTH ─
+    // The two grooves in a drawer-box side have been in the cutting data since
+    // turn 3 as flat rectangles on their own layers — which is everything a
+    // 2.5-D machine needs to know EXCEPT how deep to go. The owner's numbers,
+    // and they are not interchangeable: the runner groove is shallow because
+    // the runner has to sit FLUSH in it, the bottom groove is deep because a
+    // board has to stand in it.
+    //
+    // They reach no coordinate: a pocket is still the same four corners on the
+    // same layer, so every existing DXF is byte-for-byte what it was. What they
+    // reach is the DRAWING — the element view and the detail window say "2 mm
+    // deep" about the groove a joiner is looking at (F4.1/F4.3).
+    runnerPocketDepth: 2,       // DRAWER_RUNNER_POCKET — the runner sits flush
+    bottomPocketDepth: 7,       // DRAWER_BOTTOM_POCKET — the bottom stands in it
   },
 
   // ─── Sink base (KIT_SINK) ───
@@ -1684,7 +1698,15 @@ export const DEFAULT_CABINET_PROFILE = {
     // pixel across is hidden rather than drawn as a smudge. That is CLAUDE.md
     // F3's "truncates/hides rather than overlapping a neighbour".
     annotation: {
-      partLabelMm: 22,        // the part code + its cut size, inside the part
+      // ─── Turn 17 (CLAUDE.md F1.3): ONE TYPE SCALE ON THE SHEET ──────────
+      // "The size of the yellow heading above the CNC view. Same type scale, in
+      // world space." The in-part label carries the cabinet's name now — it is
+      // the string a joiner picks a board off a pallet by — so it is set at the
+      // heading's own size and SHRINKS to fit the part it is cut into, rather
+      // than being a second, smaller scale nobody chose. The two numbers are
+      // held equal by test/turn17-cnc-truth.test.js: a sheet with two type
+      // scales on it is what turn 16 F3 was about.
+      partLabelMm: 70,        // the cabinet, the part code and its cut size
       blockLabelMm: 45,       // the cabinet's NAME over its block
       sectionLabelMm: 70,     // the material section's header
       // How far inside its own bottom edge a part's caption sits, as a share of

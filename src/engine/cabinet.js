@@ -974,7 +974,17 @@ export function computeCabinet(params, profileOverride) {
       id: 'FIXED', part: 'FIXED', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
       edgeCode: codes.right, edgeLen: metres(internalWidth),
       box: { x: G, y: fridge.fixedPanelY, z: G, w: internalWidth, h: G, d: internalDepth },
-      cnc: rectGeometry(internalDepth, internalWidth),
+      // ─── Turn 17 (CLAUDE.md F1.2, delta 1) ───
+      // It has ALWAYS been drawn turned — `rectGeometry(internalDepth,
+      // internalWidth)`, the TOP's own nesting — and it never said so. Nothing
+      // asked until this turn, because nothing read a FIXED panel's frame: the
+      // piece carries no machining and `panelPlacement` returned null for it.
+      // With the label going INSIDE the part, the silence became visible —
+      // `cncRect` fell back to the CUT dimensions, which are the other way
+      // round, so the caption was set out in a 564-wide frame on a board that
+      // is 540 wide and stood outside its own outline. Stating the frame the
+      // kit already draws in is the fix, and it is the only thing that moves.
+      cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
     }));
     const railSockets = (withBottom) => ({
       bottom: [pz.tabCentresFromEnd],
@@ -1268,12 +1278,16 @@ export function computeCabinet(params, profileOverride) {
       panels.push(panel({
         id: `D${i}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
         box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
-        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i },
+        // Turn 17 (CLAUDE.md F4.2): which side of the box this board is. The
+        // BUDR kit has said so since turn 12; the wardrobe's boxes never did,
+        // so with a drawer becoming a piece a joiner can point at, its left and
+        // right sides had one name between them.
+        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i, side: 'L' },
       }));
       panels.push(panel({
         id: `D${i}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
         box: { x: boxLeftX + szufSzer - DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
-        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i },
+        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i, side: 'R' },
       }));
       panels.push(panel({
         id: `D${i}-BF`, part: 'DRAWER-BOX-FRONT', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
@@ -1317,9 +1331,19 @@ export function computeCabinet(params, profileOverride) {
     const common = { thickness: DR.boxSideThickness, edgeCode: codes.none, edgeLen: 0 };
     const boxLeftX = G + B.boxWidthClearance / 2;
     const boxZFront = D - frontT;
+    // Turn 17 (CLAUDE.md F4.3): each groove carries its DEPTH. The rectangle is
+    // unchanged — same layer, same four corners — so no exported byte moves;
+    // what the number does is let the element view and the detail window say how
+    // deep the cut is, from the same record the export reads.
     const sidePockets = (len) => [
-      { layer: 'DRAWER_RUNNER_POCKET', x1: 0, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth, y2: len + B.pocketOvershoot },
-      { layer: 'DRAWER_BOTTOM_POCKET', x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot },
+      {
+        layer: 'DRAWER_RUNNER_POCKET', depth: B.runnerPocketDepth,
+        x1: 0, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth, y2: len + B.pocketOvershoot,
+      },
+      {
+        layer: 'DRAWER_BOTTOM_POCKET', depth: B.bottomPocketDepth,
+        x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot,
+      },
     ];
     for (let i = 1; i <= budr.count; i += 1) {
       const sh = budr.sideHs[i - 1];

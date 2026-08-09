@@ -1318,11 +1318,28 @@ export function computeCabinet(params, profileOverride) {
   // unit is placed in a room (engine/autoparts.js).
   const wantsPlinth = AP.plinth.enabled && type.legs && type.mount === 'floor'
     && params?.plinth === true && plinthH > 0;
-  if (wantsPlinth) {
+  // ─── ONE PLINTH ACROSS A RUN (turn 12, CLAUDE.md F8) ───
+  //
+  // The toe kick is a RUN element now, exactly as the top infill has been since
+  // turn 8: engine/runs.js works out the segments, writes the geometry onto the
+  // first unit of each and a note onto the rest, and this reads the answer.
+  //
+  //   `run_plinth.role === 'owner'`   cut the whole segment's length here
+  //   `run_plinth.role === 'member'`  cut nothing; the long piece is next door
+  //   no `run_plinth` at all         the single-unit plinth, exactly as before
+  //
+  // The last line is what keeps a bare `computeCabinet(params)` — every golden
+  // fixture, every test that builds one cabinet — producing what it always did.
+  // The run element is a PROJECT decision and arrives only from the store.
+  const runPlinth = params?.run_plinth || null;
+  const plinthMember = runPlinth?.role === 'member';
+  const plinthLength = runPlinth?.role === 'owner' ? Number(runPlinth.length) || W : W;
+  const plinthX = runPlinth?.role === 'owner' ? Number(runPlinth.offset) || 0 : 0;
+  if (wantsPlinth && !plinthMember) {
     const t = AP.plinth.thickness ?? G;
     panels.push(panel({
-      id: 'PLINTH', part: 'PLINTH', role: 'plinth', w: W, h: plinthH, thickness: t,
-      edgeCode: codes.topBottom, edgeLen: metres(2 * W),
+      id: 'PLINTH', part: 'PLINTH', role: 'plinth', w: plinthLength, h: plinthH, thickness: t,
+      edgeCode: codes.topBottom, edgeLen: metres(2 * plinthLength),
       // ─── Turn 11 (CLAUDE.md F5.4): AT THE FRONT ───
       // It was at `z: setback` — 50 mm in from the WALL, which is the back of
       // the cabinet: a toe kick fitted behind the carcass, against the plaster,
@@ -1335,9 +1352,10 @@ export function computeCabinet(params, profileOverride) {
       // behind that. The setback number itself is unchanged — it always meant
       // "recessed from the front", and only the sign of it was wrong.
       box: {
-        x: 0, y: -plinthH, z: D - AP.plinth.setback - t, w: W, h: plinthH, d: t,
+        x: plinthX, y: -plinthH, z: D - AP.plinth.setback - t, w: plinthLength, h: plinthH, d: t,
       },
-      cnc: rectGeometry(W, plinthH),
+      cnc: rectGeometry(plinthLength, plinthH),
+      ...(runPlinth?.role === 'owner' ? { meta: { run: true, unitIds: runPlinth.unitIds } } : {}),
     }));
   }
 

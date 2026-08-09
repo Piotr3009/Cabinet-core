@@ -26,7 +26,7 @@ import {
 import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
-import { runInfillParams, unitTop } from '../engine/runs.js';
+import { runInfillParams, runPlinthParams, unitTop } from '../engine/runs.js';
 import { widthZones } from '../engine/zones.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
@@ -628,14 +628,25 @@ export const useProjectStore = create((set, get) => ({
         + (Number(u.params?.front_t) || profile.front.thickness),
     }, profile);
 
+    // ─── …and the PLINTH, the same way (turn 12, CLAUDE.md F8) ───
+    // One toe kick across the run, not one per carcass. Same shape of answer as
+    // the top infill above, computed after `plinth` has been resolved on every
+    // unit — a segment is a stretch of ADJACENT PLINTHED units, so it cannot be
+    // worked out until the store knows which of them have a plinth at all.
+    const plinthParams = runPlinthParams(next, profile);
+
     set({
       units: next.map((u) => {
         const run = runParams.get(u.id) ?? null;
+        const plinthRun = plinthParams.get(u.id) ?? null;
         // Reference equality matters here: this runs on every drag frame, and
         // writing a fresh object each time would re-render every unit in the
         // scene for a run nobody touched.
-        if (sameRun(u.params.run_top_infill, run)) return u;
-        return { ...u, params: { ...u.params, run_top_infill: run } };
+        if (sameRun(u.params.run_top_infill, run) && sameRun(u.params.run_plinth, plinthRun)) return u;
+        return {
+          ...u,
+          params: { ...u.params, run_top_infill: run, run_plinth: plinthRun },
+        };
       }),
       dirty: true,
     });
@@ -678,7 +689,18 @@ export const useProjectStore = create((set, get) => ({
   // placing a unit. Each one exists from the moment it is added and not before:
   // no ghost rows in the cut list for pieces nobody ordered.
 
-  /** @returns {boolean} false when this type cannot take a plinth at all. */
+  /**
+   * @returns {boolean} false when this type cannot take a plinth at all.
+   *
+   * ─── Turn 12 (CLAUDE.md F8) ───
+   * The toe kick is a RUN element now, so switching one on decides the LENGTH
+   * of the piece in front of its neighbours too — "a unit pushed against a
+   * plinthed run joins it AUTOMATICALLY". `refreshAutoParts` is what works the
+   * segments out, and it is called for exactly the reason `setTopInfill` above
+   * calls it: without it the run is recomputed only on the next drag, and a
+   * unit that has never been moved sits in front of a 600 mm offcut inside the
+   * long piece.
+   */
   addPlinth: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit || !takesPlinth(unit.type, getCabinetProfile())) return false;
@@ -686,13 +708,19 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: true } } : u)),
       dirty: true,
     }));
+    get().refreshAutoParts();
     return true;
   },
 
-  removePlinth: (unitId) => set((s) => ({
-    units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: false } } : u)),
-    dirty: true,
-  })),
+  removePlinth: (unitId) => {
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: false } } : u)),
+      dirty: true,
+    }));
+    // Taking one out of the middle of a run splits the kick in two — the same
+    // reason adding one joins them.
+    get().refreshAutoParts();
+  },
 
   /**
    * Add the top infill at the profile default, clamped to whatever the room has

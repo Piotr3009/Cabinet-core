@@ -52,15 +52,51 @@ const MECHANISM_PARTS = new Set(['DP', 'FILLER']);
 const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
 
 /**
+ * The kinds that are ATTACHED to a carcass rather than part of it (turn 14,
+ * CLAUDE.md F4).
+ *
+ * The owner's model, and it is a distinction a joiner makes without thinking:
+ * a side, a top, a back are the CARCASS — you build them once and you look at
+ * them in the editor window. A door, an end panel, a filler, the masking panel
+ * under a wall run are things you HANG ON the carcass afterwards, one at a
+ * time, and each of them is a decision with its own properties. Those you point
+ * at directly.
+ */
+const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel']);
+
+/**
  * Is this piece clickable AS A PIECE in the room view?
  *
  * The narrower question, and the one the 3D scene asks. `isSelectableElement`
  * is unchanged and still says what may be selected AT ALL — the editor window
  * uses it, and so does everything downstream of a selection. This only decides
- * what a click in the ROOM lands on, which is the half of it the owner sees.
+ * what a SINGLE CLICK in the room lands on, which is the half of it the owner
+ * sees — and turn 13's verdict on that is unchanged and deliberate: a single
+ * click on a cabinet selects the CABINET.
  */
 export function isMainViewElement(panel) {
   return isSelectableElement(panel) && ADDED_INTERIOR_KINDS.has(elementKind(panel));
+}
+
+/** An added-on piece: a door, a front, an end panel, a filler, a masking panel. */
+export function isAttachedElement(panel) {
+  return isSelectableElement(panel) && ATTACHED_KINDS.has(elementKind(panel));
+}
+
+/**
+ * Does this piece OPEN ITS OWN MODAL when it is double-clicked in the room?
+ *
+ * ─── Turn 14 (CLAUDE.md F4) ───
+ * "Added/attached elements are clicked DIRECTLY and get their OWN modal:
+ * doors, end panels, infills — and the bottom masking panel." Directly means
+ * without going through the editor window, and in this app that gesture already
+ * exists and is learnt: turn 11 F3.3 made a DOUBLE click open the piece and a
+ * single click only select. Using it here keeps both of the owner's verdicts —
+ * his turn-13 one (a click on a cabinet selects the cabinet) and this one — and
+ * costs him nothing he has to learn.
+ */
+export function opensOwnModal(panel) {
+  return isMainViewElement(panel) || isAttachedElement(panel);
 }
 
 /**
@@ -155,19 +191,33 @@ const FIELDS = {
   'end-panel': ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'material'],
   infill: ['infill-width', 'above-unit-infill', 'pin-infill', 'material'],
   plinth: ['plinth-height', 'material'],
-  door: ['hinge-side', 'front-board', 'material'],
+  // ─── Turn 14 (CLAUDE.md F4.2): DOOR EXTEND LIVES ON THE DOOR ───
+  // It is a property of the front — how far this door runs BELOW the carcass to
+  // make a handleless grab edge — and it spent three turns in the cabinet's
+  // carcass block, which is where a joiner looking for a door property does not
+  // look. The engine is untouched: `door_extend` is the same param it has been
+  // since turn 3, and this only says where the control is.
+  door: ['hinge-side', 'door-extend', 'front-board', 'material'],
   'drawer-front': ['drawer-height', 'front-board', 'material'],
+  'masking-panel': ['masking-depth', 'material'],
 };
 
 /**
  * The controls this piece's properties panel offers, in order.
  *
+ * `type` (turn 14, F4.2) is the unit TYPE record, so a field that only some
+ * kits have — the door extend, which is a wall unit's handleless grab edge —
+ * can be left out where the kit does not have it instead of being rendered
+ * disabled. Left out, every field the kind defines is offered, which is what
+ * every caller before this turn asked for.
+ *
  * @returns {string[]} field ids the panel knows how to render
  */
-export function elementFields(panel) {
+export function elementFields(panel, type = null) {
   const kind = elementKind(panel);
   if (!kind) return [];
-  const fields = [...(FIELDS[kind] || ['material'])];
+  let fields = [...(FIELDS[kind] || ['material'])];
+  if (type && !type.doorExtend) fields = fields.filter((f) => f !== 'door-extend');
   // A piece the engine DERIVES has no item to hang an override on: the
   // horizontal partition above a drawer stack follows the stack, and a shelf
   // that arrived as a bare count has no id. Those lose the fields that need one.

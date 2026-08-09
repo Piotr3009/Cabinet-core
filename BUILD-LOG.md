@@ -4668,3 +4668,40 @@ Jedna reguła, oba przypadki, w logice biegu, którą górny wypełniacz już mi
 bez równoległej implementacji, jak prosi CLAUDE.md.
 
 **Werdykt.** 1183 → **1190** testów.
+
+---
+
+## F4 — Modale elementów: drzwi, boki, wypełniacze — ✅ ZIELONA
+
+**Model właściciela**, i to rozróżnienie, które stolarz robi bez myślenia: bok,
+wieniec, plecy to KORPUS — budujesz raz i oglądasz w oknie edycji. Drzwi, bok
+maskujący, listwa przyścienna, panel maskujący pod biegiem wiszącym to rzeczy
+DOWIESZANE, po jednej, każda z własnymi właściwościami. W te celuje się wprost.
+
+**Gest.** Werdykt tury 13 — „klik w szafkę zaznacza SZAFKĘ" — jest nietknięty i
+celowo. Poszerza się DWUKLIK, który od tury 11 (F3.3) znaczy „otwórz ten
+element". `isMainViewElement` (co łapie pojedynczy klik) bez zmian;
+`isAttachedElement` + `opensOwnModal` to nowe pytanie, które zadaje dwuklik. Oba
+werdykty właściciela trzymają się naraz i stolarz nie uczy się nowego gestu.
+
+**F4.2 — „Door extend" wraca do domu.** To właściwość DRZWI: o ile front schodzi
+poniżej korpusu, żeby zrobić bezuchwytową krawędź chwytną. Siedziała w bloku
+KORPUSU prawego panelu przez trzy tury — czyli tam, gdzie nikt nie szuka
+ustawienia drzwi, i stąd zgłoszenie właściciela, że „zniknęła". Silnik
+nietknięty: `door_extend` to ten sam parametr od tury 3, zmienia się wyłącznie
+miejsce kontrolki. `elementFields(panel, type)` bierze teraz typ jednostki, więc
+szafka bez tej cechy nie dostaje kontrolki wyszarzonej, tylko jej nie ma.
+
+**F4.3 — dane sprawdzone.** Biblioteka ma jeden wpis wiszący (`wall` → `WUD`) i
+rozwiązuje się do typu z `doorExtend: true`; test trzyma to per WPIS biblioteki
+i dodatkowo per KAŻDY typ o `mount: 'wall'`, więc kit dodany w turze 15 nie
+prześlizgnie się bez flagi. Nic w danych nie było zgubione — zgubiona była
+kontrolka, w sensie „nie tam, gdzie się jej szuka".
+
+**F4.1 — paleta z kolorami.** Lista materiałów elementu BYŁA już paletą projektu
+(sloty korpusu + fronty, świadomie nie katalog dekorów) i brakowało jej połowy,
+którą stolarz rozpoznaje: koloru. `elementMaterialChoices` niesie teraz `hex`
+(dodatkowo, bez zmiany `material_id`/`material_label`, które czyta BOM), a modal
+pokazuje próbkę obok listy. Tytuł okna mówi, o KTÓRY element chodzi.
+
+**Werdykt.** 1190 → **1198** testów.

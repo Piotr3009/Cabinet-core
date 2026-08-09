@@ -3,6 +3,7 @@ import Modal from './Modal.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import ElementProperties from './ElementProperties.jsx';
+import { elementLabel } from '../engine/elements.js';
 import { anchorAtPoint } from '../lib/modalAnchor.js';
 
 // ─── Double-click a piece (turn 11, CLAUDE.md F3.3) ─────────────────────────
@@ -47,7 +48,10 @@ export default function ElementModal() {
 
   return (
     <Modal
-      title={`${unit.params.unit_num} · edit piece`}
+      // Turn 14 (CLAUDE.md F4): the window says WHICH piece it is about. With
+      // doors, end panels and fillers all opening one of these directly, "edit
+      // piece" is the one thing the title must not say.
+      title={`${unit.params.unit_num} · ${elementLabel(panel) || 'piece'}`}
       onClose={closeModal}
       anchor={anchor}
       width="w-[320px]"

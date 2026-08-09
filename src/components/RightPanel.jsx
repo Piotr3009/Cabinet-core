@@ -391,15 +391,17 @@ export default function RightPanel() {
                   />
                 </div>
               )}
+              {/* ─── Turn 14 (CLAUDE.md F4.2): DOOR EXTEND HAS MOVED ───
+                  It is a DOOR property and it lives in the door's own modal
+                  now — double-click a front. It sat here, in the carcass block,
+                  for three turns, which is why the owner came to report it
+                  missing: it is not where anybody looks for a door setting. */}
               {type.doorExtend && (
-                <label className="flex items-end gap-2 pb-1 text-sm text-ink-100">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(unit.params.door_extend)}
-                    onChange={(e) => updateUnitParams(unit.id, { door_extend: e.target.checked })}
-                  />
-                  <span>Door extend +{profile.wallUnit.doorExtend}</span>
-                </label>
+                <p className="col-span-2 text-[11px] text-ink-400">
+                  <span className="text-ink-100">Door extend</span> is a door setting — double-click a
+                  front to open it{unit.params.door_extend ? ' (on: +' : ''}
+                  {unit.params.door_extend ? `${formatMm(profile.wallUnit.doorExtend)})` : ''}.
+                </p>
               )}
             </div>
           )}

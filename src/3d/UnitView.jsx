@@ -17,7 +17,7 @@ import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
-import { isMainViewElement } from '../engine/elements.js';
+import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { machinedPanelGeometry } from './panelSolid.js';
@@ -833,6 +833,15 @@ export default function UnitView({
         // is the same code the editor drives. The room simply stops sending
         // carcass clicks down it.
         const isElement = isMainViewElement(p);
+        // ─── Turn 14 (CLAUDE.md F4.1) ───
+        // What a DOUBLE click opens. Wider than what a single click selects,
+        // and deliberately so: the owner's turn-13 verdict is that clicking a
+        // cabinet selects the cabinet, and his turn-14 one is that the pieces
+        // hung ON a cabinet — doors, end panels, fillers, the masking panel —
+        // are reached directly rather than through the editor window. The two
+        // fit together in the gesture turn 11 already taught: click selects,
+        // double click opens the piece.
+        const opensModal = opensOwnModal(p);
         const isShelfLike = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
@@ -941,7 +950,7 @@ export default function UnitView({
               // does to a cabinet — so a front does both: it swings, and its
               // hinge side is what the modal is about.
               if (front && onToggleFront) onToggleFront(p.id);
-              if (isElement && onEditElement) {
+              if (opensModal && onEditElement) {
                 onSelectElement?.(p.id);
                 onEditElement(p.id, { x: e.clientX, y: e.clientY });
               }

@@ -1074,12 +1074,20 @@ export const DEFAULT_CABINET_PROFILE = {
       // distance squared and a working value at a few metres is in the teens.
       // NO SHADOWS: the caster budget (`shadowCasters`) is untouched, and a
       // point light casting one would be six depth passes for a cube map.
+      // ─── The levels, after the owner saw the low pair in his own kitchen ───
+      // The eye pair came in at 12 in turn 14 and the low pair joined it at 6.
+      // With four lights in the room instead of two the verdict was "za dużo
+      // świateł, zrobiło się za jasno" — the complaint is the SUM, not either
+      // pair, so both come down rather than one being blamed. The low pair
+      // halves (it is fill, and fill that competes with the key is what flattens
+      // a picture); the eye pair comes off its top by a sixth, enough to be seen
+      // without losing the highlight that turn 14 built it for.
       points: [
         {
-          x: 0.35, yMm: 1650, z: 0.7, intensity: 12, colour: '#fff6ec',
+          x: 0.35, yMm: 1650, z: 0.7, intensity: 10, colour: '#fff6ec',
         },
         {
-          x: -0.35, yMm: 1650, z: 0.7, intensity: 12, colour: '#fff3e4',
+          x: -0.35, yMm: 1650, z: 0.7, intensity: 10, colour: '#fff3e4',
         },
         // ─── Turn 16: THE LOW PAIR (the owner's own request) ───
         // The eye-level pair lights what is at eye level. Below the worktop a
@@ -1094,10 +1102,10 @@ export const DEFAULT_CABINET_PROFILE = {
         // couple of metres is a wash rather than a hot spot. Still no shadows,
         // for the same reason as the pair above: the caster budget is spent.
         {
-          x: 0.35, yMm: 500, z: 0.7, intensity: 6, colour: '#fff6ec',
+          x: 0.35, yMm: 500, z: 0.7, intensity: 3, colour: '#fff6ec',
         },
         {
-          x: -0.35, yMm: 500, z: 0.7, intensity: 6, colour: '#fff3e4',
+          x: -0.35, yMm: 500, z: 0.7, intensity: 3, colour: '#fff3e4',
         },
       ],
       // Falloff limit as a multiple of the rig distance; decay stays physical.

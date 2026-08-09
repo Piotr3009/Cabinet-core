@@ -1,178 +1,184 @@
-# CLAUDE.md — Cabinet Core, TURN 14
+# CLAUDE.md — Cabinet Core, TURN 15
 
-Eighteen owner verdicts from a long live session on turn 13. Read the whole
-file first. Full autonomy, zero questions. Clean or not at all; the turn
-shrinks from the BOTTOM — which is why the quick daily-pain fixes sit at
-the TOP and the two big builds sit late.
+A polish-and-structure turn from a long owner session on turn 14 + the
+chat-delivered Step-5 batch. Read the whole file first. Full autonomy, zero
+questions. Clean or not at all; the turn shrinks from the BOTTOM.
 
-Baseline: main after the turn-13 merge. Tests at baseline: 1159.
+Baseline: main after the turn-14 merge PLUS the chat batch (SettingsPanel
+red Save/fold, Generic boards, spray/veneer/laminate/wood sources, 7 door
+shapes, Modal ResizeObserver). Tests at baseline: 1252.
 
 ## 0. IRON RULES
 
-All from turn 13 stand: engine purity; profile.js the only home of numbers;
-existing fixtures inviolable (NEW fixtures for NEW parts may be added);
-no new deps; mock mode; 0.5 mm + formatMm; CNC identity (byte-identical
-except deltas this file names, fingerprinted both sides, published);
-English; full npm reinstalls; Actions red; PR no merge; physical light
-units; read library defaults in source; band-limit procedural detail; no
-`a?.x === b?.x`; one rig; spray colour sacred; THE MODAL RULE (shared
-shell, draggable, beside the object — editor window stays the sanctioned
-maximised exception); browser verification is a standard phase.
+All standing rules apply (turns 1–14): engine purity; profile.js the only
+home of numbers; existing fixtures inviolable; no new deps; mock mode;
+0.5 mm + formatMm; English; full npm reinstalls; Actions red; PR no merge;
+physical light units; library defaults read in source; band-limit
+procedural detail; no `a?.x === b?.x`; one rig; spray colour sacred; THE
+MODAL RULE (shared shell, draggable, beside the object; editor window =
+the maximised exception); browser walk standard.
 
-## F1 — Quick bugs & regressions (the daily pain, first)
+CNC EXPORT: byte-identical EXCEPT one named delta this turn — the side
+infill gains its 45° mitre where it meets a top infill (F6). Fingerprint
+both sides, publish in `verify/t15/cnc-export-identity.md`. The two new
+CNC VIEWS (F9) are views: they read, they never write.
 
-1. **[REGRESSION] Clicking a wall no longer deselects.** History: turn 11
-   built it; turn 13's #65 fix (walls were EATING cabinet clicks) swung
-   the pendulum the other way. Fix so BOTH invariants hold at once, and
-   pin them as a PAIR in one e2e step so the pendulum cannot swing again:
-   (a) click on wall/background → selection empty;
-   (b) click on a cabinet THROUGH a wall → that cabinet selected.
-2. **[BUG] A wall unit's top infill cannot be removed** — unchecking it in
-   the context menu does nothing. Removal must remove.
-3. **[BUG] The blue helper line (edge→ceiling) stays** after the top
-   infill is set — it must disappear once the infill exists.
-4. **Hover highlight OFF.** Nothing highlights on mouse-over; highlight
-   appears only on CLICK (selection). Delete the hover treatment.
-5. **Room setup, the two small fixes now** (the big rebuild is F10):
-   (a) in Rectangle mode, TYPING a wall length keeps the RIGHT ANGLES —
-   the rectangle rescales; today it shears into a rhombus (owner
-   screenshot: two walls at 3041.4 after typing 4500);
-   (b) scope **"One wall"** shows ONE wall in Room setup and in the scene
-   — that wall plus, optionally, two 1000 mm side stubs forward. Never
-   the whole room.
+## F0 — Baseline
 
-## F2 — [CRITICAL] FRIDGE backs sit ON the dog bones, per the LISP
+1. Full install → tests green (record the count; expect 1252) → build.
+2. Verify the chat batch is on main: `SettingsPanel.jsx` has the red
+   Save/fold, `materialAssignmentStore.js` has the Generic boards,
+   `design.js` has the 7 FRONT_STYLE_OPTIONS. If any is missing, STOP and
+   write BLOCKERS — do not re-implement blind.
 
-Owner, precise: the small back panels sit BELOW the dog-bone row — the
-LISP puts them exactly ON it; the top back is UPSIDE-DOWN (bones at the
-bottom, must be at the top); the bottom back sits above instead of ON.
-Fix 1:1 against `reference/lisp/KIT_FRIDGE.lsp` with line citations in
-comments, the way turn 12 F10 did. If any golden fixture encodes the wrong
-position, STOP and write BLOCKERS instead of touching fixtures (the SINK
-rule). Regression tests on the corrected geometry.
+## F1 — Small UI verdicts (the owner's screenshots)
 
-## F3 — Top infill ENDS at obstacles (#55 activated, plus one new case)
+1. **Save turns green.** The red Save on Carcasses/Fronts: after the
+   click it shows GREEN with a ✓ ("saved" state); expanding/editing the
+   section returns it to red. Colours from the app palette (status
+   green), not new hex scattered in JSX.
+2. **Thickness in the folded summary.** A folded Carcass line reads
+   `Carcass 1: … · Generic board 18 mm · 18 mm` — the PROJECT thickness
+   always visible (owner's red "THICK" box).
+3. **Gold frames on sections.** CARCASSES and FRONTS (and the Door style
+   block) each sit in a delicate gold-bordered frame — today they melt
+   into one. Same gold as the T14 context-menu dividers; one shared class.
+4. **Right panel: sections COLLAPSED by default** and framed/highlighted:
+   either the same gold frames, or the ACTIVE section's frame lights up —
+   the owner must see where one section ends. Persist open/closed per
+   session only.
+5. **Library scrolls.** The library panel has no scroll today — a long
+   list runs off screen. Any list taller than its panel scrolls. Always.
 
-The owner parked this at turn 8; it is now live:
-1. A wall-unit run's top infill stops AT an end panel that runs to the
-   ceiling (a standing/tall unit's panel) — no wrapping past it.
-2. A tall unit's top infill ends ON a side infill — today it cuts through
-   it. One termination rule, both cases, in the run/mitre logic the top
-   infill already owns (no parallel implementation). Tests for both.
+## F2 — Outlines INSIDE the cabinet
 
-## F4 — Element modals: doors, end panels, infills, bottom panel
+Owner: the outer contour is crisp, the interior edges vanish. Cause (the
+depth war): an edge line lying exactly ON a neighbouring panel's face
+loses the z-fight to that face. Fix the textbook way: `polygonOffset` on
+panel FILL materials (factor/units as numbers in
+`profile.appearance.outline`), pushing fills a hair back so lines win
+everywhere. Verify no bleed-through artefacts at silhouette edges in the
+walk close-up; screenshot inside a carcass to `verify/t15/`.
 
-The owner's model: added/attached elements are clicked DIRECTLY and get
-their OWN modal (shared shell): **doors, end panels, infills** — and the
-bottom masking panel once F6 exists. Carcass stays in the editor window;
-shelves/partitions stay as they are.
-1. Each modal carries that element's properties (material/colour from the
-   unit palette per turn 13 F3, geometry fields that apply).
-2. **Door extend moves HOME:** it is a DOOR property — it lives in the
-   door modal, not in the cabinet's carcass panel. Keep the engine as is
-   (`door_extend` param); relocate the control.
-3. While there: the owner reports the checkbox vanished for his wall
-   units even though `types.js` WUD carries `doorExtend: true`. Verify
-   every wall-unit LIBRARY entry (turn 12 data) resolves to a type with
-   the flag; fix the data if an entry lost it.
+## F3 — Sources that show the RIGHT picker (owner: "mega ważne")
 
-## F5 — The bottom masking panel under wall units (#45, specified)
+1. **Fronts / Laminate → the DECOR picker** (the 85-EGGER picker the
+   carcass uses), not RAL palettes. A laminate front stores a decor,
+   renders as one, and the BOM names it.
+2. **Fronts / Veneer → a VENEER picker.** Owner decision (a)-minimal:
+   seed THREE-FOUR wood decors from the existing 85 (e.g. H1180 Halifax,
+   H3325 Gladstone, H1145 Bardolino — pick the most timber-like) flagged
+   as veneers, thickness 19 from the source. STRUCTURE FIRST: veneers are
+   their OWN extensible collection (data module/profile list referencing
+   decor ids), because the owner will drop in his own scanned veneers
+   later — adding one must be a data entry, never a code change.
+3. **Carcasses gain the Veneer source** — a third button beside
+   `EGGER decor | Sprayed`, wired to the same veneer collection, 19 mm
+   pinned the same way boards pin thickness (the F-batch gate applies:
+   changing effective thickness with units present ASKS first).
+4. Spray stays exactly as shipped (colours are right there).
 
-New part, run-based like the plinth:
-1. One continuous panel under a RUN of wall units: **length = the sum of
-   the run's units; depth = unit depth + 10 mm** (it hides the 10 mm
-   wall standoff). Docking a unit extends it; an end panel or gap is a
-   boundary (reuse the run logic).
-2. Material: the FRONT material/colour pipeline (as the plinth got in
-   turn 11) — flag in BUILD-LOG that the owner assumed sprayed/front and
-   may adjust.
-3. Enters BOM and CNC as a new part family with NEW fixtures; the CNC
-   identity report lists it as this turn's deliberate delta. The
-   `autoparts` slot already anticipates it by NAME — use it.
-4. Its own modal per F4; F3's termination rules apply where it meets
-   panels.
+## F4 — Door styles: a GALLERY, built for scale
 
-## F6 — Context menu, redesigned
+Owner: there will be MANY kitchen/front styles — never a bare dropdown.
+1. An **"Existing styles"** gallery: a tile per shape with a small SVG
+   VISUAL of the front (Shaker rails, Flat slab, J-groove lip, Grooved
+   lines, Grooved+frame, Arch, Arch handleless) + the name. Click = pick.
+2. Scale from day one: grid + scroll, a small name filter/search box, and
+   styles as a DATA list (id, label, svg ref) — style number thirty must
+   cost one data entry and one svg, zero component work.
+3. "+ New style" stays beside the gallery. The little SVGs are the seed
+   of the owner's "małe instrukcje" — draw them clean, one file/module,
+   reused later.
 
-1. **"Edit cabinet" FIRST and framed** (a bordered, standout entry).
-2. **"Show all dimensions" LAST.**
-3. Sections divided by a DELICATE line in the app's gold: [top infill +
-   plinth] | [all end panels] | [the rest]. Data-driven order.
-4. **Remove the hinges toggle entirely** — the choice is senseless
-   (owner). Hinges stay visible as turn 13 left them; REDRAWING the
-   hinges is a parked, separate topic — do not touch their look.
+## F5 — The library: flyouts and the owner's catalogue
 
-## F7 — The element DETAIL modal (double-click a part after explode)
+1. **Sub-lists fly out to the SIDE** (right of the panel; left if the
+   panel is docked right) — never expand downward pushing the list
+   (owner's screenshot: the Drawer group shoved everything off screen).
+   Flyout follows the shared placement/clamp logic.
+2. **The catalogue, restructured to the owner's list.** Entries without a
+   kit ship DISABLED-"soon" with the honest one-liner (the pattern-first
+   rule; wording as the DW/Corner entries already do). Everything that
+   works today stays wired (Base, Sink, Drawer 2×/3×/4×, Tall, Fridge,
+   Wall, Low cabinet).
+   - **Base units:** Standard · Sink · Corner (L-shelves, left/right) ·
+     L-shape · DW · Oven · Bin storage · Wine rack · Small fridge
+     (under-counter) · **Twin space** (~200 mm slimline, baskets or not).
+   - **Tall units:** Standard · Fridge housing · Basket tall · Pantry ·
+     Pantry-on-worktop · **Space tower** (drawer larder) · Oven tall
+     (single/double) · **American fridge** (the LSP the owner writes with
+     the assistant later).
+   - **Wall units:** Standard · **Glass unit** (glass shelves + glass
+     front) · L-shape wall.
+   - **Extras (new group):** Free-standing panels · **Decorative
+     cornice/pelmet strip** — one click adds it along a run
+     (run-logic like the plinth), SOON until its pattern lands.
+   All of it DATA (the T12 library-data module) — labels, groups, soon
+   reasons; no lists in components.
 
-Split view, shared shell, near-maximised like the editor:
-1. LEFT: a 3D view of THAT element alone — zoom, pan, rotate.
-2. RIGHT: the element's CNC DRAWING — the machined outline and paths with
-   a LAYER LEGEND (names + colours from `cnc/layers.js`), dimensions with
-   delicate extension lines from the edges.
-3. Dimensions are INTERACTIVE: hovering a machining (e.g. SCREWS_3MM)
-   highlights it in the drawing and shows its note; the element's OVERALL
-   dimensions are always visible.
-4. Reuse the drawings machinery (turn 6) for the right side — do not fork
-   a second drawing engine.
+## F6 — The infill corner is a MITRE (#51 activated)
 
-## F8 — The editor window comes alive
+Owner: the side infill still meets the top infill SQUARE. Where a side
+infill and a top infill meet, both are cut at 45° — the same mitre maths
+the top-infill corners already own (turn 8, "mitra w geometrii NA
+PASKACH"); extend it to the vertical member, do not fork it. This changes
+the side-infill part outline: the turn's ONE named CNC delta. Engine
+tests on the mitred lengths; drawings/BOM follow through the normal
+pipeline.
 
-1. **Doors OPEN in the editor** — the open-state animation exists for
-   fronts (turn 8); wire it to a click/control in the editor so the owner
-   can look inside and behind a door up close.
-2. **Every part is selectable with ACTIONS** — including auto parts (the
-   spur panel above a fridge, the sink kit's pieces): edit / move /
-   remove where the physics allows; where it does not, a short
-   explanation (the #58 pattern: say WHY, do not silently refuse).
-   Removal/move of an auto part is a design-layer override on the unit
-   (paramsForEngine), never an engine fork; BOM follows.
+## F7 — A ceiling-height end panel is a WALL for wall units
 
-## F9 — Eye-level front lights (owner chose variant A)
+Owner bug: extend a base/tall end panel to the ceiling — hanging units
+drive through it, and the dimension chains ignore it. Fix in the
+collision/measure layer (the T14 F7 pattern for talls): a panel whose top
+reaches the wall-unit band joins the obstacle set — wall units STOP at
+it, and the run dimensions measure to it. Pure engine functions + tests.
+While here, PIN the 10 mm truth the owner asked to confirm: a node test
+asserting units stand 10 mm off the wall and an end panel is
+automatically 10 mm deeper than its unit (the turn-7 construction rule) —
+the invariant becomes a test, not a custom.
 
-The gloss reads only at steep angles because every strong light is high.
-Add a SYMMETRIC PAIR of front point lights at EYE LEVEL:
-1. Extend the `studio.points` spec with **`yMm`** — an ABSOLUTE height in
-   mm (eyes do not scale with the kitchen; x/z stay rig-distance
-   fractions). Spec: left+right of centre (x ≈ ±0.35), z ≈ 0.7, **yMm:
-   1650**, intensity in the PHYSICAL teens (start ~12), warm white, NO
-   shadows (the caster budget is untouched), `ccLight: 'point'` (the
-   lightScale role exists).
-2. Tune in the walk until an orbit at sheen 60–90 shows a travelling
-   highlight at NORMAL viewing angles, not only from below. Numbers in
-   profile; the owner will turn them.
+## F8 — Multi-select: Remove doors
 
-## F10 — Room setup, the new paradigm (the big build)
+Beside "Add doors" on a multi-selection, **"Remove doors"** strips the
+doors from every selected unit in ONE action and ONE undo step (the F5
+turn-13 bulk rules). Today the owner walks unit by unit.
 
-Owner: corner-dragging is unusable — it wrecks the room and right angles
-cannot be caught. Replace the interaction:
-1. **Drag WHOLE WALLS, not corners.** Grabbing a wall moves it along its
-   normal; neighbours stretch; angles are preserved. Corner handles go.
-2. **Typed distance, AutoCAD-style:** start dragging (or select a wall),
-   TYPE a number, Enter → the wall moves EXACTLY that many mm in the drag
-   direction.
-3. **Insert box** (chimney/pillar): place a rectangular obstacle in the
-   plan; its walls are edited the same way (drag whole side / typed
-   distance). It renders in 3D, participates in placement collision like
-   walls do. Engine-side: a pure obstacle model with tests.
-4. L-shape stays; the same wall-drag editing applies to it.
-5. Rectangle right-angle lock from F1.5a is the constraint foundation —
-   build on it, do not duplicate.
+## F9 — CNC: two views and a toggle
 
-## F11 — Browser walk (standard) + docs + GATE
+The CNC EXPORT and today's grouping stay byte-identical — these are
+VIEWS.
+1. **By MATERIAL TYPE:** the sheet area splits left→right into one
+   section per ASSIGNED material type (e.g. `EGGER 18 | MDF 18 |
+   veneer 19`) — identity by MATERIAL, never by colour; every part sits
+   in its material's section. Section headers name the material as the
+   BOM does.
+2. **By CABINET:** a square per cabinet holding ALL its parts including
+   its panels — and a separate group for the run parts (infills,
+   plinths, masking panels), exactly as the owner said: "infille i
+   plinthy osobno".
+3. A visible TOGGLE between the two; the T11 rule holds (Library and the
+   right panel stay open; the checkbox tree keeps working in both views).
+4. NO nesting. The nesting simulation is deliberately deferred by the
+   owner — do not sketch it, do not scaffold it.
 
-Walk highlights (screenshots to `verify/t14/`, committed): the F1.1 PAIR
-invariant in ONE step; infill removed by uncheck; FRIDGE backs on the
-bones (compare framing with the owner's screenshot); infill stopping at a
-ceiling-height end panel AND at a side infill; door modal with Door
-extend; masking panel under a three-unit run, fourth unit docks; context
-menu order + gold dividers; detail modal with a hovered SCREWS_3MM
-highlighted; a door OPEN in the editor; a spur panel removed with BOM
-reflecting it; eye-level glint at a normal angle; a wall dragged 20 →
-typed 202 → moved exactly 202; an inserted box blocking a unit.
+## F10 — Browser walk + docs + GATE
 
-Docs: BUILD-LOG per phase; BACKLOG (#45 closes, #55 closes; hinges-redraw
-parked; cutouts parked); BLOCKERS for anything reverted. GATE: full
-reinstall → all green (1159 + new) → clean build → existing fixtures diff
-0, additions listed → deps untouched → engine purity → CNC identity
-(deltas: masking panel only) → verify/t14 populated → PR opened, not
-merged.
+Walk (screenshots to `verify/t15/`, committed): green ✓ Save after
+saving; folded line with `· 18 mm`; gold frames on the settings sections
+and the right panel; interior outlines visible inside an open carcass;
+Laminate front showing the decor picker and a veneer chosen from the
+veneer list; carcass Veneer source; the style GALLERY with its SVG tiles
+and the filter box; a flyout sub-list; the catalogue with the new groups
+and soon-entries; the side↔top infill corner at 45° in Solid and in the
+part drawing; a wall unit stopping at a ceiling-height end panel with
+dimensions measured to it; Remove doors clearing three units at once;
+both CNC views and the toggle.
+
+Docs: BUILD-LOG per phase; BACKLOG (#51 closes; nesting listed as
+deferred-by-owner; new catalogue patterns queued); BLOCKERS for anything
+reverted. GATE: full reinstall → all green (baseline + new) → clean
+build → existing fixtures diff 0 → deps untouched → engine purity → CNC
+identity (delta: side-infill mitre only) → `verify/t15/` populated → PR
+opened, not merged.

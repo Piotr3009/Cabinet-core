@@ -174,7 +174,11 @@ function useBevel(box, profile, sprayed = false) {
  * static box. The animation lives here, per panel, so opening one drawer does
  * not re-render the rest of the unit.
  */
-function MovingPanel({
+// Exported since turn 12 (CLAUDE.md F4): the cabinet-editor window renders THE
+// SAME meshes from THE SAME engine panels — "a viewer+editor over existing
+// data". A second panel renderer would be a second answer to what a mitre, a
+// machined socket, a decor and an X-ray look like.
+export function MovingPanel({
   panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
   swing = null, joineryLayers: layers = null, ...handlers
 }) {

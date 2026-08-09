@@ -13,6 +13,7 @@ import DrawingModal from '../components/DrawingModal.jsx';
 import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import ElementModal from '../components/ElementModal.jsx';
+import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
@@ -245,6 +246,9 @@ export default function ConfiguratorPage() {
         {/* Turn 11 (CLAUDE.md F3.3): the piece you double-clicked, edited where
             you clicked it. Not a centred dialog — see ElementModal. */}
         {modal === 'element' && <ElementModal />}
+        {/* Turn 12 (CLAUDE.md F4): one cabinet, its own canvas, mounted only
+            while the window is open. */}
+        {modal === 'cabinet' && <CabinetEditorModal />}
         <ContextMenu />
         <Toast />
       </div>

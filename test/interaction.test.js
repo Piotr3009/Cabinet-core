@@ -106,12 +106,18 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   // field in the panel.
   // Turn 11 also adds "Hinges in Solid" (F3.5) beside the dimensions switch:
   // the same kind of question — what do I want drawn on top of the furniture.
+  //
+  // Turn 12 (CLAUDE.md F4) adds "Edit cabinet…" — this cabinet on its own, in
+  // its own window, where it can be exploded and a part turned over. It sits
+  // above the destructive half of the menu because it is where a joiner goes to
+  // LOOK at what he has made, which is the most-reached-for thing here once the
+  // cabinet is standing.
   assert.deepEqual(ids, [
     'dimensions', 'hinges',
     'end-panel-L', 'end-panel-R', 'end-panel-B',
     'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R',
     'plinth',
-    'save-template',
+    'edit-cabinet', 'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
   ]);
 

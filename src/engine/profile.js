@@ -1552,6 +1552,22 @@ export const DEFAULT_CABINET_PROFILE = {
     // 100 mm is a spice rack: the narrowest thing a workshop would still cut,
     // edge and drill as a shelf rather than call an offcut.
     minElementDepth: 100,
+
+    // ─── The cabinet coming apart (turn 12, CLAUDE.md F4.1) ───
+    // "Each panel slides out along its face normal … like the cabinet was
+    // unscrewed." How far is a FRACTION of the cabinet's own size, not a number
+    // of millimetres, so a 300 mm vanity drawer and a 2.4 m wardrobe explode to
+    // the same picture. The maths is engine/explode.js.
+    explode: {
+      // Far enough to see the joint; near enough that it still reads as one
+      // cabinet rather than a parts diagram.
+      distanceFactor: 0.45,
+      // Extra separation between pieces travelling the same way — three shelves
+      // all lifting would otherwise stay stacked. Fans them out like a hand.
+      spreadFactor: 0.18,
+      // How long the animation takes, out and back.
+      seconds: 0.6,
+    },
   },
 
   // ─── Distance arrows on the canvas (turn 3 phase 8; redrawn turn 5, #34) ───

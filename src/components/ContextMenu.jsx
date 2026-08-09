@@ -94,6 +94,8 @@ export default function ContextMenu() {
         // "Save as template" needs one thing the menu cannot give it: a NAME.
         // That is the modal's whole job (BACKLOG #30).
         saveAsTemplate: (unitId) => openModal('save-template', { unitId, anchor: menuAnchor() }),
+        // Turn 12 (CLAUDE.md F4): the cabinet's own window, beside the cabinet.
+        editCabinet: (unitId) => openModal('cabinet', { unitId, anchor: menuAnchor() }),
         // The options for what was just added are in the panel, not in a modal.
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
       },

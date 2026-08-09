@@ -36,7 +36,7 @@ export default function VeneerPicker({
   }, []);
 
   const veneers = getVeneers();
-  const shown = useMemo(() => filterVeneers(veneers, { query }), [veneers, query, ready]);
+  const shown = useMemo(() => filterVeneers(veneers, { query }), [veneers, query]);
 
   return (
     <div className="space-y-2" data-veneer-picker="1">
@@ -55,6 +55,9 @@ export default function VeneerPicker({
         )}
       </div>
 
+      {/* The LIST is ours and arrives at once; only the pictures are fetched.
+          Saying so is the difference between "loading" and "broken". */}
+      {!ready && <p className="text-[11px] text-ink-400">Loading the pictures…</p>}
       {shown.length === 0 && (
         <p className="text-[11px] text-ink-400 py-4">Nothing matches “{query}”.</p>
       )}

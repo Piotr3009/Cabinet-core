@@ -10,6 +10,7 @@ import UnitView from './UnitView.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
 import AddPlus from './AddPlus.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
+import { useViewHandle } from './viewHandle.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
 import { addPlusPoints, unitBase } from '../engine/runs.js';
@@ -24,6 +25,16 @@ import { categoryOf } from '../engine/types.js';
 // capture), not its window geometry. Preview is 3D from the start (SPEC 7).
 
 // Hands the WebGL canvas to the PDF exporter without a second render pass.
+/**
+ * The room's own end-to-end handle (turn 13, F1/F10). Inside the Canvas,
+ * because that is where `useThree` can see anything; a component of its own so
+ * the registration unmounts with the view.
+ */
+function ViewHandle({ name }) {
+  useViewHandle(name);
+  return null;
+}
+
 function CaptureRig({ onReady, background }) {
   const { gl, scene, camera } = useThree();
   useEffect(() => {
@@ -928,6 +939,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           yet and silently do nothing — which is how the orbit ends up pointed
           at the floor. */}
       <HomeTarget orbitRef={orbitRef} height={roomH} />
+      <ViewHandle name="room" />
       <CaptureRig onReady={onCaptureReady} background={background} />
       <RenderRig onReady={onRenderReady} unitsRef={unitGroups} />
     </Canvas>

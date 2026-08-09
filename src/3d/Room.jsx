@@ -36,6 +36,37 @@ export function wallFacesCamera(face, cameraPosition) {
  * caller with no profile to hand — a test, a preview mounted before the store
  * has loaded.
  */
+
+/**
+ * "Click the background" — but only when the background is what was clicked.
+ *
+ * ─── TURN 13 (CLAUDE.md F5.1) ───
+ * Turn 11 gave the floor and the walls their own pointer-down, because the
+ * canvas's `onPointerMissed` fires only when the ray hits NOTHING and a wall is
+ * something. Right, and one case short: the walls are DOUBLE-SIDED and the
+ * camera stands outside the front one, so EVERY click in this application
+ * passes through a wall before it reaches anything — including a click on a
+ * cabinet. The room's handler therefore ran on clicks that were never about the
+ * room, and cleared the selection a moment before the cabinet set it.
+ *
+ * On a single click that is invisible: the cabinet writes last and wins. With
+ * CTRL held it is the whole feature, because the set the click was meant to
+ * grow had just been emptied. The browser walk is what found it, and it is the
+ * kind of bug that only a browser can find.
+ *
+ * So the question is not "was I the nearest thing" — the wall always is — but
+ * "was I the ONLY kind of thing". A room surface is the background when no
+ * piece of furniture is anywhere in the ray's list.
+ */
+function backgroundHit(event) {
+  for (const hit of event?.intersections || []) {
+    for (let o = hit.object; o; o = o.parent) {
+      if (o.userData?.ccUnitId) return false;
+    }
+  }
+  return true;
+}
+
 function tone(profile, surface, fallback) {
   return profile?.appearance?.room?.[surface] || fallback;
 }
@@ -143,7 +174,11 @@ function Wall({
             does. It did not, and the reason is easy to miss: the canvas's
             `onPointerMissed` fires only when the ray hits NOTHING, and a wall is
             something. So the room's own surfaces say so themselves. */}
-        <mesh geometry={geometry} receiveShadow onPointerDown={onBackground}>
+        <mesh
+          geometry={geometry}
+          receiveShadow
+          onPointerDown={(e) => { if (backgroundHit(e)) onBackground?.(e); }}
+        >
           <meshLambertMaterial
             color={tone(profile, 'wall', COLORS.wall)}
             emissive={bounce(tone(profile, 'wall', COLORS.wall), profile, 'wall')}
@@ -226,7 +261,11 @@ export default function Room({
           melt into one white blur" was Piotr's complaint and three values inside
           5 % of each other was the arithmetic behind it. The numbers are in
           profile.appearance.room; the reasoning is written down there. */}
-      <mesh geometry={floor} receiveShadow onPointerDown={background}>
+      <mesh
+        geometry={floor}
+        receiveShadow
+        onPointerDown={(e) => { if (backgroundHit(e)) background?.(e); }}
+      >
         <meshLambertMaterial
           color={tone(profile, 'floor', COLORS.floor)}
           emissive={bounce(tone(profile, 'floor', COLORS.floor), profile, 'floor')}

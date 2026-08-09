@@ -459,7 +459,15 @@ export default function UnitView({
     // joins or leaves the selection and stays exactly where it is. Letting the
     // drag run as well would move six cabinets by the two pixels the hand
     // wobbles while it is ticking the sixth.
-    const additive = Boolean(e.ctrlKey || e.metaKey);
+    //
+    // The NATIVE event is asked first, and that is not belt-and-braces: a
+    // pointer event carries `ctrlKey` on its PROTOTYPE, and react-three-fiber
+    // builds its own event object by spreading the DOM one — which copies own
+    // enumerable properties and therefore leaves every modifier behind. Read
+    // off the synthetic event alone, Ctrl+click is an ordinary click and the
+    // selection replaces instead of growing. The browser walk is what found it.
+    const native = e.nativeEvent || e;
+    const additive = Boolean(native.ctrlKey || native.metaKey || e.ctrlKey || e.metaKey);
     onSelect({ additive });
     if (additive) return;
     const hit = pointerToPlane(e.clientX, e.clientY);
@@ -763,6 +771,12 @@ export default function UnitView({
       ref={groupRef}
       position={origin}
       rotation={[0, wall.angle + rotationRad, 0]}
+      // Which cabinet this is, on the object itself (turn 13, F10). The scene
+      // already marks what a thing IS — `ccHelper`, `ccFurniture`, `ccHardware`
+      // — and this is the same kind of mark: it is what lets the acceptance
+      // walk aim a click at a named cabinet through the camera instead of
+      // guessing at a fraction of the canvas and falling back when it misses.
+      userData={{ ccUnitId: unit.id }}
       onPointerOver={enter}
       onPointerOut={leave}
     >
@@ -865,6 +879,14 @@ export default function UnitView({
             swing={front === 'door' ? swingFor(p.meta?.hinge) : null}
             joineryLayers={jointLayers}
             onPointerDown={(e) => {
+              // ─── Turn 13 (CLAUDE.md F5.1/F5.3): THE LEFT BUTTON ONLY ───
+              // A pointer-down fires for every button, so a RIGHT press on a
+              // cabinet ran this handler before the context menu ever saw it —
+              // selecting the unit, and therefore collapsing a multi-selection
+              // the instant somebody right-clicked it to act on the set. The
+              // right button belongs to the menu and to the orbit; the middle
+              // one to the pan. Neither is a grab.
+              if (((e.nativeEvent || e).button ?? 0) !== 0) return;
               // ─── Turn 9 (CLAUDE.md F4.1/F4.2): which axis this drag is on ───
               //
               // A shelf you have not touched yet behaves as it always has —
@@ -925,7 +947,14 @@ export default function UnitView({
             onContextMenu={(e) => {
               e.stopPropagation();
               e.nativeEvent?.preventDefault?.();
-              onSelect();
+              // ─── Turn 13 (CLAUDE.md F5.3) ───
+              // Right-clicking a cabinet that is ALREADY in the selection must
+              // not collapse it: the whole point of the menu over a set is that
+              // it acts on the set, and re-selecting would leave the joiner
+              // with the entries for one cabinet after ticking three. A
+              // right-click on a cabinet OUTSIDE the selection still selects
+              // it, which is what every desktop application does.
+              if (!selected) onSelect();
               if (onContextMenu) onContextMenu({ x: e.clientX, y: e.clientY, panelId: p.id, part: p.part });
             }}
             onPointerOver={shelfId

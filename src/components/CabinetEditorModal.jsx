@@ -6,6 +6,7 @@ import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel } from '../3d/UnitView.jsx';
+import { useViewHandle } from '../3d/viewHandle.js';
 import { mm } from '../3d/constants.js';
 import { surfaceFor, outlineFor } from '../3d/materials.js';
 import { useUiStore } from '../stores/uiStore.js';
@@ -203,6 +204,9 @@ function CabinetCanvas({
       onPointerMissed={() => onSelect(null)}
       onContextMenu={(e) => e.preventDefault()}
     >
+      {/* The editor's end-to-end handle (turn 13, F2.2): a PAN leaves no trace
+          in the DOM at all, so the walk reads the controls' own target. */}
+      <EditorViewHandle />
       <ambientLight intensity={0.75} />
       <directionalLight position={[radius, radius * 1.6, radius]} intensity={1.6} />
       <directionalLight position={[-radius, radius * 0.6, -radius * 0.4]} intensity={0.5} />
@@ -235,6 +239,11 @@ function CabinetCanvas({
       />
     </Canvas>
   );
+}
+
+function EditorViewHandle() {
+  useViewHandle('editor');
+  return null;
 }
 
 /**

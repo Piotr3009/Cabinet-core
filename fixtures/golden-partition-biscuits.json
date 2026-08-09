@@ -1,0 +1,157 @@
+{
+  "meta": {
+    "source": "The OWNER's workshop pattern, dictated 09.08.2026 and written into CLAUDE.md turn 13 F8 (BACKLOG #59). There is no AutoLISP for this: the kits have never cut a vertical partition's fixing, which is exactly why #59 was open. This is therefore a fixture of a RULE rather than of a reference file — the same standing the KIT files have, from the other direction.",
+    "computed_by": "Claude (turn 13 autonomous session, 09.08.2026), by hand from the rule below and NOT from the engine. Every number here was worked out from the chain and the counts before the engine was asked what it produced.",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. If engine output differs, the ENGINE is wrong (or file a BLOCKERS.md entry). Never edit expected values to make tests green.",
+    "units": "mm, panel-local CNC coordinates (origin = bottom-left of the part's nominal rectangle, as drawn in the DXF)"
+  },
+
+  "pattern": {
+    "set": "screw ⌀3 → 10 mm gap → biscuit mark 70 mm → 10 mm gap → screw ⌀3",
+    "chain": "Read as items and CLEAR gaps: 3 + 10 + 70 + 10 + 3 = 96 mm per set. Screw CENTRES at start+1.5 and start+94.5; the mark runs start+13 → start+83.",
+    "edge_minimum": "A set STARTS no closer than 50 mm from the element's edge — never less.",
+    "count": "joint ≤ 700 mm → TWO sets, one at each end honouring the 50 mm rule. Longer → ONE more in the middle, three in total. That is all.",
+    "positions": "n=2 → starts at 50 and (L − 50 − 96). n=3 → those two plus (L − 96)/2.",
+    "no_screw_set": "A through-screw exists only where the RECEIVING FACE IS CONCEALED. The carcass top is under a worktop and the bottom is inside the plinth void, so both are drilled. A FIXED SHELF's faces are what you look at with the doors open, so a partition landing on one takes the 70 mm mark alone — in the SAME positions.",
+    "joint_line": "The line the two boards meet on: their OVERLAP in the cabinet's depth, not the partition's own depth. A partition may be deeper than the shelf it stands on, and a fixing set out past the end of the receiving board is a screw into air.",
+    "where": "RECEIVING BOARD (carcass top/bottom, fixed shelf): the whole set on its face — the screws pass through it into the partition's edge, the mark lies between them. PARTITION: the mark only, at markFromEnd (20 mm) in from its end edge, on the same datum. No screws — the screw comes through the other board INTO this one's edge, so drilling it here is the same hole twice.",
+    "layers": "screws join the existing SCREWS_3MM family (turn-8 conventions, same layer and same ⌀3). The 70 mm marks go on BISCUIT_4MM — a NEW layer, 4 mm, matching the owner's dedicated VCarve in-and-out program. The name is exact and is a machine contract.",
+    "frames": "TOP/BOTTOM are drawn TURNED: CNC x runs along the cabinet's DEPTH from box.z, CNC y along its WIDTH from box.x. A SHELF is drawn upright: x along the WIDTH, y along the DEPTH. A VPART is drawn on its side: x along its HEIGHT from box.y, y along its DEPTH from box.z."
+  },
+
+  "set_positions": {
+    "note": "The counts CLAUDE.md F8.5 names, worked out from the rule. A set is 96 long; the usable band is L − 100.",
+    "cases": [
+      { "length": 400, "count": 2, "starts": [50, 254], "reason": "≤ 700 → two; 400 − 50 − 96 = 254" },
+      { "length": 700, "count": 2, "starts": [50, 554], "reason": "the threshold itself is still two — 'width > 700' adds the third" },
+      { "length": 701, "count": 3, "starts": [50, 302.5, 555], "reason": "one past it → three; the middle is (701 − 96)/2" },
+      { "length": 900, "count": 3, "starts": [50, 402, 754], "reason": "(900 − 96)/2 = 402" }
+    ]
+  },
+
+  "cases": [
+    {
+      "id": "BISCUIT-A",
+      "description": "A 900 mm base unit with ONE vertical partition and no fixed shelf: the partition runs floor to top, so both joints are into CONCEALED carcass faces and both are drilled.",
+      "inputs": {
+        "type": "BUD",
+        "width": 900,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "unit_num": "01",
+        "items": [{ "id": "p1", "kind": "partition", "x_mm": 450 }]
+      },
+      "geometry": {
+        "partition_box": { "x": 450, "y": 18, "z": 18, "w": 18, "h": 734, "d": 540 },
+        "joint_length": 540,
+        "reason": "The partition and both carcass boards span z 18 → 558, so the overlap is the whole 540. 540 ≤ 700 → two sets, at 50 and 540 − 50 − 96 = 394.",
+        "across": 441,
+        "across_reason": "The partition's centre line in the receiver's frame: 450 + 18/2 − 18 = 441."
+      },
+      "expect": [
+        {
+          "panel": "TOP",
+          "screws": [
+            { "x": 51.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 144.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 395.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 488.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" }
+          ],
+          "marks": [
+            { "from": [63, 441], "to": [133, 441], "layer": "BISCUIT_4MM" },
+            { "from": [407, 441], "to": [477, 441], "layer": "BISCUIT_4MM" }
+          ]
+        },
+        {
+          "panel": "BOTTOM",
+          "screws": [
+            { "x": 51.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 144.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 395.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 488.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" }
+          ],
+          "marks": [
+            { "from": [63, 441], "to": [133, 441], "layer": "BISCUIT_4MM" },
+            { "from": [407, 441], "to": [477, 441], "layer": "BISCUIT_4MM" }
+          ]
+        },
+        {
+          "panel": "VPART-1",
+          "screws": [],
+          "screws_reason": "The screw comes through the carcass board INTO this one's edge. Drilling it here is the same hole twice.",
+          "marks": [
+            { "from": [20, 63], "to": [20, 133], "layer": "BISCUIT_4MM" },
+            { "from": [20, 407], "to": [20, 477], "layer": "BISCUIT_4MM" },
+            { "from": [714, 63], "to": [714, 133], "layer": "BISCUIT_4MM" },
+            { "from": [714, 407], "to": [714, 477], "layer": "BISCUIT_4MM" }
+          ],
+          "marks_reason": "x = 20 (markFromEnd) at the bottom end and 734 − 20 = 714 at the top; y is the same set-out as the receiver's, from the same datum."
+        }
+      ]
+    },
+
+    {
+      "id": "BISCUIT-B",
+      "description": "The turn-12 attachment: a partition that TERMINATES ON A FIXED SHELF. The shelf's top face is what you look at with the doors open, so that joint is the NO-SCREW set — the mark alone, in the same positions.",
+      "inputs": {
+        "type": "BUD",
+        "width": 900,
+        "height": 1200,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "unit_num": "02",
+        "items": [
+          { "id": "s1", "kind": "shelf", "variant": "fixed", "pos_mm": 600 },
+          { "id": "p1", "kind": "partition", "x_mm": 450 }
+        ]
+      },
+      "geometry": {
+        "partition_box": { "x": 450, "y": 18, "z": 18, "w": 18, "h": 582, "d": 540 },
+        "shelf_box": { "x": 20, "y": 600, "z": 18, "w": 860, "h": 18, "d": 520 },
+        "bottom_joint_length": 540,
+        "shelf_joint_length": 520,
+        "reason": "The partition spans z 18 → 558 and the SHELF only 18 → 538, so their overlap is 520 — and the fixing is set out on THAT. 520 ≤ 700 → two sets, at 50 and 520 − 50 − 96 = 374."
+      },
+      "expect": [
+        {
+          "panel": "BOTTOM",
+          "screws": [
+            { "x": 51.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 144.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 395.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" },
+            { "x": 488.5, "y": 441, "d": 3, "layer": "SCREWS_3MM" }
+          ],
+          "marks": [
+            { "from": [63, 441], "to": [133, 441], "layer": "BISCUIT_4MM" },
+            { "from": [407, 441], "to": [477, 441], "layer": "BISCUIT_4MM" }
+          ]
+        },
+        {
+          "panel": "SHELF-1",
+          "screws": [],
+          "screws_reason": "THE NO-SCREW SET. A partition meeting the visible top of a fixed shelf must not be drilled through.",
+          "marks": [
+            { "from": [439, 63], "to": [439, 133], "layer": "BISCUIT_4MM" },
+            { "from": [439, 387], "to": [439, 457], "layer": "BISCUIT_4MM" }
+          ],
+          "marks_reason": "A shelf is drawn upright, so x is the partition's centre line (450 + 9 − 20 = 439) and y walks the joint."
+        },
+        {
+          "panel": "VPART-1",
+          "screws": [],
+          "marks": [
+            { "from": [20, 63], "to": [20, 133], "layer": "BISCUIT_4MM" },
+            { "from": [20, 407], "to": [20, 477], "layer": "BISCUIT_4MM" },
+            { "from": [562, 63], "to": [562, 133], "layer": "BISCUIT_4MM" },
+            { "from": [562, 387], "to": [562, 457], "layer": "BISCUIT_4MM" }
+          ],
+          "marks_reason": "The BOTTOM joint is 540 long and the SHELF joint 520, so the partition's two ends carry different set-outs — 407/477 at the bottom, 387/457 at the top. That is the overlap rule showing itself on one part."
+        }
+      ]
+    }
+  ]
+}

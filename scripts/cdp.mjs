@@ -80,6 +80,13 @@ export async function launch({ port = 9333, headless = true, width = 1600, heigh
   await page.send('Page.enable');
   await page.send('Runtime.enable');
   await page.send('Log.enable');
+  // ─── Turn 13 ───
+  // The HTTP cache is off for the whole session, and it is not a nicety: a
+  // rebuilt bundle keeps the same index.html, so a cached one goes on pointing
+  // at the PREVIOUS hashed asset and the walk quietly verifies the build before
+  // last. That cost an hour of chasing a fix that was already in the source.
+  await page.send('Network.enable');
+  await page.send('Network.setCacheDisabled', { cacheDisabled: true });
   await page.send('Emulation.setDeviceMetricsOverride', {
     width, height, deviceScaleFactor: 1, mobile: false,
   });

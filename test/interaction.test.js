@@ -112,11 +112,18 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   // above the destructive half of the menu because it is where a joiner goes to
   // LOOK at what he has made, which is the most-reached-for thing here once the
   // cabinet is standing.
+  //
+  // Turn 13 (CLAUDE.md F5.3) adds the two the menu never had and the owner asked
+  // for by name: "Add doors" — which was a button at the bottom of the right
+  // panel, a long way from the cabinet you are looking at — and "Colour…", which
+  // had no unit-level control at all until F3. Both sit with the construction
+  // entries, because both are things you DO to the cabinet rather than ways of
+  // looking at it, and both apply to the whole selection.
   assert.deepEqual(ids, [
     'dimensions', 'hinges',
     'end-panel-L', 'end-panel-R', 'end-panel-B',
     'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R',
-    'plinth',
+    'plinth', 'add-doors', 'unit-colour',
     'edit-cabinet', 'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
   ]);

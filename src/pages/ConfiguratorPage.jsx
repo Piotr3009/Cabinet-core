@@ -15,6 +15,7 @@ import ContextMenu from '../components/ContextMenu.jsx';
 import ElementModal from '../components/ElementModal.jsx';
 import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
+import UnitFinishModal from '../components/UnitFinishModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
@@ -306,6 +307,10 @@ export default function ConfiguratorPage() {
         {/* Turn 12 (CLAUDE.md F5.1): the golden "+" opens a window beside the
             cabinet rather than sending the eye to the right-hand panel. */}
         {modal === 'add-items' && <AddItemsModal />}
+        {/* Turn 13 (CLAUDE.md F3): ONE cabinet's colour, from the project's own
+            palette. It takes a selection, so the same window serves the
+            right-click menu over six cabinets (F5.3). */}
+        {modal === 'unit-finish' && <UnitFinishModal />}
         <ContextMenu />
         <Toast />
       </div>

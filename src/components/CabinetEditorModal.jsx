@@ -6,6 +6,7 @@ import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel } from '../3d/UnitView.jsx';
+import { useViewHandle } from '../3d/viewHandle.js';
 import { mm } from '../3d/constants.js';
 import { surfaceFor, outlineFor } from '../3d/materials.js';
 import { useUiStore } from '../stores/uiStore.js';
@@ -36,6 +37,21 @@ import { getUnitType } from '../engine/types.js';
 //   cabinet was unscrewed. The arithmetic is engine/explode.js and the distance
 //   is a profile number; this file only animates towards the answer.
 //
+//   ─── TURN 13 (CLAUDE.md F2): GROWN UP ───
+//
+//   The owner worked in it and asked for three things. It opens MAXIMISED —
+//   rule 15's one sanctioned exception, because this is a workspace and not a
+//   side dialog, and the exception is spelled out in the shell rather than
+//   worked around here. It PANS as well as orbits, on the room view's own
+//   convention (right or middle button), because a cabinet you cannot slide
+//   across the frame is a cabinet you can only look at from the middle. And
+//   clicking a part opens EDIT ELEMENT — the full properties, edited here.
+//
+//   That last one is the half of the change the main view feels: carcass panels
+//   are edited EXCLUSIVELY through this window now (F2.4), so the room stops
+//   routing their clicks to the element paths and selects the whole cabinet
+//   again. The paths themselves are untouched — this window is what uses them.
+//
 //   TURN A PART OVER (F4.2) — in the exploded state, a part can be selected and
 //   ROTATED freely, which is how you look at the back of a side panel without
 //   taking the room apart around it. Selecting a part shows its EXISTING
@@ -58,6 +74,9 @@ export default function CabinetEditorModal() {
 
   const [exploded, setExploded] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  // The shell owns the window; this is only what the CONTENT does with the room
+  // it has been given — a side-by-side workspace when there is width for one.
+  const [big, setBig] = useState(true);
 
   // A part that has gone (a shelf deleted from the panel below) must not stay
   // selected: the properties block would be showing a piece that is not there.
@@ -83,12 +102,18 @@ export default function CabinetEditorModal() {
       title={`${unit.params.unit_num} · ${type.label} — edit cabinet`}
       onClose={closeModal}
       width="w-[560px]"
+      // ─── Turn 13 (CLAUDE.md F2.1) ───
+      // The owner's request, and rule 15's one exception: a workspace opens
+      // near-fullscreen. The header drag, Escape and the × all survive, and the
+      // ❐ in the header puts it back beside the cabinet.
+      maximised
+      onMaximisedChange={setBig}
       footer={(
         <>
           <span className="text-[11px] text-ink-400 flex-1 text-left">
             {exploded
               ? 'Click a part to select it, then drag it to turn it over.'
-              : 'Explode to look inside — every piece comes apart on its own face.'}
+              : 'Drag to orbit · right or middle button to pan · click a part to edit it.'}
           </span>
           <button
             type="button"
@@ -102,9 +127,12 @@ export default function CabinetEditorModal() {
         </>
       )}
     >
-      <div className="space-y-3">
+      {/* Maximised, the properties stand BESIDE the cabinet — there is width
+          for them and a joiner editing a side wants to see the side. Restored,
+          the window is 560 px and they go under it, as they did in turn 12. */}
+      <div className={`h-full min-h-0 flex gap-3 ${big ? 'flex-row' : 'flex-col'}`}>
         <div
-          className="h-[300px] rounded border border-shell-600 overflow-hidden"
+          className={`rounded border border-shell-600 overflow-hidden ${big ? 'flex-1 min-w-0' : 'h-[300px]'}`}
           data-cabinet-canvas="1"
           style={{ background: profile.appearance.room?.background || '#fafaf8' }}
         >
@@ -121,24 +149,34 @@ export default function CabinetEditorModal() {
           />
         </div>
 
-        {selected ? (
-          <div className="border border-shell-600 rounded p-2 space-y-2">
-            <div className="cc-row">
-              <span className="text-xs uppercase tracking-wide text-ink-200 flex-1">
-                {elementLabel(selected)}
-              </span>
-              <button type="button" className="cc-btn-ghost" title="Deselect" onClick={() => setSelectedId(null)}>×</button>
+        <div
+          className={`${big ? 'w-[340px] shrink-0 overflow-y-auto' : ''} space-y-2`}
+          data-editor-properties="1"
+        >
+          {selected ? (
+            <div className="border border-shell-600 rounded p-2 space-y-2">
+              <div className="cc-row">
+                {/* ─── Turn 13 (CLAUDE.md F2.3) ───
+                    "Clicking a part inside the editor shows EDIT ELEMENT."
+                    Named, so the window says what it is offering rather than
+                    leaving a joiner to infer it from a row of fields. */}
+                <span className="text-xs uppercase tracking-wide text-gold flex-1" data-edit-element="1">
+                  Edit element · {elementLabel(selected)}
+                </span>
+                <button type="button" className="cc-btn-ghost" title="Deselect" onClick={() => setSelectedId(null)}>×</button>
+              </div>
+              {/* The SAME properties block the right panel shows. An edit here is
+                  the same override, on the same unit, through the same store. */}
+              <ElementProperties unit={unit} panel={selected} item={item} compact />
             </div>
-            {/* The SAME properties block the right panel shows. An edit here is
-                the same override, on the same unit, through the same store. */}
-            <ElementProperties unit={unit} panel={selected} item={item} compact />
-          </div>
-        ) : (
-          <p className="text-[11px] text-ink-400">
-            Nothing selected. Click a piece in the view — its properties appear here, and they are the
-            same fields the right-hand panel offers.
-          </p>
-        )}
+          ) : (
+            <p className="text-[11px] text-ink-400">
+              Nothing selected. Click a piece in the view — <b className="text-ink-200">Edit element</b> opens
+              here, and it is the same override machinery the right-hand panel uses. Carcass panels are
+              edited here and nowhere else.
+            </p>
+          )}
+        </div>
       </div>
     </Modal>
   );
@@ -166,6 +204,9 @@ function CabinetCanvas({
       onPointerMissed={() => onSelect(null)}
       onContextMenu={(e) => e.preventDefault()}
     >
+      {/* The editor's end-to-end handle (turn 13, F2.2): a PAN leaves no trace
+          in the DOM at all, so the walk reads the controls' own target. */}
+      <EditorViewHandle />
       <ambientLight intensity={0.75} />
       <directionalLight position={[radius, radius * 1.6, radius]} intensity={1.6} />
       <directionalLight position={[-radius, radius * 0.6, -radius * 0.4]} intensity={0.5} />
@@ -179,9 +220,18 @@ function CabinetCanvas({
         onSelect={onSelect}
         bounds={bounds}
       />
+      {/* ─── Turn 13 (CLAUDE.md F2.2): IT PANS NOW ───
+          Turn 12 said `enablePan={false}`, so the cabinet was nailed to the
+          centre of the frame and the only gesture was orbit. The convention is
+          the MAIN VIEW's, deliberately and literally: the room's OrbitControls
+          take three.js's defaults — left orbits, middle dollies, right pans —
+          so the same hand works in both places and there is nothing new to
+          learn. `screenSpacePanning` is left at its default for the same
+          reason. The context menu is already suppressed on this canvas, which
+          is what lets the right button through to the controls. */}
       <OrbitControls
         makeDefault
-        enablePan={false}
+        enablePan
         minDistance={radius * 0.35}
         maxDistance={radius * 4}
         enableDamping
@@ -189,6 +239,11 @@ function CabinetCanvas({
       />
     </Canvas>
   );
+}
+
+function EditorViewHandle() {
+  useViewHandle('editor');
+  return null;
 }
 
 /**

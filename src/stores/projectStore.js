@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import {
-  computeCabinet, isShelfLocked, SHELF_VARIANTS,
+  computeCabinet, doorCountFor, isShelfLocked, SHELF_VARIANTS,
 } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
@@ -32,6 +32,8 @@ import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
 } from '../engine/items.js';
+import { endPanelHeightDefault } from '../engine/autoparts.js';
+import { runBatch } from './historyBatch.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -806,7 +808,16 @@ export const useProjectStore = create((set, get) => ({
 
     const profile = getCabinetProfile();
     const settings = {
-      height: height || design.endPanel.height,
+      // ─── Turn 13 (CLAUDE.md F4) ───
+      // The project's answer, unless this unit CLASS has one of its own — a
+      // wall unit's panel ends with the cabinet, and "to the floor" was never a
+      // decision anybody made about a hanging carcass. Written into the data,
+      // so the slot says what the piece is and the parked extension (#45) has
+      // somewhere to opt back in.
+      height: height
+        || (getUnitType(unit.type)?.mount === 'wall'
+          ? endPanelHeightDefault(getUnitType(unit.type), profile)
+          : design.endPanel.height),
       // "Same as the doors" is what a workshop means by a default thickness.
       thickness: Number(thickness) > 0
         ? Number(thickness)
@@ -1105,6 +1116,163 @@ export const useProjectStore = create((set, get) => ({
       : u)),
     dirty: true,
   })),
+
+  // ─── The unit's own finish (turn 13, CLAUDE.md F3) ────────────────────────
+  //
+  // The bug the owner found: editing ONE cabinet's colour rewrote the whole
+  // project, because the only control the panel had was the PROJECT's. What was
+  // missing is this — a place for one cabinet's answer.
+  //
+  // Both fields are POINTERS INTO THE PROJECT PALETTE (engine/design.js
+  // `projectPalette`), never colours of their own. That is what keeps the
+  // hierarchy honest: Settings grows the palette, a unit chooses from it, and
+  // an element override (turn 9/11) still sits above both. Change Front 2 in
+  // Settings and every cabinet wearing Front 2 follows.
+  //
+  // One `set` per call and one per BATCH, so the history watcher records one
+  // undo step for a bulk recolour (F5.4) exactly as it does for a single one.
+
+  /**
+   * Give these units a carcass and/or front from the palette.
+   *
+   * @param {string|string[]} unitIds
+   * @param {object} patch  { carcass_type_id?, front_type_id? } — a key that is
+   *                        absent is LEFT ALONE, a key set to null is cleared
+   *                        back to the project. That distinction is what makes a
+   *                        "mixed" field in the bulk editor writable without
+   *                        wiping the other one (F5.2).
+   */
+  setUnitFinish: (unitIds, patch) => {
+    const ids = new Set(Array.isArray(unitIds) ? unitIds : [unitIds]);
+    const keys = ['carcass_type_id', 'front_type_id'].filter((k) => k in (patch || {}));
+    if (!ids.size || !keys.length) return;
+    set((s) => ({
+      units: s.units.map((u) => {
+        if (!ids.has(u.id)) return u;
+        const params = { ...u.params };
+        for (const k of keys) params[k] = patch[k] || null;
+        return { ...u, params };
+      }),
+      dirty: true,
+    }));
+  },
+
+  /** Back to the project's finishes for these units — F3.3, "Reset to project". */
+  resetUnitFinish: (unitIds) => {
+    const ids = new Set(Array.isArray(unitIds) ? unitIds : [unitIds]);
+    if (!ids.size) return;
+    set((s) => ({
+      units: s.units.map((u) => (ids.has(u.id)
+        ? { ...u, params: { ...u.params, carcass_type_id: null, front_type_id: null } }
+        : u)),
+      dirty: true,
+    }));
+  },
+
+  // ─── Bulk actions (turn 13, CLAUDE.md F5) ─────────────────────────────────
+  //
+  // A joiner who has just drawn six base units wants to plinth all six at once.
+  // Nothing here is a second implementation of anything: every bulk action is
+  // the SINGLE-unit action, called once per unit, inside one batch. That is the
+  // whole design, and it is what keeps the clamps honest — each cabinet's width
+  // still stops at ITS neighbour, each shelf still centres in ITS carcass — and
+  // what keeps F5.4 ("every bulk action is ONE undo step") from being a promise
+  // sixty actions have to remember to keep.
+
+  /**
+   * Run several edits as one undo step.
+   *
+   * @param {Function} fn  called with no arguments; use the store's own actions
+   * @returns whatever `fn` returned
+   */
+  batch: (fn) => runBatch(fn),
+
+  /**
+   * The same parameter patch on every unit in the selection.
+   *
+   * Per unit, through `updateUnitParams`, so every clamp that applies to one
+   * cabinet applies to each of them — a run where the third cabinet cannot grow
+   * past its neighbour says so about the third cabinet.
+   *
+   * @returns {{notices:string[]}} every clamp message, prefixed with its unit
+   */
+  updateUnitParamsBulk: (unitIds, patch) => runBatch(() => {
+    const notices = [];
+    for (const id of unitIds || []) {
+      const unit = get().units.find((u) => u.id === id);
+      if (!unit) continue;
+      const res = get().updateUnitParams(id, patch) || { notices: [] };
+      for (const n of res.notices || []) notices.push(`${unit.params.unit_num}: ${n}`);
+    }
+    return { notices };
+  }),
+
+  /** A shelf (or several) in every unit of the selection that takes one. */
+  addShelvesBulk: (unitIds, count = 1) => runBatch(() => {
+    let added = 0;
+    let skipped = 0;
+    for (const id of unitIds || []) {
+      const unit = get().units.find((u) => u.id === id);
+      if (!unit) continue;
+      // A cabinet whose kit has no shelves is not a failure, it is a cabinet
+      // that has no shelves. Counted, and reported once, rather than throwing a
+      // warning per unit at somebody who selected a whole run.
+      if (!getUnitType(unit.type)?.supports?.shelves) { skipped += 1; continue; }
+      added += get().addShelves(id, count)?.added || 0;
+    }
+    return { added, skipped };
+  }),
+
+  /**
+   * Hang the doors this cabinet's width calls for.
+   *
+   * ─── Turn 13 (CLAUDE.md F5.3 / F6) ───
+   * "Add doors" is asked for in three places now — the right panel, the
+   * right-click menu over a whole selection, and the golden plus — so the
+   * ANSWER lives here instead of in whichever component was first. It was one
+   * line of arithmetic in RightPanel; three copies of one line is how two of
+   * them end up disagreeing about the hinge.
+   *
+   * @returns {{count:number, already:boolean}} — `already` for a unit that has
+   *   doors, so a caller can say so rather than reporting a silent success.
+   */
+  addDoors: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { count: 0, already: false };
+    const profile = getCabinetProfile();
+    if (unit.params.doors && unit.params.doors !== false) {
+      return { count: get().unitResult(unitId)?.derived?.doors || 0, already: true };
+    }
+    const count = doorCountFor(unit.params.width, profile);
+    get().setDoors(unitId, { count, hinge: unit.params.hinge || profile.doors.defaultHinge });
+    return { count, already: false };
+  },
+
+  /** …and on every cabinet in the selection, as one undo step. */
+  addDoorsBulk: (unitIds) => runBatch(() => {
+    let fitted = 0;
+    let already = 0;
+    for (const id of unitIds || []) {
+      const res = get().addDoors(id);
+      if (res.already) already += 1;
+      else if (res.count) fitted += 1;
+    }
+    return { fitted, already };
+  }),
+
+  /** Even/centre the shelves in every unit of the selection. */
+  redistributeShelvesBulk: (unitIds) => runBatch(() => {
+    let done = 0;
+    for (const id of unitIds || []) {
+      const unit = get().units.find((u) => u.id === id);
+      if (!unit) continue;
+      const items = unit.params.sections?.[0]?.items || [];
+      if (!items.some((i) => i.kind === 'shelf')) continue;
+      get().redistributeShelves(id);
+      done += 1;
+    }
+    return { done };
+  }),
 
   // ── units ────────────────────────────────────────────────────────────────
   /**

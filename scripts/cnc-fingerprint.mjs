@@ -82,6 +82,37 @@ function cases() {
         }],
       },
     });
+    // ─── The deliberate delta (turn 13, CLAUDE.md F8 / #59) ───
+    // A cabinet with a VERTICAL PARTITION in it. Turn 12 cut the piece and
+    // exported it with nothing on it at all — BLOCKERS #59, open since turn 11
+    // — and turn 13 gives it the owner's biscuit set. Both cases are here so
+    // the change SHOWS in the diff as an addition on named files rather than
+    // hiding behind a script that only ever builds an undivided box: the first
+    // is a partition floor-to-top (both joints drilled), the second one that
+    // terminates on a FIXED shelf (the no-screw set).
+    out.push({
+      id: `${type}+partition`,
+      params: {
+        ...base,
+        sections: [{
+          width_mm: base.width,
+          items: [{ id: 'p1', kind: 'partition', x_mm: Math.round(base.width / 2) }],
+        }],
+      },
+    });
+    out.push({
+      id: `${type}+partition-on-shelf`,
+      params: {
+        ...base,
+        sections: [{
+          width_mm: base.width,
+          items: [
+            { id: 's1', kind: 'shelf', pos_mm: Math.round(base.height / 2), variant: 'fixed' },
+            { id: 'p1', kind: 'partition', x_mm: Math.round(base.width / 2) },
+          ],
+        }],
+      },
+    });
   }
   return out;
 }

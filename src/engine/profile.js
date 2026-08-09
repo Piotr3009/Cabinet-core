@@ -197,6 +197,34 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── Partition fixing: the biscuit set (turn 13, CLAUDE.md F8 / #59) ─────
+  //
+  // The owner's workshop truth, given as the reference pattern for a butt
+  // joint: screw ⌀3 → 10 mm gap → biscuit mark 70 mm → 10 mm gap → screw ⌀3,
+  // starting no closer than 50 mm from the element's edge, two sets up to
+  // 700 mm wide and three above it. The arithmetic is engine/biscuits.js; every
+  // number it uses is here, which is what lets a workshop with a different
+  // cutter or a different habit change the pattern without touching code.
+  biscuits: {
+    markLength: 70,            // the biscuit mark itself
+    markTool: 4,               // …cut with the owner's dedicated 4 mm in-and-out program
+    gap: 10,                   // CLEAR space between a screw and the mark
+    screwDiameter: 3,          // the same ⌀3 the rest of the carcass is screwed with
+    edgeMin: 50,               // a set STARTS no closer than this to the edge — never less
+    wideThreshold: 700,        // wider than this and a third set goes in the middle
+    // How far in from the partition's END its half of the mark is drawn. The
+    // joint's other half is an END and a flat bed cannot reach it, so what the
+    // partition carries is the set-out transferred onto its face.
+    markFromEnd: 20,
+    layer: 'BISCUIT_4MM',      // the name is the tool mapping — never tidied up
+    screwLayer: 'SCREWS_3MM',  // the turn-8 family, joined rather than duplicated
+    // Where a through-screw is allowed: the receiving face must be CONCEALED.
+    // A carcass top is under a worktop and a bottom is inside the plinth void;
+    // a fixed shelf's faces are what you look at with the doors open, so a
+    // partition landing on one takes the biscuit-only set.
+    concealedReceivers: ['TOP', 'BOTTOM'],
+  },
+
   // ─── Wardrobe specifics (KIT_WARDROBE_FULL constants, lines 498-508) ───
   wardrobe: {
     legHeight: 100,
@@ -665,7 +693,19 @@ export const DEFAULT_CABINET_PROFILE = {
       // `thickness: null` = the project's front thickness, which is what a
       // workshop means by "same as the doors".
       thickness: null,
-      defaultHeight: 'floor',       // 'floor' | 'unit'
+      defaultHeight: 'floor',       // 'floor' | 'carcass' ('unit' is the old name)
+      // ─── Turn 13 (CLAUDE.md F4) ───
+      // The owner's bug: a WALL unit's end panel ran to the FLOOR — a masking
+      // panel hanging in mid-air down the wall under a cabinet that stops at
+      // 2100. The verdict is that it ends flush with the hanging cabinet's
+      // bottom, so the DEFAULT is per unit class rather than per project.
+      //
+      // 'carcass' means "ends with the cabinet". The fourth value the slot is
+      // shaped for is 'extended' — the door/panel EXTENSION below a wall unit,
+      // parked as BACKLOG #45 — which is why this is a table of classes and not
+      // a boolean: when the extension lands, a wall unit opts into it by name
+      // and nothing about the data has to change shape.
+      defaultHeightByMount: { wall: 'carcass', floor: 'floor' },
     },
   },
 
@@ -1137,6 +1177,15 @@ export const DEFAULT_CABINET_PROFILE = {
     // an object, quiet enough not to be a diagram.
     hardware: {
       rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92', hinge: '#5b5f63',
+      // ─── Turn 13 (CLAUDE.md F7) ───
+      // Are the hinge bodies drawn in SOLID, without switching to X-ray? Yes,
+      // and the owner's verdict is that the switch now exists to HIDE them.
+      //
+      // It is a profile number rather than a `true` in the ui store because it
+      // is workshop configuration like every other appearance answer here
+      // (rule 2) — a shop that wants a clean working view sets it once instead
+      // of asking every joiner to find the toggle.
+      showInSolid: true,
     },
 
     // ─── Which ink the dimensions are written in (turn 11, CLAUDE.md F1.5) ──
@@ -1172,6 +1221,14 @@ export const DEFAULT_CABINET_PROFILE = {
       outline: '#2A2A2A',
       socket: '#B4783C',
       dogbone: '#8C182B',
+      // ─── Turn 13 (CLAUDE.md F8): the partition's fixing ───
+      // The biscuit MARK and the ⌀3 screws that flank it, drawn in X-ray so a
+      // joiner can see the set-out on the furniture and not only on the sheet.
+      // The mark takes the same warm tone its DXF layer has in the CNC preview,
+      // so the same thing is the same colour in both places; the screws take a
+      // cooler one, because a set is three things and has to read as three.
+      biscuit: '#E08A3C',
+      screw: '#3D7F9C',
       // Off the face, in mm. The same trick and the same reason as the edge
       // handle's (3d/EdgeHandle.jsx): a line drawn ON a surface is a coin toss
       // per pixel per frame.
@@ -1516,6 +1573,14 @@ export const DEFAULT_CABINET_PROFILE = {
       // How close to a viewport edge a modal may come. The same 8 px the
       // right-click menu has used since turn 11.
       marginPx: 8,
+      // ─── Turn 13 (CLAUDE.md F2.1 / rule 15's one exception) ───
+      // How much room a MAXIMISED window leaves round itself. The cabinet
+      // editor is a workspace rather than a side dialog and the owner asked for
+      // it near-fullscreen; "near" is this number, and it is a number rather
+      // than a `inset-6` in a class list because rule 2 says so. Big enough
+      // that the room behind still reads as the thing underneath, small enough
+      // that the window is the screen.
+      maximiseMarginPx: 28,
     },
   },
 
@@ -1657,6 +1722,9 @@ export function migrateCabinetProfile(profile) {
     },
     shelfHoles: { ...D.shelfHoles, ...profile.shelfHoles },
     puzzle: { ...D.puzzle, ...profile.puzzle, layers: { ...D.puzzle.layers, ...profile.puzzle?.layers } },
+    // Turn 13 (F8): a stored profile made before the biscuit pattern existed
+    // must come back with it, exactly as every other block here does.
+    biscuits: { ...D.biscuits, ...profile.biscuits },
     wardrobe: {
       ...D.wardrobe, ...profile.wardrobe,
       defaults: { ...D.wardrobe.defaults, ...profile.wardrobe?.defaults },

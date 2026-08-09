@@ -24,9 +24,26 @@
 
 import { getUnitType } from '../engine/types.js';
 
+// ─── TURN 13 (CLAUDE.md F5.3): THE MENU APPLIES TO THE SELECTION ───────────
+//
+// Ctrl+click three cabinets, right-click one of them, choose Add plinth: all
+// three get one — and the turn-12 run logic merges the adjacent ones into a
+// single length itself, so the answer is one plinth and not three.
+//
+// FIVE entries are named by CLAUDE.md and exactly those five are bulk: the
+// plinth, the pinned fillers, the end panels, Add doors and the unit colour.
+// Everything else stays about the cabinet under the pointer, and every bulk
+// entry SAYS SO in its label — a menu where some entries silently do three
+// things and others do one is a menu you have to test on your own project.
+//
+// The mechanism is the store's `batch`, so the whole thing is one undo step
+// (F5.4). Nothing here loops without it.
+
 /**
  * @param {object} args
- *   unit       the unit that was right-clicked
+ *   unit       the unit that was right-clicked — the PRIMARY
+ *   selection  every selected unit, this one included. Defaults to just it, so
+ *              a caller that has never heard of multi-select is unaffected.
  *   panelPart  which panel of it (so a front can offer front actions)
  *   dimensions whether this unit's full dimensions are currently on the scene
  *   hinges     whether the hinge bodies are drawn in Solid (turn 11, F3.5)
@@ -35,10 +52,34 @@ import { getUnitType } from '../engine/types.js';
  *                  danger?:boolean,disabled?:boolean,run:Function}>}
  */
 export function menuActions({
-  unit, panelPart, dimensions = false, hinges = false, store = {},
+  unit, selection = null, panelPart, dimensions = false, hinges = false, store = {},
 }) {
   const type = getUnitType(unit.type);
   const actions = [];
+
+  // The cabinets a bulk entry acts on, and how many — always including the one
+  // under the pointer, whatever the selection says, because right-clicking a
+  // cabinet that is not in it and getting an action on three others would be
+  // the menu lying about what it is about.
+  const targets = (() => {
+    const ids = (selection || []).map((u) => u.id).filter(Boolean);
+    return ids.includes(unit.id) ? ids : [unit.id];
+  })();
+  const many = targets.length > 1;
+  /** "Add plinth" over three cabinets says "Add plinth (3)". */
+  const forAll = (label) => (many ? `${label} (${targets.length})` : label);
+  /**
+   * Every bulk entry runs inside one batch — F5.4, and never per entry.
+   *
+   * The `batch` is asked for EXPLICITLY rather than through `??`: a batch that
+   * returns nothing (which is what a batch normally does) would make `??` fall
+   * through and run the loop a second time.
+   */
+  const each = (fn) => {
+    const loop = () => { for (const id of targets) fn(id); };
+    if (typeof store.batch === 'function') store.batch(loop);
+    else loop();
+  };
 
   // ── 1. the numbers ──
   // A toggle, not a one-way door: the same entry turns them off, which is what
@@ -76,20 +117,32 @@ export function menuActions({
     const fitted = side === 'B' ? (fittedOn('L') && fittedOn('R')) : fittedOn(side);
     actions.push({
       id: `end-panel-${side}`,
-      label: `End panel — ${label}`,
+      label: forAll(`End panel — ${label}`),
       checked: fitted,
       hint: fitted
         ? 'Fitted. Click to take it off; its options are in the Construction section'
         : 'A masking panel outside this side, in the BOM like any other piece',
+      // Bulk (F5.3), and the STATE is read per unit rather than copied from the
+      // primary: over a run where one cabinet already has a left panel, "take
+      // it off" has to take off the ones that are there and not fit five more.
       run: () => {
-        if (fitted) {
-          for (const ep of endPanels.filter((e) => side === 'B' || e.side === side)) {
-            store.removeEndPanel?.(unit.id, ep.id);
+        each((id) => {
+          const target = (selection || []).find((u) => u.id === id) || unit;
+          const own = target.params.end_panels || [];
+          if (fitted) {
+            for (const ep of own.filter((e) => side === 'B' || e.side === side)) {
+              store.removeEndPanel?.(id, ep.id);
+            }
+            return;
           }
-          return;
-        }
-        store.addEndPanel?.(unit.id, { side });
-        store.openPanelSection?.('construction');
+          if (side === 'B') {
+            if (!own.some((e) => e.side === 'L')) store.addEndPanel?.(id, { side: 'L' });
+            if (!own.some((e) => e.side === 'R')) store.addEndPanel?.(id, { side: 'R' });
+            return;
+          }
+          if (!own.some((e) => e.side === side)) store.addEndPanel?.(id, { side });
+        });
+        if (!fitted) store.openPanelSection?.('construction');
       },
     });
   }
@@ -147,13 +200,16 @@ export function menuActions({
       const width = Number(unit.params[side === 'L' ? 'side_infill_left_mm' : 'side_infill_right_mm']) || 0;
       actions.push({
         id: `pin-infill-${side}`,
-        label: `Pin infill ${label}`,
+        label: forAll(`Pin infill ${label}`),
         checked: isPinned,
         disabled: off,
         hint: isPinned
           ? `Pinned${width ? ` at ${Math.round(width)} mm` : ''} — click to unpin and let it come and go with the gap`
           : 'Keep a filler on this side whatever the gap becomes — it stretches with the unit',
-        run: () => store.setSideInfillPinned?.(unit.id, side, !isPinned),
+        // Bulk (F5.3). The primary decides the DIRECTION — the joiner is
+        // pinning or unpinning, and that is one decision — and each cabinet
+        // then produces the filler its own gap calls for, or none.
+        run: () => each((id) => store.setSideInfillPinned?.(id, side, !isPinned)),
       });
     }
   }
@@ -163,16 +219,49 @@ export function menuActions({
     const fitted = unit.params.plinth === true;
     actions.push({
       id: 'plinth',
-      label: 'Plinth',
+      label: forAll('Plinth'),
       checked: fitted,
-      hint: fitted ? 'Fitted. Click to take it off' : 'A toe kick under this unit — manual since turn 4',
+      hint: fitted
+        ? 'Fitted. Click to take it off'
+        : (many
+          ? 'A toe kick under each of them — adjacent ones come out as ONE length (turn 12)'
+          : 'A toe kick under this unit — manual since turn 4'),
+      // Bulk (F5.3), and CLAUDE.md names the reason it needs nothing else:
+      // "the turn-12 run logic merges adjacent ones itself". Three cabinets
+      // side by side get three plinth flags and one plinth.
       run: () => {
-        if (fitted) { store.removePlinth?.(unit.id); return; }
-        store.addPlinth?.(unit.id);
-        store.openPanelSection?.('construction');
+        each((id) => (fitted ? store.removePlinth?.(id) : store.addPlinth?.(id)));
+        if (!fitted) store.openPanelSection?.('construction');
       },
     });
   }
+
+  // ── 4b. doors, and the colour (turn 13, CLAUDE.md F5.3) ──
+  //
+  // Two entries the menu never had. "Add doors" was a button at the bottom of
+  // the right panel and nowhere else, which is a long way from the cabinet when
+  // the cabinet is what you are looking at; the colour had no unit-level
+  // control at all until F3, which is the bug this turn opened with.
+  {
+    const hasDoors = Boolean(unit.params.doors) && unit.params.doors !== false;
+    if (type.supports?.doors !== false) {
+      actions.push({
+        id: 'add-doors',
+        label: forAll('Add doors'),
+        disabled: hasDoors && !many,
+        hint: hasDoors && !many
+          ? 'This cabinet already has its doors'
+          : 'Hang the doors this width calls for — one or two, on the unit’s own hinge side',
+        run: () => store.addDoors?.(targets),
+      });
+    }
+  }
+  actions.push({
+    id: 'unit-colour',
+    label: forAll('Colour…'),
+    hint: 'This cabinet’s own finish, from the project palette — the project is left alone',
+    run: () => store.unitColour?.(targets),
+  });
 
   // ── 5. everything else, as before ──
   //

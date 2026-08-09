@@ -142,6 +142,17 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
     entities.push({ type: 'poly', layer: pocket.layer, closed: true, pts: pocketPoints(pocket) });
   }
 
+  // ─── Turn 13 (CLAUDE.md F8): the biscuit MARKS ───
+  // An OPEN two-point polyline — a path the cutter follows in and back out —
+  // rather than a closed rectangle, because that is what the owner's dedicated
+  // 4 mm program is: plunge, run 70 mm, retract. R12 has the closed flag
+  // already (`70 = 0` here against `1` for a pocket), so nothing about the
+  // writer changes. A panel with no marks contributes nothing, which is what
+  // keeps every existing file byte-identical.
+  for (const mark of panel.cnc?.marks || []) {
+    entities.push({ type: 'poly', layer: mark.layer, closed: false, pts: [mark.from, mark.to] });
+  }
+
   for (const hole of drills) {
     if (hole.panel !== panel.id) continue;
     entities.push({ type: 'circle', layer: hole.layer, cx: hole.x, cy: hole.y, r: hole.d / 2 });

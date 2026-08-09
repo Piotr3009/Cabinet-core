@@ -1104,6 +1104,34 @@ warsztatu, nie do programu.
 wieniec i dno (ile, w jakich odległościach), czy kołki w bokach i rowek.
 Po tej odpowiedzi geometria to kilkanaście linii obok `drawWardrobeShelfHoles*`.
 
+### ZAMKNIĘTE 09.08 (tura 13) — wzorzec biskwitowy
+
+Właściciel podyktował wzorzec i jest on od tej tury REFERENCYJNY dla złącza
+doczołowego w całej aplikacji:
+
+    wkręt ⌀3 → 10 mm przerwy → znacznik biskwitu 70 mm → 10 mm przerwy → wkręt ⌀3
+
+zaczynając nie bliżej niż 50 mm od krawędzi (nigdy mniej), dwa zestawy do
+700 mm szerokości i trzy powyżej. Wkręt na wylot istnieje wyłącznie tam, gdzie
+lico przyjmujące jest ZAKRYTE — przegroda kończąca się na widocznej półce
+stałej dostaje sam znacznik, w tych samych pozycjach.
+
+Przewidywanie z akapitu wyżej okazało się trafne co do skali: geometria to
+kilkanaście linii w `engine/cabinet.js` obok pozostałych wierceń. Co NIE było
+przewidziane, to że wzorzec nie jest tylko wierceniem — znacznik 70 mm to
+osobne narzędzie i osobna warstwa (`BISCUIT_4MM`, dedykowany program VCarve
+właściciela), więc DXF musiał nauczyć się ścieżki OTWARTEJ. To jedyna rzecz,
+której nie dało się przewidzieć z samego pytania „czym się ją mocuje".
+
+Reguła, którą to zostawia: **silnik nie zgaduje wzorca warsztatu, a kiedy
+wzorzec przychodzi, kosztuje jedną turę.** #61, #62 i #63 stoją pod tą samą
+regułą i czekają dokładnie tak samo.
+
+Pełny opis: SPEC 6.1. Liczby: `profile.biscuits`. Arytmetyka:
+`engine/biscuits.js`. Fixture: `fixtures/golden-partition-biscuits.json`
+(policzony ręcznie z reguły, nie z silnika). Delta eksportu:
+`verify/t13/cnc-export-identity.md`.
+
 ## #60 — Kamera „look at THIS" była martwa od tury 5 (naprawione w T11)
 
 Zapisane nie dlatego, że coś zostaje otwarte, tylko dlatego, że pułapka jest
@@ -1218,3 +1246,67 @@ nieparzystej wysokości stałyby 2 mm ponad korpusem.
 **Co Piotr decyduje.** Czy kitowe 4:3:2 ma zostać takie, jakie jest (wtedy to
 nie dług, tylko granica i można ją zapisać w SPEC), czy ma dostać `exact: true`
 w osobnej turze — z nowymi fixture'ami i wpisem o świadomej zmianie eksportu.
+
+### ZAMKNIĘTE 09.08 (tura 13)
+
+Właściciel wybrał pierwsze: **zostaje dokładnie takie, jakie tnie kit**
+(`exact: false`). To granica systemu, nie dług, i jako granica jest teraz
+zapisana w SPEC sekcja 6 — a nie tylko tutaj, gdzie następna tura mogłaby jej
+nie zobaczyć. Milimetr dryfu na części wysokości jest udokumentowany i
+zamrożony; test w `turn12-library.test.js` przechodzi 400 wysokości, żeby
+udowodnić, że nic nie drgnęło.
+
+## #65 — Pokój przechwytywał każde kliknięcie (naprawione w T13)
+
+Zapisane nie dlatego, że coś zostaje otwarte, tylko dlatego, że pułapka jest
+ogólna i wróci — dokładnie jak #60.
+
+Ściany pokoju są `DoubleSide`, a kamera stoi PRZED przednią ścianą i patrzy do
+środka. Znaczy to, że **każde** kliknięcie w tej aplikacji przechodzi najpierw
+przez ścianę, zanim dosięgnie czegokolwiek innego: lista przecięć, którą
+react-three-fiber podaje handlerom, zaczyna się od ściany na dystansie ~3,8 m,
+a szafka jest dopiero na ~6,9 m.
+
+Handler tła (`onPointerDown={onBackground}` na ścianie i podłodze, tura 11,
+F1.1) był więc uruchamiany dla kliknięć, które nigdy nie dotyczyły tła — i
+czyścił zaznaczenie chwilę przed tym, jak szafka je ustawiała.
+
+**Dlaczego nikt tego nie widział przez dwie tury.** Bo przy zwykłym kliknięciu
+jest to niewidoczne: szafka pisze jako ostatnia i wygrywa. Błąd wychodzi
+dopiero, gdy kliknięcie ma DODAĆ do czegoś, co już jest — czyli przy Ctrl+klik
+z tury 13. Zbiór, który miał urosnąć, był opróżniany milisekundę wcześniej.
+
+**Naprawa.** Pytanie nie brzmi „czy byłem najbliżej" — ściana zawsze jest —
+tylko „czy byłem JEDYNYM rodzajem rzeczy". Powierzchnia pokoju jest tłem, gdy
+w liście promienia nie ma nigdzie mebla (`backgroundHit` w `3d/Room.jsx`;
+każda grupa szafki nosi `userData.ccUnitId`).
+
+**Reguła na przyszłość:** handler „kliknięto nic" nie może pytać o SIEBIE.
+W scenie 3D z podwójnie stronnymi ścianami „nic" znaczy „na promieniu nie ma
+niczego, co jest czymś" — i to trzeba sprawdzić na całej liście przecięć.
+
+Znalezione przez przejście w przeglądarce, nie przez test w node. Test w node
+nie ma promienia.
+
+## #66 — `pointerdown` leci dla KAŻDEGO przycisku (naprawione w T13)
+
+Bliźniak #65, ta sama tura, ten sam bieg akceptacyjny.
+
+Prawym przyciskiem otwiera się menu kontekstowe. Ale `pointerdown` leci także
+dla prawego, więc handler szafki (`startDrag`) uruchamiał się PIERWSZY i
+zaznaczał ją — a menu budowało się już po tym. Efekt: prawy klik na szafce
+należącej do zaznaczenia trzech zwijał je do jednej i menu pokazywało wpisy
+dla jednej szafki. Znowu: niewidoczne, dopóki zaznaczenie mogło być tylko
+jedno.
+
+**Naprawa.** Wyłącznie lewy przycisk chwyta mebel. Prawy należy do menu i do
+orbity, środkowy do panoramowania.
+
+**I trzecia z tej samej rodziny:** react-three-fiber buduje swój obiekt
+zdarzenia rozsypując DOM-owy, a `ctrlKey` w `PointerEvent` siedzi na
+PROTOTYPIE — więc `Object.assign` go nie kopiuje i modyfikator nigdy nie
+docierał. Handler czyta zdarzenie natywne (`e.nativeEvent`).
+
+**Reguła na przyszłość:** w scenie 3D zdarzenie wskaźnika przechodzi przez
+warstwę tłumaczącą. Cokolwiek jest na nim AKCESOREM — przyciski, modyfikatory,
+`buttons` — sprawdź na zdarzeniu natywnym, zanim zbudujesz na tym funkcję.

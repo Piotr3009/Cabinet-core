@@ -17,7 +17,7 @@ import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
-import { isSelectableElement } from '../engine/elements.js';
+import { isMainViewElement } from '../engine/elements.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { machinedPanelGeometry } from './panelSolid.js';
@@ -454,7 +454,22 @@ export default function UnitView({
 
   const startDrag = useCallback((e) => {
     e.stopPropagation();
-    onSelect();
+    // ─── Turn 13 (CLAUDE.md F5.1): CTRL+CLICK BUILDS A SET ───
+    // With the modifier down this is not a grab, it is a tick: the cabinet
+    // joins or leaves the selection and stays exactly where it is. Letting the
+    // drag run as well would move six cabinets by the two pixels the hand
+    // wobbles while it is ticking the sixth.
+    //
+    // The NATIVE event is asked first, and that is not belt-and-braces: a
+    // pointer event carries `ctrlKey` on its PROTOTYPE, and react-three-fiber
+    // builds its own event object by spreading the DOM one — which copies own
+    // enumerable properties and therefore leaves every modifier behind. Read
+    // off the synthetic event alone, Ctrl+click is an ordinary click and the
+    // selection replaces instead of growing. The browser walk is what found it.
+    const native = e.nativeEvent || e;
+    const additive = Boolean(native.ctrlKey || native.metaKey || e.ctrlKey || e.metaKey);
+    onSelect({ additive });
+    if (additive) return;
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
     drag.current = { offset: alongMm(hit) - unit.position.x_mm };
@@ -756,6 +771,12 @@ export default function UnitView({
       ref={groupRef}
       position={origin}
       rotation={[0, wall.angle + rotationRad, 0]}
+      // Which cabinet this is, on the object itself (turn 13, F10). The scene
+      // already marks what a thing IS — `ccHelper`, `ccFurniture`, `ccHardware`
+      // — and this is the same kind of mark: it is what lets the acceptance
+      // walk aim a click at a named cabinet through the camera instead of
+      // guessing at a fraction of the canvas and falling back when it misses.
+      userData={{ ccUnitId: unit.id }}
       onPointerOver={enter}
       onPointerOut={leave}
     >
@@ -787,7 +808,20 @@ export default function UnitView({
         // What is deliberately NOT a piece is a mechanism: a drawer box's own
         // sides, the panel that carries the runners, its fillers. Those follow
         // the stack, and the way to change one is to change the stack.
-        const isElement = isSelectableElement(p);
+        //
+        // ─── TURN 13 (CLAUDE.md F2.4) ───
+        // …and turn 11 went one step too far. The owner's verdict after using
+        // it: clicking a cabinet must select the CABINET. So the ROOM asks the
+        // narrower question — `isMainViewElement`, which is the ADDED INTERIOR
+        // items and nothing else: shelves, partitions, rails. A side, a top, a
+        // bottom, a back, a door, an end panel is reached in the EDITOR window
+        // (F2.3), which is where the properties now live.
+        //
+        // Nothing about the element paths changed. `onSelectElement`,
+        // `onEditElement`, the properties block, the override store — all of it
+        // is the same code the editor drives. The room simply stops sending
+        // carcass clicks down it.
+        const isElement = isMainViewElement(p);
         const isShelfLike = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
@@ -845,6 +879,14 @@ export default function UnitView({
             swing={front === 'door' ? swingFor(p.meta?.hinge) : null}
             joineryLayers={jointLayers}
             onPointerDown={(e) => {
+              // ─── Turn 13 (CLAUDE.md F5.1/F5.3): THE LEFT BUTTON ONLY ───
+              // A pointer-down fires for every button, so a RIGHT press on a
+              // cabinet ran this handler before the context menu ever saw it —
+              // selecting the unit, and therefore collapsing a multi-selection
+              // the instant somebody right-clicked it to act on the set. The
+              // right button belongs to the menu and to the orbit; the middle
+              // one to the pan. Neither is a grab.
+              if (((e.nativeEvent || e).button ?? 0) !== 0) return;
               // ─── Turn 9 (CLAUDE.md F4.1/F4.2): which axis this drag is on ───
               //
               // A shelf you have not touched yet behaves as it always has —
@@ -905,7 +947,14 @@ export default function UnitView({
             onContextMenu={(e) => {
               e.stopPropagation();
               e.nativeEvent?.preventDefault?.();
-              onSelect();
+              // ─── Turn 13 (CLAUDE.md F5.3) ───
+              // Right-clicking a cabinet that is ALREADY in the selection must
+              // not collapse it: the whole point of the menu over a set is that
+              // it acts on the set, and re-selecting would leave the joiner
+              // with the entries for one cabinet after ticking three. A
+              // right-click on a cabinet OUTSIDE the selection still selects
+              // it, which is what every desktop application does.
+              if (!selected) onSelect();
               if (onContextMenu) onContextMenu({ x: e.clientX, y: e.clientY, panelId: p.id, part: p.part });
             }}
             onPointerOver={shelfId
@@ -976,9 +1025,28 @@ export default function UnitView({
       )}
 
       {/* The bought hardware (turn 7, CLAUDE.md F3): legs and the rail always,
-          hinges and runners only in X-ray. Every position comes from
-          engine/hardware3d.js, which reads the engine's own drilling — so the
-          count of what is drawn is the count of what is on order. */}
+          the RUNNERS only in X-ray, and the hinges whenever the profile says so.
+          Every position comes from engine/hardware3d.js, which reads the
+          engine's own drilling — so the count of what is drawn is the count of
+          what is on order.
+
+          ─── TURN 13 (CLAUDE.md F7): WHY THEY LOOKED X-RAY-ONLY ───
+          Owner: "still X-ray-only in practice". The rendering is NOT branch-
+          bound — `hinges` below has been independent of `xray` since turn 11
+          and CarcassHinges/DoorHinges draw the same procedural bodies either
+          way. Two other things were making it true in practice, and both are
+          fixed rather than argued with:
+
+            • the flag is REMEMBERED, so a browser that switched it off once in
+              turn 11 kept it off through every reload and no change to the
+              default could reach it. The storage key is versioned now
+              (stores/uiStore.js).
+            • with the doors SHUT there is nothing to see, and that is not a
+              bug: every part of a cup hinge is inside the door or inside the
+              carcass behind it. Turn 12 added the BOSS for exactly this, and
+              it reads the moment a door swings — which is what the capture in
+              verify/t13 shows. Making a closed cabinet show its ironmongery
+              would mean drawing through solid board, which is what X-ray is. */}
       <Hardware
         instances={hardware}
         profile={profile}

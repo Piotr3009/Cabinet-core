@@ -26,6 +26,11 @@ const KIND_COLOUR = {
   outline: 'outline',
   socket: 'socket',
   dogbone: 'dogbone',
+  // Turn 13 (CLAUDE.md F8): the partition's biscuit set — the 70 mm mark and
+  // the two ⌀3 screws that flank it. Two more kinds, so two more buffers at
+  // most, and only on a cabinet that actually has a partition in it.
+  biscuit: 'biscuit',
+  screw: 'screw',
 };
 
 export default function JointLines({

@@ -1,7 +1,7 @@
 import {
   useCallback, useEffect, useLayoutEffect, useRef, useState,
 } from 'react';
-import { clampToViewport, placeBesideAnchor } from '../lib/menuPlacement.js';
+import { clampToViewport, maximiseInViewport, placeBesideAnchor } from '../lib/menuPlacement.js';
 import { getCabinetProfile } from '../engine/profile.js';
 
 // ─── THE MODAL SHELL (turn 12, CLAUDE.md rule 15 / F2) ──────────────────────
@@ -50,10 +50,20 @@ import { getCabinetProfile } from '../engine/profile.js';
  *             anchor: a modal that dims the cabinet it is about is covering it
  *             with grey instead of with itself, which is the same offence.
  *   className extra classes for the panel
+ *   maximised open near-fullscreen (turn 13, F2.1 — rule 15's one sanctioned
+ *             exception, for a window that is a WORKSPACE rather than a side
+ *             dialog). It is the INITIAL state, not a lock: the header carries
+ *             a restore button, and a restored window is an ordinary modal
+ *             again — placed beside its object, dragged by its header.
+ *   onMaximisedChange
+ *             told when that toggles, so a workspace can lay itself out for the
+ *             room it has — the shell decides the WINDOW, the content decides
+ *             what to do with it.
  */
 export default function Modal({
   title, onClose, children, footer, width = 'w-[420px]',
-  anchor = null, prefer = null, dim = null, className = '',
+  anchor = null, prefer = null, dim = null, className = '', maximised = false,
+  onMaximisedChange = null,
 }) {
   const box = useRef(null);
   // `null` until the first layout pass has MEASURED the panel. Until then it is
@@ -64,8 +74,15 @@ export default function Modal({
   // Once the header has been grabbed the shell stops re-placing the panel: the
   // hand outranks the arithmetic until the modal is closed.
   const placed = useRef(false);
+  const [big, setBig] = useState(Boolean(maximised));
+  // A maximised window is sized by the VIEWPORT, so it has to be re-sized when
+  // the viewport changes — unlike a placed one, which only needs re-placing
+  // until somebody grabs it.
+  const [screen, setScreen] = useState(() => (typeof window === 'undefined'
+    ? { width: 0, height: 0 }
+    : { width: window.innerWidth, height: window.innerHeight }));
 
-  const { gapPx, marginPx } = getCabinetProfile().ui.modal;
+  const { gapPx, marginPx, maximiseMarginPx } = getCabinetProfile().ui.modal;
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -108,12 +125,30 @@ export default function Modal({
   // Placed on the way in, and re-placed if the window is resized — a modal
   // pinned to a corner that is no longer there is a modal you cannot close.
   useLayoutEffect(() => {
-    if (placed.current) return undefined;
-    place();
-    const onResize = () => { if (!placed.current) place(); };
+    if (!big && !placed.current) place();
+    const onResize = () => {
+      setScreen({ width: window.innerWidth, height: window.innerHeight });
+      if (!big && !placed.current) place();
+    };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [place]);
+  }, [place, big]);
+
+  // ─── The maximised rectangle (turn 13, F2.1) ───
+  // Worked out by `maximiseInViewport`, which is arithmetic and testable, and
+  // applied as inline geometry so the panel's own width class is simply
+  // overridden rather than swapped for a second set of classes.
+  const full = big ? maximiseInViewport({ viewport: screen, margin: maximiseMarginPx }) : null;
+
+  // Restoring is not just "stop being big": the window has never been placed,
+  // so it has to find its object the way it would have on the way in.
+  const restore = useCallback(() => {
+    placed.current = false;
+    setAt(null);
+    setBig(false);
+  }, []);
+  useLayoutEffect(() => { if (!big && !at) place(); }, [big, at, place]);
+  useEffect(() => { onMaximisedChange?.(big); }, [big, onMaximisedChange]);
 
   // ─── (a) DRAGGABLE BY ITS HEADER ───
   // The same gesture the right-click menu has: grab the bar, and the panel goes
@@ -121,7 +156,9 @@ export default function Modal({
   // is holding its top-left corner and flipping it would snatch it away.
   const startDrag = (e) => {
     const el = box.current;
-    if (!el || e.button !== 0) return;
+    // A maximised window has nowhere to be dragged TO — it already fills the
+    // screen. The handle comes back the moment it is restored (F2.1).
+    if (!el || e.button !== 0 || big) return;
     // Not on the × — a close button inside a drag handle has to stay a button.
     if (e.target.closest('button')) return;
     e.preventDefault();
@@ -163,9 +200,12 @@ export default function Modal({
         role="dialog"
         aria-label={typeof title === 'string' ? title : undefined}
         data-modal-shell="1"
-        data-modal-side={at?.side || ''}
-        className={`fixed cc-panel ${width} max-h-[90vh] flex flex-col shadow-xl ${className}`}
-        style={{
+        data-modal-side={big ? 'maximised' : (at?.side || '')}
+        data-modal-maximised={big ? '1' : '0'}
+        className={`fixed cc-panel ${big ? '' : `${width} max-h-[90vh]`} flex flex-col shadow-xl ${className}`}
+        style={full ? {
+          left: full.left, top: full.top, width: full.width, height: full.height, visibility: 'visible',
+        } : {
           left: at?.left ?? 0,
           top: at?.top ?? 0,
           visibility: at ? 'visible' : 'hidden',
@@ -173,16 +213,30 @@ export default function Modal({
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div
-          className="flex items-center px-4 py-2.5 border-b border-shell-600 cursor-move select-none"
-          title="Drag to move this window"
+          className={`flex items-center px-4 py-2.5 border-b border-shell-600 select-none ${big ? '' : 'cursor-move'}`}
+          title={big ? undefined : 'Drag to move this window'}
           data-modal-handle="1"
           onPointerDown={startDrag}
         >
           <h2 className="text-sm text-ink-50">{title}</h2>
           <span className="flex-1" />
+          {/* Offered only to a window that ASKED to be maximised. Every other
+              modal in the app is a side dialog and a maximise button on one
+              would be an invitation to break rule 15. */}
+          {maximised && (
+            <button
+              type="button"
+              className="cc-btn-ghost"
+              data-modal-maximise="1"
+              title={big ? 'Restore — put the window beside the cabinet' : 'Maximise'}
+              onClick={() => (big ? restore() : setBig(true))}
+            >
+              {big ? '❐' : '▢'}
+            </button>
+          )}
           <button type="button" className="cc-btn-ghost" title="Close (Esc)" onClick={onClose}>×</button>
         </div>
-        <div className="p-4 overflow-y-auto flex-1">{children}</div>
+        <div className="p-4 overflow-y-auto flex-1 min-h-0">{children}</div>
         {footer && <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2">{footer}</div>}
       </div>
     </div>

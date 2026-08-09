@@ -37,12 +37,16 @@ export default function AddItemsModal() {
 
   const units = useProjectStore((s) => s.units);
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
+  const addDoors = useProjectStore((s) => s.addDoors);
+  const notify = useUiStore((s) => s.notify);
   const profile = useCabinetProfileStore((s) => s.profile);
 
   const unit = units.find((u) => u.id === args?.unitId) || null;
   const type = useMemo(() => (unit ? getUnitType(unit.type) : null), [unit]);
 
   if (!unit) return null;
+
+  const hasDoors = Boolean(unit.params.doors) && unit.params.doors !== false;
 
   const dims = [
     { key: 'width', label: 'Width' },
@@ -86,6 +90,28 @@ export default function AddItemsModal() {
           <span className="text-xs uppercase tracking-wide text-ink-200">What goes inside</span>
           {/* The SAME list the right panel offers — one component, one store. */}
           <AddItems unit={unit} onZoneHover={setZoneHint} />
+
+          {/* ─── Turn 13 (CLAUDE.md F6) ───
+              "The plus-modal's add menu gains 'Add doors' alongside items — same
+              action the right panel offers, one click closer." Same action
+              literally: the store's `addDoors`, which is also what the right
+              panel and the right-click menu call. Nothing else about the window
+              changes — F6 says do not gold-plate it. */}
+          {type.supports?.doors !== false && (
+            <button
+              type="button"
+              className="cc-btn w-full mt-1"
+              data-add-doors="1"
+              disabled={hasDoors}
+              title={hasDoors ? 'This cabinet already has its doors' : 'Hang the doors this width calls for'}
+              onClick={() => {
+                const { count } = addDoors(unit.id) || {};
+                if (count) notify(`${count} door${count === 1 ? '' : 's'} added.`, 'ok');
+              }}
+            >
+              Add doors
+            </button>
+          )}
         </section>
       </div>
     </Modal>

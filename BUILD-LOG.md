@@ -4159,3 +4159,283 @@ Skasowane: `src/components/ProjectSettingsStep.jsx` (duplikat z F1).
 `baseDrawerUnit.variants[]` (proporcje 1×/2×/3×/4× + `exact`) ·
 `editor.explode.distanceFactor` / `spreadFactor` / `seconds` (F4) ·
 `editor.levelOverlapMm` (F7) · `editor.history.depth` / `coalesceMs` (F9)
+
+---
+
+# TURA 13 — 09.08.2026 (fazy F0–F11)
+
+Siedem werdyktów właściciela z testów tury 12, wzorzec mocowania przegrody
+(#59) i jedno domknięcie SPEC (#64). Baza: `9b69e2c` (main po merge'u tury 12),
+**1062 testy**. Na końcu tury: **1159 testów**.
+
+---
+
+## F0 — Baseline — ✅ ZIELONA
+
+`npm install`, **1062/1062**, czysty build, fixtures bez zmian.
+
+---
+
+## F1 — Znikające lica wieńców — ✅ ZIELONA
+
+**Diagnoza pierwsza, jak CLAUDE.md prosiło — i to JEDNA linia.**
+
+`panelPlacement` (engine/joinery.js) daje każdej formatce trójkę ortonormalną,
+i do tury 12 nikogo nie obchodziło, w którą stronę jest skręcona: formatka bez
+czopów była zwykłym prostopadłościanem, a prostopadłościan nie ma nawinięcia,
+które można pomylić. F6.2 tury 12 zrobiła z każdej machinowanej formatki
+WYTŁOCZENIE jej własnego obrysu — a wytłoczenie ma trójkąty.
+
+Cztery z pięciu układów są prawoskrętne względem kierunku wytłoczenia
+(u × v = −n, więc baza `(u, v, into)` ma wyznacznik +1) — komentarz przy
+przypadku BACK mówi to wprost od tury 12. **TOP jest tym jednym, który nie
+jest**: u = +Z, v = +X, więc u × v = +Y = +n, a `(u, v, into)` ma wyznacznik
+**−1**.
+
+Ujemny wyznacznik to ODBICIE. Odbicie zamienia trójkąty przeciwne do ruchu
+wskazówek na zgodne, więc **każdy trójkąt każdego wieńca górnego w aplikacji
+był nawinięty na odwrót**. Dwa objawy, jedna przyczyna: lica z zewnątrz
+wycinane przez back-face culling („brakujące" powierzchnie z góry) i
+`computeVertexNormals` czytające odwrócone nawinięcie, więc płyta była
+oświetlana od środka, a przebieg cieni rysował jej drugą stronę we własną mapę
+— to jest ten migot.
+
+**Naprawa.** Budowniczy odwraca nawinięcie, kiedy wyznacznik tego wymaga —
+z WYZNACZNIKA, nie z listy nazw części, żeby szósty układ dodany w turze 15 był
+pokryty w dniu, w którym powstanie. Sam układ jest nietknięty: obrócenie go
+przesunęłoby wiercenie.
+
+**Trzeci objaw, ta sama przyczyna.** Właściciel zgłosił osobno, że słoje na
+wieńcach biegną front-tył zamiast lewo-prawo. `ExtrudeGeometry` pisze UV w
+płaszczyźnie KSZTAŁTU, więc od tury 12 tekstura szła za układem CNC — a wieniec
+jest nestowany obrócony (oś x CNC wzdłuż GŁĘBOKOŚCI szafki), i to jest prawda
+maszynowa, która zostaje. UV są teraz wyprowadzane z miejsca formatki
+w SZAFCE — osie prostopadłościanu, znormalizowane do 0..1, jak oczekują
+mnożniki w `3d/materials.js` — więc obrót nestowania nie sięga już rysunku
+słojów. Regułę zapisuje `applyBoxUVs`.
+
+**Straż.** `test/turn13-panel-faces.test.js`: nawinięcie na zewnątrz dla każdej
+machinowanej formatki każdego kitu; sama ASYMETRIA przypięta, żeby nowy odbity
+układ był czerwonym testem, a nie cichą regresją; oś słojów per klasa części,
+w obu orientacjach nestowania. Plus zdjęcie z przeglądarki: `verify/t13/1a`,
+patrząc w dół w ciąg szafek wiszących.
+
+---
+
+## F2 — Okno edycji, dorosłe — ✅ ZIELONA
+
+Cztery werdykty z używania edytora tury 12.
+
+**MAKSYMALIZACJA (F2.1)** — jedyny sankcjonowany wyjątek od reguły 15, i jest
+wypisany we WSPÓLNEJ powłoce, nie obchodzony w wywołującym: `Modal` przyjmuje
+`maximised`, prostokąt liczy `maximiseInViewport` obok dwóch pozostałych
+rozmieszczeń, a margines jest liczbą z profilu. Nagłówek dalej przeciąga po
+przywróceniu, Escape dalej zamyka, a ❐ odstawia okno z powrotem obok szafki.
+
+**PANOROWANIE (F2.2)** — tura 12 miała `enablePan={false}`, więc szafka była
+przybita do środka kadru. Konwencja jest widoku pokoju, dosłownie: główne
+`OrbitControls` biorą domyślne ustawienia three.js, więc prawy albo środkowy
+przycisk panoruje w obu miejscach i nie ma czego się uczyć.
+
+**EDIT ELEMENT (F2.3)** — kliknięty kawałek otwiera blok, który mówi, czym
+jest, obok szafki, kiedy jest na to szerokość. Ten sam `ElementProperties`, te
+same nadpisania, ten sam store.
+
+**POKÓJ ZNOWU ZAZNACZA SZAFKĘ (F2.4)** — tura 11 zrobiła klikalnym każdy
+kawałek i właściciel powiedział, gdzie to idzie źle. Pokój zadaje węższe
+pytanie, `isMainViewElement`: tylko DODANE elementy wnętrza — półki, przegrody,
+relingi. Boki, wieńce, plecy i fronty edytuje się w oknie. **Ani jednej ścieżki
+elementu nie usunięto**: `isSelectableElement` dalej odpowiada za każdy kawałek,
+bo to nią jest napędzane okno edycji.
+
+---
+
+## F3 — Hierarchia koloru: projekt → szafka → element — ✅ ZIELONA
+
+**Diagnoza.** Właściciel ustawił kolory projektu w kroku 5, edytował JEDNĄ
+szafkę i zmienił się cały projekt. Bo po stronie FRONTU nie było poziomu
+szafki: korpus miał `carcass_type_id` (rozwiązywany od tury 11), a front nie
+miał wskaźnika na typy frontów projektu — więc jedyna kontrolka, jaką panel
+szafki mógł zaoferować, była PROJEKTOWA („Design settings…"). Stolarz sięgający
+po „kolor tej szafki" dostawał kolor projektu i nic mu tego nie mówiło.
+
+**Naprawa.** `front_type_id` jest tym brakującym wskaźnikiem, rozwiązywanym nad
+projektem i pod nadpisaniem elementu. `projectPalette` jest listą, jaką wolno
+pokazać: Carcass 1..3 i Front 1..2, dokładnie to, co zdefiniował krok 5 — czysta
+funkcja, więc lista w oknie i lista w teście są tą samą listą. Okno pisze
+SZAFKI; nie sięga do `design` w ogóle. „Reset to project" czyści oba wskaźniki.
+
+Oba pola są WSKAŹNIKAMI W PALETĘ, nigdy kolorami własnymi — i to trzyma
+hierarchię uczciwą: paleta rośnie w Ustawieniach, szafka wybiera z niej, a
+nadpisanie elementu (tura 9/11) siedzi nad obydwoma. Zmień Front 2 w
+Ustawieniach i każda szafka nosząca Front 2 pójdzie za nim.
+
+---
+
+## F4 — Panel boczny szafki wiszącej — ✅ ZIELONA
+
+Panel WUD biegł do PODŁOGI: płyta maskująca wisząca w powietrzu przez całą
+gołą ścianę pod szafką kończącą się na 2100 — wyceniona i pocięta na tę
+wysokość. Werdykt: kończy się równo z dołem korpusu.
+
+Kształt naprawy: domyślna wartość **per KLASA jednostki** w profilu plus jedna
+funkcja (`endPanelDrop`), a nie warunek w miejscu budowania panelu — „do
+podłogi" jest dobrą odpowiedzią dla czegoś, co na podłodze stoi, i bez sensu
+dla czegoś przykręconego do ściany. Zapisane `'floor'` na szafce wiszącej jest
+NADPISYWANE, nie migrowane: nigdy nie było decyzją, którą ktoś podjął o wiszącym
+korpusie.
+
+Slot, który CLAUDE.md kazało zostawić otwarty, jest NAZWĄ, nie flagą:
+`'extended'` już opuszcza panel, więc parkowane BACKLOG #45 wchodzi bez zmiany
+kształtu danych. Fixtures diff 0 (żaden kit nie emituje panelu bocznego);
+wysokość w BOM kurczy się dokładnie o wysokość zawieszenia — to jest naprawa,
+i jest asercją.
+
+---
+
+## F5 — Wielozaznaczenie i akcje zbiorcze — ✅ ZIELONA
+
+Ctrl+klik buduje ZBIÓR (i z niego usuwa — to połowa, o której się zapomina).
+Prawy panel nad wielozaznaczeniem staje się wspólnymi akcjami, a pole, co do
+którego szafki się nie zgadzają, pokazuje „mixed" i **nie trzyma żadnej
+wartości**: niebezpieczeństwo edytora zbiorczego to nie to, co pisze, tylko co
+pisze PRZY OKAZJI. Menu kontekstowe działa na całe zaznaczenie dla pięciu
+wpisów, które CLAUDE.md wymienia, i każdy z nich MÓWI to w etykiecie — menu, w
+którym część wpisów po cichu robi trzy rzeczy, a część jedną, to menu, które
+trzeba przetestować na własnym projekcie.
+
+Każda akcja zbiorcza jest akcją JEDNOSTKOWĄ wywołaną raz na szafkę, więc każdy
+klamr dalej należy do własnego korpusu: ciąg, w którym trzecia szafka nie może
+urosnąć obok sąsiada, mówi to o trzeciej szafce.
+
+**F5.4 — jedno cofnięcie, ZADEKLAROWANE, nie wywnioskowane.** Obserwator
+historii skleja serie na opadającym zegarze, co scala akcję zbiorczą tylko
+wtedy, gdy zegar W OGÓLE jest — a test ustawia okno na zero właśnie po to, żeby
+go nie było. `stores/historyBatch.js` to flaga w module, którego nie posiada
+żaden z dwóch store'ów (bo już tworzą łańcuch), a obserwator odkłada dokładnie
+jedną migawkę, gdy zamyka się najbardziej zewnętrzna partia. Partia, która
+rzuci wyjątkiem, i tak się zamyka.
+
+---
+
+## F6 — Złoty plus uczy się drzwi — ✅ ZIELONA
+
+Jeden przycisk w oknie plusa. Arytmetyka przeniosła się do store'a (`addDoors`),
+bo ta sama czynność jest teraz oferowana z trzech miejsc, a trzy kopie jednej
+linijki „ile drzwi bierze ta szerokość" to sposób, w jaki dwie z nich zaczynają
+się różnić co do zawiasu. Bez złocenia — F6 prosiła, żeby nie złocić.
+
+---
+
+## F7 — Zawiasy widoczne w Solid domyślnie — ✅ ZIELONA (z diagnozą)
+
+Werdykt: „dalej praktycznie tylko w X-ray". Diagnoza PRZED zmianą czegokolwiek:
+**renderowanie NIE jest przywiązane do gałęzi X-ray.** `Hardware` bierze
+`hinges` i `xray` jako dwa osobne propy od tury 11 i rysuje te same
+proceduralne korpusy pod jednym i drugim. Nie ma gałęzi do usunięcia.
+
+Prawdziwe były dwie inne rzeczy, i obie są naprawione albo zapisane:
+
+1. **Flaga jest PAMIĘTANA.** Przeglądarka, w której raz ją wyłączono podczas
+   testów tury 11, trzymała ją wyłączoną przez każde kolejne przeładowanie i
+   żadna zmiana domyślnej wartości nie mogła tam dotrzeć. Klucz w localStorage
+   jest teraz wersjonowany, a domyślna wartość przeniosła się do profilu, gdzie
+   reguła 2 każe jej być.
+2. **Przy ZAMKNIĘTYCH drzwiach nie ma czego zobaczyć**, i to nie jest błąd:
+   puszka jest wywiercona W drzwiach, a ramię i płytka są w korpusie za nimi.
+   Po to tura 12 dodała BOSS i to widać w chwili, gdy drzwi się otworzą.
+   Rysowanie ironmongerii zamkniętej szafki znaczyłoby rysowanie przez litą
+   płytę — czyli X-ray.
+
+Dowód: `verify/t13/8a`, ze ŚWIEŻEGO projektu, bez dotykania przełącznika.
+
+---
+
+## F8 — Mocowanie przegrody: WZORZEC BISKWITOWY (#59) — ✅ ZIELONA
+
+BLOCKERS #59 było otwarte od tury 11, kiedy przegroda wylądowała bez żadnego
+wiercenia, a silnik napisał to wprost: „jej WIERCENIE to późniejsze pytanie i
+jest zapisane jako takie". To jest odpowiedź właściciela i od tej tury
+referencja dla złącza doczołowego w aplikacji.
+
+    wkręt ⌀3 → 10 mm przerwy → znacznik biskwitu 70 mm → 10 mm przerwy → wkręt ⌀3
+
+od 50 mm od krawędzi — nigdy mniej — dwa zestawy do 700 mm, trzy powyżej.
+Czytane jako elementy i CZYSTE przerwy, więc zestaw ma 96 mm ze środkami
+wkrętów na +1,5 i +94,5 i znacznikiem na +13..+83. Każda liczba jest wartością
+profilu, więc warsztat czytający łańcuch inaczej zmienia profil, nie kod.
+
+**ZESTAW BEZ WKRĘTÓW.** Wkręt na wylot istnieje wyłącznie tam, gdzie lico
+przyjmujące jest ZAKRYTE — wieniec pod blatem, dno w cokole. Płaszczyzny półki
+stałej to jest to, na co się patrzy przy otwartych drzwiach, więc mocowanie z
+tury 12 dostaje sam znacznik, w tych samych pozycjach. Lista w profilu, nie
+warunek.
+
+**GDZIE.** Złącze ma dwie połowy, a stół płaski sięga płaszczyzn: element
+przyjmujący bierze cały zestaw, przegroda sam znacznik odsunięty od swojego
+końca — trasowanie przeniesione, i po to jest ZNACZNIK i dedykowany program
+in-and-out. Obie połowy trasowane od CZĘŚCI WSPÓLNEJ obu płyt, nie od głębokości
+przegrody: przegroda bywa głębsza niż półka, na której stoi.
+
+Znaczniki idą na nową warstwę `BISCUIT_4MM`, wypisaną dosłownie jak w CLAUDE.md
+— kontrakt maszynowy jak każda inna nazwa w tabeli — jako polilinia OTWARTA, bo
+in-and-out to nie kieszeń. Wkręty dołączają do `SCREWS_3MM`.
+
+Fixture: `golden-partition-biscuits.json`, policzony ręcznie z reguły, zanim
+zapytano silnik. Tożsamość: 1148 linii po obu stronach, 0 dodanych, 0 usuniętych,
+95 zmienionych — i każda z nich to przypadek z przegrodą, na jednym z czterech
+plików, których dotyka złącze.
+
+---
+
+## F9 — Dokumentacja — ✅ ZIELONA
+
+SPEC: domknięcie #64 (kitowe 4:3:2 zostaje takie, jakie tnie kit — granica, nie
+dług) i nowa sekcja 6.1 z całym wzorcem biskwitowym plus notatka, że pliki
+referencyjne w stylu KIT-ów zostają modelem dla #61/#62/#63. BLOCKERS: #59 i #64
+zamknięte z opisem, co się dało przewidzieć, a co nie; #65 i #66 dopisane na to,
+co znalazła przeglądarka. BACKLOG: sekcja tury 13 i pięć nowych pozycji.
+
+---
+
+## F10 — Przejście w przeglądarce — ✅ ZIELONA (24/24)
+
+Wszystkie dziewięć zdjęć, plus close-up zestawu biskwitowego. Bieg MIERZY, i ta
+tura schodzi o warstwę niżej: `__cc.views` wystawia scenę i kamerę, bo F1 jest
+twierdzeniem o GEOMETRII, a F2.2 o KAMERZE — żadnego z nich nie da się
+przeczytać z DOM-u. Kliknięcia są RZUTOWANE na nazwaną szafkę przez kamerę
+pokoju, a nie celowane w ułamek kanwy.
+
+I to jest to, co znalazło trzy błędy, do których test w node nie ma dostępu:
+ściany pokoju przechwytujące każde kliknięcie (BLOCKERS #65), prawy przycisk
+zwijający zaznaczenie (#66) i modyfikator `ctrlKey`, który nie przechodził
+przez warstwę zdarzeń react-three-fiber. Wszystkie trzy naprawione.
+
+---
+
+## F11 — BRAMKA — ✅ ZIELONA
+
+Pełny reinstall, **1159/1159**, czysty build, fixtures istniejące bez zmian
+(`git diff --stat fixtures/` dotyka tylko NOWEGO pliku), zależności nietknięte,
+grep czystości silnika pusty, tożsamość CNC opublikowana z jedną udokumentowaną
+deltą, `verify/t13/` zapełnione.
+
+---
+
+## Nowe pliki
+
+`src/engine/biscuits.js` · `src/lib/selection.js` · `src/stores/historyBatch.js` ·
+`src/components/UnitFinishModal.jsx` · `src/components/MultiUnitPanel.jsx` ·
+`src/3d/viewHandle.js` · `scripts/e2e-turn13.mjs` ·
+`fixtures/golden-partition-biscuits.json` ·
+sześć plików testów `test/turn13-*.test.js` · `verify/t13/`
+
+## Nowe liczby w `profile.js`
+
+`ui.modal.maximiseMarginPx` (F2.1) ·
+`autoParts.endPanel.defaultHeightByMount` (F4) ·
+`appearance.hardware.showInSolid` (F7) ·
+`appearance.joinery.biscuit` / `screw` (F8) ·
+cały blok `biscuits` — `markLength` / `markTool` / `gap` / `screwDiameter` /
+`edgeMin` / `wideThreshold` / `markFromEnd` / `layer` / `screwLayer` /
+`concealedReceivers` (F8)

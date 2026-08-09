@@ -214,6 +214,61 @@ Stock i projekty JC **nie są kopiowane** — czytane przez API na żywo.
   złączem, które się nie składa na stole montażowym. MATERIAŁ pozostaje nadpisywalny per
   element bez wyjątku, bo materiał nie zmienia ani jednego wymiaru. Potwierdzone przez
   właściciela 08.08.
+- **[DECYZJA 09.08, zamyka BLOCKERS #64] Kitowy podział 4:3:2 zostaje dokładnie taki, jaki
+  tnie kit** (`exact: false`). `budrFrontHeights` liczy każdy front osobno przez
+  `lispRound(available · r / total)`, więc przy 4:3:2 suma frontów potrafi wyjść 1 mm ponad
+  `available` (dla H = 602: 594 przy 593). To **zapisana granica, nie dług**: reguła 7 jest
+  absolutna i milimetr poprawy na wysokości, którą ktoś mógł już wyciąć, to nadal zmiana tego,
+  co robi maszyna. Warianty dodane w turze 12 (`x2`, `x4`) niosą `exact: true`, bo są NOWE i
+  nie ma czego zamrażać. Test w `turn12-library.test.js` przechodzi 400 wysokości, żeby
+  udowodnić, że nic nie drgnęło. Potwierdzone przez właściciela 09.08.
+
+### 6.1 Mocowanie przegrody — WZORZEC BISKWITOWY (09.08, zamyka BACKLOG #59)
+
+Wzorzec warsztatowy właściciela, podyktowany 09.08 i od tej tury **referencyjny dla
+złącza doczołowego** w całej aplikacji. Domykał BLOCKERS #59, otwarte od tury 11, kiedy
+przegroda pionowa wylądowała bez żadnego wiercenia.
+
+**ZESTAW (jeden komplet biskwitowy), wzdłuż linii złącza:**
+
+    wkręt ⌀3 → 10 mm przerwy → znacznik biskwitu 70 mm → 10 mm przerwy → wkręt ⌀3
+
+Czytane jako **elementy i CZYSTE przerwy**: 3 + 10 + 70 + 10 + 3 = **96 mm** na zestaw,
+środki wkrętów na +1,5 i +94,5, znacznik od +13 do +83. Zestaw **zaczyna się nie bliżej
+niż 50 mm od krawędzi elementu — nigdy mniej**.
+
+**ILE ZESTAWÓW:** szerokość ≤ 700 mm → **DWA** (po jednym przy każdym końcu, z zachowaniem
+50 mm). Szerzej → **JEDEN więcej na środku**, razem trzy. To wszystko — żadnego rozstawu,
+żadnej gęstości na metr.
+
+**ZESTAW BEZ WKRĘTÓW:** wkręt na wylot istnieje **wyłącznie tam, gdzie licowa strona jest
+ZAKRYTA**. Wieniec górny idzie pod blat, dolny w cokół — oba wierci się. Płaszczyzny półki
+STAŁEJ widać przy otwartych drzwiach, więc przegroda kończąca się na półce dostaje sam
+znacznik 70 mm — **w tych samych pozycjach**, żeby trasowanie było jedno.
+
+**GDZIE:** złącze doczołowe ma dwie połowy, a stół 3-osiowy sięga tylko płaszczyzn.
+Element PRZYJMUJĄCY (wieniec albo półka stała) dostaje cały zestaw na swojej płaszczyźnie —
+wkręty przechodzą przez niego w kant przegrody, znacznik leży między nimi. PRZEGRODA
+dostaje sam znacznik, odsunięty od swojego końca (`markFromEnd`): to trasowanie przeniesione
+na drugą połowę złącza, i dlatego jest ZNACZNIKIEM, ciętym dedykowanym programem
+„in-and-out". Wkrętów się tam nie powtarza — wkręt idzie przez tamtą płytę w ten kant.
+
+Linia złącza to **część wspólna** obu płyt w głębokości, nie głębokość samej przegrody:
+przegroda bywa głębsza niż półka, na której stoi, a mocowanie za końcem płyty przyjmującej
+to wkręt w powietrze.
+
+**WARSTWY:** wkręty dołączają do istniejącej rodziny **`SCREWS_3MM`** (konwencje tury 8 —
+ta sama warstwa, te same średnice). Znaczniki 70 mm idą na NOWĄ warstwę **`BISCUIT_4MM`**,
+4 mm, pod dedykowany program VCarve właściciela. Nazwa dosłownie jak wyżej i jest
+kontraktem maszynowym jak każda inna nazwa w `engine/cnc/layers.js`.
+
+Liczby: `profile.biscuits`. Arytmetyka: `engine/biscuits.js` (czyste funkcje).
+Fixture: `fixtures/golden-partition-biscuits.json` — policzony ręcznie z reguły, nie z
+silnika. Delta eksportu udokumentowana w `verify/t13/cnc-export-identity.md`.
+
+> **Wzorzec najpierw.** Pliki referencyjne w stylu KIT-ów pozostają modelem dla przyszłych
+> wzorców: #61 (podział drzwi), #62 (DW) i #63 (narożnik / kształt L) czekają na wejście
+> właściciela dokładnie tak, jak #59 czekało do 09.08. Silnik nie zgaduje wzorca warsztatu.
 
 ---
 

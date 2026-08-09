@@ -1,0 +1,302 @@
+{
+  "at": "2026-08-09T10:06:09.367Z",
+  "steps": [
+    {
+      "label": "F7 hinges are ON by default, from the profile, with nothing touched",
+      "ok": true,
+      "detail": "{\"showHinges\":true,\"xray\":false,\"stored\":null,\"profile\":true}"
+    },
+    {
+      "label": "F7 the hardware group is in the SOLID scene with instanced bodies in it",
+      "ok": true,
+      "detail": "{\"groups\":1,\"instancedMeshes\":5}"
+    },
+    {
+      "label": "F1 every top-facing triangle of every machined solid faces OUT",
+      "ok": true,
+      "detail": "{\"checked\":15,\"inwardTriangles\":0,\"worst\":null}"
+    },
+    {
+      "label": "F1 the top is still NESTED TURNED — the machining truth did not move",
+      "ok": true,
+      "detail": "{\"rotated\":true,\"w\":564,\"h\":382,\"boxW\":564,\"boxD\":382}"
+    },
+    {
+      "label": "F2.1 the editor opens MAXIMISED — the sanctioned exception to rule 15",
+      "ok": true,
+      "detail": "{\"flag\":\"1\",\"left\":28,\"top\":28,\"w\":1544,\"h\":944,\"margin\":28,\"coverage\":0.91096}"
+    },
+    {
+      "label": "F2.2 the right button PANS the editor — the cabinet is no longer nailed to the centre",
+      "ok": true,
+      "detail": "{\"before\":{\"x\":1.09725,\"y\":0.8046499999999998,\"z\":1.463,\"tx\":0,\"ty\":0,\"pan\":true},\"after\":{\"x\":0.9236680277487173,\"y\":0.88000998073174,\"z\":1.5517384897860051,\"tx\":-0.17358197225128283,\"ty\":0.07535998073174023,\"pan\":true},\"moved\":0.24894195298302307}"
+    },
+    {
+      "label": "F2.3 clicking a part in the editor opens EDIT ELEMENT",
+      "ok": true,
+      "detail": "Edit element · Left side"
+    },
+    {
+      "label": "F2.4 the cabinet is on screen to be clicked at all",
+      "ok": true,
+      "detail": "{\"x\":789,\"y\":703,\"onScreen\":true}"
+    },
+    {
+      "label": "F2.4 clicking a cabinet selects the WHOLE unit, not one of its panels",
+      "ok": true,
+      "detail": "{\"unit\":\"u_rss3u0z\",\"element\":null}"
+    },
+    {
+      "label": "F2.4 …and an ADDED interior item is still directly selectable",
+      "ok": true,
+      "detail": "{\"shelf\":\"SHELF-1\",\"selected\":\"SHELF-1\"}"
+    },
+    {
+      "label": "F3.2 the unit picker offers ONLY the project palette",
+      "ok": true,
+      "detail": "[{\"key\":\"carcass:c1\",\"label\":\"Carcass 1\"},{\"key\":\"front:f1\",\"label\":\"Front 1\"},{\"key\":\"front:f2\",\"label\":\"Front 2\"}]"
+    },
+    {
+      "label": "F3.2 …and a way back to Settings where the palette grows",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F3.1 ONE cabinet is recoloured, its neighbours and the PROJECT untouched",
+      "ok": true,
+      "detail": "{\"edited\":{\"front_type_id\":\"f2\"},\"left\":{\"front_type_id\":null},\"right\":{\"front_type_id\":null},\"projectFront\":\"#1b2a4a\"}"
+    },
+    {
+      "label": "F4 the WUD end panel ends flush with the cabinet bottom",
+      "ok": true,
+      "detail": "{\"unitHeight\":720,\"mount\":1500,\"panelH\":720,\"boxY\":0,\"mode\":\"carcass\"}"
+    },
+    {
+      "label": "F5.1 all three cabinets are on screen to be clicked",
+      "ok": true,
+      "detail": "[{\"x\":786,\"y\":701,\"onScreen\":true},{\"x\":907,\"y\":701,\"onScreen\":true},{\"x\":1028,\"y\":701,\"onScreen\":true}]"
+    },
+    {
+      "label": "F5.1 Ctrl+click builds a selection SET of three",
+      "ok": true,
+      "detail": "[\"u_etfi6py\",\"u_xcl58dh\",\"u_99l7kk7\"]"
+    },
+    {
+      "label": "F5.3 the context menu says the entry applies to all THREE",
+      "ok": true,
+      "detail": "{\"x\":890,\"y\":683,\"label\":\"·Plinth (3)\"}"
+    },
+    {
+      "label": "F5.3 all three get a plinth, and the run cuts ONE piece",
+      "ok": true,
+      "detail": "{\"plinthFlags\":3,\"pieces\":[{\"unit\":\"u_etfi6py\",\"w\":1800}]}"
+    },
+    {
+      "label": "F5.4 one Ctrl+Z takes all three plinths back",
+      "ok": true,
+      "detail": "{\"withPlinth\":0}"
+    },
+    {
+      "label": "F6 the plus-modal offers \"Add doors\"",
+      "ok": true,
+      "detail": "{\"present\":true,\"label\":\"Add doors\",\"disabled\":false}"
+    },
+    {
+      "label": "F6 …and clicking it hangs them",
+      "ok": true,
+      "detail": "{\"param\":{\"count\":1,\"hinge\":\"L\"},\"fronts\":1}"
+    },
+    {
+      "label": "F8 the partition carries the biscuit set, on the right layers",
+      "ok": true,
+      "detail": "{\"id\":\"u_ka1jlvz\",\"marks\":{\"TOP\":2,\"BOTTOM\":2,\"VPART-1\":4},\"screwCount\":8,\"screwLayer\":[\"SCREWS_3MM\"],\"markLayer\":[\"BISCUIT_4MM\"],\"topMarkSpan\":[70,70],\"topScrewGap\":[51.5,144.5,375.5,468.5]}"
+    },
+    {
+      "label": "F8 the CNC view shows the BISCUIT_4MM layer, with the marks drawn",
+      "ok": true,
+      "detail": "{\"biscuitInLegend\":true,\"markLines\":8}"
+    },
+    {
+      "label": "no console errors in the whole walk",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "measurements": {
+    "hingeDefault": {
+      "showHinges": true,
+      "xray": false,
+      "stored": null,
+      "profile": true
+    },
+    "hinges": {
+      "id": "u_gfnu75l",
+      "door": "01-F",
+      "hinges": 3,
+      "groups": 1,
+      "instancedMeshes": 5
+    },
+    "winding": {
+      "checked": 15,
+      "inwardTriangles": 0,
+      "worst": null
+    },
+    "grain": {
+      "rotated": true,
+      "w": 564,
+      "h": 382,
+      "boxW": 564,
+      "boxD": 382
+    },
+    "maximised": {
+      "flag": "1",
+      "left": 28,
+      "top": 28,
+      "w": 1544,
+      "h": 944,
+      "margin": 28,
+      "coverage": 0.91096
+    },
+    "pan": {
+      "before": {
+        "x": 1.09725,
+        "y": 0.8046499999999998,
+        "z": 1.463,
+        "tx": 0,
+        "ty": 0,
+        "pan": true
+      },
+      "after": {
+        "x": 0.9236680277487173,
+        "y": 0.88000998073174,
+        "z": 1.5517384897860051,
+        "tx": -0.17358197225128283,
+        "ty": 0.07535998073174023,
+        "pan": true
+      },
+      "moved": 0.24894195298302307
+    },
+    "editElement": {
+      "side": "BUL",
+      "canvas": true,
+      "panel": "Edit element · Left side"
+    },
+    "routing": {
+      "id": "u_ohfm39t",
+      "parts": [
+        "BUL",
+        "BUR",
+        "TOP",
+        "BOTTOM",
+        "BACK",
+        "SHELF",
+        "SHELF"
+      ],
+      "afterBodyClick": {
+        "unit": "u_rss3u0z",
+        "element": null
+      },
+      "shelfStill": {
+        "shelf": "SHELF-1",
+        "selected": "SHELF-1"
+      }
+    },
+    "colour": {
+      "offered": [
+        {
+          "key": "carcass:c1",
+          "label": "Carcass 1"
+        },
+        {
+          "key": "front:f1",
+          "label": "Front 1"
+        },
+        {
+          "key": "front:f2",
+          "label": "Front 2"
+        }
+      ],
+      "recoloured": {
+        "edited": {
+          "front_type_id": "f2"
+        },
+        "left": {
+          "front_type_id": null
+        },
+        "right": {
+          "front_type_id": null
+        },
+        "projectFront": "#1b2a4a"
+      }
+    },
+    "endPanel": {
+      "unitHeight": 720,
+      "mount": 1500,
+      "panelH": 720,
+      "boxY": 0,
+      "mode": "carcass"
+    },
+    "plinth": {
+      "selection": [
+        "u_etfi6py",
+        "u_xcl58dh",
+        "u_99l7kk7"
+      ],
+      "plinth": {
+        "plinthFlags": 3,
+        "pieces": [
+          {
+            "unit": "u_etfi6py",
+            "w": 1800
+          }
+        ]
+      },
+      "undo": {
+        "withPlinth": 0
+      }
+    },
+    "plusDoors": {
+      "plusDoors": {
+        "present": true,
+        "label": "Add doors",
+        "disabled": false
+      },
+      "doorsAdded": {
+        "param": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "fronts": 1
+      }
+    },
+    "biscuits": {
+      "id": "u_ka1jlvz",
+      "marks": {
+        "TOP": 2,
+        "BOTTOM": 2,
+        "VPART-1": 4
+      },
+      "screwCount": 8,
+      "screwLayer": [
+        "SCREWS_3MM"
+      ],
+      "markLayer": [
+        "BISCUIT_4MM"
+      ],
+      "topMarkSpan": [
+        70,
+        70
+      ],
+      "topScrewGap": [
+        51.5,
+        144.5,
+        375.5,
+        468.5
+      ]
+    },
+    "cncLegend": {
+      "biscuitInLegend": true,
+      "markLines": 8
+    }
+  }
+}

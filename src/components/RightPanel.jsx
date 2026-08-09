@@ -5,11 +5,13 @@ import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
+import { endPanelDrop } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
 import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
+import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
 import Section from './Section.jsx';
 import ElementProperties from './ElementProperties.jsx';
@@ -53,6 +55,7 @@ export default function RightPanel() {
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
   const removeUnit = useProjectStore((s) => s.removeUnit);
   const setDoors = useProjectStore((s) => s.setDoors);
+  const addDoorsToUnit = useProjectStore((s) => s.addDoors);
   const setUnitWall = useProjectStore((s) => s.setUnitWall);
   const rotateUnit = useProjectStore((s) => s.rotateUnit);
   const assignDoorStyle = useProjectStore((s) => s.assignDoorStyle);
@@ -77,6 +80,10 @@ export default function RightPanel() {
   const walls = useMemo(() => roomWalls(room), [room]);
 
   const viewMode = useUiStore((s) => s.viewMode);
+  // Turn 13 (CLAUDE.md F5.2): over more than one cabinet this panel becomes
+  // the COMMON actions instead. `selectedUnitId` is still the primary, so
+  // everything below it is unchanged.
+  const selectedUnitIds = useUiStore((s) => s.selectedUnitIds);
   const unit = units.find((u) => u.id === selectedUnitId) || null;
   const result = unit ? unitResult(unit.id) : null;
   const type = unit ? getUnitType(unit.type) : null;
@@ -126,9 +133,14 @@ export default function RightPanel() {
     return { panel, item };
   }, [selectedElement, unit?.id, result, items]);
 
+  // ─── Turn 13 (CLAUDE.md F6) ───
+  // The arithmetic moved into the store (`addDoors`), because the same act is
+  // offered from three places now — here, the right-click menu over a whole
+  // selection, and the golden plus — and three copies of "how many doors does
+  // this width take" is how two of them come to disagree about the hinge.
   const addDoors = () => {
-    const count = doorCountFor(unit.params.width, profile);
-    setDoors(unit.id, { count, hinge: unit.params.hinge || profile.doors.defaultHinge });
+    const { count } = addDoorsToUnit(unit.id) || {};
+    if (!count) return;
     notify(`${count} door${count === 1 ? '' : 's'} added — the unit is complete.`, 'ok');
     closeRightPanel();          // SPEC 4.10: doors are the last step
     clearSelection();
@@ -157,6 +169,15 @@ export default function RightPanel() {
         <p className="p-3 text-sm text-ink-400">Select a unit in the canvas, or open Library in the menu.</p>
       </aside>
     );
+  }
+
+  // ─── Turn 13 (CLAUDE.md F5.2) ───
+  // More than one cabinet: the shared editors and the actions that make sense
+  // for all of them. Deliberately a SEPARATE component and not this one with
+  // half its rows hidden — every field below is about one carcass's own
+  // geometry, and a "mixed" state for each of them would be forty branches.
+  if (selectedUnitIds.length > 1) {
+    return <MultiUnitPanel ids={selectedUnitIds} onClose={closeRightPanel} />;
   }
 
   return (
@@ -298,8 +319,21 @@ export default function RightPanel() {
               </select>
             </div>
             <div className="flex items-end">
-              <button type="button" className="cc-btn w-full" onClick={(e) => openModal('design', { anchor: anchorOfEvent(e) })}>
-                Design settings…
+              {/* ─── Turn 13 (CLAUDE.md F3.1) ───
+                  This was "Design settings…", and that is the bug the owner
+                  reported: a button in a UNIT's panel that opens the PROJECT's
+                  surface. Editing one cabinet's colour rewrote the whole job.
+                  It opens the unit's own picker now, which offers the project
+                  palette and writes a unit-level override; Settings is still
+                  one click away, from inside it and from the top bar. */}
+              <button
+                type="button"
+                className="cc-btn w-full"
+                data-unit-colour="1"
+                title="This cabinet's own carcass and front, from the project palette"
+                onClick={(e) => openModal('unit-finish', { unitIds: [unit.id], anchor: anchorOfEvent(e) })}
+              >
+                Colour…
               </button>
             </div>
           </div>
@@ -930,6 +964,7 @@ function Insets({ unit, profile, onSet }) {
 function EndPanels({
   unit, profile, design, onAdd, onRemove, onDefaults,
 }) {
+  const type = getUnitType(unit.type);
   const panels = unit.params.end_panels || [];
   const has = (side) => panels.some((ep) => ep.side === side);
   return (
@@ -980,7 +1015,17 @@ function EndPanels({
           <li key={ep.id} className="flex items-center gap-2 text-sm">
             <span className="text-ink-400 w-6 text-xs">{ep.side}</span>
             <span className="flex-1 text-[11px] text-ink-400">
-              {ep.height === 'unit' ? 'unit height' : 'to floor'}
+              {/* Turn 13 (F4): a wall unit's panel ends with the cabinet
+                  whatever the stored value claims, so the row reads the RULE
+                  rather than the field — a label that disagrees with the piece
+                  is worse than no label. */}
+              {endPanelDrop({
+                height: ep.height,
+                type,
+                mountHeight: unit.params.mount_height,
+                legHeight: unit.params.leg_height,
+                profile,
+              }) > 0 ? 'to floor' : 'ends with the cabinet'}
               {' · '}
               {formatMm(ep.thickness || unit.params.front_t || profile.front.thickness)} mm
               {Number(ep.top_mm) > 0 ? ` · +${formatMm(ep.top_mm)} above` : ''}

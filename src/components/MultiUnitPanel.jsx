@@ -1,0 +1,202 @@
+import { useMemo } from 'react';
+import NumberField from './NumberField.jsx';
+import { useUiStore } from '../stores/uiStore.js';
+import { useProjectStore } from '../stores/projectStore.js';
+import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+import { getUnitType } from '../engine/types.js';
+import { commonValue, MIXED } from '../lib/selection.js';
+import { anchorOfEvent } from '../lib/modalAnchor.js';
+
+// ─── The panel over MANY cabinets (turn 13, CLAUDE.md F5.2) ─────────────────
+//
+// "The right panel over a multi-selection shows the COMMON actions: add shelves
+// to all, Even/centre, and the shared property editors — fields with differing
+// values display 'mixed' and only write when the user sets them."
+//
+// The last clause is the whole design problem, and it is why `commonValue` is a
+// tested function in lib/selection.js rather than a ternary in this file. A
+// bulk editor's danger is not what it writes; it is what it writes BY ACCIDENT.
+// Six cabinets of five different heights, a height box that renders the first
+// one's number, a stray Enter — and five cabinets have silently become the
+// sixth. So a field that disagrees shows the word "mixed", holds no value at
+// all, and writes only when a human types one.
+//
+// Everything it calls is a BULK action in the store, and every bulk action is
+// the single-unit action run once per cabinet inside one batch: each clamp
+// still belongs to its own carcass, and the lot is one Ctrl+Z (F5.4).
+
+export default function MultiUnitPanel({ ids, onClose }) {
+  const units = useProjectStore((s) => s.units);
+  const updateUnitParamsBulk = useProjectStore((s) => s.updateUnitParamsBulk);
+  const addShelvesBulk = useProjectStore((s) => s.addShelvesBulk);
+  const redistributeShelvesBulk = useProjectStore((s) => s.redistributeShelvesBulk);
+  const addDoorsBulk = useProjectStore((s) => s.addDoorsBulk);
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const openModal = useUiStore((s) => s.openModal);
+  const notify = useUiStore((s) => s.notify);
+
+  const selected = useMemo(() => units.filter((u) => ids.includes(u.id)), [units, ids]);
+
+  const kinds = useMemo(() => {
+    const seen = new Map();
+    for (const u of selected) {
+      const label = getUnitType(u.type)?.label || u.type;
+      seen.set(label, (seen.get(label) || 0) + 1);
+    }
+    return [...seen].map(([label, n]) => (n > 1 ? `${n} × ${label}` : label));
+  }, [selected]);
+
+  const shelvable = selected.filter((u) => getUnitType(u.type)?.supports?.shelves).length;
+
+  // The shared numbers. Width is deliberately NOT among them: a run's widths
+  // are what make it that run, and one box that sets all six to 600 is a way to
+  // destroy a kitchen with one keystroke, not a convenience.
+  const fields = [
+    { key: 'height', label: 'Height' },
+    { key: 'depth', label: 'Depth' },
+  ];
+
+  const write = (key, value) => {
+    const { notices } = updateUnitParamsBulk(ids, { [key]: value }) || { notices: [] };
+    for (const n of notices) notify(n, 'warn');
+  };
+
+  return (
+    <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
+      <div className="flex items-center px-3 py-2 border-b border-shell-600">
+        <h2 className="text-sm text-ink-50 flex-1" data-multi-count={selected.length}>
+          {selected.length} cabinets
+        </h2>
+        <button type="button" className="cc-btn-ghost" title="Close" onClick={onClose}>×</button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-3" data-multi-panel="1">
+        <p className="text-[11px] text-ink-400">
+          {kinds.join(' · ')}. Every action here applies to all of them, and undoes as one step.
+        </p>
+
+        {/* ── the shared numbers ── */}
+        <div className="grid grid-cols-2 gap-2">
+          {fields.map(({ key, label }) => {
+            const common = commonValue(selected, (u) => u.params[key]);
+            return (
+              <div key={key}>
+                <span className="cc-label">
+                  {label}
+                  {common.mixed && <span className="ml-1 text-gold" data-mixed={key}>mixed</span>}
+                </span>
+                {common.mixed ? (
+                  // A field with no agreed value holds NOTHING. It is a text box
+                  // showing the word until somebody types a number over it —
+                  // which is the only event that may write.
+                  <input
+                    className="cc-input"
+                    placeholder={MIXED}
+                    defaultValue=""
+                    inputMode="decimal"
+                    title={`These cabinets differ. Type a ${label.toLowerCase()} to give them all the same one.`}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      const v = Number(e.currentTarget.value);
+                      if (Number.isFinite(v) && v > 0) write(key, v);
+                    }}
+                    onBlur={(e) => {
+                      const v = Number(e.currentTarget.value);
+                      if (Number.isFinite(v) && v > 0) write(key, v);
+                    }}
+                  />
+                ) : (
+                  <NumberField value={common.value} onCommit={(v) => write(key, v)} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {[['board_t', 'Board (mm)', profile.board.thicknessOptions],
+            ['front_t', 'Front (mm)', profile.front.thicknessOptions]].map(([key, label, options]) => {
+            const common = commonValue(selected, (u) => u.params[key]);
+            return (
+              <div key={key}>
+                <span className="cc-label">
+                  {label}
+                  {common.mixed && <span className="ml-1 text-gold" data-mixed={key}>mixed</span>}
+                </span>
+                <select
+                  className="cc-input"
+                  value={common.mixed ? '' : String(common.value ?? '')}
+                  onChange={(e) => { if (e.target.value) write(key, Number(e.target.value)); }}
+                >
+                  {/* The placeholder is a real option so the select has
+                      something to BE while it disagrees — and it carries no
+                      value, so choosing it writes nothing. */}
+                  {common.mixed && <option value="">{MIXED}</option>}
+                  {(options || []).map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="cc-divider" />
+
+        {/* ── the common actions ── */}
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="cc-btn w-full"
+            data-bulk="add-shelf"
+            disabled={!shelvable}
+            title={shelvable ? 'One more shelf in each of them' : 'None of these kits takes a shelf'}
+            onClick={() => {
+              const { added, skipped } = addShelvesBulk(ids, 1) || {};
+              if (added) notify(`${added} shelf${added === 1 ? '' : 'es'} added.`, 'ok');
+              if (skipped) notify(`${skipped} of them take no shelves.`, 'info');
+            }}
+          >
+            Add a shelf to all {shelvable ? `(${shelvable})` : ''}
+          </button>
+          <button
+            type="button"
+            className="cc-btn w-full"
+            data-bulk="even-shelves"
+            disabled={!shelvable}
+            title="Space every cabinet's shelves evenly in its own free height"
+            onClick={() => {
+              const { done } = redistributeShelvesBulk(ids) || {};
+              notify(done ? `Shelves centred in ${done} cabinet${done === 1 ? '' : 's'}.` : 'No shelves to centre.', done ? 'ok' : 'info');
+            }}
+          >
+            Even / centre shelves
+          </button>
+          <button
+            type="button"
+            className="cc-btn w-full"
+            data-bulk="add-doors"
+            onClick={() => {
+              const { fitted, already } = addDoorsBulk(ids) || {};
+              if (fitted) notify(`Doors hung on ${fitted} cabinet${fitted === 1 ? '' : 's'}.`, 'ok');
+              else if (already) notify('They already have their doors.', 'info');
+            }}
+          >
+            Add doors
+          </button>
+          <button
+            type="button"
+            className="cc-btn-gold w-full"
+            data-bulk="colour"
+            onClick={(e) => openModal('unit-finish', { unitIds: ids, anchor: anchorOfEvent(e) })}
+          >
+            Colour…
+          </button>
+        </div>
+
+        <p className="text-[11px] text-ink-400">
+          Right-click any of them for the rest — plinth, end panels, pinned fillers — all of which
+          apply to the whole selection too.
+        </p>
+      </div>
+    </aside>
+  );
+}

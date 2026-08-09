@@ -5562,3 +5562,284 @@ tabelką „przed / po" w `verify/t16/cnc-export-identity.md`.
 `appearance.editorRig.ambient` / `.hemisphere` / `.lamps[5]` (F7 — pięć lamp
 jako DANE, z których trzy są nowe). Nic w `studio.points` nie ruszone: F8
 kończy się pomiarem, który mówi, żeby ich nie ruszać.
+
+# TURA 17 — PARYTET (09.08.2026)
+
+Tura PARYTETU. Jedno zdanie z CLAUDE.md przeciągnięte przez cały eksport: to, co
+właściciel widzi na elemencie, ma być tym, co maszyna wycina — a to, co wychodzi
+do maszyny, ma nieść numer szafki i nic więcej. Do tego zawiasy, wysokości
+szuflad i dwa nowe kity zbudowane WYŁĄCZNIE z liczb właściciela.
+
+## F0 — Baza — ✅ ZIELONA
+
+Pełny reinstall (`rm -rf node_modules && npm install`), **1327 testów
+zielonych** — dokładnie tyle, ile zapowiada CLAUDE.md — czysty build. Obie
+paczki z czatu potwierdzone na main, nie odtwarzane w ciemno: `Environment` jest
+EKSPORTOWANE z `src/3d/Scene.jsx` (linia 133) i importowane przez
+`CabinetEditorModal.jsx` (linia 11), a cztery `appearance.studio.points` czytają
+10, 10, 3, 3 — dwa na `yMm 1650` i dwa na `yMm 500`.
+
+## F1 — KAŻDY ELEMENT MÓWI, DO KTÓREJ SZAFKI NALEŻY — ✅ ZIELONA
+
+Właściciel: „numer szafki musi być na każdym elemencie, inaczej się pogubimy
+który jest do którego".
+
+**Jeden formater, `src/engine/cnc/partLabel.js`**, wołany i przez arkusz, i przez
+zapis DXF — CLAUDE.md F1.1 prosi o dokładnie to („so the two cannot word it
+differently"). `F-01 BUR 597x568`: numer szafki tak, jak ją nazywa właściciel
+(od tury 16 F6), kod części, wymiar cięcia.
+
+Trzy decyzje, wszystkie zapisane przy liczbie:
+
+* **`x`, nie `×`.** Ten napis trafia do pliku R12 — dialektu, który VCarve na
+  maszynie Piotra parsuje — a R12 jest starszy niż jakakolwiek umowa o tym, co
+  znaczy bajt powyżej 127. Arkusz przejmuje pisownię EKSPORTU, a nie odwrotnie:
+  etykieta czytana z DESKI i etykieta czytana z EKRANU muszą być tą samą
+  etykietą.
+* **Numer szafki nie jest drukowany dwa razy.** Silnik i tak wkleja go w id
+  frontu (`01-F`), więc stara etykieta wychodziła jako `01-01-F`. `partCode()`
+  obcina prefiks — dokładnie tak, jak `dxfFileName` robi to od tury 3.
+* **Etykieta MIEŚCI SIĘ w obrysie** (F1.3). Wysokość była ograniczana udziałem
+  KRÓTSZEGO boku i nigdy nie patrzyła na szerokość — nieszkodliwe, dopóki napis
+  miał sześć znaków. Teraz kurczy się także do szerokości, a na desce zbyt
+  wąskiej przy progu czytelności (30 mm filler) SKRACA SIĘ (`01 FIL~`) zamiast
+  wystawać poza obie krawędzie. Ogonek to ASCII `~` z tego samego powodu co `x`.
+
+**Rozmiar na ekranie** (F1.3): podpis w elemencie ma teraz skalę żółtego
+nagłówka — `cnc.annotation.partLabelMm` równa się `sectionLabelMm`, a równość
+trzyma test. Arkusz ma jedną skalę typograficzną, nie dwie.
+
+## F2 — EKSPORT WEDŁUG MATERIAŁU I NIC POZA ETYKIETAMI — ✅ ZIELONA
+
+**F2.1 — wybierz płytę, wyślij całość.** Panel CNC dostaje wybór płyty i jeden
+przycisk: jeden materiał, jeden plik, przez wszystkie odhaczone szafki, ułożony
+tym samym `layoutPanels`, którym rysuje podgląd (`materialExportSection` w
+`engine/cnc/views.js`, `materialSheetDxf` w `dxf.js`). „All" jest tym eksportem,
+który aplikacja miała, i zostaje domyślne.
+
+**F2.2 — w pliku są etykiety i żadnych innych liter.** Uczciwy raport: nic nie
+trzeba było usuwać, bo nic innego nigdy nie było zapisywane. To, co ta tura
+robi, to zamienia przypadek w REGUŁĘ — i robi to w momencie, w którym najłatwiej
+byłoby ją złamać, bo nowy eksport per materiał MÓGŁBY nieść żółte nagłówki
+sekcji i nazwy szafek z podglądu. Nie niesie ich i nie ma ścieżki, którą mógłby.
+Test `DELTA 2` sprawdza OBIE ścieżki eksportu.
+
+**F2.3** — ZIP per panel bez zmian (tura 15), do przecięcia jednej uszkodzonej
+formatki.
+
+## F3 — PÓŁKI LEŻĄ TAK, JAK MÓWI WIDOK 3D — ✅ ZIELONA
+
+Właściciel: „odwróć wszystkie półki o 90 stopni w CNC — w 3D orientacja jest
+dobra, ale nie współgra z CNC".
+
+Spisane, niezgodność wygląda tak: KAŻDA deska w tej aplikacji jest kładziona
+SŁOJEM W GÓRĘ RYSUNKU — bok 560 × 2150, plecy 600 × 2150, drzwi 597 × 2147, a
+TOP jest rysowany OBRÓCONY właśnie po to (`drawTOP_ROT90`). Jedna rodzina nie:
+półka jest rysowana `szerokość × głębokość`, więc na arkuszu półka i wieniec tej
+samej szafki leżą pod kątem 90° do siebie, a w 3D są równoległymi deskami o
+równoległym rysunku.
+
+**Obraca się UŁOŻENIE, nie część.** Własne słowo CLAUDE.md i właściwe: ramka CNC
+półki nie rusza się o milimetr, więc `fixtures/golden-partition-biscuits.json` —
+który przypina znaczniki lameli półki w tej ramce — jest nietknięty, plik per
+panel jest nietknięty i mapowanie `engine/joinery.js` jest nietknięte. Rusza się
+`engine/cnc/layout.js`: `sheetTurn()` mówi, co kłaść obrócone, `turnPoint()`
+obraca, a zapis DXF stosuje tę samą transformację co podgląd. **Obrót 0 jest
+dokładną tożsamością.**
+
+Zasięg jest zasięgiem CLAUDE.md (poziome deski: `SHELF`, `PARTITION`,
+`RAIL-PART`, `FIXED`), a wewnątrz niego pytanie zadaje się RYSUNKOWI, nie
+nazwie: deska już ułożona słojem w górę zostaje tam, gdzie jest. To ma znaczenie
+na panelu `FIXED` lodówki i piekarnika, który kit rysuje `głębokość × szerokość`
+jak TOP — obrócenie go „po nazwie" położyłoby go w poprzek własnego słoja, czyli
+dokładnie tak, jak wygląda skarga, którą ta delta zamyka.
+
+## F4 — ELEMENT POKAZUJE TO, CO WYTNIE MASZYNA — ✅ ZIELONA
+
+Właściciel o szufladach: „jak je edytuję to nie mają żadnych wcięć, nie widzę
+dziurek". O plecach lodówki: „na CNC są dog bones a na elemencie nie ma".
+
+**Obie skargi miały jedną przyczynę i był nią jeden `switch`.**
+`panelPlacement` odpowiada na pytanie „gdzie w szafce leży ramka CNC tej
+części", a dla boku szuflady, frontu szuflady, drzwi i listew pleców lodówki
+odpowiadał `null`. Część bez ramki nie ma gdzie położyć własnego wiercenia —
+więc wiercenie nie było rysowane. Dane cięcia nigdy nie były wątpliwe: maszyna
+wycina te rowki i te otwory od tury 3.
+
+* **F4.1** — `machiningLines()` w `engine/joinery.js` czyta `panel.cnc` i
+  `result.drills` (te same dwa rekordy, z których pisany jest DXF), a
+  `3d/PartMachining.jsx` kładzie je na elemencie w kolorach warstw podglądu CNC.
+  Nie ma drugiego rysowania dog bone'a i być nie może: gdzie się rozejdą,
+  prawdą jest eksport.
+* **F4.2** — szuflada jest ELEMENTEM: `elementKind` zwraca `drawer` dla pudła,
+  każda deska nazywa się z osobna („Drawer 2 — side (left)"), ma swój modal
+  detalu. Panel nośny runnerów (`DP`) i fillery zostają mechanizmem — nikt ich
+  nie wybiera, idą za stosem.
+* **F4.3** — oba rowki niosą GŁĘBOKOŚĆ: `DRAWER_RUNNER_POCKET` 2 mm (runner ma
+  siedzieć równo), `DRAWER_BOTTOM_POCKET` 7 mm (stoi w nim deska). Liczby
+  w `profile.js`, nazwy warstw takie, jakie repo już ma (tura 3) — bez nowej
+  nazwy warstwy. Ani jeden bajt eksportu się nie ruszył: prostokąt jest tym
+  samym prostokątem, doszła adnotacja.
+* **F4.4** — rysowanie samego okucia runnera POZA turą (decyzja B właściciela).
+
+## F5 — WSTECZ, JEDEN POZIOM — ✅ ZIELONA
+
+Okno edytora ma DWA POZIOMY i teraz to mówi: szafka i jeden jej element.
+`‹ Cabinet` wraca do szafki i odznacza część; **nie składa rozstrzelenia i nie
+zamyka okna** (odpowiedź 1 właściciela) — stolarz, który rozebrał korpus, żeby
+obejrzeć trzy elementy po kolei, nie chce go z powrotem złożonego między dwoma
+z nich. Escape robi to samo NA TYM POZIOMIE; z niczym zaznaczonym klawisz należy
+do powłoki i nadal zamyka okno.
+
+## F6 — TRZY MAŁE WERDYKTY — ✅ ZIELONA
+
+**F6.1 — górny infill idzie DO SUFITU.** Boczne fillery mają parę „liczba + ▲"
+od tury 16; jedyna gałąź, która zwracała `null`, była tą, która najbardziej jej
+chce. Te same wywołania store'a (`setTopInfill`, `fillToCeiling`), którymi od
+tury 6 działa przeciąganie krawędzi i dwuklik. Nic nie rozwidlone.
+
+**F6.2 — zmiana nazwy jest ZNAJDOWALNA.** Kontrolka z tury 16 NIE jest
+przebudowana (CLAUDE.md zabrania) — dostaje etykietę „Name", żeby czytała się
+jak pole, a nie jak dekoracja, i wpis **„Rename…"** w menu pod prawym
+przyciskiem, który zaznacza szafkę, otwiera panel i stawia kursor w tym jednym
+polu. Jedna nazwa, jedno pole, dwoje drzwi do niego.
+
+**F6.3 — etykieta nazwy na kanwie.** „Paskudna chmurka" to był DYMEK KOMIKSOWY:
+biały zaokrąglony prostokąt z obrysem 2 px. Rysunek mebla nie ma po co go nosić.
+Teraz: płaska tabliczka, kąty proste, bez obrysu, w tonach aplikacji
+(`COLORS.labelPlate` / `.labelInk`) i w jej własnej typografii etykiet — małe,
+wersaliki, ze światłem międzyliterowym, dokładnie jak każdy `cc-label` w
+panelach. Podpisy WYMIAROWE zostają w dymku: leżą na białym tle i obrys mają
+zasłużony.
+
+## F7 — ZAWIASY: STANDARD PROJEKTU I RĘKA — ✅ ZIELONA
+
+**F7.1 — „Standard hinges: 2 / 3", domyślnie 3.** Trzy to to, co kity wiercą od
+tury 1, więc projekt, który tego nie tknie, jest cięty jak wczoraj. Na 2 odpada
+DOKŁADNIE JEDEN ŚRODKOWY zawias, a skrajne nie ruszają się nigdy — nie jest to
+ani liczba, ani nowe rozstawienie (`hingeRows` / `middleHingeIndex`). Który
+środkowy: ten najbliżej środka drzwi, bo to ten zawias stolarz zdejmuje; przy
+parzystej liczbie środkowych wygrywa NIŻSZY — arbitralnie, ale zapisane, więc
+odpowiedź jest zawsze ta sama.
+
+**F7.2 — zawiasy edytowalne ręcznie:** dodaj, usuń, przesuń — idiom półki, w
+kontrolce półki, na elemencie DRZWI. Jawna lista WYŁĄCZA regułę dla tej szafki
+(reguła kłócąca się z tym, co powiedziano na warsztacie, byłaby aplikacją
+przegłosowującą stolarza); „Reset" oddaje ją z powrotem. Lista jest SZAFKI, bo
+jej drzwi wierci się jako komplet, a korpus nosi jedną kolumnę zawiasów na
+zawiasowanym boku — różnice między skrzydłami idą do BLOCKERS.
+
+**F7.3 — wszystko za tym idzie.** I to jest miejsce, w którym trzy tabele
+przesunięć puszek zamieniły się w jedno zdanie: **puszka jest na wysokości
+swojego zawiasa** i zawsze była. `centre + doorExtend` daje co do milimetra to
+samo, co `baseOffsets`, `sinkOffsets` i `hingeCentres` dawały osobno — cały
+zestaw testów przechodzi bez zmiany, żaden odcisk się nie ruszył — a to jest to,
+co sprawia, że zawias zdjęty zabiera swoją puszkę, a zawias przesunięty ręką
+przesuwa ją ze sobą. Wiercenie w eksporcie, bryły w 3D i licznik BOM liczą tę
+samą listę.
+
+## F8 — WYSOKOŚCI SZUFLAD, GDY FRONTY ZEJDĄ — ✅ ZIELONA
+
+**F8.1 — fronty schodzą** (`drawer_fronts: false`), dokładnie tym idiomem, co
+„Remove doors" z tury 15, z menu pod prawym przyciskiem. Pudła, runnery i korpus
+zostają co do milimetra tym, czym były.
+
+**F8.2 — każda szuflada ma edytowalną WYSOKOŚĆ** (nie pozycję — właściciel był
+w tym dosłowny), na froncie i — gdy fronty zeszły — na pudle. Szuflada
+ustawiona ręką bierze swoją wysokość; te, których nikt nie tknął, biorą to, co
+zostało, w proporcji kitu, więc stos nadal wypełnia lico.
+
+**F8.3 — klamra jest właściciela:** nie krócej niż **28 + 10 mm** liczone od osi
+wkrętów. Jest FUNKCJĄ SILNIKA z własnym testem, a nie liczbą wpisaną w
+kontrolkę: wysokość, która przychodzi z szablonu, importu albo starego projektu,
+musi być odrzucona w tym samym miejscu, co wpisana z klawiatury.
+
+**F8.4 — dryf 4:3:2 kitu ZAMROŻONY** (#64, zamknięte przez właściciela): przy
+niczym nietkniętym `budrHeightsWithOwn` zwraca `budrFrontHeights` bez zmian. Ta
+faza edytuje SZTUKĘ i nie dotyka domyślnych kitu.
+
+## F9 — KIT: PANEL D/W — ✅ ZIELONA (z wpisami w BLOCKERS)
+
+Wyłącznie liczby właściciela.
+
+* **Front i nic więcej** — bez boków, bez dna, bez pleców i **bez puszek
+  zawiasów**: „no hinges, flat, no door furniture" jest wierceniem, którego nie
+  ma, a nie tylko brakiem okucia w BOM.
+* **594 mm i to jest WARTOŚĆ, nie domyślna.** Jakiejkolwiek wysokości byłby
+  korpus, front wychodzi 594 — bo powyżej 600 drzwi urządzenia się nie otworzą,
+  a aplikacja nie ma być tym, co na to pozwoliło. Test mówi to na pięciu
+  wysokościach.
+* **Plint wycięty w tym miejscu, 20 mm od góry** — jako OBRYS, nie kieszeń, bo
+  tym to jest (deska jest cięta do kształtu) i dzięki temu nie potrzebuje nowej
+  nazwy warstwy na maszynie.
+* **Jeden wieniec, zawsze 600 mm szerokości**, głębokość jak reszta runu.
+* W bibliotece nazywa się **„D/W panel"** — ten sam kit odpowiada za pralkę i za
+  lodówkę.
+
+Wszystko inne — mocowania, luzy, jak spotyka się z sąsiadami, wycięcie w plincie
+NALEŻĄCYM DO RUNU — jest w BLOCKERS i **nie ma go w kicie**.
+
+## F10 — KIT: SZAFKA POD PIEKARNIK — ✅ ZIELONA (z wpisami w BLOCKERS)
+
+* Piekarnik ma 595, więc **półka, na której stoi, siedzi 598 mm OD GÓRY
+  szafki** — od góry, nie od osi i nie od podłogi. Napisane w komentarzu przy
+  liczbie, bo to jest ta liczba, którą ktoś później „poprawi", mierząc od
+  plinta.
+* **Szuflada pod spodem**, rysowana tak, jak rysuje się szuflady, z rowkami,
+  które daje jej F4. Stos ma proporcję `[1]` w profilu, więc nie pojawia się
+  jako wariant szafki szufladowej.
+* **Bez pleców poza tymi za szufladą.** Te plecy mocują się standardowo —
+  **4 dog bones: po jednym w każdy bok, dwa w dno szafki** — czyli wzorem
+  RAIL1 lodówki z tury 14. Test porównuje je z lodówką zamiast wyprowadzać
+  drugi raz.
+
+## F11 — MIARKA — ✅ ZIELONA
+
+Klik, klik, odczyt w milimetrach. Rzutuje promień na SCENĘ w fazie
+przechwytywania na elemencie `canvas`, więc: mierzy to, co tam naprawdę stoi
+(róg szafki, blat, ścianę), a klik w trybie miarki nie może niczego zaznaczyć,
+przeciągnąć ani otworzyć — **mierzy i nigdy nie edytuje**. Overlay'e (`ccHelper`)
+są odfiltrowane, więc miarka nie zmierzy do własnego znacznika. Odczyt idzie
+przez `formatMm` i przez siatkę warsztatu (0.5 mm). Escape czyści pomiar, drugi
+Escape zamyka narzędzie.
+
+## F12 — PRZEJŚCIE, DOKUMENTY, BRAMKA
+
+`scripts/e2e-turn17.mjs` — 25 sprawdzeń, wszystkie MIERZONE (liczba czytana ze
+silnika albo prostokąt czytany z DOM), 24 zrzuty w `verify/t17/`.
+
+## BRAMKA — ✅ ZIELONA
+
+| brama | wynik |
+|---|---|
+| pełny reinstall (`rm -rf node_modules && npm install`) | czysty |
+| testy | **1362 / 1362** (baza tury: 1327, nowych 35) |
+| build | czysty |
+| istniejące fixtures | `git diff fixtures/` **pusty** — 12 plików, żadnego dodania |
+| zależności | nietknięte (`git diff package.json package-lock.json` pusty) |
+| czystość silnika | `src/engine/` importuje wyłącznie `src/engine/` |
+| tożsamość CNC | **CZTERY nazwane delty i nic poza nimi** — 0 zmian geometrii per panel, 0 zmian spisu encji |
+| `verify/t17/` | 24 zrzuty, `measurements.json`, `walk.json`, raport tożsamości, odciski przed/po, dowód encja po encji |
+| przejście w przeglądarce | **25 / 25** |
+| PR | otwarty, **nie scalony** |
+
+**Delty CNC — cztery, nazwane, opublikowane w
+`verify/t17/cnc-export-identity.md`:** (1) etykieta w elemencie niesie numer
+szafki; (2) w pliku są etykiety i żadnych innych liter — teraz jako reguła
+przypięta testem na obu ścieżkach eksportu; (3) półki kładzione obrócone o 90°;
+(4) dog bone'y, które eksport już wycina, stają się widoczne na elemencie — i
+spis encji tego NIE ZAUWAŻA, co jest dowodem, że ruszył się WIDOK.
+
+## Nowe pliki
+
+`src/engine/cnc/partLabel.js` · `src/engine/ruler.js` ·
+`src/3d/PartMachining.jsx` · `src/3d/Ruler.jsx` · `scripts/e2e-turn17.mjs` ·
+`test/turn17-phases.test.js` · `verify/t17/`
+
+## Nowe liczby w `profile.js`
+
+`hinges.standard` / `.standardOptions` (F7.1) ·
+`baseDrawerUnit.runnerPocketDepth` / `.bottomPocketDepth` (F4.3) ·
+`baseDrawerUnit.runnerScrewFromBase` / `.clearanceBelowRunner` (F8.3) ·
+`dwPanel.*` (F9) · `ovenUnit.*` (F10). Zmienione: `cnc.annotation.partLabelMm`
+22 → 70 (F1.3 — jedna skala typograficzna na arkuszu).

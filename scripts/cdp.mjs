@@ -121,7 +121,12 @@ function connect(url) {
         errors.push(d.exception?.description || d.text);
       }
       if (msg.method === 'Log.entryAdded' && msg.params.entry.level === 'error') {
-        errors.push(msg.params.entry.text);
+        // The URL as well as the message: a browser reports every failed
+        // request as the same sentence, so an acceptance walk that wants to
+        // ignore ONE of them (turn 17: the favicon the page never asks for)
+        // has to be able to tell which resource it was.
+        const { text, url } = msg.params.entry;
+        errors.push(url ? `${text} [${url}]` : text);
       }
     });
     socket.addEventListener('error', reject);

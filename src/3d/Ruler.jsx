@@ -4,7 +4,8 @@ import { useThree } from '@react-three/fiber';
 import { mm, MM } from './constants.js';
 import DimLabel from './DimLabel.jsx';
 import { useUiStore } from '../stores/uiStore.js';
-import { formatMm } from '../engine/format.js';
+import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+import { formatMm, snap } from '../engine/format.js';
 import { rulerDistance } from '../engine/ruler.js';
 
 // ─── THE RULER (turn 17, CLAUDE.md F11) ─────────────────────────────────────
@@ -48,6 +49,11 @@ export default function Ruler() {
   const addPoint = useUiStore((s) => s.addRulerPoint);
   const clear = useUiStore((s) => s.clearRuler);
   const setRuler = useUiStore((s) => s.setRuler);
+  // The workshop's own grid. F11 asks for `formatMm` AND half a millimetre,
+  // and they are two different rules: one is how a number is printed, the other
+  // is what numbers this workshop works in. A tape that reads 2583.13 is a tape
+  // nobody writes down.
+  const step = useCabinetProfileStore((s) => s.profile.editor.mmStep);
   const { gl, camera, scene } = useThree();
 
   useEffect(() => {
@@ -113,7 +119,7 @@ export default function Ruler() {
 
   if (!on || !points.length) return null;
   const [a, b] = points;
-  const span = b ? rulerDistance(a, b) : 0;
+  const span = b ? snap(rulerDistance(a, b), step) : 0;
   const midpoint = b
     ? [mm((a[0] + b[0]) / 2), mm((a[1] + b[1]) / 2) + 0.06, mm((a[2] + b[2]) / 2)]
     : null;

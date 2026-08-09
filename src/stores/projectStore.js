@@ -2656,8 +2656,12 @@ export const useProjectStore = create((set, get) => ({
   hingeRowsOf: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return [];
+    // `drillSummary`, not `derived`: the hinge centres are a DRILLING fact and
+    // the engine has always filed them there (engine/cabinet.js). Reading the
+    // wrong one gave an empty list, and an empty list is a cabinet the panel
+    // offers no hinges to edit.
     const result = get().unitResult(unitId);
-    return result?.derived?.hinge_centers || [];
+    return result?.drillSummary?.hinge_centers || [];
   },
 
   /** Move one hinge. Clamped to the carcass and snapped to the workshop grid. */

@@ -1,0 +1,127 @@
+[
+  {
+    "label": "F1.1 a part reads \"<cabinet> <part> <w>x<h>\"",
+    "ok": true,
+    "detail": "F-01 BUR 540x770"
+  },
+  {
+    "label": "F1.2 every label is INSIDE its own outline",
+    "ok": true,
+    "detail": "8/8"
+  },
+  {
+    "label": "F1.3 …at full-sheet zoom too — it shrinks, it never spills",
+    "ok": true,
+    "detail": "{\"drawn\":8,\"inside\":8}"
+  },
+  {
+    "label": "F2.1 the CNC panel offers the boards on the sheet, plus \"all\"",
+    "ok": true,
+    "detail": "[\"All materials\",\"Broken white · 18 mm · 7 parts\",\"Broken white · 25 mm · 1 parts\"]"
+  },
+  {
+    "label": "F3 every board on the sheet stands its grain UP the page",
+    "ok": true,
+    "detail": "[\"TOP:564/564\",\"BOTTOM:564/564\",\"SHELF-1:560/560\",\"BUL:770/770\"]"
+  },
+  {
+    "label": "F4.3 a drawer side carries BOTH pockets, each with its own depth",
+    "ok": true,
+    "detail": "{\"DRAWER_RUNNER_POCKET\":2,\"DRAWER_BOTTOM_POCKET\":7}"
+  },
+  {
+    "label": "F4.1 the detail window draws every cut on the piece, on its own layers",
+    "ok": true,
+    "detail": "{\"legend\":[\"OUTLINE\",\"DRAWER_RUNNER_POCKET\",\"DRAWER_BOTTOM_POCKET\"],\"paths\":2}"
+  },
+  {
+    "label": "F4.1 the fridge’s back rail shows the sockets the machine cuts",
+    "ok": true,
+    "detail": "{\"legend\":[\"OUTLINE\",\"PUZZLE_SOCKET\",\"PUZZLE_HOLES_7_5MM\"],\"paths\":12}"
+  },
+  {
+    "label": "F5 Back returns to the cabinet, keeps the explode and leaves the window open",
+    "ok": true,
+    "detail": "{\"selected\":{\"open\":true,\"label\":\"Door\",\"back\":true},\"afterBack\":{\"element\":false,\"exploded\":\"Assemble\",\"stillOpen\":true}}"
+  },
+  {
+    "label": "F6.1 the TOP infill runs to the ceiling, and the control is a number + ▲",
+    "ok": true,
+    "detail": "{\"before\":40,\"after\":250,\"room\":2500}"
+  },
+  {
+    "label": "F6.2 the panel header carries a LABELLED name field",
+    "ok": true,
+    "detail": "{\"value\":\"F-01\",\"width\":112,\"labelled\":\"Name\"}"
+  },
+  {
+    "label": "F6.2 …and \"Rename…\" is in the right-click menu",
+    "ok": true,
+    "detail": "[{\"id\":\"edit-cabinet\",\"text\":\"Edit cabinet…\"},{\"id\":\"rename\",\"text\":\"Rename “F-01”…\"},{\"id\":\"plinth\",\"text\":\"·Plinth\"},{\"id\":\"end-panel-L\",\"text\":\"·End panel — left\"}]"
+  },
+  {
+    "label": "F7.1 on 2, ONE MIDDLE hinge comes off and the outer ones never move",
+    "ok": true,
+    "detail": "{\"hinges3\":[100,470,670],\"two\":[100,670]}"
+  },
+  {
+    "label": "F7.3 …and the CUPS and the BOM count follow it",
+    "ok": true,
+    "detail": "{\"cups\":[100,670],\"hardware\":2}"
+  },
+  {
+    "label": "F7.2 a hinge moves by hand, and its cup goes with it",
+    "ok": true,
+    "detail": "{\"before\":[100,470,670],\"after\":[100,530,670],\"cups\":[100,530,670]}"
+  },
+  {
+    "label": "F8.1 the drawer fronts come off; the boxes stay",
+    "ok": true,
+    "detail": "{\"before\":3,\"removed\":3,\"after\":0,\"boxes\":15}"
+  },
+  {
+    "label": "F8.3 the owner’s clamp holds: no shorter than 28 + 10 mm",
+    "ok": true,
+    "detail": "{\"asked\":5,\"got\":38,\"heights\":[38,254,169],\"rule\":38}"
+  },
+  {
+    "label": "F9 a front and nothing else: 594 rigid, one 600 mm top, no drilling",
+    "ok": true,
+    "detail": "{\"parts\":[\"TOP\",\"FRONT\",\"PLINTH\",\"INFILL\",\"INFILL\"],\"frontH\":594,\"topW\":600}"
+  },
+  {
+    "label": "F9 the plinth is cut out at that position, 20 mm from the top",
+    "ok": true,
+    "detail": "{\"plinthH\":100,\"outline\":[[0,0],[0,80],[600,80],[600,0],[600,100],[0,100]]}"
+  },
+  {
+    "label": "F10 the oven’s shelf sits 598 mm from the TOP of the cabinet",
+    "ok": true,
+    "detail": "{\"height\":870,\"shelfTopFromTop\":598,\"backFrom\":0,\"backTo\":254,\"shelfBottom\":254,\"sockets\":4,\"drawers\":1,\"frontH\":233}"
+  },
+  {
+    "label": "F10 no back except behind the drawer, fixed with 4 dog bones",
+    "ok": true,
+    "detail": "{\"height\":870,\"shelfTopFromTop\":598,\"backFrom\":0,\"backTo\":254,\"shelfBottom\":254,\"sockets\":4,\"drawers\":1,\"frontH\":233}"
+  },
+  {
+    "label": "F11 the ruler is a toolbar switch, and it takes the cursor",
+    "ok": true,
+    "detail": "{\"pressed\":\"true\",\"cursor\":\"crosshair\"}"
+  },
+  {
+    "label": "F11 two clicks give a distance in mm — and select nothing",
+    "ok": true,
+    "detail": "{\"points\":2,\"distance\":2583,\"selected\":null}"
+  },
+  {
+    "label": "F11 Escape clears the measurement, and again closes the tool",
+    "ok": true,
+    "detail": "{\"points\":0,\"on\":true}"
+  },
+  {
+    "label": "no uncaught errors in the console during the whole walk",
+    "ok": true,
+    "detail": ""
+  }
+]

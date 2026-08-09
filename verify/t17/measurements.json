@@ -1,0 +1,181 @@
+{
+  "labels": [
+    {
+      "id": "BUL",
+      "text": "F-01 BUL 540x770",
+      "inside": true
+    },
+    {
+      "id": "BUR",
+      "text": "F-01 BUR 540x770",
+      "inside": true
+    },
+    {
+      "id": "TOP",
+      "text": "F-01 TOP 564x540",
+      "inside": true
+    },
+    {
+      "id": "BOTTOM",
+      "text": "F-01 BOTTOM 564x540",
+      "inside": true
+    },
+    {
+      "id": "BACK",
+      "text": "F-01 BACK 600x7…",
+      "inside": true
+    },
+    {
+      "id": "SHELF-1",
+      "text": "F-01 SHELF-1 560x520",
+      "inside": true
+    },
+    {
+      "id": "SHELF-2",
+      "text": "F-01 SHELF-2 560x520",
+      "inside": true
+    },
+    {
+      "id": "F-01-F",
+      "text": "F-01 F 597x767",
+      "inside": true
+    }
+  ],
+  "export": {
+    "picker": {
+      "options": [
+        "All materials",
+        "Broken white · 18 mm · 7 parts",
+        "Broken white · 25 mm · 1 parts"
+      ],
+      "value": "all"
+    },
+    "units": 1,
+    "parts": 8
+  },
+  "grain": [
+    {
+      "id": "TOP",
+      "part": "TOP",
+      "drawnW": 540,
+      "drawnH": 564,
+      "turned": false,
+      "upTheSheet": 564,
+      "grainLength": 564
+    },
+    {
+      "id": "BOTTOM",
+      "part": "BOTTOM",
+      "drawnW": 540,
+      "drawnH": 564,
+      "turned": false,
+      "upTheSheet": 564,
+      "grainLength": 564
+    },
+    {
+      "id": "SHELF-1",
+      "part": "SHELF",
+      "drawnW": 560,
+      "drawnH": 520,
+      "turned": true,
+      "upTheSheet": 560,
+      "grainLength": 560
+    },
+    {
+      "id": "BUL",
+      "part": "BUL",
+      "drawnW": 540,
+      "drawnH": 770,
+      "turned": false,
+      "upTheSheet": 770,
+      "grainLength": 770
+    }
+  ],
+  "topInfill": {
+    "before": 40,
+    "after": 250,
+    "room": 2500
+  },
+  "hinges": {
+    "three": [
+      100,
+      470,
+      670
+    ],
+    "two": {
+      "rows": [
+        100,
+        670
+      ],
+      "cups": [
+        100,
+        670
+      ],
+      "hardware": 2
+    }
+  },
+  "drawerClamp": {
+    "asked": 5,
+    "got": 38,
+    "heights": [
+      38,
+      254,
+      169
+    ],
+    "rule": 38
+  },
+  "dw": {
+    "parts": [
+      "TOP",
+      "FRONT",
+      "PLINTH",
+      "INFILL",
+      "INFILL"
+    ],
+    "frontH": 594,
+    "topW": 600,
+    "drills": 0,
+    "plinthOutline": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        80
+      ],
+      [
+        600,
+        80
+      ],
+      [
+        600,
+        0
+      ],
+      [
+        600,
+        100
+      ],
+      [
+        0,
+        100
+      ]
+    ],
+    "plinthH": 100
+  },
+  "oven": {
+    "height": 870,
+    "shelfTopFromTop": 598,
+    "backFrom": 0,
+    "backTo": 254,
+    "shelfBottom": 254,
+    "sockets": 4,
+    "drawers": 1,
+    "frontH": 233
+  },
+  "ruler": {
+    "points": 2,
+    "distance": 2583,
+    "selected": null
+  }
+}

@@ -292,3 +292,30 @@ export function outlineFor(profile, { contour = false } = {}) {
     threshold: A.outline.threshold,
   };
 }
+
+/**
+ * The depth nudge a panel's FILL takes so the outlines win (turn 15, F2).
+ *
+ * The owner's bug: "the outer contour is crisp, the interior edges vanish."
+ * They vanish because an edge INSIDE a cabinet is coplanar with the face it
+ * butts into — a shelf's front arris lies in the plane of the side panel — and
+ * two things at the same depth are decided by draw order rather than by depth.
+ * The silhouette had nothing behind it, which is why only the outside looked
+ * right.
+ *
+ * `polygonOffset` on the FILL is the textbook answer: the face is pushed a hair
+ * back in the DEPTH BUFFER ONLY, so the line in front of it always wins.
+ * Nothing moves in the scene, nothing reaches the cut list, and the numbers are
+ * the profile's (`appearance.outline.polygonOffset`) rather than literals in a
+ * component — CLAUDE.md rule 3.
+ *
+ * Spread straight onto a material: `{...panelFillOffset(profile)}`.
+ */
+export function panelFillOffset(profile) {
+  const o = profile?.appearance?.outline?.polygonOffset || {};
+  return {
+    polygonOffset: true,
+    polygonOffsetFactor: Number(o.factor) || 0,
+    polygonOffsetUnits: Number(o.units) || 0,
+  };
+}

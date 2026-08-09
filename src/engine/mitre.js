@@ -240,7 +240,33 @@ function faceNormal(solid, face) {
 export function infillMitre(panel) {
   const meta = panel?.meta;
   const box = panel?.box;
-  if (!box || !meta || meta.side !== 'top') return null;
+  if (!box || !meta) return null;
+
+  // ─── The VERTICAL member (turn 15, CLAUDE.md F6 / BACKLOG #51) ────────────
+  //
+  // #51 was parked deliberately: turn 6 describes a side infill's arm A as
+  // SCREWED to the carcass side, and a screwed joint is not a mitre, so this
+  // function refused to cut the piece and a test guarded the refusal.
+  //
+  // What turn 15 activates is a DIFFERENT joint on the same piece, and the
+  // owner is right that it was square: where the filler runs up past the units
+  // and the top infill stops against it, the two stand in one plane and make
+  // the corner of a frame. The arm stays screwed. The FACE is mitred.
+  //
+  // `meta.corner` is the leg of the 45°, put there by the engine only when
+  // there is genuinely room for the cut (engine/runs.js). Everything else about
+  // the vertical infill is untouched, which is why a run without this corner
+  // draws exactly the box it drew before.
+  if (meta.side === 'left' || meta.side === 'right') {
+    const corner = Math.max(0, Number(meta.corner) || 0);
+    if (meta.piece !== 'face' || !corner) return null;
+    // The corner nearest the top infill: the INNER edge, at the top. For a
+    // left-hand filler that is +X, for a right-hand one −X.
+    const sign = meta.side === 'left' ? +1 : -1;
+    return { box: { ...box }, planes: [chamferPlane(box, 'x', sign, 'y', +1, corner)] };
+  }
+
+  if (meta.side !== 'top') return null;
   const isFace = meta.piece === 'face';
   const isShelf = meta.piece === 'shelf';
   if (!isFace && !isShelf) return null;
@@ -259,6 +285,15 @@ export function infillMitre(panel) {
       // …and each OPEN end turns the corner, so it is cut in plan as well.
       if (ends.left === 'open') planes.push(chamferPlane(faceBox, 'x', -1, 'z', -1, t));
       if (ends.right === 'open') planes.push(chamferPlane(faceBox, 'x', +1, 'z', -1, t));
+      // Turn 15 (F6): where it stops against a ceiling-height filler it runs to
+      // its LONG POINT over the corner and comes to a point — the same cut the
+      // filler takes, on the same plane, which is what makes it a joint rather
+      // than two pieces ending near each other. The corner that comes away is
+      // the BOTTOM one, because the top edge is what runs on over the corner.
+      const cL = Math.max(0, Number(meta.corner?.left) || 0);
+      const cR = Math.max(0, Number(meta.corner?.right) || 0);
+      if (cL) planes.push(chamferPlane(faceBox, 'x', -1, 'y', -1, cL));
+      if (cR) planes.push(chamferPlane(faceBox, 'x', +1, 'y', -1, cR));
       return { box: faceBox, planes };
     }
     // The shelf, MOVED forward to its long point (see above). Its length does

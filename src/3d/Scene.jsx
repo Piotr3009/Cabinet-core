@@ -13,8 +13,10 @@ import { captureRender, furnitureBounds } from './renderCapture.js';
 import { useViewHandle } from './viewHandle.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
-import { addPlusPoints, unitBase } from '../engine/runs.js';
-import { backStandoff } from '../engine/collision.js';
+import {
+  addPlusPoints, unitBase, unitVerticals, verticalsInBand,
+} from '../engine/runs.js';
+import { backStandoff, wallClearance } from '../engine/collision.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -693,26 +695,60 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // What the distance arrows measure. Derived from the SAME results the boxes
   // are drawn from, so an arrow cannot describe a unit that is somewhere else —
   // and a drag updates it frame by frame with no drag state of its own.
-  const measured = useMemo(() => results.map(({ unit, result }) => {
-    const base = result.assemblies.mount === 'wall'
-      ? (result.assemblies.mountHeight || 0)
-      : (result.assemblies.carcass.legHeight || 0);
-    return {
-      id: unit.id,
-      wall: unit.position?.wall ?? 0,
-      x_mm: Number(unit.position?.x_mm) || 0,
-      width: Number(unit.params.width) || 0,
-      depth: Number(unit.params.depth) || 0,
-      rotation: Number(unit.position?.rotation_deg) || 0,
-      // A unit stood off the wall is measured where it stands (turn 7,
-      // CLAUDE.md F5): the arrow reads the real distance, not the one it would
-      // be at if it were pushed back.
-      backInset: backStandoff(unit, profile),
-      level: result.assemblies.mount === 'wall' ? 'wall' : 'floor',
-      label: unit.params.unit_num,
-      y: base + profile.dimensions.height,
+  const measured = useMemo(() => {
+    const rows = results.map(({ unit, result }) => {
+      const base = result.assemblies.mount === 'wall'
+        ? (result.assemblies.mountHeight || 0)
+        : (result.assemblies.carcass.legHeight || 0);
+      return {
+        id: unit.id,
+        wall: unit.position?.wall ?? 0,
+        x_mm: Number(unit.position?.x_mm) || 0,
+        width: Number(unit.params.width) || 0,
+        depth: Number(unit.params.depth) || 0,
+        rotation: Number(unit.position?.rotation_deg) || 0,
+        // A unit stood off the wall is measured where it stands (turn 7,
+        // CLAUDE.md F5): the arrow reads the real distance, not the one it would
+        // be at if it were pushed back.
+        backInset: backStandoff(unit, profile),
+        level: result.assemblies.mount === 'wall' ? 'wall' : 'floor',
+        label: unit.params.unit_num,
+        y: base + profile.dimensions.height,
+      };
+    });
+
+    // ─── Turn 15 (CLAUDE.md F7): …and the BOARDS the chain has to stop at ───
+    // The other half of the owner's bug. A base unit's end panel taken to the
+    // ceiling stands in the wall units' band, so a wall-unit dimension chain
+    // that measured past it was measuring to a wall it could not reach. The
+    // panel is measured at the WALL level as a piece of its own thickness —
+    // the same span the collision clamp stops at, from the same engine
+    // function, so the picture and the rule cannot disagree.
+    const wallLevel = rows.filter((r) => r.level === 'wall');
+    if (!wallLevel.length) return rows;
+    const band = {
+      from: profile.wallUnit.defaults.mountHeight,
+      to: profile.wallUnit.defaults.mountHeight + profile.wallUnit.defaults.height,
     };
-  }), [results, profile.dimensions.height]);
+    const owners = new Set(wallLevel.map((r) => r.id));
+    const boards = verticalsInBand(
+      unitVerticals(units.filter((u) => !owners.has(u.id)), profile),
+      band,
+      profile.editor.levelOverlapMm,
+    ).map((v, i) => ({
+      id: `${v.unitId}:${v.pieceId || v.kind}:${i}`,
+      wall: v.wall,
+      x_mm: v.from,
+      width: Math.max(0, v.to - v.from),
+      depth: v.depth,
+      rotation: 0,
+      backInset: wallClearance(profile),
+      level: 'wall',
+      label: null,
+      y: band.from + profile.dimensions.height,
+    }));
+    return [...rows, ...boards];
+  }, [results, units, profile]);
   const roomW = mm(bounds.width);
   const roomH = mm(room.height ?? 2500);
   // What the project's sprayed surfaces are polished to, on Piotr's 0–25 scale.

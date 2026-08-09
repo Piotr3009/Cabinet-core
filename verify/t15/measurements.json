@@ -1,0 +1,407 @@
+{
+  "steps": [
+    {
+      "label": "F1.1 the red Save turns GREEN with a tick once it has been pressed",
+      "ok": true,
+      "detail": "{\"before\":{\"saved\":\"0\",\"text\":\"Save\",\"colour\":\"rgb(201, 82, 75)\"},\"after\":{\"saved\":\"1\",\"text\":\"✓ Saved\",\"colour\":\"rgb(95, 158, 110)\"}}"
+    },
+    {
+      "label": "F1.2 the folded carcass line carries the PROJECT thickness",
+      "ok": true,
+      "detail": "{\"thickness\":\"·   18 mm\",\"line\":\"Carcass 1: Generic 18 (default)   ·   18 mmEdit\"}"
+    },
+    {
+      "label": "F1.1 …and editing the section puts it back to red",
+      "ok": true,
+      "detail": "{\"saved\":\"0\",\"text\":\"Save\"}"
+    },
+    {
+      "label": "F1.3 CARCASSES, FRONTS and the door-style block each sit in a gold frame",
+      "ok": true,
+      "detail": "[{\"id\":\"carcass\",\"colour\":\"rgba(170, 142, 104, 0.3)\",\"width\":\"1px\"},{\"id\":\"fronts\",\"colour\":\"rgba(170, 142, 104, 0.3)\",\"width\":\"1px\"},{\"id\":\"door-style\",\"colour\":\"rgba(170, 142, 104, 0.3)\",\"width\":\"1px\"}]"
+    },
+    {
+      "label": "F3.1 a LAMINATE front shows the EGGER decor picker, not a RAL palette",
+      "ok": true,
+      "detail": "{\"laminate\":true,\"decorPicker\":true,\"veneerPicker\":false,\"ralPalette\":false}"
+    },
+    {
+      "label": "F3.2 a VENEER front picks a TIMBER, and the project stores the veneer’s own id",
+      "ok": true,
+      "detail": "{\"veneerTiles\":[\"oak-natural\",\"oak-bardolino\",\"oak-gladstone\",\"hickory-natural\"],\"veneerChosen\":{\"source\":\"veneer\",\"finish_id\":\"veneer:oak-natural\",\"colour\":null}}"
+    },
+    {
+      "label": "F3.3 the carcass gains a VENEER source beside EGGER decor and Sprayed",
+      "ok": true,
+      "detail": "{\"carcassVeneer\":{\"present\":true},\"carcassAfter\":{\"source\":\"veneer\",\"picker\":\"veneer\"}}"
+    },
+    {
+      "label": "F4 the door styles are a GALLERY of drawings with a filter box beside \"+ New style\"",
+      "ok": true,
+      "detail": "{\"tiles\":[\"S\",\"F\",\"HJ\",\"G\",\"GF\",\"A\",\"AH\"],\"drawings\":7,\"filter\":true,\"newStyle\":true}"
+    },
+    {
+      "label": "F4.2 …and the filter narrows it, which is what makes thirty styles usable",
+      "ok": true,
+      "detail": "[\"A\",\"AH\"]"
+    },
+    {
+      "label": "F1.4 the right panel arrives with every section CLOSED, each in its own gold frame",
+      "ok": true,
+      "detail": "{\"count\":5,\"open\":[],\"borders\":[{\"section\":\"Carcass\",\"colour\":\"rgba(170, 142, 104, 0.3)\"},{\"section\":\"Add items\",\"colour\":\"rgba(170, 142, 104, 0.3)\"},{\"section\":\"Section 1\",\"colour\":\"rgba(170, 142, 104, 0.3)\"}]}"
+    },
+    {
+      "label": "F1.4 …and the ACTIVE section’s frame lights up",
+      "ok": true,
+      "detail": "{\"section\":\"Carcass\",\"klass\":\"cc-frame p-0 cc-frame-active\"}"
+    },
+    {
+      "label": "F2 every panel FILL carries the depth offset the profile asks for",
+      "ok": true,
+      "detail": "{\"found\":[{\"on\":true,\"factor\":1,\"units\":1},{\"on\":true,\"factor\":1,\"units\":1},{\"on\":true,\"factor\":1,\"units\":1},{\"on\":true,\"factor\":1,\"units\":1},{\"on\":true,\"factor\":1,\"units\":1}],\"profile\":{\"factor\":1,\"units\":1}}"
+    },
+    {
+      "label": "F5.2 the catalogue is the owner’s four groups, and F1.5 the list SCROLLS",
+      "ok": true,
+      "detail": "{\"groups\":[\"base-units\",\"tall-units\",\"wall-units\",\"extras\"],\"overflow\":\"auto\",\"maxHeight\":\"600px\"}"
+    },
+    {
+      "label": "F5.1 a sub-list flies out to the SIDE — it never pushes the list downwards",
+      "ok": true,
+      "detail": "{\"row\":{\"left\":34,\"right\":262,\"bottom\":254},\"fly\":{\"left\":270,\"right\":506,\"top\":199}}"
+    },
+    {
+      "label": "F5.2 …and it holds the owner’s base units, the held-open ones saying why",
+      "ok": true,
+      "detail": "{\"entries\":[\"door-base\",\"sink\",\"corner\",\"l-shape\",\"dishwasher\",\"oven-base\",\"bin-storage\",\"wine-rack\",\"small-fridge\",\"twin-space\",\"low\"],\"soon\":[\"corner\",\"l-shape\",\"dishwasher\",\"oven-base\",\"bin-storage\",\"wine-rack\",\"small-fridge\",\"twin-space\"]}"
+    },
+    {
+      "label": "F6 the side↔top infill corner is a 45° MITRE, and the filler is still cut to size",
+      "ok": true,
+      "detail": "{\"mitre\":{\"left\":100,\"right\":0},\"faceH\":100,\"fillerSize\":{\"w\":100,\"h\":2350},\"fillerOutline\":[[0,0],[100,0],[100,2250],[0,2350]]}"
+    },
+    {
+      "label": "F6 …and the part drawing shows the same cut",
+      "ok": true,
+      "detail": "{\"drawn\":true,\"points\":2}"
+    },
+    {
+      "label": "F7 a ceiling-height end panel is a WALL: the hanging unit stops AT it",
+      "ok": true,
+      "detail": "{\"through\":{\"base\":\"u_cyinv4j\",\"wall\":\"u_b7gt9jq\",\"x\":40,\"panelFace\":1825,\"top\":0},\"stopped\":{\"base\":\"u_jw6ws4c\",\"wall\":\"u_wmowmlp\",\"x\":1825,\"panelFace\":1825,\"top\":1630}}"
+    },
+    {
+      "label": "F8 \"Remove doors\" strips every selected cabinet in one action",
+      "ok": true,
+      "detail": "{\"removed\":{\"present\":true,\"label\":\"Remove doors (3)\"},\"before\":[true,true,true],\"after\":[false,false,false]}"
+    },
+    {
+      "label": "F8 …and ONE undo brings all three sets back",
+      "ok": true,
+      "detail": "[true,true,true]"
+    },
+    {
+      "label": "F9.1 the sheet splits into one section per MATERIAL, with a visible toggle",
+      "ok": true,
+      "detail": "{\"toggle\":[{\"id\":\"material\",\"pressed\":\"true\"},{\"id\":\"cabinet\",\"pressed\":\"false\"}],\"sections\":[\"mat_mdf18:18\",\"mat_mfc18_white:25\"],\"treeOpen\":true,\"view\":\"material\"}"
+    },
+    {
+      "label": "F9.2 …and BY CABINET gives a square per carcass with the run parts on their own",
+      "ok": true,
+      "detail": "{\"sections\":[\"cab:u_001ic6s\",\"cab:u_q7xq85i\",\"run\"],\"view\":\"cabinet\",\"run\":true,\"treeOpen\":true}"
+    }
+  ],
+  "measurements": {
+    "save": {
+      "before": {
+        "saved": "0",
+        "text": "Save",
+        "colour": "rgb(201, 82, 75)"
+      },
+      "after": {
+        "saved": "1",
+        "text": "✓ Saved",
+        "colour": "rgb(95, 158, 110)",
+        "line": "Carcass 1: Generic 18 (default)   ·   18 mmEdit",
+        "thickness": "·   18 mm"
+      }
+    },
+    "frames": [
+      {
+        "id": "carcass",
+        "colour": "rgba(170, 142, 104, 0.3)",
+        "width": "1px"
+      },
+      {
+        "id": "fronts",
+        "colour": "rgba(170, 142, 104, 0.3)",
+        "width": "1px"
+      },
+      {
+        "id": "door-style",
+        "colour": "rgba(170, 142, 104, 0.3)",
+        "width": "1px"
+      }
+    ],
+    "veneer": {
+      "veneerTiles": [
+        "oak-natural",
+        "oak-bardolino",
+        "oak-gladstone",
+        "hickory-natural"
+      ],
+      "veneerChosen": {
+        "source": "veneer",
+        "finish_id": "veneer:oak-natural",
+        "colour": null
+      }
+    },
+    "carcassVeneer": {
+      "source": "veneer",
+      "picker": "veneer"
+    },
+    "gallery": {
+      "tiles": [
+        "S",
+        "F",
+        "HJ",
+        "G",
+        "GF",
+        "A",
+        "AH"
+      ],
+      "drawings": 7,
+      "filter": true,
+      "newStyle": true,
+      "filtered": [
+        "A",
+        "AH"
+      ]
+    },
+    "rightPanel": {
+      "panel": {
+        "count": 5,
+        "open": [],
+        "borders": [
+          {
+            "section": "Carcass",
+            "colour": "rgba(170, 142, 104, 0.3)"
+          },
+          {
+            "section": "Add items",
+            "colour": "rgba(170, 142, 104, 0.3)"
+          },
+          {
+            "section": "Section 1",
+            "colour": "rgba(170, 142, 104, 0.3)"
+          }
+        ]
+      },
+      "lit": {
+        "section": "Carcass",
+        "klass": "cc-frame p-0 cc-frame-active"
+      }
+    },
+    "polygonOffset": {
+      "found": [
+        {
+          "on": true,
+          "factor": 1,
+          "units": 1
+        },
+        {
+          "on": true,
+          "factor": 1,
+          "units": 1
+        },
+        {
+          "on": true,
+          "factor": 1,
+          "units": 1
+        },
+        {
+          "on": true,
+          "factor": 1,
+          "units": 1
+        },
+        {
+          "on": true,
+          "factor": 1,
+          "units": 1
+        }
+      ],
+      "profile": {
+        "factor": 1,
+        "units": 1
+      }
+    },
+    "catalogue": {
+      "groups": [
+        "base-units",
+        "tall-units",
+        "wall-units",
+        "extras"
+      ],
+      "overflow": "auto",
+      "maxHeight": "600px"
+    },
+    "flyout": {
+      "rowBox": {
+        "x": 148,
+        "y": 226.25
+      },
+      "flyout": {
+        "row": {
+          "left": 34,
+          "right": 262,
+          "bottom": 254
+        },
+        "fly": {
+          "left": 270,
+          "right": 506,
+          "top": 199
+        },
+        "entries": [
+          "door-base",
+          "sink",
+          "corner",
+          "l-shape",
+          "dishwasher",
+          "oven-base",
+          "bin-storage",
+          "wine-rack",
+          "small-fridge",
+          "twin-space",
+          "low"
+        ],
+        "soon": [
+          "corner",
+          "l-shape",
+          "dishwasher",
+          "oven-base",
+          "bin-storage",
+          "wine-rack",
+          "small-fridge",
+          "twin-space"
+        ]
+      }
+    },
+    "mitre": {
+      "a": "u_bymjh6c",
+      "mitre": {
+        "left": 100,
+        "right": 0
+      },
+      "sideMitre": {
+        "left": 100,
+        "right": 0
+      },
+      "faceH": 100,
+      "fillerOutline": [
+        [
+          0,
+          0
+        ],
+        [
+          100,
+          0
+        ],
+        [
+          100,
+          2250
+        ],
+        [
+          0,
+          2350
+        ]
+      ],
+      "fillerSize": {
+        "w": 100,
+        "h": 2350
+      },
+      "faceOutline": [
+        [
+          100,
+          0
+        ],
+        [
+          1300,
+          0
+        ],
+        [
+          1300,
+          100
+        ],
+        [
+          0,
+          100
+        ]
+      ],
+      "faceW": 1300,
+      "runLength": 1200
+    },
+    "panelWall": {
+      "through": {
+        "base": "u_cyinv4j",
+        "wall": "u_b7gt9jq",
+        "x": 40,
+        "panelFace": 1825,
+        "top": 0
+      },
+      "stopped": {
+        "base": "u_jw6ws4c",
+        "wall": "u_wmowmlp",
+        "x": 1825,
+        "panelFace": 1825,
+        "top": 1630
+      }
+    },
+    "doors": {
+      "before": [
+        true,
+        true,
+        true
+      ],
+      "after": [
+        false,
+        false,
+        false
+      ],
+      "undone": [
+        true,
+        true,
+        true
+      ]
+    },
+    "cnc": {
+      "material": {
+        "toggle": [
+          {
+            "id": "material",
+            "pressed": "true"
+          },
+          {
+            "id": "cabinet",
+            "pressed": "false"
+          }
+        ],
+        "sections": [
+          "mat_mdf18:18",
+          "mat_mfc18_white:25"
+        ],
+        "treeOpen": true,
+        "view": "material"
+      },
+      "cabinet": {
+        "sections": [
+          "cab:u_001ic6s",
+          "cab:u_q7xq85i",
+          "run"
+        ],
+        "view": "cabinet",
+        "run": true,
+        "treeOpen": true
+      }
+    }
+  }
+}

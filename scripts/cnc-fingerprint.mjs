@@ -117,6 +117,48 @@ function cases() {
         },
       },
     });
+    // ─── The deliberate delta (turn 15, CLAUDE.md F6 / BACKLOG #51) ───
+    // The MITRED CORNER between a side infill and a top infill. Three cases,
+    // because what has to be provable is not only that the mitre cuts but that
+    // it does not cut when it should not:
+    //
+    //   +infills          a filler and a top strip with NO run information —
+    //                     a cabinet closing itself, which is what every case
+    //                     above and every existing fixture is. Square corner,
+    //                     byte for byte what turn 14 cut.
+    //   +infill-mitre     the same cabinet in a RUN whose end stops against the
+    //                     filler, both finishing flush and the filler wide
+    //                     enough to take a 45°. THE NAMED DELTA: the
+    //                     side-infill face's outline gains its corner, and the
+    //                     top-infill face runs to its long point over it.
+    //   +infill-mitre-narrow
+    //                     the same again with a filler NARROWER than the strip
+    //                     is tall. A 45° would run off the far edge of it, so
+    //                     there is no mitre — and this row must be identical to
+    //                     the un-mitred one.
+    const infills = {
+      ...base, top_infill_mm: 100, side_infill_left_mm: 120, side_infill_left_top_mm: 100,
+    };
+    const inARun = (width) => ({
+      ...infills,
+      side_infill_left_mm: width,
+      run_top_infill: {
+        role: 'owner',
+        offset: 0,
+        length: 1200,
+        faceH: 100,
+        shelfDepth: P.autoParts.topInfill.shelfDepth,
+        thickness: P.autoParts.topInfill.thickness,
+        ends: { left: 'infill', right: 'wall' },
+        returns: { left: null, right: null },
+        mitre: { left: Math.min(width, 100) === 100 ? 100 : 0, right: 0 },
+        sideMitre: { left: width >= 100 ? 100 : 0, right: 0 },
+        unitIds: ['a', 'b'],
+      },
+    });
+    out.push({ id: `${type}+infills`, params: infills });
+    out.push({ id: `${type}+infill-mitre`, params: inARun(120) });
+    out.push({ id: `${type}+infill-mitre-narrow`, params: inARun(60) });
     out.push({
       id: `${type}+partition-on-shelf`,
       params: {

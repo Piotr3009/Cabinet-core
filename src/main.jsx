@@ -6,6 +6,7 @@ import { useProjectStore } from './stores/projectStore.js';
 import { useUiStore } from './stores/uiStore.js';
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
+import { useMaterialAssignmentStore } from './stores/materialAssignmentStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
 //
@@ -23,7 +24,14 @@ import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
 // server-side authority for them to speak for.
 if (typeof window !== 'undefined') {
   window.__cc = {
-    project: useProjectStore, ui: useUiStore, profile: useCabinetProfileStore, history: useHistoryStore,
+    project: useProjectStore,
+    ui: useUiStore,
+    profile: useCabinetProfileStore,
+    history: useHistoryStore,
+    // Turn 15 (CLAUDE.md F9): the CNC "by material" view is a claim ABOUT the
+    // assignments, so the walk has to be able to make some before it can check
+    // that the sheet splits on them. Same store, same rule as the other four.
+    materials: useMaterialAssignmentStore,
   };
 }
 

@@ -22,13 +22,15 @@ import {
   withFrontColour,
 } from '../engine/design.js';
 import {
-  projectBoardThickness, projectDepth, projectFrontThickness, setFrontTypeCount,
+  carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
+  projectFrontThickness, setFrontTypeCount, sourceById, sourceTakesFacing,
 } from '../engine/projectSettings.js';
 import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import {
   runInfillParams, runMaskParams, runMemberIds, runPlinthParams, unitTop,
+  unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
 import { widthZones } from '../engine/zones.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
@@ -441,8 +443,26 @@ export const useProjectStore = create((set, get) => ({
     const design = migrateDesign(s.project.design);
     const profile = getCabinetProfile();
     const { colour, ...rest } = patch || {};
+    // ─── Turn 15 (CLAUDE.md F3) ───
+    // Changing the SOURCE changes which question the front answers. A source
+    // that faces the board (laminate, veneer) cannot use a sprayed colour, and
+    // Spray cannot use a facing — so the answer the new source cannot use is
+    // dropped rather than left behind to win an argument later. Which is which
+    // is read off the source's own record (`pickerForSource`), so a source
+    // added to the profile tomorrow behaves without a line changing here.
+    const changingSource = rest.source !== undefined;
+    const nextSource = changingSource
+      ? sourceById(frontSources(profile), rest.source)
+      : null;
+    const drop = changingSource
+      ? (sourceTakesFacing(nextSource) ? { colour: null } : { finish_id: null })
+      : {};
+    // A FACING chosen un-paints the front, the mirror of `withFrontColour`.
+    const unpaint = rest.finish_id ? { colour: null } : {};
     const types = setFrontTypeCount(design.fronts.types, design.fronts.types.length || 1, profile)
-      .map((t) => (t.id === typeId ? { ...t, ...rest } : t));
+      .map((t) => (t.id === typeId ? {
+        ...t, ...rest, ...drop, ...unpaint,
+      } : t));
     const merged = migrateDesign({ ...design, fronts: { ...design.fronts, types } });
     return {
       project: {
@@ -468,16 +488,29 @@ export const useProjectStore = create((set, get) => ({
     return migrateDesign(get().project.design);
   },
 
-  /** A carcass type's SOURCE — EGGER decor or sprayed (CLAUDE.md F9.2). */
+  /**
+   * A carcass type's SOURCE — EGGER decor, sprayed, or (turn 15, F3.3) veneer.
+   *
+   * A facing the new source cannot mean is dropped, exactly as it is for the
+   * fronts: an EGGER decor id left behind under a Veneer button would render a
+   * "veneered" carcass in a laminate.
+   */
   setCarcassSource: (typeId, source) => set((s) => {
     const design = migrateDesign(s.project.design);
+    const src = sourceById(carcassSources(getCabinetProfile()), source);
     return {
       project: {
         ...s.project,
         design: {
           ...design,
           carcass: {
-            types: design.carcass.types.map((t) => (t.id === typeId ? { ...t, source: source || null } : t)),
+            types: design.carcass.types.map((t) => (t.id === typeId
+              ? {
+                ...t,
+                source: source || null,
+                finish_id: facingMatchesSource(t.finish_id, src) ? t.finish_id : null,
+              }
+              : t)),
           },
         },
       },
@@ -1325,6 +1358,46 @@ export const useProjectStore = create((set, get) => ({
     return { fitted, already };
   }),
 
+  /**
+   * Take the doors OFF one cabinet (turn 15, CLAUDE.md F8).
+   *
+   * The exact mirror of `addDoors` above, and deliberately the same shape of
+   * answer — `{ removed, already }` — so the bulk action below can count both
+   * outcomes without asking the engine anything.
+   *
+   * `doors: false` and not `doors: null`: false is what `normalizeParams` has
+   * always read as "this cabinet has no doors", and a unit that never had any
+   * already stores it. One vocabulary, so a stripped cabinet and a cabinet
+   * ordered without doors are the same cabinet.
+   */
+  removeDoors: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { removed: 0, already: false };
+    if (!unit.params.doors || unit.params.doors === false) return { removed: 0, already: true };
+    const count = get().unitResult(unitId)?.derived?.doors || 0;
+    get().setDoors(unitId, false);
+    return { removed: count || 1, already: false };
+  },
+
+  /**
+   * …and off every cabinet in the selection, in ONE action and ONE undo step
+   * (turn 15, CLAUDE.md F8; the turn-13 F5 bulk rules).
+   *
+   * The owner walks a run unit by unit today. `runBatch` is what makes the lot
+   * a single Ctrl+Z — the same wrapper every other bulk action here uses, so
+   * this is not a second way of doing it.
+   */
+  removeDoorsBulk: (unitIds) => runBatch(() => {
+    let stripped = 0;
+    let already = 0;
+    for (const id of unitIds || []) {
+      const res = get().removeDoors(id);
+      if (res.already) already += 1;
+      else if (res.removed) stripped += 1;
+    }
+    return { stripped, already };
+  }),
+
   /** Even/centre the shelves in every unit of the selection. */
   redistributeShelvesBulk: (unitIds) => runBatch(() => {
     let done = 0;
@@ -1457,7 +1530,7 @@ export const useProjectStore = create((set, get) => ({
     const walls = roomWalls(s.project.room);
     const wallIndex = unit.position.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
-    const others = neighboursOf(s, unit).map(toObstacleUnit);
+    const others = obstaclesFor(s, unit);
     const notices = [];
     const applied = { ...patch };
 
@@ -1620,7 +1693,7 @@ export const useProjectStore = create((set, get) => ({
       wall,
       walls,
       depth: unit.params.depth,
-      others: neighboursOf(s, unit).map(toObstacleUnit),
+      others: obstaclesFor(s, unit),
       // A chimney breast stops a cabinet exactly as a neighbour does
       // (turn 14, CLAUDE.md F10.3).
       boxes: roomBoxes(s.project.room),
@@ -2607,6 +2680,43 @@ function neighboursOf(state, unit) {
   return state.units.filter((u) => u.id !== unit.id && obstructs(unit, u));
 }
 
+/**
+ * …and the PANELS in the way (turn 15, CLAUDE.md F7).
+ *
+ * A cabinet whose own carcass is nowhere near this one's height can still have
+ * a piece of board bolted to it that is — an end panel taken to the ceiling, a
+ * filler taken up with it. `neighboursOf` above will have discarded that
+ * cabinet, correctly, because the CABINET is not in the way. The panel is.
+ *
+ * Each one comes back as an obstacle of its own thickness and nothing more, so
+ * a wall unit stops AT the board rather than at the 600 mm cabinet behind it.
+ * The units already counted as neighbours are skipped: their panels are inside
+ * `footprintPads` and counting them twice would push a neighbour away by two
+ * panels.
+ */
+function panelObstaclesFor(state, unit, profile = getCabinetProfile()) {
+  const band = bandOf(unit, profile);
+  const already = new Set(neighboursOf(state, unit).map((u) => u.id));
+  const verticals = unitVerticals(
+    state.units.filter((u) => u.id !== unit.id && !already.has(u.id)),
+    profile,
+  );
+  return verticalsInBand(verticals, band, profile.editor.levelOverlapMm).map((v) => ({
+    wall: v.wall,
+    x_mm: v.from,
+    width: Math.max(0, v.to - v.from),
+    depth: v.depth,
+    rotation: 0,
+    backInset: wallClearance(profile),
+    label: v.kind === 'end-panel' ? 'end panel' : 'filler',
+  }));
+}
+
+/** Every obstacle a unit has to be clamped against: the cabinets AND the boards. */
+function obstaclesFor(state, unit, profile = getCabinetProfile()) {
+  return [...neighboursOf(state, unit).map(toObstacleUnit), ...panelObstaclesFor(state, unit, profile)];
+}
+
 /** Height of a unit's top above the floor — where its top infill starts. */
 const unitTopOf = unitTop;
 
@@ -2621,12 +2731,24 @@ function sameRun(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
   if (a.role !== b.role) return false;
+  // Turn 15 (CLAUDE.md F6): the SIDE mitre is carried by every unit in the run,
+  // members included — it is the end units' own corner — so it is compared for
+  // both roles. Miss it here and dragging a filler to the ceiling would leave
+  // the corner square until something else forced a redraw.
+  if (!sameCorner(a.sideMitre, b.sideMitre)) return false;
   if (a.role === 'member') return a.ownerId === b.ownerId;
   return a.offset === b.offset && a.length === b.length && a.faceH === b.faceH
     && a.depth === b.depth
     && a.shelfDepth === b.shelfDepth
     && a.ends?.left === b.ends?.left && a.ends?.right === b.ends?.right
-    && a.returns?.left === b.returns?.left && a.returns?.right === b.returns?.right;
+    && a.returns?.left === b.returns?.left && a.returns?.right === b.returns?.right
+    && sameCorner(a.mitre, b.mitre);
+}
+
+/** Two `{left, right}` mitre answers, treating "absent" and "0" as the same. */
+function sameCorner(a, b) {
+  return (Number(a?.left) || 0) === (Number(b?.left) || 0)
+    && (Number(a?.right) || 0) === (Number(b?.right) || 0);
 }
 
 /**
@@ -2696,7 +2818,7 @@ function freeBesideUnit(state, unit, side) {
     wall,
     walls,
     depth: unit.params.depth,
-    others: neighboursOf(state, unit).map(toObstacleUnit),
+    others: obstaclesFor(state, unit),
     boxes: roomBoxes(state.project.room),
   });
   // WHICH SIDE an obstacle is on is decided on the CARCASS, and how far away it
@@ -2868,9 +2990,27 @@ export function validateUnit(unit, result, context = {}) {
     const walls = roomWalls(context.room);
     const wallIndex = unit.position?.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
-    const others = (context.units || [])
-      .filter((u) => u.id !== unit.id && obstructs(unit, u))
-      .map(toObstacleUnit);
+    // The cabinets in the way — and, since turn 15 (CLAUDE.md F7), the ceiling-
+    // height BOARDS in the way, which belong to cabinets that are not.
+    const inTheWay = (context.units || []).filter((u) => u.id !== unit.id && obstructs(unit, u));
+    const seen = new Set(inTheWay.map((u) => u.id));
+    const profile = getCabinetProfile();
+    const others = [
+      ...inTheWay.map(toObstacleUnit),
+      ...verticalsInBand(
+        unitVerticals((context.units || []).filter((u) => u.id !== unit.id && !seen.has(u.id)), profile),
+        bandOf(unit, profile),
+        profile.editor.levelOverlapMm,
+      ).map((v) => ({
+        wall: v.wall,
+        x_mm: v.from,
+        width: Math.max(0, v.to - v.from),
+        depth: v.depth,
+        rotation: 0,
+        backInset: wallClearance(profile),
+        label: v.kind === 'end-panel' ? 'end panel' : 'filler',
+      })),
+    ];
     issues.push(...unitIssues({
       unit,
       wallWidth: wall?.width ?? 0,

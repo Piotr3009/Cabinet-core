@@ -319,6 +319,56 @@ export function rectGeometry(w, h, layer = 'OUTLINE') {
   return { outline: [[0, 0], [w, 0], [w, h], [0, h]], pockets: [], holes: [], layer };
 }
 
+/**
+ * A rectangle with one or more corners cut at 45° (turn 15, CLAUDE.md F6).
+ *
+ * The shape a MITRED strip is actually cut to. Where a side infill and a top
+ * infill meet they make the corner of a frame, and a frame corner is mitred:
+ * each member loses a right-angled triangle with equal legs, which is the only
+ * cut whose two halves add up to a square corner — and is why a mitre is 45°.
+ *
+ * `corners` names the sizes in the part's own cut frame (origin bottom-left,
+ * y up — the frame every outline in this file is in):
+ *
+ *     { bl, br, tl, tr }   the leg length taken off that corner, 0 = square
+ *
+ * A leg of 0 leaves the corner alone, so the un-mitred case comes back as the
+ * same four points `rectGeometry` returns and NOTHING in the export moves —
+ * which is what keeps this turn's CNC delta to the pieces that are genuinely
+ * mitred (CLAUDE.md's one named delta).
+ *
+ * A leg is clamped to the piece: a 45° cut cannot be longer than the side it
+ * runs off, and asking for one is a bug upstream rather than a shape.
+ */
+export function chamferedRectGeometry(w, h, corners = {}, layer = 'OUTLINE') {
+  const cap = (v) => Math.max(0, Math.min(Number(v) || 0, Math.min(w, h)));
+  const bl = cap(corners.bl);
+  const br = cap(corners.br);
+  const tl = cap(corners.tl);
+  const tr = cap(corners.tr);
+  const pts = [];
+  const push = (x, y) => {
+    const last = pts[pts.length - 1];
+    // Two corners that meet (a cut as long as the side) must not leave a
+    // zero-length edge behind — a duplicated vertex is a degenerate polyline
+    // and some CAM packages refuse the file rather than closing it.
+    if (last && Math.abs(last[0] - x) < 1e-9 && Math.abs(last[1] - y) < 1e-9) return;
+    pts.push([x, y]);
+  };
+  if (bl) push(bl, 0); else push(0, 0);
+  if (br) { push(w - br, 0); push(w, br); } else push(w, 0);
+  if (tr) { push(w, h - tr); push(w - tr, h); } else push(w, h);
+  if (tl) { push(tl, h); push(0, h - tl); } else push(0, h);
+  if (bl) push(0, bl);
+  // …and the first point may equal the last once the loop closes.
+  const first = pts[0];
+  const last = pts[pts.length - 1];
+  if (pts.length > 3 && Math.abs(first[0] - last[0]) < 1e-9 && Math.abs(first[1] - last[1]) < 1e-9) pts.pop();
+  return {
+    outline: pts, pockets: [], holes: [], layer,
+  };
+}
+
 // ─── A picture of the joint (turn 7, CLAUDE.md F2) ──────────────────────────
 
 /**

@@ -193,12 +193,9 @@ function makeRun(units, wall, mount, profile) {
  * `from`/`to` are along the wall, in the same frame `paddedSpan` uses. `kind`
  * is what the end condition will be called: 'end-panel' or 'infill'.
  */
-export function ceilingVerticals(units, { roomHeight }, profile) {
-  const tolerance = profile.autoParts.topInfill.runGap;
-  const height = Number(roomHeight) || 0;
+export function unitVerticals(units, profile) {
   const minInfill = profile.autoParts.sideInfill.minWidth;
   const out = [];
-  if (height <= 0) return out;
 
   for (const unit of units || []) {
     // A TURNED unit has no "along the wall" span to speak of, exactly as
@@ -209,16 +206,24 @@ export function ceilingVerticals(units, { roomHeight }, profile) {
     const x = Number(unit.position?.x_mm) || 0;
     const w = Number(unit.params?.width) || 0;
     const carcassTop = unitTop(unit, profile);
+    // Where the piece STARTS. The carcass's own underside is the honest answer
+    // for both kinds: an end panel may drop to the floor and a filler certainly
+    // does, and both only make the piece a bigger obstacle at heights nothing
+    // hangs at. What decides anything is the TOP.
+    const bottom = Math.max(0, carcassTop - (Number(unit.params?.height) || 0));
     const add = (side, thickness, above, kind, id) => {
       const t = Number(thickness) || 0;
       if (t <= 0) return;
-      const top = carcassTop + Math.max(0, Number(above) || 0);
-      if (top < height - tolerance) return;      // it does not reach the ceiling
       out.push({
         wall,
         from: side === 'L' ? x - t : x + w,
         to: side === 'L' ? x : x + w + t,
-        top,
+        bottom,
+        top: carcassTop + Math.max(0, Number(above) || 0),
+        // How far above its own carcass the piece has been taken. 0 is a piece
+        // that finishes with the cabinet and blocks nothing new.
+        above: Math.max(0, Number(above) || 0),
+        depth: Number(unit.params?.depth) || 0,
         kind,
         unitId: unit.id,
         pieceId: id,
@@ -240,6 +245,55 @@ export function ceilingVerticals(units, { roomHeight }, profile) {
     }
   }
   return out;
+}
+
+export function ceilingVerticals(units, { roomHeight }, profile) {
+  const tolerance = profile.autoParts.topInfill.runGap;
+  const height = Number(roomHeight) || 0;
+  if (height <= 0) return [];
+  return unitVerticals(units, profile)
+    .filter((v) => v.top >= height - tolerance)
+    .map(({ bottom, above, depth, ...rest }) => ({ ...rest, top: rest.top }));
+}
+
+// ─── A PANEL IS A WALL (turn 15, CLAUDE.md F7) ─────────────────────────────
+//
+// The owner's bug: take a base or tall unit's end panel up to the ceiling, and
+// the hanging units drive straight through it — and the run dimensions do not
+// see it either.
+//
+// It is turn 12's F7 bug one layer down. That one was "a wall unit ignores a
+// TALL unit", and the fix was to stop asking about mounting level and start
+// asking about HEIGHTS. This is the same question asked of a piece that is not
+// a cabinet: a base unit's band stops at 900 and it is quite right that a wall
+// unit may hang above it — but the panel screwed to its side has been taken to
+// 2400, and 2400 is squarely in the band the wall units hang in.
+//
+// So the panel joins the obstacle set ON ITS OWN, over its own span of wall and
+// nowhere else. Not the unit it belongs to: a 600 mm cabinet with an 18 mm
+// panel blocks 18 mm at that height, and blocking 618 would stop a wall unit
+// that has a clear 582 to hang in.
+
+/**
+ * The attached verticals that reach into a band of heights.
+ *
+ * @param {Array} verticals   from `unitVerticals`
+ * @param {{from:number,to:number}} band   the band the moving piece occupies
+ * @param {number} minOverlap  what merely TOUCHING is worth — the same profile
+ *                             number two cabinets are judged by
+ *                             (`editor.levelOverlapMm`), so a wall unit hung
+ *                             exactly on top of a panel is a run finished flush
+ *                             rather than a collision.
+ */
+export function verticalsInBand(verticals, band, minOverlap = 0) {
+  const from = Number(band?.from) || 0;
+  const to = Number(band?.to) || 0;
+  return (verticals || []).filter((v) => {
+    // A piece that stops with its own cabinet is not a NEW obstacle: the
+    // cabinet is already in the set, panels and all (`footprintPads`).
+    if (!(v.above > 0)) return false;
+    return Math.min(v.top, to) - Math.max(v.bottom, from) > (Number(minOverlap) || 0);
+  });
 }
 
 /**
@@ -265,6 +319,63 @@ function nearestVertical(verticals, side, { wall, carcassEdge, tolerance }) {
     }
   }
   return best;
+}
+
+// ─── THE MITRED CORNER (turn 15, CLAUDE.md F6 / BACKLOG #51) ────────────────
+//
+// Owner: "the side infill still meets the top infill SQUARE."
+//
+// It does, and where it happens the two pieces are the two legs of a FRAME.
+// A vertical filler running to the ceiling and the horizontal filler over the
+// units beside it stand in ONE plane — the door plane, the same plane the end
+// panels are in — and two flat members meeting at a right angle in one plane
+// are mitred. That is the whole of it, and it is the same 45° the top infill's
+// own corners have owned since turn 8; this extends it to the vertical member
+// rather than forking it (engine/mitre.js `infillMitre`).
+//
+// ─── WHY THE SIZE IS THE TOP INFILL'S OWN HEIGHT ────────────────────────────
+//
+// A 45° cut has two equal legs. At this corner one leg runs down the side
+// infill's inner edge and the other runs along the top infill's bottom edge, so
+// the mitre is exactly `faceH` on both — the top infill is cut corner to corner
+// and comes to a point, and the side infill loses a triangle with legs `faceH`
+// from its top inner corner.
+//
+// AND THEREFORE IT NEEDS ROOM. The cut runs `faceH` ACROSS the side infill, so
+// a filler narrower than the top infill is tall has no 45° to give: the cut
+// would run off the far edge of it and out into the wall. That is a real
+// constraint in a workshop and not a shortcut here — a 30 mm scribe filler
+// under a 250 mm ceiling gap is butted, because the alternative is not a mitre,
+// it is a very shallow angle. So the corner is mitred when the filler is at
+// least as wide as the gap is tall, and butted otherwise, and a test holds both.
+
+/**
+ * The 45° mitre at one end of a top infill, or 0 for a square corner.
+ *
+ * THREE things have to be true, and each of them is a joiner's reason:
+ *
+ *   1. the thing in the way is a SIDE INFILL. `blockedBy` is what separates the
+ *      two answers that both call themselves 'infill': a ceiling-height filler
+ *      the element STOPS at (this one) and a short one it simply runs over on
+ *      its way to the wall (`runEnd` case 3), which is a lap, not a corner.
+ *   2. the two FINISH FLUSH. A filler standing 200 mm proud of a 40 mm top
+ *      strip is a T and not the corner of anything; mitring it would cut a 45°
+ *      into the filler nowhere near the piece it is supposed to be joining.
+ *   3. there is ROOM for the cut — see the note above.
+ *
+ * @param {object} end          one `runEnd` answer
+ * @param {number} faceH        the top infill's face height
+ * @param {number} elementTop   where the top infill finishes, above the floor
+ * @param {number} tolerance    how far out of flush still counts as flush
+ */
+export function infillCornerMitre(end, faceH, elementTop, tolerance = 0) {
+  const h = Math.max(0, Number(faceH) || 0);
+  if (h <= 0) return 0;
+  if (!end || end.kind !== 'infill' || !end.blockedBy) return 0;
+  const flush = Math.abs((Number(end.blockerTop) || 0) - (Number(elementTop) || 0))
+    <= Math.max(0, Number(tolerance) || 0);
+  if (!flush) return 0;
+  return (Math.max(0, Number(end.blockerWidth) || 0) >= h) ? h : 0;
 }
 
 // ─── The four end conditions (CLAUDE.md F4) ───
@@ -318,7 +429,19 @@ export function runEnd(run, side, { wallWidth, roomHeight, verticals = null }, p
     side,
     { wall: run.wall, carcassEdge, tolerance },
   );
-  if (blocker) return { kind: blocker.kind, x: blocker.face, blockedBy: blocker.unitId };
+  if (blocker) {
+    return {
+      kind: blocker.kind,
+      x: blocker.face,
+      blockedBy: blocker.unitId,
+      // How WIDE the thing in the way is, and how high it goes. Turn 15 (F6)
+      // needs both: a 45° mitre runs `faceH` across the piece it is cut into,
+      // so the corner can only be mitred when there is that much of it — and it
+      // is only a CORNER at all when the two pieces finish flush.
+      blockerWidth: Math.max(0, blocker.to - blocker.from),
+      blockerTop: blocker.top,
+    };
+  }
 
   // 3 — a vertical L-infill that stops short of the ceiling: a scribe strip
   //     closing the gap. The element runs OVER it and finishes on the wall,
@@ -472,6 +595,15 @@ export function runTopInfill(run, {
       left: left.kind === 'open' ? depthAt('left') : null,
       right: right.kind === 'open' ? depthAt('right') : null,
     },
+    // Turn 15 (CLAUDE.md F6): how far the 45° runs at each end, 0 for a square
+    // corner. It travels with the run element because the piece that carries
+    // the other half of the joint — the side infill — belongs to a DIFFERENT
+    // unit at the far end of the run, and this is the one description of the
+    // run every one of them already receives.
+    mitre: {
+      left: infillCornerMitre(left, faceH, run.top + faceH, T.runGap),
+      right: infillCornerMitre(right, faceH, run.top + faceH, T.runGap),
+    },
     unitIds: run.units.map((u) => u.id),
   };
 }
@@ -506,8 +638,21 @@ export function runInfillParams(units, { walls, roomHeight, frontFaceDepthOf }, 
       for (const u of run.units) out.set(u.id, null);
       continue;
     }
-    out.set(run.units[0].id, element);
-    for (const u of run.units.slice(1)) out.set(u.id, { role: 'member', ownerId: run.units[0].id });
+    // ─── Turn 15 (CLAUDE.md F6) ───
+    // The other half of the mitre is cut into a SIDE INFILL, and a side infill
+    // belongs to the unit at that END of the run — which is the owner at the
+    // left and somebody else entirely at the right. So each end unit is told
+    // about its own corner, and everyone in the middle is told about neither.
+    const first = run.units[0];
+    const last = run.units[run.units.length - 1];
+    const sideMitreFor = (u) => ({
+      left: u.id === first.id ? element.mitre.left : 0,
+      right: u.id === last.id ? element.mitre.right : 0,
+    });
+    out.set(first.id, { ...element, sideMitre: sideMitreFor(first) });
+    for (const u of run.units.slice(1)) {
+      out.set(u.id, { role: 'member', ownerId: first.id, sideMitre: sideMitreFor(u) });
+    }
   }
   return out;
 }

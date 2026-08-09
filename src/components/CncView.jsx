@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { layoutPanels, sheetPolygon, sheetRect, toSheet } from '../engine/cnc/layout.js';
 import { CNC_LAYERS, layerScreenColor } from '../engine/cnc/layers.js';
 import { exportablePanels } from '../engine/cnc/groups.js';
+import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.js';
 import { formatMmPair } from '../engine/format.js';
 
 // ─── CNC view ───
@@ -35,6 +37,15 @@ const MIN_HOLE_PX = 1.7;   // a sub-pixel hole would simply vanish
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_MM = 40;    // hard zoom-in limit: 40 mm across the viewport
 const MAX_VIEW_MM = 60000; // hard zoom-out limit
+// How far apart two SECTIONS stand, in layout gaps (turn 15, CLAUDE.md F9).
+// Wider than the gap between two blocks inside a section, so a section boundary
+// reads as one — which is the whole point of splitting the sheet up.
+const SECTION_GAPS = 6;
+// Clear space above the sheet for the SECTION CAPTIONS. They are drawn above
+// the first block, so without it they sit at a negative y and the fit — which
+// frames the sheet's own extents — crops the one line that says which board
+// this is.
+const HEADROOM_GAPS = 4;
 
 export default function CncView() {
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
@@ -43,6 +54,10 @@ export default function CncView() {
   const profile = useCabinetProfileStore((s) => s.profile);
   const hiddenUnits = useUiStore((s) => s.cncHiddenUnits);
   const hiddenParts = useUiStore((s) => s.cncHiddenParts);
+  const view = useUiStore((s) => s.cncView);
+  const setCncView = useUiStore((s) => s.setCncView);
+  const assignments = useMaterialAssignmentStore((s) => s.assignments);
+  const materials = useMaterialAssignmentStore((s) => s.materials);
 
   const wrapRef = useRef(null);
   const svgRef = useRef(null);
@@ -60,42 +75,105 @@ export default function CncView() {
   // The ticks come from the store (components/CncTree.jsx, in the right panel):
   // a hidden UNIT contributes no block at all, and a hidden PART is simply not
   // in its block.
-  const sheets = useMemo(() => {
-    const gap = profile.cnc.layoutGap;
+  // What each ticked unit contributes, before the view decides where it goes.
+  const entries = useMemo(() => {
     const out = [];
-    let y = 0;
     for (const unit of units) {
       if (hiddenUnits[unit.id]) continue;
       const result = unitResult(unit.id);
       if (!result) continue;
-      const parts = exportablePanels(result.panels)
-        .filter((p) => !hiddenParts[unit.id]?.[p.id]);
-      if (!parts.length) continue;
-      const layout = layoutPanels(parts, result.drills, {
-        gap, rowWidth: profile.cnc.layoutRowWidth,
-      });
-      out.push({
-        unit, result, layout, offsetY: y,
-      });
-      // A unit's own caption sits above its block; `gap * 3` is one layout gap
-      // for the caption and two to keep two units from reading as one nest.
-      y += layout.height + gap * 3;
+      const panels = exportablePanels(result.panels).filter((p) => !hiddenParts[unit.id]?.[p.id]);
+      if (!panels.length) continue;
+      out.push({ unit, result, panels });
     }
     return out;
-  }, [units, unitResult, hiddenUnits, hiddenParts, profile.cnc.layoutGap, profile.cnc.layoutRowWidth]);
+  }, [units, unitResult, hiddenUnits, hiddenParts]);
+
+  // ─── The two views (turn 15, CLAUDE.md F9) ──────────────────────────────
+  //
+  // Both produce the SAME shape — a list of SECTIONS, each a caption and a
+  // stack of per-unit blocks — so there is one renderer below and not two, and
+  // the checkbox tree, the pan, the zoom and the legend cannot behave one way
+  // in one view and another way in the other (the turn-11 rule).
+  //
+  // A BLOCK is one unit's parts laid out by engine/cnc/layout.js — the same
+  // function the export uses, untouched, which is what keeps a block equal to
+  // the file that unit would produce. Drills stay with their own block, because
+  // a panel id is only unique inside its own cabinet.
+  const sections = useMemo(() => {
+    if (view === 'cabinet') {
+      const { cabinets, run } = groupByCabinet(entries);
+      return [
+        ...cabinets.map((e) => ({
+          key: `cab:${e.unit.id}`,
+          label: e.unit.params.unit_num,
+          kind: 'cabinet',
+          units: [e],
+        })),
+        // "infille i plinthy osobno" — the owner, in as many words. A plinth
+        // belongs to the run, so it is not part of any one carcass's square.
+        ...(run.length
+          ? [{ key: 'run', label: 'Run parts', kind: 'run', units: run }]
+          : []),
+      ];
+    }
+    return groupByMaterial(entries, { assignments, materials }).map((s2) => ({
+      key: s2.key,
+      label: s2.label,
+      kind: 'material',
+      assigned: s2.assigned,
+      units: s2.units,
+    }));
+  }, [entries, view, assignments, materials]);
+
+  // ─── …and where each of them stands ─────────────────────────────────────
+  // Sections run LEFT→RIGHT, which is what CLAUDE.md asks of the material view
+  // ("the sheet area splits left→right into one section per assigned material")
+  // and what makes the cabinet view a row of squares. Inside a section the
+  // blocks stack downwards.
+  const placed = useMemo(() => {
+    const gap = profile.cnc.layoutGap;
+    const out = [];
+    let x = 0;
+    for (const section of sections) {
+      const blocks = [];
+      let y = 0;
+      let width = 0;
+      for (const e of section.units) {
+        const layout = layoutPanels(e.panels, e.result.drills, {
+          gap, rowWidth: profile.cnc.layoutRowWidth,
+        });
+        blocks.push({
+          unit: e.unit, result: e.result, layout, offsetY: y,
+        });
+        width = Math.max(width, layout.width);
+        // One layout gap for the block's caption and two to keep two blocks
+        // from reading as one nest.
+        y += layout.height + gap * 3;
+      }
+      const height = Math.max(0, y - gap * 3);
+      out.push({
+        ...section, blocks, offsetX: x, offsetY: gap * HEADROOM_GAPS, width, height,
+      });
+      x += width + gap * SECTION_GAPS;
+    }
+    return out;
+  }, [sections, profile.cnc.layoutGap, profile.cnc.layoutRowWidth]);
 
   const sheet = useMemo(() => {
-    if (!sheets.length) return null;
-    const width = Math.max(...sheets.map((s2) => s2.layout.width));
-    const last = sheets[sheets.length - 1];
-    return { width, height: last.offsetY + last.layout.height };
-  }, [sheets]);
+    if (!placed.length) return null;
+    const last = placed[placed.length - 1];
+    return {
+      width: last.offsetX + last.width,
+      height: last.offsetY + Math.max(...placed.map((s2) => s2.height)),
+    };
+  }, [placed]);
 
-  // Every drill of every unit on the sheet, keyed by unit, so a part draws its
-  // own holes and never another unit's (two cabinets can both have a `BUL`).
-  const drillsOf = useMemo(
-    () => new Map(sheets.map((s2) => [s2.unit.id, s2.result.drills])),
-    [sheets],
+  // Every block on the sheet, flattened — the legend counts over this and so
+  // does the "n parts" caption.
+  const blocks = useMemo(
+    () => placed.flatMap((s2) => s2.blocks.map((b) => ({ ...b, section: s2 }))),
+    [placed],
   );
 
   // ── viewport ──────────────────────────────────────────────────────────────
@@ -123,7 +201,9 @@ export default function CncView() {
   // Refit whenever the sheet itself changes shape (another unit, another
   // parameter) — but not on every re-render, or panning would fight the user.
   const sheetKey = sheet
-    ? `${sheets.length}|${formatMmPair(sheet.width, sheet.height, 'x')}`
+    // The VIEW is part of the key: switching it reshapes the sheet completely,
+    // and a fit that did not notice would leave the new arrangement off screen.
+    ? `${view}|${placed.length}|${formatMmPair(sheet.width, sheet.height, 'x')}`
     : null;
   const lastKey = useRef(null);
   useEffect(() => {
@@ -195,7 +275,7 @@ export default function CncView() {
   const layerCounts = useMemo(() => {
     const counts = new Map();
     const bump = (name, n = 1) => counts.set(name, (counts.get(name) || 0) + n);
-    for (const s2 of sheets) {
+    for (const s2 of blocks) {
       const onSheet = new Set(s2.layout.places.map((pl) => pl.panel.id));
       for (const place of s2.layout.places) {
         const p = place.panel;
@@ -208,7 +288,7 @@ export default function CncView() {
       for (const d of s2.result.drills) if (onSheet.has(d.panel)) bump(d.layer);
     }
     return counts;
-  }, [sheets, profile.puzzle.layers.outline]);
+  }, [blocks, profile.puzzle.layers.outline]);
 
   const legend = CNC_LAYERS.filter((l) => layerCounts.has(l.name));
   const toggle = (name) => setHidden((prev) => {
@@ -225,7 +305,7 @@ export default function CncView() {
 
   const labelSize = LABEL_PX * mmPerPx;
   const minHoleR = MIN_HOLE_PX * mmPerPx;
-  const partCount = sheets.reduce((n, s2) => n + s2.layout.places.length, 0);
+  const partCount = blocks.reduce((n, s2) => n + s2.layout.places.length, 0);
 
   return (
     <div ref={wrapRef} className="absolute inset-0 bg-[#131313] overflow-hidden select-none">
@@ -240,31 +320,61 @@ export default function CncView() {
           onPointerUp={endPan}
           onPointerCancel={endPan}
         >
-          {sheets.map((s2) => (
-            // One group per unit, moved down the sheet by that unit's offset —
-            // so a block is exactly the layout that unit would export, and the
-            // sheet is those blocks stacked (turn 11, CLAUDE.md F8.1).
-            <g key={s2.unit.id} transform={`translate(0 ${s2.offsetY})`}>
+          {placed.map((s2) => (
+            // One group per SECTION, moved across the sheet by its offset, and
+            // one group per BLOCK inside it. A block is exactly the layout that
+            // unit would export (turn 11, CLAUDE.md F8.1); what turn 15 changes
+            // is only which blocks stand together and where.
+            <g key={s2.key} transform={`translate(${s2.offsetX} ${s2.offsetY})`} data-cnc-section={s2.key}>
+              {/* The square a cabinet sits in (F9.2). Drawn for the material
+                  sections too, because a section boundary a joiner cannot see
+                  is the same complaint as the settings panel's. */}
+              <rect
+                x={-profile.cnc.layoutGap}
+                y={-profile.cnc.layoutGap * 2.6}
+                width={s2.width + profile.cnc.layoutGap * 2}
+                height={s2.height + profile.cnc.layoutGap * 3.6}
+                fill="none"
+                stroke={s2.kind === 'run' ? '#7a6a3a' : '#3a3a3a'}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
               <text
                 x={0}
-                y={-profile.cnc.layoutGap}
-                fontSize={labelSize * 1.6}
-                fill={s2.unit.id === selectedUnitId ? '#e0b64a' : '#9a9a92'}
+                y={-profile.cnc.layoutGap * 3.2}
+                fontSize={labelSize * 1.8}
+                fill="#e0b64a"
                 style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
               >
-                {s2.unit.params.unit_num}
-                <tspan fill="#6f6f68">{`  ${s2.layout.places.length} parts`}</tspan>
+                {s2.label}
+                <tspan fill="#6f6f68">
+                  {`  ${s2.blocks.reduce((n, b) => n + b.layout.places.length, 0)} parts`}
+                </tspan>
               </text>
-              {s2.layout.places.map((place) => (
-                <Part
-                  key={place.panel.id}
-                  place={place}
-                  drills={drillsOf.get(s2.unit.id) || []}
-                  outlineLayer={profile.puzzle.layers.outline}
-                  labelSize={labelSize}
-                  minHoleR={minHoleR}
-                  visible={visible}
-                />
+              {s2.blocks.map((b) => (
+                <g key={b.unit.id} transform={`translate(0 ${b.offsetY})`}>
+                  <text
+                    x={0}
+                    y={-profile.cnc.layoutGap}
+                    fontSize={labelSize * 1.3}
+                    fill={b.unit.id === selectedUnitId ? '#e0b64a' : '#9a9a92'}
+                    style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+                  >
+                    {b.unit.params.unit_num}
+                    <tspan fill="#6f6f68">{`  ${b.layout.places.length} parts`}</tspan>
+                  </text>
+                  {b.layout.places.map((place) => (
+                    <Part
+                      key={place.panel.id}
+                      place={place}
+                      drills={b.result.drills}
+                      outlineLayer={profile.puzzle.layers.outline}
+                      labelSize={labelSize}
+                      minHoleR={minHoleR}
+                      visible={visible}
+                    />
+                  ))}
+                </g>
               ))}
             </g>
           ))}
@@ -283,8 +393,32 @@ export default function CncView() {
       <div className="absolute top-3 left-3 flex items-center gap-2 bg-shell-800/95 border border-shell-600 rounded px-2 py-1.5">
         <span className="text-xs text-gold uppercase tracking-wide">CNC</span>
         <span className="text-[11px] text-ink-400 tabular-nums">
-          {sheets.length} of {units.length} units · {partCount} parts
+          {entries.length} of {units.length} units · {partCount} parts
         </span>
+        <span className="w-px h-4 bg-shell-600" />
+        {/* ─── The toggle (turn 15, CLAUDE.md F9.3) ───
+            Visible, not hidden in a menu: it is the question the sheet answers,
+            and a workshop switches between the two several times in a job. The
+            Library and the right-hand panel stay exactly where they are through
+            it — the turn-11 rule — because this changes what the SHEET shows and
+            nothing else. */}
+        <div className="flex rounded border border-shell-600 overflow-hidden" role="group" aria-label="CNC view">
+          {CNC_VIEWS.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              data-cnc-view={v.id}
+              aria-pressed={view === v.id}
+              title={v.hint}
+              className={`px-2 py-1 text-[11px] transition-colors ${view === v.id
+                ? 'bg-gold text-shell-900'
+                : 'text-ink-200 hover:bg-shell-700'}`}
+              onClick={() => setCncView(v.id)}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
         <span className="w-px h-4 bg-shell-600" />
         <button type="button" className="cc-btn-ghost" title="Zoom out" onClick={() => zoomBy(ZOOM_STEP)}>−</button>
         <button type="button" className="cc-btn-ghost" title="Zoom in" onClick={() => zoomBy(1 / ZOOM_STEP)}>+</button>

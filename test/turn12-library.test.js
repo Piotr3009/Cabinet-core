@@ -9,8 +9,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  KITCHEN_LIBRARY, flattenLibrary, libraryTypeIds, resolveEntry,
+  KITCHEN_LIBRARY, flattenLibrary, groupCounts, libraryTypeIds, resolveEntry,
 } from '../src/engine/library.js';
+
+/** Every GROUP in the catalogue, nested ones included. */
+function flattenGroups(entries = KITCHEN_LIBRARY) {
+  const out = [];
+  for (const e of entries) {
+    if (e.kind !== 'group') continue;
+    out.push(e, ...flattenGroups(e.items));
+  }
+  return out;
+}
 import {
   UNIT_CATEGORIES, UNIT_TYPES, UNIT_TYPE_ORDER, defaultParamsFor, getCategory,
 } from '../src/engine/types.js';
@@ -20,25 +30,53 @@ import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engi
 
 // ─── The owner's order ──────────────────────────────────────────────────────
 
-test('the Kitchen list is the owner\'s list, in the owner\'s order', () => {
+test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () => {
+  // ─── Turn 15 (CLAUDE.md F5.2) ───
+  // Turn 12's flat list of ten became the owner's FOUR groups, because that is
+  // how he wrote the catalogue out and because thirty entries in one column is
+  // not a list anybody reads.
   assert.deepEqual(KITCHEN_LIBRARY.map((e) => e.id), [
-    'door-base',      // 1. Door base unit
-    'drawer-unit',    // 2. Drawer unit — the expandable group
-    'tall',           // 3. Tall unit
-    'fridge',         // 4. Fridge unit
-    'dishwasher',     // 5. DW unit
-    'corner',         // 6. Corner unit…
-    'l-shape',        //    …and L-shape
-    'wall',           // 7. Wall units LAST
-    // …then the two kits the owner's list does not name, kept rather than
-    // culled. After Wall units, so that "wall units last" stays true of his.
-    'sink',
-    'low',
+    'base-units', 'tall-units', 'wall-units', 'extras',
+  ]);
+  for (const g of KITCHEN_LIBRARY) assert.equal(g.kind, 'group');
+
+  const idsOf = (groupId) => KITCHEN_LIBRARY.find((g) => g.id === groupId).items.map((e) => e.id);
+
+  // Base: Standard · Sink · Corner · L-shape · DW · Oven · Bin storage ·
+  // Wine rack · Small fridge · Twin space — plus the drawer group and the low
+  // cabinet, both kits the workshop already builds.
+  assert.deepEqual(idsOf('base-units'), [
+    'door-base', 'drawer-unit', 'sink', 'corner', 'l-shape', 'dishwasher',
+    'oven-base', 'bin-storage', 'wine-rack', 'small-fridge', 'twin-space', 'low',
+  ]);
+  assert.deepEqual(idsOf('tall-units'), [
+    'tall', 'fridge', 'basket-tall', 'pantry', 'pantry-worktop', 'space-tower',
+    'oven-tall', 'american-fridge',
+  ]);
+  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'l-shape-wall']);
+  // The new group (F5.2): not cabinets — the pieces that finish a run.
+  assert.deepEqual(idsOf('extras'), ['free-standing-panels', 'cornice-pelmet']);
+});
+
+test('everything that worked before turn 15 is still wired to its kit', () => {
+  // CLAUDE.md F5.2, in as many words: "Everything that works today stays wired
+  // (Base, Sink, Drawer 2×/3×/4×, Tall, Fridge, Wall, Low cabinet)."
+  assert.deepEqual(libraryTypeIds(), [
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'WUD',
   ]);
 });
 
+test('a group says how much of it can be placed today', () => {
+  // A long list that is mostly held open has to be honest about it before it is
+  // opened — "1/3" on Wall units beats three grey rows discovered afterwards.
+  const wall = KITCHEN_LIBRARY.find((g) => g.id === 'wall-units');
+  assert.deepEqual(groupCounts(wall, P), { total: 3, enabled: 1 });
+  const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
+  assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 0 });
+});
+
 test('the drawer unit is ONE expandable entry with four splits behind it', () => {
-  const group = KITCHEN_LIBRARY.find((e) => e.id === 'drawer-unit');
+  const group = flattenGroups().find((e) => e.id === 'drawer-unit');
   assert.equal(group.kind, 'group');
   assert.deepEqual(group.items.map((i) => i.variant), ['x1', 'x2', 'x3', 'x4']);
   assert.deepEqual(
@@ -70,19 +108,28 @@ test('the Kitchen category carries the list, and the others are untouched', () =
 
 // ─── Held open, with the reason attached ────────────────────────────────────
 
-test('DW, corner and L-shape are PRESENT, disabled, and say why', () => {
-  for (const id of ['dishwasher', 'corner', 'l-shape']) {
-    const entry = KITCHEN_LIBRARY.find((e) => e.id === id);
-    assert.ok(entry, `${id} must be in the list — held open, not missing`);
+test('every held-open entry is PRESENT, disabled, and says why', () => {
+  // The pattern-first rule, applied to the whole of turn 15's catalogue rather
+  // than to the three entries turn 12 held open. A grey row that does not say
+  // why is a row a workshop asks about twice.
+  const soon = flattenLibrary().filter((e) => e.kind === 'soon');
+  assert.deepEqual(soon.map((e) => e.id), [
+    'corner', 'l-shape', 'dishwasher', 'oven-base', 'bin-storage', 'wine-rack',
+    'small-fridge', 'twin-space',
+    'basket-tall', 'pantry', 'pantry-worktop', 'space-tower', 'oven-tall', 'american-fridge',
+    'glass-unit', 'l-shape-wall',
+    'free-standing-panels', 'cornice-pelmet',
+  ]);
+  for (const entry of soon) {
     const state = resolveEntry(entry, P);
-    assert.equal(state.enabled, false);
-    assert.match(state.reason, /pattern comes first/,
-      'a grey row has to say why, or a workshop asks about it twice');
+    assert.equal(state.enabled, false, `${entry.id} must not be clickable`);
+    assert.ok(state.reason && state.reason.length > 20, `${entry.id} must say WHY, honestly`);
+    assert.ok(state.hint, `${entry.id} must say what it will be`);
   }
 });
 
 test('the 1× drawerline is held open for the reason CLAUDE.md gives', () => {
-  const group = KITCHEN_LIBRARY.find((e) => e.id === 'drawer-unit');
+  const group = flattenGroups().find((e) => e.id === 'drawer-unit');
   const one = group.items.find((i) => i.variant === 'x1');
   const state = resolveEntry(one, P);
   assert.equal(state.enabled, false);
@@ -94,7 +141,7 @@ test('the 1× drawerline is held open for the reason CLAUDE.md gives', () => {
 
 test('everything else in the list is clickable', () => {
   for (const e of flattenLibrary()) {
-    if (['dishwasher', 'corner', 'l-shape', 'drawer-1'].includes(e.id)) continue;
+    if (e.kind === 'soon' || e.id === 'drawer-1') continue;
     assert.equal(resolveEntry(e, P).enabled, true, `${e.id} should be placeable`);
   }
 });

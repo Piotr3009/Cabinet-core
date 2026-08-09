@@ -34,8 +34,10 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // the owner's order, and the categories beyond Kitchen are untouched — F3.7
   // says so outright.
   assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['kitchen', 'wardrobe', 'sets', 'media']);
+  // Turn 15 (CLAUDE.md F5.2): the same nine kits, in the order the owner's
+  // CATALOGUE puts them in — base units, then talls, then walls.
   assert.deepEqual(getCategory('kitchen').types, [
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDTALL', 'FRIDGE', 'WUD', 'SINK', 'LOW_CABINET',
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'WUD',
   ]);
   assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE']);
 

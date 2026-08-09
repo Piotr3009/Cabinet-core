@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
+} from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useTemplateStore } from '../stores/templateStore.js';
 import { UNIT_TYPES, getCategory, getUnitType, profilePath } from '../engine/types.js';
-import { resolveEntry } from '../engine/library.js';
+import { groupCounts, resolveEntry } from '../engine/library.js';
 import { formatMm } from '../engine/format.js';
 import { projectHeights } from '../engine/design.js';
+import { placeBesideAnchor } from '../lib/menuPlacement.js';
+
+// How far a flyout stands off the row that owns it, and how close it may come
+// to the edge of the screen. The same two numbers `Modal` uses for the rule-15
+// placement — this is a submenu, not a new kind of floating thing.
+const FLYOUT_GAP = 8;
+const FLYOUT_MARGIN = 8;
 
 // Floating, grab-and-move Library panel (SPEC 4.1 / section 7).
 //
@@ -174,7 +183,13 @@ export default function LibraryPanel() {
         </div>
       )}
 
-      <div className="p-2 space-y-1">
+      {/* ─── Turn 15 (CLAUDE.md F1.5): IT SCROLLS ───
+          The owner's screenshot: a long list running off the bottom of the
+          screen with no way to reach the last entry. Any list taller than its
+          panel scrolls, always. The cap is a fraction of the VIEWPORT rather
+          than a fixed pixel count, because this panel is dragged around and a
+          fixed height would be wrong the moment it is dropped near an edge. */}
+      <div className="p-2 space-y-1 cc-scroll max-h-[60vh]" data-library-list="1">
         {category.saved && <SavedSets onInsert={handleAdd} />}
         {!category.saved && !category.entries && category.types.length === 0 && (
           <p className="text-[11px] text-ink-400 px-2 py-3">
@@ -214,27 +229,33 @@ function LibraryEntry({
   entry, profile, heights, onAdd, nested = false,
 }) {
   const [open, setOpen] = useState(false);
+  const rowRef = useRef(null);
   const state = resolveEntry(entry, profile);
 
   if (entry.kind === 'group') {
+    const counts = groupCounts(entry, profile);
     return (
       <div className={nested ? '' : 'rounded border border-transparent'}>
         <button
+          ref={rowRef}
           type="button"
-          className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 border border-transparent
-            hover:border-shell-600 transition-colors flex items-center gap-2"
+          className={`w-full text-left px-2 py-2 rounded hover:bg-shell-700 border transition-colors
+            flex items-center gap-2 ${open ? 'border-gold bg-shell-700' : 'border-transparent hover:border-shell-600'}`}
           data-library-group={entry.id}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="flex-1">
+          <span className="flex-1 min-w-0">
             <span className="block text-sm text-ink-50">{entry.label}</span>
-            <span className="block text-[11px] text-ink-400">{entry.hint}</span>
+            <span className="block text-[11px] text-ink-400 truncate">{entry.hint}</span>
           </span>
-          <span className="text-ink-400" aria-hidden>{open ? '▾' : '▸'}</span>
+          <span className="cc-tag shrink-0" title={`${counts.enabled} of ${counts.total} can be placed today`}>
+            {counts.enabled}/{counts.total}
+          </span>
+          <span className={open ? 'text-gold' : 'text-ink-400'} aria-hidden>▸</span>
         </button>
         {open && (
-          <div className="pl-3 border-l border-shell-600 ml-2 space-y-1">
+          <Flyout anchorRef={rowRef} title={entry.label} onClose={() => setOpen(false)} id={entry.id}>
             {entry.items.map((item) => (
               <LibraryEntry
                 key={item.id}
@@ -245,7 +266,7 @@ function LibraryEntry({
                 nested
               />
             ))}
-          </div>
+          </Flyout>
         )}
       </div>
     );
@@ -294,6 +315,81 @@ function LibraryEntry({
         {formatMm(d.width)} × {formatMm(height)} × {formatMm(d.depth)} mm{type?.mount === 'wall' ? ' · wall' : ''}
       </div>
     </button>
+  );
+}
+
+/**
+ * A sub-list, OUT TO THE SIDE (turn 15, CLAUDE.md F5.1).
+ *
+ * The owner's screenshot: opening the Drawer group pushed the rest of the
+ * library down and off the bottom of the screen. Expanding downward inside a
+ * floating panel is what does that — the panel is 248 px of a viewport it does
+ * not own, and every nested list makes it taller.
+ *
+ * A flyout does not. It opens BESIDE the row that owns it, which is what a
+ * desktop submenu does and what keeps the parent list exactly where the eye
+ * left it. WHICH side is not decided here: `placeBesideAnchor` tries right,
+ * then left, then below, then above, and takes the first that fits — so a
+ * library dragged to the right-hand edge of the screen flies out to the LEFT
+ * without this component knowing that is what it did. That is the shared
+ * placement/clamp logic rule 15 already made every modal in this app use.
+ *
+ * Closing: Escape, or a click anywhere outside — the same two gestures every
+ * other dismissible surface here answers to.
+ */
+function Flyout({
+  anchorRef, title, id, onClose, children,
+}) {
+  const ref = useRef(null);
+  const [at, setAt] = useState(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const anchor = anchorRef?.current;
+    if (!el || !anchor) return;
+    const a = anchor.getBoundingClientRect();
+    const size = el.getBoundingClientRect();
+    setAt(placeBesideAnchor({
+      anchor: {
+        x: a.left, y: a.top, width: a.width, height: a.height,
+      },
+      size: { width: size.width, height: size.height },
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      gap: FLYOUT_GAP,
+      margin: FLYOUT_MARGIN,
+      prefer: 'right',
+    }));
+  }, [anchorRef, children]);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
+    const onDown = (e) => {
+      if (ref.current?.contains(e.target)) return;
+      if (anchorRef?.current?.contains(e.target)) return;
+      onClose();
+    };
+    window.addEventListener('keydown', onKey, true);
+    window.addEventListener('pointerdown', onDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('pointerdown', onDown, true);
+    };
+  }, [anchorRef, onClose]);
+
+  return (
+    <div
+      ref={ref}
+      data-library-flyout={id}
+      className="fixed z-30 w-[236px] cc-panel p-2 space-y-1 cc-scroll max-h-[70vh]"
+      // Off screen until it has been measured and placed: a flyout that flashes
+      // at 0,0 first is a flyout that reads as a bug.
+      style={at ? { left: at.left, top: at.top } : { left: -9999, top: 0 }}
+    >
+      <div className="px-2 pb-1 text-[10px] uppercase tracking-wide text-ink-400 border-b border-shell-600">
+        {title}
+      </div>
+      {children}
+    </div>
   );
 }
 

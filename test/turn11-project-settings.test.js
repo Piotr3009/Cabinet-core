@@ -63,11 +63,16 @@ test('the project depth is ONE number for every standing unit', () => {
 
 // ─── F9.2: three material sections ──────────────────────────────────────────
 
-test('a carcass comes from EGGER decor or from the spray booth', () => {
+test('a carcass comes from EGGER decor, the spray booth — or, since turn 15, veneer', () => {
   const ids = carcassSources(P).map((s) => s.id);
-  assert.deepEqual(ids, ['egger', 'sprayed']);
+  // Turn 15 (CLAUDE.md F3.3): "Carcasses gain the Veneer source — a third
+  // button beside `EGGER decor | Sprayed`, wired to the same veneer collection".
+  assert.deepEqual(ids, ['egger', 'sprayed', 'veneer']);
   // "yes, carcasses can be sprayed" — CLAUDE.md F9.2, in as many words.
   assert.equal(sourceById(carcassSources(P), 'sprayed').kind, 'spray');
+  // …and 19 mm is PINNED by the source, exactly as EGGER's 18 is.
+  assert.equal(sourceById(carcassSources(P), 'veneer').thickness, 19);
+  assert.equal(sourceById(carcassSources(P), 'egger').thickness, 18);
 });
 
 test('a front comes from one of the FOUR sources — spray is one, not two (owner 09.08)', () => {
@@ -96,7 +101,9 @@ test('at most two front types, and they start answered', () => {
 
 test('normalising a front type fills every field, so no consumer guesses', () => {
   const [t] = normaliseFrontTypes([{}], P);
-  assert.deepEqual(Object.keys(t).sort(), ['colour', 'id', 'label', 'material_id', 'source']);
+  // `finish_id` joined the shape in turn 15 (CLAUDE.md F3): what a BOARD front
+  // is faced with — the decor of a laminate, the veneer of a veneer.
+  assert.deepEqual(Object.keys(t).sort(), ['colour', 'finish_id', 'id', 'label', 'material_id', 'source']);
 });
 
 test('every piece of ironmongery is automatic; only the VARIANT is a question', () => {

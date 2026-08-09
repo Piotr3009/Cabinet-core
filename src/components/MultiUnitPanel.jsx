@@ -31,6 +31,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
   const addShelvesBulk = useProjectStore((s) => s.addShelvesBulk);
   const redistributeShelvesBulk = useProjectStore((s) => s.redistributeShelvesBulk);
   const addDoorsBulk = useProjectStore((s) => s.addDoorsBulk);
+  const removeDoorsBulk = useProjectStore((s) => s.removeDoorsBulk);
   const profile = useCabinetProfileStore((s) => s.profile);
   const openModal = useUiStore((s) => s.openModal);
   const notify = useUiStore((s) => s.notify);
@@ -47,6 +48,9 @@ export default function MultiUnitPanel({ ids, onClose }) {
   }, [selected]);
 
   const shelvable = selected.filter((u) => getUnitType(u.type)?.supports?.shelves).length;
+  // How many of them actually have doors on — so "Remove doors" can say what it
+  // is about to do, and be off when there is nothing to take off.
+  const withDoors = selected.filter((u) => u.params.doors && u.params.doors !== false).length;
 
   // The shared numbers. Width is deliberately NOT among them: a run's widths
   // are what make it that run, and one box that sets all six to 600 is a way to
@@ -170,18 +174,41 @@ export default function MultiUnitPanel({ ids, onClose }) {
           >
             Even / centre shelves
           </button>
-          <button
-            type="button"
-            className="cc-btn w-full"
-            data-bulk="add-doors"
-            onClick={() => {
-              const { fitted, already } = addDoorsBulk(ids) || {};
-              if (fitted) notify(`Doors hung on ${fitted} cabinet${fitted === 1 ? '' : 's'}.`, 'ok');
-              else if (already) notify('They already have their doors.', 'info');
-            }}
-          >
-            Add doors
-          </button>
+          {/* ─── Turn 15 (CLAUDE.md F8) ───
+              "Beside 'Add doors' on a multi-selection, 'Remove doors' strips
+              the doors from every selected unit in ONE action and ONE undo
+              step. Today the owner walks unit by unit." Beside, literally: the
+              two are one row, because they are one decision with two answers. */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="cc-btn"
+              data-bulk="add-doors"
+              onClick={() => {
+                const { fitted, already } = addDoorsBulk(ids) || {};
+                if (fitted) notify(`Doors hung on ${fitted} cabinet${fitted === 1 ? '' : 's'}.`, 'ok');
+                else if (already) notify('They already have their doors.', 'info');
+              }}
+            >
+              Add doors
+            </button>
+            <button
+              type="button"
+              className="cc-btn"
+              data-bulk="remove-doors"
+              disabled={!withDoors}
+              title={withDoors
+                ? `Take the doors off ${withDoors} of them — one undo step`
+                : 'None of these has doors on'}
+              onClick={() => {
+                const { stripped, already } = removeDoorsBulk(ids) || {};
+                if (stripped) notify(`Doors taken off ${stripped} cabinet${stripped === 1 ? '' : 's'}.`, 'ok');
+                else if (already) notify('None of them had doors on.', 'info');
+              }}
+            >
+              Remove doors {withDoors ? `(${withDoors})` : ''}
+            </button>
+          </div>
           <button
             type="button"
             className="cc-btn-gold w-full"

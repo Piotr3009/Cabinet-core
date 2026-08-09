@@ -11,6 +11,7 @@ import {
   shelfBounds, unitIssues, unitPlanSpan, unitSpan,
   wallClearance,
   wallObstacles,
+  bandsOverlap, unitBand,
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls,
@@ -581,6 +582,12 @@ export const useProjectStore = create((set, get) => ({
     const next = s.units.map((u) => {
       if (unitId && u.id !== unitId) return u;
       const wall = walls[u.position?.wall ?? 0] || walls[0];
+      // The AUTO-PARTS neighbours, which is a different question from "what is
+      // in the way" (F7 above): these are the units this one shares a RUN with —
+      // a plinth, a filler, a top infill. Two cabinets share a run when they
+      // stand at the same level, side by side, which is exactly what the
+      // mounting level says. A wall unit does not share a plinth with the tall
+      // cabinet it hangs beside, however much height they have in common.
       const level = getUnitType(u.type).mount;
       const others = s.units
         .filter((o) => o.id !== u.id && (o.position?.wall ?? 0) === (u.position?.wall ?? 0)
@@ -1126,7 +1133,7 @@ export const useProjectStore = create((set, get) => ({
         wallWidth: wall.width,
         wallMargin: wallMarginOf(state, unit),
         others: state.units
-          .filter((u) => (u.position.wall ?? 0) === wall.index && getUnitType(u.type).mount === level)
+          .filter((u) => (u.position.wall ?? 0) === wall.index && obstructs(unit, u, profile))
           .map(unitSpan),
         near: onThisWall ? unitSpan(beside) : null,
         side: onThisWall ? side : null,
@@ -1433,14 +1440,13 @@ export const useProjectStore = create((set, get) => ({
     // no free slot leaves the unit inside a neighbour — which nothing else in
     // this app is allowed to produce. Checked against the same free-slot rule a
     // placement uses, and put back if the answer is no.
-    const level = getUnitType(unit.type).mount;
     const room = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
       wallMargin: wallMarginOf(get(), unit),
       others: get().units
         .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex
-          && getUnitType(u.type).mount === level)
+          && obstructs(unit, u))
         .map(unitSpan),
     }, getCabinetProfile());
     if (room == null) {
@@ -1506,7 +1512,7 @@ export const useProjectStore = create((set, get) => ({
       wallWidth: walls[wallIndex].width,
       wallMargin: wallMarginOf(s, unit),
       others: s.units
-        .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && getUnitType(u.type).mount === level)
+        .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && obstructs(unit, u))
         .map(unitSpan),
     }, getCabinetProfile());
     if (x == null) {
@@ -2241,12 +2247,37 @@ function minHeightOf(typeId, profile) {
   return Number(key.split('.').reduce((acc, k) => (acc == null ? acc : acc[k]), profile)) || 0;
 }
 
+/**
+ * The band of heights this unit occupies (turn 12, CLAUDE.md F7).
+ *
+ * `floorYOf` already knows the difference between standing on legs and hanging
+ * at a mounting height, and it is the number every other height question in
+ * this store is asked against.
+ */
+function bandOf(unit, profile = getCabinetProfile()) {
+  return unitBand({ floorY: floorYOf(unit, null, profile), height: unit.params?.height });
+}
+
+/**
+ * Does `other` stand in the way of `unit`?
+ *
+ * ─── Turn 12 (CLAUDE.md F7) ───
+ * It used to be `mount === mount`, and that is why a wall unit drove straight
+ * through a tall one: a tall unit stands on the floor, so it was filed with the
+ * base units, and it reaches all the way up through the band the wall units
+ * hang in. The question is whether the two occupy the same HEIGHTS, which gives
+ * the old answer wherever the old rule was right and the right answer where it
+ * was not — see engine/collision.js.
+ */
+function obstructs(unit, other, profile = getCabinetProfile()) {
+  return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
+}
+
 function neighboursOf(state, unit) {
-  const level = getUnitType(unit.type).mount;
   // Every wall, not just this one: a unit around the corner is a neighbour the
   // moment its footprint reaches into this one's depth (engine/collision.js
   // decides that; this only decides who is even in the running).
-  return state.units.filter((u) => u.id !== unit.id && getUnitType(u.type).mount === level);
+  return state.units.filter((u) => u.id !== unit.id && obstructs(unit, u));
 }
 
 /** Height of a unit's top above the floor — where its top infill starts. */
@@ -2509,7 +2540,7 @@ export function validateUnit(unit, result, context = {}) {
     const wallIndex = unit.position?.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
     const others = (context.units || [])
-      .filter((u) => u.id !== unit.id && getUnitType(u.type).mount === level)
+      .filter((u) => u.id !== unit.id && obstructs(unit, u))
       .map(toObstacleUnit);
     issues.push(...unitIssues({
       unit,

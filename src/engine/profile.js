@@ -1532,6 +1532,13 @@ export const DEFAULT_CABINET_PROFILE = {
     mmStep: 0.5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
+    // ─── Turn 12 (CLAUDE.md F7) ───
+    // How much HEIGHT two units have to share before one blocks the other. A
+    // wall unit hung exactly level with the top of a tall cabinet beside it is a
+    // kitchen finished flush and not a collision, so touching is not overlapping
+    // — but a millimetre of float should not turn into a phantom obstacle
+    // either. The tolerance is the workshop's own grid.
+    levelOverlapMm: 0.5,
     unitMagnet: 40,            // butt a unit against its neighbour within this
     minUnitGap: 0,             // units stand edge to edge; > 0 forces a scribe gap
     // The widest deliberate clearance a unit may be given (turn 7, BACKLOG

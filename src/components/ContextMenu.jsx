@@ -4,7 +4,7 @@ import {
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { getUnitType } from '../engine/types.js';
-import { menuActions } from '../lib/contextActions.js';
+import { groupedActions, menuActions } from '../lib/contextActions.js';
 import { formatMm } from '../engine/format.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
 import { anchorOfElement } from '../lib/modalAnchor.js';
@@ -34,8 +34,6 @@ export default function ContextMenu() {
   const setSideInfillPinned = useProjectStore((s) => s.setSideInfillPinned);
   const unitDimensions = useUiStore((s) => s.unitDimensions);
   const toggleUnitDimensions = useUiStore((s) => s.toggleUnitDimensions);
-  const showHinges = useUiStore((s) => s.showHinges);
-  const toggleHinges = useUiStore((s) => s.toggleHinges);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
   const addBottomMask = useProjectStore((s) => s.addBottomMask);
   const removeBottomMask = useProjectStore((s) => s.removeBottomMask);
@@ -67,7 +65,6 @@ export default function ContextMenu() {
       selection,
       panelPart: menu.part,
       dimensions: Boolean(unitDimensions[unit.id]),
-      hinges: showHinges,
       store: {
         // F5.4: every bulk entry is one undo step, and this is the only place
         // that promise is made.
@@ -77,7 +74,6 @@ export default function ContextMenu() {
         removeUnit,
         closeAllFronts,
         toggleUnitDimensions,
-        toggleHinges,
         addEndPanel: (unitId, opts) => {
           const { error } = addEndPanel(unitId, opts) || {};
           if (error) notify(error, 'warn');
@@ -133,7 +129,12 @@ export default function ContextMenu() {
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
       },
     })
-    : []), [unit, menu, unitDimensions, showHinges, toggleHinges, redistributeShelves, rotateUnit,
+    // ─── Turn 14 (CLAUDE.md F6.4) ───
+    // `showHinges` / `toggleHinges` are GONE from this menu. The owner's
+    // verdict is that the choice is senseless; the hinges stay visible exactly
+    // as turn 13 left them (the store flag and its profile default are
+    // untouched, and View still owns it), and REDRAWING them is parked.
+    : []), [unit, menu, unitDimensions, redistributeShelves, rotateUnit,
     removeUnit, closeAllFronts, toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addTopInfill,
     removeTopInfill, addBottomMask, removeBottomMask,
     setSideInfillEnabled, setSideInfillPinned, notify, openRightPanel,
@@ -203,6 +204,8 @@ export default function ContextMenu() {
     };
   }, [menu, closeContextMenu]);
 
+  const groups = useMemo(() => groupedActions(actions), [actions]);
+
   if (!menu || !unit) return null;
 
   return (
@@ -229,32 +232,50 @@ export default function ContextMenu() {
           ? `${selection.length} cabinets selected`
           : `${unit.params.unit_num} · ${getUnitType(unit.type).label}`}
       </div>
-      {actions.map((a) => (
-        <button
-          key={a.id}
-          type="button"
-          disabled={a.disabled}
-          className={`w-full text-left px-3 py-1.5 text-sm transition-colors disabled:opacity-40
-            disabled:cursor-not-allowed hover:enabled:bg-shell-700 ${
-            a.danger ? 'text-status-danger' : 'text-ink-100'}`}
-          title={a.hint || ''}
-          onClick={() => {
-            a.run();
-            if (a.id === 'delete') clearSelection();
-            closeContextMenu();
-          }}
-        >
-          {/* The state, where the eye already is (turn 8, F7): a toggle that
-              does not say which way it is set is a toggle you have to try. */}
-          {a.checked === undefined
-            ? a.label
-            : (
-              <span className="flex items-center gap-1.5">
-                <span className={a.checked ? 'text-gold' : 'text-ink-400'}>{a.checked ? '✓' : '·'}</span>
-                <span>{a.label}</span>
-              </span>
-            )}
-        </button>
+      {/* ─── Turn 14 (CLAUDE.md F6.3): the sections, and the gold rule ───
+          The ORDER and the grouping are DATA (lib/contextActions.js); all this
+          component does is draw a delicate line between one group and the next.
+          "Delicate" is a hairline at a third opacity in the app's own gold —
+          heavy enough to separate three sections, light enough that a menu of
+          eighteen entries does not read as a table. */}
+      {groups.map((group, gi) => (
+        <div key={group.id}>
+          {gi > 0 && <div className="mx-3 my-1 border-t border-gold/30" data-menu-divider={group.id} />}
+          {group.actions.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              data-menu-entry={a.id}
+              disabled={a.disabled}
+              className={`w-full text-left text-sm transition-colors disabled:opacity-40
+                disabled:cursor-not-allowed hover:enabled:bg-shell-700 ${
+                a.danger ? 'text-status-danger' : 'text-ink-100'} ${
+                // F6.1: "Edit cabinet" FIRST and FRAMED — a bordered, standout
+                // entry, because it is the one a joiner reaches for once the
+                // cabinet is standing.
+                a.framed
+                  ? 'my-1 mx-2 px-2 py-1.5 rounded border border-gold text-gold w-[calc(100%-1rem)]'
+                  : 'px-3 py-1.5'}`}
+              title={a.hint || ''}
+              onClick={() => {
+                a.run();
+                if (a.id === 'delete') clearSelection();
+                closeContextMenu();
+              }}
+            >
+              {/* The state, where the eye already is (turn 8, F7): a toggle that
+                  does not say which way it is set is a toggle you have to try. */}
+              {a.checked === undefined
+                ? a.label
+                : (
+                  <span className="flex items-center gap-1.5">
+                    <span className={a.checked ? 'text-gold' : 'text-ink-400'}>{a.checked ? '✓' : '·'}</span>
+                    <span>{a.label}</span>
+                  </span>
+                )}
+            </button>
+          ))}
+        </div>
       ))}
     </div>
   );

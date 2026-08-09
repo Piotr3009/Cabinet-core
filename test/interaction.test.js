@@ -119,13 +119,21 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   // had no unit-level control at all until F3. Both sit with the construction
   // entries, because both are things you DO to the cabinet rather than ways of
   // looking at it, and both apply to the whole selection.
+  //
+  // ─── Turn 14 (CLAUDE.md F6) rewrites the ORDER, and it is DATA now ───
+  // "Edit cabinet" is FIRST and framed; "Show all dimensions" is LAST; the
+  // hinges toggle is GONE (the owner: the choice is senseless — the hinges stay
+  // visible exactly as turn 13 left them, and REDRAWING them is parked). The
+  // sections a joiner sees are decided by each entry's `group` and drawn with a
+  // delicate gold rule between them, so adding an entry is choosing a group.
   assert.deepEqual(ids, [
-    'dimensions', 'hinges',
+    'edit-cabinet',
     'end-panel-L', 'end-panel-R', 'end-panel-B',
     'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R',
     'plinth', 'add-doors', 'unit-colour',
-    'edit-cabinet', 'save-template',
+    'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
+    'dimensions',
   ]);
 
   // Nothing is DISABLED any more, and that is the point of the rewrite: turn 4's

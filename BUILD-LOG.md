@@ -4753,3 +4753,34 @@ otwiera jego własne okno; reguły zakończeń z F3 stosują się tam, gdzie pł
 spotyka bok, bo segmentowanie czyta te same `endPanelSpread`.
 
 **Werdykt.** 1198 → **1209** testów.
+
+---
+
+## F6 — Menu kontekstowe, przeprojektowane — ✅ ZIELONA
+
+Cztery werdykty, a czwarty jest tym, który warto zapisać: **kolejność i sekcje
+są DANYMI**. Dodanie wpisu to wybór grupy; komponent rysuje złotą kreskę między
+jedną grupą a drugą i nie ma zdania, co gdzie idzie.
+
+1. **„Edit cabinet…" PIERWSZE i w ramce** — obwiedzione złotem, bo to wpis, po
+   który stolarz sięga, kiedy szafka już stoi: idzie zobaczyć, co zrobił.
+2. **„Show all dimensions" OSTATNIE.** Tura 8 dała mu pierwsze miejsce z
+   argumentem „pokaż mi liczby tej szafki". Życie z tym mówi co innego: to
+   sposób PATRZENIA, a nie coś, co się szafce robi.
+3. **Sekcje:** `[edit] | [górny wypełniacz + plinta + panel maskujący] | [wszystkie
+   boki maskujące] | [reszta] | [wymiary]`, rozdzielone **delikatną kreską w
+   złocie aplikacji** (`border-gold/30`, włos przy jednej trzeciej krycia). Wpis
+   bez własnej grupy trafia do „reszty", więc wpis dopisany w turze 15 ląduje
+   gdzieś sensownie w dniu, w którym powstaje. Kolejność SEKCJI to lista
+   `MENU_GROUPS`, a nie kolejność `push`ów — wpis „reszty" nie wskoczy nad boki
+   przez przypadek.
+4. **Przełącznik zawiasów USUNIĘTY.** Werdykt właściciela: wybór jest
+   bezsensowny. Zawiasy zostają widoczne dokładnie tak, jak zostawiła je tura 13
+   — flaga `showHinges` i jej domyślna wartość z profilu są nietknięte, View
+   nadal ją ma — znika WPIS, który zadawał pytanie z jedną sensowną odpowiedzią.
+   PRZERYSOWANIE zawiasów to zaparkowany, osobny temat (BACKLOG).
+
+Test „nothing that was reachable stopped being reachable" trzyma pełną listę
+tury 13 minus ten jeden wpis: przeprojektowanie przesuwa, nigdy nie gubi.
+
+**Werdykt.** 1209 → **1217** testów.

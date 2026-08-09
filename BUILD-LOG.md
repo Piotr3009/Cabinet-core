@@ -4566,3 +4566,69 @@ zostaje** w zakresie ściennym: właściciel mówi o ŚCIANACH („never the who
 room"), a mebel musi na czymś stać i cień kontaktowy musi mieć co malować.
 
 **Werdykt.** 1159 → **1174** testy. Para F1.1 zmierzona w prawdziwym Chromium.
+
+---
+
+## F2 — [KRYTYCZNE] Plecy LODÓWKI siadają NA psich kościach — ✅ ZIELONA
+
+**Trzy zdania właściciela, wszystkie trzy zamienione na arytmetykę.** Obudowa
+lodówki nie ma pełnych pleców: zamykają ją trzy elementy — RAIL1 na dole, RAIL2
+w poprzek strefy lodówki i BACK nad panelem stałym (`KIT_FRIDGE.lsp` L6,
+L110-119). Boki rysuje ZWYKŁE `drawBUL`/`drawBUR` (L293, L310), więc niosą
+zwykłe trzy czopy tylne z podfrezowaniami psiej kości na 95 / H/2 / H−95
+(`SKYLON_COMMON.lsp` L699, L737-739).
+
+Trzy elementy, trzy czopy, a każdy z elementów ma DOKŁADNIE JEDNO gniazdo na
+każdej krótkiej krawędzi, 95 mm od końca (L340-346 RAIL1, L366-372 RAIL2,
+L381-387 BACK). To nie jest kwestia gustu: każdy element stoi tam, gdzie jego
+własne gniazdo spotyka czop, dla którego zostało wycięte.
+
+Tura 3 czytała pozycje z WIDOKU CZOŁOWEGO LISP-a, a widok czołowy jest
+schematem i nie zgadza się z własnym CNC tego samego pliku (rysuje back-top od
+`fixedPanelY+G` do `H−G`, choć wycinana formatka ma `spursH+G` wysokości, czyli
+biegnie `fixedPanelY → H`).
+
+| element | było | jest | czop |
+|---|---|---|---|
+| RAIL1 | y = 18 (na dnie) | **y = 0** (w licu dna) | 95 |
+| RAIL2 | y = 811 (środek strefy lodówki) | **y = 955** | 1050 |
+| BACK  | rząd gniazd 95 od DOŁU (1899) | **95 od GÓRY (2005)** | 2005 |
+
+### …i przy okazji: tura 12 obróciła nie ten obiekt
+
+Tura 12 dopasowała gniazda BACK-a przez puszczenie CNC-owego x W DÓŁ od góry
+formatki. To domyka JEDEN z czterech złączy na tej formatce i rozwala trzy
+pozostałe — sygnatura ODBICIA, nie obrotu. Policzone w milimetrach szafki na
+domyślnej obudowie (H 2100, panel stały 1804):
+
+```
+gniazda           x 95      → y 2005  ✓ górny czop boków
+wkręty do stałego x G/2     → y 2091  ✗ są na GÓRZE, a wkręcają się w 1804
+wkręty do wieńca  x h−S     → y 1813  ✗ są przy stałym, a są WIEŃCA
+gniazda wieńca (prawa kraw.) → y 1804 ✗ prawa krawędź TO sufit (L389-397)
+```
+
+Werdykt właściciela — „bones at the bottom, must be at the top" — to drugie
+odczytanie i domyka wszystkie cztery: rząd gniazd przenosi się na arkuszu, a
+układ wraca do własnego układu LISP-a (x w GÓRĘ od krawędzi wkręcanej w panel
+stały). Skrętność bez zmian (u × v = −n na obu gałęziach), więc formatka jest
+OBRÓCONA, a nie odbita; etykiety „BUL/BUR" LISP-a zamieniają się miejscami, a
+tną identycznie, bo oba gniazda są 95 od tego samego początku x.
+
+### Fixtures i tożsamość CNC
+
+`fixtures/golden-fridge.json` **nie koduje** żadnej z tych pozycji — nosi
+rozmiary, wiercenia, CSV i sumy, a pod `verify_with_piotr` ma wprost wpis
+*„RAIL2 centred at fridgeH/2 (200mm strip) — confirm position"* i *„sides keep
+FULL puzzle tenons on the back edge although there is no full back panel to
+receive them — confirm this is intended"*. Ta tura jest tym potwierdzeniem, w
+drugą stronę. Reguła SINK nie ma zastosowania, `git diff fixtures/` pusty.
+
+Delta CNC (zmierzona `scripts/cnc-fingerprint.mjs` vs `2ebc40a`): **wyłącznie
+`FRIDGE 01-BACK.dxf`** i arkusze, które ją zawierają. Każdy inny typ jednostki
+bajt w bajt. To druga świadoma delta tury obok nowego panelu maskującego (F5) —
+CLAUDE.md nazywa F2 poprawką krytyczną, więc delta jest nazwana przez ten plik,
+choć nawias w bramce F11 wymieniał tylko panel maskujący.
+
+**Werdykt.** 1174 → **1183** testy; dziewięć nowych zamyka ZŁĄCZE, a nie
+powtarza stałej.

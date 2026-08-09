@@ -82,10 +82,16 @@ test('a rotated BACK is the case that was missing', () => {
   assert.equal(back.cnc.drawn_h, 600);
 
   const placement = panelPlacement(back);
-  // CNC x runs DOWN from the top of the piece, CNC y across it.
-  assert.deepEqual(placement.u, [0, -1, 0]);
-  assert.deepEqual(placement.v, [1, 0, 0]);
-  assert.deepEqual(placement.origin, [back.box.x, back.box.y + back.box.h, back.box.z]);
+  // ─── Turn 14 (CLAUDE.md F2) ───
+  // Turn 12 ran CNC x DOWN from the top of the piece, because that is what made
+  // the sockets land on the side tenons. It made the sockets land and put the
+  // other three joints on this panel in the wrong place — the signature of a
+  // MIRROR, not a turn. The owner's verdict is that the PANEL was upside down,
+  // so the socket row moved on the sheet and the frame is the LISP's own: x
+  // runs UP from the edge that screws into the fixed panel.
+  assert.deepEqual(placement.u, [0, 1, 0]);
+  assert.deepEqual(placement.v, [-1, 0, 0]);
+  assert.deepEqual(placement.origin, [back.box.x + back.box.w, back.box.y, back.box.z]);
   assert.deepEqual(placement.n, [0, 0, -1]);
 });
 

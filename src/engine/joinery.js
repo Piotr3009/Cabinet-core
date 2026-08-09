@@ -134,19 +134,41 @@ export function panelPlacement(panel) {
       // one did not, so the machined outline was built in a 296 × 600 frame and
       // laid down as if it were 600 × 296.
       //
-      // WHICH of the two 90° turns is not a guess. It is read off the DRILLING,
-      // which is the same check the BUL/BUR note above describes: the panel's
-      // sockets have to land on the side panels' tabs, and they only do with the
-      // CNC x running DOWN from the top of the piece. The side tab at cabinet
-      // y 1980–2030 is the socket at CNC x 69.5–120.5, measured from y = 2100.
+      // WHICH of the two 90° turns is not a guess. It is read off the DRILLING:
+      // the panel's sockets have to land on the side panels' tabs.
       //
-      // Handedness is unchanged (u × v = −n either way), so the face is not
-      // mirrored — only turned.
+      // ─── TURN 14 (CLAUDE.md F2): …AND THE PANEL WAS THE THING UPSIDE DOWN ──
+      //
+      // Turn 12 made the sockets line up by running the CNC x DOWN from the top
+      // of the piece. That closes ONE of the four joints on this panel and
+      // opens the other three, which is the signature of a mirror rather than a
+      // turn. Counted in cabinet millimetres on the default housing (H 2100,
+      // fixed panel at 1804):
+      //
+      //   sockets    x 95        → y 2005   ✓ the side panels' top tenon
+      //   fixed screws x G/2     → y 2091   ✗ at the TOP, and they screw into
+      //                                       the fixed panel at 1804
+      //   top screws x h−S       → y 1813   ✗ at the fixed panel, and they are
+      //                                       the TOP panel's
+      //   TOP sockets, right edge → y 1804  ✗ the right edge IS the cabinet top
+      //                                       (KIT_FRIDGE.lsp L389-397)
+      //
+      // The owner's verdict — "the top back is UPSIDE-DOWN, bones at the bottom,
+      // must be at the top" — is the other reading, and it closes all four: the
+      // SOCKET ROW moves to 95 from the panel's top (engine/cabinet.js, F2) and
+      // the frame goes back to the LISP's own, x running UP from the edge that
+      // screws to the fixed panel.
+      //
+      // Handedness is unchanged (u × v = −n on both branches), so the face is
+      // turned and not mirrored — which is why `v` runs the other way here: with
+      // x up the cabinet, the drawn face is the one seen from INSIDE, and the
+      // LISP's "BUL socket / BUR socket" labels swap. They cut identically; the
+      // two sockets are both 95 in from the drawn x origin.
       return panel.cnc?.rotated
         ? {
-          origin: [box.x, box.y + box.h, box.z],
-          u: [0, -1, 0],
-          v: [1, 0, 0],
+          origin: [box.x + box.w, box.y, box.z],
+          u: [0, 1, 0],
+          v: [-1, 0, 0],
           n: [0, 0, -1],
         }
         : {

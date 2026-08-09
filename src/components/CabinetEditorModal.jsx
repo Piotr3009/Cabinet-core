@@ -7,12 +7,14 @@ import Modal from './Modal.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
 import { useViewHandle } from '../3d/viewHandle.js';
+import EditorRig from '../3d/EditorRig.jsx';
 import { mm } from '../3d/constants.js';
 import { surfaceFor, outlineFor } from '../3d/materials.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
+import { panelFinish } from '../engine/materials.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { cabinetBounds, explodeOffsets, explodeSettings } from '../engine/explode.js';
 import { elementLabel, isSelectableElement } from '../engine/elements.js';
@@ -242,9 +244,13 @@ function CabinetCanvas({
       {/* The editor's end-to-end handle (turn 13, F2.2): a PAN leaves no trace
           in the DOM at all, so the walk reads the controls' own target. */}
       <EditorViewHandle />
-      <ambientLight intensity={0.75} />
-      <directionalLight position={[radius, radius * 1.6, radius]} intensity={1.6} />
-      <directionalLight position={[-radius, radius * 0.6, -radius * 0.4]} intensity={0.5} />
+      {/* ─── Turn 16 (CLAUDE.md F7): THE BENCH LAMP ───
+          The owner: "serio nic nie widać". Three literal lights lived here —
+          an ambient and two directionals — so there was no knob to turn. The
+          rig is `appearance.editorRig` now, shared with the part-detail
+          window, and it was tuned by MEASURING (verify/t16/editor-light.json)
+          rather than by eye in the code. */}
+      <EditorRig profile={profile} radius={radius} />
       <ExplodedCabinet
         unit={unit}
         panels={panels}
@@ -326,6 +332,8 @@ function ExplodedCabinet({
           onToggleFront={onToggleFront}
           profile={profile}
           finishes={finishes}
+          design={design}
+          unit={unit}
           unitDesign={unitDesign}
           sheen={sheen}
           joineryLayers={joineryLayers}
@@ -348,7 +356,7 @@ function ExplodedCabinet({
  */
 function ExplodingPart({
   panel: p, offset, exploded, selected, selectable, onSelect, onOpenDetail,
-  profile, finishes, unitDesign, sheen, joineryLayers, depth,
+  profile, finishes, design, unit, unitDesign, sheen, joineryLayers, depth,
   open = 0, onToggleFront = null,
 }) {
   const group = useRef(null);
@@ -400,15 +408,26 @@ function ExplodingPart({
     window.addEventListener('pointercancel', up);
   }, [exploded, selected]);
 
+  // Turn 16 (CLAUDE.md F1.4): the piece's OWN material, resolved by the engine
+  // — the same call the room view makes, so a shelf given Front 2's board is
+  // that colour in both windows.
+  const own = useMemo(
+    () => (design ? panelFinish(p, unit, design, profile) : null),
+    [p, unit, design, profile],
+  );
   const surface = useMemo(() => surfaceFor({
     role: p.role,
     materialRole: p.material_role,
     finishExposed: p.finish_exposed,
     finishes,
     profile,
-    frontColour: unitDesign?.colour || null,
+    // The HEX, not the colour record: `THREE.Color` takes a string or a number
+    // and quietly stays white for anything else, which is why a sprayed front
+    // has been coming out white in this window since turn 12.
+    frontColour: own ? (own.colour?.hex || null) : (unitDesign?.colour?.hex || null),
     sheen,
-  }), [p, finishes, profile, unitDesign, sheen]);
+    ...(own ? { finish: own.finish } : {}),
+  }), [p, finishes, profile, unitDesign, sheen, own]);
 
   // The selected part goes gold, the same signal a dragged shelf gives in the
   // room — one colour for "this is the one you have hold of" (rule 14 territory:

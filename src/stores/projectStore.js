@@ -4,6 +4,7 @@ import {
 } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
+import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
   boxSpansOnWall,
@@ -19,7 +20,7 @@ import {
 } from '../engine/room.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
-  withFrontColour,
+  withFrontColour, withRunMaterial,
 } from '../engine/design.js';
 import {
   carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
@@ -96,13 +97,43 @@ function newUnit(typeId, profile, index, design) {
       // kitchen is built to one set of them, so a new cabinet matching the run
       // beside it is the default and a different height is the exception.
       ...projectHeightParams(type, design, profile),
-      unit_num: `${UNIT_NUM_PREFIX[type.id] ?? ''}${String(index + 1).padStart(2, '0')}`,
+      unit_num: autoUnitNum(type, index),
       // Doors are the LAST step (SPEC 4.10) — except where the type has none.
       doors: type.supports.doors ? false : null,
       sections: [{ width_mm: params.width, items }],
       materials: {},
     },
   };
+}
+
+/**
+ * The workshop's stock list, as the assignment store holds it.
+ *
+ * Read through a function rather than captured at module load, so a list loaded
+ * from the database (or swapped in a test) is the one the next question gets.
+ * The ENGINE never reaches for it — every engine function that needs stock
+ * takes it as an argument (CLAUDE.md rule 1) — and this is the one place the
+ * store hands it over.
+ */
+function workshopMaterials() {
+  try {
+    return useMaterialAssignmentStore.getState().materials || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The name a cabinet is BORN with (turn 16, CLAUDE.md F6).
+ *
+ * The automatic default, unchanged: the kit's prefix and the unit's position in
+ * the project, zero-padded — 01, 02, WU05. It is a function now rather than an
+ * expression inline in `makeUnit`, because `setUnitName` needs the same answer
+ * to give a cabinet back when its name is cleared, and two copies of a naming
+ * convention is how a project ends up with two.
+ */
+function autoUnitNum(type, index) {
+  return `${UNIT_NUM_PREFIX[type?.id] ?? ''}${String((Number(index) || 0) + 1).padStart(2, '0')}`;
 }
 
 /**
@@ -131,7 +162,11 @@ function projectHeightParams(type, design, profile) {
     // one over a worktop is a cabinet you walk into.
     ...(type.mount === 'wall' ? {} : { depth: projectDepth(design, profile) }),
     board_t: projectBoardThickness(design, profile),
-    front_t: projectFrontThickness(design, profile),
+    // Turn 16 (CLAUDE.md F1.1): front type 1's ASSIGNED BOARD pins this where
+    // there is one, exactly as carcass 1's does for the carcass. The stock list
+    // is read from the assignment store here rather than inside the engine,
+    // which keeps `projectFrontThickness` a pure function of its arguments.
+    front_t: projectFrontThickness(design, profile, workshopMaterials()),
   };
 }
 
@@ -538,6 +573,39 @@ export const useProjectStore = create((set, get) => ({
       dirty: true,
     };
   }),
+
+  /**
+   * ─── A FRONT type's board (turn 16, CLAUDE.md F1.1) ───────────────────────
+   *
+   * "Each front type gains the same MaterialStock dropdown a carcass type has —
+   * same store, same Generic fallback, same T15-B hard gates."
+   *
+   * Same setter shape as `setCarcassMaterial` above, deliberately: a front type
+   * and a carcass type are the same kind of thing in this app — a slot with a
+   * look and a board — and the two paths being one line apart is what keeps
+   * them from drifting. The GATE (a thickness change with units on the floor
+   * asks first) lives in the settings surface, where the question can be put to
+   * a human, exactly as the carcass's does.
+   */
+  setFrontMaterial: (typeId, materialId) => get().setFrontType(typeId, { material_id: materialId || null }),
+
+  /**
+   * ─── A RUN PIECE's board (turn 16, CLAUDE.md F1.2) ────────────────────────
+   *
+   * Infills, plinths, end panels and masking panels: "Same as fronts" on by
+   * default, or a board of their own. ONE setter for all four — the same store
+   * shape F1.2 asks for — going through `withRunMaterial`, which is where the
+   * rule that unticking the box keeps your board lives.
+   *
+   * @param {string} role  'infill' | 'plinth' | 'end_panel' | 'mask'
+   */
+  setRunMaterial: (role, patch) => {
+    set((s) => ({
+      project: { ...s.project, design: withRunMaterial(s.project.design, role, patch) },
+      dirty: true,
+    }));
+    return migrateDesign(get().project.design);
+  },
 
   /** What a carcass material LOOKS like (turn 4): its decor, per material type. */
   setCarcassFinish: (typeId, finishId) => set((s) => {
@@ -1034,6 +1102,49 @@ export const useProjectStore = create((set, get) => ({
   },
 
   /**
+   * ─── How far a MASKING PANEL runs BELOW the carcass (turn 16, F4.3) ───────
+   *
+   * Owner decision B: a wall unit's DOOR height and its masking-PANEL height
+   * are two independent fields, and neither writes the other. This is the
+   * panel's, and it is deliberately the mirror of `setEndPanelTop` above — one
+   * gesture learnt at the top edge and used again at the bottom.
+   *
+   * The CLAMP is the room's: a panel cannot run below the floor, so the limit
+   * is exactly how high the carcass is off it — a wall unit's mounting height,
+   * a standing unit's legs. `floorYOf` is the same function every other height
+   * question in this store is asked against.
+   *
+   * Nothing here reads `door_extend`, and nothing in the door's path reads
+   * this. That is the whole of "no auto-follow".
+   *
+   * @returns {number} the drop it got
+   */
+  setEndPanelBelow: (unitId, panelId, belowMm) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    const room = Math.max(0, floorYOf(unit, null, profile));
+    const below = Math.min(Math.max(snapTo(Number(belowMm) || 0, profile.editor.mmStep), 0), room);
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            end_panels: (u.params.end_panels || []).map((ep) => (ep.id === panelId
+              ? { ...ep, below_mm: below }
+              : ep)),
+          },
+        }
+        : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+    return below;
+  },
+
+  /**
    * How far a vertical L-infill runs above the carcass (turn 6, CLAUDE.md F4).
    *
    * Same gesture as the end panel's, deliberately: a filler and a masking panel
@@ -1397,6 +1508,75 @@ export const useProjectStore = create((set, get) => ({
     }
     return { stripped, already };
   }),
+
+  /**
+   * ─── DOOR EXTEND, over a whole selection (turn 16, CLAUDE.md F4.2) ────────
+   *
+   * "The function is MISSING there entirely. Add it beside Add/Remove doors:
+   * one action, one undo step, same default-38-editable field, applied to every
+   * selected unit's doors."
+   *
+   * Beside them literally, and through `runBatch` like every other bulk action
+   * here — which is what makes a run of eight wall units one Ctrl+Z rather than
+   * eight (the turn-13 F5 rule).
+   *
+   * Only the kits that HAVE the feature take it: a base unit has a worktop over
+   * its doors and nothing to extend past. Those are counted and reported, not
+   * silently skipped, so a joiner who selected a mixed run knows what happened.
+   *
+   * @param {string[]} unitIds
+   * @param {number|false} mm  millimetres, or false to take the extend off
+   * @returns {{applied:number, skipped:number, mm:number}}
+   */
+  setDoorExtendBulk: (unitIds, mm) => runBatch(() => {
+    const profile = getCabinetProfile();
+    const wanted = mm === false ? false : Math.max(0, snapTo(Number(mm) || 0, profile.editor.mmStep));
+    let applied = 0;
+    let skipped = 0;
+    for (const id of unitIds || []) {
+      const unit = get().units.find((u) => u.id === id);
+      if (!unit) continue;
+      if (!getUnitType(unit.type)?.doorExtend) { skipped += 1; continue; }
+      get().updateUnitParams(id, { door_extend: wanted > 0 ? wanted : false });
+      applied += 1;
+    }
+    return { applied, skipped, mm: wanted === false ? 0 : wanted };
+  }),
+
+  /**
+   * ─── A CABINET'S NAME IS THE OWNER'S (turn 16, CLAUDE.md F6) ──────────────
+   *
+   * The default stays automatic — 01, 02, WU05 — and it becomes editable. It is
+   * stored where the automatic one already lives (`params.unit_num`), which is
+   * what makes "everything downstream prints the edited name" true with nothing
+   * told to anything: the canvas label, the CNC block caption, the part codes
+   * in a DXF filename, the BOM's unit column, the drawings and the check-out
+   * all read that one field and always have.
+   *
+   * An empty name is not a name: it puts the cabinet back on the automatic one
+   * for its position, so there is a way back that does not involve guessing
+   * what the number was.
+   *
+   * Uniqueness is a WARNING and not a block (F6): two cabinets called "Island"
+   * is a workshop's business, and a cut list that refuses to save is not.
+   *
+   * @returns {string} the name it ended up with
+   */
+  setUnitName: (unitId, name) => {
+    const clean = String(name ?? '').trim().slice(0, 40);
+    const index = get().units.findIndex((u) => u.id === unitId);
+    if (index === -1) return '';
+    const unit = get().units[index];
+    const fallback = autoUnitNum(getUnitType(unit.type), index);
+    const next = clean || fallback;
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, unit_num: next } }
+        : u)),
+      dirty: true,
+    }));
+    return next;
+  },
 
   /** Even/centre the shelves in every unit of the selection. */
   redistributeShelvesBulk: (unitIds) => runBatch(() => {
@@ -2169,6 +2349,13 @@ export const useProjectStore = create((set, get) => ({
     get().updateItem(unitId, itemId, {
       material_id: material?.material_id ?? null,
       material_label: material?.material_label ?? null,
+      // Turn 16 (CLAUDE.md F1.3): …and WHICH palette row it came from. The pair
+      // above says what the board is called; only the key says which of the
+      // project's slots it is, and the key is what the picture resolves a
+      // surface from (engine/materials.js). Dropping it here — which is what
+      // this setter did until the acceptance walk caught it — left a shelf
+      // named after Front 2 and painted like the carcass.
+      material_key: material?.material_key ?? null,
     });
   },
 

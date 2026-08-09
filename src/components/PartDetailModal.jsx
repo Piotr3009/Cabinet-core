@@ -3,12 +3,14 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
 import { MovingPanel } from '../3d/UnitView.jsx';
+import EditorRig from '../3d/EditorRig.jsx';
 import { mm } from '../3d/constants.js';
 import { outlineFor, surfaceFor } from '../3d/materials.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
+import { panelFinish } from '../engine/materials.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { elementLabel } from '../engine/elements.js';
 import { partDetailDrawing } from '../engine/drawings/partDetail.js';
@@ -243,15 +245,22 @@ function PartCanvas({ unit, panel, design, profile }) {
     () => resolveJoineryLayers(profile, unitDesign?.joinery || null),
     [profile, unitDesign],
   );
+  // Turn 16 (CLAUDE.md F1.4): this piece's OWN material, resolved by the engine
+  // — the same answer the room and the editor window get.
+  const own = useMemo(
+    () => (design ? panelFinish(panel, unit, design, profile) : null),
+    [panel, unit, design, profile],
+  );
   const surface = useMemo(() => surfaceFor({
     role: panel.role,
     materialRole: panel.material_role,
     finishExposed: panel.finish_exposed,
     finishes,
     profile,
-    frontColour: unitDesign?.colour?.hex || null,
+    frontColour: own?.overridden ? (own.colour?.hex || null) : (unitDesign?.colour?.hex || null),
     sheen,
-  }), [panel, finishes, profile, unitDesign, sheen]);
+    ...(own ? { finish: own.finish } : {}),
+  }), [panel, finishes, profile, unitDesign, sheen, own]);
 
   const box = panel.box;
   const span = Math.max(box.w, box.h, box.d);
@@ -264,9 +273,10 @@ function PartCanvas({ unit, panel, design, profile }) {
       camera={{ position: [radius * 0.7, radius * 0.6, radius], fov: 40, near: 0.01, far: 100 }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[radius, radius * 1.6, radius]} intensity={1.6} />
-      <directionalLight position={[-radius, radius * 0.6, -radius * 0.4]} intensity={0.5} />
+      {/* Turn 16 (CLAUDE.md F7): the editor's own rig, shared with the
+          exploded editor — one rig for the two windows that show a part on a
+          bench, and its numbers are in the profile. */}
+      <EditorRig profile={profile} radius={radius} />
       <group position={centre}>
         <MovingPanel
           panel={panel}

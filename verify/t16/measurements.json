@@ -1,0 +1,493 @@
+{
+ "steps": [
+  {
+   "label": "F1.1 every front TYPE has a MaterialStock dropdown, with a board in it",
+   "ok": true,
+   "detail": "[{\"type\":\"f1\",\"value\":\"mat_mdf25_shaker\",\"options\":12},{\"type\":\"f2\",\"value\":\"mat_mfc18_oak\",\"options\":12}]"
+  },
+  {
+   "label": "F1.2 four \"Same as fronts\" switches, all ON by default",
+   "ok": true,
+   "detail": "[\"infill\",\"plinth\",\"end_panel\",\"mask\"]"
+  },
+  {
+   "label": "F1.2 unticking one shows its OWN dropdown, and it holds the board",
+   "ok": true,
+   "detail": "{\"ticked\":false,\"stock\":\"mat_ply18_birch\"}"
+  },
+  {
+   "label": "F5 Save: red → green on save, GREEN after closing and reopening Settings",
+   "ok": true,
+   "detail": "{\"saveBefore\":{\"saved\":\"0\",\"text\":\"Save\",\"colour\":\"rgb(201, 82, 75)\",\"className\":\"cc-btn-save px-3\"},\"saveAfter\":{\"saved\":\"1\",\"text\":\"✓ Saved\",\"colour\":\"rgb(201, 82, 75)\",\"className\":\"cc-btn-saved px-3\"},\"saveReopened\":{\"saved\":\"1\",\"text\":\"✓ Saved\",\"colour\":\"rgb(95, 158, 110)\",\"className\":\"cc-btn-saved px-3\"}}"
+  },
+  {
+   "label": "F5 …RED again the moment anything changes, and green when saved again",
+   "ok": true,
+   "detail": "{\"saveDirty\":{\"saved\":\"0\",\"text\":\"Save\",\"colour\":\"rgb(201, 82, 75)\",\"className\":\"cc-btn-save px-3\"},\"saveGreenAgain\":{\"saved\":\"1\",\"text\":\"✓ Saved\"}}"
+  },
+  {
+   "label": "a cabinet with a shelf and a plinth is on the floor",
+   "ok": true,
+   "detail": "{\"id\":\"u_42yvwj5\",\"shelfId\":\"SHELF-1\",\"name\":\"01\"}"
+  },
+  {
+   "label": "F1.3 the element list shows one row PER FRONT TYPE, keyed by type",
+   "ok": true,
+   "detail": "[{\"key\":\"front:f1\",\"label\":\"Front 1 · MDF Shaker blank 25 mm\"},{\"key\":\"front:f2\",\"label\":\"Front 2 · Melamine front 19 mm\"}]"
+  },
+  {
+   "label": "F1.4 the override is stored by KEY and reaches the engine",
+   "ok": true,
+   "detail": "{\"applied\":{\"value\":\"front:f2\"},\"stored\":{\"id\":\"shelf_bi5s2e3\",\"kind\":\"shelf\",\"variant\":\"adjustable\",\"pos_mm\":376,\"material_id\":\"mat_mfc19_front\",\"material_label\":\"RAL 3005 Wine Red spray\",\"material_key\":\"front:f2\"},\"meta\":{\"index\":1,\"variant\":\"adjustable\",\"itemId\":\"shelf_bi5s2e3\",\"locked\":false,\"front_mm\":20,\"thickness_mm\":18,\"zone\":null,\"material_id\":\"mat_mfc19_front\",\"material_label\":\"RAL 3005 Wine Red spray\",\"material_key\":\"front:f2\"}}"
+  },
+  {
+   "label": "F1.4 …and the PICTURE changed where the shelf is",
+   "ok": true,
+   "detail": "mean 229.1 → 215.1 (Δ -14.0)"
+  },
+  {
+   "label": "F4.1 the single door carries the NUMBER, defaulting to 38",
+   "ok": true,
+   "detail": "{\"checked\":false,\"value\":\"38\",\"disabled\":true,\"doorHeight\":\"717\"}"
+  },
+  {
+   "label": "F4.2 door extend exists over a MULTI-SELECTION, at 38, and applies to all",
+   "ok": true,
+   "detail": "{\"multi\":{\"present\":true,\"value\":\"38\",\"apply\":\"Apply (3)\",\"count\":\"3\"},\"bulkResult\":[38,38,38]}"
+  },
+  {
+   "label": "F4.3 the panel's height and the door's extend move INDEPENDENTLY",
+   "ok": true,
+   "detail": "{\"before\":{\"extend\":38,\"below\":0},\"afterPanel\":{\"extend\":38,\"below\":120},\"afterDoor\":{\"extend\":64,\"below\":120},\"panelH\":840,\"doorH\":781,\"panelY\":-120}"
+  },
+  {
+   "label": "F9 a side infill runs to the ceiling, like the panel beside it",
+   "ok": true,
+   "detail": "{\"before\":0,\"top\":1630,\"roomHeight\":2500,\"unitHeight\":770,\"pieceH\":2500}"
+  },
+  {
+   "label": "F6 the name is the owner's, and the engine takes it",
+   "ok": true,
+   "detail": "{\"name\":\"Island\",\"stored\":\"Island\",\"engine\":\"Island\"}"
+  },
+  {
+   "label": "F6 …and the CNC tree prints it",
+   "ok": true,
+   "detail": "[\"Island\"]"
+  },
+  {
+   "label": "F2.1 the sheet splits into one section per ASSIGNED material",
+   "ok": true,
+   "detail": "[\"BB/BB-18 · Birc…\",\"MDF Shaker blank 25 mm  6 …\",\"Melamine front…\",\"W980 SM · MFC White W980 18 mm  20 parts\"]"
+  },
+  {
+   "label": "F2.1 …and there is NO sprayed / non-sprayed toggle anywhere on the view",
+   "ok": true,
+   "detail": "{\"sprayed\":false,\"nonSprayed\":false}"
+  },
+  {
+   "label": "F3 the part codes are drawn, and every one is INSIDE its own part",
+   "ok": true,
+   "detail": "{\"labels\":27,\"parts\":28,\"outside\":0,\"size\":22}"
+  },
+  {
+   "label": "F3 …and at FAR zoom none of them spills over a neighbour",
+   "ok": true,
+   "detail": "{\"labels\":0,\"outside\":0,\"size\":null}"
+  },
+  {
+   "label": "F3 …and the caption is a SHEET size: it did not grow as the drawing shrank",
+   "ok": true,
+   "detail": "{\"nearSize\":22,\"farSize\":null}"
+  },
+  {
+   "label": "F6 …and so does the BOM",
+   "ok": true,
+   "detail": "{\"island\":true}"
+  },
+  {
+   "label": "F7 the element editor is measurably brighter, and DETAIL reads",
+   "ok": true,
+   "detail": "furniture mean 166 → 193.8 (+17 %), dark share 0.04 → 0.04, p05 50 → 59.9"
+  },
+  {
+   "label": "F8 DIAGNOSIS: a wall door and a base door are the SAME material",
+   "ok": true,
+   "detail": "{\"wall\":{\"unitId\":\"u_o70i22h\",\"panelId\":\"WU02-F\",\"role\":\"front\",\"materialRole\":\"front\",\"colour\":\"#f2f0ec\",\"roughness\":0.4,\"metalness\":0,\"env\":0.25,\"clearcoat\":0.35,\"clearcoatRoughness\":0.12},\"base\":{\"unitId\":\"u_eoks679\",\"panelId\":\"01-F\",\"role\":\"front\",\"materialRole\":\"front\",\"colour\":\"#f2f0ec\",\"roughness\":0.4,\"metalness\":0,\"env\":0.25,\"clearcoat\":0.35,\"clearcoatRoughness\":0.12}}"
+  },
+  {
+   "label": "F8 the gloss is MEASURED on both doors (numbers, not impressions)",
+   "ok": true,
+   "detail": "wall door top-2 % 244.1 / mean 244.1 vs base door top-2 % 242.1 / mean 241.4"
+  },
+  {
+   "label": "the console is clean",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "measurements": {
+  "save": {
+   "before": {
+    "saved": "0",
+    "text": "Save",
+    "colour": "rgb(201, 82, 75)",
+    "className": "cc-btn-save px-3"
+   },
+   "after": {
+    "saved": "1",
+    "text": "✓ Saved",
+    "colour": "rgb(201, 82, 75)",
+    "className": "cc-btn-saved px-3"
+   },
+   "reopened": {
+    "saved": "1",
+    "text": "✓ Saved",
+    "colour": "rgb(95, 158, 110)",
+    "className": "cc-btn-saved px-3"
+   },
+   "dirty": {
+    "saved": "0",
+    "text": "Save",
+    "colour": "rgb(201, 82, 75)",
+    "className": "cc-btn-save px-3"
+   }
+  },
+  "elementChoices": [
+   {
+    "key": "",
+    "label": "Project default"
+   },
+   {
+    "key": "carcass:c1",
+    "label": "Carcass 1 · MFC White W980 18 mm"
+   },
+   {
+    "key": "front:f1",
+    "label": "Front 1 · MDF Shaker blank 25 mm"
+   },
+   {
+    "key": "front:f2",
+    "label": "Front 2 · Melamine front 19 mm"
+   }
+  ],
+  "elementOverride": {
+   "before": {
+    "pixels": 30800,
+    "mean": 229.1,
+    "median": 243.1,
+    "p05": 125.9,
+    "p95": 245.1,
+    "contrast": 119.2,
+    "stdev": 41.9,
+    "dark": 0.011,
+    "max": 254
+   },
+   "after": {
+    "pixels": 30800,
+    "mean": 215.1,
+    "median": 242.1,
+    "p05": 106.1,
+    "p95": 245.1,
+    "contrast": 139.1,
+    "stdev": 54.4,
+    "dark": 0.016,
+    "max": 254
+   },
+   "box": {
+    "x": 672,
+    "y": 476,
+    "width": 220,
+    "height": 140
+   }
+  },
+  "doorExtend": {
+   "single": {
+    "checked": false,
+    "value": "38",
+    "disabled": true,
+    "doorHeight": "717"
+   },
+   "multi": {
+    "present": true,
+    "value": "38",
+    "apply": "Apply (3)",
+    "count": "3"
+   },
+   "applied": [
+    38,
+    38,
+    38
+   ]
+  },
+  "wallHeights": {
+   "before": {
+    "extend": 38,
+    "below": 0
+   },
+   "afterPanel": {
+    "extend": 38,
+    "below": 120
+   },
+   "afterDoor": {
+    "extend": 64,
+    "below": 120
+   },
+   "panelH": 840,
+   "doorH": 781,
+   "panelY": -120
+  },
+  "infill": {
+   "before": 0,
+   "top": 1630,
+   "roomHeight": 2500,
+   "unitHeight": 770,
+   "pieceH": 2500
+  },
+  "cncSections": [
+   {
+    "key": "mat:mat_ply18_birch",
+    "caption": "BB/BB-18 · Birc…"
+   },
+   {
+    "key": "mat:mat_mdf25_shaker",
+    "caption": "MDF Shaker blank 25 mm  6 …"
+   },
+   {
+    "key": "mat:mat_mfc19_front",
+    "caption": "Melamine front…"
+   },
+   {
+    "key": "mat:mat_mfc18_white",
+    "caption": "W980 SM · MFC White W980 18 mm  20 parts"
+   }
+  ],
+  "cncAnnotation": {
+   "near": {
+    "labels": 27,
+    "parts": 28,
+    "outside": 0,
+    "size": 22
+   },
+   "far": {
+    "labels": 0,
+    "outside": 0,
+    "size": null
+   }
+  },
+  "editorLight": {
+   "region": {
+    "x": 335,
+    "y": 254,
+    "width": 579,
+    "height": 481
+   },
+   "before": {
+    "pixels": 29034,
+    "mean": 166,
+    "median": 185,
+    "p05": 50,
+    "p95": 207.9,
+    "contrast": 157.9,
+    "stdev": 49.3,
+    "dark": 0.04,
+    "max": 208.1
+   },
+   "after": {
+    "pixels": 29034,
+    "mean": 193.8,
+    "median": 217.3,
+    "p05": 59.9,
+    "p95": 230.1,
+    "contrast": 170.2,
+    "stdev": 58.3,
+    "dark": 0.04,
+    "max": 230.1
+   },
+   "oldRig": {
+    "ambient": 0.75,
+    "hemisphere": {
+     "sky": "#ffffff",
+     "ground": "#ffffff",
+     "intensity": 0
+    },
+    "lamps": [
+     {
+      "id": "key",
+      "x": 1,
+      "y": 1.6,
+      "z": 1,
+      "intensity": 1.6
+     },
+     {
+      "id": "fill",
+      "x": -1,
+      "y": 0.6,
+      "z": -0.4,
+      "intensity": 0.5
+     }
+    ]
+   },
+   "rig": {
+    "ambient": 0.95,
+    "hemisphere": {
+     "sky": "#fff6ec",
+     "ground": "#c8c2b4",
+     "intensity": 0.85
+    },
+    "lamps": [
+     {
+      "id": "key",
+      "x": 1,
+      "y": 1.6,
+      "z": 1,
+      "intensity": 2
+     },
+     {
+      "id": "fill",
+      "x": -1,
+      "y": 0.6,
+      "z": -0.4,
+      "intensity": 0.65
+     },
+     {
+      "id": "side",
+      "x": -1.35,
+      "y": 0.25,
+      "z": 0.85,
+      "intensity": 0.9
+     },
+     {
+      "id": "under",
+      "x": 0.25,
+      "y": -1.15,
+      "z": 0.8,
+      "intensity": 0.55
+     },
+     {
+      "id": "back",
+      "x": 0.4,
+      "y": 0.85,
+      "z": -1.4,
+      "intensity": 0.7
+     }
+    ]
+   }
+  },
+  "gloss": {
+   "doors": {
+    "baseId": "u_eoks679",
+    "wallId": "u_o70i22h",
+    "base": {
+     "id": "01-F",
+     "role": "front",
+     "materialRole": "front",
+     "exposed": true
+    },
+    "wall": {
+     "id": "WU02-F",
+     "role": "front",
+     "materialRole": "front",
+     "exposed": true
+    }
+   },
+   "wallDoorMaterial": {
+    "unitId": "u_o70i22h",
+    "panelId": "WU02-F",
+    "role": "front",
+    "materialRole": "front",
+    "colour": "#f2f0ec",
+    "roughness": 0.4,
+    "metalness": 0,
+    "env": 0.25,
+    "clearcoat": 0.35,
+    "clearcoatRoughness": 0.12
+   },
+   "baseDoorMaterial": {
+    "unitId": "u_eoks679",
+    "panelId": "01-F",
+    "role": "front",
+    "materialRole": "front",
+    "colour": "#f2f0ec",
+    "roughness": 0.4,
+    "metalness": 0,
+    "env": 0.25,
+    "clearcoat": 0.35,
+    "clearcoatRoughness": 0.12
+   },
+   "sameMaterial": true,
+   "rects": {
+    "wall": {
+     "panelId": "WU02-F",
+     "x": 643,
+     "y": 207,
+     "w": 88,
+     "h": 104
+    },
+    "base": {
+     "panelId": "01-F",
+     "x": 647,
+     "y": 512,
+     "w": 86,
+     "h": 103
+    }
+   },
+   "wallDoor": {
+    "pixels": 9152,
+    "mean": 244.1,
+    "median": 244.1,
+    "p05": 243.9,
+    "p95": 244.1,
+    "contrast": 0.3,
+    "stdev": 0.1,
+    "dark": 0,
+    "max": 244.1,
+    "topShare": 0.02,
+    "topMean": 244.1
+   },
+   "baseDoor": {
+    "pixels": 8858,
+    "mean": 241.4,
+    "median": 241.1,
+    "p05": 241.1,
+    "p95": 242.1,
+    "contrast": 1,
+    "stdev": 0.4,
+    "dark": 0,
+    "max": 242.1,
+    "topShare": 0.02,
+    "topMean": 242.1
+   },
+   "points": [
+    {
+     "x": 0.35,
+     "yMm": 1650,
+     "z": 0.7,
+     "intensity": 12,
+     "colour": "#fff6ec"
+    },
+    {
+     "x": -0.35,
+     "yMm": 1650,
+     "z": 0.7,
+     "intensity": 12,
+     "colour": "#fff3e4"
+    },
+    {
+     "x": 0.35,
+     "yMm": 500,
+     "z": 0.7,
+     "intensity": 6,
+     "colour": "#fff6ec"
+    },
+    {
+     "x": -0.35,
+     "yMm": 500,
+     "z": 0.7,
+     "intensity": 6,
+     "colour": "#fff3e4"
+    }
+   ]
+  }
+ }
+}

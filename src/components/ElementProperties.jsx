@@ -7,6 +7,7 @@ import {
   elementActions, elementFields, elementLabel, boardParamFor,
 } from '../engine/elements.js';
 import { getUnitType } from '../engine/types.js';
+import { doorExtendMm, doorHeightOf } from '../engine/doors.js';
 import { elementMaterialChoices, migrateDesign } from '../engine/design.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
@@ -47,6 +48,8 @@ export default function ElementProperties({
   const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
   const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
   const setSideInfillPinned = useProjectStore((s) => s.setSideInfillPinned);
+  const setSideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
+  const setEndPanelBelow = useProjectStore((s) => s.setEndPanelBelow);
   const removeElement = useProjectStore((s) => s.removeElement);
   const moveElement = useProjectStore((s) => s.moveElement);
 
@@ -62,23 +65,39 @@ export default function ElementProperties({
   const locked = Boolean(panel.meta?.locked);
   const endPanel = (unit.params.end_panels || []).find((ep) => ep.id === panel.meta?.panelId) || null;
   const infillSide = panel.meta?.side === 'right' ? 'R' : 'L';
-  // What this piece is made of RIGHT NOW: the engine's own answer, which is the
-  // override where there is one and the project's material where there is not.
-  const materialLabel = panel.meta?.material_label || '';
+  // ─── Turn 16 (CLAUDE.md F1.3): THE PICKER MATCHES BY KEY ────────────────
+  //
+  // It matched by LABEL, which was fine while "the fronts" were one row and
+  // wrong the moment they became two: two front types faced in the same board
+  // have the same label, and a picker keyed on the label would tick both rows
+  // and store whichever the search hit first. The key is the palette's own
+  // (`carcass:c1`, `front:f2`), it is what the override stores, and it is what
+  // the BOM, the sheet and the 3D view resolve back through
+  // (engine/materials.js).
+  //
+  // A project saved before this turn has a label and no key, so the value falls
+  // back to the row whose label matches — its material is not lost, and it is
+  // written as a key the first time it is touched.
+  const storedKey = panel.meta?.material_key || '';
+  const storedLabel = panel.meta?.material_label || '';
+  const chosen = choices.find((c) => c.key === storedKey)
+    || (storedKey ? null : choices.find((c) => c.material_label === storedLabel))
+    || null;
+  const materialValue = chosen?.key || '';
 
-  const setMaterial = (label) => {
-    const pick = choices.find((c) => c.material_label === label) || null;
+  const setMaterial = (key) => {
+    const pick = choices.find((c) => c.key === key) || null;
     // A shelf keeps its material on its ITEM (turn 9): that id survives the
     // shelf being dragged past its neighbours, and a panel id does not. Every
     // other piece is built BY the engine and has no item, so it is keyed by the
     // panel id the engine gave it (turn 11, F3.1).
-    if (item) setElementMaterial(unit.id, item.id, pick);
-    else {
-      setElementOverride(unit.id, panel.id, {
-        material_id: pick?.material_id ?? null,
-        material_label: pick?.material_label ?? null,
-      });
-    }
+    const patch = {
+      material_key: pick?.key ?? null,
+      material_id: pick?.material_id ?? null,
+      material_label: pick?.material_label ?? null,
+    };
+    if (item) setElementMaterial(unit.id, item.id, patch);
+    else setElementOverride(unit.id, panel.id, patch);
   };
 
   const row = (key) => {
@@ -192,23 +211,61 @@ export default function ElementProperties({
             </div>
           </Field>
         );
+      // ─── Turn 16 (CLAUDE.md F4.3, owner decision B) ─────────────────────
+      // The masking panel's OWN height below the carcass. On a wall unit this
+      // is the second of the two independent numbers: the door has its extend
+      // and the panel has this, and setting either leaves the other exactly
+      // where it was — no auto-follow, which is what the owner asked for in as
+      // many words. Clamped by the store to what is actually under the carcass
+      // (a wall unit's mounting height, a standing unit's legs).
+      case 'below-unit-ep':
+        return (
+          <Field key={key} label="Below unit">
+            <NumberField
+              className="cc-input text-right"
+              data-below-unit="1"
+              min={0}
+              value={Number(endPanel?.below_mm) || 0}
+              title="How far this masking panel runs below the carcass (mm). The door beside it keeps its own extend."
+              onCommit={(v) => endPanel && setEndPanelBelow(unit.id, endPanel.id, v)}
+            />
+          </Field>
+        );
       case 'infill-width':
         return (
           <Field key={key} label="Width">
             <span className="cc-input block text-right opacity-70">{formatMm(panel.w)}</span>
           </Field>
         );
+      // ─── Turn 16 (CLAUDE.md F9): A FILLER GOES TO THE CEILING TOO ───────
+      // The end panel has had the pair since turn 15 — a number and a ▲ that
+      // runs it to the ceiling — and the filler beside it had only the number,
+      // which is the same gesture learnt once and available in one of the two
+      // places it belongs. Same mechanics, not a forked copy: the store's
+      // `sideInfillToCeiling` is `setSideInfillTop` with the room's own
+      // headroom in it, exactly as `endPanelToCeiling` is.
       case 'above-unit-infill':
         if (panel.meta?.side === 'top') return null;
         return (
           <Field key={key} label="Above unit">
-            <NumberField
-              className="cc-input text-right"
-              min={0}
-              value={Number(unit.params[infillSide === 'R' ? 'side_infill_right_top_mm' : 'side_infill_left_top_mm']) || 0}
-              title="How far this filler runs above the carcass (mm)"
-              onCommit={(v) => setSideInfillTop(unit.id, infillSide, v)}
-            />
+            <div className="flex gap-1">
+              <NumberField
+                className="cc-input text-right flex-1"
+                min={0}
+                value={Number(unit.params[infillSide === 'R' ? 'side_infill_right_top_mm' : 'side_infill_left_top_mm']) || 0}
+                title="How far this filler runs above the carcass (mm)"
+                onCommit={(v) => setSideInfillTop(unit.id, infillSide, v)}
+              />
+              <button
+                type="button"
+                className="cc-btn px-2"
+                data-infill-to-ceiling="1"
+                title="All the way to the ceiling"
+                onClick={() => setSideInfillToCeiling(unit.id, infillSide)}
+              >
+                ▲
+              </button>
+            </div>
           </Field>
         );
       case 'pin-infill': {
@@ -257,24 +314,49 @@ export default function ElementProperties({
       // It was in the cabinet's carcass block, three sections away from the
       // thing it is about — which is how the owner came to report it missing.
       // The engine is untouched: `door_extend` is the param it has always been.
-      case 'door-extend':
+      // ─── Turn 16 (CLAUDE.md F4.1): …AND THE NUMBER ─────────────────────
+      // The switch has been here since turn 14 and it could only say 38. The
+      // ENGINE has taken a number since turn 3 (`door_extend` may be `true` for
+      // the profile's default or a millimetre value), so this is the control
+      // catching up with it: tick it and it is the profile's 38, type over the
+      // number and it is yours. Same clamp rules as every other field in this
+      // panel — the workshop's 0.5 mm grid, and never below zero.
+      case 'door-extend': {
+        const on = Boolean(unit.params.door_extend);
+        const extend = doorExtendMm(unit.params, profile) || profile.wallUnit.doorExtend;
         return (
-          <div key={key} className="col-span-2">
-            <label className="flex items-center gap-2 text-sm text-ink-100">
-              <input
-                type="checkbox"
-                data-door-extend="1"
-                checked={Boolean(unit.params.door_extend)}
-                onChange={(e) => updateUnitParams(unit.id, { door_extend: e.target.checked })}
+          <div key={key} className="col-span-2 space-y-1">
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-sm text-ink-100 flex-1">
+                <input
+                  type="checkbox"
+                  data-door-extend="1"
+                  checked={on}
+                  onChange={(e) => updateUnitParams(unit.id, {
+                    door_extend: e.target.checked ? extend : false,
+                  })}
+                />
+                <span>Door extend</span>
+              </label>
+              <NumberField
+                className="cc-input w-20 text-right"
+                data-door-extend-mm="1"
+                min={0}
+                disabled={!on}
+                value={extend}
+                title="How far the front runs below the carcass, in millimetres"
+                onCommit={(v) => updateUnitParams(unit.id, { door_extend: v > 0 ? v : false })}
               />
-              <span>Door extend +{formatMm(profile.wallUnit.doorExtend)}</span>
-            </label>
-            <p className="text-[11px] text-ink-400">
+            </div>
+            <p className="text-[11px] text-ink-400" data-door-height={doorHeightOf(unit.params, profile)}>
               The front runs this far below the carcass — the handleless grab edge. Every door of this
-              cabinet, because they are cut as a set.
+              cabinet, because they are cut as a set. This door is{' '}
+              <span className="text-ink-100">{formatMm(doorHeightOf(unit.params, profile))} mm</span> tall;
+              a masking panel beside it keeps its own height.
             </p>
           </div>
         );
+      }
       case 'masking-depth':
         return (
           <Field key={key} label="Depth">
@@ -319,18 +401,22 @@ export default function ElementProperties({
               <span
                 className="w-4 h-4 rounded border border-shell-600 shrink-0"
                 data-element-swatch="1"
-                style={{ background: (choices.find((c) => c.material_label === materialLabel)?.hex) || 'transparent' }}
-                title={materialLabel || 'Project default'}
+                style={{ background: chosen?.hex || 'transparent' }}
+                title={chosen?.label || 'Project default'}
               />
               <select
                 className="cc-input flex-1"
-                value={materialLabel}
-                title="This piece only — the project's own palette: its boards, and its fronts"
+                data-element-material="1"
+                value={materialValue}
+                title="This piece only — the project's own palette: its boards, and each of its fronts"
                 onChange={(e) => setMaterial(e.target.value)}
               >
                 <option value="">Project default</option>
+                {/* One row PER TYPE, keyed by the palette's own key — two
+                    fronts faced in the same board are two rows with one name,
+                    and they stay two choices (F1.3). */}
                 {choices.map((c) => (
-                  <option key={c.key} value={c.material_label}>{c.material_label}</option>
+                  <option key={c.key} value={c.key}>{c.label}</option>
                 ))}
               </select>
             </div>
@@ -349,7 +435,7 @@ export default function ElementProperties({
       </div>
       <div className="text-[11px] text-ink-400">
         {formatMmPair(panel.w, panel.h)} · {formatMm(panel.thickness)} mm
-        {panel.meta?.material_label ? ` · ${panel.meta.material_label}` : ''}
+        {chosen ? ` · ${chosen.label}` : ''}
       </div>
 
       <div className={compact ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-2 gap-2'}>

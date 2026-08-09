@@ -84,8 +84,10 @@ test('a bare computeCabinet with no overrides cuts exactly what it cut before', 
 test('a material nobody chose is not a material', () => {
   assert.equal(shelfMaterial(undefined), null);
   assert.equal(shelfMaterial({}), null);
+  // Turn 16 (CLAUDE.md F1.3): the palette KEY travels with the pair, and a
+  // shelf saved before this turn simply has none.
   assert.deepEqual(shelfMaterial({ material_label: 'Oak MFC 25' }),
-    { material_id: null, material_label: 'Oak MFC 25' });
+    { material_id: null, material_label: 'Oak MFC 25', material_key: null });
 });
 
 // ─── the depth clamp, as pure arithmetic ────────────────────────────────────
@@ -323,7 +325,12 @@ test('the material list is the project\'s own boards plus the fronts, and nothin
   assert.equal(choices.length, 3, 'two carcass boards and the fronts');
   assert.equal(choices[0].material_label, 'Broken white');
   assert.equal(choices[1].material_label, 'Dark walnut');
-  assert.equal(choices[2].key, 'front');
+  // Turn 16 (CLAUDE.md F1.3): the front row is ONE PER FRONT TYPE and carries
+  // the palette's own key, so two types can never collapse into one row —
+  // `front` alone said "the fronts" and meant whichever one the resolver
+  // happened to pick.
+  assert.equal(choices[2].key, 'front:f1');
+  assert.equal(choices[2].kind, 'front');
   assert.equal(choices[2].material_label, 'Light oak');
 });
 
@@ -332,7 +339,7 @@ test('…and it names a SPRAYED front the way the cut list does (F6)', () => {
     colour: { front: { hex: '#b32428', name: '3005 Wine Red', system: 'RAL' } },
   });
   const choices = elementMaterialChoices(design, P, []);
-  assert.equal(choices.find((c) => c.key === 'front').material_label, 'RAL 3005 Wine Red spray');
+  assert.equal(choices.find((c) => c.kind === 'front').material_label, 'RAL 3005 Wine Red spray');
 });
 
 test('an assigned material shows its own name when no decor is set', () => {

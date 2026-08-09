@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import NumberField from './NumberField.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { getUnitType } from '../engine/types.js';
 import { commonValue, MIXED } from '../lib/selection.js';
+import { doorExtendMm } from '../engine/doors.js';
+import { formatMm } from '../engine/format.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 
 // ─── The panel over MANY cabinets (turn 13, CLAUDE.md F5.2) ─────────────────
@@ -32,6 +34,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
   const redistributeShelvesBulk = useProjectStore((s) => s.redistributeShelvesBulk);
   const addDoorsBulk = useProjectStore((s) => s.addDoorsBulk);
   const removeDoorsBulk = useProjectStore((s) => s.removeDoorsBulk);
+  const setDoorExtendBulk = useProjectStore((s) => s.setDoorExtendBulk);
   const profile = useCabinetProfileStore((s) => s.profile);
   const openModal = useUiStore((s) => s.openModal);
   const notify = useUiStore((s) => s.notify);
@@ -51,6 +54,22 @@ export default function MultiUnitPanel({ ids, onClose }) {
   // How many of them actually have doors on — so "Remove doors" can say what it
   // is about to do, and be off when there is nothing to take off.
   const withDoors = selected.filter((u) => u.params.doors && u.params.doors !== false).length;
+
+  // ─── Turn 16 (CLAUDE.md F4.2): the door extend over a selection ─────────
+  // How many of these kits HAVE a grab edge, what they say about it now, and
+  // the number the field starts at: their common answer where they agree, the
+  // profile's 38 where they do not. `commonValue` is the same tested helper
+  // every other shared field here uses — a field that disagrees says "mixed"
+  // and writes nothing until a human types.
+  const extendable = selected.filter((u) => getUnitType(u.type)?.doorExtend).length;
+  const extendCommon = commonValue(
+    selected.filter((u) => getUnitType(u.type)?.doorExtend),
+    (u) => doorExtendMm(u.params, profile) || null,
+  );
+  const [extendDraft, setExtendDraft] = useState(null);
+  const extend = extendDraft ?? (extendCommon.mixed ? profile.wallUnit.doorExtend
+    : (extendCommon.value || profile.wallUnit.doorExtend));
+  const setExtend = (v) => setExtendDraft(Math.max(0, Number(v) || 0));
 
   // The shared numbers. Width is deliberately NOT among them: a run's widths
   // are what make it that run, and one box that sets all six to 600 is a way to
@@ -209,6 +228,56 @@ export default function MultiUnitPanel({ ids, onClose }) {
               Remove doors {withDoors ? `(${withDoors})` : ''}
             </button>
           </div>
+          {/* ─── Turn 16 (CLAUDE.md F4.2): DOOR EXTEND, over a selection ───
+              "The function is MISSING there entirely. Add it beside Add/Remove
+              doors: one action, one undo step, same default-38-editable field,
+              applied to every selected unit's doors."
+              Beside them literally. Only the kits that HAVE the grab edge take
+              it — a base unit has a worktop over its doors — and the count says
+              how many that is rather than leaving a joiner to guess. */}
+          {extendable > 0 && (
+            <div className="grid grid-cols-[1fr_auto_auto] gap-2 items-end" data-bulk-door-extend="1">
+              <div>
+                <span className="cc-label">
+                  Door extend (mm)
+                  {extendCommon.mixed && <span className="ml-1 text-gold" data-mixed="door_extend">mixed</span>}
+                </span>
+                <NumberField
+                  className="cc-input text-right"
+                  min={0}
+                  data-door-extend-mm="1"
+                  value={extend}
+                  title="How far every selected door runs below its carcass"
+                  onCommit={setExtend}
+                />
+              </div>
+              <button
+                type="button"
+                className="cc-btn"
+                data-bulk="door-extend"
+                title={`Give ${extendable} of them a ${formatMm(extend)} mm grab edge — one undo step`}
+                onClick={() => {
+                  const { applied, skipped } = setDoorExtendBulk(ids, extend) || {};
+                  if (applied) notify(`Door extend ${formatMm(extend)} mm on ${applied} cabinet${applied === 1 ? '' : 's'}.`, 'ok');
+                  if (skipped) notify(`${skipped} of them have no grab edge to extend.`, 'info');
+                }}
+              >
+                Apply ({extendable})
+              </button>
+              <button
+                type="button"
+                className="cc-btn"
+                data-bulk="door-extend-off"
+                title="Take the grab edge off every selected door"
+                onClick={() => {
+                  const { applied } = setDoorExtendBulk(ids, false) || {};
+                  if (applied) notify(`Door extend off on ${applied} cabinet${applied === 1 ? '' : 's'}.`, 'ok');
+                }}
+              >
+                Off
+              </button>
+            </div>
+          )}
           <button
             type="button"
             className="cc-btn-gold w-full"

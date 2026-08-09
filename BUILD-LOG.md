@@ -5316,3 +5316,249 @@ wypełniacz za wąski na 45° są cięte dokładnie tak, jak cięła je tura 14.
 tury) · `projectSettings.carcassSources[veneer]` z `thickness: 19` (F3.3) ·
 pole `picker` na każdym źródle korpusu i frontu (F3 — to DANE, nie liczba, ale
 mieszka tam, gdzie źródła).
+
+---
+
+# TURA 16 — MATERIAŁ (09.08.2026)
+
+Tura MATERIAŁU. Jeden temat przeciągnięty przez całą aplikację: płyta jest
+przypisana RAZ i czytana WSZĘDZIE — w kroku 5, w modalu elementu, w widoku 3D,
+w BOM-ie i na arkuszach CNC. Do tego werdykty właściciela z testu oka tury 15.
+
+## F0 — Baza — ✅ ZIELONA
+
+Pełny reinstall, **1289 testów zielonych** (dokładnie tyle, ile zapowiada
+CLAUDE.md), czysty build. Batch z czatu potwierdzony na main:
+`test/sprayed-carcass-sheen.test.js` istnieje, `profile.appearance.studio.points`
+ma CZTERY wpisy (dwa na `yMm 1650`, dwa na `yMm 500`), a `resolveFinishes`
+zaczyna łańcuch korpusu linią natryskowego korpusu. Nic nie było odtwarzane
+w ciemno.
+
+## F1 — TOŻSAMOŚĆ MATERIAŁU — ✅ ZIELONA
+
+Właściciel dosłownie: „przypisane materiały jeśli są takie same to łączymy,
+jeśli inne to oddzielamy — dlatego przypisanie materiałów jest takie ważne".
+
+Przed turą prawdziwe przypisanie płyty miały wyłącznie TYPY KORPUSU. Fronty nie
+miały żadnego, infille/plinty/panele boczne/panele maskujące nie miały żadnego,
+a lista w modalu elementu była zwinięta i myląca. To była jedna dziura i została
+zaszyta jednym modułem: **`src/engine/materials.js`**.
+
+**F1.1 — front dostaje płytę per TYP.** Ten sam dropdown MaterialStock, który
+typ korpusu ma od tury 11, ten sam store, ten sam fallback Generic i ta sama
+twarda bramka T15-B: zmiana efektywnej grubości przy istniejących szafkach PYTA
+(Recompute / Keep), a check-out odmawia placeholderów
+(`placeholderAssignments`). `projectFrontThickness` czyta teraz przypisaną płytę
+przed źródłem — płyta 22 mm jest 22 mm, niezależnie od tego, który przycisk
+źródła się świeci. „Recompute" naprawdę przelicza: każda szafka na podłodze
+dostaje nowy `front_t` w jednej paczce i jednym cofnięciu.
+
+**F1.2 — „Same as fronts" dla części runu.** Cztery przełączniki jednego
+kształtu (`design.runMaterials`), DOMYŚLNIE WŁĄCZONE — co jest dokładnie tym, co
+aplikacja robiła do tej pory, więc migracja nie przesuwa ani jednej części.
+Odhaczenie pokazuje własny dropdown; ponowne zahaczenie **nie wyrzuca** wybranej
+płyty. Jeden komponent, jeden kształt w store, lista grup w silniku
+(`RUN_MATERIAL_GROUPS`), więc piąta część runu to wpis danych.
+
+**F1.3 — lista elementów rozróżnia typy.** `elementMaterialChoices` zwraca JEDEN
+wiersz na TYP FRONTU („Front 1 · EGGER H1180", „Front 2 · RAL 3005 Wine Red
+spray"), zbudowany na `projectPalette`, więc picker jednostki i picker elementu
+mają te same klucze. **Picker dopasowuje po KLUCZU, nigdy po etykiecie** — dwa
+fronty na tej samej płycie mają jedną nazwę i muszą zostać dwoma wyborami.
+Klucz jedzie kanałem nadpisania (`material_key`) przez silnik na `panel.meta`.
+
+**F1.4 — nadpisanie elementu dociera do OBRAZKA (BACKLOG #75 zamknięte).**
+Rozwiązanie u korzenia: `panelFinish(panel, unit, design, profile)` — czysta
+funkcja w silniku, testowana w node — a `3d/UnitView.jsx`, okno edytora i okno
+detalu tylko ją konsumują. Półka przełączona na Front 2 zmienia kolor na ekranie
+(zmierzone w przejściu). Przy okazji wypadł błąd z tury 12: okno edytora
+podawało do `THREE.Color` OBIEKT koloru zamiast hexa, więc natryskowy front był
+w nim biały.
+
+**F1.5 — jedno źródło w dół.** `engine/bom.js` czyta `resolvePanelMaterial`
+zamiast własnej rozwiązywalni; tożsamością wiersza cięcia jest KLUCZ materiału,
+więc dwa fronty na różnych płytach to dwie grupy, dwa fronty na tej samej — jedna,
+a nadpisanie PRZENOSI część między grupami. Testy w
+`test/turn16-material.test.js` trzymają obie połowy zdania właściciela.
+
+## F2 — CNC PO MATERIALE — ✅ ZIELONA
+
+**Przełącznik sprayed / non-sprayed znika z widoku CNC** (`VIEW_PRESETS`), a
+zostaje w `EXPORT_PRESETS`, bo to od nich bierze nazwę plik DXF i reguła 0 pilnuje
+tego co do bajtu. Sekcje arkusza są teraz **po PRZYPISANYM MATERIALE**:
+tożsamość to `material_id`, nagłówek to nazwa płyty tak, jak nazywa ją BOM,
+grubość wypadła z klucza (pozycja magazynowa ma jedną grubość, więc dzielenie po
+niej mogło tylko oddzielić płytę od samej siebie). Część z zahaczonym „Same as
+fronts" ląduje w sekcji frontu 1 — bo ptaszek jest PRZYPISANIEM, nie stanem
+widoku. Widok po SZAFCE z tury 15 bez zmian, przełącznik między widokami zostaje.
+
+## F3 — Czytelność CNC: symbole skalują się z rysunkiem — ✅ ZIELONA
+
+Zrzut właściciela: przy oddaleniu nazwy szafek, kody części i symbole wierceń
+zostają wielkości EKRANU, nachodzą na siebie i wychodzą poza części. Przyczyną
+była jedna linia arytmetyki powtórzona w pięciu miejscach — `LABEL_PX * mmPerPx`
+— czyli rozmiar w milimetrach arkusza dobrany tak, żeby wyszedł stały w
+pikselach. Napis jest teraz częścią RYSUNKU: `profile.cnc.annotation` w
+milimetrach arkusza (22 / 45 / 70), podpis części rysowany WEWNĄTRZ jej obrysu,
+a arytmetyka w `engine/cnc/annotation.js` (czysta, testowalna). Co się nie
+mieści — skraca się, a poniżej progu czytelności (`minLabelPx`) po prostu nie
+jest rysowane. Otwory mają swoją prawdziwą średnicę zamiast ekranowego minimum,
+więc trzydzieści sześć wierceń przestaje zlewać się w szarą plamę większą od
+części pod nimi.
+
+## F4 — Drzwi i wysokości — ✅ ZIELONA
+
+**F4.1** — przy przełączniku „Door extend" stoi LICZBA: domyślnie 38 z profilu,
+edytowalna, na siatce 0,5 mm. Silnik przyjmuje liczbę od tury 3, więc to
+kontrolka doganiająca silnik; `doorExtendMm` / `doorHeightOf` w `engine/doors.js`
+to jedno czytanie tego pola dla panelu, multi-selekcji i testu.
+
+**F4.2** — funkcji nie było na multi-selekcji w ogóle. Jest, obok Add / Remove
+doors: pole 38, „Apply (n)" i „Off", jedna paczka i jedno cofnięcie
+(`setDoorExtendBulk`), a kity bez tej cechy są POLICZONE i zgłoszone, nie po
+cichu pominięte.
+
+**F4.3** — wysokość DRZWI i wysokość PANELU MASKUJĄCEGO to dwa niezależne pola
+(decyzja właściciela B). Panel dostał własne `below_mm` (lustro `top_mm`),
+przycięte przez pokój — pod podłogę nie schodzi — a `endPanelDrop` czyta je i
+NIGDY nie zagląda do `door_extend`. Reguły maski z tury 14 (L = suma runu,
+głębokość = szafka + 10) nietknięte, co trzyma osobny test.
+
+## F5 — Save jest STANEM, nie błyskiem — ✅ ZIELONA
+
+Zielony ptaszek z tury 15 pokazywał się na moment, bo SAVED było tym samym
+booleanem co FOLDED — w komponencie. Rozdzielone: FOLDED zostaje preferencją
+widoku, a SAVED to MIGAWKA danych sekcji (`settingsSectionSnapshot`) trzymana w
+`uiStore`, więc przeżywa zamknięcie i ponowne otwarcie Ustawień. Kolor jest
+czystą funkcją `(saved, current)` — zielony, dopóki na ekranie jest to, co
+zapisano; czerwony w chwili, gdy cokolwiek się zmieni. Sekcja czerwienieje od
+SWOICH zmian, nie od sąsiada.
+
+## F6 — NAZWA szafki należy do właściciela — ✅ ZIELONA
+
+Domyślna zostaje automatyczna (01, 02, WU05…) i staje się edytowalna w miejscu,
+w którym jest pokazana — w nagłówku panelu. Trzymana tam, gdzie automatyczna
+(`params.unit_num`), więc „wszystko w dół drukuje nową nazwę" jest prawdą bez
+mówienia o tym czemukolwiek: etykieta na kanwie, podpis bloku CNC, kody części,
+BOM, rysunki, check-out. Wyczyszczenie pola przywraca automatyczną. Duplikaty są
+DOZWOLONE i oflagowane (`engine/naming.js`, miękkie ostrzeżenie), a nazwa jedzie
+do nazwy pliku przez `fileSafeName` — „01" przechodzi bez zmiany.
+
+## F7 — ŚWIATŁO w edytorze elementu — ✅ ZIELONA
+
+„Serio nic nie widać". Oba okna (edytor rozstrzelony i detal części) miały TRZY
+ŚWIATŁA JAKO LITERAŁY we własnym JSX — czyli rig bez pokrętła. Jest jeden rig w
+profilu (`appearance.editorRig`), konsumowany przez `3d/EditorRig.jsx`, z
+arytmetyką w `engine/render.js`. Stare trzy podniesione o ćwierć plus TRZY nowe
+lampy z kątów, w których stary rig nie miał nic: z boku, OD DOŁU i od tyłu — bo
+ściana gniazda odwrócona od klucza jest czarna niezależnie od tego, jak mocny
+jest klucz. **Zmierzone, nie oceniane okiem**: ten sam region detalu w
+rozstrzelonej szafce, luminancja liczona po MEBLU (piksele poniżej 244, bo tło
+okna to płaskie `#fafaf8`): **średnia 166,0 → 193,8 (+17 %)**, **p05 50,0 →
+59,9 (+20 %)** przy KONTRAŚCIE 157,9 → 170,2. Rig podniesiony bez spłaszczenia
+modelunku. Pełny raport: `verify/t16/light.md`.
+
+## F8 — Wiszące szafki a połysk — ✅ ZIELONA (DIAGNOZA; rig NIE zmieniony)
+
+CLAUDE.md każe najpierw ZDIAGNOZOWAĆ w przeglądarce i naprawić to, co się
+znajdzie. Znalazło się co innego, niż zakładał zgłoszony objaw.
+
+1. **Materiały są IDENTYCZNE.** Odczytane z ŻYWEJ sceny przez uchwyt tury 13
+   (`window.__cc.views.room`; każdy mesh panelu niesie od tej tury swój id z
+   silnika): drzwi wiszącej i drzwi stojącej mają ten sam kolor `#f2f0ec`, tę
+   samą chropowatość 0,4, ten sam probe 0,25 i ten sam clearcoat 0,35. Ścieżka
+   materiału nie jest zepsuta — „coś z farbą" nie zachodzi.
+2. **Objaw się NIE REPRODUKUJE.** Kontrolowana para (szafka stojąca i wisząca na
+   tej samej ścianie, w tym samym x, obie z drzwiami), mierzona NA DRZWIACH,
+   których położenie policzono z żywej kamery: wisząca **244,1** vs stojąca
+   **241,4** na bieli, a na froncie RAL 3005 **115,2 vs 92,4** — wisząca jest
+   JAŚNIEJSZA o 22,8, nie ciemniejsza.
+3. **Kandydat na poprawkę idzie w złą stronę.** `scripts/t16-gloss-lab.mjs`
+   przemiata cztery rigi, w tym oba, które CLAUDE.md wymienia z nazwy (para oczu
+   przesunięta, dedykowana para na 1860). Każdy podnosi wiszące JESZCZE bardziej
+   i poszerza różnicę, która i tak jest odwrotna do zgłoszenia. Więc rig zostaje
+   nietknięty — to jest odpowiedź wynikająca z pomiaru, a nie z ostrożności.
+
+To, co pomiar naprawdę pokazuje (biały front przy domyślnym połysku nie ma gdzie
+mieć refleksu, bo dyfuzja siedzi przy suficie zakresu), jest zapisane w
+BLOCKERS jako osobny, mierzalny temat — pod własnym nagłówkiem, a nie pod tym.
+Ławka zostaje gotowa: jedno polecenie mierzy dowolną parę szafek w dowolnym
+projekcie, więc SCENA WŁAŚCICIELA może być zmierzona, zamiast opisana.
+
+## F9 — Infill do sufitu — ✅ ZIELONA
+
+Boczny wypełniacz dostał parę, którą panel ma od tury 15: liczbę „Above unit" i
+▲, które puszcza go do sufitu. Mechanika jest tą samą mechaniką — store miał
+`sideInfillToCeiling` od tury 6 i brakowało wyłącznie gestu w panelu — więc to
+użycie, nie kopia. Reguły panelu przypięte w turze 15 zostają zielone.
+
+## F10 — Przejście w przeglądarce + dokumentacja + BRAMKA — ✅ ZIELONA (25/25)
+
+`scripts/e2e-turn16.mjs` w prawdziwym Chromium: **25 sprawdzeń, wszystkie
+zielone**, 20 zrzutów i `measurements.json` w `verify/t16/`. Mierzy, nie ufa —
+a tam, gdzie chodzi o ŚWIATŁO, piksele są dekodowane ze zrzutu
+(`scripts/png.mjs`, `zlib` node'a, zero nowych zależności) i luminancja jest
+liczbą w pliku.
+
+### Co pokazuje przejście
+
+| # | zrzut | co dowodzi |
+|---|---|---|
+| 1 | `1a-step5-front-boards-and-switches.png` | płyta na KAŻDYM typie frontu i cztery „Same as fronts" |
+| 2 | `1b-plinths-on-their-own-board.png` | odhaczony plinth ma własny dropdown i trzyma płytę |
+| 3 | `2a-element-modal-front-types.png` | „Front 1 · …" i „Front 2 · …" jako osobne wiersze |
+| 4 | `3a/3b-shelf-before/after-override.png` | półka przemalowana ŻYWCEM przez nadpisanie |
+| 5 | `4a-cnc-by-material.png` | cztery sekcje nazwane płytami, zero przełącznika sprayed |
+| 6 | `5a/5b-cnc-near/far-zoom.png` | kody części WEWNĄTRZ części, przy obu przybliżeniach |
+| 7 | `6a-door-extend-single.png`, `6b-door-extend-multi.png` | liczba 38 na jednych drzwiach i na multi-selekcji |
+| 8 | `7a-wall-unit-two-heights.png` | wysokość drzwi i panelu ruszane niezależnie |
+| 9 | `8a/8b/8c-save-*.png` | zielony po zapisie i po ponownym otwarciu, czerwony po zmianie |
+| 10 | `9a-renamed-in-the-cnc-tree.png`, `9b-renamed-in-the-bom.png` | „Island" w drzewku CNC i w BOM-ie |
+| 11 | `10a/10b-editor-light-*.png` | światło edytora przed i po, z liczbami |
+| 12 | `11a-wall-vs-base-gloss.png` + `gloss-*.png` | pomiar połysku wisząca vs stojąca, cztery rigi |
+| 13 | `12a-infill-to-the-ceiling.png` | wypełniacz puszczony do sufitu |
+
+## Dokumentacja
+
+`BUILD-LOG` — ten wpis, faza po fazie. `BACKLOG` — **#75 zamknięte** (kolor per
+element maluje 3D), model materiału dopisany jako zamknięty, nowe wpisy z tury.
+`BLOCKERS` — wpis o połysku (co zmierzono i czego pomiar nie potwierdził) oraz o
+tym, czego pomiar nie mógł objąć. `verify/t16/cnc-export-identity.md` — raport
+tożsamości CNC z nazwaną deltą; `verify/t16/light.md` — obie mierzone fazy z
+tabelami liczb.
+
+## BRAMKA — ✅ ZIELONA
+
+| brama | wynik |
+|---|---|
+| pełny reinstall (`rm -rf node_modules && npm install`) | czysty |
+| testy | **1327 / 1327** (baza tury: 1289, nowych 38) |
+| build | czysty |
+| istniejące fixtures | `git diff fixtures/` **pusty** — 12 plików, żadnego dodania |
+| zależności | nietknięte (`git diff package.json package-lock.json` pusty) |
+| czystość silnika | `src/engine/` importuje wyłącznie `src/engine/` |
+| tożsamość CNC | **2050 odcisków, 0 różnic**; delta nazwana i opublikowana |
+| `verify/t16/` | 20 zrzutów + 10 z ławki połysku, `measurements.json`, `gloss-lab.json`, dwa raporty |
+| przejście w przeglądarce | **25 / 25** |
+| PR | otwarty, **nie scalony** |
+
+**Delta CNC — jedna, nazwana: GRUPOWANIE ARKUSZA PRZECHODZI ZE
+SPRAYED/NON-SPRAYED NA PRZYPISANY MATERIAŁ.** Eksportowane bajty nie ruszyły się
+w ogóle (2050 odcisków identycznych), bo grupowanie, które się zmieniło, jest
+WIDOKIEM — granica postawiona w turze 15 i utrzymana. Pełne wyjaśnienie z
+tabelką „przed / po" w `verify/t16/cnc-export-identity.md`.
+
+## Nowe pliki
+
+`src/engine/materials.js` · `src/engine/naming.js` ·
+`src/engine/cnc/annotation.js` · `src/3d/EditorRig.jsx` ·
+`scripts/e2e-turn16.mjs` · `scripts/png.mjs` · `scripts/t16-gloss-lab.mjs` ·
+`test/turn16-material.test.js` · `test/turn16-phases.test.js` · `verify/t16/`
+
+## Nowe liczby w `profile.js`
+
+`cnc.annotation.partLabelMm` / `.blockLabelMm` / `.sectionLabelMm` /
+`.partLabelInset` / `.minLabelPx` / `.minSymbolPx` (F3) ·
+`appearance.editorRig.ambient` / `.hemisphere` / `.lamps[5]` (F7 — pięć lamp
+jako DANE, z których trzy są nowe). Nic w `studio.points` nie ruszone: F8
+kończy się pomiarem, który mówi, żeby ich nie ruszać.

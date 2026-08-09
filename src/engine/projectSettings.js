@@ -110,9 +110,23 @@ export function projectBoardThickness(design, profile) {
 /**
  * The FRONT board, from front type 1's source. A workshop running veneer fronts
  * gets 19 without saying so twice.
+ *
+ * ─── Turn 16 (CLAUDE.md F1.1) ───
+ * …and from its ASSIGNED BOARD before that, where one has been assigned. A
+ * front type carries stock now, and a board that is 22 mm thick is 22 mm thick
+ * whatever source button is lit — this is the same order the carcass side has
+ * followed since turn 11 (`drawnBoardT` in the settings surface: carcass 1's
+ * assigned board is the truth once one exists).
+ *
+ * `materials` is passed IN, so this stays a pure function of data and a caller
+ * with no stock list to hand gets exactly the answer it got before this turn.
  */
-export function projectFrontThickness(design, profile) {
+export function projectFrontThickness(design, profile, materials = []) {
   const first = design?.fronts?.types?.[0];
+  const board = first?.material_id
+    ? (materials || []).find((m) => m.id === first.material_id)
+    : null;
+  if (Number(board?.thickness) > 0) return Number(board.thickness);
   const fromSource = first?.source ? thicknessForSource(profile, 'front', first.source) : null;
   return fromSource ?? profile.front.thickness;
 }
@@ -213,4 +227,100 @@ export function projectDimensions(design, profile, heights) {
     { key: 'wall', label: 'Wall unit height', value: heights.wall },
     { key: 'toeKick', label: 'Plinth height', value: heights.toeKick },
   ];
+}
+
+// ─── SAVE IS A STATE, NOT A FLASH (turn 16, CLAUDE.md F5) ───────────────────
+//
+// The owner, of turn 15's green tick: it shows for a moment. It did, because
+// "saved" was a BOOLEAN in a component — the same flag that folded the section
+// away — so any re-render, any reopening of Settings, put it back to red with
+// nothing having changed, and a red Save on a section nobody has touched says
+// exactly as little as a green one that never goes red.
+//
+// F5's answer, in one line: the button's colour is a function of the DATA.
+//
+//     dirty = the section's current values ≠ the values as they were saved
+//
+// So it is computed here, purely, from (saved, current) — which is what makes
+// it node-testable and what makes it survive the panel being closed and opened
+// again: the SNAPSHOT is what is remembered, not the fact that a button was
+// once pressed.
+
+/**
+ * The sections a Save belongs to. The T15 red-Save sections, exactly — CLAUDE.md
+ * F5 says "matching the T15 red-Save sections (Carcasses, Fronts)".
+ */
+export const SAVE_SECTIONS = ['carcass', 'fronts'];
+
+/**
+ * The slice of the design ONE section owns.
+ *
+ * Deliberately narrow: a section goes red for its own changes and not for the
+ * neighbour's, so a workshop editing the fronts does not see the carcass line
+ * turn red beside it. The FRONTS section owns the front types, the door SHAPE
+ * (chosen in its gallery) and the run-piece switches that stand beside it
+ * (F1.2); the CARCASS section owns the carcass types and the project's board
+ * thickness, which is the number its folded line prints.
+ *
+ * @returns {object} a plain, comparable value — no functions, no undefined
+ */
+export function settingsSectionData(design, section) {
+  const d = design || {};
+  if (section === 'carcass') {
+    return {
+      types: (d.carcass?.types || []).map((t) => ({
+        id: t.id, label: t.label, source: t.source ?? null,
+        material_id: t.material_id ?? null, finish_id: t.finish_id ?? null,
+      })),
+      colour: d.colour?.carcass ?? null,
+      thickness: d.thickness ?? null,
+    };
+  }
+  if (section === 'fronts') {
+    return {
+      style: d.fronts?.style ?? null,
+      types: (d.fronts?.types || []).map((t) => ({
+        id: t.id, label: t.label, source: t.source ?? null,
+        colour: t.colour ?? null, material_id: t.material_id ?? null, finish_id: t.finish_id ?? null,
+      })),
+      runMaterials: d.runMaterials ?? null,
+    };
+  }
+  return null;
+}
+
+/**
+ * A stable string for a section's data, so "has it changed" is one comparison
+ * and not a deep walk written twice.
+ *
+ * Key order is fixed by `settingsSectionData` above — it builds every object
+ * literally — so `JSON.stringify` is deterministic here in a way it is not in
+ * general.
+ */
+export function settingsSectionSnapshot(design, section) {
+  const data = settingsSectionData(design, section);
+  return data === null ? null : JSON.stringify(data);
+}
+
+/**
+ * Is this section dirty? A PURE function of (saved, current), which is what
+ * CLAUDE.md F5 asks for in as many words.
+ *
+ * Never saved at all → dirty. That is the honest answer for a project that has
+ * just been created: there is something to save, and the button says so.
+ */
+export function isSectionDirty(saved, current) {
+  if (saved == null) return true;
+  return saved !== current;
+}
+
+/**
+ * What the Save button should LOOK like, so the component renders an answer
+ * rather than deciding one.
+ *
+ * @returns {{state:'saved'|'dirty', label:string, dirty:boolean}}
+ */
+export function saveButtonState(saved, current) {
+  const dirty = isSectionDirty(saved, current);
+  return { dirty, state: dirty ? 'dirty' : 'saved', label: dirty ? 'Save' : '✓ Saved' };
 }

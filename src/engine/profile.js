@@ -1126,6 +1126,42 @@ export const DEFAULT_CABINET_PROFILE = {
       roomBounce: 0.42,
     },
 
+    // ─── THE EDITOR'S OWN RIG (turn 16, CLAUDE.md F7) ───────────────────────
+    //
+    // The owner, of the element detail window and the exploded editor: "serio
+    // nic nie widać" — you genuinely cannot see anything. He is right, and the
+    // reason is that both windows carried THREE LIGHTS AS LITERALS in their own
+    // components (an ambient at 0.75 and two directionals), which is both a
+    // rule-3 violation and a rig nobody could turn up without editing JSX.
+    //
+    // It is a rig of its own and NOT the studio's, deliberately: the studio rig
+    // lights a room from a viewer's height for a picture of furniture, and this
+    // lights ONE PART held up to the light on a bench. What has to read here is
+    // the machining — a dog bone, a 5 mm hinge hole, the break on an edge — and
+    // those are read off the shading inside a 6 mm feature, not off the front
+    // face of a door.
+    //
+    // So: the old three, each raised about a quarter, plus three lamps from the
+    // angles the old rig had NOTHING in — the side, from below, and from behind
+    // — because a socket's far wall facing away from the key is black however
+    // bright the key is. Positions are FRACTIONS of the window's own orbit
+    // radius, so a 300 mm drawer front and a 2.4 m wardrobe are lit alike.
+    //
+    // The numbers were tuned by MEASURING (verify/t16/editor-light.json): mean
+    // luminance over a detail region, before and after, in a real browser.
+    editorRig: {
+      ambient: 0.95,                                    // was 0.75 in the JSX
+      hemisphere: { sky: '#fff6ec', ground: '#c8c2b4', intensity: 0.85 },
+      lamps: [
+        { id: 'key', x: 1.0, y: 1.6, z: 1.0, intensity: 2.0 },        // was 1.6
+        { id: 'fill', x: -1.0, y: 0.6, z: -0.4, intensity: 0.65 },    // was 0.5
+        // The three new ones (F7: "add fill lamps from other angles").
+        { id: 'side', x: -1.35, y: 0.25, z: 0.85, intensity: 0.9 },
+        { id: 'under', x: 0.25, y: -1.15, z: 0.8, intensity: 0.55 },
+        { id: 'back', x: 0.4, y: 0.85, z: -1.4, intensity: 0.7 },
+      ],
+    },
+
     // ─── PBR per finish family (turn 6, CLAUDE.md F2) ───
     // Turn 4 gave every piece the same 20 % sheen, which is why a melamine
     // carcass and a sprayed door looked like the same material with two
@@ -1624,6 +1660,31 @@ export const DEFAULT_CABINET_PROFILE = {
     // 8 mm is the standard two-flute compression bit a board is cut with. A
     // workshop on a 6 or a 10 changes this line and the picture follows.
     toolDiameter: 8,
+
+    // ─── Turn 16 (CLAUDE.md F3): THE SHEET'S OWN LETTERING ─────────────────
+    //
+    // Every one of these is a SHEET MILLIMETRE, not a pixel — that is the whole
+    // fix. Turn 11 sized the captions in pixels and converted to millimetres at
+    // the current zoom, so text grew as the drawing shrank until the sheet was
+    // a mat of overlapping words. Annotation is part of the drawing: a part
+    // code is 22 mm tall on the sheet whether you are looking at one cabinet or
+    // at fourteen, and it is laid out inside the outline of the part it names.
+    //
+    // The two `min…Px` numbers are the ONLY screen-space values here, and they
+    // decide one thing each: whether a thing is drawn at all. A caption too
+    // small to read is hidden rather than inflated; a drilling symbol under a
+    // pixel across is hidden rather than drawn as a smudge. That is CLAUDE.md
+    // F3's "truncates/hides rather than overlapping a neighbour".
+    annotation: {
+      partLabelMm: 22,        // the part code + its cut size, inside the part
+      blockLabelMm: 45,       // the cabinet's NAME over its block
+      sectionLabelMm: 70,     // the material section's header
+      // How far inside its own bottom edge a part's caption sits, as a share of
+      // the part's height. Keeps a caption off the outline it stands in.
+      partLabelInset: 0.06,
+      minLabelPx: 5,          // under five pixels tall, a caption is not drawn
+      minSymbolPx: 0.75,      // …and a hole under three quarters of one is not
+    },
   },
 
   // ─── Cutting-list CSV (must stay byte-identical to the LISP output) ───
@@ -1927,6 +1988,18 @@ export function migrateCabinetProfile(profile) {
         spots: mergeLightArray(D.appearance.studio.spots, profile.appearance?.studio?.spots),
         points: mergeLightArray(D.appearance.studio.points, profile.appearance?.studio?.points),
       },
+      // Turn 16 (F7): the editor's rig, merged the way the studio's is — the
+      // scalars key by key, the LAMPS as a whole list (a workshop that has cut
+      // the rig down to two must not have three grafted back on by an upgrade).
+      editorRig: {
+        ...D.appearance.editorRig,
+        ...profile.appearance?.editorRig,
+        hemisphere: {
+          ...D.appearance.editorRig.hemisphere,
+          ...profile.appearance?.editorRig?.hemisphere,
+        },
+        lamps: mergeLightArray(D.appearance.editorRig.lamps, profile.appearance?.editorRig?.lamps),
+      },
       materials: {
         melamine: { ...D.appearance.materials.melamine, ...profile.appearance?.materials?.melamine },
         lacquer: { ...D.appearance.materials.lacquer, ...profile.appearance?.materials?.lacquer },
@@ -1994,7 +2067,10 @@ export function migrateCabinetProfile(profile) {
     },
     room: { ...D.room, ...profile.room },
     ui: { ...D.ui, ...profile.ui },
-    cnc: { ...D.cnc, ...profile.cnc },
+    // Turn 16 (F3): `annotation` is merged key by key, like every other nested
+    // block here — a workshop that has tuned ONE caption height keeps the app's
+    // answer for the rest, and a profile saved before this turn gets all of it.
+    cnc: { ...D.cnc, ...profile.cnc, annotation: { ...D.cnc.annotation, ...profile.cnc?.annotation } },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: { ...D.editor, ...profile.editor },
     dimensions: { ...D.dimensions, ...profile.dimensions },

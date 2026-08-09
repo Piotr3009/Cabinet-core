@@ -871,6 +871,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           onFocus={(point, sizeMm) => focusOn([point.x, point.y, point.z], sizeMm)}
           onContextMenu={(menu) => openContextMenu({ ...menu, unitId: unit.id })}
           frontColour={resolveUnitDesign(unit, design).colour?.hex || null}
+          // Turn 16 (CLAUDE.md F1.4): the design itself, so a piece with a
+          // material of its own is painted with ITS material and not the
+          // project's. The resolution is the engine's (engine/materials.js).
+          design={design}
           onSetTopInfill={(h) => setTopInfill(unit.id, h)}
           onFillToCeiling={() => fillToCeiling(unit.id)}
           onSetEndPanelTop={(panelId, v) => setEndPanelTop(unit.id, panelId, v)}

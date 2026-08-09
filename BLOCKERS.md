@@ -1310,3 +1310,74 @@ docierał. Handler czyta zdarzenie natywne (`e.nativeEvent`).
 **Reguła na przyszłość:** w scenie 3D zdarzenie wskaźnika przechodzi przez
 warstwę tłumaczącą. Cokolwiek jest na nim AKCESOREM — przyciski, modyfikatory,
 `buttons` — sprawdź na zdarzeniu natywnym, zanim zbudujesz na tym funkcję.
+
+## #67 — Połysk wiszących szafek: objaw NIE reprodukuje się na tej bazie (T16 F8)
+
+Zapisane nie dlatego, że coś zostało cofnięte, tylko dlatego, że **werdykt
+właściciela i pomiar mówią co innego**, a następna tura musi zobaczyć liczby,
+zanim zacznie ruszać rig.
+
+**Zgłoszenie.** „Wiszące szafki nadal nie mają połysku szafek stojących — albo
+coś z farbą jest nie tak."
+
+**Diagnoza (CLAUDE.md F8, gałąź pierwsza) — materiały są identyczne.** Odczytane
+z żywej sceny przez uchwyt tury 13 (`window.__cc.views.room`); od tury 16 każdy
+mesh panelu niesie swój id z silnika (`userData.ccPanelId`), więc pomiar nazywa
+drzwi, które zmierzył:
+
+| | drzwi wiszącej `WU02-F` | drzwi stojącej `01-F` |
+|---|---|---|
+| kolor | `#f2f0ec` | `#f2f0ec` |
+| roughness | 0,4 | 0,4 |
+| envMapIntensity | 0,25 | 0,25 |
+| clearcoat / clearcoatRoughness | 0,35 / 0,12 | 0,35 / 0,12 |
+
+Ścieżka materiału nie jest zepsuta. „Coś z farbą" nie zachodzi.
+
+**Pomiar (gałąź druga) — różnica idzie w DRUGĄ stronę.** Kontrolowana para na
+tej samej ścianie, w tym samym x, obie z drzwiami; region każdego skrzydła
+policzony z żywej kamery (`Box3` → `project`), nie z pasa zdjęcia:
+
+| front | wisząca | stojąca | różnica |
+|---|---|---|---|
+| broken white | 244,1 | 241,4 | **+2,7 na korzyść wiszącej** |
+| RAL 3005 | 115,2 | 92,4 | **+22,8 na korzyść wiszącej** |
+
+**Kandydaci na poprawkę pogłębiają różnicę.** Cztery rigi w
+`scripts/t16-gloss-lab.mjs`, w tym oba, które CLAUDE.md wymienia z nazwy: para
+oczu przesunięta na 1860 (+23,6) i dedykowana para na 1860 przy 6 / 9 / 12
+(+27,2 / +29,1 / +30,7). Każdy podnosi wiszące bardziej niż stojące.
+
+**Decyzja: rig NIE został zmieniony.** F8 mówi „fix what is found" — znalezione
+jest to, że poprawka, którą sugeruje zgłoszenie, oddala obrazek od tego, o co
+właściciel prosi. Pełny raport: `verify/t16/light.md`.
+
+**Czego pomiar nie mógł objąć — i to jest jedyna otwarta część.** Mierzona była
+scena TESTOWA: domyślna kamera, domyślna wysokość zawieszenia (1500), pusty
+pokój. Właściciel patrzy na swój projekt, ze swoim kolorem, swoją kamerą i
+swoim otoczeniem. Ławka jest po to gotowa:
+
+    npm run build && npx vite preview --port 4173 &
+    node scripts/t16-gloss-lab.mjs
+
+— jedno polecenie mierzy dowolną parę szafek i zapisuje liczby do
+`verify/t16/gloss-lab.json`. Do czasu, aż będzie pomiar Z JEGO sceny, każda
+zmiana rigu byłaby zgadywaniem, a reguła fizycznych jednostek światła i „jeden
+rig" są dokładnie po to, żeby nie zgadywać.
+
+**Reguła na przyszłość:** werdykt oka jest ZGŁOSZENIEM, nie pomiarem. Zanim
+liczba w `profile.appearance` się ruszy, musi istnieć para odczytów tej samej
+powierzchni w tej samej scenie — inaczej rig jest strojony pod jeden zrzut i
+rozstrajany pod następny.
+
+## #68 — Dwie konwencje czyszczenia nazwy pliku (T16 F6)
+
+Nazwa szafki należy od tury 16 do właściciela, więc może zawierać spację albo
+ukośnik, a to jedzie do nazw plików. Czyszczą je DWIE reguły: `engine/cnc/dxf.js`
+od tury 3 (`[^A-Za-z0-9._-]` → `_`, w środku ZIP-a) i `engine/naming.js` od
+tury 16 (→ `-`, na nazwie ZIP-a). Obie są bezpieczne i obie przepuszczają „01"
+bez zmiany, więc nic się nie psuje — ale ta sama nazwa może wyjść jako
+`Kitchen-island-left-dxf.zip` z `Kitchen_island_left-BUL.dxf` w środku.
+
+Zjednoczenie ich ZMIENI nazwy plików w folderze warsztatu, czyli jest nazwaną
+deltą eksportu i regułą 0 należy do osobnej tury, która ją ogłosi. BACKLOG #88.

@@ -7,9 +7,10 @@ import { isJcMaterial, materialSlotState, useMaterialAssignmentStore } from '../
 import {
   FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights, resolveJoinery,
 } from '../engine/design.js';
+import { RUN_MATERIAL_GROUPS, runMaterialSetting } from '../engine/materials.js';
 import {
   carcassSources, frontSources, hardwareChoices, pickerForSource, projectBoardThickness,
-  projectDimensions, projectFrontThickness, sourceById,
+  projectDimensions, projectFrontThickness, saveButtonState, settingsSectionSnapshot, sourceById,
 } from '../engine/projectSettings.js';
 import { formatMm } from '../engine/format.js';
 import { PROJECT_TYPES as PROJECT_TYPE_OPTIONS } from '../engine/projectTypes.js';
@@ -78,12 +79,18 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setFrontTypes = useProjectStore((s) => s.setFrontTypes);
   const setFrontType = useProjectStore((s) => s.setFrontType);
   const setFrontColour = useProjectStore((s) => s.setFrontColour);
+  const setFrontMaterial = useProjectStore((s) => s.setFrontMaterial);
+  const setRunMaterial = useProjectStore((s) => s.setRunMaterial);
   const addDoorStyle = useProjectStore((s) => s.addDoorStyle);
   const updateDoorStyle = useProjectStore((s) => s.updateDoorStyle);
   const removeDoorStyle = useProjectStore((s) => s.removeDoorStyle);
 
   const materials = useMaterialAssignmentStore((s) => s.materials);
-  const unitCount = useProjectStore((s) => s.units.length);
+  const units = useProjectStore((s) => s.units);
+  const unitCount = units.length;
+  const updateUnitParamsBulk = useProjectStore((s) => s.updateUnitParamsBulk);
+  /** Re-cut every cabinet's fronts at a new board — one action, one undo step. */
+  const recutFronts = (thickness) => updateUnitParamsBulk(units.map((u) => u.id), { front_t: thickness });
 
   const [picking, setPicking] = useState(null);          // { carcassId } | null
   const [joineryOpen, setJoineryOpen] = useState(false);
@@ -92,12 +99,33 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   //
   // ─── Turn 15 (CLAUDE.md F1.1): …AND THE SAVE TURNS GREEN ───
   // A red button that stays red after you press it says nothing back. Pressed,
-  // it goes GREEN with a tick and the section folds; open the section again and
-  // it is red, because there is something to save again. FOLDED and SAVED are
-  // the same fact here — the button folds the section — so one flag carries
-  // both rather than two that can disagree.
+  // it goes GREEN with a tick and the section folds.
+  //
+  // ─── TURN 16 (CLAUDE.md F5): …AND STAYS GREEN ────────────────────────────
+  //
+  // The owner's verdict on that: it shows for a moment. It did, because SAVED
+  // was the same flag as FOLDED — a boolean in this component — so opening the
+  // section again, or closing Settings and coming back, put it back to red with
+  // nothing having changed.
+  //
+  // The two facts are separated now. FOLDED is still a view preference and
+  // still lives here. SAVED is a SNAPSHOT of the section's own data, kept in
+  // the ui store so it survives this component being unmounted, and the colour
+  // is a pure comparison against it (engine/projectSettings.js). Green means
+  // "what is on the screen is what was saved"; red means something has changed
+  // since — which is the only thing a Save button should ever mean.
   const [folded, setFolded] = useState({ carcass: false, fronts: false });
-  const saveSection = (key) => setFolded((f) => ({ ...f, [key]: true }));
+  const settingsSaved = useUiStore((s) => s.settingsSaved);
+  const markSettingsSaved = useUiStore((s) => s.markSettingsSaved);
+  const snapshots = useMemo(() => ({
+    carcass: settingsSectionSnapshot(design, 'carcass'),
+    fronts: settingsSectionSnapshot(design, 'fronts'),
+  }), [design]);
+  const saveState = (key) => saveButtonState(settingsSaved[key], snapshots[key]);
+  const saveSection = (key) => {
+    markSettingsSaved(key, snapshots[key]);
+    setFolded((f) => ({ ...f, [key]: true }));
+  };
   const editSection = (key) => setFolded((f) => ({ ...f, [key]: false }));
   // ── The HARD gate (owner: B + hard gates): a board whose thickness differs
   // from what the project is DRAWN at cannot be assigned silently once units
@@ -142,6 +170,33 @@ export default function SettingsPanel({ onRoomSetup = null }) {
     gateOrApply(typeId, m.thickness, m.name, () => setCarcassMaterial(typeId, m.id));
   };
 
+  // ─── Turn 16 (CLAUDE.md F1.1): A FRONT TYPE'S BOARD ──────────────────────
+  //
+  // "Each front type gains the same MaterialStock dropdown a carcass type has —
+  // same store, same Generic fallback, same T15-B hard gates (changing an
+  // effective thickness with units present ASKS Recompute/Keep)."
+  //
+  // The gate is the CARCASS's gate, reused rather than rewritten — a front
+  // board pins what every door in the job is cut from exactly as the carcass
+  // board pins the boxes, so the question ("the project is drawn at 18 and this
+  // is 22 — recompute, or keep?") is the same question and deserves the same
+  // dialog. `frontGate` holds the offered assignment while the owner decides.
+  const [frontGate, setFrontGate] = useState(null);       // { typeId, thickness, label, apply }
+  const assignFrontBoard = (typeId, materialId) => {
+    const m = frontStock.find((x) => x.id === materialId) || null;
+    if (!m) { setFrontMaterial(typeId, null); return; }
+    const apply = () => setFrontMaterial(typeId, m.id);
+    // Front type 1 is the project's front, so it is the one that pins the
+    // thickness — the same rule carcass 1 follows (#58: one G per project).
+    if (unitCount > 0 && typeId === frontTypes[0]?.id && m.thickness && m.thickness !== frontBoard) {
+      setFrontGate({
+        typeId, thickness: m.thickness, label: m.name, apply,
+      });
+      return;
+    }
+    apply();
+  };
+
   // ─── Turn 15 (CLAUDE.md F3.3) ───
   // A carcass SOURCE pins a thickness the same way a board does — an EGGER
   // board is 18 and a veneered carcass is 19 — so choosing one goes through the
@@ -151,6 +206,11 @@ export default function SettingsPanel({ onRoomSetup = null }) {
     gateOrApply(typeId, src?.thickness, src?.label || 'that source', () => setCarcassSource(typeId, src?.id || null));
   };
   const frontMaterials = materials.filter((m) => m.category === 'front');
+  // The stock a FRONT may be assigned (turn 16, F1.1): the front blanks AND the
+  // ordinary boards, because a workshop cuts doors out of both — an MDF shaker
+  // blank and an 18 mm melamine board are both real answers to "what are these
+  // doors made of", and the Generic placeholders are on the board list.
+  const frontStock = materials.filter((m) => m.category === 'front' || m.category === 'board');
   const slots = materialSlotState(
     design.carcass.types.map((t) => ({ id: t.id, label: t.label, material_id: t.material_id })),
     materials,
@@ -163,7 +223,9 @@ export default function SettingsPanel({ onRoomSetup = null }) {
       id: 'f1', label: 'Front 1', source: PS.frontSources[0].id, colour: null, material_id: null,
     }];
   const board = projectBoardThickness(design, profile);
-  const frontBoard = projectFrontThickness(design, profile);
+  // Turn 16 (F1.1): the assigned board wins over the source, so the folded line
+  // and the gate both speak about what the doors are actually cut from.
+  const frontBoard = projectFrontThickness(design, profile, materials);
 
   const setDimension = (key, value) => {
     if (key === 'depth') { setProjectDefaults({ depth: value }); return; }
@@ -227,7 +289,8 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           </span>
           <SaveButton
             section="carcass"
-            saved={folded.carcass}
+            state={saveState('carcass')}
+            folded={folded.carcass}
             onSave={() => saveSection('carcass')}
             onEdit={() => editSection('carcass')}
           />
@@ -442,7 +505,8 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           <span className="text-xs uppercase tracking-wide text-ink-200">Fronts</span>
           <SaveButton
             section="fronts"
-            saved={folded.fronts}
+            state={saveState('fronts')}
+            folded={folded.fronts}
             onSave={() => saveSection('fronts')}
             onEdit={() => editSection('fronts')}
           />
@@ -561,9 +625,155 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                   keeps its choice; the colours are not yet.
                 </p>
               )}
+
+              {/* ─── Turn 16 (CLAUDE.md F1.1): THE BOARD BEHIND THE LOOK ───
+                  The same MaterialStock dropdown a carcass type has had since
+                  turn 11, on the front types — which is the hole the whole
+                  turn is about. Until now a front had a colour and a facing and
+                  NO stock, so "what board are these doors cut from" had no
+                  answer anywhere in the project, the BOM could not name it and
+                  the CNC sheet could not group by it. */}
+              {(() => {
+                const assigned = materials.find((m) => m.id === t.material_id) || null;
+                const gateHere = frontGate && frontGate.typeId === t.id ? frontGate : null;
+                return (
+                  <div className="space-y-1">
+                    <div className="cc-row">
+                      <span className="text-[11px] text-ink-400 flex-1">
+                        {assigned
+                          ? `${assigned.code ? `${assigned.code} · ` : ''}${assigned.name} · ${assigned.thickness} mm`
+                          : `No board assigned — drawing on ${formatMm(src.thickness)} mm from the source`}
+                        {isJcMaterial(assigned) ? ' · JC' : ''}
+                      </span>
+                      <select
+                        className="cc-input w-[260px]"
+                        data-front-material={t.id}
+                        value={t.material_id || ''}
+                        onChange={(e) => assignFrontBoard(t.id, e.target.value || null)}
+                      >
+                        <option value="">MaterialStock…</option>
+                        <optgroup label="Generic — geometry only, assign a real board before check-out">
+                          {frontStock.filter((m) => m.placeholder).map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Stock">
+                          {frontStock.filter((m) => !m.placeholder).map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {`${m.code ? `${m.code} · ` : ''}${m.name}`}{isJcMaterial(m) ? ' · JC' : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+                    {gateHere && (
+                      /* The T15-B hard gate, on the fronts: the doors in this
+                         job are DRAWN at one thickness and this board is
+                         another. Nothing changes until the owner says which
+                         truth wins. */
+                      <div className="cc-row rounded border border-status-warn/60 bg-status-warn/10 px-2 py-1" data-front-thickness-gate="1">
+                        <span className="text-[11px] text-status-warn flex-1">
+                          Fronts are drawn at {formatMm(frontBoard)} mm — {gateHere.label} is {formatMm(gateHere.thickness)} mm.
+                        </span>
+                        <button
+                          type="button"
+                          className="cc-btn px-2"
+                          onClick={() => {
+                            gateHere.apply();
+                            // RECOMPUTE means recompute: every cabinet already
+                            // on the floor is re-cut at the new front board, in
+                            // one batch and one undo step. Assigning the board
+                            // alone would only change what the NEXT cabinet is
+                            // drawn at, which is exactly the silent half-change
+                            // the gate exists to prevent.
+                            const { notices } = recutFronts(gateHere.thickness) || { notices: [] };
+                            for (const n of notices) notify(n, 'warn');
+                            setFrontGate(null);
+                            notify(`Fronts recomputed at ${formatMm(gateHere.thickness)} mm`, 'warn');
+                          }}
+                        >
+                          Recompute at {formatMm(gateHere.thickness)}
+                        </button>
+                        <button type="button" className="cc-btn px-2" onClick={() => setFrontGate(null)}>
+                          Keep {formatMm(frontBoard)} — pick another
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
+
+        {/* ─── Turn 16 (CLAUDE.md F1.2): THE RUN PIECES ───────────────────────
+            "Infills, plinths, end panels and masking panels get a material
+            control with a checkbox 'Same as fronts', DEFAULT ON. On = they
+            follow front type 1's board. Unticked = an own MaterialStock
+            dropdown appears for that group."
+            ONE component, four switches — the list is `RUN_MATERIAL_GROUPS` in
+            engine/materials.js and the resolver reads the same four keys, so a
+            fifth run piece is a data entry and not a widget. */}
+        <div className="border border-shell-600 rounded p-2 space-y-1.5" data-run-materials="1">
+          <span className="text-[11px] uppercase tracking-wide text-ink-400">
+            Infills, plinths, end panels, masking panels
+          </span>
+          {RUN_MATERIAL_GROUPS.map((g) => {
+            const setting = runMaterialSetting(design, g.id);
+            const assigned = materials.find((m) => m.id === setting.material_id) || null;
+            return (
+              <div key={g.id} className="cc-row" data-run-material={g.id}>
+                <span className="text-sm text-ink-100 w-32 shrink-0" title={g.hint}>{g.label}</span>
+                <label className="flex items-center gap-1.5 text-[11px] text-ink-200 shrink-0">
+                  <input
+                    type="checkbox"
+                    data-same-as-fronts={g.id}
+                    checked={setting.sameAsFronts}
+                    onChange={(e) => setRunMaterial(g.id, { sameAsFronts: e.target.checked })}
+                  />
+                  <span>Same as fronts</span>
+                </label>
+                {setting.sameAsFronts ? (
+                  <span className="text-[11px] text-ink-400 flex-1 text-right truncate">
+                    {frontTypes[0]?.label || 'Front 1'}
+                    {materials.find((m) => m.id === frontTypes[0]?.material_id)
+                      ? ` · ${materials.find((m) => m.id === frontTypes[0].material_id).name}`
+                      : ''}
+                  </span>
+                ) : (
+                  <select
+                    className="cc-input flex-1"
+                    data-run-material-stock={g.id}
+                    value={setting.material_id || ''}
+                    onChange={(e) => setRunMaterial(g.id, { material_id: e.target.value || null })}
+                  >
+                    <option value="">MaterialStock…</option>
+                    <optgroup label="Generic — geometry only, assign a real board before check-out">
+                      {frontStock.filter((m) => m.placeholder).map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Stock">
+                      {frontStock.filter((m) => !m.placeholder).map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {`${m.code ? `${m.code} · ` : ''}${m.name}`}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                )}
+                {!setting.sameAsFronts && assigned?.placeholder && (
+                  <span className="text-[10px] text-status-warn shrink-0" title="A placeholder board — assign a real one before check-out">⚠</span>
+                )}
+              </div>
+            );
+          })}
+          <p className="text-[11px] text-ink-400">
+            Ticked, these are cut from front 1&apos;s board — which is what a workshop means by
+            &quot;same as the doors&quot;, and what puts them on the same CNC sheet. Untick one to give
+            that group a board of its own.
+          </p>
+        </div>
         <p className="text-[11px] text-ink-400">
           Front 1 is the project&apos;s front colour — it is what the scene paints and what the cut list
           names. End panels and infills are cut from it too. One cabinet&apos;s own can be changed by
@@ -778,31 +988,39 @@ export default function SettingsPanel({ onRoomSetup = null }) {
 }
 
 /**
- * The section SAVE (turn 15, CLAUDE.md F1.1).
+ * The section SAVE (turn 15, CLAUDE.md F1.1; a STATE since turn 16, F5).
  *
- * RED while there is something to save; GREEN with a tick once it has been,
- * which is also when the section is folded away. Pressing it again opens the
- * section, and it is red again — because there is something to save again.
+ * RED "Save" while this section holds something that has not been saved; GREEN
+ * with a tick when what is on the screen is what was saved — and it STAYS
+ * green through a re-render, through folding the section away and through
+ * closing Settings and opening it again, because the answer is a comparison
+ * against the saved data rather than a flag somebody set.
+ *
+ * Pressing it while it is green does not "unsave" anything: it opens the
+ * section for editing, and the button stays green until an edit actually
+ * changes something.
  *
  * One component for both sections, so the two can never disagree about what
  * "saved" looks like, and the colours are the app's own status palette
  * (`.cc-btn-save` / `.cc-btn-saved` in index.css) rather than hex in JSX.
  */
 function SaveButton({
-  section, saved, onSave, onEdit,
+  section, state, folded, onSave, onEdit,
 }) {
+  const saved = !state.dirty;
   return (
     <button
       type="button"
       className={saved ? 'cc-btn-saved px-3' : 'cc-btn-save px-3'}
       data-save-section={section}
       data-saved={saved ? '1' : '0'}
+      data-folded={folded ? '1' : '0'}
       title={saved
-        ? 'Saved — click to open this section again'
+        ? (folded ? 'Saved — click to open this section again' : 'Saved. Nothing has changed since.')
         : 'Saves these choices and folds the section away'}
-      onClick={saved ? onEdit : onSave}
+      onClick={saved && folded ? onEdit : onSave}
     >
-      {saved ? '✓ Saved' : 'Save'}
+      {state.label}
     </button>
   );
 }

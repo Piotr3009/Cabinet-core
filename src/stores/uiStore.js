@@ -113,6 +113,28 @@ export const useUiStore = create((set, get) => ({
   // lives here with the other view state and reaches nothing that is exported.
   cncView: 'material',
   setCncView: (id) => set({ cncView: id === 'cabinet' ? 'cabinet' : 'material' }),
+
+  // ─── The settings SAVE, as a state (turn 16, CLAUDE.md F5) ────────────────
+  //
+  // What was saved, per section — a snapshot of that section's own data
+  // (engine/projectSettings.js `settingsSectionSnapshot`), not a boolean. The
+  // difference is the whole phase: a boolean is reset by any re-render and by
+  // closing the panel, which is why turn 15's green tick "shows for a moment".
+  // A snapshot is compared, so the button stays green until something actually
+  // changes and goes red the moment it does.
+  //
+  // It lives HERE and not in the component for one reason: closing Settings
+  // unmounts the component. It is view state and not project state — a saved
+  // section is a fact about this session's editing, not about the kitchen — so
+  // it goes with the rest of the view state and reaches nothing that is
+  // exported.
+  settingsSaved: {},                 // { [section]: snapshot string }
+  markSettingsSaved: (section, snapshot) => set((s) => ({
+    settingsSaved: { ...s.settingsSaved, [section]: snapshot },
+  })),
+  // A different project is a different set of answers: what was saved about the
+  // last one says nothing about this one.
+  resetSettingsSaved: () => set({ settingsSaved: {} }),
   toggleCncUnit: (unitId) => set((s) => {
     const { [unitId]: on, ...rest } = s.cncHiddenUnits;
     return { cncHiddenUnits: on ? rest : { ...rest, [unitId]: true } };

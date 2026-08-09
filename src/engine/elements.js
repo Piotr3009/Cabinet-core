@@ -190,7 +190,11 @@ const FIELDS = {
   back: ['carcass-board', 'material'],
   holder: ['carcass-board', 'material'],
   spurs: ['carcass-board', 'material'],
-  'end-panel': ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'material'],
+  // Turn 16 (CLAUDE.md F4.3): `below-unit-ep` — how far this masking panel runs
+  // BELOW the carcass. The mirror of `above-unit-ep` and, on a wall unit, the
+  // owner's second independent height: the door beside it has its own number
+  // and neither writes the other.
+  'end-panel': ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'below-unit-ep', 'material'],
   infill: ['infill-width', 'above-unit-infill', 'pin-infill', 'material'],
   plinth: ['plinth-height', 'material'],
   // ─── Turn 14 (CLAUDE.md F4.2): DOOR EXTEND LIVES ON THE DOOR ───

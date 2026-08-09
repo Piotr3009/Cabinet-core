@@ -201,12 +201,27 @@ export function decorPlacement(surface, panel, profile) {
  */
 export function surfaceFor({
   role, materialRole = null, finishExposed = false, finishes, profile, frontColour = null, sheen = null,
+  finish: resolvedFinish = undefined,
 }) {
   const A = profile.appearance;
   // The engine's own answer, with the role as the fallback for a caller (a test,
   // an old cached project) that has no material_role to hand.
   const wearsFront = materialRole ? materialRole === 'front' : role === 'front';
-  const finish = wearsFront ? finishes.front : finishes.carcass;
+  // ─── Turn 16 (CLAUDE.md F1.4): THE PIECE'S OWN MATERIAL, IF IT HAS ONE ────
+  //
+  // "An element override reaches the PICTURE. Today a per-element material
+  // choice reaches the BOM and never the 3D view. Fix at the root: the view
+  // resolves a panel's SURFACE from its effective material."
+  //
+  // The root is the ENGINE (engine/materials.js `panelFinish`), which is a pure
+  // function of (panel, unit, design, profile) and is unit-tested there. This
+  // file only consumes the answer — which is what keeps the rule that the view
+  // decides nothing. The old pair is still accepted, and is what a caller with
+  // no panel in its hand (a test, a swatch, the render preview) passes, so the
+  // default path is byte-for-byte the picture turn 15 drew.
+  const finish = resolvedFinish !== undefined
+    ? resolvedFinish
+    : (wearsFront ? finishes.front : finishes.carcass);
   const shade = A.shade[role] || 0;
   const pbr = (finishExposed ? A.materials?.lacquer : A.materials?.melamine) || A.sheen;
 

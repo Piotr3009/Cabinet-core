@@ -81,7 +81,10 @@ test('the FIELDS a piece offers are element-appropriate', () => {
   // A side: the carcass board (see below) and the material.
   assert.deepEqual(fields('BUL'), ['carcass-board', 'material']);
   // An end panel: its own height, its own board, how far above the unit.
-  assert.deepEqual(fields('END-L'), ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'material']);
+  // Turn 16 (CLAUDE.md F4.3): …and how far it runs BELOW the carcass, which on
+  // a wall unit is the masking panel's own height beside the door's own extend.
+  assert.deepEqual(fields('END-L'),
+    ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'below-unit-ep', 'material']);
   // A door: the hinge side, which is what F3.1 asks for by name.
   assert.ok(fields('01-F').includes('hinge-side'));
   // Everything takes a material.

@@ -10,6 +10,7 @@ import { roomWalls } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
+import { isDuplicateName, unitName } from '../engine/naming.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
@@ -185,7 +186,11 @@ export default function RightPanel() {
 
   return (
     <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
-      <PanelHeader title={`${type.label} · ${unit.params.unit_num}`} onClose={closeRightPanel} />
+      <PanelHeader title={type.label} onClose={closeRightPanel}>
+        {/* Turn 16 (CLAUDE.md F6): the name is the owner's, edited where it is
+            shown. It was `${type.label} · 01` printed into the header. */}
+        <UnitNameField unit={unit} units={units} />
+      </PanelHeader>
 
       <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
         {/* ── the ONE piece that is selected (turn 9, CLAUDE.md F4.3) ──
@@ -923,13 +928,63 @@ function ElementSection({ unit, element, onClose }) {
   );
 }
 
-function PanelHeader({ title, onClose }) {
+function PanelHeader({ title, onClose, children = null }) {
   return (
-    <div className="flex items-center px-3 py-2 border-b border-shell-600">
-      <span className="text-xs uppercase tracking-wide text-ink-200">{title}</span>
+    <div className="flex items-center gap-2 px-3 py-2 border-b border-shell-600">
+      <span className="text-xs uppercase tracking-wide text-ink-200 shrink-0">{title}</span>
+      {children}
       <span className="flex-1" />
       <button type="button" className="cc-btn-ghost" onClick={onClose} title="Close panel">×</button>
     </div>
+  );
+}
+
+/**
+ * ─── A CABINET'S NAME, EDITED WHERE IT IS SHOWN (turn 16, CLAUDE.md F6) ─────
+ *
+ * "Default stays automatic (01, 02, WU05…), but it becomes EDITABLE — panel
+ * header and/or unit modal, inline edit, stored on the unit."
+ *
+ * Inline, in the header, because that is where the name already IS: a joiner
+ * renames the thing he is looking at rather than opening a dialog to do it.
+ * Everything downstream — the canvas label, the CNC block caption and part
+ * codes, the BOM, the drawings, the check-out — reads `params.unit_num` and
+ * always has, so nothing had to be told about this.
+ *
+ * A duplicate is FLAGGED and not refused (F6): two cabinets called "Island" is
+ * a workshop's business. Clearing the box puts the automatic name back.
+ */
+function UnitNameField({ unit, units }) {
+  const setUnitName = useProjectStore((s) => s.setUnitName);
+  const [draft, setDraft] = useState(null);
+  const duplicate = useMemo(() => isDuplicateName(unit, units), [unit, units]);
+  const value = draft ?? unitName(unit);
+  const commit = () => {
+    if (draft != null && draft.trim() !== unitName(unit)) setUnitName(unit.id, draft);
+    setDraft(null);
+  };
+  return (
+    <span className="flex items-center gap-1 min-w-0">
+      <input
+        className={`cc-input h-6 py-0 px-1.5 text-xs w-24 ${duplicate ? 'border-status-warn' : ''}`}
+        data-unit-name={unit.id}
+        value={value}
+        title={duplicate
+          ? 'Another cabinet in this project has this name — allowed, but the cut list will show two'
+          : 'What this cabinet is called. It prints on the canvas, the CNC sheet, the BOM and the drawings.'}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') { setDraft(null); e.currentTarget.blur(); }
+        }}
+      />
+      {duplicate && (
+        <span className="text-[10px] text-status-warn" data-duplicate-name="1" title="Two cabinets share this name">
+          ⚠
+        </span>
+      )}
+    </span>
   );
 }
 

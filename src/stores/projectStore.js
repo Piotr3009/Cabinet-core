@@ -6,6 +6,7 @@ import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
+  boxSpansOnWall,
   clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
   backStandoff, clampElementDepth, elementDepthBounds, freeSlotOnWall, insetPads, shelfBand,
   shelfBounds, unitIssues, unitPlanSpan, unitSpan,
@@ -14,7 +15,7 @@ import {
   bandsOverlap, unitBand,
 } from '../engine/collision.js';
 import {
-  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls,
+  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
 } from '../engine/room.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
@@ -26,7 +27,9 @@ import {
 import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
-import { runInfillParams, runPlinthParams, unitTop } from '../engine/runs.js';
+import {
+  runInfillParams, runMaskParams, runMemberIds, runPlinthParams, unitTop,
+} from '../engine/runs.js';
 import { widthZones } from '../engine/zones.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
@@ -636,18 +639,28 @@ export const useProjectStore = create((set, get) => ({
     // unit — a segment is a stretch of ADJACENT PLINTHED units, so it cannot be
     // worked out until the store knows which of them have a plinth at all.
     const plinthParams = runPlinthParams(next, profile);
+    // ─── …and the MASKING PANEL, the same way (turn 14, CLAUDE.md F5) ───
+    // One board under a run of wall units, its segments decided by the same
+    // adjacency the plinth's are: docking a cabinet extends it, an end panel or
+    // a gap ends it.
+    const maskParams = runMaskParams(next, profile);
 
     set({
       units: next.map((u) => {
         const run = runParams.get(u.id) ?? null;
         const plinthRun = plinthParams.get(u.id) ?? null;
+        const maskRun = maskParams.get(u.id) ?? null;
         // Reference equality matters here: this runs on every drag frame, and
         // writing a fresh object each time would re-render every unit in the
         // scene for a run nobody touched.
-        if (sameRun(u.params.run_top_infill, run) && sameRun(u.params.run_plinth, plinthRun)) return u;
+        if (sameRun(u.params.run_top_infill, run)
+          && sameRun(u.params.run_plinth, plinthRun)
+          && sameRun(u.params.run_mask, maskRun)) return u;
         return {
           ...u,
-          params: { ...u.params, run_top_infill: run, run_plinth: plinthRun },
+          params: {
+            ...u.params, run_top_infill: run, run_plinth: plinthRun, run_mask: maskRun,
+          },
         };
       }),
       dirty: true,
@@ -754,14 +767,66 @@ export const useProjectStore = create((set, get) => ({
     return Boolean(enabled);
   },
 
-  removeTopInfill: (unitId) => {
+  /**
+   * ─── Turn 14 (CLAUDE.md F1.2): REMOVAL MUST REMOVE ───
+   *
+   * The piece belongs to the RUN — one length over four cabinets, at the
+   * tallest height any of them asks for — so taking it off has to be a decision
+   * about the run and not about one carcass in it. Turn 6 cleared the flag on
+   * the cabinet that was right-clicked and called `refreshAutoParts`, which
+   * dutifully rebuilt the run from the other three and put the piece straight
+   * back. On a run of one that looked like it worked; on a wall-unit run, which
+   * is where the owner met it, unchecking the box did nothing at all.
+   *
+   * The members are asked for BEFORE anything is written: a run is defined by
+   * where the cabinets stand and what height they finish at, and clearing the
+   * first flag does not change either — but reading the list afterwards would
+   * mean reading it out of a store that is mid-edit.
+   */
+  /**
+   * ─── The bottom masking panel (turn 14, CLAUDE.md F5) ───
+   *
+   * A DECISION, like the plinth and the top infill: it exists from the moment
+   * somebody adds it and not before, so no cut list carries a board nobody
+   * ordered. Only a hanging cabinet has an underside to mask.
+   *
+   * @returns {boolean} false when this kit cannot take one at all
+   */
+  addBottomMask: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || getUnitType(unit.type).mount !== 'wall') return false;
     set((s) => ({
-      units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, top_infill_mm: 0 } } : u)),
+      units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, bottom_mask: true } } : u)),
       dirty: true,
     }));
-    // The piece belongs to the RUN, so taking it off one cabinet is a decision
-    // about the run — which, on a run of one, is what makes it disappear.
     get().refreshAutoParts();
+    return true;
+  },
+
+  /**
+   * Take it off — and off the whole RUN, for the same reason the top infill's
+   * removal is (F1.2): the board belongs to the run, so unticking it on one
+   * cabinet of four and leaving the other three asking for it would be a menu
+   * entry that does nothing.
+   */
+  removeBottomMask: (unitId) => {
+    const ids = new Set(runMemberIds(get().units, unitId, getCabinetProfile()));
+    set((s) => ({
+      units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, bottom_mask: false } } : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+    return ids.size;
+  },
+
+  removeTopInfill: (unitId) => {
+    const ids = new Set(runMemberIds(get().units, unitId, getCabinetProfile()));
+    set((s) => ({
+      units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, top_infill_mm: 0 } } : u)),
+      dirty: true,
+    }));
+    get().refreshAutoParts();
+    return ids.size;
   },
 
   /**
@@ -1328,9 +1393,14 @@ export const useProjectStore = create((set, get) => ({
         width: unit.params.width,
         wallWidth: wall.width,
         wallMargin: wallMarginOf(state, unit),
-        others: state.units
-          .filter((u) => (u.position.wall ?? 0) === wall.index && obstructs(unit, u, profile))
-          .map(unitSpan),
+        others: [
+          ...state.units
+            .filter((u) => (u.position.wall ?? 0) === wall.index && obstructs(unit, u, profile))
+            .map(unitSpan),
+          // A box in the plan refuses a placement exactly as a neighbour does
+          // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
+          ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: roomBoxes(state.project.room) }),
+        ],
         near: onThisWall ? unitSpan(beside) : null,
         side: onThisWall ? side : null,
       }, profile);
@@ -1392,7 +1462,9 @@ export const useProjectStore = create((set, get) => ({
     const applied = { ...patch };
 
     if (patch.width != null) {
-      const spans = wallObstacles({ wall, walls, depth: unit.params.depth, others });
+      const spans = wallObstacles({
+        wall, walls, depth: unit.params.depth, others, boxes: roomBoxes(s.project.room),
+      });
       const clamp = clampUnitWidth({
         width: Number(patch.width) || 0,
         x: unit.position.x_mm,
@@ -1545,7 +1617,13 @@ export const useProjectStore = create((set, get) => ({
     // Obstacles include units on OTHER walls whose footprint reaches into this
     // one's depth band — the corner case, in both senses.
     const others = wallObstacles({
-      wall, walls, depth: unit.params.depth, others: neighboursOf(s, unit).map(toObstacleUnit),
+      wall,
+      walls,
+      depth: unit.params.depth,
+      others: neighboursOf(s, unit).map(toObstacleUnit),
+      // A chimney breast stops a cabinet exactly as a neighbour does
+      // (turn 14, CLAUDE.md F10.3).
+      boxes: roomBoxes(s.project.room),
     });
     // A rotated unit covers a different stretch of wall than its nominal
     // width, so the clamp is given the FOOTPRINT — and the offset between the
@@ -1640,10 +1718,15 @@ export const useProjectStore = create((set, get) => ({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
       wallMargin: wallMarginOf(get(), unit),
-      others: get().units
-        .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex
-          && obstructs(unit, u))
-        .map(unitSpan),
+      others: [
+        ...get().units
+          .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex
+            && obstructs(unit, u))
+          .map(unitSpan),
+        ...boxSpansOnWall({
+          wall: walls[wallIndex], depth: unit.params.depth, boxes: roomBoxes(get().project.room),
+        }),
+      ],
     }, getCabinetProfile());
     if (room == null) {
       set((st) => ({
@@ -1707,9 +1790,14 @@ export const useProjectStore = create((set, get) => ({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
       wallMargin: wallMarginOf(s, unit),
-      others: s.units
-        .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && obstructs(unit, u))
-        .map(unitSpan),
+      others: [
+        ...s.units
+          .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && obstructs(unit, u))
+          .map(unitSpan),
+        ...boxSpansOnWall({
+          wall: walls[wallIndex], depth: unit.params.depth, boxes: roomBoxes(s.project.room),
+        }),
+      ],
     }, getCabinetProfile());
     if (x == null) {
       return {
@@ -2043,6 +2131,49 @@ export const useProjectStore = create((set, get) => ({
       dirty: true,
     }));
     return get().units.find((u) => u.id === unitId)?.params.element_overrides?.[panelId] || null;
+  },
+
+  /**
+   * ─── Turn 14 (CLAUDE.md F8.2): take an AUTO PART off, or move it ──────────
+   *
+   * A design-layer override on the unit, never an engine fork — the same
+   * channel a material override travels in, so the BOM, the CSV, the sheet and
+   * the DXF all follow with nothing told to any of them.
+   *
+   * A piece that HAS a home of its own is sent there instead: a shelf and a
+   * partition are ITEMS, and dropping one through the override would leave the
+   * item in the list with nothing on the screen.
+   *
+   * @returns {'item'|'override'|null} which path it took
+   */
+  removeElement: (unitId, panelId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !panelId) return null;
+    const result = get().unitResult(unitId);
+    const panel = result?.panels.find((p) => p.id === panelId) || null;
+    const itemId = panel?.meta?.itemId;
+    if (itemId) { get().removeItem(unitId, itemId); return 'item'; }
+    get().setElementOverride(unitId, panelId, { removed: true });
+    return 'override';
+  },
+
+  /** Put a removed piece back — the override is a decision, and it is undone. */
+  restoreElement: (unitId, panelId) => {
+    get().setElementOverride(unitId, panelId, { removed: null });
+    return true;
+  },
+
+  /**
+   * Nudge a piece in the cabinet's own frame. `delta` is ABSOLUTE — the total
+   * offset from where the kit puts it — so typing 0 puts it back.
+   */
+  moveElement: (unitId, panelId, delta) => {
+    const move = {
+      x: Number(delta?.x) || 0, y: Number(delta?.y) || 0, z: Number(delta?.z) || 0,
+    };
+    const empty = !move.x && !move.y && !move.z;
+    get().setElementOverride(unitId, panelId, { move: empty ? null : move });
+    return move;
   },
 
   /**
@@ -2492,6 +2623,7 @@ function sameRun(a, b) {
   if (a.role !== b.role) return false;
   if (a.role === 'member') return a.ownerId === b.ownerId;
   return a.offset === b.offset && a.length === b.length && a.faceH === b.faceH
+    && a.depth === b.depth
     && a.shelfDepth === b.shelfDepth
     && a.ends?.left === b.ends?.left && a.ends?.right === b.ends?.right
     && a.returns?.left === b.returns?.left && a.returns?.right === b.returns?.right;
@@ -2565,6 +2697,7 @@ function freeBesideUnit(state, unit, side) {
     walls,
     depth: unit.params.depth,
     others: neighboursOf(state, unit).map(toObstacleUnit),
+    boxes: roomBoxes(state.project.room),
   });
   // WHICH SIDE an obstacle is on is decided on the CARCASS, and how far away it
   // is on the padded span. That distinction is what lets this report a negative
@@ -2743,7 +2876,9 @@ export function validateUnit(unit, result, context = {}) {
       wallWidth: wall?.width ?? 0,
       roomHeight: context.room.height,
       // Same wall or around the corner — both are an overlap on the floor.
-      others: wallObstacles({ wall, walls, depth: unit.params?.depth ?? 0, others })
+      others: wallObstacles({
+        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: roomBoxes(context.room),
+      })
         .map((o) => ({ left: o.left, right: o.right, label: o.label })),
     }));
   }

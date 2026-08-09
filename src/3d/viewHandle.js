@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 
 // ─── The end-to-end handle, for the 3D (turn 13, CLAUDE.md F1 / F10) ────────
@@ -38,7 +39,14 @@ export function useViewHandle(name) {
     if (typeof window === 'undefined' || !name) return undefined;
     const cc = (window.__cc = window.__cc || {});
     cc.views = cc.views || {};
-    cc.views[name] = { gl, scene, camera, controls };
+    // `three` travels with the handle (turn 14): a walk that wants to ask the
+    // LIVE scene a geometric question — which objects does this pixel's ray
+    // pass through, and is a cabinet one of them (F1.1) — needs a Raycaster
+    // built by the SAME copy of three the renderer is using. Reaching for a
+    // second one off the page would be measuring a different scene graph.
+    cc.views[name] = {
+      gl, scene, camera, controls, three: THREE,
+    };
     return () => {
       // A window that has closed must not leave a scene behind for a later
       // check to measure — that is exactly the kind of stale reading a walk

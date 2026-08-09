@@ -14,6 +14,7 @@ import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import ElementModal from '../components/ElementModal.jsx';
 import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
+import PartDetailModal from '../components/PartDetailModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
 import UnitFinishModal from '../components/UnitFinishModal.jsx';
 import Scene from '../3d/Scene.jsx';
@@ -304,6 +305,10 @@ export default function ConfiguratorPage() {
         {/* Turn 12 (CLAUDE.md F4): one cabinet, its own canvas, mounted only
             while the window is open. */}
         {modal === 'cabinet' && <CabinetEditorModal />}
+        {/* ─── Turn 14 (CLAUDE.md F7) ───
+            One part, in the hand on the left and on the machine on the right.
+            Opened by double-clicking a piece in the exploded cabinet. */}
+        {modal === 'part-detail' && <PartDetailModal />}
         {/* Turn 12 (CLAUDE.md F5.1): the golden "+" opens a window beside the
             cabinet rather than sending the eye to the right-hand panel. */}
         {modal === 'add-items' && <AddItemsModal />}

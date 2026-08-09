@@ -17,7 +17,7 @@ import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
-import { isMainViewElement } from '../engine/elements.js';
+import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { machinedPanelGeometry } from './panelSolid.js';
@@ -40,8 +40,14 @@ import {
 // a drag allocating a plane per frame.
 const FLOOR = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
-/** Which kind of front this panel is, if any — that decides how it moves. */
-function frontKind(panel) {
+/**
+ * Which kind of front this panel is, if any — that decides how it moves.
+ *
+ * Exported since turn 14 (CLAUDE.md F8.1): the cabinet editor opens doors now,
+ * and it has to ask the same question the room asks rather than keeping a
+ * second list of which parts are fronts.
+ */
+export function frontKind(panel) {
   if (panel.part === 'DRAWER-FRONT') return 'drawer';
   if (panel.part === 'FRONT') return 'door';
   return null;
@@ -361,24 +367,35 @@ export default function UnitView({
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
-  // Which top edge has been clicked. Purely visual: it decides which handle is
+  // Which top edge is being DRAGGED. Purely visual: it decides which handle is
   // lit, nothing else (CLAUDE.md F3 — "click the edge → the edge highlights").
+  //
+  // ─── Turn 14 (CLAUDE.md F1.3): it is cleared when the hand lets go ────────
+  // It never was, and that is the "blue helper line that stays". The band is
+  // the full length of the run and lies on top of the piece, so once a top
+  // infill had been dragged — or double-clicked to the ceiling — a blue bar sat
+  // across the finished work until the cabinet was deselected and re-drawn.
+  // The owner reads it as a leftover guide line, which is exactly what it is: a
+  // handle is lit while it is being HELD, and this is the release.
   const [activeEdge, setActiveEdge] = useState(null);
-  // Hover, debounced. R3F fires pointerout on the panel you are leaving and
-  // pointerover on the one you are entering, in that order — so sliding the
-  // cursor across a cabinet would strobe the hover mark once per panel without
-  // this. The clear is deferred by one frame and cancelled by any new enter.
-  const [hovered, setHovered] = useState(false);
-  const leaving = useRef(null);
-  const enter = useCallback(() => {
-    if (leaving.current) { cancelAnimationFrame(leaving.current); leaving.current = null; }
-    setHovered(true);
-  }, []);
-  const leave = useCallback(() => {
-    if (leaving.current) cancelAnimationFrame(leaving.current);
-    leaving.current = requestAnimationFrame(() => { leaving.current = null; setHovered(false); });
-  }, []);
-  useEffect(() => () => { if (leaving.current) cancelAnimationFrame(leaving.current); }, []);
+  // ─── Turn 14 (CLAUDE.md F1.4): THE HOVER MARK IS GONE ─────────────────────
+  //
+  // Turn 6 drew the selection box a second time, quieter, under the cursor —
+  // "this is what you would get". The owner's verdict after living with it: a
+  // kitchen is a wall of cabinets, so moving the mouse anywhere lights
+  // something up, and a mark that appears without being asked for stops meaning
+  // "this one" and starts meaning "the mouse is somewhere". Highlight is what a
+  // CLICK does now, and nothing else.
+  //
+  // What goes with it is the debounce, the deferred clear, and the unit group's
+  // own pointerover/pointerout — and that last one is worth its own sentence,
+  // because it is not just tidying. An object with a handler is an object R3F
+  // RAYCASTS, recursively: with those two props on the group, every outline
+  // line, every joint line and every invisible tool band inside a cabinet was
+  // in the intersection list of every click in the room. That is what made a
+  // click on the floor in front of a base unit look like a click on the unit
+  // (F1.1). The panels keep their own handlers, so nothing that was clickable
+  // has stopped being clickable.
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const wallWidthMm = wall.width;
   // The cabinet's bays — the openings between its vertical partitions. One zone
@@ -652,6 +669,8 @@ export default function UnitView({
     };
     const up = () => {
       if (orbitRef?.current) orbitRef.current.enabled = true;
+      // F1.3: the handle goes out with the gesture that lit it.
+      setActiveEdge(null);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
@@ -777,8 +796,6 @@ export default function UnitView({
       // walk aim a click at a named cabinet through the camera instead of
       // guessing at a fraction of the canvas and falling back when it misses.
       userData={{ ccUnitId: unit.id }}
-      onPointerOver={enter}
-      onPointerOut={leave}
     >
       {/* ─── Turn 9 (CLAUDE.md F1.3) ───
           The contact shadow used to be drawn HERE, one hand-painted quad per
@@ -822,6 +839,15 @@ export default function UnitView({
         // is the same code the editor drives. The room simply stops sending
         // carcass clicks down it.
         const isElement = isMainViewElement(p);
+        // ─── Turn 14 (CLAUDE.md F4.1) ───
+        // What a DOUBLE click opens. Wider than what a single click selects,
+        // and deliberately so: the owner's turn-13 verdict is that clicking a
+        // cabinet selects the cabinet, and his turn-14 one is that the pieces
+        // hung ON a cabinet — doors, end panels, fillers, the masking panel —
+        // are reached directly rather than through the editor window. The two
+        // fit together in the gesture turn 11 already taught: click selects,
+        // double click opens the piece.
+        const opensModal = opensOwnModal(p);
         const isShelfLike = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
@@ -930,7 +956,7 @@ export default function UnitView({
               // does to a cabinet — so a front does both: it swings, and its
               // hinge side is what the modal is about.
               if (front && onToggleFront) onToggleFront(p.id);
-              if (isElement && onEditElement) {
+              if (opensModal && onEditElement) {
                 onSelectElement?.(p.id);
                 onEditElement(p.id, { x: e.clientX, y: e.clientY });
               }
@@ -1086,7 +1112,9 @@ export default function UnitView({
             setActiveEdge('top-infill');
             startHeightDrag(e, H, onSetTopInfill);
           }}
-          onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge('top-infill'); onFillToCeiling?.(); }}
+          // F1.3: no `setActiveEdge` — the piece is placed, so there is
+          // nothing left to be holding.
+          onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge(null); onFillToCeiling?.(); }}
         />
       )}
 
@@ -1109,7 +1137,7 @@ export default function UnitView({
               setActiveEdge(p.meta.panelId);
               startHeightDrag(e, H, (v) => onSetEndPanelTop(p.meta.panelId, v));
             }}
-            onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge(p.meta.panelId); onEndPanelToCeiling?.(p.meta.panelId); }}
+            onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge(null); onEndPanelToCeiling?.(p.meta.panelId); }}
           />
         ))}
 
@@ -1134,7 +1162,7 @@ export default function UnitView({
                 setActiveEdge(p.id);
                 startHeightDrag(e, H, (v) => onSetSideInfillTop(side, v));
               }}
-              onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge(p.id); onSideInfillToCeiling?.(side); }}
+              onDoubleClick={(e) => { e.stopPropagation(); setActiveEdge(null); onSideInfillToCeiling?.(side); }}
             />
           );
         })}
@@ -1203,20 +1231,15 @@ export default function UnitView({
       {/* Selection (turn 6, CLAUDE.md F5): a thin dashed navy box standing
           clear of the SOLID — doors stand proud of the carcass and an end panel
           stands outside it, so a mark drawn on the carcass would cut through
-          both. Hover is the same mark, quieter. */}
+          both. Turn 14 (F1.4): it appears on a CLICK and on nothing else. */}
       {/* ─── Turn 11 (CLAUDE.md F1.2): EXACTLY ONE THING IS SELECTED ───
           With a shelf selected inside it, the CABINET is not selected — it is
           the thing the shelf is in. Turn 9 drew both marks at once, so a joiner
           editing one shelf was looking at two dashed boxes and had to work out
           from the right-hand panel which of them the fields belonged to.
-          The hover mark goes with it: hovering the carcass of a cabinet you are
-          working inside is not an offer to select it. */}
-      {(selected || hovered) && !contour && !selectedElement && (
-        <SelectionOutline
-          box={solid}
-          profile={profile}
-          opacity={selected ? 1 : profile.appearance.selection.hoverOpacity}
-        />
+          (Turn 6's quieter hover copy of this mark is deleted — F1.4.) */}
+      {selected && !contour && !selectedElement && (
+        <SelectionOutline box={solid} profile={profile} opacity={1} />
       )}
 
       {/* ─── The selected ELEMENT (turn 9, CLAUDE.md F4.1) ───

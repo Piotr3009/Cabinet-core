@@ -691,9 +691,16 @@ export function elementMaterialChoices(design, profile, materials = []) {
     material_label: finishById(profile, t.finish_id)?.label
       || byId.get(t.material_id)?.name
       || t.label,
+    // Turn 14 (CLAUDE.md F4.1): the half a joiner recognises. Additive — the
+    // id and the label, which are what the BOM and the engine read, are the
+    // ones this function has always returned.
+    hex: finishById(profile, t.finish_id)?.hex
+      || (t.source === 'sprayed' ? sprayFinish(d.colour.carcass)?.hex : null)
+      || null,
   }));
   const { front } = resolveFinishes(null, d, profile);
   out.push({
+    hex: front?.hex || null,
     key: 'front',
     // There is no ONE front material id at project level — a front material is
     // a property of a door style — so the LABEL is what travels. It is the

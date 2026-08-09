@@ -707,6 +707,24 @@ export const DEFAULT_CABINET_PROFILE = {
       // and nothing about the data has to change shape.
       defaultHeightByMount: { wall: 'carcass', floor: 'floor' },
     },
+    // ─── The bottom masking panel (turn 14, CLAUDE.md F5 / BACKLOG #45) ─────
+    //
+    // The panel under a run of WALL units. The two numbers it needs are here
+    // for the reason every number is: a workshop that cuts it from 12 mm rather
+    // than from the door board changes one line.
+    //
+    // `depthExtra` is the ten millimetres the piece exists for — every cabinet
+    // in this app stands `room.wallBackClearance` off the wall, and a panel cut
+    // to the carcass depth would stop at the edge of that slot instead of
+    // hiding it. It is written as its OWN number rather than read straight off
+    // `room.wallBackClearance` at the panel-building site because they are two
+    // decisions that happen to agree today: one is how far a cabinet stands off
+    // a bowed wall, the other is how far past the carcass this board reaches.
+    mask: {
+      enabled: true,
+      thickness: null,      // null = the project's FRONT thickness (F5.2)
+      depthExtra: null,     // null = the wall standoff, which is what F5 asks for
+    },
   },
 
   // ─── Appearance (turn 4, BACKLOG #4–#6) ───
@@ -987,7 +1005,38 @@ export const DEFAULT_CABINET_PROFILE = {
       //     { x:  0.60, y: 0.45, z: 0.85, intensity: 9, colour: '#fff8f0' },
       //     { x: -0.60, y: 0.45, z: 0.85, intensity: 9, colour: '#fff4e8' },
       //   ],
-      points: [],
+      //
+      // ─── TURN 14 (CLAUDE.md F9): THE EYE-LEVEL PAIR, AND `yMm` ─────────────
+      //
+      // The owner's finding, and it is a geometric one rather than a taste one:
+      // the gloss reads only at STEEP angles, because every strong light in the
+      // rig is high. A specular highlight is the mirror of the source, so a
+      // source at 3 m and a viewer at 1.65 m can only meet on a vertical door
+      // when the viewer is looking up at it — which is not how anybody looks at
+      // a kitchen. Turn 10 was right that the SPOTS carry the travelling glint;
+      // it measured that from an orbit that was mostly above the furniture.
+      //
+      // So the pair is a pair of EYES, and that is why `yMm` exists. Every other
+      // position in this block is a fraction of the rig distance, which is
+      // correct for a studio rig — it scales with the subject. An eye does not:
+      // a joiner standing in a 2 m vanity and a joiner standing in a 6 m kitchen
+      // both have their eyes at 1650. So `yMm` is an ABSOLUTE height above the
+      // floor in millimetres and OVERRIDES `y` where it is given; x and z stay
+      // rig-distance fractions, so the pair still opens out with the job.
+      //
+      // The numbers are the owner's own starting values (F9.1) and he will turn
+      // them. Intensities are PHYSICAL — decay 2, so a point light fades with
+      // distance squared and a working value at a few metres is in the teens.
+      // NO SHADOWS: the caster budget (`shadowCasters`) is untouched, and a
+      // point light casting one would be six depth passes for a cube map.
+      points: [
+        {
+          x: 0.35, yMm: 1650, z: 0.7, intensity: 12, colour: '#fff6ec',
+        },
+        {
+          x: -0.35, yMm: 1650, z: 0.7, intensity: 12, colour: '#fff3e4',
+        },
+      ],
       // Falloff limit as a multiple of the rig distance; decay stays physical.
       pointReach: 4,
       // ─── The bounce the rig cannot produce ───
@@ -1267,8 +1316,12 @@ export const DEFAULT_CABINET_PROFILE = {
       offset: 10,               // clear of the solid — CLAUDE.md asks for 8–12
       dash: 34,
       gap: 20,
-      // Hover is the same mark, quieter: it says "this is what you would get".
-      hoverOpacity: 0.32,
+      // ─── Turn 14 (CLAUDE.md F1.4) ───
+      // `hoverOpacity` is GONE, and the absence is the setting. Turn 6 drew
+      // this same mark a second time and quieter under the cursor; the owner's
+      // verdict after living with it is that in a room full of cabinets a mark
+      // that appears without being asked for stops saying "this one" and starts
+      // saying "the mouse is somewhere". Highlight is what a CLICK does.
     },
 
     // ─── The two pluses (turn 11, CLAUDE.md F4.3) ───

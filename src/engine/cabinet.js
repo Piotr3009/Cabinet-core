@@ -27,8 +27,10 @@ import { partitionSpan, widthZones } from './zones.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
+  tabCentres,
 } from './puzzle.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
+import { maskDepthExtra } from './runs.js';
 import {
   biscuitLayers, biscuitSets, markFromEnd, receiverTakesScrews,
 } from './biscuits.js';
@@ -369,7 +371,7 @@ function clampInt(value, min, max) {
  * drawer box. They live inside a carcass or behind a door — the workshop cuts
  * them from finished board and they never reach the spray booth.
  */
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel']);
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -394,7 +396,12 @@ export function isFinishExposed(role) {
  * so, the spray schedule counts it and the 3D view paints it without a special
  * case anywhere.
  */
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth']);
+// Turn 14 (CLAUDE.md F5.2) adds `mask`: the panel under a run of wall units is
+// the plinth's twin at the other end of the kitchen — it stands in the room,
+// under the doors, in the plane the eye reads as the front of the run — so it
+// goes through the FRONT pipeline exactly as the plinth was given in turn 11.
+// FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -744,16 +751,64 @@ export function computeCabinet(params, profileOverride) {
     ? { w: W - C.topWidthBoards * G - SK.backWidthClearance, h: H - SK.backHeightDeduction - G }
     : null;
   const FR = P.fridgeUnit;
+  // ─── The FRIDGE's backs SIT ON THE DOG BONES (turn 14, CLAUDE.md F2) ──────
+  //
+  // A fridge housing has no full back: three pieces close it — RAIL1 at the
+  // bottom, RAIL2 across the middle of the fridge zone, and BACK above the
+  // fixed panel (KIT_FRIDGE.lsp L6, L110-119). The sides are drawn by the
+  // ORDINARY drawBUL/drawBUR (L293, L310), so they carry the ordinary three
+  // back tenons with their dog-bone reliefs, at 95 / H/2 / H−95 measured from
+  // the bottom of the side panel (SKYLON_COMMON.lsp L699, L737-739).
+  //
+  // Three pieces, three tenons: each back piece catches exactly one of them,
+  // and every one of them carries exactly ONE socket on each short edge, 95 mm
+  // in (KIT_FRIDGE.lsp L340-346 RAIL1, L366-372 RAIL2, L381-387 BACK). That is
+  // what decides where the pieces STAND, and turn 3 read it off the LISP's
+  // FRONT VIEW instead — which is a schematic and disagrees with its own CNC
+  // (it draws the back-top from fixedPanelY+G to H−G, while the panel it cuts
+  // is spursH+G tall and therefore runs fixedPanelY → H). The owner's verdict,
+  // three sentences, all three now arithmetic:
+  //
+  //   "the small back panels sit BELOW the dog-bone row"  → RAIL2 was centred
+  //   on the fridge zone (G + fridgeH/2), 144 mm under the middle tenon.
+  //
+  //   "the bottom back sits above instead of ON"          → RAIL1 stood on top
+  //   of the BOTTOM panel (y = G), so its socket landed at 113 and the tenon it
+  //   is for is at 95. A back panel is flush with the bottom of the carcass,
+  //   exactly as the ordinary full BACK is, and its left edge then receives the
+  //   BOTTOM panel's own back tenons (L351-358) — which only lines up at y = 0.
+  //
+  //   "the top back is UPSIDE-DOWN (bones at the bottom, must be at the top)"
+  //   → the BACK's span is right (fixedPanelY → H: its RIGHT edge receives the
+  //   TOP panel's tenons, L389-397, and its LEFT edge screws into the fixed
+  //   panel, L406-409), but its socket row was cut 95 from the BOTTOM. The
+  //   tenon it has to catch is the TOP one, at H−95. So the row moves to 95
+  //   from the panel's top — the panel turned over.
+  //
+  // This is the one CNC delta of the turn besides the new masking panel, and it
+  // is exactly one row of sockets on one panel of one kit. No golden fixture
+  // encodes it: fixtures/golden-fridge.json carries sizes, drills, CSV and
+  // totals, and lists "RAIL2 centred at fridgeH/2 — confirm position" under
+  // `verify_with_piotr`. This turn is that confirmation, the other way.
   const fridge = backStyle === 'rails'
     ? (() => {
       const fixedPanelY = G + cfg.fridgeH;
       const spursH = H - fixedPanelY - G;
+      // The dog-bone row: where the side panels' back tenons are.
+      const backTabs = tabCentres(H, pz);
+      const middleTab = backTabs.length >= 3 ? backTabs[1] : H / 2;
       return {
         fixedPanelY,
         spursH,
         railH: FR.railHeight,
-        rail2Y: cfg.fridgeH / 2,
+        // Each rail's own socket is `tabCentresFromEnd` above its bottom edge,
+        // so the piece stands that far below the tenon it catches.
+        rail1Y: 0,
+        rail2Y: middleTab - pz.tabCentresFromEnd,
         backTopH: spursH + G,
+        // …and the back-top's row is measured from its TOP, which is what
+        // "upside-down" meant.
+        backTopSocket: spursH + G - pz.tabCentresFromEnd,
         spursW: internalWidth - FR.spursWidthClearance,
         spursPanelH: spursH - G,
       };
@@ -763,6 +818,16 @@ export function computeCabinet(params, profileOverride) {
     warnings.push({
       code: 'FRIDGE_ZONE_TOO_TALL',
       message: `Fridge height ${roundTo(cfg.fridgeH, 0)} mm leaves no room for the spurs panel — lower it or raise the carcass.`,
+    });
+  }
+  // The middle rail hangs on the middle tenon, which is at half the CARCASS
+  // height and takes no notice of the fridge. A very short fridge in a very
+  // tall housing therefore puts the fixed panel through it, and that is a
+  // number to change rather than a piece to move.
+  if (fridge && fridge.rail2Y + fridge.railH > fridge.fixedPanelY) {
+    warnings.push({
+      code: 'FRIDGE_RAIL_MEETS_FIXED_PANEL',
+      message: `The middle back rail hangs on the tenon at ${roundTo(fridge.rail2Y + pz.tabCentresFromEnd, 0)} mm, which is above the fixed panel at ${roundTo(fridge.fixedPanelY, 0)} mm — raise the fridge height or lower the carcass.`,
     });
   }
 
@@ -913,14 +978,19 @@ export function computeCabinet(params, profileOverride) {
     panels.push(panel({
       id: 'RAIL1', part: 'BACK-RAIL', role: 'back', w: W, h: fridge.railH, thickness: G,
       edgeCode: codes.none, edgeLen: 0,
-      box: { x: 0, y: G, z: 0, w: W, h: fridge.railH, d: G },
+      // Flush with the bottom of the carcass, like the ordinary full BACK: its
+      // socket then lands on the lowest tenon and its left edge receives the
+      // BOTTOM panel (KIT_FRIDGE.lsp L340-358).
+      box: { x: 0, y: fridge.rail1Y, z: 0, w: W, h: fridge.railH, d: G },
       cnc: railCnc(true),
       meta: { index: 1 },
     }));
     panels.push(panel({
       id: 'RAIL2', part: 'BACK-RAIL', role: 'back', w: W, h: fridge.railH, thickness: G,
       edgeCode: codes.none, edgeLen: 0,
-      box: { x: 0, y: G + fridge.rail2Y - fridge.railH / 2, z: 0, w: W, h: fridge.railH, d: G },
+      // Hung on the MIDDLE tenon (KIT_FRIDGE.lsp L366-372 against
+      // SKYLON_COMMON.lsp L699), not centred on the fridge zone.
+      box: { x: 0, y: fridge.rail2Y, z: 0, w: W, h: fridge.railH, d: G },
       cnc: railCnc(false),
       meta: { index: 2 },
     }));
@@ -940,7 +1010,11 @@ export function computeCabinet(params, profileOverride) {
         ...socketPanelGeometry({
           w: fridge.backTopH, h: W, G, puzzle: pz,
           sockets: {
-            bottom: [pz.tabCentresFromEnd], top: [pz.tabCentresFromEnd],
+            // 95 from the panel's TOP, not from its bottom: the tenon this
+            // piece catches is the side panels' top one, at H − 95
+            // (SKYLON_COMMON.lsp L699 t3y). The drawn x axis runs UP the
+            // cabinet — its right edge is where the TOP panel's tenons go.
+            bottom: [fridge.backTopSocket], top: [fridge.backTopSocket],
             right: [G + pz.tabCentresFromEnd, W - G - pz.tabCentresFromEnd],
           },
           screws: backTopScrews,
@@ -1360,6 +1434,40 @@ export function computeCabinet(params, profileOverride) {
       },
       cnc: rectGeometry(plinthLength, plinthH),
       ...(runPlinth?.role === 'owner' ? { meta: { run: true, unitIds: runPlinth.unitIds } } : {}),
+    }));
+  }
+
+  // ── The bottom masking panel (turn 14, CLAUDE.md F5 / BACKLOG #45) ───────
+  //
+  // One continuous board under a RUN of wall units: its length the sum of the
+  // run's cabinets, its depth the unit depth plus the ten millimetres every
+  // cabinet stands off the wall — so it HIDES the standoff instead of stopping
+  // at the edge of it, which is the whole reason the piece exists.
+  //
+  // Same shape of answer as the plinth (engine/runs.js `runMaskParams`), and
+  // the same three states: an OWNER cuts the segment's length, a MEMBER cuts
+  // nothing, and no run information at all means a run of one — which is what a
+  // bare `computeCabinet(params)` sees, so every golden fixture is untouched.
+  const runMask = params?.run_mask || null;
+  const maskMember = runMask?.role === 'member';
+  const wantsMask = type.mount === 'wall' && params?.bottom_mask === true && AP.mask.enabled !== false;
+  if (wantsMask && !maskMember) {
+    const t = AP.mask.thickness ?? frontT;
+    const maskLen = runMask?.role === 'owner' ? Number(runMask.length) || W : W;
+    const maskX = runMask?.role === 'owner' ? Number(runMask.offset) || 0 : 0;
+    const wallGapMask = maskDepthExtra(P);
+    const maskD = runMask?.role === 'owner' ? Number(runMask.depth) || (D + wallGapMask) : D + wallGapMask;
+    panels.push(panel({
+      id: 'MASK', part: 'MASK', role: 'mask', w: maskLen, h: maskD, thickness: t,
+      // The two ends and the FRONT edge are seen — from the room, from below,
+      // and from the side at the end of a run. The back edge is against the
+      // wall and is the one edge nobody ever looks at.
+      edgeCode: codes.all, edgeLen: metres(2 * maskD + maskLen),
+      box: {
+        x: maskX, y: -t, z: -wallGapMask, w: maskLen, h: t, d: maskD,
+      },
+      cnc: rectGeometry(maskLen, maskD),
+      ...(runMask?.role === 'owner' ? { meta: { run: true, unitIds: runMask.unitIds } } : {}),
     }));
   }
 
@@ -2008,6 +2116,10 @@ export function computeCabinet(params, profileOverride) {
   // A DESIGN-layer input like every other one in this list, so a bare
   // computeCabinet() with none of them set cuts what the AutoLISP kit cuts.
   const elementOverrides = params?.element_overrides;
+  // What the project asked to be taken off, so the result can SAY so — a piece
+  // that has silently vanished from a cut list is a piece somebody will look
+  // for on the bench.
+  const removedParts = [];
   if (elementOverrides && typeof elementOverrides === 'object') {
     for (const p of panels) {
       const o = elementOverrides[p.id];
@@ -2018,9 +2130,42 @@ export function computeCabinet(params, profileOverride) {
         material_label: o.material_label ? String(o.material_label) : null,
       };
     }
+    // ─── Turn 14 (CLAUDE.md F8.2): an AUTO PART moved, or taken off ─────────
+    //
+    // "Removal/move of an auto part is a design-layer override on the unit
+    // (paramsForEngine), never an engine fork; BOM follows."
+    //
+    // Both are the same channel a material override already travels in, and
+    // both are applied HERE, at the end, after every kit rule has had its say.
+    // That is what makes them design-layer: the kit builds what the AutoLISP
+    // builds, and the project then says what it wants doing with it. A removed
+    // piece is simply not in `panels`, so the BOM, the CSV, the sheet and the
+    // DXF all follow with nothing told to any of them.
+    //
+    // WHETHER a piece may be removed or moved is `engine/elements.js
+    // elementActions` and is asked in the UI; the engine honours what it is
+    // given, which is the same division of labour every override here has.
+    for (const p of panels) {
+      const move = elementOverrides[p.id]?.move;
+      if (!move || !p.box) continue;
+      p.box = {
+        ...p.box,
+        x: roundTo(p.box.x + (Number(move.x) || 0), 4),
+        y: roundTo(p.box.y + (Number(move.y) || 0), 4),
+        z: roundTo(p.box.z + (Number(move.z) || 0), 4),
+      };
+      p.meta = { ...(p.meta || {}), moved: { x: Number(move.x) || 0, y: Number(move.y) || 0, z: Number(move.z) || 0 } };
+    }
+    const dropped = panels.filter((p) => elementOverrides[p.id]?.removed === true).map((p) => p.id);
+    if (dropped.length) {
+      const gone = new Set(dropped);
+      for (let i = panels.length - 1; i >= 0; i -= 1) if (gone.has(panels[i].id)) panels.splice(i, 1);
+      removedParts.push(...dropped);
+    }
   }
 
   const derived = {
+    ...(removedParts.length ? { removed_parts: removedParts } : {}),
     doors: doorCount,
     internal_width: internalWidth,
     internal_depth: internalDepth,

@@ -3,7 +3,10 @@ import { useProjectStore, elementDepthBoundsFor } from '../stores/projectStore.j
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { useUiStore } from '../stores/uiStore.js';
-import { elementFields, elementLabel, boardParamFor } from '../engine/elements.js';
+import {
+  elementActions, elementFields, elementLabel, boardParamFor,
+} from '../engine/elements.js';
+import { getUnitType } from '../engine/types.js';
 import { elementMaterialChoices, migrateDesign } from '../engine/design.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
@@ -22,7 +25,9 @@ import NumberField from './NumberField.jsx';
 // new field is an entry in that list and a case here, never a branch in a
 // component that also lays out a panel.
 
-export default function ElementProperties({ unit, panel, item = null, compact = false }) {
+export default function ElementProperties({
+  unit, panel, item = null, compact = false, actions = false,
+}) {
   const profile = useCabinetProfileStore((s) => s.profile);
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const storedDesign = useProjectStore((s) => s.project.design);
@@ -42,8 +47,11 @@ export default function ElementProperties({ unit, panel, item = null, compact = 
   const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
   const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
   const setSideInfillPinned = useProjectStore((s) => s.setSideInfillPinned);
+  const removeElement = useProjectStore((s) => s.removeElement);
+  const moveElement = useProjectStore((s) => s.moveElement);
 
-  const fields = useMemo(() => elementFields(panel), [panel]);
+  const type = useMemo(() => getUnitType(unit.type), [unit.type]);
+  const fields = useMemo(() => elementFields(panel, type), [panel, type]);
   const bounds = useMemo(() => elementDepthBoundsFor(unit, profile), [unit, profile]);
   const choices = useMemo(
     () => elementMaterialChoices(design, profile, materials),
@@ -245,6 +253,34 @@ export default function ElementProperties({ unit, panel, item = null, compact = 
           </Field>
         );
       }
+      // ─── Turn 14 (CLAUDE.md F4.2): the door's own property, on the door ───
+      // It was in the cabinet's carcass block, three sections away from the
+      // thing it is about — which is how the owner came to report it missing.
+      // The engine is untouched: `door_extend` is the param it has always been.
+      case 'door-extend':
+        return (
+          <div key={key} className="col-span-2">
+            <label className="flex items-center gap-2 text-sm text-ink-100">
+              <input
+                type="checkbox"
+                data-door-extend="1"
+                checked={Boolean(unit.params.door_extend)}
+                onChange={(e) => updateUnitParams(unit.id, { door_extend: e.target.checked })}
+              />
+              <span>Door extend +{formatMm(profile.wallUnit.doorExtend)}</span>
+            </label>
+            <p className="text-[11px] text-ink-400">
+              The front runs this far below the carcass — the handleless grab edge. Every door of this
+              cabinet, because they are cut as a set.
+            </p>
+          </div>
+        );
+      case 'masking-depth':
+        return (
+          <Field key={key} label="Depth">
+            <span className="cc-input block text-right opacity-70">{formatMm(panel.box?.d ?? panel.h)}</span>
+          </Field>
+        );
       case 'hinge-side':
         return (
           <Field key={key} label="Hinge side">
@@ -270,20 +306,34 @@ export default function ElementProperties({ unit, panel, item = null, compact = 
             <span className="cc-input block text-right opacity-70">{formatMm(panel.h)}</span>
           </Field>
         );
+      // ─── Turn 14 (CLAUDE.md F4.1) ───
+      // "material/colour from the unit palette per turn 13 F3". The LIST was
+      // already the palette — the project's carcass slots and its fronts, and
+      // deliberately not a decor catalogue — and what it was missing is the
+      // half a joiner actually recognises: the colour. Each option now carries
+      // its own hex (engine/design.js), so the row shows what it means.
       case 'material':
         return (
           <Field key={key} label="Material">
-            <select
-              className="cc-input"
-              value={materialLabel}
-              title="This piece only — the project's own boards, and the fronts"
-              onChange={(e) => setMaterial(e.target.value)}
-            >
-              <option value="">Project default</option>
-              {choices.map((c) => (
-                <option key={c.key} value={c.material_label}>{c.material_label}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1">
+              <span
+                className="w-4 h-4 rounded border border-shell-600 shrink-0"
+                data-element-swatch="1"
+                style={{ background: (choices.find((c) => c.material_label === materialLabel)?.hex) || 'transparent' }}
+                title={materialLabel || 'Project default'}
+              />
+              <select
+                className="cc-input flex-1"
+                value={materialLabel}
+                title="This piece only — the project's own palette: its boards, and its fronts"
+                onChange={(e) => setMaterial(e.target.value)}
+              >
+                <option value="">Project default</option>
+                {choices.map((c) => (
+                  <option key={c.key} value={c.material_label}>{c.material_label}</option>
+                ))}
+              </select>
+            </div>
           </Field>
         );
       default:
@@ -306,6 +356,13 @@ export default function ElementProperties({ unit, panel, item = null, compact = 
         {fields.map(row)}
       </div>
 
+      {/* ─── Turn 14 (CLAUDE.md F8.2): WHAT MAY BE DONE TO IT ───
+          Shown in the editor window, which is where a joiner has the piece in
+          his hand. Where the physics refuses, it SAYS SO — the #58 pattern: a
+          control that is simply absent teaches nothing, and a greyed one with
+          no reason teaches less. */}
+      {actions && <ElementActions unit={unit} panel={panel} onRemove={removeElement} onMove={moveElement} />}
+
       {/* Why some pieces have no thickness of their own. Written where the
           question is asked rather than in a document nobody opens: a joiner
           looking for the field is owed the reason it is not there. */}
@@ -318,6 +375,54 @@ export default function ElementProperties({ unit, panel, item = null, compact = 
       {!fields.includes('material') && (
         <p className="text-[11px] text-ink-400">
           This piece is built from the drawers under it. Change the stack to change the piece.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Edit / move / remove, and the reason where the answer is no.
+ *
+ * The rule is `engine/elements.js elementActions` — pure, and tested there —
+ * so this component decides nothing about physics: it draws the answer.
+ */
+function ElementActions({ unit, panel, onRemove, onMove }) {
+  const rules = elementActions(panel);
+  const moved = panel.meta?.moved || { x: 0, y: 0, z: 0 };
+  return (
+    <div className="border-t border-shell-600 pt-2 space-y-1" data-element-actions="1">
+      <span className="cc-label">Actions</span>
+      {rules.move.allowed ? (
+        <div className="grid grid-cols-3 gap-1" data-element-move="1">
+          {[['x', 'Across'], ['y', 'Up'], ['z', 'In']].map(([axis, label]) => (
+            <label key={axis} className="block">
+              <span className="text-[10px] text-ink-400">{label}</span>
+              <NumberField
+                className="cc-input text-right"
+                value={Number(moved[axis]) || 0}
+                title={`Offset from where the kit puts this piece, in the cabinet's own ${label.toLowerCase()} direction. 0 puts it back.`}
+                onCommit={(v) => onMove(unit.id, panel.id, { ...moved, [axis]: v })}
+              />
+            </label>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[11px] text-ink-400">{rules.move.reason}</p>
+      )}
+      {rules.remove.allowed ? (
+        <button
+          type="button"
+          className="cc-btn w-full text-status-danger"
+          data-element-remove="1"
+          title="Take this piece off. It leaves the cut list with it."
+          onClick={() => onRemove(unit.id, panel.id)}
+        >
+          Remove this piece
+        </button>
+      ) : (
+        <p className="text-[11px] text-ink-400">
+          <span className="text-ink-200">Cannot be removed.</span> {rules.remove.reason}
         </p>
       )}
     </div>

@@ -251,8 +251,13 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
 43. [LOW] Podgląd pojedynczego elementu/formatki w 3D — później.
 44. [PARKING] Upload własnych modeli 3D tenanta (GLB, Supabase Storage bucket
     `models`, RLS per tenant, limit rozmiaru) — gdy pierwszy warsztat poprosi.
-45. [PARKING] Malowane panele dolne pod wiszące (osobny element; spodnia WUD surowa —
-    konstrukcja Skylon), wiąże się z finish-per-lico w #36.
+45. ✅ **ZAMKNIĘTE (tura 14, F5).** Malowane panele dolne pod wiszące — jeden
+    ciągły panel pod BIEGIEM: długość = suma szafek, głębokość = głębokość
+    szafki + 10 mm (zakrywa odsadzenie od ściany). Rodzina części `MASK`,
+    materiał FRONTOWY (założenie właściciela, zgłoszone w BUILD-LOG), nowe
+    fixtures `golden-wall-mask.json`, własny modal, dokowanie przedłuża płytę,
+    bok maskujący albo przerwa kończy segment. Slot `endPanel.height:
+    'extended'`, który tura 13 zostawiła pod tę pozycję, jest nietknięty.
 ## DOPISANE W TURZE 7 (08.08)
 46. [MEDIUM] **Elewacje ścian per-projekt.** Karta produkcyjna jest per szafka (tura 7,
     decyzja zapisana w CLAUDE.md tury 7: dziedzictwo LISP-a i wartość warsztatowa).
@@ -301,15 +306,15 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     który trafi do silnika z pominięciem store'u (import, skrypt), tej migracji nie zobaczy.
 
 ## DOPISANE W TURZE 9 (08.08)
-55. [MEDIUM] **Mitra ciągu ma się ZATRZYMYWAĆ na end panelu / infillu terminalnym,
-    a nie owijać.** Zgłoszone przez właściciela i przez niego zaparkowane na
-    późniejszą turę — nie było w zakresie tury 9. Dziś `engine/runs.js runEnd()`
-    zna cztery warunki końcowe (`wall` / `infill` / `end-panel` / `open`) i tylko
-    `open` robi zawrót z mitrą (`runTopInfill().returns`), więc SZKIELET decyzji
-    już jest; brakuje reguły, że terminalny element ZAMYKA ciąg jako ściana,
-    a górny element kończy się na jego licu zamiast obracać za niego róg. Dotyka
-    `runEnd()`, `runTopInfill()` i `engine/mitre.js infillMitre()` — nie dotyka
-    ani formatek, ani fixtures.
+55. ✅ **ZAMKNIĘTE (tura 14, F3).** Mitra ciągu ZATRZYMUJE się na elemencie
+    terminalnym. Reguła jest JEDNA i pyta POMIESZCZENIE, nie jednostkę końcową
+    biegu: `ceilingVerticals()` zbiera piony sięgające sufitu (boki maskujące i
+    listwy przyścienne, czyjekolwiek), a `runEnd()` dobija do BLISKIEGO lica
+    najbliższego z nich. To pokrywa oba przypadki właściciela — bieg szafek
+    wiszących kończący na boku wysokiej szafki i górny wypełniacz wysokiej
+    szafki kończący NA listwie — bo w obu przeszkoda należy do kogoś innego.
+    Element kończący się na własnym wieńcu nie jest przeszkodą, więc zachowanie
+    tury 8 (bieg opływa własny bok o wysokości korpusu) jest nietknięte.
 56. [NOTA do #42 — X-RAY] **Przeprojektowanie X-raya zaplanowane na TURĘ 10,
     czeka na zrzut referencyjny właściciela.** Pozycja #42 jest zamknięta jako
     DONE (tura 7: przezroczystość płyty, okucia; tura 8: złącza) i nie jest
@@ -478,3 +483,33 @@ zgaduje wzorca warsztatu, a kiedy wzorzec przychodzi, kosztuje jedną turę.
     (`src/3d/viewHandle.js`), bo F1 jest twierdzeniem o GEOMETRII, a F2.2 o
     KAMERZE — żadnego z nich nie da się przeczytać z DOM-u. Ta sama uwaga co
     przy store'ach: gdy przyjdzie prawdziwe logowanie, schować za flagą builda.
+
+## TURA 14 — CO ZAMKNIĘTE, CO ZAPARKOWANE (09.08)
+
+**Zamknięte:** #45 (panel maskujący, F5) · #55 (mitra kończy na przeszkodzie, F3).
+
+73. [PARKING] **PRZERYSOWANIE zawiasów.** Tura 14 F6.4 skasowała przełącznik
+    „Hinges in Solid" z menu kontekstowego — werdykt właściciela: wybór jest
+    bezsensowny. Zawiasy zostają widoczne dokładnie tak, jak zostawiła je tura
+    13 (flaga `showHinges`, domyślna wartość z profilu, pozycja w View — bez
+    zmian). To, jak zawias WYGLĄDA, jest osobnym tematem i CLAUDE.md parkuje go
+    wprost: „REDRAWING the hinges is a parked, separate topic — do not touch
+    their look."
+74. [PARKING] **Wycięcia (cutouts).** Wymienione w CLAUDE.md tury 14 jako
+    zaparkowane obok przerysowania zawiasów; nie było w zakresie żadnej fazy.
+75. [MEDIUM] **Kolor per ELEMENT nie przemalowuje jeszcze 3D.** F4.1 dało
+    modalowi elementu paletę projektu z próbkami (`elementMaterialChoices` niesie
+    `hex`), a zapis nadal idzie kanałem `material_id`/`material_label`, który
+    czyta BOM. Żeby jeden bok maskujący był INNEGO koloru na obrazku, potrzebny
+    jest kanał wykończenia w nadpisaniu elementu i odczyt w `3d/materials.js
+    surfaceFor` — świadomie poza zakresem F4, bo CLAUDE.md pyta o to, SKĄD
+    bierze się wybór, a nie o drugą warstwę malowania.
+76. [LOW] **Głębokość szafki nie jest ograniczana przez BOX w planie.** F10.3
+    wpina boxy w zacisk przesuwania po ścianie i w wyszukiwanie miejsca —
+    dokładnie tam, gdzie „szafka staje przy kominie". `maxDepthOnWall()` nadal
+    pyta tylko o ŚCIANY, więc bardzo głęboka szafka wjedzie w komin stojący
+    przed nią. To ta sama arytmetyka (`rayToSegment` po bokach boxa) i osobna
+    decyzja o zakresie.
+77. [LOW] **`scripts/e2e-turn13.mjs` nie zna zmian tury 14.** To samo, co
+    pozycje 66 i 71 mówią o skryptach tur 11 i 12: nie jest zepsuty, chodzi po
+    swojej turze. `e2e-turn14.mjs` jest następcą.

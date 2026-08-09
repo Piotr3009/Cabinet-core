@@ -7,6 +7,7 @@ import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
 import { endPanelDrop } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
+import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
@@ -63,6 +64,8 @@ export default function RightPanel() {
   const removePlinth = useProjectStore((s) => s.removePlinth);
   const addTopInfill = useProjectStore((s) => s.addTopInfill);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
+  const addBottomMask = useProjectStore((s) => s.addBottomMask);
+  const removeBottomMask = useProjectStore((s) => s.removeBottomMask);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const addEndPanel = useProjectStore((s) => s.addEndPanel);
@@ -390,15 +393,17 @@ export default function RightPanel() {
                   />
                 </div>
               )}
+              {/* ─── Turn 14 (CLAUDE.md F4.2): DOOR EXTEND HAS MOVED ───
+                  It is a DOOR property and it lives in the door's own modal
+                  now — double-click a front. It sat here, in the carcass block,
+                  for three turns, which is why the owner came to report it
+                  missing: it is not where anybody looks for a door setting. */}
               {type.doorExtend && (
-                <label className="flex items-end gap-2 pb-1 text-sm text-ink-100">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(unit.params.door_extend)}
-                    onChange={(e) => updateUnitParams(unit.id, { door_extend: e.target.checked })}
-                  />
-                  <span>Door extend +{profile.wallUnit.doorExtend}</span>
-                </label>
+                <p className="col-span-2 text-[11px] text-ink-400">
+                  <span className="text-ink-100">Door extend</span> is a door setting — double-click a
+                  front to open it{unit.params.door_extend ? ' (on: +' : ''}
+                  {unit.params.door_extend ? `${formatMm(profile.wallUnit.doorExtend)})` : ''}.
+                </p>
               )}
             </div>
           )}
@@ -728,15 +733,19 @@ export default function RightPanel() {
             <div className="flex flex-col">
               <span className="text-sm text-ink-100">Top infill</span>
               <span className="text-[11px] text-ink-400">
-                {Number(unit.params.top_infill_mm) > 0 ? 'drag its top edge, or double-click it to fill' : 'not fitted'}
+                {hasTopInfill(unit) ? 'drag its top edge, or double-click it to fill' : 'not fitted'}
               </span>
             </div>
-            {Number(unit.params.top_infill_mm) > 0 ? (
+            {/* Turn 14 (CLAUDE.md F1.2): the RUN's state. A member of a run
+                carries no height of its own, so this row used to offer "Add top
+                infill" under a piece that was plainly there — and the × that
+                takes it off was unreachable from every cabinet but the first. */}
+            {hasTopInfill(unit) ? (
               <div className="flex items-center gap-1">
                 <NumberField
                   className="cc-input w-16 text-right"
                   min={0}
-                  value={unit.params.top_infill_mm}
+                  value={Number(unit.params.top_infill_mm) || 0}
                   onCommit={(v) => setTopInfill(unit.id, v)}
                 />
                 <button type="button" className="cc-btn px-2" title="All the way to the ceiling" onClick={() => fillToCeiling(unit.id)}>▲</button>
@@ -753,6 +762,30 @@ export default function RightPanel() {
               </button>
             )}
           </div>
+          )}
+
+          {/* ─── The bottom masking panel (turn 14, CLAUDE.md F5) ───
+              The plinth's twin at the other end of the kitchen, so it is in the
+              same section: one board under a RUN of hanging cabinets, its depth
+              the unit's plus the ten millimetres they stand off the wall. */}
+          {type.mount === 'wall' && (
+            <div className="cc-row">
+              <div className="flex flex-col">
+                <span className="text-sm text-ink-100">Bottom masking panel</span>
+                <span className="text-[11px] text-ink-400">
+                  {hasBottomMask(unit)
+                    ? 'one board across the run — double-click it to edit'
+                    : 'not fitted'}
+                </span>
+              </div>
+              {hasBottomMask(unit) ? (
+                <button type="button" className="cc-btn-ghost" onClick={() => removeBottomMask(unit.id)}>×</button>
+              ) : (
+                <button type="button" className="cc-btn" onClick={() => addBottomMask(unit.id)}>
+                  Add masking panel
+                </button>
+              )}
+            </div>
           )}
 
           {/* side infill — automatic, and says so */}

@@ -11,6 +11,8 @@
 // Every clearance comes from profile.editor; nothing in this file is a bare
 // number (CLAUDE.md rule 3).
 
+import { boxCorners } from './room.js';
+
 /** Clamp that survives a reversed range: never returns a value outside [lo,hi]. */
 function clampTo(value, lo, hi) {
   if (hi < lo) return lo;
@@ -328,6 +330,30 @@ export function spanInWallFrame(points, wall) {
 }
 
 /**
+ * The plan's own obstacles, in one wall's frame (turn 14, CLAUDE.md F10.3).
+ *
+ * A box is measured EXACTLY as a unit standing on another wall is: its
+ * footprint is brought into this wall's frame and it counts only where it
+ * reaches into the depth band the moving unit occupies. A chimney breast on the
+ * opposite wall is not in anybody's way; the same breast in this corner is.
+ *
+ * Its own function because two different questions ask it — the drag clamp
+ * (through `wallObstacles`) and the PLACEMENT search, which takes bare spans.
+ */
+export function boxSpansOnWall({ wall, depth, boxes = [] }) {
+  const out = [];
+  for (const box of boxes || []) {
+    const span = spanInWallFrame(boxCorners(box), wall);
+    if (span.far <= 0 || span.near >= (Number(depth) || 0)) continue;
+    if (span.right <= 0 || span.left >= wall.width) continue;
+    out.push({
+      left: span.left, right: span.right, label: box.label || 'a box in the plan', corner: false, box: true,
+    });
+  }
+  return out;
+}
+
+/**
  * Everything that blocks movement along `wall` for a unit `depth` deep.
  *
  * Same-wall neighbours are their own span. A unit on another wall counts only
@@ -340,9 +366,17 @@ export function spanInWallFrame(points, wall) {
  *   depth    the moving unit's depth
  *   others   [{ wall: index, x_mm, width, depth, label }] — every OTHER unit
  *            at the same mounting level
+ *   boxes    [{ id, x, y, w, d }] — the plan's own obstacles (turn 14,
+ *            CLAUDE.md F10.3): a chimney breast, a boxed pipe, a pillar. They
+ *            are measured EXACTLY as a unit on another wall is — footprint into
+ *            this wall's frame, ignored unless it reaches into the depth band
+ *            this unit occupies — because to a cabinet being slid along a wall
+ *            a chimney and a neighbour are the same fact.
  */
-export function wallObstacles({ wall, walls, depth, others = [] }) {
-  const out = [];
+export function wallObstacles({
+  wall, walls, depth, others = [], boxes = [],
+}) {
+  const out = [...boxSpansOnWall({ wall, depth, boxes })];
   for (const o of others) {
     if (o.wall === wall.index && !o.rotation) {
       out.push({ left: o.x_mm, right: o.x_mm + o.width, label: o.label, corner: false });

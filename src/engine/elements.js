@@ -52,15 +52,51 @@ const MECHANISM_PARTS = new Set(['DP', 'FILLER']);
 const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
 
 /**
+ * The kinds that are ATTACHED to a carcass rather than part of it (turn 14,
+ * CLAUDE.md F4).
+ *
+ * The owner's model, and it is a distinction a joiner makes without thinking:
+ * a side, a top, a back are the CARCASS — you build them once and you look at
+ * them in the editor window. A door, an end panel, a filler, the masking panel
+ * under a wall run are things you HANG ON the carcass afterwards, one at a
+ * time, and each of them is a decision with its own properties. Those you point
+ * at directly.
+ */
+const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel']);
+
+/**
  * Is this piece clickable AS A PIECE in the room view?
  *
  * The narrower question, and the one the 3D scene asks. `isSelectableElement`
  * is unchanged and still says what may be selected AT ALL — the editor window
  * uses it, and so does everything downstream of a selection. This only decides
- * what a click in the ROOM lands on, which is the half of it the owner sees.
+ * what a SINGLE CLICK in the room lands on, which is the half of it the owner
+ * sees — and turn 13's verdict on that is unchanged and deliberate: a single
+ * click on a cabinet selects the CABINET.
  */
 export function isMainViewElement(panel) {
   return isSelectableElement(panel) && ADDED_INTERIOR_KINDS.has(elementKind(panel));
+}
+
+/** An added-on piece: a door, a front, an end panel, a filler, a masking panel. */
+export function isAttachedElement(panel) {
+  return isSelectableElement(panel) && ATTACHED_KINDS.has(elementKind(panel));
+}
+
+/**
+ * Does this piece OPEN ITS OWN MODAL when it is double-clicked in the room?
+ *
+ * ─── Turn 14 (CLAUDE.md F4) ───
+ * "Added/attached elements are clicked DIRECTLY and get their OWN modal:
+ * doors, end panels, infills — and the bottom masking panel." Directly means
+ * without going through the editor window, and in this app that gesture already
+ * exists and is learnt: turn 11 F3.3 made a DOUBLE click open the piece and a
+ * single click only select. Using it here keeps both of the owner's verdicts —
+ * his turn-13 one (a click on a cabinet selects the cabinet) and this one — and
+ * costs him nothing he has to learn.
+ */
+export function opensOwnModal(panel) {
+  return isMainViewElement(panel) || isAttachedElement(panel);
 }
 
 /**
@@ -86,6 +122,7 @@ export function elementKind(panel) {
     case 'END-PANEL': return 'end-panel';
     case 'INFILL': return 'infill';
     case 'PLINTH': return 'plinth';
+    case 'MASK': return 'masking-panel';
     case 'FRONT': return 'door';
     case 'DRAWER-FRONT': return 'drawer-front';
     default: return null;
@@ -105,6 +142,7 @@ const LABELS = {
   'end-panel': 'End panel',
   infill: 'Infill',
   plinth: 'Plinth',
+  'masking-panel': 'Bottom masking panel',
   door: 'Door',
   'drawer-front': 'Drawer front',
 };
@@ -155,19 +193,33 @@ const FIELDS = {
   'end-panel': ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'material'],
   infill: ['infill-width', 'above-unit-infill', 'pin-infill', 'material'],
   plinth: ['plinth-height', 'material'],
-  door: ['hinge-side', 'front-board', 'material'],
+  // ─── Turn 14 (CLAUDE.md F4.2): DOOR EXTEND LIVES ON THE DOOR ───
+  // It is a property of the front — how far this door runs BELOW the carcass to
+  // make a handleless grab edge — and it spent three turns in the cabinet's
+  // carcass block, which is where a joiner looking for a door property does not
+  // look. The engine is untouched: `door_extend` is the same param it has been
+  // since turn 3, and this only says where the control is.
+  door: ['hinge-side', 'door-extend', 'front-board', 'material'],
   'drawer-front': ['drawer-height', 'front-board', 'material'],
+  'masking-panel': ['masking-depth', 'material'],
 };
 
 /**
  * The controls this piece's properties panel offers, in order.
  *
+ * `type` (turn 14, F4.2) is the unit TYPE record, so a field that only some
+ * kits have — the door extend, which is a wall unit's handleless grab edge —
+ * can be left out where the kit does not have it instead of being rendered
+ * disabled. Left out, every field the kind defines is offered, which is what
+ * every caller before this turn asked for.
+ *
  * @returns {string[]} field ids the panel knows how to render
  */
-export function elementFields(panel) {
+export function elementFields(panel, type = null) {
   const kind = elementKind(panel);
   if (!kind) return [];
-  const fields = [...(FIELDS[kind] || ['material'])];
+  let fields = [...(FIELDS[kind] || ['material'])];
+  if (type && !type.doorExtend) fields = fields.filter((f) => f !== 'door-extend');
   // A piece the engine DERIVES has no item to hang an override on: the
   // horizontal partition above a drawer stack follows the stack, and a shelf
   // that arrived as a bare count has no id. Those lose the fields that need one.
@@ -175,6 +227,71 @@ export function elementFields(panel) {
     return fields.filter((f) => f === 'material');
   }
   return fields;
+}
+
+// ─── What may be DONE to a piece (turn 14, CLAUDE.md F8.2) ──────────────────
+//
+// "Every part is selectable with ACTIONS — including auto parts (the spur panel
+// above a fridge, the sink kit's pieces): edit / move / remove where the
+// physics allows; where it does not, a short explanation."
+//
+// The last clause is the #58 pattern and it is the half that matters: a control
+// that is simply absent teaches nothing, and one that is greyed out with no
+// reason teaches less. So every kind answers BOTH questions — may it, and if
+// not, WHY not — in a sentence a joiner would accept from another joiner.
+//
+// The physics, in one line each:
+//
+//   A CARCASS BOARD holds the box together. The tabs are cut for it, the sockets
+//   are cut for the tabs, and a cabinet missing a side is not a cabinet.
+//
+//   A DERIVED piece follows something else. The partition above a drawer stack
+//   is the stack's lid; the sink's holders are what that kit has instead of a
+//   top. Removing one is asking for a different cabinet, and the way to ask is
+//   to change what it follows.
+//
+//   A PIECE WHOSE POSITION IS ITS DEFINITION cannot be moved. A scribe filler
+//   IS the gap it closes; an end panel is screwed to the side it masks. They
+//   come off, and they do not slide.
+//
+//   AN AUTO PART is the interesting case, and it is the one the owner named.
+//   The fridge's spur panel is fitted where a spur happens to be, and a workshop
+//   that puts the socket somewhere else wants it 100 mm over — or not at all.
+//   That is a DESIGN-LAYER decision on the unit, never an engine fork, so it
+//   travels as an element override like a material does.
+
+const ACTIONS = {
+  side: { remove: false, move: false, why: 'The carcass is held together by this board — the tabs are cut for it.' },
+  top: { remove: false, move: false, why: 'The carcass is held together by this board — the tabs are cut for it.' },
+  bottom: { remove: false, move: false, why: 'The carcass is held together by this board — the tabs are cut for it.' },
+  back: { remove: false, move: false, why: 'The back squares the carcass, and the sides are tenoned into it.' },
+  'fixed-shelf': { remove: false, move: false, why: 'It follows what is under it — change the stack, or the fridge height, and this follows.' },
+  holder: { remove: false, move: false, why: 'A sink unit has these instead of a top — taking one off opens the carcass.' },
+  'drawer-front': { remove: false, move: false, why: 'A drawer front follows its drawer — change the stack.' },
+  spurs: { remove: true, move: true, why: null },
+  shelf: { remove: true, move: true, why: null },
+  partition: { remove: true, move: true, why: null },
+  door: { remove: true, move: false, why: 'A door hangs on its hinges — the hinge side is a door property.' },
+  'end-panel': { remove: true, move: false, why: 'An end panel is screwed to the side it masks.' },
+  infill: { remove: true, move: false, why: 'A filler IS the gap it closes.' },
+  plinth: { remove: true, move: false, why: 'The toe kick runs the front of the run — its setback is a workshop number.' },
+  'masking-panel': { remove: true, move: false, why: 'The board is the underside of the run — its depth is what hides the wall standoff.' },
+};
+
+/**
+ * May this piece be removed, and may it be moved?
+ *
+ * @returns {{remove:{allowed:boolean,reason:string|null},
+ *            move:{allowed:boolean,reason:string|null}}}
+ */
+export function elementActions(panel) {
+  const kind = elementKind(panel);
+  const rule = ACTIONS[kind] || { remove: false, move: false, why: 'This piece is part of the kit.' };
+  return {
+    kind,
+    remove: { allowed: Boolean(rule.remove), reason: rule.remove ? null : rule.why },
+    move: { allowed: Boolean(rule.move), reason: rule.move ? null : rule.why },
+  };
 }
 
 /**

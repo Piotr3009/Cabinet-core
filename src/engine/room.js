@@ -85,7 +85,19 @@ export function migrateRoom(room) {
     const depth = Number(room.depth) || DEFAULT_ROOM_DEPTH;
     corners = rectCorners(width, depth);
   }
-  return normalizeRoom({ schema: ROOM_SCHEMA, height, corners, openings });
+  // Turn 14: the stub length and the plan's obstacles travel with the room —
+  // both are ROOM geometry, and both are optional, so a project saved before
+  // this turn opens with the defaults and nothing to migrate.
+  const stub = Number(room.wall_stub_mm);
+  const boxes = Array.isArray(room.boxes) ? room.boxes.map(migrateBox).filter(Boolean) : [];
+  return normalizeRoom({
+    schema: ROOM_SCHEMA,
+    height,
+    corners,
+    openings,
+    ...(Number.isFinite(stub) && stub >= 0 ? { wall_stub_mm: stub } : {}),
+    ...(boxes.length ? { boxes } : {}),
+  });
 }
 
 /**
@@ -142,6 +154,73 @@ export function wallWidth(room, index) {
   return roomWalls(room)[index]?.width ?? 0;
 }
 
+// ─── "One wall" (turn 14, CLAUDE.md F1.5b) ──────────────────────────────────
+//
+// The project SCOPE has said "one wall" since turn 7 and only ever decided one
+// thing: whether the new-project flow showed Room setup on the way in. So a
+// vanity or a single run — the jobs whose whole point is that there is no room
+// yet — were drawn standing inside a four-walled 4 × 3 m box, and Room setup
+// offered four walls to edit. The owner's verdict: never the whole room.
+//
+// What he asks for instead is what a joiner tapes out on site: the wall itself,
+// and optionally a metre of RETURN at each end so the eye has something to read
+// the depth against. So the room's data does not change shape — the polygon is
+// still what the floor is cut from and what placement measures against, and a
+// project can be switched back to "whole room" without having lost anything.
+// What changes is which walls are DRAWN and OFFERED, and that is this function.
+
+/** How far each side stub runs forward, when there are stubs at all. */
+export const DEFAULT_WALL_STUB = 1000;
+
+export function wallStub(room) {
+  const v = Number(room?.wall_stub_mm);
+  return Number.isFinite(v) && v >= 0 ? v : DEFAULT_WALL_STUB;
+}
+
+/** A wall record cut back to `length`, keeping the end named by `keep`. */
+function truncateWall(wall, keep, length) {
+  const len = Math.min(Math.max(0, Number(length) || 0), wall.width);
+  const start = keep === 'start'
+    ? { ...wall.start }
+    : { x: wall.end.x - wall.along.x * len, y: wall.end.y - wall.along.y * len };
+  const end = keep === 'start'
+    ? { x: wall.start.x + wall.along.x * len, y: wall.start.y + wall.along.y * len }
+    : { ...wall.end };
+  return {
+    ...wall, start, end, width: round4(len), stub: true,
+  };
+}
+
+/**
+ * The walls this project actually has: all of them, or — in "one wall" scope —
+ * wall 1 plus the two short returns at its ends.
+ *
+ * The stubs run FORWARD, into the room, because they are the two walls that
+ * meet the main one at its corners: the previous wall keeps the end that
+ * touches corner 0, the next one keeps the start that touches corner 1. Both
+ * carry the REAL wall index, so a unit standing on one is on the wall it always
+ * was — nothing downstream has to learn about stubs.
+ *
+ * @param {object} room
+ * @param {'room'|'wall'} scope   the project's own (engine/design.js)
+ */
+export function wallsInScope(room, scope = 'room') {
+  const walls = roomWalls(room);
+  if (scope !== 'wall' || walls.length < 3) return walls;
+  const stub = wallStub(room);
+  if (stub <= 0) return [walls[0]];
+  return [
+    walls[0],
+    truncateWall(walls[walls.length - 1], 'end', stub),
+    truncateWall(walls[1], 'start', stub),
+  ];
+}
+
+/** Which wall indices a scope shows — the list without the geometry. */
+export function wallIndicesInScope(room, scope = 'room') {
+  return wallsInScope(room, scope).filter((w) => !w.stub).map((w) => w.index);
+}
+
 /** Plan bounding box, used to centre the room in the 3D scene. */
 export function roomBounds(room) {
   const corners = cornersOf(room);
@@ -158,6 +237,198 @@ export function roomBounds(room) {
 }
 
 const round4 = (v) => Math.round(v * 1e4) / 1e4;
+
+// ─── MOVING A WALL (turn 14, CLAUDE.md F1.5a + F10.1/F10.2) ─────────────────
+//
+// The owner's verdict on corner-dragging: unusable. He is describing the
+// arithmetic, not the mouse. A corner is a point shared by two walls, so
+// dragging it changes the DIRECTION of both — every angle in the room moves at
+// once and a right angle can only be hit by luck. Typing a length did the same
+// thing from the other end: turn 3's field moved the wall's END corner along
+// the wall, which on a rectangle shears it into a rhombus. The owner's
+// screenshot — two walls reading 3041.4 after typing 4500 — is that shear.
+//
+// A wall is what a joiner actually moves. So this is the primitive, and it is
+// the ONLY one: F1.5a's typed length, F10.1's drag and F10.2's typed distance
+// all come out of it, which is what CLAUDE.md F10.5 asks for in as many words.
+//
+// The rule is the one a CAD package uses. The wall's LINE is offset along its
+// own normal; the two neighbours keep their own directions exactly and are
+// re-cut where they now meet it. Nothing else in the polygon moves. Every angle
+// in the room is therefore preserved — not "preserved for a rectangle", but
+// preserved, because no wall's direction is ever written.
+//
+// A wall dragged past its neighbours would fold the room inside out, so the
+// move is refused rather than applied: `moveWall` returns the corners it was
+// given when the result is not a room (validateRoomShape has the same say).
+
+/** Where two lines meet, or null when they are parallel. */
+function intersectLines(p, u, q, v) {
+  const denom = u.x * v.y - u.y * v.x;
+  if (Math.abs(denom) < 1e-9) return null;
+  const t = ((q.x - p.x) * v.y - (q.y - p.y) * v.x) / denom;
+  return { x: p.x + u.x * t, y: p.y + u.y * t };
+}
+
+const unit = (from, to) => {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.hypot(dx, dy);
+  return len < 1e-9 ? null : { x: dx / len, y: dy / len };
+};
+
+/**
+ * Move one whole wall along its own normal.
+ *
+ * @param {object} room
+ * @param {number} index    which wall
+ * @param {number} deltaMm  POSITIVE grows the room (the wall travels OUTWARD,
+ *                          away from the centroid); negative shrinks it.
+ * @returns {Array} the new corner list — the old one, unchanged, if the move
+ *                  would destroy the polygon.
+ */
+export function moveWall(room, index, deltaMm) {
+  const corners = cornersOf(normalizeRoom(room)).map((c) => ({ ...c }));
+  const n = corners.length;
+  const walls = roomWalls({ ...room, corners });
+  const wall = walls[index];
+  const delta = Number(deltaMm) || 0;
+  if (!wall || n < 3 || !delta) return corners;
+
+  const i = wall.index;
+  const prevIndex = (i - 1 + n) % n;
+  const nextIndex = (i + 2) % n;
+  // Outward is away from the room, so a positive delta makes the room bigger —
+  // which is what "drag the wall out" means to the hand doing it.
+  const shift = { x: -wall.inward.x * delta, y: -wall.inward.y * delta };
+  const p = { x: corners[i].x + shift.x, y: corners[i].y + shift.y };
+  const q = { x: corners[(i + 1) % n].x + shift.x, y: corners[(i + 1) % n].y + shift.y };
+  const dir = { x: wall.along.x, y: wall.along.y };
+
+  const prevDir = unit(corners[prevIndex], corners[i]);
+  const nextDir = unit(corners[(i + 1) % n], corners[nextIndex]);
+  // A neighbour parallel to this wall has no crossing point; the corner simply
+  // travels with the wall, which is the right answer for a collinear pair.
+  const newStart = (prevDir && intersectLines(p, dir, corners[prevIndex], prevDir)) || p;
+  const newEnd = (nextDir && intersectLines(q, dir, corners[nextIndex], nextDir)) || q;
+
+  const next = corners.map((c, k) => {
+    if (k === i) return { x: round4(newStart.x), y: round4(newStart.y) };
+    if (k === (i + 1) % n) return { x: round4(newEnd.x), y: round4(newEnd.y) };
+    return c;
+  });
+  // A wall dragged through its neighbours turns the polygon inside out. The
+  // signed area flipping sign is exactly that, and it is cheaper and more
+  // certain than trying to describe the geometry of the failure.
+  if (validateRoomShape(next).length || Math.sign(area2(next)) !== Math.sign(area2(corners))) {
+    return corners;
+  }
+  return next;
+}
+
+/**
+ * Set one wall's LENGTH, keeping every angle (CLAUDE.md F1.5a).
+ *
+ * The wall keeps its start corner and its direction; the NEXT wall is moved
+ * until it crosses this one at the asked-for distance. On a rectangle that is
+ * "make this side 4500" and the other three sides follow — a rescale, not a
+ * shear. It is `moveWall` underneath, so there is one rule and not two.
+ */
+export function setWallLength(room, index, lengthMm) {
+  const corners = cornersOf(normalizeRoom(room)).map((c) => ({ ...c }));
+  const walls = roomWalls({ ...room, corners });
+  const wall = walls[index];
+  const want = Number(lengthMm);
+  if (!wall || !Number.isFinite(want) || want <= 0) return corners;
+  const nextWall = walls[(index + 1) % walls.length];
+  if (!nextWall) return corners;
+
+  // Where the far corner has to land, on this wall's own line.
+  const target = {
+    x: wall.start.x + wall.along.x * want,
+    y: wall.start.y + wall.along.y * want,
+  };
+  // How far the NEXT wall has to travel along its normal to pass through it.
+  // Outward is −inward, which is the sign `moveWall` takes.
+  const dx = target.x - nextWall.start.x;
+  const dy = target.y - nextWall.start.y;
+  const delta = -(dx * nextWall.inward.x + dy * nextWall.inward.y);
+  return moveWall({ ...room, corners }, nextWall.index, delta);
+}
+
+// ─── Boxes in the plan: chimneys and pillars (turn 14, CLAUDE.md F10.3) ─────
+//
+// A kitchen has things in it that are not walls and are not furniture: a boxed
+// soil pipe in the corner, a chimney breast, a pillar. Until now the only way
+// to tell the app about one was to lie about the room's shape.
+//
+// A box is a rectangle in the plan, standing floor to ceiling. It is
+// axis-aligned in ROOM coordinates on purpose: what the owner asks to do with
+// it is "drag a whole side" and "type a distance", and both of those are one
+// number on one axis. A rotated obstacle is a different feature and would want
+// a different gesture.
+//
+// Pure data. The 3D view draws it, placement measures against it, and neither
+// needs to know how it got there.
+
+export const MIN_BOX_SIZE = 50;
+
+/** A box, from anything: ids kept, sizes made real, never inverted. */
+export function migrateBox(box) {
+  if (!box) return null;
+  const w = Math.max(MIN_BOX_SIZE, Number(box.w) || 0);
+  const d = Math.max(MIN_BOX_SIZE, Number(box.d) || 0);
+  return {
+    id: String(box.id || `box_${Math.random().toString(36).slice(2, 9)}`),
+    x: round4(Number(box.x) || 0),
+    y: round4(Number(box.y) || 0),
+    w: round4(w),
+    d: round4(d),
+  };
+}
+
+/** Every box of a room, normalised. */
+export function roomBoxes(room) {
+  return (room?.boxes || []).map(migrateBox).filter(Boolean);
+}
+
+/** The four plan corners of a box, anticlockwise from its near-left. */
+export function boxCorners(box) {
+  const b = migrateBox(box);
+  return [
+    { x: b.x, y: b.y },
+    { x: b.x + b.w, y: b.y },
+    { x: b.x + b.w, y: b.y + b.d },
+    { x: b.x, y: b.y + b.d },
+  ];
+}
+
+/** The sides a box offers to the same two gestures a wall does. */
+export const BOX_SIDES = ['left', 'right', 'front', 'back'];
+
+/**
+ * Move ONE side of a box, exactly as a wall moves: outward is positive, the
+ * other three sides stay where they are.
+ */
+export function moveBoxSide(box, side, deltaMm) {
+  const b = migrateBox(box);
+  const delta = Number(deltaMm) || 0;
+  if (!b || !delta || !BOX_SIDES.includes(side)) return b;
+  const next = { ...b };
+  if (side === 'left') { next.x = b.x - delta; next.w = b.w + delta; }
+  if (side === 'right') next.w = b.w + delta;
+  if (side === 'front') { next.y = b.y - delta; next.d = b.d + delta; }
+  if (side === 'back') next.d = b.d + delta;
+  // A side dragged through the opposite one is refused, not folded.
+  if (next.w < MIN_BOX_SIZE || next.d < MIN_BOX_SIZE) return b;
+  return migrateBox(next);
+}
+
+/** Move the whole box, without changing its size. */
+export function moveBox(box, dxMm, dyMm) {
+  const b = migrateBox(box);
+  return migrateBox({ ...b, x: b.x + (Number(dxMm) || 0), y: b.y + (Number(dyMm) || 0) });
+}
 
 // ─── Openings ───────────────────────────────────────────────────────────────
 

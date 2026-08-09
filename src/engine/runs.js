@@ -109,6 +109,50 @@ export function buildRuns(units, profile) {
   return runs;
 }
 
+/**
+ * Every unit that shares a RUN with this one — itself included.
+ *
+ * ─── Turn 14 (CLAUDE.md F1.2): "removal must remove" ───
+ * The top infill is ONE piece for the whole run and its height is the TALLEST
+ * request any member makes (`runTopInfill`, below). So clearing the flag on one
+ * cabinet of a run of four changes nothing anybody can see: the other three are
+ * still asking for it, and the long piece still runs over this one's head. From
+ * the joiner's side that is a menu entry that does nothing — which is exactly
+ * what the owner reported, and it is worst on wall units because that is where
+ * runs are longest.
+ *
+ * The piece belongs to the run, so the DECISION belongs to the run. This is the
+ * list the store writes to.
+ */
+export function runMemberIds(units, unitId, profile) {
+  for (const run of buildRuns(units, profile)) {
+    if (run.units.some((u) => u.id === unitId)) return run.units.map((u) => u.id);
+  }
+  return unitId ? [unitId] : [];
+}
+
+/**
+ * Is there a top infill above this cabinet — its own, or the run's?
+ *
+ * A run MEMBER carries no height of its own (the owner holds the geometry), so
+ * a switch that reads `top_infill_mm` alone shows "not fitted" while the piece
+ * is plainly there on the screen.
+ */
+export function hasTopInfill(unit) {
+  return (Number(unit?.params?.top_infill_mm) || 0) > 0 || Boolean(unit?.params?.run_top_infill);
+}
+
+/**
+ * Is there a masking panel under this cabinet — its own, or the run's?
+ *
+ * The twin of `hasTopInfill`, and it exists for the same reason: a member of a
+ * run carries the flag but the GEOMETRY is the owner's, and a switch that reads
+ * only one of the two can show "not fitted" under a board that is there.
+ */
+export function hasBottomMask(unit) {
+  return unit?.params?.bottom_mask === true || Boolean(unit?.params?.run_mask);
+}
+
 function makeRun(units, wall, mount, profile) {
   return {
     wall: Number(wall),
@@ -120,18 +164,125 @@ function makeRun(units, wall, mount, profile) {
   };
 }
 
+// ─── What stands in the way, floor to ceiling (turn 14, CLAUDE.md F3) ───────
+//
+// #55, parked at turn 8 and now live, plus one case the owner found using it:
+//
+//   1. a wall-unit run's top infill stops AT an end panel that runs to the
+//      ceiling — a TALL cabinet's panel, standing beside and below the run,
+//      belonging to a unit that is not in the run and never could be (it is at
+//      another mounting level);
+//   2. a tall unit's top infill ends ON a side infill instead of cutting
+//      through it.
+//
+// CLAUDE.md asks for ONE termination rule covering both, in the run logic the
+// top infill already owns. They are the same sentence: *between this run and
+// the wall, is there anything standing all the way up?* Turn 8's `runEnd` could
+// only ask it of the run's OWN end unit, which is exactly why neither case
+// worked — in both of them the thing in the way belongs to somebody else.
+//
+// So the question is asked of the ROOM. This function is the room's answer: the
+// verticals that reach the ceiling, wherever they come from, as spans along
+// their wall. A piece that stops at the top of its own carcass is not in this
+// list, which is what keeps turn 8's behaviour — a run wraps over its own
+// carcass-height end panel — exactly as it was.
+
+/**
+ * Every floor-to-ceiling vertical in the plan, as `{wall, from, to, kind, top}`.
+ *
+ * `from`/`to` are along the wall, in the same frame `paddedSpan` uses. `kind`
+ * is what the end condition will be called: 'end-panel' or 'infill'.
+ */
+export function ceilingVerticals(units, { roomHeight }, profile) {
+  const tolerance = profile.autoParts.topInfill.runGap;
+  const height = Number(roomHeight) || 0;
+  const minInfill = profile.autoParts.sideInfill.minWidth;
+  const out = [];
+  if (height <= 0) return out;
+
+  for (const unit of units || []) {
+    // A TURNED unit has no "along the wall" span to speak of, exactly as
+    // `buildRuns` says: whatever it blocks, it does not block like a panel.
+    const rotation = (((Number(unit.position?.rotation_deg) || 0) % 360) + 360) % 360;
+    if (rotation !== 0) continue;
+    const wall = unit.position?.wall ?? 0;
+    const x = Number(unit.position?.x_mm) || 0;
+    const w = Number(unit.params?.width) || 0;
+    const carcassTop = unitTop(unit, profile);
+    const add = (side, thickness, above, kind, id) => {
+      const t = Number(thickness) || 0;
+      if (t <= 0) return;
+      const top = carcassTop + Math.max(0, Number(above) || 0);
+      if (top < height - tolerance) return;      // it does not reach the ceiling
+      out.push({
+        wall,
+        from: side === 'L' ? x - t : x + w,
+        to: side === 'L' ? x : x + w + t,
+        top,
+        kind,
+        unitId: unit.id,
+        pieceId: id,
+      });
+    };
+
+    for (const ep of unit.params?.end_panels || []) {
+      const side = ep?.side === 'R' ? 'R' : 'L';
+      const t = Number(ep?.thickness) > 0 ? Number(ep.thickness) : Number(unit.params?.front_t) || 0;
+      add(side, t, ep?.top_mm, 'end-panel', ep?.id || null);
+    }
+    for (const [side, key, topKey] of [
+      ['L', 'side_infill_left_mm', 'side_infill_left_top_mm'],
+      ['R', 'side_infill_right_mm', 'side_infill_right_top_mm'],
+    ]) {
+      const width = Number(unit.params?.[key]) || 0;
+      if (width < minInfill) continue;
+      add(side, width, unit.params?.[topKey], 'infill', `${side}-infill`);
+    }
+  }
+  return out;
+}
+
+/**
+ * The nearest ceiling-height vertical between a run's end and the wall.
+ *
+ * "Between" is measured from the run's CARCASS edge outward, so a run's own end
+ * panel — which stands exactly there — is found by the same search as a tall
+ * cabinet's panel three metres away. The element stops at its NEAR face, which
+ * is the face the eye sees: running across the top of a finished surface would
+ * put a joint at eye level, and running past it would put the piece in front of
+ * something that is already the end of the run.
+ */
+function nearestVertical(verticals, side, { wall, carcassEdge, tolerance }) {
+  let best = null;
+  for (const v of verticals || []) {
+    if (v.wall !== wall) continue;
+    if (side === 'left') {
+      if (v.to > carcassEdge + tolerance) continue;         // not on this side
+      if (!best || v.to > best.face) best = { ...v, face: v.to };
+    } else {
+      if (v.from < carcassEdge - tolerance) continue;
+      if (!best || v.from < best.face) best = { ...v, face: v.from };
+    }
+  }
+  return best;
+}
+
 // ─── The four end conditions (CLAUDE.md F4) ───
 
 /**
  * What the element runs into at one end of the run, and where it therefore
  * stops. The order is the order CLAUDE.md lists them in, and it is the order a
- * joiner checks in: is there a wall? is there a filler taking me to the wall?
- * is there a panel already going all the way up? then it is open, and it turns
- * the corner.
+ * joiner checks in: is there a wall? is there anything standing all the way up
+ * between me and it? is there a filler taking me to the wall? then it is open,
+ * and it turns the corner.
  *
- * @returns {{kind:'wall'|'infill'|'end-panel'|'open', x:number}}
+ * `verticals` (turn 14, F3) is the room's own list — `ceilingVerticals`. Left
+ * out, the run answers from its own units, which is what every caller before
+ * this turn effectively asked and is what keeps a bare call honest.
+ *
+ * @returns {{kind:'wall'|'infill'|'end-panel'|'open', x:number, blockedBy?:string}}
  */
-export function runEnd(run, side, { wallWidth, roomHeight }, profile) {
+export function runEnd(run, side, { wallWidth, roomHeight, verticals = null }, profile) {
   const unit = side === 'left' ? run.units[0] : run.units[run.units.length - 1];
   const span = paddedSpan(unit);
   const carcassEdge = side === 'left'
@@ -152,22 +303,30 @@ export function runEnd(run, side, { wallWidth, roomHeight }, profile) {
   // 1 — the wall itself.
   if (Math.abs(outerEdge - wallAt) <= atWall) return { kind: 'wall', x: wallAt };
 
-  // 2 — a vertical L-infill, which closes the gap to the wall. The element runs
-  //     over it and finishes on the wall, which is what "ends on it" means for
-  //     a piece lying on top.
+  // 2 — ANYTHING standing all the way up between this end and the wall
+  //     (turn 14, CLAUDE.md F3; #55). The element butts into its near face:
+  //     that face is the finished surface at this end of the run, so running
+  //     across its top would put a joint where the eye is and running past it
+  //     would put the piece in front of the thing that finishes the run.
+  //
+  //     It is ONE rule and it covers both of the owner's cases, because in both
+  //     of them the obstacle belongs to somebody else: the tall cabinet's
+  //     ceiling-height end panel beside a run of wall units, and the scribe
+  //     filler a tall unit's own infill used to cut straight through.
+  const blocker = nearestVertical(
+    verticals || ceilingVerticals(run.units, { roomHeight }, profile),
+    side,
+    { wall: run.wall, carcassEdge, tolerance },
+  );
+  if (blocker) return { kind: blocker.kind, x: blocker.face, blockedBy: blocker.unitId };
+
+  // 3 — a vertical L-infill that stops short of the ceiling: a scribe strip
+  //     closing the gap. The element runs OVER it and finishes on the wall,
+  //     which is what "ends on it" means for a piece lying on top. (One that
+  //     DOES reach the ceiling was caught above, and is stood on rather than
+  //     covered.)
   const infill = Number(unit.params?.[side === 'left' ? 'side_infill_left_mm' : 'side_infill_right_mm']) || 0;
   if (infill >= profile.autoParts.sideInfill.minWidth) return { kind: 'infill', x: wallAt };
-
-  // 3 — an end panel already taken to the ceiling. The element butts INTO it:
-  //     the panel is the finished surface at that end, and running the infill
-  //     across its top would put a joint where the eye is.
-  const headroom = Math.max(0, (Number(roomHeight) || 0) - run.top);
-  const toCeiling = (unit.params?.end_panels || []).some((ep) => {
-    const wanted = side === 'left' ? 'L' : 'R';
-    if ((ep?.side === 'R' ? 'R' : 'L') !== wanted) return false;
-    return headroom > 0 && (Number(ep?.top_mm) || 0) >= headroom - tolerance;
-  });
-  if (toCeiling) return { kind: 'end-panel', x: carcassEdge };
 
   // 4 — open. It finishes flush with the outside of the last thing in the run
   //     and turns the corner from there.
@@ -276,15 +435,17 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
  *   thickness:number|null, ends:{left:string,right:string},
  *   returns:{left:number|null, right:number|null}, unitIds:string[] }}
  */
-export function runTopInfill(run, { wallWidth, roomHeight, frontFaceDepth }, profile) {
+export function runTopInfill(run, {
+  wallWidth, roomHeight, frontFaceDepth, verticals = null,
+}, profile) {
   const T = profile.autoParts.topInfill;
   // The face height a member asked for. A run is one height: the tallest
   // request wins, because the alternative is a step in the middle of the piece.
   const faceH = run.units.reduce((m, u) => Math.max(m, Number(u.params?.top_infill_mm) || 0), 0);
   if (faceH < T.minHeight) return null;
 
-  const left = runEnd(run, 'left', { wallWidth, roomHeight }, profile);
-  const right = runEnd(run, 'right', { wallWidth, roomHeight }, profile);
+  const left = runEnd(run, 'left', { wallWidth, roomHeight, verticals }, profile);
+  const right = runEnd(run, 'right', { wallWidth, roomHeight, verticals }, profile);
   const owner = run.units[0];
   const ownerX = Number(owner.position?.x_mm) || 0;
 
@@ -326,11 +487,16 @@ export function runTopInfill(run, { wallWidth, roomHeight, frontFaceDepth }, pro
 export function runInfillParams(units, { walls, roomHeight, frontFaceDepthOf }, profile) {
   const depthOf = frontFaceDepthOf || (() => 0);
   const out = new Map(units.map((u) => [u.id, null]));
+  // Worked out ONCE for the room and handed to every run (turn 14, F3): the
+  // thing that stops a run of wall units is usually a TALL cabinet's panel, and
+  // a tall cabinet is never in a wall-unit run.
+  const verticals = ceilingVerticals(units, { roomHeight }, profile);
   for (const run of buildRuns(units, profile)) {
     const wallWidth = walls?.[run.wall]?.width ?? 0;
     const element = runTopInfill(run, {
       wallWidth,
       roomHeight,
+      verticals,
       frontFaceDepth: {
         left: depthOf(run.units[0]),
         right: depthOf(run.units[run.units.length - 1]),
@@ -437,6 +603,131 @@ export function segmentPlinth(segment) {
     length,
     unitIds: segment.map((u) => u.id),
   };
+}
+
+// ─── THE BOTTOM MASKING PANEL (turn 14, CLAUDE.md F5 / BACKLOG #45) ─────────
+//
+// What it is, in the owner's words: one continuous panel under a RUN of wall
+// units, its length the sum of the run's cabinets and its depth the unit depth
+// plus ten millimetres — the ten that every cabinet in this application stands
+// off the wall (`profile.room.wallBackClearance`), so the panel hides the slot
+// instead of stopping at the edge of it.
+//
+// It is the PLINTH, on the other end of the kitchen, and CLAUDE.md says so in
+// as many words: "run-based like the plinth… reuse the run logic". So it is
+// literally the same three functions with two differences a joiner would name:
+//
+//   IT IS FOR HANGING CABINETS. A wall unit has an underside somebody looks up
+//   at from across the room; a base unit has a worktop on it and a plinth under
+//   it, and neither is this piece.
+//
+//   IT HAS A DEPTH RATHER THAN A HEIGHT. A toe kick is a face standing on the
+//   floor; this lies flat, so the number that is not its length is how far back
+//   it reaches.
+//
+// Everything else is the plinth's: a decision per cabinet, adjacent decisions
+// merged into one length, an end panel or a gap ending the segment.
+
+/** Does this unit want a masking panel under it? */
+function wantsMask(unit) {
+  return unit?.params?.bottom_mask === true;
+}
+
+/**
+ * How far PAST the carcass the panel reaches at the back.
+ *
+ * The workshop's own number, defaulting to the wall standoff — which is what
+ * CLAUDE.md F5 asks for ("depth = unit depth + 10 mm") and why the ten is not
+ * written anywhere. Two decisions that agree today: how far a cabinet stands
+ * off a bowed wall, and how far past it this board reaches.
+ */
+export function maskDepthExtra(profile) {
+  const stated = profile?.autoParts?.mask?.depthExtra;
+  // `Number(null)` is 0, not NaN — so "nobody has said" has to be asked before
+  // the number is read, or the default silently becomes zero and the piece
+  // stops hiding the one thing it exists to hide.
+  if (stated != null && Number.isFinite(Number(stated)) && Number(stated) >= 0) return Number(stated);
+  return Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
+}
+
+/**
+ * The masking SEGMENTS of one run — the twin of `plinthSegments`.
+ *
+ * An end panel between two cabinets is a boundary for exactly the reason it is
+ * one for the toe kick: it is a piece of board standing between them, and the
+ * panel meets its inner face rather than running behind it.
+ */
+export function maskSegments(run) {
+  if (run.mount !== 'wall') return [];
+  const segments = [];
+  let current = [];
+  const close = () => { if (current.length) segments.push(current); current = []; };
+
+  for (const unit of run.units) {
+    if (!wantsMask(unit)) { close(); continue; }
+    if (current.length) {
+      const previous = current[current.length - 1];
+      const between = endPanelSpread(previous, previous.params?.front_t).right > 0
+        || endPanelSpread(unit, unit.params?.front_t).left > 0;
+      if (between) close();
+    }
+    current.push(unit);
+  }
+  close();
+  return segments;
+}
+
+/**
+ * The masking element for one segment: where it starts, how long it is, how
+ * deep, and who carries it.
+ *
+ * Measured on the CARCASSES, like the plinth and for the same reason — an end
+ * panel is the visible end of the run and the piece meets its inner face. The
+ * DEPTH is the deepest cabinet in the segment plus the wall standoff: a segment
+ * whose cabinets are not all one depth is closed by one board, and a board that
+ * is short at the back leaves the slot the piece exists to hide.
+ */
+export function segmentMask(segment, { backClearance = 0 } = {}) {
+  if (!segment.length) return null;
+  const first = segment[0];
+  const last = segment[segment.length - 1];
+  const left = Number(first.position?.x_mm) || 0;
+  const right = (Number(last.position?.x_mm) || 0) + (Number(last.params?.width) || 0);
+  const length = right - left;
+  if (length <= 0) return null;
+  const depth = segment.reduce((m, u) => Math.max(m, Number(u.params?.depth) || 0), 0)
+    + Math.max(0, Number(backClearance) || 0);
+  if (depth <= 0) return null;
+  const owner = segment[0];
+  return {
+    role: 'owner',
+    offset: left - (Number(owner.position?.x_mm) || 0),
+    length,
+    depth,
+    unitIds: segment.map((u) => u.id),
+  };
+}
+
+/**
+ * The `run_mask` value for EVERY unit — the twin of `runPlinthParams`.
+ *
+ * The owner of each segment carries the geometry; everyone else carries a note.
+ * A member with no note at all would fall back to a single-unit path and cut a
+ * second, shorter panel inside the long one, which is the trap turn 8
+ * documented for the top infill and turn 12 met again for the plinth.
+ */
+export function runMaskParams(units, profile) {
+  const clearance = maskDepthExtra(profile);
+  const out = new Map(units.map((u) => [u.id, null]));
+  for (const run of buildRuns(units, profile)) {
+    for (const segment of maskSegments(run)) {
+      const element = segmentMask(segment, { backClearance: clearance });
+      if (!element) continue;
+      out.set(segment[0].id, element);
+      for (const u of segment.slice(1)) out.set(u.id, { role: 'member', ownerId: segment[0].id });
+    }
+  }
+  return out;
 }
 
 /**

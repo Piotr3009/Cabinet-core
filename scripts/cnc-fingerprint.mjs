@@ -100,6 +100,23 @@ function cases() {
         }],
       },
     });
+    // ─── The deliberate delta (turn 14, CLAUDE.md F5 / #45) ───
+    // The BOTTOM MASKING PANEL, a new part family. It only exists on a WALL
+    // unit and only when somebody asks for it, so it shows in the diff as an
+    // ADDITION on named files — which is what CLAUDE.md means by "new variants
+    // get NEW fingerprints, listed separately". Both states are here: one
+    // cabinet's board, and a RUN's.
+    out.push({ id: `${type}+bottom-mask`, params: { ...base, bottom_mask: true } });
+    out.push({
+      id: `${type}+bottom-mask-run-owner`,
+      params: {
+        ...base,
+        bottom_mask: true,
+        run_mask: {
+          role: 'owner', offset: 0, length: 1800, depth: 310, unitIds: ['a', 'b', 'c'],
+        },
+      },
+    });
     out.push({
       id: `${type}+partition-on-shelf`,
       params: {

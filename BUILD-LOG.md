@@ -4439,3 +4439,584 @@ sześć plików testów `test/turn13-*.test.js` · `verify/t13/`
 cały blok `biscuits` — `markLength` / `markTool` / `gap` / `screwDiameter` /
 `edgeMin` / `wideThreshold` / `markFromEnd` / `layer` / `screwLayer` /
 `concealedReceivers` (F8)
+
+---
+
+# TURA 14 — 09.08.2026 (fazy F0–F11)
+
+Osiemnaście werdyktów właściciela z długiej sesji na żywo w turze 13. Baza:
+`2ebc40a` (main po merge'u tury 13), **1159 testów**. Tura kurczy się OD DOŁU,
+więc szybkie naprawy codziennego bólu są na górze, a dwie duże budowy na końcu.
+
+---
+
+## F0 — Baseline — ✅ ZIELONA
+
+Pełny `rm -rf node_modules && npm install`, **1159/1159**, czysty build,
+`git diff fixtures/` pusty.
+
+---
+
+## F1 — Szybkie błędy i regresje — ✅ ZIELONA
+
+### F1.1 — klik w ścianę znowu odznacza (i klik PRZEZ ścianę nadal zaznacza)
+
+**Diagnoza zmierzona w przeglądarce, nie wydedukowana.** Sonda strzelała
+promieniem aparatu aplikacji w trzy punkty i wypisywała, co promień mija.
+Klik w podłogę przed szafką bazową:
+
+```
+Mesh  d=4104  (przednia ściana — NIEWIDOCZNA, ale w promieniu)
+Mesh  d=5197  podłoga
+LineSegments d=6514 …6825  ← obrysy SZAFKI, metr ZA podłogą
+```
+
+Reguła tury 13 brzmiała „czy w promieniu jest jakikolwiek mebel" — a promień
+nie kończy się na klikniętej powierzchni. Odpowiedź: tak, jest, o metr dalej.
+Więc klik w podłogę nie czyścił zaznaczenia. Wahadło z tury 11 (ściana ZJADAŁA
+kliki w szafki) odbiło się w drugą stronę.
+
+Pytanie, które trzyma OBA niezmienniki naraz, to nie „czy byłem najbliżej"
+i nie „czy byłem sam", tylko **„czy przede mną jest mebel"** — nic za
+powierzchnią, na którą patrzę, nie mogło być celem. Odległości, nie
+przynależność. Reguła jest czysta i mieszka w `lib/selection.js`
+(`roomClickIsBackground`), a nie w komponencie three.
+
+Druga połowa pary to ten sam fakt fizyczny z drugiej strony: **ściany, której
+NIE WIDAĆ, nie da się kliknąć**. Raycaster three'a ignoruje `visible` —
+przeczytane w `node_modules/three` (`Raycaster.intersectObject` woła
+`object.raycast()` zaraz po teście warstwy i innej bramki nie ma) — więc
+automatycznie chowana ściana przednia, czyli ta, za którą aparat stoi ZAWSZE,
+odpowiadała na każde zdarzenie wskaźnika w aplikacji sprzed mebli. To był
+powód, dla którego „klik w szafkę przez ścianę" w ogóle był trudnym
+przypadkiem. Mesh ściany dostał własny `raycast`, który milczy, kiedy grupa
+jest niewidoczna.
+
+Trzeci składnik przyszedł z F1.4: grupa jednostki miała `onPointerOver` /
+`onPointerOut` dla podświetlenia najazdem, a obiekt z handlerem to obiekt,
+który R3F raycastuje **rekurencyjnie** — stąd obrysy w liście przecięć.
+Skasowanie najazdu skasowało i to.
+
+Zmierzone po naprawie, w przeglądarce: klik w ścianę → `[]`, klik w szafkę →
+`[A]`, Ctrl+klik w drugą → `[A, B]`, klik w ścianę → `[]`.
+
+### F1.2 — górny wypełniacz DA SIĘ zdjąć
+
+Kafel jest JEDNYM elementem na cały BIEG, a jego wysokość to najwyższe żądanie
+któregokolwiek członka biegu (`runTopInfill`). Tura 6 czyściła flagę na tej
+jednej szafce, po czym `refreshAutoParts` odbudowywał bieg z pozostałych trzech
+i wkładał element z powrotem. Przy biegu jednoelementowym wyglądało to na
+działające; przy biegu szafek wiszących — a tam właściciel to spotkał — odklik
+nie robił nic.
+
+Element należy do biegu, więc DECYZJA należy do biegu: `runMemberIds` (silnik,
+czysta funkcja) zwraca listę, `removeTopInfill` zeruje wszystkim naraz. Do tego
+`hasTopInfill(unit)` — członek biegu nie nosi własnej wysokości, więc przełącznik
+czytający `top_infill_mm` pokazywał „niezamontowany" pod elementem, na który
+joiner patrzył, i DODAWAŁ drugie żądanie zamiast zdjąć element. Menu kontekstowe
+i prawy panel czytają teraz stan BIEGU.
+
+### F1.3 — niebieska linia pomocnicza znika
+
+`activeEdge` nigdy nie było czyszczone. Uchwyt krawędzi świeci, kiedy jest
+TRZYMANY; po puszczeniu (`pointerup`, `pointercancel`) i po dwukliku „do
+sufitu" gaśnie. Pas ma długość całego biegu i leży na wierzchu elementu, więc
+zostawał niebieską belką na skończonej robocie.
+
+### F1.4 — podświetlenie najazdem WYŁĄCZONE
+
+Skasowane: stan `hovered`, debounce, odroczone czyszczenie, `onPointerOver` /
+`onPointerOut` na grupie jednostki, drugi (cichszy) rysunek ramki zaznaczenia
+oraz liczba `appearance.selection.hoverOpacity` w profilu — nieobecność jest
+ustawieniem. Podświetla KLIK. Kursory nad półką i uchwyty krawędzi zostają:
+kursor nie jest podświetleniem, a uchwyt jest jedynym sposobem chwycenia
+krawędzi (tura 6) — zapisane jako świadome odczytanie „delete the hover
+treatment".
+
+### F1.5a — wpisana długość ściany trzyma KĄTY PROSTE
+
+Tura 3 przesuwała KORONNY narożnik ściany wzdłuż jej kierunku. Dla prostokąta
+to ścinanie: prostokąt robi się rombem, a dwie ściany 3000 wychodzą 3041,4 —
+liczba ze zrzutu właściciela.
+
+Reguła jest w silniku i jest tym samym PRYMITYWEM, którego używa przeciąganie
+ściany (F10): `moveWall` przesuwa całą ścianę wzdłuż jej normalnej, a sąsiedzi
+zachowują SWOJE kierunki i są docinani tam, gdzie się teraz spotykają. Żaden
+kierunek ściany nigdy nie jest zapisywany, więc każdy kąt w pomieszczeniu jest
+zachowany — nie „zachowany dla prostokąta", tylko zachowany. `setWallLength`
+to `moveWall` następnej ściany o tyle, żeby przecięcie wypadło na żądanej
+odległości. Ruch, który wywróciłby wielokąt na drugą stronę, jest ODRZUCANY,
+a nie stosowany.
+
+### F1.5b — zakres „Jedna ściana" pokazuje JEDNĄ ŚCIANĘ
+
+Zakres projektu mówił „jedna ściana" od tury 7 i decydował o jednej rzeczy:
+czy kreator pokaże krok Room setup. Scena nie wiedziała nic — wanity rysowała
+się w czterech ścianach pokoju 4 × 3 m, czyli nie w tej robocie, którą joiner
+wycenia.
+
+`wallsInScope(room, scope)` (silnik, testy) zwraca ścianę 1 plus dwa
+**odsadzenia 1000 mm do przodu** — po jednym przy każdym narożniku ściany
+głównej, obcięte z sąsiednich ścian, więc niosą PRAWDZIWY indeks ściany i nic
+w dole rzeki nie musi się uczyć o odsadzeniach. `room.wall_stub_mm` (domyślnie
+1000; 0 = brak) jest polem pomieszczenia, bo to geometria pomieszczenia.
+Wielokąt danych się NIE zmienia — podłoga nadal jest z niego cięta, a projekt
+da się przełączyć z powrotem na „całe pomieszczenie" nic nie tracąc. **Podłoga
+zostaje** w zakresie ściennym: właściciel mówi o ŚCIANACH („never the whole
+room"), a mebel musi na czymś stać i cień kontaktowy musi mieć co malować.
+
+**Werdykt.** 1159 → **1174** testy. Para F1.1 zmierzona w prawdziwym Chromium.
+
+---
+
+## F2 — [KRYTYCZNE] Plecy LODÓWKI siadają NA psich kościach — ✅ ZIELONA
+
+**Trzy zdania właściciela, wszystkie trzy zamienione na arytmetykę.** Obudowa
+lodówki nie ma pełnych pleców: zamykają ją trzy elementy — RAIL1 na dole, RAIL2
+w poprzek strefy lodówki i BACK nad panelem stałym (`KIT_FRIDGE.lsp` L6,
+L110-119). Boki rysuje ZWYKŁE `drawBUL`/`drawBUR` (L293, L310), więc niosą
+zwykłe trzy czopy tylne z podfrezowaniami psiej kości na 95 / H/2 / H−95
+(`SKYLON_COMMON.lsp` L699, L737-739).
+
+Trzy elementy, trzy czopy, a każdy z elementów ma DOKŁADNIE JEDNO gniazdo na
+każdej krótkiej krawędzi, 95 mm od końca (L340-346 RAIL1, L366-372 RAIL2,
+L381-387 BACK). To nie jest kwestia gustu: każdy element stoi tam, gdzie jego
+własne gniazdo spotyka czop, dla którego zostało wycięte.
+
+Tura 3 czytała pozycje z WIDOKU CZOŁOWEGO LISP-a, a widok czołowy jest
+schematem i nie zgadza się z własnym CNC tego samego pliku (rysuje back-top od
+`fixedPanelY+G` do `H−G`, choć wycinana formatka ma `spursH+G` wysokości, czyli
+biegnie `fixedPanelY → H`).
+
+| element | było | jest | czop |
+|---|---|---|---|
+| RAIL1 | y = 18 (na dnie) | **y = 0** (w licu dna) | 95 |
+| RAIL2 | y = 811 (środek strefy lodówki) | **y = 955** | 1050 |
+| BACK  | rząd gniazd 95 od DOŁU (1899) | **95 od GÓRY (2005)** | 2005 |
+
+### …i przy okazji: tura 12 obróciła nie ten obiekt
+
+Tura 12 dopasowała gniazda BACK-a przez puszczenie CNC-owego x W DÓŁ od góry
+formatki. To domyka JEDEN z czterech złączy na tej formatce i rozwala trzy
+pozostałe — sygnatura ODBICIA, nie obrotu. Policzone w milimetrach szafki na
+domyślnej obudowie (H 2100, panel stały 1804):
+
+```
+gniazda           x 95      → y 2005  ✓ górny czop boków
+wkręty do stałego x G/2     → y 2091  ✗ są na GÓRZE, a wkręcają się w 1804
+wkręty do wieńca  x h−S     → y 1813  ✗ są przy stałym, a są WIEŃCA
+gniazda wieńca (prawa kraw.) → y 1804 ✗ prawa krawędź TO sufit (L389-397)
+```
+
+Werdykt właściciela — „bones at the bottom, must be at the top" — to drugie
+odczytanie i domyka wszystkie cztery: rząd gniazd przenosi się na arkuszu, a
+układ wraca do własnego układu LISP-a (x w GÓRĘ od krawędzi wkręcanej w panel
+stały). Skrętność bez zmian (u × v = −n na obu gałęziach), więc formatka jest
+OBRÓCONA, a nie odbita; etykiety „BUL/BUR" LISP-a zamieniają się miejscami, a
+tną identycznie, bo oba gniazda są 95 od tego samego początku x.
+
+### Fixtures i tożsamość CNC
+
+`fixtures/golden-fridge.json` **nie koduje** żadnej z tych pozycji — nosi
+rozmiary, wiercenia, CSV i sumy, a pod `verify_with_piotr` ma wprost wpis
+*„RAIL2 centred at fridgeH/2 (200mm strip) — confirm position"* i *„sides keep
+FULL puzzle tenons on the back edge although there is no full back panel to
+receive them — confirm this is intended"*. Ta tura jest tym potwierdzeniem, w
+drugą stronę. Reguła SINK nie ma zastosowania, `git diff fixtures/` pusty.
+
+Delta CNC (zmierzona `scripts/cnc-fingerprint.mjs` vs `2ebc40a`): **wyłącznie
+`FRIDGE 01-BACK.dxf`** i arkusze, które ją zawierają. Każdy inny typ jednostki
+bajt w bajt. To druga świadoma delta tury obok nowego panelu maskującego (F5) —
+CLAUDE.md nazywa F2 poprawką krytyczną, więc delta jest nazwana przez ten plik,
+choć nawias w bramce F11 wymieniał tylko panel maskujący.
+
+**Werdykt.** 1174 → **1183** testy; dziewięć nowych zamyka ZŁĄCZE, a nie
+powtarza stałej.
+
+---
+
+## F3 — Górny wypełniacz KOŃCZY na przeszkodzie (#55 + jeden nowy przypadek) — ✅ ZIELONA
+
+Właściciel zaparkował #55 w turze 8; teraz jest żywe, a z używania aplikacji
+doszedł drugi przypadek. Oba to JEDNO zdanie: *między tym biegiem a ścianą stoi
+coś, co idzie na całą wysokość?*
+
+Tura 8 umiała zapytać o to tylko JEDNOSTKI KOŃCOWEJ BIEGU — i dlatego żaden z
+dwóch przypadków nie działał, bo w obu przeszkoda należy do kogoś innego:
+
+1. bieg szafek WISZĄCYCH zatrzymuje się na boku wysokiej szafki dociągniętym do
+   sufitu. Wysoka szafka nigdy nie będzie w tym biegu: `buildRuns` kluczuje po
+   poziomie montażu, więc nawet gdy tura 8 zrównuje im wieńce co do milimetra
+   (i tak jest — test to sprawdza), to są dwa biegi na jednej ścianie;
+2. górny wypełniacz wysokiej szafki kończy NA bocznym wypełniaczu zamiast go
+   przecinać.
+
+`ceilingVerticals(units, {roomHeight}, profile)` to odpowiedź POMIESZCZENIA:
+pionowe elementy sięgające sufitu — boki i wypełniacze boczne, obojętnie czyje —
+jako przedziały wzdłuż ściany. Element, który kończy się na własnym wieńcu, NIE
+jest na tej liście, i to zachowuje zachowanie tury 8 bez zmian: bieg opływa
+własny bok o wysokości korpusu (test END 3 tury 6 przechodzi nietknięty).
+
+Reguła w `runEnd` to teraz: 1) ściana → 2) **najbliższy pion do sufitu między
+mną a ścianą** → 3) listwa przyścienna niższa od sufitu (przechodzę PO niej do
+ściany, tura 6) → 4) otwarte, obracam narożnik. Element dobija do BLISKIEGO lica
+przeszkody: to jest lico, które widzi oko, więc przejście po jego wierzchu
+dałoby spoinę na wysokości wzroku, a przejście obok postawiłoby listwę przed
+tym, co kończy bieg.
+
+Jedna reguła, oba przypadki, w logice biegu, którą górny wypełniacz już miał —
+bez równoległej implementacji, jak prosi CLAUDE.md.
+
+**Werdykt.** 1183 → **1190** testów.
+
+---
+
+## F4 — Modale elementów: drzwi, boki, wypełniacze — ✅ ZIELONA
+
+**Model właściciela**, i to rozróżnienie, które stolarz robi bez myślenia: bok,
+wieniec, plecy to KORPUS — budujesz raz i oglądasz w oknie edycji. Drzwi, bok
+maskujący, listwa przyścienna, panel maskujący pod biegiem wiszącym to rzeczy
+DOWIESZANE, po jednej, każda z własnymi właściwościami. W te celuje się wprost.
+
+**Gest.** Werdykt tury 13 — „klik w szafkę zaznacza SZAFKĘ" — jest nietknięty i
+celowo. Poszerza się DWUKLIK, który od tury 11 (F3.3) znaczy „otwórz ten
+element". `isMainViewElement` (co łapie pojedynczy klik) bez zmian;
+`isAttachedElement` + `opensOwnModal` to nowe pytanie, które zadaje dwuklik. Oba
+werdykty właściciela trzymają się naraz i stolarz nie uczy się nowego gestu.
+
+**F4.2 — „Door extend" wraca do domu.** To właściwość DRZWI: o ile front schodzi
+poniżej korpusu, żeby zrobić bezuchwytową krawędź chwytną. Siedziała w bloku
+KORPUSU prawego panelu przez trzy tury — czyli tam, gdzie nikt nie szuka
+ustawienia drzwi, i stąd zgłoszenie właściciela, że „zniknęła". Silnik
+nietknięty: `door_extend` to ten sam parametr od tury 3, zmienia się wyłącznie
+miejsce kontrolki. `elementFields(panel, type)` bierze teraz typ jednostki, więc
+szafka bez tej cechy nie dostaje kontrolki wyszarzonej, tylko jej nie ma.
+
+**F4.3 — dane sprawdzone.** Biblioteka ma jeden wpis wiszący (`wall` → `WUD`) i
+rozwiązuje się do typu z `doorExtend: true`; test trzyma to per WPIS biblioteki
+i dodatkowo per KAŻDY typ o `mount: 'wall'`, więc kit dodany w turze 15 nie
+prześlizgnie się bez flagi. Nic w danych nie było zgubione — zgubiona była
+kontrolka, w sensie „nie tam, gdzie się jej szuka".
+
+**F4.1 — paleta z kolorami.** Lista materiałów elementu BYŁA już paletą projektu
+(sloty korpusu + fronty, świadomie nie katalog dekorów) i brakowało jej połowy,
+którą stolarz rozpoznaje: koloru. `elementMaterialChoices` niesie teraz `hex`
+(dodatkowo, bez zmiany `material_id`/`material_label`, które czyta BOM), a modal
+pokazuje próbkę obok listy. Tytuł okna mówi, o KTÓRY element chodzi.
+
+**Werdykt.** 1190 → **1198** testów.
+
+---
+
+## F5 — Dolny panel maskujący pod szafkami wiszącymi (#45) — ✅ ZIELONA
+
+**Co to jest.** Jedna ciągła płyta pod BIEGIEM szafek wiszących: długość = suma
+szafek biegu, głębokość = głębokość szafki + 10 mm — tych dziesięć, o które
+KAŻDA szafka w tej aplikacji stoi od ściany (`room.wallBackClearance`), więc
+płyta ZAKRYWA szczelinę, zamiast kończyć się na jej krawędzi. To jest cały powód
+istnienia tego elementu.
+
+To PLINTA z drugiego końca kuchni i CLAUDE.md mówi to wprost („run-based like
+the plinth… reuse the run logic"). Więc to dosłownie te same trzy funkcje
+(`maskSegments` / `segmentMask` / `runMaskParams`) z dwiema różnicami, które
+stolarz by nazwał: jest dla szafek WISZĄCYCH, a liczba, która nie jest jej
+długością, to GŁĘBOKOŚĆ, a nie wysokość. Reszta identyczna: decyzja per szafka,
+sąsiadujące decyzje scalone w jedną długość, bok maskujący albo przerwa kończy
+segment. Dokowanie szafki PRZEDŁUŻA płytę (test MASK-C).
+
+**Materiał: FRONT** (F5.2), tą samą rurą, którą plinta dostała w turze 11 —
+stoi w pokoju pod drzwiami, w płaszczyźnie, którą oko czyta jako front biegu, i
+jest wykańczana z nimi. **ZGŁOSZONE WŁAŚCICIELOWI: to jest założenie i jedna
+linia w `FRONT_MATERIAL_ROLES` do zmiany**, dokładnie jak prosi CLAUDE.md.
+
+**Nowa rodzina części.** `part: 'MASK'`, `role: 'mask'`, wchodzi do BOM, na
+arkusz CNC i do DXF tymi samymi trasami co każda inna formatka — nie ma drugiej
+listy cięcia. Nowe fixtures: `fixtures/golden-wall-mask.json` (sześć przypadków
+A–F). Nie ma LISP-a dla tej części, więc źródłem prawdy jest specyfikacja
+właściciela, zacytowana w pliku i rozłożona na liczby przypadek po przypadku —
+ta sama podstawa, na której od tury 2 stoją zmienne wysokości szuflad.
+`verify_with_piotr` wymienia pięć rzeczy do potwierdzenia.
+
+**Tożsamość CNC.** `scripts/cnc-fingerprint.mjs` dostał dwa nowe presety
+(`+bottom-mask`, `+bottom-mask-run-owner`), więc delta pokazuje się jako
+**314 DODANYCH linii** na nazwanych plikach, a nie chowa się za skryptem, który
+buduje tylko goły korpus. Zmienionych linii w całym raporcie: tylko FRIDGE BACK
+z F2.
+
+**Gniazdo, które ta część miała zarezerwowane.** `autoParts.endPanel
+.defaultHeightByMount` ma czwartą wartość `'extended'` opisaną w turze 13 jako
+„door/panel EXTENSION below a wall unit, parked as BACKLOG #45" — jest na
+miejscu i nietknięta; ta faza dokłada `autoParts.mask` obok niej, a nie zamiast.
+
+**Modal (F5.4).** `masking-panel` jest rodzajem DOWIESZANYM (F4), więc dwuklik
+otwiera jego własne okno; reguły zakończeń z F3 stosują się tam, gdzie płyta
+spotyka bok, bo segmentowanie czyta te same `endPanelSpread`.
+
+**Werdykt.** 1198 → **1209** testów.
+
+---
+
+## F6 — Menu kontekstowe, przeprojektowane — ✅ ZIELONA
+
+Cztery werdykty, a czwarty jest tym, który warto zapisać: **kolejność i sekcje
+są DANYMI**. Dodanie wpisu to wybór grupy; komponent rysuje złotą kreskę między
+jedną grupą a drugą i nie ma zdania, co gdzie idzie.
+
+1. **„Edit cabinet…" PIERWSZE i w ramce** — obwiedzione złotem, bo to wpis, po
+   który stolarz sięga, kiedy szafka już stoi: idzie zobaczyć, co zrobił.
+2. **„Show all dimensions" OSTATNIE.** Tura 8 dała mu pierwsze miejsce z
+   argumentem „pokaż mi liczby tej szafki". Życie z tym mówi co innego: to
+   sposób PATRZENIA, a nie coś, co się szafce robi.
+3. **Sekcje:** `[edit] | [górny wypełniacz + plinta + panel maskujący] | [wszystkie
+   boki maskujące] | [reszta] | [wymiary]`, rozdzielone **delikatną kreską w
+   złocie aplikacji** (`border-gold/30`, włos przy jednej trzeciej krycia). Wpis
+   bez własnej grupy trafia do „reszty", więc wpis dopisany w turze 15 ląduje
+   gdzieś sensownie w dniu, w którym powstaje. Kolejność SEKCJI to lista
+   `MENU_GROUPS`, a nie kolejność `push`ów — wpis „reszty" nie wskoczy nad boki
+   przez przypadek.
+4. **Przełącznik zawiasów USUNIĘTY.** Werdykt właściciela: wybór jest
+   bezsensowny. Zawiasy zostają widoczne dokładnie tak, jak zostawiła je tura 13
+   — flaga `showHinges` i jej domyślna wartość z profilu są nietknięte, View
+   nadal ją ma — znika WPIS, który zadawał pytanie z jedną sensowną odpowiedzią.
+   PRZERYSOWANIE zawiasów to zaparkowany, osobny temat (BACKLOG).
+
+Test „nothing that was reachable stopped being reachable" trzyma pełną listę
+tury 13 minus ten jeden wpis: przeprojektowanie przesuwa, nigdy nie gubi.
+
+**Werdykt.** 1209 → **1217** testów.
+
+---
+
+## F7 — Modal SZCZEGÓŁU elementu — ✅ ZIELONA
+
+Dwuklik w część w rozstrzelonej szafce otwiera okno: **element w ręce po lewej,
+element tak, jak wytnie go maszyna, po prawej**. To odpowiedź na pytanie, które
+stolarz zadaje, trzymając formatkę — „a ta dziura to na co?" — a dotąd jedynym
+miejscem, gdzie można je było zadać, był arkusz CNC, który pokazuje czterdzieści
+części naraz i o żadnej nie umie powiedzieć, czym jest.
+
+**LEWA (F7.1).** Ten sam `MovingPanel` co pokój, z tą samą machinowaną
+geometrią — gniazdo jest tu gniazdem, bo to to samo wytłoczenie, które rysuje
+scena — na własnym środku, z zoomem, panoramą i obrotem (`OrbitControls`
+`enablePan`). To nie jest drugi renderer.
+
+**PRAWA (F7.2/F7.4).** Obrys, każda ścieżka na nim, **LEGENDA WARSTW** z nazwami
+i kolorami z `cnc/layers.js` i wymiary gabarytowe z delikatnymi liniami
+odnoszącymi. Wymiary to `dimensionEntities` tury 7 — zaimportowane, nietknięte —
+bo CLAUDE.md zabrania forkować drugi silnik rysunkowy, a wymiar narysowany dwa
+razy to wymiar narysowany na dwa sposoby. Nowy jest `engine/drawings/
+partDetail.js`: czysty moduł, który daje ROZMIAR, OBRYS, listę MACHINOWAŃ i
+legendę. Nie używa `sheet.js` i mówi dlaczego: okno szczegółu to nie kartka —
+nie ma ramki, tabliczki ani podziałki, a jest interaktywne.
+
+**F7.3 — wymiary są interaktywne.** Każde machinowanie ma stabilne `id`, swoją
+warstwę i NOTATKĘ, którą stolarz by powiedział na głos („Screws ⌀3 · ⌀3 at 50,
+9.5"). Najazd podświetla ścieżkę w rysunku (grubsza kreska, reszta przygasza
+się do 35 %) i wypisuje notatkę w stopce; najazd na wiersz LEGENDY podświetla
+pierwszą ścieżkę tej warstwy. Wymiary gabarytowe **nigdy nie gasną** — to dwie
+liczby, którymi zamawia się formatkę.
+
+**Werdykt.** 1217 → **1226** testów.
+
+---
+
+## F8 — Okno edycji ożywa — ✅ ZIELONA
+
+### F8.1 — drzwi OTWIERAJĄ się w edytorze
+
+Animacja otwarcia frontu istnieje od tury 8; edytor podawał `front={null}`
+`open={0}`, więc nie było jak o nią poprosić — stolarz mógł obejrzeć szafkę z
+każdej strony poza tą jedną, która ma znaczenie: od środka. `frontKind` wyjeżdża
+z `3d/UnitView.jsx` jako eksport (edytor pyta POKÓJ, zamiast trzymać drugą listę
+tego, co jest frontem), a okno dostaje kontrolkę **„Open doors" / „Close doors"**
+w stopce oraz klik w drzwi otwierający JE jedne. Klik nadal zaznacza i
+właściwości nadal się pokazują — drzwi to jedyna część, przy której „kliknij"
+ma oczywiste znaczenie fizyczne, więc te dwie rzeczy się nie biją.
+
+### F8.2 — każda część ma AKCJE, z auto-częściami włącznie
+
+`elementActions(panel)` (czysta, w `engine/elements.js`) odpowiada na DWA
+pytania — wolno usunąć? wolno przesunąć? — i **zawsze podaje POWÓD, kiedy nie**.
+To wzorzec #58: kontrolka, której po prostu nie ma, niczego nie uczy, a wyszarzona
+bez powodu uczy jeszcze mniej.
+
+Fizyka, po jednym zdaniu:
+
+* **płyta korpusu** trzyma pudło — czopy są wycięte pod nią, a gniazda pod czopy;
+* **element POCHODNY** idzie za czymś innym: przegroda nad szufladami to
+  wieko stosu, uchwyty zlewozmywaka to jest to, co ten kit ma zamiast wieńca;
+* **element, którego POZYCJA jest jego definicją**, nie przesuwa się: listwa
+  przyścienna JEST szczeliną, którą zamyka; bok maskujący jest przykręcony do
+  boku, który maskuje. Zdjąć — tak. Przesunąć — nie;
+* **auto-część** to ciekawy przypadek i ten, który właściciel nazwał: panel
+  spurów lodówki jest tam, gdzie akurat wypada gniazdko, a warsztat, który ma je
+  gdzie indziej, chce go 100 mm w bok — albo wcale.
+
+**Mechanizm: NADPISANIE WARSTWY PROJEKTU**, nie fork silnika. Ten sam kanał
+`element_overrides`, którym jeździ materiał, dostaje `removed: true` i
+`move: {x,y,z}`, stosowane na SAMYM KOŃCU `computeCabinet` — po tym, jak kit
+powiedział swoje. Usunięta formatka po prostu nie ma jej w `panels`, więc BOM,
+CSV, arkusz i DXF idą za tym i nikomu nic nie trzeba mówić; `derived
+.removed_parts` mówi wprost, czego brakuje, żeby nikt nie szukał jej na stole.
+Przesunięcie jest ABSOLUTNE (0 wraca na miejsce), a rozmiar cięcia i `cnc` się
+nie ruszają — przesunięta formatka to ta sama formatka.
+
+**Werdykt.** 1226 → **1234** testy. Fixtures bez zmian (goły `computeCabinet`
+bez nadpisań tnie dokładnie to, co ciął).
+
+---
+
+## F9 — Światła frontowe na WYSOKOŚCI OCZU (wariant A) — ✅ ZIELONA
+
+**Odkrycie właściciela jest geometryczne, a nie gustowe.** Połysk czyta się
+tylko pod stromymi kątami, bo każde mocne światło w rigu jest wysoko. Odblask
+lustrzany to LUSTRO źródła: źródło na trzech metrach i patrzący na 1,65 mogą się
+spotkać na pionowych drzwiach tylko wtedy, gdy patrzący patrzy w GÓRĘ — a tak
+się na kuchnię nie patrzy. Tura 10 miała rację, że wędrujący błysk niosą
+jupitery; zmierzyła to na orbicie przebiegającej głównie NAD meblem.
+
+**`yMm` — i to jest cała faza.** Każda inna pozycja w tym bloku to ułamek
+odległości rigu, co jest poprawne dla rigu studyjnego: skaluje się z obiektem.
+Oko się nie skaluje — stolarz w wanity 2 m i stolarz w kuchni 6 m ma oczy na
+1650. Więc `yMm` to BEZWZGLĘDNA wysokość nad podłogą w milimetrach i przesłania
+`y`, gdzie jest podane; x i z zostają ułamkami, więc para rozsuwa się z robotą,
+nie podnosząc się z nią. `p.y` nadal działa tam, gdzie `yMm` nie ma — przykład w
+profilu i każdy rig, który warsztat już sobie napisał, chodzą dalej.
+
+Para: x ≈ ±0,35, z ≈ 0,7, **yMm 1650**, intensywność **12** (FIZYCZNA, decay 2),
+ciepła biel, **bez cieni** (budżet rzucających nietknięty — `shadowCasters` 2,
+klucz + jupitery), `ccLight: 'point'`, więc rola `render.lightScale.point`,
+którą render przeważa, istnieje i jest neutralna.
+
+**Zmierzone w przeglądarce** — pełne liczby w `verify/t14/f9-eye-level-glint.md`.
+Na wysokości oczu para dokłada światła na frontach na KAŻDYM azymucie (Δśredniej
++2…+18), a na dwóch pojawia się **nowa najjaśniejsza plama** (Δmax +59) — błysk,
+którego bez pary nie było. Z góry (kamera 3,2 m) efekt jest niespójny, a na
+trzech azymutach fronty w ogóle nie wchodzą w kadr. To jest skarga właściciela
+powiedziana od drugiej strony.
+
+Trzeci pomiar był trzecim podejściem i to też warto zapisać: dwa pierwsze
+czytały PAS kadru, a biały pokój saturuje się na 253 niezależnie od świateł, więc
+nie pokazywały nic. Dopiero filtr „tylko piksele malowanego frontu" mierzy
+powierzchnię, o którą chodzi w tej fazie.
+
+**Werdykt.** 1234 → **1240** testów.
+
+---
+
+## F10 — Room setup, nowy paradygmat (duża budowa) — ✅ ZIELONA
+
+**Werdykt właściciela: ciągnięcie za narożniki jest nie do użycia** — i opisuje
+ARYTMETYKĘ, nie mysz. Narożnik to punkt WSPÓLNY dwóch ścian, więc ciągnięcie go
+zmienia KIERUNEK obu: wszystkie kąty w pomieszczeniu ruszają się naraz, a kąt
+prosty da się trafić tylko przypadkiem.
+
+To, co stolarz przesuwa, to ŚCIANA — i to jest **jeden prymityw**. `moveWall`
+odsuwa ścianę wzdłuż jej własnej normalnej i DOCINA dwóch sąsiadów tam, gdzie
+się teraz spotykają, zachowując ich kierunki co do joty. Z tego wychodzi
+wszystko:
+
+* **F10.1 przeciąganie całej ściany** — chwyt gdziekolwiek na ścianie, ruch
+  wzdłuż normalnej, sąsiedzi się rozciągają. **Uchwyty narożników ZNIKNĘŁY.**
+* **F10.2 wpisana odległość (AutoCAD)** — z zaznaczoną ścianą wpisujesz liczbę i
+  Enter: ściana idzie DOKŁADNIE tyle milimetrów. Kierunek to kierunek
+  przeciągania, a bez przeciągania — NA ZEWNĄTRZ (pokój rośnie); minus mówi
+  drugą rzecz i wpisuje się jak każdy inny znak. Przeciąganie pamięta
+  pomieszczenie z chwili, gdy ręka poszła w dół, więc wpisana liczba jest
+  BEZWZGLĘDNA, a nie doliczana do tego, co ręka już przesunęła.
+* **F1.5a wpisana DŁUGOŚĆ to ten sam prymityw** rozwiązany dla punktu
+  przecięcia — test trzyma to dosłownie: `setWallLength(r,0,4500)` daje bajt w
+  bajt to samo, co `moveWall(r,1,500)`. Gdyby to były dwie reguły, mogłyby się
+  różnić; nie mogą.
+* **F10.4 L-kształt zostaje** i podlega tej samej edycji: test przesuwa każdą z
+  sześciu ścian i sprawdza, że wszystkie sześć kątów jest nietkniętych.
+* Ruch, który wywróciłby wielokąt na drugą stronę, jest ODRZUCANY (znak pola
+  ze znakiem), a nie stosowany.
+
+**F10.3 — WSTAW BOX** (komin, słup, obudowana rura). Czysty model w silniku:
+`migrateBox` / `boxCorners` / `moveBoxSide` / `moveBox`, prostokąt zorientowany
+w osiach planu — bo to, co właściciel chce z nim robić, to „przeciągnij CAŁY
+bok" i „wpisz odległość", a jedno i drugie to jedna liczba na jednej osi.
+Boki edytuje się DOKŁADNIE tak jak ściany (na zewnątrz = dodatnio, przeciągnięty
+przez przeciwległy bok = odmowa).
+
+Box **renderuje się w 3D** od podłogi do sufitu w tonie ściany (czyta się jako
+BUDYNEK, nie jako mebel; bez handlerów wskaźnika, więc klik przechodzi na
+podłogę za nim — czyli znaczy to, co znaczy klik w ścianę) i **uczestniczy w
+kolizji jak ściany**: `boxSpansOnWall` mierzy go dokładnie tak, jak mierzy się
+jednostkę stojącą na innej ścianie — rzut na układ tej ściany, liczy się tylko
+tam, gdzie wchodzi w pas głębokości przesuwanej szafki. Widzą go OBIE ścieżki:
+zacisk przeciągania (`wallObstacles`) i WYSZUKIWANIE MIEJSCA (`freeSlotOnWall`),
+więc szafki nie da się ani wsunąć w komin, ani w nim POSTAWIĆ.
+
+**Werdykt.** 1240 → **1252** testy.
+
+---
+
+## F11 — Przejście w przeglądarce + dokumentacja + BRAMKA — ✅ ZIELONA (14/14)
+
+`scripts/e2e-turn14.mjs` — trzynaście punktów, które nazywa CLAUDE.md, MIERZONE,
+nie fotografowane. Trzy kroki przeszły dopiero po tym, jak najpierw pomyliło się
+samo PRZEJŚCIE, i każdy jest wart linijki:
+
+* **para F1.1 jest JEDNYM krokiem** — klik w szafkę przez ścianę zaznacza,
+  Ctrl rozszerza zbiór, klik w ścianę czyści — więc wahadło nie odbije się już
+  bez czerwonego przebiegu;
+* **WUD i FRIDGE przychodzą BEZ drzwi** (tura 13 F5.3 wiesza je świadomie), więc
+  i modal drzwi, i „Open doors" potrzebowały najpierw `addDoors`;
+* **React wyprowadza `onPointerEnter` z `pointerover`**, więc syntetyczne
+  `pointerenter` — które nie bąbelkuje — jest gestem, którego aplikacja nigdy nie
+  słyszy. Najazd na legendę jest teraz prawdziwym ruchem myszy i SCREWS_3MM
+  zapala jedną ścieżkę, przygasza dwadzieścia i wypisuje
+  „Screws ⌀3 · ⌀3 at 50, 2140.5".
+
+**Jedna poprawka produktowa wyszła z pisania przejścia.** Wpisana odległość
+liczy się od pomieszczenia z chwili, gdy ŚCIANA ZOSTAŁA WYBRANA, a nie od
+bieżącego szkicu — więc „pociągnij o 20, wpisz 202, Enter" przesuwa dokładnie o
+202, a nie o 242. Dokładnie o to prosi krok przejścia w CLAUDE.md i przejście to
+teraz mierzy: **202**.
+
+## Dokumentacja
+
+`BACKLOG`: **#45 i #55 ZAMKNIĘTE** (z opisem, co je zamknęło), zaparkowane
+**#73** przerysowanie zawiasów, **#74** wycięcia, **#75** kolor per element
+faktycznie przemalowujący 3D, **#76** box a ograniczanie GŁĘBOKOŚCI, **#77**
+skrypt tury 13 jako poprzednik. `BLOCKERS`: nic nie zostało cofnięte, więc nic
+nie dopisano.
+
+## BRAMKA — ✅ ZIELONA
+
+| brama | wynik |
+|---|---|
+| pełny reinstall (`rm -rf node_modules && npm install`) | czysty |
+| testy | **1252 / 1252** (baza tury: 1159) |
+| build | czysty |
+| istniejące fixtures | `git diff fixtures/` **pusty**; `golden-wall-mask.json` to DODANIE |
+| zależności | nietknięte (`git diff package.json package-lock.json` pusty) |
+| czystość silnika | grep po React / zustand / three / stores w `src/engine/` — pusty |
+| tożsamość CNC | opublikowana w `verify/t14/cnc-export-identity.md` + oba pliki odcisków |
+| `verify/t14/` | 13 zrzutów, `measurements.json`, pomiar świateł F9, raport CNC |
+| PR | otwarty, **nie scalony** |
+
+**Delty CNC — dwie, obie nazwane.** 21 linii ZMIENIONYCH i wszystkie to plecy
+lodówki z F2 (`FRIDGE … 01-BACK.dxf` × 7 presetów plus arkusze, które je
+zawierają) — jeden rząd gniazd na jednej formatce jednego kitu. 335 linii
+DODANYCH i wszystkie to dwa nowe presety panelu maskującego z F5. Każdy inny typ
+jednostki jest bajt w bajt taki sam na każdym presecie.
+
+Bramka F11 w CLAUDE.md wymieniała w nawiasie tylko panel maskujący; F2 jest w
+tym samym pliku nazwana poprawką KRYTYCZNĄ, a zmiana rzędu gniazd jest jej
+nieuniknioną konsekwencją — więc druga delta jest nazwana wprost tutaj i w
+raporcie, a nie po cichu wchłonięta.
+
+## Nowe pliki
+
+`src/engine/drawings/partDetail.js` · `src/components/PartDetailModal.jsx` ·
+`fixtures/golden-wall-mask.json` · `scripts/e2e-turn14.mjs` ·
+osiem plików testów `test/turn14-*.test.js` · `verify/t14/`
+
+## Nowe liczby w `profile.js`
+
+`autoParts.mask.enabled` / `thickness` / `depthExtra` (F5) ·
+`appearance.studio.points[].yMm` + para na wysokości oczu (F9).
+USUNIĘTE: `appearance.selection.hoverOpacity` (F1.4 — nieobecność jest ustawieniem).

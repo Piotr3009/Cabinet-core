@@ -26,6 +26,7 @@ import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import { runInfillParams, unitTop } from '../engine/runs.js';
+import { widthZones } from '../engine/zones.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
@@ -39,6 +40,9 @@ import {
 const CACHE_KEY = 'cc.project.cache.v1';
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
+
+/** A zone index, or null for "the whole width" — `Number(null)` is 0, so ask. */
+const zoneIndexOf = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Math.trunc(Number(v)));
 
 export const DEFAULT_ROOM = ENGINE_DEFAULT_ROOM;
 
@@ -1634,26 +1638,86 @@ export const useProjectStore = create((set, get) => ({
    * definition the one with the most room in it, and the clamp has the last
    * word as it does on every other path.
    */
-  addShelves: (unitId, count = 1) => {
+  addShelves: (unitId, count = 1, zone = null) => {
     const profile = getCabinetProfile();
     let added = 0;
     for (let i = 0; i < Math.max(1, Math.trunc(count)); i += 1) {
       const unit = get().units.find((u) => u.id === unitId);
       if (!unit) break;
       const items = unit.params.sections?.[0]?.items || [];
+      // ─── Turn 12 (CLAUDE.md F5.3): WHICH SIDE ───
+      // With a partition present a cabinet has more than one column, and a
+      // shelf belongs to ONE of them. The zone is the bay's index, so the
+      // shelf follows the partition when it moves; the openings it has to
+      // centre itself between are the ones in ITS bay and nobody else's.
+      const bay = zoneIndexOf(zone);
       const pos = centredShelfPos({
         band: shelfLimits(unit, profile),
-        positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
+        positions: shelvesInEngineOrder(items)
+          .filter((sh) => (bay == null ? true : zoneIndexOf(sh.zone) === bay))
+          .map((sh) => sh.pos_mm),
         boardT: unit.params.board_t ?? profile.board.thickness,
       }, profile);
       if (pos == null) break;
       // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
       // you can move; `fixed` means screwed now, and a shelf arriving screwed
       // in is a decision nobody made.
-      get().addItem(unitId, { kind: 'shelf', variant: 'adjustable', pos_mm: pos });
+      get().addItem(unitId, {
+        kind: 'shelf', variant: 'adjustable', pos_mm: pos, ...(bay == null ? {} : { zone: bay }),
+      });
       added += 1;
     }
     return { added, requested: Math.max(1, Math.trunc(count)) };
+  },
+
+  /**
+   * The bays this cabinet is divided into (turn 12, CLAUDE.md F5.3).
+   *
+   * What the canvas highlights when a shelf is being added and a partition is
+   * present, and what the panel offers as "which side". One zone means there is
+   * nothing to ask.
+   */
+  zonesOf: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return [];
+    const profile = getCabinetProfile();
+    const items = unit.params.sections?.[0]?.items || [];
+    return widthZones({
+      width: Number(unit.params.width) || 0,
+      boardT: unit.params.board_t ?? profile.board.thickness,
+      partitions: items.filter((i) => i.kind === 'partition'),
+    });
+  },
+
+  /**
+   * ─── Centre the partitions (turn 12, CLAUDE.md F5.2) ───
+   *
+   * "Add a Centre button (like the shelves' Even)." It is the same button on
+   * the other axis and it is the same arithmetic: N partitions divide the
+   * internal width into N+1 equal CLEAR bays, which is what `evenShelfPositions`
+   * computes and what the Even button has done since turn 9. One partition in a
+   * 900 mm cabinet lands dead centre, which is the case the owner means.
+   */
+  centrePartitions: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    const G = unit.params.board_t ?? profile.board.thickness;
+    const items = unit.params.sections?.[0]?.items || [];
+    const parts = items
+      .filter((i) => i.kind === 'partition')
+      .sort((a, b) => (Number(a.x_mm) || 0) - (Number(b.x_mm) || 0));
+    if (!parts.length) return 0;
+    const xs = evenShelfPositions({
+      zoneBottom: G,
+      zoneTop: (Number(unit.params.width) || 0) - G,
+      count: parts.length,
+      boardT: G,
+    });
+    parts.forEach((item, i) => {
+      get().updateItem(unitId, item.id, { x_mm: snapTo(xs[i], profile.editor.mmStep) });
+    });
+    return parts.length;
   },
 
   /**
@@ -2344,9 +2408,28 @@ function wallMarginOf(state, unit = null) {
 // functions want, and nothing more. The RULES live in engine/collision.js.
 
 /** Every OTHER shelf's position in this unit. */
+/**
+ * The other shelves this one has to clear.
+ *
+ * ─── Turn 12 (CLAUDE.md F5.3) ───
+ * Only the ones IN THE SAME BAY. Two shelves either side of a vertical
+ * partition are not above one another in any sense a joiner would recognise —
+ * they are in different columns — so clamping one against the other pushes a
+ * shelf 40 mm off the height it was asked for, for a neighbour it will never
+ * touch. A shelf that belongs to no bay is full width and meets everything.
+ */
 function otherShelfPositions(unit, itemId) {
-  return (unit.params.sections?.[0]?.items || [])
+  const items = unit.params.sections?.[0]?.items || [];
+  const mine = items.find((i) => i.id === itemId);
+  const bay = zoneIndexOf(mine?.zone);
+  return items
     .filter((i) => i.kind === 'shelf' && i.id !== itemId && Number.isFinite(i.pos_mm))
+    .filter((i) => {
+      const theirs = zoneIndexOf(i.zone);
+      // A full-width shelf is in every bay; two zoned shelves only meet in the
+      // same one.
+      return bay == null || theirs == null || theirs === bay;
+    })
     .map((i) => i.pos_mm);
 }
 

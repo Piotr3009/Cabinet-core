@@ -14,12 +14,14 @@ import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import ElementModal from '../components/ElementModal.jsx';
 import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
+import AddItemsModal from '../components/AddItemsModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
+import { elementLabel } from '../engine/elements.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
@@ -83,6 +85,8 @@ export default function ConfiguratorPage() {
   const selectedElement = useUiStore((s) => s.selectedElement);
   const clearElement = useUiStore((s) => s.clearElement);
   const clearSelection = useUiStore((s) => s.clearSelection);
+  const removeItem = useProjectStore((s) => s.removeItem);
+  const removeUnit = useProjectStore((s) => s.removeUnit);
 
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
@@ -99,16 +103,52 @@ export default function ConfiguratorPage() {
   // right-hand panel, and the canvas does not have focus.
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key !== 'Escape') return;
-      // A field, a modal or a menu handles its own Escape first.
+      // A field, a modal or a menu handles its own key first. A joiner typing
+      // "450" into a width field is not asking for anything to be deleted.
       const tag = e.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if (selectedElement) clearElement();
-      else if (selectedUnitId) clearSelection();
+
+      if (e.key === 'Escape') {
+        if (selectedElement) clearElement();
+        else if (selectedUnitId) clearSelection();
+        return;
+      }
+
+      // ─── Delete (turn 12, CLAUDE.md F5.2) ───
+      // "a DELETE path (× in panel/modal + Delete key on selection) — both
+      // missing today". The × is in the panel; this is the key, and it acts on
+      // the SELECTED PIECE when there is one and on the cabinet otherwise —
+      // which is the same one-level-at-a-time rule Escape has followed since
+      // turn 9, applied to the other half of the gesture.
+      //
+      // Only pieces that ARE items can be deleted this way: a shelf, a
+      // partition, a rail. A side panel is not a thing you delete, it is a
+      // thing the kit has, and Delete on one must do nothing rather than
+      // something surprising.
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      if (selectedElement) {
+        const unit = units.find((u) => u.id === selectedElement.unitId);
+        const panel = unit ? unitResult(unit.id)?.panels
+          .find((p) => p.id === selectedElement.elementRef) : null;
+        const itemId = panel?.meta?.itemId;
+        if (!itemId) return;
+        e.preventDefault();
+        removeItem(unit.id, itemId);
+        clearElement();
+        notify(`${elementLabel(panel) || 'Piece'} removed.`, 'ok');
+        return;
+      }
+      if (selectedUnitId) {
+        e.preventDefault();
+        removeUnit(selectedUnitId);
+        clearSelection();
+        notify('Cabinet removed.', 'ok');
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedElement, selectedUnitId, clearElement, clearSelection]);
+  }, [selectedElement, selectedUnitId, clearElement, clearSelection,
+    units, unitResult, removeItem, removeUnit, notify]);
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);
@@ -249,6 +289,9 @@ export default function ConfiguratorPage() {
         {/* Turn 12 (CLAUDE.md F4): one cabinet, its own canvas, mounted only
             while the window is open. */}
         {modal === 'cabinet' && <CabinetEditorModal />}
+        {/* Turn 12 (CLAUDE.md F5.1): the golden "+" opens a window beside the
+            cabinet rather than sending the eye to the right-hand panel. */}
+        {modal === 'add-items' && <AddItemsModal />}
         <ContextMenu />
         <Toast />
       </div>

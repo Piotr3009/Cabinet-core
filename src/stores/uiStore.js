@@ -248,6 +248,13 @@ export const useUiStore = create((set, get) => ({
   togglePanelSection: (id) => set((s) => ({ panelOpen: { ...s.panelOpen, [id]: !s.panelOpen[id] } })),
   setPanelSection: (id, open) => set((s) => ({ panelOpen: { ...s.panelOpen, [id]: Boolean(open) } })),
 
+  // ─── Which BAY is being pointed at (turn 12, CLAUDE.md F5.3) ───
+  // "the zones left/right of the partition highlight, the user clicks one".
+  // A moment, not a mode: it lives exactly as long as the pointer is over the
+  // choice, so it belongs here with the drag and the hover and nowhere else.
+  zoneHint: null,                    // the bay's index, or null
+  setZoneHint: (index) => set({ zoneHint: index == null ? null : Math.trunc(Number(index)) }),
+
   // Which "Add items" type has its settings open. One at a time: they are
   // alternatives, not a form to fill in top to bottom.
   addItemKind: null,                 // 'drawers' | 'shelves' | 'hanger' | null

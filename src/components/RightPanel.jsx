@@ -5,6 +5,7 @@ import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
 import { doorCountFor } from '../engine/cabinet.js';
+import { endPanelDrop } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
 import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
@@ -963,6 +964,7 @@ function Insets({ unit, profile, onSet }) {
 function EndPanels({
   unit, profile, design, onAdd, onRemove, onDefaults,
 }) {
+  const type = getUnitType(unit.type);
   const panels = unit.params.end_panels || [];
   const has = (side) => panels.some((ep) => ep.side === side);
   return (
@@ -1013,7 +1015,17 @@ function EndPanels({
           <li key={ep.id} className="flex items-center gap-2 text-sm">
             <span className="text-ink-400 w-6 text-xs">{ep.side}</span>
             <span className="flex-1 text-[11px] text-ink-400">
-              {ep.height === 'unit' ? 'unit height' : 'to floor'}
+              {/* Turn 13 (F4): a wall unit's panel ends with the cabinet
+                  whatever the stored value claims, so the row reads the RULE
+                  rather than the field — a label that disagrees with the piece
+                  is worse than no label. */}
+              {endPanelDrop({
+                height: ep.height,
+                type,
+                mountHeight: unit.params.mount_height,
+                legHeight: unit.params.leg_height,
+                profile,
+              }) > 0 ? 'to floor' : 'ends with the cabinet'}
               {' · '}
               {formatMm(ep.thickness || unit.params.front_t || profile.front.thickness)} mm
               {Number(ep.top_mm) > 0 ? ` · +${formatMm(ep.top_mm)} above` : ''}

@@ -665,7 +665,19 @@ export const DEFAULT_CABINET_PROFILE = {
       // `thickness: null` = the project's front thickness, which is what a
       // workshop means by "same as the doors".
       thickness: null,
-      defaultHeight: 'floor',       // 'floor' | 'unit'
+      defaultHeight: 'floor',       // 'floor' | 'carcass' ('unit' is the old name)
+      // ─── Turn 13 (CLAUDE.md F4) ───
+      // The owner's bug: a WALL unit's end panel ran to the FLOOR — a masking
+      // panel hanging in mid-air down the wall under a cabinet that stops at
+      // 2100. The verdict is that it ends flush with the hanging cabinet's
+      // bottom, so the DEFAULT is per unit class rather than per project.
+      //
+      // 'carcass' means "ends with the cabinet". The fourth value the slot is
+      // shaped for is 'extended' — the door/panel EXTENSION below a wall unit,
+      // parked as BACKLOG #45 — which is why this is a table of classes and not
+      // a boolean: when the extension lands, a wall unit opts into it by name
+      // and nothing about the data has to change shape.
+      defaultHeightByMount: { wall: 'carcass', floor: 'floor' },
     },
   },
 
@@ -1137,6 +1149,15 @@ export const DEFAULT_CABINET_PROFILE = {
     // an object, quiet enough not to be a diagram.
     hardware: {
       rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92', hinge: '#5b5f63',
+      // ─── Turn 13 (CLAUDE.md F7) ───
+      // Are the hinge bodies drawn in SOLID, without switching to X-ray? Yes,
+      // and the owner's verdict is that the switch now exists to HIDE them.
+      //
+      // It is a profile number rather than a `true` in the ui store because it
+      // is workshop configuration like every other appearance answer here
+      // (rule 2) — a shop that wants a clean working view sets it once instead
+      // of asking every joiner to find the toggle.
+      showInSolid: true,
     },
 
     // ─── Which ink the dimensions are written in (turn 11, CLAUDE.md F1.5) ──

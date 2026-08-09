@@ -32,6 +32,7 @@ import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
 } from '../engine/items.js';
+import { endPanelHeightDefault } from '../engine/autoparts.js';
 import { runBatch } from './historyBatch.js';
 
 // ─── Project state ───
@@ -807,7 +808,16 @@ export const useProjectStore = create((set, get) => ({
 
     const profile = getCabinetProfile();
     const settings = {
-      height: height || design.endPanel.height,
+      // ─── Turn 13 (CLAUDE.md F4) ───
+      // The project's answer, unless this unit CLASS has one of its own — a
+      // wall unit's panel ends with the cabinet, and "to the floor" was never a
+      // decision anybody made about a hanging carcass. Written into the data,
+      // so the slot says what the piece is and the parked extension (#45) has
+      // somewhere to opt back in.
+      height: height
+        || (getUnitType(unit.type)?.mount === 'wall'
+          ? endPanelHeightDefault(getUnitType(unit.type), profile)
+          : design.endPanel.height),
       // "Same as the doors" is what a workshop means by a default thickness.
       thickness: Number(thickness) > 0
         ? Number(thickness)

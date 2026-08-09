@@ -28,6 +28,7 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
 } from './puzzle.js';
+import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 
 // ─── Hinge centres (SKYLON_COMMON calcHingePositions*) ───
 
@@ -1473,15 +1474,27 @@ export function computeCabinet(params, profileOverride) {
   // running it into the thing it was moved away from.
   const wallGap = Math.max(0, Number(P.room?.wallBackClearance) || 0);
   const endPanelDepth = wallGap + D + P.doors.gap + frontT;
-  // "To the floor" means down to the floor: past the legs on a standing unit,
-  // and all the way down from a wall unit's mounting height.
-  const dropToFloor = type.mount === 'wall' ? cfg.mountHeight : legHeightForPlinth;
+  // ─── Turn 13 (CLAUDE.md F4): A WALL UNIT'S PANEL ENDS WITH THE CABINET ───
+  //
+  // "To the floor" means down to the floor for something STANDING on it: past
+  // the legs. For a hanging cabinet it meant all the way down from the mounting
+  // height, which is the owner's bug — a masking panel in mid-air, down a wall
+  // that has nothing on it, priced and cut at that height.
+  //
+  // The rule is `endPanelDrop` in engine/autoparts.js, which reads a per-class
+  // default out of the profile and leaves the 'extended' slot open for the
+  // door/panel extension below a wall unit (BACKLOG #45).
   const endPanels = Array.isArray(params?.end_panels) ? params.end_panels : [];
   for (const ep of endPanels) {
     const side = ep?.side === 'R' ? 'R' : 'L';
     const t = Number(ep?.thickness) > 0 ? Number(ep.thickness) : (EP.thickness ?? frontT);
-    const toFloor = (ep?.height || EP.defaultHeight) === 'floor';
-    const drop = toFloor ? Math.max(0, dropToFloor) : 0;
+    const drop = endPanelDrop({
+      height: ep?.height,
+      type,
+      mountHeight: cfg.mountHeight,
+      legHeight: legHeightForPlinth,
+      profile: P,
+    });
     // How far it runs ABOVE the carcass — dragged there, or sent to the ceiling
     // with a double click (CLAUDE.md F3). The room's ceiling is not the
     // engine's business; the store clamps it and passes the answer down.
@@ -1506,7 +1519,10 @@ export function computeCabinet(params, profileOverride) {
       cnc: rectGeometry(endPanelDepth, panelH),
       meta: {
         side: side === 'L' ? 'left' : 'right',
-        height: toFloor ? 'floor' : 'unit',
+        // What this piece IS, resolved — so the panel and the label say the
+        // same thing the geometry does. A wall unit reads 'carcass' whatever
+        // its stored value claims, because that is what was cut (F4).
+        height: drop > 0 ? (ep?.height || endPanelHeightDefault(type, P)) : 'carcass',
         top_mm: top,
         panelId: ep?.id || null,
       },

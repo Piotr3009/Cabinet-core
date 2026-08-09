@@ -172,14 +172,28 @@ test('the top height is PER PANEL — "apply to all" does not carry it', () => {
   assert.equal(store().project.design.endPanel.top_mm, undefined);
 });
 
-test('a wall unit takes one too, and "to the floor" means the floor', () => {
+test('a wall unit takes one too, and it ENDS WITH THE CABINET', () => {
+  // ─── TURN 13 (CLAUDE.md F4): THE OWNER'S VERDICT REVERSES THIS ───
+  //
+  // Turn 6 gave a wall unit's end panel the same "to the floor" the standing
+  // units have, and this test pinned it. The owner has now seen it on a real
+  // job: a masking panel hanging in mid-air the whole way down a bare wall
+  // under a cabinet that stops at 2100 — priced and cut at that height.
+  //
+  // The verdict is that it ends flush with the hanging cabinet's bottom. The
+  // rule is engine/autoparts.js `endPanelDrop`, and it is per unit CLASS: "to
+  // the floor" is the right default for something standing on the floor and a
+  // meaningless one for something screwed to a wall.
+  //
+  // The one future exception — a door/panel EXTENSION below a wall unit — is
+  // BACKLOG #45 and the data slot is left open for it ('extended').
   const id = withUnit('WUD');
   store().addEndPanel(id, { side: 'R' });
   const unit = unitOf(id);
   const ep = endPanelOf(id);
-  const mount = Number(unit.params.mount_height);
-  assert.equal(ep.box.y, -mount, 'it drops from the mounting height');
-  assert.equal(ep.h, unit.params.height + mount);
+  assert.equal(ep.box.y, 0, 'it starts at the bottom of the carcass and goes no lower');
+  assert.equal(ep.h, unit.params.height, 'it is exactly as tall as the cabinet');
+  assert.equal(ep.meta.height, 'carcass');
   assert.equal(ep.box.d, P.room.wallBackClearance + unit.params.depth + P.doors.gap + unit.params.front_t,
     'a hung unit stands off its wall too, and its end panel reaches back to it');
 });

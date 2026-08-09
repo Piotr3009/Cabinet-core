@@ -996,9 +996,28 @@ export default function UnitView({
       )}
 
       {/* The bought hardware (turn 7, CLAUDE.md F3): legs and the rail always,
-          hinges and runners only in X-ray. Every position comes from
-          engine/hardware3d.js, which reads the engine's own drilling — so the
-          count of what is drawn is the count of what is on order. */}
+          the RUNNERS only in X-ray, and the hinges whenever the profile says so.
+          Every position comes from engine/hardware3d.js, which reads the
+          engine's own drilling — so the count of what is drawn is the count of
+          what is on order.
+
+          ─── TURN 13 (CLAUDE.md F7): WHY THEY LOOKED X-RAY-ONLY ───
+          Owner: "still X-ray-only in practice". The rendering is NOT branch-
+          bound — `hinges` below has been independent of `xray` since turn 11
+          and CarcassHinges/DoorHinges draw the same procedural bodies either
+          way. Two other things were making it true in practice, and both are
+          fixed rather than argued with:
+
+            • the flag is REMEMBERED, so a browser that switched it off once in
+              turn 11 kept it off through every reload and no change to the
+              default could reach it. The storage key is versioned now
+              (stores/uiStore.js).
+            • with the doors SHUT there is nothing to see, and that is not a
+              bug: every part of a cup hinge is inside the door or inside the
+              carcass behind it. Turn 12 added the BOSS for exactly this, and
+              it reads the moment a door swings — which is what the capture in
+              verify/t13 shows. Making a closed cabinet show its ironmongery
+              would mean drawing through solid board, which is what X-ray is. */}
       <Hardware
         instances={hardware}
         profile={profile}

@@ -33,6 +33,67 @@ export function takesPlinth(typeId, profile) {
   return Boolean(profile.autoParts.plinth.enabled && type.legs && type.mount === 'floor');
 }
 
+// ─── How far an END PANEL runs DOWN (turn 13, CLAUDE.md F4) ────────────────
+//
+// The owner's bug: a WALL unit's end panel ran to the FLOOR. A masking panel
+// hanging in mid-air the whole way down the wall under a cabinet that stops at
+// 2100 — and it went in the cut list at that height, so a workshop would have
+// cut it.
+//
+// The verdict is that it ends flush with the hanging cabinet's bottom, and that
+// is a property of the UNIT CLASS and not of the project: "to the floor" is a
+// sensible default for something standing on the floor and a meaningless one
+// for something screwed to a wall. So the default is looked up by mount, from
+// the profile, and this is the one place that lookup happens.
+//
+// ─── THE SLOT THAT IS LEFT OPEN ───
+// CLAUDE.md is explicit that there is ONE future exception — the door/panel
+// EXTENSION below a wall unit, parked as BACKLOG #45 — so the value is a NAME
+// and not a boolean. Today a wall unit's panel is 'carcass'; when the extension
+// lands it will be able to say 'extended' and drop again, and nothing about the
+// stored shape will have to change.
+
+/** Every value `endPanel.height` may take. 'unit' is 'carcass' under its old name. */
+export const END_PANEL_HEIGHTS = ['floor', 'carcass', 'unit', 'extended'];
+
+/**
+ * What "how far down" this unit class means when nobody has said.
+ *
+ * @param {object} type     the unit type record (engine/types.js)
+ * @param {object} profile
+ * @returns {'floor'|'carcass'}
+ */
+export function endPanelHeightDefault(type, profile) {
+  const EP = profile?.autoParts?.endPanel || {};
+  const byMount = EP.defaultHeightByMount || {};
+  return byMount[type?.mount] || EP.defaultHeight || 'floor';
+}
+
+/**
+ * How far BELOW the carcass this end panel runs, in mm.
+ *
+ * @param {object} args
+ *   height        what the panel says about itself, or null
+ *   type          the unit type record
+ *   mountHeight   how high a wall unit hangs (its own drop, if it ever drops)
+ *   legHeight     what a standing unit stands on
+ *   profile
+ * @returns {number} millimetres, never negative
+ */
+export function endPanelDrop({
+  height, type, mountHeight = 0, legHeight = 0, profile,
+}) {
+  const stated = END_PANEL_HEIGHTS.includes(height) ? height : endPanelHeightDefault(type, profile);
+  if (type?.mount === 'wall') {
+    // A hanging cabinet: the panel ends WITH IT. A stored 'floor' — which is
+    // what every wall unit in every project made before turn 13 says, because
+    // the project default was project-wide — is overruled rather than migrated:
+    // it was never a decision anybody made about a wall unit.
+    return stated === 'extended' ? Math.max(0, Number(mountHeight) || 0) : 0;
+  }
+  return stated === 'floor' ? Math.max(0, Number(legHeight) || 0) : 0;
+}
+
 /**
  * Is there anything above this kit for a top infill to close against?
  * (turn 8, CLAUDE.md F2.7)

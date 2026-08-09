@@ -8,7 +8,15 @@ import { applySelection, primaryOf } from '../lib/selection.js';
 
 const SNAP_KEY = 'cc.snapStep';
 const XRAY_KEY = 'cc.xray';
-const HINGES_KEY = 'cc.showHinges';
+// ─── Turn 13 (CLAUDE.md F7) ───
+// The key is VERSIONED, and that is the other half of "still X-ray-only in
+// practice". The default has said `true` since turn 11, but the flag is
+// REMEMBERED — so a browser that switched it off once during turn 11 or 12
+// testing kept it off through every reload since, and no change to the default
+// could ever reach it. Bumping the key is how a new default gets one chance to
+// be seen: the old value is not read, the toggle works exactly as before from
+// there on, and nobody has to clear site data to see the fix they asked for.
+const HINGES_KEY = 'cc.showHinges.v2';
 
 function loadSnap() {
   try {
@@ -228,12 +236,15 @@ export const useUiStore = create((set, get) => ({
   setXray: (v) => set({ xray: saveFlag(XRAY_KEY, Boolean(v)) }),
   toggleXray: () => set((s) => ({ xray: saveFlag(XRAY_KEY, !s.xray) })),
 
-  // ─── The hinges, in Solid (turn 11, CLAUDE.md F3.5) ───
+  // ─── The hinges, in Solid (turn 11, CLAUDE.md F3.5; turn 13, F7) ───
   // A MODE like X-ray beside it, and remembered for the same reason: a joiner
   // who wants to see the ironmongery on his cabinets wants to see it tomorrow
-  // too. On by default — the owner asked for the hinges to be visible, and a
-  // feature you have to find a switch for is a feature nobody finds.
-  showHinges: loadFlag(HINGES_KEY, true),
+  // too.
+  //
+  // The DEFAULT is the profile's (turn 13, F7): workshop configuration, like
+  // every other appearance answer, rather than a `true` in a view store. It is
+  // on, and the owner's verdict is that the toggle now exists to HIDE.
+  showHinges: loadFlag(HINGES_KEY, DEFAULT_CABINET_PROFILE.appearance.hardware.showInSolid !== false),
   setShowHinges: (v) => set({ showHinges: saveFlag(HINGES_KEY, Boolean(v)) }),
   toggleHinges: () => set((s) => ({ showHinges: saveFlag(HINGES_KEY, !s.showHinges) })),
 

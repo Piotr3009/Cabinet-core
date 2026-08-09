@@ -92,12 +92,39 @@ export function panelPlacement(panel) {
         n: [0, panel.part === 'TOP' ? 1 : -1, 0],
       };
     case 'BACK':
-      return {
-        origin: [box.x, box.y, box.z],
-        u: [1, 0, 0],
-        v: [0, 1, 0],
-        n: [0, 0, -1],
-      };
+      // ─── Turn 12 (CLAUDE.md F10): A BACK MAY BE DRAWN ROTATED ───
+      //
+      // Owner: the FRIDGE housing's back panel renders turned 90°, and it was
+      // right before. It was, and this is where it turns.
+      //
+      // Every other back in the app is drawn upright, so this case assumed one.
+      // KIT_FRIDGE does not: its top back panel is nested with its HEIGHT along
+      // the drawing's x (`rotated: true`, `drawn_w` = the panel's height), the
+      // same way the TOP is — and the TOP's case above has always said so. This
+      // one did not, so the machined outline was built in a 296 × 600 frame and
+      // laid down as if it were 600 × 296.
+      //
+      // WHICH of the two 90° turns is not a guess. It is read off the DRILLING,
+      // which is the same check the BUL/BUR note above describes: the panel's
+      // sockets have to land on the side panels' tabs, and they only do with the
+      // CNC x running DOWN from the top of the piece. The side tab at cabinet
+      // y 1980–2030 is the socket at CNC x 69.5–120.5, measured from y = 2100.
+      //
+      // Handedness is unchanged (u × v = −n either way), so the face is not
+      // mirrored — only turned.
+      return panel.cnc?.rotated
+        ? {
+          origin: [box.x, box.y + box.h, box.z],
+          u: [0, -1, 0],
+          v: [1, 0, 0],
+          n: [0, 0, -1],
+        }
+        : {
+          origin: [box.x, box.y, box.z],
+          u: [1, 0, 0],
+          v: [0, 1, 0],
+          n: [0, 0, -1],
+        };
     default:
       return null;
   }

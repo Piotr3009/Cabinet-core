@@ -348,13 +348,24 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
           the shipped array has nothing in it. The loop stays, because the
           decision is data: profile.appearance.studio.points says why, and one
           line there brings them back. None casts a shadow. */}
+      {/* ─── Turn 14 (CLAUDE.md F9): the pair at EYE LEVEL ───
+          `yMm` is an ABSOLUTE height above the floor, and it is the whole
+          phase: a specular highlight is the mirror of its source, so a rig
+          whose every strong light is at three metres can only put a highlight
+          on a vertical door for somebody looking UP at it. Eyes do not scale
+          with the kitchen — 1650 is 1650 in a vanity and in a six-metre run —
+          so this one number is not a fraction of the rig distance while x and z
+          still are, and the pair opens out with the job without rising with it.
+
+          `p.y` is still honoured where `yMm` is absent, so the example pair in
+          profile.js and any rig a workshop has already written keep working. */}
       {(studio.points || []).map((p, i) => (
         <pointLight
           key={`ccPoint${i}`}
           userData={{ ccLight: 'point' }}
           position={[
             fit.centre[0] + distance * p.x,
-            fit.centre[1] + distance * p.y,
+            Number.isFinite(Number(p.yMm)) ? mm(Number(p.yMm)) : fit.centre[1] + distance * (p.y || 0),
             fit.centre[2] + distance * p.z,
           ]}
           intensity={p.intensity}

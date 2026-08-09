@@ -4863,3 +4863,41 @@ nie ruszają — przesunięta formatka to ta sama formatka.
 
 **Werdykt.** 1226 → **1234** testy. Fixtures bez zmian (goły `computeCabinet`
 bez nadpisań tnie dokładnie to, co ciął).
+
+---
+
+## F9 — Światła frontowe na WYSOKOŚCI OCZU (wariant A) — ✅ ZIELONA
+
+**Odkrycie właściciela jest geometryczne, a nie gustowe.** Połysk czyta się
+tylko pod stromymi kątami, bo każde mocne światło w rigu jest wysoko. Odblask
+lustrzany to LUSTRO źródła: źródło na trzech metrach i patrzący na 1,65 mogą się
+spotkać na pionowych drzwiach tylko wtedy, gdy patrzący patrzy w GÓRĘ — a tak
+się na kuchnię nie patrzy. Tura 10 miała rację, że wędrujący błysk niosą
+jupitery; zmierzyła to na orbicie przebiegającej głównie NAD meblem.
+
+**`yMm` — i to jest cała faza.** Każda inna pozycja w tym bloku to ułamek
+odległości rigu, co jest poprawne dla rigu studyjnego: skaluje się z obiektem.
+Oko się nie skaluje — stolarz w wanity 2 m i stolarz w kuchni 6 m ma oczy na
+1650. Więc `yMm` to BEZWZGLĘDNA wysokość nad podłogą w milimetrach i przesłania
+`y`, gdzie jest podane; x i z zostają ułamkami, więc para rozsuwa się z robotą,
+nie podnosząc się z nią. `p.y` nadal działa tam, gdzie `yMm` nie ma — przykład w
+profilu i każdy rig, który warsztat już sobie napisał, chodzą dalej.
+
+Para: x ≈ ±0,35, z ≈ 0,7, **yMm 1650**, intensywność **12** (FIZYCZNA, decay 2),
+ciepła biel, **bez cieni** (budżet rzucających nietknięty — `shadowCasters` 2,
+klucz + jupitery), `ccLight: 'point'`, więc rola `render.lightScale.point`,
+którą render przeważa, istnieje i jest neutralna.
+
+**Zmierzone w przeglądarce** — pełne liczby w `verify/t14/f9-eye-level-glint.md`.
+Na wysokości oczu para dokłada światła na frontach na KAŻDYM azymucie (Δśredniej
++2…+18), a na dwóch pojawia się **nowa najjaśniejsza plama** (Δmax +59) — błysk,
+którego bez pary nie było. Z góry (kamera 3,2 m) efekt jest niespójny, a na
+trzech azymutach fronty w ogóle nie wchodzą w kadr. To jest skarga właściciela
+powiedziana od drugiej strony.
+
+Trzeci pomiar był trzecim podejściem i to też warto zapisać: dwa pierwsze
+czytały PAS kadru, a biały pokój saturuje się na 253 niezależnie od świateł, więc
+nie pokazywały nic. Dopiero filtr „tylko piksele malowanego frontu" mierzy
+powierzchnię, o którą chodzi w tej fazie.
+
+**Werdykt.** 1234 → **1240** testów.

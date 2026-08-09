@@ -1005,7 +1005,38 @@ export const DEFAULT_CABINET_PROFILE = {
       //     { x:  0.60, y: 0.45, z: 0.85, intensity: 9, colour: '#fff8f0' },
       //     { x: -0.60, y: 0.45, z: 0.85, intensity: 9, colour: '#fff4e8' },
       //   ],
-      points: [],
+      //
+      // ─── TURN 14 (CLAUDE.md F9): THE EYE-LEVEL PAIR, AND `yMm` ─────────────
+      //
+      // The owner's finding, and it is a geometric one rather than a taste one:
+      // the gloss reads only at STEEP angles, because every strong light in the
+      // rig is high. A specular highlight is the mirror of the source, so a
+      // source at 3 m and a viewer at 1.65 m can only meet on a vertical door
+      // when the viewer is looking up at it — which is not how anybody looks at
+      // a kitchen. Turn 10 was right that the SPOTS carry the travelling glint;
+      // it measured that from an orbit that was mostly above the furniture.
+      //
+      // So the pair is a pair of EYES, and that is why `yMm` exists. Every other
+      // position in this block is a fraction of the rig distance, which is
+      // correct for a studio rig — it scales with the subject. An eye does not:
+      // a joiner standing in a 2 m vanity and a joiner standing in a 6 m kitchen
+      // both have their eyes at 1650. So `yMm` is an ABSOLUTE height above the
+      // floor in millimetres and OVERRIDES `y` where it is given; x and z stay
+      // rig-distance fractions, so the pair still opens out with the job.
+      //
+      // The numbers are the owner's own starting values (F9.1) and he will turn
+      // them. Intensities are PHYSICAL — decay 2, so a point light fades with
+      // distance squared and a working value at a few metres is in the teens.
+      // NO SHADOWS: the caster budget (`shadowCasters`) is untouched, and a
+      // point light casting one would be six depth passes for a cube map.
+      points: [
+        {
+          x: 0.35, yMm: 1650, z: 0.7, intensity: 12, colour: '#fff6ec',
+        },
+        {
+          x: -0.35, yMm: 1650, z: 0.7, intensity: 12, colour: '#fff3e4',
+        },
+      ],
       // Falloff limit as a multiple of the rig distance; decay stays physical.
       pointReach: 4,
       // ─── The bounce the rig cannot produce ───

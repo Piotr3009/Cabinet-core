@@ -7,7 +7,7 @@ import {
   contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
-import Hardware from './Hardware.jsx';
+import Hardware, { DoorHinges } from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import JointLines from './JointLines.jsx';
@@ -181,7 +181,7 @@ function useBevel(box, profile, sprayed = false) {
 // machined socket, a decor and an X-ray look like.
 export function MovingPanel({
   panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
-  swing = null, joineryLayers: layers = null, ...handlers
+  swing = null, joineryLayers: layers = null, children = null, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -258,6 +258,10 @@ export function MovingPanel({
 
   return (
     <group ref={group} position={pivot}>
+      {/* Anything screwed TO this piece and travelling with it — the door half
+          of a hinge (turn 12, CLAUDE.md F6.1). Inside the group, so the swing
+          is free: no second animation to keep in step with this one. */}
+      {children}
       <mesh position={meshOffset} castShadow={!contour} receiveShadow={!contour} {...handlers}>
         {/* A mitred strip carries its own geometry (turn 8, CLAUDE.md F6), and
             since turn 11 so does a panel with the joint machined into it (F6).
@@ -810,6 +814,26 @@ export default function UnitView({
             key={p.id}
             panel={p}
             front={front}
+            // ─── Turn 12 (CLAUDE.md F6.1) ───
+            // The cup and its boss are screwed to THIS door, so they hang off
+            // it and swing with it. The arm and the plate stay on the carcass,
+            // drawn by <Hardware> below — which is what a hinge does.
+            {...(front === 'door' && (showHinges || xray) ? {
+              children: (
+                <DoorHinges
+                  items={hardware.hinges.filter((hg) => hg.panelId === p.id)}
+                  profile={profile}
+                  colour={xray
+                    ? profile.appearance.hardware.bracket
+                    : (profile.appearance.hardware.hinge || profile.appearance.hardware.bracket)}
+                  pivot={[
+                    mm(p.meta?.hinge === 'R' ? p.box.x + p.box.w : p.box.x),
+                    mm(p.box.y + p.box.h / 2),
+                    mm(p.box.z + p.box.d / 2),
+                  ]}
+                />
+              ),
+            } : {})}
             open={front ? (openFronts?.[p.id] ?? 0) : 0}
             surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
             outline={outlineFor(profile, { contour })}

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mm } from './constants.js';
-import { cncRect, notchedOutline, socketNotches } from '../engine/socketFace.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { cncRect, notchedOutline, socketNotches, tabOutlines } from '../engine/socketFace.js';
 import { panelPlacement } from '../engine/joinery.js';
 
 // ─── The board with the joint cut into it (turn 11, CLAUDE.md F6) ───────────
@@ -45,7 +46,12 @@ export function machinedPanelGeometry(panel, layers, profile) {
   const placement = panelPlacement(panel);
   if (!placement || !panel?.box) return null;
   const notches = socketNotches(panel, layers);
-  if (!notches.length) return null;
+  // ─── Turn 12 (CLAUDE.md F6.2): the OTHER half of the joint ───
+  // A socket is a POCKET and a TAB is part of the OUTLINE, and turn 11 only
+  // read the pockets — so a side panel came out a rectangle and its three tabs
+  // went with it. `tabOutlines` reads the outline the LISP actually draws.
+  const tabs = tabOutlines(panel);
+  if (!notches.length && !tabs.length) return null;
 
   const { w, h } = cncRect(panel);
   const thickness = thicknessOf(panel, placement);
@@ -56,6 +62,9 @@ export function machinedPanelGeometry(panel, layers, profile) {
     panel.part,
     w, h, thickness, radius,
     ...notches.map((n) => `${n.edge}:${n.from}:${n.to}:${n.depth}`),
+    // The tabs are part of the SHAPE, so two panels that differ only in their
+    // tabs must not share a cached solid.
+    ...tabs.map((t) => t.map(([x, y]) => `${x},${y}`).join(';')),
   ].join('|');
 
   const hit = cache.get(key);
@@ -68,7 +77,7 @@ export function machinedPanelGeometry(panel, layers, profile) {
   }
 
   const geometry = build({
-    w, h, thickness, radius, notches, placement, box: panel.box,
+    w, h, thickness, radius, notches, tabs, placement, box: panel.box,
   });
   cache.set(key, geometry);
   if (cache.size > CACHE_LIMIT) {
@@ -95,19 +104,30 @@ function thicknessOf(panel, placement) {
 }
 
 function build({
-  w, h, thickness, radius, notches, placement, box,
+  w, h, thickness, radius, notches, tabs = [], placement, box,
 }) {
+  const extrude = (points) => new THREE.ExtrudeGeometry(
+    new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y)))),
+    {
+      depth: mm(thickness),
+      bevelEnabled: false,
+      // The outline already carries its fillets as real points; asking the
+      // extruder to re-approximate curves would only add triangles.
+      curveSegments: 1,
+    },
+  );
+
   const outline = notchedOutline({
     w, h, notches, radius,
   });
-  const shape = new THREE.Shape(outline.map(([x, y]) => new THREE.Vector2(mm(x), mm(y))));
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: mm(thickness),
-    bevelEnabled: false,
-    // The outline already carries its fillets as real points; asking the
-    // extruder to re-approximate curves would only add triangles.
-    curveSegments: 1,
-  });
+  // The board, and then each tab standing off its edge. They are separate
+  // extrusions merged into one buffer rather than one polygon, because a tab
+  // that shares an edge with the board is a self-touching outline and the
+  // triangulator is entitled to refuse it. Merged, it is still ONE draw call
+  // and still one cached geometry per panel configuration.
+  const parts = [extrude(outline), ...tabs.map((t) => extrude(t))];
+  const geometry = parts.length === 1 ? parts[0] : mergeGeometries(parts, false);
+  if (parts.length > 1) for (const g of parts) g.dispose();
 
   // ExtrudeGeometry works in the z = 0 plane and extrudes towards +z. The panel
   // lives on a face of its box, so the basis is the placement's own: u and v are

@@ -8,6 +8,7 @@ import {
 } from '../engine/elements.js';
 import { getUnitType } from '../engine/types.js';
 import { doorExtendMm, doorHeightOf } from '../engine/doors.js';
+import { minDrawerFrontHeight } from '../engine/cabinet.js';
 import { elementMaterialChoices, migrateDesign } from '../engine/design.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
@@ -49,8 +50,19 @@ export default function ElementProperties({
   const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
   const setSideInfillPinned = useProjectStore((s) => s.setSideInfillPinned);
   const setSideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
+  const setTopInfill = useProjectStore((s) => s.setTopInfill);
+  const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const setEndPanelBelow = useProjectStore((s) => s.setEndPanelBelow);
   const removeElement = useProjectStore((s) => s.removeElement);
+  // Turn 17 (CLAUDE.md F7.2): the hinges of the door in hand.
+  const hingeRowsOf = useProjectStore((s) => s.hingeRowsOf);
+  const setHingePos = useProjectStore((s) => s.setHingePos);
+  const addHinge = useProjectStore((s) => s.addHinge);
+  const removeHinge = useProjectStore((s) => s.removeHinge);
+  const resetHinges = useProjectStore((s) => s.resetHinges);
+  // Turn 17 (CLAUDE.md F8.2): one drawer's height, clamped by the owner's rule.
+  const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
+  const resetDrawerHeights = useProjectStore((s) => s.resetDrawerHeights);
   const moveElement = useProjectStore((s) => s.moveElement);
 
   const type = useMemo(() => getUnitType(unit.type), [unit.type]);
@@ -245,7 +257,38 @@ export default function ElementProperties({
       // `sideInfillToCeiling` is `setSideInfillTop` with the room's own
       // headroom in it, exactly as `endPanelToCeiling` is.
       case 'above-unit-infill':
-        if (panel.meta?.side === 'top') return null;
+        // ─── Turn 17 (CLAUDE.md F6.1): …AND THE TOP FILLER GOES UP TOO ─────
+        // The side fillers have had the pair since turn 16 — a number and a ▲
+        // that runs the piece to the ceiling — and the piece that most obviously
+        // wants it, the one ABOVE a wall unit, was the one branch that returned
+        // null. Same mechanics, different number: the store's `setTopInfill`
+        // and `fillToCeiling`, which are what the drag on its top edge and the
+        // double-click have called since turn 6. Nothing is forked.
+        if (panel.meta?.side === 'top') {
+          return (
+            <Field key={key} label="Above unit">
+              <div className="flex gap-1">
+                <NumberField
+                  className="cc-input text-right flex-1"
+                  data-top-infill-mm="1"
+                  min={0}
+                  value={Number(unit.params.top_infill_mm) || 0}
+                  title="How far this filler runs above the carcass (mm). Clamped to the ceiling."
+                  onCommit={(v) => setTopInfill(unit.id, v)}
+                />
+                <button
+                  type="button"
+                  className="cc-btn px-2"
+                  data-top-infill-to-ceiling="1"
+                  title="All the way to the ceiling"
+                  onClick={() => fillToCeiling(unit.id)}
+                >
+                  ▲
+                </button>
+              </div>
+            </Field>
+          );
+        }
         return (
           <Field key={key} label="Above unit">
             <div className="flex gap-1">
@@ -357,6 +400,71 @@ export default function ElementProperties({
           </div>
         );
       }
+      // ─── Turn 17 (CLAUDE.md F7.2): THE HINGES, BY HAND ──────────────────
+      // Add one, take one off, move one — the shelf's own idiom, in the shelf's
+      // own control: a numbered row with a millimetre box, and one button each
+      // for the two things a joiner does to a set of hinges. The list is the
+      // CABINET's, because its doors are drilled as a set and the carcass
+      // carries one hinge column per hinged side; the note says so rather than
+      // leaving a joiner to discover it by editing the other leaf.
+      case 'hinges': {
+        const rows = hingeRowsOf(unit.id);
+        const own = Array.isArray(unit.params.hinge_rows) && unit.params.hinge_rows.length;
+        if (!rows.length) return null;
+        return (
+          <div key={key} className="col-span-2 space-y-1" data-hinge-rows="1">
+            <div className="cc-row">
+              <span className="cc-label flex-1">Hinges · {rows.length}</span>
+              {own && (
+                <button
+                  type="button"
+                  className="cc-btn px-2"
+                  data-hinges-reset="1"
+                  title="Back to the kit's own spacing and the project standard"
+                  onClick={() => resetHinges(unit.id)}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            {rows.map((mm, i) => (
+              // eslint-disable-next-line react/no-array-index-key
+              <div key={`h${i}`} className="flex items-center gap-1">
+                <span className="text-[10px] text-ink-400 w-4 tabular-nums">{i + 1}</span>
+                <NumberField
+                  className="cc-input text-right flex-1"
+                  data-hinge-row={i}
+                  value={mm}
+                  title="Above the carcass floor. It cannot pass the hinge above or below it."
+                  onCommit={(v) => setHingePos(unit.id, i, v)}
+                />
+                <button
+                  type="button"
+                  className="cc-btn-ghost px-2"
+                  data-hinge-remove={i}
+                  title="Take this hinge off"
+                  onClick={() => removeHinge(unit.id, i)}
+                >
+                  −
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="cc-btn w-full"
+              data-hinge-add="1"
+              title="One more hinge, in the biggest gap in the run"
+              onClick={() => addHinge(unit.id)}
+            >
+              + Add a hinge
+            </button>
+            <p className="text-[11px] text-ink-400">
+              This cabinet’s hinges — both leaves, because they are drilled as a set. Editing them here
+              turns the project standard off for this cabinet; Reset hands it back.
+            </p>
+          </div>
+        );
+      }
       case 'masking-depth':
         return (
           <Field key={key} label="Depth">
@@ -376,12 +484,56 @@ export default function ElementProperties({
             </select>
           </Field>
         );
-      case 'drawer-height':
+      // ─── Turn 17 (CLAUDE.md F8.2): THE DRAWER'S HEIGHT, EDITED ──────────
+      // It was a read-only number. It is the shelf's own control now — type a
+      // millimetre, the store clamps it to the owner's rule and the drawers
+      // nobody has touched take up what is left in the kit's ratio. The piece
+      // is found by its drawer INDEX, so the field is the same on the front and
+      // on the box behind it: with the fronts off, the box is what you click.
+      case 'drawer-height': {
+        const n = Number(panel.meta?.drawer);
+        if (!Number.isFinite(n) || n < 1) {
+          return (
+            <Field key={key} label="Front height">
+              <span className="cc-input block text-right opacity-70">{formatMm(panel.h)}</span>
+            </Field>
+          );
+        }
+        const own = Array.isArray(unit.params.drawer_heights) && unit.params.drawer_heights.length;
+        const heights = unit.params.drawer_heights || [];
+        const value = Number(heights[n - 1]);
         return (
-          <Field key={key} label="Front height">
-            <span className="cc-input block text-right opacity-70">{formatMm(panel.h)}</span>
-          </Field>
+          <div key={key} className="col-span-2 space-y-1" data-drawer-height={n}>
+            <Field label={`Drawer ${n} height`}>
+              <div className="flex gap-1">
+                <NumberField
+                  className="cc-input text-right flex-1"
+                  data-drawer-height-mm={n}
+                  min={minDrawerFrontHeight(profile)}
+                  value={Number.isFinite(value) && value > 0 ? value : panel.h}
+                  title={`No shorter than ${formatMm(minDrawerFrontHeight(profile))} mm — the runner screws plus the air under them.`}
+                  onCommit={(v) => setDrawerHeight(unit.id, drawerRef(unit, n), v)}
+                />
+                {own && (
+                  <button
+                    type="button"
+                    className="cc-btn px-2"
+                    data-drawer-heights-reset="1"
+                    title="Back to the kit's own split"
+                    onClick={() => resetDrawerHeights(unit.id)}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </Field>
+            <p className="text-[11px] text-ink-400">
+              The drawers nobody has set take up what is left, in the kit&apos;s own ratio, so the stack
+              still fills the face. No shorter than {formatMm(minDrawerFrontHeight(profile))} mm.
+            </p>
+          </div>
         );
+      }
       case 'plinth-height':
         return (
           <Field key={key} label="Height">
@@ -513,6 +665,21 @@ function ElementActions({ unit, panel, onRemove, onMove }) {
       )}
     </div>
   );
+}
+
+/**
+ * How this cabinet's drawer `n` (from the floor) is addressed.
+ *
+ * A WARDROBE's drawers are ITEMS with ids of their own; a BUDR's are a RATIO
+ * and have none, so the only handle is the index. The store takes either
+ * (turn 17, CLAUDE.md F8.2) — this is the one place that has to know which kit
+ * it is looking at, and it decides it from the data rather than from the type.
+ */
+function drawerRef(unit, n) {
+  const item = (unit.params.sections?.[0]?.items || [])
+    .filter((i) => i.kind === 'drawer')
+    .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))[n - 1];
+  return item?.id ?? n - 1;
 }
 
 function Field({ label, children }) {

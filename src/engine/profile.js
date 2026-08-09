@@ -87,6 +87,14 @@ export const DEFAULT_CABINET_PROFILE = {
 
   // ─── Hinge drilling ───
   hinges: {
+    // ─── Turn 17 (CLAUDE.md F7.1): THE PROJECT STANDARD ────────────────────
+    // "Project setup gains 'Standard hinges: 2 / 3', default 3." Three is what
+    // the kits have always drilled, so a project that never opens the setting
+    // cuts what it cut yesterday. Two takes ONE MIDDLE hinge off each door and
+    // leaves the outer ones exactly where the rule put them
+    // (engine/cabinet.js `hingeRows`).
+    standard: 3,
+    standardOptions: [2, 3],
     holeDiameter: 5,
     holePairOffset: 16,        // 2 holes per centre at centre ± 16
     xFromFrontEdge: 37,        // measured from the FRONT edge of the side panel
@@ -597,6 +605,24 @@ export const DEFAULT_CABINET_PROFILE = {
     bottomOversize: 13,
     depthAllowance: 20,         // usable depth = D − G − 20 (NOT the wardrobe rule)
     firstRowFromBottom: 38,     // runner row above each front's base
+    // ─── Turn 17 (CLAUDE.md F8.3): THE OWNER'S CLAMP ───────────────────────
+    // "A drawer may come no closer than 10 mm below the bottom runner — 28 + 10
+    // mm measured from the screw centres."
+    //
+    // Two numbers and a sum, and it is the SUM that is the rule: a drawer front
+    // shorter than 38 mm has its bottom edge inside the runner it hangs on.
+    // They are kept apart rather than written as one 38, because they are two
+    // different facts — where the runner's screws are, and how much air the
+    // owner wants under them — and a workshop that changes runners changes one
+    // of them and not the other.
+    //
+    // (38 is also `firstRowFromBottom` above, and that is not a coincidence: it
+    // is the same distance measured from the same place, once as "where the
+    // runner row goes" and once as "how short a front may be". They are left as
+    // two entries because the day they stop agreeing, the app must cut the
+    // runner row where the kit says and refuse the front on the owner's rule.)
+    runnerScrewFromBase: 28,    // the bottom runner's screw centres, from the front's base
+    clearanceBelowRunner: 10,   // …and the air the owner wants under them
     frontScrewFromSide: 50,     // + 2×G + halfDiameter, see cabinet.js
     frontScrewExtra: 3.5,
     frontScrewFromBottom: 96.5, // + G on the bottom drawer

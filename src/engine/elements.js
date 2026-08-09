@@ -242,13 +242,18 @@ const FIELDS = {
   // carcass block, which is where a joiner looking for a door property does not
   // look. The engine is untouched: `door_extend` is the same param it has been
   // since turn 3, and this only says where the control is.
-  door: ['hinge-side', 'door-extend', 'front-board', 'material'],
+  // Turn 17 (CLAUDE.md F7.2): a door's HINGES are a door property — add one,
+  // take one off, move one — so they are edited on the door and nowhere else.
+  door: ['hinge-side', 'door-extend', 'hinges', 'front-board', 'material'],
   'drawer-front': ['drawer-height', 'front-board', 'material'],
   'masking-panel': ['masking-depth', 'material'],
   // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
   // stack — that is what F8 edits, on the unit — so what is said about one
   // board of it is what it is made of.
-  drawer: ['material'],
+  // Turn 17 (CLAUDE.md F8.2): with the fronts off, the BOX is what a joiner
+  // clicks — so the drawer's height is edited on it as well as on its front.
+  // One field id, one control, two places it can be reached from.
+  drawer: ['drawer-height', 'material'],
 };
 
 /**

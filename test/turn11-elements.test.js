@@ -71,7 +71,9 @@ test('…and the drawer BOX is a piece you can open and edit', () => {
   for (const p of boxes) {
     assert.equal(isSelectableElement(p), true, `${p.id} is a board a joiner can hold`);
     assert.equal(elementKind(p), 'drawer');
-    assert.deepEqual(elementFields(p), ['material']);
+    // Turn 17 F8.2: with the fronts off, the BOX is what a joiner clicks — so
+    // the drawer's height is edited on it as well as on its front.
+    assert.deepEqual(elementFields(p), ['drawer-height', 'material']);
     // …but it is NOT clicked in the room: it is inside a shut cabinet, and the
     // turn-13 verdict (a click on a cabinet selects the cabinet) is untouched.
     assert.equal(isMainViewElement(p), false, `${p.id} must not be clickable in the room`);

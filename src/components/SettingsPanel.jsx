@@ -13,6 +13,7 @@ import {
   projectDimensions, projectFrontThickness, saveButtonState, settingsSectionSnapshot, sourceById,
 } from '../engine/projectSettings.js';
 import { formatMm } from '../engine/format.js';
+import { hingeStandard } from '../engine/cabinet.js';
 import { PROJECT_TYPES as PROJECT_TYPE_OPTIONS } from '../engine/projectTypes.js';
 import { contrastInk } from '../lib/pswColors.js';
 import SheenSlider from './SheenSlider.jsx';
@@ -72,6 +73,8 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setDesign = useProjectStore((s) => s.setDesign);
   const setProjectHeights = useProjectStore((s) => s.setProjectHeights);
   const setProjectDefaults = useProjectStore((s) => s.setProjectDefaults);
+  // Turn 17 (CLAUDE.md F7.1): how many hinges this job hangs a door on.
+  const setHingeStandard = useProjectStore((s) => s.setHingeStandard);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
   const setCarcassMaterial = useProjectStore((s) => s.setCarcassMaterial);
@@ -818,9 +821,39 @@ export default function SettingsPanel({ onRoomSetup = null }) {
             </div>
           ))}
         </div>
+        {/* ─── Turn 17 (CLAUDE.md F7.1): STANDARD HINGES ────────────────────
+            How many hinges this JOB hangs a door on. Three is what every kit
+            has drilled since turn 1, so a project that never touches this is
+            cut exactly as it was. Two takes ONE MIDDLE hinge off each door and
+            leaves the outer ones where the rule put them — the drilling in the
+            export, the hinge bodies in 3D and the BOM's hardware count all
+            follow, because all three count the same list. */}
+        <div className="cc-row" data-hinge-standard="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Standard hinges</span>
+            <span className="text-[11px] text-ink-400">
+              How many per door. On 2, each door loses one MIDDLE hinge — the outer ones never move.
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {profile.hinges.standardOptions.map((n) => (
+              <button
+                key={n}
+                type="button"
+                data-hinge-standard-option={n}
+                aria-pressed={hingeStandard(design.hinges?.standard, profile) === n}
+                className={`cc-btn px-2 ${hingeStandard(design.hinges?.standard, profile) === n ? 'border-gold text-gold' : ''}`}
+                onClick={() => setHingeStandard(n)}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
         <p className="text-[11px] text-ink-400">
           Every one of these is fitted by the automat and counted in the BOM. You pick the variant; it
-          picks the item.
+          picks the item. One cabinet&apos;s own hinges can be added, removed and moved by hand —
+          select its door in the editor.
         </p>
       </section>
 

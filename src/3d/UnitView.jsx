@@ -1315,7 +1315,19 @@ export default function UnitView({
         <group userData={{ ccHelper: true }}>
           <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
           <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
-          <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${formatMm(D)} deep`} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
+          {/* ─── Turn 17 (CLAUDE.md F6.3) ───
+              The cabinet's NAME is not a dimension and no longer dresses like
+              one: a flat plate in the app's own tones, square-cornered, in the
+              label type the panels use. The depth stays on it because it is
+              what a joiner reads next, and it stays in the same caption because
+              two floating labels over one cabinet is what the bubble already
+              looked like from a distance. */}
+          <DimLabel
+            position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]}
+            text={`${unit.params.unit_num} · ${formatMm(D)} deep`}
+            tone={selected ? 'gold' : 'dim'}
+            variant="flat"
+          />
         </group>
       )}
 

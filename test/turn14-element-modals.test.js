@@ -70,7 +70,9 @@ test('F4.1 — each modal carries the fields that apply to THAT piece', () => {
   const infill = r.panels.find((p) => p.part === 'INFILL' && p.meta?.side === 'left');
 
   assert.deepEqual(elementFields(door, getUnitType('WUD')),
-    ['hinge-side', 'door-extend', 'front-board', 'material']);
+    // Turn 17 (CLAUDE.md F7.2): a door's HINGES are edited on the door — add
+    // one, take one off, move one, the shelf's own idiom.
+    ['hinge-side', 'door-extend', 'hinges', 'front-board', 'material']);
   assert.deepEqual(elementFields(ep),
     ['end-panel-height', 'thickness-ep', 'above-unit-ep', 'below-unit-ep', 'material']);
   assert.deepEqual(elementFields(infill),

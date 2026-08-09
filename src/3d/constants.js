@@ -17,4 +17,12 @@ export const COLORS = {
   gold: '#AA8E68',
   goldSoft: '#C8A678',
   dim: '#4a4a4a',
+  // ─── Turn 17 (CLAUDE.md F6.3): the flat name plate ───
+  // The owner on the cabinet's name label: "paskudna chmurka". It was a white
+  // rounded bubble with a 2 px stroke — a speech balloon on a drawing of
+  // furniture. These two are the plate and the ink of the quiet, square,
+  // drawing-office label that replaces it, and they are the app's own tones:
+  // the shell the panels are drawn in, and the ink they print in.
+  labelPlate: '#1c1c1a',
+  labelInk: '#e8e4dc',
 };

@@ -126,11 +126,19 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   // visible exactly as turn 13 left them, and REDRAWING them is parked). The
   // sections a joiner sees are decided by each entry's `group` and drawn with a
   // delicate gold rule between them, so adding an entry is choosing a group.
+  //
+  // ─── Turn 17 (CLAUDE.md F6.2) adds RENAME, in the `edit` group ───
+  // Turn 16 shipped renaming inline in the panel header and the owner could not
+  // find it. This is not a second mechanism — it opens the panel and puts the
+  // cursor in the one field that exists — and it belongs beside "Edit cabinet",
+  // because both are "this cabinet, in particular".
   assert.deepEqual(ids, [
-    'edit-cabinet',
+    'edit-cabinet', 'rename',
     'end-panel-L', 'end-panel-R', 'end-panel-B',
     'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R',
-    'plinth', 'add-doors', 'unit-colour',
+    // Turn 17 (F8.1): "Drawer fronts" — the same idiom as Remove doors, on the
+    // kits that have a stack. A WARDROBE has one (internal, behind its doors).
+    'plinth', 'add-doors', 'drawer-fronts', 'unit-colour',
     'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
     'dimensions',

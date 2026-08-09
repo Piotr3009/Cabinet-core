@@ -304,6 +304,14 @@ export function budrHeightsWithOwn(height, profile, split, own, warnings = []) {
  */
 export function drawerSplitFor(type, profile) {
   const B = profile.baseDrawerUnit;
+  // Turn 17 (CLAUDE.md F10): a kit may name its own split in the profile rather
+  // than pick one of the drawer unit's variants — the oven base has ONE drawer
+  // under its shelf, which is not a variant of the drawer unit and should not
+  // appear in that group's flyout. The key is data, exactly like `defaultsKey`.
+  if (type?.drawerRatioKey) {
+    const own = readPath(profile, type.drawerRatioKey);
+    if (Array.isArray(own) && own.length) return { ratio: own, exact: true };
+  }
   const variant = type?.drawerVariant
     ? (B.variants || []).find((v) => v.id === type.drawerVariant)
     : null;
@@ -372,10 +380,16 @@ function normalizeParams(raw, profile) {
   // same physical drawer as runner row i and drawer front i. `index` is the
   // authority when the editor supplies it; otherwise array order stands.
   const drawerItems = [...drawersFromItems].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
+  // Turn 17 (CLAUDE.md F10): an OVEN's drawer fills the zone UNDER its shelf,
+  // not the carcass — the shelf sits `shelfFromTop` from the top of the
+  // cabinet, and what is left below it (less the two boards) is the stack.
+  const stackHeight = type.appliance === 'oven'
+    ? Math.max(0, height - profile.ovenUnit.shelfFromTop - 2 * G)
+    : height;
   const drawerHeights = type.drawerStyle === 'budr'
     // Turn 17 (CLAUDE.md F8.2): the drawers the joiner has set himself, and the
     // kit's own ratio for the rest. Nothing set = `budrFrontHeights` unchanged.
-    ? budrHeightsWithOwn(height, profile, budrSplit, p.drawer_heights, warnings)
+    ? budrHeightsWithOwn(stackHeight, profile, budrSplit, p.drawer_heights, warnings)
     : resolveDrawerHeights(p, drawers, drawerItems, profile, warnings);
   const rail = type.supports.rail ? (items.length ? Boolean(hangerFromItems) : Boolean(p.rail)) : false;
 
@@ -534,6 +548,40 @@ function collectItems(p) {
 function clampInt(value, min, max) {
   const n = Math.trunc(Number(value) || 0);
   return Math.min(Math.max(n, min), max);
+}
+
+/**
+ * A plinth with the appliance opening cut out of it (turn 17, CLAUDE.md F9).
+ *
+ * The notch runs from `cutFromTop` below the plinth's top edge down through its
+ * bottom edge, across the appliance's own width — so what is left is a 20 mm
+ * strip carrying the two ends of the piece.
+ *
+ * Coordinates are the plinth's own cut frame (origin bottom-left, y up), and
+ * the notch is CLAMPED to it: an owner plinth that runs past this unit on both
+ * sides gets the opening where the appliance is, and a notch that would reach
+ * an end of the board simply stops there.
+ *
+ * @param {number} w        the plinth's own length
+ * @param {number} h        its height
+ * @param {number} at       where the appliance starts, in the plinth's frame
+ * @param {number} span     how wide the appliance is
+ * @param {number} cutFromTop  the strip left at the top
+ */
+export function notchedPlinth(w, h, at, span, cutFromTop) {
+  const x0 = Math.max(0, Math.min(w, at));
+  const x1 = Math.max(0, Math.min(w, at + span));
+  const top = h - cutFromTop;
+  if (!(x1 - x0 > 0) || !(top > 0)) return rectGeometry(w, h);
+  const points = [[0, 0], [x0, 0], [x0, top], [x1, top], [x1, 0], [w, 0], [w, h], [0, h]];
+  // A notch that reaches an END of the board leaves the corner point repeated,
+  // and a repeated vertex is a zero-length edge — which a triangulator is
+  // entitled to refuse (3d/panelSolid.js says so about the tabs). Drop them.
+  const outline = points.filter(([x, y], i) => {
+    const prev = points[(i - 1 + points.length) % points.length];
+    return Math.abs(prev[0] - x) > 1e-9 || Math.abs(prev[1] - y) > 1e-9;
+  });
+  return { outline, pockets: [], holes: [], layer: 'OUTLINE' };
 }
 
 // ─── Panel record helper ───
@@ -1073,13 +1121,46 @@ export function computeCabinet(params, profileOverride) {
     ? { backTabs: false, topSocket: false, topScrews: false }
     : undefined;
 
-  panels.push(panel({
+  // ─── TURN 17 (CLAUDE.md F9): A FRONT AND NOTHING ELSE ────────────────────
+  //
+  // "It is a front and nothing else — no hinges, flat, no door furniture." A
+  // D/W panel closes the face of an appliance that stands on the floor between
+  // two carcasses; there is no box, so there are no sides, no bottom and no
+  // back, and the whole carcass block below is skipped rather than being built
+  // and then filtered. The two pieces the owner DID name are emitted here.
+  const applianceFront = type.appliance === 'dw';
+  if (applianceFront) {
+    const DW = P.dwPanel;
+    // ONE TOP PANEL, ALWAYS 600 mm WIDE, depth as the rest of the run. "Always"
+    // is the word he used, so the width is the profile's number and not the
+    // unit's: a 500 mm appliance gap still takes the 600 mm top.
+    panels.push(panel({
+      id: 'TOP', part: 'TOP', role: 'top', w: DW.topWidth, h: topH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(DW.topWidth),
+      box: { x: (W - DW.topWidth) / 2, y: H - G, z: G, w: DW.topWidth, h: G, d: topH },
+      cnc: { rotated: true, drawn_w: topH, drawn_h: DW.topWidth, ...rectGeometry(topH, DW.topWidth) },
+    }));
+    // HEIGHT 594, RIGID. Not a default and not a maximum: the value. Over 600
+    // and the appliance door cannot open, and the app must not be the thing
+    // that let that happen.
+    const dwW = W - P.doors.gap;
+    panels.push(panel({
+      id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: dwW, h: DW.frontHeight, thickness: frontT,
+      edgeCode: codes.all, edgeLen: metres(2 * dwW + 2 * DW.frontHeight),
+      box: { x: P.doors.gap / 2, y: H - G - DW.frontHeight, z: D + P.doors.gap, w: dwW, h: DW.frontHeight, d: frontT },
+      // Flat: no hinge cups, no cup screws, no door furniture at all.
+      cnc: rectGeometry(dwW, DW.frontHeight),
+      meta: { appliance: 'dw' },
+    }));
+  }
+
+  if (!applianceFront) panels.push(panel({
     id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.left, edgeLen: metres(sideH),
     box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
     cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges }) },
   }));
-  panels.push(panel({
+  if (!applianceFront) panels.push(panel({
     id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.right, edgeLen: metres(sideH),
     box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
@@ -1089,7 +1170,7 @@ export function computeCabinet(params, profileOverride) {
     rotated: true, drawn_w: topH, drawn_h: topW,
     ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs }),
   });
-  if (hasTopPanel) {
+  if (hasTopPanel && !applianceFront) {
     panels.push(panel({
       id: 'TOP', part: 'TOP', role: 'top', w: topW, h: topH, thickness: G,
       edgeCode: codes.right, edgeLen: metres(topW),
@@ -1097,7 +1178,7 @@ export function computeCabinet(params, profileOverride) {
       cnc: topGeom(),
     }));
   }
-  panels.push(panel({
+  if (!applianceFront) panels.push(panel({
     id: 'BOTTOM', part: 'BOTTOM', role: 'bottom', w: topW, h: topH, thickness: G,
     edgeCode: codes.right, edgeLen: metres(topW),
     box: { x: G, y: 0, z: G, w: topW, h: G, d: topH },
@@ -1121,6 +1202,74 @@ export function computeCabinet(params, profileOverride) {
       box: { x: 0, y: 0, z: 0, w: backW, h: backH, d: G },
       cnc: backCnc,
     }));
+  }
+
+  // ─── TURN 17 (CLAUDE.md F10): THE OVEN BASE UNIT ─────────────────────────
+  //
+  // Two pieces the kit adds to an ordinary base carcass, and both are the
+  // owner's own numbers.
+  //
+  //   THE SHELF. The oven is 595 high, so THE SHELF IT STANDS ON SITS 598 MM
+  //   FROM THE TOP OF THE CABINET — from the TOP, not from a centre line and
+  //   not from the floor. It is written that way here because it is the sort of
+  //   number that gets "corrected" later by somebody measuring up from the
+  //   plinth, and the correction would drop the oven 40 mm into the drawer.
+  //
+  //   THE BACK. "No back except behind the drawer. That back fixes the standard
+  //   way — 4 dog bones: one at each side, two into the bottom of the cabinet."
+  //   That is the FRIDGE's own back-rail pattern, traced in turn 14
+  //   (KIT_FRIDGE.lsp L340-358): a socket 95 mm in on each short edge, catching
+  //   the side panels' lowest tenon, and two more down its left edge at G + 95
+  //   and W − G − 95, catching the BOTTOM panel's back tenons. Four sockets,
+  //   four dog bones, and not one new number.
+  const ovenUnit = type.appliance === 'oven';
+  if (ovenUnit) {
+    const OV = P.ovenUnit;
+    // The shelf's TOP face at H − 598: the board is drawn from its underside up.
+    const shelfY = H - OV.shelfFromTop - G;
+    if (shelfY <= G) {
+      warnings.push({
+        code: 'OVEN_TOO_LOW',
+        message: `A ${roundTo(H, 0)} mm carcass has no room for the oven shelf 598 mm from its top.`,
+      });
+    }
+    panels.push(panel({
+      id: 'FIXED', part: 'FIXED', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(internalWidth),
+      box: { x: G, y: shelfY, z: G, w: internalWidth, h: G, d: internalDepth },
+      // Drawn turned, like the fridge's own fixed panel and like a TOP.
+      cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
+      meta: { variant: 'fixed', locked: true, oven: true },
+    }));
+    // The back, behind the drawer and nowhere else: flush with the bottom of
+    // the carcass, up to the underside of the shelf.
+    const backH = Math.max(0, shelfY);
+    if (backH > 0) {
+      panels.push(panel({
+        id: 'BACK', part: 'BACK', role: 'back', w: W, h: backH, thickness: G,
+        edgeCode: codes.none, edgeLen: 0,
+        box: { x: 0, y: 0, z: 0, w: W, h: backH, d: G },
+        cnc: {
+          rotated: true,
+          drawn_w: backH,
+          drawn_h: W,
+          ...socketPanelGeometry({
+            w: backH,
+            h: W,
+            G,
+            puzzle: pz,
+            sockets: {
+              // One into each SIDE — the sides' lowest tenon, 95 up from the
+              // carcass floor — and two into the BOTTOM of the cabinet.
+              bottom: [pz.tabCentresFromEnd],
+              top: [pz.tabCentresFromEnd],
+              left: [G + pz.tabCentresFromEnd, W - G - pz.tabCentresFromEnd],
+            },
+          }),
+        },
+        meta: { oven: true },
+      }));
+    }
   }
 
   // Sink: the TOP is replaced by two holders on edge, and the back moves inside.
@@ -1671,7 +1820,17 @@ export function computeCabinet(params, profileOverride) {
       box: {
         x: plinthX, y: -plinthH, z: D - AP.plinth.setback - t, w: plinthLength, h: plinthH, d: t,
       },
-      cnc: rectGeometry(plinthLength, plinthH),
+      // ─── Turn 17 (CLAUDE.md F9): THE PLINTH IS CUT OUT AT THAT POSITION ──
+      // "The plinth is cut out at that position, 20 mm from the top." An
+      // appliance door drops below the worktop and swings forward; the toe kick
+      // in front of it has to come away, and the 20 mm strip the owner leaves
+      // at the top is what keeps the piece in one length across the opening.
+      // It is the OUTLINE that changes and not a pocket, because that is what
+      // it is — the board is cut to a shape — and it therefore needs no new
+      // layer name on a machine that already reads this one.
+      cnc: applianceFront
+        ? notchedPlinth(plinthLength, plinthH, -plinthX, W, P.dwPanel.plinthCutFromTop)
+        : rectGeometry(plinthLength, plinthH),
       ...(runPlinth?.role === 'owner' ? { meta: { run: true, unitIds: runPlinth.unitIds } } : {}),
     }));
   }
@@ -2093,7 +2252,12 @@ export function computeCabinet(params, profileOverride) {
 
   // Hinge cups + their mounting screws in each door front
   const cups = P.hinges.cups;
-  for (const pnl of panels.filter((x) => x.part === 'FRONT')) {
+  // Turn 17 (CLAUDE.md F9): "no hinges, flat, no door furniture". A D/W panel's
+  // face is a FRONT in every way that matters to the BOM, the spray booth and
+  // the sheet — and in the one way that would be wrong here it is not a door,
+  // so it is not drilled for one. Read off the piece's own `meta`, not off the
+  // type, because it is a fact about the PART.
+  for (const pnl of panels.filter((x) => x.part === 'FRONT' && !x.meta?.appliance)) {
     const hingeSide = pnl.meta?.hinge || cfg.hinge;
     const cupX = hingeSide === 'L' ? pnl.w - cups.xFromHingeEdge : cups.xFromHingeEdge;
     const holeX = hingeSide === 'L' ? cupX - cups.screwOffsetX : cupX + cups.screwOffsetX;

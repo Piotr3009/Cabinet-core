@@ -271,6 +271,25 @@ export function panelPlacement(panel) {
         n: [0, 1, 0],
       };
 
+    // The wardrobe's DRAWER PANEL: the board the runners are screwed to. A
+    // vertical slab in X like a side panel, drawn upright — CNC x along the
+    // cabinet's depth from the back, y up — which is what puts its runner rows
+    // at the heights the kit drills them.
+    case 'DP':
+      return panel.meta?.side === 'R'
+        ? {
+          origin: [box.x + box.w, box.y, box.z],
+          u: [0, 0, 1],
+          v: [0, 1, 0],
+          n: [1, 0, 0],
+        }
+        : {
+          origin: [box.x, box.y, box.z + box.d],
+          u: [0, 0, -1],
+          v: [0, 1, 0],
+          n: [-1, 0, 0],
+        };
+
     // A FRONT is drilled FROM BEHIND — a hinge cup is bored in the back of the
     // door — and the kit's own arithmetic says so: for a left-hinged door the
     // cup is at `w − 21.5` in the drawing and 21.5 mm from the LEFT edge in the

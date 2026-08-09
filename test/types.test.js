@@ -204,12 +204,19 @@ for (const [file, typeId] of FILES) {
 
 test('every library type is configured, available and buildable', () => {
   // Turn 12 (CLAUDE.md F3.2): two more drawer-unit variants, 2x and 4x.
-  assert.equal(UNIT_TYPE_ORDER.length, 10, 'wardrobe + 9 kitchen kits');
+  // Turn 17 (CLAUDE.md F9/F10): the D/W panel and the oven base unit.
+  assert.equal(UNIT_TYPE_ORDER.length, 12, 'wardrobe + 11 kitchen kits');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);
     assert.ok(type.available, `${id} must be available in the Library`);
-    assert.ok(type.lisp, `${id} must name the kit it comes from`);
+    // ─── Turn 17 (CLAUDE.md F9/F10) ───
+    // A kit no longer HAS to come from a LISP file. The D/W panel and the oven
+    // base were dictated by the owner and there is no AutoLISP for either —
+    // which is the standing fixtures/golden-partition-biscuits.json has carried
+    // since turn 13: a fixture of a RULE rather than of a file. So the field
+    // must be PRESENT and honest, and `null` is honest.
+    assert.ok('lisp' in type, `${id} must say which kit it comes from, or that it has none`);
     const params = defaultParamsFor(id, P);
     const r = computeCabinet(params, P);
     assert.ok(r.panels.length > 0, `${id} default unit produces no panels`);

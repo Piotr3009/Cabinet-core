@@ -280,6 +280,21 @@ export const useUiStore = create((set, get) => ({
   // Contour view (BACKLOG #18): a presentation mode for a render or a printed
   // screen — materials fade away, the contours stay. Nothing here reaches the
   // BOM; it is a way of LOOKING at the same project.
+  // ─── THE RULER (turn 17, CLAUDE.md F11) ────────────────────────────────
+  //
+  // Click one point, click another, read the distance. Two points and no more:
+  // a third click starts a fresh measurement, which is what a tape does when
+  // you move it. It is VIEW state and nothing else — the project never hears
+  // about it — because "it measures; it never edits".
+  rulerOn: false,
+  rulerPoints: [],                   // [[x,y,z] mm] — at most two
+  setRuler: (v) => set({ rulerOn: Boolean(v), rulerPoints: [] }),
+  toggleRuler: () => set((s) => ({ rulerOn: !s.rulerOn, rulerPoints: [] })),
+  addRulerPoint: (p) => set((s) => ({
+    rulerPoints: s.rulerPoints.length >= 2 ? [p] : [...s.rulerPoints, p],
+  })),
+  clearRuler: () => set({ rulerPoints: [] }),
+
   contourView: false,
   setContourView: (v) => set({ contourView: Boolean(v) }),
   toggleContourView: () => set((s) => ({ contourView: !s.contourView })),

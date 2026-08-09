@@ -44,9 +44,22 @@ export const SHELF_BOARD_PARTS = new Set(['SHELF', 'PARTITION', 'RAIL-PART', 'FI
  *
  * A number rather than a boolean because it is an ANGLE, and because the next
  * kit that wants 180° should be a case here rather than a second flag.
+ *
+ * The scope is CLAUDE.md's — "odwróć wszystkie półki", the horizontal boards a
+ * joiner calls a shelf — and inside it the question is asked of the DRAWING and
+ * not of the part's name: a shelf board whose drawn frame already stands its
+ * long side up the page is already right and is left exactly where it is. That
+ * matters on two kinds of board and would be a bug on both if this turned by
+ * name alone. The fridge's and the oven's FIXED panel is drawn `depth × width`
+ * — the TOP's own nesting — and turning it would lay it across its own grain,
+ * which is the very complaint this delta answers. A shelf in a cabinet deeper
+ * than it is wide is the same case from the other direction.
  */
 export function sheetTurn(panel) {
-  return SHELF_BOARD_PARTS.has(panel?.part) ? 90 : 0;
+  if (!SHELF_BOARD_PARTS.has(panel?.part)) return 0;
+  const w = Number(panel.cnc?.drawn_w) > 0 ? Number(panel.cnc.drawn_w) : Number(panel.w) || 0;
+  const h = Number(panel.cnc?.drawn_h) > 0 ? Number(panel.cnc.drawn_h) : Number(panel.h) || 0;
+  return w > h ? 90 : 0;
 }
 
 /**

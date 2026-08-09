@@ -650,6 +650,44 @@ export const DEFAULT_CABINET_PROFILE = {
     bottomPocketDepth: 7,       // DRAWER_BOTTOM_POCKET — the bottom stands in it
   },
 
+  // ─── D/W PANEL (turn 17, CLAUDE.md F9) ──────────────────────────────────
+  //
+  // The owner's words, and ONLY his numbers. It is the piece that closes the
+  // face of a dishwasher, a washing machine or an under-counter fridge: "a
+  // front and nothing else — no hinges, flat, no door furniture."
+  //
+  // Everything here was dictated. What was NOT dictated — the fixings, the
+  // gaps, how it meets its neighbours — is in BLOCKERS and is not in the kit.
+  // A guessed workshop number costs two turns to unpick (CLAUDE.md 0).
+  dwPanel: {
+    defaults: { width: 600, height: 720, depth: 558 },
+    // ─── 594, AND IT IS NOT A DEFAULT ───
+    // "Height 594 mm, rigid. Always under 600, or the appliance door cannot
+    // open." So it is a FIXED VALUE with a test that says so, and no control
+    // offers to change it: a 610 mm appliance front is a machine that will not
+    // open, and the app must not be the thing that let it happen.
+    frontHeight: 594,
+    // "One top panel, always 600 mm wide, depth as the rest of the run."
+    topWidth: 600,
+    // "The plinth is cut out at that position, 20 mm from the top." The notch
+    // starts this far below the plinth's top edge and runs out of its bottom,
+    // which is what leaves the toe kick in one piece across the opening.
+    plinthCutFromTop: 20,
+  },
+
+  // ─── OVEN BASE UNIT (turn 17, CLAUDE.md F10) ────────────────────────────
+  ovenUnit: {
+    defaults: { width: 600, height: 870, depth: 558 },
+    // The appliance itself, and the number that follows from it. Written down
+    // because it is the sort of number that gets "corrected" later: the oven is
+    // 595 high, so THE SHELF IT STANDS ON SITS 598 MM FROM THE TOP OF THE
+    // CABINET — from the TOP, not from a centre line and not from the floor.
+    ovenHeight: 595,
+    shelfFromTop: 598,
+    // "A drawer below" — one, so the stack is a ratio of one.
+    drawerRatio: [1],
+  },
+
   // ─── Sink base (KIT_SINK) ───
   sinkUnit: {
     defaults: { width: 600, height: 770, depth: 558 },

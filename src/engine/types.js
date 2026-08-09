@@ -10,6 +10,8 @@
 //
 // Pure data — no React, no store imports.
 
+import { KITCHEN_LIBRARY, libraryTypeIds } from './library.js';
+
 /**
  * carcass.top      — 'panel' (TOP + BOTTOM) | 'holders' (SINK: 2 rails on edge)
  * carcass.back     — 'full' | 'inset' (SINK) | 'rails' (FRIDGE)
@@ -69,7 +71,10 @@ export const UNIT_TYPES = {
   BUDR: {
     id: 'BUDR',
     heightGroup: 'base',
-    label: 'Base unit — 3 drawers',
+    label: 'Drawer unit — 3 drawers',
+    // Which split its fronts are cut to (turn 12, CLAUDE.md F3.2). The ratio
+    // itself lives in profile.baseDrawerUnit.variants — rule 2.
+    drawerVariant: 'x3',
     family: 'kitchen',
     lisp: 'KIT_BUDR_FULL.lsp',
     // No doors at all: the three fronts ARE the face of the unit.
@@ -88,6 +93,68 @@ export const UNIT_TYPES = {
     // KIT_BUDR_FULL counts its 20 panels WITHOUT the drawer fronts (L863) and
     // lists the three fronts separately (L882-888) — the opposite of the
     // wardrobe kit, which folds drawer fronts into totalPanels.
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  // ─── The drawer-unit variants (turn 12, CLAUDE.md F3.2) ─────────────────
+  // KIT_BUDR_FULL with a different front split and nothing else. Every number
+  // the kit uses is written per FRONT — the box side ratio, the runner rows,
+  // the screw positions, the front width — so two fronts and four fronts run
+  // through the same arithmetic three did. The ratio is the only difference,
+  // and it lives in profile.baseDrawerUnit.variants.
+  BUDR2: {
+    id: 'BUDR2',
+    heightGroup: 'base',
+    label: 'Drawer unit — 2 drawers',
+    // Which split its fronts are cut to (turn 12, CLAUDE.md F3.2). The ratio
+    // itself lives in profile.baseDrawerUnit.variants — rule 2.
+    drawerVariant: 'x2',
+    family: 'kitchen',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    // No doors at all: the fronts ARE the face of the unit.
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'baseDrawerUnit.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    // KIT_BUDR_FULL counts its carcass panels WITHOUT the drawer fronts (L863)
+    // and lists the fronts separately (L882-888) — the opposite of the wardrobe
+    // kit, which folds drawer fronts into totalPanels.
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  BUDR4: {
+    id: 'BUDR4',
+    heightGroup: 'base',
+    label: 'Drawer unit — 4 drawers',
+    // Which split its fronts are cut to (turn 12, CLAUDE.md F3.2). The ratio
+    // itself lives in profile.baseDrawerUnit.variants — rule 2.
+    drawerVariant: 'x4',
+    family: 'kitchen',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    // No doors at all: the fronts ARE the face of the unit.
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'baseDrawerUnit.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    // KIT_BUDR_FULL counts its carcass panels WITHOUT the drawer fronts (L863)
+    // and lists the fronts separately (L882-888) — the opposite of the wardrobe
+    // kit, which folds drawer fronts into totalPanels.
     countsDrawerFrontsInPanels: false,
     available: true,
   },
@@ -200,7 +267,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR', 'WUD', 'BUDTALL', 'LOW_CABINET', 'SINK', 'FRIDGE'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'LOW_CABINET', 'SINK', 'FRIDGE'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -213,12 +280,24 @@ export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR', 'WUD', 'BUDTALL', 'LO
  * reach from the menu is a kit nobody can insert.
  */
 export const UNIT_CATEGORIES = [
-  { id: 'base', label: 'Base units', types: ['BUD', 'BUDR', 'SINK', 'LOW_CABINET'] },
-  { id: 'wall', label: 'Wall units', types: ['WUD'] },
-  { id: 'tall', label: 'Tall units', types: ['BUDTALL', 'FRIDGE', 'WARDROBE'] },
-  // Turn 5 (BACKLOG #30): no longer a held-open place. Its contents are the
-  // workshop's OWN saved units rather than kits, so it carries no `types` —
-  // the panel reads them from the template store.
+  // ─── Turn 12 (CLAUDE.md F3): ONE Kitchen list, in the owner's order ───
+  // Base, wall and tall units were three menus, which meant that placing a run
+  // of kitchen furniture meant opening three of them. Piotr wrote the order he
+  // wants them in and it is one list: engine/library.js holds it, and this
+  // category carries it. `types` is derived from the same data so that
+  // `categoryOf` and everything else that has asked "which category is this
+  // kit in" since turn 4 keeps working.
+  {
+    id: 'kitchen', label: 'Kitchen', entries: KITCHEN_LIBRARY, types: libraryTypeIds(),
+  },
+  // ─── …and the categories beyond Kitchen stay as they were ───
+  // CLAUDE.md F3.7 is explicit — "rework is a separate, still-to-be-discussed
+  // item — do not touch". The wardrobe is not a kitchen kit and keeps its own
+  // place; saved sets and media walls are untouched.
+  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE'] },
+  // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
+  // rather than kits, so it carries no `types` — the panel reads them from the
+  // template store.
   { id: 'sets', label: 'Saved sets', types: [], saved: true },
   { id: 'media', label: 'Media walls', types: [], soon: true },
 ];
@@ -284,5 +363,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', WUD: 'WU', BUDTALL: 'T', LOW_CABINET: 'LC', SINK: 'S', FRIDGE: 'F',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', LOW_CABINET: 'LC', SINK: 'S', FRIDGE: 'F',
 };

@@ -82,12 +82,61 @@ function lispRound(value) {
 /**
  * The BUDR front stack: heights split by the profile ratio (4:3:2) over the
  * height left once every gap is taken out. KIT_BUDR_FULL L616-619.
+ *
+ * ─── Turn 12 (CLAUDE.md F3.2): THE RATIO IS THE VARIANT ───
+ * `ratio` may be handed in — [1,1] for the 2× unit, [1,1,1,1] for the 4× — and
+ * everything downstream of this function already loops over the heights it
+ * returns, which is why two more drawer units cost the engine one argument.
+ * Left out, it is the kit's own 4:3:2 and the answer is bit-for-bit what it was.
+ *
+ * `exact` is the OTHER half of it, and it is a variant's property rather than a
+ * behaviour of this function, for a reason worth writing down.
+ *
+ * The kit says the stack fills the carcass — "stack top = H − 3"
+ * (fixtures/golden-budr.json), which is the same statement as
+ * sum(heights) === available. Rounding each front independently does not always
+ * deliver that: four equal fronts over an odd available height each round UP by
+ * a half and the stack finishes 2 mm proud, and even 4:3:2 drifts by 1 mm at
+ * some heights (H = 602 is one). A new variant must not ship with that, so the
+ * variants carry `exact: true` and the last front takes up whatever the
+ * rounding left.
+ *
+ * KIT_BUDR_FULL's own 4:3:2 carries `exact: false` and is left exactly as it is.
+ * Not because the drift is right — it is BLOCKERS #64 — but because rule 7 is
+ * absolute: the CNC export is byte-identical for everything that exists today,
+ * and a 1 mm improvement nobody asked for on a height somebody may already have
+ * cut is still a change to what the machine does.
  */
-export function budrFrontHeights(height, profile) {
+export function budrFrontHeights(height, profile, ratio = null, exact = false) {
   const B = profile.baseDrawerUnit;
-  const total = B.ratio.reduce((s, r) => s + r, 0);
-  const available = Number(height) - B.ratio.length * B.gap;
-  return B.ratio.map((r) => lispRound((available * r) / total));
+  const split = Array.isArray(ratio) && ratio.length ? ratio : B.ratio;
+  const total = split.reduce((s, r) => s + r, 0);
+  const available = Number(height) - split.length * B.gap;
+  const heights = split.map((r) => lispRound((available * r) / total));
+  if (!exact) return heights;
+  const drift = available - heights.reduce((s, h) => s + h, 0);
+  if (drift) heights[heights.length - 1] += drift;
+  return heights;
+}
+
+/**
+ * How a unit type's drawer stack is split (turn 12, CLAUDE.md F3.2).
+ *
+ * A type names a VARIANT (`drawerVariant`); the variant carries the ratio and
+ * lives in profile.baseDrawerUnit.variants, because it is a number and rule 2
+ * says where numbers live. A type that names none gets the kit's own.
+ *
+ * @returns {{ratio:number[], exact:boolean}}
+ */
+export function drawerSplitFor(type, profile) {
+  const B = profile.baseDrawerUnit;
+  const variant = type?.drawerVariant
+    ? (B.variants || []).find((v) => v.id === type.drawerVariant)
+    : null;
+  return {
+    ratio: variant?.ratio || B.ratio,
+    exact: Boolean(variant?.exact),
+  };
 }
 
 // ─── Parameter normalisation ───
@@ -130,10 +179,15 @@ function normalizeParams(raw, profile) {
     });
   }
 
+  // Which split this kit's fronts are cut to. Turn 12: a drawer unit's VARIANT
+  // is a ratio and nothing else (CLAUDE.md F3.2), so the count follows from it.
+  const budrSplit = drawerSplitFor(type, profile);
+
   let drawers = 0;
   if (type.drawerStyle === 'budr') {
-    // KIT_BUDR_FULL is always a three-drawer unit: the ratio IS the stack.
-    drawers = profile.baseDrawerUnit.ratio.length;
+    // A BUDR-style unit IS its drawers: the ratio is the stack, and the LISP
+    // kit has no "how many" question to ask.
+    drawers = budrSplit.ratio.length;
   } else if (type.supports.drawers && !drawerCountBad) {
     drawers = items.length
       ? drawersFromItems.length
@@ -145,7 +199,7 @@ function normalizeParams(raw, profile) {
   // authority when the editor supplies it; otherwise array order stands.
   const drawerItems = [...drawersFromItems].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
   const drawerHeights = type.drawerStyle === 'budr'
-    ? budrFrontHeights(height, profile)
+    ? budrFrontHeights(height, profile, budrSplit.ratio, budrSplit.exact)
     : resolveDrawerHeights(p, drawers, drawerItems, profile, warnings);
   const rail = type.supports.rail ? (items.length ? Boolean(hangerFromItems) : Boolean(p.rail)) : false;
 
@@ -1802,7 +1856,9 @@ export function computeCabinet(params, profileOverride) {
       drawer_box_front_h: [...boxFrontHs],
     } : {}),
     ...(budr ? {
-      available_h: H - B.ratio.length * B.gap,
+      // The height the fronts share out, once every gap is taken out of it. It
+      // follows the VARIANT's count (turn 12, F3.2), not the kit's own three.
+      available_h: H - budr.count * B.gap,
       front_heights: [...budr.heights],
       szufMaxDl: budr.maxDl,
       szufDl: budr.depth,

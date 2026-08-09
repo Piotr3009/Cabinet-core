@@ -477,6 +477,68 @@ export const DEFAULT_CABINET_PROFILE = {
   baseDrawerUnit: {
     defaults: { width: 600, height: 770, depth: 558 },
     ratio: [4, 3, 2],           // front heights split of (H − stackGaps)
+    // ─── The drawer-unit variants (turn 12, CLAUDE.md F3.2) ───
+    //
+    // "Drawer unit — expandable group: 1× (drawerline), 2×, 3× (today's BUDR),
+    // 4×. Derive them from the EXISTING BUD/BUDR mathematics … parameterised by
+    // count/heights; NO new joint formulas."
+    //
+    // And that is all a variant is: a RATIO. Every other number in this block —
+    // the box side ratio, the runner rows, the front width deduction, the screw
+    // positions — is already written per front rather than per unit, so 2 and 4
+    // fronts run through KIT_BUDR_FULL's arithmetic unchanged. `x3` repeats the
+    // kit's own 4:3:2 and is what BUDR has always used; it is listed so that the
+    // group reads as four of one thing rather than three plus an exception.
+    //
+    // 1× is DISABLED, and deliberately: a drawer over a DOOR needs a door of
+    // partial height, and no kit in reference/lisp defines one — the hinge rule
+    // (`hinges.rules.base`) measures its centres from the carcass, and mapping
+    // them onto a shorter front is exactly the "inventing" CLAUDE.md F3.2
+    // forbids. It is held open here with the reason attached (BLOCKERS #63).
+    variants: [
+      {
+        id: 'x1',
+        label: '1×',
+        count: 1,
+        hint: 'Drawerline — one drawer over a door',
+        ratio: null,
+        enabled: false,
+        soon: 'No kit defines a partial-height door yet — the pattern comes first',
+      },
+      // `exact` — does the last front take up whatever the rounding left, so
+      // that the stack fills the carcass exactly? The kit's own 4:3:2 says NO
+      // and is frozen there by rule 7 (see BLOCKERS #64 and the note on
+      // cabinet.js `budrFrontHeights`); the variants turn 12 adds say YES,
+      // because four equal fronts standing 2 mm proud of the carcass is not
+      // something to ship on purpose.
+      {
+        id: 'x2',
+        label: '2×',
+        count: 2,
+        hint: 'Two equal deep drawers',
+        ratio: [1, 1],
+        exact: true,
+        enabled: true,
+      },
+      {
+        id: 'x3',
+        label: '3×',
+        count: 3,
+        hint: 'The workshop standard — 4:3:2',
+        ratio: [4, 3, 2],
+        exact: false,
+        enabled: true,
+      },
+      {
+        id: 'x4',
+        label: '4×',
+        count: 4,
+        hint: 'Four equal drawers',
+        ratio: [1, 1, 1, 1],
+        exact: true,
+        enabled: true,
+      },
+    ],
     gap: 3,                     // between fronts, and the top clearance
     frontWidthDeduction: 3,     // front W = W − 3 (overlay, like a single door)
     sideRatio: 0.7,             // box side height = round(0.7 × front height)
@@ -1597,7 +1659,15 @@ export function migrateCabinetProfile(profile) {
     },
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
     lowCabinet: { ...D.lowCabinet, ...profile.lowCabinet, defaults: { ...D.lowCabinet.defaults, ...profile.lowCabinet?.defaults } },
-    baseDrawerUnit: { ...D.baseDrawerUnit, ...profile.baseDrawerUnit, defaults: { ...D.baseDrawerUnit.defaults, ...profile.baseDrawerUnit?.defaults } },
+    baseDrawerUnit: {
+      ...D.baseDrawerUnit,
+      ...profile.baseDrawerUnit,
+      defaults: { ...D.baseDrawerUnit.defaults, ...profile.baseDrawerUnit?.defaults },
+      // The variant LIST is the app's, like the finishes above: a profile saved
+      // before turn 12 has no variants at all, and a stored one that predates a
+      // new variant must not hide it from the library.
+      variants: mergeById(D.baseDrawerUnit.variants, profile.baseDrawerUnit?.variants),
+    },
     sinkUnit: { ...D.sinkUnit, ...profile.sinkUnit, defaults: { ...D.sinkUnit.defaults, ...profile.sinkUnit?.defaults } },
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
     autoParts: {
@@ -1733,6 +1803,22 @@ function mergeLightArray(defaults, stored) {
  * own entry wins on its id; anything new arrives on top, so a project saved
  * before "light oak" existed still opens with light oak available.
  */
+/**
+ * A list of {id,...} records: the app's own, with a stored profile's overrides
+ * merged onto them by id. An id the stored list has never heard of survives —
+ * which is what lets a profile saved before turn 12 still see the drawer
+ * variants that turn 12 added.
+ */
+function mergeById(defaults, stored) {
+  if (!Array.isArray(stored) || !stored.length) return defaults.map((f) => ({ ...f }));
+  const byId = new Map(defaults.map((f) => [f.id, { ...f }]));
+  for (const f of stored) {
+    if (!f?.id) continue;
+    byId.set(f.id, { ...(byId.get(f.id) || {}), ...f });
+  }
+  return [...byId.values()];
+}
+
 function mergeFinishes(defaults, stored) {
   if (!Array.isArray(stored) || !stored.length) return defaults.map((f) => ({ ...f }));
   const byId = new Map(defaults.map((f) => [f.id, { ...f }]));

@@ -4,6 +4,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useTemplateStore } from '../stores/templateStore.js';
 import { UNIT_TYPES, getCategory, getUnitType, profilePath } from '../engine/types.js';
+import { resolveEntry } from '../engine/library.js';
 import { formatMm } from '../engine/format.js';
 import { projectHeights } from '../engine/design.js';
 
@@ -175,36 +176,124 @@ export default function LibraryPanel() {
 
       <div className="p-2 space-y-1">
         {category.saved && <SavedSets onInsert={handleAdd} />}
-        {!category.saved && category.types.length === 0 && (
+        {!category.saved && !category.entries && category.types.length === 0 && (
           <p className="text-[11px] text-ink-400 px-2 py-3">
             Nothing here yet — {category.label.toLowerCase()} are a later phase.
           </p>
         )}
-        {category.types.map((id) => {
-          const t = UNIT_TYPES[id];
-          // Each type names its own defaults block in the profile, so a new
-          // kit needs no branch here.
-          const d = profilePath(profile, t.defaultsKey) || {};
-          // …but the HEIGHT it will actually arrive at is the project's, for a
-          // type that inherits one (turn 5, BACKLOG #29). Advertising the kit's
-          // 2150 and then placing a 2200 is a list that lies about its contents.
-          const height = (t.heightGroup && heights[t.heightGroup]) || d.height;
-          return (
-            <button
-              key={id}
-              type="button"
-              className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 border border-transparent hover:border-shell-600 transition-colors"
-              onClick={() => handleAdd(id)}
-            >
-              <div className="text-sm text-ink-50">{t.label}</div>
-              <div className="text-[11px] text-ink-400">
-                {formatMm(d.width)} × {formatMm(height)} × {formatMm(d.depth)} mm{t.mount === 'wall' ? ' · wall' : ''}
-              </div>
-            </button>
-          );
-        })}
+        {/* ─── Turn 12 (CLAUDE.md F3): the LIST is data ───
+            engine/library.js holds the owner's order, the expandable drawer
+            group and the three entries that are held open. This component
+            renders it and decides nothing. A category that predates the list
+            (Wardrobes) still carries a plain `types` array, and both shapes go
+            through the same row. */}
+        {(category.entries || category.types.map((id) => ({ kind: 'type', id, typeId: id })))
+          .map((entry) => (
+            <LibraryEntry
+              key={entry.id}
+              entry={entry}
+              profile={profile}
+              heights={heights}
+              onAdd={handleAdd}
+            />
+          ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * One row of the library (turn 12, CLAUDE.md F3).
+ *
+ * Three shapes, and the data says which: a KIT you can place, a GROUP that
+ * expands (the drawer unit and its four splits), and an entry HELD OPEN with
+ * the reason it is not clickable yet written beside it. A grey row that does
+ * not say why is a row a workshop asks about twice.
+ */
+function LibraryEntry({
+  entry, profile, heights, onAdd, nested = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const state = resolveEntry(entry, profile);
+
+  if (entry.kind === 'group') {
+    return (
+      <div className={nested ? '' : 'rounded border border-transparent'}>
+        <button
+          type="button"
+          className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 border border-transparent
+            hover:border-shell-600 transition-colors flex items-center gap-2"
+          data-library-group={entry.id}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span className="flex-1">
+            <span className="block text-sm text-ink-50">{entry.label}</span>
+            <span className="block text-[11px] text-ink-400">{entry.hint}</span>
+          </span>
+          <span className="text-ink-400" aria-hidden>{open ? '▾' : '▸'}</span>
+        </button>
+        {open && (
+          <div className="pl-3 border-l border-shell-600 ml-2 space-y-1">
+            {entry.items.map((item) => (
+              <LibraryEntry
+                key={item.id}
+                entry={item}
+                profile={profile}
+                heights={heights}
+                onAdd={onAdd}
+                nested
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const type = entry.typeId ? UNIT_TYPES[entry.typeId] : null;
+  // Each type names its own defaults block in the profile, so a new kit needs
+  // no branch here.
+  const d = type ? (profilePath(profile, type.defaultsKey) || {}) : {};
+  // …but the HEIGHT it will actually arrive at is the project's, for a type
+  // that inherits one (turn 5, BACKLOG #29). Advertising the kit's 2150 and
+  // then placing a 2200 is a list that lies about its contents.
+  const height = (type?.heightGroup && heights[type.heightGroup]) || d.height;
+  const label = state.label || entry.label || type?.label || entry.id;
+
+  if (!state.enabled) {
+    return (
+      <div
+        className="w-full text-left px-2 py-2 rounded opacity-50 cursor-not-allowed"
+        data-library-entry={entry.id}
+        data-disabled="1"
+        title={state.reason || 'Not yet'}
+      >
+        <div className="text-sm text-ink-100 flex items-center gap-1.5">
+          <span>{label}</span>
+          <span className="cc-tag">soon</span>
+        </div>
+        <div className="text-[11px] text-ink-400">{state.reason || entry.hint}</div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 border border-transparent hover:border-shell-600 transition-colors"
+      data-library-entry={entry.id}
+      title={state.hint || type?.label || ''}
+      onClick={() => onAdd(entry.typeId)}
+    >
+      <div className="text-sm text-ink-50">
+        {label}
+        {nested && state.hint ? <span className="text-[11px] text-ink-400"> · {state.hint}</span> : null}
+      </div>
+      <div className="text-[11px] text-ink-400">
+        {formatMm(d.width)} × {formatMm(height)} × {formatMm(d.depth)} mm{type?.mount === 'wall' ? ' · wall' : ''}
+      </div>
+    </button>
   );
 }
 

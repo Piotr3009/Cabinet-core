@@ -28,10 +28,16 @@ test('every unit type is reachable from exactly one category', () => {
 });
 
 test('the categories are the ones CLAUDE.md asks for, with the two placeholders', () => {
-  assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['base', 'wall', 'tall', 'sets', 'media']);
-  assert.deepEqual(getCategory('base').types, ['BUD', 'BUDR', 'SINK', 'LOW_CABINET']);
-  assert.deepEqual(getCategory('wall').types, ['WUD']);
-  assert.deepEqual(getCategory('tall').types, ['BUDTALL', 'FRIDGE', 'WARDROBE']);
+  // ─── Turn 12 (CLAUDE.md F3) ───
+  // Base / wall / tall were three menus for one family, so placing a run of
+  // kitchen furniture meant opening three of them. They are ONE list now, in
+  // the owner's order, and the categories beyond Kitchen are untouched — F3.7
+  // says so outright.
+  assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['kitchen', 'wardrobe', 'sets', 'media']);
+  assert.deepEqual(getCategory('kitchen').types, [
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDTALL', 'FRIDGE', 'WUD', 'SINK', 'LOW_CABINET',
+  ]);
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE']);
 
   // Turn 5 (BACKLOG #30): Saved sets is real. It holds the workshop's OWN units
   // rather than kits, so it lists no types and is marked `saved` — the panel
@@ -43,7 +49,7 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // Held open, not pretended: an empty category says "soon" and is not clickable.
   assert.equal(getCategory('media').soon, true);
   assert.deepEqual(getCategory('media').types, []);
-  for (const id of ['base', 'wall', 'tall']) {
+  for (const id of ['kitchen', 'wardrobe']) {
     assert.equal(getCategory(id).soon, undefined);
     assert.equal(getCategory(id).saved, undefined);
   }

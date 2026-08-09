@@ -1,0 +1,950 @@
+{
+  "meta": {
+    "source": "KIT_BUDR_FULL.lsp (c:BUDR_FULL lines 607-800, CSV 914-965) + SKYLON_COMMON.lsp (drawBUL/drawBUR with runnerYList) \u2014 the SAME kit as golden-budr.json, with the front split changed and nothing else",
+    "computed_by": "Claude (turn 12 autonomous session, 09.08.2026) from the LISP formulas as recorded in golden-budr.json budr_rules, NOT from the engine. The generator was validated by reproducing every field of BUDR-A and BUDR-B exactly before it was allowed to emit this file.",
+    "status": "PENDING_PIOTR_VERIFICATION",
+    "rule": "GOLDEN FIXTURES - DO NOT MODIFY. Tests must make these pass. If engine output differs, the ENGINE is wrong (or file a BLOCKERS.md entry). Never edit expected values to make tests green.",
+    "units": "mm, m2, m"
+  },
+  "budr_rules": {
+    "front_heights": "available = H - 4x3; fronts split 1:1:1:1 of it (LISP fix(x+0.5)), the LAST front taking whatever the rounding leaves so that sum(fronts) = available exactly \u2014 the kit's own invariant, stack top = H - 3. Fronts overlay the full carcass from the floor: F1 at y=0, gaps 3mm.",
+    "front_width": "szerFRONT = W - 3 (all three fronts, overlay like a single door)",
+    "drawer_depth": "maxDl = D - G - 20 (NOT the wardrobe formula); snap DOWN to {390,440,490,540,590,640,690}, floor 390",
+    "box": "szufSzer = internalW - 10; side height = round(0.70 * front) \u2014 NOT front - 36; boxFront H = side - 15 - G - 1; boxFrontLen = W - 4G - 10; bottom = (boxFrontLen + 13) x szufDl",
+    "runners": "both carcass sides, rows at [G+38, F1+3+38, F1+3+F2+3+38], holes x {37,69,293} from front edge (mirrored on BUR), layer RUNNERS_3MM",
+    "front_screws": "2 holes 3mm per front on FRONT_HINGES_3MM: x = 50+2G+3.5 from each side edge, y = 96.5 (+G for drawer 1)",
+    "side_pockets": "drawer side CNC (drawn rotated): DRAWER_RUNNER_POCKET strip x 0..15, DRAWER_BOTTOM_POCKET strip x 15..15+G+1, both overshooting 10mm past each end",
+    "box_screws": "box FRONT only: 2x SCREWS_3MM at (50, 50) and (50, dlBoxFront-50) in drawn coords; bottoms: 4x SCREWS_3MM at x {70, szerDno-70}, y {9, dlDno-9}",
+    "no_partition": "BUDR has NO partition above the drawer stack and NO shelves/doors/rail",
+    "lisp_panel_count": "LISP totalPanels = 20 (5 carcass + 15 drawer parts) and the FRONTS summary counts the 3 drawer fronts SEPARATELY (L863, L882-888) \u2014 the opposite of KIT_WARDROBE_FULL, which counts drawer fronts inside totalPanels and doors separately. Invariant that holds for every kit: panels_lisp + fronts = every cut piece except the ones the kit knowingly omits.",
+    "variant": "CLAUDE.md F3.2 \u2014 the 4x drawer unit. Four equal drawers over an ODD available height: 758/4 = 189.5, and LISP rounding takes every one of them UP to 190. Left alone the stack would finish 2mm proud of the carcass, so the top front carries the -2 and the stack fills the carcass exactly, which is what the kit says it does."
+  },
+  "cases": [
+    {
+      "id": "BUDR4-A",
+      "description": "Four-drawer base 600x770x558, ratio 1:1:1:1",
+      "inputs": {
+        "type": "BUDR4",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "unit_num": "DR1"
+      },
+      "derived": {
+        "doors": 0,
+        "internal_width": 564,
+        "internal_depth": 540,
+        "available_h": 758,
+        "front_heights": [
+          190,
+          190,
+          190,
+          188
+        ],
+        "szufMaxDl": 520,
+        "szufDl": 490,
+        "szufSzer": 554,
+        "drawer_front_w": 597,
+        "boxFrontLen": 518,
+        "drawer_box_side_h": [
+          133,
+          133,
+          133,
+          132
+        ],
+        "drawer_box_front_h": [
+          99,
+          99,
+          99,
+          98
+        ],
+        "bottom_w": 531,
+        "bottom_d": 490
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 540,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 0.77
+          },
+          "area_m2": 0.416
+        },
+        {
+          "id": "BUR",
+          "w": 540,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.77
+          },
+          "area_m2": 0.416
+        },
+        {
+          "id": "TOP",
+          "w": 564,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.305
+        },
+        {
+          "id": "BOTTOM",
+          "w": 564,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.305
+        },
+        {
+          "id": "BACK",
+          "w": 600,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.462
+        },
+        {
+          "id": "D1-SL",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D1-SR",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D2-SL",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D2-SR",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D3-SL",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D3-SR",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D4-SL",
+          "w": 490,
+          "h": 132,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D4-SR",
+          "w": 490,
+          "h": 132,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D1-BF",
+          "w": 518,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.051
+        },
+        {
+          "id": "D1-BB",
+          "w": 518,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.051
+        },
+        {
+          "id": "D2-BF",
+          "w": 518,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.051
+        },
+        {
+          "id": "D2-BB",
+          "w": 518,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.051
+        },
+        {
+          "id": "D3-BF",
+          "w": 518,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.051
+        },
+        {
+          "id": "D3-BB",
+          "w": 518,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.051
+        },
+        {
+          "id": "D4-BF",
+          "w": 518,
+          "h": 98,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.051
+        },
+        {
+          "id": "D4-BB",
+          "w": 518,
+          "h": 98,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.051
+        },
+        {
+          "id": "D1-DNO",
+          "w": 531,
+          "h": 490,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.26
+        },
+        {
+          "id": "D2-DNO",
+          "w": 531,
+          "h": 490,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.26
+        },
+        {
+          "id": "D3-DNO",
+          "w": 531,
+          "h": 490,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.26
+        },
+        {
+          "id": "D4-DNO",
+          "w": 531,
+          "h": 490,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.26
+        },
+        {
+          "id": "DR1-F1",
+          "w": 597,
+          "h": 190,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 1.57
+          },
+          "area_m2": 0.113
+        },
+        {
+          "id": "DR1-F2",
+          "w": 597,
+          "h": 190,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 1.57
+          },
+          "area_m2": 0.113
+        },
+        {
+          "id": "DR1-F3",
+          "w": 597,
+          "h": 190,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 1.57
+          },
+          "area_m2": 0.113
+        },
+        {
+          "id": "DR1-F4",
+          "w": 597,
+          "h": 188,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 1.57
+          },
+          "area_m2": 0.112
+        }
+      ],
+      "drills": {
+        "hinge_centers": [],
+        "hinged_sides": [],
+        "runner_rows_carcass_y": [
+          56,
+          231,
+          424,
+          617
+        ],
+        "runner_carcass_side": "both",
+        "runner_hole_x": [
+          37,
+          69,
+          293
+        ],
+        "drawer_front_screw_x": [
+          89.5,
+          507.5
+        ],
+        "drawer_front_screw_y_per_drawer": [
+          114.5,
+          96.5,
+          96.5,
+          96.5
+        ]
+      },
+      "csv_labels": [
+        "DR1,BUL,540,770,<,0.77,0.416",
+        "DR1,BUR,540,770,>,0.77,0.416",
+        "DR1,TOP,564,540,>,0.56,0.305",
+        "DR1,BOTTOM,564,540,>,0.56,0.305",
+        "DR1,BACK,600,770,,0,0.462",
+        "DR1,D1-SL,490,133,,0,0.065",
+        "DR1,D1-SR,490,133,,0,0.065",
+        "DR1,D2-SL,490,133,,0,0.065",
+        "DR1,D2-SR,490,133,,0,0.065",
+        "DR1,D3-SL,490,133,,0,0.065",
+        "DR1,D3-SR,490,133,,0,0.065",
+        "DR1,D4-SL,490,132,,0,0.065",
+        "DR1,D4-SR,490,132,,0,0.065",
+        "DR1,D1-BF,518,99,,0,0.051",
+        "DR1,D1-BB,518,99,,0,0.051",
+        "DR1,D2-BF,518,99,,0,0.051",
+        "DR1,D2-BB,518,99,,0,0.051",
+        "DR1,D3-BF,518,99,,0,0.051",
+        "DR1,D3-BB,518,99,,0,0.051",
+        "DR1,D4-BF,518,98,,0,0.051",
+        "DR1,D4-BB,518,98,,0,0.051",
+        "DR1,D1-DNO,531,490,,0,0.260",
+        "DR1,D2-DNO,531,490,,0,0.260",
+        "DR1,D3-DNO,531,490,,0,0.260",
+        "DR1,D4-DNO,531,490,,0,0.260",
+        "DR1,DR1-F1,597,190,<>^v,1.57,0.113",
+        "DR1,DR1-F2,597,190,<>^v,1.57,0.113",
+        "DR1,DR1-F3,597,190,<>^v,1.57,0.113",
+        "DR1,DR1-F4,597,188,<>^v,1.57,0.112"
+      ],
+      "totals": {
+        "panels_lisp": 25,
+        "fronts": 4,
+        "board_area_m2": 3.873,
+        "front_area_m2": 0.453,
+        "edging_m": 2.668,
+        "edging_front_m": 6.292,
+        "legs": 4,
+        "hinges": 0,
+        "runner_pairs": 4
+      }
+    },
+    {
+      "id": "BUDR4-B",
+      "description": "Four-drawer base 900x770x558, ratio 1:1:1:1",
+      "inputs": {
+        "type": "BUDR4",
+        "width": 900,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "unit_num": "DR2"
+      },
+      "derived": {
+        "doors": 0,
+        "internal_width": 864,
+        "internal_depth": 540,
+        "available_h": 758,
+        "front_heights": [
+          190,
+          190,
+          190,
+          188
+        ],
+        "szufMaxDl": 520,
+        "szufDl": 490,
+        "szufSzer": 854,
+        "drawer_front_w": 897,
+        "boxFrontLen": 818,
+        "drawer_box_side_h": [
+          133,
+          133,
+          133,
+          132
+        ],
+        "drawer_box_front_h": [
+          99,
+          99,
+          99,
+          98
+        ],
+        "bottom_w": 831,
+        "bottom_d": 490
+      },
+      "panels": [
+        {
+          "id": "BUL",
+          "w": 540,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 0.77
+          },
+          "area_m2": 0.416
+        },
+        {
+          "id": "BUR",
+          "w": 540,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.77
+          },
+          "area_m2": 0.416
+        },
+        {
+          "id": "TOP",
+          "w": 864,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.86
+          },
+          "area_m2": 0.467
+        },
+        {
+          "id": "BOTTOM",
+          "w": 864,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.86
+          },
+          "area_m2": 0.467
+        },
+        {
+          "id": "BACK",
+          "w": 900,
+          "h": 770,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.693
+        },
+        {
+          "id": "D1-SL",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D1-SR",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D2-SL",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D2-SR",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D3-SL",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D3-SR",
+          "w": 490,
+          "h": 133,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D4-SL",
+          "w": 490,
+          "h": 132,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D4-SR",
+          "w": 490,
+          "h": 132,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.065
+        },
+        {
+          "id": "D1-BF",
+          "w": 818,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.081
+        },
+        {
+          "id": "D1-BB",
+          "w": 818,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.081
+        },
+        {
+          "id": "D2-BF",
+          "w": 818,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.081
+        },
+        {
+          "id": "D2-BB",
+          "w": 818,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.081
+        },
+        {
+          "id": "D3-BF",
+          "w": 818,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.081
+        },
+        {
+          "id": "D3-BB",
+          "w": 818,
+          "h": 99,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.081
+        },
+        {
+          "id": "D4-BF",
+          "w": 818,
+          "h": 98,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.08
+        },
+        {
+          "id": "D4-BB",
+          "w": 818,
+          "h": 98,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.08
+        },
+        {
+          "id": "D1-DNO",
+          "w": 831,
+          "h": 490,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.407
+        },
+        {
+          "id": "D2-DNO",
+          "w": 831,
+          "h": 490,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.407
+        },
+        {
+          "id": "D3-DNO",
+          "w": 831,
+          "h": 490,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.407
+        },
+        {
+          "id": "D4-DNO",
+          "w": 831,
+          "h": 490,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0.0
+          },
+          "area_m2": 0.407
+        },
+        {
+          "id": "DR2-F1",
+          "w": 897,
+          "h": 190,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.17
+          },
+          "area_m2": 0.17
+        },
+        {
+          "id": "DR2-F2",
+          "w": 897,
+          "h": 190,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.17
+          },
+          "area_m2": 0.17
+        },
+        {
+          "id": "DR2-F3",
+          "w": 897,
+          "h": 190,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.17
+          },
+          "area_m2": 0.17
+        },
+        {
+          "id": "DR2-F4",
+          "w": 897,
+          "h": 188,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 2.17
+          },
+          "area_m2": 0.169
+        }
+      ],
+      "drills": {
+        "hinge_centers": [],
+        "hinged_sides": [],
+        "runner_rows_carcass_y": [
+          56,
+          231,
+          424,
+          617
+        ],
+        "runner_carcass_side": "both",
+        "runner_hole_x": [
+          37,
+          69,
+          293
+        ],
+        "drawer_front_screw_x": [
+          89.5,
+          807.5
+        ],
+        "drawer_front_screw_y_per_drawer": [
+          114.5,
+          96.5,
+          96.5,
+          96.5
+        ]
+      },
+      "csv_labels": [
+        "DR2,BUL,540,770,<,0.77,0.416",
+        "DR2,BUR,540,770,>,0.77,0.416",
+        "DR2,TOP,864,540,>,0.86,0.467",
+        "DR2,BOTTOM,864,540,>,0.86,0.467",
+        "DR2,BACK,900,770,,0,0.693",
+        "DR2,D1-SL,490,133,,0,0.065",
+        "DR2,D1-SR,490,133,,0,0.065",
+        "DR2,D2-SL,490,133,,0,0.065",
+        "DR2,D2-SR,490,133,,0,0.065",
+        "DR2,D3-SL,490,133,,0,0.065",
+        "DR2,D3-SR,490,133,,0,0.065",
+        "DR2,D4-SL,490,132,,0,0.065",
+        "DR2,D4-SR,490,132,,0,0.065",
+        "DR2,D1-BF,818,99,,0,0.081",
+        "DR2,D1-BB,818,99,,0,0.081",
+        "DR2,D2-BF,818,99,,0,0.081",
+        "DR2,D2-BB,818,99,,0,0.081",
+        "DR2,D3-BF,818,99,,0,0.081",
+        "DR2,D3-BB,818,99,,0,0.081",
+        "DR2,D4-BF,818,98,,0,0.080",
+        "DR2,D4-BB,818,98,,0,0.080",
+        "DR2,D1-DNO,831,490,,0,0.407",
+        "DR2,D2-DNO,831,490,,0,0.407",
+        "DR2,D3-DNO,831,490,,0,0.407",
+        "DR2,D4-DNO,831,490,,0,0.407",
+        "DR2,DR2-F1,897,190,<>^v,2.17,0.170",
+        "DR2,DR2-F2,897,190,<>^v,2.17,0.170",
+        "DR2,DR2-F3,897,190,<>^v,2.17,0.170",
+        "DR2,DR2-F4,897,188,<>^v,2.17,0.169"
+      ],
+      "totals": {
+        "panels_lisp": 25,
+        "fronts": 4,
+        "board_area_m2": 5.253,
+        "front_area_m2": 0.68,
+        "edging_m": 3.268,
+        "edging_front_m": 8.692,
+        "legs": 4,
+        "hinges": 0,
+        "runner_pairs": 4
+      }
+    }
+  ]
+}

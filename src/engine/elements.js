@@ -34,6 +34,36 @@ export function isSelectableElement(panel) {
 const MECHANISM_PARTS = new Set(['DP', 'FILLER']);
 
 /**
+ * The kinds that are ADDED INTERIOR ITEMS — the things a joiner puts INSIDE a
+ * carcass after it exists.
+ *
+ * ─── TURN 13 (CLAUDE.md F2.4) ───
+ * The owner's verdict, after living with turn 11's "the whole cabinet is
+ * selectable": clicking a cabinet must select the CABINET again. Turn 11 was
+ * right that every piece is a thing with properties; it was wrong about where
+ * you reach it. A carcass panel is reached in the EDITOR window now — which is
+ * the whole of F2 — and the room view goes back to being about cabinets.
+ *
+ * What stays directly clickable is exactly what a joiner ADDED: a shelf, a
+ * vertical partition, a fixed shelf or rail. Those are the pieces somebody put
+ * there on purpose and moves by hand, and taking the click away from them would
+ * take the drag with it.
+ */
+const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
+
+/**
+ * Is this piece clickable AS A PIECE in the room view?
+ *
+ * The narrower question, and the one the 3D scene asks. `isSelectableElement`
+ * is unchanged and still says what may be selected AT ALL — the editor window
+ * uses it, and so does everything downstream of a selection. This only decides
+ * what a click in the ROOM lands on, which is the half of it the owner sees.
+ */
+export function isMainViewElement(panel) {
+  return isSelectableElement(panel) && ADDED_INTERIOR_KINDS.has(elementKind(panel));
+}
+
+/**
  * WHICH kind of piece this is — the word a joiner would use for it.
  *
  * @returns {string|null} null for the pieces that are not elements at all

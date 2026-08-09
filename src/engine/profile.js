@@ -1516,6 +1516,14 @@ export const DEFAULT_CABINET_PROFILE = {
       // How close to a viewport edge a modal may come. The same 8 px the
       // right-click menu has used since turn 11.
       marginPx: 8,
+      // ─── Turn 13 (CLAUDE.md F2.1 / rule 15's one exception) ───
+      // How much room a MAXIMISED window leaves round itself. The cabinet
+      // editor is a workspace rather than a side dialog and the owner asked for
+      // it near-fullscreen; "near" is this number, and it is a number rather
+      // than a `inset-6` in a class list because rule 2 says so. Big enough
+      // that the room behind still reads as the thing underneath, small enough
+      // that the window is the screen.
+      maximiseMarginPx: 28,
     },
   },
 

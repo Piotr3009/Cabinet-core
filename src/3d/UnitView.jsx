@@ -17,7 +17,7 @@ import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
-import { isSelectableElement } from '../engine/elements.js';
+import { isMainViewElement } from '../engine/elements.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { machinedPanelGeometry } from './panelSolid.js';
@@ -787,7 +787,20 @@ export default function UnitView({
         // What is deliberately NOT a piece is a mechanism: a drawer box's own
         // sides, the panel that carries the runners, its fillers. Those follow
         // the stack, and the way to change one is to change the stack.
-        const isElement = isSelectableElement(p);
+        //
+        // ─── TURN 13 (CLAUDE.md F2.4) ───
+        // …and turn 11 went one step too far. The owner's verdict after using
+        // it: clicking a cabinet must select the CABINET. So the ROOM asks the
+        // narrower question — `isMainViewElement`, which is the ADDED INTERIOR
+        // items and nothing else: shelves, partitions, rails. A side, a top, a
+        // bottom, a back, a door, an end panel is reached in the EDITOR window
+        // (F2.3), which is where the properties now live.
+        //
+        // Nothing about the element paths changed. `onSelectElement`,
+        // `onEditElement`, the properties block, the override store — all of it
+        // is the same code the editor drives. The room simply stops sending
+        // carcass clicks down it.
+        const isElement = isMainViewElement(p);
         const isShelfLike = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);

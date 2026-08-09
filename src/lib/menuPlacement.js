@@ -159,6 +159,39 @@ function normaliseAnchor(anchor) {
   };
 }
 
+// ─── MAXIMISED (turn 13, CLAUDE.md F2.1) ───────────────────────────────────
+//
+// Rule 15's one sanctioned exception. The cabinet EDITOR is a workspace, not a
+// side dialog: the owner works in it, so it opens near-fullscreen and covering
+// whatever it likes. Everything else about the shell survives — the header is
+// still a drag handle once the window is restored, Escape still closes it.
+//
+// It is here, beside the other two, because it is the same KIND of thing: a
+// rectangle worked out from the viewport and a profile number, with no DOM in
+// sight. That is what lets the browser walk assert it.
+
+/**
+ * The rectangle of a maximised window: the viewport, less a margin on each side.
+ *
+ * @param {object} args
+ *   viewport  { width, height }
+ *   margin    clear pixels left round the window
+ * @returns {{left:number, top:number, width:number, height:number}}
+ */
+export function maximiseInViewport({ viewport, margin = 0 }) {
+  const vw = Math.max(0, Number(viewport?.width) || 0);
+  const vh = Math.max(0, Number(viewport?.height) || 0);
+  // A margin that would leave nothing is given up rather than returning a
+  // negative window — the same concession every clamp in this file makes.
+  const m = Math.max(0, Math.min(Number(margin) || 0, Math.min(vw, vh) / 4));
+  return {
+    left: m,
+    top: m,
+    width: Math.max(0, vw - m * 2),
+    height: Math.max(0, vh - m * 2),
+  };
+}
+
 /**
  * Keep a position on the screen and change nothing else.
  *

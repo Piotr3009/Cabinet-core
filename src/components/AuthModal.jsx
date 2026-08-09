@@ -10,6 +10,9 @@ import * as cloud from '../lib/cloudSync.js';
 // list. Without Supabase keys it explains mock mode instead of pretending.
 export default function AuthModal() {
   const closeModal = useUiStore((s) => s.closeModal);
+  // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+  // Nothing to work out here — the opener said, and the shell places it.
+  const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const notify = useUiStore((s) => s.notify);
   const { user, busy, error, projects, signIn, signUp, signOut, init, refreshProjects } = useAuthStore();
   const project = useProjectStore((s) => s.project);
@@ -46,7 +49,7 @@ export default function AuthModal() {
   };
 
   return (
-    <Modal title="Account & projects" onClose={closeModal} width="w-[460px]">
+    <Modal title="Account & projects" onClose={closeModal} anchor={anchor} width="w-[460px]">
       {isMockMode ? (
         <div className="space-y-3">
           <p className="text-sm text-ink-100">Running in <span className="text-status-warn">Mock data mode</span>.</p>

@@ -1,20 +1,22 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import Modal from './Modal.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import ElementProperties from './ElementProperties.jsx';
-import { clampMenuPosition } from '../lib/menuPlacement.js';
+import { anchorAtPoint } from '../lib/modalAnchor.js';
 
 // ─── Double-click a piece (turn 11, CLAUDE.md F3.3) ─────────────────────────
 //
 // "Double-click any element → opens an edit MODAL next to the element AND
 // focuses the right panel on it. Single click keeps selecting only."
 //
-// NEXT TO THE ELEMENT is the whole point, and it is why this is not a Modal:
-// the app's `Modal` is a centred dialog with a backdrop, which is the right
-// shape for "set up the project" and the wrong shape for "that shelf, there".
-// This is a small floating card at the click point, placed by the same
-// arithmetic the right-click menu uses (lib/menuPlacement.js) so it can never
-// open off the edge of a laptop screen either.
+// ─── TURN 12 (CLAUDE.md rule 15 / F2): THROUGH THE SHELL ───
+// Turn 11 wrote this as a floating card of its own precisely BECAUSE the app's
+// `Modal` was a centred dialog with a backdrop — the wrong shape for "that
+// shelf, there". Rule 15 makes that the shape of every modal instead, so the
+// special case is gone: the shell places this beside the piece that was
+// double-clicked, and the same three lines now also make it draggable, which is
+// what the owner asked for and what this card never had.
 //
 // It shares its CONTENTS with the right panel — one `ElementProperties`, so the
 // two can never offer different fields for the same piece.
@@ -34,51 +36,26 @@ export default function ElementModal() {
     return (unit?.params.sections?.[0]?.items || []).find((i) => i.id === id) || null;
   }, [panel, unit]);
 
-  const box = useRef(null);
-  const [at, setAt] = useState(null);
-
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setAt(clampMenuPosition({
-      // A little down and to the right of the click, so the card sits BESIDE the
-      // piece rather than on top of the thing you just pointed at.
-      x: (args?.at?.x ?? window.innerWidth / 2) + 16,
-      y: (args?.at?.y ?? window.innerHeight / 2) + 12,
-      width: rect.width,
-      height: rect.height,
-      viewport: { width: window.innerWidth, height: window.innerHeight },
-      margin: 12,
-    }));
-  }, [args, panel?.id]);
+  // The piece was pointed at, so the point IS the object as far as the screen
+  // is concerned: a rectangle of zero size at the click (lib/modalAnchor.js).
+  const anchor = useMemo(
+    () => args?.anchor || anchorAtPoint(args?.at?.x, args?.at?.y),
+    [args],
+  );
 
   if (!unit || !panel) return null;
 
   return (
-    <div
-      ref={box}
-      className="fixed z-50 w-[300px] cc-panel p-3 shadow-xl"
-      style={{
-        left: at?.left ?? (args?.at?.x ?? 0),
-        top: at?.top ?? (args?.at?.y ?? 0),
-        visibility: at ? 'visible' : 'hidden',
-      }}
-      role="dialog"
-      aria-label="Element properties"
+    <Modal
+      title={`${unit.params.unit_num} · edit piece`}
+      onClose={closeModal}
+      anchor={anchor}
+      width="w-[320px]"
     >
-      <div className="flex items-start gap-2 mb-2">
-        <span className="text-xs uppercase tracking-wide text-ink-200 flex-1">
-          {unit.params.unit_num} · edit piece
-        </span>
-        <button type="button" className="cc-btn-ghost" title="Close (Esc)" onClick={closeModal}>×</button>
-      </div>
-
       <ElementProperties unit={unit} panel={panel} item={item} compact />
-
       <p className="text-[11px] text-ink-400 mt-2">
         The same fields are in the right-hand panel, which is already showing this piece.
       </p>
-    </div>
+    </Modal>
   );
 }

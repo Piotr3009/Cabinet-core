@@ -27,6 +27,7 @@ import { persistProject } from '../lib/persist.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
 import { exportBookletPdf, exportDrawingPdf, exportDrawingSvg } from '../lib/drawingExport.js';
+import { anchorOfEvent } from '../lib/modalAnchor.js';
 
 /**
  * ─── "Add first unit" (turn 11, CLAUDE.md F4.2) ───
@@ -160,8 +161,9 @@ export default function ConfiguratorPage() {
    * (engine/drawings/card.js), which is the same code the preview renders, so
    * the file and the screen cannot drift apart.
    */
-  const onDrawing = useCallback((kind) => {
-    if (kind === 'preview' || kind === 'front-elevation') { openModal('drawing', { kind }); return; }
+  const onDrawing = useCallback((kind, e = null) => {
+    const anchor = anchorOfEvent(e);
+    if (kind === 'preview' || kind === 'front-elevation') { openModal('drawing', { kind, anchor }); return; }
     const date = new Date().toLocaleDateString();
 
     if (kind === 'booklet') {
@@ -203,9 +205,9 @@ export default function ConfiguratorPage() {
         onExportCsv={onExportCsv}
         onExportPdf={onExportPdf}
         onExportDxfZip={onExportDxfZip}
-        onRender={() => openModal('render')}
+        onRender={(e) => openModal('render', { anchor: anchorOfEvent(e) })}
         onDrawing={onDrawing}
-        onAuth={() => openModal('auth')}
+        onAuth={(e) => openModal('auth', { anchor: anchorOfEvent(e) })}
       />
       <div className="flex-1 relative overflow-hidden">
         {/* The 3D scene stays MOUNTED behind the CNC view: it owns the WebGL

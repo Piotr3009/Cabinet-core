@@ -7,6 +7,7 @@ import { getUnitType } from '../engine/types.js';
 import { menuActions } from '../lib/contextActions.js';
 import { formatMm } from '../engine/format.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
+import { anchorOfElement } from '../lib/modalAnchor.js';
 
 // Right-click menu for an item in the canvas (CLAUDE.md phase 5).
 // The actions themselves live in lib/contextActions.js — this file is only
@@ -39,6 +40,12 @@ export default function ContextMenu() {
   const openModal = useUiStore((s) => s.openModal);
 
   const unit = units.find((u) => u.id === menu?.unitId) || null;
+
+  // What a modal opened FROM this menu is beside (turn 12, rule 15): the menu
+  // itself, which is already standing next to the cabinet it is about. Read
+  // before the menu closes — see MenuBar for the same reasoning.
+  const box = useRef(null);
+  const menuAnchor = () => anchorOfElement(box.current);
 
   const actions = useMemo(() => (unit
     ? menuActions({
@@ -86,7 +93,7 @@ export default function ContextMenu() {
         },
         // "Save as template" needs one thing the menu cannot give it: a NAME.
         // That is the modal's whole job (BACKLOG #30).
-        saveAsTemplate: (unitId) => openModal('save-template', { unitId }),
+        saveAsTemplate: (unitId) => openModal('save-template', { unitId, anchor: menuAnchor() }),
         // The options for what was just added are in the panel, not in a modal.
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
       },
@@ -99,7 +106,6 @@ export default function ContextMenu() {
   // ─── Placement (turn 11, CLAUDE.md F1.4a) ───
   // Measured, then clamped by lib/menuPlacement.js. `at` is null until the
   // first layout pass, which is what the `visibility` below is for.
-  const box = useRef(null);
   const [at, setAt] = useState(null);
 
   useLayoutEffect(() => {

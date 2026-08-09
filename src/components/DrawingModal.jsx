@@ -31,6 +31,9 @@ const KINDS = {
 
 export default function DrawingModal() {
   const closeModal = useUiStore((s) => s.closeModal);
+  // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+  // Nothing to work out here — the opener said, and the shell places it.
+  const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const notify = useUiStore((s) => s.notify);
   const modalArgs = useUiStore((s) => s.modalArgs);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
@@ -104,6 +107,7 @@ export default function DrawingModal() {
 
   return (
     <Modal
+      anchor={anchor}
       title={kind === 'front-elevation' ? 'Front elevation' : 'Unit card'}
       width="w-[880px]"
       onClose={closeModal}

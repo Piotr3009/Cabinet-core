@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
+import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
@@ -300,7 +301,7 @@ export default function RightPanel() {
               </select>
             </div>
             <div className="flex items-end">
-              <button type="button" className="cc-btn w-full" onClick={() => openModal('design')}>
+              <button type="button" className="cc-btn w-full" onClick={(e) => openModal('design', { anchor: anchorOfEvent(e) })}>
                 Design settings…
               </button>
             </div>

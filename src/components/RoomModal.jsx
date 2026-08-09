@@ -36,6 +36,9 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
   // The hook is called unconditionally and the prop chosen afterwards — a hook
   // behind an `||` is a hook that sometimes does not run.
   const closeFromStore = useUiStore((s) => s.closeModal);
+  // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+  // Nothing to work out here — the opener said, and the shell places it.
+  const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const closeModal = onClose || closeFromStore;
   const notify = useUiStore((s) => s.notify);
 
@@ -149,6 +152,7 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
 
   return (
     <Modal
+      anchor={anchor}
       title="Room setup"
       onClose={closeModal}
       width="w-[860px]"

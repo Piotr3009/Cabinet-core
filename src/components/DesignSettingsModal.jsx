@@ -38,6 +38,9 @@ export default function DesignSettingsModal() {
   const updateDoorStyle = useProjectStore((s) => s.updateDoorStyle);
   const removeDoorStyle = useProjectStore((s) => s.removeDoorStyle);
   const closeModal = useUiStore((s) => s.closeModal);
+  // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+  // Nothing to work out here — the opener said, and the shell places it.
+  const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const profile = useCabinetProfileStore((s) => s.profile);
   const finishes = profile.appearance.finishes;
@@ -54,6 +57,7 @@ export default function DesignSettingsModal() {
 
   return (
     <Modal
+      anchor={anchor}
       title="Design settings"
       onClose={closeModal}
       width="w-[720px]"

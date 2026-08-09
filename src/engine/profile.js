@@ -1439,6 +1439,22 @@ export const DEFAULT_CABINET_PROFILE = {
     // a scribe — `autoParts.sideInfill.maxWidth` is 120, so anything under this
     // is a filler's job and not a cabinet's.
     addPlusMinGapMm: 100,
+
+    // ─── THE MODAL RULE (turn 12, CLAUDE.md rule 15) ───
+    // "Every modal in this application is DRAGGABLE by its header and opens
+    // BESIDE the object it concerns — never covering it." The owner said
+    // "na zawsze", so the two numbers that decide what "beside" means are here
+    // rather than in a component: one shell reads them and every modal in the
+    // app is placed by it.
+    modal: {
+      // Clear screen pixels left between the object and the modal. Enough that
+      // the edge of the cabinet and the edge of the panel are plainly two
+      // things, and not so much that the panel stops feeling attached to it.
+      gapPx: 14,
+      // How close to a viewport edge a modal may come. The same 8 px the
+      // right-click menu has used since turn 11.
+      marginPx: 8,
+    },
   },
 
   // ─── Editor defaults ───

@@ -80,13 +80,18 @@ function Dropdown({ items, onClose, nested = false }) {
                 disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-shell-700 ${
                 item.checked ? 'text-gold' : 'text-ink-100'}`}
               onPointerEnter={() => setOpenSub(hasSub ? item.label : null)}
-              onClick={() => {
+              onClick={(e) => {
                 // A submenu parent OPENS on click — it never toggles. Hovering it
                 // has already opened it by the time the click lands, so toggling
                 // would shut the submenu the pointer is sitting on.
                 if (hasSub) { setOpenSub(item.label); return; }
                 if (item.disabled) return;
-                item.run?.();
+                // The EVENT is handed to the action (turn 12, rule 15). An entry
+                // that opens a modal needs to say what the modal is beside, and
+                // for a menu entry the honest answer is the entry itself —
+                // read here, while the button still exists, because `onClose`
+                // on the next line unmounts it.
+                item.run?.(e);
                 onClose();
               }}
             >

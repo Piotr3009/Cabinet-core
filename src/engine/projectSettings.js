@@ -16,6 +16,7 @@
 // follow.
 
 import { DEFAULT_CABINET_PROFILE } from './profile.js';
+import { veneerIdFromFinishId } from './veneers.js';
 
 const settingsOf = (profile) => profile?.projectSettings || DEFAULT_CABINET_PROFILE.projectSettings;
 
@@ -31,6 +32,50 @@ export function frontSources(profile) {
 
 export function sourceById(list, id) {
   return list.find((s) => s.id === id) || null;
+}
+
+/**
+ * WHICH PICKER a source asks for (turn 15, CLAUDE.md F3).
+ *
+ * The owner's "mega ważne": a Veneer front was offering RAL palettes and a
+ * Laminate front was offering them too. Neither is a paint. The answer is a
+ * property of the SOURCE — a veneer picks a timber, a laminate picks a decor, a
+ * spray picks a colour — so it is read off the source's own record and the
+ * component decides nothing.
+ *
+ * A source that names no picker and is not marked `coloursSoon` falls back to
+ * the colour picker, which is what every source did before this turn.
+ *
+ * @returns {'decor'|'veneer'|'colour'|null}
+ */
+export function pickerForSource(source) {
+  if (!source) return null;
+  if (source.picker !== undefined) return source.picker;
+  if (source.coloursSoon) return null;
+  return source.kind === 'spray' ? 'colour' : 'decor';
+}
+
+/** Does this source face the board with something the FINISH layer stores? */
+export function sourceTakesFacing(source) {
+  const picker = pickerForSource(source);
+  return picker === 'decor' || picker === 'veneer';
+}
+
+/**
+ * Could this stored facing have come from this source?
+ *
+ * A decor id under a Veneer source is a leftover from the button that was
+ * pressed before, and leaving it there is how a project ends up veneered in a
+ * laminate. Asked by the setters, so switching a source drops what the new one
+ * cannot mean rather than carrying it silently.
+ */
+export function facingMatchesSource(finishId, source) {
+  if (!finishId) return true;
+  const isVeneer = veneerIdFromFinishId(finishId) != null;
+  const picker = pickerForSource(source);
+  if (picker === 'veneer') return isVeneer;
+  if (picker === 'decor') return !isVeneer;
+  return false;
 }
 
 /**
@@ -130,6 +175,8 @@ export function normaliseFrontTypes(types, profile) {
     source: t.source || frontSources(profile)[0]?.id || null,
     colour: t.colour ?? null,
     material_id: t.material_id ?? null,
+    // What a BOARD front is faced with — a decor or a veneer (turn 15, F3).
+    finish_id: t.finish_id ?? null,
   }));
 }
 
@@ -145,6 +192,7 @@ export function setFrontTypeCount(types, count, profile) {
       source: frontSources(profile)[0]?.id || null,
       colour: null,
       material_id: null,
+      finish_id: null,
     });
   }
   return next.slice(0, n);

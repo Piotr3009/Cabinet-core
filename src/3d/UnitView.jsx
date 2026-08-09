@@ -4,7 +4,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
 import {
-  contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor, surfaceFor,
+  contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor,
+  panelFillOffset, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import Hardware, { DoorHinges } from './Hardware.jsx';
@@ -322,6 +323,12 @@ export function MovingPanel({
           // camera hides everything the mode exists to show. Opaque board
           // always writes it.
           depthWrite={!translucent}
+          // ─── Turn 15 (CLAUDE.md F2): the outlines INSIDE the cabinet ───
+          // The fill is pushed a hair back in the DEPTH BUFFER so an edge line
+          // lying exactly on a neighbouring panel's face wins instead of
+          // z-fighting it away. Nothing moves; only what the depth test
+          // believes. Numbers from profile.appearance.outline.polygonOffset.
+          {...panelFillOffset(profile)}
         />
         {/* Thin BLACK contours, switchable from the toolbar. In contour view
             they are the whole picture, so they are never off there. */}

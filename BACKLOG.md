@@ -513,3 +513,53 @@ zgaduje wzorca warsztatu, a kiedy wzorzec przychodzi, kosztuje jedną turę.
 77. [LOW] **`scripts/e2e-turn13.mjs` nie zna zmian tury 14.** To samo, co
     pozycje 66 i 71 mówią o skryptach tur 11 i 12: nie jest zepsuty, chodzi po
     swojej turze. `e2e-turn14.mjs` jest następcą.
+
+## TURA 15 — CO ZAMKNIĘTE, CO DOPISANE (09.08)
+
+**Zamknięte:** **#51** (boczny infill w kształcie L dostał mitrę — F6; dokładnie
+tak, jak wpis przewidywał: warsztat mitruje pionowy filler, więc to rozszerzenie
+`infillMitre()` plus flaga w silniku, a ramię A dalej jest przykręcone).
+
+78. [PARKING — DECYZJA WŁAŚCICIELA] **Symulacja NESTINGU na arkuszu CNC.**
+    CLAUDE.md tury 15 F9.4 mówi to dwa razy i wprost: „NO nesting. The nesting
+    simulation is deliberately deferred by the owner — do not sketch it, do not
+    scaffold it." Oba widoki tury 15 (po materiale, po szafce) są KUBEŁKAMI w
+    kolejności części z silnika i niczym więcej; `engine/cnc/layout.js` nadal
+    układa rzędami tak, jak robi to AutoLISP. Nic nie zostało przygotowane pod
+    nesting, bo przygotowanie też jest szkicem.
+79. [MEDIUM] **Osiemnaście nowych wpisów katalogu czeka na wzorzec.** F5.2 dała
+    listę właściciela w całości: Corner, L-shape, DW, Oven, Bin storage, Wine
+    rack, Small fridge, Twin space (base) · Basket tall, Pantry,
+    Pantry-on-worktop, Space tower, Oven tall, American fridge (tall) · Glass
+    unit, L-shape wall (wall) · Free-standing panels, Cornice/pelmet (extras).
+    Wszystkie są OBECNE i wyłączone z uczciwym powodem — to reguła
+    wzorzec-najpierw, nie zaległość. Każdy z nich to osobny kit i osobna
+    rozmowa; kolejność, w której powstaną, jest decyzją właściciela.
+80. [MEDIUM] **Listwa dekoracyjna / pelmet ma gotową logikę RUNU i nie ma
+    wzorca.** Wpis `cornice-pelmet` w grupie Extras: „one click adds it along a
+    run (run-logic like the plinth)". Run-logic naprawdę jest gotowa —
+    `runPlinthParams` / `runMaskParams` robią dokładnie to — brakuje PROFILU
+    przekroju listwy i jej wzorca cięcia. To najbliższy wpis do zamknięcia z
+    całej osiemnastki.
+81. [MEDIUM] **Panele wolnostojące potrzebują właściciela w modelu.** Dziś panel
+    maskujący należy do SZAFKI (`params.end_panels`), więc panel, który nie
+    dotyka żadnej szafki, nie ma gdzie zamieszkać. To zmiana w modelu projektu
+    (element pokoju, nie jednostki), a nie nowy kit — i dlatego jest wpisem, a
+    nie fazą.
+82. [LOW] **Fornirów są cztery i są pożyczone.** F3.2 zasiewa kolekcję
+    (`engine/veneers.js`) czterema wpisami odwołującymi się do dekorów EGGER-a,
+    bo własnych skanów właściciela jeszcze nie ma. STRUKTURA jest gotowa:
+    `setVeneerCatalogue` przyjmuje listę, wpis z własnym `tex` przestaje
+    kredytować EGGER-a, a projekt zachowuje swój wybór, bo zapisał id fornira, a
+    nie dekoru. Dosypanie skanów to wpis danych.
+83. [LOW] **Zakres wybarwień WOOD nadal bez kolorów.** Źródło `wood` istnieje,
+    nie ma pickera (`picker: null`) i mówi o tym wprost — bez zmian od tury 11,
+    bo CLAUDE.md nadal parkuje sam zakres.
+84. [LOW] **Mitra narożnika wymaga wypełniacza nie węższego niż szczelina jest
+    wysoka.** F6 tnie 45° o nogach `faceH`, więc listwa 30 mm pod szczeliną 250
+    mm zostaje na styk. To prawda warsztatowa, nie ograniczenie implementacji —
+    ale gdyby właściciel chciał tam mitry pod innym kątem (mason's mitre), to
+    inne cięcie i osobna decyzja.
+85. [LOW] **`scripts/e2e-turn14.mjs` nie zna zmian tury 15.** To samo, co
+    pozycje 66, 71 i 77: nie jest zepsuty, chodzi po swojej turze.
+    `e2e-turn15.mjs` jest następcą.

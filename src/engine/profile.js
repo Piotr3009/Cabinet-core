@@ -374,9 +374,22 @@ export const DEFAULT_CABINET_PROFILE = {
   projectSettings: {
     // A carcass board, and where it comes from. `thickness` is what that source
     // IS: an EGGER decor board is 18, and a sprayed carcass is 18 of MDF.
+    // ─── Turn 15 (CLAUDE.md F3) ───
+    // `picker` is WHICH QUESTION this source asks, and it is data because the
+    // owner's verdict was that the app kept asking the wrong one: a veneer
+    // front offered a RAL palette. A source names its own picker, so adding a
+    // fifth source is a line here and not a branch in a component.
+    //   'decor'  → the 85-EGGER picker
+    //   'veneer' → the veneer collection (engine/veneers.js)
+    //   'colour' → the RAL / F&B / custom colour picker
+    //   null     → nothing to pick yet (the wood range is a later turn)
     carcassSources: [
-      { id: 'egger', label: 'EGGER decor', thickness: 18, kind: 'decor' },
-      { id: 'sprayed', label: 'Sprayed', thickness: 18, kind: 'spray' },
+      { id: 'egger', label: 'EGGER decor', thickness: 18, kind: 'decor', picker: 'decor' },
+      { id: 'sprayed', label: 'Sprayed', thickness: 18, kind: 'spray', picker: 'colour' },
+      // Owner, turn 15 F3.3: a carcass can be veneered too, from the SAME
+      // collection the fronts pick from — and 19 mm is pinned by the source
+      // exactly the way an EGGER board pins 18.
+      { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board', picker: 'veneer' },
     ],
     // A front. The two sprayed systems are the colour ranges a workshop orders
     // by name; veneer is the one that is genuinely a different thickness.
@@ -384,13 +397,17 @@ export const DEFAULT_CABINET_PROFILE = {
       // Owner, 09.08: ONE spray source. RAL vs Farrow & Ball is a choice the
       // COLOUR PICKER offers underneath (it always has), not a source button —
       // two buttons here made the same finish look like two finishes.
-      { id: 'spray', label: 'Spray', thickness: 18, kind: 'spray' },
-      { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board' },
-      { id: 'laminate', label: 'Laminate', thickness: 18, kind: 'board' },
+      { id: 'spray', label: 'Spray', thickness: 18, kind: 'spray', picker: 'colour' },
+      // Turn 15 (CLAUDE.md F3.2): a veneer front picks a TIMBER, not a paint.
+      { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board', picker: 'veneer' },
+      // …and a laminate front picks a DECOR — the same 85-EGGER picker the
+      // carcass has used since turn 5 (F3.1). It was offering RAL palettes,
+      // which is a paint range for a board that is never painted.
+      { id: 'laminate', label: 'Laminate', thickness: 18, kind: 'board', picker: 'decor' },
       // The wood RANGE is a later turn's (CLAUDE.md F9.2 says so in as many
       // words: "wood colour range comes later — leave the option present,
       // colours coming soon"). The option is real; the colours are not yet.
-      { id: 'wood', label: 'Wood', thickness: 20, kind: 'board', coloursSoon: true },
+      { id: 'wood', label: 'Wood', thickness: 20, kind: 'board', coloursSoon: true, picker: null },
     ],
     // The selector beside the automatic thickness. "Other" is not in the list —
     // it is the absence of a choice from it, and the number is then typed.
@@ -755,7 +772,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // means by "same material throughout".
     defaultFrontFinish: null,
     // Thin BLACK contours — an edges pass, not the old thick brown lines.
-    outline: { colour: '#1A1A1A', width: 1, threshold: 12 },
+    //
+    // ─── Turn 15 (CLAUDE.md F2): AND THEY WIN THE DEPTH WAR ───
+    // The owner: "the outer contour is crisp, the interior edges vanish". They
+    // do, and it is not a colour problem. An edge line INSIDE a cabinet lies
+    // exactly ON a neighbouring panel's face — a shelf's front arris is in the
+    // plane of the side panel it butts into — so line and face are at the same
+    // depth and the winner is whichever the GPU rasterises last. Outside the
+    // cabinet there is nothing behind the line, so the silhouette was always
+    // crisp; that is the tell.
+    //
+    // The textbook fix is `polygonOffset` on the FILL: every panel face is
+    // pushed a hair back in the depth buffer, so a line lying on it is nearer
+    // the camera and always wins. It moves nothing in the scene — only what the
+    // depth test believes — so no dimension, no cut and no fixture is touched.
+    //
+    // `factor` scales with the polygon's slope (it is what makes a face seen
+    // nearly edge-on offset more, which is exactly where the fight is worst)
+    // and `units` is a flat push in depth-buffer steps. 1 and 1 is the
+    // conventional starting pair and is enough here — bigger numbers start to
+    // show as bleed-through at silhouette edges, which is the artefact this
+    // must not trade for.
+    outline: {
+      colour: '#1A1A1A',
+      width: 1,
+      threshold: 12,
+      polygonOffset: { factor: 1, units: 1 },
+    },
     // ~20 % sheen: a hint of clear coat over a matt board. Not plastic.
     // Kept as the fallback a piece takes when it belongs to no finish family.
     sheen: { roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.35, metalness: 0.0 },
@@ -1838,7 +1881,16 @@ export function migrateCabinetProfile(profile) {
       // The finish LIST is the app's, not the stored profile's: a project saved
       // before a decor existed must still be able to show it.
       finishes: mergeFinishes(D.appearance.finishes, profile.appearance?.finishes),
-      outline: { ...D.appearance.outline, ...profile.appearance?.outline },
+      outline: {
+        ...D.appearance.outline,
+        ...profile.appearance?.outline,
+        // A profile saved before turn 15 has no `polygonOffset` at all, and a
+        // stored one that overrides only `factor` must keep the app's `units`.
+        polygonOffset: {
+          ...D.appearance.outline.polygonOffset,
+          ...profile.appearance?.outline?.polygonOffset,
+        },
+      },
       sheen: { ...D.appearance.sheen, ...profile.appearance?.sheen },
       sheenScale: { ...D.appearance.sheenScale, ...profile.appearance?.sheenScale },
       spray: { ...D.appearance.spray, ...profile.appearance?.spray },

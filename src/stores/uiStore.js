@@ -106,6 +106,13 @@ export const useUiStore = create((set, get) => ({
   // shown and every new part is invisible until somebody notices.
   cncHiddenUnits: {},                // { [unitId]: true }
   cncHiddenParts: {},                // { [unitId]: { [panelId]: true } }
+  // ─── Which VIEW the sheet is drawn in (turn 15, CLAUDE.md F9) ───
+  // 'material' — one section per assigned board, left→right
+  // 'cabinet'  — a square per carcass, run parts in a group of their own
+  // It is a way of LOOKING at the sheet, not a property of the project, so it
+  // lives here with the other view state and reaches nothing that is exported.
+  cncView: 'material',
+  setCncView: (id) => set({ cncView: id === 'cabinet' ? 'cabinet' : 'material' }),
   toggleCncUnit: (unitId) => set((s) => {
     const { [unitId]: on, ...rest } = s.cncHiddenUnits;
     return { cncHiddenUnits: on ? rest : { ...rest, [unitId]: true } };
@@ -258,7 +265,17 @@ export const useUiStore = create((set, get) => ({
   // Which sections of the right panel are open (turn 4, BACKLOG #10). There are
   // a lot of them now, so everything collapses — and the choice is remembered
   // across units, because a workshop tends to work on one thing at a time.
-  panelOpen: { carcass: true, add: false, contents: true, construction: false, doors: true },
+  //
+  // ─── Turn 15 (CLAUDE.md F1.4): CLOSED BY DEFAULT ───
+  // Three of the five opened themselves, which on a 310 px column meant the
+  // panel arrived already too long to read and the owner could not see where
+  // one section ended. Everything starts shut; opening one is one click and the
+  // one you open is the one that lights up (components/Section.jsx). Remembered
+  // for the SESSION only — this store is deliberately never persisted (see the
+  // note at the top of the file), so a fresh tab starts tidy again.
+  panelOpen: {
+    carcass: false, add: false, contents: false, construction: false, doors: false,
+  },
   togglePanelSection: (id) => set((s) => ({ panelOpen: { ...s.panelOpen, [id]: !s.panelOpen[id] } })),
   setPanelSection: (id, open) => set((s) => ({ panelOpen: { ...s.panelOpen, [id]: Boolean(open) } })),
 

@@ -1,0 +1,140 @@
+37,38c37,38
+< BUD+infill-mitre  file  01-INFILL-L-FACE.dxf  94ba6e63
+< BUD+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> BUD+infill-mitre  file  01-INFILL-L-FACE.dxf  18526622
+> BUD+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+41c41
+< BUD+infill-mitre  sheet all  c7ad3462
+---
+> BUD+infill-mitre  sheet all  4771adf0
+44c44
+< BUD+infill-mitre  sheet sprayed  40a8bd49
+---
+> BUD+infill-mitre  sheet sprayed  1252c0e5
+244,245c244,245
+< BUDR+infill-mitre  file  01-INFILL-L-FACE.dxf  94ba6e63
+< BUDR+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> BUDR+infill-mitre  file  01-INFILL-L-FACE.dxf  18526622
+> BUDR+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+248c248
+< BUDR+infill-mitre  sheet all  1274797a
+---
+> BUDR+infill-mitre  sheet all  009fbd4c
+251c251
+< BUDR+infill-mitre  sheet sprayed  1ff75e67
+---
+> BUDR+infill-mitre  sheet sprayed  8a03eb67
+560,561c560,561
+< BUDR2+infill-mitre  file  01-INFILL-L-FACE.dxf  94ba6e63
+< BUDR2+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> BUDR2+infill-mitre  file  01-INFILL-L-FACE.dxf  18526622
+> BUDR2+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+564c564
+< BUDR2+infill-mitre  sheet all  beb3697a
+---
+> BUDR2+infill-mitre  sheet all  12f29fb0
+567c567
+< BUDR2+infill-mitre  sheet sprayed  a3045da8
+---
+> BUDR2+infill-mitre  sheet sprayed  20108991
+876,877c876,877
+< BUDR4+infill-mitre  file  01-INFILL-L-FACE.dxf  94ba6e63
+< BUDR4+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> BUDR4+infill-mitre  file  01-INFILL-L-FACE.dxf  18526622
+> BUDR4+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+880c880
+< BUDR4+infill-mitre  sheet all  4e22f27e
+---
+> BUDR4+infill-mitre  sheet all  c9349cee
+883c883
+< BUDR4+infill-mitre  sheet sprayed  78655a54
+---
+> BUDR4+infill-mitre  sheet sprayed  d6f3d875
+1196,1197c1196,1197
+< BUDTALL+infill-mitre  file  01-INFILL-L-FACE.dxf  9b36c058
+< BUDTALL+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> BUDTALL+infill-mitre  file  01-INFILL-L-FACE.dxf  ddc6a532
+> BUDTALL+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+1200c1200
+< BUDTALL+infill-mitre  sheet all  ac4527ab
+---
+> BUDTALL+infill-mitre  sheet all  bb03d26d
+1203c1203
+< BUDTALL+infill-mitre  sheet sprayed  a1825225
+---
+> BUDTALL+infill-mitre  sheet sprayed  900cc215
+1348,1349c1348,1349
+< FRIDGE+infill-mitre  file  01-INFILL-L-FACE.dxf  9b36c058
+< FRIDGE+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> FRIDGE+infill-mitre  file  01-INFILL-L-FACE.dxf  ddc6a532
+> FRIDGE+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+1355c1355
+< FRIDGE+infill-mitre  sheet all  41c1e7ce
+---
+> FRIDGE+infill-mitre  sheet all  8891f10a
+1358c1358
+< FRIDGE+infill-mitre  sheet sprayed  a1825225
+---
+> FRIDGE+infill-mitre  sheet sprayed  900cc215
+1519,1520c1519,1520
+< LOW_CABINET+infill-mitre  file  01-INFILL-L-FACE.dxf  419b6803
+< LOW_CABINET+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> LOW_CABINET+infill-mitre  file  01-INFILL-L-FACE.dxf  f6a964dc
+> LOW_CABINET+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+1523c1523
+< LOW_CABINET+infill-mitre  sheet all  5506d1dd
+---
+> LOW_CABINET+infill-mitre  sheet all  e523d7b0
+1526c1526
+< LOW_CABINET+infill-mitre  sheet sprayed  43ef488b
+---
+> LOW_CABINET+infill-mitre  sheet sprayed  cfc71408
+1663,1664c1663,1664
+< SINK+infill-mitre  file  01-INFILL-L-FACE.dxf  94ba6e63
+< SINK+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> SINK+infill-mitre  file  01-INFILL-L-FACE.dxf  18526622
+> SINK+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+1666c1666
+< SINK+infill-mitre  sheet all  92cc1b4a
+---
+> SINK+infill-mitre  sheet all  35bbd396
+1669c1669
+< SINK+infill-mitre  sheet sprayed  efb94224
+---
+> SINK+infill-mitre  sheet sprayed  ab85828c
+1809,1810c1809,1810
+< WARDROBE+infill-mitre  file  01-INFILL-L-FACE.dxf  988ef753
+< WARDROBE+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> WARDROBE+infill-mitre  file  01-INFILL-L-FACE.dxf  435e95d4
+> WARDROBE+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+1813c1813
+< WARDROBE+infill-mitre  sheet all  31eea4ff
+---
+> WARDROBE+infill-mitre  sheet all  2974af78
+1816c1816
+< WARDROBE+infill-mitre  sheet sprayed  725768a1
+---
+> WARDROBE+infill-mitre  sheet sprayed  70147d50
+1950,1951c1950,1951
+< WUD+infill-mitre  file  01-INFILL-L-FACE.dxf  2af11625
+< WUD+infill-mitre  file  01-INFILL-T-FACE.dxf  6d63e8ae
+---
+> WUD+infill-mitre  file  01-INFILL-L-FACE.dxf  d42af234
+> WUD+infill-mitre  file  01-INFILL-T-FACE.dxf  b8b8839c
+1954c1954
+< WUD+infill-mitre  sheet all  6c7c4919
+---
+> WUD+infill-mitre  sheet all  0dd946c5
+1957c1957
+< WUD+infill-mitre  sheet sprayed  759ad40a
+---
+> WUD+infill-mitre  sheet sprayed  cddca5a6

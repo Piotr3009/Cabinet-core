@@ -27,7 +27,7 @@ import { partitionSpan, widthZones } from './zones.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  tabCentres,
+  chamferedRectGeometry, tabCentres,
 } from './puzzle.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import { maskDepthExtra } from './runs.js';
@@ -1502,17 +1502,40 @@ export function computeCabinet(params, profileOverride) {
     // on an END is the picture-frame corner where the piece turns.
     const mitre = (open) => ['long', ...(open ? ['end'] : [])];
 
+    // ─── Turn 15 (CLAUDE.md F6): the corner against a SIDE INFILL ───
+    // Where the element stops against a ceiling-height filler, the two stand in
+    // one plane and make a frame corner — so the face runs to its LONG POINT
+    // over that corner and is cut back at 45°, and the filler loses the
+    // matching triangle (see the vertical infill below). `engine/runs.js`
+    // decides whether there is room for the cut at all; here it is only ever a
+    // number, and 0 is the square corner every run had before this turn.
+    //
+    // The SHELF is not extended. It runs back at the ceiling and lands on top
+    // of the filler's own return arm; extending it would put two pieces of
+    // board in the same 18 mm.
+    const mitreL = Math.max(0, Number(runInfill.mitre?.left) || 0);
+    const mitreR = Math.max(0, Number(runInfill.mitre?.right) || 0);
+    const faceX0 = x0 - mitreL;
+    const faceLen = len + mitreL + mitreR;
+
     panels.push(panel({
-      id: 'INFILL-T-FACE', part: 'INFILL', role: 'infill', w: len, h: faceH, thickness: t,
+      id: 'INFILL-T-FACE', part: 'INFILL', role: 'infill', w: faceLen, h: faceH, thickness: t,
       // One long edge is glued into the mitre and takes no banding; the other
       // is the visible bottom edge and does. The LISP code vocabulary has no
       // "one long edge", so the code names the pair and the LENGTH says one.
-      edgeCode: codes.topBottom, edgeLen: metres(len),
-      box: { x: x0, y: H, z: faceZ - t, w: len, h: faceH, d: t },
-      cnc: rectGeometry(len, faceH),
+      edgeCode: codes.topBottom, edgeLen: metres(faceLen),
+      box: { x: faceX0, y: H, z: faceZ - t, w: faceLen, h: faceH, d: t },
+      // Cut to the long point at a mitred end: the BOTTOM corner is the one
+      // that comes away, because the face's top edge is the one that runs on to
+      // the wall over the corner.
+      cnc: chamferedRectGeometry(faceLen, faceH, { bl: mitreL, br: mitreR }),
       meta: {
         side: 'top', piece: 'face', segment: 'main', ends,
-        mitre_45: [...new Set([...mitre(ends.left === 'open'), ...mitre(ends.right === 'open')])],
+        mitre_45: [...new Set([
+          ...mitre(ends.left === 'open'), ...mitre(ends.right === 'open'),
+          ...(mitreL || mitreR ? ['end'] : []),
+        ])],
+        corner: { left: mitreL, right: mitreR },
         units: runInfill.unitIds || null,
       },
     }));
@@ -1669,13 +1692,38 @@ export function computeCabinet(params, profileOverride) {
     const isLeft = side === 'L';
     const label = isLeft ? 'left' : 'right';
 
+    // ─── Turn 15 (CLAUDE.md F6 / BACKLOG #51): THE MITRED CORNER ───
+    // Where this filler runs up past the units and a top infill stops against
+    // it, the two are the legs of a frame standing in ONE plane, and a frame
+    // corner is mitred. The 45° comes off the corner nearest the top infill —
+    // the INNER edge, at the top — and the piece's outer edge keeps its full
+    // height, which is why the cut piece is still `infillW × h` and only its
+    // OUTLINE moves. That outline is this turn's one named CNC delta.
+    //
+    // `run_top_infill.sideMitre` is the number, worked out for the run in
+    // engine/runs.js (`infillCornerMitre`) and handed to the END unit that owns
+    // this filler. 0 — every run before this turn, and every filler too narrow
+    // to take a 45° at all — is the square corner, byte for byte.
+    const cornerMitre = Math.max(0, Number(params?.run_top_infill?.sideMitre?.[label]) || 0);
+    const takesMitre = cornerMitre > 0 && cornerMitre <= infillW;
+
     // Arm B — the face. Spans the gap, flush with the door line.
     panels.push(panel({
       id: `INFILL-${side}-FACE`, part: 'INFILL', role: 'infill', w: infillW, h, thickness: t,
       edgeCode: codes.right, edgeLen: metres(h),
       box: { x: isLeft ? -infillW : W, y, z: infillFaceZ - t, w: infillW, h, d: t },
-      cnc: rectGeometry(infillW, h),
-      meta: { side: label, piece: 'face', shape: infillW >= SI.minLWidth ? 'L' : 'strip' },
+      // The corner that comes away is the one the top infill is on: the RIGHT
+      // of a left-hand filler, the LEFT of a right-hand one — always the inner
+      // edge, always at the top.
+      cnc: takesMitre
+        ? chamferedRectGeometry(infillW, h, isLeft ? { tr: cornerMitre } : { tl: cornerMitre })
+        : rectGeometry(infillW, h),
+      meta: {
+        side: label,
+        piece: 'face',
+        shape: infillW >= SI.minLWidth ? 'L' : 'strip',
+        ...(takesMitre ? { corner: cornerMitre, mitre_45: ['end'] } : {}),
+      },
     }));
 
     // Arm A — the return, screwed to the carcass side, behind the face.

@@ -9,6 +9,7 @@
 // it the same way.
 
 import { decorFinish } from './decors.js';
+import { veneerFinish } from './veneers.js';
 import { DEFAULT_CABINET_PROFILE } from './profile.js';
 
 // ─── Turn 9 (CLAUDE.md F5) ───
@@ -219,6 +220,14 @@ function coupleFrontTypes(d) {
       source: (t.source === 'ral' || t.source === 'fb') ? 'spray' : (t.source ?? null),
       colour: normaliseColour(t.colour),
       material_id: t.material_id ?? null,
+      // ─── Turn 15 (CLAUDE.md F3.1/F3.2) ───
+      // What a BOARD front is faced with: an EGGER decor for a laminate, a
+      // veneer id for a veneer. It sits beside `colour` rather than replacing
+      // it because they are different questions asked of different sources —
+      // but only ONE of them can be true of a piece of board at a time, and
+      // `projectFrontColour` below is where that is enforced: a faced front is
+      // not a painted one.
+      finish_id: t.finish_id ?? null,
     }))
     : [];
   if (!types.length) return types;
@@ -228,9 +237,22 @@ function coupleFrontTypes(d) {
   return types;
 }
 
-/** The project's front colour: front type 1's, or the older field if that is all there is. */
+/**
+ * The project's front colour: front type 1's, or the older field if that is all
+ * there is.
+ *
+ * ─── Turn 15 (CLAUDE.md F3.1/F3.2): A FACED FRONT IS NOT A PAINTED ONE ───
+ * The owner's bug in one sentence: a Laminate front kept showing RAL colours,
+ * and worse, kept BEING one — the sprayed colour left over from a previous
+ * choice still won in `resolveFinishes`, so a front ordered in H1180 rendered
+ * and printed as wine red. A front type that carries a FACING has no sprayed
+ * colour at project level, full stop. The colour is not deleted from the stored
+ * type (switch back to Spray and it is still there); it simply does not paint a
+ * board that is faced with something else, which is the truth in the workshop.
+ */
 function projectFrontColour(d) {
   const first = Array.isArray(d?.fronts?.types) ? d.fronts.types[0] : null;
+  if (first?.finish_id) return null;
   return normaliseColour(first?.colour) || normaliseColour(d?.colour?.front);
 }
 
@@ -256,7 +278,12 @@ export function withFrontColour(design, colour, typeId = null) {
     }];
   const index = typeId ? types.findIndex((t) => t.id === typeId) : 0;
   const at = index === -1 ? 0 : index;
-  const next = types.map((t, i) => (i === at ? { ...t, colour: c } : t));
+  // Turn 15 (F3): choosing a COLOUR for a front un-faces it. A board cannot be
+  // sprayed wine red and faced in oak at the same time, and this is the one
+  // setter a colour can arrive through — so it is the one place that has to say
+  // so. (Clearing the colour leaves any facing alone: "no colour" is not a
+  // decision that the board is now veneered.)
+  const next = types.map((t, i) => (i === at ? { ...t, colour: c, finish_id: c ? null : t.finish_id } : t));
   return {
     ...d,
     fronts: { ...d.fronts, types: next },
@@ -619,7 +646,14 @@ export function unitFinishOverride(unit) {
  */
 export function finishById(profile, id) {
   if (!id) return null;
-  return decorFinish(id) || profile?.appearance?.finishes?.find((f) => f.id === id) || null;
+  // Turn 15 (CLAUDE.md F3.2): a VENEER is its own collection with its own ids,
+  // asked FIRST — it borrows an EGGER decor's picture today, so a resolver that
+  // asked the decor registry first would answer with the decor's own label and
+  // the veneer's name would never reach a cut list.
+  return veneerFinish(id)
+    || decorFinish(id)
+    || profile?.appearance?.finishes?.find((f) => f.id === id)
+    || null;
 }
 
 /**
@@ -662,11 +696,32 @@ export function resolveFinishes(unit, design, profile) {
 
   const front = sprayFinish(resolved.colour)
     || finishById(profile, resolved.doorStyle?.finish_id)
+    // ─── Turn 15 (CLAUDE.md F3.1/F3.2) ───
+    // Front type 1's own FACING: the decor a laminate front is faced with, or
+    // the veneer a veneer front is. It sits after the sprayed colour and the
+    // door style — a colour chosen for ONE cabinet still covers the board, and
+    // a style still beats the project default — and ahead of `finish.front`,
+    // which is the old project-wide field the front types have replaced.
+    || finishById(profile, frontFacingFinishId(d))
     || finishById(profile, d.finish.front)
     || finishById(profile, A.defaultFrontFinish)
     || carcass;
 
   return { carcass, front };
+}
+
+/**
+ * The FACING stored on the project's front type 1 — the decor a laminate front
+ * wears or the veneer a veneer front is (turn 15, CLAUDE.md F3).
+ *
+ * Front type 1 and nobody else, because front type 1 IS the project's front
+ * (`withFrontColour` above says so for the colour and this is its other half).
+ * Type 2 is a second material assigned per piece, and it has never been the
+ * default.
+ */
+export function frontFacingFinishId(design) {
+  const d = migrateDesign(design);
+  return d.fronts.types[0]?.finish_id || null;
 }
 
 /**

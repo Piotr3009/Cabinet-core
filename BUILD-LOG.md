@@ -5020,3 +5020,299 @@ osiem plików testów `test/turn14-*.test.js` · `verify/t14/`
 `autoParts.mask.enabled` / `thickness` / `depthExtra` (F5) ·
 `appearance.studio.points[].yMm` + para na wysokości oczu (F9).
 USUNIĘTE: `appearance.selection.hoverOpacity` (F1.4 — nieobecność jest ustawieniem).
+
+---
+
+# TURA 15 — POLEROWANIE I STRUKTURA (09.08.2026)
+
+Baza: `main` po scaleniu tury 14 **plus** paczka z czatu (czerwony Save/fold w
+`SettingsPanel`, Generic boards, źródła spray/veneer/laminate/wood, 7 kształtów
+frontów, `ResizeObserver` w Modalu). Testy na starcie: **1252**.
+
+## F0 — Baza — ✅ ZIELONA
+
+Pełny reinstall (`rm -rf node_modules && npm install`, 247 pakietów) → **1252 /
+1252** testów → czysty build. Paczka z czatu potwierdzona na `main`:
+`SettingsPanel.jsx` ma czerwony Save i zwijanie, `materialAssignmentStore.js` ma
+trzy Generic boards, `design.js` ma siedmioelementowe `FRONT_STYLE_OPTIONS`.
+Nic nie było odtwarzane na ślepo, `BLOCKERS` bez wpisu.
+
+## F1 — Małe werdykty UI — ✅ ZIELONA
+
+**F1.1 — Save robi się ZIELONY.** Czerwony przycisk, który po naciśnięciu
+zostaje czerwony, nic nie odpowiada. Naciśnięty — jest ZIELONY z ptaszkiem, a
+sekcja się zwija; naciśnięty ponownie otwiera sekcję i wraca do czerwieni, bo
+znów jest co zapisać. ZWINIĘTE i ZAPISANE to tu ten sam fakt (przycisk zwija
+sekcję), więc niesie je jedna flaga, a nie dwie, które mogą się nie zgadzać.
+Kolory z palety aplikacji — `.cc-btn-save` / `.cc-btn-saved` w `index.css` na
+`status-danger` / `status-ok` — a nie hex rozsypany po JSX.
+
+**F1.2 — GRUBOŚĆ w zwiniętym podsumowaniu.** Czerwona ramka właściciela z
+napisem „THICK": linia, która nazywa płytę, ale nie mówi, na jakiej grubości
+projekt jest NARYSOWANY, ukrywa jedyną liczbę, od której mierzy się każde
+cięcie. To grubość PROJEKTU, nie płyty — te dwie są tym samym, dopóki ktoś nie
+zostawi 18 i nie przypisze płyty 22, a to dokładnie moment, w którym linia musi
+powiedzieć, która wygrała.
+
+**F1.3 — ZŁOTE RAMY na sekcjach.** CARCASSES, FRONTS i blok Door style siedzą
+w delikatnej złotej ramie. „Delikatna" to ten sam włos, którym menu kontekstowe
+tury 14 rysuje przegródki (`border-gold/30`), i to JEDNA klasa (`.cc-frame`), a
+nie obramowanie wypisane w pięciu miejscach — bo to ostatnie jest sposobem, w
+jaki następna sekcja dostaje trochę inne złoto.
+
+**F1.4 — prawy panel: ZWINIĘTY domyślnie i oprawiony.** Trzy z pięciu sekcji
+otwierały się same, co na kolumnie 310 px znaczyło panel od razu za długi, żeby
+go przeczytać. Wszystko startuje zamknięte, każda sekcja w tej samej złotej
+ramie, a ta OTWARTA świeci jaśniej (`.cc-frame-active`) — bo to nad nią się
+pracuje. Pamiętane na SESJĘ: `uiStore` z założenia nigdy nie jest utrwalany.
+
+**F1.5 — biblioteka SCROLLUJE.** Zrzut właściciela: długa lista uciekająca za
+dolną krawędź ekranu, bez sposobu na dojście do ostatniego wpisu. `.cc-scroll` +
+`max-h-[60vh]`: limit jest ułamkiem OKNA, nie stałą liczbą pikseli, bo panel
+jest przeciągalny i stała wysokość byłaby zła w chwili upuszczenia go przy
+krawędzi.
+
+## F2 — Kontury WEWNĄTRZ szafki — ✅ ZIELONA
+
+Właściciel: „zewnętrzny kontur jest ostry, wewnętrzne krawędzie znikają". Znikają
+i to nie jest problem koloru. Linia krawędzi WEWNĄTRZ szafki leży dokładnie NA
+licu sąsiedniej formatki — przednia kant półki jest w płaszczyźnie boku, w który
+się wpasowuje — więc linia i lico są na tej samej głębokości, a wygrywa to, co
+rasteryzuje się później. Na zewnątrz nie ma za linią nic, dlatego sylwetka
+zawsze była ostra; to jest ślad.
+
+Podręcznikowa poprawka: `polygonOffset` na materiale WYPEŁNIENIA. Każde lico
+formatki cofa się o włos **w buforze głębokości**, więc linia przed nim wygrywa
+wszędzie. Nic się nie przesuwa w scenie — tylko to, w co wierzy test głębokości
+— więc żaden wymiar, żadne cięcie i żaden fixture nie są tknięte. Liczby są w
+`profile.appearance.outline.polygonOffset` (`factor: 1`, `units: 1`, klasyczna
+para startowa; większe zaczynają prześwitywać na sylwetce, a tego nie wolno
+kupić), czyta je `3d/materials.js panelFillOffset()`, a `migrateCabinetProfile`
+dosypuje je profilowi zapisanemu przed tą turą.
+
+## F3 — Źródła pokazują WŁAŚCIWY picker — ✅ ZIELONA
+
+Werdykt właściciela oznaczony „mega ważne": front LAMINAT oferował paletę RAL, a
+front FORNIR też. Żaden z nich nie jest farbą.
+
+**Który picker, to własność ŹRÓDŁA.** `profile.projectSettings.*Sources` dostaje
+pole `picker` (`decor` / `veneer` / `colour` / `null`), czyta je
+`pickerForSource()`, a komponent nie decyduje o niczym. Piąte źródło dopisane
+jutro nazwie swój picker tam, nie tutaj.
+
+**F3.1 — laminat trzyma DEKOR.** Front z laminatu przechowuje `finish_id`
+dekoru, renderuje się jako dekor i BOM nazywa go dekorem. Domknięty jest przy
+tym prawdziwy błąd: zostawiony kolor natrysku WYGRYWAŁ w `resolveFinishes`, więc
+front zamówiony w H1180 renderował się i drukował jako wine red. Front, który ma
+OKLEINĘ, nie ma na poziomie projektu koloru natrysku — kolor nie znika ze
+stanu (wróć na Spray i wciąż tam jest), po prostu nie maluje płyty pokrytej
+czymś innym.
+
+**F3.2 — fornir ma WŁASNĄ, rozszerzalną kolekcję.** `engine/veneers.js`, zasiane
+minimalnie (decyzja właściciela (a)): cztery najbardziej drewniane z 85 dekorów.
+Wpis to `{ id, label, species, decorId }`, gdzie `decorId` jest ODWOŁANIEM, a nie
+wklejonym obrazkiem — kiedy przyjdzie własny skan właściciela, wpis dostaje swój
+`tex`, odwołanie znika, a każdy projekt, który kiedykolwiek wybrał „Natural oak",
+zachowuje swój wybór, bo id, które zapisał, nigdy nie było id dekoru EGGER-a.
+Dodanie fornira to WPIS DANYCH (`setVeneerCatalogue`), nigdy zmiana kodu — test
+to robi. Grubość NIE jest w tym pliku: 19 wynika ze ŹRÓDŁA, jak 18 z EGGER-a.
+Licencja EGGER-a podróżuje z pożyczonym obrazkiem: etykieta fornira niesie
+atrybucję, dopóki obrazek jest ich.
+
+**F3.3 — korpusy dostają źródło Veneer**, trzeci przycisk obok `EGGER decor |
+Sprayed`, wpięty w tę samą kolekcję, 19 mm przypięte tak, jak płyty przypinają
+grubość. Bramka partii F obowiązuje: zmiana ŹRÓDŁA korpusu przechodzi teraz
+przez tę samą twardą bramkę co przypisanie płyty (`gateOrApply`) — przedtem
+jedyna kontrolka, która MOŻE po cichu przekroić kuchnię, była tą, która nie
+pytała. Spray bez zmian.
+
+## F4 — Style frontów: GALERIA zbudowana na skalę — ✅ ZIELONA
+
+„Będzie WIELE stylów kuchennych/frontów — nigdy goła lista rozwijana." Lista
+rozwijana siedmiu skrótów to lista, którą trzeba już znać; galeria rysunków to
+lista, którą da się przeczytać.
+
+Kafel na kształt, z małym RYSUNKIEM SVG frontu i nazwą; klik = wybór. Na skalę od
+pierwszego dnia (F4.2): siatka + scroll, pole filtra po nazwie, a style i rysunki
+to DANE — `engine/design.js FRONT_STYLE_OPTIONS` na id, `engine/frontStyleArt.js`
+na obrysy. Trzydziesty styl kosztuje dwa wpisy danych i zero pracy w komponencie;
+test tego pilnuje, a styl bez rysunku dostaje płytę, nie pustą płytkę. Rysunki są
+zasiewem „małych instrukcji" właściciela: jedna ramka, trzy prymitywy, jeden
+renderer. „+ New style" stoi obok galerii.
+
+## F5 — Biblioteka: wysuwki i katalog właściciela — ✅ ZIELONA
+
+**F5.1 — podlisty WYSUWAJĄ się w BOK.** Zrzut właściciela: otwarcie grupy
+szuflad zepchnęło resztę biblioteki za dolną krawędź ekranu. Rozwijanie w dół
+wewnątrz pływającego panelu właśnie to robi — panel to 248 px okna, którego nie
+jest właścicielem. Wysuwka nie. Otwiera się OBOK wiersza, który ją posiada, a
+KTÓRA to strona nie jest decydowane tutaj: `placeBesideAnchor` próbuje prawo,
+lewo, dół, górę i bierze pierwszą, która się mieści — więc biblioteka
+przeciągnięta do prawej krawędzi wysuwa się w LEWO, a komponent nie wie, że to
+zrobił. To ta sama wspólna logika rozmieszczenia, którą reguła 15 nałożyła na
+każdy modal.
+
+**F5.2 — katalog przebudowany do listy właściciela.** Cztery grupy — Base units,
+Tall units, Wall units i nowa grupa Extras — i wszystko DANYMI w
+`engine/library.js`. Wszystko, co działało, nadal jest wpięte w swój kit (Base,
+Sink, Drawer 2×/3×/4×, Tall, Fridge, Wall, Low cabinet); osiemnaście nowych
+nazw jest OBECNYCH i wyłączonych, każda z uczciwym jednozdaniowym powodem —
+wzorzec-najpierw, ta sama formuła, którą DW i Corner noszą od tury 12. Wiersz
+grupy mówi „6/15", zanim się ją otworzy: długa lista w większości zaparkowana
+musi być co do tego szczera, zanim ktoś w nią kliknie.
+
+## F6 — Narożnik infilla to MITRA (#51 aktywowane) — ✅ ZIELONA
+
+Właściciel: „boczny infill nadal spotyka górny KWADRATOWO". Tam, gdzie pionowy
+wypełniacz idzie ponad szafki, a poziomy nad nimi zatrzymuje się o niego, obie
+części są nogami RAMY stojącej w JEDNEJ płaszczyźnie — tej samej co drzwi i
+panele maskujące. Narożnik ramy się mitruje. To ta sama matematyka, którą
+narożniki górnego infilla mają od tury 8 („mitra w geometrii NA PASKACH"),
+rozciągnięta na człon pionowy, nie sforkowana: `infillMitre()` przyjmuje teraz
+`meta.side === 'left' | 'right'` i tnie jedną płaszczyzną `chamferPlane`.
+
+**Rozmiar mitry to `faceH`** — cięcie 45° ma dwie równe nogi, jedna biegnie w
+dół wewnętrznej krawędzi wypełniacza, druga wzdłuż dolnej krawędzi paska.
+Dlatego mitra POTRZEBUJE MIEJSCA: biegnie `faceH` w POPRZEK wypełniacza, więc
+wypełniacz węższy niż pasek jest wysoki nie ma czego dać i zostaje na styk. To
+prawdziwe ograniczenie warsztatowe, nie skrót — 30 mm listwa przyścienna pod
+250 mm szczeliną nie dostaje mitry, tylko bardzo płaski kąt. Trzeci warunek:
+obie muszą kończyć się RÓWNO, bo wypełniacz wystający 200 mm ponad 40 mm pasek
+to litera T, a nie narożnik.
+
+**Delta CNC tury.** OBRYS bocznego infilla zyskuje swój narożnik 45°, a jego
+ROZMIAR się nie zmienia — zewnętrzna krawędź biegnie na pełną wysokość, cofnięta
+jest tylko wewnętrzna, i to właśnie JEST mitra. Górny pasek biegnie do swojego
+DŁUGIEGO PUNKTU nad narożnikiem. Oba cięcia leżą na JEDNEJ płaszczyźnie —
+`test/turn15-infill-mitre.test.js` sprawdza to wierzchołek po wierzchołku, bo
+inaczej to nie złącze, tylko dwie części kończące się blisko siebie. Ramię A
+nadal jest PRZYKRĘCONE i nadal odmawia cięcia, dokładnie jak mówi #51.
+
+## F7 — Panel do sufitu jest ŚCIANĄ dla szafek wiszących — ✅ ZIELONA
+
+Błąd właściciela z prawdziwej roboty: wyciągnij panel boczny szafki dolnej lub
+słupka do sufitu, a wiszące przejeżdżają przez niego — i łańcuchy wymiarowe też
+go nie widzą.
+
+To błąd F7 z tury 12 o poziom niżej. Tamten brzmiał „szafka wisząca ignoruje
+SŁUPEK" i poprawką było przestać pytać o poziom montażu, a zacząć o WYSOKOŚCI.
+To jest to samo pytanie zadane o coś, co nie jest szafką: pasmo szafki dolnej
+kończy się na 900 i słusznie wisząca może być nad nią — ale panel przykręcony do
+jej boku został wyciągnięty na 2400, a 2400 leży w środku pasma, w którym wiszą.
+
+Więc panel wchodzi do zbioru przeszkód SAM, na SWOIM odcinku ściany i nigdzie
+indziej. Nie szafka, do której należy: 18 mm panelu blokuje 18 mm, a blokowanie
+618 zatrzymałoby wiszącą, która ma czyste 600 do zawieszenia. Czyste funkcje
+silnika: `unitVerticals()` i `verticalsInBand()` w `engine/runs.js` (z których
+`ceilingVerticals` tury 14 jest teraz filtrem), obie czytane przez `projectStore`
+przy każdym klampowaniu i przez `3d/Scene.jsx` przy wymiarach — jedna odpowiedź,
+więc obraz i reguła nie mogą się nie zgadzać.
+
+**PRZYPIĘTE 10 mm.** Właściciel prosił o potwierdzenie: test węzłowy stwierdza,
+że każda jednostka stoi 10 mm od ściany (`room.wallBackClearance`, a to nie jest
+decyzja per szafka — decyzją jest `inset_back_mm`, i dodają się), oraz że panel
+maskujący jest automatycznie 10 mm głębszy od swojej szafki i dlatego ZACZYNA
+się przy ścianie. Zwyczaj tury 7 stał się testem.
+
+## F8 — Multi-select: Remove doors — ✅ ZIELONA
+
+Obok „Add doors" — dosłownie obok, w jednym rzędzie, bo to jedna decyzja z
+dwiema odpowiedziami. `removeDoors` jest lustrem `addDoors` i oddaje tę samą
+kształtem odpowiedź; `removeDoorsBulk` idzie przez `runBatch`, więc całość to
+JEDNO cofnięcie — reguła F5 tury 13, a nie druga jej implementacja. Przycisk
+mówi, ile ich zdejmie, i gaśnie, kiedy nie ma czego zdejmować.
+
+## F9 — CNC: dwa widoki i przełącznik — ✅ ZIELONA
+
+Eksport i dzisiejsze grupowanie są bajt w bajt nietknięte; to są WIDOKI.
+`engine/cnc/views.js` nie jest importowany przez `dxf.js`, `layout.js` ani
+`lib/cncExport.js` — czyta go ekran.
+
+**Po MATERIALE**: arkusz dzieli się lewo→prawo na sekcję na przypisany materiał
+(`MDF-18 · MDF 18 mm`, `W980 SM · MFC White…`), tożsamość po MATERIALE, nigdy po
+kolorze — dwoje drzwi z tej samej płyty to jedna sekcja niezależnie od tego, na
+co je natryśnięto, bo to jedna płyta na stole maszyny. Nagłówki nazywają
+materiał tak, jak nazywa go BOM. Ta sama płyta cięta w dwóch grubościach to dwie
+sekcje, bo to dwie płyty. Rola bez przypisania jest co do tego szczera zamiast
+wymyślać nazwę.
+
+**Po SZAFCE**: kwadrat na szafkę ze WSZYSTKIMI jej częściami — i osobna grupa na
+części RUNU (infille, plinty, panele maskujące), „infille i plinthy osobno".
+
+Widoczny PRZEŁĄCZNIK w pasku CNC; reguła tury 11 stoi — Biblioteka i prawy panel
+zostają otwarte, drzewko checkboxów działa w obu widokach, bo oba dają tę samą
+strukturę i renderuje je jeden kod. ŻADNEGO NESTINGU: symulacja jest świadomie
+odroczona przez właściciela i nie została ani naszkicowana, ani przygotowana.
+
+## F10 — Przejście w przeglądarce + dokumentacja + BRAMKA — ✅ ZIELONA (22/22)
+
+`scripts/e2e-turn15.mjs` w prawdziwym Chromium: **22 sprawdzenia, wszystkie
+zielone**, 15 zrzutów i `measurements.json` w `verify/t15/`. Mierzy, nie ufa —
+kolor przycisku czytany z `getComputedStyle`, kolor złota ramy sprawdzany jako
+`rgba(170,142,104,…)`, prostokąt wysuwki porównywany z prostokątem wiersza,
+`polygonOffset` czytany z żywych materiałów sceny, obrys mitry czytany z
+silnika, a nie z pikseli.
+
+### Co pokazuje przejście
+
+| # | zrzut | co dowodzi |
+|---|---|---|
+| 1 | `1a-save-green-and-thickness.png` | Save zielony z ptaszkiem, zwinięta linia z `· 18 mm` |
+| 2 | `2a-gold-frames-on-settings.png` | złote ramy na CARCASSES, FRONTS i Door style |
+| 3 | `3a-right-panel-framed-and-closed.png` | prawy panel oprawiony i zwinięty, aktywna sekcja świeci |
+| 4 | `4a-outlines-inside-a-carcass.png` | wewnętrzne kontury WIDOCZNE w otwartej szafce |
+| 5 | `5a-laminate-shows-decor-picker.png` | front laminat → picker dekorów |
+| 6 | `6a-veneer-front-and-list.png`, `6b-carcass-veneer-source.png` | fornir wybrany z listy fornirów; korpus ze źródłem Veneer |
+| 7 | `7a-style-gallery.png`, `7b-style-gallery-filtered.png` | galeria z kaflami SVG i pole filtra, które ją zawęża |
+| 8 | `8a-library-flyout-to-the-side.png` | podlista wysunięta w BOK |
+| 9 | `9a-catalogue-groups-and-soon.png` | cztery grupy i wpisy „soon" z powodami |
+| 10 | `10a-infill-corner-mitre-solid.png`, `10b-infill-corner-mitre-drawing.png` | narożnik 45° w Solid i w rysunku części |
+| 11 | `11a-wall-unit-stops-at-panel.png` | wisząca zatrzymana na panelu do sufitu |
+| 12 | `12a-remove-doors-before.png`, `12b-remove-doors-after.png` | trzy szafki bez drzwi jednym kliknięciem |
+| 13 | `13a-cnc-by-material.png`, `13b-cnc-by-cabinet.png` | oba widoki CNC i przełącznik |
+
+## Dokumentacja
+
+`BUILD-LOG` — ten wpis, faza po fazie. `BACKLOG` — **#51 zamknięte**; nesting
+dopisany jako **odroczony decyzją właściciela** (#78); osiemnaście nowych
+wzorców katalogu w kolejce (#79–#81), fornir, wood i warunek mitry jako wpisy
+(#82–#84). `BLOCKERS` — nic nie zostało cofnięte, więc nic nie dopisano.
+`verify/t15/cnc-export-identity.md` — raport tożsamości CNC z obiema stronami
+odcisków i pełnym diffem.
+
+## BRAMKA — ✅ ZIELONA
+
+| brama | wynik |
+|---|---|
+| pełny reinstall (`rm -rf node_modules && npm install`) | czysty |
+| testy | **1281 / 1281** (baza tury: 1252) |
+| build | czysty |
+| istniejące fixtures | `git diff fixtures/` **pusty** — 12 plików, żadnego dodania |
+| zależności | nietknięte (`git diff package.json package-lock.json` pusty) |
+| czystość silnika | grep po React / zustand / three / stores w `src/engine/` — tylko komentarz |
+| tożsamość CNC | 1850 odcisków identycznych; JEDNA nazwana delta (mitra), opublikowana |
+| `verify/t15/` | 15 zrzutów, `measurements.json`, raport CNC, oba pliki odcisków + diff |
+| przejście w przeglądarce | **22 / 22** |
+| PR | otwarty, **nie scalony** |
+
+**Delta CNC — jedna, nazwana.** 80 zmienionych linii i wszystkie na przypadkach
+`+infill-mitre`: `01-INFILL-L-FACE.dxf` (obrys bocznego infilla — delta nazwana
+w CLAUDE.md), `01-INFILL-T-FACE.dxf` (pasek, w który się wcina) i dwa arkusze,
+które je zawierają. Przypadki `+infills` i `+infill-mitre-narrow` są po obu
+stronach identyczne, co jest drugą połową dowodu: wypełniacz bez paska nad nim i
+wypełniacz za wąski na 45° są cięte dokładnie tak, jak cięła je tura 14.
+
+## Nowe pliki
+
+`src/engine/veneers.js` · `src/engine/frontStyleArt.js` ·
+`src/engine/cnc/views.js` · `src/components/VeneerPicker.jsx` ·
+`src/components/FrontStyleGallery.jsx` · `scripts/e2e-turn15.mjs` ·
+`test/turn15-infill-mitre.test.js` · `test/turn15-panel-is-a-wall.test.js` ·
+`test/turn15-sources-and-views.test.js` · `verify/t15/`
+
+## Nowe liczby w `profile.js`
+
+`appearance.outline.polygonOffset.factor` / `.units` (F2 — jedyne nowe LICZBY
+tury) · `projectSettings.carcassSources[veneer]` z `thickness: 19` (F3.3) ·
+pole `picker` na każdym źródle korpusu i frontu (F3 — to DANE, nie liczba, ale
+mieszka tam, gdzie źródła).

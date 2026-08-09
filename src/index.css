@@ -45,6 +45,44 @@
   .cc-tag {
     @apply text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-shell-700 text-ink-400 border border-shell-600;
   }
+
+  /* ─── The gold frame (turn 15, CLAUDE.md F1.3 / F1.4) ─────────────────────
+     The owner's verdict on the settings surface: "CARCASSES and FRONTS melt
+     into one — I cannot see where a section ends". A section is a THING now,
+     and it sits in a delicate gold-bordered frame.
+
+     "Delicate" is the same hairline the turn-14 context menu draws its group
+     dividers with (`border-gold/30`), and it is ONE class rather than a border
+     written out at each of the five places that need it — which is what stops
+     the next section from being framed in a slightly different gold. */
+  .cc-frame {
+    @apply border border-gold/30 rounded-lg p-2.5;
+  }
+  /* …and the ACTIVE one lights up. In the right panel a whole column of frames
+     would be a column of identical boxes; the section that is OPEN is the one
+     being worked on, so it is the one that is brighter. */
+  .cc-frame-active {
+    @apply border-gold/70;
+  }
+
+  /* ─── The section SAVE (turn 15, CLAUDE.md F1.1) ──────────────────────────
+     RED while there is something to save, GREEN with a tick once it has been.
+     Both colours come from the app's own status palette (tailwind.config.js) —
+     a "saved" green invented in JSX is a green that drifts from every other
+     confirmation in the app. */
+  .cc-btn-save {
+    @apply px-3 py-1.5 rounded text-sm border border-status-danger text-status-danger
+           bg-transparent hover:bg-status-danger/10 transition-colors;
+  }
+  .cc-btn-saved {
+    @apply px-3 py-1.5 rounded text-sm border border-status-ok text-status-ok
+           bg-transparent hover:bg-status-ok/10 transition-colors;
+  }
+
+  /* Any list taller than the panel it lives in scrolls. ALWAYS (turn 15,
+     CLAUDE.md F1.5) — the owner's long library ran off the bottom of the
+     screen with no way to reach the last entry. */
+  .cc-scroll { @apply overflow-y-auto overscroll-contain; }
 }
 
 /* Thin dark scrollbars — this is a workshop tool, not a showcase */

@@ -374,10 +374,10 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     naprawdę chce 22 mm boków w 18 mm korpusie, potrzebuje złącza liczonego per
     para paneli — to zmiana w `engine/puzzle.js`, nie w panelu. Pełny opis:
     BLOCKERS #58.
-62. [LOW] **Wiercenie do pionowej przegrody.** `VPART-n` jest cięty, wchodzi do
-    BOM-u i na arkusz CNC, ale nie ma jeszcze własnych otworów — ani kołków w
-    bokach, ani konfirmatów. Do ustalenia z warsztatem, CZYM się ją mocuje;
-    dopiero potem geometria. BLOCKERS #59.
+62. [ZAMKNIĘTE 09.08 — tura 13] **Wiercenie do pionowej przegrody.** Właściciel
+    podał wzorzec biskwitowy: wkręt ⌀3 / 10 / znacznik 70 / 10 / wkręt ⌀3, od
+    50 mm od krawędzi, dwa zestawy do 700 mm i trzy powyżej, bez wkrętów tam,
+    gdzie lico jest widoczne. SPEC 6.1, `engine/biscuits.js`, BLOCKERS #59.
 63. [LOW] **`window.__cc` w produkcyjnym bundlu.** Trzy store'y wystawione na
     `window` dla skryptu akceptacyjnego (`scripts/e2e-turn11.mjs`), żeby bieg
     MIERZYŁ, a nie tylko fotografował. Nie ma za tym nic, do czego devtools i
@@ -431,3 +431,50 @@ od Piotra.
     F4 prosiła o podgląd z explode i obrotem kawałka. Oba tryby są w widoku
     pokoju i oba przechodzą przez ten sam `MovingPanel`, więc gdyby były
     potrzebne, to dwa propy.
+
+## TURA 13 — CO ZROBIONE, CO ZAMKNIĘTE (09.08)
+
+**Zrobione w turze 13** (szczegóły w BUILD-LOG): znikające lica wieńców i słoje,
+które obróciły się o 90° (F1) · okno edycji na cały ekran, z panoramowaniem i
+„Edit element" (F2) · hierarchia koloru projekt → szafka → element (F3) · panel
+boczny szafki wiszącej kończy się z korpusem (F4) · Ctrl+klik, akcje zbiorcze i
+jedno cofnięcie na całą operację (F5) · „Add doors" na złotym plusie (F6) ·
+zawiasy widoczne w Solid domyślnie (F7) · **wzorzec biskwitowy mocowania
+przegrody (F8)** · dokumentacja (F9) · przejście w przeglądarce 24/24 (F10).
+
+**BLOCKERS #59 ZAMKNIĘTE.** Właściciel podał wzorzec 09.08; jest w SPEC 6.1,
+w `engine/biscuits.js`, w `fixtures/golden-partition-biscuits.json` i w eksporcie.
+Pozycja 62 poniżej (wiercenie przegrody) jest tym samym i schodzi z listy.
+
+**BLOCKERS #64 ZAMKNIĘTE.** Właściciel potwierdził 09.08: kitowe 4:3:2 zostaje
+takie, jakie tnie kit. To granica systemu, zapisana w SPEC 6, nie dług.
+
+**Nadal „wzorzec najpierw"** — #61 (szuflada nad drzwiami), #62 (DW), #63
+(narożnik / L). Czekają dokładnie tak, jak #59 czekało do 09.08: silnik nie
+zgaduje wzorca warsztatu, a kiedy wzorzec przychodzi, kosztuje jedną turę.
+
+**Dopisane z tury 13 (nie blokujące):**
+
+68. [MED] **Rozszerzenie panelu/drzwi PONIŻEJ szafki wiszącej.** Panel boczny
+    WUD kończy się teraz z korpusem (F4, werdykt właściciela). Jedyny przyszły
+    wyjątek to rozszerzenie w dół — slot danych jest zostawiony otwarty
+    (`endPanel.height: 'extended'` już działa i opuszcza panel), brakuje tylko
+    UI i decyzji, co dokładnie schodzi w dół: sam panel, czy panel i drzwi.
+    Powiązane z parkowanym #45.
+69. [LOW] **Znacznik biskwitu na przegrodzie jest TRASOWANIEM, nie gniazdem.**
+    Stół 3-osiowy nie sięga kanta, więc druga połowa złącza dostaje linię na
+    płaszczyźnie, odsuniętą o `biscuits.markFromEnd` (20 mm). Jeśli warsztat
+    woli inne odsunięcie albo wolałby, żeby to była kieszeń — to jedna liczba
+    w profilu i jedna decyzja właściciela.
+70. [LOW] **Trzy zestawy biskwitowe nie występują na przegrodzie w praktyce.**
+    Reguła „>700 mm → trzy" jest zaimplementowana i przetestowana, ale linia
+    złącza przegrody biegnie po jej GŁĘBOKOŚCI, a ta rzadko przekracza 700.
+    Wzorzec jest ogólny i czeka na pierwsze złącze, które jest szersze.
+71. [LOW] **`scripts/e2e-turn12.mjs` nie zna zmian tury 13.** To samo, co
+    pozycja 66 mówi o skrypcie tury 11: nie jest zepsuty, po prostu chodzi po
+    swojej turze. `e2e-turn13.mjs` jest następcą.
+72. [LOW] **`window.__cc.views` w produkcyjnym bundlu.** Rozszerzenie pozycji
+    63: scena i kamera obu widoków 3D są wystawione dla skryptu akceptacyjnego
+    (`src/3d/viewHandle.js`), bo F1 jest twierdzeniem o GEOMETRII, a F2.2 o
+    KAMERZE — żadnego z nich nie da się przeczytać z DOM-u. Ta sama uwaga co
+    przy store'ach: gdy przyjdzie prawdziwe logowanie, schować za flagą builda.

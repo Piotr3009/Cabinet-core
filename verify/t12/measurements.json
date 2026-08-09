@@ -1,0 +1,305 @@
+{
+  "at": "2026-08-09T02:02:46.464Z",
+  "steps": [
+    {
+      "label": "F1 the top bar opens THE settings surface",
+      "ok": true,
+      "detail": "{\"open\":true,\"roomSetup\":true,\"title\":\"Settings\"}"
+    },
+    {
+      "label": "F1.2 Room setup is reachable from it again",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F1.3 a colour set on the surface lands in the field the scene reads",
+      "ok": true,
+      "detail": "{\"front\":\"#1b2a4a\",\"type1\":\"#1b2a4a\"}"
+    },
+    {
+      "label": "F1.3 …and so does one set through the front-TYPE picker",
+      "ok": true,
+      "detail": "{\"front\":\"#5e2129\",\"type1\":\"#5e2129\"}"
+    },
+    {
+      "label": "F3.1 the Kitchen list is in the owner’s order",
+      "ok": true,
+      "detail": "[\"door-base\",\"drawer-unit\",\"tall\",\"fridge\",\"dishwasher\",\"corner\",\"l-shape\",\"wall\",\"sink\",\"low\"]"
+    },
+    {
+      "label": "F3.6 Corner and L-shape are present and disabled-soon",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F3.5 DW is held open too",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F3.2 the drawer unit expands to four splits, 1× held open",
+      "ok": true,
+      "detail": "[{\"id\":\"drawer-1\",\"disabled\":true},{\"id\":\"drawer-2\",\"disabled\":false},{\"id\":\"drawer-3\",\"disabled\":false},{\"id\":\"drawer-4\",\"disabled\":false}]"
+    },
+    {
+      "label": "F3.2 a 2× drawer unit is placed, and it has two fronts",
+      "ok": true,
+      "detail": "{\"type\":\"BUDR2\",\"fronts\":2,\"heights\":[382,382]}"
+    },
+    {
+      "label": "rule 15b a modal opens BESIDE its object, never covering it",
+      "ok": true,
+      "detail": "{\"open\":true,\"side\":\"right\",\"box\":{\"left\":994,\"top\":34,\"right\":1554,\"bottom\":521},\"coversAnchor\":false,\"onScreen\":true}"
+    },
+    {
+      "label": "rule 15 …and fully on screen",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "rule 15a it is dragged by its header…",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "rule 15a …and clamped to the viewport",
+      "ok": true,
+      "detail": "{\"left\":1040,\"top\":513,\"right\":1600,\"bottom\":1000,\"onScreen\":true}"
+    },
+    {
+      "label": "F4.1 the cabinet has its own canvas and an Explode button",
+      "ok": true,
+      "detail": "{\"exploding\":{\"found\":true,\"label\":\"Explode\"},\"exploded\":{\"label\":\"Assemble\",\"canvas\":true}}"
+    },
+    {
+      "label": "F4.1 …which becomes Assemble once it is apart",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F4.2 a part can be selected, and its EXISTING properties appear",
+      "ok": true,
+      "detail": "DR01 · Drawer unit — 2 drawers — edit cabinet×Left side×Left sideBUL540 × 770 · 18 mmCarca"
+    },
+    {
+      "label": "F5.2 Centre spaces the partitions into equal bays",
+      "ok": true,
+      "detail": "{\"id\":\"u_gdokw8s\",\"before\":[203,203,423],\"after\":[276,276,276],\"equal\":true}"
+    },
+    {
+      "label": "F5.3 a partition terminates on a FIXED shelf",
+      "ok": true,
+      "detail": "{\"terminatesOn\":\"shelf_r3vpaar\",\"depthBefore\":520,\"depthAfter\":390,\"followed\":true}"
+    },
+    {
+      "label": "F5.3 …and its depth FOLLOWS when the shelf is set back",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F5.2 a partition can be deleted",
+      "ok": true,
+      "detail": "{\"before\":3,\"after\":2}"
+    },
+    {
+      "label": "F7 a wall unit driven at a tall unit STOPS flush against it",
+      "ok": true,
+      "detail": "{\"wallRight\":2500,\"tallLeft\":2500,\"wallId\":\"u_8q797ns\"}"
+    },
+    {
+      "label": "F8 three units share ONE plinth",
+      "ok": true,
+      "detail": "[1800]"
+    },
+    {
+      "label": "F8 a fourth unit docks and the plinth EXTENDS",
+      "ok": true,
+      "detail": "[2400]"
+    },
+    {
+      "label": "F9 Ctrl+Z after a delete brings the cabinet back",
+      "ok": true,
+      "detail": "{\"before\":4,\"afterDelete\":3,\"afterUndo\":{\"units\":4,\"selected\":true,\"canRedo\":1}}"
+    },
+    {
+      "label": "F9 …and it comes back SELECTED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F6.1 hinges are ON in Solid, and the boss is a real dimension",
+      "ok": true,
+      "detail": "{\"showHinges\":true,\"xray\":false,\"rows\":6,\"boss\":16}"
+    },
+    {
+      "label": "F6.2 the side panel carries tabs in its own outline",
+      "ok": true,
+      "detail": "{\"tabPoints\":18,\"panels\":6}"
+    },
+    {
+      "label": "F10 the TALL/FRIDGE back panel is laid down at its CUT size, not its drawn size",
+      "ok": true,
+      "detail": "{\"w\":600,\"h\":346,\"rotated\":true,\"drawnW\":346,\"drawnH\":600,\"boxW\":600,\"boxH\":346}"
+    },
+    {
+      "label": "no console errors in the whole walk",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "measurements": {
+    "settings": {
+      "open": true,
+      "roomSetup": true,
+      "title": "Settings",
+      "front": "#1b2a4a",
+      "type1": "#1b2a4a"
+    },
+    "settingsViaTypes": {
+      "front": "#5e2129",
+      "type1": "#5e2129"
+    },
+    "library": {
+      "ids": [
+        "door-base",
+        "drawer-unit",
+        "tall",
+        "fridge",
+        "dishwasher",
+        "corner",
+        "l-shape",
+        "wall",
+        "sink",
+        "low"
+      ],
+      "variants": [
+        {
+          "id": "drawer-1",
+          "disabled": true
+        },
+        {
+          "id": "drawer-2",
+          "disabled": false
+        },
+        {
+          "id": "drawer-3",
+          "disabled": false
+        },
+        {
+          "id": "drawer-4",
+          "disabled": false
+        }
+      ],
+      "placed": {
+        "type": "BUDR2",
+        "fronts": 2,
+        "heights": [
+          382,
+          382
+        ]
+      }
+    },
+    "modal": {
+      "placement": {
+        "open": true,
+        "side": "right",
+        "box": {
+          "left": 994,
+          "top": 34,
+          "right": 1554,
+          "bottom": 521
+        },
+        "coversAnchor": false,
+        "onScreen": true
+      },
+      "afterDrag": {
+        "left": 1040,
+        "top": 513,
+        "right": 1600,
+        "bottom": 1000,
+        "onScreen": true
+      }
+    },
+    "cabinetEditor": {
+      "exploding": {
+        "found": true,
+        "label": "Explode"
+      },
+      "exploded": {
+        "label": "Assemble",
+        "canvas": true
+      },
+      "partPicked": {
+        "picked": true,
+        "text": "DR01 · Drawer unit — 2 drawers — edit cabinet×Left side×Left sideBUL540 × 770 · 18 mmCarca"
+      }
+    },
+    "partition": {
+      "id": "u_gdokw8s",
+      "before": [
+        203,
+        203,
+        423
+      ],
+      "after": [
+        276,
+        276,
+        276
+      ],
+      "equal": true,
+      "coupled": {
+        "terminatesOn": "shelf_r3vpaar",
+        "depthBefore": 520,
+        "depthAfter": 390,
+        "followed": true
+      },
+      "deleted": {
+        "before": 3,
+        "after": 2
+      }
+    },
+    "wallVsTall": {
+      "wallRight": 2500,
+      "tallLeft": 2500,
+      "wallId": "u_8q797ns"
+    },
+    "plinth": {
+      "three": [
+        1800
+      ],
+      "four": [
+        2400
+      ]
+    },
+    "undo": {
+      "before": 4,
+      "afterDelete": 3,
+      "afterUndo": {
+        "units": 4,
+        "selected": true,
+        "canRedo": 1
+      }
+    },
+    "hardware": {
+      "hinges": {
+        "showHinges": true,
+        "xray": false,
+        "rows": 6,
+        "boss": 16
+      },
+      "joint": {
+        "tabPoints": 18,
+        "panels": 6
+      },
+      "backGrain": {
+        "w": 600,
+        "h": 346,
+        "rotated": true,
+        "drawnW": 346,
+        "drawnH": 600,
+        "boxW": 600,
+        "boxH": 346
+      }
+    }
+  }
+}

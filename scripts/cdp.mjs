@@ -231,13 +231,69 @@ function makePage({ socket, send, consoleLines, errors }) {
       await sleep(120);
     },
 
+    /**
+     * A right click at a point — how this app opens a unit's context menu, and
+     * therefore how turn 12's cabinet editor is reached.
+     */
+    async rightclick(x, y) {
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+      await send('Input.dispatchMouseEvent', {
+        type: 'mousePressed', x, y, button: 'right', clickCount: 1, buttons: 2,
+      });
+      await send('Input.dispatchMouseEvent', {
+        type: 'mouseReleased', x, y, button: 'right', clickCount: 1, buttons: 0,
+      });
+      await sleep(120);
+    },
+
+    /**
+     * A KEY, with modifiers — added turn 12 for Ctrl+Z (CLAUDE.md F9/F11.8).
+     *
+     * `rawKeyDown` rather than `keyDown`: a shortcut carries no text, and
+     * Chromium refuses a `keyDown` without one. The modifier bitmask is CDP's
+     * own — 2 is Ctrl, 8 is Shift.
+     */
+    async key(key, { ctrl = false, shift = false, code = null, windowsVirtualKeyCode = null } = {}) {
+      const modifiers = (ctrl ? 2 : 0) | (shift ? 8 : 0);
+      const common = {
+        key,
+        code: code || `Key${key.toUpperCase()}`,
+        windowsVirtualKeyCode: windowsVirtualKeyCode ?? key.toUpperCase().charCodeAt(0),
+        nativeVirtualKeyCode: windowsVirtualKeyCode ?? key.toUpperCase().charCodeAt(0),
+        modifiers,
+      };
+      await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...common });
+      await send('Input.dispatchKeyEvent', { type: 'keyUp', ...common });
+      await sleep(120);
+    },
+
+    /** The wheel — how a joiner zooms, and therefore how a close-up is framed. */
+    async wheel(x, y, deltaY, steps = 6) {
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+      for (let i = 0; i < steps; i += 1) {
+        await send('Input.dispatchMouseEvent', {
+          type: 'mouseWheel', x, y, deltaX: 0, deltaY,
+        });
+        await sleep(70);
+      }
+      await sleep(200);
+    },
+
     async mouse(type, x, y, extra = {}) {
       await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1, buttons: 1, ...extra });
       await sleep(40);
     },
 
-    async screenshot(path) {
-      const { data } = await send('Page.captureScreenshot', { format: 'png' });
+    /**
+     * `clip` is a CLOSE-UP: CDP crops and rescales the capture, so a 300 px
+     * canvas can be published at a size somebody can actually look at, without
+     * a second image tool (CLAUDE.md rule 4 — no new dependencies).
+     */
+    async screenshot(path, clip = null) {
+      const { data } = await send('Page.captureScreenshot', {
+        format: 'png',
+        ...(clip ? { clip: { ...clip, scale: clip.scale || 3 } } : {}),
+      });
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, Buffer.from(data, 'base64'));
       return path;

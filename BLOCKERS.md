@@ -1126,3 +1126,95 @@ nie zrobiłoby nic.
 **Reguła na przyszłość:** każdy stan trzymany W BIBLIOTECE (cel orbity, pozycja
 kamery, uchwyt kontrolki), którego aplikacja także dotyka imperatywnie, nie
 może być podawany propem. Prop znaczy „to jest prawda przy każdym renderze".
+
+## #61 — Szuflada nad drzwiami (1×) czeka na drzwi o częściowej wysokości (zakres F3.2)
+
+CLAUDE.md tury 12, F3.2, wymienia **1× (drawerline: jedna szuflada nad
+drzwiami)** jako pierwszy wariant grupy „Drawer unit". Wpis jest w bibliotece,
+jest wyszarzony i pisze dlaczego. Kitu za nim nie ma.
+
+**Dlaczego to nie jest przeoczenie.** Reszta wariantów — 2×, 3×, 4× — to
+WYŁĄCZNIE proporcja podziału frontów, a każda liczba KIT_BUDR_FULL jest już
+pisana per front, więc powstały bez jednej nowej formuły. 1× nie jest
+proporcją: to szafka, która ma JEDNOCZEŚNIE front szuflady i DRZWI, a drzwi o
+częściowej wysokości nie definiuje żaden kit w `reference/lisp`. Konkretnie:
+
+- `hinges.rules.base` liczy środki zawiasów jako `[100, H−300, H−100]` z
+  wysokości KORPUSU, a puszki na froncie z `cups.baseOffsets` mierzonych na
+  tym froncie. Drzwi kończące się 380 mm pod wieńcem trzeba by odwzorować na
+  jedno i drugie — czyli wymyślić mapowanie, którego LISP nie zna.
+- Szuflada na GÓRZE korpusu BUD potrzebuje czegoś, do czego przykręcić
+  prowadnicę: BUDR ma pod każdym frontem swoje rzędy liczone od dna, a BUD nie
+  ma w tym miejscu żadnej płyty.
+
+To nie jest błąd widoczny na ekranie; to paczka formatek z zawiasami wierconymi
+w miejscu, którego nikt nie policzył.
+
+**Co Piotr decyduje.** Gdzie w takiej szafce siedzi przegroda pod szufladą
+(albo czy prowadnica idzie prosto w boki), na jakiej wysokości kończy się front
+szuflady, i od czego mierzone są zawiasy w skróconych drzwiach. Po tej
+odpowiedzi wariant to wpis w `profile.baseDrawerUnit.variants` plus kilkanaście
+linii — reszta grupy już działa.
+
+## #62 — Obudowa zmywarki (DW) nie ma wzorca „front + szczelina" (zakres F3.5)
+
+CLAUDE.md F3.5 mówi wprost: „front + gap per the appliance pattern the
+kits/SPEC define; if no pattern exists, entry DISABLED-«soon» + BLOCKERS,
+pattern-first rule". Wzorca nie ma i wpis jest wyłączony.
+
+**Co sprawdzono.** `reference/lisp` ma jeden kit sprzętowy — KIT_FRIDGE — i to
+jest OBUDOWA: korpus dookoła urządzenia, z listwami tylnymi, płytą stałą na
+`fridgeH` i panelem na wsporniki. Zmywarka jest czymś innym: to zwykle
+otwarta wnęka bez dna i bez pleców, z frontem dekoracyjnym przykręconym do
+drzwi urządzenia, i z własnymi luzami po bokach i u góry. SPEC nie opisuje
+żadnego z tych wymiarów, a `grep` po `dishwash|DW|appliance` daje w całym repo
+tylko warstwę `APPLIANCES` w KIT_FRIDGE (rysunek poglądowy w DXF-ie).
+
+**Co Piotr decyduje.** Wymiary wnęki (luz boczny, górny, czy jest dno i
+plecy), sposób mocowania frontu dekoracyjnego do drzwi zmywarki i jego
+odjęcia, oraz czy obudowa niesie cokół jak reszta ciągu. To jest dokładnie ta
+sama reguła „wzorzec najpierw", pod którą stoi #59.
+
+## #63 — Narożnik i szafka L nie mają kitu (zakres F3.6)
+
+CLAUDE.md F3.6 stawia sprawę sam: „entries PRESENT but DISABLED-«soon»: no
+kit/LISP defines them yet; the owner writes the pattern with the assistant
+first (same rule as partition drilling #59)". Oba wpisy są w bibliotece,
+wyszarzone, z powodem w wierszu.
+
+Nie ma tu nic do policzenia z istniejącej matematyki. Narożnik to korpus,
+którego rzut nie jest prostokątem — zmienia się obrys formatek, złącze na
+skosie, drzwi (jedne czy dwoje, na jakim kącie), i to, jak liczy się jego
+miejsce w ciągu i w kolizjach. Szafka L to to samo pytanie na dwóch ścianach.
+Każda z tych rzeczy dotyka `engine/collision.js`, `engine/runs.js` i
+`engine/puzzle.js` naraz.
+
+**Co Piotr decyduje.** Rysunek jednego narożnika: rzut z wymiarami, gdzie
+stoją boki, jak biegnie złącze na skosie, jak otwierają się drzwi. Reszta
+pójdzie z tego wzorca tak samo, jak warianty szuflad poszły z BUDR-a.
+
+## #64 — Kitowy podział 4:3:2 dryfuje o 1 mm na części wysokości — ZAMROŻONE (reguła 7)
+
+Zapisane nie jako dług do naprawienia, tylko jako **rzecz świadomie
+niezmieniona**, żeby następna tura nie „poprawiła" jej przez pomyłkę.
+
+`budrFrontHeights` liczy każdy front osobno: `lispRound(available · r / total)`.
+Kit deklaruje przy tym własny niezmiennik — stos wypełnia korpus dokładnie
+(`golden-budr.json`: „stack top = H − 3"), czyli `suma(frontów) = available`.
+Przy 4:3:2 to zwykle wychodzi, ale nie zawsze: dla H = 602 sumą jest 594 przy
+`available` 593, więc stos stoi 1 mm ponad korpusem.
+
+**Dlaczego to zostaje.** Reguła 7 jest absolutna: eksport CNC jest bajt w bajt
+dla wszystkiego, co istnieje dziś. Milimetr poprawy, o który nikt nie prosił,
+na wysokości, którą ktoś mógł już wyciąć, to nadal zmiana tego, co robi
+maszyna. Wariant `x3` niesie więc `exact: false` i tnie dokładnie to, co
+zawsze; test w `turn12-library.test.js` przechodzi 400 wysokości, żeby
+udowodnić, że nie drgnął.
+
+Warianty dodane w turze 12 (`x2`, `x4`) niosą `exact: true` — górny front
+bierze resztę, bo są NOWE i nie ma czego zamrażać, a cztery równe fronty na
+nieparzystej wysokości stałyby 2 mm ponad korpusem.
+
+**Co Piotr decyduje.** Czy kitowe 4:3:2 ma zostać takie, jakie jest (wtedy to
+nie dług, tylko granica i można ją zapisać w SPEC), czy ma dostać `exact: true`
+w osobnej turze — z nowymi fixture'ami i wpisem o świadomej zmianie eksportu.

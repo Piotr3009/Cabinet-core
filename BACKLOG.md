@@ -383,3 +383,51 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     MIERZYŁ, a nie tylko fotografował. Nie ma za tym nic, do czego devtools i
     tak by nie sięgnęły — ale gdy przyjdzie prawdziwe logowanie i dane klientów,
     warto to schować za flagą builda.
+
+## TURA 12 — CO ZROBIONE, CO DOPISANE (09.08)
+
+**Zrobione w turze 12** (szczegóły w BUILD-LOG): jedna powierzchnia ustawień
+i jedno źródło koloru frontu (F1) · powłoka modalna, reguła 15 (F2) ·
+biblioteka jako dane, w kolejności właściciela, + warianty szuflad 2× i 4×
+(F3) · okno edycji szafki z explode i obrotem kawałka (F4) · model stref,
+przegroda na stałej półce ze sprzężoną głębokością, Centre i delete (F5) ·
+zawiasy widoczne w Solid i czopy dog-bone (F6) · szafka wisząca zatrzymuje
+się na słupku (F7) · jeden cokół na ciąg (F8) · cofnij/ponów (F9) · plecy
+lodówki bez obrotu o 90° (F10) · przejście w przeglądarce 29/29 (F11).
+
+**BLOCKERS #59 zostaje OTWARTE.** Pionowa przegroda dalej nie ma własnego
+wiercenia. Tura 12 dała jej model stref, sprzężenie z półką, Centre i
+kasowanie — czyli wszystko poza tym, czym jest przykręcona. Czeka na wzorzec
+od Piotra.
+
+**Pozycje „wzorzec najpierw" (ta sama reguła co #59):**
+
+61. [BLOCKED] **Szuflada nad drzwiami (1×).** Wpis w bibliotece jest,
+    wyszarzony. Potrzebne: gdzie siedzi przegroda pod szufladą, na jakiej
+    wysokości kończy się front, i od czego mierzone są zawiasy w skróconych
+    drzwiach. BLOCKERS #61.
+62. [BLOCKED] **Obudowa zmywarki (DW).** Wpis jest, wyszarzony. Potrzebne:
+    luzy wnęki, mocowanie frontu dekoracyjnego do drzwi urządzenia i jego
+    odjęcia, czy niesie cokół. BLOCKERS #62.
+63. [BLOCKED] **Narożnik i szafka L.** Wpisy są, wyszarzone. Potrzebny rysunek
+    jednego narożnika: rzut z wymiarami, boki, złącze na skosie, otwieranie
+    drzwi. BLOCKERS #63.
+64. [DECYZJA] **Kitowe 4:3:2 dryfuje o 1 mm na części wysokości.** Zamrożone
+    świadomie pod regułą 7. Do decyzji: zostaje jako granica systemu (wpis w
+    SPEC) czy dostaje `exact: true` w osobnej turze z nowymi fixture'ami.
+    BLOCKERS #64.
+
+**Dopisane z tury 12 (nie blokujące):**
+
+65. [MED] **Rework kategorii poza Kuchnią.** CLAUDE.md F3.7 mówił „nie
+    dotykać", więc Szafy / Zapisane zestawy / Media walls zostały jak były.
+    Kuchnia jest teraz jedną listą-danymi (`engine/library.js`) i ten sam
+    kształt czeka na resztę, gdy Piotr powie, jak mają wyglądać.
+66. [LOW] **`scripts/e2e-turn11.mjs` nie zna zmian tury 12.** Nie jest
+    zepsuty — chodzi po turze 11 — ale zakłada stare id kategorii
+    (`base`/`wall`/`tall`). Kolejna tura albo go zaktualizuje, albo uzna
+    `e2e-turn12.mjs` za następcę.
+67. [LOW] **Okno edycji szafki nie ma X-ray ani trybu konturowego.** Świadomie:
+    F4 prosiła o podgląd z explode i obrotem kawałka. Oba tryby są w widoku
+    pokoju i oba przechodzą przez ten sam `MovingPanel`, więc gdyby były
+    potrzebne, to dwa propy.

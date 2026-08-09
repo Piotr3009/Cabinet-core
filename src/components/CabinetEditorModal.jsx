@@ -63,6 +63,7 @@ import { getUnitType } from '../engine/types.js';
 export default function CabinetEditorModal() {
   const args = useUiStore((s) => s.modalArgs);
   const closeModal = useUiStore((s) => s.closeModal);
+  const openModal = useUiStore((s) => s.openModal);
   const anchor = args?.anchor || null;
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
@@ -112,7 +113,7 @@ export default function CabinetEditorModal() {
         <>
           <span className="text-[11px] text-ink-400 flex-1 text-left">
             {exploded
-              ? 'Click a part to select it, then drag it to turn it over.'
+              ? 'Click a part to select it, drag it to turn it over — DOUBLE-CLICK it for the full detail.'
               : 'Drag to orbit · right or middle button to pan · click a part to edit it.'}
           </span>
           <button
@@ -146,6 +147,9 @@ export default function CabinetEditorModal() {
             exploded={exploded}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            onOpenDetail={(panelId, at) => openModal('part-detail', {
+              unitId: unit.id, panelId, anchor: null, at,
+            })}
           />
         </div>
 
@@ -189,7 +193,7 @@ export default function CabinetEditorModal() {
  * does in the scene.
  */
 function CabinetCanvas({
-  unit, panels, design, profile, exploded, selectedId, onSelect,
+  unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail,
 }) {
   const bounds = useMemo(() => cabinetBounds(panels), [panels]);
   const size = bounds ? Math.max(bounds.size.x, bounds.size.y, bounds.size.z) : 800;
@@ -218,6 +222,7 @@ function CabinetCanvas({
         exploded={exploded}
         selectedId={selectedId}
         onSelect={onSelect}
+        onOpenDetail={onOpenDetail}
         bounds={bounds}
       />
       {/* ─── Turn 13 (CLAUDE.md F2.2): IT PANS NOW ───
@@ -255,7 +260,7 @@ function EditorViewHandle() {
  * swing is an offset applied inside it.
  */
 function ExplodedCabinet({
-  unit, panels, design, profile, exploded, selectedId, onSelect, bounds,
+  unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail, bounds,
 }) {
   const finishes = useMemo(() => resolveFinishes(unit, design, profile), [unit, design, profile]);
   const unitDesign = useMemo(() => resolveUnitDesign(unit, design), [unit, design]);
@@ -281,6 +286,7 @@ function ExplodedCabinet({
           selected={selectedId === p.id}
           selectable={isSelectableElement(p)}
           onSelect={onSelect}
+          onOpenDetail={onOpenDetail}
           profile={profile}
           finishes={finishes}
           unitDesign={unitDesign}
@@ -304,7 +310,7 @@ function ExplodedCabinet({
  * panel at 40° is not an assembled cabinet.
  */
 function ExplodingPart({
-  panel: p, offset, exploded, selected, selectable, onSelect,
+  panel: p, offset, exploded, selected, selectable, onSelect, onOpenDetail,
   profile, finishes, unitDesign, sheen, joineryLayers, depth,
 }) {
   const group = useRef(null);
@@ -393,6 +399,17 @@ function ExplodingPart({
             e.stopPropagation();
             if (selected && exploded) { startTurn(e); return; }
             onSelect(p.id);
+          }}
+          // ─── Turn 14 (CLAUDE.md F7) ───
+          // "Double-click a part after explode" → the DETAIL window: the piece
+          // on its own on the left, the piece as the machine will cut it on the
+          // right. The gesture is turn 11's, one layer down — a single click
+          // selects, a double click opens the thing.
+          onDoubleClick={(e) => {
+            if (!selectable) return;
+            e.stopPropagation();
+            onSelect(p.id);
+            onOpenDetail?.(p.id, { x: e.clientX, y: e.clientY });
           }}
           onPointerOver={selectable ? () => { gl.domElement.style.cursor = turning ? 'grabbing' : 'pointer'; } : undefined}
           onPointerOut={selectable ? () => { gl.domElement.style.cursor = 'auto'; } : undefined}

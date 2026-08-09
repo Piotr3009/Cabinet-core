@@ -4784,3 +4784,36 @@ Test „nothing that was reachable stopped being reachable" trzyma pełną list�
 tury 13 minus ten jeden wpis: przeprojektowanie przesuwa, nigdy nie gubi.
 
 **Werdykt.** 1209 → **1217** testów.
+
+---
+
+## F7 — Modal SZCZEGÓŁU elementu — ✅ ZIELONA
+
+Dwuklik w część w rozstrzelonej szafce otwiera okno: **element w ręce po lewej,
+element tak, jak wytnie go maszyna, po prawej**. To odpowiedź na pytanie, które
+stolarz zadaje, trzymając formatkę — „a ta dziura to na co?" — a dotąd jedynym
+miejscem, gdzie można je było zadać, był arkusz CNC, który pokazuje czterdzieści
+części naraz i o żadnej nie umie powiedzieć, czym jest.
+
+**LEWA (F7.1).** Ten sam `MovingPanel` co pokój, z tą samą machinowaną
+geometrią — gniazdo jest tu gniazdem, bo to to samo wytłoczenie, które rysuje
+scena — na własnym środku, z zoomem, panoramą i obrotem (`OrbitControls`
+`enablePan`). To nie jest drugi renderer.
+
+**PRAWA (F7.2/F7.4).** Obrys, każda ścieżka na nim, **LEGENDA WARSTW** z nazwami
+i kolorami z `cnc/layers.js` i wymiary gabarytowe z delikatnymi liniami
+odnoszącymi. Wymiary to `dimensionEntities` tury 7 — zaimportowane, nietknięte —
+bo CLAUDE.md zabrania forkować drugi silnik rysunkowy, a wymiar narysowany dwa
+razy to wymiar narysowany na dwa sposoby. Nowy jest `engine/drawings/
+partDetail.js`: czysty moduł, który daje ROZMIAR, OBRYS, listę MACHINOWAŃ i
+legendę. Nie używa `sheet.js` i mówi dlaczego: okno szczegółu to nie kartka —
+nie ma ramki, tabliczki ani podziałki, a jest interaktywne.
+
+**F7.3 — wymiary są interaktywne.** Każde machinowanie ma stabilne `id`, swoją
+warstwę i NOTATKĘ, którą stolarz by powiedział na głos („Screws ⌀3 · ⌀3 at 50,
+9.5"). Najazd podświetla ścieżkę w rysunku (grubsza kreska, reszta przygasza
+się do 35 %) i wypisuje notatkę w stopce; najazd na wiersz LEGENDY podświetla
+pierwszą ścieżkę tej warstwy. Wymiary gabarytowe **nigdy nie gasną** — to dwie
+liczby, którymi zamawia się formatkę.
+
+**Werdykt.** 1217 → **1226** testów.

@@ -688,7 +688,24 @@ export function resolveFinishes(unit, design, profile) {
   const A = profile?.appearance || {};
   const resolved = resolveUnitDesign(unit, d);
 
-  const carcass = finishById(profile, resolved.carcassType?.finish_id)
+  // ─── Turn 16: A SPRAYED CARCASS IS SPRAYED TOO ───
+  //
+  // The owner's report was "the sheen slider only moves the first colour" — and
+  // the first colour was the front. The carcass never answered, and this line
+  // is why: a carcass type whose SOURCE is `sprayed` carries its colour in
+  // `design.colour.carcass`, and this function only ever asked for a board id.
+  // So a carcass sprayed wine red resolved to the profile's broken white, the
+  // 3D view painted it white, and — because a spray is what tells the renderer
+  // to take its roughness from the sheen — it kept melamine's fixed roughness
+  // whatever the slider said.
+  //
+  // The fix is the FRONT's own line, one field along: the spray comes first,
+  // ahead of any board, because paint covers a board here exactly as it does on
+  // the front side. The palette swatch in Settings has always resolved it this
+  // way (`projectPalette` below); this is the same answer given to the view,
+  // the BOM and the drawings, which all read this one function.
+  const carcass = (resolved.carcassType?.source === 'sprayed' ? sprayFinish(d.colour.carcass) : null)
+    || finishById(profile, resolved.carcassType?.finish_id)
     || finishById(profile, d.finish.carcass)
     || finishById(profile, A.defaultCarcassFinish)
     || A.finishes?.[0]

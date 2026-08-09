@@ -15,7 +15,16 @@ import assert from 'node:assert/strict';
 
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 
-const points = P.appearance.studio.points;
+const allPoints = P.appearance.studio.points;
+
+// ─── Turn 16: THE RIG GREW A SECOND PAIR, SO THIS FILE NAMES ITS OWN ────────
+// Turn 14's claims are about the EYE-LEVEL pair and every one of them still
+// holds unchanged. What no longer holds is the assumption that the eye pair is
+// the whole rig: the owner asked for a low pair at 500 (test/sprayed-carcass-
+// sheen.test.js pins that one), so this file selects the pair it is about
+// instead of taking the array whole. Nothing here was weakened — the same
+// assertions run against the same two lights.
+const points = allPoints.filter((p) => p.yMm === 1650);
 
 test('F9.1 — there is a SYMMETRIC PAIR, left and right of centre', () => {
   assert.equal(points.length, 2, 'a pair — one light gives a highlight on one side of the room');
@@ -47,7 +56,9 @@ test('F9.1 — the intensities are PHYSICAL, and warm white', () => {
 });
 
 test('F9.1 — they cast NOTHING: the shadow budget is untouched', () => {
-  for (const p of points) {
+  // Deliberately EVERY point light, not just the eye pair: the budget is a
+  // property of the rig, so a pair added later has to answer to it too.
+  for (const p of allPoints) {
     assert.notEqual(p.castShadow, true, 'a point light casting a shadow is six depth passes');
   }
   // The budget is the one turn 10 set, and the pair does not eat into it: the

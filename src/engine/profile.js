@@ -1081,6 +1081,24 @@ export const DEFAULT_CABINET_PROFILE = {
         {
           x: -0.35, yMm: 1650, z: 0.7, intensity: 12, colour: '#fff3e4',
         },
+        // ─── Turn 16: THE LOW PAIR (the owner's own request) ───
+        // The eye-level pair lights what is at eye level. Below the worktop a
+        // base unit's doors were falling away into the floor's shadow, because
+        // the only light reaching them arrives at a glancing angle from 1650 and
+        // there is no bounce off a floor the rig does not really light.
+        //
+        // So: the same pair again, at 500 — the height of a door's middle on a
+        // base unit — and at HALF the intensity, which is what "not so strong,
+        // just enough to throw a glow" asks for. A point light is spherical
+        // already; softness here is a matter of how hard it lands, and 6 at a
+        // couple of metres is a wash rather than a hot spot. Still no shadows,
+        // for the same reason as the pair above: the caster budget is spent.
+        {
+          x: 0.35, yMm: 500, z: 0.7, intensity: 6, colour: '#fff6ec',
+        },
+        {
+          x: -0.35, yMm: 500, z: 0.7, intensity: 6, colour: '#fff3e4',
+        },
       ],
       // Falloff limit as a multiple of the rig distance; decay stays physical.
       pointReach: 4,

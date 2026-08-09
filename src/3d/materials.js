@@ -225,7 +225,20 @@ export function surfaceFor({
   // Is this piece coming out of the spray booth in a colour somebody chose? A
   // sprayed DECOR is not a thing — a decor is a foil, and if a piece is exposed
   // and wearing a decor it is a decor.
-  const sprayed = finishExposed && !isDecor;
+  //
+  // ─── Turn 16: THE SECOND HALF OF "THE SHEEN ONLY MOVES ONE COLOUR" ───
+  // `finish_exposed` is the engine's answer to "does this piece go to the SPRAY
+  // BOOTH" — fronts, infills, plinths, end panels, masks. It is the right test
+  // for a piece that is sprayed BECAUSE OF WHERE IT SITS, and it is not the
+  // whole test: a workshop can spray the carcass itself, and then a side or a
+  // shelf is lacquer as surely as a door is. What it is FINISHED IN answers
+  // that, and `resolveFinishes` now hands a sprayed carcass back as a finish of
+  // kind `spray` (engine/design.js). Either route makes a piece sprayed; a
+  // decor still overrules both, because a foil board is a foil board.
+  //
+  // Nothing here touches `finish_exposed` itself — the engine's flag, the cut
+  // list and the CNC output are exactly what they were.
+  const sprayed = (finishExposed || finish?.kind === 'spray') && !isDecor;
 
   return {
     colour: paint

@@ -2116,6 +2116,10 @@ export function computeCabinet(params, profileOverride) {
   // A DESIGN-layer input like every other one in this list, so a bare
   // computeCabinet() with none of them set cuts what the AutoLISP kit cuts.
   const elementOverrides = params?.element_overrides;
+  // What the project asked to be taken off, so the result can SAY so — a piece
+  // that has silently vanished from a cut list is a piece somebody will look
+  // for on the bench.
+  const removedParts = [];
   if (elementOverrides && typeof elementOverrides === 'object') {
     for (const p of panels) {
       const o = elementOverrides[p.id];
@@ -2126,9 +2130,42 @@ export function computeCabinet(params, profileOverride) {
         material_label: o.material_label ? String(o.material_label) : null,
       };
     }
+    // ─── Turn 14 (CLAUDE.md F8.2): an AUTO PART moved, or taken off ─────────
+    //
+    // "Removal/move of an auto part is a design-layer override on the unit
+    // (paramsForEngine), never an engine fork; BOM follows."
+    //
+    // Both are the same channel a material override already travels in, and
+    // both are applied HERE, at the end, after every kit rule has had its say.
+    // That is what makes them design-layer: the kit builds what the AutoLISP
+    // builds, and the project then says what it wants doing with it. A removed
+    // piece is simply not in `panels`, so the BOM, the CSV, the sheet and the
+    // DXF all follow with nothing told to any of them.
+    //
+    // WHETHER a piece may be removed or moved is `engine/elements.js
+    // elementActions` and is asked in the UI; the engine honours what it is
+    // given, which is the same division of labour every override here has.
+    for (const p of panels) {
+      const move = elementOverrides[p.id]?.move;
+      if (!move || !p.box) continue;
+      p.box = {
+        ...p.box,
+        x: roundTo(p.box.x + (Number(move.x) || 0), 4),
+        y: roundTo(p.box.y + (Number(move.y) || 0), 4),
+        z: roundTo(p.box.z + (Number(move.z) || 0), 4),
+      };
+      p.meta = { ...(p.meta || {}), moved: { x: Number(move.x) || 0, y: Number(move.y) || 0, z: Number(move.z) || 0 } };
+    }
+    const dropped = panels.filter((p) => elementOverrides[p.id]?.removed === true).map((p) => p.id);
+    if (dropped.length) {
+      const gone = new Set(dropped);
+      for (let i = panels.length - 1; i >= 0; i -= 1) if (gone.has(panels[i].id)) panels.splice(i, 1);
+      removedParts.push(...dropped);
+    }
   }
 
   const derived = {
+    ...(removedParts.length ? { removed_parts: removedParts } : {}),
     doors: doorCount,
     internal_width: internalWidth,
     internal_depth: internalDepth,

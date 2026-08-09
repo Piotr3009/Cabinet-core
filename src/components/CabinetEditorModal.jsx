@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
 import ElementProperties from './ElementProperties.jsx';
-import { MovingPanel } from '../3d/UnitView.jsx';
+import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
 import { useViewHandle } from '../3d/viewHandle.js';
 import { mm } from '../3d/constants.js';
 import { surfaceFor, outlineFor } from '../3d/materials.js';
@@ -75,6 +75,17 @@ export default function CabinetEditorModal() {
 
   const [exploded, setExploded] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  // ─── Turn 14 (CLAUDE.md F8.1): the doors OPEN in here ───
+  // The swing animation has existed since turn 8 and this window never had a
+  // way to ask for it, so a joiner could look at a cabinet from every angle
+  // except the one that matters — inside it. `{}` means every front shut; a
+  // front's own entry overrides the ALL switch, so opening the lot and then
+  // shutting one behaves the way a hand expects.
+  const [openFronts, setOpenFronts] = useState({});
+  const [allOpen, setAllOpen] = useState(false);
+  const toggleFront = useCallback((panelId) => {
+    setOpenFronts((prev) => ({ ...prev, [panelId]: (prev[panelId] ?? (allOpen ? 1 : 0)) > 0.5 ? 0 : 1 }));
+  }, [allOpen]);
   // The shell owns the window; this is only what the CONTENT does with the room
   // it has been given — a side-by-side workspace when there is width for one.
   const [big, setBig] = useState(true);
@@ -114,8 +125,20 @@ export default function CabinetEditorModal() {
           <span className="text-[11px] text-ink-400 flex-1 text-left">
             {exploded
               ? 'Click a part to select it, drag it to turn it over — DOUBLE-CLICK it for the full detail.'
-              : 'Drag to orbit · right or middle button to pan · click a part to edit it.'}
+              : 'Drag to orbit · right or middle button to pan · click a part to edit it, or a door to open it.'}
           </span>
+          {/* F8.1: one control for the whole cabinet, and a click on a door
+              for one of them. A cabinet with no fronts is not offered it. */}
+          {panels.some((p) => p.part === 'FRONT' || p.part === 'DRAWER-FRONT') && (
+            <button
+              type="button"
+              className={`cc-btn ${allOpen ? 'border-gold text-gold' : ''}`}
+              data-open-doors="1"
+              onClick={() => { setAllOpen((v) => !v); setOpenFronts({}); }}
+            >
+              {allOpen ? 'Close doors' : 'Open doors'}
+            </button>
+          )}
           <button
             type="button"
             className={`cc-btn ${exploded ? 'border-gold text-gold' : ''}`}
@@ -147,6 +170,9 @@ export default function CabinetEditorModal() {
             exploded={exploded}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            openFronts={openFronts}
+            allOpen={allOpen}
+            onToggleFront={toggleFront}
             onOpenDetail={(panelId, at) => openModal('part-detail', {
               unitId: unit.id, panelId, anchor: null, at,
             })}
@@ -171,7 +197,11 @@ export default function CabinetEditorModal() {
               </div>
               {/* The SAME properties block the right panel shows. An edit here is
                   the same override, on the same unit, through the same store. */}
-              <ElementProperties unit={unit} panel={selected} item={item} compact />
+              {/* Turn 14 (CLAUDE.md F8.2): the editor is where a piece has
+                  ACTIONS — this is the window in which you have it in your
+                  hand. The right panel and the beside-the-piece modal show the
+                  same properties without them. */}
+              <ElementProperties unit={unit} panel={selected} item={item} compact actions />
             </div>
           ) : (
             <p className="text-[11px] text-ink-400">
@@ -194,6 +224,7 @@ export default function CabinetEditorModal() {
  */
 function CabinetCanvas({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail,
+  openFronts, allOpen, onToggleFront,
 }) {
   const bounds = useMemo(() => cabinetBounds(panels), [panels]);
   const size = bounds ? Math.max(bounds.size.x, bounds.size.y, bounds.size.z) : 800;
@@ -223,6 +254,9 @@ function CabinetCanvas({
         selectedId={selectedId}
         onSelect={onSelect}
         onOpenDetail={onOpenDetail}
+        openFronts={openFronts}
+        allOpen={allOpen}
+        onToggleFront={onToggleFront}
         bounds={bounds}
       />
       {/* ─── Turn 13 (CLAUDE.md F2.2): IT PANS NOW ───
@@ -261,6 +295,7 @@ function EditorViewHandle() {
  */
 function ExplodedCabinet({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail, bounds,
+  openFronts, allOpen, onToggleFront,
 }) {
   const finishes = useMemo(() => resolveFinishes(unit, design, profile), [unit, design, profile]);
   const unitDesign = useMemo(() => resolveUnitDesign(unit, design), [unit, design]);
@@ -287,6 +322,8 @@ function ExplodedCabinet({
           selectable={isSelectableElement(p)}
           onSelect={onSelect}
           onOpenDetail={onOpenDetail}
+          open={openFronts?.[p.id] ?? (allOpen ? 1 : 0)}
+          onToggleFront={onToggleFront}
           profile={profile}
           finishes={finishes}
           unitDesign={unitDesign}
@@ -312,6 +349,7 @@ function ExplodedCabinet({
 function ExplodingPart({
   panel: p, offset, exploded, selected, selectable, onSelect, onOpenDetail,
   profile, finishes, unitDesign, sheen, joineryLayers, depth,
+  open = 0, onToggleFront = null,
 }) {
   const group = useRef(null);
   const spin = useRef(null);
@@ -384,8 +422,13 @@ function ExplodingPart({
       <group ref={spin}>
         <MovingPanel
           panel={p}
-          front={null}
-          open={0}
+          // ─── Turn 14 (CLAUDE.md F8.1) ───
+          // Turn 12 passed `front={null}` and `open={0}`, which is what kept
+          // every door in this window shut: the swing has existed since turn 8
+          // and the editor simply never asked for it. It is the ROOM's own
+          // `frontKind` and the room's own animation — nothing new is drawn.
+          front={frontOf(p)}
+          open={open}
           surface={shown}
           outline={outlineFor(profile)}
           outlines
@@ -394,11 +437,16 @@ function ExplodingPart({
           depth={depth}
           profile={profile}
           joineryLayers={joineryLayers}
+          swing={frontOf(p) === 'door' ? 1 : null}
           onPointerDown={(e) => {
             if (!selectable) return;
             e.stopPropagation();
             if (selected && exploded) { startTurn(e); return; }
             onSelect(p.id);
+            // A click on a DOOR opens it. It is the one part where "click it"
+            // has an obvious physical meaning, and the properties still appear
+            // beside it — the two do not fight (F8.1).
+            if (frontOf(p) && onToggleFront && !exploded) onToggleFront(p.id);
           }}
           // ─── Turn 14 (CLAUDE.md F7) ───
           // "Double-click a part after explode" → the DETAIL window: the piece

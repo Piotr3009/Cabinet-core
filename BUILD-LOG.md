@@ -4817,3 +4817,49 @@ pierwszą ścieżkę tej warstwy. Wymiary gabarytowe **nigdy nie gasną** — to
 liczby, którymi zamawia się formatkę.
 
 **Werdykt.** 1217 → **1226** testów.
+
+---
+
+## F8 — Okno edycji ożywa — ✅ ZIELONA
+
+### F8.1 — drzwi OTWIERAJĄ się w edytorze
+
+Animacja otwarcia frontu istnieje od tury 8; edytor podawał `front={null}`
+`open={0}`, więc nie było jak o nią poprosić — stolarz mógł obejrzeć szafkę z
+każdej strony poza tą jedną, która ma znaczenie: od środka. `frontKind` wyjeżdża
+z `3d/UnitView.jsx` jako eksport (edytor pyta POKÓJ, zamiast trzymać drugą listę
+tego, co jest frontem), a okno dostaje kontrolkę **„Open doors" / „Close doors"**
+w stopce oraz klik w drzwi otwierający JE jedne. Klik nadal zaznacza i
+właściwości nadal się pokazują — drzwi to jedyna część, przy której „kliknij"
+ma oczywiste znaczenie fizyczne, więc te dwie rzeczy się nie biją.
+
+### F8.2 — każda część ma AKCJE, z auto-częściami włącznie
+
+`elementActions(panel)` (czysta, w `engine/elements.js`) odpowiada na DWA
+pytania — wolno usunąć? wolno przesunąć? — i **zawsze podaje POWÓD, kiedy nie**.
+To wzorzec #58: kontrolka, której po prostu nie ma, niczego nie uczy, a wyszarzona
+bez powodu uczy jeszcze mniej.
+
+Fizyka, po jednym zdaniu:
+
+* **płyta korpusu** trzyma pudło — czopy są wycięte pod nią, a gniazda pod czopy;
+* **element POCHODNY** idzie za czymś innym: przegroda nad szufladami to
+  wieko stosu, uchwyty zlewozmywaka to jest to, co ten kit ma zamiast wieńca;
+* **element, którego POZYCJA jest jego definicją**, nie przesuwa się: listwa
+  przyścienna JEST szczeliną, którą zamyka; bok maskujący jest przykręcony do
+  boku, który maskuje. Zdjąć — tak. Przesunąć — nie;
+* **auto-część** to ciekawy przypadek i ten, który właściciel nazwał: panel
+  spurów lodówki jest tam, gdzie akurat wypada gniazdko, a warsztat, który ma je
+  gdzie indziej, chce go 100 mm w bok — albo wcale.
+
+**Mechanizm: NADPISANIE WARSTWY PROJEKTU**, nie fork silnika. Ten sam kanał
+`element_overrides`, którym jeździ materiał, dostaje `removed: true` i
+`move: {x,y,z}`, stosowane na SAMYM KOŃCU `computeCabinet` — po tym, jak kit
+powiedział swoje. Usunięta formatka po prostu nie ma jej w `panels`, więc BOM,
+CSV, arkusz i DXF idą za tym i nikomu nic nie trzeba mówić; `derived
+.removed_parts` mówi wprost, czego brakuje, żeby nikt nie szukał jej na stole.
+Przesunięcie jest ABSOLUTNE (0 wraca na miejsce), a rozmiar cięcia i `cnc` się
+nie ruszają — przesunięta formatka to ta sama formatka.
+
+**Werdykt.** 1226 → **1234** testy. Fixtures bez zmian (goły `computeCabinet`
+bez nadpisań tnie dokładnie to, co ciął).

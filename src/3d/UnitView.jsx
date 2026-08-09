@@ -40,8 +40,14 @@ import {
 // a drag allocating a plane per frame.
 const FLOOR = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
-/** Which kind of front this panel is, if any — that decides how it moves. */
-function frontKind(panel) {
+/**
+ * Which kind of front this panel is, if any — that decides how it moves.
+ *
+ * Exported since turn 14 (CLAUDE.md F8.1): the cabinet editor opens doors now,
+ * and it has to ask the same question the room asks rather than keeping a
+ * second list of which parts are fronts.
+ */
+export function frontKind(panel) {
   if (panel.part === 'DRAWER-FRONT') return 'drawer';
   if (panel.part === 'FRONT') return 'door';
   return null;

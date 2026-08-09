@@ -229,6 +229,71 @@ export function elementFields(panel, type = null) {
   return fields;
 }
 
+// ─── What may be DONE to a piece (turn 14, CLAUDE.md F8.2) ──────────────────
+//
+// "Every part is selectable with ACTIONS — including auto parts (the spur panel
+// above a fridge, the sink kit's pieces): edit / move / remove where the
+// physics allows; where it does not, a short explanation."
+//
+// The last clause is the #58 pattern and it is the half that matters: a control
+// that is simply absent teaches nothing, and one that is greyed out with no
+// reason teaches less. So every kind answers BOTH questions — may it, and if
+// not, WHY not — in a sentence a joiner would accept from another joiner.
+//
+// The physics, in one line each:
+//
+//   A CARCASS BOARD holds the box together. The tabs are cut for it, the sockets
+//   are cut for the tabs, and a cabinet missing a side is not a cabinet.
+//
+//   A DERIVED piece follows something else. The partition above a drawer stack
+//   is the stack's lid; the sink's holders are what that kit has instead of a
+//   top. Removing one is asking for a different cabinet, and the way to ask is
+//   to change what it follows.
+//
+//   A PIECE WHOSE POSITION IS ITS DEFINITION cannot be moved. A scribe filler
+//   IS the gap it closes; an end panel is screwed to the side it masks. They
+//   come off, and they do not slide.
+//
+//   AN AUTO PART is the interesting case, and it is the one the owner named.
+//   The fridge's spur panel is fitted where a spur happens to be, and a workshop
+//   that puts the socket somewhere else wants it 100 mm over — or not at all.
+//   That is a DESIGN-LAYER decision on the unit, never an engine fork, so it
+//   travels as an element override like a material does.
+
+const ACTIONS = {
+  side: { remove: false, move: false, why: 'The carcass is held together by this board — the tabs are cut for it.' },
+  top: { remove: false, move: false, why: 'The carcass is held together by this board — the tabs are cut for it.' },
+  bottom: { remove: false, move: false, why: 'The carcass is held together by this board — the tabs are cut for it.' },
+  back: { remove: false, move: false, why: 'The back squares the carcass, and the sides are tenoned into it.' },
+  'fixed-shelf': { remove: false, move: false, why: 'It follows what is under it — change the stack, or the fridge height, and this follows.' },
+  holder: { remove: false, move: false, why: 'A sink unit has these instead of a top — taking one off opens the carcass.' },
+  'drawer-front': { remove: false, move: false, why: 'A drawer front follows its drawer — change the stack.' },
+  spurs: { remove: true, move: true, why: null },
+  shelf: { remove: true, move: true, why: null },
+  partition: { remove: true, move: true, why: null },
+  door: { remove: true, move: false, why: 'A door hangs on its hinges — the hinge side is a door property.' },
+  'end-panel': { remove: true, move: false, why: 'An end panel is screwed to the side it masks.' },
+  infill: { remove: true, move: false, why: 'A filler IS the gap it closes.' },
+  plinth: { remove: true, move: false, why: 'The toe kick runs the front of the run — its setback is a workshop number.' },
+  'masking-panel': { remove: true, move: false, why: 'The board is the underside of the run — its depth is what hides the wall standoff.' },
+};
+
+/**
+ * May this piece be removed, and may it be moved?
+ *
+ * @returns {{remove:{allowed:boolean,reason:string|null},
+ *            move:{allowed:boolean,reason:string|null}}}
+ */
+export function elementActions(panel) {
+  const kind = elementKind(panel);
+  const rule = ACTIONS[kind] || { remove: false, move: false, why: 'This piece is part of the kit.' };
+  return {
+    kind,
+    remove: { allowed: Boolean(rule.remove), reason: rule.remove ? null : rule.why },
+    move: { allowed: Boolean(rule.move), reason: rule.move ? null : rule.why },
+  };
+}
+
 /**
  * Which UNIT parameter a `carcass-board` field edits, so the panel does not
  * have to know that a front is a different board from a carcass.

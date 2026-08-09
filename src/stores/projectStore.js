@@ -2134,6 +2134,49 @@ export const useProjectStore = create((set, get) => ({
   },
 
   /**
+   * ─── Turn 14 (CLAUDE.md F8.2): take an AUTO PART off, or move it ──────────
+   *
+   * A design-layer override on the unit, never an engine fork — the same
+   * channel a material override travels in, so the BOM, the CSV, the sheet and
+   * the DXF all follow with nothing told to any of them.
+   *
+   * A piece that HAS a home of its own is sent there instead: a shelf and a
+   * partition are ITEMS, and dropping one through the override would leave the
+   * item in the list with nothing on the screen.
+   *
+   * @returns {'item'|'override'|null} which path it took
+   */
+  removeElement: (unitId, panelId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !panelId) return null;
+    const result = get().unitResult(unitId);
+    const panel = result?.panels.find((p) => p.id === panelId) || null;
+    const itemId = panel?.meta?.itemId;
+    if (itemId) { get().removeItem(unitId, itemId); return 'item'; }
+    get().setElementOverride(unitId, panelId, { removed: true });
+    return 'override';
+  },
+
+  /** Put a removed piece back — the override is a decision, and it is undone. */
+  restoreElement: (unitId, panelId) => {
+    get().setElementOverride(unitId, panelId, { removed: null });
+    return true;
+  },
+
+  /**
+   * Nudge a piece in the cabinet's own frame. `delta` is ABSOLUTE — the total
+   * offset from where the kit puts it — so typing 0 puts it back.
+   */
+  moveElement: (unitId, panelId, delta) => {
+    const move = {
+      x: Number(delta?.x) || 0, y: Number(delta?.y) || 0, z: Number(delta?.z) || 0,
+    };
+    const empty = !move.x && !move.y && !move.z;
+    get().setElementOverride(unitId, panelId, { move: empty ? null : move });
+    return move;
+  },
+
+  /**
    * A vertical partition, addable like a shelf (turn 11, CLAUDE.md F3.4).
    *
    * The engine has taken `kind: 'partition'` items since turn 8 — this is the

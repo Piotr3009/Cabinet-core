@@ -11,12 +11,14 @@ import {
   shelfBounds, unitIssues, unitPlanSpan, unitSpan,
   wallClearance,
   wallObstacles,
+  bandsOverlap, unitBand,
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomChangeGuard, roomWalls,
 } from '../engine/room.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
+  withFrontColour,
 } from '../engine/design.js';
 import {
   projectBoardThickness, projectDepth, projectFrontThickness, setFrontTypeCount,
@@ -24,7 +26,8 @@ import {
 import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
-import { runInfillParams, unitTop } from '../engine/runs.js';
+import { runInfillParams, runPlinthParams, unitTop } from '../engine/runs.js';
+import { widthZones } from '../engine/zones.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
@@ -39,7 +42,34 @@ const CACHE_KEY = 'cc.project.cache.v1';
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 
+/** A zone index, or null for "the whole width" — `Number(null)` is 0, so ask. */
+const zoneIndexOf = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Math.trunc(Number(v)));
+
 export const DEFAULT_ROOM = ENGINE_DEFAULT_ROOM;
+
+/**
+ * A design patch, merged (turn 12, CLAUDE.md F1).
+ *
+ * The stored design is migrated FIRST and the patch lands on the result. It is
+ * already migrated in practice (loadProject and newProject both do it), and
+ * this is still not belt-and-braces: since turn 9 the design carries a ONE-WAY
+ * migration — a sheen on the old 0–25 scale is multiplied by four — and a patch
+ * merged onto an unmigrated base would hand a freshly typed 25 to that rule and
+ * store 100 (CLAUDE.md F5).
+ *
+ * The FRONT COLOUR is the one field a plain merge cannot do, because it lives
+ * in two places that have to agree (engine/design.js `withFrontColour`). A
+ * patch that sets `colour.front` and says nothing about the front types is the
+ * old Design-settings shape — the sprayed-finish picker — and it is routed
+ * through the one setter so that both halves move together.
+ */
+function applyDesignPatch(stored, patch) {
+  const merged = migrateDesign({ ...migrateDesign(stored), ...patch });
+  const setsFrontColour = patch && Object.hasOwn(patch, 'colour')
+    && Object.hasOwn(patch.colour || {}, 'front')
+    && !Object.hasOwn(patch, 'fronts');
+  return setsFrontColour ? withFrontColour(merged, patch.colour.front) : merged;
+}
 
 function newUnit(typeId, profile, index, design) {
   const type = getUnitType(typeId);
@@ -345,7 +375,7 @@ export const useProjectStore = create((set, get) => ({
       // carries a ONE-WAY migration — a sheen on the old 0–25 scale is
       // multiplied by four — and a patch merged onto an unmigrated base would
       // hand a freshly typed 25 to that rule and store 100 (CLAUDE.md F5).
-      project: { ...s.project, design: migrateDesign({ ...migrateDesign(s.project.design), ...patch }) },
+      project: { ...s.project, design: applyDesignPatch(s.project.design, patch) },
       dirty: true,
     }));
     // The infill width lives in Design Settings, so changing it re-cuts the
@@ -393,17 +423,45 @@ export const useProjectStore = create((set, get) => ({
     };
   }),
 
-  /** One front type's source, colour or assigned stock. */
+  /**
+   * One front type's source, colour or assigned stock.
+   *
+   * ─── Turn 12 (CLAUDE.md F1) ───
+   * A COLOUR goes through `withFrontColour`, which is the one setter for it:
+   * turn 11 wrote it here and only here, into a field nothing in the app reads,
+   * which is why the scene ignored the new settings menu. Everything else in
+   * the patch is a plain merge, as before.
+   */
   setFrontType: (typeId, patch) => set((s) => {
     const design = migrateDesign(s.project.design);
     const profile = getCabinetProfile();
+    const { colour, ...rest } = patch || {};
     const types = setFrontTypeCount(design.fronts.types, design.fronts.types.length || 1, profile)
-      .map((t) => (t.id === typeId ? { ...t, ...patch } : t));
+      .map((t) => (t.id === typeId ? { ...t, ...rest } : t));
+    const merged = migrateDesign({ ...design, fronts: { ...design.fronts, types } });
     return {
-      project: { ...s.project, design: migrateDesign({ ...design, fronts: { ...design.fronts, types } }) },
+      project: {
+        ...s.project,
+        design: colour === undefined ? merged : withFrontColour(merged, colour, typeId),
+      },
       dirty: true,
     };
   }),
+
+  /**
+   * The project's FRONT COLOUR (turn 12, CLAUDE.md F1).
+   *
+   * The one door every colour control in the app goes through — the settings
+   * surface's front-type picker and its sprayed-finish picker are the same
+   * question asked twice, and before this they wrote to different fields.
+   */
+  setFrontColour: (colour, typeId = null) => {
+    set((s) => ({
+      project: { ...s.project, design: withFrontColour(s.project.design, colour, typeId) },
+      dirty: true,
+    }));
+    return migrateDesign(get().project.design);
+  },
 
   /** A carcass type's SOURCE — EGGER decor or sprayed (CLAUDE.md F9.2). */
   setCarcassSource: (typeId, source) => set((s) => {
@@ -524,6 +582,12 @@ export const useProjectStore = create((set, get) => ({
     const next = s.units.map((u) => {
       if (unitId && u.id !== unitId) return u;
       const wall = walls[u.position?.wall ?? 0] || walls[0];
+      // The AUTO-PARTS neighbours, which is a different question from "what is
+      // in the way" (F7 above): these are the units this one shares a RUN with —
+      // a plinth, a filler, a top infill. Two cabinets share a run when they
+      // stand at the same level, side by side, which is exactly what the
+      // mounting level says. A wall unit does not share a plinth with the tall
+      // cabinet it hangs beside, however much height they have in common.
       const level = getUnitType(u.type).mount;
       const others = s.units
         .filter((o) => o.id !== u.id && (o.position?.wall ?? 0) === (u.position?.wall ?? 0)
@@ -564,14 +628,25 @@ export const useProjectStore = create((set, get) => ({
         + (Number(u.params?.front_t) || profile.front.thickness),
     }, profile);
 
+    // ─── …and the PLINTH, the same way (turn 12, CLAUDE.md F8) ───
+    // One toe kick across the run, not one per carcass. Same shape of answer as
+    // the top infill above, computed after `plinth` has been resolved on every
+    // unit — a segment is a stretch of ADJACENT PLINTHED units, so it cannot be
+    // worked out until the store knows which of them have a plinth at all.
+    const plinthParams = runPlinthParams(next, profile);
+
     set({
       units: next.map((u) => {
         const run = runParams.get(u.id) ?? null;
+        const plinthRun = plinthParams.get(u.id) ?? null;
         // Reference equality matters here: this runs on every drag frame, and
         // writing a fresh object each time would re-render every unit in the
         // scene for a run nobody touched.
-        if (sameRun(u.params.run_top_infill, run)) return u;
-        return { ...u, params: { ...u.params, run_top_infill: run } };
+        if (sameRun(u.params.run_top_infill, run) && sameRun(u.params.run_plinth, plinthRun)) return u;
+        return {
+          ...u,
+          params: { ...u.params, run_top_infill: run, run_plinth: plinthRun },
+        };
       }),
       dirty: true,
     });
@@ -614,7 +689,18 @@ export const useProjectStore = create((set, get) => ({
   // placing a unit. Each one exists from the moment it is added and not before:
   // no ghost rows in the cut list for pieces nobody ordered.
 
-  /** @returns {boolean} false when this type cannot take a plinth at all. */
+  /**
+   * @returns {boolean} false when this type cannot take a plinth at all.
+   *
+   * ─── Turn 12 (CLAUDE.md F8) ───
+   * The toe kick is a RUN element now, so switching one on decides the LENGTH
+   * of the piece in front of its neighbours too — "a unit pushed against a
+   * plinthed run joins it AUTOMATICALLY". `refreshAutoParts` is what works the
+   * segments out, and it is called for exactly the reason `setTopInfill` above
+   * calls it: without it the run is recomputed only on the next drag, and a
+   * unit that has never been moved sits in front of a 600 mm offcut inside the
+   * long piece.
+   */
   addPlinth: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit || !takesPlinth(unit.type, getCabinetProfile())) return false;
@@ -622,13 +708,19 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: true } } : u)),
       dirty: true,
     }));
+    get().refreshAutoParts();
     return true;
   },
 
-  removePlinth: (unitId) => set((s) => ({
-    units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: false } } : u)),
-    dirty: true,
-  })),
+  removePlinth: (unitId) => {
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: false } } : u)),
+      dirty: true,
+    }));
+    // Taking one out of the middle of a run splits the kick in two — the same
+    // reason adding one joins them.
+    get().refreshAutoParts();
+  },
 
   /**
    * Add the top infill at the profile default, clamped to whatever the room has
@@ -1069,7 +1161,7 @@ export const useProjectStore = create((set, get) => ({
         wallWidth: wall.width,
         wallMargin: wallMarginOf(state, unit),
         others: state.units
-          .filter((u) => (u.position.wall ?? 0) === wall.index && getUnitType(u.type).mount === level)
+          .filter((u) => (u.position.wall ?? 0) === wall.index && obstructs(unit, u, profile))
           .map(unitSpan),
         near: onThisWall ? unitSpan(beside) : null,
         side: onThisWall ? side : null,
@@ -1376,14 +1468,13 @@ export const useProjectStore = create((set, get) => ({
     // no free slot leaves the unit inside a neighbour — which nothing else in
     // this app is allowed to produce. Checked against the same free-slot rule a
     // placement uses, and put back if the answer is no.
-    const level = getUnitType(unit.type).mount;
     const room = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
       wallMargin: wallMarginOf(get(), unit),
       others: get().units
         .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex
-          && getUnitType(u.type).mount === level)
+          && obstructs(unit, u))
         .map(unitSpan),
     }, getCabinetProfile());
     if (room == null) {
@@ -1449,7 +1540,7 @@ export const useProjectStore = create((set, get) => ({
       wallWidth: walls[wallIndex].width,
       wallMargin: wallMarginOf(s, unit),
       others: s.units
-        .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && getUnitType(u.type).mount === level)
+        .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && obstructs(unit, u))
         .map(unitSpan),
     }, getCabinetProfile());
     if (x == null) {
@@ -1581,26 +1672,86 @@ export const useProjectStore = create((set, get) => ({
    * definition the one with the most room in it, and the clamp has the last
    * word as it does on every other path.
    */
-  addShelves: (unitId, count = 1) => {
+  addShelves: (unitId, count = 1, zone = null) => {
     const profile = getCabinetProfile();
     let added = 0;
     for (let i = 0; i < Math.max(1, Math.trunc(count)); i += 1) {
       const unit = get().units.find((u) => u.id === unitId);
       if (!unit) break;
       const items = unit.params.sections?.[0]?.items || [];
+      // ─── Turn 12 (CLAUDE.md F5.3): WHICH SIDE ───
+      // With a partition present a cabinet has more than one column, and a
+      // shelf belongs to ONE of them. The zone is the bay's index, so the
+      // shelf follows the partition when it moves; the openings it has to
+      // centre itself between are the ones in ITS bay and nobody else's.
+      const bay = zoneIndexOf(zone);
       const pos = centredShelfPos({
         band: shelfLimits(unit, profile),
-        positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
+        positions: shelvesInEngineOrder(items)
+          .filter((sh) => (bay == null ? true : zoneIndexOf(sh.zone) === bay))
+          .map((sh) => sh.pos_mm),
         boardT: unit.params.board_t ?? profile.board.thickness,
       }, profile);
       if (pos == null) break;
       // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
       // you can move; `fixed` means screwed now, and a shelf arriving screwed
       // in is a decision nobody made.
-      get().addItem(unitId, { kind: 'shelf', variant: 'adjustable', pos_mm: pos });
+      get().addItem(unitId, {
+        kind: 'shelf', variant: 'adjustable', pos_mm: pos, ...(bay == null ? {} : { zone: bay }),
+      });
       added += 1;
     }
     return { added, requested: Math.max(1, Math.trunc(count)) };
+  },
+
+  /**
+   * The bays this cabinet is divided into (turn 12, CLAUDE.md F5.3).
+   *
+   * What the canvas highlights when a shelf is being added and a partition is
+   * present, and what the panel offers as "which side". One zone means there is
+   * nothing to ask.
+   */
+  zonesOf: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return [];
+    const profile = getCabinetProfile();
+    const items = unit.params.sections?.[0]?.items || [];
+    return widthZones({
+      width: Number(unit.params.width) || 0,
+      boardT: unit.params.board_t ?? profile.board.thickness,
+      partitions: items.filter((i) => i.kind === 'partition'),
+    });
+  },
+
+  /**
+   * ─── Centre the partitions (turn 12, CLAUDE.md F5.2) ───
+   *
+   * "Add a Centre button (like the shelves' Even)." It is the same button on
+   * the other axis and it is the same arithmetic: N partitions divide the
+   * internal width into N+1 equal CLEAR bays, which is what `evenShelfPositions`
+   * computes and what the Even button has done since turn 9. One partition in a
+   * 900 mm cabinet lands dead centre, which is the case the owner means.
+   */
+  centrePartitions: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    const profile = getCabinetProfile();
+    const G = unit.params.board_t ?? profile.board.thickness;
+    const items = unit.params.sections?.[0]?.items || [];
+    const parts = items
+      .filter((i) => i.kind === 'partition')
+      .sort((a, b) => (Number(a.x_mm) || 0) - (Number(b.x_mm) || 0));
+    if (!parts.length) return 0;
+    const xs = evenShelfPositions({
+      zoneBottom: G,
+      zoneTop: (Number(unit.params.width) || 0) - G,
+      count: parts.length,
+      boardT: G,
+    });
+    parts.forEach((item, i) => {
+      get().updateItem(unitId, item.id, { x_mm: snapTo(xs[i], profile.editor.mmStep) });
+    });
+    return parts.length;
   },
 
   /**
@@ -2124,12 +2275,37 @@ function minHeightOf(typeId, profile) {
   return Number(key.split('.').reduce((acc, k) => (acc == null ? acc : acc[k]), profile)) || 0;
 }
 
+/**
+ * The band of heights this unit occupies (turn 12, CLAUDE.md F7).
+ *
+ * `floorYOf` already knows the difference between standing on legs and hanging
+ * at a mounting height, and it is the number every other height question in
+ * this store is asked against.
+ */
+function bandOf(unit, profile = getCabinetProfile()) {
+  return unitBand({ floorY: floorYOf(unit, null, profile), height: unit.params?.height });
+}
+
+/**
+ * Does `other` stand in the way of `unit`?
+ *
+ * ─── Turn 12 (CLAUDE.md F7) ───
+ * It used to be `mount === mount`, and that is why a wall unit drove straight
+ * through a tall one: a tall unit stands on the floor, so it was filed with the
+ * base units, and it reaches all the way up through the band the wall units
+ * hang in. The question is whether the two occupy the same HEIGHTS, which gives
+ * the old answer wherever the old rule was right and the right answer where it
+ * was not — see engine/collision.js.
+ */
+function obstructs(unit, other, profile = getCabinetProfile()) {
+  return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
+}
+
 function neighboursOf(state, unit) {
-  const level = getUnitType(unit.type).mount;
   // Every wall, not just this one: a unit around the corner is a neighbour the
   // moment its footprint reaches into this one's depth (engine/collision.js
   // decides that; this only decides who is even in the running).
-  return state.units.filter((u) => u.id !== unit.id && getUnitType(u.type).mount === level);
+  return state.units.filter((u) => u.id !== unit.id && obstructs(unit, u));
 }
 
 /** Height of a unit's top above the floor — where its top infill starts. */
@@ -2291,9 +2467,28 @@ function wallMarginOf(state, unit = null) {
 // functions want, and nothing more. The RULES live in engine/collision.js.
 
 /** Every OTHER shelf's position in this unit. */
+/**
+ * The other shelves this one has to clear.
+ *
+ * ─── Turn 12 (CLAUDE.md F5.3) ───
+ * Only the ones IN THE SAME BAY. Two shelves either side of a vertical
+ * partition are not above one another in any sense a joiner would recognise —
+ * they are in different columns — so clamping one against the other pushes a
+ * shelf 40 mm off the height it was asked for, for a neighbour it will never
+ * touch. A shelf that belongs to no bay is full width and meets everything.
+ */
 function otherShelfPositions(unit, itemId) {
-  return (unit.params.sections?.[0]?.items || [])
+  const items = unit.params.sections?.[0]?.items || [];
+  const mine = items.find((i) => i.id === itemId);
+  const bay = zoneIndexOf(mine?.zone);
+  return items
     .filter((i) => i.kind === 'shelf' && i.id !== itemId && Number.isFinite(i.pos_mm))
+    .filter((i) => {
+      const theirs = zoneIndexOf(i.zone);
+      // A full-width shelf is in every bay; two zoned shelves only meet in the
+      // same one.
+      return bay == null || theirs == null || theirs === bay;
+    })
     .map((i) => i.pos_mm);
 }
 
@@ -2373,7 +2568,7 @@ export function validateUnit(unit, result, context = {}) {
     const wallIndex = unit.position?.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
     const others = (context.units || [])
-      .filter((u) => u.id !== unit.id && getUnitType(u.type).mount === level)
+      .filter((u) => u.id !== unit.id && obstructs(unit, u))
       .map(toObstacleUnit);
     issues.push(...unitIssues({
       unit,

@@ -20,6 +20,32 @@ import { mm } from './constants.js';
 // full of ironmongery is a working view nobody can read (CLAUDE.md: "the normal
 // view stays clean"). Legs and the rail are always drawn, as they always have
 // been — hiding a leg would be a regression dressed as a feature.
+//
+// ─── TURN 12 (CLAUDE.md F6.1): WHY THEY COULD NOT BE SEEN ───
+//
+// Owner: "hinges invisible in Solid — find why". They were being drawn, in the
+// right place, every frame. The answer is that every part of one was INSIDE
+// solid board:
+//
+//   • the CUP is bored into the back of the door, so the cylinder turn 7 drew
+//     at `z + cupDepth/2` sits entirely within the door's 25 mm — visible in
+//     X-ray, where the board is translucent, and in nothing else;
+//   • the ARM and the PLATE are inside the carcass, behind a shut door.
+//
+// Two things were missing and both are here now.
+//
+//   THE BOSS. `profile.hardware.hinge.bossHeight` has carried the number since
+//   turn 7 with the comment "the cup body standing proud of the door's back
+//   face", and nothing ever drew it. It is the part of a hinge a joiner
+//   actually sees when he opens a cabinet, and it was the one part missing.
+//
+//   THE SWING. The cup and the boss are screwed to the DOOR. They were drawn in
+//   a static group, so opening a door left them behind in the air where the
+//   door had been — which is worse than not drawing them. They are rendered as
+//   children of the door's own swinging group now (3d/UnitView.jsx), so they go
+//   with it, and the arm and plate stay on the carcass where they are screwed.
+//   That is also what makes the joint READ: open the door and the two halves
+//   separate, exactly as the ironmongery does.
 
 /**
  * @param {object} props
@@ -53,7 +79,7 @@ export default function Hardware({
           because in Solid it is a small object on a white door rather than the
           thing being explained. */}
       {(xray || hinges) && (
-        <Hinges
+        <CarcassHinges
           items={instances.hinges}
           profile={profile}
           colour={xray ? colours.bracket : (colours.hinge || colours.bracket)}
@@ -106,23 +132,14 @@ const put = (matrix, position, quaternion = null, scale = null) => matrix.compos
 // ─── Hinges ─────────────────────────────────────────────────────────────────
 
 /**
- * Three instanced meshes for one hinge: the cup, the arm that leaves it, and
- * the plate on the carcass side. Three shapes, three meshes — an InstancedMesh
- * carries one geometry, and three of them is still three draw calls for twelve
- * hinges rather than thirty-six.
+ * The CARCASS half: the arm that leaves the cup and the plate it is screwed to.
+ *
+ * Two instanced meshes — an InstancedMesh carries one geometry, and two of them
+ * is two draw calls for twelve hinges rather than twenty-four. Neither piece
+ * moves when a door opens: they are screwed to the side panel.
  */
-function Hinges({ items, profile, colour }) {
+function CarcassHinges({ items, profile, colour }) {
   const H = profile.hardware.hinge;
-
-  // The cup is bored along the DEPTH axis, so the cylinder (whose own axis is
-  // Y) is laid down once, here, rather than per instance.
-  const laid = useMemo(() => new THREE.Quaternion()
-    .setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2), []);
-
-  const placeCup = useMemo(() => (i, m) => {
-    const h = items[i];
-    put(m, new THREE.Vector3(mm(h.x), mm(h.y), mm(h.z + H.cupDepth / 2)), laid);
-  }, [items, H.cupDepth, laid]);
 
   // The arm runs straight back off the cup, into the carcass.
   const placeArm = useMemo(() => (i, m) => {
@@ -139,14 +156,69 @@ function Hinges({ items, profile, colour }) {
 
   return (
     <>
-      <Pieces count={items.length} place={placeCup} colour={colour} metalness={0.8}>
-        <cylinderGeometry args={[mm(H.cupDiameter / 2), mm(H.cupDiameter / 2), mm(H.cupDepth), 18]} />
-      </Pieces>
       <Pieces count={items.length} place={placeArm} colour={colour}>
         <boxGeometry args={[mm(H.armWidth), mm(H.armThickness), mm(H.armLength)]} />
       </Pieces>
       <Pieces count={items.length} place={placePlate} colour={colour}>
         <boxGeometry args={[mm(H.plateThickness), mm(H.plateWidth), mm(H.plateLength)]} />
+      </Pieces>
+    </>
+  );
+}
+
+/**
+ * The DOOR half: the ⌀35 cup bored into the back of the door, and the boss
+ * standing proud of it — which is the part you can actually see.
+ *
+ * Rendered INSIDE the door's own group (3d/UnitView.jsx), so it swings with the
+ * door. `pivot` is that group's origin in cabinet millimetres, because a child
+ * of it is positioned relative to it and the hinge instances are in the
+ * cabinet's frame like every other number in this file.
+ *
+ * @param {object} props
+ *   items   the hinge instances belonging to THIS door
+ *   pivot   [x, y, z] in cabinet mm — the group's origin
+ */
+export function DoorHinges({
+  items, profile, colour, pivot,
+}) {
+  const H = profile.hardware.hinge;
+
+  // The cup is bored along the DEPTH axis, so the cylinder (whose own axis is
+  // Y) is laid down once, here, rather than per instance.
+  const laid = useMemo(() => new THREE.Quaternion()
+    .setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2), []);
+
+  const local = (x, y, z) => new THREE.Vector3(
+    mm(x) - pivot[0], mm(y) - pivot[1], mm(z) - pivot[2],
+  );
+
+  // Into the door, from its back face.
+  const placeCup = useMemo(() => (i, m) => {
+    const h = items[i];
+    put(m, local(h.x, h.y, h.z + H.cupDepth / 2), laid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, H.cupDepth, laid, pivot[0], pivot[1], pivot[2]]);
+
+  // …and OUT of it, into the carcass opening, which is the half a joiner sees.
+  const placeBoss = useMemo(() => (i, m) => {
+    const h = items[i];
+    put(m, local(h.x, h.y, h.z - H.bossHeight / 2), laid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, H.bossHeight, laid, pivot[0], pivot[1], pivot[2]]);
+
+  if (!items.length) return null;
+  return (
+    <>
+      <Pieces count={items.length} place={placeCup} colour={colour} metalness={0.8}>
+        <cylinderGeometry args={[mm(H.cupDiameter / 2), mm(H.cupDiameter / 2), mm(H.cupDepth), 18]} />
+      </Pieces>
+      <Pieces count={items.length} place={placeBoss} colour={colour} metalness={0.8}>
+        {/* Slightly narrower than the bore it stands in, as the body of a cup
+            hinge is — it is the moving part, not the hole. */}
+        <cylinderGeometry
+          args={[mm(H.cupDiameter / 2 - 1), mm(H.cupDiameter / 2 - 1), mm(H.bossHeight), 18]}
+        />
       </Pieces>
     </>
   );

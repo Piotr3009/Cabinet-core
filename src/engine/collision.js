@@ -220,6 +220,56 @@ export function unitSpan(unit) {
   return { left, right: left + (Number(unit.params?.width) || 0) + pad.left + pad.right };
 }
 
+// ─── WHAT IS IN THE WAY OF WHAT (turn 12, CLAUDE.md F7) ────────────────────
+//
+// Bug, owner-verified twice: "a hanging unit ignores tall units completely — it
+// drives straight through them and no alignment happens."
+//
+// The cause was one line, and it had been right for eight turns. A unit's
+// obstacles were everything at the same MOUNTING LEVEL — `mount === 'wall'` for
+// hanging units, `'floor'` for standing ones — which is exactly correct while
+// every standing unit stops at worktop height and every hanging one starts
+// above it. A TALL unit breaks it: it stands on the floor, so it is filed under
+// 'floor', and it goes all the way up through the band the wall units hang in.
+// The two never met, so a wall unit drove through a 2.15 m cabinet.
+//
+// "Mounting level" was always a proxy. The real question is whether the two
+// pieces of furniture occupy the same HEIGHTS, and that is what is asked now —
+// which gives the old answer everywhere the old rule was right (a base unit and
+// a wall unit share no height at all) and the right answer where it was wrong.
+//
+// It is also, deliberately, not a rule about "tall units". A wardrobe, a fridge
+// housing, a dresser somebody has typed 1900 into and whatever kit turn 15 adds
+// are all handled by the same three lines, because the question is about the
+// furniture and not about the label on it.
+
+/**
+ * The band of heights a unit occupies: from the underside of its carcass to the
+ * top of it.
+ *
+ * @param {object} args
+ *   floorY  how far off the floor the carcass starts — the toe kick for a unit
+ *           on legs, the mounting height for one that hangs
+ *   height  the carcass height
+ */
+export function unitBand({ floorY = 0, height = 0 }) {
+  const from = Number(floorY) || 0;
+  return { from, to: from + (Number(height) || 0) };
+}
+
+/**
+ * Do two units share any of their height?
+ *
+ * `minOverlap` is what stops two pieces that merely TOUCH from blocking each
+ * other: a wall unit hung exactly on the top of a tall one is a kitchen finished
+ * flush, not a collision. It is a profile number
+ * (`editor.levelOverlapMm`) like every other clearance.
+ */
+export function bandsOverlap(a, b, minOverlap = 0) {
+  if (!a || !b) return false;
+  return Math.min(a.to, b.to) - Math.max(a.from, b.from) > (Number(minOverlap) || 0);
+}
+
 // ─── Plan geometry: units on DIFFERENT walls ────────────────────────────────
 // Two units on the same wall are a one-dimensional problem. Two units meeting
 // in a CORNER are not: one stands on wall 1 and the other on wall 2, and what

@@ -185,3 +185,67 @@ function arc(ca, cd, r, a0, a1, steps, T) {
 export function hasSocketRecesses(panel, layers) {
   return socketNotches(panel, layers).length > 0;
 }
+
+// ─── The OTHER half of the joint (turn 12, CLAUDE.md F6.2) ──────────────────
+//
+// "Sockets look right; the mating TABS with their round reliefs on the carcass
+// panel EDGES are not visible."
+//
+// They were not, and the reason is that the two halves of the joint are carried
+// in two different places in a panel's CNC data. A SOCKET is a POCKET — a
+// routed recess, `cnc.pockets` on the PUZZLE_SOCKET layer — and turn 11 turned
+// those into notches in the nominal rectangle and cut them out of the solid. A
+// TAB is part of the panel's OUTLINE: `cnc.outline` leaves the nominal
+// rectangle, goes round the tab and its two dog-bone reliefs, and comes back.
+// Nothing read that, so every board was extruded from its rectangle and the
+// tabs went with the rectangle.
+//
+// This is the reader. It invents no geometry whatsoever: a tab is the run of
+// outline points that lies OUTSIDE the nominal rectangle, closed back along the
+// edge it left from — so what comes out is the LISP's own tab profile,
+// shoulders, reliefs and all, to the half millimetre.
+
+/**
+ * Every part of this panel's outline that stands proud of its rectangle.
+ *
+ * @param {object} panel   an engine panel record
+ * @returns {Array<Array<[number,number]>>} closed polygons, in the CNC frame
+ */
+export function tabOutlines(panel) {
+  const pts = panel?.cnc?.outline;
+  if (!Array.isArray(pts) || pts.length < 4) return [];
+  const { w, h } = cncRect(panel);
+  if (!(w > 0) || !(h > 0)) return [];
+
+  const outside = ([x, y]) => x > w + EPS || y > h + EPS || x < -EPS || y < -EPS;
+  const n = pts.length;
+  if (!pts.some(outside)) return [];
+
+  // Start the walk from a point that is INSIDE, so a run can never be split
+  // across the end of the array.
+  const first = pts.findIndex((p) => !outside(p));
+  if (first === -1) return [];
+
+  const tabs = [];
+  let run = null;
+  for (let k = 0; k <= n; k += 1) {
+    const i = (first + k) % n;
+    const p = pts[i];
+    if (outside(p)) {
+      // The point BEFORE the run is where the tab leaves the board — it is part
+      // of the polygon, and it is the one the closing edge comes back to.
+      if (!run) run = [pts[(i - 1 + n) % n]];
+      run.push(p);
+    } else if (run) {
+      run.push(p);
+      tabs.push(run);
+      run = null;
+    }
+  }
+  return tabs;
+}
+
+/** Does this panel carry any tabs at all? The cheap question, asked often. */
+export function hasTabs(panel) {
+  return tabOutlines(panel).length > 0;
+}

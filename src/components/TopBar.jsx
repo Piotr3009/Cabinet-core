@@ -8,6 +8,7 @@ import { UNIT_CATEGORIES } from '../engine/types.js';
 import { buildOutputMenu } from '../lib/outputMenu.js';
 import { buildDatabaseMenu, orderMenus } from '../lib/topMenu.js';
 import { persistProject } from '../lib/persist.js';
+import { anchorOfEvent } from '../lib/modalAnchor.js';
 
 // Frozen layout, SPEC section 7: logo in gold, project name, gold Export button.
 // Turn 4 (BACKLOG #8) puts the classic menu bar in between: File · View ·
@@ -72,7 +73,7 @@ export default function TopBar({
         { label: 'Open…', hint: 'Recent projects and everything saved', run: goToStart },
         { divider: true },
         { label: 'Save', hint: dirty ? 'Unsaved changes' : 'Up to date', run: save },
-        { label: 'Save as…', run: () => openModal('save-as') },
+        { label: 'Save as…', run: (e) => openModal('save-as', { anchor: anchorOfEvent(e) }) },
         { divider: true },
         { label: 'Close project', run: goToStart },
       ],
@@ -143,8 +144,8 @@ export default function TopBar({
     {
       label: 'Settings',
       items: [
-        { label: 'Design settings…', run: () => openModal('design') },
-        { label: 'Room setup…', run: () => openModal('room') },
+        { label: 'Settings…', run: (e) => openModal('design', { anchor: anchorOfEvent(e) }) },
+        { label: 'Room setup…', run: (e) => openModal('room', { anchor: anchorOfEvent(e) }) },
         { divider: true },
         {
           label: 'Snap',
@@ -165,7 +166,7 @@ export default function TopBar({
       // The one of the three that is real today. Design Settings is where the
       // assignment lives, so that is where the entry goes rather than to a
       // second screen that would have to be kept in step with it.
-      onMaterials: () => openModal('design'),
+      onMaterials: (e) => openModal('design', { anchor: anchorOfEvent(e) }),
     }),
     // BACKLOG #36 — the place in the menu, held open. What goes behind it
     // (finish per element, the list, m², the price) is still being designed with

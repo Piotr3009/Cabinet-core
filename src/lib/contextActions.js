@@ -189,6 +189,18 @@ export function menuActions({
   // just finished configuring is where a joiner reaches for this. It asks for a
   // NAME (the modal), because a library of "Wardrobe", "Wardrobe (2)" and
   // "Wardrobe (3)" is a library nobody uses.
+  // ─── Turn 12 (CLAUDE.md F4): the cabinet editor ───
+  // "Right-click a unit → 'Edit cabinet' → a NEW modal hosting its OWN small 3D
+  // canvas with THAT unit only." It is placed here, above the destructive half
+  // of the menu, because it is the entry a joiner reaches for most often once
+  // the cabinet is standing: it is where you go to LOOK at what you have made.
+  actions.push({
+    id: 'edit-cabinet',
+    label: 'Edit cabinet…',
+    hint: 'This cabinet on its own — explode it, turn a part over, edit any piece',
+    run: () => store.editCabinet?.(unit.id),
+  });
+
   actions.push({
     id: 'save-template',
     label: 'Save as template',

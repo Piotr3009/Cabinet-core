@@ -144,20 +144,12 @@ export function migrateDesign(design) {
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: d.fronts?.handle ?? null,
-      types: Array.isArray(d.fronts?.types)
-        ? d.fronts.types.slice(0, 2).map((t, i) => ({
-          id: t.id || `f${i + 1}`,
-          label: t.label || `Front ${i + 1}`,
-          source: t.source ?? null,
-          colour: normaliseColour(t.colour),
-          material_id: t.material_id ?? null,
-        }))
-        : [],
+      types: coupleFrontTypes(d),
     },
     doorStyles: Array.isArray(d.doorStyles)
       ? d.doorStyles.map((s) => normaliseDoorStyle(s)).filter(Boolean)
       : [],
-    colour: { front: normaliseColour(d.colour?.front), carcass: normaliseColour(d.colour?.carcass) },
+    colour: { front: projectFrontColour(d), carcass: normaliseColour(d.colour?.carcass) },
     infill: { sideWidth: Number(d.infill?.sideWidth) >= 0 ? Number(d.infill.sideWidth) : base.infill.sideWidth },
     finish: {
       carcass: d.finish?.carcass ?? null,
@@ -177,6 +169,89 @@ export function migrateDesign(design) {
     // `== null` and not a truthiness test: Number(null) is 0, and a shortcut
     // that treats 0 as "not set" would also treat a real stored 0 that way.
     sheen: migrateSheen(d),
+  };
+}
+
+// ─── ONE FRONT COLOUR (turn 12, CLAUDE.md F1) ───────────────────────────────
+//
+// The bug the owner hit within minutes of turn 11: "the scene ignores what the
+// new menu sets". It did, and this is why.
+//
+// Turn 11 gave the project FRONT TYPES — up to two of them, each with a source
+// and a colour — and step 5 set the front colour by writing
+// `design.fronts.types[0].colour`. But NOTHING READS THAT FIELD. Every consumer
+// in the app — `resolveUnitDesign` below, the sprayed finish, the BOM, the unit
+// card, the 3D materials — asks `design.colour.front`, which is what the older
+// Design-settings modal wrote. Two places to say the same thing, one of them
+// wired to nothing: pick the wrong menu and the doors stay the colour they were.
+//
+// So the two are made ONE, here, in the migration every read already goes
+// through:
+//
+//   FRONT TYPE 1'S COLOUR *IS* THE PROJECT'S FRONT COLOUR.
+//
+// `design.colour.front` remains the field the app reads, because a dozen
+// consumers read it and this phase is not a rename; it is now a MIRROR of front
+// type 1 rather than a rival to it. Writing either one is writing both
+// (`withFrontColour` below is the one setter), and a project cached before this
+// turn — which has a colour in one place and nothing in the other — comes back
+// with both filled in, whichever half it stored. That is the migration
+// CLAUDE.md F1.1 asks for, and it costs a stored project nothing.
+
+/** The colours of the project's front types, with type 1 and `colour.front` agreed. */
+function coupleFrontTypes(d) {
+  const types = Array.isArray(d?.fronts?.types)
+    ? d.fronts.types.slice(0, 2).map((t, i) => ({
+      id: t.id || `f${i + 1}`,
+      label: t.label || `Front ${i + 1}`,
+      source: t.source ?? null,
+      colour: normaliseColour(t.colour),
+      material_id: t.material_id ?? null,
+    }))
+    : [];
+  if (!types.length) return types;
+  // A cached project from before turn 12 has the colour in `colour.front` and
+  // nothing on the type. Backfill it; a type that has its own is left alone.
+  if (!types[0].colour) types[0] = { ...types[0], colour: normaliseColour(d?.colour?.front) };
+  return types;
+}
+
+/** The project's front colour: front type 1's, or the older field if that is all there is. */
+function projectFrontColour(d) {
+  const first = Array.isArray(d?.fronts?.types) ? d.fronts.types[0] : null;
+  return normaliseColour(first?.colour) || normaliseColour(d?.colour?.front);
+}
+
+/**
+ * Set the project's front colour — in BOTH places, so it cannot be set in one.
+ *
+ * This is the ONE setter (CLAUDE.md F1.1: "ONE component, ONE data path"). The
+ * settings surface calls it, the store calls it, and there is nowhere left to
+ * write half of the answer from.
+ *
+ * @param {object} design   any design, stored or migrated
+ * @param {object|null} colour
+ * @param {string|null} typeId  which front type — defaults to the first
+ * @returns {object} a migrated design with the colour set
+ */
+export function withFrontColour(design, colour, typeId = null) {
+  const d = migrateDesign(design);
+  const c = normaliseColour(colour);
+  const types = d.fronts.types.length
+    ? d.fronts.types
+    : [{
+      id: 'f1', label: 'Front 1', source: null, colour: null, material_id: null,
+    }];
+  const index = typeId ? types.findIndex((t) => t.id === typeId) : 0;
+  const at = index === -1 ? 0 : index;
+  const next = types.map((t, i) => (i === at ? { ...t, colour: c } : t));
+  return {
+    ...d,
+    fronts: { ...d.fronts, types: next },
+    // Only front type 1 is the project's front colour. Type 2 is a second
+    // material a workshop assigns per piece; it has never been the default and
+    // it does not become one by being edited.
+    colour: at === 0 ? { ...d.colour, front: c } : d.colour,
   };
 }
 

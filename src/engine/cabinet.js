@@ -23,6 +23,7 @@
 import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
+import { partitionSpan, widthZones } from './zones.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
@@ -82,12 +83,61 @@ function lispRound(value) {
 /**
  * The BUDR front stack: heights split by the profile ratio (4:3:2) over the
  * height left once every gap is taken out. KIT_BUDR_FULL L616-619.
+ *
+ * ─── Turn 12 (CLAUDE.md F3.2): THE RATIO IS THE VARIANT ───
+ * `ratio` may be handed in — [1,1] for the 2× unit, [1,1,1,1] for the 4× — and
+ * everything downstream of this function already loops over the heights it
+ * returns, which is why two more drawer units cost the engine one argument.
+ * Left out, it is the kit's own 4:3:2 and the answer is bit-for-bit what it was.
+ *
+ * `exact` is the OTHER half of it, and it is a variant's property rather than a
+ * behaviour of this function, for a reason worth writing down.
+ *
+ * The kit says the stack fills the carcass — "stack top = H − 3"
+ * (fixtures/golden-budr.json), which is the same statement as
+ * sum(heights) === available. Rounding each front independently does not always
+ * deliver that: four equal fronts over an odd available height each round UP by
+ * a half and the stack finishes 2 mm proud, and even 4:3:2 drifts by 1 mm at
+ * some heights (H = 602 is one). A new variant must not ship with that, so the
+ * variants carry `exact: true` and the last front takes up whatever the
+ * rounding left.
+ *
+ * KIT_BUDR_FULL's own 4:3:2 carries `exact: false` and is left exactly as it is.
+ * Not because the drift is right — it is BLOCKERS #64 — but because rule 7 is
+ * absolute: the CNC export is byte-identical for everything that exists today,
+ * and a 1 mm improvement nobody asked for on a height somebody may already have
+ * cut is still a change to what the machine does.
  */
-export function budrFrontHeights(height, profile) {
+export function budrFrontHeights(height, profile, ratio = null, exact = false) {
   const B = profile.baseDrawerUnit;
-  const total = B.ratio.reduce((s, r) => s + r, 0);
-  const available = Number(height) - B.ratio.length * B.gap;
-  return B.ratio.map((r) => lispRound((available * r) / total));
+  const split = Array.isArray(ratio) && ratio.length ? ratio : B.ratio;
+  const total = split.reduce((s, r) => s + r, 0);
+  const available = Number(height) - split.length * B.gap;
+  const heights = split.map((r) => lispRound((available * r) / total));
+  if (!exact) return heights;
+  const drift = available - heights.reduce((s, h) => s + h, 0);
+  if (drift) heights[heights.length - 1] += drift;
+  return heights;
+}
+
+/**
+ * How a unit type's drawer stack is split (turn 12, CLAUDE.md F3.2).
+ *
+ * A type names a VARIANT (`drawerVariant`); the variant carries the ratio and
+ * lives in profile.baseDrawerUnit.variants, because it is a number and rule 2
+ * says where numbers live. A type that names none gets the kit's own.
+ *
+ * @returns {{ratio:number[], exact:boolean}}
+ */
+export function drawerSplitFor(type, profile) {
+  const B = profile.baseDrawerUnit;
+  const variant = type?.drawerVariant
+    ? (B.variants || []).find((v) => v.id === type.drawerVariant)
+    : null;
+  return {
+    ratio: variant?.ratio || B.ratio,
+    exact: Boolean(variant?.exact),
+  };
 }
 
 // ─── Parameter normalisation ───
@@ -130,10 +180,15 @@ function normalizeParams(raw, profile) {
     });
   }
 
+  // Which split this kit's fronts are cut to. Turn 12: a drawer unit's VARIANT
+  // is a ratio and nothing else (CLAUDE.md F3.2), so the count follows from it.
+  const budrSplit = drawerSplitFor(type, profile);
+
   let drawers = 0;
   if (type.drawerStyle === 'budr') {
-    // KIT_BUDR_FULL is always a three-drawer unit: the ratio IS the stack.
-    drawers = profile.baseDrawerUnit.ratio.length;
+    // A BUDR-style unit IS its drawers: the ratio is the stack, and the LISP
+    // kit has no "how many" question to ask.
+    drawers = budrSplit.ratio.length;
   } else if (type.supports.drawers && !drawerCountBad) {
     drawers = items.length
       ? drawersFromItems.length
@@ -145,7 +200,7 @@ function normalizeParams(raw, profile) {
   // authority when the editor supplies it; otherwise array order stands.
   const drawerItems = [...drawersFromItems].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
   const drawerHeights = type.drawerStyle === 'budr'
-    ? budrFrontHeights(height, profile)
+    ? budrFrontHeights(height, profile, budrSplit.ratio, budrSplit.exact)
     : resolveDrawerHeights(p, drawers, drawerItems, profile, warnings);
   const rail = type.supports.rail ? (items.length ? Boolean(hangerFromItems) : Boolean(p.rail)) : false;
 
@@ -896,9 +951,33 @@ export function computeCabinet(params, profileOverride) {
     }));
   }
 
+  // ─── The ZONE model (turn 12, CLAUDE.md F5.3) ───
+  // The bays across the cabinet, one per opening between the vertical
+  // partitions. With no partition there is exactly one bay and every shelf is
+  // full width, which is what every cabinet before turn 12 was.
+  const verticalItems = (cfg.items || [])
+    .filter((i) => i.kind === 'partition' && Number.isFinite(Number(i.x_mm)))
+    .sort((a, b) => Number(a.x_mm) - Number(b.x_mm));
+  const bays = widthZones({ width: W, boardT: G, partitions: verticalItems });
+
   for (let i = 1; i <= numShelves; i += 1) {
     const y = shelfRows[i - 1] ?? (G + ((H - 2 * G) / (numShelves + 1)) * i);
     const item = cfg.shelfItems[i - 1];
+    // Which BAY this shelf lives in (CLAUDE.md F5.3). `zone` is an index into
+    // the bays above rather than a pair of coordinates, so moving the partition
+    // moves the shelves in its bays with it — coupled, and without a second
+    // number to keep in step. Nothing said = the whole width, as before.
+    // `item.zone == null` FIRST, and not `Number.isFinite(Number(...))` alone:
+    // `Number(null)` is 0, so "no bay was chosen" would read as "bay 0" and
+    // every full-width shelf in the app would come out the width of the first
+    // bay. The same trap rule 13 is about.
+    const bay = item?.zone == null || !Number.isFinite(Number(item.zone))
+      ? null
+      : bays[Math.trunc(Number(item.zone))] || null;
+    const shelfWHere = bay ? bay.size - C.shelfWidthClearance : shelfW;
+    const shelfXHere = bay
+      ? bay.from + C.shelfWidthClearance / 2
+      : G + C.shelfWidthClearance / 2;
     // Every shelf may be pulled out to the face on its own (turn 8, F4). With
     // nothing said it is the LISP's own 20 mm, which is what a bare kit call —
     // and every golden fixture — gets.
@@ -910,8 +989,8 @@ export function computeCabinet(params, profileOverride) {
     // is different, and only when somebody said so.
     const shelfT = shelfThickness(item, G);
     panels.push(panel({
-      id: `SHELF-${i}`, part: 'SHELF', role: 'shelf', w: shelfW, h: depthHere, thickness: shelfT,
-      edgeCode: codes.right, edgeLen: metres(shelfW),
+      id: `SHELF-${i}`, part: 'SHELF', role: 'shelf', w: shelfWHere, h: depthHere, thickness: shelfT,
+      edgeCode: codes.right, edgeLen: metres(shelfWHere),
       // `pos_mm` is the shelf's BOTTOM face and always has been (the LISP draws
       // the board from shelfY up), so a thicker shelf grows UP from the pin row
       // it sits on rather than down through it.
@@ -928,14 +1007,14 @@ export function computeCabinet(params, profileOverride) {
       // oriented backwards". A shelf is placed by its FRONT edge, which is
       // where a joiner measures it from and where the setback is measured to.
       box: {
-        x: G + C.shelfWidthClearance / 2,
+        x: shelfXHere,
         y,
         z: D - setbackOf(item?.front_mm, C.shelfDepthClearance) - depthHere,
-        w: shelfW,
+        w: shelfWHere,
         h: shelfT,
         d: depthHere,
       },
-      cnc: rectGeometry(shelfW, depthHere),
+      cnc: rectGeometry(shelfWHere, depthHere),
       meta: {
         index: i,
         // Turn 8: the default is ADJUSTABLE — a shelf on pins, which is what a
@@ -948,6 +1027,7 @@ export function computeCabinet(params, profileOverride) {
         locked: isShelfLocked(item),
         front_mm: setbackOf(item?.front_mm, C.shelfDepthClearance),
         thickness_mm: shelfT,
+        zone: bay ? bay.index : null,
         ...(shelfMaterial(item) || {}),
       },
     }));
@@ -988,32 +1068,53 @@ export function computeCabinet(params, profileOverride) {
   //
   // Depth follows the horizontal partition's, so the two read as one family of
   // pieces inside the carcass and both answer to `partition_front_mm`.
+  //
+  // ─── TURN 12 (CLAUDE.md F5.3): IT MAY STAND ON A SHELF ───
+  // The owner's three rules, and the reasoning is in engine/zones.js beside the
+  // function that applies them: a partition may terminate on a FIXED shelf, its
+  // depth then FOLLOWS that shelf's (shrink the shelf and the partition shrinks
+  // with it), and an ADJUSTABLE shelf carries nothing — the partition runs past
+  // it and the collision treatment says so.
   {
-    const verticals = (cfg.items || [])
-      .filter((i) => i.kind === 'partition' && Number.isFinite(Number(i.x_mm)))
-      .sort((a, b) => Number(a.x_mm) - Number(b.x_mm));
-    const partH = H - 2 * G;
+    const verticals = verticalItems;
     let n = 0;
     for (const item of verticals) {
       const x = Math.min(Math.max(Number(item.x_mm), G), W - 2 * G);
-      if (partH <= 0) break;
+      const span = partitionSpan({
+        floor: G,
+        ceiling: H - G,
+        shelves: cfg.shelfItems || [],
+        boardT: G,
+        depth: partitionDepth,
+        fullDepth: internalDepth,
+      });
+      if (span.height <= 0) break;
       n += 1;
       panels.push(panel({
-        id: `VPART-${n}`, part: 'VPART', role: 'shelf', w: partH, h: partitionDepth, thickness: G,
+        id: `VPART-${n}`, part: 'VPART', role: 'shelf', w: span.height, h: span.depth, thickness: G,
         // One long edge is seen from the room when the doors are open — the same
         // edge a shelf shows, and it is banded for the same reason.
         edgeCode: codes.right,
-        edgeLen: metres(partH),
+        edgeLen: metres(span.height),
         box: {
-          x, y: G, z: D - (internalDepth - partitionDepth) - partitionDepth, w: G, h: partH, d: partitionDepth,
+          x,
+          y: span.from,
+          z: D - span.front_mm - span.depth,
+          w: G,
+          h: span.height,
+          d: span.depth,
         },
-        cnc: rectGeometry(partH, partitionDepth),
+        cnc: rectGeometry(span.height, span.depth),
         meta: {
           index: n,
           vertical: true,
           itemId: item.id || null,
           x_mm: x,
-          front_mm: internalDepth - partitionDepth,
+          front_mm: span.front_mm,
+          // Which shelf carries it, when one does — the panel says so, and the
+          // 3D view can draw the two as one joint rather than two pieces that
+          // happen to touch.
+          terminatesOn: span.terminatesOn,
         },
       }));
     }
@@ -1217,11 +1318,28 @@ export function computeCabinet(params, profileOverride) {
   // unit is placed in a room (engine/autoparts.js).
   const wantsPlinth = AP.plinth.enabled && type.legs && type.mount === 'floor'
     && params?.plinth === true && plinthH > 0;
-  if (wantsPlinth) {
+  // ─── ONE PLINTH ACROSS A RUN (turn 12, CLAUDE.md F8) ───
+  //
+  // The toe kick is a RUN element now, exactly as the top infill has been since
+  // turn 8: engine/runs.js works out the segments, writes the geometry onto the
+  // first unit of each and a note onto the rest, and this reads the answer.
+  //
+  //   `run_plinth.role === 'owner'`   cut the whole segment's length here
+  //   `run_plinth.role === 'member'`  cut nothing; the long piece is next door
+  //   no `run_plinth` at all         the single-unit plinth, exactly as before
+  //
+  // The last line is what keeps a bare `computeCabinet(params)` — every golden
+  // fixture, every test that builds one cabinet — producing what it always did.
+  // The run element is a PROJECT decision and arrives only from the store.
+  const runPlinth = params?.run_plinth || null;
+  const plinthMember = runPlinth?.role === 'member';
+  const plinthLength = runPlinth?.role === 'owner' ? Number(runPlinth.length) || W : W;
+  const plinthX = runPlinth?.role === 'owner' ? Number(runPlinth.offset) || 0 : 0;
+  if (wantsPlinth && !plinthMember) {
     const t = AP.plinth.thickness ?? G;
     panels.push(panel({
-      id: 'PLINTH', part: 'PLINTH', role: 'plinth', w: W, h: plinthH, thickness: t,
-      edgeCode: codes.topBottom, edgeLen: metres(2 * W),
+      id: 'PLINTH', part: 'PLINTH', role: 'plinth', w: plinthLength, h: plinthH, thickness: t,
+      edgeCode: codes.topBottom, edgeLen: metres(2 * plinthLength),
       // ─── Turn 11 (CLAUDE.md F5.4): AT THE FRONT ───
       // It was at `z: setback` — 50 mm in from the WALL, which is the back of
       // the cabinet: a toe kick fitted behind the carcass, against the plaster,
@@ -1234,9 +1352,10 @@ export function computeCabinet(params, profileOverride) {
       // behind that. The setback number itself is unchanged — it always meant
       // "recessed from the front", and only the sign of it was wrong.
       box: {
-        x: 0, y: -plinthH, z: D - AP.plinth.setback - t, w: W, h: plinthH, d: t,
+        x: plinthX, y: -plinthH, z: D - AP.plinth.setback - t, w: plinthLength, h: plinthH, d: t,
       },
-      cnc: rectGeometry(W, plinthH),
+      cnc: rectGeometry(plinthLength, plinthH),
+      ...(runPlinth?.role === 'owner' ? { meta: { run: true, unitIds: runPlinth.unitIds } } : {}),
     }));
   }
 
@@ -1802,7 +1921,9 @@ export function computeCabinet(params, profileOverride) {
       drawer_box_front_h: [...boxFrontHs],
     } : {}),
     ...(budr ? {
-      available_h: H - B.ratio.length * B.gap,
+      // The height the fronts share out, once every gap is taken out of it. It
+      // follows the VARIANT's count (turn 12, F3.2), not the kit's own three.
+      available_h: H - budr.count * B.gap,
       front_heights: [...budr.heights],
       szufMaxDl: budr.maxDl,
       szufDl: budr.depth,

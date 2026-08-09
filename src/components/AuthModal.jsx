@@ -5,11 +5,15 @@ import { useAuthStore } from '../stores/authStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { isMockMode, MOCK_REASON } from '../lib/supabase.js';
 import * as cloud from '../lib/cloudSync.js';
+import { useHistoryStore } from '../stores/historyStore.js';
 
 // Minimal account panel (SPEC 9): sign in / register, then the cloud project
 // list. Without Supabase keys it explains mock mode instead of pretending.
 export default function AuthModal() {
   const closeModal = useUiStore((s) => s.closeModal);
+  // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+  // Nothing to work out here — the opener said, and the shell places it.
+  const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const notify = useUiStore((s) => s.notify);
   const { user, busy, error, projects, signIn, signUp, signOut, init, refreshProjects } = useAuthStore();
   const project = useProjectStore((s) => s.project);
@@ -40,13 +44,17 @@ export default function AuthModal() {
   const open = async (id) => {
     const res = await cloud.loadProject(id);
     if (!res.project) { notify('Could not open that project.', 'error'); return; }
+    // A different job: the undo stack from the last one must not reach into it
+    // (turn 12, CLAUDE.md F9 — the history survives nothing, least of all a
+    // project boundary).
+    useHistoryStore.getState().clear();
     loadProject(res.project, res.units);
     notify(`Opened “${res.project.name}”.`, 'ok');
     closeModal();
   };
 
   return (
-    <Modal title="Account & projects" onClose={closeModal} width="w-[460px]">
+    <Modal title="Account & projects" onClose={closeModal} anchor={anchor} width="w-[460px]">
       {isMockMode ? (
         <div className="space-y-3">
           <p className="text-sm text-ink-100">Running in <span className="text-status-warn">Mock data mode</span>.</p>

@@ -345,3 +345,120 @@ export function runInfillParams(units, { walls, roomHeight, frontFaceDepthOf }, 
   }
   return out;
 }
+
+// ─── ONE PLINTH ACROSS A RUN (turn 12, CLAUDE.md F8) ────────────────────────
+//
+// The owner's rule, in his words:
+//
+//   • no plinth = no plinth (unchanged);
+//   • turning plinths on for adjacent units WITHOUT an end panel between them
+//     produces ONE continuous plinth across 2, 3, N units — not pieces;
+//   • a unit pushed against a plinthed run joins it AUTOMATICALLY;
+//   • an end panel or a gap is a boundary — a new segment starts.
+//
+// He is describing a toe kick as a joiner cuts one: a single length of board
+// running the front of the run, mitred or butted at the ends, not one small
+// piece per carcass with a joint every 600 mm that shows.
+//
+// It is the TOP-INFILL pattern, on the other side of the cabinet — the same
+// owner/member split, the same "one element per run", the same reasoning about
+// why a member has to carry a note rather than nothing. That is deliberate and
+// CLAUDE.md asks for it in as many words: "Reuse the top-infill run logic (one
+// element per run, T8) rather than a parallel implementation."
+//
+// The two extra boundaries a plinth has that a top infill does not:
+//
+//   AN END PANEL. It comes down to the floor and stands in the plane the toe
+//   kick occupies, so the kick stops at it — that is what an end panel is FOR.
+//   A top infill lives at the top of the cabinet where a floor-height end panel
+//   is not in the way, which is why turn 8 did not have to think about it.
+//
+//   A UNIT WITH NO PLINTH. A cabinet whose plinth is switched off is a hole in
+//   the toe kick, and a board that bridges it is a board across a doorway.
+
+/** Does this unit want a plinth of its own? */
+function wantsPlinth(unit) {
+  return unit?.params?.plinth === true;
+}
+
+/**
+ * The plinth SEGMENTS of one run: maximal stretches of adjacent plinthed units
+ * with no end panel standing between them.
+ *
+ * @returns {Array<Array<object>>} the units of each segment, left to right
+ */
+export function plinthSegments(run) {
+  const segments = [];
+  let current = [];
+  const close = () => { if (current.length) segments.push(current); current = []; };
+
+  for (const unit of run.units) {
+    if (!wantsPlinth(unit)) { close(); continue; }
+    if (current.length) {
+      const previous = current[current.length - 1];
+      // An end panel on EITHER facing side is a boundary: it is one piece of
+      // board standing between the two cabinets, and the kick meets it.
+      const between = endPanelSpread(previous, previous.params?.front_t).right > 0
+        || endPanelSpread(unit, unit.params?.front_t).left > 0;
+      if (between) close();
+    }
+    current.push(unit);
+  }
+  close();
+  return segments;
+}
+
+/**
+ * The plinth element for one segment: where it starts, how long it is, and who
+ * carries it.
+ *
+ * Measured on the CARCASSES, not on the padded span. An end panel comes down to
+ * the floor and stands in the plane the toe kick occupies — it is the visible
+ * end of the run, and the kick meets its inner face rather than running behind
+ * it. That is the same fact that makes an end panel a boundary between two
+ * cabinets, applied at the ends of the segment.
+ *
+ * It is also what keeps a SINGLE unit's plinth exactly the width it has always
+ * been (`w: W`), so the only export this phase changes is the one it means to:
+ * a run of two or more.
+ */
+export function segmentPlinth(segment) {
+  if (!segment.length) return null;
+  const first = segment[0];
+  const last = segment[segment.length - 1];
+  const left = Number(first.position?.x_mm) || 0;
+  const right = (Number(last.position?.x_mm) || 0) + (Number(last.params?.width) || 0);
+  const length = right - left;
+  if (length <= 0) return null;
+  const owner = segment[0];
+  return {
+    role: 'owner',
+    offset: left - (Number(owner.position?.x_mm) || 0),
+    length,
+    unitIds: segment.map((u) => u.id),
+  };
+}
+
+/**
+ * The `run_plinth` value for EVERY unit — the twin of `runInfillParams`.
+ *
+ * The owner of each segment carries the geometry; everyone else in it carries a
+ * note saying the segment has it covered. A member with no note at all would
+ * fall back to the single-unit path in computeCabinet and cut a second, shorter
+ * plinth inside the long one — which is exactly the trap turn 8 documented for
+ * the top infill.
+ *
+ * @returns {Map<string, object|null>} unit id → the parameter to store
+ */
+export function runPlinthParams(units, profile) {
+  const out = new Map(units.map((u) => [u.id, null]));
+  for (const run of buildRuns(units, profile)) {
+    for (const segment of plinthSegments(run)) {
+      const element = segmentPlinth(segment);
+      if (!element) continue;
+      out.set(segment[0].id, element);
+      for (const u of segment.slice(1)) out.set(u.id, { role: 'member', ownerId: segment[0].id });
+    }
+  }
+  return out;
+}

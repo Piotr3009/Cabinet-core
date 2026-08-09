@@ -477,6 +477,68 @@ export const DEFAULT_CABINET_PROFILE = {
   baseDrawerUnit: {
     defaults: { width: 600, height: 770, depth: 558 },
     ratio: [4, 3, 2],           // front heights split of (H − stackGaps)
+    // ─── The drawer-unit variants (turn 12, CLAUDE.md F3.2) ───
+    //
+    // "Drawer unit — expandable group: 1× (drawerline), 2×, 3× (today's BUDR),
+    // 4×. Derive them from the EXISTING BUD/BUDR mathematics … parameterised by
+    // count/heights; NO new joint formulas."
+    //
+    // And that is all a variant is: a RATIO. Every other number in this block —
+    // the box side ratio, the runner rows, the front width deduction, the screw
+    // positions — is already written per front rather than per unit, so 2 and 4
+    // fronts run through KIT_BUDR_FULL's arithmetic unchanged. `x3` repeats the
+    // kit's own 4:3:2 and is what BUDR has always used; it is listed so that the
+    // group reads as four of one thing rather than three plus an exception.
+    //
+    // 1× is DISABLED, and deliberately: a drawer over a DOOR needs a door of
+    // partial height, and no kit in reference/lisp defines one — the hinge rule
+    // (`hinges.rules.base`) measures its centres from the carcass, and mapping
+    // them onto a shorter front is exactly the "inventing" CLAUDE.md F3.2
+    // forbids. It is held open here with the reason attached (BLOCKERS #63).
+    variants: [
+      {
+        id: 'x1',
+        label: '1×',
+        count: 1,
+        hint: 'Drawerline — one drawer over a door',
+        ratio: null,
+        enabled: false,
+        soon: 'No kit defines a partial-height door yet — the pattern comes first',
+      },
+      // `exact` — does the last front take up whatever the rounding left, so
+      // that the stack fills the carcass exactly? The kit's own 4:3:2 says NO
+      // and is frozen there by rule 7 (see BLOCKERS #64 and the note on
+      // cabinet.js `budrFrontHeights`); the variants turn 12 adds say YES,
+      // because four equal fronts standing 2 mm proud of the carcass is not
+      // something to ship on purpose.
+      {
+        id: 'x2',
+        label: '2×',
+        count: 2,
+        hint: 'Two equal deep drawers',
+        ratio: [1, 1],
+        exact: true,
+        enabled: true,
+      },
+      {
+        id: 'x3',
+        label: '3×',
+        count: 3,
+        hint: 'The workshop standard — 4:3:2',
+        ratio: [4, 3, 2],
+        exact: false,
+        enabled: true,
+      },
+      {
+        id: 'x4',
+        label: '4×',
+        count: 4,
+        hint: 'Four equal drawers',
+        ratio: [1, 1, 1, 1],
+        exact: true,
+        enabled: true,
+      },
+    ],
     gap: 3,                     // between fronts, and the top clearance
     frontWidthDeduction: 3,     // front W = W − 3 (overlay, like a single door)
     sideRatio: 0.7,             // box side height = round(0.7 × front height)
@@ -1439,6 +1501,22 @@ export const DEFAULT_CABINET_PROFILE = {
     // a scribe — `autoParts.sideInfill.maxWidth` is 120, so anything under this
     // is a filler's job and not a cabinet's.
     addPlusMinGapMm: 100,
+
+    // ─── THE MODAL RULE (turn 12, CLAUDE.md rule 15) ───
+    // "Every modal in this application is DRAGGABLE by its header and opens
+    // BESIDE the object it concerns — never covering it." The owner said
+    // "na zawsze", so the two numbers that decide what "beside" means are here
+    // rather than in a component: one shell reads them and every modal in the
+    // app is placed by it.
+    modal: {
+      // Clear screen pixels left between the object and the modal. Enough that
+      // the edge of the cabinet and the edge of the panel are plainly two
+      // things, and not so much that the panel stops feeling attached to it.
+      gapPx: 14,
+      // How close to a viewport edge a modal may come. The same 8 px the
+      // right-click menu has used since turn 11.
+      marginPx: 8,
+    },
   },
 
   // ─── Editor defaults ───
@@ -1454,6 +1532,13 @@ export const DEFAULT_CABINET_PROFILE = {
     mmStep: 0.5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
+    // ─── Turn 12 (CLAUDE.md F7) ───
+    // How much HEIGHT two units have to share before one blocks the other. A
+    // wall unit hung exactly level with the top of a tall cabinet beside it is a
+    // kitchen finished flush and not a collision, so touching is not overlapping
+    // — but a millimetre of float should not turn into a phantom obstacle
+    // either. The tolerance is the workshop's own grid.
+    levelOverlapMm: 0.5,
     unitMagnet: 40,            // butt a unit against its neighbour within this
     minUnitGap: 0,             // units stand edge to edge; > 0 forces a scribe gap
     // The widest deliberate clearance a unit may be given (turn 7, BACKLOG
@@ -1474,6 +1559,32 @@ export const DEFAULT_CABINET_PROFILE = {
     // 100 mm is a spice rack: the narrowest thing a workshop would still cut,
     // edge and drill as a shelf rather than call an offcut.
     minElementDepth: 100,
+
+    // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
+    // How far back it goes, and how long a burst of writes has to stop for
+    // before it counts as one edit. A shelf drag writes on every pointer frame;
+    // 400 ms of stillness is a hand that has let go, and it is what makes one
+    // gesture one Ctrl+Z rather than a hundred.
+    history: {
+      depth: 50,
+      coalesceMs: 400,
+    },
+
+    // ─── The cabinet coming apart (turn 12, CLAUDE.md F4.1) ───
+    // "Each panel slides out along its face normal … like the cabinet was
+    // unscrewed." How far is a FRACTION of the cabinet's own size, not a number
+    // of millimetres, so a 300 mm vanity drawer and a 2.4 m wardrobe explode to
+    // the same picture. The maths is engine/explode.js.
+    explode: {
+      // Far enough to see the joint; near enough that it still reads as one
+      // cabinet rather than a parts diagram.
+      distanceFactor: 0.45,
+      // Extra separation between pieces travelling the same way — three shelves
+      // all lifting would otherwise stay stacked. Fans them out like a hand.
+      spreadFactor: 0.18,
+      // How long the animation takes, out and back.
+      seconds: 0.6,
+    },
   },
 
   // ─── Distance arrows on the canvas (turn 3 phase 8; redrawn turn 5, #34) ───
@@ -1581,7 +1692,15 @@ export function migrateCabinetProfile(profile) {
     },
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
     lowCabinet: { ...D.lowCabinet, ...profile.lowCabinet, defaults: { ...D.lowCabinet.defaults, ...profile.lowCabinet?.defaults } },
-    baseDrawerUnit: { ...D.baseDrawerUnit, ...profile.baseDrawerUnit, defaults: { ...D.baseDrawerUnit.defaults, ...profile.baseDrawerUnit?.defaults } },
+    baseDrawerUnit: {
+      ...D.baseDrawerUnit,
+      ...profile.baseDrawerUnit,
+      defaults: { ...D.baseDrawerUnit.defaults, ...profile.baseDrawerUnit?.defaults },
+      // The variant LIST is the app's, like the finishes above: a profile saved
+      // before turn 12 has no variants at all, and a stored one that predates a
+      // new variant must not hide it from the library.
+      variants: mergeById(D.baseDrawerUnit.variants, profile.baseDrawerUnit?.variants),
+    },
     sinkUnit: { ...D.sinkUnit, ...profile.sinkUnit, defaults: { ...D.sinkUnit.defaults, ...profile.sinkUnit?.defaults } },
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
     autoParts: {
@@ -1717,6 +1836,22 @@ function mergeLightArray(defaults, stored) {
  * own entry wins on its id; anything new arrives on top, so a project saved
  * before "light oak" existed still opens with light oak available.
  */
+/**
+ * A list of {id,...} records: the app's own, with a stored profile's overrides
+ * merged onto them by id. An id the stored list has never heard of survives —
+ * which is what lets a profile saved before turn 12 still see the drawer
+ * variants that turn 12 added.
+ */
+function mergeById(defaults, stored) {
+  if (!Array.isArray(stored) || !stored.length) return defaults.map((f) => ({ ...f }));
+  const byId = new Map(defaults.map((f) => [f.id, { ...f }]));
+  for (const f of stored) {
+    if (!f?.id) continue;
+    byId.set(f.id, { ...(byId.get(f.id) || {}), ...f });
+  }
+  return [...byId.values()];
+}
+
 function mergeFinishes(defaults, stored) {
   if (!Array.isArray(stored) || !stored.length) return defaults.map((f) => ({ ...f }));
   const byId = new Map(defaults.map((f) => [f.id, { ...f }]));

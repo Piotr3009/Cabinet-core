@@ -83,7 +83,15 @@ export default function AddPlus({
       // so a plus standing in a 100 mm slot between two cabinets is not half
       // swallowed by the carcass beside it.
       renderOrder={30}
-      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      // The CLICK POINT travels with the request (turn 12, rule 15): a modal
+      // opened from a plus standing on a cabinet has to know which cabinet it is
+      // standing on, and the point is the honest answer the screen can give.
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.({
+          x: e.clientX, y: e.clientY, width: 0, height: 0,
+        });
+      }}
       onPointerOver={(e) => { e.stopPropagation(); setHover(true); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { setHover(false); document.body.style.cursor = ''; }}
     >

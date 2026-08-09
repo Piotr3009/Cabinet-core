@@ -17,6 +17,9 @@ import { formatMm } from '../engine/format.js';
 export default function SaveTemplateModal() {
   const modalArgs = useUiStore((s) => s.modalArgs);
   const closeModal = useUiStore((s) => s.closeModal);
+  // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+  // Nothing to work out here — the opener said, and the shell places it.
+  const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const notify = useUiStore((s) => s.notify);
   const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
   const units = useProjectStore((s) => s.units);
@@ -52,6 +55,7 @@ export default function SaveTemplateModal() {
 
   return (
     <Modal
+      anchor={anchor}
       title="Save as template"
       onClose={closeModal}
       width="w-[440px]"

@@ -207,6 +207,13 @@ Stock i projekty JC **nie są kopiowane** — czytane przez API na żywo.
   sockety, dogbones, wkręty — geometria z SKYLON_COMMON drawBUL/drawBUR, parametry w profilu).
   To system montażu Skylon wpisany w geometrię formatek; inne systemy złączy — później jako
   opcje profilu.
+- **[DECYZJA 08.08, zamyka BLOCKERS #58] Grubość płyty jest PER KORPUS** — jedno `G` na kit,
+  grubość frontu osobno. To nie jest dług, tylko granica systemu, i granica postawiona przez
+  same kity: złącze puzzlowe liczy czop, ulgę dog-bone i oś gniazda z JEDNEJ grubości
+  (`engine/puzzle.js`), więc bok 22 mm w korpusie 18 mm nie jest grubszym bokiem — jest
+  złączem, które się nie składa na stole montażowym. MATERIAŁ pozostaje nadpisywalny per
+  element bez wyjątku, bo materiał nie zmienia ani jednego wymiaru. Potwierdzone przez
+  właściciela 08.08.
 
 ---
 

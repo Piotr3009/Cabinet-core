@@ -3789,3 +3789,373 @@ postawione wyżej szukałoby refa, którego jeszcze nie ma.
 Usunięte: `dimensions.defaultColour` (przeniesione do `appearance.dimensions`).
 
 **Nic nie zostało cofnięte.**
+
+---
+
+# TURA 12 — 09.08.2026 (fazy F0–F12)
+
+Werdykty właściciela z sesji testowej na zmergowanej turze 11. Jedna sekcja
+per faza, każda z **werdyktem**. Baza: `9db0093` (main po merge'u tury 11 +
+hotfix cross-wall drag), **907 testów**. Na końcu tury: **1062 testy**.
+
+---
+
+## F0 — Baseline — ✅ ZIELONA
+
+Pełny reinstall (`rm -rf node_modules && npm install`), **907/907**, czysty
+build, `git diff --stat fixtures/` = 0. Usunięcie cross-wall drag jest na
+mainie i zostaje: `UnitView.jsx:445` nosi diagnozę z czatu dosłownie —
+przeciąganie NIGDY nie zmienia ściany, świadomą drogą jest dropdown Wall.
+
+---
+
+## F1 — JEDNA powierzchnia ustawień — ✅ ZIELONA
+
+**Diagnoza, dokładna.** Krok 5 tury 11 ustawiał kolor frontu przez
+`design.fronts.types[0].colour`. **Tego pola nie czyta w tej aplikacji nic** —
+ani `resolveUnitDesign`, ani `sprayFinish`, ani BOM, ani karta jednostki, ani
+materiały 3D. Wszystkie czytają `design.colour.front`, czyli to, co pisał stary
+modal. Dwa pola na jeden fakt, jedno podłączone do niczego.
+
+**Naprawa u źródła, nie przy objawie.** Kolor frontu typu 1 JEST kolorem frontu
+projektu. `engine/design.js withFrontColour()` to jedyny setter obu połówek,
+`migrateDesign` dopisuje brakującą połówkę projektom z cache'u (w obie strony —
+zależnie od tego, którą połówkę zapisała tura 11), a obie ścieżki w store
+(`setFrontType` z kolorem, `setDesign` łatające `colour.front`) idą przez niego.
+
+**Room setup wrócił.** Projekt „wall units" pomija krok pokoju, a z kroku 5 nie
+było do niego powrotu. Jest przyciskiem na powierzchni ustawień, więc pokój jest
+osiągalny z obu drzwi.
+
+**JEDEN komponent.** `components/SettingsPanel.jsx` — suma obu, bez strat:
+wymiary/korpusy/fronty/okucia/grubość z kroku 5 + dane projektu, picker dekorów
+EGGER, infill przyścienny, style drzwi i podgląd złącza ze starego modalu. Czyta
+design ze STORE, nie z propa — dzięki temu „jedna ścieżka danych" jest
+strukturalna: punkt wejścia nie może podać innego designu, bo nie może podać
+żadnego. `ProjectSettingsStep.jsx` skasowany.
+
+**+9 testów.** Ten sam kolor ustawiony każdą kontrolką, widziany przez resolver,
+z którego maluje scena.
+
+---
+
+## F2 — Powłoka modalna (reguła 15) — ✅ ZIELONA
+
+Reguła, którą właściciel oznaczył jako WIECZNĄ: każdy modal jest przeciągalny za
+nagłówek i otwiera się OBOK obiektu, nigdy go nie zasłaniając. Zaimplementowana
+RAZ i przepuszczone przez nią wszystko.
+
+- `lib/menuPlacement.js` dostaje `placeBesideAnchor` i `clampToViewport`. Clamp
+  z tury 11 był zalążkiem — trzyma pływający byt na ekranie. To jest druga
+  połowa: najpierw decyduje, po KTÓREJ STRONIE obiektu rzecz stanie (prawo,
+  lewo, dół, góra), i mówi, gdy żadna strona nie ma miejsca.
+- `components/Modal.jsx` JEST powłoką. API z tury 3 (`title`, `onClose`,
+  `children`, `footer`, `width`) nietknięte, więc każdy istniejący modal dostał
+  zachowanie za darmo; `anchor` to jedyny nowy prop.
+- `lib/modalAnchor.js` — trzy linijki adaptera DOM. Punkt to prostokąt o zerowym
+  rozmiarze, więc nie ma przypadku szczególnego.
+- `ElementModal` traci własny kod pozycjonowania (tura 11 pisała go ręcznie
+  WŁAŚNIE dlatego, że Modal był wycentrowanym dialogiem) i zyskuje przeciąganie.
+
+**+13 testów.** Sprawdzana własność: modal i obiekt nie dzielą piksela, gdy
+którakolwiek strona ma miejsce — przechodząc obiektem przez cały viewport.
+
+---
+
+## F3 — Biblioteka, przebudowana — ✅ ZIELONA (3 pozycje świadomie wyłączone)
+
+Rodzina kuchenna była trzema menu, więc zbudowanie ciągu znaczyło otwarcie
+trzech. Jest JEDNA lista, w kolejności Piotra, jako DANE
+(`engine/library.js`); panel po niej chodzi i nie decyduje o niczym.
+
+**Warianty szuflad to WYŁĄCZNIE proporcja.** Każda liczba KIT_BUDR_FULL jest
+już pisana per FRONT — wysokość boku pudła, rzędy prowadnic, szerokość frontu,
+pozycje wkrętów — więc dwa i cztery fronty przechodzą przez tę samą arytmetykę
+co trzy. `BUDR2` i `BUDR4` to ten sam kit; proporcje siedzą w
+`profile.baseDrawerUnit.variants`. **Nie napisano ani jednej nowej formuły złącza.**
+
+**Nowe golden fixtures** policzone z formuł LISP-a zapisanych w
+`golden-budr.json`, NIE z silnika. Generator musiał najpierw odtworzyć co do
+pola BUDR-A i BUDR-B, zanim wolno mu było cokolwiek wypisać; silnik zgadza się
+z nowymi plikami niezależnie. Stare fixtures bajt w bajt.
+
+**Cztery fronty na nieparzystej wysokości** zaokrąglają każdy W GÓRĘ o pół, co
+zostawiłoby stos 2 mm ponad korpusem — więc nowe warianty niosą `exact: true`
+i górny front bierze resztę, co jest własną regułą kitu (stack top = H − 3).
+Kitowe 4:3:2 niesie `exact: false` i jest zamrożone dokładnie takie, jakie
+jest, z dryfem włącznie, bo reguła 7 jest absolutna. Test przechodzi 400
+wysokości, żeby to udowodnić.
+
+**Werdykt na wyłączone.** 1× (szuflada nad drzwiami) potrzebuje drzwi o
+częściowej wysokości — żaden kit takich nie definiuje. DW potrzebuje wzorca
+„front + szczelina" — nie ma go ani w `reference/lisp`, ani w SPEC. Narożnik i
+L-kształt nie mają kitu w ogóle. Wszystkie cztery są OBECNE, wyszarzone i piszą
+w wierszu dlaczego. BLOCKERS #61–#64.
+
+**+13 testów.**
+
+---
+
+## F4 — Okno edycji szafki („bomba") — ✅ ZIELONA
+
+Prawy klik → „Edit cabinet…" → modal na powłoce F2, obok szafki, z własnym
+małym płótnem 3D i TĄ szafką. Płótno montuje się tylko na czas okna.
+
+**Podgląd nad istniejącymi danymi.** Rysuje panele, które silnik już policzył,
+przez TEN SAM `MovingPanel` co widok pokoju — wyeksportowany z `UnitView`,
+a nie napisany drugi raz, więc ukos, wyfrezowane gniazdo dog-bone, dekor i
+faza wyglądają tak samo jak wszędzie. Nie wyprowadza niczego na nowo.
+
+**Explode to `engine/explode.js`** — czyste, testowane, bez Reacta. Normalna
+płyty to jej NAJCIEŃSZA oś, i dlatego bok jedzie w bok, półka się podnosi,
+a plecy wychodzą prosto do tyłu: szafka rozkłada się tak, jak się składała.
+Dystans to ułamek jej własnego rozmiaru (`profile.editor.explode`), więc
+szuflada 300 mm i szafa 2,4 m dają ten sam obrazek. Kawałki jadące w tę samą
+stronę są rozwachlowane, inaczej trzy półki podniosłyby się jako jeden stos.
+
+**Obrót kawałka:** w stanie rozłożonym zaznaczony kawałek bierze przeciągnięcie
+jako własny obrót — tak się ogląda tył boku i jego wiercenie. Złożenie odbija
+wszystko z powrotem.
+
+Zaznaczenie kawałka pokazuje `ElementProperties` — TEN SAM komponent, którego
+używa prawy panel i modal z dwukliku. Reużyty, nie sklonowany.
+
+**+9 testów**, w tym przejście po wszystkich kitach: każdy kawałek opuszcza
+obrys złożonej szafki po dokładnie jednej osi.
+
+---
+
+## F5 — Logika wnętrza: strefy, przegroda, złoty plus — ✅ ZIELONA
+
+**MODEL STREF** (`engine/zones.js`, czysty, testowany) — fundament, o który
+prosił właściciel. Wnętrze korpusu było listą kawałków, a prześwity między nimi
+wyprowadzano na nowo, inaczej, w trzech miejscach; przegroda robiła z tego
+cztery, z pytaniem, na które żadne nie odpowiadało — po KTÓREJ stronie.
+
+**Przegroda, dokładnie jak podyktował właściciel.** Kończy się na półce tylko
+gdy ta jest STAŁA — półka nastawna leży na czterech kołkach i jest do wyjęcia,
+więc przegroda na niej przewróci się przy pierwszym przestawieniu; przechodzi
+obok, a `partitionCollisions()` nazywa to, co mija. Jej głębokość IDZIE ZA
+półką, która ją niesie: cofnij półkę o 100 i przegroda cofa się z nią,
+automatycznie, bo to jeden węzeł, a przegroda sięgająca dalej niż jej podpora
+stoi na powietrzu.
+
+**CENTRE i DELETE**, obu brakowało. Centre to półkowe „Even" na drugiej osi —
+N przegród dzieli szerokość na N+1 równych wnęk. Panel dostał w ogóle listę
+przegród (nie było jej), więc jest × w wierszu, a Delete na zaznaczeniu usuwa
+kawałek albo szafkę, poziom po poziomie jak Escape.
+
+**KTÓRA STRONA.** Przy obecnej przegrodzie dodanie półki pyta o wnękę; wnęka
+podświetla się na płótnie, półka ląduje wyśrodkowana w niej i jest DO NIEJ
+docięta. Pionowy clamp też jest świadomy stref — dwie półki po dwóch stronach
+przegrody nie są nad sobą i nie mają się spychać o 40 mm.
+
+**Złoty „+"** otwiera okno obok szafki zamiast wysyłać wzrok na drugą stronę
+ekranu. `AddItems` wyprowadzony z `RightPanel` do własnego komponentu, więc
+okno i panel renderują jedną listę na jednym store — panel dalej lustrzy.
+
+**+21 testów.** Pułapka warta zapisania: `Number(null)` to 0, więc „bez wnęki"
+czytało się jako „wnęka 0" i docinało każdą półkę do pierwszej wnęki, dopóki
+nie stanął strażnik (rodzina reguły 13).
+
+---
+
+## F6 — Okucia, które widać — ✅ ZIELONA
+
+**Dlaczego zawiasów nie było widać.** Były rysowane, w dobrym miejscu, w każdej
+klatce — i każda ich część siedziała w litej płycie. Puszka jest wiercona W
+drzwi, więc walec z tury 7 mieści się w ich 25 mm: widoczny w X-ray, gdzie
+płyta jest półprzezroczysta, i nigdzie indziej. Ramię i płytka są w korpusie,
+za zamkniętymi drzwiami.
+
+Brakowało dwóch rzeczy. **KORPUSU PUSZKI** —
+`profile.hardware.hinge.bossHeight` nosi liczbę od tury 7 z komentarzem „the
+cup body standing proud of the door's back face", i nic tego nigdy nie
+narysowało; to jest ta część, którą stolarz widzi, otwierając szafkę. I
+**RUCHU** — puszka z korpusem są przykręcone do DRZWI, a rysowały się w
+statycznej grupie, więc otwarcie drzwi zostawiało je w powietrzu tam, gdzie
+drzwi były. Są teraz dziećmi wahliwej grupy drzwi, a ramię i płytka zostają na
+korpusie: otwierasz i obie połowy się rozjeżdżają, czyli dokładnie to, co robi
+zawias.
+
+**Czopy dog-bone.** Gniazdo to KIESZEŃ (`cnc.pockets`, PUZZLE_SOCKET) i tura 11
+wycinała je z bryły. CZOP jest częścią OBRYSU — `cnc.outline` wychodzi poza
+prostokąt nominalny, obchodzi czop i jego dwie ulgi, i wraca — a tego nie
+czytało nic. Więc panel z gniazdami wyglądał na obrobiony, a panel z czopami był
+prostokątem; WIENIEC, który ma czopy i zero gniazd, był pomijany całkowicie.
+
+`socketFace.tabOutlines()` czyta je wprost z `cnc.outline`: czop to ciąg punktów
+obrysu leżący poza prostokątem, domknięty po krawędzi, z której wyszedł. Nic nie
+wymyśla — wychodzi profil LISP-a, z ramionami i ulgami, co do pół milimetra.
+
+**+9 testów**, w tym jeden, który stwierdza DIAGNOZĘ, a nie naprawę.
+
+---
+
+## F7 — Szafka wisząca WIDZI słupki — ✅ ZIELONA
+
+Jedna linia, i przez osiem tur była poprawna: przeszkodami jednostki było
+wszystko na tym samym POZIOMIE MONTAŻU. Słupek stoi na podłodze, więc leżał w
+szufladce z szafkami dolnymi — a sięga przez całe pasmo, w którym wiszą górne.
+Nigdy się nie spotkały.
+
+„Poziom montażu" zawsze był protezą. Prawdziwe pytanie brzmi, czy dwa meble
+zajmują te same WYSOKOŚCI (`unitBand` / `bandsOverlap`, czyste, testowane) —
+i daje starą odpowiedź wszędzie tam, gdzie stara reguła była dobra. Dotknięcie
+to nie nachodzenie: górna powieszona równo z blatem słupka to kuchnia zlicowana,
+a nie kolizja, i tolerancja jest liczbą z profilu.
+
+Świadomie NIE jest to reguła o „słupkach". Szafa, obudowa lodówki, niska szafka,
+w którą ktoś wpisał 2000, i kit z tury 15 — wszystko obsługują te same trzy
+linie, bo pytanie jest o mebel, a nie o etykietę. Jest na to test.
+
+Zestaw sąsiadów dla AUTO-CZĘŚCI zostaje na poziomie montażu i komentarz mówi
+dlaczego: cokół, filler i infill są o dzieleniu CIĄGU, a to inne pytanie.
+
+**+11 testów.**
+
+---
+
+## F8 — Cokół per CIĄG — ✅ ZIELONA (świadoma zmiana eksportu)
+
+Wzorzec top-infill z tury 8, reużyty a nie napisany od nowa: ten sam podział
+owner/member, ten sam „jeden element na ciąg", ten sam powód, dla którego member
+musi nieść notatkę zamiast niczego (member bez notatki wpada w ścieżkę
+jednostkową i tnie drugi, krótszy cokół wewnątrz długiego).
+
+Dwie granice, których top-infill nie ma, obie fizyczne: **PANEL BOCZNY** schodzi
+do podłogi i stoi w płaszczyźnie cokołu, więc cokół go dobija; **jednostka BEZ
+cokołu** to dziura, a płyta ją mostkująca to płyta nad przejściem.
+
+Mierzone po KORPUSACH, nie po rozszerzonym spanie — co przy okazji zostawia
+cokół pojedynczej szafki dokładnie tej szerokości, którą miał zawsze.
+
+**RAPORT TOŻSAMOŚCI CNC** (`scripts/cnc-fingerprint.mjs`, uruchamialny na
+dowolnym checkoutcie). Baseline `9db0093` vs gałąź:
+
+| | ile |
+|---|---|
+| odciski, które SIĘ ZMIENIŁY | **35 — każdy to przypadek plinth-run** |
+| dopisane | 309, z tego **274** to nowe warianty BUDR2/BUDR4 |
+| usunięte | 42 — plik cokołu membera, o to właśnie chodzi |
+
+Trzy filtry wracają puste i to jest właściwy dowód: żadnego zmienionego odcisku,
+który nie byłby cokołem w ciągu; żadnej dopiski, która nie byłaby cokołem albo
+nowym wariantem; żadnego usunięcia poza cokołem. `verify/t12/cnc-export-identity.md`
+niesie to razem z oboma surowymi wynikami.
+
+**+15 testów.**
+
+---
+
+## F9 — Cofnij / Ponów — ✅ ZIELONA
+
+Ctrl+Z, Ctrl+Y i Ctrl+Shift+Z (warsztat ma oba rodzaje maszyn) plus dwa
+przyciski na początku paska płótna.
+
+**Obserwuje, zamiast być wołane.** Oczywisty kształt to `commit()` na górze
+każdej mutującej akcji; store projektu ma ich około sześćdziesięciu, a dzień,
+w którym ktoś dopisze sześćdziesiątą pierwszą bez tego, jest dniem, w którym
+cofanie zaczyna po cichu pomijać rodzaj edycji — czyli najgorsza awaria tej
+funkcji, bo dalej wygląda na działającą. Więc `historyStore` subskrybuje:
+zustand podaje stan i stan poprzedni, a store projektu nigdy nie mutuje w
+miejscu, więc poprzednie `{project, units}` JEST gotową migawką.
+
+**Jedno przeciągnięcie to jedno cofnięcie.** Seria zapisów jest sklejana na
+zegarze końcowym: pierwsza zmiana serii pamięta stan sprzed niej, reszta tylko
+restartuje zegar, migawka idzie na stos, gdy ręka stanie.
+
+Głębokość i okno sklejania to liczby z profilu. Nowa edycja kończy ścieżkę
+ponawiania. Zaznaczenie jedzie z migawką, więc cofnięcie skasowania oddaje
+szafkę ZAZNACZONĄ — a zaznaczenie, którego już nie ma, jest porzucane, nie
+udawane. Otwarcie projektu czyści stos. Nie utrwala niczego i jest na to test,
+który czyta moduł i sprawdza, że nie nazywa żadnego API pamięci.
+
+**+15 testów**, w większości do → cofnij → ponów → deep-equal na CAŁYM projekcie.
+
+---
+
+## F10 — Plecy, które obróciły się o 90° — ✅ ZIELONA
+
+**Diagnoza najpierw.** To warstwa wizualna, jak podejrzewał triage w czacie, ale
+nie usłojenie — to MAPOWANIE CNC→szafka, a różnicą między kitami jest jedna
+flaga, o której nikt wcześniej nie musiał myśleć.
+
+Większość paneli rysuje się na stojąco. Niektóre są zagnieżdżane OBRÓCONE, żeby
+oszczędzić arkusz: wieniec i dno od zawsze, i `panelPlacement` od zawsze o tym
+mówi — ich CNC-owy x biegnie wzdłuż GŁĘBOKOŚCI szafki. KIT_FRIDGE zagnieżdża
+tak samo swoje górne plecy (`cnc.rotated`, `drawn_w` = wysokość panelu 296,
+`drawn_h` = szerokość 600), a przypadek BACK w `panelPlacement` tego nie robił:
+mapował CNC-owy x na x szafki bezwarunkowo. Obrys wychodził w ramce 296 × 600
+i był kładziony tak, jakby był 600 × 296.
+
+Zaczęło to być widać w turze 11, bo wtedy panel z gniazdami przestał być
+pudełkiem i stał się wyciągnięciem własnego obrysu. Prostokąt wygląda tak samo
+w obie strony. Więc geometria SILNIKA rzeczywiście była nietknięta — kawałek to
+600 × 296 na liście po obu stronach błędu, i jest na to test.
+
+**KTÓRY z dwóch obrotów** nie jest zgadywaniem. Odczytany z WIERCENIA, czyli
+kontrolą, którą nazywa własny komentarz `panelPlacement`: gniazda końcowe muszą
+trafić na czopy boków, a trafiają tylko przy CNC-owym x biegnącym W DÓŁ od góry
+kawałka. Gniazdo wypada na y 1979,5–2030,5 przy czopie 1980–2030 — własny
+półmilimetrowy luz złącza z każdej strony. Skrętność bez zmian, więc płaszczyzna
+jest obrócona, a nie odbita.
+
+**STRAŻNIK jest własnością, nie listą:** dla każdego obrobionego panelu każdego
+kitu prostokąt CNC musi zgadzać się z rozpiętościami osi, na które kładzie go
+placement. Było fałszywe dla dokładnie jednego panelu w aplikacji i prawdziwe
+dla każdego innego — a kit dodany w turze 15 jest nim objęty w dniu wejścia.
+Pilnuje też F6.2, przez które wieniec i dno po raz pierwszy wychodzą z obrysu.
+
+**+6 testów.** Eksport nietknięty — raport odcisków bez zmian.
+
+---
+
+## F11 — Weryfikacja w przeglądarce (faza standardowa) — ✅ ZIELONA, 29/29
+
+`scripts/e2e-turn12.mjs` przechodzi listę F11 punkt po punkcie i MIERZY zamiast
+ufać: kolor czytany ze store'a, z którego maluje scena, pozycja modalu z DOM-u,
+długość cokołu z panelu silnika.
+
+Do sterownika doszły trzy prawdziwe gesty: prawy klik (menu kontekstowe to droga
+do edytora szafki), klawisz z modyfikatorami (`rawKeyDown` — skrót nie niesie
+tekstu, a Chromium odrzuca `keyDown` bez niego) i kółko. Plus `clip` na zrzucie,
+żeby płótno 300 px dało się opublikować w czytelnym rozmiarze — kadruje i skaluje
+CDP, więc nie doszła żadna zależność.
+
+**18 zrzutów w `verify/t12/`** z `measurements.json` obok. Ten do obejrzenia to
+`9c-dogbone-tabs-exploded.png`: czopy dog-bone sterczą z krawędzi płyt razem z
+ulgami — połowa złącza, której przed tą turą nie było widać. I
+`9b-dogbone-tab-close-up.png`: sześć korpusów zawiasów zjeżdża po boku korpusu
+dokładnie tam, gdzie jest wiercenie.
+
+---
+
+## F12 — Dokumentacja + BRAMKA — ✅ ZIELONA
+
+SPEC dostaje linię domykającą #58 (sekcja 6): grubość płyty jest PER KORPUS,
+granica postawiona przez same kity, potwierdzona przez właściciela 08.08.
+BACKLOG: #59 zostaje otwarte i czeka na wzorzec wiercenia przegrody; narożnik,
+L-kształt, DW i drzwiowa szuflada dopisane jako pozycje „wzorzec najpierw".
+BLOCKERS #61–#64 na wszystko, co wyłączone albo świadomie zamrożone.
+
+---
+
+## Nowe pliki
+
+`src/engine/library.js` · `src/engine/zones.js` · `src/engine/explode.js` ·
+`src/stores/historyStore.js` · `src/components/SettingsPanel.jsx` ·
+`src/components/AddItems.jsx` · `src/components/AddItemsModal.jsx` ·
+`src/components/CabinetEditorModal.jsx` · `src/lib/modalAnchor.js` ·
+`scripts/cnc-fingerprint.mjs` · `scripts/e2e-turn12.mjs` ·
+`fixtures/golden-budr2.json` · `fixtures/golden-budr4.json` ·
+osiem plików testów `test/turn12-*.test.js`
+
+Skasowane: `src/components/ProjectSettingsStep.jsx` (duplikat z F1).
+
+## Nowe liczby w `profile.js`
+
+`ui.modal.gapPx` / `marginPx` (reguła 15) ·
+`baseDrawerUnit.variants[]` (proporcje 1×/2×/3×/4× + `exact`) ·
+`editor.explode.distanceFactor` / `spreadFactor` / `seconds` (F4) ·
+`editor.levelOverlapMm` (F7) · `editor.history.depth` / `coalesceMs` (F9)

@@ -646,6 +646,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const focusOn = useUiStore((s) => s.focusOn);
   const clearFocus = useUiStore((s) => s.clearFocus);
   const openModal = useUiStore((s) => s.openModal);
+  const zoneHint = useUiStore((s) => s.zoneHint);
   const notify = useUiStore((s) => s.notify);
   const openContextMenu = useUiStore((s) => s.openContextMenu);
   const closeContextMenu = useUiStore((s) => s.closeContextMenu);
@@ -821,6 +822,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           wallGaps={wallGaps[unit.id]}
           // The right-click toggle: every number THIS cabinet has (turn 8, F7).
           showAllDims={Boolean(unitDimensions[unit.id])}
+          zoneHint={selectedUnitId === unit.id ? zoneHint : null}
           // The ink every dimension caption on this cabinet is written in
           // (turn 11, CLAUDE.md F1.5) — the same one the distance arrows use,
           // because they are one thing to a joiner: the numbers.
@@ -844,8 +846,14 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // The inner "+" (turn 11, CLAUDE.md F4.3): the unit STAYS selected and
           // the right panel opens its Add items section. Nothing about the
           // selection changes — that is what "inner" means.
-          onAddItems={() => {
+          // ─── Turn 12 (CLAUDE.md F5.1) ───
+          // The golden "+" opens a MODAL beside the cabinet — the answer where
+          // the question was asked. The right panel still opens on the same
+          // section, because CLAUDE.md asks it to keep mirroring: the modal is
+          // primary, not exclusive.
+          onAddItems={(at) => {
             selectUnit(unit.id);
+            openModal('add-items', { unitId: unit.id, anchor: at || null });
             openRightPanel();
             setPanelSection('add', true);
           }}

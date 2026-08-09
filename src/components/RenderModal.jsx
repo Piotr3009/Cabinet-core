@@ -21,6 +21,9 @@ import { savePng } from '../3d/renderCapture.js';
 
 export default function RenderModal({ rig }) {
   const closeModal = useUiStore((s) => s.closeModal);
+  // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+  // Nothing to work out here — the opener said, and the shell places it.
+  const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const notify = useUiStore((s) => s.notify);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const project = useProjectStore((s) => s.project);
@@ -80,6 +83,7 @@ export default function RenderModal({ rig }) {
 
   return (
     <Modal
+      anchor={anchor}
       title="Render"
       width="w-[640px]"
       onClose={closeModal}

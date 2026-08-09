@@ -28,6 +28,11 @@ const P = DEFAULT_CABINET_PROFILE;
 
 const FILES = [
   ['golden-budr.json', 'BUDR'],
+  // Turn 12 (CLAUDE.md F3.2): the same kit, split two ways and four ways. NEW
+  // fixtures for NEW variants — rule 3 allows additions and forbids edits, and
+  // golden-budr.json is byte-identical to what it was.
+  ['golden-budr2.json', 'BUDR2'],
+  ['golden-budr4.json', 'BUDR4'],
   ['golden-wud.json', 'WUD'],
   ['golden-budtall.json', 'BUDTALL'],
   ['golden-low-cabinet.json', 'LOW_CABINET'],
@@ -198,7 +203,8 @@ for (const [file, typeId] of FILES) {
 // ─── Rules the fixtures state in prose, checked as behaviour ───
 
 test('every library type is configured, available and buildable', () => {
-  assert.equal(UNIT_TYPE_ORDER.length, 8, 'wardrobe + 7 kitchen kits');
+  // Turn 12 (CLAUDE.md F3.2): two more drawer-unit variants, 2x and 4x.
+  assert.equal(UNIT_TYPE_ORDER.length, 10, 'wardrobe + 9 kitchen kits');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

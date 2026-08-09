@@ -7,7 +7,7 @@ import {
   contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
-import Hardware from './Hardware.jsx';
+import Hardware, { DoorHinges } from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import JointLines from './JointLines.jsx';
@@ -19,6 +19,7 @@ import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { isSelectableElement } from '../engine/elements.js';
 import { wallAtPoint } from '../engine/room.js';
+import { widthZones } from '../engine/zones.js';
 import { machinedPanelGeometry } from './panelSolid.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
@@ -174,9 +175,13 @@ function useBevel(box, profile, sprayed = false) {
  * static box. The animation lives here, per panel, so opening one drawer does
  * not re-render the rest of the unit.
  */
-function MovingPanel({
+// Exported since turn 12 (CLAUDE.md F4): the cabinet-editor window renders THE
+// SAME meshes from THE SAME engine panels — "a viewer+editor over existing
+// data". A second panel renderer would be a second answer to what a mitre, a
+// machined socket, a decor and an X-ray look like.
+export function MovingPanel({
   panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
-  swing = null, joineryLayers: layers = null, ...handlers
+  swing = null, joineryLayers: layers = null, children = null, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -253,6 +258,10 @@ function MovingPanel({
 
   return (
     <group ref={group} position={pivot}>
+      {/* Anything screwed TO this piece and travelling with it — the door half
+          of a hinge (turn 12, CLAUDE.md F6.1). Inside the group, so the swing
+          is free: no second animation to keep in step with this one. */}
+      {children}
       <mesh position={meshOffset} castShadow={!contour} receiveShadow={!contour} {...handlers}>
         {/* A mitred strip carries its own geometry (turn 8, CLAUDE.md F6), and
             since turn 11 so does a panel with the joint machined into it (F6).
@@ -346,6 +355,9 @@ export default function UnitView({
   // The ink every dimension caption on this cabinet is written in (turn 11,
   // CLAUDE.md F1.5). Null falls back to the two tones the scene has always had.
   dimensionColour = null,
+  // Which BAY is being pointed at in the "which side" picker (turn 12, F5.3).
+  // An index into this cabinet's own zones, or null.
+  zoneHint = null,
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
@@ -369,6 +381,14 @@ export default function UnitView({
   useEffect(() => () => { if (leaving.current) cancelAnimationFrame(leaving.current); }, []);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const wallWidthMm = wall.width;
+  // The cabinet's bays — the openings between its vertical partitions. One zone
+  // when there is no partition, which is when nothing is ever highlighted.
+  const boardT = unit.params.board_t ?? profile.board.thickness;
+  const bays = useMemo(() => widthZones({
+    width: unit.params.width,
+    boardT,
+    partitions: (unit.params.sections?.[0]?.items || []).filter((i) => i.kind === 'partition'),
+  }), [unit.params.width, boardT, unit.params.sections]);
 
   const W = unit.params.width;
   const H = unit.params.height;
@@ -794,6 +814,26 @@ export default function UnitView({
             key={p.id}
             panel={p}
             front={front}
+            // ─── Turn 12 (CLAUDE.md F6.1) ───
+            // The cup and its boss are screwed to THIS door, so they hang off
+            // it and swing with it. The arm and the plate stay on the carcass,
+            // drawn by <Hardware> below — which is what a hinge does.
+            {...(front === 'door' && (showHinges || xray) ? {
+              children: (
+                <DoorHinges
+                  items={hardware.hinges.filter((hg) => hg.panelId === p.id)}
+                  profile={profile}
+                  colour={xray
+                    ? profile.appearance.hardware.bracket
+                    : (profile.appearance.hardware.hinge || profile.appearance.hardware.bracket)}
+                  pivot={[
+                    mm(p.meta?.hinge === 'R' ? p.box.x + p.box.w : p.box.x),
+                    mm(p.box.y + p.box.h / 2),
+                    mm(p.box.z + p.box.d / 2),
+                  ]}
+                />
+              ),
+            } : {})}
             open={front ? (openFronts?.[p.id] ?? 0) : 0}
             surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
             outline={outlineFor(profile, { contour })}
@@ -1054,6 +1094,33 @@ export default function UnitView({
           title="Add something inside this unit"
           onClick={onAddItems}
         />
+      )}
+
+      {/* ─── The bay being pointed at (turn 12, CLAUDE.md F5.3) ───
+          "the zones left/right of the partition highlight, the user clicks
+          one". A translucent slab filling the clear opening — not an outline,
+          because what is being chosen is a VOLUME ("the shelf goes in there")
+          and an outline reads as a piece. It exists only while the pointer is
+          over the choice, and it carries `ccHelper` like every other tool mark
+          so it never reaches a render. */}
+      {zoneHint != null && bays[zoneHint] && !contour && (
+        <mesh
+          userData={{ ccHelper: true }}
+          position={[
+            mm(bays[zoneHint].centre),
+            mm(H / 2),
+            mm(D / 2),
+          ]}
+          raycast={null}
+        >
+          <boxGeometry args={[mm(bays[zoneHint].size), mm(H - 2 * boardT), mm(D * 0.9)]} />
+          <meshBasicMaterial
+            color={profile.appearance.addPlus.inner}
+            transparent
+            opacity={0.22}
+            depthWrite={false}
+          />
+        </mesh>
       )}
 
       {/* wall unit: the bracket line it hangs from, so it does not read as

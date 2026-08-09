@@ -78,7 +78,7 @@ export function buildOutputMenu({
           hint: d.soon ? 'A later turn' : d.hint,
           soon: d.soon || undefined,
           disabled: Boolean(d.soon),
-          run: d.soon ? undefined : () => onDrawing?.(d.id),
+          run: d.soon ? undefined : (e) => onDrawing?.(d.id, e),
         })),
       },
       { divider: true },

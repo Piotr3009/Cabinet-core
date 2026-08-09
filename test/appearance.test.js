@@ -141,7 +141,10 @@ test('the selection is a LEGIBLE blue, thin and dashed — not gold, and not bla
   assert.ok(S.offset >= 8 && S.offset <= 12, `CLAUDE.md F5 asks for 8–12 mm clear, not ${S.offset}`);
   assert.ok(S.dash > 0 && S.gap > 0, 'dashed, because no piece of furniture has a dashed edge');
   assert.ok(S.width > 0 && S.width <= 1, 'thinner than turn 6 — a mark you can see need not be heavy');
-  assert.ok(S.hoverOpacity > 0 && S.hoverOpacity < 1, 'hover is the same mark, quieter');
+  // Turn 14 (CLAUDE.md F1.4): nothing highlights on mouse-over any more, so
+  // there is no quieter copy of this mark and no number that could bring one
+  // back by accident.
+  assert.equal(S.hoverOpacity, undefined, 'the hover mark is deleted, not dimmed');
 });
 
 test('the gold outline is gone from the app, and from every piece', () => {

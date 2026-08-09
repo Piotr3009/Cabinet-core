@@ -55,6 +55,58 @@ export function isSelected(ids, id) {
 }
 
 /**
+ * ─── The PAIR (turn 14, CLAUDE.md F1.1) ─────────────────────────────────────
+ *
+ * Two invariants that have been taking it in turns to be broken for three
+ * turns, and they are one question asked from one place:
+ *
+ *   (a) click on a wall or the floor → the selection empties;
+ *   (b) click on a cabinet THROUGH a wall → that cabinet is selected.
+ *
+ * Turn 11 built (a) — the canvas's own `onPointerMissed` fires only when the
+ * ray hits NOTHING, and a wall is something, so the room's surfaces had to say
+ * so themselves. Turn 13 found that (a) had eaten (b): the walls are
+ * double-sided and the camera stands outside the front one, so EVERY click in
+ * the application passes through a wall, and the room was clearing the
+ * selection a moment before the cabinet set it. Its fix — "am I the ONLY kind
+ * of thing in this ray?" — swung the pendulum back and broke (a), because the
+ * ray does not stop at the surface that was clicked: it carries on through the
+ * floor and out under the cabinets standing on it. Measured in a browser: a
+ * click on the floor in front of a base unit lists that unit's outline lines at
+ * 6514 mm, more than a metre BEHIND the floor hit at 5197, and the room
+ * therefore refused a click that was unambiguously on the floor.
+ *
+ * The question that holds both at once is neither "was I nearest" nor "was I
+ * alone" but "is there furniture IN FRONT OF ME" — nothing behind the surface I
+ * am can have been what the eye was pointing at. Distances, not membership.
+ *
+ * The other half of the pair lives in the view and is the same physical fact:
+ * a wall the camera is BEHIND is not drawn, so it must not be clickable either
+ * (3d/Room.jsx). three's raycaster ignores `visible` — it walks the graph and
+ * asks the geometry — so a hidden wall answers pointer events unless it is told
+ * not to, and it is the hidden FRONT wall that makes (b) hard in the first
+ * place. With it out of the ray, a cabinet is always the nearest thing on the
+ * way to the wall behind it, and both invariants fall out of one rule.
+ *
+ * @param {Array} intersections  the R3F event's own list (sorted, nearest first)
+ * @param {number} distance      how far away the surface handling the event is
+ * @param {number} tolerance     metres of slack, so a coincident hit counts as
+ *                               "in front" rather than as a floating-point race
+ * @returns {boolean} true when this click belongs to the room
+ */
+export function roomClickIsBackground(intersections, distance, tolerance = 1e-4) {
+  const mine = Number.isFinite(Number(distance)) ? Number(distance) : Infinity;
+  for (const hit of intersections || []) {
+    // Behind the surface that was clicked: it cannot be what was pointed at.
+    if (Number(hit?.distance) > mine + tolerance) continue;
+    for (let o = hit?.object; o; o = o.parent) {
+      if (o.userData?.ccUnitId) return false;
+    }
+  }
+  return true;
+}
+
+/**
  * One value over many objects: the value if they all agree, MIXED if they do
  * not, and null when there is nothing to ask.
  *

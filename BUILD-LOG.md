@@ -4439,3 +4439,130 @@ sześć plików testów `test/turn13-*.test.js` · `verify/t13/`
 cały blok `biscuits` — `markLength` / `markTool` / `gap` / `screwDiameter` /
 `edgeMin` / `wideThreshold` / `markFromEnd` / `layer` / `screwLayer` /
 `concealedReceivers` (F8)
+
+---
+
+# TURA 14 — 09.08.2026 (fazy F0–F11)
+
+Osiemnaście werdyktów właściciela z długiej sesji na żywo w turze 13. Baza:
+`2ebc40a` (main po merge'u tury 13), **1159 testów**. Tura kurczy się OD DOŁU,
+więc szybkie naprawy codziennego bólu są na górze, a dwie duże budowy na końcu.
+
+---
+
+## F0 — Baseline — ✅ ZIELONA
+
+Pełny `rm -rf node_modules && npm install`, **1159/1159**, czysty build,
+`git diff fixtures/` pusty.
+
+---
+
+## F1 — Szybkie błędy i regresje — ✅ ZIELONA
+
+### F1.1 — klik w ścianę znowu odznacza (i klik PRZEZ ścianę nadal zaznacza)
+
+**Diagnoza zmierzona w przeglądarce, nie wydedukowana.** Sonda strzelała
+promieniem aparatu aplikacji w trzy punkty i wypisywała, co promień mija.
+Klik w podłogę przed szafką bazową:
+
+```
+Mesh  d=4104  (przednia ściana — NIEWIDOCZNA, ale w promieniu)
+Mesh  d=5197  podłoga
+LineSegments d=6514 …6825  ← obrysy SZAFKI, metr ZA podłogą
+```
+
+Reguła tury 13 brzmiała „czy w promieniu jest jakikolwiek mebel" — a promień
+nie kończy się na klikniętej powierzchni. Odpowiedź: tak, jest, o metr dalej.
+Więc klik w podłogę nie czyścił zaznaczenia. Wahadło z tury 11 (ściana ZJADAŁA
+kliki w szafki) odbiło się w drugą stronę.
+
+Pytanie, które trzyma OBA niezmienniki naraz, to nie „czy byłem najbliżej"
+i nie „czy byłem sam", tylko **„czy przede mną jest mebel"** — nic za
+powierzchnią, na którą patrzę, nie mogło być celem. Odległości, nie
+przynależność. Reguła jest czysta i mieszka w `lib/selection.js`
+(`roomClickIsBackground`), a nie w komponencie three.
+
+Druga połowa pary to ten sam fakt fizyczny z drugiej strony: **ściany, której
+NIE WIDAĆ, nie da się kliknąć**. Raycaster three'a ignoruje `visible` —
+przeczytane w `node_modules/three` (`Raycaster.intersectObject` woła
+`object.raycast()` zaraz po teście warstwy i innej bramki nie ma) — więc
+automatycznie chowana ściana przednia, czyli ta, za którą aparat stoi ZAWSZE,
+odpowiadała na każde zdarzenie wskaźnika w aplikacji sprzed mebli. To był
+powód, dla którego „klik w szafkę przez ścianę" w ogóle był trudnym
+przypadkiem. Mesh ściany dostał własny `raycast`, który milczy, kiedy grupa
+jest niewidoczna.
+
+Trzeci składnik przyszedł z F1.4: grupa jednostki miała `onPointerOver` /
+`onPointerOut` dla podświetlenia najazdem, a obiekt z handlerem to obiekt,
+który R3F raycastuje **rekurencyjnie** — stąd obrysy w liście przecięć.
+Skasowanie najazdu skasowało i to.
+
+Zmierzone po naprawie, w przeglądarce: klik w ścianę → `[]`, klik w szafkę →
+`[A]`, Ctrl+klik w drugą → `[A, B]`, klik w ścianę → `[]`.
+
+### F1.2 — górny wypełniacz DA SIĘ zdjąć
+
+Kafel jest JEDNYM elementem na cały BIEG, a jego wysokość to najwyższe żądanie
+któregokolwiek członka biegu (`runTopInfill`). Tura 6 czyściła flagę na tej
+jednej szafce, po czym `refreshAutoParts` odbudowywał bieg z pozostałych trzech
+i wkładał element z powrotem. Przy biegu jednoelementowym wyglądało to na
+działające; przy biegu szafek wiszących — a tam właściciel to spotkał — odklik
+nie robił nic.
+
+Element należy do biegu, więc DECYZJA należy do biegu: `runMemberIds` (silnik,
+czysta funkcja) zwraca listę, `removeTopInfill` zeruje wszystkim naraz. Do tego
+`hasTopInfill(unit)` — członek biegu nie nosi własnej wysokości, więc przełącznik
+czytający `top_infill_mm` pokazywał „niezamontowany" pod elementem, na który
+joiner patrzył, i DODAWAŁ drugie żądanie zamiast zdjąć element. Menu kontekstowe
+i prawy panel czytają teraz stan BIEGU.
+
+### F1.3 — niebieska linia pomocnicza znika
+
+`activeEdge` nigdy nie było czyszczone. Uchwyt krawędzi świeci, kiedy jest
+TRZYMANY; po puszczeniu (`pointerup`, `pointercancel`) i po dwukliku „do
+sufitu" gaśnie. Pas ma długość całego biegu i leży na wierzchu elementu, więc
+zostawał niebieską belką na skończonej robocie.
+
+### F1.4 — podświetlenie najazdem WYŁĄCZONE
+
+Skasowane: stan `hovered`, debounce, odroczone czyszczenie, `onPointerOver` /
+`onPointerOut` na grupie jednostki, drugi (cichszy) rysunek ramki zaznaczenia
+oraz liczba `appearance.selection.hoverOpacity` w profilu — nieobecność jest
+ustawieniem. Podświetla KLIK. Kursory nad półką i uchwyty krawędzi zostają:
+kursor nie jest podświetleniem, a uchwyt jest jedynym sposobem chwycenia
+krawędzi (tura 6) — zapisane jako świadome odczytanie „delete the hover
+treatment".
+
+### F1.5a — wpisana długość ściany trzyma KĄTY PROSTE
+
+Tura 3 przesuwała KORONNY narożnik ściany wzdłuż jej kierunku. Dla prostokąta
+to ścinanie: prostokąt robi się rombem, a dwie ściany 3000 wychodzą 3041,4 —
+liczba ze zrzutu właściciela.
+
+Reguła jest w silniku i jest tym samym PRYMITYWEM, którego używa przeciąganie
+ściany (F10): `moveWall` przesuwa całą ścianę wzdłuż jej normalnej, a sąsiedzi
+zachowują SWOJE kierunki i są docinani tam, gdzie się teraz spotykają. Żaden
+kierunek ściany nigdy nie jest zapisywany, więc każdy kąt w pomieszczeniu jest
+zachowany — nie „zachowany dla prostokąta", tylko zachowany. `setWallLength`
+to `moveWall` następnej ściany o tyle, żeby przecięcie wypadło na żądanej
+odległości. Ruch, który wywróciłby wielokąt na drugą stronę, jest ODRZUCANY,
+a nie stosowany.
+
+### F1.5b — zakres „Jedna ściana" pokazuje JEDNĄ ŚCIANĘ
+
+Zakres projektu mówił „jedna ściana" od tury 7 i decydował o jednej rzeczy:
+czy kreator pokaże krok Room setup. Scena nie wiedziała nic — wanity rysowała
+się w czterech ścianach pokoju 4 × 3 m, czyli nie w tej robocie, którą joiner
+wycenia.
+
+`wallsInScope(room, scope)` (silnik, testy) zwraca ścianę 1 plus dwa
+**odsadzenia 1000 mm do przodu** — po jednym przy każdym narożniku ściany
+głównej, obcięte z sąsiednich ścian, więc niosą PRAWDZIWY indeks ściany i nic
+w dole rzeki nie musi się uczyć o odsadzeniach. `room.wall_stub_mm` (domyślnie
+1000; 0 = brak) jest polem pomieszczenia, bo to geometria pomieszczenia.
+Wielokąt danych się NIE zmienia — podłoga nadal jest z niego cięta, a projekt
+da się przełączyć z powrotem na „całe pomieszczenie" nic nie tracąc. **Podłoga
+zostaje** w zakresie ściennym: właściciel mówi o ŚCIANACH („never the whole
+room"), a mebel musi na czymś stać i cień kontaktowy musi mieć co malować.
+
+**Werdykt.** 1159 → **1174** testy. Para F1.1 zmierzona w prawdziwym Chromium.

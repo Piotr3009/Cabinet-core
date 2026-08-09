@@ -1,10 +1,13 @@
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { mm, COLORS } from './constants.js';
 import DimLabel from './DimLabel.jsx';
-import { roomWalls, roomBounds, openingsOnWall } from '../engine/room.js';
+import {
+  roomWalls, roomBounds, openingsOnWall, wallsInScope,
+} from '../engine/room.js';
 import { formatMm } from '../engine/format.js';
+import { roomClickIsBackground } from '../lib/selection.js';
 
 // The room is a LIST OF WALLS (engine/room.js) — four for a rectangle, six for
 // an L. All four are drawn, and the ones the camera is behind hide themselves,
@@ -40,31 +43,14 @@ export function wallFacesCamera(face, cameraPosition) {
 /**
  * "Click the background" — but only when the background is what was clicked.
  *
- * ─── TURN 13 (CLAUDE.md F5.1) ───
- * Turn 11 gave the floor and the walls their own pointer-down, because the
- * canvas's `onPointerMissed` fires only when the ray hits NOTHING and a wall is
- * something. Right, and one case short: the walls are DOUBLE-SIDED and the
- * camera stands outside the front one, so EVERY click in this application
- * passes through a wall before it reaches anything — including a click on a
- * cabinet. The room's handler therefore ran on clicks that were never about the
- * room, and cleared the selection a moment before the cabinet set it.
- *
- * On a single click that is invisible: the cabinet writes last and wins. With
- * CTRL held it is the whole feature, because the set the click was meant to
- * grow had just been emptied. The browser walk is what found it, and it is the
- * kind of bug that only a browser can find.
- *
- * So the question is not "was I the nearest thing" — the wall always is — but
- * "was I the ONLY kind of thing". A room surface is the background when no
- * piece of furniture is anywhere in the ray's list.
+ * ─── TURN 14 (CLAUDE.md F1.1) ───
+ * The rule itself — and the three turns of pendulum behind it — is written out
+ * in lib/selection.js `roomClickIsBackground`, because it is a SELECTION rule
+ * and not a fact about three.js. All that happens here is that a room surface
+ * hands it the event: how far away I am, and everything the ray met.
  */
 function backgroundHit(event) {
-  for (const hit of event?.intersections || []) {
-    for (let o = hit.object; o; o = o.parent) {
-      if (o.userData?.ccUnitId) return false;
-    }
-  }
-  return true;
+  return roomClickIsBackground(event?.intersections, event?.distance);
 }
 
 function tone(profile, surface, fallback) {
@@ -150,6 +136,25 @@ function Wall({
     ref.current.visible = wallFacesCamera(face, camera.position);
   });
 
+  // ─── Turn 14 (CLAUDE.md F1.1): a wall you cannot SEE, you cannot CLICK ─────
+  //
+  // three's raycaster walks the graph and asks the geometry; it does not look
+  // at `visible` (read in node_modules/three — Raycaster.intersectObject calls
+  // object.raycast() the moment the LAYER test passes, and there is no other
+  // gate). So the auto-hidden front wall — the one the camera is standing
+  // outside of, which is every camera position this app ever has — was
+  // answering every pointer event in the application from in front of the
+  // furniture. That is the whole reason "click a cabinet through a wall" was
+  // ever a hard case: the wall in the way is not a wall anybody can see.
+  //
+  // It is the mesh's own `raycast` and not a `layers` trick because a layer is
+  // a rendering concern shared with the render pass, and this is one sentence
+  // about picking: I am not drawn, so I am not here.
+  const raycast = useCallback(function raycastWhenFacing(raycaster, intersects) {
+    if (ref.current && ref.current.visible === false) return;
+    THREE.Mesh.prototype.raycast.call(this, raycaster, intersects);
+  }, []);
+
   const midLabel = [
     mm((wall.start.x + wall.end.x) / 2 - centre.x),
     mm(height) * 0.5,
@@ -177,6 +182,7 @@ function Wall({
         <mesh
           geometry={geometry}
           receiveShadow
+          raycast={raycast}
           onPointerDown={(e) => { if (backgroundHit(e)) onBackground?.(e); }}
         >
           <meshLambertMaterial
@@ -212,7 +218,7 @@ function Wall({
 }
 
 export default function Room({
-  room, showLabels = true, profile = null, onBackground = null,
+  room, showLabels = true, profile = null, onBackground = null, scope = 'room',
 }) {
   // A left click on the room is a click on NOTHING: it clears the selection and
   // shuts any open menu (turn 11, CLAUDE.md F1.1). Middle and right buttons are
@@ -220,7 +226,13 @@ export default function Room({
   const background = useMemo(() => (onBackground
     ? (e) => { if (e.button === 0) onBackground(); }
     : undefined), [onBackground]);
-  const walls = useMemo(() => roomWalls(room), [room]);
+  // ─── Turn 14 (CLAUDE.md F1.5b): "One wall" means ONE WALL ─────────────────
+  // The scope has decided which walls exist since turn 7 and the scene has
+  // never been told. A vanity job drawn against one wall was shown standing in
+  // a four-walled room, which is not the job. The list is `wallsInScope`, in
+  // the engine and tested there; the drawing is unchanged — a stub is a wall
+  // record like any other, just a shorter one.
+  const walls = useMemo(() => wallsInScope(room, scope), [room, scope]);
   const bounds = useMemo(() => roomBounds(room), [room]);
   const height = room.height ?? 2500;
 
@@ -266,6 +278,8 @@ export default function Room({
         receiveShadow
         onPointerDown={(e) => { if (backgroundHit(e)) background?.(e); }}
       >
+        {/* The floor is never auto-hidden, so it needs no picking gate: it is
+            drawn from above and is behind everything standing on it. */}
         <meshLambertMaterial
           color={tone(profile, 'floor', COLORS.floor)}
           emissive={bounce(tone(profile, 'floor', COLORS.floor), profile, 'floor')}
@@ -279,12 +293,15 @@ export default function Room({
 
       {walls.map((wall) => (
         <Wall
-          key={wall.index}
+          key={wall.stub ? `stub-${wall.index}` : wall.index}
           wall={wall}
           height={height}
-          openings={openingsOnWall(room, wall.index)}
+          // A STUB is a fragment of a wall, so an opening measured along the
+          // whole wall would land in the wrong place on it — and a 1000 mm
+          // return is not where anybody puts a window.
+          openings={wall.stub ? [] : openingsOnWall(room, wall.index)}
           centre={bounds.centre}
-          showLabel={showLabels}
+          showLabel={showLabels && !wall.stub}
           profile={profile}
           onBackground={background}
         />

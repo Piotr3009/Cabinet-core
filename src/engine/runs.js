@@ -109,6 +109,39 @@ export function buildRuns(units, profile) {
   return runs;
 }
 
+/**
+ * Every unit that shares a RUN with this one — itself included.
+ *
+ * ─── Turn 14 (CLAUDE.md F1.2): "removal must remove" ───
+ * The top infill is ONE piece for the whole run and its height is the TALLEST
+ * request any member makes (`runTopInfill`, below). So clearing the flag on one
+ * cabinet of a run of four changes nothing anybody can see: the other three are
+ * still asking for it, and the long piece still runs over this one's head. From
+ * the joiner's side that is a menu entry that does nothing — which is exactly
+ * what the owner reported, and it is worst on wall units because that is where
+ * runs are longest.
+ *
+ * The piece belongs to the run, so the DECISION belongs to the run. This is the
+ * list the store writes to.
+ */
+export function runMemberIds(units, unitId, profile) {
+  for (const run of buildRuns(units, profile)) {
+    if (run.units.some((u) => u.id === unitId)) return run.units.map((u) => u.id);
+  }
+  return unitId ? [unitId] : [];
+}
+
+/**
+ * Is there a top infill above this cabinet — its own, or the run's?
+ *
+ * A run MEMBER carries no height of its own (the owner holds the geometry), so
+ * a switch that reads `top_infill_mm` alone shows "not fitted" while the piece
+ * is plainly there on the screen.
+ */
+export function hasTopInfill(unit) {
+  return (Number(unit?.params?.top_infill_mm) || 0) > 0 || Boolean(unit?.params?.run_top_infill);
+}
+
 function makeRun(units, wall, mount, profile) {
   return {
     wall: Number(wall),

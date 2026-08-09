@@ -781,6 +781,12 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         showLabels={showDimensions}
         profile={profile}
         onBackground={dropSelection}
+        // ─── Turn 14 (CLAUDE.md F1.5b) ───
+        // "One wall" has decided one thing since turn 7 — whether the
+        // new-project flow showed Room setup — and the scene was never told.
+        // A vanity drawn against one wall was shown standing in a four-walled
+        // room, which is not the job the joiner is quoting.
+        scope={design?.scope === 'wall' ? 'wall' : 'room'}
       />
 
       {results.map(({ unit, result }) => (

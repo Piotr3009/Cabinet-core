@@ -1267,8 +1267,12 @@ export const DEFAULT_CABINET_PROFILE = {
       offset: 10,               // clear of the solid — CLAUDE.md asks for 8–12
       dash: 34,
       gap: 20,
-      // Hover is the same mark, quieter: it says "this is what you would get".
-      hoverOpacity: 0.32,
+      // ─── Turn 14 (CLAUDE.md F1.4) ───
+      // `hoverOpacity` is GONE, and the absence is the setting. Turn 6 drew
+      // this same mark a second time and quieter under the cursor; the owner's
+      // verdict after living with it is that in a room full of cabinets a mark
+      // that appears without being asked for stops saying "this one" and starts
+      // saying "the mouse is somewhere". Highlight is what a CLICK does.
     },
 
     // ─── The two pluses (turn 11, CLAUDE.md F4.3) ───

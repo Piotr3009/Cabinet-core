@@ -6,6 +6,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import {
   migrateRoom, roomWalls, roomBounds, rectCorners, lCorners, validateRoomShape,
   roomChangeGuard, openingsOnWall, clampOpening, OPENING_DEFAULTS,
+  setWallLength as setWallLengthCorners, wallsInScope, wallStub,
 } from '../engine/room.js';
 import { proposeRoomFromDxf } from '../engine/dxfImport.js';
 import { formatMm, snap } from '../engine/format.js';
@@ -47,7 +48,14 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
   const [importInfo, setImportInfo] = useState(null);
   const fileRef = useRef(null);
 
+  const scope = useProjectStore((st) => (st.project.design?.scope === 'wall' ? 'wall' : 'room'));
   const walls = useMemo(() => roomWalls(draft), [draft]);
+  // ─── Turn 14 (CLAUDE.md F1.5b): "One wall" means ONE WALL, here too ───────
+  // The editor offered four walls for a job whose scope says there is one. The
+  // list is the engine's (`wallsInScope`), so the plan, the wall rows and the
+  // 3D scene cannot disagree about what this project has.
+  const shown = useMemo(() => wallsInScope(draft, scope), [draft, scope]);
+  const editable = useMemo(() => shown.filter((w) => !w.stub), [shown]);
   const bounds = useMemo(() => roomBounds(draft), [draft]);
   const shapeIssues = useMemo(() => validateRoomShape(draft.corners), [draft.corners]);
   const guard = useMemo(() => roomChangeGuard(draft, units), [draft, units]);
@@ -75,17 +83,23 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
     patch({ corners: kind === 'L' ? lCorners(w, d, grid(w / 3), grid(d / 3)) : rectCorners(w, d) });
   };
 
+  /**
+   * ─── Turn 14 (CLAUDE.md F1.5a): TYPING A LENGTH KEEPS THE RIGHT ANGLES ────
+   *
+   * Turn 3 moved the wall's END CORNER along the wall's direction, which is the
+   * obvious reading of "make this side 4500" and is wrong for the only shape
+   * anybody types into: a rectangle shears into a rhombus, and the two walls
+   * that were 3000 come out at 3041.4 — the number on the owner's screenshot.
+   *
+   * The rule is in the engine (`setWallLength`), and it is the SAME primitive
+   * the wall drag uses: this wall keeps its start and its direction, and the
+   * NEXT wall is moved along its own normal until the two cross at the distance
+   * asked for. Every angle in the room is preserved because no wall's direction
+   * is ever written.
+   */
   const setWallLength = (index, lengthMm) => {
-    // Move the wall's END corner along the wall direction. For a rectangle
-    // that is exactly "make this side longer"; for a free shape it is the
-    // least surprising thing a length field can mean.
-    const wall = walls[index];
     const len = Math.max(100, Number(lengthMm) || 0);
-    const endIndex = (index + 1) % draft.corners.length;
-    const corners = draft.corners.map((c, i) => (i === endIndex
-      ? { x: grid(wall.start.x + wall.along.x * len), y: grid(wall.start.y + wall.along.y * len) }
-      : c));
-    patch({ corners });
+    patch({ corners: setWallLengthCorners(draft, index, len).map((c) => ({ x: grid(c.x), y: grid(c.y) })) });
   };
 
   const onPlanPointerMove = (e) => {
@@ -168,10 +182,13 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
         <div>
           <div className="cc-row mb-2">
             <span className="text-xs uppercase tracking-wide text-ink-200">Plan (top view)</span>
-            <div className="flex gap-1">
-              <button type="button" className="cc-btn" onClick={() => setPreset('rect')}>Rectangle</button>
-              <button type="button" className="cc-btn" onClick={() => setPreset('L')}>L-shape</button>
-            </div>
+            {/* A one-wall job has no shape to choose (turn 14, F1.5b). */}
+            {scope === 'room' && (
+              <div className="flex gap-1">
+                <button type="button" className="cc-btn" onClick={() => setPreset('rect')}>Rectangle</button>
+                <button type="button" className="cc-btn" onClick={() => setPreset('L')}>L-shape</button>
+              </div>
+            )}
           </div>
 
           <svg
@@ -183,15 +200,25 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
           >
             <polygon
               points={draft.corners.map((c) => { const p = toSvg(c); return `${p.x},${p.y}`; }).join(' ')}
-              fill="#2d2d30" stroke="#AA8E68" strokeWidth="1.5"
+              fill="#2d2d30"
+              stroke={scope === 'wall' ? 'none' : '#AA8E68'}
+              strokeWidth="1.5"
             />
-            {walls.map((w) => {
+            {shown.map((w) => {
               const a = toSvg(w.start); const b = toSvg(w.end);
               return (
-                <g key={w.index}>
-                  <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 4} fill="#c9c9cd" fontSize="9" textAnchor="middle">
-                    {w.index + 1}: {formatMm(w.width)}
-                  </text>
+                <g key={w.stub ? `stub-${w.index}` : w.index}>
+                  {/* A stub carries no number: it is a fixed return, not a
+                      wall whose length is part of the job. */}
+                  <line
+                    x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                    stroke={w.stub ? '#6b6b70' : '#AA8E68'} strokeWidth={w.stub ? 2 : 3}
+                  />
+                  {!w.stub && (
+                    <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 4} fill="#c9c9cd" fontSize="9" textAnchor="middle">
+                      {w.index + 1}: {formatMm(w.width)}
+                    </text>
+                  )}
                   {openingsOnWall(draft, w.index).map((o) => {
                     const t1 = o.x_mm / (w.width || 1);
                     const t2 = (o.x_mm + o.width) / (w.width || 1);
@@ -228,12 +255,26 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <span className="cc-label">Room height (mm)</span>
+              <span className="cc-label">{scope === 'wall' ? 'Wall height (mm)' : 'Room height (mm)'}</span>
               <NumberField
                 value={draft.height}
                 onCommit={(v) => patch({ height: v || draft.height })}
               />
             </div>
+            {/* ─── Turn 14 (CLAUDE.md F1.5b): the two returns ───
+                "that wall plus, OPTIONALLY, two 1000 mm side stubs forward".
+                Optional is 0, and it is one field rather than a checkbox and a
+                length, because a return of no length is no return. */}
+            {scope === 'wall' && (
+              <div>
+                <span className="cc-label">Side returns (mm, 0 = none)</span>
+                <NumberField
+                  value={wallStub(draft)}
+                  min={0}
+                  onCommit={(v) => patch({ wall_stub_mm: Math.max(0, Number(v) || 0) })}
+                />
+              </div>
+            )}
             <div className="flex items-end">
               <button type="button" className="cc-btn w-full" onClick={() => fileRef.current?.click()}>
                 Import DXF plan…
@@ -272,7 +313,7 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
         <div className="space-y-3">
           <span className="text-xs uppercase tracking-wide text-ink-200">Walls</span>
           <ul className="space-y-1">
-            {walls.map((w) => (
+            {editable.map((w) => (
               <li key={w.index} className="border border-shell-600 rounded p-2 space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-ink-100 w-12">Wall {w.index + 1}</span>
@@ -283,7 +324,9 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
                   <span className="text-[11px] text-ink-400 flex-1">mm</span>
                   <button type="button" className="cc-btn px-2" title="Insert window" onClick={() => addOpening('window', w.index)}>+ Window</button>
                   <button type="button" className="cc-btn px-2" title="Insert door" onClick={() => addOpening('door', w.index)}>+ Door</button>
-                  <button type="button" className="cc-btn-ghost" title="Split this wall in two" onClick={() => addCorner(w.index)}>⊕</button>
+                  {scope === 'room' && (
+                    <button type="button" className="cc-btn-ghost" title="Split this wall in two" onClick={() => addCorner(w.index)}>⊕</button>
+                  )}
                 </div>
                 {openingsOnWall(draft, w.index).map((o) => (
                   <div key={o.id} className="flex items-center gap-1 text-[11px] text-ink-300">

@@ -23,6 +23,7 @@
 // flips it.
 
 import { getUnitType } from '../engine/types.js';
+import { hasTopInfill } from '../engine/runs.js';
 
 // ─── TURN 13 (CLAUDE.md F5.3): THE MENU APPLIES TO THE SELECTION ───────────
 //
@@ -152,13 +153,18 @@ export function menuActions({
   // top of a base cabinet is a worktop, and the gap above THAT is where the
   // wall units go.
   if (type.supports.topInfill) {
-    const fitted = Number(unit.params.top_infill_mm) > 0;
+    // Turn 14 (CLAUDE.md F1.2): the RUN's state, not this carcass's. A member
+    // of a run carries no height of its own — the owner holds the geometry —
+    // so reading `top_infill_mm` alone showed "not fitted" under a piece the
+    // joiner was looking at, and the entry then ADDED a second request instead
+    // of taking the piece off.
+    const fitted = hasTopInfill(unit);
     actions.push({
       id: 'top-infill',
       label: 'Top infill',
       checked: fitted,
       hint: fitted
-        ? 'Fitted. Click to take it off; drag its top edge to place it'
+        ? 'Fitted. Click to take it off — the whole run’s piece goes with it'
         : 'Closes the gap to the ceiling — drag its edge, or double-click it to fill',
       run: () => {
         if (fitted) { store.removeTopInfill?.(unit.id); return; }

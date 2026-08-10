@@ -70,13 +70,15 @@ export function loadHardwareCatalogues() {
 }
 
 /**
- * `movento.json` in the shape engine/runners.js parses — the adaptation turn 20
- * will need, written down while the difference is fresh. Nothing calls it yet.
+ * `movento.json` with the header's system stamped onto every row.
  *
- * The runner registry wants a `system` on every row; this catalogue names the
- * system and the profile ONCE, at the top, which is the better file and the
- * wrong shape. Stamping it onto each row is the whole of the adaptation — no
- * number is changed, invented or dropped.
+ * ─── TURN 20 (CLAUDE.md F2.3) ───────────────────────────────────────────────
+ * Turn 19 wrote this as the adaptation turn 20 would need. Turn 20 did not
+ * need it: the file is not the wrong shape, THE PARSER WAS. It reads the
+ * header itself now, so `setRunnerCatalogue(movento)` works on the owner's
+ * file as it stands and this is left only as an explicit way to say which
+ * system a headerless list belongs to. No number is changed, invented or
+ * dropped either way.
  */
 export function toRunnerManifest(raw) {
   const system = String(raw?.profile || raw?.system || '').trim();

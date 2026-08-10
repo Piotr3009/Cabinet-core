@@ -1799,8 +1799,14 @@ export const DEFAULT_CABINET_PROFILE = {
         // ─── WHERE THE MODELS LIVE ───
         // The bucket holds only the GLB bytes (F0.3); the catalogue names the
         // file and this says which bucket and which path to hang it off.
+        // ─── TURN 20 (CLAUDE.md F2.2): WHERE THE PACK ACTUALLY IS ──────────
+        // Turn 19 wrote `hardware/hinges/blum/cliptop/` — the bucket name
+        // doubled, AND a `cliptop` level the owner never created. The manifest
+        // and all 19 GLBs answer at `hinges/blum/` INSIDE the `hardware`
+        // bucket. If the owner later moves the pack into `cliptop/`, this one
+        // line follows it and nothing else has to.
         bucket: 'hardware',
-        path: 'hardware/hinges/blum/cliptop/',
+        path: 'hinges/blum/',
 
         // A downloaded model's origin is somebody else's decision and the LISP
         // owns the POSITION: the hinge aligns to the drilled cup, never the
@@ -1837,8 +1843,15 @@ export const DEFAULT_CABINET_PROFILE = {
       // number, and it says so rather than inventing one.
       movento: {
         system: '760H',
+        // ─── TURN 20 (CLAUDE.md F2.1): THE PATH IS BUCKET-RELATIVE ─────────
+        // It read `hardware/runners/blum/movento/` and the URL builder puts
+        // the BUCKET in front of it, so every request went to
+        // `…/public/hardware/hardware/runners/…` and came back 400. The bucket
+        // is called `hardware` and the folder inside it is `runners/blum/
+        // movento/`; those are two different words that happened to be spelled
+        // the same, and writing them once was the bug.
         bucket: 'hardware',
-        path: 'hardware/runners/blum/movento/',
+        path: 'runners/blum/movento/',
         manifest: 'manifest.json',
 
         // ─── THE VARIANT IS HARDWARE, NOT GEOMETRY (F6.4) ─────────────────
@@ -2480,6 +2493,14 @@ export function migrateCabinetProfile(profile) {
         cliptop: {
           ...D.hardware.hinge.cliptop,
           ...profile.hardware?.hinge?.cliptop,
+          // ─── Turn 20 (CLAUDE.md F2.2) ───
+          // WHERE THE PACK IS is the app's own knowledge, not a workshop
+          // preference — nothing in Settings edits it, and the two values that
+          // shipped were both wrong about the owner's bucket. Merged back from
+          // the defaults for the same reason `plates` below is: a stored
+          // profile carrying `hardware/hinges/blum/cliptop/` would go on
+          // asking for a folder that does not exist.
+          ...bucketLocation(D.hardware.hinge.cliptop),
           systems: mergeById(D.hardware.hinge.cliptop.systems, profile.hardware?.hinge?.cliptop?.systems),
           finishes: mergeById(D.hardware.hinge.cliptop.finishes, profile.hardware?.hinge?.cliptop?.finishes),
           // The PLATES are not merged by id from a stored profile: whether the
@@ -2506,6 +2527,10 @@ export function migrateCabinetProfile(profile) {
         movento: {
           ...D.hardware.runner.movento,
           ...profile.hardware?.runner?.movento,
+          // Turn 20 (CLAUDE.md F2.1): the doubled path shipped, so it is in
+          // stored profiles. See the hinge block above for why this comes back
+          // from the app rather than from the file.
+          ...bucketLocation(D.hardware.runner.movento),
           variants: mergeById(D.hardware.runner.movento.variants, profile.hardware?.runner?.movento?.variants),
           modelOrigin: { ...D.hardware.runner.movento.modelOrigin, ...profile.hardware?.runner?.movento?.modelOrigin },
           rod: { ...D.hardware.runner.movento.rod, ...profile.hardware?.runner?.movento?.rod },
@@ -2564,6 +2589,19 @@ export function migrateCabinetProfile(profile) {
  */
 function mergeList(defaults, stored) {
   return Array.isArray(stored) && stored.length ? stored : defaults;
+}
+
+/**
+ * Where a hardware family's models live — always the APP's answer (turn 20,
+ * CLAUDE.md F2.1/F2.2).
+ *
+ * Not a preference: no screen edits it, and the two values that shipped both
+ * described a bucket the owner does not have. A stored profile that carried
+ * one would go on producing `…/public/hardware/hardware/…` for ever, which is
+ * the exact shape of the bug this turn is closing.
+ */
+function bucketLocation(defaults) {
+  return { bucket: defaults.bucket, path: defaults.path, manifest: defaults.manifest };
 }
 
 /**

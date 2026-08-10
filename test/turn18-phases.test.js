@@ -539,11 +539,14 @@ test('F6.7/F6.8 — the manifest IS the catalogue, and the BOM orders by article
   assert.match(line.spec_label, /760H4900T-L \/ 760H4900T-R/);
   assert.equal(line.spec.articles.L, '760H4900T-L');
 
-  // …and the model url is the bucket path the owner uploaded to.
+  // …and the model url is the folder the manifest itself was read from, with
+  // the row's BASENAME on the end (turn 20, CLAUDE.md F2.1/F2.3 — this line
+  // used to assert `…/hardware/hardware/runners/…`, which is the 400 the owner
+  // was looking at, written down as an expectation).
   const url = runnerModelUrl(runnerEntry({
     system: '760H', nl: 490, variant: 'T', side: 'L',
   }), P, 'https://x.supabase.co/storage/v1/object/public');
-  assert.equal(url, 'https://x.supabase.co/storage/v1/object/public/hardware/hardware/runners/blum/movento/movento-760h-490-T-L.glb');
+  assert.equal(url, 'https://x.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/movento-760h-490-T-L.glb');
 
   clearRunnerCatalogue();
 });

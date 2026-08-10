@@ -36,6 +36,8 @@
 //
 // Pure functions — no React, no store, no fetch.
 
+import { hardwareModelUrl } from './hardwareUrl.js';
+
 /** The parsed catalogue, once somebody has read it. `null` until then. */
 let CATALOGUE = null;
 
@@ -372,15 +374,22 @@ export function doorHingeAssignment(params, panelId) {
 /**
  * Where a hinge or plate model actually lives, as a URL the browser can fetch.
  *
- * The catalogue names the file with its whole path already on it
- * (`hardware/hinges/blum/cliptop/71B3550_42542984.glb`), so unlike the runners
- * this does not re-join the path — it only puts the bucket in front of it.
+ * ─── TURN 20 (CLAUDE.md F2.2/F2.3) ─────────────────────────────────────────
+ * The catalogue names each file `hardware/hinges/blum/cliptop/71B3550_….glb`,
+ * and turn 19 believed it — so the URL carried a `cliptop` folder the owner
+ * never created and a bucket name the builder puts on anyway. Live truth: the
+ * pack answers at `hinges/blum/` inside the `hardware` bucket, manifest and
+ * all 19 models together.
+ *
+ * So the rule is the runners' rule, for the same reason: the models live
+ * BESIDE their manifest, the profile says which folder that is, and only the
+ * BASENAME is taken from the row. A pack that moves is one line of profile.
  */
 export function hingeModelUrl(entry, profile, storageBase = '') {
-  if (!entry?.file) return null;
   const C = profile.hardware.hinge.cliptop;
-  if (!storageBase) return entry.file;
-  return `${String(storageBase).replace(/\/+$/, '')}/${C.bucket}/${entry.file}`;
+  return hardwareModelUrl({
+    file: entry?.file, bucket: C.bucket, path: C.path, storageBase,
+  });
 }
 
 /**

@@ -1678,3 +1678,58 @@ Przy okazji trzeba zmierzyć dwie rzeczy:
 * czy zawias trzeba ODBIJAĆ dla drugiej ręki. Katalog nie mówi o stronie ani
   słowa, więc loader dziś nie odbija nic; potok to umie (`mirror`) i czeka na
   jedno spojrzenie na model.
+
+## #84 — Drabina NL prowadnic: pakiet Piotra i drabina aplikacji nie mają części wspólnej
+
+Znalezione w turze 20 przy naprawianiu ścieżek do bucketa (CLAUDE.md F2), **nie
+naprawione w niej celowo** — bo to decyzja zakupowa, a F2 jest turą o wyświetlaniu
+i o parserze ("Fixtures: ZERO").
+
+Po poprawieniu ścieżek katalog wreszcie się wczytuje i każdy URL się rozwiązuje —
+i **żadna szafka w aplikacji nadal nie trafia w żaden wiersz manifestu**:
+
+| | drabina |
+| --- | --- |
+| pakiet MOVENTO Piotra (40 plików) | 250, 270, 300, 320, 350, 380, 400, 420, 450 |
+| aplikacja (`wardrobe.drawers.depthSteps`) | 390, 440, 490, 540, 590, 640, 690 |
+
+Część wspólna jest **pusta**.
+
+`runnerNominalLength()` wybiera prowadnicę z drabiny **długości SKRZYNKI** z
+LISP-a, a to nie jest drabina NL Bluma. Skutek: szafka 558 mm zamawia
+„MOVENTO 490 mm", a Blum takiej nie robi — i model nigdy się nie zamontuje, choć
+plik leży w buckecie i odpowiada 200.
+
+**Co trzeba zrobić (tura 21, po decyzji Piotra).** Rozdzielić dwie liczby, które
+dziś są jedną:
+
+* `szufDl` — długość skrzynki, prawo LISP-a, CNC, **nie rusza się**;
+* NL prowadnicy — własna drabina w `profile.hardware.runner.movento`
+  (`nominalLengths`), wybierana jako największe NL mieszczące się w głębokości
+  użytkowej. Wtedy `runnerNominalLength()` czyta ją zamiast `depthSteps`.
+
+To zmienia **numer artykułu w BOM-ie** dla każdej szafki z szufladami, więc jest
+pytaniem do właściciela, a nie poprawką do zgadnięcia.
+
+Przypięte testem, który zapali się w dniu naprawy:
+`test/turn20-f2-bucket.test.js` → „the ladder gap the fixed paths uncover is
+PINNED, not hidden". Raport: `verify/t20/bucket-live.md`.
+
+## #85 — Skrzynka szuflady w szafce pod AGD wystaje 13,5 mm ponad półkę
+
+Tura 20 F1 postawiła skrzynkę **na prowadnicy** (`boxAboveRunner` = 13,5 mm nad
+wierszem wiercenia). Zacisk z tury 18, który skraca bok skrzynki tak, żeby
+zmieściła się pod półką piekarnika, mierzy prześwit **od wiersza prowadnicy** — a
+skrzynka zaczyna się teraz wyżej.
+
+Boku **nie skrócono**: CLAUDE.md F1.2 mówi „wysokości boków zostają dokładnie
+takie, jak wyciął je turn 18", a cała tura ma prawo do **jednej** zmiany
+odcisku CNC (F4, wysokość tekstu). Skrócenie boku ruszyłoby wyeksportowany DXF,
+którego nikt nie prosił o ruszenie.
+
+Zamiast tego silnik **mówi**: ostrzeżenie `APPLIANCE_DRAWER_BOX_OVER_SHELF` z
+liczbą milimetrów. Decyzja o przecięciu należy do Piotra, bo to lista rozkroju.
+
+**Co trzeba zrobić.** Jedna linia w `engine/cabinet.js` (`sideHs`), mierząca
+prześwit od własnej podstawy skrzynki zamiast od wiersza prowadnicy — i nowy
+odcisk CNC dla `OVEN_BASE` (4 pliki + arkusze), wypisany i zatwierdzony.

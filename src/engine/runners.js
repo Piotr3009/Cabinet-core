@@ -1,9 +1,11 @@
 // ─── THE RUNNERS, AS HARDWARE (turn 18, CLAUDE.md F6) ───────────────────────
 //
 // The owner uploaded the whole MOVENTO 760H ladder to Supabase Storage: bucket
-// `hardware`, path `hardware/runners/blum/movento/`, 40 GLB files (pairs L/R,
-// NL 250–450, variants S / T / SU) and a `manifest.json` beside them naming the
-// system, the nominal length, the variant and the ARTICLE NUMBER of each one.
+// `hardware`, folder `runners/blum/movento/` INSIDE it (turn 20, CLAUDE.md
+// F2.1 — turn 18 wrote the bucket's name into the path as well and every
+// request came back 400), 40 GLB files (pairs L/R, NL 250–450, variants
+// S / T / SU) and a `manifest.json` beside them naming the nominal length, the
+// variant and the ARTICLE NUMBER of each one, with the system at the top.
 //
 // Everything in this file is a decision ABOUT a runner and none of it is a
 // picture of one: which nominal length a cabinet takes, which variant a drawer
@@ -26,6 +28,8 @@
 // says so rather than inventing one.
 //
 // Pure functions — no React, no store, no fetch.
+
+import { hardwareModelUrl } from './hardwareUrl.js';
 
 /**
  * The manifest, once somebody has read it. `null` until then, and `null` is a
@@ -68,15 +72,27 @@ const SIDES = new Set(['L', 'R']);
  */
 export function parseRunnerManifest(raw) {
   const rows = Array.isArray(raw) ? raw
-    : (Array.isArray(raw?.files) ? raw.files : (Array.isArray(raw?.runners) ? raw.runners : null));
+    : (Array.isArray(raw?.files) ? raw.files
+      : (Array.isArray(raw?.runners) ? raw.runners
+        : (Array.isArray(raw?.items) ? raw.items : null)));
   if (!rows) return null;
+  // ─── TURN 20 (CLAUDE.md F2.3): THE HEADER'S SYSTEM ────────────────────────
+  // The file the owner uploaded names the system ONCE, at the top — `system:
+  // "movento"`, `profile: "760H"` — and turn 18's parser wanted it on every
+  // row, so it dropped all forty of them and the app went on drawing grey
+  // boxes with nothing in the console to say why. A row that does not say is
+  // a row that means the header, which is what the file plainly intends.
+  const header = String(raw?.system ?? raw?.profile ?? '').trim();
   const files = [];
   for (const row of rows) {
     const file = String(row?.file ?? row?.name ?? '').trim();
     const nl = Number(row?.nl ?? row?.nominal_length ?? row?.length_mm);
     const variant = String(row?.variant ?? '').trim().toUpperCase();
-    const system = String(row?.system ?? '').trim();
-    if (!file || !(nl > 0) || !variant || !system) continue;
+    const system = String(row?.system ?? '').trim() || header;
+    // nl and variant are still required — a row that cannot say WHICH runner
+    // it is cannot be ordered, and half an entry in a parts list is how a
+    // workshop buys the wrong one.
+    if (!file || !(nl > 0) || !variant) continue;
     // The side is on the row where the owner put it and in the file name where
     // he did not — `…-450-T-L.glb`. Neither is guessed: a file that says
     // neither is a PAIR file and is offered for both sides.
@@ -154,7 +170,17 @@ export function runnerEntry({
   const cat = CATALOGUE;
   if (!cat) return null;
   const want = String(variant || '').toUpperCase();
-  const matches = cat.files.filter((f) => f.system === system
+  // ─── TURN 20 (CLAUDE.md F2.3): SYSTEM SELECTS THE CATALOGUE, NOT THE ROW ──
+  // `system` used to be a per-row filter here, so a manifest whose header says
+  // `movento` and whose rows say nothing could never match a profile asking
+  // for `760H` — and the list came back empty with no error anywhere. The
+  // profile's system string decides WHICH catalogue is loaded (there is one
+  // per family, beside its own models); the match inside a loaded catalogue is
+  // on the three things that actually distinguish two runners in it. The
+  // parameter is kept so callers read the same, and it is honoured when the
+  // catalogue is one that really does carry the word.
+  const knowsSystem = system && cat.files.some((f) => f.system === system);
+  const matches = cat.files.filter((f) => (!knowsSystem || f.system === system)
     && f.nl === Number(nl)
     && f.variant === want
     && (side == null || f.side == null || f.side === side));
@@ -162,13 +188,18 @@ export function runnerEntry({
   return matches.find((f) => f.side === side) || matches[0] || null;
 }
 
-/** Where that model actually lives, as a URL the browser can fetch. */
+/**
+ * Where that model actually lives, as a URL the browser can fetch.
+ *
+ * Turn 20 (CLAUDE.md F2.3): the file lives BESIDE ITS MANIFEST, so only the
+ * basename of the manifest's `file` is used — engine/hardwareUrl.js carries
+ * the rule and the reason, and the hinges follow the same one.
+ */
 export function runnerModelUrl(entry, profile, storageBase = '') {
-  if (!entry?.file) return null;
   const M = profile.hardware.runner.movento;
-  const path = `${M.path}${entry.file}`;
-  if (!storageBase) return path;
-  return `${String(storageBase).replace(/\/+$/, '')}/${M.bucket}/${path}`;
+  return hardwareModelUrl({
+    file: entry?.file, bucket: M.bucket, path: M.path, storageBase,
+  });
 }
 
 /**

@@ -221,6 +221,26 @@ export const useUiStore = create((set, get) => ({
   setShowOutlines: (v) => set({ showOutlines: Boolean(v) }),
   toggleOutlines: () => set((s) => ({ showOutlines: !s.showOutlines })),
 
+  // ─── HIDE FRONTS (turn 18, CLAUDE.md F4 / BACKLOG W22) ────────────────────
+  //
+  // Doors AND drawer fronts out of the 3D view together, so you can see what is
+  // inside a run without opening fourteen doors one at a time.
+  //
+  // IT IS A LENS, NOT AN EDIT, and the distinction is the whole phase. "Remove
+  // doors" (turn 15) is a PROJECT DECISION: it takes the fronts out of the
+  // params, and with them out of the BOM, the cut list and the CNC sheet. This
+  // touches none of those — nothing here reaches the engine, and a project
+  // saved with it on is a project with all its doors.
+  //
+  // Deliberately NOT persisted, unlike X-ray beside it. X-ray is unmistakable —
+  // the board goes translucent — so a session that starts in it explains
+  // itself. A cabinet with no fronts looks exactly like a cabinet whose fronts
+  // were REMOVED, which is the one thing this must never be mistaken for, so it
+  // starts off every time and the toolbar button is lit while it is on.
+  hideFronts: false,
+  setHideFronts: (v) => set({ hideFronts: Boolean(v) }),
+  toggleHideFronts: () => set((s) => ({ hideFronts: !s.hideFronts })),
+
   // Realistic lighting in the WORKING view (turn 6): the environment probe the
   // sheen comes from. On by default — it is most of what turn 6 is for.
   //

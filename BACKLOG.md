@@ -633,3 +633,73 @@ jako osobny temat.
 95. [LOW] **`scripts/e2e-turn16.mjs` nie zna zmian tury 17.** To samo, co
     pozycje 66, 71, 77, 85 i 90: nie jest zepsuty, chodzi po swojej turze.
     `e2e-turn17.mjs` jest następcą.
+
+## TURA 18 — SZUFLADA — ✅ WYKONANA (10.08.2026)
+
+Numery **W** to własna lista właściciela z tej partii uwag; zapisane tu, żeby
+dało się je odszukać po jego numerze, a nie tylko po fazie.
+
+96. [HIGH] **W32 — etykiety CNC wychodzą poza elementy.** `F01 TOP 564x540 F01
+    BOTTOM 564x…` przechodzące przez części i wchodzące w sąsiadów.
+    — **TURA-18 / DONE (F1)**: jedna funkcja układu (`engine/cnc/annotation.js`
+    `labelBlock`) dla arkusza I pliku, blok do trzech wyśrodkowanych linii,
+    ucinanie `~`, połowa rozmiaru w eksporcie (`cnc.exportLabelScale`), szerszy
+    krok pisma (`MONO_ADVANCE` 0.62 → 0.85) i ciaśniejsze wypełnienie
+    (`labelFillRatio` 0.94 → 0.85). Delta 1 tury.
+97. [CRITICAL] **W33 — wysokość szuflady w szafce kuchennej wraca do liczby
+    zestawu.**
+    — **TURA-18 / DONE (F2)**: `projectStore.setDrawerHeight` rozgałęział się po
+    kształcie referencji zamiast po ZESTAWIE, więc kuchenna szuflada (która ma
+    wiersz elementu od postawienia) szła ścieżką szafy i zapisywała `height_mm`
+    tam, gdzie silnik budr nie patrzy. Przy okazji: `newUnit` budował wiersze z
+    4:3:2 zamiast z wariantu zestawu, a `setBudrDrawerHeight` startował od
+    odpowiedzi silnika i zamrażał cały stos. Prawy panel dostał to samo pole i
+    „Reset to the kit", co edytor.
+98. [MEDIUM] **W22 — zobaczyć wnętrze zabudowy bez zdejmowania frontów.**
+    — **TURA-18 / DONE (F4)**: „Hide fronts" obok X-ray i Outlines. Soczewka:
+    BOM, CNC, lista rozkroju i parametry nietknięte. Stan w `uiStore`, celowo
+    niezapamiętywany między sesjami — szafka bez frontów wygląda dokładnie jak
+    szafka, której fronty USUNIĘTO, i to jest jedyna rzecz, z którą nie wolno
+    jej pomylić.
+99. [HIGH] **W34/W35 — poprawki szafki pod piekarnik z recenzji właściciela.**
+    — **TURA-18 / DONE (F5)**: gniazda w bokach tylko tam, gdzie są plecy; blat
+    na dwóch listwach zamiast płyty TOP, z przednią LEŻĄCĄ PŁASKO; front biorący
+    szczelinę pod licem urządzenia (169 przy 770); skrzynka zmieszczona w otworze
+    pod półką. Bez otworu wentylacyjnego — decyzja, nie przeoczenie (BLOCKERS
+    #79). Delta 3 tury.
+100. [HIGH] **Prowadnice MOVENTO na ekranie.**
+    — **TURA-18 / DONE (F6)**: `GLTFLoader` z paczki three (zero nowych
+    zależności), jedno dekodowanie na plik, klon na wiersz, pozycje z LISP-a,
+    NL z głębokości, wariant T/S jako SPRZĘT (projekt → szafka → szuflada),
+    parametryczny drążek synchronizacji z progami katalogowymi Bluma, i łagodna
+    degradacja do rysowanego profilu, kiedy bucket jest nieosiągalny.
+    Manifest z bucketa JEST katalogiem do czasu `cc_hardware` (BLOCKERS #78).
+
+### Nowe pozycje, otwarte
+
+101. [MEDIUM] **Wariant prowadnicy nie ma jeszcze poziomu SZAFKI w interfejsie.**
+    Hierarchia jest pełna w silniku i w store (`params.runner_variant` między
+    projektem a szufladą — `engine/runners.js` `resolveRunnerVariant` czyta ją i
+    test ją przypina), ale kontrolki „ta szafka" nie ma nigdzie: ustawia się
+    projekt albo pojedynczą szufladę. Dokładnie ten sam kształt, co pole koloru
+    szafki z tury 13, więc to jedna kontrolka, nie nowa warstwa.
+102. [MEDIUM] **Drążek synchronizacji nie ma numeru katalogowego.** Próg,
+    rodzaj i długość są policzone i trafiają do BOM-u; sam drążek i jego adaptery
+    nie mają artykułu, bo manifest ich nie niesie. BLOCKERS #78.
+103. [LOW] **Modele prowadnic nie były jeszcze widziane z prawdziwego bucketa.**
+    Ta sesja pracuje w trybie mock. Loader, walidacja długości i przesunięcie
+    środka (`modelOrigin`) są wdrożone i przetestowane na sztucznym manifeście;
+    pierwszy montaż na żywym buckecie poprawia trzy liczby profilu i nic więcej.
+    BLOCKERS #77.
+104. [LOW] **Redukcja pod prowadnicę zakłada 18 mm dno.** Rowek ma `G + 1`
+    wysokości, gdzie `G` to płyta KORPUSU, a nie własna grubość boku skrzynki
+    (`boxSideThickness`). Przy domyślnych obie są 18, więc dziś to jest ta sama
+    liczba — kit BUDR liczy tak od tury 3 i szafa liczy teraz tak samo, żeby oba
+    tnąć identycznie. Warsztat na innym dnie niż korpus zobaczy to pierwszy.
+105. [LOW] **`scripts/e2e-turn17.mjs` nie zna zmian tury 18.** To samo, co
+    pozycje 66, 71, 77, 85, 90 i 95. `e2e-turn18.mjs` jest następcą.
+106. [LOW] **Edytor szafki nie rysuje okuć.** „Hide fronts" i prowadnice żyją w
+    widoku POKOJU (`3d/UnitView.jsx`); okno edytora ma własną scenę
+    (`ExplodedCabinet`) i nie dostaje ani jednego, ani drugiego. Nie jest to
+    regresja — nigdy ich tam nie było — ale okno edytora jest miejscem, w którym
+    ogląda się jedną szafkę z bliska, więc to jest naturalne następne pytanie.

@@ -4,7 +4,7 @@ import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
-import { doorCountFor } from '../engine/cabinet.js';
+import { doorCountFor, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
@@ -50,6 +50,7 @@ export default function RightPanel() {
   const setShelfFront = useProjectStore((s) => s.setShelfFront);
   const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
   const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
+  const resetDrawerHeights = useProjectStore((s) => s.resetDrawerHeights);
   const setAllDrawerHeights = useProjectStore((s) => s.setAllDrawerHeights);
   const setDrawerEqualHeights = useProjectStore((s) => s.setDrawerEqualHeights);
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
@@ -104,9 +105,13 @@ export default function RightPanel() {
   const partitions = items
     .filter((i) => i.kind === 'partition')
     .sort((a, b) => (Number(a.x_mm) || 0) - (Number(b.x_mm) || 0));
-  // A drawer unit whose stack comes from a fixed ratio (BUDR) has no editable
-  // drawer heights and no removable drawers — it IS its three drawers.
+  // A drawer unit whose stack comes from a fixed ratio (BUDR) has no removable
+  // drawers — it IS its three drawers. Its HEIGHTS are editable since turn 17
+  // (CLAUDE.md F8.2), and since turn 18 they are editable HERE too (F2.2).
   const ratioDrawers = type?.drawerStyle === 'budr';
+  // Has anybody set one by hand? Then there is a stack to hand back to the kit.
+  const ownDrawerHeights = Array.isArray(unit?.params.drawer_heights)
+    && unit.params.drawer_heights.length > 0;
   const equalHeights = unit?.params.drawer_equal_heights !== false;
   const resolvedDesign = unit ? resolveUnitDesign(unit, design) : null;
   const hasDoors = Boolean(unit?.params.doors) && unit.params.doors !== false;
@@ -483,14 +488,24 @@ export default function RightPanel() {
                   {drawers.map(({ item: dr, num, label }) => (
                     <li key={dr.id} className="flex items-center gap-1">
                       <span className="text-ink-400 w-6 text-xs">{label}</span>
-                      {/* A BUDR's three fronts come from the kit's own 4:3:2
-                          split of the carcass height — there is no per-drawer
-                          height to set, so the engine's number is SHOWN, not
-                          offered as an input that would do nothing. */}
+                      {/* ─── Turn 18 (CLAUDE.md F2.2) ───
+                          This was a dimmed span, with a comment saying a BUDR's
+                          fronts come from the kit's ratio and an input here
+                          "would do nothing". It DOES something now — turn 17
+                          gave the stack per-drawer heights and this turn fixed
+                          the setter that was writing them to the wrong place —
+                          so it is the same NumberField the element editor has,
+                          against the same engine clamp: no shorter than the
+                          runner screws plus the air under them. */}
                       {ratioDrawers ? (
-                        <span className="cc-input w-20 text-right opacity-70">
-                          {formatMm(result.derived.drawer_heights?.[num - 1] ?? 0)}
-                        </span>
+                        <NumberField
+                          min={minDrawerFrontHeight(profile)}
+                          className="cc-input w-20 text-right"
+                          data-drawer-height-mm={num}
+                          title={`Drawer front height (mm) — no shorter than ${formatMm(minDrawerFrontHeight(profile))} mm, the runner screws plus the air under them.`}
+                          value={result.derived.drawer_heights?.[num - 1] ?? 0}
+                          onCommit={(v) => setDrawerHeight(unit.id, dr.id, v)}
+                        />
                       ) : (
                         <NumberField
                           min={DR.minFrontHeight}
@@ -515,6 +530,23 @@ export default function RightPanel() {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {/* ─── Turn 18 (CLAUDE.md F2.2) ───
+                  …and the way back. A ratio stack that nobody has touched has
+                  no heights of its own, so there is nothing to reset and the
+                  button is not there; the moment one is typed it appears, and
+                  it hands the whole stack back to the kit's own split. */}
+              {ratioDrawers && ownDrawerHeights && (
+                <button
+                  type="button"
+                  className="cc-btn px-2 text-xs"
+                  data-drawer-heights-reset="1"
+                  title="Back to the kit's own split"
+                  onClick={() => resetDrawerHeights(unit.id)}
+                >
+                  Reset to the kit
+                </button>
               )}
 
               <div className="cc-row text-xs text-ink-400">

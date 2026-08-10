@@ -245,7 +245,11 @@ const FIELDS = {
   // Turn 17 (CLAUDE.md F7.2): a door's HINGES are a door property — add one,
   // take one off, move one — so they are edited on the door and nowhere else.
   door: ['hinge-side', 'door-extend', 'hinges', 'front-board', 'material'],
-  'drawer-front': ['drawer-height', 'front-board', 'material'],
+  // Turn 18 (CLAUDE.md F6.4): …and which RUNNER this drawer is fitted with.
+  // A per-drawer override of the project's own answer, in the colour
+  // hierarchy's own shape, and reachable from the front and from the box for
+  // the same reason the height is.
+  'drawer-front': ['drawer-height', 'runner-variant', 'front-board', 'material'],
   'masking-panel': ['masking-depth', 'material'],
   // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
   // stack — that is what F8 edits, on the unit — so what is said about one
@@ -253,7 +257,7 @@ const FIELDS = {
   // Turn 17 (CLAUDE.md F8.2): with the fronts off, the BOX is what a joiner
   // clicks — so the drawer's height is edited on it as well as on its front.
   // One field id, one control, two places it can be reached from.
-  drawer: ['drawer-height', 'material'],
+  drawer: ['drawer-height', 'runner-variant', 'material'],
 };
 
 /**

@@ -1,0 +1,142 @@
+[
+  {
+    "label": "F1.1 a label breaks onto more than one centred line",
+    "ok": true,
+    "detail": "35/35 wrapped, deepest 3"
+  },
+  {
+    "label": "F1.1 never more than three lines",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "label": "F1.1 every label is INSIDE its own outline",
+    "ok": true,
+    "detail": "35/35"
+  },
+  {
+    "label": "F1.1 …at full-sheet zoom too — it shrinks, it never spills",
+    "ok": true,
+    "detail": "21/21"
+  },
+  {
+    "label": "F1.2 every exported label is half the sheet's height for that part",
+    "ok": true,
+    "detail": "17/17"
+  },
+  {
+    "label": "F1.4 …and every entity that is not TEXT is still there",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "label": "F2.1 a kitchen drawer height typed in the RIGHT panel STAYS",
+    "ok": true,
+    "detail": "[382,382] → [500,264]"
+  },
+  {
+    "label": "F2.1 …and the drawers nobody touched take up what is left",
+    "ok": true,
+    "detail": "[500]"
+  },
+  {
+    "label": "F2.2 Reset hands the stack back to the kit's own split",
+    "ok": true,
+    "detail": "[382,382]"
+  },
+  {
+    "label": "F3.1/F3.2 a wardrobe drawer side carries BOTH pockets, at the owner's numbers",
+    "ok": true,
+    "detail": "{\"runner\":2,\"bottom\":7}"
+  },
+  {
+    "label": "F3.3 …and the bottom enters each side 6.5 mm, inside a 7 mm groove",
+    "ok": true,
+    "detail": "6.5"
+  },
+  {
+    "label": "F3.4 the detail window lists both grooves",
+    "ok": true,
+    "detail": "[\"OUTLINE\",\"DRAWER_RUNNER_POCKET\",\"DRAWER_BOTTOM_POCKET\"]"
+  },
+  {
+    "label": "F3.4 …and says how deep each one is cut",
+    "ok": true,
+    "detail": "{\"DRAWER_RUNNER_POCKET\":\"Runner groove · 460 × 15 × 2 deep pocket at 220, 7.5\",\"DRAWER_BOTTOM_POCKET\":\"Bottom groove · 460 × 19 × 7 deep pocket at 220, 24.5\"}"
+  },
+  {
+    "label": "F4 Hide fronts takes the doors and drawer fronts off the picture",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "label": "F4 …and changes nothing in the BOM, the cut list or the params",
+    "ok": true,
+    "detail": "2,1,1,2 → 2,1,1,2"
+  },
+  {
+    "label": "F6.2 every runner sits on the row the machine drills",
+    "ok": true,
+    "detail": "[56,423]"
+  },
+  {
+    "label": "F6.3 the pair is the largest NL that fits the depth",
+    "ok": true,
+    "detail": "490"
+  },
+  {
+    "label": "F6.4 the project default is T (TIP-ON BLUMOTION)",
+    "ok": true,
+    "detail": "T"
+  },
+  {
+    "label": "F6.5 the rod is on the wide drawer and not on the narrow one",
+    "ok": true,
+    "detail": "2 / 0"
+  },
+  {
+    "label": "F6.6 with no catalogue the scene still draws, and the BOM says what it cannot know",
+    "ok": true,
+    "detail": "{\"catalogue\":false,\"article\":false}"
+  },
+  {
+    "label": "F5.4 the oven base's drawer front is 169 at 770",
+    "ok": true,
+    "detail": "770 → 169"
+  },
+  {
+    "label": "F5.2 the TOP panel is gone and two rails stand in its place",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "label": "F5.2 …and the FRONT one lies FLAT",
+    "ok": true,
+    "detail": "{\"x\":18,\"y\":752,\"z\":458,\"w\":564,\"h\":18,\"d\":100}"
+  },
+  {
+    "label": "F5.1 the sides keep one dog bone and the bottom's two sockets",
+    "ok": true,
+    "detail": "[\"PUZZLE_DOG_BONES\",\"PUZZLE_SOCKET\",\"PUZZLE_SOCKET\"]"
+  },
+  {
+    "label": "F5.4 the box still fits the opening under the shelf",
+    "ok": true,
+    "detail": "154 ≤ 154"
+  },
+  {
+    "label": "F6.4 Settings offers System: Movento and Variant: T/S",
+    "ok": true,
+    "detail": "[\"T\",\"S\"]"
+  },
+  {
+    "label": "F6.4 …with the short tooltip the owner asked for, and T chosen",
+    "ok": true,
+    "detail": "Press the front to open; BLUMOTION adds the soft close."
+  },
+  {
+    "label": "no uncaught errors in the console during the whole walk",
+    "ok": true,
+    "detail": ""
+  }
+]

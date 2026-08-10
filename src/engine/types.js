@@ -14,6 +14,8 @@ import { KITCHEN_LIBRARY, libraryTypeIds } from './library.js';
 
 /**
  * carcass.top      — 'panel' (TOP + BOTTOM) | 'holders' (SINK: 2 rails on edge)
+ *                    | 'ovenRails' (OVEN_BASE: a rail at the back on edge and
+ *                      one at the front lying FLAT, turn 18 F5.2)
  * carcass.back     — 'full' | 'inset' (SINK) | 'rails' (FRIDGE)
  * drawerStyle      — null | 'wardrobe' (internal, behind doors) | 'budr' (fronts)
  * mount            — 'floor' | 'wall'
@@ -303,7 +305,12 @@ export const UNIT_TYPES = {
     hangers: false,
     doorExtend: false,
     mount: 'floor',
-    carcass: { top: 'panel', back: 'oven' },
+    // ─── Turn 18 (CLAUDE.md F5.2): A RAIL TOP, NOT A TOP PANEL ─────────────
+    // The owner's review: an oven wants air out of the top of its housing, and
+    // a full TOP panel across it is a lid. So the kit takes the SINK's own
+    // two-holder answer — a rail at the back and a rail at the front, with the
+    // opening between them — with one change: the FRONT rail lies FLAT.
+    carcass: { top: 'ovenRails', back: 'oven' },
     drawerStyle: 'budr',
     drawerRatioKey: 'ovenUnit.drawerRatio',
     minHeightKey: null,

@@ -692,6 +692,47 @@ export const DEFAULT_CABINET_PROFILE = {
     shelfFromTop: 598,
     // "A drawer below" — one, so the stack is a ratio of one.
     drawerRatio: [1],
+
+    // ─── Turn 18 (CLAUDE.md F5.2): THE TOP IS TWO RAILS ────────────────────
+    //
+    // The owner's review of turn 17: an oven housing with a full TOP panel over
+    // it is a lid, and the appliance wants the air. So the kit takes the SINK's
+    // own answer — two holders instead of a top — with ONE change he was
+    // explicit about: the FRONT rail lies FLAT, not on edge.
+    //
+    // The numbers are the OVEN's own, here, and the sink's stay where they are:
+    // `sinkUnit.railHeight` and `sinkUnit.holderScrewFromTop` are not read from
+    // this kit and fixtures/golden-sink.json proves the sink did not move.
+    topRails: {
+      // The BACK rail, standing on edge across the back of the opening — the
+      // sink's 100, quoted rather than shared, so a workshop that changes one
+      // kit's rail does not silently change the other's.
+      backHeight: 100,
+      // …and where the two 3 mm screws through each side panel catch it:
+      // 30 and 70 down from the top of the carcass, which is the sink's own
+      // two-holder pattern (the phrase CLAUDE.md F5.2 uses).
+      backScrewFromTop: [30, 70],
+      // The FRONT rail, LYING FLAT at the top front of the opening: 100 mm of
+      // board, one board thick, so what you see from the front is an 18 mm
+      // edge and the oven's flue has the whole opening behind it.
+      frontWidth: 100,
+      // ─── WHERE THE FLAT RAIL'S SCREWS GO ───────────────────────────────
+      // A flat rail is screwed through the side panel into its EDGE, so the row
+      // is on the board's own centreline (G/2 + centrelineExtra, from the top
+      // of the carcass) and the positions are measured along the rail's WIDTH,
+      // front to back. That much is the app's ordinary horizontal-board rule.
+      //
+      // The SPACING is not, and the AutoLISP does not know this piece: the
+      // shared rule is `[screwFromEnd, mid, length − screwFromEnd]`, and on a
+      // 100 mm run `screwFromEnd` (50) IS the middle, so the rule collapses to
+      // a single screw and a rail on one screw per side is a rail that pivots.
+      // Two screws, at a quarter and three quarters of the rail's own width, is
+      // therefore the ENGINE's decision where the kit is silent — the same
+      // footing `puzzle.singleSocketBelow` stands on, said out loud rather than
+      // dressed up as a traced number. BLOCKERS #76 asks the owner to confirm
+      // it; until he does, this is what the machine drills.
+      frontScrewFromEdge: 25,
+    },
   },
 
   // ─── Sink base (KIT_SINK) ───
@@ -1641,6 +1682,82 @@ export const DEFAULT_CABINET_PROFILE = {
       profileHeight: 45,     // the visible face of the profile
       profileThickness: 12.5, // how far it stands off the panel it is screwed to
       flangeDepth: 6,        // the return of the L
+
+      // ─── BLUM MOVENTO 760H (turn 18, CLAUDE.md F6) ──────────────────────
+      //
+      // The owner uploaded the whole ladder as GLB — bucket `hardware`, path
+      // `hardware/runners/blum/movento/`, 40 files plus a `manifest.json` that
+      // names each one's system, nominal length, variant and ARTICLE NUMBER.
+      // That manifest is the parts list for now (F6.8: `cc_hardware` waits for
+      // the data module), and everything here is the OFFLINE TRUTH beside it:
+      // with the bucket unreachable the app still knows which runner a drawer
+      // takes and whether it needs a rod. What it will not know is the article
+      // number, and it says so rather than inventing one.
+      movento: {
+        system: '760H',
+        bucket: 'hardware',
+        path: 'hardware/runners/blum/movento/',
+        manifest: 'manifest.json',
+
+        // ─── THE VARIANT IS HARDWARE, NOT GEOMETRY (F6.4) ─────────────────
+        // "Gaps, pockets, drilling: IDENTICAL for both." Blum's own
+        // installation page says the pattern does not change with the motion
+        // technology, so nothing downstream of this branches on it: it decides
+        // which MODEL is loaded and which ARTICLE is ordered, and that is all.
+        //
+        // T is the project default — the owner's "90% of what we make". SU is
+        // in the manifest and is deliberately not offered.
+        variants: [
+          {
+            id: 'T',
+            label: 'TIP-ON BLUMOTION',
+            hint: 'Press the front to open; BLUMOTION adds the soft close.',
+          },
+          {
+            id: 'S',
+            label: 'Standard',
+            hint: 'Pull to open, with the ordinary soft close.',
+          },
+        ],
+        defaultVariant: 'T',
+
+        // ─── WHERE THE MODEL'S OWN ORIGIN IS ──────────────────────────────
+        // A downloaded model has an origin somebody else chose, and the LISP
+        // owns the POSITION (F6.2): the runner aligns to the drilled row, never
+        // the other way round. So the model is moved by this much, in the
+        // runner's own frame — x across the cabinet from the panel it is
+        // screwed to, y up from the drilled row, z from the front of the box.
+        //
+        // MEASURED AT FIRST MOUNT and not before: nothing in this repository
+        // has opened one of the owner's files, so the honest value today is
+        // zero on all three with the bounding box centred by the loader
+        // (3d/runnerModels.js does that part). The first person to see a model
+        // sitting proud of its row corrects THESE THREE NUMBERS and nothing
+        // else — which is what stops the offset being scattered through the
+        // view code. BLOCKERS #77.
+        modelOrigin: { x: 0, y: 0, z: 0 },
+        // Units in the files are true millimetres — validated at conversion,
+        // where an NL450 file measures 450.5 long. A file whose longest
+        // is not within this of its nominal length is not the runner it claims
+        // to be, and the view falls back to the grey box rather than drawing
+        // something the wrong size (F6.6).
+        lengthTolerance: 5,
+
+        // ─── THE SYNCHRONISATION ROD (F6.5) ───────────────────────────────
+        // Catalogue thresholds, on the CABINET OPENING width — blum.com,
+        // TIP-ON BLUMOTION for MOVENTO. Written out because they are exactly
+        // the sort of number that gets rounded to "about 300".
+        rod: {
+          unitAloneBelow: 314,      // under this the unit works on its own
+          narrow: [281, 305],       // …except here, where the NARROW rod goes
+          withAdapters: [314, 1385], // and here, the rod with its adapters
+          // The rod spans the drawer BOX and loses the fixed ends the adapters
+          // take up — parametric, so a workshop that changes box widths gets a
+          // rod that changes with it. 2 × 8 mm of adapter.
+          endAllowance: 16,
+          diameter: 10,
+        },
+      },
     },
     // An adjustable leg: a plate, a stem and a foot.
     leg: {
@@ -1739,6 +1856,32 @@ export const DEFAULT_CABINET_PROFILE = {
     labelHeight: 40,                 // LISP drawText height on the CNC sheet
     labelMinHeight: 6,               // …shrunk to fit a small part, never below this
     labelFitRatio: 0.12,             // label height ≤ this × the part's short side
+    // ─── Turn 18 (CLAUDE.md F1): THE LABEL IS A BLOCK, NOT A LINE ─────────
+    //
+    // The owner's export screenshot — `F01 TOP 564x540 F01 BOTTOM 564x…`
+    // running over the parts and into the neighbours. A one-line caption on a
+    // small board can only fit by shrinking to nothing or by hanging over its
+    // own edges, so it breaks onto up to three lines at its own word breaks
+    // (`F-01` / `BUR` / `597x568`) and the block is centred in the part.
+    //
+    // The layout is engine/cnc/annotation.js `labelBlock`, and it is the SAME
+    // function for the sheet and for the file (F1.1).
+    labelMaxLines: 3,                // …up to three centred lines
+    labelLineGap: 0.25,              // leading between two of them, × the size
+    // How much of the part's own rectangle the block may fill. 0.94 until this
+    // turn, and 0.94 was measured against OUR font. The DXF carries no font,
+    // the reader's CAD picks its own, and Piotr's is wider than ours — so the
+    // block is laid out to fit in the WORST reasonable face, not the best
+    // (F1.3; the other half of it is `MONO_ADVANCE`, 0.62 → 0.85).
+    labelFillRatio: 0.85,
+    // ─── HALF THE SIZE IN THE EXPORT (F1.2) ───────────────────────────────
+    // "The exported DXF writes the label at 50% of the sheet's height for the
+    // same part. The sheet on screen keeps its size." One number, because the
+    // two labels are otherwise laid out by the same call with the same box —
+    // which is what stops them disagreeing about the WORDS while differing in
+    // size on purpose. Never below `labelMinHeight`: a label a joiner cannot
+    // read off the board is not a label.
+    exportLabelScale: 0.5,
     layoutGap: 50,                   // LISP `odstep` — gap between parts laid out flat
     layoutRowWidth: 3600,            // wrap to a new row past this (preview only)
     // ─── Turn 11 (CLAUDE.md F6) ───
@@ -1779,9 +1922,9 @@ export const DEFAULT_CABINET_PROFILE = {
       partLabelMm: 70,        // the cabinet, the part code and its cut size
       blockLabelMm: 45,       // the cabinet's NAME over its block
       sectionLabelMm: 70,     // the material section's header
-      // How far inside its own bottom edge a part's caption sits, as a share of
-      // the part's height. Keeps a caption off the outline it stands in.
-      partLabelInset: 0.06,
+      // (`partLabelInset` stood here until turn 18: how far inside its own
+      // bottom edge a part's caption sat. A block centred in the part both ways
+      // has no edge to stand off, so the number went with the rule — F1.1.)
       minLabelPx: 5,          // under five pixels tall, a caption is not drawn
       minSymbolPx: 0.75,      // …and a hole under three quarters of one is not
     },
@@ -2047,6 +2190,20 @@ export function migrateCabinetProfile(profile) {
       variants: mergeById(D.baseDrawerUnit.variants, profile.baseDrawerUnit?.variants),
     },
     sinkUnit: { ...D.sinkUnit, ...profile.sinkUnit, defaults: { ...D.sinkUnit.defaults, ...profile.sinkUnit?.defaults } },
+    // ─── Turn 18 (CLAUDE.md F5.2) ───
+    // The two appliance kits joined the profile in turn 17 and never joined
+    // THIS list, which is a migration hole with a fuse on it: the return above
+    // is `{ ...D, ...profile }`, so a profile saved by turn 17 replaces the
+    // whole block and would come back without this turn's `topRails` — an oven
+    // base with no top at all. Merged key by key now, like every other nested
+    // block here.
+    ovenUnit: {
+      ...D.ovenUnit,
+      ...profile.ovenUnit,
+      defaults: { ...D.ovenUnit.defaults, ...profile.ovenUnit?.defaults },
+      topRails: { ...D.ovenUnit.topRails, ...profile.ovenUnit?.topRails },
+    },
+    dwPanel: { ...D.dwPanel, ...profile.dwPanel, defaults: { ...D.dwPanel.defaults, ...profile.dwPanel?.defaults } },
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
     autoParts: {
       ...D.autoParts, ...profile.autoParts,
@@ -2142,7 +2299,20 @@ export function migrateCabinetProfile(profile) {
     hardware: {
       ...D.hardware, ...profile.hardware,
       hinge: { ...D.hardware.hinge, ...profile.hardware?.hinge },
-      runner: { ...D.hardware.runner, ...profile.hardware?.runner },
+      runner: {
+        ...D.hardware.runner,
+        ...profile.hardware?.runner,
+        // Turn 18 (CLAUDE.md F6): a profile saved before the Movento block
+        // existed comes back with it, and one that tunes a rod threshold keeps
+        // the rest — the same key-by-key merge every nested block here gets.
+        movento: {
+          ...D.hardware.runner.movento,
+          ...profile.hardware?.runner?.movento,
+          variants: mergeById(D.hardware.runner.movento.variants, profile.hardware?.runner?.movento?.variants),
+          modelOrigin: { ...D.hardware.runner.movento.modelOrigin, ...profile.hardware?.runner?.movento?.modelOrigin },
+          rod: { ...D.hardware.runner.movento.rod, ...profile.hardware?.runner?.movento?.rod },
+        },
+      },
       leg: { ...D.hardware.leg, ...profile.hardware?.leg },
       rail: { ...D.hardware.rail, ...profile.hardware?.rail },
     },

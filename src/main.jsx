@@ -7,6 +7,9 @@ import { useUiStore } from './stores/uiStore.js';
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
 import { useMaterialAssignmentStore } from './stores/materialAssignmentStore.js';
+import * as dxf from './engine/cnc/dxf.js';
+import * as hardware3d from './engine/hardware3d.js';
+import * as runners from './engine/runners.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
 //
@@ -33,6 +36,16 @@ if (typeof window !== 'undefined') {
     // that the sheet splits on them. Same store, same rule as the other four.
     materials: useMaterialAssignmentStore,
   };
+  // ─── Turn 18 (CLAUDE.md F7) ───
+  // Three ENGINE modules the walk has to be able to ask questions of, for the
+  // same reason the stores are here: a claim about a FILE has to be read off
+  // the file, a claim about where a runner sits has to be read off the same
+  // function the scene draws from, and a claim about a missing bucket has to be
+  // read off the registry that is missing it. All three are pure and reach
+  // nothing the page could not already compute.
+  window.__ccDxf = dxf;
+  window.__ccHardware3d = hardware3d;
+  window.__ccRunners = runners;
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

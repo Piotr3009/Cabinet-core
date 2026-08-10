@@ -26,7 +26,7 @@
 
 import { layerTableFor } from './layers.js';
 import { partLabelText } from './partLabel.js';
-import { MONO_ADVANCE, truncateToWidth } from './annotation.js';
+import { labelBlock } from './annotation.js';
 import { turnPoint } from './layout.js';
 import { fileSafeName } from '../naming.js';
 
@@ -110,52 +110,82 @@ function pocketPoints(p) {
 }
 
 /**
- * Label height that still fits INSIDE a part this size (turn 17, CLAUDE.md F1.3).
+ * The part's own rectangle, in the frame the file is written in.
  *
- * Two limits, and the second is this turn's. The height has been capped at a
- * share of the part's SHORT side since turn 3, which keeps a caption from
- * standing taller than the board. It never looked at the WIDTH, because the
- * string was `01-BUL` and six characters fit on anything. The string is
- * `F-01 BUL 560x2100` now — three times as long — so a small part would have
- * had its label hanging over both edges, which is the one thing F1.3 forbids
- * ("it never spills over the outline and never overlaps a neighbour").
- *
- * The advance width is `annotation.js`'s own, so the size the sheet shrinks a
- * caption to and the size the file writes it at are computed the same way.
+ * A part drawn TURNED (a top, a shelf, a drawer side) says so with `drawn_w` /
+ * `drawn_h`; everything else is its cut size.
  */
-function labelHeightFor(panel, cnc, text = '') {
-  const w = Math.abs(panel.cnc?.drawn_w ?? panel.w);
-  const h = Math.abs(panel.cnc?.drawn_h ?? panel.h);
-  const fitted = Math.min(w, h) * cnc.labelFitRatio;
-  const chars = String(text).length;
-  // …and never wider than the board it is cut into.
-  const acrossFit = chars > 0 ? (w * 0.94) / (chars * MONO_ADVANCE) : Infinity;
-  return Math.max(cnc.labelMinHeight, Math.min(cnc.labelHeight, fitted, acrossFit));
+function labelBox(panel) {
+  return {
+    w: Math.abs(panel.cnc?.drawn_w ?? panel.w),
+    h: Math.abs(panel.cnc?.drawn_h ?? panel.h),
+  };
 }
 
 /**
- * The part's own caption AS THE FILE WRITES IT: the string and its height.
+ * The part's own caption AS THE SHEET LAYS IT OUT — the words, the line breaks
+ * and the size, from `annotation.js`'s one layout function.
  *
- * Exported because two other places have to agree with it exactly — the identity
- * test, which asserts the label fits inside the outline on every kit, and any
- * future reader that wants to know what a board will actually say. One answer,
- * in the module that writes it (turn 17, CLAUDE.md F1.1).
+ * Exported so the CNC VIEW can ask the same question with the same box and get
+ * the same answer, which is what CLAUDE.md F1.1 means by "used by the sheet AND
+ * the file, so they cannot disagree". The only thing the two do differently is
+ * the SIZE, and that is one profile number (`cnc.exportLabelScale`).
+ */
+export function panelLabelBlock(panel, { unitNum, profile, mmPerPx = 1, minPx = 0 }) {
+  const cnc = profile.cnc;
+  const box = labelBox(panel);
+  return labelBlock({
+    text: partLabelText(unitNum, panel),
+    sizeMm: profile.cnc.annotation.partLabelMm,
+    boxW: box.w,
+    boxH: box.h,
+    maxLines: cnc.labelMaxLines,
+    fillRatio: cnc.labelFillRatio,
+    lineGap: cnc.labelLineGap,
+    minSize: cnc.labelMinHeight,
+    mmPerPx,
+    minPx,
+    // ASCII, for the reason partLabel.js gives about the multiplication sign:
+    // R12 predates any agreement about what a byte above 127 means, and the
+    // screen takes the export's spelling rather than the other way round.
+    ellipsis: '~',
+  });
+}
+
+/**
+ * …and the same block AS THE FILE WRITES IT: the same words and the same line
+ * breaks, at half the height (turn 18, CLAUDE.md F1.2).
  *
- * @returns {{str:string, h:number}} `str` is '' where not even one character fits
+ * Two limits stand above the halved size and both are older than this turn: the
+ * absolute `labelHeight` the LISP's `drawText` used, and `labelFitRatio` × the
+ * part's short side. Below it is `labelMinHeight`, which is the floor a board
+ * can still be read at across a bench.
+ *
+ * The file's size is therefore never GREATER than the sheet's, which is what
+ * makes the shared line breaks safe: a string that fitted its line at the
+ * sheet's size fits it at half of it with room to spare.
+ *
+ * @returns {{lines:string[], h:number, str:string, step:number}}
+ *   `str` is the whole caption on one line — what the part says, however it is
+ *   broken — and is '' where not even one character fits.
  */
 export function panelLabel(panel, { unitNum, profile }) {
   const cnc = profile.cnc;
-  const w = Math.abs(panel.cnc?.drawn_w ?? panel.w);
-  const wanted = partLabelText(unitNum, panel);
-  const h = labelHeightFor(panel, cnc, wanted);
-  // Where even the readable floor is too tall for the board — a 30 mm scribe
-  // filler is 30 mm wide and the string is seventeen characters — the label
-  // TRUNCATES rather than hanging over the edge. That is `annotation.js`'s own
-  // middle step between "draw it" and "hide it" (turn 16 F3), and using it here
-  // is what keeps F1.1 and F1.3 both true at once: the piece still says which
-  // cabinet it belongs to, which is the whole point of the label, and it still
-  // fits inside its own outline.
-  return { str: truncateToWidth(wanted, w * 0.94, h, '~'), h };
+  const box = labelBox(panel);
+  const block = panelLabelBlock(panel, { unitNum, profile });
+  if (!block.visible) return { lines: [], h: 0, str: '', step: 0 };
+  const h = Math.max(
+    cnc.labelMinHeight,
+    Math.min(
+      block.size * cnc.exportLabelScale,
+      cnc.labelHeight,
+      Math.min(box.w, box.h) * cnc.labelFitRatio,
+    ),
+  );
+  const lines = block.lines.map((l) => l.text);
+  return {
+    lines, h, str: lines.join(' '), step: h * (1 + cnc.labelLineGap),
+  };
 }
 
 /**
@@ -212,17 +242,23 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
   // the board on the bench and the picture on the screen say the same words.
   // It is INSIDE the part (F1.2), on the existing text layer (F1.4), and it is
   // the only text this file ever writes (F2.2).
+  //
+  // ─── Turn 18 (CLAUDE.md F1): IT IS A BLOCK, AND IT IS HALF THE SIZE ──────
+  // The caption breaks onto up to three centred lines and the block is centred
+  // on the part's own middle — so a one-line label is written at exactly the
+  // coordinate it always was, and a part too small to hold the words on one
+  // line gets them stacked instead of hanging over its edges.
   const w = panel.cnc?.drawn_w ?? panel.w;
   const h = panel.cnc?.drawn_h ?? panel.h;
   const label = panelLabel(panel, { unitNum, profile });
-  if (label.str) {
+  for (const [i, line] of label.lines.entries()) {
     entities.push({
       type: 'text',
       layer: cnc.unitNumberLayer,
       x: w / 2,
-      y: h / 2,
+      y: h / 2 + ((label.lines.length - 1) / 2 - i) * label.step,
       h: label.h,
-      str: label.str,
+      str: line,
     });
   }
 

@@ -21,6 +21,8 @@ export default function CanvasToolbar() {
   const toggleXray = useUiStore((s) => s.toggleXray);
   const rulerOn = useUiStore((s) => s.rulerOn);
   const toggleRuler = useUiStore((s) => s.toggleRuler);
+  const hideFronts = useUiStore((s) => s.hideFronts);
+  const toggleHideFronts = useUiStore((s) => s.toggleHideFronts);
 
   // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
   // Read as LENGTHS rather than through the store's own `canUndo()`, because a
@@ -114,6 +116,30 @@ export default function CanvasToolbar() {
           : 'See through the carcasses — hinges, runners and legs where they are fitted'}
       >
         X-ray
+      </button>
+
+      {/* ─── Turn 18 (CLAUDE.md F4 / BACKLOG W22): hide fronts ───
+          Beside X-ray, because it answers the same question — "what is inside
+          this?" — with the other half of the answer: X-ray looks THROUGH the
+          board, this takes the doors and the drawer fronts off it.
+          A LENS. Nothing in the BOM, the CNC, the cut list or the params
+          changes; "Remove doors" is the one that edits the project, and it is
+          in the right-click menu where a decision belongs. */}
+      <button
+        type="button"
+        aria-pressed={hideFronts}
+        data-hide-fronts="1"
+        disabled={viewMode !== '3d'}
+        className={`px-2.5 py-1 text-xs rounded transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
+          hideFronts && viewMode === '3d'
+            ? 'bg-gold text-shell-900 font-medium'
+            : 'text-ink-100 hover:bg-shell-700'}`}
+        onClick={toggleHideFronts}
+        title={hideFronts
+          ? 'Show the doors and drawer fronts again — nothing about the project changed'
+          : 'Take the doors and drawer fronts off the picture — a way of LOOKING, not an edit'}
+      >
+        Hide fronts
       </button>
 
       {/* ─── Turn 17 (CLAUDE.md F11): the ruler ───

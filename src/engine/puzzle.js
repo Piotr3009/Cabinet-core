@@ -184,10 +184,22 @@ function verticalSocket(centreY, edgeX, dir, G, pz, out) {
 export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
   const e = {
     backTabs: true, topSocket: true, bottomSocket: true,
-    topScrews: true, bottomScrews: true, ...(edges || {}),
+    topScrews: true, bottomScrews: true, backTabsBelow: Infinity, ...(edges || {}),
   };
   const out = { outline: [], pockets: [], holes: [] };
-  const centres = tabCentres(h, pz);
+  // ─── Turn 18 (CLAUDE.md F5.1): A TAB WITH NOTHING TO CATCH IT ────────────
+  //
+  // Owner's review of the oven base: "the sides carry the same 7 sockets a
+  // full-back BUD does, and above the drawer-back there is NOTHING there."
+  // He is right — the back of an oven housing stops at the shelf, so the two
+  // upper tabs and their dog-bone reliefs were cut into open air.
+  //
+  // `backTabsBelow` is the height the back reaches to. A tab is kept only if
+  // its whole DOG BONE lands inside it — the bone is ±`dogboneHalfHeight` and
+  // reaches further than the tab itself, which is the same fact that decides
+  // the middle tab on a low carcass (`middleTabThreshold`).
+  const reach = Number.isFinite(Number(e.backTabsBelow)) ? Number(e.backTabsBelow) : Infinity;
+  const centres = tabCentres(h, pz).filter((c) => c + pz.dogboneHalfHeight <= reach);
   const S = G / 2 + pz.centrelineExtra;
 
   if (!e.backTabs) {

@@ -17,6 +17,8 @@ import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
+import { resolveRunnerVariant } from '../engine/runners.js';
+import { storageBaseUrl } from '../lib/runnerCatalogue.js';
 import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
@@ -391,7 +393,7 @@ export default function UnitView({
   frontColour = null, design = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
   profile, finishes, outlines = true, contour = false, xray = false, sheen = null,
-  showHinges = false,
+  showHinges = false, hideFronts = false,
   wallGaps = null, showAllDims = false, unitDesign = null,
   // ─── One element inside this cabinet (turn 9, CLAUDE.md F4) ───
   // `selectedElement` is the ENGINE's own panel id (`SHELF-2`) or null, which
@@ -604,6 +606,29 @@ export default function UnitView({
   // Where the bought hardware sits (turn 7, CLAUDE.md F3). Derived from the
   // engine's own drilling, so a hinge is drawn where the machine bores for it.
   const hardware = useMemo(() => hardwareInstances(result, profile), [result, profile]);
+
+  // ─── Turn 18 (CLAUDE.md F6.4): WHICH RUNNER EACH DRAWER IS FITTED WITH ────
+  // Project → unit → drawer, the colour hierarchy exactly (engine/runners.js).
+  // It is HARDWARE and never geometry, so nothing above this line knows about
+  // it: the cabinet is cut identically whichever variant is chosen.
+  const runnerVariants = useMemo(() => {
+    const out = {};
+    for (const r of hardware.runners) {
+      out[r.drawer] = resolveRunnerVariant({
+        drawer: r.drawer, unit, design, profile,
+      });
+    }
+    return out;
+  }, [hardware.runners, unit, design, profile]);
+  // Where the models are served from. '' in mock mode, and '' is a complete
+  // answer: the runner is drawn from the workshop's own profile instead.
+  const storageBase = useMemo(() => storageBaseUrl(), []);
+  // Is anything open? A door part-way through its swing counts — that is when
+  // the ironmongery is worth looking at (F6.7).
+  const anyFrontOpen = useMemo(
+    () => Object.values(openFronts || {}).some((v) => Number(v) > 0),
+    [openFronts],
+  );
 
   // ─── Every number this cabinet has (turn 8, CLAUDE.md F7) ───
   // Built from the ENGINE's own output, never re-derived: what is shown is what
@@ -844,7 +869,13 @@ export default function UnitView({
           because what reads as hovering is a RUN hovering, and a per-unit
           footprint leaves a bright seam at every joint between two cabinets. */}
 
-      {result.panels.filter((p) => p.box).map((p) => {
+      {/* ─── Turn 18 (CLAUDE.md F4): HIDE FRONTS ───
+          Doors and drawer fronts leave the PICTURE together, and nothing else
+          about the project moves — `result` is the engine's own answer and it
+          is not recomputed, the BOM and the CNC sheet read it unchanged, and
+          the params never hear about this. It is a lens over the same cabinet,
+          which is what makes it different in kind from "Remove doors". */}
+      {result.panels.filter((p) => p.box && !(hideFronts && frontKind(p))).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         // ─── Turn 9 (CLAUDE.md F4.1) ───
         // What can be selected as an ELEMENT. It is the engine's own `shelf`
@@ -1132,6 +1163,13 @@ export default function UnitView({
         profile={profile}
         xray={xray && !contour}
         hinges={showHinges && !contour}
+        // ─── Turn 18 (CLAUDE.md F6.7) ───
+        // The runners appear when the fronts are OFF or a door is OPEN, which
+        // is precisely when a joiner is looking into the cabinet — and they go
+        // back behind X-ray the moment it is shut again.
+        runners={!contour && (hideFronts || anyFrontOpen)}
+        runnerVariants={runnerVariants}
+        storageBase={storageBase}
       />
 
       {/* Top infill: grab its top edge and drag UP to the ceiling, or

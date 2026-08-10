@@ -660,13 +660,19 @@ export const DEFAULT_CABINET_PROFILE = {
   // gaps, how it meets its neighbours — is in BLOCKERS and is not in the kit.
   // A guessed workshop number costs two turns to unpick (CLAUDE.md 0).
   dwPanel: {
-    defaults: { width: 600, height: 720, depth: 558 },
-    // ─── 594, AND IT IS NOT A DEFAULT ───
-    // "Height 594 mm, rigid. Always under 600, or the appliance door cannot
-    // open." So it is a FIXED VALUE with a test that says so, and no control
-    // offers to change it: a 610 mm appliance front is a machine that will not
-    // open, and the app must not be the thing that let it happen.
-    frontHeight: 594,
+    defaults: { width: 600, height: 770, depth: 558 },
+    // ─── 594 IS THE WIDTH, AND IT IS NOT A DEFAULT ───
+    // "front musi być szerokość 594, a wysokość taka sama jak reszta frontów
+    // base, czyli zależna od wysokości szafek." The 594 is what keeps the
+    // appliance door able to swing past its neighbours, so it is a FIXED VALUE
+    // and no control offers to change it. The HEIGHT is not fixed at all: this
+    // front stands in a run of base fronts and it lines up with them, so it is
+    // `H − gap` like every one of them.
+    //
+    // (Turn 17 shipped this as a rigid HEIGHT of 594 — a transcription error in
+    // the instruction, not in the engine, and it made a front the shape of a
+    // letterbox. The number was always the width.)
+    frontWidth: 594,
     // "One top panel, always 600 mm wide, depth as the rest of the run."
     topWidth: 600,
     // "The plinth is cut out at that position, 20 mm from the top." The notch
@@ -677,7 +683,7 @@ export const DEFAULT_CABINET_PROFILE = {
 
   // ─── OVEN BASE UNIT (turn 17, CLAUDE.md F10) ────────────────────────────
   ovenUnit: {
-    defaults: { width: 600, height: 870, depth: 558 },
+    defaults: { width: 600, height: 770, depth: 558 },
     // The appliance itself, and the number that follows from it. Written down
     // because it is the sort of number that gets "corrected" later: the oven is
     // 595 high, so THE SHELF IT STANDS ON SITS 598 MM FROM THE TOP OF THE

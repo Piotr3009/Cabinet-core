@@ -285,13 +285,22 @@ test('F8.1 — the fronts come off, and the boxes and the carcass stay', () => {
 // ─── F9 — the D/W panel ─────────────────────────────────────────────────────
 
 test('F9 — 594 is RIGID: it is a value, not a default', () => {
-  assert.equal(P.dwPanel.frontHeight, 594);
-  assert.ok(P.dwPanel.frontHeight < 600, 'always under 600, or the appliance door cannot open');
-  // Whatever the carcass height is asked to be, the front is 594.
-  for (const height of [700, 720, 760, 870, 900]) {
+  // Owner's review of turn 17: 594 is the WIDTH. The instruction said height
+  // and the engine built a letterbox; the number was always the one that keeps
+  // the appliance door able to swing past its neighbours.
+  assert.equal(P.dwPanel.frontWidth, 594);
+  assert.ok(P.dwPanel.frontWidth < 600, 'always under 600, or the appliance door cannot open');
+  // Whatever the opening is asked to be, the front is 594 WIDE — and as TALL
+  // as the base fronts it stands beside.
+  for (const width of [500, 600, 900]) {
+    const r = unit('DW_PANEL', { width });
+    assert.equal(r.panels.find((p) => p.part === 'FRONT').w, 594,
+      `a ${width} mm gap still cuts a 594 mm front`);
+  }
+  for (const height of [700, 720, 760, 900]) {
     const r = unit('DW_PANEL', { height });
-    const front = r.panels.find((p) => p.part === 'FRONT');
-    assert.equal(front.h, 594, `a ${height} mm unit still cuts a 594 mm front`);
+    assert.equal(r.panels.find((p) => p.part === 'FRONT').h, height - P.doors.gap,
+      `a ${height} mm run gives a ${height - P.doors.gap} mm front`);
   }
 });
 

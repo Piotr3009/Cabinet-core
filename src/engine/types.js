@@ -258,8 +258,13 @@ export const UNIT_TYPES = {
     appliance: 'dw',
     hingeRule: 'base',
     cupRule: 'baseOffsets',
-    legs: true,
-    legSource: 'baseUnit',
+    // NO LEGS. "nie ma nóg w ogóle, bo tam gdzie są nogi, tam jest D/W" — the
+    // appliance occupies the floor this unit would otherwise stand on, and a
+    // leg drawn there is a leg the joiner would try to fit.
+    legs: false,
+    legSource: null,
+    // No legs, but the TOE KICK still runs past the machine — notched for it.
+    plinth: true,
     hangers: false,
     doorExtend: false,
     mount: 'floor',
@@ -281,7 +286,12 @@ export const UNIT_TYPES = {
   // dog bones, one into each side and two into the bottom of the cabinet.
   OVEN_BASE: {
     id: 'OVEN_BASE',
-    heightGroup: null,
+    // It is a BASE unit and it stands in a run of them, so it takes the
+    // project's base height like the rest (owner, turn 17 review: "szafka
+    // zamiast standardowych jak wszystkie 770 ma 870, nie wiem dlaczego").
+    // Turn 17 shipped it off the group with a made-up 870 — declared in
+    // BLOCKERS #71, and now answered: the worktop decides, not the appliance.
+    heightGroup: 'base',
     label: 'Oven base unit',
     family: 'kitchen',
     lisp: null,

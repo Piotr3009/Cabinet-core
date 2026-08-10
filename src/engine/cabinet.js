@@ -382,9 +382,22 @@ function normalizeParams(raw, profile) {
   const drawerItems = [...drawersFromItems].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
   // Turn 17 (CLAUDE.md F10): an OVEN's drawer fills the zone UNDER its shelf,
   // not the carcass — the shelf sits `shelfFromTop` from the top of the
-  // cabinet, and what is left below it (less the two boards) is the stack.
+  // cabinet, and what is left below it is the stack.
+  //
+  // ─── The owner's own arithmetic, and why the two boards came off ───
+  // "szafka 770 − 3 mm gap − 595 oven — to ile zostaje?" 172, and 172 is the
+  // FRONT. This line used to take another 2 × G off it, which is the size of
+  // the OPENING — the carcass bottom and the shelf. That is right for a drawer
+  // BOX, which has to fit between two boards, and wrong for a FRONT, which
+  // covers them: an inset front on a base unit is `H − gap`, not `H − gap −
+  // 2G`, and an appliance unit does not get to be the exception.
+  //
+  // `shelfFromTop` is 598 = the 3 mm gap + the 595 mm oven, and the splitter
+  // below takes the gap off every stack it is given — so what goes IN is the
+  // face less the appliance, `height − ovenHeight`, and the gap comes off once,
+  // in the same place it comes off for every other unit in the app.
   const stackHeight = type.appliance === 'oven'
-    ? Math.max(0, height - profile.ovenUnit.shelfFromTop - 2 * G)
+    ? Math.max(0, height - profile.ovenUnit.ovenHeight)
     : height;
   const drawerHeights = type.drawerStyle === 'budr'
     // Turn 17 (CLAUDE.md F8.2): the drawers the joiner has set himself, and the
@@ -1140,16 +1153,20 @@ export function computeCabinet(params, profileOverride) {
       box: { x: (W - DW.topWidth) / 2, y: H - G, z: G, w: DW.topWidth, h: G, d: topH },
       cnc: { rotated: true, drawn_w: topH, drawn_h: DW.topWidth, ...rectGeometry(topH, DW.topWidth) },
     }));
-    // HEIGHT 594, RIGID. Not a default and not a maximum: the value. Over 600
-    // and the appliance door cannot open, and the app must not be the thing
-    // that let that happen.
-    const dwW = W - P.doors.gap;
+    // 594 IS THE WIDTH, RIGID. Not a default and not a maximum: the value.
+    // Over 600 and the appliance door cannot swing past its neighbours, and
+    // the app must not be the thing that let that happen. The HEIGHT is the
+    // ordinary base front height — `H − gap`, the same line 838 gives every
+    // door in the run — because this front stands among them and must line up
+    // with them.
+    const dwW = DW.frontWidth;
+    const dwH = H - P.doors.gap;
     panels.push(panel({
-      id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: dwW, h: DW.frontHeight, thickness: frontT,
-      edgeCode: codes.all, edgeLen: metres(2 * dwW + 2 * DW.frontHeight),
-      box: { x: P.doors.gap / 2, y: H - G - DW.frontHeight, z: D + P.doors.gap, w: dwW, h: DW.frontHeight, d: frontT },
+      id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: dwW, h: dwH, thickness: frontT,
+      edgeCode: codes.all, edgeLen: metres(2 * dwW + 2 * dwH),
+      box: { x: (W - dwW) / 2, y: H - dwH, z: D + P.doors.gap, w: dwW, h: dwH, d: frontT },
       // Flat: no hinge cups, no cup screws, no door furniture at all.
-      cnc: rectGeometry(dwW, DW.frontHeight),
+      cnc: rectGeometry(dwW, dwH),
       meta: { appliance: 'dw' },
     }));
   }
@@ -1776,13 +1793,27 @@ export function computeCabinet(params, profileOverride) {
   // every other panel does. What they should be is decided by
   // engine/autoparts.js from the room; this only builds them.
   const AP = P.autoParts;
-  const legHeightForPlinth = cfg.legHeight;
+  // ─── The toe kick's height comes from the RUN, not from this unit's legs ───
+  // `cfg.legHeight` is 0 for a type that stands on nothing, which is right for
+  // LEGS and wrong for the PLINTH: the D/W panel has no legs and the toe kick
+  // still runs past it at the height of its neighbours'. So when a plinthed
+  // type has no legs of its own, the run's standard leg height stands in.
+  const legHeightForPlinth = cfg.legHeight
+    || (type.plinth && !type.legs ? P.baseUnit.legHeight : 0);
   const plinthH = AP.plinth.height ?? legHeightForPlinth;
   // OPT-IN, deliberately: a bare computeCabinet(params) reproduces the LISP
   // kit and nothing else, so the golden fixtures stay the contract they are.
   // The automatics are a PROJECT decision — the store asks for them when a
   // unit is placed in a room (engine/autoparts.js).
-  const wantsPlinth = AP.plinth.enabled && type.legs && type.mount === 'floor'
+  // ─── LEGS AND A PLINTH ARE TWO DIFFERENT QUESTIONS ───
+  // They coincided until the D/W panel: legs are how a CARCASS is held off the
+  // floor, and a plinth is the toe kick that runs across the FRONT of the room.
+  // The D/W panel has no legs — the machine stands where they would be — and
+  // the toe kick still runs past it, notched for the appliance. So the gate is
+  // its own property, defaulting to `legs` so that every type written before
+  // this line behaves exactly as it did.
+  const takesPlinth = type.plinth ?? type.legs;
+  const wantsPlinth = AP.plinth.enabled && takesPlinth && type.mount === 'floor'
     && params?.plinth === true && plinthH > 0;
   // ─── ONE PLINTH ACROSS A RUN (turn 12, CLAUDE.md F8) ───
   //

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import {
-  boardParamFor, elementFields, elementKind, elementLabel, isSelectableElement,
+  boardParamFor, elementFields, elementKind, elementLabel, isMainViewElement, isSelectableElement,
 } from '../src/engine/elements.js';
 import { wallAtPoint, roomWalls, migrateRoom, rectCorners } from '../src/engine/room.js';
 import { useUiStore } from '../src/stores/uiStore.js';
@@ -42,17 +42,45 @@ test('every piece of a cabinet is a selectable element — not just the shelves'
   }
 });
 
-test('a drawer MECHANISM is not an element — it follows the stack', () => {
+// ─── Turn 17 (CLAUDE.md F4.2): THE LINE MOVED, AND WHERE IT MOVED TO ────────
+//
+// Turn 11 filed a drawer BOX with the drawer PANEL as "mechanism". The owner,
+// trying to edit a drawer: "jak je edytuję to nie mają żadnych wcięć, nie widzę
+// dziurek." A drawer box is four boards with grooves in them; the panel that
+// carries the runners and its fillers really are consequences of the stack.
+// So the test keeps its point and moves the line.
+test('the drawer PANEL and its fillers are mechanism — they follow the stack', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
   store().addDrawers(id, 3);
   const panels = resultOf(id).panels.filter((p) => p.box);
-  const mech = panels.filter((p) => p.part === 'DP' || p.part === 'FILLER' || p.role === 'drawer_box');
+  const mech = panels.filter((p) => p.part === 'DP' || p.part === 'FILLER');
   assert.ok(mech.length, 'this unit really does have a drawer mechanism');
   for (const p of mech) {
     assert.equal(isSelectableElement(p), false, `${p.id} is part of a mechanism, not a piece`);
     assert.equal(elementFields(p).length, 0);
   }
+});
+
+test('…and the drawer BOX is a piece you can open and edit', () => {
+  project();
+  const { id } = store().addUnit('WARDROBE');
+  store().addDrawers(id, 3);
+  const boxes = resultOf(id).panels.filter((p) => p.box && p.role === 'drawer_box');
+  assert.ok(boxes.length, 'this unit really does have drawer boxes');
+  for (const p of boxes) {
+    assert.equal(isSelectableElement(p), true, `${p.id} is a board a joiner can hold`);
+    assert.equal(elementKind(p), 'drawer');
+    // Turn 17 F8.2: with the fronts off, the BOX is what a joiner clicks — so
+    // the drawer's height is edited on it as well as on its front.
+    assert.deepEqual(elementFields(p), ['drawer-height', 'material']);
+    // …but it is NOT clicked in the room: it is inside a shut cabinet, and the
+    // turn-13 verdict (a click on a cabinet selects the cabinet) is untouched.
+    assert.equal(isMainViewElement(p), false, `${p.id} must not be clickable in the room`);
+  }
+  // Every drawer of the stack is named apart from the others.
+  const names = new Set(boxes.map(elementLabel));
+  assert.equal(names.size, boxes.length, `each board of each drawer names itself: ${[...names]}`);
 });
 
 test('a piece is named the way a joiner names it', () => {

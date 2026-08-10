@@ -68,6 +68,76 @@ export function hingeCentres(height, rule, profile) {
   }
 }
 
+// ─── HOW MANY HINGES, AND WHERE (turn 17, CLAUDE.md F7) ─────────────────────
+//
+// `hingeCentres` above is the LISP's own maths and stays exactly what it is:
+// how many hinges a door of this height, in this family, is drilled for. Two
+// things now sit on top of it, and both are the workshop talking rather than
+// the kit.
+//
+//   THE PROJECT STANDARD (F7.1). "Standard hinges: 2 / 3", default 3. On 2,
+//   "each door loses ONE MIDDLE hinge: a 3-hinge door becomes 2, and a 6-hinge
+//   door becomes 5 — one comes off, the outer ones never move." So it is not a
+//   count and not a re-spacing: it removes exactly one of the INNER hinges and
+//   leaves every other centre where the rule put it. WHICH inner one is the one
+//   nearest the middle of the door, because that is the hinge a joiner takes off
+//   — the ones near the ends are what stop a door bowing. With an even number of
+//   inner hinges the two candidates are equidistant and the LOWER wins, which is
+//   arbitrary but written down, and it makes the answer the same every time.
+//
+//   THE DOOR'S OWN SET (F7.2). A joiner may add one, take one off or move one,
+//   exactly as he moves a shelf. An explicit list REPLACES the rule — it is what
+//   somebody said out loud, and a rule that argued with it would be the app
+//   overruling the bench. It is the CABINET's list, because a cabinet's doors
+//   are drilled as a set and the carcass carries one hinge column per hinged
+//   side (BLOCKERS: per-leaf differences were not specified).
+//
+// Everything downstream follows on its own — the drilling in the export, the
+// hinge bodies in 3D and the BOM's hardware count all count this list.
+
+/** The standard a project is working to: 2 or 3, defaulting to the profile's. */
+export function hingeStandard(value, profile) {
+  const n = Math.trunc(Number(value));
+  const allowed = profile?.hinges?.standardOptions || [2, 3];
+  return allowed.includes(n) ? n : (Number(profile?.hinges?.standard) || 3);
+}
+
+/** The index of the inner hinge nearest the middle of the door — the one that goes. */
+export function middleHingeIndex(centres) {
+  if (!Array.isArray(centres) || centres.length < 3) return -1;
+  const mid = (centres[0] + centres[centres.length - 1]) / 2;
+  let best = 1;
+  for (let i = 2; i < centres.length - 1; i += 1) {
+    // Strictly nearer, so a tie leaves the LOWER index standing as the winner.
+    if (Math.abs(centres[i] - mid) < Math.abs(centres[best] - mid)) best = i;
+  }
+  return best;
+}
+
+/**
+ * The hinge rows of one cabinet, in millimetres up the carcass.
+ *
+ * @param {object} args
+ *   height    the carcass height
+ *   rule      profile.hinges.rules[type.hingeRule]
+ *   standard  2 or 3 (the project's, F7.1)
+ *   own       an explicit list the joiner has edited (F7.2), or null
+ * @param {object} profile
+ */
+export function hingeRows({ height, rule, standard = 3, own = null }, profile) {
+  if (Array.isArray(own) && own.length) {
+    const H = Number(height) || 0;
+    return [...own]
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v) && v >= 0 && v <= H)
+      .sort((a, b) => a - b);
+  }
+  const centres = hingeCentres(height, rule, profile);
+  if (hingeStandard(standard, profile) !== 2) return centres;
+  const drop = middleHingeIndex(centres);
+  return drop < 0 ? centres : centres.filter((_, i) => i !== drop);
+}
+
 /** Door count from the width threshold: 1 while (W − 4) ≤ 700 → 2 from W = 705 (704 → 1 door). */
 export function doorCountFor(width, profile) {
   const d = profile.doors;
@@ -126,6 +196,103 @@ export function budrFrontHeights(height, profile, ratio = null, exact = false) {
   return heights;
 }
 
+// ─── DRAWER HEIGHTS, ONCE THE FRONTS ARE OFF (turn 17, CLAUDE.md F8) ────────
+
+/**
+ * The shortest a drawer front may be (F8.3).
+ *
+ * The owner's rule, and it is an ENGINE function with its own test rather than
+ * a number typed into a control, because the UI is not allowed to be the only
+ * thing that knows it: a height that arrives from a template, an import or an
+ * old project has to be refused in the same place a typed one is.
+ */
+export function minDrawerFrontHeight(profile) {
+  const B = profile?.baseDrawerUnit || {};
+  return (Number(B.runnerScrewFromBase) || 0) + (Number(B.clearanceBelowRunner) || 0);
+}
+
+/** …and the clamp itself. Never below the rule, never above the carcass. */
+export function clampDrawerFrontHeight(mm, { profile, max = Infinity }) {
+  const floor = minDrawerFrontHeight(profile);
+  const n = Number(mm);
+  if (!Number.isFinite(n)) return floor;
+  return Math.min(Math.max(n, floor), Math.max(floor, max));
+}
+
+/**
+ * A BUDR stack where the joiner has set some of the heights himself (F8.2).
+ *
+ * The rule is the same one a shelf follows: what somebody SAID wins, and what
+ * nobody said follows the kit. So an edited drawer takes its height exactly,
+ * and the drawers nobody has touched share what is left in the variant's own
+ * ratio — which is what keeps the stack filling the face instead of leaving a
+ * slot at the top of the cabinet.
+ *
+ * With NOTHING edited it returns `budrFrontHeights` untouched, which is why
+ * BLOCKERS #64 (the kit's 4:3:2 rounding drift) stays frozen exactly as
+ * CLAUDE.md F8.4 requires: this edits a UNIT and never the kit's defaults.
+ */
+export function budrHeightsWithOwn(height, profile, split, own, warnings = []) {
+  const B = profile.baseDrawerUnit;
+  const base = budrFrontHeights(height, profile, split.ratio, split.exact);
+  const list = Array.isArray(own) ? own : null;
+  const edited = base.map((_, i) => Number.isFinite(Number(list?.[i])) && Number(list[i]) > 0);
+  if (!edited.some(Boolean)) return base;
+
+  const available = Number(height) - base.length * B.gap;
+  const floor = minDrawerFrontHeight(profile);
+  let short = false;
+  const out = base.map((h, i) => {
+    if (!edited[i]) return h;
+    const want = Number(list[i]);
+    if (want < floor) short = true;
+    return Math.max(floor, want);
+  });
+
+  const freeIdx = out.map((_, i) => i).filter((i) => !edited[i]);
+  const takenByEdited = out.reduce((s, h, i) => s + (edited[i] ? h : 0), 0);
+  const left = available - takenByEdited;
+
+  if (!freeIdx.length) {
+    if (short) {
+      warnings.push({
+        code: 'DRAWER_HEIGHT_CLAMPED',
+        message: `A drawer may be no shorter than ${floor} mm — ${B.runnerScrewFromBase} mm to the runner screws plus ${B.clearanceBelowRunner} mm under them.`,
+      });
+    }
+    // Every drawer was set by hand. The stack is what he asked for; say so if
+    // it does not add up rather than silently moving one of his numbers.
+    if (Math.abs(left) > 0.5) {
+      warnings.push({
+        code: 'DRAWER_STACK_MISMATCH',
+        message: `The drawer heights add up to ${roundTo(takenByEdited, 1)} mm in a ${roundTo(available, 1)} mm face.`,
+      });
+    }
+    return out;
+  }
+
+  const ratio = split.ratio;
+  const freeTotal = freeIdx.reduce((s, i) => s + (ratio[i] ?? 1), 0) || freeIdx.length;
+  for (const i of freeIdx) {
+    const want = lispRound((left * (ratio[i] ?? 1)) / freeTotal);
+    if (want < floor) short = true;
+    out[i] = Math.max(floor, want);
+  }
+  // The last untouched drawer absorbs the rounding, so the stack finishes level
+  // with the carcass — the kit's own "stack top = H − 3".
+  const last = freeIdx[freeIdx.length - 1];
+  const drift = available - out.reduce((s, h) => s + h, 0);
+  if (drift && out[last] + drift >= floor) out[last] += drift;
+
+  if (short) {
+    warnings.push({
+      code: 'DRAWER_HEIGHT_CLAMPED',
+      message: `A drawer may be no shorter than ${floor} mm — ${B.runnerScrewFromBase} mm to the runner screws plus ${B.clearanceBelowRunner} mm under them.`,
+    });
+  }
+  return out;
+}
+
 /**
  * How a unit type's drawer stack is split (turn 12, CLAUDE.md F3.2).
  *
@@ -137,6 +304,14 @@ export function budrFrontHeights(height, profile, ratio = null, exact = false) {
  */
 export function drawerSplitFor(type, profile) {
   const B = profile.baseDrawerUnit;
+  // Turn 17 (CLAUDE.md F10): a kit may name its own split in the profile rather
+  // than pick one of the drawer unit's variants — the oven base has ONE drawer
+  // under its shelf, which is not a variant of the drawer unit and should not
+  // appear in that group's flyout. The key is data, exactly like `defaultsKey`.
+  if (type?.drawerRatioKey) {
+    const own = readPath(profile, type.drawerRatioKey);
+    if (Array.isArray(own) && own.length) return { ratio: own, exact: true };
+  }
   const variant = type?.drawerVariant
     ? (B.variants || []).find((v) => v.id === type.drawerVariant)
     : null;
@@ -205,8 +380,16 @@ function normalizeParams(raw, profile) {
   // same physical drawer as runner row i and drawer front i. `index` is the
   // authority when the editor supplies it; otherwise array order stands.
   const drawerItems = [...drawersFromItems].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
+  // Turn 17 (CLAUDE.md F10): an OVEN's drawer fills the zone UNDER its shelf,
+  // not the carcass — the shelf sits `shelfFromTop` from the top of the
+  // cabinet, and what is left below it (less the two boards) is the stack.
+  const stackHeight = type.appliance === 'oven'
+    ? Math.max(0, height - profile.ovenUnit.shelfFromTop - 2 * G)
+    : height;
   const drawerHeights = type.drawerStyle === 'budr'
-    ? budrFrontHeights(height, profile, budrSplit.ratio, budrSplit.exact)
+    // Turn 17 (CLAUDE.md F8.2): the drawers the joiner has set himself, and the
+    // kit's own ratio for the rest. Nothing set = `budrFrontHeights` unchanged.
+    ? budrHeightsWithOwn(stackHeight, profile, budrSplit, p.drawer_heights, warnings)
     : resolveDrawerHeights(p, drawers, drawerItems, profile, warnings);
   const rail = type.supports.rail ? (items.length ? Boolean(hangerFromItems) : Boolean(p.rail)) : false;
 
@@ -253,11 +436,25 @@ function normalizeParams(raw, profile) {
     hinge,
     doorCount,
     doorExtend,
+    // ─── Turn 17 (CLAUDE.md F7) ───
+    // The project's standard (2 or 3) and, above it, this cabinet's own hinge
+    // rows if a joiner has edited them. Both are INPUTS in the design layer's
+    // own manner: nothing said means the kit's own maths, so every golden
+    // fixture and every bare `computeCabinet()` is untouched.
+    hingeStandard: p.hinge_standard,
+    hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
     shelves,
     shelfItems,
     shelfPositions,
     drawers,
     drawerItems,
+    // ─── Turn 17 (CLAUDE.md F8.1): THE FRONTS COME OFF ──────────────────────
+    // The exact mirror of turn 15's "Remove doors", on the kit whose fronts ARE
+    // its face: `false` takes them off so the boxes can be worked on, and the
+    // carcass, the runners and the boxes are untouched. Anything else — a unit
+    // that has never heard of this — keeps its fronts, which is what every
+    // fixture and every saved project is.
+    drawerFronts: p.drawer_fronts !== false,
     drawerHeights,
     rail,
     railOffset: Number(p.rail_offset ?? railDefault),
@@ -351,6 +548,40 @@ function collectItems(p) {
 function clampInt(value, min, max) {
   const n = Math.trunc(Number(value) || 0);
   return Math.min(Math.max(n, min), max);
+}
+
+/**
+ * A plinth with the appliance opening cut out of it (turn 17, CLAUDE.md F9).
+ *
+ * The notch runs from `cutFromTop` below the plinth's top edge down through its
+ * bottom edge, across the appliance's own width — so what is left is a 20 mm
+ * strip carrying the two ends of the piece.
+ *
+ * Coordinates are the plinth's own cut frame (origin bottom-left, y up), and
+ * the notch is CLAMPED to it: an owner plinth that runs past this unit on both
+ * sides gets the opening where the appliance is, and a notch that would reach
+ * an end of the board simply stops there.
+ *
+ * @param {number} w        the plinth's own length
+ * @param {number} h        its height
+ * @param {number} at       where the appliance starts, in the plinth's frame
+ * @param {number} span     how wide the appliance is
+ * @param {number} cutFromTop  the strip left at the top
+ */
+export function notchedPlinth(w, h, at, span, cutFromTop) {
+  const x0 = Math.max(0, Math.min(w, at));
+  const x1 = Math.max(0, Math.min(w, at + span));
+  const top = h - cutFromTop;
+  if (!(x1 - x0 > 0) || !(top > 0)) return rectGeometry(w, h);
+  const points = [[0, 0], [x0, 0], [x0, top], [x1, top], [x1, 0], [w, 0], [w, h], [0, h]];
+  // A notch that reaches an END of the board leaves the corner point repeated,
+  // and a repeated vertex is a zero-length edge — which a triangulator is
+  // entitled to refuse (3d/panelSolid.js says so about the tabs). Drop them.
+  const outline = points.filter(([x, y], i) => {
+    const prev = points[(i - 1 + points.length) % points.length];
+    return Math.abs(prev[0] - x) > 1e-9 || Math.abs(prev[1] - y) > 1e-9;
+  });
+  return { outline, pockets: [], holes: [], layer: 'OUTLINE' };
 }
 
 // ─── Panel record helper ───
@@ -612,15 +843,35 @@ export function computeCabinet(params, profileOverride) {
 
   // ── Hinges + cups ──────────────────────────────────────────────────────────
   const hingeRule = P.hinges.rules[type.hingeRule] || P.hinges.rules.base;
-  const centres = hingeCentres(H, hingeRule, P);
-  const cupOffsets = P.hinges.cups.baseOffsets;
-  const sinkCups = P.hinges.cups.sinkOffsets;
-  let cupY;
-  if (type.cupRule === 'hingeCentres') cupY = [...centres];
-  else if (type.cupRule === 'sinkOffsets') cupY = [sinkCups.bottom, frontH - sinkCups.upperFromTop, frontH - sinkCups.topFromTop];
-  // A wall unit whose front runs below the carcass keeps the bottom cup the
-  // same distance from the CARCASS base, so it moves up the taller front.
-  else cupY = [cupOffsets.bottom + cfg.doorExtend, frontH - cupOffsets.upperFromTop, frontH - cupOffsets.topFromTop];
+  // ─── Turn 17 (CLAUDE.md F7) ───
+  // The kit's own maths, then the project's standard, then whatever the joiner
+  // has said about THIS cabinet. A bare `computeCabinet()` — every golden
+  // fixture — passes neither of the last two and gets `hingeCentres` unchanged,
+  // which is what keeps the AutoLISP's drilling exactly where it is.
+  const centres = hingeRows({
+    height: H, rule: hingeRule, standard: cfg.hingeStandard, own: cfg.hingeRows,
+  }, P);
+  // ─── THE CUPS FOLLOW THE HINGES (turn 17, CLAUDE.md F7.3) ────────────────
+  //
+  // A cup is the hole the hinge's own body sits in, so it is at the HEIGHT of
+  // its hinge and always was — the three per-kit offset tables were three ways
+  // of writing that down and they all come out the same. Worth the arithmetic,
+  // because it is what makes F7 work at all: a door that loses its middle hinge
+  // has to lose its middle CUP, and a hinge a joiner has moved by hand has to
+  // take its cup with it.
+  //
+  //   BUD / WUD (baseOffsets)  [100 + e, frontH − 297, frontH − 97] with
+  //     frontH = H − 3 + e, i.e. [100 + e, H − 300 + e, H − 100 + e] — which is
+  //     the `base` rule's [100, H − 300, H − 100] plus the door extend.
+  //   SINK (sinkOffsets)  [100, frontH − 297, frontH − 147] = [100, H − 300,
+  //     H − 150] — the `sink` rule exactly, and that kit has no extend.
+  //   WARDROBE / TALL / LOW / FRIDGE (hingeCentres)  the centres already.
+  //
+  // So every kit is `centre + doorExtend`, to the millimetre, and the tables in
+  // profile.hinges.cups are left where they are as the traced record of the
+  // three LISP kits they came from (test/slots-and-hinge.test.js checks them
+  // against this).
+  const cupY = centres.map((c) => c + cfg.doorExtend);
 
   // ── Wardrobe drawers (internal, behind the doors) ──────────────────────────
   const DR = P.wardrobe.drawers;
@@ -870,13 +1121,46 @@ export function computeCabinet(params, profileOverride) {
     ? { backTabs: false, topSocket: false, topScrews: false }
     : undefined;
 
-  panels.push(panel({
+  // ─── TURN 17 (CLAUDE.md F9): A FRONT AND NOTHING ELSE ────────────────────
+  //
+  // "It is a front and nothing else — no hinges, flat, no door furniture." A
+  // D/W panel closes the face of an appliance that stands on the floor between
+  // two carcasses; there is no box, so there are no sides, no bottom and no
+  // back, and the whole carcass block below is skipped rather than being built
+  // and then filtered. The two pieces the owner DID name are emitted here.
+  const applianceFront = type.appliance === 'dw';
+  if (applianceFront) {
+    const DW = P.dwPanel;
+    // ONE TOP PANEL, ALWAYS 600 mm WIDE, depth as the rest of the run. "Always"
+    // is the word he used, so the width is the profile's number and not the
+    // unit's: a 500 mm appliance gap still takes the 600 mm top.
+    panels.push(panel({
+      id: 'TOP', part: 'TOP', role: 'top', w: DW.topWidth, h: topH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(DW.topWidth),
+      box: { x: (W - DW.topWidth) / 2, y: H - G, z: G, w: DW.topWidth, h: G, d: topH },
+      cnc: { rotated: true, drawn_w: topH, drawn_h: DW.topWidth, ...rectGeometry(topH, DW.topWidth) },
+    }));
+    // HEIGHT 594, RIGID. Not a default and not a maximum: the value. Over 600
+    // and the appliance door cannot open, and the app must not be the thing
+    // that let that happen.
+    const dwW = W - P.doors.gap;
+    panels.push(panel({
+      id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: dwW, h: DW.frontHeight, thickness: frontT,
+      edgeCode: codes.all, edgeLen: metres(2 * dwW + 2 * DW.frontHeight),
+      box: { x: P.doors.gap / 2, y: H - G - DW.frontHeight, z: D + P.doors.gap, w: dwW, h: DW.frontHeight, d: frontT },
+      // Flat: no hinge cups, no cup screws, no door furniture at all.
+      cnc: rectGeometry(dwW, DW.frontHeight),
+      meta: { appliance: 'dw' },
+    }));
+  }
+
+  if (!applianceFront) panels.push(panel({
     id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.left, edgeLen: metres(sideH),
     box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
     cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges }) },
   }));
-  panels.push(panel({
+  if (!applianceFront) panels.push(panel({
     id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.right, edgeLen: metres(sideH),
     box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
@@ -886,7 +1170,7 @@ export function computeCabinet(params, profileOverride) {
     rotated: true, drawn_w: topH, drawn_h: topW,
     ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs }),
   });
-  if (hasTopPanel) {
+  if (hasTopPanel && !applianceFront) {
     panels.push(panel({
       id: 'TOP', part: 'TOP', role: 'top', w: topW, h: topH, thickness: G,
       edgeCode: codes.right, edgeLen: metres(topW),
@@ -894,7 +1178,7 @@ export function computeCabinet(params, profileOverride) {
       cnc: topGeom(),
     }));
   }
-  panels.push(panel({
+  if (!applianceFront) panels.push(panel({
     id: 'BOTTOM', part: 'BOTTOM', role: 'bottom', w: topW, h: topH, thickness: G,
     edgeCode: codes.right, edgeLen: metres(topW),
     box: { x: G, y: 0, z: G, w: topW, h: G, d: topH },
@@ -918,6 +1202,74 @@ export function computeCabinet(params, profileOverride) {
       box: { x: 0, y: 0, z: 0, w: backW, h: backH, d: G },
       cnc: backCnc,
     }));
+  }
+
+  // ─── TURN 17 (CLAUDE.md F10): THE OVEN BASE UNIT ─────────────────────────
+  //
+  // Two pieces the kit adds to an ordinary base carcass, and both are the
+  // owner's own numbers.
+  //
+  //   THE SHELF. The oven is 595 high, so THE SHELF IT STANDS ON SITS 598 MM
+  //   FROM THE TOP OF THE CABINET — from the TOP, not from a centre line and
+  //   not from the floor. It is written that way here because it is the sort of
+  //   number that gets "corrected" later by somebody measuring up from the
+  //   plinth, and the correction would drop the oven 40 mm into the drawer.
+  //
+  //   THE BACK. "No back except behind the drawer. That back fixes the standard
+  //   way — 4 dog bones: one at each side, two into the bottom of the cabinet."
+  //   That is the FRIDGE's own back-rail pattern, traced in turn 14
+  //   (KIT_FRIDGE.lsp L340-358): a socket 95 mm in on each short edge, catching
+  //   the side panels' lowest tenon, and two more down its left edge at G + 95
+  //   and W − G − 95, catching the BOTTOM panel's back tenons. Four sockets,
+  //   four dog bones, and not one new number.
+  const ovenUnit = type.appliance === 'oven';
+  if (ovenUnit) {
+    const OV = P.ovenUnit;
+    // The shelf's TOP face at H − 598: the board is drawn from its underside up.
+    const shelfY = H - OV.shelfFromTop - G;
+    if (shelfY <= G) {
+      warnings.push({
+        code: 'OVEN_TOO_LOW',
+        message: `A ${roundTo(H, 0)} mm carcass has no room for the oven shelf 598 mm from its top.`,
+      });
+    }
+    panels.push(panel({
+      id: 'FIXED', part: 'FIXED', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(internalWidth),
+      box: { x: G, y: shelfY, z: G, w: internalWidth, h: G, d: internalDepth },
+      // Drawn turned, like the fridge's own fixed panel and like a TOP.
+      cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
+      meta: { variant: 'fixed', locked: true, oven: true },
+    }));
+    // The back, behind the drawer and nowhere else: flush with the bottom of
+    // the carcass, up to the underside of the shelf.
+    const backH = Math.max(0, shelfY);
+    if (backH > 0) {
+      panels.push(panel({
+        id: 'BACK', part: 'BACK', role: 'back', w: W, h: backH, thickness: G,
+        edgeCode: codes.none, edgeLen: 0,
+        box: { x: 0, y: 0, z: 0, w: W, h: backH, d: G },
+        cnc: {
+          rotated: true,
+          drawn_w: backH,
+          drawn_h: W,
+          ...socketPanelGeometry({
+            w: backH,
+            h: W,
+            G,
+            puzzle: pz,
+            sockets: {
+              // One into each SIDE — the sides' lowest tenon, 95 up from the
+              // carcass floor — and two into the BOTTOM of the cabinet.
+              bottom: [pz.tabCentresFromEnd],
+              top: [pz.tabCentresFromEnd],
+              left: [G + pz.tabCentresFromEnd, W - G - pz.tabCentresFromEnd],
+            },
+          }),
+        },
+        meta: { oven: true },
+      }));
+    }
   }
 
   // Sink: the TOP is replaced by two holders on edge, and the back moves inside.
@@ -974,7 +1326,17 @@ export function computeCabinet(params, profileOverride) {
       id: 'FIXED', part: 'FIXED', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
       edgeCode: codes.right, edgeLen: metres(internalWidth),
       box: { x: G, y: fridge.fixedPanelY, z: G, w: internalWidth, h: G, d: internalDepth },
-      cnc: rectGeometry(internalDepth, internalWidth),
+      // ─── Turn 17 (CLAUDE.md F1.2, delta 1) ───
+      // It has ALWAYS been drawn turned — `rectGeometry(internalDepth,
+      // internalWidth)`, the TOP's own nesting — and it never said so. Nothing
+      // asked until this turn, because nothing read a FIXED panel's frame: the
+      // piece carries no machining and `panelPlacement` returned null for it.
+      // With the label going INSIDE the part, the silence became visible —
+      // `cncRect` fell back to the CUT dimensions, which are the other way
+      // round, so the caption was set out in a 564-wide frame on a board that
+      // is 540 wide and stood outside its own outline. Stating the frame the
+      // kit already draws in is the fix, and it is the only thing that moves.
+      cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
     }));
     const railSockets = (withBottom) => ({
       bottom: [pz.tabCentresFromEnd],
@@ -1268,12 +1630,16 @@ export function computeCabinet(params, profileOverride) {
       panels.push(panel({
         id: `D${i}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
         box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
-        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i },
+        // Turn 17 (CLAUDE.md F4.2): which side of the box this board is. The
+        // BUDR kit has said so since turn 12; the wardrobe's boxes never did,
+        // so with a drawer becoming a piece a joiner can point at, its left and
+        // right sides had one name between them.
+        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i, side: 'L' },
       }));
       panels.push(panel({
         id: `D${i}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
         box: { x: boxLeftX + szufSzer - DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
-        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i },
+        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i, side: 'R' },
       }));
       panels.push(panel({
         id: `D${i}-BF`, part: 'DRAWER-BOX-FRONT', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
@@ -1295,7 +1661,7 @@ export function computeCabinet(params, profileOverride) {
       }));
     }
 
-    for (let i = 1; i <= numDrawers; i += 1) {
+    for (let i = 1; cfg.drawerFronts && i <= numDrawers; i += 1) {
       const zoneY = G + zoneOffsets[i - 1];
       const first = i === 1;
       // The bottom front is shortened to clear the base; the rest are the
@@ -1317,9 +1683,19 @@ export function computeCabinet(params, profileOverride) {
     const common = { thickness: DR.boxSideThickness, edgeCode: codes.none, edgeLen: 0 };
     const boxLeftX = G + B.boxWidthClearance / 2;
     const boxZFront = D - frontT;
+    // Turn 17 (CLAUDE.md F4.3): each groove carries its DEPTH. The rectangle is
+    // unchanged — same layer, same four corners — so no exported byte moves;
+    // what the number does is let the element view and the detail window say how
+    // deep the cut is, from the same record the export reads.
     const sidePockets = (len) => [
-      { layer: 'DRAWER_RUNNER_POCKET', x1: 0, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth, y2: len + B.pocketOvershoot },
-      { layer: 'DRAWER_BOTTOM_POCKET', x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot },
+      {
+        layer: 'DRAWER_RUNNER_POCKET', depth: B.runnerPocketDepth,
+        x1: 0, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth, y2: len + B.pocketOvershoot,
+      },
+      {
+        layer: 'DRAWER_BOTTOM_POCKET', depth: B.bottomPocketDepth,
+        x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot,
+      },
     ];
     for (let i = 1; i <= budr.count; i += 1) {
       const sh = budr.sideHs[i - 1];
@@ -1375,7 +1751,9 @@ export function computeCabinet(params, profileOverride) {
         cnc: geom, meta: { drawer: i },
       }));
     }
-    for (let i = 1; i <= budr.count; i += 1) {
+    // Turn 17 (CLAUDE.md F8.1): with the fronts off, the loop simply does not
+    // run — the boxes, their runners and the carcass are exactly what they were.
+    for (let i = 1; cfg.drawerFronts && i <= budr.count; i += 1) {
       const fh = budr.heights[i - 1];
       const geom = rectGeometry(budr.frontWidth, fh);
       const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0);
@@ -1442,7 +1820,17 @@ export function computeCabinet(params, profileOverride) {
       box: {
         x: plinthX, y: -plinthH, z: D - AP.plinth.setback - t, w: plinthLength, h: plinthH, d: t,
       },
-      cnc: rectGeometry(plinthLength, plinthH),
+      // ─── Turn 17 (CLAUDE.md F9): THE PLINTH IS CUT OUT AT THAT POSITION ──
+      // "The plinth is cut out at that position, 20 mm from the top." An
+      // appliance door drops below the worktop and swings forward; the toe kick
+      // in front of it has to come away, and the 20 mm strip the owner leaves
+      // at the top is what keeps the piece in one length across the opening.
+      // It is the OUTLINE that changes and not a pocket, because that is what
+      // it is — the board is cut to a shape — and it therefore needs no new
+      // layer name on a machine that already reads this one.
+      cnc: applianceFront
+        ? notchedPlinth(plinthLength, plinthH, -plinthX, W, P.dwPanel.plinthCutFromTop)
+        : rectGeometry(plinthLength, plinthH),
       ...(runPlinth?.role === 'owner' ? { meta: { run: true, unitIds: runPlinth.unitIds } } : {}),
     }));
   }
@@ -1864,7 +2252,12 @@ export function computeCabinet(params, profileOverride) {
 
   // Hinge cups + their mounting screws in each door front
   const cups = P.hinges.cups;
-  for (const pnl of panels.filter((x) => x.part === 'FRONT')) {
+  // Turn 17 (CLAUDE.md F9): "no hinges, flat, no door furniture". A D/W panel's
+  // face is a FRONT in every way that matters to the BOM, the spray booth and
+  // the sheet — and in the one way that would be wrong here it is not a door,
+  // so it is not drilled for one. Read off the piece's own `meta`, not off the
+  // type, because it is a fact about the PART.
+  for (const pnl of panels.filter((x) => x.part === 'FRONT' && !x.meta?.appliance)) {
     const hingeSide = pnl.meta?.hinge || cfg.hinge;
     const cupX = hingeSide === 'L' ? pnl.w - cups.xFromHingeEdge : cups.xFromHingeEdge;
     const holeX = hingeSide === 'L' ? cupX - cups.screwOffsetX : cupX + cups.screwOffsetX;

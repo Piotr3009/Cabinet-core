@@ -19,6 +19,8 @@ export default function CanvasToolbar() {
   const contourView = useUiStore((s) => s.contourView);
   const xray = useUiStore((s) => s.xray);
   const toggleXray = useUiStore((s) => s.toggleXray);
+  const rulerOn = useUiStore((s) => s.rulerOn);
+  const toggleRuler = useUiStore((s) => s.toggleRuler);
 
   // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
   // Read as LENGTHS rather than through the store's own `canUndo()`, because a
@@ -112,6 +114,28 @@ export default function CanvasToolbar() {
           : 'See through the carcasses — hinges, runners and legs where they are fitted'}
       >
         X-ray
+      </button>
+
+      {/* ─── Turn 17 (CLAUDE.md F11): the ruler ───
+          Beside X-ray, because it is the same kind of thing: something you
+          flick on, use, and flick off again while looking at a cabinet. It
+          measures and it never edits — while it is on, a click takes a point
+          instead of selecting anything, and Escape gives the canvas back. */}
+      <button
+        type="button"
+        aria-pressed={rulerOn}
+        data-ruler="1"
+        disabled={viewMode !== '3d'}
+        className={`px-2.5 py-1 text-xs rounded transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
+          rulerOn && viewMode === '3d'
+            ? 'bg-gold text-shell-900 font-medium'
+            : 'text-ink-100 hover:bg-shell-700'}`}
+        onClick={toggleRuler}
+        title={rulerOn
+          ? 'Measuring — click two points to read the distance. Escape clears, then closes.'
+          : 'Measure between two points on the drawing'}
+      >
+        Measure
       </button>
 
       <span className="w-px h-4 bg-shell-600" />

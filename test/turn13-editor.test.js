@@ -106,11 +106,23 @@ test('the clickable set is exactly shelves, partitions and rails', () => {
 });
 
 test('a mechanism is not a piece in either view, and never was', () => {
-  const drawers = unit('BUDR');
-  const boxes = drawers.panels.filter((p) => p.role === 'drawer_box' || p.part === 'DP');
-  assert.ok(boxes.length > 0, 'a drawer unit has a mechanism to exclude');
-  for (const p of boxes) {
+  // Turn 17 (CLAUDE.md F4.2) moves the drawer BOX out of this set — it is four
+  // boards with grooves in them and the owner edits it now. The panel that
+  // carries the runners stays: nobody chooses it, it follows the stack. It is
+  // the WARDROBE's internal stack that has one (the BUDR's fronts are its face),
+  // so that is the kit this half asks.
+  const mech = unit('WARDROBE', { drawers: 3 }).panels.filter((p) => p.part === 'DP' || p.part === 'FILLER');
+  assert.ok(mech.length > 0, 'a drawer unit has a mechanism to exclude');
+  for (const p of mech) {
     assert.equal(isSelectableElement(p), false);
+    assert.equal(isMainViewElement(p), false);
+  }
+  // The box is selectable, and it is STILL not a room-view click: the turn-13
+  // verdict — a click on a cabinet selects the cabinet — is untouched.
+  const boxes = unit('BUDR').panels.filter((p) => p.role === 'drawer_box');
+  assert.ok(boxes.length > 0);
+  for (const p of boxes) {
+    assert.equal(isSelectableElement(p), true);
     assert.equal(isMainViewElement(p), false);
   }
 });

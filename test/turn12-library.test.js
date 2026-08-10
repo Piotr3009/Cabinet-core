@@ -62,7 +62,9 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
   // CLAUDE.md F5.2, in as many words: "Everything that works today stays wired
   // (Base, Sink, Drawer 2×/3×/4×, Tall, Fridge, Wall, Low cabinet)."
   assert.deepEqual(libraryTypeIds(), [
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'WUD',
+    // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
+    // wrote the pattern for both, which is exactly the condition they carried.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'WUD',
   ]);
 });
 
@@ -114,7 +116,10 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
   // why is a row a workshop asks about twice.
   const soon = flattenLibrary().filter((e) => e.kind === 'soon');
   assert.deepEqual(soon.map((e) => e.id), [
-    'corner', 'l-shape', 'dishwasher', 'oven-base', 'bin-storage', 'wine-rack',
+    // Turn 17 (CLAUDE.md F9/F10): 'dishwasher' and 'oven-base' left this list.
+    // The owner wrote the pattern for both, which is the condition the reason
+    // attached to them stated — so they are kits now, not grey rows.
+    'corner', 'l-shape', 'bin-storage', 'wine-rack',
     'small-fridge', 'twin-space',
     'basket-tall', 'pantry', 'pantry-worktop', 'space-tower', 'oven-tall', 'american-fridge',
     'glass-unit', 'l-shape-wall',

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
-  computeCabinet, doorCountFor, isShelfLocked, SHELF_VARIANTS,
+  clampDrawerFrontHeight, computeCabinet, doorCountFor, isShelfLocked,
+  minDrawerFrontHeight, SHELF_VARIANTS,
 } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
@@ -196,7 +197,7 @@ function applyTemplateParams(unit, params) {
 }
 
 /** Interior items -> the count/flag shape the engine consumes. */
-function paramsForEngine(unit) {
+function paramsForEngine(unit, design = null) {
   const p = unit.params;
   const items = p.sections?.[0]?.items || [];
   return {
@@ -221,6 +222,12 @@ function paramsForEngine(unit) {
     // infill: the engine gained an input, not a formula, and a bare
     // computeCabinet() with none of them set cuts what the AutoLISP cuts.
     element_overrides: p.element_overrides || null,
+    // ─── Turn 17 (CLAUDE.md F7.1) ───
+    // The PROJECT's hinge standard, travelling the same way the plinth and the
+    // top infill do: an input in the design layer, never a formula in the
+    // engine. Left out — a bare kit call, every golden fixture — the engine
+    // falls back to the profile's 3 and drills what the AutoLISP drills.
+    hinge_standard: design?.hinges?.standard ?? null,
     shelves: items.filter((i) => i.kind === 'shelf').length,
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
@@ -2506,8 +2513,22 @@ export const useProjectStore = create((set, get) => ({
     };
   },
 
-  /** One drawer's height. Clamped by the engine, then the shelves re-settle. */
-  setDrawerHeight: (unitId, itemId, heightMm) => {
+  /**
+   * One drawer's height. Clamped by the engine, then the shelves re-settle.
+   *
+   * ─── Turn 17 (CLAUDE.md F8.2) ───
+   * Two kinds of drawer stack, ONE call. A WARDROBE's drawers are ITEMS — each
+   * one has an id, and this has taken that id since turn 4. A BUDR's are a
+   * RATIO, so its drawers have no ids at all and the only handle on one is its
+   * position in the stack. Rather than give the panel two functions to choose
+   * between, the second argument takes either: a number is an index from the
+   * floor, anything else is an item id. The clamp is the right one for the kit
+   * in both branches — the workshop's front-height limits for the wardrobe, the
+   * owner's runner rule for the BUDR (F8.3).
+   */
+  setDrawerHeight: (unitId, ref, heightMm) => {
+    if (typeof ref === 'number') return get().setBudrDrawerHeight(unitId, ref, heightMm);
+    const itemId = ref;
     const DR = getCabinetProfile().wardrobe.drawers;
     const h = Number(heightMm);
     const clamped = Number.isFinite(h)
@@ -2515,6 +2536,7 @@ export const useProjectStore = create((set, get) => ({
       : DR.frontHeight;
     get().updateItem(unitId, itemId, { height_mm: clamped });
     get().reclampShelves(unitId);
+    return clamped;
   },
 
   removeItem: (unitId, itemId) => {
@@ -2613,6 +2635,199 @@ export const useProjectStore = create((set, get) => ({
    * field in the right panel calls it, and anything added later must call it
    * too: the clamp lives on this side of the setter, not in the caller.
    */
+  // ─── HINGES, BY HAND (turn 17, CLAUDE.md F7.2) ────────────────────────────
+  //
+  // "Hinges are editable per door: add one, remove one, move one. Same editing
+  // idiom as shelves (turn 9/11 per-element editing), so a joiner who can move a
+  // shelf can move a hinge without learning a new gesture."
+  //
+  // So: one setter that owns the clamp and the grid, exactly as `setShelfPos`
+  // does, and add/remove written in terms of it. The list is the CABINET's —
+  // its doors are drilled as a set, and the carcass carries one hinge column per
+  // hinged side — and it is stored as plain millimetres up the carcass, which is
+  // the frame `hingeCentres` has always worked in.
+  //
+  // Storing a list at all is what turns the kit's rule off for this cabinet
+  // (engine/cabinet.js `hingeRows`): once a joiner has said where the hinges
+  // go, a rule that argued with him would be the app overruling the bench.
+  // `resetHinges` hands it back.
+
+  /** This cabinet's hinge rows as they stand — the rule's, or its own. */
+  hingeRowsOf: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return [];
+    // `drillSummary`, not `derived`: the hinge centres are a DRILLING fact and
+    // the engine has always filed them there (engine/cabinet.js). Reading the
+    // wrong one gave an empty list, and an empty list is a cabinet the panel
+    // offers no hinges to edit.
+    const result = get().unitResult(unitId);
+    return result?.drillSummary?.hinge_centers || [];
+  },
+
+  /** Move one hinge. Clamped to the carcass and snapped to the workshop grid. */
+  setHingePos: (unitId, index, mm) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const profile = getCabinetProfile();
+    const rows = [...s.hingeRowsOf(unitId)];
+    if (index < 0 || index >= rows.length) return null;
+    const H = Number(unit.params.height) || 0;
+    // A hinge lives on the carcass, so the carcass is the clamp — and never on
+    // top of the one next to it: two cups at the same height is one hinge and a
+    // hole in a door.
+    const gap = profile.hinges.holePairOffset * 2;
+    const below = index > 0 ? rows[index - 1] + gap : 0;
+    const above = index < rows.length - 1 ? rows[index + 1] - gap : H;
+    const pos = Math.min(Math.max(snapTo(Number(mm) || 0, profile.editor.mmStep), below), Math.max(below, above));
+    rows[index] = pos;
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: rows } } : u)),
+      dirty: true,
+    }));
+    return pos;
+  },
+
+  /** One more hinge, in the biggest gap in the run — where a joiner would put it. */
+  addHinge: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const profile = getCabinetProfile();
+    const rows = [...s.hingeRowsOf(unitId)];
+    const H = Number(unit.params.height) || 0;
+    if (!rows.length) {
+      const at = snapTo(H / 2, profile.editor.mmStep);
+      set((st) => ({
+        units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: [at] } } : u)),
+        dirty: true,
+      }));
+      return at;
+    }
+    let bestAt = null;
+    let bestGap = -1;
+    for (let i = 0; i < rows.length - 1; i += 1) {
+      const span = rows[i + 1] - rows[i];
+      if (span > bestGap) { bestGap = span; bestAt = (rows[i] + rows[i + 1]) / 2; }
+    }
+    // A door with one hinge on it has no gap between two — halfway to the top
+    // is the honest answer and the clamp below keeps it on the carcass.
+    if (bestAt == null) bestAt = Math.min(H, rows[0] + profile.hinges.endOffset);
+    const at = snapTo(bestAt, profile.editor.mmStep);
+    const next = [...rows, at].sort((a, b) => a - b);
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: next } } : u)),
+      dirty: true,
+    }));
+    return at;
+  },
+
+  /** One fewer. The list is what remains, not a rule with a hole in it. */
+  removeHinge: (unitId, index) => {
+    const s = get();
+    const rows = s.hingeRowsOf(unitId);
+    if (index < 0 || index >= rows.length) return null;
+    const next = rows.filter((_, i) => i !== index);
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: next } } : u)),
+      dirty: true,
+    }));
+    return next.length;
+  },
+
+  /** Hand this cabinet back to the kit's own maths and the project standard. */
+  resetHinges: (unitId) => set((st) => ({
+    units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: null } } : u)),
+    dirty: true,
+  })),
+
+  // ─── DRAWER FRONTS, AND THE HEIGHTS UNDER THEM (turn 17, CLAUDE.md F8) ───
+  //
+  // "Remove drawer fronts on a drawer unit — the same idiom as turn 15's Remove
+  // doors — so the boxes can be worked on." Literally the same idiom: one flag
+  // on the unit, the same `{ removed, already }` answer, so the panel that
+  // counts doors can count these without asking the engine anything.
+
+  /** Take the fronts off a drawer unit. The boxes and the carcass are untouched. */
+  removeDrawerFronts: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { removed: 0, already: true };
+    if (unit.params.drawer_fronts === false) return { removed: 0, already: true };
+    const count = get().unitResult(unitId)?.panels.filter((p) => p.part === 'DRAWER-FRONT').length || 0;
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, drawer_fronts: false } } : u)),
+      dirty: true,
+    }));
+    return { removed: count, already: false };
+  },
+
+  /** …and put them back. */
+  addDrawerFronts: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { fitted: 0, already: true };
+    if (unit.params.drawer_fronts !== false) return { fitted: 0, already: true };
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, drawer_fronts: true } } : u)),
+      dirty: true,
+    }));
+    return { fitted: get().unitResult(unitId)?.panels.filter((p) => p.part === 'DRAWER-FRONT').length || 0, already: false };
+  },
+
+  /**
+   * ONE drawer's height (F8.2) — its HEIGHT and never its position, which is
+   * what the owner was explicit about: a stack is a stack, and moving one
+   * drawer up would open a slot under it.
+   *
+   * The clamp is the OWNER's and it lives in the engine
+   * (`clampDrawerFrontHeight`), so a number typed here, a number that arrives in
+   * a template and a number in a project saved last year are all refused the
+   * same way. What is passed as the ceiling is what is physically left in the
+   * face once every other drawer has its own minimum.
+   */
+  setBudrDrawerHeight: (unitId, index, mm) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const profile = getCabinetProfile();
+    const result = s.unitResult(unitId);
+    const heights = result?.derived?.drawer_heights || [];
+    if (index < 0 || index >= heights.length) return null;
+    const B = profile.baseDrawerUnit;
+    const floor = minDrawerFrontHeight(profile);
+    // The face, less every gap, less the shortest the other drawers may be.
+    const available = (Number(unit.params.height) || 0) - heights.length * B.gap;
+    const max = available - (heights.length - 1) * floor;
+    const next = [...heights];
+    next[index] = clampDrawerFrontHeight(snapTo(Number(mm) || 0, profile.editor.mmStep), { profile, max });
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, drawer_heights: next } } : u)),
+      dirty: true,
+    }));
+    return next[index];
+  },
+
+  /** Hand the stack back to the kit's own ratio. */
+  resetDrawerHeights: (unitId) => set((st) => ({
+    units: st.units.map((u) => (u.id === unitId
+      ? { ...u, params: { ...u.params, drawer_heights: null } } : u)),
+    dirty: true,
+  })),
+
+  /** The project's hinge standard: 2 or 3 (turn 17, CLAUDE.md F7.1). */
+  setHingeStandard: (n) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    return {
+      project: {
+        ...s.project,
+        design: migrateDesign({ ...design, hinges: { ...design.hinges, standard: Math.trunc(Number(n)) } }),
+      },
+      dirty: true,
+    };
+  }),
+
   setShelfPos: (unitId, itemId, posRaw, snapStep = 0) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
@@ -2795,10 +3010,12 @@ export const useProjectStore = create((set, get) => ({
   unitResult: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
-    return computeCabinet(paramsForEngine(unit), getCabinetProfile());
+    return computeCabinet(paramsForEngine(unit, get().project.design), getCabinetProfile());
   },
 
-  allResults: () => get().units.map((u) => ({ unit: u, result: computeCabinet(paramsForEngine(u), getCabinetProfile()) })),
+  allResults: () => get().units.map((u) => ({
+    unit: u, result: computeCabinet(paramsForEngine(u, get().project.design), getCabinetProfile()),
+  })),
 
   markSaved: (project) => set((s) => ({ project: project || s.project, dirty: false })),
 }));

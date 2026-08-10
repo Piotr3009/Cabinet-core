@@ -101,6 +101,36 @@ export default function CabinetEditorModal() {
   }, [panels, selectedId]);
 
   const selected = panels.find((p) => p.id === selectedId) || null;
+
+  // ─── Turn 17 (CLAUDE.md F5): BACK, ONE LEVEL ─────────────────────────────
+  //
+  // Owner: inside the editor, with ONE element open, there is no way back to
+  // the cabinet — the whole window has to be closed and reopened.
+  //
+  // So the window has TWO LEVELS and now says so: the CABINET, and one PIECE of
+  // it. Back returns to the cabinet and deselects the part. It does NOT collapse
+  // the explode and it does not close the window (owner's answer 1) — a joiner
+  // who has taken the carcass apart to look at three pieces in turn does not
+  // want it assembled between two of them.
+  //
+  // Escape does the same thing AT THIS LEVEL, and only at this level: with
+  // nothing selected the key belongs to the shell and still closes the window,
+  // which is the one navigation rule this app has and the reason this is a
+  // capture-phase listener rather than a second Escape handler arguing with the
+  // modal's own.
+  const back = useCallback(() => setSelectedId(null), []);
+  useEffect(() => {
+    if (!selectedId) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      e.preventDefault();
+      setSelectedId(null);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [selectedId]);
+
   const item = useMemo(() => {
     const id = selected?.meta?.itemId;
     if (!id) return null;
@@ -126,9 +156,12 @@ export default function CabinetEditorModal() {
       footer={(
         <>
           <span className="text-[11px] text-ink-400 flex-1 text-left">
-            {exploded
-              ? 'Click a part to select it, drag it to turn it over — DOUBLE-CLICK it for the full detail.'
-              : 'Drag to orbit · right or middle button to pan · click a part to edit it, or a door to open it.'}
+            {/* eslint-disable-next-line no-nested-ternary */}
+            {selectedId
+              ? 'Editing one piece — Back (or Escape) returns to the cabinet and leaves the explode as it is.'
+              : (exploded
+                ? 'Click a part to select it, drag it to turn it over — DOUBLE-CLICK it for the full detail.'
+                : 'Drag to orbit · right or middle button to pan · click a part to edit it, or a door to open it.')}
           </span>
           {/* F8.1: one control for the whole cabinet, and a click on a door
               for one of them. A cabinet with no fronts is not offered it. */}
@@ -176,6 +209,7 @@ export default function CabinetEditorModal() {
             openFronts={openFronts}
             allOpen={allOpen}
             onToggleFront={toggleFront}
+            drills={result.drills}
             onOpenDetail={(panelId, at) => openModal('part-detail', {
               unitId: unit.id, panelId, anchor: null, at,
             })}
@@ -189,14 +223,26 @@ export default function CabinetEditorModal() {
           {selected ? (
             <div className="border border-shell-600 rounded p-2 space-y-2">
               <div className="cc-row">
+                {/* ─── Turn 17 (CLAUDE.md F5): the way back up ───
+                    First in the row, where a hand looking for "out of here"
+                    goes, and it says where it goes back TO. */}
+                <button
+                  type="button"
+                  className="cc-btn px-2 shrink-0"
+                  data-editor-back="1"
+                  title="Back to the cabinet (Escape). The explode stays as it is."
+                  onClick={back}
+                >
+                  ‹ Cabinet
+                </button>
                 {/* ─── Turn 13 (CLAUDE.md F2.3) ───
                     "Clicking a part inside the editor shows EDIT ELEMENT."
                     Named, so the window says what it is offering rather than
                     leaving a joiner to infer it from a row of fields. */}
-                <span className="text-xs uppercase tracking-wide text-gold flex-1" data-edit-element="1">
-                  Edit element · {elementLabel(selected)}
+                <span className="text-xs uppercase tracking-wide text-gold flex-1 truncate" data-edit-element="1">
+                  {elementLabel(selected)}
                 </span>
-                <button type="button" className="cc-btn-ghost" title="Deselect" onClick={() => setSelectedId(null)}>×</button>
+                <button type="button" className="cc-btn-ghost" title="Deselect" onClick={back}>×</button>
               </div>
               {/* The SAME properties block the right panel shows. An edit here is
                   the same override, on the same unit, through the same store. */}
@@ -227,7 +273,7 @@ export default function CabinetEditorModal() {
  */
 function CabinetCanvas({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail,
-  openFronts, allOpen, onToggleFront,
+  openFronts, allOpen, onToggleFront, drills = [],
 }) {
   const bounds = useMemo(() => cabinetBounds(panels), [panels]);
   const size = bounds ? Math.max(bounds.size.x, bounds.size.y, bounds.size.z) : 800;
@@ -279,6 +325,7 @@ function CabinetCanvas({
         allOpen={allOpen}
         onToggleFront={onToggleFront}
         bounds={bounds}
+        drills={drills}
       />
       {/* ─── Turn 13 (CLAUDE.md F2.2): IT PANS NOW ───
           Turn 12 said `enablePan={false}`, so the cabinet was nailed to the
@@ -316,7 +363,7 @@ function EditorViewHandle() {
  */
 function ExplodedCabinet({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail, bounds,
-  openFronts, allOpen, onToggleFront,
+  openFronts, allOpen, onToggleFront, drills = [], showMachining = true,
 }) {
   const finishes = useMemo(() => resolveFinishes(unit, design, profile), [unit, design, profile]);
   const unitDesign = useMemo(() => resolveUnitDesign(unit, design), [unit, design]);
@@ -353,6 +400,8 @@ function ExplodedCabinet({
           sheen={sheen}
           joineryLayers={joineryLayers}
           depth={unit.params.depth}
+          drills={drills}
+          showMachining={showMachining}
         />
       ))}
     </group>
@@ -372,7 +421,7 @@ function ExplodedCabinet({
 function ExplodingPart({
   panel: p, offset, exploded, selected, selectable, onSelect, onOpenDetail,
   profile, finishes, design, unit, unitDesign, sheen, joineryLayers, depth,
-  open = 0, onToggleFront = null,
+  open = 0, onToggleFront = null, drills = [], showMachining = true,
 }) {
   const group = useRef(null);
   const spin = useRef(null);
@@ -495,6 +544,13 @@ function ExplodingPart({
           }}
           onPointerOver={selectable ? () => { gl.domElement.style.cursor = turning ? 'grabbing' : 'pointer'; } : undefined}
           onPointerOut={selectable ? () => { gl.domElement.style.cursor = 'auto'; } : undefined}
+          // ─── Turn 17 (CLAUDE.md F4.1) ───
+          // The dog bones, the grooves and the drilling, ON the piece — drawn
+          // by the shared renderer from the same `panel.cnc` and
+          // `result.drills` the DXF is written from, so a door that swings open
+          // takes its hinge cups with it and there is nothing to keep in step.
+          machining={showMachining}
+          drills={drills}
         />
       </group>
     </group>

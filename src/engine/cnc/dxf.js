@@ -25,6 +25,10 @@
 // header state the true extents so any CAM package sees them immediately.
 
 import { layerTableFor } from './layers.js';
+import { partLabelText } from './partLabel.js';
+import { MONO_ADVANCE, truncateToWidth } from './annotation.js';
+import { turnPoint } from './layout.js';
+import { fileSafeName } from '../naming.js';
 
 // ─── Low-level R12 serialiser (shape from production-core/dxfWriter.js) ───
 
@@ -105,11 +109,53 @@ function pocketPoints(p) {
   return [[p.x1, p.y1], [p.x2, p.y1], [p.x2, p.y2], [p.x1, p.y2]];
 }
 
-/** Label height that still fits inside a part this size. */
-function labelHeightFor(panel, cnc) {
-  const shortSide = Math.min(Math.abs(panel.cnc?.drawn_w ?? panel.w), Math.abs(panel.cnc?.drawn_h ?? panel.h));
-  const fitted = shortSide * cnc.labelFitRatio;
-  return Math.max(cnc.labelMinHeight, Math.min(cnc.labelHeight, fitted));
+/**
+ * Label height that still fits INSIDE a part this size (turn 17, CLAUDE.md F1.3).
+ *
+ * Two limits, and the second is this turn's. The height has been capped at a
+ * share of the part's SHORT side since turn 3, which keeps a caption from
+ * standing taller than the board. It never looked at the WIDTH, because the
+ * string was `01-BUL` and six characters fit on anything. The string is
+ * `F-01 BUL 560x2100` now — three times as long — so a small part would have
+ * had its label hanging over both edges, which is the one thing F1.3 forbids
+ * ("it never spills over the outline and never overlaps a neighbour").
+ *
+ * The advance width is `annotation.js`'s own, so the size the sheet shrinks a
+ * caption to and the size the file writes it at are computed the same way.
+ */
+function labelHeightFor(panel, cnc, text = '') {
+  const w = Math.abs(panel.cnc?.drawn_w ?? panel.w);
+  const h = Math.abs(panel.cnc?.drawn_h ?? panel.h);
+  const fitted = Math.min(w, h) * cnc.labelFitRatio;
+  const chars = String(text).length;
+  // …and never wider than the board it is cut into.
+  const acrossFit = chars > 0 ? (w * 0.94) / (chars * MONO_ADVANCE) : Infinity;
+  return Math.max(cnc.labelMinHeight, Math.min(cnc.labelHeight, fitted, acrossFit));
+}
+
+/**
+ * The part's own caption AS THE FILE WRITES IT: the string and its height.
+ *
+ * Exported because two other places have to agree with it exactly — the identity
+ * test, which asserts the label fits inside the outline on every kit, and any
+ * future reader that wants to know what a board will actually say. One answer,
+ * in the module that writes it (turn 17, CLAUDE.md F1.1).
+ *
+ * @returns {{str:string, h:number}} `str` is '' where not even one character fits
+ */
+export function panelLabel(panel, { unitNum, profile }) {
+  const cnc = profile.cnc;
+  const w = Math.abs(panel.cnc?.drawn_w ?? panel.w);
+  const wanted = partLabelText(unitNum, panel);
+  const h = labelHeightFor(panel, cnc, wanted);
+  // Where even the readable floor is too tall for the board — a 30 mm scribe
+  // filler is 30 mm wide and the string is seventeen characters — the label
+  // TRUNCATES rather than hanging over the edge. That is `annotation.js`'s own
+  // middle step between "draw it" and "hide it" (turn 16 F3), and using it here
+  // is what keeps F1.1 and F1.3 both true at once: the piece still says which
+  // cabinet it belongs to, which is the whole point of the label, and it still
+  // fits inside its own outline.
+  return { str: truncateToWidth(wanted, w * 0.94, h, '~'), h };
 }
 
 /**
@@ -158,19 +204,27 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
     entities.push({ type: 'circle', layer: hole.layer, cx: hole.x, cy: hole.y, r: hole.d / 2 });
   }
 
+  // ─── Turn 17 (CLAUDE.md F1): THE PART SAYS WHICH CABINET IT IS FOR ────────
+  //
   // Part label at the centre of the nominal rectangle, exactly like
-  // (drawText "UNIT_NUMBER" midX midY 40.0 unitNum) in the LISP — with the
-  // panel id appended, because one DXF now holds one part, not a whole sheet.
+  // (drawText "UNIT_NUMBER" midX midY 40.0 unitNum) in the LISP — but the
+  // STRING is `engine/cnc/partLabel.js` now, the same one the sheet draws, so
+  // the board on the bench and the picture on the screen say the same words.
+  // It is INSIDE the part (F1.2), on the existing text layer (F1.4), and it is
+  // the only text this file ever writes (F2.2).
   const w = panel.cnc?.drawn_w ?? panel.w;
   const h = panel.cnc?.drawn_h ?? panel.h;
-  entities.push({
-    type: 'text',
-    layer: cnc.unitNumberLayer,
-    x: w / 2,
-    y: h / 2,
-    h: labelHeightFor(panel, cnc),
-    str: `${unitNum}-${panel.id}`,
-  });
+  const label = panelLabel(panel, { unitNum, profile });
+  if (label.str) {
+    entities.push({
+      type: 'text',
+      layer: cnc.unitNumberLayer,
+      x: w / 2,
+      y: h / 2,
+      h: label.h,
+      str: label.str,
+    });
+  }
 
   return entities;
 }
@@ -250,20 +304,42 @@ export function buildUnitDxfFiles(result, profile) {
  *   layout   { places, width, height } from layoutPanels()
  *   unitNum, profile
  */
-export function sheetEntities({ panels, drills, layout, unitNum, profile }) {
+export function sheetEntities({
+  panels, drills, layout, unitNum, profile, sheetHeight = null, offsetY = 0,
+}) {
   const byId = new Map(layout.places.map((pl) => [pl.panel.id, pl]));
   const entities = [];
+  // `sheetHeight`/`offsetY` are how a MATERIAL sheet stacks several cabinets'
+  // blocks into one file (F2.1). Left out, they are this layout's own height and
+  // no offset — which is the arithmetic that has produced every sheet since
+  // turn 3, to the byte.
+  const total = sheetHeight == null ? layout.height : sheetHeight;
 
   for (const panel of panels) {
     const place = byId.get(panel.id);
     if (!place) continue;
+    const turn = place.bounds.turn || 0;
     // Sheet (y-down, origin top-left) → DXF (y-up, origin bottom-left).
     const dx = place.x - place.bounds.minX;
-    const dy = (layout.height - place.y - place.h) - place.bounds.minY;
+    const dy = (total - (offsetY + place.y) - place.h) - place.bounds.minY;
+    // Turn 17 (CLAUDE.md F3): a part may be laid down TURNED, and the file has
+    // to agree with the picture — so it is the SAME transform the preview uses
+    // (engine/cnc/layout.js `turnPoint`), applied to the part's own geometry
+    // before it is moved into place. A part at turn 0 goes through unchanged.
+    const at = (x, y) => {
+      const [tx, ty] = turnPoint(x, y, turn);
+      return [tx + dx, ty + dy];
+    };
     for (const e of panelEntities(panel, drills, { unitNum, profile })) {
-      if (e.type === 'poly') entities.push({ ...e, pts: e.pts.map(([x, y]) => [x + dx, y + dy]) });
-      else if (e.type === 'circle') entities.push({ ...e, cx: e.cx + dx, cy: e.cy + dy });
-      else if (e.type === 'text') entities.push({ ...e, x: e.x + dx, y: e.y + dy });
+      if (e.type === 'poly') entities.push({ ...e, pts: e.pts.map(([x, y]) => at(x, y)) });
+      else if (e.type === 'circle') {
+        const [cx, cy] = at(e.cx, e.cy);
+        entities.push({ ...e, cx, cy });
+      } else if (e.type === 'text') {
+        const [x, y] = at(e.x, e.y);
+        // The caption is cut INTO the board, so it turns with the board.
+        entities.push({ ...e, x, y, rot: ((e.rot || 0) + turn) % 360 });
+      }
     }
   }
   return entities;
@@ -278,6 +354,60 @@ export function sheetDxfFileName(unitNum, presetId) {
 /** Complete DXF text for a whole sheet of selected parts. */
 export function sheetDxf(args) {
   const entities = sheetEntities(args);
+  const layers = layerTableFor(entities.map((e) => e.layer));
+  return writeDxf(entities, layers, entitiesExtents(entities));
+}
+
+// ─── ONE BOARD, ONE FILE (turn 17, CLAUDE.md F2.1) ──────────────────────────
+//
+// "Choose the material, export the lot." Turn 16 gave the SHEET its material
+// grouping; this is the same identity driving what leaves the app. A material
+// section on screen is a stack of per-cabinet blocks (components/CncView.jsx),
+// and this writes exactly that stack into one file — the blocks in the same
+// order, at the same spacing, so what the joiner ticked is what he gets.
+//
+// It carries THE PART LABELS AND NOTHING ELSE (F2.2, delta 2). The sheet draws
+// a yellow header over each section and a name over each block; those are
+// SCREEN furniture — "żadnych innych liter bo to nam zaśmieca program w CNC" —
+// and there is deliberately no code path here that could write one. The only
+// TEXT entity any of this can emit is `panelEntities`'s single in-part label.
+
+/**
+ * @param {object} args
+ *   blocks  [{ unitNum, panels, drills, layout }] — one per cabinet, in order
+ *   gap     profile.cnc.layoutGap; the blocks stand three gaps apart, exactly
+ *           as the preview stacks them
+ *   profile
+ */
+export function materialSheetEntities({ blocks = [], gap = 0, profile }) {
+  const step = gap * 3;
+  const height = blocks.reduce((h, b) => h + b.layout.height, 0)
+    + step * Math.max(0, blocks.length - 1);
+  const entities = [];
+  let offsetY = 0;
+  for (const block of blocks) {
+    entities.push(...sheetEntities({
+      panels: block.panels,
+      drills: block.drills,
+      layout: block.layout,
+      unitNum: block.unitNum,
+      profile,
+      sheetHeight: height,
+      offsetY,
+    }));
+    offsetY += block.layout.height + step;
+  }
+  return entities;
+}
+
+/** `{material}-cnc.dxf` — the file says which board is on the bed. */
+export function materialDxfFileName(label) {
+  return `${fileSafeName(label, 'material')}-cnc.dxf`;
+}
+
+/** Complete DXF text for one material's worth of parts, across every cabinet. */
+export function materialSheetDxf(args) {
+  const entities = materialSheetEntities(args);
   const layers = layerTableFor(entities.map((e) => e.layer));
   return writeDxf(entities, layers, entitiesExtents(entities));
 }

@@ -94,7 +94,7 @@ export default function PartDetailModal() {
           data-part-canvas="1"
           style={{ background: profile.appearance.room?.background || '#fafaf8' }}
         >
-          <PartCanvas unit={unit} panel={panel} design={storedDesign} profile={profile} />
+          <PartCanvas unit={unit} panel={panel} design={storedDesign} profile={profile} drills={result?.drills || []} />
         </div>
 
         {/* ── RIGHT: the CNC drawing (F7.2) ── */}
@@ -234,7 +234,7 @@ function PartDrawing({ drawing, hovered, onHover }) {
 }
 
 /** The piece on its own, in the room's own materials. */
-function PartCanvas({ unit, panel, design, profile }) {
+function PartCanvas({ unit, panel, design, profile, drills = [] }) {
   const finishes = useMemo(() => resolveFinishes(unit, design, profile), [unit, design, profile]);
   const unitDesign = useMemo(() => resolveUnitDesign(unit, design), [unit, design]);
   const sheen = useMemo(() => projectSheen(design, profile), [design, profile]);
@@ -286,6 +286,11 @@ function PartCanvas({ unit, panel, design, profile }) {
           depth={unit.params.depth}
           profile={profile}
           joineryLayers={joineryLayers}
+          // Turn 17 (CLAUDE.md F4.1): the same machining the right-hand drawing
+          // lists, on the piece itself — one reading of `panel.cnc`, shown two
+          // ways rather than drawn twice.
+          machining
+          drills={drills}
         />
       </group>
       {/* Zoom, pan and rotate — F7.1 names all three. */}

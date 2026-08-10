@@ -159,8 +159,21 @@ test('THE ASYMMETRY: TOP is the one placement whose basis is a reflection', () =
     if (!handed.has(key)) handed.set(key, basisDeterminant(panel));
   }
   assert.ok(handed.size >= 5, `every placement class should be exercised, saw ${handed.size}`);
-  const mirrored = [...handed].filter(([, det]) => det < 0).map(([key]) => key);
-  assert.deepEqual(mirrored, ['TOP|rotated'],
+  const mirrored = [...handed].filter(([, det]) => det < 0).map(([key]) => key).sort();
+  // ─── Turn 17 (CLAUDE.md F4.1) ───
+  // Two more placements land here, and for the reason the note above gives:
+  // both are machining truth read off the kit's own drilling, and turning
+  // either frame round to tidy the determinant would move a hole.
+  //   BACK-RAIL the fridge's back rails, whose CNC x runs UP the rail: its
+  //             left-edge sockets are the BOTTOM panel's tabs at G + 95 and
+  //             W − G − 95, which is what fixes the frame.
+  // (The fridge's FIXED panel gained a placement in the same turn and is drawn
+  // `depth × width` like a TOP, so it is a reflection too — but it carries no
+  // machining at all, so it is not one of the MACHINED panels this walks.)
+  // The builder is unchanged — it decides from the DETERMINANT and not from a
+  // list of parts, exactly so that the placement added in a later turn is
+  // covered on the day it lands (3d/panelSolid.js).
+  assert.deepEqual(mirrored, ['BACK-RAIL|rotated', 'TOP|rotated'].sort(),
     'if this list changes, the builder’s determinant check has a new case to cover — '
     + 'read the note in 3d/panelSolid.js before touching either side');
 });

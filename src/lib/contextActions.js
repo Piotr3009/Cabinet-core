@@ -159,6 +159,26 @@ export function menuActions({
     run: () => store.editCabinet?.(unit.id),
   });
 
+  // ─── Turn 17 (CLAUDE.md F6.2): RENAME, WHERE THE OWNER LOOKED ────────────
+  //
+  // Turn 16 F6 shipped renaming — inline, in the right panel's header, which is
+  // where the name already is. The owner could not find it, and living with it
+  // says why: a bare input between two other controls reads as decoration, and
+  // the place a joiner reaches for "call this one something else" is the menu he
+  // is already right-clicking the cabinet with.
+  //
+  // So this is NOT a second renaming mechanism — CLAUDE.md says "do NOT rebuild
+  // it" in as many words. It is a way IN to the one that exists: the panel
+  // opens, its Parameters section comes up and the cursor lands in the name box
+  // with the text selected. One name, one field, two doors to it.
+  actions.push({
+    id: 'rename',
+    group: 'edit',
+    label: `Rename “${unit.params.unit_num}”…`,
+    hint: 'What this cabinet is called — it prints on the canvas, the CNC sheet, the BOM and the drawings',
+    run: () => store.renameUnit?.(unit.id),
+  });
+
   // ── 2. end panels, on and OFF, from here ──
   // Turn 5 (BACKLOG #31) gave Left / Right / Both; turn 8 makes each of them a
   // switch. "Both" is still the same act twice and is still done as exactly
@@ -336,6 +356,24 @@ export function menuActions({
       });
     }
   }
+  // ─── Turn 17 (CLAUDE.md F8.1): THE DRAWER FRONTS COME OFF ────────────────
+  // The same idiom as turn 15's Remove doors, on the kit whose fronts ARE its
+  // face — so the boxes can be worked on and their heights edited. Offered only
+  // where there is a stack to strip, and it SAYS which state it is in, like
+  // every other switch in this menu since turn 8.
+  if (type.drawerStyle) {
+    const fitted = unit.params.drawer_fronts !== false;
+    actions.push({
+      id: 'drawer-fronts',
+      label: 'Drawer fronts',
+      checked: fitted,
+      hint: fitted
+        ? 'Fitted. Click to take them off — the boxes, their runners and the carcass stay exactly as they are'
+        : 'Off. The boxes are bare, so a drawer’s height can be edited on the box itself',
+      run: () => (fitted ? store.removeDrawerFronts?.(unit.id) : store.addDrawerFronts?.(unit.id)),
+    });
+  }
+
   actions.push({
     id: 'unit-colour',
     label: forAll('Colour…'),

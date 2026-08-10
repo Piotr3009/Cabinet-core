@@ -13,9 +13,10 @@ import { dirname, join } from 'node:path';
 
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
-import { layoutPanels, panelBounds } from '../src/engine/cnc/layout.js';
+import { layoutPanels, panelBounds, turnPoint } from '../src/engine/cnc/layout.js';
+
 import {
-  sheetDxf, sheetEntities, sheetDxfFileName, parseDxf, parseDxfPairs, panelEntities, buildUnitDxfFiles,
+  sheetDxf, sheetEntities, sheetDxfFileName, parseDxf, parseDxfPairs, panelEntities, panelLabel, buildUnitDxfFiles,
 } from '../src/engine/cnc/dxf.js';
 import {
   EXPORT_PRESETS, PART_GROUPS, groupOfPanel, groupPanels, panelIdsForPreset, presetOfSelection,
@@ -122,9 +123,10 @@ test('the sheet DXF contains every selected part, and nothing else', () => {
   const dxf = sheetDxf({ panels, drills: r.drills, layout, unitNum: r.unitNum, profile: P });
   const parsed = parseDxf(dxf);
 
-  // One label per part, and they name the parts we asked for.
+  // One label per part, and they name the parts we asked for — in the ONE
+  // wording the engine has (turn 17, CLAUDE.md F1.1).
   const labels = parsed.entities.filter((e) => e.type === 'text').map((e) => e.str).sort();
-  assert.deepEqual(labels, panels.map((p) => `${r.unitNum}-${p.id}`).sort());
+  assert.deepEqual(labels, panels.map((p) => panelLabel(p, { unitNum: r.unitNum, profile: P }).str).sort());
 
   // Circle count: exactly the drills of those parts.
   const expectedHoles = r.drills.filter((d) => panels.some((p) => p.id === d.panel)).length;
@@ -137,7 +139,7 @@ test('the sheet DXF contains every selected part, and nothing else', () => {
   // Nothing from the parts we did NOT select.
   const excluded = r.panels.filter((p) => groupOfPanel(p) !== 'carcass');
   for (const p of excluded) {
-    assert.equal(labels.includes(`${r.unitNum}-${p.id}`), false, `${p.id} must not be in a carcass-only sheet`);
+    assert.equal(labels.includes(panelLabel(p, { unitNum: r.unitNum, profile: P }).str), false, `${p.id} must not be in a carcass-only sheet`);
   }
 });
 
@@ -148,17 +150,25 @@ test('the exported layout IS the preview layout, part for part', () => {
   const entities = sheetEntities({ panels, drills: r.drills, layout, unitNum: r.unitNum, profile: P });
 
   for (const place of layout.places) {
-    const label = entities.find((e) => e.type === 'text' && e.str === `${r.unitNum}-${place.panel.id}`);
-    assert.ok(label, `${place.panel.id} missing from the sheet`);
     // Where the preview draws this part's own label, in sheet coordinates,
     // flipped once into the DXF's y-up frame — the same numbers, not a
-    // recomputed arrangement.
+    // recomputed arrangement. Turn 17 (CLAUDE.md F3) adds the one thing that
+    // can come between the two: a part may be laid down TURNED, and the file
+    // has to turn it with the same `turnPoint` the preview does.
+    //
+    // Matched on the STRING AND THE PLACE together, because two parts of one
+    // cabinet may honestly carry the same caption — the two 30 mm fillers are
+    // both narrower than their own label and both truncate to `01 FIL~`.
+    const want = panelLabel(place.panel, { unitNum: r.unitNum, profile: P });
     const own = panelEntities(place.panel, r.drills, { unitNum: r.unitNum, profile: P })
       .find((e) => e.type === 'text');
+    const [tx, ty] = turnPoint(own.x, own.y, place.bounds.turn || 0);
     const dx = place.x - place.bounds.minX;
     const dy = (layout.height - place.y - place.h) - place.bounds.minY;
-    assert.ok(Math.abs(label.x - (own.x + dx)) < 1e-6, `${place.panel.id} label x`);
-    assert.ok(Math.abs(label.y - (own.y + dy)) < 1e-6, `${place.panel.id} label y`);
+    const label = entities.find((e) => e.type === 'text' && e.str === want.str
+      && Math.abs(e.x - (tx + dx)) < 1e-6 && Math.abs(e.y - (ty + dy)) < 1e-6);
+    assert.ok(label, `${place.panel.id} is not on the sheet where the preview draws it`);
+    assert.equal(label.rot || 0, place.bounds.turn || 0, `${place.panel.id} label turns with its part`);
   }
 });
 

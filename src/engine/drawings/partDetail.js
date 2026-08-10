@@ -47,6 +47,11 @@ export function partMachinings(panel, drills = [], profile = null) {
   (cnc.pockets || []).forEach((p, i) => {
     const w = Math.abs(p.x2 - p.x1);
     const h = Math.abs(p.y2 - p.y1);
+    // Turn 17 (CLAUDE.md F4.3): a pocket is a CUT, and a cut has a depth. Where
+    // the engine states one — the drawer box's runner groove at 2 mm and its
+    // bottom groove at 7 mm — the note says how deep, because "how deep" is the
+    // first thing a joiner asks about a groove and the sheet could not answer.
+    const deep = Number(p.depth) > 0 ? ` × ${formatMm(p.depth)} deep` : '';
     out.push({
       id: `pocket-${i}`,
       kind: 'pocket',
@@ -55,9 +60,10 @@ export function partMachinings(panel, drills = [], profile = null) {
       y: Math.min(p.y1, p.y2),
       w,
       h,
+      depth: Number(p.depth) > 0 ? Number(p.depth) : null,
       at: [Math.min(p.x1, p.x2) + w / 2, Math.min(p.y1, p.y2) + h / 2],
-      // What a joiner would say about it: what it is, how big, and where.
-      note: `${cncLayer(p.layer).label} · ${formatMm(w)} × ${formatMm(h)} pocket at ${formatMm(Math.min(p.x1, p.x2) + w / 2)}, ${formatMm(Math.min(p.y1, p.y2) + h / 2)}`,
+      // What a joiner would say about it: what it is, how big, how deep, where.
+      note: `${cncLayer(p.layer).label} · ${formatMm(w)} × ${formatMm(h)}${deep} pocket at ${formatMm(Math.min(p.x1, p.x2) + w / 2)}, ${formatMm(Math.min(p.y1, p.y2) + h / 2)}`,
     });
   });
 

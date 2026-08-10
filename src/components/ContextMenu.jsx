@@ -38,6 +38,10 @@ export default function ContextMenu() {
   const addBottomMask = useProjectStore((s) => s.addBottomMask);
   const removeBottomMask = useProjectStore((s) => s.removeBottomMask);
   const openModal = useUiStore((s) => s.openModal);
+  // Turn 17 (CLAUDE.md F6.2): Rename selects the cabinet first — the name field
+  // is the SELECTED unit's, and a menu opened on a cabinet that is not selected
+  // would otherwise put the cursor in another one's name.
+  const selectUnit = useUiStore((s) => s.selectUnit);
   // ─── Turn 13 (CLAUDE.md F5.3) ───
   // The menu is about the cabinet under the pointer AND about everything else
   // that is selected. The list is resolved to real units here so the actions
@@ -46,6 +50,8 @@ export default function ContextMenu() {
   const selectedUnitIds = useUiStore((s) => s.selectedUnitIds);
   const batch = useProjectStore((s) => s.batch);
   const addDoorsBulk = useProjectStore((s) => s.addDoorsBulk);
+  const removeDrawerFronts = useProjectStore((s) => s.removeDrawerFronts);
+  const addDrawerFronts = useProjectStore((s) => s.addDrawerFronts);
 
   const unit = units.find((u) => u.id === menu?.unitId) || null;
   const selection = useMemo(
@@ -115,6 +121,20 @@ export default function ContextMenu() {
         saveAsTemplate: (unitId) => openModal('save-template', { unitId, anchor: menuAnchor() }),
         // Turn 12 (CLAUDE.md F4): the cabinet's own window, beside the cabinet.
         editCabinet: (unitId) => openModal('cabinet', { unitId, anchor: menuAnchor() }),
+        // ─── Turn 17 (CLAUDE.md F6.2) ───
+        // The menu does not rename anything: it SHOWS the one field that does.
+        // The panel has to be open and the unit selected before the input
+        // exists, so the focus is taken on the next frame rather than in this
+        // one — the same order the app already uses for "the options for what
+        // was just added are in the panel".
+        renameUnit: (unitId) => {
+          selectUnit(unitId);
+          openRightPanel();
+          requestAnimationFrame(() => {
+            const el = document.querySelector(`[data-unit-name="${unitId}"]`);
+            if (el) { el.focus(); el.select?.(); }
+          });
+        },
         // ─── Turn 13 (CLAUDE.md F5.3) ───
         // Both take the whole SELECTION, and both are one undo step of their
         // own: the store's bulk actions batch internally, so the menu does not
@@ -125,6 +145,17 @@ export default function ContextMenu() {
           if (!fitted && already) notify('They already have their doors.', 'info');
         },
         unitColour: (ids) => openModal('unit-finish', { unitIds: ids, anchor: menuAnchor() }),
+        // Turn 17 (CLAUDE.md F8.1): the fronts off a drawer unit, and back on.
+        removeDrawerFronts: (unitId) => {
+          const { removed } = removeDrawerFronts(unitId) || {};
+          notify(removed
+            ? `${removed} drawer front${removed === 1 ? '' : 's'} off — the boxes are yours.`
+            : 'This cabinet has no drawer fronts on.', removed ? 'ok' : 'info');
+        },
+        addDrawerFronts: (unitId) => {
+          const { fitted } = addDrawerFronts(unitId) || {};
+          notify(fitted ? `${fitted} drawer front${fitted === 1 ? '' : 's'} back on.` : 'They are already on.', fitted ? 'ok' : 'info');
+        },
         // The options for what was just added are in the panel, not in a modal.
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
       },
@@ -138,7 +169,7 @@ export default function ContextMenu() {
     removeUnit, closeAllFronts, toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addTopInfill,
     removeTopInfill, addBottomMask, removeBottomMask,
     setSideInfillEnabled, setSideInfillPinned, notify, openRightPanel,
-    setPanelSection, openModal]);
+    setPanelSection, openModal, selectUnit, removeDrawerFronts, addDrawerFronts]);
 
   // ─── Placement (turn 11, CLAUDE.md F1.4a) ───
   // Measured, then clamped by lib/menuPlacement.js. `at` is null until the

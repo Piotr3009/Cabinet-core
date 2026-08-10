@@ -243,6 +243,67 @@ export const UNIT_TYPES = {
     supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
     available: true,
   },
+  // ─── D/W PANEL (turn 17, CLAUDE.md F9) ──────────────────────────────────
+  // "It is a front and nothing else." So it is: `appliance: 'dw'` switches the
+  // carcass off — no sides, no bottom, no back — and what is left is the front
+  // and the one top panel the owner named. The same kit answers for a washing
+  // machine and for an under-counter fridge, which is why it is called what he
+  // calls it rather than after one of the three.
+  DW_PANEL: {
+    id: 'DW_PANEL',
+    heightGroup: 'base',
+    label: 'D/W panel',
+    family: 'kitchen',
+    lisp: null,
+    appliance: 'dw',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    // The TOP is the owner's one panel; there is no back and there are no sides.
+    carcass: { top: 'panel', back: 'none', sides: 'none' },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'dwPanel.defaults',
+    // No hinges, flat, no door furniture — and nothing goes inside it, because
+    // what goes inside it is a dishwasher.
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+    },
+    available: true,
+  },
+  // ─── OVEN BASE UNIT (turn 17, CLAUDE.md F10) ────────────────────────────
+  // A base carcass with the oven's shelf 598 mm from the TOP and one drawer
+  // under it. Its back is the fridge's own back-rail pattern (turn 14): four
+  // dog bones, one into each side and two into the bottom of the cabinet.
+  OVEN_BASE: {
+    id: 'OVEN_BASE',
+    heightGroup: null,
+    label: 'Oven base unit',
+    family: 'kitchen',
+    lisp: null,
+    appliance: 'oven',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'oven' },
+    drawerStyle: 'budr',
+    drawerRatioKey: 'ovenUnit.drawerRatio',
+    minHeightKey: null,
+    defaultsKey: 'ovenUnit.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
   FRIDGE: {
     id: 'FRIDGE',
     heightGroup: 'tall',
@@ -267,7 +328,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'LOW_CABINET', 'SINK', 'FRIDGE'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -363,5 +424,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', LOW_CABINET: 'LC', SINK: 'S', FRIDGE: 'F',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F',
 };

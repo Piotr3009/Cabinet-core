@@ -1381,3 +1381,88 @@ bez zmiany, więc nic się nie psuje — ale ta sama nazwa może wyjść jako
 
 Zjednoczenie ich ZMIENI nazwy plików w folderze warsztatu, czyli jest nazwaną
 deltą eksportu i regułą 0 należy do osobnej tury, która ją ogłosi. BACKLOG #88.
+
+# TURA 17 — PARYTET (09.08.2026)
+
+## #69 — Panel D/W: mocowania, luzy i sąsiedzi (T17 F9)
+
+CLAUDE.md F9 podaje pięć liczb i kończy zdaniem: „Everything else about it —
+fixings, gaps, how it meets its neighbours — was NOT given. BLOCKERS, not
+invention." Kit jest zbudowany z tych pięciu i **nie ma niczego poza nimi**.
+Otwarte, co do jednego:
+
+* **Jak front jest mocowany do urządzenia.** Zmywarka ma własne zaczepy i własny
+  rozstaw; front nie ma na sobie ANI JEDNEGO otworu i nie będzie miał, dopóki
+  właściciel nie poda wzoru. Dziś to znaczy, że stolarz wierci go na miejscu.
+* **Luz do sąsiadów.** Szerokość frontu jest liczona `W − doors.gap`, czyli
+  regułą, którą aplikacja ma dla KAŻDYCH drzwi. To jest liczba projektu, nie
+  wymyślona liczba warsztatowa — ale nikt nie powiedział, że urządzenie ma ten
+  sam luz co drzwi. Jeśli ma inny, jest to jedna liczba w `profile.dwPanel`.
+* **Jak wieniec 600 mm siada na sąsiadach.** Jest 600 „zawsze", więc przy luce
+  500 mm wystaje po 50 na stronę, a przy 700 zostawia po 50 wolnego. Nie
+  powiedziano, czy leży NA bokach sąsiadów, czy między nimi — więc nie ma
+  żadnego złącza: to prostokąt, jak w kicie.
+* **Wycięcie w plincie NALEŻĄCYM DO RUNU.** Wycięcie jest robione tam, gdzie ta
+  szafka tnie własny plint (sama albo jako właściciel odcinka). Kiedy długi
+  plint należy do SĄSIADA (`run_plinth.role === 'member'`), wycięcia nie ma:
+  ten kawałek nie wie, gdzie w jego długości stoi urządzenie. Pozycję zna
+  `engine/runs.js` i to tam trzeba ją przekazać — osobna, nazwana zmiana
+  eksportu, więc osobna tura. BACKLOG #92.
+* **Głębokość i wysokość wycięcia poza „20 mm od góry".** Nacięcie biegnie z
+  dolnej krawędzi plinta w górę do 20 mm od jego szczytu, przez całą szerokość
+  urządzenia. To jest jedyny odczyt, który zamyka się na podanej liczbie i
+  zostawia deskę w jednym kawałku — ale nie padło, czy pasek u góry ma być
+  właśnie tym, co zostaje.
+
+## #70 — Panel D/W: to jest FRONT bez korpusu, więc bez legs i bez BOM-u okuć
+
+Typ ma `legs: true` (dziedziczy po bazie), ale nie ma dna, na którym noga
+mogłaby stanąć. Dziś nie robi to nic złego — nogi są rysunkiem i liczbą w BOM,
+a nie geometrią cięcia — ale jest to niedopowiedzenie: urządzenie stoi na
+własnych nogach, a panel wisi. Czekamy na słowo właściciela, czy ta pozycja ma
+w ogóle być liczona.
+
+## #71 — Szafka pod piekarnik: wszystko poza trzema zdaniami (T17 F10)
+
+Podane były trzy rzeczy: 598 od góry, szuflada pod spodem, plecy tylko za
+szufladą z czterema dog bone'ami. Kit ma dokładnie to. Otwarte:
+
+* **Apertura piekarnika.** Nie ma żadnej. Piekarnik stoi na półce i jest
+  otoczony powietrzem; nikt nie podał ani luzu wokół niego, ani czy przód
+  potrzebuje listwy, ani jak jest przykręcony do boków.
+* **Wentylacja.** Zabudowany piekarnik zwykle wymaga otworu w plecach albo pod
+  półką. Plecy są tylko za szufladą, więc otwór byłby w niczym. Bez liczby od
+  producenta albo od właściciela — nie ma go.
+* **Wysokość szafki.** `ovenUnit.defaults.height` to 870 (598 + szuflada, która
+  wychodzi rozsądna). Nie padła. Typ nie ma `heightGroup`, więc nie łapie
+  wysokości bazowej projektu — bo jego wysokość ustala urządzenie, nie kuchnia.
+* **Kabel i wtyczka.** Zero.
+
+## #72 — Zawiasy: różnica między SKRZYDŁAMI (T17 F7.2)
+
+„Hinges are editable per door" — a lista jest SZAFKI. Powód jest fizyczny:
+korpus nosi jedną kolumnę zawiasów na każdym zawiasowanym boku i kit wierci obie
+z tej samej listy (`hingedSides` × `centres`), więc dwuskrzydłowa szafka z
+trzema zawiasami po lewej i dwoma po prawej nie ma dziś jak istnieć w silniku.
+Rozdzielenie znaczy dwie listy w parametrach szafki i dwie kolumny wierceń —
+zmiana eksportu, więc osobna, nazwana tura. Do tego czasu edycja na jednym
+skrzydle jest edycją kompletu i kontrolka mówi to wprost.
+
+## #73 — „28 + 10 mm liczone od osi wkrętów" — od czego mierzone jest 28
+
+Klamra jest wdrożona jako SUMA, bo suma jest tym, co padło: front nie krótszy
+niż 38 mm. Nie padło, od czego mierzone jest samo 28 — od dolnej krawędzi
+frontu, od podstawy pudła czy od górnej krawędzi runnera. Zapisane jako dwie
+osobne liczby (`runnerScrewFromBase`, `clearanceBelowRunner`), żeby warsztat,
+który zmieni runnery, zmienił jedną z nich, a nie 38. Zbieżność z istniejącym
+`firstRowFromBottom: 38` jest odnotowana przy liczbie i wygląda na tę samą
+odległość mierzoną z tego samego miejsca — ale nikt tego nie potwierdził.
+
+## #74 — Szuflady kitu WARDROBE nie mają rowków w bokach
+
+F4.3 mówi o dwóch kieszeniach z głębokościami i one są — na bokach pudeł BUDR,
+gdzie kit je rysuje od tury 3. Wewnętrzne szuflady szafy (`KIT_WARDROBE_FULL`)
+mają boki bez żadnej kieszeni: LISP ich nie wycina. Dodanie ich byłoby NOWYM
+frezowaniem na kicie, którego CLAUDE.md nie wymienia wśród czterech delt, więc
+ich nie ma. Jeśli właściciel chce tam ten sam rowek, to jest jedna nazwana delta
+na jedną turę.

@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import {
   VIEW_PRESETS, PART_GROUPS, exportablePanels, groupOfPanel, panelIdsForPreset,
 } from '../engine/cnc/groups.js';
-import { exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
+import { groupByMaterial } from '../engine/cnc/views.js';
+import { exportMaterialDxf, exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
 import { formatMm } from '../engine/format.js';
 
 // ─── What is on the sheet (turn 11, CLAUDE.md F8.1/F8.2) ────────────────────
@@ -40,8 +42,12 @@ export default function CncTree() {
   const setCncParts = useUiStore((s) => s.setCncParts);
   const resetCncVisibility = useUiStore((s) => s.resetCncVisibility);
 
+  const materials = useMaterialAssignmentStore((s) => s.materials);
+  const storedDesign = useProjectStore((s) => s.project.design);
+
   const [open, setOpen] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
+  const [material, setMaterial] = useState('all');
 
   const sheets = useMemo(() => units.map((u) => {
     const result = unitResult(u.id);
@@ -51,6 +57,40 @@ export default function CncTree() {
   const shownIds = (unitId, parts) => parts
     .filter((p) => !hiddenParts[unitId]?.[p.id])
     .map((p) => p.id);
+
+  // ─── Turn 17 (CLAUDE.md F2.1): WHAT IS ON THE SHEET, BY BOARD ─────────────
+  // The same entries the CNC view builds — the ticked cabinets and the ticked
+  // parts inside them — so "one material" here means exactly the section the
+  // owner is looking at, and never a second reading of the assignment.
+  const entries = useMemo(() => sheets
+    .filter((s) => s.result && !hiddenUnits[s.unit.id])
+    .map((s) => ({
+      unit: s.unit,
+      result: s.result,
+      panels: s.parts.filter((p) => !hiddenParts[s.unit.id]?.[p.id]),
+    }))
+    .filter((e) => e.panels.length), [sheets, hiddenUnits, hiddenParts]);
+
+  const sections = useMemo(
+    () => groupByMaterial(entries, { design: storedDesign, profile, materials }),
+    [entries, storedDesign, profile, materials],
+  );
+
+  // A section that has just been unticked out of existence must not leave the
+  // picker pointing at nothing — the download would then say "nothing on the
+  // sheet for that material" about a board the joiner can still see listed.
+  const materialKey = material === 'all' || sections.some((s) => s.key === material) ? material : 'all';
+
+  const downloadMaterial = () => {
+    try {
+      const { filename, label, parts } = exportMaterialDxf(entries, {
+        key: materialKey, design: storedDesign, materials, profile,
+      });
+      notify(`${filename} — ${parts} parts off ${label}.`, 'ok');
+    } catch (e) {
+      notify(e?.message || 'DXF export failed.', 'warn');
+    }
+  };
 
   const download = (sheet, kind) => {
     const ids = shownIds(sheet.unit.id, sheet.parts);
@@ -80,6 +120,41 @@ export default function CncTree() {
       <div className="cc-row">
         <span className="text-[11px] uppercase tracking-wide text-ink-400">On the sheet</span>
         <button type="button" className="cc-btn px-2" onClick={resetCncVisibility}>Show all</button>
+      </div>
+
+      {/* ─── Turn 17 (CLAUDE.md F2.1): CHOOSE THE MATERIAL, EXPORT THE LOT ───
+          One board, one file, across every ticked cabinet — the section the
+          sheet is already showing, sent to the machine. "All" is the export
+          the app has always had and is still the default. */}
+      <div className="border border-shell-600 rounded p-2 space-y-1.5" data-material-export="1">
+        <span className="text-[11px] uppercase tracking-wide text-ink-400">Export by material</span>
+        <select
+          className="cc-input w-full"
+          data-export-material="1"
+          value={materialKey}
+          title="Which assigned board to send. One material, one file — laid out exactly as the sheet shows it."
+          onChange={(e) => setMaterial(e.target.value)}
+        >
+          <option value="all">All materials</option>
+          {sections.map((s) => (
+            <option key={s.key} value={s.key}>
+              {s.label} · {s.units.reduce((n, u) => n + u.panels.length, 0)} parts
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="cc-btn-gold w-full"
+          data-download-material="1"
+          disabled={!entries.length}
+          onClick={downloadMaterial}
+        >
+          Download DXF — {materialKey === 'all' ? 'all materials' : (sections.find((s) => s.key === materialKey)?.label || 'material')}
+        </button>
+        <p className="text-[10px] text-ink-400 leading-snug">
+          The file carries each part’s own label and nothing else — no headings, no material names, no
+          counts. Those are for the screen.
+        </p>
       </div>
 
       {sheets.map((sheet) => {

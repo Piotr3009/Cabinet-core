@@ -33,6 +33,27 @@ export function isSelectableElement(panel) {
 
 const MECHANISM_PARTS = new Set(['DP', 'FILLER']);
 
+// ─── TURN 17 (CLAUDE.md F4.2): A DRAWER IS A THING YOU CAN OPEN ─────────────
+//
+// Owner: "jak je edytuję to nie mają żadnych wcięć, nie widzę dziurek."
+//
+// He was trying to edit a DRAWER, and turn 11 had decided he could not: a
+// drawer box's four sides were filed with the drawer PANEL and its fillers as
+// "part of a MECHANISM rather than of the cabinet", so a click on one selected
+// nothing and there was no detail window to open.
+//
+// Turn 11 was half right and the half it got wrong is the half the owner is
+// standing in front of. The DP panel and its fillers really are consequences of
+// the stack — they are what CARRIES the runners, and nobody chooses them. A
+// drawer BOX is a box: four boards with grooves in them, cut on the same
+// machine as everything else, and F4.2 says so in as many words — "selectable
+// in the editor, with its own detail view", like a shelf.
+//
+// What it does NOT become is a thing you point at in the room: it is inside a
+// closed cabinet, so it is neither an ADDED INTERIOR piece nor an ATTACHED one,
+// and the two sets below are untouched. You reach it where you reach a side
+// panel — in the editor window.
+
 /**
  * The kinds that are ADDED INTERIOR ITEMS — the things a joiner puts INSIDE a
  * carcass after it exists.
@@ -108,7 +129,8 @@ export function elementKind(panel) {
   const part = panel?.part;
   const role = panel?.role;
   if (!part) return null;
-  if (MECHANISM_PARTS.has(part) || role === 'drawer_box') return null;
+  if (MECHANISM_PARTS.has(part)) return null;
+  if (role === 'drawer_box') return 'drawer';
   switch (part) {
     case 'SHELF': return 'shelf';
     case 'VPART': return 'partition';
@@ -145,6 +167,15 @@ const LABELS = {
   'masking-panel': 'Bottom masking panel',
   door: 'Door',
   'drawer-front': 'Drawer front',
+  drawer: 'Drawer box',
+};
+
+/** What each board of a drawer box is called, in a joiner's words. */
+const DRAWER_PIECES = {
+  'DRAWER-SIDE': 'side',
+  'DRAWER-BOX-FRONT': 'front',
+  'DRAWER-BOX-BACK': 'back',
+  'DRAWER-BOTTOM': 'bottom',
 };
 
 /** What the panel calls it, above the engine's own id. */
@@ -157,6 +188,14 @@ export function elementLabel(panel) {
     const side = panel.meta?.side;
     const where = side === 'top' ? 'Top' : (side === 'right' ? 'Right' : 'Left');
     return `${where} infill`;
+  }
+  // Turn 17 (F4.2): WHICH drawer, and which board of it — a stack of three has
+  // twelve of these and "Drawer box" on all of them names none of them.
+  if (kind === 'drawer') {
+    const n = panel.meta?.drawer;
+    const piece = DRAWER_PIECES[panel.part];
+    const side = panel.meta?.side === 'R' ? ' (right)' : (panel.meta?.side === 'L' ? ' (left)' : '');
+    return `Drawer ${n ?? ''}${piece ? ` — ${piece}${side}` : ''}`.replace(/\s+/g, ' ').trim();
   }
   return LABELS[kind] || 'Piece';
 }
@@ -203,9 +242,18 @@ const FIELDS = {
   // carcass block, which is where a joiner looking for a door property does not
   // look. The engine is untouched: `door_extend` is the same param it has been
   // since turn 3, and this only says where the control is.
-  door: ['hinge-side', 'door-extend', 'front-board', 'material'],
+  // Turn 17 (CLAUDE.md F7.2): a door's HINGES are a door property — add one,
+  // take one off, move one — so they are edited on the door and nowhere else.
+  door: ['hinge-side', 'door-extend', 'hinges', 'front-board', 'material'],
   'drawer-front': ['drawer-height', 'front-board', 'material'],
   'masking-panel': ['masking-depth', 'material'],
+  // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
+  // stack — that is what F8 edits, on the unit — so what is said about one
+  // board of it is what it is made of.
+  // Turn 17 (CLAUDE.md F8.2): with the fronts off, the BOX is what a joiner
+  // clicks — so the drawer's height is edited on it as well as on its front.
+  // One field id, one control, two places it can be reached from.
+  drawer: ['drawer-height', 'material'],
 };
 
 /**
@@ -272,6 +320,7 @@ const ACTIONS = {
   'fixed-shelf': { remove: false, move: false, why: 'It follows what is under it — change the stack, or the fridge height, and this follows.' },
   holder: { remove: false, move: false, why: 'A sink unit has these instead of a top — taking one off opens the carcass.' },
   'drawer-front': { remove: false, move: false, why: 'A drawer front follows its drawer — change the stack.' },
+  drawer: { remove: false, move: false, why: 'A drawer box is built from the stack above and below it — change the drawer heights.' },
   spurs: { remove: true, move: true, why: null },
   shelf: { remove: true, move: true, why: null },
   partition: { remove: true, move: true, why: null },

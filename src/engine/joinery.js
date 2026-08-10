@@ -114,6 +114,18 @@ export function panelPlacement(panel) {
         v: [0, 0, 1],
         n: [0, 1, 0],
       };
+    // ─── Turn 17 (CLAUDE.md F4.1) ───
+    // The fridge's FIXED panel is a horizontal board like a shelf, but the kit
+    // draws it `internalDepth × internalWidth` — the TOP's frame, not the
+    // shelf's. It had no placement at all before this turn, so nothing that
+    // reads one could put anything on it.
+    case 'FIXED':
+      return {
+        origin: [box.x, box.y + box.h, box.z],
+        u: [0, 0, 1],
+        v: [1, 0, 0],
+        n: [0, 1, 0],
+      };
     case 'VPART':
       return {
         origin: [box.x, box.y, box.z],
@@ -177,6 +189,122 @@ export function panelPlacement(panel) {
           v: [0, 1, 0],
           n: [0, 0, -1],
         };
+
+    // ─── TURN 17 (CLAUDE.md F4.1): THE PARTS THAT HAD NO PLACE TO PUT IT ─────
+    //
+    // Owner, on drawers: "jak je edytuję to nie mają żadnych wcięć, nie widzę
+    // dziurek." And on a fridge back: "na CNC są dog bones a na elemencie nie
+    // ma."
+    //
+    // Both complaints have ONE cause, and it is this switch. Every drawing of
+    // machining in this app — the X-ray, the machined solid, and now the
+    // element view's overlay — asks `panelPlacement` where the part's CNC frame
+    // sits in the cabinet, and for a drawer side, a drawer front, a door or a
+    // fridge back RAIL it answered `null`. A part with no frame has nowhere to
+    // put its own drilling, so the drilling was not drawn. The cutting data was
+    // never in doubt: the machine has been cutting these grooves and holes
+    // since turn 3.
+    //
+    // So these are READERS of geometry that already exists, exactly like the
+    // cases above them, and each one is checked the same way the BUL/BUR pair
+    // is — by the DRILLING. Nothing here adds a millimetre to a file.
+
+    // The fridge's two back rails (KIT_FRIDGE L340-372). Drawn TURNED like the
+    // top back panel: CNC x runs UP the rail from its bottom edge, CNC y across
+    // the cabinet. Read off the sockets — the left-edge pair at G + 95 and
+    // W − G − 95 are the BOTTOM panel's tabs, which stand at exactly those two
+    // x positions in the cabinet.
+    case 'BACK-RAIL':
+      return {
+        origin: [box.x, box.y, box.z],
+        u: [0, 1, 0],
+        v: [1, 0, 0],
+        n: [0, 0, -1],
+      };
+
+    // A drawer-box side, drawn rotated: CNC x runs UP the side from its bottom
+    // edge — which is why the runner groove sits at x ∈ [0, 15], "at the very
+    // bottom" (F4.3) — and CNC y runs along the box's depth. The two sides are
+    // mirror images, so the right-hand one runs its y the other way; that keeps
+    // the frame right-handed and puts the grooves on the face they are cut in.
+    case 'DRAWER-SIDE':
+      return panel.meta?.side === 'R'
+        ? {
+          origin: [box.x + box.w, box.y, box.z + box.d],
+          u: [0, 1, 0],
+          v: [0, 0, -1],
+          n: [1, 0, 0],
+        }
+        : {
+          origin: [box.x, box.y, box.z],
+          u: [0, 1, 0],
+          v: [0, 0, 1],
+          n: [-1, 0, 0],
+        };
+
+    // The box front and back, also drawn rotated (`drawn_w` is the box height).
+    // The front carries two ⌀3 screws at 50 mm in from its own bottom corner
+    // on each side, which is what fixes the frame: x up, y across.
+    case 'DRAWER-BOX-FRONT':
+      return {
+        origin: [box.x, box.y, box.z + box.d],
+        u: [0, 1, 0],
+        v: [1, 0, 0],
+        n: [0, 0, 1],
+      };
+    case 'DRAWER-BOX-BACK':
+      return {
+        origin: [box.x + box.w, box.y, box.z],
+        u: [0, 1, 0],
+        v: [-1, 0, 0],
+        n: [0, 0, -1],
+      };
+
+    // The drawer bottom is a plain horizontal board, drawn upright: x across
+    // the box, y along its depth. Its four screws go down through it into the
+    // box sides, so they are drawn on the face you look at from above.
+    case 'DRAWER-BOTTOM':
+      return {
+        origin: [box.x, box.y + box.h, box.z],
+        u: [1, 0, 0],
+        v: [0, 0, 1],
+        n: [0, 1, 0],
+      };
+
+    // The wardrobe's DRAWER PANEL: the board the runners are screwed to. A
+    // vertical slab in X like a side panel, drawn upright — CNC x along the
+    // cabinet's depth from the back, y up — which is what puts its runner rows
+    // at the heights the kit drills them.
+    case 'DP':
+      return panel.meta?.side === 'R'
+        ? {
+          origin: [box.x + box.w, box.y, box.z],
+          u: [0, 0, 1],
+          v: [0, 1, 0],
+          n: [1, 0, 0],
+        }
+        : {
+          origin: [box.x, box.y, box.z + box.d],
+          u: [0, 0, -1],
+          v: [0, 1, 0],
+          n: [-1, 0, 0],
+        };
+
+    // A FRONT is drilled FROM BEHIND — a hinge cup is bored in the back of the
+    // door — and the kit's own arithmetic says so: for a left-hinged door the
+    // cup is at `w − 21.5` in the drawing and 21.5 mm from the LEFT edge in the
+    // room, so the drawn x runs the opposite way to the cabinet's. The frame is
+    // therefore the door seen from the carcass side, which is also the face a
+    // joiner has uppermost on the bench when he drills it.
+    case 'FRONT':
+    case 'DRAWER-FRONT':
+      return {
+        origin: [box.x + box.w, box.y, box.z],
+        u: [-1, 0, 0],
+        v: [0, 1, 0],
+        n: [0, 0, -1],
+      };
+
     default:
       return null;
   }
@@ -297,6 +425,55 @@ export function jointLines(panel, layers, { xray = false, lift = 0.4, drills = [
   for (const hole of drills) {
     if (hole.panel !== panel.id || hole.kind !== 'biscuit_screw') continue;
     out.push({ kind: 'screw', points: holeLoop(placement, hole, lift) });
+  }
+  return out;
+}
+
+// ─── EVERY CUT ON A PART, WHERE IT WILL BE (turn 17, CLAUDE.md F4.1) ────────
+//
+// `jointLines` above answers a question about the JOINT: what does a Skylon
+// carcass look like, in a room, to a customer. It is deliberately narrow — it
+// draws sockets, dog bones and the biscuit set, and it draws nothing on a part
+// that has no joint, because a rectangle on a rectangle is a coin toss per
+// pixel.
+//
+// The ELEMENT VIEW asks a different question, and it is a joiner's: what is the
+// machine going to do to THIS board? Every pocket whatever its layer, every
+// mark, every hole. Turn 17 F4.1 asks for it in as many words — "dog bones and
+// drilling appear on the part in the element view and the detail modal, from
+// the SAME geometry the export reads — not a second drawing" — so this reads
+// `panel.cnc` and `result.drills`, which is exactly what `engine/cnc/dxf.js`
+// writes the file from. Where the two ever disagree the export is the truth and
+// this is the bug (CLAUDE.md rule 0, named delta 4).
+//
+// It is a VIEW change and it moves no geometry: nothing here is written back,
+// and a part with no machining contributes nothing at all.
+
+/**
+ * @param {object} panel   an engine panel record
+ * @param {object[]} drills  result.drills (filtered here by panel id)
+ * @param {object} opts    { lift } — how far off the face to draw, in mm
+ * @returns {Array<{kind:string, layer:string, points:number[][]}>}
+ */
+export function machiningLines(panel, drills = [], { lift = 0.4 } = {}) {
+  const placement = panelPlacement(panel);
+  const cnc = panel?.cnc;
+  if (!placement || !cnc) return [];
+  const out = [];
+
+  for (const p of cnc.pockets || []) {
+    out.push({ kind: 'pocket', layer: p.layer, points: pocketLoop(placement, p, lift) });
+  }
+  for (const m of cnc.marks || []) {
+    out.push({
+      kind: 'mark',
+      layer: m.layer,
+      points: [place(placement, m.from[0], m.from[1], lift), place(placement, m.to[0], m.to[1], lift)],
+    });
+  }
+  for (const hole of drills) {
+    if (hole.panel !== panel.id) continue;
+    out.push({ kind: 'hole', layer: hole.layer, points: holeLoop(placement, hole, lift) });
   }
   return out;
 }

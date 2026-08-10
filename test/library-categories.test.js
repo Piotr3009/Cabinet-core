@@ -37,7 +37,9 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // Turn 15 (CLAUDE.md F5.2): the same nine kits, in the order the owner's
   // CATALOGUE puts them in — base units, then talls, then walls.
   assert.deepEqual(getCategory('kitchen').types, [
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'WUD',
+    // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
+    // wrote the pattern for both, which is exactly the condition they carried.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'WUD',
   ]);
   assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE']);
 

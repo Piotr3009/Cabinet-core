@@ -113,6 +113,13 @@ export const DEFAULT_DESIGN = {
   // Which VARIANT of each piece of ironmongery this job fits. The automat picks
   // the concrete item; the user only ever picks a variant (F9.2).
   hardware: { hinges: null, runners: null, handles: null },
+  // ─── Turn 17 (CLAUDE.md F7.1) ───
+  // How many hinges this JOB fits a door with: 2 or 3. `null` means the
+  // profile's own standard, which is 3 and is what every kit has always
+  // drilled — so a project saved before this turn is cut exactly as it was.
+  // It is a project decision and not a workshop one: the same shop hangs a
+  // budget kitchen on two and a heavy oak door on three.
+  hinges: { standard: null },
   // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
   // which is what a project that has never opened the section means. Resolved
   // through projectHeights() below, so a stored null and a stored number behave
@@ -171,6 +178,7 @@ export function migrateDesign(design) {
       runners: d.hardware?.runners ? String(d.hardware.runners) : null,
       handles: d.hardware?.handles ? String(d.hardware.handles) : null,
     },
+    hinges: { standard: [2, 3].includes(Math.trunc(Number(d.hinges?.standard))) ? Math.trunc(Number(d.hinges.standard)) : null },
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: d.fronts?.handle ?? null,

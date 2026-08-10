@@ -22,6 +22,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { categoryOf } from '../engine/types.js';
+import Ruler from './Ruler.jsx';
 
 // 3D scaffolding follows Production Core's rig (scene / camera / soft light /
 // capture), not its window geometry. Preview is 3D from the start (SPEC 7).
@@ -823,6 +824,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         subject={subject}
       />
       <ShadowFit signal={results} unitsRef={unitGroups} onFit={setSubject} />
+      {/* ─── Turn 17 (CLAUDE.md F11): the ruler ───
+          Mounted always, drawn only when it is on. It reaches nothing: its
+          state is the ui store's and it writes to no project field. */}
+      <Ruler />
       {/* Solid and Render only. Contour is a silhouette and X-ray is a look
           THROUGH the furniture — a shadow on the floor is furniture standing on
           it, which is the one thing neither mode is saying. */}

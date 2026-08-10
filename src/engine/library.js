@@ -82,20 +82,13 @@ export const KITCHEN_LIBRARY = [
       {
         kind: 'soon', id: 'l-shape', label: 'L-shape', hint: 'One carcass on two walls', reason: NO_PATTERN,
       },
-      {
-        kind: 'soon',
-        id: 'dishwasher',
-        label: 'DW',
-        hint: 'Dishwasher housing',
-        reason: 'No kit defines the appliance front and gap yet — the pattern comes first',
-      },
-      {
-        kind: 'soon',
-        id: 'oven-base',
-        label: 'Oven',
-        hint: 'Built-under oven housing',
-        reason: 'No kit defines the appliance aperture yet — the pattern comes first',
-      },
+      // ─── Turn 17 (CLAUDE.md F9/F10): TWO OF THE HELD-OPEN ROWS OPEN ─────
+      // The owner wrote the pattern for both, which is exactly the condition
+      // the `soon` rows carried: "the pattern comes first". They are built from
+      // his numbers and from nothing else — what he did not give is in
+      // BLOCKERS and is not in the kits.
+      { kind: 'type', id: 'dishwasher', typeId: 'DW_PANEL', label: 'D/W panel', hint: 'Dishwasher, washing machine or fridge front — a front and nothing else' },
+      { kind: 'type', id: 'oven-base', typeId: 'OVEN_BASE', label: 'Oven', hint: 'Built-under oven, on its shelf, with a drawer below' },
       {
         kind: 'soon', id: 'bin-storage', label: 'Bin storage', hint: 'Pull-out bins', reason: NO_PATTERN,
       },

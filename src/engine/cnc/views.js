@@ -2,11 +2,20 @@
 //
 // "The CNC EXPORT and today's grouping stay byte-identical — these are VIEWS."
 //
-// That sentence is the whole design brief and it is why this module exists at
-// all. Nothing here is imported by engine/cnc/dxf.js, engine/cnc/layout.js or
-// lib/cncExport.js; it is read by the SCREEN. A view sorts parts into buckets
-// and names the buckets. It never moves a coordinate, never renames a layer and
-// never decides what goes in a file.
+// That sentence was turn 15's whole design brief and it is why this module
+// exists at all: a view sorts parts into buckets and names the buckets. It
+// never moves a coordinate and never renames a layer.
+//
+// ─── TURN 17 (CLAUDE.md F2.1): THE MATERIAL NOW DECIDES WHAT LEAVES ─────────
+//
+// "Choose the material, export the lot… this is the same identity, now driving
+// what leaves the app." So `materialSection` and `groupByMaterial` below are no
+// longer read by the screen alone — `exportMaterialDxf` asks them the same
+// question the sheet asks, which is the point: the owner picks the section he
+// is looking at and gets that section in a file. What is still true, and is
+// what F2.2 turns into a hard rule, is that a view decides WHICH PARTS go in a
+// file and never what is written on them: the section's yellow header is
+// screen furniture and there is no path from it to a DXF.
 //
 // ─── WHY TWO ──────────────────────────────────────────────────────────────
 //
@@ -32,6 +41,7 @@
 // Pure data + pure functions — no React, no store imports.
 
 import { resolvePanelMaterial } from '../materials.js';
+import { layoutPanels } from './layout.js';
 
 /**
  * The parts that belong to a RUN rather than to a carcass.
@@ -175,6 +185,43 @@ export function groupByMaterial(entries, {
  * @returns {{cabinets:Array, run:Array}}  both in the same `entries` shape, so
  *          the view renders one kind of block and not two.
  */
+/**
+ * ─── ONE MATERIAL, LAID OUT READY TO WRITE (turn 17, CLAUDE.md F2.1) ────────
+ *
+ * The blocks of one material section, each already laid out by the SAME
+ * `layoutPanels` the preview draws with — so the file is the picture and not a
+ * second arrangement that happens to agree today.
+ *
+ * `key` is a section key from `groupByMaterial` (`mat:<id>` or `unassigned:…`),
+ * or `'all'` for every ticked part of every ticked cabinet, which is what the
+ * app has always exported and stays exactly that.
+ *
+ * @returns {{key:string, label:string, blocks:Array}|null}
+ */
+export function materialExportSection(entries, {
+  key = 'all', design = null, profile = null, materials = [],
+} = {}) {
+  const opts = { gap: profile.cnc.layoutGap, rowWidth: profile.cnc.layoutRowWidth };
+  const asBlocks = (list) => list
+    .filter((e) => e.panels.length)
+    .map((e) => ({
+      unit: e.unit,
+      unitNum: e.result.unitNum,
+      panels: e.panels,
+      drills: e.result.drills,
+      layout: layoutPanels(e.panels, e.result.drills, opts),
+    }));
+
+  if (key === 'all') {
+    const blocks = asBlocks(entries);
+    return blocks.length ? { key: 'all', label: 'All materials', blocks } : null;
+  }
+  const section = groupByMaterial(entries, { design, profile, materials })
+    .find((s) => s.key === key);
+  if (!section) return null;
+  return { key: section.key, label: section.label, blocks: asBlocks(section.units) };
+}
+
 export function groupByCabinet(entries) {
   const cabinets = [];
   const run = [];

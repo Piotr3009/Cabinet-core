@@ -87,6 +87,14 @@ export const DEFAULT_CABINET_PROFILE = {
 
   // ─── Hinge drilling ───
   hinges: {
+    // ─── Turn 17 (CLAUDE.md F7.1): THE PROJECT STANDARD ────────────────────
+    // "Project setup gains 'Standard hinges: 2 / 3', default 3." Three is what
+    // the kits have always drilled, so a project that never opens the setting
+    // cuts what it cut yesterday. Two takes ONE MIDDLE hinge off each door and
+    // leaves the outer ones exactly where the rule put them
+    // (engine/cabinet.js `hingeRows`).
+    standard: 3,
+    standardOptions: [2, 3],
     holeDiameter: 5,
     holePairOffset: 16,        // 2 holes per centre at centre ± 16
     xFromFrontEdge: 37,        // measured from the FRONT edge of the side panel
@@ -597,6 +605,24 @@ export const DEFAULT_CABINET_PROFILE = {
     bottomOversize: 13,
     depthAllowance: 20,         // usable depth = D − G − 20 (NOT the wardrobe rule)
     firstRowFromBottom: 38,     // runner row above each front's base
+    // ─── Turn 17 (CLAUDE.md F8.3): THE OWNER'S CLAMP ───────────────────────
+    // "A drawer may come no closer than 10 mm below the bottom runner — 28 + 10
+    // mm measured from the screw centres."
+    //
+    // Two numbers and a sum, and it is the SUM that is the rule: a drawer front
+    // shorter than 38 mm has its bottom edge inside the runner it hangs on.
+    // They are kept apart rather than written as one 38, because they are two
+    // different facts — where the runner's screws are, and how much air the
+    // owner wants under them — and a workshop that changes runners changes one
+    // of them and not the other.
+    //
+    // (38 is also `firstRowFromBottom` above, and that is not a coincidence: it
+    // is the same distance measured from the same place, once as "where the
+    // runner row goes" and once as "how short a front may be". They are left as
+    // two entries because the day they stop agreeing, the app must cut the
+    // runner row where the kit says and refuse the front on the owner's rule.)
+    runnerScrewFromBase: 28,    // the bottom runner's screw centres, from the front's base
+    clearanceBelowRunner: 10,   // …and the air the owner wants under them
     frontScrewFromSide: 50,     // + 2×G + halfDiameter, see cabinet.js
     frontScrewExtra: 3.5,
     frontScrewFromBottom: 96.5, // + G on the bottom drawer
@@ -608,6 +634,58 @@ export const DEFAULT_CABINET_PROFILE = {
     runnerPocketWidth: 15,      // DRAWER_RUNNER_POCKET strip on the box side
     bottomPocketExtra: 1,       // DRAWER_BOTTOM_POCKET strip = G + 1 wide
     pocketOvershoot: 10,
+    // ─── Turn 17 (CLAUDE.md F4.3): THE POCKETS ARE CUTS, AND CUTS HAVE DEPTH ─
+    // The two grooves in a drawer-box side have been in the cutting data since
+    // turn 3 as flat rectangles on their own layers — which is everything a
+    // 2.5-D machine needs to know EXCEPT how deep to go. The owner's numbers,
+    // and they are not interchangeable: the runner groove is shallow because
+    // the runner has to sit FLUSH in it, the bottom groove is deep because a
+    // board has to stand in it.
+    //
+    // They reach no coordinate: a pocket is still the same four corners on the
+    // same layer, so every existing DXF is byte-for-byte what it was. What they
+    // reach is the DRAWING — the element view and the detail window say "2 mm
+    // deep" about the groove a joiner is looking at (F4.1/F4.3).
+    runnerPocketDepth: 2,       // DRAWER_RUNNER_POCKET — the runner sits flush
+    bottomPocketDepth: 7,       // DRAWER_BOTTOM_POCKET — the bottom stands in it
+  },
+
+  // ─── D/W PANEL (turn 17, CLAUDE.md F9) ──────────────────────────────────
+  //
+  // The owner's words, and ONLY his numbers. It is the piece that closes the
+  // face of a dishwasher, a washing machine or an under-counter fridge: "a
+  // front and nothing else — no hinges, flat, no door furniture."
+  //
+  // Everything here was dictated. What was NOT dictated — the fixings, the
+  // gaps, how it meets its neighbours — is in BLOCKERS and is not in the kit.
+  // A guessed workshop number costs two turns to unpick (CLAUDE.md 0).
+  dwPanel: {
+    defaults: { width: 600, height: 720, depth: 558 },
+    // ─── 594, AND IT IS NOT A DEFAULT ───
+    // "Height 594 mm, rigid. Always under 600, or the appliance door cannot
+    // open." So it is a FIXED VALUE with a test that says so, and no control
+    // offers to change it: a 610 mm appliance front is a machine that will not
+    // open, and the app must not be the thing that let it happen.
+    frontHeight: 594,
+    // "One top panel, always 600 mm wide, depth as the rest of the run."
+    topWidth: 600,
+    // "The plinth is cut out at that position, 20 mm from the top." The notch
+    // starts this far below the plinth's top edge and runs out of its bottom,
+    // which is what leaves the toe kick in one piece across the opening.
+    plinthCutFromTop: 20,
+  },
+
+  // ─── OVEN BASE UNIT (turn 17, CLAUDE.md F10) ────────────────────────────
+  ovenUnit: {
+    defaults: { width: 600, height: 870, depth: 558 },
+    // The appliance itself, and the number that follows from it. Written down
+    // because it is the sort of number that gets "corrected" later: the oven is
+    // 595 high, so THE SHELF IT STANDS ON SITS 598 MM FROM THE TOP OF THE
+    // CABINET — from the TOP, not from a centre line and not from the floor.
+    ovenHeight: 595,
+    shelfFromTop: 598,
+    // "A drawer below" — one, so the stack is a ratio of one.
+    drawerRatio: [1],
   },
 
   // ─── Sink base (KIT_SINK) ───
@@ -1684,7 +1762,15 @@ export const DEFAULT_CABINET_PROFILE = {
     // pixel across is hidden rather than drawn as a smudge. That is CLAUDE.md
     // F3's "truncates/hides rather than overlapping a neighbour".
     annotation: {
-      partLabelMm: 22,        // the part code + its cut size, inside the part
+      // ─── Turn 17 (CLAUDE.md F1.3): ONE TYPE SCALE ON THE SHEET ──────────
+      // "The size of the yellow heading above the CNC view. Same type scale, in
+      // world space." The in-part label carries the cabinet's name now — it is
+      // the string a joiner picks a board off a pallet by — so it is set at the
+      // heading's own size and SHRINKS to fit the part it is cut into, rather
+      // than being a second, smaller scale nobody chose. The two numbers are
+      // held equal by test/turn17-cnc-truth.test.js: a sheet with two type
+      // scales on it is what turn 16 F3 was about.
+      partLabelMm: 70,        // the cabinet, the part code and its cut size
       blockLabelMm: 45,       // the cabinet's NAME over its block
       sectionLabelMm: 70,     // the material section's header
       // How far inside its own bottom edge a part's caption sits, as a share of

@@ -612,3 +612,24 @@ jako osobny temat.
 90. [LOW] **`scripts/e2e-turn15.mjs` nie zna zmian tury 16.** To samo, co
     pozycje 66, 71, 77 i 85: nie jest zepsuty, chodzi po swojej turze.
     `e2e-turn16.mjs` jest następcą.
+91. [MEDIUM] **VPART nie jest objęty regułą „słój w górę rysunku".** T17 F3
+    obraca poziome deski, które stolarz nazywa półką (`SHELF`, `PARTITION`,
+    `RAIL-PART`, `FIXED`). Pionowa przegroda ma `role: 'shelf'`, ale stoi na
+    sztorc i LISP rysuje ją „na boku" (x wzdłuż wysokości), więc na arkuszu leży
+    w poprzek własnego słoja tak samo, jak leżała półka. Nie jest w zakresie
+    F3 („wszystkie półki") i obrócenie jej jest nazwaną deltą eksportu.
+92. [MEDIUM] **Wycięcie w plincie nie działa na plincie RUNU.** Panel D/W tnie
+    wycięcie tam, gdzie sam tnie plint. Gdy długi plint należy do sąsiada,
+    wycięcia nie ma — kawałek nie wie, gdzie w jego długości stoi urządzenie.
+    Pozycję zna `engine/runs.js`. BLOCKERS #69.
+93. [LOW] **Eksport per materiał nie ma jeszcze własnego ZIP-a.** F2.1 daje
+    jeden plik na płytę. ZIP per panel (tura 15) nadal dotyczy CAŁEJ szafki, co
+    jest jego zadaniem — ale „daj mi po jednym pliku na formatkę, tylko z tej
+    płyty" jest oczywistym następnym pytaniem warsztatu.
+94. [LOW] **Miarka mierzy dwa punkty i nie zapamiętuje pomiaru.** F11 prosi
+    dokładnie o to („click one point, click another, read the distance") i
+    trzeci klik zaczyna nowy pomiar, jak taśma. Łańcuch pomiarów, zapis na
+    rysunku i wymiar do PDF-a to osobny temat.
+95. [LOW] **`scripts/e2e-turn16.mjs` nie zna zmian tury 17.** To samo, co
+    pozycje 66, 71, 77, 85 i 90: nie jest zepsuty, chodzi po swojej turze.
+    `e2e-turn17.mjs` jest następcą.

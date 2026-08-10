@@ -13,7 +13,9 @@ import { dirname, join } from 'node:path';
 
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE } from '../src/engine/profile.js';
-import { layoutPanels, panelBounds, sheetRect, toSheet } from '../src/engine/cnc/layout.js';
+import {
+  layoutPanels, panelBounds, sheetRect, sheetTurn, toSheet,
+} from '../src/engine/cnc/layout.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WARDROBE = JSON.parse(readFileSync(join(HERE, '..', 'fixtures', 'golden-wardrobe.json'), 'utf8'));
@@ -47,9 +49,26 @@ test('panelBounds covers the tabs and reliefs, not just the nominal rectangle', 
   assert.equal(bur.maxX, RESULT.panels.find((p) => p.id === 'BUR').w);
 
   // A plain rectangle stays a plain rectangle.
+  const front = RESULT.panels.find((p) => p.part === 'FRONT');
+  const fb = panelBounds(front, RESULT.drills);
+  assert.deepEqual([fb.minX, fb.minY, fb.maxX, fb.maxY], [0, 0, front.w, front.h]);
+  assert.equal(fb.turn, 0, 'a door is laid down the way it is drawn');
+});
+
+// ─── Turn 17 (CLAUDE.md F3): THE SHELF IS LAID DOWN TURNED ──────────────────
+test('a shelf is laid on the sheet turned 90°, and its bounds say so', () => {
   const shelf = RESULT.panels.find((p) => p.id === 'SHELF-1');
+  assert.equal(sheetTurn(shelf), 90);
   const sb = panelBounds(shelf, RESULT.drills);
-  assert.deepEqual([sb.minX, sb.minY, sb.maxX, sb.maxY], [0, 0, shelf.w, shelf.h]);
+  assert.equal(sb.turn, 90);
+  // The part is `w × depth` in its own frame; laid down it is `depth × w`, so
+  // its WIDTH — the dimension the grain runs along — stands up the sheet, the
+  // way every other board in the app already does.
+  assert.equal(sb.w, shelf.h);
+  assert.equal(sb.h, shelf.w);
+  // Turning about the frame's own origin puts the part in the second quadrant;
+  // the layout works in the bounds' frame, so nothing is ever placed negative.
+  assert.deepEqual([sb.minX, sb.minY, sb.maxX, sb.maxY], [-shelf.h, 0, 0, shelf.w]);
 });
 
 test('every part is placed exactly once, in cut-list order', () => {
@@ -95,7 +114,9 @@ test('a part wider than the row limit still gets placed (no infinite wrap)', () 
 
 test('engine y-up maps to sheet y-down, corner for corner', () => {
   const { places } = layoutPanels(RESULT.panels, RESULT.drills, OPTS);
-  const place = places.find((p) => p.panel.id === 'SHELF-1');
+  // A part laid down UNTURNED, so the part's own frame and the laid frame are
+  // the same one and the mapping can be read straight off the bounds.
+  const place = places.find((p) => p.panel.part === 'FRONT');
   const { bounds } = place;
 
   // Bottom-left of the part (engine minX/minY) → bottom-left of its box on the
@@ -103,6 +124,19 @@ test('engine y-up maps to sheet y-down, corner for corner', () => {
   assert.deepEqual(toSheet(place, bounds.minX, bounds.minY), [place.x, place.y + place.h]);
   assert.deepEqual(toSheet(place, bounds.minX, bounds.maxY), [place.x, place.y]);
   assert.deepEqual(toSheet(place, bounds.maxX, bounds.maxY), [place.x + place.w, place.y]);
+});
+
+test('…and a TURNED part maps its own corners into the same box', () => {
+  const { places } = layoutPanels(RESULT.panels, RESULT.drills, OPTS);
+  const place = places.find((p) => p.panel.id === 'SHELF-1');
+  const { w, h } = place.panel;
+  // `toSheet` takes the PART's own coordinates, whatever the sheet does with
+  // the part — which is what lets every caller (the preview, the DXF writer)
+  // go on handing it `cnc.outline` points unchanged.
+  assert.deepEqual(toSheet(place, 0, 0), [place.x + place.w, place.y + place.h]);
+  assert.deepEqual(toSheet(place, w, 0), [place.x + place.w, place.y]);
+  assert.deepEqual(toSheet(place, w, h), [place.x, place.y]);
+  assert.deepEqual(toSheet(place, 0, h), [place.x, place.y + place.h]);
 });
 
 test('a pocket becomes the same rectangle in sheet coordinates', () => {

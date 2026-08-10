@@ -188,7 +188,12 @@ export default function RightPanel() {
     <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
       <PanelHeader title={type.label} onClose={closeRightPanel}>
         {/* Turn 16 (CLAUDE.md F6): the name is the owner's, edited where it is
-            shown. It was `${type.label} · 01` printed into the header. */}
+            shown. It was `${type.label} · 01` printed into the header.
+            Turn 17 (F6.2): …and the owner could not find it. It was a bare
+            24-pixel box between two other controls, which reads as decoration
+            rather than as the field it is. It SAYS what it is now, and the
+            right-click menu has an entry that comes here and puts the cursor
+            in it — the control is not rebuilt, it is made findable. */}
         <UnitNameField unit={unit} units={units} />
       </PanelHeader>
 
@@ -965,8 +970,12 @@ function UnitNameField({ unit, units }) {
   };
   return (
     <span className="flex items-center gap-1 min-w-0">
+      <label className="text-[10px] uppercase tracking-wide text-ink-400 shrink-0" htmlFor={`unit-name-${unit.id}`}>
+        Name
+      </label>
       <input
-        className={`cc-input h-6 py-0 px-1.5 text-xs w-24 ${duplicate ? 'border-status-warn' : ''}`}
+        id={`unit-name-${unit.id}`}
+        className={`cc-input h-6 py-0 px-1.5 text-xs w-28 ${duplicate ? 'border-status-warn' : ''}`}
         data-unit-name={unit.id}
         value={value}
         title={duplicate

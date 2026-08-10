@@ -12,6 +12,7 @@ import Hardware, { DoorHinges } from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import JointLines from './JointLines.jsx';
+import PartMachining from './PartMachining.jsx';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
@@ -189,7 +190,8 @@ function useBevel(box, profile, sprayed = false) {
 // machined socket, a decor and an X-ray look like.
 export function MovingPanel({
   panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
-  swing = null, joineryLayers: layers = null, children = null, ...handlers
+  swing = null, joineryLayers: layers = null, children = null,
+  machining = false, drills = [], ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -270,6 +272,23 @@ export function MovingPanel({
           of a hinge (turn 12, CLAUDE.md F6.1). Inside the group, so the swing
           is free: no second animation to keep in step with this one. */}
       {children}
+      {/* ─── Turn 17 (CLAUDE.md F4.1): THE MACHINING, ON THE PIECE ───────────
+          Every pocket, mark and drilled hole this part carries, read off the
+          SAME `panel.cnc` and `drills` the DXF is written from
+          (3d/PartMachining.jsx). Off by default: it is a WORKSHOP overlay and
+          the room view is a picture of furniture, so only the two windows that
+          show a part on a bench — the cabinet editor and the detail window —
+          ask for it.
+
+          The lines are in the cabinet's own millimetres, and this group stands
+          at `pivot`; backing them out by exactly that puts them where the
+          engine says they are, and leaves them inside the group that animates,
+          so a door's hinge cups swing with the door. */}
+      {machining && (
+        <group position={[-pivot[0], -pivot[1], -pivot[2]]}>
+          <PartMachining panel={p} drills={drills} profile={profile} />
+        </group>
+      )}
       {/* ─── Turn 16 (CLAUDE.md F8): THE PIECE SAYS WHICH PIECE IT IS ───
           The wall-units-do-not-shine diagnosis has to READ the scene — "read
           the actual door materials of a wall vs base unit from the scene" —
@@ -1296,7 +1315,19 @@ export default function UnitView({
         <group userData={{ ccHelper: true }}>
           <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
           <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
-          <DimLabel position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} text={`${unit.params.unit_num} · ${formatMm(D)} deep`} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
+          {/* ─── Turn 17 (CLAUDE.md F6.3) ───
+              The cabinet's NAME is not a dimension and no longer dresses like
+              one: a flat plate in the app's own tones, square-cornered, in the
+              label type the panels use. The depth stays on it because it is
+              what a joiner reads next, and it stays in the same caption because
+              two floating labels over one cabinet is what the bubble already
+              looked like from a distance. */}
+          <DimLabel
+            position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]}
+            text={`${unit.params.unit_num} · ${formatMm(D)} deep`}
+            tone={selected ? 'gold' : 'dim'}
+            variant="flat"
+          />
         </group>
       )}
 

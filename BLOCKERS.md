@@ -1585,3 +1585,96 @@ Otwarte zostaje jedno: **konkretny piekarnik może w instrukcji wymagać otworu 
 podanym wymiarze w podanym miejscu.** To jest liczba producenta, per model, i
 kiedy padnie, jest to jedna nazwana delta na jedną turę — a nie liczba, którą
 wolno zgadnąć tutaj.
+
+## #80 — Płytka wkręcana ⌀3 (Blum 173L): brakuje wzoru wiercenia
+
+**Co blokuje.** CLAUDE.md F1.1 prosi o wybór prowadnicy montażowej: *knock-in ⌀5
+(domyślnie) / screw-on ⌀3*. Pierwsza z nich to wzór, który LISP wierci od tury 1
+— dwa otwory ⌀5 w rozstawie 32 mm, `profile.hinges.holePairOffset`, warstwa
+`HINGES_5MM`. Druga to **inny wzór** i nikt go nie podał.
+
+**Co założyłem / czego nie zrobiłem.** Nic nie zgadywałem. Opcja jest w
+Ustawieniach **WIDOCZNA i WYŁĄCZONA**, z dymkiem „drilling pattern pending", a
+`engine/hinges.js resolveHingePlate` nie odda jej nawet projektowi, który ją w
+sobie niesie (ręcznie zedytowanemu albo zapisanemu przez przyszły build) —
+oddaje płytkę knock-in. Scalanie profilu też jej nie przepuści: `plates` jest
+jedyną listą w `migrateCabinetProfile`, która NIE jest scalana z zapisanego
+profilu, bo to, co ta aplikacja umie wywiercić, nie jest preferencją warsztatu.
+
+To jest cała różnica między zerem delt CNC a eksportem, który kłamie. Włączona
+opcja ⌀3 wiercąca po cichu wzór ⌀5 przeszłaby przez każdy test w tym repozytorium
+i wyszłaby dopiero na maszynie.
+
+**Co Piotr ma zdecydować / dostarczyć.** Jedno z dwóch:
+
+* **kartę katalogową Blum 173L** — rozstaw otworów, średnica, odległość od
+  przedniej krawędzi boku (odpowiednik `hinges.xFromFrontEdge` = 37), albo
+* **plik `.mpr` / woodWOP** z konfiguratora Bluma dla tej płytki.
+
+Wtedy to jest trzy liczby w `profile.hinges` (jako drugi wzór obok obecnego),
+`enabled: true` w profilu i **jedna nazwana delta CNC** na turę, w której to
+wchodzi — nie liczba, którą wolno zgadnąć tutaj.
+
+## #81 — Podnośnik AVENTOS HK: pozycja jednostki na boku szafki
+
+**Co blokuje.** F5 kładzie matematykę doboru (`engine/lifts.js`) i celowo NIE
+buduje kitu — kity HK / HF to tura 20, po sesji wzorcowej. Ale nawet gdy kit
+powstanie, brakuje jednej rzeczy, której nie da się wyprowadzić z katalogu:
+**gdzie jednostka napędowa siedzi na boku szafki** — odległość od przedniej
+krawędzi i od góry, oraz jej własny wzór wkrętów.
+
+`aventos.json` niesie bryły (`bbox` każdego komponentu) i zakresy power-factor,
+czyli KTÓRY podnośnik. Nie niesie tego, GDZIE go przykręcić.
+
+**Co założyłem / czego nie zrobiłem.** Nic. Silnik dobiera jednostkę, liczy pf,
+ostrzega przy przypisaniu i przy limitach HK — i na tym kończy. Żaden otwór,
+żadna pozycja 3D, żaden panel nie powstaje.
+
+**Co Piotr ma dostarczyć.** `.mpr` dla `20K2x00` z konfiguratora Bluma **albo**
+PDF instrukcji montażu z wymiarowanym rysunkiem boku. Plik
+`reference/hardware/aventos-hf-drilling.json` jest już w repozytorium i ma
+strukturę pięciu wzorów HF z **pustymi tablicami `holes`** — kształt czeka, treści
+nie ma. To ta sama luka po stronie HF.
+
+## #82 — Dwa artykuły na rodzinę zawiasu: co znaczy drugi
+
+**Co blokuje.** `cliptop-hinges.json` wymienia **każdą rodzinę dwa razy**, pod
+dwoma różnymi numerami artykułu i dwoma plikami GLB — na przykład 71B3550 jako
+`42542984` i `43192717`, 174E6100.01 jako `42378433` i `43593532`. Wszystkie
+dziesięć rodzin (siedem zawiasów, trzy płytki) mają po dwa.
+
+Nie wiadomo, co je różni. Kandydaci: wielkość opakowania (sztuka vs karton),
+ręka, wersja z tłumieniem i bez, albo po prostu dwa numery na ten sam towar u
+dwóch dostawców.
+
+**Co założyłem.** Rodzina to JEDEN wybór niosący OBA artykuły
+(`hingeFamilies` → `{ article, articles: [a, b] }`). Rysowany i prowadzący w
+BOM-ie jest pierwszy **po posortowaniu**, żeby odpowiedź nie zależała od
+kolejności, w jakiej ktoś zapisał JSON-a; drugi jedzie razem z wpisem i nie jest
+wyrzucany, żeby w dniu, w którym znaczenie się wyjaśni, nie trzeba było niczego
+wyprowadzać od nowa.
+
+**Co Piotr ma zrobić.** Przeczytać fakturę albo zapytać przedstawiciela. Jeśli to
+opakowanie — BOM ma dzielić ilość przez wielkość paczki. Jeśli to ręka — para
+L/R ma się rozdzielać per drzwi, dokładnie jak prowadnice. Jeśli to duplikat —
+jedna linia w parserze i po sprawie.
+
+## #83 — Modele CLIP top nie były jeszcze widziane z prawdziwego bucketa
+
+To samo, co #77 mówi o prowadnicach, i z tego samego powodu: **ta sesja pracuje w
+trybie mock i nie ma dostępu do bucketa.**
+
+`hardware.hinge.cliptop.modelOrigin` i `.plateOrigin` to `{0,0,0}` i jest to
+uczciwe zero — loader stawia róg bounding boxa modelu na wywierconym punkcie i
+nie udaje, że wie więcej. Pierwsza osoba, która zobaczy zawias wiszący obok
+swojego kubka albo płytkę wciśniętą w bok, poprawia **te sześć liczb i nic
+więcej**.
+
+Przy okazji trzeba zmierzyć dwie rzeczy:
+
+* czy `maxModelLengthMm` (160) jest właściwym progiem zdrowego rozsądku —
+  walidacja jest wdrożona i model, który się nie mieści, wraca do rysowanej
+  bryły, ale nikt jej nie widział na prawdziwym pliku;
+* czy zawias trzeba ODBIJAĆ dla drugiej ręki. Katalog nie mówi o stronie ani
+  słowa, więc loader dziś nie odbija nic; potok to umie (`mirror`) i czeka na
+  jedno spojrzenie na model.

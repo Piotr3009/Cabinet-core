@@ -6101,3 +6101,185 @@ niezauważona.
 Zmienione: `MONO_ADVANCE` 0.62 → 0.85 (F1.3, w `annotation.js`, gdzie mieszka od
 tury 16). Usunięte: `cnc.annotation.partLabelInset` — blok wyśrodkowany w obu
 osiach nie ma krawędzi, od której miałby odstawać.
+
+---
+
+# TURA 19 — KATALOG OKUĆ (10.08.2026, fazy F0–F6)
+
+Tura, w której **wiedza o okuciach weszła do repozytorium**. Właściciel przyniósł
+cały świat Bluma jako GLB, a razem z modelami przyszły cztery pliki JSON pod
+`reference/hardware/`: artykuły, reguła kąta zawiasu, zakresy power-factor podnośników
+i wagi płyt. Od tej tury mają one **status katalogu wzorcowego** — dokładnie taki,
+jaki pliki LISP mają dla geometrii.
+
+Baza: `0448fc2` (main po scaleniu tury 18). Testy na wejściu: **1406**.
+
+## F0 — Baza i pliki wiedzy — ✅ ZIELONA
+
+Pełny reinstall → 1406 testów zielonych → czysty build. Cztery pliki są na
+miejscu (`movento.json`, `cliptop-hinges.json`, `aventos.json`,
+`aventos-hf-drilling.json`), więc STOP nie był potrzebny.
+
+`src/lib/hardwareCatalogue.js` to najmniejszy loader w tej aplikacji, bo **nie ma
+czego pobierać**: pliki jadą razem z aplikacją, więc są IMPORTOWANE
+(`with { type: 'json' }` — tak jak `lib/pswColors.js` czyta `psw-colors.json` od
+tury 2), a cała robota to przekazanie ich rejestrom silnika. **Silnik nigdy nie
+sięga do sieci** — dostaje katalog albo nie dostaje, i działa tak czy inaczej.
+
+MOVENTO celowo NIE jest przepięty na nowy plik. Tura 18 zbudowała cały potok
+wokół `manifest.json` z bucketa, a `movento.json` to ta sama drabinka zapisana
+inaczej (system raz u góry zamiast per wiersz; nie mówi, który z dwóch artykułów
+pary jest lewy). Przepięcie zmieniłoby to, co BOM mówi o szufladzie, bez czyjejś
+prośby — a żelazną zasadą tej tury jest, że w dole rzeki nic się nie rusza. Plik
+jest eksportowany, żeby tura 20 przyjęła go świadomie (BACKLOG 111).
+
+## F1 — Katalog zawiasów, dwa poziomy (W36) — ✅ ZIELONA
+
+Model właściciela, jego słowami: *„jeden główny wybór przypisany… a jak jedna
+szafka będzie miała inne hinges, to po podwójnym kliknięciu na hinge otworzy się
+modal… przesuń up/down plus assign if other hinge."* Ta sama hierarchia, co kolor
+(tura 13) i wariant prowadnicy (tura 18): **wygrywa to, co powiedziano najbliżej
+elementu**.
+
+**KĄT NIE JEST WYBOREM — decyduje FRONT.** Reguła jest CZYTANA z
+`cliptop-hinges.json → rules`, nie przepisana do `profile.js`, bo reguła zapisana
+dwa razy to reguła, która sama ze sobą się pokłóci:
+
+* front ≤ 25 mm → **110°** (71B3550 / 71B3590),
+* 25 < front ≤ 32 → **95°** (71B9550 / 71B9590),
+* drzwi SZAFY, za którymi jest szuflada → **155°** (71B7550 / 71B7590), bo
+  szuflada musi wyjechać obok otwartych drzwi. Ten przypadek sprawdzany jest
+  PIERWSZY — 155° na 18 mm froncie to nie pomyłka drabinki grubości, tylko
+  odpowiedź na inne pytanie.
+
+Co człowiek wybiera: **SYSTEM** (dziś jeden — CLIP top BLUMOTION), **WYKOŃCZENIE**
+(nikiel / onyks — decyduje o rysowanym GLB i o ARTYKULE w BOM-ie, o niczym
+więcej) i **PROWADNICĘ MONTAŻOWĄ**.
+
+**Płytka ⌀3 jest WIDOCZNA i WYŁĄCZONA.** Jej wzór wiercenia to liczba warsztatowa,
+której nikt nie podał — LISP zna wyłącznie ⌀5. Dymek mówi „drilling pattern
+pending", `resolveHingePlate` nie odda jej nawet projektowi, który ją w sobie
+niesie, a BLOCKERS #80 mówi dokładnie, jakiej karty potrzeba. Włączona opcja,
+która po cichu wierciłaby STARY wzór, kłamałaby o tym, co jest na maszynie.
+
+**BOM dzieli się per drzwi, po kącie i po wykończeniu.** LICZBA się nie rusza —
+to nadal `centres.length × doorCount`, ta sama, na którą wiercenie, bryły w 3D i
+`totals.hinges` zgadzają się od tury 3. Drzwi, które wychodzą na ten sam zawias,
+są JEDNĄ linią (zwykła szafka ma dalej jedną linię, którą miała od tury 3); dwie
+skrzydła zamontowane różnie to DWIE linie, bo to dwie rzeczy do kupienia.
+`hardwareCounts` sumuje rolę zamiast brać pierwszy wiersz.
+
+**Bramka re-resolve (F1.4).** Zmiana płyty frontowej, która przewraca kąt,
+re-resolve'uje TYLKO drzwi bez przypisania i mówi o tym w toaście. Samo
+re-resolve nie potrzebuje kodu — kąt jest WYPROWADZANY z grubości przy każdym
+liczeniu szafki — brakowało POWIEDZENIA tego, i to jest `hingeReResolve`, funkcja
+czysta, żeby zdanie na ekranie i test reguły były tą samą funkcją.
+
+**GLB na wywierconych punktach.** Dokładnie potok prowadnic: jedno dekodowanie na
+plik, klon na pozycję, kostium na wkrętach, szara podstawka gdy bucket
+nieosiągalny. Maszyneria z tury 18 została WYCIĄGNIĘTA do `3d/glbSource.js` i oba
+loadery na niej stoją — `runnerModels.js` zachowuje każdą nazwę i każdy kontrakt.
+Z pary artykułów rodziny rysowany jest pierwszy, oba jadą w BOM-ie, a co znaczy
+drugi — BLOCKERS #82.
+
+## F3 — Modale przestają zasłaniać swój obiekt (W37) — ✅ ZIELONA
+
+Właściciel: *„klikam na drzwi, a modal mi się otwiera na drzwiach i chuj widzę."*
+
+Reguła tury 12 była słuszna i NIEDOOKREŚLONA. „Obok" potrzebuje ODLEGŁOŚCI i
+KIERUNKU, a podwójne kliknięcie w obiekt daje powłoce prostokąt o zerowym
+rozmiarze — „obok" niego to milimetr dalej, czyli na drzwiach.
+
+`lib/menuPlacement.js` → `placeAnchoredModal`: **w GÓRĘ i w PRAWO** od obiektu, o
+`ui.modal.anchorOffset` (24 / −24, liczba profilu) **plus własna wysokość okna**,
+tak że lewy dolny róg panelu siada nad i obok wskaźnika. Przyklejone do widoku; przy
+prawej krawędzi **zmienia rękę** zamiast zjeżdżać z powrotem na obiekt. Gwarancja,
+na której to stoi, jest pozioma: panel jest oddzielony od obiektu W POPRZEK ekranu,
+więc pionowy clamp może go zsunąć gdziekolwiek i i tak nie wróci na obiekt. Gdy
+żadna ręka nie ma miejsca — spadek do czterostronnego szukania z tury 12.
+
+JEDNA POWŁOKA: edytor szafki, detal elementu, modal zawiasu i każdy próbnik koloru
+dziedziczą to w `components/Modal.jsx` i nigdzie indziej. `prefer` zostaje w API,
+żeby żaden wywołujący się nie wywrócił.
+
+## F4 — Zgubiony werdykt tury 17 — ✅ ZIELONA
+
+*„Kliknięcie 2 razy na dany element zabiera nas do listy po prawej, otwiera i
+podświetla który to element."* — właściciel poprosił o to w turze 17, a
+instrukcja to zgubiła (moja transkrypcja, nie jego pominięcie).
+
+Podwójne kliknięcie części na arkuszu CNC: gałąź szafki się OTWIERA, wiersz jest
+PRZEWIJANY do widoku i PODŚWIETLONY, a nagłówek grupy się zapala. Czysta
+nawigacja: nic nie jest tykane, nic edytowane, nic obracane — ręcznego obrotu ze
+starej listy celowo NIE MA, bo reguła półek z tury 17 zrobiła obrót automatycznym
+i żaden werdykt od tamtej pory nie prosił o kontrolkę. `treePathOfPanel` w
+`engine/cnc/groups.js` jest czystą funkcją, którą drzewo jest sterowane, więc
+da się to napędzić z testu tak samo jak wskaźnikiem.
+
+## F5 — SILNIK DOBORU PODNOŚNIKA (bez kitu) — ✅ ZIELONA
+
+Tura 20 zbuduje kity HK / HF po sesji wzorcowej z właścicielem. Ta tura kładzie
+matematykę, żeby kity tylko ją konsumowały.
+
+* **Waga płyty.** `kg_m2` niesione na rekordzie magazynowym dokładnie tak, jak
+  niesiona jest grubość; przypisana płyta wygrywa, `profile.board.kgM2` jest
+  podkładem (MFC 18/22/25 = 12 / 14,5 / 16,5; MDF lakierowany = 14 / 17 / 19).
+  Grubość spoza tabeli bierze najbliższą płytę i MÓWI o tym; remis idzie do
+  GRUBSZEJ, bo podnośnik dobrany na za małą wagę to awaria, która zrzuca drzwi
+  komuś na głowę.
+* **Power factor** = wysokość szafki × waga frontu, zakresy CZYTANE z
+  `aventos.json`. Nakładki rozstrzygane na MNIEJSZĄ jednostkę — i jest to
+  kolejność listy, nie porównanie zapisane drugi raz.
+* **Klient przypisuje, silnik się sprzeciwia.** Zasada właściciela: *„silnik
+  proponuje, klient assign, ale guidance i sprzeciw."* Przypisanie jest ZAWSZE
+  montowane, nigdy odrzucane — i ostrzegane, ze wskazaniem jednostki, która by
+  weszła („Front too heavy for 2300 — 2500 fits.").
+* Limity HK (205–600 wysokości, ≤ 1800 szerokości, ≥ 261 głębokości wewnętrznej)
+  sprawdzane niezależnie od wagi.
+* **Bez kitu i bez UI** poza wagą w stopce detalu elementu. To był warunek.
+
+## F6 — PRZEJŚCIE, DOKUMENTY, BRAMKA
+
+`scripts/e2e-turn19.mjs` — 35 sprawdzeń, wszystkie MIERZONE, 12 zrzutów w
+`verify/t19/`, plus `lift-warnings.md` (migawka tekstu ostrzeżeń, zdjęta z
+działającej aplikacji — F6 prosi o nią, bo tura 20 postawi te zdania na ekranie
+i muszą to być ZDANIA, a nie kody).
+
+## BRAMKA — ✅ ZIELONA
+
+| brama | wynik |
+|---|---|
+| pełny reinstall (`rm -rf node_modules && npm install`) | czysty |
+| testy | **1469 / 1469** (baza tury: 1406, nowych 63) |
+| build | czysty |
+| istniejące fixtures | `git diff fixtures/` **pusty** — 12 plików, żadnego dodania |
+| zależności | nietknięte (`git diff package.json package-lock.json` pusty) |
+| czystość silnika | `src/engine/` importuje wyłącznie `src/engine/` |
+| tożsamość CNC | **ZERO DELT** — oba diffy puste, odciski i sonda encja po encji |
+| `verify/t19/` | 12 zrzutów, `measurements.json`, `walk.json`, raport tożsamości, odciski i sonda przed/po, migawka ostrzeżeń podnośnika |
+| przejście w przeglądarce | **35 / 35** |
+| PR | otwarty, **nie scalony** |
+
+**Delty CNC: ZERO, i jest to strukturalne, nie obiecane.** Wiercenie liczy się z
+`profile.hinges` — średnica kubka, wkręty ⌀3, para ⌀5 w rozstawie 32 i trzy nazwy
+warstw z LISP-a. Tura 19 **nie dotyka `profile.hinges` w ogóle**; wszystko, co
+dodaje, siedzi w `profile.hardware.hinge.cliptop`, który czytają trzy rzeczy:
+powierzchnia ustawień, wiersze sprzętowe BOM-u i loader modeli 3D. Żadna z nich
+nie leży na drodze do otworu. `test/turn19-hinges.test.js` mówi to asercją: cztery
+szafki różniące się każdą sprzętową odpowiedzią tej tury dają bajt w bajt te same
+wiercenia, panele, geometrię cięcia i sumy.
+
+## Nowe pliki
+
+`src/engine/hinges.js` · `src/engine/lifts.js` · `src/lib/hardwareCatalogue.js` ·
+`src/components/HingeModal.jsx` · `src/3d/glbSource.js` · `src/3d/hingeModels.js` ·
+`scripts/e2e-turn19.mjs` · `test/turn19-hinges.test.js` ·
+`test/turn19-lifts.test.js` · `test/turn19-phases.test.js` · `verify/t19/`
+
+## Nowe liczby w `profile.js`
+
+`board.kgM2.*` + `defaultKgM2Kind` / `sprayedKgM2Kind` (F5.1) ·
+`hardware.hinge.cliptop.*` — system, wykończenia, płytki, bucket, ścieżka,
+`modelOrigin` / `plateOrigin`, `maxModelLengthMm` (F1) ·
+`ui.modal.anchorOffset` (F3). Wszystkie scalane klucz po kluczu, więc profil
+zapisany przed tą turą wraca z nimi. **Nic nie zmienione i nic nie usunięte.**

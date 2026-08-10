@@ -1,0 +1,448 @@
+{
+  "catalogues": {
+    "hinges": {
+      "items": 19,
+      "rungs": [
+        {
+          "max": 25,
+          "angle": 110
+        },
+        {
+          "max": 32,
+          "angle": 95
+        }
+      ],
+      "wardrobe": 155
+    },
+    "lifts": {
+      "units": [
+        2300,
+        2500,
+        2700,
+        2900
+      ],
+      "limits": {
+        "heightMm": [
+          205,
+          600
+        ],
+        "widthMaxMm": 1800,
+        "innerDepthMinMm": 261
+      }
+    }
+  },
+  "settings": {
+    "systems": [
+      {
+        "id": "cliptop_blumotion",
+        "title": "Blum’s soft-close cup hinge — the angle follows the front, not a menu.",
+        "on": true,
+        "disabled": false
+      }
+    ],
+    "finishes": [
+      {
+        "id": "nickel",
+        "title": "The bright plated finish — the shop’s default.",
+        "on": true,
+        "disabled": false
+      },
+      {
+        "id": "onyx",
+        "title": "The dark finish. Same hinge, same drilling, black.",
+        "on": false,
+        "disabled": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "plate_knockin5",
+        "title": "Two ⌀5 holes at 32 mm centres — what the kits have drilled since turn 1.",
+        "on": true,
+        "disabled": false
+      },
+      {
+        "id": "plate_screw3",
+        "title": "drilling pattern pending",
+        "on": false,
+        "disabled": true
+      }
+    ],
+    "note": "The ANGLE is not a choice — the front decides it. This job's 25 mm fronts take the 110° hinge; a wardrobe door with a drawer behind it takes the 155°, so the drawer clears the open door. One door can be given another by hand — double-click its hinge in 3D."
+  },
+  "hinges": {
+    "nickel": [
+      {
+        "unit": "F-01",
+        "type": "BUD",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 6,
+            "doors": 2,
+            "angle": 110,
+            "finish": "nickel",
+            "family": "71B3550",
+            "article": "42542984",
+            "assigned": false,
+            "label": "3 per door × 2 · 110° · CLIP top BLUMOTION · nickel · 42542984"
+          }
+        ],
+        "totalHinges": 6,
+        "centres": 3
+      },
+      {
+        "unit": "F-02",
+        "type": "BUD",
+        "front_t": 32,
+        "rows": [
+          {
+            "qty": 6,
+            "doors": 2,
+            "angle": 95,
+            "finish": "nickel",
+            "family": "71B9550",
+            "article": "40331821",
+            "assigned": false,
+            "label": "3 per door × 2 · 95° · CLIP top BLUMOTION · nickel · 40331821"
+          }
+        ],
+        "totalHinges": 6,
+        "centres": 3
+      },
+      {
+        "unit": "W-01",
+        "type": "WARDROBE",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 12,
+            "doors": 2,
+            "angle": 155,
+            "finish": "nickel",
+            "family": "71B7550",
+            "article": "45588965",
+            "assigned": false,
+            "label": "6 per door × 2 · 155° · CLIP top BLUMOTION · nickel · 45588965"
+          }
+        ],
+        "totalHinges": 12,
+        "centres": 6
+      },
+      {
+        "unit": "W-02",
+        "type": "WARDROBE",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 12,
+            "doors": 2,
+            "angle": 110,
+            "finish": "nickel",
+            "family": "71B3550",
+            "article": "42542984",
+            "assigned": false,
+            "label": "6 per door × 2 · 110° · CLIP top BLUMOTION · nickel · 42542984"
+          }
+        ],
+        "totalHinges": 12,
+        "centres": 6
+      }
+    ],
+    "onyx": [
+      {
+        "unit": "F-01",
+        "type": "BUD",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 6,
+            "doors": 2,
+            "angle": 110,
+            "finish": "onyx",
+            "family": "71B3590",
+            "article": "48445634",
+            "assigned": false,
+            "label": "3 per door × 2 · 110° · CLIP top BLUMOTION · onyx · 48445634"
+          }
+        ],
+        "totalHinges": 6,
+        "centres": 3
+      },
+      {
+        "unit": "F-02",
+        "type": "BUD",
+        "front_t": 32,
+        "rows": [
+          {
+            "qty": 6,
+            "doors": 2,
+            "angle": 95,
+            "finish": "onyx",
+            "family": "71B9590",
+            "article": "46350480",
+            "assigned": false,
+            "label": "3 per door × 2 · 95° · CLIP top BLUMOTION · onyx · 46350480"
+          }
+        ],
+        "totalHinges": 6,
+        "centres": 3
+      },
+      {
+        "unit": "W-01",
+        "type": "WARDROBE",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 12,
+            "doors": 2,
+            "angle": 155,
+            "finish": "onyx",
+            "family": "71B7590",
+            "article": "40074274",
+            "assigned": false,
+            "label": "6 per door × 2 · 155° · CLIP top BLUMOTION · onyx · 40074274"
+          }
+        ],
+        "totalHinges": 12,
+        "centres": 6
+      },
+      {
+        "unit": "W-02",
+        "type": "WARDROBE",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 12,
+            "doors": 2,
+            "angle": 110,
+            "finish": "onyx",
+            "family": "71B3590",
+            "article": "48445634",
+            "assigned": false,
+            "label": "6 per door × 2 · 110° · CLIP top BLUMOTION · onyx · 48445634"
+          }
+        ],
+        "totalHinges": 12,
+        "centres": 6
+      }
+    ],
+    "byUnit": [
+      {
+        "unit": "F-01",
+        "type": "BUD",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 6,
+            "doors": 2,
+            "angle": 110,
+            "finish": "nickel",
+            "family": "71B3550",
+            "article": "42542984",
+            "assigned": false,
+            "label": "3 per door × 2 · 110° · CLIP top BLUMOTION · nickel · 42542984"
+          }
+        ],
+        "totalHinges": 6,
+        "centres": 3
+      },
+      {
+        "unit": "F-02",
+        "type": "BUD",
+        "front_t": 32,
+        "rows": [
+          {
+            "qty": 6,
+            "doors": 2,
+            "angle": 95,
+            "finish": "nickel",
+            "family": "71B9550",
+            "article": "40331821",
+            "assigned": false,
+            "label": "3 per door × 2 · 95° · CLIP top BLUMOTION · nickel · 40331821"
+          }
+        ],
+        "totalHinges": 6,
+        "centres": 3
+      },
+      {
+        "unit": "W-01",
+        "type": "WARDROBE",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 12,
+            "doors": 2,
+            "angle": 155,
+            "finish": "nickel",
+            "family": "71B7550",
+            "article": "45588965",
+            "assigned": false,
+            "label": "6 per door × 2 · 155° · CLIP top BLUMOTION · nickel · 45588965"
+          }
+        ],
+        "totalHinges": 12,
+        "centres": 6
+      },
+      {
+        "unit": "W-02",
+        "type": "WARDROBE",
+        "front_t": 25,
+        "rows": [
+          {
+            "qty": 12,
+            "doors": 2,
+            "angle": 110,
+            "finish": "nickel",
+            "family": "71B3550",
+            "article": "42542984",
+            "assigned": false,
+            "label": "6 per door × 2 · 110° · CLIP top BLUMOTION · nickel · 42542984"
+          }
+        ],
+        "totalHinges": 12,
+        "centres": 6
+      }
+    ]
+  },
+  "placements": [
+    {
+      "name": "low-left",
+      "click": {
+        "x": 260,
+        "y": 820
+      },
+      "rect": {
+        "left": 284,
+        "top": 280,
+        "width": 340,
+        "height": 516,
+        "right": 624,
+        "bottom": 796,
+        "side": "up-right"
+      }
+    },
+    {
+      "name": "low-right",
+      "click": {
+        "x": 1380,
+        "y": 820
+      },
+      "rect": {
+        "left": 1016,
+        "top": 280,
+        "width": 340,
+        "height": 516,
+        "right": 1356,
+        "bottom": 796,
+        "side": "up-left"
+      }
+    },
+    {
+      "name": "top-right",
+      "click": {
+        "x": 1380,
+        "y": 140
+      },
+      "rect": {
+        "left": 1016,
+        "top": 8,
+        "width": 340,
+        "height": 516,
+        "right": 1356,
+        "bottom": 524,
+        "side": "up-left"
+      }
+    }
+  ],
+  "models": {
+    "centres": [
+      100,
+      470,
+      670
+    ],
+    "drawnYs": [
+      100,
+      470,
+      670
+    ],
+    "drawn": 6,
+    "ordered": 6,
+    "specs": [
+      {
+        "door": "F-01-FL",
+        "family": "71B3550",
+        "file": "hardware/hinges/blum/cliptop/71B3550_42542984.glb",
+        "url": "hardware/hinges/blum/cliptop/71B3550_42542984.glb"
+      },
+      {
+        "door": "F-01-FR",
+        "family": "71B7590",
+        "file": "hardware/hinges/blum/cliptop/71B7590_40074274.glb",
+        "url": "hardware/hinges/blum/cliptop/71B7590_40074274.glb"
+      }
+    ],
+    "plate": {
+      "family": "174E6100.01",
+      "file": "hardware/hinges/blum/cliptop/174E6100.01_42378433.glb"
+    },
+    "bucket": "hardware",
+    "path": "hardware/hinges/blum/cliptop/"
+  },
+  "cncFocus": {
+    "focus": {
+      "unitId": "u_8f7z4p9",
+      "panelId": "F-01-FL",
+      "stamp": 1
+    },
+    "row": {
+      "id": "F-01-FL",
+      "text": "F-01-FL 297×767"
+    },
+    "group": "fronts",
+    "visible": true
+  },
+  "weights": [
+    {
+      "name": "MFC 18",
+      "materialId": "mat_mfc18_white",
+      "line": {
+        "kg": 2.73,
+        "text": "Weight 2.73 kg — 297 × 767 at 12 kg/m², from the assigned board."
+      }
+    },
+    {
+      "name": "MDF 18",
+      "materialId": "mat_mdf18",
+      "line": {
+        "kg": 3.19,
+        "text": "Weight 3.19 kg — 297 × 767 at 14 kg/m², from the assigned board."
+      }
+    }
+  ],
+  "lift": {
+    "kg": 4.32,
+    "proposal": {
+      "unit": 2500,
+      "pf": 1728,
+      "warnings": []
+    },
+    "tooSmall": {
+      "unit": 2300,
+      "proposed": 2500,
+      "warnings": [
+        {
+          "code": "ASSIGNED_TOO_SMALL",
+          "message": "Front too heavy for 2300 — 2500 fits."
+        }
+      ]
+    },
+    "limits": [
+      "An AVENTOS HK fits a cabinet 205–600 mm high; this one is 700 mm.",
+      "An AVENTOS HK fits a cabinet up to 1800 mm wide; this one is 2000 mm.",
+      "An AVENTOS HK needs at least 261 mm inner depth; this cabinet has 200 mm."
+    ],
+    "kits": 0
+  }
+}

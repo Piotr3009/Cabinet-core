@@ -558,7 +558,11 @@ function Part({
     // actually lands on. Nothing here edits, ticks or rotates anything — it is
     // navigation, and the sheet looks exactly the same afterwards apart from
     // the part being lit.
-    <g onDoubleClick={onOpenInTree || undefined} style={onOpenInTree ? { cursor: 'pointer' } : undefined}>
+    <g
+      data-cnc-part={panel.id}
+      onDoubleClick={onOpenInTree || undefined}
+      style={onOpenInTree ? { cursor: 'pointer' } : undefined}
+    >
       {visible(oLayer) && cnc.outline?.length >= 2 && (
         <polygon
           points={sheetPolygon(place, cnc.outline)}

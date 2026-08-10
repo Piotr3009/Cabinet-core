@@ -703,3 +703,71 @@ dało się je odszukać po jego numerze, a nie tylko po fazie.
     (`ExplodedCabinet`) i nie dostaje ani jednego, ani drugiego. Nie jest to
     regresja — nigdy ich tam nie było — ale okno edytora jest miejscem, w którym
     ogląda się jedną szafkę z bliska, więc to jest naturalne następne pytanie.
+
+## TURA 19 — KATALOG OKUĆ — ✅ WYKONANA (10.08.2026)
+
+107. [HIGH] **Zawiasy stają się okuciem projektu, z wyjątkami per drzwi (W36).**
+    — **TURA-19 / DONE (F1)**: `reference/hardware/` ma status KATALOGU
+    WZORCOWEGO, czytanego przez `lib/hardwareCatalogue.js` i wpychanego do
+    silnika (`engine/hinges.js`) — silnik nigdy nie sięga do sieci. KĄT nie jest
+    wyborem: ≤ 25 mm → 110°, ≤ 32 → 95°, drzwi szafy z szufladą za nimi → 155°,
+    reguła CZYTANA z `cliptop-hinges.json`, nie przepisana. Wybór to system,
+    wykończenie (nikiel / onyks) i płytka. Podwójne kliknięcie zawiasu w 3D
+    otwiera modal: przesuwanie góra/dół przez setter y tury 17 i „Assign other
+    hinge" dla TYCH drzwi. BOM dzieli się po kącie i wykończeniu, LICZBA się nie
+    rusza. **Zero delt CNC.**
+108. [HIGH] **Modale przestają zasłaniać obiekt, który edytują (W37).**
+    — **TURA-19 / DONE (F3)**: `placeAnchoredModal` — w górę i w prawo od
+    obiektu o `ui.modal.anchorOffset` plus własna wysokość, przyklejone do
+    widoku, zmieniające rękę zamiast wracać na obiekt. JEDNA POWŁOKA, wszystkie
+    modale dziedziczą.
+109. [HIGH] **Podwójne kliknięcie części na arkuszu CNC prowadzi do drzewa.**
+    — **TURA-19 / DONE (F4)**: zgubiony werdykt tury 17. Gałąź się otwiera,
+    wiersz przewija i podświetla, nagłówek grupy zapala. Czysta nawigacja —
+    `treePathOfPanel` jest funkcją czystą, więc test napędza to tak samo jak
+    wskaźnik.
+110. [HIGH] **Silnik doboru podnośnika, bez kitu.**
+    — **TURA-19 / DONE (F5)**: waga płyty (`kg_m2` na rekordzie magazynowym,
+    podkład `profile.board.kgM2`), waga frontu, power factor z zakresami
+    CZYTANYMI z `aventos.json`, nakładka → mniejsza jednostka, limity HK, i
+    przypisanie klienta, które jest zawsze montowane i ostrzegane ze
+    wskazaniem — „silnik proponuje, klient assign, ale guidance i sprzeciw".
+    22 testy. Bez kitu i bez UI poza wagą w stopce detalu elementu.
+
+### Nowe pozycje, otwarte
+
+111. [MEDIUM] **`movento.json` nie jest jeszcze źródłem dla potoku prowadnic.**
+    Tura 18 zbudowała wszystko wokół `manifest.json` z bucketa; katalog wzorcowy
+    zapisuje tę samą drabinkę inaczej — system raz u góry i **bez informacji o
+    stronie**, więc `runnerPairSpec` dałby ten sam artykuł na L i na R i uznał
+    parę za kompletną. Adaptacja jest już napisana i przetestowana
+    (`toRunnerManifest`), nikt jej nie woła. Tura 20 przyjmuje to świadomie albo
+    zostawia — ale nie po cichu.
+112. [MEDIUM] **Kity podnośników HK / HF.** Matematyka stoi i ma testy (poz.
+    110); brakuje POZYCJI jednostki na boku szafki i wzorów wiercenia HF
+    (BLOCKERS #81 — `.mpr` 20K albo PDF montażu; `aventos-hf-drilling.json` ma
+    strukturę pięciu wzorów z pustymi `holes`). **Sesja wzorcowa z właścicielem
+    NAJPIERW**, dopiero potem kit.
+113. [MEDIUM] **Wykończenie zawiasu nie ma poziomu SZAFKI.** Dokładnie ta sama
+    luka, co poz. 101 dla prowadnic: hierarchia w silniku ma projekt i DRZWI, a
+    kontrolki „ta szafka" nie ma. Wyjątek ustawia się dziś per skrzydło, co dla
+    szafy o sześciu drzwiach jest sześcioma kliknięciami.
+114. [MEDIUM] **`kg_m2` jest tylko na liście mockowej.** Kolumna jest niesiona
+    dokładnie jak grubość i czytana przez `boardKgM2`, ale prawdziwa lista
+    materiałów (`cc_materials` / JoineryCore) jeszcze jej nie ma. Płyta bez
+    liczby spada na tabelę profilu i MÓWI o tym w stopce — degradacja, nie
+    zgadywanie.
+115. [LOW] **Zawias jest wybierany bez UCHWYTU w wadze.** `aventos.json` mówi
+    wprost: `pf = cabinet_height_mm * front_weight_kg (incl. handles)`. Uchwyt,
+    którego klient jeszcze nie wybrał, nie jest wagą, którą ta aplikacja może
+    dodać — więc pf jest liczony z samego frontu i jest to lekko za mały. Kiedy
+    uchwyty dostaną własny katalog, to jeden składnik do sumy.
+116. [LOW] **Modele CLIP top nie były widziane z prawdziwego bucketa.** To samo,
+    co poz. 103 dla prowadnic: `modelOrigin` / `plateOrigin` to uczciwe zera,
+    pierwszy montaż poprawia sześć liczb profilu i nic więcej. BLOCKERS #83.
+117. [LOW] **Edytor szafki nadal nie rysuje okuć.** Poz. 106 bez zmian — modele
+    zawiasów żyją w widoku POKOJU, okno edytora ma własną scenę. Zawias na
+    wywierconych punktach jest dokładnie tym, co chce się obejrzeć z bliska,
+    więc pytanie robi się głośniejsze.
+118. [LOW] **`scripts/e2e-turn18.mjs` nie zna zmian tury 19.** To samo, co poz.
+    66, 71, 77, 85, 90, 95 i 105. `e2e-turn19.mjs` jest następcą.

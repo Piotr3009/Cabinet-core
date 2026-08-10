@@ -179,8 +179,21 @@ test('every hardware size is in the profile, and none of them is zero', () => {
     'the cup drawn is the cup drilled — one diameter, in two places that must agree');
   for (const [group, values] of Object.entries(HW)) {
     for (const [key, value] of Object.entries(values)) {
+      // Turn 18 (CLAUDE.md F6): `runner.movento` is the CATALOGUE — a bucket
+      // path, a variant list, an article system — and not a size. The sizes
+      // beside it are still held to the rule.
+      if (value && typeof value === 'object') continue;
       assert.ok(Number(value) > 0, `hardware.${group}.${key} is a real millimetre`);
     }
+  }
+  // …and the runner catalogue's own MILLIMETRES are held to it separately.
+  const rod = HW.runner.movento.rod;
+  for (const key of ['unitAloneBelow', 'endAllowance', 'diameter']) {
+    assert.ok(Number(rod[key]) > 0, `hardware.runner.movento.rod.${key} is a real millimetre`);
+  }
+  for (const range of [rod.narrow, rod.withAdapters]) {
+    assert.equal(range.length, 2);
+    assert.ok(range[0] > 0 && range[1] > range[0], 'a range runs upwards');
   }
 });
 

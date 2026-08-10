@@ -21,6 +21,14 @@ import { DEFAULT_CABINET_PROFILE } from './profile.js';
 // by four again on every render.
 export const DESIGN_SCHEMA = 2;
 
+/**
+ * The runner variants the workshop offers, as ids — the profile's own list
+ * (turn 18, CLAUDE.md F6.4). SU is in the owner's bucket and is not on it.
+ */
+export const RUNNER_VARIANT_IDS = new Set(
+  (DEFAULT_CABINET_PROFILE.hardware.runner.movento.variants || []).map((v) => v.id),
+);
+
 export const FRONT_STYLE_OPTIONS = [
   // ─── Owner's list, 09.08: SHAPES ONLY — colour lives with the front TYPE ───
   // above, never here. The engine cuts every one of these as the same slab
@@ -120,6 +128,16 @@ export const DEFAULT_DESIGN = {
   // It is a project decision and not a workshop one: the same shop hangs a
   // budget kitchen on two and a heavy oak door on three.
   hinges: { standard: null },
+  // ─── Turn 18 (CLAUDE.md F6.4): WHICH RUNNER THIS JOB IS FITTED WITH ──────
+  // The SYSTEM (Blum MOVENTO, the only one the workshop stocks today) and the
+  // VARIANT — T for TIP-ON BLUMOTION, the owner's "90% of what we make", or S
+  // for the standard pull-to-open. `null` means the profile's default, which
+  // is T, so a project saved before this turn opens on the shop's own answer.
+  //
+  // It is HARDWARE and not geometry: the gaps, the pockets and the drilling are
+  // identical for both, so nothing in the engine branches on it. It decides
+  // which model the view loads and which article the BOM orders.
+  runners: { system: null, variant: null },
   // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
   // which is what a project that has never opened the section means. Resolved
   // through projectHeights() below, so a stored null and a stored number behave
@@ -179,6 +197,16 @@ export function migrateDesign(design) {
       handles: d.hardware?.handles ? String(d.hardware.handles) : null,
     },
     hinges: { standard: [2, 3].includes(Math.trunc(Number(d.hinges?.standard))) ? Math.trunc(Number(d.hinges.standard)) : null },
+    runners: {
+      system: d.runners?.system ? String(d.runners.system) : null,
+      // Only a variant the PROFILE offers survives the migration: a project
+      // carrying `SU` — a file that is in the owner's bucket and deliberately
+      // not on the menu — comes back on the shop's default rather than
+      // ordering something nobody chose.
+      variant: RUNNER_VARIANT_IDS.has(String(d.runners?.variant || '').toUpperCase())
+        ? String(d.runners.variant).toUpperCase()
+        : null,
+    },
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: d.fronts?.handle ?? null,

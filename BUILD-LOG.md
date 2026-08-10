@@ -5843,3 +5843,261 @@ spis encji tego NIE ZAUWAŻA, co jest dowodem, że ruszył się WIDOK.
 `baseDrawerUnit.runnerScrewFromBase` / `.clearanceBelowRunner` (F8.3) ·
 `dwPanel.*` (F9) · `ovenUnit.*` (F10). Zmienione: `cnc.annotation.partLabelMm`
 22 → 70 (F1.3 — jedna skala typograficzna na arkuszu).
+
+---
+
+# TURA 18 — 10.08.2026 — TURA SZUFLADY
+
+Właściciel położył na stole ostatnie brakujące liczby — dwie kieszenie w boku
+szuflady, odczytane z jego własnego warsztatowego DXF-a — i przyniósł całą
+drabinę MOVENTO 760H jako GLB. Więc: szuflady stają się PRAWDZIWE (boki niosą
+obróbkę, której maszyna i tak potrzebowała), prowadnice stają się WIDOCZNE
+(modele z bucketa, pozycje z LISP-a), a etykiety CNC przestają wychodzić poza
+swoje elementy. Plus poprawki szafki pod piekarnik z jego recenzji.
+
+Baza: `d220ee5` — main po scaleniu tury 17 plus pakiet z czatu. Testy na
+starcie: **1372**.
+
+## F0 — BAZA — ✅ ZIELONA
+
+Pełny reinstall, 1372 testy zielone, czysty build. Pakiet z czatu potwierdzony
+na main: `test/turn17-appliance-kits-fix.test.js` istnieje i przechodzi,
+`P.dwPanel.frontWidth === 594`, `getUnitType('OVEN_BASE').heightGroup === 'base'`,
+`getUnitType('DW_PANEL').plinth === true` przy `legs === false`.
+
+## F1 — ETYKIETY CNC: ZAWIJANE, WYŚRODKOWANE, NIGDY NA ZEWNĄTRZ — ✅ ZIELONA
+
+Zrzut właściciela: `F01 TOP 564x540 F01 BOTTOM 564x…` przechodzące przez
+elementy i wchodzące w sąsiadów. Dwie rzeczy naraz i obie są tu naprawione.
+
+* **Etykieta była JEDNĄ LINIĄ**, więc mały element mógł ją zmieścić tylko
+  kurcząc ją do zera albo wywieszając poza własne krawędzie.
+* **ARKUSZ i PLIK liczyły dopasowanie każde po swojemu** — jeden z
+  `annotation.partLabelMm` i pudełka o połowie wysokości, drugi z
+  `cnc.labelHeight` i współczynnika — więc obrazek na szkle i litery na płycie
+  mogły się nie zgadzać. I nie zgadzały się.
+
+**Jedna funkcja układu** (`engine/cnc/annotation.js` `labelBlock`), używana przez
+`components/CncView.jsx` I przez `engine/cnc/dxf.js`, z tym samym prostokątem
+elementu jako pudełkiem. Blok łamie się na własnych granicach słów (`F-01` /
+`BUR` / `597x568`), jest wyśrodkowany w elemencie w OBU osiach, a linia, która
+i tak się nie mieści, jest ucinana ASCII-owym `~` — środkowym krokiem tury 16
+między „narysuj" a „ukryj". Etykieta NIGDY nie przecina swojego obrysu, i jest
+to przypięte testem na każdym elemencie każdego zestawu.
+
+**Połowa rozmiaru w EKSPORCIE** (`cnc.exportLabelScale: 0.5`): plik pisze to, co
+układa arkusz, na połowie jego wysokości — nigdy poniżej `labelMinHeight` i
+nigdy powyżej `labelHeight` LISP-a. Arkusz na ekranie zachowuje swój rozmiar.
+
+**Szerszy krok pisma i ciaśniejsze wypełnienie**: `MONO_ADVANCE` 0.62 → 0.85,
+`labelFillRatio` 0.94 → 0.85. DXF nie niesie fontu, czytnik CAD wybiera własny,
+a font właściciela jest szerszy od naszego — etykieta ma się mieścić w
+NAJGORSZYM rozsądnym kroju, nie w najlepszym. Żadnego STYLE w pliku i nigdy nie
+będzie: komentarz nagłówkowy `dxf.js` mówi dlaczego (stylowany DXF zabił parser
+VCarve 02.08.2026).
+
+Przy okazji: arkusz obraca teraz etykietę razem z elementem położonym OBRÓCONYM.
+Plik robi to od tury 17, ekran nie robił — dokładnie ten rodzaj niezgody, o
+którą chodzi w F1.1.
+
+## F2 — WYSOKOŚCI SZUFLAD NAPRAWDĘ SIĘ ZAPISUJĄ — ✅ ZIELONA
+
+Właściciel edytuje wysokość szuflady w szafce kuchennej i wartość wraca do
+liczby zestawu. **Jeden korzeń, i to jedna linia.**
+
+`setDrawerHeight` rozgałęział się po `typeof ref === 'number'` — „brak id znaczy
+BUDR". Ale kuchenna szafka szufladowa dostaje WIERSZE ELEMENTÓW w chwili
+postawienia (`newUnit`: szafka szufladowa JEST swoimi szufladami), więc jej
+szuflady MAJĄ id, wywołanie szło ścieżką szafy i zapisywało `height_mm` na
+elemencie. Silnik budr czyta wyłącznie `params.drawer_heights`. Liczba lądowała
+tam, gdzie nikt nie patrzy.
+
+**Naprawa w korzeniu:** rozgałęzienie pyta o ZESTAW (`drawerStyle === 'budr'`),
+a nie o kształt, który akurat miał w ręku wołający. Id jest rozwiązywane do
+INDEKSU szuflady z własnych wierszy szafki. Ścieżka szafy zostaje dla zestawu,
+którego szuflady naprawdę są elementami.
+
+Dwie rzeczy wyszły przy okazji i obie są w tym samym korzeniu:
+
+* `newUnit` budował wiersze z `baseDrawerUnit.ratio` (4:3:2) niezależnie od
+  wariantu zestawu — BUDR2 dostawał trzy wiersze zamiast dwóch, a BUDR4 cztery
+  szuflady bez czwartego wiersza. Teraz z `drawerSplitFor`, tej samej funkcji,
+  którą buduje stos silnik.
+* `setBudrDrawerHeight` startował od odpowiedzi SILNIKA (`[...heights]`), więc
+  ustawienie jednej szuflady zamrażało wszystkie na dzisiejszych liczbach i
+  żadna nie zostawała wolna, żeby wziąć resztę. Startuje od WŁASNEJ listy
+  szafki — i dlatego „wpisz 500 w BUDR2 o wysokości 770, a druga staje się 264"
+  jest teraz prawdą.
+
+**Odblokowany prawy panel.** Gałąź `ratioDrawers` rysowała wysokość jako
+przygaszony span z komentarzem sprzed tury 17 („input, który nic by nie robił").
+Teraz robi: to ten sam `NumberField`, który ma edytor, przy tym samym zacisku
+silnika (podłoga 38 = `runnerScrewFromBase + clearanceBelowRunner`), plus
+przycisk „Reset to the kit". Nieaktualny komentarz usunięty.
+
+Dryf 4:3:2 zestawu pozostaje ZAMROŻONY (#64) — `resetDrawerHeights` wraca do
+niego co do milimetra, i jest to przypięte testem.
+
+## F3 — BOKI SZUFLADY MÓWIĄ PRAWDĘ — ✅ ZIELONA
+
+Z warsztatowego DXF-a właściciela, przeczytane razem na czacie:
+
+* **rowek dna** (`DRAWER_BOTTOM_POCKET`) — w wewnętrznym licu każdego boku,
+  **7 mm głęboko**, dolna krawędź **15 mm nad dolną krawędzią boku**, `G + 1`
+  wysoki, żeby weszło 18 mm dno, na całej długości boku;
+* **redukcja pod prowadnicę** (`DRAWER_RUNNER_POCKET`) — wewnętrzne lico
+  frezowane **2 mm** w paśmie **od dolnej krawędzi do rowka (0 → 15)**, na całej
+  długości. Osiemnastka staje się szesnastką tam, gdzie siedzi prowadnica:
+  *„blum tego wymaga."*
+
+Zestaw BUDR tnie obie od tury 3, dokładnie w tych miejscach. Wewnętrzne
+szuflady SZAFY nie miały żadnej — wychodziły jako gołe prostokąty — więc stolarz
+dostawał bok bez miejsca na dno i 18 mm płyty tam, gdzie prowadnica potrzebuje
+16. To jest delta 2.
+
+**Arytmetyka się domyka, i to jest sprawdzian, że to są TE liczby, a nie liczby
+prawdopodobne:** `bottomW = boxFrontLen + 13` (`bottomOversize`), a `boxFrontLen`
+to prześwit między wewnętrznymi licami boków — więc dno wchodzi **6.5 mm** w
+**7 mm** rowek i zostaje pół milimetra powietrza. Liczby w profilu były dobre od
+początku; teraz rowek, który z nich wynika, jest WYCINANY.
+
+Liczby są `profile.baseDrawerUnit`, CZYTANE stamtąd, nie skopiowane do
+`wardrobe.drawers`: zmierzono je na *boku szuflady*, nie na boku szuflady szafki
+dolnej, więc jest jeden ich komplet i oba zestawy tną według niego.
+
+**Przód i tył skrzynki STOJĄ NA DNIE** (słowa właściciela), a dno stoi w rowku —
+więc jego spód jest `runnerPocketWidth` nad dolną krawędzią boku, a przód i tył
+zaczynają się płytę wyżej. Arytmetyka zawsze się z tym zgadzała (`bok − 15 − G −
+1` to dokładnie to, co zostaje nad rowkiem, mniej milimetr powietrza u góry); to
+OBRAZEK stawiał wszystkie trzy deski na jednej linii.
+
+## F4 — UKRYJ FRONTY, NIE USUWAJ ICH — ✅ ZIELONA
+
+Przełącznik WIDOKU obok X-ray i Outlines: **Hide fronts** — drzwi I fronty
+szuflad znikają z widoku 3D razem. Nic nie zmienia się w BOM, CNC, liście
+rozkroju ani w parametrach; to soczewka, nie edycja. „Remove doors" (tura 15)
+zostaje dokładnie taki, jaki był — tamto jest decyzją projektową i mieszka w
+menu kontekstowym, gdzie mieszka decyzja.
+
+Stan w `uiStore`, nie na szafkach. Celowo NIE zapamiętywany między sesjami,
+inaczej niż X-ray obok: X-ray jest nie do pomylenia (płyta robi się
+prześwitująca), a szafka bez frontów wygląda dokładnie jak szafka, której
+fronty USUNIĘTO — i to jest jedyna rzecz, z którą nie wolno jej pomylić.
+
+## F5 — SZAFKA POD PIEKARNIK, POPRAWIONA — ✅ ZIELONA
+
+* **Gniazda w bokach tylko tam, gdzie są plecy.** BUL niósł te same siedem
+  kieszeni co BUD z pełnymi plecami, a nad plecami szuflady nie ma czego
+  łapać. `sidePanelGeometry` przyjmuje teraz `backTabsBelow`: czop jest cięty
+  tylko wtedy, gdy cała jego KOŚĆ mieści się w plecach — ten sam fakt, który
+  decyduje o środkowym czopie w niskiej szafce. Zostaje jeden czop (najniższy,
+  95 mm od podłogi szafki, ten, na który plecy naprawdę mają gniazdo) i dwa
+  gniazda dna. Gniazda górne i górny rząd wkrętów odchodzą razem z płytą TOP,
+  dokładnie tak jak u zlewozmywaka.
+* **Blat na listwach, nie płyta TOP.** Wzór dwóch uchwytów ZLEWU, z jedną
+  zmianą, którą właściciel nazwał: przednia listwa LEŻY PŁASKO (100 mm szeroka,
+  grubość płyty), więc od frontu widać kant 18 mm, a wylot pary piekarnika ma za
+  sobą cały otwór. Płaska listwa ma własny wzór wkrętów 3 mm — rozłożony dla
+  deski POZIOMEJ, nie liczbami pionowej listwy zlewu. Nowe liczby w profilu pod
+  `ovenUnit.topRails`; liczby zlewu nietknięte i `fixtures/golden-sink.json` to
+  potwierdza.
+* **Bez otworu wentylacyjnego.** Ustalone z właścicielem: otwarte plecy i
+  otwarty teraz blat SĄ wentylacją; szczelina 50 × 300 w półce wentylowałaby do
+  zamkniętej szuflady. Gdyby instrukcja konkretnego piekarnika jej wymagała, to
+  jest liczba producenta i późniejsza tura — **BLOCKERS #79**.
+* **Front szuflady bierze swoją szczelinę pod urządzeniem.** LICO piekarnika
+  zachowuje się jak front w zabudowie, a dwa fronty nigdy się nie stykają:
+  `front = H − gap − ovenHeight − gap` = **169** przy 770 (tura 17 dawała 172 i
+  front dotykał piekarnika). *„szczelina 3 mm jak wszystkie nasze drzwi."*
+* …a SKRZYNKA nadal mieści się w OTWORZE pod półką — i przy 770 nie mieściła
+  się. Bok skrzynki to `sideRatio` jego FRONTU, co jest słuszne w zabudowie
+  szafek szufladowych, gdzie front i otwór to ten sam kawałek szafki; w
+  piekarniku nie jest. Więc front decyduje o skrzynce wszędzie tam, gdzie
+  decydował, a pod półką urządzenia OSTATNIE SŁOWO MA OTWÓR: bok 120 → 98,
+  skrzynka od 56 do 154, dokładnie pod spodem półki.
+
+## F6 — PROWADNICE NA EKRANIE: POTOK MOVENTO — ✅ ZIELONA
+
+* **Loader.** `GLTFLoader` z paczki three — ZERO nowych zależności, precedens
+  `RoomEnvironment` i `mergeGeometries`. Wzorzec tekstury dekoru
+  (`3d/materials.js`) z siatką w miejscu obrazka: jedno dekodowanie na plik,
+  klon na wiersz, zbiór nasłuchujących, żeby klon wzięty przed przybyciem pliku
+  dało się wziąć jeszcze raz. Asynchronicznie, nigdy nie blokując sceny.
+* **Pozycje należą do LISP-a.** Wiersze prowadnic to `runner_rows_carcass_y` z
+  `drillSummary` — rząd, który maszyna naprawdę wierci — a model jest KOSTIUMEM
+  NA WKRĘTACH: dojeżdża do wywierconego wzoru, nigdy odwrotnie. Własny środek
+  modelu jest nieznany do pierwszego montażu, więc korekta ma JEDNO miejsce:
+  `hardware.runner.movento.modelOrigin` (dziś zera, kadr wyśrodkowany przez
+  loader) — **BLOCKERS #77** prosi o pomiar.
+* **NL z głębokości**, dokładnie tak, jak silnik już to robi (największa, która
+  wchodzi). Przypięte testem, żadnej nowej reguły.
+* **Wariant to SPRZĘT, nie geometria.** Domyślny projektowy **T (TIP-ON
+  BLUMOTION)** — „90% tego, co robimy" — z S jako opcją. Ustawiany na poziomie
+  projektu w sekcji Runners kroku 5 / Ustawień (System: Movento; Variant: T/S z
+  krótkim dymkiem), nadpisywany per szuflada w edytorze elementu, hierarchią
+  kolorów co do joty: projekt → szafka → szuflada. Pliki SU zostają w
+  manifeście, nieużywane. Szczeliny, kieszenie i wiercenie: IDENTYCZNE dla obu
+  wariantów — strona instalacyjna Bluma mówi, że wzór nie zmienia się z
+  technologią ruchu — i jest to przypięte testem, który porównuje CAŁE wyjście
+  geometryczne obu.
+* **Drążek synchronizacji jest parametryczny** — profil między dwiema jednostkami,
+  długość z szerokości skrzynki mniej stałe końcówki. Progi katalogowe, cytowane
+  w komentarzu (blum.com, TIP-ON BLUMOTION dla MOVENTO): sama jednostka poniżej
+  314 mm szerokości otworu; wąski drążek 281–305; drążek z adapterami 314–1385.
+* **Łagodna degradacja, żelazna zasada:** brak pliku, bucket nieosiągalny,
+  nieudany fetch → ten sam profil w tym samym miejscu, rysowany z liczb
+  warsztatu. Nigdy dziura, nigdy zablokowana scena. Tryb mock rysuje profil, a
+  BOM zamawia po specyfikacji i MÓWI, że numeru katalogowego nie zna, zamiast go
+  wymyślić.
+* Widoczne, kiedy fronty są ukryte (F4) albo drzwi otwarte — z resztą okuć.
+  BOM: numery katalogowe pary z manifestu, per szuflada, per wariant.
+* NIE w tej turze: tabela `cc_hardware` (czeka na moduł danych). Manifest
+  czytany z bucketa JEST katalogiem; `profile.js` trzyma liczby Movento jako
+  prawdę offline.
+
+## F7 — PRZEJŚCIE, DOKUMENTY, BRAMKA
+
+`scripts/e2e-turn18.mjs` — 28 sprawdzeń, wszystkie MIERZONE, 15 zrzutów w
+`verify/t18/`.
+
+## BRAMKA — ✅ ZIELONA
+
+| brama | wynik |
+|---|---|
+| pełny reinstall (`rm -rf node_modules && npm install`) | czysty |
+| testy | **1405 / 1405** (baza tury: 1372, nowych 33) |
+| build | czysty |
+| istniejące fixtures | `git diff fixtures/` **pusty** — 12 plików, żadnego dodania |
+| zależności | nietknięte (`git diff package.json package-lock.json` pusty) |
+| czystość silnika | `src/engine/` importuje wyłącznie `src/engine/` |
+| tożsamość CNC | **TRZY nazwane delty i nic poza nimi** — 18 zmienionych plików geometrii, wszystkie w piekarniku i w szufladzie szafy |
+| `verify/t18/` | 15 zrzutów, `measurements.json`, `walk.json`, raport tożsamości, odciski przed/po, dowód encja po encji |
+| przejście w przeglądarce | **28 / 28** |
+| PR | otwarty, **nie scalony** |
+
+**Delty CNC — trzy, nazwane, opublikowane w
+`verify/t18/cnc-export-identity.md`:** (1) etykiety w elemencie zawijają się,
+środkują i kurczą — TYLKO encje TEXT; (2) boki szuflad dostają swoją prawdziwą
+obróbkę — redukcję 2 mm i rowek 7 mm w zmierzonych przez właściciela miejscach;
+(3) szafka pod piekarnik poprawiona — gniazda w bokach tylko tam, gdzie są
+plecy, blat na listwach zamiast płyty TOP, i front biorący szczelinę pod licem
+urządzenia.
+
+Dowód encja po encji jest od tej tury **skryptem** (`scripts/cnc-delta-probe.mjs`),
+a nie sondą uruchamianą ręcznie — i buduje każdy zestaw DWA RAZY, raz z
+szufladami, bo szafa domyślnie ich nie ma i delta 2 przeszłaby obok sondy
+niezauważona.
+
+## Nowe pliki
+
+`src/engine/runners.js` · `src/lib/runnerCatalogue.js` ·
+`src/3d/runnerModels.js` · `scripts/cnc-delta-probe.mjs` ·
+`scripts/e2e-turn18.mjs` · `test/turn18-phases.test.js` · `verify/t18/`
+
+## Nowe liczby w `profile.js`
+
+`cnc.labelMaxLines` / `.labelLineGap` / `.labelFillRatio` / `.exportLabelScale`
+(F1) · `ovenUnit.topRails.*` (F5.2) · `hardware.runner.movento.*` (F6).
+Zmienione: `MONO_ADVANCE` 0.62 → 0.85 (F1.3, w `annotation.js`, gdzie mieszka od
+tury 16). Usunięte: `cnc.annotation.partLabelInset` — blok wyśrodkowany w obu
+osiach nie ma krawędzi, od której miałby odstawać.

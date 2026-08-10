@@ -204,13 +204,18 @@ test('every part carries a UNIT_NUMBER label with unit and panel id', () => {
   for (const f of FILES) {
     const { entities } = parseDxf(f.dxf);
     const texts = entities.filter((e) => e.type === 'text');
-    assert.equal(texts.length, 1, `${f.name}: exactly one label`);
-    assert.equal(texts[0].layer, PROFILE.cnc.unitNumberLayer);
+    // Turn 18 (CLAUDE.md F1.1): ONE label, on up to three lines. A part big
+    // enough for the words on one line still gets exactly one TEXT entity.
+    const panel = RESULT.panels.find((p) => p.id === f.panelId);
+    const label = panelLabel(panel, { unitNum: RESULT.unitNum, profile: PROFILE });
+    assert.ok(texts.length >= 1 && texts.length <= PROFILE.cnc.labelMaxLines,
+      `${f.name}: ${texts.length} lines of label`);
+    assert.equal(texts.length, label.lines.length, `${f.name}: the writer's own line count`);
+    for (const t of texts) assert.equal(t.layer, PROFILE.cnc.unitNumberLayer);
     // Turn 17 (CLAUDE.md F1): the cabinet's number, the part code and the cut
     // size — one formatter, shared with the sheet.
-    const panel = RESULT.panels.find((p) => p.id === f.panelId);
-    assert.equal(texts[0].str, panelLabel(panel, { unitNum: RESULT.unitNum, profile: PROFILE }).str);
-    assert.match(texts[0].str, new RegExp(`^${RESULT.unitNum} `), `${f.name}: the cabinet's number comes first`);
+    assert.equal(texts.map((t) => t.str).join(' '), label.str);
+    assert.match(texts[0].str, new RegExp(`^${RESULT.unitNum}\\b`), `${f.name}: the cabinet's number comes first`);
     assert.ok(texts[0].h >= PROFILE.cnc.labelMinHeight && texts[0].h <= PROFILE.cnc.labelHeight,
       `${f.name}: label height ${texts[0].h} out of range`);
   }

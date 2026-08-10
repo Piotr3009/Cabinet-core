@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import {
-  clampDrawerFrontHeight, computeCabinet, doorCountFor, isShelfLocked,
+  clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
   minDrawerFrontHeight, SHELF_VARIANTS,
 } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
@@ -85,8 +85,17 @@ function newUnit(typeId, profile, index, design) {
   const params = defaultParamsFor(type.id, profile);
   // A drawer unit IS its drawers — the LISP kit has no "how many" question, so
   // the stack exists from the moment the unit is placed.
+  //
+  // ─── Turn 18 (CLAUDE.md F2.1) ───
+  // …and it is the KIT's own split that says how many, not `baseDrawerUnit`'s
+  // 4:3:2. A BUDR2 is two drawers and a BUDR4 is four; both were being placed
+  // with three rows, so a BUDR4's fourth drawer had no row to be addressed by
+  // and a BUDR2 carried a phantom. `drawerSplitFor` is the same function the
+  // engine builds the stack with, which is what stops the two disagreeing.
   const items = type.drawerStyle === 'budr'
-    ? profile.baseDrawerUnit.ratio.map((_, i) => ({ id: uid('drawer'), kind: 'drawer', index: i + 1, mount: 'overlay' }))
+    ? drawerSplitFor(type, profile).ratio.map((_, i) => ({
+      id: uid('drawer'), kind: 'drawer', index: i + 1, mount: 'overlay',
+    }))
     : [];
   return {
     id: uid('u'),
@@ -196,6 +205,28 @@ function applyTemplateParams(unit, params) {
   return unit;
 }
 
+/**
+ * Which drawer of a BUDR stack this ref means, counted from the FLOOR
+ * (turn 18, CLAUDE.md F2.1).
+ *
+ * A ratio stack has no ids of its own — the engine addresses its drawers by
+ * position and writes `params.drawer_heights` in that order. A kitchen drawer
+ * unit nevertheless CARRIES item rows (`newUnit`: a drawer unit is its
+ * drawers), so a panel with an item in its hand hands one over. Both are the
+ * same drawer, and this is the one place that has to say so.
+ *
+ * A number is already the index. An id is looked up in the unit's own rows,
+ * ordered exactly as the engine orders them (`index` ascending, bottom-up).
+ */
+function budrDrawerIndex(unit, ref) {
+  if (typeof ref === 'number') return ref;
+  const rows = (unit?.params?.sections?.[0]?.items || [])
+    .filter((i) => i.kind === 'drawer')
+    .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
+  const at = rows.findIndex((i) => i.id === ref);
+  return at;                                   // −1 → the setter refuses it
+}
+
 /** Interior items -> the count/flag shape the engine consumes. */
 function paramsForEngine(unit, design = null) {
   const p = unit.params;
@@ -228,6 +259,12 @@ function paramsForEngine(unit, design = null) {
     // engine. Left out — a bare kit call, every golden fixture — the engine
     // falls back to the profile's 3 and drills what the AutoLISP drills.
     hinge_standard: design?.hinges?.standard ?? null,
+    // ─── Turn 18 (CLAUDE.md F6.4) ───
+    // The PROJECT's runner variant, travelling exactly as the hinge standard
+    // does. It is deliberately NOT `runner_variant` — that name belongs to the
+    // unit's own answer, which sits above this one in the hierarchy — so a
+    // cabinet that has said something for itself keeps saying it.
+    project_runner_variant: design?.runners?.variant ?? null,
     shelves: items.filter((i) => i.kind === 'shelf').length,
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
@@ -2521,12 +2558,33 @@ export const useProjectStore = create((set, get) => ({
    * one has an id, and this has taken that id since turn 4. A BUDR's are a
    * RATIO, so its drawers have no ids at all and the only handle on one is its
    * position in the stack. Rather than give the panel two functions to choose
-   * between, the second argument takes either: a number is an index from the
-   * floor, anything else is an item id. The clamp is the right one for the kit
-   * in both branches — the workshop's front-height limits for the wardrobe, the
-   * owner's runner rule for the BUDR (F8.3).
+   * between, the second argument takes either. The clamp is the right one for
+   * the kit in both branches — the workshop's front-height limits for the
+   * wardrobe, the owner's runner rule for the BUDR (F8.3).
+   *
+   * ─── TURN 18 (CLAUDE.md F2.1): THE FORK ASKED THE WRONG QUESTION ─────────
+   *
+   * Owner: a kitchen drawer's height is typed in, and it snaps straight back to
+   * the kit's number. One root, and it is this line.
+   *
+   * Turn 17 routed on `typeof ref === 'number'` — "no id means a BUDR". But a
+   * kitchen drawer unit gets ITEM ROWS the moment it is placed (`newUnit`
+   * above: a drawer unit IS its drawers), so its drawers DO have ids, the call
+   * took the wardrobe route, and it wrote `height_mm` onto an item. The budr
+   * engine only ever reads `params.drawer_heights`. The number landed
+   * somewhere nothing looks, and the next render read the kit's ratio back.
+   *
+   * So the fork asks the KIT, which is the thing that decides how a stack is
+   * built, instead of asking what shape the caller happened to have to hand. A
+   * BUDR takes the ratio route whatever the ref is — an id is resolved to the
+   * drawer's INDEX from the unit's own rows — and the wardrobe route stays
+   * exactly as it was for the kit whose drawers really are items.
    */
   setDrawerHeight: (unitId, ref, heightMm) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (getUnitType(unit?.type)?.drawerStyle === 'budr') {
+      return get().setBudrDrawerHeight(unitId, budrDrawerIndex(unit, ref), heightMm);
+    }
     if (typeof ref === 'number') return get().setBudrDrawerHeight(unitId, ref, heightMm);
     const itemId = ref;
     const DR = getCabinetProfile().wardrobe.drawers;
@@ -2799,7 +2857,15 @@ export const useProjectStore = create((set, get) => ({
     // The face, less every gap, less the shortest the other drawers may be.
     const available = (Number(unit.params.height) || 0) - heights.length * B.gap;
     const max = available - (heights.length - 1) * floor;
-    const next = [...heights];
+    // ─── Turn 18 (CLAUDE.md F2.1) ───
+    // Only what somebody has SAID is written down. Turn 17 started from the
+    // engine's own answer — `[...heights]` — so setting one drawer froze all
+    // three at today's numbers: `budrHeightsWithOwn` then read every one of them
+    // as edited, no drawer was left free to take up the slack, and the stack
+    // stopped filling the face. Starting from the unit's OWN list is what makes
+    // "type 500 into a 770 BUDR2 and the other drawer becomes 264" true, and it
+    // is the same rule a shelf follows: what nobody said, the kit decides.
+    const next = [...(unit.params.drawer_heights || [])];
     next[index] = clampDrawerFrontHeight(snapTo(Number(mm) || 0, profile.editor.mmStep), { profile, max });
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId
@@ -2813,6 +2879,44 @@ export const useProjectStore = create((set, get) => ({
   resetDrawerHeights: (unitId) => set((st) => ({
     units: st.units.map((u) => (u.id === unitId
       ? { ...u, params: { ...u.params, drawer_heights: null } } : u)),
+    dirty: true,
+  })),
+
+  /**
+   * The project's runner variant: T or S (turn 18, CLAUDE.md F6.4).
+   *
+   * HARDWARE and not geometry — nothing in the engine branches on it, because
+   * Blum's own installation page says the gaps, the pockets and the drilling do
+   * not change with the motion technology. What it changes is which model the
+   * view loads and which article the BOM orders.
+   */
+  setRunnerVariant: (variant) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    return {
+      project: {
+        ...s.project,
+        design: migrateDesign({
+          ...design,
+          runners: { ...design.runners, variant: String(variant || '').toUpperCase() },
+        }),
+      },
+      dirty: true,
+    };
+  }),
+
+  /**
+   * …and ONE DRAWER's own, which overrides it — the colour hierarchy exactly
+   * (turn 13, CLAUDE.md F3): project → unit → drawer. `null` hands the drawer
+   * back to whatever is above it rather than freezing today's answer onto it.
+   */
+  setDrawerRunnerVariant: (unitId, drawer, variant) => set((s) => ({
+    units: s.units.map((u) => {
+      if (u.id !== unitId) return u;
+      const own = { ...(u.params.runner_variants || {}) };
+      if (variant) own[String(drawer)] = String(variant).toUpperCase();
+      else delete own[String(drawer)];
+      return { ...u, params: { ...u.params, runner_variants: own } };
+    }),
     dirty: true,
   })),
 

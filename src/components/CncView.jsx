@@ -7,8 +7,8 @@ import { layoutPanels, sheetPolygon, sheetRect, toSheet } from '../engine/cnc/la
 import { CNC_LAYERS, layerScreenColor } from '../engine/cnc/layers.js';
 import { exportablePanels } from '../engine/cnc/groups.js';
 import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.js';
-import { labelFit, partLabelAnchor, symbolVisible } from '../engine/cnc/annotation.js';
-import { partLabelText } from '../engine/cnc/partLabel.js';
+import { labelFit, symbolVisible } from '../engine/cnc/annotation.js';
+import { panelLabelBlock } from '../engine/cnc/dxf.js';
 import { formatMmPair } from '../engine/format.js';
 
 // ─── CNC view ───
@@ -383,6 +383,7 @@ export default function CncView() {
                       drills={b.result.drills}
                       outlineLayer={profile.puzzle.layers.outline}
                       annotation={A}
+                      profile={profile}
                       mmPerPx={mmPerPx}
                       visible={visible}
                     />
@@ -498,7 +499,7 @@ function Caption({
 // ─── one cut part ───
 
 function Part({
-  place, unitNum, drills, outlineLayer, annotation, mmPerPx, visible,
+  place, unitNum, drills, outlineLayer, annotation, profile, mmPerPx, visible,
 }) {
   const { panel } = place;
   const cnc = panel.cnc || {};
@@ -516,16 +517,24 @@ function Part({
   // wording that happens to look similar. F1.1 asks for exactly that, and it is
   // why the sheet now spells the size with an ASCII `x`: this string is written
   // into a DXF R12 file as well as onto the glass.
-  const caption = partLabelText(unitNum, panel);
-  const label = labelFit({
-    text: caption,
-    sizeMm: annotation.partLabelMm,
-    boxW: place.w * 0.94,
-    boxH: place.h * 0.5,
-    mmPerPx,
-    minPx: annotation.minLabelPx,
+  // ─── Turn 18 (CLAUDE.md F1.1) ───
+  // …and it is laid out by the EXPORT's own layout call now, with the part's
+  // own rectangle as the box — `panelLabelBlock` in engine/cnc/dxf.js, which is
+  // the one function F1.1 asks for. The block breaks onto up to three centred
+  // lines and sits in the middle of the part, both ways; the file writes the
+  // same words at half the height. The sheet cannot word a label differently
+  // from the board any more, because it no longer computes one.
+  const label = panelLabelBlock(panel, {
+    unitNum, profile, mmPerPx, minPx: annotation.minLabelPx,
   });
-  const at = partLabelAnchor(place, label.size, annotation.partLabelInset);
+  // The part's own centre, in sheet coordinates — via `toSheet`, so a part laid
+  // down TURNED carries its caption round with it exactly as the file does.
+  const box = {
+    w: Math.abs(panel.cnc?.drawn_w ?? panel.w),
+    h: Math.abs(panel.cnc?.drawn_h ?? panel.h),
+  };
+  const [labelX, labelY] = toSheet(place, box.w / 2, box.h / 2);
+  const labelTurn = place.bounds.turn || 0;
   // Drilling and machining marks are the drawing's own geometry now — a ⌀5 hole
   // is five millimetres wide at every zoom, never the screen-space minimum turn
   // 11 gave it. Under the threshold it is not drawn at all, which is what stops
@@ -585,15 +594,30 @@ function Part({
       })}
 
       {/* id + the cut-list dimensions, so the sheet reads like the CSV — INSIDE
-          the part's own outline (F3), at a fixed size in sheet millimetres. */}
+          the part's own outline (F3), at a fixed size in sheet millimetres, and
+          centred in it both ways on up to three lines (turn 18, F1.1).
+          `dy` comes out of the layout positive UP, which is the drawing's frame;
+          an SVG viewport is y-DOWN, so it is subtracted. A turned part turns its
+          caption with it — the file has done that since turn 17 and the sheet
+          had not, which is exactly the kind of disagreement F1.1 is about. */}
       {label.visible && (
         <text
-          x={at.x} y={at.y} textAnchor="middle"
+          x={labelX} y={labelY} textAnchor="middle"
           fontSize={label.size} fill="#d6d6d2"
           data-part-label={panel.id}
+          transform={labelTurn ? `rotate(${-labelTurn} ${labelX} ${labelY})` : undefined}
           style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
         >
-          {label.text}
+          {label.lines.map((line) => (
+            <tspan
+              key={line.text + line.dy}
+              x={labelX}
+              y={labelY - line.dy}
+              dominantBaseline="central"
+            >
+              {line.text}
+            </tspan>
+          ))}
         </text>
       )}
     </g>

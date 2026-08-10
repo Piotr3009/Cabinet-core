@@ -29,6 +29,7 @@ import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
   chamferedRectGeometry, tabCentres,
 } from './puzzle.js';
+import { resolveRunnerVariant, runnerPairSpec, syncRodFor } from './runners.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import { maskDepthExtra } from './runs.js';
 import {
@@ -154,6 +155,19 @@ export function snapDrawerDepth(usableDepth, steps) {
 /** AutoLISP (fix (+ x 0.5)) — round half up, truncating. */
 function lispRound(value) {
   return Math.trunc(Number(value) + 0.5);
+}
+
+/**
+ * The UNDERSIDE of an appliance shelf, or null where the kit has none
+ * (turn 18, CLAUDE.md F5.4).
+ *
+ * One line, in one place, because two things need it and they are 300 lines
+ * apart: the drawer box has to stop under it, and the side panels have to stop
+ * cutting back tabs above the back that reaches it.
+ */
+function ovenShelfY(type, profile, H, G) {
+  if (type?.appliance !== 'oven') return null;
+  return H - profile.ovenUnit.shelfFromTop - G;
 }
 
 /**
@@ -396,8 +410,19 @@ function normalizeParams(raw, profile) {
   // below takes the gap off every stack it is given — so what goes IN is the
   // face less the appliance, `height − ovenHeight`, and the gap comes off once,
   // in the same place it comes off for every other unit in the app.
+  //
+  // ─── TURN 18 (CLAUDE.md F5.4): AND THE GAP BELOW THE APPLIANCE ───────────
+  // The owner's review: "szczelina 3 mm jak wszystkie nasze drzwi." The oven's
+  // FACE behaves like a front in the run, and two fronts never touch — so the
+  // drawer front below it loses a gap to the appliance as well as the gap the
+  // splitter already takes above it. `H − gap − ovenHeight − gap`: 169 on a 770
+  // carcass, where turn 17 gave 172 and the drawer front sat against the oven.
+  //
+  // It is the DRAWER STACK's own gap (`baseDrawerUnit.gap`), because that is
+  // what this is — the space between two fronts of one cabinet — and it is the
+  // same 3 mm `doors.gap` gives every door in the run.
   const stackHeight = type.appliance === 'oven'
-    ? Math.max(0, height - profile.ovenUnit.ovenHeight)
+    ? Math.max(0, height - profile.baseDrawerUnit.gap - profile.ovenUnit.ovenHeight)
     : height;
   const drawerHeights = type.drawerStyle === 'budr'
     // Turn 17 (CLAUDE.md F8.2): the drawers the joiner has set himself, and the
@@ -985,8 +1010,6 @@ export function computeCabinet(params, profileOverride) {
     }
     const boxW = internalWidth - B.boxWidthClearance;
     const frontWidth = W - B.frontWidthDeduction;
-    const sideHs = heights.map((h) => lispRound(h * B.sideRatio));
-    const boxFrontH = sideHs.map((s) => s - B.boxFrontHeightDeduction - G - B.boxFrontHeightExtra);
     const boxLen = W - B.boxFrontBoards * G - B.boxFrontClearance;
     // Front i's base above the carcass floor: the fronts overlay the base panel,
     // so front 1 starts at 0 while its RUNNER row still clears the base by G
@@ -995,6 +1018,32 @@ export function computeCabinet(params, profileOverride) {
     let acc = 0;
     for (const h of heights) { frontY.push(acc); acc += h + B.gap; }
     const runnerRows = frontY.map((y, i) => (i === 0 ? G : y) + B.firstRowFromBottom);
+    // ─── TURN 18 (CLAUDE.md F5.4): THE BOX FITS THE OPENING ─────────────────
+    //
+    // A box side is `sideRatio` of its FRONT, which is right in a run of drawer
+    // units where the front and the opening are the same piece of cabinet. An
+    // OVEN's are not: its front covers the appliance gap as well, and the box
+    // behind it lives in the short opening between the carcass bottom and the
+    // underside of the shelf the oven stands on.
+    //
+    // So the front decides the box everywhere it did before, and under a shelf
+    // the OPENING has the last word — which is what CLAUDE.md F5.4 states as a
+    // fact about this kit ("the box still fits the OPENING under the shelf").
+    // Without it a 770 oven base drew a 118 mm box from 56 mm up into a shelf
+    // whose underside is at 154.
+    const boxCeiling = ovenShelfY(type, P, H, G);
+    const sideHs = heights.map((h, i) => {
+      const wanted = lispRound(h * B.sideRatio);
+      if (boxCeiling == null) return wanted;
+      return Math.min(wanted, Math.max(0, boxCeiling - runnerRows[i]));
+    });
+    const boxFrontH = sideHs.map((s) => s - B.boxFrontHeightDeduction - G - B.boxFrontHeightExtra);
+    if (boxCeiling != null && sideHs.some((s) => s <= B.boxFrontHeightDeduction + G + B.boxFrontHeightExtra)) {
+      warnings.push({
+        code: 'APPLIANCE_DRAWER_TOO_SHORT',
+        message: `The opening under the appliance shelf leaves ${roundTo(boxCeiling - runnerRows[0], 0)} mm above the runner row — too little for a drawer box.`,
+      });
+    }
     budr = {
       heights, frontY, runnerRows, sideHs, boxFrontH,
       depth, maxDl, boxW, frontWidth, boxLen,
@@ -1105,6 +1154,42 @@ export function computeCabinet(params, profileOverride) {
     });
   }
 
+  // ─── THE OVEN HOUSING'S OWN GEOMETRY (turn 17 F10; turn 18 F5) ───────────
+  //
+  // Derived HERE, above the panels, because the side panels have to know it:
+  // this kit's back stops at the shelf, and turn 18 stops cutting the tabs
+  // there is nothing behind (F5.1).
+  //
+  //   THE SHELF. The oven is 595 high, so THE SHELF IT STANDS ON SITS 598 MM
+  //   FROM THE TOP OF THE CABINET — from the TOP, not from a centre line and
+  //   not from the floor. It is written that way here because it is the sort of
+  //   number that gets "corrected" later by somebody measuring up from the
+  //   plinth, and the correction would drop the oven 40 mm into the drawer.
+  const OV = P.ovenUnit;
+  const oven = type.appliance === 'oven'
+    ? (() => {
+      // The shelf's TOP face at H − 598: the board is drawn from its underside up.
+      const shelfY = ovenShelfY(type, P, H, G);
+      return {
+        shelfY,
+        // The back, behind the drawer and nowhere else: flush with the bottom
+        // of the carcass, up to the underside of the shelf.
+        backH: Math.max(0, shelfY),
+        // The two top rails (F5.2). The back one stands on edge; the front one
+        // lies flat, so what closes the front of the opening is a board's
+        // thickness and the rest of the top is open.
+        backRailH: OV.topRails.backHeight,
+        frontRailW: OV.topRails.frontWidth,
+      };
+    })()
+    : null;
+  if (oven && oven.shelfY <= G) {
+    warnings.push({
+      code: 'OVEN_TOO_LOW',
+      message: `A ${roundTo(H, 0)} mm carcass has no room for the oven shelf 598 mm from its top.`,
+    });
+  }
+
   // ── Shelf hole rows ────────────────────────────────────────────────────────
   const SH = P.shelfHoles;
   const numShelves = cfg.shelves;
@@ -1130,9 +1215,17 @@ export function computeCabinet(params, profileOverride) {
   // KIT_SINK's sides are the shared side panel with the joints it does not have
   // switched off: no back tabs (the back is screwed in, 50 mm forward), no top
   // sockets and no top screw row (there is no TOP panel, just two holders).
+  // ─── TURN 18 (CLAUDE.md F5.1/F5.2): AND THE OVEN'S ARE THE SAME IDEA ─────
+  // Its top is two rails rather than a TOP panel, so the top sockets and the
+  // top screw row go exactly as the sink's do — and its back only reaches the
+  // shelf, so the back tabs above the back are not cut. What is left is the
+  // one tab the back really catches and the bottom's own sockets, which is
+  // what the owner's review asks for in as many words.
   const sideEdges = backStyle === 'inset'
     ? { backTabs: false, topSocket: false, topScrews: false }
-    : undefined;
+    : (oven
+      ? { topSocket: false, topScrews: false, backTabsBelow: oven.backH }
+      : undefined);
 
   // ─── TURN 17 (CLAUDE.md F9): A FRONT AND NOTHING ELSE ────────────────────
   //
@@ -1239,39 +1332,39 @@ export function computeCabinet(params, profileOverride) {
   //   the side panels' lowest tenon, and two more down its left edge at G + 95
   //   and W − G − 95, catching the BOTTOM panel's back tenons. Four sockets,
   //   four dog bones, and not one new number.
-  const ovenUnit = type.appliance === 'oven';
-  if (ovenUnit) {
-    const OV = P.ovenUnit;
-    // The shelf's TOP face at H − 598: the board is drawn from its underside up.
-    const shelfY = H - OV.shelfFromTop - G;
-    if (shelfY <= G) {
-      warnings.push({
-        code: 'OVEN_TOO_LOW',
-        message: `A ${roundTo(H, 0)} mm carcass has no room for the oven shelf 598 mm from its top.`,
-      });
-    }
+  //
+  //   THE TOP (turn 18, CLAUDE.md F5.2). It was a full TOP panel and the
+  //   owner's review is that it is a LID: an oven wants the air out of its
+  //   housing, and the open back plus an open top ARE the ventilation. So the
+  //   kit takes the SINK's own two-holder answer, with the one change he named
+  //   — the FRONT rail lies FLAT (100 mm wide, board thick), because a rail on
+  //   edge across the front of an oven opening is 100 mm of board you look
+  //   straight at and it is where the appliance's flue comes out.
+  //
+  //   NO VENTILATION CUT, and that is a decision rather than an omission: a
+  //   50 × 300 slot in the shelf would vent into a CLOSED DRAWER. Where a
+  //   particular oven's manual demands one, that is a manufacturer's number and
+  //   a later turn (BLOCKERS).
+  if (oven) {
     panels.push(panel({
       id: 'FIXED', part: 'FIXED', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
       edgeCode: codes.right, edgeLen: metres(internalWidth),
-      box: { x: G, y: shelfY, z: G, w: internalWidth, h: G, d: internalDepth },
+      box: { x: G, y: oven.shelfY, z: G, w: internalWidth, h: G, d: internalDepth },
       // Drawn turned, like the fridge's own fixed panel and like a TOP.
       cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
       meta: { variant: 'fixed', locked: true, oven: true },
     }));
-    // The back, behind the drawer and nowhere else: flush with the bottom of
-    // the carcass, up to the underside of the shelf.
-    const backH = Math.max(0, shelfY);
-    if (backH > 0) {
+    if (oven.backH > 0) {
       panels.push(panel({
-        id: 'BACK', part: 'BACK', role: 'back', w: W, h: backH, thickness: G,
+        id: 'BACK', part: 'BACK', role: 'back', w: W, h: oven.backH, thickness: G,
         edgeCode: codes.none, edgeLen: 0,
-        box: { x: 0, y: 0, z: 0, w: W, h: backH, d: G },
+        box: { x: 0, y: 0, z: 0, w: W, h: oven.backH, d: G },
         cnc: {
           rotated: true,
-          drawn_w: backH,
+          drawn_w: oven.backH,
           drawn_h: W,
           ...socketPanelGeometry({
-            w: backH,
+            w: oven.backH,
             h: W,
             G,
             puzzle: pz,
@@ -1287,6 +1380,30 @@ export function computeCabinet(params, profileOverride) {
         meta: { oven: true },
       }));
     }
+  }
+  if (type.carcass.top === 'ovenRails' && oven) {
+    // The BACK rail, on edge against the back of the opening — the sink's
+    // HOLDER-B in every respect but the profile block its height comes from.
+    panels.push(panel({
+      id: 'RAIL-B', part: 'HOLDER', role: 'top', w: oven.backRailH, h: internalWidth, thickness: G,
+      edgeCode: codes.none, edgeLen: 0,
+      box: { x: G, y: H - oven.backRailH, z: G, w: internalWidth, h: oven.backRailH, d: G },
+      cnc: rectGeometry(oven.backRailH, internalWidth),
+      meta: { side: 'B', oven: true },
+    }));
+    // …and the FRONT rail, LYING FLAT. Its cut piece is `railWidth × internal
+    // width` like the other one; what differs is how it lies in the cabinet —
+    // `h: G` and `d: frontRailW` rather than the other way round — and
+    // therefore where the screws that hold it go.
+    panels.push(panel({
+      id: 'RAIL-F', part: 'HOLDER', role: 'top', w: oven.frontRailW, h: internalWidth, thickness: G,
+      // Banded on the long edge, like the TOP panel it stands in for: lying
+      // flat at the front of the opening, its edge is what you look at.
+      edgeCode: codes.right, edgeLen: metres(internalWidth),
+      box: { x: G, y: H - G, z: D - oven.frontRailW, w: internalWidth, h: G, d: oven.frontRailW },
+      cnc: rectGeometry(oven.frontRailW, internalWidth),
+      meta: { side: 'F', flat: true, oven: true },
+    }));
   }
 
   // Sink: the TOP is replaced by two holders on edge, and the back moves inside.
@@ -1638,11 +1755,58 @@ export function computeCabinet(params, profileOverride) {
 
     const boxLeftX = G + (dpLeft ? DP.inset + G : 0) + (DR.boxWidthClearance / 2);
     const boxZFront = D - boxSetback;
+    // ─── TURN 18 (CLAUDE.md F3): THE SIDES TELL THE TRUTH ────────────────────
+    //
+    // The owner read the two pockets off his own workshop DXF, and they are the
+    // same two the BUDR kit has cut since turn 3 — because it is the same box:
+    // the same 18 mm board, the same Blum runner, the same bottom standing in
+    // the same groove. A wardrobe's drawer sides went out as bare rectangles,
+    // which meant a joiner cutting an internal drawer got a side with nowhere
+    // for the bottom to sit and 18 mm of board where the runner needs 16.
+    //
+    //   RUNNER REDUCTION  the inner face milled 2 mm deep from the BOTTOM EDGE
+    //                     up to the groove (0 → 15). "blum tego wymaga" — an 18
+    //                     board becomes 16 where the runner lives.
+    //   BOTTOM GROOVE     7 mm deep, its lower edge 15 mm above the bottom
+    //                     edge, and G + 1 tall so the 18 mm bottom goes in.
+    //
+    // Both run the full length of the side, `pocketOvershoot` past each end so
+    // the cutter enters and leaves off the board.
+    //
+    // THE ARITHMETIC CLOSES, and that is the check that these are the right
+    // numbers rather than plausible ones: `bottomW = boxFrontLen + 13`, and
+    // `boxFrontLen` is the gap between the two sides' INNER faces — so the
+    // bottom reaches 6.5 mm into a 7 mm groove and half a millimetre of air is
+    // left at the bottom of it. Test/turn18-phases.test.js pins the sum.
+    //
+    // The numbers are `profile.baseDrawerUnit`'s, read from there rather than
+    // copied: they were measured off A DRAWER SIDE and not off a base unit's
+    // drawer side, so there is one set of them and both kits cut to it.
+    const boxSidePockets = (len) => [
+      {
+        layer: 'DRAWER_RUNNER_POCKET', depth: B.runnerPocketDepth,
+        x1: -B.pocketOvershoot, y1: 0, x2: len + B.pocketOvershoot, y2: B.runnerPocketWidth,
+      },
+      {
+        layer: 'DRAWER_BOTTOM_POCKET', depth: B.bottomPocketDepth,
+        x1: -B.pocketOvershoot, y1: B.runnerPocketWidth,
+        x2: len + B.pocketOvershoot, y2: B.runnerPocketWidth + G + B.bottomPocketExtra,
+      },
+    ];
     for (let i = 1; i <= numDrawers; i += 1) {
       const zoneY = G + zoneOffsets[i - 1];
       const sideHeight = boxSideH[i - 1];
       const bfH = boxFrontHs[i - 1];
       const boxY = zoneY + P.wardrobe.runners.firstRowFromBottom - DR.boxDropFromRunner;
+      // ─── Turn 18 (CLAUDE.md F3.4): WHERE THE BOTTOM ACTUALLY IS ───────────
+      // "Front and back of the box STAND ON the bottom", and the bottom stands
+      // in the groove — so its underside is `runnerPocketWidth` above the
+      // side's bottom edge and the front and back start one board above that.
+      // The arithmetic has always agreed (side − 15 − G − 1 is exactly what is
+      // left above the groove, less the millimetre of air at the top); it is
+      // the PICTURE that had all three boards sitting on the same line.
+      const bottomY = boxY + B.runnerPocketWidth;
+      const boxWallY = bottomY + G;
       const common = { thickness: DR.boxSideThickness, edgeCode: codes.none, edgeLen: 0 };
       panels.push(panel({
         id: `D${i}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
@@ -1651,21 +1815,23 @@ export function computeCabinet(params, profileOverride) {
         // BUDR kit has said so since turn 12; the wardrobe's boxes never did,
         // so with a drawer becoming a piece a joiner can point at, its left and
         // right sides had one name between them.
-        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i, side: 'L' },
+        cnc: pocketedRect(szufDl, sideHeight, boxSidePockets(szufDl)),
+        meta: { drawer: i, side: 'L' },
       }));
       panels.push(panel({
         id: `D${i}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
         box: { x: boxLeftX + szufSzer - DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
-        cnc: rectGeometry(szufDl, sideHeight), meta: { drawer: i, side: 'R' },
+        cnc: pocketedRect(szufDl, sideHeight, boxSidePockets(szufDl)),
+        meta: { drawer: i, side: 'R' },
       }));
       panels.push(panel({
         id: `D${i}-BF`, part: 'DRAWER-BOX-FRONT', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
-        box: { x: boxLeftX + DR.boxSideThickness, y: boxY, z: boxZFront - G, w: boxFrontLen, h: bfH, d: G },
+        box: { x: boxLeftX + DR.boxSideThickness, y: boxWallY, z: boxZFront - G, w: boxFrontLen, h: bfH, d: G },
         cnc: rectGeometry(boxFrontLen, bfH), meta: { drawer: i },
       }));
       panels.push(panel({
         id: `D${i}-BB`, part: 'DRAWER-BOX-BACK', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
-        box: { x: boxLeftX + DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: boxFrontLen, h: bfH, d: G },
+        box: { x: boxLeftX + DR.boxSideThickness, y: boxWallY, z: boxZFront - szufDl, w: boxFrontLen, h: bfH, d: G },
         cnc: rectGeometry(boxFrontLen, bfH), meta: { drawer: i },
       }));
       panels.push(panel({
@@ -1673,7 +1839,7 @@ export function computeCabinet(params, profileOverride) {
         // The bottom is narrower than the box (it sits in grooves in the two
         // sides), so it is CENTRED in it. Hanging it off the left edge made a
         // wide unit look lopsided in 3D while the cut list was right.
-        box: { x: boxLeftX + (szufSzer - bottomW) / 2, y: boxY, z: boxZFront - szufDl, w: bottomW, h: G, d: bottomD },
+        box: { x: boxLeftX + (szufSzer - bottomW) / 2, y: bottomY, z: boxZFront - szufDl, w: bottomW, h: G, d: bottomD },
         cnc: rectGeometry(bottomW, bottomD), meta: { drawer: i },
       }));
     }
@@ -1743,7 +1909,10 @@ export function computeCabinet(params, profileOverride) {
           id: `D${i}-${suffix}`, part: isFront ? 'DRAWER-BOX-FRONT' : 'DRAWER-BOX-BACK', role: 'drawer_box',
           w: budr.boxLen, h: bfH, ...common,
           box: {
-            x: boxLeftX + DR.boxSideThickness, y: boxY,
+            // Turn 18 (CLAUDE.md F3.4): standing ON the bottom, which stands in
+            // the groove — the same correction the wardrobe's box gets above,
+            // because it is the same box.
+            x: boxLeftX + DR.boxSideThickness, y: boxY + B.runnerPocketWidth + G,
             z: isFront ? boxZFront - G : boxZFront - budr.depth,
             w: budr.boxLen, h: bfH, d: G,
           },
@@ -1763,8 +1932,10 @@ export function computeCabinet(params, profileOverride) {
       }
       panels.push(panel({
         id: `D${i}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: budr.bottomW, h: budr.depth, ...common,
-        // Centred in its box, as in the wardrobe: the bottom sits in the side grooves.
-        box: { x: boxLeftX + (budr.boxW - budr.bottomW) / 2, y: boxY, z: boxZFront - budr.depth, w: budr.bottomW, h: G, d: budr.depth },
+        // Centred in its box, as in the wardrobe: the bottom sits in the side
+        // grooves — and since turn 18 (F3.4) it sits at the HEIGHT of them,
+        // `runnerPocketWidth` above the sides' bottom edge.
+        box: { x: boxLeftX + (budr.boxW - budr.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: budr.bottomW, h: G, d: budr.depth },
         cnc: geom, meta: { drawer: i },
       }));
     }
@@ -2382,6 +2553,42 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── Oven: the two top rails, and the shelf (turn 18, CLAUDE.md F5.2) ─────
+  //
+  // Two patterns, because the two rails lie differently and a screw goes into
+  // the EDGE of the board it holds.
+  //
+  //   THE BACK RAIL stands on edge, so its edge is 100 mm tall and the screws
+  //   go into it down the side panel's back edge — the sink's own two-holder
+  //   pattern, 30 and 70 from the top of the carcass.
+  //
+  //   THE FLAT RAIL's edge is one board thick, so there is ONE row and it is on
+  //   the board's centreline (G/2 + `centrelineExtra` down from the top, which
+  //   is the same centreline every top-edge screw in this app uses). What is
+  //   laid out along the rail's WIDTH is the pair — see profile.js
+  //   `ovenUnit.topRails.frontScrewFromEdge` for why it is a pair and where the
+  //   number comes from.
+  if (oven) {
+    const TR = P.ovenUnit.topRails;
+    const S = G / 2 + pz.centrelineExtra;
+    for (const sideId of ['BUL', 'BUR']) {
+      // The side panel's local x runs FRONT (0) → BACK (sideW), the frame
+      // engine/puzzle.js draws in, and the sink's holder screws are read the
+      // same way.
+      for (const fromTop of TR.backScrewFromTop) {
+        addDrill(sideId, 'rail_screw', pz.layers.screw, sideW - G / 2, H - fromTop, pz.screwDiameter);
+      }
+      for (const x of [TR.frontScrewFromEdge, oven.frontRailW - TR.frontScrewFromEdge]) {
+        addDrill(sideId, 'rail_screw', pz.layers.screw, x, H - S, pz.screwDiameter);
+      }
+      // …and the shelf the oven stands on, screwed through the sides on its own
+      // centreline exactly as the fridge's fixed panel is.
+      for (const fx of [pz.screwFromEnd, sideW - pz.screwFromEnd]) {
+        addDrill(sideId, 'fixed_screw', pz.layers.screw, fx, oven.shelfY + G / 2, pz.screwDiameter);
+      }
+    }
+  }
+
   // Fridge: spurs blocks and the fixed panel, both screwed to the sides.
   if (fridge) {
     for (const sideId of ['BUL', 'BUR']) {
@@ -2564,8 +2771,57 @@ export function computeCabinet(params, profileOverride) {
   hw('hinges', 'Hinges', totals.hinges, 'pcs',
     { per_door: centres.length, doors: doorCount, cup_diameter_mm: cups.diameter },
     doorCount > 0 ? `${centres.length} per door × ${doorCount}` : '');
-  hw('runner_pairs', 'Drawer runners', numDrawers, 'pairs',
-    { length_mm: runnerLength }, runnerLength ? `${roundTo(runnerLength, 0)} mm` : '');
+  // ─── TURN 18 (CLAUDE.md F6.4/F6.7): THE PAIR IS A PRODUCT ────────────────
+  //
+  // The length has been on this line since turn 3 and it stays exactly where it
+  // is — `spec.length_mm` is what engine/hardware3d.js falls back to and what
+  // the fixtures pin. What joins it is WHICH RUNNER: the system, the variant
+  // this job or this cabinet is fitted with, and the two article numbers, which
+  // come out of the manifest the owner uploaded beside his models and are null
+  // where nobody has read it (engine/runners.js — the engine never fetches).
+  //
+  // Nothing here branches the GEOMETRY on the variant, and that is the point:
+  // Blum's own installation page says the pattern does not change with the
+  // motion technology, so a T and an S drawer are cut identically and differ
+  // only in what is bought.
+  //
+  // PER DRAWER, PER VARIANT (F6.7). One drawer of a stack may be fitted
+  // differently from the one above it, and a parts list that averaged them
+  // would order the wrong runner for one of them — so the stack is grouped by
+  // what each drawer actually takes, and a cabinet whose drawers all agree
+  // still gets the single line it has had since turn 3.
+  const runnerDesign = { runners: { variant: params?.project_runner_variant ?? null } };
+  const byVariant = new Map();
+  for (let i = 1; i <= numDrawers; i += 1) {
+    const v = resolveRunnerVariant({
+      drawer: i, unit: { params }, design: runnerDesign, profile: P,
+    });
+    byVariant.set(v, (byVariant.get(v) || 0) + 1);
+  }
+  for (const [variant, qty] of byVariant) {
+    const spec = runnerPairSpec({ nl: runnerLength, variant, profile: P });
+    hw('runner_pairs', 'Drawer runners', qty, 'pairs',
+      { length_mm: runnerLength, ...spec },
+      runnerLength
+        ? [`${roundTo(runnerLength, 0)} mm`, `MOVENTO ${spec.system}`, spec.variant,
+          spec.complete ? `${spec.articles.L} / ${spec.articles.R}` : null]
+          .filter(Boolean).join(' · ')
+        : '');
+  }
+  // ─── The synchronisation rod (F6.5) ───
+  // A wide drawer's two runners are tied together so the box cannot rack.
+  // Blum's thresholds are on the cabinet OPENING width and the rod's own length
+  // is parametric — the box, less the ends its adapters take up.
+  const rod = numDrawers > 0
+    ? syncRodFor({
+      openingWidth: internalWidth,
+      boxWidth: budr ? budr.boxW : szufSzer,
+      profile: P,
+    })
+    : { fitted: false, kind: 'none', length: null };
+  hw('runner_sync_rods', 'Runner synchronisation rods', rod.fitted ? numDrawers : 0, 'pcs',
+    { kind: rod.kind, length_mm: rod.length, opening_mm: internalWidth },
+    rod.fitted ? `${roundTo(rod.length, 0)} mm · ${rod.kind === 'narrow' ? 'narrow' : 'with adapters'}` : '');
   hw('legs', 'Legs', legsPerUnit, 'pcs',
     { height_mm: legHeight, corners: P.legs.cornerCount, centre: legsPerUnit > P.legs.cornerCount },
     legHeight ? `${roundTo(legHeight, 0)} mm` : '');

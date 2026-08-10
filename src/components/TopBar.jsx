@@ -47,6 +47,8 @@ export default function TopBar({
   const xray = useUiStore((s) => s.xray);
   const toggleXray = useUiStore((s) => s.toggleXray);
   const toggleContourView = useUiStore((s) => s.toggleContourView);
+  const hideFronts = useUiStore((s) => s.hideFronts);
+  const toggleHideFronts = useUiStore((s) => s.toggleHideFronts);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
   const viewMode = useUiStore((s) => s.viewMode);
@@ -117,6 +119,16 @@ export default function TopBar({
           checked: xray,
           disabled: viewMode !== '3d' || contourView,
           run: toggleXray,
+        },
+        {
+          // Turn 18 (CLAUDE.md F4 / BACKLOG W22). The other half of X-ray's
+          // question, and a LENS in exactly the same sense: "Remove doors" is
+          // the project decision and it lives in the right-click menu.
+          label: 'Hide fronts',
+          hint: 'Doors and drawer fronts off the picture. Nothing in the BOM, the cut list or the CNC changes — use Remove doors for that.',
+          checked: hideFronts,
+          disabled: viewMode !== '3d',
+          run: toggleHideFronts,
         },
         {
           label: 'Contour view',

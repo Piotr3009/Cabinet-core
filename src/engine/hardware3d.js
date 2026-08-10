@@ -32,6 +32,9 @@ export function hardwareInstances(result, profile) {
   return {
     hinges: hingeInstances(result, profile),
     runners: runnerInstances(result, profile),
+    // Turn 18 (CLAUDE.md F6.5): the synchronisation rod, on the wide drawers
+    // that need one and on no others.
+    rods: rodInstances(result, profile),
     legs: legInstances(result),
     rails: railInstances(result, profile),
   };
@@ -121,11 +124,51 @@ function runnerInstances(result, profile) {
   const rightFace = xs.length ? Math.max(...xs.map((x, i) => x + sides[i].box.w)) : W - G;
 
   const out = [];
-  for (const y of rows) {
-    out.push({ kind: 'runner', side: 'L', x: leftFace, y, z, length, thickness: HW.profileThickness });
-    out.push({ kind: 'runner', side: 'R', x: rightFace, y, z, length, thickness: HW.profileThickness });
+  for (const [i, y] of rows.entries()) {
+    // Turn 18 (CLAUDE.md F6.4): WHICH DRAWER this pair belongs to, counted from
+    // the floor exactly as the engine counts them everywhere else. The variant
+    // is a per-drawer answer, so the view has to be able to ask the question,
+    // and the rows are already in the engine's own order.
+    const drawer = i + 1;
+    out.push({
+      kind: 'runner', side: 'L', drawer, x: leftFace, y, z, length, thickness: HW.profileThickness,
+    });
+    out.push({
+      kind: 'runner', side: 'R', drawer, x: rightFace, y, z, length, thickness: HW.profileThickness,
+    });
   }
   return out;
+}
+
+/**
+ * The synchronisation rod, where the drawer is wide enough to need one
+ * (turn 18, CLAUDE.md F6.5).
+ *
+ * A rod ties the two runners together so a wide box cannot rack. WHETHER there
+ * is one and HOW LONG it is are the engine's (`result.hardware` →
+ * `runner_sync_rods`, computed in cabinet.js from Blum's own thresholds); this
+ * only says where it lies — across the back of the box, at the runner row.
+ */
+function rodInstances(result, profile) {
+  const line = result.hardware.find((h) => h.role === 'runner_sync_rods');
+  if (!line || !(line.qty > 0)) return [];
+  const rows = result.drillSummary?.runner_rows_carcass_y || [];
+  const sides = result.panels.filter((p) => p.part === 'DRAWER-SIDE' && p.box);
+  if (!rows.length || !sides.length) return [];
+  const xs = sides.map((p) => p.box.x);
+  const centreX = (Math.min(...xs) + Math.max(...xs.map((x, i) => x + sides[i].box.w))) / 2;
+  const sample = sides[0];
+  const length = Number(line.spec?.length_mm) || 0;
+  return rows.map((y, i) => ({
+    kind: 'rod',
+    drawer: i + 1,
+    x: centreX,
+    y,
+    // At the BACK of the box, which is where a synchronisation rod runs.
+    z: sample.box.z,
+    length,
+    diameter: profile.hardware.runner.movento.rod.diameter,
+  }));
 }
 
 /**

@@ -124,9 +124,10 @@ test('the sheet DXF contains every selected part, and nothing else', () => {
   const parsed = parseDxf(dxf);
 
   // One label per part, and they name the parts we asked for — in the ONE
-  // wording the engine has (turn 17, CLAUDE.md F1.1).
+  // wording the engine has (turn 17, CLAUDE.md F1.1). Turn 18 breaks that
+  // wording onto up to three lines, so the comparison is line for line.
   const labels = parsed.entities.filter((e) => e.type === 'text').map((e) => e.str).sort();
-  assert.deepEqual(labels, panels.map((p) => panelLabel(p, { unitNum: r.unitNum, profile: P }).str).sort());
+  assert.deepEqual(labels, panels.flatMap((p) => panelLabel(p, { unitNum: r.unitNum, profile: P }).lines).sort());
 
   // Circle count: exactly the drills of those parts.
   const expectedHoles = r.drills.filter((d) => panels.some((p) => p.id === d.panel)).length;
@@ -138,8 +139,16 @@ test('the sheet DXF contains every selected part, and nothing else', () => {
 
   // Nothing from the parts we did NOT select.
   const excluded = r.panels.filter((p) => groupOfPanel(p) !== 'carcass');
+  const kept = new Set(labels);
   for (const p of excluded) {
-    assert.equal(labels.includes(panelLabel(p, { unitNum: r.unitNum, profile: P }).str), false, `${p.id} must not be in a carcass-only sheet`);
+    // A part that is not on this sheet may still SHARE a line with one that is
+    // (`01` on its own is every cabinet's first line on a narrow board), so the
+    // check is that no line unique to an excluded part got in.
+    const own = panelLabel(p, { unitNum: r.unitNum, profile: P }).lines
+      .filter((l) => !panels.some((q) => panelLabel(q, { unitNum: r.unitNum, profile: P }).lines.includes(l)));
+    for (const line of own) {
+      assert.equal(kept.has(line), false, `${p.id} must not be in a carcass-only sheet`);
+    }
   }
 });
 
@@ -159,16 +168,20 @@ test('the exported layout IS the preview layout, part for part', () => {
     // Matched on the STRING AND THE PLACE together, because two parts of one
     // cabinet may honestly carry the same caption — the two 30 mm fillers are
     // both narrower than their own label and both truncate to `01 FIL~`.
-    const want = panelLabel(place.panel, { unitNum: r.unitNum, profile: P });
+    // Turn 18 (CLAUDE.md F1.1): the caption is a BLOCK of up to three lines, so
+    // every line of it has to land where the preview draws that line.
     const own = panelEntities(place.panel, r.drills, { unitNum: r.unitNum, profile: P })
-      .find((e) => e.type === 'text');
-    const [tx, ty] = turnPoint(own.x, own.y, place.bounds.turn || 0);
-    const dx = place.x - place.bounds.minX;
-    const dy = (layout.height - place.y - place.h) - place.bounds.minY;
-    const label = entities.find((e) => e.type === 'text' && e.str === want.str
-      && Math.abs(e.x - (tx + dx)) < 1e-6 && Math.abs(e.y - (ty + dy)) < 1e-6);
-    assert.ok(label, `${place.panel.id} is not on the sheet where the preview draws it`);
-    assert.equal(label.rot || 0, place.bounds.turn || 0, `${place.panel.id} label turns with its part`);
+      .filter((e) => e.type === 'text');
+    assert.ok(own.length, `${place.panel.id} carries no label at all`);
+    for (const line of own) {
+      const [tx, ty] = turnPoint(line.x, line.y, place.bounds.turn || 0);
+      const dx = place.x - place.bounds.minX;
+      const dy = (layout.height - place.y - place.h) - place.bounds.minY;
+      const label = entities.find((e) => e.type === 'text' && e.str === line.str
+        && Math.abs(e.x - (tx + dx)) < 1e-6 && Math.abs(e.y - (ty + dy)) < 1e-6);
+      assert.ok(label, `${place.panel.id} is not on the sheet where the preview draws it`);
+      assert.equal(label.rot || 0, place.bounds.turn || 0, `${place.panel.id} label turns with its part`);
+    }
   }
 });
 
@@ -225,7 +238,13 @@ test('the per-part ZIP export is untouched — it is still the fallback route', 
   // And each of those files still parses on its own.
   const one = parseDxf(files.find((f) => f.name === 'W01-BUL.dxf').dxf);
   assert.ok(one.entities.length > 0);
-  assert.equal(one.entities.filter((e) => e.type === 'text').length, 1);
+  // Turn 18 (CLAUDE.md F1.1): one label, laid out on as many lines as the side
+  // panel's own rectangle wants — and never more than the profile allows.
+  const bul = r.panels.find((p) => p.id === 'BUL');
+  assert.equal(
+    one.entities.filter((e) => e.type === 'text').length,
+    panelLabel(bul, { unitNum: r.unitNum, profile: P }).lines.length,
+  );
 });
 
 test('an empty selection is refused rather than writing an empty file', () => {

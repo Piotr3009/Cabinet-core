@@ -694,6 +694,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const contourView = useUiStore((s) => s.contourView);
   const xray = useUiStore((s) => s.xray);
   const showHinges = useUiStore((s) => s.showHinges);
+  const hideFronts = useUiStore((s) => s.hideFronts);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const profile = useCabinetProfileStore((s) => s.profile);
 
@@ -903,6 +904,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           contour={contourView}
           xray={xray}
           showHinges={showHinges}
+          // Turn 18 (CLAUDE.md F4): a LENS. The fronts are still in the params,
+          // the BOM and the CNC — they are simply not drawn.
+          hideFronts={hideFronts}
           sheen={sheen}
           // How much clear WALL is beside this unit, per side. The door swing
           // reads it: past square a door comes back towards the wall on its

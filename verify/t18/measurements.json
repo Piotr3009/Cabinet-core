@@ -1,0 +1,717 @@
+{
+  "labels": [
+    {
+      "id": "BUL",
+      "lines": [
+        "F-01",
+        "BUL",
+        "540x770"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BUR",
+      "lines": [
+        "F-01",
+        "BUR",
+        "540x770"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "TOP",
+      "lines": [
+        "F-01",
+        "TOP",
+        "564x540"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BOTTOM",
+      "lines": [
+        "F-01",
+        "BOTTOM",
+        "564x540"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BACK",
+      "lines": [
+        "F-01",
+        "BACK",
+        "600x770"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "D1-DNO",
+      "lines": [
+        "F-01",
+        "D1-DNO",
+        "531x490"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "D2-DNO",
+      "lines": [
+        "F-01",
+        "D2-DNO",
+        "531x490"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BUL",
+      "lines": [
+        "F-02",
+        "BUL",
+        "540x770"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BUR",
+      "lines": [
+        "F-02",
+        "BUR",
+        "540x770"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BOTTOM",
+      "lines": [
+        "F-02",
+        "BOTTOM",
+        "564x540"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "FIXED",
+      "lines": [
+        "F-02",
+        "FIXED",
+        "564x540"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "D1-DNO",
+      "lines": [
+        "F-02",
+        "D1-DNO",
+        "531x490"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BUL",
+      "lines": [
+        "W-01 BUL",
+        "540x2150"
+      ],
+      "size": 67.5,
+      "inside": true
+    },
+    {
+      "id": "BUR",
+      "lines": [
+        "W-01 BUR",
+        "540x2150"
+      ],
+      "size": 67.5,
+      "inside": true
+    },
+    {
+      "id": "TOP",
+      "lines": [
+        "W-01",
+        "TOP",
+        "564x540"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BOTTOM",
+      "lines": [
+        "W-01",
+        "BOTTOM",
+        "564x540"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BACK",
+      "lines": [
+        "W-01",
+        "BACK",
+        "600x2150"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "PARTITION",
+      "lines": [
+        "W-01",
+        "PARTITION",
+        "564x520"
+      ],
+      "size": 62.66666666666667,
+      "inside": true
+    },
+    {
+      "id": "DP-L",
+      "lines": [
+        "W-01",
+        "DP-L",
+        "490x408"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "D1-BF",
+      "lines": [
+        "W-01 D1-BF",
+        "470x130"
+      ],
+      "size": 47,
+      "inside": true
+    },
+    {
+      "id": "D1-BB",
+      "lines": [
+        "W-01 D1-BB",
+        "470x130"
+      ],
+      "size": 47,
+      "inside": true
+    },
+    {
+      "id": "D1-DNO",
+      "lines": [
+        "W-01",
+        "D1-DNO",
+        "483x440"
+      ],
+      "size": 69,
+      "inside": true
+    },
+    {
+      "id": "D2-BF",
+      "lines": [
+        "W-01 D2-BF",
+        "470x130"
+      ],
+      "size": 47,
+      "inside": true
+    },
+    {
+      "id": "D2-BB",
+      "lines": [
+        "W-01 D2-BB",
+        "470x130"
+      ],
+      "size": 47,
+      "inside": true
+    },
+    {
+      "id": "D2-DNO",
+      "lines": [
+        "W-01",
+        "D2-DNO",
+        "483x440"
+      ],
+      "size": 69,
+      "inside": true
+    },
+    {
+      "id": "BUL",
+      "lines": [
+        "F-03",
+        "BUL",
+        "540x770"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "BUR",
+      "lines": [
+        "F-03",
+        "BUR",
+        "540x770"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "TOP",
+      "lines": [
+        "F-03 TOP",
+        "264x540"
+      ],
+      "size": 67.5,
+      "inside": true
+    },
+    {
+      "id": "BOTTOM",
+      "lines": [
+        "F-03",
+        "BOTTOM",
+        "264x540"
+      ],
+      "size": 64.11428571428571,
+      "inside": true
+    },
+    {
+      "id": "F-01-F1",
+      "lines": [
+        "F-01 F1",
+        "597x382"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "F-01-F2",
+      "lines": [
+        "F-01 F2",
+        "597x382"
+      ],
+      "size": 70,
+      "inside": true
+    },
+    {
+      "id": "F-02-F1",
+      "lines": [
+        "F-02 F1",
+        "597x169"
+      ],
+      "size": 63.84444444444445,
+      "inside": true
+    },
+    {
+      "id": "W-01-DF1",
+      "lines": [
+        "W-01 DF1",
+        "510x197"
+      ],
+      "size": 63.75,
+      "inside": true
+    },
+    {
+      "id": "W-01-DF2",
+      "lines": [
+        "W-01 DF2",
+        "510x200"
+      ],
+      "size": 63.75,
+      "inside": true
+    },
+    {
+      "id": "W-01-F",
+      "lines": [
+        "W-01 F",
+        "597x2147"
+      ],
+      "size": 70,
+      "inside": true
+    }
+  ],
+  "export": {
+    "rows": [
+      {
+        "name": "F-01-BUL.dxf",
+        "lines": [
+          "F-01",
+          "BUL",
+          "540x770"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 28
+      },
+      {
+        "name": "F-01-BUR.dxf",
+        "lines": [
+          "F-01",
+          "BUR",
+          "540x770"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 28
+      },
+      {
+        "name": "F-01-TOP.dxf",
+        "lines": [
+          "F-01",
+          "TOP",
+          "564x540"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 7
+      },
+      {
+        "name": "F-01-BOTTOM.dxf",
+        "lines": [
+          "F-01",
+          "BOTTOM",
+          "564x540"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 7
+      },
+      {
+        "name": "F-01-BACK.dxf",
+        "lines": [
+          "F-01",
+          "BACK",
+          "600x770"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 45
+      },
+      {
+        "name": "F-01-D1-SL.dxf",
+        "lines": [
+          "F-01",
+          "D1-SL",
+          "490x267"
+        ],
+        "fileHeight": 19.07142857142857,
+        "sheetSize": 38.14285714285714,
+        "nonText": 3
+      },
+      {
+        "name": "F-01-D1-SR.dxf",
+        "lines": [
+          "F-01",
+          "D1-SR",
+          "490x267"
+        ],
+        "fileHeight": 19.07142857142857,
+        "sheetSize": 38.14285714285714,
+        "nonText": 3
+      },
+      {
+        "name": "F-01-D2-SL.dxf",
+        "lines": [
+          "F-01",
+          "D2-SL",
+          "490x267"
+        ],
+        "fileHeight": 19.07142857142857,
+        "sheetSize": 38.14285714285714,
+        "nonText": 3
+      },
+      {
+        "name": "F-01-D2-SR.dxf",
+        "lines": [
+          "F-01",
+          "D2-SR",
+          "490x267"
+        ],
+        "fileHeight": 19.07142857142857,
+        "sheetSize": 38.14285714285714,
+        "nonText": 3
+      },
+      {
+        "name": "F-01-D1-BF.dxf",
+        "lines": [
+          "F-01",
+          "D1-BF",
+          "518x233"
+        ],
+        "fileHeight": 16.642857142857142,
+        "sheetSize": 33.285714285714285,
+        "nonText": 3
+      },
+      {
+        "name": "F-01-D1-BB.dxf",
+        "lines": [
+          "F-01",
+          "D1-BB",
+          "518x233"
+        ],
+        "fileHeight": 16.642857142857142,
+        "sheetSize": 33.285714285714285,
+        "nonText": 1
+      },
+      {
+        "name": "F-01-D2-BF.dxf",
+        "lines": [
+          "F-01",
+          "D2-BF",
+          "518x233"
+        ],
+        "fileHeight": 16.642857142857142,
+        "sheetSize": 33.285714285714285,
+        "nonText": 3
+      },
+      {
+        "name": "F-01-D2-BB.dxf",
+        "lines": [
+          "F-01",
+          "D2-BB",
+          "518x233"
+        ],
+        "fileHeight": 16.642857142857142,
+        "sheetSize": 33.285714285714285,
+        "nonText": 1
+      },
+      {
+        "name": "F-01-D1-DNO.dxf",
+        "lines": [
+          "F-01",
+          "D1-DNO",
+          "531x490"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 5
+      },
+      {
+        "name": "F-01-D2-DNO.dxf",
+        "lines": [
+          "F-01",
+          "D2-DNO",
+          "531x490"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 5
+      },
+      {
+        "name": "F-01-F1.dxf",
+        "lines": [
+          "F-01 F1",
+          "597x382"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 3
+      },
+      {
+        "name": "F-01-F2.dxf",
+        "lines": [
+          "F-01 F2",
+          "597x382"
+        ],
+        "fileHeight": 35,
+        "sheetSize": 70,
+        "nonText": 3
+      }
+    ],
+    "scale": 0.5
+  },
+  "drawerHeight": {
+    "before": [
+      382,
+      382
+    ],
+    "after": {
+      "heights": [
+        500,
+        264
+      ],
+      "stored": [
+        500
+      ],
+      "field": "500"
+    }
+  },
+  "pockets": {
+    "id": "D1-SL",
+    "runner": {
+      "layer": "DRAWER_RUNNER_POCKET",
+      "depth": 2,
+      "x1": -10,
+      "y1": 0,
+      "x2": 450,
+      "y2": 15
+    },
+    "bottom": {
+      "layer": "DRAWER_BOTTOM_POCKET",
+      "depth": 7,
+      "x1": -10,
+      "y1": 15,
+      "x2": 450,
+      "y2": 34
+    },
+    "expect": {
+      "width": 15,
+      "runnerDepth": 2,
+      "bottomDepth": 7
+    },
+    "bottomEnters": 6.5
+  },
+  "detail": {
+    "legend": [
+      "OUTLINE",
+      "DRAWER_RUNNER_POCKET",
+      "DRAWER_BOTTOM_POCKET"
+    ],
+    "notes": {
+      "DRAWER_RUNNER_POCKET": "Runner groove · 460 × 15 × 2 deep pocket at 220, 7.5",
+      "DRAWER_BOTTOM_POCKET": "Bottom groove · 460 × 19 × 7 deep pocket at 220, 24.5"
+    }
+  },
+  "runners": {
+    "wide": {
+      "rows": [
+        56,
+        423
+      ],
+      "runners": [
+        {
+          "drawer": 1,
+          "side": "L",
+          "y": 56,
+          "length": 490
+        },
+        {
+          "drawer": 1,
+          "side": "R",
+          "y": 56,
+          "length": 490
+        },
+        {
+          "drawer": 2,
+          "side": "L",
+          "y": 423,
+          "length": 490
+        },
+        {
+          "drawer": 2,
+          "side": "R",
+          "y": 423,
+          "length": 490
+        }
+      ],
+      "rods": 2,
+      "pair": {
+        "length_mm": 490,
+        "system": "760H",
+        "nl": 490,
+        "variant": "T",
+        "articles": {
+          "L": null,
+          "R": null
+        },
+        "complete": false
+      }
+    },
+    "narrow": {
+      "rows": [
+        56,
+        423
+      ],
+      "runners": [
+        {
+          "drawer": 1,
+          "side": "L",
+          "y": 56,
+          "length": 490
+        },
+        {
+          "drawer": 1,
+          "side": "R",
+          "y": 56,
+          "length": 490
+        },
+        {
+          "drawer": 2,
+          "side": "L",
+          "y": 423,
+          "length": 490
+        },
+        {
+          "drawer": 2,
+          "side": "R",
+          "y": 423,
+          "length": 490
+        }
+      ],
+      "rods": 0,
+      "pair": {
+        "length_mm": 490,
+        "system": "760H",
+        "nl": 490,
+        "variant": "T",
+        "articles": {
+          "L": null,
+          "R": null
+        },
+        "complete": false
+      }
+    }
+  },
+  "oven": {
+    "height": 770,
+    "frontH": 169,
+    "top": false,
+    "railB": {
+      "x": 18,
+      "y": 670,
+      "z": 18,
+      "w": 564,
+      "h": 100,
+      "d": 18
+    },
+    "railF": {
+      "x": 18,
+      "y": 752,
+      "z": 458,
+      "w": 564,
+      "h": 18,
+      "d": 100
+    },
+    "sidePockets": [
+      "PUZZLE_DOG_BONES",
+      "PUZZLE_SOCKET",
+      "PUZZLE_SOCKET"
+    ],
+    "boxTop": 154,
+    "shelfY": 154
+  },
+  "settings": {
+    "system": "Runners Blum MOVENTO 760H — the length follows the cabinet depth. MOVENTO 760H",
+    "hint": "Runner variant T — TIP-ON BLUMOTION. Press the front to open; BLUMOTION adds the soft close. T S",
+    "options": [
+      {
+        "id": "T",
+        "title": "Press the front to open; BLUMOTION adds the soft close.",
+        "on": true
+      },
+      {
+        "id": "S",
+        "title": "Pull to open, with the ordinary soft close.",
+        "on": false
+      }
+    ]
+  }
+}

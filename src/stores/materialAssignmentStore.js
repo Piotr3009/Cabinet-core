@@ -34,6 +34,10 @@ export const BOM_ROLES = [
 export const HARDWARE_ROLES = [
   { id: 'hinges',       label: 'Hinges',        hint: 'Per door, from the hinge rule' },
   { id: 'runner_pairs', label: 'Drawer runners', hint: 'One pair per drawer, at the snapped length' },
+  // Turn 18 (CLAUDE.md F6.5): the rod that ties a wide drawer's two runners
+  // together. Its own line because it is its own product with its own price,
+  // and because a narrow drawer does not have one.
+  { id: 'runner_sync_rods', label: 'Runner sync rods', hint: 'One per wide drawer — Blum’s own threshold' },
   { id: 'legs',         label: 'Legs',          hint: 'Per unit, from the profile' },
   { id: 'rail',         label: 'Hanging rail',  hint: 'Cut to the internal width' },
   { id: 'shelf_pins',   label: 'Shelf pins',    hint: 'Four per shelf' },

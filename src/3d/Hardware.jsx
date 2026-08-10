@@ -1,6 +1,12 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import {
+  useEffect, useLayoutEffect, useMemo, useRef, useState,
+} from 'react';
 import * as THREE from 'three';
 import { mm } from './constants.js';
+import { runnerEntry, runnerModelUrl } from '../engine/runners.js';
+import {
+  onRunnerLoad, runnerModel, runnerModelFits, runnerSource,
+} from './runnerModels.js';
 
 // ─── The hardware, in 3D (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
 //
@@ -53,9 +59,14 @@ import { mm } from './constants.js';
  *   profile
  *   xray       are we looking through the furniture?
  *   hinges     draw the hinge bodies even in Solid (turn 11, CLAUDE.md F3.5)
+ *   runners    …and the runners, when the fronts are off or a door is open
+ *              (turn 18, CLAUDE.md F6.7)
+ *   runnerVariants  { [drawer]: 'T' | 'S' } — resolved project → unit → drawer
+ *   storageBase     where the models are served from, '' in mock mode
  */
 export default function Hardware({
   instances, profile, xray = false, hinges = false,
+  runners = false, runnerVariants = null, storageBase = '',
 }) {
   const colours = profile.appearance.hardware;
   return (
@@ -85,7 +96,25 @@ export default function Hardware({
           colour={xray ? colours.bracket : (colours.hinge || colours.bracket)}
         />
       )}
-      {xray && <Runners items={instances.runners} profile={profile} colour={colours.bracket} />}
+      {/* ─── Turn 18 (CLAUDE.md F6.7) ───
+          The runners come out from behind X-ray when the FRONTS are off or a
+          door is open — which is exactly when a joiner is looking INTO the
+          cabinet and the ironmongery is what he is looking at. With the fronts
+          on and the doors shut they stay hidden, because a closed drawer hides
+          them in the workshop too and a wall of ironmongery is what this
+          component was written to avoid. */}
+      {(xray || runners) && (
+        <>
+          <Runners
+            items={instances.runners}
+            profile={profile}
+            colour={colours.bracket}
+            variants={runnerVariants}
+            storageBase={storageBase}
+          />
+          <Rods items={instances.rods || []} colour={colours.bracket} />
+        </>
+      )}
     </group>
   );
 }
@@ -227,15 +256,76 @@ export function DoorHinges({
 // ─── Runners ────────────────────────────────────────────────────────────────
 
 /**
- * A pair per drawer, drawn as the L each profile is: a face standing up against
- * the box side and a return along the bottom of it. Two instanced meshes for
- * the two legs of the L, whatever the drawer count is.
+ * A pair per drawer.
+ *
+ * ─── TURN 18 (CLAUDE.md F6): THE MANUFACTURER'S OWN GEOMETRY ───────────────
+ *
+ * Everything else in this file is procedural on purpose. A runner is the
+ * exception the owner asked for: he has the whole MOVENTO 760H ladder as GLB,
+ * and a Blum runner drawn from three boxes is a Blum runner nobody recognises.
+ *
+ * Two lists, and they are disjoint so nothing is ever drawn twice:
+ *
+ *   • rows whose model has ARRIVED are drawn with it, one clone per row —
+ *     which is what makes a drawer's two runners two objects at two heights;
+ *   • every other row — the file still on its way, a bucket that is down, mock
+ *     mode, a model that measures the wrong length — falls through to the
+ *     INSTANCED PROFILE this function has drawn since turn 7: the same grey
+ *     shape, at the runner's true size, in the same place (F6.6). Never a
+ *     hole, never a blocked scene.
+ *
+ * THE MODEL IS A COSTUME ON THE SCREWS (F6.2). Every position is the engine's —
+ * `hardwareInstances` reads `drillSummary.runner_rows_carcass_y`, the row the
+ * CNC actually drills — and the model is moved to it. Nothing about a
+ * downloaded file is allowed to move a hole.
  */
-function Runners({ items, profile, colour }) {
+function Runners({
+  items, profile, colour, variants = null, storageBase = '',
+}) {
   const R = profile.hardware.runner;
+  const M = R.movento;
+  // A file arriving is not a state change anything else can see, so this is the
+  // one re-render it causes — the same trick 3d/UnitView.jsx uses for a decor
+  // image that lands after the panel was drawn.
+  const [arrived, setArrived] = useState(0);
+
+  // Which FILE each row wants. The catalogue may know nothing (no bucket, mock
+  // mode) — then every url is null and every row is drawn plain.
+  const wanted = useMemo(() => items.map((r) => {
+    const variant = variants?.[r.drawer] || M.defaultVariant;
+    const entry = runnerEntry({
+      system: M.system, nl: r.length, variant, side: r.side,
+    });
+    return {
+      row: r,
+      url: entry ? runnerModelUrl(entry, profile, storageBase) : null,
+      // The manifest names L and R separately. Where it gives one file for
+      // both, the other hand is that file mirrored across the cabinet.
+      mirror: Boolean(entry && entry.side == null && r.side === 'R'),
+    };
+  }), [items, variants, profile, storageBase, M]);
+
+  useEffect(() => {
+    const offs = wanted
+      .filter((w) => w.url)
+      .map((w) => onRunnerLoad(w.url, () => setArrived((n) => n + 1)));
+    return () => { for (const off of offs) off(); };
+  }, [wanted]);
+
+  const models = useMemo(() => wanted.map((w) => {
+    if (!w.url) return null;
+    const source = runnerSource(w.url);
+    if (!source?.loaded || !runnerModelFits(source, w.row.length, profile)) return null;
+    return runnerModel(w.url, { mirror: w.mirror, profile });
+    // `arrived` is the dependency that matters: the clone must be re-taken
+    // AFTER the file lands, or it holds nothing (3d/materials.js says the same
+    // thing about a texture clone taken too early).
+  }), [wanted, profile, arrived]);
+
+  const plain = useMemo(() => items.filter((_, i) => !models[i]), [items, models]);
 
   const placeFace = useMemo(() => (i, m) => {
-    const r = items[i];
+    const r = plain[i];
     const dir = r.side === 'L' ? -1 : 1;
     put(
       m,
@@ -243,10 +333,10 @@ function Runners({ items, profile, colour }) {
       null,
       new THREE.Vector3(1, 1, mm(r.length)),
     );
-  }, [items, R.profileHeight]);
+  }, [plain, R.profileHeight]);
 
   const placeFlange = useMemo(() => (i, m) => {
-    const r = items[i];
+    const r = plain[i];
     const dir = r.side === 'L' ? -1 : 1;
     put(
       m,
@@ -254,19 +344,59 @@ function Runners({ items, profile, colour }) {
       null,
       new THREE.Vector3(1, 1, mm(r.length)),
     );
-  }, [items, R.flangeDepth]);
+  }, [plain, R.flangeDepth]);
 
   return (
     <>
+      {/* The model, standing on the drilled row: x is the face of the panel it
+          is screwed to, y is the row itself, z is the back of the box. */}
+      {models.map((model, i) => (model ? (
+        <primitive
+          // eslint-disable-next-line react/no-array-index-key -- the row IS the identity
+          key={`m${i}`}
+          object={model}
+          position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]}
+        />
+      ) : null))}
+
       {/* The upright face. Its LENGTH is a per-instance scale, so one geometry
           serves a 390 mm runner and a 690 mm one. */}
-      <Pieces count={items.length} place={placeFace} colour={colour} metalness={0.7}>
+      <Pieces count={plain.length} place={placeFace} colour={colour} metalness={0.7}>
         <boxGeometry args={[mm(R.profileThickness), mm(R.profileHeight), 1]} />
       </Pieces>
-      <Pieces count={items.length} place={placeFlange} colour={colour} metalness={0.7}>
+      <Pieces count={plain.length} place={placeFlange} colour={colour} metalness={0.7}>
         <boxGeometry args={[mm(R.flangeDepth), mm(R.profileThickness), 1]} />
       </Pieces>
     </>
+  );
+}
+
+/**
+ * The synchronisation rod (turn 18, CLAUDE.md F6.5): a tube across the back of
+ * a wide drawer box, tying the two runners together so it cannot rack.
+ *
+ * Parametric to the millimetre and never a decoration — WHETHER there is one is
+ * Blum's own threshold on the cabinet opening (engine/runners.js `syncRodFor`),
+ * and its LENGTH is the box less the ends its adapters take up. A narrow drawer
+ * draws nothing, because a narrow drawer is fitted with nothing.
+ */
+function Rods({ items, colour }) {
+  const place = useMemo(() => (i, m) => {
+    const rod = items[i];
+    put(
+      m,
+      new THREE.Vector3(mm(rod.x), mm(rod.y), mm(rod.z)),
+      // The tube is modelled up the y axis; the rod runs ACROSS the cabinet.
+      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2),
+      new THREE.Vector3(1, mm(rod.length), 1),
+    );
+  }, [items]);
+
+  if (!items.length) return null;
+  return (
+    <Pieces count={items.length} place={place} colour={colour} metalness={0.75}>
+      <cylinderGeometry args={[mm(items[0].diameter / 2), mm(items[0].diameter / 2), 1, 12]} />
+    </Pieces>
   );
 }
 

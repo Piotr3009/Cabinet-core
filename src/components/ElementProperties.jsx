@@ -10,6 +10,7 @@ import { getUnitType } from '../engine/types.js';
 import { doorExtendMm, doorHeightOf } from '../engine/doors.js';
 import { minDrawerFrontHeight } from '../engine/cabinet.js';
 import { elementMaterialChoices, migrateDesign } from '../engine/design.js';
+import { resolveRunnerVariant } from '../engine/runners.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import NumberField from './NumberField.jsx';
 
@@ -63,6 +64,8 @@ export default function ElementProperties({
   // Turn 17 (CLAUDE.md F8.2): one drawer's height, clamped by the owner's rule.
   const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
   const resetDrawerHeights = useProjectStore((s) => s.resetDrawerHeights);
+  // Turn 18 (CLAUDE.md F6.4): …and which runner it is fitted with.
+  const setDrawerRunnerVariant = useProjectStore((s) => s.setDrawerRunnerVariant);
   const moveElement = useProjectStore((s) => s.moveElement);
 
   const type = useMemo(() => getUnitType(unit.type), [unit.type]);
@@ -530,6 +533,52 @@ export default function ElementProperties({
             <p className="text-[11px] text-ink-400">
               The drawers nobody has set take up what is left, in the kit&apos;s own ratio, so the stack
               still fills the face. No shorter than {formatMm(minDrawerFrontHeight(profile))} mm.
+            </p>
+          </div>
+        );
+      }
+      // ─── Turn 18 (CLAUDE.md F6.4): THIS DRAWER'S OWN RUNNER ─────────────
+      // Project → unit → drawer, the colour hierarchy exactly. "Project" is
+      // not a fourth option: it is what the field says when nobody has
+      // overridden it, and clicking the chosen variant again gives the drawer
+      // back to the project rather than freezing today's answer onto it.
+      //
+      // It is HARDWARE and not geometry: the gaps, the pockets and the
+      // drilling are identical for both variants, so nothing about this
+      // cabinet's cut list moves. What moves is the model on the screen and
+      // the article on the order.
+      case 'runner-variant': {
+        const n = Number(panel.meta?.drawer);
+        if (!Number.isFinite(n) || n < 1) return null;
+        const own = unit.params.runner_variants?.[String(n)] || null;
+        const chosen = resolveRunnerVariant({
+          drawer: n, unit, design, profile,
+        });
+        return (
+          <div key={key} className="col-span-2 space-y-1" data-runner-variant-drawer={n}>
+            <Field label="Runner">
+              <div className="flex gap-1">
+                {profile.hardware.runner.movento.variants.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    data-runner-variant-option={v.id}
+                    aria-pressed={chosen === v.id}
+                    title={`${v.label} — ${v.hint}`}
+                    className={`cc-btn px-2 flex-1 ${chosen === v.id ? 'border-gold text-gold' : ''}`}
+                    onClick={() => setDrawerRunnerVariant(unit.id, n, own === v.id ? null : v.id)}
+                  >
+                    {v.id}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <p className="text-[11px] text-ink-400">
+              MOVENTO {profile.hardware.runner.movento.system}
+              {' · '}
+              {own ? 'this drawer’s own — click it again for the project’s' : 'the project’s'}
+              {'. '}
+              Same gaps, same pockets, same drilling either way.
             </p>
           </div>
         );

@@ -1466,3 +1466,122 @@ mają boki bez żadnej kieszeni: LISP ich nie wycina. Dodanie ich byłoby NOWYM
 frezowaniem na kicie, którego CLAUDE.md nie wymienia wśród czterech delt, więc
 ich nie ma. Jeśli właściciel chce tam ten sam rowek, to jest jedna nazwana delta
 na jedną turę.
+
+**ZAMKNIĘTE w turze 18 (F3) — właściciel chciał.** Odczytał obie kieszenie ze
+swojego warsztatowego DXF-a i potwierdził, że to jest ten sam bok: 2 mm redukcji
+od dolnej krawędzi do 15, rowek 7 mm od 15 w górę na `G + 1`. Boki szuflad szafy
+tną je teraz z tych samych liczb `baseDrawerUnit`, co BUDR — jedna nazwana delta
+(delta 2 tury 18), opublikowana w `verify/t18/cnc-export-identity.md`.
+
+---
+
+# TURA 18 — SZUFLADA (10.08.2026)
+
+## #75 — BRAMKA LICENCYJNA BLUM: modele producenta przed jakimkolwiek pokazem
+
+**To jest bliźniak #44 (skany EGGER) i ma ten sam ciężar.**
+
+Właściciel wgrał do Supabase Storage 40 plików GLB z geometrią Blum MOVENTO
+760H — `hardware/runners/blum/movento/` — i tura 18 rysuje je w widoku 3D. To
+jest **geometria produktu Bluma**, nie nasza, i traktujemy ją dokładnie tak, jak
+turę 8 nauczył EGGER:
+
+* **Do pracy warsztatu — tak.** Stolarz patrzy na szufladę, którą sam kupił i
+  sam zamontuje. To jest ta sama sytuacja, w której trzyma katalog Bluma na
+  ławce.
+* **Do POKAZU PUBLICZNEGO albo SPRZEDAŻY — NIE, dopóki nie ma pisemnej zgody
+  albo sprawdzonych warunków licencji.** Screenshot na stronie, demo dla
+  klienta, materiał marketingowy, produkt sprzedawany z modelami w środku —
+  każde z nich jest dystrybucją cudzej własności intelektualnej i każde wymaga
+  decyzji, której nikt jeszcze nie podjął.
+
+Co trzeba sprawdzić, zanim ta bramka się otworzy:
+
+1. warunki, na jakich Blum udostępnia pliki CAD/BIM (zwykle są w regulaminie
+   pobierania, a nie w samym pliku);
+2. czy licencja obejmuje **osadzenie w oprogramowaniu**, czy tylko użycie we
+   własnym projekcie;
+3. czy wymaga atrybucji i w jakiej formie;
+4. czy zmienia się cokolwiek, gdy aplikacja jest **sprzedawana** innym
+   warsztatom.
+
+**Do tego czasu — jak przy EGGER-ze:** modele wolno pokazywać w aplikacji
+warsztatu, a każdy materiał, który wychodzi na zewnątrz, musi być zrobiony bez
+nich. Aplikacja robi to bez żadnej dodatkowej pracy: bucket jest opcjonalny, a
+scena bez niego rysuje własny profil w tym samym miejscu (F6.6). **Decyzja jest
+właściciela i wymaga jego pisemnego potwierdzenia, dokładnie jak #44.**
+
+Numery katalogowe (`manifest.json`) to inna sprawa i są bezpieczne: numer
+artykułu jest faktem handlowym, nie utworem, i jest dokładnie tym, co warsztat
+wpisuje w zamówienie.
+
+## #76 — Wzór wkrętów płaskiej listwy piekarnika: rozstaw jest NASZĄ decyzją
+
+F5.2 mówi: „płaska listwa bierze własny wzór wkrętów 3 mm — rozłożony dla deski
+POZIOMEJ, nie liczbami pionowej listwy zlewu". Rząd jest oczywisty i niczego nie
+wymyśla: wkręt wchodzi w KANT listwy, więc siedzi na osi płyty
+(`G/2 + centrelineExtra` od góry szafki) — to jest reguła, której ta aplikacja
+używa dla każdej poziomej deski.
+
+**ROZSTAW nie jest oczywisty i AutoLISP nie zna tego elementu.** Wspólna reguła
+to `[screwFromEnd, środek, długość − screwFromEnd]`, a przy biegu 100 mm
+`screwFromEnd` (50) JEST środkiem — reguła zwija się do jednego wkrętu, a listwa
+na jednym wkręcie z każdej strony to listwa, która się obraca.
+
+Wdrożone: **dwa wkręty, na ćwiartce i trzech ćwiartkach własnej szerokości
+listwy** (`ovenUnit.topRails.frontScrewFromEdge: 25`). Jest to **decyzja
+silnika tam, gdzie kit milczy** — ta sama podstawa, na której stoją
+`puzzle.singleSocketBelow` i `middleTabBelow` — powiedziana wprost, a nie
+przebrana za liczbę odtworzoną z LISP-a. **Prośba do właściciela: potwierdź albo
+podaj swoją.** Do tego czasu to jest to, co wierci maszyna.
+
+## #77 — Własny środek modeli MOVENTO: zmierzyć przy pierwszym montażu
+
+F6.2: „własny środek modelu jest nieznany do pierwszego montażu: zmierz go raz,
+zapisz przesunięcie jako liczbę profilu, powiedz to w komentarzu". Zapisane jest
+— `hardware.runner.movento.modelOrigin: { x: 0, y: 0, z: 0 }` — i jest to
+uczciwe zero: **nic w tym repozytorium nie otworzyło żadnego z plików
+właściciela**, więc loader ustawia kadr modelu na początek grupy (róg jego
+własnego bounding boxa) i nie udaje, że wie więcej.
+
+Pierwsza osoba, która zobaczy prowadnicę wiszącą nad swoim rzędem albo wciśniętą
+w bok, poprawia **te trzy liczby i nic więcej** — po to są w jednym miejscu.
+Trzeba do tego przeglądarki z dostępem do bucketa; ta sesja pracuje w trybie
+mock i nie ma go.
+
+Dwie rzeczy, które trzeba przy okazji zmierzyć i zapisać:
+
+* czy pliki `-L` i `-R` naprawdę są parą (loader odbija plik PARY dla drugiej
+  ręki, a plik z własną stroną bierze jak jest);
+* czy dłuższa oś modelu odpowiada NL w granicach `lengthTolerance` (5 mm) —
+  walidacja jest wdrożona i model, który się nie zgadza, wraca do rysowanego
+  profilu, ale nikt jej jeszcze nie widział na prawdziwym pliku.
+
+## #78 — Manifest jest katalogiem, dopóki nie ma `cc_hardware`
+
+F6.8 mówi to wprost i tak jest wdrożone: `manifest.json` obok modeli JEST listą
+części, wpychaną do silnika przez `lib/runnerCatalogue.js` dokładnie tak, jak
+paczka dekorów EGGER-a od tury 8. Silnik nigdy nie sięga do sieci.
+
+Czego to jeszcze nie robi i nie udaje, że robi:
+
+* **cen.** Manifest niesie numer artykułu, nie cenę. BOM zamawia parę po
+  numerze; ile ona kosztuje, wie lista materiałów warsztatu i tam trafi, kiedy
+  będzie `cc_hardware`.
+* **drążków synchronizacji.** Progi i długość są policzone (F6.5), ale numeru
+  katalogowego samego drążka ani jego adapterów w manifeście nie ma — BOM
+  podaje rodzaj i długość. Jeśli właściciel chce je zamawiać z aplikacji,
+  potrzebne są dwa numery.
+* **wariantu SU.** Pliki są w buckecie i celowo nie ma ich w menu (`variants` w
+  profilu). Jeśli warsztat zacznie ich używać, to jeden wpis, nie zmiana kodu.
+
+## #79 — Wentylacja piekarnika: gdyby instrukcja jej zażądała
+
+Ustalone z właścicielem w F5.3: otwarte plecy i otwarty teraz blat SĄ przepływem
+powietrza, a szczelina 50 × 300 w półce wentylowałaby **do zamkniętej
+szuflady** — czyli donikąd. Dlatego jej nie ma i nie jest to przeoczenie.
+
+Otwarte zostaje jedno: **konkretny piekarnik może w instrukcji wymagać otworu o
+podanym wymiarze w podanym miejscu.** To jest liczba producenta, per model, i
+kiedy padnie, jest to jedna nazwana delta na jedną turę — a nie liczba, którą
+wolno zgadnąć tutaj.

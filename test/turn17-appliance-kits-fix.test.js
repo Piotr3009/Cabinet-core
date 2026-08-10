@@ -64,12 +64,19 @@ test('the oven base takes the project base height, like every base unit', () => 
   assert.equal(P.ovenUnit.defaults.height, 770, 'the worktop decides, not the appliance');
 });
 
-test("the drawer front is the owner's own sum: H − gap − oven", () => {
+test("the drawer front is the owner's own sum: H − gap − oven − gap", () => {
+  // ─── TURN 18 (CLAUDE.md F5.4) ───
+  // Turn 17 stopped at `H − gap − oven` — 172 on a 770 carcass — and the
+  // owner's review adds the half that was missing: the oven's FACE behaves
+  // like a front in the run, and two fronts never touch. So the drawer front
+  // loses a gap to the appliance as well as the one above it: 169.
+  // "szczelina 3 mm jak wszystkie nasze drzwi."
   for (const height of [720, 770, 900]) {
     assert.equal(Math.round(front(build('OVEN_BASE', { height })).h),
-      height - P.doors.gap - P.ovenUnit.ovenHeight,
+      height - P.doors.gap - P.ovenUnit.ovenHeight - P.baseDrawerUnit.gap,
       'a front covers the carcass bottom and the shelf; it is not the opening between them');
   }
+  assert.equal(Math.round(front(build('OVEN_BASE', { height: 770 })).h), 169);
 });
 
 test('the oven stands on its shelf with exactly the gap above it', () => {
@@ -80,8 +87,10 @@ test('the oven stands on its shelf with exactly the gap above it', () => {
 
   assert.equal(standsAt + P.ovenUnit.ovenHeight, height - P.doors.gap,
     '172 + 595 = 767, and 770 − 767 is the 3 mm gap');
-  assert.equal(Math.round(front(kit).h), standsAt,
-    'the front covers the face below the shelf — exactly, with nothing left over');
+  // …and the drawer front stops one gap BELOW the appliance face, which is
+  // where the shelf's top face is: 169 + 3 = 172 (turn 18, F5.4).
+  assert.equal(Math.round(front(kit).h) + P.baseDrawerUnit.gap, standsAt,
+    'the front covers the face below the shelf, less the gap two fronts keep');
 });
 
 test('the oven shelf is still 598 from the TOP', () => {

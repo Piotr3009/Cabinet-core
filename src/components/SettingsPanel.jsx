@@ -14,6 +14,7 @@ import {
 } from '../engine/projectSettings.js';
 import { formatMm } from '../engine/format.js';
 import { hingeStandard } from '../engine/cabinet.js';
+import { resolveRunnerVariant } from '../engine/runners.js';
 import { PROJECT_TYPES as PROJECT_TYPE_OPTIONS } from '../engine/projectTypes.js';
 import { contrastInk } from '../lib/pswColors.js';
 import SheenSlider from './SheenSlider.jsx';
@@ -69,12 +70,17 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
   const profile = useCabinetProfileStore((s) => s.profile);
   const notify = useUiStore((s) => s.notify);
+  // Turn 18 (CLAUDE.md F6.4): what the WHOLE JOB is fitted with — no unit and
+  // no drawer, so this is the project level of the hierarchy on its own.
+  const projectRunnerVariant = resolveRunnerVariant({ design, profile });
 
   const setDesign = useProjectStore((s) => s.setDesign);
   const setProjectHeights = useProjectStore((s) => s.setProjectHeights);
   const setProjectDefaults = useProjectStore((s) => s.setProjectDefaults);
   // Turn 17 (CLAUDE.md F7.1): how many hinges this job hangs a door on.
   const setHingeStandard = useProjectStore((s) => s.setHingeStandard);
+  // Turn 18 (CLAUDE.md F6.4): …and which runner it fits its drawers with.
+  const setRunnerVariant = useProjectStore((s) => s.setRunnerVariant);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
   const setCarcassMaterial = useProjectStore((s) => s.setCarcassMaterial);
@@ -850,6 +856,45 @@ export default function SettingsPanel({ onRoomSetup = null }) {
             ))}
           </div>
         </div>
+        {/* ─── Turn 18 (CLAUDE.md F6.4): THE RUNNERS ────────────────────────
+            The SYSTEM the workshop stocks and the VARIANT this job is fitted
+            with. It is HARDWARE and not geometry: Blum's own installation page
+            says the gaps, the pockets and the drilling do not change with the
+            motion technology, so a T drawer and an S drawer are cut identically
+            and differ in what is bought and in what you see on screen.
+            A single drawer can say otherwise — select it in the editor. */}
+        <div className="cc-row" data-runner-system="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Runners</span>
+            <span className="text-[11px] text-ink-400">
+              Blum MOVENTO {profile.hardware.runner.movento.system} — the length follows the cabinet depth.
+            </span>
+          </div>
+          <span className="cc-tag">MOVENTO {profile.hardware.runner.movento.system}</span>
+        </div>
+        <div className="cc-row" data-runner-variant="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Runner variant</span>
+            <span className="text-[11px] text-ink-400">
+              {runnerVariantHint(profile, projectRunnerVariant)}
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {profile.hardware.runner.movento.variants.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                data-runner-variant-option={v.id}
+                aria-pressed={projectRunnerVariant === v.id}
+                title={v.hint}
+                className={`cc-btn px-2 ${projectRunnerVariant === v.id ? 'border-gold text-gold' : ''}`}
+                onClick={() => setRunnerVariant(v.id)}
+              >
+                {v.id}
+              </button>
+            ))}
+          </div>
+        </div>
         <p className="text-[11px] text-ink-400">
           Every one of these is fitted by the automat and counted in the BOM. You pick the variant; it
           picks the item. One cabinet&apos;s own hinges can be added, removed and moved by hand —
@@ -1222,4 +1267,17 @@ function FinishSwatch({ finish }) {
       }}
     />
   );
+}
+
+/**
+ * The one-line explanation under the runner variant buttons (turn 18, F6.4).
+ *
+ * The owner asked for "a short tooltip", and the label alone ("T") says nothing
+ * to anybody who has not read Blum's catalogue — so the hint of whichever
+ * variant is currently chosen is spelled out under the row as well.
+ */
+function runnerVariantHint(profile, chosen) {
+  const list = profile.hardware.runner.movento.variants || [];
+  const v = list.find((x) => x.id === chosen) || list[0];
+  return v ? `${v.id} — ${v.label}. ${v.hint}` : '';
 }

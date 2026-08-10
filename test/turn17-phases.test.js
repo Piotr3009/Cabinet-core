@@ -154,7 +154,8 @@ test('F4.2 — a drawer box is an element with its own detail view', () => {
   const r = unit('BUDR');
   const box = r.panels.find((p) => p.role === 'drawer_box');
   assert.equal(elementKind(box), 'drawer');
-  assert.deepEqual(elementFields(box), ['drawer-height', 'material']);
+  // Turn 18 (CLAUDE.md F6.4) adds the drawer's own runner variant beside it.
+  assert.deepEqual(elementFields(box), ['drawer-height', 'runner-variant', 'material']);
 });
 
 // ─── F7 — hinges ────────────────────────────────────────────────────────────

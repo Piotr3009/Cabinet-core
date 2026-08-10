@@ -56,6 +56,10 @@ export default function CncView() {
   const hiddenParts = useUiStore((s) => s.cncHiddenParts);
   const view = useUiStore((s) => s.cncView);
   const setCncView = useUiStore((s) => s.setCncView);
+  // Turn 19 (CLAUDE.md F4): double-click a part and the right-hand tree opens
+  // on it. Pure navigation — the sheet itself does not change.
+  const focusCncPart = useUiStore((s) => s.focusCncPart);
+  const focus = useUiStore((s) => s.cncFocusPart);
   const materials = useMaterialAssignmentStore((s) => s.materials);
   // The PROJECT's own assignment is what a material section is (turn 16, F2) —
   // the carcass types, the front types and the four run-piece switches. The
@@ -386,6 +390,8 @@ export default function CncView() {
                       profile={profile}
                       mmPerPx={mmPerPx}
                       visible={visible}
+                      lit={focus?.unitId === b.unit.id && focus?.panelId === place.panel.id}
+                      onOpenInTree={() => focusCncPart(b.unit.id, place.panel.id)}
                     />
                   ))}
                 </g>
@@ -500,6 +506,7 @@ function Caption({
 
 function Part({
   place, unitNum, drills, outlineLayer, annotation, profile, mmPerPx, visible,
+  lit = false, onOpenInTree = null,
 }) {
   const { panel } = place;
   const cnc = panel.cnc || {};
@@ -543,13 +550,21 @@ function Part({
   const showSymbol = (sizeMm) => symbolVisible(sizeMm, mmPerPx, annotation.minSymbolPx);
 
   return (
-    <g>
+    // ─── Turn 19 (CLAUDE.md F4) ───
+    // "Kliknięcie 2 razy na dany element zabiera nas do listy po prawej."
+    // The gesture is on the whole part rather than on its outline alone, so
+    // double-clicking the middle of a door works as well as double-clicking its
+    // edge; the outline carries a faint fill and is therefore what the pointer
+    // actually lands on. Nothing here edits, ticks or rotates anything — it is
+    // navigation, and the sheet looks exactly the same afterwards apart from
+    // the part being lit.
+    <g onDoubleClick={onOpenInTree || undefined} style={onOpenInTree ? { cursor: 'pointer' } : undefined}>
       {visible(oLayer) && cnc.outline?.length >= 2 && (
         <polygon
           points={sheetPolygon(place, cnc.outline)}
-          fill="rgba(255,255,255,0.035)"
-          stroke={layerScreenColor(oLayer)}
-          strokeWidth={1.4}
+          fill={lit ? 'rgba(224,182,74,0.14)' : 'rgba(255,255,255,0.035)'}
+          stroke={lit ? '#e0b64a' : layerScreenColor(oLayer)}
+          strokeWidth={lit ? 2.4 : 1.4}
           vectorEffect="non-scaling-stroke"
         />
       )}

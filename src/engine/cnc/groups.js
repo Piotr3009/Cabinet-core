@@ -44,6 +44,34 @@ export function exportablePanels(panels = []) {
   return panels.filter((p) => p?.cnc && Array.isArray(p.cnc.outline) && p.cnc.outline.length >= 2);
 }
 
+/**
+ * WHERE A PART SITS IN THE TREE (turn 19, CLAUDE.md F4).
+ *
+ * The owner asked for this in the turn-17 list and my transcription dropped it:
+ * "kliknięcie 2 razy na dany element zabiera nas do listy po prawej, otwiera i
+ * podświetla który to element."
+ *
+ * Double-clicking a part on the sheet is PURE NAVIGATION — nothing is edited,
+ * nothing is ticked, nothing is rotated. What the right-hand tree needs in
+ * order to obey is three facts, and this is the pure function that gives them,
+ * so the tree can be driven from a test as well as from a pointer.
+ *
+ * @param {Array} panels   this unit's exportable parts
+ * @param {string} panelId the part that was double-clicked
+ * @returns {{panelId:string, group:string, index:number}|null}
+ *   null where the part is not on this unit's sheet at all, which is an honest
+ *   answer and not an error: a joiner may double-click a part of the unit
+ *   beside the one the tree is scrolled to.
+ */
+export function treePathOfPanel(panels, panelId) {
+  if (!panelId) return null;
+  const panel = (panels || []).find((p) => p?.id === panelId);
+  if (!panel) return null;
+  const group = groupOfPanel(panel);
+  const mine = (panels || []).filter((p) => groupOfPanel(p) === group);
+  return { panelId: panel.id, group, index: mine.findIndex((p) => p.id === panel.id) };
+}
+
 /** Group → the parts of this unit in it, in cut-list order. */
 export function groupPanels(panels) {
   const out = new Map(PART_GROUP_IDS.map((id) => [id, []]));

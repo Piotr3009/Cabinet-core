@@ -164,6 +164,28 @@ export const useUiStore = create((set, get) => ({
   }),
   resetCncVisibility: () => set({ cncHiddenUnits: {}, cncHiddenParts: {} }),
 
+  // ─── DOUBLE-CLICK A PART ON THE SHEET (turn 19, CLAUDE.md F4) ─────────────
+  //
+  // The owner's turn-17 verdict, dropped in transcription and honoured here:
+  // "kliknięcie 2 razy na dany element zabiera nas do listy po prawej, otwiera
+  // i podświetla który to element."
+  //
+  // PURE NAVIGATION. Nothing is edited, nothing is ticked on or off, nothing is
+  // rotated — the turn-17 shelf rule made rotation automatic and no verdict
+  // since has asked for a hand control. It is view state, so it lives here with
+  // the rest of it and reaches nothing that is exported.
+  //
+  // `stamp` is what makes the SAME part twice still scroll the tree: the effect
+  // in components/CncTree.jsx watches the whole record, and two identical
+  // records in a row would not be a change.
+  cncFocusPart: null,                // { unitId, panelId, stamp } | null
+  focusCncPart: (unitId, panelId) => set((s) => ({
+    cncFocusPart: unitId && panelId
+      ? { unitId, panelId, stamp: (s.cncFocusPart?.stamp || 0) + 1 }
+      : null,
+  })),
+  clearCncFocus: () => set({ cncFocusPart: null }),
+
   // Canvas view: the 3D room, or the flat CNC sheet of the selected unit.
   // Both read the SAME engine output — the toggle changes nothing but the way
   // it is drawn, so a parameter edited in 3D is already correct in CNC.

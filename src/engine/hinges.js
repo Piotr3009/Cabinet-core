@@ -180,19 +180,33 @@ export function hingeFamilies({ angle = null, finish = null, role = 'hinge' } = 
         finish: item.finish,
         articles: [],
         article: null,
-        file: item.file,
+        file: null,
+        files: new Map(),
       };
       grouped.set(item.family, entry);
     }
     entry.articles.push(item.article);
-    // The FIRST article of a family, in the catalogue's own order, is the one
-    // drawn and listed (F1.6). Sorted, so the answer does not depend on the
-    // order a JSON file happened to be written in.
-    entry.articles.sort();
-    [entry.article] = entry.articles;
-    if (!entry.file && item.file) entry.file = item.file;
+    if (item.file) entry.files.set(item.article, item.file);
   }
-  return [...grouped.values()].sort((a, b) => a.family.localeCompare(b.family));
+  // The LEADING article of a family — sorted, so the answer does not depend on
+  // the order a JSON file happened to be written in — is the one drawn and the
+  // one the BOM leads with (F1.6), and the FILE is that article's own. Both
+  // articles travel on the entry: nobody in this building knows yet what the
+  // second one means and BLOCKERS carries the question, so neither is thrown
+  // away to make the shape tidier.
+  return [...grouped.values()]
+    .map((entry) => {
+      const articles = [...entry.articles].sort();
+      const [article] = articles;
+      const { files, ...rest } = entry;
+      return {
+        ...rest,
+        articles,
+        article,
+        file: files.get(article) || files.values().next().value || null,
+      };
+    })
+    .sort((a, b) => a.family.localeCompare(b.family));
 }
 
 /** One family by name, whatever its role. */
@@ -250,8 +264,8 @@ export function plateFamily({ plate = null, finish = null } = {}) {
  *   innerDrawer     see hingeAngleFor
  *   finish          'nickel' | 'onyx'
  * @returns {{angle:number|null, family:string|null, article:string|null,
- *            articles:string[], finish:string|null, assigned:boolean,
- *            ruleAngle:number|null, complete:boolean}}
+ *            articles:string[], finish:string|null, file:string|null,
+ *            assigned:boolean, ruleAngle:number|null, complete:boolean}}
  */
 export function resolveDoorHinge({
   assigned = null, frontThickness = null, innerDrawer = false, finish = null,
@@ -268,6 +282,7 @@ export function resolveDoorHinge({
         article: own.article,
         articles: [...own.articles],
         finish: own.finish,
+        file: own.file,
         assigned: true,
         ruleAngle,
         complete: Boolean(own.article),
@@ -283,6 +298,7 @@ export function resolveDoorHinge({
       article: null,
       articles: [],
       finish: wantFinish,
+      file: null,
       assigned: false,
       ruleAngle,
       complete: false,
@@ -294,6 +310,10 @@ export function resolveDoorHinge({
     article: match.article,
     articles: [...match.articles],
     finish: match.finish,
+    // The FILE the first article names. It is on the answer rather than looked
+    // up again by the view, so the hinge that is drawn is the hinge that is
+    // ordered — one resolution, not two that agree by accident.
+    file: match.file,
     assigned: false,
     ruleAngle,
     complete: Boolean(match.article),
@@ -361,6 +381,58 @@ export function hingeModelUrl(entry, profile, storageBase = '') {
   const C = profile.hardware.hinge.cliptop;
   if (!storageBase) return entry.file;
   return `${String(storageBase).replace(/\/+$/, '')}/${C.bucket}/${entry.file}`;
+}
+
+/**
+ * THE THICKNESS RE-RESOLVE GATE (CLAUDE.md F1.4).
+ *
+ * "Changing a front's material to a thickness that flips the angle re-resolves
+ * ONLY doors without a manual assignment, and says so in a toast. A manual
+ * assignment is never silently overridden."
+ *
+ * The re-resolution itself needs no code: the angle is DERIVED from the front's
+ * thickness every time a cabinet is computed, so a door that follows the rule
+ * already follows it the moment the board changes, and a door with an
+ * assignment already ignores it. What is missing is the SAYING SO, and that is
+ * what this is — a pure answer about what just happened, so that the sentence
+ * shown to a joiner and a test of the rule are the same function.
+ *
+ * @param {object} args
+ *   fromThickness, toThickness   mm — the front board before and after
+ *   assignedDoors                how many doors in the job carry a hand-picked
+ *                                hinge (those are the ones that do NOT move)
+ *   totalDoors                   how many doors there are altogether
+ * @returns {{flipped:boolean, from:number|null, to:number|null,
+ *            reResolved:number, kept:number, message:string|null}}
+ *   `message` is null where nothing changed — a toast that fires on every board
+ *   change would teach a joiner to ignore it.
+ */
+export function hingeReResolve({
+  fromThickness = null, toThickness = null, assignedDoors = 0, totalDoors = 0,
+} = {}) {
+  const from = hingeAngleFor({ frontThickness: fromThickness });
+  const to = hingeAngleFor({ frontThickness: toThickness });
+  const kept = Math.max(0, Math.min(Number(assignedDoors) || 0, Number(totalDoors) || 0));
+  const reResolved = Math.max(0, (Number(totalDoors) || 0) - kept);
+  const flipped = Boolean(from && to && from !== to);
+  if (!flipped) {
+    return {
+      flipped: false, from, to, reResolved: 0, kept, message: null,
+    };
+  }
+  const doors = reResolved === 1 ? 'door' : 'doors';
+  const held = kept === 1 ? 'door keeps' : 'doors keep';
+  const tail = kept > 0
+    ? ` ${kept} assigned ${held} the hinge it was given.`
+    : '';
+  return {
+    flipped: true,
+    from,
+    to,
+    reResolved,
+    kept,
+    message: `Hinges re-resolved ${from}° → ${to}°: ${reResolved} ${doors} follow the front.${tail}`,
+  };
 }
 
 /**

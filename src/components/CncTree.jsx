@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import {
   VIEW_PRESETS, PART_GROUPS, exportablePanels, groupOfPanel, panelIdsForPreset,
+  treePathOfPanel,
 } from '../engine/cnc/groups.js';
 import { groupByMaterial } from '../engine/cnc/views.js';
 import { exportMaterialDxf, exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
@@ -48,6 +49,36 @@ export default function CncTree() {
   const [open, setOpen] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
   const [material, setMaterial] = useState('all');
+
+  // ─── Turn 19 (CLAUDE.md F4): THE SHEET POINTS AT THE LIST ─────────────────
+  //
+  // "Kliknięcie 2 razy na dany element zabiera nas do listy po prawej, otwiera
+  // i podświetla który to element."
+  //
+  // Three verbs and this is all three: OTWIERA — the unit's branch is expanded;
+  // ZABIERA — the row is scrolled into view; PODŚWIETLA — it is lit until
+  // something else is pointed at. Nothing is ticked, nothing is edited: the
+  // export is byte-for-byte what it was, because this touches no export.
+  //
+  // The unit is only expanded, never collapsed: a joiner who has three branches
+  // open and double-clicks a part in the fourth wants four open branches, not a
+  // tree that closes behind him.
+  const focus = useUiStore((s) => s.cncFocusPart);
+  const rowRefs = useRef(new Map());
+  useEffect(() => {
+    if (!focus?.unitId) return;
+    setOpen((prev) => (prev.has(focus.unitId) ? prev : new Set([...prev, focus.unitId])));
+  }, [focus]);
+  useEffect(() => {
+    if (!focus?.panelId) return undefined;
+    // One frame after the branch has been expanded, or the row does not exist
+    // yet and there is nothing to scroll to.
+    const id = requestAnimationFrame(() => {
+      rowRefs.current.get(`${focus.unitId}|${focus.panelId}`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [focus]);
 
   const sheets = useMemo(() => units.map((u) => {
     const result = unitResult(u.id);
@@ -231,11 +262,18 @@ export default function CncTree() {
                   const mine = parts.filter((p) => groupOfPanel(p) === g.id);
                   if (!mine.length) return null;
                   const lit = mine.filter((p) => !hiddenParts[unit.id]?.[p.id]).length;
+                  // Turn 19 (F4): which GROUP the double-clicked part is in —
+                  // the engine's own answer, so the header a joiner's eye lands
+                  // on and the row that is highlighted cannot disagree.
+                  const inGroup = focus?.unitId === unit.id
+                    && treePathOfPanel(parts, focus.panelId)?.group === g.id;
                   return (
                     <div key={g.id} className="mb-1">
                       <button
                         type="button"
-                        className="w-full flex items-center gap-2 px-1 py-0.5 rounded hover:bg-shell-700 text-left"
+                        data-cnc-group={g.id}
+                        data-cnc-group-focus={inGroup ? '1' : '0'}
+                        className={`w-full flex items-center gap-2 px-1 py-0.5 rounded hover:bg-shell-700 text-left ${inGroup ? 'text-gold' : ''}`}
                         title={g.hint}
                         onClick={() => setCncParts(unit.id, mine.map((p) => p.id), lit !== mine.length)}
                       >
@@ -244,11 +282,20 @@ export default function CncTree() {
                         <span className="text-[10px] text-ink-400 tabular-nums">{lit}/{mine.length}</span>
                       </button>
                       <ul>
-                        {mine.map((p) => (
+                        {mine.map((p) => {
+                          const isFocus = focus?.unitId === unit.id && focus?.panelId === p.id;
+                          return (
                           <li key={p.id}>
                             <button
                               type="button"
-                              className={`w-full flex items-center gap-2 pl-6 pr-1 py-0.5 rounded hover:bg-shell-700 text-left ${hiddenParts[unit.id]?.[p.id] ? 'opacity-45' : ''}`}
+                              ref={(el) => {
+                                const key = `${unit.id}|${p.id}`;
+                                if (el) rowRefs.current.set(key, el);
+                                else rowRefs.current.delete(key);
+                              }}
+                              data-cnc-row={p.id}
+                              data-cnc-row-focus={isFocus ? '1' : '0'}
+                              className={`w-full flex items-center gap-2 pl-6 pr-1 py-0.5 rounded hover:bg-shell-700 text-left ${hiddenParts[unit.id]?.[p.id] ? 'opacity-45' : ''} ${isFocus ? 'bg-gold/15 ring-1 ring-gold/70' : ''}`}
                               onClick={() => toggleCncPart(unit.id, p.id)}
                             >
                               <Tick state={hiddenParts[unit.id]?.[p.id] ? 'off' : 'on'} small />
@@ -258,7 +305,8 @@ export default function CncTree() {
                               </span>
                             </button>
                           </li>
-                        ))}
+                          );
+                        })}
                       </ul>
                     </div>
                   );

@@ -161,6 +161,49 @@ export function frontWeightKg({ widthMm, heightMm, kgM2 }) {
 }
 
 /**
+ * WHAT ONE PANEL WEIGHS — the whole chain, in one call (CLAUDE.md F5.1).
+ *
+ * The panel's own board, the panel's own thickness, the panel's own area. It
+ * takes the RESOLVED material rather than resolving one itself, because
+ * engine/materials.js is the single answer to "what is this piece made of"
+ * (turn 16, F1.5) and a second resolution here would be the second lookup table
+ * that turn removed.
+ *
+ * @param {object} args
+ *   panel      an engine panel record (w, h, thickness)
+ *   material   engine/materials.js `resolvePanelMaterial` output, or null
+ *   materials  the workshop's stock list, passed IN so this stays pure
+ *   profile
+ * @returns {{kg:number|null, kgM2:number|null, source:string|null,
+ *            exact:boolean, kind:string}}
+ */
+export function panelWeight({
+  panel, material = null, materials = [], profile,
+}) {
+  const stock = material?.material_id
+    ? (materials || []).find((m) => m.id === material.material_id) || null
+    : null;
+  // A SPRAYED surface is lacquered MDF in this workshop and everything else is
+  // faced chipboard — the board's own `board_kind` where it has one, and the
+  // finish's kind where it has not. Both live in profile.js, so a shop that
+  // sprays something else edits two words there and not this function.
+  const kind = stock?.board_kind
+    || (material?.finish?.kind === 'spray'
+      ? profile.board.sprayedKgM2Kind
+      : profile.board.defaultKgM2Kind);
+  const { kgM2, source, exact } = boardKgM2({
+    stock, thickness: panel?.thickness, kind, profile,
+  });
+  return {
+    kg: frontWeightKg({ widthMm: panel?.w, heightMm: panel?.h, kgM2 }),
+    kgM2,
+    source,
+    exact,
+    kind,
+  };
+}
+
+/**
  * THE POWER FACTOR (CLAUDE.md F5.2).
  *
  * `pf = cabinet_height_mm × front_weight_kg`, which is Blum's own formula and

@@ -1,225 +1,219 @@
-# CLAUDE.md — Cabinet Core, TURN 17
+# CLAUDE.md — Cabinet Core, TURN 18
 
-The PARITY turn: what the owner sees in a part must be what the machine
-cuts, and what leaves for the machine must carry the cabinet's number and
-nothing else. Then hinges, drawer heights, and two new kits built from the
-owner's OWN numbers.
+The DRAWER turn. The owner put the last missing numbers on the table — the
+two side pockets, read off his own workshop DXF — and brought the whole
+MOVENTO 760H ladder as GLB. So: drawers become TRUE (sides carry the
+machining the machine already needed), runners become VISIBLE (models from
+the bucket, positions from the LISP), and the CNC labels stop spilling
+over their parts. Plus the oven-base corrections from his review.
 
 Read the whole file first. Full autonomy, zero questions. Clean or not at
-all; the turn shrinks from the BOTTOM — and it is ordered so that shrinking
-drops the KITS (F9–F11) before it touches the CNC truth (F1–F4).
+all; the turn shrinks from the BOTTOM — F1–F3 are the turn's heart.
 
-Baseline: main after the turn-16 merge PLUS two chat packages —
-`cabinetcore-editor-ibl-*` (the editor window gains the RoomEnvironment
-probe: `Environment` exported from `3d/Scene.jsx`, mounted in
-`CabinetEditorModal.jsx`) and `cabinetcore-swiatla-10-3-*` (studio points
-now 10/10 at yMm 1650 and 3/3 at yMm 500). Tests at baseline: 1327.
+Baseline: main after the turn-17 merge PLUS the chat package
+`cabinetcore-kity-dw-oven-1008-*` (D/W front is 594 WIDE and base-height
+tall, no legs, plinth notched via the new `type.plinth` flag; oven base on
+`heightGroup: 'base'` at 770; drawer stack measured from the FACE, not the
+opening). Tests at baseline: 1372.
 
 ## 0. IRON RULES
 
-All standing rules apply (turns 1–16): engine purity; profile.js the only
+All standing rules apply (turns 1–17): engine purity; profile.js the only
 home of numbers; existing fixtures inviolable (ADDING is fine); no new
-deps; mock mode; 0.5 mm + formatMm; English; full npm reinstalls; Actions
-red; PR no merge; physical light units; library defaults read in source;
-band-limit procedural detail; no `a?.x === b?.x`; one rig; spray colour
-sacred; THE MODAL RULE; browser walk standard; NO nesting.
+deps; mock mode with graceful degradation; 0.5 mm + formatMm; English;
+full npm reinstalls; Actions red; PR no merge; physical light units;
+library defaults read in source; band-limit; no `a?.x === b?.x`; one rig;
+spray colour sacred; THE MODAL RULE; browser walk standard; NO nesting;
+never invent a workshop number — BLOCKERS instead.
 
-CNC EXPORT: this turn has **FOUR named deltas**, and nothing outside them.
-Fingerprint before/after and publish every one in
-`verify/t17/cnc-export-identity.md`, in these words:
+CNC EXPORT: this turn has **THREE named deltas**, and nothing outside
+them. Fingerprint before/after, publish in
+`verify/t18/cnc-export-identity.md`, in these words:
 
-1. **Every part carries its cabinet's number, inside the part** (F1).
-2. **Everything that is NOT that in-part label leaves the exported DXF**
-   (F2) — the sheet may still show whatever helps on screen.
-3. **Shelves are laid out rotated 90°** so the export agrees with the 3D
-   view (F3).
-4. **Dog bones that the export already cuts become visible on the part**
-   (F4) — a VIEW change with no geometry change, listed because the two
-   were out of step and a reader must be told which one moved. It is the
-   VIEW that moves. If the export is found to be missing a dog bone the
-   part has, STOP: that is the opposite bug and it goes to BLOCKERS.
+1. **In-part labels wrap, centre and shrink** — TEXT entities only (F1).
+2. **Drawer SIDES gain their true machining** — the 2 mm runner reduction
+   and the 7 mm bottom groove, at the owner's measured positions (F3).
+3. **The oven base is corrected** — side sockets only where the back is,
+   a flat-rail top instead of a full TOP, and the drawer front takes its
+   gap below the appliance face (F5).
 
 Anything else moving in the fingerprints is a REGRESSION, not a delta.
 
-KITS: F9 and F10 are new kits and the pattern-first rule governs them. The
-owner gave exact numbers; build ONLY from those. Where a number is
-missing — a fixing pattern, a gap, a hinge position, a runner spacing —
-write BLOCKERS and ship the kit without that feature. **Never invent a
-workshop number.** A guessed kit costs two turns to unpick.
-
 ## F0 — Baseline
 
-1. Full install → tests green (record; expect 1327) → build.
-2. Verify both chat packages are on main: `Environment` is EXPORTED from
-   `src/3d/Scene.jsx` and imported by `CabinetEditorModal.jsx`; the four
-   `studio.points` read 10, 10, 3, 3. If either is missing, STOP and write
-   BLOCKERS — do not re-implement blind.
+1. Full install → tests green (record; expect 1372) → build.
+2. Verify the chat package is on main: `test/turn17-appliance-kits-fix.
+   test.js` exists and passes; `P.dwPanel.frontWidth === 594`;
+   `getUnitType('OVEN_BASE').heightGroup === 'base'`; `getUnitType(
+   'DW_PANEL').plinth === true` with `legs === false`. Missing → STOP,
+   BLOCKERS, do not re-implement blind.
 
-## F1 — Every part says which cabinet it belongs to
+## F1 — CNC labels: wrapped, centred, never outside (W32)
 
-Owner: "numer szafki musi być na każdym elemencie, inaczej się pogubimy
-który jest do którego."
+The owner's export screenshot: `F01 TOP 564x540 F01 BOTTOM 564x…` running
+over the parts and into the neighbours.
 
-1. **The text.** `F-01 BUR 597x568` — the cabinet's number (the owner's
-   own name since turn 16 F6, not an internal id), then the part code,
-   then width×height. One formatter in the engine, used by the sheet and
-   by the export, so the two cannot word it differently.
-2. **Inside the part**, not beside it, not above it — a joiner reads it
-   off the board.
-3. **The size of the yellow heading above the CNC view.** Same type scale,
-   in world space (turn 16 F3): it grows and shrinks with the drawing and
-   it stays inside its outline. Where a part is too small to hold the
-   whole string at a readable size, the label is what shrinks — it never
-   spills over the outline and never overlaps a neighbour.
-4. Its layer is the existing text layer; no new layer name without a
-   BLOCKERS entry.
+1. **Wrap.** The in-part label breaks onto up to three centred lines
+   (`F-01` / `BUR` / `597x568` is a natural break), centred in the part
+   both ways. A line that still does not fit truncates with `~` — the
+   turn-16 middle step — and the label NEVER crosses its outline. One
+   layout function in `annotation.js`, used by the sheet AND the file, so
+   they cannot disagree.
+2. **Half the size in the EXPORT.** The exported DXF writes the label at
+   50% of the sheet's height for the same part (its own profile number,
+   e.g. `cnc.exportLabelScale: 0.5`). The sheet on screen keeps its size.
+3. **A wider advance.** `MONO_ADVANCE` 0.62 → 0.85, and the fill ratio
+   0.94 → 0.85: the DXF carries no font, the reader's CAD picks its own,
+   and the owner's font is wider than ours — labels must fit in the WORST
+   reasonable font, not the best. (Owner chose this over embedding a text
+   STYLE, because a styled DXF is what killed VCarve's parser on
+   02.08.2026 — the header comment in dxf.js says so. Do NOT add styles.)
+4. Named delta 1: TEXT entities only. The probe from the turn-17 audit
+   (entity-by-entity, pairs) is the check: zero non-TEXT changes.
 
-## F2 — Export by MATERIAL, and nothing but the labels
+## F2 — Drawer heights actually SAVE in kitchen units (W33)
 
-1. **Choose the material, export the lot.** In the CNC export the owner
-   picks which assigned material to send (turn 16 gave the sheet its
-   material grouping; this is the same identity, now driving what leaves
-   the app). One material, one export — plus "all" as it is today.
-2. **The exported DXF carries the in-part labels and NOTHING else.**
-   Owner: "żadnych innych liter bo to nam zaśmieca program w CNC." Every
-   other piece of text the sheet draws for a human — sheet headings,
-   material names, part counts, group titles — is SCREEN furniture and
-   must not reach the file. Named delta 2.
-3. The per-panel ZIP keeps its turn-15 behaviour (a whole unit, for
-   recutting one damaged formatka).
+The owner edits a kitchen drawer's height and it snaps back to the kit's
+number. Diagnosed in chat to ONE root:
 
-## F3 — Shelves lie the way the 3D view says they do
+1. **The fork is wrong.** `projectStore.setDrawerHeight` routes by
+   `typeof ref === 'number'`. Kitchen drawer units get ITEM rows at
+   placement (projectStore ~line 88), so `drawerRef` returns an item id,
+   the call takes the WARDROBE route, writes `height_mm` on the item —
+   and the budr engine only ever reads `params.drawer_heights`. The value
+   lands where nothing looks.
+   **Fix at the root:** route by the KIT — `getUnitType(unit.type)
+   .drawerStyle === 'budr'` → `setBudrDrawerHeight` with the drawer's
+   INDEX, whatever the ref's type is. The wardrobe route stays for
+   wardrobe items. Regression test: a BUDR2 unit WITH item rows (as
+   placement makes it) takes [500] and the engine returns 500/264.
+2. **Un-brick the right-hand panel.** RightPanel's `ratioDrawers` branch
+   renders the height as a dimmed span with a pre-turn-17 comment ("an
+   input that would do nothing"). It does something now: make it the same
+   NumberField the editor has (engine clamp: floor 38 =
+   `runnerScrewFromBase + clearanceBelowRunner`, ceiling from the face),
+   plus the Reset-to-kit button. Delete the stale comment.
+3. The kit's 4:3:2 drift stays FROZEN (#64). `resetDrawerHeights` returns
+   to it exactly.
 
-Owner: "odwróć wszystkie półki o 90 stopni w CNC — zobacz, w 3D orientacja
-jest dobra ale nie współgra z CNC."
+## F3 — The drawer SIDES tell the truth (the owner's own numbers)
 
-The 3D view is RIGHT and the sheet is wrong: a shelf is laid out across
-the sheet where the cabinet has it running the other way, so the grain the
-owner set in 3D is not the grain the machine cuts. Rotate the shelf's CNC
-placement 90° so the two agree, and pin the agreement with a test: for
-every kit that has shelves, the part's grain axis in the export matches
-the panel's grain axis in the cabinet frame (the turn-13 rule, "grain =
-the cabinet's space"). Named delta 3.
+From his workshop DXF, read together in chat and confirmed:
 
-## F4 — A part in the editor shows what the machine will cut
+1. **Bottom groove** (`DRAWER_BOTTOM_POCKET`): in each side's INNER face,
+   **7 mm deep**, the groove's lower edge **15 mm above the side's bottom
+   edge**, tall enough for the 18 mm bottom (same board as everything),
+   running the FULL length of the side.
+2. **Runner reduction** (`DRAWER_RUNNER_POCKET`): the side's INNER face
+   milled **2 mm deep** over the band **from the bottom edge up to the
+   groove (0 → 15 mm)**, full length — an 18 board becomes 16 where the
+   runner lives, "blum tego wymaga".
+3. **The arithmetic that must close, pinned by test:** bottom width =
+   boxFrontLen + 13 (`bottomOversize`), so the bottom enters each side
+   6.5 mm — inside a 7 mm groove with half a millimetre of air. The
+   profile's numbers were right all along; now the groove they imply is
+   CUT. Box length NL − 10, side = front − 36, `firstFrontAdjust` — all
+   LISP, all untouched.
+4. Front and back of the box STAND ON the bottom (owner's words); the
+   element view and the detail modal draw both pockets (turn 17 F4 gave
+   the plumbing; this phase gives it the right geometry).
+5. Named delta 2: the sides' DXF gains these two pocket outlines at these
+   positions. Every other panel byte-identical.
 
-Owner, on drawers: "jak je edytuję to nie mają żadnych wcięć, nie widzę
-dziurek." And on a fridge back: "na CNC są dog bones a na elemencie nie
-ma."
+## F4 — Hide the fronts, don't remove them (W22)
 
-1. **Dog bones and drilling appear on the part** in the element view and
-   the detail modal, from the SAME geometry the export reads — not a
-   second drawing. Where the two ever disagree, the export is the truth
-   and the view is the bug (rule 0, delta 4).
-2. **A drawer is an element the owner can open and edit**, like a shelf —
-   selectable in the editor, with its own detail view.
-3. **Its pockets are drawn, and they are cuts with depths:**
-   - `DRAWER_RUNNER_POCKET` — **2 mm** deep, at the very bottom, so the
-     runners sit flush.
-   - `DRAWER_BOTTOM_POCKET` — **7 mm** deep.
-   Depths as numbers in profile.js. Layer names exactly as written above
-   unless the repo already owns a name for them — if it does, keep the
-   repo's and note it in BUILD-LOG.
-4. NOT this turn: drawing the runner hardware itself (owner's decision B).
-   The pockets are in; the runner's LOOK is not.
+A VIEW toggle beside X-ray/Outlines: **Hide fronts** — doors AND drawer
+fronts vanish from the 3D view together. Nothing changes in the BOM, the
+CNC, the cut list or the params; it is a lens, not an edit. Remove doors
+(turn 15) stays exactly as it is — that one is a project decision and
+this one is a look inside. State in uiStore, not on units.
 
-## F5 — Back, one level, in the editor
+## F5 — Oven base, corrected to the owner's review (W34/W35)
 
-Owner: inside the editor, with ONE element open, there is no way back to
-the cabinet — the whole editor has to be closed and reopened.
+1. **Side sockets only where the back is.** Today the oven's BUL carries
+   the same 7 sockets a full-back BUD does; above the drawer-back there
+   is NOTHING to catch. Keep exactly the sockets whose dog bones land in
+   the low back (and the bottom's), drop the rest. Same for BUR.
+2. **A rail top, not a TOP panel** — the SINK's two-holder pattern, with
+   ONE change: the FRONT rail lies FLAT (100 mm wide, board thick),
+   not on edge. The flat rail takes its own 3 mm screw pattern — laid
+   out for a horizontal board, NOT the sink's vertical-rail numbers.
+   New numbers in profile under `ovenUnit`; the sink's own stay
+   untouched and its fixtures prove it.
+3. **No ventilation cut.** Decided with the owner: the open back and the
+   now-open top ARE the airflow; a 50×300 slot in the shelf would vent
+   into a closed drawer. If a specific oven's manual demands one, that is
+   a manufacturer's number for a later turn.
+4. **The drawer front takes its gap below the appliance.** The oven FACE
+   behaves like a front in the run, and two fronts never touch: front =
+   `H − gap − ovenHeight − gap` (169 at 770, "szczelina 3 mm jak
+   wszystkie nasze drzwi"). The box still fits the OPENING under the
+   shelf, unchanged. Test both.
+5. Named delta 3 covers 1, 2 and 4 together — the oven kit's files only.
 
-Add **Back** to the element level of the cabinet editor: it returns to the
-cabinet view and deselects the part. It does NOT collapse the explode and
-it does not close the window (owner's answer 1). Keyboard Escape does the
-same thing at that level. One editor, one navigation rule.
+## F6 — Runners on screen: the MOVENTO pipeline
 
-## F6 — Three small verdicts
+The owner uploaded the full 760H ladder to Supabase Storage: bucket
+`hardware` (public), path `hardware/runners/blum/movento/` — 40 GLB
+(pairs L/R, NL 250–450, variants S / T / SU) + `manifest.json`
+(system, nl, variant, article per file). Units are true millimetres;
+validated at conversion (an NL450 file measures 450.5 long).
 
-1. **Top infill above wall units goes UP to the ceiling** — the panel's
-   turn-15 ability, on the infill: an up control AND a typed number for
-   how far to raise it. Reuse the panel mechanics; different numbers,
-   never a forked copy.
-2. **Renaming a cabinet must be FINDABLE.** Turn 16 F6 shipped it and the
-   owner cannot find it. Do NOT rebuild it — put the entry where he
-   looked: on the unit's panel header and in the right-click menu, as a
-   visible, obvious control. Screenshot both.
-3. **The name label on the canvas looks professional.** Today it is a
-   "paskudna chmurka". A flat, quiet label — palette colours, the app's
-   type scale, no cartoon bubble. It is a look change; walk it.
+1. **Loader.** `GLTFLoader` from the three package (NO new dependency —
+   the RoomEnvironment precedent). Load once per file, clone per row —
+   the decor-texture pattern. Async, never blocking the scene.
+2. **The LISP owns the positions.** Runner rows come from the engine's
+   `runnerY` list; the model is a COSTUME on the screws — it aligns to
+   the drilled pattern, never the other way round. The model's own origin
+   is unknown until first mount: measure it once, store the offset as a
+   profile number, say so in the comment.
+3. **NL from depth**, as the engine already does (largest that fits; box
+   = NL − 10). Pin with a test; no new rule.
+4. **Variant is HARDWARE, not geometry.** Project default **T (TIP-ON
+   BLUMOTION)** — the owner's "90% of what we make" — with S as the
+   option. Set at project level in the Runners section of Step 5 /
+   Settings (System: Movento; Variant: T/S with a short tooltip — "press
+   the front to open; BLUMOTION adds the soft close"); per-drawer
+   override in the element editor, the colour hierarchy exactly. SU files
+   stay in the manifest, unused. Gaps, pockets, drilling: IDENTICAL for
+   both variants — Blum's own installation page says the pattern does not
+   change with the motion technology, and the owner keeps his 3 mm front
+   gap (Blum's template says 3.5; his call, noted here so nobody
+   "corrects" it).
+5. **The synchronisation rod is parametric** — a profile between the two
+   units, length from the box width less the fixed ends. Catalogue
+   thresholds, cited in the comment (blum.com TIP-ON BLUMOTION for
+   MOVENTO): unit alone below 314 mm opening width; narrow rod 281–305;
+   rod with adapters 314–1385.
+6. **Graceful degradation, iron rule:** file missing, bucket down, fetch
+   failing → a plain grey box of the runner's true size in the same
+   place. Never a hole, never a blocked scene. Mock mode renders the box.
+7. Visible when fronts are hidden (F4) or doors open — with the rest of
+   the hardware. BOM: the pair's article numbers from the manifest, per
+   drawer, per variant.
+8. NOT this turn: the `cc_hardware` table (waits for the data module);
+   the manifest read from the bucket IS the catalogue for now.
+   profile.js keeps Movento's numbers as the offline truth.
 
-## F7 — Hinges: a project standard, and hands on
+## F7 — Browser walk + docs + GATE
 
-1. **Project setup gains "Standard hinges: 2 / 3", default 3.** On 2, each
-   door loses ONE MIDDLE hinge: a 3-hinge door becomes 2, and a 6-hinge
-   door becomes 5 — one comes off, the outer ones never move. Positions
-   for the remaining hinges follow the LISP maths already in the engine.
-2. **Hinges are editable per door:** add one, remove one, move one. Same
-   editing idiom as shelves (turn 9/11 per-element editing), so a joiner
-   who can move a shelf can move a hinge without learning a new gesture.
-3. Everything downstream follows: the drilling in the export, the 3D view,
-   the BOM's hardware count.
+Walk (screenshots to `verify/t18/`, committed): a small part whose label
+wraps to three centred lines inside its outline, near and far; an export
+listing where every TEXT is half-size and nothing else changed; a kitchen
+BUDR2 with a drawer height typed in the RIGHT panel and STAYING (before/
+after); a drawer side in the element view showing BOTH pockets with the
+15/7/2 numbers readable in the detail modal; Hide fronts on and off over
+the same run; the oven base showing the flat front rail, the socketed-
+only-low sides and the 169 front at 770; a drawer with its MOVENTO pair
+mounted on the LISP rows, T variant, rod present on a wide drawer and
+absent on a narrow one; the same scene with the bucket unreachable —
+grey boxes, nothing broken; the Runners section in Settings with the
+tooltip open.
 
-## F8 — Drawer HEIGHTS, once the fronts are off
-
-1. **Remove drawer fronts** on a drawer unit — the same idiom as turn 15's
-   Remove doors — so the boxes can be worked on.
-2. **Edit each drawer's HEIGHT** (not its position — the owner was
-   explicit), the way shelf editing works.
-3. **The clamp is the owner's:** a drawer may come no closer than 10 mm
-   below the bottom runner — **28 + 10 mm measured from the screw
-   centres**. Numbers in profile; the clamp is an engine function with
-   its own test, and the UI cannot exceed it.
-4. The kit's 4:3:2 drift stays FROZEN (#64, owner-closed). This edits a
-   unit; it does not touch the kit's defaults.
-
-## F9 — KIT: D/W panel (dishwasher, washing machine, fridge front)
-
-The owner's words, and only these numbers:
-- It is **a front and nothing else** — no hinges, flat, no door furniture.
-- **Height 594 mm, rigid.** Always under 600, or the appliance door
-  cannot open. Not a default: a fixed value with a test that says so.
-- **The plinth is cut out at that position, 20 mm from the top.**
-- **One top panel, always 600 mm wide**, depth as the rest of the run.
-- Named **"D/W panel"** in the library; the same kit answers for washing
-  machines and fridges.
-Everything else about it — fixings, gaps, how it meets its neighbours —
-was NOT given. BLOCKERS, not invention.
-
-## F10 — KIT: Oven base unit
-
-- The oven is **595 high**, so the shelf it stands on sits **598 mm from
-  the TOP of the cabinet** — from the top, not from a centre line. Say so
-  in the code comment, because it is the sort of number that gets
-  "corrected" later.
-- **A drawer below**, drawn as the drawers are drawn (F4 gives it its
-  pockets; the runner's look is out this turn).
-- **No back except behind the drawer.** That back fixes the standard way —
-  **4 dog bones: one at each side, two into the bottom of the cabinet** —
-  the fridge pattern from turn 14.
-Anything not listed goes to BLOCKERS.
-
-## F11 — A measuring tool
-
-A ruler in the canvas: click one point, click another, read the distance
-in mm. formatMm, 0.5 mm, palette colours, Escape cancels. It measures; it
-never edits.
-
-## F12 — Browser walk + docs + GATE
-
-Walk (screenshots to `verify/t17/`, committed): a part on the sheet
-reading `F-01 BUR 597x568` inside its outline, near and far zoom; an
-export of ONE chosen material, with the DXF text listing showing labels
-only; a shelf's grain matching between 3D and the sheet; a drawer opened
-as an element with both pockets visible; a fridge back showing its dog
-bones in the element view; Back returning from a part to the cabinet;
-a top infill raised to the ceiling; the rename control where the owner
-looks; the new name label; hinges at 2 and at 3, and one hinge moved by
-hand; drawer fronts removed and a drawer height edited to its clamp; the
-D/W panel at 594 with its plinth cut-out; the oven base with its shelf 598
-from the top; the ruler measuring a run.
-
-Docs: BUILD-LOG per phase; BACKLOG updated; BLOCKERS for every number the
-kits needed and did not have. GATE: full reinstall → all green (1327 +
-new) → clean build → existing fixtures diff 0 → deps untouched → engine
-purity → CNC identity showing FOUR named deltas and nothing else →
-`verify/t17/` populated → PR.
+Docs: BUILD-LOG per phase; BACKLOG updated (W-numbers from this batch
+noted); BLOCKERS: add the **Blum licence gate** — like EGGER #44, written
+consent / terms check before any public demo or sale that shows their
+models; and anything a kit needed that the owner has not given. GATE:
+full reinstall → all green (1372 + new) → clean build → existing fixtures
+diff 0 → deps untouched → engine purity → CNC identity with the THREE
+named deltas and nothing else → `verify/t18/` populated → PR.

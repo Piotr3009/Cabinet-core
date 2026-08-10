@@ -2008,7 +2008,16 @@ export const DEFAULT_CABINET_PROFILE = {
   // a workshop preference). What belongs here is the sheet metrics.
   cnc: {
     unitNumberLayer: 'UNIT_NUMBER',  // LISP drawText layer for the part label
-    labelHeight: 40,                 // LISP drawText height on the CNC sheet
+    // ─── TURN 20 (CLAUDE.md F4): HALF AGAIN ────────────────────────────────
+    // Owner: the wrapping and the placement have been right since turn 18; the
+    // SIZE is still double what he wants, on the glass and in the file. 40 was
+    // the LISP's own `drawText` height and the LISP drew one cabinet a sheet.
+    //
+    // ONE number moves. `exportLabelScale` stays 0.5, so the exported DXF text
+    // follows it down 20 → 10 without a second decision; `labelMinHeight` (6)
+    // and `labelFitRatio` (0.12) stay exactly where they are — a small part
+    // already sizes by the ratio and must NOT shrink twice.
+    labelHeight: 20,                 // LISP drawText height on the CNC sheet, halved
     labelMinHeight: 6,               // …shrunk to fit a small part, never below this
     labelFitRatio: 0.12,             // label height ≤ this × the part's short side
     // ─── Turn 18 (CLAUDE.md F1): THE LABEL IS A BLOCK, NOT A LINE ─────────

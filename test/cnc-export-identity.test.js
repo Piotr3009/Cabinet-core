@@ -133,7 +133,11 @@ test('a per-panel DXF is byte-for-byte what it was', () => {
   // two centred lines at half the height instead of one line at 40. Every
   // coordinate on this part is where it was — a side panel is not a drawer
   // side and it is not the oven's, so deltas 2 and 3 do not reach it.
-  assert.equal(fingerprint(bul.dxf), '27e677c5', 'the side panel’s DXF has changed');
+  // turn 18 → 20: 27e677c5 → d9555e61. THE TURN'S ONLY DELTA (F4): the label
+  // is written at 20 mm instead of 35 — `cnc.labelHeight` 40 → 20 is the cap
+  // the file's height passes through, and it is now the binding one. The same
+  // two lines, the same words, the same coordinates, one group code shorter.
+  assert.equal(fingerprint(bul.dxf), 'd9555e61', 'the side panel’s DXF has changed');
 });
 
 // ─── the sheet ──────────────────────────────────────────────────────────────
@@ -146,16 +150,20 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // turn 17 → 18: 4b3d4bb8 → 50931ceb. Deltas 1 and 2: every part's label
   // again (it is a block now, at half the height), and the six drawer sides
   // gaining the two pockets the owner measured.
-  assert.equal(fingerprint(sheetOf(result, all)), '50931ceb', 'the whole-unit sheet has changed');
+  // turn 18 → 20: 50931ceb → bf00b60f. Delta F4 alone — every label's HEIGHT.
+  assert.equal(fingerprint(sheetOf(result, all)), 'bf00b60f', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
   const result = unit();
+  // Turn 20 (CLAUDE.md F4): all four move, and all four move for one reason —
+  // the label height. `verify/t20/probe-diff.txt` is the entity-by-entity
+  // evidence: 397 TEXT heights, zero strings, zero positions, zero geometry.
   const expected = {
-    all: '50931ceb',           // was 4b3d4bb8
-    'non-sprayed': '707406dd', // was d69ce32d — this one has the drawer sides in it
-    sprayed: 'dbf83ff2',       // was 9c45132b — fronts only, so delta 1 alone
-    fronts: 'dbf83ff2',        // was 9c45132b
+    all: 'bf00b60f',           // was 50931ceb
+    'non-sprayed': '07a550cd', // was 707406dd — this one has the drawer sides in it
+    sprayed: '27364f5c',       // was dbf83ff2 — fronts only
+    fronts: '27364f5c',        // was dbf83ff2
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -387,5 +395,5 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   const cuttable = exportablePanels(result.panels);
   const hidden = new Set(panelIdsForPreset(cuttable, 'sprayed'));
   const ids = cuttable.map((p) => p.id).filter((id) => !hidden.has(id));
-  assert.equal(fingerprint(sheetOf(result, ids)), '707406dd');
+  assert.equal(fingerprint(sheetOf(result, ids)), '07a550cd'); // was 707406dd — F4's height
 });

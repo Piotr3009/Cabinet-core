@@ -96,7 +96,11 @@ test('F1.2 — the EXPORT writes it at half the sheet’s height, never under th
   const bul = r.panels.find((p) => p.id === 'BUL');
   const sheet = panelLabelBlock(bul, { unitNum: '01', profile: P });
   const file = panelLabel(bul, { unitNum: '01', profile: P });
-  assert.equal(file.h, sheet.size * P.cnc.exportLabelScale);
+  // ─── Turn 20 (CLAUDE.md F4) ───
+  // Half the sheet's height, OR the absolute cap, whichever is smaller — and
+  // since `cnc.labelHeight` came down 40 → 20 the cap is the binding one on a
+  // big part. The scale itself is untouched, which is F4.2 in as many words.
+  assert.equal(file.h, Math.min(sheet.size * P.cnc.exportLabelScale, P.cnc.labelHeight));
 
   for (const panel of r.panels.filter((p) => p.cnc?.outline?.length)) {
     const s = panelLabelBlock(panel, { unitNum: '01', profile: P });

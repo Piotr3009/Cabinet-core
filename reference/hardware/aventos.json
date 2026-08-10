@@ -1,0 +1,499 @@
+{
+ "system": "aventos",
+ "units": "mm",
+ "power_units_hk_top": [
+  {
+   "unit": 2300,
+   "pf": [
+    420,
+    1610
+   ],
+   "articles": [
+    "45031193"
+   ]
+  },
+  {
+   "unit": 2500,
+   "pf": [
+    930,
+    2800
+   ],
+   "articles": [
+    "45470640"
+   ]
+  },
+  {
+   "unit": 2700,
+   "pf": [
+    1730,
+    5200
+   ],
+   "articles": [
+    "41241675"
+   ]
+  },
+  {
+   "unit": 2900,
+   "pf": [
+    3200,
+    9000
+   ],
+   "articles": [
+    "45582824"
+   ]
+  }
+ ],
+ "board_kg_m2": {
+  "mfc": {
+   "18": 12,
+   "22": 14.5,
+   "25": 16.5
+  },
+  "mdf_lacquered": {
+   "18": 14,
+   "22": 17,
+   "25": 19
+  }
+ },
+ "rules": {
+  "pf_formula": "cabinet_height_mm * front_weight_kg (incl. handles)",
+  "pf_source": "Blum catalogue via eastcoastkitchens.co.uk product listing 20K2x00.05",
+  "select": "engine proposes the unit whose pf range contains the value; client may assign another; out-of-range assignment raises a WARNING with guidance (lighter/heavier)",
+  "hk_limits": {
+   "cabinet_height_mm": [
+    205,
+    600
+   ],
+   "cabinet_width_max_mm": 1800,
+   "inner_depth_min_mm": 261
+  },
+  "covers_note": "finish suffixes (.06/T06/.02) kept raw per owner: ALL colours in",
+  "hf_note": "20F1228.42 components converted; HF kit is a FUTURE cabinet kit (pattern-first)"
+ },
+ "items": [
+  {
+   "file": "hardware/lifts/blum/aventos/40115854.glb",
+   "article": "40115854",
+   "class": "hk_arm",
+   "families": [
+    "20K2B00.06",
+    "20K2B00T06",
+    "20K2C00.06",
+    "20K2C00T06",
+    "20K2E00.06",
+    "20K2E00T06"
+   ],
+   "bbox": [
+    30.5,
+    135.1,
+    148.5
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/40240077.glb",
+   "article": "40240077",
+   "class": "hk_arm",
+   "families": [
+    "20K2B00.06",
+    "20K2B00T06",
+    "20K2C00.06",
+    "20K2C00T06",
+    "20K2E00.06",
+    "20K2E00T06"
+   ],
+   "bbox": [
+    30.5,
+    135.1,
+    148.5
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/40302885.glb",
+   "article": "40302885",
+   "class": "hk_cover",
+   "families": [
+    "20K2E00.06",
+    "20K2E01.02"
+   ],
+   "bbox": [
+    29,
+    127.4,
+    147.6
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/40319434.glb",
+   "article": "40319434",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    3.1,
+    16,
+    50
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/41241675.glb",
+   "article": "41241675",
+   "class": "hk_power_unit",
+   "families": [
+    "20K2701T"
+   ],
+   "bbox": [
+    29,
+    149.7,
+    200.2
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/41277128.glb",
+   "article": "41277128",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    21.8,
+    382.7,
+    50.8
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/41302022.glb",
+   "article": "41302022",
+   "class": "hk_arm",
+   "families": [
+    "20K2B00.06",
+    "20K2B00T06",
+    "20K2C00.06",
+    "20K2C00T06",
+    "20K2E00.06",
+    "20K2E00T06"
+   ],
+   "bbox": [
+    30.5,
+    135.1,
+    148.5
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/41428098.glb",
+   "article": "41428098",
+   "class": "hk_arm",
+   "families": [
+    "20K2B00.06",
+    "20K2B00T06",
+    "20K2C00.06",
+    "20K2C00T06",
+    "20K2E00.06",
+    "20K2E00T06"
+   ],
+   "bbox": [
+    30.5,
+    135.1,
+    148.5
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/41540958.glb",
+   "article": "41540958",
+   "class": "hk_arm",
+   "families": [
+    "20K2B00.06",
+    "20K2B00T06",
+    "20K2C00.06",
+    "20K2C00T06",
+    "20K2E00.06",
+    "20K2E00T06"
+   ],
+   "bbox": [
+    30.5,
+    135.1,
+    148.5
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/42313979.glb",
+   "article": "42313979",
+   "class": "small_cap",
+   "families": [
+    "20K2B00.06",
+    "20K2B00T06",
+    "20K2C00.06",
+    "20K2C00T06",
+    "20K2E00.06",
+    "20K2E00T06"
+   ],
+   "bbox": [
+    3.1,
+    16,
+    50
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/42544425.glb",
+   "article": "42544425",
+   "class": "hk_front_bracket",
+   "families": [
+    "20K4A00A02",
+    "20K4A01A02"
+   ],
+   "bbox": [
+    32.4,
+    56,
+    72.2
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/43241767.glb",
+   "article": "43241767",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    19.5,
+    53,
+    41.5
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/43394676.glb",
+   "article": "43394676",
+   "class": "hk_cover",
+   "families": [
+    "20K2A01.02",
+    "20K2B00.06",
+    "20K2B00T06"
+   ],
+   "bbox": [
+    29,
+    127.4,
+    137.3
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/43448687.glb",
+   "article": "43448687",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    31.3,
+    57,
+    112.3
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/43449598.glb",
+   "article": "43449598",
+   "class": "hk_small",
+   "families": [
+    "20K2901T"
+   ],
+   "bbox": [
+    21.8,
+    66.2,
+    34.7
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/43542450.glb",
+   "article": "43542450",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    25,
+    116.7,
+    274.2
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/44041485.glb",
+   "article": "44041485",
+   "class": "hk_cover",
+   "families": [
+    "20K2E00T06",
+    "20K2E01T"
+   ],
+   "bbox": [
+    29,
+    127.4,
+    147.6
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/44569277.glb",
+   "article": "44569277",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    20.5,
+    308.6,
+    37.1
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/44606176.glb",
+   "article": "44606176",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    27,
+    117.3,
+    267.9
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/45031193.glb",
+   "article": "45031193",
+   "class": "hk_power_unit",
+   "families": [
+    "20K2300T",
+    "20K2301T"
+   ],
+   "bbox": [
+    29,
+    149.7,
+    200.2
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/45390618.glb",
+   "article": "45390618",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    38.4,
+    57,
+    108.8
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/45470640.glb",
+   "article": "45470640",
+   "class": "hk_power_unit",
+   "families": [
+    "20K2500T",
+    "20K2501T"
+   ],
+   "bbox": [
+    29,
+    149.7,
+    200.2
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/45582824.glb",
+   "article": "45582824",
+   "class": "hk_power_unit",
+   "families": [
+    "20K2901T"
+   ],
+   "bbox": [
+    29,
+    151.6,
+    200.2
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/46034456.glb",
+   "article": "46034456",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    11.3,
+    19.5,
+    48.7
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/47129700.glb",
+   "article": "47129700",
+   "class": "hk_cover",
+   "families": [
+    "20K2B00T06",
+    "20K2C00T06",
+    "20K2C01T"
+   ],
+   "bbox": [
+    29,
+    127.4,
+    147.6
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/47319342.glb",
+   "article": "47319342",
+   "class": "hf_component",
+   "families": [
+    "20F1228.42"
+   ],
+   "bbox": [
+    27,
+    117.3,
+    267.9
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/48205436.glb",
+   "article": "48205436",
+   "class": "hk_cover",
+   "families": [
+    "20K2B00.06",
+    "20K2C00.06",
+    "20K2C01.02"
+   ],
+   "bbox": [
+    29,
+    127.4,
+    147.6
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/49353510.glb",
+   "article": "49353510",
+   "class": "hk_front_bracket",
+   "families": [
+    "20K4A00A02",
+    "20K4A01A02"
+   ],
+   "bbox": [
+    32.4,
+    56,
+    72.2
+   ]
+  },
+  {
+   "file": "hardware/lifts/blum/aventos/49483187.glb",
+   "article": "49483187",
+   "class": "hk_arm",
+   "families": [
+    "20K2B00.06",
+    "20K2B00T06",
+    "20K2C00.06",
+    "20K2C00T06",
+    "20K2E00.06",
+    "20K2E00T06"
+   ],
+   "bbox": [
+    30.5,
+    135.1,
+    148.5
+   ]
+  }
+ ]
+}

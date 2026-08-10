@@ -1,0 +1,29 @@
+{
+ "system": "aventos_hf",
+ "family": "20F1228.42",
+ "units": "mm",
+ "source": "Blum configurator CAM data (.mpr, woodWOP), cabinet profile",
+ "note": "coordinates are relative to each component datum; translate onto the panel",
+ "patterns": {
+  "43241767": {
+   "label": "arm_fixing_2x5mm_span32",
+   "holes": []
+  },
+  "43448687": {
+   "label": "front_cup35_screws45_offset9.5",
+   "holes": []
+  },
+  "43542450_R": {
+   "label": "lift_unit_side_2x5mm_span192_R",
+   "holes": []
+  },
+  "45390618_R": {
+   "label": "front_cup35_R_rotated",
+   "holes": []
+  },
+  "46034456": {
+   "label": "catch_2x2.5mm_span32",
+   "holes": []
+  }
+ }
+}

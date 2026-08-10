@@ -1,7 +1,7 @@
 import {
   useCallback, useEffect, useLayoutEffect, useRef, useState,
 } from 'react';
-import { clampToViewport, maximiseInViewport, placeBesideAnchor } from '../lib/menuPlacement.js';
+import { clampToViewport, maximiseInViewport, placeAnchoredModal } from '../lib/menuPlacement.js';
 import { getCabinetProfile } from '../engine/profile.js';
 
 // ─── THE MODAL SHELL (turn 12, CLAUDE.md rule 15 / F2) ──────────────────────
@@ -45,7 +45,10 @@ import { getCabinetProfile } from '../engine/profile.js';
  *   footer    the buttons row, rendered under a rule
  *   width     a Tailwind width class, as before
  *   anchor    { x, y, width, height } | null — the object this is about
- *   prefer    'right' | 'left' | 'below' | 'above' — a first choice of side
+ *   prefer    'right' | 'left' | 'below' | 'above' — turn 12's first choice of
+ *             side. Kept so no caller breaks; turn 19's rule (F3) opens up and
+ *             to the right of the object instead, and only falls back to the
+ *             four-side search when neither hand has room.
  *   dim       darken everything behind it. Defaults to FALSE when there is an
  *             anchor: a modal that dims the cabinet it is about is covering it
  *             with grey instead of with itself, which is the same offence.
@@ -82,7 +85,9 @@ export default function Modal({
     ? { width: 0, height: 0 }
     : { width: window.innerWidth, height: window.innerHeight }));
 
-  const { gapPx, marginPx, maximiseMarginPx } = getCabinetProfile().ui.modal;
+  const {
+    gapPx, marginPx, maximiseMarginPx, anchorOffset,
+  } = getCabinetProfile().ui.modal;
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -117,10 +122,25 @@ export default function Modal({
       });
       return;
     }
-    setAt(placeBesideAnchor({
-      anchor, size, viewport, gap: gapPx, margin: marginPx, prefer,
+    // ─── Turn 19 (CLAUDE.md F3 / W37) ───
+    // "Klikam na drzwi, a modal mi się otwiera na drzwiach." The shell used to
+    // open BESIDE the object, which for a double-click ON one means a
+    // millimetre from the pointer — on the door. It opens UP AND TO THE RIGHT
+    // of it now, by a profile offset plus its own height, and the arithmetic
+    // that guarantees it never comes back over the object is one pure function
+    // (lib/menuPlacement.js `placeAnchoredModal`). ONE SHELL: the cabinet
+    // editor, the element detail, the hinge modal and every colour picker
+    // inherit it here and nowhere else.
+    //
+    // `prefer` is no longer consulted: it named one of the four SIDES, and the
+    // rule no longer starts from a side. It is still accepted so no caller
+    // breaks, and a caller that needs the old search still gets it — that is
+    // exactly what `placeAnchoredModal` falls through to when neither hand has
+    // room.
+    setAt(placeAnchoredModal({
+      anchor, size, viewport, offset: anchorOffset, gap: gapPx, margin: marginPx,
     }));
-  }, [anchor, prefer, gapPx, marginPx, measure]);
+  }, [anchor, gapPx, marginPx, anchorOffset, measure]);
 
   // Placed on the way in, and re-placed if the window is resized — a modal
   // pinned to a corner that is no longer there is a modal you cannot close.

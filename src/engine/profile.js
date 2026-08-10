@@ -23,6 +23,31 @@ export const DEFAULT_CABINET_PROFILE = {
   board: {
     thickness: 18,                    // G — standard carcass board
     thicknessOptions: [18, 22],       // 22 = heavy
+
+    // ─── WHAT A SQUARE METRE OF BOARD WEIGHS (turn 19, CLAUDE.md F5.1) ─────
+    //
+    // The owner's own numbers, and they are the floor under the lift-selection
+    // engine: an AVENTOS is chosen on POWER FACTOR, which is the cabinet's
+    // height times the FRONT'S WEIGHT, and a front's weight is its area times
+    // one of these. A workshop that stocks a heavier board assigns it and its
+    // `kg_m2` wins (engine/lifts.js `boardKgM2`); this is what the app knows
+    // when nobody has assigned anything, which is most of the time while a job
+    // is being drawn.
+    //
+    // Two families because they are genuinely different boards: chipboard with
+    // a melamine face, and MDF with lacquer on it. `reference/hardware/
+    // aventos.json → board_kg_m2` carries the same table — it is the CATALOGUE
+    // OF RECORD (F0.3) and test/turn19-lifts.test.js holds the two to each
+    // other, so neither can drift.
+    kgM2: {
+      mfc: { 18: 12, 22: 14.5, 25: 16.5 },
+      mdf_lacquered: { 18: 14, 22: 17, 25: 19 },
+    },
+    // Which of those families a board belongs to when nothing says otherwise.
+    // A sprayed front is lacquered MDF in this workshop; everything else is
+    // faced chipboard.
+    defaultKgM2Kind: 'mfc',
+    sprayedKgM2Kind: 'mdf_lacquered',
   },
   front: {
     thickness: 25,                    // 18 = MDF, 19 = melamine, 25 = shaker
@@ -1674,6 +1699,91 @@ export const DEFAULT_CABINET_PROFILE = {
       plateLength: 56,       // mounting plate on the carcass side, front to back
       plateWidth: 34,
       plateThickness: 12,
+
+      // ─── BLUM CLIP top BLUMOTION (turn 19, CLAUDE.md F1) ────────────────
+      //
+      // The owner brought the whole CLIP top world as GLB and the KNOWLEDGE
+      // with it: `reference/hardware/cliptop-hinges.json` is the CATALOGUE OF
+      // RECORD (F0.3) and carries the articles, the finishes and the ANGLE
+      // RULE. Nothing of that is repeated here, deliberately — a rule copied
+      // into two files is a rule that will disagree with itself — and the
+      // engine reads it from the catalogue it is handed (engine/hinges.js,
+      // pushed in by lib/hardwareCatalogue.js, exactly as the runners are).
+      //
+      // What IS here is the workshop's side of it: which system it stocks,
+      // which finishes it will order, which plate it drills for, and where the
+      // models are served from. Those are choices, not catalogue facts.
+      //
+      // NOTHING IN THIS BLOCK REACHES THE DRILLING. The default hinge IS
+      // today's drilling — same ⌀35 cup, same ⌀3 cup screws, same ⌀5 plate
+      // holes, same layers — and CLAUDE.md's iron rule for this turn is ZERO
+      // CNC deltas. Finish, angle and article change what is BOUGHT and what is
+      // DRAWN, never what is bored.
+      cliptop: {
+        system: 'cliptop_blumotion',
+        systemLabel: 'CLIP top BLUMOTION',
+        // The one system in the catalogue today. It is a list because the next
+        // one the workshop stocks is an entry, not a rewrite.
+        systems: [
+          {
+            id: 'cliptop_blumotion',
+            label: 'CLIP top BLUMOTION',
+            hint: 'Blum’s soft-close cup hinge — the angle follows the front, not a menu.',
+          },
+        ],
+        // ─── FINISH (F1.1) ───
+        // "nickel / onyx — drives which GLB is drawn and which ARTICLE the BOM
+        // lists. Nothing else." Two finishes of the same hinge are the same
+        // hole in the same place.
+        finishes: [
+          { id: 'nickel', label: 'Nickel', hint: 'The bright plated finish — the shop’s default.' },
+          { id: 'onyx', label: 'Onyx', hint: 'The dark finish. Same hinge, same drilling, black.' },
+        ],
+        defaultFinish: 'nickel',
+
+        // ─── THE MOUNTING PLATE (F1.5) ───
+        // Knock-in ⌀5 is what the LISP drills and what every project cut so far
+        // is bored for. The screw-on ⌀3 plate is a DIFFERENT PATTERN and nobody
+        // has supplied it, so it ships DISABLED: an enabled option that
+        // silently drilled the ⌀5 pattern would make the export lie about what
+        // is on the machine. BLOCKERS carries what is needed (the Blum 173L
+        // card or its `.mpr`).
+        plates: [
+          {
+            id: 'plate_knockin5',
+            label: 'Knock-in ⌀5',
+            enabled: true,
+            hint: 'Two ⌀5 holes at 32 mm centres — what the kits have drilled since turn 1.',
+          },
+          {
+            id: 'plate_screw3',
+            label: 'Screw-on ⌀3',
+            enabled: false,
+            hint: 'drilling pattern pending',
+          },
+        ],
+        defaultPlate: 'plate_knockin5',
+
+        // ─── WHERE THE MODELS LIVE ───
+        // The bucket holds only the GLB bytes (F0.3); the catalogue names the
+        // file and this says which bucket and which path to hang it off.
+        bucket: 'hardware',
+        path: 'hardware/hinges/blum/cliptop/',
+
+        // A downloaded model's origin is somebody else's decision and the LISP
+        // owns the POSITION: the hinge aligns to the drilled cup, never the
+        // other way round. Measured at first mount and not before — the same
+        // honest zero the MOVENTO block carries, and the same rule that the
+        // first person to see one sitting proud of its cup corrects THESE
+        // THREE NUMBERS and nothing else. BLOCKERS.
+        modelOrigin: { x: 0, y: 0, z: 0 },
+        plateOrigin: { x: 0, y: 0, z: 0 },
+        // A cup hinge is a small object. A file whose longest axis is bigger
+        // than this is not a CLIP top and the view draws the procedural body
+        // instead of something the wrong size (the runners' `lengthTolerance`
+        // rule, in the shape a hinge needs it).
+        maxModelLengthMm: 160,
+      },
     },
     // A side-mounted runner pair: two L-profiles, one on the box and one on the
     // carcass, at the runner rows the engine drills. `length` comes from
@@ -2001,6 +2111,25 @@ export const DEFAULT_CABINET_PROFILE = {
       // that the room behind still reads as the thing underneath, small enough
       // that the window is the screen.
       maximiseMarginPx: 28,
+
+      // ─── Turn 19 (CLAUDE.md F3 / W37) ─────────────────────────────────────
+      //
+      // Owner: "klikam na drzwi, a modal mi się otwiera na drzwiach i chuj
+      // widzę." Turn 12 opened a modal BESIDE its object, which is right for a
+      // cabinet and wrong for a POINT: a double-click on a door hands the shell
+      // a rectangle of zero size, "beside" it is a millimetre away, and the
+      // panel lands on the door.
+      //
+      // So the shell offsets UP AND RIGHT of the object — right by `x`, and up
+      // by `y` PLUS the modal's own height, so the panel's bottom-left corner
+      // sits above and to the right of the pointer and the door underneath it
+      // stays in shot. Positive x is right; NEGATIVE y is up, which is the
+      // screen's own sign.
+      //
+      // 24 px is a thumb's width of clear glass: far enough that the pointer
+      // and the object's neighbourhood are plainly outside the panel, near
+      // enough that the panel still reads as being ABOUT the thing clicked.
+      anchorOffset: { x: 24, y: -24 },
     },
   },
 
@@ -2129,7 +2258,19 @@ export function migrateCabinetProfile(profile) {
   return {
     ...D, ...profile,
     schema: PROFILE_SCHEMA,
-    board: { ...D.board, ...profile.board },
+    board: {
+      ...D.board,
+      ...profile.board,
+      // Turn 19 (F5.1): a profile saved before the board weights existed comes
+      // back with them, and one that tunes a single thickness keeps the rest —
+      // the key-by-key merge every nested block in this function gets.
+      kgM2: {
+        ...D.board.kgM2,
+        ...profile.board?.kgM2,
+        mfc: { ...D.board.kgM2.mfc, ...profile.board?.kgM2?.mfc },
+        mdf_lacquered: { ...D.board.kgM2.mdf_lacquered, ...profile.board?.kgM2?.mdf_lacquered },
+      },
+    },
     front: { ...D.front, ...profile.front, types: { ...D.front.types, ...profile.front?.types } },
     carcass: { ...D.carcass, ...profile.carcass },
     doors: { ...D.doors, ...profile.doors },
@@ -2298,7 +2439,32 @@ export function migrateCabinetProfile(profile) {
     },
     hardware: {
       ...D.hardware, ...profile.hardware,
-      hinge: { ...D.hardware.hinge, ...profile.hardware?.hinge },
+      hinge: {
+        ...D.hardware.hinge,
+        ...profile.hardware?.hinge,
+        // Turn 19 (CLAUDE.md F1): the CLIP top block, merged key by key so a
+        // profile saved before it existed comes back with it and one that
+        // renames a finish keeps the plates.
+        cliptop: {
+          ...D.hardware.hinge.cliptop,
+          ...profile.hardware?.hinge?.cliptop,
+          systems: mergeById(D.hardware.hinge.cliptop.systems, profile.hardware?.hinge?.cliptop?.systems),
+          finishes: mergeById(D.hardware.hinge.cliptop.finishes, profile.hardware?.hinge?.cliptop?.finishes),
+          // The PLATES are not merged by id from a stored profile: whether the
+          // ⌀3 plate may be chosen is a question about what this repository
+          // knows how to drill (F1.5), not a workshop preference, and a saved
+          // profile must not be able to switch it on.
+          plates: D.hardware.hinge.cliptop.plates,
+          modelOrigin: {
+            ...D.hardware.hinge.cliptop.modelOrigin,
+            ...profile.hardware?.hinge?.cliptop?.modelOrigin,
+          },
+          plateOrigin: {
+            ...D.hardware.hinge.cliptop.plateOrigin,
+            ...profile.hardware?.hinge?.cliptop?.plateOrigin,
+          },
+        },
+      },
       runner: {
         ...D.hardware.runner,
         ...profile.hardware?.runner,
@@ -2336,7 +2502,18 @@ export function migrateCabinetProfile(profile) {
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
     },
     room: { ...D.room, ...profile.room },
-    ui: { ...D.ui, ...profile.ui },
+    ui: {
+      ...D.ui,
+      ...profile.ui,
+      // Turn 19 (CLAUDE.md F3): the shell's placement numbers, key by key, so a
+      // profile saved before the up-and-right offset existed comes back with
+      // it rather than placing every modal at {0,0} — which is ON the click.
+      modal: {
+        ...D.ui.modal,
+        ...profile.ui?.modal,
+        anchorOffset: { ...D.ui.modal.anchorOffset, ...profile.ui?.modal?.anchorOffset },
+      },
+    },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's
     // answer for the rest, and a profile saved before this turn gets all of it.

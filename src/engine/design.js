@@ -127,7 +127,17 @@ export const DEFAULT_DESIGN = {
   // drilled — so a project saved before this turn is cut exactly as it was.
   // It is a project decision and not a workshop one: the same shop hangs a
   // budget kitchen on two and a heavy oak door on three.
-  hinges: { standard: null },
+  // ─── Turn 19 (CLAUDE.md F1.1): …AND WHICH HINGE ──────────────────────────
+  // The SYSTEM the workshop stocks, the FINISH this job is fitted in, and the
+  // mounting PLATE it is drilled for. `null` on all three means the profile's
+  // own answer — CLIP top BLUMOTION, nickel, the knock-in ⌀5 — so a project
+  // saved before this turn opens on the shop's default and is cut exactly as
+  // it was. None of the three reaches a hole: the ANGLE is not on this list
+  // because it is not a choice (the front decides it), and finish and system
+  // change what is bought and what is drawn.
+  hinges: {
+    standard: null, system: null, finish: null, plate: null,
+  },
   // ─── Turn 18 (CLAUDE.md F6.4): WHICH RUNNER THIS JOB IS FITTED WITH ──────
   // The SYSTEM (Blum MOVENTO, the only one the workshop stocks today) and the
   // VARIANT — T for TIP-ON BLUMOTION, the owner's "90% of what we make", or S
@@ -196,7 +206,19 @@ export function migrateDesign(design) {
       runners: d.hardware?.runners ? String(d.hardware.runners) : null,
       handles: d.hardware?.handles ? String(d.hardware.handles) : null,
     },
-    hinges: { standard: [2, 3].includes(Math.trunc(Number(d.hinges?.standard))) ? Math.trunc(Number(d.hinges.standard)) : null },
+    hinges: {
+      standard: [2, 3].includes(Math.trunc(Number(d.hinges?.standard))) ? Math.trunc(Number(d.hinges.standard)) : null,
+      // Turn 19: kept as plain strings and RESOLVED against the profile where
+      // they are read (engine/hinges.js `resolveHingeFinish` / `resolvePlate` /
+      // `resolveHingeSystem`), which is the same shape the runner variant has —
+      // the migration cannot know which finishes a workshop offers, and the
+      // resolver refuses an unknown one there rather than guessing here. The
+      // ⌀3 plate is the one thing the resolver will never hand back while its
+      // drilling pattern is unknown (F1.5).
+      system: d.hinges?.system ? String(d.hinges.system) : null,
+      finish: d.hinges?.finish ? String(d.hinges.finish).toLowerCase() : null,
+      plate: d.hinges?.plate ? String(d.hinges.plate) : null,
+    },
     runners: {
       system: d.runners?.system ? String(d.runners.system) : null,
       // Only a variant the PROFILE offers survives the migration: a project

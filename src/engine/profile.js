@@ -287,7 +287,11 @@ export const DEFAULT_CABINET_PROFILE = {
       boxFrontHeightDeduction: 15,   // box front H = box side H − 15 − G − 1
       boxFrontHeightExtra: 1,
       bottomOversize: 13,      // bottom W = box front length + this
-      boxDropFromRunner: 9,    // box bottom sits this far below the runner row
+      // Turn 20 (CLAUDE.md F1): the wardrobe's box hung `boxDropFromRunner`
+      // BELOW the runner row and the BUDR's sat ON it — two laws for the same
+      // Blum runner. Both kits read `baseDrawerUnit.boxAboveRunner` now, which
+      // is where every other number measured off A DRAWER SIDE already lives,
+      // and this key is gone rather than left behind saying something untrue.
       depthSteps: [390, 440, 490, 540, 590, 640, 690],   // runner standard
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
@@ -659,6 +663,34 @@ export const DEFAULT_CABINET_PROFILE = {
     runnerPocketWidth: 15,      // DRAWER_RUNNER_POCKET strip on the box side
     bottomPocketExtra: 1,       // DRAWER_BOTTOM_POCKET strip = G + 1 wide
     pocketOvershoot: 10,
+    // ─── TURN 20 (CLAUDE.md F1): THE BOX TAKES ITS HEIGHT FROM THE RUNNER ───
+    //
+    // Owner, eye test of turn 18: "the holes are right, the runners are right,
+    // the fronts are right — only the BOX sits wrong against them."
+    //
+    // ONE formula for every drawer in the app, the bottom one included, and it
+    // is measured off the RUNNER — the row the engine drills and the row the
+    // runner's own underside stands on (`drillSummary.runner_rows_carcass_y`,
+    // which is where 3d/Hardware.jsx puts the bottom of the profile). Before
+    // this turn the two kits disagreed about it: a BUDR box sat exactly ON the
+    // row and a wardrobe's hung 9 mm BELOW it, which is two laws for one piece
+    // of hardware.
+    //
+    //   boxAboveRunner     the drawer SIDE's lower edge, above the runner's
+    //                      bottom — the side hangs down past the runner and
+    //                      the 2 mm × 15 mm relief at its foot is what the
+    //                      runner sits in.
+    //   bottomAboveRunner  the underside of the drawer BOTTOM, which stands in
+    //                      its groove `runnerPocketWidth` above the side's own
+    //                      lower edge: 13.5 + 15 = 28.5. Derived, not a second
+    //                      independent number — test/turn20-phases.test.js
+    //                      pins the sum, so the day a workshop changes the
+    //                      groove the two cannot drift apart silently.
+    //
+    // Neither reaches a HOLE: every pocket, groove and drilling on a box part
+    // is measured from that part's own edges, and none of those move.
+    boxAboveRunner: 13.5,
+    bottomAboveRunner: 28.5,    // = boxAboveRunner + runnerPocketWidth
     // ─── Turn 17 (CLAUDE.md F4.3): THE POCKETS ARE CUTS, AND CUTS HAVE DEPTH ─
     // The two grooves in a drawer-box side have been in the cutting data since
     // turn 3 as flat rectangles on their own layers — which is everything a

@@ -373,8 +373,19 @@ test('F5.4 — the drawer front takes its gap below the appliance, and the box f
   const side = r.panels.find((p) => p.part === 'DRAWER-SIDE');
   const bottom = r.panels.find((p) => p.id === 'BOTTOM');
   assert.ok(side.box.y >= bottom.box.y + bottom.box.h, 'the box stands above the carcass bottom');
-  assert.ok(side.box.y + side.box.h <= shelf.box.y + 1e-9,
-    'and it stops under the shelf the oven stands on');
+  // ─── Turn 20 (CLAUDE.md F1) ───
+  // The box RIDES its runner now — `boxAboveRunner` above the drilled row —
+  // and this clamp still measures the headroom from the ROW, because F1.2
+  // keeps turn 18's side heights and the turn allows exactly one CNC delta.
+  // So the SIDE is cut to the old clearance and the app WARNS that the box it
+  // makes stands that far past the shelf, rather than silently re-cutting a
+  // board (engine/cabinet.js, APPLIANCE_DRAWER_BOX_OVER_SHELF). What turn 18
+  // promised — the box is cut to the OPENING and not to the front — is exactly
+  // what is still asserted here.
+  assert.equal(side.box.h, shelf.box.y - r.drillSummary.runner_rows_carcass_y[0],
+    'the side is cut to the opening under the shelf, not to 0.7 × its front');
+  assert.ok(r.warnings.some((w) => w.code === 'APPLIANCE_DRAWER_BOX_OVER_SHELF'),
+    'and the app says what riding the runner costs against that clamp');
 });
 
 // ─── F6 — the MOVENTO pipeline ──────────────────────────────────────────────

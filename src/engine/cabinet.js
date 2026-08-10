@@ -30,6 +30,7 @@ import {
   chamferedRectGeometry, tabCentres,
 } from './puzzle.js';
 import { resolveRunnerVariant, runnerPairSpec, syncRodFor } from './runners.js';
+import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import { maskDepthExtra } from './runs.js';
 import {
@@ -481,6 +482,16 @@ function normalizeParams(raw, profile) {
     // fixture and every bare `computeCabinet()` is untouched.
     hingeStandard: p.hinge_standard,
     hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
+    // ─── Turn 19 (CLAUDE.md F1): WHICH HINGE, NOT HOW MANY ──────────────────
+    // The project's finish and system, and any per-door exception a joiner has
+    // assigned — design-layer inputs travelling exactly as the hinge standard
+    // and the runner variant do. NONE of them reaches a hole: the default hinge
+    // IS today's drilling, and these decide what is bought and what is drawn.
+    // Left out — a bare kit call, every golden fixture — the engine says
+    // nothing about the article and drills what the AutoLISP drills.
+    hingeFinish: p.project_hinge_finish ?? null,
+    hingeSystemLabel: p.project_hinge_system_label ?? null,
+    doorHinges: p.door_hinges && typeof p.door_hinges === 'object' ? p.door_hinges : null,
     shelves,
     shelfItems,
     shelfPositions,
@@ -2768,9 +2779,76 @@ export function computeCabinet(params, profileOverride) {
   };
 
   const runnerLength = budr ? budr.depth : szufDl;
-  hw('hinges', 'Hinges', totals.hinges, 'pcs',
-    { per_door: centres.length, doors: doorCount, cup_diameter_mm: cups.diameter },
-    doorCount > 0 ? `${centres.length} per door × ${doorCount}` : '');
+
+  // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────
+  //
+  // The COUNT is untouched — it is `centres.length × doorCount`, the same
+  // number the drilling, the 3D bodies and `totals.hinges` have agreed on since
+  // turn 3, and `hingeGroups` below adds up to exactly it. What is new is WHICH
+  // hinge each of those doors takes:
+  //
+  //   • the ANGLE is not a choice — the front's thickness decides it, and a
+  //     wardrobe door with a drawer behind it takes the 155° so the drawer can
+  //     clear the open door;
+  //   • the FINISH is the project's (nickel or onyx) and changes the article
+  //     and the model, nothing else;
+  //   • ONE DOOR may have been given a hinge by hand, and that wins.
+  //
+  // Doors that resolve to the SAME hinge are one BOM line, which is what keeps
+  // an ordinary cabinet on the single line it has had since turn 3; a cabinet
+  // whose two leaves are fitted differently gets two, because they are two
+  // things to buy. With no catalogue read every door resolves to the same
+  // "nothing known", the grouping collapses to one line, and the spec is
+  // byte-for-byte what it was before this turn.
+  const doorPanels = panels.filter((pn) => pn.part === 'FRONT' && pn.role === 'front');
+  const innerDrawer = type.family === 'wardrobe' && numDrawers > 0;
+  const hingeGroups = new Map();
+  if (doorCount > 0 && centres.length > 0) {
+    // A kit whose door panels are not one-per-door (a fridge housing's fixed
+    // face, a kit that has had its fronts taken off) still buys hinges for the
+    // doors the engine counted — so the LIST is padded to `doorCount` with the
+    // cabinet's own answer rather than shrinking the order to the panels.
+    const doors = doorPanels.length === doorCount ? doorPanels : [];
+    const keys = doors.length ? doors : Array.from({ length: doorCount }, () => null);
+    for (const pnl of keys) {
+      const spec = resolveDoorHinge({
+        assigned: pnl ? doorHingeAssignment({ door_hinges: cfg.doorHinges }, pnl.id) : null,
+        frontThickness: frontT,
+        innerDrawer,
+        finish: cfg.hingeFinish,
+      });
+      const key = `${spec.angle ?? ''}|${spec.finish ?? ''}|${spec.family ?? ''}|${spec.assigned ? 'a' : 'r'}`;
+      const bucket = hingeGroups.get(key);
+      if (bucket) bucket.doors += 1;
+      else hingeGroups.set(key, { spec, doors: 1 });
+    }
+  }
+  for (const { spec, doors } of hingeGroups.values()) {
+    hw('hinges', 'Hinges', centres.length * doors, 'pcs',
+      {
+        per_door: centres.length,
+        doors,
+        cup_diameter_mm: cups.diameter,
+        // Additive, every one of them: a caller that only ever read `per_door`
+        // and `doors` reads exactly what it always did.
+        angle: spec.angle,
+        family: spec.family,
+        article: spec.article,
+        articles: spec.articles,
+        finish: spec.finish,
+        system: cfg.hingeSystemLabel,
+        assigned: spec.assigned,
+      },
+      hingeSpecLabel({
+        perDoor: centres.length,
+        doors,
+        angle: spec.angle,
+        finish: spec.finish,
+        article: spec.article,
+        systemLabel: cfg.hingeSystemLabel,
+        assigned: spec.assigned,
+      }));
+  }
   // ─── TURN 18 (CLAUDE.md F6.4/F6.7): THE PAIR IS A PRODUCT ────────────────
   //
   // The length has been on this line since turn 3 and it stays exactly where it

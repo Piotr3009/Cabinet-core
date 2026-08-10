@@ -125,6 +125,92 @@ export function placeBesideAnchor({
   return { ...positionOn(best, a, w, h, g, vw, vh, m), side: best, fits: false };
 }
 
+// ─── UP AND TO THE RIGHT (turn 19, CLAUDE.md F3 / W37) ──────────────────────
+//
+// Owner: "klikam na drzwi, a modal mi się otwiera na drzwiach i chuj widzę."
+//
+// `placeBesideAnchor` above is right about a CABINET and wrong about a POINT.
+// A double-click on a door hands the shell a rectangle of zero size; "beside"
+// it is a millimetre away; and the panel lands on the door. The rule was never
+// wrong, it was under-specified — "beside" needs a DISTANCE and a DIRECTION.
+//
+// So this is the tightened rule, and it is one function so that every modal in
+// the application inherits it from the shell rather than from a copy:
+//
+//   1. UP AND RIGHT of the object, by `offset.x` across and `offset.y` up —
+//      plus the modal's OWN HEIGHT, so it is the panel's bottom-left corner
+//      that sits off the object's top-right corner and everything below the
+//      pointer stays in shot.
+//   2. CLAMPED to the viewport, and where the right-hand edge has no room the
+//      panel goes up and LEFT instead. Either way the panel is separated from
+//      the object along the X axis, which is what makes the guarantee hold: the
+//      vertical clamp can slide the panel anywhere it likes down the screen and
+//      it still cannot come back over the object.
+//   3. Where NEITHER side has room — an object as wide as the screen — it falls
+//      through to the four-side search above, which will put it below or above.
+//
+// Pure arithmetic. The shell measures and calls this; test/modal-shell.test.js
+// asserts the property that matters, which is the same one turn 12 stated:
+// THE MODAL AND THE OBJECT DO NOT OVERLAP.
+
+/** The sides this rule can answer with, before it defers to the four above. */
+export const MODAL_OFFSET_SIDES = ['up-right', 'up-left'];
+
+/**
+ * Where a modal goes when it is opened ON something — the shell's rule.
+ *
+ * @param {object} args
+ *   anchor    { x, y, width, height } — the object, in client px. A click point
+ *             is a rectangle of zero size, which is the case this exists for.
+ *   size      { width, height } — the modal's MEASURED size
+ *   viewport  { width, height }
+ *   offset    { x, y } — profile.ui.modal.anchorOffset. Positive x is right;
+ *             NEGATIVE y is up, which is the screen's own sign.
+ *   gap       the clear space `placeBesideAnchor` uses, for the fallback
+ *   margin    how close to a viewport edge the modal may come
+ * @returns {{left:number, top:number, side:string, fits:boolean}}
+ */
+export function placeAnchoredModal({
+  anchor, size, viewport, offset = null, gap = 12, margin = 8,
+}) {
+  const vw = Math.max(0, Number(viewport?.width) || 0);
+  const vh = Math.max(0, Number(viewport?.height) || 0);
+  const w = Math.max(0, Number(size?.width) || 0);
+  const h = Math.max(0, Number(size?.height) || 0);
+  const m = Math.max(0, Number(margin) || 0);
+  const a = normaliseAnchor(anchor);
+  // A missing offset is not a reason to open on top of the object: the four-
+  // side search is the honest fallback, and it is what turn 12 shipped.
+  const dx = Math.abs(Number(offset?.x) || 0);
+  const dy = Math.abs(Number(offset?.y) || 0);
+  if (!dx && !dy) return placeBesideAnchor({ anchor, size, viewport, gap, margin });
+
+  // The vertical answer is the same for both hands: the panel's BOTTOM sits
+  // `dy` above the object's top, and the clamp keeps it on the screen. Sliding
+  // it down cannot bring it back over the object, because the horizontal
+  // separation below is what does the work.
+  const wantedTop = a.y - dy - h;
+  const top = vh
+    ? Math.max(m, Math.min(wantedTop, Math.max(m, vh - h - m)))
+    : wantedTop;
+
+  const rightLeft = a.x + a.width + dx;
+  const leftLeft = a.x - dx - w;
+  // "Fits" means the panel is wholly on screen WITHOUT giving up the separation
+  // — a right-hand placement that has to be clamped leftwards is a placement
+  // that would slide back over the object, so it is refused rather than nudged.
+  if (vw === 0 || rightLeft + w <= vw - m) {
+    return { left: rightLeft, top, side: 'up-right', fits: true };
+  }
+  if (leftLeft >= m) {
+    return { left: leftLeft, top, side: 'up-left', fits: true };
+  }
+  // Neither hand. The object is as wide as the screen, or the screen is as
+  // narrow as the panel: the four-side search knows what to do about that, and
+  // it has known since turn 12.
+  return placeBesideAnchor({ anchor, size, viewport, gap, margin });
+}
+
 /**
  * The rectangle for one side, cross-axis aligned to the object and clamped so
  * that the whole modal stays on the screen.

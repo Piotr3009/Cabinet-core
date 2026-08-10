@@ -55,17 +55,24 @@ export const MOCK_MATERIALS = [
   // visibly, before the real board exists in the stock. They are placeholders
   // by name and by flag: the yellow warning stays up while one is assigned,
   // and the future check-out/JC export refuses them (the hard gate).
+  // ─── Turn 19 (CLAUDE.md F5.1): AND WHAT IT WEIGHS ─────────────────────────
+  // `kg_m2` is carried exactly as `thickness` is — a column on the stock record
+  // — because an AVENTOS is chosen on the weight of the front and a workshop
+  // that stocks a heavier board must be able to say so. A board with no figure
+  // falls back to profile.board.kgM2 (engine/lifts.js `boardKgM2`), which is
+  // what the GENERIC placeholders deliberately do: they pin the geometry
+  // honestly and they are not a real board, so they carry no real weight.
   { id: 'generic-18', code: '—', name: 'Generic board 18 mm', category: 'board', thickness: 18, unit: 'm²', price: 0, placeholder: true },
   { id: 'generic-22', code: '—', name: 'Generic board 22 mm', category: 'board', thickness: 22, unit: 'm²', price: 0, placeholder: true },
   { id: 'generic-25', code: '—', name: 'Generic board 25 mm', category: 'board', thickness: 25, unit: 'm²', price: 0, placeholder: true },
-  { id: 'mat_mfc18_white',  code: 'W980 SM', name: 'MFC White W980 18 mm',        category: 'board',  thickness: 18, unit: 'm²', price: 11.4 },
-  { id: 'mat_mfc18_oak',    code: 'H1180 ST37', name: 'MFC Halifax Oak 18 mm',    category: 'board',  thickness: 18, unit: 'm²', price: 14.9 },
-  { id: 'mat_mdf18',        code: 'MDF-18', name: 'MDF 18 mm',                    category: 'board',  thickness: 18, unit: 'm²', price: 9.8 },
-  { id: 'mat_ply18_birch',  code: 'BB/BB-18', name: 'Birch Plywood 18 mm',        category: 'board',  thickness: 18, unit: 'm²', price: 24.5 },
-  { id: 'mat_mfc22_white',  code: 'W980 SM', name: 'MFC White W980 22 mm',        category: 'board',  thickness: 22, unit: 'm²', price: 13.9 },
-  { id: 'mat_mdf25_shaker', name: 'MDF Shaker blank 25 mm',      category: 'front',  thickness: 25, unit: 'm²', price: 27.0 },
-  { id: 'mat_mfc19_front',  name: 'Melamine front 19 mm',        category: 'front',  thickness: 19, unit: 'm²', price: 16.2 },
-  { id: 'mat_hdf6_back',    name: 'HDF backing 6 mm',            category: 'board',  thickness: 6,  unit: 'm²', price: 4.6 },
+  { id: 'mat_mfc18_white',  code: 'W980 SM', name: 'MFC White W980 18 mm',        category: 'board',  thickness: 18, kg_m2: 12,   board_kind: 'mfc', unit: 'm²', price: 11.4 },
+  { id: 'mat_mfc18_oak',    code: 'H1180 ST37', name: 'MFC Halifax Oak 18 mm',    category: 'board',  thickness: 18, kg_m2: 12,   board_kind: 'mfc', unit: 'm²', price: 14.9 },
+  { id: 'mat_mdf18',        code: 'MDF-18', name: 'MDF 18 mm',                    category: 'board',  thickness: 18, kg_m2: 14,   board_kind: 'mdf_lacquered', unit: 'm²', price: 9.8 },
+  { id: 'mat_ply18_birch',  code: 'BB/BB-18', name: 'Birch Plywood 18 mm',        category: 'board',  thickness: 18, kg_m2: 12.6, board_kind: 'mfc', unit: 'm²', price: 24.5 },
+  { id: 'mat_mfc22_white',  code: 'W980 SM', name: 'MFC White W980 22 mm',        category: 'board',  thickness: 22, kg_m2: 14.5, board_kind: 'mfc', unit: 'm²', price: 13.9 },
+  { id: 'mat_mdf25_shaker', name: 'MDF Shaker blank 25 mm',      category: 'front',  thickness: 25, kg_m2: 19,   board_kind: 'mdf_lacquered', unit: 'm²', price: 27.0 },
+  { id: 'mat_mfc19_front',  name: 'Melamine front 19 mm',        category: 'front',  thickness: 19, kg_m2: 12.6, board_kind: 'mfc', unit: 'm²', price: 16.2 },
+  { id: 'mat_hdf6_back',    name: 'HDF backing 6 mm',            category: 'board',  thickness: 6,  kg_m2: 5.4,  board_kind: 'mfc', unit: 'm²', price: 4.6 },
   { id: 'mat_edge_abs',     name: 'ABS edging 22 × 1 mm',        category: 'edging', thickness: 1,  unit: 'm',  price: 0.55 },
   { id: 'hw_hinge_clip',    name: 'Clip-top hinge 110° + plate', category: 'hardware', unit: 'pcs',   price: 2.35 },
   { id: 'hw_hinge_soft',    name: 'Soft-close hinge 110° + plate', category: 'hardware', unit: 'pcs', price: 3.80 },

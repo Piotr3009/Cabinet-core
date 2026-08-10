@@ -13,7 +13,11 @@ import {
   projectDimensions, projectFrontThickness, saveButtonState, settingsSectionSnapshot, sourceById,
 } from '../engine/projectSettings.js';
 import { formatMm } from '../engine/format.js';
-import { hingeStandard } from '../engine/cabinet.js';
+import { doorCountFor, hingeStandard } from '../engine/cabinet.js';
+import { UNIT_TYPES } from '../engine/types.js';
+import {
+  hingeAngleFor, hingeReResolve, resolveHingeFinish, resolveHingePlate, resolveHingeSystem,
+} from '../engine/hinges.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { PROJECT_TYPES as PROJECT_TYPE_OPTIONS } from '../engine/projectTypes.js';
 import { contrastInk } from '../lib/pswColors.js';
@@ -81,6 +85,8 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setHingeStandard = useProjectStore((s) => s.setHingeStandard);
   // Turn 18 (CLAUDE.md F6.4): …and which runner it fits its drawers with.
   const setRunnerVariant = useProjectStore((s) => s.setRunnerVariant);
+  // Turn 19 (CLAUDE.md F1.1): …and which HINGE — system, finish, plate.
+  const setHingeHardware = useProjectStore((s) => s.setHingeHardware);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
   const setCarcassMaterial = useProjectStore((s) => s.setCarcassMaterial);
@@ -699,6 +705,22 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                             for (const n of notices) notify(n, 'warn');
                             setFrontGate(null);
                             notify(`Fronts recomputed at ${formatMm(gateHere.thickness)} mm`, 'warn');
+                            // ─── Turn 19 (CLAUDE.md F1.4): THE RE-RESOLVE GATE ───
+                            // A thicker front is a different HINGE — 110° up to
+                            // 25 mm, 95° above it — so a board change can flip
+                            // the angle under every door in the job. The doors
+                            // that follow the rule follow it; a door somebody
+                            // ASSIGNED a hinge to by hand is never silently
+                            // overruled, which is the whole point of assigning
+                            // one. Both facts are said out loud rather than
+                            // discovered on an invoice.
+                            const { message } = hingeReResolve({
+                              fromThickness: frontBoard,
+                              toThickness: gateHere.thickness,
+                              assignedDoors: doorsWithOwnHinge(units),
+                              totalDoors: doorsInProject(units, profile),
+                            });
+                            if (message) notify(message, 'warn');
                           }}
                         >
                           Recompute at {formatMm(gateHere.thickness)}
@@ -856,6 +878,22 @@ export default function SettingsPanel({ onRoomSetup = null }) {
             ))}
           </div>
         </div>
+        {/* ─── Turn 19 (CLAUDE.md F1.1): WHICH HINGE, NOT HOW MANY ─────────
+            The project level of the owner's two-level model: "jeden główny
+            wybór przypisany". Three answers — the SYSTEM the workshop stocks,
+            the FINISH this job is ordered in, and the PLATE it is drilled for
+            — and not one of them is the ANGLE, because the angle is not a
+            choice: the front's own thickness decides it, and a wardrobe door
+            with a drawer behind it takes the 155° so the drawer can clear it.
+            The line under the controls says what the job's fronts resolve to
+            today, so the rule is visible rather than folklore. */}
+        <HingeHardware
+          design={design}
+          profile={profile}
+          frontThickness={projectFrontThickness(design, profile, materials)}
+          onChange={setHingeHardware}
+        />
+
         {/* ─── Turn 18 (CLAUDE.md F6.4): THE RUNNERS ────────────────────────
             The SYSTEM the workshop stocks and the VARIANT this job is fitted
             with. It is HARDWARE and not geometry: Blum's own installation page
@@ -1280,4 +1318,172 @@ function runnerVariantHint(profile, chosen) {
   const list = profile.hardware.runner.movento.variants || [];
   const v = list.find((x) => x.id === chosen) || list[0];
   return v ? `${v.id} — ${v.label}. ${v.hint}` : '';
+}
+
+// ─── THE HINGE, AT PROJECT LEVEL (turn 19, CLAUDE.md F1.1/F1.5/F1.7) ────────
+//
+// The owner's model has two levels and this is the top one: "jeden główny wybór
+// przypisany… a jak jedna szafka będzie miała inne hinges, to po podwójnym
+// kliknięciu na hinge otworzy się modal". The exception lives on the door
+// (components/HingeModal.jsx); this is the answer every door starts from.
+//
+// THREE controls, and the thing that is NOT one of them is the point:
+//
+//   SYSTEM   CLIP top BLUMOTION — the only one in the catalogue today, shown as
+//            a row rather than a single tag because the next one the workshop
+//            stocks is an entry in profile.js and not a rewrite of this.
+//   FINISH   nickel or onyx. It decides which GLB is drawn and which ARTICLE
+//            the BOM lists. Nothing else — the same hinge, the same hole.
+//   PLATE    knock-in ⌀5, which is what the LISP drills and what every project
+//            cut so far is bored for. The screw-on ⌀3 is VISIBLE AND DISABLED:
+//            its drilling pattern is a workshop number nobody has supplied, and
+//            an enabled option that silently drilled the ⌀5 pattern would make
+//            the export lie about what is on the machine. BLOCKERS says exactly
+//            which card is needed.
+//
+// The ANGLE is absent because it is not a choice. The line under the controls
+// says what this job's fronts resolve to today so that the rule is READABLE —
+// a joiner who changes the front board from 18 to 32 sees the answer change
+// under his hand rather than discovering it on an invoice.
+function HingeHardware({
+  design, profile, frontThickness, onChange,
+}) {
+  const C = profile.hardware.hinge.cliptop;
+  const system = resolveHingeSystem(design, profile);
+  const finish = resolveHingeFinish(design, profile);
+  const plate = resolveHingePlate(design, profile);
+  const angle = hingeAngleFor({ frontThickness });
+  const wardrobeAngle = hingeAngleFor({ frontThickness, innerDrawer: true });
+
+  return (
+    <>
+      <div className="cc-row" data-hinge-system="1">
+        <div className="flex flex-col flex-1">
+          <span className="text-sm text-ink-100">Hinge system</span>
+          <span className="text-[11px] text-ink-400">
+            {C.systems.find((s) => s.id === system)?.hint || 'The cup hinge this job is fitted with.'}
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {C.systems.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              data-hinge-system-option={s.id}
+              aria-pressed={system === s.id}
+              title={s.hint}
+              className={`cc-btn px-2 ${system === s.id ? 'border-gold text-gold' : ''}`}
+              onClick={() => onChange({ system: s.id })}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="cc-row" data-hinge-finish="1">
+        <div className="flex flex-col flex-1">
+          <span className="text-sm text-ink-100">Hinge finish</span>
+          <span className="text-[11px] text-ink-400">
+            {C.finishes.find((f) => f.id === finish)?.hint || ''}
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {C.finishes.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              data-hinge-finish-option={f.id}
+              aria-pressed={finish === f.id}
+              title={f.hint}
+              className={`cc-btn px-2 ${finish === f.id ? 'border-gold text-gold' : ''}`}
+              onClick={() => onChange({ finish: f.id })}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="cc-row" data-hinge-plate="1">
+        <div className="flex flex-col flex-1">
+          <span className="text-sm text-ink-100">Mounting plate</span>
+          <span className="text-[11px] text-ink-400">
+            What the carcass side is drilled for. The ⌀5 pattern is the one this app knows.
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {C.plates.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              data-hinge-plate-option={p.id}
+              data-hinge-plate-disabled={p.enabled ? '0' : '1'}
+              aria-pressed={plate === p.id}
+              disabled={!p.enabled}
+              title={p.hint}
+              className={`cc-btn px-2 ${plate === p.id ? 'border-gold text-gold' : ''} ${p.enabled ? '' : 'opacity-40 cursor-not-allowed'}`}
+              onClick={() => p.enabled && onChange({ plate: p.id })}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p className="text-[11px] text-ink-400" data-hinge-angle-note="1">
+        {angle ? (
+          <>
+            The ANGLE is not a choice — the front decides it. This job&apos;s{' '}
+            <span className="text-ink-100">{formatMm(frontThickness)} mm</span> fronts take the{' '}
+            <span className="text-ink-100">{angle}°</span> hinge; a wardrobe door with a drawer behind
+            it takes the <span className="text-ink-100">{wardrobeAngle || 155}°</span>, so the drawer
+            clears the open door. One door can be given another by hand — double-click its hinge in 3D.
+          </>
+        ) : (
+          <>
+            The ANGLE is not a choice — the front decides it, from the hinge catalogue. One door can be
+            given another by hand: double-click its hinge in 3D.
+          </>
+        )}
+      </p>
+    </>
+  );
+}
+
+/**
+ * How many doors in this job carry a hinge somebody picked by hand
+ * (turn 19, CLAUDE.md F1.4).
+ *
+ * These are the doors the re-resolve gate does NOT touch: an assignment is
+ * somebody's decision about that door and a board change is not an argument
+ * against it.
+ */
+function doorsWithOwnHinge(units) {
+  let n = 0;
+  for (const u of units) n += Object.keys(u.params?.door_hinges || {}).length;
+  return n;
+}
+
+/**
+ * How many hinged doors the job has altogether.
+ *
+ * `doorCountFor` is the engine's own width rule, so this counts the doors the
+ * engine will actually hang rather than a guess of one per cabinet — a 1200 mm
+ * base unit has two, and both of them re-resolve.
+ */
+function doorsInProject(units, profile) {
+  let n = 0;
+  for (const u of units) {
+    const type = UNIT_TYPES[u.type];
+    if (!type?.supports?.doors) continue;
+    const said = u.params?.doors;
+    if (said === false || said === 0) continue;
+    if (said && typeof said === 'object') {
+      n += Number.isFinite(Number(said.count)) ? Number(said.count) : doorCountFor(u.params.width, profile);
+    } else {
+      n += doorCountFor(u.params.width, profile);
+    }
+  }
+  return n;
 }

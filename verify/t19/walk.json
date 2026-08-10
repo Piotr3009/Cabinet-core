@@ -1,0 +1,177 @@
+[
+  {
+    "label": "F0.3 the catalogues of record are loaded, and the engine never fetched them",
+    "ok": true,
+    "detail": "{\"hinges\":19,\"lifts\":[2300,2500,2700,2900]}"
+  },
+  {
+    "label": "F1.1 Settings offers the SYSTEM, and CLIP top BLUMOTION is it",
+    "ok": true,
+    "detail": "[\"cliptop_blumotion\"]"
+  },
+  {
+    "label": "F1.1 …the two FINISHES, with nickel the shop default and a tooltip on each",
+    "ok": true,
+    "detail": "[[\"nickel\",true],[\"onyx\",false]]"
+  },
+  {
+    "label": "F1.5 …and the ⌀3 plate is VISIBLE, DISABLED, and says why",
+    "ok": true,
+    "detail": "disabled=true title=\"drilling pattern pending\""
+  },
+  {
+    "label": "F1.5 the knock-in ⌀5 is the one chosen",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "label": "F1.2 the surface says the ANGLE is not a choice, and what the fronts resolve to",
+    "ok": true,
+    "detail": "The ANGLE is not a choice — the front decides it. This job's 25 mm fronts take the 110° hinge; a wardrobe door with a drawer behind it takes the 155°, so the drawer clears the open door. One door can be given another by hand — double-click its hinge in 3D."
+  },
+  {
+    "label": "F1.2 an 18 mm front takes the 110°, a 32 mm front the 95°",
+    "ok": true,
+    "detail": "110° / 95°"
+  },
+  {
+    "label": "F1.2 …and the BOM lists a different ARTICLE for each",
+    "ok": true,
+    "detail": "71B3550 42542984 vs 71B9550 40331821"
+  },
+  {
+    "label": "F1.2 …while the COUNT does not move — a hinge is a hinge",
+    "ok": true,
+    "detail": "6 hinges each, 3 rows"
+  },
+  {
+    "label": "F1.1 the FINISH changes the article and nothing else",
+    "ok": true,
+    "detail": "71B3550 → 71B3590"
+  },
+  {
+    "label": "F1.2 a wardrobe door with a drawer behind it takes the 155°",
+    "ok": true,
+    "detail": "155° · 71B7550"
+  },
+  {
+    "label": "F1.2 …and the wardrobe beside it, with no drawers, does not",
+    "ok": true,
+    "detail": "110° · 71B3550"
+  },
+  {
+    "label": "F3 the hinge modal never covers the point it was opened from — all three corners",
+    "ok": true,
+    "detail": "low-left:up-right low-right:up-left top-right:up-left"
+  },
+  {
+    "label": "F3 …and it sits ABOVE the click wherever the screen has room for it",
+    "ok": true,
+    "detail": "2/3 above the pointer"
+  },
+  {
+    "label": "F3 …clamped, so none of them leaves the screen",
+    "ok": true,
+    "detail": "low-left:284,280 low-right:1016,280 top-right:1016,8"
+  },
+  {
+    "label": "F1.3 the modal offers \"Assign other hinge\" — the catalogue’s own entries",
+    "ok": true,
+    "detail": "6 hinges, plus \"follow the rule\""
+  },
+  {
+    "label": "F1.3 one door assigned = TWO BOM lines, and they still add up",
+    "ok": true,
+    "detail": "1×71B3550@110° + 1×71B7590@155°"
+  },
+  {
+    "label": "F1.3 …the assigned line is marked as such, and the other leaf is untouched",
+    "ok": true,
+    "detail": "3 per door × 1 · 110° · CLIP top BLUMOTION · nickel · 42542984 | 3 per door × 1 · 155° · CLIP top BLUMOTION · onyx · 40074274 · assigned"
+  },
+  {
+    "label": "F1.6 the hinges are drawn on the ENGINE’s own centres — the LISP columns",
+    "ok": true,
+    "detail": "[100,470,670]"
+  },
+  {
+    "label": "F1.6 what is drawn is what is on order",
+    "ok": true,
+    "detail": "6 / 6"
+  },
+  {
+    "label": "F1.6 each door asks for its OWN model file, out of the catalogue",
+    "ok": true,
+    "detail": "F-01-FL:71B3550 F-01-FR:71B7590"
+  },
+  {
+    "label": "F1.6 …and the mounting PLATE has a model of its own",
+    "ok": true,
+    "detail": "174E6100.01"
+  },
+  {
+    "label": "F1.6 with the bucket unreachable the scene still draws — the grey stand-in",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "label": "F4 double-clicking a part on the sheet takes the tree to it",
+    "ok": true,
+    "detail": "{\"unitId\":\"u_8f7z4p9\",\"panelId\":\"F-01-FL\",\"stamp\":1}"
+  },
+  {
+    "label": "F4 …the branch OPENS and the row is HIGHLIGHTED",
+    "ok": true,
+    "detail": "F-01-FL 297×767"
+  },
+  {
+    "label": "F4 …in the right group, and scrolled into view",
+    "ok": true,
+    "detail": "group=fronts visible=true"
+  },
+  {
+    "label": "F4 …and nothing was ticked, edited or rotated — it is navigation",
+    "ok": true,
+    "detail": "0 units carry a hidden part"
+  },
+  {
+    "label": "F5.1 the element detail footer carries the piece’s WEIGHT in kg",
+    "ok": true,
+    "detail": "MFC 18: 2.73 kg · MDF 18: 3.19 kg"
+  },
+  {
+    "label": "F5.1 …and the SAME door in MDF is the heavier door",
+    "ok": true,
+    "detail": "2.73 → 3.19 kg"
+  },
+  {
+    "label": "F5.1 …with the line saying where the figure came from",
+    "ok": true,
+    "detail": "Weight 2.73 kg — 297 × 767 at 12 kg/m², from the assigned board."
+  },
+  {
+    "label": "F5.2 the engine PROPOSES a power unit from the cabinet and the front",
+    "ok": true,
+    "detail": "pf 1728 → 2500"
+  },
+  {
+    "label": "F5.3 an assignment is FITTED and objected to — \"silnik proponuje, klient assign\"",
+    "ok": true,
+    "detail": "Front too heavy for 2300 — 2500 fits."
+  },
+  {
+    "label": "F5.2 the three HK limits speak in sentences a joiner can act on",
+    "ok": true,
+    "detail": "An AVENTOS HK fits a cabinet 205–600 mm high; this one is 700 mm. | An AVENTOS HK fits a cabinet up to 1800 mm wide; this one is 2000 mm. | An AVENTOS HK needs at least 261 mm inner depth; this cabinet has 200 mm."
+  },
+  {
+    "label": "F5.4 …and there is NO kit UI this turn — the kits are turn 20",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "label": "no uncaught errors in the console during the whole walk",
+    "ok": true,
+    "detail": ""
+  }
+]

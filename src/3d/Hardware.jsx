@@ -4,9 +4,13 @@ import {
 import * as THREE from 'three';
 import { mm } from './constants.js';
 import { runnerEntry, runnerModelUrl } from '../engine/runners.js';
+import { hingeModelUrl, plateFamily, resolveDoorHinge } from '../engine/hinges.js';
 import {
   onRunnerLoad, runnerModel, runnerModelFits, runnerSource,
 } from './runnerModels.js';
+import {
+  hingeModel, hingeModelFits, hingeSource, onHingeLoad,
+} from './hingeModels.js';
 
 // ─── The hardware, in 3D (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
 //
@@ -67,6 +71,7 @@ import {
 export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '',
+  hingeSpecs = null, onEditHinge = null,
 }) {
   const colours = profile.appearance.hardware;
   return (
@@ -94,6 +99,9 @@ export default function Hardware({
           items={instances.hinges}
           profile={profile}
           colour={xray ? colours.bracket : (colours.hinge || colours.bracket)}
+          specs={hingeSpecs}
+          storageBase={storageBase}
+          onEditHinge={onEditHinge}
         />
       )}
       {/* ─── Turn 18 (CLAUDE.md F6.7) ───
@@ -127,7 +135,10 @@ export default function Hardware({
  * cabinet, and re-writing 160 matrices every frame for furniture that is
  * standing still is exactly the cost this component exists to avoid.
  */
-function Pieces({ count, place, colour, roughness = 0.35, metalness = 0.75, children }) {
+function Pieces({
+  count, place, colour, roughness = 0.35, metalness = 0.75, children,
+  onDoubleClick = null, visible = true,
+}) {
   const ref = useRef(null);
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -145,9 +156,32 @@ function Pieces({ count, place, colour, roughness = 0.35, metalness = 0.75, chil
   return (
     // ccNoBounds: hardware is IN the picture but must not frame it — a render
     // that zoomed out to fit a leg bracket would be a render of a leg bracket.
-    <instancedMesh ref={ref} args={[undefined, undefined, count]} userData={{ ccNoBounds: true }}>
+    //
+    // ─── Turn 19 (CLAUDE.md F1.3): AND IT CAN BE POINTED AT ──────────────────
+    // An InstancedMesh raycasts, and the hit carries the `instanceId` — so a
+    // double-click on the ninth hinge in a wardrobe arrives here as `9` without
+    // a single extra object in the scene. That matters: this component exists
+    // to keep 160 pieces of ironmongery at five draw calls, and a pick target
+    // per hinge would have handed all of that back to get one gesture.
+    <instancedMesh
+      ref={ref}
+      args={[undefined, undefined, count]}
+      userData={{ ccNoBounds: true }}
+      onDoubleClick={onDoubleClick || undefined}
+    >
       {children}
-      <meshStandardMaterial color={colour} roughness={roughness} metalness={metalness} />
+      <meshStandardMaterial
+        color={colour}
+        roughness={roughness}
+        metalness={metalness}
+        // An INVISIBLE instanced mesh is not raycast by three.js at all, so a
+        // pick surface that must not be seen is drawn transparent instead —
+        // which is what the model path below needs, and it costs one draw call
+        // for the whole set rather than one per hinge.
+        transparent={!visible}
+        opacity={visible ? 1 : 0}
+        depthWrite={visible}
+      />
     </instancedMesh>
   );
 }
@@ -166,9 +200,72 @@ const put = (matrix, position, quaternion = null, scale = null) => matrix.compos
  * Two instanced meshes — an InstancedMesh carries one geometry, and two of them
  * is two draw calls for twelve hinges rather than twenty-four. Neither piece
  * moves when a door opens: they are screwed to the side panel.
+ *
+ * ─── TURN 19 (CLAUDE.md F1.6): THE MANUFACTURER'S OWN GEOMETRY ──────────────
+ *
+ * The runners' bargain, on the hinges. The owner has the whole CLIP top world
+ * as GLB and a Blum hinge drawn from two boxes is a Blum hinge nobody
+ * recognises — so where the model has ARRIVED it is drawn, one clone per
+ * position, and where it has not (the file still on its way, a bucket that is
+ * down, mock mode, a file that measures far too big) the row falls through to
+ * the INSTANCED GREY BODY this function has drawn since turn 7. Never a hole,
+ * never a blocked scene.
+ *
+ * THE MODEL IS A COSTUME ON THE SCREWS. Every position below is the engine's —
+ * `hardwareInstances` reads `drillSummary.hinge_centers`, the rows the machine
+ * drills — and the models are moved to them. That is why this turn's CNC export
+ * has zero deltas: nothing about a downloaded file can move a hole.
+ *
+ * ─── AND IT CAN BE POINTED AT (F1.3) ───────────────────────────────────────
+ *
+ * "Po podwójnym kliknięciu na hinge otworzy się modal." The arm's instanced
+ * mesh carries the gesture, because it is the piece a joiner is actually
+ * looking at when a door is open; where a MODEL is drawn over it the arm stays
+ * as a transparent pick surface underneath, so the hinge is clickable whether
+ * or not the bucket answered.
  */
-function CarcassHinges({ items, profile, colour }) {
+function CarcassHinges({
+  items, profile, colour, specs = null, storageBase = '', onEditHinge = null,
+}) {
   const H = profile.hardware.hinge;
+  const [arrived, setArrived] = useState(0);
+
+  // Which FILE each hinge wants. `specs` is the resolution the view was handed
+  // — one entry per door panel id — so the model that is drawn is the hinge the
+  // BOM is ordering, and not a second opinion about it.
+  const wanted = useMemo(() => items.map((h) => {
+    const spec = specs?.[h.panelId] || null;
+    if (!spec?.file) return { hinge: null, plate: null };
+    return {
+      hinge: hingeModelUrl(spec, profile, storageBase),
+      plate: spec.plateFile
+        ? hingeModelUrl({ file: spec.plateFile }, profile, storageBase)
+        : null,
+    };
+  }), [items, specs, profile, storageBase]);
+
+  useEffect(() => {
+    const offs = [];
+    for (const w of wanted) {
+      if (w.hinge) offs.push(onHingeLoad(w.hinge, () => setArrived((n) => n + 1)));
+      if (w.plate) offs.push(onHingeLoad(w.plate, () => setArrived((n) => n + 1)));
+    }
+    return () => { for (const off of offs) off(); };
+  }, [wanted]);
+
+  const models = useMemo(() => wanted.map((w) => {
+    const take = (url, plate) => {
+      if (!url) return null;
+      const source = hingeSource(url);
+      if (!source?.loaded || !hingeModelFits(source, profile)) return null;
+      return hingeModel(url, { profile, plate });
+    };
+    return { hinge: take(w.hinge, false), plate: take(w.plate, true) };
+    // `arrived` is the dependency that matters: a clone taken before the file
+    // lands holds nothing, so it has to be re-taken after it does.
+  }), [wanted, profile, arrived]);
+
+  const drawnModel = models.some((m) => m.hinge);
 
   // The arm runs straight back off the cup, into the carcass.
   const placeArm = useMemo(() => (i, m) => {
@@ -183,16 +280,95 @@ function CarcassHinges({ items, profile, colour }) {
     put(m, new THREE.Vector3(mm(x), mm(h.y), mm(h.plateZ)));
   }, [items, H.plateThickness]);
 
+  const pick = useMemo(() => (onEditHinge ? (e) => {
+    const h = items[e.instanceId];
+    if (!h) return;
+    e.stopPropagation();
+    onEditHinge({
+      panelId: h.panelId,
+      // WHICH ROW, counted from the floor exactly as the engine counts them —
+      // `hardwareInstances` walks the drilled centres in order, per door, so
+      // the index inside one door's run is the index in `hinge_centers`.
+      index: items.filter((x) => x.panelId === h.panelId).indexOf(h),
+      at: { x: e.clientX, y: e.clientY },
+    });
+  } : null), [items, onEditHinge]);
+
   return (
     <>
-      <Pieces count={items.length} place={placeArm} colour={colour}>
+      {/* The models, standing on the drilled points. */}
+      {models.map((m, i) => (
+        <group key={`hm${items[i].panelId}-${items[i].y}`}>
+          {m.hinge && (
+            <primitive object={m.hinge} position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]} />
+          )}
+          {m.plate && (
+            <primitive
+              object={m.plate}
+              position={[mm(items[i].plateX), mm(items[i].y), mm(items[i].plateZ)]}
+            />
+          )}
+        </group>
+      ))}
+
+      {/* The procedural arm — the grey stand-in when the bucket is unreachable,
+          and the PICK SURFACE always. Where a model is drawn over it, it is
+          transparent: it is then doing one job, which is carrying the gesture. */}
+      <Pieces
+        count={items.length}
+        place={placeArm}
+        colour={colour}
+        onDoubleClick={pick}
+        visible={!drawnModel}
+      >
         <boxGeometry args={[mm(H.armWidth), mm(H.armThickness), mm(H.armLength)]} />
       </Pieces>
-      <Pieces count={items.length} place={placePlate} colour={colour}>
+      <Pieces count={items.length} place={placePlate} colour={colour} visible={!drawnModel}>
         <boxGeometry args={[mm(H.plateThickness), mm(H.plateWidth), mm(H.plateLength)]} />
       </Pieces>
     </>
   );
+}
+
+/**
+ * WHICH MODEL EACH DOOR'S HINGES WEAR, keyed by the door's panel id
+ * (turn 19, CLAUDE.md F1.6).
+ *
+ * The view asks the ENGINE, once per unit, and hands the answer down — so the
+ * hinge in the picture, the article in the BOM and the angle in the hinge modal
+ * are one resolution rather than three. A catalogue that has not been read
+ * gives an empty map, and the whole of the 3D falls back to the procedural body
+ * without a branch anywhere else.
+ *
+ * @param {object} args
+ *   result   computeCabinet() output
+ *   unit     the project unit (its params carry the per-door exceptions)
+ *   finish   the project's hinge finish
+ *   plate    the project's mounting plate
+ * @returns {object} { [panelId]: { file, plateFile, family, angle, article } }
+ */
+export function hingeSpecsFor({
+  result, unit, finish = null, plate = null,
+}) {
+  const out = {};
+  const doors = (result?.panels || []).filter((p) => p.part === 'FRONT' && p.role === 'front');
+  if (!doors.length) return out;
+  const plateEntry = plateFamily({ plate, finish });
+  const innerDrawer = unit?.type === 'WARDROBE' && Number(result?.derived?.drawers) > 0;
+  for (const door of doors) {
+    const spec = resolveDoorHinge({
+      assigned: unit?.params?.door_hinges?.[door.id] || null,
+      frontThickness: door.thickness,
+      innerDrawer,
+      finish,
+    });
+    out[door.id] = {
+      ...spec,
+      file: spec.file || null,
+      plateFile: plateEntry?.file || null,
+    };
+  }
+  return out;
 }
 
 /**

@@ -35,6 +35,7 @@ import {
   unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
 import { widthZones } from '../engine/zones.js';
+import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
@@ -231,6 +232,7 @@ function budrDrawerIndex(unit, ref) {
 function paramsForEngine(unit, design = null) {
   const p = unit.params;
   const items = p.sections?.[0]?.items || [];
+  const profile = getCabinetProfile();
   return {
     ...p,
     type: unit.type,
@@ -246,7 +248,7 @@ function paramsForEngine(unit, design = null) {
     // "nobody has said".
     interior_setback_mm: Number.isFinite(Number(p.interior_setback_mm))
       ? Number(p.interior_setback_mm)
-      : getCabinetProfile().carcass.interiorSetback,
+      : profile.carcass.interiorSetback,
     // ─── Turn 11 (CLAUDE.md F3.1) ───
     // What a project has said about ONE piece of this cabinet, keyed by the
     // engine's own panel id. A DESIGN-layer input like the plinth and the top
@@ -259,6 +261,19 @@ function paramsForEngine(unit, design = null) {
     // engine. Left out — a bare kit call, every golden fixture — the engine
     // falls back to the profile's 3 and drills what the AutoLISP drills.
     hinge_standard: design?.hinges?.standard ?? null,
+    // ─── Turn 19 (CLAUDE.md F1.1/F1.3) ───
+    // WHICH hinge, as opposed to how many. The project's finish and the label
+    // of the system it is fitted with travel down as inputs, exactly as the
+    // standard above does; the per-door exceptions are already on the unit's
+    // own params and are passed through by the spread, but they are named here
+    // so the hand-off is visible rather than accidental.
+    //
+    // Every one of them is ADDITIVE and none reaches a hole. A bare kit call —
+    // every golden fixture — passes none of them, resolves no article, and
+    // drills what the AutoLISP drills.
+    project_hinge_finish: resolveHingeFinish(design, profile),
+    project_hinge_system_label: profile.hardware.hinge.cliptop.systemLabel,
+    door_hinges: p.door_hinges || null,
     // ─── Turn 18 (CLAUDE.md F6.4) ───
     // The PROJECT's runner variant, travelling exactly as the hinge standard
     // does. It is deliberately NOT `runner_variant` — that name belongs to the
@@ -2931,6 +2946,84 @@ export const useProjectStore = create((set, get) => ({
       dirty: true,
     };
   }),
+
+  // ─── WHICH HINGE THIS JOB IS FITTED WITH (turn 19, CLAUDE.md F1.1) ────────
+  //
+  // Three project-level answers — system, finish, plate — and one setter for
+  // all three, because they are the same kind of decision and three near
+  // identical setters is how they drift. Every value is RESOLVED on the way out
+  // (engine/hinges.js), so a plate this build cannot drill for never sticks and
+  // a finish the workshop does not stock never reaches the BOM.
+  //
+  // None of them changes a hole. That is the iron rule of this turn and it is
+  // structural rather than promised: the drilling is computed from
+  // `profile.hinges`, which nothing here touches.
+  setHingeHardware: (patch) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    const allowed = ['system', 'finish', 'plate'];
+    const next = { ...design.hinges };
+    for (const key of allowed) if (patch?.[key] !== undefined) next[key] = patch[key];
+    return {
+      project: { ...s.project, design: migrateDesign({ ...design, hinges: next }) },
+      dirty: true,
+    };
+  }),
+
+  /** What this job is fitted with, resolved — for the panel and for a test. */
+  hingeHardware: () => {
+    const design = migrateDesign(get().project.design);
+    const profile = getCabinetProfile();
+    return {
+      system: resolveHingeSystem(design, profile),
+      finish: resolveHingeFinish(design, profile),
+      plate: resolveHingePlate(design, profile),
+    };
+  },
+
+  // ─── ONE DOOR'S OWN HINGE (turn 19, CLAUDE.md F1.3) ───────────────────────
+  //
+  // "A jak jedna szafka będzie miała inne hinges… assign if other hinge." The
+  // same hierarchy as colour and as the runner variant: what somebody said
+  // NEAREST the piece wins. It is keyed on the engine's own panel id, which is
+  // what every per-piece decision in this app has been keyed on since turn 11.
+  //
+  // An assignment is a HARDWARE fact, not a geometric one — the door is cut and
+  // bored identically either way — so nothing here invalidates a fixture, and
+  // the BOM follows because `computeCabinet` reads the same map.
+
+  /** Give one door a hinge of its own. `null` hands it back to the rule. */
+  assignDoorHinge: (unitId, panelId, family) => {
+    if (!panelId) return null;
+    const wanted = family ? String(family) : null;
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const map = { ...(u.params.door_hinges || {}) };
+        if (wanted) map[panelId] = wanted;
+        else delete map[panelId];
+        return {
+          ...u,
+          params: { ...u.params, door_hinges: Object.keys(map).length ? map : null },
+        };
+      }),
+      dirty: true,
+    }));
+    return wanted;
+  },
+
+  /** Every door of this cabinet that has been given a hinge by hand. */
+  doorHingesOf: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    return unit?.params?.door_hinges || null;
+  },
+
+  /** Hand every door of this cabinet back to the rule. */
+  resetDoorHinges: (unitId) => set((st) => ({
+    units: st.units.map((u) => (u.id === unitId
+      ? { ...u, params: { ...u.params, door_hinges: null } }
+      : u)),
+    dirty: true,
+  })),
 
   setShelfPos: (unitId, itemId, posRaw, snapStep = 0) => {
     const s = get();

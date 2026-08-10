@@ -8,7 +8,7 @@ import {
   panelFillOffset, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
-import Hardware, { DoorHinges } from './Hardware.jsx';
+import Hardware, { DoorHinges, hingeSpecsFor } from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import JointLines from './JointLines.jsx';
@@ -18,6 +18,7 @@ import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
+import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
 import { storageBaseUrl } from '../lib/runnerCatalogue.js';
 import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
@@ -400,6 +401,8 @@ export default function UnitView({
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
   selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onAddItems,
+  // Turn 19 (CLAUDE.md F1.3): double-click a hinge and its modal opens.
+  onEditHinge = null,
   // The ink every dimension caption on this cabinet is written in (turn 11,
   // CLAUDE.md F1.5). Null falls back to the two tones the scene has always had.
   dimensionColour = null,
@@ -620,6 +623,18 @@ export default function UnitView({
     }
     return out;
   }, [hardware.runners, unit, design, profile]);
+
+  // ─── Turn 19 (CLAUDE.md F1.6): WHICH HINGE EACH DOOR IS FITTED WITH ───────
+  // Project (finish, plate) → the rule (the front's thickness, and whether a
+  // drawer is behind this door) → the door's own assignment. ONE resolution,
+  // the engine's, handed to the view — so the model on screen and the article
+  // in the BOM cannot be two different hinges.
+  const hingeSpecs = useMemo(() => hingeSpecsFor({
+    result,
+    unit,
+    finish: resolveHingeFinish(design, profile),
+    plate: resolveHingePlate(design, profile),
+  }), [result, unit, design, profile]);
   // Where the models are served from. '' in mock mode, and '' is a complete
   // answer: the runner is drawn from the workshop's own profile instead.
   const storageBase = useMemo(() => storageBaseUrl(), []);
@@ -1170,6 +1185,11 @@ export default function UnitView({
         runners={!contour && (hideFronts || anyFrontOpen)}
         runnerVariants={runnerVariants}
         storageBase={storageBase}
+        // ─── Turn 19 (CLAUDE.md F1.6/F1.3) ───
+        // WHICH hinge each door wears — resolved once, by the engine, and
+        // handed down; and the gesture that opens the hinge modal on it.
+        hingeSpecs={hingeSpecs}
+        onEditHinge={onEditHinge}
       />
 
       {/* Top infill: grab its top edge and drag UP to the ceiling, or

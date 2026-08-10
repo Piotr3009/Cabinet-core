@@ -10,6 +10,9 @@ import { useMaterialAssignmentStore } from './stores/materialAssignmentStore.js'
 import * as dxf from './engine/cnc/dxf.js';
 import * as hardware3d from './engine/hardware3d.js';
 import * as runners from './engine/runners.js';
+import * as hinges from './engine/hinges.js';
+import * as lifts from './engine/lifts.js';
+import * as menuPlacement from './lib/menuPlacement.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
 //
@@ -46,6 +49,16 @@ if (typeof window !== 'undefined') {
   window.__ccDxf = dxf;
   window.__ccHardware3d = hardware3d;
   window.__ccRunners = runners;
+  // ─── Turn 19 (CLAUDE.md F6) ───
+  // The same three reasons again, for this turn's three engines: a claim about
+  // WHICH HINGE a door takes is read off the resolver the BOM and the 3D both
+  // use; a claim about a LIFT is read off the selection engine, which has no UI
+  // this turn and could otherwise only be checked in node; and the placement
+  // arithmetic is read off the same pure function the shell places with. All
+  // pure, all reaching nothing the page could not already compute.
+  window.__ccHinges = hinges;
+  window.__ccLifts = lifts;
+  window.__ccPlacement = menuPlacement;
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

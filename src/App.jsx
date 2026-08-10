@@ -5,6 +5,17 @@ import Toast from './components/Toast.jsx';
 import { useUiStore } from './stores/uiStore.js';
 import { loadDecorCatalogue } from './lib/decorCatalogue.js';
 import { loadRunnerCatalogue } from './lib/runnerCatalogue.js';
+import { loadHardwareCatalogues } from './lib/hardwareCatalogue.js';
+
+// ─── THE KNOWLEDGE FILES (turn 19, CLAUDE.md F0.3) ──────────────────────────
+//
+// The four catalogues under `reference/hardware/` ship WITH the app, so unlike
+// the decor pack and the runner manifest there is nothing to wait for and
+// nothing that can fail. Handing them to the engine at module scope rather than
+// in an effect is therefore the honest shape: by the time the first cabinet is
+// computed the hinge rule is in place, and no cabinet is ever computed against
+// a half-loaded catalogue and then quietly recomputed against a full one.
+loadHardwareCatalogues();
 
 // Two screens (turn 4, BACKLOG #7): the start screen, and the project.
 // The canvas is only ever reached THROUGH a project, so a drawing always

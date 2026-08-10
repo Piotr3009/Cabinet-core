@@ -24,18 +24,19 @@
 // package, which is the same precedent `RoomEnvironment` (3d/Scene.jsx) and
 // `mergeGeometries` (3d/panelSolid.js) already stand on.
 
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {
+  clearGlbSources, glbClone, glbFailed, glbLongestMm, glbSource, onGlbLoad,
+} from './glbSource.js';
 import { mm } from './constants.js';
 
-/** One decoded model per file, however many drawers run on it. */
-const sources = new Map();
-
-let loader = null;
-const getLoader = () => {
-  if (!loader) loader = new GLTFLoader();
-  return loader;
-};
+// ─── TURN 19 (CLAUDE.md F1.6): THE CACHE MOVED, NOTHING ELSE DID ────────────
+//
+// The hinges need exactly this — one decode per file, a clone per position, and
+// `failed` as the other path — so the machinery is 3d/glbSource.js now and both
+// hardware loaders stand on it. Every export below keeps its name and its
+// contract; what is left here is the two things that are a RUNNER's own, which
+// are where its datum sits and how long a file has to be to be the runner it
+// says it is.
 
 /**
  * The shared model for one runner file.
@@ -44,62 +45,25 @@ const getLoader = () => {
  *            failed:boolean, listeners:Set}}
  */
 export function runnerSource(url) {
-  if (!url) return null;
-  const known = sources.get(url);
-  if (known) return known;
-  const entry = {
-    scene: null, size: null, centre: null, loaded: false, failed: false, listeners: new Set(),
-  };
-  sources.set(url, entry);
-  const notify = () => { for (const cb of entry.listeners) cb(); };
-
-  // Guard the whole call: a GLTFLoader constructed in a headless environment
-  // (a node test importing this file) has no XMLHttpRequest to reach for, and
-  // the scene must degrade rather than throw on the way up.
-  try {
-    getLoader().load(
-      url,
-      (gltf) => {
-        const scene = gltf?.scene || null;
-        if (!scene) { entry.failed = true; notify(); return; }
-        // Measure it ONCE. The file's own origin is somebody else's decision —
-        // F6.2 is explicit that the LISP owns the position and the model is a
-        // costume on the screws — so what is kept is the box, and the caller
-        // aligns that box to the drilled row.
-        const box = new THREE.Box3().setFromObject(scene);
-        entry.scene = scene;
-        entry.size = box.getSize(new THREE.Vector3());
-        entry.centre = box.getCenter(new THREE.Vector3());
-        entry.min = box.min.clone();
-        entry.loaded = true;
-        notify();
-      },
-      undefined,
-      () => { entry.failed = true; notify(); },
-    );
-  } catch {
-    entry.failed = true;
-  }
-  return entry;
+  return glbSource(url);
 }
 
 /** Tell me when this model is ready — or has given up. */
 export function onRunnerLoad(url, callback) {
-  const entry = runnerSource(url);
-  if (!entry) { callback(); return () => {}; }
-  if (entry.loaded || entry.failed) { callback(); return () => {}; }
-  entry.listeners.add(callback);
-  return () => entry.listeners.delete(callback);
+  return onGlbLoad(url, callback);
 }
 
 /** Did this file fail to arrive? Then the caller draws the plain profile. */
 export function runnerFailed(url) {
-  return Boolean(url && sources.get(url)?.failed);
+  return glbFailed(url);
 }
 
 /** For tests and for a workshop switching bucket. */
 export function clearRunnerModels() {
-  sources.clear();
+  // Deliberately NOT a partial clear: the cache is keyed by url and the hinges
+  // and the runners cannot collide in it, so "forget the models" means all of
+  // them — which is what a test that switches bucket actually wants.
+  clearGlbSources();
 }
 
 /**
@@ -111,10 +75,9 @@ export function clearRunnerModels() {
  * a 450 mm drawer with nothing said. It falls back to the profile instead.
  */
 export function runnerModelFits(entry, nl, profile) {
-  if (!entry?.size) return false;
-  const tol = profile.hardware.runner.movento.lengthTolerance;
-  const longest = Math.max(entry.size.x, entry.size.y, entry.size.z) / mm(1);
-  return Math.abs(longest - Number(nl)) <= tol;
+  const longest = glbLongestMm(entry, mm(1));
+  if (longest == null) return false;
+  return Math.abs(longest - Number(nl)) <= profile.hardware.runner.movento.lengthTolerance;
 }
 
 /**
@@ -136,19 +99,10 @@ export function runnerModelFits(entry, nl, profile) {
  * @returns {THREE.Object3D|null} null while the file is still on its way
  */
 export function runnerModel(url, { mirror = false, profile }) {
-  const entry = runnerSource(url);
-  if (!entry?.loaded || !entry.scene || entry.failed) return null;
   const O = profile.hardware.runner.movento.modelOrigin;
-  const clone = entry.scene.clone(true);
-  // The file's own bounding box, brought to the group's origin…
-  clone.position.set(-entry.min.x, -entry.min.y, -entry.min.z);
-  // …and then the workshop's measured offset, in the runner's own frame.
-  clone.position.x += mm(O.x);
-  clone.position.y += mm(O.y);
-  clone.position.z += mm(O.z);
-  const group = new THREE.Group();
-  group.add(clone);
-  if (mirror) group.scale.x = -1;
-  group.userData.ccNoBounds = true;
-  return group;
+  // The file's own bounding box is brought to the group's origin and then moved
+  // by the workshop's measured offset, in the runner's own frame — the shared
+  // loader does both, because it is the same two lines for every piece of
+  // ironmongery this app will ever draw.
+  return glbClone(url, { origin: { x: mm(O.x), y: mm(O.y), z: mm(O.z) }, mirror });
 }

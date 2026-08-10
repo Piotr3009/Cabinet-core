@@ -935,6 +935,19 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           onEditElement={(panelId, at) => openModal('element', {
             unitId: unit.id, panelId, at,
           })}
+          // ─── Turn 19 (CLAUDE.md F1.3) ───
+          // "Po podwójnym kliknięciu na hinge otworzy się modal." The same
+          // gesture on the ironmongery rather than on the board, opening the
+          // window that moves it and the one that can assign another one to
+          // THIS door. The click point travels with the request, and turn 19's
+          // shell (F3) puts the window up and to the RIGHT of it — which is the
+          // whole of what the owner complained about.
+          onEditHinge={({ panelId, index, at }) => {
+            selectUnit(unit.id);
+            openModal('hinge', {
+              unitId: unit.id, panelId, hingeIndex: index, at,
+            });
+          }}
           // The inner "+" (turn 11, CLAUDE.md F4.3): the unit STAYS selected and
           // the right panel opens its Add items section. Nothing about the
           // selection changes — that is what "inner" means.

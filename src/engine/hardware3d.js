@@ -212,7 +212,14 @@ function railInstances(result, profile) {
  * A runner PAIR is two profiles; everything else is one instance per piece.
  */
 export function hardwareCounts(result) {
-  const qty = (role) => Number(result.hardware.find((h) => h.role === role)?.qty) || 0;
+  // SUMMED, not found (turn 19, CLAUDE.md F1.2). One role can be several lines
+  // now — a cabinet whose two leaves are fitted with different hinges buys them
+  // on two rows, exactly as two drawer variants have bought runners on two rows
+  // since turn 18 — and a `find` would have counted the first leaf and drawn
+  // twelve hinges against an order for six. A single-line role sums to itself.
+  const qty = (role) => result.hardware
+    .filter((h) => h.role === role)
+    .reduce((n, h) => n + (Number(h.qty) || 0), 0);
   return {
     hinges: qty('hinges'),
     runners: qty('runner_pairs') * 2,

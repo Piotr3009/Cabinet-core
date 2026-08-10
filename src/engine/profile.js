@@ -2174,16 +2174,24 @@ export const DEFAULT_CABINET_PROFILE = {
       // a rectangle of zero size, "beside" it is a millimetre away, and the
       // panel lands on the door.
       //
-      // So the shell offsets UP AND RIGHT of the object — right by `x`, and up
-      // by `y` PLUS the modal's own height, so the panel's bottom-left corner
-      // sits above and to the right of the pointer and the door underneath it
-      // stays in shot. Positive x is right; NEGATIVE y is up, which is the
-      // screen's own sign.
+      // ─── TURN 20 (CLAUDE.md F5): THE OWNER'S OWN TWO NUMBERS ────────────
       //
-      // 24 px is a thumb's width of clear glass: far enough that the pointer
-      // and the object's neighbourhood are plainly outside the panel, near
-      // enough that the panel still reads as being ABOUT the thing clicked.
-      anchorOffset: { x: 24, y: -24 },
+      // "140 px to the side (right; left when the right has no room), and the
+      // TOP of the panel level with the click."
+      //
+      //   x  140 — how much clear glass there is between the object and the
+      //            panel. A thumb's width was not enough: the owner works at
+      //            arm's length from a large screen and 24 px of air still
+      //            reads as ON the door.
+      //   y    0 — the offset of the panel's TOP from the click. Zero is
+      //            LEVEL, which is where it was before turn 19 lifted the
+      //            whole panel above the pointer; a negative number would
+      //            raise it.
+      //
+      // Positive x is right, negative y is up — the screen's own signs. Every
+      // modal in the app inherits both through the shell; there is no
+      // per-modal copy of this arithmetic (F5.4).
+      anchorOffset: { x: 140, y: 0 },
     },
   },
 

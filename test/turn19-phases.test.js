@@ -52,12 +52,16 @@ const place = (anchor, size, viewport = VIEW) => placeAnchoredModal({
 
 // ─── F3: the numbers ────────────────────────────────────────────────────────
 
-test('the offset is a PROFILE number, up and to the right (rule 2)', () => {
-  assert.ok(Number.isFinite(OFF.x), 'across');
-  assert.ok(Number.isFinite(OFF.y), 'and up');
-  assert.ok(OFF.x > 0, 'positive x is right');
-  assert.ok(OFF.y < 0, 'negative y is up — the screen’s own sign');
-  assert.deepEqual(MODAL_OFFSET_SIDES, ['up-right', 'up-left']);
+test('F5 — the offset is a PROFILE number: 140 across, level with the click', () => {
+  // ─── Turn 20 (CLAUDE.md F5) ───
+  // These assertions pinned turn 19's law — "up and to the right, by y PLUS
+  // the panel's own height" — and the owner's verdict is that lifting the
+  // panel over the pointer is exactly what he did not want. They are REWRITTEN
+  // rather than deleted, because the property they exist to hold is unchanged:
+  // THE MODAL AND THE OBJECT DO NOT OVERLAP, with clear glass between them.
+  assert.equal(OFF.x, 140, 'the owner’s own number, not one a spec invented');
+  assert.equal(OFF.y, 0, 'zero is LEVEL — the top of the panel on the click’s line');
+  assert.deepEqual(MODAL_OFFSET_SIDES, ['right', 'left'], 'the "up" went with the old law');
 });
 
 test('a profile saved before the offset existed comes back with it', () => {
@@ -70,31 +74,31 @@ test('a profile saved before the offset existed comes back with it', () => {
   assert.equal(merged.ui.modal.gapPx, 20, 'and the workshop’s own gap survives');
 });
 
-// ─── F3: the property ───────────────────────────────────────────────────────
+// ─── F5: the property ───────────────────────────────────────────────────────
 
-test('a double-click ON a door: the modal goes up and RIGHT, off the door', () => {
-  const click = anchorAtPoint(700, 600);
+test('a double-click ON a door: the modal goes RIGHT, level with the click', () => {
+  const click = anchorAtPoint(700, 400);
   const size = { width: 340, height: 420 };
   const at = place(click, size);
-  assert.equal(at.side, 'up-right');
+  assert.equal(at.side, 'right');
   assert.equal(at.left, 700 + OFF.x, 'right of the pointer by the profile offset');
-  assert.equal(at.top, 600 - Math.abs(OFF.y) - size.height, '…and its own height above it');
+  assert.equal(at.top, 400, 'and its TOP on the click’s own line');
   assert.equal(overlaps(rectOf(at, size), click), false);
   assert.ok(inside(rectOf(at, size), VIEW, M));
 });
 
-test('the corners of the owner’s complaint — the pointer is never under the panel', () => {
-  // CLAUDE.md F3.4 walks a door low-left, low-right and top-right. This is the
-  // same walk as arithmetic, and it states the guarantee the implementation
-  // actually rests on:
+test('the five corners — the object stays visible beside the panel', () => {
+  // CLAUDE.md F5.3 keeps turn 19's corner walk and asks it to pass under the
+  // new numbers. This is that walk as arithmetic, and it states the guarantee
+  // the implementation rests on:
   //
   //   the panel is separated from the object ACROSS the screen — a clear
   //   `offset.x` to one side of it — whatever the vertical clamp does.
   //
-  // That is what makes the rule hold in every corner. Near the top the panel
-  // has to slide down past the click's own height, and it is the horizontal air
-  // that keeps it off the door while it does; where there IS room above, it
-  // takes it, and the whole quadrant below the pointer is left in shot.
+  // That is what makes the rule hold in every corner. The panel's TOP is level
+  // with the click wherever the viewport allows it; low down the screen the
+  // clamp slides it UP so the whole panel is visible, and it is the horizontal
+  // air that keeps it off the door while it does.
   const size = { width: 340, height: 420 };
   const corners = [
     ['low-left', 120, 880],
@@ -111,57 +115,60 @@ test('the corners of the owner’s complaint — the pointer is never under the 
     assert.equal(overlaps(panel, click), false, `${name}: not over the pointer`);
     assert.ok(MODAL_OFFSET_SIDES.includes(at.side), `${name}: one hand or the other`);
 
-    const clearAcross = at.side === 'up-right'
+    const clearAcross = at.side === 'right'
       ? panel.x - x >= OFF.x - 1e-9
       : x - (panel.x + panel.width) >= OFF.x - 1e-9;
     assert.ok(clearAcross, `${name}: a clear ${OFF.x} px of glass beside the click`);
 
-    // And where the screen has room above the click, the panel is ABOVE it —
-    // so everything under the pointer, which is the rest of the door, stays
-    // visible. Only a click too near the top gives that up, and it gives up
-    // nothing else.
-    const roomAbove = y - Math.abs(OFF.y) - size.height >= M;
-    if (roomAbove) {
-      assert.ok(panel.y + panel.height <= y - Math.abs(OFF.y) + 1e-9, `${name}: it sits above the click`);
+    // LEVEL, where the screen allows it: the top of the panel on the click's
+    // own line. Only a click too near the BOTTOM gives that up — the clamp
+    // slides the panel up so all of it is visible — and it gives up nothing
+    // else, because the panel never comes back across the click.
+    const roomBelow = y + size.height <= VIEW.height - M;
+    if (roomBelow) {
+      assert.equal(panel.y, y, `${name}: the panel’s top is level with the click`);
     } else {
-      assert.equal(panel.y, M, `${name}: pinned under the top margin instead`);
+      assert.equal(panel.y, VIEW.height - size.height - M, `${name}: slid up off the bottom margin`);
+      assert.ok(panel.y < y, `${name}: …and only upwards`);
     }
   }
 });
 
-test('against the right edge it goes up and LEFT rather than hanging off', () => {
-  const click = anchorAtPoint(VIEW.width - 30, 600);
+test('against the right edge it goes LEFT rather than hanging off', () => {
+  const click = anchorAtPoint(VIEW.width - 30, 400);
   const size = { width: 340, height: 420 };
   const at = place(click, size);
-  assert.equal(at.side, 'up-left');
+  assert.equal(at.side, 'left');
   assert.equal(at.left, click.x - OFF.x - size.width);
+  assert.equal(at.top, 400, 'still level with the click');
   assert.equal(overlaps(rectOf(at, size), click), false);
   assert.ok(inside(rectOf(at, size), VIEW, M));
 });
 
-test('near the TOP it slides down — and horizontal air keeps it off the object', () => {
-  // The vertical clamp is free to put the panel anywhere down the screen, and
-  // that is safe precisely because the SIDE has already separated the two: this
-  // is the property the implementation rests on, so it is asserted directly.
-  const click = anchorAtPoint(700, 40);
+test('near the BOTTOM it slides up — and horizontal air keeps it off the object', () => {
+  // The vertical clamp is free to move the panel up the screen, and that is
+  // safe precisely because the SIDE has already separated the two: this is the
+  // property the implementation rests on, so it is asserted directly.
+  const click = anchorAtPoint(700, VIEW.height - 40);
   const size = { width: 340, height: 420 };
   const at = place(click, size);
-  assert.equal(at.top, M, 'pinned under the top margin');
-  assert.ok(at.top + size.height > click.y, 'it really has been pushed past the click’s height');
+  assert.equal(at.top, VIEW.height - size.height - M, 'pinned above the bottom margin');
+  assert.ok(at.top < click.y, 'it really has been pushed up past the click');
   assert.equal(overlaps(rectOf(at, size), click), false, '…and still does not cover it');
   assert.ok(inside(rectOf(at, size), VIEW, M));
 });
 
 test('EVERY modal inherits it — a button anchor is never covered either', () => {
-  // "One shell, no per-modal copies" (F3.3). A menu entry is a rectangle rather
+  // "One shell, no per-modal copies" (F5.4). A menu entry is a rectangle rather
   // than a point, and the same call has to be right about it.
   const button = {
     x: 300, y: 120, width: 160, height: 32,
   };
   const size = { width: 420, height: 500 };
   const at = place(button, size);
-  assert.equal(at.side, 'up-right');
+  assert.equal(at.side, 'right');
   assert.equal(at.left, button.x + button.width + OFF.x);
+  assert.equal(at.top, button.y, 'level with the top of the control it is about');
   assert.equal(overlaps(rectOf(at, size), button), false);
   assert.ok(inside(rectOf(at, size), VIEW, M));
 });

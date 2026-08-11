@@ -140,7 +140,8 @@ test('a NARROW cabinet gets the same treatment on the back panel, from the same 
   // back's sockets are socketCentres over the internal width, offset by a side.
   const geometry = backPanelGeometry({ w: 280, h: 770, G, puzzle: pz });
   const across = geometry.pockets
-    .filter((p) => Math.abs(p.y2 - p.y1) === pz.socketOvershoot + G / 2 + pz.centrelineExtra)
+    // Turn 24 (CLAUDE.md F4): `G / 2`, with no `centrelineExtra` on top.
+    .filter((p) => Math.abs(p.y2 - p.y1) === pz.socketOvershoot + G / 2)
     .map((p) => (p.x1 + p.x2) / 2);
   assert.deepEqual([...new Set(across)], [G + (280 - 2 * G) / 2]);
 });

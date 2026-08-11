@@ -220,7 +220,24 @@ export const DEFAULT_CABINET_PROFILE = {
     middleTabBelow: 346,
     screwDiameter: 3,
     screwFromEnd: 50,          // screws at 50, mid, length−50
-    centrelineExtra: 0.5,      // screw/socket centreline = G/2 + this
+    // ─── TURN 24 (CLAUDE.md F4): `centrelineExtra` IS GONE ─────────────────
+    //
+    // It read `centrelineExtra: 0.5` and put every screw and socket centreline
+    // at `G/2 + 0.5`. The owner: he does not remember it, it is wrong, and it
+    // skews the whole calculation. A screw driven into the EDGE of a board goes
+    // down the middle of that board — 9.00 on an 18, 9.25 on a measured 18.5 —
+    // and half a millimetre of nothing on top of it is half a millimetre of
+    // nothing in every DXF the workshop cuts.
+    //
+    // The law is now `thicknessOf(part) / 2` (engine/thickness.js), which is
+    // also what makes F3's measured board reach the drilling: the axis follows
+    // the caliper because it is derived from it rather than from a nominal with
+    // a fudge on it.
+    //
+    // THE DELTA IS GLOBAL AND IT IS NAMED: every DXF containing a screw axis
+    // shifts that axis by −0.5. Golden fixtures and fingerprints REGENERATE
+    // under this name and no other; `scripts/cnc-axis-classifier.mjs` is the
+    // proof of innocence, and `verify/t24/cnc-export-identity.md` prints it.
     layers: {
       outline: 'OUTLINE',
       socket: 'PUZZLE_SOCKET',
@@ -897,7 +914,7 @@ export const DEFAULT_CABINET_PROFILE = {
       frontWidth: 100,
       // ─── WHERE THE FLAT RAIL'S SCREWS GO ───────────────────────────────
       // A flat rail is screwed through the side panel into its EDGE, so the row
-      // is on the board's own centreline (G/2 + centrelineExtra, from the top
+      // is on the board's own centreline (G/2, from the top
       // of the carcass) and the positions are measured along the rail's WIDTH,
       // front to back. That much is the app's ordinary horizontal-board rule.
       //

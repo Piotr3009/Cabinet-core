@@ -1646,7 +1646,8 @@ export function computeCabinet(params, profileOverride) {
       cnc: railCnc(false),
       meta: { index: 2 },
     }));
-    const S = G / 2 + pz.centrelineExtra;
+    // Turn 24 (CLAUDE.md F4): the board's own centre line, and nothing on top.
+    const S = thicknessOf('BUL', cfg.thicknesses) / 2;
     const backTopScrews = [
       { x: pz.screwFromEnd, y: S }, { x: pz.screwFromEnd, y: W - S },
       { x: fridge.backTopH - pz.screwFromEnd, y: S }, { x: fridge.backTopH - pz.screwFromEnd, y: W - S },
@@ -2961,14 +2962,17 @@ export function computeCabinet(params, profileOverride) {
   //   pattern, 30 and 70 from the top of the carcass.
   //
   //   THE FLAT RAIL's edge is one board thick, so there is ONE row and it is on
-  //   the board's centreline (G/2 + `centrelineExtra` down from the top, which
-  //   is the same centreline every top-edge screw in this app uses). What is
+  //   the board's centreline (G/2 down from the top, which is the same
+  //   centreline every top-edge screw in this app uses — turn 24's F4 took the
+  //   half-millimetre off it, everywhere at once). What is
   //   laid out along the rail's WIDTH is the pair — see profile.js
   //   `ovenUnit.topRails.frontScrewFromEdge` for why it is a pair and where the
   //   number comes from.
   if (oven) {
     const TR = P.ovenUnit.topRails;
-    const S = G / 2 + pz.centrelineExtra;
+    // Turn 24 (CLAUDE.md F4): `thicknessOf(part) / 2`, on the SIDE the screw is
+    // driven into. No `centrelineExtra`, here or anywhere.
+    const S = thicknessOf('BUL', cfg.thicknesses) / 2;
     for (const sideId of ['BUL', 'BUR']) {
       // The side panel's local x runs FRONT (0) → BACK (sideW), the frame
       // engine/puzzle.js draws in, and the sink's holder screws are read the
@@ -3475,7 +3479,7 @@ export function computeCabinet(params, profileOverride) {
       holder_screw_x: [G / 2, sideW - G / 2],
       holder_screw_y: SK.holderScrewFromTop.map((f) => H - f),
       bottom_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
-      bottom_screw_y: G / 2 + pz.centrelineExtra,
+      bottom_screw_y: thicknessOf('BOTTOM', cfg.thicknesses) / 2,
     } : {}),
     ...(fridge ? {
       block_screw_x_bul: FR.blockScrewFromFront + FR.blockSize / 2 + G,

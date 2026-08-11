@@ -43,9 +43,9 @@ test('the notch is the pocket, clipped at the panel edge — the overshoot is no
   const pz = P.puzzle;
   const top = socketNotches(bul, layers).filter((n) => n.edge === 'top')[0];
 
-  // horizontalSocket(): the pocket runs from `edge − (G/2 + centrelineExtra)`
+  // horizontalSocket(): the pocket runs from `edge − G/2` (turn 24, F4)
   // to `edge + socketOvershoot`. Only the part INSIDE the board is a notch.
-  assert.equal(top.depth, G / 2 + pz.centrelineExtra, 'depth = 9.5 mm, not 15.5');
+  assert.equal(top.depth, G / 2, 'depth = 9 mm — the board’s own half, not 15.5');
   // …and it is `socketHalfWidth` either side of the socket centre.
   assert.equal(top.to - top.from, pz.socketHalfWidth * 2);
 
@@ -201,9 +201,9 @@ test('a real side panel extrudes to a board with four bites out of it', () => {
   assert.ok(area > 0);
   const pz = P.puzzle;
   const G = P.board.thickness;
-  // Four sockets, each `2 × socketHalfWidth` wide and `G/2 + centrelineExtra`
+  // Four sockets, each `2 × socketHalfWidth` wide and `G/2` (turn 24, F4)
   // deep, less the four fillets they keep in their corners.
-  const bites = 4 * (2 * pz.socketHalfWidth) * (G / 2 + pz.centrelineExtra);
+  const bites = 4 * (2 * pz.socketHalfWidth) * (G / 2);
   assert.ok(w * h - area < bites + 1e-6, 'no more board is removed than the sockets account for');
   assert.ok(w * h - area > bites * 0.8, '…and not much less: the fillets are small');
 });

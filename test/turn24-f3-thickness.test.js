@@ -218,13 +218,9 @@ test('F3 — the 18.5 PROBE: every carcass number follows the caliper', () => {
 
   // ─── THE IRON RULE: a screw axis is measured G / 2 ───
   // 18.5 means 9.25, and nothing may round, nudge or "correct" it.
-  // (The `+ profile.puzzle.centrelineExtra` still sitting on top of it is F4's
-  // to remove, and F4 removes it in the very next phase — at which point these
-  // two numbers become 9.25 and 9.)
-  const extra = P.puzzle.centrelineExtra;
-  assert.equal(screwAxis(probe), 9.25 + extra, 'the axis is measured G / 2');
+  assert.equal(screwAxis(probe), 9.25, 'the axis is measured G / 2 — 9.25, not 9.75');
   // …and the same probe at the nominal is the nominal's half, exactly.
-  assert.equal(screwAxis(computeCabinet(base(), P)), 9 + extra);
+  assert.equal(screwAxis(computeCabinet(base(), P)), 9);
 });
 
 test('F3.2 — the DRAWER BOX is cut from the box slot, not from the carcass', () => {
@@ -334,7 +330,7 @@ test('F3.4 — the store hands the engine the six measured numbers', () => {
   assert.equal(params.thickness_slots.carcass1, 18.5);
   const r = computeCabinet(params, P);
   assert.equal(r.panels.find((p) => p.id === 'BUL').thickness, 18.5);
-  assert.equal(screwAxis(r), 9.25 + P.puzzle.centrelineExtra, 'the caliper reaches the drilling');
+  assert.equal(screwAxis(r), 9.25, 'the caliper reaches the drilling');
 });
 
 test('F3.4 — a confirmed measurement round-trips through save and load', () => {

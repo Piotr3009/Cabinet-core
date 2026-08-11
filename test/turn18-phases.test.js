@@ -350,7 +350,7 @@ test('F5.2 — the top is two rails, and the FRONT one lies flat', () => {
 test('F5.2 — the flat rail takes its own screw pattern, and the sink keeps its', () => {
   const r = unit('OVEN_BASE');
   const TR = P.ovenUnit.topRails;
-  const S = r.params.board_t / 2 + P.puzzle.centrelineExtra;
+  const S = r.params.board_t / 2;   // turn 24 (CLAUDE.md F4)
   const rows = r.drills.filter((d) => d.panel === 'BUL' && d.kind === 'rail_screw');
   // Two on the flat rail's centreline, and two down the back rail's edge.
   const flat = rows.filter((d) => Math.abs(d.y - (r.params.height - S)) < 1e-9).map((d) => d.x).sort((a, b) => a - b);

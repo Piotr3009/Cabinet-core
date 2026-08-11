@@ -74,7 +74,7 @@ const PRESETS = ['all', 'non-sprayed', 'sprayed', 'fronts'];
  * wardrobe's drawer sides gain — went past it unseen. A new turn adds its own
  * case here rather than trusting the defaults to reach its work.
  */
-function cases() {
+export function cases() {
   const out = [];
   for (const type of UNIT_TYPE_ORDER) {
     const base = { ...defaultParamsFor(type, P), unit_num: '01' };
@@ -174,4 +174,7 @@ function main() {
   for (const line of text) process.stdout.write(`${line}\n`);
 }
 
-main();
+// Run only when this file is the entry point: turn 24's axis classifier
+// imports `cases()` so that both scripts ask the engine the SAME questions,
+// and an import must not print 1 500 lines to stdout on the way in.
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) main();

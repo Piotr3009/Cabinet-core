@@ -112,7 +112,7 @@ test('the back panel receives exactly the tabs the sides cut', () => {
 test('the screw rows follow the tabs instead of assuming three of them', () => {
   const height = P.lowCabinet.minHeight;
   const geom = backPanelGeometry({ w: 600, h: height, G, puzzle: pz });
-  const S = G / 2 + pz.centrelineExtra;
+  const S = G / 2;   // turn 24 (CLAUDE.md F4): the board's own half, exactly
   const leftEdge = geom.holes.filter((h) => h.kind === 'screw' && Math.abs(h.x - S) < 1e-9);
   // Two tabs → one gap between them → three rows: one in from each end and one
   // in the middle. Never a NaN, which is what destructuring a third centre that
@@ -130,6 +130,6 @@ test('a normal carcass is untouched — three tabs and four screw rows', () => {
   const r = low(600);
   assert.equal(dogbones(r.panels.find((p) => p.id === 'BUL')), 3);
   const geom = backPanelGeometry({ w: 600, h: 600, G, puzzle: pz });
-  const S = G / 2 + pz.centrelineExtra;
+  const S = G / 2;   // turn 24 (CLAUDE.md F4)
   assert.equal(geom.holes.filter((h) => h.kind === 'screw' && Math.abs(h.x - S) < 1e-9).length, 4);
 });

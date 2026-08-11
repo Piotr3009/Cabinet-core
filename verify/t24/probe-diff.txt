@@ -1,0 +1,550 @@
+1,2c1,2
+< GEOM   WARDROBE 01-BUL.dxf f7edc221
+< GEOM   WARDROBE 01-BUR.dxf d413e2d1
+---
+> GEOM   WARDROBE 01-BUL.dxf 059ce0be
+> GEOM   WARDROBE 01-BUR.dxf 9d7121f8
+5c5
+< GEOM   WARDROBE 01-BACK.dxf 81b33a91
+---
+> GEOM   WARDROBE 01-BACK.dxf 6cde8080
+7,8c7,8
+< GEOM   WARDROBE+drawers 01-BUL.dxf 189489f5
+< GEOM   WARDROBE+drawers 01-BUR.dxf 9a418b52
+---
+> GEOM   WARDROBE+drawers 01-BUL.dxf 30501da0
+> GEOM   WARDROBE+drawers 01-BUR.dxf dbea9c5d
+11c11
+< GEOM   WARDROBE+drawers 01-BACK.dxf b5810a63
+---
+> GEOM   WARDROBE+drawers 01-BACK.dxf 031f63cc
+29,30c29,30
+< GEOM   WARDROBE+partition 01-BUL.dxf f7edc221
+< GEOM   WARDROBE+partition 01-BUR.dxf 31fe986d
+---
+> GEOM   WARDROBE+partition 01-BUL.dxf 059ce0be
+> GEOM   WARDROBE+partition 01-BUR.dxf 41af52be
+33c33
+< GEOM   WARDROBE+partition 01-BACK.dxf 926cdc31
+---
+> GEOM   WARDROBE+partition 01-BACK.dxf 52ad9ac8
+37,38c37,38
+< GEOM   WARDROBE+partition-on-shelf 01-BUL.dxf 5d5d83f0
+< GEOM   WARDROBE+partition-on-shelf 01-BUR.dxf 7dfd400c
+---
+> GEOM   WARDROBE+partition-on-shelf 01-BUL.dxf 5ad91339
+> GEOM   WARDROBE+partition-on-shelf 01-BUR.dxf 7ebd1939
+41c41
+< GEOM   WARDROBE+partition-on-shelf 01-BACK.dxf 34e0847a
+---
+> GEOM   WARDROBE+partition-on-shelf 01-BACK.dxf c19a3073
+46,47c46,47
+< GEOM   WARDROBE+partitions-2 01-BUL.dxf f7edc221
+< GEOM   WARDROBE+partitions-2 01-BUR.dxf 31fe986d
+---
+> GEOM   WARDROBE+partitions-2 01-BUL.dxf 059ce0be
+> GEOM   WARDROBE+partitions-2 01-BUR.dxf 41af52be
+50c50
+< GEOM   WARDROBE+partitions-2 01-BACK.dxf 373b9a26
+---
+> GEOM   WARDROBE+partitions-2 01-BACK.dxf 79c25f93
+55,56c55,56
+< GEOM   BUD 01-BUL.dxf 81c011e4
+< GEOM   BUD 01-BUR.dxf be351a3e
+---
+> GEOM   BUD 01-BUL.dxf 2074f025
+> GEOM   BUD 01-BUR.dxf f00aa69d
+59c59
+< GEOM   BUD 01-BACK.dxf a62d8355
+---
+> GEOM   BUD 01-BACK.dxf 0e9458ae
+61,62c61,62
+< GEOM   BUD+drawers 01-BUL.dxf 81c011e4
+< GEOM   BUD+drawers 01-BUR.dxf be351a3e
+---
+> GEOM   BUD+drawers 01-BUL.dxf 2074f025
+> GEOM   BUD+drawers 01-BUR.dxf f00aa69d
+65c65
+< GEOM   BUD+drawers 01-BACK.dxf a62d8355
+---
+> GEOM   BUD+drawers 01-BACK.dxf 0e9458ae
+67,68c67,68
+< GEOM   BUD+partition 01-BUL.dxf 81c011e4
+< GEOM   BUD+partition 01-BUR.dxf 7443595c
+---
+> GEOM   BUD+partition 01-BUL.dxf 2074f025
+> GEOM   BUD+partition 01-BUR.dxf b3ee9611
+71c71
+< GEOM   BUD+partition 01-BACK.dxf 8e436881
+---
+> GEOM   BUD+partition 01-BACK.dxf e4ba74ae
+75,76c75,76
+< GEOM   BUD+partition-on-shelf 01-BUL.dxf 2dd88fc8
+< GEOM   BUD+partition-on-shelf 01-BUR.dxf d3d16c20
+---
+> GEOM   BUD+partition-on-shelf 01-BUL.dxf 57f7b9f9
+> GEOM   BUD+partition-on-shelf 01-BUR.dxf 01644a15
+79c79
+< GEOM   BUD+partition-on-shelf 01-BACK.dxf adcfa934
+---
+> GEOM   BUD+partition-on-shelf 01-BACK.dxf 44506349
+84,85c84,85
+< GEOM   BUD+partitions-2 01-BUL.dxf 81c011e4
+< GEOM   BUD+partitions-2 01-BUR.dxf 7443595c
+---
+> GEOM   BUD+partitions-2 01-BUL.dxf 2074f025
+> GEOM   BUD+partitions-2 01-BUR.dxf b3ee9611
+88c88
+< GEOM   BUD+partitions-2 01-BACK.dxf 655fbc6a
+---
+> GEOM   BUD+partitions-2 01-BACK.dxf 9723e3fd
+93,94c93,94
+< GEOM   BUDR2 01-BUL.dxf 498db19a
+< GEOM   BUDR2 01-BUR.dxf 8f9dca82
+---
+> GEOM   BUDR2 01-BUL.dxf 94a6afeb
+> GEOM   BUDR2 01-BUR.dxf ed39aa97
+97c97
+< GEOM   BUDR2 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR2 01-BACK.dxf 0e9458ae
+110,111c110,111
+< GEOM   BUDR2+drawers 01-BUL.dxf 498db19a
+< GEOM   BUDR2+drawers 01-BUR.dxf 8f9dca82
+---
+> GEOM   BUDR2+drawers 01-BUL.dxf 94a6afeb
+> GEOM   BUDR2+drawers 01-BUR.dxf ed39aa97
+114c114
+< GEOM   BUDR2+drawers 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR2+drawers 01-BACK.dxf 0e9458ae
+127,128c127,128
+< GEOM   BUDR2+partition 01-BUL.dxf 498db19a
+< GEOM   BUDR2+partition 01-BUR.dxf 8f9dca82
+---
+> GEOM   BUDR2+partition 01-BUL.dxf 94a6afeb
+> GEOM   BUDR2+partition 01-BUR.dxf ed39aa97
+131c131
+< GEOM   BUDR2+partition 01-BACK.dxf 8e436881
+---
+> GEOM   BUDR2+partition 01-BACK.dxf e4ba74ae
+145,146c145,146
+< GEOM   BUDR2+partition-on-shelf 01-BUL.dxf 498db19a
+< GEOM   BUDR2+partition-on-shelf 01-BUR.dxf 8f9dca82
+---
+> GEOM   BUDR2+partition-on-shelf 01-BUL.dxf 94a6afeb
+> GEOM   BUDR2+partition-on-shelf 01-BUR.dxf ed39aa97
+149c149
+< GEOM   BUDR2+partition-on-shelf 01-BACK.dxf 8e436881
+---
+> GEOM   BUDR2+partition-on-shelf 01-BACK.dxf e4ba74ae
+163,164c163,164
+< GEOM   BUDR2+partitions-2 01-BUL.dxf 498db19a
+< GEOM   BUDR2+partitions-2 01-BUR.dxf 8f9dca82
+---
+> GEOM   BUDR2+partitions-2 01-BUL.dxf 94a6afeb
+> GEOM   BUDR2+partitions-2 01-BUR.dxf ed39aa97
+167c167
+< GEOM   BUDR2+partitions-2 01-BACK.dxf 655fbc6a
+---
+> GEOM   BUDR2+partitions-2 01-BACK.dxf 9723e3fd
+182,183c182,183
+< GEOM   BUDR 01-BUL.dxf 26219db1
+< GEOM   BUDR 01-BUR.dxf fe0ea435
+---
+> GEOM   BUDR 01-BUL.dxf 007d3828
+> GEOM   BUDR 01-BUR.dxf 4242e3c8
+186c186
+< GEOM   BUDR 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR 01-BACK.dxf 0e9458ae
+205,206c205,206
+< GEOM   BUDR+drawers 01-BUL.dxf 26219db1
+< GEOM   BUDR+drawers 01-BUR.dxf fe0ea435
+---
+> GEOM   BUDR+drawers 01-BUL.dxf 007d3828
+> GEOM   BUDR+drawers 01-BUR.dxf 4242e3c8
+209c209
+< GEOM   BUDR+drawers 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR+drawers 01-BACK.dxf 0e9458ae
+228,229c228,229
+< GEOM   BUDR+partition 01-BUL.dxf 26219db1
+< GEOM   BUDR+partition 01-BUR.dxf fe0ea435
+---
+> GEOM   BUDR+partition 01-BUL.dxf 007d3828
+> GEOM   BUDR+partition 01-BUR.dxf 4242e3c8
+232c232
+< GEOM   BUDR+partition 01-BACK.dxf 8e436881
+---
+> GEOM   BUDR+partition 01-BACK.dxf e4ba74ae
+252,253c252,253
+< GEOM   BUDR+partition-on-shelf 01-BUL.dxf 26219db1
+< GEOM   BUDR+partition-on-shelf 01-BUR.dxf fe0ea435
+---
+> GEOM   BUDR+partition-on-shelf 01-BUL.dxf 007d3828
+> GEOM   BUDR+partition-on-shelf 01-BUR.dxf 4242e3c8
+256c256
+< GEOM   BUDR+partition-on-shelf 01-BACK.dxf 8e436881
+---
+> GEOM   BUDR+partition-on-shelf 01-BACK.dxf e4ba74ae
+276,277c276,277
+< GEOM   BUDR+partitions-2 01-BUL.dxf 26219db1
+< GEOM   BUDR+partitions-2 01-BUR.dxf fe0ea435
+---
+> GEOM   BUDR+partitions-2 01-BUL.dxf 007d3828
+> GEOM   BUDR+partitions-2 01-BUR.dxf 4242e3c8
+280c280
+< GEOM   BUDR+partitions-2 01-BACK.dxf 655fbc6a
+---
+> GEOM   BUDR+partitions-2 01-BACK.dxf 9723e3fd
+301,302c301,302
+< GEOM   BUDR4 01-BUL.dxf f0afd58b
+< GEOM   BUDR4 01-BUR.dxf 041ada65
+---
+> GEOM   BUDR4 01-BUL.dxf 18d09636
+> GEOM   BUDR4 01-BUR.dxf c7ddea04
+305c305
+< GEOM   BUDR4 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR4 01-BACK.dxf 0e9458ae
+330,331c330,331
+< GEOM   BUDR4+drawers 01-BUL.dxf f0afd58b
+< GEOM   BUDR4+drawers 01-BUR.dxf 041ada65
+---
+> GEOM   BUDR4+drawers 01-BUL.dxf 18d09636
+> GEOM   BUDR4+drawers 01-BUR.dxf c7ddea04
+334c334
+< GEOM   BUDR4+drawers 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR4+drawers 01-BACK.dxf 0e9458ae
+359,360c359,360
+< GEOM   BUDR4+partition 01-BUL.dxf f0afd58b
+< GEOM   BUDR4+partition 01-BUR.dxf 041ada65
+---
+> GEOM   BUDR4+partition 01-BUL.dxf 18d09636
+> GEOM   BUDR4+partition 01-BUR.dxf c7ddea04
+363c363
+< GEOM   BUDR4+partition 01-BACK.dxf 8e436881
+---
+> GEOM   BUDR4+partition 01-BACK.dxf e4ba74ae
+389,390c389,390
+< GEOM   BUDR4+partition-on-shelf 01-BUL.dxf f0afd58b
+< GEOM   BUDR4+partition-on-shelf 01-BUR.dxf 041ada65
+---
+> GEOM   BUDR4+partition-on-shelf 01-BUL.dxf 18d09636
+> GEOM   BUDR4+partition-on-shelf 01-BUR.dxf c7ddea04
+393c393
+< GEOM   BUDR4+partition-on-shelf 01-BACK.dxf 8e436881
+---
+> GEOM   BUDR4+partition-on-shelf 01-BACK.dxf e4ba74ae
+419,420c419,420
+< GEOM   BUDR4+partitions-2 01-BUL.dxf f0afd58b
+< GEOM   BUDR4+partitions-2 01-BUR.dxf 041ada65
+---
+> GEOM   BUDR4+partitions-2 01-BUL.dxf 18d09636
+> GEOM   BUDR4+partitions-2 01-BUR.dxf c7ddea04
+423c423
+< GEOM   BUDR4+partitions-2 01-BACK.dxf 655fbc6a
+---
+> GEOM   BUDR4+partitions-2 01-BACK.dxf 9723e3fd
+450,451c450,451
+< GEOM   WUD 01-BUL.dxf ecb8203b
+< GEOM   WUD 01-BUR.dxf 7c44186c
+---
+> GEOM   WUD 01-BUL.dxf 99ef24ce
+> GEOM   WUD 01-BUR.dxf 7b298e6b
+454c454
+< GEOM   WUD 01-BACK.dxf 40d27dee
+---
+> GEOM   WUD 01-BACK.dxf 27f530fd
+456,457c456,457
+< GEOM   WUD+drawers 01-BUL.dxf ecb8203b
+< GEOM   WUD+drawers 01-BUR.dxf 7c44186c
+---
+> GEOM   WUD+drawers 01-BUL.dxf 99ef24ce
+> GEOM   WUD+drawers 01-BUR.dxf 7b298e6b
+460c460
+< GEOM   WUD+drawers 01-BACK.dxf 40d27dee
+---
+> GEOM   WUD+drawers 01-BACK.dxf 27f530fd
+462,463c462,463
+< GEOM   WUD+partition 01-BUL.dxf ecb8203b
+< GEOM   WUD+partition 01-BUR.dxf 5269aee8
+---
+> GEOM   WUD+partition 01-BUL.dxf 99ef24ce
+> GEOM   WUD+partition 01-BUR.dxf d4840209
+466c466
+< GEOM   WUD+partition 01-BACK.dxf f4800371
+---
+> GEOM   WUD+partition 01-BACK.dxf f53f9436
+470,471c470,471
+< GEOM   WUD+partition-on-shelf 01-BUL.dxf 83033fc0
+< GEOM   WUD+partition-on-shelf 01-BUR.dxf 9c046407
+---
+> GEOM   WUD+partition-on-shelf 01-BUL.dxf 1ce72b49
+> GEOM   WUD+partition-on-shelf 01-BUR.dxf 9ae67a02
+474c474
+< GEOM   WUD+partition-on-shelf 01-BACK.dxf c89bcbb2
+---
+> GEOM   WUD+partition-on-shelf 01-BACK.dxf 132732e3
+479,480c479,480
+< GEOM   WUD+partitions-2 01-BUL.dxf ecb8203b
+< GEOM   WUD+partitions-2 01-BUR.dxf 5269aee8
+---
+> GEOM   WUD+partitions-2 01-BUL.dxf 99ef24ce
+> GEOM   WUD+partitions-2 01-BUR.dxf d4840209
+483c483
+< GEOM   WUD+partitions-2 01-BACK.dxf 2f0932e9
+---
+> GEOM   WUD+partitions-2 01-BACK.dxf 3ea618c6
+488,489c488,489
+< GEOM   BUDTALL 01-BUL.dxf 86ddd5a9
+< GEOM   BUDTALL 01-BUR.dxf e67ca63c
+---
+> GEOM   BUDTALL 01-BUL.dxf 2d1149a6
+> GEOM   BUDTALL 01-BUR.dxf 89f47b91
+492c492
+< GEOM   BUDTALL 01-BACK.dxf 966df5f3
+---
+> GEOM   BUDTALL 01-BACK.dxf 949fbdd2
+494,495c494,495
+< GEOM   BUDTALL+drawers 01-BUL.dxf 86ddd5a9
+< GEOM   BUDTALL+drawers 01-BUR.dxf e67ca63c
+---
+> GEOM   BUDTALL+drawers 01-BUL.dxf 2d1149a6
+> GEOM   BUDTALL+drawers 01-BUR.dxf 89f47b91
+498c498
+< GEOM   BUDTALL+drawers 01-BACK.dxf 966df5f3
+---
+> GEOM   BUDTALL+drawers 01-BACK.dxf 949fbdd2
+500,501c500,501
+< GEOM   BUDTALL+partition 01-BUL.dxf 86ddd5a9
+< GEOM   BUDTALL+partition 01-BUR.dxf 38898f63
+---
+> GEOM   BUDTALL+partition 01-BUL.dxf 2d1149a6
+> GEOM   BUDTALL+partition 01-BUR.dxf 16f3c328
+504c504
+< GEOM   BUDTALL+partition 01-BACK.dxf e2b4aca4
+---
+> GEOM   BUDTALL+partition 01-BACK.dxf a3453a51
+508,509c508,509
+< GEOM   BUDTALL+partition-on-shelf 01-BUL.dxf 262d1082
+< GEOM   BUDTALL+partition-on-shelf 01-BUR.dxf 6bfc79a4
+---
+> GEOM   BUDTALL+partition-on-shelf 01-BUL.dxf f164fd83
+> GEOM   BUDTALL+partition-on-shelf 01-BUR.dxf 3f8a49cd
+512c512
+< GEOM   BUDTALL+partition-on-shelf 01-BACK.dxf 45c3450a
+---
+> GEOM   BUDTALL+partition-on-shelf 01-BACK.dxf 470db8b7
+517,518c517,518
+< GEOM   BUDTALL+partitions-2 01-BUL.dxf 86ddd5a9
+< GEOM   BUDTALL+partitions-2 01-BUR.dxf 38898f63
+---
+> GEOM   BUDTALL+partitions-2 01-BUL.dxf 2d1149a6
+> GEOM   BUDTALL+partitions-2 01-BUR.dxf 16f3c328
+521c521
+< GEOM   BUDTALL+partitions-2 01-BACK.dxf da866d87
+---
+> GEOM   BUDTALL+partitions-2 01-BACK.dxf c8b6e8c6
+526,527c526,527
+< GEOM   LOW_CABINET 01-BUL.dxf 36668f83
+< GEOM   LOW_CABINET 01-BUR.dxf b994a863
+---
+> GEOM   LOW_CABINET 01-BUL.dxf 48e4a506
+> GEOM   LOW_CABINET 01-BUR.dxf f64bf7ac
+530c530
+< GEOM   LOW_CABINET 01-BACK.dxf 61b38d8e
+---
+> GEOM   LOW_CABINET 01-BACK.dxf 88212231
+532,533c532,533
+< GEOM   LOW_CABINET+drawers 01-BUL.dxf 36668f83
+< GEOM   LOW_CABINET+drawers 01-BUR.dxf b994a863
+---
+> GEOM   LOW_CABINET+drawers 01-BUL.dxf 48e4a506
+> GEOM   LOW_CABINET+drawers 01-BUR.dxf f64bf7ac
+536c536
+< GEOM   LOW_CABINET+drawers 01-BACK.dxf 61b38d8e
+---
+> GEOM   LOW_CABINET+drawers 01-BACK.dxf 88212231
+538,539c538,539
+< GEOM   LOW_CABINET+partition 01-BUL.dxf 36668f83
+< GEOM   LOW_CABINET+partition 01-BUR.dxf 1379fef1
+---
+> GEOM   LOW_CABINET+partition 01-BUL.dxf 48e4a506
+> GEOM   LOW_CABINET+partition 01-BUR.dxf 4e36cac4
+542c542
+< GEOM   LOW_CABINET+partition 01-BACK.dxf 96cfa8ca
+---
+> GEOM   LOW_CABINET+partition 01-BACK.dxf 25c05d7d
+546,547c546,547
+< GEOM   LOW_CABINET+partition-on-shelf 01-BUL.dxf 66ac65ff
+< GEOM   LOW_CABINET+partition-on-shelf 01-BUR.dxf 2de1d8a1
+---
+> GEOM   LOW_CABINET+partition-on-shelf 01-BUL.dxf 3287a616
+> GEOM   LOW_CABINET+partition-on-shelf 01-BUR.dxf c49206f8
+550c550
+< GEOM   LOW_CABINET+partition-on-shelf 01-BACK.dxf 9851d043
+---
+> GEOM   LOW_CABINET+partition-on-shelf 01-BACK.dxf d368dfae
+555,556c555,556
+< GEOM   LOW_CABINET+partitions-2 01-BUL.dxf 36668f83
+< GEOM   LOW_CABINET+partitions-2 01-BUR.dxf 1379fef1
+---
+> GEOM   LOW_CABINET+partitions-2 01-BUL.dxf 48e4a506
+> GEOM   LOW_CABINET+partitions-2 01-BUR.dxf 4e36cac4
+559c559
+< GEOM   LOW_CABINET+partitions-2 01-BACK.dxf 35a9f565
+---
+> GEOM   LOW_CABINET+partitions-2 01-BACK.dxf c3ee1f06
+564,565c564,565
+< GEOM   SINK 01-BUL.dxf 62c6b175
+< GEOM   SINK 01-BUR.dxf 22d6d48f
+---
+> GEOM   SINK 01-BUL.dxf ddae962e
+> GEOM   SINK 01-BUR.dxf 3119fc5c
+571,572c571,572
+< GEOM   SINK+drawers 01-BUL.dxf 62c6b175
+< GEOM   SINK+drawers 01-BUR.dxf 22d6d48f
+---
+> GEOM   SINK+drawers 01-BUL.dxf ddae962e
+> GEOM   SINK+drawers 01-BUR.dxf 3119fc5c
+578,579c578,579
+< GEOM   SINK+partition 01-BUL.dxf 62c6b175
+< GEOM   SINK+partition 01-BUR.dxf eba2e865
+---
+> GEOM   SINK+partition 01-BUL.dxf ddae962e
+> GEOM   SINK+partition 01-BUR.dxf ae84a850
+587,588c587,588
+< GEOM   SINK+partition-on-shelf 01-BUL.dxf 635a7c01
+< GEOM   SINK+partition-on-shelf 01-BUR.dxf 258a5279
+---
+> GEOM   SINK+partition-on-shelf 01-BUL.dxf d98c4d7a
+> GEOM   SINK+partition-on-shelf 01-BUR.dxf 3f24f9a4
+597,598c597,598
+< GEOM   SINK+partitions-2 01-BUL.dxf 62c6b175
+< GEOM   SINK+partitions-2 01-BUR.dxf eba2e865
+---
+> GEOM   SINK+partitions-2 01-BUL.dxf ddae962e
+> GEOM   SINK+partitions-2 01-BUR.dxf ae84a850
+621,622c621,622
+< GEOM   OVEN_BASE 01-BUL.dxf daf629a5
+< GEOM   OVEN_BASE 01-BUR.dxf 8fac8939
+---
+> GEOM   OVEN_BASE 01-BUL.dxf 79d77bca
+> GEOM   OVEN_BASE 01-BUR.dxf d036f90a
+625c625
+< GEOM   OVEN_BASE 01-BACK.dxf 5e299b9d
+---
+> GEOM   OVEN_BASE 01-BACK.dxf 2a9bc53f
+634,635c634,635
+< GEOM   OVEN_BASE+drawers 01-BUL.dxf daf629a5
+< GEOM   OVEN_BASE+drawers 01-BUR.dxf 8fac8939
+---
+> GEOM   OVEN_BASE+drawers 01-BUL.dxf 79d77bca
+> GEOM   OVEN_BASE+drawers 01-BUR.dxf d036f90a
+638c638
+< GEOM   OVEN_BASE+drawers 01-BACK.dxf 5e299b9d
+---
+> GEOM   OVEN_BASE+drawers 01-BACK.dxf 2a9bc53f
+647,648c647,648
+< GEOM   OVEN_BASE+partition 01-BUL.dxf daf629a5
+< GEOM   OVEN_BASE+partition 01-BUR.dxf 8fac8939
+---
+> GEOM   OVEN_BASE+partition 01-BUL.dxf 79d77bca
+> GEOM   OVEN_BASE+partition 01-BUR.dxf d036f90a
+651c651
+< GEOM   OVEN_BASE+partition 01-BACK.dxf 2fc83fdd
+---
+> GEOM   OVEN_BASE+partition 01-BACK.dxf 6e48ad9f
+661,662c661,662
+< GEOM   OVEN_BASE+partition-on-shelf 01-BUL.dxf daf629a5
+< GEOM   OVEN_BASE+partition-on-shelf 01-BUR.dxf 8fac8939
+---
+> GEOM   OVEN_BASE+partition-on-shelf 01-BUL.dxf 79d77bca
+> GEOM   OVEN_BASE+partition-on-shelf 01-BUR.dxf d036f90a
+665c665
+< GEOM   OVEN_BASE+partition-on-shelf 01-BACK.dxf 2fc83fdd
+---
+> GEOM   OVEN_BASE+partition-on-shelf 01-BACK.dxf 6e48ad9f
+675,676c675,676
+< GEOM   OVEN_BASE+partitions-2 01-BUL.dxf daf629a5
+< GEOM   OVEN_BASE+partitions-2 01-BUR.dxf 8fac8939
+---
+> GEOM   OVEN_BASE+partitions-2 01-BUL.dxf 79d77bca
+> GEOM   OVEN_BASE+partitions-2 01-BUR.dxf d036f90a
+679c679
+< GEOM   OVEN_BASE+partitions-2 01-BACK.dxf 1c250426
+---
+> GEOM   OVEN_BASE+partitions-2 01-BACK.dxf ef387054
+690,691c690,691
+< GEOM   FRIDGE 01-BUL.dxf c61b9c7a
+< GEOM   FRIDGE 01-BUR.dxf 67bbe2b4
+---
+> GEOM   FRIDGE 01-BUL.dxf b18d983f
+> GEOM   FRIDGE 01-BUR.dxf 9baa0e0b
+695,697c695,697
+< GEOM   FRIDGE 01-RAIL1.dxf 4d005229
+< GEOM   FRIDGE 01-RAIL2.dxf d0e9f709
+< GEOM   FRIDGE 01-BACK.dxf ab5cb12e
+---
+> GEOM   FRIDGE 01-RAIL1.dxf b19b232b
+> GEOM   FRIDGE 01-RAIL2.dxf 585119a7
+> GEOM   FRIDGE 01-BACK.dxf 3b269fa0
+700,701c700,701
+< GEOM   FRIDGE+drawers 01-BUL.dxf c61b9c7a
+< GEOM   FRIDGE+drawers 01-BUR.dxf 67bbe2b4
+---
+> GEOM   FRIDGE+drawers 01-BUL.dxf b18d983f
+> GEOM   FRIDGE+drawers 01-BUR.dxf 9baa0e0b
+705,707c705,707
+< GEOM   FRIDGE+drawers 01-RAIL1.dxf 4d005229
+< GEOM   FRIDGE+drawers 01-RAIL2.dxf d0e9f709
+< GEOM   FRIDGE+drawers 01-BACK.dxf ab5cb12e
+---
+> GEOM   FRIDGE+drawers 01-RAIL1.dxf b19b232b
+> GEOM   FRIDGE+drawers 01-RAIL2.dxf 585119a7
+> GEOM   FRIDGE+drawers 01-BACK.dxf 3b269fa0
+710,711c710,711
+< GEOM   FRIDGE+partition 01-BUL.dxf c61b9c7a
+< GEOM   FRIDGE+partition 01-BUR.dxf e21d0b75
+---
+> GEOM   FRIDGE+partition 01-BUL.dxf b18d983f
+> GEOM   FRIDGE+partition 01-BUR.dxf 13271670
+715,717c715,717
+< GEOM   FRIDGE+partition 01-RAIL1.dxf e8fc8137
+< GEOM   FRIDGE+partition 01-RAIL2.dxf 6e8f964f
+< GEOM   FRIDGE+partition 01-BACK.dxf 6b76d45b
+---
+> GEOM   FRIDGE+partition 01-RAIL1.dxf 8352b885
+> GEOM   FRIDGE+partition 01-RAIL2.dxf 6898e885
+> GEOM   FRIDGE+partition 01-BACK.dxf d928b6f1
+722,723c722,723
+< GEOM   FRIDGE+partition-on-shelf 01-BUL.dxf c61b9c7a
+< GEOM   FRIDGE+partition-on-shelf 01-BUR.dxf e21d0b75
+---
+> GEOM   FRIDGE+partition-on-shelf 01-BUL.dxf b18d983f
+> GEOM   FRIDGE+partition-on-shelf 01-BUR.dxf 13271670
+727,729c727,729
+< GEOM   FRIDGE+partition-on-shelf 01-RAIL1.dxf e8fc8137
+< GEOM   FRIDGE+partition-on-shelf 01-RAIL2.dxf 6e8f964f
+< GEOM   FRIDGE+partition-on-shelf 01-BACK.dxf 6b76d45b
+---
+> GEOM   FRIDGE+partition-on-shelf 01-RAIL1.dxf 8352b885
+> GEOM   FRIDGE+partition-on-shelf 01-RAIL2.dxf 6898e885
+> GEOM   FRIDGE+partition-on-shelf 01-BACK.dxf d928b6f1
+734,735c734,735
+< GEOM   FRIDGE+partitions-2 01-BUL.dxf c61b9c7a
+< GEOM   FRIDGE+partitions-2 01-BUR.dxf e21d0b75
+---
+> GEOM   FRIDGE+partitions-2 01-BUL.dxf b18d983f
+> GEOM   FRIDGE+partitions-2 01-BUR.dxf 13271670
+739,741c739,741
+< GEOM   FRIDGE+partitions-2 01-RAIL1.dxf e8fc8137
+< GEOM   FRIDGE+partitions-2 01-RAIL2.dxf 6e8f964f
+< GEOM   FRIDGE+partitions-2 01-BACK.dxf c9bfd58c
+---
+> GEOM   FRIDGE+partitions-2 01-RAIL1.dxf 8352b885
+> GEOM   FRIDGE+partitions-2 01-RAIL2.dxf 6898e885
+> GEOM   FRIDGE+partitions-2 01-BACK.dxf b7e9a3f2

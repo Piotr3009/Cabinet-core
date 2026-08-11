@@ -40,7 +40,7 @@ export function cncRect(panel) {
  * The socket pockets of one panel, expressed as NOTCHES in that rectangle.
  *
  * A socket pocket runs from `socketOvershoot` past the panel edge to
- * `G/2 + centrelineExtra` inside it — the cutter runs off the end so it leaves
+ * `G/2` inside it (turn 24, F4) — the cutter runs off the end so it leaves
  * no step. What is left in the board is therefore a notch in that edge, and this
  * works out which edge and how deep by clipping the pocket to the rectangle.
  *

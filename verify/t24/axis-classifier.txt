@@ -1,0 +1,13 @@
+entities compared            9739
+identical                    5919
+axis shift ±0.5 mm          3820
+OTHER (must be 0)            0
+entities added   (must be 0) 0
+entities removed (must be 0) 0
+
+every class that moved:
+    1740  PUZZLE_HOLES_7_5MM
+     870  PUZZLE_SOCKET
+    1210  SCREWS_3MM
+
+UNIFORM — the delta is exactly what it is named

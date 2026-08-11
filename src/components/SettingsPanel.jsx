@@ -13,6 +13,8 @@ import {
   projectDimensions, projectFrontThickness, saveButtonState, settingsSectionSnapshot, sourceById,
 } from '../engine/projectSettings.js';
 import { formatMm } from '../engine/format.js';
+// ─── TURN 24 (CLAUDE.md F3): THE CALIPER, NOT THE LABEL ─────────────────────
+import { drawerBoxGate, thicknessSlotRows } from '../engine/thickness.js';
 import { doorCountFor, hingeStandard } from '../engine/cabinet.js';
 import { UNIT_TYPES } from '../engine/types.js';
 import {
@@ -81,6 +83,8 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setDesign = useProjectStore((s) => s.setDesign);
   const setProjectHeights = useProjectStore((s) => s.setProjectHeights);
   const setProjectDefaults = useProjectStore((s) => s.setProjectDefaults);
+  // Turn 24 (CLAUDE.md F3.1): one slot's measured thickness and its tick.
+  const setSlotThickness = useProjectStore((s) => s.setSlotThickness);
   // Turn 17 (CLAUDE.md F7.1): how many hinges this job hangs a door on.
   const setHingeStandard = useProjectStore((s) => s.setHingeStandard);
   // Turn 18 (CLAUDE.md F6.4): …and which runner it fits its drawers with.
@@ -210,6 +214,33 @@ export default function SettingsPanel({ onRoomSetup = null }) {
       return;
     }
     apply();
+  };
+
+  // ─── TURN 24 (CLAUDE.md F3): THE SIX SLOTS, RESOLVED ─────────────────────
+  //
+  // One derivation for the rows the surface draws and for the numbers the
+  // engine computes from — `engine/thickness.js` — so a field and a formula
+  // cannot disagree about what a board measures.
+  const thicknessRows = useMemo(
+    () => thicknessSlotRows({ design, profile, materials }),
+    [design, profile, materials],
+  );
+  const boxGate = useMemo(() => drawerBoxGate(design), [design]);
+  // F3.4: the turn-16 identity gate, extended. Changing a CONFIRMED thickness
+  // with cabinets on the floor asks first — the same warning, the same two
+  // buttons, the same full recompute — because those cabinets were cut to the
+  // number that was there at the time.
+  const [slotGate, setSlotGate] = useState(null);   // { id, label, was, next }
+  const commitMeasured = (row, value) => {
+    const next = Number(value);
+    if (!(next > 0) || next === Number(row.measured)) return;
+    if (unitCount > 0 && row.confirmed) {
+      setSlotGate({
+        id: row.id, label: row.label, was: row.measured, next,
+      });
+      return;
+    }
+    setSlotThickness(row.id, { measured: next });
   };
 
   // ─── Turn 15 (CLAUDE.md F3.3) ───
@@ -990,6 +1021,92 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           </div>
         ) : (
           <p className="text-[11px] text-ink-400">Click a joinery type again to see the joint.</p>
+        )}
+      </section>
+
+      <div className="cc-divider" />
+
+      {/* ── 2c. THE CALIPER (turn 24, CLAUDE.md F3) ──────────────────────────
+          The owner's law: the manufacturer never tells you the board is really
+          18.5 — the CALIPER does, and the engine must compute from the caliper.
+          Six slots, each with the manufacturer's nominal as a SEED, the number
+          somebody measured, and the tick that says somebody measured it. The
+          drawer box is a HARD GATE: no thickness, no drawers. */}
+      <section className="cc-frame space-y-2" data-settings-section="thickness">
+        <div className="cc-row">
+          <span className="text-xs uppercase tracking-wide text-ink-200 flex-1">Measured thickness</span>
+          {boxGate.blocked && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border border-status-warn text-status-warn" data-box-gate="1">
+              no drawers yet
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-ink-400">
+          The manufacturer never tells you the board is really 18.5 — the caliper does. Type what
+          you measured and tick it; every formula in the app computes from that number and nothing
+          rounds it.
+        </p>
+        <ul className="space-y-1" data-thickness-slots="1">
+          {thicknessRows.map((row) => (
+            <li key={row.id} className="cc-row" data-thickness-slot={row.id}>
+              <span className="text-[12px] text-ink-100 w-24 shrink-0" title={row.hint}>{row.label}</span>
+              <span className="text-[11px] text-ink-400 w-20 shrink-0" data-slot-nominal={row.id}>
+                nominal {formatMm(row.nominal)}
+              </span>
+              <NumberField
+                className="cc-input w-20 text-right"
+                data-slot-measured={row.id}
+                value={row.measured}
+                onCommit={(v) => commitMeasured(row, v)}
+              />
+              <label className="flex items-center gap-1 text-[11px] text-ink-300">
+                <input
+                  type="checkbox"
+                  data-slot-confirmed={row.id}
+                  checked={row.confirmed}
+                  onChange={(e) => setSlotThickness(row.id, { confirmed: e.target.checked })}
+                />
+                measured
+              </label>
+              {row.dirty && (
+                <span className="text-[10px] text-gold" data-slot-dirty={row.id} title="The caliper disagrees with the label — which is normal.">
+                  ≠ label
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+        {/* ─── F3.4: THE IDENTITY GATE, EXTENDED ───
+            The turn-16 rule stands and now covers this field: changing a
+            CONFIRMED thickness with cabinets on the floor asks first and then
+            recomputes everything. Never silent — those cabinets were cut to
+            the number that was there at the time. */}
+        {slotGate && (
+          <div className="cc-row rounded border border-status-warn/60 bg-status-warn/10 px-2 py-1" data-slot-thickness-gate="1">
+            <span className="text-[11px] text-status-warn flex-1">
+              {slotGate.label} is drawn at {formatMm(slotGate.was)} mm and {unitCount} cabinet
+              {unitCount === 1 ? '' : 's'} {unitCount === 1 ? 'is' : 'are'} cut to it —
+              {' '}{formatMm(slotGate.next)} mm recuts {unitCount === 1 ? 'it' : 'them all'}.
+            </span>
+            <button
+              type="button"
+              className="cc-btn px-2"
+              data-slot-gate-apply="1"
+              onClick={() => {
+                setSlotThickness(slotGate.id, { measured: slotGate.next });
+                notify(`${slotGate.label} recomputed at ${formatMm(slotGate.next)} mm`, 'warn');
+                setSlotGate(null);
+              }}
+            >
+              Recompute at {formatMm(slotGate.next)}
+            </button>
+            <button type="button" className="cc-btn-ghost px-2" data-slot-gate-keep="1" onClick={() => setSlotGate(null)}>
+              Keep {formatMm(slotGate.was)}
+            </button>
+          </div>
+        )}
+        {boxGate.blocked && (
+          <p className="text-[11px] text-status-warn" data-box-gate-message="1">{boxGate.message}</p>
         )}
       </section>
 

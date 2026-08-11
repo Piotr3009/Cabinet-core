@@ -15,6 +15,8 @@ import { formatMm, formatMmPair } from '../engine/format.js';
 import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
 import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
 import { fieldFromX, xFromField } from '../engine/partitionPositions.js';
+// Turn 24 (CLAUDE.md F3.3): which carcass board a partition is cut from.
+import { CARCASS_SLOTS, partitionSlot, slotById } from '../engine/thickness.js';
 import NumberField from './NumberField.jsx';
 
 // ─── The properties of ONE piece (turn 11, CLAUDE.md F3) ────────────────────
@@ -44,6 +46,8 @@ export default function ElementProperties({
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const setShelfType = useProjectStore((s) => s.setShelfType);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
+  // Turn 24 (CLAUDE.md F3.3): which carcass board this partition is cut from.
+  const setPartitionSlot = useProjectStore((s) => s.setPartitionSlot);
   const setElementDepth = useProjectStore((s) => s.setElementDepth);
   const setElementThickness = useProjectStore((s) => s.setElementThickness);
   const setElementMaterial = useProjectStore((s) => s.setElementMaterial);
@@ -175,6 +179,27 @@ export default function ElementProperties({
               title="From the INSIDE face of the left side panel to this partition's near face"
               onCommit={(v) => setPartitionX(unit.id, item.id, xFromField(v, G))}
             />
+          </Field>
+        );
+      // ─── TURN 24 (CLAUDE.md F3.3): THE PARTITION'S OWN SLOT ───────────────
+      // Carcass 1–3 and nothing else: a partition is a carcass board standing
+      // on its end, and offering it a front board would be offering to build a
+      // cabinet out of doors. Its 3-D, its CNC and the bay lights all flow from
+      // the slot, because they all read the board the engine cut it at.
+      case 'partition-slot':
+        return (
+          <Field key={key} label="Board">
+            <select
+              className="cc-input w-full"
+              data-partition-slot="1"
+              value={partitionSlot(item)}
+              title="Which of the project's carcass boards this partition is cut from — measured, in Project setup"
+              onChange={(e) => setPartitionSlot(unit.id, item.id, e.target.value)}
+            >
+              {CARCASS_SLOTS.map((id) => (
+                <option key={id} value={id}>{slotById(id)?.label || id}</option>
+              ))}
+            </select>
           </Field>
         );
       case 'setback':

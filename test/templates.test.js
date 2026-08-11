@@ -11,6 +11,8 @@ import { useProjectStore, paramsForEngine } from '../src/stores/projectStore.js'
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 // ─── Saved sets (BACKLOG #30, turn 5 F4) ───
 //
@@ -38,6 +40,7 @@ function configured() {
   const { id } = store().addUnit('WARDROBE');
   store().updateUnitParams(id, { width: 900, depth: 600, height: 2000 });
   store().addShelves(id, 2);
+  confirmDrawerBox();
   store().addDrawers(id, 2, 'overlay', 220);
   store().addEndPanel(id, { side: 'R' });
   store().addPlinth(id);

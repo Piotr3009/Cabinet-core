@@ -51,6 +51,10 @@ import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
 } from '../engine/items.js';
 import { endPanelHeightDefault } from '../engine/autoparts.js';
+// Turn 24 (CLAUDE.md F3): the caliper's six numbers, and the drawer gate.
+import {
+  CARCASS_SLOTS, drawerBoxGate, projectThicknesses, slotById,
+} from '../engine/thickness.js';
 import { runBatch } from './historyBatch.js';
 
 // ─── Project state ───
@@ -297,6 +301,16 @@ function paramsForEngine(unit, design = null) {
     // unit's own answer, which sits above this one in the hierarchy — so a
     // cabinet that has said something for itself keeps saying it.
     project_runner_variant: design?.runners?.variant ?? null,
+    // ─── TURN 24 (CLAUDE.md F3.2): THE SIX MEASURED SLOTS ───────────────────
+    //
+    // The owner's law: the engine computes from the CALIPER. The six numbers
+    // travel exactly as the plinth, the hinge standard and the runner variant
+    // do — an INPUT in the design layer, never a formula in the engine — so a
+    // bare `computeCabinet()` and every golden fixture pass none of them and
+    // resolve to `board_t` and `front_t`, which is what they cut yesterday.
+    thickness_slots: design
+      ? projectThicknesses({ design, profile, materials: workshopMaterials() })
+      : null,
     shelves: items.filter((i) => i.kind === 'shelf').length,
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
@@ -537,6 +551,60 @@ export const useProjectStore = create((set, get) => ({
     if (!Object.keys(next).length) return null;
     get().setDesign(next);
     return migrateDesign(get().project.design);
+  },
+
+  /**
+   * ─── TURN 24 (CLAUDE.md F3.1): WHAT THE CALIPER SAID ──────────────────────
+   *
+   * One slot's MEASURED thickness and its confirmation tick. Two fields, one
+   * setter, because they are one act: somebody put a caliper on a board and
+   * wrote the number down.
+   *
+   * It goes through `setDesign` like every other project setting, so it is
+   * stored, migrated and undoable — and it is deliberately NOT a retro-fit of
+   * the cabinets already on the floor. The turn-16 identity GATE is what asks
+   * about those (F3.4): the surface warns, and a full recompute happens only
+   * when the owner says so.
+   *
+   * @returns {object} the migrated design
+   */
+  setSlotThickness: (slotId, { measured, confirmed } = {}) => {
+    const design = migrateDesign(get().project.design);
+    if (!slotById(slotId)) return design;
+    const before = design.thickness.slots?.[slotId] || {};
+    const row = {
+      measured: measured === undefined
+        ? (before.measured ?? null)
+        : (Number(measured) > 0 ? Number(measured) : null),
+      confirmed: confirmed === undefined ? (before.confirmed === true) : confirmed === true,
+    };
+    get().setDesign({
+      thickness: { ...design.thickness, slots: { ...design.thickness.slots, [slotId]: row } },
+    });
+    return migrateDesign(get().project.design);
+  },
+
+  /**
+   * Is this project allowed to grow a drawer yet? (F3.1)
+   *
+   * The gate is enforced in `addUnit`, `addItem` and `addDrawers`; this is the
+   * same answer for a SURFACE, so a button can be disabled with the reason on
+   * it rather than a click being swallowed.
+   */
+  drawerBoxGate: () => drawerBoxGate(get().project.design),
+
+  /**
+   * Which CARCASS board one partition is cut from (turn 24, CLAUDE.md F3.3).
+   *
+   * Owner: "grubość przegrody się nie zmienia." It is the ITEM's own field,
+   * exactly like its setback and its thickness — one piece, one answer — and
+   * an unrecognised slot falls back to carcass 1, which is what every
+   * partition saved before this turn is.
+   */
+  setPartitionSlot: (unitId, itemId, slotId) => {
+    const slot = CARCASS_SLOTS.includes(String(slotId)) ? String(slotId) : CARCASS_SLOTS[0];
+    get().updateItem(unitId, itemId, { slot });
+    return slot;
   },
 
   /** How many FRONT types this project runs (1–2, CLAUDE.md F9.2). */
@@ -1831,6 +1899,21 @@ export const useProjectStore = create((set, get) => ({
   addUnit: (typeId, { params = null, near = null, side = null } = {}) => {
     const profile = getCabinetProfile();
     const state = get();
+    // ─── TURN 24 (CLAUDE.md F3.1): NO THICKNESS, NO DRAWERS ─────────────────
+    //
+    // The owner's words, and it is a HARD gate rather than a warning: a drawer
+    // box is all joint — the sides are grooved for the bottom, the front and
+    // back are cut to the sides' own board — and half a millimetre out is a box
+    // that does not go together. So a drawer-BEARING unit cannot be added while
+    // the drawer-box slot's thickness is unconfirmed, and it is refused in the
+    // same plain sentence a wall with no room is refused in.
+    const drawerBearing = getUnitType(typeId).drawerStyle === 'budr'
+      || Number(params?.drawers) > 0
+      || (params?.sections?.[0]?.items || []).some((i) => i?.kind === 'drawer');
+    if (drawerBearing) {
+      const gate = drawerBoxGate(state.project.design);
+      if (gate.blocked) return { id: null, error: gate.message };
+    }
     const unit = newUnit(typeId, profile, state.units.length, state.project.design);
     if (params) applyTemplateParams(unit, params);
     // ─── Turn 8 (CLAUDE.md F2.1) ───
@@ -2306,6 +2389,12 @@ export const useProjectStore = create((set, get) => ({
 
   // ── interior items ───────────────────────────────────────────────────────
   addItem: (unitId, item) => {
+    // Turn 24 (CLAUDE.md F3.1): the same gate, on the other door in. "Adding
+    // any drawer-bearing unit (OR drawers to a unit) is blocked."
+    if (item?.kind === 'drawer') {
+      const gate = drawerBoxGate(get().project.design);
+      if (gate.blocked) return null;
+    }
     const id = uid(item.kind);
     set((s) => ({
       units: s.units.map((u) => {
@@ -2327,6 +2416,13 @@ export const useProjectStore = create((set, get) => ({
    * from 2 to 3 does not silently reset the two the user already sized.
    */
   addDrawers: (unitId, count, mount = 'overlay', heightMm) => {
+    // Turn 24 (CLAUDE.md F3.1): the hard gate. Removing the last drawer is
+    // always allowed — a gate that trapped a stack somebody wanted rid of
+    // would be a gate on the wrong side of the door.
+    if (count > 0) {
+      const gate = drawerBoxGate(get().project.design);
+      if (gate.blocked) return { ok: false, error: gate.message };
+    }
     const fallback = Number(heightMm) > 0
       ? Number(heightMm)
       : getCabinetProfile().wardrobe.drawers.frontHeight;
@@ -2351,6 +2447,7 @@ export const useProjectStore = create((set, get) => ({
     }));
     // The drawer stack raises the floor the shelves stand on.
     get().reclampShelves(unitId);
+    return { ok: true, error: null };
   },
 
   /**

@@ -30,6 +30,8 @@ import { computeCabinet, isShelfLocked, shelfVariant } from '../src/engine/cabin
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { shelfGapLadder } from '../src/engine/items.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const store = () => useProjectStore.getState();
 const G = P.board.thickness;
@@ -120,6 +122,7 @@ test('a BARE kit call still cuts exactly what the AutoLISP cuts', () => {
 test('a unit in a PROJECT sets its partition back with the shelves', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 2);
   store().addHangerRail(id);
   const r = resultOf(id);
@@ -137,6 +140,7 @@ test('a unit in a PROJECT sets its partition back with the shelves', () => {
 test('a partition can be stretched out to the face on its own', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 2);
   const internalDepth = unitOf(id).params.depth - G;
   store().setPartitionFront(id, 0);

@@ -13,6 +13,8 @@ import {
 import { wallAtPoint, roomWalls, migrateRoom, rectCorners } from '../src/engine/room.js';
 import { useUiStore } from '../src/stores/uiStore.js';
 import { useProjectStore, paramsForEngine } from '../src/stores/projectStore.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const store = () => useProjectStore.getState();
 const ui = () => useUiStore.getState();
@@ -52,6 +54,7 @@ test('every piece of a cabinet is a selectable element — not just the shelves'
 test('the drawer PANEL and its fillers are mechanism — they follow the stack', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 3);
   const panels = resultOf(id).panels.filter((p) => p.box);
   const mech = panels.filter((p) => p.part === 'DP' || p.part === 'FILLER');
@@ -65,6 +68,7 @@ test('the drawer PANEL and its fillers are mechanism — they follow the stack',
 test('…and the drawer BOX is a piece you can open and edit', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 3);
   const boxes = resultOf(id).panels.filter((p) => p.box && p.role === 'drawer_box');
   assert.ok(boxes.length, 'this unit really does have drawer boxes');
@@ -207,7 +211,10 @@ test('the engine cuts it: full height, partition depth, one board thick', () => 
   assert.equal(vpart.box.y, G, 'standing on the bottom panel');
   // …and it is a SELECTABLE element with a position of its own.
   assert.equal(elementKind(vpart), 'partition');
-  assert.deepEqual(elementFields(vpart), ['position-x', 'setback', 'thickness', 'material']);
+  // TURN 24 (CLAUDE.md F3.3): and WHICH carcass board it is cut from — the
+  // owner's "grubość przegrody się nie zmienia", as a picker rather than a
+  // number typed twice.
+  assert.deepEqual(elementFields(vpart), ['position-x', 'partition-slot', 'setback', 'thickness', 'material']);
 });
 
 test('a partition is clamped like a shelf: never through a side, never on another', () => {

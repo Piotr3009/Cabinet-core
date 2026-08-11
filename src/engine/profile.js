@@ -370,6 +370,14 @@ export const DEFAULT_CABINET_PROFILE = {
       boxWidthClearance: 10,   // box W = internal W − this − drawer-panel reduction
       frontOversize: 4,        // front W = box W + this (2 mm each side)
       boxFrontBoards: 4,       // box front/back length = W − 4×G − clearance − reduction
+      // ─── TURN 24 (CLAUDE.md F3.2): WHICH OF THE FOUR IS WHICH ─────────────
+      // The LISP's four board thicknesses are two DIFFERENT boards: the two
+      // CARCASS sides the box lives between, and the two of the BOX'S OWN
+      // sides the front is cut to fit between. One number could say so only
+      // while both boards measured 18. This says which two are the carcass's;
+      // the remainder is the box's, so a workshop that changes the total
+      // changes one number and the split follows.
+      boxFrontCarcassBoards: 2,
       boxFrontClearance: 10,
       boxFrontHeightDeduction: 15,   // box front H = box side H − 15 − G − 1
       boxFrontHeightExtra: 1,
@@ -739,6 +747,9 @@ export const DEFAULT_CABINET_PROFILE = {
     sideRatio: 0.7,             // box side height = round(0.7 × front height)
     boxWidthClearance: 10,      // box W = internal W − 10
     boxFrontBoards: 4,          // box front/back length = W − 4G − 10
+    // Turn 24 (CLAUDE.md F3.2): two of the four are the CARCASS's sides and
+    // two are the BOX's own. See wardrobe.drawers above for the derivation.
+    boxFrontCarcassBoards: 2,
     boxFrontClearance: 10,
     boxFrontHeightDeduction: 15,
     boxFrontHeightExtra: 1,

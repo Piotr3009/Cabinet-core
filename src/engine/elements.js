@@ -227,7 +227,12 @@ const FIELDS = {
   // double-clicked the shelf he was looking at could edit everything about it
   // except how it is held.
   shelf: ['shelf-type', 'position-y', 'setback', 'thickness', 'material'],
-  partition: ['position-x', 'setback', 'thickness', 'material'],
+  // ─── TURN 24 (CLAUDE.md F3.3): AND WHICH BOARD IT IS CUT FROM ────────────
+  // Owner: "grubość przegrody się nie zmienia" — a partition is a carcass board
+  // standing on its end, so it picks one of the project's CARCASS slots rather
+  // than being typed a number of its own. `thickness` stays beside it for the
+  // piece somebody genuinely wants at 25 mm; the slot is what it is normally.
+  partition: ['position-x', 'partition-slot', 'setback', 'thickness', 'material'],
   'fixed-shelf': ['setback-unit', 'material'],
   side: ['carcass-board', 'material'],
   top: ['carcass-board', 'material'],

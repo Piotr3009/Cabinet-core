@@ -1733,3 +1733,61 @@ liczbą milimetrów. Decyzja o przecięciu należy do Piotra, bo to lista rozkro
 **Co trzeba zrobić.** Jedna linia w `engine/cabinet.js` (`sideHs`), mierząca
 prześwit od własnej podstawy skrzynki zamiast od wiersza prowadnicy — i nowy
 odcisk CNC dla `OVEN_BASE` (4 pliki + arkusze), wypisany i zatwierdzony.
+
+## #86 — Wysokość boku tacy w półce WYSUWANEJ (F7.3)
+
+Właściciel prosił o trzeci rodzaj półki: **pull-out**, czyli płaska szuflada na
+MOVENTO. Cała maszyneria już istnieje — wiersze prowadnic, wiercenie, NL z
+głębokości, bok skrzynki z dwoma rowkami — brakuje **jednej liczby**: jak wysoki
+jest bok tacy.
+
+Nie zgadujemy jej. Opcja jest w modalu **widoczna i wyłączona**, z powodem w
+tooltipie; `engine/shelfTypes.js → shelfBuild()` odpowiada `blocked` i mówi
+dlaczego; `projectStore.setShelfType` odmawia jej zapisania, żeby projekt nie
+twierdził, że ma półkę, której silnik nie umie wyciąć.
+
+**Co trzeba zrobić.** Jedna liczba od Piotra —
+`profile.wardrobe.shelves.pulloutSideHeight` — i wtedy `shelfBuild()` zwraca
+`kind: 'runners'`, a półka staje się szufladą na wysokości półki. To jedna linia
+odblokowania, nie tura pracy.
+
+## #87 — Wiercenia frontów szuflad w SZAFIE nie są eksportowane
+
+`KIT_WARDROBE_FULL` wierci wewnętrzny front szuflady
+(`drawWDR_DRAWER_FRONT`, `FRONT_HINGES_3MM` na 93,5 / 96,5) i przód skrzynki
+(`drawWDR_BOX_FRONT`, `SCREWS_3MM` na 50). **Silnik emituje oba jako czyste
+prostokąty.**
+
+Znalezione przez bramkę F1 (`verify/t21/hole-alignment.md`): bramka musiała dla
+tego kitu policzyć linie z PRAWA LISP-a zamiast odczytać wiercenie, bo wiercenia
+nie ma. Geometria jest poprawna — obie linie wypadają na `runner bottom + 96,5`,
+Δ = 0 — więc to jest brak eksportu, nie błąd położenia.
+
+**Czego nie zrobiono i dlaczego.** Dodanie tych otworów to **delta odcisku CNC**
+dla każdej szafy z szufladami, a żelazna zasada tury 21 to zero. To jest tura
+własna, z wypisanym i zatwierdzonym nowym odciskiem.
+
+## #88 — Gzyms (F13) — NIE ZBUDOWANY, tura skrócona od dołu
+
+CLAUDE.md tury 21: „turn shrinks from the BOTTOM (F13, then F11, then F7's
+pull-out half)". Tura zatrzymała się na **F13** i nic z niego nie jest
+w połowie zbudowane: żadnych kluczy w `profile.js`, żadnych części, żadnych
+linii BOM, żadnej flagi. F11 i plumbing F7.3 **weszły**.
+
+Liczby właściciela, spisane tu, żeby następna tura ich nie wyprowadzała jeszcze
+raz:
+
+* opcja per jednostka: `cornice: none | 70 | 100` (szafy / wysokie),
+* wypełnienie 40 mm stoi NAD wieńcem górnym, w płaszczyźnie drzwi; drzwi kończą
+  się RÓWNO z górą wieńca (dziś: 3 mm niżej — `H − doors.gap`),
+* gzyms siada na wypełnieniu, dolną krawędzią równo z płaszczyzną drzwi,
+* wysięg do przodu: **48** dla 70, **65** dla 100 — do weta właściciela,
+* profil: parametryczny bead-and-cove; DXF od dostawcy może go zastąpić 1:1
+  później, bez ruszania plumbingu,
+* ciągłość: jeden bieg przez sąsiadujące jednostki; koniec przy ścianie / boku /
+  wypełnieniu bocznym — STOP równo z nim; koniec OTWARTY — gierunek 45° i powrót
+  wzdłuż boku do ściany; narożniki na 45°,
+* BOM: metry bieżące (front + powroty + naddatek na gierunek — liczba z profilu),
+* gzyms jest **materiałem kupowanym, nie częścią CNC** ⇒ delta odcisku ZERO,
+* uczciwość sufitu: wysokość jednostki + wypełnienie + gzyms w wyprowadzonych
+  wysokościach, żeby szafa 2400 pod sufitem 2400 **ostrzegała**, a nie ścinała.

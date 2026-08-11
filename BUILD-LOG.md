@@ -6495,3 +6495,147 @@ mówi, co dowodzi co.
 `appearance.cutFace` (F8) · `ui.saveConfirmMs` (F12.2) ·
 `projectSettings.frontSources` — fornir na picker dekorów (F12.3).
 **Usunięte:** `wardrobe.drawers.boxDropFromRunner` — kłamało po F1.
+
+---
+
+# TURA 21 — the holes are the judge
+
+Właściciel wstawił szufladę do rozstrzelonego edytora i odczytał prawdę z
+**dwóch otworów pilotowych, które się nie spotkały**. To rozwinęło się do
+jednej złej kotwicy w silniku, a przy okazji do drugiej takiej samej w widoku
+3-D. Reszta tury to wyroki, które wydał na to, co widział.
+
+## F1 — skrzynka bierze prawdę ze SPODU prowadnicy [KRYTYCZNE]
+
+`runnerRows` w `engine/cabinet.js` to **wiersz wkrętów** —
+`firstRowFromBottom` (38 mm), przesunięcie wiercenia MOVENTO. Turn 20 użył go
+jako kotwicy skrzynki, więc **każda skrzynka w aplikacji wisiała 38 mm za
+wysoko**, a piloty fasady mijały piloty przodu skrzynki dokładnie o tyle.
+
+* `runnerBottomY` jest teraz osobną nazwaną wielkością —
+  `(i === 0 ? G : frontY[i])`, dokładnie jak KIT_BUDR_FULL L712-714. `runnerRows`
+  zostaje wierszem wkrętów i karmi wiercenie korpusu. **Dwie nazwy, dwa
+  znaczenia, żadnego użycia jednej za drugą.**
+* Skrzynka wisi na spodzie, w OBU kitach. Wysokości boków, rozmiary i pozycje
+  frontów, rowki i kieszenie — nietknięte.
+* **Model prowadnicy stał na wkrętach.** GLB i szara zastępcza — obie kładzione
+  spodem na `y` instancji, a `y` to był wiersz wkrętów. Instancja niesie teraz
+  `y` (spód prowadnicy) i `rowY` (wiercony wiersz), więc wkręty +38 trafiają
+  w otwory modelu. `verify/t21/hole-alignment.md` zapisuje to znalezisko.
+* **BRAMKA:** `test/turn21-f1-hole-alignment.test.js`. Per rodzina kitów, per
+  szuflada: Y pilota fasady kontra Y pilota przodu skrzynki, `|Δ| = 0`. Bramka
+  i raport pytają `engine/drawerPilots.js`; **żadne z nich nie nosi kopii
+  prawa**, co jest R4 zadane we własnym kluczu.
+* Ostrzeżenie tury 20 o skrzynce nad półką AGD **zniknęło**: na prowadnicy ta
+  sama deska kończy się 24,5 mm pod półką. BLOCKERS #85 zamknięty przez F1.
+
+## F2 + F6 — adres wraca do URL-a, a edytory montują to samo [KRYTYCZNE]
+
+Konsola właściciela, cała diagnoza w jednej linii:
+`/hinges/blum/71B3550_42542984.glb → 404`. Bez hosta, bez bucketu — aplikacja
+zapytała **własną domenę**.
+
+* **Ścieżka bez hosta nie jest URL-em.** `hardwareModelSrc()` zwraca `null`,
+  widok rysuje zastępczą, **żadne żądanie nie wychodzi**. `hingeModelSrc` i
+  `runnerModelSrc` to po jednej linii nad nim, więc trzecia kopia jest
+  niemożliwa. Zawiodły tylko zawiasy, bo ich katalog jedzie w repozytorium i
+  zawsze ma plik, o który można poprosić.
+* **Host WRACA**, wyprowadzony z własnego rejestru dekorów aplikacji, nie wpisany
+  — dla builda bez `VITE_SUPABASE_URL`. `scripts/bucket-live.mjs` woła teraz tę
+  samą funkcję silnika (R4). Manifest prowadnic przestał być odmawiany dlatego,
+  że nie ma BAZY: to publiczny plik w publicznym buckecie.
+* Host potrafi wylądować po zamontowaniu płótna, więc jest hookiem, nie
+  jednorazowym `useMemo`.
+* **R4:** `3d/hardwareRegistry.js` publikuje w `window.__cc.hardware` każdy URL,
+  który scena naprawdę podała loaderowi, per powierzchnia, z `model: true|false`.
+  Spacer czyta TO i pobiera TO.
+* **F6:** prowadnice szuflady w edytorze stały POZA grupą centrującą i w surowych
+  współrzędnych silnika, i **stały w miejscu, kiedy deski się rozlatywały**.
+  Są w scenie i jadą z częścią, przy której są przykręcone. Edytor szafki nie
+  montował zawiasów w ogóle — rozwiązuje je przez `resolveDoorHinge`, ten sam
+  rejestr, z którego zamawia BOM.
+
+## F3 / F4 / F5 — trzy wyroki
+
+* **F3** `profile.appearance.cuts.enabled`, domyślnie **false**. „Arkusz CNC jest
+  dokumentem; rzeźbienie w 3-D nie jest warte swoich problemów." Jedna bramka,
+  jeden plik. To, co było PRZED turą 20 — psie kości i kieszenie konstrukcyjne —
+  **nie jest za flagą**: to obrys deski. Wiercenia zostają w rekordzie i na
+  arkuszu; na emeryturę idzie tylko ich rzeźbienie.
+* **F4** 240. **Jedna liczba się rusza.** Jedyny test, który przypinał literał
+  140, czyta profil.
+* **F5** `forceContextLoss()` na już utraconym kontekście to `INVALID_OPERATION`
+  i jedna linia w konsoli na wywołanie — dziesięć u właściciela. Uchwyt wie
+  teraz, czy jego kontekst przepadł, i strzela tylko do żywego; `dispose()`
+  leci tak czy owak, bo to dwa różne akty.
+
+## F7–F10 — wnętrze szafy dorasta
+
+* **F7** trzy rodzaje, w słowach właściciela: fix / adjustable / pull-out, a TYP
+  jest pierwszym wierszem własnego modalu półki. **Jedna prawda, dwie nazwy:**
+  typ to `variant`, który półka nosi od tury 8. LISP **niesie** prawo półki
+  regulowanej (SKYLON_COMMON drawBUL L755-768: dwie kolumny 70 mm od krawędzi,
+  trzy kołki co ±50, **⌀7,5** — nie ⌀5; LISP jest prawem i użyto go dosłownie),
+  więc `adjustable` jedzie WŁĄCZONE i nie wymyśla niczego. `pull-out` jedzie
+  widoczne i wyłączone (BLOCKERS #86).
+* **F8** cofnięcie przegrody jest **własne dla kawałka**. 20 zasiewa, nic nie
+  narzuca, a 0 jest nośne: to ono robi drzwi z F12 możliwymi.
+* **F9** **ROZPIĘTOŚĆ decyduje, nigdy kolejność.** `partitionSpan` dostawał
+  KAŻDĄ półkę w szafce, więc najniższa stała półka gdziekolwiek ucinała każdą
+  przegrodę wszędzie. Każda przegroda dostaje teraz tylko te półki, których bieg
+  **przecina jej płaszczyznę**.
+* **F10** panel mówił 860, a chip 842 o tej samej półce, a odczyt przeciągania
+  miał jeszcze trzeci punkt odniesienia. `engine/shelfHeights.js` to JEDNO
+  wyprowadzenie. **ZAPIS SIĘ NIE RUSZA.**
+
+## F11 — magnes wysokości
+
+Propozycja, nie siła. Żyje na PRZECIĄGNIĘCIU, nie w setterze — kto wpisze 848
+obok sąsiada na 850, dostaje 848. Wysokości porównywane w przestrzeni POKOJU.
+Kreskowana prowadnica rysuje się przez OBIE szafki, każda na własnej wysokości.
+Złapanie, które zacisk potem odrzucił, nie jest raportowane.
+
+## F12 — drzwi na przegrodzie
+
+Przypadek właściciela: przegrody na 600 i 800, trzy wnęki, dwoje porządnych
+drzwi i jedne małe w środku. Warunki są FIZYCZNE i czytane z kawałka.
+Szerokości to jego prawo, dosłownie, jako czysta geometria w `engine/doors.js`.
+Płytka to ISTNIEJĄCE prawo ⌀5 na nowym panelu — te same wiersze, ta sama para
+±16, ten sam `HINGES_5MM`, te same 37 mm od PRZODU, w ramce VPART-a.
+
+## F13 — NIE ZBUDOWANY
+
+Tura kurczy się od dołu i zatrzymała się tutaj. Nic z gzymsu nie jest w połowie
+zbudowane. **BLOCKERS #88** niesie liczby właściciela, żeby następna tura ich
+nie wyprowadzała jeszcze raz.
+
+## Dowody
+
+`verify/t21/` — `hole-alignment.md` (tabela bramki, każda Δ = 0), `walk.json`
+(35/38, 0 porażek, 3 zablokowane przez politykę wyjścia sesji), `console.txt`,
+`context-guard.md`, `bucket-live.md`, `cnc-export-identity.md`,
+`fingerprints-defaults-diff.txt` na **ZERO linii** i `README.md`.
+
+## Nowe pliki
+
+`src/engine/drawerPilots.js` · `src/engine/shelfHeights.js` ·
+`src/engine/shelfTypes.js` · `src/engine/shelfMagnet.js` ·
+`src/lib/storageBase.js` · `src/3d/hardwareRegistry.js` ·
+`scripts/hole-alignment.mjs` · `scripts/e2e-turn21.mjs` ·
+`test/turn21-*.test.js` (5 plików) · `verify/t21/`
+
+## Nowe liczby w `profile.js`
+
+`wardrobe.drawers.frontScrewFromBottom` / `firstFrontScrewFromBottom` (F1.4) ·
+`appearance.cuts.enabled` = false (F3) · `ui.modal.anchorOffset` → `{240, 0}`
+(F4) · `editor.shelfMagnetMm` = 10 (F11).
+**Nowe klucze `drillSummary`:** `runner_bottoms_carcass_y`,
+`runner_bottoms_dp_y` (F1.1).
+
+## CNC
+
+Złote domyślne: **ZERO**. Jedyne nowe encje tury: `HINGES_5MM` na `VPART`, i
+tylko tam, gdzie drzwi naprawdę wiszą na przegrodzie. Jeden scenariusz sondy
+(`+partition-on-shelf`) rusza się na sześciu typach, które **nie tną półki
+w ogóle** — ich przegroda zatrzymywała się na desce, której nie ma na liście
+rozkroju. Istniejące nazwane encje, tylko postawione dobrze (F9.3).

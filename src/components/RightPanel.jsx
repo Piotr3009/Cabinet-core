@@ -8,6 +8,7 @@ import { doorCountFor, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
+import { corniceOption } from '../engine/cornice.js';
 import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { isDuplicateName, unitName } from '../engine/naming.js';
@@ -75,6 +76,7 @@ export default function RightPanel() {
   const addBottomMask = useProjectStore((s) => s.addBottomMask);
   const removeBottomMask = useProjectStore((s) => s.removeBottomMask);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
+  const setCornice = useProjectStore((s) => s.setCornice);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
   const addEndPanel = useProjectStore((s) => s.addEndPanel);
   const removeEndPanel = useProjectStore((s) => s.removeEndPanel);
@@ -98,6 +100,9 @@ export default function RightPanel() {
   const unit = units.find((u) => u.id === selectedUnitId) || null;
   const result = unit ? unitResult(unit.id) : null;
   const type = unit ? getUnitType(unit.type) : null;
+  // Turn 22 (CLAUDE.md F1.1): the per-unit cornice option, resolved. A stored
+  // value this workshop does not buy reads as 'none' rather than as itself.
+  const corniceValue = unit ? corniceOption(unit.params.cornice, profile) : 0;
   const issues = unit && result ? validateUnit(unit, result, { room, units }) : [];
   const items = unit?.params.sections?.[0]?.items || [];
   // TOP-DOWN, from engine/items.js: the first row of every list below is the
@@ -837,6 +842,42 @@ export default function RightPanel() {
               </button>
             )}
           </div>
+          )}
+
+          {/* ─── THE CORNICE (turn 22, CLAUDE.md F1) ───
+              Three states, one control: none, 70, 100. It is offered on the
+              kits that finish below the ceiling with a face somebody looks up
+              at — wardrobes and tall units — and nowhere else. Choosing a
+              height also asks for the 40 mm infill the moulding is FIXED TO,
+              through the same setter the drag uses, so the ceiling still has
+              the last word. */}
+          {type.supports.cornice && (
+            <div className="cc-row">
+              <div className="flex flex-col">
+                <span className="text-sm text-ink-100">Cornice</span>
+                <span className="text-[11px] text-ink-400">
+                  {corniceValue
+                    ? `${corniceValue} mm, ${formatMm(profile.autoParts.cornice.projection[corniceValue] || 0)} forward — bought moulding, one run`
+                    : 'not fitted'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1" data-cornice-options="1">
+                {[0, ...profile.autoParts.cornice.heights].map((h) => (
+                  <button
+                    key={h}
+                    type="button"
+                    data-cornice={h}
+                    className={corniceValue === h ? 'cc-btn-gold' : 'cc-btn'}
+                    onClick={() => {
+                      const { notices } = setCornice(unit.id, h);
+                      for (const n of notices) notify(n, 'warn');
+                    }}
+                  >
+                    {h === 0 ? 'None' : `${h}`}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* ─── The bottom masking panel (turn 14, CLAUDE.md F5) ───

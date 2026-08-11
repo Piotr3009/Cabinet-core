@@ -14,6 +14,7 @@ import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import Hardware, { DoorHinges, hingeSpecsFor } from './Hardware.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
+import Cornice from './Cornice.jsx';
 import JointLines from './JointLines.jsx';
 import PartMachining from './PartMachining.jsx';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
@@ -1330,6 +1331,31 @@ export default function UnitView({
               it reads the moment a door swings — which is what the capture in
               verify/t13 shows. Making a closed cabinet show its ironmongery
               would mean drawing through solid board, which is what X-ray is. */}
+      {/* ─── THE CORNICE (turn 22, CLAUDE.md F1) ───
+          Bought moulding: it is not in `result.panels` because it is not a cut
+          piece, so it is drawn from `assemblies.cornice` — the same element the
+          BOM's linear metres are counted from, so the picture and the order can
+          never be two opinions. It wears the FRONT surface because it stands in
+          the door plane and is finished with the doors. */}
+      {result.assemblies.cornice && (
+        <Cornice
+          element={result.assemblies.cornice}
+          profile={profile}
+          surface={contour
+            ? contourSurface(profile)
+            : surfaceFor({
+              role: 'infill',
+              materialRole: 'front',
+              finishExposed: true,
+              finishes,
+              profile,
+              frontColour,
+              sheen,
+            })}
+          outline={outlines ? outlineFor(profile, { contour }) : null}
+        />
+      )}
+
       <Hardware
         instances={hardware}
         profile={profile}

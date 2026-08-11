@@ -42,10 +42,62 @@ export function unitTop(unit, profile) {
 export function unitBase(unit, profile) {
   const type = getUnitType(unit.type);
   if (type.mount === 'wall') return Number(unit.params?.mount_height) || 0;
-  if (!type.legs) return 0;
-  const own = Number(unit.params?.leg_height);
-  if (Number.isFinite(own) && own >= 0) return own;
-  return type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight;
+  if (!standsOnLegHeight(type)) return 0;
+  return impliedLegHeight(unit?.params, type, profile);
+}
+
+/**
+ * ─── TURN 22 (CLAUDE.md F4): ONE DERIVATION OF "HOW HIGH DOES IT STAND" ─────
+ *
+ * The owner, from the eye test: the D/W panel rightly has no legs — the
+ * machine lives where they would be — but its HEIGHT must behave exactly as if
+ * the run's legs were under it. Enter 50 on the run, get 50.
+ *
+ * It did not, and there were two halves to that. The first is
+ * `engine/cabinet.js`'s old `legHeightForPlinth = cfg.legHeight || (type.plinth
+ * && !type.legs ? P.baseUnit.legHeight : 0)`: a leg-less plinth type fell back
+ * to the PROFILE CONSTANT — 100, always — instead of the leg height the
+ * project actually set. The second is this function, which returned 0 for a
+ * leg-less type, so a D/W's `unitTop` was 100 mm below its legged neighbours'
+ * and `buildRuns` put it in a run of its own: the toe kick could not be one
+ * length across BUD + D/W, because the app did not think they were in the same
+ * run at all.
+ *
+ * Both halves are one sentence — *a plinth-bearing type stands as high as the
+ * legs its neighbours stand on, whether or not it has any* — and this is the
+ * one place it is written. `cabinet.js`, `projectStore.floorYOf` and this
+ * module all read it, so no D/W-special constant exists anywhere.
+ */
+export function standsOnLegHeight(type) {
+  if (!type) return false;
+  if (type.mount === 'wall') return false;
+  // A plinth without legs is the D/W panel today and whatever the next
+  // appliance front is tomorrow: the piece stands in a run of legged cabinets
+  // and finishes flush with them.
+  return Boolean(type.legs) || Boolean(type.plinth);
+}
+
+/**
+ * The leg height a unit is built to: its own (the project's toe kick, pushed
+ * onto every unit when a project height changes) before the profile's.
+ *
+ * The profile is the LAST fallback and never a floor — CLAUDE.md F4.3: "the
+ * 100 mm leg minimum is a bug: a default, never a floor". A stored 0 is a real
+ * answer and is honoured; only "nobody has said" reaches the profile.
+ */
+export function impliedLegHeight(params, type, profile) {
+  const stated = params?.leg_height;
+  // `Number(null)` is 0, not NaN, so "nobody has said" has to be asked BEFORE
+  // the number is read — the same trap `maskDepthExtra` names below. Without
+  // it a stored null reads as a cabinet standing flat on the floor with no toe
+  // kick, which is a real answer to a question nobody asked.
+  if (stated != null && stated !== '') {
+    const own = Number(stated);
+    if (Number.isFinite(own) && own >= 0) return own;
+  }
+  return type?.legSource === 'wardrobe'
+    ? profile.wardrobe.legHeight
+    : profile.baseUnit.legHeight;
 }
 
 /** How far a unit's own end panels stick out on each side. */
@@ -247,13 +299,30 @@ export function unitVerticals(units, profile) {
   return out;
 }
 
-export function ceilingVerticals(units, { roomHeight }, profile) {
+/**
+ * The attached verticals that reach a given LEVEL above the floor.
+ *
+ * ─── Turn 22 (CLAUDE.md F1.3) ───────────────────────────────────────────────
+ * `ceilingVerticals` asked this question of the ceiling and only of the
+ * ceiling, because until this turn the only thing that ran along the top of a
+ * run was the top infill, and a top infill goes to the ceiling or stops short
+ * of everything. A CORNICE stops at 2300 in a 2500 room: a filler taken to the
+ * ceiling is in its way, one that finishes with its carcass is a metre below
+ * it and is simply run over. So the level is a PARAMETER, `ceilingVerticals`
+ * is the roomHeight case of it, and there is one obstacle rule rather than
+ * two.
+ */
+export function verticalsReaching(units, level, profile) {
   const tolerance = profile.autoParts.topInfill.runGap;
-  const height = Number(roomHeight) || 0;
+  const height = Number(level) || 0;
   if (height <= 0) return [];
   return unitVerticals(units, profile)
     .filter((v) => v.top >= height - tolerance)
     .map(({ bottom, above, depth, ...rest }) => ({ ...rest, top: rest.top }));
+}
+
+export function ceilingVerticals(units, { roomHeight }, profile) {
+  return verticalsReaching(units, roomHeight, profile);
 }
 
 // ─── A PANEL IS A WALL (turn 15, CLAUDE.md F7) ─────────────────────────────

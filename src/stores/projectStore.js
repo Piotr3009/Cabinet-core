@@ -34,9 +34,12 @@ import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import {
-  paddedSpan, runInfillParams, runMaskParams, runMemberIds, runPlinthParams, unitBase,
-  unitTop, unitVerticals, verticalsInBand,
+  buildRuns, impliedLegHeight, paddedSpan, runInfillParams, runMaskParams, runMemberIds,
+  runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
+import {
+  corniceCeilingNotice, corniceOption, runCorniceParams, takesCornice,
+} from '../engine/cornice.js';
 import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
@@ -165,7 +168,14 @@ function projectHeightParams(type, design, profile) {
   return {
     ...(group ? { height: heights[group], height_custom: false } : { height_custom: false }),
     ...(type.mount === 'wall' ? { mount_height: heights.wallMount } : {}),
-    ...(type.legs ? { leg_height: heights.toeKick } : {}),
+    // ─── Turn 22 (CLAUDE.md F4.2) ───
+    // A plinth-bearing type gets the project's toe kick whether or not it has
+    // legs. The D/W panel has none — the machine stands where they would be —
+    // and its front, its plinth line and its total height all have to sit as
+    // if the run's legs were under it, which they cannot do off a number it
+    // was never given. `standsOnLegHeight` is the one place that sentence is
+    // written (engine/runs.js).
+    ...(standsOnLegHeight(type) ? { leg_height: heights.toeKick } : {}),
     // ─── Turn 11 (CLAUDE.md F9.1/F9.3) ───
     // The other three the project decides: how DEEP its units are, and the two
     // boards they are cut from. A kitchen is built to one depth — a run whose
@@ -807,22 +817,60 @@ export const useProjectStore = create((set, get) => ({
     // adjacency the plinth's are: docking a cabinet extends it, an end panel or
     // a gap ends it.
     const maskParams = runMaskParams(next, profile);
+    // ─── …and the CORNICE, the same way again (turn 22, CLAUDE.md F1.3) ─────
+    // One moulding across horizontally adjacent cornice-bearing units. It is
+    // computed after the top infill because the piece it is FIXED TO is the
+    // infill, and its ends are decided by what stands up past the CORNICE
+    // rather than by what stands up to the ceiling — engine/cornice.js asks
+    // `runEnd` that narrower question with the same four answers.
+    const corniceParams = runCorniceParams(buildRuns(next, profile), {
+      units: next,
+      walls,
+      roomHeight,
+      frontFaceDepthOf: (u) => wallClearance(profile)
+        + (Number(u.params?.depth) || 0)
+        + profile.doors.gap
+        + (Number(u.params?.front_t) || profile.front.thickness),
+      infillHeightOf: (u) => Number(u.params?.top_infill_mm) || 0,
+    }, profile);
+
+    // ─── Ceiling honesty (CLAUDE.md F1.5) ───
+    // "a 2400 wardrobe under a 2400 ceiling WARNS instead of clipping". A
+    // warning and not a clamp: clamping would re-cut a cabinet nobody asked to
+    // re-cut, and what the joiner needs is to be told the moulding he has just
+    // specified finishes above his ceiling.
+    for (const u of next) {
+      const notice = corniceCeilingNotice({
+        unitTop: unitTop(u, profile),
+        infillHeight: Number(u.params?.top_infill_mm) || 0,
+        height: takesCornice(u.type) ? u.params?.cornice : 0,
+        roomHeight,
+        label: u.params?.unit_num || null,
+      }, profile);
+      if (notice) notices.push(notice);
+    }
 
     set({
       units: next.map((u) => {
         const run = runParams.get(u.id) ?? null;
         const plinthRun = plinthParams.get(u.id) ?? null;
         const maskRun = maskParams.get(u.id) ?? null;
+        const corniceRun = corniceParams.get(u.id) ?? null;
         // Reference equality matters here: this runs on every drag frame, and
         // writing a fresh object each time would re-render every unit in the
         // scene for a run nobody touched.
         if (sameRun(u.params.run_top_infill, run)
           && sameRun(u.params.run_plinth, plinthRun)
-          && sameRun(u.params.run_mask, maskRun)) return u;
+          && sameRun(u.params.run_mask, maskRun)
+          && sameRun(u.params.run_cornice, corniceRun)) return u;
         return {
           ...u,
           params: {
-            ...u.params, run_top_infill: run, run_plinth: plinthRun, run_mask: maskRun,
+            ...u.params,
+            run_top_infill: run,
+            run_plinth: plinthRun,
+            run_mask: maskRun,
+            run_cornice: corniceRun,
           },
         };
       }),
@@ -860,6 +908,44 @@ export const useProjectStore = create((set, get) => ({
     // offcut inside the long piece.
     get().refreshAutoParts();
     return height;
+  },
+
+  /**
+   * ─── THE CORNICE (turn 22, CLAUDE.md F1) ────────────────────────────────
+   *
+   * `none | 70 | 100`, per unit. Three things happen and each is the thing a
+   * joiner would expect:
+   *
+   *   • the moulding needs something to be FIXED TO, so asking for one asks
+   *     for at least the profile's 40 mm of top infill — through the same
+   *     `setTopInfill` the drag uses, so the ceiling still has the last word
+   *     and a taller infill somebody has already dragged is left alone;
+   *   • the RUN is recomputed, because the piece is one length across the
+   *     adjacent cornice-bearing cabinets and switching one on decides the
+   *     length over the neighbours' heads (the top infill's own lesson,
+   *     turn 6);
+   *   • the CEILING is checked, and says so rather than quietly clipping.
+   *
+   * @returns {{height:number, notices:string[]}}
+   */
+  setCornice: (unitId, value) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !takesCornice(unit.type)) return { height: 0, notices: [] };
+    const profile = getCabinetProfile();
+    const height = corniceOption(value, profile);
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, cornice: height } }
+        : u)),
+      dirty: true,
+    }));
+    if (height > 0) {
+      const wanted = profile.autoParts.cornice.infillHeight;
+      const own = Number(get().units.find((u) => u.id === unitId)?.params.top_infill_mm) || 0;
+      if (own < wanted) get().setTopInfill(unitId, wanted);
+    }
+    const notices = get().refreshAutoParts();
+    return { height, notices };
   },
 
   // ── the manual pieces (turn 4, BACKLOG #16/#17) ──────────────────────────
@@ -1934,7 +2020,17 @@ export const useProjectStore = create((set, get) => ({
     const applied = {};
     for (const key of HEIGHT_KEYS) {
       if (patch[key] == null) continue;
-      const value = Math.min(limits.max, Math.max(limits.min, Number(patch[key]) || 0));
+      // ─── Turn 22 (CLAUDE.md F4.3): 100 IS A DEFAULT, NEVER A FLOOR ────────
+      //
+      // Every project height shared one minimum — `profile.projectHeights.min`,
+      // 100 — and that is right for a CARCASS: a 40 mm tall unit is a typing
+      // mistake. It was wrong for the TOE KICK, which is the one of the five
+      // that is not a carcass: 50 mm legs are a real kitchen and the field
+      // silently rounded the owner's 50 up to 100. The seed stays 100
+      // (`profile.projectHeights.toeKick`); the FLOOR is its own number and is
+      // 0, and from there the engine's own sanity is the only guard.
+      const min = key === 'toeKick' ? (limits.toeKickMin ?? 0) : limits.min;
+      const value = Math.min(limits.max, Math.max(min, Number(patch[key]) || 0));
       heights[key] = value;
       applied[key] = value;
     }
@@ -1956,7 +2052,10 @@ export const useProjectStore = create((set, get) => ({
         changes.height_custom = false;
       }
       if (applied.wallMount != null && type.mount === 'wall') changes.mount_height = resolved.wallMount;
-      if (applied.toeKick != null && type.legs) changes.leg_height = resolved.toeKick;
+      // Turn 22 (F4.2): every unit that STANDS on the run's legs follows the
+      // toe kick, the D/W panel included — it is the unit the owner watched
+      // ignore the field.
+      if (applied.toeKick != null && standsOnLegHeight(type)) changes.leg_height = resolved.toeKick;
       if (!Object.keys(changes).length) continue;
       const result = get().updateUnitParams(unit.id, changes);
       moved += 1;
@@ -3391,10 +3490,14 @@ function floorYOf(unit, applied, profile) {
   if (type.mount === 'wall') {
     return Number(applied?.mount_height ?? unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight) || 0;
   }
-  if (!type.legs) return 0;
-  const own = Number(applied?.leg_height ?? unit.params.leg_height);
-  if (Number.isFinite(own) && own >= 0) return own;
-  return type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight;
+  // Turn 22 (CLAUDE.md F4.2): the D/W panel stands as high as the legs its
+  // neighbours stand on. One derivation, engine/runs.js, read here too.
+  if (!standsOnLegHeight(type)) return 0;
+  return impliedLegHeight(
+    { leg_height: applied?.leg_height ?? unit.params.leg_height },
+    type,
+    profile,
+  );
 }
 
 /** The type's own minimum height, if its kit declares one (engine/types.js). */

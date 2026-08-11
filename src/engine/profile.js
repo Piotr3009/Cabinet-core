@@ -367,6 +367,15 @@ export const DEFAULT_CABINET_PROFILE = {
     // clamped, exactly as every other millimetre field is.
     min: 100,
     max: 3000,
+    // ─── Turn 22 (CLAUDE.md F4.3): the toe kick's OWN floor ─────────────────
+    //
+    // "the 100 mm leg minimum is a bug: a default, never a floor". `min` above
+    // guards CARCASS heights, where 100 is a sane refusal — a 40 mm tall unit
+    // is a typing mistake. The toe kick is not a carcass: 50 mm legs are a
+    // real kitchen, a plinth-less run is 0, and the engine's own sanity
+    // (plinth ≥ 0, the front not through the floor) is the guard that belongs
+    // there. `toeKick: 100` above stays the SEED every new project starts on.
+    toeKickMin: 0,
   },
 
   // ─── Project types (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
@@ -957,6 +966,51 @@ export const DEFAULT_CABINET_PROFILE = {
       enabled: true,
       thickness: null,      // null = the project's FRONT thickness (F5.2)
       depthExtra: null,     // null = the wall standoff, which is what F5 asks for
+    },
+    // ─── THE CORNICE (turn 22, CLAUDE.md F1) ────────────────────────────────
+    //
+    // The owner's numbers, written down once. Turn 21 dropped this phase by
+    // protocol and BLOCKERS #88 carried the ask so that this turn is a build
+    // and not a re-derivation:
+    //
+    //   • two heights, 70 and 100, and "none";
+    //   • forward projection 48 for the 70 and 65 for the 100 — "the owner's
+    //     numbers to veto", so they are numbers in the profile and a veto is
+    //     one line here;
+    //   • the SHAPE is a parametric bead-and-cove approximation, because the
+    //     supplier's DXF does not exist yet. When it does it replaces
+    //     `engine/cornice.js corniceSection` 1:1 and nothing else moves — the
+    //     run logic, the BOM and the 3D all read the section as a polygon.
+    //
+    // IT IS BOUGHT MOULDING, NOT A CUT PIECE. There is no thickness and no
+    // edging here because there is no board: the BOM orders LINEAR METRES and
+    // the CNC export never hears about it, which is what makes this phase's
+    // fingerprint delta zero.
+    cornice: {
+      // What the per-unit option may be. 0 is "none" and is the default.
+      heights: [70, 100],
+      // How far the moulding stands proud of the door plane, per height.
+      projection: { 70: 48, 100: 65 },
+      // The piece it is fixed to: the 40 mm top infill, standing above the
+      // carcass top in the door plane. Setting a cornice asks for at least
+      // this much infill, and the ceiling clamp still has the last word.
+      infillHeight: 40,
+      // The bead-and-cove, as fractions of the height and of the projection.
+      // Three members, bottom to top: a small convex bead, a concave sweep,
+      // and a flat land at the top.
+      section: {
+        beadHeight: 0.16,        // of the height
+        beadProjection: 0.3,     // of the projection
+        landHeight: 0.14,        // the flat top land, of the height
+        steps: 6,                // points per curved member
+      },
+      // What a mitred corner costs in ORDERED length. A joiner cuts the 45°
+      // out of a longer piece; this is the allowance per corner.
+      mitreAllowance: 100,
+      // The shortest return worth making at an open end — the top infill's own
+      // rule, for the same reason: below this the mitre is longer than the
+      // piece.
+      minReturn: 60,
     },
   },
 
@@ -2550,6 +2604,12 @@ export function migrateCabinetProfile(profile) {
       topInfill: { ...D.autoParts.topInfill, ...profile.autoParts?.topInfill },
       sideInfill: { ...D.autoParts.sideInfill, ...profile.autoParts?.sideInfill },
       endPanel: { ...D.autoParts.endPanel, ...profile.autoParts?.endPanel },
+      cornice: {
+        ...D.autoParts.cornice,
+        ...profile.autoParts?.cornice,
+        projection: { ...D.autoParts.cornice.projection, ...profile.autoParts?.cornice?.projection },
+        section: { ...D.autoParts.cornice.section, ...profile.autoParts?.cornice?.section },
+      },
     },
     appearance: {
       ...D.appearance, ...profile.appearance,

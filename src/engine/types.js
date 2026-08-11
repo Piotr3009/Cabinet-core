@@ -47,7 +47,14 @@ export const UNIT_TYPES = {
     drawerStyle: 'wardrobe',
     minHeightKey: 'wardrobe.minHeight',
     defaultsKey: 'wardrobe.defaults',
-    supports: { drawers: true, shelves: true, rail: true, pulldown: false, partition: true, doors: true, topInfill: true },
+    supports: {
+      drawers: true, shelves: true, rail: true, pulldown: false, partition: true, doors: true, topInfill: true,
+      // Turn 22 (CLAUDE.md F1.1): the cornice is offered on wardrobes and tall
+      // units — the kits that finish below the ceiling with a face somebody
+      // looks up at. A base unit has a worktop on it and a wall unit has the
+      // owner's own answer still to come.
+      cornice: true,
+    },
     available: true,
   },
   BUD: {
@@ -197,7 +204,10 @@ export const UNIT_TYPES = {
     drawerStyle: null,
     minHeightKey: 'tallUnit.minHeight',
     defaultsKey: 'tallUnit.defaults',
-    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true },
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
     available: true,
   },
   LOW_CABINET: {
@@ -339,7 +349,10 @@ export const UNIT_TYPES = {
     minHeightKey: 'fridgeUnit.minHeight',
     defaultsKey: 'fridgeUnit.defaults',
     // The fridge fills the lower zone: no shelves, no drawers, no rail.
-    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true },
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
     available: true,
   },
 };

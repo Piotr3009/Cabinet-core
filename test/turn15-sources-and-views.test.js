@@ -54,7 +54,12 @@ test('F2 — the outline offset is a PROFILE number, not a literal in the view',
   // line inside a cabinet is coplanar with the face it butts into, so the two
   // are at the same depth and the winner is draw order. `polygonOffset` pushes
   // the FILL back a hair and the line always wins.
-  assert.deepEqual(P.appearance.outline.polygonOffset, { factor: 1, units: 1 });
+  // Turn 20 (CLAUDE.md F12.1) adds the OUTLINE's own bias beside the fill's:
+  // the face steps back, the line steps forward, and an interior edge finally
+  // reads. Two decisions, two pairs of numbers, one profile block.
+  assert.deepEqual(P.appearance.outline.polygonOffset, {
+    factor: 1, units: 1, outlineFactor: -1, outlineUnits: -1,
+  });
 
   // A profile saved before this turn has no such key at all, and must come back
   // with the app's — otherwise the fix is off for every existing workshop.
@@ -62,11 +67,13 @@ test('F2 — the outline offset is a PROFILE number, not a literal in the view',
     ...P, appearance: { ...P.appearance, outline },
   });
   const old = saved({ colour: '#000000', width: 1, threshold: 12 });
-  assert.deepEqual(old.appearance.outline.polygonOffset, { factor: 1, units: 1 });
+  assert.deepEqual(old.appearance.outline.polygonOffset, P.appearance.outline.polygonOffset);
   assert.equal(old.appearance.outline.colour, '#000000', 'and its own overrides survive');
   // …and a workshop that tunes ONE of the two keeps the app's other.
   const tuned = saved({ colour: '#1A1A1A', width: 1, threshold: 12, polygonOffset: { factor: 2 } });
-  assert.deepEqual(tuned.appearance.outline.polygonOffset, { factor: 2, units: 1 });
+  assert.deepEqual(tuned.appearance.outline.polygonOffset, {
+    ...P.appearance.outline.polygonOffset, factor: 2,
+  });
 });
 
 // ─── F3 — the right picker, and the veneer collection ──────────────────────
@@ -78,7 +85,10 @@ test('F3 — every source names the picker it asks for', () => {
   // The owner's "mega ważne": a laminate front was offering RAL palettes and so
   // was a veneer front. Neither is a paint.
   assert.equal(picker('front', 'laminate'), 'decor');
-  assert.equal(picker('front', 'veneer'), 'veneer');
+  // Turn 20 (CLAUDE.md F12.3): the owner's verdict is that BOTH faced fronts
+  // pick off the same catalogue grid he already knows. The CARCASS's veneer
+  // source is untouched — that question was not asked.
+  assert.equal(picker('front', 'veneer'), 'decor');
   assert.equal(picker('front', 'spray'), 'colour');
   // Spray stays exactly as shipped — the colours are right there.
   assert.equal(picker('carcass', 'sprayed'), 'colour');
@@ -97,8 +107,15 @@ test('F3 — a facing the new source cannot mean is dropped', () => {
   const veneerSrc = sourceById(frontSources(P), 'veneer');
   const laminateSrc = sourceById(frontSources(P), 'laminate');
   const spraySrc = sourceById(frontSources(P), 'spray');
+  // Turn 20 (CLAUDE.md F12.3): a veneer FRONT picks decors now, and a project
+  // saved before it keeps the veneer it was faced in — the look and the 19 mm
+  // board are the same either way, so dropping the choice would throw away a
+  // decision for nothing.
   assert.equal(facingMatchesSource('veneer:oak-natural', veneerSrc), true);
-  assert.equal(facingMatchesSource('egger:H1180_37', veneerSrc), false, 'a decor is not a veneer');
+  assert.equal(facingMatchesSource('egger:H1180_37', veneerSrc), true);
+  assert.equal(facingMatchesSource('veneer:oak-natural', sourceById(carcassSources(P), 'veneer')), true);
+  assert.equal(facingMatchesSource('egger:H1180_37', sourceById(carcassSources(P), 'veneer')), false,
+    'on a CARCASS a decor is still not a veneer');
   assert.equal(facingMatchesSource('egger:H1180_37', laminateSrc), true);
   assert.equal(facingMatchesSource('veneer:oak-natural', laminateSrc), false);
   assert.equal(facingMatchesSource('egger:H1180_37', spraySrc), false, 'a sprayed front is not faced');

@@ -155,10 +155,12 @@ test('250 / 150 — runner rows sit under the drawer they carry', () => {
       `runner row ${i} at ${y} is outside drawer ${i + 1} (${r.derived.drawer_front_y[i]}..${top})`);
   });
 
-  // The box hangs the fixed drop below its runner row.
+  // The box RIDES its runner: turn 20 (CLAUDE.md F1) replaced the wardrobe's
+  // own "hangs 9 mm below the row" with the one law both kits keep — the side's
+  // lower edge stands `baseDrawerUnit.boxAboveRunner` above the row.
   for (const i of [1, 2]) {
     const box = drawerPanel(r, 'DRAWER-SIDE', i);
-    assert.equal(box.box.y, r.drillSummary.runner_rows_carcass_y[i - 1] - DR.boxDropFromRunner);
+    assert.equal(box.box.y, r.drillSummary.runner_rows_carcass_y[i - 1] + P.baseDrawerUnit.boxAboveRunner);
   }
 });
 

@@ -1055,6 +1055,29 @@ export function computeCabinet(params, profileOverride) {
         message: `The opening under the appliance shelf leaves ${roundTo(boxCeiling - runnerRows[0], 0)} mm above the runner row — too little for a drawer box.`,
       });
     }
+    // ─── TURN 20 (CLAUDE.md F1): SAY IT, DO NOT SILENTLY RE-CUT ─────────────
+    //
+    // Turn 18's clamp above measures the headroom from the RUNNER ROW, and
+    // this turn the box's own bottom edge stands `boxAboveRunner` above that
+    // row — so on an appliance base whose box is already clamped by the shelf,
+    // the top of the box now reaches that far past it.
+    //
+    // The board is NOT re-cut here, and that is deliberate: F1 says side
+    // heights stay exactly as turn 18 cut them, and the turn's iron rule allows
+    // exactly one CNC delta (F4's label height). Shortening a box side would
+    // move an exported DXF nobody asked to move. So the app SAYS SO instead —
+    // the same graceful answer it gives everywhere else — and the owner decides
+    // in turn 21 whether an appliance box is re-cut, which is a cutting-list
+    // decision and therefore his.
+    if (boxCeiling != null) {
+      const over = roundTo(Math.max(...sideHs.map((s, i) => runnerRows[i] + B.boxAboveRunner + s)) - boxCeiling, 1);
+      if (over > 0) {
+        warnings.push({
+          code: 'APPLIANCE_DRAWER_BOX_OVER_SHELF',
+          message: `The drawer box stands ${over} mm past the shelf the appliance sits on — it rides ${B.boxAboveRunner} mm above its runner and the box side is cut to the old clearance. Shorten the box by hand until the kit is re-cut.`,
+        });
+      }
+    }
     budr = {
       heights, frontY, runnerRows, sideHs, boxFrontH,
       depth, maxDl, boxW, frontWidth, boxLen,
@@ -1808,7 +1831,14 @@ export function computeCabinet(params, profileOverride) {
       const zoneY = G + zoneOffsets[i - 1];
       const sideHeight = boxSideH[i - 1];
       const bfH = boxFrontHs[i - 1];
-      const boxY = zoneY + P.wardrobe.runners.firstRowFromBottom - DR.boxDropFromRunner;
+      // ─── TURN 20 (CLAUDE.md F1): THE BOX RIDES THE RUNNER ─────────────────
+      // `zoneY + firstRowFromBottom` IS `drillSummary.runner_rows_carcass_y[i]`
+      // — the row the engine drills and the line the runner's underside stands
+      // on. The box is set off it by ONE number, the same number the BUDR kit
+      // below uses, because it is the same runner under the same box. Turn 18
+      // hung this box 9 mm BELOW the row and the BUDR's exactly ON it; the
+      // owner's eye test found the box "wrong against" hardware that was right.
+      const boxY = zoneY + P.wardrobe.runners.firstRowFromBottom + B.boxAboveRunner;
       // ─── Turn 18 (CLAUDE.md F3.4): WHERE THE BOTTOM ACTUALLY IS ───────────
       // "Front and back of the box STAND ON the bottom", and the bottom stands
       // in the groove — so its underside is `runnerPocketWidth` above the
@@ -1891,9 +1921,15 @@ export function computeCabinet(params, profileOverride) {
         x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot,
       },
     ];
+    // ─── TURN 20 (CLAUDE.md F1): THE BOX RIDES THE RUNNER ───────────────────
+    // `budr.runnerRows[i]` is the drilled row and the runner's own underside;
+    // the box side's lower edge stands `boxAboveRunner` above it, and the
+    // bottom `runnerPocketWidth` above that — 28.5 mm over the runner, which is
+    // where a MOVENTO puts a drawer bottom. Turn 18 had this box sitting ON the
+    // row and the wardrobe's 9 mm under it; one law now, both kits.
     for (let i = 1; i <= budr.count; i += 1) {
       const sh = budr.sideHs[i - 1];
-      const boxY = budr.runnerRows[i - 1];
+      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
       for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - DR.boxSideThickness]]) {
         panels.push(panel({
           id: `D${i}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
@@ -1906,7 +1942,7 @@ export function computeCabinet(params, profileOverride) {
     }
     for (let i = 1; i <= budr.count; i += 1) {
       const bfH = budr.boxFrontH[i - 1];
-      const boxY = budr.runnerRows[i - 1];
+      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
       for (const suffix of ['BF', 'BB']) {
         const isFront = suffix === 'BF';
         const geom = { rotated: true, drawn_w: bfH, drawn_h: budr.boxLen, ...rectGeometry(bfH, budr.boxLen) };
@@ -1933,7 +1969,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     for (let i = 1; i <= budr.count; i += 1) {
-      const boxY = budr.runnerRows[i - 1];
+      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
       const geom = rectGeometry(budr.bottomW, budr.depth);
       geom.holes = [];
       for (const x of [B.bottomScrewFromSide, budr.bottomW - B.bottomScrewFromSide]) {

@@ -3,6 +3,7 @@ import { mm } from './constants.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { cncRect, notchedOutline, socketNotches, tabOutlines } from '../engine/socketFace.js';
 import { panelPlacement } from '../engine/joinery.js';
+import { panelRecesses, recessKey } from '../engine/recesses.js';
 
 // ─── The board with the joint cut into it (turn 11, CLAUDE.md F6) ───────────
 //
@@ -42,21 +43,46 @@ const cache = new Map();
  * @param {object} profile
  * @returns {THREE.BufferGeometry|null}
  */
-export function machinedPanelGeometry(panel, layers, profile) {
+export function machinedPanelGeometry(panel, layers, profile, drills = []) {
+  return panelSolids(panel, layers, profile, drills).solid;
+}
+
+/**
+ * The board AND its cut faces (turn 20, CLAUDE.md F8).
+ *
+ * Two geometries, because they are two MATERIALS: a cut is raw board and must
+ * never wear the decor or the lacquer the faces wear (F8.2). They are built and
+ * cached together — one triangulation, one key — because they are two halves of
+ * one answer and a cache that could hold one without the other would eventually
+ * draw a hole with no wall in it.
+ *
+ * @returns {{solid:THREE.BufferGeometry|null, cuts:THREE.BufferGeometry|null}}
+ *   `solid` is null where the panel is a plain box with nothing cut into it,
+ *   which is what tells the caller to use a `boxGeometry` as it always has.
+ */
+export function panelSolids(panel, layers, profile, drills = []) {
   const placement = panelPlacement(panel);
-  if (!placement || !panel?.box) return null;
+  if (!placement || !panel?.box) return NOTHING;
   const notches = socketNotches(panel, layers);
   // ─── Turn 12 (CLAUDE.md F6.2): the OTHER half of the joint ───
   // A socket is a POCKET and a TAB is part of the OUTLINE, and turn 11 only
   // read the pockets — so a side panel came out a rectangle and its three tabs
   // went with it. `tabOutlines` reads the outline the LISP actually draws.
   const tabs = tabOutlines(panel);
-  if (!notches.length && !tabs.length) return null;
 
   const { w, h } = cncRect(panel);
   const thickness = thicknessOf(panel, placement);
-  if (!(w > 0) || !(h > 0) || !(thickness > 0)) return null;
+  if (!(w > 0) || !(h > 0) || !(thickness > 0)) return NOTHING;
   const radius = Math.max(0, (Number(profile?.cnc?.toolDiameter) || 0) / 2);
+
+  // ─── TURN 20 (CLAUDE.md F8.1): EVERY FEATURE, AS AN ABSENCE ──────────────
+  // The SOCKET layer is skipped: turn 11 cuts it out of the outline already,
+  // and cutting it twice would punch a hole through a notch.
+  const recesses = panelRecesses(panel, drills, {
+    thickness,
+    skipLayers: [layers?.socket],
+  });
+  if (!notches.length && !tabs.length && !recesses.length) return NOTHING;
 
   const key = [
     panel.part,
@@ -65,6 +91,7 @@ export function machinedPanelGeometry(panel, layers, profile) {
     // The tabs are part of the SHAPE, so two panels that differ only in their
     // tabs must not share a cached solid.
     ...tabs.map((t) => t.map(([x, y]) => `${x},${y}`).join(';')),
+    recessKey(recesses),
   ].join('|');
 
   const hit = cache.get(key);
@@ -76,17 +103,21 @@ export function machinedPanelGeometry(panel, layers, profile) {
     return hit;
   }
 
-  const geometry = build({
-    w, h, thickness, radius, notches, tabs, placement, box: panel.box,
+  const built = build({
+    w, h, thickness, radius, notches, tabs, recesses, placement, box: panel.box,
   });
-  cache.set(key, geometry);
+  cache.set(key, built);
   if (cache.size > CACHE_LIMIT) {
     const oldest = cache.keys().next().value;
-    cache.get(oldest)?.dispose();
+    const dropped = cache.get(oldest);
+    dropped?.solid?.dispose();
+    dropped?.cuts?.dispose();
     cache.delete(oldest);
   }
-  return geometry;
+  return built;
 }
+
+const NOTHING = { solid: null, cuts: null };
 
 /**
  * How thick the board is along its own normal.
@@ -104,28 +135,39 @@ function thicknessOf(panel, placement) {
 }
 
 function build({
-  w, h, thickness, radius, notches, tabs = [], placement, box,
+  w, h, thickness, radius, notches, tabs = [], recesses = [], placement, box,
 }) {
-  const extrude = (points) => new THREE.ExtrudeGeometry(
-    new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y)))),
-    {
-      depth: mm(thickness),
-      bevelEnabled: false,
-      // The outline already carries its fillets as real points; asking the
-      // extruder to re-approximate curves would only add triangles.
-      curveSegments: 1,
-    },
-  );
+  const shapeOf = (points) => new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y))));
+  const extrudeShape = (shape) => new THREE.ExtrudeGeometry(shape, {
+    depth: mm(thickness),
+    bevelEnabled: false,
+    // The outline already carries its fillets as real points; asking the
+    // extruder to re-approximate curves would only add triangles.
+    curveSegments: 1,
+  });
+  const extrude = (points) => extrudeShape(shapeOf(points));
 
   const outline = notchedOutline({
     w, h, notches, radius,
   });
+
+  // ─── TURN 20 (CLAUDE.md F8.1): THE MATERIAL IS ACTUALLY GONE ─────────────
+  //
+  // Every drilling, pocket and groove becomes a HOLE in the board's own
+  // polygon, so it is a real absence: you can see into it, the light falls
+  // into it, and it is the same absence a dog-bone socket has been since turn
+  // 11. A BLIND feature then gets its floor back as a separate cap at the true
+  // depth (below), which is what makes 2 mm read as 2 mm rather than as a slot
+  // straight through an 18 mm board.
+  const board = shapeOf(outline);
+  for (const f of recesses) board.holes.push(recessPath(f));
+
   // The board, and then each tab standing off its edge. They are separate
   // extrusions merged into one buffer rather than one polygon, because a tab
   // that shares an edge with the board is a self-touching outline and the
   // triangulator is entitled to refuse it. Merged, it is still ONE draw call
   // and still one cached geometry per panel configuration.
-  const parts = [extrude(outline), ...tabs.map((t) => extrude(t))];
+  const parts = [extrudeShape(board), ...tabs.map((t) => extrude(t))];
   const geometry = parts.length === 1 ? parts[0] : mergeGeometries(parts, false);
   if (parts.length > 1) for (const g of parts) g.dispose();
 
@@ -141,7 +183,8 @@ function build({
   );
   const origin = new THREE.Vector3(...placement.origin.map(mm)).sub(centre);
 
-  geometry.applyMatrix4(new THREE.Matrix4().makeBasis(u, v, into).setPosition(origin));
+  const basis = new THREE.Matrix4().makeBasis(u, v, into).setPosition(origin);
+  geometry.applyMatrix4(basis);
   // ─── Turn 13 (CLAUDE.md F1): THE TOP FACES THAT WENT MISSING ───
   //
   // Owner's screenshot: looking down into a run of wall units, the tops are
@@ -165,12 +208,122 @@ function build({
   // is to put the order back, and to do it from the determinant rather than
   // from a list of parts, so the sixth placement someone adds in turn 15 is
   // covered on the day it lands.
-  if (u.clone().cross(v).dot(into) < 0) reverseWinding(geometry);
+  const flipped = u.clone().cross(v).dot(into) < 0;
+  if (flipped) reverseWinding(geometry);
   geometry.computeVertexNormals();
   // The grain is a CABINET-SPACE rule and must not follow the nesting (F1).
   applyBoxUVs(geometry, box);
   geometry.computeBoundingSphere();
-  return geometry;
+
+  // ─── TURN 20 (CLAUDE.md F8.2): THE CUT FACES, IN THEIR OWN MATERIAL ──────
+  //
+  // The hole in the board above is an absence and has no inside. What a joiner
+  // sees when he looks into a drilling is the WALL of it and, on a blind one,
+  // its FLOOR — and both are raw board. So they are a second geometry, drawn
+  // by the caller with `appearance.cutFace` on it: a decor or a sprayed colour
+  // must never be painted onto a cut, and one mesh with two materials would
+  // have painted the board's own edges grey along with them.
+  //
+  // ONE buffer for the whole panel, merged and cached with the solid. F8.3
+  // asks for instancing so a side panel's eighteen holes are not eighteen draw
+  // calls; a merged buffer is ONE, is shared across every identical panel in
+  // the project by the same cache key, and needs no per-frame matrix work —
+  // which is the same bargain instancing offers, taken further.
+  const cuts = buildCuts({
+    recesses, thickness, flipped, matrix: basis, box,
+  });
+  return { solid: geometry, cuts };
+}
+
+/** The path a feature cuts out of the board, in scene units. */
+function recessPath(f) {
+  const path = new THREE.Path();
+  if (f.kind === 'round') {
+    path.absarc(mm(f.x), mm(f.y), mm(f.r), 0, Math.PI * 2, true);
+    return path;
+  }
+  const x0 = mm(f.x - f.w / 2);
+  const x1 = mm(f.x + f.w / 2);
+  const y0 = mm(f.y - f.h / 2);
+  const y1 = mm(f.y + f.h / 2);
+  // Wound the opposite way round from the outline, which is what makes a hole
+  // a hole rather than a second island.
+  path.moveTo(x0, y0);
+  path.lineTo(x0, y1);
+  path.lineTo(x1, y1);
+  path.lineTo(x1, y0);
+  path.closePath();
+  return path;
+}
+
+/** How many sides a drilled hole is drawn with. */
+const HOLE_SEGMENTS = 14;
+
+/**
+ * The walls and floors of every recess, as one buffer in the panel's own frame.
+ *
+ * A THROUGH feature is a wall and nothing else — you see daylight. A BLIND one
+ * is a wall down to its true depth and a floor across the bottom of it, and
+ * BOTH faces of the floor are drawn: the recess is open from the machined side
+ * and the board is solid from the other, so the far side needs a face too or a
+ * joiner looking at the back of a hinged door sees into the cup.
+ */
+function buildCuts({
+  recesses, thickness, flipped, matrix, box,
+}) {
+  if (!recesses.length) return null;
+  const positions = [];
+  const t = mm(thickness);
+
+  // The extrusion runs from z = 0 (the machined face) to z = t (into the
+  // board), so a feature `depth` deep has its floor at z = depth.
+  const quad = (a, b, c, d) => { positions.push(...a, ...b, ...c, ...a, ...c, ...d); };
+
+  for (const f of recesses) {
+    const deep = f.through ? t : mm(f.depth);
+    const ring = [];
+    if (f.kind === 'round') {
+      for (let i = 0; i < HOLE_SEGMENTS; i += 1) {
+        const angle = (i / HOLE_SEGMENTS) * Math.PI * 2;
+        ring.push([mm(f.x) + Math.cos(angle) * mm(f.r), mm(f.y) + Math.sin(angle) * mm(f.r)]);
+      }
+    } else {
+      const x0 = mm(f.x - f.w / 2);
+      const x1 = mm(f.x + f.w / 2);
+      const y0 = mm(f.y - f.h / 2);
+      const y1 = mm(f.y + f.h / 2);
+      ring.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
+    }
+
+    // The wall, one quad per segment, from the face down to the floor.
+    for (let i = 0; i < ring.length; i += 1) {
+      const [ax, ay] = ring[i];
+      const [bx, by] = ring[(i + 1) % ring.length];
+      quad([ax, ay, 0], [bx, by, 0], [bx, by, deep], [ax, ay, deep]);
+    }
+
+    if (f.through) continue;
+
+    // The floor, as a fan about the feature's own centre — and again facing
+    // the other way, so the board reads solid from behind.
+    const cx = mm(f.x);
+    const cy = mm(f.y);
+    for (let i = 0; i < ring.length; i += 1) {
+      const [ax, ay] = ring[i];
+      const [bx, by] = ring[(i + 1) % ring.length];
+      positions.push(cx, cy, deep, ax, ay, deep, bx, by, deep);
+      positions.push(cx, cy, deep, bx, by, deep, ax, ay, deep);
+    }
+  }
+
+  if (!positions.length) return null;
+  const cuts = new THREE.BufferGeometry();
+  cuts.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+  cuts.applyMatrix4(matrix);
+  if (flipped) reverseWinding(cuts);
+  cuts.computeVertexNormals();
+  cuts.computeBoundingSphere();
+  return cuts;
 }
 
 /**
@@ -257,7 +410,10 @@ function applyBoxUVs(geometry, box) {
 
 /** For tests and teardown: drop every cached solid. */
 export function clearPanelSolidCache() {
-  for (const g of cache.values()) g.dispose();
+  for (const built of cache.values()) {
+    built?.solid?.dispose();
+    built?.cuts?.dispose();
+  }
   cache.clear();
 }
 

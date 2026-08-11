@@ -1,0 +1,3776 @@
+1,35c1,35
+< BUD  file  01-BACK.dxf  f3cc966c
+< BUD  file  01-BOTTOM.dxf  8eae5ddc
+< BUD  file  01-BUL.dxf  a4706433
+< BUD  file  01-BUR.dxf  4607d59d
+< BUD  file  01-F.dxf  86f33d80
+< BUD  file  01-TOP.dxf  793e9e7d
+< BUD  sheet all  3a3aed94
+< BUD  sheet fronts  86f33d80
+< BUD  sheet non-sprayed  db51c133
+< BUD  sheet sprayed  86f33d80
+< BUD+bottom-mask  file  01-BACK.dxf  f3cc966c
+< BUD+bottom-mask  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+bottom-mask  file  01-BUL.dxf  a4706433
+< BUD+bottom-mask  file  01-BUR.dxf  4607d59d
+< BUD+bottom-mask  file  01-F.dxf  86f33d80
+< BUD+bottom-mask  file  01-TOP.dxf  793e9e7d
+< BUD+bottom-mask  sheet all  3a3aed94
+< BUD+bottom-mask  sheet fronts  86f33d80
+< BUD+bottom-mask  sheet non-sprayed  db51c133
+< BUD+bottom-mask  sheet sprayed  86f33d80
+< BUD+bottom-mask-run-owner  file  01-BACK.dxf  f3cc966c
+< BUD+bottom-mask-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+bottom-mask-run-owner  file  01-BUL.dxf  a4706433
+< BUD+bottom-mask-run-owner  file  01-BUR.dxf  4607d59d
+< BUD+bottom-mask-run-owner  file  01-F.dxf  86f33d80
+< BUD+bottom-mask-run-owner  file  01-TOP.dxf  793e9e7d
+< BUD+bottom-mask-run-owner  sheet all  3a3aed94
+< BUD+bottom-mask-run-owner  sheet fronts  86f33d80
+< BUD+bottom-mask-run-owner  sheet non-sprayed  db51c133
+< BUD+bottom-mask-run-owner  sheet sprayed  86f33d80
+< BUD+infill-mitre  file  01-BACK.dxf  f3cc966c
+< BUD+infill-mitre  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+infill-mitre  file  01-BUL.dxf  a4706433
+< BUD+infill-mitre  file  01-BUR.dxf  4607d59d
+< BUD+infill-mitre  file  01-F.dxf  86f33d80
+---
+> BUD  file  01-BACK.dxf  213eb844
+> BUD  file  01-BOTTOM.dxf  ababcbc4
+> BUD  file  01-BUL.dxf  6b4819a3
+> BUD  file  01-BUR.dxf  62c828e1
+> BUD  file  01-F.dxf  4939b7ec
+> BUD  file  01-TOP.dxf  878ff9ad
+> BUD  sheet all  10fe18ea
+> BUD  sheet fronts  4939b7ec
+> BUD  sheet non-sprayed  89359783
+> BUD  sheet sprayed  4939b7ec
+> BUD+bottom-mask  file  01-BACK.dxf  213eb844
+> BUD+bottom-mask  file  01-BOTTOM.dxf  ababcbc4
+> BUD+bottom-mask  file  01-BUL.dxf  6b4819a3
+> BUD+bottom-mask  file  01-BUR.dxf  62c828e1
+> BUD+bottom-mask  file  01-F.dxf  4939b7ec
+> BUD+bottom-mask  file  01-TOP.dxf  878ff9ad
+> BUD+bottom-mask  sheet all  10fe18ea
+> BUD+bottom-mask  sheet fronts  4939b7ec
+> BUD+bottom-mask  sheet non-sprayed  89359783
+> BUD+bottom-mask  sheet sprayed  4939b7ec
+> BUD+bottom-mask-run-owner  file  01-BACK.dxf  213eb844
+> BUD+bottom-mask-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUD+bottom-mask-run-owner  file  01-BUL.dxf  6b4819a3
+> BUD+bottom-mask-run-owner  file  01-BUR.dxf  62c828e1
+> BUD+bottom-mask-run-owner  file  01-F.dxf  4939b7ec
+> BUD+bottom-mask-run-owner  file  01-TOP.dxf  878ff9ad
+> BUD+bottom-mask-run-owner  sheet all  10fe18ea
+> BUD+bottom-mask-run-owner  sheet fronts  4939b7ec
+> BUD+bottom-mask-run-owner  sheet non-sprayed  89359783
+> BUD+bottom-mask-run-owner  sheet sprayed  4939b7ec
+> BUD+infill-mitre  file  01-BACK.dxf  213eb844
+> BUD+infill-mitre  file  01-BOTTOM.dxf  ababcbc4
+> BUD+infill-mitre  file  01-BUL.dxf  6b4819a3
+> BUD+infill-mitre  file  01-BUR.dxf  62c828e1
+> BUD+infill-mitre  file  01-F.dxf  4939b7ec
+40,49c40,49
+< BUD+infill-mitre  file  01-TOP.dxf  793e9e7d
+< BUD+infill-mitre  sheet all  4b98dff3
+< BUD+infill-mitre  sheet fronts  86f33d80
+< BUD+infill-mitre  sheet non-sprayed  db51c133
+< BUD+infill-mitre  sheet sprayed  6e6399bf
+< BUD+infill-mitre-narrow  file  01-BACK.dxf  f3cc966c
+< BUD+infill-mitre-narrow  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+infill-mitre-narrow  file  01-BUL.dxf  a4706433
+< BUD+infill-mitre-narrow  file  01-BUR.dxf  4607d59d
+< BUD+infill-mitre-narrow  file  01-F.dxf  86f33d80
+---
+> BUD+infill-mitre  file  01-TOP.dxf  878ff9ad
+> BUD+infill-mitre  sheet all  3963c1d5
+> BUD+infill-mitre  sheet fronts  4939b7ec
+> BUD+infill-mitre  sheet non-sprayed  89359783
+> BUD+infill-mitre  sheet sprayed  17d6067b
+> BUD+infill-mitre-narrow  file  01-BACK.dxf  213eb844
+> BUD+infill-mitre-narrow  file  01-BOTTOM.dxf  ababcbc4
+> BUD+infill-mitre-narrow  file  01-BUL.dxf  6b4819a3
+> BUD+infill-mitre-narrow  file  01-BUR.dxf  62c828e1
+> BUD+infill-mitre-narrow  file  01-F.dxf  4939b7ec
+54,63c54,63
+< BUD+infill-mitre-narrow  file  01-TOP.dxf  793e9e7d
+< BUD+infill-mitre-narrow  sheet all  6e453225
+< BUD+infill-mitre-narrow  sheet fronts  86f33d80
+< BUD+infill-mitre-narrow  sheet non-sprayed  db51c133
+< BUD+infill-mitre-narrow  sheet sprayed  5091221d
+< BUD+infills  file  01-BACK.dxf  f3cc966c
+< BUD+infills  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+infills  file  01-BUL.dxf  a4706433
+< BUD+infills  file  01-BUR.dxf  4607d59d
+< BUD+infills  file  01-F.dxf  86f33d80
+---
+> BUD+infill-mitre-narrow  file  01-TOP.dxf  878ff9ad
+> BUD+infill-mitre-narrow  sheet all  67bb791b
+> BUD+infill-mitre-narrow  sheet fronts  4939b7ec
+> BUD+infill-mitre-narrow  sheet non-sprayed  89359783
+> BUD+infill-mitre-narrow  sheet sprayed  8cf7a509
+> BUD+infills  file  01-BACK.dxf  213eb844
+> BUD+infills  file  01-BOTTOM.dxf  ababcbc4
+> BUD+infills  file  01-BUL.dxf  6b4819a3
+> BUD+infills  file  01-BUR.dxf  62c828e1
+> BUD+infills  file  01-F.dxf  4939b7ec
+68,100c68,100
+< BUD+infills  file  01-TOP.dxf  793e9e7d
+< BUD+infills  sheet all  172022ca
+< BUD+infills  sheet fronts  86f33d80
+< BUD+infills  sheet non-sprayed  db51c133
+< BUD+infills  sheet sprayed  db575172
+< BUD+partition  file  01-BACK.dxf  f3cc966c
+< BUD+partition  file  01-BOTTOM.dxf  4c24f0da
+< BUD+partition  file  01-BUL.dxf  a4706433
+< BUD+partition  file  01-BUR.dxf  4607d59d
+< BUD+partition  file  01-F.dxf  86f33d80
+< BUD+partition  file  01-TOP.dxf  a426f1f7
+< BUD+partition  file  01-VPART-1.dxf  4883a747
+< BUD+partition  sheet all  3ff3be0a
+< BUD+partition  sheet fronts  86f33d80
+< BUD+partition  sheet non-sprayed  c4048c65
+< BUD+partition  sheet sprayed  86f33d80
+< BUD+partition-on-shelf  file  01-BACK.dxf  f3cc966c
+< BUD+partition-on-shelf  file  01-BOTTOM.dxf  4c24f0da
+< BUD+partition-on-shelf  file  01-BUL.dxf  57816985
+< BUD+partition-on-shelf  file  01-BUR.dxf  382d3d6b
+< BUD+partition-on-shelf  file  01-F.dxf  86f33d80
+< BUD+partition-on-shelf  file  01-SHELF-1.dxf  7df0118f
+< BUD+partition-on-shelf  file  01-TOP.dxf  793e9e7d
+< BUD+partition-on-shelf  file  01-VPART-1.dxf  686245da
+< BUD+partition-on-shelf  sheet all  d1aca80f
+< BUD+partition-on-shelf  sheet fronts  86f33d80
+< BUD+partition-on-shelf  sheet non-sprayed  eb7689e8
+< BUD+partition-on-shelf  sheet sprayed  86f33d80
+< BUD+plinth  file  01-BACK.dxf  f3cc966c
+< BUD+plinth  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+plinth  file  01-BUL.dxf  a4706433
+< BUD+plinth  file  01-BUR.dxf  4607d59d
+< BUD+plinth  file  01-F.dxf  86f33d80
+---
+> BUD+infills  file  01-TOP.dxf  878ff9ad
+> BUD+infills  sheet all  8fa8f1dc
+> BUD+infills  sheet fronts  4939b7ec
+> BUD+infills  sheet non-sprayed  89359783
+> BUD+infills  sheet sprayed  af87045a
+> BUD+partition  file  01-BACK.dxf  213eb844
+> BUD+partition  file  01-BOTTOM.dxf  ac7003da
+> BUD+partition  file  01-BUL.dxf  6b4819a3
+> BUD+partition  file  01-BUR.dxf  62c828e1
+> BUD+partition  file  01-F.dxf  4939b7ec
+> BUD+partition  file  01-TOP.dxf  900b2a9f
+> BUD+partition  file  01-VPART-1.dxf  5d572131
+> BUD+partition  sheet all  aa5c0172
+> BUD+partition  sheet fronts  4939b7ec
+> BUD+partition  sheet non-sprayed  5bd0a437
+> BUD+partition  sheet sprayed  4939b7ec
+> BUD+partition-on-shelf  file  01-BACK.dxf  213eb844
+> BUD+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+> BUD+partition-on-shelf  file  01-BUL.dxf  46f15c1d
+> BUD+partition-on-shelf  file  01-BUR.dxf  81d15f57
+> BUD+partition-on-shelf  file  01-F.dxf  4939b7ec
+> BUD+partition-on-shelf  file  01-SHELF-1.dxf  aad11821
+> BUD+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> BUD+partition-on-shelf  file  01-VPART-1.dxf  4a0eb71d
+> BUD+partition-on-shelf  sheet all  aa81b3f6
+> BUD+partition-on-shelf  sheet fronts  4939b7ec
+> BUD+partition-on-shelf  sheet non-sprayed  27cde727
+> BUD+partition-on-shelf  sheet sprayed  4939b7ec
+> BUD+plinth  file  01-BACK.dxf  213eb844
+> BUD+plinth  file  01-BOTTOM.dxf  ababcbc4
+> BUD+plinth  file  01-BUL.dxf  6b4819a3
+> BUD+plinth  file  01-BUR.dxf  62c828e1
+> BUD+plinth  file  01-F.dxf  4939b7ec
+102,121c102,121
+< BUD+plinth  file  01-TOP.dxf  793e9e7d
+< BUD+plinth  sheet all  5b96dc0d
+< BUD+plinth  sheet fronts  86f33d80
+< BUD+plinth  sheet non-sprayed  db51c133
+< BUD+plinth  sheet sprayed  238497ee
+< BUD+plinth-run-member  file  01-BACK.dxf  f3cc966c
+< BUD+plinth-run-member  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+plinth-run-member  file  01-BUL.dxf  a4706433
+< BUD+plinth-run-member  file  01-BUR.dxf  4607d59d
+< BUD+plinth-run-member  file  01-F.dxf  86f33d80
+< BUD+plinth-run-member  file  01-TOP.dxf  793e9e7d
+< BUD+plinth-run-member  sheet all  3a3aed94
+< BUD+plinth-run-member  sheet fronts  86f33d80
+< BUD+plinth-run-member  sheet non-sprayed  db51c133
+< BUD+plinth-run-member  sheet sprayed  86f33d80
+< BUD+plinth-run-owner  file  01-BACK.dxf  f3cc966c
+< BUD+plinth-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+plinth-run-owner  file  01-BUL.dxf  a4706433
+< BUD+plinth-run-owner  file  01-BUR.dxf  4607d59d
+< BUD+plinth-run-owner  file  01-F.dxf  86f33d80
+---
+> BUD+plinth  file  01-TOP.dxf  878ff9ad
+> BUD+plinth  sheet all  2d45c77b
+> BUD+plinth  sheet fronts  4939b7ec
+> BUD+plinth  sheet non-sprayed  89359783
+> BUD+plinth  sheet sprayed  daf6d1ae
+> BUD+plinth-run-member  file  01-BACK.dxf  213eb844
+> BUD+plinth-run-member  file  01-BOTTOM.dxf  ababcbc4
+> BUD+plinth-run-member  file  01-BUL.dxf  6b4819a3
+> BUD+plinth-run-member  file  01-BUR.dxf  62c828e1
+> BUD+plinth-run-member  file  01-F.dxf  4939b7ec
+> BUD+plinth-run-member  file  01-TOP.dxf  878ff9ad
+> BUD+plinth-run-member  sheet all  10fe18ea
+> BUD+plinth-run-member  sheet fronts  4939b7ec
+> BUD+plinth-run-member  sheet non-sprayed  89359783
+> BUD+plinth-run-member  sheet sprayed  4939b7ec
+> BUD+plinth-run-owner  file  01-BACK.dxf  213eb844
+> BUD+plinth-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUD+plinth-run-owner  file  01-BUL.dxf  6b4819a3
+> BUD+plinth-run-owner  file  01-BUR.dxf  62c828e1
+> BUD+plinth-run-owner  file  01-F.dxf  4939b7ec
+123,143c123,143
+< BUD+plinth-run-owner  file  01-TOP.dxf  793e9e7d
+< BUD+plinth-run-owner  sheet all  2a38cd6f
+< BUD+plinth-run-owner  sheet fronts  86f33d80
+< BUD+plinth-run-owner  sheet non-sprayed  db51c133
+< BUD+plinth-run-owner  sheet sprayed  8eab2db5
+< BUD+shelves  file  01-BACK.dxf  f3cc966c
+< BUD+shelves  file  01-BOTTOM.dxf  8eae5ddc
+< BUD+shelves  file  01-BUL.dxf  b3925141
+< BUD+shelves  file  01-BUR.dxf  a06b19fd
+< BUD+shelves  file  01-F.dxf  86f33d80
+< BUD+shelves  file  01-SHELF-1.dxf  686d7e01
+< BUD+shelves  file  01-SHELF-2.dxf  3cdfc5fe
+< BUD+shelves  file  01-TOP.dxf  793e9e7d
+< BUD+shelves  sheet all  f9d49be7
+< BUD+shelves  sheet fronts  86f33d80
+< BUD+shelves  sheet non-sprayed  5268ee33
+< BUD+shelves  sheet sprayed  86f33d80
+< BUDR  file  01-BACK.dxf  f3cc966c
+< BUDR  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR  file  01-BUL.dxf  eefeb8a1
+< BUDR  file  01-BUR.dxf  b68a6836
+---
+> BUD+plinth-run-owner  file  01-TOP.dxf  878ff9ad
+> BUD+plinth-run-owner  sheet all  8b6ba859
+> BUD+plinth-run-owner  sheet fronts  4939b7ec
+> BUD+plinth-run-owner  sheet non-sprayed  89359783
+> BUD+plinth-run-owner  sheet sprayed  35de3e55
+> BUD+shelves  file  01-BACK.dxf  213eb844
+> BUD+shelves  file  01-BOTTOM.dxf  ababcbc4
+> BUD+shelves  file  01-BUL.dxf  2498cce9
+> BUD+shelves  file  01-BUR.dxf  539f7141
+> BUD+shelves  file  01-F.dxf  4939b7ec
+> BUD+shelves  file  01-SHELF-1.dxf  135f63c3
+> BUD+shelves  file  01-SHELF-2.dxf  46a8db5c
+> BUD+shelves  file  01-TOP.dxf  878ff9ad
+> BUD+shelves  sheet all  f3794cc3
+> BUD+shelves  sheet fronts  4939b7ec
+> BUD+shelves  sheet non-sprayed  2640eb31
+> BUD+shelves  sheet sprayed  4939b7ec
+> BUDR  file  01-BACK.dxf  213eb844
+> BUDR  file  01-BOTTOM.dxf  ababcbc4
+> BUDR  file  01-BUL.dxf  689420c9
+> BUDR  file  01-BUR.dxf  30a6ba5a
+146c146
+< BUDR  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR  file  01-D1-DNO.dxf  81c95f1d
+151c151
+< BUDR  file  01-D2-DNO.dxf  50419398
+---
+> BUDR  file  01-D2-DNO.dxf  8b5f55f6
+156c156
+< BUDR  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR  file  01-D3-DNO.dxf  f2208023
+159,170c159,170
+< BUDR  file  01-F1.dxf  6a73a0dd
+< BUDR  file  01-F2.dxf  5d4d655c
+< BUDR  file  01-F3.dxf  59a03881
+< BUDR  file  01-TOP.dxf  793e9e7d
+< BUDR  sheet all  fbc223ae
+< BUDR  sheet fronts  0a766863
+< BUDR  sheet non-sprayed  a10f12a8
+< BUDR  sheet sprayed  0a766863
+< BUDR+bottom-mask  file  01-BACK.dxf  f3cc966c
+< BUDR+bottom-mask  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+bottom-mask  file  01-BUL.dxf  eefeb8a1
+< BUDR+bottom-mask  file  01-BUR.dxf  b68a6836
+---
+> BUDR  file  01-F1.dxf  0635c879
+> BUDR  file  01-F2.dxf  c0c3b3f2
+> BUDR  file  01-F3.dxf  ef6ac9c1
+> BUDR  file  01-TOP.dxf  878ff9ad
+> BUDR  sheet all  bfaa6734
+> BUDR  sheet fronts  d1ae2369
+> BUDR  sheet non-sprayed  d56a21bc
+> BUDR  sheet sprayed  d1ae2369
+> BUDR+bottom-mask  file  01-BACK.dxf  213eb844
+> BUDR+bottom-mask  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+bottom-mask  file  01-BUL.dxf  689420c9
+> BUDR+bottom-mask  file  01-BUR.dxf  30a6ba5a
+173c173
+< BUDR+bottom-mask  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+bottom-mask  file  01-D1-DNO.dxf  81c95f1d
+178c178
+< BUDR+bottom-mask  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+bottom-mask  file  01-D2-DNO.dxf  8b5f55f6
+183c183
+< BUDR+bottom-mask  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+bottom-mask  file  01-D3-DNO.dxf  f2208023
+186,197c186,197
+< BUDR+bottom-mask  file  01-F1.dxf  6a73a0dd
+< BUDR+bottom-mask  file  01-F2.dxf  5d4d655c
+< BUDR+bottom-mask  file  01-F3.dxf  59a03881
+< BUDR+bottom-mask  file  01-TOP.dxf  793e9e7d
+< BUDR+bottom-mask  sheet all  fbc223ae
+< BUDR+bottom-mask  sheet fronts  0a766863
+< BUDR+bottom-mask  sheet non-sprayed  a10f12a8
+< BUDR+bottom-mask  sheet sprayed  0a766863
+< BUDR+bottom-mask-run-owner  file  01-BACK.dxf  f3cc966c
+< BUDR+bottom-mask-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+bottom-mask-run-owner  file  01-BUL.dxf  eefeb8a1
+< BUDR+bottom-mask-run-owner  file  01-BUR.dxf  b68a6836
+---
+> BUDR+bottom-mask  file  01-F1.dxf  0635c879
+> BUDR+bottom-mask  file  01-F2.dxf  c0c3b3f2
+> BUDR+bottom-mask  file  01-F3.dxf  ef6ac9c1
+> BUDR+bottom-mask  file  01-TOP.dxf  878ff9ad
+> BUDR+bottom-mask  sheet all  bfaa6734
+> BUDR+bottom-mask  sheet fronts  d1ae2369
+> BUDR+bottom-mask  sheet non-sprayed  d56a21bc
+> BUDR+bottom-mask  sheet sprayed  d1ae2369
+> BUDR+bottom-mask-run-owner  file  01-BACK.dxf  213eb844
+> BUDR+bottom-mask-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+bottom-mask-run-owner  file  01-BUL.dxf  689420c9
+> BUDR+bottom-mask-run-owner  file  01-BUR.dxf  30a6ba5a
+200c200
+< BUDR+bottom-mask-run-owner  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+bottom-mask-run-owner  file  01-D1-DNO.dxf  81c95f1d
+205c205
+< BUDR+bottom-mask-run-owner  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+bottom-mask-run-owner  file  01-D2-DNO.dxf  8b5f55f6
+210c210
+< BUDR+bottom-mask-run-owner  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+bottom-mask-run-owner  file  01-D3-DNO.dxf  f2208023
+213,224c213,224
+< BUDR+bottom-mask-run-owner  file  01-F1.dxf  6a73a0dd
+< BUDR+bottom-mask-run-owner  file  01-F2.dxf  5d4d655c
+< BUDR+bottom-mask-run-owner  file  01-F3.dxf  59a03881
+< BUDR+bottom-mask-run-owner  file  01-TOP.dxf  793e9e7d
+< BUDR+bottom-mask-run-owner  sheet all  fbc223ae
+< BUDR+bottom-mask-run-owner  sheet fronts  0a766863
+< BUDR+bottom-mask-run-owner  sheet non-sprayed  a10f12a8
+< BUDR+bottom-mask-run-owner  sheet sprayed  0a766863
+< BUDR+infill-mitre  file  01-BACK.dxf  f3cc966c
+< BUDR+infill-mitre  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+infill-mitre  file  01-BUL.dxf  eefeb8a1
+< BUDR+infill-mitre  file  01-BUR.dxf  b68a6836
+---
+> BUDR+bottom-mask-run-owner  file  01-F1.dxf  0635c879
+> BUDR+bottom-mask-run-owner  file  01-F2.dxf  c0c3b3f2
+> BUDR+bottom-mask-run-owner  file  01-F3.dxf  ef6ac9c1
+> BUDR+bottom-mask-run-owner  file  01-TOP.dxf  878ff9ad
+> BUDR+bottom-mask-run-owner  sheet all  bfaa6734
+> BUDR+bottom-mask-run-owner  sheet fronts  d1ae2369
+> BUDR+bottom-mask-run-owner  sheet non-sprayed  d56a21bc
+> BUDR+bottom-mask-run-owner  sheet sprayed  d1ae2369
+> BUDR+infill-mitre  file  01-BACK.dxf  213eb844
+> BUDR+infill-mitre  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+infill-mitre  file  01-BUL.dxf  689420c9
+> BUDR+infill-mitre  file  01-BUR.dxf  30a6ba5a
+227c227
+< BUDR+infill-mitre  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+infill-mitre  file  01-D1-DNO.dxf  81c95f1d
+232c232
+< BUDR+infill-mitre  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+infill-mitre  file  01-D2-DNO.dxf  8b5f55f6
+237c237
+< BUDR+infill-mitre  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+infill-mitre  file  01-D3-DNO.dxf  f2208023
+240,242c240,242
+< BUDR+infill-mitre  file  01-F1.dxf  6a73a0dd
+< BUDR+infill-mitre  file  01-F2.dxf  5d4d655c
+< BUDR+infill-mitre  file  01-F3.dxf  59a03881
+---
+> BUDR+infill-mitre  file  01-F1.dxf  0635c879
+> BUDR+infill-mitre  file  01-F2.dxf  c0c3b3f2
+> BUDR+infill-mitre  file  01-F3.dxf  ef6ac9c1
+247,255c247,255
+< BUDR+infill-mitre  file  01-TOP.dxf  793e9e7d
+< BUDR+infill-mitre  sheet all  8a589aac
+< BUDR+infill-mitre  sheet fronts  0a766863
+< BUDR+infill-mitre  sheet non-sprayed  a10f12a8
+< BUDR+infill-mitre  sheet sprayed  58d28383
+< BUDR+infill-mitre-narrow  file  01-BACK.dxf  f3cc966c
+< BUDR+infill-mitre-narrow  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+infill-mitre-narrow  file  01-BUL.dxf  eefeb8a1
+< BUDR+infill-mitre-narrow  file  01-BUR.dxf  b68a6836
+---
+> BUDR+infill-mitre  file  01-TOP.dxf  878ff9ad
+> BUDR+infill-mitre  sheet all  3ed2f4c4
+> BUDR+infill-mitre  sheet fronts  d1ae2369
+> BUDR+infill-mitre  sheet non-sprayed  d56a21bc
+> BUDR+infill-mitre  sheet sprayed  5ceba8bb
+> BUDR+infill-mitre-narrow  file  01-BACK.dxf  213eb844
+> BUDR+infill-mitre-narrow  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+infill-mitre-narrow  file  01-BUL.dxf  689420c9
+> BUDR+infill-mitre-narrow  file  01-BUR.dxf  30a6ba5a
+258c258
+< BUDR+infill-mitre-narrow  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+infill-mitre-narrow  file  01-D1-DNO.dxf  81c95f1d
+263c263
+< BUDR+infill-mitre-narrow  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+infill-mitre-narrow  file  01-D2-DNO.dxf  8b5f55f6
+268c268
+< BUDR+infill-mitre-narrow  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+infill-mitre-narrow  file  01-D3-DNO.dxf  f2208023
+271,273c271,273
+< BUDR+infill-mitre-narrow  file  01-F1.dxf  6a73a0dd
+< BUDR+infill-mitre-narrow  file  01-F2.dxf  5d4d655c
+< BUDR+infill-mitre-narrow  file  01-F3.dxf  59a03881
+---
+> BUDR+infill-mitre-narrow  file  01-F1.dxf  0635c879
+> BUDR+infill-mitre-narrow  file  01-F2.dxf  c0c3b3f2
+> BUDR+infill-mitre-narrow  file  01-F3.dxf  ef6ac9c1
+278,286c278,286
+< BUDR+infill-mitre-narrow  file  01-TOP.dxf  793e9e7d
+< BUDR+infill-mitre-narrow  sheet all  adfd2fa9
+< BUDR+infill-mitre-narrow  sheet fronts  0a766863
+< BUDR+infill-mitre-narrow  sheet non-sprayed  a10f12a8
+< BUDR+infill-mitre-narrow  sheet sprayed  d90bf3fc
+< BUDR+infills  file  01-BACK.dxf  f3cc966c
+< BUDR+infills  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+infills  file  01-BUL.dxf  eefeb8a1
+< BUDR+infills  file  01-BUR.dxf  b68a6836
+---
+> BUDR+infill-mitre-narrow  file  01-TOP.dxf  878ff9ad
+> BUDR+infill-mitre-narrow  sheet all  25ada0d1
+> BUDR+infill-mitre-narrow  sheet fronts  d1ae2369
+> BUDR+infill-mitre-narrow  sheet non-sprayed  d56a21bc
+> BUDR+infill-mitre-narrow  sheet sprayed  8ebf21b8
+> BUDR+infills  file  01-BACK.dxf  213eb844
+> BUDR+infills  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+infills  file  01-BUL.dxf  689420c9
+> BUDR+infills  file  01-BUR.dxf  30a6ba5a
+289c289
+< BUDR+infills  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+infills  file  01-D1-DNO.dxf  81c95f1d
+294c294
+< BUDR+infills  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+infills  file  01-D2-DNO.dxf  8b5f55f6
+299c299
+< BUDR+infills  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+infills  file  01-D3-DNO.dxf  f2208023
+302,304c302,304
+< BUDR+infills  file  01-F1.dxf  6a73a0dd
+< BUDR+infills  file  01-F2.dxf  5d4d655c
+< BUDR+infills  file  01-F3.dxf  59a03881
+---
+> BUDR+infills  file  01-F1.dxf  0635c879
+> BUDR+infills  file  01-F2.dxf  c0c3b3f2
+> BUDR+infills  file  01-F3.dxf  ef6ac9c1
+309,317c309,317
+< BUDR+infills  file  01-TOP.dxf  793e9e7d
+< BUDR+infills  sheet all  41f6fbbf
+< BUDR+infills  sheet fronts  0a766863
+< BUDR+infills  sheet non-sprayed  a10f12a8
+< BUDR+infills  sheet sprayed  8efeab2b
+< BUDR+partition  file  01-BACK.dxf  f3cc966c
+< BUDR+partition  file  01-BOTTOM.dxf  4c24f0da
+< BUDR+partition  file  01-BUL.dxf  eefeb8a1
+< BUDR+partition  file  01-BUR.dxf  b68a6836
+---
+> BUDR+infills  file  01-TOP.dxf  878ff9ad
+> BUDR+infills  sheet all  a43ba187
+> BUDR+infills  sheet fronts  d1ae2369
+> BUDR+infills  sheet non-sprayed  d56a21bc
+> BUDR+infills  sheet sprayed  b778f7d1
+> BUDR+partition  file  01-BACK.dxf  213eb844
+> BUDR+partition  file  01-BOTTOM.dxf  ac7003da
+> BUDR+partition  file  01-BUL.dxf  689420c9
+> BUDR+partition  file  01-BUR.dxf  30a6ba5a
+320c320
+< BUDR+partition  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+partition  file  01-D1-DNO.dxf  81c95f1d
+325c325
+< BUDR+partition  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+partition  file  01-D2-DNO.dxf  8b5f55f6
+330c330
+< BUDR+partition  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+partition  file  01-D3-DNO.dxf  f2208023
+333,345c333,345
+< BUDR+partition  file  01-F1.dxf  6a73a0dd
+< BUDR+partition  file  01-F2.dxf  5d4d655c
+< BUDR+partition  file  01-F3.dxf  59a03881
+< BUDR+partition  file  01-TOP.dxf  a426f1f7
+< BUDR+partition  file  01-VPART-1.dxf  4883a747
+< BUDR+partition  sheet all  f4db6611
+< BUDR+partition  sheet fronts  0a766863
+< BUDR+partition  sheet non-sprayed  32fa1d19
+< BUDR+partition  sheet sprayed  0a766863
+< BUDR+partition-on-shelf  file  01-BACK.dxf  f3cc966c
+< BUDR+partition-on-shelf  file  01-BOTTOM.dxf  4c24f0da
+< BUDR+partition-on-shelf  file  01-BUL.dxf  eefeb8a1
+< BUDR+partition-on-shelf  file  01-BUR.dxf  b68a6836
+---
+> BUDR+partition  file  01-F1.dxf  0635c879
+> BUDR+partition  file  01-F2.dxf  c0c3b3f2
+> BUDR+partition  file  01-F3.dxf  ef6ac9c1
+> BUDR+partition  file  01-TOP.dxf  900b2a9f
+> BUDR+partition  file  01-VPART-1.dxf  5d572131
+> BUDR+partition  sheet all  b0c6ae25
+> BUDR+partition  sheet fronts  d1ae2369
+> BUDR+partition  sheet non-sprayed  a72f87f9
+> BUDR+partition  sheet sprayed  d1ae2369
+> BUDR+partition-on-shelf  file  01-BACK.dxf  213eb844
+> BUDR+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+> BUDR+partition-on-shelf  file  01-BUL.dxf  689420c9
+> BUDR+partition-on-shelf  file  01-BUR.dxf  30a6ba5a
+348c348
+< BUDR+partition-on-shelf  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+partition-on-shelf  file  01-D1-DNO.dxf  81c95f1d
+353c353
+< BUDR+partition-on-shelf  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+partition-on-shelf  file  01-D2-DNO.dxf  8b5f55f6
+358c358
+< BUDR+partition-on-shelf  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+partition-on-shelf  file  01-D3-DNO.dxf  f2208023
+361,373c361,373
+< BUDR+partition-on-shelf  file  01-F1.dxf  6a73a0dd
+< BUDR+partition-on-shelf  file  01-F2.dxf  5d4d655c
+< BUDR+partition-on-shelf  file  01-F3.dxf  59a03881
+< BUDR+partition-on-shelf  file  01-TOP.dxf  793e9e7d
+< BUDR+partition-on-shelf  file  01-VPART-1.dxf  d9a474fa
+< BUDR+partition-on-shelf  sheet all  7b9f8b89
+< BUDR+partition-on-shelf  sheet fronts  0a766863
+< BUDR+partition-on-shelf  sheet non-sprayed  09385a4f
+< BUDR+partition-on-shelf  sheet sprayed  0a766863
+< BUDR+plinth  file  01-BACK.dxf  f3cc966c
+< BUDR+plinth  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+plinth  file  01-BUL.dxf  eefeb8a1
+< BUDR+plinth  file  01-BUR.dxf  b68a6836
+---
+> BUDR+partition-on-shelf  file  01-F1.dxf  0635c879
+> BUDR+partition-on-shelf  file  01-F2.dxf  c0c3b3f2
+> BUDR+partition-on-shelf  file  01-F3.dxf  ef6ac9c1
+> BUDR+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> BUDR+partition-on-shelf  file  01-VPART-1.dxf  dc4df93d
+> BUDR+partition-on-shelf  sheet all  7e892524
+> BUDR+partition-on-shelf  sheet fronts  d1ae2369
+> BUDR+partition-on-shelf  sheet non-sprayed  0bdb1faa
+> BUDR+partition-on-shelf  sheet sprayed  d1ae2369
+> BUDR+plinth  file  01-BACK.dxf  213eb844
+> BUDR+plinth  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+plinth  file  01-BUL.dxf  689420c9
+> BUDR+plinth  file  01-BUR.dxf  30a6ba5a
+376c376
+< BUDR+plinth  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+plinth  file  01-D1-DNO.dxf  81c95f1d
+381c381
+< BUDR+plinth  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+plinth  file  01-D2-DNO.dxf  8b5f55f6
+386c386
+< BUDR+plinth  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+plinth  file  01-D3-DNO.dxf  f2208023
+389,391c389,391
+< BUDR+plinth  file  01-F1.dxf  6a73a0dd
+< BUDR+plinth  file  01-F2.dxf  5d4d655c
+< BUDR+plinth  file  01-F3.dxf  59a03881
+---
+> BUDR+plinth  file  01-F1.dxf  0635c879
+> BUDR+plinth  file  01-F2.dxf  c0c3b3f2
+> BUDR+plinth  file  01-F3.dxf  ef6ac9c1
+393,401c393,401
+< BUDR+plinth  file  01-TOP.dxf  793e9e7d
+< BUDR+plinth  sheet all  470630a8
+< BUDR+plinth  sheet fronts  0a766863
+< BUDR+plinth  sheet non-sprayed  a10f12a8
+< BUDR+plinth  sheet sprayed  3904501a
+< BUDR+plinth-run-member  file  01-BACK.dxf  f3cc966c
+< BUDR+plinth-run-member  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+plinth-run-member  file  01-BUL.dxf  eefeb8a1
+< BUDR+plinth-run-member  file  01-BUR.dxf  b68a6836
+---
+> BUDR+plinth  file  01-TOP.dxf  878ff9ad
+> BUDR+plinth  sheet all  43a0aaee
+> BUDR+plinth  sheet fronts  d1ae2369
+> BUDR+plinth  sheet non-sprayed  d56a21bc
+> BUDR+plinth  sheet sprayed  d066f624
+> BUDR+plinth-run-member  file  01-BACK.dxf  213eb844
+> BUDR+plinth-run-member  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+plinth-run-member  file  01-BUL.dxf  689420c9
+> BUDR+plinth-run-member  file  01-BUR.dxf  30a6ba5a
+404c404
+< BUDR+plinth-run-member  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+plinth-run-member  file  01-D1-DNO.dxf  81c95f1d
+409c409
+< BUDR+plinth-run-member  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+plinth-run-member  file  01-D2-DNO.dxf  8b5f55f6
+414c414
+< BUDR+plinth-run-member  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+plinth-run-member  file  01-D3-DNO.dxf  f2208023
+417,428c417,428
+< BUDR+plinth-run-member  file  01-F1.dxf  6a73a0dd
+< BUDR+plinth-run-member  file  01-F2.dxf  5d4d655c
+< BUDR+plinth-run-member  file  01-F3.dxf  59a03881
+< BUDR+plinth-run-member  file  01-TOP.dxf  793e9e7d
+< BUDR+plinth-run-member  sheet all  fbc223ae
+< BUDR+plinth-run-member  sheet fronts  0a766863
+< BUDR+plinth-run-member  sheet non-sprayed  a10f12a8
+< BUDR+plinth-run-member  sheet sprayed  0a766863
+< BUDR+plinth-run-owner  file  01-BACK.dxf  f3cc966c
+< BUDR+plinth-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+plinth-run-owner  file  01-BUL.dxf  eefeb8a1
+< BUDR+plinth-run-owner  file  01-BUR.dxf  b68a6836
+---
+> BUDR+plinth-run-member  file  01-F1.dxf  0635c879
+> BUDR+plinth-run-member  file  01-F2.dxf  c0c3b3f2
+> BUDR+plinth-run-member  file  01-F3.dxf  ef6ac9c1
+> BUDR+plinth-run-member  file  01-TOP.dxf  878ff9ad
+> BUDR+plinth-run-member  sheet all  bfaa6734
+> BUDR+plinth-run-member  sheet fronts  d1ae2369
+> BUDR+plinth-run-member  sheet non-sprayed  d56a21bc
+> BUDR+plinth-run-member  sheet sprayed  d1ae2369
+> BUDR+plinth-run-owner  file  01-BACK.dxf  213eb844
+> BUDR+plinth-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+plinth-run-owner  file  01-BUL.dxf  689420c9
+> BUDR+plinth-run-owner  file  01-BUR.dxf  30a6ba5a
+431c431
+< BUDR+plinth-run-owner  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+plinth-run-owner  file  01-D1-DNO.dxf  81c95f1d
+436c436
+< BUDR+plinth-run-owner  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+plinth-run-owner  file  01-D2-DNO.dxf  8b5f55f6
+441c441
+< BUDR+plinth-run-owner  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+plinth-run-owner  file  01-D3-DNO.dxf  f2208023
+444,446c444,446
+< BUDR+plinth-run-owner  file  01-F1.dxf  6a73a0dd
+< BUDR+plinth-run-owner  file  01-F2.dxf  5d4d655c
+< BUDR+plinth-run-owner  file  01-F3.dxf  59a03881
+---
+> BUDR+plinth-run-owner  file  01-F1.dxf  0635c879
+> BUDR+plinth-run-owner  file  01-F2.dxf  c0c3b3f2
+> BUDR+plinth-run-owner  file  01-F3.dxf  ef6ac9c1
+448,456c448,456
+< BUDR+plinth-run-owner  file  01-TOP.dxf  793e9e7d
+< BUDR+plinth-run-owner  sheet all  eda78282
+< BUDR+plinth-run-owner  sheet fronts  0a766863
+< BUDR+plinth-run-owner  sheet non-sprayed  a10f12a8
+< BUDR+plinth-run-owner  sheet sprayed  1781552e
+< BUDR+shelves  file  01-BACK.dxf  f3cc966c
+< BUDR+shelves  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR+shelves  file  01-BUL.dxf  eefeb8a1
+< BUDR+shelves  file  01-BUR.dxf  b68a6836
+---
+> BUDR+plinth-run-owner  file  01-TOP.dxf  878ff9ad
+> BUDR+plinth-run-owner  sheet all  7ee0ee60
+> BUDR+plinth-run-owner  sheet fronts  d1ae2369
+> BUDR+plinth-run-owner  sheet non-sprayed  d56a21bc
+> BUDR+plinth-run-owner  sheet sprayed  7cc3cd1e
+> BUDR+shelves  file  01-BACK.dxf  213eb844
+> BUDR+shelves  file  01-BOTTOM.dxf  ababcbc4
+> BUDR+shelves  file  01-BUL.dxf  689420c9
+> BUDR+shelves  file  01-BUR.dxf  30a6ba5a
+459c459
+< BUDR+shelves  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR+shelves  file  01-D1-DNO.dxf  81c95f1d
+464c464
+< BUDR+shelves  file  01-D2-DNO.dxf  50419398
+---
+> BUDR+shelves  file  01-D2-DNO.dxf  8b5f55f6
+469c469
+< BUDR+shelves  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR+shelves  file  01-D3-DNO.dxf  f2208023
+472,483c472,483
+< BUDR+shelves  file  01-F1.dxf  6a73a0dd
+< BUDR+shelves  file  01-F2.dxf  5d4d655c
+< BUDR+shelves  file  01-F3.dxf  59a03881
+< BUDR+shelves  file  01-TOP.dxf  793e9e7d
+< BUDR+shelves  sheet all  fbc223ae
+< BUDR+shelves  sheet fronts  0a766863
+< BUDR+shelves  sheet non-sprayed  a10f12a8
+< BUDR+shelves  sheet sprayed  0a766863
+< BUDR2  file  01-BACK.dxf  f3cc966c
+< BUDR2  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2  file  01-BUL.dxf  b8446e70
+< BUDR2  file  01-BUR.dxf  991ed36b
+---
+> BUDR+shelves  file  01-F1.dxf  0635c879
+> BUDR+shelves  file  01-F2.dxf  c0c3b3f2
+> BUDR+shelves  file  01-F3.dxf  ef6ac9c1
+> BUDR+shelves  file  01-TOP.dxf  878ff9ad
+> BUDR+shelves  sheet all  bfaa6734
+> BUDR+shelves  sheet fronts  d1ae2369
+> BUDR+shelves  sheet non-sprayed  d56a21bc
+> BUDR+shelves  sheet sprayed  d1ae2369
+> BUDR2  file  01-BACK.dxf  213eb844
+> BUDR2  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2  file  01-BUL.dxf  7b357f88
+> BUDR2  file  01-BUR.dxf  abbe3557
+486c486
+< BUDR2  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2  file  01-D1-DNO.dxf  81c95f1d
+491c491
+< BUDR2  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2  file  01-D2-DNO.dxf  8b5f55f6
+494,504c494,504
+< BUDR2  file  01-F1.dxf  5e35c867
+< BUDR2  file  01-F2.dxf  9bef4b8a
+< BUDR2  file  01-TOP.dxf  793e9e7d
+< BUDR2  sheet all  285221db
+< BUDR2  sheet fronts  fef461da
+< BUDR2  sheet non-sprayed  8e76bf80
+< BUDR2  sheet sprayed  fef461da
+< BUDR2+bottom-mask  file  01-BACK.dxf  f3cc966c
+< BUDR2+bottom-mask  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+bottom-mask  file  01-BUL.dxf  b8446e70
+< BUDR2+bottom-mask  file  01-BUR.dxf  991ed36b
+---
+> BUDR2  file  01-F1.dxf  5742249b
+> BUDR2  file  01-F2.dxf  fb81636e
+> BUDR2  file  01-TOP.dxf  878ff9ad
+> BUDR2  sheet all  b896f637
+> BUDR2  sheet fronts  36290472
+> BUDR2  sheet non-sprayed  437626dc
+> BUDR2  sheet sprayed  36290472
+> BUDR2+bottom-mask  file  01-BACK.dxf  213eb844
+> BUDR2+bottom-mask  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+bottom-mask  file  01-BUL.dxf  7b357f88
+> BUDR2+bottom-mask  file  01-BUR.dxf  abbe3557
+507c507
+< BUDR2+bottom-mask  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+bottom-mask  file  01-D1-DNO.dxf  81c95f1d
+512c512
+< BUDR2+bottom-mask  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+bottom-mask  file  01-D2-DNO.dxf  8b5f55f6
+515,525c515,525
+< BUDR2+bottom-mask  file  01-F1.dxf  5e35c867
+< BUDR2+bottom-mask  file  01-F2.dxf  9bef4b8a
+< BUDR2+bottom-mask  file  01-TOP.dxf  793e9e7d
+< BUDR2+bottom-mask  sheet all  285221db
+< BUDR2+bottom-mask  sheet fronts  fef461da
+< BUDR2+bottom-mask  sheet non-sprayed  8e76bf80
+< BUDR2+bottom-mask  sheet sprayed  fef461da
+< BUDR2+bottom-mask-run-owner  file  01-BACK.dxf  f3cc966c
+< BUDR2+bottom-mask-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+bottom-mask-run-owner  file  01-BUL.dxf  b8446e70
+< BUDR2+bottom-mask-run-owner  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+bottom-mask  file  01-F1.dxf  5742249b
+> BUDR2+bottom-mask  file  01-F2.dxf  fb81636e
+> BUDR2+bottom-mask  file  01-TOP.dxf  878ff9ad
+> BUDR2+bottom-mask  sheet all  b896f637
+> BUDR2+bottom-mask  sheet fronts  36290472
+> BUDR2+bottom-mask  sheet non-sprayed  437626dc
+> BUDR2+bottom-mask  sheet sprayed  36290472
+> BUDR2+bottom-mask-run-owner  file  01-BACK.dxf  213eb844
+> BUDR2+bottom-mask-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+bottom-mask-run-owner  file  01-BUL.dxf  7b357f88
+> BUDR2+bottom-mask-run-owner  file  01-BUR.dxf  abbe3557
+528c528
+< BUDR2+bottom-mask-run-owner  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+bottom-mask-run-owner  file  01-D1-DNO.dxf  81c95f1d
+533c533
+< BUDR2+bottom-mask-run-owner  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+bottom-mask-run-owner  file  01-D2-DNO.dxf  8b5f55f6
+536,546c536,546
+< BUDR2+bottom-mask-run-owner  file  01-F1.dxf  5e35c867
+< BUDR2+bottom-mask-run-owner  file  01-F2.dxf  9bef4b8a
+< BUDR2+bottom-mask-run-owner  file  01-TOP.dxf  793e9e7d
+< BUDR2+bottom-mask-run-owner  sheet all  285221db
+< BUDR2+bottom-mask-run-owner  sheet fronts  fef461da
+< BUDR2+bottom-mask-run-owner  sheet non-sprayed  8e76bf80
+< BUDR2+bottom-mask-run-owner  sheet sprayed  fef461da
+< BUDR2+infill-mitre  file  01-BACK.dxf  f3cc966c
+< BUDR2+infill-mitre  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+infill-mitre  file  01-BUL.dxf  b8446e70
+< BUDR2+infill-mitre  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+bottom-mask-run-owner  file  01-F1.dxf  5742249b
+> BUDR2+bottom-mask-run-owner  file  01-F2.dxf  fb81636e
+> BUDR2+bottom-mask-run-owner  file  01-TOP.dxf  878ff9ad
+> BUDR2+bottom-mask-run-owner  sheet all  b896f637
+> BUDR2+bottom-mask-run-owner  sheet fronts  36290472
+> BUDR2+bottom-mask-run-owner  sheet non-sprayed  437626dc
+> BUDR2+bottom-mask-run-owner  sheet sprayed  36290472
+> BUDR2+infill-mitre  file  01-BACK.dxf  213eb844
+> BUDR2+infill-mitre  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+infill-mitre  file  01-BUL.dxf  7b357f88
+> BUDR2+infill-mitre  file  01-BUR.dxf  abbe3557
+549c549
+< BUDR2+infill-mitre  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+infill-mitre  file  01-D1-DNO.dxf  81c95f1d
+554c554
+< BUDR2+infill-mitre  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+infill-mitre  file  01-D2-DNO.dxf  8b5f55f6
+557,558c557,558
+< BUDR2+infill-mitre  file  01-F1.dxf  5e35c867
+< BUDR2+infill-mitre  file  01-F2.dxf  9bef4b8a
+---
+> BUDR2+infill-mitre  file  01-F1.dxf  5742249b
+> BUDR2+infill-mitre  file  01-F2.dxf  fb81636e
+563,571c563,571
+< BUDR2+infill-mitre  file  01-TOP.dxf  793e9e7d
+< BUDR2+infill-mitre  sheet all  a0b2dbea
+< BUDR2+infill-mitre  sheet fronts  fef461da
+< BUDR2+infill-mitre  sheet non-sprayed  8e76bf80
+< BUDR2+infill-mitre  sheet sprayed  8ef09cfc
+< BUDR2+infill-mitre-narrow  file  01-BACK.dxf  f3cc966c
+< BUDR2+infill-mitre-narrow  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+infill-mitre-narrow  file  01-BUL.dxf  b8446e70
+< BUDR2+infill-mitre-narrow  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+infill-mitre  file  01-TOP.dxf  878ff9ad
+> BUDR2+infill-mitre  sheet all  a2cd287c
+> BUDR2+infill-mitre  sheet fronts  36290472
+> BUDR2+infill-mitre  sheet non-sprayed  437626dc
+> BUDR2+infill-mitre  sheet sprayed  520d451c
+> BUDR2+infill-mitre-narrow  file  01-BACK.dxf  213eb844
+> BUDR2+infill-mitre-narrow  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+infill-mitre-narrow  file  01-BUL.dxf  7b357f88
+> BUDR2+infill-mitre-narrow  file  01-BUR.dxf  abbe3557
+574c574
+< BUDR2+infill-mitre-narrow  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+infill-mitre-narrow  file  01-D1-DNO.dxf  81c95f1d
+579c579
+< BUDR2+infill-mitre-narrow  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+infill-mitre-narrow  file  01-D2-DNO.dxf  8b5f55f6
+582,583c582,583
+< BUDR2+infill-mitre-narrow  file  01-F1.dxf  5e35c867
+< BUDR2+infill-mitre-narrow  file  01-F2.dxf  9bef4b8a
+---
+> BUDR2+infill-mitre-narrow  file  01-F1.dxf  5742249b
+> BUDR2+infill-mitre-narrow  file  01-F2.dxf  fb81636e
+588,596c588,596
+< BUDR2+infill-mitre-narrow  file  01-TOP.dxf  793e9e7d
+< BUDR2+infill-mitre-narrow  sheet all  7d5a93d3
+< BUDR2+infill-mitre-narrow  sheet fronts  fef461da
+< BUDR2+infill-mitre-narrow  sheet non-sprayed  8e76bf80
+< BUDR2+infill-mitre-narrow  sheet sprayed  5ed94d86
+< BUDR2+infills  file  01-BACK.dxf  f3cc966c
+< BUDR2+infills  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+infills  file  01-BUL.dxf  b8446e70
+< BUDR2+infills  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+infill-mitre-narrow  file  01-TOP.dxf  878ff9ad
+> BUDR2+infill-mitre-narrow  sheet all  1090708d
+> BUDR2+infill-mitre-narrow  sheet fronts  36290472
+> BUDR2+infill-mitre-narrow  sheet non-sprayed  437626dc
+> BUDR2+infill-mitre-narrow  sheet sprayed  88a157c6
+> BUDR2+infills  file  01-BACK.dxf  213eb844
+> BUDR2+infills  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+infills  file  01-BUL.dxf  7b357f88
+> BUDR2+infills  file  01-BUR.dxf  abbe3557
+599c599
+< BUDR2+infills  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+infills  file  01-D1-DNO.dxf  81c95f1d
+604c604
+< BUDR2+infills  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+infills  file  01-D2-DNO.dxf  8b5f55f6
+607,608c607,608
+< BUDR2+infills  file  01-F1.dxf  5e35c867
+< BUDR2+infills  file  01-F2.dxf  9bef4b8a
+---
+> BUDR2+infills  file  01-F1.dxf  5742249b
+> BUDR2+infills  file  01-F2.dxf  fb81636e
+613,621c613,621
+< BUDR2+infills  file  01-TOP.dxf  793e9e7d
+< BUDR2+infills  sheet all  fcc718ee
+< BUDR2+infills  sheet fronts  fef461da
+< BUDR2+infills  sheet non-sprayed  8e76bf80
+< BUDR2+infills  sheet sprayed  613b7240
+< BUDR2+partition  file  01-BACK.dxf  f3cc966c
+< BUDR2+partition  file  01-BOTTOM.dxf  4c24f0da
+< BUDR2+partition  file  01-BUL.dxf  b8446e70
+< BUDR2+partition  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+infills  file  01-TOP.dxf  878ff9ad
+> BUDR2+infills  sheet all  723edb86
+> BUDR2+infills  sheet fronts  36290472
+> BUDR2+infills  sheet non-sprayed  437626dc
+> BUDR2+infills  sheet sprayed  7dae3324
+> BUDR2+partition  file  01-BACK.dxf  213eb844
+> BUDR2+partition  file  01-BOTTOM.dxf  ac7003da
+> BUDR2+partition  file  01-BUL.dxf  7b357f88
+> BUDR2+partition  file  01-BUR.dxf  abbe3557
+624c624
+< BUDR2+partition  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+partition  file  01-D1-DNO.dxf  81c95f1d
+629c629
+< BUDR2+partition  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+partition  file  01-D2-DNO.dxf  8b5f55f6
+632,643c632,643
+< BUDR2+partition  file  01-F1.dxf  5e35c867
+< BUDR2+partition  file  01-F2.dxf  9bef4b8a
+< BUDR2+partition  file  01-TOP.dxf  a426f1f7
+< BUDR2+partition  file  01-VPART-1.dxf  4883a747
+< BUDR2+partition  sheet all  56bbf7d8
+< BUDR2+partition  sheet fronts  fef461da
+< BUDR2+partition  sheet non-sprayed  f62e4581
+< BUDR2+partition  sheet sprayed  fef461da
+< BUDR2+partition-on-shelf  file  01-BACK.dxf  f3cc966c
+< BUDR2+partition-on-shelf  file  01-BOTTOM.dxf  4c24f0da
+< BUDR2+partition-on-shelf  file  01-BUL.dxf  b8446e70
+< BUDR2+partition-on-shelf  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+partition  file  01-F1.dxf  5742249b
+> BUDR2+partition  file  01-F2.dxf  fb81636e
+> BUDR2+partition  file  01-TOP.dxf  900b2a9f
+> BUDR2+partition  file  01-VPART-1.dxf  5d572131
+> BUDR2+partition  sheet all  f8a439f8
+> BUDR2+partition  sheet fronts  36290472
+> BUDR2+partition  sheet non-sprayed  98656ad5
+> BUDR2+partition  sheet sprayed  36290472
+> BUDR2+partition-on-shelf  file  01-BACK.dxf  213eb844
+> BUDR2+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+> BUDR2+partition-on-shelf  file  01-BUL.dxf  7b357f88
+> BUDR2+partition-on-shelf  file  01-BUR.dxf  abbe3557
+646c646
+< BUDR2+partition-on-shelf  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+partition-on-shelf  file  01-D1-DNO.dxf  81c95f1d
+651c651
+< BUDR2+partition-on-shelf  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+partition-on-shelf  file  01-D2-DNO.dxf  8b5f55f6
+654,665c654,665
+< BUDR2+partition-on-shelf  file  01-F1.dxf  5e35c867
+< BUDR2+partition-on-shelf  file  01-F2.dxf  9bef4b8a
+< BUDR2+partition-on-shelf  file  01-TOP.dxf  793e9e7d
+< BUDR2+partition-on-shelf  file  01-VPART-1.dxf  d9a474fa
+< BUDR2+partition-on-shelf  sheet all  1d14d018
+< BUDR2+partition-on-shelf  sheet fronts  fef461da
+< BUDR2+partition-on-shelf  sheet non-sprayed  3cdb5981
+< BUDR2+partition-on-shelf  sheet sprayed  fef461da
+< BUDR2+plinth  file  01-BACK.dxf  f3cc966c
+< BUDR2+plinth  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+plinth  file  01-BUL.dxf  b8446e70
+< BUDR2+plinth  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+partition-on-shelf  file  01-F1.dxf  5742249b
+> BUDR2+partition-on-shelf  file  01-F2.dxf  fb81636e
+> BUDR2+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> BUDR2+partition-on-shelf  file  01-VPART-1.dxf  dc4df93d
+> BUDR2+partition-on-shelf  sheet all  087939bb
+> BUDR2+partition-on-shelf  sheet fronts  36290472
+> BUDR2+partition-on-shelf  sheet non-sprayed  44a055a6
+> BUDR2+partition-on-shelf  sheet sprayed  36290472
+> BUDR2+plinth  file  01-BACK.dxf  213eb844
+> BUDR2+plinth  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+plinth  file  01-BUL.dxf  7b357f88
+> BUDR2+plinth  file  01-BUR.dxf  abbe3557
+668c668
+< BUDR2+plinth  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+plinth  file  01-D1-DNO.dxf  81c95f1d
+673c673
+< BUDR2+plinth  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+plinth  file  01-D2-DNO.dxf  8b5f55f6
+676,677c676,677
+< BUDR2+plinth  file  01-F1.dxf  5e35c867
+< BUDR2+plinth  file  01-F2.dxf  9bef4b8a
+---
+> BUDR2+plinth  file  01-F1.dxf  5742249b
+> BUDR2+plinth  file  01-F2.dxf  fb81636e
+679,687c679,687
+< BUDR2+plinth  file  01-TOP.dxf  793e9e7d
+< BUDR2+plinth  sheet all  7faaeff9
+< BUDR2+plinth  sheet fronts  fef461da
+< BUDR2+plinth  sheet non-sprayed  8e76bf80
+< BUDR2+plinth  sheet sprayed  5f78cef3
+< BUDR2+plinth-run-member  file  01-BACK.dxf  f3cc966c
+< BUDR2+plinth-run-member  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+plinth-run-member  file  01-BUL.dxf  b8446e70
+< BUDR2+plinth-run-member  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+plinth  file  01-TOP.dxf  878ff9ad
+> BUDR2+plinth  sheet all  85c5e54d
+> BUDR2+plinth  sheet fronts  36290472
+> BUDR2+plinth  sheet non-sprayed  437626dc
+> BUDR2+plinth  sheet sprayed  e5cc0103
+> BUDR2+plinth-run-member  file  01-BACK.dxf  213eb844
+> BUDR2+plinth-run-member  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+plinth-run-member  file  01-BUL.dxf  7b357f88
+> BUDR2+plinth-run-member  file  01-BUR.dxf  abbe3557
+690c690
+< BUDR2+plinth-run-member  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+plinth-run-member  file  01-D1-DNO.dxf  81c95f1d
+695c695
+< BUDR2+plinth-run-member  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+plinth-run-member  file  01-D2-DNO.dxf  8b5f55f6
+698,708c698,708
+< BUDR2+plinth-run-member  file  01-F1.dxf  5e35c867
+< BUDR2+plinth-run-member  file  01-F2.dxf  9bef4b8a
+< BUDR2+plinth-run-member  file  01-TOP.dxf  793e9e7d
+< BUDR2+plinth-run-member  sheet all  285221db
+< BUDR2+plinth-run-member  sheet fronts  fef461da
+< BUDR2+plinth-run-member  sheet non-sprayed  8e76bf80
+< BUDR2+plinth-run-member  sheet sprayed  fef461da
+< BUDR2+plinth-run-owner  file  01-BACK.dxf  f3cc966c
+< BUDR2+plinth-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+plinth-run-owner  file  01-BUL.dxf  b8446e70
+< BUDR2+plinth-run-owner  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+plinth-run-member  file  01-F1.dxf  5742249b
+> BUDR2+plinth-run-member  file  01-F2.dxf  fb81636e
+> BUDR2+plinth-run-member  file  01-TOP.dxf  878ff9ad
+> BUDR2+plinth-run-member  sheet all  b896f637
+> BUDR2+plinth-run-member  sheet fronts  36290472
+> BUDR2+plinth-run-member  sheet non-sprayed  437626dc
+> BUDR2+plinth-run-member  sheet sprayed  36290472
+> BUDR2+plinth-run-owner  file  01-BACK.dxf  213eb844
+> BUDR2+plinth-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+plinth-run-owner  file  01-BUL.dxf  7b357f88
+> BUDR2+plinth-run-owner  file  01-BUR.dxf  abbe3557
+711c711
+< BUDR2+plinth-run-owner  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+plinth-run-owner  file  01-D1-DNO.dxf  81c95f1d
+716c716
+< BUDR2+plinth-run-owner  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+plinth-run-owner  file  01-D2-DNO.dxf  8b5f55f6
+719,720c719,720
+< BUDR2+plinth-run-owner  file  01-F1.dxf  5e35c867
+< BUDR2+plinth-run-owner  file  01-F2.dxf  9bef4b8a
+---
+> BUDR2+plinth-run-owner  file  01-F1.dxf  5742249b
+> BUDR2+plinth-run-owner  file  01-F2.dxf  fb81636e
+722,730c722,730
+< BUDR2+plinth-run-owner  file  01-TOP.dxf  793e9e7d
+< BUDR2+plinth-run-owner  sheet all  62d4b414
+< BUDR2+plinth-run-owner  sheet fronts  fef461da
+< BUDR2+plinth-run-owner  sheet non-sprayed  8e76bf80
+< BUDR2+plinth-run-owner  sheet sprayed  c627743c
+< BUDR2+shelves  file  01-BACK.dxf  f3cc966c
+< BUDR2+shelves  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR2+shelves  file  01-BUL.dxf  b8446e70
+< BUDR2+shelves  file  01-BUR.dxf  991ed36b
+---
+> BUDR2+plinth-run-owner  file  01-TOP.dxf  878ff9ad
+> BUDR2+plinth-run-owner  sheet all  f965bc90
+> BUDR2+plinth-run-owner  sheet fronts  36290472
+> BUDR2+plinth-run-owner  sheet non-sprayed  437626dc
+> BUDR2+plinth-run-owner  sheet sprayed  eedcc794
+> BUDR2+shelves  file  01-BACK.dxf  213eb844
+> BUDR2+shelves  file  01-BOTTOM.dxf  ababcbc4
+> BUDR2+shelves  file  01-BUL.dxf  7b357f88
+> BUDR2+shelves  file  01-BUR.dxf  abbe3557
+733c733
+< BUDR2+shelves  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR2+shelves  file  01-D1-DNO.dxf  81c95f1d
+738c738
+< BUDR2+shelves  file  01-D2-DNO.dxf  50419398
+---
+> BUDR2+shelves  file  01-D2-DNO.dxf  8b5f55f6
+741,751c741,751
+< BUDR2+shelves  file  01-F1.dxf  5e35c867
+< BUDR2+shelves  file  01-F2.dxf  9bef4b8a
+< BUDR2+shelves  file  01-TOP.dxf  793e9e7d
+< BUDR2+shelves  sheet all  285221db
+< BUDR2+shelves  sheet fronts  fef461da
+< BUDR2+shelves  sheet non-sprayed  8e76bf80
+< BUDR2+shelves  sheet sprayed  fef461da
+< BUDR4  file  01-BACK.dxf  f3cc966c
+< BUDR4  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4  file  01-BUL.dxf  6b318641
+< BUDR4  file  01-BUR.dxf  a7cef864
+---
+> BUDR2+shelves  file  01-F1.dxf  5742249b
+> BUDR2+shelves  file  01-F2.dxf  fb81636e
+> BUDR2+shelves  file  01-TOP.dxf  878ff9ad
+> BUDR2+shelves  sheet all  b896f637
+> BUDR2+shelves  sheet fronts  36290472
+> BUDR2+shelves  sheet non-sprayed  437626dc
+> BUDR2+shelves  sheet sprayed  36290472
+> BUDR4  file  01-BACK.dxf  213eb844
+> BUDR4  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4  file  01-BUL.dxf  ecba61e9
+> BUDR4  file  01-BUR.dxf  cb4b8a40
+754c754
+< BUDR4  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4  file  01-D1-DNO.dxf  81c95f1d
+759c759
+< BUDR4  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4  file  01-D2-DNO.dxf  8b5f55f6
+764c764
+< BUDR4  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4  file  01-D3-DNO.dxf  f2208023
+769c769
+< BUDR4  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4  file  01-D4-DNO.dxf  1e6b9ea4
+772,784c772,784
+< BUDR4  file  01-F1.dxf  ac3c87fd
+< BUDR4  file  01-F2.dxf  ed6c58ce
+< BUDR4  file  01-F3.dxf  90cd5819
+< BUDR4  file  01-F4.dxf  841439c8
+< BUDR4  file  01-TOP.dxf  793e9e7d
+< BUDR4  sheet all  2cf25958
+< BUDR4  sheet fronts  cc8d5088
+< BUDR4  sheet non-sprayed  72cfc42d
+< BUDR4  sheet sprayed  cc8d5088
+< BUDR4+bottom-mask  file  01-BACK.dxf  f3cc966c
+< BUDR4+bottom-mask  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+bottom-mask  file  01-BUL.dxf  6b318641
+< BUDR4+bottom-mask  file  01-BUR.dxf  a7cef864
+---
+> BUDR4  file  01-F1.dxf  f42fe85b
+> BUDR4  file  01-F2.dxf  445d489e
+> BUDR4  file  01-F3.dxf  e664bb77
+> BUDR4  file  01-F4.dxf  1f25a216
+> BUDR4  file  01-TOP.dxf  878ff9ad
+> BUDR4  sheet all  9a6c6040
+> BUDR4  sheet fronts  f2ff9d9c
+> BUDR4  sheet non-sprayed  4022d7c7
+> BUDR4  sheet sprayed  f2ff9d9c
+> BUDR4+bottom-mask  file  01-BACK.dxf  213eb844
+> BUDR4+bottom-mask  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+bottom-mask  file  01-BUL.dxf  ecba61e9
+> BUDR4+bottom-mask  file  01-BUR.dxf  cb4b8a40
+787c787
+< BUDR4+bottom-mask  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+bottom-mask  file  01-D1-DNO.dxf  81c95f1d
+792c792
+< BUDR4+bottom-mask  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+bottom-mask  file  01-D2-DNO.dxf  8b5f55f6
+797c797
+< BUDR4+bottom-mask  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+bottom-mask  file  01-D3-DNO.dxf  f2208023
+802c802
+< BUDR4+bottom-mask  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+bottom-mask  file  01-D4-DNO.dxf  1e6b9ea4
+805,817c805,817
+< BUDR4+bottom-mask  file  01-F1.dxf  ac3c87fd
+< BUDR4+bottom-mask  file  01-F2.dxf  ed6c58ce
+< BUDR4+bottom-mask  file  01-F3.dxf  90cd5819
+< BUDR4+bottom-mask  file  01-F4.dxf  841439c8
+< BUDR4+bottom-mask  file  01-TOP.dxf  793e9e7d
+< BUDR4+bottom-mask  sheet all  2cf25958
+< BUDR4+bottom-mask  sheet fronts  cc8d5088
+< BUDR4+bottom-mask  sheet non-sprayed  72cfc42d
+< BUDR4+bottom-mask  sheet sprayed  cc8d5088
+< BUDR4+bottom-mask-run-owner  file  01-BACK.dxf  f3cc966c
+< BUDR4+bottom-mask-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+bottom-mask-run-owner  file  01-BUL.dxf  6b318641
+< BUDR4+bottom-mask-run-owner  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+bottom-mask  file  01-F1.dxf  f42fe85b
+> BUDR4+bottom-mask  file  01-F2.dxf  445d489e
+> BUDR4+bottom-mask  file  01-F3.dxf  e664bb77
+> BUDR4+bottom-mask  file  01-F4.dxf  1f25a216
+> BUDR4+bottom-mask  file  01-TOP.dxf  878ff9ad
+> BUDR4+bottom-mask  sheet all  9a6c6040
+> BUDR4+bottom-mask  sheet fronts  f2ff9d9c
+> BUDR4+bottom-mask  sheet non-sprayed  4022d7c7
+> BUDR4+bottom-mask  sheet sprayed  f2ff9d9c
+> BUDR4+bottom-mask-run-owner  file  01-BACK.dxf  213eb844
+> BUDR4+bottom-mask-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+bottom-mask-run-owner  file  01-BUL.dxf  ecba61e9
+> BUDR4+bottom-mask-run-owner  file  01-BUR.dxf  cb4b8a40
+820c820
+< BUDR4+bottom-mask-run-owner  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+bottom-mask-run-owner  file  01-D1-DNO.dxf  81c95f1d
+825c825
+< BUDR4+bottom-mask-run-owner  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+bottom-mask-run-owner  file  01-D2-DNO.dxf  8b5f55f6
+830c830
+< BUDR4+bottom-mask-run-owner  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+bottom-mask-run-owner  file  01-D3-DNO.dxf  f2208023
+835c835
+< BUDR4+bottom-mask-run-owner  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+bottom-mask-run-owner  file  01-D4-DNO.dxf  1e6b9ea4
+838,850c838,850
+< BUDR4+bottom-mask-run-owner  file  01-F1.dxf  ac3c87fd
+< BUDR4+bottom-mask-run-owner  file  01-F2.dxf  ed6c58ce
+< BUDR4+bottom-mask-run-owner  file  01-F3.dxf  90cd5819
+< BUDR4+bottom-mask-run-owner  file  01-F4.dxf  841439c8
+< BUDR4+bottom-mask-run-owner  file  01-TOP.dxf  793e9e7d
+< BUDR4+bottom-mask-run-owner  sheet all  2cf25958
+< BUDR4+bottom-mask-run-owner  sheet fronts  cc8d5088
+< BUDR4+bottom-mask-run-owner  sheet non-sprayed  72cfc42d
+< BUDR4+bottom-mask-run-owner  sheet sprayed  cc8d5088
+< BUDR4+infill-mitre  file  01-BACK.dxf  f3cc966c
+< BUDR4+infill-mitre  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+infill-mitre  file  01-BUL.dxf  6b318641
+< BUDR4+infill-mitre  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+bottom-mask-run-owner  file  01-F1.dxf  f42fe85b
+> BUDR4+bottom-mask-run-owner  file  01-F2.dxf  445d489e
+> BUDR4+bottom-mask-run-owner  file  01-F3.dxf  e664bb77
+> BUDR4+bottom-mask-run-owner  file  01-F4.dxf  1f25a216
+> BUDR4+bottom-mask-run-owner  file  01-TOP.dxf  878ff9ad
+> BUDR4+bottom-mask-run-owner  sheet all  9a6c6040
+> BUDR4+bottom-mask-run-owner  sheet fronts  f2ff9d9c
+> BUDR4+bottom-mask-run-owner  sheet non-sprayed  4022d7c7
+> BUDR4+bottom-mask-run-owner  sheet sprayed  f2ff9d9c
+> BUDR4+infill-mitre  file  01-BACK.dxf  213eb844
+> BUDR4+infill-mitre  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+infill-mitre  file  01-BUL.dxf  ecba61e9
+> BUDR4+infill-mitre  file  01-BUR.dxf  cb4b8a40
+853c853
+< BUDR4+infill-mitre  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+infill-mitre  file  01-D1-DNO.dxf  81c95f1d
+858c858
+< BUDR4+infill-mitre  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+infill-mitre  file  01-D2-DNO.dxf  8b5f55f6
+863c863
+< BUDR4+infill-mitre  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+infill-mitre  file  01-D3-DNO.dxf  f2208023
+868c868
+< BUDR4+infill-mitre  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+infill-mitre  file  01-D4-DNO.dxf  1e6b9ea4
+871,874c871,874
+< BUDR4+infill-mitre  file  01-F1.dxf  ac3c87fd
+< BUDR4+infill-mitre  file  01-F2.dxf  ed6c58ce
+< BUDR4+infill-mitre  file  01-F3.dxf  90cd5819
+< BUDR4+infill-mitre  file  01-F4.dxf  841439c8
+---
+> BUDR4+infill-mitre  file  01-F1.dxf  f42fe85b
+> BUDR4+infill-mitre  file  01-F2.dxf  445d489e
+> BUDR4+infill-mitre  file  01-F3.dxf  e664bb77
+> BUDR4+infill-mitre  file  01-F4.dxf  1f25a216
+879,887c879,887
+< BUDR4+infill-mitre  file  01-TOP.dxf  793e9e7d
+< BUDR4+infill-mitre  sheet all  5a980b42
+< BUDR4+infill-mitre  sheet fronts  cc8d5088
+< BUDR4+infill-mitre  sheet non-sprayed  72cfc42d
+< BUDR4+infill-mitre  sheet sprayed  89ef7848
+< BUDR4+infill-mitre-narrow  file  01-BACK.dxf  f3cc966c
+< BUDR4+infill-mitre-narrow  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+infill-mitre-narrow  file  01-BUL.dxf  6b318641
+< BUDR4+infill-mitre-narrow  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+infill-mitre  file  01-TOP.dxf  878ff9ad
+> BUDR4+infill-mitre  sheet all  df779ca4
+> BUDR4+infill-mitre  sheet fronts  f2ff9d9c
+> BUDR4+infill-mitre  sheet non-sprayed  4022d7c7
+> BUDR4+infill-mitre  sheet sprayed  4b5cd180
+> BUDR4+infill-mitre-narrow  file  01-BACK.dxf  213eb844
+> BUDR4+infill-mitre-narrow  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+infill-mitre-narrow  file  01-BUL.dxf  ecba61e9
+> BUDR4+infill-mitre-narrow  file  01-BUR.dxf  cb4b8a40
+890c890
+< BUDR4+infill-mitre-narrow  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+infill-mitre-narrow  file  01-D1-DNO.dxf  81c95f1d
+895c895
+< BUDR4+infill-mitre-narrow  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+infill-mitre-narrow  file  01-D2-DNO.dxf  8b5f55f6
+900c900
+< BUDR4+infill-mitre-narrow  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+infill-mitre-narrow  file  01-D3-DNO.dxf  f2208023
+905c905
+< BUDR4+infill-mitre-narrow  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+infill-mitre-narrow  file  01-D4-DNO.dxf  1e6b9ea4
+908,911c908,911
+< BUDR4+infill-mitre-narrow  file  01-F1.dxf  ac3c87fd
+< BUDR4+infill-mitre-narrow  file  01-F2.dxf  ed6c58ce
+< BUDR4+infill-mitre-narrow  file  01-F3.dxf  90cd5819
+< BUDR4+infill-mitre-narrow  file  01-F4.dxf  841439c8
+---
+> BUDR4+infill-mitre-narrow  file  01-F1.dxf  f42fe85b
+> BUDR4+infill-mitre-narrow  file  01-F2.dxf  445d489e
+> BUDR4+infill-mitre-narrow  file  01-F3.dxf  e664bb77
+> BUDR4+infill-mitre-narrow  file  01-F4.dxf  1f25a216
+916,924c916,924
+< BUDR4+infill-mitre-narrow  file  01-TOP.dxf  793e9e7d
+< BUDR4+infill-mitre-narrow  sheet all  fdf7c1a1
+< BUDR4+infill-mitre-narrow  sheet fronts  cc8d5088
+< BUDR4+infill-mitre-narrow  sheet non-sprayed  72cfc42d
+< BUDR4+infill-mitre-narrow  sheet sprayed  9cb227cb
+< BUDR4+infills  file  01-BACK.dxf  f3cc966c
+< BUDR4+infills  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+infills  file  01-BUL.dxf  6b318641
+< BUDR4+infills  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+infill-mitre-narrow  file  01-TOP.dxf  878ff9ad
+> BUDR4+infill-mitre-narrow  sheet all  92ca0c23
+> BUDR4+infill-mitre-narrow  sheet fronts  f2ff9d9c
+> BUDR4+infill-mitre-narrow  sheet non-sprayed  4022d7c7
+> BUDR4+infill-mitre-narrow  sheet sprayed  5f5cf39b
+> BUDR4+infills  file  01-BACK.dxf  213eb844
+> BUDR4+infills  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+infills  file  01-BUL.dxf  ecba61e9
+> BUDR4+infills  file  01-BUR.dxf  cb4b8a40
+927c927
+< BUDR4+infills  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+infills  file  01-D1-DNO.dxf  81c95f1d
+932c932
+< BUDR4+infills  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+infills  file  01-D2-DNO.dxf  8b5f55f6
+937c937
+< BUDR4+infills  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+infills  file  01-D3-DNO.dxf  f2208023
+942c942
+< BUDR4+infills  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+infills  file  01-D4-DNO.dxf  1e6b9ea4
+945,948c945,948
+< BUDR4+infills  file  01-F1.dxf  ac3c87fd
+< BUDR4+infills  file  01-F2.dxf  ed6c58ce
+< BUDR4+infills  file  01-F3.dxf  90cd5819
+< BUDR4+infills  file  01-F4.dxf  841439c8
+---
+> BUDR4+infills  file  01-F1.dxf  f42fe85b
+> BUDR4+infills  file  01-F2.dxf  445d489e
+> BUDR4+infills  file  01-F3.dxf  e664bb77
+> BUDR4+infills  file  01-F4.dxf  1f25a216
+953,961c953,961
+< BUDR4+infills  file  01-TOP.dxf  793e9e7d
+< BUDR4+infills  sheet all  3ce56d35
+< BUDR4+infills  sheet fronts  cc8d5088
+< BUDR4+infills  sheet non-sprayed  72cfc42d
+< BUDR4+infills  sheet sprayed  4f942dbc
+< BUDR4+partition  file  01-BACK.dxf  f3cc966c
+< BUDR4+partition  file  01-BOTTOM.dxf  4c24f0da
+< BUDR4+partition  file  01-BUL.dxf  6b318641
+< BUDR4+partition  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+infills  file  01-TOP.dxf  878ff9ad
+> BUDR4+infills  sheet all  a417277f
+> BUDR4+infills  sheet fronts  f2ff9d9c
+> BUDR4+infills  sheet non-sprayed  4022d7c7
+> BUDR4+infills  sheet sprayed  997a0714
+> BUDR4+partition  file  01-BACK.dxf  213eb844
+> BUDR4+partition  file  01-BOTTOM.dxf  ac7003da
+> BUDR4+partition  file  01-BUL.dxf  ecba61e9
+> BUDR4+partition  file  01-BUR.dxf  cb4b8a40
+964c964
+< BUDR4+partition  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+partition  file  01-D1-DNO.dxf  81c95f1d
+969c969
+< BUDR4+partition  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+partition  file  01-D2-DNO.dxf  8b5f55f6
+974c974
+< BUDR4+partition  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+partition  file  01-D3-DNO.dxf  f2208023
+979c979
+< BUDR4+partition  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+partition  file  01-D4-DNO.dxf  1e6b9ea4
+982,995c982,995
+< BUDR4+partition  file  01-F1.dxf  ac3c87fd
+< BUDR4+partition  file  01-F2.dxf  ed6c58ce
+< BUDR4+partition  file  01-F3.dxf  90cd5819
+< BUDR4+partition  file  01-F4.dxf  841439c8
+< BUDR4+partition  file  01-TOP.dxf  a426f1f7
+< BUDR4+partition  file  01-VPART-1.dxf  4883a747
+< BUDR4+partition  sheet all  2d8eb97d
+< BUDR4+partition  sheet fronts  cc8d5088
+< BUDR4+partition  sheet non-sprayed  fb707603
+< BUDR4+partition  sheet sprayed  cc8d5088
+< BUDR4+partition-on-shelf  file  01-BACK.dxf  f3cc966c
+< BUDR4+partition-on-shelf  file  01-BOTTOM.dxf  4c24f0da
+< BUDR4+partition-on-shelf  file  01-BUL.dxf  6b318641
+< BUDR4+partition-on-shelf  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+partition  file  01-F1.dxf  f42fe85b
+> BUDR4+partition  file  01-F2.dxf  445d489e
+> BUDR4+partition  file  01-F3.dxf  e664bb77
+> BUDR4+partition  file  01-F4.dxf  1f25a216
+> BUDR4+partition  file  01-TOP.dxf  900b2a9f
+> BUDR4+partition  file  01-VPART-1.dxf  5d572131
+> BUDR4+partition  sheet all  c40b48c3
+> BUDR4+partition  sheet fronts  f2ff9d9c
+> BUDR4+partition  sheet non-sprayed  9d28017f
+> BUDR4+partition  sheet sprayed  f2ff9d9c
+> BUDR4+partition-on-shelf  file  01-BACK.dxf  213eb844
+> BUDR4+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+> BUDR4+partition-on-shelf  file  01-BUL.dxf  ecba61e9
+> BUDR4+partition-on-shelf  file  01-BUR.dxf  cb4b8a40
+998c998
+< BUDR4+partition-on-shelf  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+partition-on-shelf  file  01-D1-DNO.dxf  81c95f1d
+1003c1003
+< BUDR4+partition-on-shelf  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+partition-on-shelf  file  01-D2-DNO.dxf  8b5f55f6
+1008c1008
+< BUDR4+partition-on-shelf  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+partition-on-shelf  file  01-D3-DNO.dxf  f2208023
+1013c1013
+< BUDR4+partition-on-shelf  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+partition-on-shelf  file  01-D4-DNO.dxf  1e6b9ea4
+1016,1029c1016,1029
+< BUDR4+partition-on-shelf  file  01-F1.dxf  ac3c87fd
+< BUDR4+partition-on-shelf  file  01-F2.dxf  ed6c58ce
+< BUDR4+partition-on-shelf  file  01-F3.dxf  90cd5819
+< BUDR4+partition-on-shelf  file  01-F4.dxf  841439c8
+< BUDR4+partition-on-shelf  file  01-TOP.dxf  793e9e7d
+< BUDR4+partition-on-shelf  file  01-VPART-1.dxf  d9a474fa
+< BUDR4+partition-on-shelf  sheet all  33cc3663
+< BUDR4+partition-on-shelf  sheet fronts  cc8d5088
+< BUDR4+partition-on-shelf  sheet non-sprayed  bdd3fcf2
+< BUDR4+partition-on-shelf  sheet sprayed  cc8d5088
+< BUDR4+plinth  file  01-BACK.dxf  f3cc966c
+< BUDR4+plinth  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+plinth  file  01-BUL.dxf  6b318641
+< BUDR4+plinth  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+partition-on-shelf  file  01-F1.dxf  f42fe85b
+> BUDR4+partition-on-shelf  file  01-F2.dxf  445d489e
+> BUDR4+partition-on-shelf  file  01-F3.dxf  e664bb77
+> BUDR4+partition-on-shelf  file  01-F4.dxf  1f25a216
+> BUDR4+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> BUDR4+partition-on-shelf  file  01-VPART-1.dxf  dc4df93d
+> BUDR4+partition-on-shelf  sheet all  ee812b54
+> BUDR4+partition-on-shelf  sheet fronts  f2ff9d9c
+> BUDR4+partition-on-shelf  sheet non-sprayed  eb910eb7
+> BUDR4+partition-on-shelf  sheet sprayed  f2ff9d9c
+> BUDR4+plinth  file  01-BACK.dxf  213eb844
+> BUDR4+plinth  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+plinth  file  01-BUL.dxf  ecba61e9
+> BUDR4+plinth  file  01-BUR.dxf  cb4b8a40
+1032c1032
+< BUDR4+plinth  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+plinth  file  01-D1-DNO.dxf  81c95f1d
+1037c1037
+< BUDR4+plinth  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+plinth  file  01-D2-DNO.dxf  8b5f55f6
+1042c1042
+< BUDR4+plinth  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+plinth  file  01-D3-DNO.dxf  f2208023
+1047c1047
+< BUDR4+plinth  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+plinth  file  01-D4-DNO.dxf  1e6b9ea4
+1050,1053c1050,1053
+< BUDR4+plinth  file  01-F1.dxf  ac3c87fd
+< BUDR4+plinth  file  01-F2.dxf  ed6c58ce
+< BUDR4+plinth  file  01-F3.dxf  90cd5819
+< BUDR4+plinth  file  01-F4.dxf  841439c8
+---
+> BUDR4+plinth  file  01-F1.dxf  f42fe85b
+> BUDR4+plinth  file  01-F2.dxf  445d489e
+> BUDR4+plinth  file  01-F3.dxf  e664bb77
+> BUDR4+plinth  file  01-F4.dxf  1f25a216
+1055,1063c1055,1063
+< BUDR4+plinth  file  01-TOP.dxf  793e9e7d
+< BUDR4+plinth  sheet all  6aa50374
+< BUDR4+plinth  sheet fronts  cc8d5088
+< BUDR4+plinth  sheet non-sprayed  72cfc42d
+< BUDR4+plinth  sheet sprayed  5a00bafe
+< BUDR4+plinth-run-member  file  01-BACK.dxf  f3cc966c
+< BUDR4+plinth-run-member  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+plinth-run-member  file  01-BUL.dxf  6b318641
+< BUDR4+plinth-run-member  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+plinth  file  01-TOP.dxf  878ff9ad
+> BUDR4+plinth  sheet all  ffd0e1ec
+> BUDR4+plinth  sheet fronts  f2ff9d9c
+> BUDR4+plinth  sheet non-sprayed  4022d7c7
+> BUDR4+plinth  sheet sprayed  4188e7f2
+> BUDR4+plinth-run-member  file  01-BACK.dxf  213eb844
+> BUDR4+plinth-run-member  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+plinth-run-member  file  01-BUL.dxf  ecba61e9
+> BUDR4+plinth-run-member  file  01-BUR.dxf  cb4b8a40
+1066c1066
+< BUDR4+plinth-run-member  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+plinth-run-member  file  01-D1-DNO.dxf  81c95f1d
+1071c1071
+< BUDR4+plinth-run-member  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+plinth-run-member  file  01-D2-DNO.dxf  8b5f55f6
+1076c1076
+< BUDR4+plinth-run-member  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+plinth-run-member  file  01-D3-DNO.dxf  f2208023
+1081c1081
+< BUDR4+plinth-run-member  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+plinth-run-member  file  01-D4-DNO.dxf  1e6b9ea4
+1084,1096c1084,1096
+< BUDR4+plinth-run-member  file  01-F1.dxf  ac3c87fd
+< BUDR4+plinth-run-member  file  01-F2.dxf  ed6c58ce
+< BUDR4+plinth-run-member  file  01-F3.dxf  90cd5819
+< BUDR4+plinth-run-member  file  01-F4.dxf  841439c8
+< BUDR4+plinth-run-member  file  01-TOP.dxf  793e9e7d
+< BUDR4+plinth-run-member  sheet all  2cf25958
+< BUDR4+plinth-run-member  sheet fronts  cc8d5088
+< BUDR4+plinth-run-member  sheet non-sprayed  72cfc42d
+< BUDR4+plinth-run-member  sheet sprayed  cc8d5088
+< BUDR4+plinth-run-owner  file  01-BACK.dxf  f3cc966c
+< BUDR4+plinth-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+plinth-run-owner  file  01-BUL.dxf  6b318641
+< BUDR4+plinth-run-owner  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+plinth-run-member  file  01-F1.dxf  f42fe85b
+> BUDR4+plinth-run-member  file  01-F2.dxf  445d489e
+> BUDR4+plinth-run-member  file  01-F3.dxf  e664bb77
+> BUDR4+plinth-run-member  file  01-F4.dxf  1f25a216
+> BUDR4+plinth-run-member  file  01-TOP.dxf  878ff9ad
+> BUDR4+plinth-run-member  sheet all  9a6c6040
+> BUDR4+plinth-run-member  sheet fronts  f2ff9d9c
+> BUDR4+plinth-run-member  sheet non-sprayed  4022d7c7
+> BUDR4+plinth-run-member  sheet sprayed  f2ff9d9c
+> BUDR4+plinth-run-owner  file  01-BACK.dxf  213eb844
+> BUDR4+plinth-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+plinth-run-owner  file  01-BUL.dxf  ecba61e9
+> BUDR4+plinth-run-owner  file  01-BUR.dxf  cb4b8a40
+1099c1099
+< BUDR4+plinth-run-owner  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+plinth-run-owner  file  01-D1-DNO.dxf  81c95f1d
+1104c1104
+< BUDR4+plinth-run-owner  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+plinth-run-owner  file  01-D2-DNO.dxf  8b5f55f6
+1109c1109
+< BUDR4+plinth-run-owner  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+plinth-run-owner  file  01-D3-DNO.dxf  f2208023
+1114c1114
+< BUDR4+plinth-run-owner  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+plinth-run-owner  file  01-D4-DNO.dxf  1e6b9ea4
+1117,1120c1117,1120
+< BUDR4+plinth-run-owner  file  01-F1.dxf  ac3c87fd
+< BUDR4+plinth-run-owner  file  01-F2.dxf  ed6c58ce
+< BUDR4+plinth-run-owner  file  01-F3.dxf  90cd5819
+< BUDR4+plinth-run-owner  file  01-F4.dxf  841439c8
+---
+> BUDR4+plinth-run-owner  file  01-F1.dxf  f42fe85b
+> BUDR4+plinth-run-owner  file  01-F2.dxf  445d489e
+> BUDR4+plinth-run-owner  file  01-F3.dxf  e664bb77
+> BUDR4+plinth-run-owner  file  01-F4.dxf  1f25a216
+1122,1130c1122,1130
+< BUDR4+plinth-run-owner  file  01-TOP.dxf  793e9e7d
+< BUDR4+plinth-run-owner  sheet all  34bde3c7
+< BUDR4+plinth-run-owner  sheet fronts  cc8d5088
+< BUDR4+plinth-run-owner  sheet non-sprayed  72cfc42d
+< BUDR4+plinth-run-owner  sheet sprayed  cdb19342
+< BUDR4+shelves  file  01-BACK.dxf  f3cc966c
+< BUDR4+shelves  file  01-BOTTOM.dxf  8eae5ddc
+< BUDR4+shelves  file  01-BUL.dxf  6b318641
+< BUDR4+shelves  file  01-BUR.dxf  a7cef864
+---
+> BUDR4+plinth-run-owner  file  01-TOP.dxf  878ff9ad
+> BUDR4+plinth-run-owner  sheet all  b0075d9f
+> BUDR4+plinth-run-owner  sheet fronts  f2ff9d9c
+> BUDR4+plinth-run-owner  sheet non-sprayed  4022d7c7
+> BUDR4+plinth-run-owner  sheet sprayed  02d040ba
+> BUDR4+shelves  file  01-BACK.dxf  213eb844
+> BUDR4+shelves  file  01-BOTTOM.dxf  ababcbc4
+> BUDR4+shelves  file  01-BUL.dxf  ecba61e9
+> BUDR4+shelves  file  01-BUR.dxf  cb4b8a40
+1133c1133
+< BUDR4+shelves  file  01-D1-DNO.dxf  e914a503
+---
+> BUDR4+shelves  file  01-D1-DNO.dxf  81c95f1d
+1138c1138
+< BUDR4+shelves  file  01-D2-DNO.dxf  50419398
+---
+> BUDR4+shelves  file  01-D2-DNO.dxf  8b5f55f6
+1143c1143
+< BUDR4+shelves  file  01-D3-DNO.dxf  628291c5
+---
+> BUDR4+shelves  file  01-D3-DNO.dxf  f2208023
+1148c1148
+< BUDR4+shelves  file  01-D4-DNO.dxf  ceab7f82
+---
+> BUDR4+shelves  file  01-D4-DNO.dxf  1e6b9ea4
+1151,1194c1151,1194
+< BUDR4+shelves  file  01-F1.dxf  ac3c87fd
+< BUDR4+shelves  file  01-F2.dxf  ed6c58ce
+< BUDR4+shelves  file  01-F3.dxf  90cd5819
+< BUDR4+shelves  file  01-F4.dxf  841439c8
+< BUDR4+shelves  file  01-TOP.dxf  793e9e7d
+< BUDR4+shelves  sheet all  2cf25958
+< BUDR4+shelves  sheet fronts  cc8d5088
+< BUDR4+shelves  sheet non-sprayed  72cfc42d
+< BUDR4+shelves  sheet sprayed  cc8d5088
+< BUDTALL  file  01-BACK.dxf  4fd4ff52
+< BUDTALL  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL  file  01-BUL.dxf  e46bdb9a
+< BUDTALL  file  01-BUR.dxf  f9eb103d
+< BUDTALL  file  01-F.dxf  efc68b31
+< BUDTALL  file  01-TOP.dxf  793e9e7d
+< BUDTALL  sheet all  cb219fc4
+< BUDTALL  sheet fronts  efc68b31
+< BUDTALL  sheet non-sprayed  dfe08971
+< BUDTALL  sheet sprayed  efc68b31
+< BUDTALL+bottom-mask  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+bottom-mask  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+bottom-mask  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+bottom-mask  file  01-BUR.dxf  f9eb103d
+< BUDTALL+bottom-mask  file  01-F.dxf  efc68b31
+< BUDTALL+bottom-mask  file  01-TOP.dxf  793e9e7d
+< BUDTALL+bottom-mask  sheet all  cb219fc4
+< BUDTALL+bottom-mask  sheet fronts  efc68b31
+< BUDTALL+bottom-mask  sheet non-sprayed  dfe08971
+< BUDTALL+bottom-mask  sheet sprayed  efc68b31
+< BUDTALL+bottom-mask-run-owner  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+bottom-mask-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+bottom-mask-run-owner  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+bottom-mask-run-owner  file  01-BUR.dxf  f9eb103d
+< BUDTALL+bottom-mask-run-owner  file  01-F.dxf  efc68b31
+< BUDTALL+bottom-mask-run-owner  file  01-TOP.dxf  793e9e7d
+< BUDTALL+bottom-mask-run-owner  sheet all  cb219fc4
+< BUDTALL+bottom-mask-run-owner  sheet fronts  efc68b31
+< BUDTALL+bottom-mask-run-owner  sheet non-sprayed  dfe08971
+< BUDTALL+bottom-mask-run-owner  sheet sprayed  efc68b31
+< BUDTALL+infill-mitre  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+infill-mitre  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+infill-mitre  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+infill-mitre  file  01-BUR.dxf  f9eb103d
+< BUDTALL+infill-mitre  file  01-F.dxf  efc68b31
+---
+> BUDR4+shelves  file  01-F1.dxf  f42fe85b
+> BUDR4+shelves  file  01-F2.dxf  445d489e
+> BUDR4+shelves  file  01-F3.dxf  e664bb77
+> BUDR4+shelves  file  01-F4.dxf  1f25a216
+> BUDR4+shelves  file  01-TOP.dxf  878ff9ad
+> BUDR4+shelves  sheet all  9a6c6040
+> BUDR4+shelves  sheet fronts  f2ff9d9c
+> BUDR4+shelves  sheet non-sprayed  4022d7c7
+> BUDR4+shelves  sheet sprayed  f2ff9d9c
+> BUDTALL  file  01-BACK.dxf  38f8e174
+> BUDTALL  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL  file  01-BUL.dxf  00ccf828
+> BUDTALL  file  01-BUR.dxf  046276c7
+> BUDTALL  file  01-F.dxf  b4b7c511
+> BUDTALL  file  01-TOP.dxf  878ff9ad
+> BUDTALL  sheet all  47163842
+> BUDTALL  sheet fronts  b4b7c511
+> BUDTALL  sheet non-sprayed  371e82a1
+> BUDTALL  sheet sprayed  b4b7c511
+> BUDTALL+bottom-mask  file  01-BACK.dxf  38f8e174
+> BUDTALL+bottom-mask  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+bottom-mask  file  01-BUL.dxf  00ccf828
+> BUDTALL+bottom-mask  file  01-BUR.dxf  046276c7
+> BUDTALL+bottom-mask  file  01-F.dxf  b4b7c511
+> BUDTALL+bottom-mask  file  01-TOP.dxf  878ff9ad
+> BUDTALL+bottom-mask  sheet all  47163842
+> BUDTALL+bottom-mask  sheet fronts  b4b7c511
+> BUDTALL+bottom-mask  sheet non-sprayed  371e82a1
+> BUDTALL+bottom-mask  sheet sprayed  b4b7c511
+> BUDTALL+bottom-mask-run-owner  file  01-BACK.dxf  38f8e174
+> BUDTALL+bottom-mask-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+bottom-mask-run-owner  file  01-BUL.dxf  00ccf828
+> BUDTALL+bottom-mask-run-owner  file  01-BUR.dxf  046276c7
+> BUDTALL+bottom-mask-run-owner  file  01-F.dxf  b4b7c511
+> BUDTALL+bottom-mask-run-owner  file  01-TOP.dxf  878ff9ad
+> BUDTALL+bottom-mask-run-owner  sheet all  47163842
+> BUDTALL+bottom-mask-run-owner  sheet fronts  b4b7c511
+> BUDTALL+bottom-mask-run-owner  sheet non-sprayed  371e82a1
+> BUDTALL+bottom-mask-run-owner  sheet sprayed  b4b7c511
+> BUDTALL+infill-mitre  file  01-BACK.dxf  38f8e174
+> BUDTALL+infill-mitre  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+infill-mitre  file  01-BUL.dxf  00ccf828
+> BUDTALL+infill-mitre  file  01-BUR.dxf  046276c7
+> BUDTALL+infill-mitre  file  01-F.dxf  b4b7c511
+1199,1208c1199,1208
+< BUDTALL+infill-mitre  file  01-TOP.dxf  793e9e7d
+< BUDTALL+infill-mitre  sheet all  a87bf0d5
+< BUDTALL+infill-mitre  sheet fronts  efc68b31
+< BUDTALL+infill-mitre  sheet non-sprayed  dfe08971
+< BUDTALL+infill-mitre  sheet sprayed  11e794a7
+< BUDTALL+infill-mitre-narrow  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+infill-mitre-narrow  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+infill-mitre-narrow  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+infill-mitre-narrow  file  01-BUR.dxf  f9eb103d
+< BUDTALL+infill-mitre-narrow  file  01-F.dxf  efc68b31
+---
+> BUDTALL+infill-mitre  file  01-TOP.dxf  878ff9ad
+> BUDTALL+infill-mitre  sheet all  741bc775
+> BUDTALL+infill-mitre  sheet fronts  b4b7c511
+> BUDTALL+infill-mitre  sheet non-sprayed  371e82a1
+> BUDTALL+infill-mitre  sheet sprayed  7ce78fb9
+> BUDTALL+infill-mitre-narrow  file  01-BACK.dxf  38f8e174
+> BUDTALL+infill-mitre-narrow  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+infill-mitre-narrow  file  01-BUL.dxf  00ccf828
+> BUDTALL+infill-mitre-narrow  file  01-BUR.dxf  046276c7
+> BUDTALL+infill-mitre-narrow  file  01-F.dxf  b4b7c511
+1213,1222c1213,1222
+< BUDTALL+infill-mitre-narrow  file  01-TOP.dxf  793e9e7d
+< BUDTALL+infill-mitre-narrow  sheet all  9a2ba658
+< BUDTALL+infill-mitre-narrow  sheet fronts  efc68b31
+< BUDTALL+infill-mitre-narrow  sheet non-sprayed  dfe08971
+< BUDTALL+infill-mitre-narrow  sheet sprayed  7324bd4e
+< BUDTALL+infills  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+infills  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+infills  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+infills  file  01-BUR.dxf  f9eb103d
+< BUDTALL+infills  file  01-F.dxf  efc68b31
+---
+> BUDTALL+infill-mitre-narrow  file  01-TOP.dxf  878ff9ad
+> BUDTALL+infill-mitre-narrow  sheet all  4ba72ad8
+> BUDTALL+infill-mitre-narrow  sheet fronts  b4b7c511
+> BUDTALL+infill-mitre-narrow  sheet non-sprayed  371e82a1
+> BUDTALL+infill-mitre-narrow  sheet sprayed  e79cb3d0
+> BUDTALL+infills  file  01-BACK.dxf  38f8e174
+> BUDTALL+infills  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+infills  file  01-BUL.dxf  00ccf828
+> BUDTALL+infills  file  01-BUR.dxf  046276c7
+> BUDTALL+infills  file  01-F.dxf  b4b7c511
+1227,1259c1227,1259
+< BUDTALL+infills  file  01-TOP.dxf  793e9e7d
+< BUDTALL+infills  sheet all  8fe559a1
+< BUDTALL+infills  sheet fronts  efc68b31
+< BUDTALL+infills  sheet non-sprayed  dfe08971
+< BUDTALL+infills  sheet sprayed  d3f32acf
+< BUDTALL+partition  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+partition  file  01-BOTTOM.dxf  4c24f0da
+< BUDTALL+partition  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+partition  file  01-BUR.dxf  f9eb103d
+< BUDTALL+partition  file  01-F.dxf  efc68b31
+< BUDTALL+partition  file  01-TOP.dxf  a426f1f7
+< BUDTALL+partition  file  01-VPART-1.dxf  2ae5da24
+< BUDTALL+partition  sheet all  d2fdee7c
+< BUDTALL+partition  sheet fronts  efc68b31
+< BUDTALL+partition  sheet non-sprayed  f2c7da94
+< BUDTALL+partition  sheet sprayed  efc68b31
+< BUDTALL+partition-on-shelf  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+partition-on-shelf  file  01-BOTTOM.dxf  4c24f0da
+< BUDTALL+partition-on-shelf  file  01-BUL.dxf  7d320e9b
+< BUDTALL+partition-on-shelf  file  01-BUR.dxf  14eb2b44
+< BUDTALL+partition-on-shelf  file  01-F.dxf  efc68b31
+< BUDTALL+partition-on-shelf  file  01-SHELF-1.dxf  7df0118f
+< BUDTALL+partition-on-shelf  file  01-TOP.dxf  793e9e7d
+< BUDTALL+partition-on-shelf  file  01-VPART-1.dxf  c1800ff6
+< BUDTALL+partition-on-shelf  sheet all  8dc16cd3
+< BUDTALL+partition-on-shelf  sheet fronts  efc68b31
+< BUDTALL+partition-on-shelf  sheet non-sprayed  59f21aad
+< BUDTALL+partition-on-shelf  sheet sprayed  efc68b31
+< BUDTALL+plinth  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+plinth  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+plinth  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+plinth  file  01-BUR.dxf  f9eb103d
+< BUDTALL+plinth  file  01-F.dxf  efc68b31
+---
+> BUDTALL+infills  file  01-TOP.dxf  878ff9ad
+> BUDTALL+infills  sheet all  9de2e825
+> BUDTALL+infills  sheet fronts  b4b7c511
+> BUDTALL+infills  sheet non-sprayed  371e82a1
+> BUDTALL+infills  sheet sprayed  09999041
+> BUDTALL+partition  file  01-BACK.dxf  38f8e174
+> BUDTALL+partition  file  01-BOTTOM.dxf  ac7003da
+> BUDTALL+partition  file  01-BUL.dxf  00ccf828
+> BUDTALL+partition  file  01-BUR.dxf  046276c7
+> BUDTALL+partition  file  01-F.dxf  b4b7c511
+> BUDTALL+partition  file  01-TOP.dxf  900b2a9f
+> BUDTALL+partition  file  01-VPART-1.dxf  3993fdf6
+> BUDTALL+partition  sheet all  49cb90b2
+> BUDTALL+partition  sheet fronts  b4b7c511
+> BUDTALL+partition  sheet non-sprayed  1594e742
+> BUDTALL+partition  sheet sprayed  b4b7c511
+> BUDTALL+partition-on-shelf  file  01-BACK.dxf  38f8e174
+> BUDTALL+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+> BUDTALL+partition-on-shelf  file  01-BUL.dxf  d84f2ea1
+> BUDTALL+partition-on-shelf  file  01-BUR.dxf  21b210da
+> BUDTALL+partition-on-shelf  file  01-F.dxf  b4b7c511
+> BUDTALL+partition-on-shelf  file  01-SHELF-1.dxf  aad11821
+> BUDTALL+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> BUDTALL+partition-on-shelf  file  01-VPART-1.dxf  d183081a
+> BUDTALL+partition-on-shelf  sheet all  a2d7b871
+> BUDTALL+partition-on-shelf  sheet fronts  b4b7c511
+> BUDTALL+partition-on-shelf  sheet non-sprayed  6e9a67c5
+> BUDTALL+partition-on-shelf  sheet sprayed  b4b7c511
+> BUDTALL+plinth  file  01-BACK.dxf  38f8e174
+> BUDTALL+plinth  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+plinth  file  01-BUL.dxf  00ccf828
+> BUDTALL+plinth  file  01-BUR.dxf  046276c7
+> BUDTALL+plinth  file  01-F.dxf  b4b7c511
+1261,1280c1261,1280
+< BUDTALL+plinth  file  01-TOP.dxf  793e9e7d
+< BUDTALL+plinth  sheet all  b2b0cfd2
+< BUDTALL+plinth  sheet fronts  efc68b31
+< BUDTALL+plinth  sheet non-sprayed  dfe08971
+< BUDTALL+plinth  sheet sprayed  915ffd66
+< BUDTALL+plinth-run-member  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+plinth-run-member  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+plinth-run-member  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+plinth-run-member  file  01-BUR.dxf  f9eb103d
+< BUDTALL+plinth-run-member  file  01-F.dxf  efc68b31
+< BUDTALL+plinth-run-member  file  01-TOP.dxf  793e9e7d
+< BUDTALL+plinth-run-member  sheet all  cb219fc4
+< BUDTALL+plinth-run-member  sheet fronts  efc68b31
+< BUDTALL+plinth-run-member  sheet non-sprayed  dfe08971
+< BUDTALL+plinth-run-member  sheet sprayed  efc68b31
+< BUDTALL+plinth-run-owner  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+plinth-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+plinth-run-owner  file  01-BUL.dxf  e46bdb9a
+< BUDTALL+plinth-run-owner  file  01-BUR.dxf  f9eb103d
+< BUDTALL+plinth-run-owner  file  01-F.dxf  efc68b31
+---
+> BUDTALL+plinth  file  01-TOP.dxf  878ff9ad
+> BUDTALL+plinth  sheet all  a4b32148
+> BUDTALL+plinth  sheet fronts  b4b7c511
+> BUDTALL+plinth  sheet non-sprayed  371e82a1
+> BUDTALL+plinth  sheet sprayed  911b214e
+> BUDTALL+plinth-run-member  file  01-BACK.dxf  38f8e174
+> BUDTALL+plinth-run-member  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+plinth-run-member  file  01-BUL.dxf  00ccf828
+> BUDTALL+plinth-run-member  file  01-BUR.dxf  046276c7
+> BUDTALL+plinth-run-member  file  01-F.dxf  b4b7c511
+> BUDTALL+plinth-run-member  file  01-TOP.dxf  878ff9ad
+> BUDTALL+plinth-run-member  sheet all  47163842
+> BUDTALL+plinth-run-member  sheet fronts  b4b7c511
+> BUDTALL+plinth-run-member  sheet non-sprayed  371e82a1
+> BUDTALL+plinth-run-member  sheet sprayed  b4b7c511
+> BUDTALL+plinth-run-owner  file  01-BACK.dxf  38f8e174
+> BUDTALL+plinth-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+plinth-run-owner  file  01-BUL.dxf  00ccf828
+> BUDTALL+plinth-run-owner  file  01-BUR.dxf  046276c7
+> BUDTALL+plinth-run-owner  file  01-F.dxf  b4b7c511
+1282,1317c1282,1317
+< BUDTALL+plinth-run-owner  file  01-TOP.dxf  793e9e7d
+< BUDTALL+plinth-run-owner  sheet all  86d08bfb
+< BUDTALL+plinth-run-owner  sheet fronts  efc68b31
+< BUDTALL+plinth-run-owner  sheet non-sprayed  dfe08971
+< BUDTALL+plinth-run-owner  sheet sprayed  10cba7fe
+< BUDTALL+shelves  file  01-BACK.dxf  4fd4ff52
+< BUDTALL+shelves  file  01-BOTTOM.dxf  8eae5ddc
+< BUDTALL+shelves  file  01-BUL.dxf  699e77ca
+< BUDTALL+shelves  file  01-BUR.dxf  d5b99673
+< BUDTALL+shelves  file  01-F.dxf  efc68b31
+< BUDTALL+shelves  file  01-SHELF-1.dxf  686d7e01
+< BUDTALL+shelves  file  01-SHELF-2.dxf  3cdfc5fe
+< BUDTALL+shelves  file  01-TOP.dxf  793e9e7d
+< BUDTALL+shelves  sheet all  4833e3ee
+< BUDTALL+shelves  sheet fronts  efc68b31
+< BUDTALL+shelves  sheet non-sprayed  15d19f90
+< BUDTALL+shelves  sheet sprayed  efc68b31
+< DW_PANEL  file  01-F.dxf  b72e7604
+< DW_PANEL  file  01-TOP.dxf  8310dc73
+< DW_PANEL  sheet all  e19ce162
+< DW_PANEL  sheet fronts  b72e7604
+< DW_PANEL  sheet non-sprayed  8310dc73
+< DW_PANEL  sheet sprayed  b72e7604
+< DW_PANEL+bottom-mask  file  01-F.dxf  b72e7604
+< DW_PANEL+bottom-mask  file  01-TOP.dxf  8310dc73
+< DW_PANEL+bottom-mask  sheet all  e19ce162
+< DW_PANEL+bottom-mask  sheet fronts  b72e7604
+< DW_PANEL+bottom-mask  sheet non-sprayed  8310dc73
+< DW_PANEL+bottom-mask  sheet sprayed  b72e7604
+< DW_PANEL+bottom-mask-run-owner  file  01-F.dxf  b72e7604
+< DW_PANEL+bottom-mask-run-owner  file  01-TOP.dxf  8310dc73
+< DW_PANEL+bottom-mask-run-owner  sheet all  e19ce162
+< DW_PANEL+bottom-mask-run-owner  sheet fronts  b72e7604
+< DW_PANEL+bottom-mask-run-owner  sheet non-sprayed  8310dc73
+< DW_PANEL+bottom-mask-run-owner  sheet sprayed  b72e7604
+< DW_PANEL+infill-mitre  file  01-F.dxf  b72e7604
+---
+> BUDTALL+plinth-run-owner  file  01-TOP.dxf  878ff9ad
+> BUDTALL+plinth-run-owner  sheet all  b6ff9e63
+> BUDTALL+plinth-run-owner  sheet fronts  b4b7c511
+> BUDTALL+plinth-run-owner  sheet non-sprayed  371e82a1
+> BUDTALL+plinth-run-owner  sheet sprayed  9fdb3dac
+> BUDTALL+shelves  file  01-BACK.dxf  38f8e174
+> BUDTALL+shelves  file  01-BOTTOM.dxf  ababcbc4
+> BUDTALL+shelves  file  01-BUL.dxf  16387c18
+> BUDTALL+shelves  file  01-BUR.dxf  c928c56d
+> BUDTALL+shelves  file  01-F.dxf  b4b7c511
+> BUDTALL+shelves  file  01-SHELF-1.dxf  135f63c3
+> BUDTALL+shelves  file  01-SHELF-2.dxf  46a8db5c
+> BUDTALL+shelves  file  01-TOP.dxf  878ff9ad
+> BUDTALL+shelves  sheet all  274e6d5c
+> BUDTALL+shelves  sheet fronts  b4b7c511
+> BUDTALL+shelves  sheet non-sprayed  a2984f9a
+> BUDTALL+shelves  sheet sprayed  b4b7c511
+> DW_PANEL  file  01-F.dxf  427518d8
+> DW_PANEL  file  01-TOP.dxf  2255e6e5
+> DW_PANEL  sheet all  730225d8
+> DW_PANEL  sheet fronts  427518d8
+> DW_PANEL  sheet non-sprayed  2255e6e5
+> DW_PANEL  sheet sprayed  427518d8
+> DW_PANEL+bottom-mask  file  01-F.dxf  427518d8
+> DW_PANEL+bottom-mask  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+bottom-mask  sheet all  730225d8
+> DW_PANEL+bottom-mask  sheet fronts  427518d8
+> DW_PANEL+bottom-mask  sheet non-sprayed  2255e6e5
+> DW_PANEL+bottom-mask  sheet sprayed  427518d8
+> DW_PANEL+bottom-mask-run-owner  file  01-F.dxf  427518d8
+> DW_PANEL+bottom-mask-run-owner  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+bottom-mask-run-owner  sheet all  730225d8
+> DW_PANEL+bottom-mask-run-owner  sheet fronts  427518d8
+> DW_PANEL+bottom-mask-run-owner  sheet non-sprayed  2255e6e5
+> DW_PANEL+bottom-mask-run-owner  sheet sprayed  427518d8
+> DW_PANEL+infill-mitre  file  01-F.dxf  427518d8
+1322,1327c1322,1327
+< DW_PANEL+infill-mitre  file  01-TOP.dxf  8310dc73
+< DW_PANEL+infill-mitre  sheet all  46b4b708
+< DW_PANEL+infill-mitre  sheet fronts  b72e7604
+< DW_PANEL+infill-mitre  sheet non-sprayed  8310dc73
+< DW_PANEL+infill-mitre  sheet sprayed  7b1c3838
+< DW_PANEL+infill-mitre-narrow  file  01-F.dxf  b72e7604
+---
+> DW_PANEL+infill-mitre  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+infill-mitre  sheet all  d4f4308a
+> DW_PANEL+infill-mitre  sheet fronts  427518d8
+> DW_PANEL+infill-mitre  sheet non-sprayed  2255e6e5
+> DW_PANEL+infill-mitre  sheet sprayed  fc4f309c
+> DW_PANEL+infill-mitre-narrow  file  01-F.dxf  427518d8
+1332,1337c1332,1337
+< DW_PANEL+infill-mitre-narrow  file  01-TOP.dxf  8310dc73
+< DW_PANEL+infill-mitre-narrow  sheet all  e5bb58d0
+< DW_PANEL+infill-mitre-narrow  sheet fronts  b72e7604
+< DW_PANEL+infill-mitre-narrow  sheet non-sprayed  8310dc73
+< DW_PANEL+infill-mitre-narrow  sheet sprayed  8a7ec18b
+< DW_PANEL+infills  file  01-F.dxf  b72e7604
+---
+> DW_PANEL+infill-mitre-narrow  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+infill-mitre-narrow  sheet all  ca91fa56
+> DW_PANEL+infill-mitre-narrow  sheet fronts  427518d8
+> DW_PANEL+infill-mitre-narrow  sheet non-sprayed  2255e6e5
+> DW_PANEL+infill-mitre-narrow  sheet sprayed  80a0344f
+> DW_PANEL+infills  file  01-F.dxf  427518d8
+1342,1361c1342,1361
+< DW_PANEL+infills  file  01-TOP.dxf  8310dc73
+< DW_PANEL+infills  sheet all  6d42f9e5
+< DW_PANEL+infills  sheet fronts  b72e7604
+< DW_PANEL+infills  sheet non-sprayed  8310dc73
+< DW_PANEL+infills  sheet sprayed  4eada7ae
+< DW_PANEL+partition  file  01-F.dxf  b72e7604
+< DW_PANEL+partition  file  01-TOP.dxf  3de012a3
+< DW_PANEL+partition  file  01-VPART-1.dxf  5b82fed8
+< DW_PANEL+partition  sheet all  00a205f6
+< DW_PANEL+partition  sheet fronts  b72e7604
+< DW_PANEL+partition  sheet non-sprayed  6e45ffc9
+< DW_PANEL+partition  sheet sprayed  b72e7604
+< DW_PANEL+partition-on-shelf  file  01-F.dxf  b72e7604
+< DW_PANEL+partition-on-shelf  file  01-TOP.dxf  8310dc73
+< DW_PANEL+partition-on-shelf  file  01-VPART-1.dxf  c2161057
+< DW_PANEL+partition-on-shelf  sheet all  f371ff6c
+< DW_PANEL+partition-on-shelf  sheet fronts  b72e7604
+< DW_PANEL+partition-on-shelf  sheet non-sprayed  fa18a993
+< DW_PANEL+partition-on-shelf  sheet sprayed  b72e7604
+< DW_PANEL+plinth  file  01-F.dxf  b72e7604
+---
+> DW_PANEL+infills  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+infills  sheet all  2de065ff
+> DW_PANEL+infills  sheet fronts  427518d8
+> DW_PANEL+infills  sheet non-sprayed  2255e6e5
+> DW_PANEL+infills  sheet sprayed  2b7ef1a2
+> DW_PANEL+partition  file  01-F.dxf  427518d8
+> DW_PANEL+partition  file  01-TOP.dxf  279fc995
+> DW_PANEL+partition  file  01-VPART-1.dxf  83011796
+> DW_PANEL+partition  sheet all  7e86a68a
+> DW_PANEL+partition  sheet fronts  427518d8
+> DW_PANEL+partition  sheet non-sprayed  0f7a5415
+> DW_PANEL+partition  sheet sprayed  427518d8
+> DW_PANEL+partition-on-shelf  file  01-F.dxf  427518d8
+> DW_PANEL+partition-on-shelf  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+partition-on-shelf  file  01-VPART-1.dxf  6e6aab52
+> DW_PANEL+partition-on-shelf  sheet all  803e9551
+> DW_PANEL+partition-on-shelf  sheet fronts  427518d8
+> DW_PANEL+partition-on-shelf  sheet non-sprayed  e1e41d8a
+> DW_PANEL+partition-on-shelf  sheet sprayed  427518d8
+> DW_PANEL+plinth  file  01-F.dxf  427518d8
+1363,1374c1363,1374
+< DW_PANEL+plinth  file  01-TOP.dxf  8310dc73
+< DW_PANEL+plinth  sheet all  3842c672
+< DW_PANEL+plinth  sheet fronts  b72e7604
+< DW_PANEL+plinth  sheet non-sprayed  8310dc73
+< DW_PANEL+plinth  sheet sprayed  fab7f4a0
+< DW_PANEL+plinth-run-member  file  01-F.dxf  b72e7604
+< DW_PANEL+plinth-run-member  file  01-TOP.dxf  8310dc73
+< DW_PANEL+plinth-run-member  sheet all  e19ce162
+< DW_PANEL+plinth-run-member  sheet fronts  b72e7604
+< DW_PANEL+plinth-run-member  sheet non-sprayed  8310dc73
+< DW_PANEL+plinth-run-member  sheet sprayed  b72e7604
+< DW_PANEL+plinth-run-owner  file  01-F.dxf  b72e7604
+---
+> DW_PANEL+plinth  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+plinth  sheet all  1b112034
+> DW_PANEL+plinth  sheet fronts  427518d8
+> DW_PANEL+plinth  sheet non-sprayed  2255e6e5
+> DW_PANEL+plinth  sheet sprayed  87a67938
+> DW_PANEL+plinth-run-member  file  01-F.dxf  427518d8
+> DW_PANEL+plinth-run-member  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+plinth-run-member  sheet all  730225d8
+> DW_PANEL+plinth-run-member  sheet fronts  427518d8
+> DW_PANEL+plinth-run-member  sheet non-sprayed  2255e6e5
+> DW_PANEL+plinth-run-member  sheet sprayed  427518d8
+> DW_PANEL+plinth-run-owner  file  01-F.dxf  427518d8
+1376,1392c1376,1392
+< DW_PANEL+plinth-run-owner  file  01-TOP.dxf  8310dc73
+< DW_PANEL+plinth-run-owner  sheet all  40b2250c
+< DW_PANEL+plinth-run-owner  sheet fronts  b72e7604
+< DW_PANEL+plinth-run-owner  sheet non-sprayed  8310dc73
+< DW_PANEL+plinth-run-owner  sheet sprayed  42427e9c
+< DW_PANEL+shelves  file  01-F.dxf  b72e7604
+< DW_PANEL+shelves  file  01-TOP.dxf  8310dc73
+< DW_PANEL+shelves  sheet all  e19ce162
+< DW_PANEL+shelves  sheet fronts  b72e7604
+< DW_PANEL+shelves  sheet non-sprayed  8310dc73
+< DW_PANEL+shelves  sheet sprayed  b72e7604
+< FRIDGE  file  01-BACK.dxf  74338f4a
+< FRIDGE  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE  file  01-BUL.dxf  356e924f
+< FRIDGE  file  01-BUR.dxf  7dc20099
+< FRIDGE  file  01-F.dxf  efc68b31
+< FRIDGE  file  01-FIXED.dxf  ac81d04f
+---
+> DW_PANEL+plinth-run-owner  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+plinth-run-owner  sheet all  5ea3eec2
+> DW_PANEL+plinth-run-owner  sheet fronts  427518d8
+> DW_PANEL+plinth-run-owner  sheet non-sprayed  2255e6e5
+> DW_PANEL+plinth-run-owner  sheet sprayed  faad54f0
+> DW_PANEL+shelves  file  01-F.dxf  427518d8
+> DW_PANEL+shelves  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+shelves  sheet all  730225d8
+> DW_PANEL+shelves  sheet fronts  427518d8
+> DW_PANEL+shelves  sheet non-sprayed  2255e6e5
+> DW_PANEL+shelves  sheet sprayed  427518d8
+> FRIDGE  file  01-BACK.dxf  eab5d68e
+> FRIDGE  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE  file  01-BUL.dxf  e5223665
+> FRIDGE  file  01-BUR.dxf  b756abf3
+> FRIDGE  file  01-F.dxf  b4b7c511
+> FRIDGE  file  01-FIXED.dxf  9dfc5077
+1395,1406c1395,1406
+< FRIDGE  file  01-SPURS.dxf  08170f92
+< FRIDGE  file  01-TOP.dxf  793e9e7d
+< FRIDGE  sheet all  f952814a
+< FRIDGE  sheet fronts  efc68b31
+< FRIDGE  sheet non-sprayed  25adfb52
+< FRIDGE  sheet sprayed  efc68b31
+< FRIDGE+bottom-mask  file  01-BACK.dxf  74338f4a
+< FRIDGE+bottom-mask  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+bottom-mask  file  01-BUL.dxf  356e924f
+< FRIDGE+bottom-mask  file  01-BUR.dxf  7dc20099
+< FRIDGE+bottom-mask  file  01-F.dxf  efc68b31
+< FRIDGE+bottom-mask  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE  file  01-SPURS.dxf  2c666cb8
+> FRIDGE  file  01-TOP.dxf  878ff9ad
+> FRIDGE  sheet all  0f1b3f18
+> FRIDGE  sheet fronts  b4b7c511
+> FRIDGE  sheet non-sprayed  1e7de7fa
+> FRIDGE  sheet sprayed  b4b7c511
+> FRIDGE+bottom-mask  file  01-BACK.dxf  eab5d68e
+> FRIDGE+bottom-mask  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+bottom-mask  file  01-BUL.dxf  e5223665
+> FRIDGE+bottom-mask  file  01-BUR.dxf  b756abf3
+> FRIDGE+bottom-mask  file  01-F.dxf  b4b7c511
+> FRIDGE+bottom-mask  file  01-FIXED.dxf  9dfc5077
+1409,1420c1409,1420
+< FRIDGE+bottom-mask  file  01-SPURS.dxf  08170f92
+< FRIDGE+bottom-mask  file  01-TOP.dxf  793e9e7d
+< FRIDGE+bottom-mask  sheet all  f952814a
+< FRIDGE+bottom-mask  sheet fronts  efc68b31
+< FRIDGE+bottom-mask  sheet non-sprayed  25adfb52
+< FRIDGE+bottom-mask  sheet sprayed  efc68b31
+< FRIDGE+bottom-mask-run-owner  file  01-BACK.dxf  74338f4a
+< FRIDGE+bottom-mask-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+bottom-mask-run-owner  file  01-BUL.dxf  356e924f
+< FRIDGE+bottom-mask-run-owner  file  01-BUR.dxf  7dc20099
+< FRIDGE+bottom-mask-run-owner  file  01-F.dxf  efc68b31
+< FRIDGE+bottom-mask-run-owner  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+bottom-mask  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+bottom-mask  file  01-TOP.dxf  878ff9ad
+> FRIDGE+bottom-mask  sheet all  0f1b3f18
+> FRIDGE+bottom-mask  sheet fronts  b4b7c511
+> FRIDGE+bottom-mask  sheet non-sprayed  1e7de7fa
+> FRIDGE+bottom-mask  sheet sprayed  b4b7c511
+> FRIDGE+bottom-mask-run-owner  file  01-BACK.dxf  eab5d68e
+> FRIDGE+bottom-mask-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+bottom-mask-run-owner  file  01-BUL.dxf  e5223665
+> FRIDGE+bottom-mask-run-owner  file  01-BUR.dxf  b756abf3
+> FRIDGE+bottom-mask-run-owner  file  01-F.dxf  b4b7c511
+> FRIDGE+bottom-mask-run-owner  file  01-FIXED.dxf  9dfc5077
+1423,1434c1423,1434
+< FRIDGE+bottom-mask-run-owner  file  01-SPURS.dxf  08170f92
+< FRIDGE+bottom-mask-run-owner  file  01-TOP.dxf  793e9e7d
+< FRIDGE+bottom-mask-run-owner  sheet all  f952814a
+< FRIDGE+bottom-mask-run-owner  sheet fronts  efc68b31
+< FRIDGE+bottom-mask-run-owner  sheet non-sprayed  25adfb52
+< FRIDGE+bottom-mask-run-owner  sheet sprayed  efc68b31
+< FRIDGE+infill-mitre  file  01-BACK.dxf  74338f4a
+< FRIDGE+infill-mitre  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+infill-mitre  file  01-BUL.dxf  356e924f
+< FRIDGE+infill-mitre  file  01-BUR.dxf  7dc20099
+< FRIDGE+infill-mitre  file  01-F.dxf  efc68b31
+< FRIDGE+infill-mitre  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+bottom-mask-run-owner  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+bottom-mask-run-owner  file  01-TOP.dxf  878ff9ad
+> FRIDGE+bottom-mask-run-owner  sheet all  0f1b3f18
+> FRIDGE+bottom-mask-run-owner  sheet fronts  b4b7c511
+> FRIDGE+bottom-mask-run-owner  sheet non-sprayed  1e7de7fa
+> FRIDGE+bottom-mask-run-owner  sheet sprayed  b4b7c511
+> FRIDGE+infill-mitre  file  01-BACK.dxf  eab5d68e
+> FRIDGE+infill-mitre  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+infill-mitre  file  01-BUL.dxf  e5223665
+> FRIDGE+infill-mitre  file  01-BUR.dxf  b756abf3
+> FRIDGE+infill-mitre  file  01-F.dxf  b4b7c511
+> FRIDGE+infill-mitre  file  01-FIXED.dxf  9dfc5077
+1441,1452c1441,1452
+< FRIDGE+infill-mitre  file  01-SPURS.dxf  08170f92
+< FRIDGE+infill-mitre  file  01-TOP.dxf  793e9e7d
+< FRIDGE+infill-mitre  sheet all  ff9af812
+< FRIDGE+infill-mitre  sheet fronts  efc68b31
+< FRIDGE+infill-mitre  sheet non-sprayed  25adfb52
+< FRIDGE+infill-mitre  sheet sprayed  11e794a7
+< FRIDGE+infill-mitre-narrow  file  01-BACK.dxf  74338f4a
+< FRIDGE+infill-mitre-narrow  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+infill-mitre-narrow  file  01-BUL.dxf  356e924f
+< FRIDGE+infill-mitre-narrow  file  01-BUR.dxf  7dc20099
+< FRIDGE+infill-mitre-narrow  file  01-F.dxf  efc68b31
+< FRIDGE+infill-mitre-narrow  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+infill-mitre  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+infill-mitre  file  01-TOP.dxf  878ff9ad
+> FRIDGE+infill-mitre  sheet all  a0e86b8c
+> FRIDGE+infill-mitre  sheet fronts  b4b7c511
+> FRIDGE+infill-mitre  sheet non-sprayed  1e7de7fa
+> FRIDGE+infill-mitre  sheet sprayed  7ce78fb9
+> FRIDGE+infill-mitre-narrow  file  01-BACK.dxf  eab5d68e
+> FRIDGE+infill-mitre-narrow  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+infill-mitre-narrow  file  01-BUL.dxf  e5223665
+> FRIDGE+infill-mitre-narrow  file  01-BUR.dxf  b756abf3
+> FRIDGE+infill-mitre-narrow  file  01-F.dxf  b4b7c511
+> FRIDGE+infill-mitre-narrow  file  01-FIXED.dxf  9dfc5077
+1459,1470c1459,1470
+< FRIDGE+infill-mitre-narrow  file  01-SPURS.dxf  08170f92
+< FRIDGE+infill-mitre-narrow  file  01-TOP.dxf  793e9e7d
+< FRIDGE+infill-mitre-narrow  sheet all  5f9f67cd
+< FRIDGE+infill-mitre-narrow  sheet fronts  efc68b31
+< FRIDGE+infill-mitre-narrow  sheet non-sprayed  25adfb52
+< FRIDGE+infill-mitre-narrow  sheet sprayed  7324bd4e
+< FRIDGE+infills  file  01-BACK.dxf  74338f4a
+< FRIDGE+infills  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+infills  file  01-BUL.dxf  356e924f
+< FRIDGE+infills  file  01-BUR.dxf  7dc20099
+< FRIDGE+infills  file  01-F.dxf  efc68b31
+< FRIDGE+infills  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+infill-mitre-narrow  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+infill-mitre-narrow  file  01-TOP.dxf  878ff9ad
+> FRIDGE+infill-mitre-narrow  sheet all  8591d2c3
+> FRIDGE+infill-mitre-narrow  sheet fronts  b4b7c511
+> FRIDGE+infill-mitre-narrow  sheet non-sprayed  1e7de7fa
+> FRIDGE+infill-mitre-narrow  sheet sprayed  e79cb3d0
+> FRIDGE+infills  file  01-BACK.dxf  eab5d68e
+> FRIDGE+infills  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+infills  file  01-BUL.dxf  e5223665
+> FRIDGE+infills  file  01-BUR.dxf  b756abf3
+> FRIDGE+infills  file  01-F.dxf  b4b7c511
+> FRIDGE+infills  file  01-FIXED.dxf  9dfc5077
+1477,1488c1477,1488
+< FRIDGE+infills  file  01-SPURS.dxf  08170f92
+< FRIDGE+infills  file  01-TOP.dxf  793e9e7d
+< FRIDGE+infills  sheet all  5f0f2369
+< FRIDGE+infills  sheet fronts  efc68b31
+< FRIDGE+infills  sheet non-sprayed  25adfb52
+< FRIDGE+infills  sheet sprayed  d3f32acf
+< FRIDGE+partition  file  01-BACK.dxf  74338f4a
+< FRIDGE+partition  file  01-BOTTOM.dxf  4c24f0da
+< FRIDGE+partition  file  01-BUL.dxf  356e924f
+< FRIDGE+partition  file  01-BUR.dxf  7dc20099
+< FRIDGE+partition  file  01-F.dxf  efc68b31
+< FRIDGE+partition  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+infills  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+infills  file  01-TOP.dxf  878ff9ad
+> FRIDGE+infills  sheet all  cc739e05
+> FRIDGE+infills  sheet fronts  b4b7c511
+> FRIDGE+infills  sheet non-sprayed  1e7de7fa
+> FRIDGE+infills  sheet sprayed  09999041
+> FRIDGE+partition  file  01-BACK.dxf  eab5d68e
+> FRIDGE+partition  file  01-BOTTOM.dxf  ac7003da
+> FRIDGE+partition  file  01-BUL.dxf  e5223665
+> FRIDGE+partition  file  01-BUR.dxf  b756abf3
+> FRIDGE+partition  file  01-F.dxf  b4b7c511
+> FRIDGE+partition  file  01-FIXED.dxf  9dfc5077
+1491,1503c1491,1503
+< FRIDGE+partition  file  01-SPURS.dxf  08170f92
+< FRIDGE+partition  file  01-TOP.dxf  a426f1f7
+< FRIDGE+partition  file  01-VPART-1.dxf  2ae5da24
+< FRIDGE+partition  sheet all  052b1a92
+< FRIDGE+partition  sheet fronts  efc68b31
+< FRIDGE+partition  sheet non-sprayed  5cfa32d4
+< FRIDGE+partition  sheet sprayed  efc68b31
+< FRIDGE+partition-on-shelf  file  01-BACK.dxf  74338f4a
+< FRIDGE+partition-on-shelf  file  01-BOTTOM.dxf  4c24f0da
+< FRIDGE+partition-on-shelf  file  01-BUL.dxf  356e924f
+< FRIDGE+partition-on-shelf  file  01-BUR.dxf  7dc20099
+< FRIDGE+partition-on-shelf  file  01-F.dxf  efc68b31
+< FRIDGE+partition-on-shelf  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+partition  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+partition  file  01-TOP.dxf  900b2a9f
+> FRIDGE+partition  file  01-VPART-1.dxf  3993fdf6
+> FRIDGE+partition  sheet all  0f7f5ce0
+> FRIDGE+partition  sheet fronts  b4b7c511
+> FRIDGE+partition  sheet non-sprayed  1f2a88ce
+> FRIDGE+partition  sheet sprayed  b4b7c511
+> FRIDGE+partition-on-shelf  file  01-BACK.dxf  eab5d68e
+> FRIDGE+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+> FRIDGE+partition-on-shelf  file  01-BUL.dxf  e5223665
+> FRIDGE+partition-on-shelf  file  01-BUR.dxf  b756abf3
+> FRIDGE+partition-on-shelf  file  01-F.dxf  b4b7c511
+> FRIDGE+partition-on-shelf  file  01-FIXED.dxf  9dfc5077
+1506,1518c1506,1518
+< FRIDGE+partition-on-shelf  file  01-SPURS.dxf  08170f92
+< FRIDGE+partition-on-shelf  file  01-TOP.dxf  793e9e7d
+< FRIDGE+partition-on-shelf  file  01-VPART-1.dxf  4f7ef9c4
+< FRIDGE+partition-on-shelf  sheet all  7b8d59b4
+< FRIDGE+partition-on-shelf  sheet fronts  efc68b31
+< FRIDGE+partition-on-shelf  sheet non-sprayed  4f83b5e8
+< FRIDGE+partition-on-shelf  sheet sprayed  efc68b31
+< FRIDGE+plinth  file  01-BACK.dxf  74338f4a
+< FRIDGE+plinth  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+plinth  file  01-BUL.dxf  356e924f
+< FRIDGE+plinth  file  01-BUR.dxf  7dc20099
+< FRIDGE+plinth  file  01-F.dxf  efc68b31
+< FRIDGE+plinth  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+partition-on-shelf  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> FRIDGE+partition-on-shelf  file  01-VPART-1.dxf  e4b85440
+> FRIDGE+partition-on-shelf  sheet all  06acb688
+> FRIDGE+partition-on-shelf  sheet fronts  b4b7c511
+> FRIDGE+partition-on-shelf  sheet non-sprayed  19d13af4
+> FRIDGE+partition-on-shelf  sheet sprayed  b4b7c511
+> FRIDGE+plinth  file  01-BACK.dxf  eab5d68e
+> FRIDGE+plinth  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+plinth  file  01-BUL.dxf  e5223665
+> FRIDGE+plinth  file  01-BUR.dxf  b756abf3
+> FRIDGE+plinth  file  01-F.dxf  b4b7c511
+> FRIDGE+plinth  file  01-FIXED.dxf  9dfc5077
+1522,1533c1522,1533
+< FRIDGE+plinth  file  01-SPURS.dxf  08170f92
+< FRIDGE+plinth  file  01-TOP.dxf  793e9e7d
+< FRIDGE+plinth  sheet all  36e41a0a
+< FRIDGE+plinth  sheet fronts  efc68b31
+< FRIDGE+plinth  sheet non-sprayed  25adfb52
+< FRIDGE+plinth  sheet sprayed  915ffd66
+< FRIDGE+plinth-run-member  file  01-BACK.dxf  74338f4a
+< FRIDGE+plinth-run-member  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+plinth-run-member  file  01-BUL.dxf  356e924f
+< FRIDGE+plinth-run-member  file  01-BUR.dxf  7dc20099
+< FRIDGE+plinth-run-member  file  01-F.dxf  efc68b31
+< FRIDGE+plinth-run-member  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+plinth  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+plinth  file  01-TOP.dxf  878ff9ad
+> FRIDGE+plinth  sheet all  b61957ea
+> FRIDGE+plinth  sheet fronts  b4b7c511
+> FRIDGE+plinth  sheet non-sprayed  1e7de7fa
+> FRIDGE+plinth  sheet sprayed  911b214e
+> FRIDGE+plinth-run-member  file  01-BACK.dxf  eab5d68e
+> FRIDGE+plinth-run-member  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+plinth-run-member  file  01-BUL.dxf  e5223665
+> FRIDGE+plinth-run-member  file  01-BUR.dxf  b756abf3
+> FRIDGE+plinth-run-member  file  01-F.dxf  b4b7c511
+> FRIDGE+plinth-run-member  file  01-FIXED.dxf  9dfc5077
+1536,1547c1536,1547
+< FRIDGE+plinth-run-member  file  01-SPURS.dxf  08170f92
+< FRIDGE+plinth-run-member  file  01-TOP.dxf  793e9e7d
+< FRIDGE+plinth-run-member  sheet all  f952814a
+< FRIDGE+plinth-run-member  sheet fronts  efc68b31
+< FRIDGE+plinth-run-member  sheet non-sprayed  25adfb52
+< FRIDGE+plinth-run-member  sheet sprayed  efc68b31
+< FRIDGE+plinth-run-owner  file  01-BACK.dxf  74338f4a
+< FRIDGE+plinth-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+plinth-run-owner  file  01-BUL.dxf  356e924f
+< FRIDGE+plinth-run-owner  file  01-BUR.dxf  7dc20099
+< FRIDGE+plinth-run-owner  file  01-F.dxf  efc68b31
+< FRIDGE+plinth-run-owner  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+plinth-run-member  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+plinth-run-member  file  01-TOP.dxf  878ff9ad
+> FRIDGE+plinth-run-member  sheet all  0f1b3f18
+> FRIDGE+plinth-run-member  sheet fronts  b4b7c511
+> FRIDGE+plinth-run-member  sheet non-sprayed  1e7de7fa
+> FRIDGE+plinth-run-member  sheet sprayed  b4b7c511
+> FRIDGE+plinth-run-owner  file  01-BACK.dxf  eab5d68e
+> FRIDGE+plinth-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+plinth-run-owner  file  01-BUL.dxf  e5223665
+> FRIDGE+plinth-run-owner  file  01-BUR.dxf  b756abf3
+> FRIDGE+plinth-run-owner  file  01-F.dxf  b4b7c511
+> FRIDGE+plinth-run-owner  file  01-FIXED.dxf  9dfc5077
+1551,1562c1551,1562
+< FRIDGE+plinth-run-owner  file  01-SPURS.dxf  08170f92
+< FRIDGE+plinth-run-owner  file  01-TOP.dxf  793e9e7d
+< FRIDGE+plinth-run-owner  sheet all  6ea7d36d
+< FRIDGE+plinth-run-owner  sheet fronts  efc68b31
+< FRIDGE+plinth-run-owner  sheet non-sprayed  25adfb52
+< FRIDGE+plinth-run-owner  sheet sprayed  10cba7fe
+< FRIDGE+shelves  file  01-BACK.dxf  74338f4a
+< FRIDGE+shelves  file  01-BOTTOM.dxf  8eae5ddc
+< FRIDGE+shelves  file  01-BUL.dxf  356e924f
+< FRIDGE+shelves  file  01-BUR.dxf  7dc20099
+< FRIDGE+shelves  file  01-F.dxf  efc68b31
+< FRIDGE+shelves  file  01-FIXED.dxf  ac81d04f
+---
+> FRIDGE+plinth-run-owner  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+plinth-run-owner  file  01-TOP.dxf  878ff9ad
+> FRIDGE+plinth-run-owner  sheet all  68f65881
+> FRIDGE+plinth-run-owner  sheet fronts  b4b7c511
+> FRIDGE+plinth-run-owner  sheet non-sprayed  1e7de7fa
+> FRIDGE+plinth-run-owner  sheet sprayed  9fdb3dac
+> FRIDGE+shelves  file  01-BACK.dxf  eab5d68e
+> FRIDGE+shelves  file  01-BOTTOM.dxf  ababcbc4
+> FRIDGE+shelves  file  01-BUL.dxf  e5223665
+> FRIDGE+shelves  file  01-BUR.dxf  b756abf3
+> FRIDGE+shelves  file  01-F.dxf  b4b7c511
+> FRIDGE+shelves  file  01-FIXED.dxf  9dfc5077
+1565,1605c1565,1605
+< FRIDGE+shelves  file  01-SPURS.dxf  08170f92
+< FRIDGE+shelves  file  01-TOP.dxf  793e9e7d
+< FRIDGE+shelves  sheet all  f952814a
+< FRIDGE+shelves  sheet fronts  efc68b31
+< FRIDGE+shelves  sheet non-sprayed  25adfb52
+< FRIDGE+shelves  sheet sprayed  efc68b31
+< LOW_CABINET  file  01-BACK.dxf  faab3541
+< LOW_CABINET  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET  file  01-BUL.dxf  f21cc244
+< LOW_CABINET  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET  file  01-F.dxf  c745c725
+< LOW_CABINET  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET  sheet all  fd19c87e
+< LOW_CABINET  sheet fronts  c745c725
+< LOW_CABINET  sheet non-sprayed  70318ebc
+< LOW_CABINET  sheet sprayed  c745c725
+< LOW_CABINET+bottom-mask  file  01-BACK.dxf  faab3541
+< LOW_CABINET+bottom-mask  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+bottom-mask  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+bottom-mask  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+bottom-mask  file  01-F.dxf  c745c725
+< LOW_CABINET+bottom-mask  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+bottom-mask  sheet all  fd19c87e
+< LOW_CABINET+bottom-mask  sheet fronts  c745c725
+< LOW_CABINET+bottom-mask  sheet non-sprayed  70318ebc
+< LOW_CABINET+bottom-mask  sheet sprayed  c745c725
+< LOW_CABINET+bottom-mask-run-owner  file  01-BACK.dxf  faab3541
+< LOW_CABINET+bottom-mask-run-owner  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+bottom-mask-run-owner  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+bottom-mask-run-owner  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+bottom-mask-run-owner  file  01-F.dxf  c745c725
+< LOW_CABINET+bottom-mask-run-owner  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+bottom-mask-run-owner  sheet all  fd19c87e
+< LOW_CABINET+bottom-mask-run-owner  sheet fronts  c745c725
+< LOW_CABINET+bottom-mask-run-owner  sheet non-sprayed  70318ebc
+< LOW_CABINET+bottom-mask-run-owner  sheet sprayed  c745c725
+< LOW_CABINET+infill-mitre  file  01-BACK.dxf  faab3541
+< LOW_CABINET+infill-mitre  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+infill-mitre  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+infill-mitre  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+infill-mitre  file  01-F.dxf  c745c725
+---
+> FRIDGE+shelves  file  01-SPURS.dxf  2c666cb8
+> FRIDGE+shelves  file  01-TOP.dxf  878ff9ad
+> FRIDGE+shelves  sheet all  0f1b3f18
+> FRIDGE+shelves  sheet fronts  b4b7c511
+> FRIDGE+shelves  sheet non-sprayed  1e7de7fa
+> FRIDGE+shelves  sheet sprayed  b4b7c511
+> LOW_CABINET  file  01-BACK.dxf  d6a83465
+> LOW_CABINET  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET  file  01-BUL.dxf  be52fc86
+> LOW_CABINET  file  01-BUR.dxf  bb110528
+> LOW_CABINET  file  01-F.dxf  d02a6a2f
+> LOW_CABINET  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET  sheet all  cb94fce0
+> LOW_CABINET  sheet fronts  d02a6a2f
+> LOW_CABINET  sheet non-sprayed  e6f7e960
+> LOW_CABINET  sheet sprayed  d02a6a2f
+> LOW_CABINET+bottom-mask  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+bottom-mask  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+bottom-mask  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+bottom-mask  file  01-BUR.dxf  bb110528
+> LOW_CABINET+bottom-mask  file  01-F.dxf  d02a6a2f
+> LOW_CABINET+bottom-mask  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+bottom-mask  sheet all  cb94fce0
+> LOW_CABINET+bottom-mask  sheet fronts  d02a6a2f
+> LOW_CABINET+bottom-mask  sheet non-sprayed  e6f7e960
+> LOW_CABINET+bottom-mask  sheet sprayed  d02a6a2f
+> LOW_CABINET+bottom-mask-run-owner  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+bottom-mask-run-owner  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+bottom-mask-run-owner  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+bottom-mask-run-owner  file  01-BUR.dxf  bb110528
+> LOW_CABINET+bottom-mask-run-owner  file  01-F.dxf  d02a6a2f
+> LOW_CABINET+bottom-mask-run-owner  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+bottom-mask-run-owner  sheet all  cb94fce0
+> LOW_CABINET+bottom-mask-run-owner  sheet fronts  d02a6a2f
+> LOW_CABINET+bottom-mask-run-owner  sheet non-sprayed  e6f7e960
+> LOW_CABINET+bottom-mask-run-owner  sheet sprayed  d02a6a2f
+> LOW_CABINET+infill-mitre  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+infill-mitre  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+infill-mitre  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+infill-mitre  file  01-BUR.dxf  bb110528
+> LOW_CABINET+infill-mitre  file  01-F.dxf  d02a6a2f
+1610,1619c1610,1619
+< LOW_CABINET+infill-mitre  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+infill-mitre  sheet all  322f0800
+< LOW_CABINET+infill-mitre  sheet fronts  c745c725
+< LOW_CABINET+infill-mitre  sheet non-sprayed  70318ebc
+< LOW_CABINET+infill-mitre  sheet sprayed  49aa1f1d
+< LOW_CABINET+infill-mitre-narrow  file  01-BACK.dxf  faab3541
+< LOW_CABINET+infill-mitre-narrow  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+infill-mitre-narrow  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+infill-mitre-narrow  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+infill-mitre-narrow  file  01-F.dxf  c745c725
+---
+> LOW_CABINET+infill-mitre  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+infill-mitre  sheet all  31c5a120
+> LOW_CABINET+infill-mitre  sheet fronts  d02a6a2f
+> LOW_CABINET+infill-mitre  sheet non-sprayed  e6f7e960
+> LOW_CABINET+infill-mitre  sheet sprayed  0cd4aaed
+> LOW_CABINET+infill-mitre-narrow  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+infill-mitre-narrow  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+infill-mitre-narrow  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+infill-mitre-narrow  file  01-BUR.dxf  bb110528
+> LOW_CABINET+infill-mitre-narrow  file  01-F.dxf  d02a6a2f
+1624,1633c1624,1633
+< LOW_CABINET+infill-mitre-narrow  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+infill-mitre-narrow  sheet all  5762b75c
+< LOW_CABINET+infill-mitre-narrow  sheet fronts  c745c725
+< LOW_CABINET+infill-mitre-narrow  sheet non-sprayed  70318ebc
+< LOW_CABINET+infill-mitre-narrow  sheet sprayed  67b23067
+< LOW_CABINET+infills  file  01-BACK.dxf  faab3541
+< LOW_CABINET+infills  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+infills  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+infills  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+infills  file  01-F.dxf  c745c725
+---
+> LOW_CABINET+infill-mitre-narrow  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+infill-mitre-narrow  sheet all  80eb66bc
+> LOW_CABINET+infill-mitre-narrow  sheet fronts  d02a6a2f
+> LOW_CABINET+infill-mitre-narrow  sheet non-sprayed  e6f7e960
+> LOW_CABINET+infill-mitre-narrow  sheet sprayed  fa935457
+> LOW_CABINET+infills  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+infills  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+infills  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+infills  file  01-BUR.dxf  bb110528
+> LOW_CABINET+infills  file  01-F.dxf  d02a6a2f
+1638,1670c1638,1670
+< LOW_CABINET+infills  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+infills  sheet all  ea8dfcf0
+< LOW_CABINET+infills  sheet fronts  c745c725
+< LOW_CABINET+infills  sheet non-sprayed  70318ebc
+< LOW_CABINET+infills  sheet sprayed  ed0e724e
+< LOW_CABINET+partition  file  01-BACK.dxf  faab3541
+< LOW_CABINET+partition  file  01-BOTTOM.dxf  21e1fb18
+< LOW_CABINET+partition  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+partition  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+partition  file  01-F.dxf  c745c725
+< LOW_CABINET+partition  file  01-TOP.dxf  828f3d9b
+< LOW_CABINET+partition  file  01-VPART-1.dxf  53173b64
+< LOW_CABINET+partition  sheet all  5e9b5d82
+< LOW_CABINET+partition  sheet fronts  c745c725
+< LOW_CABINET+partition  sheet non-sprayed  2e10864c
+< LOW_CABINET+partition  sheet sprayed  c745c725
+< LOW_CABINET+partition-on-shelf  file  01-BACK.dxf  faab3541
+< LOW_CABINET+partition-on-shelf  file  01-BOTTOM.dxf  21e1fb18
+< LOW_CABINET+partition-on-shelf  file  01-BUL.dxf  8880d656
+< LOW_CABINET+partition-on-shelf  file  01-BUR.dxf  acaefed0
+< LOW_CABINET+partition-on-shelf  file  01-F.dxf  c745c725
+< LOW_CABINET+partition-on-shelf  file  01-SHELF-1.dxf  5654ec18
+< LOW_CABINET+partition-on-shelf  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+partition-on-shelf  file  01-VPART-1.dxf  f793eb3f
+< LOW_CABINET+partition-on-shelf  sheet all  ccc15372
+< LOW_CABINET+partition-on-shelf  sheet fronts  c745c725
+< LOW_CABINET+partition-on-shelf  sheet non-sprayed  32f06d04
+< LOW_CABINET+partition-on-shelf  sheet sprayed  c745c725
+< LOW_CABINET+plinth  file  01-BACK.dxf  faab3541
+< LOW_CABINET+plinth  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+plinth  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+plinth  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+plinth  file  01-F.dxf  c745c725
+---
+> LOW_CABINET+infills  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+infills  sheet all  3c449880
+> LOW_CABINET+infills  sheet fronts  d02a6a2f
+> LOW_CABINET+infills  sheet non-sprayed  e6f7e960
+> LOW_CABINET+infills  sheet sprayed  f5a252a6
+> LOW_CABINET+partition  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+partition  file  01-BOTTOM.dxf  5705d738
+> LOW_CABINET+partition  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+partition  file  01-BUR.dxf  bb110528
+> LOW_CABINET+partition  file  01-F.dxf  d02a6a2f
+> LOW_CABINET+partition  file  01-TOP.dxf  dd076d33
+> LOW_CABINET+partition  file  01-VPART-1.dxf  7fe8c49c
+> LOW_CABINET+partition  sheet all  e98341b4
+> LOW_CABINET+partition  sheet fronts  d02a6a2f
+> LOW_CABINET+partition  sheet non-sprayed  6922ace6
+> LOW_CABINET+partition  sheet sprayed  d02a6a2f
+> LOW_CABINET+partition-on-shelf  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+partition-on-shelf  file  01-BOTTOM.dxf  5705d738
+> LOW_CABINET+partition-on-shelf  file  01-BUL.dxf  2e665458
+> LOW_CABINET+partition-on-shelf  file  01-BUR.dxf  e980fa76
+> LOW_CABINET+partition-on-shelf  file  01-F.dxf  d02a6a2f
+> LOW_CABINET+partition-on-shelf  file  01-SHELF-1.dxf  07a86572
+> LOW_CABINET+partition-on-shelf  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+partition-on-shelf  file  01-VPART-1.dxf  2d5673ea
+> LOW_CABINET+partition-on-shelf  sheet all  ea40b94f
+> LOW_CABINET+partition-on-shelf  sheet fronts  d02a6a2f
+> LOW_CABINET+partition-on-shelf  sheet non-sprayed  3149846f
+> LOW_CABINET+partition-on-shelf  sheet sprayed  d02a6a2f
+> LOW_CABINET+plinth  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+plinth  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+plinth  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+plinth  file  01-BUR.dxf  bb110528
+> LOW_CABINET+plinth  file  01-F.dxf  d02a6a2f
+1672,1691c1672,1691
+< LOW_CABINET+plinth  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+plinth  sheet all  91ba76cc
+< LOW_CABINET+plinth  sheet fronts  c745c725
+< LOW_CABINET+plinth  sheet non-sprayed  70318ebc
+< LOW_CABINET+plinth  sheet sprayed  887046f0
+< LOW_CABINET+plinth-run-member  file  01-BACK.dxf  faab3541
+< LOW_CABINET+plinth-run-member  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+plinth-run-member  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+plinth-run-member  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+plinth-run-member  file  01-F.dxf  c745c725
+< LOW_CABINET+plinth-run-member  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+plinth-run-member  sheet all  fd19c87e
+< LOW_CABINET+plinth-run-member  sheet fronts  c745c725
+< LOW_CABINET+plinth-run-member  sheet non-sprayed  70318ebc
+< LOW_CABINET+plinth-run-member  sheet sprayed  c745c725
+< LOW_CABINET+plinth-run-owner  file  01-BACK.dxf  faab3541
+< LOW_CABINET+plinth-run-owner  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+plinth-run-owner  file  01-BUL.dxf  f21cc244
+< LOW_CABINET+plinth-run-owner  file  01-BUR.dxf  2a16ace2
+< LOW_CABINET+plinth-run-owner  file  01-F.dxf  c745c725
+---
+> LOW_CABINET+plinth  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+plinth  sheet all  389def26
+> LOW_CABINET+plinth  sheet fronts  d02a6a2f
+> LOW_CABINET+plinth  sheet non-sprayed  e6f7e960
+> LOW_CABINET+plinth  sheet sprayed  78181c0e
+> LOW_CABINET+plinth-run-member  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+plinth-run-member  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+plinth-run-member  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+plinth-run-member  file  01-BUR.dxf  bb110528
+> LOW_CABINET+plinth-run-member  file  01-F.dxf  d02a6a2f
+> LOW_CABINET+plinth-run-member  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+plinth-run-member  sheet all  cb94fce0
+> LOW_CABINET+plinth-run-member  sheet fronts  d02a6a2f
+> LOW_CABINET+plinth-run-member  sheet non-sprayed  e6f7e960
+> LOW_CABINET+plinth-run-member  sheet sprayed  d02a6a2f
+> LOW_CABINET+plinth-run-owner  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+plinth-run-owner  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+plinth-run-owner  file  01-BUL.dxf  be52fc86
+> LOW_CABINET+plinth-run-owner  file  01-BUR.dxf  bb110528
+> LOW_CABINET+plinth-run-owner  file  01-F.dxf  d02a6a2f
+1693,1709c1693,1709
+< LOW_CABINET+plinth-run-owner  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+plinth-run-owner  sheet all  75810b81
+< LOW_CABINET+plinth-run-owner  sheet fronts  c745c725
+< LOW_CABINET+plinth-run-owner  sheet non-sprayed  70318ebc
+< LOW_CABINET+plinth-run-owner  sheet sprayed  e15fec6e
+< LOW_CABINET+shelves  file  01-BACK.dxf  faab3541
+< LOW_CABINET+shelves  file  01-BOTTOM.dxf  357cefe0
+< LOW_CABINET+shelves  file  01-BUL.dxf  2fa2b2dc
+< LOW_CABINET+shelves  file  01-BUR.dxf  bf89cfc0
+< LOW_CABINET+shelves  file  01-F.dxf  c745c725
+< LOW_CABINET+shelves  file  01-SHELF-1.dxf  1faccc2b
+< LOW_CABINET+shelves  file  01-SHELF-2.dxf  4e5e24e4
+< LOW_CABINET+shelves  file  01-TOP.dxf  ef2d0db3
+< LOW_CABINET+shelves  sheet all  fa601580
+< LOW_CABINET+shelves  sheet fronts  c745c725
+< LOW_CABINET+shelves  sheet non-sprayed  a425a10c
+< LOW_CABINET+shelves  sheet sprayed  c745c725
+---
+> LOW_CABINET+plinth-run-owner  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+plinth-run-owner  sheet all  3fc7e1f1
+> LOW_CABINET+plinth-run-owner  sheet fronts  d02a6a2f
+> LOW_CABINET+plinth-run-owner  sheet non-sprayed  e6f7e960
+> LOW_CABINET+plinth-run-owner  sheet sprayed  a24cebfa
+> LOW_CABINET+shelves  file  01-BACK.dxf  d6a83465
+> LOW_CABINET+shelves  file  01-BOTTOM.dxf  8bd353e0
+> LOW_CABINET+shelves  file  01-BUL.dxf  eb7ed45e
+> LOW_CABINET+shelves  file  01-BUR.dxf  dbdaec26
+> LOW_CABINET+shelves  file  01-F.dxf  d02a6a2f
+> LOW_CABINET+shelves  file  01-SHELF-1.dxf  e5a1cea5
+> LOW_CABINET+shelves  file  01-SHELF-2.dxf  05ec0942
+> LOW_CABINET+shelves  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+shelves  sheet all  c57aee54
+> LOW_CABINET+shelves  sheet fronts  d02a6a2f
+> LOW_CABINET+shelves  sheet non-sprayed  b467f7f6
+> LOW_CABINET+shelves  sheet sprayed  d02a6a2f
+1711,1713c1711,1713
+< OVEN_BASE  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE  file  01-BUL.dxf  b0624743
+< OVEN_BASE  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE  file  01-BUL.dxf  98903773
+> OVEN_BASE  file  01-BUR.dxf  7325c7de
+1716c1716
+< OVEN_BASE  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE  file  01-D1-DNO.dxf  81c95f1d
+1719,1720c1719,1720
+< OVEN_BASE  file  01-F1.dxf  304dff75
+< OVEN_BASE  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE  file  01-F1.dxf  7efa7815
+> OVEN_BASE  file  01-FIXED.dxf  9dfc5077
+1723,1726c1723,1726
+< OVEN_BASE  sheet all  befbe604
+< OVEN_BASE  sheet fronts  304dff75
+< OVEN_BASE  sheet non-sprayed  ad26fddd
+< OVEN_BASE  sheet sprayed  304dff75
+---
+> OVEN_BASE  sheet all  3360d0fe
+> OVEN_BASE  sheet fronts  7efa7815
+> OVEN_BASE  sheet non-sprayed  f78d734f
+> OVEN_BASE  sheet sprayed  7efa7815
+1728,1730c1728,1730
+< OVEN_BASE+bottom-mask  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+bottom-mask  file  01-BUL.dxf  b0624743
+< OVEN_BASE+bottom-mask  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+bottom-mask  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+bottom-mask  file  01-BUL.dxf  98903773
+> OVEN_BASE+bottom-mask  file  01-BUR.dxf  7325c7de
+1733c1733
+< OVEN_BASE+bottom-mask  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+bottom-mask  file  01-D1-DNO.dxf  81c95f1d
+1736,1737c1736,1737
+< OVEN_BASE+bottom-mask  file  01-F1.dxf  304dff75
+< OVEN_BASE+bottom-mask  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+bottom-mask  file  01-F1.dxf  7efa7815
+> OVEN_BASE+bottom-mask  file  01-FIXED.dxf  9dfc5077
+1740,1743c1740,1743
+< OVEN_BASE+bottom-mask  sheet all  befbe604
+< OVEN_BASE+bottom-mask  sheet fronts  304dff75
+< OVEN_BASE+bottom-mask  sheet non-sprayed  ad26fddd
+< OVEN_BASE+bottom-mask  sheet sprayed  304dff75
+---
+> OVEN_BASE+bottom-mask  sheet all  3360d0fe
+> OVEN_BASE+bottom-mask  sheet fronts  7efa7815
+> OVEN_BASE+bottom-mask  sheet non-sprayed  f78d734f
+> OVEN_BASE+bottom-mask  sheet sprayed  7efa7815
+1745,1747c1745,1747
+< OVEN_BASE+bottom-mask-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+bottom-mask-run-owner  file  01-BUL.dxf  b0624743
+< OVEN_BASE+bottom-mask-run-owner  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+bottom-mask-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+bottom-mask-run-owner  file  01-BUL.dxf  98903773
+> OVEN_BASE+bottom-mask-run-owner  file  01-BUR.dxf  7325c7de
+1750c1750
+< OVEN_BASE+bottom-mask-run-owner  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+bottom-mask-run-owner  file  01-D1-DNO.dxf  81c95f1d
+1753,1754c1753,1754
+< OVEN_BASE+bottom-mask-run-owner  file  01-F1.dxf  304dff75
+< OVEN_BASE+bottom-mask-run-owner  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+bottom-mask-run-owner  file  01-F1.dxf  7efa7815
+> OVEN_BASE+bottom-mask-run-owner  file  01-FIXED.dxf  9dfc5077
+1757,1760c1757,1760
+< OVEN_BASE+bottom-mask-run-owner  sheet all  befbe604
+< OVEN_BASE+bottom-mask-run-owner  sheet fronts  304dff75
+< OVEN_BASE+bottom-mask-run-owner  sheet non-sprayed  ad26fddd
+< OVEN_BASE+bottom-mask-run-owner  sheet sprayed  304dff75
+---
+> OVEN_BASE+bottom-mask-run-owner  sheet all  3360d0fe
+> OVEN_BASE+bottom-mask-run-owner  sheet fronts  7efa7815
+> OVEN_BASE+bottom-mask-run-owner  sheet non-sprayed  f78d734f
+> OVEN_BASE+bottom-mask-run-owner  sheet sprayed  7efa7815
+1762,1764c1762,1764
+< OVEN_BASE+infill-mitre  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+infill-mitre  file  01-BUL.dxf  b0624743
+< OVEN_BASE+infill-mitre  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+infill-mitre  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+infill-mitre  file  01-BUL.dxf  98903773
+> OVEN_BASE+infill-mitre  file  01-BUR.dxf  7325c7de
+1767c1767
+< OVEN_BASE+infill-mitre  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+infill-mitre  file  01-D1-DNO.dxf  81c95f1d
+1770,1771c1770,1771
+< OVEN_BASE+infill-mitre  file  01-F1.dxf  304dff75
+< OVEN_BASE+infill-mitre  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+infill-mitre  file  01-F1.dxf  7efa7815
+> OVEN_BASE+infill-mitre  file  01-FIXED.dxf  9dfc5077
+1778,1781c1778,1781
+< OVEN_BASE+infill-mitre  sheet all  2b740772
+< OVEN_BASE+infill-mitre  sheet fronts  304dff75
+< OVEN_BASE+infill-mitre  sheet non-sprayed  ad26fddd
+< OVEN_BASE+infill-mitre  sheet sprayed  83098218
+---
+> OVEN_BASE+infill-mitre  sheet all  779abf5e
+> OVEN_BASE+infill-mitre  sheet fronts  7efa7815
+> OVEN_BASE+infill-mitre  sheet non-sprayed  f78d734f
+> OVEN_BASE+infill-mitre  sheet sprayed  5368ce0e
+1783,1785c1783,1785
+< OVEN_BASE+infill-mitre-narrow  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+infill-mitre-narrow  file  01-BUL.dxf  b0624743
+< OVEN_BASE+infill-mitre-narrow  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+infill-mitre-narrow  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+infill-mitre-narrow  file  01-BUL.dxf  98903773
+> OVEN_BASE+infill-mitre-narrow  file  01-BUR.dxf  7325c7de
+1788c1788
+< OVEN_BASE+infill-mitre-narrow  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+infill-mitre-narrow  file  01-D1-DNO.dxf  81c95f1d
+1791,1792c1791,1792
+< OVEN_BASE+infill-mitre-narrow  file  01-F1.dxf  304dff75
+< OVEN_BASE+infill-mitre-narrow  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+infill-mitre-narrow  file  01-F1.dxf  7efa7815
+> OVEN_BASE+infill-mitre-narrow  file  01-FIXED.dxf  9dfc5077
+1799,1802c1799,1802
+< OVEN_BASE+infill-mitre-narrow  sheet all  d5f0b52b
+< OVEN_BASE+infill-mitre-narrow  sheet fronts  304dff75
+< OVEN_BASE+infill-mitre-narrow  sheet non-sprayed  ad26fddd
+< OVEN_BASE+infill-mitre-narrow  sheet sprayed  355b538a
+---
+> OVEN_BASE+infill-mitre-narrow  sheet all  bc920917
+> OVEN_BASE+infill-mitre-narrow  sheet fronts  7efa7815
+> OVEN_BASE+infill-mitre-narrow  sheet non-sprayed  f78d734f
+> OVEN_BASE+infill-mitre-narrow  sheet sprayed  62e88054
+1804,1806c1804,1806
+< OVEN_BASE+infills  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+infills  file  01-BUL.dxf  b0624743
+< OVEN_BASE+infills  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+infills  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+infills  file  01-BUL.dxf  98903773
+> OVEN_BASE+infills  file  01-BUR.dxf  7325c7de
+1809c1809
+< OVEN_BASE+infills  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+infills  file  01-D1-DNO.dxf  81c95f1d
+1812,1813c1812,1813
+< OVEN_BASE+infills  file  01-F1.dxf  304dff75
+< OVEN_BASE+infills  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+infills  file  01-F1.dxf  7efa7815
+> OVEN_BASE+infills  file  01-FIXED.dxf  9dfc5077
+1820,1823c1820,1823
+< OVEN_BASE+infills  sheet all  7653c278
+< OVEN_BASE+infills  sheet fronts  304dff75
+< OVEN_BASE+infills  sheet non-sprayed  ad26fddd
+< OVEN_BASE+infills  sheet sprayed  de5b45fd
+---
+> OVEN_BASE+infills  sheet all  d8b0db40
+> OVEN_BASE+infills  sheet fronts  7efa7815
+> OVEN_BASE+infills  sheet non-sprayed  f78d734f
+> OVEN_BASE+infills  sheet sprayed  c3c7a8f3
+1825,1827c1825,1827
+< OVEN_BASE+partition  file  01-BOTTOM.dxf  4c24f0da
+< OVEN_BASE+partition  file  01-BUL.dxf  b0624743
+< OVEN_BASE+partition  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+partition  file  01-BOTTOM.dxf  ac7003da
+> OVEN_BASE+partition  file  01-BUL.dxf  98903773
+> OVEN_BASE+partition  file  01-BUR.dxf  7325c7de
+1830c1830
+< OVEN_BASE+partition  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+partition  file  01-D1-DNO.dxf  81c95f1d
+1833,1834c1833,1834
+< OVEN_BASE+partition  file  01-F1.dxf  304dff75
+< OVEN_BASE+partition  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+partition  file  01-F1.dxf  7efa7815
+> OVEN_BASE+partition  file  01-FIXED.dxf  9dfc5077
+1837,1841c1837,1841
+< OVEN_BASE+partition  file  01-VPART-1.dxf  672f7734
+< OVEN_BASE+partition  sheet all  97834ea6
+< OVEN_BASE+partition  sheet fronts  304dff75
+< OVEN_BASE+partition  sheet non-sprayed  214a09b4
+< OVEN_BASE+partition  sheet sprayed  304dff75
+---
+> OVEN_BASE+partition  file  01-VPART-1.dxf  3ea179f2
+> OVEN_BASE+partition  sheet all  7a5f6766
+> OVEN_BASE+partition  sheet fronts  7efa7815
+> OVEN_BASE+partition  sheet non-sprayed  ec6e4c2c
+> OVEN_BASE+partition  sheet sprayed  7efa7815
+1843,1845c1843,1845
+< OVEN_BASE+partition-on-shelf  file  01-BOTTOM.dxf  4c24f0da
+< OVEN_BASE+partition-on-shelf  file  01-BUL.dxf  b0624743
+< OVEN_BASE+partition-on-shelf  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+> OVEN_BASE+partition-on-shelf  file  01-BUL.dxf  98903773
+> OVEN_BASE+partition-on-shelf  file  01-BUR.dxf  7325c7de
+1848c1848
+< OVEN_BASE+partition-on-shelf  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+partition-on-shelf  file  01-D1-DNO.dxf  81c95f1d
+1851,1852c1851,1852
+< OVEN_BASE+partition-on-shelf  file  01-F1.dxf  304dff75
+< OVEN_BASE+partition-on-shelf  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+partition-on-shelf  file  01-F1.dxf  7efa7815
+> OVEN_BASE+partition-on-shelf  file  01-FIXED.dxf  9dfc5077
+1855,1859c1855,1859
+< OVEN_BASE+partition-on-shelf  file  01-VPART-1.dxf  d9a474fa
+< OVEN_BASE+partition-on-shelf  sheet all  88bd02d2
+< OVEN_BASE+partition-on-shelf  sheet fronts  304dff75
+< OVEN_BASE+partition-on-shelf  sheet non-sprayed  bce9ad9b
+< OVEN_BASE+partition-on-shelf  sheet sprayed  304dff75
+---
+> OVEN_BASE+partition-on-shelf  file  01-VPART-1.dxf  dc4df93d
+> OVEN_BASE+partition-on-shelf  sheet all  0aeea091
+> OVEN_BASE+partition-on-shelf  sheet fronts  7efa7815
+> OVEN_BASE+partition-on-shelf  sheet non-sprayed  9983e78a
+> OVEN_BASE+partition-on-shelf  sheet sprayed  7efa7815
+1861,1863c1861,1863
+< OVEN_BASE+plinth  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+plinth  file  01-BUL.dxf  b0624743
+< OVEN_BASE+plinth  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+plinth  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+plinth  file  01-BUL.dxf  98903773
+> OVEN_BASE+plinth  file  01-BUR.dxf  7325c7de
+1866c1866
+< OVEN_BASE+plinth  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+plinth  file  01-D1-DNO.dxf  81c95f1d
+1869,1870c1869,1870
+< OVEN_BASE+plinth  file  01-F1.dxf  304dff75
+< OVEN_BASE+plinth  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+plinth  file  01-F1.dxf  7efa7815
+> OVEN_BASE+plinth  file  01-FIXED.dxf  9dfc5077
+1874,1877c1874,1877
+< OVEN_BASE+plinth  sheet all  9e2b92f8
+< OVEN_BASE+plinth  sheet fronts  304dff75
+< OVEN_BASE+plinth  sheet non-sprayed  ad26fddd
+< OVEN_BASE+plinth  sheet sprayed  b5d66cf2
+---
+> OVEN_BASE+plinth  sheet all  0cb5b79a
+> OVEN_BASE+plinth  sheet fronts  7efa7815
+> OVEN_BASE+plinth  sheet non-sprayed  f78d734f
+> OVEN_BASE+plinth  sheet sprayed  c7974e66
+1879,1881c1879,1881
+< OVEN_BASE+plinth-run-member  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+plinth-run-member  file  01-BUL.dxf  b0624743
+< OVEN_BASE+plinth-run-member  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+plinth-run-member  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+plinth-run-member  file  01-BUL.dxf  98903773
+> OVEN_BASE+plinth-run-member  file  01-BUR.dxf  7325c7de
+1884c1884
+< OVEN_BASE+plinth-run-member  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+plinth-run-member  file  01-D1-DNO.dxf  81c95f1d
+1887,1888c1887,1888
+< OVEN_BASE+plinth-run-member  file  01-F1.dxf  304dff75
+< OVEN_BASE+plinth-run-member  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+plinth-run-member  file  01-F1.dxf  7efa7815
+> OVEN_BASE+plinth-run-member  file  01-FIXED.dxf  9dfc5077
+1891,1894c1891,1894
+< OVEN_BASE+plinth-run-member  sheet all  befbe604
+< OVEN_BASE+plinth-run-member  sheet fronts  304dff75
+< OVEN_BASE+plinth-run-member  sheet non-sprayed  ad26fddd
+< OVEN_BASE+plinth-run-member  sheet sprayed  304dff75
+---
+> OVEN_BASE+plinth-run-member  sheet all  3360d0fe
+> OVEN_BASE+plinth-run-member  sheet fronts  7efa7815
+> OVEN_BASE+plinth-run-member  sheet non-sprayed  f78d734f
+> OVEN_BASE+plinth-run-member  sheet sprayed  7efa7815
+1896,1898c1896,1898
+< OVEN_BASE+plinth-run-owner  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+plinth-run-owner  file  01-BUL.dxf  b0624743
+< OVEN_BASE+plinth-run-owner  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+plinth-run-owner  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+plinth-run-owner  file  01-BUL.dxf  98903773
+> OVEN_BASE+plinth-run-owner  file  01-BUR.dxf  7325c7de
+1901c1901
+< OVEN_BASE+plinth-run-owner  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+plinth-run-owner  file  01-D1-DNO.dxf  81c95f1d
+1904,1905c1904,1905
+< OVEN_BASE+plinth-run-owner  file  01-F1.dxf  304dff75
+< OVEN_BASE+plinth-run-owner  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+plinth-run-owner  file  01-F1.dxf  7efa7815
+> OVEN_BASE+plinth-run-owner  file  01-FIXED.dxf  9dfc5077
+1909,1912c1909,1912
+< OVEN_BASE+plinth-run-owner  sheet all  a93c780d
+< OVEN_BASE+plinth-run-owner  sheet fronts  304dff75
+< OVEN_BASE+plinth-run-owner  sheet non-sprayed  ad26fddd
+< OVEN_BASE+plinth-run-owner  sheet sprayed  9aaefdae
+---
+> OVEN_BASE+plinth-run-owner  sheet all  100583bf
+> OVEN_BASE+plinth-run-owner  sheet fronts  7efa7815
+> OVEN_BASE+plinth-run-owner  sheet non-sprayed  f78d734f
+> OVEN_BASE+plinth-run-owner  sheet sprayed  3f954286
+1914,1916c1914,1916
+< OVEN_BASE+shelves  file  01-BOTTOM.dxf  8eae5ddc
+< OVEN_BASE+shelves  file  01-BUL.dxf  b0624743
+< OVEN_BASE+shelves  file  01-BUR.dxf  da66071a
+---
+> OVEN_BASE+shelves  file  01-BOTTOM.dxf  ababcbc4
+> OVEN_BASE+shelves  file  01-BUL.dxf  98903773
+> OVEN_BASE+shelves  file  01-BUR.dxf  7325c7de
+1919c1919
+< OVEN_BASE+shelves  file  01-D1-DNO.dxf  e914a503
+---
+> OVEN_BASE+shelves  file  01-D1-DNO.dxf  81c95f1d
+1922,1923c1922,1923
+< OVEN_BASE+shelves  file  01-F1.dxf  304dff75
+< OVEN_BASE+shelves  file  01-FIXED.dxf  ac81d04f
+---
+> OVEN_BASE+shelves  file  01-F1.dxf  7efa7815
+> OVEN_BASE+shelves  file  01-FIXED.dxf  9dfc5077
+1926,1934c1926,1934
+< OVEN_BASE+shelves  sheet all  befbe604
+< OVEN_BASE+shelves  sheet fronts  304dff75
+< OVEN_BASE+shelves  sheet non-sprayed  ad26fddd
+< OVEN_BASE+shelves  sheet sprayed  304dff75
+< SINK  file  01-BACK.dxf  83feeeef
+< SINK  file  01-BOTTOM.dxf  f32e628b
+< SINK  file  01-BUL.dxf  0f572bd2
+< SINK  file  01-BUR.dxf  7ad9722b
+< SINK  file  01-F.dxf  84ed8752
+---
+> OVEN_BASE+shelves  sheet all  3360d0fe
+> OVEN_BASE+shelves  sheet fronts  7efa7815
+> OVEN_BASE+shelves  sheet non-sprayed  f78d734f
+> OVEN_BASE+shelves  sheet sprayed  7efa7815
+> SINK  file  01-BACK.dxf  0a357c87
+> SINK  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK  file  01-BUL.dxf  3bd44e22
+> SINK  file  01-BUR.dxf  37857717
+> SINK  file  01-F.dxf  30598a0e
+1937,1945c1937,1945
+< SINK  sheet all  86aa1951
+< SINK  sheet fronts  84ed8752
+< SINK  sheet non-sprayed  efbe6c4c
+< SINK  sheet sprayed  84ed8752
+< SINK+bottom-mask  file  01-BACK.dxf  83feeeef
+< SINK+bottom-mask  file  01-BOTTOM.dxf  f32e628b
+< SINK+bottom-mask  file  01-BUL.dxf  0f572bd2
+< SINK+bottom-mask  file  01-BUR.dxf  7ad9722b
+< SINK+bottom-mask  file  01-F.dxf  84ed8752
+---
+> SINK  sheet all  10ef58b3
+> SINK  sheet fronts  30598a0e
+> SINK  sheet non-sprayed  b0e94616
+> SINK  sheet sprayed  30598a0e
+> SINK+bottom-mask  file  01-BACK.dxf  0a357c87
+> SINK+bottom-mask  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+bottom-mask  file  01-BUL.dxf  3bd44e22
+> SINK+bottom-mask  file  01-BUR.dxf  37857717
+> SINK+bottom-mask  file  01-F.dxf  30598a0e
+1948,1956c1948,1956
+< SINK+bottom-mask  sheet all  86aa1951
+< SINK+bottom-mask  sheet fronts  84ed8752
+< SINK+bottom-mask  sheet non-sprayed  efbe6c4c
+< SINK+bottom-mask  sheet sprayed  84ed8752
+< SINK+bottom-mask-run-owner  file  01-BACK.dxf  83feeeef
+< SINK+bottom-mask-run-owner  file  01-BOTTOM.dxf  f32e628b
+< SINK+bottom-mask-run-owner  file  01-BUL.dxf  0f572bd2
+< SINK+bottom-mask-run-owner  file  01-BUR.dxf  7ad9722b
+< SINK+bottom-mask-run-owner  file  01-F.dxf  84ed8752
+---
+> SINK+bottom-mask  sheet all  10ef58b3
+> SINK+bottom-mask  sheet fronts  30598a0e
+> SINK+bottom-mask  sheet non-sprayed  b0e94616
+> SINK+bottom-mask  sheet sprayed  30598a0e
+> SINK+bottom-mask-run-owner  file  01-BACK.dxf  0a357c87
+> SINK+bottom-mask-run-owner  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+bottom-mask-run-owner  file  01-BUL.dxf  3bd44e22
+> SINK+bottom-mask-run-owner  file  01-BUR.dxf  37857717
+> SINK+bottom-mask-run-owner  file  01-F.dxf  30598a0e
+1959,1967c1959,1967
+< SINK+bottom-mask-run-owner  sheet all  86aa1951
+< SINK+bottom-mask-run-owner  sheet fronts  84ed8752
+< SINK+bottom-mask-run-owner  sheet non-sprayed  efbe6c4c
+< SINK+bottom-mask-run-owner  sheet sprayed  84ed8752
+< SINK+infill-mitre  file  01-BACK.dxf  83feeeef
+< SINK+infill-mitre  file  01-BOTTOM.dxf  f32e628b
+< SINK+infill-mitre  file  01-BUL.dxf  0f572bd2
+< SINK+infill-mitre  file  01-BUR.dxf  7ad9722b
+< SINK+infill-mitre  file  01-F.dxf  84ed8752
+---
+> SINK+bottom-mask-run-owner  sheet all  10ef58b3
+> SINK+bottom-mask-run-owner  sheet fronts  30598a0e
+> SINK+bottom-mask-run-owner  sheet non-sprayed  b0e94616
+> SINK+bottom-mask-run-owner  sheet sprayed  30598a0e
+> SINK+infill-mitre  file  01-BACK.dxf  0a357c87
+> SINK+infill-mitre  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+infill-mitre  file  01-BUL.dxf  3bd44e22
+> SINK+infill-mitre  file  01-BUR.dxf  37857717
+> SINK+infill-mitre  file  01-F.dxf  30598a0e
+1974,1982c1974,1982
+< SINK+infill-mitre  sheet all  2cc32caf
+< SINK+infill-mitre  sheet fronts  84ed8752
+< SINK+infill-mitre  sheet non-sprayed  efbe6c4c
+< SINK+infill-mitre  sheet sprayed  66c81366
+< SINK+infill-mitre-narrow  file  01-BACK.dxf  83feeeef
+< SINK+infill-mitre-narrow  file  01-BOTTOM.dxf  f32e628b
+< SINK+infill-mitre-narrow  file  01-BUL.dxf  0f572bd2
+< SINK+infill-mitre-narrow  file  01-BUR.dxf  7ad9722b
+< SINK+infill-mitre-narrow  file  01-F.dxf  84ed8752
+---
+> SINK+infill-mitre  sheet all  4e5fec07
+> SINK+infill-mitre  sheet fronts  30598a0e
+> SINK+infill-mitre  sheet non-sprayed  b0e94616
+> SINK+infill-mitre  sheet sprayed  7a864296
+> SINK+infill-mitre-narrow  file  01-BACK.dxf  0a357c87
+> SINK+infill-mitre-narrow  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+infill-mitre-narrow  file  01-BUL.dxf  3bd44e22
+> SINK+infill-mitre-narrow  file  01-BUR.dxf  37857717
+> SINK+infill-mitre-narrow  file  01-F.dxf  30598a0e
+1989,1997c1989,1997
+< SINK+infill-mitre-narrow  sheet all  af82c757
+< SINK+infill-mitre-narrow  sheet fronts  84ed8752
+< SINK+infill-mitre-narrow  sheet non-sprayed  efbe6c4c
+< SINK+infill-mitre-narrow  sheet sprayed  61585c74
+< SINK+infills  file  01-BACK.dxf  83feeeef
+< SINK+infills  file  01-BOTTOM.dxf  f32e628b
+< SINK+infills  file  01-BUL.dxf  0f572bd2
+< SINK+infills  file  01-BUR.dxf  7ad9722b
+< SINK+infills  file  01-F.dxf  84ed8752
+---
+> SINK+infill-mitre-narrow  sheet all  df9d2c5b
+> SINK+infill-mitre-narrow  sheet fronts  30598a0e
+> SINK+infill-mitre-narrow  sheet non-sprayed  b0e94616
+> SINK+infill-mitre-narrow  sheet sprayed  6fe553cc
+> SINK+infills  file  01-BACK.dxf  0a357c87
+> SINK+infills  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+infills  file  01-BUL.dxf  3bd44e22
+> SINK+infills  file  01-BUR.dxf  37857717
+> SINK+infills  file  01-F.dxf  30598a0e
+2004,2012c2004,2012
+< SINK+infills  sheet all  6bae3c92
+< SINK+infills  sheet fronts  84ed8752
+< SINK+infills  sheet non-sprayed  efbe6c4c
+< SINK+infills  sheet sprayed  96435737
+< SINK+partition  file  01-BACK.dxf  83feeeef
+< SINK+partition  file  01-BOTTOM.dxf  a6133f0f
+< SINK+partition  file  01-BUL.dxf  0f572bd2
+< SINK+partition  file  01-BUR.dxf  7ad9722b
+< SINK+partition  file  01-F.dxf  84ed8752
+---
+> SINK+infills  sheet all  85e3dbba
+> SINK+infills  sheet fronts  30598a0e
+> SINK+infills  sheet non-sprayed  b0e94616
+> SINK+infills  sheet sprayed  d86d7ad3
+> SINK+partition  file  01-BACK.dxf  0a357c87
+> SINK+partition  file  01-BOTTOM.dxf  f9b0349b
+> SINK+partition  file  01-BUL.dxf  3bd44e22
+> SINK+partition  file  01-BUR.dxf  37857717
+> SINK+partition  file  01-F.dxf  30598a0e
+2015,2024c2015,2024
+< SINK+partition  file  01-VPART-1.dxf  672f7734
+< SINK+partition  sheet all  3644f27f
+< SINK+partition  sheet fronts  84ed8752
+< SINK+partition  sheet non-sprayed  5e4d9bf3
+< SINK+partition  sheet sprayed  84ed8752
+< SINK+partition-on-shelf  file  01-BACK.dxf  83feeeef
+< SINK+partition-on-shelf  file  01-BOTTOM.dxf  a6133f0f
+< SINK+partition-on-shelf  file  01-BUL.dxf  45803f08
+< SINK+partition-on-shelf  file  01-BUR.dxf  9a966587
+< SINK+partition-on-shelf  file  01-F.dxf  84ed8752
+---
+> SINK+partition  file  01-VPART-1.dxf  3ea179f2
+> SINK+partition  sheet all  1714dc85
+> SINK+partition  sheet fronts  30598a0e
+> SINK+partition  sheet non-sprayed  ce56ec6f
+> SINK+partition  sheet sprayed  30598a0e
+> SINK+partition-on-shelf  file  01-BACK.dxf  0a357c87
+> SINK+partition-on-shelf  file  01-BOTTOM.dxf  f9b0349b
+> SINK+partition-on-shelf  file  01-BUL.dxf  dc561680
+> SINK+partition-on-shelf  file  01-BUR.dxf  bab4e0b3
+> SINK+partition-on-shelf  file  01-F.dxf  30598a0e
+2027,2037c2027,2037
+< SINK+partition-on-shelf  file  01-SHELF-1.dxf  f07be058
+< SINK+partition-on-shelf  file  01-VPART-1.dxf  ff2fdb3c
+< SINK+partition-on-shelf  sheet all  e06e88f2
+< SINK+partition-on-shelf  sheet fronts  84ed8752
+< SINK+partition-on-shelf  sheet non-sprayed  cf927b21
+< SINK+partition-on-shelf  sheet sprayed  84ed8752
+< SINK+plinth  file  01-BACK.dxf  83feeeef
+< SINK+plinth  file  01-BOTTOM.dxf  f32e628b
+< SINK+plinth  file  01-BUL.dxf  0f572bd2
+< SINK+plinth  file  01-BUR.dxf  7ad9722b
+< SINK+plinth  file  01-F.dxf  84ed8752
+---
+> SINK+partition-on-shelf  file  01-SHELF-1.dxf  252d17f0
+> SINK+partition-on-shelf  file  01-VPART-1.dxf  52182fff
+> SINK+partition-on-shelf  sheet all  9c82abf5
+> SINK+partition-on-shelf  sheet fronts  30598a0e
+> SINK+partition-on-shelf  sheet non-sprayed  de50e2e8
+> SINK+partition-on-shelf  sheet sprayed  30598a0e
+> SINK+plinth  file  01-BACK.dxf  0a357c87
+> SINK+plinth  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+plinth  file  01-BUL.dxf  3bd44e22
+> SINK+plinth  file  01-BUR.dxf  37857717
+> SINK+plinth  file  01-F.dxf  30598a0e
+2041,2049c2041,2049
+< SINK+plinth  sheet all  4a5c90ad
+< SINK+plinth  sheet fronts  84ed8752
+< SINK+plinth  sheet non-sprayed  efbe6c4c
+< SINK+plinth  sheet sprayed  0e2aa136
+< SINK+plinth-run-member  file  01-BACK.dxf  83feeeef
+< SINK+plinth-run-member  file  01-BOTTOM.dxf  f32e628b
+< SINK+plinth-run-member  file  01-BUL.dxf  0f572bd2
+< SINK+plinth-run-member  file  01-BUR.dxf  7ad9722b
+< SINK+plinth-run-member  file  01-F.dxf  84ed8752
+---
+> SINK+plinth  sheet all  acbb6215
+> SINK+plinth  sheet fronts  30598a0e
+> SINK+plinth  sheet non-sprayed  b0e94616
+> SINK+plinth  sheet sprayed  8773adb6
+> SINK+plinth-run-member  file  01-BACK.dxf  0a357c87
+> SINK+plinth-run-member  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+plinth-run-member  file  01-BUL.dxf  3bd44e22
+> SINK+plinth-run-member  file  01-BUR.dxf  37857717
+> SINK+plinth-run-member  file  01-F.dxf  30598a0e
+2052,2060c2052,2060
+< SINK+plinth-run-member  sheet all  86aa1951
+< SINK+plinth-run-member  sheet fronts  84ed8752
+< SINK+plinth-run-member  sheet non-sprayed  efbe6c4c
+< SINK+plinth-run-member  sheet sprayed  84ed8752
+< SINK+plinth-run-owner  file  01-BACK.dxf  83feeeef
+< SINK+plinth-run-owner  file  01-BOTTOM.dxf  f32e628b
+< SINK+plinth-run-owner  file  01-BUL.dxf  0f572bd2
+< SINK+plinth-run-owner  file  01-BUR.dxf  7ad9722b
+< SINK+plinth-run-owner  file  01-F.dxf  84ed8752
+---
+> SINK+plinth-run-member  sheet all  10ef58b3
+> SINK+plinth-run-member  sheet fronts  30598a0e
+> SINK+plinth-run-member  sheet non-sprayed  b0e94616
+> SINK+plinth-run-member  sheet sprayed  30598a0e
+> SINK+plinth-run-owner  file  01-BACK.dxf  0a357c87
+> SINK+plinth-run-owner  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+plinth-run-owner  file  01-BUL.dxf  3bd44e22
+> SINK+plinth-run-owner  file  01-BUR.dxf  37857717
+> SINK+plinth-run-owner  file  01-F.dxf  30598a0e
+2064,2072c2064,2072
+< SINK+plinth-run-owner  sheet all  5df66ea8
+< SINK+plinth-run-owner  sheet fronts  84ed8752
+< SINK+plinth-run-owner  sheet non-sprayed  efbe6c4c
+< SINK+plinth-run-owner  sheet sprayed  3a1cc3c5
+< SINK+shelves  file  01-BACK.dxf  83feeeef
+< SINK+shelves  file  01-BOTTOM.dxf  f32e628b
+< SINK+shelves  file  01-BUL.dxf  18c35f53
+< SINK+shelves  file  01-BUR.dxf  2964b628
+< SINK+shelves  file  01-F.dxf  84ed8752
+---
+> SINK+plinth-run-owner  sheet all  52e2aabc
+> SINK+plinth-run-owner  sheet fronts  30598a0e
+> SINK+plinth-run-owner  sheet non-sprayed  b0e94616
+> SINK+plinth-run-owner  sheet sprayed  eea363e5
+> SINK+shelves  file  01-BACK.dxf  0a357c87
+> SINK+shelves  file  01-BOTTOM.dxf  ff4a3bbf
+> SINK+shelves  file  01-BUL.dxf  4b2d3c43
+> SINK+shelves  file  01-BUR.dxf  90f7e7c4
+> SINK+shelves  file  01-F.dxf  30598a0e
+2075,2115c2075,2115
+< SINK+shelves  file  01-SHELF-1.dxf  66e9a285
+< SINK+shelves  file  01-SHELF-2.dxf  855aec06
+< SINK+shelves  sheet all  041381e5
+< SINK+shelves  sheet fronts  84ed8752
+< SINK+shelves  sheet non-sprayed  da215aa0
+< SINK+shelves  sheet sprayed  84ed8752
+< WARDROBE  file  01-BACK.dxf  3d0aea5c
+< WARDROBE  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE  file  01-BUL.dxf  e664152c
+< WARDROBE  file  01-BUR.dxf  5f7d9efe
+< WARDROBE  file  01-F.dxf  6b9c6420
+< WARDROBE  file  01-TOP.dxf  ef2d0db3
+< WARDROBE  sheet all  c60964b3
+< WARDROBE  sheet fronts  6b9c6420
+< WARDROBE  sheet non-sprayed  967d59e4
+< WARDROBE  sheet sprayed  6b9c6420
+< WARDROBE+bottom-mask  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+bottom-mask  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+bottom-mask  file  01-BUL.dxf  e664152c
+< WARDROBE+bottom-mask  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+bottom-mask  file  01-F.dxf  6b9c6420
+< WARDROBE+bottom-mask  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+bottom-mask  sheet all  c60964b3
+< WARDROBE+bottom-mask  sheet fronts  6b9c6420
+< WARDROBE+bottom-mask  sheet non-sprayed  967d59e4
+< WARDROBE+bottom-mask  sheet sprayed  6b9c6420
+< WARDROBE+bottom-mask-run-owner  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+bottom-mask-run-owner  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+bottom-mask-run-owner  file  01-BUL.dxf  e664152c
+< WARDROBE+bottom-mask-run-owner  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+bottom-mask-run-owner  file  01-F.dxf  6b9c6420
+< WARDROBE+bottom-mask-run-owner  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+bottom-mask-run-owner  sheet all  c60964b3
+< WARDROBE+bottom-mask-run-owner  sheet fronts  6b9c6420
+< WARDROBE+bottom-mask-run-owner  sheet non-sprayed  967d59e4
+< WARDROBE+bottom-mask-run-owner  sheet sprayed  6b9c6420
+< WARDROBE+infill-mitre  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+infill-mitre  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+infill-mitre  file  01-BUL.dxf  e664152c
+< WARDROBE+infill-mitre  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+infill-mitre  file  01-F.dxf  6b9c6420
+---
+> SINK+shelves  file  01-SHELF-1.dxf  d7140efd
+> SINK+shelves  file  01-SHELF-2.dxf  659f4852
+> SINK+shelves  sheet all  0d8f3227
+> SINK+shelves  sheet fronts  30598a0e
+> SINK+shelves  sheet non-sprayed  d7f25a9e
+> SINK+shelves  sheet sprayed  30598a0e
+> WARDROBE  file  01-BACK.dxf  546cead6
+> WARDROBE  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE  file  01-BUL.dxf  5242e080
+> WARDROBE  file  01-BUR.dxf  ef3ee246
+> WARDROBE  file  01-F.dxf  34cc2aec
+> WARDROBE  file  01-TOP.dxf  0316dd0b
+> WARDROBE  sheet all  0fba3459
+> WARDROBE  sheet fronts  34cc2aec
+> WARDROBE  sheet non-sprayed  53cce146
+> WARDROBE  sheet sprayed  34cc2aec
+> WARDROBE+bottom-mask  file  01-BACK.dxf  546cead6
+> WARDROBE+bottom-mask  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+bottom-mask  file  01-BUL.dxf  5242e080
+> WARDROBE+bottom-mask  file  01-BUR.dxf  ef3ee246
+> WARDROBE+bottom-mask  file  01-F.dxf  34cc2aec
+> WARDROBE+bottom-mask  file  01-TOP.dxf  0316dd0b
+> WARDROBE+bottom-mask  sheet all  0fba3459
+> WARDROBE+bottom-mask  sheet fronts  34cc2aec
+> WARDROBE+bottom-mask  sheet non-sprayed  53cce146
+> WARDROBE+bottom-mask  sheet sprayed  34cc2aec
+> WARDROBE+bottom-mask-run-owner  file  01-BACK.dxf  546cead6
+> WARDROBE+bottom-mask-run-owner  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+bottom-mask-run-owner  file  01-BUL.dxf  5242e080
+> WARDROBE+bottom-mask-run-owner  file  01-BUR.dxf  ef3ee246
+> WARDROBE+bottom-mask-run-owner  file  01-F.dxf  34cc2aec
+> WARDROBE+bottom-mask-run-owner  file  01-TOP.dxf  0316dd0b
+> WARDROBE+bottom-mask-run-owner  sheet all  0fba3459
+> WARDROBE+bottom-mask-run-owner  sheet fronts  34cc2aec
+> WARDROBE+bottom-mask-run-owner  sheet non-sprayed  53cce146
+> WARDROBE+bottom-mask-run-owner  sheet sprayed  34cc2aec
+> WARDROBE+infill-mitre  file  01-BACK.dxf  546cead6
+> WARDROBE+infill-mitre  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+infill-mitre  file  01-BUL.dxf  5242e080
+> WARDROBE+infill-mitre  file  01-BUR.dxf  ef3ee246
+> WARDROBE+infill-mitre  file  01-F.dxf  34cc2aec
+2120,2129c2120,2129
+< WARDROBE+infill-mitre  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+infill-mitre  sheet all  2b663e99
+< WARDROBE+infill-mitre  sheet fronts  6b9c6420
+< WARDROBE+infill-mitre  sheet non-sprayed  967d59e4
+< WARDROBE+infill-mitre  sheet sprayed  56abac82
+< WARDROBE+infill-mitre-narrow  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+infill-mitre-narrow  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+infill-mitre-narrow  file  01-BUL.dxf  e664152c
+< WARDROBE+infill-mitre-narrow  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+infill-mitre-narrow  file  01-F.dxf  6b9c6420
+---
+> WARDROBE+infill-mitre  file  01-TOP.dxf  0316dd0b
+> WARDROBE+infill-mitre  sheet all  76d3d5a5
+> WARDROBE+infill-mitre  sheet fronts  34cc2aec
+> WARDROBE+infill-mitre  sheet non-sprayed  53cce146
+> WARDROBE+infill-mitre  sheet sprayed  b5db1bf8
+> WARDROBE+infill-mitre-narrow  file  01-BACK.dxf  546cead6
+> WARDROBE+infill-mitre-narrow  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+infill-mitre-narrow  file  01-BUL.dxf  5242e080
+> WARDROBE+infill-mitre-narrow  file  01-BUR.dxf  ef3ee246
+> WARDROBE+infill-mitre-narrow  file  01-F.dxf  34cc2aec
+2134,2143c2134,2143
+< WARDROBE+infill-mitre-narrow  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+infill-mitre-narrow  sheet all  994cd383
+< WARDROBE+infill-mitre-narrow  sheet fronts  6b9c6420
+< WARDROBE+infill-mitre-narrow  sheet non-sprayed  967d59e4
+< WARDROBE+infill-mitre-narrow  sheet sprayed  841ece5a
+< WARDROBE+infills  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+infills  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+infills  file  01-BUL.dxf  e664152c
+< WARDROBE+infills  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+infills  file  01-F.dxf  6b9c6420
+---
+> WARDROBE+infill-mitre-narrow  file  01-TOP.dxf  0316dd0b
+> WARDROBE+infill-mitre-narrow  sheet all  e449922b
+> WARDROBE+infill-mitre-narrow  sheet fronts  34cc2aec
+> WARDROBE+infill-mitre-narrow  sheet non-sprayed  53cce146
+> WARDROBE+infill-mitre-narrow  sheet sprayed  bc9fb164
+> WARDROBE+infills  file  01-BACK.dxf  546cead6
+> WARDROBE+infills  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+infills  file  01-BUL.dxf  5242e080
+> WARDROBE+infills  file  01-BUR.dxf  ef3ee246
+> WARDROBE+infills  file  01-F.dxf  34cc2aec
+2148,2180c2148,2180
+< WARDROBE+infills  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+infills  sheet all  cea44483
+< WARDROBE+infills  sheet fronts  6b9c6420
+< WARDROBE+infills  sheet non-sprayed  967d59e4
+< WARDROBE+infills  sheet sprayed  d494b7cf
+< WARDROBE+partition  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+partition  file  01-BOTTOM.dxf  21e1fb18
+< WARDROBE+partition  file  01-BUL.dxf  e664152c
+< WARDROBE+partition  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+partition  file  01-F.dxf  6b9c6420
+< WARDROBE+partition  file  01-TOP.dxf  828f3d9b
+< WARDROBE+partition  file  01-VPART-1.dxf  6de7d09e
+< WARDROBE+partition  sheet all  c3adc5d8
+< WARDROBE+partition  sheet fronts  6b9c6420
+< WARDROBE+partition  sheet non-sprayed  a9110f44
+< WARDROBE+partition  sheet sprayed  6b9c6420
+< WARDROBE+partition-on-shelf  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+partition-on-shelf  file  01-BOTTOM.dxf  21e1fb18
+< WARDROBE+partition-on-shelf  file  01-BUL.dxf  eb4e6191
+< WARDROBE+partition-on-shelf  file  01-BUR.dxf  0f57abb3
+< WARDROBE+partition-on-shelf  file  01-F.dxf  6b9c6420
+< WARDROBE+partition-on-shelf  file  01-SHELF-1.dxf  5654ec18
+< WARDROBE+partition-on-shelf  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+partition-on-shelf  file  01-VPART-1.dxf  a75a8c97
+< WARDROBE+partition-on-shelf  sheet all  e6a62c50
+< WARDROBE+partition-on-shelf  sheet fronts  6b9c6420
+< WARDROBE+partition-on-shelf  sheet non-sprayed  660e65e4
+< WARDROBE+partition-on-shelf  sheet sprayed  6b9c6420
+< WARDROBE+plinth  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+plinth  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+plinth  file  01-BUL.dxf  e664152c
+< WARDROBE+plinth  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+plinth  file  01-F.dxf  6b9c6420
+---
+> WARDROBE+infills  file  01-TOP.dxf  0316dd0b
+> WARDROBE+infills  sheet all  3be8395b
+> WARDROBE+infills  sheet fronts  34cc2aec
+> WARDROBE+infills  sheet non-sprayed  53cce146
+> WARDROBE+infills  sheet sprayed  8b1b3859
+> WARDROBE+partition  file  01-BACK.dxf  546cead6
+> WARDROBE+partition  file  01-BOTTOM.dxf  5705d738
+> WARDROBE+partition  file  01-BUL.dxf  5242e080
+> WARDROBE+partition  file  01-BUR.dxf  ef3ee246
+> WARDROBE+partition  file  01-F.dxf  34cc2aec
+> WARDROBE+partition  file  01-TOP.dxf  dd076d33
+> WARDROBE+partition  file  01-VPART-1.dxf  17f358f0
+> WARDROBE+partition  sheet all  92e8acae
+> WARDROBE+partition  sheet fronts  34cc2aec
+> WARDROBE+partition  sheet non-sprayed  ad171340
+> WARDROBE+partition  sheet sprayed  34cc2aec
+> WARDROBE+partition-on-shelf  file  01-BACK.dxf  546cead6
+> WARDROBE+partition-on-shelf  file  01-BOTTOM.dxf  5705d738
+> WARDROBE+partition-on-shelf  file  01-BUL.dxf  3143c65d
+> WARDROBE+partition-on-shelf  file  01-BUR.dxf  8b1e946b
+> WARDROBE+partition-on-shelf  file  01-F.dxf  34cc2aec
+> WARDROBE+partition-on-shelf  file  01-SHELF-1.dxf  07a86572
+> WARDROBE+partition-on-shelf  file  01-TOP.dxf  0316dd0b
+> WARDROBE+partition-on-shelf  file  01-VPART-1.dxf  5aa6a235
+> WARDROBE+partition-on-shelf  sheet all  c3879bce
+> WARDROBE+partition-on-shelf  sheet fronts  34cc2aec
+> WARDROBE+partition-on-shelf  sheet non-sprayed  cd5bd4ba
+> WARDROBE+partition-on-shelf  sheet sprayed  34cc2aec
+> WARDROBE+plinth  file  01-BACK.dxf  546cead6
+> WARDROBE+plinth  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+plinth  file  01-BUL.dxf  5242e080
+> WARDROBE+plinth  file  01-BUR.dxf  ef3ee246
+> WARDROBE+plinth  file  01-F.dxf  34cc2aec
+2182,2201c2182,2201
+< WARDROBE+plinth  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+plinth  sheet all  e2c8a8ed
+< WARDROBE+plinth  sheet fronts  6b9c6420
+< WARDROBE+plinth  sheet non-sprayed  967d59e4
+< WARDROBE+plinth  sheet sprayed  be42acb7
+< WARDROBE+plinth-run-member  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+plinth-run-member  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+plinth-run-member  file  01-BUL.dxf  e664152c
+< WARDROBE+plinth-run-member  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+plinth-run-member  file  01-F.dxf  6b9c6420
+< WARDROBE+plinth-run-member  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+plinth-run-member  sheet all  c60964b3
+< WARDROBE+plinth-run-member  sheet fronts  6b9c6420
+< WARDROBE+plinth-run-member  sheet non-sprayed  967d59e4
+< WARDROBE+plinth-run-member  sheet sprayed  6b9c6420
+< WARDROBE+plinth-run-owner  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+plinth-run-owner  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+plinth-run-owner  file  01-BUL.dxf  e664152c
+< WARDROBE+plinth-run-owner  file  01-BUR.dxf  5f7d9efe
+< WARDROBE+plinth-run-owner  file  01-F.dxf  6b9c6420
+---
+> WARDROBE+plinth  file  01-TOP.dxf  0316dd0b
+> WARDROBE+plinth  sheet all  ade4384b
+> WARDROBE+plinth  sheet fronts  34cc2aec
+> WARDROBE+plinth  sheet non-sprayed  53cce146
+> WARDROBE+plinth  sheet sprayed  1ed284db
+> WARDROBE+plinth-run-member  file  01-BACK.dxf  546cead6
+> WARDROBE+plinth-run-member  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+plinth-run-member  file  01-BUL.dxf  5242e080
+> WARDROBE+plinth-run-member  file  01-BUR.dxf  ef3ee246
+> WARDROBE+plinth-run-member  file  01-F.dxf  34cc2aec
+> WARDROBE+plinth-run-member  file  01-TOP.dxf  0316dd0b
+> WARDROBE+plinth-run-member  sheet all  0fba3459
+> WARDROBE+plinth-run-member  sheet fronts  34cc2aec
+> WARDROBE+plinth-run-member  sheet non-sprayed  53cce146
+> WARDROBE+plinth-run-member  sheet sprayed  34cc2aec
+> WARDROBE+plinth-run-owner  file  01-BACK.dxf  546cead6
+> WARDROBE+plinth-run-owner  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+plinth-run-owner  file  01-BUL.dxf  5242e080
+> WARDROBE+plinth-run-owner  file  01-BUR.dxf  ef3ee246
+> WARDROBE+plinth-run-owner  file  01-F.dxf  34cc2aec
+2203,2256c2203,2256
+< WARDROBE+plinth-run-owner  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+plinth-run-owner  sheet all  f0b4c9a2
+< WARDROBE+plinth-run-owner  sheet fronts  6b9c6420
+< WARDROBE+plinth-run-owner  sheet non-sprayed  967d59e4
+< WARDROBE+plinth-run-owner  sheet sprayed  0a30c8ed
+< WARDROBE+shelves  file  01-BACK.dxf  3d0aea5c
+< WARDROBE+shelves  file  01-BOTTOM.dxf  357cefe0
+< WARDROBE+shelves  file  01-BUL.dxf  abba9f94
+< WARDROBE+shelves  file  01-BUR.dxf  bb21c9a0
+< WARDROBE+shelves  file  01-F.dxf  6b9c6420
+< WARDROBE+shelves  file  01-SHELF-1.dxf  1faccc2b
+< WARDROBE+shelves  file  01-SHELF-2.dxf  4e5e24e4
+< WARDROBE+shelves  file  01-TOP.dxf  ef2d0db3
+< WARDROBE+shelves  sheet all  d895fd21
+< WARDROBE+shelves  sheet fronts  6b9c6420
+< WARDROBE+shelves  sheet non-sprayed  a5a01ebf
+< WARDROBE+shelves  sheet sprayed  6b9c6420
+< WUD  file  01-BACK.dxf  89ed82d7
+< WUD  file  01-BOTTOM.dxf  fb9c1b16
+< WUD  file  01-BUL.dxf  7688dff8
+< WUD  file  01-BUR.dxf  77a99ddc
+< WUD  file  01-F.dxf  e582900e
+< WUD  file  01-TOP.dxf  66af9e8b
+< WUD  sheet all  120a781e
+< WUD  sheet fronts  e582900e
+< WUD  sheet non-sprayed  a1d3d1be
+< WUD  sheet sprayed  e582900e
+< WUD+bottom-mask  file  01-BACK.dxf  89ed82d7
+< WUD+bottom-mask  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+bottom-mask  file  01-BUL.dxf  7688dff8
+< WUD+bottom-mask  file  01-BUR.dxf  77a99ddc
+< WUD+bottom-mask  file  01-F.dxf  e582900e
+< WUD+bottom-mask  file  01-MASK.dxf  f4a5d6e2
+< WUD+bottom-mask  file  01-TOP.dxf  66af9e8b
+< WUD+bottom-mask  sheet all  e187d739
+< WUD+bottom-mask  sheet fronts  e582900e
+< WUD+bottom-mask  sheet non-sprayed  a1d3d1be
+< WUD+bottom-mask  sheet sprayed  de4776a1
+< WUD+bottom-mask-run-owner  file  01-BACK.dxf  89ed82d7
+< WUD+bottom-mask-run-owner  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+bottom-mask-run-owner  file  01-BUL.dxf  7688dff8
+< WUD+bottom-mask-run-owner  file  01-BUR.dxf  77a99ddc
+< WUD+bottom-mask-run-owner  file  01-F.dxf  e582900e
+< WUD+bottom-mask-run-owner  file  01-MASK.dxf  dec47de1
+< WUD+bottom-mask-run-owner  file  01-TOP.dxf  66af9e8b
+< WUD+bottom-mask-run-owner  sheet all  1e0e1b48
+< WUD+bottom-mask-run-owner  sheet fronts  e582900e
+< WUD+bottom-mask-run-owner  sheet non-sprayed  a1d3d1be
+< WUD+bottom-mask-run-owner  sheet sprayed  169298bc
+< WUD+infill-mitre  file  01-BACK.dxf  89ed82d7
+< WUD+infill-mitre  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+infill-mitre  file  01-BUL.dxf  7688dff8
+< WUD+infill-mitre  file  01-BUR.dxf  77a99ddc
+< WUD+infill-mitre  file  01-F.dxf  e582900e
+---
+> WARDROBE+plinth-run-owner  file  01-TOP.dxf  0316dd0b
+> WARDROBE+plinth-run-owner  sheet all  ff7e30de
+> WARDROBE+plinth-run-owner  sheet fronts  34cc2aec
+> WARDROBE+plinth-run-owner  sheet non-sprayed  53cce146
+> WARDROBE+plinth-run-owner  sheet sprayed  24d5ee93
+> WARDROBE+shelves  file  01-BACK.dxf  546cead6
+> WARDROBE+shelves  file  01-BOTTOM.dxf  8bd353e0
+> WARDROBE+shelves  file  01-BUL.dxf  3776bdc8
+> WARDROBE+shelves  file  01-BUR.dxf  94d34760
+> WARDROBE+shelves  file  01-F.dxf  34cc2aec
+> WARDROBE+shelves  file  01-SHELF-1.dxf  e5a1cea5
+> WARDROBE+shelves  file  01-SHELF-2.dxf  05ec0942
+> WARDROBE+shelves  file  01-TOP.dxf  0316dd0b
+> WARDROBE+shelves  sheet all  665b5f45
+> WARDROBE+shelves  sheet fronts  34cc2aec
+> WARDROBE+shelves  sheet non-sprayed  95481375
+> WARDROBE+shelves  sheet sprayed  34cc2aec
+> WUD  file  01-BACK.dxf  8fcfc43b
+> WUD  file  01-BOTTOM.dxf  0d68b01a
+> WUD  file  01-BUL.dxf  ae292540
+> WUD  file  01-BUR.dxf  255046f0
+> WUD  file  01-F.dxf  ef5150ec
+> WUD  file  01-TOP.dxf  0a320203
+> WUD  sheet all  77b360de
+> WUD  sheet fronts  ef5150ec
+> WUD  sheet non-sprayed  c1137a06
+> WUD  sheet sprayed  ef5150ec
+> WUD+bottom-mask  file  01-BACK.dxf  8fcfc43b
+> WUD+bottom-mask  file  01-BOTTOM.dxf  0d68b01a
+> WUD+bottom-mask  file  01-BUL.dxf  ae292540
+> WUD+bottom-mask  file  01-BUR.dxf  255046f0
+> WUD+bottom-mask  file  01-F.dxf  ef5150ec
+> WUD+bottom-mask  file  01-MASK.dxf  658b8342
+> WUD+bottom-mask  file  01-TOP.dxf  0a320203
+> WUD+bottom-mask  sheet all  6c4b2d6d
+> WUD+bottom-mask  sheet fronts  ef5150ec
+> WUD+bottom-mask  sheet non-sprayed  c1137a06
+> WUD+bottom-mask  sheet sprayed  c42c81b7
+> WUD+bottom-mask-run-owner  file  01-BACK.dxf  8fcfc43b
+> WUD+bottom-mask-run-owner  file  01-BOTTOM.dxf  0d68b01a
+> WUD+bottom-mask-run-owner  file  01-BUL.dxf  ae292540
+> WUD+bottom-mask-run-owner  file  01-BUR.dxf  255046f0
+> WUD+bottom-mask-run-owner  file  01-F.dxf  ef5150ec
+> WUD+bottom-mask-run-owner  file  01-MASK.dxf  f3037af3
+> WUD+bottom-mask-run-owner  file  01-TOP.dxf  0a320203
+> WUD+bottom-mask-run-owner  sheet all  7e6b4230
+> WUD+bottom-mask-run-owner  sheet fronts  ef5150ec
+> WUD+bottom-mask-run-owner  sheet non-sprayed  c1137a06
+> WUD+bottom-mask-run-owner  sheet sprayed  fcef180a
+> WUD+infill-mitre  file  01-BACK.dxf  8fcfc43b
+> WUD+infill-mitre  file  01-BOTTOM.dxf  0d68b01a
+> WUD+infill-mitre  file  01-BUL.dxf  ae292540
+> WUD+infill-mitre  file  01-BUR.dxf  255046f0
+> WUD+infill-mitre  file  01-F.dxf  ef5150ec
+2261,2270c2261,2270
+< WUD+infill-mitre  file  01-TOP.dxf  66af9e8b
+< WUD+infill-mitre  sheet all  a2d59edc
+< WUD+infill-mitre  sheet fronts  e582900e
+< WUD+infill-mitre  sheet non-sprayed  a1d3d1be
+< WUD+infill-mitre  sheet sprayed  7850f841
+< WUD+infill-mitre-narrow  file  01-BACK.dxf  89ed82d7
+< WUD+infill-mitre-narrow  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+infill-mitre-narrow  file  01-BUL.dxf  7688dff8
+< WUD+infill-mitre-narrow  file  01-BUR.dxf  77a99ddc
+< WUD+infill-mitre-narrow  file  01-F.dxf  e582900e
+---
+> WUD+infill-mitre  file  01-TOP.dxf  0a320203
+> WUD+infill-mitre  sheet all  dd1a7686
+> WUD+infill-mitre  sheet fronts  ef5150ec
+> WUD+infill-mitre  sheet non-sprayed  c1137a06
+> WUD+infill-mitre  sheet sprayed  3039b095
+> WUD+infill-mitre-narrow  file  01-BACK.dxf  8fcfc43b
+> WUD+infill-mitre-narrow  file  01-BOTTOM.dxf  0d68b01a
+> WUD+infill-mitre-narrow  file  01-BUL.dxf  ae292540
+> WUD+infill-mitre-narrow  file  01-BUR.dxf  255046f0
+> WUD+infill-mitre-narrow  file  01-F.dxf  ef5150ec
+2275,2284c2275,2284
+< WUD+infill-mitre-narrow  file  01-TOP.dxf  66af9e8b
+< WUD+infill-mitre-narrow  sheet all  5a902cb6
+< WUD+infill-mitre-narrow  sheet fronts  e582900e
+< WUD+infill-mitre-narrow  sheet non-sprayed  a1d3d1be
+< WUD+infill-mitre-narrow  sheet sprayed  71241a07
+< WUD+infills  file  01-BACK.dxf  89ed82d7
+< WUD+infills  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+infills  file  01-BUL.dxf  7688dff8
+< WUD+infills  file  01-BUR.dxf  77a99ddc
+< WUD+infills  file  01-F.dxf  e582900e
+---
+> WUD+infill-mitre-narrow  file  01-TOP.dxf  0a320203
+> WUD+infill-mitre-narrow  sheet all  735a43de
+> WUD+infill-mitre-narrow  sheet fronts  ef5150ec
+> WUD+infill-mitre-narrow  sheet non-sprayed  c1137a06
+> WUD+infill-mitre-narrow  sheet sprayed  b0588ccb
+> WUD+infills  file  01-BACK.dxf  8fcfc43b
+> WUD+infills  file  01-BOTTOM.dxf  0d68b01a
+> WUD+infills  file  01-BUL.dxf  ae292540
+> WUD+infills  file  01-BUR.dxf  255046f0
+> WUD+infills  file  01-F.dxf  ef5150ec
+2289,2358c2289,2358
+< WUD+infills  file  01-TOP.dxf  66af9e8b
+< WUD+infills  sheet all  27d804f5
+< WUD+infills  sheet fronts  e582900e
+< WUD+infills  sheet non-sprayed  a1d3d1be
+< WUD+infills  sheet sprayed  3e13af24
+< WUD+partition  file  01-BACK.dxf  89ed82d7
+< WUD+partition  file  01-BOTTOM.dxf  68f31976
+< WUD+partition  file  01-BUL.dxf  7688dff8
+< WUD+partition  file  01-BUR.dxf  77a99ddc
+< WUD+partition  file  01-F.dxf  e582900e
+< WUD+partition  file  01-TOP.dxf  4b085f6b
+< WUD+partition  file  01-VPART-1.dxf  b1407fbe
+< WUD+partition  sheet all  3f0687ac
+< WUD+partition  sheet fronts  e582900e
+< WUD+partition  sheet non-sprayed  70011cfb
+< WUD+partition  sheet sprayed  e582900e
+< WUD+partition-on-shelf  file  01-BACK.dxf  89ed82d7
+< WUD+partition-on-shelf  file  01-BOTTOM.dxf  68f31976
+< WUD+partition-on-shelf  file  01-BUL.dxf  e1299531
+< WUD+partition-on-shelf  file  01-BUR.dxf  19fd5043
+< WUD+partition-on-shelf  file  01-F.dxf  e582900e
+< WUD+partition-on-shelf  file  01-SHELF-1.dxf  12faeed6
+< WUD+partition-on-shelf  file  01-TOP.dxf  66af9e8b
+< WUD+partition-on-shelf  file  01-VPART-1.dxf  0584c264
+< WUD+partition-on-shelf  sheet all  b1895975
+< WUD+partition-on-shelf  sheet fronts  e582900e
+< WUD+partition-on-shelf  sheet non-sprayed  153e3d5a
+< WUD+partition-on-shelf  sheet sprayed  e582900e
+< WUD+plinth  file  01-BACK.dxf  89ed82d7
+< WUD+plinth  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+plinth  file  01-BUL.dxf  7688dff8
+< WUD+plinth  file  01-BUR.dxf  77a99ddc
+< WUD+plinth  file  01-F.dxf  e582900e
+< WUD+plinth  file  01-TOP.dxf  66af9e8b
+< WUD+plinth  sheet all  120a781e
+< WUD+plinth  sheet fronts  e582900e
+< WUD+plinth  sheet non-sprayed  a1d3d1be
+< WUD+plinth  sheet sprayed  e582900e
+< WUD+plinth-run-member  file  01-BACK.dxf  89ed82d7
+< WUD+plinth-run-member  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+plinth-run-member  file  01-BUL.dxf  7688dff8
+< WUD+plinth-run-member  file  01-BUR.dxf  77a99ddc
+< WUD+plinth-run-member  file  01-F.dxf  e582900e
+< WUD+plinth-run-member  file  01-TOP.dxf  66af9e8b
+< WUD+plinth-run-member  sheet all  120a781e
+< WUD+plinth-run-member  sheet fronts  e582900e
+< WUD+plinth-run-member  sheet non-sprayed  a1d3d1be
+< WUD+plinth-run-member  sheet sprayed  e582900e
+< WUD+plinth-run-owner  file  01-BACK.dxf  89ed82d7
+< WUD+plinth-run-owner  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+plinth-run-owner  file  01-BUL.dxf  7688dff8
+< WUD+plinth-run-owner  file  01-BUR.dxf  77a99ddc
+< WUD+plinth-run-owner  file  01-F.dxf  e582900e
+< WUD+plinth-run-owner  file  01-TOP.dxf  66af9e8b
+< WUD+plinth-run-owner  sheet all  120a781e
+< WUD+plinth-run-owner  sheet fronts  e582900e
+< WUD+plinth-run-owner  sheet non-sprayed  a1d3d1be
+< WUD+plinth-run-owner  sheet sprayed  e582900e
+< WUD+shelves  file  01-BACK.dxf  89ed82d7
+< WUD+shelves  file  01-BOTTOM.dxf  fb9c1b16
+< WUD+shelves  file  01-BUL.dxf  98b09e2a
+< WUD+shelves  file  01-BUR.dxf  3e669324
+< WUD+shelves  file  01-F.dxf  e582900e
+< WUD+shelves  file  01-SHELF-1.dxf  6887a1b1
+< WUD+shelves  file  01-SHELF-2.dxf  a7848ef2
+< WUD+shelves  file  01-TOP.dxf  66af9e8b
+< WUD+shelves  sheet all  c708fe4a
+< WUD+shelves  sheet fronts  e582900e
+< WUD+shelves  sheet non-sprayed  480b9e95
+< WUD+shelves  sheet sprayed  e582900e
+---
+> WUD+infills  file  01-TOP.dxf  0a320203
+> WUD+infills  sheet all  c85d0ff3
+> WUD+infills  sheet fronts  ef5150ec
+> WUD+infills  sheet non-sprayed  c1137a06
+> WUD+infills  sheet sprayed  51391f50
+> WUD+partition  file  01-BACK.dxf  8fcfc43b
+> WUD+partition  file  01-BOTTOM.dxf  7dd173fa
+> WUD+partition  file  01-BUL.dxf  ae292540
+> WUD+partition  file  01-BUR.dxf  255046f0
+> WUD+partition  file  01-F.dxf  ef5150ec
+> WUD+partition  file  01-TOP.dxf  b34cb163
+> WUD+partition  file  01-VPART-1.dxf  f9fe55e8
+> WUD+partition  sheet all  b1a1b198
+> WUD+partition  sheet fronts  ef5150ec
+> WUD+partition  sheet non-sprayed  20bc3e9b
+> WUD+partition  sheet sprayed  ef5150ec
+> WUD+partition-on-shelf  file  01-BACK.dxf  8fcfc43b
+> WUD+partition-on-shelf  file  01-BOTTOM.dxf  7dd173fa
+> WUD+partition-on-shelf  file  01-BUL.dxf  2675797d
+> WUD+partition-on-shelf  file  01-BUR.dxf  31e354cb
+> WUD+partition-on-shelf  file  01-F.dxf  ef5150ec
+> WUD+partition-on-shelf  file  01-SHELF-1.dxf  46b8c8d2
+> WUD+partition-on-shelf  file  01-TOP.dxf  0a320203
+> WUD+partition-on-shelf  file  01-VPART-1.dxf  406970f5
+> WUD+partition-on-shelf  sheet all  4c1b42a6
+> WUD+partition-on-shelf  sheet fronts  ef5150ec
+> WUD+partition-on-shelf  sheet non-sprayed  d5a46a59
+> WUD+partition-on-shelf  sheet sprayed  ef5150ec
+> WUD+plinth  file  01-BACK.dxf  8fcfc43b
+> WUD+plinth  file  01-BOTTOM.dxf  0d68b01a
+> WUD+plinth  file  01-BUL.dxf  ae292540
+> WUD+plinth  file  01-BUR.dxf  255046f0
+> WUD+plinth  file  01-F.dxf  ef5150ec
+> WUD+plinth  file  01-TOP.dxf  0a320203
+> WUD+plinth  sheet all  77b360de
+> WUD+plinth  sheet fronts  ef5150ec
+> WUD+plinth  sheet non-sprayed  c1137a06
+> WUD+plinth  sheet sprayed  ef5150ec
+> WUD+plinth-run-member  file  01-BACK.dxf  8fcfc43b
+> WUD+plinth-run-member  file  01-BOTTOM.dxf  0d68b01a
+> WUD+plinth-run-member  file  01-BUL.dxf  ae292540
+> WUD+plinth-run-member  file  01-BUR.dxf  255046f0
+> WUD+plinth-run-member  file  01-F.dxf  ef5150ec
+> WUD+plinth-run-member  file  01-TOP.dxf  0a320203
+> WUD+plinth-run-member  sheet all  77b360de
+> WUD+plinth-run-member  sheet fronts  ef5150ec
+> WUD+plinth-run-member  sheet non-sprayed  c1137a06
+> WUD+plinth-run-member  sheet sprayed  ef5150ec
+> WUD+plinth-run-owner  file  01-BACK.dxf  8fcfc43b
+> WUD+plinth-run-owner  file  01-BOTTOM.dxf  0d68b01a
+> WUD+plinth-run-owner  file  01-BUL.dxf  ae292540
+> WUD+plinth-run-owner  file  01-BUR.dxf  255046f0
+> WUD+plinth-run-owner  file  01-F.dxf  ef5150ec
+> WUD+plinth-run-owner  file  01-TOP.dxf  0a320203
+> WUD+plinth-run-owner  sheet all  77b360de
+> WUD+plinth-run-owner  sheet fronts  ef5150ec
+> WUD+plinth-run-owner  sheet non-sprayed  c1137a06
+> WUD+plinth-run-owner  sheet sprayed  ef5150ec
+> WUD+shelves  file  01-BACK.dxf  8fcfc43b
+> WUD+shelves  file  01-BOTTOM.dxf  0d68b01a
+> WUD+shelves  file  01-BUL.dxf  a705a9da
+> WUD+shelves  file  01-BUR.dxf  8dc66278
+> WUD+shelves  file  01-F.dxf  ef5150ec
+> WUD+shelves  file  01-SHELF-1.dxf  a005e6f5
+> WUD+shelves  file  01-SHELF-2.dxf  2ff3ef0e
+> WUD+shelves  file  01-TOP.dxf  0a320203
+> WUD+shelves  sheet all  86ae292a
+> WUD+shelves  sheet fronts  ef5150ec
+> WUD+shelves  sheet non-sprayed  99606e0f
+> WUD+shelves  sheet sprayed  ef5150ec

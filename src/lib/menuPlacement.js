@@ -137,24 +137,38 @@ export function placeBesideAnchor({
 // So this is the tightened rule, and it is one function so that every modal in
 // the application inherits it from the shell rather than from a copy:
 //
-//   1. UP AND RIGHT of the object, by `offset.x` across and `offset.y` up —
-//      plus the modal's OWN HEIGHT, so it is the panel's bottom-left corner
-//      that sits off the object's top-right corner and everything below the
-//      pointer stays in shot.
-//   2. CLAMPED to the viewport, and where the right-hand edge has no room the
-//      panel goes up and LEFT instead. Either way the panel is separated from
-//      the object along the X axis, which is what makes the guarantee hold: the
+//   1. TO THE SIDE of the object, by `offset.x` across — 140 px of clear glass,
+//      which is the number the owner asked for and not one a spec invented.
+//   2. LEVEL WITH THE CLICK: `offset.y` is the offset of the panel's TOP from
+//      the object's top, so 0 puts the two on the same line and a negative
+//      number lifts the panel.
+//   3. CLAMPED to the viewport, and where the right-hand edge has no room the
+//      panel goes LEFT instead. Either way the panel is separated from the
+//      object along the X axis, which is what makes the guarantee hold: the
 //      vertical clamp can slide the panel anywhere it likes down the screen and
 //      it still cannot come back over the object.
-//   3. Where NEITHER side has room — an object as wide as the screen — it falls
+//   4. Where NEITHER side has room — an object as wide as the screen — it falls
 //      through to the four-side search above, which will put it below or above.
+//
+// ─── TURN 20 (CLAUDE.md F5): LEVEL, NOT ABOVE ───────────────────────────────
+// Turn 19 read `offset.y` as "the panel's BOTTOM sits |y| above the object",
+// which lifts the whole panel over the pointer — the owner's verdict was that
+// it used to be level with the click and should be again. That law is DELETED
+// rather than kept as a mode: there is one vertical rule and `y` means one
+// thing.
 //
 // Pure arithmetic. The shell measures and calls this; test/modal-shell.test.js
 // asserts the property that matters, which is the same one turn 12 stated:
 // THE MODAL AND THE OBJECT DO NOT OVERLAP.
 
-/** The sides this rule can answer with, before it defers to the four above. */
-export const MODAL_OFFSET_SIDES = ['up-right', 'up-left'];
+/**
+ * The sides this rule can answer with, before it defers to the four above.
+ *
+ * Turn 20 (CLAUDE.md F5.2): `up-right`/`up-left` until this turn, and the `up`
+ * went with the law that lifted the panel over the pointer. The panel is level
+ * with the click now, so the only thing a side says is which hand it is on.
+ */
+export const MODAL_OFFSET_SIDES = ['right', 'left'];
 
 /**
  * Where a modal goes when it is opened ON something — the shell's rule.
@@ -181,15 +195,21 @@ export function placeAnchoredModal({
   const a = normaliseAnchor(anchor);
   // A missing offset is not a reason to open on top of the object: the four-
   // side search is the honest fallback, and it is what turn 12 shipped.
+  //
+  // The HORIZONTAL offset is a distance and takes an absolute value; the
+  // VERTICAL one is a SIGNED offset of the panel's top from the click (turn 20,
+  // CLAUDE.md F5.2) and must keep its sign, so `y: 0` — level — is a real
+  // answer and not "no offset given".
   const dx = Math.abs(Number(offset?.x) || 0);
-  const dy = Math.abs(Number(offset?.y) || 0);
-  if (!dx && !dy) return placeBesideAnchor({ anchor, size, viewport, gap, margin });
+  const oy = Number(offset?.y) || 0;
+  if (!offset || (!dx && !oy)) return placeBesideAnchor({ anchor, size, viewport, gap, margin });
 
-  // The vertical answer is the same for both hands: the panel's BOTTOM sits
-  // `dy` above the object's top, and the clamp keeps it on the screen. Sliding
-  // it down cannot bring it back over the object, because the horizontal
-  // separation below is what does the work.
-  const wantedTop = a.y - dy - h;
+  // The vertical answer is the same for both hands: the panel's TOP sits `oy`
+  // from the object's top — 0 is level with the click, negative lifts it — and
+  // the clamp keeps it on the screen. Sliding it up or down cannot bring it
+  // back over the object, because the horizontal separation below is what does
+  // the work.
+  const wantedTop = a.y + oy;
   const top = vh
     ? Math.max(m, Math.min(wantedTop, Math.max(m, vh - h - m)))
     : wantedTop;
@@ -200,10 +220,10 @@ export function placeAnchoredModal({
   // — a right-hand placement that has to be clamped leftwards is a placement
   // that would slide back over the object, so it is refused rather than nudged.
   if (vw === 0 || rightLeft + w <= vw - m) {
-    return { left: rightLeft, top, side: 'up-right', fits: true };
+    return { left: rightLeft, top, side: 'right', fits: true };
   }
   if (leftLeft >= m) {
-    return { left: leftLeft, top, side: 'up-left', fits: true };
+    return { left: leftLeft, top, side: 'left', fits: true };
   }
   // Neither hand. The object is as wide as the screen, or the screen is as
   // narrow as the panel: the four-side search knows what to do about that, and

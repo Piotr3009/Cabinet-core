@@ -9,6 +9,8 @@ import { exportablePanels } from '../engine/cnc/groups.js';
 import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.js';
 import { labelFit, symbolVisible } from '../engine/cnc/annotation.js';
 import { panelLabelBlock } from '../engine/cnc/dxf.js';
+import { partRollovers } from '../engine/cnc/rollover.js';
+import { clampMenuPosition } from '../lib/menuPlacement.js';
 import { formatMmPair } from '../engine/format.js';
 
 // ─── CNC view ───
@@ -72,6 +74,12 @@ export default function CncView() {
   const [size, setSize] = useState({ w: 1, h: 1 });
   const [box, setBox] = useState(null);                 // viewport in sheet mm: { x, y, w }
   const [hidden, setHidden] = useState(() => new Set());
+  // ─── Turn 20 (CLAUDE.md F7): the rollover ─────────────────────────────────
+  // `{ readout, at:{x,y} }` — WHAT is under the pointer and WHERE the pointer
+  // is, in client px. It is state and nothing else: no store, no project, no
+  // export. Leaving the feature clears it, which is the second half of what
+  // the owner asked for.
+  const [rollover, setRollover] = useState(null);
 
   // ── what is on the sheet ──────────────────────────────────────────────────
   //
@@ -258,23 +266,52 @@ export default function CncView() {
     return () => el.removeEventListener('wheel', onWheel);
   }, [onWheel]);
 
+  // ─── TURN 20 (CLAUDE.md F9): CAPTURE ON MOVEMENT, NOT ON PRESS ────────────
+  //
+  // Root cause of turn 19's dead double-click, proven in the lab with real CDP
+  // input: this container called `setPointerCapture` on EVERY left press. A
+  // captured pointer makes the browser compose `click` and `dblclick` on the
+  // CAPTURING ELEMENT rather than on the node under the cursor — so the part's
+  // own `onDoubleClick` never received one, `cncFocusPart` stayed null, and a
+  // synthetic `dispatchEvent` aimed at the `<g>` "passed" over a dead feature.
+  // That is why R1 now bans `dispatchEvent` from walks for pointer gestures.
+  //
+  // The fix is not to give up the capture — a pan that loses the pointer off
+  // the edge of the window is worse than one that does not — but to take it
+  // only when the gesture has PROVED it is a pan: pointer-down remembers the
+  // point, the first move past `panThresholdPx` starts the pan AND takes the
+  // capture, and a press-and-release under the threshold lets go having
+  // captured nothing. A click reaches the part; the pan feels identical.
   const pan = useRef(null);
   const onPointerDown = (e) => {
     if (e.button !== 0 && e.button !== 1) return;
-    pan.current = { x: e.clientX, y: e.clientY };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // `armed`, not panning: nothing is captured and nothing moves yet.
+    pan.current = {
+      x: e.clientX, y: e.clientY, from: { x: e.clientX, y: e.clientY }, panning: false,
+    };
   };
   const onPointerMove = (e) => {
+    // A pan in progress puts the tooltip away — a label chasing the cursor
+    // across a sheet being dragged is noise, and F7 asks for a ROLLOVER.
+    if (pan.current?.panning && rollover) setRollover(null);
     if (!pan.current || !box) return;
+    const threshold = profile.cnc.annotation.panThresholdPx;
+    if (!pan.current.panning) {
+      const moved = Math.hypot(e.clientX - pan.current.from.x, e.clientY - pan.current.from.y);
+      if (moved < threshold) return;
+      pan.current.panning = true;
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    }
     const dx = (e.clientX - pan.current.x) * mmPerPx;
     const dy = (e.clientY - pan.current.y) * mmPerPx;
-    pan.current = { x: e.clientX, y: e.clientY };
+    pan.current = { ...pan.current, x: e.clientX, y: e.clientY };
     setBox((b) => (b ? { ...b, x: b.x - dx, y: b.y - dy } : b));
   };
   const endPan = (e) => {
     pan.current = null;
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
   };
+  const panning = Boolean(pan.current?.panning);
 
   // ── layers actually present, for the legend ───────────────────────────────
   // Counted over the parts actually on the SHEET — every unit's, since turn 11
@@ -325,7 +362,7 @@ export default function CncView() {
         <svg
           ref={svgRef}
           className="w-full h-full touch-none"
-          style={{ cursor: pan.current ? 'grabbing' : 'grab' }}
+          style={{ cursor: panning ? 'grabbing' : 'grab' }}
           viewBox={`${box.x} ${box.y} ${box.w} ${viewH}`}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -392,6 +429,8 @@ export default function CncView() {
                       visible={visible}
                       lit={focus?.unitId === b.unit.id && focus?.panelId === place.panel.id}
                       onOpenInTree={() => focusCncPart(b.unit.id, place.panel.id)}
+                      onRollover={setRollover}
+                      rollover={rollover}
                     />
                   ))}
                 </g>
@@ -408,6 +447,14 @@ export default function CncView() {
           </p>
         </div>
       )}
+
+      {/* ─── Turn 20 (CLAUDE.md F7): the rollover ─────────────────────────────
+          Presentation only. Every number in it came out of
+          engine/cnc/rollover.js, which reads the same records the DXF is
+          written from — so the sheet after a thousand hovers is byte-for-byte
+          the sheet before, and there is no second opinion in this app about how
+          deep a groove is. */}
+      {rollover?.readout && <Rollover at={rollover.at} readout={rollover.readout} wrap={wrapRef.current} />}
 
       {/* toolbar */}
       <div className="absolute top-3 left-3 flex items-center gap-2 bg-shell-800/95 border border-shell-600 rounded px-2 py-1.5">
@@ -506,12 +553,42 @@ function Caption({
 
 function Part({
   place, unitNum, drills, outlineLayer, annotation, profile, mmPerPx, visible,
-  lit = false, onOpenInTree = null,
+  lit = false, onOpenInTree = null, onRollover = null, rollover = null,
 }) {
   const { panel } = place;
   const cnc = panel.cnc || {};
   const holes = drills.filter((d) => d.panel === panel.id);
   const oLayer = cnc.layer || outlineLayer;
+
+  // ─── Turn 20 (CLAUDE.md F7): WHAT EACH FEATURE IS ─────────────────────────
+  // One pure call per part (engine/cnc/rollover.js), keyed the way
+  // `partMachinings` has keyed features since turn 14 — `pocket-0`, `mark-2`,
+  // `hole-11` — so the tooltip and the part-detail window name the same cut by
+  // the same id. Memoised on the part and its drills: hovering builds nothing.
+  const readouts = useMemo(
+    () => new Map(partRollovers(panel, drills, profile).map((f) => [f.id, f.readout])),
+    [panel, drills, profile],
+  );
+  // The hover handlers, made once per feature id rather than per render of it.
+  const hoverProps = (id) => (onRollover ? {
+    onPointerEnter: (e) => onRollover({
+      key: `${panel.id}:${id}`, readout: readouts.get(id), at: { x: e.clientX, y: e.clientY },
+    }),
+    onPointerMove: (e) => onRollover((prev) => (prev?.key === `${panel.id}:${id}`
+      ? { ...prev, at: { x: e.clientX, y: e.clientY } }
+      : prev)),
+    onPointerLeave: () => onRollover((prev) => (prev?.key === `${panel.id}:${id}` ? null : prev)),
+    style: { cursor: 'crosshair' },
+  } : {});
+  const hovered = (id) => rollover?.key === `${panel.id}:${id}`;
+  // ─── F7.4: the hit target survives the zoom ───────────────────────────────
+  // "the hover zone is the drawn symbol or the feature's real extent, whichever
+  // is larger on screen". A ⌀5 hole at sheet zoom is two pixels across, and a
+  // rollover you have to hunt for is not one — so an INVISIBLE, stroke-free
+  // shape sits over the symbol at `hoverGracePx` on screen where the symbol is
+  // smaller than that. It draws nothing: `fill` is transparent and the drawn
+  // symbol underneath is untouched, so the picture is the picture it was.
+  const graceMm = (annotation.hoverGracePx || 0) * mmPerPx;
 
   // ─── Turn 16 (CLAUDE.md F3) ───
   // The caption is a fixed height in SHEET millimetres, shrunk to fit the part
@@ -576,11 +653,24 @@ function Part({
       {(cnc.pockets || []).filter((p) => visible(p.layer)).map((p, i) => {
         const r = sheetRect(place, p);
         if (!showSymbol(Math.max(r.w, r.h))) return null;
+        const id = `pocket-${(cnc.pockets || []).indexOf(p)}`;
+        // The grace box is centred on the drawn rectangle and only ever grows
+        // it, so a groove that is already big enough is hovered on itself.
+        const gw = Math.max(r.w, graceMm);
+        const gh = Math.max(r.h, graceMm);
         return (
-          <rect
-            key={`p${i}`} x={r.x} y={r.y} width={r.w} height={r.h}
-            fill="none" stroke={layerScreenColor(p.layer)} strokeWidth={1} vectorEffect="non-scaling-stroke"
-          />
+          <g key={`p${i}`}>
+            <rect
+              x={r.x} y={r.y} width={r.w} height={r.h}
+              fill="none" stroke={layerScreenColor(p.layer)}
+              strokeWidth={hovered(id) ? 2.4 : 1} vectorEffect="non-scaling-stroke"
+            />
+            <rect
+              x={r.x - (gw - r.w) / 2} y={r.y - (gh - r.h) / 2} width={gw} height={gh}
+              fill="transparent" stroke="none" data-cnc-feature={id}
+              {...hoverProps(id)}
+            />
+          </g>
         );
       })}
 
@@ -592,23 +682,44 @@ function Part({
       {(cnc.marks || []).filter((m) => visible(m.layer)).map((m, i) => {
         const [x1, y1] = toSheet(place, m.from[0], m.from[1]);
         const [x2, y2] = toSheet(place, m.to[0], m.to[1]);
+        const id = `mark-${(cnc.marks || []).indexOf(m)}`;
         return (
-          <line
-            key={`m${i}`} x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke={layerScreenColor(m.layer)} strokeWidth={2} strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
+          <g key={`m${i}`}>
+            <line
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke={layerScreenColor(m.layer)} strokeWidth={hovered(id) ? 4 : 2} strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* A line has no area to point at: the grace is its stroke width. */}
+            <line
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke="transparent" strokeWidth={Math.max(graceMm, 2 * mmPerPx)} strokeLinecap="round"
+              data-cnc-feature={id}
+              {...hoverProps(id)}
+            />
+          </g>
         );
       })}
 
       {holes.filter((h) => visible(h.layer)).map((h, i) => {
         const [cx, cy] = toSheet(place, h.x, h.y);
         if (!showSymbol(h.d)) return null;
+        // `partMachinings` numbers the holes over the part's OWN drills in the
+        // unit's order, which is exactly this list — so the index IS the id.
+        const id = `hole-${holes.indexOf(h)}`;
         return (
-          <circle
-            key={`h${i}`} cx={cx} cy={cy} r={h.d / 2}
-            fill="none" stroke={layerScreenColor(h.layer)} strokeWidth={1} vectorEffect="non-scaling-stroke"
-          />
+          <g key={`h${i}`}>
+            <circle
+              cx={cx} cy={cy} r={h.d / 2}
+              fill="none" stroke={layerScreenColor(h.layer)}
+              strokeWidth={hovered(id) ? 2.6 : 1} vectorEffect="non-scaling-stroke"
+            />
+            <circle
+              cx={cx} cy={cy} r={Math.max(h.d / 2, graceMm / 2)}
+              fill="transparent" stroke="none" data-cnc-feature={id}
+              {...hoverProps(id)}
+            />
+          </g>
         );
       })}
 
@@ -640,6 +751,61 @@ function Part({
         </text>
       )}
     </g>
+  );
+}
+
+// ─── the rollover (turn 20, CLAUDE.md F7) ───────────────────────────────────
+//
+// Beside the cursor, clamped to the viewport, and NEVER over the feature it
+// describes — which is `clampMenuPosition`'s job and it has known how to do it
+// since turn 11 (F7.3 says so in as many words). The offset is what keeps the
+// panel off the cut: the arithmetic clamps a box placed at the cursor, and the
+// box starts a cursor's width down and to the right of it.
+const ROLLOVER_OFFSET = { x: 16, y: 18 };
+
+function Rollover({ at, readout, wrap }) {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 220, height: 120 });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.width && (r.width !== size.width || r.height !== size.height)) {
+      setSize({ width: r.width, height: r.height });
+    }
+  }, [readout, size.width, size.height]);
+
+  // The CNC view fills its own wrapper, and the tooltip is positioned inside
+  // it, so the clamp works in the wrapper's coordinates and a sheet in a
+  // half-width panel does not put labels over the right-hand tree.
+  const rect = wrap?.getBoundingClientRect?.() || { left: 0, top: 0, width: 0, height: 0 };
+  const placed = clampMenuPosition({
+    x: at.x - rect.left + ROLLOVER_OFFSET.x,
+    y: at.y - rect.top + ROLLOVER_OFFSET.y,
+    width: size.width,
+    height: size.height,
+    viewport: { width: rect.width, height: rect.height },
+    margin: 8,
+  });
+
+  return (
+    <div
+      ref={ref}
+      data-cnc-rollover="1"
+      className="absolute z-20 pointer-events-none bg-shell-800/97 border border-shell-600 rounded px-2 py-1.5 shadow-lg max-w-[260px]"
+      style={{ left: placed.left, top: placed.top }}
+    >
+      <div className="text-[11px] text-gold uppercase tracking-wide" data-rollover-title="1">{readout.title}</div>
+      <div className="text-[10px] text-ink-400 mb-1">{readout.subtitle}</div>
+      <dl className="space-y-0.5">
+        {readout.rows.map((row) => (
+          <div key={row.label} className="flex items-baseline gap-2">
+            <dt className="text-[10px] text-ink-400 w-[86px] shrink-0">{row.label}</dt>
+            <dd className="text-[11px] text-ink-100 tabular-nums" data-rollover-value={row.label}>{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 

@@ -347,3 +347,28 @@ export function panelFillOffset(profile) {
     polygonOffsetUnits: Number(o.units) || 0,
   };
 }
+
+/**
+ * …and the bias the OUTLINE takes, which is the other half of it (turn 20,
+ * CLAUDE.md F12.1).
+ *
+ * Turn 15 pushed the face back and the owner's verdict after using it is that
+ * interior edges still vanish into the face they lie on. They do: a line and a
+ * face separated by one depth-buffer step still trade pixels where the face is
+ * seen nearly edge-on, and inside a cabinet every face is. So the line leans
+ * FORWARD by the same amount the face leans back — the separation doubles, and
+ * neither number has to be pushed far enough to bleed a line through the board
+ * standing in front of it.
+ *
+ * Spread onto `<Edges>`: drei passes its rest props straight to the
+ * LineMaterial, so this reaches the material the outline is actually drawn
+ * with.
+ */
+export function panelOutlineOffset(profile) {
+  const o = profile?.appearance?.outline?.polygonOffset || {};
+  return {
+    polygonOffset: true,
+    polygonOffsetFactor: Number(o.outlineFactor) || 0,
+    polygonOffsetUnits: Number(o.outlineUnits) || 0,
+  };
+}

@@ -96,7 +96,11 @@ test('F1.2 — the EXPORT writes it at half the sheet’s height, never under th
   const bul = r.panels.find((p) => p.id === 'BUL');
   const sheet = panelLabelBlock(bul, { unitNum: '01', profile: P });
   const file = panelLabel(bul, { unitNum: '01', profile: P });
-  assert.equal(file.h, sheet.size * P.cnc.exportLabelScale);
+  // ─── Turn 20 (CLAUDE.md F4) ───
+  // Half the sheet's height, OR the absolute cap, whichever is smaller — and
+  // since `cnc.labelHeight` came down 40 → 20 the cap is the binding one on a
+  // big part. The scale itself is untouched, which is F4.2 in as many words.
+  assert.equal(file.h, Math.min(sheet.size * P.cnc.exportLabelScale, P.cnc.labelHeight));
 
   for (const panel of r.panels.filter((p) => p.cnc?.outline?.length)) {
     const s = panelLabelBlock(panel, { unitNum: '01', profile: P });
@@ -373,8 +377,19 @@ test('F5.4 — the drawer front takes its gap below the appliance, and the box f
   const side = r.panels.find((p) => p.part === 'DRAWER-SIDE');
   const bottom = r.panels.find((p) => p.id === 'BOTTOM');
   assert.ok(side.box.y >= bottom.box.y + bottom.box.h, 'the box stands above the carcass bottom');
-  assert.ok(side.box.y + side.box.h <= shelf.box.y + 1e-9,
-    'and it stops under the shelf the oven stands on');
+  // ─── Turn 20 (CLAUDE.md F1) ───
+  // The box RIDES its runner now — `boxAboveRunner` above the drilled row —
+  // and this clamp still measures the headroom from the ROW, because F1.2
+  // keeps turn 18's side heights and the turn allows exactly one CNC delta.
+  // So the SIDE is cut to the old clearance and the app WARNS that the box it
+  // makes stands that far past the shelf, rather than silently re-cutting a
+  // board (engine/cabinet.js, APPLIANCE_DRAWER_BOX_OVER_SHELF). What turn 18
+  // promised — the box is cut to the OPENING and not to the front — is exactly
+  // what is still asserted here.
+  assert.equal(side.box.h, shelf.box.y - r.drillSummary.runner_rows_carcass_y[0],
+    'the side is cut to the opening under the shelf, not to 0.7 × its front');
+  assert.ok(r.warnings.some((w) => w.code === 'APPLIANCE_DRAWER_BOX_OVER_SHELF'),
+    'and the app says what riding the runner costs against that clamp');
 });
 
 // ─── F6 — the MOVENTO pipeline ──────────────────────────────────────────────
@@ -528,11 +543,14 @@ test('F6.7/F6.8 — the manifest IS the catalogue, and the BOM orders by article
   assert.match(line.spec_label, /760H4900T-L \/ 760H4900T-R/);
   assert.equal(line.spec.articles.L, '760H4900T-L');
 
-  // …and the model url is the bucket path the owner uploaded to.
+  // …and the model url is the folder the manifest itself was read from, with
+  // the row's BASENAME on the end (turn 20, CLAUDE.md F2.1/F2.3 — this line
+  // used to assert `…/hardware/hardware/runners/…`, which is the 400 the owner
+  // was looking at, written down as an expectation).
   const url = runnerModelUrl(runnerEntry({
     system: '760H', nl: 490, variant: 'T', side: 'L',
   }), P, 'https://x.supabase.co/storage/v1/object/public');
-  assert.equal(url, 'https://x.supabase.co/storage/v1/object/public/hardware/hardware/runners/blum/movento/movento-760h-490-T-L.glb');
+  assert.equal(url, 'https://x.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/movento-760h-490-T-L.glb');
 
   clearRunnerCatalogue();
 });

@@ -23,6 +23,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { categoryOf } from '../engine/types.js';
 import Ruler from './Ruler.jsx';
+import useContextGuard from './contextGuard.jsx';
 
 // 3D scaffolding follows Production Core's rig (scene / camera / soft light /
 // capture), not its window geometry. Preview is 3D from the start (SPEC 7).
@@ -793,9 +794,17 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // turn 5. The hexes are profile.dimensions.colours; this is only WHICH.
   const dimensionInk = profile.dimensions.colours[dimensionColour]
     || profile.dimensions.colours[profile.appearance.dimensions.colour];
+  const guardContext = useContextGuard('room');
 
   return (
     <Canvas
+      // ─── Turn 20 (CLAUDE.md F10) ───
+      // ONE context per surface, released on the way out rather than left for
+      // the collector, and counted on `window.__cc.diag`. The guard hangs off
+      // the component that OWNS the canvas — see 3d/contextGuard.jsx for why
+      // inside it was not good enough.
+      ref={guardContext.ref}
+      onCreated={guardContext.onCreated}
       // "soft" = PCFSoftShadowMap. A shadow with a hard edge under a cabinet
       // is a shadow from a point source, and there are none in a room.
       shadows="soft"
@@ -935,6 +944,15 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           onEditElement={(panelId, at) => openModal('element', {
             unitId: unit.id, panelId, at,
           })}
+          // ─── Turn 20 (CLAUDE.md F11.1) ───
+          // A double-click on a drawer's BOX — a side, the back, the bottom —
+          // opens the drawer's own window. Same modal as "Edit cabinet",
+          // scoped to the one drawer, so the shell, the explode and the part
+          // properties are the ones a joiner has already learnt.
+          onEditDrawer={(drawer, at) => {
+            selectUnit(unit.id);
+            openModal('cabinet', { unitId: unit.id, drawer, at });
+          }}
           // ─── Turn 19 (CLAUDE.md F1.3) ───
           // "Po podwójnym kliknięciu na hinge otworzy się modal." The same
           // gesture on the ironmongery rather than on the board, opening the

@@ -226,20 +226,38 @@ export function panelPlacement(panel) {
     // edge — which is why the runner groove sits at x ∈ [0, 15], "at the very
     // bottom" (F4.3) — and CNC y runs along the box's depth. The two sides are
     // mirror images, so the right-hand one runs its y the other way; that keeps
-    // the frame right-handed and puts the grooves on the face they are cut in.
+    // the frame right-handed.
+    //
+    // ─── TURN 20 (CLAUDE.md F8): AND IT IS THE INNER FACE ───────────────────
+    //
+    // Turn 17 put both frames on the side's OUTER face. Under an overlay of
+    // LINES that is nearly invisible; cut as a real recess it is plainly wrong,
+    // and the owner would have found it the first time he looked into a drawer.
+    //
+    // Both of a drawer side's cuts are on the face that looks INTO the box, and
+    // the profile says why in as many words: the runner reduction is "the inner
+    // face milled 2 mm deep from the bottom edge", because a MOVENTO sits
+    // inboard under the bottom and an 18 mm board has to become 16 where it
+    // runs; and the bottom groove holds a bottom panel that is narrower than
+    // the box and stands BETWEEN the two sides. A 7 mm groove milled in the
+    // outer face would hold nothing and would leave 11 mm of board where the
+    // machine cut 18.
+    //
+    // The frames are otherwise turn 17's — the same two, on the other faces, so
+    // handedness and the x-runs-up rule are untouched.
     case 'DRAWER-SIDE':
       return panel.meta?.side === 'R'
         ? {
-          origin: [box.x + box.w, box.y, box.z + box.d],
-          u: [0, 1, 0],
-          v: [0, 0, -1],
-          n: [1, 0, 0],
-        }
-        : {
           origin: [box.x, box.y, box.z],
           u: [0, 1, 0],
           v: [0, 0, 1],
           n: [-1, 0, 0],
+        }
+        : {
+          origin: [box.x + box.w, box.y, box.z + box.d],
+          u: [0, 1, 0],
+          v: [0, 0, -1],
+          n: [1, 0, 0],
         };
 
     // The box front and back, also drawn rotated (`drawn_w` is the box height).

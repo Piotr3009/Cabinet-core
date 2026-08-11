@@ -16,6 +16,7 @@ import { elementLabel } from '../engine/elements.js';
 import { partDetailDrawing } from '../engine/drawings/partDetail.js';
 import { drawingLayer } from '../engine/drawings/layers.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
+import useContextGuard from '../3d/contextGuard.jsx';
 
 // ─── The element DETAIL window (turn 14, CLAUDE.md F7) ──────────────────────
 //
@@ -235,6 +236,9 @@ function PartDrawing({ drawing, hovered, onHover }) {
 
 /** The piece on its own, in the room's own materials. */
 function PartCanvas({ unit, panel, design, profile, drills = [] }) {
+  // Turn 20 (CLAUDE.md F10): the third surface, and its context is released
+  // when this window closes rather than left for the collector.
+  const guardContext = useContextGuard('part-detail');
   const finishes = useMemo(() => resolveFinishes(unit, design, profile), [unit, design, profile]);
   const unitDesign = useMemo(() => resolveUnitDesign(unit, design), [unit, design]);
   const sheen = useMemo(() => projectSheen(design, profile), [design, profile]);
@@ -269,6 +273,9 @@ function PartCanvas({ unit, panel, design, profile, drills = [] }) {
 
   return (
     <Canvas
+      // Turn 20 (CLAUDE.md F10): the third surface, the same guard.
+      ref={guardContext.ref}
+      onCreated={guardContext.onCreated}
       dpr={[1, 2]}
       camera={{ position: [radius * 0.7, radius * 0.6, radius], fov: 40, near: 0.01, far: 100 }}
       onContextMenu={(e) => e.preventDefault()}

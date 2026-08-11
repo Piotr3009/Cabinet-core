@@ -70,6 +70,7 @@ export default function ContextMenu() {
       unit,
       selection,
       panelPart: menu.part,
+      panelDrawer: menu.drawer ?? null,
       dimensions: Boolean(unitDimensions[unit.id]),
       store: {
         // F5.4: every bulk entry is one undo step, and this is the only place
@@ -121,6 +122,8 @@ export default function ContextMenu() {
         saveAsTemplate: (unitId) => openModal('save-template', { unitId, anchor: menuAnchor() }),
         // Turn 12 (CLAUDE.md F4): the cabinet's own window, beside the cabinet.
         editCabinet: (unitId) => openModal('cabinet', { unitId, anchor: menuAnchor() }),
+        // Turn 20 (CLAUDE.md F11.1): the same window, scoped to one drawer.
+        editDrawer: (unitId, drawer) => openModal('cabinet', { unitId, drawer, anchor: menuAnchor() }),
         // ─── Turn 17 (CLAUDE.md F6.2) ───
         // The menu does not rename anything: it SHOWS the one field that does.
         // The panel has to be open and the unit selected before the input

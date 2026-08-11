@@ -309,13 +309,21 @@ test('…and a board change that does NOT flip it says nothing at all', () => {
 
 // ─── the models (F1.6) ──────────────────────────────────────────────────────
 
-test('a model url is the catalogue’s own path under the bucket', () => {
+test('a model url is the PROFILE’s folder under the bucket, with the file’s basename', () => {
+  // ─── Turn 20 (CLAUDE.md F2.2/F2.3) ───
+  // This test used to believe the catalogue's own `file` string was a path.
+  // It is not: it names `hardware/hinges/blum/cliptop/…`, and the pack answers
+  // at `hinges/blum/` inside the `hardware` bucket. The models live BESIDE
+  // their manifest, so the profile says the folder and the row supplies only
+  // the last segment.
   const [f] = hingeFamilies({ angle: 110, finish: 'nickel' });
-  assert.equal(hingeModelUrl(f, P, ''), f.file, 'no bucket configured — the bare path');
+  const name = f.file.split('/').pop();
+  assert.equal(hingeModelUrl(f, P, ''), `${C.path}${name}`, 'no bucket configured — the bare path');
   assert.equal(
     hingeModelUrl(f, P, 'https://x.test/storage/v1/object/public'),
-    `https://x.test/storage/v1/object/public/${C.bucket}/${f.file}`,
+    `https://x.test/storage/v1/object/public/${C.bucket}/${C.path}${name}`,
   );
+  assert.ok(!hingeModelUrl(f, P, 'https://x.test').includes('cliptop'));
   assert.equal(hingeModelUrl(null, P, ''), null);
   assert.equal(hingeModelUrl({ file: '' }, P, ''), null);
 });

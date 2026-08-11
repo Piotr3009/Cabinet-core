@@ -5,6 +5,7 @@ import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
 import {
   contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor,
+  panelOutlineOffset,
   panelFillOffset, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
@@ -26,9 +27,10 @@ import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { panelFinish } from '../engine/materials.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
-import { machinedPanelGeometry } from './panelSolid.js';
+import { panelSolids } from './panelSolid.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
+import { drawerMotion } from '../engine/drawerMotion.js';
 import {
   boxPolyhedron, clipAll, infillMitre, solidTriangles,
 } from '../engine/mitre.js';
@@ -194,7 +196,7 @@ function useBevel(box, profile, sprayed = false) {
 export function MovingPanel({
   panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
   swing = null, joineryLayers: layers = null, children = null,
-  machining = false, drills = [], ...handlers
+  machining = false, drills = [], slide = false, travel = null, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -208,10 +210,17 @@ export function MovingPanel({
   // socket is a real absence in the solid rather than a rectangle drawn on it.
   // Cached in 3d/panelSolid.js by panel CONFIGURATION, so this is a Map lookup
   // for every carcass after the first and nothing at all per frame.
-  const machined = useMemo(
-    () => (layers && !mitre ? machinedPanelGeometry(p, layers, profile) : null),
-    [p, layers, profile, mitre],
+  // ─── Turn 20 (CLAUDE.md F8): …and every other cut with it ───────────────
+  // `panelSolids` returns the board with every drilling, pocket and groove
+  // taken OUT of it, and — separately, because a cut is raw board and not a
+  // decor — the walls and floors of those cuts. Same cache, same key, so a
+  // kitchen of fourteen identical carcasses still builds two side geometries.
+  const built = useMemo(
+    () => (layers && !mitre ? panelSolids(p, layers, profile, drills) : null),
+    [p, layers, profile, mitre, drills],
   );
+  const machined = built?.solid || null;
+  const cuts = built?.cuts || null;
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
@@ -223,8 +232,13 @@ export function MovingPanel({
     : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)];
   const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
 
+  // ─── Turn 20 (CLAUDE.md F3): THE BOX TRAVELS TOO ───────────────────────
+  // `slide` is a piece of a drawer that is not its face — a side, the box
+  // front or back, the bottom. It has no gesture of its own and no swing; it
+  // rides the SAME 0..1 its front does, so the two cannot get out of step.
+  const travels = Boolean(front) || slide;
   useFrame((_, delta) => {
-    if (!group.current || !front) return;
+    if (!group.current || !travels) return;
     const target = open;
     if (Math.abs(amount.current - target) < 0.001) { amount.current = target; } else {
       // Frame-rate independent easing: fast at the start, settled in ~0.35 s.
@@ -234,9 +248,13 @@ export function MovingPanel({
     // The animation is an OFFSET from where the engine put the panel, never an
     // absolute position: writing position.z directly moved every front to
     // z = 0, i.e. inside the carcass, and the unit rendered as an open box.
-    if (front === 'drawer') {
-      // Slides straight out of the carcass, most of its own depth.
-      group.current.position.z = pivot[2] + mm(depth * 0.75) * a;
+    if (front === 'drawer' || slide) {
+      // ─── Turn 20 (CLAUDE.md F3.1): AS FAR AS THE RUNNER GOES ───────────
+      // The drawer's own NOMINAL LENGTH — a MOVENTO is full-extension and the
+      // box comes out its own length. `depth × 0.75` was turn 3's guess, made
+      // before the app knew which runner a drawer was on, and it is what left
+      // a face standing proud of a box that had not moved.
+      group.current.position.z = pivot[2] + mm(travel ?? depth * 0.75) * a;
       group.current.rotation.y = 0;
     } else {
       // Swings on the hinge side, about the group's origin. How FAR is decided
@@ -375,12 +393,38 @@ export function MovingPanel({
             threshold={outline.threshold}
             color={outline.colour}
             lineWidth={outline.width}
+            // Turn 20 (CLAUDE.md F12.1): the line leans towards the camera as
+            // far as the fill leans away from it, so an interior edge lying in
+            // a neighbour's face reads in both scenes. drei hands its rest
+            // props to the LineMaterial, which is where this has to land.
+            {...panelOutlineOffset(profile)}
             // The contour is the TOOL, not the furniture: a render hides it
             // (3d/renderCapture.js). Tagged explicitly rather than sniffed,
             // because drei draws a fat line as a LineSegments2 — which is a
             // Mesh, and reads as furniture to anything looking at the type.
             userData={{ ccHelper: true }}
           />
+        )}
+        {/* ─── Turn 20 (CLAUDE.md F8.2): THE CUT FACES ────────────────────
+            The walls and floors of every recess, in `appearance.cutFace` and
+            in NOTHING else — a decor, a lacquer and a sprayed colour are what
+            is on a board's FACE, and past the cutter there is only core. One
+            merged buffer per panel configuration, so a side panel's eighteen
+            holes are one draw call and every identical carcass shares it.
+            Nested inside the panel's own mesh, so it is disposed with it and
+            travels with every animation the board has. */}
+        {cuts && !contour && (
+          <mesh geometry={cuts} userData={{ ccHelper: false, ccCutFaces: p.id }}>
+            <meshStandardMaterial
+              color={profile.appearance.cutFace}
+              roughness={0.9}
+              metalness={0}
+              transparent={translucent}
+              opacity={faded}
+              depthWrite={!translucent}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
         )}
       </mesh>
     </group>
@@ -400,7 +444,7 @@ export default function UnitView({
   // `selectedElement` is the ENGINE's own panel id (`SHELF-2`) or null, which
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
-  selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onAddItems,
+  selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
   // Turn 19 (CLAUDE.md F1.3): double-click a hinge and its modal opens.
   onEditHinge = null,
   // The ink every dimension caption on this cabinet is written in (turn 11,
@@ -643,6 +687,13 @@ export default function UnitView({
   const anyFrontOpen = useMemo(
     () => Object.values(openFronts || {}).some((v) => Number(v) > 0),
     [openFronts],
+  );
+  // ─── Turn 20 (CLAUDE.md F3): which drawer is out, and how far it goes ─────
+  // Engine arithmetic (engine/drawerMotion.js), so a node test can hold the
+  // travel to the runner's nominal length without a browser.
+  const motion = useMemo(
+    () => drawerMotion(result.panels, openFronts),
+    [result.panels, openFronts],
   );
 
   // ─── Every number this cabinet has (turn 8, CLAUDE.md F7) ───
@@ -937,6 +988,11 @@ export default function UnitView({
         const isShelfLike = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
+        // ─── Turn 20 (CLAUDE.md F3): the box rides with its face ───────────
+        // Not a front and not a gesture: a piece of the drawer's mechanism,
+        // reading the SAME open amount the face it is screwed to reads.
+        const ride = motion.forPanel(p);
+        const slide = Boolean(ride && !front && ride.travel > 0);
         // ─── Turn 16 (CLAUDE.md F1.4): THIS PIECE'S OWN MATERIAL ────────────
         //
         // "An element override reaches the PICTURE." It did not: a per-element
@@ -994,7 +1050,15 @@ export default function UnitView({
                 />
               ),
             } : {})}
-            open={front ? (openFronts?.[p.id] ?? 0) : 0}
+            open={front ? (openFronts?.[p.id] ?? 0) : (ride?.open ?? 0)}
+            slide={slide}
+            travel={ride?.travel ?? null}
+            // ─── Turn 20 (CLAUDE.md F8.1) ───
+            // The unit's own drilling, so the board can lose the material it
+            // loses. It reaches the SOLID and nothing else here: the machining
+            // OVERLAY (`machining`) is still off in the room, because a room is
+            // a picture of furniture and the lines are a workshop tool.
+            drills={result.drills}
             surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
             outline={outlineFor(profile, { contour })}
             outlines={outlines}
@@ -1056,6 +1120,15 @@ export default function UnitView({
               // does to a cabinet — so a front does both: it swings, and its
               // hinge side is what the modal is about.
               if (front && onToggleFront) onToggleFront(p.id);
+              // ─── TURN 20 (CLAUDE.md F11.1): A DRAWER BOX OPENS THE DRAWER ──
+              // A side, the box front or back, the bottom — the parts that are
+              // the DRAWER rather than its face. The FRONT keeps its slide:
+              // opening a drawer by its face is older than the editor and is
+              // the first thing anybody does to one.
+              if (!front && p.role === 'drawer_box' && p.meta?.drawer && onEditDrawer) {
+                onEditDrawer(p.meta.drawer, { x: e.clientX, y: e.clientY });
+                return;
+              }
               if (opensModal && onEditElement) {
                 onSelectElement?.(p.id);
                 onEditElement(p.id, { x: e.clientX, y: e.clientY });
@@ -1081,7 +1154,18 @@ export default function UnitView({
               // right-click on a cabinet OUTSIDE the selection still selects
               // it, which is what every desktop application does.
               if (!selected) onSelect();
-              if (onContextMenu) onContextMenu({ x: e.clientX, y: e.clientY, panelId: p.id, part: p.part });
+              if (onContextMenu) {
+                onContextMenu({
+                  x: e.clientX,
+                  y: e.clientY,
+                  panelId: p.id,
+                  part: p.part,
+                  // Turn 20 (CLAUDE.md F11.1): WHICH drawer was right-clicked,
+                  // so the menu can offer that drawer's window rather than
+                  // guessing at one.
+                  drawer: Number(p.meta?.drawer) > 0 ? Number(p.meta.drawer) : null,
+                });
+              }
             }}
             onPointerOver={shelfId
               ? () => {
@@ -1184,6 +1268,10 @@ export default function UnitView({
         // back behind X-ray the moment it is shut again.
         runners={!contour && (hideFronts || anyFrontOpen)}
         runnerVariants={runnerVariants}
+        // ─── Turn 20 (CLAUDE.md F3.1/F3.2) ───
+        // The runner under an open drawer travels with it. One value per
+        // drawer, the same one its box and its face read.
+        drawerSlide={motion}
         storageBase={storageBase}
         // ─── Turn 19 (CLAUDE.md F1.6/F1.3) ───
         // WHICH hinge each door wears — resolved once, by the engine, and

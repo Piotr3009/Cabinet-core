@@ -1,0 +1,178 @@
+{
+ "system": "cliptop_blumotion",
+ "units": "mm",
+ "rules": {
+  "hinge_by_front_thickness": [
+   {
+    "max": 25,
+    "angle": 110
+   },
+   {
+    "max": 32,
+    "angle": 95
+   }
+  ],
+  "hinge_wardrobe_inner_drawer": 155,
+  "plate_default": "plate_knockin5",
+  "plate_option": "plate_screw3",
+  "layers": {
+   "cup": "FRONT_HINGES_35MM",
+   "cup_screws": "FRONT_HINGES_3MM",
+   "plate_knockin5": "HINGES_5MM"
+  }
+ },
+ "items": [
+  {
+   "file": "hardware/hinges/blum/cliptop/173L6100_44724390.glb",
+   "family": "173L6100",
+   "article": "44724390",
+   "role": "plate_screw3",
+   "angle": null,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/173L6100_46088242.glb",
+   "family": "173L6100",
+   "article": "46088242",
+   "role": "plate_screw3",
+   "angle": null,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/173L6130_44918665.glb",
+   "family": "173L6130",
+   "article": "44918665",
+   "role": "plate_screw3",
+   "angle": null,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/173L6130_48059017.glb",
+   "family": "173L6130",
+   "article": "48059017",
+   "role": "plate_screw3",
+   "angle": null,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/174E6100.01_42378433.glb",
+   "family": "174E6100.01",
+   "article": "42378433",
+   "role": "plate_knockin5",
+   "angle": null,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/174E6100.01_43593532.glb",
+   "family": "174E6100.01",
+   "article": "43593532",
+   "role": "plate_knockin5",
+   "angle": null,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/174E6130.01_41093467.glb",
+   "family": "174E6130.01",
+   "article": "41093467",
+   "role": "plate_knockin5",
+   "angle": null,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B3550_42542984.glb",
+   "family": "71B3550",
+   "article": "42542984",
+   "role": "hinge",
+   "angle": 110,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B3550_43192717.glb",
+   "family": "71B3550",
+   "article": "43192717",
+   "role": "hinge",
+   "angle": 110,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B3590_48445634.glb",
+   "family": "71B3590",
+   "article": "48445634",
+   "role": "hinge",
+   "angle": 110,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B3590_49491333.glb",
+   "family": "71B3590",
+   "article": "49491333",
+   "role": "hinge",
+   "angle": 110,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B7550_45588965.glb",
+   "family": "71B7550",
+   "article": "45588965",
+   "role": "hinge",
+   "angle": 155,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B7550_46597865.glb",
+   "family": "71B7550",
+   "article": "46597865",
+   "role": "hinge",
+   "angle": 155,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B7590_40074274.glb",
+   "family": "71B7590",
+   "article": "40074274",
+   "role": "hinge",
+   "angle": 155,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B7590_47406595.glb",
+   "family": "71B7590",
+   "article": "47406595",
+   "role": "hinge",
+   "angle": 155,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B9550_40331821.glb",
+   "family": "71B9550",
+   "article": "40331821",
+   "role": "hinge",
+   "angle": 95,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B9550_45165191.glb",
+   "family": "71B9550",
+   "article": "45165191",
+   "role": "hinge",
+   "angle": 95,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B9590_46350480.glb",
+   "family": "71B9590",
+   "article": "46350480",
+   "role": "hinge",
+   "angle": 95,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B9590_47438994.glb",
+   "family": "71B9590",
+   "article": "47438994",
+   "role": "hinge",
+   "angle": 95,
+   "finish": "onyx"
+  }
+ ]
+}

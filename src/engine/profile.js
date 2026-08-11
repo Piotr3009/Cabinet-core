@@ -287,7 +287,11 @@ export const DEFAULT_CABINET_PROFILE = {
       boxFrontHeightDeduction: 15,   // box front H = box side H − 15 − G − 1
       boxFrontHeightExtra: 1,
       bottomOversize: 13,      // bottom W = box front length + this
-      boxDropFromRunner: 9,    // box bottom sits this far below the runner row
+      // Turn 20 (CLAUDE.md F1): the wardrobe's box hung `boxDropFromRunner`
+      // BELOW the runner row and the BUDR's sat ON it — two laws for the same
+      // Blum runner. Both kits read `baseDrawerUnit.boxAboveRunner` now, which
+      // is where every other number measured off A DRAWER SIDE already lives,
+      // and this key is gone rather than left behind saying something untrue.
       depthSteps: [390, 440, 490, 540, 590, 640, 690],   // runner standard
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
@@ -431,8 +435,23 @@ export const DEFAULT_CABINET_PROFILE = {
       // COLOUR PICKER offers underneath (it always has), not a source button —
       // two buttons here made the same finish look like two finishes.
       { id: 'spray', label: 'Spray', thickness: 18, kind: 'spray', picker: 'colour' },
-      // Turn 15 (CLAUDE.md F3.2): a veneer front picks a TIMBER, not a paint.
-      { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board', picker: 'veneer' },
+      // ─── TURN 20 (CLAUDE.md F12.3): BOTH FACED FRONTS PICK A DECOR ───────
+      // Owner's verdict: "Veneer and Laminate open the SAME decor picker
+      // (catalogue grid, attribution string, reproduction note) as melamine —
+      // not a colour palette. Spray keeps its palette."
+      //
+      // Turn 15 gave the VENEER front a picker of its own — twelve curated
+      // timbers — on the reasoning that a species is not a decor. The owner
+      // works the other way round: he chooses the LOOK off the same catalogue
+      // for every faced board and the workshop knows what to order from it.
+      // So the front's veneer source joins the laminate's on the 85-decor
+      // grid. The CARCASS's veneer source is untouched below — that question
+      // was not asked and its picker still answers it.
+      //
+      // The THICKNESS is still the source's own 19 mm, and the assignment
+      // plumbing has carried a decor id since turn 16, so nothing about what
+      // is cut, grouped or ordered moves: this is the picker, routed.
+      { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board', picker: 'decor' },
       // …and a laminate front picks a DECOR — the same 85-EGGER picker the
       // carcass has used since turn 5 (F3.1). It was offering RAL palettes,
       // which is a paint range for a board that is never painted.
@@ -659,6 +678,34 @@ export const DEFAULT_CABINET_PROFILE = {
     runnerPocketWidth: 15,      // DRAWER_RUNNER_POCKET strip on the box side
     bottomPocketExtra: 1,       // DRAWER_BOTTOM_POCKET strip = G + 1 wide
     pocketOvershoot: 10,
+    // ─── TURN 20 (CLAUDE.md F1): THE BOX TAKES ITS HEIGHT FROM THE RUNNER ───
+    //
+    // Owner, eye test of turn 18: "the holes are right, the runners are right,
+    // the fronts are right — only the BOX sits wrong against them."
+    //
+    // ONE formula for every drawer in the app, the bottom one included, and it
+    // is measured off the RUNNER — the row the engine drills and the row the
+    // runner's own underside stands on (`drillSummary.runner_rows_carcass_y`,
+    // which is where 3d/Hardware.jsx puts the bottom of the profile). Before
+    // this turn the two kits disagreed about it: a BUDR box sat exactly ON the
+    // row and a wardrobe's hung 9 mm BELOW it, which is two laws for one piece
+    // of hardware.
+    //
+    //   boxAboveRunner     the drawer SIDE's lower edge, above the runner's
+    //                      bottom — the side hangs down past the runner and
+    //                      the 2 mm × 15 mm relief at its foot is what the
+    //                      runner sits in.
+    //   bottomAboveRunner  the underside of the drawer BOTTOM, which stands in
+    //                      its groove `runnerPocketWidth` above the side's own
+    //                      lower edge: 13.5 + 15 = 28.5. Derived, not a second
+    //                      independent number — test/turn20-phases.test.js
+    //                      pins the sum, so the day a workshop changes the
+    //                      groove the two cannot drift apart silently.
+    //
+    // Neither reaches a HOLE: every pocket, groove and drilling on a box part
+    // is measured from that part's own edges, and none of those move.
+    boxAboveRunner: 13.5,
+    bottomAboveRunner: 28.5,    // = boxAboveRunner + runnerPocketWidth
     // ─── Turn 17 (CLAUDE.md F4.3): THE POCKETS ARE CUTS, AND CUTS HAVE DEPTH ─
     // The two grooves in a drawer-box side have been in the cutting data since
     // turn 3 as flat rectangles on their own layers — which is everything a
@@ -943,12 +990,35 @@ export const DEFAULT_CABINET_PROFILE = {
     // conventional starting pair and is enough here — bigger numbers start to
     // show as bleed-through at silhouette edges, which is the artefact this
     // must not trade for.
+    //
+    // ─── TURN 20 (CLAUDE.md F12.1): AND THE LINE LEANS FORWARD AS WELL ─────
+    // Turn 15 pushed the FACE back and that closed most of it, but a line and
+    // a face a hair apart in a depth buffer of finite precision still trade
+    // pixels at grazing angles — which is where an interior edge is always
+    // seen. So the OUTLINE takes the opposite bias: the face steps back, the
+    // line steps forward, and the gap between them is twice what either could
+    // buy alone. Same mechanism, same "nothing moves in the scene", and the
+    // two numbers are kept apart because they are two decisions: how far a
+    // face may sink, and how far a line may lean out before it starts showing
+    // through the board in front of it.
     outline: {
       colour: '#1A1A1A',
       width: 1,
       threshold: 12,
-      polygonOffset: { factor: 1, units: 1 },
+      polygonOffset: {
+        factor: 1, units: 1, outlineFactor: -1, outlineUnits: -1,
+      },
     },
+    // ─── TURN 20 (CLAUDE.md F8.2): WHAT A CUT LOOKS LIKE ────────────────────
+    //
+    // Owner: every drilling and pocket must read as REMOVED material, "the cut
+    // faces a medium-dark grey". One number, read by both scenes.
+    //
+    // It is a COLOUR and never a finish: a decor or a sprayed lacquer is on the
+    // FACE of a board, and the moment a cutter has been through it what is
+    // there is raw core. Painting a decor onto the inside of a hinge cup is the
+    // thing this exists to stop.
+    cutFace: '#4a4a4a',
     // ~20 % sheen: a hint of clear coat over a matt board. Not plastic.
     // Kept as the fallback a piece takes when it belongs to no finish family.
     sheen: { roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.35, metalness: 0.0 },
@@ -1767,8 +1837,14 @@ export const DEFAULT_CABINET_PROFILE = {
         // ─── WHERE THE MODELS LIVE ───
         // The bucket holds only the GLB bytes (F0.3); the catalogue names the
         // file and this says which bucket and which path to hang it off.
+        // ─── TURN 20 (CLAUDE.md F2.2): WHERE THE PACK ACTUALLY IS ──────────
+        // Turn 19 wrote `hardware/hinges/blum/cliptop/` — the bucket name
+        // doubled, AND a `cliptop` level the owner never created. The manifest
+        // and all 19 GLBs answer at `hinges/blum/` INSIDE the `hardware`
+        // bucket. If the owner later moves the pack into `cliptop/`, this one
+        // line follows it and nothing else has to.
         bucket: 'hardware',
-        path: 'hardware/hinges/blum/cliptop/',
+        path: 'hinges/blum/',
 
         // A downloaded model's origin is somebody else's decision and the LISP
         // owns the POSITION: the hinge aligns to the drilled cup, never the
@@ -1805,8 +1881,15 @@ export const DEFAULT_CABINET_PROFILE = {
       // number, and it says so rather than inventing one.
       movento: {
         system: '760H',
+        // ─── TURN 20 (CLAUDE.md F2.1): THE PATH IS BUCKET-RELATIVE ─────────
+        // It read `hardware/runners/blum/movento/` and the URL builder puts
+        // the BUCKET in front of it, so every request went to
+        // `…/public/hardware/hardware/runners/…` and came back 400. The bucket
+        // is called `hardware` and the folder inside it is `runners/blum/
+        // movento/`; those are two different words that happened to be spelled
+        // the same, and writing them once was the bug.
         bucket: 'hardware',
-        path: 'hardware/runners/blum/movento/',
+        path: 'runners/blum/movento/',
         manifest: 'manifest.json',
 
         // ─── THE VARIANT IS HARDWARE, NOT GEOMETRY (F6.4) ─────────────────
@@ -1963,7 +2046,16 @@ export const DEFAULT_CABINET_PROFILE = {
   // a workshop preference). What belongs here is the sheet metrics.
   cnc: {
     unitNumberLayer: 'UNIT_NUMBER',  // LISP drawText layer for the part label
-    labelHeight: 40,                 // LISP drawText height on the CNC sheet
+    // ─── TURN 20 (CLAUDE.md F4): HALF AGAIN ────────────────────────────────
+    // Owner: the wrapping and the placement have been right since turn 18; the
+    // SIZE is still double what he wants, on the glass and in the file. 40 was
+    // the LISP's own `drawText` height and the LISP drew one cabinet a sheet.
+    //
+    // ONE number moves. `exportLabelScale` stays 0.5, so the exported DXF text
+    // follows it down 20 → 10 without a second decision; `labelMinHeight` (6)
+    // and `labelFitRatio` (0.12) stay exactly where they are — a small part
+    // already sizes by the ratio and must NOT shrink twice.
+    labelHeight: 20,                 // LISP drawText height on the CNC sheet, halved
     labelMinHeight: 6,               // …shrunk to fit a small part, never below this
     labelFitRatio: 0.12,             // label height ≤ this × the part's short side
     // ─── Turn 18 (CLAUDE.md F1): THE LABEL IS A BLOCK, NOT A LINE ─────────
@@ -2037,6 +2129,19 @@ export const DEFAULT_CABINET_PROFILE = {
       // has no edge to stand off, so the number went with the rule — F1.1.)
       minLabelPx: 5,          // under five pixels tall, a caption is not drawn
       minSymbolPx: 0.75,      // …and a hole under three quarters of one is not
+      // ─── Turn 20 (CLAUDE.md F9.1): WHEN A PRESS BECOMES A PAN ───────────
+      // The sheet takes the pointer capture on the first move PAST this, not
+      // on the press — a captured pointer makes the browser compose `click`
+      // and `dblclick` on the container, which is what left turn 19's
+      // double-click dead to a real mouse. Four pixels is the shake in a hand
+      // that meant to click; anything further along was a drag.
+      panThresholdPx: 4,
+      // ─── Turn 20 (CLAUDE.md F7.4): THE SMALLEST THING YOU CAN HOVER ─────
+      // A ⌀5 hole at sheet zoom is a couple of pixels across, and a rollover
+      // you have to hunt for is not a rollover. The hover zone is the drawn
+      // symbol or this, whichever is bigger ON SCREEN — the drawing is not
+      // changed, only what counts as pointing at it.
+      hoverGracePx: 7,
     },
   },
 
@@ -2120,17 +2225,31 @@ export const DEFAULT_CABINET_PROFILE = {
       // a rectangle of zero size, "beside" it is a millimetre away, and the
       // panel lands on the door.
       //
-      // So the shell offsets UP AND RIGHT of the object — right by `x`, and up
-      // by `y` PLUS the modal's own height, so the panel's bottom-left corner
-      // sits above and to the right of the pointer and the door underneath it
-      // stays in shot. Positive x is right; NEGATIVE y is up, which is the
-      // screen's own sign.
+      // ─── TURN 20 (CLAUDE.md F5): THE OWNER'S OWN TWO NUMBERS ────────────
       //
-      // 24 px is a thumb's width of clear glass: far enough that the pointer
-      // and the object's neighbourhood are plainly outside the panel, near
-      // enough that the panel still reads as being ABOUT the thing clicked.
-      anchorOffset: { x: 24, y: -24 },
+      // "140 px to the side (right; left when the right has no room), and the
+      // TOP of the panel level with the click."
+      //
+      //   x  140 — how much clear glass there is between the object and the
+      //            panel. A thumb's width was not enough: the owner works at
+      //            arm's length from a large screen and 24 px of air still
+      //            reads as ON the door.
+      //   y    0 — the offset of the panel's TOP from the click. Zero is
+      //            LEVEL, which is where it was before turn 19 lifted the
+      //            whole panel above the pointer; a negative number would
+      //            raise it.
+      //
+      // Positive x is right, negative y is up — the screen's own signs. Every
+      // modal in the app inherits both through the shell; there is no
+      // per-modal copy of this arithmetic (F5.4).
+      anchorOffset: { x: 140, y: 0 },
     },
+    // ─── Turn 20 (CLAUDE.md F12.2): THE SAVE THAT SAYS SO ──────────────────
+    // "A successful save turns the Save control green with a check for ~2 s,
+    // then returns to rest." Two seconds is long enough to catch out of the
+    // corner of an eye and short enough that it is plainly about the click
+    // that just happened rather than a state the app is in.
+    saveConfirmMs: 2000,
   },
 
   // ─── Editor defaults ───
@@ -2198,6 +2317,31 @@ export const DEFAULT_CABINET_PROFILE = {
       spreadFactor: 0.18,
       // How long the animation takes, out and back.
       seconds: 0.6,
+    },
+
+    // ─── THE RULER'S SNAPS (turn 20, CLAUDE.md F6) ─────────────────────────
+    //
+    // Owner: "the tape grabs wherever the ray lands. It must catch the points a
+    // joiner means — corner, end, middle, the meeting of two parts."
+    //
+    // AutoCAD's osnap, which is his home ground, so it uses AutoCAD's own
+    // vocabulary and nothing has to be explained: a SQUARE on an endpoint, a
+    // TRIANGLE on a midpoint, a CROSS on an intersection.
+    ruler: {
+      // How near the cursor has to be, IN SCREEN PIXELS, before a point is
+      // caught. Screen space and not millimetres: a magnet measured in
+      // millimetres would be unusable zoomed out and hair-trigger zoomed in,
+      // which is exactly why AutoCAD's aperture is in pixels too.
+      snapPx: 12,
+      // The two panels are "touching" within this. The workshop's own grid
+      // (`mmStep`), because a joint drawn a quarter of a millimetre open is a
+      // joint, and an INT marker that vanished on it would be a bug a joiner
+      // could not explain.
+      contactMm: 0.5,
+      // The marker's size on screen, in pixels. It is drawn at a constant size
+      // however far away the point is — a snap marker is a piece of the tool,
+      // not a piece of the furniture.
+      markerPx: 11,
     },
   },
 
@@ -2448,6 +2592,14 @@ export function migrateCabinetProfile(profile) {
         cliptop: {
           ...D.hardware.hinge.cliptop,
           ...profile.hardware?.hinge?.cliptop,
+          // ─── Turn 20 (CLAUDE.md F2.2) ───
+          // WHERE THE PACK IS is the app's own knowledge, not a workshop
+          // preference — nothing in Settings edits it, and the two values that
+          // shipped were both wrong about the owner's bucket. Merged back from
+          // the defaults for the same reason `plates` below is: a stored
+          // profile carrying `hardware/hinges/blum/cliptop/` would go on
+          // asking for a folder that does not exist.
+          ...bucketLocation(D.hardware.hinge.cliptop),
           systems: mergeById(D.hardware.hinge.cliptop.systems, profile.hardware?.hinge?.cliptop?.systems),
           finishes: mergeById(D.hardware.hinge.cliptop.finishes, profile.hardware?.hinge?.cliptop?.finishes),
           // The PLATES are not merged by id from a stored profile: whether the
@@ -2474,6 +2626,10 @@ export function migrateCabinetProfile(profile) {
         movento: {
           ...D.hardware.runner.movento,
           ...profile.hardware?.runner?.movento,
+          // Turn 20 (CLAUDE.md F2.1): the doubled path shipped, so it is in
+          // stored profiles. See the hinge block above for why this comes back
+          // from the app rather than from the file.
+          ...bucketLocation(D.hardware.runner.movento),
           variants: mergeById(D.hardware.runner.movento.variants, profile.hardware?.runner?.movento?.variants),
           modelOrigin: { ...D.hardware.runner.movento.modelOrigin, ...profile.hardware?.runner?.movento?.modelOrigin },
           rod: { ...D.hardware.runner.movento.rod, ...profile.hardware?.runner?.movento?.rod },
@@ -2519,7 +2675,16 @@ export function migrateCabinetProfile(profile) {
     // answer for the rest, and a profile saved before this turn gets all of it.
     cnc: { ...D.cnc, ...profile.cnc, annotation: { ...D.cnc.annotation, ...profile.cnc?.annotation } },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
-    editor: { ...D.editor, ...profile.editor },
+    editor: {
+      ...D.editor,
+      ...profile.editor,
+      // Turn 20 (CLAUDE.md F6.2): key by key, like every other nested block —
+      // a profile saved before the ruler had snaps comes back with all three
+      // numbers rather than with a magnet of `undefined` pixels.
+      ruler: { ...D.editor.ruler, ...profile.editor?.ruler },
+      explode: { ...D.editor.explode, ...profile.editor?.explode },
+      history: { ...D.editor.history, ...profile.editor?.history },
+    },
     dimensions: { ...D.dimensions, ...profile.dimensions },
   };
 }
@@ -2532,6 +2697,19 @@ export function migrateCabinetProfile(profile) {
  */
 function mergeList(defaults, stored) {
   return Array.isArray(stored) && stored.length ? stored : defaults;
+}
+
+/**
+ * Where a hardware family's models live — always the APP's answer (turn 20,
+ * CLAUDE.md F2.1/F2.2).
+ *
+ * Not a preference: no screen edits it, and the two values that shipped both
+ * described a bucket the owner does not have. A stored profile that carried
+ * one would go on producing `…/public/hardware/hardware/…` for ever, which is
+ * the exact shape of the bug this turn is closing.
+ */
+function bucketLocation(defaults) {
+  return { bucket: defaults.bucket, path: defaults.path, manifest: defaults.manifest };
 }
 
 /**

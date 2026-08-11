@@ -1,0 +1,206 @@
+{
+  "rule": "R1 — every pointer gesture in this walk is CDP input (Input.dispatchMouseEvent, via scripts/cdp.mjs). `dispatchEvent` is not used for any gesture.",
+  "bucket": "R2 — the live bucket was asked before any hardware screenshot; its answer, including a refusal, is the first two steps.",
+  "steps": [
+    {
+      "label": "R2 the LIVE bucket was asked, before any hardware was photographed",
+      "ok": true,
+      "detail": "BLOCKED in this environment — runners: Request was cancelled. | hinges: Request was cancelled."
+    },
+    {
+      "label": "R2 …and the host was DERIVED from the decor pack, not typed",
+      "ok": true,
+      "detail": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public"
+    },
+    {
+      "label": "F2.1 the runner path is bucket-relative — no doubled `hardware/`",
+      "ok": true,
+      "detail": "runners/blum/movento/"
+    },
+    {
+      "label": "F2.2 the hinge pack is at hinges/blum/, with no cliptop level",
+      "ok": true,
+      "detail": "hinges/blum/"
+    },
+    {
+      "label": "F2.3 a model URL built by the app has the tree exactly once",
+      "ok": true,
+      "detail": "(no catalogue loaded — the bucket is unreachable here)"
+    },
+    {
+      "label": "F1 every drawer box rides its runner: side +13.5, bottom +28.5",
+      "ok": true,
+      "detail": "[{\"drawer\":1,\"row\":56,\"sideAbove\":13.5,\"bottomAbove\":28.5},{\"drawer\":2,\"row\":379,\"sideAbove\":13.5,\"bottomAbove\":28.5},{\"drawer\":3,\"row\":636,\"sideAbove\":13.5,\"bottomAbove\":28.5}]"
+    },
+    {
+      "label": "F3 the drawer front was found on screen to aim a REAL pointer at",
+      "ok": true,
+      "detail": "{\"x\":800,\"y\":619,\"w\":176,\"h\":73}"
+    },
+    {
+      "label": "F3 a REAL double-click on the face moves EVERY part of that drawer, by the same Z",
+      "ok": true,
+      "detail": "[{\"id\":\"D2-SL\",\"by\":490},{\"id\":\"D2-SR\",\"by\":490},{\"id\":\"D2-BF\",\"by\":490},{\"id\":\"D2-BB\",\"by\":490},{\"id\":\"D2-DNO\",\"by\":490},{\"id\":\"DR1-F2\",\"by\":490}]"
+    },
+    {
+      "label": "F3 …and the carcass did not move at all",
+      "ok": true,
+      "detail": "BUL z = -1202"
+    },
+    {
+      "label": "F3 …and a second real double-click on the face shuts it again",
+      "ok": true,
+      "detail": "{\"modal\":\"element\",\"open\":0}"
+    },
+    {
+      "label": "F8 the scene mounts real CUT FACES, in the profile’s own grey",
+      "ok": true,
+      "detail": "{\"meshes\":22,\"triangles\":5260,\"colour\":\"#4a4a4a\"}"
+    },
+    {
+      "label": "F8.5 the EDITOR mounts the same recess geometry the room does",
+      "ok": true,
+      "detail": "{\"meshes\":18,\"tris\":3104,\"panels\":[\"BUL\",\"BUR\",\"BACK\",\"D1-SL\",\"D1-SR\",\"D2-SL\"]}"
+    },
+    {
+      "label": "F10 twelve editor opens and four render opens: LOST events = 0",
+      "ok": true,
+      "detail": "{\"created\":12,\"released\":12,\"lost\":0,\"restored\":0,\"live\":1,\"names\":[\"room\"]}"
+    },
+    {
+      "label": "F10 …and no more than two contexts are alive at the end",
+      "ok": true,
+      "detail": "live = 1 (room)"
+    },
+    {
+      "label": "F11 a drawer BOX side was found on screen to aim a REAL pointer at",
+      "ok": true,
+      "detail": "{\"x\":726,\"y\":594,\"w\":13,\"h\":86}"
+    },
+    {
+      "label": "F11 a REAL double-click on the box opens the DRAWER editor, scoped to that drawer",
+      "ok": true,
+      "detail": "{\"modal\":\"cabinet\",\"drawer\":2,\"heading\":\"DR1 · Drawer 2 — edit drawer❐×\",\"title\":null}"
+    },
+    {
+      "label": "F11 EXPLODE takes the drawer apart, and the control says how to put it back",
+      "ok": true,
+      "detail": "Assemble"
+    },
+    {
+      "label": "F11 a real click on the BOTTOM selects it and the right panel shows its detail",
+      "ok": true,
+      "detail": "{\"label\":\"Drawer 2 — bottom\",\"height\":true,\"runner\":true}"
+    },
+    {
+      "label": "F5 the panel keeps 140 px of clear glass beside the click in all five corners",
+      "ok": true,
+      "detail": "low-left:right low-right:left top-right:left top-left:right centre:right"
+    },
+    {
+      "label": "F5 …and its TOP is level with the click wherever the viewport allows it",
+      "ok": true,
+      "detail": "low-left:-288 low-right:-288 top-right:0 top-left:0 centre:0"
+    },
+    {
+      "label": "F5 a REAL double-click on a door opens a panel that does not cover it",
+      "ok": true,
+      "detail": "{\"modal\":\"element\",\"rect\":{\"left\":1117,\"top\":419,\"width\":320,\"height\":574}}"
+    },
+    {
+      "label": "F6 a REAL hover near a corner catches an END and draws its marker",
+      "ok": true,
+      "detail": "END"
+    },
+    {
+      "label": "F6 both points the tape caught are POINTS OF THE FURNITURE, not where the ray landed",
+      "ok": true,
+      "detail": "{\"a\":{\"panel\":\"DR1-F1\",\"kind\":\"END\"},\"b\":{\"panel\":\"DR1-F3\",\"kind\":\"END\"},\"of\":51}"
+    },
+    {
+      "label": "F6 …and the readout is the engine’s own distance between them, to 0.5 mm",
+      "ok": true,
+      "detail": "767 mm between [[-298.50000143051153,100.0000002384186,-903.9999998137355],[-298.50000143051153,866.9999998807907,-903.9999998137355]]"
+    },
+    {
+      "label": "F6.3 a real click with NOTHING caught places nothing",
+      "ok": true,
+      "detail": "2 → 2"
+    },
+    {
+      "label": "F9 a part was found on the sheet to aim a REAL double-click at",
+      "ok": true,
+      "detail": "{\"id\":\"BACK\",\"x\":791,\"y\":270}"
+    },
+    {
+      "label": "F9 a REAL double-click on a part focuses the tree — the turn-19 feature, alive",
+      "ok": true,
+      "detail": "{\"unitId\":\"u_lclausd\",\"panelId\":\"BACK\",\"stamp\":1}"
+    },
+    {
+      "label": "F9 …and a real drag on the sheet still pans it",
+      "ok": true,
+      "detail": "-120 -209.74 5784 3441.48 → -915.3000000000001 224.05999999999997 5784 3441.48"
+    },
+    {
+      "label": "F9 …and a real double-click AFTER the pan still fires: the capture was released",
+      "ok": true,
+      "detail": "{\"unitId\":\"u_b35al9t\",\"panelId\":\"BUR\",\"stamp\":2} (stamp was 1, aimed at BUR)"
+    },
+    {
+      "label": "F7 a REAL mouse-move onto a hole raises the rollover, with its numbers",
+      "ok": true,
+      "detail": "{\"title\":\"Drill · Puzzle ⌀7.5\",\"rows\":{\"⌀\":\"7.5 mm\",\"Depth\":\"through\",\"From X edges\":\"70.5 mm / 469.5 mm\",\"From Y edges\":\"8.5 mm / 761.5 mm\"},\"rect\":{\"left\":289,\"top\":272,\"width\":229,\"height\":122}}"
+    },
+    {
+      "label": "F7 a REAL mouse-move onto a pocket raises the rollover, with its numbers",
+      "ok": true,
+      "detail": "{\"title\":\"Pocket · Dog bones\",\"rows\":{\"Size\":\"18 × 60 mm\",\"Corner R\":\"4 mm\",\"From X edges\":\"540 mm / 18 mm past\",\"From Y edges\":\"65 mm / 645 mm\"},\"rect\":{\"left\":421,\"top\":248,\"width\":235,\"height\":122}}"
+    },
+    {
+      "label": "F7 …and leaving the feature puts the rollover away",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "label": "F4 the label cap is 20 and no exported label exceeds it",
+      "ok": true,
+      "detail": "{\"labelHeight\":20,\"exportScale\":0.5,\"maxFileHeight\":20,\"parts\":23}"
+    },
+    {
+      "label": "F12.1 every panel outline in the scene carries the forward depth bias",
+      "ok": true,
+      "detail": "{\"outlines\":29,\"biased\":29}"
+    },
+    {
+      "label": "F12.3 Veneer and Laminate open the DECOR picker; Spray keeps its palette",
+      "ok": true,
+      "detail": "[\"decor\",\"decor\",\"colour\"]"
+    },
+    {
+      "label": "F12.2 there is a Save control to click",
+      "ok": true,
+      "detail": "{\"x\":914,\"y\":24}"
+    },
+    {
+      "label": "F12.2 a real click SAVES, and the control goes green with a check",
+      "ok": true,
+      "detail": "{\"state\":\"saved\",\"text\":\"✓ Saved\"}"
+    },
+    {
+      "label": "F12.2 …and it goes back to rest by itself",
+      "ok": true,
+      "detail": "rest"
+    },
+    {
+      "label": "no uncaught errors in the console during the whole walk",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F10 …and the console says \"Context Lost\" not once",
+      "ok": true,
+      "detail": "0 lines"
+    }
+  ]
+}

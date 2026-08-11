@@ -1,0 +1,546 @@
+{
+  "base": "http://127.0.0.1:4173/",
+  "when": "2026-08-11T07:49:05.684Z",
+  "passed": 30,
+  "failed": 0,
+  "blocked": 2,
+  "total": 32,
+  "steps": [
+    {
+      "label": "R2 the LIVE bucket answers",
+      "ok": null,
+      "blocked": "this session’s egress policy refuses the storage host",
+      "detail": "runners: manifest answered 403 | hinges: manifest answered 403"
+    },
+    {
+      "label": "F1.1 the option flips through none / 70 / 100 on a REAL click each (R1)",
+      "ok": true,
+      "detail": "70→70 100→100 0→0 70→70"
+    },
+    {
+      "label": "F1.3 ONE moulding across the two wardrobes — owner + member",
+      "ok": true,
+      "detail": "1240 mm, 2 units"
+    },
+    {
+      "label": "F1.3 the left end STOPS (wall / panel / side infill) and the right end is OPEN",
+      "ok": true,
+      "detail": "{\"left\":\"infill\",\"right\":\"open\"}"
+    },
+    {
+      "label": "F1.3 …so the open end mitres 45° and RETURNS along the side to the wall",
+      "ok": true,
+      "detail": "return 596 mm, left mitre false"
+    },
+    {
+      "label": "F1.3 the 45° is a real one — the outer face runs on by the projection",
+      "ok": true,
+      "detail": "open end 48 = projection 48; stopped end 0"
+    },
+    {
+      "label": "F1.4 the BOM orders it by the METRE, and it is not a cut piece",
+      "ok": true,
+      "detail": "1.936 m · 70 mm bead-and-cove · 48 mm projection"
+    },
+    {
+      "label": "F1.4 …and NOTHING named cornice reaches the cut list",
+      "ok": true,
+      "detail": "0 panels"
+    },
+    {
+      "label": "F1.5 a wardrobe whose cornice finishes above the ceiling WARNS",
+      "ok": true,
+      "detail": "W01: the 100 mm cornice finishes 80 mm above the 2400 mm ceiling — lower the unit, or lose the cornice."
+    },
+    {
+      "label": "F4.3 the field accepts 50 — the 100 was a default, never a floor",
+      "ok": true,
+      "detail": "applied 50"
+    },
+    {
+      "label": "F4.2 the D/W stands on 50 exactly as its legged neighbour does",
+      "ok": true,
+      "detail": "BUD 100→50, D/W 100→50"
+    },
+    {
+      "label": "F4.2 …and the two share ONE plinth line — one length across the run",
+      "ok": true,
+      "detail": "600×50 @ y-50"
+    },
+    {
+      "label": "F4.5 the D/W front is still 594 wide",
+      "ok": true,
+      "detail": "594 mm"
+    },
+    {
+      "label": "F4.4 the D/W TRANSLATES under a real drag, like its neighbours (R1)",
+      "ok": true,
+      "detail": "D/W 3300→4070, BUD 2700→3316"
+    },
+    {
+      "label": "F3.1 the health row’s \"expected\" IS the registry’s own count (R4)",
+      "ok": true,
+      "detail": "Movento 0, CLIP top 19"
+    },
+    {
+      "label": "F3.1 every family names its SOURCE — db / bucket / mock",
+      "ok": true,
+      "detail": "Movento:mock CLIP top:mock AVENTOS:mock"
+    },
+    {
+      "label": "F3.1 …and the app publishes it, so the walk reads the app and not the pixels",
+      "ok": true,
+      "detail": "CLIP top 0/19"
+    },
+    {
+      "label": "F2a.2 the resolution order ran for every family, in one function",
+      "ok": true,
+      "detail": "runners=mock(0) hinges=mock(19) lifts=mock(29)"
+    },
+    {
+      "label": "R4 a hardware url the app built is absolute, with the bucket exactly once",
+      "ok": true,
+      "detail": "(no hardware mounted in this scene)"
+    },
+    {
+      "label": "F2b.2 Database ▸ Company defaults opens on a real click (R1)",
+      "ok": true,
+      "detail": "4 preference fields"
+    },
+    {
+      "label": "F2b.2 …offers only preferences — no hinge ANGLE anywhere on it",
+      "ok": true,
+      "detail": "the angle follows the front’s thickness"
+    },
+    {
+      "label": "F2b.2 …and says defaults need an account when nobody is signed in",
+      "ok": true,
+      "detail": "graceful without a session"
+    },
+    {
+      "label": "F3.2 the health row is ON that screen, printing the registry’s numbers",
+      "ok": true,
+      "detail": "0/0 0/19 0/0 | mock mock mock"
+    },
+    {
+      "label": "F3.2 …and what it prints is exactly what the registry says (R4)",
+      "ok": true,
+      "detail": "0/0 0/19 0/0 vs 0/0 0/19 0/0"
+    },
+    {
+      "label": "F2b.3 a new project with NO row is exactly what turn 21 made",
+      "ok": true,
+      "detail": "{\"hinges\":{\"standard\":null,\"system\":null,\"finish\":null,\"plate\":null},\"runners\":{\"system\":null,\"variant\":null}}"
+    },
+    {
+      "label": "F2b.3 …and with a row it is PREFILLED from it",
+      "ok": true,
+      "detail": "{\"hinges\":{\"standard\":null,\"system\":null,\"finish\":\"onyx\",\"plate\":null},\"runners\":{\"system\":null,\"variant\":\"S\"}}"
+    },
+    {
+      "label": "F2b.5 THE EQUIVALENCE PROBE — the row equals its manual-settings twin",
+      "ok": true,
+      "detail": "identical design"
+    },
+    {
+      "label": "F2b.3 …and the prefilled answers are what the SETTINGS screen shows",
+      "ok": true,
+      "detail": "{\"finish\":\"Onyx\",\"system\":\"CLIP top BLUMOTION\",\"variant\":\"S\"}"
+    },
+    {
+      "label": "R5 the app NEVER asks its own domain for a hardware model (the owner’s 404)",
+      "ok": true,
+      "detail": "clean"
+    },
+    {
+      "label": "R5 …and the bucket’s own requests succeed",
+      "ok": null,
+      "blocked": "the egress policy refuses the storage host",
+      "detail": "1 requests, all to the correct absolute url"
+    },
+    {
+      "label": "R5 …no WebGL INVALID_OPERATION",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "R5 …and no uncaught error",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "measurements": {
+    "bucket": {
+      "host": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public",
+      "ok": false,
+      "families": [
+        {
+          "id": "runners",
+          "label": "MOVENTO 760H",
+          "bucket": "hardware",
+          "path": "runners/blum/movento/",
+          "manifestUrl": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json",
+          "manifestStatus": 403,
+          "manifestBytes": 119,
+          "rows": null,
+          "model": null,
+          "ok": false,
+          "error": "manifest answered 403"
+        },
+        {
+          "id": "hinges",
+          "label": "CLIP top BLUMOTION",
+          "bucket": "hardware",
+          "path": "hinges/blum/",
+          "manifestUrl": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/hinges/blum/manifest.json",
+          "manifestStatus": 403,
+          "manifestBytes": 119,
+          "rows": null,
+          "model": null,
+          "ok": false,
+          "error": "manifest answered 403"
+        }
+      ]
+    },
+    "cornice": {
+      "ids": {
+        "a": "u_4pz3zxz",
+        "b": "u_yg0ffsj",
+        "x": [
+          40,
+          640
+        ]
+      },
+      "flips": [
+        {
+          "want": 70,
+          "clicked": true,
+          "param": 70,
+          "run": 70,
+          "assembly": 70
+        },
+        {
+          "want": 100,
+          "clicked": true,
+          "param": 100,
+          "run": 70,
+          "assembly": 70
+        },
+        {
+          "want": 0,
+          "clicked": true,
+          "param": 0,
+          "run": null,
+          "assembly": null
+        },
+        {
+          "want": 70,
+          "clicked": true,
+          "param": 70,
+          "run": 70,
+          "assembly": 70
+        }
+      ],
+      "run": {
+        "owner": {
+          "role": "owner",
+          "height": 70,
+          "projection": 48,
+          "offset": -40,
+          "length": 1240,
+          "ends": {
+            "left": "infill",
+            "right": "open"
+          },
+          "mitres": {
+            "left": false,
+            "right": true
+          },
+          "returns": {
+            "left": null,
+            "right": 596
+          },
+          "infillHeight": 40,
+          "rise": 30,
+          "top": 2320,
+          "unitIds": [
+            "u_4pz3zxz",
+            "u_yg0ffsj"
+          ]
+        },
+        "member": {
+          "role": "member",
+          "ownerId": "u_4pz3zxz"
+        },
+        "infills": [
+          [
+            40,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "length": 1240,
+        "height": 70,
+        "projection": 48,
+        "ends": {
+          "left": "infill",
+          "right": "open"
+        },
+        "mitres": {
+          "left": false,
+          "right": true
+        },
+        "returns": {
+          "left": null,
+          "right": 596
+        },
+        "members": [
+          "front",
+          "return-right"
+        ],
+        "mitreRun": 48,
+        "stopRun": 0,
+        "order": {
+          "front_mm": 1240,
+          "returns_mm": 596,
+          "corners": 1,
+          "allowance_mm": 100,
+          "total_mm": 1936,
+          "metres": 1.936
+        },
+        "bom": [
+          {
+            "role": "cornice",
+            "label": "Cornice moulding",
+            "qty": 1.936,
+            "unit": "m",
+            "spec": {
+              "height_mm": 70,
+              "projection_mm": 48,
+              "front_mm": 1240,
+              "returns_mm": 596,
+              "corners": 1,
+              "allowance_mm": 100
+            },
+            "spec_label": "70 mm bead-and-cove · 48 mm projection"
+          }
+        ]
+      },
+      "ceiling": [
+        "W01: the 100 mm cornice finishes 80 mm above the 2400 mm ceiling — lower the unit, or lose the cornice."
+      ]
+    },
+    "dw": {
+      "ids": {
+        "bud": "u_du2v5cu",
+        "dw": "u_d51ke6o"
+      },
+      "applied": {
+        "toeKick": 50
+      },
+      "before": {
+        "bud": 100,
+        "dw": 100
+      },
+      "after": {
+        "bud": 50,
+        "dw": 50
+      },
+      "legHeights": [],
+      "plinths": [
+        {
+          "w": 600,
+          "h": 50,
+          "y": -50
+        }
+      ],
+      "dwFrontBottom": 53,
+      "dwFrontW": 594
+    },
+    "dwDrag": {
+      "dw": {
+        "before": 3300,
+        "after": 4070,
+        "moved": true
+      },
+      "bud": {
+        "before": 2700,
+        "after": 3316,
+        "moved": true
+      }
+    },
+    "health": {
+      "rows": [
+        {
+          "family": "runners",
+          "label": "MOVENTO runners",
+          "short": "Movento",
+          "system": "760H",
+          "source": "mock",
+          "rows": 0,
+          "expected": 0,
+          "asked": 0,
+          "loaded": 0,
+          "failed": 0,
+          "pending": 0,
+          "firstFailure": null,
+          "manifestUrl": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json",
+          "error": "Failed to fetch"
+        },
+        {
+          "family": "hinges",
+          "label": "CLIP top hinges",
+          "short": "CLIP top",
+          "system": "cliptop_blumotion",
+          "source": "mock",
+          "rows": 19,
+          "expected": 19,
+          "asked": 0,
+          "loaded": 0,
+          "failed": 0,
+          "pending": 0,
+          "firstFailure": null,
+          "manifestUrl": null,
+          "error": null
+        },
+        {
+          "family": "lifts",
+          "label": "AVENTOS lifts",
+          "short": "AVENTOS",
+          "system": "aventos",
+          "source": "mock",
+          "rows": 29,
+          "expected": 0,
+          "asked": 0,
+          "loaded": 0,
+          "failed": 0,
+          "pending": 0,
+          "firstFailure": null,
+          "manifestUrl": null,
+          "error": null
+        }
+      ],
+      "line": "CLIP top 0/19",
+      "registry": {
+        "runners": 0,
+        "hinges": 19
+      },
+      "published": true
+    },
+    "sources": {
+      "families": [
+        "runners",
+        "hinges",
+        "lifts"
+      ],
+      "answers": [
+        {
+          "family": "runners",
+          "source": "mock",
+          "rows": 0,
+          "url": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json",
+          "error": "Failed to fetch"
+        },
+        {
+          "family": "hinges",
+          "source": "mock",
+          "rows": 19,
+          "url": null,
+          "error": null
+        },
+        {
+          "family": "lifts",
+          "source": "mock",
+          "rows": 29,
+          "url": null,
+          "error": null
+        }
+      ]
+    },
+    "registry": {
+      "hinge": [],
+      "runner": [],
+      "urls": []
+    },
+    "companyScreen": {
+      "open": true,
+      "anonymous": true,
+      "fields": [
+        "hinge_system",
+        "hinge_finish",
+        "plate",
+        "runner_variant"
+      ],
+      "health": true,
+      "counts": [
+        "0/0",
+        "0/19",
+        "0/0"
+      ],
+      "sources": [
+        "mock",
+        "mock",
+        "mock"
+      ],
+      "anglesOffered": false
+    },
+    "prefill": {
+      "without": {
+        "hinges": {
+          "standard": null,
+          "system": null,
+          "finish": null,
+          "plate": null
+        },
+        "runners": {
+          "system": null,
+          "variant": null
+        }
+      },
+      "withRow": {
+        "hinges": {
+          "standard": null,
+          "system": null,
+          "finish": "onyx",
+          "plate": null
+        },
+        "runners": {
+          "system": null,
+          "variant": "S"
+        }
+      },
+      "manual": {
+        "hinges": {
+          "standard": null,
+          "system": null,
+          "finish": "onyx",
+          "plate": null
+        },
+        "runners": {
+          "system": null,
+          "variant": "S"
+        }
+      },
+      "other": "S"
+    },
+    "prefilledUi": {
+      "finish": "Onyx",
+      "system": "CLIP top BLUMOTION",
+      "variant": "S"
+    },
+    "console": {
+      "lines": 0,
+      "errors": 2,
+      "ownOriginHardwareFailures": [],
+      "upstreamBlocked": [
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json]"
+      ],
+      "upstreamBlockedCount": 1,
+      "webglBad": [],
+      "uncaught": []
+    }
+  }
+}

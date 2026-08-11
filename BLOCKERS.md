@@ -1767,7 +1767,24 @@ nie ma. Geometria jest poprawna — obie linie wypadają na `runner bottom + 96,
 dla każdej szafy z szufladami, a żelazna zasada tury 21 to zero. To jest tura
 własna, z wypisanym i zatwierdzonym nowym odciskiem.
 
-## #88 — Gzyms (F13) — NIE ZBUDOWANY, tura skrócona od dołu
+## #88 — Gzyms (F13) — ✅ ZAMKNIĘTY W TURZE 22
+
+**ZAMKNIĘTE.** Tura 22 F1 zbudowała gzyms w całości, dokładnie z tych liczb —
+`engine/cornice.js`, `autoParts.cornice` w `profile.js`, `supports.cornice` na
+WARDROBE / BUDTALL / FRIDGE, wiersz BOM w metrach bieżących, bryła w 3D
+(`3d/Cornice.jsx`) i ostrzeżenie sufitu w sklepie. Odcisk CNC: **ZERO** —
+gzyms nie tworzy żadnej części, więc lista rozkroju, arkusz i DXF go nie widzą
+(`verify/t22/cnc-export-identity.md`, `verify/t22/probes.txt`). Zrzuty biegu,
+stopu i gierunkowego powrotu: `verify/t22/1a-*.png`, `1b-*.png`.
+
+Jedna rzecz z listy poniżej okazała się **już prawdą** i nie wymagała zmiany:
+„wypełnienie 40 stoi nad wieńcem, w płaszczyźnie drzwi" jest tym, co górne
+wypełnienie robi od tury 6 (`box.y = H`, `z = D + doors.gap + frontT − t`).
+Wysokości drzwi **nie ruszono** — to byłaby delta odcisku na każdej szafce
+z drzwiami, a żelazna zasada tury 22 to zero; gzyms siada na poziomie góry
+korpusu i to jest ta sama płaszczyzna.
+
+Zapis oryginalny tury 21, dla historii:
 
 CLAUDE.md tury 21: „turn shrinks from the BOTTOM (F13, then F11, then F7's
 pull-out half)". Tura zatrzymała się na **F13** i nic z niego nie jest
@@ -1791,3 +1808,43 @@ raz:
 * gzyms jest **materiałem kupowanym, nie częścią CNC** ⇒ delta odcisku ZERO,
 * uczciwość sufitu: wysokość jednostki + wypełnienie + gzyms w wyprowadzonych
   wysokościach, żeby szafa 2400 pod sufitem 2400 **ostrzegała**, a nie ścinała.
+
+
+---
+
+## #89 — Bucket niedostępny z sesji budującej (tura 22, jak tura 21)
+
+**Co blokuje.** Polityka wyjścia tej sesji odmawia tunelu do hosta storage:
+`CONNECT tunnel failed, response 403`, 119-bajtowa strona odmowy proxy. Ani
+`scripts/bucket-live.mjs`, ani `scripts/seed-hardware.mjs`, ani przeglądarka
+w spacerze nie dostają z bucketu ani bajtu.
+
+**Co zrobiono zamiast.** Nic z tury 22 na tym nie stoi — to jest cały sens
+`lib/hardwareSource.js`: bucket jest DRUGIM źródłem, nie jedynym. Rozstrzygnięcie
+`db → bucket → mock` jest przetestowane na wszystkich trzech gałęziach
+(`test/turn22-f2-data-module.test.js`, na fikstuurach R3 i na fałszywym
+wierszu), a spacer pokazuje żywą gałąź `mock` z kompletnym katalogiem zawiasów
+i regułą kąta. Odmowa jest zacytowana dosłownie w `verify/t22/bucket-live.md`.
+
+**Co ma zrobić Piotr.** Na swojej maszynie: `node scripts/bucket-live.mjs`
+(obie rodziny 200, 40 i 19 wierszy), potem `sql/004_tura22.sql`, potem
+`scripts/seed-hardware.mjs` z kluczami. Po zasiewie wiersz kondycji pod
+Database ▸ Company defaults ma napisać `db` zamiast `mock` — to jedno słowo
+jest całym potwierdzeniem.
+
+---
+
+## #90 — `AVENTOS`: `cc_hardware` ma dla niego wiersz, bucket nie ma manifestu
+
+**Co blokuje.** Rodzina `lifts` jest w tabeli i w rozstrzyganiu, bo tak
+wygląda kształt danych — ale w buckecie nie ma `lifts/blum/manifest.json`,
+bo właściciel go nie wgrał. Pytanie o plik, którego nikt nie opublikował, to
+404 w jego konsoli bez powodu (to była cała treść F2 tury 21), więc
+`hardwareFamilySpec('lifts').bucketPublished = false` i gałąź bucketu jest dla
+niej pominięta. Katalog jedzie z repozytorium (`reference/hardware/aventos.json`,
+CATALOGUE OF RECORD tury 19).
+
+**Co ma zrobić Piotr.** Jeżeli kiedyś wgra pakiet AVENTOS z manifestem —
+zmiana jednej flagi w `lib/hardwareSource.js` i `scripts/seed-hardware.mjs`
+zaczyna go zasiewać razem z resztą. Do tego czasu wiersz kondycji uczciwie
+mówi `mock`.

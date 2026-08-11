@@ -30,6 +30,7 @@
 // Pure functions — no React, no store, no fetch.
 
 import { hardwareModelSrc, hardwareModelUrl } from './hardwareUrl.js';
+import { cascade, companyDefaults } from './companyDefaults.js';
 
 /**
  * The manifest, once somebody has read it. `null` until then, and `null` is a
@@ -145,19 +146,26 @@ export function runnerNominalLength(usableDepth, profile) {
  *   profile
  */
 export function resolveRunnerVariant({
-  drawer = null, unit = null, design = null, profile,
+  drawer = null, unit = null, design = null, company = undefined, profile,
 }) {
   const M = profile.hardware.runner.movento;
-  const known = new Set((M.variants || []).map((v) => v.id));
-  const pick = (v) => (v && known.has(String(v).toUpperCase()) ? String(v).toUpperCase() : null);
-
-  const own = drawer != null
-    ? pick(unit?.params?.runner_variants?.[String(drawer)])
-    : null;
-  return own
-    || pick(unit?.params?.runner_variant)
-    || pick(design?.runners?.variant)
-    || M.defaultVariant;
+  const row = company === undefined ? companyDefaults() : company;
+  // ─── Turn 22 (CLAUDE.md F2b.3) ───
+  // The same four-storey ladder every other preference climbs, in the one
+  // implementation: profile → company row → project → element. The ELEMENT is
+  // two rungs of its own here and always has been — this cabinet, then this
+  // drawer — because a joiner fits one drawer differently without re-declaring
+  // the cabinet.
+  return cascade([
+    M.defaultVariant,
+    row?.runner_variant,
+    design?.runners?.variant,
+    unit?.params?.runner_variant,
+    drawer != null ? unit?.params?.runner_variants?.[String(drawer)] : null,
+  ], {
+    allowed: new Set((M.variants || []).map((v) => v.id)),
+    normalise: (v) => String(v).trim().toUpperCase(),
+  }) || M.defaultVariant;
 }
 
 /**

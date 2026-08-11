@@ -37,6 +37,11 @@
 // Pure functions — no React, no store, no fetch.
 
 import { hardwareModelSrc, hardwareModelUrl } from './hardwareUrl.js';
+// Turn 22 (CLAUDE.md F2b.3): profile → company row → project → element, ONE
+// implementation. The three resolvers below used to keep a private ladder of
+// `||`s each, which is exactly how a new storey arrives in two places out of
+// three.
+import { cascade, companyDefaults, levelsOf } from './companyDefaults.js';
 
 /** The parsed catalogue, once somebody has read it. `null` until then. */
 let CATALOGUE = null;
@@ -329,11 +334,17 @@ export function resolveDoorHinge({
  * default rather than ordering something nobody stocks — the same rule the
  * runner variant follows.
  */
-export function resolveHingeFinish(design, profile) {
+export function resolveHingeFinish(design, profile, company = undefined) {
   const C = profile.hardware.hinge.cliptop;
-  const known = new Set(C.finishes.map((f) => f.id));
-  const wanted = String(design?.hinges?.finish || '').toLowerCase();
-  return known.has(wanted) ? wanted : C.defaultFinish;
+  const row = company === undefined ? companyDefaults() : company;
+  return cascade(levelsOf({
+    profile: C.defaultFinish,
+    company: row?.hinge_finish,
+    project: design?.hinges?.finish,
+  }), {
+    allowed: new Set(C.finishes.map((f) => f.id)),
+    normalise: (v) => String(v).trim().toLowerCase(),
+  }) || C.defaultFinish;
 }
 
 /**
@@ -342,19 +353,35 @@ export function resolveHingeFinish(design, profile) {
  * (hand-edited, or saved by a future build) comes back on the knock-in plate,
  * because the alternative is an export that lies about the machine.
  */
-export function resolveHingePlate(design, profile) {
+export function resolveHingePlate(design, profile, company = undefined) {
   const C = profile.hardware.hinge.cliptop;
-  const wanted = String(design?.hinges?.plate || '');
-  const spec = C.plates.find((p) => p.id === wanted);
-  return spec?.enabled ? spec.id : C.defaultPlate;
+  const row = company === undefined ? companyDefaults() : company;
+  return cascade(levelsOf({
+    profile: C.defaultPlate,
+    company: row?.plate,
+    project: design?.hinges?.plate,
+  }), {
+    // Only a plate this build can actually DRILL for: a project carrying
+    // `plate_screw3` — hand-edited, or saved by a future build — comes back on
+    // the knock-in plate, because the alternative is an export that lies about
+    // the machine (F1.5).
+    allowed: new Set(C.plates.filter((p) => p.enabled).map((p) => p.id)),
+    normalise: (v) => String(v).trim(),
+  }) || C.defaultPlate;
 }
 
 /** The project's system, resolved against the profile's list. */
-export function resolveHingeSystem(design, profile) {
+export function resolveHingeSystem(design, profile, company = undefined) {
   const C = profile.hardware.hinge.cliptop;
-  const known = new Set(C.systems.map((s) => s.id));
-  const wanted = String(design?.hinges?.system || '');
-  return known.has(wanted) ? wanted : C.system;
+  const row = company === undefined ? companyDefaults() : company;
+  return cascade(levelsOf({
+    profile: C.system,
+    company: row?.hinge_system,
+    project: design?.hinges?.system,
+  }), {
+    allowed: new Set(C.systems.map((x) => x.id)),
+    normalise: (v) => String(v).trim(),
+  }) || C.system;
 }
 
 /**

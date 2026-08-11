@@ -1,0 +1,29 @@
+
+════════════════════════════════════════════════════════════════════════════
+F1.4 — the cornice is bought moulding: zero CNC delta
+════════════════════════════════════════════════════════════════════════════
+  SAME  WARDROBE + 70 mm cornice vs the same cabinet with only its infill
+  SAME  …and every DXF file it writes (8 files)
+        ordered instead: 0.6 m · 70 mm bead-and-cove · 48 mm projection
+  SAME  WARDROBE + 100 mm cornice vs the same cabinet with only its infill
+  SAME  …and every DXF file it writes (8 files)
+        ordered instead: 0.6 m · 100 mm bead-and-cove · 65 mm projection
+
+════════════════════════════════════════════════════════════════════════════
+F4.5 — the D/W at leg 50 moves exactly as its legged twin does
+════════════════════════════════════════════════════════════════════════════
+  DW_PANEL  stands 100 → 50, plinth 100 → 50
+            pieces whose CUT changed: PLINTH|600x100x18
+  BUD       stands 100 → 50, plinth 100 → 50
+            pieces whose CUT changed: PLINTH|600x100x18
+  DW_PANEL at its own defaults: 2 DXF files, front 594 wide
+
+════════════════════════════════════════════════════════════════════════════
+F2b.5 — a company row equals its manual-settings twin
+════════════════════════════════════════════════════════════════════════════
+  SAME  a BUDR under a company row vs the same BUDR with the variant typed in
+  SAME  …and against golden defaults (no row at all)
+        golden defaults order: 490 mm · MOVENTO 760H · T
+        under the row:         490 mm · MOVENTO 760H · S
+        typed in by hand:      490 mm · MOVENTO 760H · S
+

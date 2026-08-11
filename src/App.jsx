@@ -7,6 +7,7 @@ import { loadDecorCatalogue } from './lib/decorCatalogue.js';
 import { loadRunnerCatalogue } from './lib/runnerCatalogue.js';
 import { onStorageBase } from './lib/storageBase.js';
 import { loadHardwareCatalogues } from './lib/hardwareCatalogue.js';
+import { refreshHardwareCatalogues } from './lib/hardwareHealth.js';
 
 // ─── THE KNOWLEDGE FILES (turn 19, CLAUDE.md F0.3) ──────────────────────────
 //
@@ -47,6 +48,19 @@ export default function App() {
     loadRunnerCatalogue();
     return onStorageBase(() => { loadRunnerCatalogue(); });
   }, []);
+
+  // ─── THE DATA MODULE (turn 22, CLAUDE.md F2a) ───────────────────────────
+  //
+  // `cc_hardware`, parked since turn 15. The repository catalogues are already
+  // in the engine's registries by the time this runs (module scope, above), so
+  // this is the OVERRULE and not the load: where the owner has seeded a row,
+  // it replaces what shipped; where he has not, nothing happens at all and the
+  // app is exactly what it was.
+  //
+  // It is deliberately not awaited by anything: a cabinet computed a moment
+  // before the row lands is computed against the catalogue that ships, which
+  // is the same catalogue it would have had yesterday.
+  useEffect(() => { refreshHardwareCatalogues(); }, []);
 
 
   if (screen === 'start') {

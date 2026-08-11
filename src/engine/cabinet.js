@@ -34,7 +34,10 @@ import {
 import { resolveRunnerVariant, runnerPairSpec, syncRodFor } from './runners.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
-import { maskDepthExtra } from './runs.js';
+import { impliedLegHeight, maskDepthExtra, standsOnLegHeight } from './runs.js';
+import {
+  corniceOption, corniceOrder, corniceProjection, corniceRise, takesCornice,
+} from './cornice.js';
 import {
   biscuitLayers, biscuitSets, markFromEnd, receiverTakesScrews,
 } from './biscuits.js';
@@ -541,10 +544,11 @@ function isDrawerCountUsable(v) {
  * 0 for a type that stands on nothing.
  */
 function legHeightOf(p, type, profile) {
+  // LEGS, and only legs: a type that stands on none has none to be this tall.
+  // How high it STANDS is a different question and `engine/runs.js
+  // impliedLegHeight` is the one answer to it (turn 22, CLAUDE.md F4).
   if (!type.legs) return 0;
-  const own = Number(p.leg_height);
-  if (Number.isFinite(own) && own >= 0) return own;
-  return type.legSource === 'wardrobe' ? profile.wardrobe.legHeight : profile.baseUnit.legHeight;
+  return impliedLegHeight(p, type, profile);
 }
 
 /** Resolve a dotted profile path, tolerating a missing key. */
@@ -2108,12 +2112,29 @@ export function computeCabinet(params, profileOverride) {
   // engine/autoparts.js from the room; this only builds them.
   const AP = P.autoParts;
   // ─── The toe kick's height comes from the RUN, not from this unit's legs ───
+  //
   // `cfg.legHeight` is 0 for a type that stands on nothing, which is right for
   // LEGS and wrong for the PLINTH: the D/W panel has no legs and the toe kick
-  // still runs past it at the height of its neighbours'. So when a plinthed
-  // type has no legs of its own, the run's standard leg height stands in.
-  const legHeightForPlinth = cfg.legHeight
-    || (type.plinth && !type.legs ? P.baseUnit.legHeight : 0);
+  // still runs past it at the height of its neighbours'.
+  //
+  // ─── TURN 22 (CLAUDE.md F4.1/F4.2): AND IT IS THE RUN'S NUMBER ────────────
+  //
+  // Turn 17 wrote `|| (type.plinth && !type.legs ? P.baseUnit.legHeight : 0)`
+  // — the PROFILE CONSTANT, 100, whatever the project was set to. So a
+  // kitchen on 50 mm legs drew its D/W's toe kick at 100 and hung its front
+  // 50 mm low, and the field the joiner typed into did nothing. The owner
+  // found it with his eyes.
+  //
+  // The fix is not a D/W special case: a plinth-bearing, leg-less type derives
+  // its implied leg height from the SAME source its legged neighbours resolve
+  // — `params.leg_height`, which is the project's toe kick pushed onto every
+  // unit — with the profile only as the last fallback when nothing is set.
+  // `engine/runs.js impliedLegHeight` is that one derivation and `unitBase`
+  // and `projectStore.floorYOf` read the very same function, which is what
+  // makes the D/W stand IN the run rather than beside it.
+  const legHeightForPlinth = standsOnLegHeight(type)
+    ? (type.legs ? cfg.legHeight : impliedLegHeight(params, type, P))
+    : 0;
   const plinthH = AP.plinth.height ?? legHeightForPlinth;
   // OPT-IN, deliberately: a bare computeCabinet(params) reproduces the LISP
   // kit and nothing else, so the golden fixtures stay the contract they are.
@@ -2320,6 +2341,50 @@ export function computeCabinet(params, profileOverride) {
       }));
     }
   }
+
+  // ─── THE CORNICE (turn 22, CLAUDE.md F1) ─────────────────────────────────
+  //
+  // The one piece in this engine that produces NO PANEL. A cornice is bought
+  // moulding — ordered by the metre from a supplier, not cut from a sheet by
+  // this workshop's machine — so it reaches the BOM as HARDWARE (`hw('cornice',
+  // …)` below) and the CNC export never hears about it. That is not a
+  // shortcut: it is what makes CLAUDE.md F1.4's "fingerprint delta ZERO,
+  // fixtures ZERO" a fact. The infill it is fixed to stays the cut piece it
+  // already is, unmoved.
+  //
+  // The geometry is `engine/cornice.js`, and it arrives here the way every run
+  // element does: the store works it out for the ROOM and writes it onto the
+  // run's first unit (`run_cornice`), members carry a note, and a bare
+  // computeCabinet() call is a run of one that closes itself.
+  const CO = AP.cornice;
+  const corniceRun = params?.run_cornice;
+  const corniceHeight = takesCornice(type.id) ? corniceOption(params?.cornice, P) : 0;
+  const corniceElement = (() => {
+    if (corniceRun && typeof corniceRun === 'object' && corniceRun.role === 'member') return null;
+    if (corniceRun && corniceRun.role === 'owner') return corniceRun;
+    if (!corniceHeight) return null;
+    const projection = corniceProjection(corniceHeight, P);
+    if (!(projection > 0)) return null;
+    // A run of one, closing itself against the wall at both ends — the same
+    // answer `soloRun` gives the top infill, and for the same reason: a
+    // cabinet that has never been told about a room is not open at its ends,
+    // it simply has no room to be open in.
+    const infillHeight = runInfill ? runInfill.faceH : (Number(params?.top_infill_mm) || 0);
+    return {
+      role: 'owner',
+      height: corniceHeight,
+      projection,
+      offset: 0,
+      length: W,
+      ends: { left: 'wall', right: 'wall' },
+      mitres: { left: false, right: false },
+      returns: { left: null, right: null },
+      infillHeight,
+      rise: corniceRise(corniceHeight, infillHeight),
+      unitIds: null,
+    };
+  })();
+  const corniceOrderRow = corniceElement ? corniceOrder(corniceElement, P) : null;
 
   // End panels (turn 4, BACKLOG #17; rebuilt turn 6, CLAUDE.md F3): a masking
   // panel on the OUTSIDE of a carcass side. A cut piece like any other, so it
@@ -2963,6 +3028,16 @@ export function computeCabinet(params, profileOverride) {
   const boardEdging = boardPanels.reduce((s, x) => s + x.edging.len_m, 0);
   const frontEdging = frontPanels.reduce((s, x) => s + x.edging.len_m, 0);
 
+  // ─── TURN 22 (CLAUDE.md F4.2) ─────────────────────────────────────────────
+  // How high this carcass STANDS, which is what the 3D, the unit card and the
+  // right-hand panel all read. For a legged kit it is its legs; for the D/W
+  // panel it is the legs its neighbours stand on, because the machine occupies
+  // the floor and the FRONT still has to line up with the run. It was 0, so
+  // the D/W's front sat 100 mm low and its toe kick was drawn under the floor.
+  //
+  // `legHeight` below is the LEG's own dimension and stays exactly what it
+  // was: a type with no legs lays none out, whatever it stands on.
+  const standHeight = legHeightForPlinth;
   const legHeight = cfg.legHeight;
   const legsPerUnit = type.legs ? legCount(W, P) : 0;
   const legs = type.legs ? legLayout({ width: W, depth: D, boardT: G, height: legHeight }, P) : null;
@@ -3141,6 +3216,22 @@ export function computeCabinet(params, profileOverride) {
     { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
+  // ─── Turn 22 (CLAUDE.md F1.4): THE CORNICE IS ORDERED, NOT CUT ───────────
+  // Linear metres — the front, the returns and the allowance a 45° corner
+  // costs — against the moulding's own profile number, so two heights in one
+  // job stay two order lines (the hardware merge key is role + spec label).
+  hw('cornice', 'Cornice moulding', corniceOrderRow?.metres || 0, 'm',
+    corniceOrderRow ? {
+      height_mm: corniceElement.height,
+      projection_mm: corniceElement.projection,
+      front_mm: corniceOrderRow.front_mm,
+      returns_mm: corniceOrderRow.returns_mm,
+      corners: corniceOrderRow.corners,
+      allowance_mm: corniceOrderRow.allowance_mm,
+    } : {},
+    corniceElement
+      ? `${corniceElement.height} mm bead-and-cove · ${corniceElement.projection} mm projection`
+      : '');
 
   // ── Derived (key names match the golden fixtures) ──────────────────────────
   // ─── Per-element overrides (turn 11, CLAUDE.md F3.1) ───
@@ -3349,7 +3440,7 @@ export function computeCabinet(params, profileOverride) {
 
   // ── Assemblies for the 3D view ─────────────────────────────────────────────
   const assemblies = {
-    carcass: { w: W, h: H, d: D, legHeight },
+    carcass: { w: W, h: H, d: D, legHeight: standHeight },
     mount: type.mount,
     mountHeight: type.mount === 'wall' ? cfg.mountHeight : 0,
     legs,
@@ -3380,6 +3471,20 @@ export function computeCabinet(params, profileOverride) {
       front_mm: setbackOf(cfg.shelfItems[i]?.front_mm, C.shelfDepthClearance),
     })),
     fridge: fridge ? { fixedPanelY: fridge.fixedPanelY, fridgeH: cfg.fridgeH } : null,
+    // ─── Turn 22 (CLAUDE.md F1) ───
+    // The cornice, for the 3D and for the readouts. It is on `assemblies`
+    // rather than in `panels` because it is not a cut piece — a panel here
+    // would put it on the CNC sheet, in the cut list and in the DXF, which is
+    // three places a bought moulding must never appear.
+    cornice: corniceElement ? {
+      ...corniceElement,
+      // Where the piece lives in this unit's own frame: its bottom edge at
+      // door-top level (the carcass top), its back face in the door plane.
+      carcassTop: H,
+      doorPlane: D + P.doors.gap + frontT,
+      backZ: -Math.max(0, Number(P.room?.wallBackClearance) || 0),
+      order: corniceOrderRow,
+    } : null,
   };
 
   return {

@@ -6639,3 +6639,180 @@ tylko tam, gdzie drzwi naprawdę wiszą na przegrodzie. Jeden scenariusz sondy
 (`+partition-on-shelf`) rusza się na sześciu typach, które **nie tną półki
 w ogóle** — ich przegroda zatrzymywała się na desce, której nie ma na liście
 rozkroju. Istniejące nazwane encje, tylko postawione dobrze (F9.3).
+
+---
+
+# TURA 22 — gzyms wraca, a dane dostają kręgosłup
+
+**Baza:** `main` po scaleniu tury 21. Testy na wejściu 1618, na wyjściu
+**1679, wszystkie zielone.** Odciski CNC złotych domyślnych: **ZERO różnicy**.
+Tura NIE kurczyła się — F1, F2a, F2b, F3 i F4 weszły w całości.
+
+## SQL PRZED push
+
+**`sql/004_tura22.sql`** — uruchamia Piotr RĘCZNIE w Supabase SQL Editor,
+**zanim** zdeployuje build tej tury. Plik jest idempotentny, wymaga
+`sql/001_init.sql`, i nie jest wykonywany ani przez aplikację, ani przez
+Claude. Zawiera:
+
+* `cc_hardware` — manifesty osprzętu: `family` (runners / hinges / lifts),
+  `system`, `manifest` (jsonb w kształcie plików z bucketu), `bucket_path`,
+  `updated_at`, właściciel przez `auth.uid()`. Unikat na
+  `(owner, family, lower(system))`, żeby zasiew drugi raz PODMIENIAŁ wiersz.
+* `cc_company_defaults` — jeden wiersz na właściciela (`owner` jest kluczem
+  głównym): `hinge_system`, `hinge_finish`, `plate`, `runner_variant` i płyty
+  per rodzina. Plus `check` **odmawiający kluczy, które należą do REGUŁY** —
+  `hinge_angle` i spółka — bo aplikacja nie jest jedyną drogą do tabeli.
+* **RLS włączony na obu**, polityki wypisane per czasownik, per `auth.uid()`.
+
+Po SQL, ręcznie i tylko przez właściciela:
+
+```
+node scripts/seed-hardware.mjs                      # sucha próba: nic nie pisze
+SUPABASE_URL=… SUPABASE_SERVICE_KEY=… CC_OWNER=<uuid> \
+  node scripts/seed-hardware.mjs                    # upsert z ŻYWEGO bucketu
+```
+
+## F1 — gzyms: 70 i 100 na wypełnieniu 40
+
+Faza, którą tura 21 upuściła protokołem. BLOCKERS #88 niósł liczby
+właściciela, więc to jest budowa, a nie wyprowadzanie ich drugi raz.
+
+**Konstrukcja, tak jak właściciel poprawił.** Drzwi kończą się RÓWNO z górą
+wieńca; wypełnienie 40 stoi NAD wieńcem, w płaszczyźnie drzwi; gzyms siada na
+wypełnieniu, dolną krawędzią równo z płaszczyzną drzwi na poziomie góry drzwi.
+Środkowe zdanie **już było prawdą** — górne wypełnienie stoi na `box.y = H`
+w płaszczyźnie drzwi od tury 6 — więc ta faza dokłada kawałek NA nim i nie
+rusza niczego pod spodem. To jest cały powód, dla którego „delta odcisku ZERO,
+fikstury ZERO" jest faktem, a nie intencją.
+
+**Kształt.** `engine/cornice.js corniceSection` — parametryczny bead-and-cove:
+mały wypukły wałek na dole, wklęsła wyoblina, płaska opaska na górze. Wysięg
+**48 dla 70, 65 dla 100** — liczby właściciela, w `profile.js`, do weta jedną
+linią. DXF od dostawcy podmieni **tę jedną funkcję** 1:1; wszystko dalej —
+bieg, gierunki, powroty, metry, 3D — konsumuje listę punktów i nie ma zdania,
+skąd one są.
+
+**Ciągłość.** To jest zdanie górnego wypełnienia, więc to jest KOD górnego
+wypełnienia: `runEnd` odpowiada na wszystkie cztery zakończenia. Inaczej pyta
+się o JEDNO: które pionowe elementy stoją na drodze. Wypełnienie boczne
+wyciągnięte pod sufit zatrzymuje gzyms na 2320; takie, które kończy się
+z korpusem, jest metr pod nim i gzyms po prostu nad nim przechodzi.
+`verticalsReaching` jest tym uogólnieniem, a `ceilingVerticals` jest jego
+przypadkiem dla sufitu — jedna reguła przeszkód, nie dwie.
+
+**Segmenty łamią się na DWÓCH rzeczach:** jednostce bez gzymsu (dziura w
+biegu) i jednostce z INNĄ wysokością — 70 i 100 to dwie różne listwy i żadna
+pojedyncza długość nie jest obiema.
+
+**BOM: metry bieżące** — front + powroty + naddatek na narożnik z profilu —
+jako wiersz OKUCIA. Gzyms jest materiałem kupowanym, nie częścią CNC.
+
+**Uczciwość sufitu:** stos to jednostka + wypełnienie + wysokość gzymsu ponad
+nim, i sklep **OSTRZEGA**, a nie ścina. Ścięcie przecięłoby szafkę, o którą
+nikt nie prosił.
+
+## F2a — `cc_hardware`: manifesty dostają tabelę
+
+`lib/hardwareSource.js` to JEDNA funkcja dla każdej rodziny:
+**wiersz w bazie → manifest z bucketu → mock**. Wiersz po prostu PODMIENIA
+pobrany JSON — ten sam tolerancyjny parser z tury 20, ten sam rejestr.
+
+Trzy rodzaje „nie ma" — brak tabeli, brak sesji, brak sieci — spadają o piętro
+niżej i **żaden nie rzuca ani nie czeka**.
+
+**O składaniu URL-i do modeli nie zmienia się NIC** (R4). Ten moduł podaje
+katalogi rejestrom i nigdy nie składa URL-a; to zostaje w
+`engine/hardwareUrl.js`, dokładnie tam, gdzie zostawiła to tura 21. Test trzyma
+go za słowo.
+
+## F2b — `cc_company_defaults`: ustaw raz, wypełniaj każdy projekt
+
+Piętro, którego brakowało między kodem a projektem. **Kaskada:
+profil → wiersz firmy → projekt → element, później wygrywa, JEDNA
+implementacja** (`engine/companyDefaults.js cascade`). Cztery resolvery —
+system, wykończenie i płytka zawiasu oraz wariant prowadnicy — chodzą po niej
+zamiast trzymać po własnej drabinie `||`. To jest cały powód, dla którego nowe
+piętro dociera wszędzie naraz, a nie w trzech miejscach, które ktoś pamiętał.
+
+**Wolno tylko preferencje.** KĄT ZAWIASU wynika z grubości frontu i walidator
+odmawia go **po nazwie, z powodem** — a `check` w SQL mówi to samo drugi raz.
+
+Ekran pod Database ▸ Company defaults czyta, edytuje i zapisuje wiersz. Bez
+sesji mówi, że domyślne wymagają konta, a aplikacja jedzie na liczbach
+z profilu, jak zawsze. Nowy projekt WYPEŁNIA SIĘ z wiersza; odchylenia
+mieszkają dalej w ustawieniach projektu, a nadpisania per element (tura 19) są
+nietknięte.
+
+## F3 — kondycja osprzętu, bez DevTools
+
+Właściciel diagnozował dwie tury z konsoli. Teraz ma linię w aplikacji: per
+rodzina — modele wczytane / spodziewane, ŹRÓDŁO katalogu (`db` / `bucket` /
+`mock`) i czerwona liczba nieudanych pobrań z pierwszym URL-em do skopiowania.
+
+**Nie pobiera niczego.** Czyta trzy rejestry, które już są — katalogi silnika,
+pamięć dekodowania GLB (`glbStats`) i odpowiedź resolvera — i test pilnuje
+tego na źródle pliku. Model, którego nikt jeszcze nie potrzebował, nie jest ani
+wczytany, ani nieudany: projekt bez szuflad nie może zaświecić wiersza na
+czerwono.
+
+## F4 — D/W stoi tak wysoko, jak jego brakujące nogi
+
+Diagnoza właściciela była trafna i miała **dwie połowy**:
+
+1. `legHeightForPlinth` spadał na STAŁĄ Z PROFILU dla typu z cokołem bez nóg —
+   100, cokolwiek projekt ustawił. Kuchnia na 50 rysowała cokół D/W na 100
+   i wieszała front 50 mm za nisko, a pole, w które wpisywał, nie robiło nic.
+2. `runs.js unitBase` zwracał 0 dla tego samego typu, więc `unitTop` D/W był
+   100 pod sąsiadami i `buildRuns` wsadzał go **do własnego biegu** — jedna
+   długość cokołu przez BUD + D/W nie była w ogóle możliwa.
+
+Obie są jednym zdaniem — *typ z cokołem stoi tak wysoko jak nogi, na których
+stoją jego sąsiedzi, ma je czy nie* — i jest ono napisane **w jednym miejscu**:
+`engine/runs.js impliedLegHeight` / `standsOnLegHeight`. Czytają je
+`cabinet.js`, `projectStore.floorYOf` i `projectHeightParams`. **Żadnej stałej
+specjalnej dla D/W nigdzie.**
+
+**Minimum 100 zdegradowane do domyślnej.** `projectHeights.toeKickMin: 0`
+uwalnia sam cokół; wysokości KORPUSÓW zachowują `min` bez zmian, bo szafka
+wysoka na 40 to literówka. `projectHeights.toeKick: 100` zostaje ziarnem,
+od którego startuje nowy projekt.
+
+**„Nie mogę tego ruszyć" — obie interpretacje.** Wysokość rusza się polem (1–3
+wyżej). Przeciąganie: spacer CIĄGNIE D/W prawdziwym wskaźnikiem wzdłuż biegu
+i **nie było czego naprawiać** — D/W przesuwa się jak sąsiedzi (3300 → 4088,
+sąsiad 2700 → 3357, w tym samym geście). Przyczyną tego, co widział, była
+WYSOKOŚĆ: jego D/W stał 100 mm niżej niż bieg i wyglądał, jakby nie należał do
+niego.
+
+## Dowody
+
+`verify/t22/` — `walk.json` (**30/32, 0 porażek**, 2 zablokowane przez politykę
+wyjścia sesji), `console.txt`, siedem zrzutów, `fingerprints-diff.txt` na
+**ZERO linii**, `probes.txt` (trzy sondy równoważności), `cnc-export-identity.md`,
+`bucket-live.md/.txt/.json`, `README.md`.
+
+## Nowe pliki
+
+`src/engine/cornice.js` · `src/engine/companyDefaults.js` ·
+`src/lib/hardwareSource.js` · `src/lib/hardwareHealth.js` ·
+`src/stores/companyDefaultsStore.js` · `src/components/CompanyDefaultsModal.jsx` ·
+`src/3d/Cornice.jsx` · `sql/004_tura22.sql` · `scripts/seed-hardware.mjs` ·
+`scripts/t22-probes.mjs` · `scripts/e2e-turn22.mjs` ·
+`test/turn22-f1-cornice.test.js` · `test/turn22-f2-data-module.test.js` ·
+`test/turn22-f3-hardware-health.test.js` · `test/turn22-f4-dw-legs.test.js` ·
+`verify/t22/`
+
+## Nowe liczby w `profile.js`
+
+`autoParts.cornice` — `heights: [70, 100]`, `projection: {70: 48, 100: 65}`,
+`infillHeight: 40`, `section` (bead-and-cove jako ułamki), `mitreAllowance: 100`,
+`minReturn: 60` · `projectHeights.toeKickMin: 0` (F4.3).
+**Nowa flaga typu:** `supports.cornice` na WARDROBE, BUDTALL i FRIDGE.
+
+## CNC
+
+Złote domyślne: **ZERO**, 2766 odcisków co do jednego. Sonda encja-po-encji
+(`scripts/cnc-delta-probe.mjs`) też diffuje się do pustki — ani geometria, ani
+spis encji, ani liternictwo. Gzyms nie tworzy części; D/W przy nodze 100 (czyli
+domyślnej) tnie to, co ciął; kaskada bez wiersza to ta sama drabina, co była.

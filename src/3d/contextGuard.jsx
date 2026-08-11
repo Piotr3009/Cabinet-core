@@ -115,9 +115,20 @@ function attach(canvas, name) {
 
   const handle = {
     name, canvas, gl: null, releasing: false,
+    // ─── TURN 21 (CLAUDE.md F5.1): IS THERE STILL A CONTEXT TO GIVE BACK? ──
+    // The owner's console: `WebGL: INVALID_OPERATION: loseContext: context
+    // already lost`, ten times, out of `forceContextLoss`. Releasing a context
+    // is right; releasing one that is ALREADY GONE is shooting a corpse, and
+    // the browser says so once per shot. A context is gone when the driver
+    // took it, when we took it, or when the element has been thrown away — and
+    // this flag is set by all three routes below.
+    gone: false,
   };
 
   handle.onLost = (e) => {
+    // However this loss arrived — ours or the driver's — there is nothing left
+    // to force. Recorded FIRST, so an early return cannot skip it.
+    handle.gone = true;
     // Preventing the default is what makes a context RESTORABLE. It costs
     // nothing on the way out and it is the difference between a hiccup and a
     // dead canvas when a driver resets under a working scene.
@@ -142,6 +153,10 @@ function attach(canvas, name) {
     e.stopImmediatePropagation();
   };
   handle.onRestored = () => {
+    // A restored context is a live one again — a driver reset under a working
+    // scene is a hiccup, and the canvas that comes back from it still owns a
+    // context this hook is responsible for releasing.
+    handle.gone = false;
     diag.restored += 1;
     diag.events.push({ name, kind: 'restored' });
   };
@@ -154,7 +169,31 @@ function attach(canvas, name) {
   return handle;
 }
 
-/** Give the context back. Idempotent: a handle released twice is released once. */
+/**
+ * Is this handle's context still there to be given back?
+ *
+ * Turn 21 (CLAUDE.md F5.1). Three ways to find out, cheapest first, and any one
+ * of them saying "gone" is enough:
+ *
+ *   • our own record — the `webglcontextlost` event has fired on this canvas;
+ *   • the context's own answer — `isContextLost()`, which is the authority;
+ *   • the element — a canvas that is no longer in a document has no context
+ *     worth forcing, and asking for one would CREATE one.
+ */
+function stillLive(handle) {
+  if (!handle || handle.gone) return false;
+  const gl = handle.gl?.getContext?.();
+  if (gl?.isContextLost?.()) return false;
+  return true;
+}
+
+/**
+ * Give the context back — ONCE, and only while there is one.
+ *
+ * Idempotent by `releasing`, which is turn 20's; and quiet on a dead context by
+ * `stillLive`, which is turn 21's. The two are different questions: the first
+ * is "have I already done this", the second is "is there anything to do".
+ */
 function release(handle) {
   if (!handle || handle.releasing) return;
   const diag = contextDiag();
@@ -176,14 +215,23 @@ function release(handle) {
   // keeps three's own "Context Lost" message out of a teardown nobody needs to
   // be told about. It comes off immediately afterwards.
   DELIBERATE.add(handle.canvas);
+  // ─── TURN 21 (CLAUDE.md F5.1): DO NOT SHOOT A CORPSE ─────────────────────
+  // `forceContextLoss()` on an already-lost context is an INVALID_OPERATION,
+  // and the browser logs one line per call — the owner's ten. `dispose()` is
+  // still called either way: it frees the renderer's own GPU objects and is
+  // safe on a context that has gone, which is exactly the split turn 20 missed
+  // by treating "release" as one indivisible act.
+  const live = stillLive(handle);
   try {
     if (handle.gl) {
-      handle.gl.forceContextLoss?.();
+      if (live) handle.gl.forceContextLoss?.();
       handle.gl.dispose?.();
-    } else {
+    } else if (live) {
       loseContextOf(handle.canvas);
     }
   } catch { /* already gone */ }
+  // Whatever happened above, this canvas's context is not ours any more.
+  handle.gone = true;
   // `onLost` is deliberately NOT removed. `webglcontextlost` is dispatched
   // asynchronously, so taking the listener off here would let three's own
   // handler print "Context Lost." a moment later for a teardown that was ours
@@ -203,7 +251,11 @@ function release(handle) {
  */
 function loseContextOf(canvas) {
   const ctx = canvas.getContext('webgl2') || canvas.getContext('webgl');
-  ctx?.getExtension('WEBGL_lose_context')?.loseContext();
+  // Turn 21 (CLAUDE.md F5.1): and not on one that is already gone. This path
+  // has no renderer to ask, so the CONTEXT is asked directly — the authority
+  // on the question, and the same one `stillLive` uses on the other branch.
+  if (!ctx || ctx.isContextLost?.()) return;
+  ctx.getExtension('WEBGL_lose_context')?.loseContext();
 }
 
 /**

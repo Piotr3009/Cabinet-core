@@ -138,18 +138,28 @@ test('F8 — a cut that runs off the board is held back by a hair, not left to b
 });
 
 // ─── the geometry ───────────────────────────────────────────────────────────
+//
+// ─── TURN 21 (CLAUDE.md F3): THE CARVING IS RETIRED, BEHIND A FLAG ─────────
+//
+// The owner saw pilot dots on his door faces and stray dashes inside carcasses
+// and called it: the CNC sheet is the document. `appearance.cuts.enabled` is
+// FALSE by default, so the tests below that are about the CARVING ask a
+// profile with it on — the machinery is retired, not deleted, and a future
+// turn that flips the flag has these to stand on. What the DEFAULT profile
+// does is asserted directly underneath them.
+const CUTS_ON = { ...P, appearance: { ...P.appearance, cuts: { enabled: true } } };
 
 test('F8.1 — the board really loses the material, and the cut faces get a buffer', () => {
   clearPanelSolidCache();
   const r = budr();
   const side = r.panels.find((p) => p.part === 'DRAWER-SIDE');
-  const cut = panelSolids(side, L, P, r.drills);
+  const cut = panelSolids(side, L, CUTS_ON, r.drills);
   assert.ok(cut.solid, 'a side with grooves is no longer a plain box');
   assert.ok(cut.cuts, 'and its cuts have walls and floors of their own');
   // The same board with its two grooves taken OUT of the record is a plain
   // rectangle and gets no solid at all — so the extra triangles above are the
   // material that is actually gone, not a face painted to look cut.
-  const bare = panelSolids({ ...side, id: 'BARE', cnc: { ...side.cnc, pockets: [] } }, L, P, []);
+  const bare = panelSolids({ ...side, id: 'BARE', cnc: { ...side.cnc, pockets: [] } }, L, CUTS_ON, []);
   assert.equal(bare.solid, null, 'nothing cut into it, nothing to cut out of it');
   assert.equal(bare.cuts, null);
   clearPanelSolidCache();
@@ -167,10 +177,10 @@ test('F8.1 — a BLIND recess has a floor and a THROUGH one does not', () => {
     },
     cnc: { pockets: [{ layer: 'DRAWER_RUNNER_POCKET', depth: 2, x1: 50, y1: 50, x2: 90, y2: 90 }] },
   };
-  const blind = panelSolids(board, L, P, []);
+  const blind = panelSolids(board, L, CUTS_ON, []);
   const through = panelSolids(
     { ...board, id: 'C', cnc: { pockets: [{ ...board.cnc.pockets[0], depth: 18 }] } },
-    L, P, [],
+    L, CUTS_ON, [],
   );
   // A blind rectangle is four walls (8 triangles) plus a floor drawn both ways
   // (4 fans × 2); a through one is the four walls alone.
@@ -184,12 +194,12 @@ test('F8.3 — one buffer per panel, shared by every identical panel in the job'
   const r = budr();
   const sides = r.panels.filter((p) => p.part === 'DRAWER-SIDE' && p.meta.drawer === 1);
   assert.equal(sides.length, 2);
-  const [a, b] = sides.map((p) => panelSolids(p, L, P, r.drills));
+  const [a, b] = sides.map((p) => panelSolids(p, L, CUTS_ON, r.drills));
   assert.equal(a.solid, b.solid, 'the left and right sides of one drawer are one geometry');
   assert.equal(a.cuts, b.cuts);
   const after = panelSolidCacheSize();
   // Re-asking costs nothing at all.
-  for (const p of sides) panelSolids(p, L, P, r.drills);
+  for (const p of sides) panelSolids(p, L, CUTS_ON, r.drills);
   assert.equal(panelSolidCacheSize(), after, 'a second ask is a cache hit');
   clearPanelSolidCache();
   assert.equal(panelSolidCacheSize(), 0, 'and the cache lets go when told to');
@@ -201,7 +211,7 @@ test('F8.3 — the whole cabinet stays cheap: no per-hole mesh, no per-frame wor
   let triangles = 0;
   let buffers = 0;
   for (const p of r.panels.filter((q) => q.box && q.cnc)) {
-    const built = panelSolids(p, L, P, r.drills);
+    const built = panelSolids(p, L, CUTS_ON, r.drills);
     if (built.solid) { triangles += built.solid.attributes.position.count / 3; buffers += 1; }
     if (built.cuts) { triangles += built.cuts.attributes.position.count / 3; buffers += 1; }
   }

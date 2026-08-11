@@ -78,10 +78,20 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // ─── TURN 20 (CLAUDE.md F8.1): EVERY FEATURE, AS AN ABSENCE ──────────────
   // The SOCKET layer is skipped: turn 11 cuts it out of the outline already,
   // and cutting it twice would punch a hole through a notch.
-  const recesses = panelRecesses(panel, drills, {
-    thickness,
-    skipLayers: [layers?.socket],
-  });
+  //
+  // ─── TURN 21 (CLAUDE.md F3): AND IT IS RETIRED, BEHIND A FLAG ────────────
+  // The owner saw pilot dots on his door faces and stray dashes inside
+  // carcasses and called it: the CNC sheet is the document, the carving is not
+  // worth its problems. `profile.appearance.cuts.enabled` is FALSE, so this is
+  // an empty list and everything downstream of it — the holes punched in the
+  // board's polygon, the cut-face buffer, the cache key — collapses to what it
+  // was before turn 20. The NOTCHES and the TABS above are turn 11 and turn 12
+  // and are not behind the flag: they are the board's own outline, and a panel
+  // whose only feature is a drilling falls back to a `boxGeometry` exactly as
+  // it did in turn 19.
+  const recesses = profile?.appearance?.cuts?.enabled
+    ? panelRecesses(panel, drills, { thickness, skipLayers: [layers?.socket] })
+    : [];
   if (!notches.length && !tabs.length && !recesses.length) return NOTHING;
 
   const key = [

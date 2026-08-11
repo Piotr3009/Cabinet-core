@@ -52,14 +52,21 @@ const place = (anchor, size, viewport = VIEW) => placeAnchoredModal({
 
 // ─── F3: the numbers ────────────────────────────────────────────────────────
 
-test('F5 — the offset is a PROFILE number: 140 across, level with the click', () => {
+test('F5 — the offset is a PROFILE number: 240 across, level with the click', () => {
   // ─── Turn 20 (CLAUDE.md F5) ───
   // These assertions pinned turn 19's law — "up and to the right, by y PLUS
   // the panel's own height" — and the owner's verdict is that lifting the
   // panel over the pointer is exactly what he did not want. They are REWRITTEN
   // rather than deleted, because the property they exist to hold is unchanged:
   // THE MODAL AND THE OBJECT DO NOT OVERLAP, with clear glass between them.
-  assert.equal(OFF.x, 140, 'the owner’s own number, not one a spec invented');
+  // ─── TURN 21 (CLAUDE.md F4) ───
+  // The owner used 140 for a day and asked for 240. The number is the
+  // PROFILE's and every assertion below reads it from there; what is pinned
+  // here is that it is a real, usable clearance and that the vertical offset is
+  // still zero — LEVEL with the click — which is the half of F5 that is a law
+  // rather than a taste.
+  assert.ok(OFF.x >= 140, 'a real clearance beside the object, the owner’s own number');
+  assert.equal(OFF.x, 240, 'turn 21 (F4): 240, same law');
   assert.equal(OFF.y, 0, 'zero is LEVEL — the top of the panel on the click’s line');
   assert.deepEqual(MODAL_OFFSET_SIDES, ['right', 'left'], 'the "up" went with the old law');
 });

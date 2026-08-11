@@ -43,10 +43,29 @@ test('ordering is stable and does not clone the menus', () => {
   assert.notEqual(shown, built, '…in a new array, so the caller’s is untouched');
 });
 
-test('Database is a dropdown of three', () => {
+test('Database is a dropdown of four', () => {
   const menu = buildDatabaseMenu({});
   assert.equal(menu.label, 'Database');
-  assert.deepEqual(menu.items.map((i) => i.label), ['Materials…', 'Clients…', 'Projects…']);
+  // Turn 22 (CLAUDE.md F2b.2) adds "Company defaults…" — the storey between the
+  // code and the project — beside Materials, where a workshop looks for what it
+  // buys. It is an ADDITION and not a reorder: the other three keep their
+  // places and their behaviour.
+  assert.deepEqual(
+    menu.items.map((i) => i.label),
+    ['Materials…', 'Company defaults…', 'Clients…', 'Projects…'],
+  );
+});
+
+test('…and Company defaults is wired the same way every other entry is', () => {
+  let opened = 0;
+  const menu = buildDatabaseMenu({ onCompanyDefaults: () => { opened += 1; } });
+  const entry = menu.items.find((i) => i.label === 'Company defaults…');
+  assert.equal(entry.disabled, false);
+  assert.equal(entry.soon, false);
+  entry.run();
+  assert.equal(opened, 1);
+  // …and with nothing behind it, it says so rather than pretending.
+  assert.equal(buildDatabaseMenu({}).items.find((i) => i.label === 'Company defaults…').disabled, true);
 });
 
 test('an entry with nothing behind it is disabled and says "soon"', () => {

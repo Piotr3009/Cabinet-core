@@ -5,6 +5,7 @@ import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
+import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
 import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
@@ -296,6 +297,8 @@ export default function ConfiguratorPage() {
         {modal === 'room' && <RoomModal />}
         {modal === 'design' && <DesignSettingsModal />}
         {modal === 'auth' && <AuthModal />}
+        {/* Turn 22 (CLAUDE.md F2b.2 / F3): Database ▸ Company defaults. */}
+        {modal === 'company-defaults' && <CompanyDefaultsModal />}
         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
         {modal === 'save-template' && <SaveTemplateModal />}
         {modal === 'render' && <RenderModal rig={renderRig} />}

@@ -40,6 +40,7 @@ import {
 import {
   corniceCeilingNotice, corniceOption, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
+import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith } from '../engine/doors.js';
@@ -462,14 +463,28 @@ export const useProjectStore = create((set, get) => ({
    * carried over. "New" that inherits the last project's walls is how somebody
    * quotes a kitchen against the wrong room.
    */
-  newProject: (name = 'Untitled project', { number = '', client = '', room = null, design = null } = {}) => set({
+  newProject: (name = 'Untitled project', {
+    number = '', client = '', room = null, design = null, company = undefined,
+  } = {}) => set({
     project: {
       id: null,
       name: name || 'Untitled project',
       number: String(number || ''),
       client: String(client || ''),
       room: room ? migrateRoom(room) : DEFAULT_ROOM,
-      design: migrateDesign(design),
+      // ─── Turn 22 (CLAUDE.md F2b.3): PREFILLED FROM THE COMPANY ROW ───────
+      //
+      // "New-project flow PREFILLS from the row; project settings stay the
+      // place deviations live." So the workshop's answers are written INTO the
+      // project's own fields here, at creation — which is what makes them
+      // editable in Settings afterwards, and what stops a later change to the
+      // company row re-cutting a finished job.
+      //
+      // With no row (mock mode, no session, a workshop that has never opened
+      // the screen) `prefillDesignFromCompany` returns the design it was given,
+      // untouched — so a project made today is byte-for-byte the project turn
+      // 21 made.
+      design: migrateDesign(prefillDesignFromCompany(design, company, getCabinetProfile())),
       jc_tenant_id: null,
       jc_project_id: null,
     },

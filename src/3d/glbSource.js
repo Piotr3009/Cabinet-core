@@ -103,6 +103,30 @@ export function clearGlbSources() {
 }
 
 /**
+ * What this session has actually decoded — asked, arrived, given up.
+ *
+ * ─── Turn 22 (CLAUDE.md F3) ─────────────────────────────────────────────────
+ * "The owner has diagnosed two turns from his console. Give him the line in the
+ * app instead." This is the reading end of that line, and it FETCHES NOTHING:
+ * it is the cache above, counted. A url that has never been asked for is not in
+ * it, which is exactly right — a model nobody has needed yet is not a failure.
+ *
+ * @param {function} [filter]  (url) => boolean, for one family's own folder
+ */
+export function glbStats(filter = null) {
+  const out = {
+    asked: 0, loaded: 0, failed: 0, pending: 0, failures: [],
+  };
+  for (const [url, entry] of sources) {
+    if (filter && !filter(url)) continue;
+    out.asked += 1;
+    if (entry.failed) { out.failed += 1; out.failures.push(url); } else if (entry.loaded) out.loaded += 1;
+    else out.pending += 1;
+  }
+  return out;
+}
+
+/**
  * A clone of the model, brought to the origin of the group the caller places.
  *
  * The file's own bounding-box corner is moved to zero and then by the

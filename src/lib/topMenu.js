@@ -52,7 +52,9 @@ export function orderMenus(menus = []) {
  *
  * @param {object} handlers  { onMaterials, onClients, onProjects }
  */
-export function buildDatabaseMenu({ onMaterials = null, onClients = null, onProjects = null } = {}) {
+export function buildDatabaseMenu({
+  onMaterials = null, onClients = null, onProjects = null, onCompanyDefaults = null,
+} = {}) {
   return {
     label: 'Database',
     items: [
@@ -62,6 +64,18 @@ export function buildDatabaseMenu({ onMaterials = null, onClients = null, onProj
         disabled: !onMaterials,
         soon: !onMaterials,
         run: (e) => onMaterials?.(e),
+      },
+      // ─── Turn 22 (CLAUDE.md F2b.2 / F3) ───
+      // The storey between the code and the project: what this workshop fits
+      // when nobody has said otherwise, and — at the bottom of the same screen
+      // — what the app is actually working from (the hardware health line, so
+      // the owner never opens DevTools for it again).
+      {
+        label: 'Company defaults…',
+        hint: 'Hinges, plates, runners and boards this workshop fits — every new project starts here',
+        disabled: !onCompanyDefaults,
+        soon: !onCompanyDefaults,
+        run: (e) => onCompanyDefaults?.(e),
       },
       {
         label: 'Clients…',

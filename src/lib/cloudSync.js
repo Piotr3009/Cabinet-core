@@ -75,6 +75,46 @@ export async function deleteProject(projectId) {
   return withDb((db) => db.from('cc_projects').delete().eq('id', projectId), null);
 }
 
+// ─── COMPANY DEFAULTS (turn 22, CLAUDE.md F2b) ──────────────────────────────
+//
+// One row per owner in `cc_company_defaults` (sql/004_tura22.sql). Both calls
+// degrade exactly as everything else here does: no keys, no session, no table
+// and no network all resolve to "no row", and the app runs on profile numbers
+// as it always has. Nothing throws at the caller.
+
+export async function loadCompanyDefaults() {
+  if (isMockMode || !supabase) return { defaults: null, mock: true, error: null };
+  const { data, error } = await withDb(
+    (db) => db.from('cc_company_defaults').select('defaults, schema, updated_at').limit(1),
+    null,
+  );
+  const row = Array.isArray(data) ? data[0] : data;
+  return { defaults: row?.defaults || null, mock: false, error };
+}
+
+/**
+ * Save the row. `upsert` on the primary key, which IS the owner — so a
+ * workshop has one set of defaults and saving twice replaces rather than
+ * duplicating. RLS makes it owner-scoped server-side; the client never sends
+ * an owner and could not send somebody else's if it tried.
+ */
+export async function saveCompanyDefaults(defaults) {
+  if (isMockMode || !supabase) {
+    return { saved: false, mock: true, error: new Error('Mock data mode — no Supabase keys configured.') };
+  }
+  const { data } = await supabase.auth.getUser().catch(() => ({ data: null }));
+  const owner = data?.user?.id || null;
+  if (!owner) return { saved: false, mock: false, error: new Error('Company defaults need an account.') };
+  const res = await withDb(
+    (db) => db.from('cc_company_defaults')
+      .upsert({ owner, defaults, schema: 1 }, { onConflict: 'owner' })
+      .select()
+      .single(),
+    null,
+  );
+  return { saved: !res.error, mock: false, error: res.error };
+}
+
 // ─── Auth ───
 
 export async function getSession() {

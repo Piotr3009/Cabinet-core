@@ -201,6 +201,8 @@ export default function TopBar({
       // assignment lives, so that is where the entry goes rather than to a
       // second screen that would have to be kept in step with it.
       onMaterials: (e) => openModal('design', { anchor: anchorOfEvent(e) }),
+      // Turn 22 (CLAUDE.md F2b.2): the second one that is real.
+      onCompanyDefaults: (e) => openModal('company-defaults', { anchor: anchorOfEvent(e) }),
     }),
     // BACKLOG #36 — the place in the menu, held open. What goes behind it
     // (finish per element, the list, m², the price) is still being designed with

@@ -20,9 +20,9 @@
 // draws the plain profile it has drawn since turn 7 and the BOM orders a runner
 // by its spec with no article number against it. Nothing throws, nothing waits.
 
-import { setRunnerCatalogue } from '../engine/runners.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { storageBaseUrl as resolveStorageBase } from './storageBase.js';
+import { resolveHardwareCatalogue } from './hardwareSource.js';
 
 // ─── TURN 21 (CLAUDE.md F2) ────────────────────────────────────────────────
 // Where the app's storage is has become a question of its own — configuration
@@ -43,7 +43,6 @@ let pending = null;
 export function loadRunnerCatalogue({ fetchImpl = null, profile = null } = {}) {
   if (pending) return pending;
   const P = profile || getCabinetProfile();
-  const M = P.hardware.runner.movento;
   const base = resolveStorageBase();
   const doFetch = fetchImpl || (typeof fetch === 'function' ? fetch : null);
 
@@ -70,21 +69,46 @@ export function loadRunnerCatalogue({ fetchImpl = null, profile = null } = {}) {
   // database is absent was two unrelated facts wearing one flag.
   if (!base) return Promise.resolve({ files: [], error: null, mock: true });
 
-  const url = `${base}/${M.bucket}/${M.path}${M.manifest}`;
-  pending = doFetch(url)
-    .then((res) => {
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      return res.json();
-    })
-    .then((json) => {
-      const parsed = setRunnerCatalogue(json);
-      return { files: parsed?.files || [], error: null, mock: false };
+  // ─── TURN 22 (CLAUDE.md F2a.2): THE DATABASE GOES FIRST ──────────────────
+  //
+  // The order is one function for every family now — `lib/hardwareSource.js`
+  // `resolveHardwareCatalogue`: DB row → bucket manifest → mock. Nothing about
+  // this file's CONTRACT moves: the same promise, the same memoisation, the
+  // same `{ files, error, mock }`, the same graceful degradation, and the same
+  // url built from the same two profile strings (R4). What is new is that a
+  // row in `cc_hardware`, when the owner has seeded one, simply replaces the
+  // fetched JSON.
+  pending = resolveHardwareCatalogue({ family: 'runners', profile: P, fetchImpl: doFetch, storageBase: base })
+    .then((answer) => {
+      if (!answer.rows) {
+        // Reset, so a session that started offline can try again later.
+        pending = null;
+        return {
+          files: [],
+          error: answer.error || null,
+          // `mock` has meant one thing here since turn 18 and goes on meaning
+          // it: there was nothing to ask. A bucket that ANSWERED and failed is
+          // not mock mode, it is an error, and the two must not be one flag.
+          mock: !doFetch || !base,
+          source: answer.source,
+        };
+      }
+      return {
+        files: answer.catalogue?.files || [],
+        error: null,
+        mock: false,
+        source: answer.source,
+      };
     })
     .catch((e) => {
-      // Reset, so a session that started offline can try again later.
       pending = null;
-      return { files: [], error: e?.message || 'The runner manifest could not be read.', mock: false };
+      return { files: [], error: e?.message || 'The runner manifest could not be read.', mock: false, source: 'mock' };
     });
 
   return pending;
+}
+
+/** For tests, and for a session that has just signed in. */
+export function clearRunnerCataloguePending() {
+  pending = null;
 }

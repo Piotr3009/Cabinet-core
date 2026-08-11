@@ -5,6 +5,7 @@ import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
 import {
   contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor,
+  panelOutlineOffset,
   panelFillOffset, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
@@ -385,6 +386,11 @@ export function MovingPanel({
             threshold={outline.threshold}
             color={outline.colour}
             lineWidth={outline.width}
+            // Turn 20 (CLAUDE.md F12.1): the line leans towards the camera as
+            // far as the fill leans away from it, so an interior edge lying in
+            // a neighbour's face reads in both scenes. drei hands its rest
+            // props to the LineMaterial, which is where this has to land.
+            {...panelOutlineOffset(profile)}
             // The contour is the TOOL, not the furniture: a render hides it
             // (3d/renderCapture.js). Tagged explicitly rather than sniffed,
             // because drei draws a fat line as a LineSegments2 — which is a

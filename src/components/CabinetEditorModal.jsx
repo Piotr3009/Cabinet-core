@@ -8,6 +8,7 @@ import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
 import { useViewHandle } from '../3d/viewHandle.js';
 import EditorRig from '../3d/EditorRig.jsx';
+import ContextGuard from '../3d/contextGuard.jsx';
 import { Environment } from '../3d/Scene.jsx';
 import { mm } from '../3d/constants.js';
 import { surfaceFor, outlineFor } from '../3d/materials.js';
@@ -288,6 +289,9 @@ function CabinetCanvas({
       onPointerMissed={() => onSelect(null)}
       onContextMenu={(e) => e.preventDefault()}
     >
+      {/* Turn 20 (CLAUDE.md F10): ONE context per surface, reused across opens
+          — released here on the way out rather than left for the collector. */}
+      <ContextGuard name="editor" />
       {/* The editor's end-to-end handle (turn 13, F2.2): a PAN leaves no trace
           in the DOM at all, so the walk reads the controls' own target. */}
       <EditorViewHandle />

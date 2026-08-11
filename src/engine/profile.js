@@ -435,8 +435,23 @@ export const DEFAULT_CABINET_PROFILE = {
       // COLOUR PICKER offers underneath (it always has), not a source button —
       // two buttons here made the same finish look like two finishes.
       { id: 'spray', label: 'Spray', thickness: 18, kind: 'spray', picker: 'colour' },
-      // Turn 15 (CLAUDE.md F3.2): a veneer front picks a TIMBER, not a paint.
-      { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board', picker: 'veneer' },
+      // ─── TURN 20 (CLAUDE.md F12.3): BOTH FACED FRONTS PICK A DECOR ───────
+      // Owner's verdict: "Veneer and Laminate open the SAME decor picker
+      // (catalogue grid, attribution string, reproduction note) as melamine —
+      // not a colour palette. Spray keeps its palette."
+      //
+      // Turn 15 gave the VENEER front a picker of its own — twelve curated
+      // timbers — on the reasoning that a species is not a decor. The owner
+      // works the other way round: he chooses the LOOK off the same catalogue
+      // for every faced board and the workshop knows what to order from it.
+      // So the front's veneer source joins the laminate's on the 85-decor
+      // grid. The CARCASS's veneer source is untouched below — that question
+      // was not asked and its picker still answers it.
+      //
+      // The THICKNESS is still the source's own 19 mm, and the assignment
+      // plumbing has carried a decor id since turn 16, so nothing about what
+      // is cut, grouped or ordered moves: this is the picker, routed.
+      { id: 'veneer', label: 'Veneer', thickness: 19, kind: 'board', picker: 'decor' },
       // …and a laminate front picks a DECOR — the same 85-EGGER picker the
       // carcass has used since turn 5 (F3.1). It was offering RAL palettes,
       // which is a paint range for a board that is never painted.
@@ -975,11 +990,24 @@ export const DEFAULT_CABINET_PROFILE = {
     // conventional starting pair and is enough here — bigger numbers start to
     // show as bleed-through at silhouette edges, which is the artefact this
     // must not trade for.
+    //
+    // ─── TURN 20 (CLAUDE.md F12.1): AND THE LINE LEANS FORWARD AS WELL ─────
+    // Turn 15 pushed the FACE back and that closed most of it, but a line and
+    // a face a hair apart in a depth buffer of finite precision still trade
+    // pixels at grazing angles — which is where an interior edge is always
+    // seen. So the OUTLINE takes the opposite bias: the face steps back, the
+    // line steps forward, and the gap between them is twice what either could
+    // buy alone. Same mechanism, same "nothing moves in the scene", and the
+    // two numbers are kept apart because they are two decisions: how far a
+    // face may sink, and how far a line may lean out before it starts showing
+    // through the board in front of it.
     outline: {
       colour: '#1A1A1A',
       width: 1,
       threshold: 12,
-      polygonOffset: { factor: 1, units: 1 },
+      polygonOffset: {
+        factor: 1, units: 1, outlineFactor: -1, outlineUnits: -1,
+      },
     },
     // ~20 % sheen: a hint of clear coat over a matt board. Not plastic.
     // Kept as the fallback a piece takes when it belongs to no finish family.
@@ -2206,6 +2234,12 @@ export const DEFAULT_CABINET_PROFILE = {
       // per-modal copy of this arithmetic (F5.4).
       anchorOffset: { x: 140, y: 0 },
     },
+    // ─── Turn 20 (CLAUDE.md F12.2): THE SAVE THAT SAYS SO ──────────────────
+    // "A successful save turns the Save control green with a check for ~2 s,
+    // then returns to rest." Two seconds is long enough to catch out of the
+    // corner of an eye and short enough that it is plainly about the click
+    // that just happened rather than a state the app is in.
+    saveConfirmMs: 2000,
   },
 
   // ─── Editor defaults ───

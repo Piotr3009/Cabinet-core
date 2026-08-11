@@ -74,7 +74,14 @@ export function facingMatchesSource(finishId, source) {
   const isVeneer = veneerIdFromFinishId(finishId) != null;
   const picker = pickerForSource(source);
   if (picker === 'veneer') return isVeneer;
-  if (picker === 'decor') return !isVeneer;
+  // ─── Turn 20 (CLAUDE.md F12.3) ───
+  // A DECOR picker on a VENEER source keeps a veneer facing. The front's
+  // veneer source moved to the 85-decor grid this turn, and a project saved
+  // before it is faced in `veneer:oak-natural` — dropping that because the
+  // picker changed would throw away a decision the owner made, on a board
+  // whose look and thickness have not changed at all. New picks are decors;
+  // old ones stay valid, and both resolve through `frontFacing`.
+  if (picker === 'decor') return !isVeneer || String(source?.id || '') === 'veneer';
   return false;
 }
 

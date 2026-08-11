@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -60,11 +60,33 @@ export default function TopBar({
   const profile = useCabinetProfileStore((s) => s.profile);
 
   const [editing, setEditing] = useState(false);
+  // ─── Turn 20 (CLAUDE.md F12.2): THE SAVE THAT SAYS SO ─────────────────────
+  // Owner's pre-18 list: a save that works looks exactly like a save that does
+  // nothing. It goes GREEN with a check for two seconds and then back to rest —
+  // and a FAILED save does not, because a control that goes green whatever
+  // happened is a control nobody reads. A failure keeps today's surface: the
+  // toast, in its own tone, saying what went wrong.
+  //
+  // 'rest' | 'saving' | 'saved'. Nothing else in the app reads it: it is about
+  // the click that just happened, not a state the project is in — `dirty` is
+  // that, and it is the store's.
+  const [saveState, setSaveState] = useState('rest');
+  const confirmMs = profile.ui.saveConfirmMs;
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const save = async () => {
+    clearTimeout(timer.current);
+    setSaveState('saving');
     const { project: saved, message, tone } = await persistProject({ project, units });
     markSaved(saved);
     notify(message, tone);
+    // Only a clean 'ok' is a success. A save that landed on this computer
+    // because the database refused it comes back 'warn', and a joiner who
+    // needs to know that must not be told everything is fine.
+    if (tone !== 'ok') { setSaveState('rest'); return; }
+    setSaveState('saved');
+    timer.current = setTimeout(() => setSaveState('rest'), confirmMs);
   };
 
   const menus = [
@@ -233,6 +255,21 @@ export default function TopBar({
           {dirty && <span className="ml-2 text-ink-400 text-xs">•</span>}
         </button>
       )}
+
+      {/* The SAVE control (turn 20, CLAUDE.md F12.2). It has lived in File ▸
+          Save since turn 4, where a joiner cannot see what it did; this is the
+          same call with a face on it, beside the dirty dot that asks for it. */}
+      <button
+        type="button"
+        data-save-control="1"
+        data-save-state={saveState}
+        disabled={saveState === 'saving'}
+        title={dirty ? 'Unsaved changes' : 'Up to date'}
+        className={`cc-btn transition-colors ${saveState === 'saved' ? 'border-emerald-500 text-emerald-400' : ''}`}
+        onClick={save}
+      >
+        {saveState === 'saved' ? '✓ Saved' : (saveState === 'saving' ? 'Saving…' : 'Save')}
+      </button>
 
       <MockModeBadge />
 

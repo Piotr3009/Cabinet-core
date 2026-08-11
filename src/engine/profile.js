@@ -2312,6 +2312,13 @@ export const DEFAULT_CABINET_PROFILE = {
     mmStep: 0.5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
+    // ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET ────────────────────────
+    //
+    // Owner: dragging a shelf near the height of a shelf in the next bay — or
+    // the next CABINET — should catch, softly. His words: a PROPOSAL, not
+    // force. This is how near "near" is; drag on through and it lets go, and
+    // the numeric field never goes near it at all.
+    shelfMagnetMm: 10,
     // ─── Turn 12 (CLAUDE.md F7) ───
     // How much HEIGHT two units have to share before one blocks the other. A
     // wall unit hung exactly level with the top of a tall cabinet beside it is a

@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
+} from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
@@ -794,6 +796,18 @@ export default function UnitView({
     () => shelfLights.map((g, i) => ({ ...g, key: `gap-${i}` })),
     [shelfLights],
   );
+  // ─── Turn 21 (CLAUDE.md F11) ───
+  // Where this cabinet draws the magnet's guide, in ITS OWN frame — the caught
+  // height for the cabinet that was caught, the dragged height for the one
+  // doing the catching, and nothing at all for every other cabinet on the wall.
+  const magnetLine = useMemo(() => {
+    const caught = shelfDrag?.magnet;
+    if (!caught) return null;
+    if (shelfDrag.unitId === unit.id) return shelfDrag.pos;
+    if (caught.unitId === unit.id && Number.isFinite(caught.ownPos)) return caught.ownPos;
+    return null;
+  }, [shelfDrag, unit.id]);
+
   // The two openings the shelf being dragged stands between — the same list,
   // sliced to the board in the hand.
   const dragLights = useMemo(() => {
@@ -1242,6 +1256,23 @@ export default function UnitView({
         </group>
       )}
 
+      {/* ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET'S GUIDE LINE ───
+          Drawn by BOTH cabinets — the one with the shelf in the hand and the
+          one it caught — each at its own stored height, which is the whole
+          point: they line up on the wall because that is what the magnet
+          means. Nothing is linked; the line exists for the length of the drag
+          and no longer, and the chip carries the number they now share. */}
+      {magnetLine != null && !contour && (
+        <group userData={{ ccHelper: true, ccMagnet: magnetLine }}>
+          <DashedGuide y={magnetLine} width={W} depth={D} />
+          <DimLabel
+            position={[mm(W / 2), mm(magnetLine) + 0.05, mm(D) + 0.1]}
+            text={formatMm(fieldFromPos(magnetLine, G), { unit: true })}
+            tone="gold"
+          />
+        </group>
+      )}
+
       {/* live dimension while a shelf is being dragged (SPEC 4.8) */}
       {shelfDrag && shelfDrag.unitId === unit.id && (
         <group userData={{ ccHelper: true }}>
@@ -1539,5 +1570,35 @@ export default function UnitView({
         </group>
       )}
     </group>
+  );
+}
+
+/**
+ * A dashed line across the front of a cabinet at one height (turn 21, F11.1).
+ *
+ * `LineDashedMaterial` needs the distances computed once — three.js will not do
+ * it for you, and an undashed "dashed" line is the classic symptom. It is a
+ * HELPER: `ccHelper` keeps it out of the bounds the camera frames and out of
+ * every render and screenshot that asks for the furniture alone.
+ */
+function DashedGuide({ y, width, depth, overhang = 120 }) {
+  const line = useRef(null);
+  const geometry = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    // It runs a little past the cabinet on both sides, because what it is
+    // saying is "and the one next door", and a line that stops at the carcass
+    // says only "here".
+    g.setFromPoints([
+      new THREE.Vector3(mm(-overhang), mm(y), mm(depth) + 0.02),
+      new THREE.Vector3(mm(width + overhang), mm(y), mm(depth) + 0.02),
+    ]);
+    return g;
+  }, [y, width, depth, overhang]);
+  useLayoutEffect(() => { line.current?.computeLineDistances(); }, [geometry]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return (
+    <line ref={line} geometry={geometry}>
+      <lineDashedMaterial color="#c8a24a" dashSize={mm(24)} gapSize={mm(16)} depthTest={false} transparent opacity={0.95} />
+    </line>
   );
 }

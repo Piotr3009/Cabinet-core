@@ -29,6 +29,7 @@ import { widthZones } from '../engine/zones.js';
 import { machinedPanelGeometry } from './panelSolid.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
+import { drawerMotion } from '../engine/drawerMotion.js';
 import {
   boxPolyhedron, clipAll, infillMitre, solidTriangles,
 } from '../engine/mitre.js';
@@ -194,7 +195,7 @@ function useBevel(box, profile, sprayed = false) {
 export function MovingPanel({
   panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
   swing = null, joineryLayers: layers = null, children = null,
-  machining = false, drills = [], ...handlers
+  machining = false, drills = [], slide = false, travel = null, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -223,8 +224,13 @@ export function MovingPanel({
     : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)];
   const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
 
+  // ─── Turn 20 (CLAUDE.md F3): THE BOX TRAVELS TOO ───────────────────────
+  // `slide` is a piece of a drawer that is not its face — a side, the box
+  // front or back, the bottom. It has no gesture of its own and no swing; it
+  // rides the SAME 0..1 its front does, so the two cannot get out of step.
+  const travels = Boolean(front) || slide;
   useFrame((_, delta) => {
-    if (!group.current || !front) return;
+    if (!group.current || !travels) return;
     const target = open;
     if (Math.abs(amount.current - target) < 0.001) { amount.current = target; } else {
       // Frame-rate independent easing: fast at the start, settled in ~0.35 s.
@@ -234,9 +240,13 @@ export function MovingPanel({
     // The animation is an OFFSET from where the engine put the panel, never an
     // absolute position: writing position.z directly moved every front to
     // z = 0, i.e. inside the carcass, and the unit rendered as an open box.
-    if (front === 'drawer') {
-      // Slides straight out of the carcass, most of its own depth.
-      group.current.position.z = pivot[2] + mm(depth * 0.75) * a;
+    if (front === 'drawer' || slide) {
+      // ─── Turn 20 (CLAUDE.md F3.1): AS FAR AS THE RUNNER GOES ───────────
+      // The drawer's own NOMINAL LENGTH — a MOVENTO is full-extension and the
+      // box comes out its own length. `depth × 0.75` was turn 3's guess, made
+      // before the app knew which runner a drawer was on, and it is what left
+      // a face standing proud of a box that had not moved.
+      group.current.position.z = pivot[2] + mm(travel ?? depth * 0.75) * a;
       group.current.rotation.y = 0;
     } else {
       // Swings on the hinge side, about the group's origin. How FAR is decided
@@ -644,6 +654,13 @@ export default function UnitView({
     () => Object.values(openFronts || {}).some((v) => Number(v) > 0),
     [openFronts],
   );
+  // ─── Turn 20 (CLAUDE.md F3): which drawer is out, and how far it goes ─────
+  // Engine arithmetic (engine/drawerMotion.js), so a node test can hold the
+  // travel to the runner's nominal length without a browser.
+  const motion = useMemo(
+    () => drawerMotion(result.panels, openFronts),
+    [result.panels, openFronts],
+  );
 
   // ─── Every number this cabinet has (turn 8, CLAUDE.md F7) ───
   // Built from the ENGINE's own output, never re-derived: what is shown is what
@@ -937,6 +954,11 @@ export default function UnitView({
         const isShelfLike = p.role === 'shelf';
         const beingDragged = shelfDrag?.itemId && shelfDrag.itemId === shelfId;
         const front = frontKind(p);
+        // ─── Turn 20 (CLAUDE.md F3): the box rides with its face ───────────
+        // Not a front and not a gesture: a piece of the drawer's mechanism,
+        // reading the SAME open amount the face it is screwed to reads.
+        const ride = motion.forPanel(p);
+        const slide = Boolean(ride && !front && ride.travel > 0);
         // ─── Turn 16 (CLAUDE.md F1.4): THIS PIECE'S OWN MATERIAL ────────────
         //
         // "An element override reaches the PICTURE." It did not: a per-element
@@ -994,7 +1016,9 @@ export default function UnitView({
                 />
               ),
             } : {})}
-            open={front ? (openFronts?.[p.id] ?? 0) : 0}
+            open={front ? (openFronts?.[p.id] ?? 0) : (ride?.open ?? 0)}
+            slide={slide}
+            travel={ride?.travel ?? null}
             surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
             outline={outlineFor(profile, { contour })}
             outlines={outlines}
@@ -1184,6 +1208,10 @@ export default function UnitView({
         // back behind X-ray the moment it is shut again.
         runners={!contour && (hideFronts || anyFrontOpen)}
         runnerVariants={runnerVariants}
+        // ─── Turn 20 (CLAUDE.md F3.1/F3.2) ───
+        // The runner under an open drawer travels with it. One value per
+        // drawer, the same one its box and its face read.
+        drawerSlide={motion}
         storageBase={storageBase}
         // ─── Turn 19 (CLAUDE.md F1.6/F1.3) ───
         // WHICH hinge each door wears — resolved once, by the engine, and

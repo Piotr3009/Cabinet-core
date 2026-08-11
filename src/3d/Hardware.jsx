@@ -2,6 +2,7 @@ import {
   useEffect, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
 import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
 import { mm } from './constants.js';
 import { runnerEntry, runnerModelUrl } from '../engine/runners.js';
 import { hingeModelUrl, plateFamily, resolveDoorHinge } from '../engine/hinges.js';
@@ -70,7 +71,7 @@ import {
  */
 export default function Hardware({
   instances, profile, xray = false, hinges = false,
-  runners = false, runnerVariants = null, storageBase = '',
+  runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
   hingeSpecs = null, onEditHinge = null,
 }) {
   const colours = profile.appearance.hardware;
@@ -114,6 +115,7 @@ export default function Hardware({
       {(xray || runners) && (
         <>
           <Runners
+            slide={drawerSlide}
             items={instances.runners}
             profile={profile}
             colour={colours.bracket}
@@ -456,7 +458,7 @@ export function DoorHinges({
  * downloaded file is allowed to move a hole.
  */
 function Runners({
-  items, profile, colour, variants = null, storageBase = '',
+  items, profile, colour, variants = null, storageBase = '', slide = null,
 }) {
   const R = profile.hardware.runner;
   const M = R.movento;
@@ -500,6 +502,38 @@ function Runners({
 
   const plain = useMemo(() => items.filter((_, i) => !models[i]), [items, models]);
 
+  // ─── TURN 20 (CLAUDE.md F3.1/F3.2): THE RUNNER RIDES OUT WITH ITS DRAWER ──
+  //
+  // "The runner's fixed profile (cabinet-side) stays put; only the moving
+  // member and the box ride out. If the GLB is a single body, slide the whole
+  // model with the box — a note in the code says why, and splitting the model
+  // is the owner's future call, not this turn's guess."
+  //
+  // Both of this app's runners ARE single bodies: the manufacturer's GLB is one
+  // mesh of the whole assembly, and the grey stand-in is one L-profile drawn
+  // from three numbers. So the whole runner travels with the drawer it carries,
+  // and there is no fixed member drawn separately to leave behind. Splitting
+  // the cabinet profile from the carriage needs the model split, which is the
+  // owner's call on his own files.
+  //
+  // The offset is an OFFSET and never an absolute position — the model is
+  // placed on the drilled row by `hardwareInstances` and this adds to it, so a
+  // downloaded file still cannot move a hole (F6.2).
+  const slideOf = (drawer) => (Number(slide?.open?.get?.(drawer)) || 0)
+    * (Number(slide?.travel?.get?.(drawer)) || 0);
+
+  // One animated group per DRAWER: everything that drawer's runner is made of
+  // hangs inside it and the group's own z is eased, so the slide costs no
+  // re-render and no instance matrix is rewritten per frame. A cabinet with no
+  // drawers has one group with a zero offset, exactly as before.
+  const drawers = useMemo(
+    () => [...new Set(items.map((r) => r.drawer ?? 0))].sort((a, b) => a - b),
+    [items],
+  );
+  const inDrawer = (list, drawer) => list
+    .map((value, i) => ({ value, i }))
+    .filter(({ i }) => (items[i]?.drawer ?? 0) === drawer);
+
   const placeFace = useMemo(() => (i, m) => {
     const r = plain[i];
     const dir = r.side === 'L' ? -1 : 1;
@@ -522,29 +556,82 @@ function Runners({
     );
   }, [plain, R.flangeDepth]);
 
+  // The plain rows keep their own indices into `plain`, and the models theirs
+  // into `items`; both are filtered per drawer so a group holds exactly its own
+  // runner and the instanced geometry is still shared across the unit.
+  const plainOfDrawer = useMemo(() => {
+    const out = new Map();
+    plain.forEach((r, i) => {
+      const key = r.drawer ?? 0;
+      if (!out.has(key)) out.set(key, []);
+      out.get(key).push(i);
+    });
+    return out;
+  }, [plain]);
+
   return (
     <>
-      {/* The model, standing on the drilled row: x is the face of the panel it
-          is screwed to, y is the row itself, z is the back of the box. */}
-      {models.map((model, i) => (model ? (
-        <primitive
-          // eslint-disable-next-line react/no-array-index-key -- the row IS the identity
-          key={`m${i}`}
-          object={model}
-          position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]}
-        />
-      ) : null))}
+      {drawers.map((drawer) => {
+        const mine = plainOfDrawer.get(drawer) || [];
+        return (
+          <SlideOut key={`d${drawer}`} distance={slideOf(drawer)}>
+            {/* The model, standing on the drilled row: x is the face of the
+                panel it is screwed to, y is the row itself, z is the back of
+                the box. */}
+            {inDrawer(models, drawer).map(({ value: model, i }) => (model ? (
+              <primitive
+                // eslint-disable-next-line react/no-array-index-key -- the row IS the identity
+                key={`m${i}`}
+                object={model}
+                position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]}
+              />
+            ) : null))}
 
-      {/* The upright face. Its LENGTH is a per-instance scale, so one geometry
-          serves a 390 mm runner and a 690 mm one. */}
-      <Pieces count={plain.length} place={placeFace} colour={colour} metalness={0.7}>
-        <boxGeometry args={[mm(R.profileThickness), mm(R.profileHeight), 1]} />
-      </Pieces>
-      <Pieces count={plain.length} place={placeFlange} colour={colour} metalness={0.7}>
-        <boxGeometry args={[mm(R.flangeDepth), mm(R.profileThickness), 1]} />
-      </Pieces>
+            {/* The upright face. Its LENGTH is a per-instance scale, so one
+                geometry serves a 390 mm runner and a 690 mm one. */}
+            <Pieces
+              count={mine.length}
+              place={(n, m) => placeFace(mine[n], m)}
+              colour={colour}
+              metalness={0.7}
+            >
+              <boxGeometry args={[mm(R.profileThickness), mm(R.profileHeight), 1]} />
+            </Pieces>
+            <Pieces
+              count={mine.length}
+              place={(n, m) => placeFlange(mine[n], m)}
+              colour={colour}
+              metalness={0.7}
+            >
+              <boxGeometry args={[mm(R.flangeDepth), mm(R.profileThickness), 1]} />
+            </Pieces>
+          </SlideOut>
+        );
+      })}
     </>
   );
+}
+
+/**
+ * A group that eases itself out along +Z (turn 20, CLAUDE.md F3.3).
+ *
+ * The SAME spring the fronts use — `3d/UnitView.jsx`'s `MovingPanel` runs the
+ * identical `+= (target - current) × min(1, delta × 8)` — so a drawer's box,
+ * its face and its runner arrive together instead of one of them snapping. It
+ * is done on the GROUP rather than on the instances because an instanced matrix
+ * rewritten sixty times a second is the cost this file exists to avoid.
+ */
+function SlideOut({ distance = 0, children }) {
+  const group = useRef(null);
+  const at = useRef(0);
+  useFrame((_, delta) => {
+    if (!group.current) return;
+    const target = mm(distance);
+    if (Math.abs(at.current - target) < 1e-5) at.current = target;
+    else at.current += (target - at.current) * Math.min(1, delta * 8);
+    group.current.position.z = at.current;
+  });
+  return <group ref={group}>{children}</group>;
 }
 
 /**

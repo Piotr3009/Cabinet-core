@@ -83,6 +83,10 @@ export function hingeModel(url, {
   if (clone) {
     const spec = hardwareFinishSpec(profile, 'hinge', finish);
     const applied = applyHardwareFinish(clone, spec);
+    // Turn 24 (CLAUDE.md F1.5): which HALF of the ironmongery this clone is, so
+    // a walk traversing the scene can tell a plate from an arm without guessing
+    // from a position. The plate is the one piece that never moves at all.
+    clone.userData.ccHingePlate = Boolean(plate);
     clone.userData.ccFinish = spec?.id || null;
     clone.userData.ccFinishApplied = applied;
     clone.userData.ccFinishMetal = spec?.metal || null;
@@ -280,6 +284,11 @@ export function hingeMembers(url, args) {
 
   const outer = new THREE.Group();
   outer.add(joint);
+  // ONE object per member carries the tag. `keepMember` put it on the clone;
+  // the wrapper is what the caller places and what folds, so it takes it and
+  // the clone gives it up — otherwise a walk traversing the scene for "member
+  // B" finds each arm twice and half of them appear not to move.
+  delete inner.userData.ccHingeMember;
   outer.userData.ccNoBounds = true;
   outer.userData.ccHingeMember = 'B';
   outer.userData.ccHingeMemberNodes = inner.userData.ccHingeMemberNodes;

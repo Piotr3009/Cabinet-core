@@ -179,6 +179,14 @@ export default function PartDetailModal() {
    */
   const placePoint = useCallback((at) => {
     if (!at) return;
+    // A QUESTION ON SCREEN IS ANSWERED BEFORE THE NEXT POINT IS TAKEN (turn 24).
+    // The popover is already holding a placed point and asking what size hole
+    // goes in it. A click on the sheet behind it used to replace that point
+    // silently, so the answer arrived about a hole nobody had asked for — the
+    // failure the acceptance walk caught when the box moved out from under the
+    // Stamp button. The runaway is fixed where `screen` is declared; this is
+    // the belt to that brace, and it is the right rule anyway.
+    if (askDrill) return;
     if (tool === 'drill') {
       // F2.6: asked ONCE per session, on the FIRST placement, then it stamps.
       if (!drillSpec) {
@@ -207,7 +215,7 @@ export default function PartDetailModal() {
       }
       setPending(null);
     }
-  }, [tool, drillSpec, layer, layerDefaults, pending, dowelPitch, addOp]);
+  }, [tool, drillSpec, askDrill, layer, layerDefaults, pending, dowelPitch, addOp]);
 
   const deletePicked = useCallback(() => {
     if (!picked || !unit || !panel || !drawing) return;
@@ -234,8 +242,14 @@ export default function PartDetailModal() {
         if (e.key !== 'Escape') return;
       }
       if (e.key === 'Escape') {
-        if (typed !== null) { e.stopPropagation(); setTyped(null); setTypedSecond(null); return; }
-        if (tool !== 'select' || pending) { e.stopPropagation(); disarm(); }
+        // `stopImmediatePropagation`, not `stopPropagation`: the shell's own
+        // Escape-is-Back listener is on the SAME target (window), and stopping
+        // the bubble does not stop a sibling listener. This one is registered
+        // FIRST — a child's effect runs before its parent's — so disarming the
+        // tool consumes the key and the Back stack never sees it. Escape with
+        // nothing armed falls through, which is what makes it still mean Back.
+        if (typed !== null) { e.stopImmediatePropagation(); setTyped(null); setTypedSecond(null); return; }
+        if (tool !== 'select' || pending) { e.stopImmediatePropagation(); disarm(); }
         return;
       }
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -249,8 +263,15 @@ export default function PartDetailModal() {
         setTyped((was) => (was === null ? e.key : was + e.key));
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // CAPTURE, and this is the line that makes Esc mean what F2.1 says it
+    // means. The shell's own Escape-is-Back listener is on the same target and
+    // is registered FIRST — a child's effect runs before its parent's, and the
+    // shell is this component's child. A bubble-phase listener could never get
+    // in front of it; a capture-phase one runs before every bubble listener on
+    // the window, and stopping there consumes the key. With nothing armed this
+    // handler does not stop anything, so Escape still means Back.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [tool, picked, pending, typed, size, disarm, deletePicked]);
 
   /** Enter, on the floating input: the point goes where the NUMBER says (F2.5). */
@@ -575,8 +596,23 @@ function PartDrawing({
   const { size } = drawing;
   const svgRef = useRef(null);
   const wrapRef = useRef(null);
-  // Where the hand is on SCREEN — only so the floating number and the drill
-  // popover sit under it. Nothing geometric is ever measured in pixels.
+  // Where the hand LAST was on SCREEN — only so the floating number and the
+  // drill popover sit under it. Nothing geometric is ever measured in pixels.
+  //
+  // ─── AND IT IS NEVER CLEARED (turn 24, found by the acceptance walk) ──────
+  //
+  // It used to be nulled on `pointerleave`, and that made the drill popover
+  // run away from the hand that reached for it: the popover is a sibling of
+  // the SVG, so moving the cursor ONTO it is moving the cursor OFF the sheet,
+  // the anchor went null, and the box jumped to the default corner — under a
+  // pointer that was already on its way to a Stamp button no longer there.
+  // The click then landed on the DRAWING behind it and, with the drill armed,
+  // quietly re-pointed the hole the popover was still asking about. A joiner
+  // would have answered a question about a hole and got one somewhere else.
+  //
+  // A floating box is anchored to where the gesture happened, and a gesture
+  // that has finished does not move. So the last position stands until the
+  // next one replaces it.
   const [screen, setScreen] = useState(null);
   const pad = Math.max(size.w, size.h) * PAD + drawing.dimensionOffset;
   // The drawing's own frame has y UP (every engine drawing does); SVG has y
@@ -709,7 +745,10 @@ function PartDrawing({
           view.handlers.onPointerLeave?.(e);
           onCursor?.(null);
           onHover(null);
-          setScreen(null);
+          // `screen` is deliberately left alone — see the note where it is
+          // declared. The CURSOR is gone (no snap, no live dimensions); the
+          // last place the hand was is still the right place for a box that
+          // is already open.
         }}
         // ─── TURN 23 (CLAUDE.md F9.1) / TURN 24 (F2.3): the point goes down ─
         // It is a click and not a drag: turn 20's capture law means the pan
@@ -817,132 +856,151 @@ function PartDrawing({
           );
         })}
 
-        {/* The dimensions — turn 7's own entities, drawn in the drawing-office
-            ink. Never dimmed: F7.3 asks for the overall size to be visible
-            whatever is being hovered. */}
-        {drawing.dimensions.map((e, i) => {
-          if (e.kind === 'line') {
+        {/* ─── THE INK LAYER TAKES NO POINTER (turn 24, CLAUDE.md F2.2) ────
+            Everything below this line is ANNOTATION — the drawing office's
+            dimensions, turn 23's hover arrows, F2.4's live dimensions, the
+            rubber band and the osnap marker — and it is painted AFTER the
+            machinings, which in SVG means on top of them.
+
+            A witness line is a hairline that runs from a feature's own centre
+            out to the edge it is measuring from, so it lies exactly across the
+            thing it describes. Left interactive, it is the element the pointer
+            finds there: hovering a pocket drew the arrows, and the click that
+            followed landed on the arrow instead of the pocket and selected
+            nothing. Which feature it happened to on depended on where a line
+            fell to the pixel — the worst kind of bug, because it looks like
+            luck.
+
+            The rule the machinings already keep, one layer up: the drawn ink
+            carries the LOOK, the grace shapes carry the POINTER. */}
+        <g style={{ pointerEvents: 'none' }}>
+          {/* The dimensions — turn 7's own entities, drawn in the drawing-office
+              ink. Never dimmed: F7.3 asks for the overall size to be visible
+              whatever is being hovered. */}
+          {drawing.dimensions.map((e, i) => {
+            if (e.kind === 'line') {
+              return (
+                <line
+                  key={`d${i}`} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+                  stroke={dimInk} strokeWidth={0.9} vectorEffect="non-scaling-stroke" opacity={0.85}
+                />
+              );
+            }
+            if (e.kind !== 'text') return null;
             return (
-              <line
-                key={`d${i}`} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-                stroke={dimInk} strokeWidth={0.9} vectorEffect="non-scaling-stroke" opacity={0.85}
-              />
+              <text
+                key={`d${i}`}
+                x={e.x}
+                y={e.y}
+                fill="#9fb4d8"
+                fontSize={e.height}
+                textAnchor="middle"
+                transform={`scale(1 -1) translate(0 ${-2 * e.y})${e.rotate ? ` rotate(${-e.rotate} ${e.x} ${e.y})` : ''}`}
+                style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+              >
+                {e.text}
+              </text>
             );
-          }
-          if (e.kind !== 'text') return null;
-          return (
-            <text
-              key={`d${i}`}
-              x={e.x}
-              y={e.y}
-              fill="#9fb4d8"
-              fontSize={e.height}
-              textAnchor="middle"
-              transform={`scale(1 -1) translate(0 ${-2 * e.y})${e.rotate ? ` rotate(${-e.rotate} ${e.x} ${e.y})` : ''}`}
-              style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
-            >
-              {e.text}
-            </text>
-          );
-        })}
+          })}
 
-        {/* ─── F8.1: the hovered feature, dimensioned ───
-            Extension lines, open arrowheads, the value on the line. Thin blue,
-            from `profile.hoverDimensions` — the SAME style the scene's hover
-            arrows use, defined once and consumed twice. */}
-        {/* ─── F2.4: the live dimensions, while a tool is armed ───
-            The SAME renderer turn 23's hover arrows use — one style block, one
-            geometry module — and horizontal/vertical only, which is the rule
-            `drawingDimensionRows` enforces rather than this loop. */}
-        {liveDims.map((d) => (
-          <g key={`live-${d.key}`} data-live-dim={String(d.key)}>
-            {d.segments.map(([a, b], i) => (
-              <line
-                // eslint-disable-next-line react/no-array-index-key -- a segment has no identity of its own
-                key={i}
-                x1={a[0]}
-                y1={a[1]}
-                x2={b[0]}
-                y2={b[1]}
-                stroke={style.colour}
-                strokeWidth={style.strokeMm}
-                vectorEffect="non-scaling-stroke"
-                strokeLinecap="round"
-              />
-            ))}
-            <text
-              x={d.text.at[0]}
-              y={d.text.at[1]}
-              fill={style.colour}
-              fontSize={style.textMm}
-              textAnchor="middle"
-              transform={`scale(1 -1) translate(0 ${-2 * d.text.at[1]}) rotate(${-d.text.angle} ${d.text.at[0]} ${d.text.at[1]})`}
-              style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
-            >
-              {formatMm(d.value)}
-            </text>
-          </g>
-        ))}
+          {/* ─── F8.1: the hovered feature, dimensioned ───
+              Extension lines, open arrowheads, the value on the line. Thin blue,
+              from `profile.hoverDimensions` — the SAME style the scene's hover
+              arrows use, defined once and consumed twice. */}
+          {/* ─── F2.4: the live dimensions, while a tool is armed ───
+              The SAME renderer turn 23's hover arrows use — one style block, one
+              geometry module — and horizontal/vertical only, which is the rule
+              `drawingDimensionRows` enforces rather than this loop. */}
+          {liveDims.map((d) => (
+            <g key={`live-${d.key}`} data-live-dim={String(d.key)}>
+              {d.segments.map(([a, b], i) => (
+                <line
+                  // eslint-disable-next-line react/no-array-index-key -- a segment has no identity of its own
+                  key={i}
+                  x1={a[0]}
+                  y1={a[1]}
+                  x2={b[0]}
+                  y2={b[1]}
+                  stroke={style.colour}
+                  strokeWidth={style.strokeMm}
+                  vectorEffect="non-scaling-stroke"
+                  strokeLinecap="round"
+                />
+              ))}
+              <text
+                x={d.text.at[0]}
+                y={d.text.at[1]}
+                fill={style.colour}
+                fontSize={style.textMm}
+                textAnchor="middle"
+                transform={`scale(1 -1) translate(0 ${-2 * d.text.at[1]}) rotate(${-d.text.angle} ${d.text.at[0]} ${d.text.at[1]})`}
+                style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+              >
+                {formatMm(d.value)}
+              </text>
+            </g>
+          ))}
 
-        {/* ─── F2.3 / F2.1: the RUBBER BAND of a two-click tool ───
-            From the first click to where the point would land. It is the one
-            thing that tells a joiner the tool is holding a start. */}
-        {pending && target && (
-          <line
-            x1={pending.x}
-            y1={pending.y}
-            x2={target.x}
-            y2={target.y}
-            stroke={style.colour}
-            strokeWidth={style.strokeMm}
-            strokeDasharray="6 4"
-            vectorEffect="non-scaling-stroke"
-            data-rubber-band="1"
-          />
-        )}
+          {/* ─── F2.3 / F2.1: the RUBBER BAND of a two-click tool ───
+              From the first click to where the point would land. It is the one
+              thing that tells a joiner the tool is holding a start. */}
+          {pending && target && (
+            <line
+              x1={pending.x}
+              y1={pending.y}
+              x2={target.x}
+              y2={target.y}
+              stroke={style.colour}
+              strokeWidth={style.strokeMm}
+              strokeDasharray="6 4"
+              vectorEffect="non-scaling-stroke"
+              data-rubber-band="1"
+            />
+          )}
 
-        {/* ─── F2.3: THE OSNAP MARKER ───
-            AutoCAD's own vocabulary, drawn at a constant size on screen — a
-            marker is a piece of the tool, not a piece of the furniture. */}
-        {snap && (
-          <SnapMarker
-            kind={snap.kind}
-            x={snap.x}
-            y={snap.y}
-            mm={profile.editor.partSnap.markerPx * view.mmPerPx}
-            colour={style.colour}
-          />
-        )}
+          {/* ─── F2.3: THE OSNAP MARKER ───
+              AutoCAD's own vocabulary, drawn at a constant size on screen — a
+              marker is a piece of the tool, not a piece of the furniture. */}
+          {snap && (
+            <SnapMarker
+              kind={snap.kind}
+              x={snap.x}
+              y={snap.y}
+              mm={profile.editor.partSnap.markerPx * view.mmPerPx}
+              colour={style.colour}
+            />
+          )}
 
-        {arrows.map((d) => (
-          <g key={d.key} data-hover-dim={String(d.key)}>
-            {d.segments.map(([a, b], i) => (
-              <line
-                // eslint-disable-next-line react/no-array-index-key -- a segment has no identity of its own
-                key={i}
-                x1={a[0]}
-                y1={a[1]}
-                x2={b[0]}
-                y2={b[1]}
-                stroke={style.colour}
-                strokeWidth={style.strokeMm}
-                vectorEffect="non-scaling-stroke"
-                strokeLinecap="round"
-              />
-            ))}
-            <text
-              x={d.text.at[0]}
-              y={d.text.at[1]}
-              fill={style.colour}
-              fontSize={style.textMm}
-              textAnchor="middle"
-              transform={`scale(1 -1) translate(0 ${-2 * d.text.at[1]}) rotate(${-d.text.angle} ${d.text.at[0]} ${d.text.at[1]})`}
-              style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
-            >
-              {formatMm(d.value)}
-            </text>
-          </g>
-        ))}
+          {arrows.map((d) => (
+            <g key={d.key} data-hover-dim={String(d.key)}>
+              {d.segments.map(([a, b], i) => (
+                <line
+                  // eslint-disable-next-line react/no-array-index-key -- a segment has no identity of its own
+                  key={i}
+                  x1={a[0]}
+                  y1={a[1]}
+                  x2={b[0]}
+                  y2={b[1]}
+                  stroke={style.colour}
+                  strokeWidth={style.strokeMm}
+                  vectorEffect="non-scaling-stroke"
+                  strokeLinecap="round"
+                />
+              ))}
+              <text
+                x={d.text.at[0]}
+                y={d.text.at[1]}
+                fill={style.colour}
+                fontSize={style.textMm}
+                textAnchor="middle"
+                transform={`scale(1 -1) translate(0 ${-2 * d.text.at[1]}) rotate(${-d.text.angle} ${d.text.at[0]} ${d.text.at[1]})`}
+                style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+              >
+                {formatMm(d.value)}
+              </text>
+            </g>
+          ))}
+        </g>
         </g>
       </svg>
 
@@ -956,10 +1014,10 @@ function PartDrawing({
         <div
           className="absolute z-20 flex items-center gap-1 rounded border border-gold bg-shell-800 px-1 py-0.5 shadow"
           data-typed-entry="1"
-          style={{
-            left: Math.max(4, (screen?.x ?? 40) + 14),
-            top: Math.max(4, (screen?.y ?? 40) + 14),
-          }}
+          // Kept INSIDE the window. The drawing sits in an `overflow-hidden`
+          // frame, so a floating box that ran past its edge would be clipped —
+          // half a number the hand cannot reach is worse than no number.
+          style={floatAt(screen, px, 110, 34)}
         >
           <input
             // eslint-disable-next-line jsx-a11y/no-autofocus -- the entry IS the gesture: it opened because a digit was typed
@@ -992,10 +1050,13 @@ function PartDrawing({
         <div
           className="absolute z-20 rounded border border-gold bg-shell-800 p-2 space-y-1 shadow"
           data-drill-popover="1"
-          style={{
-            left: Math.min(Math.max(4, (screen?.x ?? 40) + 14), 260),
-            top: Math.max(4, (screen?.y ?? 40) + 14),
-          }}
+          // WHERE STAMPING WILL PUT IT. The popover holds a point that was
+          // decided before it opened — by the click, or by F2.5's typed
+          // number — and this is that point, in the part's own millimetres, so
+          // the acceptance walk can read the placement off the app instead of
+          // inferring it from what appeared afterwards (R4's habit).
+          data-drill-at={`${drillPopover.at.x},${drillPopover.at.y}`}
+          style={floatAt(screen, px, 230, 108)}
         >
           <div className="text-[11px] text-ink-200">This session’s hole</div>
           <div className="cc-row">
@@ -1029,6 +1090,24 @@ function PartDrawing({
       )}
     </div>
   );
+}
+
+/**
+ * WHERE A FLOATING BOX GOES, so that all of it is reachable.
+ *
+ * Beside the cursor, and never past the edge of the window it floats in: the
+ * drawing sits in an `overflow-hidden` frame and a box that ran past it would
+ * be CLIPPED — which is a button somebody can see the corner of and cannot
+ * press. `w` and `h` are the box's own size, which is fixed by its content.
+ */
+function floatAt(screen, box, w, h) {
+  const gap = 14;
+  const maxX = Math.max(4, (box?.w || 0) - w - 4);
+  const maxY = Math.max(4, (box?.h || 0) - h - 4);
+  return {
+    left: Math.min(Math.max(4, (screen?.x ?? 40) + gap), maxX),
+    top: Math.min(Math.max(4, (screen?.y ?? 40) + gap), maxY),
+  };
 }
 
 /**

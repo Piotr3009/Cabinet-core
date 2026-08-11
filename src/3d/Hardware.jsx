@@ -82,6 +82,10 @@ export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
   hingeSpecs = null, surface = 'room', scope = '',
+  // Turn 24 (CLAUDE.md F1.2): every leaf's signed opening angle, so the hinge's
+  // CARCASS half can fold after the door it belongs to. The door is not this
+  // component's child, which is exactly why the angle has to cross.
+  doorSwing = null,
 }) {
   const colours = profile.appearance.hardware;
   // ─── TURN 21 (CLAUDE.md R4 / F2.2 / F6.3) ───
@@ -117,6 +121,7 @@ export default function Hardware({
           storageBase={storageBase}
           surface={surface}
           scope={scope}
+          doorSwing={doorSwing}
         />
       )}
       {/* ─── Turn 18 (CLAUDE.md F6.7) ───

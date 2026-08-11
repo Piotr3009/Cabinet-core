@@ -27,7 +27,7 @@ import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { panelFinish } from '../engine/materials.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
-import { machinedPanelGeometry } from './panelSolid.js';
+import { panelSolids } from './panelSolid.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
 import { drawerMotion } from '../engine/drawerMotion.js';
@@ -210,10 +210,17 @@ export function MovingPanel({
   // socket is a real absence in the solid rather than a rectangle drawn on it.
   // Cached in 3d/panelSolid.js by panel CONFIGURATION, so this is a Map lookup
   // for every carcass after the first and nothing at all per frame.
-  const machined = useMemo(
-    () => (layers && !mitre ? machinedPanelGeometry(p, layers, profile) : null),
-    [p, layers, profile, mitre],
+  // ─── Turn 20 (CLAUDE.md F8): …and every other cut with it ───────────────
+  // `panelSolids` returns the board with every drilling, pocket and groove
+  // taken OUT of it, and — separately, because a cut is raw board and not a
+  // decor — the walls and floors of those cuts. Same cache, same key, so a
+  // kitchen of fourteen identical carcasses still builds two side geometries.
+  const built = useMemo(
+    () => (layers && !mitre ? panelSolids(p, layers, profile, drills) : null),
+    [p, layers, profile, mitre, drills],
   );
+  const machined = built?.solid || null;
+  const cuts = built?.cuts || null;
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
@@ -397,6 +404,27 @@ export function MovingPanel({
             // Mesh, and reads as furniture to anything looking at the type.
             userData={{ ccHelper: true }}
           />
+        )}
+        {/* ─── Turn 20 (CLAUDE.md F8.2): THE CUT FACES ────────────────────
+            The walls and floors of every recess, in `appearance.cutFace` and
+            in NOTHING else — a decor, a lacquer and a sprayed colour are what
+            is on a board's FACE, and past the cutter there is only core. One
+            merged buffer per panel configuration, so a side panel's eighteen
+            holes are one draw call and every identical carcass shares it.
+            Nested inside the panel's own mesh, so it is disposed with it and
+            travels with every animation the board has. */}
+        {cuts && !contour && (
+          <mesh geometry={cuts} userData={{ ccHelper: false, ccCutFaces: p.id }}>
+            <meshStandardMaterial
+              color={profile.appearance.cutFace}
+              roughness={0.9}
+              metalness={0}
+              transparent={translucent}
+              opacity={faded}
+              depthWrite={!translucent}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
         )}
       </mesh>
     </group>

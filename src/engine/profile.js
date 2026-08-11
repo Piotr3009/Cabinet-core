@@ -1009,6 +1009,16 @@ export const DEFAULT_CABINET_PROFILE = {
         factor: 1, units: 1, outlineFactor: -1, outlineUnits: -1,
       },
     },
+    // ─── TURN 20 (CLAUDE.md F8.2): WHAT A CUT LOOKS LIKE ────────────────────
+    //
+    // Owner: every drilling and pocket must read as REMOVED material, "the cut
+    // faces a medium-dark grey". One number, read by both scenes.
+    //
+    // It is a COLOUR and never a finish: a decor or a sprayed lacquer is on the
+    // FACE of a board, and the moment a cutter has been through it what is
+    // there is raw core. Painting a decor onto the inside of a hinge cup is the
+    // thing this exists to stop.
+    cutFace: '#4a4a4a',
     // ~20 % sheen: a hint of clear coat over a matt board. Not plastic.
     // Kept as the fallback a piece takes when it belongs to no finish family.
     sheen: { roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.35, metalness: 0.0 },

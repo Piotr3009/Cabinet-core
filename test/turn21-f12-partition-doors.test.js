@@ -171,15 +171,22 @@ test('F12.2 — the plate is the EXISTING ⌀5 law, on the partition’s own fac
   }
   // The two of each pair are ±16 about the row, and the row is the carcass's
   // own — measured in the partition's frame, which starts at its own bottom.
+  //
+  // ─── TURN 24 (CLAUDE.md F8): THE FRAME TURNED, THE LAW DID NOT ───────────
+  // The partition lies along the grain now — `depth × height`, x from the
+  // FRONT — so the HEIGHT that used to be the drawn x is the drawn y, and the
+  // 37 mm that used to be the y is the x. Every number below is the number it
+  // was; only which axis it is on has changed, which is what "re-orient the
+  // part" means and is exactly what a joiner sees on the sheet.
   const vp = r.panels.find((p) => p.id === 'VPART-1');
   const wanted = rows.flatMap((c) => [
     c - P.hinges.holePairOffset - vp.box.y, c + P.hinges.holePairOffset - vp.box.y,
   ]).sort((a, b) => a - b);
-  assert.deepEqual(plate.map((d) => d.x).sort((a, b) => a - b), wanted);
-  // 37 mm from the FRONT edge. The drawn frame runs from the BACK, and this
-  // door closes on the partition's RIGHT face — the part turned over, exactly
-  // as BUR is BUL turned over.
-  for (const d of plate) assert.equal(d.y, P.hinges.xFromFrontEdge);
+  assert.deepEqual(plate.map((d) => d.y).sort((a, b) => a - b), wanted);
+  // 37 mm from the FRONT edge, which the drawn x now runs from. This door
+  // closes on the partition's RIGHT face — the part turned over, exactly as
+  // BUR is BUL turned over — so it measures `depth − 37` on the drawn face.
+  for (const d of plate) assert.equal(d.x, vp.box.d - P.hinges.xFromFrontEdge);
   // The other partition carries nothing: no door is hung on it.
   assert.equal(r.drills.filter((d) => d.panel === 'VPART-2' && d.kind === 'hinge').length, 0);
 });
@@ -193,7 +200,10 @@ test('F12.2 — the LEFT face is the drawn face, and measures from the front', (
   const vp = r.panels.find((p) => p.id === 'VPART-1');
   const plate = r.drills.filter((d) => d.panel === 'VPART-1' && d.kind === 'hinge');
   assert.ok(plate.length > 0);
-  for (const d of plate) assert.equal(d.y, vp.box.d - P.hinges.xFromFrontEdge);
+  // Turn 24 (CLAUDE.md F8): the drawn x runs from the FRONT edge now, so the
+  // face that measures 37 FROM the front measures exactly 37.
+  for (const d of plate) assert.equal(d.x, P.hinges.xFromFrontEdge);
+  assert.ok(vp.box.d > 0);
 });
 
 test('F12.2 — NOTHING is drilled where no door is hung on a partition', () => {

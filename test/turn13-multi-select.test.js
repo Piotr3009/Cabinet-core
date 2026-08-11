@@ -33,6 +33,8 @@ import {
   flushHistory, unwatchProjectHistory, useHistoryStore, watchProjectHistory,
 } from '../src/stores/historyStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const store = () => useProjectStore.getState();
 const ui = () => useUiStore.getState();
@@ -252,6 +254,7 @@ test('BULK: one patch onto every unit, through the single-unit path', () => {
 
 test('BULK: a shelf in each of them, and the ones that take none are counted', () => {
   const ids = project();
+  confirmDrawerBox();
   const drawers = store().addUnit('BUDR')?.id;   // a ratio drawer unit takes no shelves
   const { added, skipped } = store().addShelvesBulk([...ids, drawers], 1);
   assert.equal(added, 3);

@@ -271,48 +271,70 @@ const MATERIALS = [
   },
 ];
 
-/** The hinge: a cup, its flange, the body, the arm, and a plastic lever. */
+/**
+ * The hinge: a cup, its flange, the clip cap, the link cover, the arm with the
+ * rear body, and a plastic lever.
+ *
+ * ─── TURN 24 (CLAUDE.md F1.5): IT IS A TWO-MEMBER FIXTURE NOW ──────────────
+ *
+ * The NODE NAMES are the real export's — `bau…` — and the z ranges are the ones
+ * CLAUDE.md's table measured off the owner's own STEP-derived file. That is not
+ * decoration: F1.3 splits the model BY NODE NAME, so a showroom whose nodes are
+ * called `HINGE_CUP` would exercise the z-threshold FALLBACK and never the rule.
+ * With these names the walk proves the shipped `rig.memberA` / `rig.memberB`
+ * lists, on the very strings a real file carries.
+ *
+ * `bau0015088251` is the node that makes the point: it spans −28 … 46.2, right
+ * across the 30 mm threshold, and it is member B. A split done by geometry
+ * alone would cut the arm in half; a split done by name puts the whole of it on
+ * the carcass, which is where it is bolted.
+ */
 function hingeParts() {
   return [
-    // The ⌀35 cup, bored along the depth, its centre at the x the real file
-    // puts it at (−7.75) — which is what makes `modelOrigin` land it in its
-    // bore without a fixture-only number anywhere.
+    // MEMBER A ─ the ⌀35 cup, bored along the depth, its centre at the x the
+    // real file puts it at (−7.75) — which is what makes `modelOrigin` land it
+    // in its bore without a fixture-only number anywhere. 35.3 … 51.3.
     {
-      name: 'HINGE_CUP',
+      name: 'bau0015089612',
       material: 'metal_nickel_raw',
       geometry: cylinderZ({
         cx: -7.75, cy: 0, r: 17.5, z0: 35.3, z1: 51.3,
       }),
     },
-    // The pressed flange that gives the cup slab its 37.5 × 57 footprint.
+    // MEMBER A ─ the CLIP cap, 39.4 … 50.1, and the pressed flange that gives
+    // the cup slab its 37.5 × 57 footprint.
     {
-      name: 'HINGE_CUP_FLANGE',
+      name: 'bau0015088783',
       material: 'metal_nickel_raw',
       geometry: box({
-        x0: -26.5, x1: 11, y0: -28.5, y1: 28.5, z0: 35.3, z1: 37.3,
+        x0: -26.5, x1: 11, y0: -28.5, y1: 28.5, z0: 39.4, z1: 50.1,
       }),
     },
+    // MEMBER A ─ the link cover, 31.1 … 44.9.
     {
-      name: 'HINGE_BODY',
+      name: 'bau0015088853',
       material: 'metal_nickel_raw',
       geometry: box({
-        x0: -22, x1: 6, y0: -14, y1: 14, z0: 0, z1: 35.3,
+        x0: -22, x1: 6, y0: -14, y1: 14, z0: 31.1, z1: 44.9,
       }),
     },
+    // MEMBER B ─ the arm and the rear body, −28 … 46.2. It CROSSES the 30 mm
+    // threshold, which is the whole reason the split is by name.
     {
-      name: 'HINGE_ARM',
+      name: 'bau0015088251',
       material: 'metal_nickel_raw',
       geometry: box({
-        x0: -20, x1: 4, y0: -11, y1: 11, z0: -29.48, z1: 2,
+        x0: -20, x1: 4, y0: -11, y1: 11, z0: -28, z1: 46.2,
       }),
     },
-    // The CLIP release lever — the one piece of a real CLIP top that is not
-    // metal, and the reason F4.2's allowlist exists.
+    // MEMBER B ─ the CLIP release lever, −29.48 … 22.5. The one piece of a real
+    // CLIP top that is not metal, and the reason F4.2's allowlist exists; it is
+    // also what keeps the file's overall box at the measured −29.48.
     {
-      name: 'CLIP_LEVER',
+      name: 'bau0019416036',
       material: 'plastic_black',
       geometry: box({
-        x0: -16, x1: 0, y0: -6, y1: 6, z0: -29.48, z1: -18,
+        x0: -16, x1: 0, y0: -6, y1: 6, z0: -29.48, z1: 22.5,
       }),
     },
   ];

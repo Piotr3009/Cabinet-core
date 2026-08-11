@@ -35,6 +35,8 @@
 // because the cache is module state. Every material this function writes to is
 // its own copy.
 
+import { attachHardwareEnv } from './hardwareEnv.js';
+
 /**
  * The finish this family is wearing, as numbers.
  *
@@ -107,11 +109,36 @@ export function applyHardwareFinish(object, spec) {
       if (want.colour && material.color?.set) material.color.set(want.colour);
       if (Number.isFinite(want.metalness)) material.metalness = want.metalness;
       if (Number.isFinite(want.roughness)) material.roughness = want.roughness;
+      // ─── TURN 24 (CLAUDE.md F12): AND SOMETHING TO REFLECT ────────────────
+      //
+      // "Nickel without an environment is grey paint." A METAL gets the
+      // hardware's own probe — a small procedural studio, built once, applied
+      // PER MATERIAL and never to the scene, so boards, fronts and lacquers are
+      // untouched and `scene.environment` stays null (F12.2). The PLASTIC does
+      // not: a release lever is moulded POM and a lever with a lightbox in it
+      // is the same mistake as a chrome one.
+      if (!plastic) {
+        attachHardwareEnv(material, want.envMapIntensity);
+        // An optional thin lacquer over a plated part. `MeshPhysicalMaterial`
+        // has it; a `MeshStandardMaterial` from a converter does not, and
+        // writing the property onto one is harmless and ignored — which is why
+        // it is guarded by the NUMBER being present rather than by the class.
+        if (Number.isFinite(want.clearcoat)) material.clearcoat = want.clearcoat;
+        if (Number.isFinite(want.clearcoatRoughness)) {
+          material.clearcoatRoughness = want.clearcoatRoughness;
+        }
+      }
       // A converter's material may carry an emissive or a map that fights the
       // finish. Neither is touched: an override that started deleting texture
       // slots would be a second renderer, and F4 asks for three numbers.
       material.needsUpdate = true;
-      applied.push({ material: source.name || '', kind: plastic ? 'plastic' : 'metal' });
+      applied.push({
+        material: source.name || '',
+        kind: plastic ? 'plastic' : 'metal',
+        // Turn 24 (F12 / R4): whether this material actually got the probe, so
+        // the walk asserts the reflection off the SCENE rather than off a pixel.
+        env: plastic ? false : Boolean(material.envMap),
+      });
       return material;
     });
     // eslint-disable-next-line no-param-reassign

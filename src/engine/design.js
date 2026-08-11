@@ -11,6 +11,8 @@
 import { decorFinish } from './decors.js';
 import { veneerFinish } from './veneers.js';
 import { DEFAULT_CABINET_PROFILE } from './profile.js';
+// Turn 24 (CLAUDE.md F3.1): the six slots the caliper answers for.
+import { THICKNESS_SLOTS } from './thickness.js';
 
 // ─── Turn 9 (CLAUDE.md F5) ───
 // 2: the sheen scale went from 0–25 to 5–100 %. A stored 20 means "a mirror" on
@@ -117,7 +119,19 @@ export const DEFAULT_DESIGN = {
   // 18 / 22 / 25 selector and `thickness.custom` is the "Other" field, which
   // wins when it is filled in.
   depth: null,
-  thickness: { board: null, custom: null },
+  // ─── TURN 24 (CLAUDE.md F3.1): AND THE CALIPER'S OWN SIX ─────────────────
+  //
+  // Owner: the manufacturer never tells you the board is really 18.5 — the
+  // CALIPER does, and the engine must compute from the caliper. `board` and
+  // `custom` above stay exactly what they are (the turn-11 selector and its
+  // "Other" field, and the seed under carcass 1); `slots` is the measurement.
+  //
+  //   { [slotId]: { measured: number|null, confirmed: boolean } }
+  //
+  // `measured: null` = nobody has put a caliper on it and the manufacturer's
+  // nominal stands. `confirmed` is the tick, and on the DRAWER BOX it is a
+  // hard gate: no thickness, no drawers (engine/thickness.js `drawerBoxGate`).
+  thickness: { board: null, custom: null, slots: {} },
   // Which VARIANT of each piece of ironmongery this job fits. The automat picks
   // the concrete item; the user only ever picks a variant (F9.2).
   hardware: { hinges: null, runners: null, handles: null },
@@ -200,6 +214,17 @@ export function migrateDesign(design) {
     thickness: {
       board: Number(d.thickness?.board) > 0 ? Number(d.thickness.board) : null,
       custom: Number(d.thickness?.custom) > 0 ? Number(d.thickness.custom) : null,
+      // Turn 24 (CLAUDE.md F3.1): the six measured slots. Only the six are
+      // kept, and only a POSITIVE measurement — a project that has never been
+      // asked comes back with an empty object and computes off the nominals,
+      // which is exactly what it computed before this turn existed.
+      slots: Object.fromEntries(THICKNESS_SLOTS.map((slot) => {
+        const row = d.thickness?.slots?.[slot.id] || {};
+        return [slot.id, {
+          measured: Number(row.measured) > 0 ? Number(row.measured) : null,
+          confirmed: row.confirmed === true,
+        }];
+      })),
     },
     hardware: {
       hinges: d.hardware?.hinges ? String(d.hardware.hinges) : null,

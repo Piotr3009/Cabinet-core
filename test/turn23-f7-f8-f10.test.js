@@ -313,14 +313,19 @@ test('F10.1 — the outermost partition still has a side to measure to', () => {
 
 test('F10.3 — the field, the Centre action and the P rows all say the same thing', () => {
   const panel = src('components/RightPanel.jsx');
-  assert.match(panel, /fieldFromX\(pt\.x_mm/);
-  assert.match(panel, /xFromField\(v, boardT\)/);
+  // ─── TURN 24 (CLAUDE.md F11): THE FIELD MEASURES FROM THE LEFT NEIGHBOUR ──
+  // Turn 23's interior datum is SUBSUMED, not duplicated: `chainFromX` measures
+  // from the nearest face to the left, and for the FIRST partition that face IS
+  // the interior face of the left side. One mapping function, two cases of it —
+  // which is why both surfaces still name the inside face for P1.
+  assert.match(panel, /chainFromX\(\{ x: mine, boardT, others \}\)/);
+  assert.match(panel, /xFromChain\(\{ value: v, x: mine, boardT, others \}\)/);
   assert.match(panel, /INSIDE face of the left side panel/);
   assert.match(panel, /Equal bays/, 'the action is named for what it is for');
   assert.match(panel, /data-partition-bays="1"/, 'and the bays themselves are shown');
 
   const props = src('components/ElementProperties.jsx');
-  assert.match(props, /fieldFromX\(item\?\.x_mm/);
-  assert.match(props, /xFromField\(v, G\)/);
+  assert.match(props, /chainFromX\(\{ x: mine, boardT: G, others: siblings \}\)/);
+  assert.match(props, /xFromChain\(\{/);
   assert.match(props, /INSIDE face of the left side panel/);
 });

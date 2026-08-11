@@ -104,7 +104,7 @@ test('F2 — and with the row moved, all FOUR of the top back’s joints close',
   const pl = panelPlacement(back);
   const yOf = (x) => pl.origin[1] + pl.u[1] * x;
 
-  const S = G / 2 + P.puzzle.centrelineExtra;
+  const S = G / 2;   // turn 24 (CLAUDE.md F4)
   const screws = (back.cnc.holes || []).filter((h) => h.kind === 'screw');
   const screwY = [...new Set(screws.map((h) => Math.round(yOf(h.x))))].sort((a, b) => a - b);
 

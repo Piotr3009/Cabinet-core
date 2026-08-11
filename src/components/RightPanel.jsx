@@ -15,7 +15,7 @@ import { isDuplicateName, unitName } from '../engine/naming.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
 import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
-import { bayWidthsOf, fieldFromX, xFromField } from '../engine/partitionPositions.js';
+import { bayWidthsOf, chainFromX, xFromChain } from '../engine/partitionPositions.js';
 import NumberField from './NumberField.jsx';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
@@ -766,23 +766,44 @@ export default function RightPanel() {
               <ul className="space-y-1">
                 {partitions.map((pt, i) => {
                   const panel = result.panels.find((pp) => pp.meta?.itemId === pt.id && pp.part === 'VPART');
+                  // ─── TURN 24 (CLAUDE.md F11): DISPLAY CHAINS, STORAGE
+                  //     STAYS ABSOLUTE ───────────────────────────────────────
+                  // Every OTHER partition, at the width the ENGINE cut it —
+                  // so a partition on carcass 2 is measured to the face that
+                  // will actually be there (F3.3). The field then shows the
+                  // clear light from this piece's LEFT neighbour, and typing
+                  // into it moves ONLY this piece: the number is a distance
+                  // from a face that is already where it is.
+                  const others = partitions
+                    .filter((o) => o.id !== pt.id)
+                    .map((o) => {
+                      const op = result.panels.find((pp) => pp.meta?.itemId === o.id && pp.part === 'VPART');
+                      return { x: op?.box.x ?? o.x_mm, w: op?.box.w ?? boardT };
+                    });
+                  const mine = panel?.box.x ?? pt.x_mm ?? boardT;
                   return (
                     <li key={pt.id} className="flex items-center gap-1 text-sm">
                       <span className="text-ink-400 w-6 text-xs">P{i + 1}</span>
-                      {/* ─── TURN 23 (CLAUDE.md F10.1) ───
+                      {/* ─── TURN 23 (CLAUDE.md F10.1) / TURN 24 (F11) ───
                           Owner: "the partition field measures from the
                           cabinet's outer end; I place partitions from the
-                          INSIDE." The title above already claimed the inner
-                          face and the number did not. The FIELD is the inside
-                          now — turn 21's shelf cure, on the other axis — and
-                          STORAGE DOES NOT MOVE: `xFromField` puts back exactly
-                          what `x_mm` has meant since turn 11, so a turn-22
-                          project opens with every partition where it was. */}
+                          INSIDE." Turn 23 made the field the inside face; turn
+                          24 makes it the LEFT NEIGHBOUR's face, which for P1 is
+                          that same interior face — one mapping, two cases of
+                          it, and turn 23's law subsumed rather than duplicated.
+                          STORAGE DOES NOT MOVE: `xFromChain` puts back exactly
+                          what `x_mm` has meant since turn 11, so moving P1
+                          changes the NUMBER P2 shows and nothing else. */}
                       <NumberField
                         className="cc-input w-16 text-right"
-                        value={fieldFromX(pt.x_mm ?? boardT, boardT)}
-                        title="From the INSIDE face of the left side panel to this partition's near face"
-                        onCommit={(v) => setPartitionX(unit.id, pt.id, xFromField(v, boardT))}
+                        data-partition-chain={pt.id}
+                        value={chainFromX({ x: mine, boardT, others })}
+                        title={i === 0
+                          ? 'From the INSIDE face of the left side panel to this partition’s near face'
+                          : 'From the previous partition’s face to this one’s near face — the clear bay between them'}
+                        onCommit={(v) => setPartitionX(
+                          unit.id, pt.id, xFromChain({ value: v, x: mine, boardT, others }),
+                        )}
                       />
                       {/* What it stands on, when it stands on something
                           (CLAUDE.md F5.3). A partition that has found a FIXED

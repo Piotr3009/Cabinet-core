@@ -37,7 +37,10 @@ test('F2.1 — the hinge BODY is drawn by the DOOR half, the plate by the carcas
   const carcass = block(hardware, 'function CarcassHinges(');
 
   // The body — the model, the cup, the boss and the arm — hangs off the leaf.
-  for (const piece of ['placeCup', 'placeBoss', 'placeArm', "kind: 'hinge'"]) {
+  // TURN 24 (F1.1): `kind: 'hinge'` became `kind: 'cup'` when the model split
+  // in two — this half is MEMBER A now, and the arm went back to the carcass
+  // where it is bolted. The procedural stand-ins are untouched.
+  for (const piece of ['placeCup', 'placeBoss', 'placeArm', "kind: 'cup'"]) {
     assert.match(door, new RegExp(piece.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `DoorHinges draws ${piece}`);
   }
   // …and the carcass half has none of them left.
@@ -57,7 +60,7 @@ test('F2.1 — the body is placed in the DOOR\'s frame, which is what makes it s
 
 test('F2.1 — the ROOM mounts the body inside the door group, with the specs', () => {
   const view = src('3d/UnitView.jsx');
-  const mount = view.slice(view.indexOf('<DoorHinges'), view.indexOf('<DoorHinges') + 900);
+  const mount = view.slice(view.indexOf('<DoorHinges'), view.indexOf('<DoorHinges') + 1200);
   assert.match(mount, /specs=\{hingeSpecs\}/, 'the door half resolves the same hinge the plate does');
   assert.match(mount, /storageBase=\{storageBase\}/);
   assert.match(mount, /scope=\{p\.id\}/, 'one mount per leaf, so the registry names the door');
@@ -75,10 +78,17 @@ test('F2.1 — the EDITOR mounts it the same way: one component, not a second pa
   assert.match(editor, /finish: resolveHingeFinish\(storedDesign, profile\)/);
 });
 
-test('F2.2 — the knuckle rig is NAMED as future work, not approximated', () => {
+test('F2.2 — the knuckle rig was named as future work… and turn 24 built it', () => {
   const door = src('3d/Hardware.jsx');
-  assert.match(door, /RIG, NOT A TRANSFORM/i, 'the honest scope is written down');
+  assert.match(door, /RIG, NOT A TRANSFORM/i, 'turn 23’s honest scope is still written down');
   assert.match(door, /knuckle/i);
+  // TURN 24 (CLAUDE.md F1): and the sentence that supersedes it. The rig is
+  // built, it is ONE joint, and it is named as an approximation of Blum's own
+  // seven-link cross rather than passed off as the linkage.
+  const models = src('3d/hingeModels.js');
+  assert.match(models, /one-joint approximation/i, 'the approximation is named');
+  assert.match(models, /seven-link cross|SEVEN-LINK/i, 'and what it approximates is named too');
+  assert.match(models, /forbids attempting the real four-bar|NOTHING HERE ATTEMPTS THAT/i);
 });
 
 test('F2.3 — nothing new drives the swing: it is the door\'s own open value', () => {

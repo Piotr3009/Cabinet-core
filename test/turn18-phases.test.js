@@ -27,6 +27,8 @@ import { DEFAULT_DESIGN, migrateDesign } from '../src/engine/design.js';
 import { elementFields } from '../src/engine/elements.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { useUiStore } from '../src/stores/uiStore.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const unit = (id, extra = {}) => computeCabinet({ ...defaultParamsFor(id, P), unit_num: '01', ...extra }, P);
 const store = () => useProjectStore.getState();
@@ -152,6 +154,9 @@ function withUnit(type) {
   store().loadProject({
     id: null, name: 'turn18', room: null, design: null,
   }, []);
+  // Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — and this file is
+  // about drawers, so the caliper is put on the box board first.
+  confirmDrawerBox();
   const { id, error } = store().addUnit(type);
   assert.equal(error, null, error || '');
   return id;
@@ -183,6 +188,7 @@ test('F2.1 — a BUDR2 with ITEM ROWS takes 500 and the engine returns 500/264',
 
 test('F2.1 — a WARDROBE’s drawers are still items, and still take the wardrobe route', () => {
   const id = withUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 2);
   const rows = store().units.find((u) => u.id === id).params.sections[0].items
     .filter((i) => i.kind === 'drawer')
@@ -344,7 +350,7 @@ test('F5.2 — the top is two rails, and the FRONT one lies flat', () => {
 test('F5.2 — the flat rail takes its own screw pattern, and the sink keeps its', () => {
   const r = unit('OVEN_BASE');
   const TR = P.ovenUnit.topRails;
-  const S = r.params.board_t / 2 + P.puzzle.centrelineExtra;
+  const S = r.params.board_t / 2;   // turn 24 (CLAUDE.md F4)
   const rows = r.drills.filter((d) => d.panel === 'BUL' && d.kind === 'rail_screw');
   // Two on the flat rail's centreline, and two down the back rail's edge.
   const flat = rows.filter((d) => Math.abs(d.y - (r.params.height - S)) < 1e-9).map((d) => d.x).sort((a, b) => a - b);

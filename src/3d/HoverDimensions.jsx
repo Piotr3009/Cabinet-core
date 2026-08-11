@@ -57,7 +57,9 @@ function Stroke({
  *   panelId  the VPART being pointed at, or null for "nothing is hovered"
  *   profile
  */
-export default function HoverDimensions({ result, panelId, profile }) {
+export default function HoverDimensions({
+  result, panelId, profile, onLeave = null,
+}) {
   const style = useMemo(() => dimensionStyle(profile), [profile]);
 
   const drawing = useMemo(() => {
@@ -75,6 +77,8 @@ export default function HoverDimensions({ result, panelId, profile }) {
 
     const gaps = bayGapsAround({ at: { x: me.box.x, w: me.box.w }, walls });
     if (!gaps.length) return null;
+    // Turn 24 (CLAUDE.md F10.1): the piece's own box, for the magnet below.
+    const own = me.box;
 
     // Drawn across the FRONT of the partition, at its own mid-height: the face
     // a joiner is looking at when he points at it, and clear of the shelves.
@@ -85,14 +89,46 @@ export default function HoverDimensions({ result, panelId, profile }) {
         from: [gap.from, y], to: [gap.to, y], offset: 0, style,
       }))
       .filter(Boolean);
-    return { rows, z, mid: y };
+    return { rows, z, mid: y, own };
   }, [panelId, result, style]);
 
   if (!drawing) return null;
   const weight = mm(style.strokeMm * 2);
 
+  const magnet = mm(style.hoverMagnetMm);
+
   return (
     <group userData={{ ccHelper: true, ccNoBounds: true, ccHoverDimension: panelId }}>
+      {/* ─── TURN 24 (CLAUDE.md F10.1): THE MAGNET ──────────────────────────
+          Owner: turn 23's arrows vanish at a pixel's twitch. On this surface a
+          twitch is a ray sliding off an 18 mm board, and tying the set to the
+          board's own `onPointerOut` is what made it happen.
+          "Once shown, the arrow set STAYS while the cursor remains within
+          `profile.editor.hoverMagnetMm` of the feature — leave the radius,
+          they fade." So this is that radius, as a volume: the partition's own
+          box grown by the magnet on every side, invisible but raycast, and
+          MOUNTED ONLY WHILE THE SET IS SHOWING — so it can never swallow a
+          click on a cabinet nobody is measuring. */}
+      <mesh
+        position={[
+          mm(drawing.own.x + drawing.own.w / 2),
+          mm(drawing.own.y + drawing.own.h / 2),
+          mm(drawing.own.z + drawing.own.d / 2),
+        ]}
+        userData={{ ccHelper: true, ccNoBounds: true, ccHoverMagnet: panelId }}
+        onPointerOut={() => onLeave?.()}
+      >
+        <boxGeometry args={[
+          mm(drawing.own.w) + magnet * 2,
+          mm(drawing.own.h) + magnet * 2,
+          mm(drawing.own.d) + magnet * 2,
+        ]}
+        />
+        {/* Transparent rather than `visible={false}`: three.js does not raycast
+            an invisible object at all, and a magnet nothing can point at is not
+            a magnet. */}
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
       {drawing.rows.map((row, i) => (
         // eslint-disable-next-line react/no-array-index-key -- a bay has no id of its own
         <group key={i} userData={{ ccHelper: true, ccNoBounds: true }}>

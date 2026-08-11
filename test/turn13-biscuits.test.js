@@ -183,7 +183,26 @@ for (const c of GOLDEN.cases) {
       // a record of the subtraction instead of a blank.
       assert.ok(want.screws.length + want.marks.length > 0, 'the fixture records something to remove');
       assert.deepEqual(screwsOf(result, want.panel), [], `${c.id} ${want.panel} still carries biscuit screws`);
-      assert.deepEqual(marksOf(panel), [], `${c.id} ${want.panel} still carries biscuit marks`);
+      // ─── TURN 24 (CLAUDE.md F7): AND THE SET COMES BACK, ON ITS OWN JOINT ──
+      //
+      // Turn 23 removed the PARTITION's borrowed biscuits, and every one of the
+      // entities this fixture worked out by hand is still absent. What turn 24
+      // adds is a different joint on a different piece: a FIX SHELF is biscuited
+      // to the boards it lands on, which is the consumer `engine/biscuits.js`
+      // was written for. So the assertion is not "no marks at all" — that would
+      // now be asserting the absence of the owner's own joint — it is "not ONE
+      // of the marks the partition's joint put there", named position by named
+      // position, which is what this file has always been about.
+      const here = marksOf(panel);
+      for (const gone of want.marks) {
+        assert.equal(
+          here.some((m) => m.layer === gone.layer
+            && m.from[0] === gone.from[0] && m.from[1] === gone.from[1]
+            && m.to[0] === gone.to[0] && m.to[1] === gone.to[1]),
+          false,
+          `${c.id} ${want.panel} still carries the partition's mark at ${gone.from}`,
+        );
+      }
     }
   });
 }

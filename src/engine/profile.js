@@ -220,7 +220,24 @@ export const DEFAULT_CABINET_PROFILE = {
     middleTabBelow: 346,
     screwDiameter: 3,
     screwFromEnd: 50,          // screws at 50, mid, length−50
-    centrelineExtra: 0.5,      // screw/socket centreline = G/2 + this
+    // ─── TURN 24 (CLAUDE.md F4): `centrelineExtra` IS GONE ─────────────────
+    //
+    // It read `centrelineExtra: 0.5` and put every screw and socket centreline
+    // at `G/2 + 0.5`. The owner: he does not remember it, it is wrong, and it
+    // skews the whole calculation. A screw driven into the EDGE of a board goes
+    // down the middle of that board — 9.00 on an 18, 9.25 on a measured 18.5 —
+    // and half a millimetre of nothing on top of it is half a millimetre of
+    // nothing in every DXF the workshop cuts.
+    //
+    // The law is now `thicknessOf(part) / 2` (engine/thickness.js), which is
+    // also what makes F3's measured board reach the drilling: the axis follows
+    // the caliper because it is derived from it rather than from a nominal with
+    // a fudge on it.
+    //
+    // THE DELTA IS GLOBAL AND IT IS NAMED: every DXF containing a screw axis
+    // shifts that axis by −0.5. Golden fixtures and fingerprints REGENERATE
+    // under this name and no other; `scripts/cnc-axis-classifier.mjs` is the
+    // proof of innocence, and `verify/t24/cnc-export-identity.md` prints it.
     layers: {
       outline: 'OUTLINE',
       socket: 'PUZZLE_SOCKET',
@@ -257,6 +274,10 @@ export const DEFAULT_CABINET_PROFILE = {
     extensionMm: 4,            // how far the extension line runs past it
     gapMm: 2,                  // …and the gap it leaves at the feature itself
     minSpanMm: 0.5,            // under this there is nothing to dimension
+    // The magnet that holds a shown set on screen is `editor.hoverMagnetMm` —
+    // it is a property of the TOOL rather than of the drawing's ink, and
+    // CLAUDE.md F10.1 names it there. `dimensionStyle` reads it through, so
+    // both surfaces still get one answer from one call.
   },
 
   // ─── THE BACK HOLDS EVERY PARTITION (turn 23, CLAUDE.md F6) ─────────────
@@ -370,6 +391,14 @@ export const DEFAULT_CABINET_PROFILE = {
       boxWidthClearance: 10,   // box W = internal W − this − drawer-panel reduction
       frontOversize: 4,        // front W = box W + this (2 mm each side)
       boxFrontBoards: 4,       // box front/back length = W − 4×G − clearance − reduction
+      // ─── TURN 24 (CLAUDE.md F3.2): WHICH OF THE FOUR IS WHICH ─────────────
+      // The LISP's four board thicknesses are two DIFFERENT boards: the two
+      // CARCASS sides the box lives between, and the two of the BOX'S OWN
+      // sides the front is cut to fit between. One number could say so only
+      // while both boards measured 18. This says which two are the carcass's;
+      // the remainder is the box's, so a workshop that changes the total
+      // changes one number and the split follows.
+      boxFrontCarcassBoards: 2,
       boxFrontClearance: 10,
       boxFrontHeightDeduction: 15,   // box front H = box side H − 15 − G − 1
       boxFrontHeightExtra: 1,
@@ -739,6 +768,9 @@ export const DEFAULT_CABINET_PROFILE = {
     sideRatio: 0.7,             // box side height = round(0.7 × front height)
     boxWidthClearance: 10,      // box W = internal W − 10
     boxFrontBoards: 4,          // box front/back length = W − 4G − 10
+    // Turn 24 (CLAUDE.md F3.2): two of the four are the CARCASS's sides and
+    // two are the BOX's own. See wardrobe.drawers above for the derivation.
+    boxFrontCarcassBoards: 2,
     boxFrontClearance: 10,
     boxFrontHeightDeduction: 15,
     boxFrontHeightExtra: 1,
@@ -886,7 +918,7 @@ export const DEFAULT_CABINET_PROFILE = {
       frontWidth: 100,
       // ─── WHERE THE FLAT RAIL'S SCREWS GO ───────────────────────────────
       // A flat rail is screwed through the side panel into its EDGE, so the row
-      // is on the board's own centreline (G/2 + centrelineExtra, from the top
+      // is on the board's own centreline (G/2, from the top
       // of the carcass) and the positions are measured along the rail's WIDTH,
       // front to back. That much is the app's ordinary horizontal-board rule.
       //
@@ -1979,18 +2011,46 @@ export const DEFAULT_CABINET_PROFILE = {
         // block rather than in the renderer. Sane metallic defaults — a
         // bright plate and a dark one — not a measurement of anybody's
         // sample.
+        //
+        // ─── TURN 24 (CLAUDE.md F12): …AND SOMETHING TO REFLECT ────────────
+        // The owner compared the STEP-grade model to the catalogue photo:
+        // still far. Nickel without an environment is GREY PAINT — a metal is
+        // a mirror, and a mirror with nothing in front of it renders as a flat
+        // swatch whatever its metalness says. `envMapIntensity` is how much of
+        // the hardware's own probe (3d/hardwareEnv.js) each finish takes, and
+        // `clearcoat` is the thin lacquer over a plated part. They are here,
+        // beside the colour, because they are the same kind of fact and a
+        // workshop tunes them in one block rather than in the renderer.
+        //
+        // NOTHING ELSE IN THE ROOM SEES THE PROBE. `scene.environment` stays
+        // null and the map attaches per MATERIAL — the no-HDRI philosophy
+        // exists for the LACQUERS and stays for them (F12.2).
         finishes: [
           {
             id: 'nickel',
             label: 'Nickel',
             hint: 'The bright plated finish — the shop’s default.',
-            material: { colour: '#c9ccd1', metalness: 0.95, roughness: 0.28 },
+            material: {
+              colour: '#c9ccd1',
+              metalness: 0.95,
+              roughness: 0.22,
+              envMapIntensity: 1.35,
+              clearcoat: 0.25,
+              clearcoatRoughness: 0.1,
+            },
           },
           {
             id: 'onyx',
             label: 'Onyx',
             hint: 'The dark finish. Same hinge, same drilling, black.',
-            material: { colour: '#2a2b2e', metalness: 0.9, roughness: 0.38 },
+            material: {
+              colour: '#2a2b2e',
+              metalness: 0.9,
+              roughness: 0.34,
+              envMapIntensity: 1.1,
+              clearcoat: 0.2,
+              clearcoatRoughness: 0.15,
+            },
           },
         ],
         defaultFinish: 'nickel',
@@ -2067,6 +2127,62 @@ export const DEFAULT_CABINET_PROFILE = {
         // If a real render shows the release lever on the wrong side, flip
         // this ONE letter — nothing else.
         fileHand: 'R',
+
+        // ─── TURN 24 (CLAUDE.md F1): THE HINGE BREAKS IN THE MIDDLE ────────
+        //
+        // Owner's verdict on turn 23: the whole model rides the leaf, and it
+        // must BREAK — cup side with the door, body side with the plate — or,
+        // failing that, disappear when open. A better FILE will not fix it: a
+        // GLB is a rigid cast. A RIG will.
+        //
+        // ONE JOINT, NAMED AS AN APPROXIMATION. A real CLIP top is a
+        // SEVEN-LINK cross (Blum's own drawings: four bars, three couplers)
+        // and the cup's path is a curve nobody here has the geometry for.
+        // This is ONE hinge at the arm's front pivot, turned by the door's own
+        // opening angle so the arm visually follows the cup into the opening
+        // while its rear stays at the plate. CLAUDE.md F1.2 asks for exactly
+        // that and forbids attempting the real four-bar; the name is in the
+        // code beside the maths (3d/hingeModels.js `foldMemberB`).
+        rig: {
+          // The FLAG (F1.4). ON, the model folds. OFF — the owner's explicit
+          // fallback if his eye test rejects the fold — an opening door HIDES
+          // the body beyond `hideBeyondDeg` and shows the plate only, which is
+          // honest in a way a wrong pose is not.
+          enabled: true,
+          hideBeyondDeg: 15,
+
+          // ─── THE SPLIT, BY NODE NAME (F1.1 / F1.3) ──────────────────────
+          //
+          // The five components of the STEP-derived standard model, measured
+          // per node, z in FILE millimetres (verify/t24/rig-members.md):
+          //
+          //   bau0015089612   35.3 … 51.3    5216 tris   cup
+          //   bau0015088783   39.4 … 50.1     332        clip cap
+          //   bau0015088853   31.1 … 44.9     416        link cover
+          //   bau0015088251  −28.0 … 46.2    2634        arm + rear body
+          //   bau0019416036  −29.4 … 22.5     364        lever
+          //
+          // MEMBER A parents to the DOOR and rides the leaf exactly as turn 23
+          // left it. MEMBER B parents to the CARCASS beside the plate and
+          // folds at the axis below.
+          //
+          // A name that is in NEITHER list falls back to the z threshold —
+          // `z > 30 ⇒ member A` — which is the honest answer for a family
+          // nobody has opened yet. It is a FALLBACK and not the rule, and
+          // `bau0015088251` is why: that node spans −28 … 46.2, so a threshold
+          // asked about its box would split the arm down the middle.
+          memberA: ['bau0015089612', 'bau0015088783', 'bau0015088853'],
+          memberB: ['bau0015088251', 'bau0019416036'],
+          zThresholdMm: 30,
+
+          // ─── THE AXIS (F1.2) ────────────────────────────────────────────
+          // Horizontal, parallel to the hinge row — the file's Y — at the
+          // arm's front pivot. Starting numbers, in FILE millimetres, and the
+          // first person to see the fold beside a real cabinet corrects THESE
+          // TWO and nothing else.
+          axis: { z: 33.5, x: -7.75 },
+        },
+
         // A cup hinge is a small object. A file whose longest axis is bigger
         // than this is not a CLIP top and the view draws the procedural body
         // instead of something the wrong size (the runners' `lengthTolerance`
@@ -2137,7 +2253,11 @@ export const DEFAULT_CABINET_PROFILE = {
         // the two, they are two entries with a `material` each, exactly like
         // the hinge's nickel and onyx above — and nothing else changes.
         finishes: [],
-        finish: { colour: '#b9bcc0', metalness: 0.9, roughness: 0.35 },
+        // Turn 24 (CLAUDE.md F12): the runner takes the same probe through the
+        // same helper — one override function, two families, as turn 23 wrote.
+        finish: {
+          colour: '#b9bcc0', metalness: 0.9, roughness: 0.3, envMapIntensity: 1.2,
+        },
         plasticMaterials: ['plastic', 'pom', 'nylon', 'rubber', 'cap'],
         plastic: { colour: '#1c1c1e', metalness: 0.05, roughness: 0.55 },
 
@@ -2500,6 +2620,19 @@ export const DEFAULT_CABINET_PROFILE = {
     mmStep: 0.5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
+    // ─── TURN 24 (CLAUDE.md F10): THE HOVER ARROWS GROW A MAGNET ───────────
+    //
+    // Owner: turn 23's arrows vanish at a pixel's twitch. They did — the set
+    // was tied to `onPointerLeave` on a hairline shape, so the smallest hand
+    // movement off the feature took the measurement away mid-read.
+    //
+    // Once SHOWN, the set STAYS while the cursor is within this much of the
+    // feature; leave the radius and they fade. In SHEET millimetres, like the
+    // part editor's own magnet above and for the same reason: a print is a
+    // drawing at a known scale and a joiner thinks in millimetres on it. The
+    // 3-D scene uses the same number in the cabinet's own millimetres.
+    hoverMagnetMm: 5,
+
     // ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET ────────────────────────
     //
     // Owner: dragging a shelf near the height of a shelf in the next bay — or
@@ -2585,6 +2718,57 @@ export const DEFAULT_CABINET_PROFILE = {
       // not a piece of the furniture.
       markerPx: 11,
     },
+
+    // ─── THE PENCIL ON A PRINT (turn 24, CLAUDE.md F2) ────────────────────
+    //
+    // The part editor draws with the MOUSE now, and the cursor carries osnap
+    // markers — AutoCAD's language, which the ruler above already speaks. What
+    // is here is the WORKSHOP's side of it: how big the magnet is, how big the
+    // marker is, and what a hole gets when nobody has said otherwise.
+    partSnap: {
+      // ─── ONE NUMBER (F2.3) ───
+      // "magnet radius ONE number in `profile.js` (sheet-space equivalent of
+      // ~5 mm)". It is in the PART's own millimetres and not in pixels, unlike
+      // the ruler's, and that is deliberate: a print is a drawing at a known
+      // scale and a joiner setting out on it thinks in millimetres. The detail
+      // window's zoom is bounded (10 mm … 5 m across), so 5 mm never becomes
+      // either unusable or hair-trigger.
+      magnetMm: 5,
+      // The marker, in SCREEN pixels — it is a piece of the tool, drawn the
+      // same size however far in the drawing is zoomed.
+      markerPx: 12,
+      // How near two features have to be to count as sharing a line, for the
+      // live horizontal/vertical dimensions (F2.4). The workshop's own grid.
+      alignMm: 0.5,
+    },
+
+    // ─── WHAT A DRILL IS, UNTIL SOMEBODY SAYS OTHERWISE (F2.6) ────────────
+    //
+    // "Drill asks ⌀ and depth ONCE per session in a compact popover on first
+    // placement (defaults from the picked layer's convention), then stamps
+    // repeatedly." These are those conventions, by LAYER NAME, because the
+    // layer IS the convention in this app: `SCREWS_3MM` is a ⌀3 and
+    // `SHELVES_7_5MM` is a ⌀7.5, and a joiner who picks the layer has already
+    // said most of what the popover asks.
+    //
+    // `depth` is a THROUGH hole where the number is 0 — which is what a screw
+    // through a side panel is, and what the export has always written.
+    drillDefaults: {
+      SCREWS_3MM: { d: 3, depth: 0 },
+      SHELVES_7_5MM: { d: 7.5, depth: 12 },
+      HINGES_5MM: { d: 5, depth: 12 },
+      FRONT_HINGES_35MM: { d: 35, depth: 12.5 },
+      FRONT_HINGES_3MM: { d: 3, depth: 0 },
+      PUZZLE_HOLES_7_5MM: { d: 7.5, depth: 0 },
+      RUNNERS_3MM: { d: 3, depth: 0 },
+      BISCUIT_4MM: { d: 4, depth: 12 },
+      // A layer the table has not met. Never invented per hole: a joiner who
+      // wants something else types it in the popover once and stamps.
+      fallback: { d: 5, depth: 12 },
+    },
+    // …and what a DOWEL LINE steps at when nobody has typed a pitch. 32 is the
+    // system-32 line every European cabinet is drilled on.
+    dowelPitchMm: 32,
   },
 
   // ─── Distance arrows on the canvas (turn 3 phase 8; redrawn turn 5, #34) ───
@@ -2874,6 +3058,23 @@ export function migrateCabinetProfile(profile) {
             ...D.hardware.hinge.cliptop.plateOrigin,
             ...profile.hardware?.hinge?.cliptop?.plateOrigin,
           },
+          // Turn 24 (CLAUDE.md F1): the rig. Key by key, because a profile
+          // saved before this turn has no member lists at all and a hinge that
+          // could not be split would be a hinge that never folds. The MEMBER
+          // LISTS come back from the app for the same reason `plates` does:
+          // which node of Blum's own export is the cup is a fact about the
+          // FILE, not a workshop preference — the flag and the axis are the
+          // two things a workshop tunes, and both survive the merge.
+          rig: {
+            ...D.hardware.hinge.cliptop.rig,
+            ...profile.hardware?.hinge?.cliptop?.rig,
+            memberA: D.hardware.hinge.cliptop.rig.memberA,
+            memberB: D.hardware.hinge.cliptop.rig.memberB,
+            axis: {
+              ...D.hardware.hinge.cliptop.rig.axis,
+              ...profile.hardware?.hinge?.cliptop?.rig?.axis,
+            },
+          },
         },
       },
       runner: {
@@ -2948,6 +3149,11 @@ export function migrateCabinetProfile(profile) {
       // a profile saved before the ruler had snaps comes back with all three
       // numbers rather than with a magnet of `undefined` pixels.
       ruler: { ...D.editor.ruler, ...profile.editor?.ruler },
+      // Turn 24 (CLAUDE.md F2): the part editor's magnet and the drill's
+      // conventions, merged key by key like every other nested block — a
+      // profile saved before this turn comes back able to draw.
+      partSnap: { ...D.editor.partSnap, ...profile.editor?.partSnap },
+      drillDefaults: { ...D.editor.drillDefaults, ...profile.editor?.drillDefaults },
       explode: { ...D.editor.explode, ...profile.editor?.explode },
       history: { ...D.editor.history, ...profile.editor?.history },
     },

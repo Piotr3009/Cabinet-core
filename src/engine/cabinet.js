@@ -39,6 +39,11 @@ import {
   corniceOption, corniceOrder, corniceProjection, corniceRise, takesCornice,
 } from './cornice.js';
 import { partitionBackScrews, partitionBackSpec } from './partitionFixings.js';
+// Turn 24 (CLAUDE.md F7): the owner's butt-joint set, given the consumer it
+// was written for — a FIX shelf.
+import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
+// Turn 24 (CLAUDE.md F3): G is a property of the PART, and this is the door.
+import { partitionSlot, thicknessOf } from './thickness.js';
 
 // ─── Hinge centres (SKYLON_COMMON calcHingePositions*) ───
 
@@ -346,6 +351,39 @@ function normalizeParams(raw, profile) {
   const type = getUnitType(p.type);
   const G = Number(p.board_t) || profile.board.thickness;
   const frontT = Number(p.front_t) || profile.front.thickness;
+  // ─── TURN 24 (CLAUDE.md F3.2): G IS A PROPERTY OF THE PART ────────────────
+  //
+  // The owner's law: the manufacturer never tells you the board is really 18.5
+  // — the CALIPER does — and the engine must compute from the caliper. So a
+  // project hands down SIX measured numbers rather than one nominal, and every
+  // law that mixes two parts takes the RIGHT side's.
+  //
+  // `board_t` and `front_t` are still the doors carcass 1 and front 1 come in
+  // through, because they are what every kit call, every golden fixture and
+  // every saved project already speaks — the slots simply say the same thing
+  // more precisely, and a call that passes none of them resolves to exactly
+  // these two. That is what keeps this phase's fingerprint delta at ZERO.
+  //
+  // The DRAWER BOX is the one slot with a default of its own: a box has been
+  // cut from `wardrobe.drawers.boxSideThickness` since turn 1 while its
+  // GEOMETRY was worked out from `G`, which is the very disagreement F3.2 is
+  // about. One number now, and with the defaults it is the same 18.
+  const said = p.thickness_slots && typeof p.thickness_slots === 'object' ? p.thickness_slots : {};
+  const slotT = (id, fallback) => (Number(said[id]) > 0 ? Number(said[id]) : fallback);
+  const thicknesses = {
+    carcass1: slotT('carcass1', G),
+    carcass2: slotT('carcass2', G),
+    carcass3: slotT('carcass3', G),
+    front1: slotT('front1', frontT),
+    front2: slotT('front2', frontT),
+    box: slotT('box', Number(profile.wardrobe?.drawers?.boxSideThickness) || G),
+  };
+  // CARCASS 1 *IS* G, and FRONT 1 *IS* the front board. Not "a slot beside
+  // them": the whole point of F3.2 is that there is one number per board and
+  // every law reads the right one, so the engine's own `G` is resolved through
+  // the slots rather than left as a second answer that could disagree.
+  const carcassG = thicknesses.carcass1;
+  const frontBoardT = thicknesses.front1;
   const warnings = [];
 
   let height = Number(p.height) || 0;
@@ -471,8 +509,13 @@ function normalizeParams(raw, profile) {
     width: Number(p.width) || 0,
     height,
     depth: Number(p.depth) || 0,
-    G,
-    frontT,
+    G: carcassG,
+    frontT: frontBoardT,
+    // Turn 24 (CLAUDE.md F3.2): the six measured slots, resolved once. Read
+    // through `thicknessOf(part, cfg.thicknesses)` — the ONE door — so that a
+    // law that needs the other side's board asks for it by name.
+    thicknesses,
+    GB: thicknesses.box,
     frontType: p.front_type || profile.front.defaultType,
     unitNum: p.unit_num == null ? '01' : String(p.unit_num),
     hinge,
@@ -837,7 +880,7 @@ export function computeCabinet(params, profileOverride) {
   const cfg = normalizeParams(params, P);
   const warnings = [...cfg.warnings];
 
-  const { width: W, height: H, depth: D, G, frontT, type, unitNum } = cfg;
+  const { width: W, height: H, depth: D, G, GB, frontT, type, unitNum } = cfg;
   const C = P.carcass;
   const codes = P.csv.codes;
   const pz = P.puzzle;
@@ -853,7 +896,21 @@ export function computeCabinet(params, profileOverride) {
   const topH = internalDepth;
   const backW = W;
   const backH = H;
-  const shelfW = W - C.shelfWidthBoards * G - C.shelfWidthClearance;
+  // ─── TURN 24 (CLAUDE.md F6): A SHELF'S WIDTH FOLLOWS ITS TYPE ────────────
+  //
+  // The owner's rule, now law: a FIX shelf is the FULL CLEAR LIGHT — wall to
+  // wall, because it is screwed in and never has to move — and an ADJUSTABLE
+  // one is that light less `shelfWidthClearance`, 2 mm a side, so it slides.
+  //
+  // On a 600 carcass: fix 564, adjustable 560.
+  //
+  // The engine's own number has ALWAYS been `W − 2G − 4`, which is exactly the
+  // adjustable law — so every shelf in every project and every golden default
+  // maps to ADJUSTABLE with ZERO delta, and the fix width appears only where a
+  // shelf is switched to fix. Both laws scale from the LIGHT and never from a
+  // constant, which is what makes them right in a bay as well as in a carcass.
+  const clearLight = W - C.shelfWidthBoards * G;
+  const shelfW = clearLight - C.shelfWidthClearance;
   // The sink's back panel sits 50 mm forward INSIDE the carcass, so its shelves
   // lose that much depth plus the panel itself (KIT_SINK L425-426).
   const SK = P.sinkUnit;
@@ -986,7 +1043,19 @@ export function computeCabinet(params, profileOverride) {
     drawerPanelD = D - G - DR.setback;
     fillerH = drawerPanelH;
     boxSetback = DR.setback + frontT;
-    boxFrontLen = W - DR.boxFrontBoards * G - DR.boxFrontClearance - drawerReduction;
+    // ─── TURN 24 (CLAUDE.md F3.2): TWO SIDES, TWO BOARDS ────────────────────
+    // `boxFrontBoards: 4` is "W − 4×G" in the LISP, and the four are not one
+    // board four times: TWO of them are the CARCASS sides the box lives
+    // between, and TWO are the BOX's own sides the front is cut to fit
+    // between. With the workshop's defaults both are 18 and the arithmetic is
+    // the LISP's to the millimetre; with a 18.5 carcass and an 18 box they are
+    // different numbers, and pretending otherwise is how a box comes out 1 mm
+    // wrong. `boxFrontCarcassBoards` is the carcass half; whatever is left of
+    // the LISP's total is the box's.
+    boxFrontLen = W
+      - DR.boxFrontCarcassBoards * G
+      - Math.max(0, DR.boxFrontBoards - DR.boxFrontCarcassBoards) * GB
+      - DR.boxFrontClearance - drawerReduction;
     bottomW = boxFrontLen + DR.bottomOversize;
     bottomD = szufDl;
 
@@ -1000,7 +1069,9 @@ export function computeCabinet(params, profileOverride) {
       // i.e. "as before, off the side" (200 → 164 → 130 with the defaults).
       const side = drawerHeights[i] - DR.frontToSideDelta;
       boxSideH.push(side);
-      boxFrontHs.push(side - DR.boxFrontHeightDeduction - G - DR.boxFrontHeightExtra);
+      // …and the `− G` here is the BOX BOTTOM, which the front stands on top
+      // of. The box's own board (F3.2), never the carcass's.
+      boxFrontHs.push(side - DR.boxFrontHeightDeduction - GB - DR.boxFrontHeightExtra);
     }
     // ─── TURN 21 (CLAUDE.md F1.1): TWO NAMES, TWO MEANINGS ──────────────────
     //
@@ -1044,7 +1115,12 @@ export function computeCabinet(params, profileOverride) {
     }
     const boxW = internalWidth - B.boxWidthClearance;
     const frontWidth = W - B.frontWidthDeduction;
-    const boxLen = W - B.boxFrontBoards * G - B.boxFrontClearance;
+    // The same two sides as the wardrobe's box above (turn 24, F3.2): two
+    // carcass boards and two of the box's own.
+    const boxLen = W
+      - B.boxFrontCarcassBoards * G
+      - Math.max(0, B.boxFrontBoards - B.boxFrontCarcassBoards) * GB
+      - B.boxFrontClearance;
     // Front i's base above the carcass floor: the fronts overlay the base panel,
     // so front 1 starts at 0 while its RUNNER row still clears the base by G
     // (KIT_BUDR_FULL L712-714).
@@ -1095,8 +1171,10 @@ export function computeCabinet(params, profileOverride) {
       if (boxCeiling == null) return wanted;
       return Math.min(wanted, Math.max(0, boxCeiling - runnerRows[i]));
     });
-    const boxFrontH = sideHs.map((s) => s - B.boxFrontHeightDeduction - G - B.boxFrontHeightExtra);
-    if (boxCeiling != null && sideHs.some((s) => s <= B.boxFrontHeightDeduction + G + B.boxFrontHeightExtra)) {
+    // Turn 24 (CLAUDE.md F3.2): the `− G` is the BOX BOTTOM the front stands
+    // on, so it is the box's own board and not the carcass's.
+    const boxFrontH = sideHs.map((s) => s - B.boxFrontHeightDeduction - GB - B.boxFrontHeightExtra);
+    if (boxCeiling != null && sideHs.some((s) => s <= B.boxFrontHeightDeduction + GB + B.boxFrontHeightExtra)) {
       warnings.push({
         code: 'APPLIANCE_DRAWER_TOO_SHORT',
         message: `The opening under the appliance shelf leaves ${roundTo(boxCeiling - runnerRows[0], 0)} mm above the runner row — too little for a drawer box.`,
@@ -1585,7 +1663,8 @@ export function computeCabinet(params, profileOverride) {
       cnc: railCnc(false),
       meta: { index: 2 },
     }));
-    const S = G / 2 + pz.centrelineExtra;
+    // Turn 24 (CLAUDE.md F4): the board's own centre line, and nothing on top.
+    const S = thicknessOf('BUL', cfg.thicknesses) / 2;
     const backTopScrews = [
       { x: pz.screwFromEnd, y: S }, { x: pz.screwFromEnd, y: W - S },
       { x: fridge.backTopH - pz.screwFromEnd, y: S }, { x: fridge.backTopH - pz.screwFromEnd, y: W - S },
@@ -1627,7 +1706,16 @@ export function computeCabinet(params, profileOverride) {
   const verticalItems = (cfg.items || [])
     .filter((i) => i.kind === 'partition' && Number.isFinite(Number(i.x_mm)))
     .sort((a, b) => Number(a.x_mm) - Number(b.x_mm));
-  const bays = widthZones({ width: W, boardT: G, partitions: verticalItems });
+  // Turn 24 (CLAUDE.md F3.3): each partition is measured at its OWN slot's
+  // board, so the bay a shelf is cut to fit is the light that will actually be
+  // there. Nothing said = carcass 1, which is every project before this turn.
+  const bays = widthZones({
+    width: W,
+    boardT: G,
+    partitions: verticalItems.map((i) => ({
+      ...i, thickness_mm: thicknessOf(partitionSlot(i), cfg.thicknesses),
+    })),
+  });
 
   for (let i = 1; i <= numShelves; i += 1) {
     const y = shelfRows[i - 1] ?? (G + ((H - 2 * G) / (numShelves + 1)) * i);
@@ -1643,10 +1731,14 @@ export function computeCabinet(params, profileOverride) {
     const bay = item?.zone == null || !Number.isFinite(Number(item.zone))
       ? null
       : bays[Math.trunc(Number(item.zone))] || null;
-    const shelfWHere = bay ? bay.size - C.shelfWidthClearance : shelfW;
-    const shelfXHere = bay
-      ? bay.from + C.shelfWidthClearance / 2
-      : G + C.shelfWidthClearance / 2;
+    // Turn 24 (CLAUDE.md F6): the light this shelf stands in — the bay's, or
+    // the whole carcass's — and then the type decides how much of it the board
+    // takes. Per-bay lights (partitions) are respected exactly as before.
+    const lightHere = bay ? bay.size : clearLight;
+    const lightFrom = bay ? bay.from : G;
+    const fixHere = isShelfLocked(item);
+    const shelfWHere = fixHere ? lightHere : lightHere - C.shelfWidthClearance;
+    const shelfXHere = fixHere ? lightFrom : lightFrom + C.shelfWidthClearance / 2;
     // Every shelf may be pulled out to the face on its own (turn 8, F4). With
     // nothing said it is the LISP's own 20 mm, which is what a bare kit call —
     // and every golden fixture — gets.
@@ -1782,13 +1874,22 @@ export function computeCabinet(params, profileOverride) {
       // won depended on the order they were added in. SPAN decides: a shelf
       // whose run crosses this partition's plane may carry it, and a shelf
       // living inside a bay touches nothing.
+      // ─── TURN 24 (CLAUDE.md F3.3): THE PARTITION HAS A SLOT ───────────────
+      // Owner: "grubość przegrody się nie zmienia" — a partition is a carcass
+      // board standing on its end, and WHICH carcass board is a choice rather
+      // than a guess. Carcass 1 is what a partition saved before this turn
+      // reads, so nothing that exists is re-cut. Its 3-D, its CNC, the shelf it
+      // may stand under and the bay lights all flow from here.
+      const slotG = thicknessOf(partitionSlot(item), cfg.thicknesses);
       const crossing = shelfRuns
-        .filter((r) => r.item && shelfCrossesPartition(r.run, { x, thickness: G }))
+        .filter((r) => r.item && shelfCrossesPartition(r.run, { x, thickness: slotG }))
         .map((r) => r.item);
       const span = partitionSpan({
         floor: G,
         ceiling: H - G,
         shelves: crossing,
+        // The board a partition is INTERRUPTED by is the SHELF's, not its own:
+        // `partitionSpan` measures the run between two horizontal boards.
         boardT: G,
         depth: ownDepth,
         fullDepth: internalDepth,
@@ -1796,7 +1897,7 @@ export function computeCabinet(params, profileOverride) {
       if (span.height <= 0) break;
       n += 1;
       panels.push(panel({
-        id: `VPART-${n}`, part: 'VPART', role: 'shelf', w: span.height, h: span.depth, thickness: G,
+        id: `VPART-${n}`, part: 'VPART', role: 'shelf', w: span.height, h: span.depth, thickness: slotG,
         // One long edge is seen from the room when the doors are open — the same
         // edge a shelf shows, and it is banded for the same reason.
         edgeCode: codes.right,
@@ -1805,14 +1906,36 @@ export function computeCabinet(params, profileOverride) {
           x,
           y: span.from,
           z: D - span.front_mm - span.depth,
-          w: G,
+          w: slotG,
           h: span.height,
           d: span.depth,
         },
-        cnc: rectGeometry(span.height, span.depth),
+        // ─── TURN 24 (CLAUDE.md F8): THE PARTITION LIES ALONG THE GRAIN ────
+        //
+        // The LISP draws the partition "rotated 90" — `height × depth`, its
+        // long side across the page — and the owner's PRODUCTION law wins: the
+        // grain runs top-to-bottom like the sides, so the piece lays on the
+        // sheet in the SAME convention as BUL and BUR (`depth × height`).
+        //
+        // The board is the same board and its CUT SIZE has not moved: `w` and
+        // `h` above are what the CSV and the BOM print, exactly as a TOP —
+        // which has been drawn rotated since turn 1 — prints its own. What
+        // changes is the FRAME the outline, the label and every drilled point
+        // on this piece are expressed in, and everything downstream of it (the
+        // sheet, the per-panel DXF, `engine/joinery.js`'s 3-D placement, the
+        // detail window) reads that frame rather than carrying a copy of it.
+        cnc: {
+          rotated: true,
+          drawn_w: span.depth,
+          drawn_h: span.height,
+          ...rectGeometry(span.depth, span.height),
+        },
         meta: {
           index: n,
           vertical: true,
+          // Which board this partition is cut from — the panel says so, so the
+          // bay lights, the CNC and the properties panel are one answer.
+          slot: partitionSlot(item),
           // Turn 21 (CLAUDE.md F12.1): the two physical preconditions for
           // hanging a door on this piece, read off the piece itself.
           fullHeight: span.from <= G + 1e-9 && span.to >= H - G - 1e-9,
@@ -1909,6 +2032,9 @@ export function computeCabinet(params, profileOverride) {
     // The numbers are `profile.baseDrawerUnit`'s, read from there rather than
     // copied: they were measured off A DRAWER SIDE and not off a base unit's
     // drawer side, so there is one set of them and both kits cut to it.
+    // Turn 24 (CLAUDE.md F3.2): the groove is cut to take the BOTTOM, so it is
+    // sized by the BOTTOM's board — the BOX slot — and never by the carcass's.
+    // "A groove in the side sized by the bottom's G", in the owner's own words.
     const boxSidePockets = (len) => [
       {
         layer: 'DRAWER_RUNNER_POCKET', depth: B.runnerPocketDepth,
@@ -1917,7 +2043,7 @@ export function computeCabinet(params, profileOverride) {
       {
         layer: 'DRAWER_BOTTOM_POCKET', depth: B.bottomPocketDepth,
         x1: -B.pocketOvershoot, y1: B.runnerPocketWidth,
-        x2: len + B.pocketOvershoot, y2: B.runnerPocketWidth + G + B.bottomPocketExtra,
+        x2: len + B.pocketOvershoot, y2: B.runnerPocketWidth + GB + B.bottomPocketExtra,
       },
     ];
     for (let i = 1; i <= numDrawers; i += 1) {
@@ -1943,11 +2069,18 @@ export function computeCabinet(params, profileOverride) {
       // left above the groove, less the millimetre of air at the top); it is
       // the PICTURE that had all three boards sitting on the same line.
       const bottomY = boxY + B.runnerPocketWidth;
-      const boxWallY = bottomY + G;
-      const common = { thickness: DR.boxSideThickness, edgeCode: codes.none, edgeLen: 0 };
+      // The front and back stand ON the bottom, so this is the BOTTOM's board
+      // (turn 24, F3.2) — the box's own, never the carcass's.
+      const boxWallY = bottomY + GB;
+      // ─── TURN 24 (CLAUDE.md F3.2): ONE NUMBER FOR THE WHOLE BOX ───────────
+      // `boxSideThickness` was the box's board and `G` was used for its
+      // geometry, which is two answers to one question. The BOX SLOT is the
+      // answer now, seeded from `boxSideThickness` so a project that has not
+      // been asked cuts exactly what it cut.
+      const common = { thickness: GB, edgeCode: codes.none, edgeLen: 0 };
       panels.push(panel({
         id: `D${i}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
-        box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
+        box: { x: boxLeftX, y: boxY, z: boxZFront - szufDl, w: GB, h: sideHeight, d: szufDl },
         // Turn 17 (CLAUDE.md F4.2): which side of the box this board is. The
         // BUDR kit has said so since turn 12; the wardrobe's boxes never did,
         // so with a drawer becoming a piece a joiner can point at, its left and
@@ -1957,18 +2090,18 @@ export function computeCabinet(params, profileOverride) {
       }));
       panels.push(panel({
         id: `D${i}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: szufDl, h: sideHeight, ...common,
-        box: { x: boxLeftX + szufSzer - DR.boxSideThickness, y: boxY, z: boxZFront - szufDl, w: DR.boxSideThickness, h: sideHeight, d: szufDl },
+        box: { x: boxLeftX + szufSzer - GB, y: boxY, z: boxZFront - szufDl, w: GB, h: sideHeight, d: szufDl },
         cnc: pocketedRect(szufDl, sideHeight, boxSidePockets(szufDl)),
         meta: { drawer: i, side: 'R' },
       }));
       panels.push(panel({
         id: `D${i}-BF`, part: 'DRAWER-BOX-FRONT', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
-        box: { x: boxLeftX + DR.boxSideThickness, y: boxWallY, z: boxZFront - G, w: boxFrontLen, h: bfH, d: G },
+        box: { x: boxLeftX + GB, y: boxWallY, z: boxZFront - GB, w: boxFrontLen, h: bfH, d: GB },
         cnc: rectGeometry(boxFrontLen, bfH), meta: { drawer: i },
       }));
       panels.push(panel({
         id: `D${i}-BB`, part: 'DRAWER-BOX-BACK', role: 'drawer_box', w: boxFrontLen, h: bfH, ...common,
-        box: { x: boxLeftX + DR.boxSideThickness, y: boxWallY, z: boxZFront - szufDl, w: boxFrontLen, h: bfH, d: G },
+        box: { x: boxLeftX + GB, y: boxWallY, z: boxZFront - szufDl, w: boxFrontLen, h: bfH, d: GB },
         cnc: rectGeometry(boxFrontLen, bfH), meta: { drawer: i },
       }));
       panels.push(panel({
@@ -1976,7 +2109,7 @@ export function computeCabinet(params, profileOverride) {
         // The bottom is narrower than the box (it sits in grooves in the two
         // sides), so it is CENTRED in it. Hanging it off the left edge made a
         // wide unit look lopsided in 3D while the cut list was right.
-        box: { x: boxLeftX + (szufSzer - bottomW) / 2, y: bottomY, z: boxZFront - szufDl, w: bottomW, h: G, d: bottomD },
+        box: { x: boxLeftX + (szufSzer - bottomW) / 2, y: bottomY, z: boxZFront - szufDl, w: bottomW, h: GB, d: bottomD },
         cnc: rectGeometry(bottomW, bottomD), meta: { drawer: i },
       }));
     }
@@ -2000,7 +2133,8 @@ export function computeCabinet(params, profileOverride) {
   // BUDR: parts grouped by kind (all sides, then all box fronts/backs, then all
   // bottoms, then the fronts) — the order KIT_BUDR_FULL lays out and writes.
   if (budr) {
-    const common = { thickness: DR.boxSideThickness, edgeCode: codes.none, edgeLen: 0 };
+    // Turn 24 (CLAUDE.md F3.2): the BOX slot, for every board of the box.
+    const common = { thickness: GB, edgeCode: codes.none, edgeLen: 0 };
     const boxLeftX = G + B.boxWidthClearance / 2;
     const boxZFront = D - frontT;
     // Turn 17 (CLAUDE.md F4.3): each groove carries its DEPTH. The rectangle is
@@ -2014,7 +2148,8 @@ export function computeCabinet(params, profileOverride) {
       },
       {
         layer: 'DRAWER_BOTTOM_POCKET', depth: B.bottomPocketDepth,
-        x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot,
+        // Sized by the BOTTOM's board, which is what goes in it (turn 24, F3.2).
+        x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + GB + B.bottomPocketExtra, y2: len + B.pocketOvershoot,
       },
     ];
     // ─── TURN 21 (CLAUDE.md F1.2): THE BOX RIDES THE RUNNER'S BOTTOM ────────
@@ -2028,10 +2163,10 @@ export function computeCabinet(params, profileOverride) {
     for (let i = 1; i <= budr.count; i += 1) {
       const sh = budr.sideHs[i - 1];
       const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-      for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - DR.boxSideThickness]]) {
+      for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - GB]]) {
         panels.push(panel({
           id: `D${i}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
-          box: { x, y: boxY, z: boxZFront - budr.depth, w: DR.boxSideThickness, h: sh, d: budr.depth },
+          box: { x, y: boxY, z: boxZFront - budr.depth, w: GB, h: sh, d: budr.depth },
           // Drawn rotated: the LISP lays the side out running along the height.
           cnc: { rotated: true, drawn_w: sh, drawn_h: budr.depth, ...pocketedRect(sh, budr.depth, sidePockets(budr.depth)) },
           meta: { drawer: i, side: suffix === 'SL' ? 'L' : 'R' },
@@ -2057,9 +2192,9 @@ export function computeCabinet(params, profileOverride) {
             // Turn 18 (CLAUDE.md F3.4): standing ON the bottom, which stands in
             // the groove — the same correction the wardrobe's box gets above,
             // because it is the same box.
-            x: boxLeftX + DR.boxSideThickness, y: boxY + B.runnerPocketWidth + G,
-            z: isFront ? boxZFront - G : boxZFront - budr.depth,
-            w: budr.boxLen, h: bfH, d: G,
+            x: boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
+            z: isFront ? boxZFront - GB : boxZFront - budr.depth,
+            w: budr.boxLen, h: bfH, d: GB,
           },
           cnc: geom,
           meta: { drawer: i },
@@ -2080,7 +2215,7 @@ export function computeCabinet(params, profileOverride) {
         // Centred in its box, as in the wardrobe: the bottom sits in the side
         // grooves — and since turn 18 (F3.4) it sits at the HEIGHT of them,
         // `runnerPocketWidth` above the sides' bottom edge.
-        box: { x: boxLeftX + (budr.boxW - budr.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: budr.bottomW, h: G, d: budr.depth },
+        box: { x: boxLeftX + (budr.boxW - budr.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: budr.bottomW, h: GB, d: budr.depth },
         cnc: geom, meta: { drawer: i },
       }));
     }
@@ -2089,8 +2224,13 @@ export function computeCabinet(params, profileOverride) {
     for (let i = 1; cfg.drawerFronts && i <= budr.count; i += 1) {
       const fh = budr.heights[i - 1];
       const geom = rectGeometry(budr.frontWidth, fh);
+      // The bottom façade runs one CARCASS board lower to cover the floor, so
+      // its screw line rises by that board (turn 24, F3.2: the carcass's).
       const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0);
-      const screwX = B.frontScrewFromSide + 2 * G + B.frontScrewExtra;
+      // …and the 50 is measured from the BOX's own side, which stands one
+      // CARCASS board and one BOX board in from the façade's edge. Two boards,
+      // two slots — the LISP's `2×G` collapsed them because both measured 18.
+      const screwX = B.frontScrewFromSide + G + GB + B.frontScrewExtra;
       geom.holes = [screwX, budr.frontWidth - screwX].map((x) => ({
         layer: B.frontScrewLayer, kind: 'front_screw', x, y: screwY, d: B.frontScrewDiameter,
       }));
@@ -2704,9 +2844,15 @@ export function computeCabinet(params, profileOverride) {
       : P.hinges.xFromFrontEdge;
     for (const pair of hingeHolePairs) {
       for (const y of pair) {
-        // The row is the carcass's; the partition's own frame starts at its
+        // ─── TURN 24 (CLAUDE.md F8) ───
+        // The partition lies along the grain now, so its own frame is
+        // `depth × height` with x running from the FRONT edge towards the back
+        // — the same convention BUL's has always had. `v` is still measured
+        // from the BACK (it is the mirror rule that makes one face 37 from the
+        // front and the other `depth − 37`), so it becomes `depth − v` here.
+        // The row is the carcass's; the height starts at the partition's own
         // bottom, which on a full-height piece is one board up.
-        addDrill(part.id, 'hinge', P.hinges.layer, y - part.box.y, v, P.hinges.holeDiameter);
+        addDrill(part.id, 'hinge', P.hinges.layer, depth - v, y - part.box.y, P.hinges.holeDiameter);
       }
     }
   }
@@ -2729,7 +2875,13 @@ export function computeCabinet(params, profileOverride) {
     if (isShelfLocked(item)) {
       // The screw row needs the shelf's OWN thickness, because it is drilled on
       // that board's centre line (turn 9, CLAUDE.md F4).
-      shelfScrewRows.push({ y: shelfRows[i], thickness: shelfThickness(item, G) });
+      shelfScrewRows.push({
+        y: shelfRows[i],
+        thickness: shelfThickness(item, G),
+        // Turn 24 (CLAUDE.md F7): the joint runs along the shelf's own DEPTH,
+        // so the set has to know which board it is setting out on.
+        panel: panels.find((x) => x.part === 'SHELF' && x.meta?.index === i + 1) || null,
+      });
     } else {
       shelfPinRows.push(shelfRows[i]);
     }
@@ -2740,15 +2892,126 @@ export function computeCabinet(params, profileOverride) {
         for (const x of shelfHoleX) addDrill(sideId, 'shelf', SH.layer, x, rowY + dy, SH.diameter);
       }
     }
-    for (const { y: rowY, thickness: rowT } of shelfScrewRows) {
-      // The centre of the board's thickness: a screw goes into the EDGE — so a
-      // shelf somebody has made 25 mm is screwed on ITS centre line and not on
-      // the carcass board's (turn 9, CLAUDE.md F4).
-      const centreY = rowY + rowT / 2;
-      for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
-        addDrill(sideId, 'shelf_screw', pz.layers.screw, x, centreY, pz.screwDiameter);
+  }
+
+  // ─── THE FIX SHELF GETS THE OWNER'S JOINT (turn 24, CLAUDE.md F7) ─────────
+  //
+  // Owner: "jak fix, to nie ma 3 poziomów 7,5 — to się wyklucza." A shelf that
+  // is screwed in is not a shelf on pins, and turn 8's three ⌀3 screws down the
+  // whole length of the side were never the joint he makes.
+  //
+  // What he makes is the BUTT-JOINT SET turn 13 recorded as his own answer to
+  // BLOCKERS #59 (`engine/biscuits.js`): screw ⌀3 → 10 → 70 mm biscuit mark →
+  // 10 → screw ⌀3, laid out along the joint line, never closer than 50 mm to an
+  // end. Turn 23 took its only consumer away — the LISP does not give a
+  // PARTITION one — and this turn gives it the consumer it was written for.
+  //
+  //   BISCUITS ON BOTH BEARING FACES. The shelf lands on two boards and both
+  //   are set out.
+  //   THROUGH ⌀3 SCREWS ONLY FROM CARCASS SIDES. A side may be drilled through:
+  //   its outer face is against a wall, a neighbouring cabinet or an end panel.
+  //   FROM A PARTITION SIDE, BISCUITS ONLY — a partition serves two bays and a
+  //   through screw would surface in the neighbour's face.
+  //   …and the SHELF's own end takes the mark transferred onto it, because a
+  //   3-axis bed cannot reach an end and the set-out has to be on both halves
+  //   before anything is glued.
+  //
+  // ONE WORLD HEIGHT (F7.2). The joint's height is the SIDE's law —
+  // `row + shelfT/2`, the board's own centre line — and the partition's pattern
+  // is that same world height minus whatever the partition stands above. There
+  // is one number and two frames, never two numbers.
+  const shelfJointMarks = [];
+  const addMark = (panelId, layer, from, to) => shelfJointMarks.push({ panelId, layer, from, to });
+  const biscuitLayerNames = biscuitLayers(P);
+  for (const row of shelfScrewRows) {
+    const shelf = row.panel;
+    if (!shelf?.box) continue;
+    // THE ONE NUMBER: the world height of the joint.
+    const jointY = row.y + row.thickness / 2;
+    const depth = shelf.box.d;
+    const front = shelf.box.z + depth;          // the shelf's front edge, in z
+    const sets = biscuitSets({ length: depth, screws: true, profile: P });
+    const noScrewSets = biscuitSets({ length: depth, screws: false, profile: P });
+
+    // ── the two bearers this shelf actually lands on ──
+    const bearers = [];
+    const runFrom = shelf.box.x;
+    const runTo = shelf.box.x + shelf.box.w;
+    for (const side of ['BUL', 'BUR']) {
+      const panelHere = panels.find((x) => x.id === side);
+      if (!panelHere) continue;
+      const touchesSide = side === 'BUL'
+        ? Math.abs(runFrom - G) < 1e-6
+        : Math.abs(runTo - (W - G)) < 1e-6;
+      if (touchesSide) bearers.push({ id: side, kind: 'side', panel: panelHere });
+    }
+    for (const part of panels.filter((x) => x.part === 'VPART' && x.box)) {
+      const touches = Math.abs(runTo - part.box.x) < 1e-6
+        || Math.abs(runFrom - (part.box.x + part.box.w)) < 1e-6;
+      // …and the shelf's joint has to be inside the partition's own run.
+      const spans = jointY >= part.box.y - 1e-6 && jointY <= part.box.y + part.box.h + 1e-6;
+      if (touches && spans) bearers.push({ id: part.id, kind: 'partition', panel: part });
+    }
+
+    for (const bearer of bearers) {
+      if (bearer.kind === 'side') {
+        // The side's own frame: BUL's x runs from the FRONT of the cabinet
+        // towards the back, BUR's runs with z (engine/joinery.js). A point at
+        // cabinet z is therefore `D − z` on BUL and `z − G` on BUR.
+        const along = (z) => (bearer.id === 'BUL' ? D - z : z - G);
+        const at = (t) => along(front - t);
+        for (const set of sets) {
+          for (const sc of set.screws) {
+            addDrill(bearer.id, 'shelf_screw', pz.layers.screw, at(sc), jointY, pz.screwDiameter);
+          }
+          addMark(bearer.id, biscuitLayerNames.mark, [at(set.mark.from), jointY], [at(set.mark.to), jointY]);
+        }
+        continue;
+      }
+      // A PARTITION serves two bays and a through screw would surface in the
+      // neighbour's face — so it takes the biscuit alone, in the very same
+      // positions, and a joiner reads one pattern on both kinds of joint.
+      //
+      // Its frame is u along its HEIGHT and v along its DEPTH from the back
+      // (engine/joinery.js), so the joint's world height becomes an x in the
+      // partition's own frame by subtracting how far it stands above the floor.
+      // Turn 24 (CLAUDE.md F8): the partition's frame is `depth × height`, x
+      // from the FRONT edge — so the joint's world height is a Y here and the
+      // set's distance from the front is the X.
+      const y = jointY - bearer.panel.box.y;
+      const alongDepth = (t) => t;
+      for (const set of noScrewSets) {
+        addMark(
+          bearer.id,
+          biscuitLayerNames.mark,
+          [alongDepth(set.mark.from), y],
+          [alongDepth(set.mark.to), y],
+        );
       }
     }
+
+    // ── and the shelf's own two ends, where the set-out is transferred ──
+    const inset = markFromEnd(P);
+    for (const [end, endX] of [['L', inset], ['R', shelf.w - inset]]) {
+      const has = bearers.some((b) => (end === 'L'
+        ? (b.kind === 'side' ? b.id === 'BUL' : Math.abs(runFrom - (b.panel.box.x + b.panel.box.w)) < 1e-6)
+        : (b.kind === 'side' ? b.id === 'BUR' : Math.abs(runTo - b.panel.box.x) < 1e-6)));
+      if (!has) continue;
+      for (const set of noScrewSets) {
+        // The shelf is drawn `width × depth` and its own y runs from the BACK,
+        // so the set's distance from the FRONT is `depth − t`.
+        addMark(shelf.id, biscuitLayerNames.mark, [endX, depth - set.mark.from], [endX, depth - set.mark.to]);
+      }
+    }
+  }
+  for (const mark of shelfJointMarks) {
+    const target = panels.find((x) => x.id === mark.panelId);
+    if (!target) continue;
+    target.cnc = target.cnc || {};
+    target.cnc.marks = [
+      ...(target.cnc.marks || []),
+      { layer: mark.layer, from: mark.from.map((v) => roundTo(v, 4)), to: mark.to.map((v) => roundTo(v, 4)) },
+    ];
   }
 
   // Hinge cups + their mounting screws in each door front
@@ -2862,14 +3125,17 @@ export function computeCabinet(params, profileOverride) {
   //   pattern, 30 and 70 from the top of the carcass.
   //
   //   THE FLAT RAIL's edge is one board thick, so there is ONE row and it is on
-  //   the board's centreline (G/2 + `centrelineExtra` down from the top, which
-  //   is the same centreline every top-edge screw in this app uses). What is
+  //   the board's centreline (G/2 down from the top, which is the same
+  //   centreline every top-edge screw in this app uses — turn 24's F4 took the
+  //   half-millimetre off it, everywhere at once). What is
   //   laid out along the rail's WIDTH is the pair — see profile.js
   //   `ovenUnit.topRails.frontScrewFromEdge` for why it is a pair and where the
   //   number comes from.
   if (oven) {
     const TR = P.ovenUnit.topRails;
-    const S = G / 2 + pz.centrelineExtra;
+    // Turn 24 (CLAUDE.md F4): `thicknessOf(part) / 2`, on the SIDE the screw is
+    // driven into. No `centrelineExtra`, here or anywhere.
+    const S = thicknessOf('BUL', cfg.thicknesses) / 2;
     for (const sideId of ['BUL', 'BUR']) {
       // The side panel's local x runs FRONT (0) → BACK (sideW), the frame
       // engine/puzzle.js draws in, and the sink's holder screws are read the
@@ -3376,7 +3642,7 @@ export function computeCabinet(params, profileOverride) {
       holder_screw_x: [G / 2, sideW - G / 2],
       holder_screw_y: SK.holderScrewFromTop.map((f) => H - f),
       bottom_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
-      bottom_screw_y: G / 2 + pz.centrelineExtra,
+      bottom_screw_y: thicknessOf('BOTTOM', cfg.thicknesses) / 2,
     } : {}),
     ...(fridge ? {
       block_screw_x_bul: FR.blockScrewFromFront + FR.blockSize / 2 + G,

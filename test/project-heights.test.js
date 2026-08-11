@@ -8,6 +8,8 @@ import { migrateDesign, projectHeights, heightForGroup, isCustomHeight } from '.
 import { HEIGHT_GROUPS, UNIT_TYPE_ORDER, getUnitType, heightGroupOf } from '../src/engine/types.js';
 import { clampUnitHeight } from '../src/engine/collision.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 // ─── Project heights (BACKLOG #29, turn 5 F3) ───
 //
@@ -81,6 +83,7 @@ test('a new unit is built to the project height for its KIND', () => {
   project({ heights: { base: 735, wall: 700, tall: 2200, wallMount: 1450, toeKick: 120 } });
 
   assert.equal(unitOf(add('BUD')).params.height, 735);
+  confirmDrawerBox();
   assert.equal(unitOf(add('BUDR')).params.height, 735);
   assert.equal(unitOf(add('SINK')).params.height, 735);
   assert.equal(unitOf(add('BUDTALL')).params.height, 2200);

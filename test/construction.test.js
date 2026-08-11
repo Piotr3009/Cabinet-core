@@ -22,6 +22,8 @@ import { buildBom } from '../src/engine/bom.js';
 import { exportablePanels } from '../src/engine/cnc/groups.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { menuActions } from '../src/lib/contextActions.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const store = () => useProjectStore.getState();
 const INFILL = 20;
@@ -37,6 +39,9 @@ function project(units = []) {
 
 function withUnit(type = 'BUD') {
   project();
+  // Turn 24 (CLAUDE.md F3.1): a fresh project has an unmeasured drawer-box
+  // board, and a drawer-bearing kit is refused until somebody has measured it.
+  confirmDrawerBox();
   const { id, error } = store().addUnit(type);
   assert.equal(error, null, error || '');
   return id;
@@ -167,6 +172,7 @@ test('a BASE unit refuses a top infill however it is asked (turn 8, F2.7)', () =
   // where the wall units are, and closing it with a strip of 18 mm board is not
   // a piece of joinery anybody would cut — so the question is refused rather
   // than answered with a number, on every route into it.
+  confirmDrawerBox();
   for (const type of ['BUD', 'BUDR', 'SINK', 'LOW_CABINET']) {
     const id = withUnit(type);
     assert.equal(store().addTopInfill(id), 0, `${type} was offered one`);

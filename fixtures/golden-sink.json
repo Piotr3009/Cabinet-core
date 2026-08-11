@@ -9,7 +9,7 @@
   "sink_rules": {
     "no_top": "NO TOP panel — replaced by two horizontal holders (HOLDER-F, HOLDER-B) 100mm high on edge, length = internalW; CSV lists them as 100 x internalW",
     "back": "back panel INSIDE the cabinet, 50mm forward of the rear, screwed (no puzzles): backW = W - 2G - 4, backH = H - 120 - G",
-    "sides": "plain rectangle outline (no back tenons, no top sockets); bottom puzzle sockets only; 3 bottom screws (50, mid, sideW-50) at y = G/2+0.5; 4 holder screws at x {G/2, sideW-G/2}, y {H-30, H-70}; 3 back screws at x = sideW-37 (BUL; mirrored BUR), y {100, H/2, H-100}",
+    "sides": "plain rectangle outline (no back tenons, no top sockets); bottom puzzle sockets only; 3 bottom screws (50, mid, sideW-50) at y = G/2 (TURN 24, CLAUDE.md F4: the `+0.5` `centrelineExtra` is REMOVED globally - the owner does not remember it, it is wrong, and it skewed the whole calculation. A screw into the edge of a board goes down the middle of that board. This is the ONE named regeneration this file has had and it moved exactly one number: 9.5 -> 9); 4 holder screws at x {G/2, sideW-G/2}, y {H-30, H-70}; 3 back screws at x = sideW-37 (BUL; mirrored BUR), y {100, H/2, H-100}",
     "bottom": "tenons on TWO edges only — the two side edges (into BUL/BUR). Both the back edge (the back is a screwed panel 50 mm forward) and the front edge are straight. NOTE: the header comment above drawSINK_BOTTOM (L150) claims a front-edge tenon; the executable point list L156-159 does not draw one and the dog-bones L188-191 cover the side edges only — the geometry wins.",
     "hinges": "top hinge 50mm lower than BUD: [100, H-300, H-150]; cups [100, frontH-297, frontH-147]",
     "shelves": "depth reduced by backSetback + G: shelfH = D - G - 20 - 50 - G; shelf pin columns at x 70 and sideW - 120 (NOT sideW-70)",
@@ -194,7 +194,7 @@
           270,
           490
         ],
-        "bottom_screw_y": 9.5
+        "bottom_screw_y": 9
       },
       "csv_labels": [
         "S01,BUL,540,770,<,0.77,0.416",
@@ -422,7 +422,7 @@
           270,
           490
         ],
-        "bottom_screw_y": 9.5
+        "bottom_screw_y": 9
       },
       "csv_labels": [
         "S02,BUL,540,770,<,0.77,0.416",

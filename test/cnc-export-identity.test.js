@@ -137,7 +137,14 @@ test('a per-panel DXF is byte-for-byte what it was', () => {
   // is written at 20 mm instead of 35 — `cnc.labelHeight` 40 → 20 is the cap
   // the file's height passes through, and it is now the binding one. The same
   // two lines, the same words, the same coordinates, one group code shorter.
-  assert.equal(fingerprint(bul.dxf), 'd9555e61', 'the side panel’s DXF has changed');
+  // ─── TURN 24 (CLAUDE.md F4): d9555e61 → 809066c0 ─────────────────────────
+  // THE GLOBAL NAMED DELTA, and it is one number: `puzzle.centrelineExtra` is
+  // gone, so every screw and socket axis on this part moves by −0.5 and
+  // NOTHING else does. `verify/t24/cnc-export-identity.md` prints the
+  // classifier's summary over the whole probe — 100 % of the moved entities
+  // are a −0.5 on a screw/socket class, zero on any other layer, zero count
+  // changes, zero geometry.
+  assert.equal(fingerprint(bul.dxf), '809066c0', 'the side panel’s DXF has changed');
 });
 
 // ─── the sheet ──────────────────────────────────────────────────────────────
@@ -151,7 +158,15 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // again (it is a block now, at half the height), and the six drawer sides
   // gaining the two pockets the owner measured.
   // turn 18 → 20: 50931ceb → bf00b60f. Delta F4 alone — every label's HEIGHT.
-  assert.equal(fingerprint(sheetOf(result, all)), 'bf00b60f', 'the whole-unit sheet has changed');
+  // turn 20 → 24: bf00b60f → 13f9d8a8. TWO named deltas and no third:
+  //   F4, the global −0.5 axis shift — this sheet holds a carcass and six
+  //   drawer sides, and every one of them carries a screw or a socket;
+  //   F9, the shelf's own label — a shelf now says `(ADJ)` or `(FIX)` after
+  //   its cut size, because the two are cut to different widths and drilled
+  //   differently and 4 mm is not a difference a joiner spots across a
+  //   workshop. TEXT only: `verify/t24/probe-diff.txt` has the entity-level
+  //   evidence, and the only strings that move are the two shelves'.
+  assert.equal(fingerprint(sheetOf(result, all)), '13f9d8a8', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -159,11 +174,17 @@ test('…and so is each preset’s', () => {
   // Turn 20 (CLAUDE.md F4): all four move, and all four move for one reason —
   // the label height. `verify/t20/probe-diff.txt` is the entity-by-entity
   // evidence: 397 TEXT heights, zero strings, zero positions, zero geometry.
+  // ─── TURN 24 (CLAUDE.md F4): THREE OF THE FOUR MOVE, AND THE FOURTH DOES
+  //     NOT — WHICH IS THE POINT ────────────────────────────────────────────
+  // The global −0.5 axis shift reaches every sheet that carries a screw or a
+  // socket. The SPRAYED and FRONTS sheets are the doors and the drawer faces:
+  // no screw, no socket, no change. A "global" delta that had moved them too
+  // would be a delta that was not what it says it is.
   const expected = {
-    all: 'bf00b60f',           // was 50931ceb
-    'non-sprayed': '07a550cd', // was 707406dd — this one has the drawer sides in it
-    sprayed: '27364f5c',       // was dbf83ff2 — fronts only
-    fronts: '27364f5c',        // was dbf83ff2
+    all: '13f9d8a8',           // was bf00b60f
+    'non-sprayed': '35eddb46', // was 07a550cd — this one has the drawer sides in it
+    sprayed: '27364f5c',       // UNCHANGED — fronts carry no screw axis
+    fronts: '27364f5c',        // UNCHANGED
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -395,5 +416,5 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   const cuttable = exportablePanels(result.panels);
   const hidden = new Set(panelIdsForPreset(cuttable, 'sprayed'));
   const ids = cuttable.map((p) => p.id).filter((id) => !hidden.has(id));
-  assert.equal(fingerprint(sheetOf(result, ids)), '07a550cd'); // was 707406dd — F4's height
+  assert.equal(fingerprint(sheetOf(result, ids)), '35eddb46'); // was 707406dd — F4's height
 });

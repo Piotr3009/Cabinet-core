@@ -1,0 +1,328 @@
+{
+ "turn": 24,
+ "url": "http://127.0.0.1:4173/",
+ "showroom": "http://127.0.0.1:4174",
+ "rules": {
+  "R1": "every click, move, wheel and keystroke is CDP Input; the guard at the top of this file enforces it",
+  "R2": "scripts/bucket-live.mjs, before any picture of hardware",
+  "R4": "hardware urls, counts, MEMBERS, node names and the fold pivot read from window.__cc.hardware",
+  "R5": "the console is captured for the whole walk",
+  "R6": "any uncaught error or React error-boundary report FAILS the step it appeared in",
+  "R7": "no data-* on R3F objects — asserted in test/turn23-f2-f4-hardware.test.js and test/turn24-f8-f12.test.js",
+  "R8": "GLB-dependent steps run against the synthetic silent showroom, whose nodes carry the real export’s own bau… names"
+ },
+ "totals": {
+  "passed": 60,
+  "failed": 0,
+  "skipped": 1
+ },
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "R4/R8 — the mounted hinge is the GLB, over the app's OWN url",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb"
+  },
+  {
+   "label": "R4/R8 — …and so is the plate",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb"
+  },
+  {
+   "label": "F2.4 — the hinge BODY hangs off the DOOR",
+   "ok": true,
+   "detail": "6 rows, parent door"
+  },
+  {
+   "label": "F2.4 — …and the PLATE stays on the carcass",
+   "ok": true,
+   "detail": "6 rows, parent carcass"
+  },
+  {
+   "label": "F1.1 — the model is cut in two, and each half says which it is",
+   "ok": true,
+   "detail": "cup [\"A\"] · body [\"B\"]"
+  },
+  {
+   "label": "F1.3 — the split is by NODE NAME, off the file’s own strings",
+   "ok": true,
+   "detail": "A [\"bau0015088783\",\"bau0015088853\",\"bau0015089612\"] · B [\"bau0015088251\",\"bau0019416036\"]"
+  },
+  {
+   "label": "F1.1 — member B is parented to the CARCASS, beside the plate",
+   "ok": true,
+   "detail": "6 rows"
+  },
+  {
+   "label": "F1.2 — the fold pivot is on the cup’s axis, 1.8 mm behind the flange",
+   "ok": true,
+   "detail": "{\"x\":-3.129243850708008e-7,\"y\":0,\"z\":-1.8000009047985088}"
+  },
+  {
+   "label": "F1.1 — member A RIDES the leaf: every cup travels with its door",
+   "ok": true,
+   "detail": "6 of 6 cups travelled"
+  },
+  {
+   "label": "F1.1 — member B STAYS on the carcass: not one arm is dragged into the room",
+   "ok": true,
+   "detail": "0 of 6 arms moved"
+  },
+  {
+   "label": "F1.2 — …and it FOLDS at the axis by the door’s own angle",
+   "ok": true,
+   "detail": "6 of 6 folded, [-1.7279,-1.7279,-1.7279] rad"
+  },
+  {
+   "label": "F1.1 — the plate never moves at all",
+   "ok": true,
+   "detail": "0 of 6 plates moved"
+  },
+  {
+   "label": "F12.1 — every hardware METAL carries the probe",
+   "ok": true,
+   "detail": "30 of 30 metals"
+  },
+  {
+   "label": "F12.1 — …and the PLASTIC carries none: a lever is moulded POM",
+   "ok": true,
+   "detail": "12 plastics, 0 with a probe"
+  },
+  {
+   "label": "F12.2 — boards, fronts and lacquers carry NO envMap of their own",
+   "ok": true,
+   "detail": "48 materials, 0 with a probe · scene wears the hardware probe: false"
+  },
+  {
+   "label": "F12.2 — and the probe is on the HARDWARE alone: taking it off touches only metals",
+   "ok": true,
+   "detail": "30 materials carried one, 30 of them metal"
+  },
+  {
+   "label": "F12.3 — both finishes reflect, and the model is the same model",
+   "ok": true,
+   "detail": "[\"nickel\"] → [\"onyx\"]"
+  },
+  {
+   "label": "F1.1 — the detail is PUSHED over the editor, not instead of it",
+   "ok": true,
+   "detail": "{\"modal\":\"part-detail\",\"depth\":1,\"panelId\":\"BUR\"}"
+  },
+  {
+   "label": "F1.4 — ← Back returns to the SAME cabinet view",
+   "ok": true,
+   "detail": "{\"modal\":\"cabinet\",\"depth\":0,\"unitId\":\"u_2r3tr9j\"}"
+  },
+  {
+   "label": "F1.2 — Escape is BACK ONE LEVEL, not close-everything",
+   "ok": true,
+   "detail": "{\"modal\":\"cabinet\",\"depth\":0}"
+  },
+  {
+   "label": "F1.2 — Done closes the WHOLE editor",
+   "ok": true,
+   "detail": "null"
+  },
+  {
+   "label": "F7.1 — the wheel zooms the detail",
+   "ok": true,
+   "detail": "-1712.8236162361625 -2537.4 4025.647232472325 2924.8 → -579.8237533031465 -1714.2285178154232 1759.647506606293 1278.4570356308457"
+  },
+  {
+   "label": "F7.1 — ⌂ fits it back",
+   "ok": true,
+   "detail": "-1712.8236162361625 -2537.4 4025.647232472325 2924.8"
+  },
+  {
+   "label": "F8.1 — hovering a feature draws dimension ARROWS, not a caption",
+   "ok": true,
+   "detail": "3 dimensions"
+  },
+  {
+   "label": "F10.1 — a twitch of ~3 mm does NOT take the arrows away",
+   "ok": true,
+   "detail": "3 dimensions still drawn, 1 px = 2.78 mm"
+  },
+  {
+   "label": "F10.1 — …and leaving the radius does",
+   "ok": true,
+   "detail": "0 dimensions"
+  },
+  {
+   "label": "F2.1 — Select · Drill · Line · Dowel line, and it opens on Select",
+   "ok": true,
+   "detail": "[\"select\",\"drill\",\"line\",\"dowels\"]"
+  },
+  {
+   "label": "F2.3 — the snap panel offers the eight kinds",
+   "ok": true,
+   "detail": "[\"END\",\"MID\",\"CEN\",\"NODE\",\"QUAD\",\"INT\",\"PER\",\"NEA\"]"
+  },
+  {
+   "label": "F2.2 — a real click SELECTS the feature under it",
+   "ok": true,
+   "detail": "1 selected: pocket-1"
+  },
+  {
+   "label": "F2.2 — …and Delete takes it off this print",
+   "ok": true,
+   "detail": "1 change"
+  },
+  {
+   "label": "F2.3 — a real cursor over a real feature raises an osnap marker",
+   "ok": true,
+   "detail": "MID on pocket-3"
+  },
+  {
+   "label": "F2.4 — the live dimensions are drawn while the tool is armed",
+   "ok": true,
+   "detail": "2 live dimensions: [\"x\",\"y\"]"
+  },
+  {
+   "label": "F2.4 — …and every one of them is HORIZONTAL or VERTICAL, never diagonal",
+   "ok": true,
+   "detail": "diagonal segment found: false"
+  },
+  {
+   "label": "F2.6 — the drill has asked NOTHING before the first placement",
+   "ok": true,
+   "detail": "{\"open\":false,\"at\":null}"
+  },
+  {
+   "label": "F2.5 — typing a digit opens the in-flight number at the cursor",
+   "ok": true,
+   "detail": "{\"open\":true,\"value\":\"37\"}"
+  },
+  {
+   "label": "F2.6 — the FIRST drill asks ⌀ and depth, once, in a popover",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "label": "F2.6 — reaching for Stamp does not move Stamp",
+   "ok": true,
+   "detail": "{\"l\":1352,\"t\":456,\"w\":63,\"h\":34} → {\"l\":1352,\"t\":456,\"w\":63,\"h\":34}"
+  },
+  {
+   "label": "F2.6 — Stamp takes the answer and the popover goes",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "label": "F2.6 — the hole that is stamped is the hole the popover was holding",
+   "ok": true,
+   "detail": "37,1075.0000000000005 → 37,1075.0000000000005"
+  },
+  {
+   "label": "F2.5 — Enter placed the hole 37 mm from the NEAREST edge",
+   "ok": true,
+   "detail": "{\"op\":\"drill\",\"layer\":\"SCREWS_3MM\",\"x\":37,\"y\":1075.0000000000005,\"d\":3,\"depth\":0} on 600×2150 ⇒ 37 mm"
+  },
+  {
+   "label": "F2.6 — …and it STAMPS from there on, without asking again",
+   "ok": true,
+   "detail": "{\"ops\":3,\"popover\":false}"
+  },
+  {
+   "label": "F2.1 — Esc returns to Select",
+   "ok": true,
+   "detail": "select"
+  },
+  {
+   "label": "F2 — a LINE and a DOWEL LINE, each drawn with two real clicks",
+   "ok": true,
+   "detail": "[\"hide\",\"drill\",\"drill\",\"line\",\"dowels\"]"
+  },
+  {
+   "label": "F2 — the part wears its badge, and it counts every one of them",
+   "ok": true,
+   "detail": "5 changes"
+  },
+  {
+   "label": "F2.8 — the EXPORT carries the drawn LINE, as an open polyline",
+   "ok": true,
+   "detail": "open polys 0 → 1"
+  },
+  {
+   "label": "F2.8 — …and the DOWEL ROW, as a row of holes",
+   "ok": true,
+   "detail": "circles 34 → 58"
+  },
+  {
+   "label": "F2.8 — \"Back to computed\" restores the part exactly",
+   "ok": true,
+   "detail": "6520 vs 6520 bytes"
+  },
+  {
+   "label": "F5.2 — mounted hinge instances == hinge_centers for EVERY leaf",
+   "ok": true,
+   "detail": "[{\"id\":\"W01-B1\",\"on\":\"BUL\",\"face\":null,\"mounted\":6},{\"id\":\"W01-B2\",\"on\":\"VPART-1\",\"face\":\"R\",\"mounted\":6},{\"id\":\"W01-B3\",\"on\":\"BUR\",\"face\":null,\"mounted\":6}]"
+  },
+  {
+   "label": "F5.1 — …including the leaves hung on a PARTITION",
+   "ok": true,
+   "detail": "[{\"id\":\"W01-B2\",\"on\":\"VPART-1\",\"face\":\"R\",\"mounted\":6}]"
+  },
+  {
+   "label": "F8.2 — hovering a partition draws the clear bays",
+   "ok": true,
+   "detail": "1 dimension groups"
+  },
+  {
+   "label": "F10.1 — …and a magnet volume is mounted WITH them, never before",
+   "ok": true,
+   "detail": "1 magnet"
+  },
+  {
+   "label": "F11.1 — every partition shows a distance from its LEFT neighbour",
+   "ok": true,
+   "detail": "[{\"id\":\"partition_pnzlb0t\",\"value\":\"582\"},{\"id\":\"partition_959knck\",\"value\":\"182\"}]"
+  },
+  {
+   "label": "F11.1 — moving P1 leaves P2’s STORED position exactly where it was",
+   "ok": true,
+   "detail": "stored [600,800] → [660,800]"
+  },
+  {
+   "label": "F11.1 — …and only the NUMBER P2 displays changes — no cascade",
+   "ok": true,
+   "detail": "shown 182 → 122"
+  },
+  {
+   "label": "F7.3 — ZERO ⌀7.5 anywhere once the shelf is FIX",
+   "ok": true,
+   "detail": "0 pins"
+  },
+  {
+   "label": "F7.1 — the joint is screws AND biscuits, on both bearing faces",
+   "ok": true,
+   "detail": "[\"BUL\",\"BUR\",\"SHELF-1\"]"
+  },
+  {
+   "label": "F8.1 — the partition is drawn depth × height, the sides’ own convention",
+   "ok": true,
+   "detail": "[540,882]"
+  },
+  {
+   "label": "F9 — the shelf’s own file says which kind it is",
+   "ok": true,
+   "detail": "(FIX) in the DXF"
+  },
+  {
+   "label": "R5 + R6 — the console is clean across the whole walk",
+   "ok": true,
+   "detail": "no errors, no React exceptions"
+  }
+ ],
+ "errors": []
+}

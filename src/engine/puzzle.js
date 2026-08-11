@@ -138,9 +138,16 @@ export function singleSocketThreshold(pz, boardThickness) {
   return pz.tabCentresFromEnd * 2 + half * 2 + boardThickness;
 }
 
-/** Socket pocket + its two holes on a horizontal edge (top or bottom of a panel). */
+/** Socket pocket + its two holes on a horizontal edge (top or bottom of a panel).
+ *
+ * ─── TURN 24 (CLAUDE.md F4): THE AXIS IS `thicknessOf(part) / 2` ────────────
+ * `S` is how far the socket runs INTO the panel from its edge, and it is half
+ * the board the tab is cut from — 9.00 on an 18, 9.25 on a measured 18.5. The
+ * `+ centrelineExtra` that used to sit on it is gone: the owner does not
+ * remember it, it is wrong, and it skewed the whole calculation. Every socket
+ * and screw law in this file reads the same half, so the delta is uniform. */
 function horizontalSocket(centreX, edgeY, dir, G, pz, out) {
-  const S = G / 2 + pz.centrelineExtra;
+  const S = G / 2;
   const inner = edgeY + dir * -S;             // pocket edge inside the panel
   const outer = edgeY + dir * pz.socketOvershoot;
   out.pockets.push({
@@ -156,7 +163,7 @@ function horizontalSocket(centreX, edgeY, dir, G, pz, out) {
 
 /** Socket pocket + its two holes on a vertical edge (left or right of a panel). */
 function verticalSocket(centreY, edgeX, dir, G, pz, out) {
-  const S = G / 2 + pz.centrelineExtra;
+  const S = G / 2;
   const inner = edgeX + dir * -S;
   const outer = edgeX + dir * pz.socketOvershoot;
   out.pockets.push({
@@ -200,7 +207,7 @@ export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
   // the middle tab on a low carcass (`middleTabThreshold`).
   const reach = Number.isFinite(Number(e.backTabsBelow)) ? Number(e.backTabsBelow) : Infinity;
   const centres = tabCentres(h, pz).filter((c) => c + pz.dogboneHalfHeight <= reach);
-  const S = G / 2 + pz.centrelineExtra;
+  const S = G / 2;
 
   if (!e.backTabs) {
     out.outline.push([0, 0], [w, 0], [w, h], [0, h]);
@@ -294,7 +301,7 @@ export function socketPanelGeometry({ w, h, G, puzzle: pz, sockets = {}, screws 
  * (matching the top/bottom-panel tabs, inset by one board thickness).
  */
 export function backPanelGeometry({ w, h, G, puzzle: pz }) {
-  const S = G / 2 + pz.centrelineExtra;
+  const S = G / 2;
   const sideCentres = tabCentres(h, pz);
   // The back receives the top/bottom panels' BACK-EDGE tabs, and those are cut
   // at socketCentres() over the INTERNAL width. Deriving them the same way — one
@@ -407,7 +414,7 @@ export function puzzlePreview(profile) {
   const h = pz.dogboneHalfHeight * 4;
   const w = pz.tabHalfWidth * 3;
   const centre = h / 2;
-  const S = G / 2 + pz.centrelineExtra;
+  const S = G / 2;
 
   const outline = [[0, 0], [w, 0], ...tabPointsRight(w, centre, G, pz), [w, h], [0, h]];
 

@@ -199,6 +199,39 @@ function cases() {
         ],
       },
     });
+    // ─── TURN 24 (CLAUDE.md F7.4): THE FIX-SHELF PROBE ──────────────────────
+    //
+    // F7's joint and F6's width appear ONLY where a shelf is FIX, and a script
+    // that only ever builds an adjustable one would report "no change" for a
+    // whole new class of entity. Two shapes, because the two halves of F7.1
+    // behave differently: from a CARCASS SIDE the set carries its through
+    // screws, and from a PARTITION it is biscuits alone.
+    out.push({
+      id: `${type}+fix-shelf`,
+      params: {
+        ...base,
+        sections: [{
+          width_mm: base.width,
+          items: [{ id: 's1', kind: 'shelf', pos_mm: Math.round(base.height / 2), variant: 'fixed' }],
+        }],
+      },
+    });
+    out.push({
+      id: `${type}+fix-shelf-in-bay`,
+      params: {
+        ...base,
+        width: Math.max(Number(base.width) || 0, 900),
+        sections: [{
+          width_mm: Math.max(Number(base.width) || 0, 900),
+          items: [
+            { id: 'p1', kind: 'partition', x_mm: 450 },
+            {
+              id: 's1', kind: 'shelf', pos_mm: Math.round(base.height / 2), zone: 0, variant: 'fixed',
+            },
+          ],
+        }],
+      },
+    });
     // …and the ADJUSTABLE shelf, which F7.4 asks to be probed separately. It
     // introduces NO new class at all — the ⌀7.5 pin rows are what the kit has
     // drilled since turn 1 — and this row is here to prove exactly that.

@@ -19,6 +19,7 @@
 // `null` here, and the caller draws the procedural cup and boss it has drawn
 // since turn 12. Never a hole, never a blocked scene.
 
+import * as THREE from 'three';
 import { glbClone, glbFailed, glbLongestMm, glbSource, onGlbLoad } from './glbSource.js';
 import { applyHardwareFinish, hardwareFinishSpec } from './hardwareFinish.js';
 import { mm } from './constants.js';
@@ -82,9 +83,251 @@ export function hingeModel(url, {
   if (clone) {
     const spec = hardwareFinishSpec(profile, 'hinge', finish);
     const applied = applyHardwareFinish(clone, spec);
+    // Turn 24 (CLAUDE.md F1.5): which HALF of the ironmongery this clone is, so
+    // a walk traversing the scene can tell a plate from an arm without guessing
+    // from a position. The plate is the one piece that never moves at all.
+    clone.userData.ccHingePlate = Boolean(plate);
     clone.userData.ccFinish = spec?.id || null;
     clone.userData.ccFinishApplied = applied;
     clone.userData.ccFinishMetal = spec?.metal || null;
   }
   return clone;
 }
+
+// ─── THE HINGE BREAKS IN THE MIDDLE (turn 24, CLAUDE.md F1) ─────────────────
+//
+// Owner, of turn 23's rigid body: it must BREAK — cup side with the door, body
+// side with the plate — or, failing that, disappear when open.
+//
+// A GLB is a rigid cast, so the file cannot answer this and a better file would
+// not either. What answers it is a RIG: the same clone, cut into two members by
+// NODE NAME, each parented where the ironmongery is actually screwed.
+//
+//   MEMBER A  the cup, its flange, the clip cap and the link cover. Clipped
+//             into the DOOR, so it rides the leaf exactly as turn 23 left it
+//             — not one millimetre of that pose moves.
+//   MEMBER B  the arm and the rear body with the lever. Screwed to the plate
+//             on the CARCASS, and it FOLDS: one rotation about a horizontal
+//             axis at the arm's front pivot, by the door's own opening angle.
+//
+// ─── IT IS ONE JOINT, AND IT IS AN APPROXIMATION ───────────────────────────
+//
+// A real CLIP top is a SEVEN-LINK cross: four bars and three couplers, whose
+// instantaneous centre travels as the door opens, which is what lets the cup
+// clear the carcass on a 110° swing. NOTHING HERE ATTEMPTS THAT. CLAUDE.md
+// F1.2 asks for a one-joint approximation, names it as one, and forbids
+// inventing the four-bar geometry Blum has not published here. So: one hinge,
+// one angle, and this paragraph.
+
+/** The member a node belongs to: 'A' (door) or 'B' (carcass). */
+export function memberOfNode(name, rig, zMaxMm = null) {
+  const said = String(name || '');
+  if ((rig?.memberA || []).includes(said)) return 'A';
+  if ((rig?.memberB || []).includes(said)) return 'B';
+  // ─── THE FALLBACK (F1.3) ───
+  // "unknown node names in future files fall back to the z-threshold
+  // `z > 30 ⇒ member A`." Measured on the node's own far edge, in FILE
+  // millimetres: the cup group lives entirely in front of the threshold and
+  // everything behind it is the arm. It is a fallback and not the rule —
+  // `bau0015088251` spans −28 … 46.2 and a threshold asked about IT would cut
+  // the arm in half, which is exactly why the names come first.
+  if (!Number.isFinite(Number(zMaxMm))) return 'B';
+  return Number(zMaxMm) > Number(rig?.zThresholdMm ?? 30) ? 'A' : 'B';
+}
+
+/**
+ * How far member B has turned, in radians, for a door open by `deg`.
+ *
+ * The identity that makes the fold read: the arm follows the cup by the SAME
+ * angle the leaf has swung through, so the two halves never scissor apart. A
+ * door that is shut folds by nothing, which is what keeps a closed cabinet
+ * byte-for-byte the picture turn 23 drew.
+ */
+export function memberBAngle(openDeg) {
+  const deg = Number(openDeg);
+  if (!Number.isFinite(deg)) return 0;
+  return (deg * Math.PI) / 180;
+}
+
+/**
+ * Is the model HIDDEN at this angle instead of folded? (F1.4)
+ *
+ * The owner's explicit fallback, and it ships as a flag rather than as a
+ * decision: with `rig.enabled` false an opening door hides the body beyond
+ * `hideBeyondDeg` and shows the plate only. He decides after his eye test.
+ */
+export function rigHidesBody(profile, openDeg) {
+  const rig = profile?.hardware?.hinge?.cliptop?.rig || {};
+  if (rig.enabled) return false;
+  return Math.abs(Number(openDeg) || 0) > Number(rig.hideBeyondDeg ?? 15);
+}
+
+/**
+ * Cut one clone into its two members.
+ *
+ * The clone arrives from `hingeModel` already posed — its cup centre on the
+ * drilled point, its flange on the door's back face, mirrored for the hand if
+ * the door needs it. Both members keep that pose: what this does is DELETE the
+ * other member's meshes from each of two clones, so member A is the file's own
+ * cup where the file's own cup is and member B is the file's own arm where the
+ * file's own arm is. Nothing is moved and nothing is re-datumed.
+ *
+ * @param {THREE.Object3D} group   a `hingeModel()` clone — never a cached source
+ * @param {object} profile
+ * @param {'A'|'B'} keep
+ * @returns {THREE.Object3D|null} the same group with the other member removed,
+ *   or null when it holds nothing at all
+ */
+export function keepMember(group, profile, keep) {
+  const rig = profile?.hardware?.hinge?.cliptop?.rig || {};
+  if (!group) return null;
+  const drop = [];
+  const kept = [];
+  const box = new THREE.Box3();
+  group.traverse((node) => {
+    if (!node.isMesh) return;
+    box.setFromObject(node);
+    // The node's own far edge in FILE millimetres, for the threshold fallback.
+    // `mm(1)` is what `3d/glbSource.js` measures with, so the two agree.
+    const zMax = box.max.z / mm(1);
+    // A converter puts the name on the NODE, the MESH or both; the walk up is
+    // one line and it is what makes a real Blum export and this repository's
+    // own showroom answer the same question.
+    const name = node.name || node.parent?.name || '';
+    const member = memberOfNode(name, rig, zMax);
+    if (member === keep) kept.push(name);
+    else drop.push(node);
+  });
+  for (const node of drop) node.parent?.remove(node);
+  if (!kept.length) return null;
+  // eslint-disable-next-line no-param-reassign
+  group.userData.ccHingeMember = keep;
+  // eslint-disable-next-line no-param-reassign
+  group.userData.ccHingeMemberNodes = kept;
+  return group;
+}
+
+/**
+ * WHERE THE JOINT IS, in the placed clone's own frame, in millimetres.
+ *
+ * The two profile numbers are in FILE coordinates, because that is the frame a
+ * mesh table is read in and the frame the first person to correct them will be
+ * looking at. `glbClone` places the file by `−min + modelOrigin`, so the axis
+ * goes through exactly the same transform — which is the whole reason this is
+ * a derivation and not a third measured number that could disagree with the
+ * other two.
+ *
+ * On the measured 71B3550 (min −26.5, −28.5, −29.48; origin −18.75, −28.5,
+ * −64.78; axis x −7.75, z 33.5) it comes to **(0, 0, −1.8) mm** — on the cup's
+ * own centre line, 1.8 mm behind the door's back face, which is where the arm
+ * of a CLIP top folds.
+ *
+ * @param {object} args
+ *   min      { x, y, z } — the FILE's bounding-box minimum, in millimetres
+ *   profile
+ * @returns {{x:number, y:number, z:number}|null}
+ */
+export function foldPivotMm({ min, profile }) {
+  const C = profile?.hardware?.hinge?.cliptop;
+  const axis = C?.rig?.axis;
+  const O = C?.modelOrigin;
+  if (!axis || !O || !min) return null;
+  const at = (a, m, o) => Number(a) - Number(m) + Number(o);
+  return {
+    x: at(axis.x ?? 0, min.x ?? 0, O.x ?? 0),
+    // The axis is HORIZONTAL and parallel to the hinge row (F1.2), so it has
+    // no height of its own: it runs through the model at the row's own y.
+    y: 0,
+    z: at(axis.z ?? 0, min.z ?? 0, O.z ?? 0),
+  };
+}
+
+/**
+ * The two members of one hinge, each ready to be parented where it belongs.
+ *
+ * Member B comes back WRAPPED: an outer group the caller places on the drilled
+ * point exactly as it places member A, holding a joint group standing at the
+ * fold pivot. `foldMemberB` turns that joint and nothing else — so the pose,
+ * the mirror and the finish are all still the ones `hingeModel` produced, and
+ * a shut door is byte-for-byte the picture turn 23 drew.
+ *
+ *     outer  ── placed on the drilled cup point
+ *       └ joint  ── at the fold pivot; THIS is what rotates
+ *           └ clone  ── pushed back by the same pivot, so angle 0 is identity
+ *
+ * @returns {{cup:THREE.Object3D|null, body:THREE.Object3D|null}}
+ *   `cup` is member A, for the door's own group; `body` is member B, for the
+ *   carcass beside the plate. Either may be null — a file with no arm in it is
+ *   drawn as far as it goes rather than not at all.
+ */
+export function hingeMembers(url, args) {
+  const profile = args?.profile;
+  const cup = keepMember(hingeModel(url, args), profile, 'A');
+  const inner = keepMember(hingeModel(url, args), profile, 'B');
+  if (!inner) return { cup, body: null };
+
+  const entry = glbSource(url);
+  const min = entry?.min
+    ? { x: entry.min.x / mm(1), y: entry.min.y / mm(1), z: entry.min.z / mm(1) }
+    : null;
+  const pivot = foldPivotMm({ min, profile });
+  if (!pivot) return { cup, body: inner };
+
+  // A mirrored clone renders its x negated (the group carries `scale.x = −1`),
+  // so the pivot's rendered position follows it and the two hands fold about
+  // the same physical point.
+  const s = args?.mirror ? -1 : 1;
+  const joint = new THREE.Group();
+  joint.position.set(mm(pivot.x) * s, 0, mm(pivot.z));
+  inner.position.set(-mm(pivot.x) * s, 0, -mm(pivot.z));
+  joint.add(inner);
+
+  const outer = new THREE.Group();
+  outer.add(joint);
+  // ONE object per member carries the tag. `keepMember` put it on the clone;
+  // the wrapper is what the caller places and what folds, so it takes it and
+  // the clone gives it up — otherwise a walk traversing the scene for "member
+  // B" finds each arm twice and half of them appear not to move.
+  delete inner.userData.ccHingeMember;
+  outer.userData.ccNoBounds = true;
+  outer.userData.ccHingeMember = 'B';
+  outer.userData.ccHingeMemberNodes = inner.userData.ccHingeMemberNodes;
+  outer.userData.ccFinish = inner.userData.ccFinish ?? null;
+  outer.userData.ccHingePivotMm = pivot;
+  outer.userData.ccHingeJoint = joint;
+  outer.userData.ccHingeFold = 0;
+  return { cup, body: outer };
+}
+
+/**
+ * THE FOLD (F1.2), applied to member B.
+ *
+ * ONE rotation about a HORIZONTAL axis parallel to the hinge row — the file's
+ * Y — positioned at the arm's front pivot, by an angle equal to the door's own
+ * opening angle, so the arm visually follows the cup into the opening while its
+ * rear stays at the plate.
+ *
+ * ─── IT IS A ONE-JOINT APPROXIMATION OF BLUM'S SEVEN-HINGE LINKAGE ─────────
+ *
+ * A real CLIP top is a cross of four bars and three couplers whose
+ * instantaneous centre travels as the door opens; that is what lets the cup
+ * clear the carcass on a 110° swing, and it is geometry nobody here has.
+ * CLAUDE.md F1.2 asks for this approximation, asks for it to be named as one,
+ * and forbids attempting the real four-bar. This is the name.
+ *
+ * @param {THREE.Object3D} body   `hingeMembers().body`
+ * @param {object} profile
+ * @param {number} angle          the door's own signed opening angle, RADIANS
+ *                                (3d/UnitView.jsx: `dir × a × swing`)
+ */
+export function foldMemberB(body, profile, angle) {
+  const joint = body?.userData?.ccHingeJoint;
+  if (!joint) return body;
+  const enabled = Boolean(profile?.hardware?.hinge?.cliptop?.rig?.enabled);
+  const turn = enabled ? (Number(angle) || 0) : 0;
+  joint.rotation.y = turn;
+  // eslint-disable-next-line no-param-reassign
+  body.userData.ccHingeFold = turn;
+  return body;
+}
+

@@ -13,6 +13,8 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { buildBom } from '../src/engine/bom.js';
 import { drawersInEngineOrder, shelvesInEngineOrder } from '../src/engine/items.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const store = () => useProjectStore.getState();
 
@@ -79,6 +81,7 @@ test('drawers stack from the bottom, and the shelves above them re-settle', () =
   store().addShelves(id, 2);
   const highBefore = Math.max(...shelvesInEngineOrder(itemsOf(id)).map((s) => s.pos_mm));
 
+  confirmDrawerBox();
   store().addDrawers(id, 3, 'overlay', 250);
   const drawers = drawersInEngineOrder(itemsOf(id));
   assert.deepEqual(drawers.map((d) => d.index), [1, 2, 3], 'numbered bottom-up for the engine');
@@ -94,6 +97,7 @@ test('drawers stack from the bottom, and the shelves above them re-settle', () =
 
 test('Equal heights is one height for the whole stack, clamped once', () => {
   const id = withUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 3, 'overlay', 200);
 
   store().setAllDrawerHeights(id, 260);
@@ -111,6 +115,7 @@ test('Equal heights is one height for the whole stack, clamped once', () => {
 
 test('unticking Equal heights keeps the stack; ticking it back adopts the bottom drawer', () => {
   const id = withUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 3, 'overlay', 200);
   store().setDrawerEqualHeights(id, false);
   assert.equal(store().units.find((u) => u.id === id).params.drawer_equal_heights, false);
@@ -128,6 +133,7 @@ test('unticking Equal heights keeps the stack; ticking it back adopts the bottom
 
 test('the hanger rail lands between the drawers and the shelves', () => {
   const id = withUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 2, 'overlay', 200);
   store().addShelves(id, 1);
   store().addHangerRail(id, { materialId: 'hw_rail_oval', materialLabel: 'Oval hanging rail 30 × 15' });

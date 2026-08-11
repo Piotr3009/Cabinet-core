@@ -186,7 +186,10 @@ test('a bare computeCabinet with none of this set cuts what the AutoLISP cuts', 
 
 test('the design defaults are all null — a project that answers nothing changes nothing', () => {
   assert.equal(DEFAULT_DESIGN.depth, null);
-  assert.deepEqual(DEFAULT_DESIGN.thickness, { board: null, custom: null });
+  // TURN 24 (CLAUDE.md F3.1): …and the caliper's six slots, all unmeasured and
+  // all unconfirmed. Nothing answered = the manufacturer's nominal, which is
+  // exactly what a project computed before the slots existed.
+  assert.deepEqual(DEFAULT_DESIGN.thickness, { board: null, custom: null, slots: {} });
   assert.deepEqual(DEFAULT_DESIGN.hardware, { hinges: null, runners: null, handles: null });
   assert.deepEqual(DEFAULT_DESIGN.fronts.types, []);
   const d = migrateDesign(null);
@@ -198,7 +201,17 @@ test('a design saved before turn 11 opens with every new field filled in', () =>
   // The migration rule this file shares with every other schema in the app: a
   // project from turn 7 must not crash a formula that reads `design.thickness`.
   const ancient = migrateDesign({ carcass: { types: [{ id: 'c1' }] }, infill: { sideWidth: 20 } });
-  assert.deepEqual(ancient.thickness, { board: null, custom: null });
+  assert.deepEqual(ancient.thickness.board, null);
+  assert.deepEqual(ancient.thickness.custom, null);
+  // Turn 24 (CLAUDE.md F3.1): the six slots arrive, empty — an old project is
+  // told the question exists and is not answered on its behalf.
+  assert.deepEqual(
+    Object.keys(ancient.thickness.slots).sort(),
+    ['box', 'carcass1', 'carcass2', 'carcass3', 'front1', 'front2'],
+  );
+  for (const row of Object.values(ancient.thickness.slots)) {
+    assert.deepEqual(row, { measured: null, confirmed: false });
+  }
   assert.deepEqual(ancient.hardware, { hinges: null, runners: null, handles: null });
   assert.deepEqual(ancient.fronts.types, []);
   assert.equal(ancient.carcass.types[0].source, null);

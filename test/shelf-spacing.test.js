@@ -43,6 +43,8 @@ import { shelfBand } from '../src/engine/collision.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { useProjectStore, paramsForEngine } from '../src/stores/projectStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const store = () => useProjectStore.getState();
 const unitOf = (id) => store().units.find((u) => u.id === id);
@@ -183,6 +185,7 @@ test('"Even" puts the shelves exactly where the LISP would put them', () => {
 test('the zone follows the drawers: shelves settle above the stack, evenly', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 3);
   store().addShelves(id, 2);
   store().redistributeShelves(id);
@@ -306,6 +309,7 @@ for (const n of [1, 2, 3]) {
   test(`cabinet with drawers below, ${n} shelf${n === 1 ? '' : 'ves'}: every gap equal`, () => {
     project();
     const { id } = store().addUnit('WARDROBE');
+    confirmDrawerBox();
     store().addDrawers(id, 3);
     store().addShelves(id, n);
     store().redistributeShelves(id);
@@ -398,6 +402,7 @@ test('the second shelf halves the biggest opening that is left', () => {
 test('an added shelf lands above the drawers, centred in what is left', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 3);
   store().addShelves(id, 1);
   const unit = unitOf(id);

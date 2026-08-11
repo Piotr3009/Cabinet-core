@@ -34,8 +34,10 @@
  *           the inner face of the left side)
  *   to      the face the last opening ends at
  *   boards  each crossing board's NEAR face, in the same frame — a shelf's
- *           `pos_mm`, a partition's `x_mm`. Order does not matter.
- *   boardT  how thick they are (one number: a cabinet is cut from one board)
+ *           `pos_mm`, a partition's `x_mm`. Order does not matter. A board may
+ *           arrive as `{ at, thickness }` where it is cut from a different
+ *           slot than its neighbours (turn 24, CLAUDE.md F3.3).
+ *   boardT  how thick they are, for every board that does not say otherwise
  *   axis    'x' | 'y', carried through onto the zone ids so a caller holding
  *           both sets can tell them apart
  * @returns {Array<{id:string,index:number,from:number,to:number,size:number,centre:number}>}
@@ -46,12 +48,19 @@ export function zonesBetween({
   const lo = Number(from) || 0;
   const hi = Number(to) || 0;
   const t = Math.max(0, Number(boardT) || 0);
+  // ─── TURN 24 (CLAUDE.md F3.3): A BOARD MAY BE ITS OWN THICKNESS ──────────
+  // A cabinet used to be cut from one board and this took one number for all
+  // of them. A partition carries a SLOT now, so a crossing board may say what
+  // it is cut from — and one that says nothing is the caller's `boardT`, which
+  // is every board in every project saved before this turn.
   const crossing = boards
-    .map((b) => Number(b))
-    .filter((b) => Number.isFinite(b) && b >= lo && b + t <= hi)
-    .sort((a, b) => a - b);
+    .map((b) => (b && typeof b === 'object'
+      ? { at: Number(b.at), t: Number(b.thickness) > 0 ? Number(b.thickness) : t }
+      : { at: Number(b), t }))
+    .filter((b) => Number.isFinite(b.at) && b.at >= lo && b.at + b.t <= hi)
+    .sort((a, b) => a.at - b.at);
 
-  const faces = [lo, ...crossing.flatMap((v) => [v, v + t]), hi];
+  const faces = [lo, ...crossing.flatMap((v) => [v.at, v.at + v.t]), hi];
   const out = [];
   for (let i = 0; i < faces.length - 1; i += 2) {
     const a = faces[i];
@@ -84,7 +93,10 @@ export function widthZones({ width, boardT, partitions = [] }) {
   return zonesBetween({
     from: t,
     to: (Number(width) || 0) - t,
-    boards: partitions.map((p) => Number(p?.x_mm)),
+    // Turn 24 (F3.3): each partition may be on its own carcass slot, and the
+    // BAY LIGHT either side of it is measured to the face of the board that is
+    // actually there. `thickness` undefined = the carcass board, as before.
+    boards: partitions.map((p) => ({ at: Number(p?.x_mm), thickness: p?.thickness_mm })),
     boardT: t,
     axis: 'x',
   });

@@ -11,7 +11,8 @@ import {
   onRunnerLoad, runnerModel, runnerModelFits, runnerSource,
 } from './runnerModels.js';
 import {
-  hingeModel, hingeModelFits, hingeSource, onHingeLoad,
+  foldMemberB, hingeMembers, hingeModel, hingeModelFits, hingeSource, onHingeLoad,
+  rigHidesBody,
 } from './hingeModels.js';
 
 // ─── The hardware, in 3D (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
@@ -81,6 +82,10 @@ export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
   hingeSpecs = null, surface = 'room', scope = '',
+  // Turn 24 (CLAUDE.md F1.2): every leaf's signed opening angle, so the hinge's
+  // CARCASS half can fold after the door it belongs to. The door is not this
+  // component's child, which is exactly why the angle has to cross.
+  doorSwing = null,
 }) {
   const colours = profile.appearance.hardware;
   // ─── TURN 21 (CLAUDE.md R4 / F2.2 / F6.3) ───
@@ -116,6 +121,7 @@ export default function Hardware({
           storageBase={storageBase}
           surface={surface}
           scope={scope}
+          doorSwing={doorSwing}
         />
       )}
       {/* ─── Turn 18 (CLAUDE.md F6.7) ───
@@ -269,18 +275,34 @@ function useHingeModels({
     // The plate's base grows +x off the panel face as authored, so a door whose
     // opening lies the other way (dir −1) takes the mirrored clone.
     const mirror = kind === 'plate' ? h?.dir === -1 : h?.side !== C.fileHand;
-    return {
-      model: hingeModel(url, {
-        profile,
-        plate: kind === 'plate',
-        mirror,
-        // Turn 23 (CLAUDE.md F4.1): the project's finish, per door, off the
-        // very resolution the BOM orders by — so the metal on screen and the
-        // article on the list cannot be two different finishes.
-        finish: specs?.[h?.panelId]?.finish || null,
-      }),
-      reason: null,
+    const args = {
+      profile,
+      plate: kind === 'plate',
+      mirror,
+      // Turn 23 (CLAUDE.md F4.1): the project's finish, per door, off the
+      // very resolution the BOM orders by — so the metal on screen and the
+      // article on the list cannot be two different finishes.
+      finish: specs?.[h?.panelId]?.finish || null,
     };
+    // ─── TURN 24 (CLAUDE.md F1): WHICH HALF OF THE HINGE THIS IS ───────────
+    //
+    // The plate is one file and is never split. The BODY file is cut in two by
+    // node name — member A clips into the door, member B stays on the carcass
+    // and folds — and each caller asks for its own half. With the rig OFF the
+    // owner's fallback applies: `cup` is the WHOLE model again, exactly as
+    // turn 23 drew it, and there is no member B at all.
+    if (kind === 'cup' || kind === 'body') {
+      const rigged = Boolean(C.rig?.enabled);
+      if (!rigged) {
+        return kind === 'cup'
+          ? { model: hingeModel(url, args), reason: null }
+          : { model: null, reason: 'rig-off' };
+      }
+      const members = hingeMembers(url, args);
+      const model = kind === 'cup' ? members.cup : members.body;
+      return { model, reason: model ? null : 'no-member' };
+    }
+    return { model: hingeModel(url, args), reason: null };
     // `arrived` is the dependency that matters: a clone taken before the file
     // lands holds nothing, so it has to be re-taken after it does.
   }), [urls, items, specs, kind, profile, arrived]);
@@ -319,11 +341,18 @@ function useHingeModels({
  */
 function CarcassHinges({
   items, profile, colour, specs = null, storageBase = '',
-  surface = 'room', scope = '',
+  surface = 'room', scope = '', doorSwing = null,
 }) {
   const H = profile.hardware.hinge;
   const { urls, models } = useHingeModels({
     items, specs, kind: 'plate', profile, storageBase,
+  });
+  // ─── TURN 24 (CLAUDE.md F1.1): MEMBER B LIVES HERE ────────────────────────
+  // The arm and the rear body are bolted to the plate, so they belong to the
+  // CARCASS's frame beside it — which is the whole point of the split, and the
+  // reason a 90° door no longer drags a whole hinge out into the room with it.
+  const { models: bodies } = useHingeModels({
+    items, specs, kind: 'body', profile, storageBase,
   });
 
   // ─── TURN 21 (CLAUDE.md R4 / F2.3) ───
@@ -340,6 +369,22 @@ function CarcassHinges({
       finish: models[i]?.model?.userData?.ccFinish || null,
     })), scope);
   }, [surface, scope, items, urls, models]);
+
+  // Turn 24 (F1.5): member B's own row, so the walk can assert the SPLIT off
+  // the scene — which member is drawn, under which parent, folded by how much
+  // — rather than off a picture of a hinge.
+  useEffect(() => {
+    reportHardware(surface, 'hingeBody', items.map((h, i) => ({
+      key: h.panelId ?? i,
+      url: urls[i] || null,
+      model: Boolean(bodies[i]?.model),
+      reason: bodies[i]?.reason,
+      parent: 'carcass',
+      member: 'B',
+      nodes: bodies[i]?.model?.userData?.ccHingeMemberNodes || null,
+      pivotMm: bodies[i]?.model?.userData?.ccHingePivotMm || null,
+    })), scope);
+  }, [surface, scope, items, urls, bodies]);
 
   const drawnModel = models.some((m) => m.model);
 
@@ -359,11 +404,47 @@ function CarcassHinges({
           position={[mm(items[i].plateX), mm(items[i].y), mm(items[i].plateZ)]}
         />
       ) : null))}
+      {/* ─── F1.1/F1.2: member B, on the drilled CUP point and folding ───
+          Placed on the cup, not on the plate: the arm's geometry is authored
+          about the cup like the rest of the file, and re-datuming it would be
+          inventing an offset. It stands in the CARCASS's frame, so a door that
+          swings leaves it behind — and the joint turns it after the leaf. */}
+      {bodies.map((m, i) => (m.model ? (
+        <HingeBody
+          key={`hb${items[i].panelId}-${items[i].y}`}
+          object={m.model}
+          profile={profile}
+          position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]}
+          angle={doorSwing?.[items[i].panelId] ?? 0}
+        />
+      ) : null))}
       <Pieces count={items.length} place={placePlate} colour={colour} visible={!drawnModel}>
         <boxGeometry args={[mm(H.plateThickness), mm(H.plateWidth), mm(H.plateLength)]} />
       </Pieces>
     </>
   );
+}
+
+/**
+ * Member B, folding after its door (turn 24, CLAUDE.md F1.2).
+ *
+ * The easing is the DOOR's own — `3d/UnitView.jsx MovingPanel` settles at
+ * `delta × 8` towards its target — because the two halves of one hinge must
+ * arrive together. Copying the constant would be two numbers that could drift,
+ * so the target comes from the same place the door's does (the open fraction
+ * times the leaf's swing) and only the integration happens here.
+ */
+function HingeBody({
+  object, profile, position, angle,
+}) {
+  const at = useRef(0);
+  useFrame((_, delta) => {
+    const target = Number(angle) || 0;
+    if (Math.abs(at.current - target) < 0.0005) at.current = target;
+    else at.current += (target - at.current) * Math.min(1, delta * 8);
+    foldMemberB(object, profile, at.current);
+  });
+  return <primitive object={object} position={position} />;
 }
 
 /**
@@ -429,13 +510,25 @@ export function hingeSpecsFor({
  * back face, and re-parenting does not move a millimetre of that — the point it
  * is placed on is simply expressed in the door's frame instead of the unit's.
  *
- * ARTICULATION, honestly scoped (F2.2). The body follows the leaf RIGIDLY: the
- * cup stays in its bore and the arm sweeps with the door. A real CLIP top folds
- * at its knuckle as it opens, so at 110° the arm lies along the carcass side
- * rather than square off the door. THAT IS A RIG, NOT A TRANSFORM — it needs
- * the model split at the knuckle and a joint angle driven off the swing, and
- * inventing one would be inventing geometry Blum has not published here. It is
- * named as future work and left undone rather than approximated.
+ * ARTICULATION, honestly scoped (turn 23, F2.2). The body followed the leaf
+ * RIGIDLY: the cup stayed in its bore and the arm swept with the door. A real
+ * CLIP top folds at its knuckle as it opens, so at 110° the arm lies along the
+ * carcass side rather than square off the door. THAT IS A RIG, NOT A TRANSFORM
+ * — it needs the model split at the knuckle and a joint angle driven off the
+ * swing — and turn 23 named it as future work rather than approximating it.
+ *
+ * ─── TURN 24 (CLAUDE.md F1): THE RIG IS BUILT, AND THIS IS ITS DOOR HALF ───
+ *
+ * The owner's verdict on the rigid body was that it must BREAK in the middle.
+ * It does: `3d/hingeModels.js` cuts the clone in two by NODE NAME, this
+ * component draws MEMBER A — the cup, its flange, the clip cap and the link
+ * cover, the pieces clipped into the leaf — and `CarcassHinges` draws MEMBER B
+ * beside the plate and folds it after the door. The joint is ONE hinge standing
+ * in for Blum's seven-link cross, and it says so where it is applied.
+ *
+ * With `profile.hardware.hinge.cliptop.rig.enabled` FALSE this component is
+ * turn 23's again, undivided — and hides the model beyond ~15° instead, which
+ * is the owner's own fallback (F1.4).
  *
  * The open/close animation is the door's own `openFronts` value. Nothing in
  * this file drives it (F2.3).
@@ -457,12 +550,21 @@ export function hingeSpecsFor({
  */
 export function DoorHinges({
   items, profile, colour, pivot, specs = null, storageBase = '',
-  surface = 'room', scope = '', onEditHinge = null,
+  surface = 'room', scope = '', onEditHinge = null, openDeg = 0,
 }) {
   const H = profile.hardware.hinge;
+  // ─── TURN 24 (CLAUDE.md F1.1): MEMBER A, AND ONLY MEMBER A ────────────────
+  // The cup, its flange, the clip cap and the link cover — the pieces that are
+  // clipped INTO the door. The arm went back to the carcass this turn, where it
+  // is bolted to the plate. With the rig switched off this is the whole model
+  // again, exactly as turn 23 drew it (F1.4).
   const { urls, models } = useHingeModels({
-    items, specs, kind: 'hinge', profile, storageBase,
+    items, specs, kind: 'cup', profile, storageBase,
   });
+  // …and the other half of F1.4: with the flag off, an opening door HIDES the
+  // model beyond ~15° and shows the plate only. A wrong pose held on screen is
+  // worse than an honest absence, and this is the owner's own fallback.
+  const hidden = rigHidesBody(profile, openDeg);
 
   // Turn 21 (R4) / turn 23 (F2.4): the same report the plate makes, and it
   // names its PARENT — which is the whole of F2 stated as a fact the walk can
@@ -471,12 +573,16 @@ export function DoorHinges({
     reportHardware(surface, 'hinge', items.map((h, i) => ({
       key: h.panelId ?? i,
       url: urls[i] || null,
-      model: Boolean(models[i]?.model),
-      reason: models[i]?.reason,
+      model: Boolean(models[i]?.model) && !hidden,
+      reason: hidden ? 'rig-off-hidden' : models[i]?.reason,
       parent: 'door',
+      // Turn 24 (F1.5): which MEMBER this row is. `null` is the rig-off answer
+      // and it is not a gap — it says the model is the undivided turn-23 one.
+      member: profile.hardware.hinge.cliptop.rig?.enabled ? 'A' : null,
+      nodes: models[i]?.model?.userData?.ccHingeMemberNodes || null,
       finish: models[i]?.model?.userData?.ccFinish || null,
     })), scope);
-  }, [surface, scope, items, urls, models]);
+  }, [surface, scope, items, urls, models, hidden, profile]);
 
   const drawnModel = models.some((m) => m.model);
 
@@ -538,7 +644,7 @@ export function DoorHinges({
     <>
       {/* The model, standing on the drilled cup point — in the DOOR's frame,
           which is the one line that makes it swing. */}
-      {models.map((m, i) => (m.model ? (
+      {(hidden ? [] : models).map((m, i) => (m.model ? (
         <primitive
           key={`hm${items[i].panelId}-${items[i].y}`}
           object={m.model}

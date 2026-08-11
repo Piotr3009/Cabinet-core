@@ -58,6 +58,17 @@ function publish() {
     finishes: (family) => [...new Set(hardwareRows()
       .filter((r) => r.family === family && r.model)
       .map((r) => r.finish))],
+    // ─── TURN 24 (CLAUDE.md F1.5 / F12.3) ───────────────────────────────────
+    /** Which MEMBER of the split hinge each mounted row is: 'A', 'B' or null. */
+    members: (family) => [...new Set(hardwareRows()
+      .filter((r) => r.family === family && r.model)
+      .map((r) => r.member))],
+    /** The node names one member is actually holding, off the very clone. */
+    nodes: (family) => [...new Set(hardwareRows()
+      .filter((r) => r.family === family && r.model)
+      .flatMap((r) => r.nodes || []))].sort(),
+    /** …and where the fold pivot landed, in the file's own millimetres. */
+    pivot: (family) => (hardwareRows().find((r) => r.family === family && r.pivotMm) || {}).pivotMm || null,
   };
 }
 
@@ -92,6 +103,11 @@ export function reportHardware(surface, family, rows, scope = '') {
     reason: r.reason ?? null,
     parent: r.parent ?? null,
     finish: r.finish ?? null,
+    // Turn 24 (CLAUDE.md F1.5): the SPLIT, as facts the walk can assert off
+    // the scene rather than a picture of a hinge it has to believe.
+    member: r.member ?? null,
+    nodes: Array.isArray(r.nodes) ? r.nodes : null,
+    pivotMm: r.pivotMm ?? null,
   })));
   publish();
 }

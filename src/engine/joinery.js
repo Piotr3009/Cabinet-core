@@ -127,10 +127,22 @@ export function panelPlacement(panel) {
         n: [0, 1, 0],
       };
     case 'VPART':
+      // ─── TURN 24 (CLAUDE.md F8): THE PARTITION LIES ALONG THE GRAIN ───────
+      //
+      // It was drawn `height × depth` — the LISP's "rotated 90" — with its CNC
+      // x running UP the piece. The owner's production law wins: the grain runs
+      // top-to-bottom like the sides, so the piece is drawn `depth × height`
+      // and its frame is the same shape BUL's is — x from the FRONT of the
+      // cabinet towards the back, y up.
+      //
+      // It is a ROTATION and not a mirror, which is the thing to check: the
+      // handedness is unchanged (u × v = −n, as on every other case here), so
+      // the machined face is still the partition's LEFT one and the hinge
+      // pattern's mirror rule reads exactly as it did.
       return {
-        origin: [box.x, box.y, box.z],
-        u: [0, 1, 0],
-        v: [0, 0, 1],
+        origin: [box.x, box.y, box.z + box.d],
+        u: [0, 0, -1],
+        v: [0, 1, 0],
         n: [-1, 0, 0],
       };
     case 'BACK':

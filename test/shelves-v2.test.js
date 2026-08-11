@@ -30,6 +30,8 @@ import { computeCabinet, isShelfLocked, shelfVariant } from '../src/engine/cabin
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { shelfGapLadder } from '../src/engine/items.js';
+// Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
+import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const store = () => useProjectStore.getState();
 const G = P.board.thickness;
@@ -120,6 +122,7 @@ test('a BARE kit call still cuts exactly what the AutoLISP cuts', () => {
 test('a unit in a PROJECT sets its partition back with the shelves', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 2);
   store().addHangerRail(id);
   const r = resultOf(id);
@@ -137,6 +140,7 @@ test('a unit in a PROJECT sets its partition back with the shelves', () => {
 test('a partition can be stretched out to the face on its own', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  confirmDrawerBox();
   store().addDrawers(id, 2);
   const internalDepth = unitOf(id).params.depth - G;
   store().setPartitionFront(id, 0);
@@ -180,7 +184,14 @@ test('an adjustable shelf is drilled for pins; a FIX one is drilled for screws',
 
   store().setShelfVariant(id, a.id, 'fixed');
   assert.equal(drillsOf(id, 'shelf').length, 1 * 2 * pinsPerRow, 'the adjustable one keeps its pins');
-  assert.equal(drillsOf(id, 'shelf_screw').length, 2 * 3, 'three screws per side for the fixed one');
+  // ─── TURN 24 (CLAUDE.md F7): THE JOINT IS THE OWNER'S NOW ────────────────
+  // "jak fix, to nie ma 3 poziomów 7,5 — to się wyklucza." A fix shelf is
+  // screwed AND biscuited, in the butt-joint set turn 13 recorded as his own
+  // answer to BLOCKERS #59 — two screws and a 70 mm mark per set, two sets on
+  // a shelf this deep. What this test has always been about is unchanged: no
+  // pins for a shelf that cannot move, and screws instead.
+  assert.ok(drillsOf(id, 'shelf_screw').length > 0, 'a fix shelf is screwed');
+  assert.equal(drillsOf(id, 'shelf_screw').length % 2, 0, 'the same pattern on both sides');
   assert.ok(b);
 });
 
@@ -190,7 +201,9 @@ test('a shelf screw is ⌀3, on the SCREWS layer, on the shelf’s own centre li
   store().setShelfVariant(id, item.id, 'fixed');
 
   const screws = drillsOf(id, 'shelf_screw');
-  assert.equal(screws.length, 6);
+  // Turn 24 (CLAUDE.md F7): two sets per bearing face on a 540-deep shelf,
+  // two screws in each — the owner's set, not turn 8's three-across-the-side.
+  assert.equal(screws.length, 8);
   for (const s of screws) {
     assert.equal(s.d, P.puzzle.screwDiameter);
     assert.equal(s.layer, P.puzzle.layers.screw, 'SCREWS_3MM — the layer the LISP already uses');
@@ -198,12 +211,18 @@ test('a shelf screw is ⌀3, on the SCREWS layer, on the shelf’s own centre li
     assert.equal(s.y, unitOf(id).params.sections[0].items[0].pos_mm + G / 2);
   }
   assert.deepEqual([...new Set(screws.map((s) => s.panel))].sort(), ['BUL', 'BUR']);
-  // Three across the depth, at the same places the partition's screws go.
-  const sideW = unitOf(id).params.depth - G;
-  assert.deepEqual(
-    [...new Set(screws.map((s) => s.x))].sort((x, y) => x - y),
-    [P.puzzle.screwFromEnd, sideW / 2, sideW - P.puzzle.screwFromEnd],
-  );
+  // …and every one of them lands ON the shelf's own run down the side, which
+  // is what makes it a joint rather than three holes down a board.
+  const shelf = resultOf(id).panels.find((p) => p.part === 'SHELF');
+  const depth = unitOf(id).params.depth;
+  const setback = depth - (shelf.box.z + shelf.box.d);
+  for (const s of screws) {
+    const fromFront = s.panel === 'BUL' ? s.x : (depth - G) - s.x;
+    assert.ok(
+      fromFront >= setback - 1e-6 && fromFront <= setback + shelf.box.d + 1e-6,
+      `${s.panel} ${s.x} is on the shelf's run`,
+    );
+  }
 });
 
 test('a LOCKED adjustable shelf is drilled exactly like a fixed one', () => {
@@ -211,7 +230,7 @@ test('a LOCKED adjustable shelf is drilled exactly like a fixed one', () => {
   const item = itemsOf(id)[0];
   store().setShelfLocked(id, item.id, true);
   assert.equal(drillsOf(id, 'shelf').length, 0, 'no pins for a shelf that cannot move');
-  assert.equal(drillsOf(id, 'shelf_screw').length, 6);
+  assert.equal(drillsOf(id, 'shelf_screw').length, 8);   // turn 24 (F7): the set
   // …and unlocking gives them back.
   store().setShelfLocked(id, item.id, false);
   assert.equal(drillsOf(id, 'shelf_screw').length, 0);

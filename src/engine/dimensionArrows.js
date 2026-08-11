@@ -46,7 +46,42 @@ export function dimensionStyle(profile) {
     extensionMm: num(S.extensionMm, 4),
     gapMm: num(S.gapMm, 2),
     minSpanMm: num(S.minSpanMm, 0.5),
+    // Turn 24 (CLAUDE.md F10): how far the cursor may stray before a shown set
+    // fades. It lives in `profile.editor` — it is a property of the TOOL and
+    // not of the drawing's ink — and is read THROUGH here so both surfaces get
+    // one answer from one call.
+    hoverMagnetMm: num(profile?.editor?.hoverMagnetMm, num(S.hoverMagnetMm, 5)),
   };
+}
+
+/**
+ * DOES THE HOVERED SET STAY? (turn 24, CLAUDE.md F10.1)
+ *
+ * Owner: turn 23's arrows vanish at a pixel's twitch. They did, because the set
+ * was tied to `onPointerLeave` on a hairline shape and the smallest hand
+ * movement off the feature took the measurement away mid-read.
+ *
+ * The cure is a magnet, and it is one comparison: once SHOWN, the set stays
+ * while the cursor is within `hoverMagnetMm` of the feature it belongs to, and
+ * fades the moment it is not. It is measured to the feature's own box, not to
+ * its centre — a joiner running his eye along a 70 mm mark has not left it.
+ *
+ * @param {object} args
+ *   cursor   { x, y } in the same millimetres as the box, or null for "gone"
+ *   box      { x, y, w, h } — the feature's own extent; a point is w = h = 0
+ *   magnetMm
+ * @returns {boolean} true while the set should stay on screen
+ */
+export function hoverHolds({ cursor, box, magnetMm = 5 }) {
+  if (!cursor || !box) return false;
+  const x = Number(cursor.x);
+  const y = Number(cursor.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+  const w = Math.max(0, Number(box.w) || 0);
+  const h = Math.max(0, Number(box.h) || 0);
+  const dx = Math.max(Number(box.x) - x, 0, x - (Number(box.x) + w));
+  const dy = Math.max(Number(box.y) - y, 0, y - (Number(box.y) + h));
+  return Math.hypot(dx, dy) <= Math.max(0, Number(magnetMm) || 0);
 }
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];

@@ -230,6 +230,35 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── HOVER DIMENSIONS (turn 23, CLAUDE.md F8) ───────────────────────────
+  //
+  // Owner: the corner caption is not what he asked for. He wants thin, small,
+  // beautiful BLUE dimension arrows that appear on hover and vanish on leave —
+  // like a drawing.
+  //
+  // ONE STYLE (F8.3), here, consumed by BOTH surfaces: the CNC part detail's
+  // SVG and the 3-D scene's meshes. The geometry that turns it into a drawing
+  // is `engine/dimensionArrows.js`, and neither surface invents an arrowhead.
+  //
+  // Everything is in MILLIMETRES, in the drawing's own frame, so a dimension is
+  // the same weight on a 300 mm shelf as on a 2400 mm side — the same rule
+  // `dimensions` below has followed since turn 5.
+  hoverDimensions: {
+    // Thin blue. Deliberately NOT the drawing-office navy or the red of the
+    // permanent dimensions (`dimensions.colours`): this is a MOMENT — it
+    // appears under the pointer and goes — and it has to read as something the
+    // hand is doing rather than as something the drawing says.
+    colour: '#3B82F6',
+    strokeMm: 0.8,
+    arrowMm: 6,                // the open head's stroke length
+    arrowAngle: 20,            // …and how far it opens, in degrees
+    textMm: 11,
+    offsetMm: 14,              // how far a measurement stands clear of the line
+    extensionMm: 4,            // how far the extension line runs past it
+    gapMm: 2,                  // …and the gap it leaves at the feature itself
+    minSpanMm: 0.5,            // under this there is nothing to dimension
+  },
+
   // ─── THE BACK HOLDS EVERY PARTITION (turn 23, CLAUDE.md F6) ─────────────
   //
   // The owner's law, and it is the LISP's own pattern densified rather than a
@@ -2640,9 +2669,10 @@ export function migrateCabinetProfile(profile) {
     },
     shelfHoles: { ...D.shelfHoles, ...profile.shelfHoles },
     puzzle: { ...D.puzzle, ...profile.puzzle, layers: { ...D.puzzle.layers, ...profile.puzzle?.layers } },
-    // Turn 23 (F6): a stored profile made before the back-screw law existed
-    // comes back with it, like every other block here.
+    // Turn 23 (F6 / F8): stored profiles made before these blocks existed come
+    // back with them, like every other block here.
     partitionBack: { ...D.partitionBack, ...profile.partitionBack },
+    hoverDimensions: { ...D.hoverDimensions, ...profile.hoverDimensions },
     // Turn 13 (F8): a stored profile made before the biscuit pattern existed
     // must come back with it, exactly as every other block here does.
     biscuits: { ...D.biscuits, ...profile.biscuits },

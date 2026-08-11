@@ -14,6 +14,7 @@ import { resolveRunnerVariant } from '../engine/runners.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
 import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
+import { fieldFromX, xFromField } from '../engine/partitionPositions.js';
 import NumberField from './NumberField.jsx';
 
 // ─── The properties of ONE piece (turn 11, CLAUDE.md F3) ────────────────────
@@ -161,13 +162,18 @@ export default function ElementProperties({
           </Field>
         );
       case 'position-x':
+        // ─── TURN 23 (CLAUDE.md F10.1) ───
+        // The same cure turn 21 gave the shelf's height, on the other axis: the
+        // field is measured from the INSIDE face of the left side, which is
+        // where a joiner places a partition from. STORAGE DOES NOT MOVE —
+        // `xFromField` puts back exactly what `x_mm` has always meant.
         return (
           <Field key={key} label="From the left">
             <NumberField
               className="cc-input text-right"
-              value={item?.x_mm ?? 0}
-              title="The partition's left face, from the outside of the left side panel"
-              onCommit={(v) => setPartitionX(unit.id, item.id, v)}
+              value={fieldFromX(item?.x_mm ?? G, G)}
+              title="From the INSIDE face of the left side panel to this partition's near face"
+              onCommit={(v) => setPartitionX(unit.id, item.id, xFromField(v, G))}
             />
           </Field>
         );

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
@@ -16,6 +16,10 @@ import { elementLabel } from '../engine/elements.js';
 import { partDetailDrawing } from '../engine/drawings/partDetail.js';
 import { drawingLayer } from '../engine/drawings/layers.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
+import {
+  dimensionSet, dimensionStyle, featureDimensionRows,
+} from '../engine/dimensionArrows.js';
+import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import useContextGuard from '../3d/contextGuard.jsx';
 
 // ─── The element DETAIL window (turn 14, CLAUDE.md F7) ──────────────────────
@@ -47,6 +51,12 @@ import useContextGuard from '../3d/contextGuard.jsx';
 //   piece is ordered by.
 
 const PAD = 0.14;   // margin round the drawing, as a fraction of its long side
+// Turn 23 (CLAUDE.md F7): the zoom's own limits, in the part's millimetres —
+// 10 mm across the window is a ⌀5 hole filling it, and 5 m is any part in the
+// app lost in the middle. The main sheet's are wider because it holds a whole
+// project; a part is a part.
+const MIN_VIEW_MM = 10;
+const MAX_VIEW_MM = 5000;
 
 //   ─── TURN 23 (CLAUDE.md F1): AND THERE IS A WAY BACK ───
 //
@@ -94,8 +104,15 @@ export default function PartDetailModal() {
       maximised
       footer={(
         <>
+          {/* ─── TURN 23 (CLAUDE.md F8.1): THE CAPTION GOES AWAY ───────────
+              Owner: "the corner caption is not what he asked for." What a
+              hovered feature IS still belongs in words — a ⌀35 cup and a ⌀35
+              pocket are the same circle — but WHERE it is, which is what the
+              caption was mostly spending its room on, is drawn now. The
+              turn-20 sheet tooltip stays where it is: different surface,
+              different job. */}
           <span className="text-[11px] text-ink-400 flex-1 text-left" data-part-note="1">
-            {note || 'Hover a hole, a pocket or a mark to see what it is. Drag the left view to turn the piece over.'}
+            {note || 'Hover a hole, a pocket or a mark — it dimensions itself. Wheel to zoom, drag to pan, double-click to fit.'}
           </span>
           <button type="button" className="cc-btn-gold" onClick={closeModal}>Done</button>
         </>
@@ -117,7 +134,7 @@ export default function PartDetailModal() {
             className="flex-1 min-h-[240px] rounded border border-shell-600 bg-[#131313] overflow-hidden"
             data-part-drawing="1"
           >
-            <PartDrawing drawing={drawing} hovered={hovered} onHover={setHovered} />
+            <PartDrawing drawing={drawing} hovered={hovered} onHover={setHovered} profile={profile} />
           </div>
 
           <div className="flex items-start gap-3">
@@ -162,21 +179,97 @@ export default function PartDetailModal() {
 /**
  * The drawing. Entities in, SVG out — and every machining is its own DOM node,
  * which is what makes F7.3's hover possible at all.
+ *
+ * ─── TURN 23 (CLAUDE.md F7): IT ZOOMS ──────────────────────────────────────
+ *
+ * Owner: "the part preview in the editor detail is fixed." Wheel zooms about
+ * the cursor, drag pans, double-click or the ⌂ fits — and the grammar is the
+ * MAIN CNC SHEET's, extracted to `lib/sheetView.js` and consumed by both, so
+ * there is no possibility of the two behaving differently. Turn 20's capture-on
+ * -MOVEMENT law comes with it: nothing is captured on a press, so a click still
+ * reaches the feature under it.
+ *
+ * NOTHING ABOUT THE DRAWING CHANGES (F7.2). It is presentation: the same
+ * entities, in the same frame, seen through a different window.
  */
-function PartDrawing({ drawing, hovered, onHover }) {
+function PartDrawing({
+  drawing, hovered, onHover, profile,
+}) {
   const { size } = drawing;
+  const svgRef = useRef(null);
+  const wrapRef = useRef(null);
   const pad = Math.max(size.w, size.h) * PAD + drawing.dimensionOffset;
   // The drawing's own frame has y UP (every engine drawing does); SVG has y
-  // down, so the whole picture is flipped once here rather than every entity
-  // being written backwards.
-  const viewBox = `${-pad} ${-size.h - pad} ${size.w + pad * 2} ${size.h + pad * 2}`;
+  // down, so the whole picture is flipped once by the group below rather than
+  // every entity being written backwards. The VIEW therefore works in the
+  // flipped frame, which is what `lib/sheetView.js` speaks.
+  const content = useMemo(() => ({
+    x: -pad, y: -size.h - pad, w: size.w + pad * 2, h: size.h + pad * 2,
+  }), [pad, size.w, size.h]);
+  const px = useElementSize(wrapRef);
+  const view = useSheetView({
+    svgRef,
+    content,
+    size: px,
+    min: MIN_VIEW_MM,
+    max: MAX_VIEW_MM,
+    panThreshold: profile.cnc.annotation.panThresholdPx,
+    // A dimension chasing the cursor across a drawing being dragged is noise.
+    onPanStart: () => onHover(null),
+  });
   const dimInk = drawingLayer('DIMENSIONS').colour;
   const outlineColour = drawing.legend.find((l) => l.name === drawing.outlineLayer)?.colour || '#f0ece4';
   const lit = (id) => hovered === id;
 
+  // ─── TURN 23 (CLAUDE.md F8.1): THE HOVER IS A DRAWING ────────────────────
+  //
+  // "…hovering a drill/pocket/feature draws dimension arrows from the feature
+  // to the part's nearest edges and to the nearest neighbouring feature —
+  // extension lines, arrowheads, the value on the line, formatMm." The corner
+  // caption turn 22 put in the footer is gone; this is what replaces it.
+  const style = useMemo(() => dimensionStyle(profile), [profile]);
+  const arrows = useMemo(() => {
+    if (!hovered) return [];
+    const centreOf = (m) => (m.kind === 'pocket'
+      ? { x: m.x + m.w / 2, y: m.y + m.h / 2 }
+      : (m.kind === 'mark'
+        ? { x: (m.from[0] + m.to[0]) / 2, y: (m.from[1] + m.to[1]) / 2 }
+        : { x: m.x, y: m.y }));
+    const me = drawing.machinings.find((m) => m.id === hovered);
+    if (!me) return [];
+    return dimensionSet(featureDimensionRows({
+      feature: centreOf(me),
+      size: { w: size.w, h: size.h },
+      others: drawing.machinings.filter((m) => m.id !== hovered).map((m) => ({ id: m.id, ...centreOf(m) })),
+      style,
+    }), style);
+  }, [hovered, drawing.machinings, size.w, size.h, style]);
+
+  const viewBox = view.box
+    ? `${view.box.x} ${view.box.y} ${view.box.w} ${view.viewH}`
+    : `${content.x} ${content.y} ${content.w} ${content.h}`;
+
   return (
-    <svg className="w-full h-full" viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
-      <g transform="scale(1 -1)">
+    <div ref={wrapRef} className="w-full h-full relative">
+      <button
+        type="button"
+        className="absolute right-1 top-1 z-10 cc-btn-ghost text-[11px] px-1.5 py-0.5"
+        data-part-fit="1"
+        title="Fit the part to the window (or double-click the drawing)"
+        onClick={view.fit}
+      >
+        ⌂
+      </button>
+      <svg
+        ref={svgRef}
+        className="w-full h-full"
+        style={{ cursor: view.panning ? 'grabbing' : 'default', touchAction: 'none' }}
+        viewBox={viewBox}
+        preserveAspectRatio="xMidYMid meet"
+        onDoubleClick={view.fit}
+        {...view.handlers}
+      >
+        <g transform="scale(1 -1)">
         {drawing.outline.length >= 2 && (
           <polygon
             points={drawing.outline.map(([x, y]) => `${x},${y}`).join(' ')}
@@ -242,8 +335,43 @@ function PartDrawing({ drawing, hovered, onHover }) {
             </text>
           );
         })}
-      </g>
-    </svg>
+
+        {/* ─── F8.1: the hovered feature, dimensioned ───
+            Extension lines, open arrowheads, the value on the line. Thin blue,
+            from `profile.hoverDimensions` — the SAME style the scene's hover
+            arrows use, defined once and consumed twice. */}
+        {arrows.map((d) => (
+          <g key={d.key} data-hover-dim={String(d.key)}>
+            {d.segments.map(([a, b], i) => (
+              <line
+                // eslint-disable-next-line react/no-array-index-key -- a segment has no identity of its own
+                key={i}
+                x1={a[0]}
+                y1={a[1]}
+                x2={b[0]}
+                y2={b[1]}
+                stroke={style.colour}
+                strokeWidth={style.strokeMm}
+                vectorEffect="non-scaling-stroke"
+                strokeLinecap="round"
+              />
+            ))}
+            <text
+              x={d.text.at[0]}
+              y={d.text.at[1]}
+              fill={style.colour}
+              fontSize={style.textMm}
+              textAnchor="middle"
+              transform={`scale(1 -1) translate(0 ${-2 * d.text.at[1]}) rotate(${-d.text.angle} ${d.text.at[0]} ${d.text.at[1]})`}
+              style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+            >
+              {formatMm(d.value)}
+            </text>
+          </g>
+        ))}
+        </g>
+      </svg>
+    </div>
   );
 }
 

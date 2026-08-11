@@ -1945,8 +1945,25 @@ export const DEFAULT_CABINET_PROFILE = {
         // honest zero the MOVENTO block carries, and the same rule that the
         // first person to see one sitting proud of its cup corrects THESE
         // THREE NUMBERS and nothing else. BLOCKERS.
-        modelOrigin: { x: 0, y: 0, z: 0 },
-        plateOrigin: { x: 0, y: 0, z: 0 },
+        // ─── MEASURED, 11/08 (chat hotfix, owner: "koduj te zawiasy") ───
+        // 71B3550 GLB, parsed headless: bbox x −26.5..11, y ±28.5, z −29.48
+        // ..51.3; cup slab 37.5×57×16 at z 35.3..51.3 ⇒ authored axes ALREADY
+        // match the unit's (y up, +z into the door, arm to −z). The wrong
+        // picture the owner shot was the BBOX-MIN datum alone. These origins
+        // put the CUP CENTRE (x −7.75, y 0) at the drilled point with the
+        // FLANGE PLANE (z 35.3) on the door's back face:
+        //   modelOrigin = min − (cupX, 0, flangeZ)
+        // 173L6100 plate: 8.5×53×41.5, base at x −8.5 ⇒ after the −min shift
+        // the base already sits on the panel face growing +x; the origin
+        // centres the dowel line (y, z) on the drilled point.
+        modelOrigin: { x: -18.75, y: -28.5, z: -64.78 },
+        plateOrigin: { x: 0, y: -26.5, z: -20.75 },
+        // The hand the FILE is authored for. The body's bulk sits at −x of
+        // the cup, which mounted reads as a RIGHT-hung door; the view mirrors
+        // the clone (about the cup, scale.x) whenever the door's side differs.
+        // If a real render shows the release lever on the wrong side, flip
+        // this ONE letter — nothing else.
+        fileHand: 'R',
         // A cup hinge is a small object. A file whose longest axis is bigger
         // than this is not a CLIP top and the view draws the procedural body
         // instead of something the wrong size (the runners' `lengthTolerance`

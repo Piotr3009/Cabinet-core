@@ -270,23 +270,30 @@ function CarcassHinges({
     return () => { for (const off of offs) off(); };
   }, [wanted]);
 
-  const models = useMemo(() => wanted.map((w) => {
-    const take = (url, plate) => {
+  const models = useMemo(() => wanted.map((w, i) => {
+    const h = items[i];
+    const C = profile.hardware.hinge.cliptop;
+    const take = (url, plate, mirror) => {
       if (!url) return { model: null, reason: 'no-url' };
       const source = hingeSource(url);
       if (source?.failed) return { model: null, reason: 'failed' };
       if (!source?.loaded) return { model: null, reason: 'loading' };
       if (!hingeModelFits(source, profile)) return { model: null, reason: 'wrong-size' };
-      return { model: hingeModel(url, { profile, plate }), reason: null };
+      return { model: hingeModel(url, { profile, plate, mirror }), reason: null };
     };
-    const hinge = take(w.hinge, false);
-    const plate = take(w.plate, true);
+    // The file is authored for ONE hand (profile: `fileHand`); the other hand
+    // is the same clone mirrored about the cup — the runners' own rule, and
+    // the mirror pivot IS the cup because the measured origin put it there.
+    const hinge = take(w.hinge, false, h ? h.side !== C.fileHand : false);
+    // The plate's base grows +x off the panel face as authored; a door whose
+    // opening lies the other way (dir −1) takes the mirrored clone.
+    const plate = take(w.plate, true, h ? h.dir === -1 : false);
     return {
       hinge: hinge.model, plate: plate.model, hingeReason: hinge.reason, plateReason: plate.reason,
     };
     // `arrived` is the dependency that matters: a clone taken before the file
     // lands holds nothing, so it has to be re-taken after it does.
-  }), [wanted, profile, arrived]);
+  }), [wanted, items, profile, arrived]);
 
   // ─── TURN 21 (CLAUDE.md R4 / F2.3) ───
   // What the walk is allowed to believe: the exact url string this component
@@ -533,7 +540,7 @@ function Runners({
     // `arrived` is the dependency that matters: the clone must be re-taken
     // AFTER the file lands, or it holds nothing (3d/materials.js says the same
     // thing about a texture clone taken too early).
-  }), [wanted, profile, arrived]);
+  }), [wanted, items, profile, arrived]);
 
   // Turn 21 (CLAUDE.md R4 / F6.3): the same report the hinges make, so the
   // walk can tell a MODEL from a stand-in in the editor as well as in the room.

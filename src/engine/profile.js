@@ -230,6 +230,35 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── THE BACK HOLDS EVERY PARTITION (turn 23, CLAUDE.md F6) ─────────────
+  //
+  // The owner's law, and it is the LISP's own pattern densified rather than a
+  // new idea: the drawer-panel partitions already screw through the back
+  // (`drawWardrobeDPHolesBACK`, KIT_WARDROBE_FULL L389-400 — `SCREWS_3MM`, one
+  // hole 50 mm above the partition's bottom and one 50 mm below its top). The
+  // INTERACTIVE vertical partition gets the same joint, with the run filled in
+  // so a 2.4 m divider is not held by two screws.
+  //
+  //   THE 50 IS THE LISP'S.   `(+ y0 dpBottomY 50.0)` / `(+ y0 dpTopY -50.0)`.
+  //   THE 400 IS THE OWNER'S. "the pitch never exceeds 400."
+  //
+  // Read together they are one derivation and it is worth writing out, because
+  // it is the sort of rule that gets remembered as "about every 400":
+  //
+  //   a 2400 partition ⇒ span 2400 − 2×50 = 2300
+  //                    ⇒ gaps = ceil(2300 / 400) = 6
+  //                    ⇒ SEVEN screws at 2300 / 6 = 383.3 mm
+  //
+  // The ends are ALWAYS at 50 and the intermediates are spread EVENLY between
+  // them: a run of 383s with a short last gap is what you get from marching a
+  // tape from one end, and it is not what a joiner sets out.
+  partitionBack: {
+    fromEnd: 50,               // the LISP's own number, both ends
+    maxPitch: 400,             // the owner's cap on what is left in between
+    screwDiameter: 3,          // the ⌀3 the whole carcass is screwed with
+    layer: 'SCREWS_3MM',       // the LISP's own layer — joined, never duplicated
+  },
+
   // ─── Partition fixing: the biscuit set (turn 13, CLAUDE.md F8 / #59) ─────
   //
   // The owner's workshop truth, given as the reference pattern for a butt
@@ -238,6 +267,18 @@ export const DEFAULT_CABINET_PROFILE = {
   // 700 mm wide and three above it. The arithmetic is engine/biscuits.js; every
   // number it uses is here, which is what lets a workshop with a different
   // cutter or a different habit change the pattern without touching code.
+  //
+  // ─── TURN 23 (CLAUDE.md F5): IT IS APPLIED TO NOTHING ───────────────────
+  // Turn 13 applied this set to the vertical partition. The LISP does not:
+  // `drawWDR_PARTITION_PANEL` (KIT_WARDROBE_FULL L254-257) draws an OUTLINE and
+  // a LABEL and nothing else, and no kit in `reference/lisp/` names a
+  // `BISCUIT_4MM` layer at all. So the partition lost the borrowed set this
+  // turn and gained `partitionBack` above, which is the LISP's own joint.
+  //
+  // The BLOCK STAYS, and is not dead weight: it is the workshop's recorded
+  // standard for a butt joint (BLOCKERS #59, answered by the owner in turn 13),
+  // the layer name is part of his VCarve tool mapping, and `engine/biscuits.js`
+  // is still tested against his four widths. What it has today is no consumer.
   biscuits: {
     markLength: 70,            // the biscuit mark itself
     markTool: 4,               // …cut with the owner's dedicated 4 mm in-and-out program
@@ -2599,6 +2640,9 @@ export function migrateCabinetProfile(profile) {
     },
     shelfHoles: { ...D.shelfHoles, ...profile.shelfHoles },
     puzzle: { ...D.puzzle, ...profile.puzzle, layers: { ...D.puzzle.layers, ...profile.puzzle?.layers } },
+    // Turn 23 (F6): a stored profile made before the back-screw law existed
+    // comes back with it, like every other block here.
+    partitionBack: { ...D.partitionBack, ...profile.partitionBack },
     // Turn 13 (F8): a stored profile made before the biscuit pattern existed
     // must come back with it, exactly as every other block here does.
     biscuits: { ...D.biscuits, ...profile.biscuits },

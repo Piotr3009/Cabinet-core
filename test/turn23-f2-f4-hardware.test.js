@@ -285,8 +285,14 @@ test('F4.4 — what was applied is recorded on the clone, for the registry to pu
 });
 
 test('F4 — a profile saved before this turn comes back able to paint', () => {
-  // A turn-19 profile: the finishes are there, with no `material` on them.
+  // A turn-19 profile: the finishes are there, with no `material` on them. The
+  // three blocks below are what the migration reads as "this is a real stored
+  // profile" rather than an unknown shape it replaces wholesale — without them
+  // this test would pass against the defaults and prove nothing.
   const stored = migrateCabinetProfile({
+    carcass: { ...P.carcass },
+    puzzle: { ...P.puzzle },
+    wardrobe: { ...P.wardrobe },
     hardware: {
       hinge: {
         cliptop: {
@@ -298,6 +304,8 @@ test('F4 — a profile saved before this turn comes back able to paint', () => {
       },
     },
   });
+  assert.equal(stored.hardware.hinge.cliptop.finishes.length, 2);
+  assert.equal(stored.hardware.hinge.cliptop.finishes[0].label, 'Nickel', 'the stored row is really merged');
   assert.ok(hardwareFinishSpec(stored, 'hinge', 'onyx')?.metal, 'onyx still has numbers');
   assert.ok(hardwareFinishSpec(stored, 'runner', null)?.metal, '…and so does the runner');
   assert.ok(stored.hardware.hinge.cliptop.plasticMaterials.length);

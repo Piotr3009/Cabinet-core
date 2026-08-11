@@ -20,6 +20,11 @@ import * as shelfMagnet from './engine/shelfMagnet.js';
 import * as shelfTypes from './engine/shelfTypes.js';
 import * as hardwareUrl from './engine/hardwareUrl.js';
 import * as storageBase from './lib/storageBase.js';
+import * as cornice from './engine/cornice.js';
+import * as companyDefaults from './engine/companyDefaults.js';
+import * as hardwareSource from './lib/hardwareSource.js';
+import * as hardwareHealth from './lib/hardwareHealth.js';
+import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
 //
@@ -75,6 +80,17 @@ if (typeof window !== 'undefined') {
   };
   window.__ccLifts = lifts;
   window.__ccPlacement = menuPlacement;
+  // ─── Turn 22 (CLAUDE.md F1 / F2 / F3 / R4) ───
+  // The same reason a sixth time, for this turn's four questions. The CORNICE
+  // is pure geometry and the walk checks the run, the stop and the 45° against
+  // the very functions the 3D sweeps from; the CASCADE is what a claim about a
+  // company row has to be read off; and the HARDWARE SOURCE and HEALTH are R4
+  // again — "models loaded / expected" is asserted against the registries, not
+  // against the pixels that print them.
+  window.__ccT22 = {
+    cornice, companyDefaults, hardwareSource, hardwareHealth,
+  };
+  window.__cc.company = useCompanyDefaultsStore;
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

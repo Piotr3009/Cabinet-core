@@ -52,7 +52,10 @@ test('F11.2 — …and the runners it rides on, and only its own pair', () => {
   const mine = runners.filter((row) => row.drawer === 2);
   assert.equal(mine.length, 2, 'a pair');
   assert.deepEqual(mine.map((row) => row.side).sort(), ['L', 'R']);
-  assert.equal(mine[0].y, r.drillSummary.runner_rows_carcass_y[1], 'on the row the engine drills');
+  // Turn 21 (CLAUDE.md F1.3): on the runner's own underside, with the row the
+  // engine drills carried beside it.
+  assert.equal(mine[0].y, r.drillSummary.runner_bottoms_carcass_y[1], 'on the runner it rides');
+  assert.equal(mine[0].rowY, r.drillSummary.runner_rows_carcass_y[1], 'and the drilled row is still there');
 });
 
 test('F11.3 — EXPLODE takes the box apart along its own assembly axes', () => {

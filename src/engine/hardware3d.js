@@ -102,6 +102,21 @@ function hingeInstances(result, profile) {
 function runnerInstances(result, profile) {
   const rows = result.drillSummary?.runner_rows_carcass_y || [];
   if (!rows.length) return [];
+  // ─── TURN 21 (CLAUDE.md F1.3): THE MODEL STANDS ON THE RUNNER, NOT ON ITS
+  //     SCREWS ────────────────────────────────────────────────────────────
+  //
+  // Both the downloaded GLB and the grey stand-in are placed with their own
+  // BOTTOM at the instance's `y`, and turn 18 handed them the drilled row —
+  // the MOVENTO screw centres, `firstRowFromBottom` (38 mm) above the runner's
+  // underside. So every runner in the app was drawn 38 mm high, exactly like
+  // the box that turn 21 has just re-anchored, and the model's own screw holes
+  // sat 38 mm above the holes the machine drills for them.
+  //
+  // The runner's underside is its own quantity now
+  // (`runner_bottoms_carcass_y`). `rowY` travels with the instance so the
+  // screw centres are still reachable — they are what the carcass is drilled
+  // on, and the model's holes are what they must land in.
+  const bottoms = result.drillSummary?.runner_bottoms_carcass_y || [];
 
   const W = result.params.width;
   const G = result.params.board_t;
@@ -124,17 +139,18 @@ function runnerInstances(result, profile) {
   const rightFace = xs.length ? Math.max(...xs.map((x, i) => x + sides[i].box.w)) : W - G;
 
   const out = [];
-  for (const [i, y] of rows.entries()) {
+  for (const [i, rowY] of rows.entries()) {
     // Turn 18 (CLAUDE.md F6.4): WHICH DRAWER this pair belongs to, counted from
     // the floor exactly as the engine counts them everywhere else. The variant
     // is a per-drawer answer, so the view has to be able to ask the question,
     // and the rows are already in the engine's own order.
     const drawer = i + 1;
+    const y = Number.isFinite(bottoms[i]) ? bottoms[i] : rowY;
     out.push({
-      kind: 'runner', side: 'L', drawer, x: leftFace, y, z, length, thickness: HW.profileThickness,
+      kind: 'runner', side: 'L', drawer, x: leftFace, y, rowY, z, length, thickness: HW.profileThickness,
     });
     out.push({
-      kind: 'runner', side: 'R', drawer, x: rightFace, y, z, length, thickness: HW.profileThickness,
+      kind: 'runner', side: 'R', drawer, x: rightFace, y, rowY, z, length, thickness: HW.profileThickness,
     });
   }
   return out;
@@ -152,7 +168,11 @@ function runnerInstances(result, profile) {
 function rodInstances(result, profile) {
   const line = result.hardware.find((h) => h.role === 'runner_sync_rods');
   if (!line || !(line.qty > 0)) return [];
-  const rows = result.drillSummary?.runner_rows_carcass_y || [];
+  // Turn 21 (CLAUDE.md F1.3): the rod ties the two RUNNERS together, so it
+  // rides with them — on the runner's underside, not on its screw centres.
+  const rows = result.drillSummary?.runner_bottoms_carcass_y?.length
+    ? result.drillSummary.runner_bottoms_carcass_y
+    : (result.drillSummary?.runner_rows_carcass_y || []);
   const sides = result.panels.filter((p) => p.part === 'DRAWER-SIDE' && p.box);
   if (!rows.length || !sides.length) return [];
   const xs = sides.map((p) => p.box.x);

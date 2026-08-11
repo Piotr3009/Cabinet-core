@@ -938,6 +938,9 @@ export function computeCabinet(params, profileOverride) {
   let boxFrontLen = null; let bottomW = null; let bottomD = null;
   let boxSetback = null;
   let runnerRowsDp = []; let runnerRowsCarcass = [];
+  // Turn 21 (CLAUDE.md F1.1): the runner's own UNDERSIDE, which is what the
+  // drawer box hangs off. `runnerRows*` above stay the SCREW centres.
+  let runnerBottomsDp = []; let runnerBottomsCarcass = [];
   // Per-drawer, bottom-up. With every drawer at the profile default these are
   // constant lists and every formula below collapses to the LISP's fixed one.
   let drawerHeights = [];
@@ -995,8 +998,24 @@ export function computeCabinet(params, profileOverride) {
       boxSideH.push(side);
       boxFrontHs.push(side - DR.boxFrontHeightDeduction - G - DR.boxFrontHeightExtra);
     }
+    // ─── TURN 21 (CLAUDE.md F1.1): TWO NAMES, TWO MEANINGS ──────────────────
+    //
+    // The runner's BOTTOM and the runner's SCREW ROW are not the same line and
+    // never were. `firstRowFromBottom` (38) is the MOVENTO drilling offset —
+    // where the carcass is drilled — and turn 20 used the drilled row as the
+    // box's anchor as well, so every box in the app hung 38 mm high. The two
+    // quantities are named apart here so nothing can reuse one for the other:
+    //
+    //   runnerBottoms…   the line the runner's own underside stands on. The
+    //                    BOX hangs off this (F1.2).
+    //   runnerRows…      the screw centres, 38 above it. The CARCASS DRILLING
+    //                    and the runner hole pattern read this, and nothing
+    //                    else does.
     for (let i = 0; i < numDrawers; i += 1) {
-      const rel = zoneOffsets[i] + P.wardrobe.runners.firstRowFromBottom;
+      const bottom = zoneOffsets[i];
+      const rel = bottom + P.wardrobe.runners.firstRowFromBottom;
+      runnerBottomsDp.push(bottom);
+      runnerBottomsCarcass.push(G + bottom);
       runnerRowsDp.push(rel);
       runnerRowsCarcass.push(G + rel);
     }
@@ -1028,7 +1047,31 @@ export function computeCabinet(params, profileOverride) {
     const frontY = [];
     let acc = 0;
     for (const h of heights) { frontY.push(acc); acc += h + B.gap; }
-    const runnerRows = frontY.map((y, i) => (i === 0 ? G : y) + B.firstRowFromBottom);
+    // ─── TURN 21 (CLAUDE.md F1.1): THE RUNNER'S BOTTOM IS ITS OWN QUANTITY ──
+    //
+    // KIT_BUDR_FULL L712-714: the runner's UNDERSIDE is flush with the bottom
+    // edge of the façade it carries (drawer 2 up), and stands on the carcass
+    // floor for drawer 1, whose front runs G lower to cover that floor. THAT
+    // line is what a drawer box hangs off.
+    //
+    // `runnerRows` is 38 mm above it — `firstRowFromBottom`, the MOVENTO screw
+    // offset — and is the CARCASS DRILLING and nothing else. Turn 20 anchored
+    // the box on the screw row, so every box in the app hung 38 mm high and
+    // the façade's pilot holes missed the box front's by exactly that. The
+    // owner read it off two drillings that did not meet.
+    //
+    // Two names, two meanings, no reuse. The pilot gate
+    // (test/turn21-f1-hole-alignment.test.js) is what holds them apart from
+    // here on: chain the pieces off `runnerBottomY` —
+    //
+    //   box side lower edge   + 13.5   (boxAboveRunner)
+    //   drawer bottom under   + 15     (runnerPocketWidth, the groove)
+    //   box front standing on + G      (the bottom board)
+    //   box-front pilot       + 50     (boxScrewFromEdge)
+    //   ────────────────────────────
+    //                         + 96.5   = the façade's own pilot, every time.
+    const runnerBottomY = frontY.map((y, i) => (i === 0 ? G : y));
+    const runnerRows = runnerBottomY.map((y) => y + B.firstRowFromBottom);
     // ─── TURN 18 (CLAUDE.md F5.4): THE BOX FITS THE OPENING ─────────────────
     //
     // A box side is `sideRatio` of its FRONT, which is right in a run of drawer
@@ -1070,7 +1113,11 @@ export function computeCabinet(params, profileOverride) {
     // in turn 21 whether an appliance box is re-cut, which is a cutting-list
     // decision and therefore his.
     if (boxCeiling != null) {
-      const over = roundTo(Math.max(...sideHs.map((s, i) => runnerRows[i] + B.boxAboveRunner + s)) - boxCeiling, 1);
+      // Turn 21 (CLAUDE.md F1.2): the box stands on the runner's BOTTOM, so
+      // that is where its top is measured from. The side height itself is
+      // untouched — it is still clamped off the screw row turn 18 clamped it
+      // off, which is what keeps the cut list byte-for-byte what it was.
+      const over = roundTo(Math.max(...sideHs.map((s, i) => runnerBottomY[i] + B.boxAboveRunner + s)) - boxCeiling, 1);
       if (over > 0) {
         warnings.push({
           code: 'APPLIANCE_DRAWER_BOX_OVER_SHELF',
@@ -1079,7 +1126,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     budr = {
-      heights, frontY, runnerRows, sideHs, boxFrontH,
+      heights, frontY, runnerRows, runnerBottomY, sideHs, boxFrontH,
       depth, maxDl, boxW, frontWidth, boxLen,
       bottomW: boxLen + B.bottomOversize,
       count: heights.length,
@@ -1831,14 +1878,17 @@ export function computeCabinet(params, profileOverride) {
       const zoneY = G + zoneOffsets[i - 1];
       const sideHeight = boxSideH[i - 1];
       const bfH = boxFrontHs[i - 1];
-      // ─── TURN 20 (CLAUDE.md F1): THE BOX RIDES THE RUNNER ─────────────────
-      // `zoneY + firstRowFromBottom` IS `drillSummary.runner_rows_carcass_y[i]`
-      // — the row the engine drills and the line the runner's underside stands
-      // on. The box is set off it by ONE number, the same number the BUDR kit
-      // below uses, because it is the same runner under the same box. Turn 18
-      // hung this box 9 mm BELOW the row and the BUDR's exactly ON it; the
-      // owner's eye test found the box "wrong against" hardware that was right.
-      const boxY = zoneY + P.wardrobe.runners.firstRowFromBottom + B.boxAboveRunner;
+      // ─── TURN 21 (CLAUDE.md F1.2): THE BOX RIDES THE RUNNER'S BOTTOM ──────
+      // The box is set off the runner's UNDERSIDE by ONE number, the same
+      // number the BUDR kit below uses, because it is the same runner under
+      // the same box. Turn 18 hung this box 9 mm BELOW the drilled row and the
+      // BUDR's exactly ON it; turn 20 put both on the row, which is 38 mm above
+      // the runner; turn 21 puts both on the runner. One law, three kits.
+      // Turn 21 (CLAUDE.md F1.1/F1.2): `zoneY` IS the runner's underside for a
+      // wardrobe drawer — `drillSummary.runner_bottoms_carcass_y[i]` — and the
+      // box hangs off THAT. Turn 20 added `firstRowFromBottom` here, which is
+      // the screw row 38 mm above it, so this box hung 38 mm high too.
+      const boxY = zoneY + B.boxAboveRunner;
       // ─── Turn 18 (CLAUDE.md F3.4): WHERE THE BOTTOM ACTUALLY IS ───────────
       // "Front and back of the box STAND ON the bottom", and the bottom stands
       // in the groove — so its underside is `runnerPocketWidth` above the
@@ -1921,15 +1971,17 @@ export function computeCabinet(params, profileOverride) {
         x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot,
       },
     ];
-    // ─── TURN 20 (CLAUDE.md F1): THE BOX RIDES THE RUNNER ───────────────────
-    // `budr.runnerRows[i]` is the drilled row and the runner's own underside;
+    // ─── TURN 21 (CLAUDE.md F1.2): THE BOX RIDES THE RUNNER'S BOTTOM ────────
+    // `budr.runnerBottomY[i]` is the line the runner's own underside stands on
+    // (flush with the façade's bottom edge, on the carcass floor for drawer 1);
     // the box side's lower edge stands `boxAboveRunner` above it, and the
     // bottom `runnerPocketWidth` above that — 28.5 mm over the runner, which is
-    // where a MOVENTO puts a drawer bottom. Turn 18 had this box sitting ON the
-    // row and the wardrobe's 9 mm under it; one law now, both kits.
+    // where a MOVENTO puts a drawer bottom. Turn 20 wrote `runnerRows` here,
+    // which is the SCREW row 38 mm higher, so every box hung 38 mm high and the
+    // façade's pilots missed the box front's by exactly that.
     for (let i = 1; i <= budr.count; i += 1) {
       const sh = budr.sideHs[i - 1];
-      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
+      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - DR.boxSideThickness]]) {
         panels.push(panel({
           id: `D${i}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
@@ -1942,7 +1994,7 @@ export function computeCabinet(params, profileOverride) {
     }
     for (let i = 1; i <= budr.count; i += 1) {
       const bfH = budr.boxFrontH[i - 1];
-      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
+      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       for (const suffix of ['BF', 'BB']) {
         const isFront = suffix === 'BF';
         const geom = { rotated: true, drawn_w: bfH, drawn_h: budr.boxLen, ...rectGeometry(bfH, budr.boxLen) };
@@ -1969,7 +2021,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     for (let i = 1; i <= budr.count; i += 1) {
-      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
+      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       const geom = rectGeometry(budr.bottomW, budr.depth);
       geom.holes = [];
       for (const x of [B.bottomScrewFromSide, budr.bottomW - B.bottomScrewFromSide]) {
@@ -3109,6 +3161,14 @@ export function computeCabinet(params, profileOverride) {
     shelf_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
     runner_rows_dp_y: runnerRowsDp,
     runner_rows_carcass_y: budr ? [...budr.runnerRows] : runnerRowsCarcass,
+    // ─── TURN 21 (CLAUDE.md F1.1/F1.3) ────────────────────────────────────
+    // The runner's own UNDERSIDE — not a drilling, which is why it is named
+    // apart from every `*_rows_*` key beside it. Two readers: the drawer box
+    // (engine, above) and the runner MODEL (3d, engine/hardware3d.js), both of
+    // which stand ON the runner rather than on its screws. The screw rows keep
+    // the carcass drilling and the runner hole pattern, unchanged.
+    runner_bottoms_dp_y: budr ? [] : runnerBottomsDp,
+    runner_bottoms_carcass_y: budr ? [...budr.runnerBottomY] : runnerBottomsCarcass,
     runner_carcass_side: runnerCarcassSide,
     runner_hole_x: [...RN.holeXPattern],
     ...(budr ? {

@@ -377,19 +377,24 @@ test('F5.4 — the drawer front takes its gap below the appliance, and the box f
   const side = r.panels.find((p) => p.part === 'DRAWER-SIDE');
   const bottom = r.panels.find((p) => p.id === 'BOTTOM');
   assert.ok(side.box.y >= bottom.box.y + bottom.box.h, 'the box stands above the carcass bottom');
-  // ─── Turn 20 (CLAUDE.md F1) ───
-  // The box RIDES its runner now — `boxAboveRunner` above the drilled row —
-  // and this clamp still measures the headroom from the ROW, because F1.2
-  // keeps turn 18's side heights and the turn allows exactly one CNC delta.
-  // So the SIDE is cut to the old clearance and the app WARNS that the box it
-  // makes stands that far past the shelf, rather than silently re-cutting a
-  // board (engine/cabinet.js, APPLIANCE_DRAWER_BOX_OVER_SHELF). What turn 18
-  // promised — the box is cut to the OPENING and not to the front — is exactly
-  // what is still asserted here.
+  // ─── Turn 21 (CLAUDE.md F1.2) ───
+  // The SIDE is still cut exactly as turn 18 cut it — the clamp measures the
+  // headroom from the drilled ROW and F1.2 leaves side heights untouched, which
+  // is what keeps this kit's DXF byte-for-byte what it was.
   assert.equal(side.box.h, shelf.box.y - r.drillSummary.runner_rows_carcass_y[0],
     'the side is cut to the opening under the shelf, not to 0.7 × its front');
-  assert.ok(r.warnings.some((w) => w.code === 'APPLIANCE_DRAWER_BOX_OVER_SHELF'),
-    'and the app says what riding the runner costs against that clamp');
+  // What HAS moved is where that side hangs. Turn 20 anchored it on the screw
+  // row, 38 mm above the runner, so the box stood past the appliance shelf and
+  // the app had to warn about it. On the runner's own bottom the same board
+  // finishes `firstRowFromBottom − boxAboveRunner` = 24.5 mm CLEAR of the
+  // shelf, and there is nothing left to warn about.
+  assert.ok(side.box.y + side.box.h <= shelf.box.y, 'the box clears the appliance shelf');
+  assert.equal(
+    shelf.box.y - (side.box.y + side.box.h),
+    P.baseDrawerUnit.firstRowFromBottom - P.baseDrawerUnit.boxAboveRunner,
+  );
+  assert.equal(r.warnings.some((w) => w.code === 'APPLIANCE_DRAWER_BOX_OVER_SHELF'), false,
+    'riding the runner instead of its screws costs nothing here');
 });
 
 // ─── F6 — the MOVENTO pipeline ──────────────────────────────────────────────
@@ -567,10 +572,17 @@ test('F6.2 — the LISP owns the positions: a runner row is the row the CNC dril
   const rows = r.drillSummary.runner_rows_carcass_y;
   const runners = hardwareInstances(r, P).runners;
   assert.equal(runners.length, rows.length * 2, 'a PAIR per row');
+  const bottoms = r.drillSummary.runner_bottoms_carcass_y;
   for (const [i, y] of rows.entries()) {
     const pair = runners.filter((x) => x.drawer === i + 1);
     assert.equal(pair.length, 2);
-    for (const x of pair) assert.equal(x.y, y, 'the model is a costume on the screws');
+    // Turn 21 (CLAUDE.md F1.3): the costume is still on the screws — the
+    // instance carries the drilled row — but the model STANDS on the runner's
+    // underside, which is 38 mm below it and is where a runner actually is.
+    for (const x of pair) {
+      assert.equal(x.rowY, y, 'the model is a costume on the screws');
+      assert.equal(x.y, bottoms[i], 'and it stands on the runner, not on its screws');
+    }
   }
   // The measured offset lives in ONE place, and it is a profile number.
   assert.deepEqual(Object.keys(P.hardware.runner.movento.modelOrigin).sort(), ['x', 'y', 'z']);

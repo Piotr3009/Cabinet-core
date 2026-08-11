@@ -40,8 +40,15 @@ const boxesOf = (r, part) => r.panels
  * runner rows — so a kit that grows a fourth drawer is covered the day it does.
  */
 function lawHolds(r, label) {
-  const rows = r.drillSummary?.runner_rows_carcass_y || [];
-  assert.ok(rows.length > 0, `${label}: the unit has runner rows to measure from`);
+  // ─── TURN 21 (CLAUDE.md F1.1) ───
+  // The anchor is the runner's own BOTTOM. Turn 20 wrote `runner_rows_carcass_y`
+  // here — the MOVENTO screw centres, `firstRowFromBottom` above it — so the
+  // law was right and the line it was measured from was 38 mm too high. Turn
+  // 21 keeps turn 20's two numbers exactly and moves them onto the runner.
+  const rows = r.drillSummary?.runner_bottoms_carcass_y || [];
+  assert.ok(rows.length > 0, `${label}: the unit has runner bottoms to measure from`);
+  const screwRows = r.drillSummary?.runner_rows_carcass_y || [];
+  assert.equal(screwRows.length, rows.length, `${label}: a screw row per runner`);
 
   const sides = boxesOf(r, 'DRAWER-SIDE');
   const bottoms = boxesOf(r, 'DRAWER-BOTTOM');
@@ -88,8 +95,10 @@ for (const [type, count] of [['BUDR2', 2], ['BUDR', 3], ['BUDR4', 4]]) {
     }, P);
     const rows = r.drillSummary.runner_rows_carcass_y;
     assert.equal(rows.length, count, `${type} has ${count} drawers`);
-    // The BOTTOM drawer's runner sits on the carcass floor — G + the kit's own
-    // first row — and the box rides it like any other, which is F1.3.
+    // The BOTTOM drawer's runner STANDS ON the carcass floor — G — and its
+    // screw row is the kit's own drilling offset above that. Two names, two
+    // meanings (turn 21, CLAUDE.md F1.1).
+    assert.equal(r.drillSummary.runner_bottoms_carcass_y[0], G);
     assert.equal(rows[0], G + P.baseDrawerUnit.firstRowFromBottom);
     lawHolds(r, type);
   });
@@ -150,22 +159,24 @@ test('F1 — the drawer heights a joiner types do not bend the law', () => {
   }
 });
 
-test('F1 — an appliance base obeys the law and SAYS what the old clamp costs', () => {
-  // Turn 18's clamp measures the headroom from the runner ROW, and the box now
-  // starts 13.5 mm above it. The board is deliberately NOT re-cut — F1.2 keeps
-  // the side heights turn 18 cut, and the turn allows exactly one CNC delta —
-  // so the app warns instead of silently moving an exported DXF.
+test('F1 — an appliance base obeys the law, and on the runner it fits the opening', () => {
+  // Turn 18's clamp measures the headroom from the runner ROW and F1.2 leaves
+  // the side heights exactly as it cut them, so nothing the machine cuts moves.
   const r = computeCabinet({
     type: 'OVEN_BASE', width: 600, height: 770, depth: 558, board_t: 18, front_t: 25, unit_num: 'OV1',
   }, P);
   lawHolds(r, 'OVEN_BASE');
   const side = r.panels.find((p) => p.part === 'DRAWER-SIDE');
   const shelf = r.panels.find((p) => p.id === 'FIXED');
-  const over = side.box.y + side.box.h - shelf.box.y;
-  assert.ok(over > 0, 'the clamped box does stand past the shelf');
-  const warned = r.warnings.find((w) => w.code === 'APPLIANCE_DRAWER_BOX_OVER_SHELF');
-  assert.ok(warned, 'and the app says so rather than re-cutting the board');
-  assert.match(warned.message, new RegExp(`${over} mm past the shelf`));
+  // ─── TURN 21 (CLAUDE.md F1.2) ───
+  // Turn 20's warning was the honest answer to a box anchored 38 mm too high:
+  // the side was cut to the opening measured from the screw row and then hung
+  // 13.5 mm above that row, so it stood past the shelf. On the runner's own
+  // bottom the same board finishes 24.5 mm clear of it and the warning is not
+  // raised — which is the F1 fix showing up in a cutting-list question the
+  // owner was asked to decide and no longer has to.
+  assert.ok(side.box.y + side.box.h <= shelf.box.y, 'the clamped box now clears the shelf');
+  assert.equal(r.warnings.find((w) => w.code === 'APPLIANCE_DRAWER_BOX_OVER_SHELF'), undefined);
 });
 
 test('F1 — a unit with no appliance shelf is not warned about one', () => {

@@ -278,6 +278,23 @@ export const DEFAULT_CABINET_PROFILE = {
       // that is what the profile carries.
       frontToSideDelta: 36,
       firstFrontAdjust: 3,     // bottom front is 3 mm shorter (clears the base)
+      // ─── TURN 21 (CLAUDE.md F1.4): THE FAÇADE'S PILOT HOLES ────────────────
+      //
+      // KIT_WARDROBE_FULL `drawWDR_DRAWER_FRONT` L313-322, verbatim: "drawerNum
+      // = drawer number (1=first, 93.5mm; rest=96.5mm from bottom)". The two
+      // numbers are ONE number: the bottom front is `firstFrontAdjust` shorter
+      // and starts that much higher, so 93.5 = 96.5 − 3 and both pilots land on
+      // the SAME world line — `runner bottom + 96.5` — exactly as the BUDR
+      // kit's do with its own `+ G` on drawer 1.
+      //
+      // They are here so the pilot gate can read the law rather than carry a
+      // copy of it, and so a workshop that moves its drawer screws moves them
+      // in one place. The wardrobe's fronts are not DRILLED by the engine yet
+      // (the LISP drills them, the engine emits a plain rectangle) — that gap
+      // is recorded in verify/t21/hole-alignment.md and in BLOCKERS, because
+      // closing it is a CNC delta and this turn's iron rule is zero.
+      frontScrewFromBottom: 96.5,
+      firstFrontScrewFromBottom: 93.5,   // = frontScrewFromBottom − firstFrontAdjust
       gap: 3,                  // gap between drawer fronts
       boxSideThickness: 18,
       boxWidthClearance: 10,   // box W = internal W − this − drawer-panel reduction

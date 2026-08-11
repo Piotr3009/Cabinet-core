@@ -125,8 +125,15 @@ test('a runner is under the box that runs on it, at the row the engine drills', 
     assert.equal(length, ordered.spec.length_mm,
       `${id}: the profile drawn is the profile ordered (${ordered.spec.length_mm} mm)`);
 
+    // Turn 21 (CLAUDE.md F1.3): the model stands on the runner's own BOTTOM,
+    // and carries the screw row it is drilled to beside it. Turn 18 drew both
+    // the GLB and the grey stand-in with their underside on the SCREW row, so
+    // every runner in the app was 38 mm high.
+    const bottoms = result.drillSummary.runner_bottoms_carcass_y;
     for (const r of runners) {
-      assert.ok(rows.includes(r.y), `${id}: ${r.y} is a runner row`);
+      assert.ok(bottoms.includes(r.y), `${id}: ${r.y} is a runner underside`);
+      assert.ok(rows.includes(r.rowY), `${id}: ${r.rowY} is a runner screw row`);
+      assert.equal(r.rowY - r.y, P.wardrobe.runners.firstRowFromBottom);
       assert.equal(r.length, length);
       assert.equal(r.z, sides[0].box.z, `${id}: it starts where the box starts`);
     }

@@ -25,6 +25,7 @@ const WARDROBE = JSON.parse(readFileSync(join(HERE, '..', 'fixtures', 'golden-wa
 const P = DEFAULT_CABINET_PROFILE;
 const DR = P.wardrobe.drawers;
 const G = P.board.thickness;
+const DR_RUNNERS = P.wardrobe.runners;
 
 const BASE = {
   type: 'WARDROBE', width: 600, height: 2150, depth: 578,
@@ -155,12 +156,21 @@ test('250 / 150 — runner rows sit under the drawer they carry', () => {
       `runner row ${i} at ${y} is outside drawer ${i + 1} (${r.derived.drawer_front_y[i]}..${top})`);
   });
 
-  // The box RIDES its runner: turn 20 (CLAUDE.md F1) replaced the wardrobe's
-  // own "hangs 9 mm below the row" with the one law both kits keep — the side's
-  // lower edge stands `baseDrawerUnit.boxAboveRunner` above the row.
+  // ─── TURN 21 (CLAUDE.md F1.1/F1.2) ───
+  // The box RIDES its runner — and the runner is its own BOTTOM, not the screw
+  // row 38 mm above it. Turn 20 anchored the box on `runner_rows_carcass_y`,
+  // which is the MOVENTO drilling offset, so every box hung 38 mm high. The
+  // row itself is unchanged (it is what the machine drills); what the box
+  // reads is `runner_bottoms_carcass_y`.
+  assert.deepEqual(r.drillSummary.runner_bottoms_dp_y, [0, 250 + DR.gap]);
+  assert.deepEqual(r.drillSummary.runner_bottoms_carcass_y, [G, G + 250 + DR.gap]);
+  r.drillSummary.runner_rows_carcass_y.forEach((row, i) => {
+    assert.equal(row, r.drillSummary.runner_bottoms_carcass_y[i] + DR_RUNNERS.firstRowFromBottom,
+      'the screw row is the runner bottom plus the drilling offset — two names, two meanings');
+  });
   for (const i of [1, 2]) {
     const box = drawerPanel(r, 'DRAWER-SIDE', i);
-    assert.equal(box.box.y, r.drillSummary.runner_rows_carcass_y[i - 1] + P.baseDrawerUnit.boxAboveRunner);
+    assert.equal(box.box.y, r.drillSummary.runner_bottoms_carcass_y[i - 1] + P.baseDrawerUnit.boxAboveRunner);
   }
 });
 

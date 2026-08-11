@@ -29,7 +29,7 @@
 //
 // Pure functions — no React, no store, no fetch.
 
-import { hardwareModelUrl } from './hardwareUrl.js';
+import { hardwareModelSrc, hardwareModelUrl } from './hardwareUrl.js';
 
 /**
  * The manifest, once somebody has read it. `null` until then, and `null` is a
@@ -198,6 +198,21 @@ export function runnerEntry({
 export function runnerModelUrl(entry, profile, storageBase = '') {
   const M = profile.hardware.runner.movento;
   return hardwareModelUrl({
+    file: entry?.file, bucket: M.bucket, path: M.path, storageBase,
+  });
+}
+
+/**
+ * The fetchable URL for a runner model — or null.
+ *
+ * Turn 21 (CLAUDE.md F2.1): the hinges' twin, through the same one helper, so
+ * the two families cannot drift apart the way turn 19 and turn 20 let them.
+ * Null where there is no host: a path with no host is not a URL, and a loader
+ * handed one asks the app's own domain for a file the app does not serve.
+ */
+export function runnerModelSrc(entry, profile, storageBase = '') {
+  const M = profile.hardware.runner.movento;
+  return hardwareModelSrc({
     file: entry?.file, bucket: M.bucket, path: M.path, storageBase,
   });
 }

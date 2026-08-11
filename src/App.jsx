@@ -5,6 +5,7 @@ import Toast from './components/Toast.jsx';
 import { useUiStore } from './stores/uiStore.js';
 import { loadDecorCatalogue } from './lib/decorCatalogue.js';
 import { loadRunnerCatalogue } from './lib/runnerCatalogue.js';
+import { onStorageBase } from './lib/storageBase.js';
 import { loadHardwareCatalogues } from './lib/hardwareCatalogue.js';
 
 // ─── THE KNOWLEDGE FILES (turn 19, CLAUDE.md F0.3) ──────────────────────────
@@ -36,7 +37,16 @@ export default function App() {
   // the 40 models stay unfetched until a drawer actually needs one. It never
   // rejects — mock mode and a dead bucket both resolve to "no catalogue", and
   // the app draws its own profile and orders by spec.
-  useEffect(() => { loadRunnerCatalogue(); }, []);
+  // ─── Turn 21 (CLAUDE.md F2) ───
+  // …and again the moment the app learns where its own storage is. On a build
+  // made without `VITE_SUPABASE_URL` the host is DERIVED from the decor pack,
+  // which lands after this effect has already run — so the first ask honestly
+  // finds no bucket, and this is the second one. Without it the owner's build
+  // draws grey stand-ins for the whole session with nothing to say why.
+  useEffect(() => {
+    loadRunnerCatalogue();
+    return onStorageBase(() => { loadRunnerCatalogue(); });
+  }, []);
 
 
   if (screen === 'start') {

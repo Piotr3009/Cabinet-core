@@ -36,7 +36,7 @@
 //
 // Pure functions — no React, no store, no fetch.
 
-import { hardwareModelUrl } from './hardwareUrl.js';
+import { hardwareModelSrc, hardwareModelUrl } from './hardwareUrl.js';
 
 /** The parsed catalogue, once somebody has read it. `null` until then. */
 let CATALOGUE = null;
@@ -388,6 +388,28 @@ export function doorHingeAssignment(params, panelId) {
 export function hingeModelUrl(entry, profile, storageBase = '') {
   const C = profile.hardware.hinge.cliptop;
   return hardwareModelUrl({
+    file: entry?.file, bucket: C.bucket, path: C.path, storageBase,
+  });
+}
+
+/**
+ * The fetchable URL for a hinge or plate model — or null.
+ *
+ * ─── TURN 21 (CLAUDE.md F2.1) ──────────────────────────────────────────────
+ * The owner's console: `/hinges/blum/71B3550_42542984.glb` → 404. Turn 20's
+ * URL was right about the bucket and the folder and had NO HOST, because the
+ * build was made without one — and `hingeModelUrl` above answers "where inside
+ * the bucket", which the loader then resolved against the app's own domain.
+ *
+ * This is what the VIEW asks. It composes exactly as the runners' does — host
+ * + bucket + family folder + basename, through the one shared helper — and it
+ * is null where there is no host, which is the stand-in path and not a
+ * request. `hingeModelUrl` keeps its meaning for the BOM and the manifest
+ * reports that legitimately want the in-bucket path.
+ */
+export function hingeModelSrc(entry, profile, storageBase = '') {
+  const C = profile.hardware.hinge.cliptop;
+  return hardwareModelSrc({
     file: entry?.file, bucket: C.bucket, path: C.path, storageBase,
   });
 }

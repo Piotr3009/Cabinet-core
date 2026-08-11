@@ -20,7 +20,7 @@ import { formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
-import { storageBaseUrl } from '../lib/runnerCatalogue.js';
+import { useStorageBase } from '../lib/storageBase.js';
 import { shelfGapLadder } from '../engine/items.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
@@ -681,7 +681,11 @@ export default function UnitView({
   }), [result, unit, design, profile]);
   // Where the models are served from. '' in mock mode, and '' is a complete
   // answer: the runner is drawn from the workshop's own profile instead.
-  const storageBase = useMemo(() => storageBaseUrl(), []);
+  // ─── Turn 21 (CLAUDE.md F2) ───
+  // Asked once at mount, this was '' forever on a build with no configuration
+  // — the decor pack that carries the host lands after the scene does. The
+  // hook re-renders the view when the host is known.
+  const storageBase = useStorageBase();
   // Is anything open? A door part-way through its swing counts — that is when
   // the ironmongery is worth looking at (F6.7).
   const anyFrontOpen = useMemo(
@@ -1273,6 +1277,7 @@ export default function UnitView({
         // drawer, the same one its box and its face read.
         drawerSlide={motion}
         storageBase={storageBase}
+        surface="room"
         // ─── Turn 19 (CLAUDE.md F1.6/F1.3) ───
         // WHICH hinge each door wears — resolved once, by the engine, and
         // handed down; and the gesture that opens the hinge modal on it.

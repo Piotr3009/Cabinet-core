@@ -22,16 +22,14 @@
 
 import { setRunnerCatalogue } from '../engine/runners.js';
 import { getCabinetProfile } from '../engine/profile.js';
-import { isMockMode } from './supabase.js';
+import { storageBaseUrl as resolveStorageBase } from './storageBase.js';
 
-/** The public storage root, or '' where the app is running without a project. */
-export function storageBaseUrl() {
-  try {
-    const url = import.meta.env?.VITE_SUPABASE_URL;
-    if (typeof url === 'string' && url) return `${url.replace(/\/+$/, '')}/storage/v1/object/public`;
-  } catch { /* not a vite build (node, a test) */ }
-  return '';
-}
+// ─── TURN 21 (CLAUDE.md F2) ────────────────────────────────────────────────
+// Where the app's storage is has become a question of its own — configuration
+// first, and the app's own decor registry where configuration is silent (a
+// build with no `VITE_SUPABASE_URL` was asking its own domain for hinge
+// models) — so it lives in lib/storageBase.js and every caller imports it from
+// there. This file asks the same question the same way.
 
 let pending = null;
 
@@ -46,16 +44,31 @@ export function loadRunnerCatalogue({ fetchImpl = null, profile = null } = {}) {
   if (pending) return pending;
   const P = profile || getCabinetProfile();
   const M = P.hardware.runner.movento;
-  const base = storageBaseUrl();
+  const base = resolveStorageBase();
   const doFetch = fetchImpl || (typeof fetch === 'function' ? fetch : null);
 
-  if (!doFetch || !base || isMockMode) {
+  if (!doFetch) {
     // Mock mode is not a degraded mode here, it is a SUPPORTED one: the
     // workshop's own numbers are in profile.js and the runner is drawn from
     // them. What is missing is the picture and the article number.
     pending = Promise.resolve({ files: [], error: null, mock: true });
     return pending;
   }
+  // ─── TURN 21 (CLAUDE.md F2) ──────────────────────────────────────────────
+  //
+  // "No host" is NOT "never". On a build made without `VITE_SUPABASE_URL` the
+  // host arrives with the decor pack, a moment later — so this answers
+  // honestly and does NOT memoise the answer, and App.jsx asks again when the
+  // host is known. Turn 18 cached the empty result here and the session was
+  // stuck with grey ironmongery for as long as it lasted.
+  //
+  // `isMockMode` is no longer part of the gate, and that is the same fact
+  // stated once: mock mode means there is no DATABASE — no projects, no auth,
+  // no keys. The manifest is a PUBLIC file in a PUBLIC bucket, fetched with
+  // the platform's own `fetch` and no client, exactly as the decor pack's
+  // full-board scans already are in mock mode. Refusing to read it because the
+  // database is absent was two unrelated facts wearing one flag.
+  if (!base) return Promise.resolve({ files: [], error: null, mock: true });
 
   const url = `${base}/${M.bucket}/${M.path}${M.manifest}`;
   pending = doFetch(url)

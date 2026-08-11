@@ -4,8 +4,9 @@ import {
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { mm } from './constants.js';
-import { runnerEntry, runnerModelUrl } from '../engine/runners.js';
-import { hingeModelUrl, plateFamily, resolveDoorHinge } from '../engine/hinges.js';
+import { runnerEntry, runnerModelSrc } from '../engine/runners.js';
+import { hingeModelSrc, plateFamily, resolveDoorHinge } from '../engine/hinges.js';
+import { clearHardwareSurface, reportHardware } from './hardwareRegistry.js';
 import {
   onRunnerLoad, runnerModel, runnerModelFits, runnerSource,
 } from './runnerModels.js';
@@ -72,9 +73,13 @@ import {
 export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
-  hingeSpecs = null, onEditHinge = null,
+  hingeSpecs = null, onEditHinge = null, surface = 'room', scope = '',
 }) {
   const colours = profile.appearance.hardware;
+  // ─── TURN 21 (CLAUDE.md R4 / F2.2 / F6.3) ───
+  // What this surface mounted goes with this surface. A window that closes
+  // stops claiming to be showing anything.
+  useEffect(() => () => clearHardwareSurface(surface), [surface]);
   return (
     <group userData={{ ccHardware: true }}>
       <Legs items={instances.legs} profile={profile} colour={colours.leg} />
@@ -103,6 +108,8 @@ export default function Hardware({
           specs={hingeSpecs}
           storageBase={storageBase}
           onEditHinge={onEditHinge}
+          surface={surface}
+          scope={scope}
         />
       )}
       {/* ─── Turn 18 (CLAUDE.md F6.7) ───
@@ -121,6 +128,8 @@ export default function Hardware({
             colour={colours.bracket}
             variants={runnerVariants}
             storageBase={storageBase}
+            surface={surface}
+            scope={scope}
           />
           <Rods items={instances.rods || []} colour={colours.bracket} />
         </>
@@ -228,6 +237,7 @@ const put = (matrix, position, quaternion = null, scale = null) => matrix.compos
  */
 function CarcassHinges({
   items, profile, colour, specs = null, storageBase = '', onEditHinge = null,
+  surface = 'room', scope = '',
 }) {
   const H = profile.hardware.hinge;
   const [arrived, setArrived] = useState(0);
@@ -235,13 +245,18 @@ function CarcassHinges({
   // Which FILE each hinge wants. `specs` is the resolution the view was handed
   // — one entry per door panel id — so the model that is drawn is the hinge the
   // BOM is ordering, and not a second opinion about it.
+  // ─── TURN 21 (CLAUDE.md F2.1): THE URL, OR NOTHING ───
+  // `hingeModelSrc` and not `hingeModelUrl`: a path with no host is not a URL,
+  // and turn 20 handed the bare in-bucket path to the loader, which asked the
+  // app's own domain for it — the owner's `/hinges/blum/…glb → 404`. Null here
+  // is the stand-in path, and no request leaves the page.
   const wanted = useMemo(() => items.map((h) => {
     const spec = specs?.[h.panelId] || null;
     if (!spec?.file) return { hinge: null, plate: null };
     return {
-      hinge: hingeModelUrl(spec, profile, storageBase),
+      hinge: hingeModelSrc(spec, profile, storageBase),
       plate: spec.plateFile
-        ? hingeModelUrl({ file: spec.plateFile }, profile, storageBase)
+        ? hingeModelSrc({ file: spec.plateFile }, profile, storageBase)
         : null,
     };
   }), [items, specs, profile, storageBase]);
@@ -257,15 +272,33 @@ function CarcassHinges({
 
   const models = useMemo(() => wanted.map((w) => {
     const take = (url, plate) => {
-      if (!url) return null;
+      if (!url) return { model: null, reason: 'no-url' };
       const source = hingeSource(url);
-      if (!source?.loaded || !hingeModelFits(source, profile)) return null;
-      return hingeModel(url, { profile, plate });
+      if (source?.failed) return { model: null, reason: 'failed' };
+      if (!source?.loaded) return { model: null, reason: 'loading' };
+      if (!hingeModelFits(source, profile)) return { model: null, reason: 'wrong-size' };
+      return { model: hingeModel(url, { profile, plate }), reason: null };
     };
-    return { hinge: take(w.hinge, false), plate: take(w.plate, true) };
+    const hinge = take(w.hinge, false);
+    const plate = take(w.plate, true);
+    return {
+      hinge: hinge.model, plate: plate.model, hingeReason: hinge.reason, plateReason: plate.reason,
+    };
     // `arrived` is the dependency that matters: a clone taken before the file
     // lands holds nothing, so it has to be re-taken after it does.
   }), [wanted, profile, arrived]);
+
+  // ─── TURN 21 (CLAUDE.md R4 / F2.3) ───
+  // What the walk is allowed to believe: the exact url string this component
+  // handed the loader, and whether the GLB or the stand-in is what is drawn.
+  useEffect(() => {
+    reportHardware(surface, 'hinge', items.map((h, i) => ({
+      key: h.panelId ?? i, url: wanted[i]?.hinge || null, model: Boolean(models[i]?.hinge), reason: models[i]?.hingeReason,
+    })), scope);
+    reportHardware(surface, 'plate', items.map((h, i) => ({
+      key: h.panelId ?? i, url: wanted[i]?.plate || null, model: Boolean(models[i]?.plate), reason: models[i]?.plateReason,
+    })), scope);
+  }, [surface, scope, items, wanted, models]);
 
   const drawnModel = models.some((m) => m.hinge);
 
@@ -459,6 +492,7 @@ export function DoorHinges({
  */
 function Runners({
   items, profile, colour, variants = null, storageBase = '', slide = null,
+  surface = 'room', scope = '',
 }) {
   const R = profile.hardware.runner;
   const M = R.movento;
@@ -476,7 +510,8 @@ function Runners({
     });
     return {
       row: r,
-      url: entry ? runnerModelUrl(entry, profile, storageBase) : null,
+      // Turn 21 (CLAUDE.md F2.1): the hinges' own helper, for the same reason.
+      url: entry ? runnerModelSrc(entry, profile, storageBase) : null,
       // The manifest names L and R separately. Where it gives one file for
       // both, the other hand is that file mirrored across the cabinet.
       mirror: Boolean(entry && entry.side == null && r.side === 'R'),
@@ -499,6 +534,17 @@ function Runners({
     // AFTER the file lands, or it holds nothing (3d/materials.js says the same
     // thing about a texture clone taken too early).
   }), [wanted, profile, arrived]);
+
+  // Turn 21 (CLAUDE.md R4 / F6.3): the same report the hinges make, so the
+  // walk can tell a MODEL from a stand-in in the editor as well as in the room.
+  useEffect(() => {
+    reportHardware(surface, 'runner', wanted.map((w, i) => ({
+      key: `${w.row.drawer}${w.row.side}`,
+      url: w.url,
+      model: Boolean(models[i]),
+      reason: models[i] ? null : (w.url ? 'no-model' : 'no-url'),
+    })), scope);
+  }, [surface, scope, wanted, models]);
 
   const plain = useMemo(() => items.filter((_, i) => !models[i]), [items, models]);
 

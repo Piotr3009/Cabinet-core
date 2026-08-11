@@ -2091,6 +2091,19 @@ export const DEFAULT_CABINET_PROFILE = {
       // has no edge to stand off, so the number went with the rule — F1.1.)
       minLabelPx: 5,          // under five pixels tall, a caption is not drawn
       minSymbolPx: 0.75,      // …and a hole under three quarters of one is not
+      // ─── Turn 20 (CLAUDE.md F9.1): WHEN A PRESS BECOMES A PAN ───────────
+      // The sheet takes the pointer capture on the first move PAST this, not
+      // on the press — a captured pointer makes the browser compose `click`
+      // and `dblclick` on the container, which is what left turn 19's
+      // double-click dead to a real mouse. Four pixels is the shake in a hand
+      // that meant to click; anything further along was a drag.
+      panThresholdPx: 4,
+      // ─── Turn 20 (CLAUDE.md F7.4): THE SMALLEST THING YOU CAN HOVER ─────
+      // A ⌀5 hole at sheet zoom is a couple of pixels across, and a rollover
+      // you have to hunt for is not a rollover. The hover zone is the drawn
+      // symbol or this, whichever is bigger ON SCREEN — the drawing is not
+      // changed, only what counts as pointing at it.
+      hoverGracePx: 7,
     },
   },
 

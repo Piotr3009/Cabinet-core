@@ -23,7 +23,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { categoryOf } from '../engine/types.js';
 import Ruler from './Ruler.jsx';
-import ContextGuard from './contextGuard.jsx';
+import useContextGuard from './contextGuard.jsx';
 
 // 3D scaffolding follows Production Core's rig (scene / camera / soft light /
 // capture), not its window geometry. Preview is 3D from the start (SPEC 7).
@@ -794,9 +794,17 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // turn 5. The hexes are profile.dimensions.colours; this is only WHICH.
   const dimensionInk = profile.dimensions.colours[dimensionColour]
     || profile.dimensions.colours[profile.appearance.dimensions.colour];
+  const guardContext = useContextGuard('room');
 
   return (
     <Canvas
+      // ─── Turn 20 (CLAUDE.md F10) ───
+      // ONE context per surface, released on the way out rather than left for
+      // the collector, and counted on `window.__cc.diag`. The guard hangs off
+      // the component that OWNS the canvas — see 3d/contextGuard.jsx for why
+      // inside it was not good enough.
+      ref={guardContext.ref}
+      onCreated={guardContext.onCreated}
       // "soft" = PCFSoftShadowMap. A shadow with a hard edge under a cabinet
       // is a shadow from a point source, and there are none in a room.
       shadows="soft"
@@ -815,9 +823,6 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
       onContextMenu={(e) => e.preventDefault()}
       style={{ background }}
     >
-      {/* Turn 20 (CLAUDE.md F10): one context per surface, released on the way
-          out and counted on `window.__cc.diag`. */}
-      <ContextGuard name="room" />
       <color attach="background" args={[background]} />
       <ToneMapping exposure={studio.exposure} />
       <Environment intensity={profile.appearance.environment.intensity} on={realisticLighting} />

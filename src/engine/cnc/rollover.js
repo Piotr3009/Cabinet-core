@@ -103,8 +103,8 @@ export function featureReadout(panel, feature, profile = null) {
   // …and where it is, off the part's OWN four edges. A drill is measured from
   // its centre, everything else from its nearest edge — which is how a joiner
   // sets a fence.
-  rows.push({ label: 'From X edges', value: `${formatMm(edges.left)} / ${formatMm(edges.right)} mm` });
-  rows.push({ label: 'From Y edges', value: `${formatMm(edges.bottom)} / ${formatMm(edges.top)} mm` });
+  rows.push({ label: 'From X edges', value: `${edgeText(edges.left)} / ${edgeText(edges.right)}` });
+  rows.push({ label: 'From Y edges', value: `${edgeText(edges.bottom)} / ${edgeText(edges.top)}` });
 
   return {
     id: feature?.id || '',
@@ -121,6 +121,18 @@ export function featureReadout(panel, feature, profile = null) {
 }
 
 const KIND_WORDS = { hole: 'Drill', pocket: 'Pocket', mark: 'Cutter pass' };
+
+/**
+ * A distance to an edge, in the words a joiner would use.
+ *
+ * A cut that runs OFF the board — a dog bone, a socket, a groove with its
+ * overshoot — is a negative distance, and "−18 mm from the right edge" is a
+ * number nobody reads twice. It says "18 mm past" instead, which is what it is
+ * and what the cutter does.
+ */
+function edgeText(value) {
+  return value < 0 ? `${formatMm(-value)} mm past` : `${formatMm(value)} mm`;
+}
 
 /** The cutter's radius, or 0 where no profile says. */
 export function toolRadius(profile) {

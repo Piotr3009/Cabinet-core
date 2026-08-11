@@ -1,0 +1,399 @@
+{
+  "bucket": {
+    "host": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public",
+    "ok": false,
+    "families": [
+      {
+        "id": "runners",
+        "label": "MOVENTO 760H",
+        "bucket": "hardware",
+        "path": "runners/blum/movento/",
+        "manifestUrl": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json",
+        "manifestStatus": null,
+        "manifestBytes": null,
+        "rows": null,
+        "model": null,
+        "ok": false,
+        "error": "Request was cancelled."
+      },
+      {
+        "id": "hinges",
+        "label": "CLIP top BLUMOTION",
+        "bucket": "hardware",
+        "path": "hinges/blum/",
+        "manifestUrl": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/hinges/blum/manifest.json",
+        "manifestStatus": null,
+        "manifestBytes": null,
+        "rows": null,
+        "model": null,
+        "ok": false,
+        "error": "Request was cancelled."
+      }
+    ]
+  },
+  "paths": {
+    "runnerPath": "runners/blum/movento/",
+    "hingePath": "hinges/blum/",
+    "bucket": "hardware",
+    "runnerManifestUrl": "hardware/runners/blum/movento/manifest.json",
+    "parsed": 0,
+    "sampleUrl": null
+  },
+  "ids": {
+    "drawerUnit": "u_lclausd",
+    "doorUnit": "u_b35al9t"
+  },
+  "f1": {
+    "law": [
+      13.5,
+      28.5
+    ],
+    "rows": [
+      {
+        "drawer": 1,
+        "row": 56,
+        "sideAbove": 13.5,
+        "bottomAbove": 28.5
+      },
+      {
+        "drawer": 2,
+        "row": 379,
+        "sideAbove": 13.5,
+        "bottomAbove": 28.5
+      },
+      {
+        "drawer": 3,
+        "row": 636,
+        "sideAbove": 13.5,
+        "bottomAbove": 28.5
+      }
+    ]
+  },
+  "f3": {
+    "closedZ": {
+      "D2-SL": -1202,
+      "D2-SR": -1202,
+      "D2-BF": -966,
+      "D2-BB": -1438,
+      "D2-DNO": -1202,
+      "DR1-F2": -916.5
+    },
+    "openZ": {
+      "D2-SL": -712,
+      "D2-SR": -712,
+      "D2-BF": -476,
+      "D2-BB": -948,
+      "D2-DNO": -712,
+      "DR1-F2": -426.5
+    },
+    "moved": [
+      {
+        "id": "D2-SL",
+        "by": 490
+      },
+      {
+        "id": "D2-SR",
+        "by": 490
+      },
+      {
+        "id": "D2-BF",
+        "by": 490
+      },
+      {
+        "id": "D2-BB",
+        "by": 490
+      },
+      {
+        "id": "D2-DNO",
+        "by": 490
+      },
+      {
+        "id": "DR1-F2",
+        "by": 490
+      }
+    ],
+    "travel": 490
+  },
+  "f8": {
+    "cutMeshes": 22,
+    "cutTris": 5260,
+    "seen": [
+      {
+        "panel": "BUL",
+        "colour": "#4a4a4a"
+      },
+      {
+        "panel": "BUR",
+        "colour": "#4a4a4a"
+      },
+      {
+        "panel": "BACK",
+        "colour": "#4a4a4a"
+      },
+      {
+        "panel": "D1-SL",
+        "colour": "#4a4a4a"
+      },
+      {
+        "panel": "D1-SR",
+        "colour": "#4a4a4a"
+      }
+    ],
+    "cutFace": "#4a4a4a"
+  },
+  "f8editor": {
+    "meshes": 18,
+    "tris": 3104,
+    "panels": [
+      "BUL",
+      "BUR",
+      "BACK",
+      "D1-SL",
+      "D1-SR",
+      "D2-SL"
+    ]
+  },
+  "diag": {
+    "created": 12,
+    "released": 12,
+    "lost": 0,
+    "restored": 0,
+    "live": 1,
+    "names": [
+      "room"
+    ]
+  },
+  "f11": {
+    "modal": "cabinet",
+    "drawer": 2,
+    "heading": "DR1 · Drawer 2 — edit drawer❐×",
+    "title": null
+  },
+  "f11picked": {
+    "label": "Drawer 2 — bottom",
+    "height": true,
+    "runner": true
+  },
+  "f5": [
+    {
+      "name": "low-left",
+      "left": 332,
+      "top": 572,
+      "side": "right",
+      "fits": true,
+      "size": {
+        "width": 340,
+        "height": 420
+      },
+      "click": {
+        "x": 192,
+        "y": 860
+      }
+    },
+    {
+      "name": "low-right",
+      "left": 928,
+      "top": 572,
+      "side": "left",
+      "fits": true,
+      "size": {
+        "width": 340,
+        "height": 420
+      },
+      "click": {
+        "x": 1408,
+        "y": 860
+      }
+    },
+    {
+      "name": "top-right",
+      "left": 960,
+      "top": 100,
+      "side": "left",
+      "fits": true,
+      "size": {
+        "width": 340,
+        "height": 420
+      },
+      "click": {
+        "x": 1440,
+        "y": 100
+      }
+    },
+    {
+      "name": "top-left",
+      "left": 268,
+      "top": 80,
+      "side": "right",
+      "fits": true,
+      "size": {
+        "width": 340,
+        "height": 420
+      },
+      "click": {
+        "x": 128,
+        "y": 80
+      }
+    },
+    {
+      "name": "centre",
+      "left": 940,
+      "top": 500,
+      "side": "right",
+      "fits": true,
+      "size": {
+        "width": 340,
+        "height": 420
+      },
+      "click": {
+        "x": 800,
+        "y": 500
+      }
+    }
+  ],
+  "f5real": {
+    "doorRect": {
+      "x": 977,
+      "y": 641,
+      "w": 182,
+      "h": 215
+    },
+    "opened": {
+      "modal": "element",
+      "rect": {
+        "left": 1117,
+        "top": 419,
+        "width": 320,
+        "height": 574
+      }
+    }
+  },
+  "f6": {
+    "rulerPoints": {
+      "a": [
+        -300,
+        100,
+        -932
+      ],
+      "b": [
+        -300,
+        870,
+        -932
+      ],
+      "expect": 770
+    },
+    "measured": {
+      "pts": [
+        [
+          -298.50000143051153,
+          100.0000002384186,
+          -903.9999998137355
+        ],
+        [
+          -298.50000143051153,
+          866.9999998807907,
+          -903.9999998137355
+        ]
+      ],
+      "distance": 767,
+      "onA": {
+        "panel": "DR1-F1",
+        "kind": "END"
+      },
+      "onB": {
+        "panel": "DR1-F3",
+        "kind": "END"
+      },
+      "boxes": 51
+    },
+    "aAt": {
+      "x": 714,
+      "y": 745
+    },
+    "bAt": {
+      "x": 711,
+      "y": 532
+    }
+  },
+  "f9": {
+    "partAt": {
+      "id": "BACK",
+      "x": 791,
+      "y": 270
+    },
+    "focus": {
+      "focus": {
+        "unitId": "u_lclausd",
+        "panelId": "BACK",
+        "stamp": 1
+      },
+      "lit": false
+    }
+  },
+  "f7targets": {
+    "hole": {
+      "id": "hole-2",
+      "x": 273,
+      "y": 254
+    },
+    "pocket": {
+      "id": "pocket-0",
+      "x": 405,
+      "y": 230
+    },
+    "total": 226
+  },
+  "f7_hole": {
+    "title": "Drill · Puzzle ⌀7.5",
+    "rows": {
+      "⌀": "7.5 mm",
+      "Depth": "through",
+      "From X edges": "70.5 mm / 469.5 mm",
+      "From Y edges": "8.5 mm / 761.5 mm"
+    },
+    "rect": {
+      "left": 289,
+      "top": 272,
+      "width": 229,
+      "height": 122
+    }
+  },
+  "f7_pocket": {
+    "title": "Pocket · Dog bones",
+    "rows": {
+      "Size": "18 × 60 mm",
+      "Corner R": "4 mm",
+      "From X edges": "540 mm / 18 mm past",
+      "From Y edges": "65 mm / 645 mm"
+    },
+    "rect": {
+      "left": 421,
+      "top": 248,
+      "width": 235,
+      "height": 122
+    }
+  },
+  "f4": {
+    "labelHeight": 20,
+    "exportScale": 0.5,
+    "maxFileHeight": 20,
+    "parts": 23
+  },
+  "f12": {
+    "outlines": 29,
+    "biased": 29,
+    "offset": {
+      "factor": 1,
+      "units": 1,
+      "outlineFactor": -1,
+      "outlineUnits": -1
+    },
+    "veneerPicker": "decor",
+    "laminatePicker": "decor",
+    "sprayPicker": "colour"
+  },
+  "f12save": {
+    "state": "saved",
+    "text": "✓ Saved"
+  }
+}

@@ -11,7 +11,7 @@ import { hardwareInstances } from '../engine/hardware3d.js';
 import { storageBaseUrl } from '../lib/runnerCatalogue.js';
 import { useViewHandle } from '../3d/viewHandle.js';
 import EditorRig from '../3d/EditorRig.jsx';
-import ContextGuard from '../3d/contextGuard.jsx';
+import useContextGuard from '../3d/contextGuard.jsx';
 import { Environment } from '../3d/Scene.jsx';
 import { mm } from '../3d/constants.js';
 import { surfaceFor, outlineFor } from '../3d/materials.js';
@@ -339,12 +339,17 @@ function CabinetCanvas({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail,
   openFronts, allOpen, onToggleFront, drills = [], hardware = null, storageBase = '',
 }) {
+  // Turn 20 (CLAUDE.md F10): the editor's context, released when this window
+  // closes — however fast it is closed. See 3d/contextGuard.jsx.
+  const guardContext = useContextGuard('editor');
   const bounds = useMemo(() => cabinetBounds(panels), [panels]);
   const size = bounds ? Math.max(bounds.size.x, bounds.size.y, bounds.size.z) : 800;
   const radius = mm(size) * 1.9;
 
   return (
     <Canvas
+      ref={guardContext.ref}
+      onCreated={guardContext.onCreated}
       dpr={[1, 2]}
       camera={{
         position: [radius * 0.75, radius * 0.55, radius], fov: 40, near: 0.01, far: 100,
@@ -352,9 +357,6 @@ function CabinetCanvas({
       onPointerMissed={() => onSelect(null)}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Turn 20 (CLAUDE.md F10): ONE context per surface, reused across opens
-          — released here on the way out rather than left for the collector. */}
-      <ContextGuard name="editor" />
       {/* The editor's end-to-end handle (turn 13, F2.2): a PAN leaves no trace
           in the DOM at all, so the walk reads the controls' own target. */}
       <EditorViewHandle />

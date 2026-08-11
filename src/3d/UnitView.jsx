@@ -1053,6 +1053,12 @@ export default function UnitView({
             open={front ? (openFronts?.[p.id] ?? 0) : (ride?.open ?? 0)}
             slide={slide}
             travel={ride?.travel ?? null}
+            // ─── Turn 20 (CLAUDE.md F8.1) ───
+            // The unit's own drilling, so the board can lose the material it
+            // loses. It reaches the SOLID and nothing else here: the machining
+            // OVERLAY (`machining`) is still off in the room, because a room is
+            // a picture of furniture and the lines are a workshop tool.
+            drills={result.drills}
             surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
             outline={outlineFor(profile, { contour })}
             outlines={outlines}

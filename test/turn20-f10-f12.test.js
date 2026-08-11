@@ -33,11 +33,33 @@ test('F10.1 — every canvas the app mounts carries the guard', () => {
   for (const [file, name] of surfaces) {
     const source = read(file);
     assert.ok(source.includes('<Canvas'), `${file} still mounts a canvas`);
-    assert.ok(source.includes(`<ContextGuard name="${name}" />`), `${file} guards it`);
+    assert.ok(source.includes(`useContextGuard('${name}')`), `${file} names its surface`);
+    assert.ok(source.includes('ref={guardContext.ref}'), `${file} hands the guard the canvas`);
+    assert.ok(source.includes('onCreated={guardContext.onCreated}'), `${file} hands it the renderer too`);
   }
   // …and nothing else in the app mounts one without being on that list.
   const all = read('src/components/CncView.jsx');
   assert.ok(!all.includes('<Canvas'), 'the CNC sheet is SVG and has no context to lose');
+});
+
+test('F10.2 — the guard hangs off the canvas’s OWNER, not off the canvas', () => {
+  // The turn-20 walk caught this: a guard mounted INSIDE the canvas lives in
+  // r3f's separate React root, and closing the window before that root flushes
+  // its effects means the guard never registers and the context leaks — which
+  // is the one case the whole feature exists for.
+  const source = read('src/3d/contextGuard.jsx');
+  assert.ok(source.includes('export default function useContextGuard'));
+  assert.ok(!source.includes('useThree'), 'it does not live inside the canvas any more');
+  assert.ok(source.includes('useEffect(() => () => { release(held.current)'),
+    'the release is the OWNER’s unmount, which React cannot skip');
+  // …and it hangs off the ELEMENT, because r3f can have made the context
+  // before it calls `onCreated` — the second thing the walk caught.
+  assert.ok(source.includes('function attach(canvas, name)'));
+  assert.ok(source.includes('loseContextOf'), 'the fallback for a context r3f never handed over');
+  // A ref called with null is NOT a release: a forwarded ref recomposed on a
+  // re-render detaches and re-attaches the same canvas, and dropping a live
+  // context for that would be this module causing the bug it fixes.
+  assert.ok(source.includes('if (!canvas || held.current?.canvas === canvas) return;'));
 });
 
 test('F10.2 — the guard RELEASES the context, which is what dispose() does not', () => {
@@ -46,8 +68,19 @@ test('F10.2 — the guard RELEASES the context, which is what dispose() does not
   assert.ok(source.includes('forceContextLoss'), 'the one call that gives a context back');
   assert.ok(source.includes('webglcontextlost'), 'and the listener F10.1 asks for');
   // A deliberate release must NOT be counted as a loss, or the gate can never
-  // be zero and the number stops meaning anything.
-  assert.ok(source.includes('if (releasing) return;'));
+  // be zero and the number stops meaning anything…
+  assert.ok(source.includes('if (!handle.releasing && !DELIBERATE.has(handle.canvas)) {'));
+  // …and it must not print three's own "Context Lost" either, or the fix for
+  // the owner's ten console lines would have written ten of its own. The
+  // listener is registered in the CAPTURE phase so it can stop three's from
+  // running on a teardown, and only on a teardown.
+  assert.ok(source.includes("addEventListener('webglcontextlost', handle.onLost, true)"));
+  assert.ok(source.includes('e.stopImmediatePropagation();'));
+  // The loss event is ASYNCHRONOUS, so the suppressing listener stays on the
+  // canvas after the teardown and a WeakSet remembers which canvases we lost —
+  // otherwise three prints the message a moment after we stop listening.
+  assert.ok(source.includes('const DELIBERATE = new WeakSet();'));
+  assert.ok(source.includes('DELIBERATE.has(handle.canvas)'));
 });
 
 test('F10.1 — the counter the walk reads is `window.__cc.diag`', () => {

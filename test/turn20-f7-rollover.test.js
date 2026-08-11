@@ -58,8 +58,8 @@ test('F7.1 — a ⌀35 cup drill says what it is, how big, how deep and where', 
   assert.equal(rowOf(cup.readout, '⌀'), `${formatMm(drill.d)} mm`);
   assert.equal(rowOf(cup.readout, 'Depth'), 'through', 'the LISP carries no cup depth — it does not invent one');
   // Measured from the CENTRE, off the part's own four edges (F7.1).
-  assert.equal(rowOf(cup.readout, 'From X edges'), `${formatMm(drill.x)} / ${formatMm(size.w - drill.x)} mm`);
-  assert.equal(rowOf(cup.readout, 'From Y edges'), `${formatMm(drill.y)} / ${formatMm(size.h - drill.y)} mm`);
+  assert.equal(rowOf(cup.readout, 'From X edges'), `${formatMm(drill.x)} mm / ${formatMm(size.w - drill.x)} mm`);
+  assert.equal(rowOf(cup.readout, 'From Y edges'), `${formatMm(drill.y)} mm / ${formatMm(size.h - drill.y)} mm`);
   // A hole has no corner for the tool to round.
   assert.equal(rowOf(cup.readout, 'Corner R'), undefined);
 });
@@ -85,7 +85,7 @@ test('F7.1 — a runner pocket says its W×H, its true depth and its corner radi
   // Measured from the NEAREST EDGE of the cut, not from its centre.
   const left = Math.min(pocket.x1, pocket.x2);
   const right = Math.max(pocket.x1, pocket.x2);
-  assert.equal(rowOf(groove.readout, 'From X edges'), `${formatMm(left)} / ${formatMm(size.w - right)} mm`);
+  assert.equal(rowOf(groove.readout, 'From X edges'), `${formatMm(left)} mm / ${formatMm(size.w - right)} mm`);
 });
 
 test('F7.1 — the bottom groove is 7 mm deep and says so, beside a 2 mm one', () => {
@@ -154,6 +154,19 @@ test('F7.2 — the derivation reaches nothing: hovering cannot change a byte', (
 });
 
 // ─── the arithmetic on its own ──────────────────────────────────────────────
+
+test('F7 — a cut that runs OFF the board says "past", not a minus sign', () => {
+  const readout = featureReadout(
+    { w: 100, h: 100, cnc: {} },
+    {
+      id: 'pocket-0', kind: 'pocket', layer: 'PUZZLE_DOG_BONES', x: 90, y: 50, w: 40, h: 20,
+    },
+    P,
+  );
+  // The pocket spans 90…130 on a 100 mm board, so it stands 30 past the right
+  // edge — which is what a dog bone does, and what the cutter does.
+  assert.equal(rowOf(readout, 'From X edges'), '90 mm / 30 mm past');
+});
 
 test('F7 — a drill is measured from its centre and a pocket from its edges', () => {
   const size = { w: 600, h: 400 };

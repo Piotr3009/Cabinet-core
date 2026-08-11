@@ -62,11 +62,18 @@ import { getCabinetProfile } from '../engine/profile.js';
  *             told when that toggles, so a workspace can lay itself out for the
  *             room it has — the shell decides the WINDOW, the content decides
  *             what to do with it.
+ *   onBack    turn 23, F1. This window is a NESTED editor surface and there is
+ *             a level under it. Given, the shell renders ← Back beside the
+ *             title and Escape means BACK ONE LEVEL rather than close-
+ *             everything. The × and the footer's Done still close the lot.
+ *             Left out — every dialog in the app, and the top of any stack —
+ *             nothing changes at all.
+ *   backLabel what it goes back TO, for the button's tooltip.
  */
 export default function Modal({
   title, onClose, children, footer, width = 'w-[420px]',
   anchor = null, prefer = null, dim = null, className = '', maximised = false,
-  onMaximisedChange = null,
+  onMaximisedChange = null, onBack = null, backLabel = '',
 }) {
   const box = useRef(null);
   // `null` until the first layout pass has MEASURED the panel. Until then it is
@@ -89,11 +96,15 @@ export default function Modal({
     gapPx, marginPx, maximiseMarginPx, anchorOffset,
   } = getCabinetProfile().ui.modal;
 
+  // ─── Turn 23 (CLAUDE.md F1.2): ESCAPE IS BACK, WHERE THERE IS A BACK ──────
+  // "Esc = Back (one level), not close-everything." One listener, in the shell,
+  // so no nested view has to argue with the modal's own handler — which is
+  // exactly the class of duplicate the stack exists to kill.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') (onBack || onClose)(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, onBack]);
 
   const measure = useCallback(() => {
     const el = box.current;
@@ -258,6 +269,21 @@ export default function Modal({
           data-modal-handle="1"
           onPointerDown={startDrag}
         >
+          {/* ─── Turn 23 (CLAUDE.md F1.2): ← Back, BESIDE THE TITLE ─────────
+              First in the header, where a hand looking for "out of here" goes,
+              and rendered only where there IS a level under this one — the top
+              of the stack has no Back, because there is nothing behind it. */}
+          {onBack && (
+            <button
+              type="button"
+              className="cc-btn-ghost mr-2 shrink-0"
+              data-modal-back="1"
+              title={`Back${backLabel ? ` to the ${backLabel}` : ''} (Escape)`}
+              onClick={onBack}
+            >
+              ← Back
+            </button>
+          )}
           <h2 className="text-sm text-ink-50">{title}</h2>
           <span className="flex-1" />
           {/* Offered only to a window that ASKED to be maximised. Every other

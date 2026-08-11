@@ -48,9 +48,20 @@ import useContextGuard from '../3d/contextGuard.jsx';
 
 const PAD = 0.14;   // margin round the drawing, as a fraction of its long side
 
+//   ─── TURN 23 (CLAUDE.md F1): AND THERE IS A WAY BACK ───
+//
+//   This window used to REPLACE the cabinet editor that opened it — one modal
+//   slot, overwritten — so the only door out was ×, which threw away the
+//   explode, the camera and the selection a joiner had set up to get here. It
+//   is a level on a STACK now: ← Back beside the title, Escape for the same
+//   thing, and the cabinet comes back exactly as it was left. Not a line of
+//   history lives in this file; the shell owns all of it.
+
 export default function PartDetailModal() {
   const args = useUiStore((s) => s.modalArgs);
   const closeModal = useUiStore((s) => s.closeModal);
+  const popModal = useUiStore((s) => s.popModal);
+  const canBack = useUiStore((s) => s.modalStack.length > 0);
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
   const storedDesign = useProjectStore((s) => s.project.design);
@@ -75,6 +86,8 @@ export default function PartDetailModal() {
       anchor={args?.anchor || null}
       title={`${unit.params.unit_num} · ${elementLabel(panel) || panel.part} — ${panel.id}`}
       onClose={closeModal}
+      onBack={canBack ? popModal : null}
+      backLabel="cabinet"
       width="w-[720px]"
       // The editor window's own exception to rule 15 (turn 13, F2.1): this is a
       // workspace — two views side by side — and not a side dialog.

@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { DEFAULT_CABINET_PROFILE } from '../engine/profile.js';
 import { applySelection, primaryOf } from '../lib/selection.js';
+import {
+  closeNav, openNav, popNav, pushNav,
+} from '../lib/editorStack.js';
 
 // ─── UI state ───
 // Panel geometry, selection and the editor's snap step. Nothing here is
@@ -49,6 +52,41 @@ function loadFlag(key, fallback) {
 function saveFlag(key, value) {
   try { localStorage.setItem(key, value ? '1' : '0'); } catch { /* private mode */ }
   return value;
+}
+
+// ─── The editor stack, in and out of this store (turn 23, CLAUDE.md F1) ──────
+//
+// `lib/editorStack.js` owns the arithmetic and speaks one shape; this store
+// keeps the same three facts under the names the whole app already reads
+// (`modal`, `modalArgs`). These two functions are the translation, written
+// once so no action has to spell it out.
+
+/** The nav, as the pure module wants it. */
+const navOf = (s) => ({
+  view: s.modal, args: s.modalArgs, stack: s.modalStack, restore: s.viewRestore,
+});
+
+/** …and back, as the patch this store applies. */
+const nextNav = (nav) => ({
+  modal: nav.view,
+  modalArgs: nav.args,
+  modalStack: nav.stack,
+  viewRestore: nav.restore,
+  // The outgoing view's getter goes with the outgoing view: the incoming one
+  // registers its own on mount, and a stale getter would snapshot a window
+  // that is no longer on screen.
+  viewSnapshot: null,
+});
+
+/** How the view on screen says it was left. Never allowed to throw. */
+function readSnapshot(s) {
+  try {
+    return typeof s.viewSnapshot === 'function' ? s.viewSnapshot() : null;
+  } catch {
+    // A snapshot that cannot be taken is a window that reopens fresh, which is
+    // a worse Back and not a broken one.
+    return null;
+  }
 }
 
 export const useUiStore = create((set, get) => ({
@@ -375,8 +413,45 @@ export const useUiStore = create((set, get) => ({
   // 'room' | 'auth' | 'design' | 'save-as' | 'save-template' | 'render' | 'drawing'
   modal: null,
   modalArgs: null,
-  openModal: (name, args = null) => set({ modal: name, modalArgs: args }),
-  closeModal: () => set({ modal: null, modalArgs: null }),
+
+  // ─── TURN 23 (CLAUDE.md F1): THE EDITOR IS A STACK ────────────────────────
+  //
+  // `modal` / `modalArgs` are the TOP of it — what is on screen — and have not
+  // changed shape, so every one of the app's twelve modals goes on working
+  // without knowing this exists. What is new is the three fields under them:
+  //
+  //   modalStack     the SUSPENDED parents, oldest first. `openModal` clears
+  //                  it (a top-level open is a new journey, and the top level
+  //                  has no Back); `pushModal` grows it; `popModal` and
+  //                  `closeModal` shrink it.
+  //   viewSnapshot   a GETTER the current view registers — "how I was left".
+  //                  A getter and not a value on purpose: a workspace whose
+  //                  camera and scroll wrote themselves into the store on
+  //                  every frame would re-render the app sixty times a second
+  //                  for a fact nobody reads until the moment of a push.
+  //   viewRestore    the snapshot handed BACK to a view that was just resumed.
+  //                  Read once, on the way in, and cleared by the next open.
+  //
+  // The arithmetic itself is `lib/editorStack.js`, pure and tested without a
+  // browser. This store is the wiring and nothing more.
+  modalStack: [],
+  viewSnapshot: null,
+  viewRestore: null,
+  openModal: (name, args = null) => set((s) => nextNav(openNav(navOf(s), name, args))),
+  /** Enter a NESTED editor surface, suspending the one on screen. */
+  pushModal: (name, args = null) => set((s) => nextNav(
+    pushNav(navOf(s), name, args, readSnapshot(s)),
+  )),
+  /** ← Back, and Escape: one level, restoring the parent exactly as it was. */
+  popModal: () => set((s) => nextNav(popNav(navOf(s)))),
+  /** Done, ×, a click outside: the whole journey, not one level of it. */
+  closeModal: () => set(() => nextNav(closeNav())),
+  /**
+   * The current view says how to snapshot itself. Called on mount and cleared
+   * on unmount; a view that registers nothing is simply reopened fresh, which
+   * is what every dialog in the app wants.
+   */
+  registerViewSnapshot: (fn) => set({ viewSnapshot: typeof fn === 'function' ? fn : null }),
 
   // Selection: which unit and which of its sections is highlighted
   selectedUnitId: null,

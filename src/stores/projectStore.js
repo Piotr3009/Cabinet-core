@@ -5,6 +5,7 @@ import {
 } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
+import { doorBays } from '../engine/doors.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
@@ -1515,6 +1516,63 @@ export const useProjectStore = create((set, get) => ({
     const count = doorCountFor(unit.params.width, profile);
     get().setDoors(unitId, { count, hinge: unit.params.hinge || profile.doors.defaultHinge });
     return { count, already: false };
+  },
+
+  // ─── TURN 21 (CLAUDE.md F12): A DOOR PER BAY ──────────────────────────────
+  //
+  // Owner: partitions at 600 and 800, three bays, two proper doors and one
+  // small one in the middle. It is a MODE the unit is in — a cabinet with
+  // per-bay doors has no whole-face door, which is what three doors in three
+  // bays means — so this writes the list and takes the face doors off in one
+  // action, and clearing it puts the unit back where it was.
+
+  /** Which bays this unit's face divides into, if any partition can carry a door. */
+  bayDoorsFor: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const result = unit ? get().unitResult(unitId) : null;
+    if (!unit || !result) return [];
+    return doorBays({
+      width: Number(unit.params.width) || 0,
+      boardT: Number(unit.params.board_t) || getCabinetProfile().board.thickness,
+      partitions: (result.panels || [])
+        .filter((p) => p.part === 'VPART')
+        .map((p) => ({
+          id: p.id, x: p.meta.x_mm, thickness: p.box.w, fullHeight: p.meta.fullHeight, setback: p.meta.setback,
+        })),
+    });
+  },
+
+  /**
+   * Turn per-bay doors on, off, or edit one bay's own answer.
+   *
+   * `modes` is one entry per bay, in bay order: `{ door: 'one'|'none', hinge }`.
+   * `null` clears the mode and the unit goes back to its face doors.
+   */
+  setBayDoors: (unitId, modes) => {
+    if (modes == null) {
+      get().updateUnitParams(unitId, { bay_doors: null });
+      return null;
+    }
+    const bays = get().bayDoorsFor(unitId);
+    const next = bays.map((_, i) => {
+      const m = modes[i] || {};
+      return {
+        door: String(m.door ?? 'none').toLowerCase() === 'one' ? 'one' : 'none',
+        hinge: String(m.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L',
+      };
+    });
+    // A cabinet with doors in its bays has no door across its face.
+    get().updateUnitParams(unitId, { bay_doors: next, doors: false });
+    return next;
+  },
+
+  /** One bay's own answer, leaving the others alone. */
+  setBayDoor: (unitId, bay, patch) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const bays = get().bayDoorsFor(unitId);
+    const current = Array.isArray(unit?.params?.bay_doors) ? unit.params.bay_doors : [];
+    const modes = bays.map((_, i) => ({ ...(current[i] || { door: 'none', hinge: 'L' }), ...(i === bay ? patch : {}) }));
+    return get().setBayDoors(unitId, modes);
   },
 
   /** …and on every cabinet in the selection, as one undo step. */

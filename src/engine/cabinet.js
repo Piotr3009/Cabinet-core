@@ -24,6 +24,8 @@ import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
 import { partitionSpan, shelfCrossesPartition, widthZones } from './zones.js';
+// Turn 21 (CLAUDE.md F12): the owner's door-width law, as pure geometry.
+import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
@@ -1809,6 +1811,9 @@ export function computeCabinet(params, profileOverride) {
         meta: {
           index: n,
           vertical: true,
+          // Turn 21 (CLAUDE.md F12.1): the two physical preconditions for
+          // hanging a door on this piece, read off the piece itself.
+          fullHeight: span.from <= G + 1e-9 && span.to >= H - G - 1e-9,
           itemId: item.id || null,
           x_mm: x,
           front_mm: span.front_mm,
@@ -2492,14 +2497,61 @@ export function computeCabinet(params, profileOverride) {
   // Door fronts, always last (they close the unit — SPEC 4.10)
   const doorZ = D + P.doors.gap;
   const doorY = -cfg.doorExtend;      // a wall-unit front may run below the box
-  if (doorCount === 1) {
+  // ─── TURN 21 (CLAUDE.md F12): DOORS ON THE PARTITION ─────────────────────
+  //
+  // Owner's case: partitions at 600 and 800, three bays, two proper doors and
+  // one small one in the middle. A full-height partition at setback 0 can carry
+  // a door, so the DOORS section offers one PER BAY — and the widths are his
+  // own law, which engine/doors.js states and this only places.
+  //
+  // It is opt-in and it replaces the face doors rather than joining them: a
+  // cabinet with per-bay doors has no whole-face door, which is what three
+  // doors in three bays means. Nothing here runs for a unit with no partitions,
+  // so every golden default is untouched by construction.
+  const doorBaysHere = doorBays({
+    width: W,
+    boardT: G,
+    partitions: panels
+      .filter((p) => p.part === 'VPART')
+      .map((p) => ({
+        id: p.id, x: p.meta.x_mm, thickness: p.box.w, fullHeight: p.meta.fullHeight, setback: p.meta.setback,
+      })),
+  });
+  const bayDoors = (type.supports.doors && Array.isArray(params?.bay_doors)
+    && bayDoorsAvailable(doorBaysHere))
+    ? bayDoorPlan({
+      bays: doorBaysHere, modes: params.bay_doors, width: W, gap: P.doors.gap,
+    })
+    : [];
+  for (const leaf of bayDoors) {
+    if (!(leaf.width > 0)) continue;
+    panels.push(panel({
+      id: `${unitNum}-B${leaf.bay + 1}`, part: 'FRONT', role: 'front', w: leaf.width, h: frontH, thickness: frontT,
+      edgeCode: codes.all, edgeLen: metres(2 * leaf.width + 2 * frontH),
+      box: {
+        x: leaf.x, y: doorY, z: doorZ, w: leaf.width, h: frontH, d: frontT,
+      },
+      cnc: rectGeometry(leaf.width, frontH),
+      meta: {
+        hinge: leaf.hinge,
+        frontType: cfg.frontType,
+        bay: leaf.bay,
+        // Which piece this leaf is screwed to, and — where that piece is a
+        // partition — which of its two faces takes the plate.
+        hingeOn: leaf.hingeOn,
+        hingeFace: leaf.hingeFace,
+      },
+    }));
+  }
+
+  if (!bayDoors.length && doorCount === 1) {
     panels.push(panel({
       id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
       box: { x: P.doors.gap / 2, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
       cnc: rectGeometry(frontW, frontH), meta: { hinge: cfg.hinge, frontType: cfg.frontType },
     }));
-  } else if (doorCount === 2) {
+  } else if (!bayDoors.length && doorCount === 2) {
     panels.push(panel({
       id: `${unitNum}-FL`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
@@ -2543,10 +2595,57 @@ export function computeCabinet(params, profileOverride) {
 
   // Hinge holes on the hinged carcass sides
   const hingeHolePairs = centres.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset]);
-  for (const sideId of hingedSides) {
+  // Turn 21 (CLAUDE.md F12.2): with doors in the bays it is the LEAVES that
+  // say which sides are hinged — an outer bay's door hangs on the carcass
+  // exactly as a face door does, and a middle bay's hangs on nothing but its
+  // partitions. Drilling `hingedSides` regardless would have bored a plate
+  // pattern into a side no door is hung on.
+  const platedSides = bayDoors.length
+    ? [...new Set(bayDoors.filter((l) => !l.onPartition).map((l) => l.hingeOn))]
+    : hingedSides;
+  for (const sideId of platedSides) {
     const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
     for (const pair of hingeHolePairs) {
       for (const y of pair) addDrill(sideId, 'hinge', P.hinges.layer, x, y, P.hinges.holeDiameter);
+    }
+  }
+  // ─── TURN 21 (CLAUDE.md F12.2): THE PLATE PATTERN, ON A NEW PANEL ────────
+  //
+  // "Hinges on a partition drill the SAME patterns the sides carry: cups in the
+  // door (unchanged law), plate ⌀5 pattern in the partition's FACE — the
+  // existing plate law on a new panel."
+  //
+  // Same rows (`hinge_centers`), same ±16 pair, same ⌀5 on HINGES_5MM, same
+  // 37 mm from the FRONT edge. What is new is only the FRAME it is measured in:
+  // engine/joinery.js places a VPART with u along its HEIGHT and v along its
+  // DEPTH from the BACK, so the front edge is `depth` and the height is
+  // measured from the partition's own bottom rather than from the carcass
+  // floor. The two faces mirror exactly as BUL and BUR do — a part drilled on
+  // its right face is the same part turned over — which is why one of them
+  // measures 37 from the front and the other `depth − 37`.
+  //
+  // These are this turn's ONLY new CNC entities, they are a NAMED class
+  // (HINGES_5MM on a VPART), and they exist only where a door is actually hung
+  // on a partition — never in a golden default.
+  for (const leaf of bayDoors) {
+    if (!leaf.onPartition) continue;
+    const part = panels.find((p) => p.id === leaf.hingeOn);
+    if (!part) continue;
+    const depth = part.box.d;
+    // As DRAWN the machined face is the partition's LEFT one (engine/joinery.js
+    // puts its normal at −x) and `v` runs from the BACK edge, so 37 mm from the
+    // FRONT is `depth − 37`. A pattern for the RIGHT face is the same part
+    // turned over, which mirrors that one axis — exactly the relationship BUL
+    // and BUR have carried since turn 1.
+    const v = leaf.hingeFace === 'L'
+      ? depth - P.hinges.xFromFrontEdge
+      : P.hinges.xFromFrontEdge;
+    for (const pair of hingeHolePairs) {
+      for (const y of pair) {
+        // The row is the carcass's; the partition's own frame starts at its
+        // bottom, which on a full-height piece is one board up.
+        addDrill(part.id, 'hinge', P.hinges.layer, y - part.box.y, v, P.hinges.holeDiameter);
+      }
     }
   }
 
@@ -3184,7 +3283,7 @@ export function computeCabinet(params, profileOverride) {
     hinge_centers: doorCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
     side_hinge_holes_y: doorCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
-    hinged_sides: hingedSides,
+    hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
     front_cup_x_from_hinge_edge: cups.xFromHingeEdge,
     shelf_row_y: shelfRows.map((v) => roundTo(v, 4)),

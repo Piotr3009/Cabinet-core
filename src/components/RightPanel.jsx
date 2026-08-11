@@ -48,6 +48,10 @@ export default function RightPanel() {
   const updateItem = useProjectStore((s) => s.updateItem);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const setShelfType = useProjectStore((s) => s.setShelfType);
+  // Turn 21 (CLAUDE.md F12): doors on the partition, one per bay.
+  const setBayDoors = useProjectStore((s) => s.setBayDoors);
+  const setBayDoor = useProjectStore((s) => s.setBayDoor);
+  const bayDoorsFor = useProjectStore((s) => s.bayDoorsFor);
   const setShelfLocked = useProjectStore((s) => s.setShelfLocked);
   const setShelfFront = useProjectStore((s) => s.setShelfFront);
   const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
@@ -117,6 +121,13 @@ export default function RightPanel() {
   const equalHeights = unit?.params.drawer_equal_heights !== false;
   const resolvedDesign = unit ? resolveUnitDesign(unit, design) : null;
   const hasDoors = Boolean(unit?.params.doors) && unit.params.doors !== false;
+  // Turn 21 (CLAUDE.md F12): the bays this face divides into, and this unit's
+  // own per-bay answer where it has one.
+  const doorBaysHere = useMemo(
+    () => (unit ? bayDoorsFor(unit.id) : []),
+    [unit, bayDoorsFor, result],
+  );
+  const bayDoorModes = Array.isArray(unit?.params?.bay_doors) ? unit.params.bay_doors : null;
   const DR = profile.wardrobe.drawers;
   // Which PROJECT height this unit follows, if its kind has one at all
   // (BACKLOG #29). A low cabinet has none — being lower is what it is for.
@@ -936,6 +947,53 @@ export default function RightPanel() {
                 <button type="button" className="cc-btn w-full" onClick={() => setDoors(unit.id, false)}>Remove doors</button>
               ) : (
                 <button type="button" className="cc-btn-gold w-full" onClick={addDoors}>Add doors — finish unit</button>
+              )}
+              {/* ─── Turn 21 (CLAUDE.md F12): A DOOR PER BAY ───
+                  Offered only where a partition can actually carry one — full
+                  height and flush with the face — because those are physical
+                  facts about the piece and not a setting to be argued with. */}
+              {doorBaysHere.length > 1 && (
+                <div className="space-y-1 pt-1" data-bay-doors="1">
+                  <div className="cc-row">
+                    <span className="text-xs text-ink-200 flex-1">Per bay</span>
+                    <button
+                      type="button"
+                      className={`cc-btn px-2 ${bayDoorModes ? 'border-gold text-gold' : ''}`}
+                      title={bayDoorModes
+                        ? 'Back to one face — the bay doors come off'
+                        : 'A door in each bay, hinged on the carcass side or on the partition'}
+                      onClick={() => setBayDoors(unit.id, bayDoorModes
+                        ? null
+                        : doorBaysHere.map((b) => ({ door: 'one', hinge: b.left.kind === 'partition' ? 'L' : 'L' })))}
+                    >
+                      {bayDoorModes ? 'On' : 'Off'}
+                    </button>
+                  </div>
+                  {bayDoorModes && doorBaysHere.map((bay, i) => (
+                    <div className="cc-row" key={bay.index} data-bay={bay.index}>
+                      <span className="text-ink-400 w-10 text-xs">B{bay.index + 1}</span>
+                      <select
+                        className="cc-input flex-1"
+                        value={bayDoorModes[i]?.door || 'none'}
+                        title="A door in this bay, or nothing"
+                        onChange={(e) => setBayDoor(unit.id, i, { door: e.target.value })}
+                      >
+                        <option value="none">No door</option>
+                        <option value="one">One door</option>
+                      </select>
+                      <select
+                        className="cc-input w-20"
+                        value={bayDoorModes[i]?.hinge || 'L'}
+                        disabled={(bayDoorModes[i]?.door || 'none') === 'none'}
+                        title="Which side this leaf is hinged on — the carcass, or the partition"
+                        onChange={(e) => setBayDoor(unit.id, i, { hinge: e.target.value })}
+                      >
+                        <option value="L">Hinge L</option>
+                        <option value="R">Hinge R</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
               )}
             </>
           ) : (

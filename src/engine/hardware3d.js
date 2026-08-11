@@ -66,6 +66,18 @@ function hingeInstances(result, profile) {
     const edgeX = right ? panel.box.x + panel.box.w : panel.box.x;
     // +1 towards the middle of the door for a left hinge, −1 for a right one.
     const dir = right ? -1 : 1;
+    // ─── TURN 21 (CLAUDE.md F12.2) ───
+    // Which FACE the plate is screwed to. A door hung on a carcass side takes
+    // the inner face of that side, as it always has; a door hung on a PARTITION
+    // takes the face of that partition it closes against — the piece is named
+    // on the door itself, so this reads the engine's answer rather than
+    // guessing from the door's position.
+    const on = panel.meta?.hingeOn
+      ? result.panels.find((p) => p.id === panel.meta.hingeOn && p.box)
+      : null;
+    const plateFaceX = on
+      ? (panel.meta.hingeFace === 'R' ? on.box.x + on.box.w : on.box.x)
+      : (right ? W - G : G);
     for (const y of centres) {
       out.push({
         kind: 'hinge',
@@ -78,7 +90,7 @@ function hingeInstances(result, profile) {
         // …and the plate, on the inner face of the side panel this door hangs
         // from, at the same distance from the front edge the engine drills the
         // plate screws at (profile.hinges.xFromFrontEdge).
-        plateX: right ? W - G : G,
+        plateX: plateFaceX,
         plateZ: D - profile.hinges.xFromFrontEdge,
         panelId: panel.id,
       });

@@ -300,16 +300,20 @@ test('F9.5 — no kit, at its defaults, is touched by this feature at all', () =
 test('F9.1 — the four tools are in the PART DETAIL, with a layer picked from a list', () => {
   const detail = src('components/PartDetailModal.jsx');
   assert.match(detail, /data-delete-feature="1"/);
-  // The three add-tools are rendered from one list, so the assertion is about
-  // that list rather than about three hand-written attributes.
-  for (const tool of ['drill', 'line', 'dowels']) {
-    assert.match(detail, new RegExp(`'${tool}', 'Add `), `the ${tool} tool`);
+  // ─── TURN 24 (CLAUDE.md F2.1): THE SAME FOUR, RENAMED AS THE MOCK NAMES
+  //     THEM ────────────────────────────────────────────────────────────────
+  // The owner vetoed turn 23's interaction and the replacement was drawn for
+  // him: **Select · Drill · Line · Dowel line**, from one list, with the layer
+  // picker beside them. What this test has always been about — one list, the
+  // EXISTING layers, no custom layers — is untouched.
+  for (const tool of ['select', 'drill', 'line', 'dowels']) {
+    assert.match(detail, new RegExp(`\\['${tool}', '`), `the ${tool} tool`);
   }
   assert.match(detail, /data-part-tool=\{id\}/);
   assert.match(detail, /CNC_LAYERS\.map/, 'the layer comes from the EXISTING list');
   assert.match(detail, /data-back-to-computed="1"/);
   assert.match(detail, /data-hand-edited=/);
-  // No custom layers this turn — parked by the owner's word.
+  // No custom layers this turn either — parked by the owner's word.
   assert.doesNotMatch(detail, /addLayer|customLayer/i);
 });
 

@@ -2669,6 +2669,57 @@ export const DEFAULT_CABINET_PROFILE = {
       // not a piece of the furniture.
       markerPx: 11,
     },
+
+    // ─── THE PENCIL ON A PRINT (turn 24, CLAUDE.md F2) ────────────────────
+    //
+    // The part editor draws with the MOUSE now, and the cursor carries osnap
+    // markers — AutoCAD's language, which the ruler above already speaks. What
+    // is here is the WORKSHOP's side of it: how big the magnet is, how big the
+    // marker is, and what a hole gets when nobody has said otherwise.
+    partSnap: {
+      // ─── ONE NUMBER (F2.3) ───
+      // "magnet radius ONE number in `profile.js` (sheet-space equivalent of
+      // ~5 mm)". It is in the PART's own millimetres and not in pixels, unlike
+      // the ruler's, and that is deliberate: a print is a drawing at a known
+      // scale and a joiner setting out on it thinks in millimetres. The detail
+      // window's zoom is bounded (10 mm … 5 m across), so 5 mm never becomes
+      // either unusable or hair-trigger.
+      magnetMm: 5,
+      // The marker, in SCREEN pixels — it is a piece of the tool, drawn the
+      // same size however far in the drawing is zoomed.
+      markerPx: 12,
+      // How near two features have to be to count as sharing a line, for the
+      // live horizontal/vertical dimensions (F2.4). The workshop's own grid.
+      alignMm: 0.5,
+    },
+
+    // ─── WHAT A DRILL IS, UNTIL SOMEBODY SAYS OTHERWISE (F2.6) ────────────
+    //
+    // "Drill asks ⌀ and depth ONCE per session in a compact popover on first
+    // placement (defaults from the picked layer's convention), then stamps
+    // repeatedly." These are those conventions, by LAYER NAME, because the
+    // layer IS the convention in this app: `SCREWS_3MM` is a ⌀3 and
+    // `SHELVES_7_5MM` is a ⌀7.5, and a joiner who picks the layer has already
+    // said most of what the popover asks.
+    //
+    // `depth` is a THROUGH hole where the number is 0 — which is what a screw
+    // through a side panel is, and what the export has always written.
+    drillDefaults: {
+      SCREWS_3MM: { d: 3, depth: 0 },
+      SHELVES_7_5MM: { d: 7.5, depth: 12 },
+      HINGES_5MM: { d: 5, depth: 12 },
+      FRONT_HINGES_35MM: { d: 35, depth: 12.5 },
+      FRONT_HINGES_3MM: { d: 3, depth: 0 },
+      PUZZLE_HOLES_7_5MM: { d: 7.5, depth: 0 },
+      RUNNERS_3MM: { d: 3, depth: 0 },
+      BISCUIT_4MM: { d: 4, depth: 12 },
+      // A layer the table has not met. Never invented per hole: a joiner who
+      // wants something else types it in the popover once and stamps.
+      fallback: { d: 5, depth: 12 },
+    },
+    // …and what a DOWEL LINE steps at when nobody has typed a pitch. 32 is the
+    // system-32 line every European cabinet is drilled on.
+    dowelPitchMm: 32,
   },
 
   // ─── Distance arrows on the canvas (turn 3 phase 8; redrawn turn 5, #34) ───
@@ -3049,6 +3100,11 @@ export function migrateCabinetProfile(profile) {
       // a profile saved before the ruler had snaps comes back with all three
       // numbers rather than with a magnet of `undefined` pixels.
       ruler: { ...D.editor.ruler, ...profile.editor?.ruler },
+      // Turn 24 (CLAUDE.md F2): the part editor's magnet and the drill's
+      // conventions, merged key by key like every other nested block — a
+      // profile saved before this turn comes back able to draw.
+      partSnap: { ...D.editor.partSnap, ...profile.editor?.partSnap },
+      drillDefaults: { ...D.editor.drillDefaults, ...profile.editor?.drillDefaults },
       explode: { ...D.editor.explode, ...profile.editor?.explode },
       history: { ...D.editor.history, ...profile.editor?.history },
     },

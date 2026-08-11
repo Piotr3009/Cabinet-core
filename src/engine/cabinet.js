@@ -664,19 +664,45 @@ function clampInt(value, min, max) {
  * @param {number} span     how wide the appliance is
  * @param {number} cutFromTop  the strip left at the top
  */
+// ─── TURN 25 (CLAUDE.md F1): THE SECOND DOUBLED EDGE THE GUARD FOUND ────────
+//
+// Turn 17 built the notch by dropping repeated VERTICES out of a fixed eight
+// point list. That is the right instinct aimed at the wrong thing: a repeated
+// point is only the visible half of the fault. Where the notch reached BOTH
+// ends of the board — which is every D/W panel's own plinth, because there the
+// appliance opening IS the whole length — dropping the two duplicated corners
+// left a path that walked the left edge up to the notch, across, DOWN the
+// right edge to the bottom, then back UP the right edge to the top, across and
+// down the left edge again. No two points were equal, and eighty millimetres
+// of each end was in the file twice.
+//
+// The shape is now derived from what is actually LEFT of the board rather than
+// patched after the fact, and there are four of those: a strip, two L's, and
+// the ordinary notch-in-the-middle. Every one is traced once, anticlockwise.
 export function notchedPlinth(w, h, at, span, cutFromTop) {
   const x0 = Math.max(0, Math.min(w, at));
   const x1 = Math.max(0, Math.min(w, at + span));
   const top = h - cutFromTop;
-  if (!(x1 - x0 > 0) || !(top > 0)) return rectGeometry(w, h);
-  const points = [[0, 0], [x0, 0], [x0, top], [x1, top], [x1, 0], [w, 0], [w, h], [0, h]];
-  // A notch that reaches an END of the board leaves the corner point repeated,
-  // and a repeated vertex is a zero-length edge — which a triangulator is
-  // entitled to refuse (3d/panelSolid.js says so about the tabs). Drop them.
-  const outline = points.filter(([x, y], i) => {
-    const prev = points[(i - 1 + points.length) % points.length];
-    return Math.abs(prev[0] - x) > 1e-9 || Math.abs(prev[1] - y) > 1e-9;
-  });
+  // No opening, or a cut that would take the whole height and leave two loose
+  // pieces rather than one board: the piece is a plain rectangle.
+  if (!(x1 - x0 > 0) || !(top > 0) || top >= h) return rectGeometry(w, h);
+
+  const reachesLeft = x0 <= 0;
+  const reachesRight = x1 >= w;
+  let outline;
+  if (reachesLeft && reachesRight) {
+    // The opening spans the board: what is left is the strip along the top.
+    outline = [[0, top], [w, top], [w, h], [0, h]];
+  } else if (reachesLeft) {
+    // An L standing on its right-hand end.
+    outline = [[x1, 0], [w, 0], [w, h], [0, h], [0, top], [x1, top]];
+  } else if (reachesRight) {
+    // …and its mirror.
+    outline = [[0, 0], [x0, 0], [x0, top], [w, top], [w, h], [0, h]];
+  } else {
+    // The ordinary case: a notch with board on both sides of it.
+    outline = [[0, 0], [x0, 0], [x0, top], [x1, top], [x1, 0], [w, 0], [w, h], [0, h]];
+  }
   return { outline, pockets: [], holes: [], layer: 'OUTLINE' };
 }
 

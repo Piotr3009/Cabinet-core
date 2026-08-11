@@ -1,0 +1,496 @@
+3,4c3,4
+< GEOM   WARDROBE 01-TOP.dxf e54b48ba
+< GEOM   WARDROBE 01-BOTTOM.dxf e54b48ba
+---
+> GEOM   WARDROBE 01-TOP.dxf ddb1ab46
+> GEOM   WARDROBE 01-BOTTOM.dxf ddb1ab46
+9,10c9,10
+< GEOM   WARDROBE+drawers 01-TOP.dxf e54b48ba
+< GEOM   WARDROBE+drawers 01-BOTTOM.dxf e54b48ba
+---
+> GEOM   WARDROBE+drawers 01-TOP.dxf ddb1ab46
+> GEOM   WARDROBE+drawers 01-BOTTOM.dxf ddb1ab46
+31,32c31,32
+< GEOM   WARDROBE+partition 01-TOP.dxf 6a0e5cc4
+< GEOM   WARDROBE+partition 01-BOTTOM.dxf 6a0e5cc4
+---
+> GEOM   WARDROBE+partition 01-TOP.dxf f2279180
+> GEOM   WARDROBE+partition 01-BOTTOM.dxf f2279180
+39,40c39,40
+< GEOM   WARDROBE+partition-on-shelf 01-TOP.dxf 6a0e5cc4
+< GEOM   WARDROBE+partition-on-shelf 01-BOTTOM.dxf 6a0e5cc4
+---
+> GEOM   WARDROBE+partition-on-shelf 01-TOP.dxf f2279180
+> GEOM   WARDROBE+partition-on-shelf 01-BOTTOM.dxf f2279180
+48,49c48,49
+< GEOM   WARDROBE+adjustable-shelves 01-TOP.dxf e54b48ba
+< GEOM   WARDROBE+adjustable-shelves 01-BOTTOM.dxf e54b48ba
+---
+> GEOM   WARDROBE+adjustable-shelves 01-TOP.dxf ddb1ab46
+> GEOM   WARDROBE+adjustable-shelves 01-BOTTOM.dxf ddb1ab46
+56,57c56,57
+< GEOM   WARDROBE+fix-shelf 01-TOP.dxf e54b48ba
+< GEOM   WARDROBE+fix-shelf 01-BOTTOM.dxf e54b48ba
+---
+> GEOM   WARDROBE+fix-shelf 01-TOP.dxf ddb1ab46
+> GEOM   WARDROBE+fix-shelf 01-BOTTOM.dxf ddb1ab46
+63,64c63,64
+< GEOM   WARDROBE+fix-shelf-in-bay 01-TOP.dxf 6a0e5cc4
+< GEOM   WARDROBE+fix-shelf-in-bay 01-BOTTOM.dxf 6a0e5cc4
+---
+> GEOM   WARDROBE+fix-shelf-in-bay 01-TOP.dxf f2279180
+> GEOM   WARDROBE+fix-shelf-in-bay 01-BOTTOM.dxf f2279180
+72,73c72,73
+< GEOM   WARDROBE+partitions-2 01-TOP.dxf 6a0e5cc4
+< GEOM   WARDROBE+partitions-2 01-BOTTOM.dxf 6a0e5cc4
+---
+> GEOM   WARDROBE+partitions-2 01-TOP.dxf f2279180
+> GEOM   WARDROBE+partitions-2 01-BOTTOM.dxf f2279180
+81,82c81,82
+< GEOM   BUD 01-TOP.dxf c59b8bca
+< GEOM   BUD 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUD 01-TOP.dxf 86be9ca6
+> GEOM   BUD 01-BOTTOM.dxf 86be9ca6
+87,88c87,88
+< GEOM   BUD+drawers 01-TOP.dxf c59b8bca
+< GEOM   BUD+drawers 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUD+drawers 01-TOP.dxf 86be9ca6
+> GEOM   BUD+drawers 01-BOTTOM.dxf 86be9ca6
+93,94c93,94
+< GEOM   BUD+partition 01-TOP.dxf 41b20590
+< GEOM   BUD+partition 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUD+partition 01-TOP.dxf 278d6f2c
+> GEOM   BUD+partition 01-BOTTOM.dxf 278d6f2c
+101,102c101,102
+< GEOM   BUD+partition-on-shelf 01-TOP.dxf 41b20590
+< GEOM   BUD+partition-on-shelf 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUD+partition-on-shelf 01-TOP.dxf 278d6f2c
+> GEOM   BUD+partition-on-shelf 01-BOTTOM.dxf 278d6f2c
+110,111c110,111
+< GEOM   BUD+adjustable-shelves 01-TOP.dxf c59b8bca
+< GEOM   BUD+adjustable-shelves 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUD+adjustable-shelves 01-TOP.dxf 86be9ca6
+> GEOM   BUD+adjustable-shelves 01-BOTTOM.dxf 86be9ca6
+118,119c118,119
+< GEOM   BUD+fix-shelf 01-TOP.dxf c59b8bca
+< GEOM   BUD+fix-shelf 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUD+fix-shelf 01-TOP.dxf 86be9ca6
+> GEOM   BUD+fix-shelf 01-BOTTOM.dxf 86be9ca6
+125,126c125,126
+< GEOM   BUD+fix-shelf-in-bay 01-TOP.dxf 41b20590
+< GEOM   BUD+fix-shelf-in-bay 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUD+fix-shelf-in-bay 01-TOP.dxf 278d6f2c
+> GEOM   BUD+fix-shelf-in-bay 01-BOTTOM.dxf 278d6f2c
+134,135c134,135
+< GEOM   BUD+partitions-2 01-TOP.dxf 41b20590
+< GEOM   BUD+partitions-2 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUD+partitions-2 01-TOP.dxf 278d6f2c
+> GEOM   BUD+partitions-2 01-BOTTOM.dxf 278d6f2c
+143,144c143,144
+< GEOM   BUDR2 01-TOP.dxf c59b8bca
+< GEOM   BUDR2 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR2 01-TOP.dxf 86be9ca6
+> GEOM   BUDR2 01-BOTTOM.dxf 86be9ca6
+160,161c160,161
+< GEOM   BUDR2+drawers 01-TOP.dxf c59b8bca
+< GEOM   BUDR2+drawers 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR2+drawers 01-TOP.dxf 86be9ca6
+> GEOM   BUDR2+drawers 01-BOTTOM.dxf 86be9ca6
+177,178c177,178
+< GEOM   BUDR2+partition 01-TOP.dxf 41b20590
+< GEOM   BUDR2+partition 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR2+partition 01-TOP.dxf 278d6f2c
+> GEOM   BUDR2+partition 01-BOTTOM.dxf 278d6f2c
+195,196c195,196
+< GEOM   BUDR2+partition-on-shelf 01-TOP.dxf 41b20590
+< GEOM   BUDR2+partition-on-shelf 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR2+partition-on-shelf 01-TOP.dxf 278d6f2c
+> GEOM   BUDR2+partition-on-shelf 01-BOTTOM.dxf 278d6f2c
+213,214c213,214
+< GEOM   BUDR2+adjustable-shelves 01-TOP.dxf c59b8bca
+< GEOM   BUDR2+adjustable-shelves 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR2+adjustable-shelves 01-TOP.dxf 86be9ca6
+> GEOM   BUDR2+adjustable-shelves 01-BOTTOM.dxf 86be9ca6
+230,231c230,231
+< GEOM   BUDR2+fix-shelf 01-TOP.dxf c59b8bca
+< GEOM   BUDR2+fix-shelf 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR2+fix-shelf 01-TOP.dxf 86be9ca6
+> GEOM   BUDR2+fix-shelf 01-BOTTOM.dxf 86be9ca6
+247,248c247,248
+< GEOM   BUDR2+fix-shelf-in-bay 01-TOP.dxf 41b20590
+< GEOM   BUDR2+fix-shelf-in-bay 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR2+fix-shelf-in-bay 01-TOP.dxf 278d6f2c
+> GEOM   BUDR2+fix-shelf-in-bay 01-BOTTOM.dxf 278d6f2c
+265,266c265,266
+< GEOM   BUDR2+partitions-2 01-TOP.dxf 41b20590
+< GEOM   BUDR2+partitions-2 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR2+partitions-2 01-TOP.dxf 278d6f2c
+> GEOM   BUDR2+partitions-2 01-BOTTOM.dxf 278d6f2c
+284,285c284,285
+< GEOM   BUDR 01-TOP.dxf c59b8bca
+< GEOM   BUDR 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR 01-TOP.dxf 86be9ca6
+> GEOM   BUDR 01-BOTTOM.dxf 86be9ca6
+307,308c307,308
+< GEOM   BUDR+drawers 01-TOP.dxf c59b8bca
+< GEOM   BUDR+drawers 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR+drawers 01-TOP.dxf 86be9ca6
+> GEOM   BUDR+drawers 01-BOTTOM.dxf 86be9ca6
+330,331c330,331
+< GEOM   BUDR+partition 01-TOP.dxf 41b20590
+< GEOM   BUDR+partition 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR+partition 01-TOP.dxf 278d6f2c
+> GEOM   BUDR+partition 01-BOTTOM.dxf 278d6f2c
+354,355c354,355
+< GEOM   BUDR+partition-on-shelf 01-TOP.dxf 41b20590
+< GEOM   BUDR+partition-on-shelf 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR+partition-on-shelf 01-TOP.dxf 278d6f2c
+> GEOM   BUDR+partition-on-shelf 01-BOTTOM.dxf 278d6f2c
+378,379c378,379
+< GEOM   BUDR+adjustable-shelves 01-TOP.dxf c59b8bca
+< GEOM   BUDR+adjustable-shelves 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR+adjustable-shelves 01-TOP.dxf 86be9ca6
+> GEOM   BUDR+adjustable-shelves 01-BOTTOM.dxf 86be9ca6
+401,402c401,402
+< GEOM   BUDR+fix-shelf 01-TOP.dxf c59b8bca
+< GEOM   BUDR+fix-shelf 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR+fix-shelf 01-TOP.dxf 86be9ca6
+> GEOM   BUDR+fix-shelf 01-BOTTOM.dxf 86be9ca6
+424,425c424,425
+< GEOM   BUDR+fix-shelf-in-bay 01-TOP.dxf 41b20590
+< GEOM   BUDR+fix-shelf-in-bay 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR+fix-shelf-in-bay 01-TOP.dxf 278d6f2c
+> GEOM   BUDR+fix-shelf-in-bay 01-BOTTOM.dxf 278d6f2c
+448,449c448,449
+< GEOM   BUDR+partitions-2 01-TOP.dxf 41b20590
+< GEOM   BUDR+partitions-2 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR+partitions-2 01-TOP.dxf 278d6f2c
+> GEOM   BUDR+partitions-2 01-BOTTOM.dxf 278d6f2c
+473,474c473,474
+< GEOM   BUDR4 01-TOP.dxf c59b8bca
+< GEOM   BUDR4 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR4 01-TOP.dxf 86be9ca6
+> GEOM   BUDR4 01-BOTTOM.dxf 86be9ca6
+502,503c502,503
+< GEOM   BUDR4+drawers 01-TOP.dxf c59b8bca
+< GEOM   BUDR4+drawers 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR4+drawers 01-TOP.dxf 86be9ca6
+> GEOM   BUDR4+drawers 01-BOTTOM.dxf 86be9ca6
+531,532c531,532
+< GEOM   BUDR4+partition 01-TOP.dxf 41b20590
+< GEOM   BUDR4+partition 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR4+partition 01-TOP.dxf 278d6f2c
+> GEOM   BUDR4+partition 01-BOTTOM.dxf 278d6f2c
+561,562c561,562
+< GEOM   BUDR4+partition-on-shelf 01-TOP.dxf 41b20590
+< GEOM   BUDR4+partition-on-shelf 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR4+partition-on-shelf 01-TOP.dxf 278d6f2c
+> GEOM   BUDR4+partition-on-shelf 01-BOTTOM.dxf 278d6f2c
+591,592c591,592
+< GEOM   BUDR4+adjustable-shelves 01-TOP.dxf c59b8bca
+< GEOM   BUDR4+adjustable-shelves 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR4+adjustable-shelves 01-TOP.dxf 86be9ca6
+> GEOM   BUDR4+adjustable-shelves 01-BOTTOM.dxf 86be9ca6
+620,621c620,621
+< GEOM   BUDR4+fix-shelf 01-TOP.dxf c59b8bca
+< GEOM   BUDR4+fix-shelf 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDR4+fix-shelf 01-TOP.dxf 86be9ca6
+> GEOM   BUDR4+fix-shelf 01-BOTTOM.dxf 86be9ca6
+649,650c649,650
+< GEOM   BUDR4+fix-shelf-in-bay 01-TOP.dxf 41b20590
+< GEOM   BUDR4+fix-shelf-in-bay 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR4+fix-shelf-in-bay 01-TOP.dxf 278d6f2c
+> GEOM   BUDR4+fix-shelf-in-bay 01-BOTTOM.dxf 278d6f2c
+679,680c679,680
+< GEOM   BUDR4+partitions-2 01-TOP.dxf 41b20590
+< GEOM   BUDR4+partitions-2 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDR4+partitions-2 01-TOP.dxf 278d6f2c
+> GEOM   BUDR4+partitions-2 01-BOTTOM.dxf 278d6f2c
+710,711c710,711
+< GEOM   WUD 01-TOP.dxf e944dea4
+< GEOM   WUD 01-BOTTOM.dxf e944dea4
+---
+> GEOM   WUD 01-TOP.dxf 6b6c68f6
+> GEOM   WUD 01-BOTTOM.dxf 6b6c68f6
+716,717c716,717
+< GEOM   WUD+drawers 01-TOP.dxf e944dea4
+< GEOM   WUD+drawers 01-BOTTOM.dxf e944dea4
+---
+> GEOM   WUD+drawers 01-TOP.dxf 6b6c68f6
+> GEOM   WUD+drawers 01-BOTTOM.dxf 6b6c68f6
+722,723c722,723
+< GEOM   WUD+partition 01-TOP.dxf bd2ed4d2
+< GEOM   WUD+partition 01-BOTTOM.dxf bd2ed4d2
+---
+> GEOM   WUD+partition 01-TOP.dxf 213557f4
+> GEOM   WUD+partition 01-BOTTOM.dxf 213557f4
+730,731c730,731
+< GEOM   WUD+partition-on-shelf 01-TOP.dxf bd2ed4d2
+< GEOM   WUD+partition-on-shelf 01-BOTTOM.dxf bd2ed4d2
+---
+> GEOM   WUD+partition-on-shelf 01-TOP.dxf 213557f4
+> GEOM   WUD+partition-on-shelf 01-BOTTOM.dxf 213557f4
+739,740c739,740
+< GEOM   WUD+adjustable-shelves 01-TOP.dxf e944dea4
+< GEOM   WUD+adjustable-shelves 01-BOTTOM.dxf e944dea4
+---
+> GEOM   WUD+adjustable-shelves 01-TOP.dxf 6b6c68f6
+> GEOM   WUD+adjustable-shelves 01-BOTTOM.dxf 6b6c68f6
+747,748c747,748
+< GEOM   WUD+fix-shelf 01-TOP.dxf e944dea4
+< GEOM   WUD+fix-shelf 01-BOTTOM.dxf e944dea4
+---
+> GEOM   WUD+fix-shelf 01-TOP.dxf 6b6c68f6
+> GEOM   WUD+fix-shelf 01-BOTTOM.dxf 6b6c68f6
+754,755c754,755
+< GEOM   WUD+fix-shelf-in-bay 01-TOP.dxf bd2ed4d2
+< GEOM   WUD+fix-shelf-in-bay 01-BOTTOM.dxf bd2ed4d2
+---
+> GEOM   WUD+fix-shelf-in-bay 01-TOP.dxf 213557f4
+> GEOM   WUD+fix-shelf-in-bay 01-BOTTOM.dxf 213557f4
+763,764c763,764
+< GEOM   WUD+partitions-2 01-TOP.dxf bd2ed4d2
+< GEOM   WUD+partitions-2 01-BOTTOM.dxf bd2ed4d2
+---
+> GEOM   WUD+partitions-2 01-TOP.dxf 213557f4
+> GEOM   WUD+partitions-2 01-BOTTOM.dxf 213557f4
+772,773c772,773
+< GEOM   BUDTALL 01-TOP.dxf c59b8bca
+< GEOM   BUDTALL 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDTALL 01-TOP.dxf 86be9ca6
+> GEOM   BUDTALL 01-BOTTOM.dxf 86be9ca6
+778,779c778,779
+< GEOM   BUDTALL+drawers 01-TOP.dxf c59b8bca
+< GEOM   BUDTALL+drawers 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDTALL+drawers 01-TOP.dxf 86be9ca6
+> GEOM   BUDTALL+drawers 01-BOTTOM.dxf 86be9ca6
+784,785c784,785
+< GEOM   BUDTALL+partition 01-TOP.dxf 41b20590
+< GEOM   BUDTALL+partition 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDTALL+partition 01-TOP.dxf 278d6f2c
+> GEOM   BUDTALL+partition 01-BOTTOM.dxf 278d6f2c
+792,793c792,793
+< GEOM   BUDTALL+partition-on-shelf 01-TOP.dxf 41b20590
+< GEOM   BUDTALL+partition-on-shelf 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDTALL+partition-on-shelf 01-TOP.dxf 278d6f2c
+> GEOM   BUDTALL+partition-on-shelf 01-BOTTOM.dxf 278d6f2c
+801,802c801,802
+< GEOM   BUDTALL+adjustable-shelves 01-TOP.dxf c59b8bca
+< GEOM   BUDTALL+adjustable-shelves 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDTALL+adjustable-shelves 01-TOP.dxf 86be9ca6
+> GEOM   BUDTALL+adjustable-shelves 01-BOTTOM.dxf 86be9ca6
+809,810c809,810
+< GEOM   BUDTALL+fix-shelf 01-TOP.dxf c59b8bca
+< GEOM   BUDTALL+fix-shelf 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   BUDTALL+fix-shelf 01-TOP.dxf 86be9ca6
+> GEOM   BUDTALL+fix-shelf 01-BOTTOM.dxf 86be9ca6
+816,817c816,817
+< GEOM   BUDTALL+fix-shelf-in-bay 01-TOP.dxf 41b20590
+< GEOM   BUDTALL+fix-shelf-in-bay 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDTALL+fix-shelf-in-bay 01-TOP.dxf 278d6f2c
+> GEOM   BUDTALL+fix-shelf-in-bay 01-BOTTOM.dxf 278d6f2c
+825,826c825,826
+< GEOM   BUDTALL+partitions-2 01-TOP.dxf 41b20590
+< GEOM   BUDTALL+partitions-2 01-BOTTOM.dxf 41b20590
+---
+> GEOM   BUDTALL+partitions-2 01-TOP.dxf 278d6f2c
+> GEOM   BUDTALL+partitions-2 01-BOTTOM.dxf 278d6f2c
+834,835c834,835
+< GEOM   LOW_CABINET 01-TOP.dxf e54b48ba
+< GEOM   LOW_CABINET 01-BOTTOM.dxf e54b48ba
+---
+> GEOM   LOW_CABINET 01-TOP.dxf ddb1ab46
+> GEOM   LOW_CABINET 01-BOTTOM.dxf ddb1ab46
+840,841c840,841
+< GEOM   LOW_CABINET+drawers 01-TOP.dxf e54b48ba
+< GEOM   LOW_CABINET+drawers 01-BOTTOM.dxf e54b48ba
+---
+> GEOM   LOW_CABINET+drawers 01-TOP.dxf ddb1ab46
+> GEOM   LOW_CABINET+drawers 01-BOTTOM.dxf ddb1ab46
+846,847c846,847
+< GEOM   LOW_CABINET+partition 01-TOP.dxf 6a0e5cc4
+< GEOM   LOW_CABINET+partition 01-BOTTOM.dxf 6a0e5cc4
+---
+> GEOM   LOW_CABINET+partition 01-TOP.dxf f2279180
+> GEOM   LOW_CABINET+partition 01-BOTTOM.dxf f2279180
+854,855c854,855
+< GEOM   LOW_CABINET+partition-on-shelf 01-TOP.dxf 6a0e5cc4
+< GEOM   LOW_CABINET+partition-on-shelf 01-BOTTOM.dxf 6a0e5cc4
+---
+> GEOM   LOW_CABINET+partition-on-shelf 01-TOP.dxf f2279180
+> GEOM   LOW_CABINET+partition-on-shelf 01-BOTTOM.dxf f2279180
+863,864c863,864
+< GEOM   LOW_CABINET+adjustable-shelves 01-TOP.dxf e54b48ba
+< GEOM   LOW_CABINET+adjustable-shelves 01-BOTTOM.dxf e54b48ba
+---
+> GEOM   LOW_CABINET+adjustable-shelves 01-TOP.dxf ddb1ab46
+> GEOM   LOW_CABINET+adjustable-shelves 01-BOTTOM.dxf ddb1ab46
+871,872c871,872
+< GEOM   LOW_CABINET+fix-shelf 01-TOP.dxf e54b48ba
+< GEOM   LOW_CABINET+fix-shelf 01-BOTTOM.dxf e54b48ba
+---
+> GEOM   LOW_CABINET+fix-shelf 01-TOP.dxf ddb1ab46
+> GEOM   LOW_CABINET+fix-shelf 01-BOTTOM.dxf ddb1ab46
+878,879c878,879
+< GEOM   LOW_CABINET+fix-shelf-in-bay 01-TOP.dxf 6a0e5cc4
+< GEOM   LOW_CABINET+fix-shelf-in-bay 01-BOTTOM.dxf 6a0e5cc4
+---
+> GEOM   LOW_CABINET+fix-shelf-in-bay 01-TOP.dxf f2279180
+> GEOM   LOW_CABINET+fix-shelf-in-bay 01-BOTTOM.dxf f2279180
+887,888c887,888
+< GEOM   LOW_CABINET+partitions-2 01-TOP.dxf 6a0e5cc4
+< GEOM   LOW_CABINET+partitions-2 01-BOTTOM.dxf 6a0e5cc4
+---
+> GEOM   LOW_CABINET+partitions-2 01-TOP.dxf f2279180
+> GEOM   LOW_CABINET+partitions-2 01-BOTTOM.dxf f2279180
+896c896
+< GEOM   SINK 01-BOTTOM.dxf f60ded71
+---
+> GEOM   SINK 01-BOTTOM.dxf 8cd62209
+903c903
+< GEOM   SINK+drawers 01-BOTTOM.dxf f60ded71
+---
+> GEOM   SINK+drawers 01-BOTTOM.dxf 8cd62209
+910c910
+< GEOM   SINK+partition 01-BOTTOM.dxf 9d8ce48f
+---
+> GEOM   SINK+partition 01-BOTTOM.dxf ee852047
+919c919
+< GEOM   SINK+partition-on-shelf 01-BOTTOM.dxf 9d8ce48f
+---
+> GEOM   SINK+partition-on-shelf 01-BOTTOM.dxf ee852047
+929c929
+< GEOM   SINK+adjustable-shelves 01-BOTTOM.dxf f60ded71
+---
+> GEOM   SINK+adjustable-shelves 01-BOTTOM.dxf 8cd62209
+938c938
+< GEOM   SINK+fix-shelf 01-BOTTOM.dxf f60ded71
+---
+> GEOM   SINK+fix-shelf 01-BOTTOM.dxf 8cd62209
+946c946
+< GEOM   SINK+fix-shelf-in-bay 01-BOTTOM.dxf 9d8ce48f
+---
+> GEOM   SINK+fix-shelf-in-bay 01-BOTTOM.dxf ee852047
+956c956
+< GEOM   SINK+partitions-2 01-BOTTOM.dxf 9d8ce48f
+---
+> GEOM   SINK+partitions-2 01-BOTTOM.dxf ee852047
+987c987
+< GEOM   OVEN_BASE 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   OVEN_BASE 01-BOTTOM.dxf 86be9ca6
+1000c1000
+< GEOM   OVEN_BASE+drawers 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   OVEN_BASE+drawers 01-BOTTOM.dxf 86be9ca6
+1013c1013
+< GEOM   OVEN_BASE+partition 01-BOTTOM.dxf 41b20590
+---
+> GEOM   OVEN_BASE+partition 01-BOTTOM.dxf 278d6f2c
+1027c1027
+< GEOM   OVEN_BASE+partition-on-shelf 01-BOTTOM.dxf 41b20590
+---
+> GEOM   OVEN_BASE+partition-on-shelf 01-BOTTOM.dxf 278d6f2c
+1041c1041
+< GEOM   OVEN_BASE+adjustable-shelves 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   OVEN_BASE+adjustable-shelves 01-BOTTOM.dxf 86be9ca6
+1054c1054
+< GEOM   OVEN_BASE+fix-shelf 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   OVEN_BASE+fix-shelf 01-BOTTOM.dxf 86be9ca6
+1067c1067
+< GEOM   OVEN_BASE+fix-shelf-in-bay 01-BOTTOM.dxf 41b20590
+---
+> GEOM   OVEN_BASE+fix-shelf-in-bay 01-BOTTOM.dxf 278d6f2c
+1081c1081
+< GEOM   OVEN_BASE+partitions-2 01-BOTTOM.dxf 41b20590
+---
+> GEOM   OVEN_BASE+partitions-2 01-BOTTOM.dxf 278d6f2c
+1096,1097c1096,1097
+< GEOM   FRIDGE 01-TOP.dxf c59b8bca
+< GEOM   FRIDGE 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   FRIDGE 01-TOP.dxf 86be9ca6
+> GEOM   FRIDGE 01-BOTTOM.dxf 86be9ca6
+1106,1107c1106,1107
+< GEOM   FRIDGE+drawers 01-TOP.dxf c59b8bca
+< GEOM   FRIDGE+drawers 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   FRIDGE+drawers 01-TOP.dxf 86be9ca6
+> GEOM   FRIDGE+drawers 01-BOTTOM.dxf 86be9ca6
+1116,1117c1116,1117
+< GEOM   FRIDGE+partition 01-TOP.dxf 41b20590
+< GEOM   FRIDGE+partition 01-BOTTOM.dxf 41b20590
+---
+> GEOM   FRIDGE+partition 01-TOP.dxf 278d6f2c
+> GEOM   FRIDGE+partition 01-BOTTOM.dxf 278d6f2c
+1128,1129c1128,1129
+< GEOM   FRIDGE+partition-on-shelf 01-TOP.dxf 41b20590
+< GEOM   FRIDGE+partition-on-shelf 01-BOTTOM.dxf 41b20590
+---
+> GEOM   FRIDGE+partition-on-shelf 01-TOP.dxf 278d6f2c
+> GEOM   FRIDGE+partition-on-shelf 01-BOTTOM.dxf 278d6f2c
+1140,1141c1140,1141
+< GEOM   FRIDGE+adjustable-shelves 01-TOP.dxf c59b8bca
+< GEOM   FRIDGE+adjustable-shelves 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   FRIDGE+adjustable-shelves 01-TOP.dxf 86be9ca6
+> GEOM   FRIDGE+adjustable-shelves 01-BOTTOM.dxf 86be9ca6
+1150,1151c1150,1151
+< GEOM   FRIDGE+fix-shelf 01-TOP.dxf c59b8bca
+< GEOM   FRIDGE+fix-shelf 01-BOTTOM.dxf c59b8bca
+---
+> GEOM   FRIDGE+fix-shelf 01-TOP.dxf 86be9ca6
+> GEOM   FRIDGE+fix-shelf 01-BOTTOM.dxf 86be9ca6
+1160,1161c1160,1161
+< GEOM   FRIDGE+fix-shelf-in-bay 01-TOP.dxf 41b20590
+< GEOM   FRIDGE+fix-shelf-in-bay 01-BOTTOM.dxf 41b20590
+---
+> GEOM   FRIDGE+fix-shelf-in-bay 01-TOP.dxf 278d6f2c
+> GEOM   FRIDGE+fix-shelf-in-bay 01-BOTTOM.dxf 278d6f2c
+1172,1173c1172,1173
+< GEOM   FRIDGE+partitions-2 01-TOP.dxf 41b20590
+< GEOM   FRIDGE+partitions-2 01-BOTTOM.dxf 41b20590
+---
+> GEOM   FRIDGE+partitions-2 01-TOP.dxf 278d6f2c
+> GEOM   FRIDGE+partitions-2 01-BOTTOM.dxf 278d6f2c

@@ -166,7 +166,17 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   //   differently and 4 mm is not a difference a joiner spots across a
   //   workshop. TEXT only: `verify/t24/probe-diff.txt` has the entity-level
   //   evidence, and the only strings that move are the two shelves'.
-  assert.equal(fingerprint(sheetOf(result, all)), '13f9d8a8', 'the whole-unit sheet has changed');
+  // ─── TURN 25 (CLAUDE.md F1): 13f9d8a8 → 1696eb4c ─────────────────────────
+  // THE DUPLICATE-EDGE FIX, and nothing else. The TOP and the BOTTOM used to
+  // write their bottom edge into the file TWICE — once as one straight segment
+  // at the head of the polyline and once as the tabbed run at its tail, with a
+  // return to the origin in between. VCarve offsets a doubled edge in BOTH
+  // directions, which is the fault the owner found in his own LISP. The points
+  // are the same points; they are traced once now. Two POLYLINE entities on
+  // this sheet reorder their vertices and not one coordinate moves —
+  // `verify/t25/edge-guard.md` carries the post-mortem and
+  // `verify/t25/cnc-export-identity.md` the entity-level evidence.
+  assert.equal(fingerprint(sheetOf(result, all)), '1696eb4c', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -180,10 +190,16 @@ test('…and so is each preset’s', () => {
   // socket. The SPRAYED and FRONTS sheets are the doors and the drawer faces:
   // no screw, no socket, no change. A "global" delta that had moved them too
   // would be a delta that was not what it says it is.
+  // ─── TURN 25 (CLAUDE.md F1): THE SAME TWO OF THE FOUR, FOR THE SAME REASON
+  // The duplicate-edge fix is on the TOP and the BOTTOM. Those are carcass
+  // boards, so the two sheets that carry a carcass move and the two that are
+  // doors and drawer faces do not — and the pair that does not move is again
+  // the interesting half: a fix that had touched a door would be a fix that is
+  // not what it says it is.
   const expected = {
-    all: '13f9d8a8',           // was bf00b60f
-    'non-sprayed': '35eddb46', // was 07a550cd — this one has the drawer sides in it
-    sprayed: '27364f5c',       // UNCHANGED — fronts carry no screw axis
+    all: '1696eb4c',           // was 13f9d8a8
+    'non-sprayed': '32cca2e6', // was 35eddb46 — this one has the carcass in it
+    sprayed: '27364f5c',       // UNCHANGED — no top, no bottom, no doubled edge
     fronts: '27364f5c',        // UNCHANGED
   };
   for (const [preset, print] of Object.entries(expected)) {
@@ -416,5 +432,5 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   const cuttable = exportablePanels(result.panels);
   const hidden = new Set(panelIdsForPreset(cuttable, 'sprayed'));
   const ids = cuttable.map((p) => p.id).filter((id) => !hidden.has(id));
-  assert.equal(fingerprint(sheetOf(result, ids)), '35eddb46'); // was 707406dd — F4's height
+  assert.equal(fingerprint(sheetOf(result, ids)), '32cca2e6'); // was 35eddb46 — F1's traced-once edge
 });

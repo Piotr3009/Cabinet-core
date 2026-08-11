@@ -13,7 +13,7 @@
 // the engine only has to CARRY the full geometry.
 
 /** Points of one tab on a vertical (right-hand) edge, running bottom → top. */
-function tabPointsRight(edgeX, centreY, G, pz) {
+export function tabPointsRight(edgeX, centreY, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [edgeX, centreY - t], [edgeX, centreY - o],
@@ -25,7 +25,7 @@ function tabPointsRight(edgeX, centreY, G, pz) {
 }
 
 /** Points of one tab on a vertical (left-hand) edge, running top → bottom. */
-function tabPointsLeft(edgeX, centreY, G, pz) {
+export function tabPointsLeft(edgeX, centreY, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [edgeX, centreY + t], [edgeX, centreY + o],
@@ -37,7 +37,7 @@ function tabPointsLeft(edgeX, centreY, G, pz) {
 }
 
 /** Points of one tab on the top edge, running right → left. */
-function tabPointsUp(edgeY, centreX, G, pz) {
+export function tabPointsUp(edgeY, centreX, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [centreX + t, edgeY], [centreX + o, edgeY],
@@ -49,7 +49,7 @@ function tabPointsUp(edgeY, centreX, G, pz) {
 }
 
 /** Points of one tab on the bottom edge, running left → right. */
-function tabPointsDown(edgeY, centreX, G, pz) {
+export function tabPointsDown(edgeY, centreX, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [centreX - t, edgeY], [centreX - o, edgeY],
@@ -247,20 +247,47 @@ export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
  * cabinet DEPTH (depth − G), drawnH spans the internal WIDTH (width − 2G).
  * Tabs on three edges — both long edges (into the sides) and the back edge.
  * The remaining edge is the cabinet front and stays plain.
+ *
+ * ─── TURN 25 (CLAUDE.md F1): THE EDGE THAT WAS DRAWN TWICE ─────────────────
+ *
+ * This function is where the owner's LISP fault lived in OUR code, and the F1
+ * guard is what found it. It used to trace the outline like this:
+ *
+ *     [0,0] → [drawnW,0]        …the bottom edge, PLAIN, straight across
+ *           → [drawnW,drawnH]   …up the right
+ *           → tabs across the top, down the back to
+ *     [0,0]                     …back at the START, mid-polyline
+ *           → tabs along the bottom edge, LEFT TO RIGHT
+ *           → (closed flag)     …and a long run back to [0,0] again
+ *
+ * The bottom edge was therefore in the file TWICE: once as one straight
+ * segment and once as the tabbed run. VCarve does not read that as one line
+ * seen twice — it offsets the two coincident paths in OPPOSITE directions and
+ * cuts the panel from the outside AND from the inside on the same job. Every
+ * TOP and every BOTTOM this engine has ever exported carried it.
+ *
+ * The fix is a re-ORDER and nothing else: the same points, in one traversal
+ * that goes round once. The bottom edge is now walked with its tabs on it,
+ * where it always belonged, and the mid-polyline return to the origin is gone.
+ * The SHAPE is identical to the last decimal — same outer boundary, same tabs,
+ * same dog bones — so what changes in the DXF is the order of the vertices in
+ * two entities per cabinet and nothing else. `verify/t25/edge-guard.md` carries
+ * the post-mortem and `verify/t25/cnc-export-identity.md` names the delta.
  */
 export function topPanelGeometry({ drawnW, drawnH, G, puzzle: pz, backTabs = true }) {
   const out = { outline: [], pockets: [], holes: [] };
   const alongDepth = socketCentres(drawnW, pz);   // t1x, t2x
   const alongWidth = socketCentres(drawnH, pz);   // t1y, t2y
 
-  out.outline.push([0, 0], [drawnW, 0], [drawnW, drawnH]);
+  // Anticlockwise, once round, starting at the bottom-left corner.
+  out.outline.push([0, 0]);
+  for (const cx of alongDepth) out.outline.push(...tabPointsDown(0, cx, G, pz));
+  out.outline.push([drawnW, 0], [drawnW, drawnH]);
   for (const cx of [...alongDepth].reverse()) out.outline.push(...tabPointsUp(drawnH, cx, G, pz));
   out.outline.push([0, drawnH]);
   // The back edge. KIT_SINK's bottom panel leaves it straight — its back is a
   // screwed panel set 50 mm forward, so there is nothing there to receive tabs.
   if (backTabs) for (const cy of [...alongWidth].reverse()) out.outline.push(...tabPointsLeft(0, cy, G, pz));
-  out.outline.push([0, 0]);
-  for (const cx of alongDepth) out.outline.push(...tabPointsDown(0, cx, G, pz));
 
   for (const cx of alongDepth) {
     out.pockets.push({ layer: pz.layers.dogbone, x1: cx - pz.dogboneHalfHeight, y1: drawnH, x2: cx + pz.dogboneHalfHeight, y2: drawnH + G });

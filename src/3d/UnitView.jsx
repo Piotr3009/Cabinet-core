@@ -12,6 +12,7 @@ import {
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import Hardware, { DoorHinges, hingeSpecsFor } from './Hardware.jsx';
+import HoverDimensions from './HoverDimensions.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
@@ -777,6 +778,10 @@ export default function UnitView({
   // to fit into — not between centre lines, because a joiner asking "will the
   // toaster go in there" is asking about the clear space.
   const [hoverShelf, setHoverShelf] = useState(null);
+  // Turn 23 (CLAUDE.md F8.2): which VPART the pointer is on. A MOMENT, like the
+  // shelf hover beside it — it lives exactly as long as the pointer is over the
+  // piece and reaches nothing that is exported.
+  const [hoverPartition, setHoverPartition] = useState(null);
   // ─── TURN 21 (CLAUDE.md F10): THE ONE DERIVATION ───────────────────────────
   // Every shelf readout in this view — the "all dims" chip, the hover ladder
   // and the live drag — is a slice of THIS. `engine/shelfHeights.js` is the
@@ -1083,10 +1088,13 @@ export default function UnitView({
             key={p.id}
             panel={p}
             front={front}
-            // ─── Turn 12 (CLAUDE.md F6.1) ───
-            // The cup and its boss are screwed to THIS door, so they hang off
-            // it and swing with it. The arm and the plate stay on the carcass,
-            // drawn by <Hardware> below — which is what a hinge does.
+            // ─── Turn 12 (CLAUDE.md F6.1) / TURN 23 (F2.1) ───
+            // The cup, its boss, the ARM and the downloaded BODY are screwed to
+            // THIS door, so they hang off it and swing with it. Only the PLATE
+            // stays on the carcass, drawn by <Hardware> below — which is what a
+            // hinge does. Turn 19 hung the model on the carcass beside the cup
+            // and it stayed shut while the door opened; the model comes through
+            // here now, on the same specs the plate is resolved from.
             {...(front === 'door' && (showHinges || xray) ? {
               children: (
                 <DoorHinges
@@ -1100,6 +1108,13 @@ export default function UnitView({
                     mm(p.box.y + p.box.h / 2),
                     mm(p.box.z + p.box.d / 2),
                   ]}
+                  specs={hingeSpecs}
+                  storageBase={storageBase}
+                  onEditHinge={onEditHinge}
+                  surface="room"
+                  // One mount per door, so the registry names which leaf each
+                  // reported hinge belongs to.
+                  scope={p.id}
                 />
               ),
             } : {})}
@@ -1229,13 +1244,34 @@ export default function UnitView({
                 else document.body.style.cursor = selectedElement === p.id ? 'ew-resize' : 'ns-resize';
                 setHoverShelf(shelfId);
               }
-              : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined)}
-            onPointerOut={(shelfId || front)
-              ? () => { document.body.style.cursor = ''; if (shelfId) setHoverShelf(null); }
+              // ─── TURN 23 (CLAUDE.md F8.2) ───
+              // Hovering a vertical partition dimensions the CLEAR BAYS either
+              // side of it, in the same thin blue the CNC detail draws in.
+              // Appears on hover, gone on leave — a moment, like the shelf gaps
+              // above it, and nothing here writes anything.
+              : (p.part === 'VPART'
+                ? () => { document.body.style.cursor = 'pointer'; setHoverPartition(p.id); }
+                : (front ? () => { document.body.style.cursor = 'pointer'; } : undefined))}
+            onPointerOut={(shelfId || front || p.part === 'VPART')
+              ? () => {
+                document.body.style.cursor = '';
+                if (shelfId) setHoverShelf(null);
+                if (p.part === 'VPART') setHoverPartition(null);
+              }
               : undefined}
           />
         );
       })}
+
+      {/* ─── TURN 23 (CLAUDE.md F8.2): hover a PARTITION, read the bays ───
+          The same style as the CNC detail's arrows, from the same profile block
+          and the same pure geometry — thin blue, open heads, the value on the
+          line. `contour` is a presentation mode and a measurement is not part
+          of the picture it presents, which is the rule every helper in this
+          file already follows. */}
+      {hoverPartition && !contour && (
+        <HoverDimensions result={result} panelId={hoverPartition} profile={profile} />
+      )}
 
       {/* ─── Hover a shelf: the gaps in the whole column (turn 8, F4) ───
           "Are they even?" is the question a joiner asks about a set of
@@ -1377,7 +1413,6 @@ export default function UnitView({
         // WHICH hinge each door wears — resolved once, by the engine, and
         // handed down; and the gesture that opens the hinge modal on it.
         hingeSpecs={hingeSpecs}
-        onEditHinge={onEditHinge}
       />
 
       {/* Top infill: grab its top edge and drag UP to the ceiling, or

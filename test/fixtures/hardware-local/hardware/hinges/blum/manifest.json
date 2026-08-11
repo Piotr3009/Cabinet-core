@@ -1,0 +1,75 @@
+{
+ "system": "cliptop_blumotion",
+ "units": "mm",
+ "generator": "cabinet-core scripts/make-fixture-hardware.mjs — synthetic, no Blum bytes",
+ "rules": {
+  "hinge_by_front_thickness": [
+   {
+    "max": 25,
+    "angle": 110
+   },
+   {
+    "max": 32,
+    "angle": 95
+   }
+  ],
+  "hinge_wardrobe_inner_drawer": 155,
+  "plate_default": "plate_knockin5",
+  "plate_option": "plate_screw3",
+  "layers": {
+   "cup": "FRONT_HINGES_35MM",
+   "cup_screws": "FRONT_HINGES_3MM",
+   "plate_knockin5": "HINGES_5MM"
+  }
+ },
+ "items": [
+  {
+   "file": "hardware/hinges/blum/cliptop/71B3550_10001.glb",
+   "family": "71B3550",
+   "article": "10001",
+   "role": "hinge",
+   "angle": 110,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B3550_10002.glb",
+   "family": "71B3550",
+   "article": "10002",
+   "role": "hinge",
+   "angle": 110,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B3550N_10003.glb",
+   "family": "71B3550N",
+   "article": "10003",
+   "role": "hinge",
+   "angle": 110,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B3550N_10004.glb",
+   "family": "71B3550N",
+   "article": "10004",
+   "role": "hinge",
+   "angle": 110,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/173L6100_20001.glb",
+   "family": "173L6100",
+   "article": "20001",
+   "role": "plate_knockin5",
+   "angle": null,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/173L6130_20002.glb",
+   "family": "173L6130",
+   "article": "20002",
+   "role": "plate_knockin5",
+   "angle": null,
+   "finish": "onyx"
+  }
+ ]
+}

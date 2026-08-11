@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -9,9 +9,9 @@ import { exportablePanels } from '../engine/cnc/groups.js';
 import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.js';
 import { labelFit, symbolVisible } from '../engine/cnc/annotation.js';
 import { panelLabelBlock } from '../engine/cnc/dxf.js';
+import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import { partRollovers } from '../engine/cnc/rollover.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
-import { formatMmPair } from '../engine/format.js';
 
 // ─── CNC view ───
 // The workshop's visual check before the machine — the job AutoCAD used to do.
@@ -36,6 +36,8 @@ import { formatMmPair } from '../engine/format.js';
 // non-scaling so a 3 mm screw hole is still visible when the whole sheet fits.
 
 const PADDING_MM = 120;
+// The +/− buttons' own step. The WHEEL's is `lib/sheetView.js`'s, shared with
+// the part detail so one notch means the same thing on both drawings.
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_MM = 40;    // hard zoom-in limit: 40 mm across the viewport
 const MAX_VIEW_MM = 60000; // hard zoom-out limit
@@ -71,8 +73,6 @@ export default function CncView() {
 
   const wrapRef = useRef(null);
   const svgRef = useRef(null);
-  const [size, setSize] = useState({ w: 1, h: 1 });
-  const [box, setBox] = useState(null);                 // viewport in sheet mm: { x, y, w }
   const [hidden, setHidden] = useState(() => new Set());
   // ─── Turn 20 (CLAUDE.md F7): the rollover ─────────────────────────────────
   // `{ readout, at:{x,y} }` — WHAT is under the pointer and WHERE the pointer
@@ -192,126 +192,39 @@ export default function CncView() {
     [placed],
   );
 
-  // ── viewport ──────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      setSize({ w: Math.max(1, width), h: Math.max(1, height) });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const fit = useCallback(() => {
-    if (!sheet || size.w <= 1) return;
-    const aspect = size.w / size.h;
-    const wantW = sheet.width + PADDING_MM * 2;
-    const wantH = sheet.height + PADDING_MM * 2;
-    const w = Math.max(wantW, wantH * aspect, MIN_VIEW_MM);
-    const h = w / aspect;
-    setBox({ x: sheet.width / 2 - w / 2, y: sheet.height / 2 - h / 2, w });
-  }, [sheet, size.w, size.h]);
-
-  // Refit whenever the sheet itself changes shape (another unit, another
-  // parameter) — but not on every re-render, or panning would fight the user.
-  const sheetKey = sheet
-    // The VIEW is part of the key: switching it reshapes the sheet completely,
-    // and a fit that did not notice would leave the new arrangement off screen.
-    ? `${view}|${placed.length}|${formatMmPair(sheet.width, sheet.height, 'x')}`
-    : null;
-  const lastKey = useRef(null);
-  useEffect(() => {
-    if (!sheetKey || size.w <= 1) return;
-    if (lastKey.current === sheetKey && box) return;
-    lastKey.current = sheetKey;
-    fit();
-  }, [sheetKey, size.w, size.h, fit, box]);
-
-  const mmPerPx = box ? box.w / size.w : 1;
-  const viewH = box ? box.w * (size.h / size.w) : 1;
-
-  const zoomBy = useCallback((factor, anchor) => {
-    setBox((b) => {
-      if (!b) return b;
-      const h = b.w * (size.h / size.w);
-      const ax = anchor ? anchor.x : b.x + b.w / 2;
-      const ay = anchor ? anchor.y : b.y + h / 2;
-      const w = Math.min(MAX_VIEW_MM, Math.max(MIN_VIEW_MM, b.w * factor));
-      const k = w / b.w;
-      return { x: ax - (ax - b.x) * k, y: ay - (ay - b.y) * k, w };
-    });
-  }, [size.h, size.w]);
-
-  const pointerToSheet = useCallback((clientX, clientY) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect || !box) return null;
-    const scale = box.w / rect.width;
-    return { x: box.x + (clientX - rect.left) * scale, y: box.y + (clientY - rect.top) * scale };
-  }, [box]);
-
-  const onWheel = useCallback((e) => {
-    if (!box) return;
-    e.preventDefault();
-    zoomBy(e.deltaY > 0 ? ZOOM_STEP : 1 / ZOOM_STEP, pointerToSheet(e.clientX, e.clientY));
-  }, [box, zoomBy, pointerToSheet]);
-
-  // Wheel has to be bound non-passively or the browser refuses preventDefault
-  // and the page scrolls behind the drawing.
-  useEffect(() => {
-    const el = svgRef.current;
-    if (!el) return undefined;
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [onWheel]);
-
-  // ─── TURN 20 (CLAUDE.md F9): CAPTURE ON MOVEMENT, NOT ON PRESS ────────────
+  // ── viewport (turn 23, CLAUDE.md F7) ──────────────────────────────────────
   //
-  // Root cause of turn 19's dead double-click, proven in the lab with real CDP
-  // input: this container called `setPointerCapture` on EVERY left press. A
-  // captured pointer makes the browser compose `click` and `dblclick` on the
-  // CAPTURING ELEMENT rather than on the node under the cursor — so the part's
-  // own `onDoubleClick` never received one, `cncFocusPart` stayed null, and a
-  // synthetic `dispatchEvent` aimed at the `<g>` "passed" over a dead feature.
-  // That is why R1 now bans `dispatchEvent` from walks for pointer gestures.
+  // The wheel-zoom-about-the-cursor, the drag-to-pan and turn 20's capture-on
+  // -MOVEMENT law used to live here, written out. F7 asks the PART DETAIL for
+  // the same grammar, so it is `lib/sheetView.js` now and both surfaces stand
+  // on it — one implementation, no possibility of the two behaving differently,
+  // and turn 20's hard-won capture rule stated once.
   //
-  // The fix is not to give up the capture — a pan that loses the pointer off
-  // the edge of the window is worse than one that does not — but to take it
-  // only when the gesture has PROVED it is a pan: pointer-down remembers the
-  // point, the first move past `panThresholdPx` starts the pan AND takes the
-  // capture, and a press-and-release under the threshold lets go having
-  // captured nothing. A click reaches the part; the pan feels identical.
-  const pan = useRef(null);
-  const onPointerDown = (e) => {
-    if (e.button !== 0 && e.button !== 1) return;
-    // `armed`, not panning: nothing is captured and nothing moves yet.
-    pan.current = {
-      x: e.clientX, y: e.clientY, from: { x: e.clientX, y: e.clientY }, panning: false,
-    };
-  };
-  const onPointerMove = (e) => {
-    // A pan in progress puts the tooltip away — a label chasing the cursor
-    // across a sheet being dragged is noise, and F7 asks for a ROLLOVER.
-    if (pan.current?.panning && rollover) setRollover(null);
-    if (!pan.current || !box) return;
-    const threshold = profile.cnc.annotation.panThresholdPx;
-    if (!pan.current.panning) {
-      const moved = Math.hypot(e.clientX - pan.current.from.x, e.clientY - pan.current.from.y);
-      if (moved < threshold) return;
-      pan.current.panning = true;
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-    }
-    const dx = (e.clientX - pan.current.x) * mmPerPx;
-    const dy = (e.clientY - pan.current.y) * mmPerPx;
-    pan.current = { ...pan.current, x: e.clientX, y: e.clientY };
-    setBox((b) => (b ? { ...b, x: b.x - dx, y: b.y - dy } : b));
-  };
-  const endPan = (e) => {
-    pan.current = null;
-    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-  };
-  const panning = Boolean(pan.current?.panning);
+  // Nothing about the gesture changed. The two limits and the padding are still
+  // this sheet's own, because a sheet holding a whole project zooms further out
+  // than a single part does.
+  const size = useElementSize(wrapRef);
+  const content = useMemo(() => (sheet ? {
+    x: -PADDING_MM,
+    y: -PADDING_MM,
+    w: sheet.width + PADDING_MM * 2,
+    h: sheet.height + PADDING_MM * 2,
+  } : null), [sheet]);
+  const sheetView = useSheetView({
+    svgRef,
+    content,
+    size,
+    min: MIN_VIEW_MM,
+    max: MAX_VIEW_MM,
+    panThreshold: profile.cnc.annotation.panThresholdPx,
+    // A label chasing the cursor across a sheet being dragged is noise, and F7
+    // of turn 20 asks for a ROLLOVER.
+    onPanStart: () => setRollover(null),
+  });
+  const {
+    box, viewH, mmPerPx, zoomBy, panning,
+  } = sheetView;
+
 
   // ── layers actually present, for the legend ───────────────────────────────
   // Counted over the parts actually on the SHEET — every unit's, since turn 11
@@ -364,10 +277,7 @@ export default function CncView() {
           className="w-full h-full touch-none"
           style={{ cursor: panning ? 'grabbing' : 'grab' }}
           viewBox={`${box.x} ${box.y} ${box.w} ${viewH}`}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endPan}
-          onPointerCancel={endPan}
+          {...sheetView.handlers}
         >
           {placed.map((s2) => (
             // One group per SECTION, moved across the sheet by its offset, and
@@ -418,6 +328,10 @@ export default function CncView() {
                   />
                   {b.layout.places.map((place) => (
                     <Part
+                      // Turn 23 (F9.3): how many hand changes this part
+                      // carries, straight off the result the sheet is drawn
+                      // from — one thin step after the engine, one answer.
+                      handEdits={b.result.handEdits?.byPanel?.[place.panel.id]?.count || 0}
                       key={place.panel.id}
                       place={place}
                       unitNum={b.unit.params.unit_num}
@@ -489,7 +403,7 @@ export default function CncView() {
         <span className="w-px h-4 bg-shell-600" />
         <button type="button" className="cc-btn-ghost" title="Zoom out" onClick={() => zoomBy(ZOOM_STEP)}>−</button>
         <button type="button" className="cc-btn-ghost" title="Zoom in" onClick={() => zoomBy(1 / ZOOM_STEP)}>+</button>
-        <button type="button" className="cc-btn-ghost" title="Fit the whole sheet" onClick={fit}>Fit</button>
+        <button type="button" className="cc-btn-ghost" title="Fit the whole sheet" onClick={sheetView.fit}>Fit</button>
       </div>
 
       {/* layer legend — click a row to hide that layer */}
@@ -553,7 +467,7 @@ function Caption({
 
 function Part({
   place, unitNum, drills, outlineLayer, annotation, profile, mmPerPx, visible,
-  lit = false, onOpenInTree = null, onRollover = null, rollover = null,
+  lit = false, onOpenInTree = null, onRollover = null, rollover = null, handEdits = 0,
 }) {
   const { panel } = place;
   const cnc = panel.cnc || {};
@@ -637,9 +551,29 @@ function Part({
     // the part being lit.
     <g
       data-cnc-part={panel.id}
+      data-hand-edited={handEdits ? String(handEdits) : undefined}
       onDoubleClick={onOpenInTree || undefined}
       style={onOpenInTree ? { cursor: 'pointer' } : undefined}
     >
+      {/* ─── TURN 23 (CLAUDE.md F9.3): THE BADGE, ON THE SHEET ──────────────
+          "The edited part wears a small badge in the detail and on the sheet."
+          A part somebody has drawn on by hand is not the part the kit cuts, and
+          the one place that must never be a surprise is the sheet a joiner
+          takes to the machine. Gold, like every "you did this" signal in the
+          app, and drawn in SHEET millimetres so it is the same size at every
+          zoom — the turn-16 lettering rule. */}
+      {handEdits > 0 && (
+        <text
+          x={toSheet(place, box.w / 2, box.h)[0]}
+          y={toSheet(place, box.w / 2, box.h)[1] - annotation.blockLabelMm * 0.4}
+          fill="#e0b64a"
+          fontSize={annotation.blockLabelMm}
+          textAnchor="middle"
+          style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+        >
+          {`✎ ${handEdits}`}
+        </text>
+      )}
       {visible(oLayer) && cnc.outline?.length >= 2 && (
         <polygon
           points={sheetPolygon(place, cnc.outline)}

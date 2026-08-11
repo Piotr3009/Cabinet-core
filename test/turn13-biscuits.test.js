@@ -22,6 +22,25 @@
 // here is the other side of that promise — a cabinet with no vertical partition
 // emits not one entity of it, which is why every existing fixture and the
 // export fingerprint are untouched.
+//
+// ─── TURN 23 (CLAUDE.md F5): …AND THE PARTITION GAVE IT BACK ────────────────
+//
+// Verified against the LISP before turn 23 was written: `drawWDR_PARTITION_
+// PANEL` (reference/lisp/KIT_WARDROBE_FULL.lsp L254-257) draws an OUTLINE and a
+// LABEL, and no kit in `reference/lisp/` names a `BISCUIT_4MM` layer anywhere.
+// The engine had applied the owner's butt-joint set to a part the LISP never
+// gave one, so this turn removes it — both halves of the joint, the receiver's
+// screws and marks and the partition's own mark. What holds the partition is
+// `engine/partitionFixings.js` and the LISP's own `drawWardrobeDPHolesBACK`.
+//
+// The PATTERN half of this file stands unchanged: it is the workshop's recorded
+// standard for a butt joint (BLOCKERS #59, answered by the owner) and the layer
+// is part of his VCarve tool mapping. What it has today is no consumer.
+//
+// The MACHINING half is now the regression test for the SUBTRACTION, and it is
+// driven by the same golden fixture: every entity turn 13 worked out by hand is
+// asserted ABSENT, one by one, on the very cases that used to carry them. A
+// fixture that records what a turn removed is worth more than a deleted one.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -150,14 +169,21 @@ const screwsOf = (result, id) => result.drills
   .filter((d) => d.panel === id && d.kind === 'biscuit_screw')
   .map((d) => ({ x: d.x, y: d.y, d: d.d, layer: d.layer }));
 
+// ─── TURN 23 · F5 — every entity of it, gone ────────────────────────────────
 for (const c of GOLDEN.cases) {
-  test(`${c.id}: ${c.description}`, () => {
+  test(`F5 — ${c.id}: the borrowed biscuits are gone (${c.description})`, () => {
     const result = unitFor(c);
     for (const want of c.expect) {
       const panel = result.panels.find((p) => p.id === want.panel);
+      // The PANEL is still cut, and at the same size: F5 removes machining,
+      // never a piece of furniture.
       assert.ok(panel, `${c.id}: no panel ${want.panel}`);
-      assert.deepEqual(screwsOf(result, want.panel), want.screws, `${c.id} ${want.panel} screws`);
-      assert.deepEqual(marksOf(panel), want.marks, `${c.id} ${want.panel} marks`);
+      // …and turn 13's own hand-worked answer is the list of what must not be
+      // there. Asserting against it rather than against `[]` is what makes this
+      // a record of the subtraction instead of a blank.
+      assert.ok(want.screws.length + want.marks.length > 0, 'the fixture records something to remove');
+      assert.deepEqual(screwsOf(result, want.panel), [], `${c.id} ${want.panel} still carries biscuit screws`);
+      assert.deepEqual(marksOf(panel), [], `${c.id} ${want.panel} still carries biscuit marks`);
     }
   });
 }
@@ -168,47 +194,41 @@ test('BISCUIT-A: the geometry the fixture set out from is the geometry the engin
   assert.deepEqual(vp.box, c.geometry.partition_box);
 });
 
-test('BISCUIT-B: the joint line is the OVERLAP, and one part shows it', () => {
+test('BISCUIT-B: the geometry the fixture set out from is untouched — only the machining went', () => {
   const c = GOLDEN.cases[1];
   const result = unitFor(c);
   const shelf = result.panels.find((p) => p.id === 'SHELF-1');
   const vp = result.panels.find((p) => p.part === 'VPART');
   assert.deepEqual(shelf.box, c.geometry.shelf_box);
   assert.deepEqual(vp.box, c.geometry.partition_box);
-  // The partition is 540 deep and the shelf 520, so the two ends of ONE part
-  // carry different set-outs. A fixing past the end of the receiving board is a
-  // screw into air.
-  const marks = vp.cnc.marks.map((m) => m.from[1]);
-  assert.ok(marks.includes(407), 'the bottom joint is set out on 540');
-  assert.ok(marks.includes(387), 'the shelf joint on 520');
 });
 
-// ─── It reaches the DXF ─────────────────────────────────────────────────────
+// ─── It leaves the DXF (turn 23, F5) ────────────────────────────────────────
 
-test('the mark is an OPEN path in the file — in and out, not a pocket', () => {
+test('F5 — the partition\'s own file carries no BISCUIT_4MM entity at all', () => {
   const c = GOLDEN.cases[0];
   const result = unitFor(c);
   const vp = result.panels.find((p) => p.part === 'VPART');
   const dxf = panelDxf(vp, result.drills, { unitNum: '01', profile: P });
 
-  assert.ok(dxf.includes('BISCUIT_4MM'), 'the layer is declared and used');
-  // R12 spells an open polyline with the closed flag clear. The mark's own
-  // vertices have to be in there at the millimetre.
+  // The layer TABLE may still declare it — the writer declares every known
+  // layer and the owner's tool mapping matches on the name. What must be gone
+  // is an ENTITY on it.
   const lines = dxf.split('\r\n');
   const at = lines.indexOf('BISCUIT_4MM', lines.indexOf('ENTITIES'));
-  assert.ok(at > 0, 'a BISCUIT_4MM entity, not just a layer-table row');
-  assert.equal(lines[at + 2], '1', 'group 66: vertices follow');
-  assert.equal(lines[at + 4], '0', 'group 70: NOT closed — the cutter goes in and comes back');
+  assert.equal(at, -1, 'the partition still cuts a biscuit mark');
 });
 
-test('the screws are ⌀3 circles on SCREWS_3MM, like every other screw in the app', () => {
+test('F5 — and neither does the board it lands on', () => {
   const c = GOLDEN.cases[0];
   const result = unitFor(c);
-  const top = result.panels.find((p) => p.part === 'TOP');
-  const dxf = panelDxf(top, result.drills, { unitNum: '01', profile: P });
-  assert.ok(dxf.includes('SCREWS_3MM'));
-  // r = 1.5 for every one of the four.
-  assert.equal((dxf.match(/\r\n40\r\n1\.5\r\n/g) || []).length >= 4, true);
+  for (const part of ['TOP', 'BOTTOM']) {
+    const panel = result.panels.find((p) => p.part === part);
+    const dxf = panelDxf(panel, result.drills, { unitNum: '01', profile: P });
+    const lines = dxf.split('\r\n');
+    assert.equal(lines.indexOf('BISCUIT_4MM', lines.indexOf('ENTITIES')), -1, `${part} still cuts a mark`);
+  }
+  assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false);
 });
 
 // ─── …and NOTHING ELSE MOVED ────────────────────────────────────────────────
@@ -234,12 +254,29 @@ test('a cabinet with a partition changes ONLY the panels the joint touches', () 
   }
 });
 
-test('markFromEnd keeps the partition’s half ON the board', () => {
-  const c = GOLDEN.cases[0];
-  const vp = unitFor(c).panels.find((p) => p.part === 'VPART');
-  for (const m of vp.cnc.marks) {
-    assert.ok(m.from[0] > 0 && m.from[0] < vp.box.h, `a mark at x ${m.from[0]} is off a ${vp.box.h} part`);
-    assert.ok(m.from[1] >= 0 && m.to[1] <= vp.box.d);
-  }
+test('the recorded standard is still a standard: markFromEnd is a real number', () => {
+  // The pattern module keeps its numbers and its tests (F5 removed its
+  // consumer, not the workshop's answer to BLOCKERS #59).
   assert.ok(markFromEnd(P) > 0);
+  assert.ok(markFromEnd(P) < P.biscuits.markLength);
+});
+
+test('F5 — no cabinet in any kit emits a mark, with a partition or without one', () => {
+  for (const id of UNIT_TYPE_ORDER) {
+    const base = defaultParamsFor(id, P);
+    const withPartition = {
+      ...base,
+      sections: [{
+        width_mm: base.width,
+        items: [{ id: 'p1', kind: 'partition', x_mm: Math.round(base.width / 2) }],
+      }],
+    };
+    for (const params of [base, withPartition]) {
+      const result = computeCabinet(params, P);
+      for (const panel of result.panels) {
+        assert.equal(panel.cnc?.marks, undefined, `${id} ${panel.id} grew a mark`);
+      }
+      assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);
+    }
+  }
 });

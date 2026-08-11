@@ -35,6 +35,48 @@ import { useEffect, useState } from 'react';
 import { storageBaseFrom } from '../engine/hardwareUrl.js';
 import { getDecorCatalogue } from '../engine/decors.js';
 
+// ─── TURN 23 (CLAUDE.md R8): THE OVERRIDE, AT THE TOP OF THE ORDER ──────────
+//
+// One documented service knob, and it earns its place twice over.
+//
+//   THE SILENT SHOWROOM. Three turns of hardware work were verified by reading
+//   code, because the cloud sandbox's egress policy answers `403 CONNECT` to
+//   the storage host and every GLB-dependent phase ended `blocked`. With this
+//   the walk serves `test/fixtures/hardware-local/` (built by
+//   `scripts/make-fixture-hardware.mjs` — synthetic bodies at the REAL
+//   dimensions, no Blum bytes) and points the app at it. Everything downstream
+//   is untouched: the same catalogue resolution, the same URL composition, the
+//   same loader, cache, clone, pose, mirror and finish. R8's whole point is
+//   that nothing takes a fixture-only branch.
+//
+//   THE OFFLINE DEMO. A joiner showing the app on a laptop in a customer's
+//   kitchen with no signal sets this to a folder he brought with him.
+//
+// It is the TOP slot deliberately: an override that lost to configuration
+// could not override anything, and a database row naming Blum files while the
+// base serves a showroom would be a catalogue describing files that are not
+// there. Local storage rather than a build flag because it has to be settable
+// on a build that has already shipped — which is exactly the situation the
+// owner is in.
+export const HARDWARE_BASE_KEY = 'cc.hardwareBase';
+
+/**
+ * The base URL somebody has pointed this session's hardware at, or ''.
+ *
+ * Read EVERY time and never cached, unlike the derived answer below: the knob
+ * may be set (or cleared) after the app has booted, and a remembered override
+ * would be the 404 of turn 21 in reverse.
+ */
+export function overrideStorageBase() {
+  try {
+    const raw = localStorage.getItem(HARDWARE_BASE_KEY);
+    return typeof raw === 'string' && raw.trim() ? raw.trim().replace(/\/+$/, '') : '';
+  } catch {
+    // No localStorage at all: a node test, a locked-down browser. Not an error.
+    return '';
+  }
+}
+
 /** What the build was configured with, or ''. */
 export function configuredStorageBase() {
   try {
@@ -72,6 +114,11 @@ let known = null;
  * workshop's own profile draws the stand-in and the BOM orders by spec.
  */
 export function storageBaseUrl() {
+  // Turn 23 (R8): the override outranks everything, including the remembered
+  // answer — a session pointed at the showroom must not go on serving the
+  // bucket it resolved a moment earlier.
+  const override = overrideStorageBase();
+  if (override) return override;
   if (known != null) return known;
   const base = configuredStorageBase() || derivedStorageBase();
   // Only REMEMBER a real answer. '' before the decor pack lands is "not yet",
@@ -90,8 +137,9 @@ export function noteStorageBase() {
   const before = known;
   const base = configuredStorageBase() || derivedStorageBase();
   if (base) known = base;
-  if (known && known !== before) for (const cb of [...listeners]) cb(known);
-  return known || '';
+  const answer = overrideStorageBase() || known;
+  if (answer && answer !== before) for (const cb of [...listeners]) cb(answer);
+  return answer || '';
 }
 
 /** Subscribe to "the host is known now". Returns the unsubscribe. */

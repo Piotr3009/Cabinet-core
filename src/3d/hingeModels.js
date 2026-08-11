@@ -20,6 +20,7 @@
 // since turn 12. Never a hole, never a blocked scene.
 
 import { glbClone, glbFailed, glbLongestMm, glbSource, onGlbLoad } from './glbSource.js';
+import { applyHardwareFinish, hardwareFinishSpec } from './hardwareFinish.js';
 import { mm } from './constants.js';
 
 /** The shared decode for one hinge or plate file. */
@@ -61,11 +62,29 @@ export function hingeModelFits(entry, profile) {
  * datums and two corrections. Both are zero until somebody has looked at a real
  * model beside a real cabinet, which is what profile.js says in as many words.
  */
-export function hingeModel(url, { profile, plate = false, mirror = false }) {
+export function hingeModel(url, {
+  profile, plate = false, mirror = false, finish = null,
+}) {
   const C = profile.hardware.hinge.cliptop;
   const O = plate ? C.plateOrigin : C.modelOrigin;
-  return glbClone(url, {
+  const clone = glbClone(url, {
     origin: { x: mm(O.x), y: mm(O.y), z: mm(O.z) },
     mirror,
   });
+  // ─── TURN 23 (CLAUDE.md F4.1): THE FINISH, ON THE CLONE ──────────────────
+  //
+  // Owner: "the model renders WHITE — raw file material." Here, on the clone,
+  // and nowhere else: the cached SOURCE is shared by every hinge in the project
+  // (3d/glbSource.js) and painting it would repaint the lot. What is applied is
+  // recorded on the group's `userData` so the walk can assert the numbers off
+  // the scene rather than off a pixel (R4) — and so `hardwareRegistry.js` can
+  // publish which finish each mounted piece is actually wearing.
+  if (clone) {
+    const spec = hardwareFinishSpec(profile, 'hinge', finish);
+    const applied = applyHardwareFinish(clone, spec);
+    clone.userData.ccFinish = spec?.id || null;
+    clone.userData.ccFinishApplied = applied;
+    clone.userData.ccFinishMetal = spec?.metal || null;
+  }
+  return clone;
 }

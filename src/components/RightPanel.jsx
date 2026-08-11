@@ -15,6 +15,7 @@ import { isDuplicateName, unitName } from '../engine/naming.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
 import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
+import { bayWidthsOf, fieldFromX, xFromField } from '../engine/partitionPositions.js';
 import NumberField from './NumberField.jsx';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
@@ -134,6 +135,15 @@ export default function RightPanel() {
   );
   const bayDoorModes = Array.isArray(unit?.params?.bay_doors) ? unit.params.bay_doors : null;
   const DR = profile.wardrobe.drawers;
+  // Turn 23 (CLAUDE.md F10.1): the carcass board, and the CLEAR BAYS this unit
+  // divides into. One derivation (`engine/partitionPositions.js`), two
+  // displays: the P rows' field and the bay chips under the header — and F8's
+  // hover arrows in the scene read the very same function.
+  const boardT = Number(unit?.params?.board_t) || profile.board.thickness;
+  const bays = useMemo(
+    () => (result ? bayWidthsOf(result, boardT) : []),
+    [result, boardT],
+  );
   // Which PROJECT height this unit follows, if its kind has one at all
   // (BACKLOG #29). A low cabinet has none — being lower is what it is for.
   const heightGroup = type?.heightGroup ?? null;
@@ -722,17 +732,36 @@ export default function RightPanel() {
             <div>
               <div className="cc-row">
                 <span className="text-sm text-ink-100">Vertical partitions ({partitions.length})</span>
+                {/* ─── Turn 23 (CLAUDE.md F10.3) ───
+                    "The Centre action and P1/P2 rows re-label accordingly." It
+                    does the same thing it has always done; what it is FOR is
+                    equal BAYS, which is the word the rest of this block now
+                    speaks. */}
                 <button
                   type="button" className="cc-btn px-2"
                   data-centre-partitions="1"
-                  title="Space them evenly across the width — equal bays"
+                  title="Space them evenly across the width — equal clear bays"
                   onClick={() => {
                     const moved = centrePartitions(unit.id);
-                    if (moved) notify(moved === 1 ? 'Partition centred.' : `${moved} partitions spaced evenly.`, 'ok');
+                    if (moved) notify(moved === 1 ? 'Partition centred — equal bays.' : `${moved} partitions spaced evenly — equal bays.`, 'ok');
                   }}
                 >
-                  Centre
+                  Equal bays
                 </button>
+              </div>
+              {/* ─── TURN 23 (CLAUDE.md F10.1): THE BAYS THEMSELVES ──────────
+                  "the scene chips (and F8's hover arrows) = CLEAR bay widths
+                  between neighbours. Both from one function." This is that
+                  function's other reading, in the panel: what the owner is
+                  actually dividing the cabinet into. */}
+              <div className="text-[11px] text-ink-400 mb-1" data-partition-bays="1">
+                bays{' '}
+                {bays.map((b, i) => (
+                  <span key={b.index}>
+                    {i > 0 ? ' · ' : ''}
+                    <b className="text-ink-200 tabular-nums">{formatMm(b.size)}</b>
+                  </span>
+                ))}
               </div>
               <ul className="space-y-1">
                 {partitions.map((pt, i) => {
@@ -740,11 +769,20 @@ export default function RightPanel() {
                   return (
                     <li key={pt.id} className="flex items-center gap-1 text-sm">
                       <span className="text-ink-400 w-6 text-xs">P{i + 1}</span>
+                      {/* ─── TURN 23 (CLAUDE.md F10.1) ───
+                          Owner: "the partition field measures from the
+                          cabinet's outer end; I place partitions from the
+                          INSIDE." The title above already claimed the inner
+                          face and the number did not. The FIELD is the inside
+                          now — turn 21's shelf cure, on the other axis — and
+                          STORAGE DOES NOT MOVE: `xFromField` puts back exactly
+                          what `x_mm` has meant since turn 11, so a turn-22
+                          project opens with every partition where it was. */}
                       <NumberField
                         className="cc-input w-16 text-right"
-                        value={pt.x_mm ?? 0}
-                        title="Distance from the left inner face to this partition's left face"
-                        onCommit={(v) => setPartitionX(unit.id, pt.id, v)}
+                        value={fieldFromX(pt.x_mm ?? boardT, boardT)}
+                        title="From the INSIDE face of the left side panel to this partition's near face"
+                        onCommit={(v) => setPartitionX(unit.id, pt.id, xFromField(v, boardT))}
                       />
                       {/* What it stands on, when it stands on something
                           (CLAUDE.md F5.3). A partition that has found a FIXED

@@ -6,9 +6,9 @@ import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
-import Hardware from '../3d/Hardware.jsx';
+import Hardware, { DoorHinges, hingeSpecsFor } from '../3d/Hardware.jsx';
 import { hardwareInstances } from '../engine/hardware3d.js';
-import { resolveDoorHinge } from '../engine/hinges.js';
+import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
 import { useStorageBase } from '../lib/storageBase.js';
 import { useViewHandle } from '../3d/viewHandle.js';
 import EditorRig from '../3d/EditorRig.jsx';
@@ -69,10 +69,33 @@ import { anchorAtPoint } from '../lib/modalAnchor.js';
 //   anywhere else. It is reused, not forked — CLAUDE.md F4.2 says so, and two
 //   copies would offer different fields for the same piece within a turn.
 
+//
+//   ─── TURN 23 (CLAUDE.md F1): AND IT IS A LEVEL ON A STACK ───
+//
+//   The owner, for the third session running: "from the part detail there is no
+//   way BACK." Turn 17's Back (below) always worked — but it goes from one
+//   ELEMENT to the cabinet, and the part DETAIL was not a level of this window
+//   at all: it REPLACED it, because `openModal` overwrites the one modal slot
+//   and this window unmounted with everything it was holding.
+//
+//   So the detail is PUSHED now, not opened, and this file's whole contribution
+//   to F1 is two things: it asks for a push, and it says how it was left. The
+//   Back button, the Escape handling and the restore are the shell's
+//   (components/Modal.jsx, lib/editorStack.js) — none of the app's editor
+//   surfaces keeps a history of its own, which is the rule that kills the class.
+
 export default function CabinetEditorModal() {
   const args = useUiStore((s) => s.modalArgs);
   const closeModal = useUiStore((s) => s.closeModal);
-  const openModal = useUiStore((s) => s.openModal);
+  const pushModal = useUiStore((s) => s.pushModal);
+  const popModal = useUiStore((s) => s.popModal);
+  const canBack = useUiStore((s) => s.modalStack.length > 0);
+  const registerViewSnapshot = useUiStore((s) => s.registerViewSnapshot);
+  // Read ONCE, on the way in: a resumed window is told how it was left, and a
+  // freshly opened one is told nothing. Reading it through `getState` rather
+  // than as a subscription is deliberate — this is an initial condition, not a
+  // value that may change under the window while it is open.
+  const restored = useMemo(() => useUiStore.getState().viewRestore || null, []);
   // The click point travels with the request when the window is opened by a
   // double-click in 3D (turn 20, F11.1), exactly as the element and hinge
   // modals take theirs — so the shell puts it beside what was clicked.
@@ -103,16 +126,19 @@ export default function CabinetEditorModal() {
   // is a hook and not a one-shot memo.
   const storageBase = useStorageBase();
 
-  const [exploded, setExploded] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  // Turn 23 (F1.1): "POP restores the previous view EXACTLY as left — same
+  // unit, same camera, same selection, same scroll." The unit is the args, and
+  // the args travel in the frame; these four are the rest of it.
+  const [exploded, setExploded] = useState(Boolean(restored?.exploded));
+  const [selectedId, setSelectedId] = useState(restored?.selectedId ?? null);
   // ─── Turn 14 (CLAUDE.md F8.1): the doors OPEN in here ───
   // The swing animation has existed since turn 8 and this window never had a
   // way to ask for it, so a joiner could look at a cabinet from every angle
   // except the one that matters — inside it. `{}` means every front shut; a
   // front's own entry overrides the ALL switch, so opening the lot and then
   // shutting one behaves the way a hand expects.
-  const [openFronts, setOpenFronts] = useState({});
-  const [allOpen, setAllOpen] = useState(false);
+  const [openFronts, setOpenFronts] = useState(restored?.openFronts || {});
+  const [allOpen, setAllOpen] = useState(Boolean(restored?.allOpen));
   const toggleFront = useCallback((panelId) => {
     setOpenFronts((prev) => ({ ...prev, [panelId]: (prev[panelId] ?? (allOpen ? 1 : 0)) > 0.5 ? 0 : 1 }));
   }, [allOpen]);
@@ -171,17 +197,24 @@ export default function CabinetEditorModal() {
   }, [drawer, result, profile]);
   // WHICH hinge each door wears — the room's own resolution, from the same
   // registry, so the editor cannot show a different hinge than the BOM orders.
+  //
+  // ─── TURN 23 (CLAUDE.md F4.1) ─────────────────────────────────────────────
+  // …and it asks the SAME function the room asks. Turn 21 called
+  // `resolveDoorHinge` here with argument names it does not take (`panelId`,
+  // `design`, `thickness` — it wants `assigned`, `frontThickness`, `finish`),
+  // so every door in this window resolved with no finish at all and could show
+  // a nickel hinge on an onyx project. `hingeSpecsFor` is the room's own
+  // resolution, finish and plate included, and this file's own comment above
+  // already says why that matters: "the editor cannot show a different hinge
+  // than the BOM orders."
   const hingeSpecs = useMemo(() => {
     if (!unit || !result || drawer) return null;
-    const out = {};
-    for (const p of result.panels || []) {
-      if (p.role !== 'front' || p.part !== 'FRONT') continue;
-      const spec = resolveDoorHinge({
-        panelId: p.id, unit, design: storedDesign, profile, thickness: p.thickness,
-      });
-      if (spec) out[p.id] = spec;
-    }
-    return out;
+    return hingeSpecsFor({
+      result,
+      unit,
+      finish: resolveHingeFinish(storedDesign, profile),
+      plate: resolveHingePlate(storedDesign, profile),
+    });
   }, [unit, result, storedDesign, profile, drawer]);
   useEffect(() => {
     if (selectedId && !panels.some((p) => p.id === selectedId)) setSelectedId(null);
@@ -224,6 +257,34 @@ export default function CabinetEditorModal() {
     return (unit?.params.sections?.[0]?.items || []).find((i) => i.id === id) || null;
   }, [selected, unit]);
 
+  // ─── TURN 23 (CLAUDE.md F1.1): HOW THIS WINDOW WAS LEFT ───────────────────
+  //
+  // The camera lives in the R3F tree and the scroll lives in the DOM, so
+  // neither is React state up here — both are read through a handle the moment
+  // the shell asks, which is the moment of the push and no other. Written as a
+  // GETTER rather than as store state on purpose: a workspace that wrote its
+  // camera into a store every frame would re-render the app for a fact nobody
+  // reads until somebody double-clicks a part.
+  const cameraHandle = useRef(null);
+  const propertiesRef = useRef(null);
+  const snapshot = useCallback(() => ({
+    exploded,
+    selectedId,
+    openFronts,
+    allOpen,
+    camera: cameraHandle.current?.read?.() || null,
+    scrollTop: propertiesRef.current?.scrollTop ?? 0,
+  }), [exploded, selectedId, openFronts, allOpen]);
+  useEffect(() => {
+    registerViewSnapshot(snapshot);
+    return () => registerViewSnapshot(null);
+  }, [registerViewSnapshot, snapshot]);
+  // …and the scroll back, once, when this window is the one being resumed.
+  useEffect(() => {
+    const el = propertiesRef.current;
+    if (el && restored?.scrollTop) el.scrollTop = restored.scrollTop;
+  }, [restored]);
+
   if (!unit || !result) return null;
 
   const type = getUnitType(unit.type);
@@ -235,6 +296,12 @@ export default function CabinetEditorModal() {
         ? `${unit.params.unit_num} · Drawer ${drawer} — edit drawer`
         : `${unit.params.unit_num} · ${type.label} — edit cabinet`}
       onClose={closeModal}
+      // Turn 23 (F1.2): a cabinet editor opened from the room is the TOP of the
+      // stack and has no Back. Reached from somewhere else — the drawer
+      // editor's own detail, next turn — the shell puts one there and Escape
+      // means one level, all without a line here.
+      onBack={canBack ? popModal : null}
+      backLabel="previous view"
       width="w-[560px]"
       // ─── Turn 13 (CLAUDE.md F2.1) ───
       // The owner's request, and rule 15's one exception: a workspace opens
@@ -303,13 +370,19 @@ export default function CabinetEditorModal() {
             onToggleFront={toggleFront}
             drills={result.drills}
             drawer={drawer}
-            onOpenDetail={(panelId, at) => openModal('part-detail', {
+            cameraHandle={cameraHandle}
+            restoreCamera={restored?.camera || null}
+            // Turn 23 (CLAUDE.md F1.1): PUSHED, not opened. The one word that
+            // is the difference between "the detail is a level of the editor"
+            // and "the detail replaced the editor".
+            onOpenDetail={(panelId, at) => pushModal('part-detail', {
               unitId: unit.id, panelId, anchor: null, at,
             })}
           />
         </div>
 
         <div
+          ref={propertiesRef}
           className={`${big ? 'w-[340px] shrink-0 overflow-y-auto' : ''} space-y-2`}
           data-editor-properties="1"
         >
@@ -379,7 +452,7 @@ export default function CabinetEditorModal() {
 function CabinetCanvas({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail,
   openFronts, allOpen, onToggleFront, drills = [], hardware = null, storageBase = '',
-  hingeSpecs = null, drawer = null,
+  hingeSpecs = null, drawer = null, cameraHandle = null, restoreCamera = null,
 }) {
   // Turn 20 (CLAUDE.md F10): the editor's context, released when this window
   // closes — however fast it is closed. See 3d/contextGuard.jsx.
@@ -402,6 +475,8 @@ function CabinetCanvas({
       {/* The editor's end-to-end handle (turn 13, F2.2): a PAN leaves no trace
           in the DOM at all, so the walk reads the controls' own target. */}
       <EditorViewHandle />
+      {/* Turn 23 (CLAUDE.md F1.1): "same camera". */}
+      <CameraMemory handle={cameraHandle} restore={restoreCamera} />
       {/* ─── Turn 16 (CLAUDE.md F7): THE BENCH LAMP ───
           The owner: "serio nic nie widać". Three literal lights lived here —
           an ambient and two directionals — so there was no knob to turn. The
@@ -469,6 +544,51 @@ function EditorViewHandle() {
 }
 
 /**
+ * The camera, remembered across a push (turn 23, CLAUDE.md F1.1).
+ *
+ * A joiner who has orbited round to look at the back of a carcass, opened one
+ * part and come back has not asked to be put back at the default three-quarter
+ * view. So the pose is READ on demand — the shell asks once, at the moment of
+ * the push — and APPLIED once, when this canvas mounts as a resumed window.
+ *
+ * It is six numbers and no state: nothing here re-renders, and a window opened
+ * fresh (`restore` null) behaves exactly as it did in turn 12.
+ */
+function CameraMemory({ handle, restore }) {
+  const camera = useThree((s) => s.camera);
+  const controls = useThree((s) => s.controls);
+
+  useEffect(() => {
+    if (!handle) return undefined;
+    handle.current = {
+      read: () => ({
+        position: [camera.position.x, camera.position.y, camera.position.z],
+        target: controls?.target
+          ? [controls.target.x, controls.target.y, controls.target.z]
+          : [0, 0, 0],
+      }),
+    };
+    return () => { handle.current = null; };
+  }, [handle, camera, controls]);
+
+  // The controls arrive a tick after the camera does (drei's `makeDefault`
+  // registers them on mount), so this waits for them rather than restoring the
+  // position and leaving the pivot where the default put it.
+  const applied = useRef(false);
+  useEffect(() => {
+    if (applied.current || !restore || !controls) return;
+    const [px, py, pz] = restore.position || [];
+    const [tx, ty, tz] = restore.target || [];
+    if ([px, py, pz].every(Number.isFinite)) camera.position.set(px, py, pz);
+    if ([tx, ty, tz].every(Number.isFinite)) controls.target.set(tx, ty, tz);
+    controls.update?.();
+    applied.current = true;
+  }, [restore, controls, camera]);
+
+  return null;
+}
+
+/**
  * The cabinet itself, centred on the origin so the orbit turns around it.
  *
  * Every piece is a `MovingPanel` — the room view's own — wrapped in a group
@@ -518,6 +638,15 @@ function ExplodedCabinet({
           depth={unit.params.depth}
           drills={drills}
           showMachining={showMachining}
+          // ─── TURN 23 (CLAUDE.md F2.1) ───
+          // The hinge BODY belongs to the leaf, in this window exactly as in
+          // the room: one component, one resolution, one place the model is
+          // cloned. A joiner who opens a door in here sees the same hinge
+          // travel with it that he sees three feet away in the scene.
+          hinges={frontOf(p) === 'door' ? (hardware?.hinges || []).filter((h) => h.panelId === p.id) : null}
+          hingeSpecs={hingeSpecs}
+          storageBase={storageBase}
+          hardwareSurface={drawer ? 'drawer-editor' : 'editor'}
         />
       ))}
       {/* ─── TURN 21 (CLAUDE.md F6.2): THE MODELS RIDE THEIR PARTS APART ────
@@ -645,6 +774,7 @@ function ExplodingPart({
   panel: p, offset, exploded, selected, selectable, onSelect, onOpenDetail,
   profile, finishes, design, unit, unitDesign, sheen, joineryLayers, depth,
   open = 0, onToggleFront = null, drills = [], showMachining = true,
+  hinges = null, hingeSpecs = null, storageBase = '', hardwareSurface = 'editor',
 }) {
   const group = useRef(null);
   const spin = useRef(null);
@@ -774,7 +904,27 @@ function ExplodingPart({
           // takes its hinge cups with it and there is nothing to keep in step.
           machining={showMachining}
           drills={drills}
-        />
+          // Turn 23 (F2.1): anything screwed to this leaf travels inside its
+          // group, so the swing is free and there is no second animation to
+          // keep in step — the room's own arrangement, in the editor.
+        >
+          {hinges?.length ? (
+            <DoorHinges
+              items={hinges}
+              profile={profile}
+              colour={profile.appearance.hardware.hinge || profile.appearance.hardware.bracket}
+              pivot={[
+                mm(p.meta?.hinge === 'R' ? p.box.x + p.box.w : p.box.x),
+                mm(p.box.y + p.box.h / 2),
+                mm(p.box.z + p.box.d / 2),
+              ]}
+              specs={hingeSpecs}
+              storageBase={storageBase}
+              surface={hardwareSurface}
+              scope={p.id}
+            />
+          ) : null}
+        </MovingPanel>
       </group>
     </group>
   );

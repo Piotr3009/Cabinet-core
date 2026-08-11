@@ -83,6 +83,42 @@ function cases() {
     // lands. Harmless on a kit that does not support drawers — the engine drops
     // them with a warning and the case is the plain cabinet again.
     out.push({ id: `${type}+drawers`, params: { ...base, drawers: 2 } });
+    // ─── TURN 23 (CLAUDE.md F5 / F6): THE PARTITION PROBE ──────────────────
+    //
+    // This turn's only two CNC classes live on a VERTICAL PARTITION and
+    // nowhere else, and a probe that only ever builds an undivided box would
+    // report `no change` for a subtraction and an addition. Three shapes,
+    // because the two laws behave differently on each:
+    //
+    //   +partition        floor to top — one full run of back screws, and the
+    //                     biscuit set that used to be here is gone
+    //   +partition-on-shelf
+    //                     turn 12's attachment: a crossing FIXED shelf, which
+    //                     is what F6.2's per-segment rule is about
+    //   +partitions-2     the owner's own three-bay case
+    const partition = (items) => ({
+      ...base,
+      width: Math.max(Number(base.width) || 0, 900),
+      sections: [{ width_mm: Math.max(Number(base.width) || 0, 900), items }],
+    });
+    out.push({
+      id: `${type}+partition`,
+      params: partition([{ id: 'p1', kind: 'partition', x_mm: 450 }]),
+    });
+    out.push({
+      id: `${type}+partition-on-shelf`,
+      params: partition([
+        { id: 's1', kind: 'shelf', pos_mm: Math.round((Number(base.height) || 720) / 2), variant: 'fixed' },
+        { id: 'p1', kind: 'partition', x_mm: 450 },
+      ]),
+    });
+    out.push({
+      id: `${type}+partitions-2`,
+      params: partition([
+        { id: 'p1', kind: 'partition', x_mm: 300 },
+        { id: 'p2', kind: 'partition', x_mm: 600 },
+      ]),
+    });
   }
   return out;
 }

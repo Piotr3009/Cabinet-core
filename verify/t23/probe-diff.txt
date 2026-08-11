@@ -1,0 +1,730 @@
+31,34c31,34
+< GEOM   WARDROBE+partition 01-TOP.dxf 9e37e3d9
+< GEOM   WARDROBE+partition 01-BOTTOM.dxf 9e37e3d9
+< GEOM   WARDROBE+partition 01-BACK.dxf fb5874f7
+< GEOM   WARDROBE+partition 01-VPART-1.dxf 49035b23
+---
+> GEOM   WARDROBE+partition 01-TOP.dxf 6a0e5cc4
+> GEOM   WARDROBE+partition 01-BOTTOM.dxf 6a0e5cc4
+> GEOM   WARDROBE+partition 01-BACK.dxf 926cdc31
+> GEOM   WARDROBE+partition 01-VPART-1.dxf ccd05d93
+40,43c40,43
+< GEOM   WARDROBE+partition-on-shelf 01-BOTTOM.dxf 9e37e3d9
+< GEOM   WARDROBE+partition-on-shelf 01-BACK.dxf fb5874f7
+< GEOM   WARDROBE+partition-on-shelf 01-SHELF-1.dxf 18b6eb58
+< GEOM   WARDROBE+partition-on-shelf 01-VPART-1.dxf bde4c3c9
+---
+> GEOM   WARDROBE+partition-on-shelf 01-BOTTOM.dxf 6a0e5cc4
+> GEOM   WARDROBE+partition-on-shelf 01-BACK.dxf 34e0847a
+> GEOM   WARDROBE+partition-on-shelf 01-SHELF-1.dxf 9f053473
+> GEOM   WARDROBE+partition-on-shelf 01-VPART-1.dxf a43efc05
+48,52c48,52
+< GEOM   WARDROBE+partitions-2 01-TOP.dxf d1a5a736
+< GEOM   WARDROBE+partitions-2 01-BOTTOM.dxf d1a5a736
+< GEOM   WARDROBE+partitions-2 01-BACK.dxf fb5874f7
+< GEOM   WARDROBE+partitions-2 01-VPART-1.dxf 49035b23
+< GEOM   WARDROBE+partitions-2 01-VPART-2.dxf 49035b23
+---
+> GEOM   WARDROBE+partitions-2 01-TOP.dxf 6a0e5cc4
+> GEOM   WARDROBE+partitions-2 01-BOTTOM.dxf 6a0e5cc4
+> GEOM   WARDROBE+partitions-2 01-BACK.dxf 373b9a26
+> GEOM   WARDROBE+partitions-2 01-VPART-1.dxf ccd05d93
+> GEOM   WARDROBE+partitions-2 01-VPART-2.dxf ccd05d93
+69,72c69,72
+< GEOM   BUD+partition 01-TOP.dxf 2fcfbe99
+< GEOM   BUD+partition 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUD+partition 01-BACK.dxf 2f6c92bf
+< GEOM   BUD+partition 01-VPART-1.dxf 5737a305
+---
+> GEOM   BUD+partition 01-TOP.dxf 41b20590
+> GEOM   BUD+partition 01-BOTTOM.dxf 41b20590
+> GEOM   BUD+partition 01-BACK.dxf 8e436881
+> GEOM   BUD+partition 01-VPART-1.dxf ff3a79df
+78,81c78,81
+< GEOM   BUD+partition-on-shelf 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUD+partition-on-shelf 01-BACK.dxf 2f6c92bf
+< GEOM   BUD+partition-on-shelf 01-SHELF-1.dxf 6394a5d7
+< GEOM   BUD+partition-on-shelf 01-VPART-1.dxf c8e26302
+---
+> GEOM   BUD+partition-on-shelf 01-BOTTOM.dxf 41b20590
+> GEOM   BUD+partition-on-shelf 01-BACK.dxf adcfa934
+> GEOM   BUD+partition-on-shelf 01-SHELF-1.dxf 272afc8f
+> GEOM   BUD+partition-on-shelf 01-VPART-1.dxf d1fa0273
+86,90c86,90
+< GEOM   BUD+partitions-2 01-TOP.dxf ac026f6e
+< GEOM   BUD+partitions-2 01-BOTTOM.dxf ac026f6e
+< GEOM   BUD+partitions-2 01-BACK.dxf 2f6c92bf
+< GEOM   BUD+partitions-2 01-VPART-1.dxf 5737a305
+< GEOM   BUD+partitions-2 01-VPART-2.dxf 5737a305
+---
+> GEOM   BUD+partitions-2 01-TOP.dxf 41b20590
+> GEOM   BUD+partitions-2 01-BOTTOM.dxf 41b20590
+> GEOM   BUD+partitions-2 01-BACK.dxf 655fbc6a
+> GEOM   BUD+partitions-2 01-VPART-1.dxf ff3a79df
+> GEOM   BUD+partitions-2 01-VPART-2.dxf ff3a79df
+129,132c129,132
+< GEOM   BUDR2+partition 01-TOP.dxf 2fcfbe99
+< GEOM   BUDR2+partition 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUDR2+partition 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR2+partition 01-VPART-1.dxf 5737a305
+---
+> GEOM   BUDR2+partition 01-TOP.dxf 41b20590
+> GEOM   BUDR2+partition 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR2+partition 01-BACK.dxf 8e436881
+> GEOM   BUDR2+partition 01-VPART-1.dxf ff3a79df
+147,150c147,150
+< GEOM   BUDR2+partition-on-shelf 01-TOP.dxf 2fcfbe99
+< GEOM   BUDR2+partition-on-shelf 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUDR2+partition-on-shelf 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR2+partition-on-shelf 01-VPART-1.dxf 5737a305
+---
+> GEOM   BUDR2+partition-on-shelf 01-TOP.dxf 41b20590
+> GEOM   BUDR2+partition-on-shelf 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR2+partition-on-shelf 01-BACK.dxf 8e436881
+> GEOM   BUDR2+partition-on-shelf 01-VPART-1.dxf ff3a79df
+165,169c165,169
+< GEOM   BUDR2+partitions-2 01-TOP.dxf ac026f6e
+< GEOM   BUDR2+partitions-2 01-BOTTOM.dxf ac026f6e
+< GEOM   BUDR2+partitions-2 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR2+partitions-2 01-VPART-1.dxf 5737a305
+< GEOM   BUDR2+partitions-2 01-VPART-2.dxf 5737a305
+---
+> GEOM   BUDR2+partitions-2 01-TOP.dxf 41b20590
+> GEOM   BUDR2+partitions-2 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR2+partitions-2 01-BACK.dxf 655fbc6a
+> GEOM   BUDR2+partitions-2 01-VPART-1.dxf ff3a79df
+> GEOM   BUDR2+partitions-2 01-VPART-2.dxf ff3a79df
+230,233c230,233
+< GEOM   BUDR+partition 01-TOP.dxf 2fcfbe99
+< GEOM   BUDR+partition 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUDR+partition 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR+partition 01-VPART-1.dxf 5737a305
+---
+> GEOM   BUDR+partition 01-TOP.dxf 41b20590
+> GEOM   BUDR+partition 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR+partition 01-BACK.dxf 8e436881
+> GEOM   BUDR+partition 01-VPART-1.dxf ff3a79df
+254,257c254,257
+< GEOM   BUDR+partition-on-shelf 01-TOP.dxf 2fcfbe99
+< GEOM   BUDR+partition-on-shelf 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUDR+partition-on-shelf 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR+partition-on-shelf 01-VPART-1.dxf 5737a305
+---
+> GEOM   BUDR+partition-on-shelf 01-TOP.dxf 41b20590
+> GEOM   BUDR+partition-on-shelf 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR+partition-on-shelf 01-BACK.dxf 8e436881
+> GEOM   BUDR+partition-on-shelf 01-VPART-1.dxf ff3a79df
+278,282c278,282
+< GEOM   BUDR+partitions-2 01-TOP.dxf ac026f6e
+< GEOM   BUDR+partitions-2 01-BOTTOM.dxf ac026f6e
+< GEOM   BUDR+partitions-2 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR+partitions-2 01-VPART-1.dxf 5737a305
+< GEOM   BUDR+partitions-2 01-VPART-2.dxf 5737a305
+---
+> GEOM   BUDR+partitions-2 01-TOP.dxf 41b20590
+> GEOM   BUDR+partitions-2 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR+partitions-2 01-BACK.dxf 655fbc6a
+> GEOM   BUDR+partitions-2 01-VPART-1.dxf ff3a79df
+> GEOM   BUDR+partitions-2 01-VPART-2.dxf ff3a79df
+361,364c361,364
+< GEOM   BUDR4+partition 01-TOP.dxf 2fcfbe99
+< GEOM   BUDR4+partition 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUDR4+partition 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR4+partition 01-VPART-1.dxf 5737a305
+---
+> GEOM   BUDR4+partition 01-TOP.dxf 41b20590
+> GEOM   BUDR4+partition 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR4+partition 01-BACK.dxf 8e436881
+> GEOM   BUDR4+partition 01-VPART-1.dxf ff3a79df
+391,394c391,394
+< GEOM   BUDR4+partition-on-shelf 01-TOP.dxf 2fcfbe99
+< GEOM   BUDR4+partition-on-shelf 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUDR4+partition-on-shelf 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR4+partition-on-shelf 01-VPART-1.dxf 5737a305
+---
+> GEOM   BUDR4+partition-on-shelf 01-TOP.dxf 41b20590
+> GEOM   BUDR4+partition-on-shelf 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR4+partition-on-shelf 01-BACK.dxf 8e436881
+> GEOM   BUDR4+partition-on-shelf 01-VPART-1.dxf ff3a79df
+421,425c421,425
+< GEOM   BUDR4+partitions-2 01-TOP.dxf ac026f6e
+< GEOM   BUDR4+partitions-2 01-BOTTOM.dxf ac026f6e
+< GEOM   BUDR4+partitions-2 01-BACK.dxf 2f6c92bf
+< GEOM   BUDR4+partitions-2 01-VPART-1.dxf 5737a305
+< GEOM   BUDR4+partitions-2 01-VPART-2.dxf 5737a305
+---
+> GEOM   BUDR4+partitions-2 01-TOP.dxf 41b20590
+> GEOM   BUDR4+partitions-2 01-BOTTOM.dxf 41b20590
+> GEOM   BUDR4+partitions-2 01-BACK.dxf 655fbc6a
+> GEOM   BUDR4+partitions-2 01-VPART-1.dxf ff3a79df
+> GEOM   BUDR4+partitions-2 01-VPART-2.dxf ff3a79df
+464,467c464,467
+< GEOM   WUD+partition 01-TOP.dxf dac10c7d
+< GEOM   WUD+partition 01-BOTTOM.dxf dac10c7d
+< GEOM   WUD+partition 01-BACK.dxf cc3e8780
+< GEOM   WUD+partition 01-VPART-1.dxf 888fc123
+---
+> GEOM   WUD+partition 01-TOP.dxf bd2ed4d2
+> GEOM   WUD+partition 01-BOTTOM.dxf bd2ed4d2
+> GEOM   WUD+partition 01-BACK.dxf f4800371
+> GEOM   WUD+partition 01-VPART-1.dxf 548257b3
+473,476c473,476
+< GEOM   WUD+partition-on-shelf 01-BOTTOM.dxf dac10c7d
+< GEOM   WUD+partition-on-shelf 01-BACK.dxf cc3e8780
+< GEOM   WUD+partition-on-shelf 01-SHELF-1.dxf 2a2267cc
+< GEOM   WUD+partition-on-shelf 01-VPART-1.dxf 068b5aac
+---
+> GEOM   WUD+partition-on-shelf 01-BOTTOM.dxf bd2ed4d2
+> GEOM   WUD+partition-on-shelf 01-BACK.dxf c89bcbb2
+> GEOM   WUD+partition-on-shelf 01-SHELF-1.dxf 5a0c8b5f
+> GEOM   WUD+partition-on-shelf 01-VPART-1.dxf 79d538f3
+481,485c481,485
+< GEOM   WUD+partitions-2 01-TOP.dxf a4c7c864
+< GEOM   WUD+partitions-2 01-BOTTOM.dxf a4c7c864
+< GEOM   WUD+partitions-2 01-BACK.dxf cc3e8780
+< GEOM   WUD+partitions-2 01-VPART-1.dxf 888fc123
+< GEOM   WUD+partitions-2 01-VPART-2.dxf 888fc123
+---
+> GEOM   WUD+partitions-2 01-TOP.dxf bd2ed4d2
+> GEOM   WUD+partitions-2 01-BOTTOM.dxf bd2ed4d2
+> GEOM   WUD+partitions-2 01-BACK.dxf 2f0932e9
+> GEOM   WUD+partitions-2 01-VPART-1.dxf 548257b3
+> GEOM   WUD+partitions-2 01-VPART-2.dxf 548257b3
+502,505c502,505
+< GEOM   BUDTALL+partition 01-TOP.dxf 2fcfbe99
+< GEOM   BUDTALL+partition 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUDTALL+partition 01-BACK.dxf da59ec39
+< GEOM   BUDTALL+partition 01-VPART-1.dxf fc2609bd
+---
+> GEOM   BUDTALL+partition 01-TOP.dxf 41b20590
+> GEOM   BUDTALL+partition 01-BOTTOM.dxf 41b20590
+> GEOM   BUDTALL+partition 01-BACK.dxf e2b4aca4
+> GEOM   BUDTALL+partition 01-VPART-1.dxf a514fb23
+511,514c511,514
+< GEOM   BUDTALL+partition-on-shelf 01-BOTTOM.dxf 2fcfbe99
+< GEOM   BUDTALL+partition-on-shelf 01-BACK.dxf da59ec39
+< GEOM   BUDTALL+partition-on-shelf 01-SHELF-1.dxf 6394a5d7
+< GEOM   BUDTALL+partition-on-shelf 01-VPART-1.dxf db7d2ce4
+---
+> GEOM   BUDTALL+partition-on-shelf 01-BOTTOM.dxf 41b20590
+> GEOM   BUDTALL+partition-on-shelf 01-BACK.dxf 45c3450a
+> GEOM   BUDTALL+partition-on-shelf 01-SHELF-1.dxf 272afc8f
+> GEOM   BUDTALL+partition-on-shelf 01-VPART-1.dxf d97f9693
+519,523c519,523
+< GEOM   BUDTALL+partitions-2 01-TOP.dxf ac026f6e
+< GEOM   BUDTALL+partitions-2 01-BOTTOM.dxf ac026f6e
+< GEOM   BUDTALL+partitions-2 01-BACK.dxf da59ec39
+< GEOM   BUDTALL+partitions-2 01-VPART-1.dxf fc2609bd
+< GEOM   BUDTALL+partitions-2 01-VPART-2.dxf fc2609bd
+---
+> GEOM   BUDTALL+partitions-2 01-TOP.dxf 41b20590
+> GEOM   BUDTALL+partitions-2 01-BOTTOM.dxf 41b20590
+> GEOM   BUDTALL+partitions-2 01-BACK.dxf da866d87
+> GEOM   BUDTALL+partitions-2 01-VPART-1.dxf a514fb23
+> GEOM   BUDTALL+partitions-2 01-VPART-2.dxf a514fb23
+540,543c540,543
+< GEOM   LOW_CABINET+partition 01-TOP.dxf 9e37e3d9
+< GEOM   LOW_CABINET+partition 01-BOTTOM.dxf 9e37e3d9
+< GEOM   LOW_CABINET+partition 01-BACK.dxf 7081a300
+< GEOM   LOW_CABINET+partition 01-VPART-1.dxf 41a9ee53
+---
+> GEOM   LOW_CABINET+partition 01-TOP.dxf 6a0e5cc4
+> GEOM   LOW_CABINET+partition 01-BOTTOM.dxf 6a0e5cc4
+> GEOM   LOW_CABINET+partition 01-BACK.dxf 96cfa8ca
+> GEOM   LOW_CABINET+partition 01-VPART-1.dxf e2786df3
+549,552c549,552
+< GEOM   LOW_CABINET+partition-on-shelf 01-BOTTOM.dxf 9e37e3d9
+< GEOM   LOW_CABINET+partition-on-shelf 01-BACK.dxf 7081a300
+< GEOM   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf 18b6eb58
+< GEOM   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf ef8f8fe9
+---
+> GEOM   LOW_CABINET+partition-on-shelf 01-BOTTOM.dxf 6a0e5cc4
+> GEOM   LOW_CABINET+partition-on-shelf 01-BACK.dxf 9851d043
+> GEOM   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf 9f053473
+> GEOM   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf 0afa1277
+557,561c557,561
+< GEOM   LOW_CABINET+partitions-2 01-TOP.dxf d1a5a736
+< GEOM   LOW_CABINET+partitions-2 01-BOTTOM.dxf d1a5a736
+< GEOM   LOW_CABINET+partitions-2 01-BACK.dxf 7081a300
+< GEOM   LOW_CABINET+partitions-2 01-VPART-1.dxf 41a9ee53
+< GEOM   LOW_CABINET+partitions-2 01-VPART-2.dxf 41a9ee53
+---
+> GEOM   LOW_CABINET+partitions-2 01-TOP.dxf 6a0e5cc4
+> GEOM   LOW_CABINET+partitions-2 01-BOTTOM.dxf 6a0e5cc4
+> GEOM   LOW_CABINET+partitions-2 01-BACK.dxf 35a9f565
+> GEOM   LOW_CABINET+partitions-2 01-VPART-1.dxf e2786df3
+> GEOM   LOW_CABINET+partitions-2 01-VPART-2.dxf e2786df3
+580,581c580,581
+< GEOM   SINK+partition 01-BOTTOM.dxf 2f9e17ea
+< GEOM   SINK+partition 01-BACK.dxf 719cf4d3
+---
+> GEOM   SINK+partition 01-BOTTOM.dxf 9d8ce48f
+> GEOM   SINK+partition 01-BACK.dxf 934ff279
+584c584
+< GEOM   SINK+partition 01-VPART-1.dxf d3e0af6c
+---
+> GEOM   SINK+partition 01-VPART-1.dxf ff3a79df
+589,590c589,590
+< GEOM   SINK+partition-on-shelf 01-BOTTOM.dxf 2f9e17ea
+< GEOM   SINK+partition-on-shelf 01-BACK.dxf 719cf4d3
+---
+> GEOM   SINK+partition-on-shelf 01-BOTTOM.dxf 9d8ce48f
+> GEOM   SINK+partition-on-shelf 01-BACK.dxf fcd39743
+593,594c593,594
+< GEOM   SINK+partition-on-shelf 01-SHELF-1.dxf c0d37fea
+< GEOM   SINK+partition-on-shelf 01-VPART-1.dxf ce922bee
+---
+> GEOM   SINK+partition-on-shelf 01-SHELF-1.dxf b9623f1f
+> GEOM   SINK+partition-on-shelf 01-VPART-1.dxf d1fa0273
+599,600c599,600
+< GEOM   SINK+partitions-2 01-BOTTOM.dxf 59cc1089
+< GEOM   SINK+partitions-2 01-BACK.dxf 719cf4d3
+---
+> GEOM   SINK+partitions-2 01-BOTTOM.dxf 9d8ce48f
+> GEOM   SINK+partitions-2 01-BACK.dxf cd6a228c
+603,604c603,604
+< GEOM   SINK+partitions-2 01-VPART-1.dxf d3e0af6c
+< GEOM   SINK+partitions-2 01-VPART-2.dxf d3e0af6c
+---
+> GEOM   SINK+partitions-2 01-VPART-1.dxf ff3a79df
+> GEOM   SINK+partitions-2 01-VPART-2.dxf ff3a79df
+611c611
+< GEOM   DW_PANEL+partition 01-TOP.dxf 9faf6096
+---
+> GEOM   DW_PANEL+partition 01-TOP.dxf 65da31b3
+613,614c613,614
+< GEOM   DW_PANEL+partition 01-VPART-1.dxf 47262c74
+< GEOM   DW_PANEL+partition-on-shelf 01-TOP.dxf 9faf6096
+---
+> GEOM   DW_PANEL+partition 01-VPART-1.dxf ff3a79df
+> GEOM   DW_PANEL+partition-on-shelf 01-TOP.dxf 65da31b3
+616,617c616,617
+< GEOM   DW_PANEL+partition-on-shelf 01-VPART-1.dxf 47262c74
+< GEOM   DW_PANEL+partitions-2 01-TOP.dxf ea7d70bd
+---
+> GEOM   DW_PANEL+partition-on-shelf 01-VPART-1.dxf ff3a79df
+> GEOM   DW_PANEL+partitions-2 01-TOP.dxf 65da31b3
+619,620c619,620
+< GEOM   DW_PANEL+partitions-2 01-VPART-1.dxf 47262c74
+< GEOM   DW_PANEL+partitions-2 01-VPART-2.dxf 47262c74
+---
+> GEOM   DW_PANEL+partitions-2 01-VPART-1.dxf ff3a79df
+> GEOM   DW_PANEL+partitions-2 01-VPART-2.dxf ff3a79df
+649c649
+< GEOM   OVEN_BASE+partition 01-BOTTOM.dxf 2fcfbe99
+---
+> GEOM   OVEN_BASE+partition 01-BOTTOM.dxf 41b20590
+651c651
+< GEOM   OVEN_BASE+partition 01-BACK.dxf 4bdebb23
+---
+> GEOM   OVEN_BASE+partition 01-BACK.dxf 2fc83fdd
+654c654
+< GEOM   OVEN_BASE+partition 01-VPART-1.dxf d3e0af6c
+---
+> GEOM   OVEN_BASE+partition 01-VPART-1.dxf ff3a79df
+663c663
+< GEOM   OVEN_BASE+partition-on-shelf 01-BOTTOM.dxf 2fcfbe99
+---
+> GEOM   OVEN_BASE+partition-on-shelf 01-BOTTOM.dxf 41b20590
+665c665
+< GEOM   OVEN_BASE+partition-on-shelf 01-BACK.dxf 4bdebb23
+---
+> GEOM   OVEN_BASE+partition-on-shelf 01-BACK.dxf 2fc83fdd
+668c668
+< GEOM   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf d3e0af6c
+---
+> GEOM   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf ff3a79df
+677c677
+< GEOM   OVEN_BASE+partitions-2 01-BOTTOM.dxf ac026f6e
+---
+> GEOM   OVEN_BASE+partitions-2 01-BOTTOM.dxf 41b20590
+679c679
+< GEOM   OVEN_BASE+partitions-2 01-BACK.dxf 4bdebb23
+---
+> GEOM   OVEN_BASE+partitions-2 01-BACK.dxf 1c250426
+682,683c682,683
+< GEOM   OVEN_BASE+partitions-2 01-VPART-1.dxf d3e0af6c
+< GEOM   OVEN_BASE+partitions-2 01-VPART-2.dxf d3e0af6c
+---
+> GEOM   OVEN_BASE+partitions-2 01-VPART-1.dxf ff3a79df
+> GEOM   OVEN_BASE+partitions-2 01-VPART-2.dxf ff3a79df
+712,713c712,713
+< GEOM   FRIDGE+partition 01-TOP.dxf 2fcfbe99
+< GEOM   FRIDGE+partition 01-BOTTOM.dxf 2fcfbe99
+---
+> GEOM   FRIDGE+partition 01-TOP.dxf 41b20590
+> GEOM   FRIDGE+partition 01-BOTTOM.dxf 41b20590
+717c717
+< GEOM   FRIDGE+partition 01-BACK.dxf 0f09c978
+---
+> GEOM   FRIDGE+partition 01-BACK.dxf 6b76d45b
+719c719
+< GEOM   FRIDGE+partition 01-VPART-1.dxf fc2609bd
+---
+> GEOM   FRIDGE+partition 01-VPART-1.dxf a514fb23
+724,725c724,725
+< GEOM   FRIDGE+partition-on-shelf 01-TOP.dxf 2fcfbe99
+< GEOM   FRIDGE+partition-on-shelf 01-BOTTOM.dxf 2fcfbe99
+---
+> GEOM   FRIDGE+partition-on-shelf 01-TOP.dxf 41b20590
+> GEOM   FRIDGE+partition-on-shelf 01-BOTTOM.dxf 41b20590
+729c729
+< GEOM   FRIDGE+partition-on-shelf 01-BACK.dxf 0f09c978
+---
+> GEOM   FRIDGE+partition-on-shelf 01-BACK.dxf 6b76d45b
+731c731
+< GEOM   FRIDGE+partition-on-shelf 01-VPART-1.dxf fc2609bd
+---
+> GEOM   FRIDGE+partition-on-shelf 01-VPART-1.dxf a514fb23
+736,737c736,737
+< GEOM   FRIDGE+partitions-2 01-TOP.dxf ac026f6e
+< GEOM   FRIDGE+partitions-2 01-BOTTOM.dxf ac026f6e
+---
+> GEOM   FRIDGE+partitions-2 01-TOP.dxf 41b20590
+> GEOM   FRIDGE+partitions-2 01-BOTTOM.dxf 41b20590
+741c741
+< GEOM   FRIDGE+partitions-2 01-BACK.dxf 0f09c978
+---
+> GEOM   FRIDGE+partitions-2 01-BACK.dxf c9bfd58c
+743,744c743,744
+< GEOM   FRIDGE+partitions-2 01-VPART-1.dxf fc2609bd
+< GEOM   FRIDGE+partitions-2 01-VPART-2.dxf fc2609bd
+---
+> GEOM   FRIDGE+partitions-2 01-VPART-1.dxf a514fb23
+> GEOM   FRIDGE+partitions-2 01-VPART-2.dxf a514fb23
+805,806c805
+< CENSUS WARDROBE+partition all circle/SCREWS_3MM 34
+< CENSUS WARDROBE+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS WARDROBE+partition all circle/SCREWS_3MM 33
+813,814c812
+< CENSUS WARDROBE+partition non-sprayed circle/SCREWS_3MM 34
+< CENSUS WARDROBE+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS WARDROBE+partition non-sprayed circle/SCREWS_3MM 33
+832d829
+< CENSUS WARDROBE+partition-on-shelf all poly/BISCUIT_4MM 8
+840d836
+< CENSUS WARDROBE+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+857,858c853
+< CENSUS WARDROBE+partitions-2 all circle/SCREWS_3MM 42
+< CENSUS WARDROBE+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS WARDROBE+partitions-2 all circle/SCREWS_3MM 40
+865,866c860
+< CENSUS WARDROBE+partitions-2 non-sprayed circle/SCREWS_3MM 42
+< CENSUS WARDROBE+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS WARDROBE+partitions-2 non-sprayed circle/SCREWS_3MM 40
+931,932c925
+< CENSUS BUD+partition all circle/SCREWS_3MM 34
+< CENSUS BUD+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS BUD+partition all circle/SCREWS_3MM 29
+939,940c932
+< CENSUS BUD+partition non-sprayed circle/SCREWS_3MM 34
+< CENSUS BUD+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUD+partition non-sprayed circle/SCREWS_3MM 29
+957,958c949
+< CENSUS BUD+partition-on-shelf all circle/SCREWS_3MM 36
+< CENSUS BUD+partition-on-shelf all poly/BISCUIT_4MM 8
+---
+> CENSUS BUD+partition-on-shelf all circle/SCREWS_3MM 34
+965,966c956
+< CENSUS BUD+partition-on-shelf non-sprayed circle/SCREWS_3MM 36
+< CENSUS BUD+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUD+partition-on-shelf non-sprayed circle/SCREWS_3MM 34
+983,984c973
+< CENSUS BUD+partitions-2 all circle/SCREWS_3MM 42
+< CENSUS BUD+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS BUD+partitions-2 all circle/SCREWS_3MM 32
+991,992c980
+< CENSUS BUD+partitions-2 non-sprayed circle/SCREWS_3MM 42
+< CENSUS BUD+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS BUD+partitions-2 non-sprayed circle/SCREWS_3MM 32
+1058,1059c1046
+< CENSUS BUDR2+partition all circle/SCREWS_3MM 46
+< CENSUS BUDR2+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR2+partition all circle/SCREWS_3MM 41
+1068,1069c1055
+< CENSUS BUDR2+partition non-sprayed circle/SCREWS_3MM 46
+< CENSUS BUDR2+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR2+partition non-sprayed circle/SCREWS_3MM 41
+1085,1086c1071
+< CENSUS BUDR2+partition-on-shelf all circle/SCREWS_3MM 46
+< CENSUS BUDR2+partition-on-shelf all poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR2+partition-on-shelf all circle/SCREWS_3MM 41
+1095,1096c1080
+< CENSUS BUDR2+partition-on-shelf non-sprayed circle/SCREWS_3MM 46
+< CENSUS BUDR2+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR2+partition-on-shelf non-sprayed circle/SCREWS_3MM 41
+1112,1113c1096
+< CENSUS BUDR2+partitions-2 all circle/SCREWS_3MM 54
+< CENSUS BUDR2+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS BUDR2+partitions-2 all circle/SCREWS_3MM 44
+1122,1123c1105
+< CENSUS BUDR2+partitions-2 non-sprayed circle/SCREWS_3MM 54
+< CENSUS BUDR2+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS BUDR2+partitions-2 non-sprayed circle/SCREWS_3MM 44
+1189,1190c1171
+< CENSUS BUDR+partition all circle/SCREWS_3MM 52
+< CENSUS BUDR+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR+partition all circle/SCREWS_3MM 47
+1199,1200c1180
+< CENSUS BUDR+partition non-sprayed circle/SCREWS_3MM 52
+< CENSUS BUDR+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR+partition non-sprayed circle/SCREWS_3MM 47
+1216,1217c1196
+< CENSUS BUDR+partition-on-shelf all circle/SCREWS_3MM 52
+< CENSUS BUDR+partition-on-shelf all poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR+partition-on-shelf all circle/SCREWS_3MM 47
+1226,1227c1205
+< CENSUS BUDR+partition-on-shelf non-sprayed circle/SCREWS_3MM 52
+< CENSUS BUDR+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR+partition-on-shelf non-sprayed circle/SCREWS_3MM 47
+1243,1244c1221
+< CENSUS BUDR+partitions-2 all circle/SCREWS_3MM 60
+< CENSUS BUDR+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS BUDR+partitions-2 all circle/SCREWS_3MM 50
+1253,1254c1230
+< CENSUS BUDR+partitions-2 non-sprayed circle/SCREWS_3MM 60
+< CENSUS BUDR+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS BUDR+partitions-2 non-sprayed circle/SCREWS_3MM 50
+1320,1321c1296
+< CENSUS BUDR4+partition all circle/SCREWS_3MM 58
+< CENSUS BUDR4+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR4+partition all circle/SCREWS_3MM 53
+1330,1331c1305
+< CENSUS BUDR4+partition non-sprayed circle/SCREWS_3MM 58
+< CENSUS BUDR4+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR4+partition non-sprayed circle/SCREWS_3MM 53
+1347,1348c1321
+< CENSUS BUDR4+partition-on-shelf all circle/SCREWS_3MM 58
+< CENSUS BUDR4+partition-on-shelf all poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR4+partition-on-shelf all circle/SCREWS_3MM 53
+1357,1358c1330
+< CENSUS BUDR4+partition-on-shelf non-sprayed circle/SCREWS_3MM 58
+< CENSUS BUDR4+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUDR4+partition-on-shelf non-sprayed circle/SCREWS_3MM 53
+1374,1375c1346
+< CENSUS BUDR4+partitions-2 all circle/SCREWS_3MM 66
+< CENSUS BUDR4+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS BUDR4+partitions-2 all circle/SCREWS_3MM 56
+1384,1385c1355
+< CENSUS BUDR4+partitions-2 non-sprayed circle/SCREWS_3MM 66
+< CENSUS BUDR4+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS BUDR4+partitions-2 non-sprayed circle/SCREWS_3MM 56
+1454,1455c1424
+< CENSUS WUD+partition all circle/SCREWS_3MM 34
+< CENSUS WUD+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS WUD+partition all circle/SCREWS_3MM 29
+1463,1464c1432
+< CENSUS WUD+partition non-sprayed circle/SCREWS_3MM 34
+< CENSUS WUD+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS WUD+partition non-sprayed circle/SCREWS_3MM 29
+1482,1483c1450
+< CENSUS WUD+partition-on-shelf all circle/SCREWS_3MM 36
+< CENSUS WUD+partition-on-shelf all poly/BISCUIT_4MM 8
+---
+> CENSUS WUD+partition-on-shelf all circle/SCREWS_3MM 34
+1491,1492c1458
+< CENSUS WUD+partition-on-shelf non-sprayed circle/SCREWS_3MM 36
+< CENSUS WUD+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS WUD+partition-on-shelf non-sprayed circle/SCREWS_3MM 34
+1510,1511c1476
+< CENSUS WUD+partitions-2 all circle/SCREWS_3MM 42
+< CENSUS WUD+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS WUD+partitions-2 all circle/SCREWS_3MM 32
+1519,1520c1484
+< CENSUS WUD+partitions-2 non-sprayed circle/SCREWS_3MM 42
+< CENSUS WUD+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS WUD+partitions-2 non-sprayed circle/SCREWS_3MM 32
+1586,1587c1550
+< CENSUS BUDTALL+partition all circle/SCREWS_3MM 34
+< CENSUS BUDTALL+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS BUDTALL+partition all circle/SCREWS_3MM 32
+1594,1595c1557
+< CENSUS BUDTALL+partition non-sprayed circle/SCREWS_3MM 34
+< CENSUS BUDTALL+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS BUDTALL+partition non-sprayed circle/SCREWS_3MM 32
+1613d1574
+< CENSUS BUDTALL+partition-on-shelf all poly/BISCUIT_4MM 8
+1621d1581
+< CENSUS BUDTALL+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+1638,1639c1598
+< CENSUS BUDTALL+partitions-2 all circle/SCREWS_3MM 42
+< CENSUS BUDTALL+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS BUDTALL+partitions-2 all circle/SCREWS_3MM 38
+1646,1647c1605
+< CENSUS BUDTALL+partitions-2 non-sprayed circle/SCREWS_3MM 42
+< CENSUS BUDTALL+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS BUDTALL+partitions-2 non-sprayed circle/SCREWS_3MM 38
+1712,1713c1670
+< CENSUS LOW_CABINET+partition all circle/SCREWS_3MM 34
+< CENSUS LOW_CABINET+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS LOW_CABINET+partition all circle/SCREWS_3MM 29
+1720,1721c1677
+< CENSUS LOW_CABINET+partition non-sprayed circle/SCREWS_3MM 34
+< CENSUS LOW_CABINET+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS LOW_CABINET+partition non-sprayed circle/SCREWS_3MM 29
+1738,1739c1694
+< CENSUS LOW_CABINET+partition-on-shelf all circle/SCREWS_3MM 36
+< CENSUS LOW_CABINET+partition-on-shelf all poly/BISCUIT_4MM 8
+---
+> CENSUS LOW_CABINET+partition-on-shelf all circle/SCREWS_3MM 34
+1746,1747c1701
+< CENSUS LOW_CABINET+partition-on-shelf non-sprayed circle/SCREWS_3MM 36
+< CENSUS LOW_CABINET+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS LOW_CABINET+partition-on-shelf non-sprayed circle/SCREWS_3MM 34
+1764,1765c1718
+< CENSUS LOW_CABINET+partitions-2 all circle/SCREWS_3MM 42
+< CENSUS LOW_CABINET+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS LOW_CABINET+partitions-2 all circle/SCREWS_3MM 32
+1772,1773c1725
+< CENSUS LOW_CABINET+partitions-2 non-sprayed circle/SCREWS_3MM 42
+< CENSUS LOW_CABINET+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS LOW_CABINET+partitions-2 non-sprayed circle/SCREWS_3MM 32
+1838,1839c1790
+< CENSUS SINK+partition all circle/SCREWS_3MM 24
+< CENSUS SINK+partition all poly/BISCUIT_4MM 4
+---
+> CENSUS SINK+partition all circle/SCREWS_3MM 23
+1846,1847c1797
+< CENSUS SINK+partition non-sprayed circle/SCREWS_3MM 24
+< CENSUS SINK+partition non-sprayed poly/BISCUIT_4MM 4
+---
+> CENSUS SINK+partition non-sprayed circle/SCREWS_3MM 23
+1864,1865c1814
+< CENSUS SINK+partition-on-shelf all circle/SCREWS_3MM 30
+< CENSUS SINK+partition-on-shelf all poly/BISCUIT_4MM 8
+---
+> CENSUS SINK+partition-on-shelf all circle/SCREWS_3MM 28
+1872,1873c1821
+< CENSUS SINK+partition-on-shelf non-sprayed circle/SCREWS_3MM 30
+< CENSUS SINK+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS SINK+partition-on-shelf non-sprayed circle/SCREWS_3MM 28
+1890,1891c1838
+< CENSUS SINK+partitions-2 all circle/SCREWS_3MM 28
+< CENSUS SINK+partitions-2 all poly/BISCUIT_4MM 8
+---
+> CENSUS SINK+partitions-2 all circle/SCREWS_3MM 26
+1898,1899c1845
+< CENSUS SINK+partitions-2 non-sprayed circle/SCREWS_3MM 28
+< CENSUS SINK+partitions-2 non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS SINK+partitions-2 non-sprayed circle/SCREWS_3MM 26
+1928,1929d1873
+< CENSUS DW_PANEL+partition all circle/SCREWS_3MM 4
+< CENSUS DW_PANEL+partition all poly/BISCUIT_4MM 4
+1932,1933d1875
+< CENSUS DW_PANEL+partition non-sprayed circle/SCREWS_3MM 4
+< CENSUS DW_PANEL+partition non-sprayed poly/BISCUIT_4MM 4
+1940,1941d1881
+< CENSUS DW_PANEL+partition-on-shelf all circle/SCREWS_3MM 4
+< CENSUS DW_PANEL+partition-on-shelf all poly/BISCUIT_4MM 4
+1944,1945d1883
+< CENSUS DW_PANEL+partition-on-shelf non-sprayed circle/SCREWS_3MM 4
+< CENSUS DW_PANEL+partition-on-shelf non-sprayed poly/BISCUIT_4MM 4
+1952,1953d1889
+< CENSUS DW_PANEL+partitions-2 all circle/SCREWS_3MM 8
+< CENSUS DW_PANEL+partitions-2 all poly/BISCUIT_4MM 8
+1956,1957d1891
+< CENSUS DW_PANEL+partitions-2 non-sprayed circle/SCREWS_3MM 8
+< CENSUS DW_PANEL+partitions-2 non-sprayed poly/BISCUIT_4MM 8
+2017,2018c1951
+< CENSUS OVEN_BASE+partition all circle/SCREWS_3MM 28
+< CENSUS OVEN_BASE+partition all poly/BISCUIT_4MM 4
+---
+> CENSUS OVEN_BASE+partition all circle/SCREWS_3MM 27
+2027,2028c1960
+< CENSUS OVEN_BASE+partition non-sprayed circle/SCREWS_3MM 28
+< CENSUS OVEN_BASE+partition non-sprayed poly/BISCUIT_4MM 4
+---
+> CENSUS OVEN_BASE+partition non-sprayed circle/SCREWS_3MM 27
+2044,2045c1976
+< CENSUS OVEN_BASE+partition-on-shelf all circle/SCREWS_3MM 28
+< CENSUS OVEN_BASE+partition-on-shelf all poly/BISCUIT_4MM 4
+---
+> CENSUS OVEN_BASE+partition-on-shelf all circle/SCREWS_3MM 27
+2054,2055c1985
+< CENSUS OVEN_BASE+partition-on-shelf non-sprayed circle/SCREWS_3MM 28
+< CENSUS OVEN_BASE+partition-on-shelf non-sprayed poly/BISCUIT_4MM 4
+---
+> CENSUS OVEN_BASE+partition-on-shelf non-sprayed circle/SCREWS_3MM 27
+2071,2072c2001
+< CENSUS OVEN_BASE+partitions-2 all circle/SCREWS_3MM 32
+< CENSUS OVEN_BASE+partitions-2 all poly/BISCUIT_4MM 8
+---
+> CENSUS OVEN_BASE+partitions-2 all circle/SCREWS_3MM 30
+2081,2082c2010
+< CENSUS OVEN_BASE+partitions-2 non-sprayed circle/SCREWS_3MM 32
+< CENSUS OVEN_BASE+partitions-2 non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS OVEN_BASE+partitions-2 non-sprayed circle/SCREWS_3MM 30
+2147,2148c2075
+< CENSUS FRIDGE+partition all circle/SCREWS_3MM 39
+< CENSUS FRIDGE+partition all poly/BISCUIT_4MM 8
+---
+> CENSUS FRIDGE+partition all circle/SCREWS_3MM 37
+2155,2156c2082
+< CENSUS FRIDGE+partition non-sprayed circle/SCREWS_3MM 39
+< CENSUS FRIDGE+partition non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS FRIDGE+partition non-sprayed circle/SCREWS_3MM 37
+2173,2174c2099
+< CENSUS FRIDGE+partition-on-shelf all circle/SCREWS_3MM 39
+< CENSUS FRIDGE+partition-on-shelf all poly/BISCUIT_4MM 8
+---
+> CENSUS FRIDGE+partition-on-shelf all circle/SCREWS_3MM 37
+2181,2182c2106
+< CENSUS FRIDGE+partition-on-shelf non-sprayed circle/SCREWS_3MM 39
+< CENSUS FRIDGE+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+---
+> CENSUS FRIDGE+partition-on-shelf non-sprayed circle/SCREWS_3MM 37
+2199,2200c2123
+< CENSUS FRIDGE+partitions-2 all circle/SCREWS_3MM 47
+< CENSUS FRIDGE+partitions-2 all poly/BISCUIT_4MM 16
+---
+> CENSUS FRIDGE+partitions-2 all circle/SCREWS_3MM 43
+2207,2208c2130
+< CENSUS FRIDGE+partitions-2 non-sprayed circle/SCREWS_3MM 47
+< CENSUS FRIDGE+partitions-2 non-sprayed poly/BISCUIT_4MM 16
+---
+> CENSUS FRIDGE+partitions-2 non-sprayed circle/SCREWS_3MM 43

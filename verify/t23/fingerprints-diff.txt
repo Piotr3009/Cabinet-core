@@ -1,0 +1,654 @@
+85,86c85,86
+< BUD+partition  file  01-BACK.dxf  213eb844
+< BUD+partition  file  01-BOTTOM.dxf  ac7003da
+---
+> BUD+partition  file  01-BACK.dxf  135d6cc0
+> BUD+partition  file  01-BOTTOM.dxf  ababcbc4
+90,92c90,92
+< BUD+partition  file  01-TOP.dxf  900b2a9f
+< BUD+partition  file  01-VPART-1.dxf  5d572131
+< BUD+partition  sheet all  aa5c0172
+---
+> BUD+partition  file  01-TOP.dxf  878ff9ad
+> BUD+partition  file  01-VPART-1.dxf  645ba1ff
+> BUD+partition  sheet all  fc22da8e
+94c94
+< BUD+partition  sheet non-sprayed  5bd0a437
+---
+> BUD+partition  sheet non-sprayed  159ef23f
+99,100c99,100
+< BUD+partition-doors  file  01-BACK.dxf  e6e903c5
+< BUD+partition-doors  file  01-BOTTOM.dxf  5591fbe1
+---
+> BUD+partition-doors  file  01-BACK.dxf  8268c255
+> BUD+partition-doors  file  01-BOTTOM.dxf  db6b145e
+103,106c103,106
+< BUD+partition-doors  file  01-TOP.dxf  c70cd306
+< BUD+partition-doors  file  01-VPART-1.dxf  def31225
+< BUD+partition-doors  file  01-VPART-2.dxf  3acd765a
+< BUD+partition-doors  sheet all  d702d772
+---
+> BUD+partition-doors  file  01-TOP.dxf  059c9f25
+> BUD+partition-doors  file  01-VPART-1.dxf  e750eee1
+> BUD+partition-doors  file  01-VPART-2.dxf  86450abc
+> BUD+partition-doors  sheet all  1b2377d0
+108c108
+< BUD+partition-doors  sheet non-sprayed  a3d27a06
+---
+> BUD+partition-doors  sheet non-sprayed  512d5430
+110,111c110,111
+< BUD+partition-on-shelf  file  01-BACK.dxf  213eb844
+< BUD+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+---
+> BUD+partition-on-shelf  file  01-BACK.dxf  f7baaebb
+> BUD+partition-on-shelf  file  01-BOTTOM.dxf  ababcbc4
+115c115
+< BUD+partition-on-shelf  file  01-SHELF-1.dxf  aad11821
+---
+> BUD+partition-on-shelf  file  01-SHELF-1.dxf  135f63c3
+117,118c117,118
+< BUD+partition-on-shelf  file  01-VPART-1.dxf  4a0eb71d
+< BUD+partition-on-shelf  sheet all  aa81b3f6
+---
+> BUD+partition-on-shelf  file  01-VPART-1.dxf  6e6aab52
+> BUD+partition-on-shelf  sheet all  48238980
+120c120
+< BUD+partition-on-shelf  sheet non-sprayed  27cde727
+---
+> BUD+partition-on-shelf  sheet non-sprayed  8210288e
+367,368c367,368
+< BUDR+partition  file  01-BACK.dxf  213eb844
+< BUDR+partition  file  01-BOTTOM.dxf  ac7003da
+---
+> BUDR+partition  file  01-BACK.dxf  135d6cc0
+> BUDR+partition  file  01-BOTTOM.dxf  ababcbc4
+389,391c389,391
+< BUDR+partition  file  01-TOP.dxf  900b2a9f
+< BUDR+partition  file  01-VPART-1.dxf  5d572131
+< BUDR+partition  sheet all  b0c6ae25
+---
+> BUDR+partition  file  01-TOP.dxf  878ff9ad
+> BUDR+partition  file  01-VPART-1.dxf  645ba1ff
+> BUDR+partition  sheet all  5ea287d1
+393c393
+< BUDR+partition  sheet non-sprayed  a72f87f9
+---
+> BUDR+partition  sheet non-sprayed  955a8687
+395,396c395,396
+< BUDR+partition-doors  file  01-BACK.dxf  e6e903c5
+< BUDR+partition-doors  file  01-BOTTOM.dxf  5591fbe1
+---
+> BUDR+partition-doors  file  01-BACK.dxf  8268c255
+> BUDR+partition-doors  file  01-BOTTOM.dxf  db6b145e
+417,420c417,420
+< BUDR+partition-doors  file  01-TOP.dxf  c70cd306
+< BUDR+partition-doors  file  01-VPART-1.dxf  5d572131
+< BUDR+partition-doors  file  01-VPART-2.dxf  3acd765a
+< BUDR+partition-doors  sheet all  b186eecf
+---
+> BUDR+partition-doors  file  01-TOP.dxf  059c9f25
+> BUDR+partition-doors  file  01-VPART-1.dxf  645ba1ff
+> BUDR+partition-doors  file  01-VPART-2.dxf  86450abc
+> BUDR+partition-doors  sheet all  d2d2fd57
+422c422
+< BUDR+partition-doors  sheet non-sprayed  ac0c4b25
+---
+> BUDR+partition-doors  sheet non-sprayed  87a5b31b
+424,425c424,425
+< BUDR+partition-on-shelf  file  01-BACK.dxf  213eb844
+< BUDR+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+---
+> BUDR+partition-on-shelf  file  01-BACK.dxf  135d6cc0
+> BUDR+partition-on-shelf  file  01-BOTTOM.dxf  ababcbc4
+446,448c446,448
+< BUDR+partition-on-shelf  file  01-TOP.dxf  900b2a9f
+< BUDR+partition-on-shelf  file  01-VPART-1.dxf  5d572131
+< BUDR+partition-on-shelf  sheet all  b0c6ae25
+---
+> BUDR+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> BUDR+partition-on-shelf  file  01-VPART-1.dxf  645ba1ff
+> BUDR+partition-on-shelf  sheet all  5ea287d1
+450c450
+< BUDR+partition-on-shelf  sheet non-sprayed  a72f87f9
+---
+> BUDR+partition-on-shelf  sheet non-sprayed  955a8687
+721,722c721,722
+< BUDR2+partition  file  01-BACK.dxf  213eb844
+< BUDR2+partition  file  01-BOTTOM.dxf  ac7003da
+---
+> BUDR2+partition  file  01-BACK.dxf  135d6cc0
+> BUDR2+partition  file  01-BOTTOM.dxf  ababcbc4
+737,739c737,739
+< BUDR2+partition  file  01-TOP.dxf  900b2a9f
+< BUDR2+partition  file  01-VPART-1.dxf  5d572131
+< BUDR2+partition  sheet all  f8a439f8
+---
+> BUDR2+partition  file  01-TOP.dxf  878ff9ad
+> BUDR2+partition  file  01-VPART-1.dxf  645ba1ff
+> BUDR2+partition  sheet all  15c0013c
+741c741
+< BUDR2+partition  sheet non-sprayed  98656ad5
+---
+> BUDR2+partition  sheet non-sprayed  86b89c63
+743,744c743,744
+< BUDR2+partition-doors  file  01-BACK.dxf  e6e903c5
+< BUDR2+partition-doors  file  01-BOTTOM.dxf  5591fbe1
+---
+> BUDR2+partition-doors  file  01-BACK.dxf  8268c255
+> BUDR2+partition-doors  file  01-BOTTOM.dxf  db6b145e
+759,762c759,762
+< BUDR2+partition-doors  file  01-TOP.dxf  c70cd306
+< BUDR2+partition-doors  file  01-VPART-1.dxf  5d572131
+< BUDR2+partition-doors  file  01-VPART-2.dxf  3acd765a
+< BUDR2+partition-doors  sheet all  bb8ddb11
+---
+> BUDR2+partition-doors  file  01-TOP.dxf  059c9f25
+> BUDR2+partition-doors  file  01-VPART-1.dxf  645ba1ff
+> BUDR2+partition-doors  file  01-VPART-2.dxf  86450abc
+> BUDR2+partition-doors  sheet all  6cacbe35
+764c764
+< BUDR2+partition-doors  sheet non-sprayed  c06ac22f
+---
+> BUDR2+partition-doors  sheet non-sprayed  ea399511
+766,767c766,767
+< BUDR2+partition-on-shelf  file  01-BACK.dxf  213eb844
+< BUDR2+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+---
+> BUDR2+partition-on-shelf  file  01-BACK.dxf  135d6cc0
+> BUDR2+partition-on-shelf  file  01-BOTTOM.dxf  ababcbc4
+782,784c782,784
+< BUDR2+partition-on-shelf  file  01-TOP.dxf  900b2a9f
+< BUDR2+partition-on-shelf  file  01-VPART-1.dxf  5d572131
+< BUDR2+partition-on-shelf  sheet all  f8a439f8
+---
+> BUDR2+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> BUDR2+partition-on-shelf  file  01-VPART-1.dxf  645ba1ff
+> BUDR2+partition-on-shelf  sheet all  15c0013c
+786c786
+< BUDR2+partition-on-shelf  sheet non-sprayed  98656ad5
+---
+> BUDR2+partition-on-shelf  sheet non-sprayed  86b89c63
+1117,1118c1117,1118
+< BUDR4+partition  file  01-BACK.dxf  213eb844
+< BUDR4+partition  file  01-BOTTOM.dxf  ac7003da
+---
+> BUDR4+partition  file  01-BACK.dxf  135d6cc0
+> BUDR4+partition  file  01-BOTTOM.dxf  ababcbc4
+1145,1147c1145,1147
+< BUDR4+partition  file  01-TOP.dxf  900b2a9f
+< BUDR4+partition  file  01-VPART-1.dxf  5d572131
+< BUDR4+partition  sheet all  c40b48c3
+---
+> BUDR4+partition  file  01-TOP.dxf  878ff9ad
+> BUDR4+partition  file  01-VPART-1.dxf  645ba1ff
+> BUDR4+partition  sheet all  a15902e8
+1149c1149
+< BUDR4+partition  sheet non-sprayed  9d28017f
+---
+> BUDR4+partition  sheet non-sprayed  401d358d
+1151,1152c1151,1152
+< BUDR4+partition-doors  file  01-BACK.dxf  e6e903c5
+< BUDR4+partition-doors  file  01-BOTTOM.dxf  5591fbe1
+---
+> BUDR4+partition-doors  file  01-BACK.dxf  8268c255
+> BUDR4+partition-doors  file  01-BOTTOM.dxf  db6b145e
+1179,1182c1179,1182
+< BUDR4+partition-doors  file  01-TOP.dxf  c70cd306
+< BUDR4+partition-doors  file  01-VPART-1.dxf  5d572131
+< BUDR4+partition-doors  file  01-VPART-2.dxf  3acd765a
+< BUDR4+partition-doors  sheet all  780b63ee
+---
+> BUDR4+partition-doors  file  01-TOP.dxf  059c9f25
+> BUDR4+partition-doors  file  01-VPART-1.dxf  645ba1ff
+> BUDR4+partition-doors  file  01-VPART-2.dxf  86450abc
+> BUDR4+partition-doors  sheet all  704a20d2
+1184c1184
+< BUDR4+partition-doors  sheet non-sprayed  9b55b3f3
+---
+> BUDR4+partition-doors  sheet non-sprayed  74b1757f
+1186,1187c1186,1187
+< BUDR4+partition-on-shelf  file  01-BACK.dxf  213eb844
+< BUDR4+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+---
+> BUDR4+partition-on-shelf  file  01-BACK.dxf  135d6cc0
+> BUDR4+partition-on-shelf  file  01-BOTTOM.dxf  ababcbc4
+1214,1216c1214,1216
+< BUDR4+partition-on-shelf  file  01-TOP.dxf  900b2a9f
+< BUDR4+partition-on-shelf  file  01-VPART-1.dxf  5d572131
+< BUDR4+partition-on-shelf  sheet all  c40b48c3
+---
+> BUDR4+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> BUDR4+partition-on-shelf  file  01-VPART-1.dxf  645ba1ff
+> BUDR4+partition-on-shelf  sheet all  a15902e8
+1218c1218
+< BUDR4+partition-on-shelf  sheet non-sprayed  9d28017f
+---
+> BUDR4+partition-on-shelf  sheet non-sprayed  401d358d
+1438,1439c1438,1439
+< BUDTALL+partition  file  01-BACK.dxf  38f8e174
+< BUDTALL+partition  file  01-BOTTOM.dxf  ac7003da
+---
+> BUDTALL+partition  file  01-BACK.dxf  445bb09b
+> BUDTALL+partition  file  01-BOTTOM.dxf  ababcbc4
+1443,1445c1443,1445
+< BUDTALL+partition  file  01-TOP.dxf  900b2a9f
+< BUDTALL+partition  file  01-VPART-1.dxf  3993fdf6
+< BUDTALL+partition  sheet all  49cb90b2
+---
+> BUDTALL+partition  file  01-TOP.dxf  878ff9ad
+> BUDTALL+partition  file  01-VPART-1.dxf  a23dd258
+> BUDTALL+partition  sheet all  8d185030
+1447c1447
+< BUDTALL+partition  sheet non-sprayed  1594e742
+---
+> BUDTALL+partition  sheet non-sprayed  7988b588
+1452,1453c1452,1453
+< BUDTALL+partition-doors  file  01-BACK.dxf  9db31e7f
+< BUDTALL+partition-doors  file  01-BOTTOM.dxf  5591fbe1
+---
+> BUDTALL+partition-doors  file  01-BACK.dxf  8a8d56c7
+> BUDTALL+partition-doors  file  01-BOTTOM.dxf  db6b145e
+1456,1459c1456,1459
+< BUDTALL+partition-doors  file  01-TOP.dxf  c70cd306
+< BUDTALL+partition-doors  file  01-VPART-1.dxf  30abc8a0
+< BUDTALL+partition-doors  file  01-VPART-2.dxf  da8a4a9f
+< BUDTALL+partition-doors  sheet all  cae72b58
+---
+> BUDTALL+partition-doors  file  01-TOP.dxf  059c9f25
+> BUDTALL+partition-doors  file  01-VPART-1.dxf  717cebd0
+> BUDTALL+partition-doors  file  01-VPART-2.dxf  54fef8b5
+> BUDTALL+partition-doors  sheet all  7e1ea6cc
+1461c1461
+< BUDTALL+partition-doors  sheet non-sprayed  be7fbd15
+---
+> BUDTALL+partition-doors  sheet non-sprayed  e5534add
+1463,1464c1463,1464
+< BUDTALL+partition-on-shelf  file  01-BACK.dxf  38f8e174
+< BUDTALL+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+---
+> BUDTALL+partition-on-shelf  file  01-BACK.dxf  f77e03fb
+> BUDTALL+partition-on-shelf  file  01-BOTTOM.dxf  ababcbc4
+1468c1468
+< BUDTALL+partition-on-shelf  file  01-SHELF-1.dxf  aad11821
+---
+> BUDTALL+partition-on-shelf  file  01-SHELF-1.dxf  135f63c3
+1470,1471c1470,1471
+< BUDTALL+partition-on-shelf  file  01-VPART-1.dxf  d183081a
+< BUDTALL+partition-on-shelf  sheet all  a2d7b871
+---
+> BUDTALL+partition-on-shelf  file  01-VPART-1.dxf  26aa761f
+> BUDTALL+partition-on-shelf  sheet all  e4fcb996
+1473c1473
+< BUDTALL+partition-on-shelf  sheet non-sprayed  6e9a67c5
+---
+> BUDTALL+partition-on-shelf  sheet non-sprayed  516ce15f
+1574,1576c1574,1576
+< DW_PANEL+partition  file  01-TOP.dxf  279fc995
+< DW_PANEL+partition  file  01-VPART-1.dxf  83011796
+< DW_PANEL+partition  sheet all  7e86a68a
+---
+> DW_PANEL+partition  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+partition  file  01-VPART-1.dxf  645ba1ff
+> DW_PANEL+partition  sheet all  25141362
+1578c1578
+< DW_PANEL+partition  sheet non-sprayed  0f7a5415
+---
+> DW_PANEL+partition  sheet non-sprayed  5529b638
+1581,1584c1581,1584
+< DW_PANEL+partition-doors  file  01-TOP.dxf  fa817e8a
+< DW_PANEL+partition-doors  file  01-VPART-1.dxf  83011796
+< DW_PANEL+partition-doors  file  01-VPART-2.dxf  9a1a5e2d
+< DW_PANEL+partition-doors  sheet all  88c39e7a
+---
+> DW_PANEL+partition-doors  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+partition-doors  file  01-VPART-1.dxf  645ba1ff
+> DW_PANEL+partition-doors  file  01-VPART-2.dxf  86450abc
+> DW_PANEL+partition-doors  sheet all  8fdc3645
+1586c1586
+< DW_PANEL+partition-doors  sheet non-sprayed  ac33a583
+---
+> DW_PANEL+partition-doors  sheet non-sprayed  e20c2bd4
+1589,1591c1589,1591
+< DW_PANEL+partition-on-shelf  file  01-TOP.dxf  279fc995
+< DW_PANEL+partition-on-shelf  file  01-VPART-1.dxf  83011796
+< DW_PANEL+partition-on-shelf  sheet all  7e86a68a
+---
+> DW_PANEL+partition-on-shelf  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+partition-on-shelf  file  01-VPART-1.dxf  645ba1ff
+> DW_PANEL+partition-on-shelf  sheet all  25141362
+1593c1593
+< DW_PANEL+partition-on-shelf  sheet non-sprayed  0f7a5415
+---
+> DW_PANEL+partition-on-shelf  sheet non-sprayed  5529b638
+1731,1732c1731,1732
+< FRIDGE+partition  file  01-BACK.dxf  eab5d68e
+< FRIDGE+partition  file  01-BOTTOM.dxf  ac7003da
+---
+> FRIDGE+partition  file  01-BACK.dxf  99db6016
+> FRIDGE+partition  file  01-BOTTOM.dxf  ababcbc4
+1740,1742c1740,1742
+< FRIDGE+partition  file  01-TOP.dxf  900b2a9f
+< FRIDGE+partition  file  01-VPART-1.dxf  3993fdf6
+< FRIDGE+partition  sheet all  0f7f5ce0
+---
+> FRIDGE+partition  file  01-TOP.dxf  878ff9ad
+> FRIDGE+partition  file  01-VPART-1.dxf  a23dd258
+> FRIDGE+partition  sheet all  43f87db8
+1744c1744
+< FRIDGE+partition  sheet non-sprayed  1f2a88ce
+---
+> FRIDGE+partition  sheet non-sprayed  fa7fe251
+1749,1750c1749,1750
+< FRIDGE+partition-doors  file  01-BACK.dxf  4c87a812
+< FRIDGE+partition-doors  file  01-BOTTOM.dxf  5591fbe1
+---
+> FRIDGE+partition-doors  file  01-BACK.dxf  5341bb2e
+> FRIDGE+partition-doors  file  01-BOTTOM.dxf  db6b145e
+1757,1760c1757,1760
+< FRIDGE+partition-doors  file  01-TOP.dxf  c70cd306
+< FRIDGE+partition-doors  file  01-VPART-1.dxf  30abc8a0
+< FRIDGE+partition-doors  file  01-VPART-2.dxf  da8a4a9f
+< FRIDGE+partition-doors  sheet all  3853d36b
+---
+> FRIDGE+partition-doors  file  01-TOP.dxf  059c9f25
+> FRIDGE+partition-doors  file  01-VPART-1.dxf  717cebd0
+> FRIDGE+partition-doors  file  01-VPART-2.dxf  54fef8b5
+> FRIDGE+partition-doors  sheet all  cdbf1f6c
+1762c1762
+< FRIDGE+partition-doors  sheet non-sprayed  f245c165
+---
+> FRIDGE+partition-doors  sheet non-sprayed  8163e93d
+1764,1765c1764,1765
+< FRIDGE+partition-on-shelf  file  01-BACK.dxf  eab5d68e
+< FRIDGE+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+---
+> FRIDGE+partition-on-shelf  file  01-BACK.dxf  99db6016
+> FRIDGE+partition-on-shelf  file  01-BOTTOM.dxf  ababcbc4
+1773,1775c1773,1775
+< FRIDGE+partition-on-shelf  file  01-TOP.dxf  900b2a9f
+< FRIDGE+partition-on-shelf  file  01-VPART-1.dxf  3993fdf6
+< FRIDGE+partition-on-shelf  sheet all  0f7f5ce0
+---
+> FRIDGE+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+> FRIDGE+partition-on-shelf  file  01-VPART-1.dxf  a23dd258
+> FRIDGE+partition-on-shelf  sheet all  43f87db8
+1777c1777
+< FRIDGE+partition-on-shelf  sheet non-sprayed  1f2a88ce
+---
+> FRIDGE+partition-on-shelf  sheet non-sprayed  fa7fe251
+1921,1922c1921,1922
+< LOW_CABINET+partition  file  01-BACK.dxf  d6a83465
+< LOW_CABINET+partition  file  01-BOTTOM.dxf  5705d738
+---
+> LOW_CABINET+partition  file  01-BACK.dxf  5a9e0851
+> LOW_CABINET+partition  file  01-BOTTOM.dxf  8bd353e0
+1926,1928c1926,1928
+< LOW_CABINET+partition  file  01-TOP.dxf  dd076d33
+< LOW_CABINET+partition  file  01-VPART-1.dxf  7fe8c49c
+< LOW_CABINET+partition  sheet all  e98341b4
+---
+> LOW_CABINET+partition  file  01-TOP.dxf  0316dd0b
+> LOW_CABINET+partition  file  01-VPART-1.dxf  47d2e388
+> LOW_CABINET+partition  sheet all  7bc82e62
+1930c1930
+< LOW_CABINET+partition  sheet non-sprayed  6922ace6
+---
+> LOW_CABINET+partition  sheet non-sprayed  5320f890
+1935,1936c1935,1936
+< LOW_CABINET+partition-doors  file  01-BACK.dxf  e95ea19a
+< LOW_CABINET+partition-doors  file  01-BOTTOM.dxf  607963df
+---
+> LOW_CABINET+partition-doors  file  01-BACK.dxf  c102e6e6
+> LOW_CABINET+partition-doors  file  01-BOTTOM.dxf  f25e10e4
+1939,1942c1939,1942
+< LOW_CABINET+partition-doors  file  01-TOP.dxf  404edb4e
+< LOW_CABINET+partition-doors  file  01-VPART-1.dxf  606b1b39
+< LOW_CABINET+partition-doors  file  01-VPART-2.dxf  81c859eb
+< LOW_CABINET+partition-doors  sheet all  70778cb1
+---
+> LOW_CABINET+partition-doors  file  01-TOP.dxf  d5fc72cd
+> LOW_CABINET+partition-doors  file  01-VPART-1.dxf  d6f28d1f
+> LOW_CABINET+partition-doors  file  01-VPART-2.dxf  a9ef37a7
+> LOW_CABINET+partition-doors  sheet all  8a290da1
+1944c1944
+< LOW_CABINET+partition-doors  sheet non-sprayed  4922163e
+---
+> LOW_CABINET+partition-doors  sheet non-sprayed  1e836afe
+1946,1947c1946,1947
+< LOW_CABINET+partition-on-shelf  file  01-BACK.dxf  d6a83465
+< LOW_CABINET+partition-on-shelf  file  01-BOTTOM.dxf  5705d738
+---
+> LOW_CABINET+partition-on-shelf  file  01-BACK.dxf  bfc6e5e6
+> LOW_CABINET+partition-on-shelf  file  01-BOTTOM.dxf  8bd353e0
+1951c1951
+< LOW_CABINET+partition-on-shelf  file  01-SHELF-1.dxf  07a86572
+---
+> LOW_CABINET+partition-on-shelf  file  01-SHELF-1.dxf  e5a1cea5
+1953,1954c1953,1954
+< LOW_CABINET+partition-on-shelf  file  01-VPART-1.dxf  2d5673ea
+< LOW_CABINET+partition-on-shelf  sheet all  ea40b94f
+---
+> LOW_CABINET+partition-on-shelf  file  01-VPART-1.dxf  a4206f74
+> LOW_CABINET+partition-on-shelf  sheet all  7e2ca97c
+1956c1956
+< LOW_CABINET+partition-on-shelf  sheet non-sprayed  3149846f
+---
+> LOW_CABINET+partition-on-shelf  sheet non-sprayed  744c618c
+2133,2134c2133,2134
+< OVEN_BASE+partition  file  01-BACK.dxf  0af333d5
+< OVEN_BASE+partition  file  01-BOTTOM.dxf  ac7003da
+---
+> OVEN_BASE+partition  file  01-BACK.dxf  38cb2f24
+> OVEN_BASE+partition  file  01-BOTTOM.dxf  ababcbc4
+2146,2147c2146,2147
+< OVEN_BASE+partition  file  01-VPART-1.dxf  3ea179f2
+< OVEN_BASE+partition  sheet all  7a5f6766
+---
+> OVEN_BASE+partition  file  01-VPART-1.dxf  645ba1ff
+> OVEN_BASE+partition  sheet all  707d19df
+2149c2149
+< OVEN_BASE+partition  sheet non-sprayed  ec6e4c2c
+---
+> OVEN_BASE+partition  sheet non-sprayed  fbeb0d09
+2151,2152c2151,2152
+< OVEN_BASE+partition-doors  file  01-BACK.dxf  28048701
+< OVEN_BASE+partition-doors  file  01-BOTTOM.dxf  5591fbe1
+---
+> OVEN_BASE+partition-doors  file  01-BACK.dxf  f770e25c
+> OVEN_BASE+partition-doors  file  01-BOTTOM.dxf  db6b145e
+2164,2166c2164,2166
+< OVEN_BASE+partition-doors  file  01-VPART-1.dxf  3ea179f2
+< OVEN_BASE+partition-doors  file  01-VPART-2.dxf  7b403e29
+< OVEN_BASE+partition-doors  sheet all  ef9c79cd
+---
+> OVEN_BASE+partition-doors  file  01-VPART-1.dxf  645ba1ff
+> OVEN_BASE+partition-doors  file  01-VPART-2.dxf  86450abc
+> OVEN_BASE+partition-doors  sheet all  20db8a91
+2168c2168
+< OVEN_BASE+partition-doors  sheet non-sprayed  8f85e94b
+---
+> OVEN_BASE+partition-doors  sheet non-sprayed  c8f31361
+2170,2171c2170,2171
+< OVEN_BASE+partition-on-shelf  file  01-BACK.dxf  0af333d5
+< OVEN_BASE+partition-on-shelf  file  01-BOTTOM.dxf  ac7003da
+---
+> OVEN_BASE+partition-on-shelf  file  01-BACK.dxf  38cb2f24
+> OVEN_BASE+partition-on-shelf  file  01-BOTTOM.dxf  ababcbc4
+2183,2184c2183,2184
+< OVEN_BASE+partition-on-shelf  file  01-VPART-1.dxf  3ea179f2
+< OVEN_BASE+partition-on-shelf  sheet all  7a5f6766
+---
+> OVEN_BASE+partition-on-shelf  file  01-VPART-1.dxf  645ba1ff
+> OVEN_BASE+partition-on-shelf  sheet all  707d19df
+2186c2186
+< OVEN_BASE+partition-on-shelf  sheet non-sprayed  ec6e4c2c
+---
+> OVEN_BASE+partition-on-shelf  sheet non-sprayed  fbeb0d09
+2349,2350c2349,2350
+< SINK+partition  file  01-BACK.dxf  0a357c87
+< SINK+partition  file  01-BOTTOM.dxf  f9b0349b
+---
+> SINK+partition  file  01-BACK.dxf  93e0ebd6
+> SINK+partition  file  01-BOTTOM.dxf  ff4a3bbf
+2356,2357c2356,2357
+< SINK+partition  file  01-VPART-1.dxf  3ea179f2
+< SINK+partition  sheet all  1714dc85
+---
+> SINK+partition  file  01-VPART-1.dxf  645ba1ff
+> SINK+partition  sheet all  f80987ab
+2359c2359
+< SINK+partition  sheet non-sprayed  ce56ec6f
+---
+> SINK+partition  sheet non-sprayed  3325930c
+2364,2365c2364,2365
+< SINK+partition-doors  file  01-BACK.dxf  073dab16
+< SINK+partition-doors  file  01-BOTTOM.dxf  b463a670
+---
+> SINK+partition-doors  file  01-BACK.dxf  9e7b0fa8
+> SINK+partition-doors  file  01-BOTTOM.dxf  f8f4539d
+2370,2372c2370,2372
+< SINK+partition-doors  file  01-VPART-1.dxf  2e43187d
+< SINK+partition-doors  file  01-VPART-2.dxf  7b403e29
+< SINK+partition-doors  sheet all  95e6dc9b
+---
+> SINK+partition-doors  file  01-VPART-1.dxf  b706a024
+> SINK+partition-doors  file  01-VPART-2.dxf  86450abc
+> SINK+partition-doors  sheet all  11af2b71
+2374c2374
+< SINK+partition-doors  sheet non-sprayed  7208a088
+---
+> SINK+partition-doors  sheet non-sprayed  db9fb588
+2376,2377c2376,2377
+< SINK+partition-on-shelf  file  01-BACK.dxf  0a357c87
+< SINK+partition-on-shelf  file  01-BOTTOM.dxf  f9b0349b
+---
+> SINK+partition-on-shelf  file  01-BACK.dxf  2204b692
+> SINK+partition-on-shelf  file  01-BOTTOM.dxf  ff4a3bbf
+2383,2385c2383,2385
+< SINK+partition-on-shelf  file  01-SHELF-1.dxf  252d17f0
+< SINK+partition-on-shelf  file  01-VPART-1.dxf  52182fff
+< SINK+partition-on-shelf  sheet all  9c82abf5
+---
+> SINK+partition-on-shelf  file  01-SHELF-1.dxf  d7140efd
+> SINK+partition-on-shelf  file  01-VPART-1.dxf  6e6aab52
+> SINK+partition-on-shelf  sheet all  bb2dbd70
+2387c2387
+< SINK+partition-on-shelf  sheet non-sprayed  de50e2e8
+---
+> SINK+partition-on-shelf  sheet non-sprayed  e6932171
+2521,2522c2521,2522
+< WARDROBE+partition  file  01-BACK.dxf  546cead6
+< WARDROBE+partition  file  01-BOTTOM.dxf  5705d738
+---
+> WARDROBE+partition  file  01-BACK.dxf  246d5a58
+> WARDROBE+partition  file  01-BOTTOM.dxf  8bd353e0
+2526,2528c2526,2528
+< WARDROBE+partition  file  01-TOP.dxf  dd076d33
+< WARDROBE+partition  file  01-VPART-1.dxf  17f358f0
+< WARDROBE+partition  sheet all  92e8acae
+---
+> WARDROBE+partition  file  01-TOP.dxf  0316dd0b
+> WARDROBE+partition  file  01-VPART-1.dxf  990937e8
+> WARDROBE+partition  sheet all  65fc9588
+2530c2530
+< WARDROBE+partition  sheet non-sprayed  ad171340
+---
+> WARDROBE+partition  sheet non-sprayed  e374cb04
+2535,2536c2535,2536
+< WARDROBE+partition-doors  file  01-BACK.dxf  1d050bed
+< WARDROBE+partition-doors  file  01-BOTTOM.dxf  607963df
+---
+> WARDROBE+partition-doors  file  01-BACK.dxf  68dd80e1
+> WARDROBE+partition-doors  file  01-BOTTOM.dxf  f25e10e4
+2539,2542c2539,2542
+< WARDROBE+partition-doors  file  01-TOP.dxf  404edb4e
+< WARDROBE+partition-doors  file  01-VPART-1.dxf  e2328d81
+< WARDROBE+partition-doors  file  01-VPART-2.dxf  40f1aca1
+< WARDROBE+partition-doors  sheet all  1385b707
+---
+> WARDROBE+partition-doors  file  01-TOP.dxf  d5fc72cd
+> WARDROBE+partition-doors  file  01-VPART-1.dxf  57fec293
+> WARDROBE+partition-doors  file  01-VPART-2.dxf  c5c198b9
+> WARDROBE+partition-doors  sheet all  6aeb79e5
+2544c2544
+< WARDROBE+partition-doors  sheet non-sprayed  537d0e4e
+---
+> WARDROBE+partition-doors  sheet non-sprayed  ee6975ac
+2546,2547c2546,2547
+< WARDROBE+partition-on-shelf  file  01-BACK.dxf  546cead6
+< WARDROBE+partition-on-shelf  file  01-BOTTOM.dxf  5705d738
+---
+> WARDROBE+partition-on-shelf  file  01-BACK.dxf  c015c71b
+> WARDROBE+partition-on-shelf  file  01-BOTTOM.dxf  8bd353e0
+2551c2551
+< WARDROBE+partition-on-shelf  file  01-SHELF-1.dxf  07a86572
+---
+> WARDROBE+partition-on-shelf  file  01-SHELF-1.dxf  e5a1cea5
+2553,2554c2553,2554
+< WARDROBE+partition-on-shelf  file  01-VPART-1.dxf  5aa6a235
+< WARDROBE+partition-on-shelf  sheet all  c3879bce
+---
+> WARDROBE+partition-on-shelf  file  01-VPART-1.dxf  24e4685d
+> WARDROBE+partition-on-shelf  sheet all  af0d9b8c
+2556c2556
+< WARDROBE+partition-on-shelf  sheet non-sprayed  cd5bd4ba
+---
+> WARDROBE+partition-on-shelf  sheet non-sprayed  a2b55843
+2688,2689c2688,2689
+< WUD+partition  file  01-BACK.dxf  8fcfc43b
+< WUD+partition  file  01-BOTTOM.dxf  7dd173fa
+---
+> WUD+partition  file  01-BACK.dxf  eed4c86a
+> WUD+partition  file  01-BOTTOM.dxf  0d68b01a
+2693,2695c2693,2695
+< WUD+partition  file  01-TOP.dxf  b34cb163
+< WUD+partition  file  01-VPART-1.dxf  f9fe55e8
+< WUD+partition  sheet all  b1a1b198
+---
+> WUD+partition  file  01-TOP.dxf  0a320203
+> WUD+partition  file  01-VPART-1.dxf  48e10c4c
+> WUD+partition  sheet all  cbe03e61
+2697c2697
+< WUD+partition  sheet non-sprayed  20bc3e9b
+---
+> WUD+partition  sheet non-sprayed  830624bd
+2702,2703c2702,2703
+< WUD+partition-doors  file  01-BACK.dxf  fc74665e
+< WUD+partition-doors  file  01-BOTTOM.dxf  db076473
+---
+> WUD+partition-doors  file  01-BACK.dxf  34491cdc
+> WUD+partition-doors  file  01-BOTTOM.dxf  3e83dc00
+2706,2709c2706,2709
+< WUD+partition-doors  file  01-TOP.dxf  4e838350
+< WUD+partition-doors  file  01-VPART-1.dxf  8465bce8
+< WUD+partition-doors  file  01-VPART-2.dxf  33bde4e7
+< WUD+partition-doors  sheet all  9902bfb6
+---
+> WUD+partition-doors  file  01-TOP.dxf  970c1227
+> WUD+partition-doors  file  01-VPART-1.dxf  d9f953da
+> WUD+partition-doors  file  01-VPART-2.dxf  9cc2322b
+> WUD+partition-doors  sheet all  478e8ba8
+2711c2711
+< WUD+partition-doors  sheet non-sprayed  d0717680
+---
+> WUD+partition-doors  sheet non-sprayed  346007b3
+2713,2714c2713,2714
+< WUD+partition-on-shelf  file  01-BACK.dxf  8fcfc43b
+< WUD+partition-on-shelf  file  01-BOTTOM.dxf  7dd173fa
+---
+> WUD+partition-on-shelf  file  01-BACK.dxf  3006b453
+> WUD+partition-on-shelf  file  01-BOTTOM.dxf  0d68b01a
+2718c2718
+< WUD+partition-on-shelf  file  01-SHELF-1.dxf  46b8c8d2
+---
+> WUD+partition-on-shelf  file  01-SHELF-1.dxf  a005e6f5
+2720,2721c2720,2721
+< WUD+partition-on-shelf  file  01-VPART-1.dxf  406970f5
+< WUD+partition-on-shelf  sheet all  4c1b42a6
+---
+> WUD+partition-on-shelf  file  01-VPART-1.dxf  ece11f54
+> WUD+partition-on-shelf  sheet all  0bae53b7
+2723c2723
+< WUD+partition-on-shelf  sheet non-sprayed  d5a46a59
+---
+> WUD+partition-on-shelf  sheet non-sprayed  6a4f5d8d

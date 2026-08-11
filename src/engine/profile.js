@@ -230,6 +230,64 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── HOVER DIMENSIONS (turn 23, CLAUDE.md F8) ───────────────────────────
+  //
+  // Owner: the corner caption is not what he asked for. He wants thin, small,
+  // beautiful BLUE dimension arrows that appear on hover and vanish on leave —
+  // like a drawing.
+  //
+  // ONE STYLE (F8.3), here, consumed by BOTH surfaces: the CNC part detail's
+  // SVG and the 3-D scene's meshes. The geometry that turns it into a drawing
+  // is `engine/dimensionArrows.js`, and neither surface invents an arrowhead.
+  //
+  // Everything is in MILLIMETRES, in the drawing's own frame, so a dimension is
+  // the same weight on a 300 mm shelf as on a 2400 mm side — the same rule
+  // `dimensions` below has followed since turn 5.
+  hoverDimensions: {
+    // Thin blue. Deliberately NOT the drawing-office navy or the red of the
+    // permanent dimensions (`dimensions.colours`): this is a MOMENT — it
+    // appears under the pointer and goes — and it has to read as something the
+    // hand is doing rather than as something the drawing says.
+    colour: '#3B82F6',
+    strokeMm: 0.8,
+    arrowMm: 6,                // the open head's stroke length
+    arrowAngle: 20,            // …and how far it opens, in degrees
+    textMm: 11,
+    offsetMm: 14,              // how far a measurement stands clear of the line
+    extensionMm: 4,            // how far the extension line runs past it
+    gapMm: 2,                  // …and the gap it leaves at the feature itself
+    minSpanMm: 0.5,            // under this there is nothing to dimension
+  },
+
+  // ─── THE BACK HOLDS EVERY PARTITION (turn 23, CLAUDE.md F6) ─────────────
+  //
+  // The owner's law, and it is the LISP's own pattern densified rather than a
+  // new idea: the drawer-panel partitions already screw through the back
+  // (`drawWardrobeDPHolesBACK`, KIT_WARDROBE_FULL L389-400 — `SCREWS_3MM`, one
+  // hole 50 mm above the partition's bottom and one 50 mm below its top). The
+  // INTERACTIVE vertical partition gets the same joint, with the run filled in
+  // so a 2.4 m divider is not held by two screws.
+  //
+  //   THE 50 IS THE LISP'S.   `(+ y0 dpBottomY 50.0)` / `(+ y0 dpTopY -50.0)`.
+  //   THE 400 IS THE OWNER'S. "the pitch never exceeds 400."
+  //
+  // Read together they are one derivation and it is worth writing out, because
+  // it is the sort of rule that gets remembered as "about every 400":
+  //
+  //   a 2400 partition ⇒ span 2400 − 2×50 = 2300
+  //                    ⇒ gaps = ceil(2300 / 400) = 6
+  //                    ⇒ SEVEN screws at 2300 / 6 = 383.3 mm
+  //
+  // The ends are ALWAYS at 50 and the intermediates are spread EVENLY between
+  // them: a run of 383s with a short last gap is what you get from marching a
+  // tape from one end, and it is not what a joiner sets out.
+  partitionBack: {
+    fromEnd: 50,               // the LISP's own number, both ends
+    maxPitch: 400,             // the owner's cap on what is left in between
+    screwDiameter: 3,          // the ⌀3 the whole carcass is screwed with
+    layer: 'SCREWS_3MM',       // the LISP's own layer — joined, never duplicated
+  },
+
   // ─── Partition fixing: the biscuit set (turn 13, CLAUDE.md F8 / #59) ─────
   //
   // The owner's workshop truth, given as the reference pattern for a butt
@@ -238,6 +296,18 @@ export const DEFAULT_CABINET_PROFILE = {
   // 700 mm wide and three above it. The arithmetic is engine/biscuits.js; every
   // number it uses is here, which is what lets a workshop with a different
   // cutter or a different habit change the pattern without touching code.
+  //
+  // ─── TURN 23 (CLAUDE.md F5): IT IS APPLIED TO NOTHING ───────────────────
+  // Turn 13 applied this set to the vertical partition. The LISP does not:
+  // `drawWDR_PARTITION_PANEL` (KIT_WARDROBE_FULL L254-257) draws an OUTLINE and
+  // a LABEL and nothing else, and no kit in `reference/lisp/` names a
+  // `BISCUIT_4MM` layer at all. So the partition lost the borrowed set this
+  // turn and gained `partitionBack` above, which is the LISP's own joint.
+  //
+  // The BLOCK STAYS, and is not dead weight: it is the workshop's recorded
+  // standard for a butt joint (BLOCKERS #59, answered by the owner in turn 13),
+  // the layer name is part of his VCarve tool mapping, and `engine/biscuits.js`
+  // is still tested against his four widths. What it has today is no consumer.
   biscuits: {
     markLength: 70,            // the biscuit mark itself
     markTool: 4,               // …cut with the owner's dedicated 4 mm in-and-out program
@@ -1898,11 +1968,44 @@ export const DEFAULT_CABINET_PROFILE = {
         // "nickel / onyx — drives which GLB is drawn and which ARTICLE the BOM
         // lists. Nothing else." Two finishes of the same hinge are the same
         // hole in the same place.
+        //
+        // ─── TURN 23 (CLAUDE.md F4.1): …AND WHAT IT LOOKS LIKE ────────────
+        // Owner: "the model renders WHITE — raw file material." A converted
+        // GLB carries whatever material the conversion wrote, so the finish
+        // reached the BOM and the file name and stopped there. `material` is
+        // the three numbers the view paints the clone with (3d/hardwareFinish
+        // .js), and it is here for the same reason every other appearance
+        // number is: it is a workshop answer, and the owner tunes it in one
+        // block rather than in the renderer. Sane metallic defaults — a
+        // bright plate and a dark one — not a measurement of anybody's
+        // sample.
         finishes: [
-          { id: 'nickel', label: 'Nickel', hint: 'The bright plated finish — the shop’s default.' },
-          { id: 'onyx', label: 'Onyx', hint: 'The dark finish. Same hinge, same drilling, black.' },
+          {
+            id: 'nickel',
+            label: 'Nickel',
+            hint: 'The bright plated finish — the shop’s default.',
+            material: { colour: '#c9ccd1', metalness: 0.95, roughness: 0.28 },
+          },
+          {
+            id: 'onyx',
+            label: 'Onyx',
+            hint: 'The dark finish. Same hinge, same drilling, black.',
+            material: { colour: '#2a2b2e', metalness: 0.9, roughness: 0.38 },
+          },
         ],
         defaultFinish: 'nickel',
+
+        // ─── THE PLASTIC STAYS PLASTIC (F4.2) ──────────────────────────────
+        // "Plastic sub-meshes (the CLIP lever, caps) keep a plastic look:
+        // override by material-name ALLOWLIST, not blanket." A chrome release
+        // lever is a hinge that does not exist, which is worse than a white
+        // one. The needles are matched as case-insensitive SUBSTRINGS of the
+        // material name, because the same lever comes out of one converter as
+        // `plastic_black` and another as `POM.001` — the mesh table in
+        // `verify/t23/hinge-meshes.md` is where a workshop reads the names its
+        // own files use, and this list is where it adds them.
+        plasticMaterials: ['plastic', 'pom', 'nylon', 'rubber', 'lever', 'cap'],
+        plastic: { colour: '#1c1c1e', metalness: 0.05, roughness: 0.55 },
 
         // ─── THE MOUNTING PLATE (F1.5) ───
         // Knock-in ⌀5 is what the LISP drills and what every project cut so far
@@ -2023,6 +2126,20 @@ export const DEFAULT_CABINET_PROFILE = {
           },
         ],
         defaultVariant: 'T',
+
+        // ─── TURN 23 (CLAUDE.md F4.3): THE RUNNER WEARS A FINISH TOO ───────
+        // "Runners get the SAME treatment through the same helper — one
+        // override function, two families." Blum sells the MOVENTO in orion
+        // grey and silk white, and this repository does not have either
+        // number: inventing a RAL is precisely what CLAUDE.md forbids here.
+        // So the list is EMPTY and there is ONE honest neutral metal, which
+        // `3d/hardwareFinish.js` falls through to. The day the owner supplies
+        // the two, they are two entries with a `material` each, exactly like
+        // the hinge's nickel and onyx above — and nothing else changes.
+        finishes: [],
+        finish: { colour: '#b9bcc0', metalness: 0.9, roughness: 0.35 },
+        plasticMaterials: ['plastic', 'pom', 'nylon', 'rubber', 'cap'],
+        plastic: { colour: '#1c1c1e', metalness: 0.05, roughness: 0.55 },
 
         // ─── WHERE THE MODEL'S OWN ORIGIN IS ──────────────────────────────
         // A downloaded model has an origin somebody else chose, and the LISP
@@ -2552,6 +2669,10 @@ export function migrateCabinetProfile(profile) {
     },
     shelfHoles: { ...D.shelfHoles, ...profile.shelfHoles },
     puzzle: { ...D.puzzle, ...profile.puzzle, layers: { ...D.puzzle.layers, ...profile.puzzle?.layers } },
+    // Turn 23 (F6 / F8): stored profiles made before these blocks existed come
+    // back with them, like every other block here.
+    partitionBack: { ...D.partitionBack, ...profile.partitionBack },
+    hoverDimensions: { ...D.hoverDimensions, ...profile.hoverDimensions },
     // Turn 13 (F8): a stored profile made before the biscuit pattern existed
     // must come back with it, exactly as every other block here does.
     biscuits: { ...D.biscuits, ...profile.biscuits },
@@ -2736,6 +2857,10 @@ export function migrateCabinetProfile(profile) {
           ...bucketLocation(D.hardware.hinge.cliptop),
           systems: mergeById(D.hardware.hinge.cliptop.systems, profile.hardware?.hinge?.cliptop?.systems),
           finishes: mergeById(D.hardware.hinge.cliptop.finishes, profile.hardware?.hinge?.cliptop?.finishes),
+          // Turn 23 (CLAUDE.md F4.2): the plastic answer and the names it is
+          // applied to. Merged rather than spread so a turn-19 profile — whose
+          // finishes carry no `material` at all — comes back able to paint.
+          plastic: { ...D.hardware.hinge.cliptop.plastic, ...profile.hardware?.hinge?.cliptop?.plastic },
           // The PLATES are not merged by id from a stored profile: whether the
           // ⌀3 plate may be chosen is a question about what this repository
           // knows how to drill (F1.5), not a workshop preference, and a saved
@@ -2765,6 +2890,13 @@ export function migrateCabinetProfile(profile) {
           // from the app rather than from the file.
           ...bucketLocation(D.hardware.runner.movento),
           variants: mergeById(D.hardware.runner.movento.variants, profile.hardware?.runner?.movento?.variants),
+          // Turn 23 (CLAUDE.md F4.3): the finish list and the single neutral
+          // metal behind it, merged like every other nested block — a profile
+          // saved before this turn comes back with them rather than with a
+          // runner that has no finish at all.
+          finishes: mergeById(D.hardware.runner.movento.finishes, profile.hardware?.runner?.movento?.finishes),
+          finish: { ...D.hardware.runner.movento.finish, ...profile.hardware?.runner?.movento?.finish },
+          plastic: { ...D.hardware.runner.movento.plastic, ...profile.hardware?.runner?.movento?.plastic },
           modelOrigin: { ...D.hardware.runner.movento.modelOrigin, ...profile.hardware?.runner?.movento?.modelOrigin },
           rod: { ...D.hardware.runner.movento.rod, ...profile.hardware?.runner?.movento?.rod },
         },

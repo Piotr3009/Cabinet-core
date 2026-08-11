@@ -70,10 +70,17 @@ import {
  *   runnerVariants  { [drawer]: 'T' | 'S' } — resolved project → unit → drawer
  *   storageBase     where the models are served from, '' in mock mode
  */
+// ─── TURN 23 (CLAUDE.md F2.1): THE MOUNTING IS SPLIT ───────────────────────
+//
+// `onEditHinge` is no longer taken here. The gesture rides the hinge's ARM, and
+// the arm went to the DOOR with the rest of the body — so `<DoorHinges>` takes
+// it where the door is rendered (3d/UnitView.jsx, and the cabinet editor). What
+// is left in this component's hinge branch is the PLATE, which is the only half
+// screwed to the carcass.
 export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
-  hingeSpecs = null, onEditHinge = null, surface = 'room', scope = '',
+  hingeSpecs = null, surface = 'room', scope = '',
 }) {
   const colours = profile.appearance.hardware;
   // ─── TURN 21 (CLAUDE.md R4 / F2.2 / F6.3) ───
@@ -107,7 +114,6 @@ export default function Hardware({
           colour={xray ? colours.bracket : (colours.hinge || colours.bracket)}
           specs={hingeSpecs}
           storageBase={storageBase}
-          onEditHinge={onEditHinge}
           surface={surface}
           scope={scope}
         />
@@ -206,114 +212,136 @@ const put = (matrix, position, quaternion = null, scale = null) => matrix.compos
 // ─── Hinges ─────────────────────────────────────────────────────────────────
 
 /**
- * The CARCASS half: the arm that leaves the cup and the plate it is screwed to.
+ * WHICH FILE these hinges want, and the clone of it where one has arrived.
  *
- * Two instanced meshes — an InstancedMesh carries one geometry, and two of them
- * is two draw calls for twelve hinges rather than twenty-four. Neither piece
- * moves when a door opens: they are screwed to the side panel.
+ * ─── TURN 23 (CLAUDE.md F2.1): ONE RESOLUTION, TWO PARENTS ─────────────────
  *
- * ─── TURN 19 (CLAUDE.md F1.6): THE MANUFACTURER'S OWN GEOMETRY ──────────────
+ * Until this turn both halves of a hinge were resolved and drawn in one place,
+ * on the carcass — which is why the owner's model "hangs closed on the carcass
+ * while the door stands open". The two halves are two components now, under two
+ * different parents, and this hook is what stops that being two copies of the
+ * loading, the caching, the mirror rule and the degradation story.
  *
- * The runners' bargain, on the hinges. The owner has the whole CLIP top world
- * as GLB and a Blum hinge drawn from two boxes is a Blum hinge nobody
- * recognises — so where the model has ARRIVED it is drawn, one clone per
- * position, and where it has not (the file still on its way, a bucket that is
- * down, mock mode, a file that measures far too big) the row falls through to
- * the INSTANCED GREY BODY this function has drawn since turn 7. Never a hole,
- * never a blocked scene.
- *
- * THE MODEL IS A COSTUME ON THE SCREWS. Every position below is the engine's —
- * `hardwareInstances` reads `drillSummary.hinge_centers`, the rows the machine
- * drills — and the models are moved to them. That is why this turn's CNC export
- * has zero deltas: nothing about a downloaded file can move a hole.
- *
- * ─── AND IT CAN BE POINTED AT (F1.3) ───────────────────────────────────────
- *
- * "Po podwójnym kliknięciu na hinge otworzy się modal." The arm's instanced
- * mesh carries the gesture, because it is the piece a joiner is actually
- * looking at when a door is open; where a MODEL is drawn over it the arm stays
- * as a transparent pick surface underneath, so the hinge is clickable whether
- * or not the bucket answered.
+ * @param {object} args
+ *   items        the hinge instances this caller is drawing
+ *   specs        { [door panel id]: the engine's resolution for that door }
+ *   kind         'hinge' (the body: cup + arm, on the DOOR) | 'plate' (carcass)
+ *   profile, storageBase
+ * @returns {{urls:(string|null)[], models:Array<{model:Object3D|null, reason:string|null}>}}
  */
-function CarcassHinges({
-  items, profile, colour, specs = null, storageBase = '', onEditHinge = null,
-  surface = 'room', scope = '',
+function useHingeModels({
+  items, specs, kind, profile, storageBase,
 }) {
-  const H = profile.hardware.hinge;
+  // A file arriving is not a state change anything else can see, so this is the
+  // one re-render it causes.
   const [arrived, setArrived] = useState(0);
 
-  // Which FILE each hinge wants. `specs` is the resolution the view was handed
-  // — one entry per door panel id — so the model that is drawn is the hinge the
-  // BOM is ordering, and not a second opinion about it.
   // ─── TURN 21 (CLAUDE.md F2.1): THE URL, OR NOTHING ───
   // `hingeModelSrc` and not `hingeModelUrl`: a path with no host is not a URL,
   // and turn 20 handed the bare in-bucket path to the loader, which asked the
   // app's own domain for it — the owner's `/hinges/blum/…glb → 404`. Null here
   // is the stand-in path, and no request leaves the page.
-  const wanted = useMemo(() => items.map((h) => {
+  const urls = useMemo(() => items.map((h) => {
     const spec = specs?.[h.panelId] || null;
-    if (!spec?.file) return { hinge: null, plate: null };
-    return {
-      hinge: hingeModelSrc(spec, profile, storageBase),
-      plate: spec.plateFile
-        ? hingeModelSrc({ file: spec.plateFile }, profile, storageBase)
-        : null,
-    };
-  }), [items, specs, profile, storageBase]);
+    if (!spec) return null;
+    if (kind === 'plate') {
+      return spec.plateFile ? hingeModelSrc({ file: spec.plateFile }, profile, storageBase) : null;
+    }
+    return spec.file ? hingeModelSrc(spec, profile, storageBase) : null;
+  }), [items, specs, kind, profile, storageBase]);
 
   useEffect(() => {
-    const offs = [];
-    for (const w of wanted) {
-      if (w.hinge) offs.push(onHingeLoad(w.hinge, () => setArrived((n) => n + 1)));
-      if (w.plate) offs.push(onHingeLoad(w.plate, () => setArrived((n) => n + 1)));
-    }
+    const offs = urls.filter(Boolean).map((u) => onHingeLoad(u, () => setArrived((n) => n + 1)));
     return () => { for (const off of offs) off(); };
-  }, [wanted]);
+  }, [urls]);
 
-  const models = useMemo(() => wanted.map((w, i) => {
+  const models = useMemo(() => urls.map((url, i) => {
     const h = items[i];
+    if (!url) return { model: null, reason: 'no-url' };
+    const source = hingeSource(url);
+    if (source?.failed) return { model: null, reason: 'failed' };
+    if (!source?.loaded) return { model: null, reason: 'loading' };
+    if (!hingeModelFits(source, profile)) return { model: null, reason: 'wrong-size' };
     const C = profile.hardware.hinge.cliptop;
-    const take = (url, plate, mirror) => {
-      if (!url) return { model: null, reason: 'no-url' };
-      const source = hingeSource(url);
-      if (source?.failed) return { model: null, reason: 'failed' };
-      if (!source?.loaded) return { model: null, reason: 'loading' };
-      if (!hingeModelFits(source, profile)) return { model: null, reason: 'wrong-size' };
-      return { model: hingeModel(url, { profile, plate, mirror }), reason: null };
-    };
-    // The file is authored for ONE hand (profile: `fileHand`); the other hand
-    // is the same clone mirrored about the cup — the runners' own rule, and
-    // the mirror pivot IS the cup because the measured origin put it there.
-    const hinge = take(w.hinge, false, h ? h.side !== C.fileHand : false);
-    // The plate's base grows +x off the panel face as authored; a door whose
+    // The body file is authored for ONE hand (profile: `fileHand`); the other
+    // hand is the same clone mirrored about the cup — the runners' own rule,
+    // and the mirror pivot IS the cup because the measured origin put it there.
+    // The plate's base grows +x off the panel face as authored, so a door whose
     // opening lies the other way (dir −1) takes the mirrored clone.
-    const plate = take(w.plate, true, h ? h.dir === -1 : false);
+    const mirror = kind === 'plate' ? h?.dir === -1 : h?.side !== C.fileHand;
     return {
-      hinge: hinge.model, plate: plate.model, hingeReason: hinge.reason, plateReason: plate.reason,
+      model: hingeModel(url, {
+        profile,
+        plate: kind === 'plate',
+        mirror,
+        // Turn 23 (CLAUDE.md F4.1): the project's finish, per door, off the
+        // very resolution the BOM orders by — so the metal on screen and the
+        // article on the list cannot be two different finishes.
+        finish: specs?.[h?.panelId]?.finish || null,
+      }),
+      reason: null,
     };
     // `arrived` is the dependency that matters: a clone taken before the file
     // lands holds nothing, so it has to be re-taken after it does.
-  }), [wanted, items, profile, arrived]);
+  }), [urls, items, specs, kind, profile, arrived]);
+
+  return { urls, models };
+}
+
+/**
+ * The CARCASS half: the mounting plate, and only the plate.
+ *
+ * ─── TURN 23 (CLAUDE.md F2.1): THE BODY LEFT ───────────────────────────────
+ *
+ * Owner: "the model hangs closed on the carcass while the door stands open.
+ * Looks awful, and it is wrong." It was: the cup, the arm and the whole
+ * downloaded body were drawn here, in the unit's static frame, while the door
+ * they are clipped into swung away from them.
+ *
+ * The split is physical and it is the phase. A CLIP top's plate is screwed to
+ * the side panel and never moves; everything else is clipped into the door and
+ * goes wherever the door goes. So this component is the plate, `DoorHinges`
+ * below is the body, and the joint READS when a door opens because the two
+ * halves separate exactly as the ironmongery does.
+ *
+ * ─── TURN 19 (CLAUDE.md F1.6): THE MANUFACTURER'S OWN GEOMETRY ─────────────
+ *
+ * Where the model has ARRIVED it is drawn, one clone per position; where it has
+ * not (the file still on its way, a bucket that is down, mock mode, a file that
+ * measures far too big) the row falls through to the INSTANCED GREY BODY this
+ * file has drawn since turn 7. Never a hole, never a blocked scene.
+ *
+ * THE MODEL IS A COSTUME ON THE SCREWS. Every position is the engine's —
+ * `hardwareInstances` reads `drillSummary.hinge_centers`, the rows the machine
+ * drills — and the models are moved to them. Nothing about a downloaded file
+ * can move a hole, which is why this turn's CNC export has zero hardware
+ * deltas.
+ */
+function CarcassHinges({
+  items, profile, colour, specs = null, storageBase = '',
+  surface = 'room', scope = '',
+}) {
+  const H = profile.hardware.hinge;
+  const { urls, models } = useHingeModels({
+    items, specs, kind: 'plate', profile, storageBase,
+  });
 
   // ─── TURN 21 (CLAUDE.md R4 / F2.3) ───
   // What the walk is allowed to believe: the exact url string this component
   // handed the loader, and whether the GLB or the stand-in is what is drawn.
+  // Turn 23 adds the PARENT, because F2.4 asks the registry to assert both.
   useEffect(() => {
-    reportHardware(surface, 'hinge', items.map((h, i) => ({
-      key: h.panelId ?? i, url: wanted[i]?.hinge || null, model: Boolean(models[i]?.hinge), reason: models[i]?.hingeReason,
-    })), scope);
     reportHardware(surface, 'plate', items.map((h, i) => ({
-      key: h.panelId ?? i, url: wanted[i]?.plate || null, model: Boolean(models[i]?.plate), reason: models[i]?.plateReason,
+      key: h.panelId ?? i,
+      url: urls[i] || null,
+      model: Boolean(models[i]?.model),
+      reason: models[i]?.reason,
+      parent: 'carcass',
+      finish: models[i]?.model?.userData?.ccFinish || null,
     })), scope);
-  }, [surface, scope, items, wanted, models]);
+  }, [surface, scope, items, urls, models]);
 
-  const drawnModel = models.some((m) => m.hinge);
-
-  // The arm runs straight back off the cup, into the carcass.
-  const placeArm = useMemo(() => (i, m) => {
-    const h = items[i];
-    put(m, new THREE.Vector3(mm(h.x), mm(h.y), mm(h.z - H.armLength / 2)));
-  }, [items, H.armLength]);
+  const drawnModel = models.some((m) => m.model);
 
   // The plate, screwed to the inner face of the side panel the door hangs from.
   const placePlate = useMemo(() => (i, m) => {
@@ -322,49 +350,15 @@ function CarcassHinges({
     put(m, new THREE.Vector3(mm(x), mm(h.y), mm(h.plateZ)));
   }, [items, H.plateThickness]);
 
-  const pick = useMemo(() => (onEditHinge ? (e) => {
-    const h = items[e.instanceId];
-    if (!h) return;
-    e.stopPropagation();
-    onEditHinge({
-      panelId: h.panelId,
-      // WHICH ROW, counted from the floor exactly as the engine counts them —
-      // `hardwareInstances` walks the drilled centres in order, per door, so
-      // the index inside one door's run is the index in `hinge_centers`.
-      index: items.filter((x) => x.panelId === h.panelId).indexOf(h),
-      at: { x: e.clientX, y: e.clientY },
-    });
-  } : null), [items, onEditHinge]);
-
   return (
     <>
-      {/* The models, standing on the drilled points. */}
-      {models.map((m, i) => (
-        <group key={`hm${items[i].panelId}-${items[i].y}`}>
-          {m.hinge && (
-            <primitive object={m.hinge} position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]} />
-          )}
-          {m.plate && (
-            <primitive
-              object={m.plate}
-              position={[mm(items[i].plateX), mm(items[i].y), mm(items[i].plateZ)]}
-            />
-          )}
-        </group>
-      ))}
-
-      {/* The procedural arm — the grey stand-in when the bucket is unreachable,
-          and the PICK SURFACE always. Where a model is drawn over it, it is
-          transparent: it is then doing one job, which is carrying the gesture. */}
-      <Pieces
-        count={items.length}
-        place={placeArm}
-        colour={colour}
-        onDoubleClick={pick}
-        visible={!drawnModel}
-      >
-        <boxGeometry args={[mm(H.armWidth), mm(H.armThickness), mm(H.armLength)]} />
-      </Pieces>
+      {models.map((m, i) => (m.model ? (
+        <primitive
+          key={`pm${items[i].panelId}-${items[i].y}`}
+          object={m.model}
+          position={[mm(items[i].plateX), mm(items[i].y), mm(items[i].plateZ)]}
+        />
+      ) : null))}
       <Pieces count={items.length} place={placePlate} colour={colour} visible={!drawnModel}>
         <boxGeometry args={[mm(H.plateThickness), mm(H.plateWidth), mm(H.plateLength)]} />
       </Pieces>
@@ -414,22 +408,77 @@ export function hingeSpecsFor({
 }
 
 /**
- * The DOOR half: the ⌀35 cup bored into the back of the door, and the boss
- * standing proud of it — which is the part you can actually see.
+ * The DOOR half: the whole hinge BODY — the ⌀35 cup in its bore, the boss
+ * standing proud of it, and the arm that sweeps out into the carcass opening.
  *
- * Rendered INSIDE the door's own group (3d/UnitView.jsx), so it swings with the
- * door. `pivot` is that group's origin in cabinet millimetres, because a child
- * of it is positioned relative to it and the hinge instances are in the
- * cabinet's frame like every other number in this file.
+ * Rendered INSIDE the door's own group (3d/UnitView.jsx and the cabinet
+ * editor), so every part of it swings with the door. `pivot` is that group's
+ * origin in cabinet millimetres, because a child of it is positioned relative
+ * to it and the hinge instances are in the cabinet's frame like every other
+ * number in this file.
+ *
+ * ─── TURN 23 (CLAUDE.md F2): IT SWINGS WITH ITS DOOR ───────────────────────
+ *
+ * Owner: "the model hangs closed on the carcass while the door stands open."
+ * Turn 12 got the PROCEDURAL half of this right — the cup and the boss have
+ * been children of the door since then — and turn 19 then hung the downloaded
+ * BODY on the carcass beside them, where it stayed shut while the door opened.
+ * The body is here now, under the leaf, and the plate is the only thing left on
+ * the carcass. The pose itself is untouched: the chat hotfix's `modelOrigin`
+ * puts the cup centre on the drilled point with the flange plane on the door's
+ * back face, and re-parenting does not move a millimetre of that — the point it
+ * is placed on is simply expressed in the door's frame instead of the unit's.
+ *
+ * ARTICULATION, honestly scoped (F2.2). The body follows the leaf RIGIDLY: the
+ * cup stays in its bore and the arm sweeps with the door. A real CLIP top folds
+ * at its knuckle as it opens, so at 110° the arm lies along the carcass side
+ * rather than square off the door. THAT IS A RIG, NOT A TRANSFORM — it needs
+ * the model split at the knuckle and a joint angle driven off the swing, and
+ * inventing one would be inventing geometry Blum has not published here. It is
+ * named as future work and left undone rather than approximated.
+ *
+ * The open/close animation is the door's own `openFronts` value. Nothing in
+ * this file drives it (F2.3).
+ *
+ * ─── AND THE BLACK CYLINDER (F3) ───────────────────────────────────────────
+ *
+ * Owner's screenshot: "a black drum floating beside each hinge." It is the
+ * `boss` below — this app's OWN ⌀33 × 16 procedural cylinder, in the dark
+ * hardware tone `appearance.hardware.hinge`, drawn on top of the downloaded
+ * model because turn 19 gated the arm and the plate on "is a model drawn" and
+ * never gated these two. See `verify/t23/hinge-meshes.md` for the mesh tables
+ * that rule out the alternative (a stray cam or cover mesh in the file itself).
+ * They are gated now, exactly as their neighbours are.
  *
  * @param {object} props
  *   items   the hinge instances belonging to THIS door
- *   pivot   [x, y, z] in cabinet mm — the group's origin
+ *   pivot   [x, y, z] in THREE units — the door group's origin
+ *   specs   the engine's per-door hinge resolution, for the model and finish
  */
 export function DoorHinges({
-  items, profile, colour, pivot,
+  items, profile, colour, pivot, specs = null, storageBase = '',
+  surface = 'room', scope = '', onEditHinge = null,
 }) {
   const H = profile.hardware.hinge;
+  const { urls, models } = useHingeModels({
+    items, specs, kind: 'hinge', profile, storageBase,
+  });
+
+  // Turn 21 (R4) / turn 23 (F2.4): the same report the plate makes, and it
+  // names its PARENT — which is the whole of F2 stated as a fact the walk can
+  // assert instead of a picture it has to believe.
+  useEffect(() => {
+    reportHardware(surface, 'hinge', items.map((h, i) => ({
+      key: h.panelId ?? i,
+      url: urls[i] || null,
+      model: Boolean(models[i]?.model),
+      reason: models[i]?.reason,
+      parent: 'door',
+      finish: models[i]?.model?.userData?.ccFinish || null,
+    })), scope);
+  }, [surface, scope, items, urls, models]);
+
+  const drawnModel = models.some((m) => m.model);
 
   // The cup is bored along the DEPTH axis, so the cylinder (whose own axis is
   // Y) is laid down once, here, rather than per instance.
@@ -454,18 +503,86 @@ export function DoorHinges({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, H.bossHeight, laid, pivot[0], pivot[1], pivot[2]]);
 
+  // The arm runs straight back off the cup, into the carcass. It moved here
+  // from the carcass half this turn: it is bolted to the cup, so it goes where
+  // the cup goes.
+  const placeArm = useMemo(() => (i, m) => {
+    const h = items[i];
+    put(m, local(h.x, h.y, h.z - H.armLength / 2));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, H.armLength, pivot[0], pivot[1], pivot[2]]);
+
+  // ─── Turn 19 (CLAUDE.md F1.3): AND IT CAN BE POINTED AT ───────────────────
+  // "Po podwójnym kliknięciu na hinge otworzy się modal." The arm's instanced
+  // mesh carries the gesture, because it is the piece a joiner is actually
+  // looking at when a door is open; where a MODEL is drawn over it the arm
+  // stays as a transparent pick surface underneath, so the hinge is clickable
+  // whether or not the bucket answered. It travels with the door now, which is
+  // also where the pointer expects to find it once the leaf has swung.
+  const pick = useMemo(() => (onEditHinge ? (e) => {
+    const h = items[e.instanceId];
+    if (!h) return;
+    e.stopPropagation();
+    onEditHinge({
+      panelId: h.panelId,
+      // WHICH ROW, counted from the floor exactly as the engine counts them —
+      // `hardwareInstances` walks the drilled centres in order, per door, so
+      // the index inside one door's run is the index in `hinge_centers`.
+      index: items.filter((x) => x.panelId === h.panelId).indexOf(h),
+      at: { x: e.clientX, y: e.clientY },
+    });
+  } : null), [items, onEditHinge]);
+
   if (!items.length) return null;
   return (
     <>
-      <Pieces count={items.length} place={placeCup} colour={colour} metalness={0.8}>
+      {/* The model, standing on the drilled cup point — in the DOOR's frame,
+          which is the one line that makes it swing. */}
+      {models.map((m, i) => (m.model ? (
+        <primitive
+          key={`hm${items[i].panelId}-${items[i].y}`}
+          object={m.model}
+          position={[
+            mm(items[i].x) - pivot[0], mm(items[i].y) - pivot[1], mm(items[i].z) - pivot[2],
+          ]}
+        />
+      ) : null))}
+
+      {/* ─── F3: THE BLACK DRUM ───
+          `visible={!drawnModel}` is the fix and it is the same guard the arm
+          and the plate have carried since turn 19. Without it these two dark
+          cylinders were drawn straight through the downloaded body — which is
+          the drum on the owner's screenshot. */}
+      <Pieces
+        count={items.length}
+        place={placeCup}
+        colour={colour}
+        metalness={0.8}
+        visible={!drawnModel}
+      >
         <cylinderGeometry args={[mm(H.cupDiameter / 2), mm(H.cupDiameter / 2), mm(H.cupDepth), 18]} />
       </Pieces>
-      <Pieces count={items.length} place={placeBoss} colour={colour} metalness={0.8}>
+      <Pieces
+        count={items.length}
+        place={placeBoss}
+        colour={colour}
+        metalness={0.8}
+        visible={!drawnModel}
+      >
         {/* Slightly narrower than the bore it stands in, as the body of a cup
             hinge is — it is the moving part, not the hole. */}
         <cylinderGeometry
           args={[mm(H.cupDiameter / 2 - 1), mm(H.cupDiameter / 2 - 1), mm(H.bossHeight), 18]}
         />
+      </Pieces>
+      <Pieces
+        count={items.length}
+        place={placeArm}
+        colour={colour}
+        onDoubleClick={pick}
+        visible={!drawnModel}
+      >
+        <boxGeometry args={[mm(H.armWidth), mm(H.armThickness), mm(H.armLength)]} />
       </Pieces>
     </>
   );
@@ -536,7 +653,11 @@ function Runners({
     if (!w.url) return null;
     const source = runnerSource(w.url);
     if (!source?.loaded || !runnerModelFits(source, w.row.length, profile)) return null;
-    return runnerModel(w.url, { mirror: w.mirror, profile });
+    // Turn 23 (CLAUDE.md F4.3): the same override helper the hinges use. The
+    // runner finish is a project setting the profile does not yet carry
+    // numbers for, so this asks for the default and gets one neutral metal —
+    // which is exactly what F4.3 asks for until the owner tunes it.
+    return runnerModel(w.url, { mirror: w.mirror, profile, finish: null });
     // `arrived` is the dependency that matters: the clone must be re-taken
     // AFTER the file lands, or it holds nothing (3d/materials.js says the same
     // thing about a texture clone taken too early).
@@ -550,6 +671,10 @@ function Runners({
       url: w.url,
       model: Boolean(models[i]),
       reason: models[i] ? null : (w.url ? 'no-model' : 'no-url'),
+      // A runner is screwed to the box side and rides it; there is no second
+      // half on the carcass to distinguish, so the parent is the drawer.
+      parent: 'drawer',
+      finish: models[i]?.userData?.ccFinish || null,
     })), scope);
   }, [surface, scope, wanted, models]);
 

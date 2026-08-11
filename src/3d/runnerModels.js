@@ -27,6 +27,7 @@
 import {
   clearGlbSources, glbClone, glbFailed, glbLongestMm, glbSource, onGlbLoad,
 } from './glbSource.js';
+import { applyHardwareFinish, hardwareFinishSpec } from './hardwareFinish.js';
 import { mm } from './constants.js';
 
 // ─── TURN 19 (CLAUDE.md F1.6): THE CACHE MOVED, NOTHING ELSE DID ────────────
@@ -98,11 +99,23 @@ export function runnerModelFits(entry, nl, profile) {
  *   profile
  * @returns {THREE.Object3D|null} null while the file is still on its way
  */
-export function runnerModel(url, { mirror = false, profile }) {
+export function runnerModel(url, { mirror = false, profile, finish = null }) {
   const O = profile.hardware.runner.movento.modelOrigin;
   // The file's own bounding box is brought to the group's origin and then moved
   // by the workshop's measured offset, in the runner's own frame — the shared
   // loader does both, because it is the same two lines for every piece of
   // ironmongery this app will ever draw.
-  return glbClone(url, { origin: { x: mm(O.x), y: mm(O.y), z: mm(O.z) }, mirror });
+  const clone = glbClone(url, { origin: { x: mm(O.x), y: mm(O.y), z: mm(O.z) }, mirror });
+  // Turn 23 (CLAUDE.md F4.3): the SAME override function the hinges use — one
+  // helper, two families. The MOVENTO has one neutral metal until the owner
+  // supplies orion grey and silk white; `3d/hardwareFinish.js` falls through to
+  // it without a branch here.
+  if (clone) {
+    const spec = hardwareFinishSpec(profile, 'runner', finish);
+    const applied = applyHardwareFinish(clone, spec);
+    clone.userData.ccFinish = spec?.id || null;
+    clone.userData.ccFinishApplied = applied;
+    clone.userData.ccFinishMetal = spec?.metal || null;
+  }
+  return clone;
 }

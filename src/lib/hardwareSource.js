@@ -5,7 +5,24 @@
 // is deliberately ONE function for every family rather than a loader per
 // catalogue:
 //
-//     DB ROW  →  BUCKET MANIFEST  →  MOCK
+//     OVERRIDE BASE  →  DB ROW  →  BUCKET MANIFEST  →  MOCK
+//
+// ─── TURN 23 (CLAUDE.md R8): THE TOP SLOT ──────────────────────────────────
+//
+// The order gained an explicit first step: a base URL somebody has pointed
+// this session at, read from `localStorage['cc.hardwareBase']`
+// (`lib/storageBase.js` carries the knob and the reasons). It is FIRST and not
+// second because an override that lost to a database row would be describing
+// files that are not where it is pointing — the row names Blum's articles and
+// the base is serving a showroom of stand-ins, and half of each is a catalogue
+// of nothing.
+//
+// It buys two things. The acceptance walk gets a hardware surface it can
+// actually load in a container whose egress policy refuses the bucket, so a
+// GLB-dependent phase is proved rather than recorded `blocked` for a fourth
+// turn running; and a joiner with no signal gets an offline demo. Nothing else
+// in the app changes shape: the manifest is fetched, parsed and adopted by the
+// same three lines the bucket branch uses.
 //
 // * a row in `cc_hardware` simply REPLACES the fetched JSON. Same shape, same
 //   tolerant turn-20 parser, same registry — the row is the file, moved;
@@ -36,7 +53,7 @@
 import { parseHingeCatalogue, setHingeCatalogue } from '../engine/hinges.js';
 import { parseRunnerManifest, setRunnerCatalogue } from '../engine/runners.js';
 import { getCabinetProfile } from '../engine/profile.js';
-import { storageBaseUrl as resolveStorageBase } from './storageBase.js';
+import { overrideStorageBase, storageBaseUrl as resolveStorageBase } from './storageBase.js';
 import { supabase, isMockMode, withDb } from './supabase.js';
 import { CLIPTOP_HINGE_CATALOGUE, AVENTOS_CATALOGUE } from './hardwareCatalogue.js';
 
@@ -175,9 +192,12 @@ export async function readHardwareRow(family, { system = null } = {}) {
  *   readRow     async (family, {system}) => row|null
  *   fetchImpl   the bucket fetch, or null for "no network"
  *   storageBase the public storage root, or '' for "no host"
+ *   overrideBase  turn 23 (R8): the top slot, or '' for "no override". Left
+ *               out, the knob itself is read — injectable so a node test can
+ *               drive the branch without a browser.
  *   adopt       false to resolve WITHOUT handing the answer to the registry —
  *               which is what the health row and the tests want
- * @returns {Promise<{source:'db'|'bucket'|'mock'|'none', rows:number,
+ * @returns {Promise<{source:'override'|'db'|'bucket'|'mock'|'none', rows:number,
  *                    system:string|null, url:string|null, error:string|null,
  *                    catalogue:object|null}>}
  */
@@ -187,6 +207,7 @@ export async function resolveHardwareCatalogue({
   readRow = readHardwareRow,
   fetchImpl = (typeof fetch === 'function' ? fetch : null),
   storageBase = null,
+  overrideBase = null,
   adopt = true,
 } = {}) {
   const spec = hardwareFamilySpec(family, profile);
@@ -213,6 +234,27 @@ export async function resolveHardwareCatalogue({
   };
 
   let error = null;
+
+  // 0 — THE OVERRIDE (turn 23, R8). A base somebody has pointed this session
+  // at serves BOTH the manifest and the models, so it has to be read before
+  // anything else can claim to know which files exist.
+  const override = overrideBase == null ? overrideStorageBase() : overrideBase;
+  const overrideUrl = override && spec.bucketPublished !== false
+    ? manifestUrl(spec, override)
+    : null;
+  if (overrideUrl && fetchImpl) {
+    try {
+      const res = await fetchImpl(overrideUrl);
+      if (!res?.ok) throw new Error(`${res?.status} ${res?.statusText || ''}`.trim());
+      const got = take(await res.json(), 'override', overrideUrl);
+      if (got) return note(got);
+      error = 'the override manifest was read but carried no usable rows';
+    } catch (e) {
+      // A knob pointing at nothing falls through to the ordinary order rather
+      // than blanking the app — the same degradation rule as every step below.
+      error = e?.message || 'the override manifest could not be read';
+    }
+  }
 
   // 1 — THE DATABASE. A row, when there is one, WINS.
   try {

@@ -1,0 +1,11 @@
+host  https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public
+
+MOVENTO 760H (hardware/runners/blum/movento/)
+  manifest  https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json
+            403  119 bytes  — rows parsed
+  FAILED — manifest answered 403
+
+CLIP top BLUMOTION (hardware/hinges/blum/)
+  manifest  https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/hinges/blum/manifest.json
+            403  119 bytes  — rows parsed
+  FAILED — manifest answered 403

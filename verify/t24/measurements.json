@@ -1,0 +1,636 @@
+{
+ "hardware": {
+  "hinge": [
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel",
+    "member": "A",
+    "nodes": [
+     "bau0015089612",
+     "bau0015088783",
+     "bau0015088853"
+    ],
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel",
+    "member": "A",
+    "nodes": [
+     "bau0015089612",
+     "bau0015088783",
+     "bau0015088853"
+    ],
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel",
+    "member": "A",
+    "nodes": [
+     "bau0015089612",
+     "bau0015088783",
+     "bau0015088853"
+    ],
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel",
+    "member": "A",
+    "nodes": [
+     "bau0015089612",
+     "bau0015088783",
+     "bau0015088853"
+    ],
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel",
+    "member": "A",
+    "nodes": [
+     "bau0015089612",
+     "bau0015088783",
+     "bau0015088853"
+    ],
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel",
+    "member": "A",
+    "nodes": [
+     "bau0015089612",
+     "bau0015088783",
+     "bau0015088853"
+    ],
+    "pivotMm": null
+   }
+  ],
+  "plate": [
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel",
+    "member": null,
+    "nodes": null,
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel",
+    "member": null,
+    "nodes": null,
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel",
+    "member": null,
+    "nodes": null,
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel",
+    "member": null,
+    "nodes": null,
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel",
+    "member": null,
+    "nodes": null,
+    "pivotMm": null
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel",
+    "member": null,
+    "nodes": null,
+    "pivotMm": null
+   }
+  ],
+  "parents": {
+   "hinge": true,
+   "plate": true
+  },
+  "modelled": {
+   "hinge": true,
+   "plate": true
+  },
+  "finishes": [
+   "nickel"
+  ]
+ },
+ "rig": {
+  "cupMembers": [
+   "A"
+  ],
+  "bodyMembers": [
+   "B"
+  ],
+  "cupNodes": [
+   "bau0015088783",
+   "bau0015088853",
+   "bau0015089612"
+  ],
+  "bodyNodes": [
+   "bau0015088251",
+   "bau0019416036"
+  ],
+  "pivot": {
+   "x": -3.129243850708008e-7,
+   "y": 0,
+   "z": -1.8000009047985088
+  },
+  "bodyRows": 6,
+  "bodyParented": true
+ },
+ "rigSwing": {
+  "rigClosed": {
+   "A": [
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ]
+   ],
+   "B": [
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ]
+   ],
+   "fold": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "rigOpen": {
+   "A": [
+    [
+     -0.2895,
+     -0.8933
+    ],
+    [
+     -0.2895,
+     -0.8933
+    ],
+    [
+     -0.2895,
+     -0.8933
+    ],
+    [
+     -0.2895,
+     -0.8933
+    ],
+    [
+     -0.2895,
+     -0.8933
+    ],
+    [
+     -0.2895,
+     -0.8933
+    ]
+   ],
+   "B": [
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ],
+    [
+     -0.277,
+     -0.929
+    ]
+   ],
+   "fold": [
+    -1.7279,
+    -1.7279,
+    -1.7279,
+    -1.7279,
+    -1.7279,
+    -1.7279
+   ]
+  },
+  "platesClosed": [
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ]
+  ],
+  "platesOpen": [
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ],
+   [
+    -0.282,
+    -0.969
+   ]
+  ],
+  "movedA": 6,
+  "movedB": 0,
+  "movedPlates": 0,
+  "folded": 6
+ },
+ "reflect": {
+  "metal": 30,
+  "metalWithEnv": 30,
+  "plastic": 12,
+  "plasticWithEnv": 0,
+  "panels": 48,
+  "panelsWithEnv": 0,
+  "sceneEnv": true,
+  "sceneIsHardwareProbe": false
+ },
+ "finishes": {
+  "nickel": [
+   "nickel"
+  ],
+  "onyx": [
+   "onyx"
+  ]
+ },
+ "zoom": {
+  "before": "-1712.8236162361625 -2537.4 4025.647232472325 2924.8",
+  "after": "-579.8237533031465 -1714.2285178154232 1759.647506606293 1278.4570356308457"
+ },
+ "hoverMagnet": {
+  "mmPerPx": 2.783,
+  "twitchPx": 1,
+  "mm": 2.78
+ },
+ "select": {
+  "clickAt": {
+   "x": 1074,
+   "y": 366
+  },
+  "id": "pocket-1",
+  "prompt": "Delete removes it from this print.",
+  "picked": 1,
+  "pickedId": "pocket-1"
+ },
+ "osnap": {
+  "kind": "MID",
+  "on": "pocket-3"
+ },
+ "live": {
+  "rows": [
+   "x",
+   "y"
+  ],
+  "diagonal": false
+ },
+ "sheet": {
+  "left": 807,
+  "top": 94,
+  "w": 748,
+  "h": 544,
+  "cx": 1181,
+  "cy": 366
+ },
+ "typed": {
+  "open": true,
+  "value": "37"
+ },
+ "typedPending": "37,1075.0000000000005",
+ "popoverBox": {
+  "before": {
+   "popover": {
+    "l": 1195,
+    "t": 380,
+    "w": 230,
+    "h": 123
+   },
+   "stamp": {
+    "l": 1352,
+    "t": 456,
+    "w": 63,
+    "h": 34
+   }
+  },
+  "after": {
+   "popover": {
+    "l": 1195,
+    "t": 380,
+    "w": 230,
+    "h": 123
+   },
+   "stamp": {
+    "l": 1352,
+    "t": 456,
+    "w": 63,
+    "h": 34
+   }
+  }
+ },
+ "drawn": {
+  "ops": 2,
+  "kinds": [
+   "hide",
+   "drill"
+  ],
+  "drill": {
+   "op": "drill",
+   "layer": "SCREWS_3MM",
+   "x": 37,
+   "y": 1075.0000000000005,
+   "d": 3,
+   "depth": 0
+  }
+ },
+ "typedPlacement": {
+  "drill": {
+   "op": "drill",
+   "layer": "SCREWS_3MM",
+   "x": 37,
+   "y": 1075.0000000000005,
+   "d": 3,
+   "depth": 0
+  },
+  "partSize": {
+   "w": 600,
+   "h": 2150
+  },
+  "off": 37
+ },
+ "drawnOps": {
+  "ops": 5,
+  "kinds": [
+   "hide",
+   "drill",
+   "drill",
+   "line",
+   "dowels"
+  ]
+ },
+ "export": {
+  "before": {
+   "name": "W01-BACK.dxf",
+   "length": 6520,
+   "total": 47,
+   "openPolys": 0,
+   "circles": 34,
+   "by": {
+    "poly/OUTLINE": 1,
+    "poly/PUZZLE_SOCKET": 10,
+    "circle/PUZZLE_HOLES_7_5MM": 20,
+    "circle/SCREWS_3MM": 14,
+    "text/UNIT_NUMBER": 2
+   }
+  },
+  "after": {
+   "name": "W01-BACK.dxf",
+   "length": 8089,
+   "total": 71,
+   "openPolys": 1,
+   "circles": 58,
+   "by": {
+    "poly/OUTLINE": 1,
+    "poly/PUZZLE_SOCKET": 9,
+    "poly/SCREWS_3MM": 1,
+    "circle/PUZZLE_HOLES_7_5MM": 20,
+    "circle/SCREWS_3MM": 38,
+    "text/UNIT_NUMBER": 2
+   }
+  }
+ },
+ "bayHinges": {
+  "centres": 6,
+  "leaves": 3,
+  "perLeaf": [
+   {
+    "id": "W01-B1",
+    "on": "BUL",
+    "face": null,
+    "mounted": 6
+   },
+   {
+    "id": "W01-B2",
+    "on": "VPART-1",
+    "face": "R",
+    "mounted": 6
+   },
+   {
+    "id": "W01-B3",
+    "on": "BUR",
+    "face": null,
+    "mounted": 6
+   }
+  ],
+  "bodies": 18
+ },
+ "chainBefore": [
+  {
+   "id": "partition_pnzlb0t",
+   "value": "582"
+  },
+  {
+   "id": "partition_959knck",
+   "value": "182"
+  }
+ ],
+ "chainAfter": {
+  "storedBefore": [
+   600,
+   800
+  ],
+  "stored": [
+   660,
+   800
+  ],
+  "fields": [
+   "642",
+   "122"
+  ]
+ },
+ "shelf": {
+  "shelfW": 1364,
+  "light": 1364,
+  "screws": 8,
+  "pins": 0,
+  "marks": [
+   "BUL",
+   "BUR",
+   "SHELF-1"
+  ],
+  "partitionDrawn": [
+   540,
+   882
+  ],
+  "partitionBox": [
+   540,
+   882
+  ],
+  "label": true
+ }
+}

@@ -939,6 +939,15 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           onEditElement={(panelId, at) => openModal('element', {
             unitId: unit.id, panelId, at,
           })}
+          // ─── Turn 20 (CLAUDE.md F11.1) ───
+          // A double-click on a drawer's BOX — a side, the back, the bottom —
+          // opens the drawer's own window. Same modal as "Edit cabinet",
+          // scoped to the one drawer, so the shell, the explode and the part
+          // properties are the ones a joiner has already learnt.
+          onEditDrawer={(drawer, at) => {
+            selectUnit(unit.id);
+            openModal('cabinet', { unitId: unit.id, drawer, at });
+          }}
           // ─── Turn 19 (CLAUDE.md F1.3) ───
           // "Po podwójnym kliknięciu na hinge otworzy się modal." The same
           // gesture on the ironmongery rather than on the board, opening the

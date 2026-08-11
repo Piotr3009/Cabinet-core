@@ -6,6 +6,9 @@ import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
+import Hardware from '../3d/Hardware.jsx';
+import { hardwareInstances } from '../engine/hardware3d.js';
+import { storageBaseUrl } from '../lib/runnerCatalogue.js';
 import { useViewHandle } from '../3d/viewHandle.js';
 import EditorRig from '../3d/EditorRig.jsx';
 import ContextGuard from '../3d/contextGuard.jsx';
@@ -21,6 +24,7 @@ import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { cabinetBounds, explodeOffsets, explodeSettings } from '../engine/explode.js';
 import { elementLabel, isSelectableElement } from '../engine/elements.js';
 import { getUnitType } from '../engine/types.js';
+import { anchorAtPoint } from '../lib/modalAnchor.js';
 
 // ─── The cabinet editor window (turn 12, CLAUDE.md F4) ──────────────────────
 //
@@ -68,7 +72,10 @@ export default function CabinetEditorModal() {
   const args = useUiStore((s) => s.modalArgs);
   const closeModal = useUiStore((s) => s.closeModal);
   const openModal = useUiStore((s) => s.openModal);
-  const anchor = args?.anchor || null;
+  // The click point travels with the request when the window is opened by a
+  // double-click in 3D (turn 20, F11.1), exactly as the element and hinge
+  // modals take theirs — so the shell puts it beside what was clicked.
+  const anchor = args?.anchor || anchorAtPoint(args?.at?.x, args?.at?.y);
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
   const storedDesign = useProjectStore((s) => s.project.design);
@@ -76,6 +83,23 @@ export default function CabinetEditorModal() {
 
   const unit = units.find((u) => u.id === args?.unitId) || null;
   const result = unit ? unitResult(unit.id) : null;
+  // ─── TURN 20 (CLAUDE.md F11): THE DRAWER GETS ITS OWN EDITOR ──────────────
+  //
+  // Owner: "click a drawer and edit THE DRAWER the way a cabinet is edited —
+  // its own window, the drawer selected, rotate it, EXPLODE it, look at every
+  // part."
+  //
+  // The window IS this one, scoped (F11.2). Not a second editor: the shell,
+  // the explode, the orbit, the part selection and the properties block are
+  // the same code, and a joiner who has learnt one has learnt both. What a
+  // `drawer` in the args changes is WHICH PANELS are in it and what the header
+  // says — which is the whole feature, and is why it is four lines rather than
+  // a file.
+  const drawer = Number(args?.drawer) > 0 ? Number(args.drawer) : null;
+  // Where the runner models are served from. '' in mock mode, and '' is a
+  // complete answer: the grey stand-in is drawn from the workshop's own
+  // profile instead (turn 18, F6.6).
+  const storageBase = useMemo(() => storageBaseUrl(), []);
 
   const [exploded, setExploded] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -96,7 +120,30 @@ export default function CabinetEditorModal() {
 
   // A part that has gone (a shelf deleted from the panel below) must not stay
   // selected: the properties block would be showing a piece that is not there.
-  const panels = useMemo(() => (result?.panels || []).filter((p) => p.box), [result]);
+  const panels = useMemo(() => {
+    const all = (result?.panels || []).filter((p) => p.box);
+    if (!drawer) return all;
+    // One drawer: its two sides, its box front and back, its bottom and its
+    // face. `meta.drawer` is the engine's own index — the same one the runner
+    // rows, the BOM lines and the CNC tree are keyed on — so nothing here has
+    // to know how a drawer is put together.
+    return all.filter((p) => Number(p.meta?.drawer) === drawer
+      && (p.role === 'drawer_box' || p.part === 'DRAWER-FRONT'));
+  }, [result, drawer]);
+  // …and the runners under it (F11.2). The cabinet view does not draw hardware
+  // — there is a wall of it in a kitchen — but a drawer on its own is exactly
+  // the case where a joiner is looking AT the runner.
+  const hardware = useMemo(() => {
+    if (!drawer || !result) return null;
+    const all = hardwareInstances(result, profile);
+    return {
+      hinges: [],
+      legs: [],
+      rails: [],
+      runners: all.runners.filter((row) => row.drawer === drawer),
+      rods: (all.rods || []).filter((row) => row.drawer === drawer),
+    };
+  }, [drawer, result, profile]);
   useEffect(() => {
     if (selectedId && !panels.some((p) => p.id === selectedId)) setSelectedId(null);
   }, [panels, selectedId]);
@@ -145,7 +192,9 @@ export default function CabinetEditorModal() {
   return (
     <Modal
       anchor={anchor}
-      title={`${unit.params.unit_num} · ${type.label} — edit cabinet`}
+      title={drawer
+        ? `${unit.params.unit_num} · Drawer ${drawer} — edit drawer`
+        : `${unit.params.unit_num} · ${type.label} — edit cabinet`}
       onClose={closeModal}
       width="w-[560px]"
       // ─── Turn 13 (CLAUDE.md F2.1) ───
@@ -159,10 +208,10 @@ export default function CabinetEditorModal() {
           <span className="text-[11px] text-ink-400 flex-1 text-left">
             {/* eslint-disable-next-line no-nested-ternary */}
             {selectedId
-              ? 'Editing one piece — Back (or Escape) returns to the cabinet and leaves the explode as it is.'
+              ? `Editing one piece — Back (or Escape) returns to the ${drawer ? 'drawer' : 'cabinet'} and leaves the explode as it is.`
               : (exploded
                 ? 'Click a part to select it, drag it to turn it over — DOUBLE-CLICK it for the full detail.'
-                : 'Drag to orbit · right or middle button to pan · click a part to edit it, or a door to open it.')}
+                : `Drag to orbit · right or middle button to pan · click a part to edit it${drawer ? ', or the front to open it.' : ', or a door to open it.'}`)}
           </span>
           {/* F8.1: one control for the whole cabinet, and a click on a door
               for one of them. A cabinet with no fronts is not offered it. */}
@@ -202,6 +251,8 @@ export default function CabinetEditorModal() {
           <CabinetCanvas
             unit={unit}
             panels={panels}
+            hardware={hardware}
+            storageBase={storageBase}
             design={storedDesign}
             profile={profile}
             exploded={exploded}
@@ -231,10 +282,10 @@ export default function CabinetEditorModal() {
                   type="button"
                   className="cc-btn px-2 shrink-0"
                   data-editor-back="1"
-                  title="Back to the cabinet (Escape). The explode stays as it is."
+                  title={`Back to the ${drawer ? 'drawer' : 'cabinet'} (Escape). The explode stays as it is.`}
                   onClick={back}
                 >
-                  ‹ Cabinet
+                  {drawer ? '‹ Drawer' : '‹ Cabinet'}
                 </button>
                 {/* ─── Turn 13 (CLAUDE.md F2.3) ───
                     "Clicking a part inside the editor shows EDIT ELEMENT."
@@ -255,9 +306,21 @@ export default function CabinetEditorModal() {
             </div>
           ) : (
             <p className="text-[11px] text-ink-400">
-              Nothing selected. Click a piece in the view — <b className="text-ink-200">Edit element</b> opens
-              here, and it is the same override machinery the right-hand panel uses. Carcass panels are
-              edited here and nowhere else.
+              {drawer
+                ? (
+                  <>
+                    Drawer {drawer} on its own — its sides, its box front and back, its bottom, its face
+                    and the runners it rides on. Click a piece for its height, its runner and its
+                    material; <b className="text-ink-200">Explode</b> takes the box apart.
+                  </>
+                )
+                : (
+                  <>
+                    Nothing selected. Click a piece in the view — <b className="text-ink-200">Edit element</b> opens
+                    here, and it is the same override machinery the right-hand panel uses. Carcass panels are
+                    edited here and nowhere else.
+                  </>
+                )}
             </p>
           )}
         </div>
@@ -274,7 +337,7 @@ export default function CabinetEditorModal() {
  */
 function CabinetCanvas({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail,
-  openFronts, allOpen, onToggleFront, drills = [],
+  openFronts, allOpen, onToggleFront, drills = [], hardware = null, storageBase = '',
 }) {
   const bounds = useMemo(() => cabinetBounds(panels), [panels]);
   const size = bounds ? Math.max(bounds.size.x, bounds.size.y, bounds.size.z) : 800;
@@ -340,6 +403,18 @@ function CabinetCanvas({
           learn. `screenSpacePanning` is left at its default for the same
           reason. The context menu is already suppressed on this canvas, which
           is what lets the right button through to the controls. */}
+      {/* Turn 20 (CLAUDE.md F11.2): the drawer's own runners, on the rows the
+          engine drills — the same instances the room draws, filtered to this
+          drawer. Drawn always here: this window IS the joiner looking at the
+          ironmongery, which is the case X-ray exists for in the room. */}
+      {hardware && (
+        <Hardware
+          instances={hardware}
+          profile={profile}
+          runners
+          storageBase={storageBase}
+        />
+      )}
       <OrbitControls
         makeDefault
         enablePan

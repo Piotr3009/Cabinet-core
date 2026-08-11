@@ -444,7 +444,7 @@ export default function UnitView({
   // `selectedElement` is the ENGINE's own panel id (`SHELF-2`) or null, which
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
-  selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onAddItems,
+  selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
   // Turn 19 (CLAUDE.md F1.3): double-click a hinge and its modal opens.
   onEditHinge = null,
   // The ink every dimension caption on this cabinet is written in (turn 11,
@@ -1114,6 +1114,15 @@ export default function UnitView({
               // does to a cabinet — so a front does both: it swings, and its
               // hinge side is what the modal is about.
               if (front && onToggleFront) onToggleFront(p.id);
+              // ─── TURN 20 (CLAUDE.md F11.1): A DRAWER BOX OPENS THE DRAWER ──
+              // A side, the box front or back, the bottom — the parts that are
+              // the DRAWER rather than its face. The FRONT keeps its slide:
+              // opening a drawer by its face is older than the editor and is
+              // the first thing anybody does to one.
+              if (!front && p.role === 'drawer_box' && p.meta?.drawer && onEditDrawer) {
+                onEditDrawer(p.meta.drawer, { x: e.clientX, y: e.clientY });
+                return;
+              }
               if (opensModal && onEditElement) {
                 onSelectElement?.(p.id);
                 onEditElement(p.id, { x: e.clientX, y: e.clientY });
@@ -1139,7 +1148,18 @@ export default function UnitView({
               // right-click on a cabinet OUTSIDE the selection still selects
               // it, which is what every desktop application does.
               if (!selected) onSelect();
-              if (onContextMenu) onContextMenu({ x: e.clientX, y: e.clientY, panelId: p.id, part: p.part });
+              if (onContextMenu) {
+                onContextMenu({
+                  x: e.clientX,
+                  y: e.clientY,
+                  panelId: p.id,
+                  part: p.part,
+                  // Turn 20 (CLAUDE.md F11.1): WHICH drawer was right-clicked,
+                  // so the menu can offer that drawer's window rather than
+                  // guessing at one.
+                  drawer: Number(p.meta?.drawer) > 0 ? Number(p.meta.drawer) : null,
+                });
+              }
             }}
             onPointerOver={shelfId
               ? () => {

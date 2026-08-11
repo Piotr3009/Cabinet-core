@@ -71,6 +71,7 @@ import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
  *   selection  every selected unit, this one included. Defaults to just it, so
  *              a caller that has never heard of multi-select is unaffected.
  *   panelPart  which panel of it (so a front can offer front actions)
+ *   panelDrawer  which DRAWER that panel belongs to, or null (turn 20, F11.1)
  *   dimensions whether this unit's full dimensions are currently on the scene
  *   hinges     whether the hinge bodies are drawn in Solid (turn 11, F3.5)
  *   store      the store functions the actions call
@@ -120,7 +121,7 @@ export function groupedActions(actions) {
 }
 
 export function menuActions({
-  unit, selection = null, panelPart, dimensions = false, hinges = false, store = {},
+  unit, selection = null, panelPart, panelDrawer = null, dimensions = false, hinges = false, store = {},
 }) {
   const type = getUnitType(unit.type);
   const actions = [];
@@ -158,6 +159,26 @@ export function menuActions({
     hint: 'This cabinet on its own — explode it, turn a part over, edit any piece',
     run: () => store.editCabinet?.(unit.id),
   });
+
+  // ── 1. …and the DRAWER's own window, where the click was on a drawer ──
+  //
+  // Turn 20 (CLAUDE.md F11.1): "Context menu on any drawer part gains 'Edit
+  // drawer' as the discoverable route." The double-click on a box panel is the
+  // fast way in; this is the one a joiner FINDS. It is only offered where the
+  // right-click actually landed on a drawer, because an entry that opens the
+  // window for "drawer 1" after a click on a side panel would be the menu
+  // guessing.
+  const onDrawer = Number(panelDrawer) > 0 ? Number(panelDrawer) : null;
+  if (onDrawer && !many) {
+    actions.push({
+      id: 'edit-drawer',
+      group: 'edit',
+      framed: true,
+      label: `Edit drawer ${onDrawer}…`,
+      hint: 'This drawer on its own — explode it, turn a part over, look at every piece',
+      run: () => store.editDrawer?.(unit.id, onDrawer),
+    });
+  }
 
   // ─── Turn 17 (CLAUDE.md F6.2): RENAME, WHERE THE OWNER LOOKED ────────────
   //

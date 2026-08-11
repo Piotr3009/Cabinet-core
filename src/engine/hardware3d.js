@@ -75,8 +75,23 @@ function hingeInstances(result, profile) {
     const on = panel.meta?.hingeOn
       ? result.panels.find((p) => p.id === panel.meta.hingeOn && p.box)
       : null;
+    // ─── TURN 24 (CLAUDE.md F5.1): WHICH FACE, FOR EVERY BEARER ─────────────
+    //
+    // Owner: bay doors drill correctly and RENDER BARE. They did, and the
+    // reason is one line: turn 21 read `hingeFace`, which only a PARTITION
+    // carries — so a bay door hung on a CARCASS SIDE fell through to
+    // `on.box.x`, the side panel's OUTER face. Its plate was drawn one board
+    // outside the cabinet, buried in the board or in the room, and every one
+    // of those doors looked as if it had no hardware at all.
+    //
+    // The law is the same for all three bearers and it is the door's own HAND:
+    // a door hinged on its LEFT closes against the face on the RIGHT of the
+    // piece it hangs from (the side's inner face, the partition's right face),
+    // and a door hinged on its RIGHT against the face on its left. That is
+    // what `hingeFace` says for a partition, and it now says it for a side
+    // too rather than being absent.
     const plateFaceX = on
-      ? (panel.meta.hingeFace === 'R' ? on.box.x + on.box.w : on.box.x)
+      ? (right ? on.box.x : on.box.x + on.box.w)
       : (right ? W - G : G);
     for (const y of centres) {
       out.push({

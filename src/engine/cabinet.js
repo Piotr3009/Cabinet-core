@@ -39,6 +39,9 @@ import {
   corniceOption, corniceOrder, corniceProjection, corniceRise, takesCornice,
 } from './cornice.js';
 import { partitionBackScrews, partitionBackSpec } from './partitionFixings.js';
+// Turn 24 (CLAUDE.md F7): the owner's butt-joint set, given the consumer it
+// was written for — a FIX shelf.
+import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
 // Turn 24 (CLAUDE.md F3): G is a property of the PART, and this is the door.
 import { partitionSlot, thicknessOf } from './thickness.js';
 
@@ -893,7 +896,21 @@ export function computeCabinet(params, profileOverride) {
   const topH = internalDepth;
   const backW = W;
   const backH = H;
-  const shelfW = W - C.shelfWidthBoards * G - C.shelfWidthClearance;
+  // ─── TURN 24 (CLAUDE.md F6): A SHELF'S WIDTH FOLLOWS ITS TYPE ────────────
+  //
+  // The owner's rule, now law: a FIX shelf is the FULL CLEAR LIGHT — wall to
+  // wall, because it is screwed in and never has to move — and an ADJUSTABLE
+  // one is that light less `shelfWidthClearance`, 2 mm a side, so it slides.
+  //
+  // On a 600 carcass: fix 564, adjustable 560.
+  //
+  // The engine's own number has ALWAYS been `W − 2G − 4`, which is exactly the
+  // adjustable law — so every shelf in every project and every golden default
+  // maps to ADJUSTABLE with ZERO delta, and the fix width appears only where a
+  // shelf is switched to fix. Both laws scale from the LIGHT and never from a
+  // constant, which is what makes them right in a bay as well as in a carcass.
+  const clearLight = W - C.shelfWidthBoards * G;
+  const shelfW = clearLight - C.shelfWidthClearance;
   // The sink's back panel sits 50 mm forward INSIDE the carcass, so its shelves
   // lose that much depth plus the panel itself (KIT_SINK L425-426).
   const SK = P.sinkUnit;
@@ -1714,10 +1731,14 @@ export function computeCabinet(params, profileOverride) {
     const bay = item?.zone == null || !Number.isFinite(Number(item.zone))
       ? null
       : bays[Math.trunc(Number(item.zone))] || null;
-    const shelfWHere = bay ? bay.size - C.shelfWidthClearance : shelfW;
-    const shelfXHere = bay
-      ? bay.from + C.shelfWidthClearance / 2
-      : G + C.shelfWidthClearance / 2;
+    // Turn 24 (CLAUDE.md F6): the light this shelf stands in — the bay's, or
+    // the whole carcass's — and then the type decides how much of it the board
+    // takes. Per-bay lights (partitions) are respected exactly as before.
+    const lightHere = bay ? bay.size : clearLight;
+    const lightFrom = bay ? bay.from : G;
+    const fixHere = isShelfLocked(item);
+    const shelfWHere = fixHere ? lightHere : lightHere - C.shelfWidthClearance;
+    const shelfXHere = fixHere ? lightFrom : lightFrom + C.shelfWidthClearance / 2;
     // Every shelf may be pulled out to the face on its own (turn 8, F4). With
     // nothing said it is the LISP's own 20 mm, which is what a bare kit call —
     // and every golden fixture — gets.
@@ -2829,7 +2850,13 @@ export function computeCabinet(params, profileOverride) {
     if (isShelfLocked(item)) {
       // The screw row needs the shelf's OWN thickness, because it is drilled on
       // that board's centre line (turn 9, CLAUDE.md F4).
-      shelfScrewRows.push({ y: shelfRows[i], thickness: shelfThickness(item, G) });
+      shelfScrewRows.push({
+        y: shelfRows[i],
+        thickness: shelfThickness(item, G),
+        // Turn 24 (CLAUDE.md F7): the joint runs along the shelf's own DEPTH,
+        // so the set has to know which board it is setting out on.
+        panel: panels.find((x) => x.part === 'SHELF' && x.meta?.index === i + 1) || null,
+      });
     } else {
       shelfPinRows.push(shelfRows[i]);
     }
@@ -2840,15 +2867,123 @@ export function computeCabinet(params, profileOverride) {
         for (const x of shelfHoleX) addDrill(sideId, 'shelf', SH.layer, x, rowY + dy, SH.diameter);
       }
     }
-    for (const { y: rowY, thickness: rowT } of shelfScrewRows) {
-      // The centre of the board's thickness: a screw goes into the EDGE — so a
-      // shelf somebody has made 25 mm is screwed on ITS centre line and not on
-      // the carcass board's (turn 9, CLAUDE.md F4).
-      const centreY = rowY + rowT / 2;
-      for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
-        addDrill(sideId, 'shelf_screw', pz.layers.screw, x, centreY, pz.screwDiameter);
+  }
+
+  // ─── THE FIX SHELF GETS THE OWNER'S JOINT (turn 24, CLAUDE.md F7) ─────────
+  //
+  // Owner: "jak fix, to nie ma 3 poziomów 7,5 — to się wyklucza." A shelf that
+  // is screwed in is not a shelf on pins, and turn 8's three ⌀3 screws down the
+  // whole length of the side were never the joint he makes.
+  //
+  // What he makes is the BUTT-JOINT SET turn 13 recorded as his own answer to
+  // BLOCKERS #59 (`engine/biscuits.js`): screw ⌀3 → 10 → 70 mm biscuit mark →
+  // 10 → screw ⌀3, laid out along the joint line, never closer than 50 mm to an
+  // end. Turn 23 took its only consumer away — the LISP does not give a
+  // PARTITION one — and this turn gives it the consumer it was written for.
+  //
+  //   BISCUITS ON BOTH BEARING FACES. The shelf lands on two boards and both
+  //   are set out.
+  //   THROUGH ⌀3 SCREWS ONLY FROM CARCASS SIDES. A side may be drilled through:
+  //   its outer face is against a wall, a neighbouring cabinet or an end panel.
+  //   FROM A PARTITION SIDE, BISCUITS ONLY — a partition serves two bays and a
+  //   through screw would surface in the neighbour's face.
+  //   …and the SHELF's own end takes the mark transferred onto it, because a
+  //   3-axis bed cannot reach an end and the set-out has to be on both halves
+  //   before anything is glued.
+  //
+  // ONE WORLD HEIGHT (F7.2). The joint's height is the SIDE's law —
+  // `row + shelfT/2`, the board's own centre line — and the partition's pattern
+  // is that same world height minus whatever the partition stands above. There
+  // is one number and two frames, never two numbers.
+  const shelfJointMarks = [];
+  const addMark = (panelId, layer, from, to) => shelfJointMarks.push({ panelId, layer, from, to });
+  const biscuitLayerNames = biscuitLayers(P);
+  for (const row of shelfScrewRows) {
+    const shelf = row.panel;
+    if (!shelf?.box) continue;
+    // THE ONE NUMBER: the world height of the joint.
+    const jointY = row.y + row.thickness / 2;
+    const depth = shelf.box.d;
+    const front = shelf.box.z + depth;          // the shelf's front edge, in z
+    const sets = biscuitSets({ length: depth, screws: true, profile: P });
+    const noScrewSets = biscuitSets({ length: depth, screws: false, profile: P });
+
+    // ── the two bearers this shelf actually lands on ──
+    const bearers = [];
+    const runFrom = shelf.box.x;
+    const runTo = shelf.box.x + shelf.box.w;
+    for (const side of ['BUL', 'BUR']) {
+      const panelHere = panels.find((x) => x.id === side);
+      if (!panelHere) continue;
+      const touchesSide = side === 'BUL'
+        ? Math.abs(runFrom - G) < 1e-6
+        : Math.abs(runTo - (W - G)) < 1e-6;
+      if (touchesSide) bearers.push({ id: side, kind: 'side', panel: panelHere });
+    }
+    for (const part of panels.filter((x) => x.part === 'VPART' && x.box)) {
+      const touches = Math.abs(runTo - part.box.x) < 1e-6
+        || Math.abs(runFrom - (part.box.x + part.box.w)) < 1e-6;
+      // …and the shelf's joint has to be inside the partition's own run.
+      const spans = jointY >= part.box.y - 1e-6 && jointY <= part.box.y + part.box.h + 1e-6;
+      if (touches && spans) bearers.push({ id: part.id, kind: 'partition', panel: part });
+    }
+
+    for (const bearer of bearers) {
+      if (bearer.kind === 'side') {
+        // The side's own frame: BUL's x runs from the FRONT of the cabinet
+        // towards the back, BUR's runs with z (engine/joinery.js). A point at
+        // cabinet z is therefore `D − z` on BUL and `z − G` on BUR.
+        const along = (z) => (bearer.id === 'BUL' ? D - z : z - G);
+        const at = (t) => along(front - t);
+        for (const set of sets) {
+          for (const sc of set.screws) {
+            addDrill(bearer.id, 'shelf_screw', pz.layers.screw, at(sc), jointY, pz.screwDiameter);
+          }
+          addMark(bearer.id, biscuitLayerNames.mark, [at(set.mark.from), jointY], [at(set.mark.to), jointY]);
+        }
+        continue;
+      }
+      // A PARTITION serves two bays and a through screw would surface in the
+      // neighbour's face — so it takes the biscuit alone, in the very same
+      // positions, and a joiner reads one pattern on both kinds of joint.
+      //
+      // Its frame is u along its HEIGHT and v along its DEPTH from the back
+      // (engine/joinery.js), so the joint's world height becomes an x in the
+      // partition's own frame by subtracting how far it stands above the floor.
+      const x = jointY - bearer.panel.box.y;
+      const v = (z) => z - bearer.panel.box.z;
+      for (const set of noScrewSets) {
+        addMark(
+          bearer.id,
+          biscuitLayerNames.mark,
+          [x, v(front - set.mark.from)],
+          [x, v(front - set.mark.to)],
+        );
       }
     }
+
+    // ── and the shelf's own two ends, where the set-out is transferred ──
+    const inset = markFromEnd(P);
+    for (const [end, endX] of [['L', inset], ['R', shelf.w - inset]]) {
+      const has = bearers.some((b) => (end === 'L'
+        ? (b.kind === 'side' ? b.id === 'BUL' : Math.abs(runFrom - (b.panel.box.x + b.panel.box.w)) < 1e-6)
+        : (b.kind === 'side' ? b.id === 'BUR' : Math.abs(runTo - b.panel.box.x) < 1e-6)));
+      if (!has) continue;
+      for (const set of noScrewSets) {
+        // The shelf is drawn `width × depth` and its own y runs from the BACK,
+        // so the set's distance from the FRONT is `depth − t`.
+        addMark(shelf.id, biscuitLayerNames.mark, [endX, depth - set.mark.from], [endX, depth - set.mark.to]);
+      }
+    }
+  }
+  for (const mark of shelfJointMarks) {
+    const target = panels.find((x) => x.id === mark.panelId);
+    if (!target) continue;
+    target.cnc = target.cnc || {};
+    target.cnc.marks = [
+      ...(target.cnc.marks || []),
+      { layer: mark.layer, from: mark.from.map((v) => roundTo(v, 4)), to: mark.to.map((v) => roundTo(v, 4)) },
+    ];
   }
 
   // Hinge cups + their mounting screws in each door front

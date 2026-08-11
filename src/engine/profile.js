@@ -2274,6 +2274,31 @@ export const DEFAULT_CABINET_PROFILE = {
       // How long the animation takes, out and back.
       seconds: 0.6,
     },
+
+    // ─── THE RULER'S SNAPS (turn 20, CLAUDE.md F6) ─────────────────────────
+    //
+    // Owner: "the tape grabs wherever the ray lands. It must catch the points a
+    // joiner means — corner, end, middle, the meeting of two parts."
+    //
+    // AutoCAD's osnap, which is his home ground, so it uses AutoCAD's own
+    // vocabulary and nothing has to be explained: a SQUARE on an endpoint, a
+    // TRIANGLE on a midpoint, a CROSS on an intersection.
+    ruler: {
+      // How near the cursor has to be, IN SCREEN PIXELS, before a point is
+      // caught. Screen space and not millimetres: a magnet measured in
+      // millimetres would be unusable zoomed out and hair-trigger zoomed in,
+      // which is exactly why AutoCAD's aperture is in pixels too.
+      snapPx: 12,
+      // The two panels are "touching" within this. The workshop's own grid
+      // (`mmStep`), because a joint drawn a quarter of a millimetre open is a
+      // joint, and an INT marker that vanished on it would be a bug a joiner
+      // could not explain.
+      contactMm: 0.5,
+      // The marker's size on screen, in pixels. It is drawn at a constant size
+      // however far away the point is — a snap marker is a piece of the tool,
+      // not a piece of the furniture.
+      markerPx: 11,
+    },
   },
 
   // ─── Distance arrows on the canvas (turn 3 phase 8; redrawn turn 5, #34) ───
@@ -2606,7 +2631,16 @@ export function migrateCabinetProfile(profile) {
     // answer for the rest, and a profile saved before this turn gets all of it.
     cnc: { ...D.cnc, ...profile.cnc, annotation: { ...D.cnc.annotation, ...profile.cnc?.annotation } },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
-    editor: { ...D.editor, ...profile.editor },
+    editor: {
+      ...D.editor,
+      ...profile.editor,
+      // Turn 20 (CLAUDE.md F6.2): key by key, like every other nested block —
+      // a profile saved before the ruler had snaps comes back with all three
+      // numbers rather than with a magnet of `undefined` pixels.
+      ruler: { ...D.editor.ruler, ...profile.editor?.ruler },
+      explode: { ...D.editor.explode, ...profile.editor?.explode },
+      history: { ...D.editor.history, ...profile.editor?.history },
+    },
     dimensions: { ...D.dimensions, ...profile.dimensions },
   };
 }

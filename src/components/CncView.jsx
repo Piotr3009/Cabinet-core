@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -12,7 +12,6 @@ import { panelLabelBlock } from '../engine/cnc/dxf.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import { partRollovers } from '../engine/cnc/rollover.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
-import { formatMmPair } from '../engine/format.js';
 
 // ─── CNC view ───
 // The workshop's visual check before the machine — the job AutoCAD used to do.

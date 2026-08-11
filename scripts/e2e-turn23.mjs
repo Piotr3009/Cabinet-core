@@ -107,28 +107,6 @@ async function main() {
     console.log(`BLKD  ${label} — ${why}${detail ? ` (${detail})` : ''}`);
   };
 
-  /** A real DRAG, press → move → release, all through CDP (R1). */
-  const drag = async (from, to, n = 12) => {
-    await page.mouse('mouseMoved', from.x, from.y, { buttons: 0, clickCount: 0 });
-    await page.send('Input.dispatchMouseEvent', {
-      type: 'mousePressed', x: from.x, y: from.y, button: 'left', clickCount: 1, buttons: 1,
-    });
-    for (let i = 1; i <= n; i += 1) {
-      await page.send('Input.dispatchMouseEvent', {
-        type: 'mouseMoved',
-        x: Math.round(from.x + ((to.x - from.x) * i) / n),
-        y: Math.round(from.y + ((to.y - from.y) * i) / n),
-        button: 'left',
-        buttons: 1,
-      });
-      await page.sleep(25);
-    }
-    await page.send('Input.dispatchMouseEvent', {
-      type: 'mouseReleased', x: to.x, y: to.y, button: 'left', clickCount: 1, buttons: 0,
-    });
-    await page.sleep(150);
-  };
-
   /** The screen rectangle of a scene object, from the LIVE scene and camera. */
   const rectOfJs = (view, predicate) => `
     const v = ${P}.views && ${P}.views[${JSON.stringify(view)}];
@@ -225,8 +203,6 @@ async function main() {
       `${hardware.plate.length} rows, parent ${hardware.plate[0]?.parent}`);
 
     // ─── F2.4: the body VISIBLY travels, the plate VISIBLY stays ───
-    const hingeRect = () => page.evaluate(rectOfJs('room', 'o.userData && o.userData.ccFinish && o.parent && o.parent.type !== "Scene"'));
-    const doorClosed = await page.evaluate(rectOfJs('room', 'o.userData && o.userData.ccPanelId && String(o.userData.ccPanelId).indexOf("-F") >= 0'));
     await shot('2a-door-closed-hinge-in-its-bore');
 
     const before = await page.evaluate(`
@@ -265,8 +241,6 @@ async function main() {
     measurements.swing = { before, after, moved, stayed };
     check('F2.1 — opening the door MOVES the hinge bodies and leaves the plates',
       moved > 0 && stayed > 0, `${moved} travelled, ${stayed} stayed`);
-    void hingeRect;
-    void doorClosed;
 
     // ─── F4: the finish, and the SAME models in the other one ───
     const nickelAt = await page.evaluate(rectOfJs('room', 'o.userData && o.userData.ccFinish'));

@@ -4,6 +4,7 @@ import {
   minDrawerFrontHeight, SHELF_VARIANTS,
 } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
@@ -3074,6 +3075,27 @@ export const useProjectStore = create((set, get) => ({
     const next = SHELF_VARIANTS.includes(variant) ? variant : 'adjustable';
     get().updateItem(unitId, itemId, { variant: next });
     return next;
+  },
+
+  /**
+   * The same question in the owner's own words (turn 21, CLAUDE.md F7):
+   * fix / adjustable / pull-out.
+   *
+   * ONE truth, two names — it writes the `variant` a shelf has carried since
+   * turn 8, so a project does not grow two answers to one question and no
+   * drilling moves for a shelf nobody has touched. A kind whose workshop number
+   * is still outstanding is REFUSED here as well as being disabled in the
+   * modal: a setter that quietly accepted `pullout` would leave a project
+   * claiming a shelf the engine cannot cut.
+   */
+  setShelfType: (unitId, itemId, type) => {
+    if (!shelfTypeEnabled(type)) return shelfTypeOf(
+      get().units.find((u) => u.id === unitId)?.params?.sections?.[0]?.items
+        ?.find((i) => i.id === itemId),
+    );
+    const variant = shelfVariantForType(type);
+    get().updateItem(unitId, itemId, { variant });
+    return shelfTypeOf({ variant });
   },
 
   /**

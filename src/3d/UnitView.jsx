@@ -21,7 +21,9 @@ import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
 import { useStorageBase } from '../lib/storageBase.js';
-import { shelfGapLadder } from '../engine/items.js';
+import {
+  clearLights, fieldFromPos, interiorFloor, lightBelow,
+} from '../engine/shelfHeights.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { panelFinish } from '../engine/materials.js';
@@ -490,6 +492,9 @@ export default function UnitView({
   // The cabinet's bays — the openings between its vertical partitions. One zone
   // when there is no partition, which is when nothing is ever highlighted.
   const boardT = unit.params.board_t ?? profile.board.thickness;
+  // Turn 21 (CLAUDE.md F10): this unit's own board — the interior floor is one
+  // of them up, and a cabinet cut from 22 mm has its floor at 22.
+  const G = boardT;
   const bays = useMemo(() => widthZones({
     width: unit.params.width,
     boardT,
@@ -720,9 +725,18 @@ export default function UnitView({
     } else if (legHeight > 0) {
       say('kick', [-0.22, mm(-legHeight / 2), front], `toe kick ${formatMm(legHeight)}`, 'dim');
     }
+    // ─── TURN 21 (CLAUDE.md F10): ONE DERIVATION, TWO DISPLAYS ─────────────
+    // This chip printed the STORED number — whose zero is the outside of the
+    // carcass bottom — while the hover ladder three lines below printed the
+    // clear light above the INTERIOR floor. 860 against 842, on the owner's
+    // screenshot, about one shelf. Both come out of `clearLights` now, so the
+    // chip, the ladder and the panel field are the same arithmetic and cannot
+    // disagree again.
     for (const shelf of result.assemblies.shelves || []) {
+      const light = lightBelow(shelf.y, shelfLights);
+      const size = light ? light.size : shelf.y - G;
       say(`shelf-${shelf.index}`, [-0.22, mm(shelf.y), front],
-        `S${shelf.index} ${formatMm(shelf.y)}${shelf.locked ? ' fixed' : ''}`, 'dim');
+        `S${shelf.index} ${formatMm(size)}${shelf.locked ? ' fixed' : ''}`, 'dim');
     }
     for (const df of result.assemblies.drawerFronts || []) {
       say(`drawer-${df.index}`, [mm(W / 2), mm(df.y + df.h / 2), front + 0.02],
@@ -760,15 +774,35 @@ export default function UnitView({
   // to fit into — not between centre lines, because a joiner asking "will the
   // toaster go in there" is asking about the clear space.
   const [hoverShelf, setHoverShelf] = useState(null);
-  const shelfGaps = useMemo(() => {
-    const G = Number(unit.params.board_t) || profile.board.thickness;
-    return shelfGapLadder({
-      positions: result.panels.filter((p) => p.part === 'SHELF' && p.box).map((p) => p.box.y),
-      floor: result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G,
+  // ─── TURN 21 (CLAUDE.md F10): THE ONE DERIVATION ───────────────────────────
+  // Every shelf readout in this view — the "all dims" chip, the hover ladder
+  // and the live drag — is a slice of THIS. `engine/shelfHeights.js` is the
+  // only place a shelf height is turned into something a person reads, and the
+  // panel field on the right is the same function's other half.
+  const shelfLights = useMemo(() => {
+    const shelves = result.panels.filter((p) => p.part === 'SHELF' && p.box);
+    return clearLights({
+      positions: shelves.map((p) => p.box.y),
+      thickness: shelves.map((p) => p.box.h),
+      floor: result.assemblies.drawerZone
+        ? result.assemblies.drawerZone.top + G
+        : interiorFloor(G),
       ceiling: H - G,
-      boardT: G,
-    }, profile.editor.mmStep).map((g, i) => ({ ...g, key: `gap-${i}` }));
-  }, [result.panels, result.assemblies.drawerZone, unit.params.board_t, profile, H]);
+    }, profile.editor.mmStep);
+  }, [result.panels, result.assemblies.drawerZone, G, profile.editor.mmStep, H]);
+  const shelfGaps = useMemo(
+    () => shelfLights.map((g, i) => ({ ...g, key: `gap-${i}` })),
+    [shelfLights],
+  );
+  // The two openings the shelf being dragged stands between — the same list,
+  // sliced to the board in the hand.
+  const dragLights = useMemo(() => {
+    if (!shelfDrag || shelfDrag.unitId !== unit.id) return [];
+    const pos = Number(shelfDrag.pos);
+    return shelfLights.filter(
+      (g) => Math.abs(g.to - pos) < 1e-6 || g.from >= pos,
+    ).slice(0, 2);
+  }, [shelfDrag, shelfLights, unit.id]);
 
   // How tall the top infill is right now — the handle sits on top of it. The
   // FACE strip is the piece the edge belongs to (there is a shelf behind it,
@@ -1211,21 +1245,25 @@ export default function UnitView({
       {/* live dimension while a shelf is being dragged (SPEC 4.8) */}
       {shelfDrag && shelfDrag.unitId === unit.id && (
         <group userData={{ ccHelper: true }}>
-          {shelfDrag.below != null && (
+          {/* ─── Turn 21 (CLAUDE.md F10): THE SAME FUNCTION AS EVERY OTHER
+              SHELF READOUT ───
+              These read the CLEAR LIGHTS either side of the board being
+              dragged, out of `shelfLights` — the very list the hover ladder
+              and the "all dims" chips are slices of. They used to read the
+              distance to the NEIGHBOUR'S OWN STORED FACE, which beside another
+              shelf is one board thickness bigger than the opening the label is
+              drawn across: a third datum for one question. */}
+          {dragLights.map((g) => (
             <DimLabel
-              position={[mm(W / 2), mm((shelfDrag.below + shelfDrag.pos) / 2), mm(D) + 0.06]}
-              text={formatMm(shelfDrag.pos - shelfDrag.below)}
+              key={`drag-${g.from}`}
+              position={[mm(W / 2), mm((g.from + g.to) / 2), mm(D) + 0.06]}
+              text={formatMm(g.size)}
               tone="gold"
             />
-          )}
-          {shelfDrag.above != null && (
-            <DimLabel
-              position={[mm(W / 2), mm((shelfDrag.above + shelfDrag.pos) / 2), mm(D) + 0.06]}
-              text={formatMm(shelfDrag.above - shelfDrag.pos)}
-              tone="gold"
-            />
-          )}
-          <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={formatMm(shelfDrag.pos, { unit: true })} tone="gold" />
+          ))}
+          {/* …and the piece's own height, on the interior datum the panel
+              field speaks. */}
+          <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={formatMm(fieldFromPos(shelfDrag.pos, G), { unit: true })} tone="gold" />
         </group>
       )}
 

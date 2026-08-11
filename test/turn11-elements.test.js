@@ -105,8 +105,10 @@ test('the FIELDS a piece offers are element-appropriate', () => {
   const panels = resultOf(id).panels;
   const fields = (pid) => elementFields(panels.find((p) => p.id === pid));
 
-  // A shelf: where it is, how far back, how thick, what of.
-  assert.deepEqual(fields('SHELF-1'), ['position-y', 'setback', 'thickness', 'material']);
+  // A shelf: what KIND it is (turn 21, CLAUDE.md F7 — the modal gains the type,
+  // first, because it decides what the rest of the rows mean), where it is, how
+  // far back, how thick, what of.
+  assert.deepEqual(fields('SHELF-1'), ['shelf-type', 'position-y', 'setback', 'thickness', 'material']);
   // A side: the carcass board (see below) and the material.
   assert.deepEqual(fields('BUL'), ['carcass-board', 'material']);
   // An end panel: its own height, its own board, how far above the unit.

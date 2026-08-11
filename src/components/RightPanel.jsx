@@ -12,6 +12,8 @@ import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/desi
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { isDuplicateName, unitName } from '../engine/naming.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
+import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
+import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
 import NumberField from './NumberField.jsx';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
@@ -45,7 +47,7 @@ export default function RightPanel() {
   const removeItem = useProjectStore((s) => s.removeItem);
   const updateItem = useProjectStore((s) => s.updateItem);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
-  const setShelfVariant = useProjectStore((s) => s.setShelfVariant);
+  const setShelfType = useProjectStore((s) => s.setShelfType);
   const setShelfLocked = useProjectStore((s) => s.setShelfLocked);
   const setShelfFront = useProjectStore((s) => s.setShelfFront);
   const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
@@ -587,6 +589,9 @@ export default function RightPanel() {
 
           {type.supports.shelves && shelves.length > 0 && (
             <div>
+              {/* Turn 21 (CLAUDE.md F10): the board the interior floor is one
+                  of — this unit's own, not the workshop default, because a
+                  cabinet cut from 22 mm has its floor 22 mm up. */}
               <div className="cc-row">
                 <span className="text-sm text-ink-100">Shelves ({shelves.length})</span>
                 <button
@@ -599,10 +604,11 @@ export default function RightPanel() {
               </div>
               <ul className="space-y-1">
                 {shelves.map(({ item: sh, label }) => {
+                  const boardT = Number(unit.params.board_t) || profile.board.thickness;
                   // Turn 8 (CLAUDE.md F4): a shelf is now three questions —
                   // where it is, how it is HELD, and how far back its front
                   // edge stands. A screwed one, or a locked one, does not move.
-                  const locked = sh.variant === 'fixed' || sh.updown_locked === true;
+                  const locked = shelfTypeOf(sh) === 'fix' || sh.updown_locked === true;
                   const toFace = Number(sh.front_mm) === 0;
                   return (
                     <li key={sh.id} className="flex items-center gap-1 text-sm">
@@ -610,20 +616,36 @@ export default function RightPanel() {
                       {/* Typed positions go through the SAME clamp as the drag —
                           the field is not a back door around the collision rules,
                           and a locked shelf refuses both. */}
+                      {/* ─── Turn 21 (CLAUDE.md F10): THE INTERIOR DATUM ───
+                          The clear light under the shelf, which is the number
+                          the 3-D chip beside it shows and the number a joiner
+                          measures. Storage does not move — `posFromField` puts
+                          it back — and the clamp is still the setter's. */}
                       <NumberField
-                        className="cc-input w-16 text-right" value={sh.pos_mm ?? 0}
+                        className="cc-input w-16 text-right"
+                        value={fieldFromPos(sh.pos_mm ?? boardT, boardT)}
                         disabled={locked}
-                        title={locked ? 'Screwed or locked — unlock it to move it' : 'Height above the carcass floor'}
-                        onCommit={(v) => setShelfPos(unit.id, sh.id, v)}
+                        title={locked
+                          ? 'Screwed or locked — unlock it to move it'
+                          : 'The clear light under the shelf — its underside above the interior floor'}
+                        onCommit={(v) => setShelfPos(unit.id, sh.id, posFromField(v, boardT))}
                       />
+                      {/* Turn 21 (CLAUDE.md F7): the owner's three kinds, in
+                          his own words. A kind whose workshop number is still
+                          outstanding is offered and disabled, with the reason
+                          on it — never silently missing, never invented. */}
                       <select
-                        className="cc-input flex-1" value={sh.variant || 'adjustable'}
+                        className="cc-input flex-1" value={shelfTypeOf(sh)}
                         title="How this shelf is held"
-                        onChange={(e) => setShelfVariant(unit.id, sh.id, e.target.value)}
+                        data-shelf-type="1"
+                        onChange={(e) => setShelfType(unit.id, sh.id, e.target.value)}
                       >
-                        <option value="adjustable">Adjustable</option>
-                        <option value="fixed">Fixed (screwed)</option>
-                        <option value="pullout">Pull-out</option>
+                        {SHELF_TYPES.map((t) => (
+                          <option key={t.id} value={t.id} disabled={!t.enabled} title={t.hint}>
+                            {t.label}
+                            {t.enabled ? '' : ' — workshop number outstanding'}
+                          </option>
+                        ))}
                       </select>
                       {/* The minimal toggle CLAUDE.md asks for: full UI later. */}
                       <button
@@ -632,7 +654,7 @@ export default function RightPanel() {
                         title={sh.updown_locked
                           ? 'Locked in place — drilled like a fixed shelf'
                           : 'Lock this shelf where it is'}
-                        disabled={sh.variant === 'fixed'}
+                        disabled={shelfTypeOf(sh) === 'fix'}
                         onClick={() => setShelfLocked(unit.id, sh.id, !sh.updown_locked)}
                       >
                         {sh.updown_locked ? '🔒' : '🔓'}

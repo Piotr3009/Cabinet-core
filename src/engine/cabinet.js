@@ -23,7 +23,7 @@
 import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
-import { partitionSpan, widthZones } from './zones.js';
+import { partitionSpan, shelfCrossesPartition, widthZones } from './zones.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
@@ -1682,6 +1682,12 @@ export function computeCabinet(params, profileOverride) {
       cnc: rectGeometry(shelfWHere, depthHere),
       meta: {
         index: i,
+        // ─── TURN 21 (CLAUDE.md F9.1): THE SHELF'S OWN RUN ────────────────
+        // Where this board actually reaches, left and right. It is what
+        // decides whether a partition yields to it — SPAN, never order — and
+        // it is recorded on the panel so the answer is the same everywhere
+        // and can be read back off a saved result.
+        run: { from: shelfXHere, to: shelfXHere + shelfWHere },
         // Turn 8: the default is ADJUSTABLE — a shelf on pins, which is what a
         // shelf with nothing said about it has always been. `fixed` now means
         // SCREWED (F4), so it cannot go on being the value nobody chose.
@@ -1697,6 +1703,13 @@ export function computeCabinet(params, profileOverride) {
       },
     }));
   }
+
+  // Turn 21 (CLAUDE.md F9): every shelf's run, in the engine's own order, for
+  // the partition pass below. Read back off the panels that were just cut, so
+  // there is one arithmetic and not a second copy of the bay maths.
+  const shelfRuns = panels
+    .filter((p) => p.part === 'SHELF' && p.meta?.run)
+    .map((p) => ({ run: p.meta.run, item: cfg.shelfItems[p.meta.index - 1] || null }));
 
   // A partition and a rail partitioner are FIX shelves in everything but name,
   // so turn 8 (F4) sets them back on the same line as the shelves beside them.
@@ -1745,12 +1758,35 @@ export function computeCabinet(params, profileOverride) {
     let n = 0;
     for (const item of verticals) {
       const x = Math.min(Math.max(Number(item.x_mm), G), W - 2 * G);
+      // ─── TURN 21 (CLAUDE.md F8): A DEFAULT, NOT A LAW ────────────────────
+      //
+      // Owner: 20 mm was FORCED on every partition; wrong. The number is this
+      // PIECE's now — `front_mm` on the item, exactly as a shelf's own setback
+      // has been since turn 8 — and the unit's `partition_front_mm` only
+      // SEEDS it, as the profile only seeds that. Nothing is imposed.
+      //
+      // Setback 0 is load-bearing rather than a corner case: it is what lets a
+      // partition reach the door plane, and therefore what makes F12's doors
+      // on a partition possible at all.
+      const ownFront = setbackOf(item?.front_mm, internalDepth - partitionDepth);
+      const ownDepth = Math.max(0, internalDepth - ownFront);
+      // ─── TURN 21 (CLAUDE.md F9): ONLY THE SHELF THAT CROSSES IT ──────────
+      //
+      // Turn 12 handed this call EVERY shelf in the cabinet, so the lowest
+      // fixed shelf anywhere truncated every partition everywhere — a shelf in
+      // the left bay stopping a partition three bays away — and which shelf
+      // won depended on the order they were added in. SPAN decides: a shelf
+      // whose run crosses this partition's plane may carry it, and a shelf
+      // living inside a bay touches nothing.
+      const crossing = shelfRuns
+        .filter((r) => r.item && shelfCrossesPartition(r.run, { x, thickness: G }))
+        .map((r) => r.item);
       const span = partitionSpan({
         floor: G,
         ceiling: H - G,
-        shelves: cfg.shelfItems || [],
+        shelves: crossing,
         boardT: G,
-        depth: partitionDepth,
+        depth: ownDepth,
         fullDepth: internalDepth,
       });
       if (span.height <= 0) break;
@@ -1776,6 +1812,9 @@ export function computeCabinet(params, profileOverride) {
           itemId: item.id || null,
           x_mm: x,
           front_mm: span.front_mm,
+          // Turn 21 (CLAUDE.md F8): 0 is what a door on this partition needs,
+          // and the view and F12 both ask the panel rather than the unit.
+          setback: span.front_mm,
           // Which shelf carries it, when one does — the panel says so, and the
           // 3D view can draw the two as one joint rather than two pieces that
           // happen to touch.

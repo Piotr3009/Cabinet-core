@@ -1,0 +1,70 @@
+364,366c364,366
+< BUDR+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+< BUDR+partition-on-shelf  file  01-VPART-1.dxf  dc4df93d
+< BUDR+partition-on-shelf  sheet all  7e892524
+---
+> BUDR+partition-on-shelf  file  01-TOP.dxf  900b2a9f
+> BUDR+partition-on-shelf  file  01-VPART-1.dxf  5d572131
+> BUDR+partition-on-shelf  sheet all  b0c6ae25
+368c368
+< BUDR+partition-on-shelf  sheet non-sprayed  0bdb1faa
+---
+> BUDR+partition-on-shelf  sheet non-sprayed  a72f87f9
+656,658c656,658
+< BUDR2+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+< BUDR2+partition-on-shelf  file  01-VPART-1.dxf  dc4df93d
+< BUDR2+partition-on-shelf  sheet all  087939bb
+---
+> BUDR2+partition-on-shelf  file  01-TOP.dxf  900b2a9f
+> BUDR2+partition-on-shelf  file  01-VPART-1.dxf  5d572131
+> BUDR2+partition-on-shelf  sheet all  f8a439f8
+660c660
+< BUDR2+partition-on-shelf  sheet non-sprayed  44a055a6
+---
+> BUDR2+partition-on-shelf  sheet non-sprayed  98656ad5
+1020,1022c1020,1022
+< BUDR4+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+< BUDR4+partition-on-shelf  file  01-VPART-1.dxf  dc4df93d
+< BUDR4+partition-on-shelf  sheet all  ee812b54
+---
+> BUDR4+partition-on-shelf  file  01-TOP.dxf  900b2a9f
+> BUDR4+partition-on-shelf  file  01-VPART-1.dxf  5d572131
+> BUDR4+partition-on-shelf  sheet all  c40b48c3
+1024c1024
+< BUDR4+partition-on-shelf  sheet non-sprayed  eb910eb7
+---
+> BUDR4+partition-on-shelf  sheet non-sprayed  9d28017f
+1355,1357c1355,1357
+< DW_PANEL+partition-on-shelf  file  01-TOP.dxf  2255e6e5
+< DW_PANEL+partition-on-shelf  file  01-VPART-1.dxf  6e6aab52
+< DW_PANEL+partition-on-shelf  sheet all  803e9551
+---
+> DW_PANEL+partition-on-shelf  file  01-TOP.dxf  279fc995
+> DW_PANEL+partition-on-shelf  file  01-VPART-1.dxf  83011796
+> DW_PANEL+partition-on-shelf  sheet all  7e86a68a
+1359c1359
+< DW_PANEL+partition-on-shelf  sheet non-sprayed  e1e41d8a
+---
+> DW_PANEL+partition-on-shelf  sheet non-sprayed  0f7a5415
+1507,1509c1507,1509
+< FRIDGE+partition-on-shelf  file  01-TOP.dxf  878ff9ad
+< FRIDGE+partition-on-shelf  file  01-VPART-1.dxf  e4b85440
+< FRIDGE+partition-on-shelf  sheet all  06acb688
+---
+> FRIDGE+partition-on-shelf  file  01-TOP.dxf  900b2a9f
+> FRIDGE+partition-on-shelf  file  01-VPART-1.dxf  3993fdf6
+> FRIDGE+partition-on-shelf  sheet all  0f7f5ce0
+1511c1511
+< FRIDGE+partition-on-shelf  sheet non-sprayed  19d13af4
+---
+> FRIDGE+partition-on-shelf  sheet non-sprayed  1f2a88ce
+1855,1856c1855,1856
+< OVEN_BASE+partition-on-shelf  file  01-VPART-1.dxf  dc4df93d
+< OVEN_BASE+partition-on-shelf  sheet all  0aeea091
+---
+> OVEN_BASE+partition-on-shelf  file  01-VPART-1.dxf  3ea179f2
+> OVEN_BASE+partition-on-shelf  sheet all  7a5f6766
+1858c1858
+< OVEN_BASE+partition-on-shelf  sheet non-sprayed  9983e78a
+---
+> OVEN_BASE+partition-on-shelf  sheet non-sprayed  ec6e4c2c

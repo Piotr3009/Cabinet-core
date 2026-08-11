@@ -172,6 +172,49 @@ function cases() {
         }],
       },
     });
+    // ─── TURN 21 (CLAUDE.md F12.5 / PROOF): THE DEDICATED PROBE ─────────────
+    //
+    // The owner's own case — partitions at 600 and 800, three bays, a door in
+    // each — because this turn's ONLY new CNC entities live here and nowhere
+    // else: the ⌀5 plate pattern (HINGES_5MM) on a VPART, where a door is hung
+    // on a partition. A scenario the turn-20 baseline does not have shows up in
+    // the diff as an ADDITION, which is what this script's header calls the
+    // right way to report a new variant.
+    out.push({
+      id: `${type}+partition-doors`,
+      params: {
+        ...base,
+        width: Math.max(Number(base.width) || 0, 1400),
+        sections: [{
+          width_mm: Math.max(Number(base.width) || 0, 1400),
+          items: [
+            { id: 'p1', kind: 'partition', x_mm: 600, front_mm: 0 },
+            { id: 'p2', kind: 'partition', x_mm: 800, front_mm: 0 },
+          ],
+        }],
+        bay_doors: [
+          { door: 'one', hinge: 'L' },
+          { door: 'one', hinge: 'L' },
+          { door: 'one', hinge: 'R' },
+        ],
+      },
+    });
+    // …and the ADJUSTABLE shelf, which F7.4 asks to be probed separately. It
+    // introduces NO new class at all — the ⌀7.5 pin rows are what the kit has
+    // drilled since turn 1 — and this row is here to prove exactly that.
+    out.push({
+      id: `${type}+adjustable-shelves`,
+      params: {
+        ...base,
+        sections: [{
+          width_mm: base.width,
+          items: [
+            { id: 's1', kind: 'shelf', pos_mm: Math.round(base.height / 3) },
+            { id: 's2', kind: 'shelf', pos_mm: Math.round((2 * base.height) / 3) },
+          ],
+        }],
+      },
+    });
   }
   return out;
 }

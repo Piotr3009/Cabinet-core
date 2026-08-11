@@ -12,6 +12,8 @@ import { minDrawerFrontHeight } from '../engine/cabinet.js';
 import { elementMaterialChoices, migrateDesign } from '../engine/design.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
+import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
+import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
 import NumberField from './NumberField.jsx';
 
 // ─── The properties of ONE piece (turn 11, CLAUDE.md F3) ────────────────────
@@ -39,6 +41,7 @@ export default function ElementProperties({
 
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
+  const setShelfType = useProjectStore((s) => s.setShelfType);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
   const setElementDepth = useProjectStore((s) => s.setElementDepth);
   const setElementThickness = useProjectStore((s) => s.setElementThickness);
@@ -117,17 +120,43 @@ export default function ElementProperties({
 
   const row = (key) => {
     switch (key) {
+      // ─── TURN 21 (CLAUDE.md F7): fix / adjustable / pull-out ──────────────
+      case 'shelf-type':
+        return (
+          <Field key={key} label="Type">
+            <select
+              className="cc-input w-full"
+              data-shelf-type="1"
+              value={shelfTypeOf(item)}
+              title="How this shelf is held"
+              onChange={(e) => setShelfType(unit.id, item.id, e.target.value)}
+            >
+              {SHELF_TYPES.map((t) => (
+                <option key={t.id} value={t.id} disabled={!t.enabled} title={t.hint}>
+                  {t.label}
+                  {t.enabled ? '' : ' — workshop number outstanding'}
+                </option>
+              ))}
+            </select>
+          </Field>
+        );
+      // ─── TURN 21 (CLAUDE.md F10): ONE TRUTH, THE INTERIOR DATUM ───────────
+      // The field showed the stored number, whose zero is the OUTSIDE of the
+      // carcass bottom, while the chip beside it showed the clear light above
+      // the INTERIOR floor — 860 against 842 on the owner's screenshot. The
+      // field speaks the joiner's datum now and `posFromField` puts it back;
+      // storage does not move, and the clamp is still the setter's.
       case 'position-y':
         return (
           <Field key={key} label="Height">
             <NumberField
               className="cc-input text-right"
-              value={item?.pos_mm ?? 0}
+              value={fieldFromPos(item?.pos_mm ?? G, G)}
               disabled={locked}
               title={locked
                 ? 'Screwed or locked — unlock it to move it'
-                : 'Above the carcass floor. The same clamp the drag obeys.'}
-              onCommit={(v) => setShelfPos(unit.id, item.id, v)}
+                : 'The underside, above the interior floor — the clear light under the shelf. The same clamp the drag obeys.'}
+              onCommit={(v) => setShelfPos(unit.id, item.id, posFromField(v, G))}
             />
           </Field>
         );

@@ -130,3 +130,164 @@ export function doorHeightOf(params, profile) {
   const gap = Number(profile?.doors?.gap) || 0;
   return Math.max(0, h - gap + doorExtendMm(params, profile));
 }
+
+// ─── DOORS ON THE PARTITION (turn 21, CLAUDE.md F12) ────────────────────────
+//
+// Owner's case, verbatim: a full-height partition at setback 0 must be able to
+// carry doors — partitions at 600 and 800, three bays, two proper doors and one
+// small one in the middle.
+//
+// ─── THE PRECONDITIONS ARE PHYSICAL, NOT A SETTING ─────────────────────────
+//
+// FULL HEIGHT, because a door hung on a board that stops half way up is hung on
+// a board that will twist. SETBACK 0, because a hinge plate is screwed to the
+// face of the piece the door closes against — a partition standing 20 mm back
+// has nothing at the door plane to screw to. Both are read off the piece
+// (F8 made the setback the partition's own), never asked for separately.
+//
+// ─── THE WIDTHS ARE THE OWNER'S LAW, VERBATIM ──────────────────────────────
+//
+// "The leaf HINGED ON the partition reaches the partition's far edge minus
+// 3 mm — same rule as at a carcass side. Its neighbour keeps the 3 mm gap,
+// therefore starts at the far edge and covers none of the partition — coming
+// out slightly narrower, which the owner accepts. Gaps between doors: always 3."
+//
+// So at a partition [px, px + t], with the RIGHT bay's door hinged on it:
+//
+//        px          px+t
+//         ├───────────┤            the partition
+//    ─────┤           │            the LEFT door stops at the far edge: px
+//         │  ├────────────────     the RIGHT door starts 3 mm past it: px + 3
+//         └─3─┘                    …and the gap between them is 3.
+//
+// Mirrored when the LEFT bay's door is the hinged one. Where BOTH bays hang a
+// door on the partition — which is real: it has two faces and each takes a
+// plate — neither can cover it, so they meet on its centre line with the same
+// 3 mm between them. Where NEITHER does, the same: the partition is simply
+// exposed between two doors that are hinged elsewhere.
+
+/** A bay is bounded on each side by the carcass, or by a partition. */
+function boundaryAt(kind, x, thickness, id = null) {
+  return {
+    kind, x, thickness, id,
+  };
+}
+
+/**
+ * The bays a set of DOOR-BEARING partitions divides a carcass face into.
+ *
+ * Only partitions that can actually carry a door are counted — full height and
+ * flush with the face — because a bay is a place a door goes, and a divider
+ * that cannot carry one does not make one.
+ *
+ * @param {object} args
+ *   width, boardT
+ *   partitions  [{ id, x, fullHeight, setback }] — the pieces the engine cut
+ * @returns {Array<{index, from, to, size, left, right}>} from/to are the CLEAR
+ *   opening's faces; `left`/`right` are the boundaries themselves.
+ */
+export function doorBays({ width, boardT, partitions = [] }) {
+  const W = Number(width) || 0;
+  const t = Math.max(0, Number(boardT) || 0);
+  const carrying = partitions
+    .filter((p) => p.fullHeight && Number(p.setback) === 0 && Number.isFinite(Number(p.x)))
+    .map((p) => ({ ...p, x: Number(p.x), thickness: Number(p.thickness) || t }))
+    .sort((a, b) => a.x - b.x);
+
+  const bounds = [
+    boundaryAt('side', 0, t, 'BUL'),
+    ...carrying.map((p) => boundaryAt('partition', p.x, p.thickness, p.id)),
+    boundaryAt('side', W - t, t, 'BUR'),
+  ];
+  const out = [];
+  for (let i = 0; i < bounds.length - 1; i += 1) {
+    const left = bounds[i];
+    const right = bounds[i + 1];
+    const from = left.x + left.thickness;
+    const to = right.x;
+    out.push({
+      index: out.length, from, to, size: Math.max(0, to - from), left, right,
+    });
+  }
+  return out;
+}
+
+/**
+ * Where each bay's door actually runs, given who is hinged on what.
+ *
+ * @param {object} args
+ *   bays   `doorBays()` output
+ *   modes  per bay, in bay order: { door: 'one'|'none', hinge: 'L'|'R' }
+ *   width, gap
+ * @returns {Array<{bay, x, width, hinge, hingeOn, hingeFace}>} one entry per
+ *   door that exists. `hingeOn` is the boundary's id — 'BUL', 'BUR' or a
+ *   partition's panel id — and `hingeFace` is which of a partition's two faces
+ *   the plate is screwed to.
+ */
+export function bayDoorPlan({
+  bays = [], modes = [], width = 0, gap = 3,
+}) {
+  const half = gap / 2;
+  const wants = bays.map((b, i) => {
+    const m = modes[i] || {};
+    const on = String(m.door ?? 'none').toLowerCase() !== 'none';
+    return { on, hinge: String(m.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L' };
+  });
+  // Which bay, if any, hangs its door on each boundary.
+  const hungOn = (boundary, side) => bays.some((b, i) => wants[i].on
+    && (side === 'left'
+      ? (b.left === boundary && wants[i].hinge === 'L')
+      : (b.right === boundary && wants[i].hinge === 'R')));
+
+  const edgeAt = (boundary, from) => {
+    // `from` is the side of the boundary the door approaches from.
+    if (boundary.kind === 'side') {
+      return boundary.id === 'BUL' ? half : Number(width) - half;
+    }
+    const mine = from === 'right' ? hungOn(boundary, 'left') : hungOn(boundary, 'right');
+    const theirs = from === 'right' ? hungOn(boundary, 'right') : hungOn(boundary, 'left');
+    if (mine && !theirs) {
+      // This door covers the partition, all but the gap short of its far edge.
+      return from === 'right' ? boundary.x + gap : boundary.x + boundary.thickness - gap;
+    }
+    if (theirs && !mine) {
+      // The neighbour covers it; this one starts at the far edge and covers none.
+      return from === 'right' ? boundary.x + boundary.thickness : boundary.x;
+    }
+    // Both, or neither: they meet on the partition's centre line.
+    return from === 'right'
+      ? boundary.x + boundary.thickness / 2 + half
+      : boundary.x + boundary.thickness / 2 - half;
+  };
+
+  const out = [];
+  bays.forEach((bay, i) => {
+    if (!wants[i].on) return;
+    const x = edgeAt(bay.left, 'right');
+    const to = edgeAt(bay.right, 'left');
+    const boundary = wants[i].hinge === 'L' ? bay.left : bay.right;
+    out.push({
+      bay: bay.index,
+      x,
+      width: Math.max(0, to - x),
+      hinge: wants[i].hinge,
+      hingeOn: boundary.id,
+      // A partition has two faces and the plate goes on the one this door
+      // closes against — the same distinction BUL and BUR carry, on a piece
+      // that is neither.
+      hingeFace: boundary.kind === 'partition' ? (wants[i].hinge === 'L' ? 'R' : 'L') : null,
+      onPartition: boundary.kind === 'partition',
+    });
+  });
+  return out;
+}
+
+/**
+ * Can this unit offer per-bay doors at all?
+ *
+ * F12.1's preconditions, asked once so the engine, the panel and a test all get
+ * the same answer.
+ */
+export function bayDoorsAvailable(bays = []) {
+  return bays.some((b) => b.left.kind === 'partition' || b.right.kind === 'partition');
+}

@@ -278,6 +278,23 @@ export const DEFAULT_CABINET_PROFILE = {
       // that is what the profile carries.
       frontToSideDelta: 36,
       firstFrontAdjust: 3,     // bottom front is 3 mm shorter (clears the base)
+      // ─── TURN 21 (CLAUDE.md F1.4): THE FAÇADE'S PILOT HOLES ────────────────
+      //
+      // KIT_WARDROBE_FULL `drawWDR_DRAWER_FRONT` L313-322, verbatim: "drawerNum
+      // = drawer number (1=first, 93.5mm; rest=96.5mm from bottom)". The two
+      // numbers are ONE number: the bottom front is `firstFrontAdjust` shorter
+      // and starts that much higher, so 93.5 = 96.5 − 3 and both pilots land on
+      // the SAME world line — `runner bottom + 96.5` — exactly as the BUDR
+      // kit's do with its own `+ G` on drawer 1.
+      //
+      // They are here so the pilot gate can read the law rather than carry a
+      // copy of it, and so a workshop that moves its drawer screws moves them
+      // in one place. The wardrobe's fronts are not DRILLED by the engine yet
+      // (the LISP drills them, the engine emits a plain rectangle) — that gap
+      // is recorded in verify/t21/hole-alignment.md and in BLOCKERS, because
+      // closing it is a CNC delta and this turn's iron rule is zero.
+      frontScrewFromBottom: 96.5,
+      firstFrontScrewFromBottom: 93.5,   // = frontScrewFromBottom − firstFrontAdjust
       gap: 3,                  // gap between drawer fronts
       boxSideThickness: 18,
       boxWidthClearance: 10,   // box W = internal W − this − drawer-panel reduction
@@ -1019,6 +1036,28 @@ export const DEFAULT_CABINET_PROFILE = {
     // there is raw core. Painting a decor onto the inside of a hinge cup is the
     // thing this exists to stop.
     cutFace: '#4a4a4a',
+
+    // ─── TURN 21 (CLAUDE.md F3): THE 3-D WOUND-CARVING IS RETIRED ───────────
+    //
+    // The owner, after seeing pilot dots on his door faces and stray dashes
+    // inside carcasses: THE CNC SHEET IS THE DOCUMENT; the 3-D carving is not
+    // worth its problems. His call, and the right one.
+    //
+    // So turn 20's feature-carving — every drilling, pocket and groove cut out
+    // of the board as a real absence, with its own cut-face buffer — renders
+    // only when this is true, and it is false. What was there BEFORE turn 20
+    // is NOT behind the flag and never was: the dog-bone sockets and the tabs
+    // are part of the board's own OUTLINE (turn 11 and turn 12) and the
+    // construction pockets the scene has always shown are still shown. The
+    // pre-turn-20 look is the reference, and verify/t21 carries the pair.
+    //
+    // No UI toggle, deliberately — it is a profile flag for a future change of
+    // heart, one line, and turning it on is the owner's word and nobody else's.
+    // The z-fighting he saw goes with the default; the carving is RETIRED, not
+    // debugged.
+    cuts: {
+      enabled: false,
+    },
     // ~20 % sheen: a hint of clear coat over a matt board. Not plastic.
     // Kept as the fallback a piece takes when it belongs to no finish family.
     sheen: { roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.35, metalness: 0.0 },
@@ -2230,6 +2269,14 @@ export const DEFAULT_CABINET_PROFILE = {
       // "140 px to the side (right; left when the right has no room), and the
       // TOP of the panel level with the click."
       //
+      // ─── TURN 21 (CLAUDE.md F4): HE USED IT FOR A DAY AND ASKED FOR MORE ─
+      //
+      // 240, same law. ONE NUMBER MOVES: right first, left where the right
+      // lacks room, clamped to the viewport, draggable — all exactly as turn 20
+      // wrote it. Every test and the acceptance walk read the number from HERE
+      // rather than pinning a literal, which is what makes "one number moves"
+      // true rather than aspirational.
+      //
       //   x  140 — how much clear glass there is between the object and the
       //            panel. A thumb's width was not enough: the owner works at
       //            arm's length from a large screen and 24 px of air still
@@ -2242,7 +2289,7 @@ export const DEFAULT_CABINET_PROFILE = {
       // Positive x is right, negative y is up — the screen's own signs. Every
       // modal in the app inherits both through the shell; there is no
       // per-modal copy of this arithmetic (F5.4).
-      anchorOffset: { x: 140, y: 0 },
+      anchorOffset: { x: 240, y: 0 },
     },
     // ─── Turn 20 (CLAUDE.md F12.2): THE SAVE THAT SAYS SO ──────────────────
     // "A successful save turns the Save control green with a check for ~2 s,
@@ -2265,6 +2312,13 @@ export const DEFAULT_CABINET_PROFILE = {
     mmStep: 0.5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
+    // ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET ────────────────────────
+    //
+    // Owner: dragging a shelf near the height of a shelf in the next bay — or
+    // the next CABINET — should catch, softly. His words: a PROPOSAL, not
+    // force. This is how near "near" is; drag on through and it lets go, and
+    // the numeric field never goes near it at all.
+    shelfMagnetMm: 10,
     // ─── Turn 12 (CLAUDE.md F7) ───
     // How much HEIGHT two units have to share before one blocks the other. A
     // wall unit hung exactly level with the top of a tall cabinet beside it is a
@@ -2513,6 +2567,9 @@ export function migrateCabinetProfile(profile) {
         },
       },
       sheen: { ...D.appearance.sheen, ...profile.appearance?.sheen },
+      // Turn 21 (CLAUDE.md F3): a profile stored before this turn has no
+      // `cuts` at all and must read as the default — off.
+      cuts: { ...D.appearance.cuts, ...profile.appearance?.cuts },
       sheenScale: { ...D.appearance.sheenScale, ...profile.appearance?.sheenScale },
       spray: { ...D.appearance.spray, ...profile.appearance?.spray },
       decor: { ...D.appearance.decor, ...profile.appearance?.decor },

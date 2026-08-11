@@ -175,7 +175,10 @@ export function isFixedShelf(item) {
  * @param {object} args
  *   floor       the top face of whatever closes the space below
  *   ceiling     the underside of the top panel
- *   shelves     every shelf item in the cabinet ({ pos_mm, variant, front_mm })
+ *   shelves     the shelf items whose run CROSSES this partition — turn 21
+ *               (CLAUDE.md F9.1): a shelf living inside one bay carries
+ *               nothing and is not a candidate, and it is the caller (which
+ *               knows where every shelf actually runs) that decides
  *   boardT      board thickness
  *   depth       the depth a partition has when nothing constrains it
  *   fullDepth   the carcass's own interior depth, which a setback is measured
@@ -224,6 +227,37 @@ export function partitionSpan({
     terminatesOn: carrying.item.id || null,
     front_mm: Math.max(0, full - coupled),
   };
+}
+
+/**
+ * Does this shelf's RUN cross this partition's plane?
+ *
+ * ─── TURN 21 (CLAUDE.md F9.1): SPAN DECIDES, NEVER ORDER ───────────────────
+ *
+ * Owner: "a shelf spanning the section over a partition rightly splits it; a
+ * shelf living INSIDE one bay must leave the partition alone — and today the
+ * ORDER of adding decides, which is nonsense."
+ *
+ * It was worse than nonsense: `partitionSpan` was handed EVERY shelf in the
+ * cabinet, so the lowest fixed shelf anywhere truncated every partition
+ * everywhere — a shelf in the left bay stopped a partition three bays away.
+ * The relation is geometric and nothing else, so this is the whole of it: two
+ * intervals on the x axis, and they either overlap or they do not.
+ *
+ * Touching is not crossing. A bay shelf runs from a partition's far face to the
+ * next one's near face; it ABUTS the boards on either side of it and carries
+ * nothing, which is exactly what a joiner means by "in that bay".
+ *
+ * @param {object} run   the shelf's own run: { from, to } in cabinet x
+ * @param {object} part  the partition: { x, thickness }
+ */
+export function shelfCrossesPartition(run, part) {
+  const from = Number(run?.from);
+  const to = Number(run?.to);
+  const x = Number(part?.x);
+  const t = Math.max(0, Number(part?.thickness) || 0);
+  if (![from, to, x].every(Number.isFinite)) return false;
+  return from < x + t && to > x;
 }
 
 /**

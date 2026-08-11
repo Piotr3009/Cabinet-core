@@ -1,5 +1,6 @@
 import { parseDecorCatalogue, setDecorCatalogue, setDecorScale } from '../engine/decors.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { noteStorageBase } from './storageBase.js';
 
 // ─── Loading the decor pack (BACKLOG #19) ───
 //
@@ -64,6 +65,13 @@ export function loadDecorCatalogue({ fetchImpl = null } = {}) {
       // beside the loader (CLAUDE.md rule 3).
       setDecorScale(getCabinetProfile().appearance?.decor?.scanHeightMm);
       setDecorCatalogue(parsed);
+      // ─── Turn 21 (CLAUDE.md F2) ───
+      // The pack's rows carry ABSOLUTE urls into the same Supabase bucket the
+      // hardware lives in, so this is also the moment the app learns where its
+      // own storage is on a build with no `VITE_SUPABASE_URL`. Derived from the
+      // registry that just landed, never typed — and the views that asked
+      // before it landed are told (lib/storageBase.js).
+      noteStorageBase();
       return { ...parsed, error: null };
     })
     .catch((e) => {

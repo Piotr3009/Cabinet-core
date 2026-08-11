@@ -13,6 +13,13 @@ import * as runners from './engine/runners.js';
 import * as hinges from './engine/hinges.js';
 import * as lifts from './engine/lifts.js';
 import * as menuPlacement from './lib/menuPlacement.js';
+import * as doors from './engine/doors.js';
+import * as drawerPilots from './engine/drawerPilots.js';
+import * as shelfHeights from './engine/shelfHeights.js';
+import * as shelfMagnet from './engine/shelfMagnet.js';
+import * as shelfTypes from './engine/shelfTypes.js';
+import * as hardwareUrl from './engine/hardwareUrl.js';
+import * as storageBase from './lib/storageBase.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
 //
@@ -57,6 +64,15 @@ if (typeof window !== 'undefined') {
   // arithmetic is read off the same pure function the shell places with. All
   // pure, all reaching nothing the page could not already compute.
   window.__ccHinges = hinges;
+  // ─── Turn 21 (CLAUDE.md R4 / F1.4 / F7 / F10 / F11 / F12) ───
+  // The same reason a fifth time. THIS turn's gate is a pair of drilled holes,
+  // and R4 says a URL is proven by asking the APP for it — so the walk asks
+  // these, which are the very functions the scene and the CNC sheet ask. All
+  // pure; the mount registry that goes with them is `window.__cc.hardware`,
+  // published by 3d/hardwareRegistry.js from the scene itself.
+  window.__ccT21 = {
+    doors, drawerPilots, shelfHeights, shelfMagnet, shelfTypes, hardwareUrl, storageBase,
+  };
   window.__ccLifts = lifts;
   window.__ccPlacement = menuPlacement;
 }

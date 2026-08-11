@@ -220,7 +220,13 @@ export function elementLabel(panel) {
 // BLOCKERS #58 records the decision.
 
 const FIELDS = {
-  shelf: ['position-y', 'setback', 'thickness', 'material'],
+  // ─── TURN 21 (CLAUDE.md F7): THE SHELF LEARNS ITS THREE KINDS ─────────────
+  // Owner: the shelf modal gains a TYPE — fix / adjustable / pull-out — and it
+  // is the FIRST row, because it is the question that decides what the other
+  // rows mean. It was only ever in the right-hand list before, so a joiner who
+  // double-clicked the shelf he was looking at could edit everything about it
+  // except how it is held.
+  shelf: ['shelf-type', 'position-y', 'setback', 'thickness', 'material'],
   partition: ['position-x', 'setback', 'thickness', 'material'],
   'fixed-shelf': ['setback-unit', 'material'],
   side: ['carcass-board', 'material'],

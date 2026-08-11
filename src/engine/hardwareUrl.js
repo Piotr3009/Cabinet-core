@@ -56,3 +56,70 @@ export function hardwareModelUrl({
   if (!storageBase) return withinBucket;
   return `${String(storageBase).replace(/\/+$/, '')}/${bucket}/${withinBucket}`;
 }
+
+// ─── TURN 21 (CLAUDE.md F2): A PATH WITH NO HOST IS NOT A URL ───────────────
+//
+// The owner's console, the whole of the diagnosis in one line:
+//
+//     /hinges/blum/71B3550_42542984.glb  →  404
+//
+// No Supabase host, no `hardware` bucket — the app asked its OWN domain for the
+// file. `hardwareModelUrl` above returns the bucket-relative PATH when it has
+// no host, which is a true answer to "where is this inside the bucket" and a
+// catastrophic one to give a loader: the browser resolves it against the page
+// and fetches a 404 from the app itself.
+//
+// The runners never hit it because their catalogue is bucket-gated — no host,
+// no manifest, no entry, no url. The HINGE catalogue ships in the repository
+// (`reference/hardware/cliptop-hinges.json`), so it always has a `file`, and
+// turn 19 and turn 20 both handed the bare path straight to the GLTFLoader.
+//
+// So the two questions are separated, and it is the SECOND one every fetching
+// caller asks: a model SOURCE is a URL or it is nothing. Where there is no
+// host there is no source, and the caller draws the stand-in it has drawn since
+// turn 7 — the iron rule, and no request leaves the page.
+
+/**
+ * A fetchable model URL — host, bucket, family folder and basename — or null.
+ *
+ * ONE helper for every hardware family, so a third copy is impossible (F2.1):
+ * `engine/hinges.js → hingeModelSrc` and `engine/runners.js → runnerModelSrc`
+ * are each one line over this, and the view fetches nothing else.
+ *
+ * @returns {string|null} null where there is no host, no bucket or no file
+ */
+export function hardwareModelSrc({
+  file, bucket, path, storageBase = '',
+}) {
+  if (!String(storageBase || '').trim()) return null;
+  if (!String(bucket || '').trim()) return null;
+  return hardwareModelUrl({
+    file, bucket, path, storageBase,
+  });
+}
+
+/**
+ * The public storage root of an absolute Supabase Storage URL — everything up
+ * to and including `/object/public`.
+ *
+ * Why the app needs this at all: the host is configuration
+ * (`VITE_SUPABASE_URL`), and a build made without it had no host to put in
+ * front of a hinge — which is precisely the 404 above. The app ALREADY carries
+ * absolute URLs into the same bucket, in the decor pack it fetches on start
+ * (`public/decors/egger/egger-decors.json` → `tex`), so where configuration is
+ * silent the app can still say where its own storage is. Derived, never typed.
+ *
+ * `scripts/bucket-live.mjs` derives the host for R2 the same way; it calls THIS
+ * function now, so the walk and the app cannot disagree about where the bucket
+ * is (rule R4).
+ *
+ * @returns {string} '' where the string is not an absolute storage URL
+ */
+export function storageBaseFrom(url) {
+  const text = String(url || '');
+  if (!/^https?:\/\//i.test(text)) return '';
+  const marker = '/object/public';
+  const at = text.indexOf(marker);
+  if (at < 0) return '';
+  return text.slice(0, at + marker.length);
+}

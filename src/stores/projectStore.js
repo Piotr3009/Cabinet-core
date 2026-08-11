@@ -4,6 +4,9 @@ import {
   minDrawerFrontHeight, SHELF_VARIANTS,
 } from '../engine/cabinet.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
+import { doorBays } from '../engine/doors.js';
+import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
@@ -31,8 +34,8 @@ import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import {
-  runInfillParams, runMaskParams, runMemberIds, runPlinthParams, unitTop,
-  unitVerticals, verticalsInBand,
+  paddedSpan, runInfillParams, runMaskParams, runMemberIds, runPlinthParams, unitBase,
+  unitTop, unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
 import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
@@ -1514,6 +1517,63 @@ export const useProjectStore = create((set, get) => ({
     const count = doorCountFor(unit.params.width, profile);
     get().setDoors(unitId, { count, hinge: unit.params.hinge || profile.doors.defaultHinge });
     return { count, already: false };
+  },
+
+  // ─── TURN 21 (CLAUDE.md F12): A DOOR PER BAY ──────────────────────────────
+  //
+  // Owner: partitions at 600 and 800, three bays, two proper doors and one
+  // small one in the middle. It is a MODE the unit is in — a cabinet with
+  // per-bay doors has no whole-face door, which is what three doors in three
+  // bays means — so this writes the list and takes the face doors off in one
+  // action, and clearing it puts the unit back where it was.
+
+  /** Which bays this unit's face divides into, if any partition can carry a door. */
+  bayDoorsFor: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const result = unit ? get().unitResult(unitId) : null;
+    if (!unit || !result) return [];
+    return doorBays({
+      width: Number(unit.params.width) || 0,
+      boardT: Number(unit.params.board_t) || getCabinetProfile().board.thickness,
+      partitions: (result.panels || [])
+        .filter((p) => p.part === 'VPART')
+        .map((p) => ({
+          id: p.id, x: p.meta.x_mm, thickness: p.box.w, fullHeight: p.meta.fullHeight, setback: p.meta.setback,
+        })),
+    });
+  },
+
+  /**
+   * Turn per-bay doors on, off, or edit one bay's own answer.
+   *
+   * `modes` is one entry per bay, in bay order: `{ door: 'one'|'none', hinge }`.
+   * `null` clears the mode and the unit goes back to its face doors.
+   */
+  setBayDoors: (unitId, modes) => {
+    if (modes == null) {
+      get().updateUnitParams(unitId, { bay_doors: null });
+      return null;
+    }
+    const bays = get().bayDoorsFor(unitId);
+    const next = bays.map((_, i) => {
+      const m = modes[i] || {};
+      return {
+        door: String(m.door ?? 'none').toLowerCase() === 'one' ? 'one' : 'none',
+        hinge: String(m.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L',
+      };
+    });
+    // A cabinet with doors in its bays has no door across its face.
+    get().updateUnitParams(unitId, { bay_doors: next, doors: false });
+    return next;
+  },
+
+  /** One bay's own answer, leaving the others alone. */
+  setBayDoor: (unitId, bay, patch) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const bays = get().bayDoorsFor(unitId);
+    const current = Array.isArray(unit?.params?.bay_doors) ? unit.params.bay_doors : [];
+    const modes = bays.map((_, i) => ({ ...(current[i] || { door: 'none', hinge: 'L' }), ...(i === bay ? patch : {}) }));
+    return get().setBayDoors(unitId, modes);
   },
 
   /** …and on every cabinet in the selection, as one undo step. */
@@ -3057,8 +3117,83 @@ export const useProjectStore = create((set, get) => ({
     return state;
   },
 
-  /** Drag a shelf vertically. Same setter, so the drag cannot bypass the clamp. */
-  moveShelf: (unitId, itemId, posRaw, snapStep) => get().setShelfPos(unitId, itemId, posRaw, snapStep),
+  /**
+   * Every height the shelf in the hand could line up WITH (turn 21, F11).
+   *
+   * The arithmetic is `engine/shelfMagnet.js`; this only hands it what the
+   * store knows — which units stand beside this one, how far off the floor each
+   * of them starts, and where each shelf actually runs, which is the engine's
+   * own `meta.run` and not a second opinion about bays.
+   */
+  shelfMagnetCandidates: (unitId, itemId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return [];
+    const profile = getCabinetProfile();
+    const runsOf = (u) => {
+      const result = s.unitResult(u.id);
+      const byItem = new Map();
+      for (const p of result?.panels || []) {
+        if (p.part === 'SHELF' && p.meta?.itemId && p.meta?.run) byItem.set(p.meta.itemId, p.meta.run);
+      }
+      return byItem;
+    };
+    const cache = new Map();
+    const shelvesOf = (u) => {
+      if (!cache.has(u.id)) cache.set(u.id, runsOf(u));
+      const runs = cache.get(u.id);
+      return (u.params?.sections?.[0]?.items || [])
+        .filter((i) => i.kind === 'shelf' && Number.isFinite(Number(i.pos_mm)))
+        .map((i) => ({ id: i.id, pos_mm: Number(i.pos_mm), run: runs.get(i.id) || null }));
+    };
+    return magnetCandidates({
+      unit,
+      itemId,
+      // Same wall, same level: a unit round a corner or hung above this one is
+      // not "beside" it however close its numbers are.
+      neighbours: s.units.filter((u) => (u.position?.wall ?? 0) === (unit.position?.wall ?? 0)
+        && getUnitType(u.type).mount === getUnitType(unit.type).mount),
+      shelvesOf,
+      baseOf: (u) => unitBase(u, profile),
+      spanOf: (u) => paddedSpan(u),
+    }).map((c) => {
+      const other = s.units.find((u) => u.id === c.unitId);
+      const item = (other?.params?.sections?.[0]?.items || []).find((i) => i.id === c.itemId);
+      // The neighbour's own stored height travels with the candidate, so the
+      // guide line can be drawn in ITS frame as well as in the dragged unit's.
+      return { ...c, ownPos: Number(item?.pos_mm) };
+    });
+  },
+
+  /**
+   * Drag a shelf vertically. Same setter, so the drag cannot bypass the clamp.
+   *
+   * ─── TURN 21 (CLAUDE.md F11): AND IT CATCHES, SOFTLY ──────────────────────
+   *
+   * The magnet lives HERE and not in `setShelfPos`, and that is the whole of
+   * F11.2: the numeric field goes through the setter and never through this, so
+   * a joiner who types 848 beside a neighbour at 850 gets 848. A proposal is
+   * something a hand makes; a typed number is not a proposal.
+   *
+   * When it catches, the drag's own snap step is set aside for the workshop
+   * grid — the point of the catch is EQUALITY, and rounding the caught height
+   * to a 32 mm drag snap would be a magnet that misses.
+   */
+  moveShelf: (unitId, itemId, posRaw, snapStep) => {
+    const profile = getCabinetProfile();
+    const step = snapStep || profile.editor.mmStep;
+    const candidates = get().shelfMagnetCandidates(unitId, itemId);
+    const pull = applyMagnet(snapTo(posRaw, step), candidates, profile.editor.shelfMagnetMm);
+    const state = get().setShelfPos(
+      unitId, itemId, pull.pos, pull.caught ? profile.editor.mmStep : snapStep,
+    );
+    // The catch is reported only where it actually took: a clamp that refused
+    // the height (a neighbour in the way, the top of the carcass) is not a
+    // magnet, and a guide line drawn across a shelf that did not move would be
+    // a promise the app did not keep.
+    const caught = pull.caught && Math.abs(state.pos - pull.pos) < 1e-6 ? pull.caught : null;
+    return { ...state, magnet: caught };
+  },
 
   // ── shelves v2 (turn 8, CLAUDE.md F4) ────────────────────────────────────
 
@@ -3074,6 +3209,27 @@ export const useProjectStore = create((set, get) => ({
     const next = SHELF_VARIANTS.includes(variant) ? variant : 'adjustable';
     get().updateItem(unitId, itemId, { variant: next });
     return next;
+  },
+
+  /**
+   * The same question in the owner's own words (turn 21, CLAUDE.md F7):
+   * fix / adjustable / pull-out.
+   *
+   * ONE truth, two names — it writes the `variant` a shelf has carried since
+   * turn 8, so a project does not grow two answers to one question and no
+   * drilling moves for a shelf nobody has touched. A kind whose workshop number
+   * is still outstanding is REFUSED here as well as being disabled in the
+   * modal: a setter that quietly accepted `pullout` would leave a project
+   * claiming a shelf the engine cannot cut.
+   */
+  setShelfType: (unitId, itemId, type) => {
+    if (!shelfTypeEnabled(type)) return shelfTypeOf(
+      get().units.find((u) => u.id === unitId)?.params?.sections?.[0]?.items
+        ?.find((i) => i.id === itemId),
+    );
+    const variant = shelfVariantForType(type);
+    get().updateItem(unitId, itemId, { variant });
+    return shelfTypeOf({ variant });
   },
 
   /**

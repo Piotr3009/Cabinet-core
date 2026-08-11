@@ -8,7 +8,8 @@ import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
 import Hardware from '../3d/Hardware.jsx';
 import { hardwareInstances } from '../engine/hardware3d.js';
-import { storageBaseUrl } from '../lib/runnerCatalogue.js';
+import { resolveDoorHinge } from '../engine/hinges.js';
+import { useStorageBase } from '../lib/storageBase.js';
 import { useViewHandle } from '../3d/viewHandle.js';
 import EditorRig from '../3d/EditorRig.jsx';
 import useContextGuard from '../3d/contextGuard.jsx';
@@ -96,10 +97,11 @@ export default function CabinetEditorModal() {
   // says — which is the whole feature, and is why it is four lines rather than
   // a file.
   const drawer = Number(args?.drawer) > 0 ? Number(args.drawer) : null;
-  // Where the runner models are served from. '' in mock mode, and '' is a
-  // complete answer: the grey stand-in is drawn from the workshop's own
-  // profile instead (turn 18, F6.6).
-  const storageBase = useMemo(() => storageBaseUrl(), []);
+  // Where the hardware models are served from. '' is a complete answer: the
+  // grey stand-in is drawn from the workshop's own profile instead (turn 18,
+  // F6.6). Turn 21 (F2): the host may arrive after this window opened, so it
+  // is a hook and not a one-shot memo.
+  const storageBase = useStorageBase();
 
   const [exploded, setExploded] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -130,12 +132,35 @@ export default function CabinetEditorModal() {
     return all.filter((p) => Number(p.meta?.drawer) === drawer
       && (p.role === 'drawer_box' || p.part === 'DRAWER-FRONT'));
   }, [result, drawer]);
-  // …and the runners under it (F11.2). The cabinet view does not draw hardware
-  // — there is a wall of it in a kitchen — but a drawer on its own is exactly
-  // the case where a joiner is looking AT the runner.
+  // ─── TURN 21 (CLAUDE.md F6): THE EDITOR MOUNTS WHAT THE ROOM MOUNTS ───────
+  //
+  // Owner: the exploded drawer showed GREY SLABS where Movento models belong.
+  // Two reasons, and both are gone:
+  //
+  //   • the host. The editor asked `storageBaseUrl()` once, at mount, on a
+  //     build that learns its host a moment later (F2) — so its runners could
+  //     never be anything but stand-ins. It is a hook now.
+  //   • the HINGES were not mounted at all. `hinges: []` and no `hingeSpecs`,
+  //     so a joiner opening a door in here saw the procedural cup while the
+  //     room three feet away showed the CLIP top. F6.1: one loader, one cache,
+  //     one degradation story, no parallel stand-in-only path anywhere.
+  //
+  // Everything below is the ROOM's own — `hardwareInstances` for the
+  // positions, `resolveDoorHinge` for which hinge each door wears, the same
+  // `<Hardware>` component for the drawing. What is editor-specific is the
+  // FILTER: a drawer window shows that drawer's pair and nothing else.
   const hardware = useMemo(() => {
-    if (!drawer || !result) return null;
+    if (!result) return null;
     const all = hardwareInstances(result, profile);
+    if (!drawer) {
+      // The whole cabinet: its hinges. Not its runners — a cabinet editor
+      // showing every runner in a drawer stack is the wall of ironmongery the
+      // room view goes behind X-ray to avoid, and the DRAWER window is where a
+      // joiner goes to look at one.
+      return {
+        hinges: all.hinges, legs: [], rails: [], runners: [], rods: [],
+      };
+    }
     return {
       hinges: [],
       legs: [],
@@ -144,6 +169,20 @@ export default function CabinetEditorModal() {
       rods: (all.rods || []).filter((row) => row.drawer === drawer),
     };
   }, [drawer, result, profile]);
+  // WHICH hinge each door wears — the room's own resolution, from the same
+  // registry, so the editor cannot show a different hinge than the BOM orders.
+  const hingeSpecs = useMemo(() => {
+    if (!unit || !result || drawer) return null;
+    const out = {};
+    for (const p of result.panels || []) {
+      if (p.role !== 'front' || p.part !== 'FRONT') continue;
+      const spec = resolveDoorHinge({
+        panelId: p.id, unit, design: storedDesign, profile, thickness: p.thickness,
+      });
+      if (spec) out[p.id] = spec;
+    }
+    return out;
+  }, [unit, result, storedDesign, profile, drawer]);
   useEffect(() => {
     if (selectedId && !panels.some((p) => p.id === selectedId)) setSelectedId(null);
   }, [panels, selectedId]);
@@ -252,6 +291,7 @@ export default function CabinetEditorModal() {
             unit={unit}
             panels={panels}
             hardware={hardware}
+            hingeSpecs={hingeSpecs}
             storageBase={storageBase}
             design={storedDesign}
             profile={profile}
@@ -262,6 +302,7 @@ export default function CabinetEditorModal() {
             allOpen={allOpen}
             onToggleFront={toggleFront}
             drills={result.drills}
+            drawer={drawer}
             onOpenDetail={(panelId, at) => openModal('part-detail', {
               unitId: unit.id, panelId, anchor: null, at,
             })}
@@ -338,6 +379,7 @@ export default function CabinetEditorModal() {
 function CabinetCanvas({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail,
   openFronts, allOpen, onToggleFront, drills = [], hardware = null, storageBase = '',
+  hingeSpecs = null, drawer = null,
 }) {
   // Turn 20 (CLAUDE.md F10): the editor's context, released when this window
   // closes — however fast it is closed. See 3d/contextGuard.jsx.
@@ -395,6 +437,10 @@ function CabinetCanvas({
         onToggleFront={onToggleFront}
         bounds={bounds}
         drills={drills}
+        hardware={hardware}
+        hingeSpecs={hingeSpecs}
+        storageBase={storageBase}
+        drawer={drawer}
       />
       {/* ─── Turn 13 (CLAUDE.md F2.2): IT PANS NOW ───
           Turn 12 said `enablePan={false}`, so the cabinet was nailed to the
@@ -405,18 +451,6 @@ function CabinetCanvas({
           learn. `screenSpacePanning` is left at its default for the same
           reason. The context menu is already suppressed on this canvas, which
           is what lets the right button through to the controls. */}
-      {/* Turn 20 (CLAUDE.md F11.2): the drawer's own runners, on the rows the
-          engine drills — the same instances the room draws, filtered to this
-          drawer. Drawn always here: this window IS the joiner looking at the
-          ironmongery, which is the case X-ray exists for in the room. */}
-      {hardware && (
-        <Hardware
-          instances={hardware}
-          profile={profile}
-          runners
-          storageBase={storageBase}
-        />
-      )}
       <OrbitControls
         makeDefault
         enablePan
@@ -445,6 +479,7 @@ function EditorViewHandle() {
 function ExplodedCabinet({
   unit, panels, design, profile, exploded, selectedId, onSelect, onOpenDetail, bounds,
   openFronts, allOpen, onToggleFront, drills = [], showMachining = true,
+  hardware = null, hingeSpecs = null, storageBase = '', drawer = null,
 }) {
   const finishes = useMemo(() => resolveFinishes(unit, design, profile), [unit, design, profile]);
   const unitDesign = useMemo(() => resolveUnitDesign(unit, design), [unit, design]);
@@ -485,8 +520,115 @@ function ExplodedCabinet({
           showMachining={showMachining}
         />
       ))}
+      {/* ─── TURN 21 (CLAUDE.md F6.2): THE MODELS RIDE THEIR PARTS APART ────
+          Turn 20 mounted the drawer's runners as a sibling of this group — so
+          they sat at raw engine coordinates while the cabinet was CENTRED on
+          the origin for the orbit, and they stayed put while the boards flew
+          apart. Both are the same mistake: the hardware was outside the scene
+          it belongs to. It is inside it now, and each piece travels with the
+          part it is screwed beside. */}
+      {hardware && (
+        <ExplodedHardware
+          hardware={hardware}
+          offsets={offsets}
+          exploded={exploded}
+          profile={profile}
+          hingeSpecs={hingeSpecs}
+          storageBase={storageBase}
+          surface={drawer ? 'drawer-editor' : 'editor'}
+        />
+      )}
     </group>
   );
+}
+
+/**
+ * The hardware, exploding with the boards (turn 21, CLAUDE.md F6).
+ *
+ * ONE loader, ONE cache, ONE degradation story: this is the room's own
+ * `<Hardware>`, given the room's own instances, and the only thing this adds is
+ * WHICH PART each piece travels with. A runner rides the box side it carries; a
+ * hinge's carcass half rides the side panel it is plated to. Anything whose
+ * part is not in this window rides nothing and stays where the engine put it,
+ * which is what an assembled cabinet looks like.
+ */
+function ExplodedHardware({
+  hardware, offsets, exploded, profile, hingeSpecs, storageBase, surface,
+}) {
+  // Group the instances by the panel they travel with. A Map of `<panel id> →
+  // instance set`, so one <Hardware> is mounted per travelling group and the
+  // instanced meshes inside it are still shared.
+  const groups = useMemo(() => {
+    const out = new Map();
+    const put = (panelId, key, item) => {
+      const id = panelId && offsets.has(panelId) ? panelId : '';
+      if (!out.has(id)) {
+        out.set(id, {
+          hinges: [], runners: [], rods: [], legs: [], rails: [],
+        });
+      }
+      out.get(id)[key].push(item);
+    };
+    for (const h of hardware.hinges || []) put(h.side === 'R' ? 'BUR' : 'BUL', 'hinges', h);
+    for (const r of hardware.runners || []) put(`D${r.drawer}-S${r.side}`, 'runners', r);
+    // The rod ties the two runners together across the back of the box; it
+    // travels with the box's own back board.
+    for (const r of hardware.rods || []) put(`D${r.drawer}-BB`, 'rods', r);
+    for (const l of hardware.legs || []) put('', 'legs', l);
+    for (const r of hardware.rails || []) put('', 'rails', r);
+    return out;
+  }, [hardware, offsets]);
+
+  return (
+    <>
+      {[...groups.entries()].map(([panelId, instances]) => (
+        <RidingHardware
+          key={panelId || 'still'}
+          offset={offsets.get(panelId) || { x: 0, y: 0, z: 0 }}
+          exploded={exploded && Boolean(panelId)}
+          profile={profile}
+        >
+          <Hardware
+            instances={instances}
+            profile={profile}
+            runners
+            hinges
+            hingeSpecs={hingeSpecs}
+            storageBase={storageBase}
+            // Turn 21 (CLAUDE.md F6.3 / R4): which window these entries were
+            // mounted in, so the walk can assert that the EDITOR's hardware is
+            // model-backed and not a stand-in. The scope is the part they ride.
+            surface={surface}
+            scope={panelId || 'still'}
+          />
+        </RidingHardware>
+      ))}
+    </>
+  );
+}
+
+/**
+ * A group that eases to a part's explode offset — the same spring
+ * `ExplodingPart` runs, so hardware and board arrive together instead of one of
+ * them snapping.
+ */
+function RidingHardware({
+  offset, exploded, profile, children,
+}) {
+  const group = useRef(null);
+  const at = useRef(0);
+  const { seconds } = explodeSettings(profile);
+  useFrame((_, delta) => {
+    if (!group.current) return;
+    const target = exploded ? 1 : 0;
+    const step = Math.min(1, delta / Math.max(0.0001, seconds) * 2);
+    at.current += (target - at.current) * step;
+    if (Math.abs(target - at.current) < 1e-4) at.current = target;
+    group.current.position.set(
+      mm(offset.x) * at.current, mm(offset.y) * at.current, mm(offset.z) * at.current,
+    );
+  });
+  return <group ref={group}>{children}</group>;
 }
 
 /**

@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
-import { hardwareModelUrl } from '../src/engine/hardwareUrl.js';
+import { hardwareModelSrc, storageBaseFrom } from '../src/engine/hardwareUrl.js';
 import { parseRunnerManifest } from '../src/engine/runners.js';
 import { parseHingeCatalogue } from '../src/engine/hinges.js';
 
@@ -44,19 +44,27 @@ export function derivedStorageBase() {
   const pack = JSON.parse(
     readFileSync(join(HERE, '..', 'public', 'decors', 'egger', 'egger-decors.json'), 'utf8'),
   );
+  // ─── TURN 21 (CLAUDE.md R4) ───────────────────────────────────────────────
+  // The SPLIT is the derivation: find an absolute url in the pack (this
+  // script's job — it reads the file off disk) and then cut the host out of it
+  // with the ENGINE's own function, which is the very function the app calls to
+  // find its own bucket (lib/storageBase.js). Turn 20 had a private copy of the
+  // cut here, and a verification with its own copy of the app's arithmetic is
+  // how a walk comes back green about a url the browser never asks for.
   const find = (node) => {
     if (!node || typeof node !== 'object') return null;
-    if (typeof node.tex === 'string' && node.tex.startsWith('http')) return node.tex;
+    for (const key of ['tex', 'scan', 'thumb', 'url']) {
+      if (typeof node[key] === 'string' && storageBaseFrom(node[key])) return node[key];
+    }
     for (const value of Object.values(node)) {
       const hit = find(value);
       if (hit) return hit;
     }
     return null;
   };
-  const tex = find(pack);
-  if (!tex) throw new Error('No absolute decor URL in the pack to derive the host from');
-  const marker = '/object/public';
-  return tex.slice(0, tex.indexOf(marker) + marker.length);
+  const absolute = find(pack);
+  if (!absolute) throw new Error('No absolute decor URL in the pack to derive the host from');
+  return storageBaseFrom(absolute);
 }
 
 /** The two families, exactly as the app addresses them. */
@@ -128,7 +136,7 @@ async function checkFamily(family, fetchImpl) {
 
   const first = rows.find((r) => r.file);
   if (!first) { out.error = 'no row in the manifest names a file'; return out; }
-  const url = hardwareModelUrl({
+  const url = hardwareModelSrc({
     file: first.file, bucket: family.bucket, path: family.path, storageBase: derivedStorageBase(),
   });
   const head = await attempt(() => fetchImpl(url, { method: 'HEAD' }));

@@ -23,7 +23,9 @@
 import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
-import { partitionSpan, widthZones } from './zones.js';
+import { partitionSpan, shelfCrossesPartition, widthZones } from './zones.js';
+// Turn 21 (CLAUDE.md F12): the owner's door-width law, as pure geometry.
+import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
@@ -938,6 +940,9 @@ export function computeCabinet(params, profileOverride) {
   let boxFrontLen = null; let bottomW = null; let bottomD = null;
   let boxSetback = null;
   let runnerRowsDp = []; let runnerRowsCarcass = [];
+  // Turn 21 (CLAUDE.md F1.1): the runner's own UNDERSIDE, which is what the
+  // drawer box hangs off. `runnerRows*` above stay the SCREW centres.
+  let runnerBottomsDp = []; let runnerBottomsCarcass = [];
   // Per-drawer, bottom-up. With every drawer at the profile default these are
   // constant lists and every formula below collapses to the LISP's fixed one.
   let drawerHeights = [];
@@ -995,8 +1000,24 @@ export function computeCabinet(params, profileOverride) {
       boxSideH.push(side);
       boxFrontHs.push(side - DR.boxFrontHeightDeduction - G - DR.boxFrontHeightExtra);
     }
+    // ─── TURN 21 (CLAUDE.md F1.1): TWO NAMES, TWO MEANINGS ──────────────────
+    //
+    // The runner's BOTTOM and the runner's SCREW ROW are not the same line and
+    // never were. `firstRowFromBottom` (38) is the MOVENTO drilling offset —
+    // where the carcass is drilled — and turn 20 used the drilled row as the
+    // box's anchor as well, so every box in the app hung 38 mm high. The two
+    // quantities are named apart here so nothing can reuse one for the other:
+    //
+    //   runnerBottoms…   the line the runner's own underside stands on. The
+    //                    BOX hangs off this (F1.2).
+    //   runnerRows…      the screw centres, 38 above it. The CARCASS DRILLING
+    //                    and the runner hole pattern read this, and nothing
+    //                    else does.
     for (let i = 0; i < numDrawers; i += 1) {
-      const rel = zoneOffsets[i] + P.wardrobe.runners.firstRowFromBottom;
+      const bottom = zoneOffsets[i];
+      const rel = bottom + P.wardrobe.runners.firstRowFromBottom;
+      runnerBottomsDp.push(bottom);
+      runnerBottomsCarcass.push(G + bottom);
       runnerRowsDp.push(rel);
       runnerRowsCarcass.push(G + rel);
     }
@@ -1028,7 +1049,31 @@ export function computeCabinet(params, profileOverride) {
     const frontY = [];
     let acc = 0;
     for (const h of heights) { frontY.push(acc); acc += h + B.gap; }
-    const runnerRows = frontY.map((y, i) => (i === 0 ? G : y) + B.firstRowFromBottom);
+    // ─── TURN 21 (CLAUDE.md F1.1): THE RUNNER'S BOTTOM IS ITS OWN QUANTITY ──
+    //
+    // KIT_BUDR_FULL L712-714: the runner's UNDERSIDE is flush with the bottom
+    // edge of the façade it carries (drawer 2 up), and stands on the carcass
+    // floor for drawer 1, whose front runs G lower to cover that floor. THAT
+    // line is what a drawer box hangs off.
+    //
+    // `runnerRows` is 38 mm above it — `firstRowFromBottom`, the MOVENTO screw
+    // offset — and is the CARCASS DRILLING and nothing else. Turn 20 anchored
+    // the box on the screw row, so every box in the app hung 38 mm high and
+    // the façade's pilot holes missed the box front's by exactly that. The
+    // owner read it off two drillings that did not meet.
+    //
+    // Two names, two meanings, no reuse. The pilot gate
+    // (test/turn21-f1-hole-alignment.test.js) is what holds them apart from
+    // here on: chain the pieces off `runnerBottomY` —
+    //
+    //   box side lower edge   + 13.5   (boxAboveRunner)
+    //   drawer bottom under   + 15     (runnerPocketWidth, the groove)
+    //   box front standing on + G      (the bottom board)
+    //   box-front pilot       + 50     (boxScrewFromEdge)
+    //   ────────────────────────────
+    //                         + 96.5   = the façade's own pilot, every time.
+    const runnerBottomY = frontY.map((y, i) => (i === 0 ? G : y));
+    const runnerRows = runnerBottomY.map((y) => y + B.firstRowFromBottom);
     // ─── TURN 18 (CLAUDE.md F5.4): THE BOX FITS THE OPENING ─────────────────
     //
     // A box side is `sideRatio` of its FRONT, which is right in a run of drawer
@@ -1070,7 +1115,11 @@ export function computeCabinet(params, profileOverride) {
     // in turn 21 whether an appliance box is re-cut, which is a cutting-list
     // decision and therefore his.
     if (boxCeiling != null) {
-      const over = roundTo(Math.max(...sideHs.map((s, i) => runnerRows[i] + B.boxAboveRunner + s)) - boxCeiling, 1);
+      // Turn 21 (CLAUDE.md F1.2): the box stands on the runner's BOTTOM, so
+      // that is where its top is measured from. The side height itself is
+      // untouched — it is still clamped off the screw row turn 18 clamped it
+      // off, which is what keeps the cut list byte-for-byte what it was.
+      const over = roundTo(Math.max(...sideHs.map((s, i) => runnerBottomY[i] + B.boxAboveRunner + s)) - boxCeiling, 1);
       if (over > 0) {
         warnings.push({
           code: 'APPLIANCE_DRAWER_BOX_OVER_SHELF',
@@ -1079,7 +1128,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     budr = {
-      heights, frontY, runnerRows, sideHs, boxFrontH,
+      heights, frontY, runnerRows, runnerBottomY, sideHs, boxFrontH,
       depth, maxDl, boxW, frontWidth, boxLen,
       bottomW: boxLen + B.bottomOversize,
       count: heights.length,
@@ -1635,6 +1684,12 @@ export function computeCabinet(params, profileOverride) {
       cnc: rectGeometry(shelfWHere, depthHere),
       meta: {
         index: i,
+        // ─── TURN 21 (CLAUDE.md F9.1): THE SHELF'S OWN RUN ────────────────
+        // Where this board actually reaches, left and right. It is what
+        // decides whether a partition yields to it — SPAN, never order — and
+        // it is recorded on the panel so the answer is the same everywhere
+        // and can be read back off a saved result.
+        run: { from: shelfXHere, to: shelfXHere + shelfWHere },
         // Turn 8: the default is ADJUSTABLE — a shelf on pins, which is what a
         // shelf with nothing said about it has always been. `fixed` now means
         // SCREWED (F4), so it cannot go on being the value nobody chose.
@@ -1650,6 +1705,13 @@ export function computeCabinet(params, profileOverride) {
       },
     }));
   }
+
+  // Turn 21 (CLAUDE.md F9): every shelf's run, in the engine's own order, for
+  // the partition pass below. Read back off the panels that were just cut, so
+  // there is one arithmetic and not a second copy of the bay maths.
+  const shelfRuns = panels
+    .filter((p) => p.part === 'SHELF' && p.meta?.run)
+    .map((p) => ({ run: p.meta.run, item: cfg.shelfItems[p.meta.index - 1] || null }));
 
   // A partition and a rail partitioner are FIX shelves in everything but name,
   // so turn 8 (F4) sets them back on the same line as the shelves beside them.
@@ -1698,12 +1760,35 @@ export function computeCabinet(params, profileOverride) {
     let n = 0;
     for (const item of verticals) {
       const x = Math.min(Math.max(Number(item.x_mm), G), W - 2 * G);
+      // ─── TURN 21 (CLAUDE.md F8): A DEFAULT, NOT A LAW ────────────────────
+      //
+      // Owner: 20 mm was FORCED on every partition; wrong. The number is this
+      // PIECE's now — `front_mm` on the item, exactly as a shelf's own setback
+      // has been since turn 8 — and the unit's `partition_front_mm` only
+      // SEEDS it, as the profile only seeds that. Nothing is imposed.
+      //
+      // Setback 0 is load-bearing rather than a corner case: it is what lets a
+      // partition reach the door plane, and therefore what makes F12's doors
+      // on a partition possible at all.
+      const ownFront = setbackOf(item?.front_mm, internalDepth - partitionDepth);
+      const ownDepth = Math.max(0, internalDepth - ownFront);
+      // ─── TURN 21 (CLAUDE.md F9): ONLY THE SHELF THAT CROSSES IT ──────────
+      //
+      // Turn 12 handed this call EVERY shelf in the cabinet, so the lowest
+      // fixed shelf anywhere truncated every partition everywhere — a shelf in
+      // the left bay stopping a partition three bays away — and which shelf
+      // won depended on the order they were added in. SPAN decides: a shelf
+      // whose run crosses this partition's plane may carry it, and a shelf
+      // living inside a bay touches nothing.
+      const crossing = shelfRuns
+        .filter((r) => r.item && shelfCrossesPartition(r.run, { x, thickness: G }))
+        .map((r) => r.item);
       const span = partitionSpan({
         floor: G,
         ceiling: H - G,
-        shelves: cfg.shelfItems || [],
+        shelves: crossing,
         boardT: G,
-        depth: partitionDepth,
+        depth: ownDepth,
         fullDepth: internalDepth,
       });
       if (span.height <= 0) break;
@@ -1726,9 +1811,15 @@ export function computeCabinet(params, profileOverride) {
         meta: {
           index: n,
           vertical: true,
+          // Turn 21 (CLAUDE.md F12.1): the two physical preconditions for
+          // hanging a door on this piece, read off the piece itself.
+          fullHeight: span.from <= G + 1e-9 && span.to >= H - G - 1e-9,
           itemId: item.id || null,
           x_mm: x,
           front_mm: span.front_mm,
+          // Turn 21 (CLAUDE.md F8): 0 is what a door on this partition needs,
+          // and the view and F12 both ask the panel rather than the unit.
+          setback: span.front_mm,
           // Which shelf carries it, when one does — the panel says so, and the
           // 3D view can draw the two as one joint rather than two pieces that
           // happen to touch.
@@ -1831,14 +1922,17 @@ export function computeCabinet(params, profileOverride) {
       const zoneY = G + zoneOffsets[i - 1];
       const sideHeight = boxSideH[i - 1];
       const bfH = boxFrontHs[i - 1];
-      // ─── TURN 20 (CLAUDE.md F1): THE BOX RIDES THE RUNNER ─────────────────
-      // `zoneY + firstRowFromBottom` IS `drillSummary.runner_rows_carcass_y[i]`
-      // — the row the engine drills and the line the runner's underside stands
-      // on. The box is set off it by ONE number, the same number the BUDR kit
-      // below uses, because it is the same runner under the same box. Turn 18
-      // hung this box 9 mm BELOW the row and the BUDR's exactly ON it; the
-      // owner's eye test found the box "wrong against" hardware that was right.
-      const boxY = zoneY + P.wardrobe.runners.firstRowFromBottom + B.boxAboveRunner;
+      // ─── TURN 21 (CLAUDE.md F1.2): THE BOX RIDES THE RUNNER'S BOTTOM ──────
+      // The box is set off the runner's UNDERSIDE by ONE number, the same
+      // number the BUDR kit below uses, because it is the same runner under
+      // the same box. Turn 18 hung this box 9 mm BELOW the drilled row and the
+      // BUDR's exactly ON it; turn 20 put both on the row, which is 38 mm above
+      // the runner; turn 21 puts both on the runner. One law, three kits.
+      // Turn 21 (CLAUDE.md F1.1/F1.2): `zoneY` IS the runner's underside for a
+      // wardrobe drawer — `drillSummary.runner_bottoms_carcass_y[i]` — and the
+      // box hangs off THAT. Turn 20 added `firstRowFromBottom` here, which is
+      // the screw row 38 mm above it, so this box hung 38 mm high too.
+      const boxY = zoneY + B.boxAboveRunner;
       // ─── Turn 18 (CLAUDE.md F3.4): WHERE THE BOTTOM ACTUALLY IS ───────────
       // "Front and back of the box STAND ON the bottom", and the bottom stands
       // in the groove — so its underside is `runnerPocketWidth` above the
@@ -1921,15 +2015,17 @@ export function computeCabinet(params, profileOverride) {
         x1: B.runnerPocketWidth, y1: -B.pocketOvershoot, x2: B.runnerPocketWidth + G + B.bottomPocketExtra, y2: len + B.pocketOvershoot,
       },
     ];
-    // ─── TURN 20 (CLAUDE.md F1): THE BOX RIDES THE RUNNER ───────────────────
-    // `budr.runnerRows[i]` is the drilled row and the runner's own underside;
+    // ─── TURN 21 (CLAUDE.md F1.2): THE BOX RIDES THE RUNNER'S BOTTOM ────────
+    // `budr.runnerBottomY[i]` is the line the runner's own underside stands on
+    // (flush with the façade's bottom edge, on the carcass floor for drawer 1);
     // the box side's lower edge stands `boxAboveRunner` above it, and the
     // bottom `runnerPocketWidth` above that — 28.5 mm over the runner, which is
-    // where a MOVENTO puts a drawer bottom. Turn 18 had this box sitting ON the
-    // row and the wardrobe's 9 mm under it; one law now, both kits.
+    // where a MOVENTO puts a drawer bottom. Turn 20 wrote `runnerRows` here,
+    // which is the SCREW row 38 mm higher, so every box hung 38 mm high and the
+    // façade's pilots missed the box front's by exactly that.
     for (let i = 1; i <= budr.count; i += 1) {
       const sh = budr.sideHs[i - 1];
-      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
+      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - DR.boxSideThickness]]) {
         panels.push(panel({
           id: `D${i}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
@@ -1942,7 +2038,7 @@ export function computeCabinet(params, profileOverride) {
     }
     for (let i = 1; i <= budr.count; i += 1) {
       const bfH = budr.boxFrontH[i - 1];
-      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
+      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       for (const suffix of ['BF', 'BB']) {
         const isFront = suffix === 'BF';
         const geom = { rotated: true, drawn_w: bfH, drawn_h: budr.boxLen, ...rectGeometry(bfH, budr.boxLen) };
@@ -1969,7 +2065,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     for (let i = 1; i <= budr.count; i += 1) {
-      const boxY = budr.runnerRows[i - 1] + B.boxAboveRunner;
+      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       const geom = rectGeometry(budr.bottomW, budr.depth);
       geom.holes = [];
       for (const x of [B.bottomScrewFromSide, budr.bottomW - B.bottomScrewFromSide]) {
@@ -2401,14 +2497,61 @@ export function computeCabinet(params, profileOverride) {
   // Door fronts, always last (they close the unit — SPEC 4.10)
   const doorZ = D + P.doors.gap;
   const doorY = -cfg.doorExtend;      // a wall-unit front may run below the box
-  if (doorCount === 1) {
+  // ─── TURN 21 (CLAUDE.md F12): DOORS ON THE PARTITION ─────────────────────
+  //
+  // Owner's case: partitions at 600 and 800, three bays, two proper doors and
+  // one small one in the middle. A full-height partition at setback 0 can carry
+  // a door, so the DOORS section offers one PER BAY — and the widths are his
+  // own law, which engine/doors.js states and this only places.
+  //
+  // It is opt-in and it replaces the face doors rather than joining them: a
+  // cabinet with per-bay doors has no whole-face door, which is what three
+  // doors in three bays means. Nothing here runs for a unit with no partitions,
+  // so every golden default is untouched by construction.
+  const doorBaysHere = doorBays({
+    width: W,
+    boardT: G,
+    partitions: panels
+      .filter((p) => p.part === 'VPART')
+      .map((p) => ({
+        id: p.id, x: p.meta.x_mm, thickness: p.box.w, fullHeight: p.meta.fullHeight, setback: p.meta.setback,
+      })),
+  });
+  const bayDoors = (type.supports.doors && Array.isArray(params?.bay_doors)
+    && bayDoorsAvailable(doorBaysHere))
+    ? bayDoorPlan({
+      bays: doorBaysHere, modes: params.bay_doors, width: W, gap: P.doors.gap,
+    })
+    : [];
+  for (const leaf of bayDoors) {
+    if (!(leaf.width > 0)) continue;
+    panels.push(panel({
+      id: `${unitNum}-B${leaf.bay + 1}`, part: 'FRONT', role: 'front', w: leaf.width, h: frontH, thickness: frontT,
+      edgeCode: codes.all, edgeLen: metres(2 * leaf.width + 2 * frontH),
+      box: {
+        x: leaf.x, y: doorY, z: doorZ, w: leaf.width, h: frontH, d: frontT,
+      },
+      cnc: rectGeometry(leaf.width, frontH),
+      meta: {
+        hinge: leaf.hinge,
+        frontType: cfg.frontType,
+        bay: leaf.bay,
+        // Which piece this leaf is screwed to, and — where that piece is a
+        // partition — which of its two faces takes the plate.
+        hingeOn: leaf.hingeOn,
+        hingeFace: leaf.hingeFace,
+      },
+    }));
+  }
+
+  if (!bayDoors.length && doorCount === 1) {
     panels.push(panel({
       id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
       box: { x: P.doors.gap / 2, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
       cnc: rectGeometry(frontW, frontH), meta: { hinge: cfg.hinge, frontType: cfg.frontType },
     }));
-  } else if (doorCount === 2) {
+  } else if (!bayDoors.length && doorCount === 2) {
     panels.push(panel({
       id: `${unitNum}-FL`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
@@ -2452,10 +2595,57 @@ export function computeCabinet(params, profileOverride) {
 
   // Hinge holes on the hinged carcass sides
   const hingeHolePairs = centres.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset]);
-  for (const sideId of hingedSides) {
+  // Turn 21 (CLAUDE.md F12.2): with doors in the bays it is the LEAVES that
+  // say which sides are hinged — an outer bay's door hangs on the carcass
+  // exactly as a face door does, and a middle bay's hangs on nothing but its
+  // partitions. Drilling `hingedSides` regardless would have bored a plate
+  // pattern into a side no door is hung on.
+  const platedSides = bayDoors.length
+    ? [...new Set(bayDoors.filter((l) => !l.onPartition).map((l) => l.hingeOn))]
+    : hingedSides;
+  for (const sideId of platedSides) {
     const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
     for (const pair of hingeHolePairs) {
       for (const y of pair) addDrill(sideId, 'hinge', P.hinges.layer, x, y, P.hinges.holeDiameter);
+    }
+  }
+  // ─── TURN 21 (CLAUDE.md F12.2): THE PLATE PATTERN, ON A NEW PANEL ────────
+  //
+  // "Hinges on a partition drill the SAME patterns the sides carry: cups in the
+  // door (unchanged law), plate ⌀5 pattern in the partition's FACE — the
+  // existing plate law on a new panel."
+  //
+  // Same rows (`hinge_centers`), same ±16 pair, same ⌀5 on HINGES_5MM, same
+  // 37 mm from the FRONT edge. What is new is only the FRAME it is measured in:
+  // engine/joinery.js places a VPART with u along its HEIGHT and v along its
+  // DEPTH from the BACK, so the front edge is `depth` and the height is
+  // measured from the partition's own bottom rather than from the carcass
+  // floor. The two faces mirror exactly as BUL and BUR do — a part drilled on
+  // its right face is the same part turned over — which is why one of them
+  // measures 37 from the front and the other `depth − 37`.
+  //
+  // These are this turn's ONLY new CNC entities, they are a NAMED class
+  // (HINGES_5MM on a VPART), and they exist only where a door is actually hung
+  // on a partition — never in a golden default.
+  for (const leaf of bayDoors) {
+    if (!leaf.onPartition) continue;
+    const part = panels.find((p) => p.id === leaf.hingeOn);
+    if (!part) continue;
+    const depth = part.box.d;
+    // As DRAWN the machined face is the partition's LEFT one (engine/joinery.js
+    // puts its normal at −x) and `v` runs from the BACK edge, so 37 mm from the
+    // FRONT is `depth − 37`. A pattern for the RIGHT face is the same part
+    // turned over, which mirrors that one axis — exactly the relationship BUL
+    // and BUR have carried since turn 1.
+    const v = leaf.hingeFace === 'L'
+      ? depth - P.hinges.xFromFrontEdge
+      : P.hinges.xFromFrontEdge;
+    for (const pair of hingeHolePairs) {
+      for (const y of pair) {
+        // The row is the carcass's; the partition's own frame starts at its
+        // bottom, which on a full-height piece is one board up.
+        addDrill(part.id, 'hinge', P.hinges.layer, y - part.box.y, v, P.hinges.holeDiameter);
+      }
     }
   }
 
@@ -3093,7 +3283,7 @@ export function computeCabinet(params, profileOverride) {
     hinge_centers: doorCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
     side_hinge_holes_y: doorCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
-    hinged_sides: hingedSides,
+    hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
     front_cup_x_from_hinge_edge: cups.xFromHingeEdge,
     shelf_row_y: shelfRows.map((v) => roundTo(v, 4)),
@@ -3109,6 +3299,14 @@ export function computeCabinet(params, profileOverride) {
     shelf_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
     runner_rows_dp_y: runnerRowsDp,
     runner_rows_carcass_y: budr ? [...budr.runnerRows] : runnerRowsCarcass,
+    // ─── TURN 21 (CLAUDE.md F1.1/F1.3) ────────────────────────────────────
+    // The runner's own UNDERSIDE — not a drilling, which is why it is named
+    // apart from every `*_rows_*` key beside it. Two readers: the drawer box
+    // (engine, above) and the runner MODEL (3d, engine/hardware3d.js), both of
+    // which stand ON the runner rather than on its screws. The screw rows keep
+    // the carcass drilling and the runner hole pattern, unchanged.
+    runner_bottoms_dp_y: budr ? [] : runnerBottomsDp,
+    runner_bottoms_carcass_y: budr ? [...budr.runnerBottomY] : runnerBottomsCarcass,
     runner_carcass_side: runnerCarcassSide,
     runner_hole_x: [...RN.holeXPattern],
     ...(budr ? {

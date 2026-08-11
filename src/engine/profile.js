@@ -274,6 +274,10 @@ export const DEFAULT_CABINET_PROFILE = {
     extensionMm: 4,            // how far the extension line runs past it
     gapMm: 2,                  // …and the gap it leaves at the feature itself
     minSpanMm: 0.5,            // under this there is nothing to dimension
+    // The magnet that holds a shown set on screen is `editor.hoverMagnetMm` —
+    // it is a property of the TOOL rather than of the drawing's ink, and
+    // CLAUDE.md F10.1 names it there. `dimensionStyle` reads it through, so
+    // both surfaces still get one answer from one call.
   },
 
   // ─── THE BACK HOLDS EVERY PARTITION (turn 23, CLAUDE.md F6) ─────────────
@@ -2007,18 +2011,46 @@ export const DEFAULT_CABINET_PROFILE = {
         // block rather than in the renderer. Sane metallic defaults — a
         // bright plate and a dark one — not a measurement of anybody's
         // sample.
+        //
+        // ─── TURN 24 (CLAUDE.md F12): …AND SOMETHING TO REFLECT ────────────
+        // The owner compared the STEP-grade model to the catalogue photo:
+        // still far. Nickel without an environment is GREY PAINT — a metal is
+        // a mirror, and a mirror with nothing in front of it renders as a flat
+        // swatch whatever its metalness says. `envMapIntensity` is how much of
+        // the hardware's own probe (3d/hardwareEnv.js) each finish takes, and
+        // `clearcoat` is the thin lacquer over a plated part. They are here,
+        // beside the colour, because they are the same kind of fact and a
+        // workshop tunes them in one block rather than in the renderer.
+        //
+        // NOTHING ELSE IN THE ROOM SEES THE PROBE. `scene.environment` stays
+        // null and the map attaches per MATERIAL — the no-HDRI philosophy
+        // exists for the LACQUERS and stays for them (F12.2).
         finishes: [
           {
             id: 'nickel',
             label: 'Nickel',
             hint: 'The bright plated finish — the shop’s default.',
-            material: { colour: '#c9ccd1', metalness: 0.95, roughness: 0.28 },
+            material: {
+              colour: '#c9ccd1',
+              metalness: 0.95,
+              roughness: 0.22,
+              envMapIntensity: 1.35,
+              clearcoat: 0.25,
+              clearcoatRoughness: 0.1,
+            },
           },
           {
             id: 'onyx',
             label: 'Onyx',
             hint: 'The dark finish. Same hinge, same drilling, black.',
-            material: { colour: '#2a2b2e', metalness: 0.9, roughness: 0.38 },
+            material: {
+              colour: '#2a2b2e',
+              metalness: 0.9,
+              roughness: 0.34,
+              envMapIntensity: 1.1,
+              clearcoat: 0.2,
+              clearcoatRoughness: 0.15,
+            },
           },
         ],
         defaultFinish: 'nickel',
@@ -2221,7 +2253,11 @@ export const DEFAULT_CABINET_PROFILE = {
         // the two, they are two entries with a `material` each, exactly like
         // the hinge's nickel and onyx above — and nothing else changes.
         finishes: [],
-        finish: { colour: '#b9bcc0', metalness: 0.9, roughness: 0.35 },
+        // Turn 24 (CLAUDE.md F12): the runner takes the same probe through the
+        // same helper — one override function, two families, as turn 23 wrote.
+        finish: {
+          colour: '#b9bcc0', metalness: 0.9, roughness: 0.3, envMapIntensity: 1.2,
+        },
         plasticMaterials: ['plastic', 'pom', 'nylon', 'rubber', 'cap'],
         plastic: { colour: '#1c1c1e', metalness: 0.05, roughness: 0.55 },
 
@@ -2584,6 +2620,19 @@ export const DEFAULT_CABINET_PROFILE = {
     mmStep: 0.5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
+    // ─── TURN 24 (CLAUDE.md F10): THE HOVER ARROWS GROW A MAGNET ───────────
+    //
+    // Owner: turn 23's arrows vanish at a pixel's twitch. They did — the set
+    // was tied to `onPointerLeave` on a hairline shape, so the smallest hand
+    // movement off the feature took the measurement away mid-read.
+    //
+    // Once SHOWN, the set STAYS while the cursor is within this much of the
+    // feature; leave the radius and they fade. In SHEET millimetres, like the
+    // part editor's own magnet above and for the same reason: a print is a
+    // drawing at a known scale and a joiner thinks in millimetres on it. The
+    // 3-D scene uses the same number in the cabinet's own millimetres.
+    hoverMagnetMm: 5,
+
     // ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET ────────────────────────
     //
     // Owner: dragging a shelf near the height of a shelf in the next bay — or

@@ -158,10 +158,15 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // again (it is a block now, at half the height), and the six drawer sides
   // gaining the two pockets the owner measured.
   // turn 18 → 20: 50931ceb → bf00b60f. Delta F4 alone — every label's HEIGHT.
-  // turn 20 → 24: bf00b60f → d83eb622. The global −0.5 axis shift (F4), and
-  // nothing else: this sheet holds a carcass and six drawer sides, and every
-  // one of them carries a screw or a socket.
-  assert.equal(fingerprint(sheetOf(result, all)), 'd83eb622', 'the whole-unit sheet has changed');
+  // turn 20 → 24: bf00b60f → 13f9d8a8. TWO named deltas and no third:
+  //   F4, the global −0.5 axis shift — this sheet holds a carcass and six
+  //   drawer sides, and every one of them carries a screw or a socket;
+  //   F9, the shelf's own label — a shelf now says `(ADJ)` or `(FIX)` after
+  //   its cut size, because the two are cut to different widths and drilled
+  //   differently and 4 mm is not a difference a joiner spots across a
+  //   workshop. TEXT only: `verify/t24/probe-diff.txt` has the entity-level
+  //   evidence, and the only strings that move are the two shelves'.
+  assert.equal(fingerprint(sheetOf(result, all)), '13f9d8a8', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -176,8 +181,8 @@ test('…and so is each preset’s', () => {
   // no screw, no socket, no change. A "global" delta that had moved them too
   // would be a delta that was not what it says it is.
   const expected = {
-    all: 'd83eb622',           // was bf00b60f
-    'non-sprayed': '5b9f99d0', // was 07a550cd — this one has the drawer sides in it
+    all: '13f9d8a8',           // was bf00b60f
+    'non-sprayed': '35eddb46', // was 07a550cd — this one has the drawer sides in it
     sprayed: '27364f5c',       // UNCHANGED — fronts carry no screw axis
     fronts: '27364f5c',        // UNCHANGED
   };
@@ -411,5 +416,5 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   const cuttable = exportablePanels(result.panels);
   const hidden = new Set(panelIdsForPreset(cuttable, 'sprayed'));
   const ids = cuttable.map((p) => p.id).filter((id) => !hidden.has(id));
-  assert.equal(fingerprint(sheetOf(result, ids)), '5b9f99d0'); // was 707406dd — F4's height
+  assert.equal(fingerprint(sheetOf(result, ids)), '35eddb46'); // was 707406dd — F4's height
 });

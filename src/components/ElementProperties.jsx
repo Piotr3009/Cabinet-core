@@ -14,7 +14,7 @@ import { resolveRunnerVariant } from '../engine/runners.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
 import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
-import { fieldFromX, xFromField } from '../engine/partitionPositions.js';
+import { chainFromX, xFromChain } from '../engine/partitionPositions.js';
 // Turn 24 (CLAUDE.md F3.3): which carcass board a partition is cut from.
 import { CARCASS_SLOTS, partitionSlot, slotById } from '../engine/thickness.js';
 import NumberField from './NumberField.jsx';
@@ -75,6 +75,11 @@ export default function ElementProperties({
   // Turn 18 (CLAUDE.md F6.4): …and which runner it is fitted with.
   const setDrawerRunnerVariant = useProjectStore((s) => s.setDrawerRunnerVariant);
   const moveElement = useProjectStore((s) => s.moveElement);
+  // Turn 24 (CLAUDE.md F11): a partition's field measures from its LEFT
+  // NEIGHBOUR, so this row needs to know what else is in the cabinet — read off
+  // the ENGINE's own panels, so a partition is measured to the face the engine
+  // actually cut and not to the one the item asked for.
+  const unitResult = useProjectStore((s) => s.unitResult);
 
   const type = useMemo(() => getUnitType(unit.type), [unit.type]);
   const fields = useMemo(() => elementFields(panel, type), [panel, type]);
@@ -165,22 +170,35 @@ export default function ElementProperties({
             />
           </Field>
         );
-      case 'position-x':
-        // ─── TURN 23 (CLAUDE.md F10.1) ───
+      case 'position-x': {
+        // ─── TURN 23 (CLAUDE.md F10.1) / TURN 24 (F11) ───
         // The same cure turn 21 gave the shelf's height, on the other axis: the
-        // field is measured from the INSIDE face of the left side, which is
-        // where a joiner places a partition from. STORAGE DOES NOT MOVE —
-        // `xFromField` puts back exactly what `x_mm` has always meant.
+        // field is measured from the INSIDE — and from turn 24 from the LEFT
+        // NEIGHBOUR's face, which for the first partition IS that inside face.
+        // One mapping, two cases of it. STORAGE DOES NOT MOVE: `xFromChain`
+        // puts back exactly what `x_mm` has always meant, so moving one
+        // partition changes the NUMBER the next one shows and nothing else.
+        const siblings = ((unitResult(unit.id)?.panels) || [])
+          .filter((pp) => pp.part === 'VPART' && pp.id !== panel?.id && pp.box)
+          .map((pp) => ({ x: pp.box.x, w: pp.box.w }));
+        const mine = panel?.box?.x ?? item?.x_mm ?? G;
+        const first = siblings.every((o) => o.x + o.w > mine);
         return (
-          <Field key={key} label="From the left">
+          <Field key={key} label={first ? 'From the left' : 'From the last'}>
             <NumberField
               className="cc-input text-right"
-              value={fieldFromX(item?.x_mm ?? G, G)}
-              title="From the INSIDE face of the left side panel to this partition's near face"
-              onCommit={(v) => setPartitionX(unit.id, item.id, xFromField(v, G))}
+              data-partition-chain={item?.id || '1'}
+              value={chainFromX({ x: mine, boardT: G, others: siblings })}
+              title={first
+                ? "From the INSIDE face of the left side panel to this partition's near face"
+                : "From the previous partition's face to this one's near face — the clear bay between them"}
+              onCommit={(v) => setPartitionX(
+                unit.id, item.id, xFromChain({ value: v, x: mine, boardT: G, others: siblings }),
+              )}
             />
           </Field>
         );
+      }
       // ─── TURN 24 (CLAUDE.md F3.3): THE PARTITION'S OWN SLOT ───────────────
       // Carcass 1–3 and nothing else: a partition is a carcass board standing
       // on its end, and offering it a front board would be offering to build a

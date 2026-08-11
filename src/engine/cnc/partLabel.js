@@ -50,7 +50,33 @@ export function partCode(unitNum, panelId) {
 }
 
 /**
+ * WHAT KIND OF SHELF THIS IS (turn 24, CLAUDE.md F9).
+ *
+ * Owner: a shelf's CNC label gains its type — `… SHELF (FIX)` / `… SHELF
+ * (ADJ)`. Same label block, one word more.
+ *
+ * It matters on a pallet: the two are cut to DIFFERENT WIDTHS now (F6 — fix
+ * takes the full clear light, adjustable is 4 mm narrower so it slides), they
+ * are drilled differently (F7 — a fix shelf is screwed and biscuited, an
+ * adjustable one is on pins), and 4 mm is not a difference a joiner will spot
+ * across a workshop. The board says which it is.
+ *
+ * It is read off the PANEL's own `meta.variant`, which the engine has set since
+ * turn 8, so there is no second answer to keep in step. Anything that is not a
+ * shelf gets nothing added: a side panel is a side panel.
+ *
+ * @returns {string} '(FIX)', '(ADJ)' or ''
+ */
+export function shelfTypeTag(panel) {
+  if (panel?.part !== 'SHELF') return '';
+  const locked = panel?.meta?.locked === true || String(panel?.meta?.variant || '') === 'fixed';
+  return locked ? '(FIX)' : '(ADJ)';
+}
+
+/**
  * `F-01 BUR 597x568` — the cabinet, the part, the cut size.
+ *
+ * …and on a SHELF, the kind it is: `F-01 SHELF-1 564x520 (FIX)`.
  *
  * @param {string} unitNum  what the cabinet is called (result.unitNum)
  * @param {object} panel    an engine panel record
@@ -60,5 +86,5 @@ export function partLabelText(unitNum, panel) {
   const name = String(unitNum ?? '').trim();
   const code = partCode(name, panel?.id);
   const size = `${formatMm(panel?.w)}x${formatMm(panel?.h)}`;
-  return [name, code, size].filter((s) => s !== '').join(' ');
+  return [name, code, size, shelfTypeTag(panel)].filter((s) => s !== '').join(' ');
 }

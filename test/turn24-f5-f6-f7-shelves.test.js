@@ -227,7 +227,9 @@ test('F7.2 — ONE world height: both faces’ joint heights are equal, to zero'
   assert.equal(world, shelf.box.y + shelf.box.h / 2);
 
   // THE PARTITION's pattern is that same height minus whatever it stands above.
-  const partJoint = [...new Set(marksOf(r, part.id).map((m) => m.from[0]))];
+  // Turn 24 (F8) lays the partition along the grain, so its own frame is
+  // `depth × height` and the joint's height is its drawn Y.
+  const partJoint = [...new Set(marksOf(r, part.id).map((m) => m.from[1]))];
   assert.equal(partJoint.length, 1);
   assert.equal(part.box.y + partJoint[0] - world, 0, 'equal in world space, exactly');
 });

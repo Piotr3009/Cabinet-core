@@ -1277,7 +1277,14 @@ export default function UnitView({
               ? () => {
                 document.body.style.cursor = '';
                 if (shelfId) setHoverShelf(null);
-                if (p.part === 'VPART') setHoverPartition(null);
+                // ─── TURN 24 (CLAUDE.md F10.1): THE ARROWS GROW A MAGNET ────
+                //
+                // The partition's hover is NOT dropped here any more. Turn 23
+                // tied it to this event and the set vanished at a pixel's
+                // twitch — a ray sliding off an 18 mm board is a twitch. The
+                // set is held by `<HoverDimensions>`'s own magnet volume, which
+                // is the piece's box grown by `hoverMagnetMm` and mounted only
+                // while the set is showing; leaving THAT is what fades them.
               }
               : undefined}
           />
@@ -1291,7 +1298,14 @@ export default function UnitView({
           of the picture it presents, which is the rule every helper in this
           file already follows. */}
       {hoverPartition && !contour && (
-        <HoverDimensions result={result} panelId={hoverPartition} profile={profile} />
+        <HoverDimensions
+          result={result}
+          panelId={hoverPartition}
+          profile={profile}
+          // Turn 24 (CLAUDE.md F10.1): leaving the MAGNET is what fades the
+          // set, not leaving the 18 mm board.
+          onLeave={() => setHoverPartition(null)}
+        />
       )}
 
       {/* ─── Hover a shelf: the gaps in the whole column (turn 8, F4) ───

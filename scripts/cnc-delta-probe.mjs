@@ -112,6 +112,62 @@ export function cases() {
         { id: 'p1', kind: 'partition', x_mm: 450 },
       ]),
     });
+    // ─── TURN 24 (CLAUDE.md F9): THE ADJUSTABLE SHELF, PROBED ─────────────
+    //
+    // F9 puts the shelf's TYPE on its label — `(ADJ)` / `(FIX)` — and that
+    // reaches EVERY shelf in the app, not only a fix one. A probe with no
+    // adjustable shelf in it would report the tag as if it were a fix-shelf
+    // delta, which it is not.
+    out.push({
+      id: `${type}+adjustable-shelves`,
+      params: {
+        ...base,
+        sections: [{
+          width_mm: Number(base.width) || 600,
+          items: [
+            { id: 's1', kind: 'shelf', pos_mm: Math.round((Number(base.height) || 720) / 3) },
+            { id: 's2', kind: 'shelf', pos_mm: Math.round((2 * (Number(base.height) || 720)) / 3) },
+          ],
+        }],
+      },
+    });
+    // ─── TURN 24 (CLAUDE.md F7.4 / F8.2): THE FIX-SHELF PROBE ─────────────
+    //
+    // F7's joint and F6's width appear ONLY where a shelf is FIX, and a probe
+    // that only ever builds an adjustable one would report "no change" for a
+    // whole new class of entity. Two shapes, because the two halves of F7.1
+    // behave differently: from a CARCASS SIDE the set carries its through
+    // screws, and from a PARTITION it is biscuits alone.
+    out.push({
+      id: `${type}+fix-shelf`,
+      params: {
+        ...base,
+        sections: [{
+          width_mm: Number(base.width) || 600,
+          items: [{ id: 's1', kind: 'shelf', pos_mm: Math.round((Number(base.height) || 720) / 2), variant: 'fixed' }],
+        }],
+      },
+    });
+    out.push({
+      id: `${type}+fix-shelf-in-bay`,
+      params: {
+        ...base,
+        width: Math.max(Number(base.width) || 0, 900),
+        sections: [{
+          width_mm: Math.max(Number(base.width) || 0, 900),
+          items: [
+            { id: 'p1', kind: 'partition', x_mm: 450 },
+            {
+              id: 's1',
+              kind: 'shelf',
+              pos_mm: Math.round((Number(base.height) || 720) / 2),
+              zone: 0,
+              variant: 'fixed',
+            },
+          ],
+        }],
+      },
+    });
     out.push({
       id: `${type}+partitions-2`,
       params: partition([

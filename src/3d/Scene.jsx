@@ -5,6 +5,9 @@ import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ContactShadows, OrbitControls } from '@react-three/drei';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+// Turn 24 (CLAUDE.md F12): the hardware's own probe — per material, never on
+// the scene.
+import { buildHardwareEnv } from './hardwareEnv.js';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
@@ -135,6 +138,15 @@ function FocusRig({ request, orbitRef, onDone }) {
 export function Environment({ intensity, on }) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
+
+  // ─── TURN 24 (CLAUDE.md F12): THE HARDWARE'S OWN PROBE ────────────────────
+  //
+  // Built here because this is where a renderer is, and NOWHERE ELSE does
+  // anything with it: it is attached to hardware MATERIALS (3d/hardwareFinish
+  // .js), never to `scene.environment`. The no-HDRI philosophy exists for the
+  // LACQUERS and stays for them — a sprayed door is lit by the studio rig and
+  // by nothing else, exactly as it has been since turn 6.
+  useEffect(() => { buildHardwareEnv(gl); }, [gl]);
 
   useEffect(() => {
     const pmrem = new THREE.PMREMGenerator(gl);

@@ -20,7 +20,7 @@ import { editCount, partFeatures } from '../engine/partEdits.js';
 import NumberField from './NumberField.jsx';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import {
-  dimensionSet, dimensionStyle, featureDimensionRows,
+  dimensionSet, dimensionStyle, featureDimensionRows, hoverHolds,
 } from '../engine/dimensionArrows.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import useContextGuard from '../3d/contextGuard.jsx';
@@ -692,15 +692,23 @@ function PartDrawing({
         // handler runs first (spread above); this only reads.
         onPointerMove={(e) => {
           view.handlers.onPointerMove?.(e);
-          if (!onCursor) return;
           const at = view.pointerToWorld(e.clientX, e.clientY);
           const rect = wrapRef.current?.getBoundingClientRect();
           setScreen(rect ? { x: e.clientX - rect.left, y: e.clientY - rect.top } : null);
-          onCursor(at ? { x: at.x, y: -at.y } : null);
+          const here = at ? { x: at.x, y: -at.y } : null;
+          onCursor?.(here);
+          // ─── TURN 24 (CLAUDE.md F10.1): THE MAGNET ──────────────────────
+          // The hovered set fades only when the cursor leaves the feature's
+          // own magnet radius — never on the twitch that takes it off a
+          // hairline stroke.
+          if (hovered && !hoverHolds({
+            cursor: here, box: featureBox(drawing, hovered), magnetMm: style.hoverMagnetMm,
+          })) onHover(null);
         }}
         onPointerLeave={(e) => {
           view.handlers.onPointerLeave?.(e);
           onCursor?.(null);
+          onHover(null);
           setScreen(null);
         }}
         // ─── TURN 23 (CLAUDE.md F9.1) / TURN 24 (F2.3): the point goes down ─
@@ -760,7 +768,13 @@ function PartDrawing({
             stroke: 'none',
             style: { cursor: 'pointer' },
             onPointerEnter: () => onHover(m.id),
-            onPointerLeave: () => onHover(null),
+            // ─── TURN 24 (CLAUDE.md F10.1): THE ARROWS HOLD ──────────────────
+            // Once shown, the set STAYS while the cursor is within
+            // `hoverDimensions.hoverMagnetMm` of the feature — which is decided
+            // on every MOVE below, against the feature's own box, rather than
+            // by this hairline shape's own leave event. Turn 23 tied it to the
+            // leave and the arrows vanished at a pixel's twitch.
+            onPointerLeave: () => {},
             // Turn 23 (F9.1): clicking a feature SELECTS it, which is what the
             // Delete tool acts on. It stops there — nothing is removed by a
             // click, because a print you can rub out by touching it is not a
@@ -1015,6 +1029,34 @@ function PartDrawing({
       )}
     </div>
   );
+}
+
+/**
+ * A machining's own EXTENT, for F10's magnet — a point for a hole, the
+ * rectangle for a pocket, the run for a mark. Measured to the box and not to
+ * the centre, because a joiner running his eye along a 70 mm mark has not left
+ * the feature he is reading.
+ */
+function featureBox(drawing, id) {
+  const m = drawing.machinings.find((x) => x.id === id);
+  if (!m) return null;
+  if (m.kind === 'pocket') {
+    return {
+      x: m.x, y: m.y, w: m.w, h: m.h,
+    };
+  }
+  if (m.kind === 'mark') {
+    return {
+      x: Math.min(m.from[0], m.to[0]),
+      y: Math.min(m.from[1], m.to[1]),
+      w: Math.abs(m.to[0] - m.from[0]),
+      h: Math.abs(m.to[1] - m.from[1]),
+    };
+  }
+  const r = Math.max(Number(m.d) / 2, 0);
+  return {
+    x: m.x - r, y: m.y - r, w: r * 2, h: r * 2,
+  };
 }
 
 /**

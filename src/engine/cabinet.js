@@ -1910,7 +1910,26 @@ export function computeCabinet(params, profileOverride) {
           h: span.height,
           d: span.depth,
         },
-        cnc: rectGeometry(span.height, span.depth),
+        // ─── TURN 24 (CLAUDE.md F8): THE PARTITION LIES ALONG THE GRAIN ────
+        //
+        // The LISP draws the partition "rotated 90" — `height × depth`, its
+        // long side across the page — and the owner's PRODUCTION law wins: the
+        // grain runs top-to-bottom like the sides, so the piece lays on the
+        // sheet in the SAME convention as BUL and BUR (`depth × height`).
+        //
+        // The board is the same board and its CUT SIZE has not moved: `w` and
+        // `h` above are what the CSV and the BOM print, exactly as a TOP —
+        // which has been drawn rotated since turn 1 — prints its own. What
+        // changes is the FRAME the outline, the label and every drilled point
+        // on this piece are expressed in, and everything downstream of it (the
+        // sheet, the per-panel DXF, `engine/joinery.js`'s 3-D placement, the
+        // detail window) reads that frame rather than carrying a copy of it.
+        cnc: {
+          rotated: true,
+          drawn_w: span.depth,
+          drawn_h: span.height,
+          ...rectGeometry(span.depth, span.height),
+        },
         meta: {
           index: n,
           vertical: true,
@@ -2825,9 +2844,15 @@ export function computeCabinet(params, profileOverride) {
       : P.hinges.xFromFrontEdge;
     for (const pair of hingeHolePairs) {
       for (const y of pair) {
-        // The row is the carcass's; the partition's own frame starts at its
+        // ─── TURN 24 (CLAUDE.md F8) ───
+        // The partition lies along the grain now, so its own frame is
+        // `depth × height` with x running from the FRONT edge towards the back
+        // — the same convention BUL's has always had. `v` is still measured
+        // from the BACK (it is the mirror rule that makes one face 37 from the
+        // front and the other `depth − 37`), so it becomes `depth − v` here.
+        // The row is the carcass's; the height starts at the partition's own
         // bottom, which on a full-height piece is one board up.
-        addDrill(part.id, 'hinge', P.hinges.layer, y - part.box.y, v, P.hinges.holeDiameter);
+        addDrill(part.id, 'hinge', P.hinges.layer, depth - v, y - part.box.y, P.hinges.holeDiameter);
       }
     }
   }
@@ -2950,14 +2975,17 @@ export function computeCabinet(params, profileOverride) {
       // Its frame is u along its HEIGHT and v along its DEPTH from the back
       // (engine/joinery.js), so the joint's world height becomes an x in the
       // partition's own frame by subtracting how far it stands above the floor.
-      const x = jointY - bearer.panel.box.y;
-      const v = (z) => z - bearer.panel.box.z;
+      // Turn 24 (CLAUDE.md F8): the partition's frame is `depth × height`, x
+      // from the FRONT edge — so the joint's world height is a Y here and the
+      // set's distance from the front is the X.
+      const y = jointY - bearer.panel.box.y;
+      const alongDepth = (t) => t;
       for (const set of noScrewSets) {
         addMark(
           bearer.id,
           biscuitLayerNames.mark,
-          [x, v(front - set.mark.from)],
-          [x, v(front - set.mark.to)],
+          [alongDepth(set.mark.from), y],
+          [alongDepth(set.mark.to), y],
         );
       }
     }

@@ -24,467 +24,925 @@
 ---
 > GEOM   WARDROBE+partition 01-BUL.dxf 059ce0be
 > GEOM   WARDROBE+partition 01-BUR.dxf 41af52be
-33c33
+33,34c33,34
 < GEOM   WARDROBE+partition 01-BACK.dxf 926cdc31
+< GEOM   WARDROBE+partition 01-VPART-1.dxf ccd05d93
 ---
 > GEOM   WARDROBE+partition 01-BACK.dxf 52ad9ac8
+> GEOM   WARDROBE+partition 01-VPART-1.dxf 0571c103
 37,38c37,38
 < GEOM   WARDROBE+partition-on-shelf 01-BUL.dxf 5d5d83f0
 < GEOM   WARDROBE+partition-on-shelf 01-BUR.dxf 7dfd400c
 ---
-> GEOM   WARDROBE+partition-on-shelf 01-BUL.dxf 5ad91339
-> GEOM   WARDROBE+partition-on-shelf 01-BUR.dxf 7ebd1939
-41c41
+> GEOM   WARDROBE+partition-on-shelf 01-BUL.dxf 67fab3bf
+> GEOM   WARDROBE+partition-on-shelf 01-BUR.dxf 73a80be3
+41,43c41,43
 < GEOM   WARDROBE+partition-on-shelf 01-BACK.dxf 34e0847a
+< GEOM   WARDROBE+partition-on-shelf 01-SHELF-1.dxf 9f053473
+< GEOM   WARDROBE+partition-on-shelf 01-VPART-1.dxf a43efc05
 ---
 > GEOM   WARDROBE+partition-on-shelf 01-BACK.dxf c19a3073
+> GEOM   WARDROBE+partition-on-shelf 01-SHELF-1.dxf d5c0dbbf
+> GEOM   WARDROBE+partition-on-shelf 01-VPART-1.dxf 8cff99ad
 46,47c46,47
+< GEOM   WARDROBE+adjustable-shelves 01-BUL.dxf 51e58a9d
+< GEOM   WARDROBE+adjustable-shelves 01-BUR.dxf d980dc8d
+---
+> GEOM   WARDROBE+adjustable-shelves 01-BUL.dxf 9bb9e066
+> GEOM   WARDROBE+adjustable-shelves 01-BUR.dxf 290f0e88
+50c50
+< GEOM   WARDROBE+adjustable-shelves 01-BACK.dxf 81b33a91
+---
+> GEOM   WARDROBE+adjustable-shelves 01-BACK.dxf 6cde8080
+54,55c54,55
+< GEOM   WARDROBE+fix-shelf 01-BUL.dxf 5d5d83f0
+< GEOM   WARDROBE+fix-shelf 01-BUR.dxf 5ca86200
+---
+> GEOM   WARDROBE+fix-shelf 01-BUL.dxf 67fab3bf
+> GEOM   WARDROBE+fix-shelf 01-BUR.dxf b4ccfa2f
+58,59c58,59
+< GEOM   WARDROBE+fix-shelf 01-BACK.dxf 81b33a91
+< GEOM   WARDROBE+fix-shelf 01-SHELF-1.dxf 5c6021bf
+---
+> GEOM   WARDROBE+fix-shelf 01-BACK.dxf 6cde8080
+> GEOM   WARDROBE+fix-shelf 01-SHELF-1.dxf 5d0fcdeb
+61,62c61,62
+< GEOM   WARDROBE+fix-shelf-in-bay 01-BUL.dxf 5d5d83f0
+< GEOM   WARDROBE+fix-shelf-in-bay 01-BUR.dxf 7dfd400c
+---
+> GEOM   WARDROBE+fix-shelf-in-bay 01-BUL.dxf 67fab3bf
+> GEOM   WARDROBE+fix-shelf-in-bay 01-BUR.dxf 41af52be
+65,67c65,67
+< GEOM   WARDROBE+fix-shelf-in-bay 01-BACK.dxf 926cdc31
+< GEOM   WARDROBE+fix-shelf-in-bay 01-SHELF-1.dxf eb364943
+< GEOM   WARDROBE+fix-shelf-in-bay 01-VPART-1.dxf ccd05d93
+---
+> GEOM   WARDROBE+fix-shelf-in-bay 01-BACK.dxf 52ad9ac8
+> GEOM   WARDROBE+fix-shelf-in-bay 01-SHELF-1.dxf 3ac11c67
+> GEOM   WARDROBE+fix-shelf-in-bay 01-VPART-1.dxf 0db9434e
+70,71c70,71
 < GEOM   WARDROBE+partitions-2 01-BUL.dxf f7edc221
 < GEOM   WARDROBE+partitions-2 01-BUR.dxf 31fe986d
 ---
 > GEOM   WARDROBE+partitions-2 01-BUL.dxf 059ce0be
 > GEOM   WARDROBE+partitions-2 01-BUR.dxf 41af52be
-50c50
+74,76c74,76
 < GEOM   WARDROBE+partitions-2 01-BACK.dxf 373b9a26
+< GEOM   WARDROBE+partitions-2 01-VPART-1.dxf ccd05d93
+< GEOM   WARDROBE+partitions-2 01-VPART-2.dxf ccd05d93
 ---
 > GEOM   WARDROBE+partitions-2 01-BACK.dxf 79c25f93
-55,56c55,56
+> GEOM   WARDROBE+partitions-2 01-VPART-1.dxf 0571c103
+> GEOM   WARDROBE+partitions-2 01-VPART-2.dxf 0571c103
+79,80c79,80
 < GEOM   BUD 01-BUL.dxf 81c011e4
 < GEOM   BUD 01-BUR.dxf be351a3e
 ---
 > GEOM   BUD 01-BUL.dxf 2074f025
 > GEOM   BUD 01-BUR.dxf f00aa69d
-59c59
+83c83
 < GEOM   BUD 01-BACK.dxf a62d8355
 ---
 > GEOM   BUD 01-BACK.dxf 0e9458ae
-61,62c61,62
+85,86c85,86
 < GEOM   BUD+drawers 01-BUL.dxf 81c011e4
 < GEOM   BUD+drawers 01-BUR.dxf be351a3e
 ---
 > GEOM   BUD+drawers 01-BUL.dxf 2074f025
 > GEOM   BUD+drawers 01-BUR.dxf f00aa69d
-65c65
+89c89
 < GEOM   BUD+drawers 01-BACK.dxf a62d8355
 ---
 > GEOM   BUD+drawers 01-BACK.dxf 0e9458ae
-67,68c67,68
+91,92c91,92
 < GEOM   BUD+partition 01-BUL.dxf 81c011e4
 < GEOM   BUD+partition 01-BUR.dxf 7443595c
 ---
 > GEOM   BUD+partition 01-BUL.dxf 2074f025
 > GEOM   BUD+partition 01-BUR.dxf b3ee9611
-71c71
+95,96c95,96
 < GEOM   BUD+partition 01-BACK.dxf 8e436881
+< GEOM   BUD+partition 01-VPART-1.dxf ff3a79df
 ---
 > GEOM   BUD+partition 01-BACK.dxf e4ba74ae
-75,76c75,76
+> GEOM   BUD+partition 01-VPART-1.dxf 15231bcf
+99,100c99,100
 < GEOM   BUD+partition-on-shelf 01-BUL.dxf 2dd88fc8
 < GEOM   BUD+partition-on-shelf 01-BUR.dxf d3d16c20
 ---
-> GEOM   BUD+partition-on-shelf 01-BUL.dxf 57f7b9f9
-> GEOM   BUD+partition-on-shelf 01-BUR.dxf 01644a15
-79c79
+> GEOM   BUD+partition-on-shelf 01-BUL.dxf ffb0d15c
+> GEOM   BUD+partition-on-shelf 01-BUR.dxf e540d159
+103,105c103,105
 < GEOM   BUD+partition-on-shelf 01-BACK.dxf adcfa934
+< GEOM   BUD+partition-on-shelf 01-SHELF-1.dxf 272afc8f
+< GEOM   BUD+partition-on-shelf 01-VPART-1.dxf d1fa0273
 ---
 > GEOM   BUD+partition-on-shelf 01-BACK.dxf 44506349
-84,85c84,85
+> GEOM   BUD+partition-on-shelf 01-SHELF-1.dxf 141120c9
+> GEOM   BUD+partition-on-shelf 01-VPART-1.dxf 577de263
+108,109c108,109
+< GEOM   BUD+adjustable-shelves 01-BUL.dxf 4472dbd2
+< GEOM   BUD+adjustable-shelves 01-BUR.dxf f7bbcce4
+---
+> GEOM   BUD+adjustable-shelves 01-BUL.dxf 1f7ca0bb
+> GEOM   BUD+adjustable-shelves 01-BUR.dxf eefd4b93
+112c112
+< GEOM   BUD+adjustable-shelves 01-BACK.dxf a62d8355
+---
+> GEOM   BUD+adjustable-shelves 01-BACK.dxf 0e9458ae
+116,117c116,117
+< GEOM   BUD+fix-shelf 01-BUL.dxf 2dd88fc8
+< GEOM   BUD+fix-shelf 01-BUR.dxf 841afe8a
+---
+> GEOM   BUD+fix-shelf 01-BUL.dxf ffb0d15c
+> GEOM   BUD+fix-shelf 01-BUR.dxf c8b8be3d
+120,121c120,121
+< GEOM   BUD+fix-shelf 01-BACK.dxf a62d8355
+< GEOM   BUD+fix-shelf 01-SHELF-1.dxf c2c8eb8b
+---
+> GEOM   BUD+fix-shelf 01-BACK.dxf 0e9458ae
+> GEOM   BUD+fix-shelf 01-SHELF-1.dxf 1ae84bd1
+123,124c123,124
+< GEOM   BUD+fix-shelf-in-bay 01-BUL.dxf 2dd88fc8
+< GEOM   BUD+fix-shelf-in-bay 01-BUR.dxf d3d16c20
+---
+> GEOM   BUD+fix-shelf-in-bay 01-BUL.dxf ffb0d15c
+> GEOM   BUD+fix-shelf-in-bay 01-BUR.dxf b3ee9611
+127,129c127,129
+< GEOM   BUD+fix-shelf-in-bay 01-BACK.dxf 8e436881
+< GEOM   BUD+fix-shelf-in-bay 01-SHELF-1.dxf 31f2611f
+< GEOM   BUD+fix-shelf-in-bay 01-VPART-1.dxf ff3a79df
+---
+> GEOM   BUD+fix-shelf-in-bay 01-BACK.dxf e4ba74ae
+> GEOM   BUD+fix-shelf-in-bay 01-SHELF-1.dxf e9b73491
+> GEOM   BUD+fix-shelf-in-bay 01-VPART-1.dxf e5c6865f
+132,133c132,133
 < GEOM   BUD+partitions-2 01-BUL.dxf 81c011e4
 < GEOM   BUD+partitions-2 01-BUR.dxf 7443595c
 ---
 > GEOM   BUD+partitions-2 01-BUL.dxf 2074f025
 > GEOM   BUD+partitions-2 01-BUR.dxf b3ee9611
-88c88
+136,138c136,138
 < GEOM   BUD+partitions-2 01-BACK.dxf 655fbc6a
+< GEOM   BUD+partitions-2 01-VPART-1.dxf ff3a79df
+< GEOM   BUD+partitions-2 01-VPART-2.dxf ff3a79df
 ---
 > GEOM   BUD+partitions-2 01-BACK.dxf 9723e3fd
-93,94c93,94
+> GEOM   BUD+partitions-2 01-VPART-1.dxf 15231bcf
+> GEOM   BUD+partitions-2 01-VPART-2.dxf 15231bcf
+141,142c141,142
 < GEOM   BUDR2 01-BUL.dxf 498db19a
 < GEOM   BUDR2 01-BUR.dxf 8f9dca82
 ---
 > GEOM   BUDR2 01-BUL.dxf 94a6afeb
 > GEOM   BUDR2 01-BUR.dxf ed39aa97
-97c97
+145c145
 < GEOM   BUDR2 01-BACK.dxf a62d8355
 ---
 > GEOM   BUDR2 01-BACK.dxf 0e9458ae
-110,111c110,111
+158,159c158,159
 < GEOM   BUDR2+drawers 01-BUL.dxf 498db19a
 < GEOM   BUDR2+drawers 01-BUR.dxf 8f9dca82
 ---
 > GEOM   BUDR2+drawers 01-BUL.dxf 94a6afeb
 > GEOM   BUDR2+drawers 01-BUR.dxf ed39aa97
-114c114
+162c162
 < GEOM   BUDR2+drawers 01-BACK.dxf a62d8355
 ---
 > GEOM   BUDR2+drawers 01-BACK.dxf 0e9458ae
-127,128c127,128
+175,176c175,176
 < GEOM   BUDR2+partition 01-BUL.dxf 498db19a
 < GEOM   BUDR2+partition 01-BUR.dxf 8f9dca82
 ---
 > GEOM   BUDR2+partition 01-BUL.dxf 94a6afeb
 > GEOM   BUDR2+partition 01-BUR.dxf ed39aa97
-131c131
+179,180c179,180
 < GEOM   BUDR2+partition 01-BACK.dxf 8e436881
+< GEOM   BUDR2+partition 01-VPART-1.dxf ff3a79df
 ---
 > GEOM   BUDR2+partition 01-BACK.dxf e4ba74ae
-145,146c145,146
+> GEOM   BUDR2+partition 01-VPART-1.dxf 15231bcf
+193,194c193,194
 < GEOM   BUDR2+partition-on-shelf 01-BUL.dxf 498db19a
 < GEOM   BUDR2+partition-on-shelf 01-BUR.dxf 8f9dca82
 ---
 > GEOM   BUDR2+partition-on-shelf 01-BUL.dxf 94a6afeb
 > GEOM   BUDR2+partition-on-shelf 01-BUR.dxf ed39aa97
-149c149
+197,198c197,198
 < GEOM   BUDR2+partition-on-shelf 01-BACK.dxf 8e436881
+< GEOM   BUDR2+partition-on-shelf 01-VPART-1.dxf ff3a79df
 ---
 > GEOM   BUDR2+partition-on-shelf 01-BACK.dxf e4ba74ae
-163,164c163,164
+> GEOM   BUDR2+partition-on-shelf 01-VPART-1.dxf 15231bcf
+211,212c211,212
+< GEOM   BUDR2+adjustable-shelves 01-BUL.dxf 498db19a
+< GEOM   BUDR2+adjustable-shelves 01-BUR.dxf 8f9dca82
+---
+> GEOM   BUDR2+adjustable-shelves 01-BUL.dxf 94a6afeb
+> GEOM   BUDR2+adjustable-shelves 01-BUR.dxf ed39aa97
+215c215
+< GEOM   BUDR2+adjustable-shelves 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR2+adjustable-shelves 01-BACK.dxf 0e9458ae
+228,229c228,229
+< GEOM   BUDR2+fix-shelf 01-BUL.dxf 498db19a
+< GEOM   BUDR2+fix-shelf 01-BUR.dxf 8f9dca82
+---
+> GEOM   BUDR2+fix-shelf 01-BUL.dxf 94a6afeb
+> GEOM   BUDR2+fix-shelf 01-BUR.dxf ed39aa97
+232c232
+< GEOM   BUDR2+fix-shelf 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR2+fix-shelf 01-BACK.dxf 0e9458ae
+245,246c245,246
+< GEOM   BUDR2+fix-shelf-in-bay 01-BUL.dxf 498db19a
+< GEOM   BUDR2+fix-shelf-in-bay 01-BUR.dxf 8f9dca82
+---
+> GEOM   BUDR2+fix-shelf-in-bay 01-BUL.dxf 94a6afeb
+> GEOM   BUDR2+fix-shelf-in-bay 01-BUR.dxf ed39aa97
+249,250c249,250
+< GEOM   BUDR2+fix-shelf-in-bay 01-BACK.dxf 8e436881
+< GEOM   BUDR2+fix-shelf-in-bay 01-VPART-1.dxf ff3a79df
+---
+> GEOM   BUDR2+fix-shelf-in-bay 01-BACK.dxf e4ba74ae
+> GEOM   BUDR2+fix-shelf-in-bay 01-VPART-1.dxf 15231bcf
+263,264c263,264
 < GEOM   BUDR2+partitions-2 01-BUL.dxf 498db19a
 < GEOM   BUDR2+partitions-2 01-BUR.dxf 8f9dca82
 ---
 > GEOM   BUDR2+partitions-2 01-BUL.dxf 94a6afeb
 > GEOM   BUDR2+partitions-2 01-BUR.dxf ed39aa97
-167c167
+267,269c267,269
 < GEOM   BUDR2+partitions-2 01-BACK.dxf 655fbc6a
+< GEOM   BUDR2+partitions-2 01-VPART-1.dxf ff3a79df
+< GEOM   BUDR2+partitions-2 01-VPART-2.dxf ff3a79df
 ---
 > GEOM   BUDR2+partitions-2 01-BACK.dxf 9723e3fd
-182,183c182,183
+> GEOM   BUDR2+partitions-2 01-VPART-1.dxf 15231bcf
+> GEOM   BUDR2+partitions-2 01-VPART-2.dxf 15231bcf
+282,283c282,283
 < GEOM   BUDR 01-BUL.dxf 26219db1
 < GEOM   BUDR 01-BUR.dxf fe0ea435
 ---
 > GEOM   BUDR 01-BUL.dxf 007d3828
 > GEOM   BUDR 01-BUR.dxf 4242e3c8
-186c186
+286c286
 < GEOM   BUDR 01-BACK.dxf a62d8355
 ---
 > GEOM   BUDR 01-BACK.dxf 0e9458ae
-205,206c205,206
+305,306c305,306
 < GEOM   BUDR+drawers 01-BUL.dxf 26219db1
 < GEOM   BUDR+drawers 01-BUR.dxf fe0ea435
 ---
 > GEOM   BUDR+drawers 01-BUL.dxf 007d3828
 > GEOM   BUDR+drawers 01-BUR.dxf 4242e3c8
-209c209
+309c309
 < GEOM   BUDR+drawers 01-BACK.dxf a62d8355
 ---
 > GEOM   BUDR+drawers 01-BACK.dxf 0e9458ae
-228,229c228,229
+328,329c328,329
 < GEOM   BUDR+partition 01-BUL.dxf 26219db1
 < GEOM   BUDR+partition 01-BUR.dxf fe0ea435
 ---
 > GEOM   BUDR+partition 01-BUL.dxf 007d3828
 > GEOM   BUDR+partition 01-BUR.dxf 4242e3c8
-232c232
+332,333c332,333
 < GEOM   BUDR+partition 01-BACK.dxf 8e436881
+< GEOM   BUDR+partition 01-VPART-1.dxf ff3a79df
 ---
 > GEOM   BUDR+partition 01-BACK.dxf e4ba74ae
-252,253c252,253
+> GEOM   BUDR+partition 01-VPART-1.dxf 15231bcf
+352,353c352,353
 < GEOM   BUDR+partition-on-shelf 01-BUL.dxf 26219db1
 < GEOM   BUDR+partition-on-shelf 01-BUR.dxf fe0ea435
 ---
 > GEOM   BUDR+partition-on-shelf 01-BUL.dxf 007d3828
 > GEOM   BUDR+partition-on-shelf 01-BUR.dxf 4242e3c8
-256c256
+356,357c356,357
 < GEOM   BUDR+partition-on-shelf 01-BACK.dxf 8e436881
+< GEOM   BUDR+partition-on-shelf 01-VPART-1.dxf ff3a79df
 ---
 > GEOM   BUDR+partition-on-shelf 01-BACK.dxf e4ba74ae
-276,277c276,277
+> GEOM   BUDR+partition-on-shelf 01-VPART-1.dxf 15231bcf
+376,377c376,377
+< GEOM   BUDR+adjustable-shelves 01-BUL.dxf 26219db1
+< GEOM   BUDR+adjustable-shelves 01-BUR.dxf fe0ea435
+---
+> GEOM   BUDR+adjustable-shelves 01-BUL.dxf 007d3828
+> GEOM   BUDR+adjustable-shelves 01-BUR.dxf 4242e3c8
+380c380
+< GEOM   BUDR+adjustable-shelves 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR+adjustable-shelves 01-BACK.dxf 0e9458ae
+399,400c399,400
+< GEOM   BUDR+fix-shelf 01-BUL.dxf 26219db1
+< GEOM   BUDR+fix-shelf 01-BUR.dxf fe0ea435
+---
+> GEOM   BUDR+fix-shelf 01-BUL.dxf 007d3828
+> GEOM   BUDR+fix-shelf 01-BUR.dxf 4242e3c8
+403c403
+< GEOM   BUDR+fix-shelf 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR+fix-shelf 01-BACK.dxf 0e9458ae
+422,423c422,423
+< GEOM   BUDR+fix-shelf-in-bay 01-BUL.dxf 26219db1
+< GEOM   BUDR+fix-shelf-in-bay 01-BUR.dxf fe0ea435
+---
+> GEOM   BUDR+fix-shelf-in-bay 01-BUL.dxf 007d3828
+> GEOM   BUDR+fix-shelf-in-bay 01-BUR.dxf 4242e3c8
+426,427c426,427
+< GEOM   BUDR+fix-shelf-in-bay 01-BACK.dxf 8e436881
+< GEOM   BUDR+fix-shelf-in-bay 01-VPART-1.dxf ff3a79df
+---
+> GEOM   BUDR+fix-shelf-in-bay 01-BACK.dxf e4ba74ae
+> GEOM   BUDR+fix-shelf-in-bay 01-VPART-1.dxf 15231bcf
+446,447c446,447
 < GEOM   BUDR+partitions-2 01-BUL.dxf 26219db1
 < GEOM   BUDR+partitions-2 01-BUR.dxf fe0ea435
 ---
 > GEOM   BUDR+partitions-2 01-BUL.dxf 007d3828
 > GEOM   BUDR+partitions-2 01-BUR.dxf 4242e3c8
-280c280
+450,452c450,452
 < GEOM   BUDR+partitions-2 01-BACK.dxf 655fbc6a
+< GEOM   BUDR+partitions-2 01-VPART-1.dxf ff3a79df
+< GEOM   BUDR+partitions-2 01-VPART-2.dxf ff3a79df
 ---
 > GEOM   BUDR+partitions-2 01-BACK.dxf 9723e3fd
-301,302c301,302
+> GEOM   BUDR+partitions-2 01-VPART-1.dxf 15231bcf
+> GEOM   BUDR+partitions-2 01-VPART-2.dxf 15231bcf
+471,472c471,472
 < GEOM   BUDR4 01-BUL.dxf f0afd58b
 < GEOM   BUDR4 01-BUR.dxf 041ada65
 ---
 > GEOM   BUDR4 01-BUL.dxf 18d09636
 > GEOM   BUDR4 01-BUR.dxf c7ddea04
-305c305
+475c475
 < GEOM   BUDR4 01-BACK.dxf a62d8355
 ---
 > GEOM   BUDR4 01-BACK.dxf 0e9458ae
-330,331c330,331
+500,501c500,501
 < GEOM   BUDR4+drawers 01-BUL.dxf f0afd58b
 < GEOM   BUDR4+drawers 01-BUR.dxf 041ada65
 ---
 > GEOM   BUDR4+drawers 01-BUL.dxf 18d09636
 > GEOM   BUDR4+drawers 01-BUR.dxf c7ddea04
-334c334
+504c504
 < GEOM   BUDR4+drawers 01-BACK.dxf a62d8355
 ---
 > GEOM   BUDR4+drawers 01-BACK.dxf 0e9458ae
-359,360c359,360
+529,530c529,530
 < GEOM   BUDR4+partition 01-BUL.dxf f0afd58b
 < GEOM   BUDR4+partition 01-BUR.dxf 041ada65
 ---
 > GEOM   BUDR4+partition 01-BUL.dxf 18d09636
 > GEOM   BUDR4+partition 01-BUR.dxf c7ddea04
-363c363
+533,534c533,534
 < GEOM   BUDR4+partition 01-BACK.dxf 8e436881
+< GEOM   BUDR4+partition 01-VPART-1.dxf ff3a79df
 ---
 > GEOM   BUDR4+partition 01-BACK.dxf e4ba74ae
-389,390c389,390
+> GEOM   BUDR4+partition 01-VPART-1.dxf 15231bcf
+559,560c559,560
 < GEOM   BUDR4+partition-on-shelf 01-BUL.dxf f0afd58b
 < GEOM   BUDR4+partition-on-shelf 01-BUR.dxf 041ada65
 ---
 > GEOM   BUDR4+partition-on-shelf 01-BUL.dxf 18d09636
 > GEOM   BUDR4+partition-on-shelf 01-BUR.dxf c7ddea04
-393c393
+563,564c563,564
 < GEOM   BUDR4+partition-on-shelf 01-BACK.dxf 8e436881
+< GEOM   BUDR4+partition-on-shelf 01-VPART-1.dxf ff3a79df
 ---
 > GEOM   BUDR4+partition-on-shelf 01-BACK.dxf e4ba74ae
-419,420c419,420
+> GEOM   BUDR4+partition-on-shelf 01-VPART-1.dxf 15231bcf
+589,590c589,590
+< GEOM   BUDR4+adjustable-shelves 01-BUL.dxf f0afd58b
+< GEOM   BUDR4+adjustable-shelves 01-BUR.dxf 041ada65
+---
+> GEOM   BUDR4+adjustable-shelves 01-BUL.dxf 18d09636
+> GEOM   BUDR4+adjustable-shelves 01-BUR.dxf c7ddea04
+593c593
+< GEOM   BUDR4+adjustable-shelves 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR4+adjustable-shelves 01-BACK.dxf 0e9458ae
+618,619c618,619
+< GEOM   BUDR4+fix-shelf 01-BUL.dxf f0afd58b
+< GEOM   BUDR4+fix-shelf 01-BUR.dxf 041ada65
+---
+> GEOM   BUDR4+fix-shelf 01-BUL.dxf 18d09636
+> GEOM   BUDR4+fix-shelf 01-BUR.dxf c7ddea04
+622c622
+< GEOM   BUDR4+fix-shelf 01-BACK.dxf a62d8355
+---
+> GEOM   BUDR4+fix-shelf 01-BACK.dxf 0e9458ae
+647,648c647,648
+< GEOM   BUDR4+fix-shelf-in-bay 01-BUL.dxf f0afd58b
+< GEOM   BUDR4+fix-shelf-in-bay 01-BUR.dxf 041ada65
+---
+> GEOM   BUDR4+fix-shelf-in-bay 01-BUL.dxf 18d09636
+> GEOM   BUDR4+fix-shelf-in-bay 01-BUR.dxf c7ddea04
+651,652c651,652
+< GEOM   BUDR4+fix-shelf-in-bay 01-BACK.dxf 8e436881
+< GEOM   BUDR4+fix-shelf-in-bay 01-VPART-1.dxf ff3a79df
+---
+> GEOM   BUDR4+fix-shelf-in-bay 01-BACK.dxf e4ba74ae
+> GEOM   BUDR4+fix-shelf-in-bay 01-VPART-1.dxf 15231bcf
+677,678c677,678
 < GEOM   BUDR4+partitions-2 01-BUL.dxf f0afd58b
 < GEOM   BUDR4+partitions-2 01-BUR.dxf 041ada65
 ---
 > GEOM   BUDR4+partitions-2 01-BUL.dxf 18d09636
 > GEOM   BUDR4+partitions-2 01-BUR.dxf c7ddea04
-423c423
+681,683c681,683
 < GEOM   BUDR4+partitions-2 01-BACK.dxf 655fbc6a
+< GEOM   BUDR4+partitions-2 01-VPART-1.dxf ff3a79df
+< GEOM   BUDR4+partitions-2 01-VPART-2.dxf ff3a79df
 ---
 > GEOM   BUDR4+partitions-2 01-BACK.dxf 9723e3fd
-450,451c450,451
+> GEOM   BUDR4+partitions-2 01-VPART-1.dxf 15231bcf
+> GEOM   BUDR4+partitions-2 01-VPART-2.dxf 15231bcf
+708,709c708,709
 < GEOM   WUD 01-BUL.dxf ecb8203b
 < GEOM   WUD 01-BUR.dxf 7c44186c
 ---
 > GEOM   WUD 01-BUL.dxf 99ef24ce
 > GEOM   WUD 01-BUR.dxf 7b298e6b
-454c454
+712c712
 < GEOM   WUD 01-BACK.dxf 40d27dee
 ---
 > GEOM   WUD 01-BACK.dxf 27f530fd
-456,457c456,457
+714,715c714,715
 < GEOM   WUD+drawers 01-BUL.dxf ecb8203b
 < GEOM   WUD+drawers 01-BUR.dxf 7c44186c
 ---
 > GEOM   WUD+drawers 01-BUL.dxf 99ef24ce
 > GEOM   WUD+drawers 01-BUR.dxf 7b298e6b
-460c460
+718c718
 < GEOM   WUD+drawers 01-BACK.dxf 40d27dee
 ---
 > GEOM   WUD+drawers 01-BACK.dxf 27f530fd
-462,463c462,463
+720,721c720,721
 < GEOM   WUD+partition 01-BUL.dxf ecb8203b
 < GEOM   WUD+partition 01-BUR.dxf 5269aee8
 ---
 > GEOM   WUD+partition 01-BUL.dxf 99ef24ce
 > GEOM   WUD+partition 01-BUR.dxf d4840209
-466c466
+724,725c724,725
 < GEOM   WUD+partition 01-BACK.dxf f4800371
+< GEOM   WUD+partition 01-VPART-1.dxf 548257b3
 ---
 > GEOM   WUD+partition 01-BACK.dxf f53f9436
-470,471c470,471
+> GEOM   WUD+partition 01-VPART-1.dxf 274c3fe3
+728,729c728,729
 < GEOM   WUD+partition-on-shelf 01-BUL.dxf 83033fc0
 < GEOM   WUD+partition-on-shelf 01-BUR.dxf 9c046407
 ---
-> GEOM   WUD+partition-on-shelf 01-BUL.dxf 1ce72b49
-> GEOM   WUD+partition-on-shelf 01-BUR.dxf 9ae67a02
-474c474
+> GEOM   WUD+partition-on-shelf 01-BUL.dxf 05f5a251
+> GEOM   WUD+partition-on-shelf 01-BUR.dxf ca410abf
+732,734c732,734
 < GEOM   WUD+partition-on-shelf 01-BACK.dxf c89bcbb2
+< GEOM   WUD+partition-on-shelf 01-SHELF-1.dxf 5a0c8b5f
+< GEOM   WUD+partition-on-shelf 01-VPART-1.dxf 79d538f3
 ---
 > GEOM   WUD+partition-on-shelf 01-BACK.dxf 132732e3
-479,480c479,480
+> GEOM   WUD+partition-on-shelf 01-SHELF-1.dxf 4a00cbb3
+> GEOM   WUD+partition-on-shelf 01-VPART-1.dxf 67e2fcf3
+737,738c737,738
+< GEOM   WUD+adjustable-shelves 01-BUL.dxf 0364b259
+< GEOM   WUD+adjustable-shelves 01-BUR.dxf 04658662
+---
+> GEOM   WUD+adjustable-shelves 01-BUL.dxf 6865554c
+> GEOM   WUD+adjustable-shelves 01-BUR.dxf 09ae85c1
+741c741
+< GEOM   WUD+adjustable-shelves 01-BACK.dxf 40d27dee
+---
+> GEOM   WUD+adjustable-shelves 01-BACK.dxf 27f530fd
+745,746c745,746
+< GEOM   WUD+fix-shelf 01-BUL.dxf 83033fc0
+< GEOM   WUD+fix-shelf 01-BUR.dxf 5ff02abb
+---
+> GEOM   WUD+fix-shelf 01-BUL.dxf 05f5a251
+> GEOM   WUD+fix-shelf 01-BUR.dxf b34ec25b
+749,750c749,750
+< GEOM   WUD+fix-shelf 01-BACK.dxf 40d27dee
+< GEOM   WUD+fix-shelf 01-SHELF-1.dxf 35fab1cb
+---
+> GEOM   WUD+fix-shelf 01-BACK.dxf 27f530fd
+> GEOM   WUD+fix-shelf 01-SHELF-1.dxf acaa4483
+752,753c752,753
+< GEOM   WUD+fix-shelf-in-bay 01-BUL.dxf 83033fc0
+< GEOM   WUD+fix-shelf-in-bay 01-BUR.dxf 9c046407
+---
+> GEOM   WUD+fix-shelf-in-bay 01-BUL.dxf 05f5a251
+> GEOM   WUD+fix-shelf-in-bay 01-BUR.dxf d4840209
+756,758c756,758
+< GEOM   WUD+fix-shelf-in-bay 01-BACK.dxf f4800371
+< GEOM   WUD+fix-shelf-in-bay 01-SHELF-1.dxf 0af3226f
+< GEOM   WUD+fix-shelf-in-bay 01-VPART-1.dxf 548257b3
+---
+> GEOM   WUD+fix-shelf-in-bay 01-BACK.dxf f53f9436
+> GEOM   WUD+fix-shelf-in-bay 01-SHELF-1.dxf 220116fb
+> GEOM   WUD+fix-shelf-in-bay 01-VPART-1.dxf fcc6a138
+761,762c761,762
 < GEOM   WUD+partitions-2 01-BUL.dxf ecb8203b
 < GEOM   WUD+partitions-2 01-BUR.dxf 5269aee8
 ---
 > GEOM   WUD+partitions-2 01-BUL.dxf 99ef24ce
 > GEOM   WUD+partitions-2 01-BUR.dxf d4840209
-483c483
+765,767c765,767
 < GEOM   WUD+partitions-2 01-BACK.dxf 2f0932e9
+< GEOM   WUD+partitions-2 01-VPART-1.dxf 548257b3
+< GEOM   WUD+partitions-2 01-VPART-2.dxf 548257b3
 ---
 > GEOM   WUD+partitions-2 01-BACK.dxf 3ea618c6
-488,489c488,489
+> GEOM   WUD+partitions-2 01-VPART-1.dxf 274c3fe3
+> GEOM   WUD+partitions-2 01-VPART-2.dxf 274c3fe3
+770,771c770,771
 < GEOM   BUDTALL 01-BUL.dxf 86ddd5a9
 < GEOM   BUDTALL 01-BUR.dxf e67ca63c
 ---
 > GEOM   BUDTALL 01-BUL.dxf 2d1149a6
 > GEOM   BUDTALL 01-BUR.dxf 89f47b91
-492c492
+774c774
 < GEOM   BUDTALL 01-BACK.dxf 966df5f3
 ---
 > GEOM   BUDTALL 01-BACK.dxf 949fbdd2
-494,495c494,495
+776,777c776,777
 < GEOM   BUDTALL+drawers 01-BUL.dxf 86ddd5a9
 < GEOM   BUDTALL+drawers 01-BUR.dxf e67ca63c
 ---
 > GEOM   BUDTALL+drawers 01-BUL.dxf 2d1149a6
 > GEOM   BUDTALL+drawers 01-BUR.dxf 89f47b91
-498c498
+780c780
 < GEOM   BUDTALL+drawers 01-BACK.dxf 966df5f3
 ---
 > GEOM   BUDTALL+drawers 01-BACK.dxf 949fbdd2
-500,501c500,501
+782,783c782,783
 < GEOM   BUDTALL+partition 01-BUL.dxf 86ddd5a9
 < GEOM   BUDTALL+partition 01-BUR.dxf 38898f63
 ---
 > GEOM   BUDTALL+partition 01-BUL.dxf 2d1149a6
 > GEOM   BUDTALL+partition 01-BUR.dxf 16f3c328
-504c504
+786,787c786,787
 < GEOM   BUDTALL+partition 01-BACK.dxf e2b4aca4
+< GEOM   BUDTALL+partition 01-VPART-1.dxf a514fb23
 ---
 > GEOM   BUDTALL+partition 01-BACK.dxf a3453a51
-508,509c508,509
+> GEOM   BUDTALL+partition 01-VPART-1.dxf 9ebe1493
+790,791c790,791
 < GEOM   BUDTALL+partition-on-shelf 01-BUL.dxf 262d1082
 < GEOM   BUDTALL+partition-on-shelf 01-BUR.dxf 6bfc79a4
 ---
-> GEOM   BUDTALL+partition-on-shelf 01-BUL.dxf f164fd83
-> GEOM   BUDTALL+partition-on-shelf 01-BUR.dxf 3f8a49cd
-512c512
+> GEOM   BUDTALL+partition-on-shelf 01-BUL.dxf 64ff31df
+> GEOM   BUDTALL+partition-on-shelf 01-BUR.dxf 8ea3af42
+794,796c794,796
 < GEOM   BUDTALL+partition-on-shelf 01-BACK.dxf 45c3450a
+< GEOM   BUDTALL+partition-on-shelf 01-SHELF-1.dxf 272afc8f
+< GEOM   BUDTALL+partition-on-shelf 01-VPART-1.dxf d97f9693
 ---
 > GEOM   BUDTALL+partition-on-shelf 01-BACK.dxf 470db8b7
-517,518c517,518
+> GEOM   BUDTALL+partition-on-shelf 01-SHELF-1.dxf 141120c9
+> GEOM   BUDTALL+partition-on-shelf 01-VPART-1.dxf 169eac63
+799,800c799,800
+< GEOM   BUDTALL+adjustable-shelves 01-BUL.dxf 68aa7215
+< GEOM   BUDTALL+adjustable-shelves 01-BUR.dxf 14c24058
+---
+> GEOM   BUDTALL+adjustable-shelves 01-BUL.dxf 74c6d1a2
+> GEOM   BUDTALL+adjustable-shelves 01-BUR.dxf c209ddfd
+803c803
+< GEOM   BUDTALL+adjustable-shelves 01-BACK.dxf 966df5f3
+---
+> GEOM   BUDTALL+adjustable-shelves 01-BACK.dxf 949fbdd2
+807,808c807,808
+< GEOM   BUDTALL+fix-shelf 01-BUL.dxf 262d1082
+< GEOM   BUDTALL+fix-shelf 01-BUR.dxf c20e4c09
+---
+> GEOM   BUDTALL+fix-shelf 01-BUL.dxf 64ff31df
+> GEOM   BUDTALL+fix-shelf 01-BUR.dxf 2cc24bf5
+811,812c811,812
+< GEOM   BUDTALL+fix-shelf 01-BACK.dxf 966df5f3
+< GEOM   BUDTALL+fix-shelf 01-SHELF-1.dxf c2c8eb8b
+---
+> GEOM   BUDTALL+fix-shelf 01-BACK.dxf 949fbdd2
+> GEOM   BUDTALL+fix-shelf 01-SHELF-1.dxf 1ae84bd1
+814,815c814,815
+< GEOM   BUDTALL+fix-shelf-in-bay 01-BUL.dxf 262d1082
+< GEOM   BUDTALL+fix-shelf-in-bay 01-BUR.dxf 6bfc79a4
+---
+> GEOM   BUDTALL+fix-shelf-in-bay 01-BUL.dxf 64ff31df
+> GEOM   BUDTALL+fix-shelf-in-bay 01-BUR.dxf 16f3c328
+818,820c818,820
+< GEOM   BUDTALL+fix-shelf-in-bay 01-BACK.dxf e2b4aca4
+< GEOM   BUDTALL+fix-shelf-in-bay 01-SHELF-1.dxf 31f2611f
+< GEOM   BUDTALL+fix-shelf-in-bay 01-VPART-1.dxf a514fb23
+---
+> GEOM   BUDTALL+fix-shelf-in-bay 01-BACK.dxf a3453a51
+> GEOM   BUDTALL+fix-shelf-in-bay 01-SHELF-1.dxf e9b73491
+> GEOM   BUDTALL+fix-shelf-in-bay 01-VPART-1.dxf 717215b9
+823,824c823,824
 < GEOM   BUDTALL+partitions-2 01-BUL.dxf 86ddd5a9
 < GEOM   BUDTALL+partitions-2 01-BUR.dxf 38898f63
 ---
 > GEOM   BUDTALL+partitions-2 01-BUL.dxf 2d1149a6
 > GEOM   BUDTALL+partitions-2 01-BUR.dxf 16f3c328
-521c521
+827,829c827,829
 < GEOM   BUDTALL+partitions-2 01-BACK.dxf da866d87
+< GEOM   BUDTALL+partitions-2 01-VPART-1.dxf a514fb23
+< GEOM   BUDTALL+partitions-2 01-VPART-2.dxf a514fb23
 ---
 > GEOM   BUDTALL+partitions-2 01-BACK.dxf c8b6e8c6
-526,527c526,527
+> GEOM   BUDTALL+partitions-2 01-VPART-1.dxf 9ebe1493
+> GEOM   BUDTALL+partitions-2 01-VPART-2.dxf 9ebe1493
+832,833c832,833
 < GEOM   LOW_CABINET 01-BUL.dxf 36668f83
 < GEOM   LOW_CABINET 01-BUR.dxf b994a863
 ---
 > GEOM   LOW_CABINET 01-BUL.dxf 48e4a506
 > GEOM   LOW_CABINET 01-BUR.dxf f64bf7ac
-530c530
+836c836
 < GEOM   LOW_CABINET 01-BACK.dxf 61b38d8e
 ---
 > GEOM   LOW_CABINET 01-BACK.dxf 88212231
-532,533c532,533
+838,839c838,839
 < GEOM   LOW_CABINET+drawers 01-BUL.dxf 36668f83
 < GEOM   LOW_CABINET+drawers 01-BUR.dxf b994a863
 ---
 > GEOM   LOW_CABINET+drawers 01-BUL.dxf 48e4a506
 > GEOM   LOW_CABINET+drawers 01-BUR.dxf f64bf7ac
-536c536
+842c842
 < GEOM   LOW_CABINET+drawers 01-BACK.dxf 61b38d8e
 ---
 > GEOM   LOW_CABINET+drawers 01-BACK.dxf 88212231
-538,539c538,539
+844,845c844,845
 < GEOM   LOW_CABINET+partition 01-BUL.dxf 36668f83
 < GEOM   LOW_CABINET+partition 01-BUR.dxf 1379fef1
 ---
 > GEOM   LOW_CABINET+partition 01-BUL.dxf 48e4a506
 > GEOM   LOW_CABINET+partition 01-BUR.dxf 4e36cac4
-542c542
+848,849c848,849
 < GEOM   LOW_CABINET+partition 01-BACK.dxf 96cfa8ca
+< GEOM   LOW_CABINET+partition 01-VPART-1.dxf e2786df3
 ---
 > GEOM   LOW_CABINET+partition 01-BACK.dxf 25c05d7d
-546,547c546,547
+> GEOM   LOW_CABINET+partition 01-VPART-1.dxf cc021bb3
+852,853c852,853
 < GEOM   LOW_CABINET+partition-on-shelf 01-BUL.dxf 66ac65ff
 < GEOM   LOW_CABINET+partition-on-shelf 01-BUR.dxf 2de1d8a1
 ---
-> GEOM   LOW_CABINET+partition-on-shelf 01-BUL.dxf 3287a616
-> GEOM   LOW_CABINET+partition-on-shelf 01-BUR.dxf c49206f8
-550c550
+> GEOM   LOW_CABINET+partition-on-shelf 01-BUL.dxf 9b9f1df5
+> GEOM   LOW_CABINET+partition-on-shelf 01-BUR.dxf 54583d33
+856,858c856,858
 < GEOM   LOW_CABINET+partition-on-shelf 01-BACK.dxf 9851d043
+< GEOM   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf 9f053473
+< GEOM   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf 0afa1277
 ---
 > GEOM   LOW_CABINET+partition-on-shelf 01-BACK.dxf d368dfae
-555,556c555,556
+> GEOM   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf d5c0dbbf
+> GEOM   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf 061ec2a7
+861,862c861,862
+< GEOM   LOW_CABINET+adjustable-shelves 01-BUL.dxf 397e172b
+< GEOM   LOW_CABINET+adjustable-shelves 01-BUR.dxf 98b1288b
+---
+> GEOM   LOW_CABINET+adjustable-shelves 01-BUL.dxf 3ea80f0e
+> GEOM   LOW_CABINET+adjustable-shelves 01-BUR.dxf 60e5d9a4
+865c865
+< GEOM   LOW_CABINET+adjustable-shelves 01-BACK.dxf 61b38d8e
+---
+> GEOM   LOW_CABINET+adjustable-shelves 01-BACK.dxf 88212231
+869,870c869,870
+< GEOM   LOW_CABINET+fix-shelf 01-BUL.dxf 66ac65ff
+< GEOM   LOW_CABINET+fix-shelf 01-BUR.dxf b913f6df
+---
+> GEOM   LOW_CABINET+fix-shelf 01-BUL.dxf 9b9f1df5
+> GEOM   LOW_CABINET+fix-shelf 01-BUR.dxf 5409cf29
+873,874c873,874
+< GEOM   LOW_CABINET+fix-shelf 01-BACK.dxf 61b38d8e
+< GEOM   LOW_CABINET+fix-shelf 01-SHELF-1.dxf 5c6021bf
+---
+> GEOM   LOW_CABINET+fix-shelf 01-BACK.dxf 88212231
+> GEOM   LOW_CABINET+fix-shelf 01-SHELF-1.dxf 5d0fcdeb
+876,877c876,877
+< GEOM   LOW_CABINET+fix-shelf-in-bay 01-BUL.dxf 66ac65ff
+< GEOM   LOW_CABINET+fix-shelf-in-bay 01-BUR.dxf 2de1d8a1
+---
+> GEOM   LOW_CABINET+fix-shelf-in-bay 01-BUL.dxf 9b9f1df5
+> GEOM   LOW_CABINET+fix-shelf-in-bay 01-BUR.dxf 4e36cac4
+880,882c880,882
+< GEOM   LOW_CABINET+fix-shelf-in-bay 01-BACK.dxf 96cfa8ca
+< GEOM   LOW_CABINET+fix-shelf-in-bay 01-SHELF-1.dxf eb364943
+< GEOM   LOW_CABINET+fix-shelf-in-bay 01-VPART-1.dxf e2786df3
+---
+> GEOM   LOW_CABINET+fix-shelf-in-bay 01-BACK.dxf 25c05d7d
+> GEOM   LOW_CABINET+fix-shelf-in-bay 01-SHELF-1.dxf 3ac11c67
+> GEOM   LOW_CABINET+fix-shelf-in-bay 01-VPART-1.dxf c312c53c
+885,886c885,886
 < GEOM   LOW_CABINET+partitions-2 01-BUL.dxf 36668f83
 < GEOM   LOW_CABINET+partitions-2 01-BUR.dxf 1379fef1
 ---
 > GEOM   LOW_CABINET+partitions-2 01-BUL.dxf 48e4a506
 > GEOM   LOW_CABINET+partitions-2 01-BUR.dxf 4e36cac4
-559c559
+889,891c889,891
 < GEOM   LOW_CABINET+partitions-2 01-BACK.dxf 35a9f565
+< GEOM   LOW_CABINET+partitions-2 01-VPART-1.dxf e2786df3
+< GEOM   LOW_CABINET+partitions-2 01-VPART-2.dxf e2786df3
 ---
 > GEOM   LOW_CABINET+partitions-2 01-BACK.dxf c3ee1f06
-564,565c564,565
+> GEOM   LOW_CABINET+partitions-2 01-VPART-1.dxf cc021bb3
+> GEOM   LOW_CABINET+partitions-2 01-VPART-2.dxf cc021bb3
+894,895c894,895
 < GEOM   SINK 01-BUL.dxf 62c6b175
 < GEOM   SINK 01-BUR.dxf 22d6d48f
 ---
 > GEOM   SINK 01-BUL.dxf ddae962e
 > GEOM   SINK 01-BUR.dxf 3119fc5c
-571,572c571,572
+901,902c901,902
 < GEOM   SINK+drawers 01-BUL.dxf 62c6b175
 < GEOM   SINK+drawers 01-BUR.dxf 22d6d48f
 ---
 > GEOM   SINK+drawers 01-BUL.dxf ddae962e
 > GEOM   SINK+drawers 01-BUR.dxf 3119fc5c
-578,579c578,579
+908,909c908,909
 < GEOM   SINK+partition 01-BUL.dxf 62c6b175
 < GEOM   SINK+partition 01-BUR.dxf eba2e865
 ---
 > GEOM   SINK+partition 01-BUL.dxf ddae962e
 > GEOM   SINK+partition 01-BUR.dxf ae84a850
-587,588c587,588
+914c914
+< GEOM   SINK+partition 01-VPART-1.dxf ff3a79df
+---
+> GEOM   SINK+partition 01-VPART-1.dxf 15231bcf
+917,918c917,918
 < GEOM   SINK+partition-on-shelf 01-BUL.dxf 635a7c01
 < GEOM   SINK+partition-on-shelf 01-BUR.dxf 258a5279
 ---
-> GEOM   SINK+partition-on-shelf 01-BUL.dxf d98c4d7a
-> GEOM   SINK+partition-on-shelf 01-BUR.dxf 3f24f9a4
-597,598c597,598
+> GEOM   SINK+partition-on-shelf 01-BUL.dxf 6c093f8d
+> GEOM   SINK+partition-on-shelf 01-BUR.dxf 0dcef8d1
+923,924c923,924
+< GEOM   SINK+partition-on-shelf 01-SHELF-1.dxf b9623f1f
+< GEOM   SINK+partition-on-shelf 01-VPART-1.dxf d1fa0273
+---
+> GEOM   SINK+partition-on-shelf 01-SHELF-1.dxf 6b525fe3
+> GEOM   SINK+partition-on-shelf 01-VPART-1.dxf 577de263
+927,928c927,928
+< GEOM   SINK+adjustable-shelves 01-BUL.dxf 138f0309
+< GEOM   SINK+adjustable-shelves 01-BUR.dxf 8f564a2b
+---
+> GEOM   SINK+adjustable-shelves 01-BUL.dxf f432206e
+> GEOM   SINK+adjustable-shelves 01-BUR.dxf 2d87d40c
+936,937c936,937
+< GEOM   SINK+fix-shelf 01-BUL.dxf 635a7c01
+< GEOM   SINK+fix-shelf 01-BUR.dxf 20a6debb
+---
+> GEOM   SINK+fix-shelf 01-BUL.dxf 6c093f8d
+> GEOM   SINK+fix-shelf 01-BUR.dxf d20a4939
+942c942
+< GEOM   SINK+fix-shelf 01-SHELF-1.dxf 8065c50b
+---
+> GEOM   SINK+fix-shelf 01-SHELF-1.dxf d889d34f
+944,945c944,945
+< GEOM   SINK+fix-shelf-in-bay 01-BUL.dxf 635a7c01
+< GEOM   SINK+fix-shelf-in-bay 01-BUR.dxf 258a5279
+---
+> GEOM   SINK+fix-shelf-in-bay 01-BUL.dxf 6c093f8d
+> GEOM   SINK+fix-shelf-in-bay 01-BUR.dxf ae84a850
+950,951c950,951
+< GEOM   SINK+fix-shelf-in-bay 01-SHELF-1.dxf ae89816f
+< GEOM   SINK+fix-shelf-in-bay 01-VPART-1.dxf ff3a79df
+---
+> GEOM   SINK+fix-shelf-in-bay 01-SHELF-1.dxf 2a51f1a3
+> GEOM   SINK+fix-shelf-in-bay 01-VPART-1.dxf c90805de
+954,955c954,955
 < GEOM   SINK+partitions-2 01-BUL.dxf 62c6b175
 < GEOM   SINK+partitions-2 01-BUR.dxf eba2e865
 ---
 > GEOM   SINK+partitions-2 01-BUL.dxf ddae962e
 > GEOM   SINK+partitions-2 01-BUR.dxf ae84a850
-621,622c621,622
+960,961c960,961
+< GEOM   SINK+partitions-2 01-VPART-1.dxf ff3a79df
+< GEOM   SINK+partitions-2 01-VPART-2.dxf ff3a79df
+---
+> GEOM   SINK+partitions-2 01-VPART-1.dxf 15231bcf
+> GEOM   SINK+partitions-2 01-VPART-2.dxf 15231bcf
+970c970
+< GEOM   DW_PANEL+partition 01-VPART-1.dxf ff3a79df
+---
+> GEOM   DW_PANEL+partition 01-VPART-1.dxf 15231bcf
+973c973
+< GEOM   DW_PANEL+partition-on-shelf 01-VPART-1.dxf ff3a79df
+---
+> GEOM   DW_PANEL+partition-on-shelf 01-VPART-1.dxf 15231bcf
+980c980
+< GEOM   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf ff3a79df
+---
+> GEOM   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf 15231bcf
+983,986c983,986
+< GEOM   DW_PANEL+partitions-2 01-VPART-1.dxf ff3a79df
+< GEOM   DW_PANEL+partitions-2 01-VPART-2.dxf ff3a79df
 < GEOM   OVEN_BASE 01-BUL.dxf daf629a5
 < GEOM   OVEN_BASE 01-BUR.dxf 8fac8939
 ---
+> GEOM   DW_PANEL+partitions-2 01-VPART-1.dxf 15231bcf
+> GEOM   DW_PANEL+partitions-2 01-VPART-2.dxf 15231bcf
 > GEOM   OVEN_BASE 01-BUL.dxf 79d77bca
 > GEOM   OVEN_BASE 01-BUR.dxf d036f90a
-625c625
+989c989
 < GEOM   OVEN_BASE 01-BACK.dxf 5e299b9d
 ---
 > GEOM   OVEN_BASE 01-BACK.dxf 2a9bc53f
-634,635c634,635
+998,999c998,999
 < GEOM   OVEN_BASE+drawers 01-BUL.dxf daf629a5
 < GEOM   OVEN_BASE+drawers 01-BUR.dxf 8fac8939
 ---
 > GEOM   OVEN_BASE+drawers 01-BUL.dxf 79d77bca
 > GEOM   OVEN_BASE+drawers 01-BUR.dxf d036f90a
-638c638
+1002c1002
 < GEOM   OVEN_BASE+drawers 01-BACK.dxf 5e299b9d
 ---
 > GEOM   OVEN_BASE+drawers 01-BACK.dxf 2a9bc53f
-647,648c647,648
+1011,1012c1011,1012
 < GEOM   OVEN_BASE+partition 01-BUL.dxf daf629a5
 < GEOM   OVEN_BASE+partition 01-BUR.dxf 8fac8939
 ---
 > GEOM   OVEN_BASE+partition 01-BUL.dxf 79d77bca
 > GEOM   OVEN_BASE+partition 01-BUR.dxf d036f90a
-651c651
+1015c1015
 < GEOM   OVEN_BASE+partition 01-BACK.dxf 2fc83fdd
 ---
 > GEOM   OVEN_BASE+partition 01-BACK.dxf 6e48ad9f
-661,662c661,662
+1018c1018
+< GEOM   OVEN_BASE+partition 01-VPART-1.dxf ff3a79df
+---
+> GEOM   OVEN_BASE+partition 01-VPART-1.dxf 15231bcf
+1025,1026c1025,1026
 < GEOM   OVEN_BASE+partition-on-shelf 01-BUL.dxf daf629a5
 < GEOM   OVEN_BASE+partition-on-shelf 01-BUR.dxf 8fac8939
 ---
 > GEOM   OVEN_BASE+partition-on-shelf 01-BUL.dxf 79d77bca
 > GEOM   OVEN_BASE+partition-on-shelf 01-BUR.dxf d036f90a
-665c665
+1029c1029
 < GEOM   OVEN_BASE+partition-on-shelf 01-BACK.dxf 2fc83fdd
 ---
 > GEOM   OVEN_BASE+partition-on-shelf 01-BACK.dxf 6e48ad9f
-675,676c675,676
+1032c1032
+< GEOM   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf ff3a79df
+---
+> GEOM   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf 15231bcf
+1039,1040c1039,1040
+< GEOM   OVEN_BASE+adjustable-shelves 01-BUL.dxf daf629a5
+< GEOM   OVEN_BASE+adjustable-shelves 01-BUR.dxf 8fac8939
+---
+> GEOM   OVEN_BASE+adjustable-shelves 01-BUL.dxf 79d77bca
+> GEOM   OVEN_BASE+adjustable-shelves 01-BUR.dxf d036f90a
+1043c1043
+< GEOM   OVEN_BASE+adjustable-shelves 01-BACK.dxf 5e299b9d
+---
+> GEOM   OVEN_BASE+adjustable-shelves 01-BACK.dxf 2a9bc53f
+1052,1053c1052,1053
+< GEOM   OVEN_BASE+fix-shelf 01-BUL.dxf daf629a5
+< GEOM   OVEN_BASE+fix-shelf 01-BUR.dxf 8fac8939
+---
+> GEOM   OVEN_BASE+fix-shelf 01-BUL.dxf 79d77bca
+> GEOM   OVEN_BASE+fix-shelf 01-BUR.dxf d036f90a
+1056c1056
+< GEOM   OVEN_BASE+fix-shelf 01-BACK.dxf 5e299b9d
+---
+> GEOM   OVEN_BASE+fix-shelf 01-BACK.dxf 2a9bc53f
+1065,1066c1065,1066
+< GEOM   OVEN_BASE+fix-shelf-in-bay 01-BUL.dxf daf629a5
+< GEOM   OVEN_BASE+fix-shelf-in-bay 01-BUR.dxf 8fac8939
+---
+> GEOM   OVEN_BASE+fix-shelf-in-bay 01-BUL.dxf 79d77bca
+> GEOM   OVEN_BASE+fix-shelf-in-bay 01-BUR.dxf d036f90a
+1069c1069
+< GEOM   OVEN_BASE+fix-shelf-in-bay 01-BACK.dxf 2fc83fdd
+---
+> GEOM   OVEN_BASE+fix-shelf-in-bay 01-BACK.dxf 6e48ad9f
+1072c1072
+< GEOM   OVEN_BASE+fix-shelf-in-bay 01-VPART-1.dxf ff3a79df
+---
+> GEOM   OVEN_BASE+fix-shelf-in-bay 01-VPART-1.dxf 15231bcf
+1079,1080c1079,1080
 < GEOM   OVEN_BASE+partitions-2 01-BUL.dxf daf629a5
 < GEOM   OVEN_BASE+partitions-2 01-BUR.dxf 8fac8939
 ---
 > GEOM   OVEN_BASE+partitions-2 01-BUL.dxf 79d77bca
 > GEOM   OVEN_BASE+partitions-2 01-BUR.dxf d036f90a
-679c679
+1083c1083
 < GEOM   OVEN_BASE+partitions-2 01-BACK.dxf 1c250426
 ---
 > GEOM   OVEN_BASE+partitions-2 01-BACK.dxf ef387054
-690,691c690,691
+1086,1087c1086,1087
+< GEOM   OVEN_BASE+partitions-2 01-VPART-1.dxf ff3a79df
+< GEOM   OVEN_BASE+partitions-2 01-VPART-2.dxf ff3a79df
+---
+> GEOM   OVEN_BASE+partitions-2 01-VPART-1.dxf 15231bcf
+> GEOM   OVEN_BASE+partitions-2 01-VPART-2.dxf 15231bcf
+1094,1095c1094,1095
 < GEOM   FRIDGE 01-BUL.dxf c61b9c7a
 < GEOM   FRIDGE 01-BUR.dxf 67bbe2b4
 ---
 > GEOM   FRIDGE 01-BUL.dxf b18d983f
 > GEOM   FRIDGE 01-BUR.dxf 9baa0e0b
-695,697c695,697
+1099,1101c1099,1101
 < GEOM   FRIDGE 01-RAIL1.dxf 4d005229
 < GEOM   FRIDGE 01-RAIL2.dxf d0e9f709
 < GEOM   FRIDGE 01-BACK.dxf ab5cb12e
@@ -492,13 +950,13 @@
 > GEOM   FRIDGE 01-RAIL1.dxf b19b232b
 > GEOM   FRIDGE 01-RAIL2.dxf 585119a7
 > GEOM   FRIDGE 01-BACK.dxf 3b269fa0
-700,701c700,701
+1104,1105c1104,1105
 < GEOM   FRIDGE+drawers 01-BUL.dxf c61b9c7a
 < GEOM   FRIDGE+drawers 01-BUR.dxf 67bbe2b4
 ---
 > GEOM   FRIDGE+drawers 01-BUL.dxf b18d983f
 > GEOM   FRIDGE+drawers 01-BUR.dxf 9baa0e0b
-705,707c705,707
+1109,1111c1109,1111
 < GEOM   FRIDGE+drawers 01-RAIL1.dxf 4d005229
 < GEOM   FRIDGE+drawers 01-RAIL2.dxf d0e9f709
 < GEOM   FRIDGE+drawers 01-BACK.dxf ab5cb12e
@@ -506,13 +964,13 @@
 > GEOM   FRIDGE+drawers 01-RAIL1.dxf b19b232b
 > GEOM   FRIDGE+drawers 01-RAIL2.dxf 585119a7
 > GEOM   FRIDGE+drawers 01-BACK.dxf 3b269fa0
-710,711c710,711
+1114,1115c1114,1115
 < GEOM   FRIDGE+partition 01-BUL.dxf c61b9c7a
 < GEOM   FRIDGE+partition 01-BUR.dxf e21d0b75
 ---
 > GEOM   FRIDGE+partition 01-BUL.dxf b18d983f
 > GEOM   FRIDGE+partition 01-BUR.dxf 13271670
-715,717c715,717
+1119,1121c1119,1121
 < GEOM   FRIDGE+partition 01-RAIL1.dxf e8fc8137
 < GEOM   FRIDGE+partition 01-RAIL2.dxf 6e8f964f
 < GEOM   FRIDGE+partition 01-BACK.dxf 6b76d45b
@@ -520,13 +978,17 @@
 > GEOM   FRIDGE+partition 01-RAIL1.dxf 8352b885
 > GEOM   FRIDGE+partition 01-RAIL2.dxf 6898e885
 > GEOM   FRIDGE+partition 01-BACK.dxf d928b6f1
-722,723c722,723
+1123c1123
+< GEOM   FRIDGE+partition 01-VPART-1.dxf a514fb23
+---
+> GEOM   FRIDGE+partition 01-VPART-1.dxf 9ebe1493
+1126,1127c1126,1127
 < GEOM   FRIDGE+partition-on-shelf 01-BUL.dxf c61b9c7a
 < GEOM   FRIDGE+partition-on-shelf 01-BUR.dxf e21d0b75
 ---
 > GEOM   FRIDGE+partition-on-shelf 01-BUL.dxf b18d983f
 > GEOM   FRIDGE+partition-on-shelf 01-BUR.dxf 13271670
-727,729c727,729
+1131,1133c1131,1133
 < GEOM   FRIDGE+partition-on-shelf 01-RAIL1.dxf e8fc8137
 < GEOM   FRIDGE+partition-on-shelf 01-RAIL2.dxf 6e8f964f
 < GEOM   FRIDGE+partition-on-shelf 01-BACK.dxf 6b76d45b
@@ -534,13 +996,63 @@
 > GEOM   FRIDGE+partition-on-shelf 01-RAIL1.dxf 8352b885
 > GEOM   FRIDGE+partition-on-shelf 01-RAIL2.dxf 6898e885
 > GEOM   FRIDGE+partition-on-shelf 01-BACK.dxf d928b6f1
-734,735c734,735
+1135c1135
+< GEOM   FRIDGE+partition-on-shelf 01-VPART-1.dxf a514fb23
+---
+> GEOM   FRIDGE+partition-on-shelf 01-VPART-1.dxf 9ebe1493
+1138,1139c1138,1139
+< GEOM   FRIDGE+adjustable-shelves 01-BUL.dxf c61b9c7a
+< GEOM   FRIDGE+adjustable-shelves 01-BUR.dxf 67bbe2b4
+---
+> GEOM   FRIDGE+adjustable-shelves 01-BUL.dxf b18d983f
+> GEOM   FRIDGE+adjustable-shelves 01-BUR.dxf 9baa0e0b
+1143,1145c1143,1145
+< GEOM   FRIDGE+adjustable-shelves 01-RAIL1.dxf 4d005229
+< GEOM   FRIDGE+adjustable-shelves 01-RAIL2.dxf d0e9f709
+< GEOM   FRIDGE+adjustable-shelves 01-BACK.dxf ab5cb12e
+---
+> GEOM   FRIDGE+adjustable-shelves 01-RAIL1.dxf b19b232b
+> GEOM   FRIDGE+adjustable-shelves 01-RAIL2.dxf 585119a7
+> GEOM   FRIDGE+adjustable-shelves 01-BACK.dxf 3b269fa0
+1148,1149c1148,1149
+< GEOM   FRIDGE+fix-shelf 01-BUL.dxf c61b9c7a
+< GEOM   FRIDGE+fix-shelf 01-BUR.dxf 67bbe2b4
+---
+> GEOM   FRIDGE+fix-shelf 01-BUL.dxf b18d983f
+> GEOM   FRIDGE+fix-shelf 01-BUR.dxf 9baa0e0b
+1153,1155c1153,1155
+< GEOM   FRIDGE+fix-shelf 01-RAIL1.dxf 4d005229
+< GEOM   FRIDGE+fix-shelf 01-RAIL2.dxf d0e9f709
+< GEOM   FRIDGE+fix-shelf 01-BACK.dxf ab5cb12e
+---
+> GEOM   FRIDGE+fix-shelf 01-RAIL1.dxf b19b232b
+> GEOM   FRIDGE+fix-shelf 01-RAIL2.dxf 585119a7
+> GEOM   FRIDGE+fix-shelf 01-BACK.dxf 3b269fa0
+1158,1159c1158,1159
+< GEOM   FRIDGE+fix-shelf-in-bay 01-BUL.dxf c61b9c7a
+< GEOM   FRIDGE+fix-shelf-in-bay 01-BUR.dxf e21d0b75
+---
+> GEOM   FRIDGE+fix-shelf-in-bay 01-BUL.dxf b18d983f
+> GEOM   FRIDGE+fix-shelf-in-bay 01-BUR.dxf 13271670
+1163,1165c1163,1165
+< GEOM   FRIDGE+fix-shelf-in-bay 01-RAIL1.dxf e8fc8137
+< GEOM   FRIDGE+fix-shelf-in-bay 01-RAIL2.dxf 6e8f964f
+< GEOM   FRIDGE+fix-shelf-in-bay 01-BACK.dxf 6b76d45b
+---
+> GEOM   FRIDGE+fix-shelf-in-bay 01-RAIL1.dxf 8352b885
+> GEOM   FRIDGE+fix-shelf-in-bay 01-RAIL2.dxf 6898e885
+> GEOM   FRIDGE+fix-shelf-in-bay 01-BACK.dxf d928b6f1
+1167c1167
+< GEOM   FRIDGE+fix-shelf-in-bay 01-VPART-1.dxf a514fb23
+---
+> GEOM   FRIDGE+fix-shelf-in-bay 01-VPART-1.dxf 9ebe1493
+1170,1171c1170,1171
 < GEOM   FRIDGE+partitions-2 01-BUL.dxf c61b9c7a
 < GEOM   FRIDGE+partitions-2 01-BUR.dxf e21d0b75
 ---
 > GEOM   FRIDGE+partitions-2 01-BUL.dxf b18d983f
 > GEOM   FRIDGE+partitions-2 01-BUR.dxf 13271670
-739,741c739,741
+1175,1177c1175,1177
 < GEOM   FRIDGE+partitions-2 01-RAIL1.dxf e8fc8137
 < GEOM   FRIDGE+partitions-2 01-RAIL2.dxf 6e8f964f
 < GEOM   FRIDGE+partitions-2 01-BACK.dxf c9bfd58c
@@ -548,3 +1060,1118 @@
 > GEOM   FRIDGE+partitions-2 01-RAIL1.dxf 8352b885
 > GEOM   FRIDGE+partitions-2 01-RAIL2.dxf 6898e885
 > GEOM   FRIDGE+partitions-2 01-BACK.dxf b7e9a3f2
+1179,1180c1179,1180
+< GEOM   FRIDGE+partitions-2 01-VPART-1.dxf a514fb23
+< GEOM   FRIDGE+partitions-2 01-VPART-2.dxf a514fb23
+---
+> GEOM   FRIDGE+partitions-2 01-VPART-1.dxf 9ebe1493
+> GEOM   FRIDGE+partitions-2 01-VPART-2.dxf 9ebe1493
+1245c1245
+< CENSUS WARDROBE+partition all text/UNIT_NUMBER 16
+---
+> CENSUS WARDROBE+partition all text/UNIT_NUMBER 18
+1252c1252
+< CENSUS WARDROBE+partition non-sprayed text/UNIT_NUMBER 12
+---
+> CENSUS WARDROBE+partition non-sprayed text/UNIT_NUMBER 14
+1265c1265,1266
+< CENSUS WARDROBE+partition-on-shelf all circle/SCREWS_3MM 36
+---
+> CENSUS WARDROBE+partition-on-shelf all circle/SCREWS_3MM 38
+> CENSUS WARDROBE+partition-on-shelf all poly/BISCUIT_4MM 8
+1269c1270
+< CENSUS WARDROBE+partition-on-shelf all text/UNIT_NUMBER 19
+---
+> CENSUS WARDROBE+partition-on-shelf all text/UNIT_NUMBER 21
+1272c1273,1274
+< CENSUS WARDROBE+partition-on-shelf non-sprayed circle/SCREWS_3MM 36
+---
+> CENSUS WARDROBE+partition-on-shelf non-sprayed circle/SCREWS_3MM 38
+> CENSUS WARDROBE+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+1276c1278
+< CENSUS WARDROBE+partition-on-shelf non-sprayed text/UNIT_NUMBER 15
+---
+> CENSUS WARDROBE+partition-on-shelf non-sprayed text/UNIT_NUMBER 17
+1315c1317,1318
+< CENSUS WARDROBE+fix-shelf all circle/SCREWS_3MM 32
+---
+> CENSUS WARDROBE+fix-shelf all circle/SCREWS_3MM 34
+> CENSUS WARDROBE+fix-shelf all poly/BISCUIT_4MM 8
+1322c1325,1326
+< CENSUS WARDROBE+fix-shelf non-sprayed circle/SCREWS_3MM 32
+---
+> CENSUS WARDROBE+fix-shelf non-sprayed circle/SCREWS_3MM 34
+> CENSUS WARDROBE+fix-shelf non-sprayed poly/BISCUIT_4MM 8
+1339c1343,1344
+< CENSUS WARDROBE+fix-shelf-in-bay all circle/SCREWS_3MM 39
+---
+> CENSUS WARDROBE+fix-shelf-in-bay all circle/SCREWS_3MM 37
+> CENSUS WARDROBE+fix-shelf-in-bay all poly/BISCUIT_4MM 8
+1343c1348
+< CENSUS WARDROBE+fix-shelf-in-bay all text/UNIT_NUMBER 19
+---
+> CENSUS WARDROBE+fix-shelf-in-bay all text/UNIT_NUMBER 21
+1346c1351,1352
+< CENSUS WARDROBE+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 39
+---
+> CENSUS WARDROBE+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 37
+> CENSUS WARDROBE+fix-shelf-in-bay non-sprayed poly/BISCUIT_4MM 8
+1350c1356
+< CENSUS WARDROBE+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 15
+---
+> CENSUS WARDROBE+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 17
+1367c1373
+< CENSUS WARDROBE+partitions-2 all text/UNIT_NUMBER 17
+---
+> CENSUS WARDROBE+partitions-2 all text/UNIT_NUMBER 21
+1374c1380
+< CENSUS WARDROBE+partitions-2 non-sprayed text/UNIT_NUMBER 13
+---
+> CENSUS WARDROBE+partitions-2 non-sprayed text/UNIT_NUMBER 17
+1439c1445
+< CENSUS BUD+partition all text/UNIT_NUMBER 17
+---
+> CENSUS BUD+partition all text/UNIT_NUMBER 18
+1446c1452
+< CENSUS BUD+partition non-sprayed text/UNIT_NUMBER 13
+---
+> CENSUS BUD+partition non-sprayed text/UNIT_NUMBER 14
+1459c1465,1466
+< CENSUS BUD+partition-on-shelf all circle/SCREWS_3MM 34
+---
+> CENSUS BUD+partition-on-shelf all circle/SCREWS_3MM 36
+> CENSUS BUD+partition-on-shelf all poly/BISCUIT_4MM 8
+1463c1470
+< CENSUS BUD+partition-on-shelf all text/UNIT_NUMBER 20
+---
+> CENSUS BUD+partition-on-shelf all text/UNIT_NUMBER 21
+1466c1473,1474
+< CENSUS BUD+partition-on-shelf non-sprayed circle/SCREWS_3MM 34
+---
+> CENSUS BUD+partition-on-shelf non-sprayed circle/SCREWS_3MM 36
+> CENSUS BUD+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+1470c1478
+< CENSUS BUD+partition-on-shelf non-sprayed text/UNIT_NUMBER 16
+---
+> CENSUS BUD+partition-on-shelf non-sprayed text/UNIT_NUMBER 17
+1509c1517,1518
+< CENSUS BUD+fix-shelf all circle/SCREWS_3MM 32
+---
+> CENSUS BUD+fix-shelf all circle/SCREWS_3MM 34
+> CENSUS BUD+fix-shelf all poly/BISCUIT_4MM 8
+1516c1525,1526
+< CENSUS BUD+fix-shelf non-sprayed circle/SCREWS_3MM 32
+---
+> CENSUS BUD+fix-shelf non-sprayed circle/SCREWS_3MM 34
+> CENSUS BUD+fix-shelf non-sprayed poly/BISCUIT_4MM 8
+1533c1543,1544
+< CENSUS BUD+fix-shelf-in-bay all circle/SCREWS_3MM 35
+---
+> CENSUS BUD+fix-shelf-in-bay all circle/SCREWS_3MM 33
+> CENSUS BUD+fix-shelf-in-bay all poly/BISCUIT_4MM 8
+1537c1548
+< CENSUS BUD+fix-shelf-in-bay all text/UNIT_NUMBER 20
+---
+> CENSUS BUD+fix-shelf-in-bay all text/UNIT_NUMBER 21
+1540c1551,1552
+< CENSUS BUD+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 35
+---
+> CENSUS BUD+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 33
+> CENSUS BUD+fix-shelf-in-bay non-sprayed poly/BISCUIT_4MM 8
+1544c1556
+< CENSUS BUD+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 16
+---
+> CENSUS BUD+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 17
+1561c1573
+< CENSUS BUD+partitions-2 all text/UNIT_NUMBER 19
+---
+> CENSUS BUD+partitions-2 all text/UNIT_NUMBER 21
+1568c1580
+< CENSUS BUD+partitions-2 non-sprayed text/UNIT_NUMBER 15
+---
+> CENSUS BUD+partitions-2 non-sprayed text/UNIT_NUMBER 17
+1636c1648
+< CENSUS BUDR2+partition all text/UNIT_NUMBER 45
+---
+> CENSUS BUDR2+partition all text/UNIT_NUMBER 46
+1645c1657
+< CENSUS BUDR2+partition non-sprayed text/UNIT_NUMBER 41
+---
+> CENSUS BUDR2+partition non-sprayed text/UNIT_NUMBER 42
+1661c1673
+< CENSUS BUDR2+partition-on-shelf all text/UNIT_NUMBER 45
+---
+> CENSUS BUDR2+partition-on-shelf all text/UNIT_NUMBER 46
+1670c1682
+< CENSUS BUDR2+partition-on-shelf non-sprayed text/UNIT_NUMBER 41
+---
+> CENSUS BUDR2+partition-on-shelf non-sprayed text/UNIT_NUMBER 42
+1736c1748
+< CENSUS BUDR2+fix-shelf-in-bay all text/UNIT_NUMBER 45
+---
+> CENSUS BUDR2+fix-shelf-in-bay all text/UNIT_NUMBER 46
+1745c1757
+< CENSUS BUDR2+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 41
+---
+> CENSUS BUDR2+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 42
+1761c1773
+< CENSUS BUDR2+partitions-2 all text/UNIT_NUMBER 47
+---
+> CENSUS BUDR2+partitions-2 all text/UNIT_NUMBER 49
+1770c1782
+< CENSUS BUDR2+partitions-2 non-sprayed text/UNIT_NUMBER 43
+---
+> CENSUS BUDR2+partitions-2 non-sprayed text/UNIT_NUMBER 45
+1836c1848
+< CENSUS BUDR+partition all text/UNIT_NUMBER 60
+---
+> CENSUS BUDR+partition all text/UNIT_NUMBER 61
+1845c1857
+< CENSUS BUDR+partition non-sprayed text/UNIT_NUMBER 55
+---
+> CENSUS BUDR+partition non-sprayed text/UNIT_NUMBER 56
+1861c1873
+< CENSUS BUDR+partition-on-shelf all text/UNIT_NUMBER 60
+---
+> CENSUS BUDR+partition-on-shelf all text/UNIT_NUMBER 61
+1870c1882
+< CENSUS BUDR+partition-on-shelf non-sprayed text/UNIT_NUMBER 55
+---
+> CENSUS BUDR+partition-on-shelf non-sprayed text/UNIT_NUMBER 56
+1936c1948
+< CENSUS BUDR+fix-shelf-in-bay all text/UNIT_NUMBER 60
+---
+> CENSUS BUDR+fix-shelf-in-bay all text/UNIT_NUMBER 61
+1945c1957
+< CENSUS BUDR+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 55
+---
+> CENSUS BUDR+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 56
+1961c1973
+< CENSUS BUDR+partitions-2 all text/UNIT_NUMBER 62
+---
+> CENSUS BUDR+partitions-2 all text/UNIT_NUMBER 64
+1970c1982
+< CENSUS BUDR+partitions-2 non-sprayed text/UNIT_NUMBER 57
+---
+> CENSUS BUDR+partitions-2 non-sprayed text/UNIT_NUMBER 59
+2036c2048
+< CENSUS BUDR4+partition all text/UNIT_NUMBER 77
+---
+> CENSUS BUDR4+partition all text/UNIT_NUMBER 78
+2045c2057
+< CENSUS BUDR4+partition non-sprayed text/UNIT_NUMBER 69
+---
+> CENSUS BUDR4+partition non-sprayed text/UNIT_NUMBER 70
+2061c2073
+< CENSUS BUDR4+partition-on-shelf all text/UNIT_NUMBER 77
+---
+> CENSUS BUDR4+partition-on-shelf all text/UNIT_NUMBER 78
+2070c2082
+< CENSUS BUDR4+partition-on-shelf non-sprayed text/UNIT_NUMBER 69
+---
+> CENSUS BUDR4+partition-on-shelf non-sprayed text/UNIT_NUMBER 70
+2136c2148
+< CENSUS BUDR4+fix-shelf-in-bay all text/UNIT_NUMBER 77
+---
+> CENSUS BUDR4+fix-shelf-in-bay all text/UNIT_NUMBER 78
+2145c2157
+< CENSUS BUDR4+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 69
+---
+> CENSUS BUDR4+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 70
+2161c2173
+< CENSUS BUDR4+partitions-2 all text/UNIT_NUMBER 79
+---
+> CENSUS BUDR4+partitions-2 all text/UNIT_NUMBER 81
+2170c2182
+< CENSUS BUDR4+partitions-2 non-sprayed text/UNIT_NUMBER 71
+---
+> CENSUS BUDR4+partitions-2 non-sprayed text/UNIT_NUMBER 73
+2259c2271,2272
+< CENSUS WUD+partition-on-shelf all circle/SCREWS_3MM 34
+---
+> CENSUS WUD+partition-on-shelf all circle/SCREWS_3MM 36
+> CENSUS WUD+partition-on-shelf all poly/BISCUIT_4MM 8
+2264c2277
+< CENSUS WUD+partition-on-shelf all text/UNIT_NUMBER 20
+---
+> CENSUS WUD+partition-on-shelf all text/UNIT_NUMBER 21
+2267c2280,2281
+< CENSUS WUD+partition-on-shelf non-sprayed circle/SCREWS_3MM 34
+---
+> CENSUS WUD+partition-on-shelf non-sprayed circle/SCREWS_3MM 36
+> CENSUS WUD+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+2272c2286
+< CENSUS WUD+partition-on-shelf non-sprayed text/UNIT_NUMBER 16
+---
+> CENSUS WUD+partition-on-shelf non-sprayed text/UNIT_NUMBER 17
+2313c2327,2328
+< CENSUS WUD+fix-shelf all circle/SCREWS_3MM 32
+---
+> CENSUS WUD+fix-shelf all circle/SCREWS_3MM 34
+> CENSUS WUD+fix-shelf all poly/BISCUIT_4MM 8
+2321c2336,2337
+< CENSUS WUD+fix-shelf non-sprayed circle/SCREWS_3MM 32
+---
+> CENSUS WUD+fix-shelf non-sprayed circle/SCREWS_3MM 34
+> CENSUS WUD+fix-shelf non-sprayed poly/BISCUIT_4MM 8
+2339c2355,2356
+< CENSUS WUD+fix-shelf-in-bay all circle/SCREWS_3MM 35
+---
+> CENSUS WUD+fix-shelf-in-bay all circle/SCREWS_3MM 33
+> CENSUS WUD+fix-shelf-in-bay all poly/BISCUIT_4MM 8
+2347c2364,2365
+< CENSUS WUD+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 35
+---
+> CENSUS WUD+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 33
+> CENSUS WUD+fix-shelf-in-bay non-sprayed poly/BISCUIT_4MM 8
+2443c2461
+< CENSUS BUDTALL+partition all text/UNIT_NUMBER 16
+---
+> CENSUS BUDTALL+partition all text/UNIT_NUMBER 18
+2450c2468
+< CENSUS BUDTALL+partition non-sprayed text/UNIT_NUMBER 12
+---
+> CENSUS BUDTALL+partition non-sprayed text/UNIT_NUMBER 14
+2463c2481,2482
+< CENSUS BUDTALL+partition-on-shelf all circle/SCREWS_3MM 36
+---
+> CENSUS BUDTALL+partition-on-shelf all circle/SCREWS_3MM 38
+> CENSUS BUDTALL+partition-on-shelf all poly/BISCUIT_4MM 8
+2467c2486
+< CENSUS BUDTALL+partition-on-shelf all text/UNIT_NUMBER 19
+---
+> CENSUS BUDTALL+partition-on-shelf all text/UNIT_NUMBER 21
+2470c2489,2490
+< CENSUS BUDTALL+partition-on-shelf non-sprayed circle/SCREWS_3MM 36
+---
+> CENSUS BUDTALL+partition-on-shelf non-sprayed circle/SCREWS_3MM 38
+> CENSUS BUDTALL+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+2474c2494
+< CENSUS BUDTALL+partition-on-shelf non-sprayed text/UNIT_NUMBER 15
+---
+> CENSUS BUDTALL+partition-on-shelf non-sprayed text/UNIT_NUMBER 17
+2513c2533,2534
+< CENSUS BUDTALL+fix-shelf all circle/SCREWS_3MM 32
+---
+> CENSUS BUDTALL+fix-shelf all circle/SCREWS_3MM 34
+> CENSUS BUDTALL+fix-shelf all poly/BISCUIT_4MM 8
+2520c2541,2542
+< CENSUS BUDTALL+fix-shelf non-sprayed circle/SCREWS_3MM 32
+---
+> CENSUS BUDTALL+fix-shelf non-sprayed circle/SCREWS_3MM 34
+> CENSUS BUDTALL+fix-shelf non-sprayed poly/BISCUIT_4MM 8
+2537c2559,2560
+< CENSUS BUDTALL+fix-shelf-in-bay all circle/SCREWS_3MM 38
+---
+> CENSUS BUDTALL+fix-shelf-in-bay all circle/SCREWS_3MM 36
+> CENSUS BUDTALL+fix-shelf-in-bay all poly/BISCUIT_4MM 8
+2541c2564
+< CENSUS BUDTALL+fix-shelf-in-bay all text/UNIT_NUMBER 19
+---
+> CENSUS BUDTALL+fix-shelf-in-bay all text/UNIT_NUMBER 21
+2544c2567,2568
+< CENSUS BUDTALL+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 38
+---
+> CENSUS BUDTALL+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 36
+> CENSUS BUDTALL+fix-shelf-in-bay non-sprayed poly/BISCUIT_4MM 8
+2548c2572
+< CENSUS BUDTALL+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 15
+---
+> CENSUS BUDTALL+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 17
+2565c2589
+< CENSUS BUDTALL+partitions-2 all text/UNIT_NUMBER 17
+---
+> CENSUS BUDTALL+partitions-2 all text/UNIT_NUMBER 21
+2572c2596
+< CENSUS BUDTALL+partitions-2 non-sprayed text/UNIT_NUMBER 13
+---
+> CENSUS BUDTALL+partitions-2 non-sprayed text/UNIT_NUMBER 17
+2657c2681,2682
+< CENSUS LOW_CABINET+partition-on-shelf all circle/SCREWS_3MM 34
+---
+> CENSUS LOW_CABINET+partition-on-shelf all circle/SCREWS_3MM 36
+> CENSUS LOW_CABINET+partition-on-shelf all poly/BISCUIT_4MM 8
+2661c2686
+< CENSUS LOW_CABINET+partition-on-shelf all text/UNIT_NUMBER 20
+---
+> CENSUS LOW_CABINET+partition-on-shelf all text/UNIT_NUMBER 21
+2664c2689,2690
+< CENSUS LOW_CABINET+partition-on-shelf non-sprayed circle/SCREWS_3MM 34
+---
+> CENSUS LOW_CABINET+partition-on-shelf non-sprayed circle/SCREWS_3MM 36
+> CENSUS LOW_CABINET+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+2668c2694
+< CENSUS LOW_CABINET+partition-on-shelf non-sprayed text/UNIT_NUMBER 16
+---
+> CENSUS LOW_CABINET+partition-on-shelf non-sprayed text/UNIT_NUMBER 17
+2707c2733,2734
+< CENSUS LOW_CABINET+fix-shelf all circle/SCREWS_3MM 32
+---
+> CENSUS LOW_CABINET+fix-shelf all circle/SCREWS_3MM 34
+> CENSUS LOW_CABINET+fix-shelf all poly/BISCUIT_4MM 8
+2714c2741,2742
+< CENSUS LOW_CABINET+fix-shelf non-sprayed circle/SCREWS_3MM 32
+---
+> CENSUS LOW_CABINET+fix-shelf non-sprayed circle/SCREWS_3MM 34
+> CENSUS LOW_CABINET+fix-shelf non-sprayed poly/BISCUIT_4MM 8
+2731c2759,2760
+< CENSUS LOW_CABINET+fix-shelf-in-bay all circle/SCREWS_3MM 35
+---
+> CENSUS LOW_CABINET+fix-shelf-in-bay all circle/SCREWS_3MM 33
+> CENSUS LOW_CABINET+fix-shelf-in-bay all poly/BISCUIT_4MM 8
+2738c2767,2768
+< CENSUS LOW_CABINET+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 35
+---
+> CENSUS LOW_CABINET+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 33
+> CENSUS LOW_CABINET+fix-shelf-in-bay non-sprayed poly/BISCUIT_4MM 8
+2831c2861
+< CENSUS SINK+partition all text/UNIT_NUMBER 21
+---
+> CENSUS SINK+partition all text/UNIT_NUMBER 22
+2838c2868
+< CENSUS SINK+partition non-sprayed text/UNIT_NUMBER 17
+---
+> CENSUS SINK+partition non-sprayed text/UNIT_NUMBER 18
+2851c2881,2882
+< CENSUS SINK+partition-on-shelf all circle/SCREWS_3MM 28
+---
+> CENSUS SINK+partition-on-shelf all circle/SCREWS_3MM 30
+> CENSUS SINK+partition-on-shelf all poly/BISCUIT_4MM 8
+2855c2886
+< CENSUS SINK+partition-on-shelf all text/UNIT_NUMBER 24
+---
+> CENSUS SINK+partition-on-shelf all text/UNIT_NUMBER 25
+2858c2889,2890
+< CENSUS SINK+partition-on-shelf non-sprayed circle/SCREWS_3MM 28
+---
+> CENSUS SINK+partition-on-shelf non-sprayed circle/SCREWS_3MM 30
+> CENSUS SINK+partition-on-shelf non-sprayed poly/BISCUIT_4MM 8
+2862c2894
+< CENSUS SINK+partition-on-shelf non-sprayed text/UNIT_NUMBER 20
+---
+> CENSUS SINK+partition-on-shelf non-sprayed text/UNIT_NUMBER 21
+2901c2933,2934
+< CENSUS SINK+fix-shelf all circle/SCREWS_3MM 26
+---
+> CENSUS SINK+fix-shelf all circle/SCREWS_3MM 28
+> CENSUS SINK+fix-shelf all poly/BISCUIT_4MM 8
+2908c2941,2942
+< CENSUS SINK+fix-shelf non-sprayed circle/SCREWS_3MM 26
+---
+> CENSUS SINK+fix-shelf non-sprayed circle/SCREWS_3MM 28
+> CENSUS SINK+fix-shelf non-sprayed poly/BISCUIT_4MM 8
+2925c2959,2960
+< CENSUS SINK+fix-shelf-in-bay all circle/SCREWS_3MM 29
+---
+> CENSUS SINK+fix-shelf-in-bay all circle/SCREWS_3MM 27
+> CENSUS SINK+fix-shelf-in-bay all poly/BISCUIT_4MM 8
+2929c2964
+< CENSUS SINK+fix-shelf-in-bay all text/UNIT_NUMBER 24
+---
+> CENSUS SINK+fix-shelf-in-bay all text/UNIT_NUMBER 25
+2932c2967,2968
+< CENSUS SINK+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 29
+---
+> CENSUS SINK+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 27
+> CENSUS SINK+fix-shelf-in-bay non-sprayed poly/BISCUIT_4MM 8
+2936c2972
+< CENSUS SINK+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 20
+---
+> CENSUS SINK+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 21
+2953c2989
+< CENSUS SINK+partitions-2 all text/UNIT_NUMBER 23
+---
+> CENSUS SINK+partitions-2 all text/UNIT_NUMBER 25
+2960c2996
+< CENSUS SINK+partitions-2 non-sprayed text/UNIT_NUMBER 19
+---
+> CENSUS SINK+partitions-2 non-sprayed text/UNIT_NUMBER 21
+2986c3022
+< CENSUS DW_PANEL+partition all text/UNIT_NUMBER 6
+---
+> CENSUS DW_PANEL+partition all text/UNIT_NUMBER 7
+2988c3024
+< CENSUS DW_PANEL+partition non-sprayed text/UNIT_NUMBER 4
+---
+> CENSUS DW_PANEL+partition non-sprayed text/UNIT_NUMBER 5
+2994c3030
+< CENSUS DW_PANEL+partition-on-shelf all text/UNIT_NUMBER 6
+---
+> CENSUS DW_PANEL+partition-on-shelf all text/UNIT_NUMBER 7
+2996c3032
+< CENSUS DW_PANEL+partition-on-shelf non-sprayed text/UNIT_NUMBER 4
+---
+> CENSUS DW_PANEL+partition-on-shelf non-sprayed text/UNIT_NUMBER 5
+3018c3054
+< CENSUS DW_PANEL+fix-shelf-in-bay all text/UNIT_NUMBER 6
+---
+> CENSUS DW_PANEL+fix-shelf-in-bay all text/UNIT_NUMBER 7
+3020c3056
+< CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 4
+---
+> CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 5
+3026c3062
+< CENSUS DW_PANEL+partitions-2 all text/UNIT_NUMBER 8
+---
+> CENSUS DW_PANEL+partitions-2 all text/UNIT_NUMBER 10
+3028c3064
+< CENSUS DW_PANEL+partitions-2 non-sprayed text/UNIT_NUMBER 6
+---
+> CENSUS DW_PANEL+partitions-2 non-sprayed text/UNIT_NUMBER 8
+3092c3128
+< CENSUS OVEN_BASE+partition all text/UNIT_NUMBER 35
+---
+> CENSUS OVEN_BASE+partition all text/UNIT_NUMBER 36
+3101c3137
+< CENSUS OVEN_BASE+partition non-sprayed text/UNIT_NUMBER 34
+---
+> CENSUS OVEN_BASE+partition non-sprayed text/UNIT_NUMBER 35
+3117c3153
+< CENSUS OVEN_BASE+partition-on-shelf all text/UNIT_NUMBER 35
+---
+> CENSUS OVEN_BASE+partition-on-shelf all text/UNIT_NUMBER 36
+3126c3162
+< CENSUS OVEN_BASE+partition-on-shelf non-sprayed text/UNIT_NUMBER 34
+---
+> CENSUS OVEN_BASE+partition-on-shelf non-sprayed text/UNIT_NUMBER 35
+3192c3228
+< CENSUS OVEN_BASE+fix-shelf-in-bay all text/UNIT_NUMBER 35
+---
+> CENSUS OVEN_BASE+fix-shelf-in-bay all text/UNIT_NUMBER 36
+3201c3237
+< CENSUS OVEN_BASE+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 34
+---
+> CENSUS OVEN_BASE+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 35
+3217c3253
+< CENSUS OVEN_BASE+partitions-2 all text/UNIT_NUMBER 37
+---
+> CENSUS OVEN_BASE+partitions-2 all text/UNIT_NUMBER 39
+3226c3262
+< CENSUS OVEN_BASE+partitions-2 non-sprayed text/UNIT_NUMBER 36
+---
+> CENSUS OVEN_BASE+partitions-2 non-sprayed text/UNIT_NUMBER 38
+3289c3325
+< CENSUS FRIDGE+partition all text/UNIT_NUMBER 27
+---
+> CENSUS FRIDGE+partition all text/UNIT_NUMBER 29
+3296c3332
+< CENSUS FRIDGE+partition non-sprayed text/UNIT_NUMBER 23
+---
+> CENSUS FRIDGE+partition non-sprayed text/UNIT_NUMBER 25
+3313c3349
+< CENSUS FRIDGE+partition-on-shelf all text/UNIT_NUMBER 27
+---
+> CENSUS FRIDGE+partition-on-shelf all text/UNIT_NUMBER 29
+3320c3356
+< CENSUS FRIDGE+partition-on-shelf non-sprayed text/UNIT_NUMBER 23
+---
+> CENSUS FRIDGE+partition-on-shelf non-sprayed text/UNIT_NUMBER 25
+3385c3421
+< CENSUS FRIDGE+fix-shelf-in-bay all text/UNIT_NUMBER 27
+---
+> CENSUS FRIDGE+fix-shelf-in-bay all text/UNIT_NUMBER 29
+3392c3428
+< CENSUS FRIDGE+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 23
+---
+> CENSUS FRIDGE+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 25
+3409c3445
+< CENSUS FRIDGE+partitions-2 all text/UNIT_NUMBER 28
+---
+> CENSUS FRIDGE+partitions-2 all text/UNIT_NUMBER 32
+3416c3452
+< CENSUS FRIDGE+partitions-2 non-sprayed text/UNIT_NUMBER 24
+---
+> CENSUS FRIDGE+partitions-2 non-sprayed text/UNIT_NUMBER 28
+3499c3535,3537
+< TEXT   WARDROBE+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2114x560|20|1057,280
+---
+> TEXT   WARDROBE+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|280,1082
+> TEXT   WARDROBE+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|280,1057
+> TEXT   WARDROBE+partition 01-VPART-1.dxf UNIT_NUMBER|2114x560|20|280,1032
+3515,3518c3553,3558
+< TEXT   WARDROBE+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|430,282.5
+< TEXT   WARDROBE+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|860x540|20|430,257.5
+< TEXT   WARDROBE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|528.5,292.5
+< TEXT   WARDROBE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|1057x560|20|528.5,267.5
+---
+> TEXT   WARDROBE+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|432,295
+> TEXT   WARDROBE+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|864x540|20|432,270
+> TEXT   WARDROBE+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|432,245
+> TEXT   WARDROBE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|280,553.5
+> TEXT   WARDROBE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|280,528.5
+> TEXT   WARDROBE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|1057x560|20|280,503.5
+3534,3539c3574,3579
+< TEXT   WARDROBE+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,295
+< TEXT   WARDROBE+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,270
+< TEXT   WARDROBE+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x540|20|280,245
+< TEXT   WARDROBE+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01|20|280,295
+< TEXT   WARDROBE+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|SHELF-2|20|280,270
+< TEXT   WARDROBE+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x540|20|280,245
+---
+> TEXT   WARDROBE+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|280,295
+> TEXT   WARDROBE+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x540|20|280,270
+> TEXT   WARDROBE+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|(ADJ)|20|280,245
+> TEXT   WARDROBE+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01 SHELF-2|20|280,295
+> TEXT   WARDROBE+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x540|20|280,270
+> TEXT   WARDROBE+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|(ADJ)|20|280,245
+3553,3555c3593,3595
+< TEXT   WARDROBE+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,295
+< TEXT   WARDROBE+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,270
+< TEXT   WARDROBE+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|560x540|20|280,245
+---
+> TEXT   WARDROBE+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|282,295
+> TEXT   WARDROBE+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|564x540|20|282,270
+> TEXT   WARDROBE+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|282,245
+3569,3572c3609,3614
+< TEXT   WARDROBE+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01|20|214,295
+< TEXT   WARDROBE+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|214,270
+< TEXT   WARDROBE+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|428x540|20|214,245
+< TEXT   WARDROBE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2114x560|20|1057,280
+---
+> TEXT   WARDROBE+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|216,295
+> TEXT   WARDROBE+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|432x540|20|216,270
+> TEXT   WARDROBE+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|216,245
+> TEXT   WARDROBE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|280,1082
+> TEXT   WARDROBE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|280,1057
+> TEXT   WARDROBE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|2114x560|20|280,1032
+3588,3589c3630,3635
+< TEXT   WARDROBE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2114x560|20|1057,280
+< TEXT   WARDROBE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2 2114x560|20|1057,280
+---
+> TEXT   WARDROBE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|280,1082
+> TEXT   WARDROBE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|280,1057
+> TEXT   WARDROBE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|2114x560|20|280,1032
+> TEXT   WARDROBE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|280,1082
+> TEXT   WARDROBE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|280,1057
+> TEXT   WARDROBE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|2114x560|20|280,1032
+3631,3632c3677,3679
+< TEXT   BUD+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUD+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUD+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUD+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUD+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+3648,3652c3695,3700
+< TEXT   BUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|430,272.5
+< TEXT   BUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|860x520|20|430,247.5
+< TEXT   BUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|183.5,295
+< TEXT   BUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|183.5,270
+< TEXT   BUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|367x540|20|183.5,245
+---
+> TEXT   BUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|432,285
+> TEXT   BUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|864x520|20|432,260
+> TEXT   BUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|432,235
+> TEXT   BUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,208.5
+> TEXT   BUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,183.5
+> TEXT   BUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|367x540|20|270,158.5
+3668,3673c3716,3721
+< TEXT   BUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,285
+< TEXT   BUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,260
+< TEXT   BUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x520|20|280,235
+< TEXT   BUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01|20|280,285
+< TEXT   BUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|SHELF-2|20|280,260
+< TEXT   BUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x520|20|280,235
+---
+> TEXT   BUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|280,285
+> TEXT   BUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x520|20|280,260
+> TEXT   BUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|(ADJ)|20|280,235
+> TEXT   BUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01 SHELF-2|20|280,285
+> TEXT   BUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x520|20|280,260
+> TEXT   BUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|(ADJ)|20|280,235
+3687,3689c3735,3737
+< TEXT   BUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,285
+< TEXT   BUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,260
+< TEXT   BUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|560x520|20|280,235
+---
+> TEXT   BUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|282,285
+> TEXT   BUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|564x520|20|282,260
+> TEXT   BUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|282,235
+3703,3707c3751,3756
+< TEXT   BUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01|20|214,285
+< TEXT   BUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|214,260
+< TEXT   BUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|428x520|20|214,235
+< TEXT   BUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|216,285
+> TEXT   BUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|432x520|20|216,260
+> TEXT   BUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|216,235
+> TEXT   BUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+3723,3726c3772,3777
+< TEXT   BUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+< TEXT   BUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2|20|367,282.5
+< TEXT   BUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+> TEXT   BUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,367
+> TEXT   BUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|270,342
+3832,3833c3883,3885
+< TEXT   BUDR2+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR2+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR2+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR2+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR2+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+3877,3878c3929,3931
+< TEXT   BUDR2+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR2+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR2+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR2+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR2+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+4012,4013c4065,4067
+< TEXT   BUDR2+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR2+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR2+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR2+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR2+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+4057,4060c4111,4116
+< TEXT   BUDR2+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR2+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+< TEXT   BUDR2+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2|20|367,282.5
+< TEXT   BUDR2+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR2+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR2+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR2+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+> TEXT   BUDR2+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR2+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,367
+> TEXT   BUDR2+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|270,342
+4228,4229c4284,4286
+< TEXT   BUDR+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+4288,4289c4345,4347
+< TEXT   BUDR+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+4472,4473c4530,4532
+< TEXT   BUDR+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+4532,4535c4591,4596
+< TEXT   BUDR+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+< TEXT   BUDR+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2|20|367,282.5
+< TEXT   BUDR+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+> TEXT   BUDR+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,367
+> TEXT   BUDR+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|270,342
+4752,4753c4813,4815
+< TEXT   BUDR4+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR4+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR4+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR4+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR4+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+4829,4830c4891,4893
+< TEXT   BUDR4+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR4+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR4+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR4+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR4+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+5064,5065c5127,5129
+< TEXT   BUDR4+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR4+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR4+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR4+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR4+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+5141,5144c5205,5210
+< TEXT   BUDR4+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   BUDR4+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+< TEXT   BUDR4+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2|20|367,282.5
+< TEXT   BUDR4+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   BUDR4+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR4+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   BUDR4+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+> TEXT   BUDR4+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   BUDR4+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,367
+> TEXT   BUDR4+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|270,342
+5246,5248c5312,5314
+< TEXT   WUD+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|342,216
+< TEXT   WUD+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|342,191
+< TEXT   WUD+partition 01-VPART-1.dxf UNIT_NUMBER|684x382|20|342,166
+---
+> TEXT   WUD+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|191,367
+> TEXT   WUD+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|191,342
+> TEXT   WUD+partition 01-VPART-1.dxf UNIT_NUMBER|684x382|20|191,317
+5264,5268c5330,5335
+< TEXT   WUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|430,193.5
+< TEXT   WUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|860x362|20|430,168.5
+< TEXT   WUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|171,216
+< TEXT   WUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|171,191
+< TEXT   WUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|342x382|20|171,166
+---
+> TEXT   WUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|432,206
+> TEXT   WUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|864x362|20|432,181
+> TEXT   WUD+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|432,156
+> TEXT   WUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|191,196
+> TEXT   WUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|191,171
+> TEXT   WUD+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|342x382|20|191,146
+5284,5289c5351,5356
+< TEXT   WUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,206
+< TEXT   WUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,181
+< TEXT   WUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x362|20|280,156
+< TEXT   WUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01|20|280,206
+< TEXT   WUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|SHELF-2|20|280,181
+< TEXT   WUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x362|20|280,156
+---
+> TEXT   WUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|280,206
+> TEXT   WUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x362|20|280,181
+> TEXT   WUD+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|(ADJ)|20|280,156
+> TEXT   WUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01 SHELF-2|20|280,206
+> TEXT   WUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x362|20|280,181
+> TEXT   WUD+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|(ADJ)|20|280,156
+5303,5305c5370,5372
+< TEXT   WUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,206
+< TEXT   WUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,181
+< TEXT   WUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|560x362|20|280,156
+---
+> TEXT   WUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|282,206
+> TEXT   WUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|564x362|20|282,181
+> TEXT   WUD+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|282,156
+5319,5324c5386,5391
+< TEXT   WUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01|20|214,206
+< TEXT   WUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|214,181
+< TEXT   WUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|428x362|20|214,156
+< TEXT   WUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|342,216
+< TEXT   WUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|342,191
+< TEXT   WUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|684x382|20|342,166
+---
+> TEXT   WUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|216,206
+> TEXT   WUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|432x362|20|216,181
+> TEXT   WUD+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|216,156
+> TEXT   WUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|191,367
+> TEXT   WUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|191,342
+> TEXT   WUD+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|684x382|20|191,317
+5340,5345c5407,5412
+< TEXT   WUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|342,216
+< TEXT   WUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|342,191
+< TEXT   WUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|684x382|20|342,166
+< TEXT   WUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|342,216
+< TEXT   WUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|342,191
+< TEXT   WUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|684x382|20|342,166
+---
+> TEXT   WUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|191,367
+> TEXT   WUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|191,342
+> TEXT   WUD+partitions-2 01-VPART-1.dxf UNIT_NUMBER|684x382|20|191,317
+> TEXT   WUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|191,367
+> TEXT   WUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|191,342
+> TEXT   WUD+partitions-2 01-VPART-2.dxf UNIT_NUMBER|684x382|20|191,317
+5387c5454,5456
+< TEXT   BUDTALL+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2064x540|20|1032,270
+---
+> TEXT   BUDTALL+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   BUDTALL+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,1032
+> TEXT   BUDTALL+partition 01-VPART-1.dxf UNIT_NUMBER|2064x540|20|270,1007
+5403,5406c5472,5477
+< TEXT   BUDTALL+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|430,272.5
+< TEXT   BUDTALL+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|860x520|20|430,247.5
+< TEXT   BUDTALL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|516,282.5
+< TEXT   BUDTALL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|1032x540|20|516,257.5
+---
+> TEXT   BUDTALL+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|432,285
+> TEXT   BUDTALL+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|864x520|20|432,260
+> TEXT   BUDTALL+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|432,235
+> TEXT   BUDTALL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,541
+> TEXT   BUDTALL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,516
+> TEXT   BUDTALL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|1032x540|20|270,491
+5422,5427c5493,5498
+< TEXT   BUDTALL+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,285
+< TEXT   BUDTALL+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,260
+< TEXT   BUDTALL+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x520|20|280,235
+< TEXT   BUDTALL+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01|20|280,285
+< TEXT   BUDTALL+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|SHELF-2|20|280,260
+< TEXT   BUDTALL+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x520|20|280,235
+---
+> TEXT   BUDTALL+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|280,285
+> TEXT   BUDTALL+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x520|20|280,260
+> TEXT   BUDTALL+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|(ADJ)|20|280,235
+> TEXT   BUDTALL+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01 SHELF-2|20|280,285
+> TEXT   BUDTALL+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x520|20|280,260
+> TEXT   BUDTALL+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|(ADJ)|20|280,235
+5441,5443c5512,5514
+< TEXT   BUDTALL+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,285
+< TEXT   BUDTALL+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,260
+< TEXT   BUDTALL+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|560x520|20|280,235
+---
+> TEXT   BUDTALL+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|282,285
+> TEXT   BUDTALL+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|564x520|20|282,260
+> TEXT   BUDTALL+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|282,235
+5457,5460c5528,5533
+< TEXT   BUDTALL+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01|20|214,285
+< TEXT   BUDTALL+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|214,260
+< TEXT   BUDTALL+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|428x520|20|214,235
+< TEXT   BUDTALL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2064x540|20|1032,270
+---
+> TEXT   BUDTALL+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|216,285
+> TEXT   BUDTALL+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|432x520|20|216,260
+> TEXT   BUDTALL+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|216,235
+> TEXT   BUDTALL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   BUDTALL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,1032
+> TEXT   BUDTALL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|2064x540|20|270,1007
+5476,5477c5549,5554
+< TEXT   BUDTALL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2064x540|20|1032,270
+< TEXT   BUDTALL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2 2064x540|20|1032,270
+---
+> TEXT   BUDTALL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   BUDTALL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,1032
+> TEXT   BUDTALL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|2064x540|20|270,1007
+> TEXT   BUDTALL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   BUDTALL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,1032
+> TEXT   BUDTALL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|2064x540|20|270,1007
+5519,5521c5596,5598
+< TEXT   LOW_CABINET+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|282,305
+< TEXT   LOW_CABINET+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|282,280
+< TEXT   LOW_CABINET+partition 01-VPART-1.dxf UNIT_NUMBER|564x560|20|282,255
+---
+> TEXT   LOW_CABINET+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|280,307
+> TEXT   LOW_CABINET+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|280,282
+> TEXT   LOW_CABINET+partition 01-VPART-1.dxf UNIT_NUMBER|564x560|20|280,257
+5537,5541c5614,5619
+< TEXT   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|430,282.5
+< TEXT   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|860x540|20|430,257.5
+< TEXT   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|141,305
+< TEXT   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|141,280
+< TEXT   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|282x560|20|141,255
+---
+> TEXT   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|432,295
+> TEXT   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|864x540|20|432,270
+> TEXT   LOW_CABINET+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|432,245
+> TEXT   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|280,166
+> TEXT   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|280,141
+> TEXT   LOW_CABINET+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|282x560|20|280,116
+5557,5562c5635,5640
+< TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,295
+< TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,270
+< TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x540|20|280,245
+< TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01|20|280,295
+< TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|SHELF-2|20|280,270
+< TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x540|20|280,245
+---
+> TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|280,295
+> TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x540|20|280,270
+> TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|(ADJ)|20|280,245
+> TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01 SHELF-2|20|280,295
+> TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x540|20|280,270
+> TEXT   LOW_CABINET+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|(ADJ)|20|280,245
+5576,5578c5654,5656
+< TEXT   LOW_CABINET+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,295
+< TEXT   LOW_CABINET+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,270
+< TEXT   LOW_CABINET+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|560x540|20|280,245
+---
+> TEXT   LOW_CABINET+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|282,295
+> TEXT   LOW_CABINET+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|564x540|20|282,270
+> TEXT   LOW_CABINET+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|282,245
+5592,5597c5670,5675
+< TEXT   LOW_CABINET+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01|20|214,295
+< TEXT   LOW_CABINET+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|214,270
+< TEXT   LOW_CABINET+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|428x540|20|214,245
+< TEXT   LOW_CABINET+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|282,305
+< TEXT   LOW_CABINET+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|282,280
+< TEXT   LOW_CABINET+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|564x560|20|282,255
+---
+> TEXT   LOW_CABINET+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|216,295
+> TEXT   LOW_CABINET+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|432x540|20|216,270
+> TEXT   LOW_CABINET+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|216,245
+> TEXT   LOW_CABINET+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|280,307
+> TEXT   LOW_CABINET+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|280,282
+> TEXT   LOW_CABINET+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|564x560|20|280,257
+5613,5618c5691,5696
+< TEXT   LOW_CABINET+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|282,305
+< TEXT   LOW_CABINET+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|282,280
+< TEXT   LOW_CABINET+partitions-2 01-VPART-1.dxf UNIT_NUMBER|564x560|20|282,255
+< TEXT   LOW_CABINET+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|282,305
+< TEXT   LOW_CABINET+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|282,280
+< TEXT   LOW_CABINET+partitions-2 01-VPART-2.dxf UNIT_NUMBER|564x560|20|282,255
+---
+> TEXT   LOW_CABINET+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|280,307
+> TEXT   LOW_CABINET+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|280,282
+> TEXT   LOW_CABINET+partitions-2 01-VPART-1.dxf UNIT_NUMBER|564x560|20|280,257
+> TEXT   LOW_CABINET+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|280,307
+> TEXT   LOW_CABINET+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|280,282
+> TEXT   LOW_CABINET+partitions-2 01-VPART-2.dxf UNIT_NUMBER|564x560|20|280,257
+5672,5673c5750,5752
+< TEXT   SINK+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   SINK+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   SINK+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   SINK+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   SINK+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+5693,5697c5772,5777
+< TEXT   SINK+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|430,238.5
+< TEXT   SINK+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|860x452|20|430,213.5
+< TEXT   SINK+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|183.5,295
+< TEXT   SINK+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|183.5,270
+< TEXT   SINK+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|367x540|20|183.5,245
+---
+> TEXT   SINK+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|432,251
+> TEXT   SINK+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|864x452|20|432,226
+> TEXT   SINK+partition-on-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|432,201
+> TEXT   SINK+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,208.5
+> TEXT   SINK+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,183.5
+> TEXT   SINK+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|367x540|20|270,158.5
+5717,5722c5797,5802
+< TEXT   SINK+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,251
+< TEXT   SINK+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,226
+< TEXT   SINK+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x452|20|280,201
+< TEXT   SINK+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01|20|280,251
+< TEXT   SINK+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|SHELF-2|20|280,226
+< TEXT   SINK+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x452|20|280,201
+---
+> TEXT   SINK+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|280,251
+> TEXT   SINK+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|560x452|20|280,226
+> TEXT   SINK+adjustable-shelves 01-SHELF-1.dxf UNIT_NUMBER|(ADJ)|20|280,201
+> TEXT   SINK+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|01 SHELF-2|20|280,251
+> TEXT   SINK+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|560x452|20|280,226
+> TEXT   SINK+adjustable-shelves 01-SHELF-2.dxf UNIT_NUMBER|(ADJ)|20|280,201
+5740,5742c5820,5822
+< TEXT   SINK+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01|20|280,251
+< TEXT   SINK+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|280,226
+< TEXT   SINK+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|560x452|20|280,201
+---
+> TEXT   SINK+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|282,251
+> TEXT   SINK+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|564x452|20|282,226
+> TEXT   SINK+fix-shelf 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|282,201
+5760,5764c5840,5845
+< TEXT   SINK+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01|20|214,251
+< TEXT   SINK+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|SHELF-1|20|214,226
+< TEXT   SINK+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|428x452|20|214,201
+< TEXT   SINK+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   SINK+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   SINK+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|01 SHELF-1|20|216,251
+> TEXT   SINK+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|432x452|20|216,226
+> TEXT   SINK+fix-shelf-in-bay 01-SHELF-1.dxf UNIT_NUMBER|(FIX)|20|216,201
+> TEXT   SINK+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   SINK+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   SINK+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+5784,5787c5865,5870
+< TEXT   SINK+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   SINK+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+< TEXT   SINK+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2|20|367,282.5
+< TEXT   SINK+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   SINK+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   SINK+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   SINK+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+> TEXT   SINK+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   SINK+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,367
+> TEXT   SINK+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|270,342
+5804,5805c5887,5889
+< TEXT   DW_PANEL+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   DW_PANEL+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   DW_PANEL+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   DW_PANEL+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   DW_PANEL+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+5810,5811c5894,5896
+< TEXT   DW_PANEL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   DW_PANEL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   DW_PANEL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   DW_PANEL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   DW_PANEL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+5824,5825c5909,5911
+< TEXT   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+5830,5833c5916,5921
+< TEXT   DW_PANEL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   DW_PANEL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+< TEXT   DW_PANEL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2|20|367,282.5
+< TEXT   DW_PANEL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   DW_PANEL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   DW_PANEL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   DW_PANEL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+> TEXT   DW_PANEL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   DW_PANEL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,367
+> TEXT   DW_PANEL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|270,342
+5922,5923c6010,6012
+< TEXT   OVEN_BASE+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   OVEN_BASE+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   OVEN_BASE+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   OVEN_BASE+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   OVEN_BASE+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+5957,5958c6046,6048
+< TEXT   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   OVEN_BASE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+6062,6063c6152,6154
+< TEXT   OVEN_BASE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   OVEN_BASE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   OVEN_BASE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   OVEN_BASE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   OVEN_BASE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+6097,6100c6188,6193
+< TEXT   OVEN_BASE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1|20|367,282.5
+< TEXT   OVEN_BASE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|367,257.5
+< TEXT   OVEN_BASE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2|20|367,282.5
+< TEXT   OVEN_BASE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|367,257.5
+---
+> TEXT   OVEN_BASE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   OVEN_BASE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+> TEXT   OVEN_BASE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+> TEXT   OVEN_BASE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,392
+> TEXT   OVEN_BASE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,367
+> TEXT   OVEN_BASE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|270,342
+6186c6279,6281
+< TEXT   FRIDGE+partition 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2064x540|20|1032,270
+---
+> TEXT   FRIDGE+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   FRIDGE+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,1032
+> TEXT   FRIDGE+partition 01-VPART-1.dxf UNIT_NUMBER|2064x540|20|270,1007
+6213c6308,6310
+< TEXT   FRIDGE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2064x540|20|1032,270
+---
+> TEXT   FRIDGE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   FRIDGE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,1032
+> TEXT   FRIDGE+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|2064x540|20|270,1007
+6288c6385,6387
+< TEXT   FRIDGE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2064x540|20|1032,270
+---
+> TEXT   FRIDGE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   FRIDGE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,1032
+> TEXT   FRIDGE+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|2064x540|20|270,1007
+6315,6316c6414,6419
+< TEXT   FRIDGE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01 VPART-1 2064x540|20|1032,270
+< TEXT   FRIDGE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01 VPART-2 2064x540|20|1032,270
+---
+> TEXT   FRIDGE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   FRIDGE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,1032
+> TEXT   FRIDGE+partitions-2 01-VPART-1.dxf UNIT_NUMBER|2064x540|20|270,1007
+> TEXT   FRIDGE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,1057
+> TEXT   FRIDGE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,1032
+> TEXT   FRIDGE+partitions-2 01-VPART-2.dxf UNIT_NUMBER|2064x540|20|270,1007

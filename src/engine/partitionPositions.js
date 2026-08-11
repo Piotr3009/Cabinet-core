@@ -56,6 +56,87 @@ export function xFromField(value, boardT) {
   return Number(value) + interiorLeft(boardT);
 }
 
+// ─── THE PARTITION MEASURES FROM ITS LEFT NEIGHBOUR (turn 24, F11) ──────────
+//
+// The owner's request, with the trap he and the assistant agreed to avoid:
+// **display chains, storage stays absolute.**
+//
+// "The panel field for partition N shows the clear distance from its LEFT
+// neighbour's face — the interior face of the left side for P1, P1's face for
+// P2. Editing the field moves ONLY that partition; the stored positions remain
+// absolute, so moving P1 changes the NUMBER P2 displays and nothing else — no
+// cascades."
+//
+// That last sentence is the whole design, and it is what makes this a MAPPING
+// rather than a data model. `x_mm` still means exactly what it has meant since
+// turn 11 — the partition's LEFT FACE in the cabinet's own frame — so every
+// engine formula, every drilled row and every saved project is untouched.
+//
+// And turn 23's interior datum is SUBSUMED, not duplicated: a partition with no
+// left neighbour measures from the interior face of the left side, which is
+// precisely what `fieldFromX` says. One mapping function, two cases of it.
+
+/**
+ * The wall a partition measures FROM: the nearest face to its left.
+ *
+ * @param {object} args
+ *   x        this partition's own left face
+ *   boardT   the carcass board — the interior datum, for a partition with no
+ *            neighbour to its left
+ *   others   [{ x, w }] — every OTHER partition in the cabinet, in any order
+ * @returns {{at:number, of:string}} `of` is 'side' or 'partition'
+ */
+export function leftNeighbourFace({ x, boardT, others = [] }) {
+  const me = Number(x);
+  const faces = (others || [])
+    .map((p) => ({ at: Number(p.x) + (Number(p.w) || interiorLeft(boardT)), of: 'partition' }))
+    .filter((f) => Number.isFinite(f.at) && f.at <= me + 1e-9)
+    .sort((a, b) => b.at - a.at);
+  return faces[0] || { at: interiorLeft(boardT), of: 'side' };
+}
+
+/**
+ * WHAT THE FIELD SHOWS for partition N: the clear light from its left
+ * neighbour's face to its own near face.
+ */
+export function chainFromX({ x, boardT, others = [] }) {
+  return Number(x) - leftNeighbourFace({ x, boardT, others }).at;
+}
+
+/**
+ * …and back: a typed chain distance, as the ABSOLUTE `x_mm` that is stored.
+ *
+ * The inverse is taken against the CURRENT left neighbour, which is what makes
+ * the edit local: the number the owner types is a distance from a face that is
+ * already where it is, so moving this partition cannot move that one. It does
+ * not clamp — the clamp is `store.setPartitionX`'s, exactly as above.
+ */
+export function xFromChain({ value, x, boardT, others = [] }) {
+  return leftNeighbourFace({ x, boardT, others }).at + Number(value);
+}
+
+/**
+ * Every partition's DISPLAY number, in one call — the chain, left to right.
+ *
+ * @param {object} args
+ *   boardT
+ *   partitions  [{ id, x, w }] in any order
+ * @returns {Array<{id, x, w, from:number, value:number, of:string}>} sorted
+ *   left to right, which is the order a panel lists them in.
+ */
+export function partitionChain({ boardT, partitions = [] }) {
+  const sorted = [...(partitions || [])]
+    .map((p) => ({ ...p, x: Number(p.x), w: Number(p.w) || interiorLeft(boardT) }))
+    .filter((p) => Number.isFinite(p.x))
+    .sort((a, b) => a.x - b.x);
+  return sorted.map((p, i) => {
+    const face = leftNeighbourFace({ x: p.x, boardT, others: sorted.filter((_, j) => j !== i) });
+    return {
+      ...p, from: face.at, of: face.of, value: p.x - face.at,
+    };
+  });
+}
+
 /**
  * The CLEAR BAYS across a cabinet: side → partition → partition → side.
  *

@@ -253,8 +253,7 @@ function SnapMarker({ point, kind, sizePx = 11 }) {
     <group
       position={[mm(point[0]), mm(point[1]), mm(point[2])]}
       quaternion={camera.quaternion}
-      userData={{ ccHelper: true }}
-      data-snap-kind={kind}
+      userData={{ ccHelper: true, ccSnapKind: kind }}
     >
       <lineSegments geometry={geometry} userData={{ ccHelper: true, ccSnapKind: kind }}>
         <lineBasicMaterial

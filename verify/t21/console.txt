@@ -1,0 +1,9 @@
+warning: THREE.WebGLRenderer: WEBGL_lose_context extension not supported.
+
+── errors ──
+Failed to load resource: the server responded with a status of 404 (Not Found) [http://127.0.0.1:4173/favicon.ico]
+Failed to load resource: the server responded with a status of 404 (Not Found) [http://127.0.0.1:4173/favicon.ico]
+Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json]
+Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/hinges/blum/71B3550_42542984.glb]
+Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/hinges/blum/174E6100.01_42378433.glb]
+Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/hinges/blum/71B3550_42542984.glb]

@@ -1,0 +1,1 @@
+THREE.WebGLRenderer: WEBGL_lose_context extension not supported.

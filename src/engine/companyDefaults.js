@@ -283,10 +283,12 @@ export function prefillDesignFromCompany(design, company, profile) {
   if (kitchen?.carcass_thickness && next.thickness?.board == null) {
     next.thickness = { ...(next.thickness || {}), board: kitchen.carcass_thickness };
   }
-  const profileOptions = profile?.front?.thicknessOptions || [];
-  if (kitchen?.front_thickness && profileOptions.includes(Number(kitchen.front_thickness))) {
-    const types = Array.isArray(next.fronts?.types) ? next.fronts.types : [];
-    if (!types.length) next.fronts = { ...(next.fronts || {}), thickness: Number(kitchen.front_thickness) };
-  }
+  // The FRONT thickness is deliberately NOT prefilled. Since turn 16 it is
+  // front type 1's ASSIGNED BOARD that pins what the doors are cut from
+  // (`engine/projectSettings.js projectFrontThickness`), and a preference that
+  // reached round that would be the company row overruling the stock list —
+  // which is the one thing this storey must never do. The row's
+  // `front_thickness` is kept on the row and read by the screen; it does not
+  // write a project field there is no place for.
   return next;
 }

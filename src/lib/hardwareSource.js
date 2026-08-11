@@ -38,7 +38,7 @@ import { parseRunnerManifest, setRunnerCatalogue } from '../engine/runners.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { storageBaseUrl as resolveStorageBase } from './storageBase.js';
 import { supabase, isMockMode, withDb } from './supabase.js';
-import { CLIPTOP_HINGE_CATALOGUE, MOVENTO_CATALOGUE, AVENTOS_CATALOGUE } from './hardwareCatalogue.js';
+import { CLIPTOP_HINGE_CATALOGUE, AVENTOS_CATALOGUE } from './hardwareCatalogue.js';
 
 /** The families `cc_hardware.family` may name — the SQL's own CHECK, in JS. */
 export const HARDWARE_FAMILIES = ['runners', 'hinges', 'lifts'];
@@ -274,5 +274,3 @@ export function hardwareRowFor(family, manifest, profile = getCabinetProfile()) 
     bucket_path: `${spec.bucket}/${spec.path}${spec.manifest}`,
   };
 }
-
-export { MOVENTO_CATALOGUE };

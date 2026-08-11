@@ -1,10 +1,10 @@
 {
   "base": "http://127.0.0.1:4173/",
-  "when": "2026-08-11T07:38:03.253Z",
-  "passed": 29,
+  "when": "2026-08-11T07:45:49.896Z",
+  "passed": 30,
   "failed": 0,
   "blocked": 2,
-  "total": 31,
+  "total": 32,
   "steps": [
     {
       "label": "R2 the LIVE bucket answers",
@@ -143,6 +143,11 @@
       "detail": "identical design"
     },
     {
+      "label": "F2b.3 …and the prefilled answers are what the SETTINGS screen shows",
+      "ok": true,
+      "detail": "{\"finish\":\"Onyx\",\"system\":\"CLIP top BLUMOTION\",\"variant\":\"S\"}"
+    },
+    {
       "label": "R5 the app NEVER asks its own domain for a hardware model (the owner’s 404)",
       "ok": true,
       "detail": "clean"
@@ -199,8 +204,8 @@
     },
     "cornice": {
       "ids": {
-        "a": "u_9zg2i8q",
-        "b": "u_lmscl5j",
+        "a": "u_a4bwh0k",
+        "b": "u_tqol05s",
         "x": [
           40,
           640
@@ -259,13 +264,13 @@
           "rise": 30,
           "top": 2320,
           "unitIds": [
-            "u_9zg2i8q",
-            "u_lmscl5j"
+            "u_a4bwh0k",
+            "u_tqol05s"
           ]
         },
         "member": {
           "role": "member",
-          "ownerId": "u_9zg2i8q"
+          "ownerId": "u_a4bwh0k"
         },
         "infills": [
           [
@@ -330,8 +335,8 @@
     },
     "dw": {
       "ids": {
-        "bud": "u_kp4m7ax",
-        "dw": "u_sssxcll"
+        "bud": "u_pu4338g",
+        "dw": "u_u7fqzh7"
       },
       "applied": {
         "toeKick": 50
@@ -520,6 +525,11 @@
         }
       },
       "other": "S"
+    },
+    "prefilledUi": {
+      "finish": "Onyx",
+      "system": "CLIP top BLUMOTION",
+      "variant": "S"
     },
     "console": {
       "lines": 0,

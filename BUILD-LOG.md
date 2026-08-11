@@ -6787,7 +6787,7 @@ niego.
 
 ## Dowody
 
-`verify/t22/` — `walk.json` (**29/31, 0 porażek**, 2 zablokowane przez politykę
+`verify/t22/` — `walk.json` (**30/32, 0 porażek**, 2 zablokowane przez politykę
 wyjścia sesji), `console.txt`, siedem zrzutów, `fingerprints-diff.txt` na
 **ZERO linii**, `probes.txt` (trzy sondy równoważności), `cnc-export-identity.md`,
 `bucket-live.md/.txt/.json`, `README.md`.

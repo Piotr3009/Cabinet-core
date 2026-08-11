@@ -14,7 +14,7 @@ node scripts/bucket-live.mjs              # R2
 
 ## The walk — `walk.json`
 
-**29 passed, 0 failed, 2 blocked by this environment**, on a real Chromium
+**30 passed, 0 failed, 2 blocked by this environment**, on a real Chromium
 driven over the DevTools protocol.
 
 * **R1** every click and every drag is `Input.dispatchMouseEvent`. The ban on
@@ -41,7 +41,7 @@ proxy's own answer.
 | `4a-bud-and-dw-one-plinth-line-at-50.png` | F4.6 — BUD + D/W panel on a run set to 50 mm legs, sharing one plinth line |
 | `4b-dw-dragged-along-the-run.png` | F4.4(b) — the D/W after a real pointer drag along the run |
 | `2a-company-defaults-and-hardware-health.png` | F2b.2 and F3 — the Company defaults screen (with the "needs an account" notice, the four preferences and the per-family boards) and the hardware health row under it |
-| `2b-new-project-prefilled-from-the-row.png` | F2b.3 — a project created with a company row present, in its own settings |
+| `2b-new-project-prefilled-from-the-row.png` | F2b.3 — a project created with a company row present: its own Settings screen showing Hinge finish **Onyx** and Runner variant **S**, neither of which was typed into it |
 | `99-the-room-at-the-end.png` | the room the walk finished in |
 
 ## CNC

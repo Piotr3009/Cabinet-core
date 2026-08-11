@@ -637,6 +637,30 @@ async function main() {
     await page.sleep(300);
     await page.click('[role="menuitem"]', 'Settings…');
     await page.sleep(900);
+    // Scroll the panel to the HARDWARE controls — the ones the row prefilled.
+    // A picture of a settings screen whose prefilled fields are below the fold
+    // proves nothing, and this claim is about those four controls.
+    const prefilledUi = await page.evaluate(`
+      const anchor = document.querySelector('[data-hinge-finish="1"]');
+      if (!anchor) return null;
+      anchor.scrollIntoView({ block: 'center' });
+      const pressed = (sel) => {
+        const on = [...document.querySelectorAll(sel)].find((n) => n.getAttribute('aria-pressed') === 'true');
+        return on ? on.textContent.trim() : null;
+      };
+      return {
+        finish: pressed('[data-hinge-finish-option]'),
+        system: pressed('[data-hinge-system-option]'),
+        variant: pressed('[data-runner-variant-option]'),
+      };
+    `);
+    measurements.prefilledUi = prefilledUi;
+    check('F2b.3 …and the prefilled answers are what the SETTINGS screen shows',
+      Boolean(prefilledUi)
+        && /onyx/i.test(prefilledUi.finish || '')
+        && (prefilledUi.variant || '').includes(prefill.other),
+      JSON.stringify(prefilledUi));
+    await page.sleep(400);
     await shot('2b-new-project-prefilled-from-the-row');
     await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
     await page.sleep(300);

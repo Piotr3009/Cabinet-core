@@ -199,6 +199,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // same way; test/single-socket.test.js recomputes it on every run, so the
     // number and the reasoning cannot drift apart.
     singleSocketBelow: 264.5,
+    // ─── TURN 25 (CLAUDE.md F2): ONE CENTRED JOINT ON A SHALLOW CABINET ─────
+    //
+    // From the owner's CORRECTED `panel_joints.lsp`, and it is his arithmetic
+    // rather than ours: a socket is 51 mm wide and a dog bone is 60, and both
+    // are set out 95 mm in from each end of the run. Two of them therefore
+    // collide on a narrow panel —
+    //
+    //     sockets    2 × 95 + 51 = 241     …below 241 the pockets meet
+    //     dog bones  2 × 95 + 60 = 250     …below 250 the reliefs meet
+    //
+    // — which is the same collision `singleSocketBelow` was derived for in
+    // turn 7, arrived at from the other end. The difference is what the answer
+    // is keyed on. `singleSocketBelow` asks about the RUN, one panel at a time;
+    // the owner asks about the CABINET, once, and every mating panel takes the
+    // same answer so the joints still line up. A side whose socket is centred
+    // and a top whose tab is at 95 is not a joint at all.
+    //
+    // ONE RESOLVED INSET PER UNIT (`engine/puzzle.js resolvedJointInset`):
+    // depth at or under `singleJointMaxDepth` ⇒ one joint on the panel's own
+    // centre line; above it ⇒ the pair at `tabCentresFromEnd`, exactly as
+    // before. 300 is the owner's number and it stands clear of both collisions
+    // with room to spare: a 300 mm carcass has a 282 mm run, which is 32 mm
+    // above the dog bones' own limit — the margin is deliberate, because a
+    // joint that only just fits is a joint that fails on a board cut 2 mm under.
+    //
+    // Same features, fewer of them. No new entity class, no new layer.
+    singleJointMaxDepth: 300,
     // ─── Turn 8 (F0 / BLOCKERS #37 / BACKLOG #47) ───
     // The same family of problem on the OTHER axis. `tabCentres()` puts three
     // tabs down the back edge of a side panel — 95 in from each end and one in

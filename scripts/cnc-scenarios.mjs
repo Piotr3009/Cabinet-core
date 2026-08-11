@@ -222,6 +222,20 @@ export function cases() {
         }],
       },
     });
+    // ─── TURN 25 (CLAUDE.md F2.3): THE SHALLOW PROBE ───────────────────────
+    //
+    // Every golden default is a DEEP cabinet — 400 mm at the shallowest, and
+    // the rest 558 or 578 — so the single centred joint cannot appear in any of
+    // them, which is exactly why F2's fingerprint delta on the defaults is
+    // zero. A rule nothing in the probe reaches is a rule nobody can see, so
+    // here is a 200 mm unit: sockets, ⌀7.5 holes and dog bones all on one
+    // centre line instead of two, on every part of the carcass at once. It
+    // shows in the diff as an ADDITION on named files.
+    out.push({ id: `${type}+shallow-200`, params: { ...base, depth: 200 } });
+    // …and the cabinet one millimetre the other side of the owner's threshold,
+    // which must still be the pair at 95. A boundary with only one side probed
+    // is a boundary nobody has checked.
+    out.push({ id: `${type}+shallow-301`, params: { ...base, depth: 301 } });
   }
   return out;
 }

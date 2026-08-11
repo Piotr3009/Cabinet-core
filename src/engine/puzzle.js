@@ -118,11 +118,56 @@ export function middleTabThreshold(pz, boardThickness) {
  * drawer heights stand on (turn 2, task 4): where the kits are silent, the
  * engine decides and says so, rather than pretending to have traced it.
  */
-export function socketCentres(length, pz) {
-  const e = pz.tabCentresFromEnd;
+export function socketCentres(length, pz, inset = undefined) {
+  // ─── TURN 25 (CLAUDE.md F2): THE UNIT'S OWN RESOLVED INSET ───────────────
+  // `inset` left out is the law above, unchanged, and is what every caller
+  // that sets out along an axis other than the DEPTH passes — the back edge's
+  // tabs, the back panel's rows across the width. `null` is the shallow
+  // cabinet's answer: one joint, on the panel's own centre line, whatever the
+  // run happens to measure. `resolvedJointInset()` below is the only thing
+  // that decides which, and it decides once per unit.
+  const e = inset === undefined ? pz.tabCentresFromEnd : inset;
+  if (e === null) return [length / 2];
   const threshold = Number(pz.singleSocketBelow) || 0;
   if (threshold > 0 && length < threshold) return [length / 2];
   return [e, length - e];
+}
+
+/**
+ * ONE INSET PER CABINET (turn 25, CLAUDE.md F2).
+ *
+ * The owner's corrected `panel_joints.lsp`: a socket is 51 mm wide, a dog bone
+ * is 60, both sit 95 in from each end — so two of them collide on a panel under
+ * 241 mm, and their reliefs under 250. His answer is not "make this panel
+ * different"; it is "a shallow CABINET has one joint, centred", asked once and
+ * given to every mating panel, because a side whose socket is on the centre
+ * line and a top whose tab is at 95 do not meet.
+ *
+ * @param {number} depth  the CABINET's depth, mm — not the panel's run
+ * @param {object} pz     profile.puzzle
+ * @returns {number|null} the inset from each end, or null for one centred joint
+ */
+export function resolvedJointInset(depth, pz) {
+  const max = Number(pz?.singleJointMaxDepth) || 0;
+  const d = Number(depth) || 0;
+  if (max > 0 && d > 0 && d <= max) return null;
+  return pz.tabCentresFromEnd;
+}
+
+/**
+ * The two collisions the owner's numbers describe, recomputed from the geometry
+ * they come from — the twin of `singleSocketThreshold()` and
+ * `middleTabThreshold()`, exported for the same reason: the 300 in the profile
+ * can be CHECKED against what it is protecting rather than trusted.
+ *
+ * @returns {{socket:number, dogbone:number}} the run lengths below which each
+ *   pair meets, in mm
+ */
+export function jointCollisionLengths(pz) {
+  return {
+    socket: pz.tabCentresFromEnd * 2 + pz.socketHalfWidth * 2,
+    dogbone: pz.tabCentresFromEnd * 2 + pz.dogboneHalfHeight * 2,
+  };
 }
 
 /**
@@ -188,7 +233,9 @@ function verticalSocket(centreY, edgeX, dir, G, pz, out) {
  * screwed in from the inside), so it is a flag here rather than a second copy
  * of 120 lines of tab arithmetic.
  */
-export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
+export function sidePanelGeometry({
+  w, h, G, side, puzzle: pz, edges, jointInset = undefined,
+}) {
   const e = {
     backTabs: true, topSocket: true, bottomSocket: true,
     topScrews: true, bottomScrews: true, backTabsBelow: Infinity, ...(edges || {}),
@@ -228,8 +275,10 @@ export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
     }
   }
 
-  // Sockets on the top and bottom edges (they receive the TOP/BOTTOM tabs)
-  for (const cx of socketCentres(w, pz)) {
+  // Sockets on the top and bottom edges (they receive the TOP/BOTTOM tabs).
+  // This run IS the cabinet's depth, so it takes the unit's resolved inset
+  // (turn 25, CLAUDE.md F2) — and the TOP's mating tabs take the same one.
+  for (const cx of socketCentres(w, pz, jointInset)) {
     if (e.topSocket) horizontalSocket(cx, h, +1, G, pz, out);
     if (e.bottomSocket) horizontalSocket(cx, 0, -1, G, pz, out);
   }
@@ -274,10 +323,15 @@ export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
  * two entities per cabinet and nothing else. `verify/t25/edge-guard.md` carries
  * the post-mortem and `verify/t25/cnc-export-identity.md` names the delta.
  */
-export function topPanelGeometry({ drawnW, drawnH, G, puzzle: pz, backTabs = true }) {
+export function topPanelGeometry({
+  drawnW, drawnH, G, puzzle: pz, backTabs = true, jointInset = undefined,
+}) {
   const out = { outline: [], pockets: [], holes: [] };
-  const alongDepth = socketCentres(drawnW, pz);   // t1x, t2x
-  const alongWidth = socketCentres(drawnH, pz);   // t1y, t2y
+  // The long edges run along the cabinet's DEPTH and take the unit's resolved
+  // inset (turn 25, CLAUDE.md F2); the back edge runs across its WIDTH and is
+  // set out by the run, exactly as it always was.
+  const alongDepth = socketCentres(drawnW, pz, jointInset);   // t1x, t2x
+  const alongWidth = socketCentres(drawnH, pz);               // t1y, t2y
 
   // Anticlockwise, once round, starting at the bottom-left corner.
   out.outline.push([0, 0]);

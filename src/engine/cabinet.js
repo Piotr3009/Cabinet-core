@@ -29,7 +29,7 @@ import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  chamferedRectGeometry, tabCentres,
+  chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
 import { resolveRunnerVariant, runnerPairSpec, syncRodFor } from './runners.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
@@ -922,6 +922,15 @@ export function computeCabinet(params, profileOverride) {
   const topH = internalDepth;
   const backW = W;
   const backH = H;
+  // ─── TURN 25 (CLAUDE.md F2): ONE RESOLVED INSET, FOR THE WHOLE UNIT ──────
+  //
+  // Resolved HERE and once, off the cabinet's own depth, and handed to every
+  // panel that sets a joint out along that axis — the two sides' top and bottom
+  // sockets and the top/bottom panels' mating tabs and dog bones. That is what
+  // makes the joints still line up: a side whose socket is on the centre line
+  // and a top whose tab is at 95 do not meet, and the only way to be sure they
+  // cannot happen is for there to be nowhere else the question is asked.
+  const jointInset = resolvedJointInset(D, pz);
   // ─── TURN 24 (CLAUDE.md F6): A SHELF'S WIDTH FOLLOWS ITS TYPE ────────────
   //
   // The owner's rule, now law: a FIX shelf is the FULL CLEAR LIGHT — wall to
@@ -1457,17 +1466,17 @@ export function computeCabinet(params, profileOverride) {
     id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.left, edgeLen: metres(sideH),
     box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges }) },
+    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges, jointInset }) },
   }));
   if (!applianceFront) panels.push(panel({
     id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.right, edgeLen: metres(sideH),
     box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges }) },
+    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges, jointInset }) },
   }));
   const topGeom = (backTabs = true) => ({
     rotated: true, drawn_w: topH, drawn_h: topW,
-    ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs }),
+    ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs, jointInset }),
   });
   if (hasTopPanel && !applianceFront) {
     panels.push(panel({
@@ -3565,6 +3574,12 @@ export function computeCabinet(params, profileOverride) {
     doors: doorCount,
     internal_width: internalWidth,
     internal_depth: internalDepth,
+    // ─── TURN 25 (CLAUDE.md F2): THE UNIT'S RESOLVED JOINT INSET ───────────
+    // 95, or `null` where a shallow cabinet takes one centred joint. Published
+    // because it is a fact about the CABINET rather than about any one panel —
+    // the drawing, the part detail and a test all ask the same question, and a
+    // second answer computed anywhere else is the drift F2 exists to stop.
+    joint_inset: jointInset,
     ...(doorCount === 2 ? { door_width: frontW } : {}),
     ...(cfg.doorExtend ? { door_extend_mm: cfg.doorExtend } : (type.doorExtend ? { door_extend_mm: 0 } : {})),
     ...(hasDrawers ? {

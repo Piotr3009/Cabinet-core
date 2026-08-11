@@ -13,6 +13,7 @@ import RenderModal from '../components/RenderModal.jsx';
 import DrawingModal from '../components/DrawingModal.jsx';
 import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
+import HandEditsModal from '../components/HandEditsModal.jsx';
 import ElementModal from '../components/ElementModal.jsx';
 import HingeModal from '../components/HingeModal.jsx';
 import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
@@ -324,6 +325,12 @@ export default function ConfiguratorPage() {
             palette. It takes a selection, so the same window serves the
             right-click menu over six cabinets (F5.3). */}
         {modal === 'unit-finish' && <UnitFinishModal />}
+        {/* ─── Turn 23 (CLAUDE.md F9.3) ───
+            "This part carries manual edits — recompute drops them, continue?"
+            It is not a modal in the `modal` slot: it is raised by the STATE of
+            the project rather than by anybody opening it, and it must be able
+            to appear over whatever window the recompute happened in. */}
+        <HandEditsModal />
         <ContextMenu />
         <Toast />
       </div>

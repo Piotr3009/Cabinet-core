@@ -15,6 +15,9 @@ import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { elementLabel } from '../engine/elements.js';
 import { partDetailDrawing } from '../engine/drawings/partDetail.js';
 import { drawingLayer } from '../engine/drawings/layers.js';
+import { CNC_LAYERS } from '../engine/cnc/layers.js';
+import { editCount, partFeatures } from '../engine/partEdits.js';
+import NumberField from './NumberField.jsx';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import {
   dimensionSet, dimensionStyle, featureDimensionRows,
@@ -72,11 +75,22 @@ export default function PartDetailModal() {
   const closeModal = useUiStore((s) => s.closeModal);
   const popModal = useUiStore((s) => s.popModal);
   const canBack = useUiStore((s) => s.modalStack.length > 0);
+  const notify = useUiStore((s) => s.notify);
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
   const storedDesign = useProjectStore((s) => s.project.design);
+  const addPartEdit = useProjectStore((s) => s.addPartEdit);
+  const clearPartEdits = useProjectStore((s) => s.clearPartEdits);
+  const undoPartEdit = useProjectStore((s) => s.undoPartEdit);
   const profile = useCabinetProfileStore((s) => s.profile);
   const [hovered, setHovered] = useState(null);
+  // ─── TURN 23 (CLAUDE.md F9.1): THE PENCIL ────────────────────────────────
+  const [picked, setPicked] = useState(null);   // the feature under the Delete tool
+  const [tool, setTool] = useState(null);       // 'drill' | 'line' | 'dowels' | null
+  const [form, setForm] = useState(() => ({
+    layer: 'SCREWS_3MM', d: 5, depth: 12, x: 0, y: 0, x2: 0, y2: 0, pitch: 32,
+  }));
+  const [next, setNext] = useState(1);          // which end a click sets, for a line
 
   const unit = units.find((u) => u.id === args?.unitId) || null;
   const result = unit ? unitResult(unit.id) : null;
@@ -86,6 +100,61 @@ export default function PartDetailModal() {
     () => (panel ? partDetailDrawing(panel, { drills: result?.drills || [], profile }) : null),
     [panel, result, profile],
   );
+  // The stable ids of everything on this part, in the SAME order the drawing
+  // lists its machinings — so the id the SVG hovers and the id an override
+  // names are two views of one walk (engine/partEdits.js).
+  const features = useMemo(
+    () => (panel ? partFeatures(panel, result?.drills || []) : []),
+    [panel, result],
+  );
+  const edits = unit?.params?.part_edits?.[panel?.id] || null;
+  const changes = editCount(edits);
+
+  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+
+  /** A click on the drawing fills the tool's point — F9.1's "clicked or typed". */
+  const pickPoint = ({ x, y }) => {
+    if (!tool) return;
+    if (tool === 'drill') { set({ x: Math.round(x), y: Math.round(y) }); return; }
+    if (next === 1) { set({ x: Math.round(x), y: Math.round(y) }); setNext(2); return; }
+    set({ x2: Math.round(x), y2: Math.round(y) });
+    setNext(1);
+  };
+
+  const commit = () => {
+    if (!tool || !unit || !panel) return;
+    const op = tool === 'drill'
+      ? {
+        op: 'drill', layer: form.layer, x: Number(form.x), y: Number(form.y), d: Number(form.d), depth: Number(form.depth),
+      }
+      : (tool === 'line'
+        ? {
+          op: 'line', layer: form.layer, from: [Number(form.x), Number(form.y)], to: [Number(form.x2), Number(form.y2)],
+        }
+        : {
+          op: 'dowels',
+          layer: form.layer,
+          from: [Number(form.x), Number(form.y)],
+          to: [Number(form.x2), Number(form.y2)],
+          pitch: Number(form.pitch),
+          d: Number(form.d),
+          depth: Number(form.depth),
+        });
+    addPartEdit(unit.id, panel.id, op);
+    notify('Added by hand — this print only.', 'ok');
+  };
+
+  const deletePicked = () => {
+    if (!picked || !unit || !panel) return;
+    // The DRAWING's id and the OVERRIDE's id are the same walk in the same
+    // order, so the nth machining is the nth feature.
+    const at = drawing.machinings.findIndex((m) => m.id === picked);
+    const feature = features[at];
+    if (!feature) return;
+    addPartEdit(unit.id, panel.id, { op: 'hide', feature: feature.fid });
+    setPicked(null);
+    notify('Removed from this print.', 'ok');
+  };
 
   if (!unit || !panel || !drawing) return null;
 
@@ -94,7 +163,24 @@ export default function PartDetailModal() {
   return (
     <Modal
       anchor={args?.anchor || null}
-      title={`${unit.params.unit_num} · ${elementLabel(panel) || panel.part} — ${panel.id}`}
+      title={(
+        <span className="flex items-center gap-2">
+          <span>{`${unit.params.unit_num} · ${elementLabel(panel) || panel.part} — ${panel.id}`}</span>
+          {/* ─── TURN 23 (CLAUDE.md F9.3): THE BADGE ─────────────────────────
+              "The edited part wears a small badge (edited by hand · 3
+              changes)." Here and on the sheet, so a part that has been drawn
+              on says so wherever it is looked at. */}
+          {changes > 0 && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded border border-gold text-gold"
+              data-hand-edited={String(changes)}
+              title="This print carries manual edits. The next cabinet of this kit is stock."
+            >
+              ✎ edited by hand · {changes} change{changes === 1 ? '' : 's'}
+            </span>
+          )}
+        </span>
+      )}
       onClose={closeModal}
       onBack={canBack ? popModal : null}
       backLabel="cabinet"
@@ -134,7 +220,15 @@ export default function PartDetailModal() {
             className="flex-1 min-h-[240px] rounded border border-shell-600 bg-[#131313] overflow-hidden"
             data-part-drawing="1"
           >
-            <PartDrawing drawing={drawing} hovered={hovered} onHover={setHovered} profile={profile} />
+            <PartDrawing
+              drawing={drawing}
+              hovered={hovered}
+              onHover={setHovered}
+              profile={profile}
+              picked={picked}
+              onPickFeature={(id) => setPicked((was) => (was === id ? null : id))}
+              onPickPoint={pickPoint}
+            />
           </div>
 
           <div className="flex items-start gap-3">
@@ -142,7 +236,17 @@ export default function PartDetailModal() {
               <div className="text-ink-100">
                 {formatMmPair(panel.w, panel.h, ' × ')} · {formatMm(panel.thickness)} mm
               </div>
-              {drawing.size.rotated && <div>nested turned on the sheet</div>}
+              {/* ─── TURN 23 (CLAUDE.md F9.4): THE ORIENTATION ──────────────
+                  "The detail shows the part exactly as the CNC sheet lays it,
+                  along the grain, no rotation for editing." It does, and it
+                  always did: this drawing is `panel.cnc.drawn_w × drawn_h`,
+                  which is the very rectangle `cnc/layout.js` places on the
+                  sheet. What was missing was SAYING so — the old note read
+                  "nested turned on the sheet", which invites a joiner to
+                  wonder which way round he is looking. */}
+              <div data-part-orientation={drawing.size.rotated ? 'turned' : 'upright'}>
+                drawn as the sheet lays it{drawing.size.rotated ? ' — turned, along the grain' : ''}
+              </div>
               {panel.meta?.material_label ? <div>{panel.meta.material_label}</div> : null}
             </div>
 
@@ -170,6 +274,119 @@ export default function PartDetailModal() {
               ))}
             </ul>
           </div>
+
+          {/* ─── TURN 23 (CLAUDE.md F9.1): THE PENCIL, ON THIS PRINT ────────
+              The owner's four tools, and every one of them writes an OVERRIDE
+              on this project's own part — never the engine, never the kit, and
+              never the next cabinet. The layer is picked from the EXISTING
+              list (`cnc/layers.js`): no custom layers this turn, parked by the
+              owner's word with three questions on file. */}
+          <div className="border border-shell-600 rounded p-2 space-y-2" data-part-tools="1">
+            <div className="cc-row">
+              <span className="text-xs uppercase tracking-wide text-gold flex-1">By hand · this print only</span>
+              {changes > 0 && (
+                <>
+                  <button
+                    type="button" className="cc-btn-ghost"
+                    data-part-undo="1"
+                    title="Undo the last change on this part"
+                    onClick={() => undoPartEdit(unit.id, panel.id)}
+                  >
+                    Undo
+                  </button>
+                  <button
+                    type="button" className="cc-btn px-2"
+                    data-back-to-computed="1"
+                    title="Drop every manual change on this part and go back to what the engine computed"
+                    onClick={() => {
+                      clearPartEdits(unit.id, panel.id);
+                      setPicked(null);
+                      notify('Back to computed — this part is stock again.', 'ok');
+                    }}
+                  >
+                    Back to computed
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="cc-row">
+              <button
+                type="button"
+                className="cc-btn px-2"
+                data-delete-feature="1"
+                disabled={!picked}
+                title={picked
+                  ? 'Take this feature off this print'
+                  : 'Click a hole, a pocket or a mark in the drawing first'}
+                onClick={deletePicked}
+              >
+                Delete feature
+              </button>
+              {[['drill', 'Add drill'], ['line', 'Add line'], ['dowels', 'Add dowel line']].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`cc-btn px-2 ${tool === id ? 'border-gold text-gold' : ''}`}
+                  data-part-tool={id}
+                  onClick={() => { setTool((t) => (t === id ? null : id)); setNext(1); }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {tool && (
+              <div className="space-y-1" data-part-tool-form={tool}>
+                <div className="cc-row">
+                  <span className="text-[11px] text-ink-400 w-12">Layer</span>
+                  <select
+                    className="cc-input flex-1"
+                    data-part-layer="1"
+                    value={form.layer}
+                    onChange={(e) => set({ layer: e.target.value })}
+                  >
+                    {CNC_LAYERS.map((l) => (
+                      <option key={l.name} value={l.name}>{l.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="cc-row">
+                  <span className="text-[11px] text-ink-400 w-12">{tool === 'drill' ? 'At' : 'From'}</span>
+                  <NumberField className="cc-input w-20 text-right" data-part-x="1" value={form.x} onCommit={(v) => set({ x: v })} />
+                  <NumberField className="cc-input w-20 text-right" data-part-y="1" value={form.y} onCommit={(v) => set({ y: v })} />
+                  {tool !== 'drill' && (
+                    <>
+                      <span className="text-[11px] text-ink-400">to</span>
+                      <NumberField className="cc-input w-20 text-right" data-part-x2="1" value={form.x2} onCommit={(v) => set({ x2: v })} />
+                      <NumberField className="cc-input w-20 text-right" data-part-y2="1" value={form.y2} onCommit={(v) => set({ y2: v })} />
+                    </>
+                  )}
+                </div>
+                {tool !== 'line' && (
+                  <div className="cc-row">
+                    <span className="text-[11px] text-ink-400 w-12">⌀ / deep</span>
+                    <NumberField className="cc-input w-20 text-right" data-part-d="1" value={form.d} onCommit={(v) => set({ d: v })} />
+                    <NumberField className="cc-input w-20 text-right" data-part-depth="1" value={form.depth} onCommit={(v) => set({ depth: v })} />
+                    {tool === 'dowels' && (
+                      <>
+                        <span className="text-[11px] text-ink-400">pitch</span>
+                        <NumberField className="cc-input w-20 text-right" data-part-pitch="1" value={form.pitch} onCommit={(v) => set({ pitch: v })} />
+                      </>
+                    )}
+                  </div>
+                )}
+                <div className="cc-row">
+                  <span className="text-[11px] text-ink-400 flex-1">
+                    {tool === 'drill'
+                      ? 'Click the drawing to place it, or type the position.'
+                      : `Click the drawing for ${next === 1 ? 'the START' : 'the END'}, or type both.`}
+                  </span>
+                  <button type="button" className="cc-btn-gold" data-part-add="1" onClick={commit}>Add</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Modal>
@@ -193,7 +410,7 @@ export default function PartDetailModal() {
  * entities, in the same frame, seen through a different window.
  */
 function PartDrawing({
-  drawing, hovered, onHover, profile,
+  drawing, hovered, onHover, profile, picked = null, onPickFeature = null, onPickPoint = null,
 }) {
   const { size } = drawing;
   const svgRef = useRef(null);
@@ -268,6 +485,16 @@ function PartDrawing({
         preserveAspectRatio="xMidYMid meet"
         onDoubleClick={view.fit}
         {...view.handlers}
+        // ─── TURN 23 (CLAUDE.md F9.1): "position clicked or typed" ──────────
+        // A click on the drawing hands the tools a point in the PART's own
+        // frame. It is a click and not a drag: turn 20's capture law means the
+        // pan never swallowed it, and `lastGesturePanned` is what tells the two
+        // apart after the fact — releasing a pan must not drill a hole.
+        onClick={(e) => {
+          if (!onPickPoint || view.lastGesturePanned()) return;
+          const at = view.pointerToWorld(e.clientX, e.clientY);
+          if (at) onPickPoint({ x: at.x, y: -at.y });
+        }}
       >
         <g transform="scale(1 -1)">
         {drawing.outline.length >= 2 && (
@@ -290,8 +517,14 @@ function PartDrawing({
             opacity: hovered && !lit(m.id) ? 0.35 : 1,
             onPointerEnter: () => onHover(m.id),
             onPointerLeave: () => onHover(null),
+            // Turn 23 (F9.1): clicking a feature SELECTS it, which is what the
+            // Delete tool acts on. It stops there — nothing is removed by a
+            // click, because a print you can rub out by touching it is not a
+            // print anybody would open twice.
+            onClick: onPickFeature ? (e) => { e.stopPropagation(); onPickFeature(m.id); } : undefined,
             style: { cursor: 'pointer' },
             'data-machining': m.id,
+            ...(picked === m.id ? { 'data-picked': '1', strokeWidth: 3.4, stroke: '#e0b64a' } : {}),
           };
           if (m.kind === 'pocket') {
             return <rect key={m.id} x={m.x} y={m.y} width={m.w} height={m.h} {...common} />;

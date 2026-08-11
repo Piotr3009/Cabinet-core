@@ -3,6 +3,9 @@ import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
   minDrawerFrontHeight, SHELF_VARIANTS,
 } from '../engine/cabinet.js';
+import {
+  applyPartEdits, partSignature, withPartEdit, withoutLastPartEdit, withoutPartEdits,
+} from '../engine/partEdits.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
 import { doorBays } from '../engine/doors.js';
@@ -3474,15 +3477,88 @@ export const useProjectStore = create((set, get) => ({
 
   // ── derived ──────────────────────────────────────────────────────────────
   /** Live engine output for one unit — recomputed on every read (SPEC 4.11). */
+  // ─── TURN 23 (CLAUDE.md F9.2): THE ONE PLACE THE PENCIL IS APPLIED ────────
+  //
+  // "The ENGINE stays pure and ignorant: overrides apply in a thin step after
+  // computeCabinet(), in ONE function both the 3-D, the sheet and the DXF
+  // EXPORT consume."
+  //
+  // This is that place, and it is the only one. Every surface in the app reads
+  // a unit through `unitResult` or `allResults` — the room, the cabinet editor,
+  // the part detail, the CNC sheet, the BOM and the export — so there is no
+  // second path on which a hidden hole could come back. `computeCabinet` above
+  // is handed nothing: the LISP is untouched, the kits are untouched, and the
+  // next cabinet of the same kit is stock by construction.
   unitResult: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
-    return computeCabinet(paramsForEngine(unit, get().project.design), getCabinetProfile());
+    return applyPartEdits(
+      computeCabinet(paramsForEngine(unit, get().project.design), getCabinetProfile()),
+      unit.params?.part_edits || null,
+    );
   },
 
   allResults: () => get().units.map((u) => ({
-    unit: u, result: computeCabinet(paramsForEngine(u, get().project.design), getCabinetProfile()),
+    unit: u,
+    result: applyPartEdits(
+      computeCabinet(paramsForEngine(u, get().project.design), getCabinetProfile()),
+      u.params?.part_edits || null,
+    ),
   })),
+
+  // ─── The tools (F9.1) ─────────────────────────────────────────────────────
+  //
+  // Three actions, and every one of them is `withPartEdit` and friends — the
+  // pure arithmetic in `engine/partEdits.js` — over one unit's params. They go
+  // in `params.part_edits` and not on the unit object because params are what
+  // this app saves, loads, caches and undoes: a pencil mark that did not
+  // survive a reload would be a worse feature than none.
+
+  /** Add one op to one part. `signature` pins it to the board it was drawn on. */
+  addPartEdit: (unitId, panelId, op) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const result = get().unitResult(unitId);
+    const panel = result?.panels.find((p) => p.id === panelId);
+    if (!panel) return null;
+    const next = withPartEdit(unit.params.part_edits || {}, panelId, op, partSignature(panel));
+    get().updateUnitParams(unitId, { part_edits: next });
+    return next[panelId];
+  },
+
+  /** "Back to computed" — this part's edits, all of them, gone (F9.3). */
+  clearPartEdits: (unitId, panelId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit?.params?.part_edits) return false;
+    const next = withoutPartEdits(unit.params.part_edits, panelId);
+    get().updateUnitParams(unitId, { part_edits: next });
+    return true;
+  },
+
+  /** One step back, for a hand that has just added the wrong hole. */
+  undoPartEdit: (unitId, panelId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit?.params?.part_edits) return false;
+    get().updateUnitParams(unitId, {
+      part_edits: withoutLastPartEdit(unit.params.part_edits, panelId),
+    });
+    return true;
+  },
+
+  /** What this part carries by hand, or null. */
+  partEditsOf: (unitId, panelId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    return unit?.params?.part_edits?.[panelId] || null;
+  },
+
+  /**
+   * Every part in the project whose hand edits no longer fit the board they
+   * were drawn on (F9.3). The app ASKS about these; nothing here decides.
+   */
+  staleHandEdits: () => get().units.flatMap((u) => {
+    const rows = get().unitResult(u.id)?.handEdits?.stale || [];
+    return rows.map((row) => ({ ...row, unitId: u.id, unitNum: u.params.unit_num }));
+  }),
 
   markSaved: (project) => set((s) => ({ project: project || s.project, dirty: false })),
 }));

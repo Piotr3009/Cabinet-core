@@ -161,9 +161,15 @@ export function useSheetView({
 
   const pan = useRef(null);
   const [panning, setPanning] = useState(false);
+  // Did the LAST completed gesture turn into a pan? A surface that also takes
+  // clicks (turn 23's F9 tools pick a point on the drawing) has to be able to
+  // tell "I dragged the sheet" from "I clicked at 300, 40" — and by the time
+  // `click` fires the pan has already ended, so it cannot ask `panning`.
+  const panned = useRef(false);
 
   const onPointerDown = useCallback((e) => {
     if (e.button !== 0 && e.button !== 1) return;
+    panned.current = false;
     // ARMED, not panning: nothing is captured and nothing moves yet.
     pan.current = {
       x: e.clientX, y: e.clientY, from: { x: e.clientX, y: e.clientY }, panning: false,
@@ -176,6 +182,7 @@ export function useSheetView({
       const moved = Math.hypot(e.clientX - pan.current.from.x, e.clientY - pan.current.from.y);
       if (moved < panThreshold) return;
       pan.current.panning = true;
+      panned.current = true;
       setPanning(true);
       onPanStart?.();
       e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -201,6 +208,8 @@ export function useSheetView({
     zoomBy,
     pointerToWorld,
     panning,
+    /** Was the gesture that has just finished a PAN rather than a click? */
+    lastGesturePanned: () => panned.current,
     setBox,
     handlers: {
       onPointerDown, onPointerMove, onPointerUp: endPan, onPointerLeave: endPan, onPointerCancel: endPan,

@@ -74,7 +74,7 @@ test('F7.1 — ONE implementation: the sheet and the detail share the grammar', 
   }
   // …and turn 20's capture-on-MOVEMENT law is stated once, in it.
   const hook = src('lib/sheetView.js');
-  assert.match(hook, /pan\.current\.panning = true;\s*\n\s*setPanning\(true\);[\s\S]*?setPointerCapture/);
+  assert.match(hook, /pan\.current\.panning = true;[\s\S]{0,120}?setPointerCapture/);
   assert.match(hook, /CAPTURE LAW/);
 });
 

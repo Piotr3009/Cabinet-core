@@ -329,6 +329,10 @@ export default function CncView() {
                   />
                   {b.layout.places.map((place) => (
                     <Part
+                      // Turn 23 (F9.3): how many hand changes this part
+                      // carries, straight off the result the sheet is drawn
+                      // from — one thin step after the engine, one answer.
+                      handEdits={b.result.handEdits?.byPanel?.[place.panel.id]?.count || 0}
                       key={place.panel.id}
                       place={place}
                       unitNum={b.unit.params.unit_num}
@@ -464,7 +468,7 @@ function Caption({
 
 function Part({
   place, unitNum, drills, outlineLayer, annotation, profile, mmPerPx, visible,
-  lit = false, onOpenInTree = null, onRollover = null, rollover = null,
+  lit = false, onOpenInTree = null, onRollover = null, rollover = null, handEdits = 0,
 }) {
   const { panel } = place;
   const cnc = panel.cnc || {};
@@ -548,9 +552,29 @@ function Part({
     // the part being lit.
     <g
       data-cnc-part={panel.id}
+      data-hand-edited={handEdits ? String(handEdits) : undefined}
       onDoubleClick={onOpenInTree || undefined}
       style={onOpenInTree ? { cursor: 'pointer' } : undefined}
     >
+      {/* ─── TURN 23 (CLAUDE.md F9.3): THE BADGE, ON THE SHEET ──────────────
+          "The edited part wears a small badge in the detail and on the sheet."
+          A part somebody has drawn on by hand is not the part the kit cuts, and
+          the one place that must never be a surprise is the sheet a joiner
+          takes to the machine. Gold, like every "you did this" signal in the
+          app, and drawn in SHEET millimetres so it is the same size at every
+          zoom — the turn-16 lettering rule. */}
+      {handEdits > 0 && (
+        <text
+          x={toSheet(place, box.w / 2, box.h)[0]}
+          y={toSheet(place, box.w / 2, box.h)[1] - annotation.blockLabelMm * 0.4}
+          fill="#e0b64a"
+          fontSize={annotation.blockLabelMm}
+          textAnchor="middle"
+          style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+        >
+          {`✎ ${handEdits}`}
+        </text>
+      )}
       {visible(oLayer) && cnc.outline?.length >= 2 && (
         <polygon
           points={sheetPolygon(place, cnc.outline)}

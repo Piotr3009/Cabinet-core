@@ -1,0 +1,147 @@
+{
+ "turn": 23,
+ "url": "http://127.0.0.1:4173/",
+ "showroom": "http://127.0.0.1:4174",
+ "rules": {
+  "R1": "every gesture is CDP Input; the guard at the top of this file enforces it",
+  "R4": "hardware urls and counts read from window.__cc.hardware",
+  "R5": "the console is captured for the whole walk",
+  "R6": "any uncaught error or React error-boundary report FAILS the step it appeared in",
+  "R7": "no data-* on R3F objects — asserted in test/turn23-f2-f4-hardware.test.js",
+  "R8": "GLB-dependent steps run against the synthetic silent showroom"
+ },
+ "totals": {
+  "passed": 24,
+  "failed": 0,
+  "skipped": 1
+ },
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "R4/R8 — the mounted hinge is the GLB, over the app's OWN url",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb"
+  },
+  {
+   "label": "R4/R8 — …and so is the plate",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb"
+  },
+  {
+   "label": "F2.4 — the hinge BODY hangs off the DOOR",
+   "ok": true,
+   "detail": "6 rows, parent door"
+  },
+  {
+   "label": "F2.4 — …and the PLATE stays on the carcass",
+   "ok": true,
+   "detail": "6 rows, parent carcass"
+  },
+  {
+   "label": "F2.1 — opening the door MOVES the hinge bodies and leaves the plates",
+   "ok": true,
+   "detail": "6 travelled, 6 stayed"
+  },
+  {
+   "label": "F4.4 — the mounted models wear the project's finish",
+   "ok": true,
+   "detail": "[\"nickel\"] → [\"onyx\"]"
+  },
+  {
+   "label": "F1.1 — the detail is PUSHED over the editor, not instead of it",
+   "ok": true,
+   "detail": "{\"modal\":\"part-detail\",\"depth\":1,\"panelId\":\"BUR\"}"
+  },
+  {
+   "label": "F1.4 — ← Back returns to the SAME cabinet view",
+   "ok": true,
+   "detail": "{\"modal\":\"cabinet\",\"depth\":0,\"unitId\":\"u_coon15h\"}"
+  },
+  {
+   "label": "F1.2 — Escape is BACK ONE LEVEL, not close-everything",
+   "ok": true,
+   "detail": "{\"modal\":\"cabinet\",\"depth\":0}"
+  },
+  {
+   "label": "F1.2 — Done closes the WHOLE editor",
+   "ok": true,
+   "detail": "null"
+  },
+  {
+   "label": "F7.1 — the wheel zooms the detail",
+   "ok": true,
+   "detail": "-1506.2092715231788 -2537.4 3612.4185430463576 2924.7999999999997 → -489.5107190236844 -1714.2285178154225 1579.0214380473687 1278.4570356308454"
+  },
+  {
+   "label": "F7.1 — ⌂ fits it back",
+   "ok": true,
+   "detail": "-1506.2092715231788 -2537.4 3612.4185430463576 2924.7999999999997"
+  },
+  {
+   "label": "F8.1 — hovering a feature draws dimension ARROWS, not a caption",
+   "ok": true,
+   "detail": "3 dimensions · note \"Screws ⌀3 · ⌀3 at 9.5, 2100\""
+  },
+  {
+   "label": "F9.1 — a real click SELECTS the feature under it",
+   "ok": true,
+   "detail": "1 selected"
+  },
+  {
+   "label": "F9.1 — …and Delete takes it off this print",
+   "ok": true,
+   "detail": "1 change"
+  },
+  {
+   "label": "F9.3 — the part wears its badge",
+   "ok": true,
+   "detail": "2 changes"
+  },
+  {
+   "label": "F9.6 — the EXPORT carries both changes",
+   "ok": true,
+   "detail": "circles 34 → 34 (one removed, one added), ⌀8 present: true"
+  },
+  {
+   "label": "F9.3 — \"Back to computed\" restores the part exactly",
+   "ok": true,
+   "detail": "6628 vs 6628 bytes"
+  },
+  {
+   "label": "F8.2 — hovering a partition draws the clear bays",
+   "ok": true,
+   "detail": "1 dimension groups"
+  },
+  {
+   "label": "F10.1 — the panel shows the CLEAR BAYS",
+   "ok": true,
+   "detail": "bays 382 · 382 · 564"
+  },
+  {
+   "label": "F5 — the partition carries no biscuit at all",
+   "ok": true,
+   "detail": "{\"backScrews\":14,\"biscuits\":0,\"marks\":0,\"vparts\":2}"
+  },
+  {
+   "label": "F6 — the back holds every partition",
+   "ok": true,
+   "detail": "14 screws for 2 partitions"
+  },
+  {
+   "label": "R5 + R6 — the console is clean across the whole walk",
+   "ok": true,
+   "detail": "no errors, no React exceptions"
+  }
+ ],
+ "errors": []
+}

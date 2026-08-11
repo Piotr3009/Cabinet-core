@@ -515,6 +515,25 @@ function PartDrawing({
             strokeWidth: lit(m.id) ? 3 : 1.2,
             vectorEffect: 'non-scaling-stroke',
             opacity: hovered && !lit(m.id) ? 0.35 : 1,
+            // The drawn symbol carries the LOOK; the grace shape below carries
+            // the POINTER, so a feature is never both invisible and clickable.
+            pointerEvents: 'none',
+            'data-machining': m.id,
+            ...(picked === m.id ? { 'data-picked': '1', strokeWidth: 3.4, stroke: '#e0b64a' } : {}),
+          };
+          // ─── TURN 23 (F8.1 / F9.1): THE HIT ZONE SURVIVES THE ZOOM ────────
+          // The sheet learnt this in turn 20 (F7.4, `hoverGracePx`) and the
+          // detail needs it for the same reason: a ⌀3 hole drawn `fill: none`
+          // is a HAIRLINE, and with the whole part in the window its stroke is
+          // under a pixel wide. Hovering it is then a matter of luck, and
+          // clicking it to delete it is worse than luck. So an invisible shape
+          // sits over every feature at no less than the profile's grace in
+          // SCREEN pixels, and it is the one thing the pointer talks to.
+          const grace = (profile.cnc.annotation.hoverGracePx || 8) * view.mmPerPx;
+          const hit = {
+            fill: 'transparent',
+            stroke: 'none',
+            style: { cursor: 'pointer' },
             onPointerEnter: () => onHover(m.id),
             onPointerLeave: () => onHover(null),
             // Turn 23 (F9.1): clicking a feature SELECTS it, which is what the
@@ -522,22 +541,41 @@ function PartDrawing({
             // click, because a print you can rub out by touching it is not a
             // print anybody would open twice.
             onClick: onPickFeature ? (e) => { e.stopPropagation(); onPickFeature(m.id); } : undefined,
-            style: { cursor: 'pointer' },
-            'data-machining': m.id,
-            ...(picked === m.id ? { 'data-picked': '1', strokeWidth: 3.4, stroke: '#e0b64a' } : {}),
           };
           if (m.kind === 'pocket') {
-            return <rect key={m.id} x={m.x} y={m.y} width={m.w} height={m.h} {...common} />;
+            return (
+              <g key={m.id}>
+                <rect x={m.x} y={m.y} width={m.w} height={m.h} {...common} />
+                <rect
+                  x={Math.min(m.x, m.x + m.w / 2 - grace)}
+                  y={Math.min(m.y, m.y + m.h / 2 - grace)}
+                  width={Math.max(m.w, grace * 2)}
+                  height={Math.max(m.h, grace * 2)}
+                  {...hit}
+                />
+              </g>
+            );
           }
           if (m.kind === 'mark') {
             return (
-              <line
-                key={m.id} x1={m.from[0]} y1={m.from[1]} x2={m.to[0]} y2={m.to[1]}
-                strokeLinecap="round" {...common}
-              />
+              <g key={m.id}>
+                <line
+                  x1={m.from[0]} y1={m.from[1]} x2={m.to[0]} y2={m.to[1]}
+                  strokeLinecap="round" {...common}
+                />
+                <line
+                  x1={m.from[0]} y1={m.from[1]} x2={m.to[0]} y2={m.to[1]}
+                  strokeLinecap="round" strokeWidth={grace * 2} {...hit} stroke="transparent"
+                />
+              </g>
             );
           }
-          return <circle key={m.id} cx={m.x} cy={m.y} r={Math.max(m.d / 2, 1.2)} {...common} />;
+          return (
+            <g key={m.id}>
+              <circle cx={m.x} cy={m.y} r={Math.max(m.d / 2, 1.2)} {...common} />
+              <circle cx={m.x} cy={m.y} r={Math.max(m.d / 2, grace)} {...hit} />
+            </g>
+          );
         })}
 
         {/* The dimensions — turn 7's own entities, drawn in the drawing-office

@@ -1,8 +1,29 @@
 # BUILD-LOG.md
 
-Co powstało w każdej turze, dlaczego tak, i co to zmienia w aplikacji.
-Jedna sekcja per tura, **chronologicznie — najstarsza na górze**, nowa dopisywana
-na końcu. Problemy i decyzje bez odpowiedzi → `BLOCKERS.md`, rejestr zadań → `BACKLOG.md`.
+What was built in each turn, why that way, and what it changes in the app.
+One section per turn, **chronological — oldest at the top**, new ones appended at
+the end. Open problems and unanswered decisions → `BLOCKERS.md`, the task
+register → `BACKLOG.md`.
+
+> ## THE LANGUAGE OF THIS FILE (turn 23, CLAUDE.md F11.1)
+>
+> "Docs speak one language." **From turn 21 on this log is written in English**,
+> and turn 23 re-issued turns 21 and 22 — the two most recent sections, and the
+> ones a reader actually reaches for — along with turn 21's deferral note. They
+> are translations of the same text: nothing was added, dropped or softened.
+>
+> **Turns 1–20 are left exactly as they were written, in Polish, and that is a
+> decision rather than an omission.** This log is not documentation that can be
+> re-drafted; it is the RECORD of what was decided and why, cited by name in
+> `BLOCKERS.md`, in `CLAUDE.md` and in the comments of half the engine. A
+> paraphrase of 6,500 lines of it would be a new document wearing an old
+> document's authority, and a single softened sentence in it would be a decision
+> quietly changed. Translating them is a job for a turn that can review the
+> result line by line against the original — say the word and it gets one.
+>
+> Everything a reader needs in English already is: `README.md`, `SPEC.md`,
+> `CLAUDE.md`, `BLOCKERS.md`, every `verify/*/README.md`, and every comment in
+> `src/`.
 
 > **Historia tur 1–4 odtworzona (tura 6).** Sekcje poniżej zniknęły z pliku przy
 > incydencie gita między turą 4 a 5; wróciły z commita `dc075b5`. Treść jest dosłowna;
@@ -6498,301 +6519,314 @@ mówi, co dowodzi co.
 
 ---
 
-# TURA 21 — the holes are the judge
+# TURN 21 — the holes are the judge
 
-Właściciel wstawił szufladę do rozstrzelonego edytora i odczytał prawdę z
-**dwóch otworów pilotowych, które się nie spotkały**. To rozwinęło się do
-jednej złej kotwicy w silniku, a przy okazji do drugiej takiej samej w widoku
-3-D. Reszta tury to wyroki, które wydał na to, co widział.
+> **Re-issued in English, turn 23 (CLAUDE.md F11.1): "the turn-21 deferral note
+> and any BUILD-LOG sections written in Polish are re-issued in English — docs
+> speak one language."** The words are the same; only the language moved.
 
-## F1 — skrzynka bierze prawdę ze SPODU prowadnicy [KRYTYCZNE]
+The owner put a drawer into the exploded editor and read the truth off **two
+pilot holes that did not meet**. That opened out into one bad anchor in the
+engine, and a second identical one in the 3-D view beside it. The rest of the
+turn is the verdicts he passed on what he saw.
 
-`runnerRows` w `engine/cabinet.js` to **wiersz wkrętów** —
-`firstRowFromBottom` (38 mm), przesunięcie wiercenia MOVENTO. Turn 20 użył go
-jako kotwicy skrzynki, więc **każda skrzynka w aplikacji wisiała 38 mm za
-wysoko**, a piloty fasady mijały piloty przodu skrzynki dokładnie o tyle.
+## F1 — the box takes its truth from the UNDERSIDE of the runner [CRITICAL]
 
-* `runnerBottomY` jest teraz osobną nazwaną wielkością —
-  `(i === 0 ? G : frontY[i])`, dokładnie jak KIT_BUDR_FULL L712-714. `runnerRows`
-  zostaje wierszem wkrętów i karmi wiercenie korpusu. **Dwie nazwy, dwa
-  znaczenia, żadnego użycia jednej za drugą.**
-* Skrzynka wisi na spodzie, w OBU kitach. Wysokości boków, rozmiary i pozycje
-  frontów, rowki i kieszenie — nietknięte.
-* **Model prowadnicy stał na wkrętach.** GLB i szara zastępcza — obie kładzione
-  spodem na `y` instancji, a `y` to był wiersz wkrętów. Instancja niesie teraz
-  `y` (spód prowadnicy) i `rowY` (wiercony wiersz), więc wkręty +38 trafiają
-  w otwory modelu. `verify/t21/hole-alignment.md` zapisuje to znalezisko.
-* **BRAMKA:** `test/turn21-f1-hole-alignment.test.js`. Per rodzina kitów, per
-  szuflada: Y pilota fasady kontra Y pilota przodu skrzynki, `|Δ| = 0`. Bramka
-  i raport pytają `engine/drawerPilots.js`; **żadne z nich nie nosi kopii
-  prawa**, co jest R4 zadane we własnym kluczu.
-* Ostrzeżenie tury 20 o skrzynce nad półką AGD **zniknęło**: na prowadnicy ta
-  sama deska kończy się 24,5 mm pod półką. BLOCKERS #85 zamknięty przez F1.
+`runnerRows` in `engine/cabinet.js` is a **screw row** — `firstRowFromBottom`
+(38 mm), the MOVENTO's drilling offset. Turn 20 used it as the box's anchor, so
+**every drawer box in the app hung 38 mm too high**, and the front's pilots
+missed the box front's pilots by exactly that.
 
-## F2 + F6 — adres wraca do URL-a, a edytory montują to samo [KRYTYCZNE]
+* `runnerBottomY` is its own named quantity now — `(i === 0 ? G : frontY[i])`,
+  exactly as KIT_BUDR_FULL L712-714 has it. `runnerRows` stays the screw row and
+  feeds the carcass drilling. **Two names, two meanings, neither used for the
+  other.**
+* The box hangs off the underside, in BOTH kits. Side heights, front sizes and
+  positions, grooves and pockets: untouched.
+* **The runner model stood on the screws.** The GLB and the grey stand-in were
+  both laid bottom-down on the instance's `y`, and that `y` was the screw row.
+  An instance now carries `y` (the runner's underside) and `rowY` (the drilled
+  row), so a screw at +38 lands in the model's own hole.
+  `verify/t21/hole-alignment.md` records the finding.
+* **THE GATE:** `test/turn21-f1-hole-alignment.test.js`. Per kit family, per
+  drawer: the front pilot's Y against the box front's pilot Y, `|Δ| = 0`. The
+  gate and the report both ask `engine/drawerPilots.js`; **neither carries a
+  copy of the law**, which is R4 set in its own key.
+* Turn 20's warning about a box over an appliance shelf is **gone**: on the
+  runner the same board finishes 24.5 mm under the shelf. BLOCKERS #85 closed
+  by F1.
 
-Konsola właściciela, cała diagnoza w jednej linii:
-`/hinges/blum/71B3550_42542984.glb → 404`. Bez hosta, bez bucketu — aplikacja
-zapytała **własną domenę**.
+## F2 + F6 — the address goes back into the URL, and the editors mount the same thing [CRITICAL]
 
-* **Ścieżka bez hosta nie jest URL-em.** `hardwareModelSrc()` zwraca `null`,
-  widok rysuje zastępczą, **żadne żądanie nie wychodzi**. `hingeModelSrc` i
-  `runnerModelSrc` to po jednej linii nad nim, więc trzecia kopia jest
-  niemożliwa. Zawiodły tylko zawiasy, bo ich katalog jedzie w repozytorium i
-  zawsze ma plik, o który można poprosić.
-* **Host WRACA**, wyprowadzony z własnego rejestru dekorów aplikacji, nie wpisany
-  — dla builda bez `VITE_SUPABASE_URL`. `scripts/bucket-live.mjs` woła teraz tę
-  samą funkcję silnika (R4). Manifest prowadnic przestał być odmawiany dlatego,
-  że nie ma BAZY: to publiczny plik w publicznym buckecie.
-* Host potrafi wylądować po zamontowaniu płótna, więc jest hookiem, nie
-  jednorazowym `useMemo`.
-* **R4:** `3d/hardwareRegistry.js` publikuje w `window.__cc.hardware` każdy URL,
-  który scena naprawdę podała loaderowi, per powierzchnia, z `model: true|false`.
-  Spacer czyta TO i pobiera TO.
-* **F6:** prowadnice szuflady w edytorze stały POZA grupą centrującą i w surowych
-  współrzędnych silnika, i **stały w miejscu, kiedy deski się rozlatywały**.
-  Są w scenie i jadą z częścią, przy której są przykręcone. Edytor szafki nie
-  montował zawiasów w ogóle — rozwiązuje je przez `resolveDoorHinge`, ten sam
-  rejestr, z którego zamawia BOM.
+The owner's console, the whole diagnosis in one line:
+`/hinges/blum/71B3550_42542984.glb → 404`. No host, no bucket — the app asked
+**its own domain**.
 
-## F3 / F4 / F5 — trzy wyroki
+* **A path with no host is not a URL.** `hardwareModelSrc()` returns `null`, the
+  view draws the stand-in, **no request leaves the page**. `hingeModelSrc` and
+  `runnerModelSrc` are one line each over it, so a third copy is impossible.
+  Only the hinges ever hit it, because their catalogue ships in the repository
+  and therefore always has a file to ask for.
+* **THE HOST COMES BACK**, derived from the app's own decor registry rather than
+  typed anywhere — for a build made without `VITE_SUPABASE_URL`.
+  `scripts/bucket-live.mjs` calls that same engine function now (R4). The runner
+  manifest stopped being refused because there is no DATABASE: it is a public
+  file in a public bucket.
+* The host can land after the canvas has mounted, so it is a hook and not a
+  one-shot `useMemo`.
+* **R4:** `3d/hardwareRegistry.js` publishes at `window.__cc.hardware` every URL
+  the scene actually handed a loader, per surface, with `model: true|false`. The
+  walk reads THAT and fetches THAT.
+* **F6:** the drawer's runners in the editor stood OUTSIDE the centring group
+  and at raw engine coordinates, and **stood still while the boards flew
+  apart**. They are in the scene now and travel with the part they are screwed
+  beside. The cabinet editor was not mounting hinges at all — it resolves them
+  through `resolveDoorHinge`, the same registry the BOM orders from.
 
-* **F3** `profile.appearance.cuts.enabled`, domyślnie **false**. „Arkusz CNC jest
-  dokumentem; rzeźbienie w 3-D nie jest warte swoich problemów." Jedna bramka,
-  jeden plik. To, co było PRZED turą 20 — psie kości i kieszenie konstrukcyjne —
-  **nie jest za flagą**: to obrys deski. Wiercenia zostają w rekordzie i na
-  arkuszu; na emeryturę idzie tylko ich rzeźbienie.
-* **F4** 240. **Jedna liczba się rusza.** Jedyny test, który przypinał literał
-  140, czyta profil.
-* **F5** `forceContextLoss()` na już utraconym kontekście to `INVALID_OPERATION`
-  i jedna linia w konsoli na wywołanie — dziesięć u właściciela. Uchwyt wie
-  teraz, czy jego kontekst przepadł, i strzela tylko do żywego; `dispose()`
-  leci tak czy owak, bo to dwa różne akty.
+## F3 / F4 / F5 — three verdicts
 
-## F7–F10 — wnętrze szafy dorasta
+* **F3** `profile.appearance.cuts.enabled`, default **false**. "The CNC sheet is
+  the document; carving it in 3-D is not worth its trouble." One gate, one file.
+  What existed BEFORE turn 20 — dog bones and construction pockets — is **not
+  behind the flag**: that is the board's own outline. The drilling stays in the
+  record and on the sheet; only the carving of it is retired.
+* **F4** 240. **One number moves.** The only test that pinned the literal 140
+  reads the profile.
+* **F5** `forceContextLoss()` on an already-lost context is an
+  `INVALID_OPERATION` and one console line per call — ten of them on the
+  owner's machine. The guard knows now whether its context is gone and only
+  fires at a live one; `dispose()` runs either way, because they are two
+  different acts.
 
-* **F7** trzy rodzaje, w słowach właściciela: fix / adjustable / pull-out, a TYP
-  jest pierwszym wierszem własnego modalu półki. **Jedna prawda, dwie nazwy:**
-  typ to `variant`, który półka nosi od tury 8. LISP **niesie** prawo półki
-  regulowanej (SKYLON_COMMON drawBUL L755-768: dwie kolumny 70 mm od krawędzi,
-  trzy kołki co ±50, **⌀7,5** — nie ⌀5; LISP jest prawem i użyto go dosłownie),
-  więc `adjustable` jedzie WŁĄCZONE i nie wymyśla niczego. `pull-out` jedzie
-  widoczne i wyłączone (BLOCKERS #86).
-* **F8** cofnięcie przegrody jest **własne dla kawałka**. 20 zasiewa, nic nie
-  narzuca, a 0 jest nośne: to ono robi drzwi z F12 możliwymi.
-* **F9** **ROZPIĘTOŚĆ decyduje, nigdy kolejność.** `partitionSpan` dostawał
-  KAŻDĄ półkę w szafce, więc najniższa stała półka gdziekolwiek ucinała każdą
-  przegrodę wszędzie. Każda przegroda dostaje teraz tylko te półki, których bieg
-  **przecina jej płaszczyznę**.
-* **F10** panel mówił 860, a chip 842 o tej samej półce, a odczyt przeciągania
-  miał jeszcze trzeci punkt odniesienia. `engine/shelfHeights.js` to JEDNO
-  wyprowadzenie. **ZAPIS SIĘ NIE RUSZA.**
+## F7–F10 — the inside of the wardrobe grows up
 
-## F11 — magnes wysokości
+* **F7** three kinds, in the owner's words: fix / adjustable / pull-out, and the
+  TYPE is the first row of the shelf's own modal. **One truth, two names:** the
+  type is the `variant` a shelf has carried since turn 8. The LISP **carries**
+  the adjustable shelf's law (SKYLON_COMMON `drawBUL` L755-768: two columns
+  70 mm off the edge, three pins at ±50, **⌀7.5** — not ⌀5; the LISP is the law
+  and it is used verbatim), so `adjustable` ships ENABLED and invents nothing.
+  `pull-out` ships visible and disabled (BLOCKERS #86).
+* **F8** the partition's setback is **the piece's own**. 20 seeds it, nothing
+  imposes it, and 0 is load-bearing: it is what makes F12's doors possible.
+* **F9** **SPAN decides, never order.** `partitionSpan` was handed EVERY shelf
+  in the cabinet, so the lowest fixed shelf anywhere truncated every partition
+  everywhere. Each partition is now given only the shelves whose run **crosses
+  its plane**.
+* **F10** the panel said 860 and the chip said 842 about the same shelf, and the
+  drag readout had a third datum again. `engine/shelfHeights.js` is ONE
+  derivation. **STORAGE DOES NOT MOVE.**
 
-Propozycja, nie siła. Żyje na PRZECIĄGNIĘCIU, nie w setterze — kto wpisze 848
-obok sąsiada na 850, dostaje 848. Wysokości porównywane w przestrzeni POKOJU.
-Kreskowana prowadnica rysuje się przez OBIE szafki, każda na własnej wysokości.
-Złapanie, które zacisk potem odrzucił, nie jest raportowane.
+## F11 — the height magnet
 
-## F12 — drzwi na przegrodzie
+A suggestion, not a force. It lives on the DRAG and not in the setter — type 848
+beside a neighbour at 850 and you get 848. Heights compared in ROOM space. The
+dashed guide is drawn across BOTH cabinets, each at its own height. A catch the
+clamp then rejected is not reported.
 
-Przypadek właściciela: przegrody na 600 i 800, trzy wnęki, dwoje porządnych
-drzwi i jedne małe w środku. Warunki są FIZYCZNE i czytane z kawałka.
-Szerokości to jego prawo, dosłownie, jako czysta geometria w `engine/doors.js`.
-Płytka to ISTNIEJĄCE prawo ⌀5 na nowym panelu — te same wiersze, ta sama para
-±16, ten sam `HINGES_5MM`, te same 37 mm od PRZODU, w ramce VPART-a.
+## F12 — doors on the partition
 
-## F13 — NIE ZBUDOWANY
+The owner's case: partitions at 600 and 800, three bays, two proper doors and a
+small one in the middle. The conditions are PHYSICAL and read off the piece. The
+widths are his law, verbatim, as pure geometry in `engine/doors.js`. The plate
+is the EXISTING ⌀5 law on a new panel — the same rows, the same ±16 pair, the
+same `HINGES_5MM`, the same 37 mm from the FRONT, in the VPART's own frame.
 
-Tura kurczy się od dołu i zatrzymała się tutaj. Nic z gzymsu nie jest w połowie
-zbudowane. **BLOCKERS #88** niesie liczby właściciela, żeby następna tura ich
-nie wyprowadzała jeszcze raz.
+## F13 — NOT BUILT
 
-## Dowody
+The turn shrinks from the bottom and it stopped here. Nothing of the cornice is
+half-built. **BLOCKERS #88** carries the owner's numbers so the next turn does
+not have to derive them again.
 
-`verify/t21/` — `hole-alignment.md` (tabela bramki, każda Δ = 0), `walk.json`
-(35/38, 0 porażek, 3 zablokowane przez politykę wyjścia sesji), `console.txt`,
+> Turn 22 built it. See F1 below.
+
+## Proof
+
+`verify/t21/` — `hole-alignment.md` (the gate's table, every Δ = 0), `walk.json`
+(35/38, 0 failures, 3 blocked by the session's egress policy), `console.txt`,
 `context-guard.md`, `bucket-live.md`, `cnc-export-identity.md`,
-`fingerprints-defaults-diff.txt` na **ZERO linii** i `README.md`.
+`fingerprints-defaults-diff.txt` at **ZERO lines**, and `README.md`.
 
-## Nowe pliki
+## New files
 
 `src/engine/drawerPilots.js` · `src/engine/shelfHeights.js` ·
 `src/engine/shelfTypes.js` · `src/engine/shelfMagnet.js` ·
 `src/lib/storageBase.js` · `src/3d/hardwareRegistry.js` ·
 `scripts/hole-alignment.mjs` · `scripts/e2e-turn21.mjs` ·
-`test/turn21-*.test.js` (5 plików) · `verify/t21/`
+`test/turn21-*.test.js` (5 files) · `verify/t21/`
 
-## Nowe liczby w `profile.js`
+## New numbers in `profile.js`
 
 `wardrobe.drawers.frontScrewFromBottom` / `firstFrontScrewFromBottom` (F1.4) ·
 `appearance.cuts.enabled` = false (F3) · `ui.modal.anchorOffset` → `{240, 0}`
 (F4) · `editor.shelfMagnetMm` = 10 (F11).
-**Nowe klucze `drillSummary`:** `runner_bottoms_carcass_y`,
-`runner_bottoms_dp_y` (F1.1).
+**New `drillSummary` keys:** `runner_bottoms_carcass_y`, `runner_bottoms_dp_y`
+(F1.1).
 
 ## CNC
 
-Złote domyślne: **ZERO**. Jedyne nowe encje tury: `HINGES_5MM` na `VPART`, i
-tylko tam, gdzie drzwi naprawdę wiszą na przegrodzie. Jeden scenariusz sondy
-(`+partition-on-shelf`) rusza się na sześciu typach, które **nie tną półki
-w ogóle** — ich przegroda zatrzymywała się na desce, której nie ma na liście
-rozkroju. Istniejące nazwane encje, tylko postawione dobrze (F9.3).
+Golden defaults: **ZERO**. The turn's only new entities: `HINGES_5MM` on a
+`VPART`, and only where a door really hangs on a partition. One probe scenario
+(`+partition-on-shelf`) moves on six types that **do not cut shelves at all** —
+their partition was stopping on a board that is not in the cut list. Existing
+named entities, only put in the right place (F9.3).
 
 ---
 
-# TURA 22 — gzyms wraca, a dane dostają kręgosłup
+# TURN 22 — the cornice comes back, and the data gets a spine
 
-**Baza:** `main` po scaleniu tury 21. Testy na wejściu 1618, na wyjściu
-**1679, wszystkie zielone.** Odciski CNC złotych domyślnych: **ZERO różnicy**.
-Tura NIE kurczyła się — F1, F2a, F2b, F3 i F4 weszły w całości.
+> **Re-issued in English, turn 23 (CLAUDE.md F11.1).**
 
-## SQL PRZED push
+**Baseline:** `main` after turn 21 was merged. Tests in 1618, out **1679, all
+green.** CNC fingerprints of the golden defaults: **ZERO difference.** The turn
+did NOT shrink — F1, F2a, F2b, F3 and F4 all landed in full.
 
-**`sql/004_tura22.sql`** — uruchamia Piotr RĘCZNIE w Supabase SQL Editor,
-**zanim** zdeployuje build tej tury. Plik jest idempotentny, wymaga
-`sql/001_init.sql`, i nie jest wykonywany ani przez aplikację, ani przez
-Claude. Zawiera:
+## SQL BEFORE the push
 
-* `cc_hardware` — manifesty osprzętu: `family` (runners / hinges / lifts),
-  `system`, `manifest` (jsonb w kształcie plików z bucketu), `bucket_path`,
-  `updated_at`, właściciel przez `auth.uid()`. Unikat na
-  `(owner, family, lower(system))`, żeby zasiew drugi raz PODMIENIAŁ wiersz.
-* `cc_company_defaults` — jeden wiersz na właściciela (`owner` jest kluczem
-  głównym): `hinge_system`, `hinge_finish`, `plate`, `runner_variant` i płyty
-  per rodzina. Plus `check` **odmawiający kluczy, które należą do REGUŁY** —
-  `hinge_angle` i spółka — bo aplikacja nie jest jedyną drogą do tabeli.
-* **RLS włączony na obu**, polityki wypisane per czasownik, per `auth.uid()`.
+**`sql/004_tura22.sql`** — Piotr runs it BY HAND in the Supabase SQL Editor,
+**before** deploying this turn's build. The file is idempotent, requires
+`sql/001_init.sql`, and is executed neither by the app nor by Claude. It
+contains:
 
-Po SQL, ręcznie i tylko przez właściciela:
+* `cc_hardware` — the hardware manifests: `family` (runners / hinges / lifts),
+  `system`, `manifest` (jsonb, in the shape of the bucket's own files),
+  `bucket_path`, `updated_at`, owned through `auth.uid()`. Unique on
+  `(owner, family, lower(system))`, so seeding a second time REPLACES the row.
+* `cc_company_defaults` — one row per owner (`owner` is the primary key):
+  `hinge_system`, `hinge_finish`, `plate`, `runner_variant` and the boards per
+  family. Plus a `check` **refusing keys that belong to the RULE** —
+  `hinge_angle` and its kind — because the app is not the only way into the
+  table.
+* **RLS on for both**, policies written out per verb, per `auth.uid()`.
+
+After the SQL, by hand and by the owner only:
 
 ```
-node scripts/seed-hardware.mjs                      # sucha próba: nic nie pisze
+node scripts/seed-hardware.mjs                      # dry run: writes nothing
 SUPABASE_URL=… SUPABASE_SERVICE_KEY=… CC_OWNER=<uuid> \
-  node scripts/seed-hardware.mjs                    # upsert z ŻYWEGO bucketu
+  node scripts/seed-hardware.mjs                    # upsert from the LIVE bucket
 ```
 
-## F1 — gzyms: 70 i 100 na wypełnieniu 40
+## F1 — the cornice: 70 and 100 on a 40 infill
 
-Faza, którą tura 21 upuściła protokołem. BLOCKERS #88 niósł liczby
-właściciela, więc to jest budowa, a nie wyprowadzanie ich drugi raz.
+The phase turn 21 dropped by protocol. BLOCKERS #88 carried the owner's
+numbers, so this is a build and not a second derivation of them.
 
-**Konstrukcja, tak jak właściciel poprawił.** Drzwi kończą się RÓWNO z górą
-wieńca; wypełnienie 40 stoi NAD wieńcem, w płaszczyźnie drzwi; gzyms siada na
-wypełnieniu, dolną krawędzią równo z płaszczyzną drzwi na poziomie góry drzwi.
-Środkowe zdanie **już było prawdą** — górne wypełnienie stoi na `box.y = H`
-w płaszczyźnie drzwi od tury 6 — więc ta faza dokłada kawałek NA nim i nie
-rusza niczego pod spodem. To jest cały powód, dla którego „delta odcisku ZERO,
-fikstury ZERO" jest faktem, a nie intencją.
+**The construction, as the owner corrected it.** The doors finish FLUSH with the
+top of the carcass top; the 40 infill stands ABOVE the top, in the door plane;
+the cornice sits on the infill, its lower edge flush with the door plane at the
+top of the doors. The middle sentence **was already true** — the top infill has
+stood at `box.y = H` in the door plane since turn 6 — so this phase adds a piece
+ON it and moves nothing underneath. That is the whole reason "fingerprint delta
+ZERO, fixtures ZERO" is a fact rather than an intention.
 
-**Kształt.** `engine/cornice.js corniceSection` — parametryczny bead-and-cove:
-mały wypukły wałek na dole, wklęsła wyoblina, płaska opaska na górze. Wysięg
-**48 dla 70, 65 dla 100** — liczby właściciela, w `profile.js`, do weta jedną
-linią. DXF od dostawcy podmieni **tę jedną funkcję** 1:1; wszystko dalej —
-bieg, gierunki, powroty, metry, 3D — konsumuje listę punktów i nie ma zdania,
-skąd one są.
+**The shape.** `engine/cornice.js corniceSection` — a parametric bead-and-cove:
+a small convex bead at the bottom, a concave cove, a flat fillet on top.
+Projection **48 for 70, 65 for 100** — the owner's numbers, in `profile.js`,
+vetoable in one line. A supplier's DXF replaces **that one function** 1:1;
+everything downstream — the run, the mitres, the returns, the metres, the 3-D —
+consumes a list of points and has no opinion about where they came from.
 
-**Ciągłość.** To jest zdanie górnego wypełnienia, więc to jest KOD górnego
-wypełnienia: `runEnd` odpowiada na wszystkie cztery zakończenia. Inaczej pyta
-się o JEDNO: które pionowe elementy stoją na drodze. Wypełnienie boczne
-wyciągnięte pod sufit zatrzymuje gzyms na 2320; takie, które kończy się
-z korpusem, jest metr pod nim i gzyms po prostu nad nim przechodzi.
-`verticalsReaching` jest tym uogólnieniem, a `ceilingVerticals` jest jego
-przypadkiem dla sufitu — jedna reguła przeszkód, nie dwie.
+**Continuity.** This is the top infill's own sentence, so it is the top infill's
+own CODE: `runEnd` answers all four terminations. Otherwise it asks ONE thing:
+which vertical elements stand in the way. A side infill pulled up to the ceiling
+stops the cornice at 2320; one that finishes with the carcass is a metre below
+it and the cornice simply passes over. `verticalsReaching` is that
+generalisation, and `ceilingVerticals` is its ceiling case — one obstacle rule,
+not two.
 
-**Segmenty łamią się na DWÓCH rzeczach:** jednostce bez gzymsu (dziura w
-biegu) i jednostce z INNĄ wysokością — 70 i 100 to dwie różne listwy i żadna
-pojedyncza długość nie jest obiema.
+**Segments break on TWO things:** a unit with no cornice (a hole in the run) and
+a unit at a DIFFERENT height — 70 and 100 are two different mouldings and no
+single length is both.
 
-**BOM: metry bieżące** — front + powroty + naddatek na narożnik z profilu —
-jako wiersz OKUCIA. Gzyms jest materiałem kupowanym, nie częścią CNC.
+**BOM: linear metres** — face + returns + the profile's corner allowance — as a
+HARDWARE line. A cornice is bought material, not a CNC part.
 
-**Uczciwość sufitu:** stos to jednostka + wypełnienie + wysokość gzymsu ponad
-nim, i sklep **OSTRZEGA**, a nie ścina. Ścięcie przecięłoby szafkę, o którą
-nikt nie prosił.
+**Ceiling honesty:** the stack is the unit + the infill + the cornice's height
+above it, and the shop **WARNS** rather than trimming. Trimming would cut a
+cabinet nobody asked to have cut.
 
-## F2a — `cc_hardware`: manifesty dostają tabelę
+## F2a — `cc_hardware`: the manifests get a table
 
-`lib/hardwareSource.js` to JEDNA funkcja dla każdej rodziny:
-**wiersz w bazie → manifest z bucketu → mock**. Wiersz po prostu PODMIENIA
-pobrany JSON — ten sam tolerancyjny parser z tury 20, ten sam rejestr.
+`lib/hardwareSource.js` is ONE function for every family:
+**a database row → the bucket manifest → mock**. A row simply REPLACES the
+fetched JSON — the same tolerant parser from turn 20, the same registry.
 
-Trzy rodzaje „nie ma" — brak tabeli, brak sesji, brak sieci — spadają o piętro
-niżej i **żaden nie rzuca ani nie czeka**.
+Three kinds of "no" — no table, no session, no network — each fall through to
+the next, and **none of them throws or waits**.
 
-**O składaniu URL-i do modeli nie zmienia się NIC** (R4). Ten moduł podaje
-katalogi rejestrom i nigdy nie składa URL-a; to zostaje w
-`engine/hardwareUrl.js`, dokładnie tam, gdzie zostawiła to tura 21. Test trzyma
-go za słowo.
+**NOTHING about model URL composition changes** (R4). This module hands
+catalogues to the registries and never composes a URL; that stays in
+`engine/hardwareUrl.js`, exactly where turn 21 left it. A test holds it to that.
 
-## F2b — `cc_company_defaults`: ustaw raz, wypełniaj każdy projekt
+## F2b — `cc_company_defaults`: set it once, prefill every project
 
-Piętro, którego brakowało między kodem a projektem. **Kaskada:
-profil → wiersz firmy → projekt → element, później wygrywa, JEDNA
-implementacja** (`engine/companyDefaults.js cascade`). Cztery resolvery —
-system, wykończenie i płytka zawiasu oraz wariant prowadnicy — chodzą po niej
-zamiast trzymać po własnej drabinie `||`. To jest cały powód, dla którego nowe
-piętro dociera wszędzie naraz, a nie w trzech miejscach, które ktoś pamiętał.
+The storey that was missing between the code and the project. **The cascade:
+profile → company row → project → element, later wins, ONE implementation**
+(`engine/companyDefaults.js cascade`). Four resolvers — the hinge's system,
+finish and plate, and the runner's variant — walk it instead of each keeping its
+own ladder of `||`. That is the whole reason the new storey reaches everywhere
+at once rather than in the three places somebody remembered.
 
-**Wolno tylko preferencje.** KĄT ZAWIASU wynika z grubości frontu i walidator
-odmawia go **po nazwie, z powodem** — a `check` w SQL mówi to samo drugi raz.
+**Preferences only.** The HINGE ANGLE follows from the front's thickness and the
+validator refuses it **by name, with a reason** — and the SQL `check` says the
+same thing a second time.
 
-Ekran pod Database ▸ Company defaults czyta, edytuje i zapisuje wiersz. Bez
-sesji mówi, że domyślne wymagają konta, a aplikacja jedzie na liczbach
-z profilu, jak zawsze. Nowy projekt WYPEŁNIA SIĘ z wiersza; odchylenia
-mieszkają dalej w ustawieniach projektu, a nadpisania per element (tura 19) są
-nietknięte.
+The screen under Database ▸ Company defaults reads, edits and saves the row.
+With no session it says that defaults need an account, and the app runs on the
+profile's numbers as it always has. A new project PREFILLS from the row;
+departures still live in the project settings, and turn 19's per-element
+overrides are untouched.
 
-## F3 — kondycja osprzętu, bez DevTools
+## F3 — hardware health, without DevTools
 
-Właściciel diagnozował dwie tury z konsoli. Teraz ma linię w aplikacji: per
-rodzina — modele wczytane / spodziewane, ŹRÓDŁO katalogu (`db` / `bucket` /
-`mock`) i czerwona liczba nieudanych pobrań z pierwszym URL-em do skopiowania.
+The owner diagnosed two turns from his console. Now he has the line in the app:
+per family — models loaded / expected, the catalogue's SOURCE (`db` / `bucket` /
+`mock`) and a red count of failed fetches with the first URL to copy.
 
-**Nie pobiera niczego.** Czyta trzy rejestry, które już są — katalogi silnika,
-pamięć dekodowania GLB (`glbStats`) i odpowiedź resolvera — i test pilnuje
-tego na źródle pliku. Model, którego nikt jeszcze nie potrzebował, nie jest ani
-wczytany, ani nieudany: projekt bez szuflad nie może zaświecić wiersza na
-czerwono.
+**It fetches nothing.** It reads three registries that already exist — the
+engine's catalogues, the GLB decode cache (`glbStats`) and the resolver's answer
+— and a test holds it to that at the source. A model nobody has needed yet is
+neither loaded nor failed: a project with no drawers cannot light a row red.
 
-## F4 — D/W stoi tak wysoko, jak jego brakujące nogi
+## F4 — the D/W panel stands as high as its missing legs
 
-Diagnoza właściciela była trafna i miała **dwie połowy**:
+The owner's diagnosis was right and had **two halves**:
 
-1. `legHeightForPlinth` spadał na STAŁĄ Z PROFILU dla typu z cokołem bez nóg —
-   100, cokolwiek projekt ustawił. Kuchnia na 50 rysowała cokół D/W na 100
-   i wieszała front 50 mm za nisko, a pole, w które wpisywał, nie robiło nic.
-2. `runs.js unitBase` zwracał 0 dla tego samego typu, więc `unitTop` D/W był
-   100 pod sąsiadami i `buildRuns` wsadzał go **do własnego biegu** — jedna
-   długość cokołu przez BUD + D/W nie była w ogóle możliwa.
+1. `legHeightForPlinth` fell back to a PROFILE CONSTANT for a plinthed type with
+   no legs — 100, whatever the project had set. A kitchen at 50 drew the D/W's
+   plinth at 100 and hung its front 50 mm low, and the field he was typing into
+   did nothing.
+2. `runs.js unitBase` returned 0 for the same type, so the D/W's `unitTop` was
+   100 below its neighbours and `buildRuns` put it **in a run of its own** — one
+   plinth length across BUD + D/W was not possible at all.
 
-Obie są jednym zdaniem — *typ z cokołem stoi tak wysoko jak nogi, na których
-stoją jego sąsiedzi, ma je czy nie* — i jest ono napisane **w jednym miejscu**:
-`engine/runs.js impliedLegHeight` / `standsOnLegHeight`. Czytają je
-`cabinet.js`, `projectStore.floorYOf` i `projectHeightParams`. **Żadnej stałej
-specjalnej dla D/W nigdzie.**
+Both are one sentence — *a plinthed type stands as high as the legs its
+neighbours stand on, whether or not it has any* — and it is written **in one
+place**: `engine/runs.js impliedLegHeight` / `standsOnLegHeight`. `cabinet.js`,
+`projectStore.floorYOf` and `projectHeightParams` all read it. **No D/W-special
+constant anywhere.**
 
-**Minimum 100 zdegradowane do domyślnej.** `projectHeights.toeKickMin: 0`
-uwalnia sam cokół; wysokości KORPUSÓW zachowują `min` bez zmian, bo szafka
-wysoka na 40 to literówka. `projectHeights.toeKick: 100` zostaje ziarnem,
-od którego startuje nowy projekt.
+**The 100 minimum demoted to a default.** `projectHeights.toeKickMin: 0` frees
+the toe kick itself; CARCASS heights keep their `min` unchanged, because a
+cabinet 40 mm tall is a typo. `projectHeights.toeKick: 100` remains the seed a
+new project starts from.
 
-**„Nie mogę tego ruszyć" — obie interpretacje.** Wysokość rusza się polem (1–3
-wyżej). Przeciąganie: spacer CIĄGNIE D/W prawdziwym wskaźnikiem wzdłuż biegu
-i **nie było czego naprawiać** — D/W przesuwa się jak sąsiedzi (3300 → 4088,
-sąsiad 2700 → 3357, w tym samym geście). Przyczyną tego, co widział, była
-WYSOKOŚĆ: jego D/W stał 100 mm niżej niż bieg i wyglądał, jakby nie należał do
-niego.
+**"I cannot move it" — both readings.** The height moves by the field (1–3
+above). Dragging: the walk PULLS the D/W with a real pointer along the run and
+**there was nothing to fix** — the D/W moves like its neighbours (3300 → 4088,
+neighbour 2700 → 3357, in the same gesture). The cause of what he saw was the
+HEIGHT: his D/W stood 100 mm lower than the run and looked as though it did not
+belong to it.
 
-## Dowody
+## Proof
 
-`verify/t22/` — `walk.json` (**30/32, 0 porażek**, 2 zablokowane przez politykę
-wyjścia sesji), `console.txt`, siedem zrzutów, `fingerprints-diff.txt` na
-**ZERO linii**, `probes.txt` (trzy sondy równoważności), `cnc-export-identity.md`,
-`bucket-live.md/.txt/.json`, `README.md`.
+`verify/t22/` — `walk.json` (**30/32, 0 failures**, 2 blocked by the session's
+egress policy), `console.txt`, seven screenshots, `fingerprints-diff.txt` at
+**ZERO lines**, `probes.txt` (three equivalence probes),
+`cnc-export-identity.md`, `bucket-live.md/.txt/.json`, `README.md`.
 
-## Nowe pliki
+## New files
 
 `src/engine/cornice.js` · `src/engine/companyDefaults.js` ·
 `src/lib/hardwareSource.js` · `src/lib/hardwareHealth.js` ·
@@ -6803,16 +6837,253 @@ wyjścia sesji), `console.txt`, siedem zrzutów, `fingerprints-diff.txt` na
 `test/turn22-f3-hardware-health.test.js` · `test/turn22-f4-dw-legs.test.js` ·
 `verify/t22/`
 
-## Nowe liczby w `profile.js`
+## New numbers in `profile.js`
 
 `autoParts.cornice` — `heights: [70, 100]`, `projection: {70: 48, 100: 65}`,
-`infillHeight: 40`, `section` (bead-and-cove jako ułamki), `mitreAllowance: 100`,
-`minReturn: 60` · `projectHeights.toeKickMin: 0` (F4.3).
-**Nowa flaga typu:** `supports.cornice` na WARDROBE, BUDTALL i FRIDGE.
+`infillHeight: 40`, `section` (the bead-and-cove as fractions),
+`mitreAllowance: 100`, `minReturn: 60` · `projectHeights.toeKickMin: 0` (F4.3).
+**New type flag:** `supports.cornice` on WARDROBE, BUDTALL and FRIDGE.
 
 ## CNC
 
-Złote domyślne: **ZERO**, 2766 odcisków co do jednego. Sonda encja-po-encji
-(`scripts/cnc-delta-probe.mjs`) też diffuje się do pustki — ani geometria, ani
-spis encji, ani liternictwo. Gzyms nie tworzy części; D/W przy nodze 100 (czyli
-domyślnej) tnie to, co ciął; kaskada bez wiersza to ta sama drabina, co była.
+Golden defaults: **ZERO**, all 2766 fingerprints to the character. The
+entity-by-entity probe (`scripts/cnc-delta-probe.mjs`) also diffs to nothing —
+not the geometry, not the entity census, not the lettering. A cornice creates no
+part; a D/W on a 100 leg (the default) cuts what it cut; a cascade with no row
+is the same ladder it was.
+
+---
+
+# TURN 23 — the Back button the owner asked for three times
+
+**Baseline:** `main` including both chat hotfixes (the hinge pose, and the
+ruler's R3F-attribute fix). Tests in **1679**, out **1792, all green**. CNC
+fingerprints of the golden defaults: **ZERO difference**. The turn did NOT
+shrink — F1 through F11 all landed.
+
+## F1 — Back: the editor grows a navigation stack [CRITICAL]
+
+The owner has asked for this across several sessions and it kept dying in
+collection. It lands as the thing whose ABSENCE was the bug rather than as a
+third Back button: from the part detail there was no way back because the detail
+did not sit ON the editor — it REPLACED it. One modal slot, overwritten, and the
+window unmounted with everything it was holding.
+
+* `lib/editorStack.js` — the arithmetic, pure and browser-free. **Open** clears
+  the stack (so the top level has no Back), **push** suspends the parent with
+  the snapshot it was left holding, **pop** restores it, **close** ends the
+  whole journey.
+* `stores/uiStore.js` gains `modalStack` / `pushModal` / `popModal` /
+  `registerViewSnapshot` UNDER the unchanged `modal` + `modalArgs` every other
+  modal already reads. Twelve modals learn nothing.
+* `components/Modal.jsx` — **the shell** renders ← Back beside the title where
+  there is a level underneath, and **Escape means BACK ONE LEVEL** there rather
+  than close-everything. Done and × still close the lot. One implementation:
+  no nested view keeps a history of its own, which is the rule that kills the
+  class.
+* The snapshot is a GETTER, not state: a workspace writing its camera into a
+  store every frame would re-render the app for a fact nobody reads until
+  somebody double-clicks a part. **Same unit, same camera, same selection, same
+  scroll.**
+
+## F2 — the hinge swings with its door [HIGH]
+
+The model hung closed on the carcass while the door stood open. Turn 12 got the
+PROCEDURAL half right — the cup and the boss have been children of the door
+since then — and turn 19 hung the downloaded BODY on the carcass beside them.
+
+* The split is physical: **the body (cup, boss, arm and the GLB) parents to the
+  DOOR; only the PLATE stays on the carcass.** The pose is untouched — the chat
+  hotfix's `modelOrigin` still puts the cup centre on the drilled point, simply
+  expressed in the door's frame.
+* One hook (`useHingeModels`) feeds both halves, so the loading, the caching,
+  the mirror rule and the degradation story are not written twice.
+* Both surfaces mount the same component. The cabinet editor was resolving its
+  hinges with argument names `resolveDoorHinge` does not take, so its doors had
+  no finish at all; it asks `hingeSpecsFor` now — the room's own resolution.
+* **Articulation, honestly scoped.** The body follows the leaf RIGIDLY. A real
+  CLIP top folds at its knuckle; that is a rig, not a transform, and it is named
+  in the code as future work rather than approximated.
+* The registry publishes each piece's **parent**, so F2 is a fact the walk
+  asserts and not a picture somebody has to believe.
+
+## F3 — the black cylinder [HIGH]
+
+**The drum is not in the file. It is ours.** It is this app's own procedural cup
+and boss — ⌀35 × 12.5 and ⌀33 × 16 in `appearance.hardware.hinge`, a dark grey —
+drawn straight through the downloaded model. Turn 19 gated the arm and the plate
+on "is a model drawn" and never gated these two, so on any project where the
+bucket answered every hinge was drawn twice.
+
+`scripts/glb-meshes.mjs` is the tool the diagnosis is made with: a
+zero-dependency GLB parser that prints every mesh's name, material, size, offset
+and how far it sits CLEAR of the rest of the model. `verify/t23/hinge-meshes.md`
+carries the tables and the verdict — and states plainly that the real files
+could not be read here, with the one command that reads them from a machine that
+can.
+
+## F4 — the hinge wears its finish [HIGH]
+
+`3d/hardwareFinish.js`: **ONE override function, TWO families.** Nickel and onyx
+are metalness / roughness / colour in `profile.js`; the runner takes the same
+helper and one honest neutral metal, because orion grey and silk white are real
+Blum finishes whose numbers this repository does not have.
+
+* **The plastic is an ALLOWLIST, not a blanket.** A chrome release lever is a
+  hinge that does not exist, so material NAMES on the list keep a plastic look
+  and everything else takes the metal. The names to match are the ones the mesh
+  table prints.
+* Every material is CLONED before it is painted. `Object3D.clone()` shares
+  materials, and the original is the one decoded copy every hinge in the project
+  is cloned from — painting it would repaint the room and survive a reload.
+
+## F5 — partitions lose the borrowed biscuits [HIGH] · CNC, named
+
+Verified against the LISP: `drawWDR_PARTITION_PANEL` (KIT_WARDROBE_FULL
+L254-257) draws an OUTLINE and a LABEL and nothing else, and no kit in
+`reference/lisp/` names a `BISCUIT_4MM` layer anywhere. Turn 13 had applied the
+owner's butt-joint set to a part the LISP never gave one, so **both halves go**:
+the receiver's screws and marks, and the partition's own end mark.
+
+`engine/biscuits.js`, `profile.biscuits` and the layer all STAY — that is the
+workshop's recorded answer to BLOCKERS #59 and part of his VCarve tool mapping.
+What it has today is no consumer, and the file says so. Turn 13's golden fixture
+now drives the regression test for the REMOVAL: every entity it worked out by
+hand is asserted absent, one by one, on the cases that used to carry them.
+
+## F6 — the back holds every partition [HIGH] · CNC, named
+
+The LISP's own answer, one function further down the same file:
+`drawWardrobeDPHolesBACK` (L389-400) screws a drawer-panel partition through the
+BACK on its own axis, `SCREWS_3MM`, ⌀3, **50 mm** off each end. The interactive
+vertical partition is the same piece doing the same job, so it takes the same
+joint with the run filled in to the owner's **400 mm** cap:
+
+```
+a 2400 partition ⇒ span 2300 ⇒ ceil(2300/400) = 6 gaps ⇒ 7 screws at 383.3
+```
+
+The ends are ALWAYS at 50 and the intermediates spread EVENLY — a run of 400s
+with a short last gap is what marching a tape from one end gives you, and it is
+not what a joiner sets out. A partition split by a crossing fixed shelf drills
+per SEGMENT. The DP and rail-partitioner lines keep their own law, asserted.
+
+## F7 — the CNC detail learns to zoom [MEDIUM]
+
+Wheel zooms about the cursor, drag pans, double-click or the ⌂ fits. The grammar
+is the MAIN SHEET's, extracted to `lib/sheetView.js` and adopted by both — so
+turn 20's capture-on-MOVEMENT law is stated once and the two cannot behave
+differently. Nothing about the drawing changes; it is a viewBox.
+
+## F8 — hover dimensions become drawings, not captions [MEDIUM]
+
+`engine/dimensionArrows.js` turns two points into a drawing: extension lines, an
+offset dimension line, two OPEN arrowheads meeting AT the measured points, and
+the value on the line, never upside down. **ONE style** in
+`profile.hoverDimensions` — thin blue, deliberately not the permanent dimension
+ink, because this is a moment — consumed by two surfaces that could hardly be
+more different:
+
+* the CNC part detail dimensions a hovered feature to its nearest edge in BOTH
+  axes and to its nearest neighbour. The corner caption goes away; the turn-20
+  sheet tooltip stays where it is;
+* the scene dimensions the CLEAR BAYS either side of a hovered partition.
+
+The detail also gained the sheet's own **hit grace** (turn 20's `hoverGracePx`):
+a ⌀3 hole drawn `fill: none` is a hairline, and hovering it was a matter of
+luck. The acceptance walk found that, which is what a walk is for.
+
+## F9 — the pencil on one print: per-part CNC overrides [HIGH]
+
+    computeCabinet()  →  applyPartEdits()  →  the 3-D, the sheet, the DXF
+       (pure, ignorant)      (thin)
+
+**The engine never learns.** `computeCabinet` is handed nothing and does not
+mention this feature; grep it and it is not there. The LISP is untouched, the
+kits are untouched, and the next cabinet of the same kit is stock BY
+CONSTRUCTION.
+
+* Four tools in the part detail: delete a feature (any hole, pocket or mark),
+  add a drill, add a line, add a dowel line — each on a layer picked from the
+  EXISTING list. No custom layers: parked by the owner's word.
+* **Feature ids are derived from what a feature IS** — kind, layer, position —
+  so an override survives a recompute that renumbers the list. Duplicates get a
+  stable occurrence suffix.
+* A badge "✎ edited by hand · N changes" in the detail AND on the sheet, Undo
+  one step, and one-click **Back to computed**.
+* A part that has been RESIZED does not carry its edits: the signature no longer
+  matches, so nothing is applied and the export is **stock** — and the app then
+  ASKS whether to drop them or put the size back. Refusing to apply is the
+  conservative half; the asking is the courteous half.
+
+## F10 — partition position speaks the shelves' language [MEDIUM]
+
+The field measured from the cabinet's outer end while its own tooltip claimed
+the inner face. `engine/partitionPositions.js` is turn 21's shelf cure on the
+other axis: the field is from the INSIDE, the bays are CLEAR widths, and both
+come from one module — which F8's scene arrows read as well. **STORAGE DOES NOT
+MOVE**: `x_mm` means what it has meant since turn 11 and a turn-22 project opens
+identical. "Centre" is "Equal bays".
+
+## F11 — loose ends
+
+The turn-21 and turn-22 BUILD-LOG sections, and turn 21's deferral note, are
+re-issued in English above. The hinge screenshots are the SILENT SHOWROOM's and
+`verify/t23/bucket-live.md` says so plainly, because the bucket answered `403`
+at this session's egress proxy for the third turn running.
+
+## R6, R7, R8 — the new iron rules, and what they caught
+
+* **R6** — a React exception in the console is a FAILED step. The walk snapshots
+  the error log per step. It caught a real one on the first run: a dangling
+  `fit` reference left in `CncView.jsx` by F7's extraction, which threw on every
+  render of the CNC sheet's toolbar and which no assertion in the walk would
+  otherwise have noticed.
+* **R7** — no DOM attributes on R3F scene objects. `PartMachining.jsx` carried
+  `data-part-machining` on a `<group>` — the ruler marker's own bug, still live.
+  It is `userData` now, and a test sweeps `src/3d`, `src/components` and
+  `src/pages` for the whole class.
+* **R8** — the silent showroom. `scripts/make-fixture-hardware.mjs` generates
+  synthetic GLBs at the REAL measured dimensions (no Blum bytes), and
+  `localStorage['cc.hardwareBase']` is the documented knob that points the app
+  at them — the explicit TOP slot of `lib/hardwareSource.js`'s order. **No
+  fixture-only branch exists anywhere in the app.**
+
+## Proof
+
+`verify/t23/` — `walk.json` (**24 ok, 0 failures**, 1 blocked by the session's
+egress policy), `console.txt`, sixteen screenshots, `hinge-meshes.md`,
+`cnc-export-identity.md`, `bucket-live.md/.txt/.json`,
+`fingerprints-turn22-baseline.txt` (byte-identical to turn 22's),
+`fingerprints-turn23.txt`, `fingerprints-diff.txt`, `probe-*.txt` and
+`README.md`.
+
+## New files
+
+`src/lib/editorStack.js` · `src/lib/sheetView.js` · `src/3d/hardwareFinish.js` ·
+`src/3d/HoverDimensions.jsx` · `src/engine/partitionFixings.js` ·
+`src/engine/partitionPositions.js` · `src/engine/dimensionArrows.js` ·
+`src/engine/partEdits.js` · `src/components/HandEditsModal.jsx` ·
+`scripts/make-fixture-hardware.mjs` · `scripts/glb-meshes.mjs` ·
+`scripts/fixture-server.mjs` · `scripts/e2e-turn23.mjs` ·
+`test/turn23-*.test.js` (5 files) · `test/fixtures/hardware-local/` ·
+`verify/t23/`
+
+## New numbers in `profile.js`
+
+`partitionBack` — `fromEnd: 50` (the LISP's), `maxPitch: 400` (the owner's),
+`screwDiameter: 3`, `layer: 'SCREWS_3MM'` (F6) ·
+`hoverDimensions` — colour, stroke, arrow, text, offset, extension, gap (F8) ·
+`hardware.hinge.cliptop.finishes[].material` for nickel and onyx, plus
+`plasticMaterials` and `plastic` (F4) ·
+`hardware.runner.movento.finishes` (empty), `finish`, `plasticMaterials`,
+`plastic` (F4.3).
+
+## CNC
+
+Golden defaults: **ZERO**. The only two classes that move are named, both on a
+vertical partition, both justified by a LISP line:
+`poly/BISCUIT_4MM` falls to zero (F5) and `circle/SCREWS_3MM` changes count
+(F5 removes, F6 adds). The entity-by-entity probe gained three partition
+scenarios — it had none, so it could not have seen either class — and diffs to
+those two entity types and nothing else. Fixtures: **zero**.

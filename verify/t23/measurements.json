@@ -1,0 +1,322 @@
+{
+ "hardware": {
+  "hinge": [
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "hinge",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "door",
+    "finish": "nickel"
+   }
+  ],
+  "plate": [
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel"
+   },
+   {
+    "surface": "room",
+    "family": "plate",
+    "key": "W01-F",
+    "url": "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb",
+    "model": true,
+    "reason": null,
+    "parent": "carcass",
+    "finish": "nickel"
+   }
+  ],
+  "parents": {
+   "hinge": true,
+   "plate": true
+  },
+  "modelled": {
+   "hinge": true,
+   "plate": true
+  },
+  "finishes": [
+   "nickel"
+  ]
+ },
+ "swing": {
+  "before": [
+   [
+    "nickel",
+    -0.277,
+    0.2,
+    -0.929
+   ],
+   [
+    "nickel",
+    -0.277,
+    0.59,
+    -0.929
+   ],
+   [
+    "nickel",
+    -0.277,
+    0.98,
+    -0.929
+   ],
+   [
+    "nickel",
+    -0.277,
+    1.37,
+    -0.929
+   ],
+   [
+    "nickel",
+    -0.277,
+    1.76,
+    -0.929
+   ],
+   [
+    "nickel",
+    -0.277,
+    2.15,
+    -0.929
+   ],
+   [
+    "nickel",
+    -0.282,
+    0.2,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    0.59,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    0.98,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    1.37,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    1.76,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    2.15,
+    -0.969
+   ]
+  ],
+  "after": [
+   [
+    "nickel",
+    -0.2895,
+    0.2,
+    -0.8933
+   ],
+   [
+    "nickel",
+    -0.2895,
+    0.59,
+    -0.8933
+   ],
+   [
+    "nickel",
+    -0.2895,
+    0.98,
+    -0.8933
+   ],
+   [
+    "nickel",
+    -0.2895,
+    1.37,
+    -0.8933
+   ],
+   [
+    "nickel",
+    -0.2895,
+    1.76,
+    -0.8933
+   ],
+   [
+    "nickel",
+    -0.2895,
+    2.15,
+    -0.8933
+   ],
+   [
+    "nickel",
+    -0.282,
+    0.2,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    0.59,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    0.98,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    1.37,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    1.76,
+    -0.969
+   ],
+   [
+    "nickel",
+    -0.282,
+    2.15,
+    -0.969
+   ]
+  ],
+  "moved": 6,
+  "stayed": 6
+ },
+ "finishes": {
+  "nickel": [
+   "nickel"
+  ],
+  "onyx": [
+   "onyx"
+  ]
+ },
+ "zoom": {
+  "before": "-1506.2092715231788 -2537.4 3612.4185430463576 2924.7999999999997",
+  "after": "-489.5107190236844 -1714.2285178154225 1579.0214380473687 1278.4570356308454"
+ },
+ "export": {
+  "before": {
+   "name": "W01-BACK.dxf",
+   "length": 6628,
+   "circles": 34
+  },
+  "after": {
+   "name": "W01-BACK.dxf",
+   "length": 6625,
+   "circles": 34,
+   "has8": true
+  }
+ },
+ "partition": {
+  "backScrews": 14,
+  "biscuits": 0,
+  "marks": 0,
+  "vparts": 2
+ }
+}

@@ -404,7 +404,7 @@ export default function CncView() {
         <span className="w-px h-4 bg-shell-600" />
         <button type="button" className="cc-btn-ghost" title="Zoom out" onClick={() => zoomBy(ZOOM_STEP)}>−</button>
         <button type="button" className="cc-btn-ghost" title="Zoom in" onClick={() => zoomBy(1 / ZOOM_STEP)}>+</button>
-        <button type="button" className="cc-btn-ghost" title="Fit the whole sheet" onClick={fit}>Fit</button>
+        <button type="button" className="cc-btn-ghost" title="Fit the whole sheet" onClick={sheetView.fit}>Fit</button>
       </div>
 
       {/* layer legend — click a row to hide that layer */}

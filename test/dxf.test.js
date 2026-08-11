@@ -287,6 +287,13 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     FRONT_HINGES_3MM: 30, RUNNERS_3MM: 5, UNIT_NUMBER: 94, CARCASE: 7,
     DRAWER_RUNNER_POCKET: 1, DRAWER_BOTTOM_POCKET: 2, HANGER_HOLE: 4,
     BISCUIT_4MM: 40,
+    // ─── TURN 25 (CLAUDE.md F3.4): ONE NEW NAME ───
+    // The shaker panel POCKET. Until this turn a front's DXF was an outline and
+    // its hinge holes; a shaker's face is machined, and a 6 mm flat-bottomed
+    // pocket is a tool of its own on the bed — not a profile cut and not a
+    // drilling. ACI 41 sits beside the biscuit's 40 and is likewise unused by
+    // the LISP's own table, so nothing it already draws changes colour.
+    SHAKER_PANEL_POCKET: 41,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

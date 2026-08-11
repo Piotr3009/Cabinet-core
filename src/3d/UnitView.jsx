@@ -18,6 +18,7 @@ import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
 import JointLines from './JointLines.jsx';
 import PartMachining from './PartMachining.jsx';
+import { shakerFrontGeometry } from './shakerSolid.js';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
@@ -225,7 +226,14 @@ export function MovingPanel({
     () => (layers && !mitre ? panelSolids(p, layers, profile, drills) : null),
     [p, layers, profile, mitre, drills],
   );
-  const machined = built?.solid || null;
+  // ─── Turn 25 (CLAUDE.md F3): THE SHAKER IS A TRAY, NOT A SLAB ───────────
+  // A recess in the face, leaving the frame standing — one solid, so the
+  // rebate's walls and the frame's face cannot z-fight, and the shadow those
+  // walls throw at a grazing angle is what makes it read as a shaker rather
+  // than as a rectangle drawn on a door (3d/shakerSolid.js). Cached by leaf
+  // size and frame, so a kitchen of identical doors builds one geometry.
+  const shaker = useMemo(() => (mitre ? null : shakerFrontGeometry(p)), [p, mitre]);
+  const machined = shaker || built?.solid || null;
   const cuts = built?.cuts || null;
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 

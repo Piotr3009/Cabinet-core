@@ -30,6 +30,7 @@ import VeneerPicker from './VeneerPicker.jsx';
 import ColourPicker from './ColourPicker.jsx';
 import FrontStyleGallery, { FrontStyleArt } from './FrontStyleGallery.jsx';
 import NumberField from './NumberField.jsx';
+import { shakerFrameMm } from '../engine/shaker.js';
 
 // ─── THE SETTINGS SURFACE (turn 12, CLAUDE.md F1) ───────────────────────────
 //
@@ -1144,6 +1145,30 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           value={design.fronts.style}
           onPick={(id) => setDesign({ fronts: { ...design.fronts, style: id } })}
         />
+
+        {/* ─── Turn 25 (CLAUDE.md F3.1): THE SHAKER FRAME ───
+            Equal on all four sides — "shaker zawsze równy" — so it is ONE
+            field and there is deliberately no rail/stile pair beside it.
+            10…200 mm, and where a front is too small to take it the app SAYS
+            so on the cabinet rather than quietly cutting a narrower frame
+            (F3.2); the message is the engine's own and reaches the unit's
+            warnings. */}
+        {design.fronts.style === 'S' && (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-ink-400 w-28">Shaker frame</span>
+            <NumberField
+              className="cc-input w-24"
+              value={shakerFrameMm(design, profile)}
+              min={profile.front.types.S.frameMin}
+              max={profile.front.types.S.frameMax}
+              onCommit={(v) => setDesign({ fronts: { ...design.fronts, shakerFrame: v } })}
+            />
+            <span className="text-[11px] text-ink-400">
+              mm, equal all round · {profile.front.types.S.frameMin}–{profile.front.types.S.frameMax} ·
+              {' '}panel recessed {profile.front.types.S.recessDepth} mm
+            </span>
+          </div>
+        )}
 
         <div className="cc-divider" />
         <span className="text-[11px] uppercase tracking-wide text-ink-400">The workshop&apos;s own styles</span>

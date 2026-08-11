@@ -53,7 +53,38 @@ export const DEFAULT_CABINET_PROFILE = {
     thickness: 25,                    // 18 = MDF, 19 = melamine, 25 = shaker
     thicknessOptions: [18, 19, 25],
     types: {
-      S: { label: 'Shaker', frameWidth: 50 },
+      // ─── TURN 25 (CLAUDE.md F3): A SHAKER THAT LOOKS LIKE ONE ────────────
+      //
+      // Until this turn a shaker rendered as a flat slab and only its 25 mm
+      // thickness said otherwise. What makes it a shaker is a RECESS in its
+      // face, and the numbers of that recess are here.
+      //
+      // `frameWidth` was 50 — the AutoLISP elevation's `off`, traced in turn 5
+      // for a line on a drawing rather than for a cut. The owner's number for
+      // the piece is 70, and it is now ONE number: the elevation draws the
+      // frame the machine pockets, so the picture and the door cannot disagree.
+      //
+      // EQUAL ON ALL FOUR SIDES — "shaker zawsze równy". There is deliberately
+      // no rail/stile pair here: a second number is a second thing to get
+      // wrong, and the owner does not want one.
+      //
+      // `minPanel` is OURS and is said so plainly. The owner gave the frame's
+      // range and the recess depth; he did not give the narrowest panel worth
+      // cutting, and the engine has to have one or a 148 mm frame on a 300 mm
+      // door leaves a 4 mm slot and calls it a shaker. 60 mm is a workshop
+      // judgement — a panel narrower than the frame around it does not read as
+      // a panel — and it is a DEFAULT in the profile, so a workshop that
+      // disagrees changes one line. What it must never do is silently move the
+      // frame instead (F3.2).
+      S: {
+        label: 'Shaker',
+        frameWidth: 70,          // equal on all four sides
+        frameMin: 10,
+        frameMax: 200,
+        recessDepth: 6,          // panel face sits at frontT − 6
+        minPanel: 60,
+        pocketLayer: 'SHAKER_PANEL_POCKET',
+      },
       H: { label: 'Handleless (J-groove)', grooveDepth: 30 },
       F: { label: 'Flat' },
     },

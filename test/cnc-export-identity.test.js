@@ -176,7 +176,14 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // this sheet reorder their vertices and not one coordinate moves —
   // `verify/t25/edge-guard.md` carries the post-mortem and
   // `verify/t25/cnc-export-identity.md` the entity-level evidence.
-  assert.equal(fingerprint(sheetOf(result, all)), '1696eb4c', 'the whole-unit sheet has changed');
+  // ─── TURN 25 (CLAUDE.md F3.4): 1696eb4c → cbfa35ea ───────────────────────
+  // THE SHAKER PANEL POCKET, and nothing else. Until this turn the front DXF
+  // was an outline and its hinge holes; a shaker's face is machined, and this
+  // sheet carries three fronts that take the 6 mm recess and one — a 197 mm
+  // drawer front, three short of the 200 a 70 mm frame needs — that is REFUSED
+  // and cut plain, with the cabinet carrying the message. Three POLYLINE
+  // entities appear on one new layer; not one existing coordinate moves.
+  assert.equal(fingerprint(sheetOf(result, all)), 'cbfa35ea', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -196,11 +203,16 @@ test('…and so is each preset’s', () => {
   // doors and drawer faces do not — and the pair that does not move is again
   // the interesting half: a fix that had touched a door would be a fix that is
   // not what it says it is.
+  // ─── TURN 25: AND NOW THE OTHER TWO, FOR THE OTHER REASON ────────────────
+  // F1 moved the two sheets that carry a carcass. F3 moves the two that carry
+  // the FRONTS, and leaves `non-sprayed` exactly where F1 left it. Between them
+  // the four sheets say which delta reached which part of the cabinet, which is
+  // what a preset census is for.
   const expected = {
-    all: '1696eb4c',           // was 13f9d8a8
-    'non-sprayed': '32cca2e6', // was 35eddb46 — this one has the carcass in it
-    sprayed: '27364f5c',       // UNCHANGED — no top, no bottom, no doubled edge
-    fronts: '27364f5c',        // UNCHANGED
+    all: 'cbfa35ea',           // was 1696eb4c — F3's pocket on three fronts
+    'non-sprayed': '32cca2e6', // UNCHANGED since F1 — no front is on this sheet
+    sprayed: '8a6498da',       // was 27364f5c — F3's pocket
+    fronts: '8a6498da',        // was 27364f5c — the same three fronts
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -241,6 +253,13 @@ test('the entities are grouped by layer exactly as before', () => {
     RUNNERS_3MM: 18,
     SCREWS_3MM: 50,
     SHELVES_7_5MM: 24,
+    // ─── TURN 25 (CLAUDE.md F3.4): ONE NEW LINE, AND ONLY ONE ──────────────
+    // The shaker panel pocket. THREE, not four: this wardrobe carries a door
+    // and three drawer fronts, and the bottom drawer front is 197 mm high —
+    // three short of the 200 a 70 mm frame needs — so it is REFUSED and cut
+    // plain (F3.2), with the cabinet carrying the message. A census that said
+    // 4 would be a census of an app that clamped.
+    SHAKER_PANEL_POCKET: 3,
     // DELTA 1 — one label per part still, but written as a BLOCK: 31 parts,
     // 72 lines between them. Nothing else on this list moves by one.
     UNIT_NUMBER: 72,

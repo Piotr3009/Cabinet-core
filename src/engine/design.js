@@ -61,6 +61,12 @@ export const DEFAULT_DESIGN = {
     // Handles are a later phase — the slot is here so the shape does not change
     // under a saved project when they arrive.
     handle: null,
+    // ─── TURN 25 (CLAUDE.md F3.1): THE SHAKER FRAME, PROJECT-WIDE ─────────
+    // Equal on all four sides ("shaker zawsze równy"), 10…200 mm. `null` means
+    // "nobody has said", and the profile's 70 answers it — the same shape of
+    // default the hinge standard and the runner variant carry, so a project
+    // saved before this turn opens with the workshop's number rather than a 0.
+    shakerFrame: null,
     // ─── Turn 11 (CLAUDE.md F9.2) ───
     // Up to TWO front types, the twin of the 1–3 carcass types above. Each has a
     // SOURCE (RAL / F&B / veneer / laminate / wood), a colour and, where it is a
@@ -257,6 +263,7 @@ export function migrateDesign(design) {
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: d.fronts?.handle ?? null,
+      shakerFrame: Number(d.fronts?.shakerFrame) > 0 ? Number(d.fronts.shakerFrame) : null,
       types: coupleFrontTypes(d),
     },
     doorStyles: Array.isArray(d.doorStyles)

@@ -220,13 +220,21 @@ const round2 = (v) => {
   return s === '-0.00' ? '0' : s.replace(/\.?0+$/, '') || '0';
 };
 
-/** The four corners of a pocket record, anticlockwise. */
+/**
+ * The four corners of a pocket record — anticlockwise, or clockwise where the
+ * record says it is a cut-out.
+ *
+ * This mirrors `cnc/dxf.js pocketPoints()` deliberately: the guard has to check
+ * the loop the WRITER writes, and a guard that built its own idea of the same
+ * rectangle would be checking a rectangle nobody cuts.
+ */
 function pocketLoop(p) {
   const x1 = Math.min(p.x1, p.x2);
   const x2 = Math.max(p.x1, p.x2);
   const y1 = Math.min(p.y1, p.y2);
   const y2 = Math.max(p.y1, p.y2);
-  return [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
+  const pts = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
+  return p.cutout ? pts.reverse() : pts;
 }
 
 /** The loop a pocket record actually writes — its own points where it has them. */

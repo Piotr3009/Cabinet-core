@@ -32,6 +32,16 @@ export const CNC_LAYERS = [
   // changes colour in AutoCAD; the screen tone is a warm one, distinct from the
   // cool ⌀3 screws it sits between so a set reads as three things.
   { name: 'BISCUIT_4MM',        aci: 40, screen: '#ffb066', label: 'Biscuit 70 mm',  kind: 'mark' },
+  // ─── Turn 25 (CLAUDE.md F3.4): the shaker panel POCKET ───
+  // Until this turn the front DXF was an outline and its hinge holes and
+  // nothing else. A shaker's face is machined — a 6 mm recess leaving the frame
+  // standing — and that is a TOOL of its own on the bed: a large flat-bottomed
+  // pocket, not a profile cut and not a drilling. It gets its own layer for the
+  // same reason BISCUIT_4MM did, and appears ONLY on shaker fronts.
+  //
+  // ACI 41 sits beside the biscuit's 40 and is unused by the LISP's own table,
+  // so nothing it already draws changes colour in AutoCAD.
+  { name: 'SHAKER_PANEL_POCKET', aci: 41, screen: '#c3a06a', label: 'Shaker panel', kind: 'pocket' },
   { name: 'HINGES_5MM',         aci: 5,  screen: '#74a9ff', label: 'Hinges ⌀5',      kind: 'hole' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },

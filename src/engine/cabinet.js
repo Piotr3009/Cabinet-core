@@ -25,6 +25,9 @@ import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
 import { partitionSpan, shelfCrossesPartition, widthZones } from './zones.js';
 // Turn 21 (CLAUDE.md F12): the owner's door-width law, as pure geometry.
+import {
+  isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
+} from './shaker.js';
 import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
@@ -2160,7 +2163,7 @@ export function computeCabinet(params, profileOverride) {
         id: `${unitNum}-DF${i}`, part: 'DRAWER-FRONT', role: 'front', w: drawerFrontW, h: dfH, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * drawerFrontW + 2 * dfH),
         box: { x: boxLeftX - (DR.frontOversize / 2), y: dfY, z: D - DR.setback - frontT, w: drawerFrontW, h: dfH, d: frontT },
-        cnc: rectGeometry(drawerFrontW, dfH), meta: { drawer: i },
+        cnc: rectGeometry(drawerFrontW, dfH), meta: { drawer: i, frontType: cfg.frontType },
       }));
     }
   }
@@ -2273,7 +2276,7 @@ export function computeCabinet(params, profileOverride) {
         id: `${unitNum}-F${i}`, part: 'DRAWER-FRONT', role: 'front', w: budr.frontWidth, h: fh, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * budr.frontWidth + 2 * fh),
         box: { x: B.frontWidthDeduction / 2, y: budr.frontY[i - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
-        cnc: geom, meta: { drawer: i },
+        cnc: geom, meta: { drawer: i, frontType: cfg.frontType },
       }));
     }
   }
@@ -2802,6 +2805,42 @@ export function computeCabinet(params, profileOverride) {
       box: { x: W - P.doors.gap / 2 - frontW, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
       cnc: rectGeometry(frontW, frontH), meta: { hinge: 'R', frontType: cfg.frontType },
     }));
+  }
+
+  // ─── TURN 25 (CLAUDE.md F3): THE SHAKER GETS ITS RECESS ──────────────────
+  //
+  // One pass over the fronts, here, rather than a line at each of the five
+  // places a front is cut. The pocket is a fact about a PIECE — "this board is
+  // a shaker, and a shaker's face is machined" — and it is read off the piece's
+  // own `meta.frontType`, so a D/W panel's deliberately flat face (turn 17, F9)
+  // is untouched without anybody having to remember it here.
+  //
+  // ─── IT IS REFUSED, NOT CLAMPED (F3.2) ───────────────────────────────────
+  // Where the frame will not fit the leaf the front is cut PLAIN and the
+  // cabinet carries a warning naming the numbers. The frame is never quietly
+  // reduced so it fits: a joiner who set 200 and got 120 has a kitchen where
+  // some doors wear one frame and some another, and nothing ever told him.
+  const shakerFrame = shakerFrameMm({ fronts: { shakerFrame: params?.shaker_frame_mm } }, P);
+  const shakerFronts = panels.filter((x) => isShakerFront(x));
+  for (const pnl of shakerFronts) {
+    const pocket = shakerPocket({ w: pnl.w, h: pnl.h, frame: shakerFrame }, P);
+    if (!pocket) {
+      warnings.push({
+        code: 'SHAKER_FRAME_TOO_WIDE',
+        panel: pnl.id,
+        message: `${pnl.id}: ${shakerProblem({ w: pnl.w, h: pnl.h, frame: shakerFrame }, P)}`,
+      });
+      continue;
+    }
+    pnl.cnc.pockets = [...(pnl.cnc.pockets || []), pocket];
+    // What the 3-D solid and the handle law both need, on the piece: the frame
+    // that was actually cut, and how deep the panel floor sits. `thickness`
+    // itself is UNTOUCHED and stays the full board — F3.5.
+    pnl.meta.shaker = {
+      frame: shakerFrame,
+      depth: pocket.depth,
+      panelFloor: shakerPanelFloor(pnl.thickness, P),
+    };
   }
 
   // ── Drills ─────────────────────────────────────────────────────────────────

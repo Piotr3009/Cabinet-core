@@ -301,6 +301,11 @@ function paramsForEngine(unit, design = null) {
     // unit's own answer, which sits above this one in the hierarchy — so a
     // cabinet that has said something for itself keeps saying it.
     project_runner_variant: design?.runners?.variant ?? null,
+    // ─── TURN 25 (CLAUDE.md F3.1): THE PROJECT'S SHAKER FRAME ──────────────
+    // Travels exactly as the hinge standard and the runner variant do: an INPUT
+    // in the design layer, never a formula in the engine. Left out — a bare kit
+    // call, every golden fixture — the engine falls back to the profile's 70.
+    shaker_frame_mm: design?.fronts?.shakerFrame ?? null,
     // ─── TURN 24 (CLAUDE.md F3.2): THE SIX MEASURED SLOTS ───────────────────
     //
     // The owner's law: the engine computes from the CALIPER. The six numbers

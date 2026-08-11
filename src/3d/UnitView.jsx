@@ -1083,10 +1083,13 @@ export default function UnitView({
             key={p.id}
             panel={p}
             front={front}
-            // ─── Turn 12 (CLAUDE.md F6.1) ───
-            // The cup and its boss are screwed to THIS door, so they hang off
-            // it and swing with it. The arm and the plate stay on the carcass,
-            // drawn by <Hardware> below — which is what a hinge does.
+            // ─── Turn 12 (CLAUDE.md F6.1) / TURN 23 (F2.1) ───
+            // The cup, its boss, the ARM and the downloaded BODY are screwed to
+            // THIS door, so they hang off it and swing with it. Only the PLATE
+            // stays on the carcass, drawn by <Hardware> below — which is what a
+            // hinge does. Turn 19 hung the model on the carcass beside the cup
+            // and it stayed shut while the door opened; the model comes through
+            // here now, on the same specs the plate is resolved from.
             {...(front === 'door' && (showHinges || xray) ? {
               children: (
                 <DoorHinges
@@ -1100,6 +1103,13 @@ export default function UnitView({
                     mm(p.box.y + p.box.h / 2),
                     mm(p.box.z + p.box.d / 2),
                   ]}
+                  specs={hingeSpecs}
+                  storageBase={storageBase}
+                  onEditHinge={onEditHinge}
+                  surface="room"
+                  // One mount per door, so the registry names which leaf each
+                  // reported hinge belongs to.
+                  scope={p.id}
                 />
               ),
             } : {})}
@@ -1377,7 +1387,6 @@ export default function UnitView({
         // WHICH hinge each door wears — resolved once, by the engine, and
         // handed down; and the gesture that opens the hinge modal on it.
         hingeSpecs={hingeSpecs}
-        onEditHinge={onEditHinge}
       />
 
       {/* Top infill: grab its top edge and drag UP to the ceiling, or

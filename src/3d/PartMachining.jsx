@@ -61,7 +61,14 @@ export default function PartMachining({
 
   if (!geometries.length) return null;
   return (
-    <group userData={{ ccHelper: true }} data-part-machining={panel.id}>
+    {/* ─── TURN 23 (CLAUDE.md R7): NO DOM ATTRIBUTES ON R3F OBJECTS ─────────
+        This group carried `data-part-machining={panel.id}` — the same class of
+        bug the ruler's marker had, which threw on every render for two turns
+        while the walk stayed green. R3F's reconciler applies an unknown prop to
+        the three.js object; `data-*` is not a property of an Object3D. It goes
+        in `userData`, where everything a walk or a tool needs to find already
+        lives (`ccHelper`, `ccPanelId`, `ccMachiningLayer` beside it). */}
+    <group userData={{ ccHelper: true, ccPartMachining: panel.id }}>
       {geometries.map(({ layer, geometry, colour }) => (
         <lineSegments key={layer} geometry={geometry} userData={{ ccHelper: true, ccMachiningLayer: layer }}>
           <lineBasicMaterial

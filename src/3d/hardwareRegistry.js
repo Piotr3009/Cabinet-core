@@ -46,6 +46,18 @@ function publish() {
       const rows = hardwareRows().filter((r) => r.family === family);
       return rows.length > 0 && rows.every((r) => r.model === true);
     },
+    /**
+     * Turn 23 (CLAUDE.md F2.4): "Registry asserts both parents." Does every
+     * mounted piece of this family hang off the node it is screwed to?
+     */
+    allParented: (family, parent) => {
+      const rows = hardwareRows().filter((r) => r.family === family);
+      return rows.length > 0 && rows.every((r) => r.parent === parent);
+    },
+    /** Turn 23 (CLAUDE.md F4.4): which finish the mounted models are wearing. */
+    finishes: (family) => [...new Set(hardwareRows()
+      .filter((r) => r.family === family && r.model)
+      .map((r) => r.finish))],
   };
 }
 
@@ -55,7 +67,13 @@ function publish() {
  * @param {string} surface  'room' | 'editor' | 'drawer-editor' — the same names
  *                          the context guard uses, for the same reason
  * @param {string} family   'hinge' | 'plate' | 'runner'
- * @param {Array} rows      [{ key, url, model, reason }]
+ * @param {Array} rows      [{ key, url, model, reason, parent, finish }]
+ *                          parent  turn 23 (F2.4): 'door' | 'carcass' |
+ *                                 'drawer' — WHICH NODE this piece hangs off.
+ *                                 The whole of F2 stated as a fact the walk can
+ *                                 assert rather than a picture it must believe.
+ *                          finish  turn 23 (F4.4): the finish id actually
+ *                                 painted onto the clone, read off the clone.
  *                          url    the EXACT string handed to the loader, or
  *                                 null where there is nothing to fetch
  *                          model  true = the GLB mesh is what is drawn;
@@ -72,6 +90,8 @@ export function reportHardware(surface, family, rows, scope = '') {
     url: r.url ?? null,
     model: Boolean(r.model),
     reason: r.reason ?? null,
+    parent: r.parent ?? null,
+    finish: r.finish ?? null,
   })));
   publish();
 }

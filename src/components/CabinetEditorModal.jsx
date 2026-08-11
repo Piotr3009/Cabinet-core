@@ -6,9 +6,9 @@ import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
-import Hardware from '../3d/Hardware.jsx';
+import Hardware, { DoorHinges, hingeSpecsFor } from '../3d/Hardware.jsx';
 import { hardwareInstances } from '../engine/hardware3d.js';
-import { resolveDoorHinge } from '../engine/hinges.js';
+import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
 import { useStorageBase } from '../lib/storageBase.js';
 import { useViewHandle } from '../3d/viewHandle.js';
 import EditorRig from '../3d/EditorRig.jsx';
@@ -197,17 +197,24 @@ export default function CabinetEditorModal() {
   }, [drawer, result, profile]);
   // WHICH hinge each door wears — the room's own resolution, from the same
   // registry, so the editor cannot show a different hinge than the BOM orders.
+  //
+  // ─── TURN 23 (CLAUDE.md F4.1) ─────────────────────────────────────────────
+  // …and it asks the SAME function the room asks. Turn 21 called
+  // `resolveDoorHinge` here with argument names it does not take (`panelId`,
+  // `design`, `thickness` — it wants `assigned`, `frontThickness`, `finish`),
+  // so every door in this window resolved with no finish at all and could show
+  // a nickel hinge on an onyx project. `hingeSpecsFor` is the room's own
+  // resolution, finish and plate included, and this file's own comment above
+  // already says why that matters: "the editor cannot show a different hinge
+  // than the BOM orders."
   const hingeSpecs = useMemo(() => {
     if (!unit || !result || drawer) return null;
-    const out = {};
-    for (const p of result.panels || []) {
-      if (p.role !== 'front' || p.part !== 'FRONT') continue;
-      const spec = resolveDoorHinge({
-        panelId: p.id, unit, design: storedDesign, profile, thickness: p.thickness,
-      });
-      if (spec) out[p.id] = spec;
-    }
-    return out;
+    return hingeSpecsFor({
+      result,
+      unit,
+      finish: resolveHingeFinish(storedDesign, profile),
+      plate: resolveHingePlate(storedDesign, profile),
+    });
   }, [unit, result, storedDesign, profile, drawer]);
   useEffect(() => {
     if (selectedId && !panels.some((p) => p.id === selectedId)) setSelectedId(null);
@@ -631,6 +638,15 @@ function ExplodedCabinet({
           depth={unit.params.depth}
           drills={drills}
           showMachining={showMachining}
+          // ─── TURN 23 (CLAUDE.md F2.1) ───
+          // The hinge BODY belongs to the leaf, in this window exactly as in
+          // the room: one component, one resolution, one place the model is
+          // cloned. A joiner who opens a door in here sees the same hinge
+          // travel with it that he sees three feet away in the scene.
+          hinges={frontOf(p) === 'door' ? (hardware?.hinges || []).filter((h) => h.panelId === p.id) : null}
+          hingeSpecs={hingeSpecs}
+          storageBase={storageBase}
+          hardwareSurface={drawer ? 'drawer-editor' : 'editor'}
         />
       ))}
       {/* ─── TURN 21 (CLAUDE.md F6.2): THE MODELS RIDE THEIR PARTS APART ────
@@ -758,6 +774,7 @@ function ExplodingPart({
   panel: p, offset, exploded, selected, selectable, onSelect, onOpenDetail,
   profile, finishes, design, unit, unitDesign, sheen, joineryLayers, depth,
   open = 0, onToggleFront = null, drills = [], showMachining = true,
+  hinges = null, hingeSpecs = null, storageBase = '', hardwareSurface = 'editor',
 }) {
   const group = useRef(null);
   const spin = useRef(null);
@@ -887,7 +904,27 @@ function ExplodingPart({
           // takes its hinge cups with it and there is nothing to keep in step.
           machining={showMachining}
           drills={drills}
-        />
+          // Turn 23 (F2.1): anything screwed to this leaf travels inside its
+          // group, so the swing is free and there is no second animation to
+          // keep in step — the room's own arrangement, in the editor.
+        >
+          {hinges?.length ? (
+            <DoorHinges
+              items={hinges}
+              profile={profile}
+              colour={profile.appearance.hardware.hinge || profile.appearance.hardware.bracket}
+              pivot={[
+                mm(p.meta?.hinge === 'R' ? p.box.x + p.box.w : p.box.x),
+                mm(p.box.y + p.box.h / 2),
+                mm(p.box.z + p.box.d / 2),
+              ]}
+              specs={hingeSpecs}
+              storageBase={storageBase}
+              surface={hardwareSurface}
+              scope={p.id}
+            />
+          ) : null}
+        </MovingPanel>
       </group>
     </group>
   );

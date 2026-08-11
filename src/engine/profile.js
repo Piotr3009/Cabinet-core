@@ -1898,11 +1898,44 @@ export const DEFAULT_CABINET_PROFILE = {
         // "nickel / onyx — drives which GLB is drawn and which ARTICLE the BOM
         // lists. Nothing else." Two finishes of the same hinge are the same
         // hole in the same place.
+        //
+        // ─── TURN 23 (CLAUDE.md F4.1): …AND WHAT IT LOOKS LIKE ────────────
+        // Owner: "the model renders WHITE — raw file material." A converted
+        // GLB carries whatever material the conversion wrote, so the finish
+        // reached the BOM and the file name and stopped there. `material` is
+        // the three numbers the view paints the clone with (3d/hardwareFinish
+        // .js), and it is here for the same reason every other appearance
+        // number is: it is a workshop answer, and the owner tunes it in one
+        // block rather than in the renderer. Sane metallic defaults — a
+        // bright plate and a dark one — not a measurement of anybody's
+        // sample.
         finishes: [
-          { id: 'nickel', label: 'Nickel', hint: 'The bright plated finish — the shop’s default.' },
-          { id: 'onyx', label: 'Onyx', hint: 'The dark finish. Same hinge, same drilling, black.' },
+          {
+            id: 'nickel',
+            label: 'Nickel',
+            hint: 'The bright plated finish — the shop’s default.',
+            material: { colour: '#c9ccd1', metalness: 0.95, roughness: 0.28 },
+          },
+          {
+            id: 'onyx',
+            label: 'Onyx',
+            hint: 'The dark finish. Same hinge, same drilling, black.',
+            material: { colour: '#2a2b2e', metalness: 0.9, roughness: 0.38 },
+          },
         ],
         defaultFinish: 'nickel',
+
+        // ─── THE PLASTIC STAYS PLASTIC (F4.2) ──────────────────────────────
+        // "Plastic sub-meshes (the CLIP lever, caps) keep a plastic look:
+        // override by material-name ALLOWLIST, not blanket." A chrome release
+        // lever is a hinge that does not exist, which is worse than a white
+        // one. The needles are matched as case-insensitive SUBSTRINGS of the
+        // material name, because the same lever comes out of one converter as
+        // `plastic_black` and another as `POM.001` — the mesh table in
+        // `verify/t23/hinge-meshes.md` is where a workshop reads the names its
+        // own files use, and this list is where it adds them.
+        plasticMaterials: ['plastic', 'pom', 'nylon', 'rubber', 'lever', 'cap'],
+        plastic: { colour: '#1c1c1e', metalness: 0.05, roughness: 0.55 },
 
         // ─── THE MOUNTING PLATE (F1.5) ───
         // Knock-in ⌀5 is what the LISP drills and what every project cut so far
@@ -2023,6 +2056,20 @@ export const DEFAULT_CABINET_PROFILE = {
           },
         ],
         defaultVariant: 'T',
+
+        // ─── TURN 23 (CLAUDE.md F4.3): THE RUNNER WEARS A FINISH TOO ───────
+        // "Runners get the SAME treatment through the same helper — one
+        // override function, two families." Blum sells the MOVENTO in orion
+        // grey and silk white, and this repository does not have either
+        // number: inventing a RAL is precisely what CLAUDE.md forbids here.
+        // So the list is EMPTY and there is ONE honest neutral metal, which
+        // `3d/hardwareFinish.js` falls through to. The day the owner supplies
+        // the two, they are two entries with a `material` each, exactly like
+        // the hinge's nickel and onyx above — and nothing else changes.
+        finishes: [],
+        finish: { colour: '#b9bcc0', metalness: 0.9, roughness: 0.35 },
+        plasticMaterials: ['plastic', 'pom', 'nylon', 'rubber', 'cap'],
+        plastic: { colour: '#1c1c1e', metalness: 0.05, roughness: 0.55 },
 
         // ─── WHERE THE MODEL'S OWN ORIGIN IS ──────────────────────────────
         // A downloaded model has an origin somebody else chose, and the LISP
@@ -2736,6 +2783,10 @@ export function migrateCabinetProfile(profile) {
           ...bucketLocation(D.hardware.hinge.cliptop),
           systems: mergeById(D.hardware.hinge.cliptop.systems, profile.hardware?.hinge?.cliptop?.systems),
           finishes: mergeById(D.hardware.hinge.cliptop.finishes, profile.hardware?.hinge?.cliptop?.finishes),
+          // Turn 23 (CLAUDE.md F4.2): the plastic answer and the names it is
+          // applied to. Merged rather than spread so a turn-19 profile — whose
+          // finishes carry no `material` at all — comes back able to paint.
+          plastic: { ...D.hardware.hinge.cliptop.plastic, ...profile.hardware?.hinge?.cliptop?.plastic },
           // The PLATES are not merged by id from a stored profile: whether the
           // ⌀3 plate may be chosen is a question about what this repository
           // knows how to drill (F1.5), not a workshop preference, and a saved
@@ -2765,6 +2816,13 @@ export function migrateCabinetProfile(profile) {
           // from the app rather than from the file.
           ...bucketLocation(D.hardware.runner.movento),
           variants: mergeById(D.hardware.runner.movento.variants, profile.hardware?.runner?.movento?.variants),
+          // Turn 23 (CLAUDE.md F4.3): the finish list and the single neutral
+          // metal behind it, merged like every other nested block — a profile
+          // saved before this turn comes back with them rather than with a
+          // runner that has no finish at all.
+          finishes: mergeById(D.hardware.runner.movento.finishes, profile.hardware?.runner?.movento?.finishes),
+          finish: { ...D.hardware.runner.movento.finish, ...profile.hardware?.runner?.movento?.finish },
+          plastic: { ...D.hardware.runner.movento.plastic, ...profile.hardware?.runner?.movento?.plastic },
           modelOrigin: { ...D.hardware.runner.movento.modelOrigin, ...profile.hardware?.runner?.movento?.modelOrigin },
           rod: { ...D.hardware.runner.movento.rod, ...profile.hardware?.runner?.movento?.rod },
         },

@@ -2067,6 +2067,62 @@ export const DEFAULT_CABINET_PROFILE = {
         // If a real render shows the release lever on the wrong side, flip
         // this ONE letter — nothing else.
         fileHand: 'R',
+
+        // ─── TURN 24 (CLAUDE.md F1): THE HINGE BREAKS IN THE MIDDLE ────────
+        //
+        // Owner's verdict on turn 23: the whole model rides the leaf, and it
+        // must BREAK — cup side with the door, body side with the plate — or,
+        // failing that, disappear when open. A better FILE will not fix it: a
+        // GLB is a rigid cast. A RIG will.
+        //
+        // ONE JOINT, NAMED AS AN APPROXIMATION. A real CLIP top is a
+        // SEVEN-LINK cross (Blum's own drawings: four bars, three couplers)
+        // and the cup's path is a curve nobody here has the geometry for.
+        // This is ONE hinge at the arm's front pivot, turned by the door's own
+        // opening angle so the arm visually follows the cup into the opening
+        // while its rear stays at the plate. CLAUDE.md F1.2 asks for exactly
+        // that and forbids attempting the real four-bar; the name is in the
+        // code beside the maths (3d/hingeModels.js `foldMemberB`).
+        rig: {
+          // The FLAG (F1.4). ON, the model folds. OFF — the owner's explicit
+          // fallback if his eye test rejects the fold — an opening door HIDES
+          // the body beyond `hideBeyondDeg` and shows the plate only, which is
+          // honest in a way a wrong pose is not.
+          enabled: true,
+          hideBeyondDeg: 15,
+
+          // ─── THE SPLIT, BY NODE NAME (F1.1 / F1.3) ──────────────────────
+          //
+          // The five components of the STEP-derived standard model, measured
+          // per node, z in FILE millimetres (verify/t24/rig-members.md):
+          //
+          //   bau0015089612   35.3 … 51.3    5216 tris   cup
+          //   bau0015088783   39.4 … 50.1     332        clip cap
+          //   bau0015088853   31.1 … 44.9     416        link cover
+          //   bau0015088251  −28.0 … 46.2    2634        arm + rear body
+          //   bau0019416036  −29.4 … 22.5     364        lever
+          //
+          // MEMBER A parents to the DOOR and rides the leaf exactly as turn 23
+          // left it. MEMBER B parents to the CARCASS beside the plate and
+          // folds at the axis below.
+          //
+          // A name that is in NEITHER list falls back to the z threshold —
+          // `z > 30 ⇒ member A` — which is the honest answer for a family
+          // nobody has opened yet. It is a FALLBACK and not the rule, and
+          // `bau0015088251` is why: that node spans −28 … 46.2, so a threshold
+          // asked about its box would split the arm down the middle.
+          memberA: ['bau0015089612', 'bau0015088783', 'bau0015088853'],
+          memberB: ['bau0015088251', 'bau0019416036'],
+          zThresholdMm: 30,
+
+          // ─── THE AXIS (F1.2) ────────────────────────────────────────────
+          // Horizontal, parallel to the hinge row — the file's Y — at the
+          // arm's front pivot. Starting numbers, in FILE millimetres, and the
+          // first person to see the fold beside a real cabinet corrects THESE
+          // TWO and nothing else.
+          axis: { z: 33.5, x: -7.75 },
+        },
+
         // A cup hinge is a small object. A file whose longest axis is bigger
         // than this is not a CLIP top and the view draws the procedural body
         // instead of something the wrong size (the runners' `lengthTolerance`
@@ -2873,6 +2929,23 @@ export function migrateCabinetProfile(profile) {
           plateOrigin: {
             ...D.hardware.hinge.cliptop.plateOrigin,
             ...profile.hardware?.hinge?.cliptop?.plateOrigin,
+          },
+          // Turn 24 (CLAUDE.md F1): the rig. Key by key, because a profile
+          // saved before this turn has no member lists at all and a hinge that
+          // could not be split would be a hinge that never folds. The MEMBER
+          // LISTS come back from the app for the same reason `plates` does:
+          // which node of Blum's own export is the cup is a fact about the
+          // FILE, not a workshop preference — the flag and the axis are the
+          // two things a workshop tunes, and both survive the merge.
+          rig: {
+            ...D.hardware.hinge.cliptop.rig,
+            ...profile.hardware?.hinge?.cliptop?.rig,
+            memberA: D.hardware.hinge.cliptop.rig.memberA,
+            memberB: D.hardware.hinge.cliptop.rig.memberB,
+            axis: {
+              ...D.hardware.hinge.cliptop.rig.axis,
+              ...profile.hardware?.hinge?.cliptop?.rig?.axis,
+            },
           },
         },
       },

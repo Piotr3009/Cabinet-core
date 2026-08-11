@@ -772,6 +772,24 @@ export default function UnitView({
     }, profile);
   }, [wallGaps, result.panels, W, profile]);
 
+  // ─── TURN 24 (CLAUDE.md F1.2): EVERY LEAF'S SIGNED ANGLE ──────────────────
+  //
+  // The hinge splits in two this turn: member A rides the door and member B
+  // stays on the carcass and FOLDS by the door's own opening angle. Member B is
+  // drawn by `<Hardware>`, which is not a child of any door, so the angle has
+  // to cross — and it crosses as the SAME expression `MovingPanel` integrates
+  // (`dir × open × swing`), read off the same two inputs, so a fold that lagged
+  // its leaf would be a bug in one place rather than a disagreement between two.
+  const doorSwing = useMemo(() => {
+    const out = {};
+    for (const p of result.panels) {
+      if (p.part !== 'FRONT' || !p.box) continue;
+      const dir = p.meta?.hinge === 'R' ? 1 : -1;
+      out[p.id] = dir * (openFronts?.[p.id] ?? 0) * swingFor(p.meta?.hinge);
+    }
+    return out;
+  }, [result.panels, openFronts, swingFor]);
+
   // ─── The gaps between the shelves (turn 8, CLAUDE.md F4) ───
   // Which shelf the cursor is on, and the whole ladder of clear openings in the
   // column it belongs to. Measured between FACES — the clear space a thing has
@@ -1111,6 +1129,9 @@ export default function UnitView({
                   specs={hingeSpecs}
                   storageBase={storageBase}
                   onEditHinge={onEditHinge}
+                  // Turn 24 (F1.4): with the rig OFF the model hides beyond
+                  // ~15°, and this is the number it is asked about.
+                  openDeg={Math.abs(((doorSwing[p.id] || 0) * 180) / Math.PI)}
                   surface="room"
                   // One mount per door, so the registry names which leaf each
                   // reported hinge belongs to.
@@ -1413,6 +1434,11 @@ export default function UnitView({
         // WHICH hinge each door wears — resolved once, by the engine, and
         // handed down; and the gesture that opens the hinge modal on it.
         hingeSpecs={hingeSpecs}
+        // ─── TURN 24 (CLAUDE.md F1.2): HOW FAR EACH LEAF HAS SWUNG ───────────
+        // The hinge's carcass half folds by the DOOR's own angle, and the door
+        // is not this component's child — so the angle is handed across rather
+        // than a second swing being computed beside the first.
+        doorSwing={doorSwing}
       />
 
       {/* Top infill: grab its top edge and drag UP to the ceiling, or

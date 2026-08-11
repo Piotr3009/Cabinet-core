@@ -6283,3 +6283,215 @@ wiercenia, panele, geometrię cięcia i sumy.
 `modelOrigin` / `plateOrigin`, `maxModelLengthMm` (F1) ·
 `ui.modal.anchorOffset` (F3). Wszystkie scalane klucz po kluczu, więc profil
 zapisany przed tą turą wraca z nimi. **Nic nie zmienione i nic nie usunięte.**
+
+---
+
+# TURA 20 — SKRZYNKA ZNAJDUJE PROWADNICĘ, BUCKET ZNAJDUJE PLIKI (11.08.2026, fazy F1–F12)
+
+Dwanaście uwag z oględzin właściciela po turach 17–19, trzy z nich
+zdiagnozowane do przyczyny w laboratorium, zanim CLAUDE.md powstał. Wszystkie
+dwanaście zamknięte.
+
+Baza: `a631e8d` (main po scaleniu tury 19). Testy na wejściu: **1469**, na
+wyjściu: **1555**. Odciski CNC na wejściu: `verify/t19/fingerprints-turn19.txt`.
+
+## Dwie nowe żelazne zasady, od tej tury na stałe
+
+**R1 — GEST DOWODZI SIĘ PRAWDZIWYM WSKAŹNIKIEM.** Podwójne kliknięcie na arkuszu
+CNC w turze 19 przeszło na `element.dispatchEvent(...)`, podczas gdy funkcja była
+martwa dla prawdziwej myszy. `scripts/e2e-turn20.mjs` nie używa `dispatchEvent`
+do ŻADNEGO gestu: każdy klik, dwuklik, przeciągnięcie i najechanie to wejście
+CDP. Asercje na store'ach zostają — ale PO prawdziwym geście, nigdy zamiast.
+
+**R2 — TWIERDZENIE O BUCKECIE DOWODZI SIĘ NA ŻYWYM BUCKECIE.** Host wyprowadzany
+z paczki dekorów, oba manifesty i po jednym modelu na rodzinę. W TEJ SESJI host
+jest zablokowany przez politykę wyjścia (403 na CONNECT) i **nie udajemy, że
+było inaczej**: `scripts/bucket-live.mjs` robi całe sprawdzenie jedną komendą,
+`verify/t20/bucket-live.md` niesie odmowę wraz z dowodem.
+
+**R3 — PRAWDZIWY MANIFEST JEST FIXTUREM.** Oba pliki właściciela leżą teraz w
+`test/fixtures/bucket/` i parsery jadą po nich w testach: 40 wierszy prowadnic,
+19 zawiasów. Rozjazd schematu zapala test zamiast szarzyć scenę.
+
+## F1 — Skrzynka bierze wysokość z prowadnicy
+
+Jedno prawo dla KAŻDEJ szuflady, także dolnej, mierzone od wiersza, który silnik
+naprawdę wierci: dolna krawędź boku = wiersz + **13,5**, spód dna = wiersz +
+**28,5** (13,5 + 15 mm wpustu, więc druga liczba jest wyprowadzona, nie
+przepisana). Przedtem dwa kity mówiły co innego o tej samej prowadnicy Bluma:
+skrzynka BUDR siedziała DOKŁADNIE na wierszu, a szafy 9 mm POD nim.
+`wardrobe.drawers.boxDropFromRunner` jest usunięte, nie zostawione z nieprawdą.
+
+**Odciski CNC: bajt w bajt bazowe.** Każdy wpust, kieszeń i otwór liczy się od
+własnych krawędzi części — żaden z nich nie jedzie za skrzynką. Golden fixtures:
+**nic nie regenerowane**, bo żaden z nich nie zapisuje pozycji Y
+(`verify/t20/fixture-delta.md` pokazuje to komendą).
+
+Jedno następstwo, nazwane zamiast wchłonięte: w szafce pod AGD bok skrzynki jest
+przycięty zaciskiem z tury 18 mierzonym OD WIERSZA, więc skrzynka wystaje teraz
+13,5 mm ponad półkę. Płyty **nie skrócono** (F1.2 zachowuje wysokości boków,
+a tura ma prawo do jednej delty CNC) — silnik OSTRZEGA
+(`APPLIANCE_DRAWER_BOX_OVER_SHELF`), a decyzja o przecięciu należy do
+właściciela. BLOCKERS #85.
+
+## F2 — Bucket czytany takim, jaki jest
+
+Trzy usterki, wszystkie z jednego powodu: trzy dokumenty zgadzały się ze sobą, a
+bucket z żadnym z nich. Ścieżka prowadnic niosła NAZWĘ BUCKETA drugi raz
+(`…/public/hardware/hardware/…` → 400); ścieżka zawiasów niosła ją i jeszcze
+poziom `cliptop/`, którego właściciel nigdy nie założył; a manifesty nazywają
+każdy `file` ścieżką, która nie istnieje nigdzie, i nie mają `system` w wierszu —
+więc parser wyrzucał wszystkie czterdzieści wierszy w ciszy.
+
+Parser jest teraz tolerancyjny dla obu rodzin: URL to **folder manifestu +
+basename** (jedna reguła, jeden dom — `engine/hardwareUrl.js`), wiersz bez
+`system` dziedziczy nagłówek, a `system` przestał być filtrem per wiersz, który
+mógł opróżnić listę — wybiera KTÓRY katalog jest wczytany, a dopasowanie w nim
+idzie po nl / wariancie / stronie. Obie ścieżki wracają z domyślnych przy
+migracji: gdzie leży paczka właściciela, to wiedza aplikacji, nie preferencja
+warsztatu.
+
+**Czwarta usterka, znaleziona z czytania paczki i CELOWO nienaprawiona:**
+drabinka NL Bluma w buckecie (250…450) i drabinka, z której aplikacja wybiera
+długość nominalną (390…690 — długości SKRZYNKI z LISP-a), **nie mają części
+wspólnej**. To zmienia numer artykułu w BOM-ie, więc jest pytaniem do
+właściciela: BLOCKERS #84 i test, który zapali się w dniu naprawy.
+
+## F3 — Jedzie cała szuflada, nie sam front
+
+`engine/drawerMotion.js`: co jedzie razem (klucz `meta.drawer`, ten sam, na
+którym silnik trzyma wiersze prowadnic i linie BOM-u) i jak daleko — **własna
+długość nominalna szuflady**, bo MOVENTO jest pełnego wysuwu. `depth × 0,75`
+było zgadywanką tury 3, sprzed dnia, w którym aplikacja wiedziała, na czym
+szuflada jeździ. Prowadnica jedzie razem ze skrzynką: obie w tej aplikacji są
+JEDNYM ciałem, a rozdzielenie profilu stałego od wózka wymaga podzielenia modelu
+przez właściciela.
+
+## F4 — Etykieta CNC o połowę mniejsza — JEDYNA delta CNC tury
+
+`cnc.labelHeight` 40 → **20**. Dowód jest bytami, nie obietnicą
+(`scripts/cnc-delta-probe.mjs`, 278 plików): **0** zmian geometrii, **0** w
+spisie bytów, **0** warstw, **0** napisów, **0** pozycji, **397** wysokości
+tekstu — i żadna nowa wyższa niż 20. Wysokości już poniżej limitu (19,07, 16,64,
+9,5, podłoga 6) **nie ruszyły się co do cyfry**: mała część już skaluje się
+proporcją i nie ma kurczyć się dwa razy.
+
+Jedna uczciwa uwaga: eksport zszedł 35 → 20, a nie 20 → 10 jak przewiduje F4.2,
+bo rozmiar na SZKLE bierze się z `annotation.partLabelMm` (70), a `labelHeight`
+jest tylko limitem pliku. Przycięcie szkła też — zmierzone — przełamuje wspólną
+etykietę na nowo (212 części z dwóch linii na jedną, spis bytów rusza się w 192
+miejscach), czyli zmienia to, co plik MÓWI. To delta dla tury, która ją nazwie.
+
+## F5 — Modal 140 px z boku, w poziomie kliknięcia
+
+`anchorOffset` → `{ x: 140, y: 0 }`, a `y` to teraz przesunięcie GÓRY panelu od
+kliknięcia. Prawo tury 19 („dół siedzi |y| nad obiektem") jest **skasowane**, nie
+zostawione jako tryb. Prawo poziome bez zmian, i to ono trzyma gwarancję. Testy
+tury 19 przepisane, ze spacerem po pięciu narożnikach.
+
+## F6 — Linijka uczy się punktów obiektu
+
+`lib/rulerSnaps.js` — czysta arytmetyka na bryłach: **END** (8 narożników),
+**MID** (12 środków krawędzi), **INT** (styk dwóch płyt w granicach 0,5 mm — środek
+wspólnej krawędzi i jej dwa końce). Punkt pokrywający się jest oferowany RAZ, a
+wyższy priorytet wygrywa piksel: END > MID > INT, jak w AutoCAD-zie. Magnes
+liczy się w PIKSELACH (`snapPx` 12), bo apertura mierzona w milimetrach jest
+bezużyteczna z daleka i nadwrażliwa z bliska. Kliknięcie BEZ złapanego punktu
+**nie stawia nic** — to właśnie czyni znacznik całą informacją zwrotną.
+
+## F7 — Arkusz CNC odpowiada wskaźnikowi
+
+Rollover nad wierceniem, kieszenią, wpustem i przejściem freza: rodzaj + warstwa,
+⌀ albo W×H, głębokość, promień naroża i odległości do WŁASNYCH krawędzi części.
+Wyprowadzenie to czysty moduł silnika po tych samych rekordach, z których pisze
+się DXF; identyfikatory zgadzają się z oknem detalu. Cel najechania rośnie do
+`hoverGracePx` tam, gdzie symbol jest mniejszy — otwór ⌀5 przy oddaleniu ma dwa
+piksele.
+
+## F8 — Materiał pokazuje rany
+
+Każde wiercenie, kieszeń i wpust to teraz DZIURA we własnym wielokącie płyty —
+prawdziwa nieobecność, taka sama, jaką kość psa ma od tury 11 — a ściany i dna
+tych cięć to DRUGI bufor, żeby `appearance.cutFace` (#4a4a4a) było jedyną rzeczą
+na nich. Cięcie ślepe pokazuje dno na prawdziwej głębokości, przelotowe
+przechodzi na wylot, a kieszeń bez podanej głębokości **nie jest cięta** zamiast
+być ciętą na zgadywankę.
+
+Przy okazji wyszła pomyłka tury 17: rama CNC boku szuflady leżała na ZEWNĘTRZNEJ
+ścianie. Pod kreskami tego nie widać; wycięte naprawdę widać od razu — MOVENTO
+siedzi od środka pod dnem, a dno stoi we wpustach MIĘDZY bokami. Obie ramy idą na
+ścianę wewnętrzną.
+
+Koszt: jeden scalony bufor na konfigurację płyty, dzielony przez każdą identyczną
+płytę w projekcie — cała szafka trzyszufladowa to kilka tysięcy trójkątów, nie
+siatka na otwór. Bramka odległości niepotrzebna, więc `perf.md` nie ma.
+
+## F9 — Dwuklik na arkuszu naprawdę działa
+
+Przechwycenie wskaźnika **na RUCHU, nie na naciśnięciu**. Przechwycony wskaźnik
+każe przeglądarce składać `click` i `dblclick` na PRZECHWYTUJĄCYM elemencie, więc
+uchwyt części z tury 19 nigdy ich nie dostawał. Pierwszy ruch poza
+`panThresholdPx` (4) zaczyna przesuwanie i bierze przechwycenie; puszczenie
+przed progiem oddaje wszystko, nic nie przechwyciwszy.
+
+## F10 — Zgubione konteksty
+
+`WebGLRenderer.dispose()` **nie oddaje kontekstu**. Przeglądarka trzyma około
+szesnastu żywych i zabija najstarszy, żeby zrobić miejsce — dziesięć linii
+właściciela to nie aplikacja gubiąca konteksty, tylko aplikacja je zbierająca.
+`3d/contextGuard.jsx` oddaje kontekst świadomie i liczy na `window.__cc.diag`,
+z ODDANIEM liczonym osobno od STRATY.
+
+Spacer złapał dwie rzeczy, których testy jednostkowe złapać nie mogły: strażnik
+w środku `<Canvas>` w ogóle się nie rejestrował przy szybkim otwieraniu (osobny
+korzeń Reacta nie zdążył wypłukać efektów), a samo oddanie drukowało tę samą
+linię `Context Lost`, którą naprawia. Strażnik wisi teraz na ELEMENCIE canvasa w
+drzewie właściciela, a nasłuch w fazie przechwytywania plus WeakSet celowo
+zgaszonych canvasów trzyma rozbiórkę poza konsolą. 12 × edytor + 4 × render:
+**lost 0, jeden żywy kontekst, zero linii w konsoli**.
+
+## F11 — Szuflada dostaje własny edytor
+
+To JEST okno edytora szafki, zawężone: ta sama powłoka, ten sam wybuch, ten sam
+blok właściwości. `drawer` w argumentach modalu zmienia, które płyty są w środku
+— i dokłada prowadnice, na które pokój nie patrzy, bo w kuchni jest ich ściana, a
+w tym oknie są tym, na co się patrzy. WYBUCH nie potrzebował niczego:
+`engine/explode.js` wysyła płytę wzdłuż jej najcieńszej osi na zewnątrz, co na
+szufladzie daje dokładnie listę z F11.3. Dwie drogi wejścia: dwuklik na płycie
+SKRZYNKI (front zachowuje swój wysuw) i „Edytuj szufladę N…" w menu
+kontekstowym, oferowane tylko tam, gdzie kliknięcie naprawdę padło na szufladę.
+
+## F12 — Trzy małe werdykty
+
+Kontur bierze WŁASNE odchylenie głębokości, przeciwne do wypełnienia: płaszczyzna
+cofa się, linia wychodzi do przodu, prześwit się podwaja. **Zapis mówi, że
+zapisał** — zielony z ptaszkiem na `ui.saveConfirmMs`, i zapis, który wrócił z
+czymkolwiek innym niż `ok`, zielony NIE jest. **Fornir dołącza do laminatu** na
+siatce 85 dekorów; forniru w KORPUSIE nikt nie pytał, więc jego picker stoi, a
+projekt już oforniowany zachowuje swój wybór.
+
+## Dowody
+
+`verify/t20/` — `walk.json` (40/40, R1 w nagłówku), `measurements.json`, 18
+zrzutów, `fingerprints-*`, `probe-*`, `cnc-export-identity.md`,
+`fixture-delta.md`, `bucket-live.md`, `context-lost.md` i `README.md`, który
+mówi, co dowodzi co.
+
+## Nowe pliki
+
+`src/engine/hardwareUrl.js` · `src/engine/drawerMotion.js` ·
+`src/engine/recesses.js` · `src/engine/cnc/rollover.js` · `src/lib/rulerSnaps.js` ·
+`src/3d/contextGuard.jsx` · `scripts/bucket-live.mjs` · `scripts/e2e-turn20.mjs` ·
+`test/fixtures/bucket/` · `test/turn20-*.test.js` (7 plików) · `verify/t20/`
+
+## Nowe liczby w `profile.js`
+
+`baseDrawerUnit.boxAboveRunner` / `bottomAboveRunner` (F1) ·
+`hardware.runner.movento.path` i `hardware.hinge.cliptop.path` — poprawione (F2) ·
+`cnc.labelHeight` 40 → 20 (F4) · `ui.modal.anchorOffset` → `{140, 0}` (F5) ·
+`editor.ruler.snapPx` / `contactMm` / `markerPx` (F6) ·
+`cnc.annotation.panThresholdPx` (F9) i `hoverGracePx` (F7) ·
+`appearance.outline.polygonOffset.outlineFactor` / `outlineUnits` (F12.1) ·
+`appearance.cutFace` (F8) · `ui.saveConfirmMs` (F12.2) ·
+`projectSettings.frontSources` — fornir na picker dekorów (F12.3).
+**Usunięte:** `wardrobe.drawers.boxDropFromRunner` — kłamało po F1.

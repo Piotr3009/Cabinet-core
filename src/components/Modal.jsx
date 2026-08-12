@@ -272,12 +272,24 @@ export default function Modal({
           {/* ─── Turn 23 (CLAUDE.md F1.2): ← Back, BESIDE THE TITLE ─────────
               First in the header, where a hand looking for "out of here" goes,
               and rendered only where there IS a level under this one — the top
-              of the stack has no Back, because there is nothing behind it. */}
-          {onBack && (
+              of the stack has no Back, because there is nothing behind it.
+
+              ─── TURN 26 (CLAUDE.md F12.2): AND IN A WORKSPACE IT IS BIG ─────
+              The owner, of the editor: "Back moves to the top centre of the
+              modal, large." In a WORKSPACE — a maximised window that fills the
+              screen — a ghost button 4 px from the left edge of a 1900 px
+              header is a button nobody finds, and "out of here" is the thing a
+              hand looks for first. So a maximised window puts it in the MIDDLE
+              of the header at a size the eye lands on, and every side dialog
+              keeps the quiet one beside its title. One shell, two placements,
+              and the placement follows the KIND of window rather than being a
+              per-modal decision. */}
+          {onBack && !big && (
             <button
               type="button"
               className="cc-btn-ghost mr-2 shrink-0"
               data-modal-back="1"
+              data-modal-back-place="beside"
               title={`Back${backLabel ? ` to the ${backLabel}` : ''} (Escape)`}
               onClick={onBack}
             >
@@ -285,6 +297,19 @@ export default function Modal({
             </button>
           )}
           <h2 className="text-sm text-ink-50">{title}</h2>
+          <span className="flex-1" />
+          {onBack && big && (
+            <button
+              type="button"
+              className="cc-editor-back shrink-0"
+              data-modal-back="1"
+              data-modal-back-place="top-centre"
+              title={`Back${backLabel ? ` to the ${backLabel}` : ''} (Escape)`}
+              onClick={onBack}
+            >
+              ← Back
+            </button>
+          )}
           <span className="flex-1" />
           {/* Offered only to a window that ASKED to be maximised. Every other
               modal in the app is a side dialog and a maximise button on one

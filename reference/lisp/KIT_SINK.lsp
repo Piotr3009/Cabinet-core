@@ -125,12 +125,17 @@
       (setq i 1)
       (while (<= i numShelves)
         (setq shelfY (+ y0 G (* spacing i)))
-        (drawCircle "SHELVES_7_5MM" (+ x0 70.0) (- shelfY 50.0) 3.75)
-        (drawCircle "SHELVES_7_5MM" (+ x0 70.0) shelfY 3.75)
-        (drawCircle "SHELVES_7_5MM" (+ x0 70.0) (+ shelfY 50.0) 3.75)
-        (drawCircle "SHELVES_7_5MM" (+ x0 szer -120.0) (- shelfY 50.0) 3.75)
-        (drawCircle "SHELVES_7_5MM" (+ x0 szer -120.0) shelfY 3.75)
-        (drawCircle "SHELVES_7_5MM" (+ x0 szer -120.0) (+ shelfY 50.0) 3.75)
+        ;; MIRROR FIX 12.08.2026: BUR is the mirrored board (x0 = BACK edge,
+        ;; like its hinges at szer-37). These six were copied from BUL verbatim,
+        ;; so the right side's pins sat 120 from the FRONT. Columns are a
+        ;; distance from the cabinet's front and back, same on both sides:
+        ;; back column at x0+120, front column at x0+szer-70.
+        (drawCircle "SHELVES_7_5MM" (+ x0 120.0) (- shelfY 50.0) 3.75)
+        (drawCircle "SHELVES_7_5MM" (+ x0 120.0) shelfY 3.75)
+        (drawCircle "SHELVES_7_5MM" (+ x0 120.0) (+ shelfY 50.0) 3.75)
+        (drawCircle "SHELVES_7_5MM" (+ x0 szer -70.0) (- shelfY 50.0) 3.75)
+        (drawCircle "SHELVES_7_5MM" (+ x0 szer -70.0) shelfY 3.75)
+        (drawCircle "SHELVES_7_5MM" (+ x0 szer -70.0) (+ shelfY 50.0) 3.75)
         (setq i (1+ i)))))
   (drawText "UNIT_NUMBER" midX midY 40.0 unitNum))
 

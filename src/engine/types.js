@@ -184,7 +184,17 @@ export const UNIT_TYPES = {
     drawerStyle: null,
     minHeightKey: null,
     defaultsKey: 'wallUnit.defaults',
-    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true },
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      // ─── TURN 26 (CLAUDE.md F9.2): A WALL UNIT JOINS THE RUN ─────────────
+      // "A cornice run continues across ANY adjacent cornice-bearing unit
+      // whose top edges meet — tall and wall alike, not just floor-standing."
+      // Turn 22 offered the moulding on wardrobes and tall units because those
+      // are what stand up to the ceiling; a run of wall units finishes at the
+      // same height and takes the same moulding, and leaving it off was the
+      // app deciding a joinery question by unit type.
+      cornice: true,
+    },
     available: true,
   },
   BUDTALL: {

@@ -24,6 +24,10 @@ import * as cornice from './engine/cornice.js';
 import * as companyDefaults from './engine/companyDefaults.js';
 import * as hardwareSource from './lib/hardwareSource.js';
 import * as hardwareHealth from './lib/hardwareHealth.js';
+import * as machining from './engine/machining.js';
+import * as recesses from './engine/recesses.js';
+import * as lighting from './engine/lighting.js';
+import * as format from './engine/format.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -91,6 +95,20 @@ if (typeof window !== 'undefined') {
     cornice, companyDefaults, hardwareSource, hardwareHealth,
   };
   window.__cc.company = useCompanyDefaultsStore;
+  // ─── Turn 26 (CLAUDE.md R10 / R11 / F10) ───
+  // The same reason a seventh time, and R10 makes it sharper than it has ever
+  // been: the turn's central claim is that THE SCENE RENDERS THE RECORD. A walk
+  // that photographed a hole would be proving a picture; a walk that asks
+  // `recesses.panelRecesses` — the very function `3d/panelSolid.js` builds the
+  // cut faces from — and compares it with the panel's own `cnc` and `drills` is
+  // proving the parity itself. `machining` is the per-class policy those two
+  // agree through, and `lighting` is F10's "compute it, do not eyeball it" —
+  // the walk reads the before/after sum out of the running scene rather than
+  // recomputing it beside the app. All pure; none reaches anything the page
+  // could not already compute.
+  window.__ccT26 = {
+    machining, recesses, lighting, format,
+  };
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

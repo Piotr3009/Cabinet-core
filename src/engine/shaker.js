@@ -154,14 +154,27 @@ export function shakerPocket({ w, h, frame }, profile) {
 /**
  * Is this panel a front cut from the shaker style?
  *
- * Read off the PIECE's own `meta.frontType`, never off the unit's type: a
- * D/W panel's face is a FRONT in every way that matters to the BOM and the
- * spray booth and is deliberately flat (turn 17, F9), and the way that stays
- * true is that the fact lives on the part.
+ * Read off the PIECE's own `meta.frontType`, never off the unit's type — the
+ * fact lives on the part.
+ *
+ * ─── TURN 26 (CLAUDE.md F5.5): AND AN APPLIANCE FRONT IS A FRONT ───────────
+ *
+ * This function used to answer FALSE for a D/W panel whatever its type said,
+ * on turn 17's reading of "it is a front and nothing else — no hinges, flat, no
+ * door furniture". The owner's turn-26 verdict corrects the middle of that
+ * sentence: "A D/W front is a front: F3-turn-25's shaker applies to it, and so
+ * do handles. The `dwPanel` path must stop being a special case for anything a
+ * front normally has."
+ *
+ * What turn 17 was really saying — and what stands — is that it takes no CUP
+ * HINGES, because it screws to the appliance's own door. That is one law about
+ * one thing, and it is said where it belongs: on the drilling pass in
+ * `engine/cabinet.js`, and in `engine/doors.js doorHingeDatum`, which hands a
+ * D/W panel no datum at all. It is not said here, because "does this board
+ * carry a rebate" and "is this board hung on hinges" are two questions.
  */
 export function isShakerFront(panel) {
   if (panel?.role !== 'front') return false;
-  if (panel?.meta?.appliance) return false;
   return panel?.meta?.frontType === 'S';
 }
 

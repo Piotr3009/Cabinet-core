@@ -59,6 +59,46 @@ export default function MenuBar({ menus }) {
   );
 }
 
+/**
+ * A menu entry that is a RANGE (turn 26, CLAUDE.md F10.3).
+ *
+ * `{ label, slider: { min, max, step, value, format }, run }`. The value is
+ * echoed beside the label because a slider with no number on it is a slider
+ * nobody can set twice the same way.
+ */
+function SliderItem({ item }) {
+  const s = item.slider;
+  return (
+    <div className="px-3 py-1.5 text-sm text-ink-100" title={item.hint || ''}>
+      <div className="flex items-center gap-2">
+        <span className="w-3 shrink-0" />
+        <span className="flex-1">{item.label}</span>
+        <span className="text-ink-400 tabular-nums">{s.format ? s.format(s.value) : s.value}</span>
+      </div>
+      <input
+        type="range"
+        className="w-full mt-1 accent-gold"
+        min={s.min}
+        max={s.max}
+        step={s.step}
+        value={s.value}
+        disabled={item.disabled}
+        aria-label={item.label}
+        // A DIAGNOSTIC, for the same reason every other `data-*` in this app is
+        // one: the acceptance walk has to be able to put a real pointer on this
+        // track, and finding it by its label is finding it by a sentence
+        // somebody may reword. Nothing reads it back.
+        data-menu-slider={String(item.label).toLowerCase()}
+        onChange={(e) => item.run?.(Number(e.target.value))}
+        // A click on the track must not reach the dismissal handler on the way
+        // out, or the menu shuts under the pointer mid-drag.
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
+}
+
 function Dropdown({ items, onClose, nested = false }) {
   const [openSub, setOpenSub] = useState(null);
   return (
@@ -68,6 +108,13 @@ function Dropdown({ items, onClose, nested = false }) {
     >
       {items.map((item, i) => {
         if (item.divider) return <div key={`div-${i}`} className="cc-divider !my-1" />;
+        // ─── TURN 26 (CLAUDE.md F10.3): A MENU ENTRY MAY BE A SLIDER ────────
+        // "A brightness slider in the View menu." A menu is DATA in this app
+        // and a new KIND of entry is one branch here, exactly as `divider` and
+        // `items` are — not a component the View menu has to be rebuilt around.
+        // It does not close the menu on change: a slider is dragged, and a menu
+        // that shut on the first pixel would be unusable.
+        if (item.slider) return <SliderItem key={item.label} item={item} />;
         const hasSub = Array.isArray(item.items) && item.items.length > 0;
         return (
           <div key={item.label} className="relative">

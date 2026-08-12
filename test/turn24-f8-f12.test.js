@@ -141,7 +141,17 @@ test('F9 — it is TEXT and nothing else: no entity moves for it', () => {
   const shelf = adj.panels.find((p) => p.part === 'SHELF');
   // The label is a string on a part whose geometry the tag cannot touch.
   assert.match(partLabelText('01', shelf), /\(ADJ\)$/);
-  assert.deepEqual(shelf.cnc.outline, [[0, 0], [shelf.w, 0], [shelf.w, shelf.h], [0, shelf.h]]);
+  // ─── TURN 26 (CLAUDE.md F8) ───
+  // The outline is a plain rectangle still; what moved is the FRAME it is
+  // drawn in. A shelf lies along the grain now — `depth × width`, the sides'
+  // own convention — so the rectangle is `drawn_w × drawn_h` and the cut size
+  // (`w`, `h`) is untouched, which is what the CSV and the BOM print.
+  assert.equal(shelf.cnc.drawn_w, shelf.h, 'drawn `depth × width`');
+  assert.equal(shelf.cnc.drawn_h, shelf.w);
+  assert.deepEqual(
+    shelf.cnc.outline,
+    [[0, 0], [shelf.h, 0], [shelf.h, shelf.w], [0, shelf.w]],
+  );
 });
 
 // ─── F10 — HOVER ARROWS GROW A MAGNET ──────────────────────────────────────

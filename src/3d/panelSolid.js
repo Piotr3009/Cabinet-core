@@ -89,8 +89,15 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // and are not behind the flag: they are the board's own outline, and a panel
   // whose only feature is a drilling falls back to a `boxGeometry` exactly as
   // it did in turn 19.
+  //
+  // ─── TURN 26 (CLAUDE.md R10 / F3): AND IT IS BACK ON ─────────────────────
+  // The owner's newer and higher law — the sheet is the truth and the scene
+  // follows it — outranks the retirement, and the flag ships TRUE. What makes
+  // it honest this time is that the depth is real (`engine/recesses.js` reads
+  // the record's own, then the workshop's table) and that WHICH classes are
+  // bored is a named policy with a reason per class (`engine/machining.js`).
   const recesses = profile?.appearance?.cuts?.enabled
-    ? panelRecesses(panel, drills, { thickness, skipLayers: [layers?.socket] })
+    ? panelRecesses(panel, drills, { thickness, skipLayers: [layers?.socket], profile })
     : [];
   if (!notches.length && !tabs.length && !recesses.length) return NOTHING;
 

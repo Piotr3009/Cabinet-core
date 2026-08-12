@@ -183,7 +183,19 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // drawer front, three short of the 200 a 70 mm frame needs — that is REFUSED
   // and cut plain, with the cabinet carrying the message. Three POLYLINE
   // entities appear on one new layer; not one existing coordinate moves.
-  assert.equal(fingerprint(sheetOf(result, all)), 'cbfa35ea', 'the whole-unit sheet has changed');
+  // ─── TURN 26 (CLAUDE.md F8): cbfa35ea → ce75028e ─────────────────────────
+  // THE SHELF LIES ALONG THE GRAIN, and nothing else on this sheet. The owner:
+  // shelves are laid ACROSS the sheet, so the grain runs front-to-back, and the
+  // banding on the LONG front edge runs across it. A shelf is drawn `depth ×
+  // width` now — the same convention BUL and BUR have had since turn 1 and the
+  // partition took in turn 24 — so its own frame stands its long axis up the
+  // page and `sheetTurn` no longer has to turn it at layout.
+  //
+  // Two POLYLINE entities (the two shelves' outlines) and two TEXT entities
+  // (their labels) are written in the turned frame; every other part on this
+  // sheet is byte-identical, and the CUT SIZE of the shelves has not moved —
+  // `w` and `h` are what the CSV and the BOM print and they are unchanged.
+  assert.equal(fingerprint(sheetOf(result, all)), 'ce75028e', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -208,11 +220,15 @@ test('…and so is each preset’s', () => {
   // the FRONTS, and leaves `non-sprayed` exactly where F1 left it. Between them
   // the four sheets say which delta reached which part of the cabinet, which is
   // what a preset census is for.
+  // ─── TURN 26 (CLAUDE.md F8): AND NOW THE TWO THAT CARRY A SHELF ─────────
+  // F8 lays a shelf along the grain, so the two sheets with a shelf on them
+  // move and the two that are doors and drawer faces do not — the same census
+  // logic every delta before it has been read by.
   const expected = {
-    all: 'cbfa35ea',           // was 1696eb4c — F3's pocket on three fronts
-    'non-sprayed': '32cca2e6', // UNCHANGED since F1 — no front is on this sheet
-    sprayed: '8a6498da',       // was 27364f5c — F3's pocket
-    fronts: '8a6498da',        // was 27364f5c — the same three fronts
+    all: 'ce75028e',           // was cbfa35ea — F8's two shelves, turned in their own frame
+    'non-sprayed': '13ba3fd2', // was 32cca2e6 — the same two shelves
+    sprayed: '8a6498da',       // UNCHANGED — no shelf is on this sheet
+    fronts: '8a6498da',        // UNCHANGED, for the same reason
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -370,12 +386,27 @@ test('DELTA 2: the exported DXF carries the labels and NO other lettering', () =
   }
 });
 
-test('DELTA 3: a shelf is laid down turned, and only a shelf is', () => {
+test('DELTA 3: a shelf stands its long side up the page — and turn 26 does it in the DRAWING', () => {
+  // Turn 17 turned a shelf at LAYOUT, because it was drawn `width × depth` and
+  // the nester had to stand it up. Turn 26 (F8) draws it `depth × width` — the
+  // sides' own convention — so it arrives standing and `sheetTurn` correctly
+  // leaves it alone. The rule itself is untouched and still says what it always
+  // said: "a shelf board whose drawn frame already stands its long side up the
+  // page is already right and is left exactly where it is."
   const result = unit();
   for (const panel of exportablePanels(result.panels)) {
     const turned = sheetTurn(panel) === 90;
-    assert.equal(turned, panel.role === 'shelf' && panel.part !== 'VPART',
-      `${panel.id} (${panel.part}) is laid down ${turned ? 'turned' : 'square'}`);
+    const w = Number(panel.cnc?.drawn_w) || panel.w;
+    const h = Number(panel.cnc?.drawn_h) || panel.h;
+    const shelfBoard = panel.role === 'shelf' && panel.part !== 'VPART';
+    // Only a shelf board is ever a candidate, and it is turned only when its
+    // own drawing lies down.
+    assert.equal(turned, shelfBoard && w > h, `${panel.id} (${panel.part}) is laid down ${turned ? 'turned' : 'square'}`);
+    if (panel.part !== 'SHELF') continue;
+    // …and a SHELF's drawing no longer lies down: F8.
+    assert.equal(w, panel.h, 'drawn `depth × width`');
+    assert.equal(h, panel.w);
+    assert.equal(turned, false, 'so the nester has nothing to turn');
   }
 });
 
@@ -451,5 +482,5 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   const cuttable = exportablePanels(result.panels);
   const hidden = new Set(panelIdsForPreset(cuttable, 'sprayed'));
   const ids = cuttable.map((p) => p.id).filter((id) => !hidden.has(id));
-  assert.equal(fingerprint(sheetOf(result, ids)), '32cca2e6'); // was 35eddb46 — F1's traced-once edge
+  assert.equal(fingerprint(sheetOf(result, ids)), '13ba3fd2'); // was 32cca2e6 — F8's shelves
 });

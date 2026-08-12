@@ -512,3 +512,44 @@ export function hingeSpecLabel({
   if (assigned) parts.push('assigned');
   return parts.join(' · ');
 }
+
+/**
+ * WHICH MODEL EACH DOOR'S HINGES WEAR, keyed by the door's panel id
+ * (turn 19, CLAUDE.md F1.6).
+ *
+ * The view asks the ENGINE, once per unit, and hands the answer down — so the
+ * hinge in the picture, the article in the BOM and the angle in the hinge modal
+ * are one resolution rather than three. A catalogue that has not been read
+ * gives an empty map, and the whole of the 3D falls back to the procedural body
+ * without a branch anywhere else.
+ *
+ * @param {object} args
+ *   result   computeCabinet() output
+ *   unit     the project unit (its params carry the per-door exceptions)
+ *   finish   the project's hinge finish
+ *   plate    the project's mounting plate
+ * @returns {object} { [panelId]: { file, plateFile, family, angle, article } }
+ */
+export function hingeSpecsFor({
+  result, unit, finish = null, plate = null,
+}) {
+  const out = {};
+  const doors = (result?.panels || []).filter((p) => p.part === 'FRONT' && p.role === 'front');
+  if (!doors.length) return out;
+  const plateEntry = plateFamily({ plate, finish });
+  const innerDrawer = unit?.type === 'WARDROBE' && Number(result?.derived?.drawers) > 0;
+  for (const door of doors) {
+    const spec = resolveDoorHinge({
+      assigned: unit?.params?.door_hinges?.[door.id] || null,
+      frontThickness: door.thickness,
+      innerDrawer,
+      finish,
+    });
+    out[door.id] = {
+      ...spec,
+      file: spec.file || null,
+      plateFile: plateEntry?.file || null,
+    };
+  }
+  return out;
+}

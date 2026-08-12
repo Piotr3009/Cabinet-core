@@ -49,25 +49,53 @@ export function metres(mm) {
 // a column of numbers with four decimals is unreadable at a bench.
 export const MM_DISPLAY_DECIMALS = 1;
 
+// ─── HALF A MILLIMETRE, FOR A DIMENSION (turn 26, CLAUDE.md F4.3) ───────────
+//
+// "Precision 0.5 mm everywhere (`formatMm` gains a half-mm mode for
+// dimensions): 3 mm gaps and half-millimetre differences are exactly what
+// these are for."
+//
+// The owner's complaint was that the shelf, side and front dimensions read as
+// ROUNDED TO 1 MM — so a 3 mm gap between two doors and a 2.5 mm one printed
+// the same number, which is precisely the difference a joiner is looking at
+// them to find. A dimension is now quantised to the nearest HALF and printed
+// as 197, 196.5, 3.
+//
+// It is a MODE and not the new default, because the two questions are
+// different: the cut list prints what the saw is set to (a tenth, since turn
+// 5), and a dimension on the screen prints what the eye is being asked to
+// judge. `DIMENSION_STEP_MM` is the quantum, in the profile's own units.
+export const DIMENSION_STEP_MM = 0.5;
+
 /**
  * A millimetre value as the app shows it.
  *
  * @param {number|string} value
- * @param {{unit?:boolean, dash?:string}} [opts]
+ * @param {{unit?:boolean, dash?:string, half?:boolean}} [opts]
  *   unit  append " mm"
  *   dash  what a non-number reads as (default: an empty string)
+ *   half  quantise to the nearest 0.5 — the DIMENSION mode (F4.3)
  */
-export function formatMm(value, { unit = false, dash = '' } = {}) {
+export function formatMm(value, { unit = false, dash = '', half = false } = {}) {
   // Deliberately stricter than Number(): null, undefined, '' and booleans are
   // NOT zero here. A missing dimension must read as missing — printing "0" is
   // the app inventing a size, which is worse than saying nothing.
   if (value == null || value === '' || typeof value === 'boolean') return dash;
   const n = Number(value);
   if (!Number.isFinite(n)) return dash;
-  const r = roundTo(n, MM_DISPLAY_DECIMALS);
+  // n × 0.5 is exact in binary, so a half lands on a real half and never on
+  // 196.50000000000003.
+  const r = half
+    ? roundTo(Math.round(n / DIMENSION_STEP_MM) * DIMENSION_STEP_MM, 1)
+    : roundTo(n, MM_DISPLAY_DECIMALS);
   // `Object.is` rather than `=== 0`: -0 would otherwise print as "-0".
   const text = Number.isInteger(r) ? String(Object.is(r, -0) ? 0 : r) : r.toFixed(MM_DISPLAY_DECIMALS);
   return unit ? `${text} mm` : text;
+}
+
+/** A dimension's own text: half-millimetre precision, always (F4.3). */
+export function formatDimension(value, opts = {}) {
+  return formatMm(value, { ...opts, half: true });
 }
 
 /** "600 × 720" — the pair that captions a panel, through the same rule. */

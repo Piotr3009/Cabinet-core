@@ -66,11 +66,20 @@ test('F1.1 the option is none | 70 | 100, and nothing else', () => {
   assert.equal(corniceOption(120, P), 0);
 });
 
-test('F1.1 wardrobes and tall units take one; base, wall and drawer kits do not', () => {
-  for (const id of ['WARDROBE', 'BUDTALL', 'FRIDGE']) {
-    assert.equal(takesCornice(id), true, `${id} finishes below the ceiling`);
+test('F1.1 — the kits that finish in the air take one; the ones under a worktop do not', () => {
+  // ─── TURN 26 (CLAUDE.md F9.2): THE WALL UNIT JOINS THEM ──────────────────
+  // "A cornice run continues across ANY adjacent cornice-bearing unit whose
+  // top edges meet — tall and wall alike, not just floor-standing." Turn 22
+  // offered the moulding on wardrobes and tall units because those are what
+  // stand up to the ceiling; a run of wall units finishes at the same height
+  // and takes the same moulding, and leaving it off was the app deciding a
+  // joinery question by unit type.
+  for (const id of ['WARDROBE', 'BUDTALL', 'FRIDGE', 'WUD']) {
+    assert.equal(takesCornice(id), true, `${id} finishes in the air`);
   }
-  for (const id of ['BUD', 'BUDR', 'BUDR2', 'BUDR4', 'WUD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET']) {
+  // A base unit finishes under a worktop and a D/W panel under the same one:
+  // there is nothing up there to put a moulding on.
+  for (const id of ['BUD', 'BUDR', 'BUDR2', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET']) {
     assert.equal(takesCornice(id), false, `${id} is not a cornice-bearing kit`);
   }
 });

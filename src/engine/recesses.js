@@ -29,6 +29,7 @@
 // Pure functions — no three.js, no React (engine rule).
 
 import { cncRect } from './socketFace.js';
+import { machiningFor } from './machining.js';
 
 /** How much material is left at an edge a cut runs off, in mm. */
 export const EDGE_KEEP = 0.2;
@@ -51,16 +52,25 @@ export const EDGE_KEEP = 0.2;
  *   not say", which for a drill means through and for a pocket means it is not
  *   cut at all rather than cut to a guess.
  */
-export function panelRecesses(panel, drills = [], { thickness = 0, skipLayers = [] } = {}) {
+export function panelRecesses(panel, drills = [], { thickness = 0, skipLayers = [], profile = null } = {}) {
   const cnc = panel?.cnc;
   if (!cnc) return [];
   const { w, h } = cncRect(panel);
   if (!(w > 0) || !(h > 0)) return [];
   const skip = new Set(skipLayers.filter(Boolean));
+  // ─── TURN 26 (CLAUDE.md R10 / F3.3): WHICH CLASSES, AND HOW DEEP ─────────
+  // One named policy per CNC class (engine/machining.js), so a class the scene
+  // deliberately does not bore is a sentence somebody wrote rather than a hole
+  // that quietly went missing. Without a profile the policy is inert and this
+  // behaves exactly as turn 20 left it.
+  const policy = (layer) => (profile
+    ? machiningFor(layer, profile)
+    : { draw: true, depth: null });
   const out = [];
 
   for (const p of cnc.pockets || []) {
     if (skip.has(p.layer)) continue;
+    if (!policy(p.layer).draw) continue;
     const depth = Number(p.depth);
     // A pocket with no stated depth is NOT cut. Every pocket the engine states
     // a depth for is cut to it; inventing one for the rest would be a picture
@@ -87,18 +97,23 @@ export function panelRecesses(panel, drills = [], { thickness = 0, skipLayers = 
     if (hole.panel !== panel.id) continue;
     const r = (Number(hole.d) || 0) / 2;
     if (!(r > 0)) continue;
+    const rule = policy(hole.layer);
+    if (!rule.draw) continue;
     // Off the board, or so near the edge that a hole would break the outline:
     // the machine drills it, the picture leaves it out rather than producing a
     // shape a triangulator will refuse.
     if (hole.x - r < EDGE_KEEP || hole.y - r < EDGE_KEEP) continue;
     if (hole.x + r > w - EDGE_KEEP || hole.y + r > h - EDGE_KEEP) continue;
-    const depth = Number(hole.depth);
+    // ─── TURN 26 (CLAUDE.md R10): THE RECORD WINS ─────────────────────────
+    // The hole's own depth if it states one — which the cup now does, to the
+    // owner's measured 11 mm — then the workshop's own table for that class,
+    // and only then "through", which is what a drilling in these kits has
+    // meant since turn 1.
+    const stated = Number(hole.depth);
+    const depth = stated > 0 ? stated : rule.depth;
     out.push({
       kind: 'round',
       layer: hole.layer,
-      // The LISP carries no drill depth, and a drill with no depth goes
-      // through — which is what every hole in these kits does except a hinge
-      // cup, and the day the catalogue states a cup's depth this reads it.
       depth: depth > 0 ? Math.min(depth, thickness || depth) : null,
       through: !(depth > 0) || (thickness > 0 && depth >= thickness - 1e-6),
       x: hole.x,

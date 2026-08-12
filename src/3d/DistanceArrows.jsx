@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { mm } from './constants.js';
-import DimLabel from './DimLabel.jsx';
+import DimensionChain from './DimensionChain.jsx';
+import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { roomDistances, distanceLabel } from '../engine/dimensions.js';
 
 // ─── Distance arrows, drawn the way a drawing office draws them ───
@@ -33,121 +34,44 @@ import { roomDistances, distanceLabel } from '../engine/dimensions.js';
 // derived from the units, so the arrow follows the cabinet frame by frame with
 // no drag state of its own to keep in step.
 
-/** A thin bar between two points in the wall's local X–Z plane, at height y. */
-function Stroke({ from, to, y, weight, colour }) {
-  const dx = to[0] - from[0];
-  const dz = to[1] - from[1];
-  const length = Math.hypot(dx, dz);
-  if (!(length > 0)) return null;
-  return (
-    <mesh
-      position={[(from[0] + to[0]) / 2, y, (from[1] + to[1]) / 2]}
-      rotation={[0, -Math.atan2(dz, dx), 0]}
-    >
-      {/* Flat in Y as well as thin in Z: a dimension line is a LINE, and a
-          square-section bar catches the light like a piece of furniture. */}
-      <boxGeometry args={[length, weight * 0.6, weight]} />
-      <meshBasicMaterial color={colour} toneMapped={false} allowOverride={false} />
-    </mesh>
-  );
-}
+// ─── TURN 26 (CLAUDE.md R11): THE DRAWING MOVED OUT ─────────────────────────
+//
+// R11: ONE DIMENSION COMPONENT. This file held the second of the three
+// implementations — its own `Stroke`, its own architectural tick, its own OPEN
+// arrowhead and its own caption — and having three is exactly how four dialects
+// happened. It computes POINTS now and hands them to `3d/DimensionChain.jsx`.
+//
+// Nothing about WHAT is measured changed: `engine/dimensions.js roomDistances`
+// is still the arithmetic, still per wall, still live during a drag because the
+// measurements are derived from the units rather than from a drag state.
+//
+// The PLACEMENT is the same convention it always was and is now also F4.2's:
+// the chain lies ON THE FLOOR, in front of the run, with witness lines coming
+// out from the two faces being measured. That is what `plane="xz"` and a
+// non-zero `offset` mean to the one component, so this file no longer has to
+// say it in meshes.
 
 /**
- * One end of a dimension: the architectural tick (a 45° slash across the line)
- * or an OPEN arrowhead — two strokes meeting at the measured point, nothing
- * filled in. `dir` is +1 when the head points along +X, −1 the other way.
+ * One measurement, as a row of points in its wall's local frame: +X runs along
+ * the wall from the start corner, +Z points into the room. The parent group
+ * does the placing, so nothing here needs to know which wall of which shaped
+ * room it is on.
  */
-function End({ x, y, z, dir, cfg, weight, colour }) {
-  const size = mm(cfg.arrowHead);
-  if (cfg.head === 'open') {
-    // The apex sits ON the measured point and the two strokes run back from it,
-    // which is what makes "which way does it point" a non-question.
-    const back = dir * size;
-    const spread = size * 0.34;
-    return (
-      <>
-        <Stroke from={[x, z]} to={[x - back, z - spread]} y={y} weight={weight} colour={colour} />
-        <Stroke from={[x, z]} to={[x - back, z + spread]} y={y} weight={weight} colour={colour} />
-      </>
-    );
-  }
-  const rad = (cfg.tickAngle * Math.PI) / 180;
-  const half = size * 0.5;
-  return (
-    <Stroke
-      from={[x - Math.cos(rad) * half, z - Math.sin(rad) * half]}
-      to={[x + Math.cos(rad) * half, z + Math.sin(rad) * half]}
-      y={y}
-      weight={weight}
-      colour={colour}
-    />
-  );
+function rowOf(mark, cfg, i) {
+  return {
+    key: `${mark.kind}-${i}`,
+    // The two faces being measured, at the depth they actually stand at…
+    from: [mark.from, mark.depth + cfg.extensionGap],
+    to: [mark.to, mark.depth + cfg.extensionGap],
+    // …and the dimension line pushed clear of them, into the room.
+    offset: cfg.standoff - cfg.extensionGap,
+    label: distanceLabel(mark.mm),
+  };
 }
 
-/**
- * One measurement, in its wall's local frame: +X runs along the wall from the
- * start corner, +Z points into the room. The parent group does the placing, so
- * nothing here needs to know which wall of which shaped room it is on.
- */
-function Arrow({ mark, cfg, colour }) {
-  const x1 = mm(mark.from);
-  const x2 = mm(mark.to);
-  const y = mm(mark.y);
-  const zLine = mm(mark.depth + cfg.standoff);
-  const zFace = mm(mark.depth + cfg.extensionGap);
-  const zTip = mm(mark.depth + cfg.standoff + cfg.extension * 0.25);
-  const weight = mm(cfg.lineWeight);
-  const head = mm(cfg.arrowHead);
-  const span = x2 - x1;
-
-  // A narrow gap has no room for two heads pointing inwards at each other: past
-  // that point they turn round and point AT the gap from outside, and the line
-  // is carried out past them — which is what a draughtsman does, and it is only
-  // meaningful at all now that the heads point where they are aimed.
-  const inward = span > head * 2.2;
-  const overrun = inward ? 0 : head * 1.6;
-
-  return (
-    <group>
-      {/* the dimension line */}
-      <Stroke
-        from={[x1 - overrun, zLine]}
-        to={[x2 + overrun, zLine]}
-        y={y}
-        weight={weight}
-        colour={colour}
-      />
-
-      {/* extension lines: out from the exact faces being measured, stopping a
-          little past the dimension line */}
-      {[x1, x2].map((x, i) => (
-        <Stroke key={`ext${i}`} from={[x, zFace]} to={[x, zTip]} y={y} weight={weight} colour={colour} />
-      ))}
-
-      {[[x1, 1], [x2, -1]].map(([x, into], i) => (
-        <End
-          key={`end${i}`}
-          x={x}
-          y={y}
-          z={zLine}
-          dir={inward ? into : -into}
-          cfg={cfg}
-          weight={weight}
-          colour={colour}
-        />
-      ))}
-
-      <DimLabel
-        position={[(x1 + x2) / 2, y + mm(cfg.labelOffset), zLine]}
-        text={distanceLabel(mark.mm)}
-        colour={colour}
-        scale={0.9}
-      />
-    </group>
-  );
-}
-
-export default function DistanceArrows({ walls, units, roomCentre, profile, colourKey }) {
+export default function DistanceArrows({
+  walls, units, roomCentre, profile, colourKey,
+}) {
   const cfg = profile.dimensions;
   // Turn 11 (CLAUDE.md F1.5): the fallback is the profile's own DEFAULT INK,
   // which lives in appearance.dimensions and is red from this turn on. `cfg` is
@@ -155,6 +79,7 @@ export default function DistanceArrows({ walls, units, roomCentre, profile, colo
   const colour = cfg.colours[colourKey]
     || cfg.colours[profile?.appearance?.dimensions?.colour]
     || Object.values(cfg.colours)[0];
+  const style = useMemo(() => dimensionStyle(profile), [profile]);
   const marks = useMemo(
     () => roomDistances({ walls, units, minGap: cfg.minGap }),
     [walls, units, cfg.minGap],
@@ -165,15 +90,22 @@ export default function DistanceArrows({ walls, units, roomCentre, profile, colo
       {walls.map((wall) => {
         const mine = marks.filter((m) => m.wall === wall.index);
         if (!mine.length) return null;
+        // Every mark on one wall shares a height — they are room distances, and
+        // a room distance is measured on the floor.
         return (
           <group
             key={`dim-wall-${wall.index}`}
             position={[mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y)]}
             rotation={[0, wall.angle, 0]}
           >
-            {mine.map((m, i) => (
-              <Arrow key={`${m.kind}-${i}`} mark={m} cfg={cfg} colour={colour} />
-            ))}
+            <DimensionChain
+              rows={mine.map((m, i) => rowOf(m, cfg, i))}
+              style={style}
+              plane="xz"
+              at={mine[0].y}
+              colour={colour}
+              name={`wall-${wall.index}`}
+            />
           </group>
         );
       })}

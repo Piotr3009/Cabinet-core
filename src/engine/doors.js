@@ -291,3 +291,72 @@ export function bayDoorPlan({
 export function bayDoorsAvailable(bays = []) {
   return bays.some((b) => b.left.kind === 'partition' || b.right.kind === 'partition');
 }
+
+// ─── THE MOUNTING DATUM (turn 26, CLAUDE.md F1.2) ───────────────────────────
+//
+// The owner's hinge pierced the front of his doors, and the reason it could is
+// that nothing in this app had ever said, once, WHICH PLANE a hinge is measured
+// from. The cup was placed off `panel.box.z` in one file, the model off the
+// same number read again in another, and the door's own group hangs at its
+// MID-PLANE — three readings of one fact.
+//
+// It is one fact and this is the one place it is said:
+//
+//   **THE DATUM IS THE DOOR'S INNER FACE — the side the bit enters.**
+//
+// Never the mid-plane (which is where the swinging group's origin is, and
+// which is 12.5 mm out on a 25 mm leaf), and never the recess floor of a
+// SHAKER (whose rebate is cut in the OUTER face and leaves the inner one
+// exactly where a plain door's is — a cup bored to the recess floor would be
+// bored 8 mm proud of the board).
+//
+// Every leaf type answers here: plain, shaker, partition-hung, wall, tall. A
+// D/W panel is not a door at all — it screws to the appliance and takes no
+// cups (F5.3) — and this says so by returning null rather than by a branch
+// somewhere downstream.
+
+/**
+ * @param {object} panel  an engine FRONT panel record
+ * @returns {{innerZ:number, outerZ:number, thickness:number}|null}
+ *   `innerZ` is the plane the cup is bored from and the plane the GLB's flange
+ *   stands on; `outerZ` is the face NOTHING of a hinge may cross (F1.3).
+ */
+export function doorHingeDatum(panel) {
+  const box = panel?.box;
+  if (!panel || !box) return null;
+  if (panel.part !== 'FRONT') return null;
+  // An appliance front is screwed to the machine's own door: no cups, no bores,
+  // and therefore no datum to hand out.
+  if (panel.meta?.appliance) return null;
+  const thickness = Number(box.d);
+  if (!(thickness > 0)) return null;
+  return {
+    // The cabinet's +z runs from the wall towards the room, so a front's box.z
+    // IS its inner face and `box.z + box.d` is the face the customer sees.
+    // A shaker's `meta.shaker.depth` is deliberately not consulted: the rebate
+    // is in the outer face and moves neither plane.
+    innerZ: Number(box.z),
+    outerZ: Number(box.z) + thickness,
+    thickness,
+  };
+}
+
+/**
+ * How deep into the leaf the ironmongery is allowed to go, and where its far
+ * face lands (F1.1/F1.3).
+ *
+ * The bore is the owner's measured `hardware.hinge.cupDepth`, clamped to the
+ * board: a 25 mm cup law applied to an 18 mm door would be a through hole, and
+ * a through hole is exactly the fault this turn exists to end. The clamp keeps
+ * a hair of material (`floorKeep`) so the bore stays BLIND on any board this
+ * workshop cuts fronts from.
+ */
+export function cupBoreOf(panel, profile) {
+  const datum = doorHingeDatum(panel);
+  if (!datum) return null;
+  const wanted = Number(profile?.hardware?.hinge?.cupDepth) || 0;
+  if (!(wanted > 0)) return null;
+  const keep = Number(profile?.hardware?.hinge?.cupFloorKeepMm ?? 1);
+  const depth = Math.min(wanted, Math.max(0, datum.thickness - keep));
+  return { ...datum, depth, floorZ: datum.innerZ + depth };
+}

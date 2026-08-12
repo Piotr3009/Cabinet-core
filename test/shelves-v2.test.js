@@ -286,7 +286,11 @@ test('the setback reaches the CSV and the CNC outline, not just the picture', ()
   store().setShelfFront(id, item.id, 0);
   const r = resultOf(id);
   const shelf = r.panels.find((p) => p.part === 'SHELF');
-  assert.equal(shelf.cnc.outline[2][1], shelf.h, 'the CNC outline is the piece, not the old size');
+  // Turn 26 (CLAUDE.md F8): a shelf is drawn `depth × width`, so the far corner
+  // of its outline is (depth, width). The CUT SIZE — what the CSV prints — is
+  // `w × h` and is unmoved, which is the point of the delta being a FRAME
+  // change and not a re-cut.
+  assert.deepEqual(shelf.cnc.outline[2], [shelf.h, shelf.w], 'the CNC outline is the piece, not the old size');
   assert.ok(r.csvLines.some((l) => l.includes(`,SHELF-1,${Math.round(shelf.w)},${Math.round(shelf.h)},`)));
 });
 

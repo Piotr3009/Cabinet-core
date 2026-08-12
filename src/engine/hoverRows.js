@@ -24,7 +24,20 @@
 // path here that could produce a sloping dimension. A test asserts it rather
 // than trusting the reading.
 //
+// ─── AND A SHELF IS MEASURED IN ITS OWN BAY (turn 27, CLAUDE.md F1.3) ───────
+//
+// The owner, from the eye test: a shelf's dimension chain "measures the whole
+// cabinet instead of the bay it sits in". A shelf standing between a partition
+// and BUR has a clear bay of its own and that is the number a joiner wants —
+// bearer face to bearer face, the two boards `engine/shelfBearers.js` says are
+// carrying it and the very same pair its ⌀7.5 ladder is bored into.
+//
+// R12: the LOOK does not change. Same component, same style block, same
+// geometry — one row is added and its endpoints are the bay's.
+//
 // Pure functions — no React, no three.js, no store (engine rule).
+
+import { bearingWalls, shelfBay } from './shelfBearers.js';
 
 /**
  * The rows to draw for ONE piece, in the plane the scene draws them on.
@@ -41,7 +54,7 @@ export function pieceHoverRows(result, panelId, profile) {
   const panels = result?.panels || [];
   const me = panels.find((p) => p?.id === panelId);
   if (!me?.box) return null;
-  if (me.part === 'SHELF' || me.part === 'FIXED') return shelfRows(result, me);
+  if (me.part === 'SHELF' || me.part === 'FIXED') return shelfRows(result, me, profile);
   if (me.part === 'BUL' || me.part === 'BUR') return sideRows(result, me, profile);
   return null;
 }
@@ -55,7 +68,7 @@ export function pieceHoverRows(result, panelId, profile) {
  * BAY is measured against the shelves in ITS bay rather than against one on the
  * other side of a partition.
  */
-function shelfRows(result, me) {
+function shelfRows(result, me, profile = null) {
   const H = Number(result?.params?.height) || 0;
   const G = Number(result?.params?.board_t) || 18;
   const panels = result.panels || [];
@@ -86,8 +99,24 @@ function shelfRows(result, me) {
   if (ceilingY - (me.box.y + me.box.h) > 0.5) {
     rows.push({ kind: 'gap-above', from: [x, me.box.y + me.box.h], to: [x, ceilingY] });
   }
+  // ─── TURN 27 (CLAUDE.md F1.3): AND THE BAY IT SITS IN ────────────────────
+  //
+  // Bearer face to bearer face — the clear light between the two boards this
+  // shelf is standing on, which on a divided cabinet is its BAY and not the
+  // carcass. It runs along the shelf's own centre line, between the two
+  // vertical gaps and crossing neither.
+  const bay = shelfBay({
+    walls: bearingWalls(panels),
+    run: me.meta?.run || { from: me.box.x, to: me.box.x + me.box.w },
+    level: me.box.y,
+    tolerance: Number(profile?.carcass?.shelfWidthClearance) || 0,
+  });
+  const mid = me.box.y + me.box.h / 2;
+  if (bay && bay.size > 0.5) {
+    rows.push({ kind: 'bay', from: [bay.from, mid], to: [bay.to, mid] });
+  }
   if (!rows.length) return null;
-  return { rows, z, mid: me.box.y + me.box.h / 2 };
+  return { rows, z, mid };
 }
 
 /**

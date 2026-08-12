@@ -222,6 +222,58 @@ export function cases() {
         }],
       },
     });
+    // ─── TURN 27 (CLAUDE.md F1.4): WHERE THE HOLES MOVE ────────────────────
+    //
+    // Not one of the probes above puts an ADJUSTABLE shelf inside a BAY, which
+    // is exactly why F1's correction reports zero against every one of them: a
+    // cabinet with no partition resolves both bearers to BUL and BUR and comes
+    // out byte-identical, and a FIX shelf in a bay has no pin ladder at all.
+    //
+    // These three are the cases the owner was looking at, and they are where
+    // the NAMED delta lives — the ⌀7.5 ladder leaving BUL (where it was wrong)
+    // and appearing in the partition, in the partition's OWN frame.
+    //
+    //   +shelf-in-right-bay        one partition, the shelf between it and BUR:
+    //                              the eye test's own cabinet. BUL must come
+    //                              out bare.
+    //   +shelf-mid-bay-2-parts     two partitions, the shelf in the MIDDLE bay:
+    //                              partition/partition, the pair with no side
+    //                              in it at all.
+    //   +shelf-end-bay-2-parts     …and the same cabinet with the shelf in the
+    //                              far bay, so the other partition proves it is
+    //                              untouched.
+    const wide = Math.max(Number(base.width) || 0, 1200);
+    out.push({
+      id: `${type}+shelf-in-right-bay`,
+      params: {
+        ...base,
+        width: Math.max(Number(base.width) || 0, 900),
+        sections: [{
+          width_mm: Math.max(Number(base.width) || 0, 900),
+          items: [
+            { id: 'p1', kind: 'partition', x_mm: 450 },
+            { id: 's1', kind: 'shelf', pos_mm: Math.round(base.height / 2), zone: 1 },
+          ],
+        }],
+      },
+    });
+    for (const [name, zone] of [['mid-bay', 1], ['end-bay', 2]]) {
+      out.push({
+        id: `${type}+shelf-${name}-2-parts`,
+        params: {
+          ...base,
+          width: wide,
+          sections: [{
+            width_mm: wide,
+            items: [
+              { id: 'p1', kind: 'partition', x_mm: 400 },
+              { id: 'p2', kind: 'partition', x_mm: 800 },
+              { id: 's1', kind: 'shelf', pos_mm: Math.round(base.height / 2), zone },
+            ],
+          }],
+        },
+      });
+    }
     // ─── TURN 25 (CLAUDE.md F2.3): THE SHALLOW PROBE ───────────────────────
     //
     // Every golden default is a DEEP cabinet — 400 mm at the shallowest, and

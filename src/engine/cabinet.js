@@ -24,6 +24,11 @@ import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
 import { partitionSpan, shelfCrossesPartition, widthZones } from './zones.js';
+// Turn 27 (CLAUDE.md F1): which TWO boards a shelf actually lands on, and how
+// a world height reads in each of their own frames.
+import {
+  bearerList, bearingWalls, heightOnBearer, onBearer, pinColumns, shelfBearers,
+} from './shelfBearers.js';
 // Turn 21 (CLAUDE.md F12): the owner's door-width law, as pure geometry.
 import {
   isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
@@ -3124,28 +3129,82 @@ export function computeCabinet(params, profileOverride) {
   // partition above a drawer stack has always used (SCREWS_3MM), because it is
   // the same joint: this is what "fixed" means in the workshop, and pin holes
   // for a shelf that cannot move are holes drilled for nothing.
+  //
+  // ─── TURN 27 (CLAUDE.md F1.1): BEARERS, NOT SIDES ────────────────────────
+  //
+  // The owner, from the eye test: a shelf running from BUR to a partition gets
+  // its ⌀7.5 holes bored in BUL — a board that shelf never touches. The cause
+  // was `for (const sideId of ['BUL', 'BUR'])`, an assumption that is true of a
+  // cabinet with no partition in it and of nothing else.
+  //
+  // A shelf lands on TWO vertical boards and which two is a fact about the
+  // shelf's own run: `engine/shelfBearers.js` resolves them, and the pins, the
+  // fix joint below and the shelf's dimension chain all ask it, so a picture
+  // and a sheet cannot disagree about which boards a shelf is on.
   const shelfPinRows = [];
   const shelfScrewRows = [];
   for (let i = 0; i < shelfRows.length; i += 1) {
     const item = cfg.shelfItems[i];
+    // Turn 24 (CLAUDE.md F7) / turn 27 (F1): the set has to know which board it
+    // is setting out on, and which two boards it lands on.
+    const shelfPanel = panels.find((x) => x.part === 'SHELF' && x.meta?.index === i + 1) || null;
     if (isShelfLocked(item)) {
       // The screw row needs the shelf's OWN thickness, because it is drilled on
       // that board's centre line (turn 9, CLAUDE.md F4).
       shelfScrewRows.push({
         y: shelfRows[i],
         thickness: shelfThickness(item, G),
-        // Turn 24 (CLAUDE.md F7): the joint runs along the shelf's own DEPTH,
-        // so the set has to know which board it is setting out on.
-        panel: panels.find((x) => x.part === 'SHELF' && x.meta?.index === i + 1) || null,
+        panel: shelfPanel,
       });
     } else {
-      shelfPinRows.push(shelfRows[i]);
+      shelfPinRows.push({ y: shelfRows[i], panel: shelfPanel });
     }
   }
-  for (const sideId of ['BUL', 'BUR']) {
-    for (const rowY of shelfPinRows) {
+  const carryingWalls = bearingWalls(panels);
+  // ─── THE ORDER THE MACHINE READS THEM IN ─────────────────────────────────
+  //
+  // Gathered per BEARER and emitted in panel order — BUL's whole ladder, then
+  // BUR's, then each partition's — which is exactly the order turn 26 emitted
+  // for a cabinet with no partition. That is what makes F1.4's "fingerprint
+  // delta ZERO on golden defaults" a fact rather than a hope: on a box with no
+  // partition in it every shelf resolves to BUL and BUR and this loop writes
+  // the same holes in the same sequence.
+  const pinWork = new Map();
+  for (const row of shelfPinRows) {
+    const bearers = shelfBearers({
+      walls: carryingWalls,
+      run: row.panel?.meta?.run || null,
+      level: row.y,
+      // An ADJUSTABLE shelf is cut `shelfWidthClearance` narrower than its bay
+      // and stands half of it off each bearer. It is on those two boards all
+      // the same — on four pins driven into them — so the slack it was cut with
+      // is the slack this resolution allows and not a millimetre more.
+      tolerance: C.shelfWidthClearance,
+    });
+    for (const bearer of bearerList(bearers)) {
+      const slot = pinWork.get(bearer.id) || { bearer, rows: [] };
+      slot.rows.push(row.y);
+      pinWork.set(bearer.id, slot);
+    }
+  }
+  for (const wall of carryingWalls) {
+    const slot = pinWork.get(wall.id);
+    if (!slot) continue;
+    // F1.2: the columns are THIS board's own — one `columnFromEdge` from its
+    // front edge, one `shelfBackColumn` from the back of its own depth — so a
+    // partition set back from the face has its back column set back with it.
+    const columns = pinColumns(slot.bearer, {
+      columnFromEdge: SH.columnFromEdge, backColumn: shelfBackColumn,
+    });
+    for (const rowY of slot.rows) {
       for (const dy of SH.clusterOffsets) {
-        for (const x of shelfHoleX) addDrill(sideId, 'shelf', SH.layer, x, rowY + dy, SH.diameter);
+        // …and the HEIGHT is converted into this bearer's own frame, separately
+        // for each one: a partition's origin is its own bottom edge, so a row
+        // measured from the cabinet floor would be out by the thickness of the
+        // bottom board on every hole.
+        const y = heightOnBearer(slot.bearer, rowY + dy);
+        if (!onBearer(slot.bearer, y)) continue;
+        for (const x of columns) addDrill(wall.id, 'shelf', SH.layer, x, y, SH.diameter);
       }
     }
   }
@@ -3190,24 +3249,18 @@ export function computeCabinet(params, profileOverride) {
     const noScrewSets = biscuitSets({ length: depth, screws: false, profile: P });
 
     // ── the two bearers this shelf actually lands on ──
-    const bearers = [];
+    //
+    // ─── TURN 27 (CLAUDE.md F1.1): ONE RESOLUTION, NOT TWO ────────────────
+    // Turn 24 answered this question here and turn 1 answered it differently
+    // for the pin ladder, which is how a shelf came to be dimensioned against
+    // one pair of boards and drilled into another. There is one answer now and
+    // `engine/shelfBearers.js` holds it; a FIX shelf is cut to its bay exactly,
+    // so it lands on those faces with no slack at all.
     const runFrom = shelf.box.x;
     const runTo = shelf.box.x + shelf.box.w;
-    for (const side of ['BUL', 'BUR']) {
-      const panelHere = panels.find((x) => x.id === side);
-      if (!panelHere) continue;
-      const touchesSide = side === 'BUL'
-        ? Math.abs(runFrom - G) < 1e-6
-        : Math.abs(runTo - (W - G)) < 1e-6;
-      if (touchesSide) bearers.push({ id: side, kind: 'side', panel: panelHere });
-    }
-    for (const part of panels.filter((x) => x.part === 'VPART' && x.box)) {
-      const touches = Math.abs(runTo - part.box.x) < 1e-6
-        || Math.abs(runFrom - (part.box.x + part.box.w)) < 1e-6;
-      // …and the shelf's joint has to be inside the partition's own run.
-      const spans = jointY >= part.box.y - 1e-6 && jointY <= part.box.y + part.box.h + 1e-6;
-      if (touches && spans) bearers.push({ id: part.id, kind: 'partition', panel: part });
-    }
+    const bearers = bearerList(shelfBearers({
+      walls: carryingWalls, run: { from: runFrom, to: runTo }, level: jointY, tolerance: 0,
+    }));
 
     for (const bearer of bearers) {
       if (bearer.kind === 'side') {
@@ -3955,12 +4008,12 @@ export function computeCabinet(params, profileOverride) {
     // project has no handle — R9 in the summary as well as in the drilling.
     ...(handlePlacements.length ? { handles: handlePlacements } : {}),
     shelf_row_y: shelfRows.map((v) => roundTo(v, 4)),
-    shelf_cluster_y: shelfPinRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row + dy, 4))),
+    shelf_cluster_y: shelfPinRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row.y + dy, 4))),
     shelf_hole_x: shelfHoleX,
     // Turn 8 (F4): which rows are PINNED and which are SCREWED. `shelf_row_y`
     // stays every shelf, because it is where the shelves ARE and the drawings
     // dimension it; these two say how each one is held.
-    shelf_pin_row_y: shelfPinRows.map((v) => roundTo(v, 4)),
+    shelf_pin_row_y: shelfPinRows.map((row) => roundTo(row.y, 4)),
     // On the SHELF's own centre line, not the carcass board's — a shelf
     // somebody made 25 mm is screwed through its own middle (turn 9, F4).
     shelf_screw_row_y: shelfScrewRows.map((r) => roundTo(r.y + r.thickness / 2, 4)),

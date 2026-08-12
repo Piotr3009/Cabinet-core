@@ -248,7 +248,10 @@ test('F14.2 — a SHELF gets the clear gaps below and above it', () => {
   const shelf = r.panels.find((p) => p.part === 'SHELF');
   const set = pieceHoverRows(r, shelf.id, P);
   assert.ok(set, 'a shelf has something worth reading');
-  assert.deepEqual(set.rows.map((x) => x.kind).sort(), ['gap-above', 'gap-below']);
+  // Turn 27 (CLAUDE.md F1.3) adds the third: the shelf's own clear BAY, bearer
+  // face to bearer face. On an undivided cabinet that is the internal width,
+  // which is why turn 25's two rows are still both here and unchanged.
+  assert.deepEqual(set.rows.map((x) => x.kind).sort(), ['bay', 'gap-above', 'gap-below']);
   // Between FACES: below is from the bottom panel's top face to the shelf's
   // underside, and the two add up to the compartment.
   const below = set.rows.find((x) => x.kind === 'gap-below');
@@ -257,8 +260,17 @@ test('F14.2 — a SHELF gets the clear gaps below and above it', () => {
   assert.equal(above.from[1], shelf.box.y + shelf.box.h);
   assert.equal(below.from[1], r.params.board_t, 'the bottom panel’s top face');
   assert.equal(above.to[1], r.params.height - r.params.board_t, 'the top panel’s underside');
-  // Horizontal and vertical only.
-  for (const row of set.rows) assert.equal(row.from[0], row.to[0], 'a vertical row');
+  // Horizontal and vertical only (F14.3) — never a sloping one.
+  for (const row of set.rows) {
+    assert.ok(
+      row.from[0] === row.to[0] || row.from[1] === row.to[1],
+      `${row.kind} runs on one axis`,
+    );
+  }
+  const bay = set.rows.find((x) => x.kind === 'bay');
+  assert.equal(bay.from[0], r.params.board_t, 'the left side’s inner face');
+  assert.equal(bay.to[0], r.params.width - r.params.board_t, '…and the right side’s');
+  assert.equal(bay.from[1], bay.to[1], 'drawn along the shelf’s own centre line');
 });
 
 test('F14.2 — a SIDE PANEL gets the interior depth and the interior height', () => {

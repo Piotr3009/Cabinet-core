@@ -1,277 +1,279 @@
-# CLAUDE.md — TURN 25: the sheet gets a guard, the door gets a face
+# CLAUDE.md — TURN 26: what the eye test found
 
-An edge drawn twice in a polyline is not a wasted minute — VCarve
-offsets the two paths in opposite directions, cuts the panel from
-outside AND inside, and the board goes in the skip. The owner found it
-in his own LISP and fixed it there; this turn puts a permanent guard on
-OUR exporter so no future turn can ship it. Behind the guard: the
-shaker door finally looks like a shaker, handles arrive as real models
-with real drillings, doors on partitions get the full toolkit, the
-adjustable shelf shows its brass, and the export tree learns four
-groups.
+Turn 25's guard caught a fault that had been shipping since turn 3, and
+then the owner sat down with the result and found nine more. This turn
+is mostly HIS list: the hinge that pierces the door front, the shelf
+holes the scene never drew, the dimensions that speak four dialects,
+the dishwasher that behaves like a cupboard, and the shaker whose
+rebate reads as a different colour. Behind them, one new law that
+outranks all of it — **the sheet is the truth and the scene follows
+it**.
 
 Read the whole file first. Full autonomy, zero questions. Clean or not
-at all; the turn shrinks from the BOTTOM (F20 upward — F1, F2, F3 and
-F4 never shrink).
+at all; the turn shrinks from the BOTTOM (F12 upward — F1, F2 and F3
+never shrink).
 
-Baseline: main after the turn-24 merge. Do NOT hard-code the baseline
-test count — read it from the merge commit and state it in BUILD-LOG.
-CNC fingerprints: `verify/t24/fingerprints-turn24.txt`.
+Baseline: main after the turn-25 merge. Read the baseline test count
+from that commit; do not hard-code it. CNC fingerprints:
+`verify/t25/fingerprints-turn25.txt`.
 
 ## 0. IRON RULES
 
-Everything standing from turns 1–24 applies: R1 real CDP input, R2
-live bucket, R3 verbatim manifests as fixtures, R4 URLs proven by
-asking the app, R5 the walk reads the console, R6 a React exception
-fails the step, R7 no DOM attributes on R3F objects, R8 hardware
-visuals proven on the silent showroom. Plus:
+Everything from turns 1–25 stands: R1 real CDP input, R2 live bucket,
+R3 verbatim manifests, R4 URLs from the app, R5 console captured, R6 a
+React exception fails the step, R7 no DOM attributes on R3F objects,
+R8 the silent showroom, R9 no feature without its part. New:
 
-R9. **NO FEATURE WITHOUT ITS PART.** The owner's law, verbatim
-    intent: no shelf, no shelf drilling; no hinges and no door, no
-    hinge holes. Every drilling class exists ONLY while the part it
-    serves exists. Removing a part removes its preparation from the
-    same recompute; adding it back brings the preparation back. This
-    is general — doors, shelves, partitions, runners, handles — not a
-    door special case. A test asserts it per class.
+R10. **THE SHEET IS THE TRUTH; THE SCENE FOLLOWS IT.** The owner's
+     law, verbatim intent: *"cut CNC musi być twoją drogą do
+     wizualizacji, nie na odwrót."* Every drilling, pocket and cut on
+     a panel's CNC record MUST be visible on that panel in 3-D — the
+     scene renders the RECORD, never a parallel idea of what should be
+     there. Hardware may add to the picture (a sleeve inside a hole, a
+     hinge in its bore); it may never replace or omit the hole. A test
+     per part class asserts count and position parity between
+     `panel.cnc` and what the scene mounts, to 0.01 mm.
 
-## F1 — The duplicate-edge guard [CRITICAL] — never shrinks
+R11. **ONE DIMENSION COMPONENT.** The partition chain is the house
+     style and the only implementation. Anything that dimensions
+     anything — shelves, sides, fronts, gaps — feeds POINTS to that
+     one component and draws nothing itself. Three exist today
+     (`DistanceArrows`, `HoverDimensions`, `DimLabel`) and that is
+     exactly how four dialects happened.
 
-1. A new exporter check, run on EVERY panel in EVERY probe scenario
-   and in the golden set: for each panel's outline, assert that no
-   segment appears twice — same trace in either direction, same
-   layer — and that the outline is ONE closed polyline with no
-   dangling ends and no overlapping runs. Coordinates compare at
-   0.01 mm tolerance.
-2. **Winding**: the outer outline runs one consistent direction
-   (anticlockwise, matching the owner's corrected LISP); interior
-   cut-outs run the opposite way. Assert both — this is the signal
-   VCarve reads to know which side the material is on.
-3. A red result FAILS THE SUITE and stops the turn. Wire it into the
-   standard test run, not a separate script, so every future turn
-   inherits it.
-4. The engine builds outlines procedurally and is expected to pass
-   today. If it does NOT, fix the generator — never the test.
-5. `verify/t25/edge-guard.md`: panels checked, tolerance, and the
-   winding convention, with the LISP post-mortem in two sentences so
-   the next reader knows why this test exists.
+## F1 — The hinge stops piercing the door [CRITICAL]
 
-## F2 — The shallow cabinet gets ONE centred joint [HIGH]
+The owner measured the real thing: a CLIP top cup is **11 mm** deep in
+a 25 mm door. The scene shows roughly 15 and the body breaks through
+to the FRONT face — diagnosed before this file was written:
+`profile.js:1959` carries `cupDepth: 12.5`, and `Hardware.jsx:601`
+mounts the cup at `z + cupDepth/2`, so the procedural cup alone
+overshoots; with the GLB's own flange datum on top of it, the body
+lands proud of the leaf.
 
-From the owner's corrected `panel_joints.lsp`: sockets are 51 mm
-wide, dog bones 60 mm, and both sit 95 mm in from each end — so on a
-narrow panel they collide (panels under 241 mm, dog bones under 250).
+1. `cupDepth: 11` — the owner's measured number, with his name on it
+   in the comment.
+2. **The mounting datum is the door's INNER face** — the side the bit
+   enters — never the mid-plane, never the recess floor of a shaker
+   panel. One helper resolves it for every leaf type; the GLB's cup
+   flange sits ON that plane (the turn-24 `modelOrigin` derivation
+   already measures the flange — re-verify against the STEP model
+   now in the bucket and correct the number if it moved).
+3. **The guarantee**: a test walks every hinge instance on every door
+   type — plain, shaker, partition-hung, wall, tall — and asserts that
+   NO part of the hinge (procedural or GLB, in ANY open angle of
+   turn 24's rig) crosses the door's outer face plane. This is the
+   test that makes "it pierces the front" impossible to ship again.
+4. Fronts hinge-drilled by the engine already use the correct depth
+   for CNC — verify; if CNC and the scene disagree, R10 decides: the
+   sheet wins and the scene is corrected.
 
-1. Cabinet depth ≤ **300 mm** ⇒ ONE joint centred on the panel;
-   above 300 ⇒ today's pair at **95** exactly as now. One resolved
-   inset per unit, shared by every mating panel so joints still line
-   up. Both numbers in `profile.js`.
-2. Sockets, ⌀7.5 puzzle holes and dog bones all follow the resolved
-   positions — same features, fewer of them; no new entity classes.
-3. CNC: golden defaults are deep cabinets ⇒ **fingerprint delta ZERO**.
-   A shallow probe (200 mm deep unit) shows the single-joint pattern
-   — named in `cnc-export-identity.md`.
+## F2 — Partition doors: one path, not two [CRITICAL]
 
-## F3 — The shaker door looks like a shaker [HIGH]
+The owner: on the small partition-hung leaves the hinges are the OLD
+procedural ones, they do not fold, and they pierce. Three symptoms,
+and the code says one cause — `Hardware.jsx` contains no reading of
+`hingeOn`/`hingeFace` at all, so those leaves fall into a legacy
+branch that predates the GLB mount, the rig and the datum fix.
 
-Today a shaker renders as a flat slab; only the 25 mm thickness says
-otherwise.
+1. Delete the legacy branch. EVERY door — side-hung or
+   partition-hung — builds its hinge instances through ONE function
+   that reads `hingeOn` + `hingeFace` from the panel's meta, mounts
+   the GLB, applies turn 24's rig and turn 26's datum.
+2. Turn 25's paired test compared NUMBERS and passed while the
+   pictures differed. Extend it: the pair must also agree on the
+   MOUNT — model-backed vs procedural, parent node, fold state at
+   45°, and the F1 no-pierce assertion — for both leaves.
+3. Display only ⇒ CNC delta ZERO.
 
-1. **Geometry**: a recess **6 mm** deep in the door's face, leaving a
-   frame of width `shakerFrame` — **equal on all four sides** (the
-   owner: "shaker zawsze równy"), settable **10…200 mm**, default
-   70. Panel face therefore sits at 25 − 6 = 19 mm.
-2. **Validation**: 2 × frame + a minimum panel width must fit the
-   leaf; a 200 mm frame on a 300 mm door is refused with a plain
-   message, never silently clamped.
-3. **Material**: the recessed panel carries the SAME finish as the
-   frame; the inner edges must read as a real rebate — correct
-   normals, no z-fighting, visible corner shadow at grazing angles.
-   That shadow is what sells it; screenshot proves it.
-4. **CNC**: the panel pocket is a NAMED class on the front's sheet
-   (today the front DXF is outline only). Appears only on shaker
-   fronts.
-5. **Hinge rule**: the angle law reads the FULL 25 mm, never the
-   19 mm floor. A test pins this — it is exactly the kind of thing
-   that silently picks the wrong article.
+## F3 — The scene draws what the sheet drills [CRITICAL]
 
-## F4 — Handles: real models, real holes, one line across the kitchen
-##      [HIGH]
+R10's first application, and the owner's clearest complaint: a side
+panel carries **three ⌀7.5 holes in a row** per shelf level on the
+sheet; in the scene there are no holes at all — X-ray included — only
+sleeves where a shelf happens to stand.
 
-New in the door/front modal: **Add handle**, asking two things — type
-(**bar** or **knob**) and, for a bar, the **screw centres** (96, 128,
-160, 192, 224 or typed).
+1. Every ⌀7.5 shelf hole on a panel's CNC record renders as a real
+   bore in that panel's face — **empty ones too**, so the full ladder
+   of levels reads at a glance, exactly as on the sheet.
+2. Sleeves and pins (turn 25's brass) mount INSIDE the holes that
+   actually carry a shelf. The hole is the panel's; the sleeve is
+   the hardware's.
+3. Sweep the same rule across every drilling class the scene claims
+   to show — hinge bores, screw holes, biscuit slots, dowels: what is
+   on the sheet is in the picture. Where a class is deliberately not
+   drawn, name it in `verify/t26/sheet-vs-scene.md` with the reason;
+   silence is not allowed.
+4. The parity test from R10 is the proof; it must cover at least
+   BUL/BUR, TOP/BOTTOM, BACK, shelves, partitions and fronts.
 
-1. **Reference point, the owner's law:**
-   * base unit doors: **50 from the TOP** of the front, 50 in from
-     the opening edge,
-   * wall unit doors: **50 from the BOTTOM**, 50 in from the opening
-     edge,
-   * tall unit doors: **mid height** of the door, 50 in — movable,
-   * drawer fronts and D/W panels: **horizontal**, centred on width,
-     **50 from the top** of the front,
-   * SHAKER fronts: centred on the frame's width (vertical frame for
-     doors, bottom/top frame for horizontals) — UNLESS the frame is
-     **under 30 mm**, in which case fall back to the 50 × 50 rule.
-2. **Drillings**: knob = one hole; bar = the reference hole plus its
-   partner at the chosen centres, along the handle's axis. A NAMED
-   class on the front's sheet. R9 applies — remove the handle, the
-   holes go.
-3. **Model**: procedural, **gold** for now — a round bar on two
-   posts, a hemispherical knob. Catalogue models arrive later by the
-   bucket route; the mount point and axis are already the contract.
-4. **Moving one moves all — with a warning.** Dragging or typing a
-   new position applies to every front of that class in the project
-   (a kitchen's handles must line up), behind a confirmation naming
-   the count: "this moves handles on 14 fronts". Unticking **apply to
-   all** confines it to this front, which then wears a deviation
-   badge — same grammar as turn 19's per-hinge overrides.
+## F4 — One dimension language, at last [HIGH]
 
-## F5 — Doors on a partition are just doors [HIGH]
+The owner: the partition chain is right; shelves, sides and fronts are
+wrong — white labels, no arrows, badly placed, rounded to 1 mm.
 
-Turn 24 made their hinges visible; this turn makes them equal.
+1. R11: the partition chain's renderer becomes THE dimension
+   component. `HoverDimensions` and any front-dimension drawing feed
+   it points and captions; `DimLabel`'s standalone use for dimensions
+   ends (it may stay for non-dimension chips like unit names).
+2. **Placement, the owner's picture**: horizontal chains lie ON THE
+   FLOOR in front of the run, like a drawing's dimension line —
+   witness lines dropping from the front edges, the chain below them.
+   Vertical chains run down the SIDE of the unit. Never across the
+   face of a front.
+3. **Precision 0.5 mm** everywhere (`formatMm` gains a half-mm mode
+   for dimensions): 3 mm gaps and half-millimetre differences are
+   exactly what these are for.
+4. Same thin blue line, real arrowheads, value on the line — the
+   partition style, everywhere. Shelves and side panels (interior
+   depth, interior height) included; turn 25's magnet stays.
 
-1. Every door capability works on a partition-hung leaf: per-hinge
-   override (turn 19), article and angle choice, hinge side, opening
-   in the scene with turn 24's rig, selection, the modal, BOM lines,
-   the CNC sheet. No "bay door" branch anywhere.
-2. **The paired test**: two identical cabinets — one door on a side,
-   one on a partition — assert identical behaviour for each
-   capability (override count, hinge count, BOM entries, drill
-   classes). Any future door feature must satisfy this pair, which
-   is the point.
+## F5 — The dishwasher joins the family [HIGH]
 
-## F6 — The adjustable shelf shows its brass [HIGH]
+Four faults, one appliance:
 
-The owner: he wants to SEE gold or silver sleeves — and they are the
-**⌀7.5** we already drill, not a new 5 mm system.
+1. **Front sits 3 mm high.** `cabinet.js:1534` — `dwH = H - gap` is
+   right, but `box.y = H - dwH` glues the leaf to the TOP and puts
+   the whole gap UNDER it, while every other front starts from the
+   bottom. Correct the datum so a D/W front lines up with its
+   neighbours; the gap belongs at the top.
+2. **It opens sideways.** A D/W front drops FORWARD about its BOTTOM
+   edge, ~90°, not on cup hinges. Its own opening behaviour.
+3. **No cup hinges, no cup drilling** — the panel screws to the
+   appliance door. If the engine drills hinge bores in it, they go
+   (R9 and R10 agree).
+4. **Plinth.** A D/W unit may carry a plinth like any other, joining
+   the run's continuous plinth line, height from the run's leg
+   height (turn 22's law). **BLOCKER**: whether the plinth in front
+   of an appliance is a fixed part, a removable one, or simply the
+   run's plinth passing through is a workshop question the owner has
+   not answered — implement it as the run's plinth passing through,
+   the least committal reading, and put the question in BLOCKERS.
+5. **Shaker.** A D/W front is a front: F3-turn-25's shaker applies to
+   it, and so do handles. The `dwPanel` path must stop being a
+   special case for anything a front normally has.
 
-1. In the scene, an adjustable shelf renders **sleeve rings** in the
-   ⌀7.5 holes that carry it, plus the pin (spon) the shelf rests on.
-   Finish **gold or silver**, chosen in project settings, materials
-   in `profile.js` beside the hardware finishes.
-2. FIX shelves show nothing — that visual difference is the feature:
-   one look tells you which shelf is which.
-3. R9 governs: no shelf, no sleeves and no holes.
-4. Display only over the existing drilling ⇒ CNC delta ZERO.
+## F6 — The shaker's rebate is the same colour [HIGH]
 
-## F7 — Export tree: four groups [HIGH]
+The owner: the recess reads as a different colour, and it looks bad.
+The panel floor and the four inner walls must carry the SAME material
+instance as the frame, with correct normals; the only difference the
+eye should see is SHADOW. Verify smoothing/normals at the rebate
+corners, kill any distinct material, screenshot at a grazing angle.
 
-1. Groups, in order: **Carcasses** (BUL, BUR, TOP, BOTTOM, BACK) ·
-   **Shelves** (shelves + VPART) · **Doors, fronts & panels** ·
-   **Infills & plinths**. INFILL-* leaves the Carcass group.
-2. Quick-select buttons: **All · Carcasses · Shelves · Doors, fronts
-   & panels · Infills & plinths** — each ticks its whole group.
-   Per-panel ticks behave as today; counters at unit and group level
-   update live.
-3. The one-file DXF takes the ticked set; the per-panel ZIP still
-   ships the WHOLE unit, unchanged — the footnote already says why.
+## F7 — The fix shelf is a clean rectangle [HIGH] — CNC, named
 
-## F8 — Drawer box: a floor and a ceiling [HIGH]
+The owner, twice, and the second time decisively: **no biscuits on the
+shelf itself — not even on its ends.** Remove them.
 
-From the owner's LISP, with his correction to the clearance:
+1. Fix shelf CNC = OUTLINE + label. Nothing else.
+2. The joint lives in the bearers: biscuit slots in the faces of
+   BUL/BUR **and** of the partition; ⌀3 through-screws from BUL/BUR
+   only, never through a partition; ⌀3 in the BACK on the shelf's
+   axis (the owner's addition — same law as the partition's back
+   screws: ends 50, pitch ≤ 400).
+3. Zero ⌀7.5 on a fix shelf or its bearers — the red test from turn
+   24 stands; a second red test now forbids ANY entity but the
+   outline on the fix shelf part itself.
+4. Named delta in the fix-shelf probe; golden defaults ZERO.
 
-1. Side height stays 70% of the front, but is now **floored** at
-   `minimum inside + 15 + G + 1` and **capped** so the box top clears
-   whatever sits above it — the underside of the top panel, or the
-   next runner — by **5 mm** (the owner's number, not the LISP's 3).
-2. The cap is what stopped a tall top drawer breaking the top panel;
-   the owner has seen it happen. Numbers in `profile.js`, named.
-3. CNC: box parts change size only where the cap or floor bites;
-   golden defaults must show **ZERO** — if any moves, the scenario is
-   one the cap now catches, and it is named in the identity report.
+## F8 — Shelves lie along the grain [HIGH] — CNC, named
 
-## F9 — Short runners [MEDIUM]
+The owner: shelves are laid across the sheet, so the grain runs
+front-to-back; the edge banding goes on the LONG front edge and must
+run WITH the grain. Lay every shelf (fix and adjustable) with its
+length left-to-right, the same convention as the sides — the
+partition already got this in turn 24 (F8) and this is the same
+production law. Tops and bottoms are NOT in scope.
 
-Add NL **250, 270, 300, 320, 350, 380** to the Movento catalogue and
-select **from the shortest upward**, so a shallow cabinet gets a short
-runner instead of a box longer than the carcass. Models are already in
-the bucket. Existing deep units keep today's selection — assert that.
+## F9 — The cornice grows corners [MEDIUM]
 
-## F10 — SHORT / OVER warnings [MEDIUM]
+1. **Diagnose first**: the right-click cornice toggle does nothing
+   (the owner). Find whether the menu item, the store write or the
+   resolver is at fault; report in `verify/t26/cornice-toggle.md`.
+2. **Wall units join the run.** A cornice run continues across ANY
+   adjacent cornice-bearing unit whose top edges meet — tall and wall
+   alike, not just floor-standing.
+3. **The internal 45° mitre**: where two runs meet at an angle (a
+   wall unit meeting a tall unit), the profile mitres internally at
+   45°, as it already does externally at an open end. Four cases
+   total: run, stop at a wall, open-end return, corner.
+4. **BLOCKER**: when the two units differ in depth (wall 350 against
+   tall 578) the cornice cannot simply mitre — the owner has not said
+   whether he steps it or carries the deeper line and returns. Ship
+   the mitre for equal depths, refuse (with a plain message) for
+   unequal ones, and ask in BLOCKERS.
 
-When the fronts do not fit the opening, or a front is too shallow for
-a sane box, the app says so — a **yellow warning** on the unit and in
-the drawer modal, naming the number. It does NOT block; the owner
-wants to see it in practice first. Silent clamping ends here.
+## F10 — The light comes from the ceiling [MEDIUM]
 
-## F11 — Remove door [MEDIUM]
+The owner's proposal, and his constraint: total brightness must NOT
+increase.
 
-At the BOTTOM of the door's double-click modal, separated by a rule:
-**Remove door**. The `Delete` key on a selected leaf does the same.
-No confirmation dialog — Undo covers it. R9 does the rest: the hinge
-holes leave with the door and return with it.
+1. One broad ceiling source at real ceiling height above the tall
+   units, set back **1.5 m** from the fronts, medium intensity.
+2. **Whatever is added above is subtracted from the facing spots** —
+   the scene's total luminous contribution stays as it is today.
+   Compute it, do not eyeball it, and put the before/after sum in
+   `verify/t26/lighting.md`.
+3. A **brightness slider** in the View menu scales every source
+   proportionally, state remembered.
+4. Screenshots: a shaker door under the old rig and the new one, same
+   camera — the rebate shadow is the whole point.
 
-## F12 — Cornice 100, and cornice in the modal [MEDIUM]
+## F11 — SHORT / OVER and the export tree, verified [LOW]
 
-1. **Diagnose first**: option 100 shipped in turn 22 but the owner
-   only gets 70. Find whether the profile geometry, the panel option
-   or the resolver is at fault; state the finding in
-   `verify/t25/cornice-100.md` before fixing.
-2. The 100 profile is **richer** than the 70 — larger bottom bead,
-   deeper cove, a pronounced top land, projection 65. **BLOCKER**:
-   the owner has a reference drawing he sent long ago; if it is not
-   in the repo, ship the parametric richer profile and note that the
-   drawing supersedes it in a later turn without touching the
-   plumbing.
-3. **Top cornice** joins the unit's right-click menu (none / 70 /
-   100). Top infill is already there.
+Turn 25 shipped both; the owner could not find the warning. Confirm
+it triggers (a 770 opening with three 200 fronts), that its wording
+names the number, and screenshot it. No new behaviour.
 
-## F13 — Front dimensions, project-wide [MEDIUM]
+## F12 — Editor housekeeping [LOW]
 
-A toggle — **Show front dimensions** — in the door modal and in the
-View menu, scoped to the **whole project** (the owner's choice), state
-remembered. On: every front's width and height, plus the gaps —
-between doors, between drawer fronts, to sides, to the top, to the
-floor. Off: clean scene. Same arrow style as F14.
+Only what fits without touching the drawing tools:
 
-## F14 — One dimension language [MEDIUM]
-
-1. The partition chain from turn 24 moves **down** off the centre
-   line so it stops hiding behind the add (+) button — offset a
-   fraction of the bay height, one number in `profile.js`.
-2. The SAME thin blue arrows appear on hover for **shelves** (clear
-   gaps to floor, neighbour shelf, top) and for a **side panel**
-   (interior depth and interior height, drawn inside the cabinet).
-3. Horizontal and vertical only; the 5 mm magnet from turn 24
-   applies everywhere. One style block, four consumers.
-
-## F15 — Open / close all doors [MEDIUM]
-
-A toggle button in the top toolbar **between BOM and Measure**: first
-press opens every door in the project, second closes them. Works with
-turn 24's rig.
+1. The layer list moves OFF the toolbar; the layer is asked ONCE,
+   before the edits are committed ("which layer should these go on?").
+2. **Back** moves to the top centre of the modal, large.
+3. Panel split: the 3-D view shrinks to ~25 %, the sheet takes ~75 %.
+4. `Delete` after a selection must actually delete — verify the
+   disabled-looking button in the owner's screenshot is state, not a
+   bug; fix if it is a bug.
 
 ## OUT OF SCOPE — named so nothing drifts in
 
-* Drawer numbering D1-from-top: the owner parked it — leave today's
-  bottom-up numbering alone.
-* Custom layers per tenant; the four-bar hinge linkage; LIFT kits;
-  the ⌀3 screw-on plate; pull-out tray height — all still parked.
-* `centrelineExtra` 0.5: the LISP carries the same 0.5 in six places,
-  so it is NOT a Cabinet Core invention. Nothing in this turn touches
-  it; it waits on the owner's bench test.
+* The CAD drawing tools (circle, rectangle, trim, join `J`, offset,
+  orto toggle, 45° constraint, typed `400 Tab 500`, starting a draw
+  from a snapped point): the owner's list, and a turn of its own.
+* Default depth 578 and end panels extending to the wall: gathered,
+  not yet specified — next turn.
+* Drawer numbering D1-from-top; `centrelineExtra` (removed in turn 24,
+  the LISP still carries 0.5 — the owner's bench test decides);
+  custom layers; four-bar linkage; LIFT kits; ⌀3 plate card;
+  pull-out tray height.
 
-## PROOF — `verify/t25/`
+## PROOF — `verify/t26/`
 
-* `walk.json` — R1 input, R5+R6 console, R4 app URLs, R8 showroom.
-* `edge-guard.md`, `cornice-100.md`.
-* Screenshots: shaker door at a grazing angle showing the rebate
-  shadow; gold bar and knob on base, wall and drawer fronts; a
-  partition door with its hinge overrides open; sleeves in an
-  adjustable shelf beside a bare fix shelf; the four-group export
-  tree; front dimensions on and off; shelf and side-panel hover
-  arrows; the shallow-cabinet single joint.
-* `fingerprints-turn24-baseline.txt`, `fingerprints-turn25.txt`,
-  `fingerprints-diff.txt`, `cnc-export-identity.md` — ZERO on golden
-  defaults; named: F2's shallow-joint pattern, F3's shaker pocket,
-  F4's handle holes, F8's cap where it bites.
+* `walk.json` — R1/R4/R5/R6/R8 as ever.
+* `sheet-vs-scene.md` (R10 parity, per class, with the deliberate
+  omissions named), `cornice-toggle.md`, `lighting.md`.
+* Screenshots: a hinge at 0/45/90° with the no-pierce guarantee
+  visible on a shaker door; a partition leaf's hinge folded and
+  model-backed; a side panel showing its full ⌀7.5 ladder in the
+  scene beside its sheet; floor-lying dimension chains at 0.5 mm; the
+  D/W front level with its neighbours and dropped open; the shaker
+  rebate at a grazing angle; the fix-shelf sheet as a bare rectangle;
+  a shelf laid along the grain; a wall-to-tall cornice corner; the
+  new lighting pair.
+* `fingerprints-*`, `cnc-export-identity.md` — named: F7's fix-shelf
+  subtraction and back screws, F8's shelf orientation, F5's D/W
+  changes. ZERO on golden defaults.
 
 ## TESTS
 
-New: the duplicate-edge and winding guard across every scenario;
-inset resolution either side of 300; shaker frame validation and the
-25 mm hinge rule; handle reference points per unit type and the
-under-30 fallback; the F5 paired door test; R9 per drilling class
-(remove part → holes gone → add back → holes identical); export
-grouping; box floor and cap arithmetic; runner selection shortest-up;
-front-dimension gap maths. 100% green or shrink from the bottom.
+New: F1's no-pierce sweep across door types and rig angles; F2's
+extended pair (mount, parent, fold, pierce); R10 parity per part
+class; R11 single-component assertion (grep-level: no other module
+draws an arrowhead); 0.5 mm formatting; D/W front datum and opening
+axis; shaker material identity; F7's bare-rectangle and no-⌀7.5 red
+tests; F8 orientation; cornice corner resolution incl. the refusal on
+unequal depths; the lighting sum. 100 % green or shrink from the
+bottom.

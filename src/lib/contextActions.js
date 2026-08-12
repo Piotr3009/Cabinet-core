@@ -23,6 +23,8 @@
 // flips it.
 
 import { getUnitType } from '../engine/types.js';
+import { getCabinetProfile } from '../engine/profile.js';
+import { corniceOption } from '../engine/cornice.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 
 // ─── TURN 14 (CLAUDE.md F6): THE ORDER IS DATA ─────────────────────────────
@@ -94,6 +96,12 @@ import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
  */
 const GROUP_OF = {
   'top-infill': 'run-pieces',
+  // Turn 25 (CLAUDE.md F12.3): the cornice is a run piece like the infill it
+  // is screwed to, so it sits in the same group rather than at the bottom with
+  // the per-cabinet actions.
+  'cornice-0': 'run-pieces',
+  'cornice-70': 'run-pieces',
+  'cornice-100': 'run-pieces',
   plinth: 'run-pieces',
   'bottom-mask': 'run-pieces',
   'end-panel-L': 'end-panels',
@@ -122,6 +130,7 @@ export function groupedActions(actions) {
 
 export function menuActions({
   unit, selection = null, panelPart, panelDrawer = null, dimensions = false, hinges = false, store = {},
+  profile = getCabinetProfile(),
 }) {
   const type = getUnitType(unit.type);
   const actions = [];
@@ -266,6 +275,30 @@ export function menuActions({
       },
     });
   }
+  // ─── TURN 25 (CLAUDE.md F12.3): THE TOP CORNICE, IN THE MENU ────────────
+  //
+  // "Top cornice joins the unit's right-click menu (none / 70 / 100). Top
+  // infill is already there." Three entries rather than one toggle, because a
+  // cornice is a CHOICE of moulding and not an on/off — and the two heights are
+  // read off the profile, so a workshop that stocks a third gets a third entry.
+  if (type.supports.cornice) {
+    const fitted = corniceOption(unit.params.cornice, profile);
+    for (const h of [0, ...(profile.autoParts.cornice.heights || [])]) {
+      actions.push({
+        id: `cornice-${h}`,
+        label: h === 0 ? 'Top cornice: none' : `Top cornice ${h} mm`,
+        checked: fitted === h,
+        hint: h === 0
+          ? 'No moulding over this cabinet'
+          : `${profile.autoParts.cornice.projection[h] || 0} mm forward of the doors — bought moulding, one run`,
+        run: () => {
+          store.setCornice?.(unit.id, h);
+          store.openPanelSection?.('construction');
+        },
+      });
+    }
+  }
+
   // The SIDE infill is DERIVED — it is a fact about where the unit is standing
   // (BACKLOG #15) — so the switch is not "add one", it is "does this cabinet
   // take one at all". A joiner who is going to scribe the door instead turns it

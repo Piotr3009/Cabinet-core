@@ -702,6 +702,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const openLibraryToInsert = useUiStore((s) => s.openLibraryToInsert);
   const showDimensions = useUiStore((s) => s.showDimensions);
   const unitDimensions = useUiStore((s) => s.unitDimensions);
+  const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
@@ -935,6 +936,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           wallGaps={wallGaps[unit.id]}
           // The right-click toggle: every number THIS cabinet has (turn 8, F7).
           showAllDims={Boolean(unitDimensions[unit.id])}
+          // Turn 25 (CLAUDE.md F13): one project-wide flag, handed to every
+          // cabinet — so a gap between two units' fronts is on or off, never
+          // half of each.
+          showFrontDimensions={showFrontDimensions}
           zoneHint={selectedUnitId === unit.id ? zoneHint : null}
           // The ink every dimension caption on this cabinet is written in
           // (turn 11, CLAUDE.md F1.5) — the same one the distance arrows use,

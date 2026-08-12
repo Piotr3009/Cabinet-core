@@ -140,7 +140,12 @@ export function corniceSection(height, profile) {
   if (!h) return [];
   const pr = corniceProjection(h, profile);
   if (!(pr > 0)) return [];
-  const S = profile.autoParts.cornice.section;
+  // ─── TURN 25 (CLAUDE.md F12.2): EACH HEIGHT'S OWN PROPORTIONS ───────────
+  // A 100 is not a 70 photocopied at 143 %. The base fractions answer for any
+  // height the profile does not speak about, so a workshop that adds a 140
+  // gets a sensible shape without having to describe one.
+  const base = profile.autoParts.cornice.section;
+  const S = { ...base, ...(base.byHeight?.[h] || {}) };
   const steps = Math.max(2, Math.trunc(Number(S.steps) || 2));
   const beadH = h * S.beadHeight;
   const beadD = pr * S.beadProjection;

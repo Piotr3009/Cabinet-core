@@ -75,6 +75,11 @@ export default function ElementModal() {
       <HandleSection unit={unit} panel={panel} />
       {/* ─── Turn 25 (CLAUDE.md F11): REMOVE DOOR ───
           At the BOTTOM, separated by a rule. No confirmation — Undo covers it. */}
+      {/* ─── Turn 25 (CLAUDE.md F13): the same toggle the View menu carries ───
+          "in the door modal AND in the View menu, scoped to the whole project".
+          One piece of state, two places to reach it — so it cannot be on in one
+          and off in the other. */}
+      <FrontDimensionsToggle panel={panel} />
       <RemoveDoor unit={unit} panel={panel} onDone={closeModal} />
       {/* ─── Turn 19 (CLAUDE.md F5.1): WHAT IT WEIGHS ─────────────────────────
           The footer of the detail window. It is here because it is the one
@@ -343,5 +348,35 @@ function RemoveDoor({ unit, panel, onDone }) {
         Remove door
       </button>
     </div>
+  );
+}
+
+/**
+ * ─── SHOW FRONT DIMENSIONS (turn 25, CLAUDE.md F13) ─────────────────────────
+ *
+ * Scoped to the WHOLE PROJECT, and the label says so: a joiner ticking it on
+ * one door and finding numbers on fourteen would think it broken, and the
+ * sentence under it is what stops that. It is the owner's own choice of scope —
+ * the numbers this is for are the GAPS, and a gap belongs to two fronts at once.
+ */
+function FrontDimensionsToggle({ panel }) {
+  const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
+  const toggleFrontDimensions = useUiStore((s) => s.toggleFrontDimensions);
+  if (panel?.role !== 'front') return null;
+  return (
+    <label className="flex items-start gap-1.5 mt-2 pt-2 border-t border-shell-600 text-[11px] text-ink-400">
+      <input
+        type="checkbox"
+        className="mt-0.5"
+        data-front-dimensions
+        checked={showFrontDimensions}
+        onChange={toggleFrontDimensions}
+      />
+      <span>
+        <span className="text-ink-100">Show front dimensions</span>
+        {' — '}
+        every front&apos;s width and height and the gaps around it, for the whole project.
+      </span>
+    </label>
   );
 }

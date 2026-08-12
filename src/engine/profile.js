@@ -367,6 +367,18 @@ export const DEFAULT_CABINET_PROFILE = {
     extensionMm: 4,            // how far the extension line runs past it
     gapMm: 2,                  // …and the gap it leaves at the feature itself
     minSpanMm: 0.5,            // under this there is nothing to dimension
+    // ─── TURN 25 (CLAUDE.md F14.1): THE CHAIN MOVES DOWN ──────────────────
+    //
+    // Turn 24 drew the partition chain across the bay's own MID-HEIGHT, which
+    // is exactly where the add (+) button stands — so the number a joiner had
+    // just asked for was hidden behind the control he had asked it with.
+    //
+    // It drops by a FRACTION of the bay's height rather than by a fixed number
+    // of millimetres, because the button is placed the same way: a fixed 80 mm
+    // is clear on a wardrobe bay and off the bottom of a 300 mm one. A quarter
+    // of the way down puts it in the lower half and well below the button on
+    // any bay the app will build.
+    chainDropFraction: 0.25,
     // The magnet that holds a shown set on screen is `editor.hoverMagnetMm` —
     // it is a property of the TOOL rather than of the drawing's ink, and
     // CLAUDE.md F10.1 names it there. `dimensionStyle` reads it through, so
@@ -1231,6 +1243,34 @@ export const DEFAULT_CABINET_PROFILE = {
         beadProjection: 0.3,     // of the projection
         landHeight: 0.14,        // the flat top land, of the height
         steps: 6,                // points per curved member
+        // ─── TURN 25 (CLAUDE.md F12.2): THE 100 IS RICHER, NOT BIGGER ──────
+        //
+        // Turn 22 gave both heights the SAME fractions, so a 100 was a 70
+        // photocopied at 143 % — which is not what a bigger moulding is. The
+        // owner asks for "a larger bottom bead, a deeper cove, a pronounced
+        // top land, projection 65", and those are three different proportions
+        // rather than one scale factor.
+        //
+        //   beadHeight     0.16 → 0.20   a larger bottom bead
+        //   beadProjection 0.30 → 0.26   …standing proud LESS far, which is
+        //                                what leaves the cove a deeper sweep:
+        //                                it now travels 48 mm of projection
+        //                                where the scaled shape travelled 45
+        //   landHeight     0.14 → 0.20   a pronounced top land
+        //
+        // ─── BLOCKER, STATED (F12.2) ──────────────────────────────────────
+        // The owner has a reference drawing he sent long ago. It is NOT in
+        // this repository — `reference/` has the eleven LISP kits, the colour
+        // packs and the hardware catalogues, and no cornice section anywhere.
+        // So this is the parametric richer profile F12.2 asks for in that
+        // case, and the drawing SUPERSEDES it in a later turn WITHOUT touching
+        // the plumbing: the section is already read through one function
+        // (`engine/cornice.js corniceSection`) by the run logic, the BOM and
+        // the 3-D, so replacing these three numbers with traced ones changes
+        // nothing else.
+        byHeight: {
+          100: { beadHeight: 0.2, beadProjection: 0.26, landHeight: 0.2 },
+        },
       },
       // What a mitred corner costs in ORDERED length. A joiner cuts the 45°
       // out of a longer piece; this is the allowance per corner.
@@ -3105,7 +3145,14 @@ export function migrateCabinetProfile(profile) {
         ...D.autoParts.cornice,
         ...profile.autoParts?.cornice,
         projection: { ...D.autoParts.cornice.projection, ...profile.autoParts?.cornice?.projection },
-        section: { ...D.autoParts.cornice.section, ...profile.autoParts?.cornice?.section },
+        section: {
+          ...D.autoParts.cornice.section,
+          ...profile.autoParts?.cornice?.section,
+          byHeight: {
+            ...D.autoParts.cornice.section.byHeight,
+            ...profile.autoParts?.cornice?.section?.byHeight,
+          },
+        },
       },
     },
     appearance: {

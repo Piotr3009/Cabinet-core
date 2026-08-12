@@ -3940,6 +3940,26 @@ function sameRun(a, b) {
   // the corner square until something else forced a redraw.
   if (!sameCorner(a.sideMitre, b.sideMitre)) return false;
   if (a.role === 'member') return a.ownerId === b.ownerId;
+  // ─── TURN 25 (CLAUDE.md F12.1): THE CORNICE'S OWN HEIGHT ─────────────────
+  //
+  // THE DIAGNOSIS. Option 100 shipped in turn 22 and the owner only ever got
+  // 70, and neither the profile geometry nor the panel option nor the resolver
+  // was at fault — all three carry 100 correctly, and `verify/t25/cornice-100.md`
+  // shows them doing it. What was at fault is THIS comparison.
+  //
+  // The list below was written for the top infill, the plinth and the masking
+  // board, none of which has a height: they are all "one board, this long,
+  // ending like this". A cornice is the first run element whose IDENTITY
+  // includes a height, and turn 22 added it to the callers without extending
+  // this. So switching a unit from 70 to 100 produced a genuinely new element
+  // — same offset, same length, same faceH, same ends, same returns, same
+  // mitres — that this function called identical, and `refreshAutoParts`
+  // returned the unit untouched with its 70 still on it.
+  //
+  // Every other field is compared because a moulding that differs in it is a
+  // different length of timber; height and projection are exactly that.
+  if ((Number(a.height) || 0) !== (Number(b.height) || 0)) return false;
+  if ((Number(a.projection) || 0) !== (Number(b.projection) || 0)) return false;
   return a.offset === b.offset && a.length === b.length && a.faceH === b.faceH
     && a.depth === b.depth
     && a.shelfDepth === b.shelfDepth

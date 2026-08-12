@@ -827,10 +827,25 @@ export default function UnitView({
   // for a side whose neighbour is another cabinet rather than a wall, and a
   // null gap means the door is free — two doors opening into each other is a
   // different question, with a different answer, and CLAUDE.md asks about walls.
-  const swingFor = useCallback((hinge) => {
+  //
+  // ─── TURN 26 (CLAUDE.md F2.1): THE LEAF'S OWN WIDTH, NOT THE FIRST ONE'S ──
+  //
+  // This asked `result.panels.find(p => p.part === 'FRONT')` — the FIRST front
+  // in the cabinet — for every door in it. On a face with two matched leaves
+  // that is the same number twice and nobody notices. On a cabinet with doors
+  // in its BAYS the leaves are different widths by construction, so every
+  // partition-hung leaf swung by its neighbour's angle, and turn 24's rig then
+  // folded its hinge by that wrong angle too. That is one of the owner's three
+  // symptoms — "they do not fold" — and it is a leaf being handed another
+  // leaf's number.
+  //
+  // It takes the PANEL now. Same law, same profile, asked about the door it is
+  // actually about.
+  const swingFor = useCallback((panel) => {
+    const hinge = panel?.meta?.hinge;
     const gap = hinge === 'R' ? wallGaps?.right : wallGaps?.left;
     return doorOpenAngle({
-      doorWidth: result.panels.find((p) => p.part === 'FRONT')?.w ?? W,
+      doorWidth: panel?.w ?? result.panels.find((p) => p.part === 'FRONT')?.w ?? W,
       hingeOffset: profile.doors.gap / 2,
       gapToWall: gap ?? null,
     }, profile);
@@ -849,7 +864,7 @@ export default function UnitView({
     for (const p of result.panels) {
       if (p.part !== 'FRONT' || !p.box) continue;
       const dir = p.meta?.hinge === 'R' ? 1 : -1;
-      out[p.id] = dir * (openFronts?.[p.id] ?? 0) * swingFor(p.meta?.hinge);
+      out[p.id] = dir * (openFronts?.[p.id] ?? 0) * swingFor(p);
     }
     return out;
   }, [result.panels, openFronts, swingFor]);
@@ -1219,7 +1234,7 @@ export default function UnitView({
             xray={xray}
             depth={D}
             profile={profile}
-            swing={front === 'door' ? swingFor(p.meta?.hinge) : null}
+            swing={front === 'door' ? swingFor(p) : null}
             joineryLayers={jointLayers}
             onPointerDown={(e) => {
               // ─── Turn 13 (CLAUDE.md F5.1/F5.3): THE LEFT BUTTON ONLY ───

@@ -32,12 +32,10 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { hardwareInstances } from '../src/engine/hardware3d.js';
 import { cupBoreOf, doorHingeDatum } from '../src/engine/doors.js';
-import { foldPivotMm, memberOfNode } from '../src/3d/hingeModels.js';
 import { panelRecesses } from '../src/engine/recesses.js';
-import { parseGlb, meshTable } from '../scripts/glb-meshes.mjs';
+import { ANGLES, hingeFileBox, hingeReach } from './fixtures/hinge-reach.mjs';
 
 const C = P.hardware.hinge.cliptop;
-const RIG = C.rig;
 const H = P.hardware.hinge;
 
 // ─── THE OWNER'S NUMBER, AND THE DERIVATION HUNG OFF IT ─────────────────────
@@ -63,7 +61,7 @@ test('F1.2 — the model’s flange plane is DERIVED from the bore, not typed', 
   assert.equal(Math.round((C.fileMinZ - flange) * 100) / 100, C.modelOrigin.z);
 
   // …and the measurements really are the file's.
-  const box = fileBox();
+  const box = hingeFileBox();
   assert.equal(Math.round(box.min.z * 100) / 100, C.fileMinZ);
   assert.equal(Math.round(box.max.z * 100) / 100, C.cupBoreFileZ);
 });
@@ -220,9 +218,6 @@ test('F1.3 — and the guard would CATCH the fault it was written for', () => {
 
 // ─── the fixtures ───────────────────────────────────────────────────────────
 
-/** 0 … a CLIP top's full 110°, and the two the screenshots are taken at. */
-const ANGLES = [0, 15, 30, 45, 60, 90, 100, 110];
-
 const base = (type) => ({ ...defaultParamsFor(type, P), unit_num: '01' });
 
 /** Every door type F1.3 names, each as a computed cabinet. */
@@ -244,84 +239,3 @@ function cabinets() {
 
 const leaves = (r) => r.panels.filter((p) => p.part === 'FRONT' && p.role === 'front' && p.box && !p.meta?.appliance);
 
-let FILE_ROWS = null;
-function rows() {
-  if (!FILE_ROWS) {
-    const bytes = readFileSync(new URL(
-      '../test/fixtures/hardware-local/hardware/hinges/blum/71B3550_10001.glb',
-      import.meta.url,
-    ));
-    FILE_ROWS = meshTable(parseGlb(bytes));
-  }
-  return FILE_ROWS;
-}
-
-function fileBox() {
-  const all = rows();
-  return {
-    min: { x: Math.min(...all.map((r) => r.min[0])), y: Math.min(...all.map((r) => r.min[1])), z: Math.min(...all.map((r) => r.min[2])) },
-    max: { x: Math.max(...all.map((r) => r.max[0])), y: Math.max(...all.map((r) => r.max[1])), z: Math.max(...all.map((r) => r.max[2])) },
-  };
-}
-
-/**
- * How far into the leaf each member of the DOWNLOADED body reaches, in the
- * LEAF's own frame, with the door open by `deg`.
- *
- * Member A is clipped into the door and rides it: in the leaf's frame it never
- * moves, and this returns its shut pose at every angle. Member B stays in the
- * CARCASS's frame and folds about the cup axis (`foldPivotMm`, exactly as
- * `3d/hingeModels.js` folds it) — so it is transformed into the room and then
- * counter-rotated by the door's own swing about the door's own hinge edge,
- * which is what `3d/UnitView.jsx MovingPanel` turns the leaf by.
- *
- * The two axes are NOT the same axis, and that is the honest cost of the
- * one-joint approximation turn 24 named: the arm's front link drifts a little
- * deeper into the bore as the leaf opens. What it must never do — and what this
- * measures — is come out of the front of the door.
- */
-function hingeReach(leaf, h, deg, cliptop = C) {
-  const box = fileBox();
-  const O = cliptop.modelOrigin;
-  const profile = withCliptop(cliptop);
-  const pivot = foldPivotMm({ min: box.min, profile });
-  // The hand the FILE is authored for; the other hand is the same clone
-  // mirrored about the cup (`3d/Hardware.jsx useHingeModels`).
-  const s = h.side !== cliptop.fileHand ? -1 : 1;
-  // The leaf's own swing, signed exactly as `MovingPanel` signs it.
-  const phi = (leaf.meta?.hinge === 'R' ? 1 : -1) * ((deg * Math.PI) / 180);
-  const hingeEdgeX = leaf.meta?.hinge === 'R' ? leaf.box.x + leaf.box.w : leaf.box.x;
-  const midZ = leaf.box.z + leaf.box.d / 2;
-
-  let a = -Infinity;
-  let b = -Infinity;
-  for (const row of rows()) {
-    const member = memberOfNode(row.node, RIG, row.max[2]);
-    for (const cx of [row.min[0], row.max[0]]) {
-      for (const cy of [row.min[1], row.max[1]]) {
-        for (const cz of [row.min[2], row.max[2]]) {
-          const lx = s * (cx - box.min.x + O.x);
-          const lz = cz - box.min.z + O.z;
-          if (member === 'A') { a = Math.max(a, h.z + lz); continue; }
-          // fold about (s·pivot.x, pivot.z), in the cup's own frame…
-          const dx = lx - s * pivot.x;
-          const dz = lz - pivot.z;
-          const fx = s * pivot.x + dx * Math.cos(phi) + dz * Math.sin(phi);
-          const fz = pivot.z + (-dx * Math.sin(phi) + dz * Math.cos(phi));
-          // …into the room, and back into the leaf's frame.
-          const ex = h.x + fx - hingeEdgeX;
-          const ez = h.z + fz - midZ;
-          b = Math.max(b, midZ + (ex * Math.sin(phi) + ez * Math.cos(phi)));
-        }
-      }
-    }
-  }
-  return { a, b };
-}
-
-function withCliptop(cliptop) {
-  return {
-    ...P,
-    hardware: { ...P.hardware, hinge: { ...P.hardware.hinge, cliptop } },
-  };
-}

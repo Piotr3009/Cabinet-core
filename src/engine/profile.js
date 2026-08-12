@@ -997,37 +997,20 @@ export const DEFAULT_CABINET_PROFILE = {
   // Everything here was dictated. What was NOT dictated — the fixings, the
   // gaps, how it meets its neighbours — is in BLOCKERS and is not in the kit.
   // A guessed workshop number costs two turns to unpick (CLAUDE.md 0).
+  // ─── TURN 27 (CLAUDE.md F2.5): WHAT IS LEFT OF IT ──────────────────────
+  //
+  // The measured numbers moved to the TYPE, where they belong: 594 (the front
+  // width, rigid — over 600 and the appliance door cannot swing past its
+  // neighbours), the 20 mm strip the plinth notch leaves at the top, and the
+  // angle the front drops to. Nothing was lost; what went is the GEOMETRY the
+  // parallel path owned — `topWidth: 600`, the one panel a carcass-less D/W
+  // needed — because a D/W is an ordinary unit now and its top is the run's
+  // top, cut by the same arithmetic as the cabinet beside it.
+  //
+  // What stays here is what this block was always for: the size a new one of
+  // these arrives at, which is a PROJECT default and not a fact about the kit.
   dwPanel: {
     defaults: { width: 600, height: 770, depth: 558 },
-    // ─── 594 IS THE WIDTH, AND IT IS NOT A DEFAULT ───
-    // "front musi być szerokość 594, a wysokość taka sama jak reszta frontów
-    // base, czyli zależna od wysokości szafek." The 594 is what keeps the
-    // appliance door able to swing past its neighbours, so it is a FIXED VALUE
-    // and no control offers to change it. The HEIGHT is not fixed at all: this
-    // front stands in a run of base fronts and it lines up with them, so it is
-    // `H − gap` like every one of them.
-    //
-    // (Turn 17 shipped this as a rigid HEIGHT of 594 — a transcription error in
-    // the instruction, not in the engine, and it made a front the shape of a
-    // letterbox. The number was always the width.)
-    frontWidth: 594,
-    // "One top panel, always 600 mm wide, depth as the rest of the run."
-    topWidth: 600,
-    // "The plinth is cut out at that position, 20 mm from the top." The notch
-    // starts this far below the plinth's top edge and runs out of its bottom,
-    // which is what leaves the toe kick in one piece across the opening.
-    plinthCutFromTop: 20,
-    // ─── TURN 26 (CLAUDE.md F5.2): IT DROPS, IT DOES NOT SWING ────────────
-    //
-    // Owner: "it opens sideways." It did — the scene reads a FRONT and swings
-    // one, and a D/W panel is a front. But this one is screwed to the
-    // appliance's own door: it falls FORWARD about its BOTTOM edge, about 90°,
-    // and there is no cup hinge in it anywhere.
-    //
-    // Ninety and not a degree more: past square the machine's door is
-    // travelling back UNDER the cabinet, and the number a joiner cares about is
-    // "will it clear the plinth", which is what square answers.
-    openAngleDeg: 90,
   },
 
   // ─── OVEN BASE UNIT (turn 17, CLAUDE.md F10) ────────────────────────────

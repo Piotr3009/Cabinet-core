@@ -265,12 +265,19 @@ export const UNIT_TYPES = {
     supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
     available: true,
   },
-  // ─── D/W PANEL (turn 17, CLAUDE.md F9) ──────────────────────────────────
-  // "It is a front and nothing else." So it is: `appliance: 'dw'` switches the
-  // carcass off — no sides, no bottom, no back — and what is left is the front
-  // and the one top panel the owner named. The same kit answers for a washing
-  // machine and for an under-counter fridge, which is why it is called what he
-  // calls it rather than after one of the three.
+  // ─── D/W UNIT (turn 17 F9; turn 27, CLAUDE.md F2) ───────────────────────
+  //
+  // The owner: *"dlaczego zmywarki nie traktujesz jak szafki?"* He is right,
+  // and the record proves it — the legs ignored the run (turn 22), the front
+  // sat 3 mm high (turn 26), no shaker, no handle, no plinth, and it opened
+  // the wrong way. That is not six faults; it is ONE fault six times, and the
+  // cause was `dwPanel`: a parallel path that had to be remembered every time
+  // anything was added.
+  //
+  // So it is an ORDINARY unit with two properties — `interiorOccupied` and
+  // `frontOpens` — and everything else about it is the run's own law. The same
+  // kit answers for a washing machine and for an under-counter fridge, which
+  // is why it is called what he calls it rather than after one of the three.
   DW_PANEL: {
     id: 'DW_PANEL',
     heightGroup: 'base',
@@ -282,7 +289,8 @@ export const UNIT_TYPES = {
     cupRule: 'baseOffsets',
     // NO LEGS. "nie ma nóg w ogóle, bo tam gdzie są nogi, tam jest D/W" — the
     // appliance occupies the floor this unit would otherwise stand on, and a
-    // leg drawn there is a leg the joiner would try to fit.
+    // leg drawn there is a leg the joiner would try to fit. It still STANDS on
+    // the run's own leg height: turn 22's F4 reads `plinth`, not `legs`.
     legs: false,
     legSource: null,
     // No legs, but the TOE KICK still runs past the machine — notched for it.
@@ -290,13 +298,43 @@ export const UNIT_TYPES = {
     hangers: false,
     doorExtend: false,
     mount: 'floor',
-    // The TOP is the owner's one panel; there is no back and there are no sides.
-    carcass: { top: 'panel', back: 'none', sides: 'none' },
+    // ─── TURN 27 (CLAUDE.md F2.1): THE CARCASS IS THE RUN'S CARCASS ───────
+    // Sides, top, bottom and back, cut by exactly the arithmetic every cabinet
+    // beside it goes through. `back: 'none', sides: 'none'` were the parallel
+    // path, and with them went the reason a D/W had to be remembered.
+    carcass: { top: 'panel', back: 'full' },
+    // ─── THE FIRST OF THE TWO PROPERTIES (F2.1) ──────────────────────────
+    // Nothing goes inside it, because what goes inside it is a dishwasher. It
+    // is a fact about the CARCASS and not a list of controls to hide: no
+    // shelves, no rail, no drawers, no back furniture.
+    interiorOccupied: true,
+    // ─── …AND THE SECOND ─────────────────────────────────────────────────
+    // Its front falls FORWARD about its BOTTOM edge, to 45° — the owner's
+    // number, "enough to read" — and it answers "Open all" with every other
+    // front. It is screwed to the appliance's own door, so it carries no cup
+    // hinges and no cup drilling (F2.3; R9 and R10 agree).
+    frontOpens: 'drop',
+    frontOpenAngleDeg: 45,
+    // ─── THE MEASURED NUMBERS (F2.5) ─────────────────────────────────────
+    // "594 IS THE WIDTH, RIGID. Not a default and not a maximum: the value."
+    // Over 600 and the appliance door cannot swing past its neighbours, and
+    // the app must not be the thing that let that happen. The HEIGHT is not
+    // fixed at all: this front stands in a run of base fronts and lines up
+    // with them, so it is `H − gap` like every one of them.
+    //
+    // These lived in `profile.dwPanel` while there was a parallel path to read
+    // them. The path is gone; the numbers are properties of the TYPE, which is
+    // what they always were.
+    frontWidth: 594,
+    // "The plinth is cut out at that position, 20 mm from the top" — the toe
+    // kick that runs past this unit is relieved so the appliance door can drop
+    // (F2.4: the run's plinth passing through, as turn 26 shipped it).
+    plinthCutFromTop: 20,
     drawerStyle: null,
     minHeightKey: null,
     defaultsKey: 'dwPanel.defaults',
-    // No hinges, flat, no door furniture — and nothing goes inside it, because
-    // what goes inside it is a dishwasher.
+    // `doors: false` — there is no DOOR to choose here. The face is the
+    // appliance's front and `frontOpens` above is what emits it.
     supports: {
       drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
     },

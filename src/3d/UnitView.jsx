@@ -273,7 +273,11 @@ export function MovingPanel({
   // it is screwed to the appliance's own door and falls FORWARD about its
   // BOTTOM edge. The panel says which (`meta.opening`), so this is a fact
   // about the PIECE and not a question about what kind of cabinet it is on.
-  const drops = front === 'door' && p.meta?.opening === 'drop-front';
+  //
+  // Turn 27 (CLAUDE.md F2.1): the value is `'drop'` — the same word the unit
+  // type uses (`frontOpens: 'drop'`), because a front that falls forward is
+  // not a species of cabinet and the two names for it were one name too many.
+  const drops = front === 'door' && p.meta?.opening === 'drop';
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
   // pinned to that edge; a drop front rotates about its BOTTOM one; everything
@@ -316,13 +320,18 @@ export function MovingPanel({
       group.current.position.z = pivot[2] + mm(travel ?? depth * 0.75) * a;
       group.current.rotation.y = 0;
     } else if (drops) {
-      // ─── TURN 26 (CLAUDE.md F5.2): FORWARD, ABOUT THE BOTTOM EDGE ───────
-      // A NEGATIVE turn about the piece's own x: +x runs across the cabinet
-      // and the leaf has to fall towards the room, so the top edge travels to
-      // +z and the panel finishes lying flat in front of the plinth. The angle
-      // is the appliance's own (`profile.dwPanel.openAngleDeg`), handed down
-      // as this piece's `swing` like every other front's.
-      group.current.rotation.x = -a * (swing ?? Math.PI / 2);
+      // ─── TURN 27 (CLAUDE.md F2.1): THE AXIS WAS INVERTED ────────────────
+      //
+      // Turn 26 turned this NEGATIVE and reasoned it out backwards. A rotation
+      // by θ about +x carries a point at +y (the leaf's top edge, measured
+      // from the pivot at its bottom) to z = y·sin θ — so a NEGATIVE θ sends
+      // the top edge to −z, back INTO the carcass, which is the owner's "it
+      // drops the wrong way". POSITIVE is forward, towards the room, and the
+      // panel finishes leaning out over the plinth.
+      //
+      // The angle is the PIECE's own (`meta.openAngleDeg`, the type's 45°),
+      // handed down as this front's `swing` like every other front's.
+      group.current.rotation.x = a * (swing ?? Math.PI / 4);
       group.current.rotation.y = 0;
       group.current.position.z = pivot[2];
     } else {
@@ -926,11 +935,13 @@ export default function UnitView({
   // It takes the PANEL now. Same law, same profile, asked about the door it is
   // actually about.
   const swingFor = useCallback((panel) => {
-    // Turn 26 (CLAUDE.md F5.2): a D/W front is not on cup hinges and its
-    // opening is not a swing past a wall — it drops forward about its bottom
-    // edge to the appliance's own angle.
-    if (panel?.meta?.opening === 'drop-front') {
-      return ((Number(profile.dwPanel?.openAngleDeg) || 90) * Math.PI) / 180;
+    // Turn 26 (CLAUDE.md F5.2) / turn 27 (F2.1): a D/W front is not on cup
+    // hinges and its opening is not a swing past a wall — it drops forward
+    // about its bottom edge, to the angle THE PIECE carries. 45° is the
+    // owner's number and it reaches here off `meta`, so the scene never asks
+    // what kind of cabinet a front is on.
+    if (panel?.meta?.opening === 'drop') {
+      return ((Number(panel.meta.openAngleDeg) || 45) * Math.PI) / 180;
     }
     const hinge = panel?.meta?.hinge;
     const gap = hinge === 'R' ? wallGaps?.right : wallGaps?.left;
@@ -955,7 +966,7 @@ export default function UnitView({
       if (p.part !== 'FRONT' || !p.box) continue;
       // A DROP FRONT has no hinge to fold (F5.2/F5.3): it is screwed to the
       // appliance's own door, and there is no carcass half to turn after it.
-      if (p.meta?.opening === 'drop-front') { out[p.id] = 0; continue; }
+      if (p.meta?.opening === 'drop') { out[p.id] = 0; continue; }
       const dir = p.meta?.hinge === 'R' ? 1 : -1;
       out[p.id] = dir * (openFronts?.[p.id] ?? 0) * swingFor(p);
     }

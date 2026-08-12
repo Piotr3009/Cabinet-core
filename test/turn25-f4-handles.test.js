@@ -33,7 +33,11 @@ test('F4.1 — the four classes, decided on the piece and its cabinet', () => {
   assert.deepEqual(HANDLE_CLASSES, ['base-door', 'wall-door', 'tall-door', 'horizontal']);
   const door = { role: 'front', part: 'FRONT', meta: {} };
   const drawer = { role: 'front', part: 'DRAWER-FRONT', meta: {} };
-  const dw = { role: 'front', part: 'FRONT', meta: { appliance: 'dw' } };
+  // Turn 27 (CLAUDE.md F2.2): the class is read off the GESTURE — a front
+  // that falls forward about its bottom edge is gripped from above, like a
+  // drawer front — and not off `meta.appliance`, which was an `if (dwPanel)`
+  // sitting in the middle of the handle law.
+  const dw = { role: 'front', part: 'FRONT', meta: { appliance: 'dw', opening: 'drop' } };
   assert.equal(handleClassOf(door, UNIT_TYPES.BUD), 'base-door');
   assert.equal(handleClassOf(door, UNIT_TYPES.WUD), 'wall-door');
   assert.equal(handleClassOf(door, UNIT_TYPES.WARDROBE), 'tall-door');

@@ -1,161 +1,220 @@
-# CLAUDE.md — TURN 27: four things, and none of them cosmetic
+# CLAUDE.md — TURN 28: the owner's list, eleven items long
 
-A SHORT turn, deliberately. Turn 26 carried twelve phases and the owner
-watched it lose track of its own work; this one carries four, and three
-of them are faults that reach the workshop. The fourth is a colour the
-assistant changed without being asked.
-
-Read the whole file first. Full autonomy, zero questions. Clean or not
-at all; the turn shrinks from the BOTTOM (F4, then F3 — F1 and F2 never
+A BIG turn, deliberately, and overnight. The owner walked turn 27 with his own
+eyes and came back with a list; this file is that list, in his order. Read the
+whole file first. Full autonomy, zero questions. Clean or not at all; the turn
+shrinks from the BOTTOM (F11 first, then F10, and so on — F1 and F2 never
 shrink).
 
-Baseline: main after the turn-26 merge. A chat fix (`3d/DrillRings.jsx`
-+ `3d/UnitView.jsx` — drilled recesses replaced by decals in the room)
-may or may not be on main when this runs; if it is, leave it alone —
-nothing here touches it.
+Baseline: main after the 12.08 chat fix (`shoulderDepth` 13 and the sink BUR
+shelf-column mirror are already on main, with their fingerprints frozen in
+`test/cnc-export-identity.test.js` — do not re-derive them).
 
 ## 0. IRON RULES
 
-Turns 1–26 stand: R1 real CDP input, R2 live bucket, R3 verbatim
-manifests, R4 URLs from the app, R5 console captured, R6 a React
-exception fails the step, R7 no DOM attributes on R3F objects, R8 the
-silent showroom, R9 no feature without its part, R10 the sheet is the
-truth, R11 one dimension component. New:
+Turns 1–27 stand: R1 real CDP input, R2 live bucket, R3 verbatim manifests,
+R4 URLs from the app, R5 console captured, R6 a React exception fails the
+step, R7 no DOM attributes on R3F objects, R8 the silent showroom, R9 no
+feature without its part, R10 the sheet is the truth, R11 one dimension
+component, R12 extend means extend.
 
-R12. **EXTEND MEANS EXTEND.** When the owner asks for a behaviour to
-     reach further — the same dimensions on shelves as on partitions,
-     the same handle rule on another unit — the LOOK does not change.
-     Turn 26 unified four dimension dialects (right) and repainted them
-     on the way (wrong, and nobody asked). If an appearance seems to
-     need improving, it is a separate proposal for the owner, never a
-     silent rider on someone else's request.
+## F1 [CRITICAL] — THE DISHWASHER IS A FRONT, A RAIL AND A PLINTH
 
-## F1 — A shelf drills the two boards that carry it [CRITICAL]
+The owner, verbatim: "nie ma całego korpusu oprócz górnego panela, który ma
+600 mm bez żadnych dog bonów — tak jak było, tylko chciałem żeby to było
+podciągnięte pod logikę szafki."
 
-The owner, from the eye test: a shelf running from BUR to a partition
-gets its ⌀7.5 holes bored in **BUL** — a board that shelf never
-touches. And its dimension chain measures the whole cabinet instead of
-the bay it sits in.
+Turn 27 F2 read "a normal unit" as "a carcass" and cut BUL, BUR, TOP, BOTTOM
+and BACK around a machine. Wrong. The D/W emits exactly:
 
-1. **Bearers, not sides.** A shelf resolves the TWO pieces that
-   actually carry it — side/side, side/partition or partition/
-   partition — and its pin holes (adjustable) and its joint (fix, per
-   turn 24's F7) are drilled in THOSE, nowhere else. Today's law
-   assumes BUL+BUR and that assumption ends here.
-2. **Each bearer in its own frame.** A partition stands INSIDE the
-   carcass, so it is shorter than a side and its CNC origin is its
-   own bottom edge, not the cabinet floor. Convert the shelf's world
-   height into each bearer's own coordinates separately — a partition
-   whose holes are measured from the cabinet floor is out by the
-   thickness of the bottom board, on every hole.
-3. **Dimensions follow the bay.** The shelf's chain measures its own
-   clear bay — bearer face to bearer face — not the full internal
-   width. Same component, same look (R11, R12); only the endpoints
-   change.
-4. CNC: this is a CORRECTION, not a new class. Cabinets with no
-   partition are unaffected ⇒ **fingerprint delta ZERO on golden
-   defaults**. The partition+shelf probes move: holes leave BUL and
-   appear in the partition. Name it, and state in
-   `cnc-export-identity.md` that the leaving holes were wrong.
-5. Tests: shelf between BUR and a partition — assert no entity of
-   any shelf class lands on BUL; assert the partition's hole heights
-   equal the shelf height minus the partition's own base; both
-   two-partition cases (shelf in the middle bay, shelf in an end
-   bay); a plain cabinet is byte-identical.
+1. **TOP — 600 × 540 × 18, plain.** Full unit width (not internal), full
+   depth, ZERO pockets, ZERO holes, no dog bones, no sockets, no screws. The
+   turn-26 engine (`bd7cec4`) emitted exactly this piece — match it.
+2. **FRONT — unchanged from turn 27.** 594 × 767 × 25, `opening:'drop'`,
+   45° OUTWARD, shaker/handle/material laws inherited, no cups (F2.3 stands).
+3. **PLINTH — DEFAULT ON.** `defaultParamsFor('DW_PANEL')` sets the plinth
+   flag true; the panel is the turn-27 pass-through with the 20 mm notch from
+   the top (`notchedPlinth`, `type.plinthCutFromTop`), joining a run exactly
+   as turn 27 F2.4 built it. The owner: "najważniejszego czyli plinth i tak
+   nie ma" — after this phase it is there on a bare default D/W.
 
-## F2 — The dishwasher stops being a species of its own [HIGH]
+No BUL, no BUR, no BOTTOM, no BACK, no legs, no hardware. `interiorOccupied`
+stays on the type (it is what keeps shelves/rails/drawers out). This CLOSES
+BLOCKERS #94: there is no carcass, so there is no bottom to argue about.
 
-The owner: *"dlaczego zmywarki nie traktujesz jak szafki?"* He is
-right, and the record proves it — legs ignored the run (turn 22),
-the front sat 3 mm high (turn 26), no shaker, no handle, no plinth,
-and it opens the wrong way. That is not six faults; it is one fault
-six times, and the cause is `dwPanel`: a parallel path that has to be
-remembered every time anything is added.
+Tests: `test/turn27-f2-dishwasher-is-a-cabinet.test.js` asserted the carcass —
+rewrite its assertions to THIS law (the inheritance halves stay: shaker,
+handle, gaps, dimension chain, drop sign). Check `turn22-f4-dw-legs` and
+`turn26-f5-dishwasher` against the new panel set. The D/W fingerprints move
+again — ONE named delta, `DW_PANEL` files only, proven in
+`verify/t28/cnc-export-identity.md` with the entity evidence.
 
-1. A D/W unit becomes an ORDINARY unit with two properties:
-   * `interiorOccupied: true` — the carcass has no shelves, no back
-     furniture, nothing inside; the appliance is there. It keeps
-     sides, top, bottom, back and plinth exactly like its neighbours,
-     to the run's own laws.
-   * `frontOpens: 'drop'` — its front falls FORWARD about its BOTTOM
-     edge, to **45°** (enough to read; the owner's number), and it
-     answers "Open all" with every other front. Turn 26 dropped it
-     INWARD — the axis is inverted; fix the sign, and prove it with
-     a screenshot from the side.
-2. Everything a front has, it has: shaker (turn 25's F3), handle
-   (turn 25's F4, drawer-front rule — horizontal, centred, 50 from
-   the top), the project's material, the 3 mm gaps, the dimension
-   chain. No `if (dwPanel)` in any of it.
-3. It carries NO cup hinges and NO cup drilling — it screws to the
-   appliance door (R9 and R10 agree).
-4. The plinth in front of it is the run's plinth passing through,
-   as turn 26 shipped; the BLOCKER about fixed vs removable stays
-   open and nothing here settles it.
-5. Delete `dwPanel`'s dead geometry once nothing reads it. Keep the
-   594 front width and any other MEASURED number — move them into
-   the unit type, do not lose them.
-6. CNC: the D/W's own parts are already what they are; where the
-   unified path changes an entity, name it. Assert a D/W beside a BUD
-   of the same width shares carcass laws exactly.
+## F2 [CRITICAL] — CUPS AND HANDLES TAKE THE SHEET'S OWN MIRROR
 
-## F3 — The shaker recess has walls [HIGH]
+Two halves of one convention fault. The FRONT's CNC frame is the INSIDE
+MIRROR (`engine/joinery.js panelPlacement`: origin bottom-RIGHT, u = [−1,0,0])
+— the workshop cuts from the inside and the sheet is drawn that way. The cup
+law honours it; two other things do not.
 
-The owner: the 6 mm recess works, but it has no side walls at all —
-the panel reads as a hole straight through the door.
+**F2a — the tray un-mirrors the bores.** `src/3d/shakerSolid.js
+normaliseBores` reads the CNC x with `b.x − w/2`, assuming a bottom-LEFT
+origin. The engine is correct (an L leaf's cup lands 21.5 from the hinge edge
+in WORLD); only the 3-D tray flips it, and with it every cup screw and handle
+hole on a shaker leaf — the owner's photo: arms on one stile, bored cups on
+the other. Fix: `x: w / 2 − Number(b.x)`, comment corrected. The y stays; the
+cache key already carries the bores.
 
-1. The recessed panel is a CLOSED solid: floor at 6 mm depth, four
-   inner walls rising back to the frame face, correct outward
-   normals, no gaps at the corners.
-2. Same material as the frame (turn 26's F6 rule stands); the only
-   difference the eye sees is shadow.
-3. Screenshot from a grazing angle AND from behind the door — the
-   second one is what proves there is no hole.
+**F2b — the handle law thinks in room view.** `src/engine/handles.js` ~146:
+`const openingLeft = hinge === 'R'; x = openingLeft ? inset : w − inset;`
+That is the ROOM's left, written into the MIRRORED frame — so on the sheet
+the knob prints on the CUP edge for BOTH hands. The owner's sheet `03-F`
+(597×767): three ⌀35 cups on the right stile and the knob hole beside them.
+The law: the opening edge is resolved IN THE SHEET MIRROR — hinge L → hinge
+at sheet-right → knob/bar reference at sheet-LEFT (`x = inset`), hinge R the
+converse. One condition flips; `y`, centres and anchors stand. The 3-D handle
+mounts off `meta.handle` in the same frame, so with F2a it lands on the free
+stile in the room too.
 
-## F4 — The dimensions go back to black [MEDIUM]
+Named delta: every DXF carrying a door handle moves that handle's x to the
+opposite stile (and nothing else moves). Golden fixtures that pin `handles`
+x update under this name; `verify/t28/cnc-export-identity.md` carries the
+entity evidence.
 
-R12's first debt. Turn 26 was asked to give shelves, sides and fronts
-the partition chain's BEHAVIOUR; it also repainted every label. The
-owner did not ask for that and does not want it.
+Proof: a double-door shaker unit, both hands. Off the MOUNTED geometry (R4):
+each cup 21.5 ± 0.1 from its own hinge edge, each handle at its free edge.
+Off the SHEET: cups and knob on OPPOSITE stiles for both hands — the owner's
+03-F re-rendered as the before/after pair. Screenshots: each leaf open from
+behind, cups beside the arms, handle across the door.
 
-1. Restore the pre-turn-26 dimension appearance — the dark label
-   background and the palette that went with it — as the single
-   style, now used by every surface.
-2. The unification stays: one component, one geometry, 0.5 mm
-   precision, floor-lying chains. Only the paint returns.
-3. `verify/t27/dimensions-colour.md`: the turn-25 look beside the
-   turn-27 look, same camera, so the owner can see the debt paid.
+## F3 [HIGH] — A SHELF'S DIMENSION STANDS IN ITS OWN BAY
 
-## OUT OF SCOPE
+The owner: "znowu pokazuje po prawej stronie szafki półki, które są po lewej
+od divertera — to nie jest spójne; jak jest diverter, to półki inaczej będą
+rozdzielone, to proste jest."
 
-* The hinge fold: the assistant is deriving the open pose from the
-  STEP model himself and will show the owner a render before any of
-  it becomes a turn. Nothing about the rig changes here.
-* Everything else from the eye test — shelf grain in 3-D, rings
-  without a collar on ⌀3/⌀5, the sleeve colour governing rings and
-  pins, a second brightness slider on the toolbar, the layer list
-  still on the editor toolbar, and hinge drilling entering from the
-  WRONG SIDE (the owner: everything is machined from inside the
-  cabinet) — all gathered, all going into turn 28. Do not start
-  them here.
+Turn 27 F1 taught the DRILLING which boards carry a shelf
+(`engine/shelfBearers.js`); the dimension ladder never learned it — a shelf in
+the LEFT bay draws its gap ladder on the unit's RIGHT flank. The ladder for a
+shelf anchors on the flank of ITS OWN BAY, resolved through the SAME
+`shelfBearers`/`shelfBay` the drilling uses (one resolution — the turn-27
+argument, extended to the picture). A shelf in the left bay dimensions on the
+left; right bay on the right; middle bay on its own partition flank. R11
+stands: still one dimension component, fed a different anchor.
 
-## PROOF — `verify/t27/`
+Proof: the turn-27 eye-test cabinet (partition at 450, shelf in each bay in
+turn); read each ladder's anchor x off the scene and assert it is on the
+shelf's own bay side. Screenshots per bay.
 
-* `walk.json` — R1/R4/R5/R6/R8 as ever.
-* Screenshots: a shelf between BUR and a partition, with the
-  partition's sheet beside it showing the holes and BUL's sheet
-  showing none; a D/W dropped open at 45° seen from the side, and a
-  D/W front with a shaker and a handle; the shaker recess from
-  behind; the dimension labels before and after F4.
-* `fingerprints-*`, `cnc-export-identity.md` — ZERO on golden
-  defaults; named: F1's hole move (with the note that the old
-  position was a fault), F2's unification wherever it touches an
-  entity.
+## F4 [HIGH] — THE BEVEL SHADER STOPS FLATTENING THE WORLD
 
-## TESTS
+Found in chat, to the line. `src/3d/bevel.js` line ~124: `normal = ccBent;`
+— the fragment normal is REPLACED by one reconstructed from the panel's
+bounding box (`ccFaceNormal = ccFace * ccSign`). Every fragment on a front —
+frame, recess wall, recess floor — is nearest the ±z pair, so everything
+shades +z and a 6 mm shaker rebate is invisible from every angle. The owner
+proved it: outlines ON show the frame (the edge pass reads geometry), outlines
+OFF is "mega płasko", rotation changes nothing. Not the light.
 
-New: bearer resolution for every shelf/partition arrangement;
-per-bearer coordinate conversion; the shelf's bay dimension
-endpoints; D/W parity against a BUD of the same width; the drop axis
-and its 45° limit; shaker solid closure (no open boundary edges);
-the restored dimension palette read from the profile. 100 % green or
-shrink from the bottom.
+The law: the MESH normal is the base. The box reconstruction contributes ONLY
+the edge roll, blended in near true box edges (the existing `ccRoll` band);
+where the geometry normal disagrees with the box face normal — a recess wall,
+a floor — the geometry wins. Orange peel perturbs whatever normal survives,
+unchanged. No geometry changes, no CNC, no new uniforms unless the blend
+needs one.
+
+Proof: the sprayed burgundy shaker from the owner's screenshots, same grazing
+camera, outlines OFF — the rebate reads. A rotation sweep (three angles)
+shows the recess walls catching light. A decor shaker beside it behaves the
+same. Before/after pairs in `verify/t28/`.
+
+## F5 [HIGH] — ONE COLOUR SOURCE FOR THE SHELF-SUPPORT FAMILY
+
+The owner: the gold/silver choice governs the WHOLE family — the sleeves, the
+pins, and the drill-ring collars (`3d/DrillRings.jsx` already reads
+`design.hardware.shelfSleeve`; the sleeve and pin models must read the SAME
+key, one place). One selector, three consumers, zero second sources.
+
+Proof: flip the selector both ways in the walk; read the mounted materials of
+a sleeve, a pin and a ring and assert all three follow.
+
+## F6 [HIGH] — A COLLAR ONLY WHERE A SLEEVE GOES
+
+The chat fix of 12.08 gave EVERY round drilling a metal collar. The owner:
+- ⌀7.5 on the SHELF layer (`SHELVES_7_5MM`) → collar + dark core (a sleeve
+  lines that hole);
+- ⌀7.5 puzzle holes, ⌀3, ⌀5 and everything else → a plain dark disc, NO
+  collar (nothing lines them).
+
+`3d/DrillRings.jsx` branches on the LAYER, not the diameter. Collar colour
+still follows F5's one source.
+
+Proof: one cabinet with shelf rows, puzzle sockets and screws; read the
+mounted ring materials per layer off the scene and assert the split.
+
+## F7 [MEDIUM] — SHELF GRAIN IN 3-D FOLLOWS THE SHEET
+
+Turn 26 F8 turned the shelf's CNC frame along the grain; the 3-D texture
+still runs across. The scene reads the same frame the sheet prints —
+`decorPlacement` for a SHELF orients `scanAlongGrainMm` front-to-back, edge
+banding on the long front edge. CNC untouched (it is already right).
+
+Proof: a decor shelf photographed beside its own sheet; the grain direction
+matches.
+
+## F8 [MEDIUM] — THE DIMENSION LANGUAGE, FOUR CORRECTIONS
+
+All in the ONE component (R11), all owner's words, all visual only:
+
+1. **Height is never "from the floor".** A base unit's vertical chain is TWO
+   segments on one line: `100` (plinth, stop arrows) below, `770` (carcass,
+   stop arrows) above. Confirmed geometry: 100 at the bottom, 770 stacked
+   over it, one shared vertical line.
+2. **A run of identical cabinets dimensions ONCE**, on the outermost unit
+   (right or left end of the run), not per cabinet. An end panel does NOT
+   break the run; a different cabinet does.
+3. **"Show front dimensions": the horizontal (width) label sits at 1/4 of the
+   front's height from its BOTTOM** — off the centre where the labels crossed
+   and overlapped.
+4. **The vertical (height) label moves ~50 px right of centre** — the centre
+   is where the plus buttons live and they cover everything.
+
+Proof: before/after screenshot pairs for each of the four, on the owner's
+eye-test kitchen; a run of three identical units for (2).
+
+## F9 [MEDIUM] — BACK INSET ON THE QUICK MENU, AND END PANELS REACH THE WALL
+
+Multi-select of floor-standing units (more than one selected) shows a **Back
+inset** field in the quick menu, UNDER the dimension numbers. It moves the
+whole selected run off the wall; every END PANEL in that run deepens
+automatically so it always reaches the wall (panel depth = unit depth +
+inset). Single-selection and wall units: no field. Engine: the inset reaches
+`paramsForEngine` like every project decision; the end panel's cut size grows
+with it (it IS a cut-list change — named where it shows).
+
+Proof: select a run, set an inset, read the end panel's depth off the BOM and
+the scene; both = depth + inset. Deselect → field gone.
+
+## F10 [LOW] — A SECOND BRIGHTNESS SLIDER ON THE TOP BAR
+
+The existing View-menu brightness gets a twin on the top toolbar (same state,
+two controls, R11-style: one source). Nothing else about lighting changes.
+
+## F11 [LOW] — THE LAYER LIST LEAVES THE EDITOR TOOLBAR
+
+Turn 26 F12 was asked to remove it and did not. The part editor's toolbar
+drops the layer list; the ONE question about a layer is asked ONCE, at save.
+Nothing else on the toolbar moves (R12).
+
+## OUT OF SCOPE — gathered for turn 29
+
+The hinge fold rig (assistant's own job,
+outside turns), the CAD tools for the part editor, per-tenant layers, LIFT
+kits, tray side height, 173L plate pattern.
+
+## THE WALK AND THE PROOFS
+
+`verify/t28/`: the acceptance walk (`scripts/e2e-turn28.mjs`) under R1–R8,
+`walk.json`, `console.txt`, `measurements.json`, before/after screenshots per
+phase as named above, `cnc-export-identity.md` for F1's single named delta,
+and fresh fingerprint + probe pairs (baseline = this file's baseline commit).
+Full suite green, from `rm -rf node_modules && npm install`, never `--silent`.

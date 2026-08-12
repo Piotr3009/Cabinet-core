@@ -294,7 +294,11 @@ function Lights({
       : fit.centre[1] + distance * (p.y || 0))),
     // …the furniture's own front face, its ceiling, and the owner's 1.5 m.
     frontZ: subject ? subject.max[2] : fit.centre[2] + fit.radius,
-    ceilingY: mm(roomHeight > 0 ? roomHeight : studio.ceiling?.fallbackCeilingMm ?? 2700),
+    // `roomHeight` arrives in SCENE units (the caller has already converted the
+    // room's millimetres); only the FALLBACK is a raw millimetre figure out of
+    // the profile, so only the fallback goes through `mm`. Converting twice put
+    // the ceiling source two and a half millimetres off the floor.
+    ceilingY: roomHeight > 0 ? roomHeight : mm(studio.ceiling?.fallbackCeilingMm ?? 2700),
     setback: mm(studio.ceiling?.setbackMm ?? 1500),
   }), [studio, fit, distance, subject, roomHeight]);
 

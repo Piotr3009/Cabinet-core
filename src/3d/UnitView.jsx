@@ -795,6 +795,26 @@ export default function UnitView({
   // A hair proud of the door plane, so the chain is not buried in it.
   const frontDimZ = result.params.depth + profile.doors.gap + (result.params.front_t || 25) + 1;
 
+  // ─── TURN 21 (CLAUDE.md F10): THE ONE DERIVATION ───────────────────────────
+  // It stands HERE, above the chains, because turn 26's full-dimension chain
+  // reads it: a `const` declared below its own reader is a temporal dead zone
+  // and the whole view throws on first render.
+  // Every shelf readout in this view — the "all dims" chip, the hover ladder
+  // and the live drag — is a slice of THIS. `engine/shelfHeights.js` is the
+  // only place a shelf height is turned into something a person reads, and the
+  // panel field on the right is the same function's other half.
+  const shelfLights = useMemo(() => {
+    const shelves = result.panels.filter((p) => p.part === 'SHELF' && p.box);
+    return clearLights({
+      positions: shelves.map((p) => p.box.y),
+      thickness: shelves.map((p) => p.box.h),
+      floor: result.assemblies.drawerZone
+        ? result.assemblies.drawerZone.top + G
+        : interiorFloor(G),
+      ceiling: H - G,
+    }, profile.editor.mmStep);
+  }, [result.panels, result.assemblies.drawerZone, G, profile.editor.mmStep, H]);
+
   // ─── EVERY NUMBER THIS CABINET HAS, AS CHAINS (turn 26, CLAUDE.md R11) ────
   //
   // Turn 8 drew these as floating captions and the owner's turn-26 verdict is
@@ -937,22 +957,6 @@ export default function UnitView({
   // shelf hover beside it — it lives exactly as long as the pointer is over the
   // piece and reaches nothing that is exported.
   const [hoverPartition, setHoverPartition] = useState(null);
-  // ─── TURN 21 (CLAUDE.md F10): THE ONE DERIVATION ───────────────────────────
-  // Every shelf readout in this view — the "all dims" chip, the hover ladder
-  // and the live drag — is a slice of THIS. `engine/shelfHeights.js` is the
-  // only place a shelf height is turned into something a person reads, and the
-  // panel field on the right is the same function's other half.
-  const shelfLights = useMemo(() => {
-    const shelves = result.panels.filter((p) => p.part === 'SHELF' && p.box);
-    return clearLights({
-      positions: shelves.map((p) => p.box.y),
-      thickness: shelves.map((p) => p.box.h),
-      floor: result.assemblies.drawerZone
-        ? result.assemblies.drawerZone.top + G
-        : interiorFloor(G),
-      ceiling: H - G,
-    }, profile.editor.mmStep);
-  }, [result.panels, result.assemblies.drawerZone, G, profile.editor.mmStep, H]);
   const shelfGaps = useMemo(
     () => shelfLights.map((g, i) => ({ ...g, key: `gap-${i}` })),
     [shelfLights],

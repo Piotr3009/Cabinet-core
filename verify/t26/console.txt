@@ -1,0 +1,3 @@
+# every console message of the turn-26 walk — 1 in total
+# uncaught exceptions and React error-boundary reports: 0
+warning  THREE.WebGLRenderer: WEBGL_lose_context extension not supported.

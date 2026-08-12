@@ -220,3 +220,29 @@ test('F4.4 — shelves and side panels are in the one language too', async () =>
   // …and `HoverDimensions` hands exactly those rows over untouched.
   assert.match(file('3d/HoverDimensions.jsx'), /rows: set\.rows\.map\(\(r, i\) => \(\{/);
 });
+
+// ─── WHAT THE ACCEPTANCE WALK FOUND ─────────────────────────────────────────
+
+test('R11 — the chain’s inputs are declared ABOVE it, so the view renders at all', () => {
+  // The first run of the turn-26 walk never reached its second step: the
+  // production build threw `Cannot access 'gs' before initialization` on the
+  // first render of every unit. `fullDimensions` — this turn's chain of every
+  // number a cabinet has — reads `shelfLights`, and `shelfLights` was declared
+  // seventy lines BELOW it. A `const` read above its own declaration is a
+  // temporal dead zone, and the whole view died on it.
+  //
+  // The suite could not see it: these tests import the ENGINE, and a hook order
+  // inside a `.jsx` component is not something node can execute. So the guard
+  // is the source order itself, which is the fact that was wrong.
+  const src = readFileSync(new URL('../src/3d/UnitView.jsx', import.meta.url), 'utf8');
+  const declared = src.indexOf('const shelfLights = useMemo(');
+  const used = src.indexOf('const fullDimensions = useMemo(');
+  assert.ok(declared > 0, 'the one derivation is still there');
+  assert.ok(used > 0, 'and so is the chain that reads it');
+  assert.ok(declared < used,
+    `shelfLights is declared at ${declared} and read at ${used} — a temporal dead zone`);
+  // …and it really is read by the chain, so this guard cannot rot into a test
+  // of two unrelated line numbers.
+  const body = src.slice(used, src.indexOf('}, [showAllDims', used));
+  assert.match(body, /shelfLights/, 'the chain reads it');
+});

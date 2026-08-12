@@ -369,6 +369,25 @@ function CarcassHinges({
     items, specs, kind: 'body', profile, storageBase,
   });
 
+  // ─── TURN 26 (CLAUDE.md F1.3): WHICH LEAF THIS HINGE BELONGS TO ──────────
+  //
+  // A DIAGNOSTIC, and the reason it exists is the no-pierce guarantee. A room
+  // with six cabinets in it has sixty hinge members in one scene graph, and
+  // "no part of THE HINGE crosses THE DOOR's outer face" is a claim about one
+  // leaf and its own three. Without this the acceptance walk would be
+  // measuring the cabinet next door and calling it a pierce. Stamped on the
+  // clone rather than passed as a prop because `<primitive>` hands the object
+  // straight to three and a `userData` prop would replace the split's own.
+  // Nothing in the app reads it back.
+  useEffect(() => {
+    models.forEach((m, i) => {
+      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+    });
+    bodies.forEach((m, i) => {
+      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+    });
+  }, [models, bodies, items]);
+
   // ─── TURN 21 (CLAUDE.md R4 / F2.3) ───
   // What the walk is allowed to believe: the exact url string this component
   // handed the loader, and whether the GLB or the stand-in is what is drawn.
@@ -543,6 +562,15 @@ export function DoorHinges({
   const { urls, models } = useHingeModels({
     items, specs, kind: 'cup', profile, storageBase,
   });
+
+  // Turn 26 (CLAUDE.md F1.3): which LEAF each cup belongs to, for the same
+  // reason member B carries it — a no-pierce claim is about ONE door and its
+  // own hinges, and a room full of cabinets is a scene full of everyone's.
+  useEffect(() => {
+    models.forEach((m, i) => {
+      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+    });
+  }, [models, items]);
   // …and the other half of F1.4: with the flag off, an opening door HIDES the
   // model beyond ~15° and shows the plate only. A wrong pose held on screen is
   // worse than an honest absence, and this is the owner's own fallback.

@@ -1,0 +1,619 @@
+{
+ "hardware": {
+  "urls": [
+   "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+   "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb"
+  ],
+  "hinge": 3,
+  "hingeUrl": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+  "modelled": true,
+  "memberA": [
+   "A"
+  ],
+  "memberB": [
+   "B"
+  ],
+  "parentA": [
+   "door"
+  ],
+  "parentB": [
+   "carcass"
+  ],
+  "bodies": 3
+ },
+ "f1": {
+  "profile": {
+   "unitId": "u_m571ur3",
+   "doorId": "01-F",
+   "thickness": 25,
+   "cupDepth": 11,
+   "drilledDepths": [
+    11
+   ],
+   "cups": 3,
+   "modelOriginZ": -69.78
+  },
+  "sweep": [
+   {
+    "asked": 0,
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 12.5,
+    "innerMm": -12.5,
+    "worstMm": -1.5,
+    "proudMm": -14,
+    "rotationDeg": 0,
+    "dropDeg": 0
+   },
+   {
+    "asked": 15,
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 12.5,
+    "innerMm": -12.5,
+    "worstMm": -1.5,
+    "proudMm": -14,
+    "rotationDeg": -15,
+    "dropDeg": 0
+   },
+   {
+    "asked": 30,
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 12.5,
+    "innerMm": -12.5,
+    "worstMm": -1.5,
+    "proudMm": -14,
+    "rotationDeg": -30,
+    "dropDeg": 0
+   },
+   {
+    "asked": 45,
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 12.5,
+    "innerMm": -12.5,
+    "worstMm": -1.5,
+    "proudMm": -14,
+    "rotationDeg": -45,
+    "dropDeg": 0
+   },
+   {
+    "asked": 60,
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 12.5,
+    "innerMm": -12.5,
+    "worstMm": -1.5,
+    "proudMm": -14,
+    "rotationDeg": -60,
+    "dropDeg": 0
+   },
+   {
+    "asked": 90,
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 12.5,
+    "innerMm": -12.5,
+    "worstMm": -1.5,
+    "proudMm": -14,
+    "rotationDeg": -90,
+    "dropDeg": 0
+   },
+   {
+    "asked": 99,
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 12.5,
+    "innerMm": -12.5,
+    "worstMm": -1.5,
+    "proudMm": -14,
+    "rotationDeg": -99,
+    "dropDeg": 0
+   }
+  ],
+  "shaker": {
+   "leaf": {
+    "id": "01-F",
+    "shaker": {
+     "frame": 70,
+     "depth": 6,
+     "panelFloor": 12
+    },
+    "frontType": "S"
+   },
+   "sweep": [
+    {
+     "members": 6,
+     "vertices": 726,
+     "seen": [
+      "A",
+      "B"
+     ],
+     "outerMm": 9,
+     "innerMm": -9,
+     "worstMm": 2,
+     "proudMm": -7,
+     "rotationDeg": 0,
+     "dropDeg": 0
+    },
+    {
+     "members": 6,
+     "vertices": 726,
+     "seen": [
+      "A",
+      "B"
+     ],
+     "outerMm": 9,
+     "innerMm": -9,
+     "worstMm": 2,
+     "proudMm": -7,
+     "rotationDeg": -49.5,
+     "dropDeg": 0
+    },
+    {
+     "members": 6,
+     "vertices": 726,
+     "seen": [
+      "A",
+      "B"
+     ],
+     "outerMm": 9,
+     "innerMm": -9,
+     "worstMm": 2,
+     "proudMm": -7,
+     "rotationDeg": -99,
+     "dropDeg": 0
+    }
+   ]
+  }
+ },
+ "f2": {
+  "leaves": [
+   {
+    "id": "02-B1",
+    "hinge": "L",
+    "hingeOn": "BUL",
+    "hingeFace": null
+   },
+   {
+    "id": "02-B2",
+    "hinge": "L",
+    "hingeOn": "VPART-1",
+    "hingeFace": "R"
+   },
+   {
+    "id": "02-B3",
+    "hinge": "R",
+    "hingeOn": "BUR",
+    "hingeFace": null
+   }
+  ],
+  "mount": {
+   "rows": 21,
+   "cups": 12,
+   "arms": 9,
+   "allModel": true,
+   "members": [
+    "A",
+    "B"
+   ],
+   "parents": [
+    "carcass",
+    "door"
+   ],
+   "stand": []
+  },
+  "sweep": [
+   {
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 9,
+    "innerMm": -9,
+    "worstMm": 2,
+    "proudMm": -7,
+    "rotationDeg": 0,
+    "dropDeg": 0,
+    "fold": 0
+   },
+   {
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 9,
+    "innerMm": -9,
+    "worstMm": 2,
+    "proudMm": -7,
+    "rotationDeg": -49.5,
+    "dropDeg": 0,
+    "fold": -0.8639379797371931
+   },
+   {
+    "members": 6,
+    "vertices": 726,
+    "seen": [
+     "A",
+     "B"
+    ],
+    "outerMm": 9,
+    "innerMm": -9,
+    "worstMm": 2,
+    "proudMm": -7,
+    "rotationDeg": -99,
+    "dropDeg": 0,
+    "fold": -1.7278759594743862
+   }
+  ]
+ },
+ "r10": {
+  "rows": [
+   {
+    "part": "BUL",
+    "id": "BUL",
+    "record": 42,
+    "drawable": 42,
+    "rendered": 42,
+    "classes": [
+     "HINGES_5MM",
+     "PUZZLE_HOLES_7_5MM",
+     "SCREWS_3MM",
+     "SHELVES_7_5MM"
+    ],
+    "omitted": []
+   },
+   {
+    "part": "BUR",
+    "id": "BUR",
+    "record": 42,
+    "drawable": 42,
+    "rendered": 42,
+    "classes": [
+     "HINGES_5MM",
+     "PUZZLE_HOLES_7_5MM",
+     "SCREWS_3MM",
+     "SHELVES_7_5MM"
+    ],
+    "omitted": []
+   },
+   {
+    "part": "TOP",
+    "id": "TOP",
+    "record": 0,
+    "drawable": 0,
+    "rendered": 0,
+    "classes": [],
+    "omitted": []
+   },
+   {
+    "part": "BOTTOM",
+    "id": "BOTTOM",
+    "record": 0,
+    "drawable": 0,
+    "rendered": 0,
+    "classes": [],
+    "omitted": []
+   },
+   {
+    "part": "BACK",
+    "id": "BACK",
+    "record": 37,
+    "drawable": 37,
+    "rendered": 37,
+    "classes": [
+     "PUZZLE_HOLES_7_5MM",
+     "SCREWS_3MM"
+    ],
+    "omitted": []
+   },
+   {
+    "part": "SHELF",
+    "id": "SHELF-1",
+    "record": 0,
+    "drawable": 0,
+    "rendered": 0,
+    "classes": [],
+    "omitted": []
+   },
+   {
+    "part": "SHELF",
+    "id": "SHELF-2",
+    "record": 0,
+    "drawable": 0,
+    "rendered": 0,
+    "classes": [],
+    "omitted": []
+   },
+   {
+    "part": "SHELF",
+    "id": "SHELF-3",
+    "record": 0,
+    "drawable": 0,
+    "rendered": 0,
+    "classes": [],
+    "omitted": []
+   },
+   {
+    "part": "INFILL",
+    "id": "INFILL-L-FACE",
+    "record": 0,
+    "drawable": 0,
+    "rendered": 0,
+    "classes": [],
+    "omitted": []
+   },
+   {
+    "part": "INFILL",
+    "id": "INFILL-L-ARM",
+    "record": 0,
+    "drawable": 0,
+    "rendered": 0,
+    "classes": [],
+    "omitted": []
+   },
+   {
+    "part": "FRONT",
+    "id": "W03-FL",
+    "record": 18,
+    "drawable": 18,
+    "rendered": 18,
+    "classes": [
+     "FRONT_HINGES_35MM",
+     "FRONT_HINGES_3MM"
+    ],
+    "omitted": []
+   },
+   {
+    "part": "FRONT",
+    "id": "W03-FR",
+    "record": 18,
+    "drawable": 18,
+    "rendered": 18,
+    "classes": [
+     "FRONT_HINGES_35MM",
+     "FRONT_HINGES_3MM"
+    ],
+    "omitted": []
+   }
+  ],
+  "omissions": [
+   "OUTLINE",
+   "CARCASE",
+   "PUZZLE_SOCKET",
+   "BISCUIT_4MM",
+   "SHAKER_PANEL_POCKET",
+   "UNIT_NUMBER"
+  ]
+ },
+ "f3": {
+  "pins": 12,
+  "levels": [
+   1050,
+   1100,
+   1150,
+   1450,
+   1500,
+   1550
+  ],
+  "rendered": 12,
+  "sleeves": 8,
+  "cutFaceMeshes": 3,
+  "panel": "BUL",
+  "detail": {
+   "canvas": true,
+   "drawing": true,
+   "bores": 0
+  }
+ },
+ "f4": {
+  "chains": 9,
+  "rows": 17,
+  "sprites": 28,
+  "half": [
+   "3",
+   "2.5",
+   "881.5",
+   "0.5"
+  ],
+  "step": 0.5
+ },
+ "f5": {
+  "id": "u_n30lln9",
+  "frontId": "DW04-F",
+  "y": 0,
+  "h": 767,
+  "top": 767,
+  "neighbourY": 0,
+  "opening": "drop-front",
+  "openAngleDeg": 90,
+  "cups": 0,
+  "plateHoles": 0,
+  "shaker": {
+   "frame": 70,
+   "depth": 6,
+   "panelFloor": 12
+  },
+  "handle": null,
+  "dropped": {
+   "members": 0,
+   "vertices": 0,
+   "seen": [],
+   "outerMm": 9,
+   "innerMm": -9,
+   "worstMm": null,
+   "proudMm": null,
+   "rotationDeg": 0,
+   "dropDeg": -90
+  }
+ },
+ "f6": {
+  "id": "01-F",
+  "materials": 1,
+  "groups": 0,
+  "vertices": 1326,
+  "uv": true,
+  "colour": "f2f0ec"
+ },
+ "f10": {
+  "roles": [
+   "ambient",
+   "ceiling",
+   "fill",
+   "key",
+   "point",
+   "rim",
+   "spot"
+  ],
+  "ceiling": {
+   "intensity": 1.0944603578102863,
+   "position": [
+    -0.14999999997019753,
+    2.5,
+    -2.41100000038743
+   ],
+   "world": [
+    -0.14999999997019753,
+    2.5,
+    -2.41100000038743
+   ],
+   "angle": 1.05,
+   "penumbra": 0.9
+  },
+  "computed": [
+   0,
+   2.7,
+   -1.5
+  ],
+  "roomHeightMm": 2500,
+  "share": 0.35,
+  "setbackMm": 1500,
+  "brightness": 0.5,
+  "scale": 0.5,
+  "slid": 0.65
+ },
+ "f7": {
+  "fix": {
+   "outline": 1,
+   "pockets": 0,
+   "marks": 0,
+   "holes": 0,
+   "drills": 0,
+   "rotated": true,
+   "drawn": [
+    520,
+    864
+   ],
+   "board": [
+    864,
+    520
+   ]
+  },
+  "adj": {
+   "outline": 1,
+   "pockets": 0,
+   "marks": 0,
+   "holes": 0,
+   "drills": 0,
+   "rotated": true,
+   "drawn": [
+    520,
+    860
+   ],
+   "board": [
+    860,
+    520
+   ]
+  },
+  "fixId": "SHELF-1",
+  "backScrews": 3
+ },
+ "f9": {
+  "piece": {
+   "height": 100,
+   "projection": 65,
+   "corners": {
+    "left": null,
+    "right": null
+   },
+   "mitres": {
+    "left": false,
+    "right": true
+   }
+  },
+  "wall": 100,
+  "metres": 1.629,
+  "drawn": 2,
+  "members": 5
+ },
+ "f11": {
+  "warnings": [
+   {
+    "code": "DRAWER_FRONTS_SHORT",
+    "message": "The drawer fronts leave 161 mm of the opening uncovered — the stack is 609 mm in a 770 mm face."
+   }
+  ],
+  "onScreen": {
+   "text": "▲The drawer fronts leave 161 mm of the opening uncovered — the stack is 609 mm in a 770 mm face.",
+   "left": 1312,
+   "top": 527,
+   "right": 1579,
+   "bottom": 573
+  }
+ },
+ "f12": {
+  "back": {
+   "x": 800,
+   "w": 99,
+   "c": 849
+  },
+  "backText": "← Back",
+  "split": "25/75",
+  "toolbarLayer": false,
+  "deleteDisabled": true,
+  "view": {
+   "x": 45,
+   "w": 378,
+   "c": 234
+  },
+  "sheet": {
+   "x": 435,
+   "w": 1121,
+   "c": 995
+  },
+  "width": 1600
+ }
+}

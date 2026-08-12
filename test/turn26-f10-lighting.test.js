@@ -236,3 +236,25 @@ test('F10.3 — and it does not disturb the balance: the sum scales, it does not
     assert.ok(Math.abs(other.at - row.at * 0.5) < 1e-5, `${row.role} kept its share`);
   }
 });
+
+// ─── WHAT THE ACCEPTANCE WALK FOUND ─────────────────────────────────────────
+
+test('F10.1 — the ceiling height is converted ONCE: the lamp is not on the floor', () => {
+  // The walk read the mounted lamp's position out of the live scene and found
+  // it at y = 0.0025 — two and a half millimetres above the floor, lighting the
+  // plinths. `<Lights>` receives `roomHeight` in SCENE units (its caller has
+  // already converted the room's millimetres) and this passed it through `mm`
+  // a second time. Only the FALLBACK is a raw millimetre figure, so only the
+  // fallback goes through the conversion, and the shape of that expression is
+  // what this asserts — there is no browser here to measure the lamp in.
+  const src = read('3d/Scene.jsx');
+  assert.match(src, /ceilingY: roomHeight > 0 \? roomHeight : mm\(studio\.ceiling\?\.fallbackCeilingMm \?\? 2700\)/);
+  assert.ok(!/ceilingY: mm\(roomHeight/.test(src), 'the double conversion is gone');
+  // …and the caller really does hand it scene units, which is the premise.
+  assert.match(src, /const roomH = mm\(room\.height \?\? 2500\);/);
+  assert.match(src, /roomHeight=\{roomH\}/);
+  // The arithmetic downstream is unchanged: a lamp at the ceiling of a 2.5 m
+  // room is at 2.5, and `verify/t26/walk.json` records exactly that.
+  const at = ceilingPosition({ centre: [0, 1.1, 0.3], frontZ: 0.9, ceilingY: 2.5, setback: 1.5 });
+  assert.equal(at[1], 2.5);
+});

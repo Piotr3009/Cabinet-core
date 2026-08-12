@@ -110,7 +110,15 @@ export default function DimensionChain({
   const third = mm(at);
 
   return (
-    <group userData={{ ccHelper: true, ccNoBounds: true, ccDimensionChain: name ?? drawn.length }}>
+    <group userData={{
+      ccHelper: true,
+      ccNoBounds: true,
+      ccDimensionChain: name ?? drawn.length,
+      // …and the COUNT beside the name, so a walk can add up how many
+      // dimensions the scene is drawing without parsing a label.
+      ccDimensionRows: drawn.length,
+    }}
+    >
       {children}
       {drawn.map((row) => (
         <group key={row.key} userData={{ ccHelper: true, ccNoBounds: true }}>

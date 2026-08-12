@@ -84,6 +84,11 @@ function SliderItem({ item }) {
         value={s.value}
         disabled={item.disabled}
         aria-label={item.label}
+        // A DIAGNOSTIC, for the same reason every other `data-*` in this app is
+        // one: the acceptance walk has to be able to put a real pointer on this
+        // track, and finding it by its label is finding it by a sentence
+        // somebody may reword. Nothing reads it back.
+        data-menu-slider={String(item.label).toLowerCase()}
         onChange={(e) => item.run?.(Number(e.target.value))}
         // A click on the track must not reach the dismissal handler on the way
         // out, or the menu shuts under the pointer mid-drag.

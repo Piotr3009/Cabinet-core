@@ -1635,6 +1635,60 @@ export const DEFAULT_CABINET_PROFILE = {
       // shadow camera's far plane, because three takes `light.distance` for it
       // (SpotLightShadow.updateMatrices) — read there before it was relied on.
       spotReach: 4,
+
+      // ─── TURN 26 (CLAUDE.md F10): THE LIGHT COMES FROM THE CEILING ───────
+      //
+      // The owner's proposal, and his constraint in the same breath: "one broad
+      // ceiling source at real ceiling height above the tall units, set back
+      // 1.5 m from the fronts, medium intensity" — and "whatever is added above
+      // is SUBTRACTED from the facing spots; the scene's total luminous
+      // contribution stays as it is today."
+      //
+      // `share` is what makes that an identity rather than a tuning session.
+      // It is the fraction of the FACING SPOTS' contribution at the subject
+      // that the ceiling source takes over, so the spots are scaled by
+      // `1 − share` and the sum is unchanged EXACTLY, at any room size and any
+      // camera fit. The lamp's own candela is derived from it and from where it
+      // hangs (`engine/lighting.js balanceRig`), which is why there is no
+      // intensity in this block: a number here would be a second answer to a
+      // question the share has already answered.
+      //
+      // 0.35 is "medium": the room reads as lit from above without the fronts
+      // losing the modelling the pair of jupiters gives them. It is a fraction,
+      // so the owner turns it without re-balancing anything.
+      ceiling: {
+        enabled: true,
+        share: 0.35,
+        // A BROAD source: a wide cone, mostly penumbra, which is what a ceiling
+        // plane does. Tighter than this and it is a downlight; wider and it
+        // stops having a direction at all and might as well be the ambient.
+        angle: 1.05,
+        penumbra: 0.9,
+        // How far BACK from the fronts it hangs, in ROOM millimetres. The
+        // owner's own number, and it is absolute for the same reason turn 14's
+        // eye height is: a metre and a half is a metre and a half in a galley
+        // and in a six-metre kitchen.
+        setbackMm: 1500,
+        // The room's ceiling where nobody has said what it is.
+        fallbackCeilingMm: 2700,
+        // Barely warm, like the jupiters — a white board that is visibly cream
+        // is a white board a client will query.
+        colour: '#fffaf0',
+      },
+
+      // ─── TURN 26 (CLAUDE.md F10.3): THE BRIGHTNESS SLIDER ────────────────
+      //
+      // "A brightness slider in the View menu scales every source
+      // proportionally, state remembered."
+      //
+      // PROPORTIONALLY is the whole of it: ONE multiplier on every lamp, so the
+      // ratios turn 10 measured — the key against the fill, the spots against
+      // the ambient — are exactly the ones the rig was balanced at whatever the
+      // slider says. A slider that touched one lamp would be a slider that
+      // re-lights the scene; this one only turns it up.
+      brightness: {
+        min: 0.5, max: 1.5, step: 0.05, default: 1,
+      },
       // ─── The glints: EMPTY, and that is the finding (turn 10, F1.5) ───
       //
       // PSW's gloss was never an environment map — its painted wood has none.
@@ -3294,6 +3348,11 @@ export function migrateCabinetProfile(profile) {
       studio: {
         ...D.appearance.studio, ...profile.appearance?.studio,
         hemisphere: { ...D.appearance.studio.hemisphere, ...profile.appearance?.studio?.hemisphere },
+        // Turn 26 (CLAUDE.md F10): the two new blocks merge key by key, so a
+        // profile saved before this turn gains them whole and one that has
+        // tuned the share keeps it.
+        ceiling: { ...D.appearance.studio.ceiling, ...profile.appearance?.studio?.ceiling },
+        brightness: { ...D.appearance.studio.brightness, ...profile.appearance?.studio?.brightness },
         // ─── Turn 10 (CLAUDE.md F1/F5) ───
         // The lights that are LISTS — the jupiters and the glints — merge like
         // the other lists in this file: a stored profile that names them wins

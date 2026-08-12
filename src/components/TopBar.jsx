@@ -54,6 +54,9 @@ export default function TopBar({
   const toggleHideFronts = useUiStore((s) => s.toggleHideFronts);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
+  // Turn 26 (CLAUDE.md F10.3): the brightness slider's value and its setter.
+  const brightness = useUiStore((s) => s.brightness);
+  const setBrightness = useUiStore((s) => s.setBrightness);
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
   const bomOpen = useUiStore((s) => s.bomOpen);
@@ -144,6 +147,25 @@ export default function TopBar({
           // probe is sampled for every lit pixel of every panel. On by default;
           // here so a machine with no GPU worth the name has a way out. A
           // RENDER lights itself properly whatever this says.
+          // ─── TURN 26 (CLAUDE.md F10.3): HOW BRIGHT THE ROOM IS ──────────
+          // ONE multiplier on every lamp, so the ratios the rig was balanced
+          // at — the key against the fill, the jupiters against the ambient —
+          // are exactly the ones turn 10 measured whatever this is set to. A
+          // slider that touched one lamp would be a slider that re-lights the
+          // scene; this one only turns it up. Remembered, like X-ray.
+          label: 'Brightness',
+          hint: 'Scales every light in the room together. The balance between them does not move.',
+          disabled: viewMode !== '3d',
+          slider: {
+            min: profile.appearance.studio.brightness.min,
+            max: profile.appearance.studio.brightness.max,
+            step: profile.appearance.studio.brightness.step,
+            value: brightness,
+            format: (v) => `${Math.round(v * 100)} %`,
+          },
+          run: setBrightness,
+        },
+        {
           label: 'Realistic lighting',
           hint: 'Environment reflections and contact shadows. Turn it off if the view feels heavy — a render is unaffected.',
           checked: realisticLighting,

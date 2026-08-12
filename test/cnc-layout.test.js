@@ -55,20 +55,38 @@ test('panelBounds covers the tabs and reliefs, not just the nominal rectangle', 
   assert.equal(fb.turn, 0, 'a door is laid down the way it is drawn');
 });
 
-// ─── Turn 17 (CLAUDE.md F3): THE SHELF IS LAID DOWN TURNED ──────────────────
-test('a shelf is laid on the sheet turned 90°, and its bounds say so', () => {
+// ─── Turn 17 (CLAUDE.md F3) / TURN 26 (F8): THE SHELF STANDS UP ────────────
+//
+// Turn 17 turned a shelf at LAYOUT, because it was drawn `width × depth` and
+// the nester had to stand it up. Turn 26 draws it `depth × width` — the sides'
+// own convention, so the grain runs with the banded front edge — and it
+// therefore ARRIVES standing. `sheetTurn`'s rule is untouched and still says
+// what it always said: a board whose drawn frame already stands its long side
+// up the page is left exactly where it is.
+test('a shelf stands its long side up the page, and the nester leaves it alone', () => {
   const shelf = RESULT.panels.find((p) => p.id === 'SHELF-1');
-  assert.equal(sheetTurn(shelf), 90);
+  assert.equal(shelf.cnc.drawn_w, shelf.h, 'drawn `depth × width` (turn 26, F8)');
+  assert.equal(shelf.cnc.drawn_h, shelf.w);
+  assert.equal(sheetTurn(shelf), 0, 'so there is nothing left to turn');
   const sb = panelBounds(shelf, RESULT.drills);
-  assert.equal(sb.turn, 90);
-  // The part is `w × depth` in its own frame; laid down it is `depth × w`, so
-  // its WIDTH — the dimension the grain runs along — stands up the sheet, the
-  // way every other board in the app already does.
+  assert.equal(sb.turn, 0);
+  // Its WIDTH — the dimension the grain runs along — stands up the sheet, the
+  // way every other board in the app already does. It simply gets there by
+  // being DRAWN that way rather than by being turned afterwards.
   assert.equal(sb.w, shelf.h);
   assert.equal(sb.h, shelf.w);
-  // Turning about the frame's own origin puts the part in the second quadrant;
-  // the layout works in the bounds' frame, so nothing is ever placed negative.
-  assert.deepEqual([sb.minX, sb.minY, sb.maxX, sb.maxY], [-shelf.h, 0, 0, shelf.w]);
+  assert.deepEqual([sb.minX, sb.minY, sb.maxX, sb.maxY], [0, 0, shelf.h, shelf.w]);
+});
+
+test('…and a board that IS drawn lying down is still turned: the PARTITION board', () => {
+  // The rule has to keep working, so it is asserted on a part that still needs
+  // it — the horizontal board under a drawer stack, which F8 deliberately
+  // leaves alone (it is the cabinet's structure, not a shelf a joiner sets out).
+  const part = RESULT.panels.find((p) => p.part === 'PARTITION');
+  assert.ok(part, 'this fixture has one');
+  assert.equal(sheetTurn(part), 90);
+  const b = panelBounds(part, RESULT.drills);
+  assert.deepEqual([b.minX, b.minY, b.maxX, b.maxY], [-part.h, 0, 0, part.w]);
 });
 
 test('every part is placed exactly once, in cut-list order', () => {
@@ -128,7 +146,7 @@ test('engine y-up maps to sheet y-down, corner for corner', () => {
 
 test('…and a TURNED part maps its own corners into the same box', () => {
   const { places } = layoutPanels(RESULT.panels, RESULT.drills, OPTS);
-  const place = places.find((p) => p.panel.id === 'SHELF-1');
+  const place = places.find((p) => p.panel.part === 'PARTITION');
   const { w, h } = place.panel;
   // `toSheet` takes the PART's own coordinates, whatever the sheet does with
   // the part — which is what lets every caller (the preview, the DXF writer)

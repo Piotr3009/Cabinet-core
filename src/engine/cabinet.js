@@ -45,7 +45,9 @@ import { impliedLegHeight, maskDepthExtra, standsOnLegHeight } from './runs.js';
 import {
   corniceOption, corniceOrder, corniceProjection, corniceRise, takesCornice,
 } from './cornice.js';
-import { partitionBackScrews, partitionBackSpec } from './partitionFixings.js';
+import {
+  partitionBackScrewRun, partitionBackScrews, partitionBackSpec,
+} from './partitionFixings.js';
 // Turn 24 (CLAUDE.md F7): the owner's butt-joint set, given the consumer it
 // was written for — a FIX shelf.
 import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
@@ -1931,7 +1933,31 @@ export function computeCabinet(params, profileOverride) {
         h: shelfT,
         d: depthHere,
       },
-      cnc: rectGeometry(shelfWHere, depthHere),
+      // ─── TURN 26 (CLAUDE.md F8): A SHELF LIES ALONG THE GRAIN ───────────
+      //
+      // Owner: shelves are laid ACROSS the sheet, so the grain runs
+      // front-to-back; the edge banding goes on the LONG front edge and must
+      // run WITH the grain. It was drawn `width × depth`, which puts its long
+      // axis across the drawing and its grain up the DEPTH — the one direction
+      // a shelf's own banded edge does not run in.
+      //
+      // Laid `depth × width` it is the SAME convention BUL and BUR have had
+      // since turn 1 and the partition took in turn 24 (F8): the piece's long
+      // axis runs up the drawing, the grain with it, and the banded front edge
+      // with the grain. It is the same production law, applied to the third
+      // board that needed it.
+      //
+      // The board is the same board and its CUT SIZE has not moved: `w` and
+      // `h` above are what the CSV and the BOM print. What changes is the
+      // FRAME the outline, the label and every point on this piece are
+      // expressed in — and everything downstream reads that frame
+      // (`engine/joinery.js`) rather than carrying a copy of it.
+      cnc: {
+        rotated: true,
+        drawn_w: depthHere,
+        drawn_h: shelfWHere,
+        ...rectGeometry(depthHere, shelfWHere),
+      },
       meta: {
         index: i,
         // ─── TURN 21 (CLAUDE.md F9.1): THE SHELF'S OWN RUN ────────────────
@@ -3220,17 +3246,33 @@ export function computeCabinet(params, profileOverride) {
       }
     }
 
-    // ── and the shelf's own two ends, where the set-out is transferred ──
-    const inset = markFromEnd(P);
-    for (const [end, endX] of [['L', inset], ['R', shelf.w - inset]]) {
-      const has = bearers.some((b) => (end === 'L'
-        ? (b.kind === 'side' ? b.id === 'BUL' : Math.abs(runFrom - (b.panel.box.x + b.panel.box.w)) < 1e-6)
-        : (b.kind === 'side' ? b.id === 'BUR' : Math.abs(runTo - b.panel.box.x) < 1e-6)));
-      if (!has) continue;
-      for (const set of noScrewSets) {
-        // The shelf is drawn `width × depth` and its own y runs from the BACK,
-        // so the set's distance from the FRONT is `depth − t`.
-        addMark(shelf.id, biscuitLayerNames.mark, [endX, depth - set.mark.from], [endX, depth - set.mark.to]);
+    // ─── TURN 26 (CLAUDE.md F7.1): NOTHING ON THE SHELF ITSELF ────────────
+    //
+    // The owner, twice, and the second time decisively: **no biscuits on the
+    // shelf itself — not even on its ends.** Turn 24 transferred the set-out
+    // onto both ends of the board on the reasoning that a 3-axis bed cannot
+    // reach an end and the two halves of a joint should agree before anything
+    // is glued. He has looked at the sheet and said no: a fix shelf is an
+    // OUTLINE and a LABEL, and nothing else.
+    //
+    // The joint has not gone anywhere — it lives in the BEARERS, above: the
+    // biscuit marks and the ⌀3 through-screws in BUL/BUR, the marks alone in a
+    // partition (a through screw would surface in the neighbouring bay), and
+    // now the ⌀3 in the BACK below.
+    //
+    // ─── …AND THE BACK HOLDS IT (F7.2, the owner's addition) ──────────────
+    //
+    // "⌀3 in the BACK on the shelf's axis — same law as the partition's back
+    // screws: ends 50, pitch ≤ 400." It IS the same law and it is the same
+    // function: `engine/partitionFixings.js partitionBackScrewRun`, asked
+    // along the shelf's own run instead of up a partition's. A shelf and a
+    // partition are one board doing one job in two directions, and a second
+    // spacing rule for the second direction is a second thing to get wrong.
+    const back = panels.find((x) => x.part === 'BACK');
+    if (back) {
+      const spec = partitionBackSpec(P);
+      for (const x of partitionBackScrewRun({ from: runFrom, to: runTo, profile: P })) {
+        addDrill('BACK', 'shelf_back_screw', spec.layer, x, jointY, spec.diameter);
       }
     }
   }

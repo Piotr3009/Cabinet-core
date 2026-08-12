@@ -105,8 +105,33 @@ export function panelPlacement(panel) {
     // Handedness is the right one in both (u × v = −n), which is what the turn
     // 13 F1 guard is about.
     case 'SHELF':
+      // ─── TURN 26 (CLAUDE.md F8): THE SHELF LIES ALONG THE GRAIN ───────────
+      //
+      // It was drawn `width × depth` — its long axis across the page, its grain
+      // running front-to-back — and the owner's production law wins: a shelf's
+      // banded edge is its LONG FRONT one and the banding must run WITH the
+      // grain, so the piece lays on the sheet in the same convention as the
+      // sides and (since turn 24) the partition. Drawn `depth × width`, its CNC
+      // x runs from the FRONT of the cabinet towards the back and its y across
+      // the width.
+      //
+      // It is a ROTATION and not a mirror, which is the thing to check: the
+      // handedness is unchanged (u × v = −n, as on every other case here), so
+      // the machined face is still the board's TOP — the face a partition lands
+      // on — and nothing that reads this frame has to know it turned.
+      return {
+        origin: [box.x, box.y + box.h, box.z + box.d],
+        u: [0, 0, -1],
+        v: [1, 0, 0],
+        n: [0, 1, 0],
+      };
     case 'PARTITION':
     case 'RAIL-PART':
+      // NOT in F8's scope, and deliberately: these are the boards that span the
+      // full internal width under a drawer stack or a rail. They are the
+      // cabinet's own structure rather than a shelf a joiner sets out, and
+      // CLAUDE.md F8 names shelves.
+      //
       // Drawn on the face a partition lands on — the TOP one.
       return {
         origin: [box.x, box.y + box.h, box.z],

@@ -176,8 +176,13 @@ test('F7.1 — a fix shelf is biscuited on BOTH bearing faces, and screwed from 
     assert.equal(marksOf(r, side).length, sets.length, `${side} takes the 70 mm mark of each set`);
     for (const m of marksOf(r, side)) assert.equal(m.layer, 'BISCUIT_4MM');
   }
-  // …and the shelf's own two ends carry the set-out, transferred.
-  assert.equal(marksOf(r, shelf.id).length, sets.length * 2, 'both ends of the shelf');
+  // ─── TURN 26 (CLAUDE.md F7.1): AND THE SHELF ITSELF CARRIES NOTHING ─────
+  // Turn 24 transferred the set-out onto both ends of the board. The owner has
+  // looked at the sheet and said no, twice, the second time decisively: "no
+  // biscuits on the shelf itself — not even on its ends." A fix shelf is an
+  // OUTLINE and a LABEL. The joint has not gone anywhere — it is in the
+  // bearers above, and (turn 26, F7.2) in the BACK.
+  assert.equal(marksOf(r, shelf.id).length, 0, 'the shelf is a clean rectangle');
 });
 
 test('F7.1 — from a PARTITION side it is biscuits only: no screw in the neighbour’s face', () => {

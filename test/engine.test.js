@@ -257,12 +257,20 @@ async function verifyCase(t, fixtureCase, opts = {}) {
       d.shelf_cluster_y.forEach((row, i) => assertArrayAtPrecision(result.drillSummary.shelf_cluster_y[i], row, `${id} shelf cluster ${i}`));
     }
     if (d.shelf_hole_x) assertArrayAtPrecision(result.drillSummary.shelf_hole_x, d.shelf_hole_x, `${id} shelf_hole_x`);
+    // The mirrored board's own columns (sink mirror fix, 12.08.2026): on the
+    // one cabinet whose columns are asymmetric the fixture states BUR's pair
+    // separately; everywhere else the two sets coincide and one array serves.
+    if (d.shelf_hole_x_bur) assertArrayAtPrecision(result.drillSummary.shelf_hole_x_bur, d.shelf_hole_x_bur, `${id} shelf_hole_x_bur`);
     if (d.shelf_row_y && d.shelf_hole_x) {
       for (const side of ['BUL', 'BUR']) {
+        const cols = side === 'BUR' ? (d.shelf_hole_x_bur || d.shelf_hole_x) : d.shelf_hole_x;
         const holes = result.drills.filter((x) => x.panel === side && x.kind === 'shelf');
-        assert.equal(holes.length, d.shelf_row_y.length * PROFILE.shelfHoles.clusterOffsets.length * d.shelf_hole_x.length,
+        assert.equal(holes.length, d.shelf_row_y.length * PROFILE.shelfHoles.clusterOffsets.length * cols.length,
           `${id} ${side} shelf hole count`);
-        for (const h of holes) assert.equal(h.d, PROFILE.shelfHoles.diameter, `${id} shelf hole diameter`);
+        for (const h of holes) {
+          assert.equal(h.d, PROFILE.shelfHoles.diameter, `${id} shelf hole diameter`);
+          assert.ok(cols.some((x) => Math.abs(h.x - x) <= 0.05), `${id} ${side} shelf hole x ${h.x} unexpected`);
+        }
       }
     }
   });

@@ -1510,6 +1510,10 @@ export function computeCabinet(params, profileOverride) {
   // The sink's back pin column moves forward — its back panel is inside the box.
   const shelfBackColumn = backStyle === 'inset' ? SK.shelfBackColumnFromEdge : SH.columnFromEdge;
   const shelfHoleX = [SH.columnFromEdge, sideW - shelfBackColumn];
+  // The mirrored board's own columns (see shelfBearers.pinColumns): back
+  // column from ITS x=0, front column at depth − 70. Same SET as `shelfHoleX`
+  // whenever the columns are symmetric — only the sink tells them apart.
+  const shelfHoleXBur = [shelfBackColumn, sideW - SH.columnFromEdge];
 
   // ── Panels ─────────────────────────────────────────────────────────────────
   const panels = [];
@@ -4004,6 +4008,7 @@ export function computeCabinet(params, profileOverride) {
     shelf_row_y: shelfRows.map((v) => roundTo(v, 4)),
     shelf_cluster_y: shelfPinRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row.y + dy, 4))),
     shelf_hole_x: shelfHoleX,
+    shelf_hole_x_bur: shelfHoleXBur,
     // Turn 8 (F4): which rows are PINNED and which are SCREWED. `shelf_row_y`
     // stays every shelf, because it is where the shelves ARE and the drawings
     // dimension it; these two say how each one is held.

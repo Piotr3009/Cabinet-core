@@ -158,7 +158,22 @@ export function onBearer(bearer, localY) {
  */
 export function pinColumns(bearer, { columnFromEdge, backColumn }) {
   const depth = Number(bearer?.panel?.box?.d) || 0;
-  return [Number(columnFromEdge) || 0, depth - (Number(backColumn) || 0)];
+  const front = Number(columnFromEdge) || 0;
+  const back = Number(backColumn) || 0;
+  // ─── SINK MIRROR FIX (owner, 12.08.2026): THE COLUMNS ARE FRONT AND BACK ──
+  //
+  // `BUR` is the mirrored board: its CNC x runs from the BACK edge (its hinge
+  // plate sits at `depth − 37`, its hanger at `fromBack` — every other feature
+  // on it flips). These columns did not, because KIT_SINK.lsp's own
+  // `drawSINK_BUR` copied the BUL block verbatim — and on the one cabinet
+  // whose columns are ASYMMETRIC (70 front / 120 back, the inset back panel)
+  // the right side's pins came out 120 from the front. The owner verified it
+  // on the board: a shelf pin row is a distance from the CABINET's front and
+  // back, the same on both sides, so the mirrored board flips its x like
+  // everything else on it. Symmetric columns (70/70) are their own mirror,
+  // which is why every other type is byte-identical under this line.
+  if (bearer?.id === 'BUR') return [back, depth - front];
+  return [front, depth - back];
 }
 
 /**

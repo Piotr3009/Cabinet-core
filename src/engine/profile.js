@@ -238,7 +238,12 @@ export const DEFAULT_CABINET_PROFILE = {
     tabCentresFromEnd: 95,     // outer tab centres; the third sits at mid-length
     tabHalfOpening: 19,        // half-width of the slot mouth at the edge
     tabHalfWidth: 25,          // half-width once past the shoulder
-    shoulderDepth: 10.5,       // depth at which the slot widens
+    // ─── OWNER, 12.08.2026: 13, FOR THE ½″ CUTTER ────────────────────────
+    // 10.5 was set out for a ⌀10 tool; the workshop is on ⌀12.7 now (the
+    // biggest bit anyone cuts board with) and at 10.5 the neck's own corner
+    // radius left the joint tight. His bench number, both LISPs and this
+    // line: change together, never apart.
+    shoulderDepth: 13,         // depth at which the slot widens
     dogboneHalfHeight: 30,     // relief pocket ± this around the tab centre
     socketHalfWidth: 25.5,     // socket pocket on the mating edge
     socketOvershoot: 6,        // pocket runs 6 mm past the panel edge

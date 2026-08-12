@@ -144,7 +144,14 @@ test('a per-panel DXF is byte-for-byte what it was', () => {
   // classifier's summary over the whole probe — 100 % of the moved entities
   // are a −0.5 on a screw/socket class, zero on any other layer, zero count
   // changes, zero geometry.
-  assert.equal(fingerprint(bul.dxf), '809066c0', 'the side panel’s DXF has changed');
+  // ─── 12.08.2026 (owner's bench, chat fix): 809066c0 → 21d5d6dc ──────────
+  // ONE NUMBER AGAIN: `puzzle.shoulderDepth` 10.5 → 13, the owner's re-set
+  // for the ⌀12.7 cutter. Every tab shoulder vertex on every tabbed outline
+  // moves by exactly 2.5 along its edge and NOTHING else does — the semantic
+  // classifier over all probe scenarios counted 18 248 vertex moves, every
+  // one ±2.5 on one axis, zero pocket/hole/count changes outside the sink
+  // mirror below. Both of the owner's LISPs change the same day.
+  assert.equal(fingerprint(bul.dxf), '21d5d6dc', 'the side panel’s DXF has changed');
 });
 
 // ─── the sheet ──────────────────────────────────────────────────────────────
@@ -195,7 +202,10 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // (their labels) are written in the turned frame; every other part on this
   // sheet is byte-identical, and the CUT SIZE of the shelves has not moved —
   // `w` and `h` are what the CSV and the BOM print and they are unchanged.
-  assert.equal(fingerprint(sheetOf(result, all)), 'ce75028e', 'the whole-unit sheet has changed');
+  // ─── 12.08.2026 (owner's bench): ce75028e → 3439a402 ─────────────────────
+  // `shoulderDepth` 10.5 → 13 reaches every tabbed carcass board on this
+  // sheet; the shelves, doors and labels do not move a hundredth.
+  assert.equal(fingerprint(sheetOf(result, all)), '3439a402', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -224,10 +234,15 @@ test('…and so is each preset’s', () => {
   // F8 lays a shelf along the grain, so the two sheets with a shelf on them
   // move and the two that are doors and drawer faces do not — the same census
   // logic every delta before it has been read by.
+  // ─── 12.08.2026 (owner's bench): AND THE SAME CENSUS LOGIC ONCE MORE ────
+  // `shoulderDepth` 13 is a joint on the CARCASS boards, so the two sheets
+  // that carry a carcass move and the two that are doors and drawer faces do
+  // not — the pair that stands still is again the proof the delta is what it
+  // says it is.
   const expected = {
-    all: 'ce75028e',           // was cbfa35ea — F8's two shelves, turned in their own frame
-    'non-sprayed': '13ba3fd2', // was 32cca2e6 — the same two shelves
-    sprayed: '8a6498da',       // UNCHANGED — no shelf is on this sheet
+    all: '3439a402',           // was ce75028e — every tab shoulder, 10.5 → 13
+    'non-sprayed': '07a0d206', // was 13ba3fd2 — the same shoulders
+    sprayed: '8a6498da',       // UNCHANGED — no tab is on a door
     fronts: '8a6498da',        // UNCHANGED, for the same reason
   };
   for (const [preset, print] of Object.entries(expected)) {
@@ -482,5 +497,5 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   const cuttable = exportablePanels(result.panels);
   const hidden = new Set(panelIdsForPreset(cuttable, 'sprayed'));
   const ids = cuttable.map((p) => p.id).filter((id) => !hidden.has(id));
-  assert.equal(fingerprint(sheetOf(result, ids)), '13ba3fd2'); // was 32cca2e6 — F8's shelves
+  assert.equal(fingerprint(sheetOf(result, ids)), '07a0d206'); // 12.08.2026: was 13ba3fd2 — the shoulders, same sheet as the preset's
 });

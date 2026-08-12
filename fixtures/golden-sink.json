@@ -12,7 +12,7 @@
     "sides": "plain rectangle outline (no back tenons, no top sockets); bottom puzzle sockets only; 3 bottom screws (50, mid, sideW-50) at y = G/2 (TURN 24, CLAUDE.md F4: the `+0.5` `centrelineExtra` is REMOVED globally - the owner does not remember it, it is wrong, and it skewed the whole calculation. A screw into the edge of a board goes down the middle of that board. This is the ONE named regeneration this file has had and it moved exactly one number: 9.5 -> 9); 4 holder screws at x {G/2, sideW-G/2}, y {H-30, H-70}; 3 back screws at x = sideW-37 (BUL; mirrored BUR), y {100, H/2, H-100}",
     "bottom": "tenons on TWO edges only — the two side edges (into BUL/BUR). Both the back edge (the back is a screwed panel 50 mm forward) and the front edge are straight. NOTE: the header comment above drawSINK_BOTTOM (L150) claims a front-edge tenon; the executable point list L156-159 does not draw one and the dog-bones L188-191 cover the side edges only — the geometry wins.",
     "hinges": "top hinge 50mm lower than BUD: [100, H-300, H-150]; cups [100, frontH-297, frontH-147]",
-    "shelves": "depth reduced by backSetback + G: shelfH = D - G - 20 - 50 - G; shelf pin columns at x 70 and sideW - 120 (NOT sideW-70)",
+    "shelves": "depth reduced by backSetback + G: shelfH = D - G - 20 - 50 - G; shelf pin columns are 70 from the CABINET front and 120 from its back on BOTH sides — BUL [70, sideW-120], BUR (mirrored board, x from the back) [120, sideW-70]. KIT_SINK.lsp drawSINK_BUR copied BUL's x verbatim; owner verified 12.08.2026 that this was the copy-not-mirror bug, LISP corrected the same day",
     "lisp_panel_count": "LISP totalPanels = 4 + 2 holders + shelves"
   },
   "cases": [
@@ -174,6 +174,10 @@
         "shelf_hole_x": [
           70,
           420
+        ],
+        "shelf_hole_x_bur": [
+          120,
+          470
         ],
         "back_screw_x_bul": 503,
         "back_screw_y": [
@@ -402,6 +406,10 @@
         "shelf_hole_x": [
           70,
           420
+        ],
+        "shelf_hole_x_bur": [
+          120,
+          470
         ],
         "back_screw_x_bul": 503,
         "back_screw_y": [

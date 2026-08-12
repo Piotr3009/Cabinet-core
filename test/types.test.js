@@ -141,11 +141,14 @@ async function verifyCase(t, fixtureCase) {
     }
     if (d.shelf_row_y?.length && d.shelf_hole_x) {
       for (const side of ['BUL', 'BUR']) {
+        // Sink mirror fix (12.08.2026): the mirrored board states its own pair
+        // where the columns are asymmetric; elsewhere one array serves both.
+        const cols = side === 'BUR' ? (d.shelf_hole_x_bur || d.shelf_hole_x) : d.shelf_hole_x;
         const holes = result.drills.filter((x) => x.panel === side && x.kind === 'shelf');
-        assert.equal(holes.length, d.shelf_row_y.length * P.shelfHoles.clusterOffsets.length * d.shelf_hole_x.length,
+        assert.equal(holes.length, d.shelf_row_y.length * P.shelfHoles.clusterOffsets.length * cols.length,
           `${id} ${side} shelf hole count`);
         for (const h of holes) {
-          assert.ok(d.shelf_hole_x.some((x) => Math.abs(h.x - x) <= 0.05), `${id} shelf hole x ${h.x} unexpected`);
+          assert.ok(cols.some((x) => Math.abs(h.x - x) <= 0.05), `${id} ${side} shelf hole x ${h.x} unexpected`);
         }
       }
     }

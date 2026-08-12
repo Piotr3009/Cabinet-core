@@ -12,7 +12,7 @@
     "hinge_drill": "each center -> 2 holes 5mm (r2.5) at center +/-16, x=37 from FRONT edge of side panel, layer HINGES_5MM",
     "front_cups_base_unit": "Y from bottom of front: [100, Hf-297, Hf-97]; cup 35mm (r17.5) at x=21.5 from hinge edge, layer FRONT_HINGES_35MM; 2 mounting holes 3mm (r1.5) at cupX +/-9.5 toward door center (holeX), cupY +/-23, layer FRONT_HINGES_3MM",
     "shelf_holes": "rows at y = G + i*spacing, spacing=(H-2G)/(numShelves+1); each row = cluster of 3 holes 7.5mm (r3.75) at rowY-50, rowY, rowY+50; columns x=70 and x=panelWidth-70; layer SHELVES_7_5MM",
-    "puzzle_system": "side panels are NOT rectangles: back edge has 3 slots (centers y=95, H/2, H-95; opening +/-19 at edge, widening to +/-25 at depth 10.5, full depth G; dogbone rect +/-30 x G on layer PUZZLE_DOG_BONES); top+bottom edges have sockets at x=95 and x=W-95 (width +/-25.5, with 2 holes 7.5mm at +/-24.5 on layer PUZZLE_HOLES_7_5MM); screws 3mm at x=50, mid, W-50 on layer SCREWS_3MM. Exact geometry: reference/lisp/SKYLON_COMMON.lsp drawBUL/drawBUR",
+    "puzzle_system": "side panels are NOT rectangles: back edge has 3 slots (centers y=95, H/2, H-95; opening +/-19 at edge, widening to +/-25 at depth 13 (owner 12.08.2026: was 10.5, re-set for the ⌀12.7 cutter), full depth G; dogbone rect +/-30 x G on layer PUZZLE_DOG_BONES); top+bottom edges have sockets at x=95 and x=W-95 (width +/-25.5, with 2 holes 7.5mm at +/-24.5 on layer PUZZLE_HOLES_7_5MM); screws 3mm at x=50, mid, W-50 on layer SCREWS_3MM. Exact geometry: reference/lisp/SKYLON_COMMON.lsp drawBUL/drawBUR",
     "edging_codes": "< left long edge, > right long edge (or front edge for TOP/BOTTOM/SHELF), ^v top+bottom, <>^v all four; EDG_L in metres",
     "csv_header": "UNIT,PANEL,SZER,WYS,EDGE,EDG_L,SQM"
   },

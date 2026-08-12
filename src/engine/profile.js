@@ -2419,6 +2419,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // The hanging rail. The 3D drew a ⌀30 tube with the number written into the
     // mesh; it lives here now, with everything else that is bought and not cut.
     rail: { diameter: 30 },
+    // ─── THE SHELF SUPPORT (turn 25, CLAUDE.md F6) ──────────────────────────
+    //
+    // The owner: he wants to SEE gold or silver sleeves — and they are the
+    // ⌀7.5 this engine has drilled since turn 1, not a new 5 mm system. So
+    // there is nothing new to cut here and nothing new to order beyond what
+    // `shelfHoles.pinsPerShelf` has always counted; what is new is that the
+    // fitting is DRAWN.
+    //
+    // A support is two pieces and a joiner buys them as one: the SLEEVE, a
+    // knock-in collar that lines the ⌀7.5 hole, and the PIN — the "spon" — that
+    // goes into it and that the shelf rests on. The sleeve is what shows when
+    // the shelf is out, and it is what the owner is asking to see.
+    //
+    // These proportions are OURS: the ⌀7.5 is his, and a collar for a 7.5 hole
+    // is about 11 across with a 2 mm flange, and the pin that goes in it is a
+    // 5 mm peg standing 9 mm proud. A catalogue fitting replaces the numbers
+    // and nothing else.
+    shelfPin: {
+      sleeveOuter: 11,
+      sleeveFlange: 2,
+      pinDiameter: 5,
+      pinLength: 9,
+      // A little shoulder under the shelf, so the board is seen to be resting
+      // ON something rather than floating beside a peg.
+      shoulderDiameter: 8,
+      shoulderThickness: 1.5,
+    },
   },
 
   // ─── Technical drawings (turn 6, CLAUDE.md F7; turn 7, F1) ───
@@ -3224,6 +3251,7 @@ export function migrateCabinetProfile(profile) {
         },
       },
       leg: { ...D.hardware.leg, ...profile.hardware?.leg },
+      shelfPin: { ...D.hardware.shelfPin, ...profile.hardware?.shelfPin },
       rail: { ...D.hardware.rail, ...profile.hardware?.rail },
     },
     drawings: {

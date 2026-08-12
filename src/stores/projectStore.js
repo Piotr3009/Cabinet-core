@@ -3293,6 +3293,26 @@ export const useProjectStore = create((set, get) => ({
     };
   }),
 
+  /**
+   * ─── THE SHELF SUPPORTS' METAL (turn 25, CLAUDE.md F6.1) ──────────────────
+   *
+   * Gold or silver, chosen once for the job. It is a PROJECT decision like the
+   * hinge finish above and reaches nothing but the picture: the fitting is the
+   * ⌀7.5 this engine has drilled since turn 1, so there is no cut and no order
+   * that follows from it.
+   */
+  setShelfSleeve: (id) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    const wanted = id === 'gold' || id === 'silver' ? id : null;
+    return {
+      project: {
+        ...s.project,
+        design: migrateDesign({ ...design, hardware: { ...design.hardware, shelfSleeve: wanted } }),
+      },
+      dirty: true,
+    };
+  }),
+
   /** What this job is fitted with, resolved — for the panel and for a test. */
   hingeHardware: () => {
     const design = migrateDesign(get().project.design);

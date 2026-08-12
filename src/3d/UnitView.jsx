@@ -1466,6 +1466,8 @@ export default function UnitView({
         // WHICH hinge each door wears — resolved once, by the engine, and
         // handed down; and the gesture that opens the hinge modal on it.
         hingeSpecs={hingeSpecs}
+        // Turn 25 (CLAUDE.md F6.1): gold or silver, chosen once for the job.
+        shelfMetal={design?.hardware?.shelfSleeve || null}
         // ─── TURN 24 (CLAUDE.md F1.2): HOW FAR EACH LEAF HAS SWUNG ───────────
         // The hinge's carcass half folds by the DOOR's own angle, and the door
         // is not this component's child — so the angle is handed across rather

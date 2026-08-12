@@ -178,7 +178,13 @@ export const DEFAULT_DESIGN = {
   thickness: { board: null, custom: null, slots: {} },
   // Which VARIANT of each piece of ironmongery this job fits. The automat picks
   // the concrete item; the user only ever picks a variant (F9.2).
-  hardware: { hinges: null, runners: null, handles: null },
+  // ─── Turn 25 (CLAUDE.md F6.1): the metal the shelf supports are in ───────
+  // Gold or silver, chosen once for the job. `null` means the profile's own
+  // default, so a project saved before this turn opens on the workshop's
+  // answer rather than on nothing.
+  hardware: {
+    hinges: null, runners: null, handles: null, shelfSleeve: null,
+  },
   // ─── Turn 17 (CLAUDE.md F7.1) ───
   // How many hinges this JOB fits a door with: 2 or 3. `null` means the
   // profile's own standard, which is 3 and is what every kit has always
@@ -273,6 +279,9 @@ export function migrateDesign(design) {
     hardware: {
       hinges: d.hardware?.hinges ? String(d.hardware.hinges) : null,
       runners: d.hardware?.runners ? String(d.hardware.runners) : null,
+      shelfSleeve: d.hardware?.shelfSleeve === 'gold' || d.hardware?.shelfSleeve === 'silver'
+        ? d.hardware.shelfSleeve
+        : null,
       handles: d.hardware?.handles ? String(d.hardware.handles) : null,
     },
     hinges: {

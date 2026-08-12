@@ -92,6 +92,7 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setRunnerVariant = useProjectStore((s) => s.setRunnerVariant);
   // Turn 19 (CLAUDE.md F1.1): …and which HINGE — system, finish, plate.
   const setHingeHardware = useProjectStore((s) => s.setHingeHardware);
+  const setShelfSleeve = useProjectStore((s) => s.setShelfSleeve);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
   const setCarcassMaterial = useProjectStore((s) => s.setCarcassMaterial);
@@ -925,6 +926,40 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           frontThickness={projectFrontThickness(design, profile, materials)}
           onChange={setHingeHardware}
         />
+
+        {/* ─── Turn 25 (CLAUDE.md F6.1): THE SHELF SUPPORTS ──────────────────
+            "He wants to SEE gold or silver sleeves." Two buttons, beside the
+            hinge finish because it is the same kind of decision — what the
+            ironmongery in this job is plated in. It reaches the PICTURE and
+            nothing else: the fitting sits in the ⌀7.5 this engine has drilled
+            since turn 1, so no cut and no order follows from it. */}
+        <div className="cc-row" data-shelf-sleeve="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Shelf supports</span>
+            <span className="text-[11px] text-ink-400">
+              The sleeve and pin an adjustable shelf stands on — in the ⌀7.5 the machine already
+              bores. A fixed shelf has none, and that is how you tell them apart.
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {Object.entries(profile.appearance.metals).map(([id, m]) => (
+              <button
+                key={id}
+                type="button"
+                data-shelf-sleeve-option={id}
+                aria-pressed={(design.hardware.shelfSleeve || profile.appearance.metalDefault) === id}
+                className={`cc-btn px-2 ${(design.hardware.shelfSleeve || profile.appearance.metalDefault) === id ? 'border-gold text-gold' : ''}`}
+                onClick={() => setShelfSleeve(id)}
+              >
+                <span
+                  className="inline-block w-3 h-3 rounded-full align-middle mr-1 border border-shell-600"
+                  style={{ background: m.colour }}
+                />
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* ─── Turn 18 (CLAUDE.md F6.4): THE RUNNERS ────────────────────────
             The SYSTEM the workshop stocks and the VARIANT this job is fitted

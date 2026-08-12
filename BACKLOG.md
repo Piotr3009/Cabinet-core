@@ -771,3 +771,14 @@ dało się je odszukać po jego numerze, a nie tylko po fazie.
     więc pytanie robi się głośniejsze.
 118. [LOW] **`scripts/e2e-turn18.mjs` nie zna zmian tury 19.** To samo, co poz.
     66, 71, 77, 85, 90, 95 i 105. `e2e-turn19.mjs` jest następcą.
+119. [MEDIUM] **Wkręty ⌀3 w PLECACH wychodzą poza formatkę na kitach o krótkich
+    plecach.** Znalezione przy okazji tury 27 (F1), sprawdzone i potwierdzone
+    jako **stan sprzed tej tury** — probe daje ten sam wynik na `8c0ece5`, więc
+    nic tu nie zepsuł ten obieg. `partitionBackScrewRun` (tura 23, F6) liczy
+    swój bieg w układzie SZAFKI i wypisuje go na `BACK`, a `BACK` na SINK
+    (cofnięte plecy), OVEN_BASE (plecy tylko za szufladą) i FRIDGE (plecy jako
+    listwy) jest znacznie mniejszy albo w innym miejscu. Wynik: dziesięć
+    otworów, które na arkuszu leżą poza obrysem — najgorszy na FRIDGE, y = −1736.
+    Formatka jest poprawna; punkt nie jest przeliczony do jej własnej ramy.
+    Dokładnie ta sama choroba, którą F1 wyleczył dla półki, na drugim boarcie.
+    Do tury 28 razem z resztą zebranych rzeczy.

@@ -1290,6 +1290,13 @@ export const DEFAULT_CABINET_PROFILE = {
       // rule, for the same reason: below this the mitre is longer than the
       // piece.
       minReturn: 60,
+      // ─── TURN 26 (CLAUDE.md F9.3/F9.4): WHEN IS IT A CORNER? ─────────────
+      // How close two mouldings have to be — in TOP and in DEPTH — to be
+      // treated as meeting. Two millimetres is a scribe, not a step: a run
+      // fitted to a bowed wall is not a different depth from its neighbour and
+      // must not be refused as one. Past it the two really are different
+      // pieces and the corner is refused out loud (BLOCKERS #92).
+      cornerToleranceMm: 2,
     },
   },
 

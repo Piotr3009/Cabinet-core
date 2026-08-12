@@ -35,6 +35,7 @@ export default function ContextMenu() {
   const unitDimensions = useUiStore((s) => s.unitDimensions);
   const toggleUnitDimensions = useUiStore((s) => s.toggleUnitDimensions);
   const removeTopInfill = useProjectStore((s) => s.removeTopInfill);
+  const setCornice = useProjectStore((s) => s.setCornice);
   const addBottomMask = useProjectStore((s) => s.addBottomMask);
   const removeBottomMask = useProjectStore((s) => s.removeBottomMask);
   const openModal = useUiStore((s) => s.openModal);
@@ -92,6 +93,23 @@ export default function ContextMenu() {
           if (!addTopInfill(unitId)) notify('No room between this unit and the ceiling.', 'warn');
         },
         removeTopInfill,
+        // ─── TURN 26 (CLAUDE.md F9.1): THE TOGGLE THAT DID NOTHING ──────────
+        //
+        // Owner: the right-click cornice toggle does nothing. The menu item was
+        // there, the store action was there, and the ENTRY IN THIS OBJECT was
+        // not — so `store.setCornice?.(unit.id, h)` was an optional call on
+        // `undefined`, which is a silent no-op by design. The `?.` that makes
+        // this list safe to grow is the same `?.` that made a missing line
+        // invisible; `verify/t26/cornice-toggle.md` carries the post-mortem and
+        // `test/turn26-f9-cornice.test.js` now asserts that EVERY entry the
+        // menu can produce has the function it calls.
+        //
+        // The notices are the store's own — the ceiling check and the infill
+        // the moulding is screwed to — and they are shown rather than dropped.
+        setCornice: (unitId, height) => {
+          const { notices } = setCornice(unitId, height) || {};
+          for (const notice of notices || []) notify(notice, 'warn');
+        },
         // Turn 14 (CLAUDE.md F5): the board under a run of wall units.
         addBottomMask: (unitId) => {
           if (!addBottomMask(unitId)) notify('Only a hanging cabinet has an underside to mask.', 'warn');
@@ -170,7 +188,7 @@ export default function ContextMenu() {
     // untouched, and View still owns it), and REDRAWING them is parked.
     : []), [unit, menu, unitDimensions, redistributeShelves, rotateUnit,
     removeUnit, closeAllFronts, toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addTopInfill,
-    removeTopInfill, addBottomMask, removeBottomMask,
+    removeTopInfill, setCornice, addBottomMask, removeBottomMask,
     setSideInfillEnabled, setSideInfillPinned, notify, openRightPanel,
     setPanelSection, openModal, selectUnit, removeDrawerFronts, addDrawerFronts]);
 

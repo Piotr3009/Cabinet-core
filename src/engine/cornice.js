@@ -250,6 +250,9 @@ export function corniceSegments(run, profile) {
 export function segmentCornice(segment, {
   wall = 0, mount = 'floor', wallWidth = 0, roomHeight = 0,
   verticals = null, frontFaceDepth = null, infillHeightOf = null,
+  // Turn 26 (CLAUDE.md F9.3): what this segment MEETS at each end, where that
+  // thing carries a moulding of its own — `{ height, depth, top, unitId }`.
+  neighbourAt = null,
 }, profile) {
   const C = profile.autoParts.cornice;
   const height = corniceOption(segment?.height, profile);
@@ -285,6 +288,23 @@ export function segmentCornice(segment, {
     left: left.kind === 'open' ? depthAt('left') : null,
     right: right.kind === 'open' ? depthAt('right') : null,
   };
+
+  // ─── TURN 26 (CLAUDE.md F9.3/F9.4): IS THIS END A CORNER? ────────────────
+  //
+  // A CORNER is another cornice-bearing element finishing flush with this one,
+  // at this end. What is beside a run and how tall it is are `runEnd`'s
+  // answers; whether the two mouldings can meet is `corniceCorner`'s, and it
+  // is the one that may REFUSE.
+  const corners = {
+    left: corniceCorner({
+      mine: { height, depth: Math.max(0, Number(frontFaceDepth?.left) || 0), top: stackTop },
+      theirs: neighbourAt?.left || null,
+    }, profile),
+    right: corniceCorner({
+      mine: { height, depth: Math.max(0, Number(frontFaceDepth?.right) || 0), top: stackTop },
+      theirs: neighbourAt?.right || null,
+    }, profile),
+  };
   // The infill this moulding is fixed to. The tallest request in the segment,
   // exactly as the top infill's own run height is decided — one piece, one
   // height — because the moulding lands on ONE face.
@@ -300,18 +320,128 @@ export function segmentCornice(segment, {
     offset: left.x - ownerX,
     length,
     ends: { left: left.kind, right: right.kind },
-    // A 45° corner exists at an OPEN end and nowhere else: every other end
-    // condition is a STOP, flush against the thing in the way.
+    // ─── TURN 26 (CLAUDE.md F9.3): FOUR CASES, NOT THREE ────────────────────
+    //
+    // A 45° used to exist at an OPEN end and nowhere else: every other end
+    // condition was a STOP, flush against the thing in the way. That is right
+    // for a wall and for a scribe filler and WRONG for the one the owner
+    // named — a run of wall units meeting a tall unit, both carrying the same
+    // moulding, their tops flush. There the two lengths meet and a joiner
+    // mitres them internally at 45°, exactly as he mitres externally at an
+    // open end. The four cases are now: `run`, `wall`, `open` (which returns)
+    // and `corner`.
+    //
+    // `corniceCorner` decides — including the refusal when the two pieces are
+    // different depths, which is BLOCKERS #92 and is NOT guessed at here.
     mitres: {
-      left: left.kind === 'open',
-      right: right.kind === 'open',
+      left: left.kind === 'open' || corners.left?.mitre === true,
+      right: right.kind === 'open' || corners.right?.mitre === true,
     },
+    corners,
     returns,
     infillHeight,
     rise: corniceRise(height, infillHeight),
     top: stackTop,
     unitIds: segment.units.map((u) => u.id),
   };
+}
+
+// ─── THE INTERNAL 45° (turn 26, CLAUDE.md F9.3/F9.4) ────────────────────────
+//
+// "Where two runs meet at an angle (a wall unit meeting a tall unit), the
+// profile mitres internally at 45°, as it already does externally at an open
+// end. Four cases total: run, stop at a wall, open-end return, corner."
+//
+// Three of the four were already `runEnd`'s: a `run` is a length that simply
+// continues, a `wall` is a square stop, an `open` end turns the corner and
+// returns to the back wall. The fourth is this one — the end is not empty and
+// is not a wall, it is ANOTHER PIECE OF THE SAME MOULDING finishing flush, and
+// a joiner cuts both at 45° and closes the corner.
+//
+// ─── AND WHEN IT REFUSES (F9.4, BLOCKERS #92) ───────────────────────────────
+//
+// "When the two units differ in depth (wall 350 against tall 578) the cornice
+// cannot simply mitre — the owner has not said whether he steps it or carries
+// the deeper line and returns. Ship the mitre for equal depths, refuse (with a
+// plain message) for unequal ones, and ask in BLOCKERS."
+//
+// So it refuses, out loud. A 45° between two different projections is not a
+// 45° at all — the two sections do not meet along a line — and drawing one
+// would be the app answering a workshop question nobody has asked it to.
+
+/**
+ * Does this end of a cornice run meet another one, and may they mitre?
+ *
+ * @param {object} args
+ *   mine    { height, depth, top } — this run's moulding at this end
+ *   theirs  the same for whatever it meets, or null for "nothing there"
+ * @returns {null|{kind:'corner', mitre:boolean, refused?:boolean,
+ *                 message?:string, with?:string}}
+ *   `null` is "this is not a corner", which leaves `runEnd`'s own answer
+ *   standing. A refusal is a corner that exists and cannot be cut.
+ */
+export function corniceCorner({ mine, theirs }, profile) {
+  if (!mine || !theirs) return null;
+  const C = profile?.autoParts?.cornice || {};
+  const tolerance = Math.max(0, Number(C.cornerToleranceMm ?? 2));
+  const mineH = corniceOption(mine.height, profile);
+  const theirsH = corniceOption(theirs.height, profile);
+  if (!mineH || !theirsH) return null;
+
+  // TOPS MUST MEET. A moulding that finishes 300 mm above its neighbour's is
+  // not in a corner with it — it runs past, over the top, and `runEnd` has
+  // already said what that is.
+  if (Math.abs((Number(mine.top) || 0) - (Number(theirs.top) || 0)) > tolerance) return null;
+
+  const withId = theirs.unitId || null;
+
+  // TWO DIFFERENT MOULDINGS cannot be mitred to each other: a 70 and a 100 are
+  // two profiles and no single 45° joins them.
+  if (mineH !== theirsH) {
+    return {
+      kind: 'corner',
+      mitre: false,
+      refused: true,
+      with: withId,
+      message: `The ${mineH} mm cornice meets a ${theirsH} mm one at this corner. `
+        + 'Two heights are two mouldings and no 45° joins them — put the same height on both, '
+        + 'or stop one against the other.',
+    };
+  }
+
+  // …and the owner's own open question: DIFFERENT DEPTHS.
+  const a = Math.max(0, Number(mine.depth) || 0);
+  const b = Math.max(0, Number(theirs.depth) || 0);
+  if (Math.abs(a - b) > tolerance) {
+    return {
+      kind: 'corner',
+      mitre: false,
+      refused: true,
+      with: withId,
+      message: `A ${Math.round(a)} mm deep run meets a ${Math.round(b)} mm deep one at this corner. `
+        + 'A 45° between two different projections does not close, and whether the moulding steps '
+        + 'or carries the deeper line and returns is a workshop decision nobody has made yet '
+        + '(BLOCKERS #92). The corner is left square until it is.',
+    };
+  }
+
+  return { kind: 'corner', mitre: true, with: withId };
+}
+
+/**
+ * Every refusal this element carries, as sentences a surface can print.
+ *
+ * A refusal is not a warning about the FURNITURE — nothing is cut wrong — it is
+ * the app saying which joint it has declined to draw and why. It is gathered
+ * here so a panel, a toast and a test all read the same list.
+ */
+export function corniceRefusals(element) {
+  if (!element || element.role !== 'owner') return [];
+  return ['left', 'right']
+    .map((side) => (element.corners?.[side]?.refused
+      ? { side, message: element.corners[side].message, with: element.corners[side].with }
+      : null))
+    .filter(Boolean);
 }
 
 /**
@@ -329,23 +459,81 @@ export function runCorniceParams(runs, {
 }, profile) {
   const out = new Map((units || []).map((u) => [u.id, null]));
   const depthOf = frontFaceDepthOf || (() => 0);
+
+  // ─── TURN 26 (CLAUDE.md F9.2/F9.3): EVERY SEGMENT IN THE ROOM, FIRST ─────
+  //
+  // "A cornice run continues across ANY adjacent cornice-bearing unit whose
+  // top edges meet — tall and wall alike, not just floor-standing."
+  //
+  // A wall unit and a tall unit are on different MOUNTS, so `buildRuns` puts
+  // them in different runs by construction — which is exactly why F9.3 speaks
+  // of "two runs meeting at an angle". The corner therefore cannot be decided
+  // inside one run's pass, and this is why the segments are gathered before any
+  // of them is turned into an element.
+  const gathered = [];
   for (const run of runs) {
     for (const segment of corniceSegments(run, profile)) {
       const first = segment.units[0];
       const last = segment.units[segment.units.length - 1];
-      const wallWidth = walls?.[run.wall]?.width ?? 0;
-      const element = segmentCornice(segment, {
-        wall: run.wall,
-        mount: run.mount,
-        wallWidth,
-        roomHeight,
-        frontFaceDepth: { left: depthOf(first), right: depthOf(last) },
-        infillHeightOf,
-      }, profile);
-      if (!element) continue;
-      out.set(first.id, element);
-      for (const u of segment.units.slice(1)) out.set(u.id, { role: 'member', ownerId: first.id });
+      const span = {
+        left: paddedSpan(first).left,
+        right: paddedSpan(last).right,
+      };
+      gathered.push({
+        run,
+        segment,
+        first,
+        last,
+        span,
+        height: segment.height,
+        top: corniceStackTop({
+          unitTop: unitTop(first, profile),
+          infillHeight: segment.units.reduce(
+            (m, u) => Math.max(m, Number(infillHeightOf ? infillHeightOf(u) : u.params?.top_infill_mm) || 0),
+            0,
+          ),
+          height: segment.height,
+        }),
+      });
     }
+  }
+
+  // What each segment MEETS at each of its ends: another segment on the same
+  // wall whose far edge touches this one's near edge. `cornerToleranceMm` is
+  // what makes a scribe gap not a step.
+  const touch = Math.max(0, Number(profile?.autoParts?.cornice?.cornerToleranceMm ?? 2));
+  const neighbourOf = (me, side) => {
+    for (const other of gathered) {
+      if (other === me) continue;
+      if (other.run.wall !== me.run.wall) continue;
+      const meets = side === 'left'
+        ? Math.abs(other.span.right - me.span.left) <= touch
+        : Math.abs(other.span.left - me.span.right) <= touch;
+      if (!meets) continue;
+      return {
+        unitId: other.first.id,
+        height: other.height,
+        top: other.top,
+        depth: depthOf(side === 'left' ? other.last : other.first),
+      };
+    }
+    return null;
+  };
+
+  for (const me of gathered) {
+    const wallWidth = walls?.[me.run.wall]?.width ?? 0;
+    const element = segmentCornice(me.segment, {
+      wall: me.run.wall,
+      mount: me.run.mount,
+      wallWidth,
+      roomHeight,
+      frontFaceDepth: { left: depthOf(me.first), right: depthOf(me.last) },
+      infillHeightOf,
+      neighbourAt: { left: neighbourOf(me, 'left'), right: neighbourOf(me, 'right') },
+    }, profile);
+    if (!element) continue;
+    out.set(me.first.id, element);
+    for (const u of me.segment.units.slice(1)) out.set(u.id, { role: 'member', ownerId: me.first.id });
   }
   return out;
 }

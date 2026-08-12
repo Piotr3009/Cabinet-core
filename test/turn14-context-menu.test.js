@@ -61,8 +61,13 @@ test('F6.3 — the sections are [top infill + plinth] | [all end panels] | [the 
 test('F6.3 — a WALL unit’s run group carries the masking panel with the top infill', () => {
   const groups = groupedActions(menu('WUD'));
   const runPieces = groups.find((g) => g.id === 'run-pieces').actions.map((a) => a.id);
-  assert.deepEqual(runPieces, ['top-infill', 'bottom-mask'],
-    'what closes the gap above, and what closes the underside — one question at two heights');
+  // ─── TURN 26 (CLAUDE.md F9.2): …AND THE CORNICE JOINS THEM ──────────────
+  // "A cornice run continues across ANY adjacent cornice-bearing unit whose
+  // top edges meet — tall and wall alike." A run of wall units finishes at the
+  // same height as the tall unit beside it and takes the same moulding, so the
+  // three entries are offered here exactly as they are on a tall unit.
+  assert.deepEqual(runPieces, ['top-infill', 'cornice-0', 'cornice-70', 'cornice-100', 'bottom-mask'],
+    'what closes the gap above, what finishes it, and what closes the underside');
   assert.ok(!runPieces.includes('plinth'), 'a hanging cabinet stands on nothing');
 });
 

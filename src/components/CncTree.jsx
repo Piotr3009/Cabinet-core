@@ -217,6 +217,10 @@ export default function CncTree() {
                 type="button"
                 className="text-ink-400 text-[10px] w-4"
                 aria-expanded={isOpen}
+                // Turn 25: the acceptance walk opens the branch with a real
+                // click before reading the four groups (CLAUDE.md F7), and a
+                // caret with no name of its own is a caret nothing can aim at.
+                data-cnc-branch={unit.id}
                 title={isOpen ? 'Hide the parts' : 'Show the parts'}
                 onClick={() => setOpen((prev) => {
                   const next = new Set(prev);

@@ -334,7 +334,11 @@ export function MovingPanel({
           a door's pivot is its hinge edge while a drawer front's is its middle
           — one formula, in the one place that already knows which. */}
       {p.meta?.handle && (
-        <FrontHandle panel={p} profile={profile} pivot={pivot} surface="room" scope={p.id} />
+        // The surface is the PANEL's own, not `<Hardware>`'s: a handle is
+        // mounted by the front it is screwed through, and reporting it on the
+        // room surface would let `<Hardware>`'s unmount clear it (turn 21's
+        // registry clears a whole surface at once).
+        <FrontHandle panel={p} profile={profile} pivot={pivot} surface="room-front" scope={p.id} />
       )}
       {/* ─── Turn 16 (CLAUDE.md F8): THE PIECE SAYS WHICH PIECE IT IS ───
           The wall-units-do-not-shine diagnosis has to READ the scene — "read

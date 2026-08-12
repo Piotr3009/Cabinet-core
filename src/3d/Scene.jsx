@@ -14,6 +14,7 @@ import DistanceArrows from './DistanceArrows.jsx';
 import AddPlus from './AddPlus.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
 import { useViewHandle } from './viewHandle.js';
+import { balanceRig, brightnessScale } from '../engine/lighting.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
 import {
@@ -215,7 +216,9 @@ export function Environment({ intensity, on }) {
  * fractions of the rig distance, exactly as the key, fill, rim and points are,
  * so the whole rig scales with the job instead of being tuned for one kitchen.
  */
-function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
+function Lights({
+  roomHeight, roomWidth, shadow, studio, subject, brightness = 1,
+}) {
   const key = useRef(null);
   // The box the shadow map has to cover, in scene units. Falls back to the room
   // when there is no furniture yet — an empty room casts nothing, but the
@@ -267,12 +270,49 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
     });
   }, [studio.spots, keyCasts, budget]);
 
+  // ─── TURN 26 (CLAUDE.md F10): THE CEILING SOURCE, AND WHAT IT COSTS ───────
+  //
+  // "One broad ceiling source at real ceiling height above the tall units, set
+  // back 1.5 m from the fronts, medium intensity" — and "whatever is added
+  // above is SUBTRACTED from the facing spots; the scene's total luminous
+  // contribution stays as it is today. Compute it, do not eyeball it."
+  //
+  // The computation is `engine/lighting.js` and it is pure: it converts every
+  // lamp in the rig to the one comparable quantity — irradiance at the point
+  // the rig is aimed at — and hands back the ceiling lamp's candela together
+  // with the factor the two jupiters must be scaled by. This file sets the
+  // numbers and has no opinion about them, which is what lets a node test hold
+  // the identity to six decimals without a browser.
+  const balance = useMemo(() => balanceRig({
+    studio,
+    centre: fit.centre,
+    distance,
+    // The eye-level pair's heights are ABSOLUTE (turn 14, F9) and only this
+    // file can turn them into scene units.
+    pointYs: (studio.points || []).map((p) => (Number.isFinite(Number(p.yMm))
+      ? mm(Number(p.yMm))
+      : fit.centre[1] + distance * (p.y || 0))),
+    // …the furniture's own front face, its ceiling, and the owner's 1.5 m.
+    frontZ: subject ? subject.max[2] : fit.centre[2] + fit.radius,
+    // `roomHeight` arrives in SCENE units (the caller has already converted the
+    // room's millimetres); only the FALLBACK is a raw millimetre figure out of
+    // the profile, so only the fallback goes through `mm`. Converting twice put
+    // the ceiling source two and a half millimetres off the floor.
+    ceilingY: roomHeight > 0 ? roomHeight : mm(studio.ceiling?.fallbackCeilingMm ?? 2700),
+    setback: mm(studio.ceiling?.setbackMm ?? 1500),
+  }), [studio, fit, distance, subject, roomHeight]);
+
+  // ─── F10.3: THE SLIDER ───────────────────────────────────────────────────
+  // One multiplier on every lamp, so the RATIOS the rig was balanced at are
+  // exactly the ones turn 10 measured whatever it is set to.
+  const gain = Number(brightness) > 0 ? Number(brightness) : 1;
+
   return (
     <>
       {/* Tagged by ROLE, so a render can still rebalance them
           (renderCapture.js) without the capture pass guessing which is which.
           By default it does not: profile.render.lightScale is all 1s now. */}
-      <ambientLight userData={{ ccLight: 'ambient' }} intensity={studio.ambient} />
+      <ambientLight userData={{ ccLight: 'ambient' }} intensity={studio.ambient * gain} />
       {/* ─── Turn 9 (CLAUDE.md F1) ───
           The flat light, given a direction. An ambient is one number from every
           side, which is the one thing light in a room never is: what comes from
@@ -285,14 +325,14 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
         userData={{ ccLight: 'ambient' }}
         color={studio.hemisphere.sky}
         groundColor={studio.hemisphere.ground}
-        intensity={studio.hemisphere.intensity}
+        intensity={studio.hemisphere.intensity * gain}
       />
       <primitive object={target} />
       <directionalLight
         ref={key}
         userData={{ ccLight: 'key' }}
         position={[fit.centre[0] + distance * 0.55, fit.centre[1] + distance * 0.85, fit.centre[2] + distance * 0.7]}
-        intensity={studio.key}
+        intensity={studio.key * gain}
         // Turn 10 (CLAUDE.md F1.4) makes this a profile decision rather than a
         // fact of the file, because the alternative — handing the shadow to a
         // jupiter and letting the key light only — had to be tried by LOOKING.
@@ -323,7 +363,7 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
       <directionalLight
         userData={{ ccLight: 'fill' }}
         position={[fit.centre[0] - distance * 0.8, fit.centre[1] + distance * 0.5, fit.centre[2] + distance * 0.55]}
-        intensity={studio.fill}
+        intensity={studio.fill * gain}
       />
       {/* Rim, from behind and above: the light that draws a bright edge down
           the side of a white cabinet standing against a white wall. It is what
@@ -331,7 +371,7 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
       <directionalLight
         userData={{ ccLight: 'rim' }}
         position={[fit.centre[0] - distance * 0.3, fit.centre[1] + distance * 0.6, fit.centre[2] - distance * 0.9]}
-        intensity={studio.rim}
+        intensity={studio.rim * gain}
       />
       {/* ─── The jupiters (turn 10, CLAUDE.md F1) ───
           Hung in the upper front corners and aimed DOWN-ACROSS at the same fit
@@ -354,7 +394,7 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
             fit.centre[2] + distance * s.z,
           ]}
           target={target}
-          intensity={s.intensity}
+          intensity={s.intensity * balance.spotScale * gain}
           color={s.colour}
           angle={s.angle}
           penumbra={s.penumbra}
@@ -368,6 +408,31 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
           shadow-camera-near={Math.max(0.05, distance * 0.1)}
         />
       ))}
+      {/* ─── TURN 26 (CLAUDE.md F10.1): THE CEILING ─────────────────────────
+          One broad source at real ceiling height, set back 1.5 m from the
+          fronts, aimed at the same fit centre the whole rig is aimed at. Its
+          candela is DERIVED (`engine/lighting.js`) from the share it takes off
+          the two jupiters above, so the room gains a direction without gaining
+          a lumen — which is the owner's constraint and is asserted to six
+          decimals in `test/turn26-f10-lighting.test.js`.
+
+          It casts no shadow: the budget (`studio.shadowCasters`) is untouched,
+          and a broad source at 2.7 m throws a soft one straight down that the
+          furniture already hides. */}
+      {balance.enabled && balance.ceiling && (
+        <spotLight
+          userData={{ ccLight: 'ceiling' }}
+          position={balance.ceiling.position}
+          target={target}
+          intensity={balance.ceiling.intensity * gain}
+          color={balance.ceiling.colour}
+          angle={balance.ceiling.angle}
+          penumbra={balance.ceiling.penumbra}
+          distance={distance * (studio.spotReach ?? 4)}
+          decay={2}
+          castShadow={false}
+        />
+      )}
       {/* The glints (hotfix 08.08; EMPTIED turn 10, CLAUDE.md F1.5). Point
           sources whose highlights move across a door as the camera orbits —
           which the F4 orbit test showed the spots already do on their own, so
@@ -394,7 +459,7 @@ function Lights({ roomHeight, roomWidth, shadow, studio, subject }) {
             Number.isFinite(Number(p.yMm)) ? mm(Number(p.yMm)) : fit.centre[1] + distance * (p.y || 0),
             fit.centre[2] + distance * p.z,
           ]}
-          intensity={p.intensity}
+          intensity={p.intensity * gain}
           color={p.colour}
           distance={distance * (studio.pointReach ?? 3)}
           decay={2}
@@ -710,6 +775,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const showHinges = useUiStore((s) => s.showHinges);
   const hideFronts = useUiStore((s) => s.hideFronts);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
+  // Turn 26 (CLAUDE.md F10.3): the View menu's brightness, remembered.
+  const brightness = useUiStore((s) => s.brightness);
   const profile = useCabinetProfileStore((s) => s.profile);
 
   // `units` is the subscription that drives the re-render; allResults() is a
@@ -861,6 +928,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         shadow={profile.render.shadow.normal}
         studio={studio}
         subject={subject}
+        // Turn 26 (CLAUDE.md F10.3): the View menu's slider, remembered.
+        brightness={brightnessScale(brightness, profile)}
       />
       <ShadowFit signal={results} unitsRef={unitGroups} onFit={setSubject} />
       {/* ─── Turn 17 (CLAUDE.md F11): the ruler ───

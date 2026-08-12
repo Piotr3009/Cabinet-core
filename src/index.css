@@ -28,6 +28,17 @@
   .cc-btn-ghost {
     @apply px-2 py-1 rounded text-sm text-ink-200 hover:text-gold hover:bg-shell-700 transition-colors;
   }
+  /* ─── TURN 26 (CLAUDE.md F12.2): BACK, IN A WORKSPACE ────────────────────
+     "Back moves to the top centre of the modal, large." A maximised editor
+     fills the screen, and a ghost button 4 px from the left edge of a 1900 px
+     header is a button nobody finds — while "out of here" is the first thing
+     a hand looks for. So in a workspace it is centred and it is a real button:
+     the app's own bordered style at a size the eye lands on. Every side dialog
+     keeps the quiet one beside its title. */
+  .cc-editor-back {
+    @apply px-5 py-2 rounded text-base font-medium border border-gold text-gold bg-shell-700
+           hover:bg-gold hover:text-shell-900 transition-colors;
+  }
   .cc-panel {
     @apply bg-shell-800 border border-shell-600 rounded-lg shadow-panel;
   }

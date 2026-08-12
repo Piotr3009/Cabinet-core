@@ -1,0 +1,211 @@
+{
+ "turn": 26,
+ "url": "http://127.0.0.1:4173/",
+ "showroom": "http://127.0.0.1:4174",
+ "rules": {
+  "R1": "every click, move, wheel and keystroke is CDP Input; the guard at the top of this file enforces it",
+  "R2": "scripts/bucket-live.mjs, before any picture of hardware",
+  "R4": "hardware urls, counts, members, parents and finishes read from window.__cc.hardware",
+  "R5": "the console is captured for the whole walk",
+  "R6": "any uncaught error or React error-boundary report FAILS the step it appeared in",
+  "R7": "no data-* on R3F objects — asserted in test/turn23-f2-f4-hardware.test.js and test/turn24-f8-f12.test.js",
+  "R8": "GLB-dependent steps run against the synthetic silent showroom",
+  "R9": "no feature without its part — swept per drilling class in the suite",
+  "R10": "the parity is measured off BOTH sides at once: the panel's own cnc/drills, and engine/recesses.js, the function 3d/panelSolid.js cuts the board with",
+  "R11": "every dimension in the scene is found by traversing for ccDimensionChain — the one component"
+ },
+ "totals": {
+  "passed": 36,
+  "failed": 0,
+  "skipped": 1
+ },
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "R4/R8 — the mounted hinge is the GLB, over the app's OWN url",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb"
+  },
+  {
+   "label": "R4 — …and it is the SPLIT rig: member A on the door, member B on the carcass",
+   "ok": true,
+   "detail": "A×3 on the door · B×3 on the carcass"
+  },
+  {
+   "label": "F1.1 — the cup is the owner’s measured 11 mm, and the SHEET says so too",
+   "ok": true,
+   "detail": "profile 11 mm · 3 cups drilled at 11 mm"
+  },
+  {
+   "label": "F1.3 — NO part of the hinge crosses the door’s outer face, at ANY rig angle",
+   "ok": true,
+   "detail": "7 angles (0°, 15°, 30°, 45°, 60°, 90°, 99°) · members A+B · deepest reach -14.000 mm past the face"
+  },
+  {
+   "label": "F1.3 — …and on a SHAKER leaf, whose datum is the frame face and NOT the recess floor",
+   "ok": true,
+   "detail": "0°: -7 · 50°: -7 · 99°: -7"
+  },
+  {
+   "label": "F2.1 — a partition-hung leaf says WHICH partition and WHICH face it hangs on",
+   "ok": true,
+   "detail": "02-B1: BUL/— · 02-B2: VPART-1/R · 02-B3: BUR/—"
+  },
+  {
+   "label": "F2.2 — EVERY leaf in the project is on the same mount: model-backed, split, parented",
+   "ok": true,
+   "detail": "12 cups + 9 arms, all GLB · members A+B"
+  },
+  {
+   "label": "F2.2 — a partition-hung leaf FOLDS and does not pierce, at 0, half and full",
+   "ok": true,
+   "detail": "0°: members A+B, proud -7, fold 0 · 50°: members A+B, proud -7, fold -0.8639379797371931 · 99°: members A+B, proud -7, fold -1.7278759594743862"
+  },
+  {
+   "label": "R10 — every drilling the sheet carries in a drawn class is a real bore in the picture",
+   "ok": true,
+   "detail": "12 parts · 157 bores rendered from 157 records · 0 disagreements"
+  },
+  {
+   "label": "R10 — the classes deliberately NOT drawn are named, and every one carries a reason",
+   "ok": true,
+   "detail": "named in verify/t26/sheet-vs-scene.md: OUTLINE, CARCASE, PUZZLE_SOCKET, BISCUIT_4MM, SHAKER_PANEL_POCKET, UNIT_NUMBER"
+  },
+  {
+   "label": "F3.1 — the side panel’s FULL ⌀7.5 ladder is bored, EMPTY levels included",
+   "ok": true,
+   "detail": "BUL: 12 holes on 6 levels · 12 bored · 8 sleeves inside them"
+  },
+  {
+   "label": "F3.2 — …and the sleeves are FEWER than the holes: the hole is the panel’s, the sleeve the hardware’s",
+   "ok": true,
+   "detail": "8 sleeves in 12 holes"
+  },
+  {
+   "label": "F3.1 — …and the detail window shows the ladder and the sheet in one frame",
+   "ok": true,
+   "detail": "piece drawn · sheet drawn · 0 cut-face buffers on the board"
+  },
+  {
+   "label": "R11 — every dimension in the scene is drawn by the ONE chain component",
+   "ok": true,
+   "detail": "9 chains · 17 rows"
+  },
+  {
+   "label": "F4.3 — …and it reads to HALF a millimetre, which is what a 3 mm gap needs",
+   "ok": true,
+   "detail": "step 0.5 mm · 3 · 2.5 · 881.5 · 0.5"
+  },
+  {
+   "label": "F5.1 — the D/W front starts from the BOTTOM, level with its neighbours; the gap is at the TOP",
+   "ok": true,
+   "detail": "D/W front at y 0 · its neighbour at 0"
+  },
+  {
+   "label": "F5.3 — no cup hinges and NO CUP DRILLING: the panel screws to the appliance door",
+   "ok": true,
+   "detail": "0 cups · 0 plate holes"
+  },
+  {
+   "label": "F5.5 — …and it is a FRONT for everything a front has: the shaker applies to it",
+   "ok": true,
+   "detail": "frame 70, recess 6"
+  },
+  {
+   "label": "F5.2 — it drops FORWARD about its bottom edge, ~90°, and not sideways",
+   "ok": true,
+   "detail": "opening \"drop-front\" at 90° · x -90° · y 0°"
+  },
+  {
+   "label": "F6 — the frame, the panel floor and the four rebate walls are ONE material instance",
+   "ok": true,
+   "detail": "1 material · 0 geometry groups · 1326 vertices · #f2f0ec"
+  },
+  {
+   "label": "F10.1 — there is ONE broad ceiling source, and it hangs 1.5 m back from the fronts",
+   "ok": true,
+   "detail": "at [-0.15, 2.50, -2.41] m in a 2500 mm room, cone 1.05 rad, penumbra 0.9"
+  },
+  {
+   "label": "F10.2 — …and it is SUBTRACTED from the facing spots: the sum is the ledger in lighting.md",
+   "ok": true,
+   "detail": "share 0.35 of the spots' contribution"
+  },
+  {
+   "label": "F10.3 — the View menu carries a brightness slider, and dragging it moves the scene",
+   "ok": true,
+   "detail": "0.5 → 0.65"
+  },
+  {
+   "label": "F7.1 — the fix shelf’s sheet is a bare rectangle: an outline and a label, nothing else",
+   "ok": true,
+   "detail": "outline 1 · 0 pockets · 0 marks · 0 drills"
+  },
+  {
+   "label": "F7.2 — the joint moved into the bearers, and the BACK carries the ⌀3 on the shelf’s axis",
+   "ok": true,
+   "detail": "3 ⌀3 in the BACK"
+  },
+  {
+   "label": "F8 — every shelf lies ALONG THE GRAIN: length left-to-right, like the sides",
+   "ok": true,
+   "detail": "drawn 520×864 from a board 864×520"
+  },
+  {
+   "label": "F9.1 — the cornice toggle really adds one, and the scene draws it",
+   "ok": true,
+   "detail": "100 mm, 65 mm projection · 2 runs, 5 members swept"
+  },
+  {
+   "label": "F9.2 — …and a WALL unit joins the run: a cornice is not floor-standing-only",
+   "ok": true,
+   "detail": "wall unit takes 100 mm and sweeps 100 · corner resolver present"
+  },
+  {
+   "label": "F11 — a 770 opening with three 200 fronts raises SHORT, and the sentence NAMES the number",
+   "ok": true,
+   "detail": "The drawer fronts leave 161 mm of the opening uncovered — the stack is 609 mm in a 770 mm face."
+  },
+  {
+   "label": "F11 — …and the owner can SEE it: it is on the panel, in the app’s warning tone",
+   "ok": true,
+   "detail": "▲The drawer fronts leave 161 mm of the opening uncovered — the stack is 609 mm in a 770 mm face."
+  },
+  {
+   "label": "F12.2 — Back is at the TOP CENTRE of the editor, and it is a real button",
+   "ok": true,
+   "detail": "\"← Back\" centred at 849 of 1600"
+  },
+  {
+   "label": "F12.1 — the layer list is OFF the toolbar; nobody has been asked yet",
+   "ok": true,
+   "detail": "gone"
+  },
+  {
+   "label": "F12.3 — the split is 25 % view / 75 % sheet",
+   "ok": true,
+   "detail": "25/75 · view 378px, sheet 1121px"
+  },
+  {
+   "label": "F12.4 — Delete is disabled because NOTHING IS PICKED — state, not a bug",
+   "ok": true,
+   "detail": "disabled: true"
+  },
+  {
+   "label": "R5 + R6 — the console is clean across the whole walk",
+   "ok": true,
+   "detail": "no errors, no React exceptions"
+  }
+ ],
+ "errors": []
+}

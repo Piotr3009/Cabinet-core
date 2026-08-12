@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { mm } from './constants.js';
 import { runnerEntry, runnerModelSrc } from '../engine/runners.js';
-import { hingeModelSrc, plateFamily, resolveDoorHinge } from '../engine/hinges.js';
+import { hingeModelSrc } from '../engine/hinges.js';
 import { clearHardwareSurface, reportHardware } from './hardwareRegistry.js';
 import {
   onRunnerLoad, runnerModel, runnerModelFits, runnerSource,
@@ -369,6 +369,25 @@ function CarcassHinges({
     items, specs, kind: 'body', profile, storageBase,
   });
 
+  // ─── TURN 26 (CLAUDE.md F1.3): WHICH LEAF THIS HINGE BELONGS TO ──────────
+  //
+  // A DIAGNOSTIC, and the reason it exists is the no-pierce guarantee. A room
+  // with six cabinets in it has sixty hinge members in one scene graph, and
+  // "no part of THE HINGE crosses THE DOOR's outer face" is a claim about one
+  // leaf and its own three. Without this the acceptance walk would be
+  // measuring the cabinet next door and calling it a pierce. Stamped on the
+  // clone rather than passed as a prop because `<primitive>` hands the object
+  // straight to three and a `userData` prop would replace the split's own.
+  // Nothing in the app reads it back.
+  useEffect(() => {
+    models.forEach((m, i) => {
+      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+    });
+    bodies.forEach((m, i) => {
+      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+    });
+  }, [models, bodies, items]);
+
   // ─── TURN 21 (CLAUDE.md R4 / F2.3) ───
   // What the walk is allowed to believe: the exact url string this component
   // handed the loader, and whether the GLB or the stand-in is what is drawn.
@@ -461,46 +480,14 @@ function HingeBody({
   return <primitive object={object} position={position} />;
 }
 
-/**
- * WHICH MODEL EACH DOOR'S HINGES WEAR, keyed by the door's panel id
- * (turn 19, CLAUDE.md F1.6).
- *
- * The view asks the ENGINE, once per unit, and hands the answer down — so the
- * hinge in the picture, the article in the BOM and the angle in the hinge modal
- * are one resolution rather than three. A catalogue that has not been read
- * gives an empty map, and the whole of the 3D falls back to the procedural body
- * without a branch anywhere else.
- *
- * @param {object} args
- *   result   computeCabinet() output
- *   unit     the project unit (its params carry the per-door exceptions)
- *   finish   the project's hinge finish
- *   plate    the project's mounting plate
- * @returns {object} { [panelId]: { file, plateFile, family, angle, article } }
- */
-export function hingeSpecsFor({
-  result, unit, finish = null, plate = null,
-}) {
-  const out = {};
-  const doors = (result?.panels || []).filter((p) => p.part === 'FRONT' && p.role === 'front');
-  if (!doors.length) return out;
-  const plateEntry = plateFamily({ plate, finish });
-  const innerDrawer = unit?.type === 'WARDROBE' && Number(result?.derived?.drawers) > 0;
-  for (const door of doors) {
-    const spec = resolveDoorHinge({
-      assigned: unit?.params?.door_hinges?.[door.id] || null,
-      frontThickness: door.thickness,
-      innerDrawer,
-      finish,
-    });
-    out[door.id] = {
-      ...spec,
-      file: spec.file || null,
-      plateFile: plateEntry?.file || null,
-    };
-  }
-  return out;
-}
+// ─── WHICH MODEL EACH DOOR'S HINGES WEAR ────────────────────────────────────
+//
+// `hingeSpecsFor` moved to `engine/hinges.js` in turn 26 (CLAUDE.md F2.2). It
+// is pure — a resolution over the engine's own panels and the catalogue — and
+// it had no business living in a `.jsx` file where a node test cannot import
+// it, which is exactly why the pair could not assert the MOUNT. Re-exported
+// here so every existing caller is unchanged.
+export { hingeSpecsFor } from '../engine/hinges.js';
 
 /**
  * The DOOR half: the whole hinge BODY — the ⌀35 cup in its bore, the boss
@@ -575,6 +562,15 @@ export function DoorHinges({
   const { urls, models } = useHingeModels({
     items, specs, kind: 'cup', profile, storageBase,
   });
+
+  // Turn 26 (CLAUDE.md F1.3): which LEAF each cup belongs to, for the same
+  // reason member B carries it — a no-pierce claim is about ONE door and its
+  // own hinges, and a room full of cabinets is a scene full of everyone's.
+  useEffect(() => {
+    models.forEach((m, i) => {
+      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+    });
+  }, [models, items]);
   // …and the other half of F1.4: with the flag off, an opening door HIDES the
   // model beyond ~15° and shows the plate only. A wrong pose held on screen is
   // worse than an honest absence, and this is the owner's own fallback.
@@ -609,10 +605,21 @@ export function DoorHinges({
     mm(x) - pivot[0], mm(y) - pivot[1], mm(z) - pivot[2],
   );
 
-  // Into the door, from its back face.
+  // ─── TURN 26 (CLAUDE.md F1.1/F1.2): INTO THE BORE, AND NO FURTHER ────────
+  //
+  // `h.z` is the leaf's MOUNTING DATUM — its inner face, resolved once by
+  // `engine/doors.js doorHingeDatum` — and `h.cupDepth` is the owner's 11 mm
+  // already clamped to that leaf's own board. This component no longer reads
+  // the catalogue depth for itself: a second reading of one number is exactly
+  // how a 12.5 mm cylinder came to be drawn into an 18 mm door.
   const placeCup = useMemo(() => (i, m) => {
     const h = items[i];
-    put(m, local(h.x, h.y, h.z + H.cupDepth / 2), laid);
+    const depth = Number(h.cupDepth) || 0;
+    // The geometry is cut to the catalogue depth and shared by every cup in the
+    // unit; a leaf whose board forced the clamp scales its own instance along
+    // the bore's axis (the cylinder's own y, before `laid` turns it into z).
+    const stretch = H.cupDepth > 0 ? depth / H.cupDepth : 1;
+    put(m, local(h.x, h.y, h.z + depth / 2), laid, new THREE.Vector3(1, stretch, 1));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, H.cupDepth, laid, pivot[0], pivot[1], pivot[2]]);
 
@@ -1200,6 +1207,36 @@ export function ShelfSupports({ items, profile, metal }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, S.sleeveFlange],
   );
+  // ─── TURN 26 (CLAUDE.md F3.2): THE PART THAT IS IN THE HOLE ───────────────
+  //
+  // "Sleeves and pins mount INSIDE the holes that actually carry a shelf. The
+  // hole is the panel's; the sleeve is the hardware's."
+  //
+  // Until this turn there was no hole to be inside — the scene bored none — so
+  // the collar was a rim standing on a blank face. The barrel goes the other
+  // way along the normal, into the board, and it is never longer than the bore
+  // the machine actually cuts (`holeDepth`, read off the record by
+  // `engine/hardware3d.js`). Its DIAMETER is the drilling's own, per instance,
+  // because a sleeve that did not fit its hole is the parallel idea R10 forbids.
+  const placeBarrel = useMemo(
+    () => (i, m) => {
+      const it = items[i];
+      const deep = Math.max(0, Math.min(S.sleeveDepth ?? 0, it.holeDepth ?? S.sleeveDepth ?? 0));
+      if (!(deep > 0)) { put(m, new THREE.Vector3(0, -1e6, 0)); return; }
+      const n = new THREE.Vector3(it.normal[0], it.normal[1], it.normal[2]).normalize();
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+      const at = new THREE.Vector3(
+        mm(it.x) - n.x * mm(deep / 2),
+        mm(it.y) - n.y * mm(deep / 2),
+        mm(it.z) - n.z * mm(deep / 2),
+      );
+      // The unit cylinder is scaled to the HOLE, so one geometry serves a ⌀7.5
+      // system and whatever the next workshop drills.
+      put(m, at, q, new THREE.Vector3(mm(it.diameter), mm(deep), mm(it.diameter)));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, S.sleeveDepth],
+  );
   const placePin = useMemo(
     () => placeAt(S.pinLength / 2, S.pinLength),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1215,7 +1252,20 @@ export function ShelfSupports({ items, profile, metal }) {
   const r = (d) => mm(d / 2);
   return (
     <group userData={{ ccHardware: true, ccShelfSupports: items.length }}>
-      {/* The collar in the hole — the piece that shows when the shelf is out. */}
+      {/* The barrel, INSIDE the bore the machine cuts (F3.2). Unit-sized and
+          scaled per instance to the hole's own diameter, so the fitting can
+          never be a different size from the hole it lines. */}
+      <Pieces
+        count={items.length}
+        place={placeBarrel}
+        colour={metal.colour}
+        metalness={metal.metalness}
+        roughness={metal.roughness}
+      >
+        <cylinderGeometry args={[0.5, 0.5, 1, 16]} />
+      </Pieces>
+      {/* …and its RIM, on the face — the piece that shows when the shelf is
+          out, and what the owner is asking to see. */}
       <Pieces
         count={items.length}
         place={placeSleeve}

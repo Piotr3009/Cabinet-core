@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { mm } from './constants.js';
-import DimLabel from './DimLabel.jsx';
-import { dimensionEntities, dimensionStyle } from '../engine/dimensionArrows.js';
+import DimensionChain from './DimensionChain.jsx';
+import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { pieceHoverRows } from '../engine/hoverRows.js';
 import { bayGapsAround } from '../engine/partitionPositions.js';
 
@@ -28,26 +28,15 @@ import { bayGapsAround } from '../engine/partitionPositions.js';
 // and the render's bounds already skip — and NOT a `data-*` attribute, which
 // crashes the R3F reconciler (the ruler marker's own bug, two turns running).
 // A walk finds these by traversing the scene for `ccHoverDimension`.
-
-/** One thin bar between two points in the cabinet's own X–Y plane, at z. */
-function Stroke({
-  from, to, z, weight, colour,
-}) {
-  const dx = to[0] - from[0];
-  const dy = to[1] - from[1];
-  const length = Math.hypot(dx, dy);
-  if (!(length > 1e-6)) return null;
-  return (
-    <mesh
-      position={[(from[0] + to[0]) / 2, (from[1] + to[1]) / 2, z]}
-      rotation={[0, 0, Math.atan2(dy, dx)]}
-      userData={{ ccHelper: true, ccNoBounds: true }}
-    >
-      <boxGeometry args={[length, weight, weight * 0.6]} />
-      <meshBasicMaterial color={colour} toneMapped={false} />
-    </mesh>
-  );
-}
+//
+// ─── TURN 26 (CLAUDE.md R11): AND THE DRAWING ITSELF MOVED OUT ─────────────
+//
+// This file used to own a `Stroke`, a `DimLabel` and the loop that turned a
+// dimension into meshes — which is one of the three implementations R11
+// abolishes. It computes POINTS now and hands them to `3d/DimensionChain.jsx`,
+// the one component. What it kept is the only thing that was ever its own:
+// WHICH numbers are worth reading off a hovered piece, and the magnet volume
+// that keeps them on screen.
 
 /**
  * The clear bays either side of one hovered partition.
@@ -84,9 +73,9 @@ export default function HoverDimensions({
       const set = pieceHoverRows(result, panelId, profile);
       if (!set) return null;
       return {
-        rows: set.rows.map((r) => dimensionEntities({
-          from: r.from, to: r.to, offset: r.offset ?? 0, style,
-        })).filter(Boolean),
+        rows: set.rows.map((r, i) => ({
+          key: r.key ?? `p${i}`, from: r.from, to: r.to, offset: r.offset ?? 0,
+        })),
         z: set.z,
         mid: set.mid,
         own: me.box,
@@ -117,17 +106,13 @@ export default function HoverDimensions({
     // fixed 80 mm is clear on a wardrobe bay and off the bottom of a 300 mm one.
     const y = me.box.y + me.box.h * (0.5 - style.chainDropFraction);
     const z = me.box.z + me.box.d;
-    const rows = gaps
-      .map((gap) => dimensionEntities({
-        from: [gap.from, y], to: [gap.to, y], offset: 0, style,
-      }))
-      .filter(Boolean);
+    const rows = gaps.map((gap, i) => ({
+      key: `bay${i}`, from: [gap.from, y], to: [gap.to, y], offset: 0,
+    }));
     return { rows, z, mid: y, own };
   }, [panelId, result, style]);
 
   if (!drawing) return null;
-  const weight = mm(style.strokeMm * 2);
-
   const magnet = mm(style.hoverMagnetMm);
 
   return (
@@ -138,56 +123,41 @@ export default function HoverDimensions({
           board's own `onPointerOut` is what made it happen.
           "Once shown, the arrow set STAYS while the cursor remains within
           `profile.editor.hoverMagnetMm` of the feature — leave the radius,
-          they fade." So this is that radius, as a volume: the partition's own
-          box grown by the magnet on every side, invisible but raycast, and
-          MOUNTED ONLY WHILE THE SET IS SHOWING — so it can never swallow a
-          click on a cabinet nobody is measuring. */}
-      <mesh
-        position={[
-          mm(drawing.own.x + drawing.own.w / 2),
-          mm(drawing.own.y + drawing.own.h / 2),
-          mm(drawing.own.z + drawing.own.d / 2),
-        ]}
-        userData={{ ccHelper: true, ccNoBounds: true, ccHoverMagnet: panelId }}
-        onPointerOut={() => onLeave?.()}
+          they fade." So this is that radius, as a volume: the piece's own box
+          grown by the magnet on every side, invisible but raycast, and MOUNTED
+          ONLY WHILE THE SET IS SHOWING — so it can never swallow a click on a
+          cabinet nobody is measuring.
+
+          Turn 26 (F4.4): "turn 25's magnet stays." It does, unchanged; what
+          moved out of this file is the DRAWING. */}
+      <DimensionChain
+        rows={drawing.rows}
+        style={style}
+        plane="xy"
+        at={drawing.z + style.strokeMm * 2}
+        name={panelId}
       >
-        <boxGeometry args={[
-          mm(drawing.own.w) + magnet * 2,
-          mm(drawing.own.h) + magnet * 2,
-          mm(drawing.own.d) + magnet * 2,
-        ]}
-        />
-        {/* Transparent rather than `visible={false}`: three.js does not raycast
-            an invisible object at all, and a magnet nothing can point at is not
-            a magnet. */}
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
-      {drawing.rows.map((row, i) => (
-        // eslint-disable-next-line react/no-array-index-key -- a bay has no id of its own
-        <group key={i} userData={{ ccHelper: true, ccNoBounds: true }}>
-          {row.segments.map(([a, b], j) => (
-            <Stroke
-              // eslint-disable-next-line react/no-array-index-key -- nor does a segment
-              key={j}
-              from={[mm(a[0]), mm(a[1])]}
-              to={[mm(b[0]), mm(b[1])]}
-              z={mm(drawing.z) + weight}
-              weight={weight}
-              colour={style.colour}
-            />
-          ))}
-          {/* The value, on the line — the scene's own label sprite, in the
-              hover ink rather than the dimension red, so it reads as the
-              moment it is. */}
-          <DimLabel
-            position={[mm(row.text.at[0]), mm(row.text.at[1]), mm(drawing.z) + weight * 2]}
-            text={String(Math.round(row.value))}
-            colour={style.colour}
-            variant="flat"
-            scale={0.8}
+        <mesh
+          position={[
+            mm(drawing.own.x + drawing.own.w / 2),
+            mm(drawing.own.y + drawing.own.h / 2),
+            mm(drawing.own.z + drawing.own.d / 2),
+          ]}
+          userData={{ ccHelper: true, ccNoBounds: true, ccHoverMagnet: panelId }}
+          onPointerOut={() => onLeave?.()}
+        >
+          <boxGeometry args={[
+            mm(drawing.own.w) + magnet * 2,
+            mm(drawing.own.h) + magnet * 2,
+            mm(drawing.own.d) + magnet * 2,
+          ]}
           />
-        </group>
-      ))}
+          {/* Transparent rather than `visible={false}`: three.js does not
+              raycast an invisible object at all, and a magnet nothing can
+              point at is not a magnet. */}
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      </DimensionChain>
     </group>
   );
 }

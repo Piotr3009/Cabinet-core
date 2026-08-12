@@ -1017,6 +1017,17 @@ export const DEFAULT_CABINET_PROFILE = {
     // starts this far below the plinth's top edge and runs out of its bottom,
     // which is what leaves the toe kick in one piece across the opening.
     plinthCutFromTop: 20,
+    // ─── TURN 26 (CLAUDE.md F5.2): IT DROPS, IT DOES NOT SWING ────────────
+    //
+    // Owner: "it opens sideways." It did — the scene reads a FRONT and swings
+    // one, and a D/W panel is a front. But this one is screwed to the
+    // appliance's own door: it falls FORWARD about its BOTTOM edge, about 90°,
+    // and there is no cup hinge in it anywhere.
+    //
+    // Ninety and not a degree more: past square the machine's door is
+    // travelling back UNDER the cabinet, and the number a joiner cares about is
+    // "will it clear the plinth", which is what square answers.
+    openAngleDeg: 90,
   },
 
   // ─── OVEN BASE UNIT (turn 17, CLAUDE.md F10) ────────────────────────────
@@ -1279,6 +1290,13 @@ export const DEFAULT_CABINET_PROFILE = {
       // rule, for the same reason: below this the mitre is longer than the
       // piece.
       minReturn: 60,
+      // ─── TURN 26 (CLAUDE.md F9.3/F9.4): WHEN IS IT A CORNER? ─────────────
+      // How close two mouldings have to be — in TOP and in DEPTH — to be
+      // treated as meeting. Two millimetres is a scribe, not a step: a run
+      // fitted to a bowed wall is not a different depth from its neighbour and
+      // must not be refused as one. Past it the two really are different
+      // pieces and the corner is refused out loud (BLOCKERS #92).
+      cornerToleranceMm: 2,
     },
   },
 
@@ -1377,8 +1395,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // heart, one line, and turning it on is the owner's word and nobody else's.
     // The z-fighting he saw goes with the default; the carving is RETIRED, not
     // debugged.
+    //
+    // ─── TURN 26 (CLAUDE.md R10 / F3): AND HIS WORD IS THE OTHER WAY NOW ────
+    //
+    // "cut CNC musi być twoją drogą do wizualizacji, nie na odwrót." R10
+    // outranks the retirement, and the owner's example is the reason: a side
+    // panel with three ⌀7.5 holes per level on the sheet and NO holes at all in
+    // the scene, X-ray included.
+    //
+    // What was actually wrong in turn 20 was never the carving. It was that no
+    // drilling stated a DEPTH, so every one of them read as a hole straight
+    // through the board — which is precisely the pilot dots he saw on his door
+    // faces. Depth is a property of the record now (engine/cabinet.js writes
+    // the cup's own 11 mm) and of the workshop's own table for the rest
+    // (`editor.drillDefaults`), and WHICH CLASSES are bored at all is a named
+    // policy with a reason per class (engine/machining.js). The flag is TRUE.
     cuts: {
-      enabled: false,
+      enabled: true,
     },
     // ~20 % sheen: a hint of clear coat over a matt board. Not plastic.
     // Kept as the fallback a piece takes when it belongs to no finish family.
@@ -1602,6 +1635,60 @@ export const DEFAULT_CABINET_PROFILE = {
       // shadow camera's far plane, because three takes `light.distance` for it
       // (SpotLightShadow.updateMatrices) — read there before it was relied on.
       spotReach: 4,
+
+      // ─── TURN 26 (CLAUDE.md F10): THE LIGHT COMES FROM THE CEILING ───────
+      //
+      // The owner's proposal, and his constraint in the same breath: "one broad
+      // ceiling source at real ceiling height above the tall units, set back
+      // 1.5 m from the fronts, medium intensity" — and "whatever is added above
+      // is SUBTRACTED from the facing spots; the scene's total luminous
+      // contribution stays as it is today."
+      //
+      // `share` is what makes that an identity rather than a tuning session.
+      // It is the fraction of the FACING SPOTS' contribution at the subject
+      // that the ceiling source takes over, so the spots are scaled by
+      // `1 − share` and the sum is unchanged EXACTLY, at any room size and any
+      // camera fit. The lamp's own candela is derived from it and from where it
+      // hangs (`engine/lighting.js balanceRig`), which is why there is no
+      // intensity in this block: a number here would be a second answer to a
+      // question the share has already answered.
+      //
+      // 0.35 is "medium": the room reads as lit from above without the fronts
+      // losing the modelling the pair of jupiters gives them. It is a fraction,
+      // so the owner turns it without re-balancing anything.
+      ceiling: {
+        enabled: true,
+        share: 0.35,
+        // A BROAD source: a wide cone, mostly penumbra, which is what a ceiling
+        // plane does. Tighter than this and it is a downlight; wider and it
+        // stops having a direction at all and might as well be the ambient.
+        angle: 1.05,
+        penumbra: 0.9,
+        // How far BACK from the fronts it hangs, in ROOM millimetres. The
+        // owner's own number, and it is absolute for the same reason turn 14's
+        // eye height is: a metre and a half is a metre and a half in a galley
+        // and in a six-metre kitchen.
+        setbackMm: 1500,
+        // The room's ceiling where nobody has said what it is.
+        fallbackCeilingMm: 2700,
+        // Barely warm, like the jupiters — a white board that is visibly cream
+        // is a white board a client will query.
+        colour: '#fffaf0',
+      },
+
+      // ─── TURN 26 (CLAUDE.md F10.3): THE BRIGHTNESS SLIDER ────────────────
+      //
+      // "A brightness slider in the View menu scales every source
+      // proportionally, state remembered."
+      //
+      // PROPORTIONALLY is the whole of it: ONE multiplier on every lamp, so the
+      // ratios turn 10 measured — the key against the fill, the spots against
+      // the ambient — are exactly the ones the rig was balanced at whatever the
+      // slider says. A slider that touched one lamp would be a slider that
+      // re-lights the scene; this one only turns it up.
+      brightness: {
+        min: 0.5, max: 1.5, step: 0.05, default: 1,
+      },
       // ─── The glints: EMPTY, and that is the finding (turn 10, F1.5) ───
       //
       // PSW's gloss was never an environment map — its painted wood has none.
@@ -2134,11 +2221,24 @@ export const DEFAULT_CABINET_PROFILE = {
   // numbers and both the drawing and the 3D follow.
   hardware: {
     // A 35 mm cup hinge (the Blum/Hettich standard the drilling in `hinges`
-    // above is already dimensioned for — cup ⌀35, 12.5 deep, cup centre 21.5 in
+    // above is already dimensioned for — cup ⌀35, 11 deep, cup centre 21.5 in
     // from the door edge).
     hinge: {
       cupDiameter: 35,
-      cupDepth: 12.5,
+      // ─── TURN 26 (CLAUDE.md F1.1): PIOTR MEASURED IT ────────────────────
+      // The owner put a rule on the real thing: **a CLIP top cup is 11 mm deep
+      // in a 25 mm door.** Not 12.5, which is the number the app has carried
+      // since turn 1 and which nobody in this building had checked against a
+      // hinge. It is HIS number and it decides three things at once — how deep
+      // the bore is cut on the sheet (`cup` drills now state this depth), how
+      // far the procedural cylinder goes into the leaf, and where the
+      // downloaded model's flange plane sits (`modelOrigin.z` below is derived
+      // from it, and a test holds the derivation).
+      cupDepth: 11,
+      // How much board a blind cup must leave under it. The bore is clamped to
+      // `thickness − this` so an 18 mm front cannot be drilled through by a law
+      // written for a 25 mm one (engine/doors.js `cupBoreOf`).
+      cupFloorKeepMm: 1,
       bossHeight: 16,        // the cup body standing proud of the door's back face
       armLength: 62,         // cup centre → the far end of the arm, along the depth
       armWidth: 22,          // across the door's height
@@ -2294,14 +2394,39 @@ export const DEFAULT_CABINET_PROFILE = {
         // 71B3550 GLB, parsed headless: bbox x −26.5..11, y ±28.5, z −29.48
         // ..51.3; cup slab 37.5×57×16 at z 35.3..51.3 ⇒ authored axes ALREADY
         // match the unit's (y up, +z into the door, arm to −z). The wrong
-        // picture the owner shot was the BBOX-MIN datum alone. These origins
-        // put the CUP CENTRE (x −7.75, y 0) at the drilled point with the
-        // FLANGE PLANE (z 35.3) on the door's back face:
+        // picture the owner shot was the BBOX-MIN datum alone.
+        //
+        // ─── TURN 26 (CLAUDE.md F1.2): AND THE FLANGE PLANE WAS WRONG ───────
+        //
+        // Turn 24 read the cup slab's NEAR end (z 35.3) as the flange plane and
+        // stood that on the door's inner face — so the model's ⌀35 body went
+        // SIXTEEN millimetres into the leaf. That is the "roughly 15" the owner
+        // measured off the screen, and on an 18 or 19 mm front it is a hinge
+        // standing in the last two millimetres of the board.
+        //
+        // The cup slab's FAR end is the bottom of the bore, and the owner's
+        // caliper says the bore is 11 mm. So the flange plane is DERIVED, not
+        // typed a third time:
+        //
+        //   flangeZ = cupBoreFileZ − hardware.hinge.cupDepth = 51.3 − 11 = 40.3
+        //   modelOrigin.z = min.z − flangeZ = −29.48 − 40.3 = −69.78
+        //
+        // `test/turn26-f1-no-pierce.test.js` asserts that identity, so the day
+        // the owner re-measures the cup the origin cannot be left behind.
+        //
+        // These origins put the CUP CENTRE (x −7.75, y 0) at the drilled point
+        // with the FLANGE PLANE on the door's INNER face:
         //   modelOrigin = min − (cupX, 0, flangeZ)
         // 173L6100 plate: 8.5×53×41.5, base at x −8.5 ⇒ after the −min shift
         // the base already sits on the panel face growing +x; the origin
         // centres the dowel line (y, z) on the drilled point.
-        modelOrigin: { x: -18.75, y: -28.5, z: -64.78 },
+        //
+        // The file z of the cup's DEEPEST point — the bottom of the ⌀35 bore.
+        // A measurement, like `min` above, and the one the flange is derived
+        // from. A pack whose cup is authored differently changes this line.
+        cupBoreFileZ: 51.3,
+        fileMinZ: -29.48,
+        modelOrigin: { x: -18.75, y: -28.5, z: -69.78 },
         plateOrigin: { x: 0, y: -26.5, z: -20.75 },
         // The hand the FILE is authored for. The body's bulk sits at −x of
         // the cup, which mounted reads as a RIGHT-hung door; the view mirrors
@@ -2512,6 +2637,22 @@ export const DEFAULT_CABINET_PROFILE = {
     shelfPin: {
       sleeveOuter: 11,
       sleeveFlange: 2,
+      // ─── TURN 26 (CLAUDE.md F3.2): THE COLLAR GOES IN THE HOLE ───────────
+      //
+      // "Sleeves and pins mount INSIDE the holes that actually carry a shelf.
+      // The hole is the panel's; the sleeve is the hardware's."
+      //
+      // Until this turn there was no hole to be inside: the scene bored none
+      // (turn 21's retirement), so the collar was a disc standing on a blank
+      // face and it read as one. The BARREL is the part that lines the bore,
+      // and its diameter is not a number here — it is the DRILLING's own,
+      // read off the instance, because a sleeve that did not fit the hole the
+      // machine cuts would be exactly the parallel idea R10 forbids.
+      //
+      // How far it goes in is a fitting's own length and the workshop's to
+      // change; it must never exceed the bore, and the view clamps it to the
+      // hole's stated depth.
+      sleeveDepth: 9,
       pinDiameter: 5,
       pinLength: 9,
       // A little shoulder under the shelf, so the board is seen to be resting
@@ -2962,12 +3103,25 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // `depth` is a THROUGH hole where the number is 0 — which is what a screw
     // through a side panel is, and what the export has always written.
+    // ─── TURN 26 (CLAUDE.md R10 / F3.3): AND THE SCENE READS THE SAME TABLE ──
+    //
+    // This block was the hand-editor's stamping convention. It is now also what
+    // `engine/machining.js` bores a blind hole to when the RECORD does not
+    // state a depth — one table, so the hole a joiner stamps and the hole the
+    // scene shows are the same hole. Two rows are corrected this turn, both on
+    // the owner's own words.
     drillDefaults: {
       SCREWS_3MM: { d: 3, depth: 0 },
       SHELVES_7_5MM: { d: 7.5, depth: 12 },
       HINGES_5MM: { d: 5, depth: 12 },
-      FRONT_HINGES_35MM: { d: 35, depth: 12.5 },
-      FRONT_HINGES_3MM: { d: 3, depth: 0 },
+      // The owner measured the cup: ELEVEN, not 12.5 (CLAUDE.md F1.1). The
+      // engine states this depth on the hole itself, so the record is what is
+      // actually bored; this row is what a hand-stamped cup takes.
+      FRONT_HINGES_35MM: { d: 35, depth: 11 },
+      // …and the cup's own two fixing screws follow the cup rather than going
+      // through the leaf. A ⌀3 straight through a door is turn 21's "pilot dots
+      // on his door faces", which is what retired the whole carving pass.
+      FRONT_HINGES_3MM: { d: 3, depth: 11 },
       PUZZLE_HOLES_7_5MM: { d: 7.5, depth: 0 },
       RUNNERS_3MM: { d: 3, depth: 0 },
       BISCUIT_4MM: { d: 4, depth: 12 },
@@ -2988,9 +3142,23 @@ export const DEFAULT_CABINET_PROFILE = {
   // faces being measured, an architectural tick across each end, and the value
   // in the middle. Every number below is in ROOM millimetres, so the annotation
   // scales with the drawing instead of with the camera.
+  //
+  // ─── TURN 26 (CLAUDE.md R11): THE END-STYLE KNOBS ARE GONE ────────────────
+  //
+  // `arrowHead`, `tickAngle`, `head` and `labelOffset` described how THIS file
+  // drew an arrow, and this file no longer draws one: R11 gives the whole app
+  // ONE dimension component (`3d/DimensionChain.jsx`), whose ends, weight and
+  // caption are the partition chain's — `hoverDimensions` above. Four knobs
+  // that no longer reach a pixel are four ways to spend an afternoon; they are
+  // removed rather than left as a trap, and a stored profile that still carries
+  // them simply keeps them and is ignored.
+  //
+  // What is LEFT here is what a ROOM DISTANCE is about and what the chain
+  // cannot know: how close two things have to be to count as touching, how far
+  // in front of the run the line lies, how high it floats, and the two inks a
+  // technical drawing is written in.
   dimensions: {
     minGap: 2,            // below this the two things are touching, not spaced
-    arrowHead: 45,        // length of the tick / open head, in room mm
     standoff: 90,         // how far in front of the units the line is drawn
     height: 120,          // how high above a unit's base the line floats
     // "1 px look": the thinnest bar that survives being rasterised at the
@@ -2998,12 +3166,6 @@ export const DEFAULT_CABINET_PROFILE = {
     lineWeight: 3,
     extension: 110,       // extension line, from the measured face outwards
     extensionGap: 18,     // …starting this far off the face, as a draughtsman does
-    tickAngle: 45,        // the oblique architectural tick, in degrees
-    // How the ends are drawn: 'tick' = the 45° slash of an architectural
-    // drawing, 'open' = a two-stroke arrowhead with nothing filled in.
-    head: 'tick',
-    // Which way the value sits off the line.
-    labelOffset: 70,
     // The two inks of a technical drawing. Navy is the default; red is the
     // option in View ▸ Dimension colour. Nothing else on the canvas is either
     // colour, so a measurement never reads as part of the furniture.
@@ -3186,6 +3348,11 @@ export function migrateCabinetProfile(profile) {
       studio: {
         ...D.appearance.studio, ...profile.appearance?.studio,
         hemisphere: { ...D.appearance.studio.hemisphere, ...profile.appearance?.studio?.hemisphere },
+        // Turn 26 (CLAUDE.md F10): the two new blocks merge key by key, so a
+        // profile saved before this turn gains them whole and one that has
+        // tuned the share keeps it.
+        ceiling: { ...D.appearance.studio.ceiling, ...profile.appearance?.studio?.ceiling },
+        brightness: { ...D.appearance.studio.brightness, ...profile.appearance?.studio?.brightness },
         // ─── Turn 10 (CLAUDE.md F1/F5) ───
         // The lights that are LISTS — the jupiters and the glints — merge like
         // the other lists in this file: a stored profile that names them wins

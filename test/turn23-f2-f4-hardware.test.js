@@ -169,7 +169,25 @@ test('R8 — the synthetic hinge fills the SAME box as the measured 71B3550', as
   assert.deepEqual(box.max, [11, 28.5, 51.3]);
   const C = P.hardware.hinge.cliptop;
   assert.equal(Math.round((box.min[0] - C.modelOrigin.x) * 100) / 100, -7.75, 'the cup centre lands on the drilled point');
-  assert.equal(Math.round((box.min[2] - C.modelOrigin.z) * 100) / 100, 35.3, 'the flange plane lands on the door face');
+  // ─── TURN 26 (CLAUDE.md F1.2): AND THE FLANGE PLANE MOVED ────────────────
+  // It was read as the cup slab's NEAR end (35.3), which stood 16 mm of ⌀35
+  // body inside the leaf. The owner measured the bore — 11 mm — so the flange
+  // is the slab's FAR end less the bore, and it is DERIVED rather than typed:
+  //   flange = cupBoreFileZ − cupDepth = 51.3 − 11 = 40.3
+  const flange = C.cupBoreFileZ - P.hardware.hinge.cupDepth;
+  assert.equal(flange, 40.3, 'the owner’s 11 mm bore off the measured cup bottom');
+  assert.equal(
+    Math.round((box.min[2] - C.modelOrigin.z) * 100) / 100,
+    flange,
+    'the flange plane lands on the door’s INNER face',
+  );
+  // …and what that buys: PLACED — `glbClone` moves the file by −min + origin —
+  // the model's deepest point sits exactly at the bottom of the bore.
+  assert.equal(
+    Math.round((box.max[2] - box.min[2] + C.modelOrigin.z) * 100) / 100,
+    P.hardware.hinge.cupDepth,
+    'nothing of the cup goes deeper into the leaf than the hole drilled for it',
+  );
   // …and it is small enough to be believed as a CLIP top (turn 19's guard).
   assert.ok(Math.max(...box.size) <= C.maxModelLengthMm);
 });

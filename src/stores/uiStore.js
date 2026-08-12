@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { DEFAULT_CABINET_PROFILE } from '../engine/profile.js';
+import { brightnessScale } from '../engine/lighting.js';
 import { applySelection, primaryOf } from '../lib/selection.js';
 import {
   closeNav, openNav, popNav, pushNav,
@@ -56,6 +57,27 @@ function loadFlag(key, fallback) {
 /** Writes and returns the value, so a setter can be one expression. */
 function saveFlag(key, value) {
   try { localStorage.setItem(key, value ? '1' : '0'); } catch { /* private mode */ }
+  return value;
+}
+
+// ─── TURN 26 (CLAUDE.md F10.3): THE BRIGHTNESS SLIDER, REMEMBERED ───────────
+//
+// "A brightness slider in the View menu scales every source proportionally,
+// state remembered." A NUMBER rather than a flag, so it takes the same two
+// helpers one storey up — clamped through the profile's own range on the way
+// in, because a stored 40 from a hand-edited key must not blow the scene out.
+const BRIGHTNESS_KEY = 'cc.brightness';
+
+function loadBrightness() {
+  try {
+    return brightnessScale(Number(localStorage.getItem(BRIGHTNESS_KEY)), DEFAULT_CABINET_PROFILE);
+  } catch {
+    return DEFAULT_CABINET_PROFILE.appearance.studio.brightness.default;
+  }
+}
+
+function saveBrightness(value) {
+  try { localStorage.setItem(BRIGHTNESS_KEY, String(value)); } catch { /* private mode */ }
   return value;
 }
 
@@ -344,6 +366,15 @@ export const useUiStore = create((set, get) => ({
   realisticLighting: true,
   setRealisticLighting: (v) => set({ realisticLighting: Boolean(v) }),
   toggleRealisticLighting: () => set((s) => ({ realisticLighting: !s.realisticLighting })),
+
+  // ─── Turn 26 (CLAUDE.md F10.3): how bright the room is ───────────────────
+  // ONE multiplier on every lamp — the ratios the rig was balanced at are the
+  // ones turn 10 measured, whatever this says. Remembered, like X-ray and the
+  // front dimensions: the joiner has said how he wants to look at the job.
+  brightness: loadBrightness(),
+  setBrightness: (v) => set({
+    brightness: saveBrightness(brightnessScale(v, DEFAULT_CABINET_PROFILE)),
+  }),
 
   // X-ray (turn 7, CLAUDE.md F3 / BACKLOG #42): look THROUGH the furniture. The
   // board goes translucent, the contours stay, and the hardware the workshop

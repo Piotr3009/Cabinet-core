@@ -7262,3 +7262,181 @@ Two things are named rather than done, and both are named in CLAUDE.md itself:
 the owner's cornice reference drawing is not in this repository, so F12.2 ships
 the parametric profile his own clause asks for in that case; and `bucket-live`
 is blocked by the sandbox rather than by the app.
+
+---
+
+# TURN 26 — the sheet becomes the truth
+
+**Baseline: the turn-25 merge, `51c55dc`. Suite there: 2 038 tests, 2 038 pass.
+Suite at the end of this turn: 2 141 tests, 2 141 pass, on a clean build.**
+
+## The turn in one line
+
+The owner sat down with turn 25's result and found ten things wrong with it, and
+behind them one law that outranks all ten: **the sheet is the truth and the
+scene follows it.** Nothing shrank. All twelve features are in.
+
+## R10 — the sheet is the truth; the scene follows it
+
+The turn's own rule, and the reason `src/engine/machining.js` exists. It is the
+per-class policy — all eighteen CNC layers, whether the scene bores each one out
+of the board's own solid, and at what depth where the record does not state one.
+Every class that is deliberately NOT drawn carries its reason in a sentence, and
+`verify/t26/sheet-vs-scene.md` is generated FROM that module rather than written
+beside it, so silence is impossible and drift is impossible.
+
+The direction of travel is the point. `appearance.cuts.enabled` goes back to
+`true` (turn 21 retired it), `panelRecesses` consults the policy and takes its
+depth from the RECORD first and the table second, and the drill record grew an
+optional `depth` so the cup's 11 mm is a fact on the sheet rather than a number
+in a component.
+
+## R11 — one dimension component
+
+`3d/DimensionChain.jsx`. `DistanceArrows` and `HoverDimensions` keep their
+geometry and lose their drawing: both compute POINTS and hand them to the one
+chain. `DimLabel`'s standalone use for dimensions ends. The assertion is
+grep-level and deliberately blunt — **no other module in `src/3d` draws an
+arrowhead** — because four dialects is exactly what three implementations
+produced.
+
+## F1 — the hinge stops piercing the door [CRITICAL]
+
+`cupDepth: 12.5` → **11**, the owner's own caliper reading, with his name on it.
+The datum is the leaf's INNER face, resolved for every leaf type by ONE helper
+(`doorHingeDatum` / `cupBoreOf` in `engine/doors.js`) — never the mid-plane,
+never a shaker's recess floor. The GLB's flange derivation was re-taken against
+the model in the bucket and `modelOrigin.z` moved −64.78 → −69.78 with it.
+
+The guarantee is a sweep, not a promise: every hinge instance, every door type,
+every rig angle in turn 24's rig, measured in the LEAF's own frame. Nothing
+crosses the outer face by so much as a hundredth of a millimetre.
+
+## F2 — partition doors: one path, not two [CRITICAL]
+
+`Hardware.jsx` contained no reading of `hingeOn`/`hingeFace` at all, so
+partition-hung leaves fell into a legacy branch older than the GLB mount, the
+rig and the datum. The branch is gone: EVERY door builds its instances through
+`doorHingeInstances`, which reads both. `hingeSpecsFor` moved to
+`engine/hinges.js` so a node test can import it — which is precisely why turn
+25's paired test compared numbers and never the MOUNT. It compares both now, and
+the fold state at 45°, and the no-pierce assertion. CNC delta: zero.
+
+**And a second cause the owner's "they do not fold" was hiding**: `swingFor`
+asked `panels.find(p => p.part === 'FRONT')` — the FIRST front in the cabinet —
+for every door in it. On a face with matched leaves nobody notices; on a cabinet
+with doors in its BAYS every partition-hung leaf swung by its neighbour's angle,
+and the rig folded its hinge by that wrong angle too. It takes the panel now.
+
+## F3 — the scene draws what the sheet drills [HIGH]
+
+The owner's clearest complaint: three ⌀7.5 holes per shelf level on the sheet,
+and no holes at all in the scene — only sleeves where a shelf happened to stand.
+Every ⌀7.5 on the record is a real bore in the face now, **empty levels
+included**, so the full ladder reads at a glance. Sleeves and pins mount INSIDE
+the holes that carry a shelf: the hole is the panel's, the sleeve is the
+hardware's. Swept across BUL/BUR, TOP/BOTTOM, BACK, shelves, partitions and
+fronts — and a panel whose record is empty must have an empty picture, which is
+parity too.
+
+## F4 — one dimension language [HIGH]
+
+Horizontal chains lie ON THE FLOOR in front of the run with witness lines
+dropping from the front edges; vertical chains run down the SIDE. Never across
+the face of a front. **0.5 mm everywhere** (`formatDimension`, and
+`DIMENSION_STEP_MM`) — 3 mm gaps and half-millimetre differences are what these
+are for.
+
+## F5 — the dishwasher joins the family [HIGH]
+
+Four faults, one appliance. The front starts from the BOTTOM like every other
+front and the gap goes to the top (`box.y = H − dwH` glued it to the top and put
+the whole gap under it). It drops FORWARD about its bottom edge at the
+appliance's own 90°, not sideways on cup hinges it does not have. No cup, no cup
+drilling. And it stops being a special case for anything a front normally has:
+the shaker applies to it, and so do handles. **BLOCKER #91** — whether the
+plinth in front of an appliance is fixed, removable or the run's own passing
+through is a workshop question; shipped as the least committal reading.
+
+## F6 — the shaker's rebate is the same colour [HIGH]
+
+`shakerFrontGeometry` rebuilt on `THREE.Shape`/`ShapeGeometry` and merged into
+ONE buffer with ONE material — frame, panel floor and all four rebate walls —
+with `boxUVs` giving the leaf a single continuous skin. The only difference the
+eye can see is shadow, which is `6a-…-at-a-grazing-angle.png`.
+
+## F7 + F8 — the shelves [HIGH] · CNC, named
+
+F7: the fix shelf's sheet is an OUTLINE and a label. Nothing else. The joint
+lives in the bearers — biscuits in the faces of BUL/BUR and of the partition,
+⌀3 through-screws from BUL/BUR only, and ⌀3 in the BACK on the shelf's axis
+(ends 50, pitch ≤ 400, the partition's own law). F8: every shelf lies length
+left-to-right, so the grain runs with the banded long front edge — the same
+production law the partition got in turn 24.
+
+## F9 — the cornice grows corners [MEDIUM]
+
+Diagnosis first (`verify/t26/cornice-toggle.md`). Wall units join the run; a
+cornice run continues across ANY adjacent cornice-bearing unit whose top edges
+meet. The internal 45° mitre where two runs meet. **BLOCKER #92** — unequal
+depths (wall 350 against tall 578) cannot simply mitre and the owner has not
+said whether he steps it or carries the deeper line; the mitre ships for equal
+depths and the app REFUSES, in a plain sentence, for unequal ones.
+
+## F10 — the light comes from the ceiling [MEDIUM]
+
+One broad source at real ceiling height, 1.5 m back from the fronts, and its
+candela is DERIVED rather than typed: it takes `share` of what the facing spots
+deliver at the subject and the spots are scaled by `1 − share`, so the identity
+holds exactly at any room size and any camera fit. `engine/lighting.js` is that
+computation, `verify/t26/lighting.md` is its per-lamp ledger, and the drift is
+zero to six decimals. A brightness slider scales every lamp by one multiplier,
+state remembered.
+
+## F11 + F12 [LOW]
+
+F11 confirmed, not rebuilt: the 770 opening with three 200 fronts raises SHORT,
+the sentence names 161 mm, 609 mm and 770 mm, and the walk photographs it where
+the owner would see it. F12: the layer list leaves the toolbar and is asked ONCE
+before the edits are committed; Back is large at the top centre of a workspace;
+the split is 25 % view / 75 % sheet; and Delete is disabled because nothing is
+picked, which is state and not a bug.
+
+## The export
+
+**Three named deltas and nothing else**, argued entity by entity in
+`verify/t26/cnc-export-identity.md`. `poly/BISCUIT_4MM` 8 → 4 (F7's shelf ends),
+`circle/SCREWS_3MM` +2 or +3 (F7's back screws), `poly/SHAKER_PANEL_POCKET`
+absent → 1 on `DW_PANEL` alone (F5). Four DXF files move and no others; SHAPE
+moves wherever GEOM does, which is the opposite signature to turn 25's re-order
+and is what a real re-cut looks like. **Eleven of the twelve golden defaults are
+byte-for-byte unchanged**; the twelfth is `DW_PANEL`, which is F5's own.
+
+No hinge drilling moved anywhere — F1 and F2 are depth and display, and the DXF
+is a 2-D file that carries a circle's centre and diameter.
+
+## The walk
+
+36 ok · 0 failed · 1 blocked (`bucket-live`, 403 at this session's egress proxy,
+recorded verbatim — the same blockage as turn 25). Real CDP input throughout;
+the console printed nothing all walk. R10's parity is measured in the browser
+off both sides at once — 157 bores from 157 records across 12 parts, zero
+disagreements — and F1's guarantee is re-taken off the live scene in the leaf's
+own frame at seven angles on three leaf types.
+
+**It found two defects the suite could not see, both introduced by this turn.**
+
+1. The whole 3-D view threw on first render: F4's new chain reads `shelfLights`
+   and `shelfLights` was declared seventy lines below it. A temporal dead zone,
+   fatal in every unit, invisible to a suite that imports the engine. Guarded
+   now by a source-order assertion.
+2. F10's ceiling source hung two and a half millimetres off the floor —
+   `roomHeight` arrives in scene units and the new balance converted it a second
+   time. Every other assertion in the feature passed; the lamp was simply
+   lighting the plinths. Guarded now.
+
+## What did not shrink, and what is left
+
+Nothing shrank. All twelve features are in. Three blockers are named rather than
+guessed: the D/W plinth (#91), the unequal-depth cornice corner (#92) and the
+MOVENTO ⌀3 pilot depth (#93).

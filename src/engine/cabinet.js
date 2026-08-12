@@ -30,7 +30,9 @@ import {
 } from './shaker.js';
 import { resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
-import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
+import {
+  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays,
+} from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
@@ -43,7 +45,9 @@ import { impliedLegHeight, maskDepthExtra, standsOnLegHeight } from './runs.js';
 import {
   corniceOption, corniceOrder, corniceProjection, corniceRise, takesCornice,
 } from './cornice.js';
-import { partitionBackScrews, partitionBackSpec } from './partitionFixings.js';
+import {
+  partitionBackScrewRun, partitionBackScrews, partitionBackSpec,
+} from './partitionFixings.js';
 // Turn 24 (CLAUDE.md F7): the owner's butt-joint set, given the consumer it
 // was written for — a FIX shelf.
 import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
@@ -1535,10 +1539,49 @@ export function computeCabinet(params, profileOverride) {
     panels.push(panel({
       id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: dwW, h: dwH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * dwW + 2 * dwH),
-      box: { x: (W - dwW) / 2, y: H - dwH, z: D + P.doors.gap, w: dwW, h: dwH, d: frontT },
-      // Flat: no hinge cups, no cup screws, no door furniture at all.
+      box: {
+        x: (W - dwW) / 2,
+        // ─── TURN 26 (CLAUDE.md F5.1): IT SAT 3 MM HIGH ────────────────────
+        //
+        // `H − dwH` glued the leaf to the TOP of the carcass and put the whole
+        // door gap UNDERNEATH it, while every other front in the run starts
+        // from the BOTTOM (`doorY`) and leaves its gap at the top. So a D/W
+        // front stood three millimetres proud of its neighbours down a whole
+        // run — the owner's own measurement, and one line.
+        //
+        // The datum is `-cfg.doorExtend`, exactly as it is for a door, a pair
+        // of doors and a bay leaf — the `doorY` the block further down names.
+        // It is 0 on a base unit and negative on a wall unit whose front runs
+        // below its box, and a D/W panel is neither exception: it takes the
+        // same number the run takes.
+        y: -cfg.doorExtend,
+        z: D + P.doors.gap,
+        w: dwW,
+        h: dwH,
+        d: frontT,
+      },
       cnc: rectGeometry(dwW, dwH),
-      meta: { appliance: 'dw' },
+      meta: {
+        appliance: 'dw',
+        // ─── TURN 26 (CLAUDE.md F5.5): A D/W FRONT IS A FRONT ──────────────
+        //
+        // "F3-turn-25's shaker applies to it, and so do handles. The `dwPanel`
+        // path must stop being a special case for anything a front normally
+        // has."
+        //
+        // It carries the project's own front type now, so the shaker pass
+        // below picks it up like any other leaf and the elevation draws its
+        // frame. What it still does NOT get is the one thing it genuinely does
+        // not have — cup hinges — and that is said where it belongs, on the
+        // drilling pass, by the `appliance` flag above (F5.3).
+        frontType: cfg.frontType,
+        // …and HOW IT OPENS (F5.2). A D/W front is screwed to the appliance's
+        // own door: it drops FORWARD about its BOTTOM edge, ~90°, and it is
+        // not on cup hinges at all. The scene reads this rather than asking
+        // what type of unit it is on.
+        opening: 'drop-front',
+        openAngleDeg: DW.openAngleDeg,
+      },
     }));
   }
 
@@ -1890,7 +1933,31 @@ export function computeCabinet(params, profileOverride) {
         h: shelfT,
         d: depthHere,
       },
-      cnc: rectGeometry(shelfWHere, depthHere),
+      // ─── TURN 26 (CLAUDE.md F8): A SHELF LIES ALONG THE GRAIN ───────────
+      //
+      // Owner: shelves are laid ACROSS the sheet, so the grain runs
+      // front-to-back; the edge banding goes on the LONG front edge and must
+      // run WITH the grain. It was drawn `width × depth`, which puts its long
+      // axis across the drawing and its grain up the DEPTH — the one direction
+      // a shelf's own banded edge does not run in.
+      //
+      // Laid `depth × width` it is the SAME convention BUL and BUR have had
+      // since turn 1 and the partition took in turn 24 (F8): the piece's long
+      // axis runs up the drawing, the grain with it, and the banded front edge
+      // with the grain. It is the same production law, applied to the third
+      // board that needed it.
+      //
+      // The board is the same board and its CUT SIZE has not moved: `w` and
+      // `h` above are what the CSV and the BOM print. What changes is the
+      // FRAME the outline, the label and every point on this piece are
+      // expressed in — and everything downstream reads that frame
+      // (`engine/joinery.js`) rather than carrying a copy of it.
+      cnc: {
+        rotated: true,
+        drawn_w: depthHere,
+        drawn_h: shelfWHere,
+        ...rectGeometry(depthHere, shelfWHere),
+      },
       meta: {
         index: i,
         // ─── TURN 21 (CLAUDE.md F9.1): THE SHELF'S OWN RUN ────────────────
@@ -2936,7 +3003,31 @@ export function computeCabinet(params, profileOverride) {
 
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];
-  const addDrill = (panelId, kind, layer, x, y, d) => drills.push({ panel: panelId, kind, layer, x: roundTo(x, 4), y: roundTo(y, 4), d });
+  // ─── TURN 26 (CLAUDE.md R10 / F1.4): A DRILL MAY STATE ITS DEPTH ──────────
+  //
+  // "Fronts hinge-drilled by the engine already use the correct depth for CNC —
+  // verify; if CNC and the scene disagree, R10 decides: the sheet wins and the
+  // scene is corrected." They did not: `addDrill` had no depth at all, so every
+  // hole this engine has ever emitted reads as a THROUGH hole
+  // (engine/recesses.js says so in as many words) — and a ⌀35 cup bored through
+  // a door is the owner's "the hinge pierces the front".
+  //
+  // The sheet is the truth, so the sheet is what gains the number. `depth` is
+  // OPTIONAL and absent on every hole that really does go through, which is all
+  // of them but the cup: a hole with no depth keeps meaning exactly what it has
+  // meant since turn 1. The DXF is unchanged — a circle carries a diameter and
+  // a layer and never a depth (engine/cnc/dxf.js) — so the fingerprint does not
+  // move, which is what makes this a display correction with a record behind it
+  // rather than a re-cut.
+  const addDrill = (panelId, kind, layer, x, y, d, depth = null) => drills.push({
+    panel: panelId,
+    kind,
+    layer,
+    x: roundTo(x, 4),
+    y: roundTo(y, 4),
+    d,
+    ...(Number(depth) > 0 ? { depth: roundTo(depth, 4) } : {}),
+  });
 
   // ─── Turn 13 (CLAUDE.md F8): a MARK is neither a hole nor a pocket ───
   //
@@ -3155,17 +3246,33 @@ export function computeCabinet(params, profileOverride) {
       }
     }
 
-    // ── and the shelf's own two ends, where the set-out is transferred ──
-    const inset = markFromEnd(P);
-    for (const [end, endX] of [['L', inset], ['R', shelf.w - inset]]) {
-      const has = bearers.some((b) => (end === 'L'
-        ? (b.kind === 'side' ? b.id === 'BUL' : Math.abs(runFrom - (b.panel.box.x + b.panel.box.w)) < 1e-6)
-        : (b.kind === 'side' ? b.id === 'BUR' : Math.abs(runTo - b.panel.box.x) < 1e-6)));
-      if (!has) continue;
-      for (const set of noScrewSets) {
-        // The shelf is drawn `width × depth` and its own y runs from the BACK,
-        // so the set's distance from the FRONT is `depth − t`.
-        addMark(shelf.id, biscuitLayerNames.mark, [endX, depth - set.mark.from], [endX, depth - set.mark.to]);
+    // ─── TURN 26 (CLAUDE.md F7.1): NOTHING ON THE SHELF ITSELF ────────────
+    //
+    // The owner, twice, and the second time decisively: **no biscuits on the
+    // shelf itself — not even on its ends.** Turn 24 transferred the set-out
+    // onto both ends of the board on the reasoning that a 3-axis bed cannot
+    // reach an end and the two halves of a joint should agree before anything
+    // is glued. He has looked at the sheet and said no: a fix shelf is an
+    // OUTLINE and a LABEL, and nothing else.
+    //
+    // The joint has not gone anywhere — it lives in the BEARERS, above: the
+    // biscuit marks and the ⌀3 through-screws in BUL/BUR, the marks alone in a
+    // partition (a through screw would surface in the neighbouring bay), and
+    // now the ⌀3 in the BACK below.
+    //
+    // ─── …AND THE BACK HOLDS IT (F7.2, the owner's addition) ──────────────
+    //
+    // "⌀3 in the BACK on the shelf's axis — same law as the partition's back
+    // screws: ends 50, pitch ≤ 400." It IS the same law and it is the same
+    // function: `engine/partitionFixings.js partitionBackScrewRun`, asked
+    // along the shelf's own run instead of up a partition's. A shelf and a
+    // partition are one board doing one job in two directions, and a second
+    // spacing rule for the second direction is a second thing to get wrong.
+    const back = panels.find((x) => x.part === 'BACK');
+    if (back) {
+      const spec = partitionBackSpec(P);
+      for (const x of partitionBackScrewRun({ from: runFrom, to: runTo, profile: P })) {
+        addDrill('BACK', 'shelf_back_screw', spec.layer, x, jointY, spec.diameter);
       }
     }
   }
@@ -3190,8 +3297,14 @@ export function computeCabinet(params, profileOverride) {
     const hingeSide = pnl.meta?.hinge || cfg.hinge;
     const cupX = hingeSide === 'L' ? pnl.w - cups.xFromHingeEdge : cups.xFromHingeEdge;
     const holeX = hingeSide === 'L' ? cupX - cups.screwOffsetX : cupX + cups.screwOffsetX;
+    // Turn 26 (CLAUDE.md F1.4): the cup is the ONE hole in these kits that does
+    // not go through, and this is where the sheet says so. The number is the
+    // owner's measured 11 mm, clamped to this leaf's own board by the same
+    // helper the scene reads (engine/doors.js `cupBoreOf`) — one derivation, so
+    // the bore in the picture is the bore on the sheet to the hundredth.
+    const cupBore = cupBoreOf(pnl, P);
     for (const y of cupY) {
-      addDrill(pnl.id, 'cup', cups.layer, cupX, y, cups.diameter);
+      addDrill(pnl.id, 'cup', cups.layer, cupX, y, cups.diameter, cupBore?.depth ?? null);
       addDrill(pnl.id, 'cup_screw', cups.screwLayer, holeX, y + cups.screwOffsetY, cups.screwDiameter);
       addDrill(pnl.id, 'cup_screw', cups.screwLayer, holeX, y - cups.screwOffsetY, cups.screwDiameter);
     }

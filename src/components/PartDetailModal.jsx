@@ -103,7 +103,21 @@ export default function PartDetailModal() {
   //   a typed number is an IN-FLIGHT OVERRIDE, never a form (F2.5)
   //   the drill asks ⌀ and depth ONCE, then stamps (F2.6)
   const [tool, setTool] = useState('select');
-  const [layer, setLayer] = useState('SCREWS_3MM');
+  // ─── TURN 26 (CLAUDE.md F12.1): THE LAYER IS ASKED ONCE ──────────────────
+  //
+  // "The layer list moves OFF the toolbar; the layer is asked ONCE, before the
+  // edits are committed."
+  //
+  // It was a permanent dropdown a joiner had to set before he drew, which is
+  // the FORM this editor was rebuilt to stop being — and it is the wrong moment
+  // besides: which layer a set of holes goes on is a decision about the SET,
+  // and the set does not exist until it has been drawn. So `null` is "nobody
+  // has said", the first op to be committed opens the question, and the answer
+  // stands for the rest of the session exactly as the drill's ⌀ and depth do
+  // (F2.6). The same grammar, one storey up.
+  const [layer, setLayer] = useState(null);
+  // The op waiting on that answer, if the question is open.
+  const [askLayer, setAskLayer] = useState(null);
   const [picked, setPicked] = useState(null);   // the feature the Select tool holds
   const [pending, setPending] = useState(null); // the first click of a two-click tool
   // ⌀ and depth, asked ONCE per session (F2.6). `null` = not asked yet.
@@ -144,6 +158,8 @@ export default function PartDetailModal() {
   // layer IS the convention in this app — `SCREWS_3MM` is a ⌀3 — so picking the
   // layer has already answered most of what the popover asks.
   const layerDefaults = profile.editor.drillDefaults[layer] || profile.editor.drillDefaults.fallback;
+  // (With no layer chosen yet the fallback answers, and the popover's numbers
+  //  are typed over anyway — the question about the LAYER comes after.)
   const dowelPitch = Number(pitch) > 0 ? Number(pitch) : profile.editor.dowelPitchMm;
 
   /** Back to Select, with nothing half-drawn left behind (F2.1: Esc). */
@@ -165,9 +181,23 @@ export default function PartDetailModal() {
 
   const addOp = useCallback((op) => {
     if (!unit || !panel) return;
-    addPartEdit(unit.id, panel.id, op);
+    // F12.1: the ONE gate. An op that names no layer yet is held and the
+    // question is asked — once, for the whole session — and `commitOnLayer`
+    // below is what lets it through afterwards.
+    if (!layer) { setAskLayer(op); return; }
+    addPartEdit(unit.id, panel.id, { ...op, layer });
     notify('Added by hand — this print only.', 'ok');
-  }, [unit, panel, addPartEdit, notify]);
+  }, [unit, panel, layer, addPartEdit, notify]);
+
+  /** The answer, and the edit that was waiting for it. */
+  const commitOnLayer = useCallback((chosen) => {
+    const op = askLayer;
+    setLayer(chosen);
+    setAskLayer(null);
+    if (!op || !unit || !panel) return;
+    addPartEdit(unit.id, panel.id, { ...op, layer: chosen });
+    notify(`Added by hand on ${chosen} — this print only.`, 'ok');
+  }, [askLayer, unit, panel, addPartEdit, notify]);
 
   /**
    * PLACE A POINT — the one door every gesture goes through.
@@ -336,18 +366,30 @@ export default function PartDetailModal() {
         </>
       )}
     >
-      <div className="h-full min-h-0 flex gap-3 flex-col md:flex-row">
+      {/* ─── TURN 26 (CLAUDE.md F12.3): 25 % VIEW, 75 % SHEET ────────────────
+          "Panel split: the 3-D view shrinks to ~25 %, the sheet takes ~75 %."
+          The two panes were `flex-1` each — half and half — and the half a
+          joiner is actually working on is the SHEET: the view of the piece is
+          there to say WHICH board this is, and the drawing is what he is
+          drilling. The fractions are CSS variables so the pair is one decision
+          in one place, and they fall back to the stacked column on a narrow
+          window exactly as before. */}
+      <div
+        className="h-full min-h-0 flex gap-3 flex-col md:flex-row"
+        data-editor-split="25/75"
+        style={{ '--cc-editor-view': '25%', '--cc-editor-sheet': '75%' }}
+      >
         {/* ── LEFT: the piece itself (F7.1) ── */}
         <div
-          className="rounded border border-shell-600 overflow-hidden flex-1 min-w-0 min-h-[240px]"
+          className="rounded border border-shell-600 overflow-hidden min-w-0 min-h-[240px] basis-full md:basis-[var(--cc-editor-view)] md:shrink-0 md:grow-0"
           data-part-canvas="1"
           style={{ background: profile.appearance.room?.background || '#fafaf8' }}
         >
           <PartCanvas unit={unit} panel={panel} design={storedDesign} profile={profile} drills={result?.drills || []} />
         </div>
 
-        {/* ── RIGHT: the CNC drawing (F7.2) ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-2">
+        {/* ── RIGHT: the CNC drawing (F7.2) — and it takes three quarters ── */}
+        <div className="min-w-0 flex flex-col gap-2 basis-full md:basis-[var(--cc-editor-sheet)] md:grow">
           <div
             className="flex-1 min-h-[240px] rounded border border-shell-600 bg-[#131313] overflow-hidden"
             data-part-drawing="1"
@@ -458,17 +500,6 @@ export default function PartDetailModal() {
                   {label}
                 </button>
               ))}
-              <select
-                className="cc-input w-40"
-                data-part-layer="1"
-                value={layer}
-                title="Which layer this draws on — the existing list; custom layers are parked"
-                onChange={(e) => setLayer(e.target.value)}
-              >
-                {CNC_LAYERS.map((l) => (
-                  <option key={l.name} value={l.name}>{l.name}</option>
-                ))}
-              </select>
               <span className="flex-1" />
               {changes > 0 && (
                 <>
@@ -496,6 +527,53 @@ export default function PartDetailModal() {
               )}
             </div>
 
+            {/* ─── TURN 26 (CLAUDE.md F12.1): WHICH LAYER SHOULD THESE GO ON? ──
+                Asked ONCE, at the moment the first edit is committed, and never
+                again for the rest of the session — the same grammar the drill's
+                ⌀-and-depth popover has used since turn 24, one storey up. The
+                list is the EXISTING one (`cnc/layers.js`); custom layers are
+                parked by the owner's word, with three questions on file.
+
+                It is a strip and not a modal: a dialog over the drawing would
+                hide the very thing the joiner has just drawn on it. */}
+            {askLayer && (
+              <div className="cc-row items-center" data-layer-ask="1">
+                <span className="text-[11px] text-ink-100 shrink-0" data-layer-ask-prompt="1">
+                  Which layer should these go on?
+                </span>
+                <select
+                  className="cc-input w-48"
+                  data-layer-ask-list="1"
+                  defaultValue="SCREWS_3MM"
+                  aria-label="Which layer should these go on?"
+                  onChange={(e) => commitOnLayer(e.target.value)}
+                >
+                  {CNC_LAYERS.map((l) => (
+                    <option key={l.name} value={l.name}>{l.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="cc-btn-gold px-3"
+                  data-layer-ask-ok="1"
+                  onClick={() => commitOnLayer(
+                    document.querySelector('[data-layer-ask-list="1"]')?.value || 'SCREWS_3MM',
+                  )}
+                >
+                  Use it
+                </button>
+                <button
+                  type="button"
+                  className="cc-btn-ghost"
+                  data-layer-ask-cancel="1"
+                  title="Drop this edit — nothing is committed"
+                  onClick={() => setAskLayer(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
             <div className="cc-row">
               <span className="text-[11px] text-ink-400 flex-1" data-part-prompt="1">
                 {tool === 'select'
@@ -506,6 +584,15 @@ export default function PartDetailModal() {
                     ? 'Click to stamp a hole. Type a number to place it off the nearest edge; Esc cancels the number, Esc again the tool.'
                     : `Click ${pending ? 'the END' : 'the START'}. Type a number to place it off the nearest edge; Esc cancels.`)}
               </span>
+              {layer && (
+                <span
+                  className="text-[11px] text-ink-400 shrink-0"
+                  data-part-layer-chosen={layer}
+                  title="The layer this session is drawing on — asked once, when the first edit was committed"
+                >
+                  on {layer}
+                </span>
+              )}
               {tool === 'select' && (
                 <button
                   type="button"

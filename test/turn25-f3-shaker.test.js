@@ -139,15 +139,25 @@ test('F3.4 — a NAMED class on the front’s sheet, and only on shaker fronts',
   }
 });
 
-test('F3.4 — the appliance panel’s face stays flat', () => {
-  // Turn 17, F9: "no hinges, flat, no door furniture". A D/W panel's face is a
-  // FRONT in every way that matters to the BOM and the spray booth, and in the
-  // one way that would be wrong here it is not a door.
-  const dw = computeCabinet({ ...defaultParamsFor('DW_PANEL', P), unit_num: '01' }, P);
+test('F3.4 — the appliance panel’s face is a FRONT, and takes the shaker (turn 26, F5.5)', () => {
+  // Turn 25 read turn 17's "no hinges, flat, no door furniture" as covering the
+  // rebate too, and cut a D/W face plain whatever the job's front style said.
+  // The owner's turn-26 verdict: "A D/W front is a front: F3-turn-25's shaker
+  // applies to it, and so do handles. The `dwPanel` path must stop being a
+  // special case for anything a front normally has." So a run of shaker
+  // kitchen no longer has one flat door in the middle of it.
+  const dw = computeCabinet({ ...defaultParamsFor('DW_PANEL', P), unit_num: '01', front_type: 'S' }, P);
   const face = dw.panels.find((p) => p.part === 'FRONT');
   assert.ok(face, 'the D/W panel has a face');
-  assert.equal(isShakerFront(face), false);
-  assert.deepEqual(face.cnc.pockets || [], []);
+  assert.equal(isShakerFront(face), true);
+  assert.equal((face.cnc.pockets || []).length, 1, 'one recess, like every other shaker leaf');
+  assert.equal(face.cnc.pockets[0].layer, 'SHAKER_PANEL_POCKET');
+  assert.equal(face.meta.shaker.frame, P.front.types.S.frameWidth);
+
+  // …and a FLAT job still cuts it flat, which is the same law read the other
+  // way: the piece follows the project's front style like any other front.
+  const flat = computeCabinet({ ...defaultParamsFor('DW_PANEL', P), unit_num: '01', front_type: 'F' }, P);
+  assert.deepEqual(flat.panels.find((p) => p.part === 'FRONT').cnc.pockets || [], []);
 });
 
 test('F3.4 — the pocket reaches the DXF, on its own layer, wound as a cut-out', () => {

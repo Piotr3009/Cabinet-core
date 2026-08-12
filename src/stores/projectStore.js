@@ -44,7 +44,7 @@ import {
   runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
 import {
-  corniceCeilingNotice, corniceOption, runCorniceParams, takesCornice,
+  corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 import { widthZones } from '../engine/zones.js';
@@ -951,6 +951,18 @@ export const useProjectStore = create((set, get) => ({
         label: u.params?.unit_num || null,
       }, profile);
       if (notice) notices.push(notice);
+    }
+
+    // ─── TURN 26 (CLAUDE.md F9.4): THE CORNERS IT HAS DECLINED TO CUT ────────
+    //
+    // A refusal is not a warning about the FURNITURE — nothing is cut wrong. It
+    // is the app saying which joint it will not draw and why: a 45° between two
+    // different projections does not close, and whether the moulding steps or
+    // carries the deeper line and returns is a workshop decision nobody has
+    // made (BLOCKERS #92). Ship the mitre for equal depths, refuse out loud for
+    // unequal ones — and "out loud" is this line.
+    for (const element of corniceParams.values()) {
+      for (const refusal of corniceRefusals(element)) notices.push(refusal.message);
     }
 
     set({

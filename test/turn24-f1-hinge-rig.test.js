@@ -77,9 +77,14 @@ test('F1.2 — the fold pivot is the file axis put through the clone’s own tra
   assert.ok(Math.abs(pivot.x - 0) < 1e-9, `pivot x = ${pivot.x}`);
   // The axis is HORIZONTAL and parallel to the hinge row: no height of its own.
   assert.equal(pivot.y, 0);
-  // z: 33.5 in the file, and the origin put the flange plane (35.3) on the
-  // door's back face ⇒ 1.8 mm behind it, which is where an arm folds.
-  assert.ok(Math.abs(pivot.z - -1.8) < 1e-9, `pivot z = ${pivot.z}`);
+  // ─── TURN 26 (CLAUDE.md F1.2): THE DATUM MOVED, SO THE PIVOT DID ────────
+  // z: 33.5 in the file. Turn 24 stood the cup slab's NEAR end (35.3) on the
+  // door's inner face and read the pivot 1.8 mm behind it. The owner measured
+  // the bore at 11 mm, so the flange is the slab's FAR end less the bore
+  // (51.3 − 11 = 40.3) and the same file axis is now 6.8 mm behind the leaf —
+  // which is where a CLIP top's arm actually folds: BEHIND the door, in the
+  // carcass opening, not a whisker inside the board.
+  assert.ok(Math.abs(pivot.z - -6.8) < 1e-9, `pivot z = ${pivot.z}`);
 });
 
 test('F1.2 — moving the axis moves the pivot, one number for one number', () => {
@@ -95,7 +100,8 @@ test('F1.2 — moving the axis moves the pivot, one number for one number', () =
     },
   });
   const pivot = foldPivotMm({ min, profile: moved });
-  assert.ok(Math.abs(pivot.z - 4.7) < 1e-9, `pivot z = ${pivot.z}`);
+  // 40 + 29.48 − 69.78 (turn 26's corrected origin) = −0.3.
+  assert.ok(Math.abs(pivot.z - -0.3) < 1e-9, `pivot z = ${pivot.z}`);
 });
 
 /** A stand-in for a decoded CLIP top: one mesh per node of the table. */

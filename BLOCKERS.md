@@ -1848,3 +1848,79 @@ CATALOGUE OF RECORD tury 19).
 zmiana jednej flagi w `lib/hardwareSource.js` i `scripts/seed-hardware.mjs`
 zaczyna go zasiewać razem z resztą. Do tego czasu wiersz kondycji uczciwie
 mówi `mock`.
+
+---
+
+## #91 — Cokół przed zmywarką: stały, zdejmowany, czy przelotowy? (tura 26, F5.4)
+
+**Co blokuje.** CLAUDE.md F5.4 mówi wprost, że to pytanie warsztatowe, na które
+właściciel jeszcze nie odpowiedział: *whether the plinth in front of an
+appliance is a fixed part, a removable one, or simply the run's plinth passing
+through is a workshop question the owner has not answered.*
+
+Trzy odpowiedzi i każda znaczy co innego dla cięcia:
+
+* **fixed** — osobna formatka na szerokość zmywarki, przykręcona na stałe.
+  Wtedy cokół biegu ma w tym miejscu przerwę, a nie wycięcie, i lista cięcia
+  zyskuje jedną pozycję na każde urządzenie.
+* **removable** — ta sama formatka, ale na zatrzaskach/magnesach, żeby dostać
+  się do nóżek i węża. Geometria jak wyżej, inna okucia i inna pozycja w BOM.
+* **passing through** — cokół biegu jest jednym kawałkiem, a przed urządzeniem
+  ma tylko podfrezowanie na jego nóżkę.
+
+**Co zrobiłem.** **Passing through** — najmniej zobowiązująca lektura, tak jak
+CLAUDE.md F5.4 poleca. To jest zresztą to, co silnik robił od tury 17:
+`notchedPlinth` zostawia górną krawędź nietkniętą i podcina cokół
+`dwPanel.plinthCutFromTop` = 20 mm poniżej niej, otwarte od dołu — więc linia,
+którą oko prowadzi wzdłuż biegu, jest ciągła, a formatka jest jedna.
+Wysokość bierze z **wysokości nóżek biegu** (prawo tury 22, F4), więc zmywarka
+stoi na tej samej linii co szafki obok niej przy każdej wartości.
+
+Test: `test/turn26-f5-dishwasher.test.js` → *F5.4 — the toe kick is the RUN's…*
+
+**Co Piotr ma zdecydować.** Która z trzech. Jeżeli **fixed** albo **removable** —
+potrzebna jest jedna liczba: o ile formatka przed urządzeniem jest węższa od
+otworu (luz na palce / na zatrzask), i czy jej wysokość to wysokość cokołu czy
+cokół minus luz od podłogi.
+
+---
+
+## #92 — Gzyms między elementami o RÓŻNEJ głębokości (tura 26, F9.4)
+
+**Co blokuje.** CLAUDE.md F9.4: *when the two units differ in depth (wall 350
+against tall 578) the cornice cannot simply mitre — the owner has not said
+whether he steps it or carries the deeper line and returns.*
+
+Dwa rozwiązania stolarskie i nie da się zgadnąć:
+
+* **step** — gzyms schodzi na płytszym elemencie, a w miejscu zmiany jest
+  pionowy uskok o `578 − 350 = 228` mm głębokości. Uczciwe, ale uskok trzeba
+  zamknąć zwrotką.
+* **carry the deeper line and return** — gzyms biegnie na głębokości
+  GŁĘBSZEGO elementu przez oba, a nad płytszym wisi w powietrzu i wraca do
+  ściany zwrotką na końcu biegu. Częstsze w kuchniach, droższe w materiale.
+
+**Co zrobiłem.** Zgodnie z F9.4: **narożnik 45° tylko dla RÓWNYCH głębokości.**
+Przy różnych `corniceCorner` odmawia i zwraca powód w prostym zdaniu
+(`engine/cornice.js`), a interfejs go pokazuje zamiast rysować coś, czego
+warsztat nie potwierdził. Odmowa jest jawna, nie cicha.
+
+**Co Piotr ma zdecydować.** Step czy carry-and-return. Jeśli **step** —
+jedna liczba: jak wysoki jest uskok w stosunku do samego profilu (czy zwrotka
+jest na całą wysokość gzymsu, czy tylko na jego dolną część).
+
+---
+
+## #93 — Głębokość otworu pilotowego pod wkręt prowadnicy MOVENTO (tura 26, F3.3)
+
+**Co blokuje.** R10 każe scenie wywiercić to, co jest na arkuszu, i na jaką
+głębokość. `profile.editor.drillDefaults.RUNNERS_3MM` mówi dziś `depth: 0`,
+czyli NA WYLOT — a wkręt prowadnicy w boku 18 mm na wylot wychodzi na zewnątrz
+szafki.
+
+**Co zrobiłem.** Nic nie wymyśliłem. Scena rysuje to, co mówi tabela warsztatu,
+czyli na wylot, i jest to **nazwane** w `verify/t26/sheet-vs-scene.md` razem z
+powodem. Zmiana to jedna liczba w profilu.
+
+**Co Piotr ma zdecydować.** Jaka jest głębokość otworu ⌀3 pod wkręt prowadnicy
+(i czy Blum podaje ją inaczej dla boku 18 i 19 mm).

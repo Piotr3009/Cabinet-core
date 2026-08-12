@@ -1179,6 +1179,36 @@ export function ShelfSupports({ items, profile, metal }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, S.sleeveFlange],
   );
+  // ─── TURN 26 (CLAUDE.md F3.2): THE PART THAT IS IN THE HOLE ───────────────
+  //
+  // "Sleeves and pins mount INSIDE the holes that actually carry a shelf. The
+  // hole is the panel's; the sleeve is the hardware's."
+  //
+  // Until this turn there was no hole to be inside — the scene bored none — so
+  // the collar was a rim standing on a blank face. The barrel goes the other
+  // way along the normal, into the board, and it is never longer than the bore
+  // the machine actually cuts (`holeDepth`, read off the record by
+  // `engine/hardware3d.js`). Its DIAMETER is the drilling's own, per instance,
+  // because a sleeve that did not fit its hole is the parallel idea R10 forbids.
+  const placeBarrel = useMemo(
+    () => (i, m) => {
+      const it = items[i];
+      const deep = Math.max(0, Math.min(S.sleeveDepth ?? 0, it.holeDepth ?? S.sleeveDepth ?? 0));
+      if (!(deep > 0)) { put(m, new THREE.Vector3(0, -1e6, 0)); return; }
+      const n = new THREE.Vector3(it.normal[0], it.normal[1], it.normal[2]).normalize();
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+      const at = new THREE.Vector3(
+        mm(it.x) - n.x * mm(deep / 2),
+        mm(it.y) - n.y * mm(deep / 2),
+        mm(it.z) - n.z * mm(deep / 2),
+      );
+      // The unit cylinder is scaled to the HOLE, so one geometry serves a ⌀7.5
+      // system and whatever the next workshop drills.
+      put(m, at, q, new THREE.Vector3(mm(it.diameter), mm(deep), mm(it.diameter)));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, S.sleeveDepth],
+  );
   const placePin = useMemo(
     () => placeAt(S.pinLength / 2, S.pinLength),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1194,7 +1224,20 @@ export function ShelfSupports({ items, profile, metal }) {
   const r = (d) => mm(d / 2);
   return (
     <group userData={{ ccHardware: true, ccShelfSupports: items.length }}>
-      {/* The collar in the hole — the piece that shows when the shelf is out. */}
+      {/* The barrel, INSIDE the bore the machine cuts (F3.2). Unit-sized and
+          scaled per instance to the hole's own diameter, so the fitting can
+          never be a different size from the hole it lines. */}
+      <Pieces
+        count={items.length}
+        place={placeBarrel}
+        colour={metal.colour}
+        metalness={metal.metalness}
+        roughness={metal.roughness}
+      >
+        <cylinderGeometry args={[0.5, 0.5, 1, 16]} />
+      </Pieces>
+      {/* …and its RIM, on the face — the piece that shows when the shelf is
+          out, and what the owner is asking to see. */}
       <Pieces
         count={items.length}
         place={placeSleeve}

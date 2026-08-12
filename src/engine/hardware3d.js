@@ -30,6 +30,7 @@
  */
 import { panelPlacement } from './joinery.js';
 import { cupBoreOf, doorHingeDatum } from './doors.js';
+import { machiningFor } from './machining.js';
 
 export function hardwareInstances(result, profile) {
   return {
@@ -107,6 +108,14 @@ export function shelfSupportInstances(result, profile) {
         // opposite of the panel's outward normal, i.e. into the cabinet.
         normal: [-n[0], -n[1], -n[2]],
         diameter: hole.d,
+        // Turn 26 (CLAUDE.md F3.2): how deep the hole this collar lines
+        // actually is — the record's own depth first, then the workshop's own
+        // table for the class (engine/machining.js), which is the very number
+        // `engine/recesses.js` bores it to. One reading, so the collar cannot
+        // be longer than the hole it is knocked into.
+        holeDepth: Number(hole.depth) > 0
+          ? Number(hole.depth)
+          : machiningFor(hole.layer, profile).depth,
       });
     }
   }

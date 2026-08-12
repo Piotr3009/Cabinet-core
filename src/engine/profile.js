@@ -2565,6 +2565,22 @@ export const DEFAULT_CABINET_PROFILE = {
     shelfPin: {
       sleeveOuter: 11,
       sleeveFlange: 2,
+      // ─── TURN 26 (CLAUDE.md F3.2): THE COLLAR GOES IN THE HOLE ───────────
+      //
+      // "Sleeves and pins mount INSIDE the holes that actually carry a shelf.
+      // The hole is the panel's; the sleeve is the hardware's."
+      //
+      // Until this turn there was no hole to be inside: the scene bored none
+      // (turn 21's retirement), so the collar was a disc standing on a blank
+      // face and it read as one. The BARREL is the part that lines the bore,
+      // and its diameter is not a number here — it is the DRILLING's own,
+      // read off the instance, because a sleeve that did not fit the hole the
+      // machine cuts would be exactly the parallel idea R10 forbids.
+      //
+      // How far it goes in is a fitting's own length and the workshop's to
+      // change; it must never exceed the bore, and the view clamps it to the
+      // hole's stated depth.
+      sleeveDepth: 9,
       pinDiameter: 5,
       pinLength: 9,
       // A little shoulder under the shelf, so the board is seen to be resting

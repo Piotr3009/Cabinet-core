@@ -29,6 +29,7 @@
  * @returns {{hinges:Array, runners:Array, legs:Array, rails:Array}}
  */
 import { panelPlacement } from './joinery.js';
+import { cupBoreOf, doorHingeDatum } from './doors.js';
 
 export function hardwareInstances(result, profile) {
   return {
@@ -113,77 +114,120 @@ export function shelfSupportInstances(result, profile) {
 }
 
 /**
- * One hinge per door per hinge row.
+ * ─── ONE PATH FOR EVERY LEAF (turn 26, CLAUDE.md F2.1) ──────────────────────
+ *
+ * The owner, on the small partition-hung leaves: the hinges are the OLD
+ * procedural ones, they do not fold, and they pierce. Three symptoms, and
+ * there is now exactly ONE function that answers "where is this door's
+ * ironmongery" — this one — for a leaf hung on a carcass side and for a leaf
+ * hung on a partition alike.
+ *
+ * It reads the two facts the ENGINE already wrote on the leaf:
+ *
+ *   `hingeOn`    which piece the plate is screwed to — 'BUL', 'BUR' or a
+ *                partition's own panel id;
+ *   `hingeFace`  WHICH of that piece's two faces takes it, where the piece has
+ *                two that matter (a partition). Turn 24 derived this from the
+ *                door's hand instead and got the same answer by construction —
+ *                which is a coincidence held in place by a comment, and this
+ *                turn stops relying on it: the meta wins where it is present,
+ *                and `test/turn26-f2-one-hinge-path.test.js` asserts the
+ *                derivation agrees with it on every leaf of the pair.
  *
  * The HEIGHTS are `drillSummary.hinge_centers` — the carcass rows the plate is
- * screwed to, which is what CLAUDE.md names. The SIDE and the door's own edges
- * come from the front panel's box, so a pair of doors puts one hinge set on
- * each side without this function knowing how many doors there are.
- *
- * `x` is the CUP centre: `hinges.cups.xFromHingeEdge` in from the door's hinge
- * edge, which is the same 21.5 mm the front panel is drilled at.
+ * screwed to. `x` is the CUP centre: `hinges.cups.xFromHingeEdge` in from the
+ * door's hinge edge, the same 21.5 mm the front panel is drilled at. `z` is
+ * the leaf's MOUNTING DATUM — its inner face, resolved by the one helper
+ * (`engine/doors.js doorHingeDatum`), never re-derived here.
  */
 function hingeInstances(result, profile) {
   const out = [];
   const centres = result.drillSummary?.hinge_centers || [];
   if (!centres.length) return out;
-  const cups = profile.hinges.cups;
   const W = result.params.width;
   const G = result.params.board_t;
-  const D = result.params.depth;
 
   for (const panel of result.panels) {
-    if (panel.part !== 'FRONT' || !panel.box) continue;
-    const right = panel.meta?.hinge === 'R';
-    const edgeX = right ? panel.box.x + panel.box.w : panel.box.x;
-    // +1 towards the middle of the door for a left hinge, −1 for a right one.
-    const dir = right ? -1 : 1;
-    // ─── TURN 21 (CLAUDE.md F12.2) ───
-    // Which FACE the plate is screwed to. A door hung on a carcass side takes
-    // the inner face of that side, as it always has; a door hung on a PARTITION
-    // takes the face of that partition it closes against — the piece is named
-    // on the door itself, so this reads the engine's answer rather than
-    // guessing from the door's position.
-    const on = panel.meta?.hingeOn
-      ? result.panels.find((p) => p.id === panel.meta.hingeOn && p.box)
-      : null;
-    // ─── TURN 24 (CLAUDE.md F5.1): WHICH FACE, FOR EVERY BEARER ─────────────
-    //
-    // Owner: bay doors drill correctly and RENDER BARE. They did, and the
-    // reason is one line: turn 21 read `hingeFace`, which only a PARTITION
-    // carries — so a bay door hung on a CARCASS SIDE fell through to
-    // `on.box.x`, the side panel's OUTER face. Its plate was drawn one board
-    // outside the cabinet, buried in the board or in the room, and every one
-    // of those doors looked as if it had no hardware at all.
-    //
-    // The law is the same for all three bearers and it is the door's own HAND:
-    // a door hinged on its LEFT closes against the face on the RIGHT of the
-    // piece it hangs from (the side's inner face, the partition's right face),
-    // and a door hinged on its RIGHT against the face on its left. That is
-    // what `hingeFace` says for a partition, and it now says it for a side
-    // too rather than being absent.
-    const plateFaceX = on
-      ? (right ? on.box.x : on.box.x + on.box.w)
-      : (right ? W - G : G);
-    for (const y of centres) {
-      out.push({
-        kind: 'hinge',
-        side: right ? 'R' : 'L',
-        dir,
-        // The cup, bored into the back face of the door.
-        x: edgeX + dir * cups.xFromHingeEdge,
-        y,
-        z: panel.box.z,
-        // …and the plate, on the inner face of the side panel this door hangs
-        // from, at the same distance from the front edge the engine drills the
-        // plate screws at (profile.hinges.xFromFrontEdge).
-        plateX: plateFaceX,
-        plateZ: D - profile.hinges.xFromFrontEdge,
-        panelId: panel.id,
-      });
-    }
+    for (const instance of doorHingeInstances(panel, {
+      panels: result.panels, centres, profile, width: W, boardT: G, depth: result.params.depth,
+    })) out.push(instance);
   }
   return out;
+}
+
+/**
+ * The hinges of ONE leaf. Exported because the paired test asserts the two
+ * kinds of leaf come out of the same call rather than out of two that happen
+ * to agree (F2.2).
+ *
+ * @param {object} panel   an engine panel record — anything that is not a
+ *   hinged FRONT contributes nothing, which is how the D/W panel (F5.3) and
+ *   every carcass board fall out without a branch of their own.
+ */
+export function doorHingeInstances(panel, {
+  panels = [], centres = [], profile, width = 0, boardT = 0, depth = 0,
+}) {
+  if (!panel || panel.part !== 'FRONT' || !panel.box) return [];
+  // The DATUM, and the gate. A leaf with no datum is a leaf that takes no cup
+  // hinges at all — today that is the appliance front, and it is one `null`
+  // rather than a special case here and another one in the view.
+  const datum = doorHingeDatum(panel);
+  if (!datum) return [];
+  // The BORE — the owner's 11 mm, clamped to the board so a blind cup stays
+  // blind on an 18 mm front. It travels on the instance because the view draws
+  // the procedural cylinder to it and the guard measures against it, and two
+  // readings of one number is how this turn's fault got in.
+  const bore = cupBoreOf(panel, profile);
+
+  const cups = profile.hinges.cups;
+  const right = panel.meta?.hinge === 'R';
+  const edgeX = right ? panel.box.x + panel.box.w : panel.box.x;
+  // +1 towards the middle of the door for a left hinge, −1 for a right one.
+  const dir = right ? -1 : 1;
+
+  // ─── WHICH PIECE, AND WHICH OF ITS FACES ────────────────────────────────
+  //
+  // A door hung on a carcass side takes the inner face of that side; a door
+  // hung on a PARTITION takes the face of that partition it closes against.
+  // Both are named on the leaf itself.
+  const on = panel.meta?.hingeOn
+    ? panels.find((p) => p.id === panel.meta.hingeOn && p.box)
+    : null;
+  // `hingeFace` is the ENGINE's own answer and it is the one the plate pattern
+  // is drilled from (engine/cabinet.js). 'L' means the plate is on the bearer's
+  // LEFT face, 'R' its right one. Absent — a carcass side, which has only one
+  // face a door can close against — it falls to the door's own hand, which is
+  // the same law said the other way round.
+  const face = panel.meta?.hingeFace || (right ? 'L' : 'R');
+  const plateFaceX = on
+    ? (face === 'L' ? on.box.x : on.box.x + on.box.w)
+    : (right ? width - boardT : boardT);
+
+  return centres.map((y) => ({
+    kind: 'hinge',
+    side: right ? 'R' : 'L',
+    dir,
+    // The cup, bored into the INNER face of the door.
+    x: edgeX + dir * cups.xFromHingeEdge,
+    y,
+    z: datum.innerZ,
+    // Turn 26 (F1.3): the plane nothing about this hinge may cross, carried on
+    // the instance so the scene and the guard read one number.
+    outerZ: datum.outerZ,
+    thickness: datum.thickness,
+    cupDepth: bore?.depth ?? 0,
+    // …and the plate, on the face of the piece this door hangs from, at the
+    // same distance from the front edge the engine drills the plate screws at
+    // (profile.hinges.xFromFrontEdge).
+    plateX: plateFaceX,
+    plateZ: depth - profile.hinges.xFromFrontEdge,
+    // Which bearer, and which of its faces — reported so a walk can assert the
+    // mount rather than infer it from a coordinate (F2.2).
+    hingeOn: panel.meta?.hingeOn || null,
+    hingeFace: face,
+    onPartition: Boolean(on && on.part === 'VPART'),
+    panelId: panel.id,
+  }));
 }
 
 /**

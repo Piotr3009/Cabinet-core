@@ -1377,8 +1377,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // heart, one line, and turning it on is the owner's word and nobody else's.
     // The z-fighting he saw goes with the default; the carving is RETIRED, not
     // debugged.
+    //
+    // ─── TURN 26 (CLAUDE.md R10 / F3): AND HIS WORD IS THE OTHER WAY NOW ────
+    //
+    // "cut CNC musi być twoją drogą do wizualizacji, nie na odwrót." R10
+    // outranks the retirement, and the owner's example is the reason: a side
+    // panel with three ⌀7.5 holes per level on the sheet and NO holes at all in
+    // the scene, X-ray included.
+    //
+    // What was actually wrong in turn 20 was never the carving. It was that no
+    // drilling stated a DEPTH, so every one of them read as a hole straight
+    // through the board — which is precisely the pilot dots he saw on his door
+    // faces. Depth is a property of the record now (engine/cabinet.js writes
+    // the cup's own 11 mm) and of the workshop's own table for the rest
+    // (`editor.drillDefaults`), and WHICH CLASSES are bored at all is a named
+    // policy with a reason per class (engine/machining.js). The flag is TRUE.
     cuts: {
-      enabled: false,
+      enabled: true,
     },
     // ~20 % sheen: a hint of clear coat over a matt board. Not plastic.
     // Kept as the fallback a piece takes when it belongs to no finish family.
@@ -2134,11 +2149,24 @@ export const DEFAULT_CABINET_PROFILE = {
   // numbers and both the drawing and the 3D follow.
   hardware: {
     // A 35 mm cup hinge (the Blum/Hettich standard the drilling in `hinges`
-    // above is already dimensioned for — cup ⌀35, 12.5 deep, cup centre 21.5 in
+    // above is already dimensioned for — cup ⌀35, 11 deep, cup centre 21.5 in
     // from the door edge).
     hinge: {
       cupDiameter: 35,
-      cupDepth: 12.5,
+      // ─── TURN 26 (CLAUDE.md F1.1): PIOTR MEASURED IT ────────────────────
+      // The owner put a rule on the real thing: **a CLIP top cup is 11 mm deep
+      // in a 25 mm door.** Not 12.5, which is the number the app has carried
+      // since turn 1 and which nobody in this building had checked against a
+      // hinge. It is HIS number and it decides three things at once — how deep
+      // the bore is cut on the sheet (`cup` drills now state this depth), how
+      // far the procedural cylinder goes into the leaf, and where the
+      // downloaded model's flange plane sits (`modelOrigin.z` below is derived
+      // from it, and a test holds the derivation).
+      cupDepth: 11,
+      // How much board a blind cup must leave under it. The bore is clamped to
+      // `thickness − this` so an 18 mm front cannot be drilled through by a law
+      // written for a 25 mm one (engine/doors.js `cupBoreOf`).
+      cupFloorKeepMm: 1,
       bossHeight: 16,        // the cup body standing proud of the door's back face
       armLength: 62,         // cup centre → the far end of the arm, along the depth
       armWidth: 22,          // across the door's height
@@ -2294,14 +2322,39 @@ export const DEFAULT_CABINET_PROFILE = {
         // 71B3550 GLB, parsed headless: bbox x −26.5..11, y ±28.5, z −29.48
         // ..51.3; cup slab 37.5×57×16 at z 35.3..51.3 ⇒ authored axes ALREADY
         // match the unit's (y up, +z into the door, arm to −z). The wrong
-        // picture the owner shot was the BBOX-MIN datum alone. These origins
-        // put the CUP CENTRE (x −7.75, y 0) at the drilled point with the
-        // FLANGE PLANE (z 35.3) on the door's back face:
+        // picture the owner shot was the BBOX-MIN datum alone.
+        //
+        // ─── TURN 26 (CLAUDE.md F1.2): AND THE FLANGE PLANE WAS WRONG ───────
+        //
+        // Turn 24 read the cup slab's NEAR end (z 35.3) as the flange plane and
+        // stood that on the door's inner face — so the model's ⌀35 body went
+        // SIXTEEN millimetres into the leaf. That is the "roughly 15" the owner
+        // measured off the screen, and on an 18 or 19 mm front it is a hinge
+        // standing in the last two millimetres of the board.
+        //
+        // The cup slab's FAR end is the bottom of the bore, and the owner's
+        // caliper says the bore is 11 mm. So the flange plane is DERIVED, not
+        // typed a third time:
+        //
+        //   flangeZ = cupBoreFileZ − hardware.hinge.cupDepth = 51.3 − 11 = 40.3
+        //   modelOrigin.z = min.z − flangeZ = −29.48 − 40.3 = −69.78
+        //
+        // `test/turn26-f1-no-pierce.test.js` asserts that identity, so the day
+        // the owner re-measures the cup the origin cannot be left behind.
+        //
+        // These origins put the CUP CENTRE (x −7.75, y 0) at the drilled point
+        // with the FLANGE PLANE on the door's INNER face:
         //   modelOrigin = min − (cupX, 0, flangeZ)
         // 173L6100 plate: 8.5×53×41.5, base at x −8.5 ⇒ after the −min shift
         // the base already sits on the panel face growing +x; the origin
         // centres the dowel line (y, z) on the drilled point.
-        modelOrigin: { x: -18.75, y: -28.5, z: -64.78 },
+        //
+        // The file z of the cup's DEEPEST point — the bottom of the ⌀35 bore.
+        // A measurement, like `min` above, and the one the flange is derived
+        // from. A pack whose cup is authored differently changes this line.
+        cupBoreFileZ: 51.3,
+        fileMinZ: -29.48,
+        modelOrigin: { x: -18.75, y: -28.5, z: -69.78 },
         plateOrigin: { x: 0, y: -26.5, z: -20.75 },
         // The hand the FILE is authored for. The body's bulk sits at −x of
         // the cup, which mounted reads as a RIGHT-hung door; the view mirrors
@@ -2962,12 +3015,25 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // `depth` is a THROUGH hole where the number is 0 — which is what a screw
     // through a side panel is, and what the export has always written.
+    // ─── TURN 26 (CLAUDE.md R10 / F3.3): AND THE SCENE READS THE SAME TABLE ──
+    //
+    // This block was the hand-editor's stamping convention. It is now also what
+    // `engine/machining.js` bores a blind hole to when the RECORD does not
+    // state a depth — one table, so the hole a joiner stamps and the hole the
+    // scene shows are the same hole. Two rows are corrected this turn, both on
+    // the owner's own words.
     drillDefaults: {
       SCREWS_3MM: { d: 3, depth: 0 },
       SHELVES_7_5MM: { d: 7.5, depth: 12 },
       HINGES_5MM: { d: 5, depth: 12 },
-      FRONT_HINGES_35MM: { d: 35, depth: 12.5 },
-      FRONT_HINGES_3MM: { d: 3, depth: 0 },
+      // The owner measured the cup: ELEVEN, not 12.5 (CLAUDE.md F1.1). The
+      // engine states this depth on the hole itself, so the record is what is
+      // actually bored; this row is what a hand-stamped cup takes.
+      FRONT_HINGES_35MM: { d: 35, depth: 11 },
+      // …and the cup's own two fixing screws follow the cup rather than going
+      // through the leaf. A ⌀3 straight through a door is turn 21's "pilot dots
+      // on his door faces", which is what retired the whole carving pass.
+      FRONT_HINGES_3MM: { d: 3, depth: 11 },
       PUZZLE_HOLES_7_5MM: { d: 7.5, depth: 0 },
       RUNNERS_3MM: { d: 3, depth: 0 },
       BISCUIT_4MM: { d: 4, depth: 12 },

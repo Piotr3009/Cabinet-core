@@ -19,6 +19,8 @@ import Cornice from './Cornice.jsx';
 import JointLines from './JointLines.jsx';
 import PartMachining from './PartMachining.jsx';
 import { shakerFrontGeometry } from './shakerSolid.js';
+import { isShakerFront } from '../engine/shaker.js';
+import { panelRecesses } from '../engine/recesses.js';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
@@ -234,7 +236,17 @@ export function MovingPanel({
   // walls throw at a grazing angle is what makes it read as a shaker rather
   // than as a rectangle drawn on a door (3d/shakerSolid.js). Cached by leaf
   // size and frame, so a kitchen of identical doors builds one geometry.
-  const shaker = useMemo(() => (mitre ? null : shakerFrontGeometry(p)), [p, mitre]);
+  //
+  // ─── TURN 26 (CLAUDE.md R10 / F3.3): …AND ITS DRILLING ──────────────────
+  // A shaker leaf never reached `panelSolids`, so it was the one FRONT class
+  // whose cups and cup screws the scene did not show. The tray takes the same
+  // `engine/recesses.js` records every other board reads, and bores them
+  // itself — one solid, which is turn 25's own reason for building it by hand.
+  const shaker = useMemo(() => {
+    if (mitre) return null;
+    if (!isShakerFront(p) || !profile?.appearance?.cuts?.enabled) return shakerFrontGeometry(p);
+    return shakerFrontGeometry(p, panelRecesses(p, drills, { thickness: p.box.d, profile }));
+  }, [p, mitre, drills, profile]);
   const machined = shaker || built?.solid || null;
   const cuts = built?.cuts || null;
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);

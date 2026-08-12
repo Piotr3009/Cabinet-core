@@ -30,7 +30,9 @@ import {
 } from './shaker.js';
 import { resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
-import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
+import {
+  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays,
+} from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
@@ -2936,7 +2938,31 @@ export function computeCabinet(params, profileOverride) {
 
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];
-  const addDrill = (panelId, kind, layer, x, y, d) => drills.push({ panel: panelId, kind, layer, x: roundTo(x, 4), y: roundTo(y, 4), d });
+  // ─── TURN 26 (CLAUDE.md R10 / F1.4): A DRILL MAY STATE ITS DEPTH ──────────
+  //
+  // "Fronts hinge-drilled by the engine already use the correct depth for CNC —
+  // verify; if CNC and the scene disagree, R10 decides: the sheet wins and the
+  // scene is corrected." They did not: `addDrill` had no depth at all, so every
+  // hole this engine has ever emitted reads as a THROUGH hole
+  // (engine/recesses.js says so in as many words) — and a ⌀35 cup bored through
+  // a door is the owner's "the hinge pierces the front".
+  //
+  // The sheet is the truth, so the sheet is what gains the number. `depth` is
+  // OPTIONAL and absent on every hole that really does go through, which is all
+  // of them but the cup: a hole with no depth keeps meaning exactly what it has
+  // meant since turn 1. The DXF is unchanged — a circle carries a diameter and
+  // a layer and never a depth (engine/cnc/dxf.js) — so the fingerprint does not
+  // move, which is what makes this a display correction with a record behind it
+  // rather than a re-cut.
+  const addDrill = (panelId, kind, layer, x, y, d, depth = null) => drills.push({
+    panel: panelId,
+    kind,
+    layer,
+    x: roundTo(x, 4),
+    y: roundTo(y, 4),
+    d,
+    ...(Number(depth) > 0 ? { depth: roundTo(depth, 4) } : {}),
+  });
 
   // ─── Turn 13 (CLAUDE.md F8): a MARK is neither a hole nor a pocket ───
   //
@@ -3190,8 +3216,14 @@ export function computeCabinet(params, profileOverride) {
     const hingeSide = pnl.meta?.hinge || cfg.hinge;
     const cupX = hingeSide === 'L' ? pnl.w - cups.xFromHingeEdge : cups.xFromHingeEdge;
     const holeX = hingeSide === 'L' ? cupX - cups.screwOffsetX : cupX + cups.screwOffsetX;
+    // Turn 26 (CLAUDE.md F1.4): the cup is the ONE hole in these kits that does
+    // not go through, and this is where the sheet says so. The number is the
+    // owner's measured 11 mm, clamped to this leaf's own board by the same
+    // helper the scene reads (engine/doors.js `cupBoreOf`) — one derivation, so
+    // the bore in the picture is the bore on the sheet to the hundredth.
+    const cupBore = cupBoreOf(pnl, P);
     for (const y of cupY) {
-      addDrill(pnl.id, 'cup', cups.layer, cupX, y, cups.diameter);
+      addDrill(pnl.id, 'cup', cups.layer, cupX, y, cups.diameter, cupBore?.depth ?? null);
       addDrill(pnl.id, 'cup_screw', cups.screwLayer, holeX, y + cups.screwOffsetY, cups.screwDiameter);
       addDrill(pnl.id, 'cup_screw', cups.screwLayer, holeX, y - cups.screwOffsetY, cups.screwDiameter);
     }

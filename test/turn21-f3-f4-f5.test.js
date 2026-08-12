@@ -20,25 +20,41 @@ import {
 
 const read = (rel) => readFileSync(new URL(`../src/${rel}`, import.meta.url), 'utf8');
 
-// ─── F3 — retired, and retired by DEFAULT ──────────────────────────────────
+// ─── F3 — RETIRED IN TURN 21, REINSTATED IN TURN 26 ────────────────────────
+//
+// Turn 21's verdict was the owner's and it stands as a record of what he saw:
+// pilot dots on his door faces and stray dashes inside his carcasses. Turn 26
+// R10 is his newer and higher law — "cut CNC musi być twoją drogą do
+// wizualizacji, nie na odwrót" — and it reverses the retirement, because the
+// example that forced it is a side panel with three ⌀7.5 holes per level on
+// the sheet and NO holes at all in the scene.
+//
+// What was actually wrong was never the carving: no drilling stated a DEPTH,
+// so every one of them read as a hole straight through the board. Those pilot
+// dots ARE that fault. The flag ships TRUE now, the cup states its own 11 mm,
+// and WHICH classes are bored is a named policy (engine/machining.js).
+//
+// The tests below keep their turn-21 shape so the reversal is legible: the
+// same three questions, the opposite answers, and the MIGRATION unchanged.
 
-test('F3.1 — `appearance.cuts.enabled` exists and is FALSE', () => {
-  assert.equal(P.appearance.cuts.enabled, false, 'the owner’s call: retired');
-  assert.equal(getCabinetProfile().appearance.cuts.enabled, false, '…and in the running profile');
-  // A profile SAVED before this turn has no `cuts` at all and must read as the
+test('F3.1 — `appearance.cuts.enabled` exists and is TRUE (turn 26, R10)', () => {
+  assert.equal(P.appearance.cuts.enabled, true, 'the owner’s newer call: the scene renders the record');
+  assert.equal(getCabinetProfile().appearance.cuts.enabled, true, '…and in the running profile');
+  // A profile SAVED before turn 21 has no `cuts` at all and must read as the
   // default rather than as undefined — which would be falsy by luck, not by
   // rule, and would break the first time somebody stored `{}` there.
   const stored = { ...P, appearance: { ...P.appearance, cutFace: '#123456' } };
   delete stored.appearance.cuts;
   const old = migrateCabinetProfile(stored);
-  assert.equal(old.appearance.cuts.enabled, false);
+  assert.equal(old.appearance.cuts.enabled, true);
   assert.equal(old.appearance.cutFace, '#123456', 'and it keeps what it did say');
-  // Flipping it is one line and nothing else.
-  const on = migrateCabinetProfile({ ...P, appearance: { ...P.appearance, cuts: { enabled: true } } });
-  assert.equal(on.appearance.cuts.enabled, true);
+  // …and a workshop that has deliberately turned it OFF keeps it off: it is a
+  // flag, in both directions.
+  const off = migrateCabinetProfile({ ...P, appearance: { ...P.appearance, cuts: { enabled: false } } });
+  assert.equal(off.appearance.cuts.enabled, false);
 });
 
-test('F3.1 — with the flag off, a drilled panel is a plain box again', async () => {
+test('F3.1 — with the flag ON, a drilled panel is carved; OFF, it is a plain box', async () => {
   const { clearPanelSolidCache, panelSolids } = await import('../src/3d/panelSolid.js');
   clearPanelSolidCache();
   const L = joineryLayers(P);
@@ -46,21 +62,18 @@ test('F3.1 — with the flag off, a drilled panel is a plain box again', async (
     type: 'BUDR', width: 600, height: 770, depth: 558, board_t: 18, front_t: 25, unit_num: '01',
   }, P);
 
-  // A drawer side: two grooves and nothing else. Turn 20 carved them; with the
-  // flag off it is the plain board turn 19 drew.
+  // A drawer side: two grooves and nothing else.
   const side = r.panels.find((p) => p.part === 'DRAWER-SIDE');
-  const off = panelSolids(side, L, P, r.drills);
-  assert.equal(off.solid, null, 'no carved solid — the caller falls back to a boxGeometry');
-  assert.equal(off.cuts, null, 'and no cut-face buffer to fight with it in the depth buffer');
+  const on = panelSolids(side, L, P, r.drills);
+  assert.ok(on.solid && on.cuts, 'the grooves are a real absence with real walls');
 
-  // …and the machinery is retired, not deleted: one profile line brings it all
-  // back, which is what F3.1 asks for.
-  const on = panelSolids(side, L, { ...P, appearance: { ...P.appearance, cuts: { enabled: true } } }, r.drills);
-  assert.ok(on.solid && on.cuts, 'the flag is a flag and not a tombstone');
+  const off = panelSolids(side, L, { ...P, appearance: { ...P.appearance, cuts: { enabled: false } } }, r.drills);
+  assert.equal(off.solid, null, 'flag off — the caller falls back to a boxGeometry');
+  assert.equal(off.cuts, null, 'and no cut-face buffer to fight with it in the depth buffer');
   clearPanelSolidCache();
 });
 
-test('F3.2 — what was there BEFORE turn 20 is NOT behind the flag', async () => {
+test('F3.2 — what was there BEFORE turn 20 does not depend on the flag either way', async () => {
   const { clearPanelSolidCache, panelSolids } = await import('../src/3d/panelSolid.js');
   clearPanelSolidCache();
   const L = joineryLayers(P);
@@ -80,33 +93,40 @@ test('F3.2 — what was there BEFORE turn 20 is NOT behind the flag', async () =
 
   // A carcass side carries the puzzle SOCKETS and the TABS — turn 11 and turn
   // 12, the board's own outline — plus a great many drillings. With the flag
-  // off it still gets a real machined solid, because the sockets and tabs are
+  // OFF it still gets a real machined solid, because the sockets and tabs are
   // the shape of the board and were never turn 20's.
   const bul = r.panels.find((p) => p.id === 'BUL');
+  const off = { ...P, appearance: { ...P.appearance, cuts: { enabled: false } } };
+  const bare = panelSolids(bul, L, off, r.drills);
+  assert.ok(bare.solid, 'the dog-boned, tabbed side is still a machined solid');
+  assert.equal(bare.cuts, null, 'but nothing is carved into its faces');
+  clearPanelSolidCache();
+  // …and with the flag on — the shipped default — the drillings are THERE.
   const built = panelSolids(bul, L, P, r.drills);
-  assert.ok(built.solid, 'the dog-boned, tabbed side is still a machined solid');
-  assert.equal(built.cuts, null, 'but nothing is carved into its faces');
-  // The drillings ARE still in the record — the CNC sheet is the document and
-  // it has lost nothing. Only the 3-D carving of them is retired.
+  assert.ok(built.solid && built.cuts, 'R10: what the sheet drills, the scene bores');
   const drilled = r.drills.filter((d) => d.panel === 'BUL');
   assert.ok(drilled.length > 10, `${drilled.length} drillings, still exported`);
-  assert.ok(panelRecesses(bul, drilled, { thickness: 18, skipLayers: [L.socket] }).length > 10,
-    'and the arithmetic that would carve them is intact, waiting on the flag');
+  assert.ok(panelRecesses(bul, drilled, { thickness: 18, skipLayers: [L.socket], profile: P }).length > 10,
+    'and every one of them is a recess the view can cut');
   clearPanelSolidCache();
 });
 
-test('F3.3 — the always-on path is gone, not commented out', () => {
+test('F3.3 — the recess pass has ONE call site, and it is guarded', () => {
   const src = read('3d/panelSolid.js');
-  // The gate is a real branch on the profile flag, and it is the ONLY place
-  // recesses are computed.
+  // The gate is a real branch on the profile flag, and it is the ONLY place a
+  // carcass board's recesses are computed.
   assert.equal((src.match(/panelRecesses\(/g) || []).length, 1, 'one call site, guarded');
   assert.match(src, /profile\?\.appearance\?\.cuts\?\.enabled/);
   // No dead always-on copy left lying about in a comment.
   assert.ok(!/^\s*\/\/\s*const recesses = panelRecesses/m.test(src));
   const view = read('3d/UnitView.jsx');
-  // The view needs no flag of its own: `panelSolids` answers null and the cut
-  // mesh is already conditional on it. One decision, one place.
-  assert.ok(!view.includes('cuts.enabled'), 'the flag is read in exactly one file');
+  // ─── TURN 26 (CLAUDE.md F3.3) ───
+  // The view now reads the flag ONCE, for the one panel class that never went
+  // through `panelSolids` at all: a SHAKER leaf, whose tray is its own solid
+  // (3d/shakerSolid.js) and which therefore has to bore its own cups or be the
+  // single FRONT class the scene does not show. It is named, not incidental.
+  assert.equal((view.match(/cuts\?\.enabled/g) || []).length, 1, 'exactly one reader in the view, and it is the shaker tray');
+  assert.match(view, /shakerFrontGeometry\(p, panelRecesses\(/);
   assert.match(view, /cuts && !contour/);
 });
 

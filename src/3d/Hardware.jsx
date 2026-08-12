@@ -609,10 +609,21 @@ export function DoorHinges({
     mm(x) - pivot[0], mm(y) - pivot[1], mm(z) - pivot[2],
   );
 
-  // Into the door, from its back face.
+  // ─── TURN 26 (CLAUDE.md F1.1/F1.2): INTO THE BORE, AND NO FURTHER ────────
+  //
+  // `h.z` is the leaf's MOUNTING DATUM — its inner face, resolved once by
+  // `engine/doors.js doorHingeDatum` — and `h.cupDepth` is the owner's 11 mm
+  // already clamped to that leaf's own board. This component no longer reads
+  // the catalogue depth for itself: a second reading of one number is exactly
+  // how a 12.5 mm cylinder came to be drawn into an 18 mm door.
   const placeCup = useMemo(() => (i, m) => {
     const h = items[i];
-    put(m, local(h.x, h.y, h.z + H.cupDepth / 2), laid);
+    const depth = Number(h.cupDepth) || 0;
+    // The geometry is cut to the catalogue depth and shared by every cup in the
+    // unit; a leaf whose board forced the clamp scales its own instance along
+    // the bore's axis (the cylinder's own y, before `laid` turns it into z).
+    const stretch = H.cupDepth > 0 ? depth / H.cupDepth : 1;
+    put(m, local(h.x, h.y, h.z + depth / 2), laid, new THREE.Vector3(1, stretch, 1));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, H.cupDepth, laid, pivot[0], pivot[1], pivot[2]]);
 

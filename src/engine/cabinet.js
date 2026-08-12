@@ -2773,6 +2773,20 @@ export function computeCabinet(params, profileOverride) {
       bays: doorBaysHere, modes: params.bay_doors, width: W, gap: P.doors.gap,
     })
     : [];
+  // ─── TURN 25 (CLAUDE.md F5): A DOOR IS A DOOR, WHEREVER IT IS HUNG ───────
+  //
+  // Turn 21 gave a partition-hung leaf its drilling and turn 24 made its hinges
+  // visible; what it still did not have was a place in the ORDER FORM. The
+  // reason was one number: `doorCount` comes from the FACE's own door rule, and
+  // a cabinet with doors in its bays sets `doors: false` by construction — so
+  // `totals.hinges` was `centres.length × 0`, `drillSummary.hinge_centers` was
+  // empty, and the BOM bought nothing to hang three leaves on while the machine
+  // bored all twelve plate holes for them.
+  //
+  // `leafCount` is that number said properly: how many doors this cabinet has,
+  // counting the ones on a partition. Every law downstream reads it, and there
+  // is no branch anywhere that asks whether a leaf is a "bay door".
+  const leafCount = bayDoors.length || doorCount;
   for (const leaf of bayDoors) {
     if (!(leaf.width > 0)) continue;
     panels.push(panel({
@@ -3413,7 +3427,9 @@ export function computeCabinet(params, profileOverride) {
     edging_front_m: roundTo(frontEdging, 6),
     edging_total_m: roundTo(boardEdging + frontEdging, 6),
     legs: legsPerUnit,
-    hinges: doorCount > 0 ? centres.length * doorCount : 0,
+    // Turn 25 (CLAUDE.md F5): the LEAVES, not the face's door rule — a door
+    // hung on a partition needs the same three hinges as one hung on a side.
+    hinges: leafCount > 0 ? centres.length * leafCount : 0,
     runner_pairs: numDrawers,
     hangers: type.hangers ? P.wallUnit.hangers.count : 0,
     rail: hasRail ? 1 : 0,
@@ -3453,16 +3469,29 @@ export function computeCabinet(params, profileOverride) {
   // things to buy. With no catalogue read every door resolves to the same
   // "nothing known", the grouping collapses to one line, and the spec is
   // byte-for-byte what it was before this turn.
-  const doorPanels = panels.filter((pn) => pn.part === 'FRONT' && pn.role === 'front');
+  // ─── TURN 25 (CLAUDE.md F5): A DOOR IS A DOOR, WHEREVER IT IS HUNG ───────
+  //
+  // Turn 21 gave a partition-hung leaf its drilling and turn 24 made its hinges
+  // visible; what it still did not have was a place in the ORDER FORM. The
+  // reason was one number: `doorCount` comes from the FACE's own door rule, and
+  // a cabinet with doors in its bays sets `doors: false` by construction — so
+  // `totals.hinges` was `centres.length × 0` and the BOM bought nothing to hang
+  // three leaves on.
+  //
+  // `leafCount` is that number said properly: how many doors this cabinet has,
+  // counting the ones on a partition. Every law below reads it, and there is no
+  // branch anywhere that asks whether a leaf is a "bay door".
+  const doorPanels = panels.filter((pn) => pn.part === 'FRONT' && pn.role === 'front'
+    && !pn.meta?.appliance);
   const innerDrawer = type.family === 'wardrobe' && numDrawers > 0;
   const hingeGroups = new Map();
-  if (doorCount > 0 && centres.length > 0) {
+  if (leafCount > 0 && centres.length > 0) {
     // A kit whose door panels are not one-per-door (a fridge housing's fixed
     // face, a kit that has had its fronts taken off) still buys hinges for the
     // doors the engine counted — so the LIST is padded to `doorCount` with the
     // cabinet's own answer rather than shrinking the order to the panels.
-    const doors = doorPanels.length === doorCount ? doorPanels : [];
-    const keys = doors.length ? doors : Array.from({ length: doorCount }, () => null);
+    const doors = doorPanels.length === leafCount ? doorPanels : [];
+    const keys = doors.length ? doors : Array.from({ length: leafCount }, () => null);
     for (const pnl of keys) {
       const spec = resolveDoorHinge({
         assigned: pnl ? doorHingeAssignment({ door_hinges: cfg.doorHinges }, pnl.id) : null,
@@ -3664,7 +3693,11 @@ export function computeCabinet(params, profileOverride) {
 
   const derived = {
     ...(removedParts.length ? { removed_parts: removedParts } : {}),
-    doors: doorCount,
+    // Turn 25 (CLAUDE.md F5): how many doors this cabinet HAS. For a face
+    // cabinet that is the face's own rule and every fixture is untouched; for a
+    // cabinet whose doors are in its bays it used to be 0, which was a cabinet
+    // reporting that it had no doors while three of them hung on its partitions.
+    doors: leafCount,
     internal_width: internalWidth,
     internal_depth: internalDepth,
     // ─── TURN 25 (CLAUDE.md F2): THE UNIT'S RESOLVED JOINT INSET ───────────
@@ -3729,8 +3762,8 @@ export function computeCabinet(params, profileOverride) {
   };
 
   const drillSummary = {
-    hinge_centers: doorCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
-    side_hinge_holes_y: doorCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
+    hinge_centers: leafCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
+    side_hinge_holes_y: leafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
     hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
     front_cup_y: cupY.map((v) => roundTo(v, 4)),

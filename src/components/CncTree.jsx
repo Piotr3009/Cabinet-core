@@ -4,7 +4,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import {
-  VIEW_PRESETS, PART_GROUPS, exportablePanels, groupOfPanel, panelIdsForPreset,
+  PART_GROUPS, QUICK_SELECTS, exportablePanels, groupOfPanel, panelIdsForQuickSelect,
   treePathOfPanel,
 } from '../engine/cnc/groups.js';
 import { groupByMaterial } from '../engine/cnc/views.js';
@@ -240,20 +240,29 @@ export default function CncTree() {
                     `panelIdsForPreset` the export has used since turn 3.
                     Nothing about the EXPORT changed: the presets are all still
                     in engine/cnc/groups.js and still name the files. */}
+                {/* ─── Turn 25 (CLAUDE.md F7.2): FIVE QUICK-SELECT BUTTONS ───
+                    All · Carcasses · Shelves · Doors, fronts & panels ·
+                    Infills & plinths, each ticking its WHOLE group. They are
+                    derived from the same `PART_GROUPS` the headers below are
+                    drawn from (engine/cnc/groups.js), so a button and the
+                    header it selects cannot come to mean different things —
+                    which is what the old row did, where the buttons were EXPORT
+                    PRESETS and the headers were groups. */}
                 <div className="grid grid-cols-2 gap-1 pb-1.5">
-                  {VIEW_PRESETS.map((preset) => (
+                  {QUICK_SELECTS.map((q) => (
                     <button
-                      key={preset.id}
+                      key={q.id}
                       type="button"
-                      title={preset.hint || ''}
+                      title={q.hint || ''}
+                      data-cnc-quick={q.id}
                       className="px-1.5 py-1 text-[10px] rounded border border-shell-600 text-ink-100 hover:bg-shell-700"
                       onClick={() => {
-                        const wanted = new Set(panelIdsForPreset(parts, preset.id));
+                        const wanted = new Set(panelIdsForQuickSelect(parts, q.id));
                         setCncParts(unit.id, parts.map((p) => p.id), false);
                         setCncParts(unit.id, [...wanted], true);
                       }}
                     >
-                      {preset.label}
+                      {q.label}
                     </button>
                   ))}
                 </div>

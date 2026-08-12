@@ -44,20 +44,34 @@ test('every cut part lands in exactly one group, decided on part and role', () =
   assert.equal(total, r.panels.length, 'no part is lost or counted twice');
   for (const id of PART_GROUPS.map((g) => g.id)) assert.ok(groups.has(id));
 
-  // The two that a substring match would get wrong.
+  // The ones a substring match would get wrong.
   assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'RAIL-PART')), 'shelves');
-  assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'D1-SL')), 'drawers');
-  assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'DP-L')), 'drawers', 'the drawer panel is a drawer part');
   assert.equal(groupOfPanel(r.panels.find((p) => p.part === 'FRONT')), 'fronts');
   assert.equal(groupOfPanel(r.panels.find((p) => p.part === 'DRAWER-FRONT')), 'fronts');
-  assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'BACK')), 'carcass');
+  assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'BACK')), 'carcasses');
 
-  // The turn-3 automatics are carcass work.
+  // ─── TURN 25 (CLAUDE.md F7.1): FOUR GROUPS, AND TWO THINGS MOVED ─────────
+  // The DRAWERS group is gone: a drawer box and the panel that carries its
+  // runners are carcass board, cut and assembled as a carcass is, and a joiner
+  // ticking "Carcasses" to fill a sheet with everything that is not a front
+  // wants them on it.
+  assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'D1-SL')), 'carcasses');
+  assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'DP-L')), 'carcasses');
+
+  // …and INFILL-* LEAVES the carcass group, with the plinth beside it: both are
+  // finishing pieces that stand in the room and are sprayed with the doors.
   const withExtras = computeCabinet({
     type: 'BUD', width: 600, height: 770, depth: 558, unit_num: '01', plinth: true, top_infill_mm: 40,
   }, P);
-  assert.equal(groupOfPanel(withExtras.panels.find((p) => p.id === 'PLINTH')), 'carcass');
-  assert.equal(groupOfPanel(withExtras.panels.find((p) => p.id === 'INFILL-T')), 'carcass');
+  assert.equal(groupOfPanel(withExtras.panels.find((p) => p.id === 'PLINTH')), 'infills');
+  // …and the piece is looked up by a name it really has. `INFILL-T` never
+  // existed — the top infill is cut as a FACE and a SHELF — so the old
+  // assertion was passing `undefined` to `groupOfPanel` and reading the
+  // fallback back out. It proved nothing, which is why it survived the group
+  // it was about moving.
+  const infills = withExtras.panels.filter((p) => p.role === 'infill');
+  assert.ok(infills.length, 'the cabinet really has a top infill');
+  for (const piece of infills) assert.equal(groupOfPanel(piece), 'infills', piece.id);
 });
 
 test('the four presets select what their names say', () => {

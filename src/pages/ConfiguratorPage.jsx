@@ -93,6 +93,8 @@ export default function ConfiguratorPage() {
   const clearSelection = useUiStore((s) => s.clearSelection);
   const removeItem = useProjectStore((s) => s.removeItem);
   const removeUnit = useProjectStore((s) => s.removeUnit);
+  // Turn 25 (CLAUDE.md F11): the same action the front's modal calls.
+  const removeFront = useProjectStore((s) => s.removeFront);
   const undo = useHistoryStore((s) => s.undo);
   const redo = useHistoryStore((s) => s.redo);
 
@@ -149,6 +151,25 @@ export default function ConfiguratorPage() {
         const unit = units.find((u) => u.id === selectedElement.unitId);
         const panel = unit ? unitResult(unit.id)?.panels
           .find((p) => p.id === selectedElement.elementRef) : null;
+        // ─── TURN 25 (CLAUDE.md F11): …AND A DOOR IS ONE OF THEM NOW ─────
+        //
+        // "The Delete key on a selected leaf does the same." A door is not an
+        // ITEM — it has no `itemId`, because it is not something added to a
+        // section — so it fell through the rule above and Delete did nothing
+        // on the one piece a joiner most often wants gone. It is handled by
+        // its own path, through the same store action the modal's button
+        // calls, so the two cannot come to mean different things.
+        //
+        // No confirmation: Undo covers it, and a dialog in front of an action
+        // one Ctrl+Z away is a dialog that only ever gets dismissed. R9 does
+        // the rest — the hinge holes leave with the door and return with it.
+        if (panel?.part === 'FRONT' && !panel.meta?.appliance) {
+          e.preventDefault();
+          const res = removeFront(unit.id, panel.id);
+          clearElement();
+          if (res) notify(res.scope === 'bay' ? 'Door removed from the bay.' : 'Doors removed.', 'ok');
+          return;
+        }
         const itemId = panel?.meta?.itemId;
         if (!itemId) return;
         e.preventDefault();
@@ -167,7 +188,7 @@ export default function ConfiguratorPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedElement, selectedUnitId, clearElement, clearSelection,
-    units, unitResult, removeItem, removeUnit, notify, undo, redo]);
+    units, unitResult, removeItem, removeUnit, removeFront, notify, undo, redo]);
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);

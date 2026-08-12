@@ -20,6 +20,11 @@ const XRAY_KEY = 'cc.xray';
 // be seen: the old value is not read, the toggle works exactly as before from
 // there on, and nobody has to clear site data to see the fix they asked for.
 const HINGES_KEY = 'cc.showHinges.v2';
+// Turn 25 (CLAUDE.md F13): "scoped to the WHOLE PROJECT (the owner's choice),
+// state remembered." Remembered the way X-ray and the hinges are, in the same
+// two helpers — a joiner who works with the front numbers on wants them on
+// tomorrow as well.
+const FRONT_DIMS_KEY = 'cc.showFrontDimensions';
 
 function loadSnap() {
   try {
@@ -245,6 +250,26 @@ export const useUiStore = create((set, get) => ({
   showDimensions: true,
   setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
   toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
+
+  // ─── FRONT DIMENSIONS (turn 25, CLAUDE.md F13) ──────────────────────────
+  //
+  // "A toggle — Show front dimensions — in the door modal and in the View menu,
+  // scoped to the WHOLE PROJECT (the owner's choice), state remembered."
+  //
+  // PROJECT-WIDE and not per-door, and that is his call rather than a
+  // simplification: the numbers a joiner is checking with this are the GAPS,
+  // and a gap belongs to two fronts at once. A per-door switch would let one
+  // leaf of a pair show the gap between them and the other not.
+  //
+  // Off is a clean scene: nothing is drawn at all, which is the state the app
+  // opens in.
+  showFrontDimensions: loadFlag(FRONT_DIMS_KEY, false),
+  setShowFrontDimensions: (v) => set({
+    showFrontDimensions: saveFlag(FRONT_DIMS_KEY, Boolean(v)),
+  }),
+  toggleFrontDimensions: () => set((s) => ({
+    showFrontDimensions: saveFlag(FRONT_DIMS_KEY, !s.showFrontDimensions),
+  })),
 
   // ─── One cabinet's OWN dimensions (turn 8, CLAUDE.md F7) ───
   // `showDimensions` above is the project's: each unit's W/H/D caption and the
@@ -548,6 +573,40 @@ export const useUiStore = create((set, get) => ({
     const { [unitId]: _dropped, ...rest } = s.openFronts;
     return { openFronts: rest };
   }),
+
+  // ─── OPEN / CLOSE ALL DOORS (turn 25, CLAUDE.md F15) ────────────────────
+  //
+  // "First press opens every door in the project, second closes them."
+  //
+  // The STATE is the same `openFronts` map every other animation reads, so it
+  // works with turn 24's hinge rig for free: a door opened this way swings on
+  // the same value, and its hinge's carcass half folds after it exactly as it
+  // does for a door opened by hand. Nothing here reaches the engine.
+  //
+  // Which way the press goes is decided on what is ACTUALLY open rather than
+  // on a remembered flag: a joiner who opened three doors by hand and then
+  // pressed the button expects the rest to open, not those three to shut.
+  toggleAllFronts: (entries) => set((s) => {
+    const rows = (entries || []).filter((e) => e?.unitId && e.panelIds?.length);
+    if (!rows.length) return {};
+    const anyShut = rows.some((e) => e.panelIds.some((id) => !((s.openFronts[e.unitId]?.[id] ?? 0) > 0.5)));
+    if (!anyShut) return { openFronts: {} };
+    const next = { ...s.openFronts };
+    for (const e of rows) {
+      const unit = { ...(next[e.unitId] || {}) };
+      for (const id of e.panelIds) unit[id] = 1;
+      next[e.unitId] = unit;
+    }
+    return { openFronts: next };
+  }),
+
+  /** Is EVERY door in this set standing open? — what the button lights on. */
+  allFrontsOpen: (entries) => {
+    const rows = (entries || []).filter((e) => e?.unitId && e.panelIds?.length);
+    if (!rows.length) return false;
+    const map = get().openFronts;
+    return rows.every((e) => e.panelIds.every((id) => (map[e.unitId]?.[id] ?? 0) > 0.5));
+  },
 
   // Snap step: 1 mm default, 0.5 mm and the 32 mm system as options (SPEC 4.8)
   snapStep: loadSnap(),

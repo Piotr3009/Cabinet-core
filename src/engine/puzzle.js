@@ -13,7 +13,7 @@
 // the engine only has to CARRY the full geometry.
 
 /** Points of one tab on a vertical (right-hand) edge, running bottom → top. */
-function tabPointsRight(edgeX, centreY, G, pz) {
+export function tabPointsRight(edgeX, centreY, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [edgeX, centreY - t], [edgeX, centreY - o],
@@ -25,7 +25,7 @@ function tabPointsRight(edgeX, centreY, G, pz) {
 }
 
 /** Points of one tab on a vertical (left-hand) edge, running top → bottom. */
-function tabPointsLeft(edgeX, centreY, G, pz) {
+export function tabPointsLeft(edgeX, centreY, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [edgeX, centreY + t], [edgeX, centreY + o],
@@ -37,7 +37,7 @@ function tabPointsLeft(edgeX, centreY, G, pz) {
 }
 
 /** Points of one tab on the top edge, running right → left. */
-function tabPointsUp(edgeY, centreX, G, pz) {
+export function tabPointsUp(edgeY, centreX, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [centreX + t, edgeY], [centreX + o, edgeY],
@@ -49,7 +49,7 @@ function tabPointsUp(edgeY, centreX, G, pz) {
 }
 
 /** Points of one tab on the bottom edge, running left → right. */
-function tabPointsDown(edgeY, centreX, G, pz) {
+export function tabPointsDown(edgeY, centreX, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [centreX - t, edgeY], [centreX - o, edgeY],
@@ -118,11 +118,56 @@ export function middleTabThreshold(pz, boardThickness) {
  * drawer heights stand on (turn 2, task 4): where the kits are silent, the
  * engine decides and says so, rather than pretending to have traced it.
  */
-export function socketCentres(length, pz) {
-  const e = pz.tabCentresFromEnd;
+export function socketCentres(length, pz, inset = undefined) {
+  // ─── TURN 25 (CLAUDE.md F2): THE UNIT'S OWN RESOLVED INSET ───────────────
+  // `inset` left out is the law above, unchanged, and is what every caller
+  // that sets out along an axis other than the DEPTH passes — the back edge's
+  // tabs, the back panel's rows across the width. `null` is the shallow
+  // cabinet's answer: one joint, on the panel's own centre line, whatever the
+  // run happens to measure. `resolvedJointInset()` below is the only thing
+  // that decides which, and it decides once per unit.
+  const e = inset === undefined ? pz.tabCentresFromEnd : inset;
+  if (e === null) return [length / 2];
   const threshold = Number(pz.singleSocketBelow) || 0;
   if (threshold > 0 && length < threshold) return [length / 2];
   return [e, length - e];
+}
+
+/**
+ * ONE INSET PER CABINET (turn 25, CLAUDE.md F2).
+ *
+ * The owner's corrected `panel_joints.lsp`: a socket is 51 mm wide, a dog bone
+ * is 60, both sit 95 in from each end — so two of them collide on a panel under
+ * 241 mm, and their reliefs under 250. His answer is not "make this panel
+ * different"; it is "a shallow CABINET has one joint, centred", asked once and
+ * given to every mating panel, because a side whose socket is on the centre
+ * line and a top whose tab is at 95 do not meet.
+ *
+ * @param {number} depth  the CABINET's depth, mm — not the panel's run
+ * @param {object} pz     profile.puzzle
+ * @returns {number|null} the inset from each end, or null for one centred joint
+ */
+export function resolvedJointInset(depth, pz) {
+  const max = Number(pz?.singleJointMaxDepth) || 0;
+  const d = Number(depth) || 0;
+  if (max > 0 && d > 0 && d <= max) return null;
+  return pz.tabCentresFromEnd;
+}
+
+/**
+ * The two collisions the owner's numbers describe, recomputed from the geometry
+ * they come from — the twin of `singleSocketThreshold()` and
+ * `middleTabThreshold()`, exported for the same reason: the 300 in the profile
+ * can be CHECKED against what it is protecting rather than trusted.
+ *
+ * @returns {{socket:number, dogbone:number}} the run lengths below which each
+ *   pair meets, in mm
+ */
+export function jointCollisionLengths(pz) {
+  return {
+    socket: pz.tabCentresFromEnd * 2 + pz.socketHalfWidth * 2,
+    dogbone: pz.tabCentresFromEnd * 2 + pz.dogboneHalfHeight * 2,
+  };
 }
 
 /**
@@ -188,7 +233,9 @@ function verticalSocket(centreY, edgeX, dir, G, pz, out) {
  * screwed in from the inside), so it is a flag here rather than a second copy
  * of 120 lines of tab arithmetic.
  */
-export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
+export function sidePanelGeometry({
+  w, h, G, side, puzzle: pz, edges, jointInset = undefined,
+}) {
   const e = {
     backTabs: true, topSocket: true, bottomSocket: true,
     topScrews: true, bottomScrews: true, backTabsBelow: Infinity, ...(edges || {}),
@@ -228,8 +275,10 @@ export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
     }
   }
 
-  // Sockets on the top and bottom edges (they receive the TOP/BOTTOM tabs)
-  for (const cx of socketCentres(w, pz)) {
+  // Sockets on the top and bottom edges (they receive the TOP/BOTTOM tabs).
+  // This run IS the cabinet's depth, so it takes the unit's resolved inset
+  // (turn 25, CLAUDE.md F2) — and the TOP's mating tabs take the same one.
+  for (const cx of socketCentres(w, pz, jointInset)) {
     if (e.topSocket) horizontalSocket(cx, h, +1, G, pz, out);
     if (e.bottomSocket) horizontalSocket(cx, 0, -1, G, pz, out);
   }
@@ -247,20 +296,52 @@ export function sidePanelGeometry({ w, h, G, side, puzzle: pz, edges }) {
  * cabinet DEPTH (depth − G), drawnH spans the internal WIDTH (width − 2G).
  * Tabs on three edges — both long edges (into the sides) and the back edge.
  * The remaining edge is the cabinet front and stays plain.
+ *
+ * ─── TURN 25 (CLAUDE.md F1): THE EDGE THAT WAS DRAWN TWICE ─────────────────
+ *
+ * This function is where the owner's LISP fault lived in OUR code, and the F1
+ * guard is what found it. It used to trace the outline like this:
+ *
+ *     [0,0] → [drawnW,0]        …the bottom edge, PLAIN, straight across
+ *           → [drawnW,drawnH]   …up the right
+ *           → tabs across the top, down the back to
+ *     [0,0]                     …back at the START, mid-polyline
+ *           → tabs along the bottom edge, LEFT TO RIGHT
+ *           → (closed flag)     …and a long run back to [0,0] again
+ *
+ * The bottom edge was therefore in the file TWICE: once as one straight
+ * segment and once as the tabbed run. VCarve does not read that as one line
+ * seen twice — it offsets the two coincident paths in OPPOSITE directions and
+ * cuts the panel from the outside AND from the inside on the same job. Every
+ * TOP and every BOTTOM this engine has ever exported carried it.
+ *
+ * The fix is a re-ORDER and nothing else: the same points, in one traversal
+ * that goes round once. The bottom edge is now walked with its tabs on it,
+ * where it always belonged, and the mid-polyline return to the origin is gone.
+ * The SHAPE is identical to the last decimal — same outer boundary, same tabs,
+ * same dog bones — so what changes in the DXF is the order of the vertices in
+ * two entities per cabinet and nothing else. `verify/t25/edge-guard.md` carries
+ * the post-mortem and `verify/t25/cnc-export-identity.md` names the delta.
  */
-export function topPanelGeometry({ drawnW, drawnH, G, puzzle: pz, backTabs = true }) {
+export function topPanelGeometry({
+  drawnW, drawnH, G, puzzle: pz, backTabs = true, jointInset = undefined,
+}) {
   const out = { outline: [], pockets: [], holes: [] };
-  const alongDepth = socketCentres(drawnW, pz);   // t1x, t2x
-  const alongWidth = socketCentres(drawnH, pz);   // t1y, t2y
+  // The long edges run along the cabinet's DEPTH and take the unit's resolved
+  // inset (turn 25, CLAUDE.md F2); the back edge runs across its WIDTH and is
+  // set out by the run, exactly as it always was.
+  const alongDepth = socketCentres(drawnW, pz, jointInset);   // t1x, t2x
+  const alongWidth = socketCentres(drawnH, pz);               // t1y, t2y
 
-  out.outline.push([0, 0], [drawnW, 0], [drawnW, drawnH]);
+  // Anticlockwise, once round, starting at the bottom-left corner.
+  out.outline.push([0, 0]);
+  for (const cx of alongDepth) out.outline.push(...tabPointsDown(0, cx, G, pz));
+  out.outline.push([drawnW, 0], [drawnW, drawnH]);
   for (const cx of [...alongDepth].reverse()) out.outline.push(...tabPointsUp(drawnH, cx, G, pz));
   out.outline.push([0, drawnH]);
   // The back edge. KIT_SINK's bottom panel leaves it straight — its back is a
   // screwed panel set 50 mm forward, so there is nothing there to receive tabs.
   if (backTabs) for (const cy of [...alongWidth].reverse()) out.outline.push(...tabPointsLeft(0, cy, G, pz));
-  out.outline.push([0, 0]);
-  for (const cx of alongDepth) out.outline.push(...tabPointsDown(0, cx, G, pz));
 
   for (const cx of alongDepth) {
     out.pockets.push({ layer: pz.layers.dogbone, x1: cx - pz.dogboneHalfHeight, y1: drawnH, x2: cx + pz.dogboneHalfHeight, y2: drawnH + G });
@@ -333,8 +414,30 @@ export function backPanelGeometry({ w, h, G, puzzle: pz }) {
   return out;
 }
 
-/** Plain rectangular outline for panels without puzzle joints. */
+/**
+ * Plain rectangular outline for panels without puzzle joints.
+ *
+ * ─── TURN 25 (CLAUDE.md F1.4): A PIECE OF NO SIZE HAS NO OUTLINE ───────────
+ *
+ * The F1 guard found this, on an impossible cabinet: an OVEN_BASE 500 mm high
+ * cannot hold a 595 mm oven, so the opening under its shelf is negative and the
+ * drawer boards it produced were −152 mm tall. Every one of them went on the
+ * sheet, was laid out, and was written into a DXF as a rectangle traced
+ * BACKWARDS — which is a cut path telling VCarve the material is on the other
+ * side of the line, on a board that does not exist.
+ *
+ * The cabinet already SAYS it is impossible (`OVEN_TOO_LOW`) and has since turn
+ * 17. What was missing is that nothing downstream believed it. A part the
+ * machine could not cut now has no outline at all, so `exportablePanels`, the
+ * layout, the sheet and the file all drop it by the rule they already had —
+ * "a real outline" — instead of each needing to be told.
+ *
+ * Every part with a real size is byte-for-byte what it was.
+ */
 export function rectGeometry(w, h, layer = 'OUTLINE') {
+  if (!(Number(w) > 0) || !(Number(h) > 0)) {
+    return { outline: [], pockets: [], holes: [], layer };
+  }
   return { outline: [[0, 0], [w, 0], [w, h], [0, h]], pockets: [], holes: [], layer };
 }
 

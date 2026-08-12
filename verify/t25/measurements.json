@@ -1,0 +1,135 @@
+{
+ "hardware": {
+  "urls": [
+   "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+   "http://127.0.0.1:4174/hardware/hinges/blum/173L6100_20001.glb"
+  ],
+  "hinge": 6,
+  "hingeUrl": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb",
+  "modelled": true,
+  "parents": true
+ },
+ "shaker": {
+  "id": "01-FL",
+  "frontType": "S",
+  "shaker": {
+   "frame": 70,
+   "depth": 6,
+   "panelFloor": 19
+  },
+  "thickness": 25,
+  "pocket": 1,
+  "vertices": 84,
+  "normalDirections": 6
+ },
+ "handles": {
+  "doors": [
+   {
+    "id": "01-FL",
+    "handle": {
+     "type": "bar",
+     "centres": 160,
+     "axis": "vertical",
+     "anchor": "end",
+     "x": 412,
+     "y": 717,
+     "holes": [
+      [
+       412,
+       717
+      ],
+      [
+       412,
+       557
+      ]
+     ],
+     "rule": "top-inset+shaker-stile",
+     "deviation": false,
+     "class": "base-door"
+    }
+   },
+   {
+    "id": "01-FR",
+    "handle": {
+     "type": "bar",
+     "centres": 160,
+     "axis": "vertical",
+     "anchor": "end",
+     "x": 35,
+     "y": 717,
+     "holes": [
+      [
+       35,
+       717
+      ],
+      [
+       35,
+       557
+      ]
+     ],
+     "rule": "top-inset+shaker-stile",
+     "deviation": false,
+     "class": "base-door"
+    }
+   }
+  ],
+  "holes": 4,
+  "mounted": 2,
+  "member": "bar",
+  "parent": "front",
+  "finish": "gold",
+  "drawn": 2,
+  "surfaces": [
+   "room",
+   "room-front"
+  ]
+ },
+ "r9": {
+  "before": {
+   "PUZZLE_HOLES_7_5MM": 36,
+   "SCREWS_3MM": 26,
+   "HINGES_5MM": 12,
+   "FRONT_HINGES_35MM": 6,
+   "FRONT_HINGES_3MM": 12,
+   "HANDLES_5MM": 4
+  },
+  "without": {
+   "PUZZLE_HOLES_7_5MM": 36,
+   "SCREWS_3MM": 26
+  },
+  "sameOnReturn": true
+ },
+ "sleeves": {
+  "drawn": 4,
+  "pins": 12,
+  "shelves": [
+   "adjustable",
+   "fixed"
+  ]
+ },
+ "shallow": {
+  "inset": null,
+  "sockets": 2,
+  "holes": 4
+ },
+ "tree": {
+  "groups": [
+   "carcasses",
+   "shelves",
+   "fronts"
+  ],
+  "quick": [
+   "all",
+   "carcasses",
+   "shelves",
+   "fronts",
+   "infills"
+  ],
+  "expected": [
+   "carcasses",
+   "shelves",
+   "fronts"
+  ],
+  "unitId": "u_na4wjnw"
+ }
+}

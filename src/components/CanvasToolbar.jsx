@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useHistoryStore } from '../stores/historyStore.js';
+import { useProjectStore } from '../stores/projectStore.js';
 
 // ─── Canvas toolbar ───
 // The controls that act on the DRAWING, sitting on the drawing (CLAUDE.md turn
@@ -23,6 +25,26 @@ export default function CanvasToolbar() {
   const toggleRuler = useUiStore((s) => s.toggleRuler);
   const hideFronts = useUiStore((s) => s.hideFronts);
   const toggleHideFronts = useUiStore((s) => s.toggleHideFronts);
+
+  // ─── Turn 25 (CLAUDE.md F15): every door in the project ───
+  // The DOORS, gathered from the computed units — the engine's own panels, so
+  // a leaf hung on a partition is in the set exactly as a face door is (F5).
+  // `openFronts` is subscribed to so the label flips the moment the last door
+  // swings, and the entries are memoised on the units so a drag does not
+  // rebuild them per frame.
+  const units = useProjectStore((s) => s.units);
+  const unitResult = useProjectStore((s) => s.unitResult);
+  const openFronts = useUiStore((s) => s.openFronts);
+  const toggleAllFronts = useUiStore((s) => s.toggleAllFronts);
+  const doorEntries = useMemo(() => units.map((u) => ({
+    unitId: u.id,
+    panelIds: (unitResult(u.id)?.panels || [])
+      .filter((p) => p.part === 'FRONT' && !p.meta?.appliance)
+      .map((p) => p.id),
+  })).filter((e) => e.panelIds.length), [units, unitResult]);
+  const everyDoorOpen = doorEntries.length > 0 && doorEntries.every(
+    (e) => e.panelIds.every((id) => (openFronts[e.unitId]?.[id] ?? 0) > 0.5),
+  );
 
   // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
   // Read as LENGTHS rather than through the store's own `canUndo()`, because a
@@ -162,6 +184,30 @@ export default function CanvasToolbar() {
           : 'Measure between two points on the drawing'}
       >
         Measure
+      </button>
+
+      {/* ─── Turn 25 (CLAUDE.md F15): OPEN / CLOSE ALL DOORS ───
+          "A toggle button in the top toolbar BETWEEN BOM AND MEASURE." First
+          press opens every door in the project, second closes them. It writes
+          the same `openFronts` value a double-click writes, so it works with
+          turn 24's hinge rig for free — a door opened this way swings on the
+          same number and its hinge's carcass half folds after it. Nothing
+          about the project changes: this is a way of LOOKING. */}
+      <button
+        type="button"
+        aria-pressed={everyDoorOpen}
+        data-open-all-doors="1"
+        disabled={viewMode !== '3d' || !doorEntries.length}
+        className={`px-2.5 py-1 text-xs rounded transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
+          everyDoorOpen && viewMode === '3d'
+            ? 'bg-gold text-shell-900 font-medium'
+            : 'text-ink-100 hover:bg-shell-700'}`}
+        onClick={() => toggleAllFronts(doorEntries)}
+        title={everyDoorOpen
+          ? 'Shut every door in the project'
+          : 'Swing every door in the project open — nothing about the project changes'}
+      >
+        {everyDoorOpen ? 'Close all' : 'Open all'}
       </button>
 
       <span className="w-px h-4 bg-shell-600" />

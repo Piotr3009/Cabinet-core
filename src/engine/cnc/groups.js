@@ -7,30 +7,90 @@
 //
 // Pure data + pure functions — no React, no store imports.
 
+// ─── FOUR GROUPS (turn 25, CLAUDE.md F7) ────────────────────────────────────
+//
+// The owner's list, in his order:
+//
+//   Carcasses               BUL, BUR, TOP, BOTTOM, BACK
+//   Shelves                 shelves + VPART
+//   Doors, fronts & panels
+//   Infills & plinths
+//
+// Two things move and both are named. INFILL-* LEAVES the carcass group, where
+// turn 3 put it because it was cut from board and nobody had asked: an infill
+// is a finishing piece that stands in the room beside the doors, is sprayed
+// with them, and belongs with the plinth. And the old DRAWERS group is gone —
+// a drawer BOX is carcass board, cut and assembled exactly as a carcass is, and
+// a joiner ticking "Carcasses" to fill a sheet with everything that is not a
+// front wants the boxes on it. The drawer FRONTS were never in that group and
+// are not now.
+//
+// The four cover every part the engine cuts, which is the property that makes
+// the quick-select buttons add up to All.
 export const PART_GROUPS = [
-  { id: 'carcass', label: 'Carcass', hint: 'Sides, top, bottom, back, plinth, infill' },
-  { id: 'shelves', label: 'Shelves', hint: 'Shelves, partition, rail partition' },
-  { id: 'drawers', label: 'Drawers', hint: 'Drawer boxes and drawer panels' },
-  { id: 'fronts', label: 'Fronts & doors', hint: 'Doors and drawer fronts' },
+  {
+    id: 'carcasses',
+    label: 'Carcasses',
+    hint: 'Sides, top, bottom, back — and the drawer boxes, which are the same board',
+  },
+  { id: 'shelves', label: 'Shelves', hint: 'Shelves and vertical partitions' },
+  {
+    id: 'fronts',
+    label: 'Doors, fronts & panels',
+    hint: 'Doors, drawer fronts, end panels and masking panels',
+  },
+  { id: 'infills', label: 'Infills & plinths', hint: 'Scribe fillers, top infill and the toe kick' },
 ];
 
 export const PART_GROUP_IDS = PART_GROUPS.map((g) => g.id);
 
 /**
+ * The quick-select buttons, in the owner's order (turn 25, CLAUDE.md F7.2):
+ * All · Carcasses · Shelves · Doors, fronts & panels · Infills & plinths.
+ *
+ * Each one ticks its WHOLE group. They are derived from `PART_GROUPS` rather
+ * than typed out beside it, so a fifth group next turn is one entry and not two
+ * that can disagree — which is the fault the old row had, where the buttons
+ * were EXPORT PRESETS and the headers below them were groups, and the two
+ * answered different questions with the same word.
+ */
+export const QUICK_SELECTS = [
+  { id: 'all', label: 'All', hint: 'Every cut part of this cabinet', includes: () => true },
+  ...PART_GROUPS.map((g) => ({
+    id: g.id,
+    label: g.label,
+    hint: g.hint,
+    includes: (p) => groupOfPanel(p) === g.id,
+  })),
+];
+
+/** The panel ids one quick-select button ticks. */
+export function panelIdsForQuickSelect(panels, id) {
+  const entry = QUICK_SELECTS.find((q) => q.id === id);
+  if (!entry) return [];
+  return (panels || []).filter((p) => entry.includes(p)).map((p) => p.id);
+}
+
+/**
  * Which group a cut part belongs to.
  *
  * Decided on the engine's own `part` and `role`, never on the id string: a
- * panel called "RAIL-PART" is a shelf, and "D1-SL" is a drawer part, and no
- * amount of substring matching would get both right.
+ * panel called "RAIL-PART" is a shelf, and no amount of substring matching
+ * would get that right — nor would it get "INFILL-T" right for the group it
+ * moved to this turn, which is exactly the sort of thing that was matched by
+ * name in a rewrite and quietly wrong.
  */
 export function groupOfPanel(panel) {
-  const part = panel?.part;
   const role = panel?.role;
-  if (role === 'front') return 'fronts';
-  if (role === 'drawer_box') return 'drawers';
-  if (part === 'DP' || part === 'FILLER') return 'drawers';   // the drawer panel and its fillers
-  if (role === 'shelf') return 'shelves';                     // SHELF, PARTITION, RAIL-PART, FIXED
-  return 'carcass';                                           // sides, top/bottom, back, holders, spurs, plinth, infill
+  // Everything that stands in the room beside the doors and is finished with
+  // them: doors, drawer fronts, end panels, the wall unit's masking board.
+  if (role === 'front' || role === 'end_panel' || role === 'mask') return 'fronts';
+  if (role === 'infill' || role === 'plinth') return 'infills';
+  if (role === 'shelf') return 'shelves';                     // SHELF, VPART, RAIL-PART, FIXED
+  // …and everything else is board that lives inside a carcass: the sides, the
+  // top and bottom, the back, the holders and spurs, the drawer panel and its
+  // fillers, and every part of a drawer box.
+  return 'carcasses';
 }
 
 /**
@@ -123,7 +183,16 @@ export const EXPORT_PRESETS = [
     id: 'fronts',
     label: 'Fronts & doors only',
     hint: 'Doors and drawer fronts, nothing else',
-    includes: (p) => groupOfPanel(p) === 'fronts',
+    // ─── TURN 25 (CLAUDE.md F7.1): READ OFF THE ROLE, NOT OFF THE GROUP ────
+    //
+    // It was `groupOfPanel(p) === 'fronts'`, and this turn's regrouping widened
+    // that group to "Doors, fronts & panels" — which would have put a wall
+    // unit's masking board into a file called `…-cnc-fronts.dxf`. The PRESET
+    // and the GROUP are two different questions that happen to share a word:
+    // the preset names an export file and is a machine contract (rule 0), the
+    // group is how the tree is laid out. So the preset asks the piece what it
+    // IS, which is what it always meant and what it now cannot drift from.
+    includes: (p) => p?.role === 'front',
   },
 ];
 

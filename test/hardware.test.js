@@ -61,8 +61,11 @@ test('one runner PAIR per drawer, at the snapped runner length', () => {
 
   // A deeper carcass snaps up a step, and the spec follows.
   assert.equal(roleOf(run({ depth: 700, drawers: 1, shelves: 0 }), 'runner_pairs').spec.length_mm, 540);
-  // Drawers dropped for a too-shallow carcass → nothing to buy.
-  assert.equal(roleOf(run({ depth: 460, drawers: 2, shelves: 0 }), 'runner_pairs'), undefined);
+  // Turn 25 (CLAUDE.md F9): a 460 mm carcass takes a SHORT runner now instead
+  // of being told it is too shallow and then cut a box longer than itself.
+  assert.equal(roleOf(run({ depth: 460, drawers: 2, shelves: 0 }), 'runner_pairs').spec.length_mm, 320);
+  // Below the shortest runner Blum makes there is still nothing to buy.
+  assert.equal(roleOf(run({ depth: 300, drawers: 2, shelves: 0 }), 'runner_pairs'), undefined);
 });
 
 test('legs come from the profile, and only for a type that has them', () => {

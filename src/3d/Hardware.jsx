@@ -82,12 +82,16 @@ export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
   hingeSpecs = null, surface = 'room', scope = '',
+  // Turn 25 (CLAUDE.md F6.1): which metal the shelf supports are in, chosen
+  // once for the job. Left out, the profile's own default answers.
+  shelfMetal = null,
   // Turn 24 (CLAUDE.md F1.2): every leaf's signed opening angle, so the hinge's
   // CARCASS half can fold after the door it belongs to. The door is not this
   // component's child, which is exactly why the angle has to cross.
   doorSwing = null,
 }) {
   const colours = profile.appearance.hardware;
+  const metalId = shelfMetal || profile.appearance.metalDefault;
   // ─── TURN 21 (CLAUDE.md R4 / F2.2 / F6.3) ───
   // What this surface mounted goes with this surface. A window that closes
   // stops claiming to be showing anything.
@@ -95,6 +99,16 @@ export default function Hardware({
   return (
     <group userData={{ ccHardware: true }}>
       <Legs items={instances.legs} profile={profile} colour={colours.leg} />
+      {/* ─── Turn 25 (CLAUDE.md F6): the adjustable shelf's sleeves and pins ───
+          Always drawn, like the legs and the rail — a fitting a joiner looks
+          for, not a workshop overlay. A FIX shelf has no pin holes and so
+          contributes nothing, which is the whole feature: one look tells you
+          which shelf is which. */}
+      <ShelfSupports
+        items={instances.shelfSupports || []}
+        profile={profile}
+        metal={profile.appearance.metals[metalId] || profile.appearance.metals.gold}
+      />
       {instances.rails.map((rail, i) => (
         <Rail key={`rail-${i}`} rail={rail} colour={colours.rail} />
       ))}
@@ -1006,5 +1020,232 @@ function Rail({ rail, colour }) {
       <cylinderGeometry args={[mm(rail.diameter / 2), mm(rail.diameter / 2), mm(rail.length), 14]} />
       <meshStandardMaterial color={colour} roughness={0.4} metalness={0.6} />
     </mesh>
+  );
+}
+
+// ─── HANDLES (turn 25, CLAUDE.md F4.3) ──────────────────────────────────────
+//
+// "Procedural, GOLD for now — a round bar on two posts, a hemispherical knob.
+// Catalogue models arrive later by the bucket route; the mount point and axis
+// are already the contract."
+//
+// So this draws the two shapes and reports the contract. What a bought model
+// will replace is the GEOMETRY and nothing else: it arrives at
+// `handle.x, handle.y` on the front's own face, along `handle.axis`, and it is
+// the engine (`engine/handles.js`) that decides both — exactly as a hinge's
+// downloaded body arrives at the cup the engine drilled.
+//
+// It hangs off the FRONT's own swinging group (3d/UnitView.jsx passes it as a
+// child), so a handle on an open door is on the open door and not left in the
+// air where the door used to be — the same mistake turn 12 found in the cup.
+
+/**
+ * One handle on one front.
+ *
+ * @param {object} props
+ *   panel    the front's engine record — `meta.handle` is the contract
+ *   pivot    the group's own origin in scene units, backed out so the handle
+ *            can be placed in the cabinet's millimetres like everything else
+ */
+export function FrontHandle({
+  panel, profile, pivot, surface = 'room', scope = '',
+}) {
+  const spec = panel?.meta?.handle || null;
+  const metal = profile.appearance.metals[profile.handles.finish]
+    || profile.appearance.metals.gold;
+
+  useEffect(() => {
+    if (!spec) return;
+    // R4/R8: what the SCENE mounted, in the app's own registry. A procedural
+    // piece has no url and says so — `model: false` with a reason, exactly as a
+    // hinge that fell back to its stand-in does — so the walk can tell a handle
+    // that is drawn from one that is merely configured.
+    reportHardware(surface, 'handle', [{
+      key: panel.id,
+      url: null,
+      model: false,
+      reason: 'procedural',
+      parent: 'front',
+      finish: profile.handles.finish,
+      member: spec.type,
+      pivotMm: [spec.x, spec.y],
+    }], scope || panel.id);
+  }, [spec, panel?.id, profile.handles.finish, surface, scope]);
+
+  if (!spec || !panel?.box) return null;
+
+  const H = profile.handles;
+  const box = panel.box;
+  // The front's OUTER face, in the cabinet's own frame — a handle stands proud
+  // of the door it is screwed through.
+  const faceZ = box.z + box.d;
+  // The reference point is in the front's CUT frame (origin bottom-left); the
+  // scene works in the cabinet's. One translation, here, so nothing downstream
+  // has to know there are two frames.
+  const wx = box.x + spec.x;
+  const wy = box.y + spec.y;
+
+  const at = (x, y, z) => [mm(x) - pivot[0], mm(y) - pivot[1], mm(z) - pivot[2]];
+  const material = (
+    <meshStandardMaterial color={metal.colour} metalness={metal.metalness} roughness={metal.roughness} />
+  );
+
+  if (spec.type === 'knob') {
+    const r = H.knob.diameter / 2;
+    const stem = H.knob.standoff;
+    return (
+      <group userData={{ ccHardware: true, ccHandle: panel.id }}>
+        <mesh position={at(wx, wy, faceZ + stem / 2)} userData={{ ccNoBounds: true }}>
+          <cylinderGeometry args={[mm(H.knob.stemDiameter / 2), mm(H.knob.stemDiameter / 2), mm(stem), 12]} />
+          {material}
+        </mesh>
+        {/* A HEMISPHERE — `thetaLength: π/2` — because that is what a knob is:
+            a dome on a stem, flat where it meets the shaft. A full sphere reads
+            as a ball on a stick and catches the light in the wrong place. */}
+        <mesh
+          position={at(wx, wy, faceZ + stem)}
+          rotation={[Math.PI / 2, 0, 0]}
+          userData={{ ccNoBounds: true }}
+        >
+          <sphereGeometry args={[mm(r), 20, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          {material}
+        </mesh>
+      </group>
+    );
+  }
+
+  // A BAR: two posts standing off the door, and a rod between them running
+  // `overhang` past each post — which is what a bar handle actually is, and
+  // what makes the gap a hand goes into.
+  const horizontal = spec.axis === 'horizontal';
+  const centres = spec.centres || H.defaultCentres;
+  const half = centres / 2;
+  // The rod is centred on the two SCREWS, wherever the anchor put them.
+  const holes = Array.isArray(spec.holes) && spec.holes.length === 2 ? spec.holes : null;
+  const midX = holes ? (holes[0][0] + holes[1][0]) / 2 : spec.x + (horizontal ? 0 : 0);
+  const midY = holes ? (holes[0][1] + holes[1][1]) / 2 : spec.y;
+  const postAt = holes
+    ? holes.map(([hx, hy]) => [box.x + hx, box.y + hy])
+    : [[wx, wy], [wx, wy]];
+  const rodLen = centres + 2 * H.bar.overhang;
+
+  return (
+    <group userData={{ ccHardware: true, ccHandle: panel.id }}>
+      {postAt.map(([px, py], i) => (
+        <mesh
+          // eslint-disable-next-line react/no-array-index-key
+          key={`post-${i}`}
+          position={at(px, py, faceZ + H.bar.standoff / 2)}
+          rotation={[Math.PI / 2, 0, 0]}
+          userData={{ ccNoBounds: true }}
+        >
+          <cylinderGeometry args={[mm(H.bar.postDiameter / 2), mm(H.bar.postDiameter / 2), mm(H.bar.standoff), 12]} />
+          {material}
+        </mesh>
+      ))}
+      <mesh
+        position={at(box.x + midX, box.y + midY, faceZ + H.bar.standoff)}
+        rotation={horizontal ? [0, 0, Math.PI / 2] : [0, 0, 0]}
+        userData={{ ccNoBounds: true }}
+      >
+        <cylinderGeometry args={[mm(H.bar.rodDiameter / 2), mm(H.bar.rodDiameter / 2), mm(rodLen), 14]} />
+        {material}
+      </mesh>
+    </group>
+  );
+}
+
+// ─── THE ADJUSTABLE SHELF'S BRASS (turn 25, CLAUDE.md F6) ───────────────────
+//
+// Owner: he wants to SEE gold or silver sleeves — and they are the ⌀7.5 this
+// engine has drilled since turn 1, not a new 5 mm system.
+//
+// Two pieces per support and a joiner buys them as one: the SLEEVE, a knock-in
+// collar lining the hole, and the PIN — the "spon" — that goes into it and that
+// the shelf rests on. The sleeve is what shows when the shelf is out, and it is
+// what he is asking to see.
+//
+// ALWAYS VISIBLE, like the legs and the rail: this is a fitting a joiner looks
+// for, not a workshop overlay. A FIX shelf contributes nothing at all, because
+// it has no pin holes for `shelfSupportInstances` to find — and that visual
+// difference IS the feature (F6.2).
+
+/**
+ * @param {object} props
+ *   items   `hardwareInstances(result, profile).shelfSupports`
+ *   metal   one entry of `profile.appearance.metals`
+ */
+export function ShelfSupports({ items, profile, metal }) {
+  const S = profile.hardware.shelfPin;
+
+  // Every support points INTO the cabinet off the board it is knocked into, and
+  // a cylinder is modelled up its own y — so the quaternion is the one that
+  // takes +y onto that normal. Both side panels are ±x, so this is a quarter
+  // turn about z in one direction or the other; written as a general rotation
+  // so a support in a PARTITION or a back panel needs no second case.
+  const placeAt = (offset, length) => (i, m) => {
+    const it = items[i];
+    const n = new THREE.Vector3(it.normal[0], it.normal[1], it.normal[2]).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+    const at = new THREE.Vector3(
+      mm(it.x) + n.x * mm(offset),
+      mm(it.y) + n.y * mm(offset),
+      mm(it.z) + n.z * mm(offset),
+    );
+    put(m, at, q, new THREE.Vector3(1, mm(length), 1));
+  };
+
+  const placeSleeve = useMemo(
+    () => placeAt(S.sleeveFlange / 2, S.sleeveFlange),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, S.sleeveFlange],
+  );
+  const placePin = useMemo(
+    () => placeAt(S.pinLength / 2, S.pinLength),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, S.pinLength],
+  );
+  const placeShoulder = useMemo(
+    () => placeAt(S.pinLength - S.shoulderThickness / 2, S.shoulderThickness),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, S.pinLength, S.shoulderThickness],
+  );
+
+  if (!items.length) return null;
+  const r = (d) => mm(d / 2);
+  return (
+    <group userData={{ ccHardware: true, ccShelfSupports: items.length }}>
+      {/* The collar in the hole — the piece that shows when the shelf is out. */}
+      <Pieces
+        count={items.length}
+        place={placeSleeve}
+        colour={metal.colour}
+        metalness={metal.metalness}
+        roughness={metal.roughness}
+      >
+        <cylinderGeometry args={[r(S.sleeveOuter), r(S.sleeveOuter), 1, 16]} />
+      </Pieces>
+      {/* The pin the shelf rests on. */}
+      <Pieces
+        count={items.length}
+        place={placePin}
+        colour={metal.colour}
+        metalness={metal.metalness}
+        roughness={metal.roughness}
+      >
+        <cylinderGeometry args={[r(S.pinDiameter), r(S.pinDiameter), 1, 12]} />
+      </Pieces>
+      {/* …and its little shoulder, so the board is seen to be standing ON
+          something rather than floating beside a peg. */}
+      <Pieces
+        count={items.length}
+        place={placeShoulder}
+        colour={metal.colour}
+        metalness={metal.metalness}
+        roughness={metal.roughness}
+      >
+        <cylinderGeometry args={[r(S.shoulderDiameter), r(S.shoulderDiameter), 1, 12]} />
+      </Pieces>
+    </group>
   );
 }

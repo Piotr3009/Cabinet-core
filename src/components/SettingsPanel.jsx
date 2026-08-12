@@ -30,6 +30,7 @@ import VeneerPicker from './VeneerPicker.jsx';
 import ColourPicker from './ColourPicker.jsx';
 import FrontStyleGallery, { FrontStyleArt } from './FrontStyleGallery.jsx';
 import NumberField from './NumberField.jsx';
+import { shakerFrameMm } from '../engine/shaker.js';
 
 // ─── THE SETTINGS SURFACE (turn 12, CLAUDE.md F1) ───────────────────────────
 //
@@ -91,6 +92,7 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setRunnerVariant = useProjectStore((s) => s.setRunnerVariant);
   // Turn 19 (CLAUDE.md F1.1): …and which HINGE — system, finish, plate.
   const setHingeHardware = useProjectStore((s) => s.setHingeHardware);
+  const setShelfSleeve = useProjectStore((s) => s.setShelfSleeve);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
   const setCarcassMaterial = useProjectStore((s) => s.setCarcassMaterial);
@@ -925,6 +927,40 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           onChange={setHingeHardware}
         />
 
+        {/* ─── Turn 25 (CLAUDE.md F6.1): THE SHELF SUPPORTS ──────────────────
+            "He wants to SEE gold or silver sleeves." Two buttons, beside the
+            hinge finish because it is the same kind of decision — what the
+            ironmongery in this job is plated in. It reaches the PICTURE and
+            nothing else: the fitting sits in the ⌀7.5 this engine has drilled
+            since turn 1, so no cut and no order follows from it. */}
+        <div className="cc-row" data-shelf-sleeve="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Shelf supports</span>
+            <span className="text-[11px] text-ink-400">
+              The sleeve and pin an adjustable shelf stands on — in the ⌀7.5 the machine already
+              bores. A fixed shelf has none, and that is how you tell them apart.
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {Object.entries(profile.appearance.metals).map(([id, m]) => (
+              <button
+                key={id}
+                type="button"
+                data-shelf-sleeve-option={id}
+                aria-pressed={(design.hardware.shelfSleeve || profile.appearance.metalDefault) === id}
+                className={`cc-btn px-2 ${(design.hardware.shelfSleeve || profile.appearance.metalDefault) === id ? 'border-gold text-gold' : ''}`}
+                onClick={() => setShelfSleeve(id)}
+              >
+                <span
+                  className="inline-block w-3 h-3 rounded-full align-middle mr-1 border border-shell-600"
+                  style={{ background: m.colour }}
+                />
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* ─── Turn 18 (CLAUDE.md F6.4): THE RUNNERS ────────────────────────
             The SYSTEM the workshop stocks and the VARIANT this job is fitted
             with. It is HARDWARE and not geometry: Blum's own installation page
@@ -1144,6 +1180,30 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           value={design.fronts.style}
           onPick={(id) => setDesign({ fronts: { ...design.fronts, style: id } })}
         />
+
+        {/* ─── Turn 25 (CLAUDE.md F3.1): THE SHAKER FRAME ───
+            Equal on all four sides — "shaker zawsze równy" — so it is ONE
+            field and there is deliberately no rail/stile pair beside it.
+            10…200 mm, and where a front is too small to take it the app SAYS
+            so on the cabinet rather than quietly cutting a narrower frame
+            (F3.2); the message is the engine's own and reaches the unit's
+            warnings. */}
+        {design.fronts.style === 'S' && (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-ink-400 w-28">Shaker frame</span>
+            <NumberField
+              className="cc-input w-24"
+              value={shakerFrameMm(design, profile)}
+              min={profile.front.types.S.frameMin}
+              max={profile.front.types.S.frameMax}
+              onCommit={(v) => setDesign({ fronts: { ...design.fronts, shakerFrame: v } })}
+            />
+            <span className="text-[11px] text-ink-400">
+              mm, equal all round · {profile.front.types.S.frameMin}–{profile.front.types.S.frameMax} ·
+              {' '}panel recessed {profile.front.types.S.recessDepth} mm
+            </span>
+          </div>
+        )}
 
         <div className="cc-divider" />
         <span className="text-[11px] uppercase tracking-wide text-ink-400">The workshop&apos;s own styles</span>

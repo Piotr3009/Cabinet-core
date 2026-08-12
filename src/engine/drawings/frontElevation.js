@@ -27,6 +27,7 @@ import { formatMm } from '../format.js';
 import {
   boundsOf, entCircle as circle, entLine as line, entRect as rect, entText as text, moveEntities,
 } from './primitives.js';
+import { shakerFits, shakerFrameMm } from '../shaker.js';
 
 /**
  * Which layer a panel is drawn on, and whether it is a hidden line.
@@ -98,11 +99,20 @@ export function doorSwing(box, hinge) {
   ];
 }
 
-/** The face detail of a front: shaker frame, J-groove, or nothing at all. */
-export function frontDetail(box, frontType, profile) {
+/**
+ * The face detail of a front: shaker frame, J-groove, or nothing at all.
+ *
+ * ─── TURN 25 (CLAUDE.md F3): THE DRAWING FOLLOWS THE CUT ───────────────────
+ * The frame was `profile.front.types.S.frameWidth` read straight, with a
+ * `w > off × 2.2` heuristic of its own for whether it fitted. That is exactly
+ * how a picture and a cut part come to disagree about the same door — the
+ * heuristic left a 10 mm panel on a 230 mm front and the machine would have
+ * refused it. `engine/shaker.js` is the one law now, and this asks it.
+ */
+export function frontDetail(box, frontType, profile, frame = null) {
   if (frontType === 'S') {
-    const off = profile.front.types.S.frameWidth;      // LISP `off` = 50
-    if (box.w > off * 2.2 && box.h > off * 2.2) {
+    const off = frame == null ? shakerFrameMm(null, profile) : Number(frame);
+    if (shakerFits({ w: box.w, h: box.h, frame: off }, profile)) {
       return [rect('DOORS', box.x + off, box.y + off, box.w - off * 2, box.h - off * 2)];
     }
     return [];

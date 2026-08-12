@@ -41,7 +41,15 @@ test('F6.3 — the sections are [top infill + plinth] | [all end panels] | [the 
   assert.deepEqual(groups.map((g) => g.id), ['edit', 'run-pieces', 'end-panels', 'rest', 'dimensions']);
 
   const runPieces = groups.find((g) => g.id === 'run-pieces').actions.map((a) => a.id);
-  assert.deepEqual(runPieces, ['top-infill', 'plinth'], 'the pieces that finish a run');
+  // Turn 25 (CLAUDE.md F12.3): the TOP CORNICE joins them, as three entries
+  // rather than a toggle — it is a CHOICE of moulding — and it sits with the
+  // infill it is screwed to rather than at the bottom with the per-cabinet
+  // actions.
+  assert.deepEqual(
+    runPieces,
+    ['top-infill', 'cornice-0', 'cornice-70', 'cornice-100', 'plinth'],
+    'the pieces that finish a run',
+  );
 
   const panels = groups.find((g) => g.id === 'end-panels').actions.map((a) => a.id);
   assert.deepEqual(panels, ['end-panel-L', 'end-panel-R', 'end-panel-B'], 'every masking panel');

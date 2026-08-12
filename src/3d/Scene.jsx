@@ -702,6 +702,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const openLibraryToInsert = useUiStore((s) => s.openLibraryToInsert);
   const showDimensions = useUiStore((s) => s.showDimensions);
   const unitDimensions = useUiStore((s) => s.unitDimensions);
+  const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const contourView = useUiStore((s) => s.contourView);
@@ -713,7 +714,23 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
 
   // `units` is the subscription that drives the re-render; allResults() is a
   // stable store function, so deriving from it alone would never update.
-  const results = useMemo(() => allResults(), [units, allResults]);
+  //
+  // ─── TURN 25: …AND SO IS THE PROJECT'S DESIGN ───────────────────────────
+  //
+  // Found by the acceptance walk, and it is the same shape of fault as F12's:
+  // `allResults()` computes through `paramsForEngine(unit, project.design)`, so
+  // a DESIGN-level change is a change to the geometry — this turn's handles and
+  // its shaker frame both arrive that way, and so does the hinge standard the
+  // drilling has followed since turn 17. The memo listened to `units` alone, so
+  // "add a handle" recomputed nothing and the scene went on drawing doors with
+  // no handle on them until something else happened to touch a cabinet.
+  //
+  // The design object is replaced whole on every write (`setDesign`,
+  // `setProjectHandle`, `setHingeHardware`), so reference equality is the right
+  // dependency and costs nothing on a drag, which never touches it. `design` is
+  // already subscribed to above — the room needs it for the finishes — so this
+  // is a dependency and not a second subscription.
+  const results = useMemo(() => allResults(), [units, design, allResults]);
   const walls = useMemo(() => roomWalls(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
 
@@ -935,6 +952,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           wallGaps={wallGaps[unit.id]}
           // The right-click toggle: every number THIS cabinet has (turn 8, F7).
           showAllDims={Boolean(unitDimensions[unit.id])}
+          // Turn 25 (CLAUDE.md F13): one project-wide flag, handed to every
+          // cabinet — so a gap between two units' fronts is on or off, never
+          // half of each.
+          showFrontDimensions={showFrontDimensions}
           zoneHint={selectedUnitId === unit.id ? zoneHint : null}
           // The ink every dimension caption on this cabinet is written in
           // (turn 11, CLAUDE.md F1.5) — the same one the distance arrows use,

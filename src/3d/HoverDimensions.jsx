@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { mm } from './constants.js';
 import DimLabel from './DimLabel.jsx';
 import { dimensionEntities, dimensionStyle } from '../engine/dimensionArrows.js';
+import { pieceHoverRows } from '../engine/hoverRows.js';
 import { bayGapsAround } from '../engine/partitionPositions.js';
 
 // ─── THE BAYS, ON HOVER (turn 23, CLAUDE.md F8.2) ───────────────────────────
@@ -65,8 +66,32 @@ export default function HoverDimensions({
   const drawing = useMemo(() => {
     if (!panelId || !result) return null;
     const panels = result.panels || [];
-    const me = panels.find((p) => p.id === panelId && p.part === 'VPART');
+    const me = panels.find((p) => p.id === panelId);
     if (!me?.box) return null;
+
+    // ─── TURN 25 (CLAUDE.md F14.2): THE SAME ARROWS ON THREE MORE PIECES ──
+    //
+    // "The SAME thin blue arrows appear on hover for SHELVES (clear gaps to
+    // floor, neighbour shelf, top) and for a SIDE PANEL (interior depth and
+    // interior height, drawn inside the cabinet)."
+    //
+    // Same style block, same `dimensionEntities`, same magnet — the only thing
+    // that differs per piece is WHICH numbers are worth reading, and that is
+    // one pure function (`engine/hoverRows.js`). Horizontal and vertical only,
+    // as F14.3 asks: every row below is one axis or the other and there is no
+    // path here that could produce a sloping one.
+    if (me.part !== 'VPART') {
+      const set = pieceHoverRows(result, panelId, profile);
+      if (!set) return null;
+      return {
+        rows: set.rows.map((r) => dimensionEntities({
+          from: r.from, to: r.to, offset: r.offset ?? 0, style,
+        })).filter(Boolean),
+        z: set.z,
+        mid: set.mid,
+        own: me.box,
+      };
+    }
 
     // What a bay is bounded BY: the two sides' inner faces and every other
     // vertical partition. Read off the engine's own panels, so a partition the
@@ -80,9 +105,17 @@ export default function HoverDimensions({
     // Turn 24 (CLAUDE.md F10.1): the piece's own box, for the magnet below.
     const own = me.box;
 
-    // Drawn across the FRONT of the partition, at its own mid-height: the face
-    // a joiner is looking at when he points at it, and clear of the shelves.
-    const y = me.box.y + me.box.h / 2;
+    // Drawn across the FRONT of the partition: the face a joiner is looking at
+    // when he points at it, and clear of the shelves.
+    //
+    // ─── TURN 25 (CLAUDE.md F14.1): AND BELOW THE MIDDLE ──────────────────
+    // It used to sit on the bay's own mid-height, which is exactly where the
+    // add (+) button stands — so the number a joiner had just asked for was
+    // hidden behind the control he asked it with. It drops by a FRACTION of
+    // the bay (`hoverDimensions.chainDropFraction`) rather than by a fixed
+    // number of millimetres, because the button is placed the same way and a
+    // fixed 80 mm is clear on a wardrobe bay and off the bottom of a 300 mm one.
+    const y = me.box.y + me.box.h * (0.5 - style.chainDropFraction);
     const z = me.box.z + me.box.d;
     const rows = gaps
       .map((gap) => dimensionEntities({

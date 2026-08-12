@@ -47,6 +47,37 @@ export const FRONT_STYLE_OPTIONS = [
   { id: 'AH', label: 'Arched handleless' },
 ];
 
+/**
+ * A project's handle, normalised (turn 25, CLAUDE.md F4).
+ *
+ * `null` is a complete answer and means "no handles yet" — which is what every
+ * project made before this turn says, and what R9 then makes true of the
+ * drilling: no handle, no holes.
+ */
+export function normaliseHandle(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const type = raw.type === 'knob' ? 'knob' : (raw.type === 'bar' ? 'bar' : null);
+  if (!type) return null;
+  const centres = Number(raw.centres);
+  return {
+    type,
+    ...(type === 'bar' && centres > 0 ? { centres } : {}),
+  };
+}
+
+/** …and the per-class offsets, which are two numbers or nothing. */
+export function normaliseHandleOffsets(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  const out = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const x = Number(value?.x) || 0;
+    const y = Number(value?.y) || 0;
+    if (x === 0 && y === 0) continue;
+    out[key] = { x, y };
+  }
+  return out;
+}
+
 export const DEFAULT_DESIGN = {
   schema: DESIGN_SCHEMA,
   // 1–3 carcass materials. One is the common case; three is a run with a
@@ -61,6 +92,19 @@ export const DEFAULT_DESIGN = {
     // Handles are a later phase — the slot is here so the shape does not change
     // under a saved project when they arrive.
     handle: null,
+    // ─── TURN 25 (CLAUDE.md F3.1): THE SHAKER FRAME, PROJECT-WIDE ─────────
+    // Equal on all four sides ("shaker zawsze równy"), 10…200 mm. `null` means
+    // "nobody has said", and the profile's 70 answers it — the same shape of
+    // default the hinge standard and the runner variant carry, so a project
+    // saved before this turn opens with the workshop's number rather than a 0.
+    shakerFrame: null,
+    // ─── TURN 25 (CLAUDE.md F4): THE PROJECT'S HANDLE ────────────────────
+    // `handle` is what a kitchen is fitted with — { type, centres } — and
+    // `handleOffsets` is where each CLASS of front carries it, keyed by the
+    // classes engine/handles.js names. Per class rather than per project,
+    // because a base door and a wall door were never meant to line up with
+    // each other: one is gripped from above and the other from below.
+    handleOffsets: {},
     // ─── Turn 11 (CLAUDE.md F9.2) ───
     // Up to TWO front types, the twin of the 1–3 carcass types above. Each has a
     // SOURCE (RAL / F&B / veneer / laminate / wood), a colour and, where it is a
@@ -134,7 +178,13 @@ export const DEFAULT_DESIGN = {
   thickness: { board: null, custom: null, slots: {} },
   // Which VARIANT of each piece of ironmongery this job fits. The automat picks
   // the concrete item; the user only ever picks a variant (F9.2).
-  hardware: { hinges: null, runners: null, handles: null },
+  // ─── Turn 25 (CLAUDE.md F6.1): the metal the shelf supports are in ───────
+  // Gold or silver, chosen once for the job. `null` means the profile's own
+  // default, so a project saved before this turn opens on the workshop's
+  // answer rather than on nothing.
+  hardware: {
+    hinges: null, runners: null, handles: null, shelfSleeve: null,
+  },
   // ─── Turn 17 (CLAUDE.md F7.1) ───
   // How many hinges this JOB fits a door with: 2 or 3. `null` means the
   // profile's own standard, which is 3 and is what every kit has always
@@ -229,6 +279,9 @@ export function migrateDesign(design) {
     hardware: {
       hinges: d.hardware?.hinges ? String(d.hardware.hinges) : null,
       runners: d.hardware?.runners ? String(d.hardware.runners) : null,
+      shelfSleeve: d.hardware?.shelfSleeve === 'gold' || d.hardware?.shelfSleeve === 'silver'
+        ? d.hardware.shelfSleeve
+        : null,
       handles: d.hardware?.handles ? String(d.hardware.handles) : null,
     },
     hinges: {
@@ -256,7 +309,9 @@ export function migrateDesign(design) {
     },
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
-      handle: d.fronts?.handle ?? null,
+      handle: normaliseHandle(d.fronts?.handle),
+      shakerFrame: Number(d.fronts?.shakerFrame) > 0 ? Number(d.fronts.shakerFrame) : null,
+      handleOffsets: normaliseHandleOffsets(d.fronts?.handleOffsets),
       types: coupleFrontTypes(d),
     },
     doorStyles: Array.isArray(d.doorStyles)

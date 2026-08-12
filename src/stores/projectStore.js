@@ -10,7 +10,9 @@ import { getCabinetProfile } from '../engine/profile.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
 import { doorBays } from '../engine/doors.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
-import { defaultParamsFor, getUnitType, UNIT_NUM_PREFIX } from '../engine/types.js';
+import {
+  defaultParamsFor, getUnitType, UNIT_NUM_PREFIX, UNIT_TYPES,
+} from '../engine/types.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 import {
@@ -26,9 +28,10 @@ import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
 } from '../engine/room.js';
 import {
-  HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, projectHeights, setCarcassTypeCount,
-  withFrontColour, withRunMaterial,
+  HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, normaliseHandle, projectHeights,
+  setCarcassTypeCount, withFrontColour, withRunMaterial,
 } from '../engine/design.js';
+import { handleClassCount } from '../engine/handles.js';
 import {
   carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
   projectFrontThickness, setFrontTypeCount, sourceById, sourceTakesFacing,
@@ -301,6 +304,20 @@ function paramsForEngine(unit, design = null) {
     // unit's own answer, which sits above this one in the hierarchy — so a
     // cabinet that has said something for itself keeps saying it.
     project_runner_variant: design?.runners?.variant ?? null,
+    // ─── TURN 25 (CLAUDE.md F3.1): THE PROJECT'S SHAKER FRAME ──────────────
+    // Travels exactly as the hinge standard and the runner variant do: an INPUT
+    // in the design layer, never a formula in the engine. Left out — a bare kit
+    // call, every golden fixture — the engine falls back to the profile's 70.
+    shaker_frame_mm: design?.fronts?.shakerFrame ?? null,
+    // ─── TURN 25 (CLAUDE.md F4): THE HANDLE, AND ONE FRONT'S OWN ───────────
+    // The project's choice with its per-class offsets, and this cabinet's own
+    // exceptions keyed by panel id — the same two-level shape turn 19 gave the
+    // hinge. Neither reaches a hole unless a handle has been ASKED for, which
+    // is R9: no handle, no drilling.
+    project_handle: design?.fronts?.handle
+      ? { ...design.fronts.handle, offsets: design.fronts.handleOffsets || {} }
+      : null,
+    front_handles: p.front_handles || null,
     // ─── TURN 24 (CLAUDE.md F3.2): THE SIX MEASURED SLOTS ───────────────────
     //
     // The owner's law: the engine computes from the CALIPER. The six numbers
@@ -1782,6 +1799,39 @@ export const useProjectStore = create((set, get) => ({
   },
 
   /**
+   * ─── REMOVE THIS LEAF (turn 25, CLAUDE.md F11) ───────────────────────────
+   *
+   * "At the BOTTOM of the door's double-click modal, separated by a rule:
+   * Remove door. The Delete key on a selected leaf does the same. No
+   * confirmation dialog — Undo covers it."
+   *
+   * A leaf hung in a BAY is removed on its own: `bay_doors` already says one
+   * thing per bay, so that bay stops asking for a door and its neighbours are
+   * untouched. A FACE door has no per-leaf answer in the parameters — a pair is
+   * cut as a pair — so removing one takes the face's doors off, which is what
+   * the action means on a cabinet that has one door and the honest reading on a
+   * cabinet that has two.
+   *
+   * R9 does the rest: the hinge holes leave with the door and return with it,
+   * in the same recompute, because they only ever existed while it did.
+   *
+   * @returns {{removed:number, scope:'bay'|'face'}|null}
+   */
+  removeFront: (unitId, panelId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const panel = get().unitResult(unitId)?.panels.find((p) => p.id === panelId) || null;
+    if (!panel || panel.part !== 'FRONT') return null;
+    const bay = panel.meta?.bay;
+    if (Number.isFinite(Number(bay))) {
+      get().setBayDoor(unitId, Number(bay), { door: 'none' });
+      return { removed: 1, scope: 'bay' };
+    }
+    const res = get().removeDoors(unitId);
+    return { removed: res.removed, scope: 'face' };
+  },
+
+  /**
    * …and off every cabinet in the selection, in ONE action and ONE undo step
    * (turn 15, CLAUDE.md F8; the turn-13 F5 bulk rules).
    *
@@ -3243,6 +3293,26 @@ export const useProjectStore = create((set, get) => ({
     };
   }),
 
+  /**
+   * ─── THE SHELF SUPPORTS' METAL (turn 25, CLAUDE.md F6.1) ──────────────────
+   *
+   * Gold or silver, chosen once for the job. It is a PROJECT decision like the
+   * hinge finish above and reaches nothing but the picture: the fitting is the
+   * ⌀7.5 this engine has drilled since turn 1, so there is no cut and no order
+   * that follows from it.
+   */
+  setShelfSleeve: (id) => set((s) => {
+    const design = migrateDesign(s.project.design);
+    const wanted = id === 'gold' || id === 'silver' ? id : null;
+    return {
+      project: {
+        ...s.project,
+        design: migrateDesign({ ...design, hardware: { ...design.hardware, shelfSleeve: wanted } }),
+      },
+      dirty: true,
+    };
+  }),
+
   /** What this job is fitted with, resolved — for the panel and for a test. */
   hingeHardware: () => {
     const design = migrateDesign(get().project.design);
@@ -3289,6 +3359,91 @@ export const useProjectStore = create((set, get) => ({
   doorHingesOf: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     return unit?.params?.door_hinges || null;
+  },
+
+  // ─── HANDLES (turn 25, CLAUDE.md F4.4) ────────────────────────────────────
+  //
+  // "Moving one moves all — with a warning." The MOVE is a project-level write
+  // keyed by the front's CLASS, so every base door in the kitchen goes together
+  // and the wall doors do not follow. Unticking `apply to all` writes the front
+  // its own offset instead, and that front then wears a deviation badge —
+  // exactly the grammar turn 19 gave a per-hinge override.
+
+  /** The kitchen's handle: type and, for a bar, its screw centres. */
+  setProjectHandle: (handle) => {
+    const design = migrateDesign(get().project.design);
+    set((st) => ({
+      project: {
+        ...st.project,
+        design: { ...design, fronts: { ...design.fronts, handle: normaliseHandle(handle) } },
+      },
+      dirty: true,
+    }));
+    return normaliseHandle(handle);
+  },
+
+  /**
+   * Move every handle of one CLASS. `offset` is millimetres off the reference
+   * point the owner's law puts it at; `{x:0,y:0}` hands the class back to it.
+   */
+  moveHandleClass: (handleClass, offset) => {
+    const design = migrateDesign(get().project.design);
+    const offsets = { ...(design.fronts.handleOffsets || {}) };
+    const x = Number(offset?.x) || 0;
+    const y = Number(offset?.y) || 0;
+    if (x === 0 && y === 0) delete offsets[handleClass];
+    else offsets[handleClass] = { x, y };
+    set((st) => ({
+      project: {
+        ...st.project,
+        design: { ...design, fronts: { ...design.fronts, handleOffsets: offsets } },
+      },
+      dirty: true,
+    }));
+    return offsets[handleClass] || null;
+  },
+
+  /**
+   * Give ONE front a handle of its own — a different type, different centres,
+   * or a position the class does not share. `null` hands it back to the class.
+   */
+  setFrontHandle: (unitId, panelId, spec) => {
+    if (!panelId) return null;
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const map = { ...(u.params.front_handles || {}) };
+        if (spec) map[panelId] = spec;
+        else delete map[panelId];
+        return {
+          ...u,
+          params: { ...u.params, front_handles: Object.keys(map).length ? map : null },
+        };
+      }),
+      dirty: true,
+    }));
+    return spec || null;
+  },
+
+  /**
+   * How many fronts a change to this class would move — the number the
+   * confirmation names ("this moves handles on 14 fronts").
+   *
+   * Counted off the COMPUTED units, so it is the fronts that actually exist
+   * rather than a guess from the parameters; a confirmation with the wrong
+   * number in it is worse than no confirmation.
+   */
+  handleClassCountOf: (handleClass) => {
+    const s = get();
+    const entries = s.units.map((u) => ({
+      unitType: UNIT_TYPES[u.type],
+      panels: s.unitResult(u.id)?.panels || [],
+      unit: u,
+    }));
+    return handleClassCount(
+      entries, handleClass,
+      (entry, panel) => entry.unit.params?.front_handles?.[panel.id] || null,
+    );
   },
 
   /** Hand every door of this cabinet back to the rule. */
@@ -3785,6 +3940,26 @@ function sameRun(a, b) {
   // the corner square until something else forced a redraw.
   if (!sameCorner(a.sideMitre, b.sideMitre)) return false;
   if (a.role === 'member') return a.ownerId === b.ownerId;
+  // ─── TURN 25 (CLAUDE.md F12.1): THE CORNICE'S OWN HEIGHT ─────────────────
+  //
+  // THE DIAGNOSIS. Option 100 shipped in turn 22 and the owner only ever got
+  // 70, and neither the profile geometry nor the panel option nor the resolver
+  // was at fault — all three carry 100 correctly, and `verify/t25/cornice-100.md`
+  // shows them doing it. What was at fault is THIS comparison.
+  //
+  // The list below was written for the top infill, the plinth and the masking
+  // board, none of which has a height: they are all "one board, this long,
+  // ending like this". A cornice is the first run element whose IDENTITY
+  // includes a height, and turn 22 added it to the callers without extending
+  // this. So switching a unit from 70 to 100 produced a genuinely new element
+  // — same offset, same length, same faceH, same ends, same returns, same
+  // mitres — that this function called identical, and `refreshAutoParts`
+  // returned the unit untouched with its 70 still on it.
+  //
+  // Every other field is compared because a moulding that differs in it is a
+  // different length of timber; height and projection are exactly that.
+  if ((Number(a.height) || 0) !== (Number(b.height) || 0)) return false;
+  if ((Number(a.projection) || 0) !== (Number(b.projection) || 0)) return false;
   return a.offset === b.offset && a.length === b.length && a.faceH === b.faceH
     && a.depth === b.depth
     && a.shelfDepth === b.shelfDepth

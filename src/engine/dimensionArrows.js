@@ -46,6 +46,10 @@ export function dimensionStyle(profile) {
     extensionMm: num(S.extensionMm, 4),
     gapMm: num(S.gapMm, 2),
     minSpanMm: num(S.minSpanMm, 0.5),
+    // Turn 25 (CLAUDE.md F14.1): how far below a bay's mid-height the
+    // partition chain sits, as a fraction of the bay — so it clears the add
+    // (+) button on a bay of any size.
+    chainDropFraction: num(S.chainDropFraction, 0.25),
     // Turn 24 (CLAUDE.md F10): how far the cursor may stray before a shown set
     // fades. It lives in `profile.editor` — it is a property of the TOOL and
     // not of the drawing's ink — and is read THROUGH here so both surfaces get

@@ -190,7 +190,12 @@ test('the design defaults are all null — a project that answers nothing change
   // all unconfirmed. Nothing answered = the manufacturer's nominal, which is
   // exactly what a project computed before the slots existed.
   assert.deepEqual(DEFAULT_DESIGN.thickness, { board: null, custom: null, slots: {} });
-  assert.deepEqual(DEFAULT_DESIGN.hardware, { hinges: null, runners: null, handles: null });
+  // Turn 25 (CLAUDE.md F6.1): `shelfSleeve` joins them, null for exactly the
+  // same reason — the project has said nothing about which metal its shelf
+  // supports are in, and the profile's own default answers.
+  assert.deepEqual(DEFAULT_DESIGN.hardware, {
+    hinges: null, runners: null, handles: null, shelfSleeve: null,
+  });
   assert.deepEqual(DEFAULT_DESIGN.fronts.types, []);
   const d = migrateDesign(null);
   assert.equal(projectBoardThickness(d, P), P.board.thickness);
@@ -212,7 +217,9 @@ test('a design saved before turn 11 opens with every new field filled in', () =>
   for (const row of Object.values(ancient.thickness.slots)) {
     assert.deepEqual(row, { measured: null, confirmed: false });
   }
-  assert.deepEqual(ancient.hardware, { hinges: null, runners: null, handles: null });
+  assert.deepEqual(ancient.hardware, {
+    hinges: null, runners: null, handles: null, shelfSleeve: null,
+  });
   assert.deepEqual(ancient.fronts.types, []);
   assert.equal(ancient.carcass.types[0].source, null);
   assert.equal(ancient.colour.carcass, null);

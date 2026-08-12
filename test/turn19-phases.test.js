@@ -244,9 +244,11 @@ test('a door lands in Fronts, a side in Carcass, a shelf in Shelves', () => {
   const groupOf = (id) => treePathOfPanel(parts, id)?.group;
   assert.equal(groupOf('01-FL'), 'fronts');
   assert.equal(groupOf('01-FR'), 'fronts');
-  assert.equal(groupOf('BUL'), 'carcass');
-  assert.equal(groupOf('BUR'), 'carcass');
-  assert.equal(groupOf('BACK'), 'carcass');
+  // Turn 25 (CLAUDE.md F7.1): the group is called `carcasses` now, and its
+  // membership widened — see test/turn25-f7-export-tree.test.js.
+  assert.equal(groupOf('BUL'), 'carcasses');
+  assert.equal(groupOf('BUR'), 'carcasses');
+  assert.equal(groupOf('BACK'), 'carcasses');
   const shelf = parts.find((p) => groupOfPanel(p) === 'shelves');
   assert.ok(shelf, 'the cabinet really has one');
   assert.equal(groupOf(shelf.id), 'shelves');

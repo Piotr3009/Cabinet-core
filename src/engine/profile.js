@@ -53,7 +53,38 @@ export const DEFAULT_CABINET_PROFILE = {
     thickness: 25,                    // 18 = MDF, 19 = melamine, 25 = shaker
     thicknessOptions: [18, 19, 25],
     types: {
-      S: { label: 'Shaker', frameWidth: 50 },
+      // ─── TURN 25 (CLAUDE.md F3): A SHAKER THAT LOOKS LIKE ONE ────────────
+      //
+      // Until this turn a shaker rendered as a flat slab and only its 25 mm
+      // thickness said otherwise. What makes it a shaker is a RECESS in its
+      // face, and the numbers of that recess are here.
+      //
+      // `frameWidth` was 50 — the AutoLISP elevation's `off`, traced in turn 5
+      // for a line on a drawing rather than for a cut. The owner's number for
+      // the piece is 70, and it is now ONE number: the elevation draws the
+      // frame the machine pockets, so the picture and the door cannot disagree.
+      //
+      // EQUAL ON ALL FOUR SIDES — "shaker zawsze równy". There is deliberately
+      // no rail/stile pair here: a second number is a second thing to get
+      // wrong, and the owner does not want one.
+      //
+      // `minPanel` is OURS and is said so plainly. The owner gave the frame's
+      // range and the recess depth; he did not give the narrowest panel worth
+      // cutting, and the engine has to have one or a 148 mm frame on a 300 mm
+      // door leaves a 4 mm slot and calls it a shaker. 60 mm is a workshop
+      // judgement — a panel narrower than the frame around it does not read as
+      // a panel — and it is a DEFAULT in the profile, so a workshop that
+      // disagrees changes one line. What it must never do is silently move the
+      // frame instead (F3.2).
+      S: {
+        label: 'Shaker',
+        frameWidth: 70,          // equal on all four sides
+        frameMin: 10,
+        frameMax: 200,
+        recessDepth: 6,          // panel face sits at frontT − 6
+        minPanel: 60,
+        pocketLayer: 'SHAKER_PANEL_POCKET',
+      },
       H: { label: 'Handleless (J-groove)', grooveDepth: 30 },
       F: { label: 'Flat' },
     },
@@ -85,6 +116,41 @@ export const DEFAULT_CABINET_PROFILE = {
     // The TOP and BOTTOM stay full depth and are not in this: they carry the
     // puzzle joint, and shortening them is shortening the carcass.
     interiorSetback: 20,
+  },
+
+  // ─── HANDLES (turn 25, CLAUDE.md F4) ────────────────────────────────────
+  //
+  // The owner's reference law is `engine/handles.js`; these are the numbers it
+  // reads. Every one of them is his except `holeDiameter` and the model
+  // proportions, which are said to be ours below.
+  handles: {
+    // "50 from the TOP … 50 in from the opening edge" — the one inset, used on
+    // both axes and by all four classes, because it is one number in his head.
+    inset: 50,
+    // A shaker's handle goes on the centre line of the FRAME. Under this the
+    // frame is too narrow to centre anything on and the 50 × 50 rule answers
+    // instead — the owner's own fallback, and his number.
+    shakerMinFrame: 30,
+    // OURS: a handle screw is an M4 through a front, which is a ⌀5 clearance
+    // hole on any bench in the country. It gets a NAMED LAYER of its own for
+    // the reason BISCUIT_4MM and SHAKER_PANEL_POCKET did — it is a tool of its
+    // own on the bed, and VCarve matches tools by layer name.
+    holeDiameter: 5,
+    layer: 'HANDLES_5MM',
+    // The centres a bar comes in. A typed number is accepted too (F4), so this
+    // is the list the picker offers rather than a set of allowed values.
+    barCentres: [96, 128, 160, 192, 224],
+    defaultCentres: 128,
+    // ─── The procedural models (F4.3) ───
+    // GOLD "for now": catalogue models arrive later by the bucket route, and
+    // what this turn fixes is the CONTRACT — the mount point and the axis —
+    // rather than the shape. These proportions are OURS: a 12 mm bar on 32 mm
+    // posts and a 30 mm hemisphere are the commonest things in a catalogue,
+    // and they are here so that a bought model that replaces them arrives at
+    // the same place with the same axis.
+    bar: { rodDiameter: 12, standoff: 32, postDiameter: 10, overhang: 20 },
+    knob: { diameter: 30, standoff: 22, stemDiameter: 8 },
+    finish: 'gold',
   },
 
   // ─── Doors / fronts ───
@@ -199,6 +265,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // same way; test/single-socket.test.js recomputes it on every run, so the
     // number and the reasoning cannot drift apart.
     singleSocketBelow: 264.5,
+    // ─── TURN 25 (CLAUDE.md F2): ONE CENTRED JOINT ON A SHALLOW CABINET ─────
+    //
+    // From the owner's CORRECTED `panel_joints.lsp`, and it is his arithmetic
+    // rather than ours: a socket is 51 mm wide and a dog bone is 60, and both
+    // are set out 95 mm in from each end of the run. Two of them therefore
+    // collide on a narrow panel —
+    //
+    //     sockets    2 × 95 + 51 = 241     …below 241 the pockets meet
+    //     dog bones  2 × 95 + 60 = 250     …below 250 the reliefs meet
+    //
+    // — which is the same collision `singleSocketBelow` was derived for in
+    // turn 7, arrived at from the other end. The difference is what the answer
+    // is keyed on. `singleSocketBelow` asks about the RUN, one panel at a time;
+    // the owner asks about the CABINET, once, and every mating panel takes the
+    // same answer so the joints still line up. A side whose socket is centred
+    // and a top whose tab is at 95 is not a joint at all.
+    //
+    // ONE RESOLVED INSET PER UNIT (`engine/puzzle.js resolvedJointInset`):
+    // depth at or under `singleJointMaxDepth` ⇒ one joint on the panel's own
+    // centre line; above it ⇒ the pair at `tabCentresFromEnd`, exactly as
+    // before. 300 is the owner's number and it stands clear of both collisions
+    // with room to spare: a 300 mm carcass has a 282 mm run, which is 32 mm
+    // above the dog bones' own limit — the margin is deliberate, because a
+    // joint that only just fits is a joint that fails on a board cut 2 mm under.
+    //
+    // Same features, fewer of them. No new entity class, no new layer.
+    singleJointMaxDepth: 300,
     // ─── Turn 8 (F0 / BLOCKERS #37 / BACKLOG #47) ───
     // The same family of problem on the OTHER axis. `tabCentres()` puts three
     // tabs down the back edge of a side panel — 95 in from each end and one in
@@ -274,6 +367,18 @@ export const DEFAULT_CABINET_PROFILE = {
     extensionMm: 4,            // how far the extension line runs past it
     gapMm: 2,                  // …and the gap it leaves at the feature itself
     minSpanMm: 0.5,            // under this there is nothing to dimension
+    // ─── TURN 25 (CLAUDE.md F14.1): THE CHAIN MOVES DOWN ──────────────────
+    //
+    // Turn 24 drew the partition chain across the bay's own MID-HEIGHT, which
+    // is exactly where the add (+) button stands — so the number a joiner had
+    // just asked for was hidden behind the control he had asked it with.
+    //
+    // It drops by a FRACTION of the bay's height rather than by a fixed number
+    // of millimetres, because the button is placed the same way: a fixed 80 mm
+    // is clear on a wardrobe bay and off the bottom of a 300 mm one. A quarter
+    // of the way down puts it in the lower half and well below the button on
+    // any bay the app will build.
+    chainDropFraction: 0.25,
     // The magnet that holds a shown set on screen is `editor.hoverMagnetMm` —
     // it is a property of the TOOL rather than of the drawing's ink, and
     // CLAUDE.md F10.1 names it there. `dimensionStyle` reads it through, so
@@ -408,7 +513,23 @@ export const DEFAULT_CABINET_PROFILE = {
       // Blum runner. Both kits read `baseDrawerUnit.boxAboveRunner` now, which
       // is where every other number measured off A DRAWER SIDE already lives,
       // and this key is gone rather than left behind saying something untrue.
-      depthSteps: [390, 440, 490, 540, 590, 640, 690],   // runner standard
+      // ─── TURN 25 (CLAUDE.md F9): THE SHORT RUNNERS ─────────────────────
+      //
+      // The ladder started at 390, so a 350 mm deep cabinet was told "too
+      // shallow for drawers" and then cut a 390 mm box anyway — a box LONGER
+      // THAN THE CARCASS. The owner asked for NL 250, 270, 300, 320, 350 and
+      // 380, and every one of them is already in the bucket: they are in
+      // `test/fixtures/bucket/runners-blum-movento-manifest.json`, which is the
+      // live manifest verbatim (R3), in both S and T.
+      //
+      // The SELECTION rule is unchanged and is what makes this safe: the
+      // largest step that fits, found by walking the ladder FROM THE SHORTEST
+      // UPWARD and keeping the last one that still fits
+      // (`engine/runners.js runnerNominalLength`). Adding shorter rungs cannot
+      // change what the largest-that-fits is for a deep cabinet, which is why
+      // every existing unit keeps today's runner — and there is a test that
+      // says so rather than a sentence.
+      depthSteps: [250, 270, 300, 320, 350, 380, 390, 440, 490, 540, 590, 640, 690],
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
       partitionClearance: 5,   // partition sits 5 mm above the top drawer front
@@ -834,6 +955,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // is measured from that part's own edges, and none of those move.
     boxAboveRunner: 13.5,
     bottomAboveRunner: 28.5,    // = boxAboveRunner + runnerPocketWidth
+    // ─── TURN 25 (CLAUDE.md F8): A FLOOR AND A CEILING ─────────────────────
+    //
+    // "The cap is what stopped a tall top drawer breaking the top panel; the
+    // owner has seen it happen." A box hangs off its runner and stands up from
+    // it, and a front tall enough makes a box tall enough to foul whatever is
+    // above it — the next runner down the stack, or, for the top drawer, the
+    // underside of the top panel. Neither is negotiable, so the SIDE gives.
+    //
+    // FIVE, and it is the owner's number and not the LISP's three: he has
+    // watched a box lift a top panel off its tabs and wants the margin.
+    boxTopClearance: 5,
+    // …and the floor at the other end. A box front is `side − 15 − G − 1`, so
+    // a short enough front produces a box front of nothing and, below that, of
+    // a negative number. `minBoxInside` is the shallowest box a workshop will
+    // actually build — a cutlery tray — and it is OURS: the owner gave the
+    // arithmetic (`minimum inside + 15 + G + 1`) and not the minimum.
+    minBoxInside: 40,
     // ─── Turn 17 (CLAUDE.md F4.3): THE POCKETS ARE CUTS, AND CUTS HAVE DEPTH ─
     // The two grooves in a drawer-box side have been in the cutting data since
     // turn 3 as flat rectangles on their own layers — which is everything a
@@ -1105,6 +1243,34 @@ export const DEFAULT_CABINET_PROFILE = {
         beadProjection: 0.3,     // of the projection
         landHeight: 0.14,        // the flat top land, of the height
         steps: 6,                // points per curved member
+        // ─── TURN 25 (CLAUDE.md F12.2): THE 100 IS RICHER, NOT BIGGER ──────
+        //
+        // Turn 22 gave both heights the SAME fractions, so a 100 was a 70
+        // photocopied at 143 % — which is not what a bigger moulding is. The
+        // owner asks for "a larger bottom bead, a deeper cove, a pronounced
+        // top land, projection 65", and those are three different proportions
+        // rather than one scale factor.
+        //
+        //   beadHeight     0.16 → 0.20   a larger bottom bead
+        //   beadProjection 0.30 → 0.26   …standing proud LESS far, which is
+        //                                what leaves the cove a deeper sweep:
+        //                                it now travels 48 mm of projection
+        //                                where the scaled shape travelled 45
+        //   landHeight     0.14 → 0.20   a pronounced top land
+        //
+        // ─── BLOCKER, STATED (F12.2) ──────────────────────────────────────
+        // The owner has a reference drawing he sent long ago. It is NOT in
+        // this repository — `reference/` has the eleven LISP kits, the colour
+        // packs and the hardware catalogues, and no cornice section anywhere.
+        // So this is the parametric richer profile F12.2 asks for in that
+        // case, and the drawing SUPERSEDES it in a later turn WITHOUT touching
+        // the plumbing: the section is already read through one function
+        // (`engine/cornice.js corniceSection`) by the run logic, the BOM and
+        // the 3-D, so replacing these three numbers with traced ones changes
+        // nothing else.
+        byHeight: {
+          100: { beadHeight: 0.2, beadProjection: 0.26, landHeight: 0.2 },
+        },
       },
       // What a mitred corner costs in ORDERED length. A joiner cuts the 45°
       // out of a longer piece; this is the allowance per corner.
@@ -1746,6 +1912,22 @@ export const DEFAULT_CABINET_PROFILE = {
     // white door a bright bracket grey reads as a smudge. This is the tone of
     // the nickel-plated body a workshop actually screws in — dark enough to be
     // an object, quiet enough not to be a diagram.
+    // ─── TURN 25 (CLAUDE.md F4.3 / F6.1): THE TWO METALS ────────────────────
+    //
+    // The owner asks for the same two things twice this turn — a GOLD handle
+    // (F4.3: "procedural, gold for now") and gold-or-silver shelf sleeves
+    // (F6.1: "he wants to SEE gold or silver") — so there is one block of two
+    // metals rather than a colour in each feature. A third piece of brass next
+    // turn reads this and adds nothing.
+    //
+    // They sit here, beside the hardware finishes, because that is what they
+    // are: a plated metal is a surface, and the numbers are the same three the
+    // hinge finishes carry (colour, metalness, roughness).
+    metals: {
+      gold: { label: 'Gold', colour: '#c9a227', metalness: 0.95, roughness: 0.22 },
+      silver: { label: 'Silver', colour: '#c8ccd0', metalness: 0.95, roughness: 0.18 },
+    },
+    metalDefault: 'gold',
     hardware: {
       rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92', hinge: '#5b5f63',
       // ─── Turn 13 (CLAUDE.md F7) ───
@@ -2310,6 +2492,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // The hanging rail. The 3D drew a ⌀30 tube with the number written into the
     // mesh; it lives here now, with everything else that is bought and not cut.
     rail: { diameter: 30 },
+    // ─── THE SHELF SUPPORT (turn 25, CLAUDE.md F6) ──────────────────────────
+    //
+    // The owner: he wants to SEE gold or silver sleeves — and they are the
+    // ⌀7.5 this engine has drilled since turn 1, not a new 5 mm system. So
+    // there is nothing new to cut here and nothing new to order beyond what
+    // `shelfHoles.pinsPerShelf` has always counted; what is new is that the
+    // fitting is DRAWN.
+    //
+    // A support is two pieces and a joiner buys them as one: the SLEEVE, a
+    // knock-in collar that lines the ⌀7.5 hole, and the PIN — the "spon" — that
+    // goes into it and that the shelf rests on. The sleeve is what shows when
+    // the shelf is out, and it is what the owner is asking to see.
+    //
+    // These proportions are OURS: the ⌀7.5 is his, and a collar for a 7.5 hole
+    // is about 11 across with a 2 mm flange, and the pin that goes in it is a
+    // 5 mm peg standing 9 mm proud. A catalogue fitting replaces the numbers
+    // and nothing else.
+    shelfPin: {
+      sleeveOuter: 11,
+      sleeveFlange: 2,
+      pinDiameter: 5,
+      pinLength: 9,
+      // A little shoulder under the shelf, so the board is seen to be resting
+      // ON something rather than floating beside a peg.
+      shoulderDiameter: 8,
+      shoulderThickness: 1.5,
+    },
   },
 
   // ─── Technical drawings (turn 6, CLAUDE.md F7; turn 7, F1) ───
@@ -2844,6 +3053,12 @@ export function migrateCabinetProfile(profile) {
     front: { ...D.front, ...profile.front, types: { ...D.front.types, ...profile.front?.types } },
     carcass: { ...D.carcass, ...profile.carcass },
     doors: { ...D.doors, ...profile.doors },
+    handles: {
+      ...D.handles,
+      ...profile.handles,
+      bar: { ...D.handles.bar, ...profile.handles?.bar },
+      knob: { ...D.handles.knob, ...profile.handles?.knob },
+    },
     hinges: {
       ...D.hinges, ...profile.hinges,
       rules: { ...D.hinges.rules, ...profile.hinges?.rules },
@@ -2930,7 +3145,14 @@ export function migrateCabinetProfile(profile) {
         ...D.autoParts.cornice,
         ...profile.autoParts?.cornice,
         projection: { ...D.autoParts.cornice.projection, ...profile.autoParts?.cornice?.projection },
-        section: { ...D.autoParts.cornice.section, ...profile.autoParts?.cornice?.section },
+        section: {
+          ...D.autoParts.cornice.section,
+          ...profile.autoParts?.cornice?.section,
+          byHeight: {
+            ...D.autoParts.cornice.section.byHeight,
+            ...profile.autoParts?.cornice?.section?.byHeight,
+          },
+        },
       },
     },
     appearance: {
@@ -2952,6 +3174,12 @@ export function migrateCabinetProfile(profile) {
       // Turn 21 (CLAUDE.md F3): a profile stored before this turn has no
       // `cuts` at all and must read as the default — off.
       cuts: { ...D.appearance.cuts, ...profile.appearance?.cuts },
+      metals: {
+        ...D.appearance.metals,
+        ...profile.appearance?.metals,
+        gold: { ...D.appearance.metals.gold, ...profile.appearance?.metals?.gold },
+        silver: { ...D.appearance.metals.silver, ...profile.appearance?.metals?.silver },
+      },
       sheenScale: { ...D.appearance.sheenScale, ...profile.appearance?.sheenScale },
       spray: { ...D.appearance.spray, ...profile.appearance?.spray },
       decor: { ...D.appearance.decor, ...profile.appearance?.decor },
@@ -3103,6 +3331,7 @@ export function migrateCabinetProfile(profile) {
         },
       },
       leg: { ...D.hardware.leg, ...profile.hardware?.leg },
+      shelfPin: { ...D.hardware.shelfPin, ...profile.hardware?.shelfPin },
       rail: { ...D.hardware.rail, ...profile.hardware?.rail },
     },
     drawings: {

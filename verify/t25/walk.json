@@ -1,0 +1,139 @@
+{
+ "turn": 25,
+ "url": "http://127.0.0.1:4173/",
+ "showroom": "http://127.0.0.1:4174",
+ "rules": {
+  "R1": "every click, move, wheel and keystroke is CDP Input; the guard at the top of this file enforces it",
+  "R2": "scripts/bucket-live.mjs, before any picture of hardware",
+  "R4": "hardware urls, counts, parents and finishes read from window.__cc.hardware — including this turn's handles",
+  "R5": "the console is captured for the whole walk",
+  "R6": "any uncaught error or React error-boundary report FAILS the step it appeared in",
+  "R7": "no data-* on R3F objects — asserted in test/turn23-f2-f4-hardware.test.js and test/turn24-f8-f12.test.js",
+  "R8": "GLB-dependent steps run against the synthetic silent showroom",
+  "R9": "the door is removed IN THE APP and the classes it served are read again, then added back and compared"
+ },
+ "totals": {
+  "passed": 22,
+  "failed": 0,
+  "skipped": 1
+ },
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "R4/R8 — the mounted hinge is the GLB, over the app's OWN url",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174/hardware/hinges/blum/71B3550_10001.glb"
+  },
+  {
+   "label": "F3.1 — the door is a shaker: a 6 mm recess and a 70 mm frame",
+   "ok": true,
+   "detail": "{\"frame\":70,\"depth\":6,\"panelFloor\":19}"
+  },
+  {
+   "label": "F3.1 — the panel face sits at 25 − 6 = 19, and the BOARD is still 25",
+   "ok": true,
+   "detail": "floor 19, board 25"
+  },
+  {
+   "label": "F3.3 — the mesh is a TRAY, not a slab: real rebate walls with their own normals",
+   "ok": true,
+   "detail": "84 vertices, 6 normal directions"
+  },
+  {
+   "label": "F3.4 — …and its panel pocket is on the front’s own sheet",
+   "ok": true,
+   "detail": "1 SHAKER_PANEL_POCKET"
+  },
+  {
+   "label": "F4.1 — a BASE door’s handle is 50 from the TOP, on the shaker stile",
+   "ok": true,
+   "detail": "01-FL: top-inset+shaker-stile · 01-FR: top-inset+shaker-stile"
+  },
+  {
+   "label": "F4.2 — a bar drills TWO holes per door, on their own named class",
+   "ok": true,
+   "detail": "4 on HANDLES_5MM"
+  },
+  {
+   "label": "R4/F4.3 — the SCENE reports the handles it mounted, in gold, on the front",
+   "ok": true,
+   "detail": "2 rows, bar, gold"
+  },
+  {
+   "label": "R9 — remove the door in the app and every class it served GOES",
+   "ok": true,
+   "detail": "PUZZLE_HOLES_7_5MM, SCREWS_3MM"
+  },
+  {
+   "label": "R9 — …put it back and the drilling is IDENTICAL, to the coordinate",
+   "ok": true,
+   "detail": "byte for byte"
+  },
+  {
+   "label": "F6.1 — the ADJUSTABLE shelf’s sleeves are drawn, in the ⌀7.5 that carry it",
+   "ok": true,
+   "detail": "4 supports over 12 ⌀7.5 holes"
+  },
+  {
+   "label": "F6.2 — …and the FIX shelf beside it shows nothing",
+   "ok": true,
+   "detail": "shelves adjustable, fixed · 4 supports (one shelf’s worth)"
+  },
+  {
+   "label": "F15 — one press on the toolbar opens every door in the project",
+   "ok": true,
+   "detail": "2 leaves open"
+  },
+  {
+   "label": "F15 — …and a second press shuts them",
+   "ok": true,
+   "detail": "0 left open"
+  },
+  {
+   "label": "F13 — the front dimensions appear, project-wide",
+   "ok": true,
+   "detail": "8 rows drawn"
+  },
+  {
+   "label": "F13 — …and off is a CLEAN SCENE",
+   "ok": true,
+   "detail": "0 rows drawn"
+  },
+  {
+   "label": "F2 — a 200 mm cabinet resolves ONE centred joint per run",
+   "ok": true,
+   "detail": "inset null · 2 sockets · 4 ⌀7.5"
+  },
+  {
+   "label": "F7.1 — the sheet’s tree is the groups that have parts, in the owner’s order",
+   "ok": true,
+   "detail": "carcasses · shelves · fronts (expected carcasses · shelves · fronts)"
+  },
+  {
+   "label": "F7.2 — …with All and the four as quick-select buttons",
+   "ok": true,
+   "detail": "all · carcasses · shelves · fronts · infills"
+  },
+  {
+   "label": "F7.2 — clicking \"Shelves\" ticks its whole group and unticks the rest",
+   "ok": true,
+   "detail": "7 parts unticked"
+  },
+  {
+   "label": "R5 + R6 — the console is clean across the whole walk",
+   "ok": true,
+   "detail": "no errors, no React exceptions"
+  }
+ ],
+ "errors": []
+}

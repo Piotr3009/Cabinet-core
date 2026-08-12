@@ -25,11 +25,16 @@ import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
 import { partitionSpan, shelfCrossesPartition, widthZones } from './zones.js';
 // Turn 21 (CLAUDE.md F12): the owner's door-width law, as pure geometry.
+import {
+  isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
+} from './shaker.js';
+import { resolveHandle } from './handles.js';
+import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
 import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  chamferedRectGeometry, tabCentres,
+  chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
 import { resolveRunnerVariant, runnerPairSpec, syncRodFor } from './runners.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
@@ -526,6 +531,14 @@ function normalizeParams(raw, profile) {
     // rows if a joiner has edited them. Both are INPUTS in the design layer's
     // own manner: nothing said means the kit's own maths, so every golden
     // fixture and every bare `computeCabinet()` is untouched.
+    // ─── TURN 25 (CLAUDE.md F4): THE PROJECT'S HANDLE, AND ONE FRONT'S OWN ──
+    // The same two-level hierarchy turn 19 gave the hinge: the PROJECT says
+    // which handle and where, ONE FRONT may say something else and be believed,
+    // and there is no third level. Both are INPUTS in the design layer — a bare
+    // kit call, every golden fixture, passes neither and drills no handle at
+    // all, which is what the AutoLISP drills.
+    handle: p.project_handle && typeof p.project_handle === 'object' ? p.project_handle : null,
+    frontHandles: p.front_handles && typeof p.front_handles === 'object' ? p.front_handles : null,
     hingeStandard: p.hinge_standard,
     hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
     // ─── Turn 19 (CLAUDE.md F1): WHICH HINGE, NOT HOW MANY ──────────────────
@@ -664,19 +677,45 @@ function clampInt(value, min, max) {
  * @param {number} span     how wide the appliance is
  * @param {number} cutFromTop  the strip left at the top
  */
+// ─── TURN 25 (CLAUDE.md F1): THE SECOND DOUBLED EDGE THE GUARD FOUND ────────
+//
+// Turn 17 built the notch by dropping repeated VERTICES out of a fixed eight
+// point list. That is the right instinct aimed at the wrong thing: a repeated
+// point is only the visible half of the fault. Where the notch reached BOTH
+// ends of the board — which is every D/W panel's own plinth, because there the
+// appliance opening IS the whole length — dropping the two duplicated corners
+// left a path that walked the left edge up to the notch, across, DOWN the
+// right edge to the bottom, then back UP the right edge to the top, across and
+// down the left edge again. No two points were equal, and eighty millimetres
+// of each end was in the file twice.
+//
+// The shape is now derived from what is actually LEFT of the board rather than
+// patched after the fact, and there are four of those: a strip, two L's, and
+// the ordinary notch-in-the-middle. Every one is traced once, anticlockwise.
 export function notchedPlinth(w, h, at, span, cutFromTop) {
   const x0 = Math.max(0, Math.min(w, at));
   const x1 = Math.max(0, Math.min(w, at + span));
   const top = h - cutFromTop;
-  if (!(x1 - x0 > 0) || !(top > 0)) return rectGeometry(w, h);
-  const points = [[0, 0], [x0, 0], [x0, top], [x1, top], [x1, 0], [w, 0], [w, h], [0, h]];
-  // A notch that reaches an END of the board leaves the corner point repeated,
-  // and a repeated vertex is a zero-length edge — which a triangulator is
-  // entitled to refuse (3d/panelSolid.js says so about the tabs). Drop them.
-  const outline = points.filter(([x, y], i) => {
-    const prev = points[(i - 1 + points.length) % points.length];
-    return Math.abs(prev[0] - x) > 1e-9 || Math.abs(prev[1] - y) > 1e-9;
-  });
+  // No opening, or a cut that would take the whole height and leave two loose
+  // pieces rather than one board: the piece is a plain rectangle.
+  if (!(x1 - x0 > 0) || !(top > 0) || top >= h) return rectGeometry(w, h);
+
+  const reachesLeft = x0 <= 0;
+  const reachesRight = x1 >= w;
+  let outline;
+  if (reachesLeft && reachesRight) {
+    // The opening spans the board: what is left is the strip along the top.
+    outline = [[0, top], [w, top], [w, h], [0, h]];
+  } else if (reachesLeft) {
+    // An L standing on its right-hand end.
+    outline = [[x1, 0], [w, 0], [w, h], [0, h], [0, top], [x1, top]];
+  } else if (reachesRight) {
+    // …and its mirror.
+    outline = [[0, 0], [x0, 0], [x0, top], [w, top], [w, h], [0, h]];
+  } else {
+    // The ordinary case: a notch with board on both sides of it.
+    outline = [[0, 0], [x0, 0], [x0, top], [x1, top], [x1, 0], [w, 0], [w, h], [0, h]];
+  }
   return { outline, pockets: [], holes: [], layer: 'OUTLINE' };
 }
 
@@ -896,6 +935,15 @@ export function computeCabinet(params, profileOverride) {
   const topH = internalDepth;
   const backW = W;
   const backH = H;
+  // ─── TURN 25 (CLAUDE.md F2): ONE RESOLVED INSET, FOR THE WHOLE UNIT ──────
+  //
+  // Resolved HERE and once, off the cabinet's own depth, and handed to every
+  // panel that sets a joint out along that axis — the two sides' top and bottom
+  // sockets and the top/bottom panels' mating tabs and dog bones. That is what
+  // makes the joints still line up: a side whose socket is on the centre line
+  // and a top whose tab is at 95 do not meet, and the only way to be sure they
+  // cannot happen is for there to be nowhere else the question is asked.
+  const jointInset = resolvedJointInset(D, pz);
   // ─── TURN 24 (CLAUDE.md F6): A SHELF'S WIDTH FOLLOWS ITS TYPE ────────────
   //
   // The owner's rule, now law: a FIX shelf is the FULL CLEAR LIGHT — wall to
@@ -1067,7 +1115,22 @@ export function computeCabinet(params, profileOverride) {
       acc += drawerHeights[i] + DR.gap;
       // Box side = front − frontToSideDelta; box front/back = side − 15 − G − 1,
       // i.e. "as before, off the side" (200 → 164 → 130 with the defaults).
-      const side = drawerHeights[i] - DR.frontToSideDelta;
+      // ─── TURN 25 (CLAUDE.md F8) ───
+      // The wardrobe's own law is a fixed DELTA off the front rather than the
+      // base unit's 70 %, and it stays exactly that. What it gains is the same
+      // floor and the same ceiling: a box in a wardrobe fouls the shelf or the
+      // top over it in precisely the way one in a base unit fouls the top
+      // panel, and the owner's 5 mm is a fact about a box and not about a kit.
+      const ceilingHere = i + 1 < numDrawers
+        ? G + acc                        // the next drawer's own base
+        : (partitionY > 0 ? partitionY : H - (hasTopPanel ? G : 0));
+      const resolved = resolveBoxSide({
+        wanted: drawerHeights[i] - DR.frontToSideDelta,
+        base: G + zoneOffsets[i],
+        ceiling: ceilingHere,
+        boxBoardT: GB,
+      }, P);
+      const side = resolved.height;
       boxSideH.push(side);
       // …and the `− G` here is the BOX BOTTOM, which the front stands on top
       // of. The box's own board (F3.2), never the carcass's.
@@ -1166,11 +1229,58 @@ export function computeCabinet(params, profileOverride) {
     // Without it a 770 oven base drew a 118 mm box from 56 mm up into a shelf
     // whose underside is at 154.
     const boxCeiling = ovenShelfY(type, P, H, G);
-    const sideHs = heights.map((h, i) => {
+    // ─── TURN 25 (CLAUDE.md F8): WHAT IS ABOVE EACH BOX ─────────────────────
+    //
+    // For every drawer but the top one it is the NEXT RUNNER's underside; for
+    // the top one it is the underside of the top panel — or the appliance
+    // shelf, where a kit has one, which is the lower of the two and therefore
+    // the one that binds.
+    //
+    // Read off `runnerBottomY`, which is where a box actually stands, rather
+    // than off the screw row: turn 21 named those two apart precisely because
+    // one had been used for the other.
+    const topOfBox = hasTopPanel ? H - G : H;
+    const ceilingAbove = (i) => (i + 1 < runnerBottomY.length
+      ? runnerBottomY[i + 1]
+      : (boxCeiling == null ? topOfBox : Math.min(topOfBox, boxCeiling)));
+    const boxSides = heights.map((h, i) => {
       const wanted = lispRound(h * B.sideRatio);
-      if (boxCeiling == null) return wanted;
-      return Math.min(wanted, Math.max(0, boxCeiling - runnerRows[i]));
+      // Turn 18's own clamp under an appliance shelf stands, and stands FIRST:
+      // it is measured off the screw row and is what keeps the oven base's cut
+      // list byte-for-byte what it was.
+      const underShelf = boxCeiling == null
+        ? wanted
+        : Math.min(wanted, Math.max(0, boxCeiling - runnerRows[i]));
+      return resolveBoxSide({
+        wanted: underShelf,
+        base: runnerBottomY[i] + B.boxAboveRunner,
+        ceiling: ceilingAbove(i),
+        boxBoardT: GB,
+      }, P);
     });
+    const sideHs = boxSides.map((r) => r.height);
+    for (const [i, r] of boxSides.entries()) {
+      if (r.capped) {
+        warnings.push({
+          code: 'DRAWER_BOX_CAPPED',
+          message: `Drawer ${i + 1}: the box side is cut to ${roundTo(r.height, 1)} mm instead of ${roundTo(r.wanted, 1)} — `
+            + `${B.boxTopClearance} mm is kept clear of what sits above it.`,
+        });
+      } else if (r.floored) {
+        warnings.push({
+          code: 'DRAWER_BOX_FLOORED',
+          message: `Drawer ${i + 1}: the box side is raised to ${roundTo(r.height, 1)} mm, the shortest that leaves `
+            + `${P.baseDrawerUnit.minBoxInside} mm inside the box.`,
+        });
+      }
+      if (r.impossible) {
+        warnings.push({
+          code: 'DRAWER_BOX_NO_ROOM',
+          message: `Drawer ${i + 1}: there is no room for a box here — ${roundTo(r.cap, 1)} mm of headroom against a `
+            + `${roundTo(r.floor, 1)} mm minimum side.`,
+        });
+      }
+    }
     // Turn 24 (CLAUDE.md F3.2): the `− G` is the BOX BOTTOM the front stands
     // on, so it is the box's own board and not the carcass's.
     const boxFrontH = sideHs.map((s) => s - B.boxFrontHeightDeduction - GB - B.boxFrontHeightExtra);
@@ -1207,6 +1317,11 @@ export function computeCabinet(params, profileOverride) {
         });
       }
     }
+    // ─── TURN 25 (CLAUDE.md F10): SHORT / OVER ──────────────────────────────
+    // Not a block and not a clamp: the app SAYS what it found and cuts what it
+    // was asked for. The owner wants to see it in practice first.
+    const stackSays = frontStackWarning({ heights, gap: B.gap, available: H });
+    if (stackSays) warnings.push(stackSays);
     budr = {
       heights, frontY, runnerRows, runnerBottomY, sideHs, boxFrontH,
       depth, maxDl, boxW, frontWidth, boxLen,
@@ -1431,17 +1546,17 @@ export function computeCabinet(params, profileOverride) {
     id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.left, edgeLen: metres(sideH),
     box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges }) },
+    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges, jointInset }) },
   }));
   if (!applianceFront) panels.push(panel({
     id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
     edgeCode: codes.right, edgeLen: metres(sideH),
     box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges }) },
+    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges, jointInset }) },
   }));
   const topGeom = (backTabs = true) => ({
     rotated: true, drawn_w: topH, drawn_h: topW,
-    ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs }),
+    ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs, jointInset }),
   });
   if (hasTopPanel && !applianceFront) {
     panels.push(panel({
@@ -2125,7 +2240,7 @@ export function computeCabinet(params, profileOverride) {
         id: `${unitNum}-DF${i}`, part: 'DRAWER-FRONT', role: 'front', w: drawerFrontW, h: dfH, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * drawerFrontW + 2 * dfH),
         box: { x: boxLeftX - (DR.frontOversize / 2), y: dfY, z: D - DR.setback - frontT, w: drawerFrontW, h: dfH, d: frontT },
-        cnc: rectGeometry(drawerFrontW, dfH), meta: { drawer: i },
+        cnc: rectGeometry(drawerFrontW, dfH), meta: { drawer: i, frontType: cfg.frontType },
       }));
     }
   }
@@ -2238,7 +2353,7 @@ export function computeCabinet(params, profileOverride) {
         id: `${unitNum}-F${i}`, part: 'DRAWER-FRONT', role: 'front', w: budr.frontWidth, h: fh, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * budr.frontWidth + 2 * fh),
         box: { x: B.frontWidthDeduction / 2, y: budr.frontY[i - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
-        cnc: geom, meta: { drawer: i },
+        cnc: geom, meta: { drawer: i, frontType: cfg.frontType },
       }));
     }
   }
@@ -2726,6 +2841,20 @@ export function computeCabinet(params, profileOverride) {
       bays: doorBaysHere, modes: params.bay_doors, width: W, gap: P.doors.gap,
     })
     : [];
+  // ─── TURN 25 (CLAUDE.md F5): A DOOR IS A DOOR, WHEREVER IT IS HUNG ───────
+  //
+  // Turn 21 gave a partition-hung leaf its drilling and turn 24 made its hinges
+  // visible; what it still did not have was a place in the ORDER FORM. The
+  // reason was one number: `doorCount` comes from the FACE's own door rule, and
+  // a cabinet with doors in its bays sets `doors: false` by construction — so
+  // `totals.hinges` was `centres.length × 0`, `drillSummary.hinge_centers` was
+  // empty, and the BOM bought nothing to hang three leaves on while the machine
+  // bored all twelve plate holes for them.
+  //
+  // `leafCount` is that number said properly: how many doors this cabinet has,
+  // counting the ones on a partition. Every law downstream reads it, and there
+  // is no branch anywhere that asks whether a leaf is a "bay door".
+  const leafCount = bayDoors.length || doorCount;
   for (const leaf of bayDoors) {
     if (!(leaf.width > 0)) continue;
     panels.push(panel({
@@ -2767,6 +2896,42 @@ export function computeCabinet(params, profileOverride) {
       box: { x: W - P.doors.gap / 2 - frontW, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
       cnc: rectGeometry(frontW, frontH), meta: { hinge: 'R', frontType: cfg.frontType },
     }));
+  }
+
+  // ─── TURN 25 (CLAUDE.md F3): THE SHAKER GETS ITS RECESS ──────────────────
+  //
+  // One pass over the fronts, here, rather than a line at each of the five
+  // places a front is cut. The pocket is a fact about a PIECE — "this board is
+  // a shaker, and a shaker's face is machined" — and it is read off the piece's
+  // own `meta.frontType`, so a D/W panel's deliberately flat face (turn 17, F9)
+  // is untouched without anybody having to remember it here.
+  //
+  // ─── IT IS REFUSED, NOT CLAMPED (F3.2) ───────────────────────────────────
+  // Where the frame will not fit the leaf the front is cut PLAIN and the
+  // cabinet carries a warning naming the numbers. The frame is never quietly
+  // reduced so it fits: a joiner who set 200 and got 120 has a kitchen where
+  // some doors wear one frame and some another, and nothing ever told him.
+  const shakerFrame = shakerFrameMm({ fronts: { shakerFrame: params?.shaker_frame_mm } }, P);
+  const shakerFronts = panels.filter((x) => isShakerFront(x));
+  for (const pnl of shakerFronts) {
+    const pocket = shakerPocket({ w: pnl.w, h: pnl.h, frame: shakerFrame }, P);
+    if (!pocket) {
+      warnings.push({
+        code: 'SHAKER_FRAME_TOO_WIDE',
+        panel: pnl.id,
+        message: `${pnl.id}: ${shakerProblem({ w: pnl.w, h: pnl.h, frame: shakerFrame }, P)}`,
+      });
+      continue;
+    }
+    pnl.cnc.pockets = [...(pnl.cnc.pockets || []), pocket];
+    // What the 3-D solid and the handle law both need, on the piece: the frame
+    // that was actually cut, and how deep the panel floor sits. `thickness`
+    // itself is UNTOUCHED and stays the full board — F3.5.
+    pnl.meta.shaker = {
+      frame: shakerFrame,
+      depth: pocket.depth,
+      panelFloor: shakerPanelFloor(pnl.thickness, P),
+    };
   }
 
   // ── Drills ─────────────────────────────────────────────────────────────────
@@ -3032,6 +3197,51 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── TURN 25 (CLAUDE.md F4.2): THE HANDLE HOLES ──────────────────────────
+  //
+  // R9, the owner's law: no feature without its part. A handle's holes exist
+  // ONLY while the handle does — remove it and they go in the same recompute,
+  // add it back and they return identical — which is why this loop reads the
+  // resolved handle and drills nothing at all when there is none.
+  //
+  // A knob is one hole; a bar is the reference and its partner at the chosen
+  // centres, along the handle's own axis. Where the bar would run off the
+  // board the cabinet says so and drills neither — the same grammar F3 uses
+  // for a frame that will not fit.
+  const handlePlacements = [];
+  for (const pnl of panels.filter((x) => x.role === 'front')) {
+    const resolved = resolveHandle({
+      panel: pnl,
+      unitType: type,
+      project: cfg.handle,
+      own: cfg.frontHandles?.[pnl.id] || null,
+      hinge: pnl.meta?.hinge || cfg.hinge,
+      frame: pnl.meta?.shaker?.frame ?? null,
+    }, P);
+    if (!resolved) continue;
+    if (resolved.problem) {
+      warnings.push({ code: 'HANDLE_DOES_NOT_FIT', panel: pnl.id, message: `${pnl.id}: ${resolved.problem}` });
+    }
+    for (const hole of resolved.holes) addDrill(pnl.id, 'handle', hole.layer, hole.x, hole.y, hole.d);
+    // What the 3-D model mounts on: the piece, the point and the axis. The
+    // MODEL is procedural and gold for now (F4.3) and a catalogue one arrives
+    // later by the bucket route — the contract it will arrive against is this.
+    pnl.meta.handle = {
+      type: resolved.type,
+      centres: resolved.centres,
+      axis: resolved.reference.axis,
+      anchor: resolved.reference.anchor,
+      x: roundTo(resolved.reference.x, 4),
+      y: roundTo(resolved.reference.y, 4),
+      holes: resolved.holes.map((k) => [roundTo(k.x, 4), roundTo(k.y, 4)]),
+      rule: resolved.reference.rule,
+      deviation: resolved.deviation,
+      class: resolved.class,
+      ...(resolved.problem ? { problem: resolved.problem } : {}),
+    };
+    handlePlacements.push({ panel: pnl.id, ...pnl.meta.handle });
+  }
+
   // Runners: on each drawer panel, and on a carcass side only where no drawer panel sits
   const RN = P.wardrobe.runners;
   let runnerCarcassSide = null;
@@ -3285,7 +3495,9 @@ export function computeCabinet(params, profileOverride) {
     edging_front_m: roundTo(frontEdging, 6),
     edging_total_m: roundTo(boardEdging + frontEdging, 6),
     legs: legsPerUnit,
-    hinges: doorCount > 0 ? centres.length * doorCount : 0,
+    // Turn 25 (CLAUDE.md F5): the LEAVES, not the face's door rule — a door
+    // hung on a partition needs the same three hinges as one hung on a side.
+    hinges: leafCount > 0 ? centres.length * leafCount : 0,
     runner_pairs: numDrawers,
     hangers: type.hangers ? P.wallUnit.hangers.count : 0,
     rail: hasRail ? 1 : 0,
@@ -3325,16 +3537,29 @@ export function computeCabinet(params, profileOverride) {
   // things to buy. With no catalogue read every door resolves to the same
   // "nothing known", the grouping collapses to one line, and the spec is
   // byte-for-byte what it was before this turn.
-  const doorPanels = panels.filter((pn) => pn.part === 'FRONT' && pn.role === 'front');
+  // ─── TURN 25 (CLAUDE.md F5): A DOOR IS A DOOR, WHEREVER IT IS HUNG ───────
+  //
+  // Turn 21 gave a partition-hung leaf its drilling and turn 24 made its hinges
+  // visible; what it still did not have was a place in the ORDER FORM. The
+  // reason was one number: `doorCount` comes from the FACE's own door rule, and
+  // a cabinet with doors in its bays sets `doors: false` by construction — so
+  // `totals.hinges` was `centres.length × 0` and the BOM bought nothing to hang
+  // three leaves on.
+  //
+  // `leafCount` is that number said properly: how many doors this cabinet has,
+  // counting the ones on a partition. Every law below reads it, and there is no
+  // branch anywhere that asks whether a leaf is a "bay door".
+  const doorPanels = panels.filter((pn) => pn.part === 'FRONT' && pn.role === 'front'
+    && !pn.meta?.appliance);
   const innerDrawer = type.family === 'wardrobe' && numDrawers > 0;
   const hingeGroups = new Map();
-  if (doorCount > 0 && centres.length > 0) {
+  if (leafCount > 0 && centres.length > 0) {
     // A kit whose door panels are not one-per-door (a fridge housing's fixed
     // face, a kit that has had its fronts taken off) still buys hinges for the
     // doors the engine counted — so the LIST is padded to `doorCount` with the
     // cabinet's own answer rather than shrinking the order to the panels.
-    const doors = doorPanels.length === doorCount ? doorPanels : [];
-    const keys = doors.length ? doors : Array.from({ length: doorCount }, () => null);
+    const doors = doorPanels.length === leafCount ? doorPanels : [];
+    const keys = doors.length ? doors : Array.from({ length: leafCount }, () => null);
     for (const pnl of keys) {
       const spec = resolveDoorHinge({
         assigned: pnl ? doorHingeAssignment({ door_hinges: cfg.doorHinges }, pnl.id) : null,
@@ -3536,9 +3761,19 @@ export function computeCabinet(params, profileOverride) {
 
   const derived = {
     ...(removedParts.length ? { removed_parts: removedParts } : {}),
-    doors: doorCount,
+    // Turn 25 (CLAUDE.md F5): how many doors this cabinet HAS. For a face
+    // cabinet that is the face's own rule and every fixture is untouched; for a
+    // cabinet whose doors are in its bays it used to be 0, which was a cabinet
+    // reporting that it had no doors while three of them hung on its partitions.
+    doors: leafCount,
     internal_width: internalWidth,
     internal_depth: internalDepth,
+    // ─── TURN 25 (CLAUDE.md F2): THE UNIT'S RESOLVED JOINT INSET ───────────
+    // 95, or `null` where a shallow cabinet takes one centred joint. Published
+    // because it is a fact about the CABINET rather than about any one panel —
+    // the drawing, the part detail and a test all ask the same question, and a
+    // second answer computed anywhere else is the drift F2 exists to stop.
+    joint_inset: jointInset,
     ...(doorCount === 2 ? { door_width: frontW } : {}),
     ...(cfg.doorExtend ? { door_extend_mm: cfg.doorExtend } : (type.doorExtend ? { door_extend_mm: 0 } : {})),
     ...(hasDrawers ? {
@@ -3595,12 +3830,17 @@ export function computeCabinet(params, profileOverride) {
   };
 
   const drillSummary = {
-    hinge_centers: doorCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
-    side_hinge_holes_y: doorCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
+    hinge_centers: leafCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
+    side_hinge_holes_y: leafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
     hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
     front_cup_x_from_hinge_edge: cups.xFromHingeEdge,
+    // ─── TURN 25 (CLAUDE.md F4): where every handle on this cabinet sits ────
+    // Published rather than re-derived: the 3-D model, the drawing and a test
+    // all ask the same question, and the answer is one list. Empty where the
+    // project has no handle — R9 in the summary as well as in the drilling.
+    ...(handlePlacements.length ? { handles: handlePlacements } : {}),
     shelf_row_y: shelfRows.map((v) => roundTo(v, 4)),
     shelf_cluster_y: shelfPinRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row + dy, 4))),
     shelf_hole_x: shelfHoleX,

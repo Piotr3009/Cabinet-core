@@ -48,6 +48,9 @@ export default function TopBar({
   const toggleXray = useUiStore((s) => s.toggleXray);
   const toggleContourView = useUiStore((s) => s.toggleContourView);
   const hideFronts = useUiStore((s) => s.hideFronts);
+  // Turn 25 (CLAUDE.md F13): project-wide, remembered.
+  const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
+  const toggleFrontDimensions = useUiStore((s) => s.toggleFrontDimensions);
   const toggleHideFronts = useUiStore((s) => s.toggleHideFronts);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
@@ -107,6 +110,20 @@ export default function TopBar({
       items: [
         { label: 'Outlines', checked: showOutlines || contourView, disabled: contourView, run: toggleOutlines },
         { label: 'Dimensions', checked: showDimensions, disabled: viewMode !== '3d' || contourView, run: toggleDimensions },
+        {
+          // ─── Turn 25 (CLAUDE.md F13): SHOW FRONT DIMENSIONS ───
+          // Every front's width and height, and the gaps — between doors,
+          // between drawer fronts, to the sides, to the top, to the floor.
+          // PROJECT-WIDE, which is the owner's own choice and not a
+          // simplification: the numbers this is for are the GAPS, and a gap
+          // belongs to two fronts at once, so a per-door switch would let one
+          // leaf of a pair show the gap between them and the other not.
+          label: 'Show front dimensions',
+          hint: 'Every front’s width and height, and the gaps between them — for the whole project.',
+          checked: showFrontDimensions,
+          disabled: viewMode !== '3d' || contourView,
+          run: toggleFrontDimensions,
+        },
         {
           // Which ink the distance dimensions are drawn in (BACKLOG #34). Both
           // are drawing-office colours; the hexes are in the profile.

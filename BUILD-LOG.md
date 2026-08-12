@@ -7087,3 +7087,178 @@ vertical partition, both justified by a LISP line:
 (F5 removes, F6 adds). The entity-by-entity probe gained three partition
 scenarios — it had none, so it could not have seen either class — and diffs to
 those two entity types and nothing else. Fixtures: **zero**.
+
+---
+
+# TURN 25 — the sheet gets a guard, the door gets a face
+
+**Baseline: the turn-24 merge, `b6fc5c3`. Suite there: 1 901 tests, 1 901 pass.
+Suite at the end of this turn: 2 038 tests, 2 038 pass, on a clean build.**
+
+## The turn in one line
+
+The owner found an edge drawn twice in his own AutoLISP and fixed it there. This
+turn put the permanent guard on OUR exporter — and the guard was red on its
+first run, three times over.
+
+## F1 — the duplicate-edge guard, and what it caught [CRITICAL]
+
+`src/engine/cnc/edgeGuard.js` + `test/turn25-f1-edge-guard.test.js`, wired into
+`npm test` so every future turn inherits it. One closed polyline, no dangling
+end, no zero-length segment, no segment traced twice in either direction, no
+collinear overlapping run; outer outline anticlockwise, interior cut-outs
+clockwise; everything compared at 0.01 mm. Run over every panel of every probe
+scenario and every golden case — 5 700+ outlines a run.
+
+The probe list moved out of `scripts/cnc-fingerprint.mjs` into
+`scripts/cnc-scenarios.mjs` so "every scenario" has one definition. The
+extraction was proved fingerprint-neutral before anything else changed.
+
+**Three real faults, all shipping:**
+
+1. `topPanelGeometry` wrote the bottom edge of every TOP and every BOTTOM into
+   the file twice — once as a plain segment at the head of the polyline and once
+   as the tabbed run at its tail, with a return to the origin in between. The
+   owner's fault, in our JavaScript, on the two commonest parts in the project.
+   Fixed by re-ordering the traversal to go round once. Same points, same area,
+   one vertex fewer: the repeated origin.
+2. `notchedPlinth` de-duplicated repeated VERTICES instead of deriving the shape.
+   Where the appliance opening spans the whole board — every D/W panel's plinth
+   — that left eighty millimetres of each end in the file twice with no two
+   points equal.
+3. F8's new probe put an `OVEN_BASE` 500 mm high through the guard and five
+   panels came back clockwise: an impossible cabinet was emitting **−152 mm**
+   boards, laid out and written into DXFs as rectangles traced backwards. It
+   predates this turn. The cabinet had said `OVEN_TOO_LOW` since turn 17 and
+   nothing downstream believed it; `rectGeometry` now returns no outline for a
+   piece of non-positive size, so every consumer drops it by the rule it already
+   had.
+
+`scripts/cnc-delta-probe.mjs` gained an **order-blind `SHAPE` section** to
+measure the cost: against the turn-24 merge, 277 GEOM lines move and **zero
+SHAPE lines move on any carcass board** — not one point set, not one area, not
+one entity count, not one label. That is what turns "a re-order and nothing
+else" from a sentence into a measurement.
+
+## F2 — the shallow cabinet gets ONE centred joint [HIGH]
+
+From the owner's corrected `panel_joints.lsp`: a socket is 51 wide, a dog bone
+60, both at 95 from each end, so two collide on a run under 241 and their
+reliefs under 250. His answer is asked ONCE PER CABINET and given to every
+mating panel — a side whose socket is on the centre line and a top whose tab is
+at 95 do not meet. `singleJointMaxDepth: 300`, `resolvedJointInset(depth)`,
+`derived.joint_inset`. `socketCentres()` gained an optional argument whose
+absence is the turn-7 law to the number, which is why every fixture is
+byte-identical. Every unit type defaults to 400 mm or deeper — asserted per type
+— so the delta on the defaults is ZERO.
+
+## F3 — the shaker door looks like a shaker [HIGH]
+
+A 6 mm recess, a frame equal on all four sides (10–200, default 70), panel face
+at 19. The 3-D door is a TRAY built as ONE solid — outer board, four rebate
+walls, a panel floor — rather than a frame with a box standing in it, because
+two solids meeting at a rebate wall are two coplanar surfaces and that is
+z-fighting by construction. Every normal is written out, so the light falls INTO
+the recess. It is REFUSED, never clamped: where the frame will not fit, the front
+is cut plain and the cabinet says so in a plain sentence naming the numbers.
+
+`SHAKER_PANEL_POCKET` (ACI 41) is the named CNC delta, and the first loop this
+engine has ever cut that lies wholly inside a board — so the first subject of
+F1's winding rule. F3.5's hinge law is pinned: `thickness` stays 25, the 19 is a
+floor that reaches nothing, and the test would fail if the angle ladder stopped
+stepping at 25.
+
+## F4 — handles [HIGH]
+
+Four reference classes and they are the owner's four: base doors 50 from the
+TOP, wall doors 50 from the BOTTOM (a base unit is gripped from above and a wall
+unit from below), tall doors at mid height, horizontals centred on the width.
+Shaker fronts centre on the frame unless it is under 30. `HANDLES_5MM` (ACI 42);
+knob one hole, bar the reference and its partner. Where the reference is
+edge-relative it IS a hole and the partner goes into the door; where it is
+centre-relative the pair straddles it.
+
+Procedural gold, hanging off the front's own animating group. Moving one moves
+all — per CLASS, so base doors go together and wall doors do not follow —
+behind a confirmation naming a count taken off the computed units. Fingerprint
+delta ZERO: a handle is an input in the design layer and a bare kit call passes
+none.
+
+## F5 — doors on a partition are just doors [HIGH]
+
+The paired test IS the feature, and it found one number: `doorCount` is the
+face's own rule and a bay-door cabinet stores `doors: false`, so `totals.hinges`
+was `centres.length × 0` and the BOM bought nothing to hang three leaves on
+while the machine bored all twelve of their plate holes. `leafCount` says it
+properly. Two comparisons in the test had to be written more carefully than they
+first were, and both are recorded: cups are compared FROM THE HINGE EDGE, and
+the override test loads a catalogue or it would pass while proving nothing.
+
+## F6 — the adjustable shelf shows its brass [HIGH]
+
+`shelfSupportInstances` READS the ⌀7.5 that already carry each shelf. Three
+things follow from the picture being a reading of the drilling rather than a
+second drawing of it: the CNC delta is zero, a FIX shelf shows nothing without
+being told to, and R9 holds without a line of code mentioning it.
+`profile.appearance.metals` carries gold and silver once, shared with F4.
+
+## F7 — four groups [HIGH]
+
+Carcasses · Shelves · Doors, fronts & panels · Infills & plinths, with five
+quick-select buttons DERIVED from the groups. INFILL-* leaves the carcass group;
+the drawers group goes, because a box is carcass board. **One near miss, caught
+by the fingerprint diff:** the `fronts` EXPORT PRESET read `groupOfPanel`, so
+widening that group would have put a masking board into `…-cnc-fronts.dxf`. The
+preset asks the piece what it IS now.
+
+## F8 — a floor and a ceiling on the drawer box [HIGH]
+
+Five millimetres of clearance — the owner's number, not the LISP's three — read
+off `runnerBottomY` where a box actually stands. A floor at
+`minimum inside + 15 + G + 1`, derived from the arithmetic that produces the box
+front so the two are each other's inverse. Both limits reach the wardrobe's
+internal boxes too. ZERO on every default: a 770 mm base unit's top box finishes
+22 mm below the top panel.
+
+## F9 – F15
+
+* **F9** NL 250–380 join the ladder; the selection rule is untouched, which is
+  why every deep unit keeps today's runner. Three tests turn over with it,
+  including turn 20's own "pinned so the day it is fixed this test says so".
+* **F10** silent clamping ends: `frontStackFit` says whether the fronts fill the
+  opening and by how many millimetres, in yellow, on the unit and in the drawer
+  modal. It does not block.
+* **F11** Remove door at the bottom of the modal, and the Delete key — which did
+  nothing on a door before, because a door is not an item.
+* **F12** the diagnosis first, in `verify/t25/cornice-100.md`: geometry, option
+  and resolver all innocent; the fault is `sameRun`, whose field list was written
+  for run elements that have no height. The 100 gets its own richer section (the
+  owner's drawing is not in the repo, and the BLOCKER is stated). It joins the
+  right-click menu.
+* **F13** front dimensions, project-wide and remembered, with the gap maths as a
+  pure engine module.
+* **F14** the partition chain drops off the centre line by a FRACTION of the bay,
+  because it was hiding behind the add (+) button; shelves and side panels get
+  the same arrows.
+* **F15** open/close all doors, writing the same value a double-click writes so
+  turn 24's rig folds either way.
+
+## The walk
+
+22 ok · 0 failed · 1 blocked (`bucket-live`, 403 at this session's egress proxy,
+recorded verbatim). Real CDP input throughout; the console printed nothing all
+walk; R9 proven in the app by removing the door and reading the drilling back.
+
+**It found a defect the suite could not see**: `Scene.jsx` memoised its results
+on `units` alone, so a DESIGN-level change — this turn's handles, its shaker
+frame, and the hinge standard the drilling has followed since turn 17 —
+recomputed nothing until something else touched a cabinet.
+
+## What did not shrink, and what is left
+
+Nothing shrank. All fifteen features are in.
+
+Two things are named rather than done, and both are named in CLAUDE.md itself:
+the owner's cornice reference drawing is not in this repository, so F12.2 ships
+the parametric profile his own clause asks for in that case; and `bucket-live`
+is blocked by the sandbox rather than by the app.

@@ -11,13 +11,14 @@ import {
   panelFillOffset, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
-import Hardware, { DoorHinges, hingeSpecsFor } from './Hardware.jsx';
+import Hardware, { DoorHinges, FrontHandle, hingeSpecsFor } from './Hardware.jsx';
 import HoverDimensions from './HoverDimensions.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
 import JointLines from './JointLines.jsx';
 import PartMachining from './PartMachining.jsx';
+import { shakerFrontGeometry } from './shakerSolid.js';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import { formatMm } from '../engine/format.js';
@@ -29,6 +30,8 @@ import {
   clearLights, fieldFromPos, interiorFloor, lightBelow,
 } from '../engine/shelfHeights.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
+import { dimensionEntities, dimensionStyle } from '../engine/dimensionArrows.js';
+import { frontDimensionRows } from '../engine/frontDimensions.js';
 import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { panelFinish } from '../engine/materials.js';
 import { wallAtPoint } from '../engine/room.js';
@@ -225,7 +228,14 @@ export function MovingPanel({
     () => (layers && !mitre ? panelSolids(p, layers, profile, drills) : null),
     [p, layers, profile, mitre, drills],
   );
-  const machined = built?.solid || null;
+  // ─── Turn 25 (CLAUDE.md F3): THE SHAKER IS A TRAY, NOT A SLAB ───────────
+  // A recess in the face, leaving the frame standing — one solid, so the
+  // rebate's walls and the frame's face cannot z-fight, and the shadow those
+  // walls throw at a grazing angle is what makes it read as a shaker rather
+  // than as a rectangle drawn on a door (3d/shakerSolid.js). Cached by leaf
+  // size and frame, so a kitchen of identical doors builds one geometry.
+  const shaker = useMemo(() => (mitre ? null : shakerFrontGeometry(p)), [p, mitre]);
+  const machined = shaker || built?.solid || null;
   const cuts = built?.cuts || null;
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
@@ -315,6 +325,20 @@ export function MovingPanel({
         <group position={[-pivot[0], -pivot[1], -pivot[2]]}>
           <PartMachining panel={p} drills={drills} profile={profile} />
         </group>
+      )}
+      {/* ─── Turn 25 (CLAUDE.md F4.3): THE HANDLE ───
+          Screwed THROUGH this front, so it lives inside the group that
+          animates: a door's handle swings with the door and a drawer's comes
+          out with the drawer. Rendered HERE rather than handed in from
+          outside, because `pivot` is what a handle has to be backed out by and
+          a door's pivot is its hinge edge while a drawer front's is its middle
+          — one formula, in the one place that already knows which. */}
+      {p.meta?.handle && (
+        // The surface is the PANEL's own, not `<Hardware>`'s: a handle is
+        // mounted by the front it is screwed through, and reporting it on the
+        // room surface would let `<Hardware>`'s unmount clear it (turn 21's
+        // registry clears a whole surface at once).
+        <FrontHandle panel={p} profile={profile} pivot={pivot} surface="room-front" scope={p.id} />
       )}
       {/* ─── Turn 16 (CLAUDE.md F8): THE PIECE SAYS WHICH PIECE IT IS ───
           The wall-units-do-not-shine diagnosis has to READ the scene — "read
@@ -446,6 +470,9 @@ export default function UnitView({
   profile, finishes, outlines = true, contour = false, xray = false, sheen = null,
   showHinges = false, hideFronts = false,
   wallGaps = null, showAllDims = false, unitDesign = null,
+  // Turn 25 (CLAUDE.md F13): project-wide, so it arrives as a prop rather than
+  // being read out of the store in here.
+  showFrontDimensions = false,
   // ─── One element inside this cabinet (turn 9, CLAUDE.md F4) ───
   // `selectedElement` is the ENGINE's own panel id (`SHELF-2`) or null, which
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
@@ -713,6 +740,31 @@ export default function UnitView({
   // Built from the ENGINE's own output, never re-derived: what is shown is what
   // is cut. Ordered the way a joiner reads a cabinet — the box, what it stands
   // on, then what is inside it, then what finishes it.
+  // ─── Turn 25 (CLAUDE.md F13): the front dimensions of THIS cabinet ───
+  // Pure geometry from `engine/frontDimensions.js`, turned into the same
+  // arrows every other dimension in the app is drawn with. Memoised on the
+  // result, so a drag does not rebuild them per frame.
+  const dimStyle = useMemo(() => dimensionStyle(profile), [profile]);
+  const frontDimRows = useMemo(() => {
+    if (!showFrontDimensions) return [];
+    const D0 = result.params.depth;
+    return frontDimensionRows(result).map((row, i) => {
+      const from = row.axis === 'h' ? [row.from, row.at] : [row.at, row.from];
+      const to = row.axis === 'h' ? [row.to, row.at] : [row.at, row.to];
+      const ent = dimensionEntities({
+        from, to, offset: 0, style: dimStyle,
+      });
+      if (!ent) return null;
+      return {
+        key: `${row.kind}-${row.a || ''}-${row.b || ''}-${i}`,
+        segments: ent.segments,
+        text: ent.text ? { at: ent.text.at, value: ent.text.value } : null,
+        // A hair proud of the door plane, so the arrows are not buried in it.
+        z: D0 + profile.doors.gap + (result.params.front_t || 25) + 1,
+      };
+    }).filter(Boolean);
+  }, [showFrontDimensions, result, dimStyle, profile]);
+
   const fullDimensions = useMemo(() => {
     if (!showAllDims) return [];
     const out = [];
@@ -1448,6 +1500,8 @@ export default function UnitView({
         // WHICH hinge each door wears — resolved once, by the engine, and
         // handed down; and the gesture that opens the hinge modal on it.
         hingeSpecs={hingeSpecs}
+        // Turn 25 (CLAUDE.md F6.1): gold or silver, chosen once for the job.
+        shelfMetal={design?.hardware?.shelfSleeve || null}
         // ─── TURN 24 (CLAUDE.md F1.2): HOW FAR EACH LEAF HAS SWUNG ───────────
         // The hinge's carcass half folds by the DOOR's own angle, and the door
         // is not this component's child — so the angle is handed across rather
@@ -1670,7 +1724,71 @@ export default function UnitView({
           ))}
         </group>
       )}
+
+      {/* ─── Turn 25 (CLAUDE.md F13): SHOW FRONT DIMENSIONS ─────────────────
+          Every front's width and height, and the gaps — between doors, between
+          drawer fronts, to the sides, to the top, to the floor. PROJECT-WIDE,
+          which is why it is not the per-unit toggle above it.
+
+          The SAME arrows as everything else this turn (F14.3): one style block,
+          `engine/dimensionArrows.js`'s geometry, and rows that are horizontal
+          or vertical and nothing else. The maths is `engine/frontDimensions.js`
+          and is pure, so the gap between two doors is a number a test can hold
+          rather than a picture somebody has to look at. */}
+      {showFrontDimensions && !contour && !hideFronts && (
+        <group userData={{ ccHelper: true, ccFrontDimensions: frontDimRows.length }}>
+          {frontDimRows.map((row) => (
+            <group key={row.key} userData={{ ccHelper: true, ccNoBounds: true }}>
+              {row.segments.map(([a, b], j) => (
+                <Stroke2
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={j}
+                  from={[mm(a[0]), mm(a[1])]}
+                  to={[mm(b[0]), mm(b[1])]}
+                  z={mm(row.z)}
+                  weight={mm(dimStyle.strokeMm * 2)}
+                  colour={dimStyle.colour}
+                />
+              ))}
+              {row.text && (
+                <DimLabel
+                  position={[mm(row.text.at[0]), mm(row.text.at[1]), mm(row.z)]}
+                  text={row.text.value}
+                  tone="dim"
+                  colour={dimStyle.colour}
+                />
+              )}
+            </group>
+          ))}
+        </group>
+      )}
     </group>
+  );
+}
+
+/**
+ * One thin stroke of a front dimension, in the cabinet's own XY plane.
+ *
+ * A flat quad rather than a line: `LineBasicMaterial`'s width is one pixel on
+ * every driver that matters, and "thin, small, beautiful" is a millimetre
+ * measurement rather than a pixel one (turn 23, F8.3).
+ */
+function Stroke2({
+  from, to, z, weight, colour,
+}) {
+  const dx = to[0] - from[0];
+  const dy = to[1] - from[1];
+  const len = Math.hypot(dx, dy);
+  if (!(len > 0)) return null;
+  return (
+    <mesh
+      position={[(from[0] + to[0]) / 2, (from[1] + to[1]) / 2, z]}
+      rotation={[0, 0, Math.atan2(dy, dx)]}
+      userData={{ ccHelper: true, ccNoBounds: true }}
+    >
+      <planeGeometry args={[len, weight]} />
+      <meshBasicMaterial color={colour} transparent opacity={0.95} depthTest={false} />
+    </mesh>
   );
 }
 

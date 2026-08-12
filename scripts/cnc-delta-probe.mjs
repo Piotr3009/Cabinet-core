@@ -21,6 +21,12 @@
 //   TEXT   <kit> <file> <layer>|<str>|<height>|<x>,<y>
 //                                       every TEXT entity a per-panel file
 //                                       carries, in order
+//   SHAPE  <kit> <file> <hash> <area>   turn 25: the same polys as GEOM, but
+//                                       ORDER-BLIND — the SET of points and the
+//                                       area each loop encloses. GEOM sees a
+//                                       re-ordered traversal; SHAPE cannot, so a
+//                                       turn that only re-orders a polyline
+//                                       diffs on GEOM and is silent here.
 //
 // A turn whose only delta is the lettering therefore diffs to TEXT lines and
 // nothing else — which is what "TEXT entities only" means as a fact rather than
@@ -179,8 +185,36 @@ export function cases() {
   return out;
 }
 
+/**
+ * The same entities, described so that the ORDER of a polyline's vertices is
+ * invisible (turn 25, CLAUDE.md F1).
+ *
+ * F1's fix re-traces the TOP and the BOTTOM so their bottom edge is in the file
+ * once instead of twice. `describe()` is order-sensitive by design — it is what
+ * catches a moved coordinate — so it reports that as a change, and cannot say
+ * whether the change is a re-order or a different board. This can: the sorted
+ * point SET and the enclosed AREA are both blind to where a traversal starts
+ * and which way it happens to run, and both move the instant a real coordinate
+ * does.
+ */
+function describeShape(e) {
+  if (e.type === 'poly') {
+    const pts = e.pts.map(([x, y]) => `${num(x)},${num(y)}`);
+    let a = 0;
+    for (let i = 0; i < e.pts.length; i += 1) {
+      const [x1, y1] = e.pts[i];
+      const [x2, y2] = e.pts[(i + 1) % e.pts.length];
+      a += x1 * y2 - x2 * y1;
+    }
+    return `poly ${e.layer} ${e.closed ? 'closed' : 'open'} ${[...new Set(pts)].sort().join(' ')} area${num(Math.abs(a / 2))}`;
+  }
+  if (e.type === 'circle') return `circle ${e.layer} ${num(e.cx)},${num(e.cy)} r${num(e.r)}`;
+  return `text ${e.layer}|${e.str}|${num(e.h)}|${num(e.x)},${num(e.y)}`;
+}
+
 function main() {
   const geom = [];
+  const shapes = [];
   const census = [];
   const text = [];
 
@@ -197,6 +231,8 @@ function main() {
       const parsed = parseDxf(f.dxf);
       const shape = parsed.entities.filter((e) => e.type !== 'text').map(describe).join('\n');
       geom.push(`GEOM   ${type} ${f.name} ${fingerprint(shape)}`);
+      const unordered = parsed.entities.filter((e) => e.type !== 'text').map(describeShape).sort().join('\n');
+      shapes.push(`SHAPE  ${type} ${f.name} ${fingerprint(unordered)}`);
       for (const e of parsed.entities.filter((t) => t.type === 'text')) {
         text.push(`TEXT   ${type} ${f.name} ${e.layer}|${e.str}|${num(e.h)}|${num(e.x)},${num(e.y)}`);
       }
@@ -226,6 +262,7 @@ function main() {
   }
 
   for (const line of geom) process.stdout.write(`${line}\n`);
+  for (const line of shapes) process.stdout.write(`${line}\n`);
   for (const line of census) process.stdout.write(`${line}\n`);
   for (const line of text) process.stdout.write(`${line}\n`);
 }

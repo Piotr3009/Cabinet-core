@@ -135,7 +135,12 @@ test('the menu offers what the unit has, and always offers the basics', () => {
   assert.deepEqual(ids, [
     'edit-cabinet', 'rename',
     'end-panel-L', 'end-panel-R', 'end-panel-B',
-    'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R',
+    'top-infill',
+    // Turn 25 (CLAUDE.md F12.3): the TOP CORNICE, none / 70 / 100. Three
+    // entries because it is a CHOICE of moulding and not a toggle, and beside
+    // the top infill because that is the piece it is screwed to.
+    'cornice-0', 'cornice-70', 'cornice-100',
+    'side-infill', 'pin-infill-L', 'pin-infill-R',
     // Turn 17 (F8.1): "Drawer fronts" — the same idiom as Remove doors, on the
     // kits that have a stack. A WARDROBE has one (internal, behind its doors).
     'plinth', 'add-doors', 'drawer-fronts', 'unit-colour',

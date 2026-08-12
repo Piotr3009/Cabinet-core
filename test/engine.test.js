@@ -353,12 +353,29 @@ test('fixture rules hold in the engine', async (t) => {
     assert.equal(snapDrawerDepth(465, steps), 440);
     assert.equal(snapDrawerDepth(440, steps), 440);
     assert.equal(snapDrawerDepth(439, steps), 390);
-    assert.equal(snapDrawerDepth(389, steps), null);
+    // ─── TURN 25 (CLAUDE.md F9): THE SHORT RUNNERS ─────────────────────────
+    // 389 used to be `null` — nothing on the ladder fitted, so a shallow
+    // cabinet was told "too shallow for drawers" and then cut a 390 mm box
+    // anyway, LONGER THAN THE CARCASS. The ladder starts at 250 now and the
+    // rule is unchanged: the largest step that fits.
+    assert.equal(snapDrawerDepth(389, steps), 380);
+    assert.equal(snapDrawerDepth(249, steps), null, 'below the shortest runner there is still nothing');
   });
 
   await t.test('too-shallow cabinet drops the drawers with a warning', () => {
-    const r = computeCabinet({
+    // Turn 25 (CLAUDE.md F9): 460 mm deep is no longer too shallow — it takes a
+    // 380 mm runner, which is the whole point of the short ladder. The rule
+    // itself is unchanged and is exercised on a cabinet that really is too
+    // shallow for anything Blum makes.
+    const fits = computeCabinet({
       type: 'WARDROBE', width: 600, height: 2150, depth: 460,
+      board_t: 18, front_t: 25, drawers: 2, rail: false, shelves: 0, unit_num: 'W09',
+    }, PROFILE);
+    assert.equal(fits.params.drawers, 2, 'a 460 mm carcass now gets a short runner');
+    assert.ok(fits.panels.filter((p) => p.role === 'drawer_box').length > 0);
+
+    const r = computeCabinet({
+      type: 'WARDROBE', width: 600, height: 2150, depth: 300,
       board_t: 18, front_t: 25, drawers: 2, rail: false, shelves: 0, unit_num: 'W09',
     }, PROFILE);
     assert.equal(r.params.drawers, 0);

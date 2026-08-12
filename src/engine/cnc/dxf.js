@@ -104,9 +104,23 @@ export function writeDxf(entities, layers, extents) {
 
 // ─── Engine geometry → entities ───
 
-/** A pocket record { x1,y1,x2,y2 } is a closed 4-point rectangle. */
+/**
+ * A pocket record { x1,y1,x2,y2 } is a closed 4-point rectangle.
+ *
+ * ─── TURN 25 (CLAUDE.md F1.2): AND A CUT-OUT RUNS THE OTHER WAY ────────────
+ * Anticlockwise for the ordinary pocket — a socket, a dog bone, a runner groove
+ * — every one of which deliberately breaks the board's edge so the cutter
+ * enters and leaves off the work, and is therefore a piece of the PROFILE.
+ *
+ * A pocket flagged `cutout` lies wholly INSIDE the board (F3's shaker panel is
+ * the first this engine has ever cut) and is traced CLOCKWISE. That opposition
+ * is not tidiness: it is the signal VCarve reads to know which side of the line
+ * the material is on, and a hole traced the same way round as its outline is a
+ * hole machined to its own outside.
+ */
 function pocketPoints(p) {
-  return [[p.x1, p.y1], [p.x2, p.y1], [p.x2, p.y2], [p.x1, p.y2]];
+  const pts = [[p.x1, p.y1], [p.x2, p.y1], [p.x2, p.y2], [p.x1, p.y2]];
+  return p.cutout ? pts.reverse() : pts;
 }
 
 /**

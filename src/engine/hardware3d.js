@@ -28,6 +28,8 @@
  * @param {object} profile
  * @returns {{hinges:Array, runners:Array, legs:Array, rails:Array}}
  */
+import { panelPlacement } from './joinery.js';
+
 export function hardwareInstances(result, profile) {
   return {
     hinges: hingeInstances(result, profile),
@@ -37,7 +39,77 @@ export function hardwareInstances(result, profile) {
     rods: rodInstances(result, profile),
     legs: legInstances(result),
     rails: railInstances(result, profile),
+    // Turn 25 (CLAUDE.md F6): the sleeves and pins an ADJUSTABLE shelf stands
+    // on. Display only — every one of them is read off a ⌀7.5 hole the machine
+    // already bores, so nothing here reaches the cut list.
+    shelfSupports: shelfSupportInstances(result, profile),
   };
+}
+
+/**
+ * ─── THE ADJUSTABLE SHELF SHOWS ITS BRASS (turn 25, CLAUDE.md F6) ───────────
+ *
+ * The owner wants to SEE gold or silver sleeves — and they are the ⌀7.5 this
+ * engine has drilled since turn 1, not a new 5 mm system. So there is nothing
+ * new to cut: this reads the holes that ALREADY carry each shelf and says where
+ * the fitting in them is.
+ *
+ * ─── WHICH HOLES CARRY IT ───────────────────────────────────────────────────
+ *
+ * A row of shelf holes is a CLUSTER — three of them, at `clusterOffsets`, so
+ * the shelf can be moved a notch either way. Only the one the shelf is actually
+ * standing on has a pin in it, and that is the hole at the shelf's own
+ * underside. `pinsPerShelf` (4) is the count the BOM has always ordered, and it
+ * is what falls out of this: two columns on each of two sides.
+ *
+ * ─── FIX SHELVES SHOW NOTHING, AND THAT IS THE FEATURE (F6.2) ───────────────
+ *
+ * A fixed shelf has no pin holes at all — turn 24 made that law — so it has no
+ * carrying holes for this to find and contributes nothing without being asked
+ * to. One look tells you which shelf is which, and the reason it does is that
+ * the picture is a reading of the drilling rather than a second drawing of it.
+ *
+ * R9 falls out the same way: no shelf, no holes, no sleeves.
+ */
+export function shelfSupportInstances(result, profile) {
+  const layer = profile.shelfHoles.layer;
+  const out = [];
+  const shelves = result.panels.filter((p) => p.part === 'SHELF' && p.box);
+  if (!shelves.length) return out;
+
+  for (const shelf of shelves) {
+    // The row the shelf stands on is its own underside. A hole a millimetre
+    // either side of it is a NOTCH, not a support.
+    const rowY = shelf.box.y;
+    for (const hole of result.drills) {
+      if (hole.layer !== layer) continue;
+      if (Math.abs(hole.y - rowY) > 0.5) continue;
+      const side = result.panels.find((p) => p.id === hole.panel);
+      const placement = side ? panelPlacement(side) : null;
+      if (!placement) continue;
+      // …and it has to be a hole in a board this shelf actually reaches.
+      const { origin, u, v, n } = placement;
+      const thickness = Math.abs(n[0]) > 0.5 ? side.box.w
+        : (Math.abs(n[1]) > 0.5 ? side.box.h : side.box.d);
+      // The drilled face is the INNER one — the CNC frame's origin sits on the
+      // outward face, so stepping one board back along the outward normal is
+      // where a sleeve's flange actually shows.
+      const at = (i) => origin[i] + u[i] * hole.x + v[i] * hole.y - n[i] * thickness;
+      out.push({
+        kind: 'shelf_support',
+        shelf: shelf.id,
+        panel: hole.panel,
+        x: at(0),
+        y: at(1),
+        z: at(2),
+        // Which way the pin points OUT of the board it is knocked into: the
+        // opposite of the panel's outward normal, i.e. into the cabinet.
+        normal: [-n[0], -n[1], -n[2]],
+        diameter: hole.d,
+      });
+    }
+  }
+  return out;
 }
 
 /**

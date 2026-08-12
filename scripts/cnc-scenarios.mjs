@@ -236,6 +236,23 @@ export function cases() {
     // which must still be the pair at 95. A boundary with only one side probed
     // is a boundary nobody has checked.
     out.push({ id: `${type}+shallow-301`, params: { ...base, depth: 301 } });
+    // ─── TURN 25 (CLAUDE.md F4.2): THE HANDLE PROBE ────────────────────────
+    //
+    // Handles are an INPUT in the design layer — a bare kit call passes none
+    // and drills none, which is R9 and is why every golden default is
+    // byte-identical. A probe that never asked for one would therefore report
+    // "no change" for a whole new drilling class. Both types, because a knob is
+    // one hole and a bar is two and the two reference laws behave differently:
+    // the bar's partner goes INTO the door from an edge-relative reference and
+    // straddles a centre-relative one.
+    out.push({
+      id: `${type}+handles-bar`,
+      params: { ...base, project_handle: { type: 'bar', centres: 160 } },
+    });
+    out.push({
+      id: `${type}+handles-knob`,
+      params: { ...base, project_handle: { type: 'knob' } },
+    });
   }
   return out;
 }

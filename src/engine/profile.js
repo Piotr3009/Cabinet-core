@@ -118,6 +118,41 @@ export const DEFAULT_CABINET_PROFILE = {
     interiorSetback: 20,
   },
 
+  // ─── HANDLES (turn 25, CLAUDE.md F4) ────────────────────────────────────
+  //
+  // The owner's reference law is `engine/handles.js`; these are the numbers it
+  // reads. Every one of them is his except `holeDiameter` and the model
+  // proportions, which are said to be ours below.
+  handles: {
+    // "50 from the TOP … 50 in from the opening edge" — the one inset, used on
+    // both axes and by all four classes, because it is one number in his head.
+    inset: 50,
+    // A shaker's handle goes on the centre line of the FRAME. Under this the
+    // frame is too narrow to centre anything on and the 50 × 50 rule answers
+    // instead — the owner's own fallback, and his number.
+    shakerMinFrame: 30,
+    // OURS: a handle screw is an M4 through a front, which is a ⌀5 clearance
+    // hole on any bench in the country. It gets a NAMED LAYER of its own for
+    // the reason BISCUIT_4MM and SHAKER_PANEL_POCKET did — it is a tool of its
+    // own on the bed, and VCarve matches tools by layer name.
+    holeDiameter: 5,
+    layer: 'HANDLES_5MM',
+    // The centres a bar comes in. A typed number is accepted too (F4), so this
+    // is the list the picker offers rather than a set of allowed values.
+    barCentres: [96, 128, 160, 192, 224],
+    defaultCentres: 128,
+    // ─── The procedural models (F4.3) ───
+    // GOLD "for now": catalogue models arrive later by the bucket route, and
+    // what this turn fixes is the CONTRACT — the mount point and the axis —
+    // rather than the shape. These proportions are OURS: a 12 mm bar on 32 mm
+    // posts and a 30 mm hemisphere are the commonest things in a catalogue,
+    // and they are here so that a bought model that replaces them arrives at
+    // the same place with the same axis.
+    bar: { rodDiameter: 12, standoff: 32, postDiameter: 10, overhang: 20 },
+    knob: { diameter: 30, standoff: 22, stemDiameter: 8 },
+    finish: 'gold',
+  },
+
   // ─── Doors / fronts ───
   doors: {
     // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
@@ -1804,6 +1839,22 @@ export const DEFAULT_CABINET_PROFILE = {
     // white door a bright bracket grey reads as a smudge. This is the tone of
     // the nickel-plated body a workshop actually screws in — dark enough to be
     // an object, quiet enough not to be a diagram.
+    // ─── TURN 25 (CLAUDE.md F4.3 / F6.1): THE TWO METALS ────────────────────
+    //
+    // The owner asks for the same two things twice this turn — a GOLD handle
+    // (F4.3: "procedural, gold for now") and gold-or-silver shelf sleeves
+    // (F6.1: "he wants to SEE gold or silver") — so there is one block of two
+    // metals rather than a colour in each feature. A third piece of brass next
+    // turn reads this and adds nothing.
+    //
+    // They sit here, beside the hardware finishes, because that is what they
+    // are: a plated metal is a surface, and the numbers are the same three the
+    // hinge finishes carry (colour, metalness, roughness).
+    metals: {
+      gold: { label: 'Gold', colour: '#c9a227', metalness: 0.95, roughness: 0.22 },
+      silver: { label: 'Silver', colour: '#c8ccd0', metalness: 0.95, roughness: 0.18 },
+    },
+    metalDefault: 'gold',
     hardware: {
       rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92', hinge: '#5b5f63',
       // ─── Turn 13 (CLAUDE.md F7) ───
@@ -2902,6 +2953,12 @@ export function migrateCabinetProfile(profile) {
     front: { ...D.front, ...profile.front, types: { ...D.front.types, ...profile.front?.types } },
     carcass: { ...D.carcass, ...profile.carcass },
     doors: { ...D.doors, ...profile.doors },
+    handles: {
+      ...D.handles,
+      ...profile.handles,
+      bar: { ...D.handles.bar, ...profile.handles?.bar },
+      knob: { ...D.handles.knob, ...profile.handles?.knob },
+    },
     hinges: {
       ...D.hinges, ...profile.hinges,
       rules: { ...D.hinges.rules, ...profile.hinges?.rules },
@@ -3010,6 +3067,12 @@ export function migrateCabinetProfile(profile) {
       // Turn 21 (CLAUDE.md F3): a profile stored before this turn has no
       // `cuts` at all and must read as the default — off.
       cuts: { ...D.appearance.cuts, ...profile.appearance?.cuts },
+      metals: {
+        ...D.appearance.metals,
+        ...profile.appearance?.metals,
+        gold: { ...D.appearance.metals.gold, ...profile.appearance?.metals?.gold },
+        silver: { ...D.appearance.metals.silver, ...profile.appearance?.metals?.silver },
+      },
       sheenScale: { ...D.appearance.sheenScale, ...profile.appearance?.sheenScale },
       spray: { ...D.appearance.spray, ...profile.appearance?.spray },
       decor: { ...D.appearance.decor, ...profile.appearance?.decor },

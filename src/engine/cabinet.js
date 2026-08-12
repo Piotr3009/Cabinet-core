@@ -28,6 +28,7 @@ import { partitionSpan, shelfCrossesPartition, widthZones } from './zones.js';
 import {
   isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
 } from './shaker.js';
+import { resolveHandle } from './handles.js';
 import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
@@ -529,6 +530,14 @@ function normalizeParams(raw, profile) {
     // rows if a joiner has edited them. Both are INPUTS in the design layer's
     // own manner: nothing said means the kit's own maths, so every golden
     // fixture and every bare `computeCabinet()` is untouched.
+    // ─── TURN 25 (CLAUDE.md F4): THE PROJECT'S HANDLE, AND ONE FRONT'S OWN ──
+    // The same two-level hierarchy turn 19 gave the hinge: the PROJECT says
+    // which handle and where, ONE FRONT may say something else and be believed,
+    // and there is no third level. Both are INPUTS in the design layer — a bare
+    // kit call, every golden fixture, passes neither and drills no handle at
+    // all, which is what the AutoLISP drills.
+    handle: p.project_handle && typeof p.project_handle === 'object' ? p.project_handle : null,
+    frontHandles: p.front_handles && typeof p.front_handles === 'object' ? p.front_handles : null,
     hingeStandard: p.hinge_standard,
     hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
     // ─── Turn 19 (CLAUDE.md F1): WHICH HINGE, NOT HOW MANY ──────────────────
@@ -3106,6 +3115,51 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── TURN 25 (CLAUDE.md F4.2): THE HANDLE HOLES ──────────────────────────
+  //
+  // R9, the owner's law: no feature without its part. A handle's holes exist
+  // ONLY while the handle does — remove it and they go in the same recompute,
+  // add it back and they return identical — which is why this loop reads the
+  // resolved handle and drills nothing at all when there is none.
+  //
+  // A knob is one hole; a bar is the reference and its partner at the chosen
+  // centres, along the handle's own axis. Where the bar would run off the
+  // board the cabinet says so and drills neither — the same grammar F3 uses
+  // for a frame that will not fit.
+  const handlePlacements = [];
+  for (const pnl of panels.filter((x) => x.role === 'front')) {
+    const resolved = resolveHandle({
+      panel: pnl,
+      unitType: type,
+      project: cfg.handle,
+      own: cfg.frontHandles?.[pnl.id] || null,
+      hinge: pnl.meta?.hinge || cfg.hinge,
+      frame: pnl.meta?.shaker?.frame ?? null,
+    }, P);
+    if (!resolved) continue;
+    if (resolved.problem) {
+      warnings.push({ code: 'HANDLE_DOES_NOT_FIT', panel: pnl.id, message: `${pnl.id}: ${resolved.problem}` });
+    }
+    for (const hole of resolved.holes) addDrill(pnl.id, 'handle', hole.layer, hole.x, hole.y, hole.d);
+    // What the 3-D model mounts on: the piece, the point and the axis. The
+    // MODEL is procedural and gold for now (F4.3) and a catalogue one arrives
+    // later by the bucket route — the contract it will arrive against is this.
+    pnl.meta.handle = {
+      type: resolved.type,
+      centres: resolved.centres,
+      axis: resolved.reference.axis,
+      anchor: resolved.reference.anchor,
+      x: roundTo(resolved.reference.x, 4),
+      y: roundTo(resolved.reference.y, 4),
+      holes: resolved.holes.map((k) => [roundTo(k.x, 4), roundTo(k.y, 4)]),
+      rule: resolved.reference.rule,
+      deviation: resolved.deviation,
+      class: resolved.class,
+      ...(resolved.problem ? { problem: resolved.problem } : {}),
+    };
+    handlePlacements.push({ panel: pnl.id, ...pnl.meta.handle });
+  }
+
   // Runners: on each drawer panel, and on a carcass side only where no drawer panel sits
   const RN = P.wardrobe.runners;
   let runnerCarcassSide = null;
@@ -3681,6 +3735,11 @@ export function computeCabinet(params, profileOverride) {
     hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
     front_cup_x_from_hinge_edge: cups.xFromHingeEdge,
+    // ─── TURN 25 (CLAUDE.md F4): where every handle on this cabinet sits ────
+    // Published rather than re-derived: the 3-D model, the drawing and a test
+    // all ask the same question, and the answer is one list. Empty where the
+    // project has no handle — R9 in the summary as well as in the drilling.
+    ...(handlePlacements.length ? { handles: handlePlacements } : {}),
     shelf_row_y: shelfRows.map((v) => roundTo(v, 4)),
     shelf_cluster_y: shelfPinRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row + dy, 4))),
     shelf_hole_x: shelfHoleX,

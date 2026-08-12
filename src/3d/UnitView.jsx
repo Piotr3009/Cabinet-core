@@ -11,7 +11,7 @@ import {
   panelFillOffset, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
-import Hardware, { DoorHinges, hingeSpecsFor } from './Hardware.jsx';
+import Hardware, { DoorHinges, FrontHandle, hingeSpecsFor } from './Hardware.jsx';
 import HoverDimensions from './HoverDimensions.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
@@ -323,6 +323,16 @@ export function MovingPanel({
         <group position={[-pivot[0], -pivot[1], -pivot[2]]}>
           <PartMachining panel={p} drills={drills} profile={profile} />
         </group>
+      )}
+      {/* ─── Turn 25 (CLAUDE.md F4.3): THE HANDLE ───
+          Screwed THROUGH this front, so it lives inside the group that
+          animates: a door's handle swings with the door and a drawer's comes
+          out with the drawer. Rendered HERE rather than handed in from
+          outside, because `pivot` is what a handle has to be backed out by and
+          a door's pivot is its hinge edge while a drawer front's is its middle
+          — one formula, in the one place that already knows which. */}
+      {p.meta?.handle && (
+        <FrontHandle panel={p} profile={profile} pivot={pivot} surface="room" scope={p.id} />
       )}
       {/* ─── Turn 16 (CLAUDE.md F8): THE PIECE SAYS WHICH PIECE IT IS ───
           The wall-units-do-not-shine diagnosis has to READ the scene — "read

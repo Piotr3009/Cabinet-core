@@ -294,6 +294,12 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // drilling. ACI 41 sits beside the biscuit's 40 and is likewise unused by
     // the LISP's own table, so nothing it already draws changes colour.
     SHAKER_PANEL_POCKET: 41,
+    // ─── TURN 25 (CLAUDE.md F4.2): AND ONE MORE ───
+    // The handle screws — ⌀5 through the front, one for a knob and two for a
+    // bar. Its own layer for the same reason: a handle hole mixed in with the
+    // hinge plate's ⌀5 would be drilled by the plate's program, on the plate's
+    // side of the door. ACI 42, again unused by the LISP's table.
+    HANDLES_5MM: 42,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

@@ -42,6 +42,12 @@ export const CNC_LAYERS = [
   // ACI 41 sits beside the biscuit's 40 and is unused by the LISP's own table,
   // so nothing it already draws changes colour in AutoCAD.
   { name: 'SHAKER_PANEL_POCKET', aci: 41, screen: '#c3a06a', label: 'Shaker panel', kind: 'pocket' },
+  // ─── Turn 25 (CLAUDE.md F4.2): the handle screws ───
+  // ⌀5 through the front, one for a knob and two for a bar. A layer of its own
+  // for the same reason the two above have one: it is a separate operation on
+  // the bed, matched by name, and a handle hole mixed in with the hinge plate's
+  // ⌀5 would be drilled by the plate's program on the plate's side of the door.
+  { name: 'HANDLES_5MM',        aci: 42, screen: '#ffd43b', label: 'Handles ⌀5',    kind: 'hole' },
   { name: 'HINGES_5MM',         aci: 5,  screen: '#74a9ff', label: 'Hinges ⌀5',      kind: 'hole' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },

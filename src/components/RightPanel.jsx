@@ -22,6 +22,7 @@ import AddItems from './AddItems.jsx';
 import Section from './Section.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import CncTree from './CncTree.jsx';
+import UnitWarnings from './UnitWarnings.jsx';
 
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
@@ -383,6 +384,14 @@ export default function RightPanel() {
               </button>
             </div>
           </div>
+
+          {/* ─── Turn 25 (CLAUDE.md F10): SHORT / OVER, ON THE UNIT ───────────
+              Silent clamping ends here. The engine has raised a short front,
+              absorbed a stack's drift and cut a box back to clear the top panel
+              for twenty-four turns without any of it reaching a person; this is
+              the reading that shows it. It does NOT block — the cabinet is cut
+              as asked and the app says what it found. */}
+          <UnitWarnings unitId={unit.id} />
 
           <div className="grid grid-cols-2 gap-2">
             <div>

@@ -143,25 +143,28 @@ test('F2.3 — the match keys on nl/variant/side, not on a word the rows never s
   clearRunnerCatalogue();
 });
 
-test('F2.3 — and the ladder gap the fixed paths uncover is PINNED, not hidden', () => {
-  // A fourth defect, found by reading the pack rather than the documents about
-  // it, and deliberately NOT fixed here: the app chooses a runner's nominal
+test('F2.3 → TURN 25 (F9): the two ladders MEET now, and here is where', () => {
+  // Turn 20 found a fourth defect by reading the pack rather than the documents
+  // about it, and deliberately did not fix it: the app chose a runner's nominal
   // length off `wardrobe.drawers.depthSteps` (390…690 — the LISP's drawer BOX
-  // lengths) and the owner's MOVENTO pack carries 250…450. The two ladders do
-  // not intersect at all, so with the paths corrected the catalogue loads, the
-  // URLs resolve, and no cabinet in the app can still match a row.
+  // lengths) while the owner's MOVENTO pack carries 250…450, so the two ladders
+  // did not intersect AT ALL. With the paths corrected the catalogue loaded, the
+  // URLs resolved, and no cabinet in the app could match a row. It was pinned
+  // here "so the day it is fixed this test says so".
   //
-  // Which runner a workshop BUYS is the owner's decision and not a bug to be
-  // guessed at in a display turn (F2: "Fixtures: ZERO"), so it is written down
-  // — BLOCKERS, and verify/t20/bucket-live.md — and pinned here so the day it
-  // is fixed this test says so.
+  // ─── THIS IS THAT DAY (turn 25, CLAUDE.md F9) ────────────────────────────
+  // The owner asked for NL 250, 270, 300, 320, 350 and 380 by name, and every
+  // one of them is in the pack. The assertion is INVERTED rather than deleted:
+  // what was "they must not meet" is now "they meet at exactly these six", so
+  // the day somebody trims the ladder this test says so too.
   clearRunnerCatalogue();
   const parsed = setRunnerCatalogue(RUNNER_MANIFEST);
   const packLadder = new Set(parsed.files.map((f) => f.nl));
   const appLadder = P.wardrobe.drawers.depthSteps;
   assert.deepEqual(
-    appLadder.filter((step) => packLadder.has(step)), [],
-    'the two ladders still do not meet — see BLOCKERS',
+    appLadder.filter((step) => packLadder.has(step)),
+    [250, 270, 300, 320, 350, 380],
+    'the owner’s six short runners are the ladders’ meeting point',
   );
   clearRunnerCatalogue();
 });

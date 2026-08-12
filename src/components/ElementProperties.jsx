@@ -18,6 +18,7 @@ import { chainFromX, xFromChain } from '../engine/partitionPositions.js';
 // Turn 24 (CLAUDE.md F3.3): which carcass board a partition is cut from.
 import { CARCASS_SLOTS, partitionSlot, slotById } from '../engine/thickness.js';
 import NumberField from './NumberField.jsx';
+import UnitWarnings, { DRAWER_WARNING_CODES } from './UnitWarnings.jsx';
 
 // ─── The properties of ONE piece (turn 11, CLAUDE.md F3) ────────────────────
 //
@@ -612,6 +613,9 @@ export default function ElementProperties({
               The drawers nobody has set take up what is left, in the kit&apos;s own ratio, so the stack
               still fills the face. No shorter than {formatMm(minDrawerFrontHeight(profile))} mm.
             </p>
+            {/* ─── Turn 25 (CLAUDE.md F10): SHORT / OVER, in the drawer modal ───
+                Naming the number, and not blocking anything. */}
+            <UnitWarnings unitId={unit.id} only={DRAWER_WARNING_CODES} compact />
           </div>
         );
       }

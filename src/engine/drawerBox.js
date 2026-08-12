@@ -122,3 +122,78 @@ export function resolveBoxSide({
     impossible: cap != null && cap < floor,
   };
 }
+
+// ─── SHORT / OVER (turn 25, CLAUDE.md F10) ──────────────────────────────────
+//
+// "When the fronts do not fit the opening, or a front is too shallow for a sane
+// box, the app says so — a yellow warning on the unit and in the drawer modal,
+// naming the number. It does NOT block; the owner wants to see it in practice
+// first. Silent clamping ends here."
+//
+// The engine has clamped quietly in three places for twenty-four turns: a front
+// under the runner minimum is raised, a stack that does not add up has its last
+// free drawer absorb the drift, and a box side that will not fit is cut short.
+// Every one of those is the right answer to a bad number and none of them ever
+// reached a person. This is the reading that does.
+
+/**
+ * Do the fronts fill the opening they were cut for?
+ *
+ * @param {object} args
+ *   heights    the fronts, in order
+ *   gap        `profile.baseDrawerUnit.gap` — one below each front, including
+ *              the last (it is the top clearance as well)
+ *   available  the face the stack has to fill
+ * @returns {{state:'fit'|'short'|'over', by:number, used:number}}
+ *   `by` is how many millimetres are missing or spare, always positive.
+ */
+export function frontStackFit({ heights = [], gap = 0, available = 0 }) {
+  const used = heights.reduce((s, h) => s + (Number(h) || 0), 0) + heights.length * (Number(gap) || 0);
+  const spare = (Number(available) || 0) - used;
+  // Half a millimetre is rounding, not a gap: the kit's own split rounds to
+  // whole millimetres and the last free drawer absorbs the drift.
+  if (Math.abs(spare) <= 0.5) return { state: 'fit', by: 0, used };
+  return { state: spare > 0 ? 'short' : 'over', by: Math.abs(spare), used };
+}
+
+/**
+ * The warning that reading produces, or null.
+ *
+ * A sentence with the NUMBER in it, because "the fronts do not fit" is not
+ * something a joiner can act on and "17 mm short" is.
+ */
+export function frontStackWarning({ heights, gap, available }) {
+  const fit = frontStackFit({ heights, gap, available });
+  if (fit.state === 'fit') return null;
+  const by = Math.round(fit.by * 10) / 10;
+  return fit.state === 'short'
+    ? {
+      code: 'DRAWER_FRONTS_SHORT',
+      message: `The drawer fronts leave ${by} mm of the opening uncovered — the stack is ${Math.round(fit.used)} mm in a ${Math.round(available)} mm face.`,
+    }
+    : {
+      code: 'DRAWER_FRONTS_OVER',
+      message: `The drawer fronts overrun the opening by ${by} mm — the stack is ${Math.round(fit.used)} mm in a ${Math.round(available)} mm face.`,
+    };
+}
+
+/**
+ * The warning codes a DRAWER's own modal is about (turn 25, CLAUDE.md F10).
+ *
+ * It lives HERE rather than in the component for one reason: a code renamed in
+ * the engine and not in the list would stop reaching the modal silently, and a
+ * list beside the codes it names is a list a test can hold to them.
+ */
+export const DRAWER_WARNING_CODES = [
+  'DRAWER_FRONTS_SHORT',
+  'DRAWER_FRONTS_OVER',
+  'DRAWER_HEIGHT_CLAMPED',
+  'DRAWER_STACK_MISMATCH',
+  'DRAWER_BOX_CAPPED',
+  'DRAWER_BOX_FLOORED',
+  'DRAWER_BOX_NO_ROOM',
+  'DRAWERS_TOO_SHALLOW',
+  'DRAWERS_TOO_TALL',
+  'APPLIANCE_DRAWER_TOO_SHORT',
+  'APPLIANCE_DRAWER_BOX_OVER_SHELF',
+];

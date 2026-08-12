@@ -29,7 +29,7 @@ import {
   isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
 } from './shaker.js';
 import { resolveHandle } from './handles.js';
-import { resolveBoxSide } from './drawerBox.js';
+import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
 import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
@@ -1317,6 +1317,11 @@ export function computeCabinet(params, profileOverride) {
         });
       }
     }
+    // ─── TURN 25 (CLAUDE.md F10): SHORT / OVER ──────────────────────────────
+    // Not a block and not a clamp: the app SAYS what it found and cuts what it
+    // was asked for. The owner wants to see it in practice first.
+    const stackSays = frontStackWarning({ heights, gap: B.gap, available: H });
+    if (stackSays) warnings.push(stackSays);
     budr = {
       heights, frontY, runnerRows, runnerBottomY, sideHs, boxFrontH,
       depth, maxDl, boxW, frontWidth, boxLen,

@@ -501,7 +501,23 @@ export const DEFAULT_CABINET_PROFILE = {
       // Blum runner. Both kits read `baseDrawerUnit.boxAboveRunner` now, which
       // is where every other number measured off A DRAWER SIDE already lives,
       // and this key is gone rather than left behind saying something untrue.
-      depthSteps: [390, 440, 490, 540, 590, 640, 690],   // runner standard
+      // ─── TURN 25 (CLAUDE.md F9): THE SHORT RUNNERS ─────────────────────
+      //
+      // The ladder started at 390, so a 350 mm deep cabinet was told "too
+      // shallow for drawers" and then cut a 390 mm box anyway — a box LONGER
+      // THAN THE CARCASS. The owner asked for NL 250, 270, 300, 320, 350 and
+      // 380, and every one of them is already in the bucket: they are in
+      // `test/fixtures/bucket/runners-blum-movento-manifest.json`, which is the
+      // live manifest verbatim (R3), in both S and T.
+      //
+      // The SELECTION rule is unchanged and is what makes this safe: the
+      // largest step that fits, found by walking the ladder FROM THE SHORTEST
+      // UPWARD and keeping the last one that still fits
+      // (`engine/runners.js runnerNominalLength`). Adding shorter rungs cannot
+      // change what the largest-that-fits is for a deep cabinet, which is why
+      // every existing unit keeps today's runner — and there is a test that
+      // says so rather than a sentence.
+      depthSteps: [250, 270, 300, 320, 350, 380, 390, 440, 490, 540, 590, 640, 690],
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
       partitionClearance: 5,   // partition sits 5 mm above the top drawer front

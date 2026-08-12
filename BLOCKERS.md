@@ -1924,3 +1924,37 @@ powodem. Zmiana to jedna liczba w profilu.
 
 **Co Piotr ma zdecydować.** Jaka jest głębokość otworu ⌀3 pod wkręt prowadnicy
 (i czy Blum podaje ją inaczej dla boku 18 i 19 mm).
+
+---
+
+## #94 — Dno w szafce pod zmywarkę: czy ono tam w ogóle jest? (tura 27, F2.1)
+
+**Co blokuje.** CLAUDE.md F2.1 mówi wprost, czego właściciel chce od zmywarki:
+*It keeps sides, top, bottom, back and plinth exactly like its neighbours, to
+the run's own laws.* Zrobiłem dokładnie to — korpus zmywarki jest korpusem
+biegu, deska w deskę z BUD-em tej samej szerokości (`test/turn27-f2-…` →
+*F2.6*).
+
+Zostaje jedno pytanie, którego tura 27 nie rozstrzyga, bo nie ma po co go
+zgadywać: **DNO**. Urządzenie stoi na podłodze i ma ~820 mm wysokości, a dno
+korpusu leży na linii nóżek biegu, czyli ~150 mm nad podłogą. Fizycznie
+zmywarka nie wjedzie nad dno — więc albo:
+
+* **dno jest** i szafka pod zmywarkę to obudowa, do której urządzenie wsuwa się
+  od frontu ponad dnem (wtedy wysokość korpusu musi urosnąć, a nie jest to
+  szafka biegu);
+* **dna nie ma** — dwa boki, wieniec i plecy, a urządzenie stoi na podłodze
+  między bokami (to jest to, co widać w większości kuchni);
+* **dno jest, ale cofnięte / częściowe** — półka usztywniająca z tyłu, a
+  urządzenie stoi na podłodze przed nią.
+
+**Co zrobiłem.** To, co napisane: **dno jest**, bo F2.1 wymienia je z nazwy, i
+jest cięte tą samą arytmetyką co dno sąsiada. Nie zmniejszyłem go po cichu i nie
+wyrzuciłem — zgadywanie wymiaru warsztatowego kosztuje dwie tury (CLAUDE.md 0).
+Reszta F2 od tego nie zależy: korpus, front, cokół i otwieranie są takie same
+przy każdej z trzech odpowiedzi.
+
+**Co Piotr ma zdecydować.** Która z trzech. Jeżeli **dna nie ma** — czy to
+własność TYPU (jak `interiorOccupied`), czy osobne pole, i czy wieniec zostaje
+(bo blat i tak leży na bokach). Jeżeli **cofnięte** — jedna liczba: jak głęboka
+jest ta półka i jak wysoko stoi.

@@ -1,0 +1,35 @@
+# shelf-in-right-bay — the eye test’s own cabinet: one partition, the shelf between it and BUR
+shelf-in-right-bay  panels  BUL BUR
+shelf-in-right-bay  BUL  470,350 470,400 470,450 70,350 70,400 70,450
+shelf-in-right-bay  BUR  470,350 470,400 470,450 70,350 70,400 70,450
+shelf-in-right-bay  BUL  origin y=0 depth=540
+shelf-in-right-bay  BUR  origin y=0 depth=540
+
+# shelf-in-left-bay — the mirror: the same cabinet with the shelf on the other side
+shelf-in-left-bay  panels  BUL BUR
+shelf-in-left-bay  BUL  470,350 470,400 470,450 70,350 70,400 70,450
+shelf-in-left-bay  BUR  470,350 470,400 470,450 70,350 70,400 70,450
+shelf-in-left-bay  BUL  origin y=0 depth=540
+shelf-in-left-bay  BUR  origin y=0 depth=540
+
+# shelf-mid-bay-2-parts — two partitions, the shelf in the MIDDLE bay — partition/partition
+shelf-mid-bay-2-parts  panels  BUL BUR
+shelf-mid-bay-2-parts  BUL  470,350 470,400 470,450 70,350 70,400 70,450
+shelf-mid-bay-2-parts  BUR  470,350 470,400 470,450 70,350 70,400 70,450
+shelf-mid-bay-2-parts  BUL  origin y=0 depth=540
+shelf-mid-bay-2-parts  BUR  origin y=0 depth=540
+
+# shelf-end-bay-2-parts — …and the same cabinet with the shelf in the far bay
+shelf-end-bay-2-parts  panels  BUL BUR
+shelf-end-bay-2-parts  BUL  470,350 470,400 470,450 70,350 70,400 70,450
+shelf-end-bay-2-parts  BUR  470,350 470,400 470,450 70,350 70,400 70,450
+shelf-end-bay-2-parts  BUL  origin y=0 depth=540
+shelf-end-bay-2-parts  BUR  origin y=0 depth=540
+
+# plain-cabinet — the control: no partition at all — this row must never move
+plain-cabinet  panels  BUL BUR
+plain-cabinet  BUL  470,350 470,400 470,450 70,350 70,400 70,450
+plain-cabinet  BUR  470,350 470,400 470,450 70,350 70,400 70,450
+plain-cabinet  BUL  origin y=0 depth=540
+plain-cabinet  BUR  origin y=0 depth=540
+

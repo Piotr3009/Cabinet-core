@@ -62,9 +62,12 @@ test('F5.1 — three millimetres, which is what the owner measured', () => {
 
 test('F5.2 — the panel says HOW it opens, and it is not a swing', () => {
   const face = frontOf(dw());
-  assert.equal(face.meta.opening, 'drop-front');
-  assert.equal(face.meta.openAngleDeg, P.dwPanel.openAngleDeg);
-  assert.equal(P.dwPanel.openAngleDeg, 90, 'about 90°, and not a degree past square');
+  // Turn 27 (CLAUDE.md F2.1): the word is `'drop'` — the same one the unit
+  // type uses — and the angle is the owner's 45°, carried by the TYPE now
+  // that there is no parallel path to read a profile block.
+  assert.equal(face.meta.opening, 'drop');
+  assert.equal(face.meta.openAngleDeg, getUnitType('DW_PANEL').frontOpenAngleDeg);
+  assert.equal(face.meta.openAngleDeg, 45, 'far enough to read, which is his number');
   // An ordinary door says nothing of the kind, so the scene's default is
   // unchanged and there is no branch anywhere on "is this a dishwasher".
   assert.equal(frontOf(base()).meta.opening, undefined);
@@ -73,15 +76,17 @@ test('F5.2 — the panel says HOW it opens, and it is not a swing', () => {
 test('F5.2 — the scene turns it about its BOTTOM edge, forward', () => {
   const view = readFileSync(new URL('../src/3d/UnitView.jsx', import.meta.url), 'utf8');
   // The piece decides, not the unit type.
-  assert.match(view, /const drops = front === 'door' && p\.meta\?\.opening === 'drop-front';/);
+  assert.match(view, /const drops = front === 'door' && p\.meta\?\.opening === 'drop';/);
   // The pivot is the leaf's own bottom edge…
   assert.match(view, /drops\s*\n\s*\? \[mm\(p\.box\.x \+ p\.box\.w \/ 2\), mm\(p\.box\.y\), mm\(p\.box\.z \+ p\.box\.d \/ 2\)\]/);
   // …the mesh hangs above it…
   assert.match(view, /drops\s*\n\s*\? \[0, mm\(p\.box\.h \/ 2\), 0\]/);
-  // …and the turn is about x, negative, which takes the top edge into the room.
-  assert.match(view, /group\.current\.rotation\.x = -a \* \(swing \?\? Math\.PI \/ 2\);/);
+  // …and the turn is about x, POSITIVE (turn 27, CLAUDE.md F2.1: turn 26 had
+  // the sign inverted and dropped the leaf back into the carcass — a rotation
+  // by θ about +x carries the top edge to z = y·sin θ, so forward is +).
+  assert.match(view, /group\.current\.rotation\.x = a \* \(swing \?\? Math\.PI \/ 4\);/);
   // It never uses the hinge swing: `swingFor` answers the appliance's angle.
-  assert.match(view, /if \(panel\?\.meta\?\.opening === 'drop-front'\) \{/);
+  assert.match(view, /if \(panel\?\.meta\?\.opening === 'drop'\) \{/);
 });
 
 // ─── F5.3 — NO CUPS, ANYWHERE ───────────────────────────────────────────────
@@ -122,7 +127,7 @@ test('F5.4 — the toe kick is the RUN’s, at the run’s leg height, in one pi
   // 20 mm below its top edge and open at the bottom, so the line the eye
   // follows along the run is unbroken.
   const ys = plinth.cnc.outline.map(([, y]) => y);
-  assert.ok(ys.includes(plinth.h - P.dwPanel.plinthCutFromTop), 'relieved 20 mm below the top');
+  assert.ok(ys.includes(plinth.h - getUnitType('DW_PANEL').plinthCutFromTop), 'relieved 20 mm below the top');
   assert.equal(Math.max(...ys), plinth.h, 'and the top edge runs right through');
 });
 

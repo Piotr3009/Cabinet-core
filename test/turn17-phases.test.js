@@ -289,8 +289,11 @@ test('F9 — 594 is RIGID: it is a value, not a default', () => {
   // Owner's review of turn 17: 594 is the WIDTH. The instruction said height
   // and the engine built a letterbox; the number was always the one that keeps
   // the appliance door able to swing past its neighbours.
-  assert.equal(P.dwPanel.frontWidth, 594);
-  assert.ok(P.dwPanel.frontWidth < 600, 'always under 600, or the appliance door cannot open');
+  // Turn 27 (CLAUDE.md F2.5): the number did not change and did not go — it
+  // moved to the TYPE, where a measured fact about a kit belongs, when the
+  // parallel path that used to read it out of the profile was deleted.
+  assert.equal(getUnitType('DW_PANEL').frontWidth, 594);
+  assert.ok(getUnitType('DW_PANEL').frontWidth < 600, 'always under 600, or the appliance door cannot open');
   // Whatever the opening is asked to be, the front is 594 WIDE — and as TALL
   // as the base fronts it stands beside.
   for (const width of [500, 600, 900]) {
@@ -305,13 +308,20 @@ test('F9 — 594 is RIGID: it is a value, not a default', () => {
   }
 });
 
-test('F9 — a front and nothing else, plus one 600 mm top', () => {
+test('F9 — no cup hinges (and, since turn 27, an ordinary carcass under them)', () => {
   const r = unit('DW_PANEL');
-  assert.deepEqual(r.panels.map((p) => p.part).sort(), ['FRONT', 'TOP']);
+  // ─── TURN 27 (CLAUDE.md F2.1) ─────────────────────────────────────────
+  // "A front and nothing else, plus one 600 mm top" was turn 17's reading and
+  // it is what made a D/W a species of its own. The carcass is the run's now,
+  // and its TOP is the top the cabinet beside it gets — `W − 2G`, not a
+  // profile constant a parallel path owned.
+  assert.deepEqual(r.panels.map((p) => p.part).sort(),
+    ['BACK', 'BOTTOM', 'BUL', 'BUR', 'FRONT', 'TOP']);
   const top = r.panels.find((p) => p.part === 'TOP');
-  assert.equal(top.w, 600, 'always 600 mm wide');
+  const defaults = defaultParamsFor('DW_PANEL', P);
+  assert.equal(top.w, defaults.width - 2 * P.board.thickness, 'the run’s own top');
   // …and its depth is the run's, which is the unit's own depth less the board.
-  assert.equal(top.h, defaultParamsFor('DW_PANEL', P).depth - P.board.thickness);
+  assert.equal(top.h, defaults.depth - P.board.thickness);
   // ─── NO HINGES — and turn 26 (CLAUDE.md F5) narrows the rest ─────────────
   //
   // Turn 17's sentence was "a front and nothing else — no hinges, flat, no door
@@ -329,7 +339,7 @@ test('F9 — a front and nothing else, plus one 600 mm top', () => {
 });
 
 test('F9 — the plinth is cut out at that position, 20 mm from the top', () => {
-  assert.equal(P.dwPanel.plinthCutFromTop, 20);
+  assert.equal(getUnitType('DW_PANEL').plinthCutFromTop, 20);
   const r = unit('DW_PANEL', { plinth: true });
   const plinth = r.panels.find((p) => p.part === 'PLINTH');
   assert.ok(plinth, 'the unit cuts its own plinth');

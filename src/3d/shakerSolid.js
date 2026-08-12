@@ -193,12 +193,32 @@ function buildTray(w, h, t, frame, depth, cuts = []) {
   parts.push(face(back, -Z, BACK));
 
   // ── the rebate's four walls: THE SHADOW ──
+  //
   // Each faces INWARD, towards the middle of the panel, which is what makes the
   // top wall dark when the light is high and the side walls dark when it is low.
-  quad([-ix, iy, Z], [ix, iy, Z], [ix, iy, floorZ], [-ix, iy, floorZ], [0, -1, 0]);
-  quad([ix, -iy, Z], [-ix, -iy, Z], [-ix, -iy, floorZ], [ix, -iy, floorZ], [0, 1, 0]);
-  quad([-ix, -iy, Z], [-ix, iy, Z], [-ix, iy, floorZ], [-ix, -iy, floorZ], [1, 0, 0]);
-  quad([ix, iy, Z], [ix, -iy, Z], [ix, -iy, floorZ], [ix, iy, floorZ], [-1, 0, 0]);
+  //
+  // ─── TURN 27 (CLAUDE.md F3): AND THEY WERE WOUND INSIDE OUT ─────────────
+  //
+  // The owner: the 6 mm recess works, but it has no side walls at all — the
+  // panel reads as a hole straight through the door.
+  //
+  // He is right, and it is the one thing that can go wrong with a hand-built
+  // face while every number in it is correct: turn 25 declared the right
+  // INWARD normal on each of these four quads and wound the triangles the
+  // other way round. A rasteriser culls on the WINDING and not on the normal,
+  // so all four walls were front-facing AWAY from the recess — invisible from
+  // the room, and what showed through the gap was whatever stood behind the
+  // door. A shadow needs a wall to be cast by, and there were none.
+  //
+  // Wound the other way now, so the visible side of each is the side its
+  // normal points at. The FLOOR was never the problem and has not moved, and
+  // the corners meet exactly as they always did: the top and bottom walls run
+  // the full ±ix and the side walls the full ±iy, so the four share their end
+  // edges and there is no gap at a corner to see through.
+  quad([-ix, iy, Z], [-ix, iy, floorZ], [ix, iy, floorZ], [ix, iy, Z], [0, -1, 0]);
+  quad([ix, -iy, Z], [ix, -iy, floorZ], [-ix, -iy, floorZ], [-ix, -iy, Z], [0, 1, 0]);
+  quad([-ix, -iy, Z], [-ix, -iy, floorZ], [-ix, iy, floorZ], [-ix, iy, Z], [1, 0, 0]);
+  quad([ix, iy, Z], [ix, iy, floorZ], [ix, -iy, floorZ], [ix, -iy, Z], [-1, 0, 0]);
 
   // ── the four outer edges ──
   quad([-X, -Y, -Z], [X, -Y, -Z], [X, -Y, Z], [-X, -Y, Z], [0, -1, 0]);
@@ -221,7 +241,13 @@ function buildTray(w, h, t, frame, depth, cuts = []) {
       const p1 = [cx + Math.cos(a1) * r, cy + Math.sin(a1) * r];
       // Facing the bore's own axis, so the light falls INTO it.
       const n0 = [-Math.cos((a0 + a1) / 2), -Math.sin((a0 + a1) / 2), 0];
-      quad([p0[0], p0[1], -Z], [p1[0], p1[1], -Z], [p1[0], p1[1], stop], [p0[0], p0[1], stop], n0);
+      //
+      // Turn 27 (CLAUDE.md F3): wound to match, for the same reason the four
+      // rebate walls above are. These carried the right normal and the wrong
+      // winding too, so a ⌀35 cup in a shaker leaf was a hole you looked
+      // THROUGH rather than into — the owner's own sentence about the recess,
+      // said again on a smaller radius.
+      quad([p0[0], p0[1], -Z], [p0[0], p0[1], stop], [p1[0], p1[1], stop], [p1[0], p1[1], -Z], n0);
       if (c.through) continue;
       pos.push(cx, cy, stop, p1[0], p1[1], stop, p0[0], p0[1], stop);
       for (let k = 0; k < 3; k += 1) nor.push(0, 0, -1);
@@ -270,9 +296,30 @@ const rect = (x0, y0, x1, y1) => {
   return path;
 };
 
+/**
+ * A bore's mouth, as the SAME polygon its wall is built from.
+ *
+ * ─── TURN 27 (CLAUDE.md F3.1): THE RING AND THE WALL AGREE ─────────────────
+ *
+ * This was `absarc`, and the triangulator subdivided it by its own rule — so
+ * the hole in the face was a polygon of one vertex count and the cylinder under
+ * it a polygon of another. Two approximations of one circle leave hairline
+ * slivers of nothing between them, which is the same thing the rebate walls
+ * were doing at a larger radius: a place you can see through a solid board.
+ *
+ * The same `HOLE_SEGMENTS` and the same start angle as the wall, so the two
+ * share their vertices exactly and the leaf closes.
+ */
 const circle = (cx, cy, r) => {
   const path = new THREE.Path();
-  path.absarc(cx, cy, r, 0, Math.PI * 2, true);
+  for (let i = 0; i < HOLE_SEGMENTS; i += 1) {
+    const a = (i / HOLE_SEGMENTS) * Math.PI * 2;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    if (i === 0) path.moveTo(x, y);
+    else path.lineTo(x, y);
+  }
+  path.closePath();
   return path;
 };
 

@@ -52,6 +52,14 @@ export function dimensionStyle(profile) {
     // partition chain sits, as a fraction of the bay — so it clears the add
     // (+) button on a bay of any size.
     chainDropFraction: num(S.chainDropFraction, 0.25),
+    // ─── TURN 27 (CLAUDE.md F4 / R12): THE LABEL'S OWN PALETTE ────────────
+    // The dark plate and the light ink the chain carried before turn 26
+    // repainted them, read through here so every surface that draws a
+    // dimension gets ONE answer from ONE call — which is the same sentence
+    // R11 makes about the geometry.
+    labelPlate: S.label?.plate || '#1c1c1a',
+    labelInk: S.label?.ink || '#e8e4dc',
+    labelAlpha: num(S.label?.plateAlpha, 0.9),
     // Turn 24 (CLAUDE.md F10): how far the cursor may stray before a shown set
     // fades. It lives in `profile.editor` — it is a property of the TOOL and
     // not of the drawing's ink — and is read THROUGH here so both surfaces get

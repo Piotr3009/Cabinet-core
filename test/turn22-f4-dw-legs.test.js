@@ -220,7 +220,9 @@ test('F4.5 the D/W front is 594 wide and its height law is untouched', () => {
   for (const leg of [50, 100]) {
     for (const height of [720, 770, 800]) {
       const front = dw({ leg_height: leg, height }).panels.find((p) => p.part === 'FRONT');
-      assert.equal(front.w, P.dwPanel.frontWidth, 'always 594');
+      // Turn 27 (CLAUDE.md F2.5): the number moved to the TYPE with the rest
+      // of the D/W's measured facts; it did not change and it did not go.
+      assert.equal(front.w, getUnitType('DW_PANEL').frontWidth, 'always 594');
       assert.equal(front.h, height - P.doors.gap, 'and as tall as the base fronts beside it');
     }
   }

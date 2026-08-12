@@ -76,7 +76,13 @@ export function handleSpec(profile) {
 export function handleClassOf(panel, unitType) {
   if (panel?.role !== 'front') return null;
   if (panel.part === 'DRAWER-FRONT') return 'horizontal';
-  if (panel.meta?.appliance) return 'horizontal';
+  // ─── TURN 27 (CLAUDE.md F2.2): READ THE GESTURE, NOT THE APPLIANCE ──────
+  // This asked `meta.appliance` — an `if (dwPanel)` in the handle law, which
+  // is exactly what F2 is about. The owner's rule is about how the front is
+  // GRIPPED, and a front that falls forward about its bottom edge is gripped
+  // from above like a drawer front. Any front that drops answers the same way,
+  // whatever is behind it.
+  if (panel.meta?.opening === 'drop') return 'horizontal';
   if (panel.part !== 'FRONT') return null;
   const group = unitType?.heightGroup;
   if (unitType?.mount === 'wall') return 'wall-door';

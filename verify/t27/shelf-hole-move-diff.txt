@@ -1,0 +1,46 @@
+2,3c2
+< shelf-in-right-bay  panels  BUL BUR
+< shelf-in-right-bay  BUL  470,350 470,400 470,450 70,350 70,400 70,450
+---
+> shelf-in-right-bay  panels  BUR VPART-1
+5c4
+< shelf-in-right-bay  BUL  origin y=0 depth=540
+---
+> shelf-in-right-bay  VPART-1  470,332 470,382 470,432 70,332 70,382 70,432
+6a6
+> shelf-in-right-bay  VPART-1  origin y=18 depth=540
+9c9
+< shelf-in-left-bay  panels  BUL BUR
+---
+> shelf-in-left-bay  panels  BUL VPART-1
+11c11
+< shelf-in-left-bay  BUR  470,350 470,400 470,450 70,350 70,400 70,450
+---
+> shelf-in-left-bay  VPART-1  470,332 470,382 470,432 70,332 70,382 70,432
+13c13
+< shelf-in-left-bay  BUR  origin y=0 depth=540
+---
+> shelf-in-left-bay  VPART-1  origin y=18 depth=540
+16,20c16,20
+< shelf-mid-bay-2-parts  panels  BUL BUR
+< shelf-mid-bay-2-parts  BUL  470,350 470,400 470,450 70,350 70,400 70,450
+< shelf-mid-bay-2-parts  BUR  470,350 470,400 470,450 70,350 70,400 70,450
+< shelf-mid-bay-2-parts  BUL  origin y=0 depth=540
+< shelf-mid-bay-2-parts  BUR  origin y=0 depth=540
+---
+> shelf-mid-bay-2-parts  panels  VPART-1 VPART-2
+> shelf-mid-bay-2-parts  VPART-1  470,332 470,382 470,432 70,332 70,382 70,432
+> shelf-mid-bay-2-parts  VPART-2  470,332 470,382 470,432 70,332 70,382 70,432
+> shelf-mid-bay-2-parts  VPART-1  origin y=18 depth=540
+> shelf-mid-bay-2-parts  VPART-2  origin y=18 depth=540
+23,24c23
+< shelf-end-bay-2-parts  panels  BUL BUR
+< shelf-end-bay-2-parts  BUL  470,350 470,400 470,450 70,350 70,400 70,450
+---
+> shelf-end-bay-2-parts  panels  BUR VPART-2
+26c25
+< shelf-end-bay-2-parts  BUL  origin y=0 depth=540
+---
+> shelf-end-bay-2-parts  VPART-2  470,332 470,382 470,432 70,332 70,382 70,432
+27a27
+> shelf-end-bay-2-parts  VPART-2  origin y=18 depth=540

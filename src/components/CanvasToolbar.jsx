@@ -36,10 +36,16 @@ export default function CanvasToolbar() {
   const unitResult = useProjectStore((s) => s.unitResult);
   const openFronts = useUiStore((s) => s.openFronts);
   const toggleAllFronts = useUiStore((s) => s.toggleAllFronts);
+  // ─── TURN 27 (CLAUDE.md F2.1): EVERY FRONT ANSWERS ───────────────────────
+  //
+  // This filtered out `meta.appliance` — so the one front in the kitchen that
+  // opens differently was the one front the button did not touch. That is the
+  // `dwPanel` habit in a component: a D/W front is a FRONT, it has a gesture
+  // (it drops, turn 26's F5.2), and "Open all" means all.
   const doorEntries = useMemo(() => units.map((u) => ({
     unitId: u.id,
     panelIds: (unitResult(u.id)?.panels || [])
-      .filter((p) => p.part === 'FRONT' && !p.meta?.appliance)
+      .filter((p) => p.part === 'FRONT')
       .map((p) => p.id),
   })).filter((e) => e.panelIds.length), [units, unitResult]);
   const everyDoorOpen = doorEntries.length > 0 && doorEntries.every(

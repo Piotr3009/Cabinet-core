@@ -143,7 +143,6 @@ export default function DimensionChain({
             row={row}
             plane={plane}
             at={third}
-            colour={ink}
             style={style}
           />
         </group>
@@ -161,7 +160,7 @@ export default function DimensionChain({
  * own tone, its own rounding and its own offset.
  */
 function Value({
-  row, plane, at, colour, style,
+  row, plane, at, style,
 }) {
   const text = row.text?.value ?? formatDimension(row.value);
   const u = mm(row.text?.at?.[0] ?? 0);
@@ -171,55 +170,80 @@ function Value({
   // own weight, so it scales with the drawing.
   const lift = mm(style.strokeMm * 3);
   const position = plane === 'xz' ? [u, at + lift, v] : [u, v, at + lift];
-  return <DimensionValue position={position} text={text} colour={colour} />;
+  return <DimensionValue position={position} text={text} style={style} />;
 }
 
 /**
- * A billboarded number, in the dimension ink.
+ * A billboarded number, on the drawing office's own dark plate.
  *
  * SPEC 7: labels must ALWAYS face the camera. A sprite with a canvas texture,
  * for the same three reasons `3d/DimLabel.jsx` gives — sprites are billboards
  * by definition, need no font download, and appear in the WebGL snapshot the
  * PDF is made from.
  *
- * It is NOT `DimLabel`. That component draws a speech-bubble plate for a CHIP
- * (a cabinet's name, a magnet's height) and this is a dimension's value on a
- * drawing: no plate, no outline, the ink of the line it sits on, and a halo so
- * it survives landing on a dark carcass.
+ * ─── TURN 27 (CLAUDE.md F4 / R12): THE PAINT COMES BACK ────────────────────
+ *
+ * R12's first debt. Turn 26 was asked to give shelves, sides and fronts the
+ * partition chain's BEHAVIOUR and it repainted every label on the way: the
+ * quiet dark plate the chain had carried since turn 17 became a white halo and
+ * the line's own ink. Nobody asked for that.
+ *
+ * So this is turn 25's flat label again, exactly — square corners and no
+ * stroke (the plate IS the edge), the app's own shell as the ground and its
+ * own ink on it, the label type the panels use: small, letter-spaced,
+ * monospace. What is NEW is that it is now the ONLY one: shelves, sides,
+ * fronts, gaps and the room's distance marks all wear it, because there is one
+ * dimension component and it has one look.
+ *
+ * The INK is the plate's, not the line's. A chain drawn in gold because its
+ * cabinet is selected still turns gold — the strokes carry that — and its
+ * number stays legible instead of turning into a gold word on a dark ground.
+ * That is precisely how the partition chain behaved before turn 26.
  */
-function DimensionValue({ position, text, colour }) {
+function DimensionValue({ position, text, style }) {
   const texture = useMemo(() => {
-    const size = 48;
+    const size = 38;
     const font = `600 ${size}px ui-monospace, Menlo, Consolas, monospace`;
     const canvas = document.createElement('canvas');
     const measure = canvas.getContext('2d');
     measure.font = font;
-    const pad = 10;
-    const width = Math.ceil(measure.measureText(text).width) + pad * 2;
+    const pad = 16;
+    // The plate is wider than the type: the letter-spacing the app's own
+    // `cc-label` carries has to be paid for in pixels, and a caption that
+    // touches its own edge reads as clipped.
+    const tracking = size * 0.09;
+    const width = Math.ceil(measure.measureText(text).width + tracking * text.length) + pad * 2;
     const height = size + pad * 2;
     canvas.width = width;
     canvas.height = height;
     const c = canvas.getContext('2d');
     c.font = font;
     c.textBaseline = 'middle';
-    c.textAlign = 'center';
-    // The halo: the drawing's own paper, thinly, so a number that lands on a
-    // walnut carcass is still a number. Not a plate — a plate is a chip.
-    c.lineWidth = 6;
-    c.strokeStyle = 'rgba(255,255,255,0.85)';
-    c.strokeText(text, width / 2, height / 2 + 1);
-    c.fillStyle = colour;
-    c.fillText(text, width / 2, height / 2 + 1);
+    // Square, quiet, and no outline at all — the plate IS the edge.
+    c.fillStyle = style.labelPlate;
+    c.globalAlpha = style.labelAlpha;
+    c.fillRect(0, 0, width, height);
+    c.globalAlpha = 1;
+    c.fillStyle = style.labelInk;
+    // Drawn letter by letter, which is the only way a canvas tracks type.
+    const total = measure.measureText(text).width + tracking * (text.length - 1);
+    let x = (width - total) / 2;
+    c.textAlign = 'left';
+    for (const ch of text) {
+      c.fillText(ch, x, height / 2 + 1);
+      x += measure.measureText(ch).width + tracking;
+    }
     const tex = new THREE.CanvasTexture(canvas);
     tex.anisotropy = 4;
     tex.needsUpdate = true;
     tex.userData.aspect = width / height;
     return tex;
-  }, [text, colour]);
+  }, [text, style.labelPlate, style.labelInk, style.labelAlpha]);
 
   useEffect(() => () => texture.dispose(), [texture]);
 
-  const h = 0.042;
+  // Turn 25's own size: `DimLabel`'s 0.055 at the chain's scale of 0.8.
+  const h = 0.044;
   const w = h * (texture.userData.aspect || 3);
   return (
     <sprite position={position} scale={[w, h, 1]} renderOrder={10} userData={{ ccHelper: true, ccNoBounds: true }}>

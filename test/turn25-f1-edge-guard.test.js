@@ -34,7 +34,7 @@ import { dirname, join } from 'node:path';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet, notchedPlinth } from '../src/engine/cabinet.js';
 import {
-  socketCentres, tabPointsDown, tabPointsLeft, tabPointsUp, topPanelGeometry,
+  rectGeometry, socketCentres, tabPointsDown, tabPointsLeft, tabPointsUp, topPanelGeometry,
 } from '../src/engine/puzzle.js';
 import {
   CUTOUT_WINDING, EDGE_TOLERANCE, OUTER_WINDING, formatFinding, isInterior, loopFindings,
@@ -282,6 +282,35 @@ test('F1.4 — the notched plinth is one board, not a path drawn back over itsel
   assert.equal(area(notchedPlinth(1800, 100, 0, 600, 20)), 1800 * 100 - 600 * 80);
   assert.equal(area(notchedPlinth(1800, 100, 1200, 600, 20)), 1800 * 100 - 600 * 80);
   assert.equal(area(strip), 600 * 20);
+});
+
+test('F1.4 — a piece of no size has no outline, so it never reaches a sheet', () => {
+  // The THIRD fault the guard found, and it came out of F8's new probe: an
+  // OVEN_BASE 500 mm high cannot hold a 595 mm oven, so the opening under its
+  // shelf is negative and the drawer boards it produced were −152 mm tall.
+  // Every one of them went on the sheet, was laid out, and was written into a
+  // DXF as a rectangle traced BACKWARDS — a cut path telling VCarve the
+  // material is on the other side of the line, on a board that does not exist.
+  //
+  // The cabinet has SAID it was impossible since turn 17 (`OVEN_TOO_LOW`).
+  // What was missing is that nothing downstream believed it.
+  assert.deepEqual(rectGeometry(-10, 200).outline, []);
+  assert.deepEqual(rectGeometry(200, 0).outline, []);
+  assert.equal(rectGeometry(200, 100).outline.length, 4, 'a real board is untouched');
+
+  const impossible = computeCabinet({
+    ...defaultParamsFor('OVEN_BASE', P), unit_num: '01', height: 500, drawers: 4,
+  }, P);
+  assert.ok(
+    impossible.warnings.some((w) => w.code === 'OVEN_TOO_LOW'),
+    'the cabinet still says the oven does not fit',
+  );
+  for (const panel of impossible.panels) {
+    const cuttable = Array.isArray(panel.cnc?.outline) && panel.cnc.outline.length >= 2;
+    if (!cuttable) continue;
+    assert.ok(panel.w > 0 && panel.h > 0, `${panel.id} is ${panel.w} × ${panel.h} and is on the sheet`);
+  }
+  assert.deepEqual(resultFindings(impossible), []);
 });
 
 test('F1.3 — the guard SEES a fault planted in a real panel', () => {

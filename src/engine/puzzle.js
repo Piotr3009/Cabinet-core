@@ -414,8 +414,30 @@ export function backPanelGeometry({ w, h, G, puzzle: pz }) {
   return out;
 }
 
-/** Plain rectangular outline for panels without puzzle joints. */
+/**
+ * Plain rectangular outline for panels without puzzle joints.
+ *
+ * ─── TURN 25 (CLAUDE.md F1.4): A PIECE OF NO SIZE HAS NO OUTLINE ───────────
+ *
+ * The F1 guard found this, on an impossible cabinet: an OVEN_BASE 500 mm high
+ * cannot hold a 595 mm oven, so the opening under its shelf is negative and the
+ * drawer boards it produced were −152 mm tall. Every one of them went on the
+ * sheet, was laid out, and was written into a DXF as a rectangle traced
+ * BACKWARDS — which is a cut path telling VCarve the material is on the other
+ * side of the line, on a board that does not exist.
+ *
+ * The cabinet already SAYS it is impossible (`OVEN_TOO_LOW`) and has since turn
+ * 17. What was missing is that nothing downstream believed it. A part the
+ * machine could not cut now has no outline at all, so `exportablePanels`, the
+ * layout, the sheet and the file all drop it by the rule they already had —
+ * "a real outline" — instead of each needing to be told.
+ *
+ * Every part with a real size is byte-for-byte what it was.
+ */
 export function rectGeometry(w, h, layer = 'OUTLINE') {
+  if (!(Number(w) > 0) || !(Number(h) > 0)) {
+    return { outline: [], pockets: [], holes: [], layer };
+  }
   return { outline: [[0, 0], [w, 0], [w, h], [0, h]], pockets: [], holes: [], layer };
 }
 

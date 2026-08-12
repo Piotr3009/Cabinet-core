@@ -253,6 +253,14 @@ export function cases() {
       id: `${type}+handles-knob`,
       params: { ...base, project_handle: { type: 'knob' } },
     });
+    // ─── TURN 25 (CLAUDE.md F8.3): WHERE THE CAP BITES ─────────────────────
+    //
+    // Every golden default has room over its top box — a 720 mm base unit's
+    // stack finishes 22 mm below the top panel — so F8's ceiling cannot appear
+    // in any of them, which is why its delta on the defaults is zero. A SHORT
+    // cabinet with a FULL stack is where it bites: the top box would stand
+    // 4.5 mm under the panel and is cut back to leave the owner's 5.
+    out.push({ id: `${type}+drawers-capped`, params: { ...base, height: 500, drawers: 4 } });
   }
   return out;
 }

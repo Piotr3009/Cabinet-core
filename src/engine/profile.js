@@ -927,6 +927,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // is measured from that part's own edges, and none of those move.
     boxAboveRunner: 13.5,
     bottomAboveRunner: 28.5,    // = boxAboveRunner + runnerPocketWidth
+    // ─── TURN 25 (CLAUDE.md F8): A FLOOR AND A CEILING ─────────────────────
+    //
+    // "The cap is what stopped a tall top drawer breaking the top panel; the
+    // owner has seen it happen." A box hangs off its runner and stands up from
+    // it, and a front tall enough makes a box tall enough to foul whatever is
+    // above it — the next runner down the stack, or, for the top drawer, the
+    // underside of the top panel. Neither is negotiable, so the SIDE gives.
+    //
+    // FIVE, and it is the owner's number and not the LISP's three: he has
+    // watched a box lift a top panel off its tabs and wants the margin.
+    boxTopClearance: 5,
+    // …and the floor at the other end. A box front is `side − 15 − G − 1`, so
+    // a short enough front produces a box front of nothing and, below that, of
+    // a negative number. `minBoxInside` is the shallowest box a workshop will
+    // actually build — a cutlery tray — and it is OURS: the owner gave the
+    // arithmetic (`minimum inside + 15 + G + 1`) and not the minimum.
+    minBoxInside: 40,
     // ─── Turn 17 (CLAUDE.md F4.3): THE POCKETS ARE CUTS, AND CUTS HAVE DEPTH ─
     // The two grooves in a drawer-box side have been in the cutting data since
     // turn 3 as flat rectangles on their own layers — which is everything a

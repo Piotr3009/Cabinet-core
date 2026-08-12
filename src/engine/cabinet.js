@@ -29,6 +29,7 @@ import {
   isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
 } from './shaker.js';
 import { resolveHandle } from './handles.js';
+import { resolveBoxSide } from './drawerBox.js';
 import { bayDoorPlan, bayDoorsAvailable, doorBays } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
@@ -1114,7 +1115,22 @@ export function computeCabinet(params, profileOverride) {
       acc += drawerHeights[i] + DR.gap;
       // Box side = front − frontToSideDelta; box front/back = side − 15 − G − 1,
       // i.e. "as before, off the side" (200 → 164 → 130 with the defaults).
-      const side = drawerHeights[i] - DR.frontToSideDelta;
+      // ─── TURN 25 (CLAUDE.md F8) ───
+      // The wardrobe's own law is a fixed DELTA off the front rather than the
+      // base unit's 70 %, and it stays exactly that. What it gains is the same
+      // floor and the same ceiling: a box in a wardrobe fouls the shelf or the
+      // top over it in precisely the way one in a base unit fouls the top
+      // panel, and the owner's 5 mm is a fact about a box and not about a kit.
+      const ceilingHere = i + 1 < numDrawers
+        ? G + acc                        // the next drawer's own base
+        : (partitionY > 0 ? partitionY : H - (hasTopPanel ? G : 0));
+      const resolved = resolveBoxSide({
+        wanted: drawerHeights[i] - DR.frontToSideDelta,
+        base: G + zoneOffsets[i],
+        ceiling: ceilingHere,
+        boxBoardT: GB,
+      }, P);
+      const side = resolved.height;
       boxSideH.push(side);
       // …and the `− G` here is the BOX BOTTOM, which the front stands on top
       // of. The box's own board (F3.2), never the carcass's.
@@ -1213,11 +1229,58 @@ export function computeCabinet(params, profileOverride) {
     // Without it a 770 oven base drew a 118 mm box from 56 mm up into a shelf
     // whose underside is at 154.
     const boxCeiling = ovenShelfY(type, P, H, G);
-    const sideHs = heights.map((h, i) => {
+    // ─── TURN 25 (CLAUDE.md F8): WHAT IS ABOVE EACH BOX ─────────────────────
+    //
+    // For every drawer but the top one it is the NEXT RUNNER's underside; for
+    // the top one it is the underside of the top panel — or the appliance
+    // shelf, where a kit has one, which is the lower of the two and therefore
+    // the one that binds.
+    //
+    // Read off `runnerBottomY`, which is where a box actually stands, rather
+    // than off the screw row: turn 21 named those two apart precisely because
+    // one had been used for the other.
+    const topOfBox = hasTopPanel ? H - G : H;
+    const ceilingAbove = (i) => (i + 1 < runnerBottomY.length
+      ? runnerBottomY[i + 1]
+      : (boxCeiling == null ? topOfBox : Math.min(topOfBox, boxCeiling)));
+    const boxSides = heights.map((h, i) => {
       const wanted = lispRound(h * B.sideRatio);
-      if (boxCeiling == null) return wanted;
-      return Math.min(wanted, Math.max(0, boxCeiling - runnerRows[i]));
+      // Turn 18's own clamp under an appliance shelf stands, and stands FIRST:
+      // it is measured off the screw row and is what keeps the oven base's cut
+      // list byte-for-byte what it was.
+      const underShelf = boxCeiling == null
+        ? wanted
+        : Math.min(wanted, Math.max(0, boxCeiling - runnerRows[i]));
+      return resolveBoxSide({
+        wanted: underShelf,
+        base: runnerBottomY[i] + B.boxAboveRunner,
+        ceiling: ceilingAbove(i),
+        boxBoardT: GB,
+      }, P);
     });
+    const sideHs = boxSides.map((r) => r.height);
+    for (const [i, r] of boxSides.entries()) {
+      if (r.capped) {
+        warnings.push({
+          code: 'DRAWER_BOX_CAPPED',
+          message: `Drawer ${i + 1}: the box side is cut to ${roundTo(r.height, 1)} mm instead of ${roundTo(r.wanted, 1)} — `
+            + `${B.boxTopClearance} mm is kept clear of what sits above it.`,
+        });
+      } else if (r.floored) {
+        warnings.push({
+          code: 'DRAWER_BOX_FLOORED',
+          message: `Drawer ${i + 1}: the box side is raised to ${roundTo(r.height, 1)} mm, the shortest that leaves `
+            + `${P.baseDrawerUnit.minBoxInside} mm inside the box.`,
+        });
+      }
+      if (r.impossible) {
+        warnings.push({
+          code: 'DRAWER_BOX_NO_ROOM',
+          message: `Drawer ${i + 1}: there is no room for a box here — ${roundTo(r.cap, 1)} mm of headroom against a `
+            + `${roundTo(r.floor, 1)} mm minimum side.`,
+        });
+      }
+    }
     // Turn 24 (CLAUDE.md F3.2): the `− G` is the BOX BOTTOM the front stands
     // on, so it is the box's own board and not the carcass's.
     const boxFrontH = sideHs.map((s) => s - B.boxFrontHeightDeduction - GB - B.boxFrontHeightExtra);

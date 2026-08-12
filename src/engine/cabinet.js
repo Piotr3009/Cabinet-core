@@ -1537,10 +1537,49 @@ export function computeCabinet(params, profileOverride) {
     panels.push(panel({
       id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: dwW, h: dwH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * dwW + 2 * dwH),
-      box: { x: (W - dwW) / 2, y: H - dwH, z: D + P.doors.gap, w: dwW, h: dwH, d: frontT },
-      // Flat: no hinge cups, no cup screws, no door furniture at all.
+      box: {
+        x: (W - dwW) / 2,
+        // ─── TURN 26 (CLAUDE.md F5.1): IT SAT 3 MM HIGH ────────────────────
+        //
+        // `H − dwH` glued the leaf to the TOP of the carcass and put the whole
+        // door gap UNDERNEATH it, while every other front in the run starts
+        // from the BOTTOM (`doorY`) and leaves its gap at the top. So a D/W
+        // front stood three millimetres proud of its neighbours down a whole
+        // run — the owner's own measurement, and one line.
+        //
+        // The datum is `-cfg.doorExtend`, exactly as it is for a door, a pair
+        // of doors and a bay leaf — the `doorY` the block further down names.
+        // It is 0 on a base unit and negative on a wall unit whose front runs
+        // below its box, and a D/W panel is neither exception: it takes the
+        // same number the run takes.
+        y: -cfg.doorExtend,
+        z: D + P.doors.gap,
+        w: dwW,
+        h: dwH,
+        d: frontT,
+      },
       cnc: rectGeometry(dwW, dwH),
-      meta: { appliance: 'dw' },
+      meta: {
+        appliance: 'dw',
+        // ─── TURN 26 (CLAUDE.md F5.5): A D/W FRONT IS A FRONT ──────────────
+        //
+        // "F3-turn-25's shaker applies to it, and so do handles. The `dwPanel`
+        // path must stop being a special case for anything a front normally
+        // has."
+        //
+        // It carries the project's own front type now, so the shaker pass
+        // below picks it up like any other leaf and the elevation draws its
+        // frame. What it still does NOT get is the one thing it genuinely does
+        // not have — cup hinges — and that is said where it belongs, on the
+        // drilling pass, by the `appliance` flag above (F5.3).
+        frontType: cfg.frontType,
+        // …and HOW IT OPENS (F5.2). A D/W front is screwed to the appliance's
+        // own door: it drops FORWARD about its BOTTOM edge, ~90°, and it is
+        // not on cup hinges at all. The scene reads this rather than asking
+        // what type of unit it is on.
+        opening: 'drop-front',
+        openAngleDeg: DW.openAngleDeg,
+      },
     }));
   }
 

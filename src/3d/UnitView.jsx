@@ -252,14 +252,29 @@ export function MovingPanel({
   const cuts = built?.cuts || null;
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
+  // ─── TURN 26 (CLAUDE.md F5.2): AND A D/W FRONT DROPS ────────────────────
+  // Owner: "it opens sideways." It did, because the scene had one way for a
+  // FRONT to open and a D/W panel is a front. It is not on cup hinges at all:
+  // it is screwed to the appliance's own door and falls FORWARD about its
+  // BOTTOM edge. The panel says which (`meta.opening`), so this is a fact
+  // about the PIECE and not a question about what kind of cabinet it is on.
+  const drops = front === 'door' && p.meta?.opening === 'drop-front';
+
   // A door rotates about its hinge edge, so the mesh is offset inside a group
-  // pinned to that edge; everything else sits at its own centre.
+  // pinned to that edge; a drop front rotates about its BOTTOM one; everything
+  // else sits at its own centre.
   const hingeAtRight = p.meta?.hinge === 'R';
   const centre = mitre?.box || p.box;
-  const pivot = front === 'door'
-    ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
-    : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)];
-  const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
+  // eslint-disable-next-line no-nested-ternary
+  const pivot = drops
+    ? [mm(p.box.x + p.box.w / 2), mm(p.box.y), mm(p.box.z + p.box.d / 2)]
+    : (front === 'door'
+      ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
+      : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)]);
+  // eslint-disable-next-line no-nested-ternary
+  const meshOffset = drops
+    ? [0, mm(p.box.h / 2), 0]
+    : (front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0]);
 
   // ─── Turn 20 (CLAUDE.md F3): THE BOX TRAVELS TOO ───────────────────────
   // `slide` is a piece of a drawer that is not its face — a side, the box
@@ -285,6 +300,16 @@ export function MovingPanel({
       // a face standing proud of a box that had not moved.
       group.current.position.z = pivot[2] + mm(travel ?? depth * 0.75) * a;
       group.current.rotation.y = 0;
+    } else if (drops) {
+      // ─── TURN 26 (CLAUDE.md F5.2): FORWARD, ABOUT THE BOTTOM EDGE ───────
+      // A NEGATIVE turn about the piece's own x: +x runs across the cabinet
+      // and the leaf has to fall towards the room, so the top edge travels to
+      // +z and the panel finishes lying flat in front of the plinth. The angle
+      // is the appliance's own (`profile.dwPanel.openAngleDeg`), handed down
+      // as this piece's `swing` like every other front's.
+      group.current.rotation.x = -a * (swing ?? Math.PI / 2);
+      group.current.rotation.y = 0;
+      group.current.position.z = pivot[2];
     } else {
       // Swings on the hinge side, about the group's origin. How FAR is decided
       // by what is beside the cabinet (turn 8, CLAUDE.md F5): a door with a
@@ -866,6 +891,12 @@ export default function UnitView({
   // It takes the PANEL now. Same law, same profile, asked about the door it is
   // actually about.
   const swingFor = useCallback((panel) => {
+    // Turn 26 (CLAUDE.md F5.2): a D/W front is not on cup hinges and its
+    // opening is not a swing past a wall — it drops forward about its bottom
+    // edge to the appliance's own angle.
+    if (panel?.meta?.opening === 'drop-front') {
+      return ((Number(profile.dwPanel?.openAngleDeg) || 90) * Math.PI) / 180;
+    }
     const hinge = panel?.meta?.hinge;
     const gap = hinge === 'R' ? wallGaps?.right : wallGaps?.left;
     return doorOpenAngle({
@@ -887,6 +918,9 @@ export default function UnitView({
     const out = {};
     for (const p of result.panels) {
       if (p.part !== 'FRONT' || !p.box) continue;
+      // A DROP FRONT has no hinge to fold (F5.2/F5.3): it is screwed to the
+      // appliance's own door, and there is no carcass half to turn after it.
+      if (p.meta?.opening === 'drop-front') { out[p.id] = 0; continue; }
       const dir = p.meta?.hinge === 'R' ? 1 : -1;
       out[p.id] = dir * (openFronts?.[p.id] ?? 0) * swingFor(p);
     }

@@ -312,11 +312,20 @@ test('F9 — a front and nothing else, plus one 600 mm top', () => {
   assert.equal(top.w, 600, 'always 600 mm wide');
   // …and its depth is the run's, which is the unit's own depth less the board.
   assert.equal(top.h, defaultParamsFor('DW_PANEL', P).depth - P.board.thickness);
-  // No hinges, flat, no door furniture.
+  // ─── NO HINGES — and turn 26 (CLAUDE.md F5) narrows the rest ─────────────
+  //
+  // Turn 17's sentence was "a front and nothing else — no hinges, flat, no door
+  // furniture", and the owner's turn-26 verdict corrects its middle: a D/W
+  // front IS a front, so the shaker applies to it and so do handles. What
+  // stands is the part that was ever about this piece — it takes NO CUP HINGES,
+  // because it screws to the appliance's own door.
   const front = r.panels.find((p) => p.part === 'FRONT');
-  assert.equal(r.drills.filter((d) => d.panel === front.id).length, 0);
-  assert.deepEqual(front.cnc.pockets, []);
-  assert.equal(r.totals.hinges, 0);
+  assert.equal(r.totals.hinges, 0, 'it is screwed to the machine, not hung on cups');
+  assert.equal(r.drills.filter((d) => d.panel === front.id && d.kind === 'cup').length, 0);
+  assert.equal(r.drills.filter((d) => d.panel === front.id && d.kind === 'cup_screw').length, 0);
+  assert.equal(r.drillSummary.hinge_centers?.length ?? 0, 0);
+  // …and no plate pattern anywhere, because there is nothing to hang.
+  assert.equal(r.drills.filter((d) => d.layer === P.hinges.layer).length, 0);
 });
 
 test('F9 — the plinth is cut out at that position, 20 mm from the top', () => {

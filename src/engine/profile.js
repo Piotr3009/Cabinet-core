@@ -1017,6 +1017,17 @@ export const DEFAULT_CABINET_PROFILE = {
     // starts this far below the plinth's top edge and runs out of its bottom,
     // which is what leaves the toe kick in one piece across the opening.
     plinthCutFromTop: 20,
+    // ─── TURN 26 (CLAUDE.md F5.2): IT DROPS, IT DOES NOT SWING ────────────
+    //
+    // Owner: "it opens sideways." It did — the scene reads a FRONT and swings
+    // one, and a D/W panel is a front. But this one is screwed to the
+    // appliance's own door: it falls FORWARD about its BOTTOM edge, about 90°,
+    // and there is no cup hinge in it anywhere.
+    //
+    // Ninety and not a degree more: past square the machine's door is
+    // travelling back UNDER the cabinet, and the number a joiner cares about is
+    // "will it clear the plinth", which is what square answers.
+    openAngleDeg: 90,
   },
 
   // ─── OVEN BASE UNIT (turn 17, CLAUDE.md F10) ────────────────────────────

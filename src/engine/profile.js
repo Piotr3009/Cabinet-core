@@ -379,6 +379,29 @@ export const DEFAULT_CABINET_PROFILE = {
     // of the way down puts it in the lower half and well below the button on
     // any bay the app will build.
     chainDropFraction: 0.25,
+    // ─── TURN 27 (CLAUDE.md F4 / R12): THE DIMENSIONS GO BACK TO BLACK ────
+    //
+    // R12's first debt. Turn 26 was asked to give shelves, sides and fronts
+    // the partition chain's BEHAVIOUR; it also repainted every label on the
+    // way — a white halo and the line's own ink instead of the quiet dark
+    // plate the chain had carried since turn 17. The owner did not ask for
+    // that and does not want it.
+    //
+    // So the palette is BACK, and it is here rather than in `3d/constants.js`
+    // because the test reads it from the profile and a workshop that wants a
+    // different one changes a value rather than a component. The two hexes are
+    // the app's own tones, unchanged from turn 17: the shell the panels are
+    // drawn in, and the ink they print in.
+    //
+    // The UNIFICATION stays — one component, one geometry, 0.5 mm precision,
+    // floor-lying chains. Only the paint returns.
+    label: {
+      plate: '#1c1c1a',
+      ink: '#e8e4dc',
+      // A plate, not a sticker: it lets a hair of the room through so a
+      // number lying on the floor still reads as an annotation.
+      plateAlpha: 0.9,
+    },
     // The magnet that holds a shown set on screen is `editor.hoverMagnetMm` —
     // it is a property of the TOOL rather than of the drawing's ink, and
     // CLAUDE.md F10.1 names it there. `dimensionStyle` reads it through, so
@@ -3216,7 +3239,14 @@ export function migrateCabinetProfile(profile) {
     // Turn 23 (F6 / F8): stored profiles made before these blocks existed come
     // back with them, like every other block here.
     partitionBack: { ...D.partitionBack, ...profile.partitionBack },
-    hoverDimensions: { ...D.hoverDimensions, ...profile.hoverDimensions },
+    hoverDimensions: {
+      ...D.hoverDimensions,
+      ...profile.hoverDimensions,
+      // Turn 27 (CLAUDE.md F4.3): the label palette is a BLOCK, so a stored
+      // profile that overrides one of its two tones keeps the other rather
+      // than dropping it — the same one-level merge every block here gets.
+      label: { ...D.hoverDimensions.label, ...profile.hoverDimensions?.label },
+    },
     // Turn 13 (F8): a stored profile made before the biscuit pattern existed
     // must come back with it, exactly as every other block here does.
     biscuits: { ...D.biscuits, ...profile.biscuits },

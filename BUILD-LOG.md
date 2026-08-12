@@ -7440,3 +7440,150 @@ own frame at seven angles on three leaf types.
 Nothing shrank. All twelve features are in. Three blockers are named rather than
 guessed: the D/W plinth (#91), the unequal-depth cornice corner (#92) and the
 MOVENTO ⌀3 pilot depth (#93).
+
+---
+
+# TURN 27 — four things, and none of them cosmetic
+
+**Baseline: the turn-26 merge, `8c0ece5`. Suite there: 2 141 tests, 2 141 pass.
+Suite at the end of this turn: 2 184 tests, 2 184 pass, on a clean build.**
+
+## The turn in one line
+
+A SHORT turn, deliberately: four phases, three faults that reach the workshop
+and one colour the assistant changed without being asked. **Nothing shrank.**
+
+## R12 — extend means extend
+
+The turn's own new rule, and F4 is the debt it names. When the owner asks for a
+behaviour to reach further, the LOOK does not change. Turn 26 unified four
+dimension dialects (right) and repainted them on the way (wrong, and nobody
+asked). An appearance that seems to need improving is a separate proposal, never
+a silent rider on someone else's request.
+
+## F1 — a shelf drills the two boards that carry it [CRITICAL]
+
+The owner, from the eye test: a shelf running from BUR to a partition gets its
+⌀7.5 holes bored in **BUL** — a board that shelf never touches.
+
+The cause was one line, true of a cabinet with no partition in it and of nothing
+else: `for (const sideId of ['BUL', 'BUR'])`. `src/engine/shelfBearers.js` is
+the answer — the shelf resolves the TWO vertical boards its own run actually
+lands on, out of the boards standing at that height, and the pin ladder, the fix
+shelf's joint and the dimension chain all ask it. Turn 24's F7 block had its own
+second answer to the same question; it is gone, which is why a sheet and a
+picture can no longer disagree about which boards a shelf is on.
+
+**Each bearer in its own frame.** A partition's CNC origin is its own bottom
+edge, so a row measured from the cabinet floor is out by the thickness of the
+bottom board on every hole. `heightOnBearer` converts per bearer and
+`pinColumns` does the same for the two columns, so a partition set back from the
+face has its back column set back with it.
+
+**Dimensions follow the bay.** `pieceHoverRows` gives a shelf a third row: its
+own clear bay, bearer face to bearer face. Same component, same style block,
+same geometry — only the endpoints are new.
+
+**The fingerprint on every golden default is ZERO**, and by construction rather
+than by luck: the ladder is gathered per bearer and emitted in PANEL order, so a
+box with no partition writes exactly the sequence turn 26 wrote.
+
+## F2 — the dishwasher stops being a species of its own [HIGH]
+
+*"dlaczego zmywarki nie traktujesz jak szafki?"* Six faults over five turns —
+legs ignoring the run, a front 3 mm high, no shaker, no handle, no plinth, and
+opening the wrong way — were one fault six times, and the cause was `dwPanel`: a
+parallel path that had to be remembered every time anything was added.
+
+It is an ORDINARY unit now, with two properties. `interiorOccupied: true` — the
+appliance is what is inside, read once in `normalise` above every interior
+derivation. `frontOpens: 'drop'` — the face falls FORWARD about its bottom edge
+to 45°. Turn 26 turned that NEGATIVE about +x, which carries the top edge to −z,
+back into the carcass; forward is plus.
+
+Everything else is the run's own law: sides, top, bottom, back and plinth cut by
+the arithmetic the cabinet beside it goes through, and the front emitted with
+the doors off the same `doorY`, `doorZ`, `frontH`, `frontT` and `cfg.frontType`
+— so the shaker, the handle, the material, the 3 mm gaps and the dimension chain
+reach it with nobody remembering to. The handle class reads the GESTURE now, and
+"Open all" no longer filters it out. What it still does not get is the one thing
+it genuinely does not have: cup hinges.
+
+Two half-fixed laws were finished on the way. `autoparts.takesPlinth` still
+asked `type.legs` while the engine had asked `type.plinth ?? type.legs` since
+turn 22 — so the engine would cut the toe kick and the STORE never asked for it,
+which is "no plinth" on the owner's list. And `profile.dwPanel` keeps its
+`defaults` and has lost its geometry; 594, the 20 mm plinth strip and the drop
+angle are properties of the TYPE, which is what they always were.
+
+## F3 — the shaker recess has walls [HIGH]
+
+The owner: the 6 mm recess works, but it has no side walls at all — the panel
+reads as a hole straight through the door.
+
+The one thing that can go wrong with a hand-built face while every number in it
+is correct. Turn 25 declared the right INWARD normal on each of the four rebate
+walls and wound the triangles the other way round; a rasteriser culls on the
+WINDING, so all four were front-facing AWAY from the recess. A shadow needs a
+wall to be cast by, and there were none to cast it.
+
+Two more faces of the same fault, named rather than fixed quietly: the BORE
+walls were wound the same way (a ⌀35 cup you looked through rather than into),
+and a bore's MOUTH was an `absarc` the triangulator subdivided by its own rule,
+leaving hairline slivers between the ring in the face and the cylinder under it.
+
+Proved as arithmetic rather than as a picture: every triangle's winding agrees
+with its own normal, and the tray is a closed solid — every directed edge
+matched by its opposite, drilled or not, at every size and frame the app builds.
+The walk re-takes both off the MOUNTED mesh in the running WebGL.
+
+## F4 — the dimensions go back to black [MEDIUM]
+
+R12's debt. The value is turn 25's flat label again, exactly: square corners and
+no stroke, the app's own shell as the ground and its own ink on it, letter-
+spaced monospace, at the same 0.044. What is new is that it is now the ONLY one
+— every surface wears it, because there is one dimension component.
+
+The ink is the plate's, not the line's, which is how the partition chain behaved
+before turn 26: a chain drawn in gold because its cabinet is selected still
+turns gold, and its number stays legible. The palette lives in
+`profile.hoverDimensions.label` and reaches the component through
+`dimensionStyle`, so a workshop changes a value rather than a component.
+
+`verify/t27/dimensions-colour.md` drives two builds of the app through one
+script — the turn-26 baseline and this branch, same project, same cabinet, same
+camera — so the debt can be seen paid rather than asserted.
+
+## The export
+
+**Two named deltas and no third thing**, argued entity by entity in
+`verify/t27/cnc-export-identity.md`. F1's ladder leaves the board the shelf
+never touches and appears in the partition, in the partition's own frame — the
+fingerprint reports it as three ADDED probes, because an adjustable shelf inside
+a BAY is a case turn 26's probe set never built, so a third script prints the
+move itself hole by hole. F2's unification is confined to `DW_PANEL`: one
+changed file (`01-TOP.dxf`, the 600 mm top becoming the run's own), four added
+boards, and five removed `VPART` files that were a divider standing in a cabinet
+with no sides for it to stand between.
+
+F3 and F4 move no CNC entity at all, and the entity-by-entity probe says so as a
+fact: **not one line of its diff is on any type but `DW_PANEL`.**
+
+## The walk
+
+19 ok · 0 failed · 1 blocked (`bucket-live`, 403 at this session's egress proxy,
+recorded verbatim — the same blockage as turns 22–26). Real CDP input
+throughout; the console printed nothing all walk. Every claim is read off the
+app: `shelfBearers` and `hoverRows` for F1, the live scene graph for F2's drop
+and F3's winding, `dimensionStyle` for F4's palette.
+
+It found one defect the suite could not see: the D/W had no plinth in the app,
+because `autoparts.takesPlinth` and the engine were asking two different
+questions about the same thing. Guarded now by a test on both.
+
+## What did not shrink, and what is left
+
+Nothing shrank. All four phases are in. One new blocker is named rather than
+guessed: **#94** — whether the D/W carcass has a bottom under a machine that
+stands on the floor. CLAUDE.md F2.1 names the bottom, so the bottom is cut; the
+question of whether it belongs there is the owner's.

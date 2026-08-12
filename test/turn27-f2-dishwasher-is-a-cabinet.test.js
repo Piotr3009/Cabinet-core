@@ -27,6 +27,7 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { handleClassOf } from '../src/engine/handles.js';
 import { frontDimensionRows } from '../src/engine/frontDimensions.js';
 import { doorHingeDatum } from '../src/engine/doors.js';
+import { autoPartsFor, takesPlinth } from '../src/engine/autoparts.js';
 
 const build = (type, extra = {}) => computeCabinet(
   { ...defaultParamsFor(type, P), unit_num: '01', ...extra }, P,
@@ -273,4 +274,23 @@ test('F2.6 the FRONT is where the two differ, and it differs in the two ways nam
   assert.equal(a.w, 594, 'and 594 wide, which is the measured number');
   assert.equal(a.meta.opening, 'drop');
   assert.equal(b.meta.opening, undefined, 'an ordinary door says nothing of the kind');
+});
+
+test('F2.4 the STORE asks the same question the engine does about a plinth', () => {
+  // The other half of "no plinth" on the owner's list of six. The engine has
+  // gated on `type.plinth ?? type.legs` since turn 22 — legs and a toe kick are
+  // two questions, and they only coincided until the D/W — while
+  // `autoparts.takesPlinth` still asked `type.legs`. So the engine would cut it
+  // and the app never asked for it. One gate now.
+  assert.equal(takesPlinth('DW_PANEL', P), true, 'no legs, and a toe kick all the same');
+  assert.equal(takesPlinth('BUD', P), true);
+  assert.equal(takesPlinth('WUD', P), false, 'a wall unit hangs; it stands on nothing');
+  const parts = autoPartsFor({
+    unit: { type: 'DW_PANEL', params: { plinth: true, width: 600, height: 770 }, position: { x_mm: 0 } },
+    wallWidth: 4000,
+    others: [],
+    roomHeight: 2500,
+    design: {},
+  }, P);
+  assert.equal(parts.plinth, true, 'so the store carries it through to the engine');
 });

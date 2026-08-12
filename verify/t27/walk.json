@@ -1,0 +1,127 @@
+{
+ "turn": 27,
+ "url": "http://127.0.0.1:4173/",
+ "showroom": "http://127.0.0.1:4174",
+ "rules": {
+  "R1": "every move and keystroke is CDP Input; the guard at the top of this file enforces it",
+  "R2": "scripts/bucket-live.mjs, before any picture of hardware",
+  "R4": "every claim is read off the app: shelfBearers and hoverRows for F1, the live scene graph for F2 and F3, dimensionStyle for F4",
+  "R5": "the console is captured for the whole walk",
+  "R6": "any uncaught error or React error-boundary report FAILS the step it appeared in",
+  "R7": "no data-* on R3F objects — asserted in test/turn23-f2-f4-hardware.test.js and test/turn24-f8-f12.test.js",
+  "R8": "GLB-dependent steps run against the synthetic silent showroom",
+  "R9": "no feature without its part — the handle holes exist only while the handle does",
+  "R10": "the sheet is the truth: F1 photographs the two SHEETS beside the scene",
+  "R11": "every dimension in the scene is found by traversing for ccDimensionChain — the one component",
+  "R12": "extend means extend: F4 restores the pre-turn-26 paint and changes nothing else"
+ },
+ "totals": {
+  "passed": 19,
+  "failed": 0,
+  "skipped": 1
+ },
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "F1.1 — the shelf resolves BUR and the partition, and nothing else",
+   "ok": true,
+   "detail": "VPART-1 + BUR (partition/side)"
+  },
+  {
+   "label": "F1.1 — NO entity of any shelf class lands on BUL",
+   "ok": true,
+   "detail": "BUL: 0 shelf-class entities, 0 ⌀7.5 holes"
+  },
+  {
+   "label": "F1.1 — BUR and the partition each take the whole ladder",
+   "ok": true,
+   "detail": "BUR 6, VPART-1 6, expected 6 each"
+  },
+  {
+   "label": "F1.2 — the partition’s hole heights are the shelf’s minus its own base",
+   "ok": true,
+   "detail": "world 350/400/450 → partition 332/382/432 (base 18)"
+  },
+  {
+   "label": "F1.3 — the shelf’s chain measures its BAY, not the internal width",
+   "ok": true,
+   "detail": "468 → 882 = 414 mm, of 864 internal"
+  },
+  {
+   "label": "F1.4 — both sheets are in the record, side by side",
+   "ok": true,
+   "detail": "the partition carries the ladder; BUL is bare"
+  },
+  {
+   "label": "F2.1 — the D/W is an ordinary carcass: sides, top, bottom, back, plinth",
+   "ok": true,
+   "detail": "BACK BOTTOM BUL BUR FRONT PLINTH TOP"
+  },
+  {
+   "label": "F2.6 — and beside a BUD of the same width the carcass laws are identical",
+   "ok": true,
+   "detail": "boards identical, joints identical"
+  },
+  {
+   "label": "F2.1 — nothing is inside it: the appliance is",
+   "ok": true,
+   "detail": "0 interior pieces"
+  },
+  {
+   "label": "F2.2 — the front has a shaker and a handle, and the run’s own gaps",
+   "ok": true,
+   "detail": "shaker frame 70, handle horizontal (shaker-top-frame), 2 holes; front 594×767 at y 0 — its twin 767 at 0"
+  },
+  {
+   "label": "F2.3 — no cup, no cup drilling, no plate pattern, nothing in the BOM",
+   "ok": true,
+   "detail": "cups 0, plate holes 0, BOM hinges 0"
+  },
+  {
+   "label": "F2.4 — the run’s plinth passes through, relieved for the appliance",
+   "ok": true,
+   "detail": "the toe kick is one piece with a notch in it"
+  },
+  {
+   "label": "F2.1 — it drops FORWARD, about its bottom edge, to 45°",
+   "ok": true,
+   "detail": "rotation.x 45°, y 0°; the top edge stands 542.35 mm INTO the room and 542.35 mm up"
+  },
+  {
+   "label": "F3.1 — every face of the mounted tray is visible from the side its normal points at",
+   "ok": true,
+   "detail": "670 triangles, 324 rebate-wall triangles, 0 wound against their normal"
+  },
+  {
+   "label": "F3.1 — and it is a CLOSED solid: no open boundary edges",
+   "ok": true,
+   "detail": "0 unmatched directed edges"
+  },
+  {
+   "label": "F4.1 — the label palette is the dark plate and its light ink, from the PROFILE",
+   "ok": true,
+   "detail": "plate #1c1c1a at 0.9, ink #e8e4dc — read through dimensionStyle"
+  },
+  {
+   "label": "R11 + F4.2 — every dimension in the scene is still the one component",
+   "ok": true,
+   "detail": "7 chains, 8 rows, all found by ccDimensionChain"
+  },
+  {
+   "label": "R5 + R6 — the console is clean across the whole walk",
+   "ok": true,
+   "detail": "no errors, no React exceptions"
+  }
+ ],
+ "errors": []
+}

@@ -1,0 +1,157 @@
+{
+ "f1": {
+  "shelfId": "SHELF-1",
+  "shelfY": 400,
+  "run": {
+   "from": 470,
+   "to": 880
+  },
+  "partId": "VPART-1",
+  "partBase": 18,
+  "partDepth": 520,
+  "bul": [],
+  "bur": [
+   [
+    70,
+    350
+   ],
+   [
+    470,
+    350
+   ],
+   [
+    70,
+    400
+   ],
+   [
+    470,
+    400
+   ],
+   [
+    70,
+    450
+   ],
+   [
+    470,
+    450
+   ]
+  ],
+  "part": [
+   [
+    70,
+    332
+   ],
+   [
+    450,
+    332
+   ],
+   [
+    70,
+    382
+   ],
+   [
+    450,
+    382
+   ],
+   [
+    70,
+    432
+   ],
+   [
+    450,
+    432
+   ]
+  ],
+  "bulShelfEntities": 0,
+  "bearers": [
+   "VPART-1",
+   "BUR"
+  ],
+  "bearerKinds": [
+   "partition",
+   "side"
+  ],
+  "bay": {
+   "from": 468,
+   "to": 882,
+   "size": 414
+  },
+  "internalWidth": 864,
+  "clusterOffsets": [
+   -50,
+   0,
+   50
+  ]
+ },
+ "f2": {
+  "dwPanelId": "DW02-F",
+  "parts": [
+   "BACK",
+   "BOTTOM",
+   "BUL",
+   "BUR",
+   "FRONT",
+   "PLINTH",
+   "TOP"
+  ],
+  "carcassSame": true,
+  "jointsSame": true,
+  "shaker": {
+   "frame": 70,
+   "depth": 6,
+   "panelFloor": 19
+  },
+  "handle": {
+   "axis": "horizontal",
+   "class": "horizontal",
+   "rule": "shaker-top-frame"
+  },
+  "handleHoles": 2,
+  "cups": 0,
+  "plateHoles": 0,
+  "hinges": 0,
+  "opening": "drop",
+  "openAngleDeg": 45,
+  "frontW": 594,
+  "frontH": 767,
+  "frontY": 0,
+  "twinFrontH": 767,
+  "twinFrontY": 0,
+  "plinthNotched": true,
+  "interior": 0
+ },
+ "f2drop": {
+  "pose": [
+   0.7853981633974483,
+   0,
+   0.5735
+  ],
+  "drop": {
+   "rotationXDeg": 45,
+   "rotationYDeg": 0,
+   "topEdgeZmm": 542.35,
+   "topEdgeYmm": 542.35
+  }
+ },
+ "f3": {
+  "panelId": "03-F",
+  "tray": {
+   "triangles": 670,
+   "mismatches": 0,
+   "wallTriangles": 324,
+   "openEdges": 0
+  }
+ },
+ "f4": {
+  "plate": "#1c1c1a",
+  "ink": "#e8e4dc",
+  "alpha": 0.9,
+  "fromProfile": {
+   "plate": "#1c1c1a",
+   "ink": "#e8e4dc",
+   "plateAlpha": 0.9
+  },
+  "chains": 7,
+  "rows": 8
+ }
+}

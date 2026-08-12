@@ -28,6 +28,9 @@ import * as machining from './engine/machining.js';
 import * as recesses from './engine/recesses.js';
 import * as lighting from './engine/lighting.js';
 import * as format from './engine/format.js';
+import * as shelfBearers from './engine/shelfBearers.js';
+import * as hoverRows from './engine/hoverRows.js';
+import * as dimensionArrows from './engine/dimensionArrows.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -108,6 +111,18 @@ if (typeof window !== 'undefined') {
   // could not already compute.
   window.__ccT26 = {
     machining, recesses, lighting, format,
+  };
+  // ─── Turn 27 (CLAUDE.md F1 / F4 / R4) ───
+  // The same reason an eighth time, for this turn's two questions that are
+  // arithmetic rather than pixels. F1's whole claim is that a shelf drills the
+  // two boards that CARRY it, so the walk asks `shelfBearers` — the very
+  // resolution the drilling pass and the dimension chain both go through —
+  // rather than reading a hole off a picture. F4's is that the label palette is
+  // ONE decision read from the profile, so the walk asks `dimensionStyle`, the
+  // call the component makes. Both pure; neither reaches anything the page
+  // could not already compute.
+  window.__ccT27 = {
+    shelfBearers, hoverRows, dimensionArrows,
   };
 }
 

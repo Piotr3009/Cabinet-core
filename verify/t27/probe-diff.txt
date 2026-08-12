@@ -1,0 +1,436 @@
+964c964,968
+< GEOM   DW_PANEL 01-TOP.dxf 65da31b3
+---
+> GEOM   DW_PANEL 01-BUL.dxf 57d9794f
+> GEOM   DW_PANEL 01-BUR.dxf f00aa69d
+> GEOM   DW_PANEL 01-TOP.dxf 86be9ca6
+> GEOM   DW_PANEL 01-BOTTOM.dxf 86be9ca6
+> GEOM   DW_PANEL 01-BACK.dxf 0e9458ae
+966c970,974
+< GEOM   DW_PANEL+drawers 01-TOP.dxf 65da31b3
+---
+> GEOM   DW_PANEL+drawers 01-BUL.dxf 57d9794f
+> GEOM   DW_PANEL+drawers 01-BUR.dxf f00aa69d
+> GEOM   DW_PANEL+drawers 01-TOP.dxf 86be9ca6
+> GEOM   DW_PANEL+drawers 01-BOTTOM.dxf 86be9ca6
+> GEOM   DW_PANEL+drawers 01-BACK.dxf 0e9458ae
+968c976,980
+< GEOM   DW_PANEL+partition 01-TOP.dxf 65da31b3
+---
+> GEOM   DW_PANEL+partition 01-BUL.dxf 57d9794f
+> GEOM   DW_PANEL+partition 01-BUR.dxf f00aa69d
+> GEOM   DW_PANEL+partition 01-TOP.dxf 278d6f2c
+> GEOM   DW_PANEL+partition 01-BOTTOM.dxf 278d6f2c
+> GEOM   DW_PANEL+partition 01-BACK.dxf 0ed6e890
+970,971c982,986
+< GEOM   DW_PANEL+partition 01-VPART-1.dxf 15231bcf
+< GEOM   DW_PANEL+partition-on-shelf 01-TOP.dxf 65da31b3
+---
+> GEOM   DW_PANEL+partition-on-shelf 01-BUL.dxf 57d9794f
+> GEOM   DW_PANEL+partition-on-shelf 01-BUR.dxf f00aa69d
+> GEOM   DW_PANEL+partition-on-shelf 01-TOP.dxf 278d6f2c
+> GEOM   DW_PANEL+partition-on-shelf 01-BOTTOM.dxf 278d6f2c
+> GEOM   DW_PANEL+partition-on-shelf 01-BACK.dxf 0ed6e890
+973,974c988,992
+< GEOM   DW_PANEL+partition-on-shelf 01-VPART-1.dxf 15231bcf
+< GEOM   DW_PANEL+adjustable-shelves 01-TOP.dxf 65da31b3
+---
+> GEOM   DW_PANEL+adjustable-shelves 01-BUL.dxf 57d9794f
+> GEOM   DW_PANEL+adjustable-shelves 01-BUR.dxf f00aa69d
+> GEOM   DW_PANEL+adjustable-shelves 01-TOP.dxf 86be9ca6
+> GEOM   DW_PANEL+adjustable-shelves 01-BOTTOM.dxf 86be9ca6
+> GEOM   DW_PANEL+adjustable-shelves 01-BACK.dxf 0e9458ae
+976c994,998
+< GEOM   DW_PANEL+fix-shelf 01-TOP.dxf 65da31b3
+---
+> GEOM   DW_PANEL+fix-shelf 01-BUL.dxf 57d9794f
+> GEOM   DW_PANEL+fix-shelf 01-BUR.dxf f00aa69d
+> GEOM   DW_PANEL+fix-shelf 01-TOP.dxf 86be9ca6
+> GEOM   DW_PANEL+fix-shelf 01-BOTTOM.dxf 86be9ca6
+> GEOM   DW_PANEL+fix-shelf 01-BACK.dxf 0e9458ae
+978c1000,1004
+< GEOM   DW_PANEL+fix-shelf-in-bay 01-TOP.dxf 65da31b3
+---
+> GEOM   DW_PANEL+fix-shelf-in-bay 01-BUL.dxf 57d9794f
+> GEOM   DW_PANEL+fix-shelf-in-bay 01-BUR.dxf f00aa69d
+> GEOM   DW_PANEL+fix-shelf-in-bay 01-TOP.dxf 278d6f2c
+> GEOM   DW_PANEL+fix-shelf-in-bay 01-BOTTOM.dxf 278d6f2c
+> GEOM   DW_PANEL+fix-shelf-in-bay 01-BACK.dxf 0ed6e890
+980,981c1006,1010
+< GEOM   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf 15231bcf
+< GEOM   DW_PANEL+partitions-2 01-TOP.dxf 65da31b3
+---
+> GEOM   DW_PANEL+partitions-2 01-BUL.dxf 57d9794f
+> GEOM   DW_PANEL+partitions-2 01-BUR.dxf f00aa69d
+> GEOM   DW_PANEL+partitions-2 01-TOP.dxf 278d6f2c
+> GEOM   DW_PANEL+partitions-2 01-BOTTOM.dxf 278d6f2c
+> GEOM   DW_PANEL+partitions-2 01-BACK.dxf 0ed6e890
+983,984d1011
+< GEOM   DW_PANEL+partitions-2 01-VPART-1.dxf 15231bcf
+< GEOM   DW_PANEL+partitions-2 01-VPART-2.dxf 15231bcf
+2146c2173,2177
+< SHAPE  DW_PANEL 01-TOP.dxf 124e63b5
+---
+> SHAPE  DW_PANEL 01-BUL.dxf 7200cf86
+> SHAPE  DW_PANEL 01-BUR.dxf cfea3282
+> SHAPE  DW_PANEL 01-TOP.dxf d8f26df9
+> SHAPE  DW_PANEL 01-BOTTOM.dxf d8f26df9
+> SHAPE  DW_PANEL 01-BACK.dxf 147b826f
+2148c2179,2183
+< SHAPE  DW_PANEL+drawers 01-TOP.dxf 124e63b5
+---
+> SHAPE  DW_PANEL+drawers 01-BUL.dxf 7200cf86
+> SHAPE  DW_PANEL+drawers 01-BUR.dxf cfea3282
+> SHAPE  DW_PANEL+drawers 01-TOP.dxf d8f26df9
+> SHAPE  DW_PANEL+drawers 01-BOTTOM.dxf d8f26df9
+> SHAPE  DW_PANEL+drawers 01-BACK.dxf 147b826f
+2150c2185,2189
+< SHAPE  DW_PANEL+partition 01-TOP.dxf 124e63b5
+---
+> SHAPE  DW_PANEL+partition 01-BUL.dxf 7200cf86
+> SHAPE  DW_PANEL+partition 01-BUR.dxf cfea3282
+> SHAPE  DW_PANEL+partition 01-TOP.dxf 7ae0514f
+> SHAPE  DW_PANEL+partition 01-BOTTOM.dxf 7ae0514f
+> SHAPE  DW_PANEL+partition 01-BACK.dxf 3abb23a1
+2152,2153c2191,2195
+< SHAPE  DW_PANEL+partition 01-VPART-1.dxf b0937b41
+< SHAPE  DW_PANEL+partition-on-shelf 01-TOP.dxf 124e63b5
+---
+> SHAPE  DW_PANEL+partition-on-shelf 01-BUL.dxf 7200cf86
+> SHAPE  DW_PANEL+partition-on-shelf 01-BUR.dxf cfea3282
+> SHAPE  DW_PANEL+partition-on-shelf 01-TOP.dxf 7ae0514f
+> SHAPE  DW_PANEL+partition-on-shelf 01-BOTTOM.dxf 7ae0514f
+> SHAPE  DW_PANEL+partition-on-shelf 01-BACK.dxf 3abb23a1
+2155,2156c2197,2201
+< SHAPE  DW_PANEL+partition-on-shelf 01-VPART-1.dxf b0937b41
+< SHAPE  DW_PANEL+adjustable-shelves 01-TOP.dxf 124e63b5
+---
+> SHAPE  DW_PANEL+adjustable-shelves 01-BUL.dxf 7200cf86
+> SHAPE  DW_PANEL+adjustable-shelves 01-BUR.dxf cfea3282
+> SHAPE  DW_PANEL+adjustable-shelves 01-TOP.dxf d8f26df9
+> SHAPE  DW_PANEL+adjustable-shelves 01-BOTTOM.dxf d8f26df9
+> SHAPE  DW_PANEL+adjustable-shelves 01-BACK.dxf 147b826f
+2158c2203,2207
+< SHAPE  DW_PANEL+fix-shelf 01-TOP.dxf 124e63b5
+---
+> SHAPE  DW_PANEL+fix-shelf 01-BUL.dxf 7200cf86
+> SHAPE  DW_PANEL+fix-shelf 01-BUR.dxf cfea3282
+> SHAPE  DW_PANEL+fix-shelf 01-TOP.dxf d8f26df9
+> SHAPE  DW_PANEL+fix-shelf 01-BOTTOM.dxf d8f26df9
+> SHAPE  DW_PANEL+fix-shelf 01-BACK.dxf 147b826f
+2160c2209,2213
+< SHAPE  DW_PANEL+fix-shelf-in-bay 01-TOP.dxf 124e63b5
+---
+> SHAPE  DW_PANEL+fix-shelf-in-bay 01-BUL.dxf 7200cf86
+> SHAPE  DW_PANEL+fix-shelf-in-bay 01-BUR.dxf cfea3282
+> SHAPE  DW_PANEL+fix-shelf-in-bay 01-TOP.dxf 7ae0514f
+> SHAPE  DW_PANEL+fix-shelf-in-bay 01-BOTTOM.dxf 7ae0514f
+> SHAPE  DW_PANEL+fix-shelf-in-bay 01-BACK.dxf 3abb23a1
+2162,2163c2215,2219
+< SHAPE  DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf b0937b41
+< SHAPE  DW_PANEL+partitions-2 01-TOP.dxf 124e63b5
+---
+> SHAPE  DW_PANEL+partitions-2 01-BUL.dxf 7200cf86
+> SHAPE  DW_PANEL+partitions-2 01-BUR.dxf cfea3282
+> SHAPE  DW_PANEL+partitions-2 01-TOP.dxf 7ae0514f
+> SHAPE  DW_PANEL+partitions-2 01-BOTTOM.dxf 7ae0514f
+> SHAPE  DW_PANEL+partitions-2 01-BACK.dxf 3abb23a1
+2165,2166d2220
+< SHAPE  DW_PANEL+partitions-2 01-VPART-1.dxf b0937b41
+< SHAPE  DW_PANEL+partitions-2 01-VPART-2.dxf b0937b41
+4379c4433,4437
+< CENSUS DW_PANEL all poly/OUTLINE 2
+---
+> CENSUS DW_PANEL all circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL all circle/SCREWS_3MM 26
+> CENSUS DW_PANEL all poly/OUTLINE 6
+> CENSUS DW_PANEL all poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL all poly/PUZZLE_SOCKET 18
+4381,4383c4439,4445
+< CENSUS DW_PANEL all text/UNIT_NUMBER 4
+< CENSUS DW_PANEL non-sprayed poly/OUTLINE 1
+< CENSUS DW_PANEL non-sprayed text/UNIT_NUMBER 2
+---
+> CENSUS DW_PANEL all text/UNIT_NUMBER 13
+> CENSUS DW_PANEL non-sprayed circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL non-sprayed circle/SCREWS_3MM 26
+> CENSUS DW_PANEL non-sprayed poly/OUTLINE 5
+> CENSUS DW_PANEL non-sprayed poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL non-sprayed poly/PUZZLE_SOCKET 18
+> CENSUS DW_PANEL non-sprayed text/UNIT_NUMBER 11
+4390c4452,4456
+< CENSUS DW_PANEL+drawers all poly/OUTLINE 2
+---
+> CENSUS DW_PANEL+drawers all circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+drawers all circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+drawers all poly/OUTLINE 6
+> CENSUS DW_PANEL+drawers all poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+drawers all poly/PUZZLE_SOCKET 18
+4392,4394c4458,4464
+< CENSUS DW_PANEL+drawers all text/UNIT_NUMBER 4
+< CENSUS DW_PANEL+drawers non-sprayed poly/OUTLINE 1
+< CENSUS DW_PANEL+drawers non-sprayed text/UNIT_NUMBER 2
+---
+> CENSUS DW_PANEL+drawers all text/UNIT_NUMBER 13
+> CENSUS DW_PANEL+drawers non-sprayed circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+drawers non-sprayed circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+drawers non-sprayed poly/OUTLINE 5
+> CENSUS DW_PANEL+drawers non-sprayed poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+drawers non-sprayed poly/PUZZLE_SOCKET 18
+> CENSUS DW_PANEL+drawers non-sprayed text/UNIT_NUMBER 11
+4401c4471,4475
+< CENSUS DW_PANEL+partition all poly/OUTLINE 3
+---
+> CENSUS DW_PANEL+partition all circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+partition all circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+partition all poly/OUTLINE 6
+> CENSUS DW_PANEL+partition all poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+partition all poly/PUZZLE_SOCKET 18
+4403,4405c4477,4483
+< CENSUS DW_PANEL+partition all text/UNIT_NUMBER 7
+< CENSUS DW_PANEL+partition non-sprayed poly/OUTLINE 2
+< CENSUS DW_PANEL+partition non-sprayed text/UNIT_NUMBER 5
+---
+> CENSUS DW_PANEL+partition all text/UNIT_NUMBER 13
+> CENSUS DW_PANEL+partition non-sprayed circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+partition non-sprayed circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+partition non-sprayed poly/OUTLINE 5
+> CENSUS DW_PANEL+partition non-sprayed poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+partition non-sprayed poly/PUZZLE_SOCKET 18
+> CENSUS DW_PANEL+partition non-sprayed text/UNIT_NUMBER 11
+4412c4490,4494
+< CENSUS DW_PANEL+partition-on-shelf all poly/OUTLINE 3
+---
+> CENSUS DW_PANEL+partition-on-shelf all circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+partition-on-shelf all circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+partition-on-shelf all poly/OUTLINE 6
+> CENSUS DW_PANEL+partition-on-shelf all poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+partition-on-shelf all poly/PUZZLE_SOCKET 18
+4414,4416c4496,4502
+< CENSUS DW_PANEL+partition-on-shelf all text/UNIT_NUMBER 7
+< CENSUS DW_PANEL+partition-on-shelf non-sprayed poly/OUTLINE 2
+< CENSUS DW_PANEL+partition-on-shelf non-sprayed text/UNIT_NUMBER 5
+---
+> CENSUS DW_PANEL+partition-on-shelf all text/UNIT_NUMBER 13
+> CENSUS DW_PANEL+partition-on-shelf non-sprayed circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+partition-on-shelf non-sprayed circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+partition-on-shelf non-sprayed poly/OUTLINE 5
+> CENSUS DW_PANEL+partition-on-shelf non-sprayed poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+partition-on-shelf non-sprayed poly/PUZZLE_SOCKET 18
+> CENSUS DW_PANEL+partition-on-shelf non-sprayed text/UNIT_NUMBER 11
+4423c4509,4513
+< CENSUS DW_PANEL+adjustable-shelves all poly/OUTLINE 2
+---
+> CENSUS DW_PANEL+adjustable-shelves all circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+adjustable-shelves all circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+adjustable-shelves all poly/OUTLINE 6
+> CENSUS DW_PANEL+adjustable-shelves all poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+adjustable-shelves all poly/PUZZLE_SOCKET 18
+4425,4427c4515,4521
+< CENSUS DW_PANEL+adjustable-shelves all text/UNIT_NUMBER 4
+< CENSUS DW_PANEL+adjustable-shelves non-sprayed poly/OUTLINE 1
+< CENSUS DW_PANEL+adjustable-shelves non-sprayed text/UNIT_NUMBER 2
+---
+> CENSUS DW_PANEL+adjustable-shelves all text/UNIT_NUMBER 13
+> CENSUS DW_PANEL+adjustable-shelves non-sprayed circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+adjustable-shelves non-sprayed circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+adjustable-shelves non-sprayed poly/OUTLINE 5
+> CENSUS DW_PANEL+adjustable-shelves non-sprayed poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+adjustable-shelves non-sprayed poly/PUZZLE_SOCKET 18
+> CENSUS DW_PANEL+adjustable-shelves non-sprayed text/UNIT_NUMBER 11
+4434c4528,4532
+< CENSUS DW_PANEL+fix-shelf all poly/OUTLINE 2
+---
+> CENSUS DW_PANEL+fix-shelf all circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+fix-shelf all circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+fix-shelf all poly/OUTLINE 6
+> CENSUS DW_PANEL+fix-shelf all poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+fix-shelf all poly/PUZZLE_SOCKET 18
+4436,4438c4534,4540
+< CENSUS DW_PANEL+fix-shelf all text/UNIT_NUMBER 4
+< CENSUS DW_PANEL+fix-shelf non-sprayed poly/OUTLINE 1
+< CENSUS DW_PANEL+fix-shelf non-sprayed text/UNIT_NUMBER 2
+---
+> CENSUS DW_PANEL+fix-shelf all text/UNIT_NUMBER 13
+> CENSUS DW_PANEL+fix-shelf non-sprayed circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+fix-shelf non-sprayed circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+fix-shelf non-sprayed poly/OUTLINE 5
+> CENSUS DW_PANEL+fix-shelf non-sprayed poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+fix-shelf non-sprayed poly/PUZZLE_SOCKET 18
+> CENSUS DW_PANEL+fix-shelf non-sprayed text/UNIT_NUMBER 11
+4445c4547,4551
+< CENSUS DW_PANEL+fix-shelf-in-bay all poly/OUTLINE 3
+---
+> CENSUS DW_PANEL+fix-shelf-in-bay all circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+fix-shelf-in-bay all circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+fix-shelf-in-bay all poly/OUTLINE 6
+> CENSUS DW_PANEL+fix-shelf-in-bay all poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+fix-shelf-in-bay all poly/PUZZLE_SOCKET 18
+4447,4449c4553,4559
+< CENSUS DW_PANEL+fix-shelf-in-bay all text/UNIT_NUMBER 7
+< CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed poly/OUTLINE 2
+< CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 5
+---
+> CENSUS DW_PANEL+fix-shelf-in-bay all text/UNIT_NUMBER 13
+> CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed poly/OUTLINE 5
+> CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed poly/PUZZLE_SOCKET 18
+> CENSUS DW_PANEL+fix-shelf-in-bay non-sprayed text/UNIT_NUMBER 11
+4456c4566,4570
+< CENSUS DW_PANEL+partitions-2 all poly/OUTLINE 4
+---
+> CENSUS DW_PANEL+partitions-2 all circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+partitions-2 all circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+partitions-2 all poly/OUTLINE 6
+> CENSUS DW_PANEL+partitions-2 all poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+partitions-2 all poly/PUZZLE_SOCKET 18
+4458,4460c4572,4578
+< CENSUS DW_PANEL+partitions-2 all text/UNIT_NUMBER 10
+< CENSUS DW_PANEL+partitions-2 non-sprayed poly/OUTLINE 3
+< CENSUS DW_PANEL+partitions-2 non-sprayed text/UNIT_NUMBER 8
+---
+> CENSUS DW_PANEL+partitions-2 all text/UNIT_NUMBER 13
+> CENSUS DW_PANEL+partitions-2 non-sprayed circle/PUZZLE_HOLES_7_5MM 36
+> CENSUS DW_PANEL+partitions-2 non-sprayed circle/SCREWS_3MM 26
+> CENSUS DW_PANEL+partitions-2 non-sprayed poly/OUTLINE 5
+> CENSUS DW_PANEL+partitions-2 non-sprayed poly/PUZZLE_DOG_BONES 18
+> CENSUS DW_PANEL+partitions-2 non-sprayed poly/PUZZLE_SOCKET 18
+> CENSUS DW_PANEL+partitions-2 non-sprayed text/UNIT_NUMBER 11
+7297,7298c7415,7425
+< TEXT   DW_PANEL 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,312.5
+< TEXT   DW_PANEL 01-TOP.dxf UNIT_NUMBER|600x540|20|270,287.5
+---
+> TEXT   DW_PANEL 01-BUL.dxf UNIT_NUMBER|01 BUL|20|270,397.5
+> TEXT   DW_PANEL 01-BUL.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL 01-BUR.dxf UNIT_NUMBER|01 BUR|20|270,397.5
+> TEXT   DW_PANEL 01-BUR.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,294.5
+> TEXT   DW_PANEL 01-TOP.dxf UNIT_NUMBER|564x540|20|270,269.5
+> TEXT   DW_PANEL 01-BOTTOM.dxf UNIT_NUMBER|01|20|270,307
+> TEXT   DW_PANEL 01-BOTTOM.dxf UNIT_NUMBER|BOTTOM|20|270,282
+> TEXT   DW_PANEL 01-BOTTOM.dxf UNIT_NUMBER|564x540|20|270,257
+> TEXT   DW_PANEL 01-BACK.dxf UNIT_NUMBER|01 BACK|20|300,397.5
+> TEXT   DW_PANEL 01-BACK.dxf UNIT_NUMBER|600x770|20|300,372.5
+7301,7302c7428,7438
+< TEXT   DW_PANEL+drawers 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,312.5
+< TEXT   DW_PANEL+drawers 01-TOP.dxf UNIT_NUMBER|600x540|20|270,287.5
+---
+> TEXT   DW_PANEL+drawers 01-BUL.dxf UNIT_NUMBER|01 BUL|20|270,397.5
+> TEXT   DW_PANEL+drawers 01-BUL.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+drawers 01-BUR.dxf UNIT_NUMBER|01 BUR|20|270,397.5
+> TEXT   DW_PANEL+drawers 01-BUR.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+drawers 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,294.5
+> TEXT   DW_PANEL+drawers 01-TOP.dxf UNIT_NUMBER|564x540|20|270,269.5
+> TEXT   DW_PANEL+drawers 01-BOTTOM.dxf UNIT_NUMBER|01|20|270,307
+> TEXT   DW_PANEL+drawers 01-BOTTOM.dxf UNIT_NUMBER|BOTTOM|20|270,282
+> TEXT   DW_PANEL+drawers 01-BOTTOM.dxf UNIT_NUMBER|564x540|20|270,257
+> TEXT   DW_PANEL+drawers 01-BACK.dxf UNIT_NUMBER|01 BACK|20|300,397.5
+> TEXT   DW_PANEL+drawers 01-BACK.dxf UNIT_NUMBER|600x770|20|300,372.5
+7305,7306c7441,7451
+< TEXT   DW_PANEL+partition 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,312.5
+< TEXT   DW_PANEL+partition 01-TOP.dxf UNIT_NUMBER|600x540|20|270,287.5
+---
+> TEXT   DW_PANEL+partition 01-BUL.dxf UNIT_NUMBER|01 BUL|20|270,397.5
+> TEXT   DW_PANEL+partition 01-BUL.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+partition 01-BUR.dxf UNIT_NUMBER|01 BUR|20|270,397.5
+> TEXT   DW_PANEL+partition 01-BUR.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+partition 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,444.5
+> TEXT   DW_PANEL+partition 01-TOP.dxf UNIT_NUMBER|864x540|20|270,419.5
+> TEXT   DW_PANEL+partition 01-BOTTOM.dxf UNIT_NUMBER|01|20|270,457
+> TEXT   DW_PANEL+partition 01-BOTTOM.dxf UNIT_NUMBER|BOTTOM|20|270,432
+> TEXT   DW_PANEL+partition 01-BOTTOM.dxf UNIT_NUMBER|864x540|20|270,407
+> TEXT   DW_PANEL+partition 01-BACK.dxf UNIT_NUMBER|01 BACK|20|450,397.5
+> TEXT   DW_PANEL+partition 01-BACK.dxf UNIT_NUMBER|900x770|20|450,372.5
+7309,7313c7454,7464
+< TEXT   DW_PANEL+partition 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+< TEXT   DW_PANEL+partition 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+< TEXT   DW_PANEL+partition 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+< TEXT   DW_PANEL+partition-on-shelf 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,312.5
+< TEXT   DW_PANEL+partition-on-shelf 01-TOP.dxf UNIT_NUMBER|600x540|20|270,287.5
+---
+> TEXT   DW_PANEL+partition-on-shelf 01-BUL.dxf UNIT_NUMBER|01 BUL|20|270,397.5
+> TEXT   DW_PANEL+partition-on-shelf 01-BUL.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+partition-on-shelf 01-BUR.dxf UNIT_NUMBER|01 BUR|20|270,397.5
+> TEXT   DW_PANEL+partition-on-shelf 01-BUR.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+partition-on-shelf 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,444.5
+> TEXT   DW_PANEL+partition-on-shelf 01-TOP.dxf UNIT_NUMBER|864x540|20|270,419.5
+> TEXT   DW_PANEL+partition-on-shelf 01-BOTTOM.dxf UNIT_NUMBER|01|20|270,457
+> TEXT   DW_PANEL+partition-on-shelf 01-BOTTOM.dxf UNIT_NUMBER|BOTTOM|20|270,432
+> TEXT   DW_PANEL+partition-on-shelf 01-BOTTOM.dxf UNIT_NUMBER|864x540|20|270,407
+> TEXT   DW_PANEL+partition-on-shelf 01-BACK.dxf UNIT_NUMBER|01 BACK|20|450,397.5
+> TEXT   DW_PANEL+partition-on-shelf 01-BACK.dxf UNIT_NUMBER|900x770|20|450,372.5
+7316,7320c7467,7477
+< TEXT   DW_PANEL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+< TEXT   DW_PANEL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+< TEXT   DW_PANEL+partition-on-shelf 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+< TEXT   DW_PANEL+adjustable-shelves 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,312.5
+< TEXT   DW_PANEL+adjustable-shelves 01-TOP.dxf UNIT_NUMBER|600x540|20|270,287.5
+---
+> TEXT   DW_PANEL+adjustable-shelves 01-BUL.dxf UNIT_NUMBER|01 BUL|20|270,397.5
+> TEXT   DW_PANEL+adjustable-shelves 01-BUL.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+adjustable-shelves 01-BUR.dxf UNIT_NUMBER|01 BUR|20|270,397.5
+> TEXT   DW_PANEL+adjustable-shelves 01-BUR.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+adjustable-shelves 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,294.5
+> TEXT   DW_PANEL+adjustable-shelves 01-TOP.dxf UNIT_NUMBER|564x540|20|270,269.5
+> TEXT   DW_PANEL+adjustable-shelves 01-BOTTOM.dxf UNIT_NUMBER|01|20|270,307
+> TEXT   DW_PANEL+adjustable-shelves 01-BOTTOM.dxf UNIT_NUMBER|BOTTOM|20|270,282
+> TEXT   DW_PANEL+adjustable-shelves 01-BOTTOM.dxf UNIT_NUMBER|564x540|20|270,257
+> TEXT   DW_PANEL+adjustable-shelves 01-BACK.dxf UNIT_NUMBER|01 BACK|20|300,397.5
+> TEXT   DW_PANEL+adjustable-shelves 01-BACK.dxf UNIT_NUMBER|600x770|20|300,372.5
+7323,7324c7480,7490
+< TEXT   DW_PANEL+fix-shelf 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,312.5
+< TEXT   DW_PANEL+fix-shelf 01-TOP.dxf UNIT_NUMBER|600x540|20|270,287.5
+---
+> TEXT   DW_PANEL+fix-shelf 01-BUL.dxf UNIT_NUMBER|01 BUL|20|270,397.5
+> TEXT   DW_PANEL+fix-shelf 01-BUL.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+fix-shelf 01-BUR.dxf UNIT_NUMBER|01 BUR|20|270,397.5
+> TEXT   DW_PANEL+fix-shelf 01-BUR.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+fix-shelf 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,294.5
+> TEXT   DW_PANEL+fix-shelf 01-TOP.dxf UNIT_NUMBER|564x540|20|270,269.5
+> TEXT   DW_PANEL+fix-shelf 01-BOTTOM.dxf UNIT_NUMBER|01|20|270,307
+> TEXT   DW_PANEL+fix-shelf 01-BOTTOM.dxf UNIT_NUMBER|BOTTOM|20|270,282
+> TEXT   DW_PANEL+fix-shelf 01-BOTTOM.dxf UNIT_NUMBER|564x540|20|270,257
+> TEXT   DW_PANEL+fix-shelf 01-BACK.dxf UNIT_NUMBER|01 BACK|20|300,397.5
+> TEXT   DW_PANEL+fix-shelf 01-BACK.dxf UNIT_NUMBER|600x770|20|300,372.5
+7327,7328c7493,7503
+< TEXT   DW_PANEL+fix-shelf-in-bay 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,312.5
+< TEXT   DW_PANEL+fix-shelf-in-bay 01-TOP.dxf UNIT_NUMBER|600x540|20|270,287.5
+---
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BUL.dxf UNIT_NUMBER|01 BUL|20|270,397.5
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BUL.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BUR.dxf UNIT_NUMBER|01 BUR|20|270,397.5
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BUR.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,444.5
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-TOP.dxf UNIT_NUMBER|864x540|20|270,419.5
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BOTTOM.dxf UNIT_NUMBER|01|20|270,457
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BOTTOM.dxf UNIT_NUMBER|BOTTOM|20|270,432
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BOTTOM.dxf UNIT_NUMBER|864x540|20|270,407
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BACK.dxf UNIT_NUMBER|01 BACK|20|450,397.5
+> TEXT   DW_PANEL+fix-shelf-in-bay 01-BACK.dxf UNIT_NUMBER|900x770|20|450,372.5
+7331,7335c7506,7516
+< TEXT   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+< TEXT   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+< TEXT   DW_PANEL+fix-shelf-in-bay 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+< TEXT   DW_PANEL+partitions-2 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,312.5
+< TEXT   DW_PANEL+partitions-2 01-TOP.dxf UNIT_NUMBER|600x540|20|270,287.5
+---
+> TEXT   DW_PANEL+partitions-2 01-BUL.dxf UNIT_NUMBER|01 BUL|20|270,397.5
+> TEXT   DW_PANEL+partitions-2 01-BUL.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+partitions-2 01-BUR.dxf UNIT_NUMBER|01 BUR|20|270,397.5
+> TEXT   DW_PANEL+partitions-2 01-BUR.dxf UNIT_NUMBER|540x770|20|270,372.5
+> TEXT   DW_PANEL+partitions-2 01-TOP.dxf UNIT_NUMBER|01 TOP|20|270,444.5
+> TEXT   DW_PANEL+partitions-2 01-TOP.dxf UNIT_NUMBER|864x540|20|270,419.5
+> TEXT   DW_PANEL+partitions-2 01-BOTTOM.dxf UNIT_NUMBER|01|20|270,457
+> TEXT   DW_PANEL+partitions-2 01-BOTTOM.dxf UNIT_NUMBER|BOTTOM|20|270,432
+> TEXT   DW_PANEL+partitions-2 01-BOTTOM.dxf UNIT_NUMBER|864x540|20|270,407
+> TEXT   DW_PANEL+partitions-2 01-BACK.dxf UNIT_NUMBER|01 BACK|20|450,397.5
+> TEXT   DW_PANEL+partitions-2 01-BACK.dxf UNIT_NUMBER|900x770|20|450,372.5
+7338,7343d7518
+< TEXT   DW_PANEL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|01|20|270,392
+< TEXT   DW_PANEL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|VPART-1|20|270,367
+< TEXT   DW_PANEL+partitions-2 01-VPART-1.dxf UNIT_NUMBER|734x540|20|270,342
+< TEXT   DW_PANEL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|01|20|270,392
+< TEXT   DW_PANEL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|VPART-2|20|270,367
+< TEXT   DW_PANEL+partitions-2 01-VPART-2.dxf UNIT_NUMBER|734x540|20|270,342

@@ -27,10 +27,23 @@
 import { getUnitType } from './types.js';
 import { unitBase } from './runs.js';
 
-/** Does this type stand on the floor and therefore get a plinth? */
+/**
+ * Does this type stand on the floor and therefore get a plinth?
+ *
+ * ─── TURN 27 (CLAUDE.md F2.4): LEGS AND A PLINTH ARE TWO QUESTIONS ─────────
+ *
+ * This asked `type.legs`, and `engine/cabinet.js` has asked `type.plinth ??
+ * type.legs` since turn 22 — because they coincided until the D/W panel, which
+ * has no legs (the machine stands where they would be) and a toe kick that
+ * still runs past it. Two gates for one question is how "no plinth" got onto
+ * the owner's list of six: the engine would cut it, and the STORE never asked.
+ *
+ * One gate now, the engine's own, in the words turn 22 wrote it in.
+ */
 export function takesPlinth(typeId, profile) {
   const type = getUnitType(typeId);
-  return Boolean(profile.autoParts.plinth.enabled && type.legs && type.mount === 'floor');
+  const bears = type.plinth ?? type.legs;
+  return Boolean(profile.autoParts.plinth.enabled && bears && type.mount === 'floor');
 }
 
 // ─── How far an END PANEL runs DOWN (turn 13, CLAUDE.md F4) ────────────────

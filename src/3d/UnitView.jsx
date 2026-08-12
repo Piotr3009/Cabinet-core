@@ -16,12 +16,19 @@ import HoverDimensions from './HoverDimensions.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
-import JointLines from './JointLines.jsx';
+import DrillRings from './DrillRings.jsx';
+
+// A stable empty list: a fresh [] would rebuild every panel solid on every
+// render.
+const EMPTY_DRILLS = [];
 import PartMachining from './PartMachining.jsx';
 import { shakerFrontGeometry } from './shakerSolid.js';
+import { isShakerFront } from '../engine/shaker.js';
+import { panelRecesses } from '../engine/recesses.js';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
-import { formatMm } from '../engine/format.js';
+import DimensionChain from './DimensionChain.jsx';
+import { formatDimension, formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
@@ -30,7 +37,7 @@ import {
   clearLights, fieldFromPos, interiorFloor, lightBelow,
 } from '../engine/shelfHeights.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
-import { dimensionEntities, dimensionStyle } from '../engine/dimensionArrows.js';
+import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { frontDimensionRows } from '../engine/frontDimensions.js';
 import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { panelFinish } from '../engine/materials.js';
@@ -224,9 +231,20 @@ export function MovingPanel({
   // taken OUT of it, and — separately, because a cut is raw board and not a
   // decor — the walls and floors of those cuts. Same cache, same key, so a
   // kitchen of fourteen identical carcasses still builds two side geometries.
+  // ─── Turn 26 (chat, owner: "usuń te zagłębienia") ───────────────────────
+  // A bored drilling leaves a ring of wall COPLANAR with the face it is bored
+  // into, and two coplanar surfaces have no depth order — that is the flicker
+  // the owner kept circling, and why the back of a cabinet showed through its
+  // own front. The room therefore gets a CLEAN board and the holes are drawn
+  // as decals by 3d/DrillRings.jsx. The workshop overlay is a different
+  // question: with a part on a bench — the cabinet editor, the detail window —
+  // the machining is what you are there to look at, so the solid keeps its
+  // cuts. R10 is untouched: the sheet is still the truth and the scene still
+  // follows it; only the way a hole is DRAWN has changed.
+  const boredDrills = machining ? drills : EMPTY_DRILLS;
   const built = useMemo(
-    () => (layers && !mitre ? panelSolids(p, layers, profile, drills) : null),
-    [p, layers, profile, mitre, drills],
+    () => (layers && !mitre ? panelSolids(p, layers, profile, boredDrills) : null),
+    [p, layers, profile, mitre, boredDrills],
   );
   // ─── Turn 25 (CLAUDE.md F3): THE SHAKER IS A TRAY, NOT A SLAB ───────────
   // A recess in the face, leaving the frame standing — one solid, so the
@@ -234,19 +252,44 @@ export function MovingPanel({
   // walls throw at a grazing angle is what makes it read as a shaker rather
   // than as a rectangle drawn on a door (3d/shakerSolid.js). Cached by leaf
   // size and frame, so a kitchen of identical doors builds one geometry.
-  const shaker = useMemo(() => (mitre ? null : shakerFrontGeometry(p)), [p, mitre]);
+  //
+  // ─── TURN 26 (CLAUDE.md R10 / F3.3): …AND ITS DRILLING ──────────────────
+  // A shaker leaf never reached `panelSolids`, so it was the one FRONT class
+  // whose cups and cup screws the scene did not show. The tray takes the same
+  // `engine/recesses.js` records every other board reads, and bores them
+  // itself — one solid, which is turn 25's own reason for building it by hand.
+  const shaker = useMemo(() => {
+    if (mitre) return null;
+    if (!isShakerFront(p) || !profile?.appearance?.cuts?.enabled) return shakerFrontGeometry(p);
+    return shakerFrontGeometry(p, panelRecesses(p, drills, { thickness: p.box.d, profile }));
+  }, [p, mitre, drills, profile]);
   const machined = shaker || built?.solid || null;
   const cuts = built?.cuts || null;
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
+  // ─── TURN 26 (CLAUDE.md F5.2): AND A D/W FRONT DROPS ────────────────────
+  // Owner: "it opens sideways." It did, because the scene had one way for a
+  // FRONT to open and a D/W panel is a front. It is not on cup hinges at all:
+  // it is screwed to the appliance's own door and falls FORWARD about its
+  // BOTTOM edge. The panel says which (`meta.opening`), so this is a fact
+  // about the PIECE and not a question about what kind of cabinet it is on.
+  const drops = front === 'door' && p.meta?.opening === 'drop-front';
+
   // A door rotates about its hinge edge, so the mesh is offset inside a group
-  // pinned to that edge; everything else sits at its own centre.
+  // pinned to that edge; a drop front rotates about its BOTTOM one; everything
+  // else sits at its own centre.
   const hingeAtRight = p.meta?.hinge === 'R';
   const centre = mitre?.box || p.box;
-  const pivot = front === 'door'
-    ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
-    : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)];
-  const meshOffset = front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0];
+  // eslint-disable-next-line no-nested-ternary
+  const pivot = drops
+    ? [mm(p.box.x + p.box.w / 2), mm(p.box.y), mm(p.box.z + p.box.d / 2)]
+    : (front === 'door'
+      ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
+      : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)]);
+  // eslint-disable-next-line no-nested-ternary
+  const meshOffset = drops
+    ? [0, mm(p.box.h / 2), 0]
+    : (front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0]);
 
   // ─── Turn 20 (CLAUDE.md F3): THE BOX TRAVELS TOO ───────────────────────
   // `slide` is a piece of a drawer that is not its face — a side, the box
@@ -272,6 +315,16 @@ export function MovingPanel({
       // a face standing proud of a box that had not moved.
       group.current.position.z = pivot[2] + mm(travel ?? depth * 0.75) * a;
       group.current.rotation.y = 0;
+    } else if (drops) {
+      // ─── TURN 26 (CLAUDE.md F5.2): FORWARD, ABOUT THE BOTTOM EDGE ───────
+      // A NEGATIVE turn about the piece's own x: +x runs across the cabinet
+      // and the leaf has to fall towards the room, so the top edge travels to
+      // +z and the panel finishes lying flat in front of the plinth. The angle
+      // is the appliance's own (`profile.dwPanel.openAngleDeg`), handed down
+      // as this piece's `swing` like every other front's.
+      group.current.rotation.x = -a * (swing ?? Math.PI / 2);
+      group.current.rotation.y = 0;
+      group.current.position.z = pivot[2];
     } else {
       // Swings on the hinge side, about the group's origin. How FAR is decided
       // by what is beside the cabinet (turn 8, CLAUDE.md F5): a door with a
@@ -747,78 +800,142 @@ export default function UnitView({
   const dimStyle = useMemo(() => dimensionStyle(profile), [profile]);
   const frontDimRows = useMemo(() => {
     if (!showFrontDimensions) return [];
-    const D0 = result.params.depth;
-    return frontDimensionRows(result).map((row, i) => {
-      const from = row.axis === 'h' ? [row.from, row.at] : [row.at, row.from];
-      const to = row.axis === 'h' ? [row.to, row.at] : [row.at, row.to];
-      const ent = dimensionEntities({
-        from, to, offset: 0, style: dimStyle,
-      });
-      if (!ent) return null;
-      return {
-        key: `${row.kind}-${row.a || ''}-${row.b || ''}-${i}`,
-        segments: ent.segments,
-        text: ent.text ? { at: ent.text.at, value: ent.text.value } : null,
-        // A hair proud of the door plane, so the arrows are not buried in it.
-        z: D0 + profile.doors.gap + (result.params.front_t || 25) + 1,
-      };
-    }).filter(Boolean);
-  }, [showFrontDimensions, result, dimStyle, profile]);
+    return frontDimensionRows(result).map((row, i) => ({
+      key: `${row.kind}-${row.a || ''}-${row.b || ''}-${i}`,
+      from: row.axis === 'h' ? [row.from, row.at] : [row.at, row.from],
+      to: row.axis === 'h' ? [row.to, row.at] : [row.at, row.to],
+      offset: 0,
+    }));
+  }, [showFrontDimensions, result]);
+  // A hair proud of the door plane, so the chain is not buried in it.
+  const frontDimZ = result.params.depth + profile.doors.gap + (result.params.front_t || 25) + 1;
+
+  // ─── TURN 21 (CLAUDE.md F10): THE ONE DERIVATION ───────────────────────────
+  // It stands HERE, above the chains, because turn 26's full-dimension chain
+  // reads it: a `const` declared below its own reader is a temporal dead zone
+  // and the whole view throws on first render.
+  // Every shelf readout in this view — the "all dims" chip, the hover ladder
+  // and the live drag — is a slice of THIS. `engine/shelfHeights.js` is the
+  // only place a shelf height is turned into something a person reads, and the
+  // panel field on the right is the same function's other half.
+  const shelfLights = useMemo(() => {
+    const shelves = result.panels.filter((p) => p.part === 'SHELF' && p.box);
+    return clearLights({
+      positions: shelves.map((p) => p.box.y),
+      thickness: shelves.map((p) => p.box.h),
+      floor: result.assemblies.drawerZone
+        ? result.assemblies.drawerZone.top + G
+        : interiorFloor(G),
+      ceiling: H - G,
+    }, profile.editor.mmStep);
+  }, [result.panels, result.assemblies.drawerZone, G, profile.editor.mmStep, H]);
+
+  // ─── EVERY NUMBER THIS CABINET HAS, AS CHAINS (turn 26, CLAUDE.md R11) ────
+  //
+  // Turn 8 drew these as floating captions and the owner's turn-26 verdict is
+  // the last word on that: white labels, no arrows, badly placed, rounded to
+  // 1 mm. They are DIMENSIONS, so they are drawn by the one dimension
+  // component like every other dimension in the app — points in, chain out.
+  //
+  // Two groups, and the split is F4.2's picture:
+  //
+  //   the FLOOR chain  everything horizontal — the width, the internal width,
+  //                    the depth — lying on the floor in front of the run with
+  //                    witness lines dropping to it from the front edges;
+  //   the SIDE chain   everything vertical — the height, every shelf's clear
+  //                    light, every drawer front, the toe kick, the infill —
+  //                    running down the side of the unit, never across a face.
+  const floorY = isWallMounted ? 0 : -legHeight;
+  const sideOffset = profile.hoverDimensions.offsetMm * 3;
 
   const fullDimensions = useMemo(() => {
-    if (!showAllDims) return [];
-    const out = [];
-    const say = (key, at, text, tone) => out.push({
-      key, at, text, tone,
+    if (!showAllDims) return { floor: [], side: [] };
+    const floor = [];
+    const side = [];
+    // The floor chain measures the FRONT edge of the cabinet, pushed forward of
+    // it — which is what a drawing's dimension line is.
+    floor.push({
+      key: 'w', from: [0, D], to: [W, D], offset: sideOffset, label: `W ${formatDimension(W)}`,
     });
-    const front = mm(D) + 0.09;
-    say('w', [mm(W / 2), mm(isWallMounted ? -60 : -legHeight - 60), front], `W ${formatMm(W)}`);
-    say('h', [mm(W) + 0.22, mm(H / 2), front], `H ${formatMm(H)}`);
-    say('d', [mm(W / 2), mm(H) + 0.16, mm(D / 2)], `D ${formatMm(D)}`);
-    say('iw', [mm(W / 2), mm(H) + 0.09, front], `internal ${formatMm(result.derived.internal_width)}`, 'dim');
+    floor.push({
+      key: 'iw',
+      from: [G, D],
+      to: [W - G, D],
+      offset: sideOffset * 2,
+      label: `internal ${formatDimension(result.derived.internal_width)}`,
+    });
+    // The DEPTH runs the other way in the same plane, off the cabinet's left.
+    floor.push({
+      key: 'd', from: [0, 0], to: [0, D], offset: -sideOffset, label: `D ${formatDimension(D)}`,
+    });
+
+    const column = (key, from, to, label, step = 1) => side.push({
+      key, from: [W, from], to: [W, to], offset: sideOffset * step, label,
+    });
+    column('h', isWallMounted ? 0 : -legHeight, H, `H ${formatDimension(H)}`);
     if (isWallMounted) {
-      say('mount', [mm(W) + 0.22, mm(-60), front], `hung at ${formatMm(result.assemblies.mountHeight)}`, 'dim');
+      column('mount', 0, -result.assemblies.mountHeight, `hung at ${formatDimension(result.assemblies.mountHeight)}`, 2);
     } else if (legHeight > 0) {
-      say('kick', [-0.22, mm(-legHeight / 2), front], `toe kick ${formatMm(legHeight)}`, 'dim');
+      column('kick', -legHeight, 0, `toe kick ${formatDimension(legHeight)}`, 2);
     }
     // ─── TURN 21 (CLAUDE.md F10): ONE DERIVATION, TWO DISPLAYS ─────────────
-    // This chip printed the STORED number — whose zero is the outside of the
-    // carcass bottom — while the hover ladder three lines below printed the
-    // clear light above the INTERIOR floor. 860 against 842, on the owner's
-    // screenshot, about one shelf. Both come out of `clearLights` now, so the
-    // chip, the ladder and the panel field are the same arithmetic and cannot
-    // disagree again.
+    // This printed the STORED number — whose zero is the outside of the carcass
+    // bottom — while the hover ladder printed the clear light above the
+    // INTERIOR floor. 860 against 842 on the owner's screenshot, about one
+    // shelf. Both come out of `clearLights`, so the chain, the ladder and the
+    // panel field are the same arithmetic and cannot disagree again.
     for (const shelf of result.assemblies.shelves || []) {
       const light = lightBelow(shelf.y, shelfLights);
-      const size = light ? light.size : shelf.y - G;
-      say(`shelf-${shelf.index}`, [-0.22, mm(shelf.y), front],
-        `S${shelf.index} ${formatMm(size)}${shelf.locked ? ' fixed' : ''}`, 'dim');
+      const from = light ? light.from : G;
+      const to = light ? light.to : shelf.y;
+      column(`shelf-${shelf.index}`, from, to,
+        `S${shelf.index} ${formatDimension(to - from)}${shelf.locked ? ' fixed' : ''}`, 2);
     }
     for (const df of result.assemblies.drawerFronts || []) {
-      say(`drawer-${df.index}`, [mm(W / 2), mm(df.y + df.h / 2), front + 0.02],
-        `D${df.index} ${formatMm(df.h)}`, 'dim');
+      column(`drawer-${df.index}`, df.y, df.y + df.h, `D${df.index} ${formatDimension(df.h)}`, 3);
     }
     const infillFace = result.panels.find((p) => p.part === 'INFILL' && p.meta?.side === 'top' && p.meta?.piece === 'face');
     if (infillFace) {
-      say('top-infill', [mm(W / 2), mm(infillFace.box.y + infillFace.box.h / 2), front],
-        `infill ${formatMm(infillFace.box.h)}`, 'dim');
+      column('top-infill', infillFace.box.y, infillFace.box.y + infillFace.box.h,
+        `infill ${formatDimension(infillFace.box.h)}`, 2);
     }
     for (const ep of result.panels.filter((p) => p.part === 'END-PANEL')) {
-      say(`ep-${ep.id}`, [mm(ep.box.x + ep.box.w / 2), mm(ep.box.y + ep.box.h + 40), mm(D)],
-        `end panel ${formatMm(ep.h)}`, 'dim');
+      side.push({
+        key: `ep-${ep.id}`,
+        from: [ep.box.x + ep.box.w / 2, ep.box.y],
+        to: [ep.box.x + ep.box.w / 2, ep.box.y + ep.box.h],
+        offset: 0,
+        label: `end panel ${formatDimension(ep.h)}`,
+      });
     }
-    return out;
-  }, [showAllDims, W, H, D, isWallMounted, legHeight, result]);
+    return { floor, side };
+  }, [showAllDims, W, H, D, G, isWallMounted, legHeight, result, shelfLights, sideOffset]);
 
-  // ─── How far each door may swing (turn 8, CLAUDE.md F5) ───
-  // Decided by what is beside the cabinet ON THE HINGE SIDE. `wallGaps` is null
-  // for a side whose neighbour is another cabinet rather than a wall, and a
-  // null gap means the door is free — two doors opening into each other is a
-  // different question, with a different answer, and CLAUDE.md asks about walls.
-  const swingFor = useCallback((hinge) => {
+  //
+  // ─── TURN 26 (CLAUDE.md F2.1): THE LEAF'S OWN WIDTH, NOT THE FIRST ONE'S ──
+  //
+  // This asked `result.panels.find(p => p.part === 'FRONT')` — the FIRST front
+  // in the cabinet — for every door in it. On a face with two matched leaves
+  // that is the same number twice and nobody notices. On a cabinet with doors
+  // in its BAYS the leaves are different widths by construction, so every
+  // partition-hung leaf swung by its neighbour's angle, and turn 24's rig then
+  // folded its hinge by that wrong angle too. That is one of the owner's three
+  // symptoms — "they do not fold" — and it is a leaf being handed another
+  // leaf's number.
+  //
+  // It takes the PANEL now. Same law, same profile, asked about the door it is
+  // actually about.
+  const swingFor = useCallback((panel) => {
+    // Turn 26 (CLAUDE.md F5.2): a D/W front is not on cup hinges and its
+    // opening is not a swing past a wall — it drops forward about its bottom
+    // edge to the appliance's own angle.
+    if (panel?.meta?.opening === 'drop-front') {
+      return ((Number(profile.dwPanel?.openAngleDeg) || 90) * Math.PI) / 180;
+    }
+    const hinge = panel?.meta?.hinge;
     const gap = hinge === 'R' ? wallGaps?.right : wallGaps?.left;
     return doorOpenAngle({
-      doorWidth: result.panels.find((p) => p.part === 'FRONT')?.w ?? W,
+      doorWidth: panel?.w ?? result.panels.find((p) => p.part === 'FRONT')?.w ?? W,
       hingeOffset: profile.doors.gap / 2,
       gapToWall: gap ?? null,
     }, profile);
@@ -836,8 +953,11 @@ export default function UnitView({
     const out = {};
     for (const p of result.panels) {
       if (p.part !== 'FRONT' || !p.box) continue;
+      // A DROP FRONT has no hinge to fold (F5.2/F5.3): it is screwed to the
+      // appliance's own door, and there is no carcass half to turn after it.
+      if (p.meta?.opening === 'drop-front') { out[p.id] = 0; continue; }
       const dir = p.meta?.hinge === 'R' ? 1 : -1;
-      out[p.id] = dir * (openFronts?.[p.id] ?? 0) * swingFor(p.meta?.hinge);
+      out[p.id] = dir * (openFronts?.[p.id] ?? 0) * swingFor(p);
     }
     return out;
   }, [result.panels, openFronts, swingFor]);
@@ -852,22 +972,6 @@ export default function UnitView({
   // shelf hover beside it — it lives exactly as long as the pointer is over the
   // piece and reaches nothing that is exported.
   const [hoverPartition, setHoverPartition] = useState(null);
-  // ─── TURN 21 (CLAUDE.md F10): THE ONE DERIVATION ───────────────────────────
-  // Every shelf readout in this view — the "all dims" chip, the hover ladder
-  // and the live drag — is a slice of THIS. `engine/shelfHeights.js` is the
-  // only place a shelf height is turned into something a person reads, and the
-  // panel field on the right is the same function's other half.
-  const shelfLights = useMemo(() => {
-    const shelves = result.panels.filter((p) => p.part === 'SHELF' && p.box);
-    return clearLights({
-      positions: shelves.map((p) => p.box.y),
-      thickness: shelves.map((p) => p.box.h),
-      floor: result.assemblies.drawerZone
-        ? result.assemblies.drawerZone.top + G
-        : interiorFloor(G),
-      ceiling: H - G,
-    }, profile.editor.mmStep);
-  }, [result.panels, result.assemblies.drawerZone, G, profile.editor.mmStep, H]);
   const shelfGaps = useMemo(
     () => shelfLights.map((g, i) => ({ ...g, key: `gap-${i}` })),
     [shelfLights],
@@ -1207,7 +1311,7 @@ export default function UnitView({
             xray={xray}
             depth={D}
             profile={profile}
-            swing={front === 'door' ? swingFor(p.meta?.hinge) : null}
+            swing={front === 'door' ? swingFor(p) : null}
             joineryLayers={jointLayers}
             onPointerDown={(e) => {
               // ─── Turn 13 (CLAUDE.md F5.1/F5.3): THE LEFT BUTTON ONLY ───
@@ -1368,16 +1472,21 @@ export default function UnitView({
           so a stack that is 3 mm out says so at a glance.
           It is a readout, not a drag: nothing here writes anything. */}
       {hoverShelf && !contour && !shelfDrag && (
-        <group userData={{ ccHelper: true }}>
-          {shelfGaps.map((g) => (
-            <DimLabel
-              key={g.key}
-              position={[mm(W / 2), mm((g.from + g.to) / 2), mm(D) + 0.06]}
-              text={formatMm(g.size)}
-              tone={g.even ? 'dim' : 'gold'}
-            />
-          ))}
-        </group>
+        <DimensionChain
+          rows={shelfGaps.map((g) => ({
+            key: g.key,
+            from: [W, g.from],
+            to: [W, g.to],
+            offset: sideOffset,
+            // The set is read as a set — "are they even?" — so an UNEVEN gap
+            // says so in the gold the app uses for "this is the one".
+            label: `${formatDimension(g.size)}${g.even ? '' : ' ≠'}`,
+          }))}
+          style={dimStyle}
+          plane="xy"
+          at={D}
+          name={`shelf-gaps-${unit.id}`}
+        />
       )}
 
       {/* ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET'S GUIDE LINE ───
@@ -1408,14 +1517,20 @@ export default function UnitView({
               distance to the NEIGHBOUR'S OWN STORED FACE, which beside another
               shelf is one board thickness bigger than the opening the label is
               drawn across: a third datum for one question. */}
-          {dragLights.map((g) => (
-            <DimLabel
-              key={`drag-${g.from}`}
-              position={[mm(W / 2), mm((g.from + g.to) / 2), mm(D) + 0.06]}
-              text={formatMm(g.size)}
-              tone="gold"
-            />
-          ))}
+          <DimensionChain
+            rows={dragLights.map((g) => ({
+              key: `drag-${g.from}`,
+              from: [W, g.from],
+              to: [W, g.to],
+              offset: sideOffset,
+              label: formatDimension(g.size),
+            }))}
+            style={dimStyle}
+            plane="xy"
+            at={D}
+            colour={COLORS.gold}
+            name={`shelf-drag-${unit.id}`}
+          />
           {/* …and the piece's own height, on the interior datum the panel
               field speaks. */}
           <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={formatMm(fieldFromPos(shelfDrag.pos, G), { unit: true })} tone="gold" />
@@ -1428,7 +1543,7 @@ export default function UnitView({
           data, so a second joint system draws itself. Not in Contour, where
           the whole point is that everything but the silhouette goes away. */}
       {!contour && (
-        <JointLines result={result} profile={profile} xray={xray} design={unitDesign} />
+        <DrillRings result={result} profile={profile} design={unitDesign} />
       )}
 
       {/* The bought hardware (turn 7, CLAUDE.md F3): legs and the rail always,
@@ -1688,15 +1803,42 @@ export default function UnitView({
           the answer to "which one am I holding". */}
       {showLabels && (
         <group userData={{ ccHelper: true }}>
-          <DimLabel position={[mm(W / 2), mm(isWallMounted ? 0 : -legHeight) - 0.09, mm(D)]} text={formatMm(W)} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
-          <DimLabel position={[mm(W) + 0.16, mm(H / 2), mm(D)]} text={formatMm(H)} tone={selected ? 'gold' : 'dim'} colour={selected ? null : dimensionColour} />
+          {/* ─── TURN 26 (CLAUDE.md R11 / F4.2): W AND H ARE DIMENSIONS ─────
+              They were two floating captions in the project's dimension ink.
+              They are CHAINS now, drawn by the one component, and they are
+              placed the way the owner drew them: the width lies on the FLOOR
+              in front of the cabinet with witness lines dropping from its
+              front edges, and the height runs down its SIDE. Never across the
+              face of a front.
+
+              The SELECTED cabinet keeps the gold, which is not a colour
+              choice: it is the answer to "which one am I holding". */}
+          <DimensionChain
+            rows={[{
+              key: 'w', from: [0, D], to: [W, D], offset: sideOffset, label: formatDimension(W),
+            }]}
+            style={dimStyle}
+            plane="xz"
+            at={floorY}
+            colour={selected ? COLORS.gold : dimensionColour}
+            name={`w-${unit.id}`}
+          />
+          <DimensionChain
+            rows={[{
+              key: 'h', from: [W, floorY], to: [W, H], offset: sideOffset, label: formatDimension(H),
+            }]}
+            style={dimStyle}
+            plane="xy"
+            at={D}
+            colour={selected ? COLORS.gold : dimensionColour}
+            name={`h-${unit.id}`}
+          />
           {/* ─── Turn 17 (CLAUDE.md F6.3) ───
-              The cabinet's NAME is not a dimension and no longer dresses like
+              The cabinet's NAME is not a dimension and does not dress like
               one: a flat plate in the app's own tones, square-cornered, in the
-              label type the panels use. The depth stays on it because it is
-              what a joiner reads next, and it stays in the same caption because
-              two floating labels over one cabinet is what the bubble already
-              looked like from a distance. */}
+              label type the panels use. This is the use `DimLabel` keeps
+              (R11): a CHIP, not a measurement. The depth stays on it because
+              it is what a joiner reads next. */}
           <DimLabel
             position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]}
             text={`${unit.params.unit_num} · ${formatMm(D)} deep`}
@@ -1712,16 +1854,23 @@ export default function UnitView({
           wall of numbers, and over ONE cabinet it is the answer to "what did I
           set this to". Tool chrome, so it never reaches a render. */}
       {showAllDims && !contour && (
-        <group userData={{ ccHelper: true }}>
-          {fullDimensions.map((d) => (
-            <DimLabel
-              key={d.key}
-              position={d.at}
-              text={d.text}
-              tone={d.tone || 'gold'}
-              colour={d.tone === 'dim' ? dimensionColour : null}
-            />
-          ))}
+        <group userData={{ ccHelper: true, ccAllDimensions: fullDimensions.floor.length + fullDimensions.side.length }}>
+          <DimensionChain
+            rows={fullDimensions.floor}
+            style={dimStyle}
+            plane="xz"
+            at={floorY}
+            colour={dimensionColour}
+            name={`all-floor-${unit.id}`}
+          />
+          <DimensionChain
+            rows={fullDimensions.side}
+            style={dimStyle}
+            plane="xy"
+            at={D}
+            colour={dimensionColour}
+            name={`all-side-${unit.id}`}
+          />
         </group>
       )}
 
@@ -1737,58 +1886,16 @@ export default function UnitView({
           rather than a picture somebody has to look at. */}
       {showFrontDimensions && !contour && !hideFronts && (
         <group userData={{ ccHelper: true, ccFrontDimensions: frontDimRows.length }}>
-          {frontDimRows.map((row) => (
-            <group key={row.key} userData={{ ccHelper: true, ccNoBounds: true }}>
-              {row.segments.map(([a, b], j) => (
-                <Stroke2
-                  // eslint-disable-next-line react/no-array-index-key
-                  key={j}
-                  from={[mm(a[0]), mm(a[1])]}
-                  to={[mm(b[0]), mm(b[1])]}
-                  z={mm(row.z)}
-                  weight={mm(dimStyle.strokeMm * 2)}
-                  colour={dimStyle.colour}
-                />
-              ))}
-              {row.text && (
-                <DimLabel
-                  position={[mm(row.text.at[0]), mm(row.text.at[1]), mm(row.z)]}
-                  text={row.text.value}
-                  tone="dim"
-                  colour={dimStyle.colour}
-                />
-              )}
-            </group>
-          ))}
+          <DimensionChain
+            rows={frontDimRows}
+            style={dimStyle}
+            plane="xy"
+            at={frontDimZ}
+            name={`fronts-${unit.id}`}
+          />
         </group>
       )}
     </group>
-  );
-}
-
-/**
- * One thin stroke of a front dimension, in the cabinet's own XY plane.
- *
- * A flat quad rather than a line: `LineBasicMaterial`'s width is one pixel on
- * every driver that matters, and "thin, small, beautiful" is a millimetre
- * measurement rather than a pixel one (turn 23, F8.3).
- */
-function Stroke2({
-  from, to, z, weight, colour,
-}) {
-  const dx = to[0] - from[0];
-  const dy = to[1] - from[1];
-  const len = Math.hypot(dx, dy);
-  if (!(len > 0)) return null;
-  return (
-    <mesh
-      position={[(from[0] + to[0]) / 2, (from[1] + to[1]) / 2, z]}
-      rotation={[0, 0, Math.atan2(dy, dx)]}
-      userData={{ ccHelper: true, ccNoBounds: true }}
-    >
-      <planeGeometry args={[len, weight]} />
-      <meshBasicMaterial color={colour} transparent opacity={0.95} depthTest={false} />
-    </mesh>
   );
 }
 

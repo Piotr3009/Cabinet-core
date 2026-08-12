@@ -32,6 +32,8 @@
 //
 // Pure functions and pure data. No React, no store, no three.js.
 
+import { formatDimension } from './format.js';
+
 /** The style, defensively read, so a partial profile cannot produce NaN. */
 export function dimensionStyle(profile) {
   const S = profile?.hoverDimensions || {};
@@ -171,7 +173,12 @@ export function dimensionEntities({
       // ON its own line is a value with a stroke through it.
       at: add(scale(add(a, b), 0.5), scale(normal, (offset >= 0 ? 1 : -1) * S.textMm * 0.45)),
       angle,
-      value: label ?? String(Math.round(value)),
+      // ─── TURN 26 (CLAUDE.md F4.3): HALF A MILLIMETRE ────────────────────
+      // It was `Math.round`, so a 3 mm gap between two doors and a 2.5 mm one
+      // printed the same number — which is exactly the difference a joiner is
+      // looking at a dimension to find. Every surface that draws these reads
+      // this string, so the precision is decided once.
+      value: label ?? formatDimension(value),
     },
   };
 }

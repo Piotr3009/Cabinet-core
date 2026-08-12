@@ -3070,9 +3070,23 @@ export const DEFAULT_CABINET_PROFILE = {
   // faces being measured, an architectural tick across each end, and the value
   // in the middle. Every number below is in ROOM millimetres, so the annotation
   // scales with the drawing instead of with the camera.
+  //
+  // ─── TURN 26 (CLAUDE.md R11): THE END-STYLE KNOBS ARE GONE ────────────────
+  //
+  // `arrowHead`, `tickAngle`, `head` and `labelOffset` described how THIS file
+  // drew an arrow, and this file no longer draws one: R11 gives the whole app
+  // ONE dimension component (`3d/DimensionChain.jsx`), whose ends, weight and
+  // caption are the partition chain's — `hoverDimensions` above. Four knobs
+  // that no longer reach a pixel are four ways to spend an afternoon; they are
+  // removed rather than left as a trap, and a stored profile that still carries
+  // them simply keeps them and is ignored.
+  //
+  // What is LEFT here is what a ROOM DISTANCE is about and what the chain
+  // cannot know: how close two things have to be to count as touching, how far
+  // in front of the run the line lies, how high it floats, and the two inks a
+  // technical drawing is written in.
   dimensions: {
     minGap: 2,            // below this the two things are touching, not spaced
-    arrowHead: 45,        // length of the tick / open head, in room mm
     standoff: 90,         // how far in front of the units the line is drawn
     height: 120,          // how high above a unit's base the line floats
     // "1 px look": the thinnest bar that survives being rasterised at the
@@ -3080,12 +3094,6 @@ export const DEFAULT_CABINET_PROFILE = {
     lineWeight: 3,
     extension: 110,       // extension line, from the measured face outwards
     extensionGap: 18,     // …starting this far off the face, as a draughtsman does
-    tickAngle: 45,        // the oblique architectural tick, in degrees
-    // How the ends are drawn: 'tick' = the 45° slash of an architectural
-    // drawing, 'open' = a two-stroke arrowhead with nothing filled in.
-    head: 'tick',
-    // Which way the value sits off the line.
-    labelOffset: 70,
     // The two inks of a technical drawing. Navy is the default; red is the
     // option in View ▸ Dimension colour. Nothing else on the canvas is either
     // colour, so a measurement never reads as part of the furniture.

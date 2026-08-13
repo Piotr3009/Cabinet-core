@@ -72,19 +72,24 @@ test('F1.2 — the fold pivot is the file axis put through the clone’s own tra
   // The measured 71B3550 box, from the chat hotfix recorded in profile.js.
   const min = { x: -26.5, y: -28.5, z: -29.48 };
   const pivot = foldPivotMm({ min, profile: P });
-  // x: the axis IS the cup's own centre line, and `modelOrigin` put that at
-  // the drilled point — so the joint is on the cup's axis, at zero.
-  assert.ok(Math.abs(pivot.x - 0) < 1e-9, `pivot x = ${pivot.x}`);
+  // ─── TURN 29 (CLAUDE.md F5): THE AXIS IS MEASURED NOW ───────────────────
+  //
+  // Turn 24 shipped starting numbers (x −7.75 — the cup's own centre line —
+  // and z 33.5) and said the first person to see the fold beside a real
+  // cabinet corrects THOSE TWO and nothing else. The lab measured them on
+  // `71B3550_42542984.glb` and render-verified: x = −0.01808 m, z = +0.04286 m.
+  //
+  // Through the clone's own transform (`axis − min + modelOrigin`, the very
+  // shift `glbClone` places the file by) that is:
+  //
+  //   x  −18.08 + 26.5 − 18.75 = −10.33   ten millimetres towards the arm,
+  //                                       off the cup's centre line
+  //   z   42.86 + 29.48 − 69.78 = +2.56   a whisker INSIDE the leaf, which is
+  //                                       where a CLIP top's knuckle sits
+  assert.ok(Math.abs(pivot.x - -10.33) < 1e-9, `pivot x = ${pivot.x}`);
   // The axis is HORIZONTAL and parallel to the hinge row: no height of its own.
   assert.equal(pivot.y, 0);
-  // ─── TURN 26 (CLAUDE.md F1.2): THE DATUM MOVED, SO THE PIVOT DID ────────
-  // z: 33.5 in the file. Turn 24 stood the cup slab's NEAR end (35.3) on the
-  // door's inner face and read the pivot 1.8 mm behind it. The owner measured
-  // the bore at 11 mm, so the flange is the slab's FAR end less the bore
-  // (51.3 − 11 = 40.3) and the same file axis is now 6.8 mm behind the leaf —
-  // which is where a CLIP top's arm actually folds: BEHIND the door, in the
-  // carcass opening, not a whisker inside the board.
-  assert.ok(Math.abs(pivot.z - -6.8) < 1e-9, `pivot z = ${pivot.z}`);
+  assert.ok(Math.abs(pivot.z - 2.56) < 1e-9, `pivot z = ${pivot.z}`);
 });
 
 test('F1.2 — moving the axis moves the pivot, one number for one number', () => {
@@ -157,10 +162,20 @@ test('F1.2 — the fold is the door’s own angle, and a shut door folds by noth
   const body = fakeBody();
   foldMemberB(body, P, 0);
   assert.equal(body.userData.ccHingeJoint.rotation.y, 0);
+  // ─── TURN 29 (CLAUDE.md F5): THE SAME ANGLE, FROM THE OTHER END ─────────
+  //
+  // Member B rides the LEAF now and folds BACK through the leaf's own angle,
+  // so the joint turns the other way and the two halves keep one knuckle. The
+  // magnitude is untouched — it is still the door's own angle, and a shut door
+  // still folds by nothing.
   const ninety = -Math.PI / 2;
   foldMemberB(body, P, ninety);
-  assert.equal(body.userData.ccHingeJoint.rotation.y, ninety);
-  assert.equal(body.userData.ccHingeFold, ninety);
+  assert.equal(body.userData.ccHingeJoint.rotation.y, -ninety);
+  assert.equal(body.userData.ccHingeFold, -ninety);
+  // …and it stops at the ironmongery's own limit: a CLIP top opens to 110°.
+  foldMemberB(body, P, Math.PI);
+  assert.ok(Math.abs(body.userData.ccHingeFold + (110 * Math.PI) / 180) < 1e-9,
+    `a 180° door still folds 110°, not ${body.userData.ccHingeFold}`);
 });
 
 test('F1.4 — with the flag OFF nothing folds, and the body hides beyond 15°', () => {
@@ -215,15 +230,22 @@ test('F1.5 — the showroom fixture carries the table’s own node names', () =>
     import.meta.url,
   ));
   const rows = meshTable(parseGlb(bytes));
-  const names = rows.map((r) => r.node).sort();
+  // ─── TURN 29 (CLAUDE.md F5): …AND A KNUCKLE ON THE MEASURED PIN ─────────
+  // The showroom grew three more meshes this turn — member A's two knuckle
+  // lugs and member B's barrel between them, all on the fold axis — so a NAME
+  // may now appear more than once. The set is what the member lists are about;
+  // the count is a modelling detail and asserting it would make the fixture
+  // harder to improve for no gain.
+  const names = [...new Set(rows.map((r) => r.node))].sort();
   assert.deepEqual(names, [...RIG.memberA, ...RIG.memberB].sort());
   // …and each node's own far edge is the table's, to a tenth of a millimetre.
   for (const row of TABLE) {
-    const got = rows.find((r) => r.node === row.node);
-    assert.ok(got, `${row.node} is in the file`);
+    const got = rows.filter((r) => r.node === row.node);
+    assert.ok(got.length, `${row.node} is in the file`);
+    const far = Math.max(...got.map((r) => r.max[2]));
     assert.ok(
-      Math.abs(got.max[2] - row.z[1]) < 0.1,
-      `${row.node} reaches z ${row.z[1]}, measured ${got.max[2]}`,
+      Math.abs(far - row.z[1]) < 0.1,
+      `${row.node} reaches z ${row.z[1]}, measured ${far}`,
     );
   }
 });

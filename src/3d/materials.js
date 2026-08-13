@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { decorMapping, grainRun } from '../engine/decors.js';
+import { decorMapping, grainRun, imageGrainAxis } from '../engine/decors.js';
 import { roughnessFromSheen } from '../engine/design.js';
 
 // ─── What a panel is made of, as far as the eye is concerned ───
@@ -95,29 +95,56 @@ const clones = new Map();
  * @param {string} url
  * @param {object} t   { repeatX, repeatY, rotate, anisotropy }
  */
-export function decorTexture(url, { repeatX, repeatY, rotate = false, anisotropy = 8 }) {
+export function decorTexture(url, placement) {
+  const { repeatX, repeatY, rotate = false, anisotropy = 8 } = placement;
   const entry = decorSource(url);
   if (!entry?.loaded || !entry.tex || entry.failed) return null;
-  const rx = Math.round(Math.max(0.01, repeatX) * 1000) / 1000;
-  const ry = Math.round(Math.max(0.01, repeatY) * 1000) / 1000;
+  const rx = quantise(repeatX);
+  const ry = quantise(repeatY);
   const key = `${url}|${rx}|${ry}|${rotate ? 1 : 0}|${anisotropy}`;
   const known = clones.get(key);
   if (known) return known;
   const tex = entry.tex.clone();
-  tex.repeat.set(rx, ry);
-  if (rotate) {
-    // Turning the image a quarter turn is what puts the grain along the face's
-    // U axis. `center` matters: rotate about (0,0) and the whole map slides off
-    // the panel, which shows up as a piece that is the right colour and has no
-    // figure on it at all.
-    tex.center.set(0.5, 0.5);
-    tex.rotation = Math.PI / 2;
-  }
+  applyDecorTransform(tex, placement);
   // A cabinet side is seen at a glancing angle far more often than face-on, and
   // that is exactly where an unfiltered woodgrain turns into a shimmer.
   tex.anisotropy = Math.max(1, Math.round(anisotropy));
   tex.needsUpdate = true;
   clones.set(key, tex);
+  return tex;
+}
+
+/** The repeat, at the precision the clone cache is keyed on. */
+function quantise(v) {
+  return Math.round(Math.max(0.01, v) * 1000) / 1000;
+}
+
+/**
+ * The placement, written onto a texture — the ONE place a decor's repeat and
+ * quarter turn are set (turn 29, CLAUDE.md F1).
+ *
+ * It is exported because it is the whole of what "which way does the grain run"
+ * means once the arithmetic is done: `test/turn29-f1-shelf-grain-scene.test.js`
+ * calls THIS on a bare texture and reads the resulting UV matrix back, so what
+ * is asserted is the SURFACE the scene mounts rather than a flag on the way to
+ * it. A second copy of these three lines in a test would have proved nothing.
+ */
+export function applyDecorTransform(tex, { repeatX, repeatY, rotate = false }) {
+  tex.repeat.set(quantise(repeatX), quantise(repeatY));
+  if (rotate) {
+    // A quarter turn swaps which axis of the image lies along which axis of the
+    // face — which is how the figure of a finish whose grain runs the "wrong"
+    // way for this piece (`engine/decors.js imageGrainAxis`) is put where the
+    // board wants it. `center` matters: rotate about (0,0) and the whole map
+    // slides off the panel, which shows up as a piece that is the right colour
+    // and has no figure on it at all.
+    tex.center.set(0.5, 0.5);
+    tex.rotation = Math.PI / 2;
+  } else {
+    tex.center.set(0, 0);
+    tex.rotation = 0;
+  }
+  tex.updateMatrix();
   return tex;
 }
 
@@ -144,29 +171,55 @@ export function decorPlacement(surface, panel, profile) {
   const { lengthMm } = grainRun(panel);
   const map = decorMapping(panel.box, lengthMm);
 
+  // ─── TURN 29 (CLAUDE.md F1): WHERE THE QUARTER TURN IS DECIDED ───────────
+  //
+  // Two facts meet HERE and nowhere else, which is the whole of F1:
+  //
+  //   the CABINET's    `map.grainAxis` — which axis of this piece's big face
+  //                    the figure has to run along. A statement about board.
+  //   the IMAGE's      `imageGrainAxis(surface)` — which axis of THIS finish's
+  //                    picture the figure runs along. A measured fact about
+  //                    two families of file that are 90° apart (engine/decors
+  //                    .js): a manufacturer's board scan runs down its V, our
+  //                    own procedural grain along its U.
+  //
+  // Turn 8 asked only the first and assumed the second, so every panel wearing
+  // the FALLBACK grain — which is every panel on a machine that cannot reach
+  // the bucket — had its figure 90° out. The scans were right and stay right:
+  // both branches below are turn 8's own arithmetic, unmoved.
+  const rotate = map.grainAxis !== imageGrainAxis(surface);
+
   if (surface.scanAlongGrainMm > 0) {
-    // The image's own proportions decide how wide that many millimetres is; the
-    // aspect is read off the decoded image, so a scan re-exported at a different
-    // shape stays physically right instead of stretching.
+    // The image's own proportions decide how far ACROSS the grain one scan
+    // reaches; the aspect is read off the decoded image, so a scan re-exported
+    // at a different shape stays physically right instead of stretching. The
+    // grain runs DOWN a board scan, so `scanAlongGrainMm` is its height and the
+    // across span is its width: `alongMm × aspect`.
     const entry = sources.get(surface.texture);
     const img = entry?.tex?.image;
     const aspect = img?.width && img?.height ? img.width / img.height : 1;
     const alongMm = surface.scanAlongGrainMm;
     const acrossMm = alongMm * aspect;
-    return map.rotate
-      // Grain along U: the image's height axis lies along the face's width.
+    return rotate
+      // Turned: the image's height axis lies along the face's WIDTH.
       ? { url: surface.texture, repeatX: map.heightMm / acrossMm, repeatY: map.widthMm / alongMm, rotate: true, anisotropy }
       : { url: surface.texture, repeatX: map.widthMm / acrossMm, repeatY: map.heightMm / alongMm, rotate: false, anisotropy };
   }
 
+  // Our own procedural grain is a square TILE — `repeatMm` of board each way.
+  // three builds its texture matrix as SCALE ∘ ROTATE (`Matrix3.setUvTransform`
+  // — the rotation is inside), so on a TURNED image it is `repeat.x` that
+  // divides the face's V extent and `repeat.y` its U. Turn 8 divided them the
+  // unturned way in both branches, which did not turn the figure but STRETCHED
+  // it on any face that is not square — the quiet half of the same fault.
   const tile = surface.repeatMm > 0 ? surface.repeatMm : 900;
-  return {
-    url: surface.texture,
-    repeatX: map.widthMm / tile,
-    repeatY: map.heightMm / tile,
-    rotate: map.rotate,
-    anisotropy,
-  };
+  return rotate
+    ? {
+      url: surface.texture, repeatX: map.heightMm / tile, repeatY: map.widthMm / tile, rotate: true, anisotropy,
+    }
+    : {
+      url: surface.texture, repeatX: map.widthMm / tile, repeatY: map.heightMm / tile, rotate: false, anisotropy,
+    };
 }
 
 /**

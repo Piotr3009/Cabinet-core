@@ -391,9 +391,19 @@ function reverseWinding(geometry) {
  * along X, v along Y) and normalised 0..1 over the box, which is the range
  * `decorPlacement`'s repeats are written against.
  *
- * Then a horizontal panel grains left→right and a vertical one up its height,
- * whichever way the sheet nester turned it — and `decorMapping.rotate`, which
- * has always assumed the box's axes, is telling the truth again.
+ * Then the piece's grain runs where the CABINET says it runs, whichever way the
+ * sheet nester turned it — and `decorMapping`, which has always assumed the
+ * box's axes, is telling the truth again.
+ *
+ * ─── TURN 29 (CLAUDE.md F1): AND THE FACE IT PICKS IS THE ONE THAT MATTERS ──
+ *
+ * The face pick and the axis pair here are `decorMapping`'s own, deliberately
+ * duplicated in the two frames one answer has to be true in — the UVs of the
+ * mesh, and the repeats of the texture laid on them. F1's fault was NOT here:
+ * this file and that function have agreed since turn 13, and a shelf's big face
+ * has come out ±Y (u along X, v along Z) in both the whole time. What was wrong
+ * was WHICH WAY the image was turned onto those axes, and that is one flag in
+ * `engine/decors.js`.
  */
 function applyBoxUVs(geometry, box) {
   const w = mm(Math.abs(box.w)) || 1;

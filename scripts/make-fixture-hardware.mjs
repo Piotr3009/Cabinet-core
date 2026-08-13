@@ -100,6 +100,57 @@ function box({
 }
 
 /**
+ * A barrel lying along the file's Y — the KNUCKLE (turn 29, CLAUDE.md F5).
+ *
+ * The fold axis is Y-parallel, so the one feature that makes the rig assertable
+ * is a piece of geometry standing ON it. R8 asks that the showroom carry "a pin
+ * at the same model-space point" as the real file, and this is that pin: the
+ * two members interlock at x = −18.08, z = +42.86 mm, member A's two lugs
+ * outside and member B's barrel between them, exactly as a CLIP top's knuckle
+ * is put together.
+ */
+function cylinderY({
+  cx, cz, r, y0, y1, segments = 20,
+}) {
+  const positions = [];
+  const normals = [];
+  const indices = [];
+  const push = (p, n) => {
+    positions.push(M(p[0]), M(p[1]), M(p[2]));
+    normals.push(n[0], n[1], n[2]);
+    return positions.length / 3 - 1;
+  };
+  for (let i = 0; i < segments; i += 1) {
+    const a0 = (i / segments) * Math.PI * 2;
+    const a1 = ((i + 1) / segments) * Math.PI * 2;
+    const p0 = [cx + Math.cos(a0) * r, cz + Math.sin(a0) * r];
+    const p1 = [cx + Math.cos(a1) * r, cz + Math.sin(a1) * r];
+    const n0 = [Math.cos(a0), 0, Math.sin(a0)];
+    const n1 = [Math.cos(a1), 0, Math.sin(a1)];
+    const a = push([p0[0], y0, p0[1]], n0);
+    const b = push([p1[0], y0, p1[1]], n1);
+    const c = push([p1[0], y1, p1[1]], n1);
+    const d = push([p0[0], y1, p0[1]], n0);
+    indices.push(a, b, c, a, c, d);
+  }
+  for (const [y, n, wind] of [[y1, [0, 1, 0], true], [y0, [0, -1, 0], false]]) {
+    const centre = push([cx, y, cz], n);
+    const ring = [];
+    for (let i = 0; i < segments; i += 1) {
+      const a = (i / segments) * Math.PI * 2;
+      ring.push(push([cx + Math.cos(a) * r, y, cz + Math.sin(a) * r], n));
+    }
+    for (let i = 0; i < segments; i += 1) {
+      const q = ring[i];
+      const t = ring[(i + 1) % segments];
+      if (wind) indices.push(centre, q, t);
+      else indices.push(centre, t, q);
+    }
+  }
+  return { positions, normals, indices };
+}
+
+/**
  * A cylinder along the DEPTH axis (z) — which is how a cup is bored, so the
  * fixture matches the real file's authored axes rather than needing a rotation
  * the app would have to know about.
@@ -289,6 +340,17 @@ const MATERIALS = [
  * alone would cut the arm in half; a split done by name puts the whole of it on
  * the carcass, which is where it is bolted.
  */
+// The measured fold axis, in FILE millimetres — `profile.hardware.hinge
+// .cliptop.rig.axis`, quoted rather than imported because this script writes a
+// FILE and must not depend on the app booting. `test/turn29-f5-hinge-fold
+// .test.js` asserts the two agree, so a corrected axis cannot leave the
+// showroom's pin behind.
+// The radius is the showroom's own and is chosen, not measured: 2 mm keeps the
+// whole barrel inside the per-node z envelopes the real export measures
+// (`bau0015088853` ends at 44.9, `bau0015088251` at 46.2), so the fixture still
+// reproduces the table `verify/t24/rig-members.md` records, node for node.
+const KNUCKLE = { x: -18.08, z: 42.86, r: 2 };
+
 function hingeParts() {
   return [
     // MEMBER A ─ the ⌀35 cup, bored along the depth, its centre at the x the
@@ -335,6 +397,39 @@ function hingeParts() {
       material: 'plastic_black',
       geometry: box({
         x0: -16, x1: 0, y0: -6, y1: 6, z0: -29.48, z1: 22.5,
+      }),
+    },
+    // ─── TURN 29 (CLAUDE.md F5): THE KNUCKLE, ON THE MEASURED PIN ──────────
+    //
+    // The fold axis is the Y-parallel line through x = −0.01808, z = +0.04286
+    // of the real file. R8 asks the showroom to carry "a pin at the same
+    // model-space point, so the rig math is asserted for real" — so the two
+    // members INTERLOCK there, member A's two lugs outside and member B's
+    // barrel between them, which is how a CLIP top's knuckle is put together.
+    //
+    // Both parts carry a name that is already on its member's list, so nothing
+    // about the split changes; and the whole barrel lies inside the measured
+    // bounding box (x −26.5…11, y ±28.5, z −29.48…51.3), so `min`, `size` and
+    // every origin derived from them are untouched to the byte.
+    {
+      name: 'bau0015088853',
+      material: 'metal_nickel_raw',
+      geometry: cylinderY({
+        cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: -28.5, y1: -12,
+      }),
+    },
+    {
+      name: 'bau0015088853',
+      material: 'metal_nickel_raw',
+      geometry: cylinderY({
+        cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: 12, y1: 28.5,
+      }),
+    },
+    {
+      name: 'bau0015088251',
+      material: 'metal_nickel_raw',
+      geometry: cylinderY({
+        cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: -12, y1: 12,
       }),
     },
   ];

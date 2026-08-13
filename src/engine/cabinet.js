@@ -959,6 +959,13 @@ export function computeCabinet(params, profileOverride) {
   const hasBottom = (type.carcass.bottom ?? 'panel') === 'panel';
   // ONE plain board across the opening: the D/W's whole carcass (F1.1).
   const hasTopRail = type.carcass.top === 'rail';
+  // ─── TURN 29 (CLAUDE.md F3) ───────────────────────────────────────────────
+  // Does this kit's FACE fall forward about its bottom edge instead of swinging
+  // on cups? Read once, here, because turn 29 puts that face on the ordinary
+  // door control — so `doorCount` is 1 on a kit that hangs on NO hinges, and
+  // every law that used to read "has this cabinet a door" as "does it hang on
+  // cups" has to be asked the second question by name.
+  const dropsForward = type.frontOpens === 'drop';
 
   // ── Carcass geometry ───────────────────────────────────────────────────────
   const internalWidth = W - C.topWidthBoards * G;
@@ -1031,7 +1038,13 @@ export function computeCabinet(params, profileOverride) {
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
     : W - P.doors.gap;
-  const hingedSides = doorCount === 2 ? ['BUL', 'BUR'] : (doorCount === 1 ? [cfg.hinge === 'R' ? 'BUR' : 'BUL'] : []);
+  // Turn 29 (CLAUDE.md F3): an appliance face is screwed to the machine's own
+  // door and hangs on nothing, so no side of this kit is a hinged side — which
+  // matters now that such a kit answers the ordinary door control and can
+  // report a `doorCount` of 1. (It has no BUL to bore either, which is how the
+  // fault showed: six ⌀5 plate holes addressed to a panel that is not cut.)
+  const hingedSides = dropsForward ? []
+    : (doorCount === 2 ? ['BUL', 'BUR'] : (doorCount === 1 ? [cfg.hinge === 'R' ? 'BUR' : 'BUL'] : []));
 
   // ── Hinges + cups ──────────────────────────────────────────────────────────
   const hingeRule = P.hinges.rules[type.hingeRule] || P.hinges.rules.base;
@@ -2960,7 +2973,25 @@ export function computeCabinet(params, profileOverride) {
   // `leafCount` is that number said properly: how many doors this cabinet has,
   // counting the ones on a partition. Every law downstream reads it, and there
   // is no branch anywhere that asks whether a leaf is a "bay door".
-  const leafCount = bayDoors.length || doorCount;
+  //
+  // ─── TURN 29 (CLAUDE.md F3): A FACE THAT IS NOT A LEAF ───────────────────
+  //
+  // The D/W's front joins the standard door control this turn, so `doorCount`
+  // is 1 on a kit that hangs on NO hinges — its face is screwed to the
+  // appliance's own door. Two numbers, because they answer two questions and
+  // turn 25 proved what happens when one is asked to answer both:
+  //
+  //   `leafCount`        how many FRONTS the face has — what the add/remove
+  //                      control speaks about and what `derived.doors` reports
+  //   `hingedLeafCount`  how many of them hang on cup hinges — what the BOM
+  //                      buys ironmongery for and what the machine bores
+  //
+  // On every kit but this one they are the same number, so nothing else in the
+  // engine, the BOM or the export moves by a hundredth.
+  // A drop front is ONE face however wide the kit is: 594 is a measured number
+  // and there is no two-leaf appliance door.
+  const leafCount = dropsForward ? Math.min(1, doorCount) : (bayDoors.length || doorCount);
+  const hingedLeafCount = dropsForward ? 0 : (bayDoors.length || doorCount);
   for (const leaf of bayDoors) {
     if (!(leaf.width > 0)) continue;
     panels.push(panel({
@@ -2995,7 +3026,12 @@ export function computeCabinet(params, profileOverride) {
   // `cfg.frontType` from the same lines every leaf in the run takes them from
   // — which is the whole of F2.2 — and its own WIDTH from the type, because
   // 594 is a measured number and not a formula.
-  if (type.frontOpens === 'drop') {
+  //
+  // ─── TURN 29 (CLAUDE.md F3): …AND IT IS SWITCHED ON LIKE EVERY OTHER ─────
+  // `leafCount` is the door control's own answer, so "Remove doors" takes this
+  // face off the scene, the sheet and the BOM exactly as it takes a BUD's off
+  // — and turn 28's composition arrives as the DEFAULT rather than as a wire.
+  if (dropsForward && leafCount > 0) {
     const dropW = Number(type.frontWidth) > 0 ? Number(type.frontWidth) : frontW;
     panels.push(panel({
       id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: dropW, h: frontH, thickness: frontT,
@@ -3017,14 +3053,14 @@ export function computeCabinet(params, profileOverride) {
     }));
   }
 
-  if (!bayDoors.length && doorCount === 1) {
+  if (!dropsForward && !bayDoors.length && doorCount === 1) {
     panels.push(panel({
       id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
       box: { x: P.doors.gap / 2, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
       cnc: rectGeometry(frontW, frontH), meta: { hinge: cfg.hinge, frontType: cfg.frontType },
     }));
-  } else if (!bayDoors.length && doorCount === 2) {
+  } else if (!dropsForward && !bayDoors.length && doorCount === 2) {
     panels.push(panel({
       id: `${unitNum}-FL`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
       edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
@@ -3732,7 +3768,9 @@ export function computeCabinet(params, profileOverride) {
     legs: legsPerUnit,
     // Turn 25 (CLAUDE.md F5): the LEAVES, not the face's door rule — a door
     // hung on a partition needs the same three hinges as one hung on a side.
-    hinges: leafCount > 0 ? centres.length * leafCount : 0,
+    // Turn 29 (F3): the HINGED leaves — an appliance face is screwed to the
+    // machine's own door and buys nothing to hang itself on.
+    hinges: hingedLeafCount > 0 ? centres.length * hingedLeafCount : 0,
     runner_pairs: numDrawers,
     hangers: type.hangers ? P.wallUnit.hangers.count : 0,
     rail: hasRail ? 1 : 0,
@@ -3781,20 +3819,21 @@ export function computeCabinet(params, profileOverride) {
   // `totals.hinges` was `centres.length × 0` and the BOM bought nothing to hang
   // three leaves on.
   //
-  // `leafCount` is that number said properly: how many doors this cabinet has,
-  // counting the ones on a partition. Every law below reads it, and there is no
+  // `hingedLeafCount` is that number said properly: how many doors this cabinet
+  // hangs on cup hinges, counting the ones on a partition and NOT counting an
+  // appliance face (turn 29, F3). Every law below reads it, and there is no
   // branch anywhere that asks whether a leaf is a "bay door".
   const doorPanels = panels.filter((pn) => pn.part === 'FRONT' && pn.role === 'front'
     && !pn.meta?.appliance);
   const innerDrawer = type.family === 'wardrobe' && numDrawers > 0;
   const hingeGroups = new Map();
-  if (leafCount > 0 && centres.length > 0) {
+  if (hingedLeafCount > 0 && centres.length > 0) {
     // A kit whose door panels are not one-per-door (a fridge housing's fixed
     // face, a kit that has had its fronts taken off) still buys hinges for the
     // doors the engine counted — so the LIST is padded to `doorCount` with the
     // cabinet's own answer rather than shrinking the order to the panels.
-    const doors = doorPanels.length === leafCount ? doorPanels : [];
-    const keys = doors.length ? doors : Array.from({ length: leafCount }, () => null);
+    const doors = doorPanels.length === hingedLeafCount ? doorPanels : [];
+    const keys = doors.length ? doors : Array.from({ length: hingedLeafCount }, () => null);
     for (const pnl of keys) {
       const spec = resolveDoorHinge({
         assigned: pnl ? doorHingeAssignment({ door_hinges: cfg.doorHinges }, pnl.id) : null,
@@ -4065,8 +4104,8 @@ export function computeCabinet(params, profileOverride) {
   };
 
   const drillSummary = {
-    hinge_centers: leafCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
-    side_hinge_holes_y: leafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
+    hinge_centers: hingedLeafCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
+    side_hinge_holes_y: hingedLeafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
     hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
     front_cup_y: cupY.map((v) => roundTo(v, 4)),

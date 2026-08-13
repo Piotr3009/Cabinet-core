@@ -814,6 +814,22 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
     }),
     [results, unitDimensions, profile],
   );
+  // ─── TURN 29 (CLAUDE.md F2.2): …AND SO DOES THE ONE THE EYE SEES ─────────
+  //
+  // The owner, on turn 28's F8.2: *"nadal pokazuje na każdej szafce"*. It did
+  // — turn 28 taught the RIGHT-CLICK chain the run rule and left the chain
+  // "Show dimensions" draws alone, and that is the one on screen. Same
+  // function, same law, asked about every cabinet the toolbar has switched on:
+  // a stretch of neighbours that would print the same numbers carries them
+  // once, on the run's outer end.
+  const sizeChainOn = useMemo(
+    () => dimensionCarriers({
+      results,
+      wanted: showDimensions && !contourView ? results.map((e) => e.unit.id) : [],
+      profile,
+    }),
+    [results, showDimensions, contourView, profile],
+  );
   const walls = useMemo(() => roomWalls(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
 
@@ -1021,6 +1037,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           onSetSideInfillTop={(side, v) => setSideInfillTop(unit.id, side, v)}
           onSideInfillToCeiling={(side) => sideInfillToCeiling(unit.id, side)}
           showLabels={showDimensions && !contourView}
+          // Turn 29 (CLAUDE.md F2.2): the W and the 100 + 770 are the RUN's,
+          // and one cabinet of it carries them. The name chip above is not a
+          // dimension and stays on every unit.
+          carriesSizeChain={sizeChainOn.has(unit.id)}
           profile={profile}
           finishes={resolveFinishes(unit, design, profile)}
           outlines={showOutlines}

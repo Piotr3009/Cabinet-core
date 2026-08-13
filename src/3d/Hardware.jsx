@@ -90,10 +90,10 @@ export default function Hardware({
   // sleeves. The DESIGN comes in now and `shelfSupportMetal` is the one place
   // the answer is worked out, for the sleeve, the pin and the collar alike.
   design = null,
-  // Turn 24 (CLAUDE.md F1.2): every leaf's signed opening angle, so the hinge's
-  // CARCASS half can fold after the door it belongs to. The door is not this
-  // component's child, which is exactly why the angle has to cross.
-  doorSwing = null,
+  // Turn 24 took every leaf's signed opening angle here, so the hinge's CARCASS
+  // half could fold after the door it belonged to. Turn 29 (CLAUDE.md F5) moved
+  // that half INTO the leaf's own group, where the angle already is — so the
+  // prop is gone rather than left as a wire nothing pulls.
 }) {
   const colours = profile.appearance.hardware;
   const shelfMetal = shelfSupportMetal(design, profile);
@@ -140,7 +140,6 @@ export default function Hardware({
           storageBase={storageBase}
           surface={surface}
           scope={scope}
-          doorSwing={doorSwing}
         />
       )}
       {/* ─── Turn 18 (CLAUDE.md F6.7) ───
@@ -364,19 +363,26 @@ function useHingeModels({
  */
 function CarcassHinges({
   items, profile, colour, specs = null, storageBase = '',
-  surface = 'room', scope = '', doorSwing = null,
+  surface = 'room', scope = '',
 }) {
   const H = profile.hardware.hinge;
   const { urls, models } = useHingeModels({
     items, specs, kind: 'plate', profile, storageBase,
   });
-  // ─── TURN 24 (CLAUDE.md F1.1): MEMBER B LIVES HERE ────────────────────────
-  // The arm and the rear body are bolted to the plate, so they belong to the
-  // CARCASS's frame beside it — which is the whole point of the split, and the
-  // reason a 90° door no longer drags a whole hinge out into the room with it.
-  const { models: bodies } = useHingeModels({
-    items, specs, kind: 'body', profile, storageBase,
-  });
+  // ─── TURN 29 (CLAUDE.md F5): MEMBER B MOVED NEXT DOOR ─────────────────────
+  //
+  // Turn 24 drew the arm here, in the CARCASS's frame, and folded it forward by
+  // the leaf's angle. With the knuckle measured it is possible to say what that
+  // cost: the leaf turns about its own hinge line, so member A's pin travelled
+  // on an arc and member B's — the centre of its own rotation — did not, and by
+  // 110° the two halves of one hinge stood 25 mm apart.
+  //
+  // The arm rides the LEAF now and turns BACK through the same angle, which
+  // keeps its world orientation the carcass's (it does not swing out with the
+  // door — turn 23's fault) and keeps the knuckle a single point (turn 24's).
+  // It is drawn by `<DoorHinges>` below, beside the cup it is jointed to.
+  // Everything else about this component is what it was: the PLATE, screwed to
+  // the side panel, which is the one piece of a CLIP top that never moves.
 
   // ─── TURN 26 (CLAUDE.md F1.3): WHICH LEAF THIS HINGE BELONGS TO ──────────
   //
@@ -392,10 +398,7 @@ function CarcassHinges({
     models.forEach((m, i) => {
       if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
     });
-    bodies.forEach((m, i) => {
-      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
-    });
-  }, [models, bodies, items]);
+  }, [models, items]);
 
   // ─── TURN 21 (CLAUDE.md R4 / F2.3) ───
   // What the walk is allowed to believe: the exact url string this component
@@ -411,22 +414,6 @@ function CarcassHinges({
       finish: models[i]?.model?.userData?.ccFinish || null,
     })), scope);
   }, [surface, scope, items, urls, models]);
-
-  // Turn 24 (F1.5): member B's own row, so the walk can assert the SPLIT off
-  // the scene — which member is drawn, under which parent, folded by how much
-  // — rather than off a picture of a hinge.
-  useEffect(() => {
-    reportHardware(surface, 'hingeBody', items.map((h, i) => ({
-      key: h.panelId ?? i,
-      url: urls[i] || null,
-      model: Boolean(bodies[i]?.model),
-      reason: bodies[i]?.reason,
-      parent: 'carcass',
-      member: 'B',
-      nodes: bodies[i]?.model?.userData?.ccHingeMemberNodes || null,
-      pivotMm: bodies[i]?.model?.userData?.ccHingePivotMm || null,
-    })), scope);
-  }, [surface, scope, items, urls, bodies]);
 
   const drawnModel = models.some((m) => m.model);
 
@@ -446,20 +433,6 @@ function CarcassHinges({
           position={[mm(items[i].plateX), mm(items[i].y), mm(items[i].plateZ)]}
         />
       ) : null))}
-      {/* ─── F1.1/F1.2: member B, on the drilled CUP point and folding ───
-          Placed on the cup, not on the plate: the arm's geometry is authored
-          about the cup like the rest of the file, and re-datuming it would be
-          inventing an offset. It stands in the CARCASS's frame, so a door that
-          swings leaves it behind — and the joint turns it after the leaf. */}
-      {bodies.map((m, i) => (m.model ? (
-        <HingeBody
-          key={`hb${items[i].panelId}-${items[i].y}`}
-          object={m.model}
-          profile={profile}
-          position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]}
-          angle={doorSwing?.[items[i].panelId] ?? 0}
-        />
-      ) : null))}
       <Pieces count={items.length} place={placePlate} colour={colour} visible={!drawnModel}>
         <boxGeometry args={[mm(H.plateThickness), mm(H.plateWidth), mm(H.plateLength)]} />
       </Pieces>
@@ -468,13 +441,19 @@ function CarcassHinges({
 }
 
 /**
- * Member B, folding after its door (turn 24, CLAUDE.md F1.2).
+ * Member B, folding BACK through its door's own angle (turn 24 F1.2; turn 29
+ * CLAUDE.md F5).
  *
  * The easing is the DOOR's own — `3d/UnitView.jsx MovingPanel` settles at
  * `delta × 8` towards its target — because the two halves of one hinge must
  * arrive together. Copying the constant would be two numbers that could drift,
  * so the target comes from the same place the door's does (the open fraction
  * times the leaf's swing) and only the integration happens here.
+ *
+ * Since turn 29 this object is a child of the LEAF, so the easing matters twice
+ * over: the group it sits in is being eased by `MovingPanel` at the same rate,
+ * and a fold that lagged its own parent would show as an arm scissoring open
+ * and shut on every click. Same rate, same target, arrives together.
  */
 function HingeBody({
   object, profile, position, angle,
@@ -561,25 +540,48 @@ export { hingeSpecsFor } from '../engine/hinges.js';
 export function DoorHinges({
   items, profile, colour, pivot, specs = null, storageBase = '',
   surface = 'room', scope = '', onEditHinge = null, openDeg = 0,
+  // ─── TURN 29 (CLAUDE.md F5) ───
+  // The leaf's own SIGNED opening angle, in radians — `dir × open × swing`, the
+  // very expression `MovingPanel` integrates. Member B folds BACK through it,
+  // which is what keeps the arm at the carcass's angle while it rides the leaf.
+  swing = 0,
 }) {
   const H = profile.hardware.hinge;
-  // ─── TURN 24 (CLAUDE.md F1.1): MEMBER A, AND ONLY MEMBER A ────────────────
+  // ─── TURN 24 (CLAUDE.md F1.1): MEMBER A ───────────────────────────────────
   // The cup, its flange, the clip cap and the link cover — the pieces that are
-  // clipped INTO the door. The arm went back to the carcass this turn, where it
-  // is bolted to the plate. With the rig switched off this is the whole model
+  // clipped INTO the door. With the rig switched off this is the whole model
   // again, exactly as turn 23 drew it (F1.4).
   const { urls, models } = useHingeModels({
     items, specs, kind: 'cup', profile, storageBase,
+  });
+  // ─── TURN 29 (CLAUDE.md F5): …AND MEMBER B, BESIDE IT ─────────────────────
+  //
+  // The arm and the rear body. Turn 24 drew them in the CARCASS's frame and
+  // turned them FORWARD by the leaf's angle; with the knuckle measured, that
+  // rig can be checked, and it fails the check — the leaf turns about its own
+  // hinge line, so member A's pin travels on an arc while member B's stands
+  // still, and at 110° the two halves of one hinge are 25 mm apart.
+  //
+  // They are jointed at the pin, so they are drawn in ONE frame and jointed
+  // there: member B rides the leaf on the same drilled point member A stands
+  // on, and `foldMemberB` turns it back through the leaf's own angle. The
+  // knuckle is then a single point by construction and the arm keeps the
+  // carcass's orientation — at 110° it lies along the side panel rather than
+  // standing square off the door, which is what a CLIP top does.
+  const { models: bodies } = useHingeModels({
+    items, specs, kind: 'body', profile, storageBase,
   });
 
   // Turn 26 (CLAUDE.md F1.3): which LEAF each cup belongs to, for the same
   // reason member B carries it — a no-pierce claim is about ONE door and its
   // own hinges, and a room full of cabinets is a scene full of everyone's.
   useEffect(() => {
-    models.forEach((m, i) => {
-      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
-    });
-  }, [models, items]);
+    for (const list of [models, bodies]) {
+      list.forEach((m, i) => {
+        if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+      });
+    }
+  }, [models, bodies, items]);
   // …and the other half of F1.4: with the flag off, an opening door HIDES the
   // model beyond ~15° and shows the plate only. A wrong pose held on screen is
   // worse than an honest absence, and this is the owner's own fallback.
@@ -600,8 +602,32 @@ export function DoorHinges({
       member: profile.hardware.hinge.cliptop.rig?.enabled ? 'A' : null,
       nodes: models[i]?.model?.userData?.ccHingeMemberNodes || null,
       finish: models[i]?.model?.userData?.ccFinish || null,
+      // Turn 29 (F5): where this hinge's knuckle is, in the clone's own
+      // millimetres, and which hand it is — so a walk can put the point into
+      // the room for BOTH members and check that they are one point.
+      pivotMm: models[i]?.model?.userData?.ccHingePivotMm || null,
+      mirror: models[i]?.model?.userData?.ccHingeMirror ?? null,
     })), scope);
   }, [surface, scope, items, urls, models, hidden, profile]);
+
+  // Turn 24 (F1.5): member B's own row, so the walk can assert the SPLIT off
+  // the scene — which member is drawn, under which parent, folded by how much
+  // — rather than off a picture of a hinge. Turn 29 (F5): the parent is the
+  // DOOR now, and the fold is the leaf's angle turned back.
+  useEffect(() => {
+    reportHardware(surface, 'hingeBody', items.map((h, i) => ({
+      key: h.panelId ?? i,
+      url: urls[i] || null,
+      model: Boolean(bodies[i]?.model) && !hidden,
+      reason: hidden ? 'rig-off-hidden' : bodies[i]?.reason,
+      parent: 'door',
+      member: 'B',
+      nodes: bodies[i]?.model?.userData?.ccHingeMemberNodes || null,
+      pivotMm: bodies[i]?.model?.userData?.ccHingePivotMm || null,
+      mirror: bodies[i]?.model?.userData?.ccHingeMirror ?? null,
+      fold: bodies[i]?.model?.userData?.ccHingeFold ?? null,
+    })), scope);
+  }, [surface, scope, items, urls, bodies, hidden]);
 
   const drawnModel = models.some((m) => m.model);
 
@@ -681,6 +707,25 @@ export function DoorHinges({
           position={[
             mm(items[i].x) - pivot[0], mm(items[i].y) - pivot[1], mm(items[i].z) - pivot[2],
           ]}
+        />
+      ) : null))}
+
+      {/* ─── TURN 29 (CLAUDE.md F5): member B, on the SAME drilled point ───
+          Placed on the cup and not on the plate: the arm's geometry is authored
+          about the cup like the rest of the file, and re-datuming it would be
+          inventing an offset. It stands in the LEAF's frame beside member A, so
+          the knuckle the two share is one point — and `foldMemberB` turns it
+          back through the leaf's own angle, which is what keeps the arm at the
+          carcass's attitude while the door swings away from it. */}
+      {(hidden ? [] : bodies).map((m, i) => (m.model ? (
+        <HingeBody
+          key={`hb${items[i].panelId}-${items[i].y}`}
+          object={m.model}
+          profile={profile}
+          position={[
+            mm(items[i].x) - pivot[0], mm(items[i].y) - pivot[1], mm(items[i].z) - pivot[2],
+          ]}
+          angle={swing}
         />
       ) : null))}
 

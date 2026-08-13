@@ -202,16 +202,30 @@ function Value({
  */
 function DimensionValue({ position, text, style }) {
   const texture = useMemo(() => {
-    const size = 38;
-    const font = `600 ${size}px ui-monospace, Menlo, Consolas, monospace`;
+    // ─── TURN 29 (CLAUDE.md F4): A THIRD BIGGER, HALF THE WEIGHT ───────────
+    //
+    // *"napisy troszeczkę za małe — jakby były o 30% większe ale o połowę mniej
+    // tłuste na tych wymiarowaniach wszędzie."* Both numbers are the profile's
+    // (`hoverDimensions.label`), read through `dimensionStyle` like the two
+    // inks beside them, because this component is the ONE place a dimension's
+    // caption is drawn (R11) and a workshop tunes type in one block.
+    //
+    // The size that the EYE measures is the sprite's height below; `pixels` is
+    // the canvas the glyphs are rasterised on and grows with it so the label
+    // gets bigger rather than softer. The weight is a light cut of the SAME
+    // monospace family — less fat, not a different face.
+    const size = style.labelPixels;
+    const font = `${style.labelWeight} ${size}px ui-monospace, Menlo, Consolas, monospace`;
     const canvas = document.createElement('canvas');
     const measure = canvas.getContext('2d');
     measure.font = font;
-    const pad = 16;
+    // Padding and tracking are fractions of the type, so the plate grows WITH
+    // it: turn 25's 16 px on 38 is the 0.42 the profile carries.
+    const pad = Math.round(size * style.labelPad);
     // The plate is wider than the type: the letter-spacing the app's own
     // `cc-label` carries has to be paid for in pixels, and a caption that
     // touches its own edge reads as clipped.
-    const tracking = size * 0.09;
+    const tracking = size * style.labelTracking;
     const width = Math.ceil(measure.measureText(text).width + tracking * text.length) + pad * 2;
     const height = size + pad * 2;
     canvas.width = width;
@@ -238,12 +252,15 @@ function DimensionValue({ position, text, style }) {
     tex.needsUpdate = true;
     tex.userData.aspect = width / height;
     return tex;
-  }, [text, style.labelPlate, style.labelInk, style.labelAlpha]);
+  }, [text, style.labelPlate, style.labelInk, style.labelAlpha,
+    style.labelPixels, style.labelWeight, style.labelPad, style.labelTracking]);
 
   useEffect(() => () => texture.dispose(), [texture]);
 
-  // Turn 25's own size: `DimLabel`'s 0.055 at the chain's scale of 0.8.
-  const h = 0.044;
+  // Turn 25's own size was 0.044 — `DimLabel`'s 0.055 at the chain's scale of
+  // 0.8. Turn 29 (CLAUDE.md F4) is that × 1.3, and it is the number the eye
+  // measures: the walk reads the mounted sprite's scale and checks the ratio.
+  const h = style.labelHeight;
   const w = h * (texture.userData.aspect || 3);
   return (
     <sprite position={position} scale={[w, h, 1]} renderOrder={10} userData={{ ccHelper: true, ccNoBounds: true }}>

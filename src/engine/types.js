@@ -370,10 +370,21 @@ export const UNIT_TYPES = {
     drawerStyle: null,
     minHeightKey: null,
     defaultsKey: 'dwPanel.defaults',
-    // `doors: false` — there is no DOOR to choose here. The face is the
-    // appliance's front and `frontOpens` above is what emits it.
+    // ─── TURN 29 (CLAUDE.md F3): THE FRONT JOINS THE STANDARD CONTROLS ────
+    //
+    // The owner: *"front i plinth powinien być tak samo włączany jak cała
+    // reszta szafek, tymi samymi przyciskami."* Turn 28 hard-wired both — the
+    // face was emitted whenever the kit was a D/W and the plinth toggle was
+    // hidden because the kit has no legs — so the two pieces a joiner is most
+    // likely to want off were the two he could not switch.
+    //
+    // `doors: true` is not a claim that the face is a DOOR. It is the answer
+    // to "does this kit have a front you add and remove", which is the
+    // question the control asks, and it is yes. What the face IS stays where
+    // it was: `frontOpens` emits it, `meta.appliance` keeps the cups out of
+    // it, and `leafCount` below does not count it as a leaf to hang hinges on.
     supports: {
-      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: false,
     },
     available: true,
   },
@@ -529,7 +540,13 @@ export function defaultParamsFor(typeId, profile) {
     rail: false,
     rail_offset: d.railOffset ?? null,
     hinge: profile.doors.defaultHinge,
-    doors: null,          // null = derive from the width threshold
+    // null = derive from the width threshold. A kit whose face is the
+    // APPLIANCE's own front rather than a door arrives with it FITTED (turn
+    // 29, CLAUDE.md F3): it is one of the three pieces the kit is, exactly as
+    // its toe kick is, so the decision arrives already made and the joiner
+    // unticks it if he disagrees. Everywhere else doors are the LAST step
+    // (SPEC 4.10) and this line is what it always was.
+    doors: type.frontOpens ? true : null,
     // ─── TURN 28 (CLAUDE.md F1): THE PLINTH IS ON BY DEFAULT — ON THIS KIT ──
     //
     // The owner: *"najważniejszego czyli plinth i tak nie ma"* — the piece he

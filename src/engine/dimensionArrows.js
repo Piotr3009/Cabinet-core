@@ -60,6 +60,15 @@ export function dimensionStyle(profile) {
     labelPlate: S.label?.plate || '#1c1c1a',
     labelInk: S.label?.ink || '#e8e4dc',
     labelAlpha: num(S.label?.plateAlpha, 0.9),
+    // ─── TURN 29 (CLAUDE.md F4): …AND ITS TYPE ────────────────────────────
+    // The owner's *"o 30% większe ale o połowę mniej tłuste"*, read through
+    // here for the same reason the two inks are: ONE call answers what a
+    // dimension's caption looks like, and there is one component asking.
+    labelHeight: num(S.label?.heightM, 0.0572),
+    labelPixels: num(S.label?.pixels, 49),
+    labelWeight: num(S.label?.weight, 300),
+    labelPad: num(S.label?.padFraction, 0.42),
+    labelTracking: num(S.label?.trackingFraction, 0.09),
     // Turn 24 (CLAUDE.md F10): how far the cursor may stray before a shown set
     // fades. It lives in `profile.editor` — it is a property of the TOOL and
     // not of the drawing's ink — and is read THROUGH here so both surfaces get

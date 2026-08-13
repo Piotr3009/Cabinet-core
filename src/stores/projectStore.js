@@ -126,8 +126,14 @@ function newUnit(typeId, profile, index, design) {
       // beside it is the default and a different height is the exception.
       ...projectHeightParams(type, design, profile),
       unit_num: autoUnitNum(type, index),
-      // Doors are the LAST step (SPEC 4.10) — except where the type has none.
-      doors: type.supports.doors ? false : null,
+      // Doors are the LAST step (SPEC 4.10) — except where the type has none,
+      // and except where the "door" is the APPLIANCE's own front (turn 29,
+      // CLAUDE.md F3): a D/W panel is a front, a rail and a toe kick, and two
+      // of the three arriving fitted while the joiner has to ask for the
+      // third is not a composition anybody chose. `defaultParamsFor` says the
+      // same thing off the same property, so a bare kit call agrees.
+      // eslint-disable-next-line no-nested-ternary
+      doors: type.supports.doors ? (type.frontOpens ? true : false) : null,
       sections: [{ width_mm: params.width, items }],
       materials: {},
     },

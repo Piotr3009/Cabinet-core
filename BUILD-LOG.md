@@ -7587,3 +7587,189 @@ Nothing shrank. All four phases are in. One new blocker is named rather than
 guessed: **#94** — whether the D/W carcass has a bottom under a machine that
 stands on the floor. CLAUDE.md F2.1 names the bottom, so the bottom is cut; the
 question of whether it belongs there is the owner's.
+
+---
+
+# TURN 28 — the owner's list, eleven items long
+
+**Baseline: main after the 12.08 chat fix, `8b6ece6`. Suite there: 2 184 tests,
+2 184 pass. Suite at the end of this turn: 2 276 tests, 2 276 pass, on a clean
+`rm -rf node_modules && npm install`.**
+
+## The turn in one line
+
+A BIG turn, and it is the owner's own list in his order: he walked turn 27 with
+his eyes and came back with eleven things. **Nothing shrank** — all eleven are
+in, and the two that were allowed to shrink first (F11, then F10) did not have
+to.
+
+## F1 — the dishwasher is a FRONT, a RAIL and a PLINTH [CRITICAL]
+
+Verbatim: *"nie ma całego korpusu oprócz górnego panela, który ma 600 mm bez
+żadnych dog bonów — tak jak było, tylko chciałem żeby to było podciągnięte pod
+logikę szafki."*
+
+Turn 27 read his earlier *"dlaczego zmywarki nie traktujesz jak szafki?"* as
+"cut it a carcass" and put BUL, BUR, TOP, BOTTOM and BACK around a machine that
+stands on the floor. What he asked for was the LOGIC and not the boards.
+
+So the kit DECLARES what it is made of, in the same keys every other kit answers
+— `carcass: { top: 'rail', sides: 'none', bottom: 'none', back: 'none' }` — and
+the engine reads the declaration. `sides` and `bottom` are QUESTIONS from this
+turn on, absent on every kit that has them; there is no `dwPanel` block, no
+`applianceFront` gate and no `if (type.id === 'DW_PANEL')` anywhere, which is
+the path turn 27 was right to burn and which does not come back.
+
+The RAIL is the piece turn 26 cut, to the byte: `01-TOP.dxf` is `2255e6e5` here
+and `2255e6e5` at `bd7cec4`. Full unit width rather than the internal width —
+it has no sides to sit between — by the run's own internal depth, so a worktop
+lies flat across it and its neighbours. Zero pockets, zero holes, no dog bones.
+The whole kit is undrilled and buys nothing.
+
+The toe kick arrives ON: `defaultParamsFor('DW_PANEL')` carries it, on this one
+kit, because *"najważniejszego czyli plinth i tak nie ma"* and because a D/W is
+three pieces of which the notched kick is one. A plinth stays a decision on
+every other type.
+
+**BLOCKERS #94 is closed**, wider than it was asked: there is no carcass, so
+there is no bottom to argue about.
+
+## F2 — cups and handles take the sheet's own mirror [CRITICAL]
+
+Two halves of one convention fault. A FRONT's cut frame is the INSIDE MIRROR —
+`engine/joinery.js panelPlacement`, origin bottom-RIGHT, `u = [−1, 0, 0]` —
+because the workshop bores a door from the back. The cup law has honoured it
+since turn 1.
+
+**F2a**, the tray: `src/3d/shakerSolid.js normaliseBores` read the CNC x as if
+the origin were bottom-LEFT and mirrored every hole it cut, which is the owner's
+photograph — hinge arms on one stile, bored cups on the other.
+
+**F2b**, the handle law: it resolved "the opening edge" in ROOM terms and wrote
+the answer into the MIRRORED frame, so on the sheet the knob printed on the CUP
+stile for both hands. That is his `03-F` exactly. One condition flips; `y`, the
+centres and the anchors stand.
+
+…and the SCENE reads `meta.handle` back through the same mirror, which it did
+not. Turn 27's two inversions cancelled: right picture, wrong file. They agree
+by construction now rather than by luck.
+
+## F3 — a shelf's dimension stands in its own bay [HIGH]
+
+*"znowu pokazuje po prawej stronie szafki półki, które są po lewej od
+divertera."* Turn 27 F1 taught the DRILLING which two boards carry a shelf; the
+ladder never learned it. `engine/shelfHeights.js shelfColumns` is that same
+resolution extended to the picture: shelves grouped by the pair of boards they
+stand on, each group's clear lights its BAY's own, each group carrying the FLANK
+its ladder belongs on. Left bay left, right bay right, middle bay on its own
+partition. R11 stands — one dimension component, a different anchor — and an
+undivided cabinet resolves to one column on the unit's right flank, which is
+what turn 8 shipped.
+
+## F4 — the bevel shader stops flattening the world [HIGH]
+
+`normal = ccBent` REPLACED the fragment's own mesh normal with one reconstructed
+from the panel's bounding box. Every fragment of a front — frame, rebate wall,
+recess floor — is nearest the ±z pair of a 25 mm board, so all of them shaded
++z and a 6 mm shaker rebate was invisible from every angle. He proved it was not
+the light: outlines ON drew the frame (the edge pass reads geometry), outlines
+OFF was *"mega płasko"*, and rotating changed nothing.
+
+The MESH normal is the base now. The box contributes exactly one thing — the
+edge ROLL, the difference between the rolled reconstruction and the flat one —
+blended in by how far the two agree. A plain board comes out with the vector
+turn 6 shipped, to the bit; a rebate wall keeps its own. `before/f4-rebate.png`
+and `after/f4-rebate.png` are the same door at the same angle in the same light.
+
+## F5 + F6 — the shelf-support family, and where a collar belongs [HIGH]
+
+F5: there were TWO colour sources. `3d/DrillRings.jsx` carried its own table of
+two metals and its own fallback (silver) while `3d/Hardware.jsx` read the
+profile's with `metalDefault` (gold) behind it — so an untouched project drew
+silver collars round gold sleeves. One resolver
+(`3d/hardwareFinish.js shelfSupportMetal`), three consumers, zero second sources.
+
+F6: the 12.08 chat fix gave EVERY round drilling a collar. A collar stands for a
+SLEEVE, and a sleeve lines exactly one kind of hole — the ⌀7.5 on the shelf
+layer. A ⌀7.5 PUZZLE socket is the same bit at the same diameter and takes a
+dowel, which is the case that proves the branch is on the LAYER and not on the
+size.
+
+## F7 — a shelf's grain follows its own sheet [MEDIUM]
+
+`grainRun` falls back to the saw's rule — the longer of a part's two cut
+dimensions — and a shelf is nearly square: 560 across a 600 carcass against 520
+deep, forty millimetres deciding it the wrong way for the one piece whose
+nesting turn 26 had just written down. The piece STATES its grain now, in the
+field `grainRun` has always offered for exactly this. Not one DXF entity moves.
+
+What this does not settle is asked as **BLOCKERS #95** rather than guessed at:
+`sheetTurn` still lays a shelf down by its drawn size, so the nesting and the
+stated grain can differ on that one part, and turning the nester is a CNC change
+this turn is forbidden to make.
+
+## F8 — the dimension language, four corrections [MEDIUM]
+
+Height is never "from the floor": the toe kick and the carcass are two segments
+on ONE line, 100 below and 770 above, instead of an 870 that is on no cut list.
+A run of identical cabinets dimensions ONCE, on the outermost unit — and
+"identical" is decided on the NUMBERS THE CHAIN WOULD PRINT rather than on a
+list of params, so a kit that gains a number next turn is compared on it without
+anybody remembering to come back. An end panel does not break a run; a different
+cabinet does. The width label drops to a quarter of the front's height and the
+height label steps right of the plus button, so the two stop crossing.
+
+## F9 — the back inset over a run [MEDIUM]
+
+A multi-selection of floor-standing units gets the field, under the dimension
+numbers. It moves the whole selected run off the wall in one batch and one undo,
+and every END PANEL in that run deepens by the same amount so it still reaches
+the plaster. Turn 8 deliberately kept the two apart — the gap holds a soil pipe
+— and the owner overrules that here; it IS a cut-list change and it is named
+where it shows.
+
+## F10 + F11 — the two at the bottom [LOW]
+
+F10: the View menu's brightness gets a twin on the toolbar. Same state, same
+setter, same three profile numbers — one source, two controls.
+
+F11: turn 26 F12 was asked to take the layer list off the part editor's toolbar
+and half did it, turning the permanent dropdown into a question asked once — the
+right grammar — and then rendering the question INSIDE the toolbar box, so a
+list of every CNC layer still opened on it. The strip stands on its own now. The
+four tools, the actions and the snap panel did not move (R12).
+
+## The export
+
+**Two named deltas and no third thing**, argued entity by entity in
+`verify/t28/cnc-export-identity.md`. F1 is confined to `DW_PANEL` — and its
+FRONT is byte-identical across turns 26, 27 and 28. F2b moves a handle's x to
+the opposite stile on every DXF carrying one; `scripts/t28-handle-move.mjs`
+prints that move hole by hole, on the sheet and in the room, and the diff is
+**18 rows, every one of them `HANDLES_5MM`, not one cup moved**. The
+entity-by-entity probe says the rest as a fact: not one line of its diff is on
+any type but `DW_PANEL`.
+
+F9's end-panel depth is real and reaches nothing in either report, because no
+scenario in the probe set stands a cabinet off the wall. That is a limit of the
+probe set and it is named rather than read as innocence.
+
+## The walk
+
+38 ok · 0 failed · 1 blocked (`bucket-live`, 403 at this session's egress proxy,
+recorded verbatim — the same blockage as turns 22–27). Real CDP input
+throughout. The app printed nothing all walk; the one console line is three.js
+noting that this headless Chromium has no `WEBGL_lose_context`.
+
+Every claim is read off the app rather than off a pixel: the D/W's own record
+and the pieces the SCENE mounted for it, the cups measured off the very function
+the hinges are mounted from, `shelfColumns` for the ladder, the shader's own
+compiled blend band and the leaf's wall normals in the running WebGL, the
+MOUNTED materials by name for the metals, the end panel's cut size beside its
+drawn depth, and the store's brightness after a real click.
+
+## What did not shrink, and what is left
+
+Nothing shrank. All eleven phases are in. One new blocker is named rather than
+guessed — **#95**, whether the nester should turn a shelf now that the piece
+states its grain — and one is closed: **#94**, in the owner's own words.

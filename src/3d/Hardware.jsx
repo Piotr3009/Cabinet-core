@@ -180,6 +180,10 @@ export default function Hardware({
 function Pieces({
   count, place, colour, roughness = 0.35, metalness = 0.75, children,
   onDoubleClick = null, visible = true,
+  // Turn 28 (CLAUDE.md F5 / R4): which member of a family this set is, so a
+  // walk can read the MOUNTED material of a sleeve and of a pin by name rather
+  // than by counting children.
+  member = null,
 }) {
   const ref = useRef(null);
   useLayoutEffect(() => {
@@ -208,7 +212,7 @@ function Pieces({
     <instancedMesh
       ref={ref}
       args={[undefined, undefined, count]}
-      userData={{ ccNoBounds: true }}
+      userData={{ ccNoBounds: true, ...(member ? { ccMember: member } : {}) }}
       onDoubleClick={onDoubleClick || undefined}
     >
       {children}
@@ -1272,6 +1276,7 @@ export function ShelfSupports({ items, profile, metal }) {
           never be a different size from the hole it lines. */}
       <Pieces
         count={items.length}
+        member="shelf-sleeve-barrel"
         place={placeBarrel}
         colour={metal.colour}
         metalness={metal.metalness}
@@ -1283,6 +1288,7 @@ export function ShelfSupports({ items, profile, metal }) {
           out, and what the owner is asking to see. */}
       <Pieces
         count={items.length}
+        member="shelf-sleeve"
         place={placeSleeve}
         colour={metal.colour}
         metalness={metal.metalness}
@@ -1293,6 +1299,7 @@ export function ShelfSupports({ items, profile, metal }) {
       {/* The pin the shelf rests on. */}
       <Pieces
         count={items.length}
+        member="shelf-pin"
         place={placePin}
         colour={metal.colour}
         metalness={metal.metalness}
@@ -1304,6 +1311,7 @@ export function ShelfSupports({ items, profile, metal }) {
           something rather than floating beside a peg. */}
       <Pieces
         count={items.length}
+        member="shelf-pin-shoulder"
         place={placeShoulder}
         colour={metal.colour}
         metalness={metal.metalness}

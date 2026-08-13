@@ -1,0 +1,640 @@
+{
+ "f1": {
+  "parts": [
+   "FRONT",
+   "PLINTH",
+   "TOP"
+  ],
+  "railW": 600,
+  "railH": 540,
+  "railT": 18,
+  "railOutline": 4,
+  "railPockets": 0,
+  "railHoles": 0,
+  "railBoxY": 752,
+  "railBoxZ": 18,
+  "unitWidth": 600,
+  "drills": 0,
+  "hardware": 0,
+  "kickH": 100,
+  "kickNotchY": 2,
+  "kickTopY": 100,
+  "frontW": 594,
+  "frontH": 767,
+  "frontOpening": "drop",
+  "frontAngle": 45,
+  "drawnHere": [
+   "DW01-F",
+   "PLINTH",
+   "TOP"
+  ]
+ },
+ "f1b": {
+  "railY": 752,
+  "railZ": 18,
+  "railH": 540,
+  "budTopY": 752,
+  "budTopZ": 18,
+  "budTopH": 540,
+  "kickLengths": [
+   1200
+  ],
+  "kickHeights": [
+   100
+  ]
+ },
+ "f2sheet": {
+  "leaves": [
+   {
+    "id": "03-FL",
+    "hinge": "L",
+    "w": 447,
+    "cupSide": 1,
+    "cupsOneColumn": true,
+    "handleSide": -1,
+    "cupXs": [
+     425.5,
+     425.5,
+     425.5
+    ],
+    "handleXs": [
+     35,
+     35
+    ],
+    "boxX": 1.5
+   },
+   {
+    "id": "03-FR",
+    "hinge": "R",
+    "w": 447,
+    "cupSide": -1,
+    "cupsOneColumn": true,
+    "handleSide": 1,
+    "cupXs": [
+     21.5,
+     21.5,
+     21.5
+    ],
+    "handleXs": [
+     412,
+     412
+    ],
+    "boxX": 451.5
+   }
+  ],
+  "cupFromHinge": 21.5,
+  "inset": 50
+ },
+ "f2mounted": [
+  {
+   "id": "03-FL",
+   "hinge": "L",
+   "w": 447,
+   "cupSide": 1,
+   "cupsOneColumn": true,
+   "handleSide": -1,
+   "cupXs": [
+    425.5,
+    425.5,
+    425.5
+   ],
+   "handleXs": [
+    35,
+    35
+   ],
+   "boxX": 1.5,
+   "mounted": {
+    "leafMinX": 0.901500001549721,
+    "leafMaxX": 1.3484999984502795,
+    "posts": [
+     1.3135000000000003,
+     1.3135000000000003,
+     1.3135000000000003
+    ],
+    "rides": 3
+   }
+  },
+  {
+   "id": "03-FR",
+   "hinge": "R",
+   "w": 447,
+   "cupSide": -1,
+   "cupsOneColumn": true,
+   "handleSide": 1,
+   "cupXs": [
+    21.5,
+    21.5,
+    21.5
+   ],
+   "handleXs": [
+    412,
+    412
+   ],
+   "boxX": 451.5,
+   "mounted": {
+    "leafMinX": 1.351500001549721,
+    "leafMaxX": 1.7984999984502794,
+    "posts": [
+     1.3865000000000003,
+     1.3865000000000003,
+     1.3865000000000003
+    ],
+    "rides": 3
+   }
+  }
+ ],
+ "f2cups": {
+  "leaves": [
+   {
+    "id": "03-FL",
+    "hinge": "L",
+    "hingeEdge": 1.5,
+    "xs": [
+     23,
+     23,
+     23
+    ],
+    "offs": [
+     21.5,
+     21.5,
+     21.5
+    ]
+   },
+   {
+    "id": "03-FR",
+    "hinge": "R",
+    "hingeEdge": 898.5,
+    "xs": [
+     877,
+     877,
+     877
+    ],
+    "offs": [
+     21.5,
+     21.5,
+     21.5
+    ]
+   }
+  ],
+  "want": 21.5
+ },
+ "f3": {
+  "bays": [
+   {
+    "zone": 0,
+    "shelfId": "SHELF-1",
+    "shelfMid": 234,
+    "width": 900,
+    "of": [
+     "BUL",
+     "VPART-1"
+    ],
+    "flank": {
+     "x": 0,
+     "dir": -1,
+     "on": "BUL"
+    },
+    "columns": 1,
+    "chains": [
+     {
+      "name": "w-u_w0a4qk3",
+      "rows": 1,
+      "minX": -0.2999999999999998,
+      "maxX": 0.30000000000000016,
+      "strokes": 7
+     },
+     {
+      "name": "h-u_w0a4qk3",
+      "rows": 1,
+      "minX": 0.25697393957002324,
+      "maxX": 0.27600000000000025,
+      "strokes": 7
+     },
+     {
+      "name": "w-u_ww4evka",
+      "rows": 1,
+      "minX": 0.2999999999999998,
+      "maxX": 0.8999999999999998,
+      "strokes": 7
+     },
+     {
+      "name": "h-u_ww4evka",
+      "rows": 1,
+      "minX": 0.8569739395700229,
+      "maxX": 0.8759999999999999,
+      "strokes": 7
+     },
+     {
+      "name": "w-u_b2kcfsa",
+      "rows": 1,
+      "minX": 0.9000000000000004,
+      "maxX": 1.8000000000000003,
+      "strokes": 7
+     },
+     {
+      "name": "h-u_b2kcfsa",
+      "rows": 1,
+      "minX": 1.7569739395700235,
+      "maxX": 1.7760000000000002,
+      "strokes": 7
+     },
+     {
+      "name": "w-u_3a9xhlp",
+      "rows": 1,
+      "minX": 1.7999999999999998,
+      "maxX": 2.6999999999999997,
+      "strokes": 7
+     },
+     {
+      "name": "h-u_3a9xhlp",
+      "rows": 1,
+      "minX": 2.656973939570023,
+      "maxX": 2.6759999999999997,
+      "strokes": 7
+     },
+     {
+      "name": "all-floor-u_3a9xhlp",
+      "rows": 3,
+      "minX": 1.7999999999999998,
+      "maxX": 2.6999999999999997,
+      "strokes": 21
+     },
+     {
+      "name": "all-side-u_3a9xhlp",
+      "rows": 3,
+      "minX": 1.8449999999999998,
+      "maxX": 2.6759999999999997,
+      "strokes": 21
+     },
+     {
+      "name": "wall-0",
+      "rows": 2,
+      "minX": -6,
+      "maxX": 6,
+      "strokes": 14
+     }
+    ]
+   },
+   {
+    "zone": 1,
+    "shelfId": "SHELF-1",
+    "shelfMid": 675,
+    "width": 900,
+    "of": [
+     "VPART-1",
+     "BUR"
+    ],
+    "flank": {
+     "x": 900,
+     "dir": 1,
+     "on": "BUR"
+    },
+    "columns": 1,
+    "chains": [
+     {
+      "name": "w-u_w0a4qk3",
+      "rows": 1,
+      "minX": -0.2999999999999998,
+      "maxX": 0.30000000000000016,
+      "strokes": 7
+     },
+     {
+      "name": "h-u_w0a4qk3",
+      "rows": 1,
+      "minX": 0.25697393957002324,
+      "maxX": 0.27600000000000025,
+      "strokes": 7
+     },
+     {
+      "name": "w-u_ww4evka",
+      "rows": 1,
+      "minX": 0.2999999999999998,
+      "maxX": 0.8999999999999998,
+      "strokes": 7
+     },
+     {
+      "name": "h-u_ww4evka",
+      "rows": 1,
+      "minX": 0.8569739395700229,
+      "maxX": 0.8759999999999999,
+      "strokes": 7
+     },
+     {
+      "name": "w-u_b2kcfsa",
+      "rows": 1,
+      "minX": 0.9000000000000004,
+      "maxX": 1.8000000000000003,
+      "strokes": 7
+     },
+     {
+      "name": "h-u_b2kcfsa",
+      "rows": 1,
+      "minX": 1.7569739395700235,
+      "maxX": 1.7760000000000002,
+      "strokes": 7
+     },
+     {
+      "name": "w-u_3a9xhlp",
+      "rows": 1,
+      "minX": 1.7999999999999998,
+      "maxX": 2.6999999999999997,
+      "strokes": 7
+     },
+     {
+      "name": "h-u_3a9xhlp",
+      "rows": 1,
+      "minX": 2.656973939570023,
+      "maxX": 2.6759999999999997,
+      "strokes": 7
+     },
+     {
+      "name": "all-floor-u_3a9xhlp",
+      "rows": 3,
+      "minX": 1.7999999999999998,
+      "maxX": 2.6999999999999997,
+      "strokes": 21
+     },
+     {
+      "name": "all-side-u_3a9xhlp",
+      "rows": 3,
+      "minX": 2.6149739395700227,
+      "maxX": 2.6759999999999997,
+      "strokes": 21
+     },
+     {
+      "name": "wall-0",
+      "rows": 2,
+      "minX": -6,
+      "maxX": 6,
+      "strokes": 14
+     }
+    ]
+   }
+  ]
+ },
+ "f4": {
+  "blend": {
+   "from": 0.15,
+   "to": 0.5
+  },
+  "wallVertices": 972,
+  "faceVertices": 1038,
+  "bevelState": true,
+  "shaker": true,
+  "outlines": false
+ },
+ "f5": {
+  "gold": {
+   "chosen": "gold",
+   "metal": {
+    "id": "gold",
+    "label": "Gold",
+    "colour": "#c9a227",
+    "metalness": 0.95,
+    "roughness": 0.22
+   },
+   "sleeves": [
+    "#c9a227"
+   ],
+   "pins": [
+    "#c9a227"
+   ],
+   "collars": [
+    {
+     "hex": "#c9a227",
+     "n": 16
+    }
+   ],
+   "cores": [
+    {
+     "hex": "#141414",
+     "n": 16
+    }
+   ],
+   "plain": [
+    {
+     "hex": "#141414",
+     "n": 36
+    },
+    {
+     "hex": "#141414",
+     "n": 26
+    },
+    {
+     "hex": "#141414",
+     "n": 6
+    },
+    {
+     "hex": "#141414",
+     "n": 36
+    },
+    {
+     "hex": "#141414",
+     "n": 26
+    },
+    {
+     "hex": "#141414",
+     "n": 12
+    },
+    {
+     "hex": "#141414",
+     "n": 36
+    },
+    {
+     "hex": "#141414",
+     "n": 29
+    },
+    {
+     "hex": "#141414",
+     "n": 12
+    }
+   ],
+   "byLayer": {
+    "PUZZLE_HOLES_7_5MM": 36,
+    "SCREWS_3MM": 29,
+    "HINGES_5MM": 12,
+    "SHELVES_7_5MM": 24,
+    "FRONT_HINGES_35MM": 6,
+    "FRONT_HINGES_3MM": 12,
+    "HANDLES_5MM": 4
+   },
+   "shelfLayer": "SHELVES_7_5MM",
+   "puzzleLayer": "PUZZLE_HOLES_7_5MM"
+  },
+  "silver": {
+   "chosen": "silver",
+   "metal": {
+    "id": "silver",
+    "label": "Silver",
+    "colour": "#c8ccd0",
+    "metalness": 0.95,
+    "roughness": 0.18
+   },
+   "sleeves": [
+    "#c8ccd0"
+   ],
+   "pins": [
+    "#c8ccd0"
+   ],
+   "collars": [
+    {
+     "hex": "#c8ccd0",
+     "n": 16
+    }
+   ],
+   "cores": [
+    {
+     "hex": "#141414",
+     "n": 16
+    }
+   ],
+   "plain": [
+    {
+     "hex": "#141414",
+     "n": 36
+    },
+    {
+     "hex": "#141414",
+     "n": 26
+    },
+    {
+     "hex": "#141414",
+     "n": 6
+    },
+    {
+     "hex": "#141414",
+     "n": 36
+    },
+    {
+     "hex": "#141414",
+     "n": 26
+    },
+    {
+     "hex": "#141414",
+     "n": 12
+    },
+    {
+     "hex": "#141414",
+     "n": 36
+    },
+    {
+     "hex": "#141414",
+     "n": 29
+    },
+    {
+     "hex": "#141414",
+     "n": 12
+    }
+   ],
+   "byLayer": {
+    "PUZZLE_HOLES_7_5MM": 36,
+    "SCREWS_3MM": 29,
+    "HINGES_5MM": 12,
+    "SHELVES_7_5MM": 24,
+    "FRONT_HINGES_35MM": 6,
+    "FRONT_HINGES_3MM": 12,
+    "HANDLES_5MM": 4
+   },
+   "shelfLayer": "SHELVES_7_5MM",
+   "puzzleLayer": "PUZZLE_HOLES_7_5MM"
+  }
+ },
+ "f7": {
+  "stated": "h",
+  "axis": "h",
+  "lengthMm": 520,
+  "shelfW": 860,
+  "shelfH": 520,
+  "rotate": false,
+  "grainAxisInRoom": "z",
+  "drawnW": 520,
+  "drawnH": 860,
+  "sideRotate": false
+ },
+ "f8": {
+  "wanted": [
+   "u_cz6w33k",
+   "u_d0kj7mh",
+   "u_ydefqh1"
+  ],
+  "carriers": [
+   "u_ydefqh1"
+  ],
+  "sigsEqual": true,
+  "chains": [
+   "w-u_w0a4qk3",
+   "h-u_w0a4qk3",
+   "w-u_ww4evka",
+   "h-u_ww4evka",
+   "w-u_b2kcfsa",
+   "h-u_b2kcfsa",
+   "w-u_3a9xhlp",
+   "h-u_3a9xhlp",
+   "w-u_cz6w33k",
+   "h-u_cz6w33k",
+   "w-u_d0kj7mh",
+   "h-u_d0kj7mh",
+   "w-u_ydefqh1",
+   "h-u_ydefqh1",
+   "all-floor-u_ydefqh1",
+   "all-side-u_ydefqh1",
+   "wall-0"
+  ],
+  "legHeight": 100,
+  "height": 770,
+  "widthLabelAt": 191.75,
+  "heightLabelAt": 375,
+  "faceY": 0,
+  "faceH": 767,
+  "faceX": 1.5,
+  "faceW": 597,
+  "labels": {
+   "widthFromBottom": 0.25,
+   "heightOffsetMm": 75,
+   "heightOffsetMaxShare": 0.4
+  }
+ },
+ "f9": {
+  "before": {
+   "ids": [
+    "u_cz6w33k",
+    "u_d0kj7mh",
+    "u_ydefqh1"
+   ],
+   "depth": 558,
+   "epW": 596,
+   "epZ": -10
+  },
+  "after": {
+   "insets": [
+    40,
+    40,
+    40
+   ],
+   "epW": 636,
+   "epZ": -50,
+   "drawnDepth": 635.9999775886536,
+   "bom": null
+  }
+ },
+ "f10": {
+  "before": 0.5,
+  "after": {
+   "store": 1.4,
+   "menuWouldShow": 1.4,
+   "el": 1.4
+  }
+ },
+ "f11": {
+  "selectsOnToolbar": 0,
+  "askInsideToolbar": false,
+  "askAnywhere": false,
+  "tools": [
+   "select",
+   "drill",
+   "line",
+   "dowels"
+  ],
+  "snapPanel": true
+ }
+}

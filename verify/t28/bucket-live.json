@@ -1,0 +1,32 @@
+{
+ "host": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public",
+ "ok": false,
+ "families": [
+  {
+   "id": "runners",
+   "label": "MOVENTO 760H",
+   "bucket": "hardware",
+   "path": "runners/blum/movento/",
+   "manifestUrl": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json",
+   "manifestStatus": 403,
+   "manifestBytes": 119,
+   "rows": null,
+   "model": null,
+   "ok": false,
+   "error": "manifest answered 403"
+  },
+  {
+   "id": "hinges",
+   "label": "CLIP top BLUMOTION",
+   "bucket": "hardware",
+   "path": "hinges/blum/",
+   "manifestUrl": "https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/hinges/blum/manifest.json",
+   "manifestStatus": 403,
+   "manifestBytes": 119,
+   "rows": null,
+   "model": null,
+   "ok": false,
+   "error": "manifest answered 403"
+  }
+ ]
+}

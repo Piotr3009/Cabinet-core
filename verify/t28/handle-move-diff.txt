@@ -1,0 +1,60 @@
+4c4
+< BUD/600/L/knob  01-F  HANDLES_5MM  SHEET x=562.00 y=717.00  ROOM left+35.00 right+562.00  hinge=L
+---
+> BUD/600/L/knob  01-F  HANDLES_5MM  SHEET x=35.00 y=717.00  ROOM left+562.00 right+35.00  hinge=L
+8,9c8,9
+< BUD/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=562.00 y=717.00  ROOM left+35.00 right+562.00  hinge=L
+< BUD/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=562.00 y=557.00  ROOM left+35.00 right+562.00  hinge=L
+---
+> BUD/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=35.00 y=717.00  ROOM left+562.00 right+35.00  hinge=L
+> BUD/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=35.00 y=557.00  ROOM left+562.00 right+35.00  hinge=L
+13c13
+< BUD/600/R/knob  01-F  HANDLES_5MM  SHEET x=35.00 y=717.00  ROOM left+562.00 right+35.00  hinge=R
+---
+> BUD/600/R/knob  01-F  HANDLES_5MM  SHEET x=562.00 y=717.00  ROOM left+35.00 right+562.00  hinge=R
+17,18c17,18
+< BUD/600/R/bar-160  01-F  HANDLES_5MM  SHEET x=35.00 y=717.00  ROOM left+562.00 right+35.00  hinge=R
+< BUD/600/R/bar-160  01-F  HANDLES_5MM  SHEET x=35.00 y=557.00  ROOM left+562.00 right+35.00  hinge=R
+---
+> BUD/600/R/bar-160  01-F  HANDLES_5MM  SHEET x=562.00 y=717.00  ROOM left+35.00 right+562.00  hinge=R
+> BUD/600/R/bar-160  01-F  HANDLES_5MM  SHEET x=562.00 y=557.00  ROOM left+35.00 right+562.00  hinge=R
+22c22
+< BUD/900/L/knob  01-FL  HANDLES_5MM  SHEET x=412.00 y=717.00  ROOM left+35.00 right+412.00  hinge=L
+---
+> BUD/900/L/knob  01-FL  HANDLES_5MM  SHEET x=35.00 y=717.00  ROOM left+412.00 right+35.00  hinge=L
+26c26
+< BUD/900/L/knob  01-FR  HANDLES_5MM  SHEET x=35.00 y=717.00  ROOM left+412.00 right+35.00  hinge=R
+---
+> BUD/900/L/knob  01-FR  HANDLES_5MM  SHEET x=412.00 y=717.00  ROOM left+35.00 right+412.00  hinge=R
+30,31c30,31
+< BUD/900/L/bar-160  01-FL  HANDLES_5MM  SHEET x=412.00 y=717.00  ROOM left+35.00 right+412.00  hinge=L
+< BUD/900/L/bar-160  01-FL  HANDLES_5MM  SHEET x=412.00 y=557.00  ROOM left+35.00 right+412.00  hinge=L
+---
+> BUD/900/L/bar-160  01-FL  HANDLES_5MM  SHEET x=35.00 y=717.00  ROOM left+412.00 right+35.00  hinge=L
+> BUD/900/L/bar-160  01-FL  HANDLES_5MM  SHEET x=35.00 y=557.00  ROOM left+412.00 right+35.00  hinge=L
+35,36c35,36
+< BUD/900/L/bar-160  01-FR  HANDLES_5MM  SHEET x=35.00 y=717.00  ROOM left+412.00 right+35.00  hinge=R
+< BUD/900/L/bar-160  01-FR  HANDLES_5MM  SHEET x=35.00 y=557.00  ROOM left+412.00 right+35.00  hinge=R
+---
+> BUD/900/L/bar-160  01-FR  HANDLES_5MM  SHEET x=412.00 y=717.00  ROOM left+35.00 right+412.00  hinge=R
+> BUD/900/L/bar-160  01-FR  HANDLES_5MM  SHEET x=412.00 y=557.00  ROOM left+35.00 right+412.00  hinge=R
+43c43
+< BUDTALL/600/L/knob  01-F  HANDLES_5MM  SHEET x=562.00 y=1048.50  ROOM left+35.00 right+562.00  hinge=L
+---
+> BUDTALL/600/L/knob  01-F  HANDLES_5MM  SHEET x=35.00 y=1048.50  ROOM left+562.00 right+35.00  hinge=L
+50,51c50,51
+< BUDTALL/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=562.00 y=968.50  ROOM left+35.00 right+562.00  hinge=L
+< BUDTALL/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=562.00 y=1128.50  ROOM left+35.00 right+562.00  hinge=L
+---
+> BUDTALL/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=35.00 y=968.50  ROOM left+562.00 right+35.00  hinge=L
+> BUDTALL/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=35.00 y=1128.50  ROOM left+562.00 right+35.00  hinge=L
+55c55
+< WUD/600/L/knob  01-F  HANDLES_5MM  SHEET x=562.00 y=50.00  ROOM left+35.00 right+562.00  hinge=L
+---
+> WUD/600/L/knob  01-F  HANDLES_5MM  SHEET x=35.00 y=50.00  ROOM left+562.00 right+35.00  hinge=L
+59,60c59,60
+< WUD/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=562.00 y=50.00  ROOM left+35.00 right+562.00  hinge=L
+< WUD/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=562.00 y=210.00  ROOM left+35.00 right+562.00  hinge=L
+---
+> WUD/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=35.00 y=50.00  ROOM left+562.00 right+35.00  hinge=L
+> WUD/600/L/bar-160  01-F  HANDLES_5MM  SHEET x=35.00 y=210.00  ROOM left+562.00 right+35.00  hinge=L

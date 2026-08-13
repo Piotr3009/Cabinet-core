@@ -263,7 +263,20 @@ function DimensionValue({ position, text, style }) {
   const h = style.labelHeight;
   const w = h * (texture.userData.aspect || 3);
   return (
-    <sprite position={position} scale={[w, h, 1]} renderOrder={10} userData={{ ccHelper: true, ccNoBounds: true }}>
+    <sprite
+      position={position}
+      scale={[w, h, 1]}
+      renderOrder={10}
+      // ─── TURN 29 (CLAUDE.md F2/F4): WHAT THIS LABEL ACTUALLY SAYS ─────────
+      // The value is rasterised into a canvas, so a walk counting the numbers
+      // the scene draws — "one 600, one 100, one 770 for the run" — could only
+      // count sprites, not read them. It travels on `userData` (R7: never a
+      // `data-*` on an R3F object) beside the height the eye measures, and
+      // nothing in the app reads either back.
+      userData={{
+        ccHelper: true, ccNoBounds: true, ccDimensionText: text, ccDimensionHeight: h,
+      }}
+    >
       {/* `allowOverride={false}` — a dimension is TOOL, and tool casts no
           shadow (turn 9, CLAUDE.md F1.3). */}
       <spriteMaterial attach="material" map={texture} transparent depthTest={false} allowOverride={false} />

@@ -98,10 +98,26 @@ function useDecor(surface, panel, profile) {
   // with, and every decor panel rendered plain white.
   const [tick, bump] = useState(0);
   const url = surface?.texture || null;
+  // ─── TURN 29 (CLAUDE.md F1): AND THE FALLBACK NEEDS A LISTENER TOO ───────
+  //
+  // Found by the walk, on the very machine rule 7 is written for. When the scan
+  // FAILS, the failure itself is a notification and this memo re-runs — and
+  // then asks for the fallback's texture, which has only just started loading
+  // and comes back null. Nothing was ever listening for THAT image, so no
+  // second re-render ever came: the panel stayed blank until something else in
+  // the app happened to touch it.
+  //
+  // So both urls are subscribed. It also starts the fallback's own download at
+  // mount rather than at the moment of failure, which is one 512 px file for
+  // the whole project and is the difference between mock mode WORKING and mock
+  // mode working eventually.
+  const fallbackUrl = surface?.fallback?.texture || null;
   useEffect(() => {
-    if (!url) return undefined;
-    return onDecorLoad(url, () => bump((n) => n + 1));
-  }, [url]);
+    const offs = [];
+    if (url) offs.push(onDecorLoad(url, () => bump((n) => n + 1)));
+    if (fallbackUrl && fallbackUrl !== url) offs.push(onDecorLoad(fallbackUrl, () => bump((n) => n + 1)));
+    return () => { for (const off of offs) off(); };
+  }, [url, fallbackUrl]);
 
   return useMemo(() => {
     if (!url) return { map: null, tinted: false };

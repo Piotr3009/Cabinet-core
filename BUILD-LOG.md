@@ -7773,3 +7773,174 @@ drawn depth, and the store's brightness after a real click.
 Nothing shrank. All eleven phases are in. One new blocker is named rather than
 guessed — **#95**, whether the nester should turn a shelf now that the piece
 states its grain — and one is closed: **#94**, in the owner's own words.
+
+---
+
+# TURN 29 — the eye's two catches, two new laws, and the hinge folds
+
+**Baseline: main after the PR #28 merge, `13978f8`. Suite there: 2 276 tests,
+2 276 pass. Suite at the end of this turn: 2 325 tests, 2 325 pass, on a clean
+`rm -rf node_modules && npm install`.**
+
+## The turn in one line
+
+Turn 28 shipped eleven phases and two of them were GREEN AND WRONG. This turn
+fixes what the owner's eye caught, and the interesting part is that in both
+cases the flag the test asserted was not even the fault.
+
+## F1 — shelf grain in 3-D, on the shelf the eye sees [CRITICAL]
+
+The owner, with a screenshot: open carcasses, wood-decor shelves, and the figure
+running LEFT–RIGHT across every one. *"na wizualizacji nie działa, na CNC było
+ok."*
+
+**What turn 28's F7 test asserted.** In its own words, *"the SCENE lays the scan
+front-to-back"* — and then `assert.equal(map.rotate, false)`. `rotate` is not a
+direction in the room. It is whether the IMAGE takes a quarter turn, and turn 8
+decided that inside `decorMapping`, a function that has never been shown an
+image.
+
+**The app paints TWO families of wood and they are 90° apart.** Both are
+measured from the assets in this repository rather than believed:
+
+* the MANUFACTURER'S SCAN — EGGER's full-board photograph, PORTRAIT, 3 685 ×
+  7 937 px for a 1 310 × 2 800 mm sheet, its figure running DOWN the image. The
+  shipped thumbnails ("the thumbnail is the entire board scan reduced") measure
+  2.5× smoother along V than across U, and `scanAlongGrainMm` — 2 800 — is that
+  height in millimetres of board, which is the same fact already written as a
+  number;
+* OUR PROCEDURAL GRAIN — `scripts/gen-textures.mjs`, which stretches the noise
+  along `x` and stacks the rings up `v`, so its figure runs ALONG the image. The
+  shipped files measure 6.6× smoother along U than across it.
+
+Turn 8 wrote one rule and it fits the SCANS. So every panel wearing the
+FALLBACK — which is every panel on any machine that cannot reach the bucket,
+including this sandbox and, on the evidence of his screenshot, the owner's — was
+exactly 90° out. On a shelf that is left-to-right; on a wieniec it is
+front-to-back, which is the turn-13 complaint that came back.
+
+`decorMapping` states the BOARD's axis now (`grainAxis`) and nothing about any
+picture. The quarter turn is decided in `3d/materials.js decorPlacement`, where
+the finish is, against `imageGrainAxis(surface)` — and the two families are told
+apart by how they are already PLACED (a scan carries a physical size, a tile a
+repeat), so there is no new field on a finish and no second flag on a piece. The
+SCAN branches are turn 8's own arithmetic, unmoved; a bucket that answers sees
+no change at all.
+
+**…and the fallback did not even arrive.** Found by the walk, on the very
+machine rule 7 is written for: when a scan fails, the failure re-renders the
+panel, the panel asks for the fallback's texture, the fallback has only just
+started loading — and NOTHING was listening for it. The board stayed blank until
+something else in the app happened to touch it. Both urls are subscribed now.
+
+The proof is the SURFACE. `test/turn29-f1-shelf-grain-scene.test.js` builds the
+geometry the scene builds, lays the texture through the one function the mounted
+material's map goes through, inverts the resulting UV matrix and reads the grain
+direction in millimetres of cabinet; the walk does the same on the mounted mesh
+in a live WebGL scene and measures the IMAGE's own pixels while it is there.
+Shelf `z`, wieniec `x`, side `y`, door `y`, drawer front `x` — every one of them
+a law the owner has already stated, and all of them from one rule.
+
+## F2 — the dimension language, the two halves that did not land [CRITICAL]
+
+*"nie ma 100, plinthu nie pokazuje"* and *"nadal pokazuje na każdej szafce"*.
+
+Turn 28 wrote BOTH corrections — and wrote them into `fullDimensions`, the memo
+behind `showAllDims`, which is the RIGHT-CLICK chain. The chain the toolbar's
+"Show dimensions" draws is a different block forty lines down the same file and
+had neither. Green tests, unchanged screen.
+
+They are on the visible chain now: TWO segments on ONE vertical line, the toe
+kick below and the carcass above, meeting at 0 — the outside of the carcass
+bottom, the datum every other number on the cabinet is measured from — and a
+second carrier set, fed by the toolbar's own flag over every cabinet in the
+room, so a run of identical units draws its W and its 100 + 770 once. The NAME
+chip is not a dimension and still appears on every unit. The front labels the
+owner approved are not touched, and a guard says so.
+
+## F3 — the D/W's front and plinth join the standard controls [HIGH]
+
+*"front i plinth powinien być tak samo włączany jak cała reszta szafek, tymi
+samymi przyciskami."*
+
+Turn 28 hard-wired both: the face was emitted whenever the kit was a D/W, and
+the plinth toggle was hidden because the right panel gated it on `type.legs` —
+which this kit has none of. The engine and the store have agreed since turn 22
+that legs and a toe kick are two questions; the panel was the third opinion, and
+it is the engine's own gate now.
+
+`supports.doors` is TRUE, and that is not a claim that the face is a door: it is
+the answer to "does this kit have a front you add and remove". What the face IS
+stays where it was. TWO leaf counts, because they answer two questions and turn
+25 proved what happens when one is asked to answer both — `leafCount` is what
+the face HAS and `hingedLeafCount` is what hangs on cups. On every kit but this
+one they are the same number, which is what makes the split safe.
+
+It also removed six ⌀5 plate holes addressed to a `BUL` a D/W does not cut.
+
+## F4 — dimension typography [HIGH]
+
+*"o 30% większe ale o połowę mniej tłuste."* One place, because R11 gives the app
+one dimension component and it owns every caption. Three numbers in the profile
+beside the two inks: the sprite's rendered height ×1.3 (0.044 → 0.0572 — the
+size the EYE measures, not the canvas's), the canvas grown by the same 1.3 so
+the type gets bigger rather than softer, and the weight halved to a light cut of
+the same monospace. Padding and tracking became fractions of the type so the
+plate grows with it. Nothing else about the plate moved.
+
+## F5 — the hinge folds about its measured axis [HIGH]
+
+The lab measured what turn 24 had to guess and said so: the axis is the
+Y-parallel line through x = −0.01808, z = +0.04286 m of `71B3550_42542984.glb`.
+Through the clone's own transform that is a pin at (−10.33, 0, +2.56) mm from
+the cup centre.
+
+**With a measured pin the rig can be CHECKED, and turn 24's fails.** The arm
+stood in the carcass's frame and turned forward by the leaf's angle, so member
+B's pin was the centre of its own rotation and never moved while member A's rode
+the leaf round its hinge line. By 110° the two halves of one hinge stood 25 mm
+apart.
+
+A one-joint rig cannot hold both ends of the arm — the leaf turns about its own
+hinge line, not about the pin — and the end worth holding is the KNUCKLE,
+because that is the joint a joiner is looking at. So member B rides the leaf
+beside member A and folds BACK through the leaf's own angle: the knuckle is one
+point by construction, and +θ from the leaf and −θ at the joint cancel, so the
+arm keeps the CARCASS's attitude and at 110° lies along the side panel instead
+of standing square off the door — which is what a CLIP top does and what turn 23
+asked for. The fold stops at the ironmongery's own 110°.
+
+The cost is named rather than discovered: at 110° the arm's rear stands **54.6
+mm** from the plate, and a test measures it on both hands.
+
+R8: the showroom's synthetic hinge grew a KNUCKLE on the measured pin — member
+A's two lugs outside, member B's barrel between them — so the rig math is
+asserted on geometry rather than on an assertion about geometry. The true-file
+visual check is owed in chat after the merge and `verify/t29/README.md` says so.
+
+## The export
+
+**Zero deltas, and it is proved rather than asserted.** The fingerprint and the
+entity-by-entity probe were both run in a worktree at the baseline commit and on
+this branch: 4 719 and 7 848 rows either side, and both diffs are EMPTY files.
+Every phase this turn is scene or UI.
+
+## The walk
+
+23 ok · 0 failed · 1 blocked (`bucket-live`, 403 at this session's egress proxy,
+recorded verbatim — the same blockage as turns 22–28). Real CDP input
+throughout, and F3 presses the app's own four buttons with a real mouse. **The
+app printed nothing at all across the whole walk** — zero console messages, zero
+exceptions.
+
+Every claim is read off the app rather than off a pixel, and F1's read is the
+one to look at: the mounted texture's own pixels, its own UV matrix and the
+geometry's own uvs, multiplied into a direction in the room.
+
+## What did not shrink, and what is left
+
+Nothing shrank. All five phases are in, plus the fallback-listener fault the
+walk turned up on the way. No new blocker is named; **#95** is unchanged, and
+the one thing this turn cannot settle — whether the real 71B3550's own arm looks
+right folded about the measured line — is owed to the owner's screen rather than
+claimed.

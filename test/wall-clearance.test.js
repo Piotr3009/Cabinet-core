@@ -111,18 +111,33 @@ test('an end panel is cut deep enough to reach the wall behind it', () => {
   assert.equal(ep.w, GAP + unit.params.depth + P.doors.gap + unit.params.front_t);
 });
 
-test('a deliberate inset does NOT lengthen the end panel — the pipe is in there', () => {
-  // The distinction is the point. The wall clearance is empty air behind every
-  // cabinet and a masking panel should cross it. A 40 mm inset holds a soil
-  // pipe, and running the panel back into it is running it into the thing the
-  // cabinet was moved away from.
+test('a deliberate inset DOES lengthen the end panel — it still reaches the wall', () => {
+  // ─── TURN 28 (CLAUDE.md F9): THE OWNER OVERRULES TURN 8 ON THIS ───────────
+  //
+  // Turn 8 kept the two apart on the reasoning that the wall clearance is empty
+  // air a masking panel should cross, while a 40 mm inset holds a soil pipe and
+  // running the panel back into it runs it into the thing the cabinet was moved
+  // away from.
+  //
+  // The owner's F9 says otherwise, and he is right about which is the common
+  // case: the field moves a whole RUN off the wall, and an end panel that stops
+  // short leaves a slot down the side of the run at eye level — the very fault
+  // the wall-clearance line above was written to fix, back again the moment the
+  // number gets bigger than ten millimetres. "Every end panel in that run
+  // deepens automatically so it always reaches the wall."
   project();
   const id = store().addUnit('BUD').id;
   store().addEndPanel(id, { side: 'R' });
   const before = resultOf(id).panels.find((p) => p.part === 'END-PANEL').w;
   store().setUnitInsets(id, { back: 40 });
   const after = resultOf(id).panels.find((p) => p.part === 'END-PANEL').w;
-  assert.equal(after, before);
+  assert.equal(after, before + 40, 'deeper by exactly the inset');
+  // …and it still STARTS at the wall and finishes flush with the door, which is
+  // the invariant the number is in service of.
+  const ep = resultOf(id).panels.find((p) => p.part === 'END-PANEL');
+  const door = resultOf(id).panels.find((p) => p.part === 'FRONT');
+  assert.equal(ep.box.z, -(GAP + 40), 'it starts AT the wall, past the inset');
+  if (door) assert.equal(ep.box.z + ep.box.d, door.box.z + door.box.d);
 });
 
 test('a mitred return runs to the wall, not to the back of the carcass', () => {

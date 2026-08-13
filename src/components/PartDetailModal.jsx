@@ -475,12 +475,18 @@ export default function PartDetailModal() {
           </div>
 
           {/* ─── TURN 24 (CLAUDE.md F2): THE TOOLBAR, AS DRAWN ─────────────
-              Select · Drill · Line · Dowel line, and a LAYER picker. Esc goes
-              back to Select. Every one of them writes an OVERRIDE on this
-              project's own part — never the engine, never the kit, and never
-              the next cabinet. The layer list is the EXISTING one
-              (`cnc/layers.js`): custom layers are parked by the owner's word,
-              with three questions on file. */}
+              Select · Drill · Line · Dowel line. Esc goes back to Select.
+              Every one of them writes an OVERRIDE on this project's own part —
+              never the engine, never the kit, and never the next cabinet.
+
+              ─── TURN 28 (CLAUDE.md F11): AND NO LAYER LIST ─────────────────
+              "Turn 26 F12 was asked to remove it and did not." It was half
+              removed: turn 26 turned the permanent dropdown into a question
+              asked once — which is the right grammar — and then rendered the
+              question INSIDE this box, so a list of every CNC layer in the app
+              still opened on the toolbar. It is a strip of its own now, below
+              the tools, and this box carries the four tools and the actions on
+              what is drawn. Nothing else on it moved (R12). */}
           <div className="border border-shell-600 rounded p-2 space-y-2" data-part-tools="1">
             <div className="cc-row">
               {[
@@ -526,53 +532,6 @@ export default function PartDetailModal() {
                 </>
               )}
             </div>
-
-            {/* ─── TURN 26 (CLAUDE.md F12.1): WHICH LAYER SHOULD THESE GO ON? ──
-                Asked ONCE, at the moment the first edit is committed, and never
-                again for the rest of the session — the same grammar the drill's
-                ⌀-and-depth popover has used since turn 24, one storey up. The
-                list is the EXISTING one (`cnc/layers.js`); custom layers are
-                parked by the owner's word, with three questions on file.
-
-                It is a strip and not a modal: a dialog over the drawing would
-                hide the very thing the joiner has just drawn on it. */}
-            {askLayer && (
-              <div className="cc-row items-center" data-layer-ask="1">
-                <span className="text-[11px] text-ink-100 shrink-0" data-layer-ask-prompt="1">
-                  Which layer should these go on?
-                </span>
-                <select
-                  className="cc-input w-48"
-                  data-layer-ask-list="1"
-                  defaultValue="SCREWS_3MM"
-                  aria-label="Which layer should these go on?"
-                  onChange={(e) => commitOnLayer(e.target.value)}
-                >
-                  {CNC_LAYERS.map((l) => (
-                    <option key={l.name} value={l.name}>{l.name}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="cc-btn-gold px-3"
-                  data-layer-ask-ok="1"
-                  onClick={() => commitOnLayer(
-                    document.querySelector('[data-layer-ask-list="1"]')?.value || 'SCREWS_3MM',
-                  )}
-                >
-                  Use it
-                </button>
-                <button
-                  type="button"
-                  className="cc-btn-ghost"
-                  data-layer-ask-cancel="1"
-                  title="Drop this edit — nothing is committed"
-                  onClick={() => setAskLayer(null)}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
 
             <div className="cc-row">
               <span className="text-[11px] text-ink-400 flex-1" data-part-prompt="1">
@@ -651,6 +610,52 @@ export default function PartDetailModal() {
               <button type="button" className="cc-btn-ghost px-1 text-[11px]" data-snap-none="1" onClick={() => setAllSnaps(false)}>none</button>
             </div>
           </div>
+          {/* ─── TURN 26 (CLAUDE.md F12.1): WHICH LAYER SHOULD THESE GO ON? ──
+              Asked ONCE, at the moment the first edit is committed, and never
+              again for the rest of the session — the same grammar the drill's
+              ⌀-and-depth popover has used since turn 24, one storey up. The
+              list is the EXISTING one (`cnc/layers.js`); custom layers are
+              parked by the owner's word, with three questions on file.
+
+              It is a strip and not a modal: a dialog over the drawing would
+              hide the very thing the joiner has just drawn on it. */}
+          {askLayer && (
+            <div className="cc-row items-center" data-layer-ask="1">
+              <span className="text-[11px] text-ink-100 shrink-0" data-layer-ask-prompt="1">
+                Which layer should these go on?
+              </span>
+              <select
+                className="cc-input w-48"
+                data-layer-ask-list="1"
+                defaultValue="SCREWS_3MM"
+                aria-label="Which layer should these go on?"
+                onChange={(e) => commitOnLayer(e.target.value)}
+              >
+                {CNC_LAYERS.map((l) => (
+                  <option key={l.name} value={l.name}>{l.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="cc-btn-gold px-3"
+                data-layer-ask-ok="1"
+                onClick={() => commitOnLayer(
+                  document.querySelector('[data-layer-ask-list="1"]')?.value || 'SCREWS_3MM',
+                )}
+              >
+                Use it
+              </button>
+              <button
+                type="button"
+                className="cc-btn-ghost"
+                data-layer-ask-cancel="1"
+                title="Drop this edit — nothing is committed"
+                onClick={() => setAskLayer(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </Modal>

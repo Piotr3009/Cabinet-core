@@ -316,6 +316,39 @@ export default function TopBar({
 
       <div className="flex-1" />
 
+      {/* ─── TURN 28 (CLAUDE.md F10): THE BRIGHTNESS, WHERE THE HAND IS ─────
+          The View menu's slider gets a TWIN on the toolbar. Not a second
+          setting — the SAME state and the same setter, and the same three
+          numbers out of the same profile block, which is what R11 means here:
+          one source, two controls. Moving either moves the other, because
+          there is only one value.
+
+          It is on the toolbar because it is the one lighting control a joiner
+          reaches for while he is looking at the picture, and a control you
+          have to open a menu to reach is a control you use once. Nothing else
+          about the lighting changes. */}
+      <label
+        className="flex items-center gap-2 select-none"
+        data-brightness-control="1"
+        title="Scales every light in the room together. The balance between them does not move."
+      >
+        <span className="cc-label mb-0">Bright</span>
+        <input
+          type="range"
+          className="w-24 accent-gold"
+          min={profile.appearance.studio.brightness.min}
+          max={profile.appearance.studio.brightness.max}
+          step={profile.appearance.studio.brightness.step}
+          value={brightness}
+          disabled={viewMode !== '3d'}
+          data-brightness-value={brightness}
+          onChange={(e) => setBrightness(Number(e.target.value))}
+        />
+        <span className="text-[11px] text-ink-400 tabular-nums w-9 text-right">
+          {`${Math.round(brightness * 100)} %`}
+        </span>
+      </label>
+
       <button type="button" className="cc-btn" onClick={onAuth}>Account</button>
       <button type="button" className="cc-btn-gold" onClick={() => setBomOpen(!bomOpen)}>Export</button>
     </header>

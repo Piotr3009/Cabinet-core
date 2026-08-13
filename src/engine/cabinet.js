@@ -2756,11 +2756,24 @@ export function computeCabinet(params, profileOverride) {
   // short of the wall — and the slot is at eye level down the whole side of the
   // run, which is the one place a masking panel exists to not have.
   //
-  // The DELIBERATE inset (`inset_back_mm`) is deliberately NOT added: that gap
-  // holds a soil pipe or a bowed wall, and running the panel back into it is
-  // running it into the thing it was moved away from.
+  // ─── TURN 28 (CLAUDE.md F9): …AND SO IS THE DELIBERATE ONE ───────────────
+  //
+  // Turn 8 left the deliberate inset (`inset_back_mm`) OUT of this sum, on the
+  // reasoning that the gap holds a soil pipe and a panel run back into it is
+  // run into the thing the cabinet was moved away from. The owner's turn-28
+  // decision overrules that, and he is right about which is the common case:
+  // the field moves a whole RUN off the wall, and an end panel that stops short
+  // of the plaster leaves a slot down the side of the run at eye level —
+  // exactly the fault turn 8's own wall-clearance line was written to fix,
+  // reappearing the moment the number gets bigger than 10 mm.
+  //
+  // "Every END PANEL in that run deepens automatically so it always reaches the
+  // wall (panel depth = unit depth + inset)." So it does. This IS a cut-list
+  // change and it is named where it shows: a project with a back inset on it
+  // cuts a deeper end panel than it did yesterday.
   const wallGap = Math.max(0, Number(P.room?.wallBackClearance) || 0);
-  const endPanelDepth = wallGap + D + P.doors.gap + frontT;
+  const insetBack = Math.max(0, Number(params?.inset_back_mm) || 0);
+  const endPanelDepth = wallGap + insetBack + D + P.doors.gap + frontT;
   // ─── Turn 13 (CLAUDE.md F4): A WALL UNIT'S PANEL ENDS WITH THE CABINET ───
   //
   // "To the floor" means down to the floor for something STANDING on it: past
@@ -2798,11 +2811,12 @@ export function computeCabinet(params, profileOverride) {
       // `drop > 0 ? -drop : 0` and not `-drop`: negative zero is a real value in
       // JS and a box.y of -0 fails an === check downstream for no reason.
       // …and it therefore STARTS at the wall, which in the unit's own frame is
-      // `wallGap` behind the carcass back.
+      // `wallGap` behind the carcass back — plus the deliberate inset, which is
+      // how much further off the wall this run has been stood (turn 28, F9).
       box: {
         x: side === 'L' ? -t : W,
         y: drop > 0 ? -drop : 0,
-        z: wallGap > 0 ? -wallGap : 0,
+        z: wallGap + insetBack > 0 ? -(wallGap + insetBack) : 0,
         w: t,
         h: panelH,
         d: endPanelDepth,

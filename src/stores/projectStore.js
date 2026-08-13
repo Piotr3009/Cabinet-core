@@ -1679,6 +1679,40 @@ export const useProjectStore = create((set, get) => ({
     return { notices };
   }),
 
+  /**
+   * ─── TURN 28 (CLAUDE.md F9): THE BACK INSET OVER A SELECTION ─────────────
+   *
+   * "Multi-select of floor-standing units shows a Back inset field. It moves
+   * the whole selected run off the wall; every END PANEL in that run deepens
+   * automatically so it always reaches the wall."
+   *
+   * The first half is this: `setUnitInsets` run once per cabinet inside ONE
+   * batch, exactly as every other bulk action in this store is the single-unit
+   * action repeated — so each cabinet's own depth clamp still has its say
+   * about its own wall, and the lot is one Ctrl+Z (turn 13, F5.4).
+   *
+   * The second half is the ENGINE's: `endPanelDepth` reads `inset_back_mm` and
+   * the cut size grows with it. Nothing here computes a panel.
+   *
+   * A WALL unit is skipped rather than refused: it hangs on brackets, "off the
+   * wall" is what a bracket already is, and a joiner who selected a run with
+   * one wall cabinet in it has not asked for it to move.
+   */
+  setUnitInsetsBulk: (unitIds, patch) => runBatch(() => {
+    const notices = [];
+    let applied = 0;
+    let skipped = 0;
+    for (const id of unitIds || []) {
+      const unit = get().units.find((u) => u.id === id);
+      if (!unit) continue;
+      if (getUnitType(unit.type)?.mount !== 'floor') { skipped += 1; continue; }
+      const res = get().setUnitInsets(id, patch) || { applied: {}, notices: [] };
+      if (Object.keys(res.applied || {}).length) applied += 1;
+      for (const n of res.notices || []) notices.push(`${unit.params.unit_num}: ${n}`);
+    }
+    return { applied, skipped, notices };
+  }),
+
   /** A shelf (or several) in every unit of the selection that takes one. */
   addShelvesBulk: (unitIds, count = 1) => runBatch(() => {
     let added = 0;

@@ -1992,3 +1992,44 @@ przy każdej z trzech odpowiedzi.
 własność TYPU (jak `interiorOccupied`), czy osobne pole, i czy wieniec zostaje
 (bo blat i tak leży na bokach). Jeżeli **cofnięte** — jedna liczba: jak głęboka
 jest ta półka i jak wysoko stoi.
+
+---
+
+## #95 — Czy nesting ma OBRACAĆ półkę, skoro słój biegnie przód-tył? (tura 28, F7)
+
+**Co blokuje.** Tura 28 F7 mówi wprost, czego właściciel chce od obrazu:
+*"`decorPlacement` for a SHELF orients `scanAlongGrainMm` front-to-back, edge
+banding on the long front edge"* — czyli w pokoju słój półki biegnie
+**przód-tył**, bo półki kładzie się w poprzek arkusza. Zrobiłem dokładnie to:
+formatka **deklaruje** swój słój (`cnc.grain: 'h'`, czyli jej własna głębokość),
+a `engine/decors.js grainRun` czyta deklarację zamiast reguły piły (dłuższy z
+dwóch wymiarów) — bo półka jest prawie kwadratowa i ta reguła rozstrzyga ją
+czterdziestoma milimetrami w złą stronę.
+
+F7 mówi też, w tych samych słowach: **"CNC untouched (it is already right)"** —
+więc `engine/cnc/layout.js sheetTurn` nie został ruszony. A ten kładzie
+formatkę **dłuższym rysowanym bokiem do góry**, czyli typową półkę (szersza niż
+głębsza) kładzie szerokością w pionie arkusza.
+
+**Skutek, nazwany, a nie przemilczany.** Reguła tury 17 (F3) brzmiała: *słój
+biegnie DO GÓRY rysunku*. Dla półki te dwie rzeczy przestały się pokrywać: na
+arkuszu do góry idzie SZEROKOŚĆ, a zadeklarowany słój idzie GŁĘBOKOŚCIĄ. Test
+`test/turn17-phases.test.js` F3 wyłącza dziś półkę z tej reguły z tym
+uzasadnieniem i nazwiskiem tego wpisu; reszta desek (PARTITION, RAIL-PART,
+FIXED, TOP, BOTTOM, boki, plecy) trzyma ją bez zmian.
+
+**Co zrobiłem.** Nie zgadywałem arkusza. Zmieniłem to, o co F7 prosi — obraz —
+i zostawiłem nesting dokładnie tam, gdzie był, bo obrócenie półki na arkuszu to
+zmiana CNC, której ta tura ma zakaz (F7, zdanie drugie), i kosztowałaby nowe
+odciski palców na każdym kicie z półką.
+
+**Co Piotr ma zdecydować.** Jedno z dwóch:
+
+1. **Arkusz idzie za deklaracją** — `sheetTurn` obraca półkę o 90°, żeby jej
+   głębokość stanęła w pionie arkusza i słój arkusza zgadzał się ze słojem
+   formatki. To zmiana CNC na każdym kicie z półką i musi mieć swoją nazwaną
+   deltę oraz nowe odciski.
+2. **Arkusz zostaje jak jest** — bo pion arkusza to u nas kolejność cięcia, a
+   nie kierunek słoja płyty, i operator sam kładzie formatkę zgodnie z
+   deklaracją. Wtedy warto, żeby deklaracja (`grain`) **drukowała się na
+   formatce** obok etykiety, i to jest jedna linijka tekstu na arkuszu.

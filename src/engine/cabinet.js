@@ -1956,6 +1956,26 @@ export function computeCabinet(params, profileOverride) {
         rotated: true,
         drawn_w: depthHere,
         drawn_h: shelfWHere,
+        // ─── TURN 28 (CLAUDE.md F7): THE 3-D FOLLOWS THE SHEET ────────────
+        //
+        // Turn 26 F8 turned the shelf's CNC frame along the grain and the
+        // TEXTURE went on running the other way, because `engine/decors.js
+        // grainRun` falls back to the saw's own rule — the grain runs the
+        // LONGER of a part's two cut dimensions — and a shelf is nearly
+        // square: 564 across a 600 carcass against 538 deep. So the picture
+        // said left-to-right and the sheet said front-to-back, on the one
+        // piece where 26 mm decides it.
+        //
+        // The piece SAYS SO now, in the field `grainRun` has always offered
+        // for exactly this ("the only statement that could ever beat the
+        // saw"): `h` is this record's own `h`, which for a shelf is its
+        // DEPTH. Front-to-back, with the banded long front edge across it,
+        // which is how a shelf is nested and what turn 26 F8 wrote down.
+        //
+        // Nothing on the sheet moves: `grainRun` is the only reader of this
+        // field in the app, and the DXF is written from the outline, the
+        // pockets, the holes and the drawn size.
+        grain: 'h',
         ...rectGeometry(depthHere, shelfWHere),
       },
       meta: {

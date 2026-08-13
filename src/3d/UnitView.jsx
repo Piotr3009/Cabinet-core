@@ -809,13 +809,15 @@ export default function UnitView({
   const dimStyle = useMemo(() => dimensionStyle(profile), [profile]);
   const frontDimRows = useMemo(() => {
     if (!showFrontDimensions) return [];
-    return frontDimensionRows(result).map((row, i) => ({
+    // Turn 28 (CLAUDE.md F8.3/F8.4): where the two labels sit is the PROFILE's
+    // answer, resolved in the engine, so the scene still decides nothing.
+    return frontDimensionRows(result, profile).map((row, i) => ({
       key: `${row.kind}-${row.a || ''}-${row.b || ''}-${i}`,
       from: row.axis === 'h' ? [row.from, row.at] : [row.at, row.from],
       to: row.axis === 'h' ? [row.to, row.at] : [row.at, row.to],
       offset: 0,
     }));
-  }, [showFrontDimensions, result]);
+  }, [showFrontDimensions, result, profile]);
   // A hair proud of the door plane, so the chain is not buried in it.
   const frontDimZ = result.params.depth + profile.doors.gap + (result.params.front_t || 25) + 1;
 
@@ -907,12 +909,23 @@ export default function UnitView({
       offset: flank.dir * sideOffset * step,
       label,
     });
-    column('h', isWallMounted ? 0 : -legHeight, H, `H ${formatDimension(H)}`);
+    // ─── TURN 28 (CLAUDE.md F8.1): HEIGHT IS NEVER "FROM THE FLOOR" ───────
+    //
+    // The chain ran the whole way from the floor to the top of the carcass and
+    // printed 870 — a number that is on no cut list, that nobody orders board
+    // to and that the joiner then has to do arithmetic on to get back to the
+    // two he cares about. The owner's picture is two SEGMENTS on ONE line: the
+    // toe kick below and the carcass above, stacked, each with its own stop
+    // arrows, sharing the vertical they stand on.
+    //
+    // So both take `step` 1 — the same offset, which is what "one line" means
+    // here — and the carcass starts at 0 rather than at −legHeight.
     if (isWallMounted) {
-      column('mount', 0, -result.assemblies.mountHeight, `hung at ${formatDimension(result.assemblies.mountHeight)}`, 2);
+      column('mount', 0, -result.assemblies.mountHeight, `hung at ${formatDimension(result.assemblies.mountHeight)}`);
     } else if (legHeight > 0) {
-      column('kick', -legHeight, 0, `toe kick ${formatDimension(legHeight)}`, 2);
+      column('kick', -legHeight, 0, `toe kick ${formatDimension(legHeight)}`);
     }
+    column('h', 0, H, `H ${formatDimension(H)}`);
     // ─── TURN 21 (CLAUDE.md F10): ONE DERIVATION, TWO DISPLAYS ─────────────
     // This printed the STORED number — whose zero is the outside of the carcass
     // bottom — while the hover ladder printed the clear light above the
@@ -1682,7 +1695,10 @@ export default function UnitView({
         // handed down; and the gesture that opens the hinge modal on it.
         hingeSpecs={hingeSpecs}
         // Turn 25 (CLAUDE.md F6.1): gold or silver, chosen once for the job.
-        shelfMetal={design?.hardware?.shelfSleeve || null}
+        // Turn 28 (F5): and RESOLVED once — the sleeve, the pin and the drill
+        // ring's collar all take `3d/hardwareFinish.js shelfSupportMetal` of
+        // this one design.
+        design={design}
         // ─── TURN 24 (CLAUDE.md F1.2): HOW FAR EACH LEAF HAS SWUNG ───────────
         // The hinge's carcass half folds by the DOOR's own angle, and the door
         // is not this component's child — so the angle is handed across rather

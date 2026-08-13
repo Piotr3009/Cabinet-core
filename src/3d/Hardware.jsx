@@ -14,6 +14,7 @@ import {
   foldMemberB, hingeMembers, hingeModel, hingeModelFits, hingeSource, onHingeLoad,
   rigHidesBody,
 } from './hingeModels.js';
+import { shelfSupportMetal } from './hardwareFinish.js';
 
 // ─── The hardware, in 3D (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
 //
@@ -82,16 +83,20 @@ export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
   hingeSpecs = null, surface = 'room', scope = '',
-  // Turn 25 (CLAUDE.md F6.1): which metal the shelf supports are in, chosen
-  // once for the job. Left out, the profile's own default answers.
-  shelfMetal = null,
+  // ─── TURN 28 (CLAUDE.md F5): ONE COLOUR SOURCE FOR THE WHOLE FAMILY ──────
+  // Turn 25 handed this component the chosen METAL ID and let it resolve the
+  // numbers; `3d/DrillRings.jsx` resolved its own, off its own table, with its
+  // own fallback — so an untouched project drew silver collars round gold
+  // sleeves. The DESIGN comes in now and `shelfSupportMetal` is the one place
+  // the answer is worked out, for the sleeve, the pin and the collar alike.
+  design = null,
   // Turn 24 (CLAUDE.md F1.2): every leaf's signed opening angle, so the hinge's
   // CARCASS half can fold after the door it belongs to. The door is not this
   // component's child, which is exactly why the angle has to cross.
   doorSwing = null,
 }) {
   const colours = profile.appearance.hardware;
-  const metalId = shelfMetal || profile.appearance.metalDefault;
+  const shelfMetal = shelfSupportMetal(design, profile);
   // ─── TURN 21 (CLAUDE.md R4 / F2.2 / F6.3) ───
   // What this surface mounted goes with this surface. A window that closes
   // stops claiming to be showing anything.
@@ -107,7 +112,7 @@ export default function Hardware({
       <ShelfSupports
         items={instances.shelfSupports || []}
         profile={profile}
-        metal={profile.appearance.metals[metalId] || profile.appearance.metals.gold}
+        metal={shelfMetal}
       />
       {instances.rails.map((rail, i) => (
         <Rail key={`rail-${i}`} rail={rail} colour={colours.rail} />

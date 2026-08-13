@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { mm } from './constants.js';
 import { machiningLines, panelPlacement } from '../engine/joinery.js';
 import { shelfSupportInstances } from '../engine/hardware3d.js';
+import { shelfSupportMetal } from './hardwareFinish.js';
 
 // ─── DRILL RINGS — a hole you can see, without cutting the board ───────────
 //
@@ -48,10 +49,19 @@ const RING_SEGMENTS = 24;
 const LIFT_MM = 0.15;      // off the face, so nothing is exactly coplanar
 const SKIP_MM = 0.6;       // a sleeve this close owns the hole
 
-const METALS = {
-  gold: { color: '#c9a227', metalness: 1, roughness: 0.34 },
-  silver: { color: '#cfd2d4', metalness: 1, roughness: 0.30 },
-};
+// ─── TURN 28 (CLAUDE.md F6): A COLLAR ONLY WHERE A SLEEVE GOES ─────────────
+//
+// The chat fix of 12.08 put a metal collar round EVERY round drilling. The
+// owner's correction, layer by layer:
+//
+//   ⌀7.5 on the SHELF layer   a sleeve lines that hole → collar + dark core
+//   everything else           nothing lines it → a plain dark disc
+//
+// The ⌀7.5 PUZZLE hole is the case that proves it is the LAYER and not the
+// diameter: same bit, same size, and a dowel goes in it rather than a brass
+// collar. So this branches on the layer the engine drilled it on, which is the
+// fact about what the hole is FOR.
+const DARK_CORE = '#141414';
 
 /** The centre and radius of a hole loop, in cabinet millimetres. */
 function loopCircle(points) {
@@ -80,8 +90,9 @@ export default function DrillRings({ result, profile, design = null }) {
     const dressed = (x, y, z) => sleeves.some((s) => Math.abs(s.x - x) < SKIP_MM
       && Math.abs(s.y - y) < SKIP_MM && Math.abs(s.z - z) < SKIP_MM);
 
-    // Bucket by diameter: one instanced pair per size, and a kitchen only ever
-    // has a handful of sizes.
+    // Bucket by diameter AND by whether the hole is sleeved (F6): one
+    // instanced set per size per kind, and a kitchen only ever has a handful.
+    const sleeveLayer = profile?.shelfHoles?.layer;
     const byDiameter = new Map();
 
     for (const panel of panels) {
@@ -107,8 +118,14 @@ export default function DrillRings({ result, profile, design = null }) {
         const y = centre[1] - n[1] * step;
         const z = centre[2] - n[2] * step;
         if (dressed(x, y, z)) continue;
-        const key = radius.toFixed(2);
-        if (!byDiameter.has(key)) byDiameter.set(key, { radius, items: [] });
+        // ─── TURN 28 (CLAUDE.md F6): THE LAYER DECIDES, NOT THE DIAMETER ───
+        // A collar stands for a SLEEVE, and a sleeve lines exactly one kind of
+        // hole: the ⌀7.5 on the shelf layer. A ⌀7.5 puzzle socket is the same
+        // bit and takes a dowel, so it gets the plain dark disc every other
+        // drilling gets.
+        const sleeved = Boolean(sleeveLayer) && line.layer === sleeveLayer;
+        const key = `${radius.toFixed(2)}|${sleeved ? 'sleeve' : 'plain'}`;
+        if (!byDiameter.has(key)) byDiameter.set(key, { key, radius, sleeved, items: [] });
         byDiameter.get(key).items.push({ x, y, z, normal: [-n[0], -n[1], -n[2]] });
       }
     }
@@ -116,35 +133,54 @@ export default function DrillRings({ result, profile, design = null }) {
     return [...byDiameter.values()].filter((g) => g.items.length);
   }, [result, profile]);
 
-  const metal = METALS[design?.hardware?.shelfSleeve === 'gold' ? 'gold' : 'silver'];
+  // ─── TURN 28 (CLAUDE.md F5): ONE COLOUR SOURCE ────────────────────────────
+  // The collar is the third member of the shelf-support family, and it takes
+  // the family's own metal — the very function the sleeve and the pin take it
+  // from (`3d/hardwareFinish.js`). This carried its own table of two metals and
+  // its own fallback, so an untouched project drew silver collars round gold
+  // sleeves.
+  const metal = shelfSupportMetal(design, profile);
 
   if (!groups.length) return null;
 
   return (
     <group>
       {groups.map((g) => (
-        <RingSet key={g.radius.toFixed(2)} radius={g.radius} items={g.items} metal={metal} />
+        <RingSet
+          key={g.key}
+          radius={g.radius}
+          items={g.items}
+          metal={metal}
+          collar={g.sleeved}
+        />
       ))}
     </group>
   );
 }
 
-function RingSet({ radius, items, metal }) {
+function RingSet({
+  radius, items, metal, collar = true,
+}) {
   // 7.5 outside, 5.5 inside — a 1 mm collar, exactly the owner's picture, and
   // it scales sanely for a ⌀3 screw (which reads as a small metal head).
-  const collar = Math.min(1, Math.max(0.35, radius * 0.27));
-  const inner = Math.max(0.2, radius - collar);
+  //
+  // ─── TURN 28 (CLAUDE.md F6) ───
+  // …where there IS a collar. A hole nothing lines is a plain dark disc at its
+  // own full diameter, which is what a ⌀3 screw hole, a ⌀5 pilot and a ⌀7.5
+  // puzzle socket look like in a board.
+  const flange = collar ? Math.min(1, Math.max(0.35, radius * 0.27)) : 0;
+  const inner = collar ? Math.max(0.2, radius - flange) : radius;
 
   const ringGeom = useMemo(
-    () => new THREE.RingGeometry(mm(inner), mm(radius), RING_SEGMENTS),
-    [inner, radius],
+    () => (collar ? new THREE.RingGeometry(mm(inner), mm(radius), RING_SEGMENTS) : null),
+    [inner, radius, collar],
   );
   const coreGeom = useMemo(
     () => new THREE.CircleGeometry(mm(inner), RING_SEGMENTS),
     [inner],
   );
 
-  React.useEffect(() => () => { ringGeom.dispose(); coreGeom.dispose(); }, [ringGeom, coreGeom]);
+  React.useEffect(() => () => { ringGeom?.dispose(); coreGeom.dispose(); }, [ringGeom, coreGeom]);
 
   const matrices = useMemo(() => {
     const up = new THREE.Vector3(0, 0, 1);
@@ -169,20 +205,31 @@ function RingSet({ radius, items, metal }) {
 
   return (
     <>
-      <instancedMesh ref={setRefs} args={[ringGeom, undefined, items.length]} userData={{ ccHelper: true }}>
+      {/* THE COLLAR — only where a sleeve goes (F6). */}
+      {ringGeom && (
+        <instancedMesh
+          ref={setRefs}
+          args={[ringGeom, undefined, items.length]}
+          userData={{ ccHelper: true, ccDrillRing: 'collar' }}
+        >
+          <meshStandardMaterial
+            color={metal.colour}
+            metalness={metal.metalness}
+            roughness={metal.roughness}
+            side={THREE.DoubleSide}
+            polygonOffset
+            polygonOffsetFactor={-2}
+            polygonOffsetUnits={-2}
+          />
+        </instancedMesh>
+      )}
+      <instancedMesh
+        ref={setRefs}
+        args={[coreGeom, undefined, items.length]}
+        userData={{ ccHelper: true, ccDrillRing: collar ? 'core' : 'plain' }}
+      >
         <meshStandardMaterial
-          color={metal.color}
-          metalness={metal.metalness}
-          roughness={metal.roughness}
-          side={THREE.DoubleSide}
-          polygonOffset
-          polygonOffsetFactor={-2}
-          polygonOffsetUnits={-2}
-        />
-      </instancedMesh>
-      <instancedMesh ref={setRefs} args={[coreGeom, undefined, items.length]} userData={{ ccHelper: true }}>
-        <meshStandardMaterial
-          color="#141414"
+          color={DARK_CORE}
           metalness={0}
           roughness={0.95}
           side={THREE.DoubleSide}

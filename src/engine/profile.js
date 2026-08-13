@@ -411,6 +411,29 @@ export const DEFAULT_CABINET_PROFILE = {
     // it is a property of the TOOL rather than of the drawing's ink, and
     // CLAUDE.md F10.1 names it there. `dimensionStyle` reads it through, so
     // both surfaces still get one answer from one call.
+    //
+    // ─── TURN 28 (CLAUDE.md F8.3/F8.4): WHERE A FRONT'S OWN TWO LABELS SIT ──
+    //
+    // The owner, with "Show front dimensions" on: the two numbers crossed each
+    // other in the middle of every door, and the middle is also where the add
+    // (+) buttons stand — so a leaf wore a width, a height and a button in one
+    // square inch and none of the three could be read.
+    //
+    // They move apart, and both moves are HIS: the width label drops to a
+    // QUARTER of the front's height from its bottom, and the height label
+    // stands clear to the right of the centre line.
+    frontLabels: {
+      // A fraction rather than a number of millimetres, for the same reason
+      // `chainDropFraction` above is one: a fixed drop that clears a 2 100 mm
+      // door is off the bottom of a 140 mm drawer front.
+      widthFromBottom: 0.25,
+      // …and this one IS a number, because it is a distance from a control of
+      // a fixed size. 75 mm is the owner's "about 50 px" at the zoom a cabinet
+      // is worked on at; it is clamped to a share of the front's own width
+      // below, so it can never carry the number off a narrow piece.
+      heightOffsetMm: 75,
+      heightOffsetMaxShare: 0.4,
+    },
   },
 
   // ─── THE BACK HOLDS EVERY PARTITION (turn 23, CLAUDE.md F6) ─────────────

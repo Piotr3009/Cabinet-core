@@ -9,6 +9,7 @@
 
 import { unitPlanSpan } from './collision.js';
 import { formatMm } from './format.js';
+import { buildRuns } from './runs.js';
 
 /**
  * Every gap worth an arrow, for one wall and one mounting level.
@@ -115,4 +116,101 @@ export function roomDistances({ walls = [], units = [], minGap = 2 }) {
  */
 export function distanceLabel(mmValue) {
   return formatMm(mmValue, { unit: true });
+}
+
+// ─── A RUN OF IDENTICAL CABINETS DIMENSIONS ONCE (turn 28, CLAUDE.md F8.2) ──
+//
+// The owner, walking turn 27: six identical base units in a row, six identical
+// chains of the same six numbers standing beside each other. A drawing does not
+// do that — it dimensions the piece once and lets the run repeat it — and six
+// copies of one number is six things to read where there is one thing to know.
+//
+// The law: *a run of identical cabinets dimensions ONCE, on the outermost unit
+// (right or left end of the run), not per cabinet. An END PANEL does NOT break
+// the run; a DIFFERENT cabinet does.*
+//
+// ─── WHAT "IDENTICAL" MEANS, AND WHY IT IS ASKED THIS WAY ──────────────────
+//
+// Not "the same type", and not a list of params to compare: two cabinets are
+// identical FOR THIS PURPOSE when the chain would print the same numbers. So
+// the comparison is the numbers themselves — the signature below is exactly
+// what the side and floor chains carry — and a kit that gains a number next
+// turn is compared on it without anybody remembering to come back here.
+//
+// The END PANEL is excluded by construction: it is a piece attached to the run
+// rather than a fact about the cabinet, which is CLAUDE.md's own sentence.
+
+/**
+ * The numbers one cabinet's chains print, as a comparable string.
+ *
+ * @param {object} result  computeCabinet() output
+ * @returns {string}
+ */
+export function dimensionSignature(result) {
+  const p = result?.params || {};
+  const a = result?.assemblies || {};
+  const n = (v) => Math.round((Number(v) || 0) * 100) / 100;
+  const parts = [
+    result?.type,
+    n(p.width), n(p.height), n(p.depth),
+    n(result?.derived?.internal_width),
+    n(a.carcass?.legHeight),
+    n(a.mountHeight),
+    (a.shelves || []).map((s) => `${n(s.y)}:${s.locked ? 'f' : 'a'}`).join(','),
+    (a.drawerFronts || []).map((d) => `${n(d.y)}x${n(d.h)}`).join(','),
+    // The top infill is a piece of the CABINET and is dimensioned with it; the
+    // END PANEL is not, and is left out on purpose (F8.2).
+    (result?.panels || [])
+      .filter((x) => x.part === 'INFILL' && x.meta?.side === 'top' && x.meta?.piece === 'face')
+      .map((x) => n(x.box?.h)).join(','),
+  ];
+  return parts.join('|');
+}
+
+/**
+ * WHICH cabinets actually draw their chains.
+ *
+ * Everything that is not in a run of its own equals draws as it always did; a
+ * stretch of neighbours that would print the same numbers draws on ONE of them,
+ * and that one is the stretch's outer end — the right-hand cabinet, so the
+ * chain stands clear of the run rather than inside it.
+ *
+ * @param {object} args
+ *   results  [{ unit, result }] — every cabinet in the room
+ *   wanted   the ids the joiner has switched dimensions on for
+ *   profile
+ * @returns {Set<string>} the ids that draw
+ */
+export function dimensionCarriers({ results = [], wanted = [], profile }) {
+  const on = new Set(wanted);
+  if (on.size < 2) return on;
+  const byId = new Map(results.map((e) => [e.unit.id, e]));
+  const runs = buildRuns(results.map((e) => e.unit), profile);
+  const carriers = new Set(on);
+  const seen = new Set();
+
+  for (const run of runs) {
+    // The run in its own left-to-right order, narrowed to the cabinets that
+    // were asked to show their numbers. A cabinet whose neighbour is switched
+    // OFF is not standing beside a duplicate of itself as far as the drawing
+    // is concerned, so the stretch is broken there too.
+    const here = run.units.filter((u) => on.has(u.id));
+    for (const u of here) seen.add(u.id);
+    let i = 0;
+    while (i < here.length) {
+      const sig = dimensionSignature(byId.get(here[i].id)?.result);
+      let j = i;
+      // …and the stretch has to be CONSECUTIVE in the run: a different cabinet
+      // between two identical ones breaks it, which is the owner's own clause.
+      while (j + 1 < here.length
+        && run.units.indexOf(here[j + 1]) === run.units.indexOf(here[j]) + 1
+        && dimensionSignature(byId.get(here[j + 1].id)?.result) === sig) j += 1;
+      // One chain for the stretch, on its outer (right-hand) end.
+      for (let k = i; k < j; k += 1) carriers.delete(here[k].id);
+      i = j + 1;
+    }
+  }
+  // A cabinet no run claimed — turned, or standing on its own — keeps its own.
+  for (const id of on) if (!seen.has(id)) carriers.add(id);
+  return carriers;
 }

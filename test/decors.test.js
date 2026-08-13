@@ -180,15 +180,24 @@ test('a carcass SIDE gets its grain up the panel, not across it', () => {
   assert.equal(map.widthMm, side.box.d, 'while U spans the depth');
 });
 
-test('a top, a shelf and a drawer front get their grain across the piece', () => {
+test('a top and a bottom get their grain across the piece', () => {
   const r = computeCabinet({
     type: 'BUD', width: 1200, height: 770, depth: 558, unit_num: '01', shelves: 1, doors: { count: 2 },
   }, P);
-  for (const id of ['TOP', 'BOTTOM', 'SHELF-1']) {
+  for (const id of ['TOP', 'BOTTOM']) {
     const p = r.panels.find((x) => x.id === id);
     const map = decorMapping(p.box, grainRun(p).lengthMm);
     assert.equal(map.rotate, true, `${id}: a wide flat piece runs its grain along the width`);
   }
+  // ─── TURN 28 (CLAUDE.md F7): …AND A SHELF DOES NOT ───────────────────────
+  // The saw's rule — the longer of the two cut dimensions — is the FALLBACK,
+  // and a shelf is the piece it gets wrong: 1 164 across against 520 deep says
+  // "along the width" while the sheet (turn 26 F8) nests it the other way. The
+  // piece states its own grain, and the picture follows the sheet.
+  const shelf = r.panels.find((x) => x.id === 'SHELF-1');
+  assert.equal(shelf.cnc.grain, 'h', 'the shelf says so on the piece');
+  assert.equal(decorMapping(shelf.box, grainRun(shelf).lengthMm).rotate, false,
+    'front to back, with the banded long front edge across it');
 });
 
 test('a door runs its grain up the door', () => {

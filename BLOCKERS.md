@@ -2033,3 +2033,57 @@ odciski palców na każdym kicie z półką.
    nie kierunek słoja płyty, i operator sam kładzie formatkę zgodnie z
    deklaracją. Wtedy warto, żeby deklaracja (`grain`) **drukowała się na
    formatce** obok etykiety, i to jest jedna linijka tekstu na arkuszu.
+
+**Tura 29 — nic tu nie ruszyłem, ale przyczyna obrazu była INNA.** F1 tury 29
+naprawił obraz półki i nie dotknął nestingu ani deklaracji: pytanie powyżej
+stoi dokładnie tam, gdzie stało. Warto jednak wiedzieć, czemu obraz był zły
+mimo poprawnej deklaracji — aplikacja maluje DWIE rodziny drewna obrócone
+względem siebie o 90°: skan EGGER-a jest PIONOWY (2 800 mm wzdłuż wysokości
+obrazu), a nasze proceduralne słoje biegną wzdłuż SZEROKOŚCI. Tura 8 napisała
+jedną regułę i pasuje ona do skanów, więc każda maszyna, która nie dosięgnie
+bucketu — czyli i ta piaskownica, i (sądząc po zrzucie) komputer właściciela —
+malowała wszystko obrócone o ćwierć obrotu. To jest naprawione i zmierzone na
+plikach z repo; `cnc.grain` i `sheetTurn` są nietknięte.
+
+
+---
+
+## #96 — Zawias na JEDNYM przegubie: ogon ramienia ucieka 54,6 mm przy 110° (tura 29, F5)
+
+**Co blokuje.** Prawdziwy CLIP top to SIEDMIOOGNIWOWY krzyż — cztery ramiona i
+trzy łączniki — którego chwilowy środek obrotu WĘDRUJE w trakcie otwierania; to
+właśnie pozwala puszce ominąć bok korpusu przy 110°. Tej geometrii nikt tu nie
+ma i CLAUDE.md (tura 24, F1.2) wprost zabrania jej zgadywać.
+
+Na jednym przegubie nie da się utrzymać OBU końców ramienia. Skrzydło obraca się
+wokół własnej krawędzi zawiasowej, a nie wokół sworznia, więc kolanko jedzie po
+łuku — i cokolwiek jest do niego przykręcone, jedzie razem z nim.
+
+**Co zrobiłem.** Trzymam KOLANKO, bo to jest przegub, na który stolarz patrzy:
+człon B jedzie ze skrzydłem i obraca się z powrotem o jego własny kąt, więc oba
+człony spotykają się w jednym punkcie (0,000 mm przy 0°, 45° i 110°, na obu
+rękach) i ramię zachowuje kąt KORPUSU — przy 110° leży wzdłuż boku, a nie stoi
+prostopadle do drzwi. Ceną jest ogon: **przy 110° tył ramienia stoi 54,6 mm od
+płytki** (`test/turn29-f5-hinge-fold.test.js` to mierzy i pilnuje).
+
+Alternatywa — to, co robiła tura 24 — trzyma ogon i **rozrywa zawias na pół**:
+przy 110° dwie połówki jednego zawiasu stały 25 mm od siebie. To jest gorszy
+obrazek i to jest ta zmiana.
+
+**Co Piotr ma zdecydować.** Jedno z trzech:
+
+1. **Zostawiamy jak jest** — jeden przegub, kolanko trzymane, ogon dryfuje.
+   Przy 45° (a tyle widać w praktyce) dryf to kilkanaście milimetrów w głębi
+   ciemnego korpusu i nie rzuca się w oczy.
+2. **Dajesz geometrię czteroprzegubową** (rysunki Blum: długości ramion i
+   położenia sworzni) — wtedy rig przestaje być przybliżeniem i oba końce
+   siedzą tam, gdzie mają.
+3. **Ramię znika powyżej N stopni** — `rig.enabled: false` już to potrafi
+   (ukrywa korpus zawiasu powyżej `hideBeyondDeg` i zostawia samą płytkę), więc
+   to jest jedna wartość w profilu, nie nowa praca.
+
+**I jedna rzecz do sprawdzenia OKIEM, nie testem.** Oś jest zmierzona i rig jest
+udowodniony na syntetycznym zawiasie showroomu (te same nazwy węzłów, sworzeń w
+tym samym punkcie modelu). Czy PRAWDZIWY `71B3550_42542984.glb` wygląda dobrze
+złożony wokół tej linii — tego ta piaskownica nie sprawdzi, bo bucket odpowiada
+403. To jest sprawdzenie na Twoim ekranie po merge'u.

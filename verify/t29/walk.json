@@ -1,0 +1,147 @@
+{
+ "turn": 29,
+ "url": "http://127.0.0.1:4173/",
+ "showroom": "http://127.0.0.1:4174",
+ "rules": {
+  "R1": "every move and keystroke is CDP Input; the guard at the top of this file enforces it. F3 presses the app’s own two buttons with a real mouse",
+  "R2": "scripts/bucket-live.mjs, before any picture of hardware",
+  "R4": "every claim is read off the app: F1 measures the MOUNTED texture, its UV matrix and the geometry’s own UVs; F2 and F4 read the sprites the one dimension component mounted; F3 reads the record and the scene after each click; F5 reads both hinge members’ world positions",
+  "R5": "the console is captured for the whole walk",
+  "R6": "any uncaught error or React error-boundary report FAILS the step it appeared in",
+  "R7": "no data-* on R3F objects — the scene is found by userData (ccPanelId, ccDimensionChain, ccDimensionText, ccHingeMember)",
+  "R8": "GLB-dependent steps run against the synthetic silent showroom, whose hinge carries the measured knuckle",
+  "R9": "no feature without its part — F3 asserts the SCENE stops drawing a piece the moment it is switched off",
+  "R10": "the sheet is the truth: F1’s grain follows the frame turn 26 F8 nested the shelf in",
+  "R11": "every dimension in the scene is found by traversing for ccDimensionChain — one component, one type",
+  "R12": "extend means extend: F2 moves the two corrections to the path the eye sees and leaves the front labels the owner approved alone"
+ },
+ "totals": {
+  "passed": 23,
+  "failed": 0,
+  "skipped": 1
+ },
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "F1 — THE LAW: a decor shelf’s grain runs FRONT-TO-BACK on the mounted surface",
+   "ok": true,
+   "detail": "z — image grain along u (0.401 vs 2.661), turned 90°"
+  },
+  {
+   "label": "F1 — …and the WIENIEC above it still runs left-to-right (turn 13’s law)",
+   "ok": true,
+   "detail": "x — turned 0°"
+  },
+  {
+   "label": "F1 — …and a carcass SIDE still runs up the panel (turn 8’s law)",
+   "ok": true,
+   "detail": "y — turned 90°"
+  },
+  {
+   "label": "F1 — the picture is the one the room can actually reach (R7 / rule 7)",
+   "ok": true,
+   "detail": "textures/grain-neutral.png at 512×512"
+  },
+  {
+   "label": "F2.1 — the base unit’s chain reads 100 AND 770, on one vertical line",
+   "ok": true,
+   "detail": "100 × 1, 770 × 1, 870 × 0"
+  },
+  {
+   "label": "F2.1 — …and the 870 nobody orders board to is gone",
+   "ok": true,
+   "detail": "0 labels reading 870"
+  },
+  {
+   "label": "F2.2 — a run of THREE identical units draws ONE 600, ONE 100 and ONE 770",
+   "ok": true,
+   "detail": "600 × 1, 100 × 1, 770 × 1 for 3 cabinets"
+  },
+  {
+   "label": "F2.2 — …and it is ONE cabinet that carries the chains, not three",
+   "ok": true,
+   "detail": "w-u_sl9o8rt:1 · h-u_sl9o8rt:2 · wall-0:2"
+  },
+  {
+   "label": "F2.2 — a DIFFERENT cabinet breaks the run: three chains, three widths",
+   "ok": true,
+   "detail": "3 width chains · 600 × 2, 900 × 1"
+  },
+  {
+   "label": "F4 — every mounted dimension label is 1.3× the height turn 25 drew",
+   "ok": true,
+   "detail": "0.0572 against 0.044 — ×1.3000"
+  },
+  {
+   "label": "F3 — a D/W arrives with its FRONT and its PLINTH, and the scene draws all three",
+   "ok": true,
+   "detail": "FRONT · PLINTH · TOP — scene: DW01-F · PLINTH · TOP"
+  },
+  {
+   "label": "F3 — the panel offers the ORDINARY plinth control on a kit with no legs",
+   "ok": true,
+   "detail": "the same button every other cabinet has"
+  },
+  {
+   "label": "F3 — \"Remove doors\" takes the face out of the scene, the sheet and the BOM",
+   "ok": true,
+   "detail": "PLINTH · TOP — 2 csv lines (was 3), front area 0.06"
+  },
+  {
+   "label": "F3 — …and the plinth toggle takes the toe kick with it, leaving the RAIL",
+   "ok": true,
+   "detail": "TOP — scene: TOP, 0 holes"
+  },
+  {
+   "label": "F3 — and the same two buttons put them back, piece for piece",
+   "ok": true,
+   "detail": "FRONT · PLINTH · TOP — 3 csv lines, front area 0.515598"
+  },
+  {
+   "label": "F5 — the CUP rides the leaf and the ARM is the piece that folds",
+   "ok": true,
+   "detail": "01-FL: A×3 B×3 · 01-FR: A×3 B×3"
+  },
+  {
+   "label": "F5 — the KNUCKLE is one point at 0°, 45° and 110°, on BOTH hands",
+   "ok": true,
+   "detail": "L@0°: 0.000 mm · R@0°: 0.000 mm · L@45°: 0.000 mm · R@45°: 0.000 mm · L@110°: 0.000 mm · R@110°: 0.000 mm"
+  },
+  {
+   "label": "F5 — the ARM keeps the CARCASS’s attitude: it does not swing out with the door",
+   "ok": true,
+   "detail": "L@0°: 0.000° · R@0°: 0.000° · L@45°: 0.000° · R@45°: 0.000° · L@110°: 0.000° · R@110°: 0.000°"
+  },
+  {
+   "label": "F5 — …while the LEAF really did swing to the angle it was asked for",
+   "ok": true,
+   "detail": "L@0°: 0.0° · R@0°: 0.0° · L@45°: 45.0° · R@45°: 45.0° · L@110°: 110.0° · R@110°: 110.0°"
+  },
+  {
+   "label": "F5 — the fold is the leaf’s own angle and stops at the ironmongery’s 110°",
+   "ok": true,
+   "detail": "L@0°: folded 0.0° · R@0°: folded 0.0° · L@45°: folded 45.0° · R@45°: folded 45.0° · L@110°: folded 110.0° · R@110°: folded 110.0°"
+  },
+  {
+   "label": "F5 — and it is the MEASURED axis both members are jointed on",
+   "ok": true,
+   "detail": "(-10.330000312924383, 0, 2.5599990952014906) mm from the cup centre"
+  },
+  {
+   "label": "R5 + R6 — the console is clean across the whole walk",
+   "ok": true,
+   "detail": "no errors, no React exceptions"
+  }
+ ],
+ "errors": []
+}

@@ -264,19 +264,32 @@ export function hingeMembers(url, args) {
   const profile = args?.profile;
   const cup = keepMember(hingeModel(url, args), profile, 'A');
   const inner = keepMember(hingeModel(url, args), profile, 'B');
-  if (!inner) return { cup, body: null };
 
   const entry = glbSource(url);
   const min = entry?.min
     ? { x: entry.min.x / mm(1), y: entry.min.y / mm(1), z: entry.min.z / mm(1) }
     : null;
   const pivot = foldPivotMm({ min, profile });
-  if (!pivot) return { cup, body: inner };
-
   // A mirrored clone renders its x negated (the group carries `scale.x = −1`),
   // so the pivot's rendered position follows it and the two hands fold about
   // the same physical point.
   const s = args?.mirror ? -1 : 1;
+  // ─── TURN 29 (CLAUDE.md F5): THE CUP KNOWS WHERE THE KNUCKLE IS TOO ──────
+  //
+  // The pin is one point of one hinge and both members meet at it. Member B
+  // has carried it since turn 24 because it is what B turns about; member A
+  // carries it now because the PROOF is that the two coincide, and a walk that
+  // could only ask one of them would be measuring against a number it had
+  // worked out itself. `ccHingePivotMm` is in the placed clone's own
+  // millimetres and `ccHingeMirror` is the hand, so a reader can put the point
+  // into the room without knowing anything about the file.
+  if (cup) {
+    cup.userData.ccHingePivotMm = pivot;
+    cup.userData.ccHingeMirror = s;
+  }
+  if (!inner) return { cup, body: null };
+  if (!pivot) return { cup, body: inner };
+
   const joint = new THREE.Group();
   joint.position.set(mm(pivot.x) * s, 0, mm(pivot.z));
   inner.position.set(-mm(pivot.x) * s, 0, -mm(pivot.z));
@@ -294,37 +307,73 @@ export function hingeMembers(url, args) {
   outer.userData.ccHingeMemberNodes = inner.userData.ccHingeMemberNodes;
   outer.userData.ccFinish = inner.userData.ccFinish ?? null;
   outer.userData.ccHingePivotMm = pivot;
+  outer.userData.ccHingeMirror = s;
   outer.userData.ccHingeJoint = joint;
   outer.userData.ccHingeFold = 0;
   return { cup, body: outer };
 }
 
 /**
- * THE FOLD (F1.2), applied to member B.
+ * THE FOLD (turn 24 F1.2; turn 29 CLAUDE.md F5), applied to member B.
  *
  * ONE rotation about a HORIZONTAL axis parallel to the hinge row — the file's
- * Y — positioned at the arm's front pivot, by an angle equal to the door's own
- * opening angle, so the arm visually follows the cup into the opening while its
- * rear stays at the plate.
+ * Y — at the arm's front pivot, which since turn 29 is the MEASURED knuckle:
+ * the Y-parallel line through x = −0.01808, z = +0.04286 m of the file.
  *
- * ─── IT IS A ONE-JOINT APPROXIMATION OF BLUM'S SEVEN-HINGE LINKAGE ─────────
+ * ─── WHOSE ANGLE, AND WHICH WAY ROUND ──────────────────────────────────────
  *
- * A real CLIP top is a cross of four bars and three couplers whose
- * instantaneous centre travels as the door opens; that is what lets the cup
- * clear the carcass on a 110° swing, and it is geometry nobody here has.
- * CLAUDE.md F1.2 asks for this approximation, asks for it to be named as one,
- * and forbids attempting the real four-bar. This is the name.
+ * The rig was measured with the ARM held still and the CUP turned about the
+ * pin: +θ opens, 0 → 110°. That is the joint, and a joint can be driven from
+ * either end. The app drives it from the other one — member B rides the leaf
+ * beside member A and turns BACK by the leaf's own angle — because that is the
+ * end where the two things that must be true both come out true:
+ *
+ *   the KNUCKLE stays a single point   member B turns about it, so it does not
+ *                                      move; member A carries it on the leaf;
+ *                                      the two coincide at every angle.
+ *   the ARM keeps the CARCASS's angle   +θ from the leaf and −θ here cancel, so
+ *                                      at 110° the arm lies along the carcass
+ *                                      side instead of standing square off the
+ *                                      door — which is what a CLIP top does and
+ *                                      what turn 23 was asked to fix.
+ *
+ * ─── IT IS A ONE-JOINT APPROXIMATION OF BLUM'S SEVEN-LINK CROSS ────────────
+ *
+ * A real CLIP top is four bars and three couplers whose instantaneous centre
+ * TRAVELS as the door opens; that is what lets the cup clear the carcass on a
+ * 110° swing, and it is geometry nobody here has. One joint cannot hold both
+ * ends of the arm: the leaf turns about its own hinge line, so the knuckle
+ * travels on an arc and the arm's rear travels with it. This rig holds the
+ * KNUCKLE — the joint you can see — and lets the tail drift; the alternative
+ * holds the tail and tears the hinge in half on screen. CLAUDE.md asks for the
+ * approximation, asks for it to be named as one, and forbids attempting the
+ * real four-bar. This is the name, and `verify/t29/README.md` carries the
+ * number the tail drifts by.
  *
  * @param {THREE.Object3D} body   `hingeMembers().body`
  * @param {object} profile
- * @param {number} angle          the door's own signed opening angle, RADIANS
+ * @param {number} angle          the LEAF's own signed opening angle, RADIANS
  *                                (3d/UnitView.jsx: `dir × a × swing`)
  */
 export function foldMemberB(body, profile, angle) {
   const joint = body?.userData?.ccHingeJoint;
   if (!joint) return body;
-  const enabled = Boolean(profile?.hardware?.hinge?.cliptop?.rig?.enabled);
-  const turn = enabled ? (Number(angle) || 0) : 0;
+  const C = profile?.hardware?.hinge?.cliptop;
+  const enabled = Boolean(C?.rig?.enabled);
+  // The ironmongery's own limit. A door drawn past 110° is a door the hinge
+  // does not open to, and a fold past it would be a bent arm.
+  const cap = (Math.abs(Number(C?.rig?.maxFoldDeg) || 110) * Math.PI) / 180;
+  const leaf = Math.max(-cap, Math.min(cap, Number(angle) || 0));
+  // Relative to the leaf, and that is the whole of the minus sign: the leaf has
+  // turned +θ and the arm has to come back through the same θ to stay where the
+  // plate is. `angle` already carries the HAND — `dir` is −1 on a left-hung
+  // door — and so does the clone's mirror, which is why the fold needs no
+  // second correction for it: applying it here, inside the mirrored group's
+  // parent, is applying it BEFORE the hand mirror.
+  // `leaf !== 0` keeps a shut door at a plain zero rather than at −0: the two
+  // render identically and read differently, and a walk comparing scene-graph
+  // numbers should not have to know that.
+  const turn = enabled && leaf !== 0 ? -leaf : 0;
   joint.rotation.y = turn;
   // eslint-disable-next-line no-param-reassign
   body.userData.ccHingeFold = turn;

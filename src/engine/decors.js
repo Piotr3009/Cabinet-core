@@ -288,6 +288,56 @@ export function grainRun(panel) {
   };
 }
 
+// ─── WHICH WAY THE FIGURE RUNS IN THE IMAGE ITSELF (turn 29, CLAUDE.md F1) ──
+//
+// THE APP PAINTS TWO FAMILIES OF WOOD AND THEY ARE 90° APART. Turn 8 wrote one
+// mapping for both, and that is F1's fault: a decor shelf's grain ran across it
+// exactly when the picture came from the family the mapping was not written
+// for, which is the family a machine with no network always gets.
+//
+//   THE MANUFACTURER'S SCAN — an EGGER full-board photograph, 2 800 mm of board
+//   down a 7 937 px image and 1 310 mm across a 3 685 px one. It is PORTRAIT
+//   and the grain runs down its HEIGHT, its V axis. Measured, not assumed: the
+//   shipped thumbnails ("the thumbnail is the entire board scan reduced") are
+//   2.5× smoother down V than across U, and `scanAlongGrainMm` — 2 800 — is the
+//   image's own height in millimetres of board, which is the same sentence said
+//   as a number.
+//
+//   OUR OWN PROCEDURAL GRAIN — `scripts/gen-textures.mjs`, the fallback a decor
+//   with no scan and a build with no network both drop to (rule 7). It renders
+//   the ring phase from `v` and stretches the noise along `x`, so its figure
+//   runs along the image's WIDTH, its U axis. The shipped file measures 6.6×
+//   smoother along U than across it.
+//
+// Both numbers are re-measured from the shipped assets in
+// `test/turn29-f1-shelf-grain-scene.test.js`, so neither can be a belief.
+//
+// ─── AND IT EXPLAINS BOTH OF THE OWNER'S REPORTS ────────────────────────────
+//
+//   turn 13  "słoje na wieńcach biegną front-tył zamiast lewo-prawo"
+//   turn 29  the shelves' grain runs left-to-right instead of front-to-back
+//
+// A wieniec wants its grain along its face's U and a shelf along its V, so one
+// mapping applied to the wrong image family gets them wrong in OPPOSITE
+// directions — which is exactly the pair of complaints, four turns apart.
+
+/** Our own procedural grain runs along the image's width. */
+export const TILE_GRAIN_AXIS = 'u';
+/** A manufacturer's board scan runs down the image's height. */
+export const SCAN_GRAIN_AXIS = 'v';
+
+/**
+ * Which axis of THIS finish's image the figure runs along.
+ *
+ * The two families are already told apart by how they are PLACED — a scan
+ * carries `scanAlongGrainMm` and is laid by its physical size, a tile carries
+ * `repeatMm` and repeats — so this needs no new field on a finish and no new
+ * flag on a piece. It is the fact that was missing, said once.
+ */
+export function imageGrainAxis(surface) {
+  return Number(surface?.scanAlongGrainMm) > 0 ? SCAN_GRAIN_AXIS : TILE_GRAIN_AXIS;
+}
+
 /**
  * How to lay a scan on ONE panel's biggest face.
  *
@@ -297,15 +347,18 @@ export function grainRun(panel) {
  * one — the two edges are 18 mm of board and nobody reads the grain on them —
  * so the mapping is worked out for that face and the edges take what falls out.
  *
- * `rotate` means the grain has to run along the face's U axis, which is the
- * case turn 7 got wrong in the one place it shows most: a side panel's biggest
- * face has u along the DEPTH and v along the HEIGHT, and turn 7 scaled the
- * texture by the box's x and y — so every carcass side in the app had its grain
- * lying on its side.
+ * `grainAxis` is the CABINET's own statement: which of that face's two axes the
+ * figure has to run along, decided by which of them is the piece's length along
+ * the grain. It owes nothing to any image, which is the turn-29 correction:
+ * turn 8 returned `rotate` from here and so decided a question about a PICTURE
+ * in a function that has never been shown one. Whether the image needs a
+ * quarter turn is `3d/materials.js decorPlacement`, where the finish is —
+ * `grainAxis` against `imageGrainAxis(surface)`, and the fix is where the scene
+ * reads it rather than a second flag beside the first.
  *
  * @param {{w:number,h:number,d:number}} box  the panel's box, in mm
  * @param {number} grainMm  the piece's length along the grain (grainRun above)
- * @returns {{widthMm:number, heightMm:number, rotate:boolean}}
+ * @returns {{widthMm:number, heightMm:number, grainAxis:'u'|'v'}}
  */
 export function decorMapping(box, grainMm) {
   const w = Math.abs(Number(box?.w) || 0);
@@ -318,6 +371,6 @@ export function decorMapping(box, grainMm) {
   ];
   const face = faces.reduce((best, f) => (f.area > best.area ? f : best), faces[0]);
   const target = Math.abs(Number(grainMm) || 0);
-  const rotate = Math.abs(face.widthMm - target) < Math.abs(face.heightMm - target);
-  return { widthMm: face.widthMm, heightMm: face.heightMm, rotate };
+  const grainAxis = Math.abs(face.widthMm - target) < Math.abs(face.heightMm - target) ? 'u' : 'v';
+  return { widthMm: face.widthMm, heightMm: face.heightMm, grainAxis };
 }

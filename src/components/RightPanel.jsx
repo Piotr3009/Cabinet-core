@@ -5,7 +5,7 @@ import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
 import { doorCountFor, minDrawerFrontHeight } from '../engine/cabinet.js';
-import { endPanelDrop } from '../engine/autoparts.js';
+import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { corniceOption } from '../engine/cornice.js';
@@ -848,7 +848,16 @@ export default function RightPanel() {
           hint="Plinth, top infill and end panels — added, never assumed"
         >
           {/* plinth */}
-          {type.legs && type.mount === 'floor' ? (
+          {/* ─── TURN 29 (CLAUDE.md F3): THE ENGINE'S OWN GATE, NOT A SECOND ─
+              *"front i plinth powinien być tak samo włączany jak cała reszta
+              szafek."* This asked `type.legs`, and legs and a plinth have been
+              two questions since turn 22 — the D/W panel has NO legs (the
+              machine stands where they would be) and a toe kick that runs
+              past it, notched. So the engine would cut the piece and the panel
+              refused to offer the button. One gate now, `engine/autoparts.js
+              takesPlinth`, which is the same function the store's own
+              `canTakePlinth` asks. */}
+          {takesPlinth(unit.type, profile) && type.mount === 'floor' ? (
             <div className="cc-row">
               <div className="flex flex-col">
                 <span className="text-sm text-ink-100">Plinth</span>
@@ -865,7 +874,7 @@ export default function RightPanel() {
               )}
             </div>
           ) : (
-            <p className="text-[11px] text-ink-400">This type stands on no legs — it takes no plinth.</p>
+            <p className="text-[11px] text-ink-400">This type carries no toe kick — it takes no plinth.</p>
           )}
 
           {/* top infill — not offered on a base unit at all (turn 8, F2.7):

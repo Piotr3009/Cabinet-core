@@ -60,7 +60,7 @@ test('F2.1 — the body is placed in the DOOR\'s frame, which is what makes it s
 
 test('F2.1 — the ROOM mounts the body inside the door group, with the specs', () => {
   const view = src('3d/UnitView.jsx');
-  const mount = view.slice(view.indexOf('<DoorHinges'), view.indexOf('<DoorHinges') + 1200);
+  const mount = view.slice(view.indexOf('<DoorHinges'), view.indexOf('/>', view.indexOf('<DoorHinges')) + 2);
   assert.match(mount, /specs=\{hingeSpecs\}/, 'the door half resolves the same hinge the plate does');
   assert.match(mount, /storageBase=\{storageBase\}/);
   assert.match(mount, /scope=\{p\.id\}/, 'one mount per leaf, so the registry names the door');

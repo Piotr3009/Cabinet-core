@@ -261,6 +261,18 @@ test('F7 — a bare kit call is untouched: nothing said, nothing changes', () =>
     const type = getUnitType(id);
     if (!type.supports.doors) continue;
     const r = unit(id, { doors: true });
+    // ─── TURN 29 (CLAUDE.md F3) ───────────────────────────────────────────
+    // A kit whose FACE is the appliance's own front answers the ordinary door
+    // control now — so it reaches this loop — and it hangs on NO cup hinges:
+    // it is screwed to the machine's door. Zero rows, and zero is asserted
+    // rather than skipped, because the fault this guards against is a plate
+    // pattern bored into a side that is not even cut.
+    if (type.frontOpens === 'drop') {
+      assert.deepEqual(r.drillSummary.hinge_centers, [], `${id} hangs on nothing`);
+      assert.deepEqual(r.drillSummary.hinged_sides, [], `${id} has no side to bore`);
+      assert.equal(r.totals.hinges, 0);
+      continue;
+    }
     const rule = P.hinges.rules[type.hingeRule];
     assert.deepEqual(r.drillSummary.hinge_centers, hingeCentres(defaultParamsFor(id, P).height, rule, P),
       `${id} must still drill exactly what the AutoLISP drills`);

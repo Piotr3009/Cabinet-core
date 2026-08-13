@@ -175,9 +175,15 @@ test('a carcass SIDE gets its grain up the panel, not across it', () => {
   }, P);
   const side = r.panels.find((p) => p.id === 'BUL');
   const map = decorMapping(side.box, grainRun(side).lengthMm);
-  assert.equal(map.rotate, false, 'the grain is the face s V axis — up the panel');
+  assert.equal(map.grainAxis, 'v', 'the grain is the face s V axis — up the panel');
   assert.equal(map.heightMm, side.box.h, 'and V spans the panel height');
   assert.equal(map.widthMm, side.box.d, 'while U spans the depth');
+  // ─── TURN 29 (CLAUDE.md F1) ───
+  // WHICH WAY THE PICTURE IS TURNED is not this function's answer any more: it
+  // depends on the image, and the app paints two families of wood that run 90°
+  // apart. `test/turn29-f1-shelf-grain-scene.test.js` asserts both, on the
+  // surface the scene mounts.
+  assert.equal(map.rotate, undefined, 'a mapping decides the BOARD, not the picture');
 });
 
 test('a top and a bottom get their grain across the piece', () => {
@@ -187,7 +193,7 @@ test('a top and a bottom get their grain across the piece', () => {
   for (const id of ['TOP', 'BOTTOM']) {
     const p = r.panels.find((x) => x.id === id);
     const map = decorMapping(p.box, grainRun(p).lengthMm);
-    assert.equal(map.rotate, true, `${id}: a wide flat piece runs its grain along the width`);
+    assert.equal(map.grainAxis, 'u', `${id}: a wide flat piece runs its grain along the width`);
   }
   // ─── TURN 28 (CLAUDE.md F7): …AND A SHELF DOES NOT ───────────────────────
   // The saw's rule — the longer of the two cut dimensions — is the FALLBACK,
@@ -196,8 +202,12 @@ test('a top and a bottom get their grain across the piece', () => {
   // piece states its own grain, and the picture follows the sheet.
   const shelf = r.panels.find((x) => x.id === 'SHELF-1');
   assert.equal(shelf.cnc.grain, 'h', 'the shelf says so on the piece');
-  assert.equal(decorMapping(shelf.box, grainRun(shelf).lengthMm).rotate, false,
-    'front to back, with the banded long front edge across it');
+  const shelfMap = decorMapping(shelf.box, grainRun(shelf).lengthMm);
+  assert.equal(shelfMap.grainAxis, 'v', 'front to back, with the banded long front edge across it');
+  // …and the shelf is the OPPOSITE of the wieniec above it, which is the whole
+  // of the owner's turn-29 F1: two horizontal boards, two grain directions.
+  assert.equal(decorMapping(r.panels.find((x) => x.id === 'TOP').box,
+    grainRun(r.panels.find((x) => x.id === 'TOP')).lengthMm).grainAxis, 'u');
 });
 
 test('a door runs its grain up the door', () => {
@@ -206,7 +216,7 @@ test('a door runs its grain up the door', () => {
   }, P);
   const door = r.panels.find((p) => p.part === 'FRONT');
   const map = decorMapping(door.box, grainRun(door).lengthMm);
-  assert.equal(map.rotate, false);
+  assert.equal(map.grainAxis, 'v');
   assert.equal(map.heightMm, door.box.h);
 });
 

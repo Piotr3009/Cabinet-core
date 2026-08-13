@@ -54,8 +54,21 @@ test('F7 …so the SCENE lays the scan front-to-back on the shelf’s big face',
   // width) and v along Z (its depth).
   assert.equal(map.widthMm, shelf.box.w);
   assert.equal(map.heightMm, shelf.box.d);
-  assert.equal(map.rotate, false, 'grain along V — which on this face is front-to-back');
+  assert.equal(map.grainAxis, 'v', 'grain along V — which on this face is front-to-back');
 
+  // ─── TURN 29 (CLAUDE.md F1): AND THIS IS WHERE F7 STOPPED SHORT ──────────
+  //
+  // It asserted `rotate === false` and called that "front to back". `rotate` is
+  // not a direction in the room — it is whether the IMAGE takes a quarter turn
+  // — and turn 8 decided that in a function that has never been shown an
+  // image. For a manufacturer's SCAN, whose figure runs down its own height,
+  // `false` really is front-to-back and this assertion was right. For the
+  // procedural grain a machine with no network falls back to — whose figure
+  // runs along its WIDTH — `false` laid it across the shelf, and that is the
+  // picture the owner photographed. Same flag, two families of image, 90°
+  // apart. The direction is the line above; which way the picture is turned is
+  // `3d/materials.js decorPlacement`, and the SURFACE both produce is asserted
+  // in `test/turn29-f1-shelf-grain-scene.test.js` off a mounted material.
   const placed = decorPlacement(SCAN, shelf, P);
   assert.equal(placed.rotate, false);
   // One image is 1 200 mm of real board ALONG the grain, so the repeat down the
@@ -76,10 +89,10 @@ test('F7 the picture and the sheet now agree about which way the figure runs', (
   assert.deepEqual(pl.u, [0, 0, -1], 'the drawn x really is the cabinet’s depth axis');
   assert.deepEqual(pl.v, [1, 0, 0], '…and the drawn y its width');
 
-  // THE PICTURE: the along-grain axis, as a direction in the room. `rotate`
-  // false means the grain runs down the face's V, and V on this face is Z.
+  // THE PICTURE: the along-grain axis, as a direction in the room. `grainAxis`
+  // 'v' means the grain runs down the face's V, and V on this face is Z.
   const map = decorMapping(shelf.box, grainRun(shelf).lengthMm);
-  const grainAxis = map.rotate ? 'x' : 'z';
+  const grainAxis = map.grainAxis === 'u' ? 'x' : 'z';
   assert.equal(grainAxis, 'z', 'front to back in the room');
   // …which is the axis the sheet's own x runs along. One direction, two
   // drawings of it.
@@ -109,7 +122,7 @@ test('F7 no other board moved: the sides, the partition and the top are as they 
   // A SIDE runs its grain up its height and always has; nothing here touched it.
   const side = r.panels.find((p) => p.part === 'BUL');
   assert.equal(grainRun(side).lengthMm, side.h);
-  assert.equal(decorMapping(side.box, grainRun(side).lengthMm).rotate, false);
+  assert.equal(decorMapping(side.box, grainRun(side).lengthMm).grainAxis, 'v');
 });
 
 test('F7 the CNC is untouched: nothing but grainRun reads the field', () => {
@@ -168,6 +181,6 @@ test('F7 a fix shelf and an adjustable one are the same piece about this', () =>
   assert.equal(shelves.length, 2);
   for (const s of shelves) {
     assert.equal(s.cnc.grain, 'h', `${s.id}: nested the same way whichever way it is held`);
-    assert.equal(decorMapping(s.box, grainRun(s).lengthMm).rotate, false);
+    assert.equal(decorMapping(s.box, grainRun(s).lengthMm).grainAxis, 'v');
   }
 });

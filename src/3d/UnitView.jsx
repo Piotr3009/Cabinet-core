@@ -98,10 +98,26 @@ function useDecor(surface, panel, profile) {
   // with, and every decor panel rendered plain white.
   const [tick, bump] = useState(0);
   const url = surface?.texture || null;
+  // ─── TURN 29 (CLAUDE.md F1): AND THE FALLBACK NEEDS A LISTENER TOO ───────
+  //
+  // Found by the walk, on the very machine rule 7 is written for. When the scan
+  // FAILS, the failure itself is a notification and this memo re-runs — and
+  // then asks for the fallback's texture, which has only just started loading
+  // and comes back null. Nothing was ever listening for THAT image, so no
+  // second re-render ever came: the panel stayed blank until something else in
+  // the app happened to touch it.
+  //
+  // So both urls are subscribed. It also starts the fallback's own download at
+  // mount rather than at the moment of failure, which is one 512 px file for
+  // the whole project and is the difference between mock mode WORKING and mock
+  // mode working eventually.
+  const fallbackUrl = surface?.fallback?.texture || null;
   useEffect(() => {
-    if (!url) return undefined;
-    return onDecorLoad(url, () => bump((n) => n + 1));
-  }, [url]);
+    const offs = [];
+    if (url) offs.push(onDecorLoad(url, () => bump((n) => n + 1)));
+    if (fallbackUrl && fallbackUrl !== url) offs.push(onDecorLoad(fallbackUrl, () => bump((n) => n + 1)));
+    return () => { for (const off of offs) off(); };
+  }, [url, fallbackUrl]);
 
   return useMemo(() => {
     if (!url) return { map: null, tinted: false };
@@ -532,6 +548,13 @@ export default function UnitView({
   profile, finishes, outlines = true, contour = false, xray = false, sheen = null,
   showHinges = false, hideFronts = false,
   wallGaps = null, showAllDims = false, unitDesign = null,
+  // ─── TURN 29 (CLAUDE.md F2.2) ───
+  // Does THIS cabinet carry its run's W and its 100 + 770? The answer is the
+  // engine's (`engine/dimensions.js dimensionCarriers`) and it arrives as a
+  // prop, exactly as `showAllDims` does, because it is a fact about the ROOM
+  // and a cabinet cannot see the one next door. Defaults true, so a caller
+  // with one cabinet in its hand — the editor window — draws as it always did.
+  carriesSizeChain = true,
   // Turn 25 (CLAUDE.md F13): project-wide, so it arrives as a prop rather than
   // being read out of the store in here.
   showFrontDimensions = false,
@@ -878,6 +901,30 @@ export default function UnitView({
   //                    running down the side of the unit, never across a face.
   const floorY = isWallMounted ? 0 : -legHeight;
   const sideOffset = profile.hoverDimensions.offsetMm * 3;
+
+  // ─── TURN 29 (CLAUDE.md F2.1): THE VERTICAL CHAIN IS TWO SEGMENTS ────────
+  //
+  // The owner: *"nie ma 100, plinthu nie pokazuje"* — the base unit's chain
+  // still reads a single 770, drawn across the whole 870 from the floor. The
+  // law is turn 28's F8.1, restated: TWO segments on ONE vertical line, the
+  // toe kick below and the carcass above, each with its own stop arrows.
+  //
+  // Both take the SAME offset, because that is the whole of what "one line"
+  // means here, and they meet at 0 — the outside of the carcass bottom, which
+  // is the datum every other number on this cabinet is measured from. A wall
+  // unit has no kick and draws the one segment it has.
+  const heightChain = useMemo(() => {
+    const rows = [];
+    if (!isWallMounted && legHeight > 0) {
+      rows.push({
+        key: 'kick', from: [W, -legHeight], to: [W, 0], offset: sideOffset, label: formatDimension(legHeight),
+      });
+    }
+    rows.push({
+      key: 'h', from: [W, 0], to: [W, H], offset: sideOffset, label: formatDimension(H),
+    });
+    return rows;
+  }, [W, H, legHeight, isWallMounted, sideOffset]);
 
   const fullDimensions = useMemo(() => {
     if (!showAllDims) return { floor: [], side: [] };
@@ -1356,6 +1403,10 @@ export default function UnitView({
                   // Turn 24 (F1.4): with the rig OFF the model hides beyond
                   // ~15°, and this is the number it is asked about.
                   openDeg={Math.abs(((doorSwing[p.id] || 0) * 180) / Math.PI)}
+                  // Turn 29 (CLAUDE.md F5): the leaf's SIGNED angle, which the
+                  // arm folds back through. Same expression `MovingPanel`
+                  // integrates, so the two halves cannot disagree.
+                  swing={doorSwing[p.id] || 0}
                   surface="room"
                   // One mount per door, so the registry names which leaf each
                   // reported hinge belongs to.
@@ -1894,27 +1945,48 @@ export default function UnitView({
               face of a front.
 
               The SELECTED cabinet keeps the gold, which is not a colour
-              choice: it is the answer to "which one am I holding". */}
-          <DimensionChain
-            rows={[{
-              key: 'w', from: [0, D], to: [W, D], offset: sideOffset, label: formatDimension(W),
-            }]}
-            style={dimStyle}
-            plane="xz"
-            at={floorY}
-            colour={selected ? COLORS.gold : dimensionColour}
-            name={`w-${unit.id}`}
-          />
-          <DimensionChain
-            rows={[{
-              key: 'h', from: [W, floorY], to: [W, H], offset: sideOffset, label: formatDimension(H),
-            }]}
-            style={dimStyle}
-            plane="xy"
-            at={D}
-            colour={selected ? COLORS.gold : dimensionColour}
-            name={`h-${unit.id}`}
-          />
+              choice: it is the answer to "which one am I holding".
+
+              ─── TURN 29 (CLAUDE.md F2.2): AND A RUN SAYS IT ONCE ───────────
+              Turn 28 wrote the run rule into `showAllDims` — the RIGHT-CLICK
+              chain — and the owner's *"nadal pokazuje na każdej szafce"* is
+              about THIS one, the one "Show dimensions" draws. It is the same
+              rule, on the path the eye sees: the engine says which cabinet of
+              a run carries the numbers (`engine/dimensions.js`) and the scene
+              draws what it is told. The NAME chip below is not a dimension and
+              keeps appearing on every cabinet. */}
+          {carriesSizeChain && (
+            <>
+              <DimensionChain
+                rows={[{
+                  key: 'w', from: [0, D], to: [W, D], offset: sideOffset, label: formatDimension(W),
+                }]}
+                style={dimStyle}
+                plane="xz"
+                at={floorY}
+                colour={selected ? COLORS.gold : dimensionColour}
+                name={`w-${unit.id}`}
+              />
+              {/* ─── TURN 29 (CLAUDE.md F2.1): THE 100 THE OWNER CANNOT SEE ──
+                  *"nie ma 100, plinthu nie pokazuje."* The chain ran the whole
+                  way from the floor to the top of the carcass and printed the
+                  CARCASS's number over it — 770 drawn across 870 — so the toe
+                  kick was inside the arrow and named nowhere.
+
+                  Two segments on ONE vertical line, each with its own stop
+                  arrows: the kick below, the carcass above, both on the same
+                  offset, which is what "one line" means. It is turn 28's own
+                  F8.1 law, moved to the chain the walk actually draws. */}
+              <DimensionChain
+                rows={heightChain}
+                style={dimStyle}
+                plane="xy"
+                at={D}
+                colour={selected ? COLORS.gold : dimensionColour}
+                name={`h-${unit.id}`}
+              />
+            </>
+          )}
           {/* ─── Turn 17 (CLAUDE.md F6.3) ───
               The cabinet's NAME is not a dimension and does not dress like
               one: a flat plate in the app's own tones, square-cornered, in the

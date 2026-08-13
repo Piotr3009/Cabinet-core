@@ -406,6 +406,33 @@ export const DEFAULT_CABINET_PROFILE = {
       // A plate, not a sticker: it lets a hair of the room through so a
       // number lying on the floor still reads as an annotation.
       plateAlpha: 0.9,
+
+      // ─── TURN 29 (CLAUDE.md F4): A THIRD BIGGER, HALF THE WEIGHT ────────
+      //
+      // The owner, verbatim: *"napisy troszeczkę za małe — jakby były o 30%
+      // większe ale o połowę mniej tłuste na tych wymiarowaniach wszędzie, to
+      // by było super."*
+      //
+      // Three numbers, here rather than in the component, because they are the
+      // drawing office's TYPE and a workshop tunes type in one block (rule 3).
+      // Nothing else about the plate moves: same ground, same ink, same square
+      // corners, same layout laws.
+      //
+      //   heightM   what the eye actually measures — the sprite's own height
+      //             in the room. Turn 25's 0.044 × 1.3. Growing the canvas
+      //             alone would only have made a sharper label the same size.
+      //   pixels    the canvas the glyphs are drawn on, grown by the same 1.3
+      //             so the type keeps its texel density instead of softening.
+      //   weight    600 was "bold-ish mono"; half of it is 300, a light cut of
+      //             the SAME family — the owner asked for less fat, not for a
+      //             different face.
+      heightM: 0.0572,
+      pixels: 49,
+      weight: 300,
+      // The plate's padding and the letter-spacing, as fractions of `pixels`,
+      // so the plate grows WITH the type instead of tightening round it.
+      padFraction: 0.42,
+      trackingFraction: 0.09,
     },
     // The magnet that holds a shown set on screen is `editor.hoverMagnetMm` —
     // it is a property of the TOOL rather than of the drawing's ink, and
@@ -2518,10 +2545,39 @@ export const DEFAULT_CABINET_PROFILE = {
 
           // ─── THE AXIS (F1.2) ────────────────────────────────────────────
           // Horizontal, parallel to the hinge row — the file's Y — at the
-          // arm's front pivot. Starting numbers, in FILE millimetres, and the
-          // first person to see the fold beside a real cabinet corrects THESE
-          // TWO and nothing else.
-          axis: { z: 33.5, x: -7.75 },
+          // arm's front pivot.
+          //
+          // ─── TURN 29 (CLAUDE.md F5): MEASURED, AND FINAL ────────────────
+          //
+          // Turn 24 shipped starting numbers and said in as many words that
+          // the first person to see the fold beside a real cabinet corrects
+          // THESE TWO and nothing else. They have been measured on
+          // `71B3550_42542984.glb` and render-verified, and CLAUDE.md hands
+          // them over as final: the fold axis is the Y-parallel line through
+          //
+          //     x = −0.01808 m      z = +0.04286 m
+          //
+          // The file is authored in METRES like every GLB this app loads, and
+          // everything in this block is in FILE MILLIMETRES, so they are ×1000
+          // here. `foldPivotMm` puts them through the very transform
+          // `glbClone` places the model by, which is what keeps this a
+          // derivation rather than a third number that could disagree.
+          //
+          // On this file that lands the pin at (−10.33, 0, +2.56) mm from the
+          // cup's centre: ten millimetres towards the arm and a whisker inside
+          // the leaf, which is where a CLIP top's knuckle is.
+          axis: { x: -18.08, z: 42.86 },
+
+          // ─── WHICH WAY, AND HOW FAR ─────────────────────────────────────
+          // "+θ opens, range 0 → 110°." The direction is the CUP's about the
+          // pin, which is how the rig was measured in the lab; the app turns
+          // the ARM relative to the leaf, so it is the same joint driven from
+          // its other end and the sign is negated where it is applied
+          // (`3d/hingeModels.js foldMemberB`, which says so beside the line).
+          //
+          // The cap is the ironmongery's own: a CLIP top opens to 110° and a
+          // door drawn past it would be a hinge bent further than it goes.
+          maxFoldDeg: 110,
         },
 
         // A cup hinge is a small object. A file whose longest axis is bigger

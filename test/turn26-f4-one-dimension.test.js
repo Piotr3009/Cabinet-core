@@ -175,7 +175,14 @@ test('F4.2 — a chain lies in ONE of two planes, and the caller says which', ()
   assert.match(view, /const floorY = isWallMounted \? 0 : -legHeight;/);
   // …and vertical ones run down the SIDE: the chain's own points are at the
   // cabinet's right-hand edge, pushed clear of it by an offset.
-  assert.match(view, /from: \[W, floorY\], to: \[W, H\], offset: sideOffset/);
+  // ─── TURN 29 (CLAUDE.md F2.1): AND IT IS TWO SEGMENTS NOW ────────────────
+  // Same edge, same offset — which is what puts them on ONE line — split at 0
+  // so the toe kick is a number of its own instead of being drawn inside the
+  // carcass's arrow. The single floor-to-top row this asserted printed 770
+  // across 870 and is the fault F2.1 names.
+  assert.match(view, /from: \[W, -legHeight\], to: \[W, 0\], offset: sideOffset/);
+  assert.match(view, /from: \[W, 0\], to: \[W, H\], offset: sideOffset/);
+  assert.doesNotMatch(view, /from: \[W, floorY\], to: \[W, H\]/, 'nobody orders board to an 870');
   // The room's distances lie on the floor too.
   const room = file('3d/DistanceArrows.jsx');
   assert.match(room, /plane="xz"/);

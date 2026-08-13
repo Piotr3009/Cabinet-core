@@ -165,10 +165,16 @@ test('F2.2 — MODEL-BACKED, not procedural: both leaves resolve the same file',
 test('F2.2 — the PARENT is the same for both: body on the door, plate on the carcass', () => {
   const hardware = read('3d/Hardware.jsx');
   const view = read('3d/UnitView.jsx');
-  // The two components each name their own parent to the registry, and there
-  // is one of each — so "which parent" cannot be a per-leaf answer.
-  assert.equal((hardware.match(/parent: 'door'/g) || []).length, 1);
-  assert.equal((hardware.match(/parent: 'carcass'/g) || []).length, 2, 'the plate and member B');
+  // The two components each name their own parent to the registry, so "which
+  // parent" cannot be a per-leaf answer.
+  // ─── TURN 29 (CLAUDE.md F5): AND MEMBER B CHANGED SIDES ─────────────────
+  // The arm is jointed to the CUP at the knuckle, so it is drawn in the cup's
+  // own frame and folded back through the leaf's angle — which keeps the
+  // knuckle one point and the arm at the carcass's attitude. What is left on
+  // the carcass is the PLATE, which is the one piece of a CLIP top screwed to
+  // the side panel and the one piece that genuinely never moves.
+  assert.equal((hardware.match(/parent: 'door'/g) || []).length, 2, 'member A and member B');
+  assert.equal((hardware.match(/parent: 'carcass'/g) || []).length, 1, 'the plate, and only the plate');
   // …and the DOOR half is mounted as a child of the leaf's own moving group,
   // for every leaf, with no test on which door it is.
   assert.match(view, /front === 'door' && \(showHinges \|\| xray\)/);

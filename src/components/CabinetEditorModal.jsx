@@ -614,19 +614,6 @@ function ExplodedCabinet({
   );
   const centre = bounds ? [-mm(bounds.centre.x), -mm(bounds.centre.y), -mm(bounds.centre.z)] : [0, 0, 0];
 
-  // Turn 24 (CLAUDE.md F1.2): the signed angle of every leaf, in the editor's
-  // own swing (1 radian, `ExplodingPart` below), so member B folds after its
-  // door here too. The room computes the same thing from the same two inputs.
-  const doorSwing = useMemo(() => {
-    const out = {};
-    for (const p of panels) {
-      if (frontOf(p) !== 'door' || !p.box) continue;
-      const dir = p.meta?.hinge === 'R' ? 1 : -1;
-      out[p.id] = dir * (openFronts?.[p.id] ?? (allOpen ? 1 : 0)) * 1;
-    }
-    return out;
-  }, [panels, openFronts, allOpen]);
-
   return (
     <group position={centre}>
       {panels.map((p) => (
@@ -678,12 +665,6 @@ function ExplodedCabinet({
           hingeSpecs={hingeSpecs}
           storageBase={storageBase}
           surface={drawer ? 'drawer-editor' : 'editor'}
-          // Turn 24 (CLAUDE.md F1.2): every leaf's signed angle, so the hinge's
-          // carcass half folds after the door in this window exactly as it does
-          // in the room. The expression is `MovingPanel`'s own — `dir × open ×
-          // swing`, and the editor's swing is 1 radian (below) — so one fold
-          // cannot lag the leaf it belongs to.
-          doorSwing={doorSwing}
         />
       )}
     </group>
@@ -702,7 +683,6 @@ function ExplodedCabinet({
  */
 function ExplodedHardware({
   hardware, offsets, exploded, profile, hingeSpecs, storageBase, surface,
-  doorSwing = null,
 }) {
   // Group the instances by the panel they travel with. A Map of `<panel id> →
   // instance set`, so one <Hardware> is mounted per travelling group and the
@@ -744,7 +724,6 @@ function ExplodedHardware({
             hinges
             hingeSpecs={hingeSpecs}
             storageBase={storageBase}
-            doorSwing={doorSwing}
             // Turn 21 (CLAUDE.md F6.3 / R4): which window these entries were
             // mounted in, so the walk can assert that the EDITOR's hardware is
             // model-backed and not a stand-in. The scope is the part they ride.
@@ -943,6 +922,11 @@ function ExplodingPart({
               storageBase={storageBase}
               // Turn 24 (F1.4): the rig-off fallback's own number.
               openDeg={Math.abs((open || 0) * 180 / Math.PI)}
+              // Turn 29 (CLAUDE.md F5): the leaf's SIGNED angle, which member
+              // B folds back through. `MovingPanel`'s own expression — `dir ×
+              // open × swing`, and this window's swing is 1 radian — so the
+              // fold cannot lag the leaf it is jointed to.
+              swing={(p.meta?.hinge === 'R' ? 1 : -1) * (open || 0)}
               surface={hardwareSurface}
               scope={p.id}
             />

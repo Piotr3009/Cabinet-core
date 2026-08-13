@@ -1927,7 +1927,41 @@ powodem. Zmiana to jedna liczba w profilu.
 
 ---
 
-## #94 — Dno w szafce pod zmywarkę: czy ono tam w ogóle jest? (tura 27, F2.1)
+## #94 — Dno w szafce pod zmywarkę: czy ono tam w ogóle jest? — ✅ ZAMKNIĘTY W TURZE 28
+
+**ZAMKNIĘTE. Właściciel odpowiedział, i odpowiedział szerzej niż pytanie.**
+Nie tylko dna nie ma — nie ma **całego korpusu**. Verbatim (CLAUDE.md tury 28,
+F1): *"nie ma całego korpusu oprócz górnego panela, który ma 600 mm bez żadnych
+dog bonów — tak jak było, tylko chciałem żeby to było podciągnięte pod logikę
+szafki."*
+
+Czyli druga z trzech możliwości poniżej, doprowadzona do końca: **boki są
+bokami sąsiadów**, urządzenie stoi na podłodze między nimi, a jedyna deska nad
+nim to **listwa** — pełna szerokość otworu (600 na jego 600 mm przerwie), pełna
+głębokość biegu (540), 18 mm, **zero kieszeni, zero otworów, żadnych dog bonów,
+gniazd ani rzędów wkrętów**. Dokładnie ta formatka, którą cięła tura 26
+(`bd7cec4`), co do setnej.
+
+**"Podciągnięte pod logikę szafki"** to była cała reszta prośby, i to jest to,
+co zbudowała tura 28: typ **deklaruje**, z czego jest zrobiony, w tych samych
+kluczach, w których każdy inny kit odpowiada na to pytanie —
+`carcass: { top: 'rail', sides: 'none', bottom: 'none', back: 'none' }` — a
+silnik czyta deklarację. `sides` i `bottom` są od tej tury pytaniami (domyślnie
+`'panel'`, więc nieobecnymi u wszystkich pozostałych kitów), a nie założeniem.
+Nigdzie nie ma `if (dwPanel)` ani `if (appliance)`: to była ścieżka równoległa,
+którą tura 27 słusznie spaliła, i nie wraca.
+
+**Trzecia część:** `defaultParamsFor('DW_PANEL')` przynosi **cokół włączony**
+(*"najważniejszego czyli plinth i tak nie ma"*) — na tym jednym kicie, bo tu
+cokół JEST jedną z trzech formatek. Wszędzie indziej cokół zostaje decyzją.
+
+Pytania o dno (obudowa / brak / cofnięte) nie ma już po co zadawać: **nie ma
+korpusu, więc nie ma dna, o które można się spierać.** Dowód: `test/turn28-f1-
+dw-front-rail-plinth.test.js` oraz przepisane `test/turn27-f2-…` (F2.1, F2.6).
+
+---
+
+## #94 (oryginalny wpis, tura 27) — Dno w szafce pod zmywarkę: czy ono tam w ogóle jest? (tura 27, F2.1)
 
 **Co blokuje.** CLAUDE.md F2.1 mówi wprost, czego właściciel chce od zmywarki:
 *It keeps sides, top, bottom, back and plinth exactly like its neighbours, to

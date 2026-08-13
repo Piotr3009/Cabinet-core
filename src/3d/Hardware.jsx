@@ -1086,10 +1086,18 @@ export function FrontHandle({
   // The front's OUTER face, in the cabinet's own frame — a handle stands proud
   // of the door it is screwed through.
   const faceZ = box.z + box.d;
-  // The reference point is in the front's CUT frame (origin bottom-left); the
-  // scene works in the cabinet's. One translation, here, so nothing downstream
-  // has to know there are two frames.
-  const wx = box.x + spec.x;
+  // ─── TURN 28 (CLAUDE.md F2): THE CUT FRAME IS THE INSIDE MIRROR ──────────
+  //
+  // The reference point is in the FRONT's cut frame, whose origin is the
+  // leaf's bottom-RIGHT corner with x running LEFT (`engine/joinery.js
+  // panelPlacement`) — the door seen from the carcass side, which is how the
+  // joiner has it on the bench when he bores it. This read it as a bottom-LEFT
+  // frame, so the model stood on the HINGE stile in the room while the sheet
+  // said the other one; with F2b's law behind it, one mirror puts both on the
+  // free stile. The scene works in the cabinet's frame, so the translation is
+  // here and nothing downstream has to know there are two.
+  const sheetX = (x) => box.x + box.w - Number(x);
+  const wx = sheetX(spec.x);
   const wy = box.y + spec.y;
 
   const at = (x, y, z) => [mm(x) - pivot[0], mm(y) - pivot[1], mm(z) - pivot[2]];
@@ -1129,10 +1137,12 @@ export function FrontHandle({
   const half = centres / 2;
   // The rod is centred on the two SCREWS, wherever the anchor put them.
   const holes = Array.isArray(spec.holes) && spec.holes.length === 2 ? spec.holes : null;
-  const midX = holes ? (holes[0][0] + holes[1][0]) / 2 : spec.x + (horizontal ? 0 : 0);
+  const midX = holes ? (holes[0][0] + holes[1][0]) / 2 : spec.x;
   const midY = holes ? (holes[0][1] + holes[1][1]) / 2 : spec.y;
+  // The screw holes are in the same cut frame as the reference, so they take
+  // the same mirror (F2).
   const postAt = holes
-    ? holes.map(([hx, hy]) => [box.x + hx, box.y + hy])
+    ? holes.map(([hx, hy]) => [sheetX(hx), box.y + hy])
     : [[wx, wy], [wx, wy]];
   const rodLen = centres + 2 * H.bar.overhang;
 
@@ -1151,7 +1161,7 @@ export function FrontHandle({
         </mesh>
       ))}
       <mesh
-        position={at(box.x + midX, box.y + midY, faceZ + H.bar.standoff)}
+        position={at(sheetX(midX), box.y + midY, faceZ + H.bar.standoff)}
         rotation={horizontal ? [0, 0, Math.PI / 2] : [0, 0, 0]}
         userData={{ ccNoBounds: true }}
       >

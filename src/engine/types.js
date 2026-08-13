@@ -16,7 +16,21 @@ import { KITCHEN_LIBRARY, libraryTypeIds } from './library.js';
  * carcass.top      — 'panel' (TOP + BOTTOM) | 'holders' (SINK: 2 rails on edge)
  *                    | 'ovenRails' (OVEN_BASE: a rail at the back on edge and
  *                      one at the front lying FLAT, turn 18 F5.2)
- * carcass.back     — 'full' | 'inset' (SINK) | 'rails' (FRIDGE)
+ *                    | 'rail' (DW_PANEL, turn 28 F1: ONE plain board across the
+ *                      opening, at the unit's own width — see below)
+ * carcass.back     — 'full' | 'inset' (SINK) | 'rails' (FRIDGE) | 'none'
+ * carcass.sides    — 'panel' (default, when the key is absent) | 'none'
+ * carcass.bottom   — 'panel' (default, when the key is absent) | 'none'
+ *
+ * ─── TURN 28 (CLAUDE.md F1): SIDES AND A BOTTOM ARE QUESTIONS TOO ──────────
+ *
+ * `top` and `back` have been answers-per-kit since turn 3; `sides` and `bottom`
+ * were assumed. They were assumed because every kit written before the D/W has
+ * them — and turn 27 read that assumption as a law and cut a carcass around a
+ * dishwasher. They are keys now, absent everywhere but on the one kit that
+ * genuinely has neither, which is what "podciągnięte pod logikę szafki" asks
+ * for: the D/W says what it is made of in the same words every other kit uses,
+ * rather than being remembered by the engine.
  * drawerStyle      — null | 'wardrobe' (internal, behind doors) | 'budr' (fronts)
  * mount            — 'floor' | 'wall'
  *
@@ -298,11 +312,34 @@ export const UNIT_TYPES = {
     hangers: false,
     doorExtend: false,
     mount: 'floor',
-    // ─── TURN 27 (CLAUDE.md F2.1): THE CARCASS IS THE RUN'S CARCASS ───────
-    // Sides, top, bottom and back, cut by exactly the arithmetic every cabinet
-    // beside it goes through. `back: 'none', sides: 'none'` were the parallel
-    // path, and with them went the reason a D/W had to be remembered.
-    carcass: { top: 'panel', back: 'full' },
+    // ─── TURN 28 (CLAUDE.md F1): A FRONT, A RAIL AND A PLINTH ─────────────
+    //
+    // The owner, verbatim: *"nie ma całego korpusu oprócz górnego panela,
+    // który ma 600 mm bez żadnych dog bonów — tak jak było, tylko chciałem
+    // żeby to było podciągnięte pod logikę szafki."*
+    //
+    // Turn 27 read "an ordinary unit" as "a carcass" and cut BUL, BUR, TOP,
+    // BOTTOM and BACK around a machine. There is no box: a dishwasher stands
+    // on the floor between two carcasses and the only board above it is the
+    // rail that ties them together and carries the worktop. So the kit DECLARES
+    // what it is made of, in the same three keys every other kit answers, and
+    // the engine reads the declaration rather than remembering the kit.
+    //
+    //   top: 'rail'    ONE plain board, the unit's own width by the run's own
+    //                  internal depth — the piece turn 26 cut (bd7cec4): zero
+    //                  pockets, zero holes, no dog bones, no sockets, no screw
+    //                  rows. Nothing joins to it, because there is nothing for
+    //                  it to join to.
+    //   sides: 'none'  the neighbours' sides are the sides of the opening.
+    //   bottom:'none'  the machine stands on the floor.
+    //   back: 'none'   and there is nothing behind it to close.
+    //
+    // This is what CLOSES BLOCKERS #94 (which board does the D/W's bottom
+    // socket land in?): there is no carcass, so there is no bottom to argue
+    // about.
+    carcass: {
+      top: 'rail', sides: 'none', bottom: 'none', back: 'none',
+    },
     // ─── THE FIRST OF THE TWO PROPERTIES (F2.1) ──────────────────────────
     // Nothing goes inside it, because what goes inside it is a dishwasher. It
     // is a fact about the CARCASS and not a list of controls to hide: no
@@ -493,6 +530,19 @@ export function defaultParamsFor(typeId, profile) {
     rail_offset: d.railOffset ?? null,
     hinge: profile.doors.defaultHinge,
     doors: null,          // null = derive from the width threshold
+    // ─── TURN 28 (CLAUDE.md F1): THE PLINTH IS ON BY DEFAULT — ON THIS KIT ──
+    //
+    // The owner: *"najważniejszego czyli plinth i tak nie ma"* — the piece he
+    // cares about most was the one a bare D/W still arrived without. A plinth
+    // is a DECISION everywhere else (turn 4, BACKLOG #16: no ghost rows in the
+    // cut list) and that stays true; but a D/W panel is three pieces, and the
+    // toe kick notched for the appliance door is one of the three. A kit that
+    // declares `plinth: true` is a kit whose toe kick IS the kit, so the
+    // decision arrives already made and the joiner unticks it if he disagrees.
+    //
+    // Spread rather than a constant, so that every type written before this
+    // line carries no `plinth` key at all and behaves exactly as it did.
+    ...(type.plinth ? { plinth: true } : {}),
     ...(type.mount === 'wall' ? { mount_height: d.mountHeight ?? 1500 } : {}),
     ...(type.doorExtend ? { door_extend: false } : {}),
     ...(type.id === 'FRIDGE' ? { fridge_h: profile.fridgeUnit.defaults.fridgeH } : {}),

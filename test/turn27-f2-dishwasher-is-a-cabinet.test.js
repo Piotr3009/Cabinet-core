@@ -16,6 +16,23 @@
 //   F2.5  `dwPanel`'s dead geometry is gone; every MEASURED number moved into
 //         the unit type.
 //   F2.6  a D/W beside a BUD of the same width shares carcass laws exactly.
+//
+// ─── TURN 28 (CLAUDE.md F1): THE OWNER WALKED IT AND CORRECTED F2.1 ────────
+//
+// *"nie ma całego korpusu oprócz górnego panela, który ma 600 mm bez żadnych
+// dog bonów — tak jak było, tylko chciałem żeby to było podciągnięte pod logikę
+// szafki."*
+//
+// Turn 27 read "an ordinary unit" as "a carcass" and cut BUL, BUR, TOP, BOTTOM
+// and BACK around a machine. What he asked for was the LOGIC, not the boards:
+// the kit declares what it is made of in the same keys every other kit answers
+// (`carcass.top/sides/bottom/back`) and the engine reads the declaration. What
+// the declaration then emits is three pieces — a FRONT, a RAIL and a PLINTH.
+//
+// So F2.1's carcass half and F2.6 are rewritten to THIS law below. The half of
+// turn 27 that was right — the INHERITANCE: shaker, handle, the 3 mm gaps, the
+// dimension chain, the drop sign, no cups, the notched toe kick — is untouched,
+// because none of it was ever about the boards.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -44,17 +61,55 @@ test('F2.1 the type declares the two properties, and nothing else is special', (
   assert.equal(type.interiorOccupied, true, 'the appliance is what is inside');
   assert.equal(type.frontOpens, 'drop');
   assert.equal(type.frontOpenAngleDeg, 45, 'the owner’s number — enough to read');
-  // The carcass is the run's carcass. `back: 'none', sides: 'none'` were the
-  // parallel path, and they are gone.
-  assert.deepEqual(type.carcass, { top: 'panel', back: 'full' });
+  // ─── TURN 28 (CLAUDE.md F1) ───────────────────────────────────────────────
+  // …and it declares what it is MADE OF, in the very keys `top` and `back` have
+  // been read from since turn 3. That is the difference between this and the
+  // `dwPanel` path turn 27 burned: `sides` and `bottom` are questions the TYPE
+  // answers, absent on every kit that has them, and the engine never learns the
+  // word "dishwasher".
+  assert.deepEqual(type.carcass, {
+    top: 'rail', sides: 'none', bottom: 'none', back: 'none',
+  });
 });
 
-test('F2.1 it keeps sides, top, bottom, back and plinth like its neighbours', () => {
+test('F2.1 it is a FRONT, a RAIL and a PLINTH, and there is no fourth piece', () => {
   const r = dw({ plinth: true });
-  const parts = r.panels.map((p) => p.part);
-  for (const part of [...CARCASS, 'PLINTH', 'FRONT']) {
-    assert.ok(parts.includes(part), `a D/W has a ${part}`);
+  assert.deepEqual(r.panels.map((p) => p.part).sort(), ['FRONT', 'PLINTH', 'TOP']);
+  // The RAIL, to the owner's own number: "górnego panela, który ma 600 mm bez
+  // żadnych dog bonów — tak jak było" — the piece the turn-26 engine cut.
+  const rail = r.panels.find((p) => p.part === 'TOP');
+  assert.equal(rail.w, r.params.width, 'the full opening, not the internal width');
+  assert.equal(rail.w, 600, 'which on his 600 mm appliance gap is the 600 he said');
+  assert.equal(rail.h, r.params.depth - P.board.thickness, 'the run’s own top depth');
+  assert.equal(rail.h, 540);
+  assert.equal(rail.thickness, P.board.thickness);
+  assert.deepEqual(rail.cnc.outline, [[0, 0], [540, 0], [540, 600], [0, 600]], 'a bare rectangle');
+  assert.deepEqual(rail.cnc.pockets, []);
+  assert.deepEqual(rail.cnc.holes, []);
+  // …and it finishes on the same line as the tops either side of it.
+  assert.deepEqual(rail.box, {
+    x: 0, y: r.params.height - P.board.thickness, z: P.board.thickness, w: 600, h: 18, d: 540,
+  });
+  // No carcass, and therefore nothing to drill and nothing to buy.
+  for (const part of CARCASS.filter((x) => x !== 'TOP')) {
+    assert.ok(!r.panels.some((p) => p.part === part), `a D/W has no ${part}`);
   }
+  assert.equal(r.drills.length, 0, 'not one hole in the whole kit');
+  assert.deepEqual(r.hardware, [], 'no legs, no hinges, no hardware');
+});
+
+test('F2.1 the PLINTH is on by DEFAULT — the piece he cares about most', () => {
+  // The owner: *"najważniejszego czyli plinth i tak nie ma"*. A plinth is a
+  // DECISION on every other kit and stays one; on the kit whose toe kick is one
+  // of its three pieces the decision arrives already made.
+  assert.equal(defaultParamsFor('DW_PANEL', P).plinth, true);
+  assert.equal(defaultParamsFor('BUD', P).plinth, undefined, 'and nowhere else');
+  const bare = dw();
+  const kick = bare.panels.find((p) => p.part === 'PLINTH');
+  assert.ok(kick, 'a bare default D/W has its toe kick');
+  assert.equal(kick.h, P.baseUnit.legHeight, 'at the run’s own height');
+  const ys = kick.cnc.outline.map(([, y]) => y);
+  assert.ok(ys.includes(kick.h - getUnitType('DW_PANEL').plinthCutFromTop), 'notched, 20 from the top');
 });
 
 test('F2.1 interiorOccupied: nothing goes in, whatever is asked for', () => {
@@ -232,35 +287,45 @@ test('F2.5 `dwPanel` keeps its defaults and has lost its geometry', () => {
 
 // ─── F2.6 — parity with a BUD of the same width ─────────────────────────────
 
-test('F2.6 a D/W beside a BUD of the same width shares carcass laws exactly', () => {
+test('F2.6 a D/W beside a BUD of the same width stands in the run, piece for piece', () => {
+  // ─── TURN 28 (CLAUDE.md F1) ───────────────────────────────────────────────
+  // Turn 27 proved parity by comparing BOARDS, which is what led it to cut a
+  // carcass in the first place. The parity that was ever the point is the one
+  // the eye sees down a run: the toe kick on one line, the face on one line,
+  // and the worktop lying flat across both. That is what is asserted now, and
+  // it holds without the D/W owning a single board a dishwasher would displace.
   for (const width of [500, 600, 800]) {
     for (const height of [720, 770]) {
       const a = dw({ width, height, plinth: true });
       const b = build('BUD', {
         width, height, plinth: true, unit_num: '01',
       });
-      const carcass = (r) => r.panels
-        .filter((p) => CARCASS.includes(p.part))
-        .map((p) => `${p.part}|${p.w}x${p.h}x${p.thickness}|${JSON.stringify(p.box)}`);
-      assert.deepEqual(carcass(a), carcass(b), `${width}×${height}: the same boards, in the same places`);
-      // …and the same joints on them, hole for hole. The ONE exception is the
-      // hinge plate pattern, which a BUD's side carries because a door is hung
-      // on it and a D/W's does not because nothing is (F2.3) — so it is named
-      // here rather than filtered away quietly.
-      const joints = (r) => r.drills
-        .filter((d) => CARCASS.includes(d.panel) && d.layer !== P.hinges.layer)
-        .map((d) => `${d.panel}|${d.layer}|${d.x},${d.y}|${d.d}`)
-        .sort();
-      assert.deepEqual(joints(a), joints(b), `${width}×${height}: the same carcass drilling`);
-      assert.equal(a.drills.filter((d) => d.layer === P.hinges.layer).length, 0, 'no plate pattern');
-      assert.ok(b.drills.some((d) => d.layer === P.hinges.layer), '…and a BUD has one');
-      // The PLINTH is the run's in both, at the same height and the same line;
-      // only its outline differs, because the appliance door has to drop past
-      // it (F2.4).
+      // THE TOE KICK — the run's, at the same height, on the same line. Only
+      // its OUTLINE differs, because the appliance door has to drop past it.
       const kick = (r) => r.panels.find((p) => p.part === 'PLINTH');
-      assert.equal(kick(a).h, kick(b).h);
+      assert.equal(kick(a).h, kick(b).h, `${width}×${height}: the same kick height`);
       assert.equal(kick(a).w, kick(b).w);
-      assert.deepEqual(kick(a).box, kick(b).box);
+      assert.deepEqual(kick(a).box, kick(b).box, 'and on the same line');
+      // THE FACE — same height, same datum, same standoff. Only the WIDTH
+      // differs, and it differs by the measured 594 (F2.5).
+      const fa = frontOf(a); const fb = frontOf(b);
+      assert.equal(fa.h, fb.h, `${width}×${height}: the fronts line up`);
+      assert.equal(fa.box.y, fb.box.y);
+      assert.equal(fa.box.z, fb.box.z);
+      // THE WORKTOP LINE — the D/W's rail finishes level with the BUD's top,
+      // and to the same depth, so a worktop lies flat across the two.
+      const topA = a.panels.find((p) => p.part === 'TOP');
+      const topB = b.panels.find((p) => p.part === 'TOP');
+      assert.equal(topA.box.y, topB.box.y, `${width}×${height}: level tops`);
+      assert.equal(topA.box.z, topB.box.z);
+      assert.equal(topA.h, topB.h, 'the same depth of board');
+      // …and it spans the whole opening, where the BUD's sits between two sides.
+      assert.equal(topA.w, width, 'the rail spans the opening');
+      assert.equal(topB.w, width - 2 * P.board.thickness, '…and a BUD’s top does not');
+      // The BUD is a box and carries a box's drilling; the D/W is not and does
+      // not — named here rather than filtered away quietly.
+      assert.equal(a.drills.length, 0, 'nothing to drill');
+      assert.ok(b.drills.some((d) => d.layer === P.hinges.layer), '…and a BUD has a plate pattern');
     }
   }
 });

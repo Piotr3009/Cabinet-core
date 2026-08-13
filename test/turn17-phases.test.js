@@ -308,20 +308,28 @@ test('F9 — 594 is RIGID: it is a value, not a default', () => {
   }
 });
 
-test('F9 — no cup hinges (and, since turn 27, an ordinary carcass under them)', () => {
+test('F9 — no cup hinges (and, since turn 28, a rail rather than a carcass)', () => {
   const r = unit('DW_PANEL');
-  // ─── TURN 27 (CLAUDE.md F2.1) ─────────────────────────────────────────
-  // "A front and nothing else, plus one 600 mm top" was turn 17's reading and
-  // it is what made a D/W a species of its own. The carcass is the run's now,
-  // and its TOP is the top the cabinet beside it gets — `W − 2G`, not a
-  // profile constant a parallel path owned.
-  assert.deepEqual(r.panels.map((p) => p.part).sort(),
-    ['BACK', 'BOTTOM', 'BUL', 'BUR', 'FRONT', 'TOP']);
+  // ─── TURN 28 (CLAUDE.md F1) ───────────────────────────────────────────
+  // "nie ma całego korpusu oprócz górnego panela, który ma 600 mm bez żadnych
+  // dog bonów." Turn 27 heard "treat it like a cabinet" and cut it one; the
+  // owner walked the result and said what he meant — a D/W is a FRONT, a RAIL
+  // and a PLINTH, pulled under the cabinet's own logic rather than given the
+  // cabinet's own boards. `defaultParamsFor` brings the toe kick with it now
+  // (F1.3), so a bare one is all three.
+  assert.deepEqual(r.panels.map((p) => p.part).sort(), ['FRONT', 'PLINTH', 'TOP']);
   const top = r.panels.find((p) => p.part === 'TOP');
   const defaults = defaultParamsFor('DW_PANEL', P);
-  assert.equal(top.w, defaults.width - 2 * P.board.thickness, 'the run’s own top');
-  // …and its depth is the run's, which is the unit's own depth less the board.
+  // A TOP PANEL sits BETWEEN two sides; this rail has none to sit between, so
+  // it spans the whole opening — the UNIT's width, which is the 600 he named.
+  assert.equal(top.w, defaults.width, 'full unit width, not internal');
+  assert.equal(top.w, 600);
+  // …and its depth is the run's, so the worktop lies flat across all three.
   assert.equal(top.h, defaults.depth - P.board.thickness);
+  // "bez żadnych dog bonów" — nothing on it at all.
+  assert.deepEqual(top.cnc.pockets, [], 'zero pockets');
+  assert.deepEqual(top.cnc.holes, [], 'zero holes');
+  assert.equal(top.cnc.outline.length, 4, 'four corners: no dog bones, no sockets');
   // ─── NO HINGES — and turn 26 (CLAUDE.md F5) narrows the rest ─────────────
   //
   // Turn 17's sentence was "a front and nothing else — no hinges, flat, no door

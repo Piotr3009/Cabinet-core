@@ -70,6 +70,26 @@ void ccEdge(out vec3 dist, out vec3 face) {
 }
 `;
 
+/**
+ * ─── TURN 28 (CLAUDE.md F4): HOW FAR THE BOX IS ALLOWED TO SPEAK ────────────
+ *
+ * How much the fragment's own MESH normal has to agree with the normal
+ * reconstructed from the bounding box before the box's edge roll is blended
+ * in. `dot` of the two: 1 is a plain panel face (the box reading is exactly
+ * right), 0 is a shaker rebate's wall (the box reading is 90° wrong).
+ *
+ * The band is wide on purpose. `ccEdge` splits a tie between the axes that are
+ * equally near, so on a box EDGE the reconstruction is the two faces' bisector
+ * (dot 0.707 with a flat face) and on a CORNER it is the three-way one (dot
+ * 0.577) — both must still take their roll, or every corner of every board in
+ * the room would have a dead spot on it. What must NOT roll is a face standing
+ * ACROSS the box's own — a shaker's rebate wall — and those sit at 0.
+ *
+ * Exported so the guard reads the numbers the shader is compiled with rather
+ * than a copy of them.
+ */
+export const BEVEL_BLEND = { from: 0.15, to: 0.50 };
+
 // Inserted where `normal` is final and `nonPerturbedNormal` still feeds the
 // clearcoat — so the lacquer's clear film picks the edge up as well, which is
 // the whole difference between a sprayed door and a melamine one at a corner.
@@ -91,7 +111,36 @@ const FRAG_NORMAL = /* glsl */`
   vec3 ccPxSpan = fwidth(ccDist) / max(ccBevel, 1e-6);
   vec3 ccEdgeBand = vec3(1.0) - smoothstep(vec3(0.3), vec3(1.0), ccPxSpan);
   ccRoll *= ccEdgeBand;
-  vec3 ccBentObj = normalize(ccFaceNormal + ccRoll * ccSign * ccBevelStrength);
+
+  // ─── TURN 28 (CLAUDE.md F4): THE MESH NORMAL IS THE BASE ────────────────
+  //
+  // This line used to be \`normal = ccBent\` — the fragment normal REPLACED by
+  // one reconstructed from the panel's bounding box. On a plain board that is
+  // the same vector and nobody could tell. On a SHAKER front it is not: every
+  // fragment of the leaf — frame, rebate wall, recess floor — is nearest the
+  // ±z pair, so every one of them shaded +z and a 6 mm rebate was invisible
+  // from every angle. The owner proved it was not the light: outlines ON drew
+  // the frame (the edge pass reads geometry), outlines OFF was "mega płasko",
+  // and rotating the camera changed nothing.
+  //
+  // So the geometry is the base and the box contributes ONE thing: the EDGE
+  // ROLL, which is the difference between the rolled reconstruction and the
+  // flat one. It is blended in by how far the mesh normal agrees that the box
+  // reading is right — full on a face that IS the box's face, nothing at all
+  // on a recess wall standing across it. Where they disagree, the geometry
+  // wins, which is the whole of F4.
+  //
+  // Everything is done in VIEW space, where \`normal\` already is, so a board
+  // whose mesh normal is its box face normal comes out with exactly the vector
+  // turn 6 shipped: \`base + 1.0 * (rolled − flat)\` is \`rolled\`.
+  vec3 ccBoxObj = normalize(ccFaceNormal);
+  vec3 ccRolledObj = normalize(ccFaceNormal + ccRoll * ccSign * ccBevelStrength);
+  vec3 ccBoxView = normalize(vCcAxX * ccBoxObj.x + vCcAxY * ccBoxObj.y + vCcAxZ * ccBoxObj.z);
+  vec3 ccRolledView = normalize(vCcAxX * ccRolledObj.x + vCcAxY * ccRolledObj.y + vCcAxZ * ccRolledObj.z);
+  vec3 ccBase = normalize(normal);
+  float ccAgree = smoothstep(${BEVEL_BLEND.from.toFixed(2)}, ${BEVEL_BLEND.to.toFixed(2)}, dot(ccBase, ccBoxView));
+  vec3 ccBent = normalize(ccBase + ccAgree * (ccRolledView - ccBoxView));
+
   // ─── Orange peel (turn 8, CLAUDE.md F1) ───
   // A sprayed surface is not optically flat. The gun leaves a fine cellular
   // texture a millimetre or two across, and it is most of the difference
@@ -101,7 +150,9 @@ const FRAG_NORMAL = /* glsl */`
   // the frame rate and could not be seen anyway.
   //
   // Only the TANGENTIAL part is used, so the face still faces the way it faces
-  // and the piece keeps its silhouette.
+  // and the piece keeps its silhouette. Turn 28: it perturbs WHATEVER normal
+  // survived the blend above — unchanged in kind, and now correct on a rebate
+  // wall as well as on a frame.
   if (ccSpray > 0.0) {
     vec3 ccSp = vCcLocal * ccSprayFreq;
     // ─── Band limit (hotfix 08.08) ───
@@ -112,15 +163,15 @@ const FRAG_NORMAL = /* glsl */`
     // so zooming out melts it to flat colour instead of into stripes.
     float ccPhasePx = max(fwidth(ccSp.x), max(fwidth(ccSp.y), fwidth(ccSp.z)));
     float ccBand = 1.0 - smoothstep(0.5, 1.5, ccPhasePx);
-    vec3 ccWob = vec3(
+    vec3 ccWobObj = vec3(
       sin(ccSp.y + ccSp.z * 1.7),
       sin(ccSp.z + ccSp.x * 1.3),
       sin(ccSp.x + ccSp.y * 1.9)
     );
-    ccWob -= ccBentObj * dot(ccWob, ccBentObj);
-    ccBentObj = normalize(ccBentObj + ccWob * (ccSpray * ccBand));
+    vec3 ccWob = vCcAxX * ccWobObj.x + vCcAxY * ccWobObj.y + vCcAxZ * ccWobObj.z;
+    ccWob -= ccBent * dot(ccWob, ccBent);
+    ccBent = normalize(ccBent + ccWob * (ccSpray * ccBand));
   }
-  vec3 ccBent = normalize(vCcAxX * ccBentObj.x + vCcAxY * ccBentObj.y + vCcAxZ * ccBentObj.z);
   normal = ccBent;
   nonPerturbedNormal = ccBent;
 }

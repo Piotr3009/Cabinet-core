@@ -40,9 +40,17 @@ test('every panel the view draws carries a box, and it is inside the carcass', (
       // Fronts legitimately stand proud of the carcass depth and, on a wall
       // unit with the door extend, hang below it.
       const isFront = p.material_role === 'front';
+      // ─── TURN 28 (CLAUDE.md F1.3) ─────────────────────────────────────────
+      // A PLINTH stands UNDER the carcass by its own height — that is what a
+      // toe kick IS, and every plinth in the app has always been at
+      // `y: −plinthH`. It was simply never reachable from a bare
+      // `defaultParamsFor` before, because a plinth is a decision. The D/W is
+      // the kit whose toe kick is one of its three pieces, so it arrives with
+      // one, and the invariant has to say what it always meant.
+      const floor = p.role === 'plinth' ? -h : (isFront ? -P.wallUnit.doorExtend : 0);
       assert.ok(z >= -1e-6 && z + d <= D + P.doors.gap + P.front.thickness + 1e-6,
         `${id} ${p.id} sticks out front/back: ${z}..${z + d} of ${D}`);
-      assert.ok(y >= (isFront ? -P.wallUnit.doorExtend : 0) - 1e-6 && y + h <= H + 1e-6,
+      assert.ok(y >= floor - 1e-6 && y + h <= H + 1e-6,
         `${id} ${p.id} sticks out vertically: ${y}..${y + h} of ${H}`);
     }
   }

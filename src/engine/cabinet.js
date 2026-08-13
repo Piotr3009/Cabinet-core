@@ -948,6 +948,17 @@ export function computeCabinet(params, profileOverride) {
   const pz = P.puzzle;
   const hasTopPanel = type.carcass.top === 'panel';
   const backStyle = type.carcass.back;
+  // ─── TURN 28 (CLAUDE.md F1): WHAT THIS KIT IS MADE OF, IN ITS OWN WORDS ───
+  //
+  // `top` and `back` have been read off the type since turn 3; `sides` and
+  // `bottom` were assumed, and turn 27 built a carcass around a dishwasher on
+  // the strength of that assumption. They are read here now, exactly as the
+  // other two are, and default to 'panel' — so every kit but the D/W is
+  // untouched, to the byte.
+  const hasSides = (type.carcass.sides ?? 'panel') === 'panel';
+  const hasBottom = (type.carcass.bottom ?? 'panel') === 'panel';
+  // ONE plain board across the opening: the D/W's whole carcass (F1.1).
+  const hasTopRail = type.carcass.top === 'rail';
 
   // ── Carcass geometry ───────────────────────────────────────────────────────
   const internalWidth = W - C.topWidthBoards * G;
@@ -1532,34 +1543,35 @@ export function computeCabinet(params, profileOverride) {
       ? { topSocket: false, topScrews: false, backTabsBelow: oven.backH }
       : undefined);
 
-  // ─── TURN 27 (CLAUDE.md F2.1): THE D/W IS AN ORDINARY UNIT ───────────────
+  // ─── TURN 28 (CLAUDE.md F1): THE KIT SAYS WHAT IT IS MADE OF ─────────────
   //
-  // The owner: *"dlaczego zmywarki nie traktujesz jak szafki?"*
+  // The owner, verbatim: *"nie ma całego korpusu oprócz górnego panela, który
+  // ma 600 mm bez żadnych dog bonów — tak jak było, tylko chciałem żeby to było
+  // podciągnięte pod logikę szafki."*
   //
-  // Turn 17 read "it is a front and nothing else" as a licence to switch the
-  // carcass off — no sides, no bottom, no back — and the block that stood here
-  // built a 600 mm top and a 594 mm leaf and skipped everything below. That is
-  // the `dwPanel` path, and it is the reason a D/W had to be REMEMBERED every
-  // time a front gained something: legs, gaps, a shaker, a handle, a plinth.
+  // Turn 27 read his *"dlaczego zmywarki nie traktujesz jak szafki?"* as "cut
+  // it a carcass" and put BUL, BUR, TOP, BOTTOM and BACK around a machine. The
+  // correction is not another `if (appliance)` gate — that is the `dwPanel`
+  // path turn 27 was right to burn — it is that SIDES and a BOTTOM became
+  // questions the type answers, beside the two (`top`, `back`) it has answered
+  // since turn 3. One reading, four keys, no kit remembered anywhere.
   //
-  // It is gone. A D/W unit keeps sides, top, bottom, back and plinth exactly
-  // like its neighbours, to the run's own laws; what is different about it is
-  // two properties on the type (`interiorOccupied`, `frontOpens`) and nothing
-  // else. There is no `applianceFront` gate below this line and no
-  // `if (dwPanel)` anywhere in the shaker, the handle, the material, the gaps
-  // or the dimension chain.
-  panels.push(panel({
-    id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
-    edgeCode: codes.left, edgeLen: metres(sideH),
-    box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges, jointInset }) },
-  }));
-  panels.push(panel({
-    id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
-    edgeCode: codes.right, edgeLen: metres(sideH),
-    box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges, jointInset }) },
-  }));
+  // What a D/W emits is therefore its declaration and nothing else: a plain
+  // rail across the opening, the front, and the toe kick.
+  if (hasSides) {
+    panels.push(panel({
+      id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
+      edgeCode: codes.left, edgeLen: metres(sideH),
+      box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
+      cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges, jointInset }) },
+    }));
+    panels.push(panel({
+      id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(sideH),
+      box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
+      cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges, jointInset }) },
+    }));
+  }
   const topGeom = (backTabs = true) => ({
     rotated: true, drawn_w: topH, drawn_h: topW,
     ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs, jointInset }),
@@ -1572,12 +1584,37 @@ export function computeCabinet(params, profileOverride) {
       cnc: topGeom(),
     }));
   }
-  panels.push(panel({
-    id: 'BOTTOM', part: 'BOTTOM', role: 'bottom', w: topW, h: topH, thickness: G,
-    edgeCode: codes.right, edgeLen: metres(topW),
-    box: { x: G, y: 0, z: G, w: topW, h: G, d: topH },
-    cnc: topGeom(backStyle !== 'inset'),
-  }));
+  // ─── …AND THE RAIL (F1.1) ────────────────────────────────────────────────
+  //
+  // "górnego panela, który ma 600 mm bez żadnych dog bonów — tak jak było."
+  //
+  // A TOP PANEL sits BETWEEN two sides and is `internalWidth` wide; this board
+  // has no sides to sit between, so it spans the whole opening — the UNIT's own
+  // width, which on the 600 mm appliance gap he measured is the 600 he said.
+  // Its DEPTH is the run's own `internalDepth`, so it finishes on the same line
+  // as the tops either side of it and the worktop lies flat across all three.
+  //
+  // `rectGeometry` and nothing else: zero pockets, zero holes, no dog bones, no
+  // sockets, no screw rows. It is not joined to anything, because there is
+  // nothing to join it to — it is screwed through into the neighbours' sides on
+  // the bench. This is the piece the turn-26 engine cut (bd7cec4) and it is cut
+  // to the hundredth here.
+  if (hasTopRail) {
+    panels.push(panel({
+      id: 'TOP', part: 'TOP', role: 'top', w: W, h: topH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(W),
+      box: { x: 0, y: H - G, z: G, w: W, h: G, d: topH },
+      cnc: { rotated: true, drawn_w: topH, drawn_h: W, ...rectGeometry(topH, W) },
+    }));
+  }
+  if (hasBottom) {
+    panels.push(panel({
+      id: 'BOTTOM', part: 'BOTTOM', role: 'bottom', w: topW, h: topH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(topW),
+      box: { x: G, y: 0, z: G, w: topW, h: G, d: topH },
+      cnc: topGeom(backStyle !== 'inset'),
+    }));
+  }
 
   if (backStyle === 'full') {
     const backCnc = { rotated: false, drawn_w: backW, drawn_h: backH, ...backPanelGeometry({ w: backW, h: backH, G, puzzle: pz }) };

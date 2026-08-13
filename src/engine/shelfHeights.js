@@ -32,7 +32,23 @@
 // so an existing project opens with every shelf exactly where it was, and only
 // the numbers SHOWN change meaning.
 //
+// ─── …AND EACH COLUMN IS A BAY (turn 28, CLAUDE.md F3) ─────────────────────
+//
+// The owner, walking turn 27: *"znowu pokazuje po prawej stronie szafki półki,
+// które są po lewej od divertera — to nie jest spójne; jak jest diverter, to
+// półki inaczej będą rozdzielone, to proste jest."*
+//
+// Turn 27 F1 taught the DRILLING which two boards carry a shelf; the ladder
+// never learned it, so a shelf in the LEFT bay drew its gaps down the unit's
+// RIGHT flank — and drew them against shelves it does not share a compartment
+// with. `shelfColumns` below is the same resolution (`engine/shelfBearers.js`)
+// extended to the picture: shelves are grouped by the pair of boards they
+// stand on, each group's lights are that BAY's own, and each group carries the
+// FLANK its ladder belongs on.
+//
 // Pure functions — no React, no store, no profile import.
+
+import { bearingWalls, shelfBearers } from './shelfBearers.js';
 
 /**
  * The INTERIOR FLOOR: the top face of the carcass bottom, in cabinet mm.
@@ -139,4 +155,115 @@ export function clearLights({
 export function lightBelow(pos, lights = []) {
   const p = Number(pos);
   return lights.find((g) => Math.abs(g.to - p) < 1e-6) || null;
+}
+
+/**
+ * WHICH FLANK A BAY'S LADDER STANDS ON (turn 28, CLAUDE.md F3).
+ *
+ * The owner's law, in his order: *a shelf in the left bay dimensions on the
+ * left; right bay on the right; middle bay on its own partition flank.*
+ *
+ * The RIGHT side is asked first, deliberately: an undivided cabinet's shelf
+ * stands between BUL and BUR and has to keep answering exactly what it has
+ * answered since turn 8 — the unit's right flank — or every ladder in every
+ * project moves for a fault that was only ever about divided cabinets.
+ *
+ * @param {object|null} bearers  `{left, right}` from `shelfBearers`
+ * @param {number} width         the unit's own width, for the fallback
+ * @returns {{x:number, dir:number, on:string|null}}
+ *   `x` is the anchor in the cabinet's frame, `dir` the way the chain is
+ *   pushed clear of it (+1 to the right, −1 to the left), `on` the board it
+ *   stands against.
+ */
+export function ladderFlank(bearers, width = 0) {
+  const { left, right } = bearers || {};
+  if (right?.kind === 'side') {
+    return { x: right.panel.box.x + right.panel.box.w, dir: +1, on: right.id };
+  }
+  if (left?.kind === 'side') {
+    return { x: left.panel.box.x, dir: -1, on: left.id };
+  }
+  // A MIDDLE bay: neither end is the carcass, so the ladder stands against the
+  // bay's own left-hand partition and is pushed INTO the bay it measures.
+  if (left) return { x: left.face, dir: +1, on: left.id };
+  if (right) return { x: right.face, dir: -1, on: right.id };
+  return { x: Number(width) || 0, dir: +1, on: null };
+}
+
+/**
+ * THE COLUMNS OF ONE CABINET: one per bay that has shelves in it.
+ *
+ * A shelf's gaps are measured against the shelves it shares a compartment
+ * with, and its ladder is drawn on that compartment's own flank. Both come out
+ * of `engine/shelfBearers.js` — the same resolution the ⌀7.5 ladder is bored
+ * through — so the picture and the sheet cannot disagree about which boards a
+ * shelf is on.
+ *
+ * An undivided cabinet has exactly ONE column, whose bearers are BUL and BUR
+ * and whose flank is the unit's right side: everything about it is what turn 8
+ * shipped, to the millimetre.
+ *
+ * @param {object} args
+ *   panels     computeCabinet() panels
+ *   floor      the face the columns start at (the interior floor, or the top
+ *              of a drawer zone)
+ *   ceiling    the underside of the top panel
+ *   width      the unit's own width
+ *   tolerance  how far a shelf may stand off a bearer and still be on it
+ * @param {number} step  the evenness tolerance `clearLights` uses
+ * @returns {Array<{key:string, of:[string,string]|null, flank:object,
+ *                  shelves:Array, lights:Array}>}
+ */
+export function shelfColumns({
+  panels = [], floor = 0, ceiling = 0, width = 0, tolerance = 0,
+}, step = 0.5) {
+  const shelves = (panels || []).filter((p) => p?.box && (p.part === 'SHELF' || p.part === 'FIXED'));
+  if (!shelves.length) return [];
+  const walls = bearingWalls(panels);
+
+  const columns = new Map();
+  for (const p of shelves) {
+    const run = p.meta?.run || { from: p.box.x, to: p.box.x + p.box.w };
+    // ONE resolution per shelf, and it is the drilling's own (turn 27 F1).
+    const bearers = shelfBearers({
+      walls, run, level: p.box.y, tolerance,
+    });
+    const key = bearers.left && bearers.right
+      ? `${bearers.left.id}|${bearers.right.id}`
+      : 'unbounded';
+    if (!columns.has(key)) {
+      columns.set(key, {
+        key,
+        of: bearers.left && bearers.right ? [bearers.left.id, bearers.right.id] : null,
+        flank: ladderFlank(bearers, width),
+        shelves: [],
+      });
+    }
+    columns.get(key).shelves.push(p);
+  }
+
+  return [...columns.values()].map((c) => {
+    const ordered = [...c.shelves].sort((a, b) => a.box.y - b.box.y);
+    return {
+      ...c,
+      shelves: ordered,
+      lights: clearLights({
+        positions: ordered.map((p) => p.box.y),
+        thickness: ordered.map((p) => p.box.h),
+        floor,
+        ceiling,
+      }, step),
+    };
+  });
+}
+
+/** The column one shelf belongs to, by its panel id. */
+export function columnOfShelf(columns = [], panelId = null) {
+  return (columns || []).find((c) => c.shelves.some((p) => p.id === panelId)) || null;
+}
+
+/** …or by the editor item it was made from, which is what a drag carries. */
+export function columnOfItem(columns = [], itemId = null) {
+  if (itemId == null) return null;
+  return (columns || []).find((c) => c.shelves.some((p) => p.meta?.itemId === itemId)) || null;
 }

@@ -40,6 +40,34 @@ test('F1.1 — every node of the standard model lands in the member the table na
   }
 });
 
+// ─── CHAT FIX 13.08.2026: AND THE REAL FILE'S OWN NAMES ─────────────────────
+// The bucket GLB appends the Blum article to every node:
+// `bau0015089612_v(71B355M0101)`. Turn 29 matched by equality, every name
+// missed, and the z fallback glued the ARM (zMax 46.2 > 30) to the door — the
+// owner's "zawiasy się nie łamią". This table is the five names AS THE REAL
+// FILE SPELLS THEM; the arm row is the one that proves the NAME won, because
+// the fallback alone would answer 'A' for it.
+const REAL_TABLE = [
+  { node: 'bau0015089612_v(71B355M0101)', z: [35.3, 51.3], member: 'A' },
+  { node: 'bau0015088783_v(71T310-04)', z: [39.4, 50.1], member: 'A' },
+  { node: 'bau0015088853_v(70T310-0502)', z: [31.1, 44.9], member: 'A' },
+  { node: 'bau0015088251_v(70T310M0201)', z: [-28.0, 46.2], member: 'B' },
+  { node: 'bau0019416036_v(70T510M1402)', z: [-29.4, 22.5], member: 'B' },
+];
+
+test('F1.1 — the REAL file\'s suffixed names land by NAME, not by the fallback', () => {
+  for (const row of REAL_TABLE) {
+    assert.equal(
+      memberOfNode(row.node, RIG, row.z[1]),
+      row.member,
+      `${row.node} belongs to member ${row.member}`,
+    );
+  }
+  // The proof the name did the work: strip the rig and the arm's own zMax
+  // sends it to the WRONG member — exactly the turn-29 failure on the eye.
+  assert.equal(memberOfNode('bau0015088251_v(70T310M0201)', {}, 46.2), 'A');
+});
+
 test('F1.1 — the two lists partition the model: no node in both, none missing', () => {
   const a = new Set(RIG.memberA);
   const b = new Set(RIG.memberB);
@@ -237,10 +265,23 @@ test('F1.5 — the showroom fixture carries the table’s own node names', () =>
   // the count is a modelling detail and asserting it would make the fixture
   // harder to improve for no gain.
   const names = [...new Set(rows.map((r) => r.node))].sort();
-  assert.deepEqual(names, [...RIG.memberA, ...RIG.memberB].sort());
+  // ─── CHAT FIX 13.08.2026: THE FIXTURE SPELLS NAMES LIKE THE REAL FILE ───
+  // The real export appends the article: `bau0015089612_v(71B355M0101)`, and
+  // the showroom now does too — this very mismatch is how the equality bug
+  // hid. So the assertion is the prefix relation, both ways: every fixture
+  // node begins with exactly one shipped member name, and every shipped name
+  // opens at least one fixture node.
+  const shipped = [...RIG.memberA, ...RIG.memberB];
+  for (const n of names) {
+    assert.equal(shipped.filter((m) => n.startsWith(m)).length, 1,
+      `${n} begins with exactly one shipped member name`);
+  }
+  for (const m of shipped) {
+    assert.ok(names.some((n) => n.startsWith(m)), `${m} opens a fixture node`);
+  }
   // …and each node's own far edge is the table's, to a tenth of a millimetre.
   for (const row of TABLE) {
-    const got = rows.filter((r) => r.node === row.node);
+    const got = rows.filter((r) => r.node.startsWith(row.node));
     assert.ok(got.length, `${row.node} is in the file`);
     const far = Math.max(...got.map((r) => r.max[2]));
     assert.ok(

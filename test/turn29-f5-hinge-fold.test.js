@@ -109,8 +109,10 @@ test('F5 the SILENT SHOWROOM has a knuckle at the same model-space point', () =>
   // They INTERLOCK: member A's two lugs outside, member B's barrel between —
   // which is how a CLIP top's knuckle is put together, and what makes the two
   // members' pin the same point rather than two points that happen to agree.
-  const lugs = barrels.filter((b) => RIG.memberA.includes(b.node));
-  const pin = barrels.filter((b) => RIG.memberB.includes(b.node));
+  // Membership by PREFIX, the way `memberOfNode` reads a real export's
+  // suffixed names (chat fix 13.08.2026) — equality here is how the bug hid.
+  const lugs = barrels.filter((b) => RIG.memberA.some((m) => b.node.startsWith(m)));
+  const pin = barrels.filter((b) => RIG.memberB.some((m) => b.node.startsWith(m)));
   assert.equal(lugs.length, 2);
   assert.equal(pin.length, 1);
   assert.ok(pin[0].min[1] >= Math.max(...lugs.map((l) => l.max[1] < 0 ? l.max[1] : -Infinity)) - 1e-6);

@@ -357,7 +357,7 @@ function hingeParts() {
     // real file puts it at (−7.75) — which is what makes `modelOrigin` land it
     // in its bore without a fixture-only number anywhere. 35.3 … 51.3.
     {
-      name: 'bau0015089612',
+      name: 'bau0015089612_v(71B355M0101)',
       material: 'metal_nickel_raw',
       geometry: cylinderZ({
         cx: -7.75, cy: 0, r: 17.5, z0: 35.3, z1: 51.3,
@@ -366,7 +366,7 @@ function hingeParts() {
     // MEMBER A ─ the CLIP cap, 39.4 … 50.1, and the pressed flange that gives
     // the cup slab its 37.5 × 57 footprint.
     {
-      name: 'bau0015088783',
+      name: 'bau0015088783_v(71T310-04)',
       material: 'metal_nickel_raw',
       geometry: box({
         x0: -26.5, x1: 11, y0: -28.5, y1: 28.5, z0: 39.4, z1: 50.1,
@@ -374,7 +374,7 @@ function hingeParts() {
     },
     // MEMBER A ─ the link cover, 31.1 … 44.9.
     {
-      name: 'bau0015088853',
+      name: 'bau0015088853_v(70T310-0502)',
       material: 'metal_nickel_raw',
       geometry: box({
         x0: -22, x1: 6, y0: -14, y1: 14, z0: 31.1, z1: 44.9,
@@ -383,7 +383,7 @@ function hingeParts() {
     // MEMBER B ─ the arm and the rear body, −28 … 46.2. It CROSSES the 30 mm
     // threshold, which is the whole reason the split is by name.
     {
-      name: 'bau0015088251',
+      name: 'bau0015088251_v(70T310M0201)',
       material: 'metal_nickel_raw',
       geometry: box({
         x0: -20, x1: 4, y0: -11, y1: 11, z0: -28, z1: 46.2,
@@ -393,7 +393,7 @@ function hingeParts() {
     // CLIP top that is not metal, and the reason F4.2's allowlist exists; it is
     // also what keeps the file's overall box at the measured −29.48.
     {
-      name: 'bau0019416036',
+      name: 'bau0019416036_v(70T510M1402)',
       material: 'plastic_black',
       geometry: box({
         x0: -16, x1: 0, y0: -6, y1: 6, z0: -29.48, z1: 22.5,
@@ -412,21 +412,21 @@ function hingeParts() {
     // bounding box (x −26.5…11, y ±28.5, z −29.48…51.3), so `min`, `size` and
     // every origin derived from them are untouched to the byte.
     {
-      name: 'bau0015088853',
+      name: 'bau0015088853_v(70T310-0502)',
       material: 'metal_nickel_raw',
       geometry: cylinderY({
         cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: -28.5, y1: -12,
       }),
     },
     {
-      name: 'bau0015088853',
+      name: 'bau0015088853_v(70T310-0502)',
       material: 'metal_nickel_raw',
       geometry: cylinderY({
         cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: 12, y1: 28.5,
       }),
     },
     {
-      name: 'bau0015088251',
+      name: 'bau0015088251_v(70T310M0201)',
       material: 'metal_nickel_raw',
       geometry: cylinderY({
         cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: -12, y1: 12,

@@ -122,8 +122,16 @@ export function hingeModel(url, {
 /** The member a node belongs to: 'A' (door) or 'B' (carcass). */
 export function memberOfNode(name, rig, zMaxMm = null) {
   const said = String(name || '');
-  if ((rig?.memberA || []).includes(said)) return 'A';
-  if ((rig?.memberB || []).includes(said)) return 'B';
+  // ─── CHAT FIX 13.08.2026: THE REAL FILE'S NAMES CARRY A SUFFIX ──────────
+  // The bucket GLB (STEP-derived) names its meshes with the article appended:
+  // `bau0015089612_v(71B355M0101)`. Turn 29 matched by EQUALITY, so on the
+  // real file every name missed, the z fallback took over, and the arm body
+  // (`bau0015088251…`, zMax 46.2 > 30) was glued to the DOOR — the exact
+  // miscut the comment below warns about. The owner saw it as "zawiasy się
+  // nie łamią". The walk's synthetic wore BARE names and passed; it wears the
+  // suffixed names now, so this gap cannot re-open. A prefix is the match.
+  if ((rig?.memberA || []).some((m) => said.startsWith(m))) return 'A';
+  if ((rig?.memberB || []).some((m) => said.startsWith(m))) return 'B';
   // ─── THE FALLBACK (F1.3) ───
   // "unknown node names in future files fall back to the z-threshold
   // `z > 30 ⇒ member A`." Measured on the node's own far edge, in FILE

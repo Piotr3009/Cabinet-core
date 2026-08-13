@@ -30,6 +30,7 @@ import { anchorOfEvent } from '../lib/modalAnchor.js';
 export default function MultiUnitPanel({ ids, onClose }) {
   const units = useProjectStore((s) => s.units);
   const updateUnitParamsBulk = useProjectStore((s) => s.updateUnitParamsBulk);
+  const setUnitInsetsBulk = useProjectStore((s) => s.setUnitInsetsBulk);
   const addShelvesBulk = useProjectStore((s) => s.addShelvesBulk);
   const redistributeShelvesBulk = useProjectStore((s) => s.redistributeShelvesBulk);
   const addDoorsBulk = useProjectStore((s) => s.addDoorsBulk);
@@ -84,6 +85,27 @@ export default function MultiUnitPanel({ ids, onClose }) {
     for (const n of notices) notify(n, 'warn');
   };
 
+  // ─── TURN 28 (CLAUDE.md F9): THE BACK INSET, OVER A RUN ──────────────────
+  //
+  // The owner: a Back inset field on a MULTI-selection of floor-standing units,
+  // under the dimension numbers. It moves the whole selected run off the wall —
+  // a bowed wall or a soil pipe is a fact about a stretch of wall, not about
+  // one cabinet, and setting it six times is six chances to type it differently.
+  //
+  // A WALL unit hangs on brackets, which is what "off the wall" already means
+  // for it, so a selection with any wall unit in it does not offer the field:
+  // the run this is about is a floor run. Single selection keeps the field it
+  // has always had, in the right panel (`RightPanel.Insets`) — this is the
+  // BULK one, and offering the same number in two places for one cabinet is
+  // how they come to disagree.
+  const floorStanding = selected.filter((u) => getUnitType(u.type)?.mount === 'floor');
+  const offersBackInset = selected.length > 1 && floorStanding.length === selected.length;
+  const backCommon = commonValue(selected, (u) => Number(u.params.inset_back_mm) || 0);
+  const setBackInset = (v) => {
+    const { notices } = setUnitInsetsBulk(ids, { back: v }) || { notices: [] };
+    for (const n of notices) notify(n, 'warn');
+  };
+
   return (
     <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
       <div className="flex items-center px-3 py-2 border-b border-shell-600">
@@ -135,6 +157,30 @@ export default function MultiUnitPanel({ ids, onClose }) {
             );
           })}
         </div>
+
+        {/* ─── TURN 28 (CLAUDE.md F9) ───
+            UNDER the dimension numbers, which is where the owner asked for it,
+            and only on a run of floor-standing cabinets. */}
+        {offersBackInset && (
+          <div data-multi-back-inset="1">
+            <span className="cc-label">
+              Back inset
+              {backCommon.mixed && <span className="ml-1 text-gold" data-mixed="inset_back_mm">mixed</span>}
+            </span>
+            <NumberField
+              className="cc-input text-right"
+              min={0}
+              max={profile.editor.maxInset}
+              title="Stand the whole run off the wall — a pipe, a bowed wall, a skirting. Every end panel in it deepens to reach the wall."
+              value={backCommon.mixed ? 0 : (backCommon.value || 0)}
+              onCommit={setBackInset}
+            />
+            <p className="text-[11px] text-ink-400">
+              Moves all {selected.length} off the wall. Their end panels get deeper by the same
+              amount, so the run still finishes against the plaster.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-2">
           {[['board_t', 'Board (mm)', profile.board.thicknessOptions],

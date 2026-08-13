@@ -948,6 +948,17 @@ export function computeCabinet(params, profileOverride) {
   const pz = P.puzzle;
   const hasTopPanel = type.carcass.top === 'panel';
   const backStyle = type.carcass.back;
+  // ─── TURN 28 (CLAUDE.md F1): WHAT THIS KIT IS MADE OF, IN ITS OWN WORDS ───
+  //
+  // `top` and `back` have been read off the type since turn 3; `sides` and
+  // `bottom` were assumed, and turn 27 built a carcass around a dishwasher on
+  // the strength of that assumption. They are read here now, exactly as the
+  // other two are, and default to 'panel' — so every kit but the D/W is
+  // untouched, to the byte.
+  const hasSides = (type.carcass.sides ?? 'panel') === 'panel';
+  const hasBottom = (type.carcass.bottom ?? 'panel') === 'panel';
+  // ONE plain board across the opening: the D/W's whole carcass (F1.1).
+  const hasTopRail = type.carcass.top === 'rail';
 
   // ── Carcass geometry ───────────────────────────────────────────────────────
   const internalWidth = W - C.topWidthBoards * G;
@@ -1532,34 +1543,35 @@ export function computeCabinet(params, profileOverride) {
       ? { topSocket: false, topScrews: false, backTabsBelow: oven.backH }
       : undefined);
 
-  // ─── TURN 27 (CLAUDE.md F2.1): THE D/W IS AN ORDINARY UNIT ───────────────
+  // ─── TURN 28 (CLAUDE.md F1): THE KIT SAYS WHAT IT IS MADE OF ─────────────
   //
-  // The owner: *"dlaczego zmywarki nie traktujesz jak szafki?"*
+  // The owner, verbatim: *"nie ma całego korpusu oprócz górnego panela, który
+  // ma 600 mm bez żadnych dog bonów — tak jak było, tylko chciałem żeby to było
+  // podciągnięte pod logikę szafki."*
   //
-  // Turn 17 read "it is a front and nothing else" as a licence to switch the
-  // carcass off — no sides, no bottom, no back — and the block that stood here
-  // built a 600 mm top and a 594 mm leaf and skipped everything below. That is
-  // the `dwPanel` path, and it is the reason a D/W had to be REMEMBERED every
-  // time a front gained something: legs, gaps, a shaker, a handle, a plinth.
+  // Turn 27 read his *"dlaczego zmywarki nie traktujesz jak szafki?"* as "cut
+  // it a carcass" and put BUL, BUR, TOP, BOTTOM and BACK around a machine. The
+  // correction is not another `if (appliance)` gate — that is the `dwPanel`
+  // path turn 27 was right to burn — it is that SIDES and a BOTTOM became
+  // questions the type answers, beside the two (`top`, `back`) it has answered
+  // since turn 3. One reading, four keys, no kit remembered anywhere.
   //
-  // It is gone. A D/W unit keeps sides, top, bottom, back and plinth exactly
-  // like its neighbours, to the run's own laws; what is different about it is
-  // two properties on the type (`interiorOccupied`, `frontOpens`) and nothing
-  // else. There is no `applianceFront` gate below this line and no
-  // `if (dwPanel)` anywhere in the shaker, the handle, the material, the gaps
-  // or the dimension chain.
-  panels.push(panel({
-    id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
-    edgeCode: codes.left, edgeLen: metres(sideH),
-    box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges, jointInset }) },
-  }));
-  panels.push(panel({
-    id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
-    edgeCode: codes.right, edgeLen: metres(sideH),
-    box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
-    cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges, jointInset }) },
-  }));
+  // What a D/W emits is therefore its declaration and nothing else: a plain
+  // rail across the opening, the front, and the toe kick.
+  if (hasSides) {
+    panels.push(panel({
+      id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
+      edgeCode: codes.left, edgeLen: metres(sideH),
+      box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
+      cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges, jointInset }) },
+    }));
+    panels.push(panel({
+      id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(sideH),
+      box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
+      cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges, jointInset }) },
+    }));
+  }
   const topGeom = (backTabs = true) => ({
     rotated: true, drawn_w: topH, drawn_h: topW,
     ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs, jointInset }),
@@ -1572,12 +1584,37 @@ export function computeCabinet(params, profileOverride) {
       cnc: topGeom(),
     }));
   }
-  panels.push(panel({
-    id: 'BOTTOM', part: 'BOTTOM', role: 'bottom', w: topW, h: topH, thickness: G,
-    edgeCode: codes.right, edgeLen: metres(topW),
-    box: { x: G, y: 0, z: G, w: topW, h: G, d: topH },
-    cnc: topGeom(backStyle !== 'inset'),
-  }));
+  // ─── …AND THE RAIL (F1.1) ────────────────────────────────────────────────
+  //
+  // "górnego panela, który ma 600 mm bez żadnych dog bonów — tak jak było."
+  //
+  // A TOP PANEL sits BETWEEN two sides and is `internalWidth` wide; this board
+  // has no sides to sit between, so it spans the whole opening — the UNIT's own
+  // width, which on the 600 mm appliance gap he measured is the 600 he said.
+  // Its DEPTH is the run's own `internalDepth`, so it finishes on the same line
+  // as the tops either side of it and the worktop lies flat across all three.
+  //
+  // `rectGeometry` and nothing else: zero pockets, zero holes, no dog bones, no
+  // sockets, no screw rows. It is not joined to anything, because there is
+  // nothing to join it to — it is screwed through into the neighbours' sides on
+  // the bench. This is the piece the turn-26 engine cut (bd7cec4) and it is cut
+  // to the hundredth here.
+  if (hasTopRail) {
+    panels.push(panel({
+      id: 'TOP', part: 'TOP', role: 'top', w: W, h: topH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(W),
+      box: { x: 0, y: H - G, z: G, w: W, h: G, d: topH },
+      cnc: { rotated: true, drawn_w: topH, drawn_h: W, ...rectGeometry(topH, W) },
+    }));
+  }
+  if (hasBottom) {
+    panels.push(panel({
+      id: 'BOTTOM', part: 'BOTTOM', role: 'bottom', w: topW, h: topH, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(topW),
+      box: { x: G, y: 0, z: G, w: topW, h: G, d: topH },
+      cnc: topGeom(backStyle !== 'inset'),
+    }));
+  }
 
   if (backStyle === 'full') {
     const backCnc = { rotated: false, drawn_w: backW, drawn_h: backH, ...backPanelGeometry({ w: backW, h: backH, G, puzzle: pz }) };
@@ -1919,6 +1956,26 @@ export function computeCabinet(params, profileOverride) {
         rotated: true,
         drawn_w: depthHere,
         drawn_h: shelfWHere,
+        // ─── TURN 28 (CLAUDE.md F7): THE 3-D FOLLOWS THE SHEET ────────────
+        //
+        // Turn 26 F8 turned the shelf's CNC frame along the grain and the
+        // TEXTURE went on running the other way, because `engine/decors.js
+        // grainRun` falls back to the saw's own rule — the grain runs the
+        // LONGER of a part's two cut dimensions — and a shelf is nearly
+        // square: 564 across a 600 carcass against 538 deep. So the picture
+        // said left-to-right and the sheet said front-to-back, on the one
+        // piece where 26 mm decides it.
+        //
+        // The piece SAYS SO now, in the field `grainRun` has always offered
+        // for exactly this ("the only statement that could ever beat the
+        // saw"): `h` is this record's own `h`, which for a shelf is its
+        // DEPTH. Front-to-back, with the banded long front edge across it,
+        // which is how a shelf is nested and what turn 26 F8 wrote down.
+        //
+        // Nothing on the sheet moves: `grainRun` is the only reader of this
+        // field in the app, and the DXF is written from the outline, the
+        // pockets, the holes and the drawn size.
+        grain: 'h',
         ...rectGeometry(depthHere, shelfWHere),
       },
       meta: {
@@ -2699,11 +2756,24 @@ export function computeCabinet(params, profileOverride) {
   // short of the wall — and the slot is at eye level down the whole side of the
   // run, which is the one place a masking panel exists to not have.
   //
-  // The DELIBERATE inset (`inset_back_mm`) is deliberately NOT added: that gap
-  // holds a soil pipe or a bowed wall, and running the panel back into it is
-  // running it into the thing it was moved away from.
+  // ─── TURN 28 (CLAUDE.md F9): …AND SO IS THE DELIBERATE ONE ───────────────
+  //
+  // Turn 8 left the deliberate inset (`inset_back_mm`) OUT of this sum, on the
+  // reasoning that the gap holds a soil pipe and a panel run back into it is
+  // run into the thing the cabinet was moved away from. The owner's turn-28
+  // decision overrules that, and he is right about which is the common case:
+  // the field moves a whole RUN off the wall, and an end panel that stops short
+  // of the plaster leaves a slot down the side of the run at eye level —
+  // exactly the fault turn 8's own wall-clearance line was written to fix,
+  // reappearing the moment the number gets bigger than 10 mm.
+  //
+  // "Every END PANEL in that run deepens automatically so it always reaches the
+  // wall (panel depth = unit depth + inset)." So it does. This IS a cut-list
+  // change and it is named where it shows: a project with a back inset on it
+  // cuts a deeper end panel than it did yesterday.
   const wallGap = Math.max(0, Number(P.room?.wallBackClearance) || 0);
-  const endPanelDepth = wallGap + D + P.doors.gap + frontT;
+  const insetBack = Math.max(0, Number(params?.inset_back_mm) || 0);
+  const endPanelDepth = wallGap + insetBack + D + P.doors.gap + frontT;
   // ─── Turn 13 (CLAUDE.md F4): A WALL UNIT'S PANEL ENDS WITH THE CABINET ───
   //
   // "To the floor" means down to the floor for something STANDING on it: past
@@ -2741,11 +2811,12 @@ export function computeCabinet(params, profileOverride) {
       // `drop > 0 ? -drop : 0` and not `-drop`: negative zero is a real value in
       // JS and a box.y of -0 fails an === check downstream for no reason.
       // …and it therefore STARTS at the wall, which in the unit's own frame is
-      // `wallGap` behind the carcass back.
+      // `wallGap` behind the carcass back — plus the deliberate inset, which is
+      // how much further off the wall this run has been stood (turn 28, F9).
       box: {
         x: side === 'L' ? -t : W,
         y: drop > 0 ? -drop : 0,
-        z: wallGap > 0 ? -wallGap : 0,
+        z: wallGap + insetBack > 0 ? -(wallGap + insetBack) : 0,
         w: t,
         h: panelH,
         d: endPanelDepth,

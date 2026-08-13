@@ -1,0 +1,222 @@
+{
+ "turn": 28,
+ "url": "http://127.0.0.1:4173/",
+ "showroom": "http://127.0.0.1:4174",
+ "rules": {
+  "R1": "every move and keystroke is CDP Input; the guard at the top of this file enforces it",
+  "R2": "scripts/bucket-live.mjs, before any picture of hardware",
+  "R4": "every claim is read off the app: the record for F1, the MOUNTED scene graph for F2/F4/F5/F6/F9, shelfColumns for F3, decors for F7, dimensions and frontDimensions for F8, the DOM for F10 and F11",
+  "R5": "the console is captured for the whole walk",
+  "R6": "any uncaught error or React error-boundary report FAILS the step it appeared in",
+  "R7": "no data-* on R3F objects — the scene is found by userData (ccPanelId, ccDimensionChain, ccDrillRing, ccMember)",
+  "R8": "GLB-dependent steps run against the synthetic silent showroom",
+  "R9": "no feature without its part — F1 asserts the SCENE draws the three pieces and no fourth",
+  "R10": "the sheet is the truth: F2 photographs the leaf’s own sheet beside the mounted cups",
+  "R11": "every dimension in the scene is found by traversing for ccDimensionChain — the one component, fed a different anchor",
+  "R12": "extend means extend: F11 finishes what turn 26 F12 started and moves nothing else on the toolbar"
+ },
+ "totals": {
+  "passed": 38,
+  "failed": 0,
+  "skipped": 1
+ },
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "F1.1 — a D/W is exactly a FRONT, a RAIL and a PLINTH",
+   "ok": true,
+   "detail": "FRONT · PLINTH · TOP"
+  },
+  {
+   "label": "F1.1 — the rail is the unit’s own width by the run’s depth, and PLAIN",
+   "ok": true,
+   "detail": "600 × 540 × 18, 4 corners, 0 pockets, 0 holes"
+  },
+  {
+   "label": "F1.1 — nothing is drilled and nothing is bought",
+   "ok": true,
+   "detail": "0 holes, 0 hardware lines"
+  },
+  {
+   "label": "F1.3 — the toe kick arrived WITH it, relieved 20 mm below its top edge",
+   "ok": true,
+   "detail": "100 mm, 2 corners on the cut line, top edge at 100"
+  },
+  {
+   "label": "F1.2 — the front is turn 27’s front, unchanged",
+   "ok": true,
+   "detail": "594 × 767, drop to 45°"
+  },
+  {
+   "label": "R9 — the SCENE draws those three pieces and no fourth",
+   "ok": true,
+   "detail": "DW01-F · PLINTH · TOP"
+  },
+  {
+   "label": "F1.1 — the rail finishes level with its neighbour’s top, to the same depth",
+   "ok": true,
+   "detail": "D/W 752/18/540 vs BUD 752/18/540"
+  },
+  {
+   "label": "F1.3 — …and the two toe kicks are ONE piece across the run",
+   "ok": true,
+   "detail": "1 length(s): 1200 mm at 100"
+  },
+  {
+   "label": "F2b — on the SHEET the cups and the handle are on OPPOSITE stiles, both hands",
+   "ok": true,
+   "detail": "03-FL (L): cups 425.5/425.5/425.5, handle 35/35 · 03-FR (R): cups 21.5/21.5/21.5, handle 412/412"
+  },
+  {
+   "label": "F2 — every MOUNTED cup is 21.5 ± 0.1 from its own leaf’s hinge edge, in the room",
+   "ok": true,
+   "detail": "03-FL (L): 21.50/21.50/21.50 from 1.5 · 03-FR (R): 21.50/21.50/21.50 from 898.5"
+  },
+  {
+   "label": "F2 — …and the scene really hangs those pieces on the leaf that swings",
+   "ok": true,
+   "detail": "03-FL: 3 pieces riding · 03-FR: 3 pieces riding"
+  },
+  {
+   "label": "F2 — every MOUNTED handle stands at its leaf’s FREE edge, in the room",
+   "ok": true,
+   "detail": "03-FL (L): 3 posts · 03-FR (R): 3 posts"
+  },
+  {
+   "label": "F3 — a divided cabinet is on the wall to measure",
+   "ok": true,
+   "detail": "u_3a9xhlp  (3 units)"
+  },
+  {
+   "label": "F3 — a shelf in the LEFT bay anchors on the unit’s LEFT flank",
+   "ok": true,
+   "detail": "bearers BUL + VPART-1 → x 0, dir -1"
+  },
+  {
+   "label": "F3 — a shelf in the RIGHT bay anchors on the unit’s RIGHT flank",
+   "ok": true,
+   "detail": "bearers VPART-1 + BUR → x 900, dir 1"
+  },
+  {
+   "label": "F3 — and the two anchors are on OPPOSITE sides of the divider",
+   "ok": true,
+   "detail": "left 0 < 234 · right 900 > 675"
+  },
+  {
+   "label": "F4 — the leaf’s rebate WALLS carry their own normals in the running scene",
+   "ok": true,
+   "detail": "972 wall vertices against 1038 facing ones"
+  },
+  {
+   "label": "F4 — and the shader is compiled with a BAND, not a replacement",
+   "ok": true,
+   "detail": "blend 0.15 → 0.5, bevel state on the material: true"
+  },
+  {
+   "label": "F5 — the sleeve, the pin and the collar all follow the selector, in GOLD",
+   "ok": true,
+   "detail": "metal #c9a227 · sleeves #c9a227 · pins #c9a227 · collars #c9a227"
+  },
+  {
+   "label": "F5 — …and in SILVER, all three together",
+   "ok": true,
+   "detail": "metal #c8ccd0 · sleeves #c8ccd0 · pins #c8ccd0 · collars #c8ccd0"
+  },
+  {
+   "label": "F6 — this cabinet really carries both ⌀7.5 classes",
+   "ok": true,
+   "detail": "24 on SHELVES_7_5MM, 36 on PUZZLE_HOLES_7_5MM"
+  },
+  {
+   "label": "F6 — a COLLAR is mounted only for the sleeved set; everything else is a plain disc",
+   "ok": true,
+   "detail": "16 collared, 219 plain"
+  },
+  {
+   "label": "F7 — the shelf states its grain, and the SCENE lays it front-to-back",
+   "ok": true,
+   "detail": "860 × 520, grain along h (520 mm) → z in the room"
+  },
+  {
+   "label": "F7 — …which is the axis the SHEET’s own x runs along",
+   "ok": true,
+   "detail": "drawn 520 × 860 — depth by width, turn 26 F8's frame"
+  },
+  {
+   "label": "F8 — a run of three identical base units is on the wall",
+   "ok": true,
+   "detail": "u_cz6w33k · u_d0kj7mh · u_ydefqh1"
+  },
+  {
+   "label": "F8.2 — three identical cabinets, ONE chain, on the outermost",
+   "ok": true,
+   "detail": "carriers u_ydefqh1 of 3 switched on"
+  },
+  {
+   "label": "F8.1 — the toe kick and the carcass are two numbers, not one 870",
+   "ok": true,
+   "detail": "100 below, 770 above — and no 870 anywhere"
+  },
+  {
+   "label": "F8.3 — the width label sits a quarter up from the front’s bottom",
+   "ok": true,
+   "detail": "192 of 767, centre would be 384"
+  },
+  {
+   "label": "F8.4 — …and the height label steps right of the centre line",
+   "ok": true,
+   "detail": "375, centre 300, edge 598.5"
+  },
+  {
+   "label": "F9.1 — a multi-selection of floor units offers the Back inset field",
+   "ok": true,
+   "detail": "the field is on the quick menu"
+  },
+  {
+   "label": "F9.2 — the whole selected run moved off the wall",
+   "ok": true,
+   "detail": "insets 40/40/40"
+  },
+  {
+   "label": "F9.3 — the end panel is deeper by exactly the inset, on the SHEET and in the SCENE",
+   "ok": true,
+   "detail": "596 → 636 mm cut, 636 mm drawn"
+  },
+  {
+   "label": "F9.1 — …and a SINGLE selection does not offer it",
+   "ok": true,
+   "detail": "deselect → the field is gone"
+  },
+  {
+   "label": "F10 — a real pointer on the toolbar slider moves the ONE brightness state",
+   "ok": true,
+   "detail": "0.5 → 1.4, and the control reads 1.4"
+  },
+  {
+   "label": "F11 — the part editor’s toolbar carries NO layer list",
+   "ok": true,
+   "detail": "0 dropdowns on the toolbar, question inside it: false"
+  },
+  {
+   "label": "F11 — …and everything else on it did not move (R12)",
+   "ok": true,
+   "detail": "select · drill · line · dowels, snap panel present"
+  },
+  {
+   "label": "R5 + R6 — the console is clean across the whole walk",
+   "ok": true,
+   "detail": "no errors, no React exceptions"
+  }
+ ],
+ "errors": []
+}

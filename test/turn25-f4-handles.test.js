@@ -48,22 +48,41 @@ test('F4.1 — the four classes, decided on the piece and its cabinet', () => {
   assert.equal(handleClassOf({ role: 'side', part: 'BUL' }, UNIT_TYPES.BUD), null);
 });
 
+// ─── TURN 28 (CLAUDE.md F2b): THE X IS IN THE SHEET'S OWN MIRROR ────────────
+//
+// `handleReference` answers in the FRONT's CUT frame, and a front's cut frame
+// is the INSIDE MIRROR — origin at the leaf's bottom-RIGHT corner, x running
+// LEFT (`engine/joinery.js panelPlacement`), because the workshop bores a door
+// from the back. Turn 25 wrote the ROOM's left into that frame, so the knob
+// printed on the CUP stile for BOTH hands (the owner's sheet `03-F`).
+//
+// The INTENT of every line below is unchanged and so is every `y`: what moves
+// is the x, to the other stile, because that is where "the opening edge" is in
+// the frame this number is written in. Read it as: hinge L → the hinge is at
+// sheet-`w`, so the handle is at sheet-`inset`.
+
 test('F4.1 — a BASE unit door: 50 from the TOP, 50 in from the opening edge', () => {
   const panel = { w: 600, h: 800 };
-  // Hinged LEFT ⇒ the opening edge is the RIGHT one.
+  // Hinged LEFT ⇒ the hinge edge is sheet-RIGHT ⇒ the handle is at sheet-LEFT,
+  // which IS the opening edge of the door in the room.
   const left = handleReference({ panel, handleClass: 'base-door', hinge: 'L' }, P);
-  assert.equal(left.x, 600 - 50);
+  assert.equal(left.x, 50);
   assert.equal(left.y, 800 - 50);
   assert.equal(left.rule, 'top-inset');
   // …and hinged RIGHT it mirrors, which is the whole point of "the OPENING edge".
   const right = handleReference({ panel, handleClass: 'base-door', hinge: 'R' }, P);
-  assert.equal(right.x, 50);
+  assert.equal(right.x, 600 - 50);
   assert.equal(right.y, 800 - 50);
+  // The CUPS are the check on the convention: they have honoured the mirror
+  // since turn 1, and a handle that is right stands at the opposite end of the
+  // sheet from them for the same hand.
+  const cupX = 600 - P.hinges.cups.xFromHingeEdge;      // an L leaf's cup, drawn
+  assert.ok(Math.abs(cupX - left.x) > 400, 'cups on one stile, the knob on the other');
 });
 
 test('F4.1 — a WALL unit door: 50 from the BOTTOM', () => {
   const r = handleReference({ panel: { w: 600, h: 720 }, handleClass: 'wall-door', hinge: 'L' }, P);
-  assert.equal(r.x, 550);
+  assert.equal(r.x, 50);
   assert.equal(r.y, 50);
   assert.equal(r.rule, 'bottom-inset');
   // A base unit is gripped from above and a wall unit from below, which is
@@ -74,7 +93,7 @@ test('F4.1 — a WALL unit door: 50 from the BOTTOM', () => {
 
 test('F4.1 — a TALL unit door: MID HEIGHT, 50 in', () => {
   const r = handleReference({ panel: { w: 600, h: 2100 }, handleClass: 'tall-door', hinge: 'L' }, P);
-  assert.equal(r.x, 550);
+  assert.equal(r.x, 50);
   assert.equal(r.y, 1050);
   assert.equal(r.rule, 'mid-height');
   // "Movable": an offset carries it off the reference and the resolver honours
@@ -99,7 +118,7 @@ test('F4.1 — a SHAKER front centres on the FRAME’s width', () => {
   const door = handleReference({
     panel: { w: 600, h: 800 }, handleClass: 'base-door', hinge: 'L', frame: 70,
   }, P);
-  assert.equal(door.x, 600 - 35, 'the stile’s own centre line');
+  assert.equal(door.x, 35, 'the stile’s own centre line — the OPENING stile (F2b)');
   assert.match(door.rule, /shaker-stile/);
   // …and the top frame for a horizontal.
   const drawer = handleReference({ panel: { w: 600, h: 300 }, handleClass: 'horizontal', frame: 70 }, P);
@@ -112,17 +131,17 @@ test('F4.1 — …UNLESS the frame is under 30, when 50 × 50 answers instead', 
   const wide = handleReference({
     panel: { w: 600, h: 800 }, handleClass: 'base-door', hinge: 'L', frame: 30,
   }, P);
-  assert.equal(wide.x, 600 - 15, '30 is INCLUDED — “under 30 mm” falls back');
+  assert.equal(wide.x, 15, '30 is INCLUDED — “under 30 mm” falls back');
   const narrow = handleReference({
     panel: { w: 600, h: 800 }, handleClass: 'base-door', hinge: 'L', frame: 29,
   }, P);
-  assert.equal(narrow.x, 600 - 50, 'a 29 mm frame is too narrow to centre on');
+  assert.equal(narrow.x, 50, 'a 29 mm frame is too narrow to centre on');
   assert.equal(narrow.rule, 'top-inset');
   // A FLAT front has no frame at all and takes the same fallback.
   const flat = handleReference({
     panel: { w: 600, h: 800 }, handleClass: 'base-door', hinge: 'L', frame: null,
   }, P);
-  assert.equal(flat.x, 550);
+  assert.equal(flat.x, 50);
 });
 
 // ─── F4.2 — the drillings ───────────────────────────────────────────────────

@@ -234,15 +234,23 @@ test('R11 — the chain’s inputs are declared ABOVE it, so the view renders at
   // The suite could not see it: these tests import the ENGINE, and a hook order
   // inside a `.jsx` component is not something node can execute. So the guard
   // is the source order itself, which is the fact that was wrong.
+  //
+  // TURN 28 (CLAUDE.md F3): the one derivation is `shelfColumns` now — the
+  // same lights, grouped by the BAY each shelf stands in and carrying the
+  // flank its ladder is drawn on. The guard is the same fact about it.
   const src = readFileSync(new URL('../src/3d/UnitView.jsx', import.meta.url), 'utf8');
-  const declared = src.indexOf('const shelfLights = useMemo(');
+  const declared = src.indexOf('const shelfColumnList = useMemo(');
   const used = src.indexOf('const fullDimensions = useMemo(');
   assert.ok(declared > 0, 'the one derivation is still there');
   assert.ok(used > 0, 'and so is the chain that reads it');
   assert.ok(declared < used,
-    `shelfLights is declared at ${declared} and read at ${used} — a temporal dead zone`);
+    `shelfColumnList is declared at ${declared} and read at ${used} — a temporal dead zone`);
+  // …and so is `unitFlank`, which the chain reads on the same first render.
+  const flank = src.indexOf('const unitFlank = useMemo(');
+  assert.ok(flank > 0 && flank < used, 'the fallback flank is declared above the chain too');
   // …and it really is read by the chain, so this guard cannot rot into a test
   // of two unrelated line numbers.
   const body = src.slice(used, src.indexOf('}, [showAllDims', used));
-  assert.match(body, /shelfLights/, 'the chain reads it');
+  assert.match(body, /shelfColumnList/, 'the chain reads it');
+  assert.match(body, /unitFlank/);
 });

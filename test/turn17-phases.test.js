@@ -76,7 +76,26 @@ function sheetUpAxisInCabinet(panel) {
   return ['x', 'y', 'z'][i] ?? null;
 }
 
-test('F3 — every shelf’s grain axis in the export is its grain axis in the cabinet', () => {
+// ─── TURN 28 (CLAUDE.md F7): WHERE THIS RULE STOPS, AND WHY ────────────────
+//
+// F3's rule is "the grain runs UP the drawing", and the grain it means is the
+// SAW's — `grainRun`'s fallback, the longer of a part's two cut dimensions.
+// That is right for every board this turn leaves alone.
+//
+// The owner's turn-28 F7 states the SHELF's own nesting as a production fact:
+// *shelves are laid ACROSS the sheet, so the grain runs front-to-back* — which
+// is not the saw's fallback, because a shelf is nearly square and the fallback
+// answers with the 40 mm it is wider than it is deep. So a shelf now SAYS its
+// grain on the piece (`cnc.grain`), and the 3-D follows the statement.
+//
+// F7 also says, in as many words, "CNC untouched (it is already right)". So
+// `sheetTurn` is not touched and a shelf goes on being laid down by its drawn
+// size — which means the NESTING and the STATED grain can differ on this one
+// part. That is a real question about the sheet and it is asked as one, in
+// BLOCKERS #95, rather than guessed at by turning the layout.
+const STATES_ITS_OWN_GRAIN = new Set(['SHELF']);
+
+test('F3 — every shelf board’s grain axis in the export is its grain axis in the cabinet', () => {
   let checked = 0;
   for (const id of UNIT_TYPE_ORDER) {
     const r = unit(id, { shelves: getUnitType(id).supports.shelves ? 2 : 0 });
@@ -84,6 +103,7 @@ test('F3 — every shelf’s grain axis in the export is its grain axis in the c
       // The horizontal boards a joiner calls a shelf. A VPART stands on end and
       // is a different piece; it is out of F3's scope and out of `sheetTurn`'s.
       if (!['SHELF', 'PARTITION', 'RAIL-PART', 'FIXED'].includes(panel.part)) continue;
+      if (STATES_ITS_OWN_GRAIN.has(panel.part)) continue;
       checked += 1;
       assert.equal(
         sheetUpAxisInCabinet(panel),
@@ -92,7 +112,7 @@ test('F3 — every shelf’s grain axis in the export is its grain axis in the c
       );
     }
   }
-  assert.ok(checked >= 6, `every kit with shelves should be covered, saw ${checked} boards`);
+  assert.ok(checked >= 2, `every kit with a shelf board should be covered, saw ${checked}`);
 });
 
 test('F3 — …and so does every other board, which is the rule it joins', () => {
@@ -101,11 +121,19 @@ test('F3 — …and so does every other board, which is the rule it joins', () =
   // at 90° to each other on the sheet while they are parallel in the cabinet.
   // Stated as the rule it is — the grain runs UP the drawing — it covers both.
   const r = unit('WARDROBE', { shelves: 2, doors: true });
-  for (const id of ['TOP', 'BOTTOM', 'BUL', 'BACK', 'SHELF-1']) {
+  for (const id of ['TOP', 'BOTTOM', 'BUL', 'BACK']) {
     const panel = r.panels.find((p) => p.id === id);
     assert.ok(panel, id);
     assert.equal(sheetUpAxisInCabinet(panel), grainAxisInCabinet(panel), `${id} lies across its own grain`);
   }
+  // …and the SHELF's own frame is still turn 26 F8's, to the millimetre: what
+  // turn 28 adds is the piece's statement about which way the figure runs in
+  // it, and the drawing has not moved.
+  const shelf = r.panels.find((p) => p.id === 'SHELF-1');
+  assert.equal(shelf.cnc.rotated, true);
+  assert.equal(shelf.cnc.drawn_w, shelf.h, 'drawn depth × width, as turn 26 left it');
+  assert.equal(shelf.cnc.drawn_h, shelf.w);
+  assert.equal(shelf.cnc.grain, 'h', 'and it states its grain: front to back');
 });
 
 // ─── F4 — the machining is on the part ──────────────────────────────────────
@@ -308,20 +336,28 @@ test('F9 — 594 is RIGID: it is a value, not a default', () => {
   }
 });
 
-test('F9 — no cup hinges (and, since turn 27, an ordinary carcass under them)', () => {
+test('F9 — no cup hinges (and, since turn 28, a rail rather than a carcass)', () => {
   const r = unit('DW_PANEL');
-  // ─── TURN 27 (CLAUDE.md F2.1) ─────────────────────────────────────────
-  // "A front and nothing else, plus one 600 mm top" was turn 17's reading and
-  // it is what made a D/W a species of its own. The carcass is the run's now,
-  // and its TOP is the top the cabinet beside it gets — `W − 2G`, not a
-  // profile constant a parallel path owned.
-  assert.deepEqual(r.panels.map((p) => p.part).sort(),
-    ['BACK', 'BOTTOM', 'BUL', 'BUR', 'FRONT', 'TOP']);
+  // ─── TURN 28 (CLAUDE.md F1) ───────────────────────────────────────────
+  // "nie ma całego korpusu oprócz górnego panela, który ma 600 mm bez żadnych
+  // dog bonów." Turn 27 heard "treat it like a cabinet" and cut it one; the
+  // owner walked the result and said what he meant — a D/W is a FRONT, a RAIL
+  // and a PLINTH, pulled under the cabinet's own logic rather than given the
+  // cabinet's own boards. `defaultParamsFor` brings the toe kick with it now
+  // (F1.3), so a bare one is all three.
+  assert.deepEqual(r.panels.map((p) => p.part).sort(), ['FRONT', 'PLINTH', 'TOP']);
   const top = r.panels.find((p) => p.part === 'TOP');
   const defaults = defaultParamsFor('DW_PANEL', P);
-  assert.equal(top.w, defaults.width - 2 * P.board.thickness, 'the run’s own top');
-  // …and its depth is the run's, which is the unit's own depth less the board.
+  // A TOP PANEL sits BETWEEN two sides; this rail has none to sit between, so
+  // it spans the whole opening — the UNIT's width, which is the 600 he named.
+  assert.equal(top.w, defaults.width, 'full unit width, not internal');
+  assert.equal(top.w, 600);
+  // …and its depth is the run's, so the worktop lies flat across all three.
   assert.equal(top.h, defaults.depth - P.board.thickness);
+  // "bez żadnych dog bonów" — nothing on it at all.
+  assert.deepEqual(top.cnc.pockets, [], 'zero pockets');
+  assert.deepEqual(top.cnc.holes, [], 'zero holes');
+  assert.equal(top.cnc.outline.length, 4, 'four corners: no dog bones, no sockets');
   // ─── NO HINGES — and turn 26 (CLAUDE.md F5) narrows the rest ─────────────
   //
   // Turn 17's sentence was "a front and nothing else — no hinges, flat, no door

@@ -20,6 +20,7 @@ import { roomWalls, roomBounds } from '../engine/room.js';
 import {
   addPlusPoints, unitBase, unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
+import { dimensionCarriers } from '../engine/dimensions.js';
 import { backStandoff, wallClearance } from '../engine/collision.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -798,6 +799,21 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // already subscribed to above — the room needs it for the finishes — so this
   // is a dependency and not a second subscription.
   const results = useMemo(() => allResults(), [units, design, allResults]);
+  // ─── TURN 28 (CLAUDE.md F8.2): A RUN OF IDENTICAL CABINETS DIMENSIONS ONCE ─
+  //
+  // Six identical base units in a row drew six identical chains of the same six
+  // numbers. A drawing dimensions the piece once and lets the run repeat it, so
+  // the engine decides WHICH cabinet carries the chain (engine/dimensions.js)
+  // and the scene draws what it is told — the same shape every other decision
+  // in this file takes.
+  const dimensionOn = useMemo(
+    () => dimensionCarriers({
+      results,
+      wanted: Object.keys(unitDimensions).filter((id) => unitDimensions[id]),
+      profile,
+    }),
+    [results, unitDimensions, profile],
+  );
   const walls = useMemo(() => roomWalls(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
 
@@ -1019,8 +1035,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // reads it: past square a door comes back towards the wall on its
           // hinge side (turn 8, CLAUDE.md F5).
           wallGaps={wallGaps[unit.id]}
-          // The right-click toggle: every number THIS cabinet has (turn 8, F7).
-          showAllDims={Boolean(unitDimensions[unit.id])}
+          // The right-click toggle: every number THIS cabinet has (turn 8, F7)
+          // — drawn on ONE cabinet of a run of identical ones (turn 28, F8.2).
+          showAllDims={dimensionOn.has(unit.id)}
           // Turn 25 (CLAUDE.md F13): one project-wide flag, handed to every
           // cabinet — so a gap between two units' fronts is on or off, never
           // half of each.

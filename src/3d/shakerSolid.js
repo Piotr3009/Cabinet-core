@@ -94,10 +94,22 @@ export function shakerFrontGeometry(panel, bores = []) {
 /**
  * The bores this leaf carries, in the MESH's own centred millimetres.
  *
- * `engine/recesses.js` works in the part's CNC frame, whose origin is the
- * bottom-left of the leaf; the tray is built about its own centre like every
- * other panel mesh in the app. One translation, here, so nothing else has to
- * know there are two frames.
+ * ─── TURN 28 (CLAUDE.md F2a): THE CNC FRAME IS THE INSIDE MIRROR ───────────
+ *
+ * `engine/recesses.js` works in the part's CNC frame, and for a FRONT that
+ * frame's origin is the leaf's bottom-RIGHT corner with x running LEFT
+ * (`engine/joinery.js panelPlacement`): the workshop bores a door from the
+ * back, and the sheet is drawn the way the door lies on the bench. This
+ * translation read it as a bottom-LEFT frame — `b.x − w/2` — and so mirrored
+ * every hole in the tray. The ENGINE was right (an L leaf's cup lands 21.5 mm
+ * from its hinge edge in the ROOM); only the picture flipped, which is the
+ * owner's photograph: hinge arms on one stile and the bored cups on the other.
+ *
+ * The tray is built about its own centre like every other panel mesh in the
+ * app, and the mesh runs the room's way — so x = w/2 − CNC x. The `y` is
+ * unchanged: `v` is [0, 1, 0] in that same placement, so CNC y and the mesh's
+ * y run together. One translation, here, so nothing else has to know there are
+ * two frames.
  */
 function normaliseBores(bores, w, h, t) {
   const out = [];
@@ -108,7 +120,7 @@ function normaliseBores(bores, w, h, t) {
     const deep = b.through ? t : Math.min(Number(b.depth) || 0, t);
     if (!(deep > 0)) continue;
     out.push({
-      x: Number(b.x) - w / 2,
+      x: w / 2 - Number(b.x),
       y: Number(b.y) - h / 2,
       r,
       depth: deep,

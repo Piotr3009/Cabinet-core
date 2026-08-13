@@ -1,0 +1,599 @@
+81c81
+< BUD+handles-bar  file  01-F.dxf  353db40f
+---
+> BUD+handles-bar  file  01-F.dxf  7c16016f
+83,84c83,84
+< BUD+handles-bar  sheet all  a7b7e623
+< BUD+handles-bar  sheet fronts  353db40f
+---
+> BUD+handles-bar  sheet all  388a40b3
+> BUD+handles-bar  sheet fronts  7c16016f
+86c86
+< BUD+handles-bar  sheet sprayed  353db40f
+---
+> BUD+handles-bar  sheet sprayed  7c16016f
+91c91
+< BUD+handles-knob  file  01-F.dxf  2af656af
+---
+> BUD+handles-knob  file  01-F.dxf  b5dfb6a2
+93,94c93,94
+< BUD+handles-knob  sheet all  a6d9d87b
+< BUD+handles-knob  sheet fronts  2af656af
+---
+> BUD+handles-knob  sheet all  1fdb182e
+> BUD+handles-knob  sheet fronts  b5dfb6a2
+96c96
+< BUD+handles-knob  sheet sprayed  2af656af
+---
+> BUD+handles-knob  sheet sprayed  b5dfb6a2
+2377c2377
+< BUDTALL+handles-bar  file  01-F.dxf  f58f9821
+---
+> BUDTALL+handles-bar  file  01-F.dxf  ec41bab7
+2379,2380c2379,2380
+< BUDTALL+handles-bar  sheet all  467e7a8a
+< BUDTALL+handles-bar  sheet fronts  f58f9821
+---
+> BUDTALL+handles-bar  sheet all  465c81ec
+> BUDTALL+handles-bar  sheet fronts  ec41bab7
+2382c2382
+< BUDTALL+handles-bar  sheet sprayed  f58f9821
+---
+> BUDTALL+handles-bar  sheet sprayed  ec41bab7
+2387c2387
+< BUDTALL+handles-knob  file  01-F.dxf  7886ebe5
+---
+> BUDTALL+handles-knob  file  01-F.dxf  3108038a
+2389,2390c2389,2390
+< BUDTALL+handles-knob  sheet all  f8d66ec4
+< BUDTALL+handles-knob  sheet fronts  7886ebe5
+---
+> BUDTALL+handles-knob  sheet all  66a51ea5
+> BUDTALL+handles-knob  sheet fronts  3108038a
+2392c2392
+< BUDTALL+handles-knob  sheet sprayed  7886ebe5
+---
+> BUDTALL+handles-knob  sheet sprayed  3108038a
+2577,2580d2576
+< DW_PANEL  file  01-BACK.dxf  4aec2425
+< DW_PANEL  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL  file  01-BUL.dxf  633fa705
+< DW_PANEL  file  01-BUR.dxf  c012b7f8
+2582,2583c2578,2580
+< DW_PANEL  file  01-TOP.dxf  2bed7165
+< DW_PANEL  sheet all  53994aba
+---
+> DW_PANEL  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL  file  01-TOP.dxf  2255e6e5
+> DW_PANEL  sheet all  d9de1dda
+2585,2590c2582,2583
+< DW_PANEL  sheet non-sprayed  b882ad18
+< DW_PANEL  sheet sprayed  567e4aea
+< DW_PANEL+adjustable-shelves  file  01-BACK.dxf  4aec2425
+< DW_PANEL+adjustable-shelves  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+adjustable-shelves  file  01-BUL.dxf  633fa705
+< DW_PANEL+adjustable-shelves  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL  sheet non-sprayed  2255e6e5
+> DW_PANEL  sheet sprayed  e16f3009
+2592,2593c2585,2587
+< DW_PANEL+adjustable-shelves  file  01-TOP.dxf  2bed7165
+< DW_PANEL+adjustable-shelves  sheet all  53994aba
+---
+> DW_PANEL+adjustable-shelves  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+adjustable-shelves  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+adjustable-shelves  sheet all  d9de1dda
+2595,2600c2589,2590
+< DW_PANEL+adjustable-shelves  sheet non-sprayed  b882ad18
+< DW_PANEL+adjustable-shelves  sheet sprayed  567e4aea
+< DW_PANEL+bottom-mask  file  01-BACK.dxf  4aec2425
+< DW_PANEL+bottom-mask  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+bottom-mask  file  01-BUL.dxf  633fa705
+< DW_PANEL+bottom-mask  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+adjustable-shelves  sheet non-sprayed  2255e6e5
+> DW_PANEL+adjustable-shelves  sheet sprayed  e16f3009
+2602,2603c2592,2594
+< DW_PANEL+bottom-mask  file  01-TOP.dxf  2bed7165
+< DW_PANEL+bottom-mask  sheet all  53994aba
+---
+> DW_PANEL+bottom-mask  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+bottom-mask  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+bottom-mask  sheet all  d9de1dda
+2605,2610c2596,2597
+< DW_PANEL+bottom-mask  sheet non-sprayed  b882ad18
+< DW_PANEL+bottom-mask  sheet sprayed  567e4aea
+< DW_PANEL+bottom-mask-run-owner  file  01-BACK.dxf  4aec2425
+< DW_PANEL+bottom-mask-run-owner  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+bottom-mask-run-owner  file  01-BUL.dxf  633fa705
+< DW_PANEL+bottom-mask-run-owner  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+bottom-mask  sheet non-sprayed  2255e6e5
+> DW_PANEL+bottom-mask  sheet sprayed  e16f3009
+2612,2613c2599,2601
+< DW_PANEL+bottom-mask-run-owner  file  01-TOP.dxf  2bed7165
+< DW_PANEL+bottom-mask-run-owner  sheet all  53994aba
+---
+> DW_PANEL+bottom-mask-run-owner  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+bottom-mask-run-owner  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+bottom-mask-run-owner  sheet all  d9de1dda
+2615,2620c2603,2604
+< DW_PANEL+bottom-mask-run-owner  sheet non-sprayed  b882ad18
+< DW_PANEL+bottom-mask-run-owner  sheet sprayed  567e4aea
+< DW_PANEL+drawers-capped  file  01-BACK.dxf  358c060d
+< DW_PANEL+drawers-capped  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+drawers-capped  file  01-BUL.dxf  f4a999aa
+< DW_PANEL+drawers-capped  file  01-BUR.dxf  7fcaf9f9
+---
+> DW_PANEL+bottom-mask-run-owner  sheet non-sprayed  2255e6e5
+> DW_PANEL+bottom-mask-run-owner  sheet sprayed  e16f3009
+2622,2623c2606,2608
+< DW_PANEL+drawers-capped  file  01-TOP.dxf  2bed7165
+< DW_PANEL+drawers-capped  sheet all  e1a57e55
+---
+> DW_PANEL+drawers-capped  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+drawers-capped  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+drawers-capped  sheet all  abf084b6
+2625,2630c2610,2611
+< DW_PANEL+drawers-capped  sheet non-sprayed  59190372
+< DW_PANEL+drawers-capped  sheet sprayed  2c5c506c
+< DW_PANEL+fix-shelf  file  01-BACK.dxf  4aec2425
+< DW_PANEL+fix-shelf  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+fix-shelf  file  01-BUL.dxf  633fa705
+< DW_PANEL+fix-shelf  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+drawers-capped  sheet non-sprayed  2255e6e5
+> DW_PANEL+drawers-capped  sheet sprayed  f96dacf5
+2632,2633c2613,2615
+< DW_PANEL+fix-shelf  file  01-TOP.dxf  2bed7165
+< DW_PANEL+fix-shelf  sheet all  53994aba
+---
+> DW_PANEL+fix-shelf  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+fix-shelf  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+fix-shelf  sheet all  d9de1dda
+2635,2640c2617,2618
+< DW_PANEL+fix-shelf  sheet non-sprayed  b882ad18
+< DW_PANEL+fix-shelf  sheet sprayed  567e4aea
+< DW_PANEL+fix-shelf-in-bay  file  01-BACK.dxf  287988a5
+< DW_PANEL+fix-shelf-in-bay  file  01-BOTTOM.dxf  d7eef8fa
+< DW_PANEL+fix-shelf-in-bay  file  01-BUL.dxf  633fa705
+< DW_PANEL+fix-shelf-in-bay  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+fix-shelf  sheet non-sprayed  2255e6e5
+> DW_PANEL+fix-shelf  sheet sprayed  e16f3009
+2642,2643c2620,2622
+< DW_PANEL+fix-shelf-in-bay  file  01-TOP.dxf  97ea4c03
+< DW_PANEL+fix-shelf-in-bay  sheet all  747e2d67
+---
+> DW_PANEL+fix-shelf-in-bay  file  01-PLINTH.dxf  8c914a7c
+> DW_PANEL+fix-shelf-in-bay  file  01-TOP.dxf  beb3da1d
+> DW_PANEL+fix-shelf-in-bay  sheet all  2d09c1ad
+2645,2650c2624,2625
+< DW_PANEL+fix-shelf-in-bay  sheet non-sprayed  d19de28e
+< DW_PANEL+fix-shelf-in-bay  sheet sprayed  567e4aea
+< DW_PANEL+handles-bar  file  01-BACK.dxf  4aec2425
+< DW_PANEL+handles-bar  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+handles-bar  file  01-BUL.dxf  633fa705
+< DW_PANEL+handles-bar  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+fix-shelf-in-bay  sheet non-sprayed  beb3da1d
+> DW_PANEL+fix-shelf-in-bay  sheet sprayed  277484d1
+2652,2653c2627,2629
+< DW_PANEL+handles-bar  file  01-TOP.dxf  2bed7165
+< DW_PANEL+handles-bar  sheet all  e8825ae6
+---
+> DW_PANEL+handles-bar  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+handles-bar  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+handles-bar  sheet all  60196aaf
+2655,2660c2631,2632
+< DW_PANEL+handles-bar  sheet non-sprayed  b882ad18
+< DW_PANEL+handles-bar  sheet sprayed  cc23273c
+< DW_PANEL+handles-knob  file  01-BACK.dxf  4aec2425
+< DW_PANEL+handles-knob  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+handles-knob  file  01-BUL.dxf  633fa705
+< DW_PANEL+handles-knob  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+handles-bar  sheet non-sprayed  2255e6e5
+> DW_PANEL+handles-bar  sheet sprayed  104afc8d
+2662,2663c2634,2636
+< DW_PANEL+handles-knob  file  01-TOP.dxf  2bed7165
+< DW_PANEL+handles-knob  sheet all  2b48326f
+---
+> DW_PANEL+handles-knob  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+handles-knob  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+handles-knob  sheet all  f245c58f
+2665,2670c2638,2639
+< DW_PANEL+handles-knob  sheet non-sprayed  b882ad18
+< DW_PANEL+handles-knob  sheet sprayed  1ea16a29
+< DW_PANEL+infill-mitre  file  01-BACK.dxf  4aec2425
+< DW_PANEL+infill-mitre  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+infill-mitre  file  01-BUL.dxf  633fa705
+< DW_PANEL+infill-mitre  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+handles-knob  sheet non-sprayed  2255e6e5
+> DW_PANEL+handles-knob  sheet sprayed  439c0f02
+2676,2677c2645,2647
+< DW_PANEL+infill-mitre  file  01-TOP.dxf  2bed7165
+< DW_PANEL+infill-mitre  sheet all  6a687740
+---
+> DW_PANEL+infill-mitre  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+infill-mitre  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+infill-mitre  sheet all  8585f97d
+2679,2684c2649,2650
+< DW_PANEL+infill-mitre  sheet non-sprayed  b882ad18
+< DW_PANEL+infill-mitre  sheet sprayed  04666511
+< DW_PANEL+infill-mitre-narrow  file  01-BACK.dxf  4aec2425
+< DW_PANEL+infill-mitre-narrow  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+infill-mitre-narrow  file  01-BUL.dxf  633fa705
+< DW_PANEL+infill-mitre-narrow  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+infill-mitre  sheet non-sprayed  2255e6e5
+> DW_PANEL+infill-mitre  sheet sprayed  c97f2c0e
+2690,2691c2656,2658
+< DW_PANEL+infill-mitre-narrow  file  01-TOP.dxf  2bed7165
+< DW_PANEL+infill-mitre-narrow  sheet all  24e0c922
+---
+> DW_PANEL+infill-mitre-narrow  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+infill-mitre-narrow  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+infill-mitre-narrow  sheet all  986c2617
+2693,2698c2660,2661
+< DW_PANEL+infill-mitre-narrow  sheet non-sprayed  b882ad18
+< DW_PANEL+infill-mitre-narrow  sheet sprayed  2312dcb5
+< DW_PANEL+infills  file  01-BACK.dxf  4aec2425
+< DW_PANEL+infills  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+infills  file  01-BUL.dxf  633fa705
+< DW_PANEL+infills  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+infill-mitre-narrow  sheet non-sprayed  2255e6e5
+> DW_PANEL+infill-mitre-narrow  sheet sprayed  9ae25f6b
+2704,2705c2667,2669
+< DW_PANEL+infills  file  01-TOP.dxf  2bed7165
+< DW_PANEL+infills  sheet all  7282f826
+---
+> DW_PANEL+infills  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+infills  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+infills  sheet all  3ac3c08c
+2707,2712c2671,2672
+< DW_PANEL+infills  sheet non-sprayed  b882ad18
+< DW_PANEL+infills  sheet sprayed  5bf53892
+< DW_PANEL+partition  file  01-BACK.dxf  4aec2425
+< DW_PANEL+partition  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+partition  file  01-BUL.dxf  633fa705
+< DW_PANEL+partition  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+infills  sheet non-sprayed  2255e6e5
+> DW_PANEL+infills  sheet sprayed  0c8cafe8
+2714,2715c2674,2676
+< DW_PANEL+partition  file  01-TOP.dxf  2bed7165
+< DW_PANEL+partition  sheet all  53994aba
+---
+> DW_PANEL+partition  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+partition  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+partition  sheet all  d9de1dda
+2717,2722c2678,2679
+< DW_PANEL+partition  sheet non-sprayed  b882ad18
+< DW_PANEL+partition  sheet sprayed  567e4aea
+< DW_PANEL+partition-doors  file  01-BACK.dxf  c037f160
+< DW_PANEL+partition-doors  file  01-BOTTOM.dxf  e8937ebe
+< DW_PANEL+partition-doors  file  01-BUL.dxf  633fa705
+< DW_PANEL+partition-doors  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+partition  sheet non-sprayed  2255e6e5
+> DW_PANEL+partition  sheet sprayed  e16f3009
+2724,2725c2681,2683
+< DW_PANEL+partition-doors  file  01-TOP.dxf  02e70a05
+< DW_PANEL+partition-doors  sheet all  e8ac4a48
+---
+> DW_PANEL+partition-doors  file  01-PLINTH.dxf  bb841998
+> DW_PANEL+partition-doors  file  01-TOP.dxf  91aee107
+> DW_PANEL+partition-doors  sheet all  505ea758
+2727,2732c2685,2686
+< DW_PANEL+partition-doors  sheet non-sprayed  99eddc3a
+< DW_PANEL+partition-doors  sheet sprayed  567e4aea
+< DW_PANEL+partition-on-shelf  file  01-BACK.dxf  4aec2425
+< DW_PANEL+partition-on-shelf  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+partition-on-shelf  file  01-BUL.dxf  633fa705
+< DW_PANEL+partition-on-shelf  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+partition-doors  sheet non-sprayed  91aee107
+> DW_PANEL+partition-doors  sheet sprayed  0517619f
+2734,2735c2688,2690
+< DW_PANEL+partition-on-shelf  file  01-TOP.dxf  2bed7165
+< DW_PANEL+partition-on-shelf  sheet all  53994aba
+---
+> DW_PANEL+partition-on-shelf  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+partition-on-shelf  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+partition-on-shelf  sheet all  d9de1dda
+2737,2742c2692,2693
+< DW_PANEL+partition-on-shelf  sheet non-sprayed  b882ad18
+< DW_PANEL+partition-on-shelf  sheet sprayed  567e4aea
+< DW_PANEL+plinth  file  01-BACK.dxf  4aec2425
+< DW_PANEL+plinth  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+plinth  file  01-BUL.dxf  633fa705
+< DW_PANEL+plinth  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+partition-on-shelf  sheet non-sprayed  2255e6e5
+> DW_PANEL+partition-on-shelf  sheet sprayed  e16f3009
+2745,2746c2696,2697
+< DW_PANEL+plinth  file  01-TOP.dxf  2bed7165
+< DW_PANEL+plinth  sheet all  7a1e3704
+---
+> DW_PANEL+plinth  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+plinth  sheet all  d9de1dda
+2748c2699
+< DW_PANEL+plinth  sheet non-sprayed  b882ad18
+---
+> DW_PANEL+plinth  sheet non-sprayed  2255e6e5
+2750,2753d2700
+< DW_PANEL+plinth-run-member  file  01-BACK.dxf  4aec2425
+< DW_PANEL+plinth-run-member  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+plinth-run-member  file  01-BUL.dxf  633fa705
+< DW_PANEL+plinth-run-member  file  01-BUR.dxf  c012b7f8
+2755,2756c2702,2703
+< DW_PANEL+plinth-run-member  file  01-TOP.dxf  2bed7165
+< DW_PANEL+plinth-run-member  sheet all  53994aba
+---
+> DW_PANEL+plinth-run-member  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+plinth-run-member  sheet all  a12ef90e
+2758c2705
+< DW_PANEL+plinth-run-member  sheet non-sprayed  b882ad18
+---
+> DW_PANEL+plinth-run-member  sheet non-sprayed  2255e6e5
+2760,2763d2706
+< DW_PANEL+plinth-run-owner  file  01-BACK.dxf  4aec2425
+< DW_PANEL+plinth-run-owner  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+plinth-run-owner  file  01-BUL.dxf  633fa705
+< DW_PANEL+plinth-run-owner  file  01-BUR.dxf  c012b7f8
+2766,2767c2709,2710
+< DW_PANEL+plinth-run-owner  file  01-TOP.dxf  2bed7165
+< DW_PANEL+plinth-run-owner  sheet all  3ce6f82b
+---
+> DW_PANEL+plinth-run-owner  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+plinth-run-owner  sheet all  082d0731
+2769c2712
+< DW_PANEL+plinth-run-owner  sheet non-sprayed  b882ad18
+---
+> DW_PANEL+plinth-run-owner  sheet non-sprayed  2255e6e5
+2771,2774d2713
+< DW_PANEL+shallow-200  file  01-BACK.dxf  4aec2425
+< DW_PANEL+shallow-200  file  01-BOTTOM.dxf  9f8995cc
+< DW_PANEL+shallow-200  file  01-BUL.dxf  fdd7d38b
+< DW_PANEL+shallow-200  file  01-BUR.dxf  5f111c68
+2776,2777c2715,2717
+< DW_PANEL+shallow-200  file  01-TOP.dxf  dbc82fb3
+< DW_PANEL+shallow-200  sheet all  d2fbc0cc
+---
+> DW_PANEL+shallow-200  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+shallow-200  file  01-TOP.dxf  e34a3aef
+> DW_PANEL+shallow-200  sheet all  e91e0d66
+2779,2784c2719,2720
+< DW_PANEL+shallow-200  sheet non-sprayed  45043a2b
+< DW_PANEL+shallow-200  sheet sprayed  567e4aea
+< DW_PANEL+shallow-301  file  01-BACK.dxf  4aec2425
+< DW_PANEL+shallow-301  file  01-BOTTOM.dxf  652ffa58
+< DW_PANEL+shallow-301  file  01-BUL.dxf  136b2d9f
+< DW_PANEL+shallow-301  file  01-BUR.dxf  3f129cce
+---
+> DW_PANEL+shallow-200  sheet non-sprayed  e34a3aef
+> DW_PANEL+shallow-200  sheet sprayed  e16f3009
+2786,2787c2722,2724
+< DW_PANEL+shallow-301  file  01-TOP.dxf  04fd1449
+< DW_PANEL+shallow-301  sheet all  e52e350f
+---
+> DW_PANEL+shallow-301  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+shallow-301  file  01-TOP.dxf  52cd88ed
+> DW_PANEL+shallow-301  sheet all  6faf6854
+2789,2794c2726,2727
+< DW_PANEL+shallow-301  sheet non-sprayed  727ab29a
+< DW_PANEL+shallow-301  sheet sprayed  567e4aea
+< DW_PANEL+shelf-end-bay-2-parts  file  01-BACK.dxf  e875cc16
+< DW_PANEL+shelf-end-bay-2-parts  file  01-BOTTOM.dxf  d79e71b4
+< DW_PANEL+shelf-end-bay-2-parts  file  01-BUL.dxf  633fa705
+< DW_PANEL+shelf-end-bay-2-parts  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+shallow-301  sheet non-sprayed  52cd88ed
+> DW_PANEL+shallow-301  sheet sprayed  e16f3009
+2796,2797c2729,2731
+< DW_PANEL+shelf-end-bay-2-parts  file  01-TOP.dxf  7077bd6d
+< DW_PANEL+shelf-end-bay-2-parts  sheet all  27ceff64
+---
+> DW_PANEL+shelf-end-bay-2-parts  file  01-PLINTH.dxf  94b9f688
+> DW_PANEL+shelf-end-bay-2-parts  file  01-TOP.dxf  ba12cd27
+> DW_PANEL+shelf-end-bay-2-parts  sheet all  7b7b856a
+2799,2804c2733,2734
+< DW_PANEL+shelf-end-bay-2-parts  sheet non-sprayed  ecf5e1b6
+< DW_PANEL+shelf-end-bay-2-parts  sheet sprayed  567e4aea
+< DW_PANEL+shelf-in-right-bay  file  01-BACK.dxf  287988a5
+< DW_PANEL+shelf-in-right-bay  file  01-BOTTOM.dxf  d7eef8fa
+< DW_PANEL+shelf-in-right-bay  file  01-BUL.dxf  633fa705
+< DW_PANEL+shelf-in-right-bay  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+shelf-end-bay-2-parts  sheet non-sprayed  ba12cd27
+> DW_PANEL+shelf-end-bay-2-parts  sheet sprayed  1e71a310
+2806,2807c2736,2738
+< DW_PANEL+shelf-in-right-bay  file  01-TOP.dxf  97ea4c03
+< DW_PANEL+shelf-in-right-bay  sheet all  747e2d67
+---
+> DW_PANEL+shelf-in-right-bay  file  01-PLINTH.dxf  8c914a7c
+> DW_PANEL+shelf-in-right-bay  file  01-TOP.dxf  beb3da1d
+> DW_PANEL+shelf-in-right-bay  sheet all  2d09c1ad
+2809,2814c2740,2741
+< DW_PANEL+shelf-in-right-bay  sheet non-sprayed  d19de28e
+< DW_PANEL+shelf-in-right-bay  sheet sprayed  567e4aea
+< DW_PANEL+shelf-mid-bay-2-parts  file  01-BACK.dxf  e875cc16
+< DW_PANEL+shelf-mid-bay-2-parts  file  01-BOTTOM.dxf  d79e71b4
+< DW_PANEL+shelf-mid-bay-2-parts  file  01-BUL.dxf  633fa705
+< DW_PANEL+shelf-mid-bay-2-parts  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+shelf-in-right-bay  sheet non-sprayed  beb3da1d
+> DW_PANEL+shelf-in-right-bay  sheet sprayed  277484d1
+2816,2817c2743,2745
+< DW_PANEL+shelf-mid-bay-2-parts  file  01-TOP.dxf  7077bd6d
+< DW_PANEL+shelf-mid-bay-2-parts  sheet all  27ceff64
+---
+> DW_PANEL+shelf-mid-bay-2-parts  file  01-PLINTH.dxf  94b9f688
+> DW_PANEL+shelf-mid-bay-2-parts  file  01-TOP.dxf  ba12cd27
+> DW_PANEL+shelf-mid-bay-2-parts  sheet all  7b7b856a
+2819,2824c2747,2748
+< DW_PANEL+shelf-mid-bay-2-parts  sheet non-sprayed  ecf5e1b6
+< DW_PANEL+shelf-mid-bay-2-parts  sheet sprayed  567e4aea
+< DW_PANEL+shelves  file  01-BACK.dxf  4aec2425
+< DW_PANEL+shelves  file  01-BOTTOM.dxf  1c23480c
+< DW_PANEL+shelves  file  01-BUL.dxf  633fa705
+< DW_PANEL+shelves  file  01-BUR.dxf  c012b7f8
+---
+> DW_PANEL+shelf-mid-bay-2-parts  sheet non-sprayed  ba12cd27
+> DW_PANEL+shelf-mid-bay-2-parts  sheet sprayed  1e71a310
+2826,2827c2750,2752
+< DW_PANEL+shelves  file  01-TOP.dxf  2bed7165
+< DW_PANEL+shelves  sheet all  53994aba
+---
+> DW_PANEL+shelves  file  01-PLINTH.dxf  5013de8a
+> DW_PANEL+shelves  file  01-TOP.dxf  2255e6e5
+> DW_PANEL+shelves  sheet all  d9de1dda
+2829,2830c2754,2755
+< DW_PANEL+shelves  sheet non-sprayed  b882ad18
+< DW_PANEL+shelves  sheet sprayed  567e4aea
+---
+> DW_PANEL+shelves  sheet non-sprayed  2255e6e5
+> DW_PANEL+shelves  sheet sprayed  e16f3009
+2935c2860
+< FRIDGE+handles-bar  file  01-F.dxf  f58f9821
+---
+> FRIDGE+handles-bar  file  01-F.dxf  ec41bab7
+2941,2942c2866,2867
+< FRIDGE+handles-bar  sheet all  cee856ff
+< FRIDGE+handles-bar  sheet fronts  f58f9821
+---
+> FRIDGE+handles-bar  sheet all  5027ff3f
+> FRIDGE+handles-bar  sheet fronts  ec41bab7
+2944c2869
+< FRIDGE+handles-bar  sheet sprayed  f58f9821
+---
+> FRIDGE+handles-bar  sheet sprayed  ec41bab7
+2949c2874
+< FRIDGE+handles-knob  file  01-F.dxf  7886ebe5
+---
+> FRIDGE+handles-knob  file  01-F.dxf  3108038a
+2955,2956c2880,2881
+< FRIDGE+handles-knob  sheet all  e0a16825
+< FRIDGE+handles-knob  sheet fronts  7886ebe5
+---
+> FRIDGE+handles-knob  sheet all  ae6b19ca
+> FRIDGE+handles-knob  sheet fronts  3108038a
+2958c2883
+< FRIDGE+handles-knob  sheet sprayed  7886ebe5
+---
+> FRIDGE+handles-knob  sheet sprayed  3108038a
+3277c3202
+< LOW_CABINET+handles-bar  file  01-F.dxf  065baef4
+---
+> LOW_CABINET+handles-bar  file  01-F.dxf  51137f26
+3279,3280c3204,3205
+< LOW_CABINET+handles-bar  sheet all  39e09560
+< LOW_CABINET+handles-bar  sheet fronts  065baef4
+---
+> LOW_CABINET+handles-bar  sheet all  6ef0be72
+> LOW_CABINET+handles-bar  sheet fronts  51137f26
+3282c3207
+< LOW_CABINET+handles-bar  sheet sprayed  065baef4
+---
+> LOW_CABINET+handles-bar  sheet sprayed  51137f26
+3287c3212
+< LOW_CABINET+handles-knob  file  01-F.dxf  205cf121
+---
+> LOW_CABINET+handles-knob  file  01-F.dxf  bd278d7c
+3289,3290c3214,3215
+< LOW_CABINET+handles-knob  sheet all  b6e97ff5
+< LOW_CABINET+handles-knob  sheet fronts  205cf121
+---
+> LOW_CABINET+handles-knob  sheet all  1c40b410
+> LOW_CABINET+handles-knob  sheet fronts  bd278d7c
+3292c3217
+< LOW_CABINET+handles-knob  sheet sprayed  205cf121
+---
+> LOW_CABINET+handles-knob  sheet sprayed  bd278d7c
+3990c3915
+< SINK+handles-bar  file  01-F.dxf  fa316519
+---
+> SINK+handles-bar  file  01-F.dxf  67145aa1
+3993,3994c3918,3919
+< SINK+handles-bar  sheet all  09ef86e4
+< SINK+handles-bar  sheet fronts  fa316519
+---
+> SINK+handles-bar  sheet all  915c9b08
+> SINK+handles-bar  sheet fronts  67145aa1
+3996c3921
+< SINK+handles-bar  sheet sprayed  fa316519
+---
+> SINK+handles-bar  sheet sprayed  67145aa1
+4001c3926
+< SINK+handles-knob  file  01-F.dxf  6b458201
+---
+> SINK+handles-knob  file  01-F.dxf  3378af74
+4004,4005c3929,3930
+< SINK+handles-knob  sheet all  c9128600
+< SINK+handles-knob  sheet fronts  6b458201
+---
+> SINK+handles-knob  sheet all  47be0eee
+> SINK+handles-knob  sheet fronts  3378af74
+4007c3932
+< SINK+handles-knob  sheet sprayed  6b458201
+---
+> SINK+handles-knob  sheet sprayed  3378af74
+4315c4240
+< WARDROBE+handles-bar  file  01-F.dxf  8e539178
+---
+> WARDROBE+handles-bar  file  01-F.dxf  67c1bdea
+4317,4318c4242,4243
+< WARDROBE+handles-bar  sheet all  a5ab53fc
+< WARDROBE+handles-bar  sheet fronts  8e539178
+---
+> WARDROBE+handles-bar  sheet all  ff46c9be
+> WARDROBE+handles-bar  sheet fronts  67c1bdea
+4320c4245
+< WARDROBE+handles-bar  sheet sprayed  8e539178
+---
+> WARDROBE+handles-bar  sheet sprayed  67c1bdea
+4325c4250
+< WARDROBE+handles-knob  file  01-F.dxf  67934150
+---
+> WARDROBE+handles-knob  file  01-F.dxf  6d78a40d
+4327,4328c4252,4253
+< WARDROBE+handles-knob  sheet all  e6990a54
+< WARDROBE+handles-knob  sheet fronts  67934150
+---
+> WARDROBE+handles-knob  sheet all  757191c1
+> WARDROBE+handles-knob  sheet fronts  6d78a40d
+4330c4255
+< WARDROBE+handles-knob  sheet sprayed  67934150
+---
+> WARDROBE+handles-knob  sheet sprayed  6d78a40d
+4597c4522
+< WUD+handles-bar  file  01-F.dxf  24590305
+---
+> WUD+handles-bar  file  01-F.dxf  5b7db897
+4599,4600c4524,4525
+< WUD+handles-bar  sheet all  700dbac0
+< WUD+handles-bar  sheet fronts  24590305
+---
+> WUD+handles-bar  sheet all  b6c2b67a
+> WUD+handles-bar  sheet fronts  5b7db897
+4602c4527
+< WUD+handles-bar  sheet sprayed  24590305
+---
+> WUD+handles-bar  sheet sprayed  5b7db897
+4607c4532
+< WUD+handles-knob  file  01-F.dxf  3d4224fb
+---
+> WUD+handles-knob  file  01-F.dxf  67790c2e
+4609,4610c4534,4535
+< WUD+handles-knob  sheet all  a6409faa
+< WUD+handles-knob  sheet fronts  3d4224fb
+---
+> WUD+handles-knob  sheet all  44d5639d
+> WUD+handles-knob  sheet fronts  67790c2e
+4612c4537
+< WUD+handles-knob  sheet sprayed  3d4224fb
+---
+> WUD+handles-knob  sheet sprayed  67790c2e

@@ -143,9 +143,32 @@ export function handleReference({
   }
 
   // A door. The OPENING edge is the one away from the hinge.
-  const openingLeft = hinge === 'R';
+  //
+  // ─── TURN 28 (CLAUDE.md F2b): RESOLVED IN THE SHEET'S OWN MIRROR ─────────
+  //
+  // A FRONT's cut frame — the frame this function returns and the one the
+  // drilling is written in — is the INSIDE MIRROR: origin at the leaf's
+  // bottom-RIGHT corner, x running LEFT (`engine/joinery.js panelPlacement`).
+  // The workshop bores a door from the back and the sheet is drawn the way the
+  // door lies on the bench. The CUP law honours it and always has: an L-hinged
+  // leaf's cup is drawn at `w − 21.5` and lands 21.5 mm from the LEFT edge in
+  // the room, which is its hinge edge.
+  //
+  // THE FAULT: `openingLeft = hinge === 'R'` is the ROOM's left, written
+  // straight into the MIRRORED frame — so on the sheet the knob printed beside
+  // the cups, on the hinge stile, for BOTH hands. The owner's sheet `03-F`
+  // (597 × 767) is the picture of it: three ⌀35 cups up one stile and the
+  // handle hole next to them.
+  //
+  // The law, in the frame it is written into: hinge L → the hinge edge is
+  // sheet-RIGHT (`x = w`), so the reference stands at sheet-LEFT, `x = inset`;
+  // hinge R the converse. ONE condition flips. `y`, the centres, the anchors
+  // and every other rule below are untouched, and the 3-D handle lands on the
+  // free stile in the room because it reads this same frame back through the
+  // same mirror (3d/Hardware.jsx).
+  const openingAtSheetOrigin = hinge === 'L';
   const acrossFromEdge = onFrame ? f / 2 : inset;
-  const x = openingLeft ? acrossFromEdge : w - acrossFromEdge;
+  const x = openingAtSheetOrigin ? acrossFromEdge : w - acrossFromEdge;
 
   // ─── WHICH POINT THIS IS ────────────────────────────────────────────────
   //

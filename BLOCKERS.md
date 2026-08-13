@@ -1927,7 +1927,41 @@ powodem. Zmiana to jedna liczba w profilu.
 
 ---
 
-## #94 — Dno w szafce pod zmywarkę: czy ono tam w ogóle jest? (tura 27, F2.1)
+## #94 — Dno w szafce pod zmywarkę: czy ono tam w ogóle jest? — ✅ ZAMKNIĘTY W TURZE 28
+
+**ZAMKNIĘTE. Właściciel odpowiedział, i odpowiedział szerzej niż pytanie.**
+Nie tylko dna nie ma — nie ma **całego korpusu**. Verbatim (CLAUDE.md tury 28,
+F1): *"nie ma całego korpusu oprócz górnego panela, który ma 600 mm bez żadnych
+dog bonów — tak jak było, tylko chciałem żeby to było podciągnięte pod logikę
+szafki."*
+
+Czyli druga z trzech możliwości poniżej, doprowadzona do końca: **boki są
+bokami sąsiadów**, urządzenie stoi na podłodze między nimi, a jedyna deska nad
+nim to **listwa** — pełna szerokość otworu (600 na jego 600 mm przerwie), pełna
+głębokość biegu (540), 18 mm, **zero kieszeni, zero otworów, żadnych dog bonów,
+gniazd ani rzędów wkrętów**. Dokładnie ta formatka, którą cięła tura 26
+(`bd7cec4`), co do setnej.
+
+**"Podciągnięte pod logikę szafki"** to była cała reszta prośby, i to jest to,
+co zbudowała tura 28: typ **deklaruje**, z czego jest zrobiony, w tych samych
+kluczach, w których każdy inny kit odpowiada na to pytanie —
+`carcass: { top: 'rail', sides: 'none', bottom: 'none', back: 'none' }` — a
+silnik czyta deklarację. `sides` i `bottom` są od tej tury pytaniami (domyślnie
+`'panel'`, więc nieobecnymi u wszystkich pozostałych kitów), a nie założeniem.
+Nigdzie nie ma `if (dwPanel)` ani `if (appliance)`: to była ścieżka równoległa,
+którą tura 27 słusznie spaliła, i nie wraca.
+
+**Trzecia część:** `defaultParamsFor('DW_PANEL')` przynosi **cokół włączony**
+(*"najważniejszego czyli plinth i tak nie ma"*) — na tym jednym kicie, bo tu
+cokół JEST jedną z trzech formatek. Wszędzie indziej cokół zostaje decyzją.
+
+Pytania o dno (obudowa / brak / cofnięte) nie ma już po co zadawać: **nie ma
+korpusu, więc nie ma dna, o które można się spierać.** Dowód: `test/turn28-f1-
+dw-front-rail-plinth.test.js` oraz przepisane `test/turn27-f2-…` (F2.1, F2.6).
+
+---
+
+## #94 (oryginalny wpis, tura 27) — Dno w szafce pod zmywarkę: czy ono tam w ogóle jest? (tura 27, F2.1)
 
 **Co blokuje.** CLAUDE.md F2.1 mówi wprost, czego właściciel chce od zmywarki:
 *It keeps sides, top, bottom, back and plinth exactly like its neighbours, to
@@ -1958,3 +1992,44 @@ przy każdej z trzech odpowiedzi.
 własność TYPU (jak `interiorOccupied`), czy osobne pole, i czy wieniec zostaje
 (bo blat i tak leży na bokach). Jeżeli **cofnięte** — jedna liczba: jak głęboka
 jest ta półka i jak wysoko stoi.
+
+---
+
+## #95 — Czy nesting ma OBRACAĆ półkę, skoro słój biegnie przód-tył? (tura 28, F7)
+
+**Co blokuje.** Tura 28 F7 mówi wprost, czego właściciel chce od obrazu:
+*"`decorPlacement` for a SHELF orients `scanAlongGrainMm` front-to-back, edge
+banding on the long front edge"* — czyli w pokoju słój półki biegnie
+**przód-tył**, bo półki kładzie się w poprzek arkusza. Zrobiłem dokładnie to:
+formatka **deklaruje** swój słój (`cnc.grain: 'h'`, czyli jej własna głębokość),
+a `engine/decors.js grainRun` czyta deklarację zamiast reguły piły (dłuższy z
+dwóch wymiarów) — bo półka jest prawie kwadratowa i ta reguła rozstrzyga ją
+czterdziestoma milimetrami w złą stronę.
+
+F7 mówi też, w tych samych słowach: **"CNC untouched (it is already right)"** —
+więc `engine/cnc/layout.js sheetTurn` nie został ruszony. A ten kładzie
+formatkę **dłuższym rysowanym bokiem do góry**, czyli typową półkę (szersza niż
+głębsza) kładzie szerokością w pionie arkusza.
+
+**Skutek, nazwany, a nie przemilczany.** Reguła tury 17 (F3) brzmiała: *słój
+biegnie DO GÓRY rysunku*. Dla półki te dwie rzeczy przestały się pokrywać: na
+arkuszu do góry idzie SZEROKOŚĆ, a zadeklarowany słój idzie GŁĘBOKOŚCIĄ. Test
+`test/turn17-phases.test.js` F3 wyłącza dziś półkę z tej reguły z tym
+uzasadnieniem i nazwiskiem tego wpisu; reszta desek (PARTITION, RAIL-PART,
+FIXED, TOP, BOTTOM, boki, plecy) trzyma ją bez zmian.
+
+**Co zrobiłem.** Nie zgadywałem arkusza. Zmieniłem to, o co F7 prosi — obraz —
+i zostawiłem nesting dokładnie tam, gdzie był, bo obrócenie półki na arkuszu to
+zmiana CNC, której ta tura ma zakaz (F7, zdanie drugie), i kosztowałaby nowe
+odciski palców na każdym kicie z półką.
+
+**Co Piotr ma zdecydować.** Jedno z dwóch:
+
+1. **Arkusz idzie za deklaracją** — `sheetTurn` obraca półkę o 90°, żeby jej
+   głębokość stanęła w pionie arkusza i słój arkusza zgadzał się ze słojem
+   formatki. To zmiana CNC na każdym kicie z półką i musi mieć swoją nazwaną
+   deltę oraz nowe odciski.
+2. **Arkusz zostaje jak jest** — bo pion arkusza to u nas kolejność cięcia, a
+   nie kierunek słoja płyty, i operator sam kładzie formatkę zgodnie z
+   deklaracją. Wtedy warto, żeby deklaracja (`grain`) **drukowała się na
+   formatce** obok etykiety, i to jest jedna linijka tekstu na arkuszu.

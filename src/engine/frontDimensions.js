@@ -176,21 +176,76 @@ export function frontGaps(result) {
   return out.filter((g) => g.mm > 0.1 || near(g.mm, 0, 0.0001));
 }
 
-/** Every front's own size, as a dimension row apiece. */
-export function frontSizes(result) {
-  return frontRects(result).flatMap((f) => ([
-    {
-      kind: 'front-w', axis: 'h', mm: round(f.w), from: f.x, to: f.x + f.w, at: f.y + f.h / 2, a: f.id, b: f.id,
-    },
-    {
-      kind: 'front-h', axis: 'v', mm: round(f.h), from: f.y, to: f.y + f.h, at: f.x + f.w / 2, a: f.id, b: f.id,
-    },
-  ]));
+/**
+ * ─── WHERE A FRONT'S OWN TWO LABELS SIT (turn 28, CLAUDE.md F8.3/F8.4) ──────
+ *
+ * The owner, with the toggle on: both numbers sat on the front's centre lines,
+ * so they crossed each other in the middle of every leaf — and the middle is
+ * also where the add (+) buttons stand, which covered whatever was left.
+ *
+ * They move apart, and both moves are his:
+ *
+ *   F8.3  the WIDTH label sits at a QUARTER of the front's height from its
+ *         BOTTOM, off the centre where the labels crossed;
+ *   F8.4  the HEIGHT label moves clear to the RIGHT of the centre line, out
+ *         from under the buttons.
+ *
+ * The numbers are the profile's (`hoverDimensions.frontLabels`) rather than
+ * literals here, and the right-hand shift is clamped to a share of the front's
+ * own width so a narrow drawer front cannot carry its number off its edge.
+ */
+function labelSpec(profile) {
+  const L = profile?.hoverDimensions?.frontLabels || {};
+  const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback);
+  return {
+    widthFromBottom: num(L.widthFromBottom, 0.25),
+    heightOffsetMm: num(L.heightOffsetMm, 75),
+    heightOffsetMaxShare: num(L.heightOffsetMaxShare, 0.4),
+  };
+}
+
+/**
+ * Every front's own size, as a dimension row apiece.
+ *
+ * @param {object} result   computeCabinet() output
+ * @param {object} [profile]  where the two label placements come from; without
+ *   one the same defaults answer, so a caller with no profile in its hand (a
+ *   test, an old cached view) draws the same picture.
+ */
+export function frontSizes(result, profile = null) {
+  const L = labelSpec(profile);
+  return frontRects(result).flatMap((f) => {
+    // F8.4: to the RIGHT of centre, never past the piece's own edge.
+    const shift = Math.min(L.heightOffsetMm, f.w * L.heightOffsetMaxShare);
+    return [
+      {
+        kind: 'front-w',
+        axis: 'h',
+        mm: round(f.w),
+        from: f.x,
+        to: f.x + f.w,
+        // F8.3: a quarter of the way up from the bottom.
+        at: f.y + f.h * L.widthFromBottom,
+        a: f.id,
+        b: f.id,
+      },
+      {
+        kind: 'front-h',
+        axis: 'v',
+        mm: round(f.h),
+        from: f.y,
+        to: f.y + f.h,
+        at: f.x + f.w / 2 + shift,
+        a: f.id,
+        b: f.id,
+      },
+    ];
+  });
 }
 
 /** Sizes and gaps together — what the scene draws when the toggle is on. */
-export function frontDimensionRows(result) {
-  return [...frontSizes(result), ...frontGaps(result)];
+export function frontDimensionRows(result, profile = null) {
+  return [...frontSizes(result, profile), ...frontGaps(result)];
 }
 
 const round = (v) => Math.round((Number(v) || 0) * 100) / 100;

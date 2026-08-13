@@ -14,6 +14,7 @@ import {
   foldMemberB, hingeMembers, hingeModel, hingeModelFits, hingeSource, onHingeLoad,
   rigHidesBody,
 } from './hingeModels.js';
+import { shelfSupportMetal } from './hardwareFinish.js';
 
 // ─── The hardware, in 3D (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
 //
@@ -82,16 +83,20 @@ export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
   hingeSpecs = null, surface = 'room', scope = '',
-  // Turn 25 (CLAUDE.md F6.1): which metal the shelf supports are in, chosen
-  // once for the job. Left out, the profile's own default answers.
-  shelfMetal = null,
+  // ─── TURN 28 (CLAUDE.md F5): ONE COLOUR SOURCE FOR THE WHOLE FAMILY ──────
+  // Turn 25 handed this component the chosen METAL ID and let it resolve the
+  // numbers; `3d/DrillRings.jsx` resolved its own, off its own table, with its
+  // own fallback — so an untouched project drew silver collars round gold
+  // sleeves. The DESIGN comes in now and `shelfSupportMetal` is the one place
+  // the answer is worked out, for the sleeve, the pin and the collar alike.
+  design = null,
   // Turn 24 (CLAUDE.md F1.2): every leaf's signed opening angle, so the hinge's
   // CARCASS half can fold after the door it belongs to. The door is not this
   // component's child, which is exactly why the angle has to cross.
   doorSwing = null,
 }) {
   const colours = profile.appearance.hardware;
-  const metalId = shelfMetal || profile.appearance.metalDefault;
+  const shelfMetal = shelfSupportMetal(design, profile);
   // ─── TURN 21 (CLAUDE.md R4 / F2.2 / F6.3) ───
   // What this surface mounted goes with this surface. A window that closes
   // stops claiming to be showing anything.
@@ -107,7 +112,7 @@ export default function Hardware({
       <ShelfSupports
         items={instances.shelfSupports || []}
         profile={profile}
-        metal={profile.appearance.metals[metalId] || profile.appearance.metals.gold}
+        metal={shelfMetal}
       />
       {instances.rails.map((rail, i) => (
         <Rail key={`rail-${i}`} rail={rail} colour={colours.rail} />
@@ -175,6 +180,10 @@ export default function Hardware({
 function Pieces({
   count, place, colour, roughness = 0.35, metalness = 0.75, children,
   onDoubleClick = null, visible = true,
+  // Turn 28 (CLAUDE.md F5 / R4): which member of a family this set is, so a
+  // walk can read the MOUNTED material of a sleeve and of a pin by name rather
+  // than by counting children.
+  member = null,
 }) {
   const ref = useRef(null);
   useLayoutEffect(() => {
@@ -203,7 +212,7 @@ function Pieces({
     <instancedMesh
       ref={ref}
       args={[undefined, undefined, count]}
-      userData={{ ccNoBounds: true }}
+      userData={{ ccNoBounds: true, ...(member ? { ccMember: member } : {}) }}
       onDoubleClick={onDoubleClick || undefined}
     >
       {children}
@@ -1086,10 +1095,18 @@ export function FrontHandle({
   // The front's OUTER face, in the cabinet's own frame — a handle stands proud
   // of the door it is screwed through.
   const faceZ = box.z + box.d;
-  // The reference point is in the front's CUT frame (origin bottom-left); the
-  // scene works in the cabinet's. One translation, here, so nothing downstream
-  // has to know there are two frames.
-  const wx = box.x + spec.x;
+  // ─── TURN 28 (CLAUDE.md F2): THE CUT FRAME IS THE INSIDE MIRROR ──────────
+  //
+  // The reference point is in the FRONT's cut frame, whose origin is the
+  // leaf's bottom-RIGHT corner with x running LEFT (`engine/joinery.js
+  // panelPlacement`) — the door seen from the carcass side, which is how the
+  // joiner has it on the bench when he bores it. This read it as a bottom-LEFT
+  // frame, so the model stood on the HINGE stile in the room while the sheet
+  // said the other one; with F2b's law behind it, one mirror puts both on the
+  // free stile. The scene works in the cabinet's frame, so the translation is
+  // here and nothing downstream has to know there are two.
+  const sheetX = (x) => box.x + box.w - Number(x);
+  const wx = sheetX(spec.x);
   const wy = box.y + spec.y;
 
   const at = (x, y, z) => [mm(x) - pivot[0], mm(y) - pivot[1], mm(z) - pivot[2]];
@@ -1129,10 +1146,12 @@ export function FrontHandle({
   const half = centres / 2;
   // The rod is centred on the two SCREWS, wherever the anchor put them.
   const holes = Array.isArray(spec.holes) && spec.holes.length === 2 ? spec.holes : null;
-  const midX = holes ? (holes[0][0] + holes[1][0]) / 2 : spec.x + (horizontal ? 0 : 0);
+  const midX = holes ? (holes[0][0] + holes[1][0]) / 2 : spec.x;
   const midY = holes ? (holes[0][1] + holes[1][1]) / 2 : spec.y;
+  // The screw holes are in the same cut frame as the reference, so they take
+  // the same mirror (F2).
   const postAt = holes
-    ? holes.map(([hx, hy]) => [box.x + hx, box.y + hy])
+    ? holes.map(([hx, hy]) => [sheetX(hx), box.y + hy])
     : [[wx, wy], [wx, wy]];
   const rodLen = centres + 2 * H.bar.overhang;
 
@@ -1151,7 +1170,7 @@ export function FrontHandle({
         </mesh>
       ))}
       <mesh
-        position={at(box.x + midX, box.y + midY, faceZ + H.bar.standoff)}
+        position={at(sheetX(midX), box.y + midY, faceZ + H.bar.standoff)}
         rotation={horizontal ? [0, 0, Math.PI / 2] : [0, 0, 0]}
         userData={{ ccNoBounds: true }}
       >
@@ -1257,6 +1276,7 @@ export function ShelfSupports({ items, profile, metal }) {
           never be a different size from the hole it lines. */}
       <Pieces
         count={items.length}
+        member="shelf-sleeve-barrel"
         place={placeBarrel}
         colour={metal.colour}
         metalness={metal.metalness}
@@ -1268,6 +1288,7 @@ export function ShelfSupports({ items, profile, metal }) {
           out, and what the owner is asking to see. */}
       <Pieces
         count={items.length}
+        member="shelf-sleeve"
         place={placeSleeve}
         colour={metal.colour}
         metalness={metal.metalness}
@@ -1278,6 +1299,7 @@ export function ShelfSupports({ items, profile, metal }) {
       {/* The pin the shelf rests on. */}
       <Pieces
         count={items.length}
+        member="shelf-pin"
         place={placePin}
         colour={metal.colour}
         metalness={metal.metalness}
@@ -1289,6 +1311,7 @@ export function ShelfSupports({ items, profile, metal }) {
           something rather than floating beside a peg. */}
       <Pieces
         count={items.length}
+        member="shelf-pin-shoulder"
         place={placeShoulder}
         colour={metal.colour}
         metalness={metal.metalness}

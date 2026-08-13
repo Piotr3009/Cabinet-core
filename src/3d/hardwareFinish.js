@@ -146,3 +146,38 @@ export function applyHardwareFinish(object, spec) {
   });
   return applied;
 }
+
+/**
+ * ─── THE SHELF-SUPPORT FAMILY'S METAL (turn 28, CLAUDE.md F5) ──────────────
+ *
+ * The owner: the gold/silver choice governs the WHOLE family — the SLEEVE that
+ * lines the hole, the PIN the shelf rests on, and the drill-ring COLLAR that
+ * stands for one where no sleeve is modelled. One selector, three consumers,
+ * zero second sources.
+ *
+ * There were two. `3d/DrillRings.jsx` carried its own table of two metals and
+ * its own fallback (silver); `3d/Hardware.jsx` read `profile.appearance.metals`
+ * and fell back to `profile.appearance.metalDefault` (gold). So a project that
+ * had never touched the selector drew silver collars around gold sleeves, and
+ * "one place" was two places that happened to agree on the two ids.
+ *
+ * This is the one place. The chosen id is validated against the profile's own
+ * metals — an unknown one is not a colour anybody can order — and the profile's
+ * default answers when nothing is chosen, which is what the sleeve has always
+ * done.
+ *
+ * @param {object|null} design   the project design (`hardware.shelfSleeve`)
+ * @param {object} profile
+ * @returns {{id:string, label:string, colour:string, metalness:number,
+ *            roughness:number}}
+ */
+export function shelfSupportMetal(design, profile) {
+  const metals = profile?.appearance?.metals || {};
+  const chosen = design?.hardware?.shelfSleeve;
+  const fallback = profile?.appearance?.metalDefault;
+  const id = (chosen && metals[chosen] && chosen)
+    || (fallback && metals[fallback] && fallback)
+    || Object.keys(metals)[0]
+    || 'gold';
+  return { id, ...(metals[id] || {}) };
+}

@@ -34,7 +34,7 @@ import { resolveRunnerVariant } from '../engine/runners.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
 import { useStorageBase } from '../lib/storageBase.js';
 import {
-  clearLights, fieldFromPos, interiorFloor, lightBelow,
+  columnOfItem, columnOfShelf, fieldFromPos, interiorFloor, lightBelow, shelfColumns,
 } from '../engine/shelfHeights.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
@@ -809,13 +809,15 @@ export default function UnitView({
   const dimStyle = useMemo(() => dimensionStyle(profile), [profile]);
   const frontDimRows = useMemo(() => {
     if (!showFrontDimensions) return [];
-    return frontDimensionRows(result).map((row, i) => ({
+    // Turn 28 (CLAUDE.md F8.3/F8.4): where the two labels sit is the PROFILE's
+    // answer, resolved in the engine, so the scene still decides nothing.
+    return frontDimensionRows(result, profile).map((row, i) => ({
       key: `${row.kind}-${row.a || ''}-${row.b || ''}-${i}`,
       from: row.axis === 'h' ? [row.from, row.at] : [row.at, row.from],
       to: row.axis === 'h' ? [row.to, row.at] : [row.at, row.to],
       offset: 0,
     }));
-  }, [showFrontDimensions, result]);
+  }, [showFrontDimensions, result, profile]);
   // A hair proud of the door plane, so the chain is not buried in it.
   const frontDimZ = result.params.depth + profile.doors.gap + (result.params.front_t || 25) + 1;
 
@@ -827,17 +829,37 @@ export default function UnitView({
   // and the live drag — is a slice of THIS. `engine/shelfHeights.js` is the
   // only place a shelf height is turned into something a person reads, and the
   // panel field on the right is the same function's other half.
-  const shelfLights = useMemo(() => {
-    const shelves = result.panels.filter((p) => p.part === 'SHELF' && p.box);
-    return clearLights({
-      positions: shelves.map((p) => p.box.y),
-      thickness: shelves.map((p) => p.box.h),
-      floor: result.assemblies.drawerZone
-        ? result.assemblies.drawerZone.top + G
-        : interiorFloor(G),
-      ceiling: H - G,
-    }, profile.editor.mmStep);
-  }, [result.panels, result.assemblies.drawerZone, G, profile.editor.mmStep, H]);
+  //
+  // ─── TURN 28 (CLAUDE.md F3): …AND EACH COLUMN IS A BAY ────────────────────
+  //
+  // The owner: *"znowu pokazuje po prawej stronie szafki półki, które są po
+  // lewej od divertera — to nie jest spójne; jak jest diverter, to półki
+  // inaczej będą rozdzielone."*
+  //
+  // Turn 27 F1 taught the DRILLING which two boards carry a shelf; this list
+  // never learned it, so every shelf in the cabinet was one column measured
+  // against all the others and drawn down the unit's RIGHT flank whichever bay
+  // it stood in. `shelfColumns` groups them through the very same
+  // `engine/shelfBearers.js` resolution the ⌀7.5 ladder is bored through, and
+  // hands each group the FLANK its chain belongs on. One resolution, one
+  // dimension component (R11), a different anchor.
+  //
+  // An undivided cabinet resolves to ONE column whose bearers are BUL and BUR
+  // and whose flank is `W` — which is what turn 8 shipped, to the millimetre.
+  const shelfColumnList = useMemo(() => shelfColumns({
+    panels: result.panels,
+    floor: result.assemblies.drawerZone
+      ? result.assemblies.drawerZone.top + G
+      : interiorFloor(G),
+    ceiling: H - G,
+    width: W,
+    tolerance: profile.carcass.shelfWidthClearance,
+  }, profile.editor.mmStep), [
+    result.panels, result.assemblies.drawerZone, G, H, W,
+    profile.carcass.shelfWidthClearance, profile.editor.mmStep,
+  ]);
+  /** The flank a piece with no column of its own falls back to: the unit's. */
+  const unitFlank = useMemo(() => ({ x: W, dir: +1, on: 'BUR' }), [W]);
 
   // ─── EVERY NUMBER THIS CABINET HAS, AS CHAINS (turn 26, CLAUDE.md R11) ────
   //
@@ -878,27 +900,52 @@ export default function UnitView({
       key: 'd', from: [0, 0], to: [0, D], offset: -sideOffset, label: `D ${formatDimension(D)}`,
     });
 
-    const column = (key, from, to, label, step = 1) => side.push({
-      key, from: [W, from], to: [W, to], offset: sideOffset * step, label,
+    // The unit's own numbers stand on the unit's own flank; a SHELF's stand on
+    // its BAY's (F3), which is what `flank` is for.
+    const column = (key, from, to, label, step = 1, flank = unitFlank) => side.push({
+      key,
+      from: [flank.x, from],
+      to: [flank.x, to],
+      offset: flank.dir * sideOffset * step,
+      label,
     });
-    column('h', isWallMounted ? 0 : -legHeight, H, `H ${formatDimension(H)}`);
+    // ─── TURN 28 (CLAUDE.md F8.1): HEIGHT IS NEVER "FROM THE FLOOR" ───────
+    //
+    // The chain ran the whole way from the floor to the top of the carcass and
+    // printed 870 — a number that is on no cut list, that nobody orders board
+    // to and that the joiner then has to do arithmetic on to get back to the
+    // two he cares about. The owner's picture is two SEGMENTS on ONE line: the
+    // toe kick below and the carcass above, stacked, each with its own stop
+    // arrows, sharing the vertical they stand on.
+    //
+    // So both take `step` 1 — the same offset, which is what "one line" means
+    // here — and the carcass starts at 0 rather than at −legHeight.
     if (isWallMounted) {
-      column('mount', 0, -result.assemblies.mountHeight, `hung at ${formatDimension(result.assemblies.mountHeight)}`, 2);
+      column('mount', 0, -result.assemblies.mountHeight, `hung at ${formatDimension(result.assemblies.mountHeight)}`);
     } else if (legHeight > 0) {
-      column('kick', -legHeight, 0, `toe kick ${formatDimension(legHeight)}`, 2);
+      column('kick', -legHeight, 0, `toe kick ${formatDimension(legHeight)}`);
     }
+    column('h', 0, H, `H ${formatDimension(H)}`);
     // ─── TURN 21 (CLAUDE.md F10): ONE DERIVATION, TWO DISPLAYS ─────────────
     // This printed the STORED number — whose zero is the outside of the carcass
     // bottom — while the hover ladder printed the clear light above the
     // INTERIOR floor. 860 against 842 on the owner's screenshot, about one
     // shelf. Both come out of `clearLights`, so the chain, the ladder and the
     // panel field are the same arithmetic and cannot disagree again.
+    // ─── TURN 28 (CLAUDE.md F3): A SHELF'S LADDER STANDS IN ITS OWN BAY ────
+    // Its clear light is measured against the shelves it shares a compartment
+    // with, and the chain is drawn on that compartment's flank — the left of
+    // the unit for a left-bay shelf, the right for a right-bay one, and its
+    // own partition for a middle bay.
     for (const shelf of result.assemblies.shelves || []) {
-      const light = lightBelow(shelf.y, shelfLights);
+      const board = result.panels.find((p) => p.part === 'SHELF' && p.meta?.index === shelf.index);
+      const col = board ? columnOfShelf(shelfColumnList, board.id) : null;
+      const light = lightBelow(shelf.y, col?.lights || []);
       const from = light ? light.from : G;
       const to = light ? light.to : shelf.y;
       column(`shelf-${shelf.index}`, from, to,
-        `S${shelf.index} ${formatDimension(to - from)}${shelf.locked ? ' fixed' : ''}`, 2);
+        `S${shelf.index} ${formatDimension(to - from)}${shelf.locked ? ' fixed' : ''}`,
+        2, col?.flank || unitFlank);
     }
     for (const df of result.assemblies.drawerFronts || []) {
       column(`drawer-${df.index}`, df.y, df.y + df.h, `D${df.index} ${formatDimension(df.h)}`, 3);
@@ -918,7 +965,7 @@ export default function UnitView({
       });
     }
     return { floor, side };
-  }, [showAllDims, W, H, D, G, isWallMounted, legHeight, result, shelfLights, sideOffset]);
+  }, [showAllDims, W, H, D, G, isWallMounted, legHeight, result, shelfColumnList, unitFlank, sideOffset]);
 
   //
   // ─── TURN 26 (CLAUDE.md F2.1): THE LEAF'S OWN WIDTH, NOT THE FIRST ONE'S ──
@@ -983,9 +1030,16 @@ export default function UnitView({
   // shelf hover beside it — it lives exactly as long as the pointer is over the
   // piece and reaches nothing that is exported.
   const [hoverPartition, setHoverPartition] = useState(null);
+  // ─── TURN 28 (CLAUDE.md F3) ───
+  // The ladder is the HOVERED shelf's own bay: the gaps it shares with the
+  // shelves beside it, on the flank of the compartment they are all in.
+  const hoverColumn = useMemo(
+    () => columnOfItem(shelfColumnList, hoverShelf),
+    [shelfColumnList, hoverShelf],
+  );
   const shelfGaps = useMemo(
-    () => shelfLights.map((g, i) => ({ ...g, key: `gap-${i}` })),
-    [shelfLights],
+    () => (hoverColumn?.lights || []).map((g, i) => ({ ...g, key: `gap-${i}` })),
+    [hoverColumn],
   );
   // ─── Turn 21 (CLAUDE.md F11) ───
   // Where this cabinet draws the magnet's guide, in ITS OWN frame — the caught
@@ -1000,14 +1054,17 @@ export default function UnitView({
   }, [shelfDrag, unit.id]);
 
   // The two openings the shelf being dragged stands between — the same list,
-  // sliced to the board in the hand.
+  // sliced to the board in the hand. Turn 28 (F3): its OWN bay's list.
+  const dragColumn = useMemo(() => (shelfDrag && shelfDrag.unitId === unit.id
+    ? columnOfItem(shelfColumnList, shelfDrag.itemId)
+    : null), [shelfDrag, shelfColumnList, unit.id]);
   const dragLights = useMemo(() => {
-    if (!shelfDrag || shelfDrag.unitId !== unit.id) return [];
+    if (!dragColumn || !shelfDrag) return [];
     const pos = Number(shelfDrag.pos);
-    return shelfLights.filter(
+    return dragColumn.lights.filter(
       (g) => Math.abs(g.to - pos) < 1e-6 || g.from >= pos,
     ).slice(0, 2);
-  }, [shelfDrag, shelfLights, unit.id]);
+  }, [shelfDrag, dragColumn]);
 
   // How tall the top infill is right now — the handle sits on top of it. The
   // FACE strip is the piece the edge belongs to (there is a shelf behind it,
@@ -1482,13 +1539,14 @@ export default function UnitView({
           shelf, shelf to shelf, and the last one to the underside of the top —
           so a stack that is 3 mm out says so at a glance.
           It is a readout, not a drag: nothing here writes anything. */}
-      {hoverShelf && !contour && !shelfDrag && (
+      {hoverShelf && hoverColumn && !contour && !shelfDrag && (
         <DimensionChain
           rows={shelfGaps.map((g) => ({
             key: g.key,
-            from: [W, g.from],
-            to: [W, g.to],
-            offset: sideOffset,
+            // TURN 28 (CLAUDE.md F3): its own bay's flank, not the unit's.
+            from: [hoverColumn.flank.x, g.from],
+            to: [hoverColumn.flank.x, g.to],
+            offset: hoverColumn.flank.dir * sideOffset,
             // The set is read as a set — "are they even?" — so an UNEVEN gap
             // says so in the gold the app uses for "this is the one".
             label: `${formatDimension(g.size)}${g.even ? '' : ' ≠'}`,
@@ -1523,7 +1581,7 @@ export default function UnitView({
           {/* ─── Turn 21 (CLAUDE.md F10): THE SAME FUNCTION AS EVERY OTHER
               SHELF READOUT ───
               These read the CLEAR LIGHTS either side of the board being
-              dragged, out of `shelfLights` — the very list the hover ladder
+              dragged, out of the shelf's OWN BAY's lights — the very list the ladder
               and the "all dims" chips are slices of. They used to read the
               distance to the NEIGHBOUR'S OWN STORED FACE, which beside another
               shelf is one board thickness bigger than the opening the label is
@@ -1531,9 +1589,11 @@ export default function UnitView({
           <DimensionChain
             rows={dragLights.map((g) => ({
               key: `drag-${g.from}`,
-              from: [W, g.from],
-              to: [W, g.to],
-              offset: sideOffset,
+              // TURN 28 (CLAUDE.md F3): on the bay the board is being dragged
+              // in, so the live readout does not jump the divider.
+              from: [(dragColumn?.flank || unitFlank).x, g.from],
+              to: [(dragColumn?.flank || unitFlank).x, g.to],
+              offset: (dragColumn?.flank || unitFlank).dir * sideOffset,
               label: formatDimension(g.size),
             }))}
             style={dimStyle}
@@ -1544,7 +1604,15 @@ export default function UnitView({
           />
           {/* …and the piece's own height, on the interior datum the panel
               field speaks. */}
-          <DimLabel position={[mm(W) + 0.17, mm(shelfDrag.pos), mm(D)]} text={formatMm(fieldFromPos(shelfDrag.pos, G), { unit: true })} tone="gold" />
+          <DimLabel
+            position={[
+              mm((dragColumn?.flank || unitFlank).x) + (dragColumn?.flank || unitFlank).dir * 0.17,
+              mm(shelfDrag.pos),
+              mm(D),
+            ]}
+            text={formatMm(fieldFromPos(shelfDrag.pos, G), { unit: true })}
+            tone="gold"
+          />
         </group>
       )}
 
@@ -1627,7 +1695,10 @@ export default function UnitView({
         // handed down; and the gesture that opens the hinge modal on it.
         hingeSpecs={hingeSpecs}
         // Turn 25 (CLAUDE.md F6.1): gold or silver, chosen once for the job.
-        shelfMetal={design?.hardware?.shelfSleeve || null}
+        // Turn 28 (F5): and RESOLVED once — the sleeve, the pin and the drill
+        // ring's collar all take `3d/hardwareFinish.js shelfSupportMetal` of
+        // this one design.
+        design={design}
         // ─── TURN 24 (CLAUDE.md F1.2): HOW FAR EACH LEAF HAS SWUNG ───────────
         // The hinge's carcass half folds by the DOOR's own angle, and the door
         // is not this component's child — so the angle is handed across rather

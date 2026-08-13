@@ -52,19 +52,27 @@ test('the D/W panel has NO legs — the appliance stands there', () => {
   assert.equal(legs.length, 0, 'a leg drawn here is a leg somebody would try to fit');
 });
 
-// ─── TURN 27 (CLAUDE.md F2.1): …AND THEN IT BECAME A CABINET ───────────────
+// ─── TURN 28 (CLAUDE.md F1): A FRONT, A RAIL AND A PLINTH ──────────────────
 //
-// The owner: *"dlaczego zmywarki nie traktujesz jak szafki?"* Turn 17's answer
-// here — a front and a top and nothing else — is what made a D/W a species of
-// its own, and six faults followed from it over five turns. It keeps sides,
-// top, bottom, back and plinth exactly like its neighbours now; what it does
-// not keep is anything INSIDE, because what goes inside it is a dishwasher.
-test('the D/W unit is an ordinary carcass with an appliance in it', () => {
+// Turn 17's answer here was "a front and a top and nothing else", turn 27's was
+// "an ordinary carcass", and the owner walked turn 27 and gave the third:
+// *"nie ma całego korpusu oprócz górnego panela… tylko chciałem żeby to było
+// podciągnięte pod logikę szafki."* The LOGIC is the cabinet's — the type
+// declares its carcass in the same keys every kit does — and what the logic
+// then emits is three pieces, because that is what a dishwasher panel is.
+test('the D/W unit is a front, a rail and a plinth', () => {
   const ids = build('DW_PANEL').panels.map((p) => p.id).sort();
-  assert.deepEqual(ids, ['01-F', 'BACK', 'BOTTOM', 'BUL', 'BUR', 'TOP']);
+  assert.deepEqual(ids, ['01-F', 'PLINTH', 'TOP']);
   const r = build('DW_PANEL', { shelves: 3, rail: true, drawers: 2 });
   assert.equal(r.panels.filter((p) => p.role === 'shelf').length, 0, 'nothing inside');
   assert.equal(r.drills.filter((d) => d.layer === P.shelfHoles.layer).length, 0, 'and no pin ladder');
+  // No carcass at all — which is what closes BLOCKERS #94: there is no bottom
+  // for the sink BUR's shelf column to argue with.
+  for (const part of ['BUL', 'BUR', 'BOTTOM', 'BACK']) {
+    assert.equal(r.panels.filter((p) => p.part === part).length, 0, `no ${part}`);
+  }
+  assert.equal(r.drills.length, 0, 'and not one hole in the whole kit');
+  assert.deepEqual(r.hardware, [], 'no hardware: no legs, no hinges, nothing to buy');
 });
 
 // ── Oven base ───────────────────────────────────────────────────────────────

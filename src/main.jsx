@@ -31,6 +31,11 @@ import * as format from './engine/format.js';
 import * as shelfBearers from './engine/shelfBearers.js';
 import * as hoverRows from './engine/hoverRows.js';
 import * as dimensionArrows from './engine/dimensionArrows.js';
+import * as bevel from './3d/bevel.js';
+import * as hardwareFinish from './3d/hardwareFinish.js';
+import * as decors from './engine/decors.js';
+import * as dimensions from './engine/dimensions.js';
+import * as frontDimensions from './engine/frontDimensions.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -123,6 +128,28 @@ if (typeof window !== 'undefined') {
   // could not already compute.
   window.__ccT27 = {
     shelfBearers, hoverRows, dimensionArrows,
+  };
+  // ─── Turn 28 (CLAUDE.md F3 / F4 / F5 / F7 / F8 / R4) ───
+  // The same reason a ninth time, for the five questions this turn answers
+  // with arithmetic rather than with pixels.
+  //
+  //   `shelfHeights`     F3: which BAY a shelf is in and which flank its
+  //                      ladder stands on, asked of the very function the view
+  //                      feeds the one dimension component from.
+  //   `bevel`            F4: the blend band the shader is COMPILED with, so
+  //                      the walk reads the number rather than a screenshot's
+  //                      opinion of it.
+  //   `hardwareFinish`   F5: one colour source for the sleeve, the pin and the
+  //                      collar — asked of the resolver all three call.
+  //   `decors`           F7: which way the grain runs on a piece, off the same
+  //                      pair of functions `3d/materials.js` places with.
+  //   `dimensions`       F8.2: WHICH cabinet of a run carries the chain, off
+  //                      the function the scene asks.
+  //   `frontDimensions`  F8.3/F8.4: where a front's two labels sit.
+  //
+  // All pure; none reaches anything the page could not already compute.
+  window.__ccT28 = {
+    shelfHeights, bevel, hardwareFinish, decors, dimensions, frontDimensions,
   };
 }
 

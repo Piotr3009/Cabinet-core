@@ -2489,6 +2489,18 @@ export const DEFAULT_CABINET_PROFILE = {
         fileMinZ: -29.48,
         modelOrigin: { x: -18.75, y: -28.5, z: -69.78 },
         plateOrigin: { x: 0, y: -26.5, z: -20.75 },
+        // ─── CHAT FIX 14.08.2026: THE PLATE FACES ITS PANEL ────────────────
+        // Owner, off the live scene: the screws stood proud towards the
+        // MIDDLE of the cabinet instead of biting the side panel — his
+        // bucket's own plate file (`174E6100.01…`) is authored facing the
+        // room. Half a turn about z puts the screws into the board and the
+        // arm rail towards the opening. The spin is taken about the file's
+        // own BBOX in x/y (`3d/hingeModels.js`), so the datum still means
+        // what `plateOrigin` says and the body stays ON the face rather than
+        // inside it. Same standing as `modelOrigin`: the first person to see
+        // a plate that mounts the other way round corrects THIS ONE number
+        // (0 switches the turn off; only 0 and 180 exist for a plate).
+        plateSpinDeg: 180,
         // The hand the FILE is authored for. The body's bulk sits at −x of
         // the cup, which mounted reads as a RIGHT-hung door; the view mirrors
         // the clone (about the cup, scale.x) whenever the door's side differs.

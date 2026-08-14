@@ -141,6 +141,18 @@ test('F3 — the procedural cup and boss are GONE; one invisible pick surface st
   assert.doesNotMatch(door, /cylinderGeometry/);
 });
 
+test('F3 — the plate takes its half turn about its own bbox, datum intact (chat fix 14.08.2026)', () => {
+  // The owner's screws faced the middle of the cabinet; `plateSpinDeg: 180`
+  // turns the plate into the board, about its own bbox so `plateOrigin`
+  // still means what it says. One number, and 0 switches it off.
+  assert.equal(P.hardware.hinge.cliptop.plateSpinDeg, 180);
+  const models = src('3d/hingeModels.js');
+  assert.match(models, /Math\.abs\(Number\(C\.plateSpinDeg\) \|\| 0\) === 180/);
+  assert.match(models, /k\.rotation\.z = Math\.PI;/);
+  assert.match(models, /k\.position\.x = \(entry\.min\.x \+ entry\.size\.x\) \+ mm\(O\.x\);/);
+  assert.match(models, /k\.position\.y = \(entry\.min\.y \+ entry\.size\.y\) \+ mm\(O\.y\);/);
+});
+
 test('F3 — the drum verdict is written into the code beside the fix', () => {
   const hardware = src('3d/Hardware.jsx');
   assert.match(hardware, /black drum/i);

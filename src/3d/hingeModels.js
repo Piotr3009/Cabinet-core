@@ -72,6 +72,25 @@ export function hingeModel(url, {
     origin: { x: mm(O.x), y: mm(O.y), z: mm(O.z) },
     mirror,
   });
+  // ─── CHAT FIX 14.08.2026: THE PLATE'S HALF TURN ──────────────────────────
+  // profile: `plateSpinDeg`. The owner's plate files are authored screws-to-
+  // the-room, and half a turn about z puts them into the board. The turn is
+  // taken about the file's own BBOX in x and y, NOT about the datum: under a
+  // π turn min goes to −max, so the child is re-seated at +max exactly the
+  // way `glbClone` seats it at −min — and the datum keeps meaning what
+  // `plateOrigin` says, with the body ON the panel face rather than inside
+  // it. The hand mirror sits on the GROUP above this child and is untouched.
+  // Only 0 and 180 exist for a plate, and the formula is π's own — which is
+  // why the guard asks for 180 by name rather than spinning by any angle.
+  if (clone && plate && Math.abs(Number(C.plateSpinDeg) || 0) === 180) {
+    const entry = glbSource(url);
+    const k = clone.children[0];
+    if (entry && k) {
+      k.rotation.z = Math.PI;
+      k.position.x = (entry.min.x + entry.size.x) + mm(O.x);
+      k.position.y = (entry.min.y + entry.size.y) + mm(O.y);
+    }
+  }
   // ─── TURN 23 (CLAUDE.md F4.1): THE FINISH, ON THE CLONE ──────────────────
   //
   // Owner: "the model renders WHITE — raw file material." Here, on the clone,

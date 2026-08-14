@@ -631,43 +631,12 @@ export function DoorHinges({
 
   const drawnModel = models.some((m) => m.model);
 
-  // The cup is bored along the DEPTH axis, so the cylinder (whose own axis is
-  // Y) is laid down once, here, rather than per instance.
-  const laid = useMemo(() => new THREE.Quaternion()
-    .setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2), []);
-
   const local = (x, y, z) => new THREE.Vector3(
     mm(x) - pivot[0], mm(y) - pivot[1], mm(z) - pivot[2],
   );
 
-  // ─── TURN 26 (CLAUDE.md F1.1/F1.2): INTO THE BORE, AND NO FURTHER ────────
-  //
-  // `h.z` is the leaf's MOUNTING DATUM — its inner face, resolved once by
-  // `engine/doors.js doorHingeDatum` — and `h.cupDepth` is the owner's 11 mm
-  // already clamped to that leaf's own board. This component no longer reads
-  // the catalogue depth for itself: a second reading of one number is exactly
-  // how a 12.5 mm cylinder came to be drawn into an 18 mm door.
-  const placeCup = useMemo(() => (i, m) => {
-    const h = items[i];
-    const depth = Number(h.cupDepth) || 0;
-    // The geometry is cut to the catalogue depth and shared by every cup in the
-    // unit; a leaf whose board forced the clamp scales its own instance along
-    // the bore's axis (the cylinder's own y, before `laid` turns it into z).
-    const stretch = H.cupDepth > 0 ? depth / H.cupDepth : 1;
-    put(m, local(h.x, h.y, h.z + depth / 2), laid, new THREE.Vector3(1, stretch, 1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, H.cupDepth, laid, pivot[0], pivot[1], pivot[2]]);
-
-  // …and OUT of it, into the carcass opening, which is the half a joiner sees.
-  const placeBoss = useMemo(() => (i, m) => {
-    const h = items[i];
-    put(m, local(h.x, h.y, h.z - H.bossHeight / 2), laid);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, H.bossHeight, laid, pivot[0], pivot[1], pivot[2]]);
-
-  // The arm runs straight back off the cup, into the carcass. It moved here
-  // from the carcass half this turn: it is bolted to the cup, so it goes where
-  // the cup goes.
+  // The arm runs straight back off the cup, into the carcass. It is the pick
+  // surface for the hinge modal and nothing else — see the note below.
   const placeArm = useMemo(() => (i, m) => {
     const h = items[i];
     put(m, local(h.x, h.y, h.z - H.armLength / 2));
@@ -729,39 +698,28 @@ export function DoorHinges({
         />
       ) : null))}
 
-      {/* ─── F3: THE BLACK DRUM ───
-          `visible={!drawnModel}` is the fix and it is the same guard the arm
-          and the plate have carried since turn 19. Without it these two dark
-          cylinders were drawn straight through the downloaded body — which is
-          the drum on the owner's screenshot. */}
-      <Pieces
-        count={items.length}
-        place={placeCup}
-        colour={colour}
-        metalness={0.8}
-        visible={!drawnModel}
-      >
-        <cylinderGeometry args={[mm(H.cupDiameter / 2), mm(H.cupDiameter / 2), mm(H.cupDepth), 18]} />
-      </Pieces>
-      <Pieces
-        count={items.length}
-        place={placeBoss}
-        colour={colour}
-        metalness={0.8}
-        visible={!drawnModel}
-      >
-        {/* Slightly narrower than the bore it stands in, as the body of a cup
-            hinge is — it is the moving part, not the hole. */}
-        <cylinderGeometry
-          args={[mm(H.cupDiameter / 2 - 1), mm(H.cupDiameter / 2 - 1), mm(H.bossHeight), 18]}
-        />
-      </Pieces>
+      {/* ─── CHAT FIX 14.08.2026: THE STAND-INS ARE GONE — OWNER'S ORDER ───
+          "Najlepiej będzie usunąć ten kod ze starymi zawiasami i spokój."
+          On his restored projects the old procedural hinge — the black drum's
+          cousins, cup cylinder, boss and arm box, drawn since turn 12 — kept
+          appearing ON TOP of a correctly loaded GLB. The gate (`visible=
+          {!drawnModel}`, turn 23's fix, `verify/t23/hinge-meshes.md` beside
+          it) should have stood them down and on his machine did not; rather
+          than defend a gate nobody can reproduce misfiring, the stand-ins are
+          REMOVED. A hinge is the downloaded model or nothing — the same
+          honesty `rigHidesBody` chose for a rig that is off.
+
+          ONE instanced surface remains, permanently invisible: the ARM as the
+          double-click PICK target for the hinge modal (turn 19 F1.3). It is
+          `visible={false}` by constant, not by gate — there is no state in
+          which it is seen. `drawnModel` above still gates nothing visual; it
+          is kept for the registry rows, which is what the walk reads. */}
       <Pieces
         count={items.length}
         place={placeArm}
         colour={colour}
         onDoubleClick={pick}
-        visible={!drawnModel}
+        visible={false}
       >
         <boxGeometry args={[mm(H.armWidth), mm(H.armThickness), mm(H.armLength)]} />
       </Pieces>

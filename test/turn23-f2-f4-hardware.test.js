@@ -36,12 +36,16 @@ test('F2.1 — the hinge BODY is drawn by the DOOR half, the plate by the carcas
   const door = block(hardware, 'export function DoorHinges(');
   const carcass = block(hardware, 'function CarcassHinges(');
 
-  // The body — the model, the cup, the boss and the arm — hangs off the leaf.
-  // TURN 24 (F1.1): `kind: 'hinge'` became `kind: 'cup'` when the model split
-  // in two — this half is MEMBER A now, and the arm went back to the carcass
-  // where it is bolted. The procedural stand-ins are untouched.
-  for (const piece of ['placeCup', 'placeBoss', 'placeArm', "kind: 'cup'"]) {
+  // The body — the MODEL — hangs off the leaf. TURN 24 (F1.1): `kind: 'hinge'`
+  // became `kind: 'cup'` when the model split in two — this half is MEMBER A.
+  // CHAT FIX 14.08.2026: the procedural cup and boss are GONE by the owner's
+  // order (they were appearing on top of a loaded GLB on his restored
+  // projects); `placeArm` remains only as the invisible double-click pick.
+  for (const piece of ['placeArm', "kind: 'cup'"]) {
     assert.match(door, new RegExp(piece.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `DoorHinges draws ${piece}`);
+  }
+  for (const piece of ['placeCup', 'placeBoss']) {
+    assert.doesNotMatch(door, new RegExp(piece), `${piece} is gone from DoorHinges — model or nothing`);
   }
   // …and the carcass half has none of them left.
   for (const piece of ['placeCup', 'placeBoss', 'placeArm']) {
@@ -119,16 +123,22 @@ test('F2.4 — a row that says nothing about its parent is null, never guessed',
 
 // ─── F3 — the black cylinder ───────────────────────────────────────────────
 
-test('F3 — the procedural cup and boss are GATED on "is a model drawn"', () => {
+test('F3 — the procedural cup and boss are GONE; one invisible pick surface stays', () => {
+  // ─── CHAT FIX 14.08.2026, the owner's order ─────────────────────────────
+  // On restored projects the stand-ins appeared ON TOP of a correctly loaded
+  // GLB; turn 23's gate should have stood them down and on his machine did
+  // not. "Najlepiej będzie usunąć ten kod ze starymi zawiasami i spokój" —
+  // so the contract flips: a hinge is the downloaded model or NOTHING, and
+  // the only <Pieces> left in DoorHinges is the arm as the double-click PICK
+  // target, invisible by CONSTANT rather than by gate.
   const door = block(src('3d/Hardware.jsx'), 'export function DoorHinges(');
-  // Three stand-ins, three gates. Before this turn the cup and the boss had
-  // none, so they were drawn straight through the downloaded body — the drum.
   const stands = door.split('<Pieces').slice(1);
-  assert.equal(stands.length, 3, 'the cup, the boss and the arm');
-  for (const [i, piece] of stands.entries()) {
-    const props = piece.slice(0, piece.indexOf('>'));
-    assert.match(props, /visible=\{!drawnModel\}/, `stand-in ${i} stands down for a model`);
-  }
+  assert.equal(stands.length, 1, 'the pick surface, and nothing else');
+  const props = stands[0].slice(0, stands[0].indexOf('>'));
+  assert.match(props, /visible=\{false\}/, 'invisible in every state — no gate to misfire');
+  assert.match(props, /onDoubleClick=\{pick\}/, 'and it is the gesture, which is why it exists');
+  // The drum's cylinders are not drawn from here in any state.
+  assert.doesNotMatch(door, /cylinderGeometry/);
 });
 
 test('F3 — the drum verdict is written into the code beside the fix', () => {

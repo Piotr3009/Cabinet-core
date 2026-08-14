@@ -2551,8 +2551,30 @@ export const DEFAULT_CABINET_PROFILE = {
           // nobody has opened yet. It is a FALLBACK and not the rule, and
           // `bau0015088251` is why: that node spans −28 … 46.2, so a threshold
           // asked about its box would split the arm down the middle.
-          memberA: ['bau0015089612', 'bau0015088783', 'bau0015088853'],
-          memberB: ['bau0015088251', 'bau0019416036'],
+          // ─── CHAT FIX 14.08.2026: EVERY FAMILY'S OWN NAMES ──────────────
+          // The five above are `71B3550_42542984`'s. The OTHER bucket files
+          // wear other bau numbers, so on a 155° wardrobe door the fallback
+          // put the MAIN ARM on the leaf — the owner's "stara wersja" —
+          // and a 95°/onyx door was one finish away from the same. Measured
+          // per file on the live bucket (node × z-span × role, 14.08):
+          // cups, caps and covers to the DOOR; arms, links and levers to
+          // the CARCASS. `71B3550_43192717` (names `Geom3D*`) stays on the
+          // fallback and is never auto-picked — the family's leading
+          // article is 42542984; BACKLOG carries its re-export.
+          memberA: [
+            'bau0015089612', 'bau0015088783', 'bau0015088853', // 71B3550
+            'bau0015157579',                                   // 71B3590 cup
+            'bau0079302490', 'bau0079324562', 'bau0079298416', // 71B7550 155°
+            'bau0081900639',                                   // 71B7590 cup
+            'bau0015166285', 'bau0015167707', 'bau0015167363', // 71B9550 95°
+            'bau0016962400',                                   // 71B9590 cup
+          ],
+          memberB: [
+            'bau0015088251', 'bau0019416036',                  // 71B3550
+            'bau0079291413', 'bau0079262819',                  // 155° arm+link
+            'bau0025540121', 'bau0082114196',                  // 155° levers
+            'bau0015166656', 'bau0019426112',                  // 95° arm+lever
+          ],
           zThresholdMm: 30,
 
           // ─── THE AXIS (F1.2) ────────────────────────────────────────────
@@ -2601,20 +2623,22 @@ export const DEFAULT_CABINET_PROFILE = {
           //   −x   off the SIDE PANEL, towards the cabinet's middle — the
           //        file's +x runs TOWARD the panel (lab-measured, both
           //        hands, 14.08.2026: +15 buried the arm 14.7 mm in the
-          //        side at 0°; −15 clears leaf AND side at 0° exactly)
+          //        side at 0°; −x clears leaf AND side at 0° exactly)
           //   −z   out of the LEAF, deeper into the carcass
           //
-          // — both of them "inboard", 15 mm each, in FILE millimetres like
+          // — both of them "inboard", 20 mm each (owner's bench verdict
+          // 14.08: 15 cleared the shut door but grazed at 90°; +5 makes 90°
+          // exact and halves the 110° residue), in FILE millimetres like
           // every other number in this block. The slide is written INSIDE the
           // mirrored clone (`3d/hingeModels.js offsetArmNode`), so the hand
           // needs no second sign: `scale.x = −1` mirrors it with the metal
           // and inboard stays inboard on either hand. The LEVER
           // (`bau0019416036…`) and the CUP do not move; the JOINT keeps the
           // measured axis above, so the drawn arm stands a constant
-          // √(15² + 15²) ≈ 21.2 mm off its knuckle — the cost, asserted in
+          // √(20² + 20²) ≈ 28.3 mm off its knuckle — the cost, asserted in
           // `test/turn29-f5`, of clearing the leaf without touching the
           // axis. And — costume on the screws — no hole moves either.
-          armOffset: { node: 'bau0015088251', xMm: -15, zMm: -15 },
+          armOffset: { node: 'bau0015088251', xMm: -20, zMm: -20 },
         },
 
         // A cup hinge is a small object. A file whose longest axis is bigger
@@ -3095,6 +3119,11 @@ export const DEFAULT_CABINET_PROFILE = {
     // to it, so "196.5" can be typed, seen and cut. Nothing to do with the drag
     // snap above — that is a user preference, this is what the tool measures in.
     mmStep: 0.5,
+    // ─── CHAT FIX 14.08.2026: THE HINGE'S OWN NUDGE ───────────────────────
+    // Owner: one workshop step per click "trwa za długo" on a 2250 door.
+    // Five millimetres is a stride a joiner recognises; the NumberField
+    // still takes any exact figure, so nothing is lost — only clicks.
+    hingeNudgeMm: 5,
     minShelfGap: 40,           // minimum clear space between two shelves
     minShelfEdgeGap: 40,       // …and between a shelf and the top / base / partition
     // ─── TURN 24 (CLAUDE.md F10): THE HOVER ARROWS GROW A MAGNET ───────────

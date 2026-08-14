@@ -168,8 +168,8 @@ export default function HingeModal() {
                 type="button"
                 className="cc-btn-ghost px-2"
                 data-hinge-up={i}
-                title="Up one step on the workshop grid"
-                onClick={() => setHingePos(unit.id, i, mm + profile.editor.mmStep * 2)}
+                title="Up — the hinge\u2019s own 5 mm stride"
+                onClick={() => setHingePos(unit.id, i, mm + (profile.editor.hingeNudgeMm || 5))}
               >
                 ↑
               </button>
@@ -177,8 +177,8 @@ export default function HingeModal() {
                 type="button"
                 className="cc-btn-ghost px-2"
                 data-hinge-down={i}
-                title="Down one step on the workshop grid"
-                onClick={() => setHingePos(unit.id, i, mm - profile.editor.mmStep * 2)}
+                title="Down — the hinge\u2019s own 5 mm stride"
+                onClick={() => setHingePos(unit.id, i, mm - (profile.editor.hingeNudgeMm || 5))}
               >
                 ↓
               </button>

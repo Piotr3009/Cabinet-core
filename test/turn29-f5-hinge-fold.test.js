@@ -73,9 +73,26 @@ test('F5 the axis is the measured one, to the micron, in the file’s own frame'
   assert.equal(RIG.maxFoldDeg, 110);
 });
 
-test('F5 the member split is byte-for-byte the contract turn 24 confirmed', () => {
-  assert.deepEqual(RIG.memberA, ['bau0015089612', 'bau0015088783', 'bau0015088853']);
-  assert.deepEqual(RIG.memberB, ['bau0015088251', 'bau0019416036']);
+test('F5 the member split is byte-for-byte the contract turn 24 confirmed — grown per family (chat fix 14.08.2026)', () => {
+  // Turn 24's five names are `42542984`'s own; the owner's 155° wardrobe
+  // door proved the point of listing the rest — its foreign-named MAIN ARM
+  // fell to the z fallback and rode the leaf. Cups, caps and covers to the
+  // DOOR; arms, links and levers to the CARCASS; measured per file on the
+  // live bucket.
+  assert.deepEqual(RIG.memberA, [
+    'bau0015089612', 'bau0015088783', 'bau0015088853',
+    'bau0015157579',
+    'bau0079302490', 'bau0079324562', 'bau0079298416',
+    'bau0081900639',
+    'bau0015166285', 'bau0015167707', 'bau0015167363',
+    'bau0016962400',
+  ]);
+  assert.deepEqual(RIG.memberB, [
+    'bau0015088251', 'bau0019416036',
+    'bau0079291413', 'bau0079262819',
+    'bau0025540121', 'bau0082114196',
+    'bau0015166656', 'bau0019426112',
+  ]);
   assert.equal(C.fileHand, 'R');
 });
 
@@ -267,12 +284,13 @@ test('F5 the knuckle is ONE point, at every angle, on both hands', () => {
 
 test('F5 the drawn arm stands |armOffset| off the knuckle — a slide, not a turn (chat fix 14.08.2026)', () => {
   const off = RIG.armOffset;
-  // The owner's numbers, spelt out: ONE node, 15 off the side (the file's
-  // −x — its +x runs TOWARD the panel, lab-measured on both hands), 15 out
-  // of the leaf (−z), and the profile is where they live.
+  // The owner's numbers, spelt out: ONE node, 20 off the side (the file's
+  // −x — its +x runs TOWARD the panel, lab-measured on both hands), 20 out
+  // of the leaf (−z; his bench verdict 14.08 raised 15 by five), and the
+  // profile is where they live.
   assert.equal(off.node, 'bau0015088251');
-  assert.equal(off.xMm, -15);
-  assert.equal(off.zMm, -15);
+  assert.equal(off.xMm, -20);
+  assert.equal(off.zMm, -20);
   const slide = Math.hypot(off.xMm, off.zMm);
   for (const hinge of ['L', 'R']) {
     const shut = scene(hinge, 0);

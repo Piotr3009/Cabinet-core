@@ -72,7 +72,10 @@ test('F1.1 — the two lists partition the model: no node in both, none missing'
   const a = new Set(RIG.memberA);
   const b = new Set(RIG.memberB);
   for (const node of a) assert.equal(b.has(node), false, `${node} is in one list only`);
-  assert.equal(a.size + b.size, TABLE.length, 'five components, and all five are named');
+  // CHAT FIX 14.08.2026: the lists grew past this one file — they now name
+  // every bucket family's nodes (the owner's 155° door is why). So the
+  // contract on THIS table is coverage, not equality: all five of the
+  // measured file's components are named, in exactly one list each.
   for (const row of TABLE) {
     assert.equal(a.has(row.node) || b.has(row.node), true, `${row.node} is named`);
   }
@@ -159,8 +162,11 @@ test('F1.1 — keepMember cuts the clone in two, and the two halves are disjoint
     g.traverse((n) => { if (n.isMesh) out.push(n.name); });
     return out.sort();
   };
-  assert.deepEqual(namesOf(a), [...RIG.memberA].sort());
-  assert.deepEqual(namesOf(b), [...RIG.memberB].sort());
+  // The fake models ONE file — `42542984`'s five-node table above — while
+  // the profile's lists cover every bucket family since the 14.08 chat fix;
+  // so the contract here is the FILE's own names, spelt out.
+  assert.deepEqual(namesOf(a), ['bau0015088783', 'bau0015088853', 'bau0015089612']);
+  assert.deepEqual(namesOf(b), ['bau0015088251', 'bau0019416036']);
   assert.equal(a.userData.ccHingeMember, 'A');
   assert.equal(b.userData.ccHingeMember, 'B');
 });
@@ -276,7 +282,11 @@ test('F1.5 — the showroom fixture carries the table’s own node names', () =>
     assert.equal(shipped.filter((m) => n.startsWith(m)).length, 1,
       `${n} begins with exactly one shipped member name`);
   }
-  for (const m of shipped) {
+  // CHAT FIX 14.08.2026: the lists name every bucket family now, and the
+  // showroom models ONE of them — so the round trip is asked of the FIVE
+  // names this fixture is built to, not of names that belong to a 155°
+  // or a 95° export.
+  for (const m of ['bau0015089612', 'bau0015088783', 'bau0015088853', 'bau0015088251', 'bau0019416036']) {
     assert.ok(names.some((n) => n.startsWith(m)), `${m} opens a fixture node`);
   }
   // …and each node's own far edge is the table's, to a tenth of a millimetre.

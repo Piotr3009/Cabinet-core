@@ -2578,6 +2578,31 @@ export const DEFAULT_CABINET_PROFILE = {
           // The cap is the ironmongery's own: a CLIP top opens to 110° and a
           // door drawn past it would be a hinge bent further than it goes.
           maxFoldDeg: 110,
+
+          // ─── CHAT FIX 14.08.2026: THE ARM SLIDES INBOARD ────────────────
+          //
+          // The owner's verdict on the T29 fold, from his own screenshot: at
+          // 90° the arm crosses the leaf, and the cup and the base are right
+          // ("podstawa zawiasu jest super"). So ONE node — the arm body,
+          // `bau0015088251…` — takes a PURE TRANSLATION and nothing turns:
+          //
+          //   −x   off the SIDE PANEL, towards the cabinet's middle — the
+          //        file's +x runs TOWARD the panel (lab-measured, both
+          //        hands, 14.08.2026: +15 buried the arm 14.7 mm in the
+          //        side at 0°; −15 clears leaf AND side at 0° exactly)
+          //   −z   out of the LEAF, deeper into the carcass
+          //
+          // — both of them "inboard", 15 mm each, in FILE millimetres like
+          // every other number in this block. The slide is written INSIDE the
+          // mirrored clone (`3d/hingeModels.js offsetArmNode`), so the hand
+          // needs no second sign: `scale.x = −1` mirrors it with the metal
+          // and inboard stays inboard on either hand. The LEVER
+          // (`bau0019416036…`) and the CUP do not move; the JOINT keeps the
+          // measured axis above, so the drawn arm stands a constant
+          // √(15² + 15²) ≈ 21.2 mm off its knuckle — the cost, asserted in
+          // `test/turn29-f5`, of clearing the leaf without touching the
+          // axis. And — costume on the screws — no hole moves either.
+          armOffset: { node: 'bau0015088251', xMm: -15, zMm: -15 },
         },
 
         // A cup hinge is a small object. A file whose longest axis is bigger

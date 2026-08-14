@@ -216,6 +216,48 @@ export function keepMember(group, profile, keep) {
 }
 
 /**
+ * THE ARM'S OWN SLIDE (chat fix 14.08.2026), applied inside member B.
+ *
+ * The owner's verdict on the turn-29 fold, from his own screenshot: at 90°
+ * the arm crosses the leaf, and the cup and the base are right. The fix he
+ * chose is a PURE TRANSLATION of ONE node — the arm body — by the profile's
+ * `rig.armOffset`, in FILE millimetres: −x walks it off the side panel (the
+ * file's +x runs TOWARD the panel — lab-measured on both hands), −z walks
+ * it out of the leaf, and nothing turns.
+ *
+ * WHERE it is written is most of what it means. The offset goes on the named
+ * node INSIDE the clone, so it sits BELOW the hand mirror (`glbClone`'s
+ * `scale.x = −1`) — inboard is inboard on either hand with no second sign —
+ * and BELOW the joint, whose −θ holds the clone at the CARCASS's attitude at
+ * every angle. A translation under both is therefore a constant, carcass-
+ * fixed slide: the fold above turns exactly as before, about exactly the
+ * measured axis, and the drawn arm stands `|armOffset|` off the knuckle at
+ * every angle instead of on it — the cost, measured and asserted in
+ * `test/turn29-f5`, of clearing the leaf without touching the axis.
+ *
+ * The LEVER (`bau0019416036…`) is not the named node and does not move; the
+ * cup is member A and never arrives here; and — costume on the screws — no
+ * hole moves either.
+ */
+export function offsetArmNode(inner, profile) {
+  const off = profile?.hardware?.hinge?.cliptop?.rig?.armOffset;
+  if (!inner || !off?.node) return inner;
+  inner.traverse((node) => {
+    const said = String(node.name || '');
+    if (!said.startsWith(off.node)) return;
+    // A converter puts the name on the NODE, the MESH or both (`keepMember`,
+    // above, reads the same fact) — the slide is written ONCE, on the
+    // outermost named object, and a named child inside it inherits it.
+    if (String(node.parent?.name || '').startsWith(off.node)) return;
+    node.position.x += mm(off.xMm || 0);
+    node.position.z += mm(off.zMm || 0);
+  });
+  // eslint-disable-next-line no-param-reassign
+  inner.userData.ccHingeArmOffsetMm = { x: off.xMm || 0, z: off.zMm || 0 };
+  return inner;
+}
+
+/**
  * WHERE THE JOINT IS, in the placed clone's own frame, in millimetres.
  *
  * The two profile numbers are in FILE coordinates, because that is the frame a
@@ -271,7 +313,7 @@ export function foldPivotMm({ min, profile }) {
 export function hingeMembers(url, args) {
   const profile = args?.profile;
   const cup = keepMember(hingeModel(url, args), profile, 'A');
-  const inner = keepMember(hingeModel(url, args), profile, 'B');
+  const inner = offsetArmNode(keepMember(hingeModel(url, args), profile, 'B'), profile);
 
   const entry = glbSource(url);
   const min = entry?.min
@@ -313,6 +355,7 @@ export function hingeMembers(url, args) {
   outer.userData.ccNoBounds = true;
   outer.userData.ccHingeMember = 'B';
   outer.userData.ccHingeMemberNodes = inner.userData.ccHingeMemberNodes;
+  outer.userData.ccHingeArmOffsetMm = inner.userData.ccHingeArmOffsetMm ?? null;
   outer.userData.ccFinish = inner.userData.ccFinish ?? null;
   outer.userData.ccHingePivotMm = pivot;
   outer.userData.ccHingeMirror = s;

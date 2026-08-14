@@ -48,7 +48,7 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { hardwareInstances } from '../src/engine/hardware3d.js';
-import { foldMemberB, foldPivotMm } from '../src/3d/hingeModels.js';
+import { foldMemberB, foldPivotMm, offsetArmNode } from '../src/3d/hingeModels.js';
 import { mm } from '../src/3d/constants.js';
 import { parseGlb, meshTable } from '../scripts/glb-meshes.mjs';
 
@@ -146,6 +146,18 @@ function members({ mirror }) {
   const inner = new THREE.Group();
   inner.scale.x = s;
   inner.position.set(-mm(pivot.x) * s, 0, -mm(pivot.z));
+  // The REAL export's SUFFIXED names (chat fix 13.08.2026 — a bare name here
+  // is how the last gap hid): the arm body and the lever, so the slide below
+  // is applied by the REAL `offsetArmNode` matching a REAL name, and the
+  // lever's stillness is the same function declining a name, not this test
+  // forgetting to move it.
+  const arm = new THREE.Group();
+  arm.name = 'bau0015088251_v(70T310M0201)';
+  const lever = new THREE.Group();
+  lever.name = 'bau0019416036_v(70T510M1402)';
+  inner.add(arm);
+  inner.add(lever);
+  offsetArmNode(inner, P);
   const joint = new THREE.Group();
   joint.position.set(mm(pivot.x) * s, 0, mm(pivot.z));
   joint.add(inner);
@@ -154,7 +166,7 @@ function members({ mirror }) {
   outer.userData.ccHingeJoint = joint;
   outer.userData.ccHingePivotMm = pivot;
   outer.userData.ccHingeMirror = s;
-  return { cup, body: outer, pivot, s };
+  return { cup, body: outer, pivot, s, arm, lever };
 }
 
 test('F5 the graph this test composes is the one hingeMembers builds', () => {
@@ -164,6 +176,11 @@ test('F5 the graph this test composes is the one hingeMembers builds', () => {
   // …and member A carries the pin too, which is what lets a reader ask BOTH
   // halves where the knuckle is instead of working one of them out itself.
   assert.match(MODELS, /cup\.userData\.ccHingePivotMm = pivot;/);
+  // …and the chat fix's slide is the source's own lines, applied where the
+  // members are built — below the mirror, below the joint — not a re-model.
+  assert.match(MODELS, /node\.position\.x \+= mm\(off\.xMm \|\| 0\);/);
+  assert.match(MODELS, /node\.position\.z \+= mm\(off\.zMm \|\| 0\);/);
+  assert.match(MODELS, /offsetArmNode\(keepMember\(hingeModel\(url, args\), profile, 'B'\), profile\)/);
 });
 
 /** One leaf's hinge instances and the door group's own origin. */
@@ -193,7 +210,9 @@ function scene(hinge, degrees) {
   const swing = dir * ((degrees * Math.PI) / 180);
   // The hand mirror is the view's own rule: the body file is authored for a
   // RIGHT-hung door and the other hand takes the mirrored clone.
-  const { cup, body, pivot: pinMm, s } = members({ mirror: h.side !== C.fileHand });
+  const {
+    cup, body, pivot: pinMm, s, arm, lever,
+  } = members({ mirror: h.side !== C.fileHand });
 
   const unit = new THREE.Group();
   const door = new THREE.Group();
@@ -223,8 +242,14 @@ function scene(hinge, degrees) {
     .localToWorld(new THREE.Vector3(0, 0, mm(tailZ)));
   const armQuat = body.userData.ccHingeJoint.getWorldQuaternion(new THREE.Quaternion());
   const cupQuat = cup.getWorldQuaternion(new THREE.Quaternion());
+  // …and the DRAWN pin (chat fix 14.08.2026): the arm's own barrel, which
+  // `offsetArmNode` slid off the axis. In the ARM node's frame the barrel
+  // still sits where the file put it — the NODE moved, not the metal in it —
+  // so the same file-frame point, asked of the moved node, is the moved pin.
+  const drawnKnuckle = arm.localToWorld(new THREE.Vector3(mm(pinMm.x), 0, mm(pinMm.z)));
   return {
-    cupKnuckle, armKnuckle, tail, armQuat, cupQuat, swing, plateZ: mm(h.plateZ),
+    cupKnuckle, armKnuckle, drawnKnuckle, tail, armQuat, cupQuat, swing,
+    leverLocal: lever.position.clone(), plateZ: mm(h.plateZ),
   };
 }
 
@@ -238,6 +263,48 @@ test('F5 the knuckle is ONE point, at every angle, on both hands', () => {
       assert.ok(gap < 0.2, `${hinge} at ${deg}°: the two halves meet to ${gap.toFixed(4)} mm`);
     }
   }
+});
+
+test('F5 the drawn arm stands |armOffset| off the knuckle — a slide, not a turn (chat fix 14.08.2026)', () => {
+  const off = RIG.armOffset;
+  // The owner's numbers, spelt out: ONE node, 15 off the side (the file's
+  // −x — its +x runs TOWARD the panel, lab-measured on both hands), 15 out
+  // of the leaf (−z), and the profile is where they live.
+  assert.equal(off.node, 'bau0015088251');
+  assert.equal(off.xMm, -15);
+  assert.equal(off.zMm, -15);
+  const slide = Math.hypot(off.xMm, off.zMm);
+  for (const hinge of ['L', 'R']) {
+    const shut = scene(hinge, 0);
+    const shutVec = shut.drawnKnuckle.clone().sub(shut.armKnuckle);
+    for (const deg of ANGLES) {
+      const sc = scene(hinge, deg);
+      // THE NUDGED EXPECTATION. Turn 29 asked the drawn pin to sit ON the
+      // axis; the owner's slide moves it — by exactly the offset's own
+      // length, at every angle, on both hands. Zero here would mean the
+      // slide never happened; anything else would mean it is not the pure
+      // translation he asked for.
+      const gap = sc.drawnKnuckle.distanceTo(sc.armKnuckle) / mm(1);
+      assert.ok(Math.abs(gap - slide) < 0.2,
+        `${hinge} at ${deg}°: the drawn pin stands ${gap.toFixed(3)} mm off the axis, not ${slide.toFixed(3)}`);
+      // CARCASS-FIXED and PURE: the world vector from axis to drawn pin is
+      // the shut one at every angle — a rotation of any kind would turn it.
+      const vec = sc.drawnKnuckle.clone().sub(sc.armKnuckle);
+      assert.ok(vec.distanceTo(shutVec) / mm(1) < 1e-6, `${hinge} at ${deg}°: the slide turned`);
+    }
+    // …and the LEVER did not move: `offsetArmNode` matched one name only —
+    // "podstawa zawiasu jest super" stays exactly as it is.
+    assert.equal(shut.leverLocal.length(), 0, 'the lever stays put');
+  }
+  // Both hands slide INBOARD — mirrored x, same z: the clone's own
+  // `scale.x = −1` carries the sign, and no second correction exists to
+  // disagree with it.
+  const l = scene('L', 0);
+  const r = scene('R', 0);
+  const lv = l.drawnKnuckle.clone().sub(l.armKnuckle);
+  const rv = r.drawnKnuckle.clone().sub(r.armKnuckle);
+  assert.ok(Math.abs(lv.x + rv.x) < 1e-9, 'x mirrors with the hand');
+  assert.ok(Math.abs(lv.z - rv.z) < 1e-9, 'z is the same on either hand');
 });
 
 test('F5 the ARM keeps the CARCASS’s attitude while the CUP keeps the leaf’s', () => {

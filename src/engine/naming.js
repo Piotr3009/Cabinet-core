@@ -61,3 +61,57 @@ export function fileSafeName(name, fallback = 'unit') {
     .replace(/^[-.]+|[-.]+$/g, '');
   return cleaned || fallback;
 }
+
+// ─── THE PROJECT NAMES ITS OWN FILES (turn 31, CLAUDE.md F5) ────────────────
+//
+// The owner, 15.08.2026: "`{ProjectName}-cnc-{DDMM-HHMM}.dxf` (sanitised),
+// never `All-materials-cnc` again — nine identical filenames were half of
+// yesterday's confusion. Same pattern for any other export the app writes."
+//
+// Nine identical filenames is the whole argument. A workshop exports the same
+// sheet three times while it corrects something, opens a Downloads folder
+// holding `All-materials-cnc.dxf`, `All-materials-cnc (1).dxf` and
+// `All-materials-cnc (2).dxf`, and has no way on earth to tell which is the
+// one to cut. Two facts fix it and both were already in the app: WHICH JOB and
+// WHEN.
+//
+// ─── ONE PATTERN, AND IT IS ONE FUNCTION ────────────────────────────────────
+//
+//     {ProjectName}-{kind}[-{subject}]-{DDMM-HHMM}.{ext}
+//
+// `subject` is the part of the job the file is about — a cabinet number, a
+// material, a view — and it is there for the same reason the stamp is: two
+// exports pressed in the same minute must not collide, and the difference
+// between them is worth reading off the name. The exports the owner named have
+// no subject and come out exactly as he wrote them.
+//
+// Sanitised through `fileSafeName`, which is turn 16's and unchanged: a project
+// called "Smith / kitchen 2" is a path a machine can open.
+
+/** `DDMM-HHMM` — the family stamp, unchanged since SPEC 2. */
+export function exportStamp(now = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(now.getDate())}${p(now.getMonth() + 1)}-${p(now.getHours())}${p(now.getMinutes())}`;
+}
+
+/**
+ * The ONE name every export the app writes is built from.
+ *
+ * @param {object} args
+ *   project  the project's name, however the joiner typed it
+ *   kind     'cnc' | 'cutlist' | 'drawing' | 'render' | … — what sort of file
+ *   subject  optional: which cabinet, which material, which view
+ *   ext      without the dot
+ *   now      injectable, so a test can pin the stamp
+ */
+export function exportFileName({
+  project, kind, subject = null, ext, now = new Date(),
+}) {
+  const parts = [
+    fileSafeName(project, 'project'),
+    fileSafeName(kind, 'export'),
+    ...(subject ? [fileSafeName(subject, '')].filter(Boolean) : []),
+    exportStamp(now),
+  ];
+  return `${parts.join('-')}.${ext}`;
+}

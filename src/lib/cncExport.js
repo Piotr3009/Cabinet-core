@@ -5,7 +5,7 @@ import {
 import { layoutPanels } from '../engine/cnc/layout.js';
 import { exportablePanels, presetOfSelection } from '../engine/cnc/groups.js';
 import { materialExportSection } from '../engine/cnc/views.js';
-import { fileSafeName } from '../engine/naming.js';
+import { exportFileName, fileSafeName } from '../engine/naming.js';
 // Turn 31 (CLAUDE.md F3): both guards run before any file is written.
 import { exportGate, panelsThatGo } from '../engine/cnc/exportGate.js';
 import { getCabinetProfile } from '../engine/profile.js';
@@ -39,7 +39,7 @@ import { download } from './exporters.js';
  * @param {object} [profile]
  * @returns {Promise<{filename:string, files:string[]}>}
  */
-export async function exportUnitDxfZip(result, profile = getCabinetProfile(), { exportAnyway = false } = {}) {
+export async function exportUnitDxfZip(result, profile = getCabinetProfile(), { exportAnyway = false, project = null } = {}) {
   const gate = exportGate([{ result }], { profile });
   const held = new Set(gate.held.map((h) => h.panelId));
   const safe = exportAnyway || gate.ok
@@ -62,7 +62,11 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), { 
   // workshop's machine has to open. The DXF names inside the zip have been
   // sanitised since turn 3 (engine/cnc/dxf.js); this is the wrapper catching
   // up. An automatic name ("01", "WU05") passes through untouched.
-  const filename = `${fileSafeName(result.unitNum, 'unit')}-dxf.zip`;
+  // Turn 31 (CLAUDE.md F5): the job names its own files. Without a project —
+  // nothing in the app calls it that way any more — it is what it always was.
+  const filename = project
+    ? exportFileName({ project, kind: 'cnc', subject: result.unitNum, ext: 'zip' })
+    : `${fileSafeName(result.unitNum, 'unit')}-dxf.zip`;
   download(filename, blob);
   return {
     filename,
@@ -82,7 +86,7 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), { 
  * @param {string[]} selectedIds  panel ids to include
  * @param {object} [profile]
  */
-export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(), { exportAnyway = false } = {}) {
+export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(), { exportAnyway = false, project = null } = {}) {
   const wanted = new Set(selectedIds);
   const chosen = exportablePanels(result.panels).filter((p) => wanted.has(p.id));
   if (!chosen.length) throw new Error('Nothing selected to export.');
@@ -98,7 +102,7 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   const dxf = sheetDxf({
     panels, drills: result.drills, layout, unitNum: result.unitNum, profile,
   });
-  const filename = sheetDxfFileName(result.unitNum, presetId);
+  const filename = sheetDxfFileName(result.unitNum, presetId, { project });
   download(filename, new Blob([dxf], { type: 'application/dxf' }));
   return {
     filename,
@@ -128,6 +132,7 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
  */
 export function exportMaterialDxf(entries, {
   key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,
+  project = null,
 } = {}) {
   const gate = exportGate(entries, { profile });
   // The held-back parts leave the SELECTION before the section is laid out, so
@@ -149,7 +154,7 @@ export function exportMaterialDxf(entries, {
   const dxf = materialSheetDxf({
     blocks: section.blocks, gap: profile.cnc.layoutGap, profile,
   });
-  const filename = materialDxfFileName(section.label);
+  const filename = materialDxfFileName(section.label, { project });
   download(filename, new Blob([dxf], { type: 'application/dxf' }));
   return {
     filename,

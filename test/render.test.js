@@ -271,22 +271,26 @@ test('the contact shadow is a run, baked once, and it knows how high to look', (
 
 // ─── the file ───
 
-test('a render is named {project}-{unit|scene}-{date}.png', () => {
-  const date = new Date(2026, 7, 7);       // 07.08.2026
+test('a render is named {ProjectName}-render-{unit|scene}-{DDMM-HHMM}.png', () => {
+  // ─── TURN 31 (CLAUDE.md F5) ──────────────────────────────────────────────
+  // "Same pattern for any other export the app writes." Turn 6's name carried
+  // the DAY, which is the `All-materials-cnc` fault with a longer fuse: three
+  // renders of one room on one afternoon produced three identical names. The
+  // job, the kind, the subject and the MINUTE — like every other export.
+  const date = new Date(2026, 7, 7, 14, 5);       // 07.08.2026 14:05
   assert.equal(
     renderFilename({ project: 'Hampstead kitchen', subject: 'W01', date }),
-    'hampstead-kitchen-w01-2026-08-07.png',
+    'Hampstead-kitchen-render-w01-0708-1405.png',
   );
   assert.equal(
     renderFilename({ project: 'Hampstead kitchen', subject: 'scene', date }),
-    'hampstead-kitchen-scene-2026-08-07.png',
+    'Hampstead-kitchen-render-scene-0708-1405.png',
   );
   // A project nobody named, and one named in a way a filesystem hates.
-  assert.equal(renderFilename({ project: '', subject: '', date }), 'project-scene-2026-08-07.png');
-  assert.equal(
-    renderFilename({ project: 'Ostrów / Łódź "flat" #3', subject: 'W01', date }),
-    'ostrow-lodz-flat-3-w01-2026-08-07.png',
-  );
+  assert.equal(renderFilename({ project: '', subject: '', date }), 'project-render-scene-0708-1405.png');
+  const awkward = renderFilename({ project: 'Ostrów / Łódź "flat" #3', subject: 'W01', date });
+  assert.ok(!/[/"#]/.test(awkward), awkward);
+  assert.match(awkward, /-render-w01-0708-1405\.png$/);
 });
 
 test('slug never returns an empty string', () => {
@@ -306,7 +310,7 @@ test('renderJob turns four choices into everything the 3D layer needs', () => {
     bounds: box(3.6, 2.2, 0.6),
     project: 'Test kitchen',
     subject: 'W01',
-    date: new Date(2026, 7, 7),
+    date: new Date(2026, 7, 7, 14, 5),
   }, P);
 
   assert.equal(job.width, 3840);
@@ -317,7 +321,7 @@ test('renderJob turns four choices into everything the 3D layer needs', () => {
   assert.equal(job.ao, P.appearance.bevel.ao.render);
   assert.ok(job.ao > P.appearance.bevel.ao.strength, 'the render darkens the joints harder than the editor');
   assert.equal(job.environmentIntensity, P.appearance.environment.renderIntensity);
-  assert.equal(job.filename, 'test-kitchen-w01-2026-08-07.png');
+  assert.equal(job.filename, 'Test-kitchen-render-w01-0708-1405.png');
 
   // The camera is framed on the IMAGE aspect, not the screen's — a 4K render
   // of a square window is still 3840 × 2160 and must be framed as such.

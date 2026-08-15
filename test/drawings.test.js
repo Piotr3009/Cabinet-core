@@ -282,12 +282,19 @@ test('the SVG escapes a project name that would otherwise break it', () => {
 });
 
 test('the file is named like everything else this app writes', () => {
+  // ─── TURN 31 (CLAUDE.md F5) ──────────────────────────────────────────────
+  // "Same pattern for any other export the app writes": the job, the kind, the
+  // subject and the MINUTE. The minute is what turn 30's name was missing —
+  // exporting the same elevation twice after a correction produced two
+  // identical names, which is the owner's own "nine identical filenames" by a
+  // different door. The stamp is injected so this is a fact rather than a race.
+  const at = new Date(2026, 7, 15, 21, 30);
   assert.equal(
-    drawingFilename({ project: 'Hampstead kitchen', unit: 'W01', ext: 'svg' }),
-    'hampstead-kitchen-w01-front-elevation.svg',
+    drawingFilename({ project: 'Hampstead kitchen', unit: 'W01', ext: 'svg', now: at }),
+    'Hampstead-kitchen-drawing-w01-front-elevation-1508-2130.svg',
   );
   assert.equal(
-    drawingFilename({ project: 'Hampstead kitchen', unit: 'W01', ext: 'pdf' }),
-    'hampstead-kitchen-w01-front-elevation.pdf',
+    drawingFilename({ project: 'Hampstead kitchen', unit: 'W01', ext: 'pdf', now: at }),
+    'Hampstead-kitchen-drawing-w01-front-elevation-1508-2130.pdf',
   );
 });

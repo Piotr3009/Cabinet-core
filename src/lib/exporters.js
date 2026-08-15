@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { formatMm } from '../engine/format.js';
+import { exportFileName } from '../engine/naming.js';
 import { resolveFinishes } from '../engine/design.js';
 
 // ─── Exports ───
@@ -20,11 +21,19 @@ export function download(filename, blob) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** `cabinetcore-{opis}-{DDMM}-{HHMM}.{ext}` — the family naming rule (SPEC 2). */
-export function exportFilename(kind, ext, now = new Date()) {
-  const p = (n) => String(n).padStart(2, '0');
-  const stamp = `${p(now.getDate())}${p(now.getMonth() + 1)}-${p(now.getHours())}${p(now.getMinutes())}`;
-  return `cabinetcore-${kind}-${stamp}.${ext}`;
+/**
+ * `{ProjectName}-{kind}-{DDMM-HHMM}.{ext}` (turn 31, CLAUDE.md F5).
+ *
+ * SPEC 2's family rule with the WORD "cabinetcore" replaced by the word that
+ * identifies the file: which job it belongs to. Every export the app writes
+ * already carried the minute; what none of them carried was the project, and
+ * that is the half a Downloads folder needs.
+ *
+ * `project` is optional and the fallback is the old literal, so nothing that
+ * has not yet been handed one produces a broken name.
+ */
+export function exportFilename(kind, ext, now = new Date(), project = null) {
+  return exportFileName({ project: project || 'cabinetcore', kind, ext, now });
 }
 
 /**
@@ -41,7 +50,12 @@ export function buildCuttingListCsv(entries, profile = getCabinetProfile()) {
 
 export function exportCuttingListCsv(entries, projectName = 'project') {
   const csv = buildCuttingListCsv(entries);
-  download(exportFilename('cutlist', 'csv'), new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  // Turn 31 (CLAUDE.md F5): `projectName` has been a parameter of this function
+  // since turn 3 and was never once used for anything. It names the file now.
+  download(
+    exportFilename('cutlist', 'csv', new Date(), projectName),
+    new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
+  );
   return csv;
 }
 
@@ -203,6 +217,6 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     );
   }
 
-  doc.save(exportFilename('project', 'pdf'));
+  doc.save(exportFilename('project', 'pdf', new Date(), project?.name || null));
   return doc;
 }

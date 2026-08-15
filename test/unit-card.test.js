@@ -427,13 +427,22 @@ test('the booklet really is a multi-page PDF, at the sizes the cards chose', () 
 });
 
 test('the files are named like everything else this app writes', () => {
+  // Turn 31 (CLAUDE.md F5): the job first, the minute last. See drawings.test.js.
+  const at = new Date(2026, 7, 15, 21, 30);
   assert.equal(
-    drawingFilename({ project: 'Hampstead kitchen', unit: 'W01', view: 'unit-card', ext: 'pdf' }),
-    'hampstead-kitchen-w01-unit-card.pdf',
+    drawingFilename({
+      project: 'Hampstead kitchen', unit: 'W01', view: 'unit-card', ext: 'pdf', now: at,
+    }),
+    'Hampstead-kitchen-drawing-w01-unit-card-1508-2130.pdf',
   );
   assert.equal(
-    drawingFilename({ project: 'Hampstead kitchen', unit: 'W01', view: 'unit-card', ext: 'svg' }),
-    'hampstead-kitchen-w01-unit-card.svg',
+    drawingFilename({
+      project: 'Hampstead kitchen', unit: 'W01', view: 'unit-card', ext: 'svg', now: at,
+    }),
+    'Hampstead-kitchen-drawing-w01-unit-card-1508-2130.svg',
   );
-  assert.equal(bookletFilename({ project: 'Hampstead kitchen' }), 'hampstead-kitchen-unit-cards.pdf');
+  assert.equal(
+    bookletFilename({ project: 'Hampstead kitchen', now: at }),
+    'Hampstead-kitchen-unit-cards-1508-2130.pdf',
+  );
 });

@@ -45,6 +45,8 @@ export default function CncTree() {
 
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const storedDesign = useProjectStore((s) => s.project.design);
+  // Turn 31 (CLAUDE.md F5): every file this panel writes is named after the job.
+  const projectName = useProjectStore((s) => s.project.name);
 
   const [open, setOpen] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
@@ -127,7 +129,7 @@ export default function CncTree() {
   const downloadMaterial = (exportAnyway = false) => {
     try {
       const res = exportMaterialDxf(entries, {
-        key: materialKey, design: storedDesign, materials, profile, exportAnyway,
+        key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName,
       });
       notify(`${res.filename} — ${res.parts} parts off ${res.label}.`, 'ok');
       sayGate(res, () => downloadMaterial(true));
@@ -141,7 +143,7 @@ export default function CncTree() {
     if (!ids.length) { notify('Nothing ticked on this unit.', 'warn'); return; }
     if (kind === 'zip') {
       setBusy(true);
-      exportUnitDxfZip(sheet.result, profile, { exportAnyway })
+      exportUnitDxfZip(sheet.result, profile, { exportAnyway, project: projectName })
         .then((res) => {
           notify(`${res.filename} — ${res.files.length} DXF files.`, 'ok');
           sayGate(res, () => download(sheet, kind, true));
@@ -151,7 +153,7 @@ export default function CncTree() {
       return;
     }
     try {
-      const res = exportSheetDxf(sheet.result, ids, profile, { exportAnyway });
+      const res = exportSheetDxf(sheet.result, ids, profile, { exportAnyway, project: projectName });
       notify(`${res.filename} — ${res.parts} parts, laid out as shown.`, 'ok');
       sayGate(res, () => download(sheet, kind, true));
     } catch (e) {

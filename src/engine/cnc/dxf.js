@@ -28,7 +28,7 @@ import { layerTableFor } from './layers.js';
 import { partLabelText } from './partLabel.js';
 import { labelBlock } from './annotation.js';
 import { turnPoint } from './layout.js';
-import { fileSafeName } from '../naming.js';
+import { exportFileName, fileSafeName } from '../naming.js';
 
 // ─── Low-level R12 serialiser (shape from production-core/dxfWriter.js) ───
 
@@ -395,8 +395,23 @@ export function sheetEntities({
   return entities;
 }
 
-/** `{unitNum}-cnc-{preset}.dxf` — the file says what is inside it. */
-export function sheetDxfFileName(unitNum, presetId) {
+/**
+ * `{ProjectName}-cnc-{unitNum}-{preset}-{DDMM-HHMM}.dxf` (turn 31, CLAUDE.md F5).
+ *
+ * The file says WHICH JOB, what is inside it and WHEN it was written. Turn 3
+ * wrote `{unitNum}-cnc-{preset}.dxf`, which says two of the four and produces
+ * the same name every time the same sheet is exported — the owner's "nine
+ * identical filenames".
+ *
+ * `project` is optional so nothing that has not been handed one breaks; without
+ * it the file is named after the unit alone, as it always was.
+ */
+export function sheetDxfFileName(unitNum, presetId, { project = null, now = new Date() } = {}) {
+  if (project) {
+    return exportFileName({
+      project, kind: 'cnc', subject: `${unitNum}-${presetId}`, ext: 'dxf', now,
+    });
+  }
   const safe = `${unitNum}-cnc-${presetId}`.replace(/[^A-Za-z0-9._-]+/g, '_');
   return `${safe}.dxf`;
 }
@@ -450,8 +465,20 @@ export function materialSheetEntities({ blocks = [], gap = 0, profile }) {
   return entities;
 }
 
-/** `{material}-cnc.dxf` — the file says which board is on the bed. */
-export function materialDxfFileName(label) {
+/**
+ * `{ProjectName}-cnc-{material}-{DDMM-HHMM}.dxf` (turn 31, CLAUDE.md F5).
+ *
+ * THE file the owner named: this is where `All-materials-cnc.dxf` came from,
+ * nine times in one afternoon. The material is still in the name — the file
+ * says which board goes on the bed — and the job and the minute are in front of
+ * it.
+ */
+export function materialDxfFileName(label, { project = null, now = new Date() } = {}) {
+  if (project) {
+    return exportFileName({
+      project, kind: 'cnc', subject: label, ext: 'dxf', now,
+    });
+  }
   return `${fileSafeName(label, 'material')}-cnc.dxf`;
 }
 

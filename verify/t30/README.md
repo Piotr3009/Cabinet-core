@@ -240,3 +240,40 @@ that stands still is the proof the delta is what it says it is.
 | `4b-the-divider-standing-on-the-board-it-is-screwed-to.png` | the divider and its board together |
 
 ---
+
+## F5 [HIGH] — the shelf-pin setback, 70 → 50, through the OVERRIDE CHANNEL
+
+The LISP drills sleeves **70 mm** in from each edge — SKYLON_COMMON's own
+shelf-hole block, `(+ x0 70.0)` and `(+ x0 szer -70.0)` — so **70 stays the
+engine's bare answer** and the owner's 50 travels the plinth's road:
+
+```
+profile.shelfHoles.columnFromEdge (70, = LISP)
+  → company row  shelf_pin_setback_mm
+  → project      design.shelves.pinSetback
+  → paramsForEngine()  shelf_pin_setback_mm
+  → the drilling, and therefore the 3-D
+```
+
+Not one formula moved. A bare `computeCabinet()` — every golden fixture — passes
+no setback and drills 70 on every kit, front and back.
+
+The SINK keeps its own back column (120, `sinkUnit.shelfBackColumnFromEdge`):
+that is a fact about the kit, not a workshop preference, so a sink on the
+owner's standard is 50 at the front and the sink's own number at the back.
+
+### Read off the running app
+
+| | |
+| --- | --- |
+| nothing said | columns at **70 and 470** on a 540 mm board; the project says `null` |
+| the owner's 50, typed into Settings | columns at **50 and 490**; **24 holes, the same 24** — moved, not added |
+| the summary the drawings and the BOM read | `[50, 490]` |
+
+| file | |
+| --- | --- |
+| `5a-the-kits-own-70-mm-pin-columns.png` | the kit's own answer |
+| `5b-the-shelf-pin-setback-control-in-settings.png` | the control it is typed into |
+| `5c-the-owners-50-mm-pin-columns-on-the-same-board.png` | the same board, the shop's standard |
+
+---

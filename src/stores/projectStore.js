@@ -315,6 +315,19 @@ function paramsForEngine(unit, design = null) {
     // in the design layer, never a formula in the engine. Left out — a bare kit
     // call, every golden fixture — the engine falls back to the profile's 70.
     shaker_frame_mm: design?.fronts?.shakerFrame ?? null,
+    // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ─────────────────────
+    // The owner's standard is 50 and the LISP's is 70, so 70 stays the ENGINE's
+    // bare answer and this is the override channel — travelling exactly as the
+    // plinth, the hinge standard, the runner variant and the shaker frame do:
+    // an INPUT in the design layer, never a formula in the engine. Left out —
+    // a bare kit call, every golden fixture — the engine falls back to the
+    // profile's 70 and drills what the AutoLISP drills.
+    //
+    // The COMPANY row has already been folded into the design by
+    // `prefillDesignFromCompany` at `newProject`, which is where every other
+    // company preference is resolved; a project that has said something of its
+    // own keeps saying it.
+    shelf_pin_setback_mm: design?.shelves?.pinSetback ?? null,
     // ─── TURN 25 (CLAUDE.md F4): THE HANDLE, AND ONE FRONT'S OWN ───────────
     // The project's choice with its per-class offsets, and this cabinet's own
     // exceptions keyed by panel id — the same two-level shape turn 19 gave the

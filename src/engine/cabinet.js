@@ -1532,13 +1532,31 @@ export function computeCabinet(params, profileOverride) {
     const spacing = (zoneTop - zoneBottom) / (numShelves + 1);
     for (let i = 1; i <= numShelves; i += 1) shelfRows.push(zoneBottom + spacing * i);
   }
-  // The sink's back pin column moves forward — its back panel is inside the box.
-  const shelfBackColumn = backStyle === 'inset' ? SK.shelfBackColumnFromEdge : SH.columnFromEdge;
-  const shelfHoleX = [SH.columnFromEdge, sideW - shelfBackColumn];
+  // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK, AS AN INPUT ──────────
+  //
+  // The LISP drills sleeves 70 mm in from each edge — SKYLON_COMMON's own
+  // shelf-hole block, `(drawCircle "SHELVES_7_5MM" (+ x0 70.0) …)` and
+  // `(+ x0 szer -70.0)` — so **70 stays this engine's bare answer** and a
+  // `computeCabinet()` with nothing said cuts exactly that.
+  //
+  // The owner's workshop standard is 50, and it arrives the way every
+  // owner-standard number in this app arrives: as an INPUT travelling the
+  // plinth's own road (profile default → company row → project →
+  // `paramsForEngine()`), never as a changed formula. Rule 1, in one line.
+  const shelfPinSetback = Number(params?.shelf_pin_setback_mm) > 0
+    ? Number(params.shelf_pin_setback_mm)
+    : SH.columnFromEdge;
+  // The sink's back pin column moves forward — its back panel is inside the
+  // box — and that is a fact about the KIT rather than a workshop preference,
+  // so the override does not reach it. A sink with the owner's 50 is 50 at the
+  // front and the sink's own number at the back, which is what both of those
+  // sentences mean at once.
+  const shelfBackColumn = backStyle === 'inset' ? SK.shelfBackColumnFromEdge : shelfPinSetback;
+  const shelfHoleX = [shelfPinSetback, sideW - shelfBackColumn];
   // The mirrored board's own columns (see shelfBearers.pinColumns): back
   // column from ITS x=0, front column at depth − 70. Same SET as `shelfHoleX`
   // whenever the columns are symmetric — only the sink tells them apart.
-  const shelfHoleXBur = [shelfBackColumn, sideW - SH.columnFromEdge];
+  const shelfHoleXBur = [shelfBackColumn, sideW - shelfPinSetback];
 
   // ── Panels ─────────────────────────────────────────────────────────────────
   const panels = [];
@@ -3342,7 +3360,10 @@ export function computeCabinet(params, profileOverride) {
     // front edge, one `shelfBackColumn` from the back of its own depth — so a
     // partition set back from the face has its back column set back with it.
     const columns = pinColumns(slot.bearer, {
-      columnFromEdge: SH.columnFromEdge, backColumn: shelfBackColumn,
+      // Turn 30 (CLAUDE.md F5): the workshop's own setback where it has one,
+      // and the LISP's 70 where it has not. ONE resolution, so a partition and
+      // a side cannot be drilled to two different standards.
+      columnFromEdge: shelfPinSetback, backColumn: shelfBackColumn,
     });
     for (const rowY of slot.rows) {
       for (const dy of SH.clusterOffsets) {

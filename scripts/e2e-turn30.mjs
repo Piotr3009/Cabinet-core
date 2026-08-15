@@ -949,6 +949,85 @@ async function main() {
       await page.sleep(400);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F5 [HIGH] — the shelf-pin setback, 70 → 50, through the OVERRIDE CHANNEL
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f5')) {
+      await newRoom('Turn 30 walk — F5');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.addUnit('BUD');
+        s.updateUnitParams(u.id, { width: 600, doors: false });
+        s.addItem(u.id, { kind: 'shelf', pos_mm: 300 });
+        s.addItem(u.id, { kind: 'shelf', pos_mm: 500 });
+        window.__t30 = { unitId: u.id };
+        ${P}.ui.getState().closeRightPanel();
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+
+      const columnsJs = `
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t30.unitId);
+        const layer = ${P}.profile.getState().profile.shelfHoles.layer;
+        const side = r.panels.find((p) => p.id === 'BUL');
+        const xs = [...new Set(r.drills.filter((d) => d.panel === 'BUL' && d.layer === layer).map((d) => d.x))].sort((a, b) => a - b);
+        // …and the SLEEVES the scene actually mounted, which is the 3-D half.
+        const v = ${P}.views && ${P}.views.room;
+        const sleeves = [];
+        if (v) {
+          v.scene.traverse((o) => {
+            if (o.userData && o.userData.ccHardwareKind === 'shelf_support') sleeves.push(o.position.z);
+          });
+        }
+        return {
+          xs,
+          depth: side.box.d,
+          fromFront: xs.map((x) => x).sort((a, b) => a - b),
+          fromBack: xs.map((x) => side.box.d - x).sort((a, b) => a - b),
+          summary: r.drillSummary.shelf_hole_x,
+          holes: r.drills.filter((d) => d.layer === layer).length,
+          said: s.project.design && s.project.design.shelves ? s.project.design.shelves.pinSetback : null,
+        };
+      `;
+
+      const bare = await page.evaluate(columnsJs);
+      check('F5 — with nothing said the app drills the LISP’s 70, front and back',
+        bare.said == null && bare.xs[0] === 70 && bare.depth - bare.xs[1] === 70,
+        `columns at ${bare.xs.join(' and ')} on a ${bare.depth} mm board · project says ${bare.said}`);
+      await frameOn('BUL', [1.5, 0.25, 0.9]);
+      await page.sleep(800);
+      await shot('5a-the-kits-own-70-mm-pin-columns');
+
+      // The owner's 50, typed into the control a joiner types it into.
+      await page.evaluate(`${P}.ui.getState().openModal('design', { at: { x: 320, y: 220 } }); return true;`);
+      await page.sleep(700);
+      const hasField = await page.evaluate('return document.querySelectorAll(\'[data-shelf-pin-setback]\').length;');
+      check('F5 — the setback has a control of its own in Settings', hasField === 1, `${hasField} fields`);
+      await shot('5b-the-shelf-pin-setback-control-in-settings');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const d = s.project.design;
+        s.setDesign({ shelves: { ...(d.shelves || {}), pinSetback: 50 } });
+        return true;
+      `);
+      await page.sleep(900);
+      const at50 = await page.evaluate(columnsJs);
+      measurements.f5 = { bare, at50 };
+      check('F5 — the owner’s 50 moves BOTH columns, and moves the same number of holes',
+        at50.said === 50 && at50.xs[0] === 50 && at50.depth - at50.xs[1] === 50 && at50.holes === bare.holes,
+        `columns at ${at50.xs.join(' and ')} · ${at50.holes} holes, same as ${bare.holes}`);
+      check('F5 — …and the summary the drawings and the BOM read moved with it',
+        JSON.stringify(at50.summary) === JSON.stringify([50, at50.depth - 50]),
+        JSON.stringify(at50.summary));
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(500);
+      await frameOn('BUL', [1.5, 0.25, 0.9]);
+      await page.sleep(800);
+      await shot('5c-the-owners-50-mm-pin-columns-on-the-same-board');
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

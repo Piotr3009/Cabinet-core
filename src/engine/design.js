@@ -87,6 +87,19 @@ export const DEFAULT_DESIGN = {
     // it costs. A decor is chosen per material type, not per unit.
     types: [{ id: 'c1', label: 'Carcass 1', material_id: null, finish_id: null }],
   },
+  // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ────────────────────────
+  //
+  // The owner's standard is 50; the LISP drills 70 (SKYLON_COMMON `drawBUL`,
+  // the shelf-hole block — `(+ x0 70.0)` and `(+ x0 szer -70.0)`), so 70 stays
+  // the ENGINE's bare answer and this is the OVERRIDE CHANNEL, exactly as the
+  // plinth, the hinge standard and the runner variant travel: an INPUT in the
+  // design layer, never a formula in the engine.
+  //
+  // `null` means "nobody has said", and the profile's 70 answers it — which is
+  // what keeps every golden fixture cutting what the AutoLISP cuts.
+  shelves: {
+    pinSetback: null,
+  },
   fronts: {
     style: 'S',
     // Handles are a later phase — the slot is here so the shape does not change
@@ -306,6 +319,11 @@ export function migrateDesign(design) {
       variant: RUNNER_VARIANT_IDS.has(String(d.runners?.variant || '').toUpperCase())
         ? String(d.runners.variant).toUpperCase()
         : null,
+    },
+    // Turn 30 (CLAUDE.md F5): the shelf-pin setback, migrated like the shaker
+    // frame above it — a positive number or nothing at all.
+    shelves: {
+      pinSetback: Number(d.shelves?.pinSetback) > 0 ? Number(d.shelves.pinSetback) : null,
     },
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,

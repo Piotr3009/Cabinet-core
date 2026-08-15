@@ -975,7 +975,16 @@ export function defaultParamsFor(typeId, profile) {
     front_type: type.frontType || profile.front.defaultType,
     shelves: 0,
     // BUDR is a three-drawer unit by definition (LISP has no count question).
-    drawers: type.drawerStyle === 'budr' ? profile.baseDrawerUnit.ratio.length : 0,
+    //
+    // ─── TURN 31 (CLAUDE.md F11): …AND A KIT MAY NAME ITS OWN COUNT ────────
+    // The PANTRY's drawers ARE the pantry — turn 30 built the machinery and
+    // left the count at zero, so a joiner who placed one got a tall empty box
+    // and had to know to ask for the thing he had just chosen. A kit whose
+    // defaults block carries `drawers` says so; every kit written before this
+    // line carries none and is exactly what it was.
+    drawers: type.drawerStyle === 'budr'
+      ? profile.baseDrawerUnit.ratio.length
+      : (Number.isFinite(Number(d.drawers)) ? Number(d.drawers) : 0),
     rail: false,
     rail_offset: d.railOffset ?? null,
     hinge: profile.doors.defaultHinge,

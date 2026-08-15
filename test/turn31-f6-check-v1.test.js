@@ -341,8 +341,13 @@ test('every threshold is a PROFILE number, and an old profile gets them all', ()
   assert.equal(tallNoFixHeightMm({ checks: { tallNoFixHeightMm: 1500 } }), 1500);
   assert.deepEqual(sheetSizeMm({ cnc: { sheet: { width: 3050, height: 1220 } } }), { width: 3050, height: 1220 });
   assert.equal(wideFrontMm({}), 600);
-  // …and a profile saved before Check v1 comes back with the lot.
-  const old = migrateCabinetProfile({ doors: { gap: 3 } });
+  // …and a profile saved before Check v1 comes back with the lot. Built from a
+  // RECOGNISABLE profile with the new keys removed — see the note in
+  // turn31-f4-front-gaps.test.js for why a two-key object would prove nothing.
+  const before = { ...P, cnc: { ...P.cnc } };
+  delete before.checks;
+  delete before.cnc.sheet;
+  const old = migrateCabinetProfile(before);
   assert.equal(old.checks.tallNoFixHeightMm, 1200);
   assert.deepEqual(old.cnc.sheet, { width: 2790, height: 2060 });
 });

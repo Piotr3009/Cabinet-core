@@ -492,8 +492,16 @@ test('18. every threshold is a PROFILE number, and survives an old profile', () 
   assert.equal(hingeAdjustMm({ hinges: { sideAdjustMm: 2 } }), 2);
   assert.equal(neighbourReachMm({}), 200);
   assert.equal(clearanceFor(NEIGHBOUR.END_PANEL, { doors: { clearance: { endPanel: 4 } } }), 4);
-  // …and a profile saved before this turn comes back with all of them.
-  const old = migrateCabinetProfile({ doors: { gap: 3 } });
+  // …and a profile saved before this turn comes back with all of them. Built
+  // from a RECOGNISABLE profile with the new keys REMOVED, which is what a
+  // stored profile from turn 30 actually looks like — a two-key object would
+  // exercise `migrateCabinetProfile`'s "unrecognisable shape" branch (it
+  // returns the defaults whole) and prove nothing about the merge.
+  const before = { ...P, doors: { ...P.doors }, hinges: { ...P.hinges } };
+  delete before.doors.maxNeighbourGapMm;
+  delete before.doors.clearance;
+  delete before.hinges.sideAdjustMm;
+  const old = migrateCabinetProfile(before);
   assert.equal(old.doors.maxNeighbourGapMm, 6);
   assert.deepEqual(old.doors.clearance, P.doors.clearance);
   assert.equal(old.hinges.sideAdjustMm, 1.5);

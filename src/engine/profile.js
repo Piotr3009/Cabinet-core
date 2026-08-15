@@ -1094,7 +1094,22 @@ export const DEFAULT_CABINET_PROFILE = {
   // height — the kit it is made of, said once.
   pantryUnit: {
     minHeight: 1100,
-    defaults: { width: 600, height: 2100, depth: 558 },
+    // ─── TURN 31 (CLAUDE.md F11): AND IT ARRIVES WITH ITS DRAWERS ──────────
+    //
+    // "PANTRY defaults include its drawers (today it computes 6 bare panels
+    // until `drawers` is set)."
+    //
+    // He is right, and it is the same class of fault turn 28 fixed on the D/W
+    // panel: a kit whose DRAWERS ARE THE KIT arrived without them, so a joiner
+    // who placed a pantry got a tall empty box and had to know to ask for the
+    // thing he had just chosen. Turn 30 built the machinery — the wardrobe
+    // drawer, hole for hole — and left the count at zero.
+    //
+    // OWNER'S NUMBER, 15.08.2026: three, which is what turn 30's own proof
+    // photographed ("three Blum boxes and no drawer faces").
+    defaults: {
+      width: 600, height: 2100, depth: 558, drawers: 3,
+    },
   },
 
   // ─── Low cabinet (KIT_LOW_CABINET_FULL) ───

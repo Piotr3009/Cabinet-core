@@ -377,14 +377,75 @@ const KNUCKLE = { x: -18.08, z: 42.86, r: 2 };
 // very bytes.
 const ARM_155 = { x0: -34, z0: -46.5 };
 
-function hingeParts({ wide = false } = {}) {
+// ─── TURN 31 (CLAUDE.md F11): THE 155° FIXTURE'S OWN NODE NAMES ─────────────
+//
+// The owner's note, verbatim: "`71B7550_*` synthetic fixtures currently carry
+// the 3550's node names — regenerate … with the REAL 155° node names measured
+// on the live bucket … so the member-split tests test what ships."
+//
+// He is right, and the fault is worse than untidy. F1.3 splits a mounted hinge
+// into its two members BY NODE NAME (`profile.hardware.hinge.cliptop.rig`), and
+// that profile has carried the real 155° names since turn 30:
+//
+//     member A   bau0079302490  bau0079324562  bau0079298416
+//     member B   bau0079291413  bau0079262819  bau0025540121  bau0082114196
+//
+// The showroom's 155° file carried `71B3550`'s names instead. So every walk
+// that "proved the 155° fold" was proving the 110° hinge's entries in that
+// list, seven strings the app actually ships were exercised by nothing at all,
+// and a typo in any of them would have passed every test in the repository.
+//
+// THE NAMES ARE THE OWNER'S, off the live bucket, handed over in CLAUDE.md.
+// Nothing here was measured by this session and nothing was guessed: the
+// geometry is still the synthetic body turn 30 wrote (no Blum bytes), and what
+// changes is what the nodes are CALLED — which is the only thing the split
+// reads.
+const NODES = {
+  // The 110° family, unchanged: turn 24 measured these off the owner's own
+  // STEP-derived `71B3550`.
+  110: {
+    cup: 'bau0015089612_v(71B355M0101)',
+    clipCap: 'bau0015088783_v(71T310-04)',
+    linkCover: 'bau0015088853_v(70T310-0502)',
+    arm: 'bau0015088251_v(70T310M0201)',
+    lever: 'bau0019416036_v(70T510M1402)',
+    // The 110° export has no second B-side link and no second lever; the two
+    // extra 155° nodes are simply absent, which is what `wide` decides below.
+    link: null,
+    lever2: null,
+  },
+  // The 155° family, off the live bucket (CLAUDE.md F11).
+  155: {
+    cup: 'bau0079302490',
+    clipCap: 'bau0079324562',
+    linkCover: 'bau0079298416',
+    arm: 'bau0079291413',
+    link: 'bau0079262819',
+    lever: 'bau0025540121',
+    lever2: 'bau0082114196',
+  },
+};
+
+/**
+ * …and the ONYX 155° cup is its own node.
+ *
+ * `71B7590`'s cup is `bau0081900639` in the profile's member-A list, beside
+ * `71B7550`'s. Two files, two node names, and the fixture says so rather than
+ * shipping one file's name on both — which is the very fault this feature is
+ * correcting, one level down.
+ */
+const CUP_BY_FAMILY = { '71B7590': 'bau0081900639' };
+
+function hingeParts({ wide = false, family = null } = {}) {
   const arm = wide ? ARM_155 : { x0: -20, z0: -28 };
+  const n = { ...NODES[wide ? 155 : 110] };
+  if (family && CUP_BY_FAMILY[family]) n.cup = CUP_BY_FAMILY[family];
   return [
     // MEMBER A ─ the ⌀35 cup, bored along the depth, its centre at the x the
     // real file puts it at (−7.75) — which is what makes `modelOrigin` land it
     // in its bore without a fixture-only number anywhere. 35.3 … 51.3.
     {
-      name: 'bau0015089612_v(71B355M0101)',
+      name: n.cup,
       material: 'metal_nickel_raw',
       geometry: cylinderZ({
         cx: -7.75, cy: 0, r: 17.5, z0: 35.3, z1: 51.3,
@@ -393,7 +454,7 @@ function hingeParts({ wide = false } = {}) {
     // MEMBER A ─ the CLIP cap, 39.4 … 50.1, and the pressed flange that gives
     // the cup slab its 37.5 × 57 footprint.
     {
-      name: 'bau0015088783_v(71T310-04)',
+      name: n.clipCap,
       material: 'metal_nickel_raw',
       geometry: box({
         x0: -26.5, x1: 11, y0: -28.5, y1: 28.5, z0: 39.4, z1: 50.1,
@@ -401,7 +462,7 @@ function hingeParts({ wide = false } = {}) {
     },
     // MEMBER A ─ the link cover, 31.1 … 44.9.
     {
-      name: 'bau0015088853_v(70T310-0502)',
+      name: n.linkCover,
       material: 'metal_nickel_raw',
       geometry: box({
         x0: -22, x1: 6, y0: -14, y1: 14, z0: 31.1, z1: 44.9,
@@ -411,7 +472,7 @@ function hingeParts({ wide = false } = {}) {
     // −46.5 … 46.2 on the 155° one. It CROSSES the 30 mm threshold, which is
     // the whole reason the split is by name.
     {
-      name: 'bau0015088251_v(70T310M0201)',
+      name: n.arm,
       material: 'metal_nickel_raw',
       geometry: box({
         x0: arm.x0, x1: 4, y0: -11, y1: 11, z0: arm.z0, z1: 46.2,
@@ -421,7 +482,7 @@ function hingeParts({ wide = false } = {}) {
     // CLIP top that is not metal, and the reason F4.2's allowlist exists; it is
     // also what keeps the file's overall box at the measured −29.48.
     {
-      name: 'bau0019416036_v(70T510M1402)',
+      name: n.lever,
       material: 'plastic_black',
       geometry: box({
         x0: -16, x1: 0, y0: -6, y1: 6, z0: -29.48, z1: 22.5,
@@ -440,26 +501,50 @@ function hingeParts({ wide = false } = {}) {
     // bounding box (x −26.5…11, y ±28.5, z −29.48…51.3), so `min`, `size` and
     // every origin derived from them are untouched to the byte.
     {
-      name: 'bau0015088853_v(70T310-0502)',
+      name: n.linkCover,
       material: 'metal_nickel_raw',
       geometry: cylinderY({
         cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: -28.5, y1: -12,
       }),
     },
     {
-      name: 'bau0015088853_v(70T310-0502)',
+      name: n.linkCover,
       material: 'metal_nickel_raw',
       geometry: cylinderY({
         cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: 12, y1: 28.5,
       }),
     },
     {
-      name: 'bau0015088251_v(70T310M0201)',
+      name: n.arm,
       material: 'metal_nickel_raw',
       geometry: cylinderY({
         cx: KNUCKLE.x, cz: KNUCKLE.z, r: KNUCKLE.r, y0: -12, y1: 12,
       }),
     },
+    // ─── TURN 31 (CLAUDE.md F11): THE 155°'s TWO EXTRA MEMBER-B NODES ─────
+    //
+    // The real 155° export carries seven nodes where the 110° carries five,
+    // and the profile's member-B list names all of them. Without these two,
+    // `bau0079262819` and `bau0082114196` are strings the app ships and
+    // NOTHING exercises — a typo in either would have passed every test in the
+    // repository, which is the same fault as the wrong names one level down.
+    //
+    // Both lie INSIDE the wide body's own measured envelope, so `min`, `size`
+    // and every origin derived from them are untouched to the byte.
+    ...(n.link ? [{
+      name: n.link,
+      material: 'metal_nickel_raw',
+      geometry: box({
+        x0: arm.x0 + 2, x1: -2, y0: -9, y1: 9, z0: arm.z0 + 2, z1: 10,
+      }),
+    }] : []),
+    ...(n.lever2 ? [{
+      name: n.lever2,
+      material: 'plastic_black',
+      geometry: box({
+        x0: -14, x1: -2, y0: -5, y1: 5, z0: -20, z1: 14,
+      }),
+    }] : []),
   ];
 }
 
@@ -619,7 +704,9 @@ for (const row of hinges.items) {
   // Turn 30 (CLAUDE.md F1): the 155° families carry the WIDE body — the whole
   // reason they exist here is that their `min` is not `71B3550`'s.
   const parts = row.role === 'hinge'
-    ? hingeParts({ wide: row.angle === 155 })
+    // Turn 31 (CLAUDE.md F11): …and the FAMILY, so the onyx 155° carries its
+    // own cup node rather than the nickel one's.
+    ? hingeParts({ wide: row.angle === 155, family: row.family })
     : plateParts();
   written.push(write(join(hingeDir, name), glb(parts, MATERIALS, GEN)));
 }

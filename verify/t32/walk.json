@@ -31,29 +31,19 @@
    "detail": ""
   },
   {
-   "label": "F6 — mock mode: the register holds nothing and answers null, app fully alive",
+   "label": "F8 — a wardrobe project’s Kitchen shelf hides the kitchen-only kits",
    "ok": true,
-   "detail": "{\"mockRows\":0,\"mockAnswer\":null,\"badge\":true}"
+   "detail": "{\"baseUnitsGone\":true,\"wallUnitsGone\":true,\"escape\":\"▾ Show all (20 more)\"}"
   },
   {
-   "label": "F6 — a REGISTERED row resolves its article; the register informs, nothing blocks",
+   "label": "F8 — \"Show all\" is the one-click way past it — a filter, never a block",
    "ok": true,
-   "detail": "{\"before\":14,\"after\":13,\"clips\":\"Plinth clips\\n2 pcs\\nart. CL-100\"}"
+   "detail": "▾ Show all (20 more)"
   },
   {
-   "label": "F7 — the box parts LEAVE the cutting list; the faces stay ours",
+   "label": "F8 — one real click and everything is back",
    "ok": true,
-   "detail": "{\"boxLinesBefore\":10,\"boxLinesAfter\":0,\"frontsStillCut\":2,\"meshesBefore\":10}"
-  },
-  {
-   "label": "F7 — LIVE SCENE: the geometry stays — every box board still stands in 3D",
-   "ok": true,
-   "detail": "meshes before 10 · after 10"
-  },
-  {
-   "label": "F7 — a PURCHASE LINE per bought box, as a named spec",
-   "ok": true,
-   "detail": "[\"Ready-made drawer box 440×184 · 2 pcs · Ready-made drawer box · depth×side 440×184 mm · SPEC\"]"
+   "detail": ""
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -80,19 +70,19 @@
    "detail": "{\"dom\":true}"
   },
   {
-   "name": "6a-the-registered-clip-buying-by-article-beside-the-yellow-specs",
+   "name": "8a-the-wardrobe-librarys-kitchen-shelf-filtered-with-show-all",
    "subject": {
-    "dom": "[data-bom-line=\"plinth_clips\"]",
-    "text": "CL-100"
+    "dom": "[data-library-show-all=\"1\"]",
+    "text": "Show all"
    },
    "present": true,
    "detail": "{\"dom\":true,\"text\":true}"
   },
   {
-   "name": "7a-ready-made-boxes-bought-as-purchase-lines-not-cut-parts",
+   "name": "8b-show-all-brings-the-kitchen-kits-back",
    "subject": {
-    "dom": "[data-bom-line=\"ready_boxes\"]",
-    "text": "Ready-made drawer box"
+    "dom": "[data-library-list=\"1\"]",
+    "text": "Base units"
    },
    "present": true,
    "detail": "{\"dom\":true,\"text\":true}"

@@ -874,6 +874,47 @@ async function main() {
       `);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F8 [MEDIUM] — the library follows the project: a filter, never a block
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f8')) {
+      await page.evaluate(`
+        ${P}.project.getState().setDesign({ projectType: 'wardrobe' });
+        ${P}.ui.getState().setLibraryCategory('kitchen');
+        return true;
+      `);
+      await page.waitFor(`document.querySelector('[data-library-list="1"]')`, { what: 'the library' });
+      const f8 = await page.evaluate(`
+        const list = document.querySelector('[data-library-list="1"]').innerText;
+        const btn = document.querySelector('[data-library-show-all="1"]');
+        return {
+          baseUnitsGone: !/Base units/i.test(list),
+          wallUnitsGone: !/Wall units/i.test(list),
+          escape: btn ? btn.innerText.trim() : null,
+        };
+      `);
+      measurements.f8 = f8;
+      check('F8 — a wardrobe project’s Kitchen shelf hides the kitchen-only kits',
+        f8.baseUnitsGone && f8.wallUnitsGone, JSON.stringify(f8));
+      check('F8 — "Show all" is the one-click way past it — a filter, never a block',
+        /^▾ Show all \(\d+ more\)$/.test(f8.escape || ''), f8.escape);
+      await shot('8a-the-wardrobe-librarys-kitchen-shelf-filtered-with-show-all',
+        { dom: '[data-library-show-all="1"]', text: 'Show all' });
+      await page.click('[data-library-show-all="1"]');
+      const f8open = await page.evaluate(`
+        const list = document.querySelector('[data-library-list="1"]').innerText;
+        return { baseBack: /Base units/i.test(list), wallBack: /Wall units/i.test(list) };
+      `);
+      check('F8 — one real click and everything is back', f8open.baseBack && f8open.wallBack);
+      await shot('8b-show-all-brings-the-kitchen-kits-back',
+        { dom: '[data-library-list="1"]', text: 'Base units' });
+      await page.evaluate(`
+        ${P}.project.getState().setDesign({ projectType: null });
+        ${P}.ui.getState().closeLibrary();
+        return true;
+      `);
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

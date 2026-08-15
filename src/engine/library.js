@@ -224,6 +224,53 @@ export const KITCHEN_LIBRARY = [
 ];
 
 /** Every entry, groups flattened — what a "which kits exist" question wants. */
+/**
+ * ─── TURN 32 (CLAUDE.md F8): THE LIBRARY FOLLOWS THE PROJECT ────────────────
+ *
+ * Cargo units, bins and pull-outs are KITCHEN items; a Wardrobe project's
+ * library shows wardrobe things. The FAMILY is the kit's own
+ * (`engine/types.js`, family: 'kitchen' | 'wardrobe'), read through an
+ * injected `familyOf` so this file keeps importing nothing from types.js.
+ *
+ * It is a FILTER AND NEVER A BLOCK — the same grammar the item filter
+ * learned in T11 F4.4: the panel puts a "Show all" under the list, and
+ * everything is one click away. A group whose insertable types are all
+ * foreign folds away with them; `hidden` is what the escape hatch counts.
+ *
+ * @returns {{entries: Array, hidden: number}}
+ */
+export function filterLibraryByProject(entries, projectCategory, familyOf) {
+  if (!projectCategory || typeof familyOf !== 'function') {
+    return { entries: entries || [], hidden: 0 };
+  }
+  let hidden = 0;
+  const prune = (list) => (list || [])
+    .map((e) => {
+      if (e.kind === 'group') {
+        const before = hidden;
+        const items = prune(e.items);
+        // A group folds away only when the FILTER emptied it: it lost kits
+        // and keeps nothing a click can insert (nor a subgroup that does).
+        // A group of held-open "soon" rows that lost nothing stands as it
+        // always stood.
+        const lost = hidden > before;
+        const alive = items.some((i) => (i.kind === 'type' && i.typeId) || i.kind === 'group');
+        return lost && !alive ? null : { ...e, items };
+      }
+      if (e.kind === 'type' && e.typeId) {
+        const family = familyOf(e.typeId) || null;
+        if (family && family !== projectCategory) {
+          hidden += 1;
+          return null;
+        }
+      }
+      return e;
+    })
+    .filter(Boolean);
+  const pruned = prune(entries);
+  return { entries: pruned, hidden };
+}
+
 export function flattenLibrary(entries = KITCHEN_LIBRARY) {
   const out = [];
   for (const e of entries) {

@@ -6,7 +6,8 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useTemplateStore } from '../stores/templateStore.js';
 import { UNIT_TYPES, getCategory, getUnitType, profilePath } from '../engine/types.js';
-import { groupCounts, resolveEntry } from '../engine/library.js';
+import { filterLibraryByProject, groupCounts, resolveEntry } from '../engine/library.js';
+import { getProjectType } from '../engine/projectTypes.js';
 import { formatMm } from '../engine/format.js';
 import { projectHeights } from '../engine/design.js';
 import { placeBesideAnchor } from '../lib/menuPlacement.js';
@@ -38,6 +39,11 @@ export default function LibraryPanel() {
   const profile = useCabinetProfileStore((s) => s.profile);
   const design = useProjectStore((s) => s.project.design);
   const heights = useMemo(() => projectHeights(design, profile), [design, profile]);
+  // ─── TURN 32 (CLAUDE.md F8): the library follows the PROJECT ─────────────
+  // A wardrobe project's library shows wardrobe things; "Show all" is the
+  // one-click way past it (T11 F4.4's grammar). A filter, never a block.
+  const projectCategory = getProjectType(design?.projectType).category;
+  const [showAllTypes, setShowAllTypes] = useState(false);
 
   const drag = useRef(null);
   // ─── Turn 9 (CLAUDE.md F2) ───
@@ -203,16 +209,38 @@ export default function LibraryPanel() {
             renders it and decides nothing. A category that predates the list
             (Wardrobes) still carries a plain `types` array, and both shapes go
             through the same row. */}
-        {(category.entries || category.types.map((id) => ({ kind: 'type', id, typeId: id })))
-          .map((entry) => (
-            <LibraryEntry
-              key={entry.id}
-              entry={entry}
-              profile={profile}
-              heights={heights}
-              onAdd={handleAdd}
-            />
-          ))}
+        {(() => {
+          const base = category.entries || category.types.map((id) => ({ kind: 'type', id, typeId: id }));
+          // Turn 32 (CLAUDE.md F8): the kits' own families decide — a
+          // wardrobe project hides the kitchen-only kits until "Show all".
+          const filtered = filterLibraryByProject(base, projectCategory, (id) => getUnitType(id)?.family);
+          const shownEntries = showAllTypes ? base : filtered.entries;
+          return (
+            <>
+              {shownEntries.map((entry) => (
+                <LibraryEntry
+                  key={entry.id}
+                  entry={entry}
+                  profile={profile}
+                  heights={heights}
+                  onAdd={handleAdd}
+                />
+              ))}
+              {filtered.hidden > 0 && (
+                <button
+                  type="button"
+                  data-library-show-all="1"
+                  className="w-full text-left px-2 py-1 text-[11px] text-ink-400 hover:text-gold transition-colors"
+                  onClick={() => setShowAllTypes((v) => !v)}
+                >
+                  {showAllTypes
+                    ? `▴ Show what a ${projectCategory} project usually takes`
+                    : `▾ Show all (${filtered.hidden} more)`}
+                </button>
+              )}
+            </>
+          );
+        })()}
       </div>
     </div>
   );

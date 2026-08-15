@@ -231,6 +231,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // When the UI supplies explicit shelf positions, drill the rows there
     // instead of on the even-spacing formula.
     followPositions: true,
+    // ─── TURN 30 (CLAUDE.md F3): WHICH FACE OF A DIVIDER IS BORED ─────────
+    //
+    // The owner: a partition shows shelf-pin drilling on BOTH faces, and a
+    // machine drills one. He is right, and it was worse than a picture: a
+    // partition serving two bays had the SAME ladder emitted twice, once for
+    // each bay's shelves, at identical x and y — six positions, twelve holes,
+    // the bit going down the same hole a second time.
+    //
+    // A divider is bored from ONE face and this is which. It is a per-divider
+    // setting (the item's own `drill_face`, from the divider's modal) and this
+    // is the answer a divider that has not been asked falls back to.
+    //
+    // LEFT ships tonight, and CLAUDE.md is explicit about what that means: the
+    // owner wants a longer conversation about dividers, so this is a SAFE
+    // PLACEHOLDER — one line to change — and the SETTING is not in question.
+    // The Q1 in the push message is this line and nothing else.
+    partitionFace: 'L',
   },
 
   // ─── Skylon puzzle joint (SKYLON_COMMON drawBUL / drawBUR / drawTOP_ROT90) ───

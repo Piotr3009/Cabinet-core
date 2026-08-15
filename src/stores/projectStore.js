@@ -630,6 +630,25 @@ export const useProjectStore = create((set, get) => ({
     return slot;
   },
 
+  /**
+   * WHICH FACE OF ONE DIVIDER IS BORED (turn 30, CLAUDE.md F3).
+   *
+   * The owner: a partition shows shelf-pin drilling on BOTH faces, and a
+   * machine drills one. It is the ITEM's own field, exactly like its slot and
+   * its setback above — one piece, one answer — and `null` hands the divider
+   * back to `profile.shelfHoles.partitionFace`, which ships LEFT tonight.
+   *
+   * Nothing here invalidates a fixture: the DRILLING moves, so the recompute
+   * is the ordinary one every item edit takes, and the 3-D and the DXF follow
+   * because both read `result.drills`.
+   */
+  setPartitionDrillFace: (unitId, itemId, face) => {
+    const said = String(face || '').toUpperCase();
+    const value = said === 'L' || said === 'R' ? said : null;
+    get().updateItem(unitId, itemId, { drill_face: value });
+    return value;
+  },
+
   /** How many FRONT types this project runs (1–2, CLAUDE.md F9.2). */
   setFrontTypes: (count) => set((s) => {
     const design = migrateDesign(s.project.design);

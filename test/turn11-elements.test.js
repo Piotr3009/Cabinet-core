@@ -214,7 +214,10 @@ test('the engine cuts it: full height, partition depth, one board thick', () => 
   // TURN 24 (CLAUDE.md F3.3): and WHICH carcass board it is cut from — the
   // owner's "grubość przegrody się nie zmienia", as a picker rather than a
   // number typed twice.
-  assert.deepEqual(elementFields(vpart), ['position-x', 'partition-slot', 'setback', 'thickness', 'material']);
+  // TURN 30 (CLAUDE.md F3): …and WHICH FACE the machine bores, beside it.
+  assert.deepEqual(elementFields(vpart), [
+    'position-x', 'partition-slot', 'partition-drill-face', 'setback', 'thickness', 'material',
+  ]);
 });
 
 test('a partition is clamped like a shelf: never through a side, never on another', () => {

@@ -129,3 +129,42 @@ opens — not a store call standing in for it.
 | `2c-the-hinge-moved-from-inside-the-doors-own-window.png` | and the row moved |
 
 ---
+
+## F3 [HIGH] — a divider is bored from ONE face, and it says which
+
+The owner: a partition shows shelf-pin drilling on BOTH faces, and a machine
+drills one.
+
+**It was worse than a picture.** A partition serving two bays had the SAME
+LADDER EMITTED TWICE — once for the left bay's shelves and once for the right's
+— at identical x and y. Six positions, **twelve holes**, the bit going down each
+one a second time.
+
+What ships: a per-divider `drill_face`, written by the divider's own modal; the
+engine drills that face only, so the 3-D and the DXF agree by construction (both
+read `result.drills`, and there is one list); and DEFAULT **LEFT** from
+`profile.shelfHoles.partitionFace`.
+
+**Q1 for the owner is that one line.** CLAUDE.md: LEFT is the safe placeholder
+and the SETTING is not in question. `test/turn30-f3-divider-face.test.js` proves
+the line works by flipping it and re-reading the drilling.
+
+### Read off the running app, on a divider with a shelf in EACH bay
+
+| | |
+| --- | --- |
+| the ladder | **6 holes at 6 distinct points** — before F3 it was 12 at 6 |
+| nothing said | face `L`, summary `{"VPART-1":"L"}` |
+| …and it is the LEFT bay's shelf that put them there | rows **732, 782, 832** (that shelf is at 800 world; the divider stands one board up) |
+| press **Right** in the divider's modal | rows **1332, 1382, 1432** — the right bay's shelf, at 1400 |
+| the SIDES | `BUL 6→6, BUR 6→6` — untouched by any of it |
+
+A bare kit does not move: a side panel has one face that matters and is never
+asked the question, `partition_drill_face` is absent from the summary of a
+cabinet with no divider in it, and the emission order is still BUL then BUR.
+
+| file | |
+| --- | --- |
+| `3a-the-divider-bored-on-its-left-face-only.png` | the divider from the left |
+| `3b-the-L-R-setting-in-the-dividers-modal.png` | the setting, in the divider's own window |
+| `3c-the-same-divider-bored-on-its-right-face.png` | and from the right, after pressing Right |

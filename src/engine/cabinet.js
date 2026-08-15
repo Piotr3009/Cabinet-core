@@ -2157,6 +2157,17 @@ export function computeCabinet(params, profileOverride) {
           itemId: item.id || null,
           x_mm: x,
           front_mm: span.front_mm,
+          // ─── TURN 30 (CLAUDE.md F3): WHICH FACE THIS DIVIDER IS BORED FROM
+          // On the PANEL, so the 3-D, the properties panel, the divider's own
+          // modal and the drill loop below are one answer rather than four
+          // places that each work it out. The item's own `drill_face` where it
+          // has been asked; `profile.shelfHoles.partitionFace` where it has
+          // not — LEFT tonight, and one line to change.
+          drillFace: (() => {
+            const said = String(item?.drill_face || '').toUpperCase();
+            if (said === 'L' || said === 'R') return said;
+            return String(P.shelfHoles?.partitionFace || 'L').toUpperCase() === 'R' ? 'R' : 'L';
+          })(),
           // Turn 21 (CLAUDE.md F8): 0 is what a door on this partition needs,
           // and the view and F12 both ask the panel rather than the unit.
           setback: span.front_mm,
@@ -3246,6 +3257,23 @@ export function computeCabinet(params, profileOverride) {
   // shelf's own run: `engine/shelfBearers.js` resolves them, and the pins, the
   // fix joint below and the shelf's dimension chain all ask it, so a picture
   // and a sheet cannot disagree about which boards a shelf is on.
+  // ─── TURN 30 (CLAUDE.md F3): THE FACE THIS DIVIDER IS BORED FROM ─────────
+  //
+  // Per divider, from the divider's own item (`drill_face`, written by its
+  // modal), falling back to the profile's one line. LEFT ships tonight and
+  // CLAUDE.md says why: the owner wants a longer conversation about dividers,
+  // so this is the SAFE PLACEHOLDER — `profile.shelfHoles.partitionFace` — and
+  // the setting itself is not in question. One line to change, and every
+  // divider that has not been asked follows it.
+  //
+  // Read off the PANEL's own `meta.itemId`, so a partition the engine has
+  // clamped or re-ordered still answers for the item a person edited.
+  const partitionFaceDefault = String(P.shelfHoles?.partitionFace || 'L').toUpperCase() === 'R' ? 'R' : 'L';
+  const partitionFaceOf = (panelId) => {
+    const said = String(panels.find((x) => x.id === panelId)?.meta?.drillFace || '').toUpperCase();
+    return said === 'L' || said === 'R' ? said : partitionFaceDefault;
+  };
+
   const shelfPinRows = [];
   const shelfScrewRows = [];
   for (let i = 0; i < shelfRows.length; i += 1) {
@@ -3287,6 +3315,20 @@ export function computeCabinet(params, profileOverride) {
       tolerance: C.shelfWidthClearance,
     });
     for (const bearer of bearerList(bearers)) {
+      // ─── TURN 30 (CLAUDE.md F3): A DIVIDER IS BORED FROM ONE FACE ────────
+      //
+      // The owner: a partition shows shelf-pin drilling on BOTH faces, and a
+      // machine drills one. It was worse than a picture — a partition serving
+      // two bays had the SAME ladder pushed twice, once for the left bay's
+      // shelves and once for the right's, at identical x and y. Six positions,
+      // twelve holes, the bit going down each one a second time.
+      //
+      // So the divider states WHICH FACE it is bored from and the other bay's
+      // shelves put no pins in it. `bearer.side` is which of this board's two
+      // faces the shelf actually lands against (engine/shelfBearers.js), and a
+      // SIDE panel is not asked at all: it has one face that matters and a
+      // shelf can only ever land on that one.
+      if (bearer.kind === 'partition' && bearer.side !== partitionFaceOf(bearer.id)) continue;
       const slot = pinWork.get(bearer.id) || { bearer, rows: [] };
       slot.rows.push(row.y);
       pinWork.set(bearer.id, slot);
@@ -4123,6 +4165,18 @@ export function computeCabinet(params, profileOverride) {
     // stays every shelf, because it is where the shelves ARE and the drawings
     // dimension it; these two say how each one is held.
     shelf_pin_row_y: shelfPinRows.map((row) => roundTo(row.y, 4)),
+    // ─── TURN 30 (CLAUDE.md F3): WHICH FACE EACH DIVIDER IS BORED FROM ─────
+    // Published rather than re-derived, exactly as `handles` is: the 3-D, the
+    // sheet, the divider's own modal and the report all ask one list. Absent
+    // on a cabinet with no divider in it, so a golden box's summary is the
+    // summary it has always had, key for key.
+    ...(panels.some((p) => p.part === 'VPART')
+      ? {
+        partition_drill_face: Object.fromEntries(panels
+          .filter((p) => p.part === 'VPART')
+          .map((p) => [p.id, p.meta.drillFace])),
+      }
+      : {}),
     // On the SHELF's own centre line, not the carcass board's — a shelf
     // somebody made 25 mm is screwed through its own middle (turn 9, F4).
     shelf_screw_row_y: shelfScrewRows.map((r) => roundTo(r.y + r.thickness / 2, 4)),

@@ -232,7 +232,10 @@ const FIELDS = {
   // standing on its end, so it picks one of the project's CARCASS slots rather
   // than being typed a number of its own. `thickness` stays beside it for the
   // piece somebody genuinely wants at 25 mm; the slot is what it is normally.
-  partition: ['position-x', 'partition-slot', 'setback', 'thickness', 'material'],
+  // Turn 30 (CLAUDE.md F3): …and WHICH FACE it is bored from. Beside the
+  // board it is cut from, because they are the same kind of question about
+  // the same piece: what it is, and how the machine meets it.
+  partition: ['position-x', 'partition-slot', 'partition-drill-face', 'setback', 'thickness', 'material'],
   'fixed-shelf': ['setback-unit', 'material'],
   side: ['carcass-board', 'material'],
   top: ['carcass-board', 'material'],

@@ -117,9 +117,17 @@ export function shelfBearers({
     .filter((w) => w.from >= to - slack)
     .sort((a, b) => a.from - b.from)[0] || null;
 
+  // ─── TURN 30 (CLAUDE.md F3): WHICH FACE OF THE BEARER, BY NAME ───────────
+  //
+  // `face` is a COORDINATE — the plane the shelf lands on. `side` is which of
+  // the board's own two faces that plane is, and a divider needs the name
+  // rather than the number: a shelf standing to the RIGHT of a partition lands
+  // on the partition's RIGHT face, and the partition is bored from one face or
+  // the other. Said here, once, so the pin ladder and anything else that asks
+  // cannot work it out two ways.
   return {
-    left: left ? { ...left, face: left.to } : null,
-    right: right ? { ...right, face: right.from } : null,
+    left: left ? { ...left, face: left.to, side: 'R' } : null,
+    right: right ? { ...right, face: right.from, side: 'L' } : null,
   };
 }
 

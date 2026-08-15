@@ -1,215 +1,223 @@
-# CLAUDE.md — TURN 30
+# CLAUDE.md — TURN 31
 
-Date issued: 14.08.2026. Previous turn: T29 (merged). **NIGHT RUN — maximum
-scope.** Commit PER FEATURE in the order written here (F1 → F21), so a run
-that dies at 4 a.m. still leaves a mergeable head with the critical core in. Everything below assumes
-today's four chat-fix deliveries are already on `main` (arm slide −20/−20,
-old procedural hinge removed, plate half-turn `plateSpinDeg`, member lists per
-family + `hingeNudgeMm: 5`). If `test/turn29-f5` does not assert
-`off.xMm === -20`, STOP and tell the owner to push the pending chat ZIP first.
+Date issued: 15.08.2026. Previous turn: T30 (merged — verify the merge before
+anything: `src/engine/frontGapClash.js` must exist on main; if it does not,
+STOP and tell the owner T30 is not merged). Everything below was agreed with
+the owner in today's chat, point by point; the numbers are his unless marked
+as a default he may correct.
 
 ## Iron rules for this turn
 
-1. **Engine purity.** `computeCabinet()` bare — every golden fixture — cuts
-   what the AutoLISP cuts. Owner-standard changes in this turn (F5, F11) go
-   through the OVERRIDE CHANNEL (profile/company/project input →
-   `paramsForEngine()`), never as a formula change. Golden fixtures are
-   untouchable; if F4 restores LISP-true drilling that the engine LOST, that
-   is the one sanctioned fixture change — regenerate with a dated fingerprint
-   commentary naming this file and the LISP lines.
-2. **Proof screenshots** in `verify/t30/`, each containing its named subject.
-   An empty frame fails the phase.
-3. **No scope creep.** Each feature names its files; touching anything else
-   needs the owner's word in the PR description.
-4. **DXF text style is forbidden** (VCarve crash 02.08.2026).
-5. All UI copy in English. All modals draggable, opening BESIDE the clicked
-   object.
-6. No SQL is expected this turn. If any feature turns out to need a table,
-   STOP and label the package "SQL PRZED push".
+1. **Engine purity.** Bare `computeCabinet()` = the AutoLISP; golden fixtures
+   untouchable. Owner-standard behaviour goes through the OVERRIDE CHANNEL
+   (profile/company/project → `paramsForEngine()`), exactly as F5/F11 did in
+   T30.
+2. **No hole without truth.** A drilled hole exists only where a LISP line or
+   a published Blum pattern says so.
+3. **Proof screenshots** in `verify/t31/`, each containing its named subject;
+   an empty frame fails the phase. Browser proofs on REAL pointer input where
+   a feature is interactive.
+4. **No auto-healing of faulty geometry.** A guard SPEAKS; it never silently
+   fixes. (The duplicate-edge guard's own contract — it now applies to every
+   guard this turn adds.)
+5. **DXF text style is forbidden** (VCarve crash 02.08.2026).
+6. All UI copy in English. Commit PER FEATURE in the order written; a run
+   that dies early must leave a mergeable head.
+7. No SQL expected. If a feature turns out to need a table, STOP and label
+   the package "SQL PRZED push".
 
 ## Features
 
-### F1 [CRITICAL] — Hinge body placed by ABSOLUTE datum (the 155° depth bug)
+### F1 [CRITICAL] — Modal shell: all 42 windows, one behaviour
 
-The owner: a 155° hinge "jest za głęboko osadzony w drzwiach i się nie
-otwiera". Measured 14.08 in the chat lab, and the numbers are FINAL — do not
-re-derive them:
+The owner's standing rule — every modal draggable, opening BESIDE the
+clicked object — is real in 3 of 42 components. `Modal.jsx` already knows
+how; make it the mandatory shell. Route every modal through it: drag by
+header, spawn beside the click (clamped to viewport), one close path, one
+z-order authority. No visual redesign — same content, same sizes; only the
+shell behaviour unifies. Proof: three different modals dragged and opened
+beside their objects, in `verify/t31/`.
 
-* Every Blum hinge GLB in the bucket shares ONE authoring frame. The cup
-  datum sits at **(x = −7.75, y = 0, z = 40.3) file-millimetres, absolute**
-  (z = the flange plane). `modelOrigin`'s min-relative math places `42542984`
-  correctly only because its own min was baked in; a 155° file has a bigger
-  body, a different min, and lands ~17 mm deep in an 18 mm leaf.
-* Fix: place the hinge BODY clone at `−datum` (absolute), not `−min +
-  modelOrigin`. For `42542984` the two are byte-identical by construction —
-  prove it in a test. `foldPivotMm` simplifies to `axis − datum` and the
-  pivot stays (−10.33, 0, +2.56) to the micron — prove that too.
-* Profile: `fileDatum: { x: -7.75, y: 0, z: 40.3 }` beside `modelOrigin`,
-  with a comment giving `modelOrigin` the history and `fileDatum` the job.
-  Keep `modelOrigin` for the PLATE path (plates are a separate question and
-  the owner's plate is right today).
-* Update the contracts in `test/turn24-f1`, `test/turn29-f5` and any turn-21/
-  turn-26 test that spells the min-math. Render-verify closed/90°/110° for
-  the 110° AND the 155° file, both hands, `verify/t30/`.
-* Files: `src/engine/profile.js`, `src/3d/hingeModels.js`, tests above.
+### F2 [CRITICAL] — One dirty gate + message levels (owner's colours)
 
-### F2 [CRITICAL] — ONE modal for door + hinges
+**Dirty:** today 77 of 137 store actions each remember to set the flag; 60
+forget, and a forgotten flag is silently lost work. Wrap project mutation in
+ONE gate that sets it; delete the 77 hand-written repeats. Leaving with
+unsaved work shows a RED "Save the project — unsaved changes".
 
-Owner approved the shape ("opowiedz jak chcesz to zrobić" — this is how):
+**Messages:** one toast slot, 4 s, each message erasing the last — the owner
+has never seen one. Replace with three levels, his rules verbatim:
+* RED — stays until clicked. Errors only.
+* YELLOW — dismissed by clicking anywhere else.
+* GREY — a few seconds, centre; and DELETE most of them — an effect visible
+  in 3D needs no toast.
+Messages queue; a red is never overwritten by a grey. Proof: one of each
+level on screen, screenshotted.
 
-* One draggable modal **"Door"**, two sections. Section A = today's
-  ElementModal content for a FRONT. Section B = today's HingeModal content,
-  whole: assignment, rows list, ±5 mm arrows, NumberField, Reset, remove.
-* Double-click the door → modal opens at section A. Double-click a hinge →
-  the SAME modal, scrolled to section B, that hinge's row highlighted
-  (today's `ring-gold` row style).
-* The two old modals are REMOVED — one component, one open/close path, one
-  registry of "what is open". Every existing action keeps working; no new
-  dependencies; existing store actions (`setHingePos`, `resetHinges`,
-  `removeHinge`, assignment) are reused, not rewritten.
-* Files: new `src/components/DoorModal.jsx`, deletions of the old two, call
-  sites in `UnitView.jsx` / `CabinetEditorModal.jsx` / pick handlers.
+### F3 [CRITICAL] — The guards, wired: Check #9 and #10 + export gate
 
-### F3 [HIGH] — Middle divider: CHOOSE the drilled face
+`edgeGuard` (turn 25, tested, never wired to the user's own export) joins
+the app in two places, and a second guard joins it:
 
-Today a partition shows shelf-pin drilling on BOTH faces; a machine drills
-one. Per-divider setting **L / R** in the divider's modal; the engine drills
-the chosen face only; the 3D and the DXF agree. DEFAULT: **LEFT** — the
-owner wants a longer conversation about dividers and this is the safe
-placeholder, one profile line to change; the SETTING itself is not in
-question.
+* **Check #9 — outline faults** (`resultFindings`): doubled edge, overlapping
+  runs, wrong winding. RED; click flies the camera to the panel.
+* **Check #10 — drill faults**: exact-duplicate circles (same layer, same
+  centre, same radius, 0.01 mm) AND colliding hinge rows (two rows closer
+  than `hingeMinSpacingMm`, profile, default **60**). RED.
+* **Export gate**: both guards run before files are written. A faulty panel
+  is HELD OUT of the export — message names it — with an explicit "Export
+  anyway" for the owner's own judgement. Everything clean exports normally.
+* **At the source**: `setHingePos` / add-hinge REFUSE to land a row closer
+  than `hingeMinSpacingMm` to another (the proven live bug:
+  `hinge_rows [100,100,470]` drills every hinge hole twice today). Blocked
+  move = yellow message with the number. One profile line flips block→warn
+  if the owner ever wants it loose.
+* Regression test: the `[100,100,470]` case must FAIL the guard and the
+  store must refuse to create it.
 
-### F4 [HIGH] — Dividers into TOP and BOTTOM: drilling + biscuits
+### F4 [CRITICAL] — Front gaps: the owner's rulebook (18 points)
 
-Owner: "chyba kiedyś było ale się zagineło." Audit `engine/biscuits.js`,
-`zones.js`/partitions against the LISP (`reference/lisp/` — KIT_BUDR,
-KIT_WARDROBE carry partitions) and restore the partition-to-top/bottom
-joinery the LISP cuts. This is LISP-truth restoration: if bare-kit output
-changes, that is the sanctioned fixture regeneration of rule 1 — dated
-commentary, named LISP lines, exact drill-count deltas in the PR.
+The rule set agreed today, verbatim; implement all of it. Display and Check
+measure **front↔neighbour** (what a client sees), never front↔own carcass.
 
-### F5 [HIGH] — Shelf-pin setback 70 → 50, the owner's standard
+**A. Front clearance per edge, by neighbour (left and right independent):**
+1. Neighbour = another cabinet's front → clearance **1.5** (1.5+1.5=3).
+2. Neighbour = end panel → **3.0**.
+3. Neighbour = infill/filler → **3.0** (same category as panel: a rigid
+   neighbour that gives nothing back).
+4. Neighbour = appliance with its own front (dishwasher 594 in 600) →
+   **0** — the front extends to the carcass end; the appliance provides
+   the 3.
+   **4a. Appliance column (oven/microwave):** every front above/below the
+   appliance takes the APPLIANCE's width (oven 598 → drawer front below is
+   598). Alignment to neighbours happens at the COLUMN's outer edges by
+   this matrix, symmetrically — uniquely here both edges are set by the
+   appliance, not by hinges (a drawer has no cups; runners follow the
+   carcass, only the front widens).
+5. Neighbour = bare wall → **3.0** + yellow "infill? (dust collection)".
+6. End of run (nothing) → **1.5**.
+7. L-shape corner → PARKED with the L-shape unit; do not invent it.
 
-LISP drills sleeves at **70 mm** from each edge (SKYLON_COMMON ~762) — so 70
-stays the engine's bare answer. Add override input `shelf_pin_setback_mm`
-travelling like the plinth: profile default 70 (=LISP), company/project value
-**50**, `paramsForEngine()` passes it, drilling and 3D follow. Bare kit and
-fixtures untouched.
+**B. Asymmetry law:**
+8. A width correction acts ONLY on the edge whose neighbour demands it —
+   never symmetrically.
+9. Cups sit **21.5 from the front's edge, always** — they travel WITH the
+   edge on every correction; the drilling pattern is untouchable.
+10. Plates on the carcass never move; differences up to ±1.5 are absorbed
+    by the hinge's own side adjustment, silently.
+11. A correction **> 1.5** on the hinge edge → yellow in Check ("beyond the
+    hinge's adjustment — check").
+12. Handle: centred stays centred (recomputed to the new width); edge-set
+    keeps ITS edge at ITS distance, whichever edge that is.
 
-### F6 [MEDIUM] — Handle move: kill the nag
+**C. Carcasses:**
+13. Carcasses in a run stand **touching** — a state, not an option. A gap
+    between carcasses = RED in Check; the only fix offered is closing to
+    touch. Cabinets are NEVER moved to fix a front gap.
 
-Moving a handle by 10 mm asks "dziwne pytanie" every time. Remove the
-confirmation on nudge; the move applies directly and one undo step covers it.
-Keep any warning that guards an actual conflict (off-panel, collision) —
-only the routine nag dies.
+**D. Detection and repair:**
+14. Shown gap = front↔neighbour.
+15. Gap **< 3 mm** → RED; the modal offers TWO options, each with its
+    number: **[Narrow the front(s)]** (default; halves of the shortfall,
+    asymmetry law applies, cups ride the edge) / **[Insert/fix an infill]**.
+16. Gap **> 6 mm** → yellow "too wide — infill or front correction?"
+    (owner's default threshold; one profile number).
+17. Narrowing a front warns "changes BOM and drilling" before it acts.
+18. Thresholds (3, 6, 1.5-adjustment) live in the profile.
 
-### F7 [HIGH] — Shelf × hinge clash: ask, then open the right menu
+### F5 [HIGH] — Export names the project
 
-When a shelf row and a hinge cup land at the same height (collision window:
-derive from the geometry — cup ⌀35 + the sleeve pattern's ±50 — and write
-the number down, don't feel it), show a conflict prompt: **"Remove sleeves
-at this shelf"** / **"Move the hinge"**. The choice OPENS the matching
-editor: the shelf's modal at that row, or F2's Door modal at section B with
-that hinge highlighted. No silent auto-fix.
+`{ProjectName}-cnc-{DDMM-HHMM}.dxf` (sanitised), never `All-materials-cnc`
+again — nine identical filenames were half of yesterday's confusion. Same
+pattern for any other export the app writes.
 
-### F8 [MEDIUM] — Auto worktop over a multi-selection
+### F6 [HIGH] — Check v1: the pre-production controller
 
-Select 2+ base cabinets → one worktop covers the run "od ściany aż do
-paneli": front overhang **20 mm**, side overhang past an end panel **10
-mm**, wall side flush. Design-layer auto-part like the end panels — no hole,
-no fixture. Extensions drawable afterwards (same interaction family as end
-panel edits). DECIDED: thickness **38 mm** (UK standard; 770 + 100 legs +
-38 ≈ the 900 line), material = the PROJECT's worktop decor by default, a
-per-worktop override is a later chat-fix, not tonight's problem.
+A **Check** button beside BOM/CNC, and the same list automatically before
+Export. Result = a PANEL of findings (not toasts): click → camera flies to
+the subject and the right editor opens (the F7/T30 mechanism). Rules, with
+the owner's colours; thresholds are profile numbers marked as owner-tunable:
 
-### F9 [MEDIUM] — Cornice over a multi-selection, like the infill
+* #1 shelf × hinge collision (exists, T30) — red
+* #2 front gap < 3 mm (exists, T30 → reuse under F4's neighbour measure) — red
+* #3 tall cabinet with no FIX shelf: height > 1200 and zero fixed → "add one
+  fixed shelf" — yellow
+* #4 door too heavy / too few hinges: weight (already computed) + height vs
+  the Blum table (`reference/hardware/` — take the published CLIP top table;
+  if the repo lacks it, add it as a reference JSON with the source named) — red
+* #5 20–80 mm of open gap above a run with no infill → "infill? (dust
+  collection)" — yellow
+* #6 base run standing with no plinth → yellow
+* #7 panel larger than the sheet (2790×2060 default) → red
+* #8 front wider than 600 at 110° → "consider 155°" — yellow
+* #9 outline faults (F3) — red
+* #10 drill faults (F3) — red
+* #11 carcass gap in a run (F4.13) — red
+Findings name their subject (unit, panel, mm). No blocking anywhere except
+the export gate's hold-out, which has "Export anyway".
 
-Today cornice is per-cabinet; the infill already knows multi-select. Reuse
-that flow: select 2+ → one cornice across. Same design layer, no drilling.
+### F7 [HIGH] — Hover aura on handles and hinges
 
-### F10 [MEDIUM] — Main-menu front style propagates
+Not a snap — a CATCHMENT. An invisible enlarged hitbox (~8 mm in scene mm,
+the T30 pick-surface pattern) around every handle and hinge:
+* inside the aura → the dimension label shows (handle: distance to its
+  NEAREST front edge, one number — default the owner may extend to two);
+  colour ORANGE (red is reserved for Check);
+* label STAYS while the cursor is anywhere in the aura; disappears ~300 ms
+  after leaving (no flicker at the boundary);
+* the same aura is the grab/double-click target — no more pixel-hunting a
+  thin rail.
 
-Choosing "flat" in the main menu sets the PROJECT default front style; every
-front without its own override follows. Per-front overrides survive, exactly
-like the hinge finish cascade (profile → company → project → element).
+### F8 [MEDIUM] — Double-click a cabinet dimension → mini modal
 
-### F11 [MEDIUM] — Two hinges under 600 mm
+Double-click the width or height figure on the canvas → a small modal
+(through F1's shell, beside the click) with width and height fields; commit
+on Enter. Existing engine setters; nothing new in the engine.
 
-LISP ladders: Base = always 3; Low = 2 under 800. Owner's standard: ANY door
-under **600 mm** takes **2** hinges (100 / wys−100). Same override channel as
-F5: `hinge_two_below_mm` default null (=LISP ladders, bare kit unchanged),
-company/project value 600. Respect per-door manual hinge edits — they win.
+### F9 [MEDIUM] — HOOD: wall hood unit + the hood itself
 
-### F12 [MEDIUM] — Front-to-front gap clash, red under 3 mm
+New Kitchen type: hood wall unit (parent geometry KIT_WUD envelope, shorter
+door above an open appliance aperture). The extractor itself is HARDWARE:
+BOM line + GLB slot for when the owner uploads a model (the Blum pattern).
+Rule 2 applies: no invented holes — the aperture is geometry, the fixings
+wait for truth.
 
-Room level: compute the gap between neighbouring fronts in a run; when a gap
-is **< 3 mm**, paint the pair's meeting edges red and show the value. It is
-a WARNING overlay, not a block. Threshold as a profile number.
+### F10 [MEDIUM] — CORNER → L-SHAPE rename
 
-## The library batch — F13–F21 (owner: "daj na maxa")
+The T30 type is an L-shape cabinet, not a corner system — rename typeId
+`CORNER` → `L_SHAPE`, label "L-shape unit". MIGRATE saved projects: on
+project load, `CORNER` reads as `L_SHAPE` (one-line alias kept forever);
+never break an existing save. Joints for it stay PARKED by the owner's word.
 
-**THE ONE HARD RULE FOR EVERY NEW TYPE:** a drilled hole exists only where a
-LISP line (`reference/lisp/`) or a published Blum pattern
-(`reference/hardware/`) says so. A type with no such truth ships GEOMETRY +
-BOM and its panels ship UNDRILLED, with the gap named in the report — an
-invented hole is a miscut in somebody's workshop. Kitchen becomes a
-top-level library category; every type below lands in it with a default
-size, a 3D body, a BOM line and the standard door/drawer machinery where its
-parent kit already has it.
+### F11 [MEDIUM] — Honest 155° fixture + T30 leftovers
 
-### F13 [HIGH] — Cargo 300 (tall pull-out larder)
-Parent geometry: KIT_BUDTALL. Proposed width 300. Carcass + full door per
-the kit; the pull-out frame is HARDWARE (BOM + GLB slot when the owner
-uploads one), no invented runners drilling — the mechanism mounts to floor
-and top per manufacturer, which is not this repo's truth yet.
+* `71B7550_*` synthetic fixtures currently carry the 3550's node names —
+  regenerate `scripts/make-fixture-hardware.mjs` output with the REAL 155°
+  node names measured on the live bucket (`bau0079302490`, `bau0079324562`,
+  `bau0079298416`, `bau0079291413`, `bau0079262819`, `bau0025540121`,
+  `bau0082114196`) so the member-split tests test what ships.
+* Rename `verify/t30/12b-…-1mm-…png` → its banner says 2 mm; the name lies.
+* PANTRY defaults include its drawers (today it computes 6 bare panels until
+  `drawers` is set).
 
-### F14 [HIGH] — Pantry cupboard, Blum drawer system ("koniecznie")
-Parent: KIT_BUDTALL + the existing drawer machinery (KIT_LOW/KIT_SINK rows,
-MOVENTO catalogue). Internal drawers behind doors: existing drawer boxes and
-runner drilling, front omitted (see F20's mechanism — build it once, use it
-in both).
+### F12 [LOW] — Sweep
 
-### F15 [MEDIUM] — American fridge housing
-Parent: KIT_FRIDGE.lsp — it EXISTS and is the truth. Widen the parameter
-envelope to american sizes; drilling stays the kit's own.
+Delete `src/3d/JointLines.jsx` (dead since T13) and the 83 exports no code
+imports (list from the 14.08 audit — regenerate it, don't trust it: an
+export used only by tests stays if the test asserts behaviour, goes if it
+asserts the export's own existence).
 
-### F16 [MEDIUM] — Bin unit
-Parent: KIT_BUD. Pull-out bin = hardware on the door/carcass per
-manufacturer: BOM + visual, no invented holes.
+## Open items the owner parked (do NOT start)
 
-### F17 [MEDIUM] — Wine rack
-Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
-panels in the BOM. No drilling truth exists → no drilling ships.
+L-shape joints and corner handle-reach rule · appliance GLBs (oven, sink,
+hob, dishwasher, extractor — models arrive when the owner uploads them; the
+slots from F9 and existing types are the landing pads) · sheet nesting
+(cutting optimisation) = T32, its own turn · `71B3550_43192717` re-export ·
+per-family arm offsets and fold axes · EGGER licence e-mail = BLOCKER #44.
 
-### F18 [MEDIUM] — Twin cupboard
-Parent: KIT_DOOR_DOUBLE — it exists. Expose it in the Kitchen category with
-its own defaults.
+## Owner-tunable defaults written in this turn
 
-### F19 [MEDIUM] — Corner units
-The riskiest of the batch. Start from what the LISP family actually
-supports (KIT_BUDR is in the repo — READ it first and say in the PR what it
-is); ship the L-carcass geometry + BOM; any hinge/drilling beyond the
-parent kit's own lines waits for a LISP. Do not improvise corner-post
-drilling overnight.
-
-### F20 [HIGH] — Two-drawer front, one hidden internal (the trend)
-Mechanism: an INTERNAL drawer = existing box + runner rows, `front: none`,
-sitting behind the front above it. Engine input on the drawer stack; BOM
-counts the box and the runners; drilling is the existing runner truth. This
-is the same mechanism F14 consumes.
-
-### F21 [MEDIUM] — Glass wall units
-Parent: KIT_WUD. Front style `glass`: frame + translucent panel in 3D, BOM
-says glass door; hinge rule unchanged (glass doors take the same cups
-unless the owner says otherwise — note it in the report).
-
-## Open question for the owner (answer in the push message)
-
-* **Q1 (F3):** default drilled face of a divider — LEFT ships tonight;
-  change the one profile line if you want RIGHT or "wider zone".
-
-## Backlog carried (not in scope)
-
-`71B3550_43192717` re-export (Geom3D names, fallback-only) · per-family arm
-offsets and fold axes (155°/95° use 3550's — attitude right, point
-approximate) · EGGER licence e-mail = BLOCKER #44 before any public demo.
+`hingeMinSpacingMm: 60` · gap thresholds 3 / 6 / ±1.5 · Check #3 height
+1200 · #5 window 20–80 · #7 sheet 2790×2060 · #8 width 600 · hover aura
+8 mm, linger 300 ms. Each is ONE profile number with a comment naming
+today's date and the owner as the source.

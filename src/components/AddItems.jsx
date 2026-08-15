@@ -69,7 +69,16 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
 
   const onAddDrawers = (count, height) => {
     const before = items.filter((i) => i.kind === 'drawer').length;
-    addDrawers(unit.id, count, 'overlay', height);
+    // ─── CHAT FIX 15.08.2026: THE CLICK LISTENS ─────────────────────────────
+    // This handler used to congratulate BLIND — the store refused (turn 24's
+    // gate) and the toast said "added". The gate is open now, but a handler
+    // that ignores its store's answer will lie again the next time anything
+    // refuses; so the answer is read, and a refusal is said out loud.
+    const res = addDrawers(unit.id, count, 'overlay', height);
+    if (res && res.ok === false) {
+      notify(res.error || 'The drawers were not added.', 'warn');
+      return;
+    }
     // Honest about what the number means: drawers that were already there KEEP
     // the height they were given, so this cannot claim the whole stack is now
     // `height` mm.

@@ -123,8 +123,21 @@ export default function Hardware({
         profile={profile}
         metal={shelfMetal}
       />
+      {/* CHAT FIX 15.08.2026: the rail joins the METAL FAMILY. The owner's
+          gold/silver choice has governed the sleeves and collars since the
+          selector existed ("the choice governs the WHOLE family") — the
+          hanging rail is family too, and it takes the SAME resolved answer
+          (`shelfMetal`, worked out once at the top of this component) rather
+          than resolving its own — turn 28 exists because two resolvers drew
+          silver collars round gold sleeves. `colours.rail` stays as the
+          fallback a profile with no metals still draws. */}
       {instances.rails.map((rail, i) => (
-        <Rail key={`rail-${i}`} rail={rail} colour={colours.rail} />
+        <Rail
+          key={`rail-${i}`}
+          rail={rail}
+          colour={colours.rail}
+          metal={shelfMetal}
+        />
       ))}
       {/* ─── Turn 11 (CLAUDE.md F3.5): the hinges are furniture ───
           Owner verdict: a hinge is a thing that is FITTED, and a joiner opening
@@ -1116,7 +1129,10 @@ function Legs({ items, profile, colour }) {
 // ─── The rail ───────────────────────────────────────────────────────────────
 
 /** One tube, at the diameter the profile carries. Not instanced: there is one. */
-function Rail({ rail, colour }) {
+function Rail({ rail, colour, metal = null }) {
+  // The family metal when the profile carries one (gold/silver, the same pair
+  // the shelf sleeves wear); the old neutral grey where it does not.
+  const tone = metal?.colour || colour;
   return (
     <mesh
       position={[mm(rail.x), mm(rail.y), mm(rail.z)]}
@@ -1124,7 +1140,11 @@ function Rail({ rail, colour }) {
       userData={{ ccNoBounds: true }}
     >
       <cylinderGeometry args={[mm(rail.diameter / 2), mm(rail.diameter / 2), mm(rail.length), 14]} />
-      <meshStandardMaterial color={colour} roughness={0.4} metalness={0.6} />
+      <meshStandardMaterial
+        color={tone}
+        roughness={metal?.roughness ?? 0.4}
+        metalness={metal?.metalness ?? 0.6}
+      />
     </mesh>
   );
 }

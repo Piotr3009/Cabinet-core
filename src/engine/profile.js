@@ -719,7 +719,12 @@ export const DEFAULT_CABINET_PROFILE = {
     legHeight: 100,
     legsPerUnit: 4,
     minHeight: 1800,
-    defaults: { width: 600, height: 2150, depth: 578, railOffset: 1400 },
+    // CHAT FIX 15.08.2026, owner's standard: 568 deep — an 18 back leaves a
+    // 550 CLEAR interior, which is the number he actually wants ("chcę mieć
+    // minimum 550 w środku"). The golden fixture's own CASES keep their
+    // explicit 578 inputs: a pinned input is a pinned input, and the bare-kit
+    // answers do not move.
+    defaults: { width: 600, height: 2150, depth: 568, railOffset: 1400 },
 
     drawers: {
       maxCount: 6,

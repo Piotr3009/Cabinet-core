@@ -83,7 +83,10 @@ test('F1.1 — a line that still will not fit truncates with `~`, and never cros
 });
 
 test('F1.1 — the sheet and the file lay a label out with ONE function', () => {
-  const r = unit('WARDROBE', { drawers: 2, shelves: 2, doors: true });
+  // CHAT FIX 15.08.2026: the wardrobe DEFAULT moved to the owner's 568; this
+  // test's numbers are the 578 world's, so the input is pinned rather than
+  // inherited — a pinned input is a pinned input.
+  const r = unit('WARDROBE', { depth: 578, drawers: 2, shelves: 2, doors: true });
   for (const panel of r.panels.filter((p) => p.cnc?.outline?.length)) {
     const sheet = panelLabelBlock(panel, { unitNum: '01', profile: P });
     const file = panelLabel(panel, { unitNum: '01', profile: P });
@@ -94,7 +97,10 @@ test('F1.1 — the sheet and the file lay a label out with ONE function', () => 
 
 test('F1.2 — the EXPORT writes it at half the sheet’s height, never under the floor', () => {
   assert.equal(P.cnc.exportLabelScale, 0.5);
-  const r = unit('WARDROBE', { drawers: 2, shelves: 2, doors: true });
+  // CHAT FIX 15.08.2026: the wardrobe DEFAULT moved to the owner's 568; this
+  // test's numbers are the 578 world's, so the input is pinned rather than
+  // inherited — a pinned input is a pinned input.
+  const r = unit('WARDROBE', { depth: 578, drawers: 2, shelves: 2, doors: true });
   const bul = r.panels.find((p) => p.id === 'BUL');
   const sheet = panelLabelBlock(bul, { unitNum: '01', profile: P });
   const file = panelLabel(bul, { unitNum: '01', profile: P });
@@ -131,7 +137,10 @@ test('F1 — the caption is centred in the part, both ways', () => {
 });
 
 test('F1.4 — the exported file carries TEXT and nothing else new', () => {
-  const r = unit('WARDROBE', { drawers: 2, shelves: 2, doors: true });
+  // CHAT FIX 15.08.2026: the wardrobe DEFAULT moved to the owner's 568; this
+  // test's numbers are the 578 world's, so the input is pinned rather than
+  // inherited — a pinned input is a pinned input.
+  const r = unit('WARDROBE', { depth: 578, drawers: 2, shelves: 2, doors: true });
   const bul = r.panels.find((p) => p.id === 'BUL');
   const parsed = parseDxf(panelDxf(bul, r.drills, { unitNum: '01', profile: P }));
   const texts = parsed.entities.filter((e) => e.type === 'text');

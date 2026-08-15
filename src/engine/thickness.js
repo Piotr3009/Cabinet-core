@@ -134,7 +134,20 @@ function slotRecord(design, slotId) {
  * CLAUDE.md's second iron rule for this turn is about exactly that.
  */
 export function slotThickness(slotId, { design, profile, materials = [] } = {}) {
-  return num(slotRecord(design, slotId).measured) ?? slotNominal(slotId, { design, profile, materials });
+  const own = num(slotRecord(design, slotId).measured);
+  if (own != null) return own;
+  // ─── CHAT FIX 15.08.2026: THE BOX INHERITS THE CARCASS ────────────────────
+  // Owner's ruling: "domyślnie ten sam materiał co carcass". A hand-set box
+  // number above still wins outright; with none, the box takes the FIRST
+  // carcass slot's answer — measured where somebody measured it — and only a
+  // project with no carcass answer at all falls back to the profile seed.
+  // The ready-made-box alternative is a wizard question (T32), not this
+  // function's business.
+  if (slotId === DRAWER_BOX_SLOT) {
+    const carcass = num(slotRecord(design, 'carcass1').measured);
+    if (carcass != null) return carcass;
+  }
+  return slotNominal(slotId, { design, profile, materials });
 }
 
 /** Has somebody actually put a caliper on this board? */
@@ -197,12 +210,17 @@ export function thicknessSlotRows({ design, profile, materials = [] } = {}) {
  * @returns {{blocked:boolean, message:string|null}}
  */
 export function drawerBoxGate(design) {
-  if (slotConfirmed(design, DRAWER_BOX_SLOT)) return { blocked: false, message: null };
-  return {
-    blocked: true,
-    message: 'Measure the drawer-box board first: Project setup → Drawer box, '
-      + 'type what the caliper says and tick it. No thickness, no drawers.',
-  };
+  // ─── CHAT FIX 15.08.2026: THE GATE OPENS — THE BOX INHERITS ───────────────
+  // Turn 24 closed this door because a GUESSED box thickness reaches grooves
+  // and bottoms. The owner's ruling today removes the guess a better way: the
+  // box board IS the carcass board unless somebody says otherwise — and the
+  // carcass thickness is CONFIRMED at project birth, so the inherited number
+  // is a measured one, not a default. "Ready-made boxes" become a wizard
+  // question (T32); a hand-set box slot still wins outright, exactly as
+  // before. Nothing left to block on: the gate stays as the ONE place the
+  // policy is written, and it now always says go.
+  void design;
+  return { blocked: false, message: null };
 }
 
 // ─── WHICH SLOT A PART IS CUT FROM ─────────────────────────────────────────

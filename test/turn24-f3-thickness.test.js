@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
+import { getCabinetProfile } from '../src/engine/profile.js';
 import { migrateDesign } from '../src/engine/design.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { useProjectStore, paramsForEngine } from '../src/stores/projectStore.js';
@@ -88,52 +89,44 @@ test('F3.1 — the surface reads ONE derivation, and it says when the two disagr
   assert.equal(rows.find((r) => r.id === 'carcass2').dirty, false);
 });
 
-// ─── F3.1 — the hard gate ──────────────────────────────────────────────────
+// ─── F3.1 — the gate, re-ruled 15.08.2026: THE BOX INHERITS ────────────────
+//
+// Turn 24 closed this door so a GUESSED box thickness could never reach a
+// groove. The owner's ruling today removes the guess a better way — the box
+// board IS the carcass board unless somebody says otherwise — so the gate
+// stays as the one written policy and now always says go.
 
-test('F3.1 — no thickness, no drawers: the gate is closed until the box is ticked', () => {
-  assert.equal(drawerBoxGate(migrateDesign({})).blocked, true);
-  assert.match(drawerBoxGate(migrateDesign({})).message, /No thickness, no drawers/);
-  // A MEASUREMENT alone is not the answer — the tick is somebody saying they
-  // did it. A seeded number that nobody checked is exactly the label.
+test('F3.1 — the gate is OPEN: the box inherits, nothing blocks (owner 15.08.2026)', () => {
+  assert.equal(drawerBoxGate(migrateDesign({})).blocked, false);
+  assert.equal(drawerBoxGate(migrateDesign({})).message, null);
   const seeded = migrateDesign({ thickness: { slots: { box: { measured: 18, confirmed: false } } } });
-  assert.equal(drawerBoxGate(seeded).blocked, true);
-  const done = migrateDesign({ thickness: { slots: { box: { measured: 18, confirmed: true } } } });
-  assert.equal(done ? drawerBoxGate(done).blocked : true, false);
-  assert.equal(drawerBoxGate(done).message, null);
+  assert.equal(drawerBoxGate(seeded).blocked, false);
 });
 
-test('F3.1 — a drawer-bearing unit is refused, in the plain message', () => {
+test('F3.1 — drawers add FIRST TIME, no ceremony, and the box wears the carcass number', () => {
   project();
-  const attempt = store().addUnit('BUDR');
-  assert.equal(attempt.id, null, 'a ratio drawer unit IS its drawers');
-  assert.match(attempt.error, /No thickness, no drawers/);
-  // A cabinet with no drawers in it is not blocked: the gate is about boxes.
+  // The carcass was measured at project birth (the wizard's own step)…
+  store().setSlotThickness('carcass1', { measured: 16.5, confirmed: true });
+  // …and a ratio drawer unit, a plain cabinet and a stack all go straight in.
+  assert.equal(store().addUnit('BUDR').error, null);
   const plain = store().addUnit('BUD');
-  assert.equal(plain.error, null);
-  // …and adding drawers to that cabinet is refused by the same gate.
-  const added = store().addDrawers(plain.id, 2);
-  assert.equal(added.ok, false);
-  assert.match(added.error, /No thickness, no drawers/);
+  assert.equal(store().addDrawers(plain.id, 2).ok, true);
   assert.equal(
     unitOf(plain.id).params.sections[0].items.filter((i) => i.kind === 'drawer').length,
-    0,
-    'and nothing was added behind the refusal',
+    2,
   );
-
-  // Measure it, tick it, and the same three calls go through.
-  store().setSlotThickness('box', { measured: 18, confirmed: true });
-  assert.equal(store().drawerBoxGate().blocked, false);
-  assert.equal(store().addDrawers(plain.id, 2).ok, true);
-  assert.equal(store().addUnit('BUDR').error, null);
+  // The inheritance itself: no box answer of its own → the carcass's 16.5.
+  const design = store().project.design;
+  assert.equal(slotThickness('box', { design, profile: getCabinetProfile() }), 16.5);
+  // A hand-set box number still wins outright, exactly as before.
+  store().setSlotThickness('box', { measured: 12, confirmed: true });
+  assert.equal(slotThickness('box', { design: store().project.design, profile: getCabinetProfile() }), 12);
 });
 
-test('F3.1 — removing a stack is never gated: the door only closes one way', () => {
+test('F3.1 — removing a stack was never gated, and still is not', () => {
   project();
-  store().setSlotThickness('box', { measured: 18, confirmed: true });
   const { id } = store().addUnit('WARDROBE');
   store().addDrawers(id, 2);
-  store().setSlotThickness('box', { confirmed: false });
-  assert.equal(store().drawerBoxGate().blocked, true);
   assert.equal(store().addDrawers(id, 0).ok, true, 'you may always take them out again');
 });
 

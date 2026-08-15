@@ -56,7 +56,10 @@ const LISP = readFileSync(new URL('../reference/lisp/KIT_WARDROBE_FULL.lsp', imp
 
 /** The very kit the LISP lines are written for: a wardrobe with a drawer panel. */
 const wardrobe = () => computeCabinet({
-  ...defaultParamsFor('WARDROBE', P), unit_num: 'W1', drawers: 3,
+  ...defaultParamsFor('WARDROBE', P),
+    // CHAT FIX 15.08.2026: default depth is 568 now; this test SAYS "on this
+    // 578 mm wardrobe", so it pins what it says.
+    depth: 578, unit_num: 'W1', drawers: 3,
 }, P);
 
 /** The interactive divider: `golden-partition-biscuits.json` BISCUIT-A. */

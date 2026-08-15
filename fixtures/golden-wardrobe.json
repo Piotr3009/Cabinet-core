@@ -7,9 +7,24 @@
     "units": "mm, m2, m"
   },
   "wardrobe_constants": {
-    "legHeight": 100, "drawerSetback": 50, "drawerSideH": 164, "drawerFrontH": 200,
-    "drawerGap": 3, "drFirstAdj": 3, "szufBok": 18, "dpInset": 30, "fillerW": 30, "fillerFrontOff": 40,
-    "min_height": 1800, "defaults": { "width": 600, "height": 2150, "depth": 578, "rail_offset": 1400 }
+    "legHeight": 100,
+    "drawerSetback": 50,
+    "drawerSideH": 164,
+    "drawerFrontH": 200,
+    "drawerGap": 3,
+    "drFirstAdj": 3,
+    "szufBok": 18,
+    "dpInset": 30,
+    "fillerW": 30,
+    "fillerFrontOff": 40,
+    "min_height": 1800,
+    "defaults": {
+      "width": 600,
+      "height": 2150,
+      "depth": 568,
+      "rail_offset": 1400
+    },
+    "defaults_note": "15.08.2026 owner: default depth 578→568 (clear interior 550 behind an 18 back). Cases keep explicit 578 inputs — bare-kit answers unchanged."
   },
   "wardrobe_rules": {
     "hinge_count_tall": "H < 1600 -> 5 hinges; H >= 1600 -> 6 hinges. Centers: [100, 100+i*spacing..., H-100]; spacing=(H-200)/4 (5 hinges) or (H-200)/5 (6 hinges)",
@@ -33,46 +48,317 @@
     {
       "id": "W-A",
       "description": "Default wardrobe: 1 door hinge L, 2 internal drawers, rail @1400, 2 shelves",
-      "inputs": { "type": "WARDROBE", "width": 600, "height": 2150, "depth": 578, "board_t": 18, "front_t": 25, "front_type": "S", "drawers": 2, "rail": true, "rail_offset": 1400, "shelves": 2, "hinge": "L", "unit_num": "W01" },
+      "inputs": {
+        "type": "WARDROBE",
+        "width": 600,
+        "height": 2150,
+        "depth": 578,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "drawers": 2,
+        "rail": true,
+        "rail_offset": 1400,
+        "shelves": 2,
+        "hinge": "L",
+        "unit_num": "W01"
+      },
       "derived": {
-        "doors": 1, "internal_width": 564, "internal_depth": 560,
-        "numDrPanels": 1, "dp_side": "L", "drawerReduction": 48,
-        "szufMaxDl": 465, "szufDl": 440, "szufSzer": 506, "drawerFrontW": 510,
-        "drawerTotalH": 403, "partition_bottom_y": 426, "drawerPanelH": 408, "drawerPanelD": 510,
-        "boxFrontLen": 470, "boxFrontH": 130, "bottom_w": 483, "bottom_d": 440
+        "doors": 1,
+        "internal_width": 564,
+        "internal_depth": 560,
+        "numDrPanels": 1,
+        "dp_side": "L",
+        "drawerReduction": 48,
+        "szufMaxDl": 465,
+        "szufDl": 440,
+        "szufSzer": 506,
+        "drawerFrontW": 510,
+        "drawerTotalH": 403,
+        "partition_bottom_y": 426,
+        "drawerPanelH": 408,
+        "drawerPanelD": 510,
+        "boxFrontLen": 470,
+        "boxFrontH": 130,
+        "bottom_w": 483,
+        "bottom_d": 440
       },
       "panels": [
-        { "id": "BUL", "w": 560, "h": 2150, "qty": 1, "material_role": "board", "edging": { "code": "<", "len_m": 2.15 }, "area_m2": 1.204 },
-        { "id": "BUR", "w": 560, "h": 2150, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 2.15 }, "area_m2": 1.204 },
-        { "id": "TOP", "w": 564, "h": 560, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.316 },
-        { "id": "BOTTOM", "w": 564, "h": 560, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.316 },
-        { "id": "BACK", "w": 600, "h": 2150, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 1.29 },
-        { "id": "SHELF-1", "w": 560, "h": 540, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.302 },
-        { "id": "SHELF-2", "w": 560, "h": 540, "qty": 1, "material_role": "board", "edging": { "code": ">", "len_m": 0.56 }, "area_m2": 0.302 },
-        { "id": "PARTITION", "w": 564, "h": 560, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.316 },
-        { "id": "RAIL-PART", "w": 564, "h": 560, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.316 },
-        { "id": "DP-L", "w": 510, "h": 408, "qty": 1, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.208 },
-        { "id": "FILLER", "w": 30, "h": 408, "qty": 2, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.012 },
-        { "id": "D{i}-SL/SR", "w": 440, "h": 164, "qty": 4, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.072 },
-        { "id": "D{i}-BF/BB", "w": 470, "h": 130, "qty": 4, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.061 },
-        { "id": "D{i}-DNO", "w": 483, "h": 440, "qty": 2, "material_role": "board", "edging": { "code": "", "len_m": 0 }, "area_m2": 0.213 },
-        { "id": "W01-DF1", "w": 510, "h": 197, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 1.41 }, "area_m2": 0.1 },
-        { "id": "W01-DF2", "w": 510, "h": 200, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 1.42 }, "area_m2": 0.102 },
-        { "id": "W01-F", "w": 597, "h": 2147, "qty": 1, "material_role": "front", "edging": { "code": "<>^v", "len_m": 5.49 }, "area_m2": 1.282 }
+        {
+          "id": "BUL",
+          "w": 560,
+          "h": 2150,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "<",
+            "len_m": 2.15
+          },
+          "area_m2": 1.204
+        },
+        {
+          "id": "BUR",
+          "w": 560,
+          "h": 2150,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 2.15
+          },
+          "area_m2": 1.204
+        },
+        {
+          "id": "TOP",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "BOTTOM",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "BACK",
+          "w": 600,
+          "h": 2150,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 1.29
+        },
+        {
+          "id": "SHELF-1",
+          "w": 560,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.302
+        },
+        {
+          "id": "SHELF-2",
+          "w": 560,
+          "h": 540,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": ">",
+            "len_m": 0.56
+          },
+          "area_m2": 0.302
+        },
+        {
+          "id": "PARTITION",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "RAIL-PART",
+          "w": 564,
+          "h": 560,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.316
+        },
+        {
+          "id": "DP-L",
+          "w": 510,
+          "h": 408,
+          "qty": 1,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.208
+        },
+        {
+          "id": "FILLER",
+          "w": 30,
+          "h": 408,
+          "qty": 2,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.012
+        },
+        {
+          "id": "D{i}-SL/SR",
+          "w": 440,
+          "h": 164,
+          "qty": 4,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.072
+        },
+        {
+          "id": "D{i}-BF/BB",
+          "w": 470,
+          "h": 130,
+          "qty": 4,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.061
+        },
+        {
+          "id": "D{i}-DNO",
+          "w": 483,
+          "h": 440,
+          "qty": 2,
+          "material_role": "board",
+          "edging": {
+            "code": "",
+            "len_m": 0
+          },
+          "area_m2": 0.213
+        },
+        {
+          "id": "W01-DF1",
+          "w": 510,
+          "h": 197,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 1.41
+          },
+          "area_m2": 0.1
+        },
+        {
+          "id": "W01-DF2",
+          "w": 510,
+          "h": 200,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 1.42
+          },
+          "area_m2": 0.102
+        },
+        {
+          "id": "W01-F",
+          "w": 597,
+          "h": 2147,
+          "qty": 1,
+          "material_role": "front",
+          "edging": {
+            "code": "<>^v",
+            "len_m": 5.49
+          },
+          "area_m2": 1.282
+        }
       ],
       "drills": {
-        "hinge_centers": [100, 490, 880, 1270, 1660, 2050],
-        "side_hinge_holes_y": [[84,116],[474,506],[864,896],[1254,1286],[1644,1676],[2034,2066]],
+        "hinge_centers": [
+          100,
+          490,
+          880,
+          1270,
+          1660,
+          2050
+        ],
+        "side_hinge_holes_y": [
+          [
+            84,
+            116
+          ],
+          [
+            474,
+            506
+          ],
+          [
+            864,
+            896
+          ],
+          [
+            1254,
+            1286
+          ],
+          [
+            1644,
+            1676
+          ],
+          [
+            2034,
+            2066
+          ]
+        ],
         "side_hinge_holes_x": 37,
-        "hinged_sides": ["BUL"],
-        "front_cup_y": [100, 490, 880, 1270, 1660, 2050],
+        "hinged_sides": [
+          "BUL"
+        ],
+        "front_cup_y": [
+          100,
+          490,
+          880,
+          1270,
+          1660,
+          2050
+        ],
         "front_cup_x_from_hinge_edge": 21.5,
-        "runner_rows_dp_y": [38, 241],
-        "runner_rows_carcass_y": [56, 259],
+        "runner_rows_dp_y": [
+          38,
+          241
+        ],
+        "runner_rows_carcass_y": [
+          56,
+          259
+        ],
         "runner_carcass_side": "BUR",
-        "runner_hole_x": [37, 69, 293],
-        "shelf_row_y": [722.7, 1427.3],
-        "shelf_hole_x": [70, 490]
+        "runner_hole_x": [
+          37,
+          69,
+          293
+        ],
+        "shelf_row_y": [
+          722.7,
+          1427.3
+        ],
+        "shelf_hole_x": [
+          70,
+          490
+        ]
       },
       "totals": {
         "panels_lisp": 23,
@@ -90,35 +376,140 @@
     {
       "id": "W-B",
       "description": "Wide wardrobe: 2 doors, 2 drawer panels (L+R), 2 drawers, rail, 2 shelves",
-      "inputs": { "type": "WARDROBE", "width": 1200, "height": 2150, "depth": 578, "board_t": 18, "front_t": 25, "front_type": "S", "drawers": 2, "rail": true, "rail_offset": 1400, "shelves": 2, "hinge": null, "unit_num": "W02" },
+      "inputs": {
+        "type": "WARDROBE",
+        "width": 1200,
+        "height": 2150,
+        "depth": 578,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": "S",
+        "drawers": 2,
+        "rail": true,
+        "rail_offset": 1400,
+        "shelves": 2,
+        "hinge": null,
+        "unit_num": "W02"
+      },
       "derived": {
-        "doors": 2, "door_width": 597, "internal_width": 1164, "internal_depth": 560,
-        "numDrPanels": 2, "drawerReduction": 96,
-        "szufDl": 440, "szufSzer": 1058, "drawerFrontW": 1062,
-        "drawerTotalH": 403, "partition_bottom_y": 426, "drawerPanelH": 408, "drawerPanelD": 510,
-        "boxFrontLen": 1022, "boxFrontH": 130, "bottom_w": 1035, "bottom_d": 440
+        "doors": 2,
+        "door_width": 597,
+        "internal_width": 1164,
+        "internal_depth": 560,
+        "numDrPanels": 2,
+        "drawerReduction": 96,
+        "szufDl": 440,
+        "szufSzer": 1058,
+        "drawerFrontW": 1062,
+        "drawerTotalH": 403,
+        "partition_bottom_y": 426,
+        "drawerPanelH": 408,
+        "drawerPanelD": 510,
+        "boxFrontLen": 1022,
+        "boxFrontH": 130,
+        "bottom_w": 1035,
+        "bottom_d": 440
       },
       "panels_delta_vs_WA": [
-        { "id": "TOP/BOTTOM", "w": 1164, "h": 560, "qty": 2, "area_m2_each": 0.652 },
-        { "id": "BACK", "w": 1200, "h": 2150, "area_m2": 2.58 },
-        { "id": "SHELF-1/2", "w": 1160, "h": 540, "qty": 2, "area_m2_each": 0.626 },
-        { "id": "PARTITION", "w": 1164, "h": 560, "area_m2": 0.652 },
-        { "id": "RAIL-PART", "w": 1164, "h": 560, "area_m2": 0.652 },
-        { "id": "DP-L + DP-R", "w": 510, "h": 408, "qty": 2 },
-        { "id": "FILLER", "w": 30, "h": 408, "qty": 4 },
-        { "id": "D{i}-BF/BB", "w": 1022, "h": 130, "qty": 4 },
-        { "id": "D{i}-DNO", "w": 1035, "h": 440, "qty": 2 },
-        { "id": "W02-DF1", "w": 1062, "h": 197 },
-        { "id": "W02-DF2", "w": 1062, "h": 200 },
-        { "id": "W02-FL + W02-FR", "w": 597, "h": 2147, "qty": 2 }
+        {
+          "id": "TOP/BOTTOM",
+          "w": 1164,
+          "h": 560,
+          "qty": 2,
+          "area_m2_each": 0.652
+        },
+        {
+          "id": "BACK",
+          "w": 1200,
+          "h": 2150,
+          "area_m2": 2.58
+        },
+        {
+          "id": "SHELF-1/2",
+          "w": 1160,
+          "h": 540,
+          "qty": 2,
+          "area_m2_each": 0.626
+        },
+        {
+          "id": "PARTITION",
+          "w": 1164,
+          "h": 560,
+          "area_m2": 0.652
+        },
+        {
+          "id": "RAIL-PART",
+          "w": 1164,
+          "h": 560,
+          "area_m2": 0.652
+        },
+        {
+          "id": "DP-L + DP-R",
+          "w": 510,
+          "h": 408,
+          "qty": 2
+        },
+        {
+          "id": "FILLER",
+          "w": 30,
+          "h": 408,
+          "qty": 4
+        },
+        {
+          "id": "D{i}-BF/BB",
+          "w": 1022,
+          "h": 130,
+          "qty": 4
+        },
+        {
+          "id": "D{i}-DNO",
+          "w": 1035,
+          "h": 440,
+          "qty": 2
+        },
+        {
+          "id": "W02-DF1",
+          "w": 1062,
+          "h": 197
+        },
+        {
+          "id": "W02-DF2",
+          "w": 1062,
+          "h": 200
+        },
+        {
+          "id": "W02-FL + W02-FR",
+          "w": 597,
+          "h": 2147,
+          "qty": 2
+        }
       ],
       "drills": {
-        "hinge_centers": [100, 490, 880, 1270, 1660, 2050],
-        "hinged_sides": ["BUL", "BUR"],
-        "runner_rows_dp_y": [38, 241],
+        "hinge_centers": [
+          100,
+          490,
+          880,
+          1270,
+          1660,
+          2050
+        ],
+        "hinged_sides": [
+          "BUL",
+          "BUR"
+        ],
+        "runner_rows_dp_y": [
+          38,
+          241
+        ],
         "runner_carcass_side": "none (both DPs carry runners) [VERIFY]",
-        "shelf_row_y": [722.7, 1427.3],
-        "shelf_hole_x": [70, 490]
+        "shelf_row_y": [
+          722.7,
+          1427.3
+        ],
+        "shelf_hole_x": [
+          70,
+          490
+        ]
       },
       "totals": {
         "panels_true_incl_railpart": 27,

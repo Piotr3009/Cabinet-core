@@ -193,7 +193,25 @@ export function runnerEntry({
     && f.variant === want
     && (side == null || f.side == null || f.side === side));
   // A side-specific file beats a pair file when both are there.
-  return matches.find((f) => f.side === side) || matches[0] || null;
+  const exact = matches.find((f) => f.side === side) || matches[0] || null;
+  if (exact) return exact;
+  // ─── CHAT FIX 15.08.2026: SNAP DOWN TO THE CATALOGUE ─────────────────────
+  // The engine's depth ladder and the owner's bucket speak different lengths
+  // (the ladder said 440; the manifest knows 420 and 450), so every default
+  // drawer since turn 18 asked for a length no file has — and the grey
+  // profile never once gave way to a model. A runner one step SHORTER always
+  // fits where the asked-for one would; longer never safely does. So: the
+  // LARGEST catalogue length not above the ask, same variant, same side
+  // rules. The entry carries `snappedFromNl` so a Check rule (T32) can say
+  // so out loud; the BOM orders the article that will actually be bought.
+  const shorter = cat.files
+    .filter((f) => (!knowsSystem || f.system === system)
+      && f.variant === want
+      && f.nl < Number(nl)
+      && (side == null || f.side == null || f.side === side))
+    .sort((a, b) => b.nl - a.nl);
+  const best = shorter.find((f) => f.side === side) || shorter[0] || null;
+  return best ? { ...best, snappedFromNl: Number(nl) } : null;
 }
 
 /**

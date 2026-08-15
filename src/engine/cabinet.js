@@ -4749,7 +4749,14 @@ export function computeCabinet(params, profileOverride) {
     mount: type.mount,
     mountHeight: type.mount === 'wall' ? cfg.mountHeight : 0,
     legs,
-    rail: hasRail ? { y: railY, x1: G, x2: W - G, z: D - DR.setback } : null,
+    // ─── CHAT FIX 15.08.2026: THE RAIL HANGS MID-DEPTH ──────────────────────
+    // Owner, off the live scene: the tube rendered at the FRONT of the
+    // wardrobe. It was borrowing `DR.setback` — the DRAWER BOX's 50 mm — a
+    // coupling nobody chose. A hanging rail lives in the MIDDLE of the
+    // interior: halfway between the back panel's face (G) and the front (D).
+    // View-only: the rail has no CNC of its own (HANGER_HOLE is the wall
+    // bracket in a wall unit's back, a different thing entirely).
+    rail: hasRail ? { y: railY, x1: G, x2: W - G, z: (D + G) / 2 } : null,
     drawerZone: hasDrawers ? { top: partitionY, count: numDrawers, heights: [...drawerHeights] } : null,
     drawerFronts: budr
       ? budr.heights.map((h, i) => ({ index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth }))

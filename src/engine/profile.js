@@ -2487,6 +2487,38 @@ export const DEFAULT_CABINET_PROFILE = {
         // from. A pack whose cup is authored differently changes this line.
         cupBoreFileZ: 51.3,
         fileMinZ: -29.48,
+        // ─── HISTORY (turns 19–29): `modelOrigin` is MIN-RELATIVE ──────────
+        // It answers "how far must this file's bounding-box corner move so the
+        // cup lands on the drilled point" — and the answer is only right for
+        // the file whose min was baked into it (`fileMinZ` above, the
+        // `42542984` export). It keeps that job for the PLATE path, where the
+        // owner's plate is right today and where a second family has not yet
+        // arrived to disagree with it.
+        //
+        // ─── TURN 30 F1: `fileDatum` IS THE JOB ────────────────────────────
+        //
+        // The owner, of a 155° wardrobe hinge: "jest za głęboko osadzony w
+        // drzwiach i się nie otwiera." Measured in the chat lab 14.08.2026 and
+        // FINAL: every Blum hinge GLB in the bucket shares ONE authoring
+        // frame, and the cup datum sits at this point in FILE millimetres,
+        // ABSOLUTE — x on the cup's own centre line, y on the row, z the
+        // FLANGE PLANE (the same 40.3 the bore derivation above produces:
+        // `cupBoreFileZ − hardware.hinge.cupDepth`).
+        //
+        // Absolute is the whole of the fix. A 155° file has a bigger body and
+        // therefore a different `min`; placed by `−min + modelOrigin` it lands
+        // ~17 mm deep in an 18 mm leaf — a hinge in the last millimetre of the
+        // board, which is the door that would not open. Placed by `−fileDatum`
+        // it lands on the flange plane whatever the body around it is.
+        //
+        // For `42542984` the two transforms are BYTE-IDENTICAL by
+        // construction, because `modelOrigin` was derived from this very
+        // datum and that file's own min:
+        //   −min + modelOrigin = −min + (min − fileDatum) = −fileDatum
+        // `test/turn30-f1-hinge-datum.test.js` proves that identity rather
+        // than asserting it, so the day somebody re-measures the cup the two
+        // cannot drift apart in silence.
+        fileDatum: { x: -7.75, y: 0, z: 40.3 },
         modelOrigin: { x: -18.75, y: -28.5, z: -69.78 },
         plateOrigin: { x: 0, y: -26.5, z: -20.75 },
         // ─── CHAT FIX 14.08.2026: THE PLATE FACES ITS PANEL ────────────────
@@ -3608,6 +3640,14 @@ export function migrateCabinetProfile(profile) {
           // knows how to drill (F1.5), not a workshop preference, and a saved
           // profile must not be able to switch it on.
           plates: D.hardware.hinge.cliptop.plates,
+          // Turn 30 (CLAUDE.md F1): the ABSOLUTE cup datum the hinge BODY is
+          // placed by. Merged key by key like the origins beside it, so a
+          // profile saved before this turn — which has no datum at all — comes
+          // back able to place a hinge that is not `42542984`.
+          fileDatum: {
+            ...D.hardware.hinge.cliptop.fileDatum,
+            ...profile.hardware?.hinge?.cliptop?.fileDatum,
+          },
           modelOrigin: {
             ...D.hardware.hinge.cliptop.modelOrigin,
             ...profile.hardware?.hinge?.cliptop?.modelOrigin,

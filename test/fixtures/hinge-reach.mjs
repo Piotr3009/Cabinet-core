@@ -7,10 +7,17 @@
 // the pair exists to prove identical.
 //
 // It reads the GLB's bytes directly — `scripts/glb-meshes.mjs`, no loader and
-// no XHR — places them by the same `−min + modelOrigin` transform
-// `3d/glbSource.js` applies, splits the members with the same `memberOfNode`
-// the rig uses, and folds member B about the same `foldPivotMm` axis
-// `3d/hingeModels.js` folds it about.
+// no XHR — places them by the same transform `3d/glbSource.js` applies, splits
+// the members with the same `memberOfNode` the rig uses, and folds member B
+// about the same `foldPivotMm` axis `3d/hingeModels.js` folds it about.
+//
+// ─── TURN 30 (CLAUDE.md F1): THAT TRANSFORM IS `−fileDatum` NOW ────────────
+//
+// It was `−min + modelOrigin`. The owner's 155° hinge proved what min-relative
+// costs on a file whose bounding box is not the measured one, so the body goes
+// on its ABSOLUTE cup datum and this reader follows it there. On `42542984`
+// the two are the same placement to the byte, which is why every number this
+// file has ever produced is unchanged.
 
 import { readFileSync } from 'node:fs';
 import { DEFAULT_CABINET_PROFILE as P } from '../../src/engine/profile.js';
@@ -59,12 +66,12 @@ export function hingeFileBox() {
  */
 export function hingeReach(leaf, h, deg, cliptop = C) {
   const box = hingeFileBox();
-  const O = cliptop.modelOrigin;
+  const D = cliptop.fileDatum;
   const profile = {
     ...P,
     hardware: { ...P.hardware, hinge: { ...P.hardware.hinge, cliptop } },
   };
-  const pivot = foldPivotMm({ min: box.min, profile });
+  const pivot = foldPivotMm({ profile });
   // The hand the FILE is authored for; the other hand is the same clone
   // mirrored about the cup (`3d/Hardware.jsx useHingeModels`).
   const s = h.side !== cliptop.fileHand ? -1 : 1;
@@ -80,8 +87,8 @@ export function hingeReach(leaf, h, deg, cliptop = C) {
     for (const cx of [row.min[0], row.max[0]]) {
       for (const cy of [row.min[1], row.max[1]]) {
         for (const cz of [row.min[2], row.max[2]]) {
-          const lx = s * (cx - box.min.x + O.x);
-          const lz = cz - box.min.z + O.z;
+          const lx = s * (cx - D.x);
+          const lz = cz - D.z;
           if (member === 'A') { a = Math.max(a, h.z + lz); continue; }
           // fold about (s·pivot.x, pivot.z), in the cup's own frame…
           const dx = lx - s * pivot.x;

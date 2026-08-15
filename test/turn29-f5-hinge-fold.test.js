@@ -98,8 +98,14 @@ test('F5 the member split is byte-for-byte the contract turn 24 confirmed — gr
 
 test('F5 the pin lands 10.33 mm off the cup and 2.56 mm inside the leaf', () => {
   const pivot = foldPivotMm({ min: FILE_MIN, profile: P });
-  // `axis − min + modelOrigin`, the very shift `glbClone` places the file by —
-  // a derivation, so a corrected axis moves the pin and nothing else.
+  // ─── TURN 30 (CLAUDE.md F1): THE DERIVATION LOST ITS BOUNDING BOX ───────
+  // Turn 29 wrote this as `axis − min + modelOrigin`, the shift `glbClone`
+  // placed the body by. F1 places the body on its ABSOLUTE `fileDatum`, so the
+  // pin follows: `axis − fileDatum`, no min in it at all. On THIS file the two
+  // are the same point — `modelOrigin = min − fileDatum` by construction — and
+  // both readings are asserted here so the equality is proved and not assumed.
+  assert.ok(Math.abs(pivot.x - (RIG.axis.x - C.fileDatum.x)) < 1e-9);
+  assert.ok(Math.abs(pivot.z - (RIG.axis.z - C.fileDatum.z)) < 1e-9);
   assert.ok(Math.abs(pivot.x - (RIG.axis.x - FILE_MIN.x + C.modelOrigin.x)) < 1e-9);
   assert.ok(Math.abs(pivot.z - (RIG.axis.z - FILE_MIN.z + C.modelOrigin.z)) < 1e-9);
   assert.ok(Math.abs(pivot.x - -10.33) < 1e-9, `x = ${pivot.x}`);

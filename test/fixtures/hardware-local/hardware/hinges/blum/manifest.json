@@ -56,6 +56,38 @@
    "finish": "onyx"
   },
   {
+   "file": "hardware/hinges/blum/cliptop/71B7550_15001.glb",
+   "family": "71B7550",
+   "article": "15001",
+   "role": "hinge",
+   "angle": 155,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B7550_15002.glb",
+   "family": "71B7550",
+   "article": "15002",
+   "role": "hinge",
+   "angle": 155,
+   "finish": "nickel"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B7590_15003.glb",
+   "family": "71B7590",
+   "article": "15003",
+   "role": "hinge",
+   "angle": 155,
+   "finish": "onyx"
+  },
+  {
+   "file": "hardware/hinges/blum/cliptop/71B7590_15004.glb",
+   "family": "71B7590",
+   "article": "15004",
+   "role": "hinge",
+   "angle": 155,
+   "finish": "onyx"
+  },
+  {
    "file": "hardware/hinges/blum/cliptop/173L6100_20001.glb",
    "family": "173L6100",
    "article": "20001",

@@ -1,0 +1,70 @@
+{
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "F1 — the leaves really are wearing the 110° file",
+   "ok": true,
+   "detail": "01-FL: 71B3550_10001.glb (110°) · 01-FR: 71B3550_10001.glb (110°)"
+  },
+  {
+   "label": "F1 — the leaves really are wearing the 155° file",
+   "ok": true,
+   "detail": "01-FL: 71B7550_15001.glb (155°) · 01-FR: 71B7550_15001.glb (155°)"
+  },
+  {
+   "label": "F1 — the 110° CUP reaches no deeper than its own ⌀35 bore, at 0°/90°/110°, both hands",
+   "ok": true,
+   "detail": "L@0°: 11.00 · R@0°: 11.00 · L@90°: 11.00 · R@90°: 11.00 · L@110°: 11.00 · R@110°: 11.00 mm into a 25 mm leaf (bore 11)"
+  },
+  {
+   "label": "F1 — …and with the door SHUT the 110° ARM lies behind the leaf, not in it",
+   "ok": true,
+   "detail": "L: -14.10 mm · R: -14.10 mm"
+  },
+  {
+   "label": "F1 — the 155° CUP reaches no deeper than its own ⌀35 bore, at 0°/90°/110°, both hands",
+   "ok": true,
+   "detail": "L@0°: 11.00 · R@0°: 11.00 · L@90°: 11.00 · R@90°: 11.00 · L@110°: 11.00 · R@110°: 11.00 mm into a 25 mm leaf (bore 11)"
+  },
+  {
+   "label": "F1 — …and with the door SHUT the 155° ARM lies behind the leaf, not in it",
+   "ok": true,
+   "detail": "L: -14.10 mm · R: -14.10 mm"
+  },
+  {
+   "label": "F1 — the 155° cup sits exactly where the 110° cup sits",
+   "ok": true,
+   "detail": "L@0°: 11.00 vs 11.00 · R@0°: 11.00 vs 11.00 · L@90°: 11.00 vs 11.00 · R@90°: 11.00 vs 11.00 · L@110°: 11.00 vs 11.00 · R@110°: 11.00 vs 11.00"
+  },
+  {
+   "label": "F1 — the 155° hinge’s knuckle is still ONE point, at 0°/90°/110°, both hands",
+   "ok": true,
+   "detail": "L@0°: 0.000 mm · R@0°: 0.000 mm · L@90°: 0.000 mm · R@90°: 0.000 mm · L@110°: 0.000 mm · R@110°: 0.000 mm"
+  },
+  {
+   "label": "F1 — …on the MEASURED pin, unmoved by the bigger file",
+   "ok": true,
+   "detail": "(-10.329999999999998, 0, 2.5600000000000023) mm from the cup centre"
+  },
+  {
+   "label": "F1 — …and the arm still keeps the CARCASS’s attitude",
+   "ok": true,
+   "detail": "L@0°: 0.000° · R@0°: 0.000° · L@90°: 0.000° · R@90°: 0.000° · L@110°: 0.000° · R@110°: 0.000°"
+  },
+  {
+   "label": "R6 — the console is clean for the whole walk",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

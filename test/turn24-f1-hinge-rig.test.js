@@ -110,13 +110,21 @@ test('F1.2 — the fold pivot is the file axis put through the clone’s own tra
   // cabinet corrects THOSE TWO and nothing else. The lab measured them on
   // `71B3550_42542984.glb` and render-verified: x = −0.01808 m, z = +0.04286 m.
   //
-  // Through the clone's own transform (`axis − min + modelOrigin`, the very
-  // shift `glbClone` places the file by) that is:
+  // Through the clone's own transform that is:
   //
-  //   x  −18.08 + 26.5 − 18.75 = −10.33   ten millimetres towards the arm,
-  //                                       off the cup's centre line
-  //   z   42.86 + 29.48 − 69.78 = +2.56   a whisker INSIDE the leaf, which is
-  //                                       where a CLIP top's knuckle sits
+  //   x  −18.08 + 7.75 = −10.33   ten millimetres towards the arm, off the
+  //                               cup's centre line
+  //   z   42.86 − 40.3 = +2.56    a whisker INSIDE the leaf, which is where a
+  //                               CLIP top's knuckle sits
+  //
+  // ─── TURN 30 (CLAUDE.md F1) ────────────────────────────────────────────
+  // The transform used to be `axis − min + modelOrigin`; it is `axis −
+  // fileDatum` now, because the BODY is placed by its absolute datum and the
+  // pin goes through whatever the body goes through. Same two numbers on this
+  // file — the arithmetic below is `min` and `modelOrigin` cancelling — and a
+  // pin that no longer moves when a 155° export brings a bigger bounding box.
+  assert.ok(Math.abs(pivot.x - (P.hardware.hinge.cliptop.rig.axis.x
+    - P.hardware.hinge.cliptop.fileDatum.x)) < 1e-9);
   assert.ok(Math.abs(pivot.x - -10.33) < 1e-9, `pivot x = ${pivot.x}`);
   // The axis is HORIZONTAL and parallel to the hinge row: no height of its own.
   assert.equal(pivot.y, 0);

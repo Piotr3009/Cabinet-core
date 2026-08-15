@@ -1913,6 +1913,74 @@ async function main() {
       await page.sleep(900);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F18 [MEDIUM] — the twin cupboard
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f18')) {
+      await newRoom('Turn 30 walk — F18');
+      await page.evaluate(`${P}.ui.getState().setLibraryCategory('kitchen'); return true;`);
+      await page.sleep(700);
+      await page.click('[data-library-group="base-units"]');
+      await page.sleep(700);
+      await page.click('[data-library-entry="twin-cupboard"]');
+      await page.sleep(1500);
+      await page.evaluate(`${P}.ui.getState().closeLibrary(); return true;`);
+      await page.sleep(1000);
+
+      const f18 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units[0];
+        s.updateUnitParams(u.id, { doors: true });
+        const b = s.addUnit('BUD', { near: u.id, side: 'right' });
+        s.updateUnitParams(b.id, { width: u.params.width, doors: true });
+        window.__t30 = { twin: u.id, bud: b.id, ids: [u.id, b.id] };
+        const part = (id) => String(id).replace(/^[^-]*-/, '');
+        const holes = (x) => x.drills.map((d) => part(d.panel) + '|' + d.layer + '|' + d.kind + '|' + d.x + '|' + d.y + '|' + d.d).sort().join(',');
+        const r = s.unitResult(u.id);
+        const rb = s.unitResult(b.id);
+        const leaves = (x) => x.panels.filter((p) => p.role === 'front');
+        // …and a NARROW twin, where the width threshold would give a single.
+        s.updateUnitParams(u.id, { width: 700 });
+        const narrow = leaves(s.unitResult(u.id)).length;
+        s.updateUnitParams(b.id, { width: 700 });
+        const narrowBud = leaves(s.unitResult(b.id)).length;
+        s.updateUnitParams(u.id, { width: 900 });
+        s.updateUnitParams(b.id, { width: 900 });
+        return {
+          type: u.type,
+          width: 900,
+          leaves: leaves(r).length,
+          leafW: leaves(r).map((p) => p.w),
+          same: holes(r) === holes(rb),
+          drills: r.drills.length,
+          budDrills: rb.drills.length,
+          narrow,
+          narrowBud,
+        };
+      `);
+      measurements.f18 = f18;
+      check('F18 — the Library places a twin cupboard, 900 wide, with a PAIR of doors',
+        f18.type === 'TWIN' && f18.leaves === 2,
+        `${f18.type} · ${f18.leaves} leaves of ${f18.leafW.join(' + ')} mm`);
+      check('F18 — it is drilled EXACTLY as a base unit of the same size',
+        f18.same === true && f18.drills === f18.budDrills,
+        `${f18.drills} holes vs the base unit’s ${f18.budDrills}`);
+      check('F18 — and at 700 it is STILL a pair, where a base unit is a single',
+        f18.narrow === 2 && f18.narrowBud === 1,
+        `twin ${f18.narrow} leaves · base unit ${f18.narrowBud}`);
+
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.9, 0.55, 2.0]);
+      await page.sleep(900);
+      await shot('18a-a-twin-cupboard-beside-a-single-door-base-unit-of-the-same-width');
+      await page.click('[data-open-all-doors]');
+      await page.sleep(2200);
+      await frameUnits(await page.evaluate('return [window.__t30.twin];'), [1.0, 0.5, 2.0]);
+      await page.sleep(900);
+      await shot('18b-open-a-pair-of-leaves-on-kit-buds-own-carcass');
+      await page.click('[data-open-all-doors]');
+      await page.sleep(1000);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

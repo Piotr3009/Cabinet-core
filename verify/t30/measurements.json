@@ -1,65 +1,16 @@
 {
- "f17": {
-  "type": "WINE",
-  "uprights": 3,
-  "shelves": 20,
-  "cell": {
-   "id": "LATTICE-H1-1",
-   "part": "LATTICE-H",
-   "role": "shelf",
-   "material_role": "board",
-   "finish_exposed": false,
-   "w": 127.5,
-   "h": 540,
-   "qty": 1,
-   "thickness": 18,
-   "edging": {
-    "code": ">",
-    "len_m": 0.1275
-   },
-   "area_m2": 0.06885,
-   "box": {
-    "x": 18,
-    "y": 125.33333333333333,
-    "z": 0,
-    "w": 127.5,
-    "h": 18,
-    "d": 540
-   },
-   "cnc": {
-    "outline": [
-     [
-      0,
-      0
-     ],
-     [
-      127.5,
-      0
-     ],
-     [
-      127.5,
-      540
-     ],
-     [
-      0,
-      540
-     ]
-    ],
-    "pockets": [],
-    "holes": [],
-    "layer": "OUTLINE"
-   },
-   "meta": {
-    "lattice": "shelf",
-    "row": 1,
-    "column": 1
-   }
-  },
-  "drawn": 23,
-  "machined": 0,
+ "f18": {
+  "type": "TWIN",
+  "width": 900,
+  "leaves": 2,
+  "leafW": [
+   447,
+   447
+  ],
   "same": true,
-  "drills": 62,
-  "budDrills": 62,
-  "onSheet": 23
+  "drills": 92,
+  "budDrills": 92,
+  "narrow": 2,
+  "narrowBud": 1
  }
 }

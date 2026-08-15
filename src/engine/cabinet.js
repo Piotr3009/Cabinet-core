@@ -581,7 +581,11 @@ function normalizeParams(raw, profile) {
     doorCount = Number.isFinite(Number(p.doors.count)) ? Number(p.doors.count) : doorCountFor(p.width, profile);
     if (p.doors.hinge) hinge = String(p.doors.hinge).toUpperCase() === 'R' ? 'R' : 'L';
   } else {
-    doorCount = doorCountFor(p.width, profile);
+    // ─── TURN 30 (CLAUDE.md F18) ───
+    // A kit whose face IS two leaves says so, and says it once. Everything
+    // written before tonight has no `doorCount` and reads the width threshold
+    // exactly as it always has, so no fixture can move.
+    doorCount = Number(type.doorCount) > 0 ? Number(type.doorCount) : doorCountFor(p.width, profile);
   }
 
   // Wall units may run their fronts below the carcass (handleless grab edge).

@@ -213,7 +213,8 @@ test('every library type is configured, available and buildable', () => {
   // Turn 30 (CLAUDE.md F15): the american fridge housing.
   // Turn 30 (CLAUDE.md F16): the bin unit.
   // Turn 30 (CLAUDE.md F17): the wine rack.
-  assert.equal(UNIT_TYPE_ORDER.length, 17, 'wardrobe + 16 kitchen kits');
+  // Turn 30 (CLAUDE.md F18): the twin cupboard.
+  assert.equal(UNIT_TYPE_ORDER.length, 18, 'wardrobe + 17 kitchen kits');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

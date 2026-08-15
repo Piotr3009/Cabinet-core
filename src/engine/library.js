@@ -113,6 +113,12 @@ export const KITCHEN_LIBRARY = [
         hint: 'The slimline filler unit — baskets or not',
         reason: NO_PATTERN,
       },
+      // ─── Turn 30 (CLAUDE.md F18): the twin cupboard ──────────────────────
+      // A cupboard whose face is TWO leaves, at the width a pair is worth
+      // hanging at. KIT_BUD_FULL cuts it and the two-leaf arithmetic is the
+      // engine's own; see engine/types.js TWIN for what KIT_DOOR_DOUBLE.lsp
+      // turned out to be.
+      { kind: 'type', id: 'twin-cupboard', typeId: 'TWIN', label: 'Twin cupboard', hint: 'Base cupboard with a pair of doors' },
       // Kept rather than culled: it is a kit the workshop already builds.
       { kind: 'type', id: 'low', typeId: 'LOW_CABINET' },
     ],

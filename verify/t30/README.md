@@ -803,3 +803,58 @@ exists yet"*.
 | --- | --- |
 | `17a-a-wine-rack-the-lattice-standing-in-kit-buds-carcass.png` | the rack |
 | `17b-the-sheet-plain-rectangles-and-not-one-notch.png` | the cut |
+
+---
+
+## F18 [MEDIUM] — the twin cupboard
+
+### First, the correction: what `KIT_DOOR_DOUBLE.lsp` actually is
+
+CLAUDE.md names it as the parent — *"it exists"*. It exists, and it is **not a
+cupboard**. Read it:
+
+> `;;; Double Doors with Frame` · `;;; Command: DOOR_DOUBLE` · `;;; Base point:
+> bottom-left of left door leaf` · layers `FRAME` / `DOOR_OUTSIDE` /
+> `DOOR_INSIDE` / `DOOR_IRONMONGERY` · asks for *"Overall FRAME WIDTH incl frame
+> members <1603>"*, *"Overall FRAME HEIGHT <2083>"*, *"Frame depth [mm] <100>"*,
+> *"Door number <DD01>"*
+
+It is a pair of **interior room doors in a lining**. There is no carcass in it,
+no shelf, no leg and no cup bored into a cabinet side (`BUL`, `SHELF`, `legW`,
+`hingeCupList` all absent — asserted). A kitchen cupboard cannot be built from
+it, and no type in the app claims it as its kit.
+
+### So what ships
+
+The deliverable that survives the correction, which is the one that was asked
+for: **a twin cupboard in the Kitchen category with its own defaults**.
+`KIT_BUD_FULL.lsp` cuts it and the two-leaf face is the engine's own
+`doors.doubleTotalGap` arithmetic — LISP truth since turn 1, untouched. A twin
+at 900 is drilled **hole for hole** as a 900 base unit.
+
+What is new is that it is a **kit**: `doorCount: 2`, so a **700 mm twin is a
+pair** where the width threshold would give a base unit a single. No kit written
+before tonight has a `doorCount`, so the threshold is exactly what it was
+(704 → 1, 705 → 2, asserted), and a job that says `doors: { count: 1 }` still
+wins.
+
+### The gap, named
+
+**None** — every hole is `KIT_BUD_FULL.lsp`'s own. What is *not* shipped is
+anything from `KIT_DOOR_DOUBLE.lsp`: its frame members, its lining and its door
+ironmongery are a different product and would need their own type.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f18` → **5 ok · 0 failed**.
+
+| | twin | base unit, same width |
+| --- | --- | --- |
+| leaves at 900 | **2** × 447 mm | 1 |
+| holes | 92 | 92, **same fingerprint** |
+| leaves at 700 | **2** | 1 |
+
+| file | |
+| --- | --- |
+| `18a-a-twin-cupboard-beside-a-single-door-base-unit-of-the-same-width.png` | the pair |
+| `18b-open-a-pair-of-leaves-on-kit-buds-own-carcass.png` | open |

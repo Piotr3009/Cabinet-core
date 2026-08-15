@@ -12,29 +12,19 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F17 — the Library places a wine rack, and it has a LATTICE in it",
+   "label": "F18 — the Library places a twin cupboard, 900 wide, with a PAIR of doors",
    "ok": true,
-   "detail": "3 uprights · 20 shelves"
+   "detail": "TWIN · 2 leaves of 447 + 447 mm"
   },
   {
-   "label": "F17 — the room draws every one of those boards",
+   "label": "F18 — it is drilled EXACTLY as a base unit of the same size",
    "ok": true,
-   "detail": "23 lattice boards in the scene"
+   "detail": "92 holes vs the base unit’s 92"
   },
   {
-   "label": "F17 — and every one is a PLAIN rectangle: no hole, no pocket, no notch",
+   "label": "F18 — and at 700 it is STILL a pair, where a base unit is a single",
    "ok": true,
-   "detail": "0 machined lattice boards"
-  },
-  {
-   "label": "F17 — the CARCASS is drilled exactly as KIT_BUD drills one",
-   "ok": true,
-   "detail": "62 holes vs the base unit’s 62"
-  },
-  {
-   "label": "F17 — …and the lattice is on the CUT LIST, board for board",
-   "ok": true,
-   "detail": "23 of 23 on the sheet"
+   "detail": "twin 2 leaves · base unit 1"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

@@ -234,6 +234,55 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F18): THE TWIN CUPBOARD ───────────────────────────
+  //
+  // CLAUDE.md: "Twin cupboard. Parent: KIT_DOOR_DOUBLE — it exists. Expose it
+  // in the Kitchen category with its own defaults."
+  //
+  // ─── WHAT KIT_DOOR_DOUBLE.lsp ACTUALLY IS ──────────────────────────────────
+  //
+  // It exists, and it is not a cupboard. Read it: it is an INTERIOR DOUBLE DOOR
+  // SET in a lining — its own header says "Double Doors with Frame", its
+  // command is DOOR_DOUBLE, its base point is "bottom-left of left door leaf",
+  // its layers are FRAME / DOOR_OUTSIDE / DOOR_INSIDE / DOOR_IRONMONGERY, and
+  // it asks for an overall FRAME width of 1603, a frame height of 2083, a frame
+  // DEPTH of 100 and a door number of "DD01". There is no carcass in it, no
+  // shelf, no leg and no cup bored into a cabinet side. It is a pair of room
+  // doors, and a kitchen cupboard cannot be built from it.
+  //
+  // ─── SO WHAT SHIPS ────────────────────────────────────────────────────────
+  //
+  // The deliverable that survives the correction, which is the one the owner
+  // asked for: a twin cupboard in the Kitchen category with its own defaults.
+  // The kit that actually cuts one is KIT_BUD_FULL, and the two-leaf face is
+  // the engine's own `doors.doubleTotalGap` arithmetic — LISP truth since turn
+  // 1, and the same two leaves any 900 mm base unit has always been given.
+  //
+  // What is NEW is that it is a KIT: `doorCount: 2` means a pair whatever the
+  // width, so a 700 mm twin is a twin rather than a single. Nothing else about
+  // it differs from a base unit, and the test asserts that hole for hole.
+  TWIN: {
+    id: 'TWIN',
+    heightGroup: 'base',
+    label: 'Twin cupboard',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    // A pair of leaves, at any width — the one thing that makes it a twin.
+    doorCount: 2,
+    minHeightKey: null,
+    defaultsKey: 'twinCupboard.defaults',
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    available: true,
+  },
   // ─── TURN 30 (CLAUDE.md F17): THE WINE RACK ───────────────────────────────
   //
   // "Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
@@ -662,7 +711,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -782,5 +831,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW',
 };

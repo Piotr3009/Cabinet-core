@@ -1271,6 +1271,18 @@ export const DEFAULT_CABINET_PROFILE = {
     fixedScrewFromEnd: 50,
   },
 
+  // ─── Twin cupboard (turn 30, CLAUDE.md F18) ───────────────────────────────
+  //
+  // "Expose it in the Kitchen category with its own defaults." A two-door base
+  // cupboard: 900 is the width a pair of leaves is worth hanging at, and the
+  // leaves themselves are `doors.doubleTotalGap` — the engine's own arithmetic
+  // since turn 1, which is KIT_BUD_FULL's.
+  //
+  // See the type for what KIT_DOOR_DOUBLE.lsp actually turned out to be.
+  twinCupboard: {
+    defaults: { width: 900, height: 770, depth: 558 },
+  },
+
   // ─── Wine rack (turn 30, CLAUDE.md F17) ───────────────────────────────────
   //
   // "Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
@@ -3682,6 +3694,7 @@ export function migrateCabinetProfile(profile) {
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
     binUnit: { ...D.binUnit, ...profile.binUnit, defaults: { ...D.binUnit.defaults, ...profile.binUnit?.defaults } },
     wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
+    twinCupboard: { ...D.twinCupboard, ...profile.twinCupboard, defaults: { ...D.twinCupboard.defaults, ...profile.twinCupboard?.defaults } },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,
       ...profile.americanFridgeUnit,

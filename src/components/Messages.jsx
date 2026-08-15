@@ -60,7 +60,7 @@ function Line({ msg, onDismiss }) {
             type="button"
             className="cc-btn shrink-0"
             data-message-action={msg.id}
-            onClick={() => { onDismiss(msg.id); msg.action.run?.(); }}
+            onClick={(e) => { onDismiss(msg.id); msg.action.run?.(e); }}
           >
             {msg.action.label}
           </button>
@@ -80,7 +80,7 @@ function Line({ msg, onDismiss }) {
           type="button"
           className="cc-btn shrink-0"
           data-message-action={msg.id}
-          onClick={() => { onDismiss(msg.id); msg.action.run?.(); }}
+          onClick={(e) => { onDismiss(msg.id); msg.action.run?.(e); }}
         >
           {msg.action.label}
         </button>

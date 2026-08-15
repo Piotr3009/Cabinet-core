@@ -217,7 +217,7 @@ export function doorCountFor(width, profile) {
  * consulted here — which is exactly what makes an internal drawer safe under
  * the batch rule: it removes a board, it invents nothing.
  */
-export function internalDrawerSet(params, type, count) {
+export function internalDrawerSet(params, type, count, items = []) {
   const n = Number(count) || 0;
   const all = () => new Set(Array.from({ length: n }, (_, i) => i + 1));
   if (params?.drawer_fronts === false) return all();
@@ -230,6 +230,14 @@ export function internalDrawerSet(params, type, count) {
   // behind its doors — says so once, on the type, and a job can still hand a
   // list of its own above.
   if (type?.internalDrawers === 'all' && own !== false) return all();
+  // ─── TURN 32 (CLAUDE.md F4): A DRAWER ITEM MAY SAY IT FOR ITSELF ─────────
+  // AddItems asks overlay/internal now, and the answer lives on the item
+  // (`mount: 'internal'` — the field T30 wrote and nothing ever read). The
+  // explicit project channels above still win, exactly as before.
+  const fromItems = (items || [])
+    .map((it, i) => (it?.mount === 'internal' ? i + 1 : null))
+    .filter((v) => v != null && v <= n);
+  if (fromItems.length) return new Set(fromItems);
   return new Set();
 }
 
@@ -476,8 +484,21 @@ function normalizeParams(raw, profile) {
   // positional sections[].items[] model from the editor (SPEC section 5).
   const items = collectItems(p);
   const shelvesFromItems = items.filter((i) => i.kind === 'shelf');
-  const drawersFromItems = items.filter((i) => i.kind === 'drawer');
-  const hangerFromItems = items.find((i) => i.kind === 'hanger');
+  // ─── TURN 32 (CLAUDE.md F4): A DRAWER MAY BELONG TO A COLUMN ─────────────
+  // A drawer item carrying a `zone` lives in that column and is built by the
+  // column-drawer pass from the column's own walls; the DEFAULT zone —
+  // bottom, full width, DP + fillers per the LISP — is every drawer that says
+  // nothing, which is every drawer in every project before this turn.
+  const drawersFromItems = items.filter((i) => i.kind === 'drawer'
+    && (i.zone == null || !Number.isFinite(Number(i.zone))));
+  const columnDrawerItems = items.filter((i) => i.kind === 'drawer'
+    && i.zone != null && Number.isFinite(Number(i.zone)));
+  // …and so may a hanging rail: a `zone` puts one rail in one column. The
+  // unit-wide rail is every hanger that says nothing, exactly as before.
+  const hangerFromItems = items.find((i) => i.kind === 'hanger'
+    && (i.zone == null || !Number.isFinite(Number(i.zone))));
+  const columnRailItems = items.filter((i) => i.kind === 'hanger'
+    && i.zone != null && Number.isFinite(Number(i.zone)));
 
   // ─── TURN 27 (CLAUDE.md F2.1): THE APPLIANCE IS WHAT IS INSIDE ───────────
   //
@@ -649,6 +670,23 @@ function normalizeParams(raw, profile) {
     shelfPositions,
     drawers,
     drawerItems,
+    // Turn 32 (CLAUDE.md F4): the columns' drawers, grouped by their zone —
+    // bottom-up inside each column, exactly as the default stack is.
+    columnDrawers: [...new Set(columnDrawerItems.map((i) => Math.trunc(Number(i.zone))))]
+      .sort((a, b) => a - b)
+      .map((zone) => ({
+        zone,
+        drawers: columnDrawerItems
+          .filter((i) => Math.trunc(Number(i.zone)) === zone)
+          .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))
+          .map((i) => ({ height_mm: i.height_mm, mount: i.mount })),
+      })),
+    columnRails: columnRailItems.map((i) => ({
+      zone: Math.trunc(Number(i.zone)),
+      offset: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
+      material_id: i.material_id ?? null,
+      material_label: i.material_label ?? null,
+    })),
     // ─── Turn 17 (CLAUDE.md F8.1): THE FRONTS COME OFF ──────────────────────
     // The exact mirror of turn 15's "Remove doors", on the kit whose fronts ARE
     // its face: `false` takes them off so the boxes can be worked on, and the
@@ -673,7 +711,7 @@ function normalizeParams(raw, profile) {
     // `drawer_fronts: false` (turn 17) keeps its exact meaning: the WHOLE face
     // comes off. It is the same answer said the short way, so it is folded in
     // here rather than living as a second rule further down.
-    internalDrawers: internalDrawerSet(p, type, drawers),
+    internalDrawers: internalDrawerSet(p, type, drawers, drawerItems),
     drawerHeights,
     rail,
     railOffset: Number(p.rail_offset ?? railDefault),
@@ -2639,6 +2677,240 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── TURN 32 (CLAUDE.md F4): COLUMN DRAWERS — THE WARDROBE'S ZONES ────────
+  //
+  // A vertical partition divides the interior into COLUMNS, and a column may
+  // carry its own drawer stack. Everything is computed FROM THE COLUMN'S
+  // WALLS — the carcass side and/or the partition — with the same numbers the
+  // full-width zone has always used (P.wardrobe.drawers): the column's clear
+  // light replaces `internalWidth`, and the bounding boards play the DP
+  // panels' whole part (so no DP is cut and no reduction is taken). The
+  // boxes, the fronts, the runner rows and the column's own closing board
+  // all follow; an `internal` drawer is given no face, exactly as F20 built.
+  //
+  // It arrives on the OVERRIDE CHANNEL (`params.column_drawers`, built by the
+  // store from the drawer items' own `zone`): a bare `computeCabinet()` —
+  // every golden fixture — passes none, this block emits nothing, and the
+  // DEFAULT zone above cuts exactly what the AutoLISP cuts.
+  const columnDrawerSets = [];
+  if (wardrobeDrawers && Array.isArray(cfg.columnDrawers) && cfg.columnDrawers.length
+    && verticalItems.length) {
+    for (const spec of cfg.columnDrawers) {
+      const k = Math.trunc(Number(spec?.zone));
+      const bay = bays[k];
+      const list = Array.isArray(spec?.drawers) ? spec.drawers : [];
+      if (!bay || !list.length) continue;
+      const colMaxDl = D - G - DR.setback - frontT - DR.depthAllowance;
+      const colDl = snapDrawerDepth(colMaxDl, DR.depthSteps);
+      if (colDl == null) {
+        warnings.push({
+          code: 'DRAWERS_TOO_SHALLOW',
+          message: `Column ${k + 1}: cabinet too shallow for drawers (usable ${roundTo(colMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — the column's drawers were dropped.`,
+        });
+        continue;
+      }
+      const heights = list.map((d) => (Number(d?.height_mm) > 0 ? Number(d.height_mm) : DR.frontHeight));
+      const totalH = heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
+      if (totalH > H - 2 * G - DR.zoneHeadroom) {
+        warnings.push({
+          code: 'DRAWERS_TOO_TALL',
+          message: `Column ${k + 1}: ${heights.length} drawers do not fit below the column's partition — the column's drawers were dropped.`,
+        });
+        continue;
+      }
+      const boxW = bay.size - DR.boxWidthClearance;
+      const colBoxFrontLen = bay.size
+        - Math.max(0, DR.boxFrontBoards - DR.boxFrontCarcassBoards) * GB
+        - DR.boxFrontClearance;
+      const offsets = []; const sideHs = []; const bfHs = [];
+      const partY = G + totalH + DR.partitionClearance;
+      let acc = 0;
+      for (let i = 0; i < heights.length; i += 1) {
+        offsets.push(acc);
+        acc += heights[i] + DR.gap;
+        const ceilingHere = i + 1 < heights.length ? G + acc : partY;
+        const resolved = resolveBoxSide({
+          wanted: heights[i] - DR.frontToSideDelta,
+          base: G + offsets[i],
+          ceiling: ceilingHere,
+          boxBoardT: GB,
+        }, P);
+        sideHs.push(resolved.height);
+        bfHs.push(resolved.height - DR.boxFrontHeightDeduction - GB - DR.boxFrontHeightExtra);
+      }
+      columnDrawerSets.push({
+        zone: k,
+        bay,
+        bounds: {
+          left: k === 0 ? 'BUL' : `VPART-${k}`,
+          right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
+        },
+        mounts: list.map((d) => (d?.mount === 'internal' ? 'internal' : 'overlay')),
+        heights,
+        offsets,
+        sideHs,
+        bfHs,
+        dl: colDl,
+        boxW,
+        frontW: boxW + DR.frontOversize,
+        boxFrontLen: colBoxFrontLen,
+        bottomW: colBoxFrontLen + DR.bottomOversize,
+        partY,
+      });
+    }
+
+    // The pieces, per column — the same five boards a full-width drawer is,
+    // with the same two pockets in the sides (it is the same box on the same
+    // runner), cut to the column's own light. The pocket helper mirrors the
+    // full-width zone's exactly; the numbers are `profile.baseDrawerUnit`'s
+    // because they were measured off A DRAWER SIDE, not off a kit.
+    const colSidePockets = (len) => [
+      {
+        layer: 'DRAWER_RUNNER_POCKET', depth: B.runnerPocketDepth,
+        x1: -B.pocketOvershoot, y1: 0, x2: len + B.pocketOvershoot, y2: B.runnerPocketWidth,
+      },
+      {
+        layer: 'DRAWER_BOTTOM_POCKET', depth: B.bottomPocketDepth,
+        x1: -B.pocketOvershoot, y1: B.runnerPocketWidth,
+        x2: len + B.pocketOvershoot, y2: B.runnerPocketWidth + GB + B.bottomPocketExtra,
+      },
+    ];
+    for (const set of columnDrawerSets) {
+      const boxLeftX = set.bay.from + DR.boxWidthClearance / 2;
+      const colBoxSetback = DR.setback + frontT;
+      const boxZFront = D - colBoxSetback;
+      const common = { thickness: GB, edgeCode: codes.none, edgeLen: 0 };
+      const tagOf = (i) => `Z${set.zone + 1}D${i}`;
+      for (let i = 1; i <= set.heights.length; i += 1) {
+        const zoneY = G + set.offsets[i - 1];
+        const sideHeight = set.sideHs[i - 1];
+        const bfH = set.bfHs[i - 1];
+        const boxY = zoneY + B.boxAboveRunner;
+        const bottomY = boxY + B.runnerPocketWidth;
+        const boxWallY = bottomY + GB;
+        const tag = tagOf(i);
+        panels.push(panel({
+          id: `${tag}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: set.dl, h: sideHeight, ...common,
+          box: { x: boxLeftX, y: boxY, z: boxZFront - set.dl, w: GB, h: sideHeight, d: set.dl },
+          cnc: pocketedRect(set.dl, sideHeight, colSidePockets(set.dl)),
+          meta: { drawer: i, side: 'L', zone: set.zone },
+        }));
+        panels.push(panel({
+          id: `${tag}-SR`, part: 'DRAWER-SIDE', role: 'drawer_box', w: set.dl, h: sideHeight, ...common,
+          box: { x: boxLeftX + set.boxW - GB, y: boxY, z: boxZFront - set.dl, w: GB, h: sideHeight, d: set.dl },
+          cnc: pocketedRect(set.dl, sideHeight, colSidePockets(set.dl)),
+          meta: { drawer: i, side: 'R', zone: set.zone },
+        }));
+        panels.push(panel({
+          id: `${tag}-BF`, part: 'DRAWER-BOX-FRONT', role: 'drawer_box', w: set.boxFrontLen, h: bfH, ...common,
+          box: { x: boxLeftX + GB, y: boxWallY, z: boxZFront - GB, w: set.boxFrontLen, h: bfH, d: GB },
+          cnc: rectGeometry(set.boxFrontLen, bfH), meta: { drawer: i, zone: set.zone },
+        }));
+        panels.push(panel({
+          id: `${tag}-BB`, part: 'DRAWER-BOX-BACK', role: 'drawer_box', w: set.boxFrontLen, h: bfH, ...common,
+          box: { x: boxLeftX + GB, y: boxWallY, z: boxZFront - set.dl, w: set.boxFrontLen, h: bfH, d: GB },
+          cnc: rectGeometry(set.boxFrontLen, bfH), meta: { drawer: i, zone: set.zone },
+        }));
+        panels.push(panel({
+          id: `${tag}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: set.bottomW, h: set.dl, ...common,
+          box: {
+            x: boxLeftX + (set.boxW - set.bottomW) / 2, y: bottomY, z: boxZFront - set.dl, w: set.bottomW, h: GB, d: set.dl,
+          },
+          cnc: rectGeometry(set.bottomW, set.dl), meta: { drawer: i, zone: set.zone },
+        }));
+      }
+      // The FACES — one per drawer, unless the drawer is INTERNAL (F20's law:
+      // no face, and the face above grows down over its zone).
+      for (let i = 1; i <= set.heights.length; i += 1) {
+        if (set.mounts[i - 1] === 'internal') continue;
+        const zoneY = G + set.offsets[i - 1];
+        const first = i === 1;
+        const ownH = first ? set.heights[0] - DR.firstFrontAdjust : set.heights[i - 1];
+        const ownY = first ? zoneY + DR.firstFrontAdjust : zoneY;
+        let bottom = i;
+        while (bottom > 1 && set.mounts[bottom - 2] === 'internal') bottom -= 1;
+        const dfY = bottom === i
+          ? ownY
+          : (bottom === 1 ? G + set.offsets[0] + DR.firstFrontAdjust : G + set.offsets[bottom - 1]);
+        const dfH = ownY + ownH - dfY;
+        panels.push(panel({
+          id: `${unitNum}-${tagOf(i)}-F`, part: 'DRAWER-FRONT', role: 'front', w: set.frontW, h: dfH, thickness: frontT,
+          edgeCode: codes.all, edgeLen: metres(2 * set.frontW + 2 * dfH),
+          box: {
+            x: set.bay.from + DR.boxWidthClearance / 2 - (DR.frontOversize / 2), y: dfY, z: D - DR.setback - frontT, w: set.frontW, h: dfH, d: frontT,
+          },
+          cnc: rectGeometry(set.frontW, dfH), meta: { drawer: i, zone: set.zone, frontType: cfg.frontType },
+        }));
+      }
+      // The column's own CLOSING BOARD — the same horizontal partition the
+      // full-width zone has always stood its shelves on, spanning this column
+      // only, at the same clearance above its top drawer.
+      panels.push(panel({
+        id: `Z${set.zone + 1}-PART`, part: 'PARTITION', role: 'shelf', w: set.bay.size, h: partitionDepth, thickness: G,
+        edgeCode: codes.none, edgeLen: 0,
+        box: {
+          x: set.bay.from, y: set.partY, z: G, w: set.bay.size, h: G, d: partitionDepth,
+        },
+        cnc: rectGeometry(set.bay.size, partitionDepth),
+        meta: {
+          variant: 'fixed', locked: true, zone: set.zone, front_mm: internalDepth - partitionDepth,
+        },
+      }));
+    }
+  }
+
+  // ─── TURN 32 (CLAUDE.md F4): A COLUMN MAY HANG ITS OWN RAIL ───────────────
+  //
+  // Same law as the unit-wide rail — the same default offset, the same
+  // too-high clamp, the same partitioner board above it — measured across the
+  // column's own span, standing on the column's own drawer stack where one
+  // exists. On the override channel like everything else in this turn: no
+  // zoned hanger item, no block, no change to any fixture.
+  const columnRailSets = [];
+  if (type.supports.rail && Array.isArray(cfg.columnRails) && cfg.columnRails.length
+    && verticalItems.length) {
+    for (const spec of cfg.columnRails) {
+      const k = Math.trunc(Number(spec?.zone));
+      const bay = bays[k];
+      if (!bay) continue;
+      const stack = columnDrawerSets.find((s) => s.zone === k) || null;
+      const base = stack ? stack.partY + G : G;
+      let colRailY = base + (Number(spec.offset) > 0 ? Number(spec.offset) : cfg.railOffset);
+      let colRailPartY = colRailY + RL.partitionAbove;
+      if (colRailPartY + G > H - G - RL.topClearance) {
+        warnings.push({
+          code: 'RAIL_TOO_HIGH',
+          message: `Column ${k + 1}: rail too high for the carcass — lowered to fit under the top.`,
+        });
+        colRailY = H - G - RL.topClearance - G - RL.partitionAbove;
+        colRailPartY = colRailY + RL.partitionAbove;
+      }
+      columnRailSets.push({
+        zone: k,
+        bay,
+        bounds: {
+          left: k === 0 ? 'BUL' : `VPART-${k}`,
+          right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
+        },
+        railY: colRailY,
+        railPartY: colRailPartY,
+        material_id: spec.material_id ?? null,
+        material_label: spec.material_label ?? null,
+      });
+      panels.push(panel({
+        id: `Z${k + 1}-RAIL-PART`, part: 'RAIL-PART', role: 'shelf', w: bay.size, h: partitionDepth, thickness: G,
+        edgeCode: codes.none, edgeLen: 0,
+        box: {
+          x: bay.from, y: colRailPartY, z: G, w: bay.size, h: G, d: partitionDepth,
+        },
+        cnc: rectGeometry(bay.size, partitionDepth),
+        meta: {
+          variant: 'fixed', locked: true, zone: k, front_mm: internalDepth - partitionDepth,
+        },
+      }));
+    }
+  }
+
   // BUDR: parts grouped by kind (all sides, then all box fronts/backs, then all
   // bottoms, then the fronts) — the order KIT_BUDR_FULL lays out and writes.
   if (budr) {
@@ -4005,6 +4277,50 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── TURN 32 (CLAUDE.md F4): THE COLUMN'S RUNNERS DRILL ITS OWN WALLS ─────
+  //
+  // A carcass side takes the pattern the full-width zone has always drilled
+  // into it (rows at `firstRowFromBottom`, holes at `holeXPattern` from the
+  // front, behind the box setback). A PARTITION takes the DP's own published
+  // pattern — it is doing the DP's whole job — in the VPART's own CNC frame:
+  // u along its HEIGHT above its floor at G, v along its DEPTH from the
+  // front. The closing board's three screws land exactly where the
+  // full-width zone lands them, measured across the column's own span.
+  for (const set of columnDrawerSets) {
+    const colBoxSetback = DR.setback + frontT;
+    const colPartCentre = set.partY + G / 2;
+    for (const bound of [set.bounds.left, set.bounds.right]) {
+      const carcass = bound === 'BUL' || bound === 'BUR';
+      if (!carcass && !panels.some((x) => x.id === bound)) continue;
+      for (let i = 0; i < set.offsets.length; i += 1) {
+        const rel = set.offsets[i] + RN.firstRowFromBottom;
+        for (const px of RN.holeXPattern) {
+          if (carcass) {
+            const x = bound === 'BUR' ? sideW - px - colBoxSetback : px + colBoxSetback;
+            addDrill(bound, 'runner', RN.layer, x, G + rel, RN.holeDiameter);
+          } else {
+            // The VPART's own frame, exactly as the bay-door hinges use it:
+            // x along the DEPTH as `depth − v` (v measured from the front),
+            // y the height above the partition's own bottom.
+            addDrill(bound, 'runner', RN.layer, partitionDepth - (px + colBoxSetback), rel, RN.holeDiameter);
+          }
+        }
+      }
+      if (carcass) {
+        for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
+          addDrill(bound, 'partition_screw', pz.layers.screw, x, colPartCentre, DP.screwDiameter);
+        }
+      } else {
+        for (const v of [pz.screwFromEnd, partitionDepth / 2, partitionDepth - pz.screwFromEnd]) {
+          addDrill(bound, 'partition_screw', pz.layers.screw, v, colPartCentre - G, DP.screwDiameter);
+        }
+      }
+    }
+    for (const x of [set.bay.from + pz.screwFromEnd, set.bay.centre, set.bay.to - pz.screwFromEnd]) {
+      addDrill('BACK', 'partition_screw', pz.layers.screw, x, colPartCentre, DP.screwDiameter);
+    }
+  }
+
   // BUDR: runners on BOTH carcass sides — there is no drawer panel and no door.
   if (budr) {
     runnerCarcassSide = 'both';
@@ -4107,6 +4423,35 @@ export function computeCabinet(params, profileOverride) {
     if (backStyle === 'full') {
       for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
         addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, railPartCentreY, RL.bracketScrewDiameter);
+      }
+    }
+  }
+
+  // ─── TURN 32 (CLAUDE.md F4): the column's rail fixes to ITS walls ─────────
+  // The same bracket screw and the same three partitioner screws, into the
+  // column's bounding boards — a carcass side in its own frame, a VPART in
+  // the frame the bay-door hinges established (depth first, then height
+  // above its own bottom).
+  for (const set of columnRailSets) {
+    const centre = set.railPartY + G / 2;
+    for (const bound of [set.bounds.left, set.bounds.right]) {
+      const carcass = bound === 'BUL' || bound === 'BUR';
+      if (!carcass && !panels.some((x) => x.id === bound)) continue;
+      if (carcass) {
+        addDrill(bound, 'rail_bracket', pz.layers.screw, sideW / 2, set.railY, RL.bracketScrewDiameter);
+        for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
+          addDrill(bound, 'rail_partition_screw', pz.layers.screw, x, centre, RL.bracketScrewDiameter);
+        }
+      } else {
+        addDrill(bound, 'rail_bracket', pz.layers.screw, partitionDepth / 2, set.railY - G, RL.bracketScrewDiameter);
+        for (const v of [pz.screwFromEnd, partitionDepth / 2, partitionDepth - pz.screwFromEnd]) {
+          addDrill(bound, 'rail_partition_screw', pz.layers.screw, v, centre - G, RL.bracketScrewDiameter);
+        }
+      }
+    }
+    if (backStyle === 'full') {
+      for (const x of [set.bay.from + pz.screwFromEnd, set.bay.centre, set.bay.to - pz.screwFromEnd]) {
+        addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, centre, RL.bracketScrewDiameter);
       }
     }
   }
@@ -4276,7 +4621,10 @@ export function computeCabinet(params, profileOverride) {
     hardware.push({ role, label, qty, unit, spec, spec_label: specLabel });
   };
 
-  const runnerLength = budr ? budr.depth : szufDl;
+  // Turn 32 (CLAUDE.md F4): the columns share the default ladder — the depth
+  // is the cabinet's, so a column drawer snaps to the same length.
+  const runnerLength = budr ? budr.depth : (szufDl ?? columnDrawerSets[0]?.dl ?? null);
+  const columnDrawerCount = columnDrawerSets.reduce((s, c) => s + c.heights.length, 0);
 
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────
   //
@@ -4382,7 +4730,10 @@ export function computeCabinet(params, profileOverride) {
   // still gets the single line it has had since turn 3.
   const runnerDesign = { runners: { variant: params?.project_runner_variant ?? null } };
   const byVariant = new Map();
-  for (let i = 1; i <= numDrawers; i += 1) {
+  for (let i = 1; i <= numDrawers + columnDrawerCount; i += 1) {
+    // Turn 32 (CLAUDE.md F4): a column drawer buys a pair exactly as a
+    // full-width one does — same ladder, same variant resolution, counted
+    // after the default stack so per-drawer overrides keep their indices.
     const v = resolveRunnerVariant({
       drawer: i, unit: { params }, design: runnerDesign, profile: P,
     });
@@ -4412,6 +4763,16 @@ export function computeCabinet(params, profileOverride) {
   hw('runner_sync_rods', 'Runner synchronisation rods', rod.fitted ? numDrawers : 0, 'pcs',
     { kind: rod.kind, length_mm: rod.length, opening_mm: internalWidth },
     rod.fitted ? `${roundTo(rod.length, 0)} mm · ${rod.kind === 'narrow' ? 'narrow' : 'with adapters'}` : '');
+  // Turn 32 (CLAUDE.md F4): each column asks the same Blum threshold with its
+  // OWN opening — a wide column's drawers take rods, a narrow one's do not.
+  for (const set of columnDrawerSets) {
+    const colRod = syncRodFor({ openingWidth: set.bay.size, boxWidth: set.boxW, profile: P });
+    hw('runner_sync_rods', 'Runner synchronisation rods', colRod.fitted ? set.heights.length : 0, 'pcs',
+      {
+        kind: colRod.kind, length_mm: colRod.length, opening_mm: set.bay.size, zone: set.zone,
+      },
+      colRod.fitted ? `${roundTo(colRod.length, 0)} mm · column ${set.zone + 1}` : '');
+  }
   hw('legs', 'Legs', legsPerUnit, 'pcs',
     { height_mm: legHeight, corners: P.legs.cornerCount, centre: legsPerUnit > P.legs.cornerCount },
     legHeight ? `${roundTo(legHeight, 0)} mm` : '');
@@ -4423,6 +4784,14 @@ export function computeCabinet(params, profileOverride) {
   hw('rail', 'Hanging rail', hasRail ? 1 : 0, 'pcs',
     { length_mm: internalWidth, material_id: params?.rail_material_id ?? null },
     [`${roundTo(internalWidth, 0)} mm`, railProduct].filter(Boolean).join(' · '));
+  // Turn 32 (CLAUDE.md F4): a column's rail is its own purchase, cut to the
+  // column's own light.
+  for (const set of columnRailSets) {
+    hw('rail', 'Hanging rail', 1, 'pcs',
+      { length_mm: set.bay.size, material_id: set.material_id, zone: set.zone },
+      [`${roundTo(set.bay.size, 0)} mm`, `column ${set.zone + 1}`, set.material_label || '']
+        .filter(Boolean).join(' · '));
+  }
   hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',
     { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
   // ─── TURN 30 (CLAUDE.md F21): "BOM SAYS GLASS DOOR" ──────────────────────
@@ -4757,7 +5126,23 @@ export function computeCabinet(params, profileOverride) {
     // View-only: the rail has no CNC of its own (HANGER_HOLE is the wall
     // bracket in a wall unit's back, a different thing entirely).
     rail: hasRail ? { y: railY, x1: G, x2: W - G, z: (D + G) / 2 } : null,
+    // Turn 32 (CLAUDE.md F4): the columns' own rails, beside the unit-wide one.
+    columnRails: columnRailSets.map((set) => ({
+      zone: set.zone, y: set.railY, x1: set.bay.from, x2: set.bay.to, z: (D + G) / 2,
+    })),
     drawerZone: hasDrawers ? { top: partitionY, count: numDrawers, heights: [...drawerHeights] } : null,
+    // Turn 32 (CLAUDE.md F4): each column's own stack — its zone index, the
+    // top of its closing board and what stands in it — for the store's shelf
+    // clamps and the walk's measures.
+    columnDrawers: columnDrawerSets.map((set) => ({
+      zone: set.zone,
+      top: set.partY,
+      count: set.heights.length,
+      heights: [...set.heights],
+      mounts: [...set.mounts],
+      from: set.bay.from,
+      to: set.bay.to,
+    })),
     drawerFronts: budr
       ? budr.heights.map((h, i) => ({ index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth }))
       : (hasDrawers

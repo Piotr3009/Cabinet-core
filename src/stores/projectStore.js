@@ -2752,7 +2752,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * heights already set on surviving drawers are kept, so bumping the count
    * from 2 to 3 does not silently reset the two the user already sized.
    */
-  addDrawers: (unitId, count, mount = 'overlay', heightMm) => {
+  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null) => {
     // Turn 24 (CLAUDE.md F3.1): the hard gate. Removing the last drawer is
     // always allowed — a gate that trapped a stack somebody wanted rid of
     // would be a gate on the wrong side of the door.
@@ -2760,6 +2760,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const gate = drawerBoxGate(get().project.design);
       if (gate.blocked) return { ok: false, error: gate.message };
     }
+    // ─── TURN 32 (CLAUDE.md F4): THE RECESSED-PARTITION LAW ────────────────
+    // Drawers in a column need that column's walls FULL DEPTH at the runner
+    // band. A guard that SPEAKS: the refusal carries the number and the door
+    // to the partition's own editor — it fixes nothing by itself.
+    if (count > 0 && zone != null) {
+      const guard = get().columnDrawerGuard(unitId, zone);
+      if (guard.blocked) return { ok: false, error: guard.message, guard };
+    }
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
     const fallback = Number(heightMm) > 0
       ? Number(heightMm)
       : getCabinetProfile().wardrobe.drawers.frontHeight;
@@ -2767,15 +2776,20 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
-        const kept = section.items.filter((i) => i.kind !== 'drawer');
+        const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+          ? null : Math.trunc(Number(i.zone)));
+        // Turn 32 (CLAUDE.md F4): only THIS zone's stack is replaced — the
+        // other columns' drawers are somebody else's answer.
+        const kept = section.items.filter((i) => i.kind !== 'drawer' || zoneOf(i) !== wantZone);
         const previous = section.items
-          .filter((i) => i.kind === 'drawer')
+          .filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone)
           .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
         const drawers = Array.from({ length: count }, (_, i) => ({
           id: previous[i]?.id || uid('drawer'),
           kind: 'drawer',
           index: i + 1,
           mount,
+          ...(wantZone == null ? {} : { zone: wantZone }),
           height_mm: Number(previous[i]?.height_mm) > 0 ? Number(previous[i].height_mm) : fallback,
         }));
         return { ...u, params: { ...u.params, sections: [{ ...section, items: [...drawers, ...kept] }] } };
@@ -2784,6 +2798,45 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // The drawer stack raises the floor the shelves stand on.
     get().reclampShelves(unitId);
     return { ok: true, error: null };
+  },
+
+  /**
+   * ─── TURN 32 (CLAUDE.md F4): MAY THIS COLUMN TAKE DRAWERS? ────────────────
+   *
+   * The owner's law, 15.08: drawers in a column require that column's walls
+   * FULL DEPTH at the runner band. A bounding partition standing back from
+   * the front — its own `front_mm`, or the unit's `partition_front_mm` seed,
+   * or the profile's interior setback where nobody said anything — has no
+   * board where the runner screws go. The refusal names the number and the
+   * partition, so the one button ([Reset the setback]) can open its editor.
+   */
+  columnDrawerGuard: (unitId, zone) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { blocked: false };
+    const profile = getCabinetProfile();
+    const items = unit.params.sections?.[0]?.items || [];
+    const parts = items
+      .filter((i) => i.kind === 'partition' && Number.isFinite(Number(i.x_mm)))
+      .sort((a, b) => Number(a.x_mm) - Number(b.x_mm));
+    const k = Math.trunc(Number(zone));
+    const unitSeed = Number.isFinite(Number(unit.params.partition_front_mm)) && Number(unit.params.partition_front_mm) >= 0
+      ? Number(unit.params.partition_front_mm)
+      : profile.carcass.interiorSetback;
+    for (const [n, item] of [[k - 1, parts[k - 1]], [k, parts[k]]]) {
+      if (!item) continue;
+      const own = Number(item.front_mm);
+      const setback = Number.isFinite(own) && own >= 0 ? own : unitSeed;
+      if (setback > 0) {
+        return {
+          blocked: true,
+          setbackMm: setback,
+          itemId: item.id,
+          panelId: `VPART-${n + 1}`,
+          message: `The column's partition stands ${setback} mm back from the front — drawers need its full depth at the runner band.`,
+        };
+      }
+    }
+    return { blocked: false };
   },
 
   /**
@@ -2862,7 +2915,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // centre itself between are the ones in ITS bay and nobody else's.
       const bay = zoneIndexOf(zone);
       const pos = centredShelfPos({
-        band: shelfLimits(unit, profile),
+        // Turn 32 (CLAUDE.md F4): the band is the BAY's — a shelf over a
+        // column's drawer stack starts above that column's closing board.
+        band: shelfLimits(unit, profile, bay),
         positions: shelvesInEngineOrder(items)
           .filter((sh) => (bay == null ? true : zoneIndexOf(sh.zone) === bay))
           .map((sh) => sh.pos_mm),
@@ -2935,23 +2990,37 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * of the drawer stack below it (BACKLOG #12: "hangers in between"). The chosen
    * hardware travels with the item, so the BOM names the product.
    */
-  addHangerRail: (unitId, { materialId = null, materialLabel = null } = {}) => {
+  addHangerRail: (unitId, { materialId = null, materialLabel = null, zone = null } = {}) => {
     const profile = getCabinetProfile();
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
     const items = unit.params.sections?.[0]?.items || [];
-    if (items.some((i) => i.kind === 'hanger')) return null;
+    // Turn 32 (CLAUDE.md F4): one rail PER COLUMN — a second in the same
+    // column (or a second unit-wide one) is still refused.
+    const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    if (items.some((i) => i.kind === 'hanger' && zoneOf(i) === wantZone)) return null;
     const result = computeCabinet(paramsForEngine(unit), profile);
     const G = unit.params.board_t ?? profile.board.thickness;
-    const zoneBase = result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G;
+    const columnStack = wantZone != null
+      ? (result.assemblies.columnDrawers || []).find((c) => c.zone === wantZone)
+      : null;
+    const zoneBase = columnStack
+      ? columnStack.top + G
+      : (wantZone == null && result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G);
     const offset = nextHangerOffset({
-      band: shelfLimits(unit, profile),
+      band: shelfLimits(unit, profile, wantZone),
       positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
       zoneBase,
       fallback: unit.params.rail_offset,
     }, profile);
     return get().addItem(unitId, {
-      kind: 'hanger', pos_mm: snapTo(offset, profile.editor.mmStep), material_id: materialId, material_label: materialLabel,
+      kind: 'hanger',
+      pos_mm: snapTo(offset, profile.editor.mmStep),
+      ...(wantZone == null ? {} : { zone: wantZone }),
+      material_id: materialId,
+      material_label: materialLabel,
     });
   },
 
@@ -4189,21 +4258,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return;
     const profile = getCabinetProfile();
-    const band = shelfBandFor(unit, profile);
+    // Turn 32 (CLAUDE.md F4): one engine result, one band PER BAY — a shelf
+    // in a column clamps above that column's own drawer stack, and shelves
+    // in different columns never push each other (they stand side by side).
+    const result = computeCabinet(paramsForEngine(unit), profile);
+    const bands = new Map();
+    const bandOf = (zone) => {
+      const key = zone == null ? 'all' : Math.trunc(Number(zone));
+      if (!bands.has(key)) bands.set(key, shelfBandFor(unit, profile, zone, result));
+      return bands.get(key);
+    };
+    const zoneKeyOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
     const items = unit.params.sections?.[0]?.items || [];
     const shelves = items.filter((i) => i.kind === 'shelf' && Number.isFinite(i.pos_mm))
       .sort((a, b) => a.pos_mm - b.pos_mm);
     if (!shelves.length) return;
 
-    // Bottom-up, each shelf clamped against the ones already settled below it.
+    // Bottom-up, each shelf clamped against the ones already settled below it
+    // in ITS OWN bay (a full-width shelf crosses every bay, so it settles
+    // against all of them).
     const settled = [];
     const next = new Map();
     for (const sh of shelves) {
+      const myZone = zoneKeyOf(sh);
+      const others = settled
+        .filter((p) => myZone == null || p.zone == null || p.zone === myZone)
+        .map((p) => p.pos);
       const state = clampShelfPos({
-        pos: sh.pos_mm, current: sh.pos_mm, others: settled, band,
+        pos: sh.pos_mm, current: sh.pos_mm, others, band: bandOf(myZone),
       }, profile);
       next.set(sh.id, state.pos);
-      settled.push(state.pos);
+      settled.push({ pos: state.pos, zone: myZone });
     }
     if ([...next].every(([id, pos]) => items.find((i) => i.id === id)?.pos_mm === pos)) return;
 
@@ -4682,20 +4768,28 @@ function otherShelfPositions(unit, itemId) {
 }
 
 /** The band this unit's shelves may live in, read off the engine result. */
-function shelfBandFor(unit, profile) {
+function shelfBandFor(unit, profile, zone = null, precomputed = null) {
   const G = unit.params.board_t ?? profile.board.thickness;
-  const result = computeCabinet(paramsForEngine(unit), profile);
+  const result = precomputed || computeCabinet(paramsForEngine(unit), profile);
+  // Turn 32 (CLAUDE.md F4): a shelf living in a COLUMN stands on that
+  // column's own stack — its closing board, not the full-width zone's.
+  const columnStack = zone != null
+    ? (result.assemblies.columnDrawers || []).find((c) => c.zone === Math.trunc(Number(zone)))
+    : null;
+  const floorY = columnStack
+    ? columnStack.top + G
+    : (zone == null && result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : null);
   return shelfBand({
     height: unit.params.height,
     boardT: G,
     // Top face of the drawer partition when there is a stack, else the base.
-    floorY: result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : null,
+    floorY,
   }, profile);
 }
 
 /** The vertical band a shelf may live in: above the drawer stack, below the top. */
-export function shelfLimits(unit, profile) {
-  const band = shelfBandFor(unit, profile);
+export function shelfLimits(unit, profile, zone = null) {
+  const band = shelfBandFor(unit, profile, zone);
   const G = unit.params.board_t ?? profile.board.thickness;
   return { ...band, drawerTop: band.floor === G ? null : band.floor };
 }

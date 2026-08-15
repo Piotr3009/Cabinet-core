@@ -7,6 +7,7 @@ import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js
 import { getUnitType } from '../engine/types.js';
 import { hangerOf } from '../engine/items.js';
 import { formatMm } from '../engine/format.js';
+import { anchorOfEvent } from '../lib/modalAnchor.js';
 
 // ─── "What goes inside" (turn 4, BACKLOG #10; turn 12, CLAUDE.md F5.1) ──────
 //
@@ -34,6 +35,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const notify = useUiStore((s) => s.notify);
   const openFrontsFor = useUiStore((s) => s.openFrontsFor);
+  const openModal = useUiStore((s) => s.openModal);
   const addItemKind = useUiStore((s) => s.addItemKind);
   const setAddItemKind = useUiStore((s) => s.setAddItemKind);
 
@@ -56,6 +58,12 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
 
   const [drawerCount, setDrawerCount] = useState(existingDrawers || 2);
   const [drawerHeight, setDrawerHeight] = useState(DR.frontHeight);
+  // ─── TURN 32 (CLAUDE.md F4): overlay or INTERNAL, per stack — the owner
+  // set "internal" and nothing listened; the click listens now. And WHICH
+  // COLUMN, when the cabinet is divided — same grammar as the shelves.
+  const [drawerMount, setDrawerMount] = useState('overlay');
+  const [drawerZone, setDrawerZone] = useState(null);
+  const [railZone, setRailZone] = useState(null);
   const [shelfCount, setShelfCount] = useState(1);
   const [shelfZone, setShelfZone] = useState(null);
   const [railMaterial, setRailMaterial] = useState(hardware.find((m) => /rail/i.test(m.name))?.id || '');
@@ -69,13 +77,29 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
 
   const onAddDrawers = (count, height) => {
     const before = items.filter((i) => i.kind === 'drawer').length;
+    const zone = zones.length > 1 ? drawerZone : null;
     // ─── CHAT FIX 15.08.2026: THE CLICK LISTENS ─────────────────────────────
     // This handler used to congratulate BLIND — the store refused (turn 24's
     // gate) and the toast said "added". The gate is open now, but a handler
     // that ignores its store's answer will lie again the next time anything
     // refuses; so the answer is read, and a refusal is said out loud.
-    const res = addDrawers(unit.id, count, 'overlay', height);
+    // ─── TURN 32 (CLAUDE.md F4): …and the answer may carry a DOOR ───────────
+    // The recessed-partition law refuses with the number and ONE button:
+    // [Reset the setback], which opens the partition's own editor
+    // (F7-pattern). The guard SPEAKS; it fixes nothing by itself.
+    const res = addDrawers(unit.id, count, drawerMount, height, zone);
     if (res && res.ok === false) {
+      if (res.guard?.blocked) {
+        notify(res.error, 'error', {
+          action: {
+            label: 'Reset the setback',
+            run: (e) => openModal('element', {
+              unitId: unit.id, panelId: res.guard.panelId, anchor: anchorOfEvent(e),
+            }),
+          },
+        });
+        return;
+      }
       notify(res.error || 'The drawers were not added.', 'warn');
       return;
     }
@@ -109,8 +133,14 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     const id = addHangerRail(unit.id, {
       materialId: material?.id || null,
       materialLabel: material?.name || null,
+      zone: zones.length > 1 ? railZone : null,
     });
-    if (!id) { notify('This unit already has a hanging rail.', 'warn'); return; }
+    if (!id) {
+      notify(zones.length > 1
+        ? 'That column already has a hanging rail.'
+        : 'This unit already has a hanging rail.', 'warn');
+      return;
+    }
     done();
   };
 
@@ -127,14 +157,18 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // through the same item list, on the other axis.
     {
       id: 'partition',
-      label: 'Vertical partition',
+      // Turn 32 (CLAUDE.md F4): the owner's name for it.
+      label: 'Vertical partition (divider)',
       disabled: !type.supports.shelves,
       why: 'not for this type',
     },
     {
       id: 'hanger',
       label: 'Hanger rail',
-      disabled: !type.supports.rail || Boolean(rail),
+      // Turn 32 (CLAUDE.md F4): a divided cabinet may hang one rail PER
+      // COLUMN, so a fitted unit-wide rail only closes the door when there
+      // are no columns left to ask about.
+      disabled: !type.supports.rail || (Boolean(rail) && zones.length <= 1),
       why: rail ? 'already fitted' : 'not for this type',
     },
     { id: 'cargo', label: 'Cargo pull-out', disabled: true, soon: true },
@@ -171,6 +205,35 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
             <div className="mt-1 mb-2 ml-2 pl-2 border-l border-shell-600 space-y-2">
               {kind.id === 'drawers' && (
                 <>
+                  {/* ─── WHICH COLUMN (turn 32, CLAUDE.md F4) ───
+                      The same grammar the shelves learned in turn 12: only
+                      asked when the cabinet is divided. */}
+                  {zones.length > 1 && (
+                    <div className="space-y-1">
+                      <span className="cc-label">Which column</span>
+                      <div className="flex flex-wrap gap-1">
+                        {zones.map((z) => (
+                          <button
+                            key={z.id}
+                            type="button"
+                            data-drawer-zone={z.index}
+                            className={`cc-btn px-2 ${drawerZone === z.index ? 'border-gold text-gold' : ''}`}
+                            title={`${formatMm(z.size)} mm clear`}
+                            onPointerEnter={() => onZoneHover?.(z.index)}
+                            onPointerLeave={() => onZoneHover?.(drawerZone)}
+                            onClick={() => { setDrawerZone(z.index); onZoneHover?.(z.index); }}
+                          >
+                            Column {z.index + 1} · {formatMm(z.size)}
+                          </button>
+                        ))}
+                      </div>
+                      {drawerZone == null && (
+                        <p className="text-[11px] text-gold">
+                          This cabinet is divided — pick the column the drawers go in.
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-end gap-2">
                     <div className="w-16">
                       <span className="cc-label">Count</span>
@@ -183,10 +246,37 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                         value={drawerHeight} onCommit={setDrawerHeight}
                       />
                     </div>
-                    <button type="button" className="cc-btn-gold" onClick={() => onAddDrawers(drawerCount, drawerHeight)}>Add</button>
+                    <button
+                      type="button"
+                      className="cc-btn-gold"
+                      disabled={zones.length > 1 && drawerZone == null}
+                      onClick={() => onAddDrawers(drawerCount, drawerHeight)}
+                    >
+                      Add
+                    </button>
                   </div>
+                  {/* ─── TURN 32 (CLAUDE.md F4): OVERLAY OR INTERNAL ───
+                      The mechanism T30 F20 built for the pantry, wired to the
+                      question at last: an INTERNAL drawer is given no face and
+                      lives behind the doors, revealed when a front opens. */}
                   <div className="flex gap-1">
-                    <button type="button" className="cc-btn border-gold text-gold flex-1" disabled>Overlay</button>
+                    <button
+                      type="button"
+                      data-drawer-mount="overlay"
+                      className={`cc-btn flex-1 ${drawerMount === 'overlay' ? 'border-gold text-gold' : ''}`}
+                      onClick={() => setDrawerMount('overlay')}
+                    >
+                      Overlay
+                    </button>
+                    <button
+                      type="button"
+                      data-drawer-mount="internal"
+                      className={`cc-btn flex-1 ${drawerMount === 'internal' ? 'border-gold text-gold' : ''}`}
+                      title="No front of its own — the drawer lives behind the doors"
+                      onClick={() => setDrawerMount('internal')}
+                    >
+                      Internal
+                    </button>
                     <button
                       type="button" className="cc-btn flex-1" disabled
                       title="Inset deductions still to come from Piotr — BLOCKERS #6"
@@ -269,6 +359,27 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
 
               {kind.id === 'hanger' && (
                 <>
+                  {zones.length > 1 && (
+                    <div className="space-y-1">
+                      <span className="cc-label">Which column</span>
+                      <div className="flex flex-wrap gap-1">
+                        {zones.map((z) => (
+                          <button
+                            key={z.id}
+                            type="button"
+                            data-rail-zone={z.index}
+                            className={`cc-btn px-2 ${railZone === z.index ? 'border-gold text-gold' : ''}`}
+                            title={`${formatMm(z.size)} mm clear`}
+                            onPointerEnter={() => onZoneHover?.(z.index)}
+                            onPointerLeave={() => onZoneHover?.(railZone)}
+                            onClick={() => { setRailZone(z.index); onZoneHover?.(z.index); }}
+                          >
+                            Column {z.index + 1} · {formatMm(z.size)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <span className="cc-label">Rail (hardware)</span>
                     <select

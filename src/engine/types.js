@@ -234,6 +234,60 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT ─────────────────────────────
+  //
+  // "The riskiest of the batch. Start from what the LISP family actually
+  // supports (KIT_BUDR is in the repo — READ it first and say in the PR what it
+  // is); ship the L-carcass geometry + BOM; any hinge/drilling beyond the
+  // parent kit's own lines waits for a LISP. Do not improvise corner-post
+  // drilling overnight."
+  //
+  // KIT_BUDR_FULL.lsp was read. Its header: "Base Unit Drawer - 3 drawers
+  // (4:3:2 ratio)", and its body is the MOVENTO runner outline drawn line by
+  // line. It is the THREE-DRAWER BASE UNIT this app has shipped since turn 3 —
+  // `BUDR` above is already built from it — and there is not one corner in it.
+  //
+  // So there is no parent kit for a corner unit, and no parent lines to
+  // inherit. The batch rule then settles the whole feature: GEOMETRY and a BOM,
+  // and NOT ONE HOLE. No cup, no shelf sleeve, no leg plate, no corner post.
+  //
+  //   `carcass` — all four 'none': the standard carcass is not this shape, so
+  //               none of it is emitted and the L builder in cabinet.js puts
+  //               the boards in instead.
+  //   `legs`    — false. A leg's position comes from a RECTANGULAR footprint,
+  //               and one of the four would stand in the L's missing corner.
+  //               Where a corner cabinet is really footed is a question for
+  //               the owner, not for tonight.
+  //   `doors`   — none. A corner door hangs on cups bored to a pattern nobody
+  //               has written down here.
+  CORNER: {
+    id: 'CORNER',
+    heightGroup: 'base',
+    label: 'Corner unit',
+    family: 'kitchen',
+    // Named for honesty, not for inheritance: this is the family the shape
+    // belongs to. Its own drilling waits for a LISP.
+    lisp: null,
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: {
+      top: 'none', back: 'none', sides: 'none', bottom: 'none',
+    },
+    drawerStyle: null,
+    corner: true,
+    // Its depth is its identity, like a wall unit's 400: a corner unit turns
+    // the run, and a 558 corner is not a corner. See projectHeightParams.
+    ownDepth: true,
+    minHeightKey: null,
+    defaultsKey: 'cornerUnit.defaults',
+    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    available: true,
+  },
   // ─── TURN 30 (CLAUDE.md F18): THE TWIN CUPBOARD ───────────────────────────
   //
   // CLAUDE.md: "Twin cupboard. Parent: KIT_DOOR_DOUBLE — it exists. Expose it
@@ -711,7 +765,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -831,5 +885,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', CORNER: 'CR',
 };

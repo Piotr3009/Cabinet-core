@@ -1271,6 +1271,20 @@ export const DEFAULT_CABINET_PROFILE = {
     fixedScrewFromEnd: 50,
   },
 
+  // ─── Corner unit (turn 30, CLAUDE.md F19) ─────────────────────────────────
+  //
+  // "Ship the L-carcass geometry + BOM; any hinge/drilling beyond the parent
+  // kit's own lines waits for a LISP."
+  //
+  // There IS no parent kit — KIT_BUDR_FULL turned out to be the three-drawer
+  // base unit — so these numbers are a SHAPE and nothing more. `armMm` is the
+  // depth of each arm of the L; the two openings it leaves are `width − armMm`
+  // and `depth − armMm`, which at 1000 / 600 is 400 apiece.
+  cornerUnit: {
+    defaults: { width: 1000, height: 770, depth: 1000 },
+    armMm: 600,
+  },
+
   // ─── Twin cupboard (turn 30, CLAUDE.md F18) ───────────────────────────────
   //
   // "Expose it in the Kitchen category with its own defaults." A two-door base
@@ -3695,6 +3709,7 @@ export function migrateCabinetProfile(profile) {
     binUnit: { ...D.binUnit, ...profile.binUnit, defaults: { ...D.binUnit.defaults, ...profile.binUnit?.defaults } },
     wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
     twinCupboard: { ...D.twinCupboard, ...profile.twinCupboard, defaults: { ...D.twinCupboard.defaults, ...profile.twinCupboard?.defaults } },
+    cornerUnit: { ...D.cornerUnit, ...profile.cornerUnit, defaults: { ...D.cornerUnit.defaults, ...profile.cornerUnit?.defaults } },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,
       ...profile.americanFridgeUnit,

@@ -12,19 +12,24 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F18 — the Library places a twin cupboard, 900 wide, with a PAIR of doors",
+   "label": "F19 — the Library places a corner unit, and it is an L of eight boards",
    "ok": true,
-   "detail": "TWIN · 2 leaves of 447 + 447 mm"
+   "detail": "CORNER 1000 × 770 × 1000 — BACK BACK SIDE SIDE BOTTOM BOTTOM TOP TOP"
   },
   {
-   "label": "F18 — it is drilled EXACTLY as a base unit of the same size",
+   "label": "F19 — NOT ONE HOLE is drilled in it, and nothing is bought for it",
    "ok": true,
-   "detail": "92 holes vs the base unit’s 92"
+   "detail": "0 holes · 0 order lines · 0 doors"
   },
   {
-   "label": "F18 — and at 700 it is STILL a pair, where a base unit is a single",
+   "label": "F19 — the room draws every board, and every board has a real size",
    "ok": true,
-   "detail": "twin 2 leaves · base unit 1"
+   "detail": "8 boards drawn · 0 inverted"
+  },
+  {
+   "label": "F19 — …and every one of them is on the CUT LIST",
+   "ok": true,
+   "detail": "8 of 8"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

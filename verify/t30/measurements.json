@@ -1,16 +1,26 @@
 {
- "f18": {
-  "type": "TWIN",
-  "width": 900,
-  "leaves": 2,
-  "leafW": [
-   447,
-   447
+ "f19": {
+  "type": "CORNER",
+  "size": [
+   1000,
+   770,
+   1000
   ],
-  "same": true,
-  "drills": 92,
-  "budDrills": 92,
-  "narrow": 2,
-  "narrowBud": 1
+  "parts": [
+   "BACK",
+   "BACK",
+   "SIDE",
+   "SIDE",
+   "BOTTOM",
+   "BOTTOM",
+   "TOP",
+   "TOP"
+  ],
+  "drills": 0,
+  "hardware": 0,
+  "fronts": 0,
+  "drawn": 8,
+  "onSheet": 8,
+  "negative": 0
  }
 }

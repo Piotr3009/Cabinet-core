@@ -217,7 +217,13 @@ function projectHeightParams(type, design, profile) {
     //
     // A WALL unit keeps its own depth: 400 is what a wall unit is, and a 558 mm
     // one over a worktop is a cabinet you walk into.
-    ...(type.mount === 'wall' ? {} : { depth: projectDepth(design, profile) }),
+    //
+    // ─── Turn 30 (CLAUDE.md F19) ───
+    // …and so does a kit whose depth IS its identity. A corner unit turns the
+    // run: its depth is the second wall's arm, not the run's front line, and a
+    // 558 corner is not a corner. `ownDepth` is the same sentence the wall
+    // unit's `mount` says, said by a kit that is not on a wall.
+    ...(type.mount === 'wall' || type.ownDepth ? {} : { depth: projectDepth(design, profile) }),
     board_t: projectBoardThickness(design, profile),
     // Turn 16 (CLAUDE.md F1.1): front type 1's ASSIGNED BOARD pins this where
     // there is one, exactly as carcass 1's does for the carcass. The stock list

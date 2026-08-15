@@ -677,6 +677,9 @@ function normalizeParams(raw, profile) {
     drawerHeights,
     rail,
     railOffset: Number(p.rail_offset ?? railDefault),
+    // Turn 30 (CLAUDE.md F19): the depth of each arm of a corner unit's L. An
+    // INPUT, defaulting to the profile's, like every other number a kit has.
+    cornerArm: Number(p.corner_arm_mm) > 0 ? Number(p.corner_arm_mm) : profile.cornerUnit.armMm,
     fridgeH: Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
     mountHeight: Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
     // Toe kick, per unit (turn 5, BACKLOG #29). The project sets it in Design
@@ -1999,6 +2002,68 @@ export function computeCabinet(params, profileOverride) {
       box: { x: G + FR.spursWidthClearance / 2, y: fridge.fixedPanelY + G, z: D - FR.spursFromFront - G, w: fridge.spursW, h: fridge.spursPanelH, d: G },
       cnc: rectGeometry(fridge.spursPanelH, fridge.spursW),
     }));
+    }
+  }
+
+  // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT'S L-CARCASS ─────────────────
+  //
+  // "The riskiest of the batch. Start from what the LISP family actually
+  // supports (KIT_BUDR is in the repo — READ it first and say in the PR what it
+  // is); ship the L-carcass geometry + BOM; any hinge/drilling beyond the
+  // parent kit's own lines waits for a LISP. Do not improvise corner-post
+  // drilling overnight."
+  //
+  // KIT_BUDR_FULL.lsp was read. Its own header says "Base Unit Drawer - 3
+  // drawers (4:3:2 ratio)" and its body is the MOVENTO runner outline drawn
+  // line by line. It is the THREE-DRAWER BASE UNIT this app has shipped since
+  // turn 3, and there is not one corner in it. So there is no parent kit for a
+  // corner unit, which means there are no parent lines to inherit — and by the
+  // batch rule that settles it: this ships GEOMETRY and a BOM, and NOT ONE
+  // HOLE.
+  //
+  // ─── THE SHAPE, AND WHY IT IS MADE OF RECTANGLES ──────────────────────────
+  //
+  // Two arms meeting in the corner, inside the footprint the room already
+  // understands (W × D, backed onto both walls):
+  //
+  //     z=D  ┌──────┐              arm A: x 0..W,   z 0..arm
+  //          │  B   │              arm B: x 0..arm, z 0..D
+  //   z=arm  ├──────┴───────┐      the bite at (arm, arm) is the open front
+  //          │      A       │      corner, where two door openings meet
+  //     z=0  └──────────────┘
+  //          x=0   x=arm    x=W
+  //
+  // Every board is a plain RECTANGLE — the L floor and the L top are each cut
+  // as two pieces rather than as one L-shaped board, because two rectangles are
+  // two boards a machine cuts today, and an L outline is a shape nobody's LISP
+  // has drawn. Nothing here is notched, bored or jointed.
+  if (type.corner && W > 0 && D > 0) {
+    const CN = P.cornerUnit;
+    const arm = Math.min(cfg.cornerArm || CN.armMm, Math.min(W, D) - G);
+    const board = (id, part, w, h, box, meta) => panels.push(panel({
+      id, part, role: 'side', w, h, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(w), box, cnc: rectGeometry(w, h), meta,
+    }));
+    // The two walls it stands against.
+    board(`${unitNum}-BACK-A`, 'BACK', W, H, { x: 0, y: 0, z: 0, w: W, h: H, d: G }, { corner: 'wallA' });
+    board(`${unitNum}-BACK-B`, 'BACK', D - G, H, { x: 0, y: 0, z: G, w: G, h: H, d: D - G }, { corner: 'wallB' });
+    // The two ends, one at the far end of each arm.
+    board(`${unitNum}-SIDE-A`, 'SIDE', arm, H, { x: W - G, y: 0, z: 0, w: G, h: H, d: arm }, { corner: 'endA' });
+    board(`${unitNum}-SIDE-B`, 'SIDE', arm - G, H, { x: G, y: 0, z: D - G, w: arm - G, h: H, d: G }, { corner: 'endB' });
+    // …and the floor and the top, each as the two rectangles the L is made of.
+    const aW = W - 2 * G;
+    const aD = arm - G;
+    const bW = arm - 2 * G;
+    const bD = D - arm - G;
+    for (const [name, y] of [['BOTTOM', G], ['TOP', H - G]]) {
+      board(`${unitNum}-${name}-A`, name, aW, aD, {
+        x: G, y: y - (name === 'TOP' ? 0 : G), z: G, w: aW, h: G, d: aD,
+      }, { corner: 'armA' });
+      if (bD > 0 && bW > 0) {
+        board(`${unitNum}-${name}-B`, name, bW, bD, {
+          x: G, y: y - (name === 'TOP' ? 0 : G), z: arm, w: bW, h: G, d: bD,
+        }, { corner: 'armB' });
+      }
     }
   }
 

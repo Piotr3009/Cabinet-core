@@ -72,13 +72,12 @@ export const KITCHEN_LIBRARY = [
         ],
       },
       { kind: 'type', id: 'sink', typeId: 'SINK', label: 'Sink' },
-      {
-        kind: 'soon',
-        id: 'corner',
-        label: 'Corner',
-        hint: 'The cabinet that turns a run — L-shelves, left or right',
-        reason: NO_PATTERN,
-      },
+      // ─── Turn 30 (CLAUDE.md F19): the corner unit, as GEOMETRY ───────────
+      // KIT_BUDR_FULL turned out to be the three-drawer base unit, so there is
+      // NO parent kit for a corner — and therefore no lines to inherit. The
+      // L-carcass ships as boards and a BOM, with not one hole in it, and the
+      // row says so.
+      { kind: 'type', id: 'corner', typeId: 'CORNER', label: 'Corner', hint: 'The cabinet that turns a run — L-carcass only, no LISP defines its drilling' },
       {
         kind: 'soon', id: 'l-shape', label: 'L-shape', hint: 'One carcass on two walls', reason: NO_PATTERN,
       },

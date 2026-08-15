@@ -1981,6 +1981,70 @@ async function main() {
       await page.sleep(1000);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F19 [MEDIUM] — the corner unit
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f19')) {
+      await newRoom('Turn 30 walk — F19');
+      await page.evaluate(`${P}.ui.getState().setLibraryCategory('kitchen'); return true;`);
+      await page.sleep(700);
+      await page.click('[data-library-group="base-units"]');
+      await page.sleep(700);
+      await shot('19a-the-corner-row-open-in-the-library-and-what-it-says');
+      await page.click('[data-library-entry="corner"]');
+      await page.sleep(1500);
+      await page.evaluate(`${P}.ui.getState().closeLibrary(); return true;`);
+      await page.sleep(1200);
+
+      const f19 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units[0];
+        window.__t30 = { corner: u.id, ids: [u.id] };
+        const r = s.unitResult(u.id);
+        const v = ${P}.views && ${P}.views.room;
+        const drawn = [];
+        if (v) {
+          v.scene.traverse((o) => {
+            if (o.userData && o.userData.ccUnitId === u.id) {
+              o.traverse((n) => { if (n.isMesh && n.userData && n.userData.ccPanelId) drawn.push(n.userData.ccPanelId); });
+            }
+          });
+        }
+        return {
+          type: u.type,
+          size: [u.params.width, u.params.height, u.params.depth],
+          parts: r.panels.map((p) => p.part),
+          drills: r.drills.length,
+          hardware: r.hardware.length,
+          fronts: r.panels.filter((p) => p.role === 'front').length,
+          drawn: drawn.length,
+          onSheet: r.panels.filter((p) => r.csvLines.some((l) => l.includes(p.id))).length,
+          negative: r.panels.filter((p) => !(p.w > 0) || !(p.h > 0)).length,
+        };
+      `);
+      measurements.f19 = f19;
+      check('F19 — the Library places a corner unit, and it is an L of eight boards',
+        f19.type === 'CORNER' && f19.parts.length === 8,
+        `${f19.type} ${f19.size.join(' × ')} — ${f19.parts.join(' ')}`);
+      check('F19 — NOT ONE HOLE is drilled in it, and nothing is bought for it',
+        f19.drills === 0 && f19.hardware === 0 && f19.fronts === 0,
+        `${f19.drills} holes · ${f19.hardware} order lines · ${f19.fronts} doors`);
+      check('F19 — the room draws every board, and every board has a real size',
+        f19.drawn >= 8 && f19.negative === 0,
+        `${f19.drawn} boards drawn · ${f19.negative} inverted`);
+      check('F19 — …and every one of them is on the CUT LIST',
+        f19.onSheet === 8, `${f19.onSheet} of 8`);
+
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [1.1, 0.9, 1.9]);
+      await page.sleep(900);
+      await shot('19b-the-l-carcass-two-arms-meeting-in-the-corner');
+      await page.evaluate(`${P}.ui.getState().setViewMode('cnc'); return true;`);
+      await page.sleep(1800);
+      await shot('19c-its-sheet-eight-plain-boards-and-no-drilling-at-all');
+      await page.evaluate(`${P}.ui.getState().setViewMode('3d'); return true;`);
+      await page.sleep(900);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

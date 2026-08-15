@@ -858,3 +858,75 @@ ironmongery are a different product and would need their own type.
 | --- | --- |
 | `18a-a-twin-cupboard-beside-a-single-door-base-unit-of-the-same-width.png` | the pair |
 | `18b-open-a-pair-of-leaves-on-kit-buds-own-carcass.png` | open |
+
+---
+
+## F19 [MEDIUM] — the corner unit
+
+### First, what `KIT_BUDR` is — read, as instructed
+
+`reference/lisp/KIT_BUDR_FULL.lsp`, its own header:
+
+> `;;; Base Unit Drawer - 3 drawers (4:3:2 ratio)`
+
+…and its body is the MOVENTO runner outline drawn line by line
+(`DRAW-RUNNER-LEFT`). It is the **three-drawer base unit** this app has shipped
+since turn 3 — `BUDR` is already built from it — and there is **not one corner
+in it** (no `corner`, `L-shape`, `diagonal` or `mitre`, asserted against the
+file).
+
+### Which settles the whole feature
+
+No parent kit means no parent lines, and the batch rule then says exactly what
+ships: **geometry and a BOM, and not one hole.**
+
+| | |
+| --- | --- |
+| holes | **0** — no cup, no shelf sleeve, no leg plate, no corner post |
+| hinged sides / cup rows / shelf rows / runner rows | all empty |
+| order lines | **0** — nothing is bought, because nothing is specified |
+| doors | **none** — a corner leaf hangs on cups nobody has written down; asking for one anyway changes nothing |
+| legs | **`legs: false`** — a leg's position comes from a *rectangular* footprint and one of the four would stand in the L's missing corner |
+
+`lisp: null`, honestly — the type claims no kit, because there is none to claim.
+
+### The L, and why it is made of rectangles
+
+Two arms meeting in the corner, inside the footprint the room already
+understands:
+
+```
+    z=D  ┌──────┐            arm A: x 0..W,   z 0..arm
+         │  B   │            arm B: x 0..arm, z 0..D
+  z=arm  ├──────┴───────┐    the bite at (arm, arm) is the open front corner,
+         │      A       │    where the two door openings would meet
+    z=0  └──────────────┘
+         x=0   x=arm    x=W
+```
+
+Eight boards — 2 backs, 2 ends, 2 floors, 2 tops — every one a **plain
+rectangle**. The L floor and the L top are each cut as *two* pieces rather than
+as one L-shaped board, because two rectangles are two boards a machine cuts
+today and an L outline is a shape nobody's LISP has drawn.
+
+1000 × 770 × 1000 with a 600 arm leaves two **400 mm openings**. The arm is an
+input (`corner_arm_mm`), and a nonsense value cannot cut a board out of
+existence. A corner unit also **keeps its own depth** — `ownDepth: true`, the
+same sentence a wall unit's `mount` says, because a 558 corner is not a corner.
+
+### The gap, named — and it is the biggest one in the batch
+
+**All of its drilling.** No LISP line and no published pattern states a corner
+unit's carcass joints, its door cups, its shelf supports, its corner post or
+where it stands. None of it is guessed at. What ships is a shape a joiner can
+see and a cut list he can cut.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f19` → **6 ok · 0 failed**.
+
+| file | |
+| --- | --- |
+| `19a-the-corner-row-open-in-the-library-and-what-it-says.png` | the row, and its reason |
+| `19b-the-l-carcass-two-arms-meeting-in-the-corner.png` | the carcass |
+| `19c-its-sheet-eight-plain-boards-and-no-drilling-at-all.png` | the cut |

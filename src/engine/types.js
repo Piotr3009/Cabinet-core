@@ -234,6 +234,53 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F13): CARGO 300, THE PULL-OUT LARDER ──────────────
+  //
+  // "Parent geometry: KIT_BUDTALL. Proposed width 300. Carcass + full door per
+  // the kit; the pull-out frame is HARDWARE (BOM + GLB slot when the owner
+  // uploads one), no invented runners drilling — the mechanism mounts to floor
+  // and top per manufacturer, which is not this repo's truth yet."
+  //
+  // Every field below is BUDTALL's, because that is what "parent geometry"
+  // means: the carcass, the door, the hinge ladder and every hole in them are
+  // KIT_BUDTALL_FULL's own, and the test asserts that hole for hole against a
+  // tall unit of the same size. What is different is the WIDTH it arrives at,
+  // that it holds no shelves — the frame is what fills it — and the frame in
+  // the BOM.
+  //
+  // `hardwareKit` is the library rule in one field: a bought mechanism gets a
+  // LINE TO ORDER and nothing else. No hole, no runner row, no invented model.
+  CARGO: {
+    id: 'CARGO',
+    heightGroup: 'tall',
+    label: 'Cargo 300',
+    family: 'kitchen',
+    lisp: 'KIT_BUDTALL_FULL.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    minHeightKey: 'cargoUnit.minHeight',
+    defaultsKey: 'cargoUnit.defaults',
+    hardwareKit: {
+      role: 'cargo_frame',
+      label: 'Pull-out larder frame',
+      // What a joiner orders it BY. The mechanism mounts to the floor and the
+      // top of the carcass per the manufacturer's own instructions, so what
+      // this repo can honestly say is the opening it has to fit.
+      by: 'opening',
+    },
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
   LOW_CABINET: {
     id: 'LOW_CABINET',
     // A low cabinet that inherits the 720 mm base height is a base unit with
@@ -454,7 +501,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -569,5 +616,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F',
 };

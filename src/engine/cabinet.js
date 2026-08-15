@@ -4087,6 +4087,35 @@ export function computeCabinet(params, profileOverride) {
     [`${roundTo(internalWidth, 0)} mm`, railProduct].filter(Boolean).join(' · '));
   hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',
     { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
+  // ─── TURN 30 (CLAUDE.md F13–F21): A BOUGHT MECHANISM IS A LINE TO ORDER ───
+  //
+  // "A drilled hole exists only where a LISP line or a published Blum pattern
+  // says so. A type with no such truth ships GEOMETRY + BOM and its panels
+  // ship UNDRILLED, with the gap named in the report."
+  //
+  // This is the BOM half of that rule, and it is deliberately ONE line of
+  // arithmetic: a kit that declares `hardwareKit` buys one mechanism, to the
+  // size of the opening it has to fit. It reaches no drill, no runner row and
+  // no 3D body — a mechanism whose fixing this repo cannot state is a mechanism
+  // this repo does not place. Types written before tonight carry no
+  // `hardwareKit` at all, so not one fixture can move.
+  if (type.hardwareKit) {
+    const kit = type.hardwareKit;
+    // The clear opening: between the sides, between the bottom and the top,
+    // and from the back to the inside of the door. Read off the carcass the
+    // kit actually cut rather than off the nominal size, because a mechanism
+    // is ordered to what it has to fit inside.
+    const openH = H
+      - (type.carcass.top === 'panel' ? G : 0)
+      - (type.carcass.bottom === 'none' ? 0 : G);
+    hw(kit.role, kit.label, 1, 'pcs',
+      {
+        opening_width_mm: roundTo(internalWidth, 1),
+        opening_height_mm: roundTo(openH, 1),
+        opening_depth_mm: roundTo(internalDepth, 1),
+      },
+      `${roundTo(internalWidth, 0)} × ${roundTo(openH, 0)} × ${roundTo(internalDepth, 0)} mm opening`);
+  }
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
   // ─── Turn 22 (CLAUDE.md F1.4): THE CORNICE IS ORDERED, NOT CUT ───────────

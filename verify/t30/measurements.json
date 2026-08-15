@@ -1,64 +1,38 @@
 {
- "f12": {
-  "clean": {
-   "list": [],
-   "marks": [],
-   "rows": [],
-   "xs": [
-    5700,
-    6300
-   ],
-   "cut": [
-    {
-     "panels": 6,
-     "drills": 77
+ "f13": {
+  "type": "CARGO",
+  "size": [
+   300,
+   2150,
+   558
+  ],
+  "tallHeight": null,
+  "parts": [
+   "BUL",
+   "BUR",
+   "TOP",
+   "BOTTOM",
+   "BACK",
+   "FRONT"
+  ],
+  "drills": 88,
+  "same": true,
+  "tallDrills": 88,
+  "frame": [
+   {
+    "role": "cargo_frame",
+    "label": "Pull-out larder frame",
+    "qty": 1,
+    "unit": "pcs",
+    "spec": {
+     "opening_width_mm": 264,
+     "opening_height_mm": 2114,
+     "opening_depth_mm": 540
     },
-    {
-     "panels": 6,
-     "drills": 77
-    }
-   ]
-  },
-  "tight": {
-   "list": [
-    {
-     "mm": 2,
-     "pair": [
-      "01-F",
-      "02-F"
-     ]
-    }
-   ],
-   "marks": [
-    {
-     "mm": 2,
-     "pair": [
-      "01-F",
-      "02-F"
-     ]
-    }
-   ],
-   "rows": [
-    {
-     "mm": 2,
-     "pair": "01-F|02-F",
-     "text": "▲2 mm between 01's 01-F and 02's 02-F — under the 3 mm minimum."
-    }
-   ],
-   "xs": [
-    5700,
-    6299
-   ],
-   "cut": [
-    {
-     "panels": 6,
-     "drills": 77
-    },
-    {
-     "panels": 6,
-     "drills": 77
-    }
-   ]
-  }
+    "spec_label": "264 × 2114 × 540 mm opening"
+   }
+  ],
+  "tallFrame": 0,
+  "invented": 0
  }
 }

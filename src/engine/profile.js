@@ -964,6 +964,21 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 600, height: 2100, depth: 558 },
   },
 
+  // ─── Cargo 300, the pull-out larder (turn 30, CLAUDE.md F13) ───────────────
+  //
+  // "Parent geometry: KIT_BUDTALL. Proposed width 300. Carcass + full door per
+  // the kit; the pull-out frame is HARDWARE (BOM + GLB slot when the owner
+  // uploads one), no invented runners drilling — the mechanism mounts to floor
+  // and top per manufacturer, which is not this repo's truth yet."
+  //
+  // So the only thing that is its OWN here is the width. The carcass, the door
+  // and every hole in both are KIT_BUDTALL_FULL's, and the test asserts that
+  // hole for hole against a tall unit of the same size.
+  cargoUnit: {
+    minHeight: 1100,
+    defaults: { width: 300, height: 2100, depth: 558 },
+  },
+
   // ─── Low cabinet (KIT_LOW_CABINET_FULL) ───
   lowCabinet: {
     minHeight: 300,
@@ -3576,6 +3591,7 @@ export function migrateCabinetProfile(profile) {
       hangers: { ...D.wallUnit.hangers, ...profile.wallUnit?.hangers },
     },
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
+    cargoUnit: { ...D.cargoUnit, ...profile.cargoUnit, defaults: { ...D.cargoUnit.defaults, ...profile.cargoUnit?.defaults } },
     lowCabinet: { ...D.lowCabinet, ...profile.lowCabinet, defaults: { ...D.lowCabinet.defaults, ...profile.lowCabinet?.defaults } },
     baseDrawerUnit: {
       ...D.baseDrawerUnit,

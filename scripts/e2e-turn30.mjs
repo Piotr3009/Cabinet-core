@@ -1535,6 +1535,83 @@ async function main() {
       await shot('12c-the-meeting-edges-in-red-at-2mm');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F13 [HIGH] — Cargo 300, the tall pull-out larder
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f13')) {
+      await newRoom('Turn 30 walk — F13');
+      // Placed from the LIBRARY, through the panel a joiner uses, so the proof
+      // is that the row is there and clickable and not that a store action
+      // exists.
+      await page.evaluate(`${P}.ui.getState().setLibraryCategory('kitchen'); return true;`);
+      await page.sleep(700);
+      await page.click('[data-library-group="tall-units"]');
+      await page.sleep(700);
+      await shot('13a-cargo-300-in-the-kitchen-library-under-tall-units');
+      await page.click('[data-library-entry="cargo-300"]');
+      await page.sleep(1500);
+      await page.evaluate(`${P}.ui.getState().closeLibrary(); return true;`);
+      await page.sleep(1200);
+
+      const f13 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units[0];
+        // Doors are the LAST step everywhere in this app (SPEC 4.10), so a
+        // Cargo arrives without one and the joiner hangs it — same as a tall.
+        s.updateUnitParams(u.id, { doors: true });
+        // A TALL UNIT cut to the Cargo's own size, standing beside it: the
+        // fingerprints of the two have to be the same string.
+        const t = s.addUnit('BUDTALL', { near: u.id, side: 'right' });
+        s.updateUnitParams(t.id, {
+          width: u.params.width, height: u.params.height, depth: u.params.depth, doors: true,
+        });
+        window.__t30 = { cargo: u.id, tall: t.id, ids: [u.id, t.id] };
+        // The PART, not the panel id: two cabinets have different unit numbers
+        // and the same boards, and it is the boards being compared.
+        const part = (id) => String(id).replace(/^[^-]*-/, '');
+        const holes = (x) => x.drills.map((d) => part(d.panel) + '|' + d.layer + '|' + d.kind + '|' + d.x + '|' + d.y + '|' + d.d).sort().join(',');
+        const r = s.unitResult(u.id);
+        const rt = s.unitResult(t.id);
+        return {
+          type: u.type,
+          size: [u.params.width, u.params.height, u.params.depth],
+          tallHeight: s.project.design.heights ? s.project.design.heights.tall : null,
+          parts: r.panels.map((p) => p.part),
+          drills: r.drills.length,
+          same: holes(r) === holes(rt),
+          tallDrills: rt.drills.length,
+          frame: r.hardware.filter((h) => h.role === 'cargo_frame'),
+          tallFrame: rt.hardware.filter((h) => h.role === 'cargo_frame').length,
+          invented: r.drills.filter((d) => /RUNNER|CARGO|FRAME/i.test(d.layer || '')).length,
+        };
+      `);
+      measurements.f13 = f13;
+      check('F13 — the Library places a Cargo: 300 wide, on the run’s own tall height',
+        f13.type === 'CARGO' && f13.size[0] === 300 && f13.size[1] > 2000,
+        `${f13.type} ${f13.size.join(' × ')}`);
+      check('F13 — it is KIT_BUDTALL’s carcass and a full door',
+        f13.parts.join(' ') === 'BUL BUR TOP BOTTOM BACK FRONT',
+        f13.parts.join(' '));
+      check('F13 — and it is drilled EXACTLY as a tall unit its size: hole for hole',
+        f13.same === true && f13.drills === f13.tallDrills,
+        `${f13.drills} holes vs the tall unit’s ${f13.tallDrills}`);
+      check('F13 — the pull-out frame is ORDERED: one BOM line, to the opening',
+        f13.frame.length === 1 && f13.frame[0].qty === 1 && f13.tallFrame === 0,
+        f13.frame[0] ? `${f13.frame[0].label} — ${f13.frame[0].spec_label}` : '(none)');
+      check('F13 — …and it drills NOTHING the kit does not drill',
+        f13.invented === 0, `${f13.drills} holes, none of them a frame fixing`);
+
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [1.5, 0.85, 2.8]);
+      await page.sleep(900);
+      await shot('13b-a-cargo-300-standing-a-tall-carcass-and-a-full-door');
+      // …and the CUT sheet, where an invented hole would show up as a hole.
+      await page.evaluate(`${P}.ui.getState().setViewMode('cnc'); return true;`);
+      await page.sleep(1600);
+      await shot('13c-the-cargo-sheet-the-kits-own-holes-and-no-others');
+      await page.evaluate(`${P}.ui.getState().setViewMode('3d'); return true;`);
+      await page.sleep(900);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

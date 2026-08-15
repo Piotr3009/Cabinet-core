@@ -12,34 +12,29 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F12 — a correctly laid out run is SILENT: no red, no number",
+   "label": "F13 — the Library places a Cargo: 300 wide, on the run’s own tall height",
    "ok": true,
-   "detail": "0 faults · 0 marks · 0 rows"
+   "detail": "CARGO 300 × 2150 × 558"
   },
   {
-   "label": "F12 — a job opened 1 mm tight is CAUGHT, and the room paints it red",
+   "label": "F13 — it is KIT_BUDTALL’s carcass and a full door",
    "ok": true,
-   "detail": "1 faults · 1 marks"
+   "detail": "BUL BUR TOP BOTTOM BACK FRONT"
   },
   {
-   "label": "F12 — …the value is on the mark itself: 2 mm, under the 3 mm minimum",
+   "label": "F13 — and it is drilled EXACTLY as a tall unit its size: hole for hole",
    "ok": true,
-   "detail": "2 mm"
+   "detail": "88 holes vs the tall unit’s 88"
   },
   {
-   "label": "F12 — …it names the PAIR of leaves that meet there",
+   "label": "F13 — the pull-out frame is ORDERED: one BOM line, to the opening",
    "ok": true,
-   "detail": "01-F + 02-F"
+   "detail": "Pull-out larder frame — 264 × 2114 × 540 mm opening"
   },
   {
-   "label": "F12 — …and the readout SHOWS the value beside it",
+   "label": "F13 — …and it drills NOTHING the kit does not drill",
    "ok": true,
-   "detail": "▲2 mm between 01's 01-F and 02's 02-F — under the 3 mm minimum."
-  },
-  {
-   "label": "F12 — it is a WARNING and not a block: both cabinets are cut as before",
-   "ok": true,
-   "detail": "[{\"panels\":6,\"drills\":77},{\"panels\":6,\"drills\":77}]"
+   "detail": "88 holes, none of them a frame fixing"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

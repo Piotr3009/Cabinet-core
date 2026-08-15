@@ -121,6 +121,11 @@ export const KITCHEN_LIBRARY = [
     items: [
       { kind: 'type', id: 'tall', typeId: 'BUDTALL', label: 'Standard' },
       { kind: 'type', id: 'fridge', typeId: 'FRIDGE', label: 'Fridge housing' },
+      // ─── Turn 30 (CLAUDE.md F13): CARGO 300 ─────────────────────────────
+      // KIT_BUDTALL's carcass and door at 300 wide. The pull-out frame is a
+      // bought mechanism: it is in the BOM and it drills nothing, because the
+      // manufacturer's floor-and-top fixing is not this repo's truth yet.
+      { kind: 'type', id: 'cargo-300', typeId: 'CARGO', hint: 'Tall pull-out larder — the frame is ordered, not cut' },
       {
         kind: 'soon', id: 'basket-tall', label: 'Basket tall', hint: 'Wire baskets top to bottom', reason: NO_PATTERN,
       },

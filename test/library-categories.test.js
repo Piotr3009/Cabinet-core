@@ -39,7 +39,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   assert.deepEqual(getCategory('kitchen').types, [
     // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
     // wrote the pattern for both, which is exactly the condition they carried.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'WUD',
+    // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'WUD',
   ]);
   assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE']);
 

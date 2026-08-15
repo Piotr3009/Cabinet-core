@@ -548,3 +548,49 @@ its millimetres. The walk compares the cut before and after: identical.
 | `12a-two-cabinets-butted-a-correct-3mm-joint-says-nothing.png` | a correct run |
 | `12b-the-same-run-1mm-tight-the-joint-painted-red-with-its-value.png` | the fault, painted, with the number |
 | `12c-the-meeting-edges-in-red-at-2mm.png` | close on the joint |
+
+---
+
+## F13 [HIGH] — Cargo 300, the tall pull-out larder
+
+`CARGO` is `KIT_BUDTALL_FULL.lsp` at **300 wide**. Every field on the type is
+BUDTALL's — the hinge ladder, the cup rule, the leg source, the carcass — and
+the test states the consequence in the strongest form available:
+
+> A Cargo is drilled **exactly** as KIT_BUDTALL drills a tall unit of the same
+> size — hole for hole, layer for layer, and the same `drillSummary`.
+
+**The pull-out frame is HARDWARE.** One BOM line, `cargo_frame`, quantity 1,
+specified by the **clear opening** it has to fit (264 × 2064 × 540 on the
+default). It reaches no drill, no runner row and no 3D body: `hardwareInstances`
+has nothing for it, which is the honest form of *"GLB slot when the owner
+uploads one"*.
+
+That half of the batch rule is now a **field on the type**, not an engine
+change: `hardwareKit: { role, label, by }`. No kit written before tonight
+carries one, so no fixture can move — asserted across the whole type list.
+
+### The gap, named
+
+The mechanism mounts to the **floor and the top** per the manufacturer, and no
+LISP line and no published pattern in `reference/hardware/` states those
+fixings. **Nothing is drilled for it**, and the frame is ordered instead.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f13` → **7 ok · 0 failed**. Placed from the
+Library panel, then measured against a BUDTALL cut to the same size standing
+beside it.
+
+| | Cargo | tall unit, same size |
+| --- | --- | --- |
+| size | 300 × 2150 × 558 | 300 × 2150 × 558 |
+| parts | BUL BUR TOP BOTTOM BACK FRONT | the same |
+| holes | 88 | 88, **the same fingerprint** |
+| frame on the order | 1 × *264 × 2114 × 540 mm opening* | 0 |
+
+| file | |
+| --- | --- |
+| `13a-cargo-300-in-the-kitchen-library-under-tall-units.png` | the row |
+| `13b-a-cargo-300-standing-a-tall-carcass-and-a-full-door.png` | the cabinet |
+| `13c-the-cargo-sheet-the-kits-own-holes-and-no-others.png` | the cut |

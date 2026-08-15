@@ -21,6 +21,8 @@ import {
   addPlusPoints, unitBase, unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
 import { dimensionCarriers } from '../engine/dimensions.js';
+// Turn 30 (CLAUDE.md F12): neighbouring fronts that come too close.
+import { frontGapClashes } from '../engine/frontGapClash.js';
 import { backStandoff, wallClearance } from '../engine/collision.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -468,6 +470,58 @@ function Lights({
       ))}
     </>
   );
+}
+
+/**
+ * ─── FRONT TO FRONT, IN RED (turn 30, CLAUDE.md F12) ────────────────────────
+ *
+ * "when a gap is < 3 mm, paint the pair's meeting edges red and show the value.
+ * It is a WARNING overlay, not a block."
+ *
+ * So it paints and it says the number, and it changes nothing: the pairs and
+ * the millimetres are `engine/frontGapClash.js`'s, the threshold is the
+ * profile's, and the cabinets under the paint are cut exactly as they were
+ * asked for.
+ *
+ * The mark is drawn ON the meeting line, standing a whisker proud of the door
+ * plane so it is not z-fought by the leaves it is about, and it spans only the
+ * height the two fronts actually SHARE — a 1.5 mm gap between a tall door and a
+ * short one is a fault along the short one's own edge and nowhere else.
+ */
+function FrontGapMarks({
+  clashes, walls, roomCentre, colour, doorPlaneOf,
+}) {
+  return clashes.map((c, i) => {
+    const wall = walls[c.wall] || walls[0];
+    if (!wall) return null;
+    const along = new THREE.Vector3(wall.along.x, 0, wall.along.y);
+    const inward = new THREE.Vector3(wall.inward.x, 0, wall.inward.y);
+    const centre = new THREE.Vector3(
+      mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+    )
+      .addScaledVector(along, mm(c.atX))
+      .addScaledVector(inward, mm(doorPlaneOf(c)))
+      .setY(mm((c.fromY + c.toY) / 2));
+    const height = mm(Math.max(1, c.toY - c.fromY));
+    return (
+      <mesh
+        // eslint-disable-next-line react/no-array-index-key
+        key={`${c.wall}-${c.atX}-${i}`}
+        position={centre.toArray()}
+        rotation={[0, wall.angle, 0]}
+        renderOrder={12}
+        userData={{
+          ccFrontGapMm: c.mm,
+          ccFrontGapPair: [c.a.panelId, c.b.panelId],
+          ccFrontGapThreshold: c.thresholdMm,
+          ccNoBounds: true,
+        }}
+      >
+        <boxGeometry args={[mm(6), height, mm(2)]} />
+        <meshBasicMaterial color={colour} depthTest={false} toneMapped={false} />
+      </mesh>
+    );
+  });
 }
 
 /**
@@ -950,6 +1004,17 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // Turn 30 (CLAUDE.md F8): the slabs this project carries, geometry resolved.
   const worktopsOf = useProjectStore((s) => s.worktopsOf);
   const worktops = useMemo(() => worktopsOf(), [units, design, worktopsOf]);
+  // Turn 30 (CLAUDE.md F12): neighbouring fronts that come closer than the
+  // profile's minimum. Room level — across cabinets, which is the fault a
+  // per-cabinet reader cannot see.
+  const frontGapClashList = useMemo(
+    () => frontGapClashes({
+      entries: results,
+      baseOf: (u) => unitBase(u, profile),
+      profile,
+    }),
+    [results, profile],
+  );
   const studio = profile.appearance.studio;
   // ─── Turn 10 (CLAUDE.md F3) ───
   // The lightest of the room's three tones, and the only one that is not a
@@ -1207,6 +1272,22 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           accident. The library opens at the category the cabinet you clicked
           beside belongs to, carrying the place with it, so a wall unit's plus
           offers wall units. */}
+      {/* ─── Turn 30 (CLAUDE.md F12): FRONT TO FRONT, IN RED ──────────────
+          A WARNING OVERLAY and not a block: the pair's meeting edges, painted,
+          with the value on the mark for a walk to read. Solid view only — a
+          contour drawing is the machine's picture and a warning is not cut. */}
+      {!contourView && frontGapClashList.length > 0 && (
+        <FrontGapMarks
+          clashes={frontGapClashList}
+          walls={walls}
+          roomCentre={bounds.centre}
+          colour={profile.appearance.frontGapWarning.colour}
+          // The leaf's OWN plane, off the pair itself — a whisker proud of it
+          // so the mark is not z-fought by the doors it is about.
+          doorPlaneOf={(c) => c.a.z + c.a.d + 1}
+        />
+      )}
+
       {/* ─── Turn 30 (CLAUDE.md F8): THE WORKTOP ─────────────────────────
           A design-layer auto-part over a run of base cabinets. Drawn AFTER the
           units so it lies on them, and only in the solid view — a contour

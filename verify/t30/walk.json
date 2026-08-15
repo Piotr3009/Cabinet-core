@@ -12,29 +12,34 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F11 — with nothing said the LISP ladder stands: Base is ALWAYS three",
+   "label": "F12 — a correctly laid out run is SILENT: no red, no number",
    "ok": true,
-   "detail": "short 100/200/400 · tall 100/470/670"
+   "detail": "0 faults · 0 marks · 0 rows"
   },
   {
-   "label": "F11 — the owner’s 600 puts the SHORT door on two, at 100 and wys − 100",
+   "label": "F12 — a job opened 1 mm tight is CAUGHT, and the room paints it red",
    "ok": true,
-   "detail": "short 100/400"
+   "detail": "1 faults · 1 marks"
   },
   {
-   "label": "F11 — …and leaves the FULL door exactly where the ladder put it",
+   "label": "F12 — …the value is on the mark itself: 2 mm, under the 3 mm minimum",
    "ok": true,
-   "detail": "tall 100/470/670"
+   "detail": "2 mm"
   },
   {
-   "label": "F11 — …and the CUPS followed: two hinges, two bores",
+   "label": "F12 — …it names the PAIR of leaves that meet there",
    "ok": true,
-   "detail": "short 2 cups · tall 3"
+   "detail": "01-F + 02-F"
   },
   {
-   "label": "F11 — a door edited BY HAND wins over the standard",
+   "label": "F12 — …and the readout SHOWS the value beside it",
    "ok": true,
-   "detail": "short 140/400"
+   "detail": "▲2 mm between 01's 01-F and 02's 02-F — under the 3 mm minimum."
+  },
+  {
+   "label": "F12 — it is a WARNING and not a block: both cabinets are cut as before",
+   "ok": true,
+   "detail": "[{\"panels\":6,\"drills\":77},{\"panels\":6,\"drills\":77}]"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

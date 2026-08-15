@@ -1,41 +1,64 @@
 {
- "f11": {
-  "ladders": {
-   "said": null,
-   "short": {
-    "rows": [
-     100,
-     200,
-     400
-    ],
-    "cups": 3
-   },
-   "tall": {
-    "rows": [
-     100,
-     470,
-     670
-    ],
-    "cups": 3
-   }
+ "f12": {
+  "clean": {
+   "list": [],
+   "marks": [],
+   "rows": [],
+   "xs": [
+    5700,
+    6300
+   ],
+   "cut": [
+    {
+     "panels": 6,
+     "drills": 77
+    },
+    {
+     "panels": 6,
+     "drills": 77
+    }
+   ]
   },
-  "owners": {
-   "said": 600,
-   "short": {
-    "rows": [
-     100,
-     400
-    ],
-    "cups": 2
-   },
-   "tall": {
-    "rows": [
-     100,
-     470,
-     670
-    ],
-    "cups": 3
-   }
+  "tight": {
+   "list": [
+    {
+     "mm": 2,
+     "pair": [
+      "01-F",
+      "02-F"
+     ]
+    }
+   ],
+   "marks": [
+    {
+     "mm": 2,
+     "pair": [
+      "01-F",
+      "02-F"
+     ]
+    }
+   ],
+   "rows": [
+    {
+     "mm": 2,
+     "pair": "01-F|02-F",
+     "text": "▲2 mm between 01's 01-F and 02's 02-F — under the 3 mm minimum."
+    }
+   ],
+   "xs": [
+    5700,
+    6299
+   ],
+   "cut": [
+    {
+     "panels": 6,
+     "drills": 77
+    },
+    {
+     "panels": 6,
+     "drills": 77
+    }
+   ]
   }
  }
 }

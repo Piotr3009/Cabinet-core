@@ -1432,6 +1432,109 @@ async function main() {
       await shot('11c-and-a-hand-edited-door-wins');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F12 [MEDIUM] — front to front, red under 3 mm
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f12')) {
+      await newRoom('Turn 30 walk — F12');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const a = s.addUnit('BUD');
+        s.updateUnitParams(a.id, { doors: true });
+        const b = s.addUnit('BUD', { near: a.id, side: 'right' });
+        s.updateUnitParams(b.id, { doors: true });
+        window.__t30 = { a: a.id, b: b.id, ids: [a.id, b.id] };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+
+      // What the ROOM drew, what the READOUT says, and what the CUT is — the
+      // three answers that have to agree, read in one go.
+      const readGap = `
+        const s = ${P}.project.getState();
+        const v = ${P}.views && ${P}.views.room;
+        const marks = [];
+        if (v) {
+          v.scene.traverse((o) => {
+            if (o.userData && o.userData.ccFrontGapMm != null) {
+              marks.push({ mm: o.userData.ccFrontGapMm, pair: o.userData.ccFrontGapPair });
+            }
+          });
+        }
+        const rows = Array.from(document.querySelectorAll('[data-front-gap-mm]')).map((el) => ({
+          mm: Number(el.getAttribute('data-front-gap-mm')),
+          pair: el.getAttribute('data-front-gap-pair'),
+          text: (el.textContent || '').trim(),
+        }));
+        const cut = (id) => {
+          const r = s.unitResult(id);
+          return { panels: r.panels.length, drills: r.drills.length };
+        };
+        return {
+          list: s.frontGapWarnings().map((c) => ({ mm: c.mm, pair: [c.a.panelId, c.b.panelId] })),
+          marks,
+          rows,
+          xs: s.units.map((u) => u.position.x_mm),
+          cut: [cut(window.__t30.a), cut(window.__t30.b)],
+        };
+      `;
+
+      const clean = await page.evaluate(readGap);
+      check('F12 — a correctly laid out run is SILENT: no red, no number',
+        clean.list.length === 0 && clean.marks.length === 0 && clean.rows.length === 0,
+        `${clean.list.length} faults · ${clean.marks.length} marks · ${clean.rows.length} rows`);
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.9, 0.55, 2.4]);
+      await page.sleep(900);
+      await shot('12a-two-cabinets-butted-a-correct-3mm-joint-says-nothing');
+
+      // ─── THE FAULT ────────────────────────────────────────────────────
+      // A job that arrives already laid out, one millimetre tight — the
+      // layout the editor's clamp never drew and nothing has ever measured.
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const units = s.units.map((u) => (u.id === window.__t30.b
+          ? { ...u, position: { ...u.position, x_mm: u.position.x_mm - 1 } }
+          : u));
+        s.loadProject({
+          id: null,
+          name: 'a job somebody saved',
+          room: s.project.room,
+          design: s.project.design,
+        }, units);
+        return true;
+      `);
+      await page.sleep(1600);
+
+      const tight = await page.evaluate(readGap);
+      measurements.f12 = { clean, tight };
+      check('F12 — a job opened 1 mm tight is CAUGHT, and the room paints it red',
+        tight.list.length === 1 && tight.marks.length === 1,
+        `${tight.list.length} faults · ${tight.marks.length} marks`);
+      check('F12 — …the value is on the mark itself: 2 mm, under the 3 mm minimum',
+        tight.marks[0] && tight.marks[0].mm === 2,
+        `${tight.marks[0] ? tight.marks[0].mm : '?'} mm`);
+      check('F12 — …it names the PAIR of leaves that meet there',
+        tight.marks[0] && tight.marks[0].pair
+        && tight.marks[0].pair.join('|') === '01-F|02-F',
+        tight.marks[0] && tight.marks[0].pair ? tight.marks[0].pair.join(' + ') : '?');
+      check('F12 — …and the readout SHOWS the value beside it',
+        tight.rows.length === 1 && tight.rows[0].mm === 2
+        && /2 mm between/.test(tight.rows[0].text),
+        tight.rows[0] ? tight.rows[0].text : '(nothing)');
+      check('F12 — it is a WARNING and not a block: both cabinets are cut as before',
+        JSON.stringify(tight.cut) === JSON.stringify(clean.cut),
+        JSON.stringify(tight.cut));
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.9, 0.55, 2.4]);
+      await page.sleep(900);
+      await shot('12b-the-same-run-1mm-tight-the-joint-painted-red-with-its-value');
+      // …and close on the joint, where the red sliver stands between the two
+      // leaves it is about.
+      await frameUnits(await page.evaluate('return [window.__t30.b];'), [0.55, 0.2, 1.5]);
+      await page.sleep(900);
+      await shot('12c-the-meeting-edges-in-red-at-2mm');
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

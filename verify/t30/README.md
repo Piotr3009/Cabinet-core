@@ -491,3 +491,60 @@ read, and the test asserts that ordering in the source.
 | `11a-the-lisp-ladder-three-hinges-on-a-short-door.png` | the kit's own answer |
 | `11b-the-owners-standard-two-hinges-on-the-same-door.png` | the shop's |
 | `11c-and-a-hand-edited-door-wins.png` | and the bench's |
+
+---
+
+## F12 [MEDIUM] — front to front, red under 3 mm
+
+`engine/frontGapClash.js` measures the gap between **neighbouring fronts across
+a run** — the last door of one cabinet and the first door of the next, which is
+the joint a kitchen actually fails at and which nothing in this app has ever
+measured. Turn 25's `frontGaps` is the other question (the gaps *inside* one
+cabinet) and is untouched.
+
+A pair is: two fronts **on one wall**, on **unturned** cabinets, whose **height
+bands** overlap, whose **front planes** overlap (a leaf on a 330 deep cabinet
+and one on a 558 deep cabinet beside it are 228 mm apart in air and never
+meet), with **nothing standing between them** — so a run of three doors reports
+its two real joints rather than three pairs.
+
+### The first thing the tests prove is that the app is right
+
+Every kit in the engine stands its front `doors.gap / 2` = **1.5 mm** inside its
+own carcass on both edges — measured across the whole type list — and the double
+door and the per-bay doors leave the same **3.00** between leaves. So two
+cabinets standing edge to edge measure exactly 3.00: **the number, not under
+it**, and a correct kitchen is silent.
+
+`moveUnit` clamps a slide into the free slot and `updateUnitParams` refuses a
+width that would eat a neighbour (*"Width limited to 600 mm by 02"*), so **the
+editor cannot draw this fault with the mouse** — both asserted. What can is a
+job that arrives already laid out: `loadProject` opening a saved or imported
+file whose positions never passed through `clampUnitX`. An **overlap** is the
+same fault worse and is reported too, in the millimetres it comes out negative.
+
+The threshold is `profile.doors.minNeighbourGapMm` = **3**; a workshop that
+wants 5 gets 5, asserted rather than described.
+
+### It is a WARNING and not a block
+
+Nothing moves a cabinet, re-cuts a door or refuses a layout. The room paints the
+pair's meeting edges (`FrontGapMarks`, the profile's red, spanning only the
+height the two actually share) and `FrontGapWarnings` says the value — **one
+list, `frontGapWarnings()` in the store**, so a mark can never appear without
+its millimetres. The walk compares the cut before and after: identical.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f12` → **7 ok · 0 failed**.
+
+| | faults | marks | readout | cut |
+| --- | --- | --- | --- | --- |
+| two 600s butted (3.00) | 0 | 0 | silent | 6 panels · 77 holes |
+| the same job opened 1 mm tight | 1 | 1 × **2 mm** | *"2 mm between 01's 01-F and 02's 02-F — under the 3 mm minimum."* | 6 panels · 77 holes, **unchanged** |
+
+| file | |
+| --- | --- |
+| `12a-two-cabinets-butted-a-correct-3mm-joint-says-nothing.png` | a correct run |
+| `12b-the-same-run-1mm-tight-the-joint-painted-red-with-its-value.png` | the fault, painted, with the number |
+| `12c-the-meeting-edges-in-red-at-2mm.png` | close on the joint |

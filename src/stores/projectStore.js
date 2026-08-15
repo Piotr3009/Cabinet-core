@@ -34,6 +34,7 @@ import {
 import { handleClassCount } from '../engine/handles.js';
 // Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
 import { worktopEligible, worktopsFor } from '../engine/worktop.js';
+import { frontGapClashes } from '../engine/frontGapClash.js';
 import {
   carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
   projectFrontThickness, setFrontTypeCount, sourceById, sourceTakesFacing,
@@ -3628,6 +3629,26 @@ export const useProjectStore = create((set, get) => ({
       records: migrateDesign(s.project.design).worktops,
       units: s.units,
       profile: getCabinetProfile(),
+    });
+  },
+
+  /**
+   * ─── Turn 30 (CLAUDE.md F12): neighbouring fronts that come too close ─────
+   *
+   * "Room level: compute the gap between neighbouring fronts in a run; when a
+   * gap is < 3 mm, paint the pair's meeting edges red and show the value."
+   *
+   * ONE answer for both surfaces — the red marks in the room and the readout
+   * that says the number — so a mark can never appear without its millimetres,
+   * or the other way round. It READS and it warns; nothing here writes.
+   */
+  frontGapWarnings: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    return frontGapClashes({
+      entries: s.allResults(),
+      baseOf: (u) => unitBase(u, profile),
+      profile,
     });
   },
 

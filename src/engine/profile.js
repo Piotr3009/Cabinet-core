@@ -155,6 +155,17 @@ export const DEFAULT_CABINET_PROFILE = {
 
   // ─── Doors / fronts ───
   doors: {
+    // ─── TURN 30 (CLAUDE.md F12): HOW NEAR TWO FRONTS MAY COME ────────────
+    //
+    // Room level: the gap between NEIGHBOURING fronts in a run — the last door
+    // of one cabinet and the first of the next. Two cabinets that each measure
+    // perfectly can still be set out 1.5 mm apart, and nothing in this app said
+    // so until tonight.
+    //
+    // Under this, the pair's meeting edges are painted RED and the value is
+    // shown. It is a WARNING OVERLAY and not a block: the cabinets are built
+    // exactly as they were asked for.
+    minNeighbourGapMm: 3,
     // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
     // width 705 mm (704 is still ONE door — BLOCKERS.md #2)
     widthDeduction: 4,
@@ -2275,6 +2286,10 @@ export const DEFAULT_CABINET_PROFILE = {
     // `run` is the app's selection blue, which is where it started; `inner` is
     // the app's gold, the colour every other "this is the thing you are working
     // on" mark in the app already wears.
+    // ─── TURN 30 (CLAUDE.md F12): THE COLOUR OF A FRONT-GAP FAULT ─────────
+    // Red, because that is what CLAUDE.md asks for and what everybody already
+    // means by it. A PICTURE number: nothing downstream of it is cut.
+    frontGapWarning: { colour: '#e2483c' },
     // ─── TURN 30 (CLAUDE.md F8): WHAT A WORKTOP LOOKS LIKE ────────────────
     // Until a per-worktop decor arrives (CLAUDE.md puts it in a later
     // chat-fix), a slab is drawn in the workshop's own worktop grey. It is a
@@ -3626,6 +3641,8 @@ export function migrateCabinetProfile(profile) {
       // Turn 30 (CLAUDE.md F8): a profile saved before the worktop existed has
       // no colour for one, and a slab drawn in `undefined` is a black slab.
       worktop: { ...D.appearance.worktop, ...profile.appearance?.worktop },
+      // Turn 30 (CLAUDE.md F12): and the colour a too-near pair is painted.
+      frontGapWarning: { ...D.appearance.frontGapWarning, ...profile.appearance?.frontGapWarning },
       // Turn 21 (CLAUDE.md F3): a profile stored before this turn has no
       // `cuts` at all and must read as the default — off.
       cuts: { ...D.appearance.cuts, ...profile.appearance?.cuts },

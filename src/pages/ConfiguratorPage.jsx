@@ -22,6 +22,7 @@ import UnitFinishModal from '../components/UnitFinishModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
+import FrontGapWarnings from '../components/FrontGapWarnings.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
@@ -311,6 +312,12 @@ export default function ConfiguratorPage() {
             when the scene is emptied, because it is not a splash screen: it is
             what an empty room looks like. */}
         {units.length === 0 && viewMode === '3d' && <FirstUnitPlus />}
+
+        {/* ─── Turn 30 (CLAUDE.md F12): "…and SHOW THE VALUE" ─────────────
+            The red marks are painted in the room; this is the number beside
+            them. Solid view only — the CNC view is the machine's picture and
+            a warning is not cut. */}
+        {viewMode === '3d' && <FrontGapWarnings />}
 
         <LibraryPanel />
         {rightPanelOpen && !bomOpen && <RightPanel />}

@@ -1357,6 +1357,81 @@ async function main() {
       await shot('10c-flat-everywhere-except-the-front-with-its-own-answer');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F11 [MEDIUM] — two hinges under 600, on the override channel
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f11')) {
+      await newRoom('Turn 30 walk — F11');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        // A SHORT base unit - a 500 carcass is a 497 leaf - beside a full one,
+        // so the rule and its boundary are in the same picture.
+        const short = s.addUnit('BUD');
+        s.updateUnitParams(short.id, { width: 500, height: 500, doors: true });
+        const tall = s.addUnit('BUD', { near: short.id, side: 'right' });
+        s.updateUnitParams(tall.id, { width: 500, doors: true });
+        window.__t30 = { short: short.id, tall: tall.id };
+        ${P}.ui.getState().setShowHinges(true);
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+
+      const readHinges = `
+        const s = ${P}.project.getState();
+        const of = (id) => {
+          const r = s.unitResult(id);
+          return { rows: r.drillSummary.hinge_centers, cups: r.drillSummary.front_cup_y.length };
+        };
+        return {
+          said: s.project.design.hingeTwoBelow == null ? null : s.project.design.hingeTwoBelow,
+          short: of(window.__t30.short),
+          tall: of(window.__t30.tall),
+        };
+      `;
+      const ladders = await page.evaluate(readHinges);
+      check('F11 — with nothing said the LISP ladder stands: Base is ALWAYS three',
+        ladders.said === null && ladders.short.rows.length === 3 && ladders.tall.rows.length === 3,
+        `short ${ladders.short.rows.join('/')} · tall ${ladders.tall.rows.join('/')}`);
+      await frameUnits([await page.evaluate('return window.__t30.short;')], [0.6, 0.3, 1.3]);
+      await page.sleep(900);
+      await shot('11a-the-lisp-ladder-three-hinges-on-a-short-door');
+
+      // The owner's standard, on the project.
+      await page.evaluate(`${P}.project.getState().setDesign({ hingeTwoBelow: 600 }); return true;`);
+      await page.sleep(1400);
+      const owners = await page.evaluate(readHinges);
+      measurements.f11 = { ladders, owners };
+      check('F11 — the owner’s 600 puts the SHORT door on two, at 100 and wys − 100',
+        owners.said === 600 && owners.short.rows.length === 2
+        && owners.short.rows[0] === 100 && owners.short.rows[1] === 400,
+        `short ${owners.short.rows.join('/')}`);
+      check('F11 — …and leaves the FULL door exactly where the ladder put it',
+        owners.tall.rows.length === 3
+        && JSON.stringify(owners.tall.rows) === JSON.stringify(ladders.tall.rows),
+        `tall ${owners.tall.rows.join('/')}`);
+      check('F11 — …and the CUPS followed: two hinges, two bores',
+        owners.short.cups === 2 && owners.tall.cups === 3,
+        `short ${owners.short.cups} cups · tall ${owners.tall.cups}`);
+      await frameUnits([await page.evaluate('return window.__t30.short;')], [0.6, 0.3, 1.3]);
+      await page.sleep(900);
+      await shot('11b-the-owners-standard-two-hinges-on-the-same-door');
+
+      // …and a door somebody has edited by hand WINS.
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        s.setHingePos(window.__t30.short, 0, 140);
+        return true;
+      `);
+      await page.sleep(1000);
+      const edited = await page.evaluate(readHinges);
+      check('F11 — a door edited BY HAND wins over the standard',
+        edited.short.rows.length >= 2 && edited.short.rows[0] === 140,
+        `short ${edited.short.rows.join('/')}`);
+      await page.sleep(400);
+      await shot('11c-and-a-hand-edited-door-wins');
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

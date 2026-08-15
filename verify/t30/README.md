@@ -456,3 +456,38 @@ override and is left alone.
 | `10a-a-shaker-job-with-one-grooved-front.png` | before |
 | `10b-the-front-style-gallery-in-the-main-menu.png` | the menu control |
 | `10c-flat-everywhere-except-the-front-with-its-own-answer.png` | after |
+
+---
+
+## F11 [MEDIUM] — two hinges under 600, on the OVERRIDE CHANNEL
+
+The LISP ladders stay the engine's bare answer — **Base is always three**, Low
+takes two under 800 — and the owner's standard arrives the way F5's setback
+does: `hinge_two_below_mm`, default **null** (= the ladders), company row →
+project → `paramsForEngine()`.
+
+The two centres are `[endOffset, H − endOffset]` — the LISP's own outer pair
+written in the carcass frame — so *"100 / wys − 100"* is his sentence and not a
+second set of numbers. The threshold is measured against the **door's** own
+height, because that is what he said.
+
+**"Respect per-door manual hinge edits — they win"** is control flow, not a
+promise: the explicit list returns from `hingeRows` before the threshold is ever
+read, and the test asserts that ordering in the source.
+
+### Read off the running app, a 500 carcass beside a 770
+
+`node scripts/e2e-turn30.mjs --only f11` → **7 ok · 0 failed**.
+
+| | short (500) | full (770) |
+| --- | --- | --- |
+| nothing said | `100 / 200 / 400` — Base is always three | `100 / 470 / 670` |
+| the owner's **600** | **`100 / 400`** | `100 / 470 / 670`, untouched |
+| cups | 2 | 3 |
+| after one hand edit | `140 / 400` — the bench wins | |
+
+| file | |
+| --- | --- |
+| `11a-the-lisp-ladder-three-hinges-on-a-short-door.png` | the kit's own answer |
+| `11b-the-owners-standard-two-hinges-on-the-same-door.png` | the shop's |
+| `11c-and-a-hand-edited-door-wins.png` | and the bench's |

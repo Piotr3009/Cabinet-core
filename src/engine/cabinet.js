@@ -151,13 +151,43 @@ export function middleHingeIndex(centres) {
  *   own       an explicit list the joiner has edited (F7.2), or null
  * @param {object} profile
  */
-export function hingeRows({ height, rule, standard = 3, own = null }, profile) {
+export function hingeRows({
+  height, rule, standard = 3, own = null, doorHeight = null, twoBelowMm = null,
+}, profile) {
   if (Array.isArray(own) && own.length) {
     const H = Number(height) || 0;
     return [...own]
       .map((v) => Number(v))
       .filter((v) => Number.isFinite(v) && v >= 0 && v <= H)
       .sort((a, b) => a - b);
+  }
+  // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER 600 ───────────────────────
+  //
+  // The LISP's ladders are what they are — Base is ALWAYS three, Low takes two
+  // under 800 — and they stay the engine's bare answer. The owner's standard is
+  // different and simpler: ANY door under 600 mm takes TWO, at 100 and
+  // `wys − 100`.
+  //
+  // So it arrives the way F5's setback arrives and the plinth before it: an
+  // INPUT on the override channel, `hinge_two_below_mm`, default null. Null is
+  // "the LISP ladders", which is what every golden fixture passes and therefore
+  // what a bare `computeCabinet()` still drills.
+  //
+  // The two centres are `[endOffset, H − endOffset]` — the LISP's own outer
+  // pair, written in the CARCASS frame the rows live in — so "100 / wys − 100"
+  // is his sentence and not a second set of numbers. The threshold is measured
+  // against the DOOR's own height, because that is what he said and because a
+  // door is what a hinge hangs.
+  //
+  // A DOOR SOMEBODY HAS EDITED BY HAND is untouched: the `own` list above
+  // returns before this line ever runs, which is CLAUDE.md's "respect per-door
+  // manual hinge edits — they win", as control flow rather than as a promise.
+  const below = Number(twoBelowMm);
+  const leaf = Number(doorHeight);
+  if (below > 0 && leaf > 0 && leaf < below) {
+    const end = Number(profile?.hinges?.endOffset) || 0;
+    const H = Number(height) || 0;
+    return [end, H - end];
   }
   const centres = hingeCentres(height, rule, profile);
   if (hingeStandard(standard, profile) !== 2) return centres;
@@ -564,6 +594,10 @@ function normalizeParams(raw, profile) {
     frontHandles: p.front_handles && typeof p.front_handles === 'object' ? p.front_handles : null,
     hingeStandard: p.hinge_standard,
     hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
+    // Turn 30 (CLAUDE.md F11): the owner's "any door under 600 takes two". An
+    // INPUT, exactly like the standard above it — null is the LISP's ladders,
+    // which is what every golden fixture passes.
+    hingeTwoBelowMm: Number(p.hinge_two_below_mm) > 0 ? Number(p.hinge_two_below_mm) : null,
     // ─── Turn 19 (CLAUDE.md F1): WHICH HINGE, NOT HOW MANY ──────────────────
     // The project's finish and system, and any per-door exception a joiner has
     // assigned — design-layer inputs travelling exactly as the hinge standard
@@ -1057,7 +1091,15 @@ export function computeCabinet(params, profileOverride) {
   // fixture — passes neither of the last two and gets `hingeCentres` unchanged,
   // which is what keeps the AutoLISP's drilling exactly where it is.
   const centres = hingeRows({
-    height: H, rule: hingeRule, standard: cfg.hingeStandard, own: cfg.hingeRows,
+    height: H,
+    rule: hingeRule,
+    standard: cfg.hingeStandard,
+    own: cfg.hingeRows,
+    // Turn 30 (CLAUDE.md F11): the owner's "any door under 600 takes two".
+    // Both of these are INPUTS — a bare kit call passes neither and gets the
+    // LISP's ladder unchanged.
+    doorHeight: frontH,
+    twoBelowMm: cfg.hingeTwoBelowMm,
   }, P);
   // ─── THE CUPS FOLLOW THE HINGES (turn 17, CLAUDE.md F7.3) ────────────────
   //

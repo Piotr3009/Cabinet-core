@@ -12,29 +12,29 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F10 — the job starts on the workshop’s own default, and one cabinet is grooved by hand",
+   "label": "F11 — with nothing said the LISP ladder stands: Base is ALWAYS three",
    "ok": true,
-   "detail": "project S · cut S/S/G"
+   "detail": "short 100/200/400 · tall 100/470/670"
   },
   {
-   "label": "F10 — choosing Flat in the menu sets the PROJECT default",
+   "label": "F11 — the owner’s 600 puts the SHORT door on two, at 100 and wys − 100",
    "ok": true,
-   "detail": "F"
+   "detail": "short 100/400"
   },
   {
-   "label": "F10 — …and every front WITHOUT its own override follows, in the CUT",
+   "label": "F11 — …and leaves the FULL door exactly where the ladder put it",
    "ok": true,
-   "detail": "abwx:F · 26r9:F · 4jrq:G"
+   "detail": "tall 100/470/670"
   },
   {
-   "label": "F10 — …while the one somebody made GROOVED survives",
+   "label": "F11 — …and the CUPS followed: two hinges, two bores",
    "ok": true,
-   "detail": "G"
+   "detail": "short 2 cups · tall 3"
   },
   {
-   "label": "F10 — and it is the CUT that moved: a shaker is machined, a flat front is not",
+   "label": "F11 — a door edited BY HAND wins over the standard",
    "ok": true,
-   "detail": "1 pockets → 0"
+   "detail": "short 140/400"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

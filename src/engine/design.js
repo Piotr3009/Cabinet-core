@@ -100,6 +100,12 @@ export const DEFAULT_DESIGN = {
   shelves: {
     pinSetback: null,
   },
+  // Turn 30 (CLAUDE.md F11): the owner's "any door under 600 takes two". The
+  // hinge group of the design layer already carries the STANDARD (2 / 3) and
+  // the finish; this is the same kind of answer and lives beside them.
+  //   null = the LISP's own ladders — Base always three, Low two under 800 —
+  //   which is what every golden fixture cuts.
+  hingeTwoBelow: null,
   // ─── TURN 30 (CLAUDE.md F8): THE WORKTOPS ────────────────────────────────
   //
   // One record per slab: which cabinets it covers, the decor it is cut from
@@ -337,6 +343,8 @@ export function migrateDesign(design) {
     shelves: {
       pinSetback: Number(d.shelves?.pinSetback) > 0 ? Number(d.shelves.pinSetback) : null,
     },
+    // Turn 30 (CLAUDE.md F11): a positive number of millimetres, or nothing.
+    hingeTwoBelow: Number(d.hingeTwoBelow) > 0 ? Number(d.hingeTwoBelow) : null,
     // Turn 30 (CLAUDE.md F8): a worktop needs an id and at least two cabinets
     // to lie on; anything else in a stored record is not a worktop.
     worktops: (Array.isArray(d.worktops) ? d.worktops : [])

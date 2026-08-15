@@ -1,44 +1,41 @@
 {
- "f10": {
-  "before": {
-   "project": "S",
-   "cut": [
-    {
-     "id": "u_ffmabwx",
-     "type": "S",
-     "pockets": 1
-    },
-    {
-     "id": "u_8y126r9",
-     "type": "S",
-     "pockets": 1
-    },
-    {
-     "id": "u_6nm4jrq",
-     "type": "G",
-     "pockets": 0
-    }
-   ]
+ "f11": {
+  "ladders": {
+   "said": null,
+   "short": {
+    "rows": [
+     100,
+     200,
+     400
+    ],
+    "cups": 3
+   },
+   "tall": {
+    "rows": [
+     100,
+     470,
+     670
+    ],
+    "cups": 3
+   }
   },
-  "after": {
-   "project": "F",
-   "cut": [
-    {
-     "id": "u_ffmabwx",
-     "type": "F",
-     "pockets": 0
-    },
-    {
-     "id": "u_8y126r9",
-     "type": "F",
-     "pockets": 0
-    },
-    {
-     "id": "u_6nm4jrq",
-     "type": "G",
-     "pockets": 0
-    }
-   ]
+  "owners": {
+   "said": 600,
+   "short": {
+    "rows": [
+     100,
+     400
+    ],
+    "cups": 2
+   },
+   "tall": {
+    "rows": [
+     100,
+     470,
+     670
+    ],
+    "cups": 3
+   }
   }
  }
 }

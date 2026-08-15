@@ -191,6 +191,16 @@ export const DEFAULT_CABINET_PROFILE = {
     xFromFrontEdge: 37,        // measured from the FRONT edge of the side panel
     layer: 'HINGES_5MM',
     endOffset: 100,            // first/last hinge centre, from panel end
+    // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER … ───────────────────────
+    //
+    // The LISP's ladders are what they are — Base is ALWAYS three, Low takes
+    // two under 800 — and `null` is those ladders. The owner's own standard is
+    // ANY door under 600 mm on TWO hinges, at 100 and `wys − 100`, and it
+    // arrives on the OVERRIDE CHANNEL (company row → project → `hinge_two_
+    // below_mm`) rather than as a changed ladder. Null here is what keeps a
+    // bare `computeCabinet()` — every golden fixture — drilling the AutoLISP's
+    // own count.
+    twoBelowMm: null,
     // Hinge-count rules per unit family (SKYLON_COMMON calcHingePositions*)
     rules: {
       base: { mode: 'base', secondFromTop: 300 },                 // [100, H−300, H−100]

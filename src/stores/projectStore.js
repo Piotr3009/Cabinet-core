@@ -363,6 +363,12 @@ function paramsForEngine(unit, design = null) {
     // company preference is resolved; a project that has said something of its
     // own keeps saying it.
     shelf_pin_setback_mm: design?.shelves?.pinSetback ?? null,
+    // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER 600 ─────────────────────
+    // The owner's standard, on the same road as the setback above it and the
+    // plinth before both: an INPUT in the design layer, never a formula in the
+    // engine. Left out — a bare kit call, every golden fixture — the engine
+    // uses the LISP's own ladders and drills what the AutoLISP drills.
+    hinge_two_below_mm: design?.hingeTwoBelow ?? null,
     // ─── TURN 25 (CLAUDE.md F4): THE HANDLE, AND ONE FRONT'S OWN ───────────
     // The project's choice with its per-class offsets, and this cabinet's own
     // exceptions keyed by panel id — the same two-level shape turn 19 gave the

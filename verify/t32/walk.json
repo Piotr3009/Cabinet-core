@@ -1,0 +1,142 @@
+{
+ "steps": [
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "F1 — the type is a LABEL on the settings step, never a second dropdown",
+   "ok": true,
+   "detail": "{\"type\":\"Wardrobe\",\"typeDropdowns\":0,\"depth\":\"568\",\"total\":\"total item = wardrobe + legs = 2500 mm\"}"
+  },
+  {
+   "label": "F1 — the depth seed follows the PROJECT TYPE: the wardrobe row reads 568",
+   "ok": true,
+   "detail": "depth field: 568"
+  },
+  {
+   "label": "F1 — the LIVE line: total item = wardrobe + legs",
+   "ok": true,
+   "detail": "total item = wardrobe + legs = 2500 mm"
+  },
+  {
+   "label": "F1 — under 40 mm of headroom the wizard ASKS: to the ceiling, with no infill?",
+   "ok": true,
+   "detail": "Only 0 mm to the ceiling. To the ceiling, with no infill?\n\nAn infill can be scribed to the"
+  },
+  {
+   "label": "F1 — …and Start designing is disabled while it stands unanswered",
+   "ok": true,
+   "detail": "disabled: true"
+  },
+  {
+   "label": "F1 — \"Yes — to the ceiling\" is remembered on the design",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1 — three front types on the step",
+   "ok": true,
+   "detail": "f1,f2,f3"
+  },
+  {
+   "label": "F1 — slot 2 wears the shape its gallery picked",
+   "ok": true,
+   "detail": "{\"f2\":\"F\",\"count\":3}"
+  },
+  {
+   "label": "F1 — the mock swatches are DELETED from the step",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1 — ONE picker: EGGER tiles ∪ stock (Generic in its own labelled group)",
+   "ok": true,
+   "detail": "[\"Generic — geometry only, assign a real board before check-out\",\"Stock\"]"
+  },
+  {
+   "label": "F1 — a real click on an EGGER tile assigns the carcass",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1 — no assignment → Start designing stays disabled, and it says why",
+   "ok": true,
+   "detail": "Front 1, Front 2, Front 3 — no material yet. Generic counts as an assignment; no"
+  },
+  {
+   "label": "F1 — Generic IS an assignment: the button opens",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1 — LIVE SCENE: the engine stamped the wardrobe 568 deep",
+   "ok": true,
+   "detail": "params.depth = 568"
+  },
+  {
+   "label": "F1 — LIVE SCENE: the meshes stand 568 deep in the room (±2 mm)",
+   "ok": true,
+   "detail": "{\"meshes\":5,\"w\":600,\"h\":2400,\"d\":568}"
+  },
+  {
+   "label": "R6 — the console is clean for the whole walk",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "shots": [
+  {
+   "name": "1a-step-4-one-screen-number-client-and-the-type-as-a-label",
+   "subject": {
+    "dom": "[data-wizard-type-label=\"1\"]",
+    "text": "total item"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "1b-the-ceiling-question-with-the-owners-scribe-warning",
+   "subject": {
+    "dom": "[data-ceiling-question=\"1\"]",
+    "text": "ceilings are rarely straight"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "1c-three-front-types-and-the-8-style-gallery-open-for-slot-2",
+   "subject": {
+    "dom": "[data-style-gallery-for=\"f2\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "1d-one-material-picker-egger-tiles-and-stock-with-generic",
+   "subject": {
+    "dom": "[data-material-picker-for=\"carcass:c1\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "1e-start-designing-held-until-every-slot-is-assigned",
+   "subject": {
+    "dom": "[data-materials-missing=\"1\"]",
+    "text": "Generic counts"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "1f-the-wardrobe-standing-568-deep-measured-off-its-own-meshes",
+   "subject": {
+    "mesh": "BUL"
+   },
+   "present": true,
+   "detail": "{\"mesh\":true}"
+  }
+ ]
+}

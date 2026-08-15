@@ -1,0 +1,29 @@
+{
+ "f1": {
+  "top": {
+   "type": "Wardrobe",
+   "typeDropdowns": 0,
+   "depth": "568",
+   "total": "total item = wardrobe + legs = 2500 mm"
+  },
+  "guard": {
+   "question": true,
+   "text": "Only 0 mm to the ceiling. To the ceiling, with no infill?\n\nAn infill can be scribed to the ceiling’s real shape — ceilings are rarely straight.\n\nYes — to the ceiling\nNo — keep an infill",
+   "startDisabled": true
+  },
+  "liveScene": {
+   "placed": {
+    "id": "u_wsjt96f",
+    "depth": 568,
+    "width": 600,
+    "height": 2400
+   },
+   "bounds": {
+    "meshes": 5,
+    "w": 600,
+    "h": 2400,
+    "d": 568
+   }
+  }
+ }
+}

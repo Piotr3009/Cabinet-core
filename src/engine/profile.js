@@ -976,7 +976,15 @@ export const DEFAULT_CABINET_PROFILE = {
     // it is the absence of a choice from it, and the number is then typed.
     boardThicknessOptions: [18, 22, 25],
     maxCarcassTypes: 3,
-    maxFrontTypes: 2,
+    // ─── TURN 32 (CLAUDE.md F1.4): THREE FRONT TYPES ────────────────────────
+    // OWNER'S NUMBER, 15.08.2026: "How many front types in this project?
+    // [1] [2] [3]" — kitchens get the same three. Was 2 since turn 11.
+    maxFrontTypes: 3,
+    // ─── TURN 32 (CLAUDE.md F1.3): THE CEILING QUESTION ─────────────────────
+    // OWNER-TUNABLE DEFAULT, 15.08.2026: under this much headroom the wizard
+    // asks "To the ceiling, with no infill?" — an infill can be scribed to the
+    // ceiling's real shape; ceilings are rarely straight.
+    ceilingQuestionMm: 40,
     // The ironmongery. Every one of these is FITTED AUTOMATICALLY — the plinth
     // gets its legs, bases and clips, a door gets its hinges, a drawer gets its
     // runners, a wall unit gets its handles, and every cut edge that shows gets

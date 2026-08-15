@@ -260,6 +260,13 @@ export const DEFAULT_DESIGN = {
   // falls back exactly as it did before turn 7.
   projectType: null,
   scope: 'room',                 // 'room' | 'wall'
+  // ─── TURN 32 (CLAUDE.md F1.3): THE CEILING ANSWER ────────────────────────
+  // When a wardrobe stands within the question gap of the ceiling, the wizard
+  // asks: "To the ceiling, with no infill?" — `'flush'` is yes (scribe the
+  // door/carcass to the ceiling's real shape), `'infill'` is no (keep an
+  // infill above). `null` = never asked, which is every project saved before
+  // this turn and every project the question does not apply to.
+  ceiling: null,
   // How the carcass is held together (profile.joinery). null = the profile's
   // default, which today is the only one there is.
   joinery: null,
@@ -387,6 +394,9 @@ export function migrateDesign(design) {
     ])),
     projectType: d.projectType ? String(d.projectType) : null,
     scope: d.scope === 'wall' ? 'wall' : 'room',
+    // Turn 32 (CLAUDE.md F1.3): only the two answers survive; anything else
+    // is "never asked".
+    ceiling: d.ceiling === 'flush' || d.ceiling === 'infill' ? d.ceiling : null,
     joinery: d.joinery ? String(d.joinery) : null,
     // `== null` and not a truthiness test: Number(null) is 0, and a shortcut
     // that treats 0 as "not set" would also treat a real stored 0 that way.
@@ -444,7 +454,8 @@ function migrateRunMaterials(stored, base) {
 /** The colours of the project's front types, with type 1 and `colour.front` agreed. */
 function coupleFrontTypes(d) {
   const types = Array.isArray(d?.fronts?.types)
-    ? d.fronts.types.slice(0, 2).map((t, i) => ({
+    // Turn 32 (CLAUDE.md F1.4): three slots now — the owner's [1] [2] [3].
+    ? d.fronts.types.slice(0, 3).map((t, i) => ({
       id: t.id || `f${i + 1}`,
       label: t.label || `Front ${i + 1}`,
       // Owner, 09.08: 'ral' and 'fb' collapsed into ONE 'spray' source — the
@@ -461,6 +472,10 @@ function coupleFrontTypes(d) {
       // `projectFrontColour` below is where that is enforced: a faced front is
       // not a painted one.
       finish_id: t.finish_id ?? null,
+      // ─── Turn 32 (CLAUDE.md F1.4): SHAPE FIRST, COLOUR SECOND ────────────
+      // The slot's own door shape from the 8-style gallery; null = the
+      // project's `fronts.style`, which is what every older slot meant.
+      style: FRONT_STYLE_OPTIONS.some((o) => o.id === t.style) ? t.style : null,
     }))
     : [];
   if (!types.length) return types;
@@ -769,8 +784,18 @@ export function resolveUnitDesign(unit, design) {
   const styleId = unit?.params?.door_style_id || null;
   const style = d.doorStyles.find((s) => s.id === styleId) || null;
 
+  // ─── Turn 32 (CLAUDE.md F1.4): THE SLOT'S OWN SHAPE ───────────────────────
+  // Each front type carries a door shape from the gallery now, so the cascade
+  // gains one rung: this unit's own answer, then its door style, then the
+  // front-type slot it wears, then the project. A slot whose style is null
+  // falls straight through to `fronts.style`, which is what every project
+  // saved before this turn does everywhere.
+  const wornType = paletteFrontTypes(d)
+    .find((t) => t.id === unit?.params?.front_type_id) || null;
+
   const frontType = unit?.params?.front_type
     || style?.frontType
+    || wornType?.style
     || d.fronts.style;
 
   // ─── Turn 13 (CLAUDE.md F3.1): THE UNIT LEVEL, WHICH WAS MISSING ───
@@ -787,8 +812,7 @@ export function resolveUnitDesign(unit, design) {
   // grows in Settings" true: change Front 2 in Settings and every cabinet
   // wearing Front 2 follows, which is what a workshop means by a second front
   // material.
-  const frontPalette = paletteFrontTypes(d);
-  const unitFrontType = frontPalette.find((t) => t.id === unit?.params?.front_type_id) || null;
+  const unitFrontType = wornType;
 
   // ─── Turn 16 (CLAUDE.md F1.1): A FACED FRONT TYPE IS NOT A PAINTED ONE ────
   //

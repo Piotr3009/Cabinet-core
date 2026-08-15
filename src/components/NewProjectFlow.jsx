@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
 import RoomModal from './RoomModal.jsx';
-import SettingsPanel from './SettingsPanel.jsx';
+import WizardSettings from './WizardSettings.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { PROJECT_TYPES, getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
-import { migrateDesign } from '../engine/design.js';
+import { migrateDesign, projectHeights } from '../engine/design.js';
+import { wizardStartBlockers } from '../engine/projectSettings.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 
 // ─── New project (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
@@ -115,6 +116,17 @@ export default function NewProjectFlow({
   const index = STEPS.indexOf(step);
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
 
+  // ─── TURN 32 (CLAUDE.md F1): WHAT STANDS BETWEEN HERE AND THE CANVAS ───────
+  // No assignment → no Start (Generic counts; nothing does not). A wardrobe
+  // taller than the room → no Start. The ceiling question, unanswered → no
+  // Start. All decided by one pure engine function, so a node test can hold
+  // the button to its word.
+  const roomHeight = useProjectStore((s) => Number(s.project.room?.height) || 0);
+  const { blockers } = useMemo(() => wizardStartBlockers({
+    design, heights: projectHeights(design, profile), roomHeight, profile,
+  }), [design, profile, roomHeight]);
+  const blocked = step === 'settings' && blockers.length > 0;
+
   // The room step IS the room editor, shown in place.
   if (step === 'room') {
     return (
@@ -153,7 +165,16 @@ export default function NewProjectFlow({
             </button>
           )}
           {step === 'settings' && !asking && (
-            <button type="button" className="cc-btn-gold" onClick={start}>Start designing</button>
+            <button
+              type="button"
+              className="cc-btn-gold"
+              disabled={blocked}
+              title={blocked ? blockers.map((b) => b.message).join('\n') : undefined}
+              data-start-designing="1"
+              onClick={start}
+            >
+              Start designing
+            </button>
           )}
           {step === 'settings' && asking && (
             <>
@@ -304,13 +325,15 @@ export default function NewProjectFlow({
                 and this project keeps them to itself.
               </p>
             )}
-            {/* ─── Turn 12 (CLAUDE.md F1) ───
-                THE SAME COMPONENT the Settings menu opens, bound to the same
-                store the scene reads. Turn 11 had a copy here, and a colour set
-                on this step never reached the furniture. Room setup is reachable
-                from it too — a wall-units job skips the room step, and this is
-                the way back to it. */}
-            <SettingsPanel onRoomSetup={() => setStep('room')} />
+            {/* ─── TURN 32 (CLAUDE.md F1): ONE SCREEN, NO SCROLLING ───
+                The owner dictated the shape: number/client/type, saved sets as
+                a LOAD list, dimensions per project type with the ceiling
+                guards, FRONTS BEFORE MATERIALS, one material picker, sheen.
+                The turn-12 lesson still holds — this surface writes through
+                the SAME store setters Design Settings uses, so nothing set
+                here can fail to reach the furniture. The full panel stays in
+                the Settings menu. */}
+            <WizardSettings onRoomSetup={() => setStep('room')} />
           </>
         )}
       </div>

@@ -7944,3 +7944,137 @@ walk turned up on the way. No new blocker is named; **#95** is unchanged, and
 the one thing this turn cannot settle — whether the real 71B3550's own arm looks
 right folded about the measured line — is owed to the owner's screen rather than
 claimed.
+
+# TURN 32 — Wardrobes
+
+## The turn in one line
+
+Kitchens pause; the wardrobe becomes a real project — the wizard rebuilt to
+the owner's dictated shape, hardware as its own step, front gaps healing
+themselves, the interior divided into COLUMNS that carry their own drawers
+and rails, and a BOM the workshop can invoice from, fed by a registry of
+existence that informs and never blocks.
+
+## F1 — The wizard, step 4 rebuilt [CRITICAL]
+
+One screen, no scrolling: Number · Client · Type-as-a-LABEL, saved settings
+sets as a LOAD list, dimensions per project type, FRONTS BEFORE MATERIALS
+("How many front types? [1][2][3]" — maxFrontTypes 3 now, each slot with the
+existing 8-style gallery and its own door shape), one material picker
+(EGGER ∪ stock, mock swatches gone, Generic counts as an assignment and
+nothing does not), sheen after colours. The wardrobe answers height +
+plinth with the live "total item = wardrobe + legs" line and two guards:
+taller than the room cannot continue; under 40 mm of headroom (profile
+line, owner 15.08.2026) asks "To the ceiling, with no infill?" with the
+scribe warning. The depth seed follows the PROJECT TYPE at the source —
+projectDepth() answers profile.wardrobe.defaults.depth (568) — one
+function, read by the wizard row and by addUnit.
+
+## F2 — Hardware as its own step 5 [CRITICAL]
+
+Metal colour chrome / onyx / gold (writes design.hardware.shelfSleeve; the
+rail follows, measured in the scene); soft-close YES by default, the
+profile line marked `soft-close default — owner to confirm 15.08` (Q1);
+plinth as a read-only summary with the clips-from-FRONT-legs-only rule
+(engine/legs.js frontLegCount). Behind it the AUTOMAT: hingeAutomat extends
+the angle table to pick the ARTICLE — angle + metal + soft-close → one row,
+registry first, catalogue after, and a NAMED SPEC where neither knows
+(gold, std) — never an invented number.
+
+## F3 — Front gaps become SELF-HEALING [CRITICAL]
+
+The T31 matrix stays law; the MODE changes: healingPlan turns the measured
+correctionMm into per-edge trims applied through the same front_edge_trim
+channel, from refreshAutoParts — the one choke point creation, neighbour
+change, resize and move already funnel through. Grey notes announce every
+correction ("front 01 01-F −1.5 mm at an end panel"); the red modal
+survives only where auto has no move (parked corner, appliance face, no
+board left). Healing works both ways — a vanished neighbour hands the edge
+back. Templates drop the trims (they are the neighbourhood's, not the
+build's). The label fault: close gap figures climb separate rungs
+(spreadOverlappingRows), and two neighbours' facing to-side figures never
+share a line (the right one steps down one label height).
+
+## F4 — ZONES: the wardrobe's columns [CRITICAL]
+
+A vertical partition — renamed "Vertical partition (divider)" — divides the
+interior into columns. Column drawers are computed FROM THE COLUMN'S WALLS
+with the full-width zone's own numbers: boxes with their pockets, faces,
+the column's closing board, runner rows drilled into the bounding boards (a
+VPART takes the DP's published pattern), runner pairs and sync-rod
+thresholds per column. Overlay/INTERNAL per drawer at last (T30 F20's
+mechanism wired — internal drawers hide behind the doors and are revealed
+when a front opens). One rail per column, cut to the column's light, with
+its partitioner and brackets. Shelves clamp above their own column's
+stack. The recessed-partition law refuses drawers with the number and ONE
+button — [Reset the setback] — opening the partition's editor. The default
+zone and every golden fixture: untouched.
+
+## F5 — BOM the workshop can invoice from [CRITICAL]
+
+Two blocks, one export. MATERIALS per decor (fronts apart): m² net →
++15 % waste → "~N sheets of 2800×2070" (a division with a label, never a
+cutting plan) → edging metres; both numbers profile lines marked owner to
+confirm (Q2). IRONMONGERY with articles: hinges via the automat with the
+PLATES as their own line, runner pairs at the snapped length, the rail by
+the METRE with supports off the bracket drilling, legs, plinth clips +
+connectors from FRONT legs only, shelf supports, and screws/confirmats
+counted off the drilling. Unknown = YELLOW named spec, never invented,
+never dropped. Export {ProjectName}-bom-{DDMM-HHMM}.csv with RED Check
+findings riding on top; the Order tab warns the same way.
+
+## F6 — The hardware REGISTER [HIGH] — "SQL PRZED push"
+
+sql/005_tura32.sql: cc_hardware_register, the owner's columns exactly,
+RLS on, (owner, article) as the upsert identity. A registry of EXISTENCE —
+stock lives in JoineryCore. Seed once by script
+(scripts/seed-hardware-register.mjs): the MOVENTO manifest's 40 articles
+and the CLIP top hinge + plate articles, dry-run by default. Registered =
+the automat resolves; unregistered = the yellow line; mock mode = null
+answers and a fully alive app.
+
+## F7 — Ready-made drawer boxes [HIGH]
+
+The wizard's one question. Same-board is the default and already the
+engine's behaviour. Ready-made: box parts leave the cutting list and the
+BOM's cut rows; a purchase line per bought box appears; the fronts stay
+ours; the geometry stays computed — not one panel and not one hole moves.
+
+## F8 — Library filtered by project type [MEDIUM]
+
+The kits' own family decides: a wardrobe project's library hides the
+kitchen kits behind "Show all (N more)" — T11 F4.4's grammar, a filter and
+never a block.
+
+## F9 — Handle preview: the owner's drawing [MEDIUM]
+
+On hover the handle shows CAD dimension lines with arrowheads — top-edge
+offset, side-edge offset, hole spacing — in the drawing-office blue,
+replacing T31's single orange number. The aura, the linger and the grab
+stay. The global "Front dimensions" toggle already stands in the View menu
+(T28) beside the door modal's, one flag behind both — pinned rather than
+added twice.
+
+## The export
+
+The only SQL is F6's, labelled "SQL PRZED push" in the PR with the
+migration file named. Owner-tunable defaults written this turn, each ONE
+profile line dated 15.08.2026: soft-close default (marked), waste 15 % and
+sheet 2800×2070 (marked), wardrobe depth seed 568, ceiling-question 40 mm.
+
+## The walk
+
+scripts/e2e-turn32.mjs — nine phases, real pointer input, live-scene
+measures per unit (ccUnitId): the wardrobe standing 568 deep off its own
+meshes, the onyx rail's rendered colour, the healed front's width, the
+column drawer front at its column's light, the BOM screen against the
+app's own functions, the register's null answers and its overrule, the
+bought boxes still standing in 3D, the filtered library, the owner's
+drawing on the hovered handle. Proofs in verify/t32/.
+
+## What did not shrink, and what is left
+
+Nothing shrank. Parked stays parked: nesting, hood rework, sliding doors,
+L-shape joints, appliance GLBs, mirrors/accessories/lighting (T33), MOVENTO
+ladder alignment, per-family hinge fold axes, the EGGER licence e-mail
+(#44). Open questions Q1–Q3 travel with the PR.

@@ -46,7 +46,10 @@ const realErrors = (list) => list.filter((e) => !IGNORED.some((rx) => rx.test(St
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const showroom = await startFixtureServer({ port: 4174 });
-  const page = await launch({ width: 1600, height: 1000 });
+  // 1250 tall: the rebuilt step 4 is ONE screen, but a wizard anchored low on
+  // a start screen that already lists a recent project can put its footer
+  // under a 1000 px window — and a click below the glass lands nowhere.
+  const page = await launch({ width: 1600, height: 1250 });
 
   let errorMark = 0;
   const consoleSince = () => realErrors(page.errors.slice(errorMark));
@@ -343,6 +346,9 @@ async function main() {
         await page.click('button', 'File', { exact: true });
         await page.click('button', 'New project…');
         await page.sleep(400);
+        // The RED "unsaved changes" reminder is leaveProject's own and floats
+        // over the wizard's footer — the walk has read it; away it goes.
+        await page.evaluate(`${P}.ui.getState().clearMessages(); return true;`);
       }
       await page.click('button', 'New project');
       await page.click('button', 'Next', { exact: true });
@@ -361,7 +367,26 @@ async function main() {
         return true;
       `);
       await page.click('[data-next-hardware="1"]');
-      await page.waitFor(`document.querySelector('[data-wizard-hardware="1"]')`, { what: 'step 5' });
+      try {
+        await page.waitFor(`document.querySelector('[data-wizard-hardware="1"]')`, { what: 'step 5' });
+      } catch (e) {
+        const dump = await page.evaluate(`
+          const btn = document.querySelector('[data-next-hardware="1"]');
+          const d = ${P}.project.getState().project.design;
+          return {
+            modal: document.querySelector('[data-modal-shell="1"]')?.getAttribute('data-modal-name') || null,
+            disabled: btn ? btn.disabled : null,
+            title: btn ? btn.title : '',
+            ceiling: d.ceiling,
+            fronts: d.fronts.types.map((t) => ({ id: t.id, m: t.material_id })),
+            carcass: d.carcass.types.map((t) => ({ id: t.id, m: t.material_id })),
+            body: document.body.innerText.slice(0, 260).replace(/\\n/g, ' | '),
+          };
+        `).catch(() => null);
+        console.log('F2 DEBUG:', JSON.stringify(dump));
+        console.log('F2 CONSOLE:', JSON.stringify(page.errors.slice(-4)));
+        throw e;
+      }
 
       const prefilled = await page.evaluate(`
         const gold = document.querySelector('[data-metal-option="gold"]');

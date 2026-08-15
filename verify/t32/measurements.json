@@ -1,4 +1,127 @@
 {
+ "f1": {
+  "top": {
+   "type": "Wardrobe",
+   "typeDropdowns": 0,
+   "depth": "568",
+   "total": "total item = wardrobe + legs = 2500 mm"
+  },
+  "guard": {
+   "question": true,
+   "text": "Only 0 mm to the ceiling. To the ceiling, with no infill?\n\nAn infill can be scribed to the ceiling’s real shape — ceilings are rarely straight.\n\nYes — to the ceiling\nNo — keep an infill",
+   "startDisabled": true
+  },
+  "liveScene": {
+   "placed": {
+    "id": "u_rb35hiz",
+    "depth": 568,
+    "width": 600,
+    "height": 2400
+   },
+   "bounds": {
+    "meshes": 5,
+    "w": 600,
+    "h": 2400,
+    "d": 568
+   }
+  }
+ },
+ "f2": {
+  "prefilled": {
+   "metals": [
+    "chrome",
+    "onyx",
+    "gold"
+   ],
+   "goldLit": true,
+   "yesLit": true,
+   "plinth": "PLINTH\n\nPlinth 100 mm · Same as fronts (default)\n\nClips + clip connectors are counted automatically from the FRONT legs only, per unit.",
+   "automat": "Standard door: Hinge 110° · soft-close · gold — no article in the registry yet; the BOM prints it as a named spec.",
+   "ironmongeryOnStep4": false
+  },
+  "rail": {
+   "hit": {
+    "colour": "2f2f33",
+    "radius": 15
+   },
+   "want": "2f2f33"
+  }
+ },
+ "f3": {
+  "healed": {
+   "w": 595.5,
+   "trim": {
+    "left": 0,
+    "right": 1.5
+   },
+   "notes": [
+    {
+     "level": "grey",
+     "text": "front 01 01-F −1.5 mm at an end panel"
+    }
+   ]
+  },
+  "scene": {
+   "sceneW": 595.5,
+   "engineW": 595.5
+  },
+  "labelRows": [
+   {
+    "kind": "to-side",
+    "at": 383.5
+   },
+   {
+    "kind": "to-side",
+    "at": 365.5
+   }
+  ]
+ },
+ "f4": {
+  "built": {
+   "ok": true,
+   "bay": {
+    "from": 609,
+    "size": 573
+   },
+   "frontW": 567,
+   "rails": 1,
+   "closer": true,
+   "partitionRunnerHoles": 6
+  },
+  "scene": {
+   "sceneW": 567,
+   "engineW": 567
+  }
+ },
+ "f5": {
+  "order": {
+   "firstSheetLabel": "~2 sheets of 2800×2070",
+   "domHasSheetLabel": true,
+   "frontsApart": true,
+   "yellowsOnScreen": 14,
+   "yellowsInEngine": 14,
+   "clips": 2,
+   "railUnit": "m",
+   "screws": 6
+  }
+ },
+ "f6": {
+  "before": 14,
+  "yellows": 13,
+  "clipsText": "Plinth clips\n2 pcs\nart. CL-100"
+ },
+ "f7": {
+  "boxLinesBefore": 10,
+  "boxLinesAfter": 0,
+  "frontsStillCut": 2,
+  "meshesBefore": 10,
+  "meshesAfter": 10
+ },
+ "f8": {
+  "baseUnitsGone": true,
+  "wallUnitsGone": true,
+  "escape": "▾ Show all (20 more)"
+ },
  "f9": {
   "chain": {
    "ccHelper": true,

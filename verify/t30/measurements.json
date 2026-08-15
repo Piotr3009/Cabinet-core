@@ -1,29 +1,65 @@
 {
- "f16": {
-  "type": "BIN",
+ "f17": {
+  "type": "WINE",
+  "uprights": 3,
+  "shelves": 20,
+  "cell": {
+   "id": "LATTICE-H1-1",
+   "part": "LATTICE-H",
+   "role": "shelf",
+   "material_role": "board",
+   "finish_exposed": false,
+   "w": 127.5,
+   "h": 540,
+   "qty": 1,
+   "thickness": 18,
+   "edging": {
+    "code": ">",
+    "len_m": 0.1275
+   },
+   "area_m2": 0.06885,
+   "box": {
+    "x": 18,
+    "y": 125.33333333333333,
+    "z": 0,
+    "w": 127.5,
+    "h": 18,
+    "d": 540
+   },
+   "cnc": {
+    "outline": [
+     [
+      0,
+      0
+     ],
+     [
+      127.5,
+      0
+     ],
+     [
+      127.5,
+      540
+     ],
+     [
+      0,
+      540
+     ]
+    ],
+    "pockets": [],
+    "holes": [],
+    "layer": "OUTLINE"
+   },
+   "meta": {
+    "lattice": "shelf",
+    "row": 1,
+    "column": 1
+   }
+  },
+  "drawn": 23,
+  "machined": 0,
   "same": true,
-  "drills": 77,
-  "budDrills": 77,
-  "line": [
-   {
-    "role": "bin_pullout",
-    "label": "Pull-out bin unit",
-    "qty": 1,
-    "unit": "pcs",
-    "spec": {
-     "opening_width_mm": 564,
-     "opening_height_mm": 734,
-     "opening_depth_mm": 540
-    },
-    "spec_label": "564 × 734 × 540 mm opening"
-   }
-  ],
-  "budLine": 0,
-  "bodies": [
-   {
-    "role": "bin_pullout",
-    "placeholder": true
-   }
-  ]
+  "drills": 62,
+  "budDrills": 62,
+  "onSheet": 23
  }
 }

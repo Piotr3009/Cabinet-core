@@ -67,7 +67,7 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
     // wrote the pattern for both, which is exactly the condition they carried.
     // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD',
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD',
   ]);
 });
 
@@ -124,7 +124,9 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // attached to them stated — so they are kits now, not grey rows.
     // Turn 30 (CLAUDE.md F16): 'bin-storage' left this list — KIT_BUD's own
     // carcass, with the pull-out ordered rather than cut.
-    'corner', 'l-shape', 'wine-rack',
+    // Turn 30 (CLAUDE.md F17): 'wine-rack' left it too — KIT_BUD's carcass
+    // with a lattice of plain boards, and the joints named as the gap.
+    'corner', 'l-shape',
     'small-fridge', 'twin-space',
     // Turn 30 (CLAUDE.md F14): 'pantry' left this list — KIT_BUDTALL's carcass
     // with the wardrobe kit's own internal drawer machinery in it.

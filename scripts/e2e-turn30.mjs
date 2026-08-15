@@ -1840,6 +1840,79 @@ async function main() {
       await shot('16b-closed-beside-the-base-unit-it-is-cut-exactly-like');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F17 [MEDIUM] — the wine rack
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f17')) {
+      await newRoom('Turn 30 walk — F17');
+      await page.evaluate(`${P}.ui.getState().setLibraryCategory('kitchen'); return true;`);
+      await page.sleep(700);
+      await page.click('[data-library-group="base-units"]');
+      await page.sleep(700);
+      await page.click('[data-library-entry="wine-rack"]');
+      await page.sleep(1500);
+      await page.evaluate(`${P}.ui.getState().closeLibrary(); return true;`);
+      await page.sleep(1200);
+
+      const f17 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units[0];
+        const b = s.addUnit('BUD', { near: u.id, side: 'right' });
+        s.updateUnitParams(b.id, {
+          width: u.params.width, height: u.params.height, depth: u.params.depth, doors: false,
+        });
+        window.__t30 = { wine: u.id, bud: b.id, ids: [u.id, b.id] };
+        const part = (id) => String(id).replace(/^[^-]*-/, '');
+        const holes = (x) => x.drills.map((d) => part(d.panel) + '|' + d.layer + '|' + d.kind + '|' + d.x + '|' + d.y + '|' + d.d).sort().join(',');
+        const r = s.unitResult(u.id);
+        const rb = s.unitResult(b.id);
+        const lat = r.panels.filter((p) => /^LATTICE-/.test(p.part));
+        const v = ${P}.views && ${P}.views.room;
+        let drawn = 0;
+        if (v) {
+          v.scene.traverse((o) => {
+            if (o.userData && /LATTICE/.test(String(o.userData.ccPanelId || ''))) drawn += 1;
+          });
+        }
+        return {
+          type: u.type,
+          uprights: lat.filter((p) => p.part === 'LATTICE-V').length,
+          shelves: lat.filter((p) => p.part === 'LATTICE-H').length,
+          cell: lat.filter((p) => p.part === 'LATTICE-H')[0] || null,
+          drawn,
+          machined: lat.filter((p) => (p.cnc.holes || []).length || (p.cnc.pockets || []).length).length,
+          same: holes(r) === holes(rb),
+          drills: r.drills.length,
+          budDrills: rb.drills.length,
+          onSheet: lat.filter((p) => r.csvLines.some((l) => l.includes(p.id))).length,
+        };
+      `);
+      measurements.f17 = f17;
+      check('F17 — the Library places a wine rack, and it has a LATTICE in it',
+        f17.type === 'WINE' && f17.uprights >= 1 && f17.shelves >= 4,
+        `${f17.uprights} uprights · ${f17.shelves} shelves`);
+      check('F17 — the room draws every one of those boards',
+        f17.drawn >= f17.uprights + f17.shelves,
+        `${f17.drawn} lattice boards in the scene`);
+      check('F17 — and every one is a PLAIN rectangle: no hole, no pocket, no notch',
+        f17.machined === 0, `${f17.machined} machined lattice boards`);
+      check('F17 — the CARCASS is drilled exactly as KIT_BUD drills one',
+        f17.same === true && f17.drills === f17.budDrills,
+        `${f17.drills} holes vs the base unit’s ${f17.budDrills}`);
+      check('F17 — …and the lattice is on the CUT LIST, board for board',
+        f17.onSheet === f17.uprights + f17.shelves,
+        `${f17.onSheet} of ${f17.uprights + f17.shelves} on the sheet`);
+
+      await frameUnits(await page.evaluate('return [window.__t30.wine];'), [1.25, 0.75, 2.3]);
+      await page.sleep(900);
+      await shot('17a-a-wine-rack-the-lattice-standing-in-kit-buds-carcass');
+      await page.evaluate(`${P}.ui.getState().setViewMode('cnc'); return true;`);
+      await page.sleep(1800);
+      await shot('17b-the-sheet-plain-rectangles-and-not-one-notch');
+      await page.evaluate(`${P}.ui.getState().setViewMode('3d'); return true;`);
+      await page.sleep(900);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

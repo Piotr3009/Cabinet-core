@@ -12,24 +12,29 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F16 — the Library places a bin unit on KIT_BUD’s carcass",
+   "label": "F17 — the Library places a wine rack, and it has a LATTICE in it",
    "ok": true,
-   "detail": "BIN"
+   "detail": "3 uprights · 20 shelves"
   },
   {
-   "label": "F16 — it is drilled EXACTLY as a base unit: hole for hole",
+   "label": "F17 — the room draws every one of those boards",
    "ok": true,
-   "detail": "77 holes vs the base unit’s 77"
+   "detail": "23 lattice boards in the scene"
   },
   {
-   "label": "F16 — the pull-out is ORDERED: one BOM line, to the opening",
+   "label": "F17 — and every one is a PLAIN rectangle: no hole, no pocket, no notch",
    "ok": true,
-   "detail": "Pull-out bin unit — 564 × 734 × 540 mm opening"
+   "detail": "0 machined lattice boards"
   },
   {
-   "label": "F16 — …and the room shows the SPACE it takes, marked a placeholder",
+   "label": "F17 — the CARCASS is drilled exactly as KIT_BUD drills one",
    "ok": true,
-   "detail": "bin_pullout"
+   "detail": "62 holes vs the base unit’s 62"
+  },
+  {
+   "label": "F17 — …and the lattice is on the CUT LIST, board for board",
+   "ok": true,
+   "detail": "23 of 23 on the sheet"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

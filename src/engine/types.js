@@ -234,6 +234,41 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F17): THE WINE RACK ───────────────────────────────
+  //
+  // "Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
+  // panels in the BOM. No drilling truth exists → no drilling ships."
+  //
+  // The carcass is KIT_BUD's and is drilled exactly as KIT_BUD drills it. The
+  // LATTICE is `lattice: true` — a grid of plain rectangles, emitted in
+  // cabinet.js, carrying no machining of any kind. It is an OPEN unit: no
+  // doors, because there is nothing in the kits about hanging one on a rack,
+  // and no shelves, because the lattice is what a wine rack has instead.
+  //
+  // THE GAP, and it is named here as well as in the report: the cross-halving
+  // joints that hold a real lattice together are not cut. No LISP line and no
+  // published pattern states them, and an invented notch is a miscut.
+  WINE: {
+    id: 'WINE',
+    heightGroup: 'base',
+    label: 'Wine rack',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    lattice: true,
+    minHeightKey: null,
+    defaultsKey: 'wineRack.defaults',
+    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    available: true,
+  },
   // ─── TURN 30 (CLAUDE.md F16): THE BIN UNIT ────────────────────────────────
   //
   // "Parent: KIT_BUD. Pull-out bin = hardware on the door/carcass per
@@ -627,7 +662,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -747,5 +782,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR',
 };

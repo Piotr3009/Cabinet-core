@@ -94,9 +94,11 @@ export const KITCHEN_LIBRARY = [
       // bought mechanism: a BOM line and a placeholder volume, because the
       // manufacturer's own fixing is not this repo's truth.
       { kind: 'type', id: 'bin-storage', typeId: 'BIN', label: 'Bin storage', hint: 'Base unit for a pull-out bin — the mechanism is ordered, not cut' },
-      {
-        kind: 'soon', id: 'wine-rack', label: 'Wine rack', hint: 'Bottle cradles instead of shelves', reason: NO_PATTERN,
-      },
+      // ─── Turn 30 (CLAUDE.md F17): the wine rack OPENS, as GEOMETRY ───────
+      // KIT_BUD's carcass with a lattice of plain boards in it. No LISP line
+      // and no published pattern states a wine rack's joints, so the boards
+      // ship UNDRILLED and unnotched and the gap is named in the report.
+      { kind: 'type', id: 'wine-rack', typeId: 'WINE', label: 'Wine rack', hint: 'Open lattice of cells — boards only, no drilling truth exists yet' },
       {
         kind: 'soon',
         id: 'small-fridge',

@@ -1271,6 +1271,19 @@ export const DEFAULT_CABINET_PROFILE = {
     fixedScrewFromEnd: 50,
   },
 
+  // ─── Wine rack (turn 30, CLAUDE.md F17) ───────────────────────────────────
+  //
+  // "Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
+  // panels in the BOM. No drilling truth exists → no drilling ships."
+  //
+  // `cellMm` is the bottle, in effect: the clear opening one cradle wants. The
+  // engine fits as many whole cells as the carcass takes and shares the rest
+  // out evenly, so a wider rack gets MORE cells rather than fatter ones.
+  wineRack: {
+    defaults: { width: 600, height: 770, depth: 558 },
+    cellMm: 100,
+  },
+
   // ─── Bin unit (turn 30, CLAUDE.md F16) ────────────────────────────────────
   //
   // "Parent: KIT_BUD. Pull-out bin = hardware on the door/carcass per
@@ -3668,6 +3681,7 @@ export function migrateCabinetProfile(profile) {
     dwPanel: { ...D.dwPanel, ...profile.dwPanel, defaults: { ...D.dwPanel.defaults, ...profile.dwPanel?.defaults } },
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
     binUnit: { ...D.binUnit, ...profile.binUnit, defaults: { ...D.binUnit.defaults, ...profile.binUnit?.defaults } },
+    wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,
       ...profile.americanFridgeUnit,

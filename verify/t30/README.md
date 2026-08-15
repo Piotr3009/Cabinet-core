@@ -756,3 +756,50 @@ drilled. No LISP line, no published pattern.
 | --- | --- |
 | `16a-a-bin-unit-the-space-the-pull-out-takes-inside-kit-buds-carcass.png` | the volume |
 | `16b-closed-beside-the-base-unit-it-is-cut-exactly-like.png` | the pair |
+
+---
+
+## F17 [MEDIUM] — the wine rack
+
+The one type in the batch with **geometry of its own**. Every other kit borrows
+a carcass; this one adds boards no LISP has ever drawn. So the batch rule bites
+here, and the answer is literal:
+
+* the **carcass** is `KIT_BUD_FULL.lsp`'s, hole for hole (62 holes, same
+  fingerprint as a doorless base unit — and the lattice adds **no** hole to it
+  either, which is where a row of dowel holes would have been invented);
+* the **lattice** is plain rectangles — no hole, no pocket, no socket, no tab,
+  a four-corner outline and nothing else, asserted board by board.
+
+The grid comes from `profile.wineRack.cellMm` = **100** — the bottle, in effect.
+The engine fits as many whole cells as the carcass takes and shares the rest out
+evenly, so a **wider rack gets more cells rather than fatter ones** (600 → 4
+columns of 127.5; 1000 → more, at about the same cell). The shelves are cut
+**per cell** rather than run through the uprights, so every board on the list is
+one a joiner can cut and drop in without a joint this repo cannot specify.
+
+It is an **open** unit: no doors (nothing in the kits about hanging one on a
+rack), no shelves (the lattice is what it has instead), and nothing ordered.
+
+### The gap, named
+
+**The cross-halving joints.** A real lattice is halved together; no LISP line
+and no published pattern in this repo states those notches, so they are **not
+cut**. The library row says so where a joiner reads it — *"no drilling truth
+exists yet"*.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f17` → **7 ok · 0 failed**.
+
+| | |
+| --- | --- |
+| lattice | 3 uprights · 20 shelves, all 23 drawn in the room |
+| machined lattice boards | **0** |
+| carcass holes | 62 — the same fingerprint as a doorless base unit |
+| on the cut list | 23 of 23 |
+
+| file | |
+| --- | --- |
+| `17a-a-wine-rack-the-lattice-standing-in-kit-buds-carcass.png` | the rack |
+| `17b-the-sheet-plain-rectangles-and-not-one-notch.png` | the cut |

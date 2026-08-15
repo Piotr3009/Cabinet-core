@@ -1998,6 +1998,62 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── TURN 30 (CLAUDE.md F17): THE WINE RACK'S LATTICE ─────────────────────
+  //
+  // "Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
+  // panels in the BOM. No drilling truth exists → no drilling ships."
+  //
+  // So this emits BOARDS and nothing else. Every piece below is a plain
+  // rectangle with no machining of any kind: no notch, no dowel, no screw, no
+  // pin. The cross-halving joints a lattice is really made with are exactly the
+  // truth this repo does not hold, and they are named in the report instead of
+  // being guessed at overnight.
+  //
+  // ─── HOW MANY CELLS ─────────────────────────────────────────────────────
+  //
+  // The cell is a PROFILE number — the bottle, in effect — and the count is
+  // whatever fits the opening whole. `cell + G` is one cell and the board that
+  // divides it from the next, so the arithmetic is the same one a joiner does
+  // with a tape: how many of these go in, and then share the rest out evenly.
+  // Nothing is cut to a remainder.
+  if (type.lattice && H > 4 * G && internalWidth > 0) {
+    const LR = P.wineRack;
+    const openH = H - 2 * G;
+    const latticeDepth = internalDepth;
+    const fit = (span) => Math.max(1, Math.floor((span + G) / (LR.cellMm + G)));
+    const cols = fit(internalWidth);
+    const rows = fit(openH);
+    const cellW = (internalWidth - (cols - 1) * G) / cols;
+    const cellH = (openH - (rows - 1) * G) / rows;
+    // The uprights: full height of the opening, one between each pair of cells.
+    for (let i = 1; i < cols; i += 1) {
+      const x = G + i * cellW + (i - 1) * G;
+      panels.push(panel({
+        id: `LATTICE-V${i}`, part: 'LATTICE-V', role: 'shelf', w: openH, h: latticeDepth, thickness: G,
+        edgeCode: codes.right, edgeLen: metres(openH),
+        box: { x, y: G, z: 0, w: G, h: openH, d: latticeDepth },
+        cnc: rectGeometry(openH, latticeDepth),
+        meta: { lattice: 'upright', column: i },
+      }));
+    }
+    // …and the shelves, cut PER CELL rather than run through the uprights, so
+    // that every board in the list is a board that can be cut and dropped in
+    // without a joint this repo cannot specify.
+    for (let r = 1; r < rows; r += 1) {
+      const y = G + r * cellH + (r - 1) * G;
+      for (let c = 0; c < cols; c += 1) {
+        const x = G + c * (cellW + G);
+        panels.push(panel({
+          id: `LATTICE-H${r}-${c + 1}`, part: 'LATTICE-H', role: 'shelf', w: cellW, h: latticeDepth, thickness: G,
+          edgeCode: codes.right, edgeLen: metres(cellW),
+          box: { x, y, z: 0, w: cellW, h: G, d: latticeDepth },
+          cnc: rectGeometry(cellW, latticeDepth),
+          meta: { lattice: 'shelf', row: r, column: c + 1 },
+        }));
+      }
+    }
+  }
+
   // ─── The ZONE model (turn 12, CLAUDE.md F5.3) ───
   // The bays across the cabinet, one per opening between the vertical
   // partitions. With no partition there is exactly one bay and every shelf is

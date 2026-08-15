@@ -11,11 +11,11 @@
 //
 // Pure functions — no React, no store imports, no three.js.
 
-export const ROOM_SCHEMA = 2;
+const ROOM_SCHEMA = 2;
 
-export const DEFAULT_ROOM_WIDTH = 4000;
-export const DEFAULT_ROOM_DEPTH = 3000;
-export const DEFAULT_ROOM_HEIGHT = 2500;
+const DEFAULT_ROOM_WIDTH = 4000;
+const DEFAULT_ROOM_DEPTH = 3000;
+const DEFAULT_ROOM_HEIGHT = 2500;
 
 export const DEFAULT_ROOM = {
   schema: ROOM_SCHEMA,

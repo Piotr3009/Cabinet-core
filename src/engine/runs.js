@@ -101,7 +101,7 @@ export function impliedLegHeight(params, type, profile) {
 }
 
 /** How far a unit's own end panels stick out on each side. */
-export function endPanelSpread(unit, fallbackThickness = 0) {
+function endPanelSpread(unit, fallbackThickness = 0) {
   const out = { left: 0, right: 0 };
   for (const ep of unit?.params?.end_panels || []) {
     const t = Number(ep?.thickness) > 0 ? Number(ep.thickness) : Number(fallbackThickness) || 0;
@@ -627,7 +627,7 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
  *   thickness:number|null, ends:{left:string,right:string},
  *   returns:{left:number|null, right:number|null}, unitIds:string[] }}
  */
-export function runTopInfill(run, {
+function runTopInfill(run, {
   wallWidth, roomHeight, frontFaceDepth, verticals = null,
 }, profile) {
   const T = profile.autoParts.topInfill;
@@ -901,7 +901,7 @@ export function maskSegments(run) {
  * whose cabinets are not all one depth is closed by one board, and a board that
  * is short at the back leaves the slot the piece exists to hide.
  */
-export function segmentMask(segment, { backClearance = 0 } = {}) {
+function segmentMask(segment, { backClearance = 0 } = {}) {
   if (!segment.length) return null;
   const first = segment[0];
   const last = segment[segment.length - 1];

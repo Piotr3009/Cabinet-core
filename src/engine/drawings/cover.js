@@ -96,7 +96,3 @@ export function buildCoverSheet({
   return { entities, width: page.width, height: page.height, scale: null, format: page, cover: true };
 }
 
-/** "600 × 770 × 558" — the size line on a cover row, already formatted. */
-export function coverSize(formatMmFn, { width, height, depth }) {
-  return [width, height, depth].map((v) => formatMmFn(v)).join(' × ');
-}

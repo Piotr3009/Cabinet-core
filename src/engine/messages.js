@@ -64,7 +64,6 @@ export const LEVELS = Object.freeze({
   },
 });
 
-export const LEVEL_NAMES = Object.freeze(Object.keys(LEVELS));
 
 /**
  * The old vocabulary, mapped ONCE.

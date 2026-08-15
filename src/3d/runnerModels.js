@@ -54,18 +54,7 @@ export function onRunnerLoad(url, callback) {
   return onGlbLoad(url, callback);
 }
 
-/** Did this file fail to arrive? Then the caller draws the plain profile. */
-export function runnerFailed(url) {
-  return glbFailed(url);
-}
 
-/** For tests and for a workshop switching bucket. */
-export function clearRunnerModels() {
-  // Deliberately NOT a partial clear: the cache is keyed by url and the hinges
-  // and the runners cannot collide in it, so "forget the models" means all of
-  // them — which is what a test that switches bucket actually wants.
-  clearGlbSources();
-}
 
 /**
  * Is this file the runner it claims to be?

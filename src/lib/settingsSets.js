@@ -19,8 +19,8 @@
 
 import { migrateDesign } from '../engine/design.js';
 
-export const SETTINGS_SETS_KEY = 'cc.settingsSets.v1';
-export const SETTINGS_SET_SCHEMA = 1;
+const SETTINGS_SETS_KEY = 'cc.settingsSets.v1';
+const SETTINGS_SET_SCHEMA = 1;
 
 function read(storage) {
   try {

@@ -4299,10 +4299,3 @@ export function setActiveCabinetProfile(profile) {
 export function getCabinetProfile() {
   return activeProfile || DEFAULT_CABINET_PROFILE;
 }
-
-/** Temporarily compute with a frozen (snapshot) profile. */
-export function withProfile(profile, fn) {
-  const prev = activeProfile;
-  if (profile) activeProfile = migrateCabinetProfile(profile);
-  try { return fn(); } finally { activeProfile = prev; }
-}

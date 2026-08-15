@@ -1356,7 +1356,7 @@ export function Extractor({
  *   items   `hardwareInstances(result, profile).shelfSupports`
  *   metal   one entry of `profile.appearance.metals`
  */
-export function ShelfSupports({ items, profile, metal }) {
+function ShelfSupports({ items, profile, metal }) {
   const S = profile.hardware.shelfPin;
 
   // Every support points INTO the cabinet off the board it is knocked into, and

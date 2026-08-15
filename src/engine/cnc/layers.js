@@ -81,10 +81,6 @@ export function layerScreenColor(name) {
   return cncLayer(name).screen;
 }
 
-/** AutoCAD Color Index for the DXF layer table. */
-export function layerAci(name) {
-  return cncLayer(name).aci;
-}
 
 /**
  * The layer rows a DXF file must declare, given the layers its entities use.

@@ -4834,7 +4834,7 @@ export function computeCabinet(params, profileOverride) {
 
 // ─── Cutting-list CSV (byte-identical to the LISP SKYLON_labels.csv rows) ───
 
-export function buildCsvLines(unitNum, panels, profile) {
+function buildCsvLines(unitNum, panels, profile) {
   const { dimDecimals: dd, edgingDecimals: ed, areaDecimals: ad } = profile.csv;
   return panels.map((p) => [
     unitNum,

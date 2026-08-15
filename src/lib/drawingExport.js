@@ -121,7 +121,7 @@ function newDoc(sheet) {
 }
 
 /** One laid-out sheet onto the CURRENT page of a jsPDF document. */
-export function drawSheet(doc, sheet) {
+function drawSheet(doc, sheet) {
   const { width, height } = sheet;
   const flip = (y) => height - y;
 

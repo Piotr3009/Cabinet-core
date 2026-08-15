@@ -91,7 +91,7 @@ export function handleClassOf(panel, unitType) {
 }
 
 /** Does this class run up the front, or across it? */
-export function handleAxisOf(handleClass) {
+function handleAxisOf(handleClass) {
   return handleClass === 'horizontal' ? 'horizontal' : 'vertical';
 }
 

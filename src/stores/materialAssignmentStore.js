@@ -9,7 +9,7 @@ import { create } from 'zustand';
 // front / drawer_box. Sources: 'own' (the local list below) or 'jc' (a
 // JoineryCore stock_items UUID — the integration lands in a later phase).
 
-export const ASSIGNMENT_SCHEMA = 2;
+const ASSIGNMENT_SCHEMA = 2;
 
 export const BOM_ROLES = [
   { id: 'side',       label: 'Sides',          hint: 'BUL / BUR, drawer panels, fillers' },
@@ -44,7 +44,6 @@ export const HARDWARE_ROLES = [
   { id: 'hangers',      label: 'Wall hangers',  hint: 'Two per wall unit' },
 ];
 
-export const HARDWARE_ROLE_IDS = new Set(HARDWARE_ROLES.map((r) => r.id));
 
 // Sample workshop material list — this is what "Mock data mode" runs on.
 // `category` is the same vocabulary as cc_materials (board | front | edging |

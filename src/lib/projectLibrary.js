@@ -50,7 +50,7 @@ function write(storage, data) {
 }
 
 /** A project id that does not collide and reads as ours. */
-export function newProjectId(seed) {
+function newProjectId(seed) {
   const rand = seed != null ? String(seed) : Math.random().toString(36).slice(2, 9);
   return `loc_${rand}`;
 }

@@ -34,10 +34,6 @@ export function onHingeLoad(url, callback) {
   return onGlbLoad(url, callback);
 }
 
-/** Did this file fail to arrive? Then the caller draws the procedural body. */
-export function hingeModelFailed(url) {
-  return glbFailed(url);
-}
 
 /**
  * Is this file the hinge it claims to be?
@@ -182,19 +178,6 @@ export function memberOfNode(name, rig, zMaxMm = null) {
   return Number(zMaxMm) > Number(rig?.zThresholdMm ?? 30) ? 'A' : 'B';
 }
 
-/**
- * How far member B has turned, in radians, for a door open by `deg`.
- *
- * The identity that makes the fold read: the arm follows the cup by the SAME
- * angle the leaf has swung through, so the two halves never scissor apart. A
- * door that is shut folds by nothing, which is what keeps a closed cabinet
- * byte-for-byte the picture turn 23 drew.
- */
-export function memberBAngle(openDeg) {
-  const deg = Number(openDeg);
-  if (!Number.isFinite(deg)) return 0;
-  return (deg * Math.PI) / 180;
-}
 
 /**
  * Is the model HIDDEN at this angle instead of folded? (F1.4)

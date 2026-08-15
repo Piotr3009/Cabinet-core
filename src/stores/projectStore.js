@@ -4646,16 +4646,6 @@ export function elementDepthBoundsFor(unit, profile) {
  */
 const MAX_ELEMENT_THICKNESS = 100;
 
-/** Drag bounds for one shelf: the band, narrowed by its immediate neighbours. */
-export function shelfDragBounds(unit, itemId, profile) {
-  const band = shelfBandFor(unit, profile);
-  const self = unit.params.sections?.[0]?.items?.find((i) => i.id === itemId);
-  return shelfBounds({
-    pos: self?.pos_mm ?? band.min,
-    others: otherShelfPositions(unit, itemId),
-    band,
-  }, profile);
-}
 
 /**
  * Interior validation. The hard rule from SPEC 4.7: a drawer stack must be

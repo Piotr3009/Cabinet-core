@@ -40,10 +40,6 @@ export function renderSize(longSide, aspect) {
 
 const even = (n) => Math.max(2, n % 2 === 0 ? n : n + 1);
 
-/** The resolution options, as the settings panel lists them. */
-export function renderResolutions(profile = getCabinetProfile()) {
-  return profile.render.resolutions.map((r) => ({ ...r }));
-}
 
 export function resolutionById(id, profile = getCabinetProfile()) {
   return profile.render.resolutions.find((r) => r.id === id) || profile.render.resolutions[0];
@@ -212,9 +208,6 @@ export function subjectBounds(boxes, { floor = 0 } = {}) {
 
 // ─── Shadows ───
 
-export function shadowQualities(profile = getCabinetProfile()) {
-  return Object.entries(profile.render.shadow).map(([id, cfg]) => ({ id, ...cfg }));
-}
 
 export function shadowQuality(id, profile = getCabinetProfile()) {
   return profile.render.shadow[id] || profile.render.shadow.normal;

@@ -196,7 +196,7 @@ export const EXPORT_PRESETS = [
   },
 ];
 
-export function presetById(id) {
+function presetById(id) {
   return EXPORT_PRESETS.find((p) => p.id === id) || null;
 }
 

@@ -23,13 +23,13 @@ import { wallFacesCamera } from './Room.jsx';
 // while its backing store is briefly 4K.
 
 /** Objects carrying this in userData are the TOOL, not the furniture. */
-export const HELPER_FLAG = 'ccHelper';
+const HELPER_FLAG = 'ccHelper';
 
 /** …and this marks something that IS in the picture but must not frame it. */
-export const NO_BOUNDS_FLAG = 'ccNoBounds';
+const NO_BOUNDS_FLAG = 'ccNoBounds';
 
 /** …and this one marks a LINE that is furniture rather than tool (turn 8, F8). */
-export const FURNITURE_FLAG = 'ccFurniture';
+const FURNITURE_FLAG = 'ccFurniture';
 
 /**
  * A helper, an outline pass, or a billboarded label — all of it tool chrome.

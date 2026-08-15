@@ -50,7 +50,7 @@ const q = (v) => {
 };
 
 /** The kinds an override may name. */
-export const EDIT_OPS = ['hide', 'drill', 'line', 'dowels'];
+const EDIT_OPS = ['hide', 'drill', 'line', 'dowels'];
 
 /**
  * The STABLE id of one feature on one part.
@@ -95,10 +95,6 @@ export function partFeatures(panel, drills = []) {
   return out;
 }
 
-/** The same walk, as a Set of ids — what "is this feature hidden" asks. */
-export function featureIdsOf(panel, drills = []) {
-  return partFeatures(panel, drills).map((f) => f.fid);
-}
 
 /**
  * WHAT BOARD THIS IS: the identity an edit is pinned to.

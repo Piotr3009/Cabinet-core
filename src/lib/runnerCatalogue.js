@@ -108,7 +108,3 @@ export function loadRunnerCatalogue({ fetchImpl = null, profile = null } = {}) {
   return pending;
 }
 
-/** For tests, and for a session that has just signed in. */
-export function clearRunnerCataloguePending() {
-  pending = null;
-}

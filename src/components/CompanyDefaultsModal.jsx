@@ -217,7 +217,7 @@ export default function CompanyDefaultsModal() {
  * red, when there is one — how many fetches failed and the first url that did,
  * copyable. It reads the registries and fetches nothing.
  */
-export function HardwareHealthRow({ rows }) {
+function HardwareHealthRow({ rows }) {
   const notify = useUiStore((s) => s.notify);
   const copy = async (text) => {
     try {

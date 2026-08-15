@@ -998,6 +998,8 @@ export const DEFAULT_CABINET_PROFILE = {
           { id: 'soft-close', label: 'Soft-close' },
           { id: 'standard', label: 'Standard' },
         ],
+        // soft-close default — owner to confirm 15.08 (TURN 32 F2 ships YES;
+        // the question travels with the PR as Q1).
         default: 'soft-close',
         automat: 'hinge',
       },
@@ -2438,8 +2440,22 @@ export const DEFAULT_CABINET_PROFILE = {
     metals: {
       gold: { label: 'Gold', colour: '#c9a227', metalness: 0.95, roughness: 0.22 },
       silver: { label: 'Silver', colour: '#c8ccd0', metalness: 0.95, roughness: 0.18 },
+      // ─── TURN 32 (CLAUDE.md F2): THE WIZARD'S METAL COLOURS ───────────────
+      // OWNER'S MENU, 15.08.2026: chrome / onyx / gold on the Hardware step.
+      // Chrome and onyx join the palette; silver stays for the projects that
+      // already carry it. Same three numbers as every plated surface here.
+      chrome: { label: 'Chrome', colour: '#cfd4d8', metalness: 0.95, roughness: 0.12 },
+      onyx: { label: 'Onyx', colour: '#2f2f33', metalness: 0.9, roughness: 0.35 },
     },
     metalDefault: 'gold',
+    // ─── TURN 32 (CLAUDE.md F2): THE AUTOMAT'S FINISH ROW ───────────────────
+    // Which PUBLISHED hinge finish each metal colour buys — a rule-table row,
+    // never code. Blum publishes nickel and onyx; a gold hinge has no
+    // published article, so gold answers null and the BOM prints a NAMED SPEC
+    // line rather than an invented number (CLAUDE.md rule 3).
+    metalHingeFinish: {
+      chrome: 'nickel', silver: 'nickel', onyx: 'onyx', gold: null,
+    },
     hardware: {
       rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92', hinge: '#5b5f63',
       // ─── Turn 13 (CLAUDE.md F7) ───

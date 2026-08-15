@@ -3564,7 +3564,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   setShelfSleeve: (id) => set((s) => {
     const design = migrateDesign(s.project.design);
-    const wanted = id === 'gold' || id === 'silver' ? id : null;
+    // Turn 32 (CLAUDE.md F2): the palette is the profile's own — chrome and
+    // onyx joined it for the wizard's metal colours.
+    const wanted = getCabinetProfile().appearance.metals[id] ? id : null;
     return {
       project: {
         ...s.project,

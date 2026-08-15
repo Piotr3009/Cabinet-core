@@ -320,7 +320,9 @@ export function migrateDesign(design) {
     hardware: {
       hinges: d.hardware?.hinges ? String(d.hardware.hinges) : null,
       runners: d.hardware?.runners ? String(d.hardware.runners) : null,
-      shelfSleeve: d.hardware?.shelfSleeve === 'gold' || d.hardware?.shelfSleeve === 'silver'
+      // Turn 32 (CLAUDE.md F2): chrome and onyx joined the palette — the
+      // wizard's metal colours. Anything else is still "nobody has said".
+      shelfSleeve: ['gold', 'silver', 'chrome', 'onyx'].includes(d.hardware?.shelfSleeve)
         ? d.hardware.shelfSleeve
         : null,
       handles: d.hardware?.handles ? String(d.hardware.handles) : null,

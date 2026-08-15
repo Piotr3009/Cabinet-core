@@ -66,7 +66,7 @@
    "detail": "Front 1, Front 2, Front 3 — no material yet. Generic counts as an assignment; no"
   },
   {
-   "label": "F1 — Generic IS an assignment: the button opens",
+   "label": "F1 — Generic IS an assignment: the flow opens",
    "ok": true,
    "detail": ""
   },
@@ -79,6 +79,91 @@
    "label": "F1 — LIVE SCENE: the meshes stand 568 deep in the room (±2 mm)",
    "ok": true,
    "detail": "{\"meshes\":5,\"w\":600,\"h\":2400,\"d\":568}"
+  },
+  {
+   "label": "F2 — the step is small and FULLY PRE-FILLED: gold and soft-close already lit",
+   "ok": true,
+   "detail": "{\"gold\":true,\"yes\":true}"
+  },
+  {
+   "label": "F2 — the owner’s three metals: chrome / onyx / gold",
+   "ok": true,
+   "detail": "chrome,onyx,gold"
+  },
+  {
+   "label": "F2 — the plinth is a READ-ONLY summary: height, material \"(default)\", and the front-legs rule",
+   "ok": true,
+   "detail": "PLINTH ·  · Plinth 100 mm · Same as fronts (default) ·  · Clips + clip connectors are counted automatically from the FRONT legs only, per unit."
+  },
+  {
+   "label": "F2 — the metal colour writes the family choice (design.hardware.shelfSleeve)",
+   "ok": true,
+   "detail": "onyx"
+  },
+  {
+   "label": "F2 — the AUTOMAT resolves onyx + soft-close to a real Blum article",
+   "ok": true,
+   "detail": "Standard door: 110° · soft-close · 71B3550N · art. 10003"
+  },
+  {
+   "label": "F2 — what the registry does not know is a NAMED SPEC, never an invented number",
+   "ok": true,
+   "detail": "Standard door: Hinge 110° · standard · onyx — no article in the registry yet; the BOM prints it as a named spec."
+  },
+  {
+   "label": "F2 — LIVE SCENE: the hanging rail is rendered in the chosen onyx",
+   "ok": true,
+   "detail": "{\"hit\":{\"colour\":\"2f2f33\",\"radius\":15},\"want\":\"2f2f33\"}"
+  },
+  {
+   "label": "F3 — the end panel appears and the front NARROWS ITSELF on that edge",
+   "ok": true,
+   "detail": "{\"left\":0,\"right\":1.5}"
+  },
+  {
+   "label": "F3 — the correction announces itself as a GREY note, never a question",
+   "ok": true,
+   "detail": "[{\"level\":\"grey\",\"text\":\"front 01 01-F −1.5 mm at an end panel\"}]"
+  },
+  {
+   "label": "F3 — LIVE SCENE: the healed front’s meshes measure the healed width",
+   "ok": true,
+   "detail": "{\"sceneW\":595.5,\"engineW\":595.5}"
+  },
+  {
+   "label": "F3 — facing gap figures never share a line (the right one steps down a rung)",
+   "ok": true,
+   "detail": "[{\"kind\":\"to-side\",\"at\":383.5},{\"kind\":\"to-side\",\"at\":365.5}]"
+  },
+  {
+   "label": "F4 — a recessed partition REFUSES drawers, with the number",
+   "ok": true,
+   "detail": "The column's partition stands 20 mm back from the front — drawers need its full depth at the runner band."
+  },
+  {
+   "label": "F4 — the column’s drawers are cut FROM THE COLUMN’S WALLS",
+   "ok": true,
+   "detail": "{\"ok\":true,\"bay\":{\"from\":609,\"size\":573},\"frontW\":567,\"rails\":1,\"closer\":true,\"partitionRunnerHoles\":6}"
+  },
+  {
+   "label": "F4 — the runner rows land on the PARTITION — it does the DP’s job",
+   "ok": true,
+   "detail": "6 holes"
+  },
+  {
+   "label": "F4 — the other column hangs its own rail",
+   "ok": true,
+   "detail": "1 column rail(s)"
+  },
+  {
+   "label": "F4 — LIVE SCENE: the column drawer front measures its column width",
+   "ok": true,
+   "detail": "{\"sceneW\":567,\"engineW\":567}"
+  },
+  {
+   "label": "F4 — internal drawers: box and runners, NO face, behind the doors",
+   "ok": true,
+   "detail": "{\"hasBox\":true,\"noFace\":true,\"doorsOpen\":2}"
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -134,6 +219,80 @@
    "name": "1f-the-wardrobe-standing-568-deep-measured-off-its-own-meshes",
    "subject": {
     "mesh": "BUL"
+   },
+   "present": true,
+   "detail": "{\"mesh\":true}"
+  },
+  {
+   "name": "2a-hardware-step-5-small-and-fully-pre-filled",
+   "subject": {
+    "dom": "[data-wizard-hardware=\"1\"]",
+    "text": "Plinth 100 mm"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "2b-the-automat-answers-a-named-spec-when-no-article-exists",
+   "subject": {
+    "dom": "[data-hinge-automat=\"1\"]",
+    "text": "named spec"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "2c-the-rail-wearing-the-wizard-chosen-onyx-in-the-room",
+   "subject": {
+    "mesh": "BUL"
+   },
+   "present": true,
+   "detail": "{\"mesh\":true}"
+  },
+  {
+   "name": "3a-the-grey-note-the-self-correction-speaks-with",
+   "subject": {
+    "text": "at an end panel"
+   },
+   "present": true,
+   "detail": "{\"text\":true}"
+  },
+  {
+   "name": "3b-the-front-standing-1-5-narrower-against-its-end-panel",
+   "subject": {
+    "mesh": "01-F"
+   },
+   "present": true,
+   "detail": "{\"mesh\":true}"
+  },
+  {
+   "name": "3c-front-dimensions-on-with-the-figures-standing-apart",
+   "subject": {
+    "dom": "canvas"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "4a-the-guard-speaks-the-setback-number-and-one-button",
+   "subject": {
+    "text": "Reset the setback"
+   },
+   "present": true,
+   "detail": "{\"text\":true}"
+  },
+  {
+   "name": "4b-two-drawers-and-a-rail-living-in-their-own-columns",
+   "subject": {
+    "mesh": "W01-Z2D1-F"
+   },
+   "present": true,
+   "detail": "{\"mesh\":true}"
+  },
+  {
+   "name": "4c-internal-drawers-revealed-behind-the-open-doors",
+   "subject": {
+    "mesh": "Z2D1-SL"
    },
    "present": true,
    "detail": "{\"mesh\":true}"

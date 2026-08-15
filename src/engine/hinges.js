@@ -254,6 +254,80 @@ export function plateFamily({ plate = null, finish = null } = {}) {
 }
 
 /**
+ * ─── TURN 32 (CLAUDE.md F2): WHICH METAL BUYS WHICH FINISH ──────────────────
+ *
+ * The wizard's metal colour (chrome / onyx / gold) against the finishes Blum
+ * actually publishes. A rule-table ROW in the profile, never code here — and
+ * a metal with no published finish (gold) answers null, so the automat prints
+ * a named SPEC rather than an invented article (CLAUDE.md rule 3).
+ */
+export function metalHingeFinish(profile, metal) {
+  const map = profile?.appearance?.metalHingeFinish || {};
+  if (!metal || !Object.prototype.hasOwnProperty.call(map, metal)) return null;
+  return map[metal];
+}
+
+/**
+ * ─── TURN 32 (CLAUDE.md F2): THE AUTOMAT PICKS THE ARTICLE ──────────────────
+ *
+ * The rule table that already picks the ANGLE (thick front → 95°, internal
+ * drawer → 155°, standard → 110°) extends to pick the ROW: angle + metal +
+ * soft-close → one article. Everything on the way is a table lookup —
+ * thick fronts and inner drawers are rungs in the catalogue's own rules, and
+ * a corner rule joins as DATA the day one is published, never as code here.
+ *
+ * `lookup` is the hardware REGISTRY (F6): asked first, so a workshop's own
+ * registered row wins. With no registry — mock mode, or a category it does
+ * not know — the in-repo Blum catalogue answers what it can. That catalogue
+ * is CLIP top BLUMOTION, soft-close by construction, so `std` has no
+ * published article and the answer is honestly unresolved: the BOM prints
+ * the named `spec_label` as a YELLOW line, never an invented number and
+ * never a silent drop.
+ *
+ * @returns {{angle, variant:'soft'|'std', metal, finish, family, article,
+ *            articles:string[], source:string|null, resolved:boolean,
+ *            spec_label:string}}
+ */
+export function hingeAutomat({
+  frontThickness = null, innerDrawer = false, metal = null, softClose = true,
+} = {}, { profile = null, lookup = null } = {}) {
+  const angle = hingeAngleFor({ frontThickness, innerDrawer });
+  const variant = softClose ? 'soft' : 'std';
+  const finish = metalHingeFinish(profile, metal);
+  let row = null;
+  if (angle != null && typeof lookup === 'function') {
+    row = lookup({
+      category: 'hinge', angle, finish, variant,
+    }) || null;
+  }
+  if (!row && angle != null && finish && variant === 'soft') {
+    const [fam] = hingeFamilies({ angle, finish, role: 'hinge' });
+    if (fam) {
+      row = {
+        family: fam.family, article: fam.article, articles: fam.articles, finish: fam.finish, source: 'catalogue',
+      };
+    }
+  }
+  const spec = [
+    `Hinge ${angle != null ? `${angle}°` : '(no rung for this front)'}`,
+    variant === 'soft' ? 'soft-close' : 'standard',
+    metal || null,
+  ].filter(Boolean).join(' · ');
+  return {
+    angle,
+    variant,
+    metal,
+    finish,
+    family: row?.family ?? null,
+    article: row?.article ?? null,
+    articles: row?.articles ? [...row.articles] : [],
+    source: row?.source ?? null,
+    resolved: Boolean(row?.article),
+    spec_label: spec,
+  };
+}
+
+/**
  * WHICH HINGE ONE DOOR IS FITTED WITH — the whole hierarchy, in one call.
  *
  * Project (finish, system) → the RULE (angle, from the front and what is behind

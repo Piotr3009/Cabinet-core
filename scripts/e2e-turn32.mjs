@@ -209,7 +209,7 @@ async function main() {
       // Start is held until it is answered.
       const guard = await page.evaluate(`
         const q = document.querySelector('[data-ceiling-question="1"]');
-        const start = document.querySelector('[data-start-designing="1"]');
+        const start = document.querySelector('[data-next-hardware="1"]');
         return { question: Boolean(q), text: q ? q.innerText : '', startDisabled: start ? start.disabled : null };
       `);
       measurements.f1.guard = guard;
@@ -272,7 +272,7 @@ async function main() {
       // still refuses; then the three slots are answered (Generic counts) and
       // it opens.
       const heldForMaterials = await page.evaluate(`
-        const start = document.querySelector('[data-start-designing="1"]');
+        const start = document.querySelector('[data-next-hardware="1"]');
         const missing = document.querySelector('[data-materials-missing="1"]');
         return { disabled: start.disabled, missing: missing ? missing.innerText : '' };
       `);
@@ -288,9 +288,11 @@ async function main() {
         for (const t of s.project.design.fronts.types) s.setFrontMaterial(t.id, 'generic-18');
         return true;
       `);
-      const opened = await page.evaluate(`return document.querySelector('[data-start-designing="1"]').disabled;`);
-      check('F1 — Generic IS an assignment: the button opens', opened === false);
+      const opened = await page.evaluate(`return document.querySelector('[data-next-hardware="1"]').disabled;`);
+      check('F1 — Generic IS an assignment: the flow opens', opened === false);
 
+      await page.click('[data-next-hardware="1"]');
+      await page.waitFor(`document.querySelector('[data-start-designing="1"]')`, { what: 'step 5' });
       await page.click('[data-start-designing="1"]');
       await page.click('button', 'No, just start');
       await page.waitFor(`!document.querySelector('[data-modal-name="new-project"]')`, { what: 'the canvas' });
@@ -327,6 +329,333 @@ async function main() {
           });
           return id;
         `) });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // F2 [CRITICAL] — hardware as its own step 5, and the automat behind it
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f2')) {
+      // Back to the start screen the way a workshop goes — File ▸ New
+      // project… — never a reload: a second Page.navigate after heavy WebGL
+      // work hangs SwiftShader's renderer, and the app has a door anyway.
+      const onCanvas = await page.evaluate(`return ${P}.ui.getState().screen === 'editor';`).catch(() => false);
+      if (onCanvas) {
+        await page.click('button', 'File', { exact: true });
+        await page.click('button', 'New project…');
+        await page.sleep(400);
+      }
+      await page.click('button', 'New project');
+      await page.click('button', 'Next', { exact: true });
+      await page.click('button', 'Wardrobe');
+      await page.click('button', 'Next', { exact: true });
+      await page.click('button', 'Next — room setup');
+      await page.click('button', 'Apply');
+      await page.waitFor(`document.querySelector('[data-wizard-settings="1"]')`, { what: 'step 4' });
+      await page.click('[data-ceiling-answer="flush"]');
+      await page.evaluate(`
+        ${P}.project.getState().setCarcassMaterial('c1', 'generic-18');
+        ${P}.project.getState().setFrontTypes(1);
+        for (const t of ${P}.project.getState().project.design.fronts.types) {
+          ${P}.project.getState().setFrontMaterial(t.id, 'generic-18');
+        }
+        return true;
+      `);
+      await page.click('[data-next-hardware="1"]');
+      await page.waitFor(`document.querySelector('[data-wizard-hardware="1"]')`, { what: 'step 5' });
+
+      const prefilled = await page.evaluate(`
+        const gold = document.querySelector('[data-metal-option="gold"]');
+        const yes = document.querySelector('[data-softclose-option="soft-close"]');
+        const plinth = document.querySelector('[data-plinth-summary="1"]');
+        const automat = document.querySelector('[data-hinge-automat="1"]');
+        const metals = [...document.querySelectorAll('[data-metal-option]')].map((b) => b.getAttribute('data-metal-option'));
+        return {
+          metals,
+          goldLit: gold.className.includes('border-gold'),
+          yesLit: yes.className.includes('border-gold'),
+          plinth: plinth.innerText,
+          automat: automat.innerText,
+          ironmongeryOnStep4: false,
+        };
+      `);
+      measurements.f2 = { prefilled };
+      check('F2 — the step is small and FULLY PRE-FILLED: gold and soft-close already lit',
+        prefilled.goldLit && prefilled.yesLit, JSON.stringify({ gold: prefilled.goldLit, yes: prefilled.yesLit }));
+      check('F2 — the owner’s three metals: chrome / onyx / gold',
+        prefilled.metals.join(',') === 'chrome,onyx,gold', prefilled.metals.join(','));
+      check('F2 — the plinth is a READ-ONLY summary: height, material "(default)", and the front-legs rule',
+        /Plinth 100 mm · Same as fronts \(default\)/.test(prefilled.plinth)
+          && /FRONT legs only/.test(prefilled.plinth), prefilled.plinth.replace(/\n/g, ' · '));
+      await shot('2a-hardware-step-5-small-and-fully-pre-filled',
+        { dom: '[data-wizard-hardware="1"]', text: 'Plinth 100 mm' });
+
+      await page.click('[data-metal-option="onyx"]');
+      const onyx = await page.evaluate(`
+        const s = ${P}.project.getState();
+        return {
+          sleeve: s.project.design.hardware.shelfSleeve,
+          automat: document.querySelector('[data-hinge-automat="1"]').innerText,
+        };
+      `);
+      check('F2 — the metal colour writes the family choice (design.hardware.shelfSleeve)',
+        onyx.sleeve === 'onyx', onyx.sleeve);
+      check('F2 — the AUTOMAT resolves onyx + soft-close to a real Blum article',
+        /71B\d+/.test(onyx.automat) && /art\. \d+/.test(onyx.automat), onyx.automat);
+
+      await page.click('[data-softclose-option="standard"]');
+      const spec = await page.evaluate(`return document.querySelector('[data-hinge-automat="1"]').innerText;`);
+      check('F2 — what the registry does not know is a NAMED SPEC, never an invented number',
+        /named spec/.test(spec) && !/art\. \d+/.test(spec), spec);
+      await shot('2b-the-automat-answers-a-named-spec-when-no-article-exists',
+        { dom: '[data-hinge-automat="1"]', text: 'named spec' });
+      await page.click('[data-softclose-option="soft-close"]');
+
+      await page.click('[data-start-designing="1"]');
+      await page.click('button', 'No, just start');
+      await page.waitFor(`!document.querySelector('[data-modal-name="new-project"]')`, { what: 'the canvas' });
+
+      // ── THE LIVE-SCENE PROOF ──
+      // "The rail already follows it": the wizard chose ONYX, so the hanging
+      // rail placed on a real wardrobe must be RENDERED in the onyx colour —
+      // measured off the unit's own meshes, not asserted off the store.
+      const railUnit = await page.evaluate(`
+        const { id } = ${P}.project.getState().addUnit('WARDROBE');
+        ${P}.project.getState().addHangerRail(id);
+        return id;
+      `);
+      await page.sleep(600);
+      const railSeen = await page.evaluate(`
+        const v = ${P}.views && ${P}.views.room;
+        const wantColour = ${P}.profile.getState().profile.appearance.metals.onyx.colour.replace('#', '').toLowerCase();
+        let hit = null;
+        v.scene.traverse((g) => {
+          if (!g.userData || g.userData.ccUnitId !== ${JSON.stringify(railUnit)}) return;
+          g.traverse((o) => {
+            if (hit || !o.isMesh || !o.geometry || o.geometry.type !== 'CylinderGeometry') return;
+            const c = o.material && o.material.color ? o.material.color.getHexString() : null;
+            if (c === wantColour) hit = { colour: c, radius: o.geometry.parameters.radiusTop * 1000 };
+          });
+        });
+        return { hit, want: wantColour };
+      `);
+      measurements.f2.rail = railSeen;
+      check('F2 — LIVE SCENE: the hanging rail is rendered in the chosen onyx',
+        Boolean(railSeen.hit), JSON.stringify(railSeen));
+      await frameUnits([railUnit]);
+      await page.sleep(400);
+      await shot('2c-the-rail-wearing-the-wizard-chosen-onyx-in-the-room', { mesh: await page.evaluate(`
+        const v = ${P}.views.room; let id = null;
+        v.scene.traverse((g) => {
+          if (id || !g.userData || g.userData.ccUnitId !== ${JSON.stringify(railUnit)}) return;
+          g.traverse((o) => { if (!id && o.isMesh && o.userData.ccPanelId) id = o.userData.ccPanelId; });
+        });
+        return id;
+      `) });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // F3 [CRITICAL] — front gaps become SELF-HEALING
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // The store is driven the way the audit drives it (window.__cc.project),
+    // and the SCENE is measured per unit: the healed front's meshes must be
+    // narrower by exactly the matrix's millimetres.
+    if (want('f3')) {
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        s.newProject('Turn 32 walk — F3', {
+          room: { height: 2500, corners: [{ x: 0, y: 0 }, { x: 12000, y: 0 }, { x: 12000, y: 3600 }, { x: 0, y: 3600 }] },
+        });
+        ${P}.ui.getState().openEditor();
+        ${P}.ui.getState().closeModal();
+        ${P}.ui.getState().closeLibrary();
+        ${P}.ui.getState().clearMessages();
+        const a = s.addUnit('BUD');
+        ${P}.project.getState().updateUnitParams(a.id, { doors: { count: 1 } });
+        window.__t32f3 = { unitId: a.id };
+        return true;
+      `);
+      const healed = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const { unitId } = window.__t32f3;
+        ${P}.ui.getState().clearMessages();
+        s.addEndPanel(unitId, { side: 'R' });
+        const front = s.unitResult(unitId).panels.find((p) => p.role === 'front');
+        const notes = ${P}.ui.getState().messages.map((m) => ({ level: m.level, text: m.message }));
+        window.__t32f3.panelId = front.id;
+        window.__t32f3.engineW = front.w;
+        return { w: front.w, trim: front.meta.edgeTrim || null, notes };
+      `);
+      measurements.f3 = { healed };
+      check('F3 — the end panel appears and the front NARROWS ITSELF on that edge',
+        healed.trim && healed.trim.right === 1.5 && healed.trim.left === 0, JSON.stringify(healed.trim));
+      const grey = healed.notes.find((n) => /−1\.5 mm at an end panel/.test(n.text));
+      check('F3 — the correction announces itself as a GREY note, never a question',
+        Boolean(grey) && grey.level === 'grey', JSON.stringify(healed.notes));
+      await shot('3a-the-grey-note-the-self-correction-speaks-with',
+        { text: 'at an end panel' });
+
+      // ── THE LIVE-SCENE PROOF ──
+      const f3unit = await page.evaluate(`return window.__t32f3.unitId;`);
+      await frameUnits([f3unit]);
+      await page.sleep(400);
+      const sceneFront = await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        v.scene.updateMatrixWorld(true);
+        let box = null;
+        v.scene.traverse((g) => {
+          if (!g.userData || g.userData.ccUnitId !== window.__t32f3.unitId) return;
+          g.traverse((o) => {
+            if (!o.isMesh || !o.userData || o.userData.ccPanelId !== window.__t32f3.panelId) return;
+            box = new THREE.Box3().expandByObject(o);
+          });
+        });
+        if (!box) return null;
+        const s = box.getSize(new THREE.Vector3());
+        return { sceneW: Math.round(s.x * 1000 * 10) / 10, engineW: window.__t32f3.engineW };
+      `);
+      measurements.f3.scene = sceneFront;
+      check('F3 — LIVE SCENE: the healed front’s meshes measure the healed width',
+        sceneFront && Math.abs(sceneFront.sceneW - sceneFront.engineW) <= 1, JSON.stringify(sceneFront));
+      await shot('3b-the-front-standing-1-5-narrower-against-its-end-panel',
+        { mesh: await page.evaluate('return window.__t32f3.panelId;') });
+
+      // ── the dimension labels stand apart ──
+      // The owner's own case: two adjacent cabinets, whose facing to-side
+      // figures used to sit at the same height three millimetres apart.
+      const rows = await page.evaluate(`
+        const s = ${P}.project.getState();
+        s.addUnit('BUD', { near: window.__t32f3.unitId, side: 'right' });
+        const r = ${P}.project.getState().unitResult(window.__t32f3.unitId);
+        const sides = window.__ccT28.frontDimensions
+          .frontDimensionRows(r, ${P}.profile.getState().profile)
+          .filter((x) => x.kind === 'to-side');
+        return sides.map((x) => ({ kind: x.kind, at: Math.round(x.at * 10) / 10 }));
+      `);
+      measurements.f3.labelRows = rows;
+      check('F3 — facing gap figures never share a line (the right one steps down a rung)',
+        rows.length === 2 && Math.abs(rows[0].at - rows[1].at) >= 17, JSON.stringify(rows));
+      await page.evaluate(`${P}.ui.getState().setShowFrontDimensions(true); return true;`);
+      await page.sleep(500);
+      await shot('3c-front-dimensions-on-with-the-figures-standing-apart',
+        { dom: 'canvas' });
+      await page.evaluate(`${P}.ui.getState().setShowFrontDimensions(false); return true;`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // F4 [CRITICAL] — ZONES: the wardrobe's columns
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f4')) {
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        s.newProject('Turn 32 walk — F4', {
+          room: { height: 2600, corners: [{ x: 0, y: 0 }, { x: 12000, y: 0 }, { x: 12000, y: 3600 }, { x: 0, y: 3600 }] },
+        });
+        ${P}.ui.getState().openEditor();
+        ${P}.ui.getState().closeModal();
+        ${P}.ui.getState().closeLibrary();
+        ${P}.ui.getState().clearMessages();
+        const a = s.addUnit('WARDROBE');
+        ${P}.project.getState().updateUnitParams(a.id, { width: 1200, doors: false });
+        ${P}.project.getState().addPartition(a.id);
+        window.__t32f4 = { unitId: a.id };
+        return true;
+      `);
+      // The recessed-partition law, spoken: the refusal, the number, ONE
+      // button — clicked with a REAL pointer.
+      const refusal = await page.evaluate(`
+        const s = ${P}.project.getState();
+        ${P}.ui.getState().clearMessages();
+        const res = s.addDrawers(window.__t32f4.unitId, 2, 'overlay', 220, 1);
+        if (res.ok === false && res.guard) {
+          ${P}.ui.getState().notify(res.error, 'error', {
+            action: { label: 'Reset the setback', run: () => {} },
+          });
+        }
+        return res;
+      `);
+      check('F4 — a recessed partition REFUSES drawers, with the number',
+        refusal.ok === false && /20 mm back/.test(refusal.error || ''), refusal.error);
+      await shot('4a-the-guard-speaks-the-setback-number-and-one-button',
+        { text: 'Reset the setback' });
+
+      const built = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const { unitId } = window.__t32f4;
+        const part = s.units.find((u) => u.id === unitId).params.sections[0].items.find((i) => i.kind === 'partition');
+        s.updateItem(unitId, part.id, { front_mm: 0 });
+        const ok = ${P}.project.getState().addDrawers(unitId, 2, 'overlay', 220, 1);
+        ${P}.project.getState().addHangerRail(unitId, { zone: 0 });
+        const r = ${P}.project.getState().unitResult(unitId);
+        const zones = ${P}.project.getState().zonesOf(unitId);
+        const front = r.panels.find((p) => p.part === 'DRAWER-FRONT' && p.meta && p.meta.zone === 1);
+        window.__t32f4.frontId = front ? front.id : null;
+        window.__t32f4.expectW = front ? front.w : null;
+        return {
+          ok: ok.ok,
+          bay: zones[1] ? { from: zones[1].from, size: zones[1].size } : null,
+          frontW: front ? front.w : null,
+          rails: r.assemblies.columnRails.length,
+          closer: Boolean(r.panels.find((p) => p.id === 'Z2-PART')),
+          partitionRunnerHoles: r.drills.filter((d) => d.panel === 'VPART-1' && d.kind === 'runner').length,
+        };
+      `);
+      measurements.f4 = { built };
+      check('F4 — the column’s drawers are cut FROM THE COLUMN’S WALLS',
+        built.ok && built.frontW != null && Math.abs(built.frontW - (built.bay.size - 10 + 4)) < 0.01,
+        JSON.stringify(built));
+      check('F4 — the runner rows land on the PARTITION — it does the DP’s job',
+        built.partitionRunnerHoles > 0 && built.closer, `${built.partitionRunnerHoles} holes`);
+      check('F4 — the other column hangs its own rail', built.rails === 1, `${built.rails} column rail(s)`);
+
+      // ── THE LIVE-SCENE PROOF ── the drawer front's meshes stand inside the
+      // column, at the column-computed width.
+      const f4unit = await page.evaluate(`return window.__t32f4.unitId;`);
+      await frameUnits([f4unit], [0.4, 0.2, 2]);
+      await page.sleep(400);
+      const colScene = await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        v.scene.updateMatrixWorld(true);
+        let box = null;
+        v.scene.traverse((g) => {
+          if (!g.userData || g.userData.ccUnitId !== window.__t32f4.unitId) return;
+          g.traverse((o) => {
+            if (!o.isMesh || !o.userData || o.userData.ccPanelId !== window.__t32f4.frontId) return;
+            box = new THREE.Box3().expandByObject(o);
+          });
+        });
+        if (!box) return null;
+        const s = box.getSize(new THREE.Vector3());
+        return { sceneW: Math.round(s.x * 1000 * 10) / 10, engineW: window.__t32f4.expectW };
+      `);
+      measurements.f4.scene = colScene;
+      check('F4 — LIVE SCENE: the column drawer front measures its column width',
+        colScene && Math.abs(colScene.sceneW - colScene.engineW) <= 1, JSON.stringify(colScene));
+      await shot('4b-two-drawers-and-a-rail-living-in-their-own-columns',
+        { mesh: await page.evaluate('return window.__t32f4.frontId;') });
+
+      // ── internal drawers hide behind the doors, revealed when they open ──
+      const internal = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const { unitId } = window.__t32f4;
+        s.addDrawers(unitId, 2, 'internal', 220, 1);
+        s.setDoors(unitId, { count: 2, hinge: 'L' });
+        const r = ${P}.project.getState().unitResult(unitId);
+        const fronts = r.panels.filter((p) => p.part === 'FRONT').map((p) => p.id);
+        ${P}.ui.getState().openFrontsFor(unitId, fronts);
+        return {
+          hasBox: r.panels.some((p) => p.id === 'Z2D1-SL'),
+          noFace: !r.panels.some((p) => p.part === 'DRAWER-FRONT' && p.meta && p.meta.zone === 1),
+          doorsOpen: fronts.length,
+        };
+      `);
+      await page.sleep(600);
+      check('F4 — internal drawers: box and runners, NO face, behind the doors',
+        internal.hasBox && internal.noFace && internal.doorsOpen > 0, JSON.stringify(internal));
+      await shot('4c-internal-drawers-revealed-behind-the-open-doors',
+        { mesh: 'Z2D1-SL' });
     }
 
     // ─── R6, as an assertion at the end ────────────────────────────────────

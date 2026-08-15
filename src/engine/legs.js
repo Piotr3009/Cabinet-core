@@ -43,3 +43,25 @@ export function legLayout({ width, depth, boardT, height }, profile) {
 export function legCount(width, profile) {
   return profile.legs.cornerCount + (Number(width) > profile.legs.extraLegOverWidth ? 1 : 0);
 }
+
+/**
+ * ─── TURN 32 (CLAUDE.md F2/F5): THE FRONT ROW ───────────────────────────────
+ *
+ * OWNER'S RULE, 15.08.2026: plinth clips and their connectors are counted
+ * FROM FRONT LEGS ONLY — the plinth clips to the row that stands at z ≈ front.
+ * The centre leg sits mid-depth and holds no plinth; the back row faces the
+ * wall. Read off `legLayout`'s own positions, so the rule and the layout can
+ * never disagree.
+ */
+export function frontLegPositions({ width, depth, boardT }, profile) {
+  const L = profile.legs;
+  const zFront = depth - L.insetFromFront - L.width;
+  return legLayout({
+    width, depth, boardT, height: 0,
+  }, profile).positions.filter((p) => p.z === zFront);
+}
+
+/** How many clips (and connectors) the plinth of this unit takes. */
+export function frontLegCount({ width, depth, boardT }, profile) {
+  return frontLegPositions({ width, depth, boardT }, profile).length;
+}

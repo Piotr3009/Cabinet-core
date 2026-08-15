@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
 import RoomModal from './RoomModal.jsx';
 import WizardSettings from './WizardSettings.jsx';
+import WizardHardware from './WizardHardware.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -25,7 +26,11 @@ import { useHistoryStore } from '../stores/historyStore.js';
 // second one written for the flow. That is CLAUDE.md's instruction — "the
 // existing modal" — and it is also the only way the two cannot drift.
 
-const STEPS = ['info', 'type', 'scope', 'room', 'settings'];
+// ─── TURN 32 (CLAUDE.md F2): HARDWARE IS ITS OWN STEP ───────────────────────
+// The ironmongery leaves the settings screen: the client-facing choices and
+// the workshop choices are two different heads, and a screen that scrolls
+// gets half-read. Step 5 is small and always fully pre-filled.
+const STEPS = ['info', 'type', 'scope', 'room', 'settings', 'hardware'];
 
 export default function NewProjectFlow({
   initialNumber = '', onCancel, onStart, anchor = null,
@@ -164,19 +169,31 @@ export default function NewProjectFlow({
               {scope === 'room' ? 'Next — room setup' : 'Next — settings'}
             </button>
           )}
-          {step === 'settings' && !asking && (
+          {step === 'settings' && (
             <button
               type="button"
               className="cc-btn-gold"
               disabled={blocked}
               title={blocked ? blockers.map((b) => b.message).join('\n') : undefined}
+              data-next-hardware="1"
+              onClick={() => setStep('hardware')}
+            >
+              Next — hardware
+            </button>
+          )}
+          {step === 'hardware' && !asking && (
+            <button
+              type="button"
+              className="cc-btn-gold"
+              disabled={blockers.length > 0}
+              title={blockers.length ? blockers.map((b) => b.message).join('\n') : undefined}
               data-start-designing="1"
               onClick={start}
             >
               Start designing
             </button>
           )}
-          {step === 'settings' && asking && (
+          {step === 'hardware' && asking && (
             <>
               <input
                 className="cc-input w-[220px]"
@@ -318,6 +335,18 @@ export default function NewProjectFlow({
         )}
 
         {step === 'settings' && (
+          /* ─── TURN 32 (CLAUDE.md F1): ONE SCREEN, NO SCROLLING ───
+              The owner dictated the shape: number/client/type, saved sets as
+              a LOAD list, dimensions per project type with the ceiling
+              guards, FRONTS BEFORE MATERIALS, one material picker, sheen.
+              The turn-12 lesson still holds — this surface writes through
+              the SAME store setters Design Settings uses, so nothing set
+              here can fail to reach the furniture. The full panel stays in
+              the Settings menu. */
+          <WizardSettings onRoomSetup={() => setStep('room')} />
+        )}
+
+        {step === 'hardware' && (
           <>
             {asking && (
               <p className="text-sm text-gold border border-gold/50 bg-gold/5 rounded px-3 py-2">
@@ -325,15 +354,7 @@ export default function NewProjectFlow({
                 and this project keeps them to itself.
               </p>
             )}
-            {/* ─── TURN 32 (CLAUDE.md F1): ONE SCREEN, NO SCROLLING ───
-                The owner dictated the shape: number/client/type, saved sets as
-                a LOAD list, dimensions per project type with the ceiling
-                guards, FRONTS BEFORE MATERIALS, one material picker, sheen.
-                The turn-12 lesson still holds — this surface writes through
-                the SAME store setters Design Settings uses, so nothing set
-                here can fail to reach the furniture. The full panel stays in
-                the Settings menu. */}
-            <WizardSettings onRoomSetup={() => setStep('room')} />
+            <WizardHardware />
           </>
         )}
       </div>
@@ -344,7 +365,7 @@ export default function NewProjectFlow({
 function Steps({ current, scope }) {
   const shown = STEPS.filter((s) => s !== 'room' || scope === 'room');
   const labels = {
-    info: 'Project', type: 'Type', scope: 'Scope', room: 'Room', settings: 'Project settings',
+    info: 'Project', type: 'Type', scope: 'Scope', room: 'Room', settings: 'Project settings', hardware: 'Hardware',
   };
   return (
     <ol className="flex items-center gap-1.5 text-[11px]">

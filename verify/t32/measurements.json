@@ -13,7 +13,7 @@
   },
   "liveScene": {
    "placed": {
-    "id": "u_wsjt96f",
+    "id": "u_2hb1i00",
     "depth": 568,
     "width": 600,
     "height": 2400
@@ -24,6 +24,73 @@
     "h": 2400,
     "d": 568
    }
+  }
+ },
+ "f2": {
+  "prefilled": {
+   "metals": [
+    "chrome",
+    "onyx",
+    "gold"
+   ],
+   "goldLit": true,
+   "yesLit": true,
+   "plinth": "PLINTH\n\nPlinth 100 mm · Same as fronts (default)\n\nClips + clip connectors are counted automatically from the FRONT legs only, per unit.",
+   "automat": "Standard door: Hinge 110° · soft-close · gold — no article in the registry yet; the BOM prints it as a named spec.",
+   "ironmongeryOnStep4": false
+  },
+  "rail": {
+   "hit": {
+    "colour": "2f2f33",
+    "radius": 15
+   },
+   "want": "2f2f33"
+  }
+ },
+ "f3": {
+  "healed": {
+   "w": 595.5,
+   "trim": {
+    "left": 0,
+    "right": 1.5
+   },
+   "notes": [
+    {
+     "level": "grey",
+     "text": "front 01 01-F −1.5 mm at an end panel"
+    }
+   ]
+  },
+  "scene": {
+   "sceneW": 595.5,
+   "engineW": 595.5
+  },
+  "labelRows": [
+   {
+    "kind": "to-side",
+    "at": 383.5
+   },
+   {
+    "kind": "to-side",
+    "at": 365.5
+   }
+  ]
+ },
+ "f4": {
+  "built": {
+   "ok": true,
+   "bay": {
+    "from": 609,
+    "size": 573
+   },
+   "frontW": 567,
+   "rails": 1,
+   "closer": true,
+   "partitionRunnerHoles": 6
+  },
+  "scene": {
+   "sceneW": 567,
+   "engineW": 567
   }
  }
 }

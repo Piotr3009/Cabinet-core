@@ -48,8 +48,42 @@ export function hardwareInstances(result, profile) {
     shelfSupports: shelfSupportInstances(result, profile),
     // Turn 30 (CLAUDE.md F16): the PLACEHOLDER volume a bought mechanism
     // occupies, on the kits that ask for one. See `kitInstances`.
-    kits: kitInstances(result),
+    // Turn 33 (CLAUDE.md F3): …and the wardrobe's own bought mechanisms —
+    // trouser pull-out, tie rack, pull-down rail — the same placeholder
+    // grammar, per COLUMN, from the assemblies the engine measured.
+    kits: [...kitInstances(result), ...wardrobeKitInstances(result)],
   };
+}
+
+/**
+ * ─── TURN 33 (CLAUDE.md F3): THE WARDROBE MECHANISMS' PLACEHOLDERS ──────────
+ *
+ * The engine has already said where each one lives (`assemblies.wardrobeKits`,
+ * the column's own opening); this insets the body the same visible margin
+ * `kitInstances` uses, so nobody reads a placeholder as a product. GLB slots:
+ * the day the owner supplies files, a datum wrapper over `glbSource` replaces
+ * the walls exactly as the cargo frame's slot is replaced.
+ */
+export function wardrobeKitInstances(result) {
+  const kits = result?.assemblies?.wardrobeKits;
+  if (!Array.isArray(kits) || !kits.length) return [];
+  return kits.map((k) => {
+    const inset = Math.min(40, k.box.w / 10);
+    return {
+      kind: 'kit',
+      id: k.id,
+      role: `wardrobe_kit_${k.kind}`,
+      body: k.kind,
+      label: k.label,
+      placeholder: true,
+      x: k.box.x + inset,
+      y: k.box.y,
+      z: k.box.z + inset,
+      w: k.box.w - 2 * inset,
+      h: k.box.h,
+      d: k.box.d - 2 * inset,
+    };
+  });
 }
 
 /**

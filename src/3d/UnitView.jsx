@@ -412,7 +412,7 @@ export function MovingPanel({
   const faded = contour ? surface.opacity : (xray ? (front ? X.front : X.carcass) : 1);
   const translucent = faded < 1;
 
-  return (
+  const body = (
     <group ref={group} position={pivot}>
       {/* Anything screwed TO this piece and travelling with it — the door half
           of a hinge (turn 12, CLAUDE.md F6.1). Inside the group, so the swing
@@ -605,6 +605,23 @@ export function MovingPanel({
           </mesh>
         )}
       </mesh>
+    </group>
+  );
+
+  // ─── TURN 33 (CLAUDE.md F3): THE SHOE SHELF LEANS ─────────────────────────
+  // The CUT is a plain rectangle and the pins are the standard rows; the LEAN
+  // is a picture — the board (and its stop rail, which carries the same meta)
+  // rotates about the shelf's back-bottom edge by the profile's 15°. Positive
+  // rotation about x drops the FRONT edge, which is what a shoe shelf does.
+  const tiltDeg = Number(p.meta?.tilt_deg) || 0;
+  const tiltPivot = p.meta?.tilt_pivot || null;
+  if (!tiltDeg || !tiltPivot) return body;
+  return (
+    <group
+      position={[0, mm(tiltPivot.y), mm(tiltPivot.z)]}
+      rotation={[THREE.MathUtils.degToRad(tiltDeg), 0, 0]}
+    >
+      <group position={[0, -mm(tiltPivot.y), -mm(tiltPivot.z)]}>{body}</group>
     </group>
   );
 }
@@ -2001,6 +2018,34 @@ export default function UnitView({
       {!contour && (
         <LedStrips unit={unit} result={result} design={design} />
       )}
+
+      {/* ─── TURN 33 (CLAUDE.md F3): THE DISPLAY DRAWER'S GLASS ──────────────
+          Lying on the box's own rim, drawn with the glass door's material —
+          a picture of what the BOM orders (`Glass W × D`), never a cut. It
+          does not ride an opened box tonight: the pane is drawn at rest, and
+          the walk photographs it shut. */}
+      {!contour && (result.assemblies.drawerGlass || []).map((pane) => (
+        <mesh
+          key={`glass-${pane.zone ?? 'w'}-${pane.drawer}`}
+          position={[
+            mm(pane.box.x + pane.box.w / 2),
+            mm(pane.box.y + pane.box.h / 2),
+            mm(pane.box.z + pane.box.d / 2),
+          ]}
+          userData={{ ccDrawerGlass: true, ccNoBounds: true }}
+        >
+          <boxGeometry args={[mm(pane.box.w), mm(pane.box.h), mm(pane.box.d)]} />
+          <meshPhysicalMaterial
+            color="#eef3f4"
+            transparent
+            opacity={0.42}
+            roughness={0.06}
+            metalness={0}
+            transmission={0.85}
+            thickness={0.004}
+          />
+        </mesh>
+      ))}
 
       {/* Selection (turn 6, CLAUDE.md F5): a thin dashed navy box standing
           clear of the SOLID — doors stand proud of the carcass and an end panel

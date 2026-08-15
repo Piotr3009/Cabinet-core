@@ -45,9 +45,11 @@ const shelfOf = (r, n = 1) => r.panels.find((p) => p.id === `SHELF-${n}`);
 
 // ─── F7 — the three kinds ──────────────────────────────────────────────────
 
-test('F7 — three kinds, in the owner’s own words', () => {
-  assert.deepEqual(SHELF_TYPES.map((t) => t.id), ['fix', 'adjustable', 'pullout']);
-  assert.deepEqual(SHELF_TYPES.map((t) => t.label), ['Fix', 'Adjustable', 'Pull-out']);
+test('F7 — three kinds, in the owner’s own words — and turn 33 adds his fourth', () => {
+  // Turn 33 (CLAUDE.md F3): the SHOE SHELF joins the menu — pinned like the
+  // adjustable, tilted only in the picture, its stop rail cut beside it.
+  assert.deepEqual(SHELF_TYPES.map((t) => t.id), ['fix', 'adjustable', 'pullout', 'shoe']);
+  assert.deepEqual(SHELF_TYPES.map((t) => t.label), ['Fix', 'Adjustable', 'Pull-out', 'Shoe shelf']);
 });
 
 test('F7.1/F7.2 — a type is the `variant` a shelf already had: ONE truth, two names', () => {

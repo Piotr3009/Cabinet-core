@@ -1072,7 +1072,9 @@ function KitBodies({ items, colour }) {
     ];
     return (
       <group
-        key={k.role}
+        // Turn 33 (F3): two mechanisms may share a role across columns — the
+        // instance's own id keys them apart; a kit without one keys as before.
+        key={k.id || k.role}
         position={[mm(k.x), mm(k.y), mm(k.z)]}
         userData={{ ccKitBody: k.role, ccKitPlaceholder: true, ccNoBounds: true }}
       >

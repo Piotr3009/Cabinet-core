@@ -499,6 +499,12 @@ function normalizeParams(raw, profile) {
     && (i.zone == null || !Number.isFinite(Number(i.zone))));
   const columnRailItems = items.filter((i) => i.kind === 'hanger'
     && i.zone != null && Number.isFinite(Number(i.zone)));
+  // ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS ───────────────────────
+  // Trouser pull-out, tie rack, pull-down rail — per column or full width.
+  // Each is a BOM purchase line ordered to its opening and a labelled
+  // placeholder body in the view; ZERO holes ride any of them (rule 3: no
+  // published fixing pattern exists).
+  const wardrobeKitItems = items.filter((i) => WARDROBE_KIT_KINDS.includes(i?.kind));
 
   // ─── TURN 27 (CLAUDE.md F2.1): THE APPLIANCE IS WHAT IS INSIDE ───────────
   //
@@ -679,8 +685,19 @@ function normalizeParams(raw, profile) {
         drawers: columnDrawerItems
           .filter((i) => Math.trunc(Number(i.zone)) === zone)
           .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))
-          .map((i) => ({ height_mm: i.height_mm, mount: i.mount })),
+          // Turn 33 (F3): the variant rides with the drawer — the box is cut
+          // exactly as ever; the INSERT (and the glass) is what it orders.
+          .map((i) => ({ height_mm: i.height_mm, mount: i.mount, variant: drawerVariantOf(i) })),
       })),
+    // Turn 33 (CLAUDE.md F3): the bought mechanisms, normalised — a kind the
+    // profile knows, a column or the whole width, a height somebody may have
+    // set. Nothing here reaches a hole.
+    wardrobeKits: wardrobeKitItems.map((i) => ({
+      id: i.id || null,
+      kind: i.kind,
+      zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
+      pos_mm: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
+    })),
     columnRails: columnRailItems.map((i) => ({
       zone: Math.trunc(Number(i.zone)),
       offset: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
@@ -945,7 +962,22 @@ export function wearsFrontMaterial(role) {
  * more than "a shelf". It cannot go on meaning that now that it means screwed,
  * so stored projects are migrated on the way in (stores/projectStore.js).
  */
-export const SHELF_VARIANTS = ['adjustable', 'fixed', 'pullout'];
+// Turn 33 (CLAUDE.md F3): 'shoe' joins the list — a pinned shelf whose tilt
+// and stop rail are geometry, never drilling (engine/shelfTypes.js).
+export const SHELF_VARIANTS = ['adjustable', 'fixed', 'pullout', 'shoe'];
+
+// ─── TURN 33 (CLAUDE.md F3): THE WARDROBE'S ACCESSORY VOCABULARY ────────────
+// Drawer VARIANTS whose insert is BOUGHT (the box stays cut); the glass-top
+// belt/tie drawer additionally orders its glass. And the three BOUGHT
+// mechanisms that are items in a column. Anything else says null and is the
+// plain drawer every project has always had.
+export const DRAWER_VARIANTS = ['shoe', 'belt_tie', 'belt_tie_glass'];
+export const WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail'];
+
+/** A drawer item's variant, or null for the plain box. */
+export function drawerVariantOf(item) {
+  return DRAWER_VARIANTS.includes(item?.variant) ? item.variant : null;
+}
 
 export function shelfVariant(item) {
   const v = String(item?.variant ?? '');
@@ -1257,6 +1289,13 @@ export function computeCabinet(params, profileOverride) {
   let zoneOffsets = [];      // bottom of drawer i's front, relative to the stack base
   let boxSideH = [];
   let boxFrontHs = [];
+
+  // ─── TURN 33 (CLAUDE.md F3): THE GLASS-TOP DRAWER'S PANE ──────────────────
+  // Collected where the box coordinates already are, drawn translucent by the
+  // 3D, ORDERED by the BOM — never cut here (glass is bought, rule 3). The
+  // 4 mm is the picture's own thickness, the same convention the glass door
+  // draws with; the ORDER line carries only the width and depth.
+  const drawerGlassPanes = [];
 
   if (hasDrawers) {
     numDrPanels = doorCount === 2 ? 2 : 1;
@@ -2316,8 +2355,45 @@ export function computeCabinet(params, profileOverride) {
         thickness_mm: shelfT,
         zone: bay ? bay.index : null,
         ...(shelfMaterial(item) || {}),
+        // ─── TURN 33 (CLAUDE.md F3): THE SHOE SHELF'S TILT ────────────────
+        // Geometry only: the CUT is the same rectangle every shelf is, the
+        // drilling is the standard pin rows above (the workshop sets the
+        // front pair lower — their own act with the pins), and the 3D leans
+        // the board about its back-bottom edge by the profile's 15°.
+        ...(shelfVariant(item) === 'shoe' ? {
+          tilt_deg: P.wardrobeAccessories.shoeShelf.tiltDeg,
+          tilt_pivot: { y, z: D - setbackOf(item?.front_mm, C.shelfDepthClearance) - depthHere },
+        } : {}),
       },
     }));
+
+    // ─── TURN 33 (CLAUDE.md F3): THE STOP RAIL (listwa), CUT WITH THE BOARD ──
+    // A strip along the shoe shelf's front edge that keeps the shoes on the
+    // slope. It is a CUT part — in the list, edged on its long showing edge —
+    // and it ships UNDRILLED: no LISP line fixes a listwa (rule 3), so the
+    // fixing is the workshop's own, exactly as the WINE lattice travels.
+    if (shelfVariant(item) === 'shoe') {
+      const SR = P.wardrobeAccessories.shoeShelf.stopRail;
+      const shelfFrontZ = D - setbackOf(item?.front_mm, C.shelfDepthClearance);
+      panels.push(panel({
+        id: `SHOE-RAIL-${i}`, part: 'SHOE-RAIL', role: 'shelf', w: shelfWHere, h: SR.height, thickness: SR.thickness,
+        edgeCode: codes.right, edgeLen: metres(shelfWHere),
+        // Standing on the shelf's top face at its front edge; the 3D leans it
+        // with the board (same pivot, same angle) so the pair stays one thing.
+        box: {
+          x: shelfXHere, y: y + shelfT, z: shelfFrontZ - SR.thickness, w: shelfWHere, h: SR.height, d: SR.thickness,
+        },
+        cnc: rectGeometry(shelfWHere, SR.height),
+        meta: {
+          index: i,
+          itemId: item?.id || null,
+          zone: bay ? bay.index : null,
+          shoe_rail: true,
+          tilt_deg: P.wardrobeAccessories.shoeShelf.tiltDeg,
+          tilt_pivot: { y, z: shelfFrontZ - depthHere },
+        },
+      }));
+    }
   }
 
   // Turn 21 (CLAUDE.md F9): every shelf's run, in the engine's own order, for
@@ -2643,6 +2719,17 @@ export function computeCabinet(params, profileOverride) {
         box: { x: boxLeftX + (szufSzer - bottomW) / 2, y: bottomY, z: boxZFront - szufDl, w: bottomW, h: GB, d: bottomD },
         cnc: rectGeometry(bottomW, bottomD), meta: { drawer: i },
       }));
+      // Turn 33 (F3): the display drawer's glass, lying on the box's own rim.
+      if (drawerVariantOf(cfg.drawerItems[i - 1]) === 'belt_tie_glass') {
+        drawerGlassPanes.push({
+          zone: null,
+          drawer: i,
+          box: {
+            x: boxLeftX + GB, y: boxY + sideHeight - 4, z: boxZFront - szufDl + GB,
+            w: szufSzer - 2 * GB, h: 4, d: szufDl - 2 * GB,
+          },
+        });
+      }
     }
 
     for (let i = 1; i <= numDrawers; i += 1) {
@@ -2746,6 +2833,9 @@ export function computeCabinet(params, profileOverride) {
           right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
         },
         mounts: list.map((d) => (d?.mount === 'internal' ? 'internal' : 'overlay')),
+        // Turn 33 (F3): which drawers order an insert (and glass) — the boxes
+        // themselves are cut exactly as every column box is.
+        variants: list.map((d) => (DRAWER_VARIANTS.includes(d?.variant) ? d.variant : null)),
         heights,
         offsets,
         sideHs,
@@ -2818,6 +2908,18 @@ export function computeCabinet(params, profileOverride) {
           },
           cnc: rectGeometry(set.bottomW, set.dl), meta: { drawer: i, zone: set.zone },
         }));
+        // Turn 33 (F3): the column's display drawer glass, same law as the
+        // full-width zone's.
+        if (set.variants?.[i - 1] === 'belt_tie_glass') {
+          drawerGlassPanes.push({
+            zone: set.zone,
+            drawer: i,
+            box: {
+              x: boxLeftX + GB, y: boxY + sideHeight - 4, z: boxZFront - set.dl + GB,
+              w: set.boxW - 2 * GB, h: 4, d: set.dl - 2 * GB,
+            },
+          });
+        }
       }
       // The FACES — one per drawer, unless the drawer is INTERNAL (F20's law:
       // no face, and the face above grows down over its zone).
@@ -2908,6 +3010,41 @@ export function computeCabinet(params, profileOverride) {
           variant: 'fixed', locked: true, zone: k, front_mm: internalDepth - partitionDepth,
         },
       }));
+    }
+  }
+
+  // ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS' BODIES ────────────────
+  //
+  // Trouser pull-out, tie rack, pull-down rail: each occupies its column (or
+  // the whole interior when no column is named) as a labelled PLACEHOLDER —
+  // "the room for one, not a product" — until the owner supplies a GLB. The
+  // BOM line is ordered to the OPENING (the hardware section below); NOT ONE
+  // HOLE goes with any of them: no LISP line and no published pattern fixes
+  // these mechanisms (rule 3), so the fixings wait for truth exactly as the
+  // extractor's do.
+  const wardrobeKitBodies = [];
+  if (Array.isArray(cfg.wardrobeKits) && cfg.wardrobeKits.length && type.family === 'wardrobe') {
+    const KITS = P.wardrobeAccessories.kits;
+    for (const spec of cfg.wardrobeKits) {
+      const body = KITS[spec.kind];
+      if (!body) continue;
+      const bay = spec.zone != null ? bays[spec.zone] : null;
+      if (spec.zone != null && !bay) continue;         // a column that left
+      const from = bay ? bay.from : G;
+      const size = bay ? bay.size : internalWidth;
+      // The pull-down hangs from the top; the others stand at their height.
+      const y = spec.kind === 'pulldown_rail'
+        ? H - G - body.topDrop - body.bodyHeight
+        : (spec.pos_mm ?? body.posMm);
+      wardrobeKitBodies.push({
+        id: spec.id || `${spec.kind}:${spec.zone ?? 'w'}`,
+        kind: spec.kind,
+        zone: spec.zone,
+        label: body.label,
+        box: {
+          x: from, y, z: G, w: size, h: body.bodyHeight, d: internalDepth,
+        },
+      });
     }
   }
 
@@ -4626,6 +4763,50 @@ export function computeCabinet(params, profileOverride) {
   const runnerLength = budr ? budr.depth : (szufDl ?? columnDrawerSets[0]?.dl ?? null);
   const columnDrawerCount = columnDrawerSets.reduce((s, c) => s + c.heights.length, 0);
 
+  // ─── TURN 33 (CLAUDE.md F3): THE INSERTS ARE BOUGHT, THE GLASS IS ORDERED ─
+  //
+  // A shoe or belt/tie drawer's BOX is cut exactly as every box is; what the
+  // variant adds is a PURCHASE — the insert, named to the box's own interior,
+  // and for the display drawer its glass. Named specs with no article (the
+  // registry knows none): the invoice prints them YELLOW, never invents.
+  {
+    const insertWords = {
+      shoe: 'Shoe drawer insert',
+      belt_tie: 'Belt/tie divider insert',
+      belt_tie_glass: 'Belt/tie divider insert',
+    };
+    const orderInsert = (variant, wInt, dInt) => {
+      if (!variant) return;
+      hw('drawer_insert', insertWords[variant], 1, 'pcs',
+        { width_mm: roundTo(wInt, 0), depth_mm: roundTo(dInt, 0), variant },
+        `${insertWords[variant]} · ${roundTo(wInt, 0)} × ${roundTo(dInt, 0)} mm`);
+      if (variant === 'belt_tie_glass') {
+        hw('drawer_glass', 'Glass — display drawer top', 1, 'pcs',
+          { width_mm: roundTo(wInt, 0), depth_mm: roundTo(dInt, 0) },
+          `Glass ${roundTo(wInt, 0)} × ${roundTo(dInt, 0)} mm`);
+      }
+    };
+    if (!budr && hasDrawers && szufSzer != null && szufDl != null) {
+      for (let i = 1; i <= numDrawers; i += 1) {
+        orderInsert(drawerVariantOf(cfg.drawerItems[i - 1]), szufSzer - 2 * GB, szufDl - 2 * GB);
+      }
+    }
+    for (const set of columnDrawerSets) {
+      for (let i = 1; i <= set.heights.length; i += 1) {
+        orderInsert(set.variants?.[i - 1], set.boxW - 2 * GB, set.dl - 2 * GB);
+      }
+    }
+  }
+
+  // ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS, ORDERED TO THE OPENING ─
+  // One line per mechanism, at the width of the column it lives in — the
+  // number a joiner reads off a data sheet when he buys one. ZERO holes.
+  for (const kit of wardrobeKitBodies) {
+    hw(`wardrobe_kit_${kit.kind}`, kit.label, 1, 'pcs',
+      { opening_width_mm: roundTo(kit.box.w, 0), zone: kit.zone },
+      `${kit.label} · ${roundTo(kit.box.w, 0)} mm opening`);
+  }
+
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────
   //
   // The COUNT is untouched — it is `centres.length × doorCount`, the same
@@ -5131,6 +5312,11 @@ export function computeCabinet(params, profileOverride) {
       zone: set.zone, y: set.railY, x1: set.bay.from, x2: set.bay.to, z: (D + G) / 2,
     })),
     drawerZone: hasDrawers ? { top: partitionY, count: numDrawers, heights: [...drawerHeights] } : null,
+    // Turn 33 (CLAUDE.md F3): what the accessories DRAW — the display glass
+    // panes and the bought mechanisms' labelled placeholder bodies. Ordered
+    // in the hardware list; never cut, never drilled.
+    drawerGlass: drawerGlassPanes,
+    wardrobeKits: wardrobeKitBodies,
     // Turn 32 (CLAUDE.md F4): each column's own stack — its zone index, the
     // top of its closing board and what stands in it — for the store's shelf
     // clamps and the walk's measures.

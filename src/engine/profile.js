@@ -824,6 +824,42 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── TURN 33 (CLAUDE.md F3): THE WARDROBE'S INTERIOR ACCESSORIES ──────────
+  //
+  // The standing doctrine: what we CUT and what we BUY. The shoe shelf and its
+  // stop rail are CUT; the trouser pull-out, the tie rack and the pull-down
+  // rail are BOUGHT — a named BOM spec and a labelled placeholder body until
+  // the owner supplies files and articles. ZERO holes ride any of this: the
+  // shoe shelf rests on the STANDARD ⌀7.5 pin rows the kit has always drilled
+  // (the front pair simply set lower — the workshop's own way), and no bought
+  // mechanism has a published fixing pattern (rule 3).
+  wardrobeAccessories: {
+    shoeShelf: {
+      // OWNER'S NUMBER, 15.08.2026: the shoe shelf tilts 15° — owner-tunable.
+      tiltDeg: 15,
+      // The front stop rail (listwa) the owner named, CUT with the shelf.
+      // Its SECTION is Claude's seed, 15.08.2026 — the owner named the piece,
+      // not the numbers; owner-tunable like everything in this block. It ships
+      // UNDRILLED: no LISP line fixes a listwa, so the fixing is the
+      // workshop's own (the WINE lattice precedent).
+      stopRail: { height: 60, thickness: 18 },
+    },
+    // OWNER'S THRESHOLD, 15.08.2026: a column's hanging rail above this many
+    // millimetres FROM THE FLOOR makes the UI SUGGEST the pull-down — a grey
+    // hint, never a block.
+    pulldownSuggestMm: 2000,
+    // The BOUGHT mechanisms' placeholder bodies — VIEW numbers only (the room
+    // each one takes, drawn translucent until a GLB arrives), never a cut and
+    // never a hole. `posMm` is where the body's underside sits above the
+    // carcass base when the item does not say; the pull-down hangs down from
+    // the top by `topDrop` instead, because that is where such a rail lives.
+    kits: {
+      trouser: { label: 'Trouser pull-out', bodyHeight: 120, posMm: 900 },
+      tie_rack: { label: 'Tie rack', bodyHeight: 300, posMm: 1100 },
+      pulldown_rail: { label: 'Pull-down rail', bodyHeight: 140, topDrop: 50 },
+    },
+  },
+
   // ─── Base unit (kitchen) specifics ───
   baseUnit: {
     legHeight: 100,
@@ -1043,7 +1079,9 @@ export const DEFAULT_CABINET_PROFILE = {
   // characters here rather than arguing with a component.
   itemsByContext: {
     kitchen: ['shelves', 'drawers', 'partition', 'cargo', 'bins'],
-    wardrobe: ['shelves', 'hanger', 'drawers', 'partition', 'pulldown'],
+    // Turn 33 (CLAUDE.md F3): the wardrobe's interior grows its accessories —
+    // the shoe shelf (cut) and the two bought mechanisms beside the pull-down.
+    wardrobe: ['shelves', 'shoe_shelf', 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
     // Anything whose family is not listed. Deliberately the plain furniture
     // answer rather than a union of the two.
     default: ['shelves', 'drawers', 'partition'],

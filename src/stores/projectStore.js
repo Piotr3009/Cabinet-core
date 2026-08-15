@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
-  minDrawerFrontHeight, SHELF_VARIANTS,
+  minDrawerFrontHeight, SHELF_VARIANTS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
   applyPartEdits, partSignature, withPartEdit, withoutLastPartEdit, withoutPartEdits,
@@ -2787,7 +2787,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * heights already set on surviving drawers are kept, so bumping the count
    * from 2 to 3 does not silently reset the two the user already sized.
    */
-  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null) => {
+  // Turn 33 (CLAUDE.md F3): `variant` rides in — null is the plain box every
+  // drawer has always been; 'shoe' | 'belt_tie' | 'belt_tie_glass' add the
+  // BOUGHT insert (and the glass) to the BOM. The box itself cuts unchanged.
+  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null, variant = null) => {
     // Turn 24 (CLAUDE.md F3.1): the hard gate. Removing the last drawer is
     // always allowed — a gate that trapped a stack somebody wanted rid of
     // would be a gate on the wrong side of the door.
@@ -2825,6 +2828,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           index: i + 1,
           mount,
           ...(wantZone == null ? {} : { zone: wantZone }),
+          // Turn 33 (F3): the whole stack takes the asked-for variant; a
+          // re-add with none keeps each drawer's own previous answer.
+          ...(variant != null ? { variant } : (previous[i]?.variant ? { variant: previous[i].variant } : {})),
           height_mm: Number(previous[i]?.height_mm) > 0 ? Number(previous[i].height_mm) : fallback,
         }));
         return { ...u, params: { ...u.params, sections: [{ ...section, items: [...drawers, ...kept] }] } };
@@ -2936,7 +2942,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * definition the one with the most room in it, and the clamp has the last
    * word as it does on every other path.
    */
-  addShelves: (unitId, count = 1, zone = null) => {
+  // Turn 33 (CLAUDE.md F3): `variant` rides in — 'shoe' places the tilted
+  // shoe shelf (standard pins, front pair set lower; stop rail cut with it).
+  addShelves: (unitId, count = 1, zone = null, variant = 'adjustable') => {
     const profile = getCabinetProfile();
     let added = 0;
     for (let i = 0; i < Math.max(1, Math.trunc(count)); i += 1) {
@@ -2961,9 +2969,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (pos == null) break;
       // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
       // you can move; `fixed` means screwed now, and a shelf arriving screwed
-      // in is a decision nobody made.
+      // in is a decision nobody made. Turn 33 (F3): a SHOE shelf arrives as
+      // itself; anything unrecognised lands on adjustable, never on nothing.
       get().addItem(unitId, {
-        kind: 'shelf', variant: 'adjustable', pos_mm: pos, ...(bay == null ? {} : { zone: bay }),
+        kind: 'shelf',
+        variant: SHELF_VARIANTS.includes(variant) ? variant : 'adjustable',
+        pos_mm: pos,
+        ...(bay == null ? {} : { zone: bay }),
       });
       added += 1;
     }
@@ -3057,6 +3069,45 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       material_id: materialId,
       material_label: materialLabel,
     });
+  },
+
+  // ─── TURN 33 (CLAUDE.md F3): A BOUGHT MECHANISM IN A COLUMN ───────────────
+  //
+  // Trouser pull-out, tie rack, pull-down rail — an ITEM like a shelf, one
+  // per column per kind (a second of the same kind in the same opening is a
+  // mechanism nobody can fit). The engine answers with a purchase line and a
+  // labelled placeholder; ZERO holes travel with it.
+  addWardrobeKit: (unitId, kind, zone = null) => {
+    if (!WARDROBE_KIT_KINDS.includes(kind)) return null;
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
+    const items = unit.params.sections?.[0]?.items || [];
+    const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    if (items.some((i) => i.kind === kind && zoneOf(i) === wantZone)) return null;
+    return get().addItem(unitId, {
+      kind,
+      ...(wantZone == null ? {} : { zone: wantZone }),
+    });
+  },
+
+  /**
+   * ─── TURN 33 (CLAUDE.md F3): HOW HIGH THE RAIL STANDS, OFF THE FLOOR ──────
+   *
+   * The pull-down suggestion's own measure: the rail's carcass-local y plus
+   * the legs under the carcass. Asked of the computed result so the UI and a
+   * test read the same number the scene draws.
+   */
+  railHeightsAboveFloor: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return [];
+    const result = get().unitResult(unitId);
+    const legH = result.assemblies.carcass.legHeight || 0;
+    const out = [];
+    if (result.assemblies.rail) out.push({ zone: null, mm: result.assemblies.rail.y + legH });
+    for (const r of result.assemblies.columnRails || []) out.push({ zone: r.zone, mm: r.y + legH });
+    return out;
   },
 
   // ─── Per-element overrides (turn 9, CLAUDE.md F4) ───

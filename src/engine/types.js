@@ -62,7 +62,10 @@ export const UNIT_TYPES = {
     minHeightKey: 'wardrobe.minHeight',
     defaultsKey: 'wardrobe.defaults',
     supports: {
-      drawers: true, shelves: true, rail: true, pulldown: false, partition: true, doors: true, topInfill: true,
+      // Turn 33 (CLAUDE.md F3): the pull-down rail goes LIVE on the wardrobe —
+      // a BOUGHT mechanism (BOM named spec + placeholder body, zero holes),
+      // suggested by a grey hint when a rail stands above the owner's 2000 mm.
+      drawers: true, shelves: true, rail: true, pulldown: true, partition: true, doors: true, topInfill: true,
       // Turn 22 (CLAUDE.md F1.1): the cornice is offered on wardrobes and tall
       // units — the kits that finish below the ceiling with a face somebody
       // looks up at. A base unit has a worktop on it and a wall unit has the

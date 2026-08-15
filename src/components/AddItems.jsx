@@ -43,6 +43,10 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const addShelves = useProjectStore((s) => s.addShelves);
   const addPartition = useProjectStore((s) => s.addPartition);
   const addHangerRail = useProjectStore((s) => s.addHangerRail);
+  // Turn 33 (CLAUDE.md F3): the bought mechanisms and the rail-height measure
+  // behind the pull-down suggestion.
+  const addWardrobeKit = useProjectStore((s) => s.addWardrobeKit);
+  const railHeightsAboveFloor = useProjectStore((s) => s.railHeightsAboveFloor);
   const unitResult = useProjectStore((s) => s.unitResult);
   const zonesOf = useProjectStore((s) => s.zonesOf);
 
@@ -63,9 +67,14 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // COLUMN, when the cabinet is divided — same grammar as the shelves.
   const [drawerMount, setDrawerMount] = useState('overlay');
   const [drawerZone, setDrawerZone] = useState(null);
+  // ─── TURN 33 (CLAUDE.md F3): the drawer's VARIANT — the insert is bought,
+  // the box is cut unchanged. null = the plain drawer, as ever.
+  const [drawerVariant, setDrawerVariant] = useState(null);
   const [railZone, setRailZone] = useState(null);
   const [shelfCount, setShelfCount] = useState(1);
   const [shelfZone, setShelfZone] = useState(null);
+  // Turn 33 (F3): which column a bought mechanism goes in.
+  const [kitZone, setKitZone] = useState(null);
   const [railMaterial, setRailMaterial] = useState(hardware.find((m) => /rail/i.test(m.name))?.id || '');
   // ─── Turn 11 (CLAUDE.md F4.4) ───
   // The list is FILTERED by what this kind of cabinet is for, and "Show all" is
@@ -87,7 +96,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // The recessed-partition law refuses with the number and ONE button:
     // [Reset the setback], which opens the partition's own editor
     // (F7-pattern). The guard SPEAKS; it fixes nothing by itself.
-    const res = addDrawers(unit.id, count, drawerMount, height, zone);
+    const res = addDrawers(unit.id, count, drawerMount, height, zone, drawerVariant);
     if (res && res.ok === false) {
       if (res.guard?.blocked) {
         notify(res.error, 'error', {
@@ -130,10 +139,11 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   };
 
   const onAddRail = (material) => {
+    const zone = zones.length > 1 ? railZone : null;
     const id = addHangerRail(unit.id, {
       materialId: material?.id || null,
       materialLabel: material?.name || null,
-      zone: zones.length > 1 ? railZone : null,
+      zone,
     });
     if (!id) {
       notify(zones.length > 1
@@ -141,6 +151,28 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
         : 'This unit already has a hanging rail.', 'warn');
       return;
     }
+    // ─── TURN 33 (CLAUDE.md F3): THE PULL-DOWN SUGGESTION ───────────────────
+    // The owner's rule: a rail above 2000 mm FROM THE FLOOR gets a grey HINT
+    // suggesting the pull-down — never a block. Measured off the computed
+    // result (rail y + legs), the same number the scene stands the tube at.
+    const threshold = profile.wardrobeAccessories?.pulldownSuggestMm || 2000;
+    const height = railHeightsAboveFloor(unit.id)
+      .find((r) => (zone == null ? r.zone == null : r.zone === zone));
+    if (height && height.mm > threshold) {
+      notify(`Rail at ${Math.round(height.mm)} mm — above ${threshold}, a pull-down rail brings it to hand. Add items ▸ Pull-down rail.`);
+    }
+    done();
+  };
+
+  // Turn 33 (CLAUDE.md F3): a bought mechanism into its column — the store
+  // refuses a second of the same kind in the same opening, and says so.
+  const onAddKit = (kitKind, label) => {
+    const id = addWardrobeKit(unit.id, kitKind, zones.length > 1 ? kitZone : null);
+    if (!id) {
+      notify(`That ${zones.length > 1 ? 'column' : 'unit'} already has a ${label.toLowerCase()}.`, 'warn');
+      return;
+    }
+    notify(`${label} added — a purchase line in the BOM and the room it takes in the scene. Nothing is drilled.`, 'ok');
     done();
   };
 
@@ -152,6 +184,15 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       why: ratioDrawers ? 'this kit IS its drawers' : 'not for this type',
     },
     { id: 'shelves', label: 'Shelves', disabled: !type.supports.shelves, why: 'not for this type' },
+    // ─── TURN 33 (CLAUDE.md F3): THE SHOE SHELF ─────────────────────────────
+    // CUT, both pieces: the board tilted 15° on the STANDARD pin rows (the
+    // front pair set lower — the workshop's own way) and its stop rail.
+    {
+      id: 'shoe_shelf',
+      label: 'Shoe shelf',
+      disabled: !type.supports.shelves || type.family !== 'wardrobe',
+      why: 'a wardrobe thing',
+    },
     // Turn 11 (CLAUDE.md F3.4): the vertical partition, at last. It divides the
     // cabinet into columns and is placed and edited exactly as a shelf is —
     // through the same item list, on the other axis.
@@ -173,7 +214,27 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     },
     { id: 'cargo', label: 'Cargo pull-out', disabled: true, soon: true },
     { id: 'bins', label: 'Waste bins', disabled: true, soon: true },
-    { id: 'pulldown', label: 'Pull-down rail', disabled: true, soon: true },
+    // ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS GO LIVE ──────────────
+    // Each is a BOM named spec + the room it takes in the scene (a labelled
+    // placeholder until the owner supplies a GLB). ZERO holes ride them.
+    {
+      id: 'pulldown',
+      label: 'Pull-down rail',
+      disabled: !type.supports.pulldown,
+      why: 'not for this type',
+    },
+    {
+      id: 'trouser',
+      label: 'Trouser pull-out',
+      disabled: type.family !== 'wardrobe',
+      why: 'a wardrobe thing',
+    },
+    {
+      id: 'tie_rack',
+      label: 'Tie rack',
+      disabled: type.family !== 'wardrobe',
+      why: 'a wardrobe thing',
+    },
   ];
 
   // What this FAMILY of cabinet offers by default (profile.itemsByContext) —
@@ -284,9 +345,76 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       Inset <span className="cc-tag ml-1">soon</span>
                     </button>
                   </div>
+                  {/* ─── TURN 33 (CLAUDE.md F3): THE VARIANT — insert bought,
+                      box cut unchanged. Only a wardrobe asks. */}
+                  {type.family === 'wardrobe' && (
+                    <div className="flex gap-1 flex-wrap">
+                      {[
+                        [null, 'Standard', 'The plain box'],
+                        ['shoe', 'Shoe', 'Low box; the shoe insert is a purchase line'],
+                        ['belt_tie', 'Belt/tie', 'Low box; the divider insert is a purchase line'],
+                        ['belt_tie_glass', 'Belt/tie + glass', 'Display drawer: the glass is ordered to the box'],
+                      ].map(([id, label, hint]) => (
+                        <button
+                          key={label}
+                          type="button"
+                          data-drawer-variant={id || 'std'}
+                          className={`cc-btn px-2 text-[11px] ${drawerVariant === id ? 'border-gold text-gold' : ''}`}
+                          title={hint}
+                          onClick={() => setDrawerVariant(id)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <p className="text-[11px] text-ink-400">
                     Stacked from the bottom, {DR.minFrontHeight}–{DR.maxFrontHeight} mm each. A partition closes the
                     stack automatically (SPEC 4.7), and the doors open so you can see them.
+                  </p>
+                </>
+              )}
+
+              {kind.id === 'shoe_shelf' && (
+                <>
+                  {zones.length > 1 && (
+                    <div className="space-y-1">
+                      <span className="cc-label">Which bay</span>
+                      <div className="flex flex-wrap gap-1">
+                        {zones.map((z) => (
+                          <button
+                            key={z.id}
+                            type="button"
+                            data-shoe-zone={z.index}
+                            className={`cc-btn px-2 ${shelfZone === z.index ? 'border-gold text-gold' : ''}`}
+                            title={`${formatMm(z.size)} mm clear`}
+                            onPointerEnter={() => onZoneHover?.(z.index)}
+                            onPointerLeave={() => onZoneHover?.(shelfZone)}
+                            onClick={() => { setShelfZone(z.index); onZoneHover?.(z.index); }}
+                          >
+                            Bay {z.index + 1} · {formatMm(z.size)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className="cc-btn-gold w-full"
+                    data-add-shoe-shelf="1"
+                    disabled={zones.length > 1 && shelfZone == null}
+                    onClick={() => {
+                      const { added } = addShelves(unit.id, 1, zones.length > 1 ? shelfZone : null, 'shoe');
+                      if (!added) notify('Not enough clear height for a shoe shelf.', 'warn');
+                      done();
+                    }}
+                  >
+                    Add a shoe shelf
+                  </button>
+                  <p className="text-[11px] text-ink-400">
+                    The board leans {profile.wardrobeAccessories?.shoeShelf?.tiltDeg ?? 15}° on the standard pin
+                    rows — the front pair set lower, the workshop&apos;s own way — with a stop rail cut along its
+                    front edge. Nothing new is drilled.
                   </p>
                 </>
               )}
@@ -406,6 +534,50 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                   </p>
                 </>
               )}
+
+              {/* ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS ─────────── */}
+              {['pulldown', 'trouser', 'tie_rack'].includes(kind.id) && (() => {
+                const kitKind = kind.id === 'pulldown' ? 'pulldown_rail' : kind.id;
+                return (
+                  <>
+                    {zones.length > 1 && (
+                      <div className="space-y-1">
+                        <span className="cc-label">Which column</span>
+                        <div className="flex flex-wrap gap-1">
+                          {zones.map((z) => (
+                            <button
+                              key={z.id}
+                              type="button"
+                              data-kit-zone={z.index}
+                              className={`cc-btn px-2 ${kitZone === z.index ? 'border-gold text-gold' : ''}`}
+                              title={`${formatMm(z.size)} mm clear`}
+                              onPointerEnter={() => onZoneHover?.(z.index)}
+                              onPointerLeave={() => onZoneHover?.(kitZone)}
+                              onClick={() => { setKitZone(z.index); onZoneHover?.(z.index); }}
+                            >
+                              Column {z.index + 1} · {formatMm(z.size)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      className="cc-btn-gold w-full"
+                      data-add-kit={kitKind}
+                      disabled={zones.length > 1 && kitZone == null}
+                      onClick={() => onAddKit(kitKind, kind.label)}
+                    >
+                      Add {kind.label.toLowerCase()}
+                    </button>
+                    <p className="text-[11px] text-ink-400">
+                      BOUGHT, never cut: a named spec in the BOM ordered to the column&apos;s opening, and the
+                      room it takes drawn in the scene — a labelled placeholder until the owner&apos;s model
+                      arrives. Nothing is drilled: no fixing pattern is published.
+                    </p>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>

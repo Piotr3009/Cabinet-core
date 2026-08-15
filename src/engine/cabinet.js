@@ -671,6 +671,10 @@ function normalizeParams(raw, profile) {
     hingeFinish: p.project_hinge_finish ?? null,
     hingeSystemLabel: p.project_hinge_system_label ?? null,
     doorHinges: p.door_hinges && typeof p.door_hinges === 'object' ? p.door_hinges : null,
+    // Turn 33 (CLAUDE.md F4): which doors wear a mirror, and on which face.
+    // Additive like everything on this list — a bare kit call passes nothing,
+    // stamps nothing, orders nothing, drills nothing.
+    doorMirrors: p.door_mirrors && typeof p.door_mirrors === 'object' ? p.door_mirrors : null,
     shelves,
     shelfItems,
     shelfPositions,
@@ -4762,6 +4766,33 @@ export function computeCabinet(params, profileOverride) {
   // is the cabinet's, so a column drawer snaps to the same length.
   const runnerLength = budr ? budr.depth : (szufDl ?? columnDrawerSets[0]?.dl ?? null);
   const columnDrawerCount = columnDrawerSets.reduce((s, c) => s + c.heights.length, 0);
+
+  // ─── TURN 33 (CLAUDE.md F4): MIRRORS ON DOORS — bonded, never drilled ─────
+  //
+  // A door may wear a mirror on its inside or outside face. The engine's whole
+  // answer is three things: a META face for the 3D to draw the plane on, a BOM
+  // line `Mirror W × H` at the front minus the profile's margin a side, and
+  // NOTHING in `drills` — mirrors are bonded, and a hole for one would be a
+  // hole with no LISP line behind it (rule 3).
+  if (cfg.doorMirrors) {
+    const margin = P.doors.mirror.marginPerSide;
+    for (const pnl of panels) {
+      if (pnl.part !== 'FRONT' || pnl.role !== 'front' || pnl.meta?.appliance) continue;
+      const face = cfg.doorMirrors[pnl.id];
+      if (face !== 'inside' && face !== 'outside') continue;
+      const mw = Math.max(0, pnl.w - 2 * margin);
+      const mh = Math.max(0, pnl.h - 2 * margin);
+      if (!(mw > 0 && mh > 0)) continue;
+      pnl.meta.mirror = {
+        face, w: mw, h: mh, margin,
+      };
+      hw('mirror', `Mirror — door ${face}`, 1, 'pcs',
+        {
+          width_mm: roundTo(mw, 0), height_mm: roundTo(mh, 0), face, panel: pnl.id,
+        },
+        `Mirror ${roundTo(mw, 0)} × ${roundTo(mh, 0)} mm · ${face}`);
+    }
+  }
 
   // ─── TURN 33 (CLAUDE.md F3): THE INSERTS ARE BOUGHT, THE GLASS IS ORDERED ─
   //

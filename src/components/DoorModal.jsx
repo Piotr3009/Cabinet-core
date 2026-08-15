@@ -126,6 +126,11 @@ export default function DoorModal() {
               it, and changing that moves every front of the same class in the
               project unless they say otherwise. */}
           <HandleSection unit={unit} panel={panel} />
+          {/* ─── TURN 33 (CLAUDE.md F4): MIRRORS ON DOORS ───
+              Inside, outside, or none — per DOOR. Bonded, never drilled: the
+              choice draws a plane and orders `Mirror W × H`, and not one hole
+              travels with it. */}
+          <MirrorSection unit={unit} panel={panel} isDoor={isDoor} />
           {/* ─── Turn 25 (CLAUDE.md F13): the same toggle the View menu carries
               — "in the door modal AND in the View menu, scoped to the whole
               project". One piece of state, two places to reach it. */}
@@ -585,6 +590,51 @@ function HandleSection({ unit, panel }) {
           </label>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * ─── TURN 33 (CLAUDE.md F4): THE DOOR'S MIRROR ──────────────────────────────
+ *
+ * none / inside / outside, per door — the same per-door grammar the hinge
+ * exception speaks (`door_mirrors[panelId]`). A mirror is BONDED to the face,
+ * never drilled: no hole pattern exists and none is invented (rule 3). The
+ * engine answers with the plane the 3D draws and the `Mirror W × H` order
+ * line — the front minus the profile's margin a side, marked owner-to-confirm.
+ */
+function MirrorSection({ unit, panel, isDoor }) {
+  const setDoorMirror = useProjectStore((s) => s.setDoorMirror);
+  const doorMirrorsOf = useProjectStore((s) => s.doorMirrorsOf);
+  const notify = useUiStore((s) => s.notify);
+  if (!isDoor) return null;
+  const current = doorMirrorsOf(unit.id)?.[panel.id] || null;
+  const words = { inside: 'inside', outside: 'outside' };
+  return (
+    <div className="mt-2 pt-2 border-t border-shell-600 space-y-1" data-mirror-section={panel.id}>
+      <span className="text-[11px] uppercase tracking-wide text-ink-400">Mirror</span>
+      <div className="flex gap-1">
+        {[[null, 'None'], ['inside', 'Inside'], ['outside', 'Outside']].map(([face, label]) => (
+          <button
+            key={label}
+            type="button"
+            data-door-mirror={face || 'none'}
+            className={`cc-btn px-2 text-[11px] flex-1 ${current === face ? 'border-gold text-gold' : ''}`}
+            onClick={() => {
+              setDoorMirror(unit.id, panel.id, face);
+              notify(face
+                ? `${panel.id}: mirror on the ${words[face]} face — ordered to the front, bonded, nothing drilled.`
+                : `${panel.id}: mirror off.`, 'ok');
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="text-[11px] text-ink-400">
+        Bonded to the face, never drilled. The BOM orders the glass at the front minus 20 mm a side
+        — a profile number, owner to confirm (15.08.2026).
+      </p>
     </div>
   );
 }

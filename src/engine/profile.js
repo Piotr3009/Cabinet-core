@@ -222,6 +222,11 @@ export const DEFAULT_CABINET_PROFILE = {
     // shown. It is a WARNING OVERLAY and not a block: the cabinets are built
     // exactly as they were asked for.
     minNeighbourGapMm: 3,
+    // ─── TURN 33 (CLAUDE.md F4): MIRRORS ON DOORS ──────────────────────────
+    // The ordered glass is the FRONT minus this margin a side. ONE profile
+    // line, 15.08.2026 — 20 ships marked `owner to confirm`. A mirror is
+    // BONDED, never drilled: no number in this block can reach a hole.
+    mirror: { marginPerSide: 20 },
     // ─── TURN 31 (CLAUDE.md F4.16 / F4.18): AND HOW WIDE IS TOO WIDE ───────
     //
     // OWNER'S DEFAULT, 15.08.2026 (his word: "one profile number"). Over this,

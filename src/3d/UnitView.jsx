@@ -450,6 +450,32 @@ export function MovingPanel({
           form is written to, inside the group that animates so it swings with
           its door. It is not a board and it is not machined; it is what the
           glazier delivers. */}
+      {/* ─── TURN 33 (CLAUDE.md F4): THE MIRROR, ON ITS CHOSEN FACE ───────
+          Bonded to the door — inside or outside — so it lives in the group
+          that swings: open the door and the inside mirror shows. A thin
+          metallic plane with the environment in it (realistic lighting is
+          where it reads as glass); the ORDER is the engine's own
+          `Mirror W × H` line, front minus the profile's margin a side. */}
+      {p.meta?.mirror && (
+        <mesh
+          position={[
+            mm(p.box.x + p.box.w / 2) - pivot[0],
+            mm(p.box.y + p.box.h / 2) - pivot[1],
+            (p.meta.mirror.face === 'outside'
+              ? mm(p.box.z + p.box.d) + 0.0012
+              : mm(p.box.z) - 0.0012) - pivot[2],
+          ]}
+          userData={{ ccDoorMirror: p.meta.mirror.face, ccNoBounds: true }}
+        >
+          <boxGeometry args={[mm(p.meta.mirror.w), mm(p.meta.mirror.h), 0.002]} />
+          <meshPhysicalMaterial
+            color="#e8edf0"
+            metalness={1}
+            roughness={0.03}
+            envMapIntensity={2.2}
+          />
+        </mesh>
+      )}
       {p.meta?.glass && (
         <mesh
           position={[

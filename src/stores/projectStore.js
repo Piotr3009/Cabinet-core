@@ -345,6 +345,12 @@ function paramsForEngine(unit, design = null) {
     project_hinge_finish: resolveHingeFinish(design, profile),
     project_hinge_system_label: profile.hardware.hinge.cliptop.systemLabel,
     door_hinges: p.door_hinges || null,
+    // ─── TURN 33 (CLAUDE.md F4): MIRRORS ON DOORS ───────────────────────────
+    // Per-door, keyed by the engine panel id like door_hinges above: 'inside'
+    // | 'outside'; absence is none. A mirror is BONDED, never drilled — the
+    // engine stamps a meta face, draws a plane and orders the glass, and NOT
+    // ONE hole travels with it.
+    door_mirrors: p.door_mirrors || null,
     // ─── Turn 18 (CLAUDE.md F6.4) ───
     // The PROJECT's runner variant, travelling exactly as the hinge standard
     // does. It is deliberately NOT `runner_variant` — that name belongs to the
@@ -4055,6 +4061,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /** Every door of this cabinet that has been given a hinge by hand. */
+  // ─── TURN 33 (CLAUDE.md F4): ONE DOOR'S MIRROR ────────────────────────────
+  // 'inside' | 'outside' | null, per panel id — the exact grammar
+  // assignDoorHinge speaks. Bonded, never drilled: nothing here can reach a
+  // hole, and the BOM line is the engine's own answer.
+  setDoorMirror: (unitId, panelId, face) => {
+    const want = face === 'inside' || face === 'outside' ? face : null;
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const map = { ...(u.params.door_mirrors || {}) };
+        if (want) map[panelId] = want;
+        else delete map[panelId];
+        return {
+          ...u,
+          params: { ...u.params, door_mirrors: Object.keys(map).length ? map : null },
+        };
+      }),
+    }));
+  },
+  doorMirrorsOf: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    return unit?.params?.door_mirrors || null;
+  },
+
   doorHingesOf: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     return unit?.params?.door_hinges || null;

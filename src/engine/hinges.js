@@ -613,7 +613,11 @@ export function hingeSpecsFor({
   const doors = (result?.panels || []).filter((p) => p.part === 'FRONT' && p.role === 'front');
   if (!doors.length) return out;
   const plateEntry = plateFamily({ plate, finish });
-  const innerDrawer = unit?.type === 'WARDROBE' && Number(result?.derived?.drawers) > 0;
+  // Turn 33 (F6): both stacks — the full-width zone's and the columns' — and
+  // the field is actually PUBLISHED now (derived.drawers was read here since
+  // turn 30 and never written; see cabinet.js derived).
+  const innerDrawer = unit?.type === 'WARDROBE'
+    && (Number(result?.derived?.drawers) || 0) + (Number(result?.derived?.column_drawers) || 0) > 0;
   for (const door of doors) {
     const spec = resolveDoorHinge({
       assigned: unit?.params?.door_hinges?.[door.id] || null,

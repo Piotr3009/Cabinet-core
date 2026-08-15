@@ -219,7 +219,10 @@ function HingeSection({
   const spec = useMemo(() => resolveDoorHinge({
     assigned,
     frontThickness: panel?.thickness ?? unit?.params?.front_t ?? profile.front.thickness,
-    innerDrawer: Boolean(result?.derived?.drawers) && unit?.type === 'WARDROBE',
+    // Turn 33 (F6): a COLUMN's drawers count too — the modal must name the
+    // same 155° the BOM buys for a stack living beside a divider.
+    innerDrawer: Boolean(result?.derived?.drawers || result?.derived?.column_drawers)
+      && unit?.type === 'WARDROBE',
     finish,
   }), [assigned, panel, unit, result, finish, profile]);
 

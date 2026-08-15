@@ -1301,10 +1301,25 @@ export function computeCabinet(params, profileOverride) {
   // draws with; the ORDER line carries only the width and depth.
   const drawerGlassPanes = [];
 
+  // ─── TURN 33 (CLAUDE.md F6): THE BEHIND-DOOR LAW, NAMED ONCE ──────────────
+  //
+  // Which carcass sides carry the drawer machinery's standoff — the DP panel
+  // (DP.inset in from the side, plus its own board) and the two FILLER boards
+  // that close the 30 — because the door hinged on that side swings through
+  // exactly that band. KIT_WARDROBE_FULL's own rule, written since turn 3 in
+  // the full-width zone; the owner's 15.08 fault was the COLUMNS not reading
+  // it ("nie wstawiają automatycznie 30 mm infila — patrz szafy bez
+  // dividera"). ONE source now; the full-width zone and every column stack
+  // read this same object — one law, two readers, zero divergence.
+  const dpSideLaw = {
+    left: doorCount === 2 || cfg.hinge === 'L',
+    right: doorCount === 2 || cfg.hinge === 'R',
+  };
+
   if (hasDrawers) {
     numDrPanels = doorCount === 2 ? 2 : 1;
-    dpLeft = doorCount === 2 || cfg.hinge === 'L';
-    dpRight = doorCount === 2 || cfg.hinge === 'R';
+    dpLeft = dpSideLaw.left;
+    dpRight = dpSideLaw.right;
     drawerReduction = numDrPanels * (DP.inset + G);
 
     szufMaxDl = D - G - DR.setback - frontT - DR.depthAllowance;
@@ -2809,8 +2824,22 @@ export function computeCabinet(params, profileOverride) {
         });
         continue;
       }
-      const boxW = bay.size - DR.boxWidthClearance;
-      const colBoxFrontLen = bay.size
+      // ─── TURN 33 (CLAUDE.md F6): THE COLUMN READS THE BEHIND-DOOR LAW ─────
+      //
+      // A column bounded by a PARTITION needs no standoff there — the divider
+      // is the wall the runner mounts on, full stop. A column bounded by the
+      // CARCASS SIDE under a hinged door is the no-divider wardrobe's own
+      // case, and it takes the no-divider wardrobe's own answer: the DP stands
+      // `DP.inset + G` in from that side, the fillers close the 30, and the
+      // column's LIGHT — box, front, bottom — narrows by exactly the standoff
+      // the full-width zone has always taken. Same numbers, same source
+      // (`dpSideLaw`), zero divergence.
+      const dpL = k === 0 && dpSideLaw.left;
+      const dpR = k === bays.length - 1 && dpSideLaw.right;
+      const standoff = DP.inset + G;
+      const lightHere = bay.size - (dpL ? standoff : 0) - (dpR ? standoff : 0);
+      const boxW = lightHere - DR.boxWidthClearance;
+      const colBoxFrontLen = lightHere
         - Math.max(0, DR.boxFrontBoards - DR.boxFrontCarcassBoards) * GB
         - DR.boxFrontClearance;
       const offsets = []; const sideHs = []; const bfHs = [];
@@ -2836,6 +2865,9 @@ export function computeCabinet(params, profileOverride) {
           left: k === 0 ? 'BUL' : `VPART-${k}`,
           right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
         },
+        // Turn 33 (F6): which of this column's walls carry the DP standoff.
+        dpL,
+        dpR,
         mounts: list.map((d) => (d?.mount === 'internal' ? 'internal' : 'overlay')),
         // Turn 33 (F3): which drawers order an insert (and glass) — the boxes
         // themselves are cut exactly as every column box is.
@@ -2870,7 +2902,9 @@ export function computeCabinet(params, profileOverride) {
       },
     ];
     for (const set of columnDrawerSets) {
-      const boxLeftX = set.bay.from + DR.boxWidthClearance / 2;
+      // Turn 33 (F6): the box rides the DP wall where one stands — the same
+      // `DP.inset + G` the full-width zone's boxLeftX has always taken.
+      const boxLeftX = set.bay.from + (set.dpL ? DP.inset + G : 0) + DR.boxWidthClearance / 2;
       const colBoxSetback = DR.setback + frontT;
       const boxZFront = D - colBoxSetback;
       const common = { thickness: GB, edgeCode: codes.none, edgeLen: 0 };
@@ -2943,7 +2977,14 @@ export function computeCabinet(params, profileOverride) {
           id: `${unitNum}-${tagOf(i)}-F`, part: 'DRAWER-FRONT', role: 'front', w: set.frontW, h: dfH, thickness: frontT,
           edgeCode: codes.all, edgeLen: metres(2 * set.frontW + 2 * dfH),
           box: {
-            x: set.bay.from + DR.boxWidthClearance / 2 - (DR.frontOversize / 2), y: dfY, z: D - DR.setback - frontT, w: set.frontW, h: dfH, d: frontT,
+            // Turn 33 (F6): the face follows the box off the DP wall.
+            x: set.bay.from + (set.dpL ? DP.inset + G : 0)
+              + DR.boxWidthClearance / 2 - (DR.frontOversize / 2),
+            y: dfY,
+            z: D - DR.setback - frontT,
+            w: set.frontW,
+            h: dfH,
+            d: frontT,
           },
           cnc: rectGeometry(set.frontW, dfH), meta: { drawer: i, zone: set.zone, frontType: cfg.frontType },
         }));
@@ -2962,6 +3003,43 @@ export function computeCabinet(params, profileOverride) {
           variant: 'fixed', locked: true, zone: set.zone, front_mm: internalDepth - partitionDepth,
         },
       }));
+
+      // ─── TURN 33 (CLAUDE.md F6): THE DP AND ITS FILLERS, AT THE COLUMN ────
+      //
+      // The missing 30, cut at last: where this column's wall is the hinged
+      // carcass side, the SAME boards the no-divider wardrobe has always cut
+      // — the DP panel `DP.inset` in from the side (the runner's wall) and
+      // the two FILLER boards that close the gap — sized to THIS column's own
+      // stack, ids carrying the zone. The full-width emission above is
+      // untouched; both read the one `dpSideLaw`.
+      const colDpH = set.partY - G;
+      const colDpD = D - G - DR.setback;
+      const colFillerZs = [D - DR.setback - DP.fillerFrontOffset - G, G];
+      for (const side of [set.dpL ? 'L' : null, set.dpR ? 'R' : null]) {
+        if (!side) continue;
+        panels.push(panel({
+          id: `Z${set.zone + 1}-DP-${side}`, part: 'DP', role: 'side', w: colDpD, h: colDpH, thickness: G,
+          edgeCode: codes.none, edgeLen: 0,
+          box: {
+            x: side === 'L' ? G + DP.inset : W - G - DP.inset - G,
+            y: G, z: G, w: G, h: colDpH, d: colDpD,
+          },
+          cnc: rectGeometry(colDpD, colDpH),
+          meta: { side, zone: set.zone },
+        }));
+        for (let f = 0; f < colFillerZs.length; f += 1) {
+          panels.push(panel({
+            id: `Z${set.zone + 1}-FILLER-${side}${f + 1}`, part: 'FILLER', role: 'side', w: DP.fillerWidth, h: colDpH, thickness: G,
+            edgeCode: codes.none, edgeLen: 0,
+            box: {
+              x: side === 'L' ? G : W - G - DP.fillerWidth,
+              y: G, z: colFillerZs[f], w: DP.fillerWidth, h: colDpH, d: G,
+            },
+            cnc: rectGeometry(DP.fillerWidth, colDpH),
+            meta: { side, zone: set.zone },
+          }));
+        }
+      }
     }
   }
 
@@ -4873,7 +4951,11 @@ export function computeCabinet(params, profileOverride) {
   // branch anywhere that asks whether a leaf is a "bay door".
   const doorPanels = panels.filter((pn) => pn.part === 'FRONT' && pn.role === 'front'
     && !pn.meta?.appliance);
-  const innerDrawer = type.family === 'wardrobe' && numDrawers > 0;
+  // Turn 33 (CLAUDE.md F6): a drawer in a COLUMN is a drawer behind this
+  // door too — the 155° rule read only the full-width stack, so a wardrobe
+  // whose only drawers lived in a column hung 110° hinges over boxes that
+  // need the wider swing. One count, both stacks.
+  const innerDrawer = type.family === 'wardrobe' && (numDrawers + columnDrawerCount) > 0;
   const hingeGroups = new Map();
   if (hingedLeafCount > 0 && centres.length > 0) {
     // A kit whose door panels are not one-per-door (a fridge housing's fixed
@@ -5175,6 +5257,15 @@ export function computeCabinet(params, profileOverride) {
     // cabinet whose doors are in its bays it used to be 0, which was a cabinet
     // reporting that it had no doors while three of them hung on its partitions.
     doors: leafCount,
+    // ─── TURN 33 (CLAUDE.md F6): THE DRAWER COUNTS, PUBLISHED AT LAST ──────
+    // `derived.drawers` was read by the door modal and the 3-D hinge models
+    // (hinges.js hingeSpecsFor) since turn 30 — and NEVER WRITTEN: the field
+    // did not exist, so both consumers saw "no drawers" on every wardrobe and
+    // showed 110° where the BOM (which reads the engine's own count) bought
+    // 155°. The consumer sweep's textbook fault, one call downstream. Both
+    // stacks are published now: the full-width zone's and the columns'.
+    drawers: numDrawers,
+    column_drawers: columnDrawerCount,
     internal_width: internalWidth,
     internal_depth: internalDepth,
     // ─── TURN 25 (CLAUDE.md F2): THE UNIT'S RESOLVED JOINT INSET ───────────

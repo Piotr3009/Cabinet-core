@@ -1612,6 +1612,94 @@ async function main() {
       await page.sleep(900);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F14 [HIGH] — the pantry, with Blum drawers behind its doors
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f14')) {
+      await newRoom('Turn 30 walk — F14');
+      await page.evaluate(`${P}.ui.getState().setLibraryCategory('kitchen'); return true;`);
+      await page.sleep(700);
+      await page.click('[data-library-group="tall-units"]');
+      await page.sleep(700);
+      await page.click('[data-library-entry="pantry"]');
+      await page.sleep(1500);
+      await page.evaluate(`${P}.ui.getState().closeLibrary(); return true;`);
+      await page.sleep(1000);
+
+      const f14 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units[0];
+        // A drawer stack is GATED on the drawer-box board being measured (turn
+        // 24 F3.1: "no thickness, no drawers"), and a pantry's drawers are
+        // ITEMS like every other internal stack in this app.
+        s.setSlotThickness('box', { measured: 15, confirmed: true });
+        s.updateUnitParams(u.id, { doors: true });
+        s.addDrawers(u.id, 3);
+        // A WARDROBE cut to the same size with its fronts off, standing beside
+        // it: the internal drawer machinery, which is what a pantry borrows.
+        const w = s.addUnit('WARDROBE', { near: u.id, side: 'right' });
+        s.updateUnitParams(w.id, {
+          width: u.params.width, height: u.params.height, depth: u.params.depth,
+          doors: true, drawer_fronts: false, leg_height: u.params.leg_height,
+        });
+        s.addDrawers(w.id, 3);
+        window.__t30 = { pantry: u.id, wardrobe: w.id, ids: [u.id, w.id] };
+        const part = (id) => String(id).replace(/^[^-]*-/, '');
+        const holes = (x) => x.drills.map((d) => part(d.panel) + '|' + d.layer + '|' + d.kind + '|' + d.x + '|' + d.y + '|' + d.d).sort().join(',');
+        const r = s.unitResult(u.id);
+        const rw = s.unitResult(w.id);
+        return {
+          type: u.type,
+          size: [u.params.width, u.params.height],
+          boxes: r.panels.filter((p) => p.part === 'DRAWER-SIDE').length / 2,
+          faces: r.panels.filter((p) => p.part === 'DRAWER-FRONT').length,
+          doors: r.panels.filter((p) => p.part === 'FRONT').length,
+          runnerHoles: r.drills.filter((d) => d.layer === 'RUNNERS_3MM').length,
+          same: holes(r) === holes(rw),
+          drills: r.drills.length,
+          wardrobeDrills: rw.drills.length,
+          runners: r.hardware.filter((h) => h.role === 'runner_pairs').map((h) => h.qty),
+        };
+      `);
+      measurements.f14 = f14;
+      check('F14 — the Library places a Pantry on the tall unit’s carcass',
+        f14.type === 'PANTRY' && f14.size[0] === 600 && f14.size[1] > 2000,
+        `${f14.type} ${f14.size.join(' × ')}`);
+      check('F14 — three Blum boxes inside it, and NOT one drawer face',
+        f14.boxes === 3 && f14.faces === 0 && f14.doors === 1,
+        `${f14.boxes} boxes · ${f14.faces} faces · ${f14.doors} door`);
+      check('F14 — the runner drilling is the existing MOVENTO truth',
+        f14.runnerHoles >= 18, `${f14.runnerHoles} holes on RUNNERS_3MM`);
+      check('F14 — and it is drilled EXACTLY as a wardrobe with its fronts off',
+        f14.same === true && f14.drills === f14.wardrobeDrills,
+        `${f14.drills} holes vs the wardrobe’s ${f14.wardrobeDrills}`);
+      check('F14 — the BOM buys the runners, because the boxes are really there',
+        f14.runners.length === 1 && f14.runners[0] === 3, `${f14.runners.join('/')} pairs`);
+
+      await frameUnits(await page.evaluate('return [window.__t30.pantry];'), [1.5, 0.85, 2.8]);
+      await page.sleep(900);
+      await shot('14a-a-pantry-closed-a-tall-cupboard-with-doors');
+      // …and OPEN, which is the whole point: the drawers are inside it.
+      await page.click('[data-open-all-doors]');
+      await page.sleep(2200);
+      // Re-framed with the doors open: swinging them changes the box the
+      // camera is fitted to, and the subject is what is INSIDE.
+      await frameUnits(await page.evaluate('return [window.__t30.pantry];'), [1.1, 0.5, 1.95]);
+      await page.sleep(900);
+      await shot('14b-the-same-pantry-open-three-blum-boxes-and-no-drawer-faces');
+      await page.click('[data-open-all-doors]');
+      await page.sleep(1200);
+      // …and with the FRONTS taken off the picture, which is the plainest
+      // possible view of what a pantry is: boxes, runners and no faces.
+      await page.click('[data-hide-fronts]');
+      await page.sleep(1400);
+      await frameUnits(await page.evaluate('return [window.__t30.pantry];'), [1.3, 0.6, 2.2]);
+      await page.sleep(900);
+      await shot('14c-fronts-hidden-the-boxes-and-their-runners-behind-the-doors');
+      await page.click('[data-hide-fronts]');
+      await page.sleep(900);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

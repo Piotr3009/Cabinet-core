@@ -49,7 +49,8 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
     'door-base', 'drawer-unit', 'sink', 'corner', 'l-shape', 'dishwasher',
     'oven-base', 'bin-storage', 'wine-rack', 'small-fridge', 'twin-space', 'low',
   ]);
-  // Turn 30 (CLAUDE.md F13): Cargo 300 lands beside the kits it is made of.
+  // Turn 30 (CLAUDE.md F13/F14): Cargo 300 and the pantry land beside the kits
+  // they are made of; the pantry's held-open row became a kit.
   assert.deepEqual(idsOf('tall-units'), [
     'tall', 'fridge', 'cargo-300', 'basket-tall', 'pantry', 'pantry-worktop',
     'space-tower', 'oven-tall', 'american-fridge',
@@ -66,7 +67,7 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
     // wrote the pattern for both, which is exactly the condition they carried.
     // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'WUD',
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'WUD',
   ]);
 });
 
@@ -123,7 +124,9 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // attached to them stated — so they are kits now, not grey rows.
     'corner', 'l-shape', 'bin-storage', 'wine-rack',
     'small-fridge', 'twin-space',
-    'basket-tall', 'pantry', 'pantry-worktop', 'space-tower', 'oven-tall', 'american-fridge',
+    // Turn 30 (CLAUDE.md F14): 'pantry' left this list — KIT_BUDTALL's carcass
+    // with the wardrobe kit's own internal drawer machinery in it.
+    'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall', 'american-fridge',
     'glass-unit', 'l-shape-wall',
     'free-standing-panels', 'cornice-pelmet',
   ]);

@@ -594,3 +594,62 @@ beside it.
 | `13a-cargo-300-in-the-kitchen-library-under-tall-units.png` | the row |
 | `13b-a-cargo-300-standing-a-tall-carcass-and-a-full-door.png` | the cabinet |
 | `13c-the-cargo-sheet-the-kits-own-holes-and-no-others.png` | the cut |
+
+---
+
+## F14 [HIGH] — the pantry, with Blum drawers ("koniecznie")
+
+A pantry has **two parents**, so it is drilled by both of them and the test is
+two equalities with no third answer:
+
+| | is drilled exactly as |
+| --- | --- |
+| with **no** drawers | a `KIT_BUDTALL_FULL` tall unit of the same size — hole for hole, same `drillSummary` |
+| with **three** | a **wardrobe with three frontless drawers** — the internal drawer machinery this engine has had since turn 3 |
+
+Nothing is added between those two. The drawer panels the runners screw to, the
+MOVENTO rows on `RUNNERS_3MM` (first row at `wardrobe.runners.firstRowFromBottom`
+= 38), the box sides, backs and bottoms and the sync rod are all the existing
+machinery, unchanged.
+
+### The mechanism, built once — F20's
+
+`internalDrawerSet(params, type, count)` is **F20's mechanism**, written here
+because F14 is its first consumer, exactly as CLAUDE.md instructs. Three ways of
+saying one thing:
+
+| | |
+| --- | --- |
+| `internal_drawers: [2]` | the job's own — F20's hidden drawer |
+| `internalDrawers: 'all'` on the type | the kit's — a pantry's drawers live behind its doors |
+| `drawer_fronts: false` | turn 17's *"the fronts come off"*, unchanged |
+
+It decides **one** thing: whether a `DRAWER-FRONT` board is cut. Asserted: the
+same pantry with faces and without has *not one hole* different, an identical
+order form, and exactly three boards between them. The source is checked for
+`drills.push` / `hw(` / `panels.push` / `runner` and has none, and it is
+consulted in exactly the two front loops.
+
+### The gap, named
+
+**None for the drawers** — box, runners and drilling are all existing LISP/
+MOVENTO truth. What a larder often also has — **door racks** — is not shipped:
+no LISP line and no published pattern states their fixing.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f14` → **7 ok · 0 failed**, against a
+wardrobe cut to the same size with its fronts off, standing beside it.
+
+| | pantry | wardrobe, fronts off |
+| --- | --- | --- |
+| boxes / faces / doors | 3 / **0** / 1 | 3 / 0 / 1 |
+| holes on `RUNNERS_3MM` | 18 | 18 |
+| holes in total | 125 | 125, **same fingerprint** |
+| runner pairs ordered | 3 | 3 |
+
+| file | |
+| --- | --- |
+| `14a-a-pantry-closed-a-tall-cupboard-with-doors.png` | closed |
+| `14b-the-same-pantry-open-three-blum-boxes-and-no-drawer-faces.png` | open |
+| `14c-fronts-hidden-the-boxes-and-their-runners-behind-the-doors.png` | fronts hidden |

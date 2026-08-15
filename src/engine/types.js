@@ -281,6 +281,46 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F14): THE PANTRY, WITH BLUM DRAWERS ("koniecznie") ─
+  //
+  // "Parent: KIT_BUDTALL + the existing drawer machinery (KIT_LOW/KIT_SINK
+  // rows, MOVENTO catalogue). Internal drawers behind doors: existing drawer
+  // boxes and runner drilling, front omitted (see F20's mechanism — build it
+  // once, use it in both)."
+  //
+  // So it is BUDTALL's carcass and door, wearing `drawerStyle: 'wardrobe'` —
+  // the INTERNAL drawer machinery this engine has had since turn 3: the drawer
+  // panels the runners screw to, the MOVENTO rows on `RUNNERS_3MM`, the box
+  // sides, backs and bottoms, and the sync rod. Not one of those numbers is
+  // touched here; a pantry's drawer holes are the same holes a wardrobe of the
+  // same size is drilled with, which is what the test asserts.
+  //
+  // `internalDrawers: 'all'` is F20's mechanism, declared once on the kit: a
+  // pantry's drawers live BEHIND ITS DOORS and never had faces.
+  PANTRY: {
+    id: 'PANTRY',
+    heightGroup: 'tall',
+    label: 'Pantry',
+    family: 'kitchen',
+    lisp: 'KIT_BUDTALL_FULL.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'wardrobe',
+    internalDrawers: 'all',
+    minHeightKey: 'pantryUnit.minHeight',
+    defaultsKey: 'pantryUnit.defaults',
+    supports: {
+      drawers: true, shelves: true, rail: false, pulldown: false, partition: true, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
   LOW_CABINET: {
     id: 'LOW_CABINET',
     // A low cabinet that inherits the 720 mm base height is a base unit with
@@ -501,7 +541,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -616,5 +656,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F',
 };

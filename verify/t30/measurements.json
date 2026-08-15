@@ -1,38 +1,19 @@
 {
- "f13": {
-  "type": "CARGO",
+ "f14": {
+  "type": "PANTRY",
   "size": [
-   300,
-   2150,
-   558
+   600,
+   2150
   ],
-  "tallHeight": null,
-  "parts": [
-   "BUL",
-   "BUR",
-   "TOP",
-   "BOTTOM",
-   "BACK",
-   "FRONT"
-  ],
-  "drills": 88,
+  "boxes": 3,
+  "faces": 0,
+  "doors": 1,
+  "runnerHoles": 18,
   "same": true,
-  "tallDrills": 88,
-  "frame": [
-   {
-    "role": "cargo_frame",
-    "label": "Pull-out larder frame",
-    "qty": 1,
-    "unit": "pcs",
-    "spec": {
-     "opening_width_mm": 264,
-     "opening_height_mm": 2114,
-     "opening_depth_mm": 540
-    },
-    "spec_label": "264 × 2114 × 540 mm opening"
-   }
-  ],
-  "tallFrame": 0,
-  "invented": 0
+  "drills": 125,
+  "wardrobeDrills": 125,
+  "runners": [
+   3
+  ]
  }
 }

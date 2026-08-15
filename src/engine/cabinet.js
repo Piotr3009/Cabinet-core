@@ -201,6 +201,38 @@ export function doorCountFor(width, profile) {
   return (Number(width) - d.widthDeduction) <= d.singleDoorMaxWidth ? 1 : 2;
 }
 
+/**
+ * ─── TURN 30 (CLAUDE.md F14 / F20): WHICH DRAWERS ARE INTERNAL ─────────────
+ *
+ * Which drawers in the stack get NO FRONT — 1-based, as a Set.
+ *
+ * Three ways of saying it, one answer:
+ *   `internal_drawers: [2]`   the job's own — F20's hidden drawer;
+ *   `internalDrawers: 'all'`  the KIT's — F14's pantry, whose drawers live
+ *                             behind doors and never had faces;
+ *   `drawer_fronts: false`    turn 17's "the fronts come off", unchanged.
+ *
+ * It decides one thing only: whether a DRAWER-FRONT panel is cut. The box, the
+ * runner rows, the drilling and the BOM are the existing machinery and are not
+ * consulted here — which is exactly what makes an internal drawer safe under
+ * the batch rule: it removes a board, it invents nothing.
+ */
+export function internalDrawerSet(params, type, count) {
+  const n = Number(count) || 0;
+  const all = () => new Set(Array.from({ length: n }, (_, i) => i + 1));
+  if (params?.drawer_fronts === false) return all();
+  const own = params?.internal_drawers;
+  if (Array.isArray(own)) {
+    return new Set(own.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v >= 1 && v <= n));
+  }
+  if (own === 'all') return all();
+  // A kit whose drawers are internal BY DEFINITION — a pantry's drawers are
+  // behind its doors — says so once, on the type, and a job can still hand a
+  // list of its own above.
+  if (type?.internalDrawers === 'all' && own !== false) return all();
+  return new Set();
+}
+
 /** Largest standard runner length that fits the usable depth, or null. */
 export function snapDrawerDepth(usableDepth, steps) {
   let best = null;
@@ -620,6 +652,24 @@ function normalizeParams(raw, profile) {
     // that has never heard of this — keeps its fronts, which is what every
     // fixture and every saved project is.
     drawerFronts: p.drawer_fronts !== false,
+    // ─── TURN 30 (CLAUDE.md F14 / F20): THE INTERNAL DRAWER ─────────────────
+    //
+    // "An INTERNAL drawer = existing box + runner rows, `front: none`, sitting
+    // behind the front above it." (F20) — and F14's pantry is the same
+    // mechanism with every drawer in the stack internal, which is why CLAUDE.md
+    // says *"build it once, use it in both"*.
+    //
+    // It is a LIST of 1-based drawer numbers and nothing else. The box, the
+    // runner rows, the BOM and every hole are untouched: an internal drawer is
+    // a drawer that is not given a face, so the only thing this can change is
+    // whether a DRAWER-FRONT panel is emitted. A kit that wants the whole stack
+    // internal — the pantry — says so on the type, and a job that hides one
+    // drawer behind the front above it passes the one number.
+    //
+    // `drawer_fronts: false` (turn 17) keeps its exact meaning: the WHOLE face
+    // comes off. It is the same answer said the short way, so it is folded in
+    // here rather than living as a second rule further down.
+    internalDrawers: internalDrawerSet(p, type, drawers),
     drawerHeights,
     rail,
     railOffset: Number(p.rail_offset ?? railDefault),
@@ -2403,7 +2453,10 @@ export function computeCabinet(params, profileOverride) {
       }));
     }
 
-    for (let i = 1; cfg.drawerFronts && i <= numDrawers; i += 1) {
+    for (let i = 1; i <= numDrawers; i += 1) {
+      // Turn 30 (CLAUDE.md F14/F20): an INTERNAL drawer is given no face. Its
+      // box, its runners and its holes are above and are untouched.
+      if (cfg.internalDrawers.has(i)) continue;
       const zoneY = G + zoneOffsets[i - 1];
       const first = i === 1;
       // The bottom front is shortened to clear the base; the rest are the
@@ -2510,7 +2563,10 @@ export function computeCabinet(params, profileOverride) {
     }
     // Turn 17 (CLAUDE.md F8.1): with the fronts off, the loop simply does not
     // run — the boxes, their runners and the carcass are exactly what they were.
-    for (let i = 1; cfg.drawerFronts && i <= budr.count; i += 1) {
+    // Turn 30 (CLAUDE.md F20): …and ONE of them can come off on its own, which
+    // is the two-drawer front with a hidden drawer behind it.
+    for (let i = 1; i <= budr.count; i += 1) {
+      if (cfg.internalDrawers.has(i)) continue;
       const fh = budr.heights[i - 1];
       const geom = rectGeometry(budr.frontWidth, fh);
       // The bottom façade runs one CARCASS board lower to cover the floor, so

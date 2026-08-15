@@ -12,29 +12,29 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F13 — the Library places a Cargo: 300 wide, on the run’s own tall height",
+   "label": "F14 — the Library places a Pantry on the tall unit’s carcass",
    "ok": true,
-   "detail": "CARGO 300 × 2150 × 558"
+   "detail": "PANTRY 600 × 2150"
   },
   {
-   "label": "F13 — it is KIT_BUDTALL’s carcass and a full door",
+   "label": "F14 — three Blum boxes inside it, and NOT one drawer face",
    "ok": true,
-   "detail": "BUL BUR TOP BOTTOM BACK FRONT"
+   "detail": "3 boxes · 0 faces · 1 door"
   },
   {
-   "label": "F13 — and it is drilled EXACTLY as a tall unit its size: hole for hole",
+   "label": "F14 — the runner drilling is the existing MOVENTO truth",
    "ok": true,
-   "detail": "88 holes vs the tall unit’s 88"
+   "detail": "18 holes on RUNNERS_3MM"
   },
   {
-   "label": "F13 — the pull-out frame is ORDERED: one BOM line, to the opening",
+   "label": "F14 — and it is drilled EXACTLY as a wardrobe with its fronts off",
    "ok": true,
-   "detail": "Pull-out larder frame — 264 × 2114 × 540 mm opening"
+   "detail": "125 holes vs the wardrobe’s 125"
   },
   {
-   "label": "F13 — …and it drills NOTHING the kit does not drill",
+   "label": "F14 — the BOM buys the runners, because the boxes are really there",
    "ok": true,
-   "detail": "88 holes, none of them a frame fixing"
+   "detail": "3 pairs"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

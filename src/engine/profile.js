@@ -979,6 +979,16 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 300, height: 2100, depth: 558 },
   },
 
+  // ─── Pantry (turn 30, CLAUDE.md F14) ──────────────────────────────────────
+  //
+  // KIT_BUDTALL's carcass wearing the wardrobe kit's INTERNAL drawer machinery.
+  // 600 is the width a larder is built at and 2100 is the tall unit's own
+  // height — the kit it is made of, said once.
+  pantryUnit: {
+    minHeight: 1100,
+    defaults: { width: 600, height: 2100, depth: 558 },
+  },
+
   // ─── Low cabinet (KIT_LOW_CABINET_FULL) ───
   lowCabinet: {
     minHeight: 300,
@@ -3592,6 +3602,7 @@ export function migrateCabinetProfile(profile) {
     },
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
     cargoUnit: { ...D.cargoUnit, ...profile.cargoUnit, defaults: { ...D.cargoUnit.defaults, ...profile.cargoUnit?.defaults } },
+    pantryUnit: { ...D.pantryUnit, ...profile.pantryUnit, defaults: { ...D.pantryUnit.defaults, ...profile.pantryUnit?.defaults } },
     lowCabinet: { ...D.lowCabinet, ...profile.lowCabinet, defaults: { ...D.lowCabinet.defaults, ...profile.lowCabinet?.defaults } },
     baseDrawerUnit: {
       ...D.baseDrawerUnit,

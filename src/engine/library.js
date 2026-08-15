@@ -129,9 +129,11 @@ export const KITCHEN_LIBRARY = [
       {
         kind: 'soon', id: 'basket-tall', label: 'Basket tall', hint: 'Wire baskets top to bottom', reason: NO_PATTERN,
       },
-      {
-        kind: 'soon', id: 'pantry', label: 'Pantry', hint: 'Shelved larder with door racks', reason: NO_PATTERN,
-      },
+      // ─── Turn 30 (CLAUDE.md F14): the pantry OPENS ───────────────────────
+      // KIT_BUDTALL's carcass and door with the wardrobe kit's own internal
+      // drawer machinery inside it — boxes, MOVENTO runner rows and all. The
+      // drawers live behind the doors and have no faces.
+      { kind: 'type', id: 'pantry', typeId: 'PANTRY', hint: 'Larder with internal Blum drawers behind its doors' },
       {
         kind: 'soon',
         id: 'pantry-worktop',

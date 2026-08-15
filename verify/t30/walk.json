@@ -12,34 +12,34 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F8 — the button is on the MULTI-selection",
+   "label": "F9 — the per-unit control’s own buttons are on the MULTI-selection",
    "ok": true,
-   "detail": "1 buttons"
+   "detail": "3 buttons (None + the profile's two heights)"
   },
   {
-   "label": "F8 — ONE slab covers all three, and the scene drew exactly one",
+   "label": "F9 — nothing is fitted to start with",
    "ok": true,
-   "detail": "1 stored · 1 drawn"
+   "detail": "0"
   },
   {
-   "label": "F8 — …38 mm thick, the decided UK standard",
+   "label": "F9 — ONE press fits it to all three",
    "ok": true,
-   "detail": "38 mm"
+   "detail": "heights 100"
   },
   {
-   "label": "F8 — …20 mm proud of the DOOR plane, and flush at the wall",
+   "label": "F9 — …and it is ONE MOULDING across the run, not three",
    "ok": true,
-   "detail": "606 deep over a 558 carcass + 3 gap + 25 door + 20"
+   "detail": "1 owner spanning 3 cabinets, 1800 mm long"
   },
   {
-   "label": "F8 — …and it runs PAST the end panel rather than stopping at the carcass",
+   "label": "F9 — …with the infill it is fixed to asked for, exactly as the per-unit press does",
    "ok": true,
-   "detail": "1845 mm over an 1800 run (1820 without a panel)"
+   "detail": "40 mm of top infill"
   },
   {
-   "label": "F8 — the cabinets under it are cut exactly as they were",
+   "label": "F9 — and one press takes it off again",
    "ok": true,
-   "detail": "7 panels, 77 holes — and the engine has never heard of a worktop"
+   "detail": "0"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

@@ -1,48 +1,96 @@
 {
- "f8": {
-  "stored": 1,
-  "geometry": {
-   "wall": 0,
-   "x": 5690,
-   "w": 1845,
-   "y": 870,
-   "h": 38,
-   "z": 0,
-   "d": 606,
-   "depth": 606,
-   "thickness": 38,
-   "decor": null,
-   "overhang": {
-    "front": 20,
-    "side": 10,
-    "wall": 0
-   },
-   "extensions": {
-    "left": 0,
-    "right": 0,
-    "front": 0
-   },
-   "unitIds": [
-    "u_5t2qrze",
-    "u_rx3su2m",
-    "u_r36q3fh"
+ "f9": {
+  "before": {
+   "runs": [
+    {
+     "cornice": 0,
+     "infill": 0,
+     "run": null
+    },
+    {
+     "cornice": 0,
+     "infill": 0,
+     "run": null
+    },
+    {
+     "cornice": 0,
+     "infill": 0,
+     "run": null
+    }
+   ],
+   "owners": 0,
+   "length": null,
+   "spans": 0,
+   "heights": [
+    0
+   ],
+   "infills": [
+    0
    ]
   },
-  "drawn": [
-   {
-    "w": 1845,
-    "d": 606,
-    "t": 38,
-    "y": 870,
-    "overhang": {
-     "front": 20,
-     "side": 10,
-     "wall": 0
+  "after": {
+   "runs": [
+    {
+     "cornice": 100,
+     "infill": 40,
+     "run": {
+      "role": "owner",
+      "height": 100,
+      "projection": 65,
+      "offset": 0,
+      "length": 1800,
+      "ends": {
+       "left": "open",
+       "right": "open"
+      },
+      "mitres": {
+       "left": true,
+       "right": true
+      },
+      "corners": {
+       "left": null,
+       "right": null
+      },
+      "returns": {
+       "left": 596,
+       "right": 596
+      },
+      "infillHeight": 40,
+      "rise": 60,
+      "top": 2350,
+      "unitIds": [
+       "u_4aagtie",
+       "u_ubchxno",
+       "u_inuaid5"
+      ]
+     }
+    },
+    {
+     "cornice": 100,
+     "infill": 40,
+     "run": {
+      "role": "member",
+      "ownerId": "u_4aagtie"
+     }
+    },
+    {
+     "cornice": 100,
+     "infill": 40,
+     "run": {
+      "role": "member",
+      "ownerId": "u_4aagtie"
+     }
     }
-   }
-  ],
-  "unitDepth": 558,
-  "frontT": 25,
-  "gap": 3
+   ],
+   "owners": 1,
+   "length": 1800,
+   "spans": 3,
+   "heights": [
+    100
+   ],
+   "infills": [
+    40
+   ]
+  }
  }
 }

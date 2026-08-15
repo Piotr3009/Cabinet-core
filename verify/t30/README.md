@@ -382,3 +382,38 @@ assumed — so every golden fixture is untouched by construction.
 | `8a-three-base-cabinets-selected-no-worktop-yet.png` | before |
 | `8b-one-worktop-over-the-run-from-the-wall-out-past-the-panel.png` | one slab across all three |
 | `8c-the-overhang-20-proud-of-the-doors-flush-at-the-wall.png` | the overhang, from the end |
+
+---
+
+## F9 [MEDIUM] — one cornice across a multi-selection
+
+**What was missing was never the run.** `engine/cornice.js runCorniceParams` has
+made a cornice ONE MOULDING across adjacent cornice-bearing cabinets since turn
+22 — the top infill's own lesson from turn 6 — and not a line of it is touched.
+
+What was missing was the **entrance**: a joiner who had just selected six tall
+units had to open each panel and press its own button six times, and six presses
+is six undo steps. So this is the per-unit control's own three buttons, over a
+selection, through the per-unit action, in one batch.
+
+### Read off the running app, on three tall units
+
+`node scripts/e2e-turn30.mjs --only f9` → **8 ok · 0 failed**.
+
+| | |
+| --- | --- |
+| the control | 3 buttons — None and the profile's own two heights, not a copy of the list |
+| one press of **100** | all three at 100 |
+| the piece | **1 owner spanning 3 cabinets, 1800 mm long** — one moulding, not three |
+| the infill it is fixed to | 40 mm on each, exactly as a per-unit press asks for |
+| one press of **None** | all three back to 0 |
+
+A kit that takes no cornice is **skipped**, not refused — the courtesy the back
+inset shows a wall unit. No drilling: the top infill the moulding needs is a
+panel and appears; not one hole is added.
+
+| file | |
+| --- | --- |
+| `9a-three-tall-units-selected-the-bulk-cornice-buttons.png` | the buttons on the selection |
+| `9b-one-cornice-across-all-three-from-one-press.png` | one moulding across the run |
+| `9c-and-one-press-takes-it-off-again.png` | and off again |

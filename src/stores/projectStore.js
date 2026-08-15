@@ -1720,6 +1720,47 @@ export const useProjectStore = create((set, get) => ({
   }),
 
   /**
+   * ─── TURN 30 (CLAUDE.md F9): THE CORNICE OVER A SELECTION ────────────────
+   *
+   * "Today cornice is per-cabinet; the infill already knows multi-select. Reuse
+   * that flow: select 2+ → one cornice across. Same design layer, no drilling."
+   *
+   * REUSE is the whole of it, and it is reuse in BOTH directions:
+   *
+   *   the ACTION is `setCornice`, once per cabinet, inside one batch — which
+   *   is what every bulk action in this store is, and what makes it one undo
+   *   step without anybody remembering to make it one;
+   *
+   *   the RUN is `engine/cornice.js runCorniceParams`, which has made a
+   *   cornice ONE MOULDING across adjacent cornice-bearing cabinets since turn
+   *   22 (the top infill's own lesson from turn 6). Nothing about the piece is
+   *   recomputed here. What was missing was never the run — it was the
+   *   ENTRANCE: a joiner who had selected six cabinets had no way in.
+   *
+   * A cabinet whose kit takes no cornice is SKIPPED rather than refused, the
+   * way a wall unit is skipped by the back inset below: somebody who selected a
+   * run with a base unit in it has not asked for a moulding on the base unit.
+   *
+   * @returns {{done:number, skipped:number, notices:string[]}}
+   */
+  setCorniceBulk: (unitIds, value) => runBatch(() => {
+    const notices = [];
+    let done = 0;
+    let skipped = 0;
+    for (const id of unitIds || []) {
+      const unit = get().units.find((u) => u.id === id);
+      if (!unit) continue;
+      if (!takesCornice(unit.type)) { skipped += 1; continue; }
+      const res = get().setCornice(id, value) || { notices: [] };
+      done += 1;
+      for (const n of res.notices || []) notices.push(n);
+    }
+    // The run is recomputed once per call inside `setCornice`; the notices it
+    // returns are the CEILING's, and a duplicate of one says nothing new.
+    return { done, skipped, notices: [...new Set(notices)] };
+  }),
+
+  /**
    * ─── TURN 28 (CLAUDE.md F9): THE BACK INSET OVER A SELECTION ─────────────
    *
    * "Multi-select of floor-standing units shows a Back inset field. It moves

@@ -1208,6 +1208,86 @@ async function main() {
         `${holes.panels} panels, ${holes.drills} holes — and the engine has never heard of a worktop`);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F9 [MEDIUM] — one cornice across a multi-selection
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f9')) {
+      await newRoom('Turn 30 walk — F9');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const ids = [];
+        let near = null;
+        for (let i = 0; i < 3; i += 1) {
+          const u = near ? s.addUnit('BUDTALL', { near, side: 'right' }) : s.addUnit('BUDTALL');
+          ids.push(u.id);
+          near = u.id;
+        }
+        window.__t30 = { ids };
+        ${P}.ui.getState().selectUnit(ids[0]);
+        for (const id of ids.slice(1)) ${P}.ui.getState().selectUnit(id, { additive: true });
+        ${P}.ui.getState().openRightPanel();
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+      const controls = await page.evaluate('return document.querySelectorAll(\'[data-bulk-cornice-height]\').length;');
+      check('F9 — the per-unit control’s own buttons are on the MULTI-selection',
+        controls === 3, `${controls} buttons (None + the profile's two heights)`);
+      await shot('9a-three-tall-units-selected-the-bulk-cornice-buttons');
+
+      const readRun = `
+        const s = ${P}.project.getState();
+        const runs = window.__t30.ids.map((id) => {
+          const u = s.units.find((x) => x.id === id);
+          // A missing value and 0 are the same answer - "not fitted" - and
+          // the engine's own corniceOption says so; normalised here so the
+          // walk reads a number rather than three kinds of nothing.
+          return {
+            cornice: Number(u.params.cornice) > 0 ? Number(u.params.cornice) : 0,
+            infill: Number(u.params.top_infill_mm) || 0,
+            run: u.params.run_cornice,
+          };
+        });
+        const owners = runs.filter((r) => r.run && r.run.role === 'owner');
+        return {
+          runs, owners: owners.length, length: owners[0] ? owners[0].run.length : null,
+          spans: owners[0] ? owners[0].run.unitIds.length : 0,
+          heights: [...new Set(runs.map((r) => r.cornice))],
+          infills: [...new Set(runs.map((r) => r.infill))],
+        };
+      `;
+      const before = await page.evaluate(readRun);
+      check('F9 — nothing is fitted to start with', before.heights.join() === '0', before.heights.join());
+
+      // ONE press, on the button a joiner presses.
+      await page.click('[data-bulk-cornice-height="100"]');
+      await page.sleep(1200);
+      const after = await page.evaluate(readRun);
+      measurements.f9 = { before, after };
+      check('F9 — ONE press fits it to all three',
+        after.heights.length === 1 && after.heights[0] === 100,
+        `heights ${after.heights.join('/')}`);
+      check('F9 — …and it is ONE MOULDING across the run, not three',
+        after.owners === 1 && after.spans === 3 && after.length === 1800,
+        `${after.owners} owner spanning ${after.spans} cabinets, ${after.length} mm long`);
+      check('F9 — …with the infill it is fixed to asked for, exactly as the per-unit press does',
+        after.infills.length === 1 && after.infills[0] >= 40,
+        `${after.infills.join('/')} mm of top infill`);
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.75, 0.75, 1.7]);
+      await page.sleep(900);
+      await shot('9b-one-cornice-across-all-three-from-one-press');
+
+      // …and one press takes it off again.
+      await page.click('[data-bulk-cornice-height="0"]');
+      await page.sleep(1000);
+      const off = await page.evaluate(readRun);
+      check('F9 — and one press takes it off again',
+        off.heights.length === 1 && off.heights[0] === 0,
+        off.heights.join('/'));
+      await page.sleep(500);
+      await shot('9c-and-one-press-takes-it-off-again');
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

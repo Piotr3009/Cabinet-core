@@ -11,7 +11,7 @@ import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/sh
 import { doorBays } from '../engine/doors.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
@@ -35,6 +35,12 @@ import { handleClassCount } from '../engine/handles.js';
 // Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
 import { worktopEligible, worktopsFor } from '../engine/worktop.js';
 import { frontGapClashes } from '../engine/frontGapClash.js';
+// Turn 31 (CLAUDE.md F4): the owner's 18-point front-gap rulebook.
+import { carcassGaps, frontClearances } from '../engine/frontClearance.js';
+// Turn 31 (CLAUDE.md F6): Check v1, the pre-production controller.
+import { runChecks } from '../engine/checks.js';
+// Turn 31 (CLAUDE.md F3): the drill guard's own number, at the source.
+import { hingeMinSpacingMm, hingeRowClashes, hingeSpacingBlocks } from '../engine/cnc/drillGuard.js';
 import {
   carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
   projectFrontThickness, setFrontTypeCount, sourceById, sourceTakesFacing,
@@ -62,6 +68,8 @@ import {
   CARCASS_SLOTS, drawerBoxGate, projectThicknesses, slotById,
 } from '../engine/thickness.js';
 import { runBatch } from './historyBatch.js';
+// ─── Turn 31 (CLAUDE.md F2): ONE dirty gate, and 77 repeats deleted.
+import { dirtyGate } from './dirtyGate.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -363,6 +371,16 @@ function paramsForEngine(unit, design = null) {
     // is handed no design at all and falls back to the profile's own default,
     // which is what the AutoLISP cuts.
     front_type: design ? resolveUnitDesign(unit, design).frontType : p.front_type,
+    // ─── TURN 31 (CLAUDE.md F4.8): THE ASYMMETRY LAW'S OWN INPUT ───────────
+    //
+    // Per-front, per-EDGE millimetres, decided by the owner's clearance matrix
+    // (engine/frontClearance.js) and applied by one pass in the engine. It
+    // travels the override channel exactly as the plinth, the hinge standard,
+    // the shaker frame and the shelf-pin setback do: an INPUT in the project
+    // layer, never a formula in the kit. Left out — a bare `computeCabinet()`,
+    // every golden fixture — the pass does nothing at all and the kit cuts what
+    // the AutoLISP cuts.
+    front_edge_trim: p.front_edge_trim || null,
     shaker_frame_mm: design?.fronts?.shakerFrame ?? null,
     // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ─────────────────────
     // The owner's standard is 50 and the LISP's is 70, so 70 stays the ENGINE's
@@ -482,8 +500,26 @@ export function migrateUnitFrontStyle(unit, profile = null) {
   };
 }
 
+/**
+ * ─── TURN 31 (CLAUDE.md F10): AN OLD TYPE NAME NEVER BREAKS A SAVE ─────────
+ *
+ * "on project load, `CORNER` reads as `L_SHAPE` (one-line alias kept forever);
+ * never break an existing save."
+ *
+ * The unit's stored `type` is rewritten on the way in, so everything
+ * downstream — the engine, the panel, the BOM, the CNC tree — sees one name.
+ * The TABLE is `engine/types.js TYPE_ALIASES` and it is kept forever: a
+ * migration runs once on a project somebody opens, and a file that has sat in a
+ * drawer for two years has never been migrated at all.
+ */
+function migrateUnitType(unit) {
+  const resolved = resolveTypeId(unit?.type);
+  if (!unit || resolved === unit.type) return unit;
+  return { ...unit, type: resolved, params: { ...unit.params, type: resolved } };
+}
+
 const migrateUnits = (units) => (Array.isArray(units)
-  ? units.map((u) => migrateUnitFrontStyle(migrateUnitShelves(u)))
+  ? units.map((u) => migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))))
   : []);
 
 function loadCache() {
@@ -515,7 +551,7 @@ function saveCache(state) {
 
 const cached = typeof localStorage !== 'undefined' ? loadCache() : null;
 
-export const useProjectStore = create((set, get) => ({
+export const useProjectStore = create(dirtyGate((set, get) => ({
   // A cached project may predate room v2 — migrate on the way in, so an old
   // tab that reloads gets four walls instead of a crash.
   project: cached?.project
@@ -529,7 +565,7 @@ export const useProjectStore = create((set, get) => ({
   dirty: false,
 
   // ── project / room ───────────────────────────────────────────────────────
-  setProjectName: (name) => set((s) => ({ project: { ...s.project, name }, dirty: true })),
+  setProjectName: (name) => set((s) => ({ project: { ...s.project, name } })),
 
   /**
    * The two things the new-project flow asks for that are not the name (turn 7,
@@ -544,7 +580,6 @@ export const useProjectStore = create((set, get) => ({
       ...(patch.number !== undefined ? { number: String(patch.number ?? '') } : {}),
       ...(patch.client !== undefined ? { client: String(patch.client ?? '') } : {}),
     },
-    dirty: true,
   })),
 
   /**
@@ -560,7 +595,7 @@ export const useProjectStore = create((set, get) => ({
     const next = migrateRoom({ ...s.project.room, ...patch });
     const verdict = roomChangeGuard(next, s.units);
     if (!verdict.ok) return verdict;
-    set((st) => ({ project: { ...st.project, room: next }, dirty: true }));
+    set((st) => ({ project: { ...st.project, room: next } }));
     // A lower ceiling shortens every top infill; a longer wall opens a gap.
     get().refreshAutoParts();
     return verdict;
@@ -577,7 +612,6 @@ export const useProjectStore = create((set, get) => ({
       ...s.project,
       room: { ...s.project.room, openings: [...(s.project.room.openings || []), { id: uid('op'), ...opening }] },
     },
-    dirty: true,
   })),
 
   updateOpening: (id, patch) => set((s) => ({
@@ -588,7 +622,6 @@ export const useProjectStore = create((set, get) => ({
         openings: (s.project.room.openings || []).map((o) => (o.id === id ? { ...o, ...patch } : o)),
       },
     },
-    dirty: true,
   })),
 
   removeOpening: (id) => set((s) => ({
@@ -596,7 +629,6 @@ export const useProjectStore = create((set, get) => ({
       ...s.project,
       room: { ...s.project.room, openings: (s.project.room.openings || []).filter((o) => o.id !== id) },
     },
-    dirty: true,
   })),
 
   loadProject: (project, units) => set({
@@ -654,7 +686,6 @@ export const useProjectStore = create((set, get) => ({
       // multiplied by four — and a patch merged onto an unmigrated base would
       // hand a freshly typed 25 to that rule and store 100 (CLAUDE.md F5).
       project: { ...s.project, design: applyDesignPatch(s.project.design, patch) },
-      dirty: true,
     }));
     // The infill width lives in Design Settings, so changing it re-cuts the
     // fillers everywhere.
@@ -770,7 +801,6 @@ export const useProjectStore = create((set, get) => ({
           fronts: { ...design.fronts, types: setFrontTypeCount(design.fronts.types, count, profile) },
         }),
       },
-      dirty: true,
     };
   }),
 
@@ -813,7 +843,6 @@ export const useProjectStore = create((set, get) => ({
         ...s.project,
         design: colour === undefined ? merged : withFrontColour(merged, colour, typeId),
       },
-      dirty: true,
     };
   }),
 
@@ -827,7 +856,6 @@ export const useProjectStore = create((set, get) => ({
   setFrontColour: (colour, typeId = null) => {
     set((s) => ({
       project: { ...s.project, design: withFrontColour(s.project.design, colour, typeId) },
-      dirty: true,
     }));
     return migrateDesign(get().project.design);
   },
@@ -858,13 +886,11 @@ export const useProjectStore = create((set, get) => ({
           },
         },
       },
-      dirty: true,
     };
   }),
 
   setCarcassTypes: (count) => set((s) => ({
     project: { ...s.project, design: setCarcassTypeCount(migrateDesign(s.project.design), count) },
-    dirty: true,
   })),
 
   setCarcassMaterial: (typeId, materialId) => set((s) => {
@@ -879,7 +905,6 @@ export const useProjectStore = create((set, get) => ({
           },
         },
       },
-      dirty: true,
     };
   }),
 
@@ -911,7 +936,6 @@ export const useProjectStore = create((set, get) => ({
   setRunMaterial: (role, patch) => {
     set((s) => ({
       project: { ...s.project, design: withRunMaterial(s.project.design, role, patch) },
-      dirty: true,
     }));
     return migrateDesign(get().project.design);
   },
@@ -929,7 +953,6 @@ export const useProjectStore = create((set, get) => ({
           },
         },
       },
-      dirty: true,
     };
   }),
 
@@ -941,7 +964,6 @@ export const useProjectStore = create((set, get) => ({
       if (!next) return {};
       return {
         project: { ...s.project, design: { ...design, doorStyles: [...design.doorStyles, next] } },
-        dirty: true,
       };
     });
     return id;
@@ -957,7 +979,6 @@ export const useProjectStore = create((set, get) => ({
           doorStyles: design.doorStyles.map((st) => (st.id === id ? normaliseDoorStyle({ ...st, ...patch, id }) : st)),
         },
       },
-      dirty: true,
     };
   }),
 
@@ -970,7 +991,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.params.door_style_id === id
         ? { ...u, params: { ...u.params, door_style_id: null } }
         : u)),
-      dirty: true,
     };
   }),
 
@@ -1123,7 +1143,6 @@ export const useProjectStore = create((set, get) => ({
           },
         };
       }),
-      dirty: true,
     });
     return notices;
   },
@@ -1148,7 +1167,6 @@ export const useProjectStore = create((set, get) => ({
     }, profile);
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, top_infill_mm: height } } : u)),
-      dirty: true,
     }));
     // Turn 6: the top infill is ONE piece for the whole RUN (engine/runs.js), so
     // asking for one over this cabinet decides the length of the piece over its
@@ -1186,7 +1204,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, cornice: height } }
         : u)),
-      dirty: true,
     }));
     if (height > 0) {
       const wanted = profile.autoParts.cornice.infillHeight;
@@ -1219,7 +1236,6 @@ export const useProjectStore = create((set, get) => ({
     if (!unit || !takesPlinth(unit.type, getCabinetProfile())) return false;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: true } } : u)),
-      dirty: true,
     }));
     get().refreshAutoParts();
     return true;
@@ -1228,7 +1244,6 @@ export const useProjectStore = create((set, get) => ({
   removePlinth: (unitId) => {
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: false } } : u)),
-      dirty: true,
     }));
     // Taking one out of the middle of a run splits the kick in two — the same
     // reason adding one joins them.
@@ -1259,7 +1274,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, side_infill_off: !enabled } }
         : u)),
-      dirty: true,
     }));
     get().refreshAutoParts();
     return Boolean(enabled);
@@ -1295,7 +1309,6 @@ export const useProjectStore = create((set, get) => ({
     if (!unit || getUnitType(unit.type).mount !== 'wall') return false;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, bottom_mask: true } } : u)),
-      dirty: true,
     }));
     get().refreshAutoParts();
     return true;
@@ -1311,7 +1324,6 @@ export const useProjectStore = create((set, get) => ({
     const ids = new Set(runMemberIds(get().units, unitId, getCabinetProfile()));
     set((s) => ({
       units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, bottom_mask: false } } : u)),
-      dirty: true,
     }));
     get().refreshAutoParts();
     return ids.size;
@@ -1321,7 +1333,6 @@ export const useProjectStore = create((set, get) => ({
     const ids = new Set(runMemberIds(get().units, unitId, getCabinetProfile()));
     set((s) => ({
       units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, top_infill_mm: 0 } } : u)),
-      dirty: true,
     }));
     get().refreshAutoParts();
     return ids.size;
@@ -1412,7 +1423,6 @@ export const useProjectStore = create((set, get) => ({
       project: applyToAll === false
         ? st.project
         : { ...st.project, design: migrateDesign({ ...design, endPanel: { ...settings, applyToAll: true } }) },
-      dirty: true,
     }));
     // The unit is wider than it was; settle it legally where it stands.
     get().moveUnit(unitId, unit.position.x_mm, 0);
@@ -1424,7 +1434,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, end_panels: (u.params.end_panels || []).filter((ep) => ep.id !== panelId) } }
         : u)),
-      dirty: true,
     }));
     get().refreshAutoParts();
   },
@@ -1455,7 +1464,6 @@ export const useProjectStore = create((set, get) => ({
             }),
           }
           : s.project,
-        dirty: true,
       };
     });
     get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
@@ -1489,7 +1497,6 @@ export const useProjectStore = create((set, get) => ({
           },
         }
         : u)),
-      dirty: true,
     }));
     // An end panel that reaches the CEILING is one of the four things a run's
     // top infill can finish against (engine/runs.js), so moving this edge can
@@ -1535,7 +1542,6 @@ export const useProjectStore = create((set, get) => ({
           },
         }
         : u)),
-      dirty: true,
     }));
     get().refreshAutoParts();
     return below;
@@ -1558,7 +1564,6 @@ export const useProjectStore = create((set, get) => ({
     const key = side === 'R' ? 'side_infill_right_top_mm' : 'side_infill_left_top_mm';
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, [key]: top } } : u)),
-      dirty: true,
     }));
     // A filler taken to the ceiling changes nothing about the RUN — but one
     // taken back down can. Cheap, and it keeps the two in step.
@@ -1590,7 +1595,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, [key]: Boolean(pinned) } }
         : u)),
-      dirty: true,
     }));
     get().refreshAutoParts();
     const now = get().units.find((u) => u.id === unitId);
@@ -1651,7 +1655,6 @@ export const useProjectStore = create((set, get) => ({
 
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, ...applied } } : u)),
-      dirty: true,
     }));
 
     const notices = [];
@@ -1699,7 +1702,6 @@ export const useProjectStore = create((set, get) => ({
     const design = migrateDesign(s.project.design);
     return {
       project: { ...s.project, design: migrateDesign({ ...design, endPanel: { ...design.endPanel, ...patch } }) },
-      dirty: true,
     };
   }),
 
@@ -1720,7 +1722,6 @@ export const useProjectStore = create((set, get) => ({
     units: s.units.map((u) => (u.id === unitId
       ? { ...u, params: { ...u.params, door_style_id: styleId || null } }
       : u)),
-    dirty: true,
   })),
 
   // ─── The unit's own finish (turn 13, CLAUDE.md F3) ────────────────────────
@@ -1759,7 +1760,6 @@ export const useProjectStore = create((set, get) => ({
         for (const k of keys) params[k] = patch[k] || null;
         return { ...u, params };
       }),
-      dirty: true,
     }));
   },
 
@@ -1771,7 +1771,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (ids.has(u.id)
         ? { ...u, params: { ...u.params, carcass_type_id: null, front_type_id: null } }
         : u)),
-      dirty: true,
     }));
   },
 
@@ -2135,7 +2134,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, unit_num: next } }
         : u)),
-      dirty: true,
     }));
     return next;
   },
@@ -2254,7 +2252,7 @@ export const useProjectStore = create((set, get) => ({
     // editable field, and the unit can be hung wherever the window allows.
     const aligned = alignedMountFor(state, unit, placed);
     if (aligned != null) unit.params.mount_height = aligned;
-    set((s) => ({ units: [...s.units, unit], dirty: true }));
+    set((s) => ({ units: [...s.units, unit] }));
     // A unit arrives with its SCRIBE FILLERS worked out from where it landed.
     // The plinth and the top infill are decisions and wait to be asked for
     // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
@@ -2263,7 +2261,7 @@ export const useProjectStore = create((set, get) => ({
   },
 
   removeUnit: (unitId) => {
-    set((s) => ({ units: s.units.filter((u) => u.id !== unitId), dirty: true }));
+    set((s) => ({ units: s.units.filter((u) => u.id !== unitId) }));
     get().refreshAutoParts();
   },
 
@@ -2358,7 +2356,6 @@ export const useProjectStore = create((set, get) => ({
         }
         return { ...u, params };
       }),
-      dirty: true,
     }));
     // The clamp above keeps the unit inside its slot without moving it; this
     // re-runs the position clamp anyway, so a unit that was already overlapping
@@ -2409,7 +2406,7 @@ export const useProjectStore = create((set, get) => ({
     if (!Object.keys(applied).length) return { applied: {}, moved: 0, notices: [] };
 
     const nextDesign = migrateDesign({ ...design, heights });
-    set((st) => ({ project: { ...st.project, design: nextDesign }, dirty: true }));
+    set((st) => ({ project: { ...st.project, design: nextDesign } }));
 
     const resolved = projectHeights(nextDesign, profile);
     const notices = [];
@@ -2505,7 +2502,6 @@ export const useProjectStore = create((set, get) => ({
 
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
-      dirty: true,
     }));
     // Moving changes which gaps exist — and a gap is a filler.
     get().refreshAutoParts();
@@ -2608,7 +2604,6 @@ export const useProjectStore = create((set, get) => ({
 
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, rotation_deg: next } } : u)),
-      dirty: true,
     }));
     // Turning changes the footprint; settle it legally where it stands
     // (moveUnit re-derives the automatics on the way through).
@@ -2652,7 +2647,6 @@ export const useProjectStore = create((set, get) => ({
     }
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, wall: wallIndex, x_mm: x } } : u)),
-      dirty: true,
     }));
     get().refreshAutoParts(unitId);
     return { wall: wallIndex, x_mm: x, blocked: false, error: null };
@@ -2673,7 +2667,6 @@ export const useProjectStore = create((set, get) => ({
         const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
         return { ...u, params: { ...u.params, sections: [{ ...section, items: [...section.items, { id, ...item }] }] } };
       }),
-      dirty: true,
     }));
     // A shelf added at a position someone else already occupies is a collision
     // like any other — it goes through the same clamp.
@@ -2714,7 +2707,6 @@ export const useProjectStore = create((set, get) => ({
         }));
         return { ...u, params: { ...u.params, sections: [{ ...section, items: [...drawers, ...kept] }] } };
       }),
-      dirty: true,
     }));
     // The drawer stack raises the floor the shelves stand on.
     get().reclampShelves(unitId);
@@ -2749,7 +2741,6 @@ export const useProjectStore = create((set, get) => ({
           },
         };
       }),
-      dirty: true,
     }));
     get().reclampShelves(unitId);
     return clamped;
@@ -2761,7 +2752,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_equal_heights: Boolean(equal) } }
         : u)),
-      dirty: true,
     }));
     // Ticking it back on has to MEAN something: the bottom drawer's height (the
     // one the eye starts from) becomes the height of the stack.
@@ -2992,7 +2982,6 @@ export const useProjectStore = create((set, get) => ({
           params: { ...u.params, element_overrides: Object.keys(all).length ? all : null },
         };
       }),
-      dirty: true,
     }));
     return get().units.find((u) => u.id === unitId)?.params.element_overrides?.[panelId] || null;
   },
@@ -3176,7 +3165,6 @@ export const useProjectStore = create((set, get) => ({
         }
         return { ...u, params: { ...u.params, sections: [{ ...section, items }] } };
       }),
-      dirty: true,
     }));
     if (wasDrawer) get().reclampShelves(unitId);   // the floor just dropped
   },
@@ -3190,7 +3178,6 @@ export const useProjectStore = create((set, get) => ({
         params: { ...u.params, sections: [{ ...section, items: section.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) }] },
       };
     }),
-    dirty: true,
   })),
 
   /**
@@ -3241,7 +3228,6 @@ export const useProjectStore = create((set, get) => ({
     const next = items.map((i) => (at.has(i.id) ? { ...i, pos_mm: at.get(i.id) } : i));
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
-      dirty: true,
     }));
     // Even spacing can still be too tight when the band is short; the clamp has
     // the final word, as it does for every other path.
@@ -3282,7 +3268,32 @@ export const useProjectStore = create((set, get) => ({
     return result?.drillSummary?.hinge_centers || [];
   },
 
-  /** Move one hinge. Clamped to the carcass and snapped to the workshop grid. */
+  /**
+   * Move one hinge. Clamped to the carcass and snapped to the workshop grid.
+   *
+   * ─── TURN 31 (CLAUDE.md F3): AND REFUSED AT THE SOURCE ───────────────────
+   *
+   * The proven live bug: `hinge_rows [100, 100, 470]` is storable from this
+   * setter today, and `computeCabinet()` then emits the cups at 84 and 116
+   * TWICE — same panel, same layer, same coordinate. A 5 mm bit going back into
+   * a hole it has already made.
+   *
+   * Turn 17's clamp was already trying to stop it ("never on top of the one
+   * next to it") and it was TOO SMALL: `holePairOffset * 2` is 32 mm, which is
+   * the two holes of ONE hinge, not the room two hinges need. The line is
+   * `hingeMinSpacingMm` — profile, 60, the owner's number — and it is the SAME
+   * number the guard reports at (engine/cnc/drillGuard.js), so the setter and
+   * the Check can never disagree about what is legal.
+   *
+   * And it REFUSES rather than repairing: turn 17's clamp slid the row to the
+   * nearest legal place, which is the app deciding where a hinge goes. Rule 4 —
+   * the guard SPEAKS. A blocked move returns the reason with the number in it
+   * and leaves the ladder exactly as it was; `hinges.spacingBlocks: false` is
+   * the one profile line that turns the refusal into a warning.
+   *
+   * @returns {number|null} the position it landed at, or null when refused —
+   *          with `{ blocked, message }` on the object either way.
+   */
   setHingePos: (unitId, index, mm) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
@@ -3291,22 +3302,30 @@ export const useProjectStore = create((set, get) => ({
     const rows = [...s.hingeRowsOf(unitId)];
     if (index < 0 || index >= rows.length) return null;
     const H = Number(unit.params.height) || 0;
-    // A hinge lives on the carcass, so the carcass is the clamp — and never on
-    // top of the one next to it: two cups at the same height is one hinge and a
-    // hole in a door.
-    const gap = profile.hinges.holePairOffset * 2;
-    const below = index > 0 ? rows[index - 1] + gap : 0;
-    const above = index < rows.length - 1 ? rows[index + 1] - gap : H;
-    const pos = Math.min(Math.max(snapTo(Number(mm) || 0, profile.editor.mmStep), below), Math.max(below, above));
-    rows[index] = pos;
+    const min = hingeMinSpacingMm(profile);
+    // The carcass is still the clamp: a hinge cannot be off the board.
+    const pos = Math.min(Math.max(snapTo(Number(mm) || 0, profile.editor.mmStep), 0), H);
+    const next = rows.map((v, i) => (i === index ? pos : v));
+    const clash = hingeRowClashes(next, { minSpacingMm: min, unitNum: unit.params.unit_num });
+    if (clash.length && hingeSpacingBlocks(profile)) {
+      return { blocked: true, message: clash[0].message, minSpacingMm: min };
+    }
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: rows } } : u)),
-      dirty: true,
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: next } } : u)),
     }));
-    return pos;
+    return clash.length
+      ? { pos, blocked: false, message: clash[0].message, minSpacingMm: min }
+      : pos;
   },
 
-  /** One more hinge, in the biggest gap in the run — where a joiner would put it. */
+  /**
+   * One more hinge, in the biggest gap in the run — where a joiner would put it.
+   *
+   * Turn 31 (CLAUDE.md F3): and REFUSED where the biggest gap is not big
+   * enough. A ladder with no room left for another hinge is a ladder that gets
+   * one dropped on top of an existing row, which is the doubled hole again by a
+   * different door.
+   */
   addHinge: (unitId) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
@@ -3314,11 +3333,11 @@ export const useProjectStore = create((set, get) => ({
     const profile = getCabinetProfile();
     const rows = [...s.hingeRowsOf(unitId)];
     const H = Number(unit.params.height) || 0;
+    const min = hingeMinSpacingMm(profile);
     if (!rows.length) {
       const at = snapTo(H / 2, profile.editor.mmStep);
       set((st) => ({
         units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: [at] } } : u)),
-        dirty: true,
       }));
       return at;
     }
@@ -3333,9 +3352,16 @@ export const useProjectStore = create((set, get) => ({
     if (bestAt == null) bestAt = Math.min(H, rows[0] + profile.hinges.endOffset);
     const at = snapTo(bestAt, profile.editor.mmStep);
     const next = [...rows, at].sort((a, b) => a - b);
+    const clash = hingeRowClashes(next, { minSpacingMm: min, unitNum: unit.params.unit_num });
+    if (clash.length && hingeSpacingBlocks(profile)) {
+      return {
+        blocked: true,
+        message: `No room for another hinge: ${clash[0].message}`,
+        minSpacingMm: min,
+      };
+    }
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: next } } : u)),
-      dirty: true,
     }));
     return at;
   },
@@ -3348,7 +3374,6 @@ export const useProjectStore = create((set, get) => ({
     const next = rows.filter((_, i) => i !== index);
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: next } } : u)),
-      dirty: true,
     }));
     return next.length;
   },
@@ -3356,7 +3381,6 @@ export const useProjectStore = create((set, get) => ({
   /** Hand this cabinet back to the kit's own maths and the project standard. */
   resetHinges: (unitId) => set((st) => ({
     units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: null } } : u)),
-    dirty: true,
   })),
 
   // ─── DRAWER FRONTS, AND THE HEIGHTS UNDER THEM (turn 17, CLAUDE.md F8) ───
@@ -3375,7 +3399,6 @@ export const useProjectStore = create((set, get) => ({
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_fronts: false } } : u)),
-      dirty: true,
     }));
     return { removed: count, already: false };
   },
@@ -3388,7 +3411,6 @@ export const useProjectStore = create((set, get) => ({
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_fronts: true } } : u)),
-      dirty: true,
     }));
     return { fitted: get().unitResult(unitId)?.panels.filter((p) => p.part === 'DRAWER-FRONT').length || 0, already: false };
   },
@@ -3430,7 +3452,6 @@ export const useProjectStore = create((set, get) => ({
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_heights: next } } : u)),
-      dirty: true,
     }));
     return next[index];
   },
@@ -3439,7 +3460,6 @@ export const useProjectStore = create((set, get) => ({
   resetDrawerHeights: (unitId) => set((st) => ({
     units: st.units.map((u) => (u.id === unitId
       ? { ...u, params: { ...u.params, drawer_heights: null } } : u)),
-    dirty: true,
   })),
 
   /**
@@ -3460,7 +3480,6 @@ export const useProjectStore = create((set, get) => ({
           runners: { ...design.runners, variant: String(variant || '').toUpperCase() },
         }),
       },
-      dirty: true,
     };
   }),
 
@@ -3477,7 +3496,6 @@ export const useProjectStore = create((set, get) => ({
       else delete own[String(drawer)];
       return { ...u, params: { ...u.params, runner_variants: own } };
     }),
-    dirty: true,
   })),
 
   /** The project's hinge standard: 2 or 3 (turn 17, CLAUDE.md F7.1). */
@@ -3488,7 +3506,6 @@ export const useProjectStore = create((set, get) => ({
         ...s.project,
         design: migrateDesign({ ...design, hinges: { ...design.hinges, standard: Math.trunc(Number(n)) } }),
       },
-      dirty: true,
     };
   }),
 
@@ -3510,7 +3527,6 @@ export const useProjectStore = create((set, get) => ({
     for (const key of allowed) if (patch?.[key] !== undefined) next[key] = patch[key];
     return {
       project: { ...s.project, design: migrateDesign({ ...design, hinges: next }) },
-      dirty: true,
     };
   }),
 
@@ -3530,7 +3546,6 @@ export const useProjectStore = create((set, get) => ({
         ...s.project,
         design: migrateDesign({ ...design, hardware: { ...design.hardware, shelfSleeve: wanted } }),
       },
-      dirty: true,
     };
   }),
 
@@ -3571,7 +3586,6 @@ export const useProjectStore = create((set, get) => ({
           params: { ...u.params, door_hinges: Object.keys(map).length ? map : null },
         };
       }),
-      dirty: true,
     }));
     return wanted;
   },
@@ -3665,6 +3679,151 @@ export const useProjectStore = create((set, get) => ({
     });
   },
 
+  /**
+   * ─── TURN 31 (CLAUDE.md F4): THE RULEBOOK, READ ──────────────────────────
+   *
+   * Every front in the room with what stands on each of its two edges, what the
+   * owner's matrix wants there and what it actually has. ONE answer for the
+   * overlay, the Check and the repair modal, exactly as `frontGapWarnings` is
+   * one answer for the red marks and their millimetres — a display that
+   * measured one thing while the Check measured another is how a joiner ends up
+   * arguing with his own app.
+   *
+   * It READS. Nothing here writes, moves a cabinet or narrows a board.
+   */
+  frontClearances: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    return frontClearances({
+      entries: s.allResults(),
+      units: s.units,
+      baseOf: (u) => unitBase(u, profile),
+      wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      profile,
+    });
+  },
+
+  /**
+   * ─── CHECK v1 (turn 31, CLAUDE.md F6) ────────────────────────────────────
+   *
+   * Eleven rules over the whole job, in one list. Pressed by the Check button
+   * and run automatically before Export — the SAME call both times, because a
+   * pre-export check that could differ from the one the button gives is a check
+   * nobody would believe.
+   *
+   * It READS. Nothing here blocks, moves or re-cuts (rule 4); the one hold-out
+   * in the app is the export gate's, and that has "Export anyway".
+   */
+  runChecks: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    return runChecks({
+      entries: s.allResults(),
+      units: s.units,
+      room: s.project.room,
+      design: migrateDesign(s.project.design),
+      materials: useMaterialAssignmentStore.getState().materials,
+      wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      profile,
+    });
+  },
+
+  /** Rule 13: carcasses in a run that are not touching. RED in the Check. */
+  carcassGapWarnings: () => carcassGaps(get().units, getCabinetProfile()),
+
+  /**
+   * ─── RULE 8, WRITTEN: A CORRECTION ON ONE EDGE ───────────────────────────
+   *
+   * "A width correction acts ONLY on the edge whose neighbour demands it —
+   * never symmetrically."
+   *
+   * It lands on the OVERRIDE CHANNEL (`params.front_edge_trim`, applied by
+   * `paramsForEngine` and consumed by one pass in the engine), so a bare
+   * `computeCabinet()` — every golden fixture — never sees it. The engine
+   * applies it BEFORE the drilling, which is what makes rules 9 and 12 true by
+   * construction: the cups stay 21.5 from the front's own edge and the handle
+   * keeps its distance from its own edge, because both are derived from the
+   * width that has just changed.
+   *
+   * Rule 17 — "narrowing a front warns 'changes BOM and drilling' before it
+   * acts" — is the CALLER's, and it is a warning rather than a veto: this
+   * setter does what it is told.
+   *
+   * @param {string} unitId
+   * @param {string} panelId
+   * @param {object} patch  { left, right } in mm — absolute, not cumulative
+   * @returns {object|null} the trim now stored for that front
+   */
+  setFrontEdgeTrim: (unitId, panelId, patch) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !panelId) return null;
+    const current = unit.params.front_edge_trim || {};
+    const was = current[panelId] || { left: 0, right: 0 };
+    const next = {
+      left: Math.max(0, Number(patch?.left ?? was.left) || 0),
+      right: Math.max(0, Number(patch?.right ?? was.right) || 0),
+    };
+    const map = { ...current };
+    // A correction of nothing is no correction: an empty entry left behind
+    // would put `edgeTrim: {0,0}` on the piece and make a stock front look
+    // hand-corrected on the sheet.
+    if (next.left <= 0 && next.right <= 0) delete map[panelId];
+    else map[panelId] = next;
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, front_edge_trim: Object.keys(map).length ? map : null } }
+        : u)),
+    }));
+    return map[panelId] || null;
+  },
+
+  /** Hand this front back to the kit's own width. */
+  clearFrontEdgeTrim: (unitId, panelId) => get().setFrontEdgeTrim(unitId, panelId, { left: 0, right: 0 }),
+
+  /**
+   * Rule 15's first option, applied: NARROW THE FRONT(S).
+   *
+   * The plan is the engine's (`narrowingPlan` — halves of the shortfall, the
+   * asymmetry law, the hinge-adjustment flag); this is one batch so the whole
+   * repair is ONE step of undo. A repair a joiner has to undo twice is a repair
+   * he stops trusting.
+   */
+  narrowFronts: (trims) => runBatch(() => {
+    const done = [];
+    for (const t of trims || []) {
+      if (!t?.unitId || !t?.panelId || !(t.mm > 0)) continue;
+      const unit = get().units.find((u) => u.id === t.unitId);
+      const was = unit?.params?.front_edge_trim?.[t.panelId] || { left: 0, right: 0 };
+      const side = t.side === 'left' ? 'left' : 'right';
+      done.push(get().setFrontEdgeTrim(t.unitId, t.panelId, {
+        // CUMULATIVE on that edge: a second correction on a front that has
+        // already been narrowed once adds to it, because the first correction
+        // is part of the width the second one measured against.
+        [side]: Math.round((Number(was[side]) || 0) + Number(t.mm)) === 0
+          ? 0 : (Number(was[side]) || 0) + Number(t.mm),
+      }));
+    }
+    return done;
+  }),
+
+  /**
+   * Rule 13's ONE fix: close the run to touch.
+   *
+   * "The only fix offered is closing to touch. Cabinets are NEVER moved to fix
+   * a FRONT gap." Both halves matter, and the second one is why this action
+   * exists at all rather than the app quietly sliding a cabinet whenever a
+   * front measures short: a carcass gap is its own fault with its own fix, and
+   * a front gap is never repaired by moving furniture.
+   */
+  closeCarcassGap: (rightUnitId, mm) => {
+    const unit = get().units.find((u) => u.id === rightUnitId);
+    if (!unit || !(Math.abs(Number(mm)) > 0)) return null;
+    const to = (Number(unit.position?.x_mm) || 0) - Math.abs(Number(mm));
+    return get().moveUnit(rightUnitId, to);
+  },
+
   /** Every door of this cabinet that has been given a hinge by hand. */
   doorHingesOf: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
@@ -3687,7 +3846,6 @@ export const useProjectStore = create((set, get) => ({
         ...st.project,
         design: { ...design, fronts: { ...design.fronts, handle: normaliseHandle(handle) } },
       },
-      dirty: true,
     }));
     return normaliseHandle(handle);
   },
@@ -3708,7 +3866,6 @@ export const useProjectStore = create((set, get) => ({
         ...st.project,
         design: { ...design, fronts: { ...design.fronts, handleOffsets: offsets } },
       },
-      dirty: true,
     }));
     return offsets[handleClass] || null;
   },
@@ -3730,7 +3887,6 @@ export const useProjectStore = create((set, get) => ({
           params: { ...u.params, front_handles: Object.keys(map).length ? map : null },
         };
       }),
-      dirty: true,
     }));
     return spec || null;
   },
@@ -3761,7 +3917,6 @@ export const useProjectStore = create((set, get) => ({
     units: st.units.map((u) => (u.id === unitId
       ? { ...u, params: { ...u.params, door_hinges: null } }
       : u)),
-    dirty: true,
   })),
 
   setShelfPos: (unitId, itemId, posRaw, snapStep = 0) => {
@@ -3944,7 +4099,6 @@ export const useProjectStore = create((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, partition_front_mm: value } }
         : u)),
-      dirty: true,
     }));
     return value;
   },
@@ -3991,7 +4145,6 @@ export const useProjectStore = create((set, get) => ({
           },
         }
         : u)),
-      dirty: true,
     }));
   },
 
@@ -4012,7 +4165,6 @@ export const useProjectStore = create((set, get) => ({
         },
       }
       : u)),
-    dirty: true,
   })),
 
   /**
@@ -4123,7 +4275,7 @@ export const useProjectStore = create((set, get) => ({
   }),
 
   markSaved: (project) => set((s) => ({ project: project || s.project, dirty: false })),
-}));
+})));
 
 // Cache to localStorage on every change (fallback only — the DB stays primary)
 useProjectStore.subscribe((state) => saveCache(state));
@@ -4494,16 +4646,6 @@ export function elementDepthBoundsFor(unit, profile) {
  */
 const MAX_ELEMENT_THICKNESS = 100;
 
-/** Drag bounds for one shelf: the band, narrowed by its immediate neighbours. */
-export function shelfDragBounds(unit, itemId, profile) {
-  const band = shelfBandFor(unit, profile);
-  const self = unit.params.sections?.[0]?.items?.find((i) => i.id === itemId);
-  return shelfBounds({
-    pos: self?.pos_mm ?? band.min,
-    others: otherShelfPositions(unit, itemId),
-    band,
-  }, profile);
-}
 
 /**
  * Interior validation. The hard rule from SPEC 4.7: a drawer stack must be

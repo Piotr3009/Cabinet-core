@@ -46,7 +46,7 @@
 
 import { decorById, decorFinish, decorLabel, finishIdForDecor } from './decors.js';
 
-export const VENEER_ID_PREFIX = 'veneer';
+const VENEER_ID_PREFIX = 'veneer';
 
 /**
  * The seed (owner decision (a)-minimal): the most TIMBER-LIKE of the 85, the
@@ -91,7 +91,7 @@ export function normaliseVeneer(raw) {
   };
 }
 
-export function veneerById(id) {
+function veneerById(id) {
   if (!id) return null;
   return catalogue.find((v) => v.id === String(id)) || null;
 }

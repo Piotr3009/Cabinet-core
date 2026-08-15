@@ -174,7 +174,12 @@ test('F2.2 — the PARENT is the same for both: body on the door, plate on the c
   // the carcass is the PLATE, which is the one piece of a CLIP top screwed to
   // the side panel and the one piece that genuinely never moves.
   assert.equal((hardware.match(/parent: 'door'/g) || []).length, 2, 'member A and member B');
-  assert.equal((hardware.match(/parent: 'carcass'/g) || []).length, 1, 'the plate, and only the plate');
+  // Turn 31 (CLAUDE.md F9) adds a second `parent: 'carcass'`, and it is not a
+  // hinge: the EXTRACTOR's registry slot, which hangs in the cabinet's own
+  // aperture. The property this asserts is about the HINGE, so it is asked of
+  // the hinge's own reports.
+  const hingeReports = hardware.slice(0, hardware.indexOf('export function Extractor'));
+  assert.equal((hingeReports.match(/parent: 'carcass'/g) || []).length, 1, 'the plate, and only the plate');
   // …and the DOOR half is mounted as a child of the leaf's own moving group,
   // for every leaf, with no test on which door it is.
   assert.match(view, /front === 'door' && \(showHinges \|\| xray\)/);

@@ -38,15 +38,7 @@ import { setAventosCatalogue } from '../engine/lifts.js';
 export const CLIPTOP_HINGE_CATALOGUE = cliptop;
 export const MOVENTO_CATALOGUE = movento;
 export const AVENTOS_CATALOGUE = aventos;
-export const AVENTOS_HF_DRILLING_PATTERNS = aventosHfDrilling;
 
-/** The four files, as the record of what a build is carrying. */
-export const HARDWARE_FILES = [
-  { id: 'cliptop-hinges', label: 'CLIP top hinges', raw: cliptop },
-  { id: 'movento', label: 'MOVENTO runners', raw: movento },
-  { id: 'aventos', label: 'AVENTOS lifts', raw: aventos },
-  { id: 'aventos-hf-drilling', label: 'AVENTOS HF drilling', raw: aventosHfDrilling },
-];
 
 /**
  * Hand the catalogues to the engine. Idempotent, synchronous, unfailing.
@@ -69,19 +61,3 @@ export function loadHardwareCatalogues() {
   };
 }
 
-/**
- * `movento.json` with the header's system stamped onto every row.
- *
- * ─── TURN 20 (CLAUDE.md F2.3) ───────────────────────────────────────────────
- * Turn 19 wrote this as the adaptation turn 20 would need. Turn 20 did not
- * need it: the file is not the wrong shape, THE PARSER WAS. It reads the
- * header itself now, so `setRunnerCatalogue(movento)` works on the owner's
- * file as it stands and this is left only as an explicit way to say which
- * system a headerless list belongs to. No number is changed, invented or
- * dropped either way.
- */
-export function toRunnerManifest(raw) {
-  const system = String(raw?.profile || raw?.system || '').trim();
-  const files = (raw?.items || []).map((row) => ({ ...row, system }));
-  return { files };
-}

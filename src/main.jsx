@@ -3,7 +3,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { useProjectStore } from './stores/projectStore.js';
-import { useUiStore } from './stores/uiStore.js';
+import { modalShellFaults, useUiStore } from './stores/uiStore.js';
+import * as exportGate from './engine/cnc/exportGate.js';
+import * as drillGuard from './engine/cnc/drillGuard.js';
+import * as cncExport from './lib/cncExport.js';
+import * as frontClearance from './engine/frontClearance.js';
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
 import { useMaterialAssignmentStore } from './stores/materialAssignmentStore.js';
@@ -151,6 +155,18 @@ if (typeof window !== 'undefined') {
   window.__ccT28 = {
     shelfHeights, bevel, hardwareFinish, decors, dimensions, frontDimensions,
   };
+  // ─── Turn 31 (CLAUDE.md F1) ───
+  // The shell's own guard, published for the same reason every reader above is:
+  // R4 says a claim is proven by asking the APP. "No modal opened without
+  // knowing what it is about" is a claim about a session, and this is the
+  // session's own record of it — the guard SPEAKS (rule 4) and this is where
+  // it can be heard from outside.
+  window.__cc.modalFaults = modalShellFaults;
+  // ─── Turn 31 (CLAUDE.md F3 / R4) ───
+  // The two the export gate is made of, published for the same reason every
+  // reader above is: a claim about what the EXPORT does has to be read off the
+  // functions the export button calls, not off a re-implementation beside it.
+  window.__ccT31 = { exportGate, drillGuard, cncExport, frontClearance };
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

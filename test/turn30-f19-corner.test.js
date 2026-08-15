@@ -36,7 +36,7 @@ import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engi
 import { flattenLibrary, resolveEntry } from '../src/engine/library.js';
 import { hardwareInstances } from '../src/engine/hardware3d.js';
 
-const of = (over = {}) => computeCabinet({ ...defaultParamsFor('CORNER', P), unit_num: '01', ...over }, P);
+const of = (over = {}) => computeCabinet({ ...defaultParamsFor('L_SHAPE', P), unit_num: '01', ...over }, P);
 const G = P.board.thickness;
 const CN = P.cornerUnit;
 
@@ -55,7 +55,7 @@ test('F19 KIT_BUDR_FULL.lsp is the THREE-DRAWER BASE UNIT, not a corner kit', ()
 });
 
 test('F19 …so the corner unit claims NO kit, because there is none to claim', () => {
-  assert.equal(getUnitType('CORNER').lisp, null);
+  assert.equal(getUnitType('L_SHAPE').lisp, null);
   // Nothing in the app pretends a corner kit exists.
   for (const id of UNIT_TYPE_ORDER) {
     const l = getUnitType(id).lisp;
@@ -95,13 +95,13 @@ test('F19 …and nothing is bought for it either, because nothing is specified',
   }
   // A corner cabinet's LEGS are the clearest thing not to improvise: one of
   // the four would stand in the L's missing corner.
-  assert.equal(getUnitType('CORNER').legs, false);
+  assert.equal(getUnitType('L_SHAPE').legs, false);
 });
 
 test('F19 no door: a corner leaf hangs on cups nobody has written down', () => {
   const c = of();
   assert.equal(c.panels.filter((p) => p.role === 'front').length, 0);
-  assert.equal(getUnitType('CORNER').supports.doors, false);
+  assert.equal(getUnitType('L_SHAPE').supports.doors, false);
   // …and asking for one anyway changes nothing, because the kit has no face.
   assert.equal(of({ doors: true }).panels.filter((p) => p.role === 'front').length, 0);
   assert.equal(of({ doors: true }).drills.length, 0);
@@ -174,22 +174,26 @@ test('F19 every board reaches the BOM and the cut list', () => {
 // ─── 4. IT IS REACHABLE, AND IT SAYS WHAT IT IS ────────────────────────────
 
 test('F19 the held-open row became a kit, and it names the gap where a joiner reads it', () => {
-  assert.equal(categoryOf('CORNER').id, 'kitchen');
-  const entry = flattenLibrary().find((e) => e.id === 'corner');
+  // ─── TURN 31 (CLAUDE.md F10): AND IT IS CALLED WHAT IT IS ────────────────
+  // The kit is unchanged to the millimetre; its NAME was a promise it could
+  // not keep. Everything this test protected still holds under the new one.
+  assert.equal(categoryOf('L_SHAPE').id, 'kitchen');
+  const entry = flattenLibrary().find((e) => e.id === 'l-shape-unit');
   assert.equal(entry.kind, 'type');
-  assert.equal(entry.typeId, 'CORNER');
+  assert.equal(entry.typeId, 'L_SHAPE');
+  assert.equal(entry.label, 'L-shape unit');
   const state = resolveEntry(entry, P);
   assert.equal(state.enabled, true);
   assert.match(state.hint, /no LISP defines its drilling/);
-  assert.equal(UNIT_NUM_PREFIX.CORNER, 'CR');
-  // The L-shape row is a DIFFERENT thing (one carcass on two walls) and stays
-  // held open.
+  assert.equal(UNIT_NUM_PREFIX.L_SHAPE, 'CR');
+  // The held-open row is a DIFFERENT promise — the JOINTS, which stay parked
+  // by the owner's word — and it stays held open.
   assert.equal(flattenLibrary().find((e) => e.id === 'l-shape').kind, 'soon');
 });
 
 test('F19 no other kit grew a corner', () => {
   for (const id of UNIT_TYPE_ORDER) {
-    if (id === 'CORNER') continue;
+    if (id === 'L_SHAPE') continue;
     assert.notEqual(getUnitType(id).corner, true, id);
   }
   // …and a base unit is exactly what it was.

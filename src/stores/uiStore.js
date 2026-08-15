@@ -1,10 +1,15 @@
 import { create } from 'zustand';
-import { DEFAULT_CABINET_PROFILE } from '../engine/profile.js';
+import { DEFAULT_CABINET_PROFILE, getCabinetProfile } from '../engine/profile.js';
 import { brightnessScale } from '../engine/lighting.js';
 import { applySelection, primaryOf } from '../lib/selection.js';
 import {
   closeNav, openNav, popNav, pushNav,
 } from '../lib/editorStack.js';
+import { modalAnchorFault, withModalAnchor } from '../lib/modalLayer.js';
+import {
+  dismissedByClickAway, expired, greyMs, leaveWarning, makeMessage, pushMessage, queueMax,
+  trimQueue,
+} from '../engine/messages.js';
 
 // ─── UI state ───
 // Panel geometry, selection and the editor's snap step. Nothing here is
@@ -105,6 +110,44 @@ const nextNav = (nav) => ({
   viewSnapshot: null,
 });
 
+// ─── TURN 31 (CLAUDE.md F1): THE SHELL'S OWN DOOR ───────────────────────────
+//
+// Every window in the app arrives through `openModal` / `pushModal`, so the two
+// things F1 asks for that are not the shell's own drawing happen HERE, once:
+//
+//   • a click point becomes an ANCHOR. Turn 11's `{ at: {x, y} }` and turn 12's
+//     `{ anchor: rect }` were reconciled in four different components, each with
+//     its own line; now they are reconciled on the way in, and a modal reads
+//     `args.anchor` and nothing else.
+//
+//   • a modal that is ABOUT AN OBJECT and was opened without one is NAMED.
+//     Rule 4: the guard speaks, it never silently fixes. Nothing is invented,
+//     the window still opens (a window that refuses to open because its opener
+//     forgot an argument is a window nobody can use) — the fault is recorded
+//     on the store and printed once, and the fix belongs in the caller.
+const modalFaults = [];
+
+/** Normalise the args and record any fault. Returns the args to store. */
+function throughTheShell(name, args) {
+  const next = withModalAnchor(args);
+  const fault = modalAnchorFault(name, next);
+  if (fault) {
+    modalFaults.push({ modal: name, message: fault, at: Date.now() });
+    // Once per modal kind: a guard that prints on every open is a guard the
+    // console teaches you to scroll past.
+    if (modalFaults.filter((f) => f.modal === name).length === 1) {
+      // eslint-disable-next-line no-console
+      console.warn(`[modal shell] ${fault}`);
+    }
+  }
+  return next;
+}
+
+/** What the shell has had to complain about this session (read by the walk). */
+export function modalShellFaults() {
+  return modalFaults.slice();
+}
+
 /** How the view on screen says it was left. Never allowed to throw. */
 function readSnapshot(s) {
   try {
@@ -158,6 +201,15 @@ export const useUiStore = create((set, get) => ({
   // BOM panel — computed live, shown on demand (SPEC 4.11)
   bomOpen: false,
   setBomOpen: (v) => set({ bomOpen: v }),
+
+  // ─── CHECK v1 (turn 31, CLAUDE.md F6) ─────────────────────────────────────
+  // "A Check button beside BOM/CNC" — the same shape as the BOM's own flag,
+  // because it is the same kind of thing: a panel, computed live, shown on
+  // demand. Opening one closes the other; two 380 px panels over a 3D view is
+  // a 3D view nobody can see.
+  checkOpen: false,
+  setCheckOpen: (v) => set(v ? { checkOpen: true, bomOpen: false } : { checkOpen: false }),
+  toggleCheck: () => set((s) => (s.checkOpen ? { checkOpen: false } : { checkOpen: true, bomOpen: false })),
 
   // ─── What is on the CNC sheet (turn 11, CLAUDE.md F8.1) ───
   //
@@ -493,10 +545,12 @@ export const useUiStore = create((set, get) => ({
   modalStack: [],
   viewSnapshot: null,
   viewRestore: null,
-  openModal: (name, args = null) => set((s) => nextNav(openNav(navOf(s), name, args))),
+  openModal: (name, args = null) => set((s) => nextNav(
+    openNav(navOf(s), name, throughTheShell(name, args)),
+  )),
   /** Enter a NESTED editor surface, suspending the one on screen. */
   pushModal: (name, args = null) => set((s) => nextNav(
-    pushNav(navOf(s), name, args, readSnapshot(s)),
+    pushNav(navOf(s), name, throughTheShell(name, args), readSnapshot(s)),
   )),
   /** ← Back, and Escape: one level, restoring the parent exactly as it was. */
   popModal: () => set((s) => nextNav(popNav(navOf(s)))),
@@ -646,13 +700,57 @@ export const useUiStore = create((set, get) => ({
     set({ snapStep: step });
   },
 
-  // Transient toast messages (validation feedback)
-  toast: null,
-  notify: (message, tone = 'info') => {
-    set({ toast: { message, tone, at: Date.now() } });
-    setTimeout(() => {
-      if (Date.now() - (get().toast?.at ?? 0) >= 3800) set({ toast: null });
-    }, 4000);
+  // ─── THE THREE MESSAGE LEVELS (turn 31, CLAUDE.md F2) ─────────────────────
+  //
+  // What was here: ONE slot, four seconds, each message erasing the last — and
+  // the owner has never seen one. A bulk action fires five in a tick and four
+  // of them are gone before a frame is drawn.
+  //
+  // What is here now is a QUEUE, and the rules that govern it are
+  // engine/messages.js — pure, tested without a browser. This store is the
+  // wiring and the clock, and nothing more. `notify(message, tone)` is
+  // deliberately unchanged: 129 call sites keep working and gain the levels for
+  // free, because the four old tones ARE the three levels
+  // (`messages.js levelOf`).
+  messages: [],
+  notify: (message, tone = 'info', opts = null) => {
+    if (!message) return null;
+    const now = Date.now();
+    const profile = getCabinetProfile();
+    const msg = makeMessage(message, tone, { at: now, profile, action: opts?.action || null });
+    set((s) => ({ messages: trimQueue(pushMessage(s.messages, msg), queueMax(profile)) }));
+    // Only a grey has a clock. A red that expired on its own would be exactly
+    // the fault this feature exists to end, so there is no timer for one.
+    if (msg.expiresAt != null) {
+      setTimeout(() => {
+        const gone = expired(get().messages, Date.now());
+        if (gone.length) set((s) => ({ messages: s.messages.filter((m) => !gone.includes(m.id)) }));
+      }, greyMs(profile) + 60);
+    }
+    return msg.id;
   },
-  dismissToast: () => set({ toast: null }),
+  /** One message, clicked. The RED's only exit. */
+  dismissMessage: (id) => set((s) => ({ messages: s.messages.filter((m) => m.id !== id) })),
+  /** A pointer went down somewhere else: the YELLOWS go, the reds stay. */
+  dismissOnClickAway: () => set((s) => {
+    const gone = dismissedByClickAway(s.messages);
+    return gone.length ? { messages: s.messages.filter((m) => !gone.includes(m.id)) } : {};
+  }),
+  clearMessages: () => set({ messages: [] }),
+
+  /**
+   * ─── LEAVING WITH UNSAVED WORK (F2) ──────────────────────────────────────
+   *
+   * "Leaving with unsaved work shows a RED 'Save the project — unsaved
+   * changes'." Every door out of the editor is `goToStart`, so this is the one
+   * place it can be said — and it SPEAKS rather than fixing (rule 4): it does
+   * not save behind the joiner's back and it does not bar the door. The message
+   * is a RED, so it stays until it is clicked, which is what carries it onto
+   * the screen he has just walked to.
+   */
+  warnIfUnsaved: (projectState) => {
+    const warning = leaveWarning(projectState || {});
+    if (warning) get().notify(warning.message, warning.tone);
+    return warning;
+  },
 }));

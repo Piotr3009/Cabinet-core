@@ -12,6 +12,7 @@
 // Pure functions — no React, no store imports, no three.js.
 
 import { getCabinetProfile } from './profile.js';
+import { exportFileName } from './naming.js';
 
 // ─── Resolution ───
 
@@ -39,10 +40,6 @@ export function renderSize(longSide, aspect) {
 
 const even = (n) => Math.max(2, n % 2 === 0 ? n : n + 1);
 
-/** The resolution options, as the settings panel lists them. */
-export function renderResolutions(profile = getCabinetProfile()) {
-  return profile.render.resolutions.map((r) => ({ ...r }));
-}
 
 export function resolutionById(id, profile = getCabinetProfile()) {
   return profile.render.resolutions.find((r) => r.id === id) || profile.render.resolutions[0];
@@ -211,9 +208,6 @@ export function subjectBounds(boxes, { floor = 0 } = {}) {
 
 // ─── Shadows ───
 
-export function shadowQualities(profile = getCabinetProfile()) {
-  return Object.entries(profile.render.shadow).map(([id, cfg]) => ({ id, ...cfg }));
-}
 
 export function shadowQuality(id, profile = getCabinetProfile()) {
   return profile.render.shadow[id] || profile.render.shadow.normal;
@@ -243,18 +237,24 @@ export function slug(text, fallback = 'project') {
 }
 
 /**
- * `{project}-{unit|scene}-{date}.png` (CLAUDE.md F2).
+ * `{ProjectName}-render-{unit|scene}-{DDMM-HHMM}.png` (turn 31, CLAUDE.md F5).
  *
  * `subject` is a unit number when one unit is selected and the literal 'scene'
  * when the render is of the whole room — so a folder of renders sorts by
  * project, then tells you at a glance which are details and which are the
  * money shot.
+ *
+ * ─── TURN 31 (CLAUDE.md F5) ──────────────────────────────────────────────
+ * "Same pattern for any other export the app writes." This one carried the
+ * DAY and not the minute, which is the same fault as `All-materials-cnc` with
+ * a longer fuse: three renders of the same room on one afternoon produced
+ * three identical names.
  */
 export function renderFilename({ project, subject, date = new Date(), ext = 'png' } = {}) {
   const d = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  return `${slug(project)}-${slug(subject, 'scene')}-${stamp}.${ext}`;
+  return exportFileName({
+    project, kind: 'render', subject: slug(subject, 'scene'), ext, now: d,
+  });
 }
 
 /**

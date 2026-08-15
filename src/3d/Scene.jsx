@@ -1242,6 +1242,14 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // the question was asked. The right panel still opens on the same
           // section, because CLAUDE.md asks it to keep mirroring: the modal is
           // primary, not exclusive.
+          // ─── TURN 31 (CLAUDE.md F8) ───
+          // Double-click the width or height figure on the canvas. The click
+          // point travels with the request exactly as every other gesture in
+          // this file does, and F1's shell puts the window beside it.
+          onEditSize={({ field, at }) => {
+            selectUnit(unit.id);
+            openModal('unit-size', { unitId: unit.id, field, at });
+          }}
           onAddItems={(at) => {
             selectUnit(unit.id);
             openModal('add-items', { unitId: unit.id, anchor: at || null });

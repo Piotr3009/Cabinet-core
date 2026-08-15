@@ -87,16 +87,12 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     const { added, requested } = addShelves(unit.id, count, zones.length > 1 ? shelfZone : null);
     if (added === 0) notify('Not enough clear height for another shelf.', 'warn');
     else if (added < requested) notify(`Room for ${added} of ${requested} shelves — the rest would not fit.`, 'warn');
-    else if (zones.length > 1 && shelfZone != null) {
-      notify(`Shelf centred in bay ${shelfZone + 1}.`, 'ok');
-    }
     done();
   };
 
   const onAddPartition = () => {
     const id = addPartition(unit.id);
     if (!id) notify('No room for another partition in this cabinet.', 'warn');
-    else notify('Vertical partition added — drag or type its position to move it.', 'ok');
     done();
   };
 
@@ -106,7 +102,6 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       materialLabel: material?.name || null,
     });
     if (!id) { notify('This unit already has a hanging rail.', 'warn'); return; }
-    notify(material ? `Hanging rail added — ${material.name}.` : 'Hanging rail added.', 'ok');
     done();
   };
 

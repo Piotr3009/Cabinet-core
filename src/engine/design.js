@@ -27,7 +27,7 @@ export const DESIGN_SCHEMA = 2;
  * The runner variants the workshop offers, as ids — the profile's own list
  * (turn 18, CLAUDE.md F6.4). SU is in the owner's bucket and is not on it.
  */
-export const RUNNER_VARIANT_IDS = new Set(
+const RUNNER_VARIANT_IDS = new Set(
   (DEFAULT_CABINET_PROFILE.hardware.runner.movento.variants || []).map((v) => v.id),
 );
 
@@ -69,7 +69,7 @@ export function normaliseHandle(raw) {
 }
 
 /** …and the per-class offsets, which are two numbers or nothing. */
-export function normaliseHandleOffsets(raw) {
+function normaliseHandleOffsets(raw) {
   if (!raw || typeof raw !== 'object') return {};
   const out = {};
   for (const [key, value] of Object.entries(raw)) {
@@ -1031,7 +1031,7 @@ export function resolveFinishes(unit, design, profile) {
  * Type 2 is a second material assigned per piece, and it has never been the
  * default.
  */
-export function frontFacingFinishId(design) {
+function frontFacingFinishId(design) {
   const d = migrateDesign(design);
   return d.fronts.types[0]?.finish_id || null;
 }

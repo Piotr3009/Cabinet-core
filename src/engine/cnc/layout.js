@@ -37,7 +37,7 @@
 // is about.
 
 /** The horizontal boards a joiner calls a shelf. VPART is upright and is not one. */
-export const SHELF_BOARD_PARTS = new Set(['SHELF', 'PARTITION', 'RAIL-PART', 'FIXED']);
+const SHELF_BOARD_PARTS = new Set(['SHELF', 'PARTITION', 'RAIL-PART', 'FIXED']);
 
 /**
  * How many degrees this part is turned when it is laid on the sheet.

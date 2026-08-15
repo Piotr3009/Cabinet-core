@@ -55,6 +55,7 @@ export default function SaveTemplateModal() {
 
   return (
     <Modal
+      name="save-template"
       anchor={anchor}
       title="Save as template"
       onClose={closeModal}

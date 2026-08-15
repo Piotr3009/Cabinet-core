@@ -51,7 +51,7 @@ export const RUN_MATERIAL_GROUPS = [
   { id: 'mask', label: 'Masking panels', hint: 'The board under a run of wall units' },
 ];
 
-export const RUN_MATERIAL_ROLES = new Set(RUN_MATERIAL_GROUPS.map((g) => g.id));
+const RUN_MATERIAL_ROLES = new Set(RUN_MATERIAL_GROUPS.map((g) => g.id));
 
 /** The run-piece switch for this role, with the shipped default behind it. */
 export function runMaterialSetting(design, role) {
@@ -68,7 +68,7 @@ export function runMaterialSetting(design, role) {
  * (`params.front_type_id`) rather than a second one. A unit wearing Front 2 is
  * wearing Front 2 in the picture, in the cut list and on the sheet.
  */
-export function frontTypeFor(unit, design) {
+function frontTypeFor(unit, design) {
   const d = migrateDesign(design);
   const types = d.fronts.types;
   const wanted = unit?.params?.front_type_id || null;
@@ -76,7 +76,7 @@ export function frontTypeFor(unit, design) {
 }
 
 /** Which CARCASS TYPE a cabinet wears. */
-export function carcassTypeFor(unit, design) {
+function carcassTypeFor(unit, design) {
   const d = migrateDesign(design);
   const types = d.carcass.types;
   const wanted = unit?.params?.carcass_type_id || null;
@@ -130,7 +130,7 @@ export function materialSlotOf(panel, unit, design) {
  * two distinct choices (F1.3). Both are read, newest first, so a project saved
  * before this turn keeps the material it was given.
  */
-export function elementMaterialOverride(panel) {
+function elementMaterialOverride(panel) {
   const meta = panel?.meta || {};
   const key = meta.material_key || null;
   const id = meta.material_id || null;
@@ -288,41 +288,6 @@ export function panelFinish(panel, unit, design, profile) {
   return { finish: m.finish, colour: m.colour, overridden: m.overridden };
 }
 
-/**
- * Every material this project actually uses, with the pieces on it.
- *
- * The BOM's material groups and the CNC sheet's sections are the same
- * question — "what comes off each board" — asked of the same resolver, which
- * is CLAUDE.md F1.5's "one source downstream" made structural.
- *
- * @param {Array} entries  [{ unit, result|panels }]
- * @returns {Array<{key, label, material_id, assigned, placeholder, panels:[]}>}
- */
-export function materialGroups(entries, {
-  design = null, profile = null, materials = [],
-} = {}) {
-  const groups = new Map();
-  for (const entry of entries || []) {
-    const panels = entry.panels || entry.result?.panels || [];
-    for (const panel of panels) {
-      const m = resolvePanelMaterial(panel, entry.unit, design, profile, materials);
-      let bucket = groups.get(m.key);
-      if (!bucket) {
-        bucket = {
-          key: m.key,
-          label: m.label,
-          material_id: m.material_id,
-          assigned: m.assigned,
-          placeholder: m.placeholder,
-          panels: [],
-        };
-        groups.set(m.key, bucket);
-      }
-      bucket.panels.push({ unit: entry.unit, panel, material: m });
-    }
-  }
-  return [...groups.values()];
-}
 
 /**
  * The CHECK-OUT gate (CLAUDE.md F1.1, the T15-B rule carried to the fronts).

@@ -12,6 +12,7 @@ import { panelLabelBlock } from '../engine/cnc/dxf.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import { partRollovers } from '../engine/cnc/rollover.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── CNC view ───
 // The workshop's visual check before the machine — the job AutoCAD used to do.
@@ -726,7 +727,7 @@ function Rollover({ at, readout, wrap }) {
     <div
       ref={ref}
       data-cnc-rollover="1"
-      className="absolute z-20 pointer-events-none bg-shell-800/97 border border-shell-600 rounded px-2 py-1.5 shadow-lg max-w-[260px]"
+      className={`absolute ${LAYER_CLASS.panel} pointer-events-none bg-shell-800/97 border border-shell-600 rounded px-2 py-1.5 shadow-lg max-w-[260px]`}
       style={{ left: placed.left, top: placed.top }}
     >
       <div className="text-[11px] text-gold uppercase tracking-wide" data-rollover-title="1">{readout.title}</div>

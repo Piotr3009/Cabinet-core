@@ -17,7 +17,9 @@ import {
   panelFillOffset, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
-import Hardware, { DoorHinges, FrontHandle, hingeSpecsFor } from './Hardware.jsx';
+import Hardware, {
+  DoorHinges, Extractor, FrontHandle, hingeSpecsFor,
+} from './Hardware.jsx';
 import HoverDimensions from './HoverDimensions.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
@@ -603,6 +605,8 @@ export default function UnitView({
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
   selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
+  // Turn 31 (CLAUDE.md F8): double-click the width or height FIGURE.
+  onEditSize = null,
   // Turn 19 (CLAUDE.md F1.3): double-click a hinge and its modal opens.
   onEditHinge = null,
   // The ink every dimension caption on this cabinet is written in (turn 11,
@@ -1764,6 +1768,21 @@ export default function UnitView({
         />
       )}
 
+      {/* ─── TURN 31 (CLAUDE.md F9): THE EXTRACTOR'S SLOT ───────────────────
+          The machine is HARDWARE — a BOM line and a registry slot for the GLB
+          the owner will upload — and the APERTURE is the geometry. Nothing is
+          drawn: an empty aperture is honest about what the app knows, which is
+          the lesson turn 30 learnt the hard way about procedural stand-ins. */}
+      {result.hardware?.some?.((h) => h.role === 'extractor') && (
+        <Extractor
+          unitId={unit.id}
+          aperture={{
+            w: result.hardware.find((h) => h.role === 'extractor').spec.aperture_width_mm,
+            h: result.hardware.find((h) => h.role === 'extractor').spec.aperture_height_mm,
+            d: result.hardware.find((h) => h.role === 'extractor').spec.aperture_depth_mm,
+          }}
+        />
+      )}
       <Hardware
         instances={hardware}
         profile={profile}
@@ -2006,6 +2025,9 @@ export default function UnitView({
                 at={floorY}
                 colour={selected ? COLORS.gold : dimensionColour}
                 name={`w-${unit.id}`}
+                onPick={onEditSize ? (row, e) => onEditSize({
+                  field: 'width', at: { x: e.clientX, y: e.clientY }, row: row.key,
+                }) : null}
               />
               {/* ─── TURN 29 (CLAUDE.md F2.1): THE 100 THE OWNER CANNOT SEE ──
                   *"nie ma 100, plinthu nie pokazuje."* The chain ran the whole
@@ -2024,6 +2046,9 @@ export default function UnitView({
                 at={D}
                 colour={selected ? COLORS.gold : dimensionColour}
                 name={`h-${unit.id}`}
+                onPick={onEditSize ? (row, e) => onEditSize({
+                  field: 'height', at: { x: e.clientX, y: e.clientY }, row: row.key,
+                }) : null}
               />
             </>
           )}

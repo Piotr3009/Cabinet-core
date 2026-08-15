@@ -36,8 +36,8 @@ import { mm } from './constants.js';
 // the piece underneath.
 
 /** How far the band stands above the face, and how far inside its outline. */
-export const HANDLE_LIFT_MM = 0.6;
-export const HANDLE_INSET_MM = 1;
+const HANDLE_LIFT_MM = 0.6;
+const HANDLE_INSET_MM = 1;
 
 export default function EdgeHandle({
   position, width, depth, thickness, colour, active = false, title,

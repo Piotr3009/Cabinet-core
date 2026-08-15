@@ -89,7 +89,14 @@ test('F4.1 the INK is the plate’s, not the line’s — as it was before turn 
   // gold, the room's navy or red) and never the number, which is exactly how
   // the partition chain behaved. A gold word on a near-black plate is not a
   // measurement anybody reads.
-  assert.match(chain, /<Value\s*\n\s*row=\{row\}\s*\n\s*plane=\{plane\}\s*\n\s*at=\{third\}\s*\n\s*style=\{style\}\s*\n\s*\/>/);
+  // Turn 31 (CLAUDE.md F8) gave `Value` an optional `onPick` — the invisible
+  // catchment that makes the FIGURE double-clickable. The property this
+  // asserts is unchanged and is the one that matters: `colour` is NOT among
+  // the props the value receives, so the chain's ink never reaches the number.
+  const value = chain.slice(chain.indexOf('<Value'), chain.indexOf('<Value') + 260);
+  assert.match(value, /row=\{row\}/);
+  assert.match(value, /style=\{style\}/);
+  assert.ok(!/colour=/.test(value), 'the chain’s ink reached the number');
   assert.match(chain, /colour=\{ink\}/, 'the strokes still take it');
 });
 

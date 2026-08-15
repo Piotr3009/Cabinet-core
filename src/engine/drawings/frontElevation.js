@@ -68,7 +68,7 @@ export function panelStyle(panel, { width, height }) {
  * nobody can read. The drawer FRONTS are the face of that unit and they are
  * drawn, so nothing is lost that a joiner looks for here.
  */
-export function isDrawn(panel) {
+function isDrawn(panel) {
   if (!panel.box) return false;
   if (panel.role === 'back') return false;         // behind everything, full face
   if (panel.role === 'drawer_box') return false;

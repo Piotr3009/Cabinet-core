@@ -10,6 +10,7 @@ import { doorExtendMm } from '../engine/doors.js';
 import { corniceOption, takesCornice } from '../engine/cornice.js';
 import { formatMm } from '../engine/format.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── The panel over MANY cabinets (turn 13, CLAUDE.md F5.2) ─────────────────
 //
@@ -128,7 +129,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
   };
 
   return (
-    <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
+    <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
       <div className="flex items-center px-3 py-2 border-b border-shell-600">
         <h2 className="text-sm text-ink-50 flex-1" data-multi-count={selected.length}>
           {selected.length} cabinets
@@ -241,7 +242,6 @@ export default function MultiUnitPanel({ ids, onClose }) {
             title={shelvable ? 'One more shelf in each of them' : 'None of these kits takes a shelf'}
             onClick={() => {
               const { added, skipped } = addShelvesBulk(ids, 1) || {};
-              if (added) notify(`${added} shelf${added === 1 ? '' : 'es'} added.`, 'ok');
               if (skipped) notify(`${skipped} of them take no shelves.`, 'info');
             }}
           >
@@ -255,7 +255,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
             title="Space every cabinet's shelves evenly in its own free height"
             onClick={() => {
               const { done } = redistributeShelvesBulk(ids) || {};
-              notify(done ? `Shelves centred in ${done} cabinet${done === 1 ? '' : 's'}.` : 'No shelves to centre.', done ? 'ok' : 'info');
+              if (!done) notify('No shelves to centre.', 'info');
             }}
           >
             Even / centre shelves
@@ -272,8 +272,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
               data-bulk="add-doors"
               onClick={() => {
                 const { fitted, already } = addDoorsBulk(ids) || {};
-                if (fitted) notify(`Doors hung on ${fitted} cabinet${fitted === 1 ? '' : 's'}.`, 'ok');
-                else if (already) notify('They already have their doors.', 'info');
+                if (!fitted && already) notify('They already have their doors.', 'info');
               }}
             >
               Add doors
@@ -288,8 +287,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
                 : 'None of these has doors on'}
               onClick={() => {
                 const { stripped, already } = removeDoorsBulk(ids) || {};
-                if (stripped) notify(`Doors taken off ${stripped} cabinet${stripped === 1 ? '' : 's'}.`, 'ok');
-                else if (already) notify('None of them had doors on.', 'info');
+                if (!stripped && already) notify('None of them had doors on.', 'info');
               }}
             >
               Remove doors {withDoors ? `(${withDoors})` : ''}
@@ -351,8 +349,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
               title="One worktop over these cabinets — from the wall out past the end panels"
               onClick={() => {
                 const res = addWorktop(ids);
-                if (res.ok) notify(`Worktop over ${ids.length} cabinets — 38 mm, 20 mm proud of the doors.`, 'ok');
-                else notify(res.error, 'warn');
+                if (!res.ok) notify(res.error, 'warn');
               }}
             >
               Add worktop ({ids.length})
@@ -363,7 +360,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
                 className="cc-btn px-2"
                 data-remove-worktop={worktopHere.id}
                 title="Take it off — Undo puts it back"
-                onClick={() => { removeWorktop(worktopHere.id); notify('Worktop removed.'); }}
+                onClick={() => removeWorktop(worktopHere.id)}
               >
                 Remove
               </button>
@@ -400,7 +397,6 @@ export default function MultiUnitPanel({ ids, onClose }) {
                 title={`Give ${extendable} of them a ${formatMm(extend)} mm grab edge — one undo step`}
                 onClick={() => {
                   const { applied, skipped } = setDoorExtendBulk(ids, extend) || {};
-                  if (applied) notify(`Door extend ${formatMm(extend)} mm on ${applied} cabinet${applied === 1 ? '' : 's'}.`, 'ok');
                   if (skipped) notify(`${skipped} of them have no grab edge to extend.`, 'info');
                 }}
               >
@@ -412,8 +408,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
                 data-bulk="door-extend-off"
                 title="Take the grab edge off every selected door"
                 onClick={() => {
-                  const { applied } = setDoorExtendBulk(ids, false) || {};
-                  if (applied) notify(`Door extend off on ${applied} cabinet${applied === 1 ? '' : 's'}.`, 'ok');
+                  setDoorExtendBulk(ids, false);
                 }}
               >
                 Off

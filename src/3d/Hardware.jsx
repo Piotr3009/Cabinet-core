@@ -15,6 +15,8 @@ import {
   rigHidesBody,
 } from './hingeModels.js';
 import { shelfSupportMetal } from './hardwareFinish.js';
+// Turn 31 (CLAUDE.md F7): the catchment around every handle and hinge.
+import HoverAura from './HoverAura.jsx';
 
 // ─── The hardware, in 3D (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
 //
@@ -730,6 +732,34 @@ export function DoorHinges({
       >
         <boxGeometry args={[mm(H.armWidth), mm(H.armThickness), mm(H.armLength)]} />
       </Pieces>
+
+      {/* ─── TURN 31 (CLAUDE.md F7): THE CATCHMENT ─────────────────────────
+          The arm above is 4 mm of plate and, on a canvas showing a kitchen,
+          two pixels. This is the same pick surface at a size a hand can hit —
+          the profile's ~8 mm on every side — and it carries the OTHER two
+          things F7 asks for: the number, in orange, while the cursor is
+          anywhere inside it, and the double-click that opens the hinge's own
+          window. The arm keeps its own gesture so nothing that worked before
+          stops working. */}
+      {items.map((h, i) => (
+        <HoverAura
+          key={`ha-${h.panelId}-${h.y}`}
+          at={[mm(h.x) - pivot[0], mm(h.y) - pivot[1], mm(h.z - H.armLength / 2) - pivot[2]]}
+          size={{ w: H.armWidth, h: H.armThickness, d: H.armLength }}
+          subject={{ kind: 'hinge', id: `${h.panelId}-${h.y}`, mm: h.y }}
+          profile={profile}
+          onActivate={onEditHinge ? (e) => onEditHinge({
+            panelId: h.panelId,
+            index: items.filter((x) => x.panelId === h.panelId).indexOf(h),
+            at: { x: e.clientX, y: e.clientY },
+          }) : null}
+          labelAt={[
+            mm(h.x) - pivot[0],
+            mm(h.y + 26) - pivot[1],
+            mm(h.z) - pivot[2],
+          ]}
+        />
+      ))}
     </>
   );
 }
@@ -1179,6 +1209,16 @@ export function FrontHandle({
     const stem = H.knob.standoff;
     return (
       <group userData={{ ccHardware: true, ccHandle: panel.id }}>
+        {/* Turn 31 (CLAUDE.md F7): the catchment. A knob is 30 mm across and
+            its stem is 8; the box is the knob plus the profile's ~8 on every
+            side, and inside it the leaf's own nearest-edge distance shows in
+            orange. */}
+        <HoverAura
+          at={at(wx, wy, faceZ + stem / 2)}
+          size={{ w: H.knob.diameter, h: H.knob.diameter, d: stem + r }}
+          subject={{ kind: 'handle', id: panel.id, panel }}
+          profile={profile}
+        />
         <mesh position={at(wx, wy, faceZ + stem / 2)} userData={{ ccNoBounds: true }}>
           <cylinderGeometry args={[mm(H.knob.stemDiameter / 2), mm(H.knob.stemDiameter / 2), mm(stem), 12]} />
           {material}
@@ -1217,6 +1257,17 @@ export function FrontHandle({
 
   return (
     <group userData={{ ccHardware: true, ccHandle: panel.id }}>
+      {/* Turn 31 (CLAUDE.md F7): the catchment, round the WHOLE bar rather
+          than round one post — "no more pixel-hunting a thin rail" is a rail
+          you can point anywhere along. */}
+      <HoverAura
+        at={at(sheetX(midX), box.y + midY, faceZ + H.bar.standoff)}
+        size={horizontal
+          ? { w: rodLen, h: H.bar.rodDiameter, d: H.bar.standoff + H.bar.rodDiameter }
+          : { w: H.bar.rodDiameter, h: rodLen, d: H.bar.standoff + H.bar.rodDiameter }}
+        subject={{ kind: 'handle', id: panel.id, panel }}
+        profile={profile}
+      />
       {postAt.map(([px, py], i) => (
         <mesh
           // eslint-disable-next-line react/no-array-index-key
@@ -1241,6 +1292,50 @@ export function FrontHandle({
   );
 }
 
+// ─── THE EXTRACTOR'S SLOT (turn 31, CLAUDE.md F9) ───────────────────────────
+//
+// "The extractor itself is HARDWARE: BOM line + GLB slot for when the owner
+// uploads a model (the Blum pattern)."
+//
+// THE BLUM PATTERN, exactly: the app declares the piece to the registry with
+// `model: false` and a REASON, so `hardwareHealth` counts it as a family whose
+// bucket is empty rather than as a family nobody asked for — which is the
+// difference between "the owner has not uploaded it yet" and "this app forgot
+// about extractors". The moment a file lands under `hardware/appliances/`, the
+// slot resolves and the machine appears; nothing else has to change.
+//
+// NOTHING IS DRAWN. Not a stand-in, not a grey box: turn 30's own lesson
+// (`CHAT FIX 14.08.2026 — the stand-ins are gone`) is that a procedural
+// pretend-piece is worse than an empty aperture, because an empty aperture is
+// honest about what the app knows. And NOT ONE HOLE goes with it (rule 2):
+// every make of extractor fixes differently and this repo has no published
+// pattern for any of them.
+
+/**
+ * @param {object} props
+ *   unitId    which cabinet's aperture this is
+ *   aperture  { w, h, d } in mm — what the BOM ordered against
+ */
+export function Extractor({
+  unitId, aperture, surface = 'room', scope = '',
+}) {
+  useEffect(() => {
+    if (!aperture) return;
+    reportHardware(surface, 'extractor', [{
+      key: unitId,
+      url: null,
+      model: false,
+      reason: 'no model uploaded yet',
+      parent: 'carcass',
+      member: 'extractor',
+      spec: aperture,
+    }], scope || unitId);
+  }, [unitId, aperture?.w, aperture?.h, aperture?.d, surface, scope]);
+  // The aperture is the geometry. There is nothing else to draw until there is
+  // a file to draw it from.
+  return null;
+}
+
 // ─── THE ADJUSTABLE SHELF'S BRASS (turn 25, CLAUDE.md F6) ───────────────────
 //
 // Owner: he wants to SEE gold or silver sleeves — and they are the ⌀7.5 this
@@ -1261,7 +1356,7 @@ export function FrontHandle({
  *   items   `hardwareInstances(result, profile).shelfSupports`
  *   metal   one entry of `profile.appearance.metals`
  */
-export function ShelfSupports({ items, profile, metal }) {
+function ShelfSupports({ items, profile, metal }) {
   const S = profile.hardware.shelfPin;
 
   // Every support points INTO the cabinet off the board it is knocked into, and

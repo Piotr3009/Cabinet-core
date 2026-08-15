@@ -6,6 +6,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { getUnitType } from '../engine/types.js';
 import { groupedActions, menuActions } from '../lib/contextActions.js';
 import { formatMm } from '../engine/format.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
 import { anchorOfElement } from '../lib/modalAnchor.js';
 
@@ -162,7 +163,6 @@ export default function ContextMenu() {
         // wrap them again.
         addDoors: (ids) => {
           const { fitted, already } = addDoorsBulk(ids) || {};
-          if (fitted) notify(`Doors hung on ${fitted} cabinet${fitted === 1 ? '' : 's'}.`, 'ok');
           if (!fitted && already) notify('They already have their doors.', 'info');
         },
         unitColour: (ids) => openModal('unit-finish', { unitIds: ids, anchor: menuAnchor() }),
@@ -175,7 +175,7 @@ export default function ContextMenu() {
         },
         addDrawerFronts: (unitId) => {
           const { fitted } = addDrawerFronts(unitId) || {};
-          notify(fitted ? `${fitted} drawer front${fitted === 1 ? '' : 's'} back on.` : 'They are already on.', fitted ? 'ok' : 'info');
+          if (!fitted) notify('They are already on.', 'info');
         },
         // The options for what was just added are in the panel, not in a modal.
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },
@@ -263,7 +263,7 @@ export default function ContextMenu() {
   return (
     <div
       ref={box}
-      className="fixed z-50 w-[180px] cc-panel py-1"
+      className={`fixed ${LAYER_CLASS.menu} w-[180px] cc-panel py-1`}
       // Hidden for exactly one frame: the placement has to MEASURE the menu, and
       // a menu drawn at the raw pointer position first would flash off the
       // bottom of a short screen before it corrected itself.

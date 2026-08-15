@@ -546,7 +546,7 @@ its millimetres. The walk compares the cut before and after: identical.
 | file | |
 | --- | --- |
 | `12a-two-cabinets-butted-a-correct-3mm-joint-says-nothing.png` | a correct run |
-| `12b-the-same-run-1mm-tight-the-joint-painted-red-with-its-value.png` | the fault, painted, with the number |
+| `12b-the-same-run-2mm-tight-the-joint-painted-red-with-its-value.png` | the fault, painted, with the number (renamed turn 31 F11 — the name said 1 mm, the banner in the picture says 2; the picture was right) |
 | `12c-the-meeting-edges-in-red-at-2mm.png` | close on the joint |
 
 ---

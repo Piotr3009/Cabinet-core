@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── Canvas toolbar ───
 // The controls that act on the DRAWING, sitting on the drawing (CLAUDE.md turn
@@ -15,6 +16,9 @@ export default function CanvasToolbar() {
   const showDimensions = useUiStore((s) => s.showDimensions);
   const toggleDimensions = useUiStore((s) => s.toggleDimensions);
   const bomOpen = useUiStore((s) => s.bomOpen);
+  const checkOpen = useUiStore((s) => s.checkOpen);
+  const toggleCheck = useUiStore((s) => s.toggleCheck);
+  const runChecks = useProjectStore((s) => s.runChecks);
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const toggleOutlines = useUiStore((s) => s.toggleOutlines);
@@ -36,6 +40,14 @@ export default function CanvasToolbar() {
   const unitResult = useProjectStore((s) => s.unitResult);
   const openFronts = useUiStore((s) => s.openFronts);
   const toggleAllFronts = useUiStore((s) => s.toggleAllFronts);
+  // ─── Turn 31 (CLAUDE.md F6): the Check's own count, on its button ─────────
+  // Recomputed when the job changes, not per frame: this walks every cabinet
+  // through eleven rules, and doing that sixty times a second is a frame rate
+  // spent on a question nobody has asked.
+  const design = useProjectStore((s) => s.project.design);
+  const checkFindings = useMemo(() => runChecks(), [units, design, runChecks]);
+  const checkCount = checkFindings.length;
+  const checkReds = checkFindings.some((f) => f.level === 'red');
   // ─── TURN 27 (CLAUDE.md F2.1): EVERY FRONT ANSWERS ───────────────────────
   //
   // This filtered out `meta.appliance` — so the one front in the kitchen that
@@ -62,7 +74,7 @@ export default function CanvasToolbar() {
   const redo = useHistoryStore((s) => s.redo);
 
   return (
-    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-shell-800/95 border border-shell-600 rounded px-1.5 py-1 shadow-lg">
+    <div className={`absolute top-3 left-1/2 -translate-x-1/2 ${LAYER_CLASS.panel} flex items-center gap-1.5 bg-shell-800/95 border border-shell-600 rounded px-1.5 py-1 shadow-lg`}>
       {/* First on the bar, where a hand reaching for "no, not that" goes. */}
       <button
         type="button"
@@ -228,6 +240,24 @@ export default function CanvasToolbar() {
         title="Bill of materials"
       >
         BOM
+      </button>
+
+      {/* ─── CHECK v1 (turn 31, CLAUDE.md F6): "a Check button beside BOM/CNC"
+          — beside it, and built exactly like it, because it is the same kind of
+          thing: a panel, computed live, shown on demand. The count is on the
+          button, so a joiner knows there is something to look at without
+          opening it. */}
+      <button
+        type="button"
+        aria-pressed={checkOpen}
+        data-check-button={checkCount}
+        className={`px-2.5 py-1 text-xs rounded transition-colors ${checkOpen
+          ? 'bg-gold text-shell-900 font-medium'
+          : `text-ink-100 hover:bg-shell-700 ${checkReds ? 'text-status-danger' : ''}`}`}
+        onClick={toggleCheck}
+        title="Eleven pre-production rules over the whole job"
+      >
+        Check{checkCount ? ` · ${checkCount}` : ''}
       </button>
 
       <span className="w-px h-4 bg-shell-600" />

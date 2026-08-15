@@ -21,6 +21,7 @@ export default function SaveAsModal({ onSave }) {
 
   return (
     <Modal
+      name="save-as"
       anchor={anchor}
       title="Save as"
       onClose={closeModal}

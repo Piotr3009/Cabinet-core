@@ -71,8 +71,6 @@ const BY_ID = new Map(THICKNESS_SLOTS.map((s) => [s.id, s]));
 
 /** The three carcass slots, by id — what a partition and a panel may be on. */
 export const CARCASS_SLOTS = THICKNESS_SLOTS.filter((s) => s.kind === 'carcass').map((s) => s.id);
-/** …and the two front slots. */
-export const FRONT_SLOTS = THICKNESS_SLOTS.filter((s) => s.kind === 'front').map((s) => s.id);
 /** The one slot the hard gate is about. */
 export const DRAWER_BOX_SLOT = 'box';
 
@@ -124,7 +122,7 @@ export function slotNominal(slotId, { design, profile, materials = [] } = {}) {
 }
 
 /** The slot's stored record — `{ measured, confirmed }` — or an empty one. */
-export function slotRecord(design, slotId) {
+function slotRecord(design, slotId) {
   return (design?.thickness?.slots || {})[slotId] || {};
 }
 

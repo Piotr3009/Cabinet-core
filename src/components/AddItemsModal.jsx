@@ -56,6 +56,7 @@ export default function AddItemsModal() {
 
   return (
     <Modal
+      name="add-items"
       anchor={anchor}
       title={`${unit.params.unit_num} · ${type.label}`}
       onClose={() => { setZoneHint(null); closeModal(); }}
@@ -105,8 +106,7 @@ export default function AddItemsModal() {
               disabled={hasDoors}
               title={hasDoors ? 'This cabinet already has its doors' : 'Hang the doors this width calls for'}
               onClick={() => {
-                const { count } = addDoors(unit.id) || {};
-                if (count) notify(`${count} door${count === 1 ? '' : 's'} added.`, 'ok');
+                addDoors(unit.id);
               }}
             >
               Add doors

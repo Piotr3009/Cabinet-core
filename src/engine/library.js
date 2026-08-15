@@ -77,9 +77,16 @@ export const KITCHEN_LIBRARY = [
       // NO parent kit for a corner — and therefore no lines to inherit. The
       // L-carcass ships as boards and a BOM, with not one hole in it, and the
       // row says so.
-      { kind: 'type', id: 'corner', typeId: 'CORNER', label: 'Corner', hint: 'The cabinet that turns a run — L-carcass only, no LISP defines its drilling' },
+      // ─── TURN 31 (CLAUDE.md F10): CORNER → L-SHAPE ──────────────────────
+      // "The T30 type is an L-shape cabinet, not a corner system." A carousel,
+      // a magic corner and a bi-fold are mechanisms this app has none of, and
+      // calling the kit a corner unit promised something that was never in the
+      // box. The row id stays distinct from the held-open one below, which is
+      // a different promise: this kit is the L-CARCASS, and the JOINTS that
+      // would make it a corner SYSTEM stay parked by the owner's word.
+      { kind: 'type', id: 'l-shape-unit', typeId: 'L_SHAPE', label: 'L-shape unit', hint: 'The cabinet that turns a run — L-carcass only, no LISP defines its drilling' },
       {
-        kind: 'soon', id: 'l-shape', label: 'L-shape', hint: 'One carcass on two walls', reason: NO_PATTERN,
+        kind: 'soon', id: 'l-shape', label: 'L-shape joints', hint: 'One carcass on two walls, jointed', reason: NO_PATTERN,
       },
       // ─── Turn 17 (CLAUDE.md F9/F10): TWO OF THE HELD-OPEN ROWS OPEN ─────
       // The owner wrote the pattern for both, which is exactly the condition
@@ -180,6 +187,9 @@ export const KITCHEN_LIBRARY = [
       // with the recess taken all the way through, and a pane ordered for the
       // hole. Glass SHELVES are a separate question and are not shipped.
       { kind: 'type', id: 'glass-unit', typeId: 'WUD_GLASS', label: 'Glass unit', hint: 'Wall unit with a glazed door — the pane is ordered, not cut' },
+      // Turn 31 (CLAUDE.md F9): the hood cabinet. The APERTURE is geometry; the
+      // extractor is a BOM line and a GLB slot, and not one fixing hole.
+      { kind: 'type', id: 'hood-unit', typeId: 'WUD_HOOD', label: 'Hood unit', hint: 'Wall unit over an extractor — open underneath, shorter door' },
       {
         kind: 'soon', id: 'l-shape-wall', label: 'L-shape wall', hint: 'One carcass on two walls', reason: NO_PATTERN,
       },

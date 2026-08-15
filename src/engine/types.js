@@ -275,6 +275,57 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
+  //
+  // "New Kitchen type: hood wall unit (parent geometry KIT_WUD envelope,
+  // shorter door above an open appliance aperture). The extractor itself is
+  // HARDWARE: BOM line + GLB slot for when the owner uploads a model (the Blum
+  // pattern). Rule 2 applies: no invented holes — the aperture is geometry, the
+  // fixings wait for truth."
+  //
+  // So it is a WALL UNIT, to the letter, with two differences and no third:
+  //
+  //   • NO BOTTOM PANEL. `carcass.bottom: 'none'` — the aperture is the open
+  //     underside the extractor hangs in, and a board across it is a lid on a
+  //     machine that has to breathe. The engine has read this key since the
+  //     sink unit; nothing new was needed for it.
+  //   • A SHORTER DOOR, standing above the aperture. That is
+  //     `hood_aperture_mm`, an INPUT on the override channel, and it is zero
+  //     for every other kit in the app.
+  //
+  // NOT ONE HOLE. There is no published pattern for hanging an extractor in a
+  // cabinet — every make fixes differently — so the aperture is geometry and
+  // the fixings wait for truth. The BOM names the machine so it can be ORDERED,
+  // and `3d/hardwareRegistry` gets a slot for the GLB the moment the owner
+  // uploads one, exactly as every Blum family arrived.
+  WUD_HOOD: {
+    id: 'WUD_HOOD',
+    heightGroup: 'wall',
+    label: 'Hood wall unit',
+    family: 'kitchen',
+    // The PARENT geometry, in as many words: the KIT_WUD envelope.
+    lisp: 'KIT_WUD_FULL.lsp',
+    // A hood's door takes the same cups as any wall door — it is a wall door.
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    appliance: 'extractor',
+    legs: false,
+    legSource: null,
+    hangers: true,
+    // A door that stops above an aperture cannot also run below the box.
+    doorExtend: false,
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full', bottom: 'none' },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'hoodWallUnit.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+
   // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT ─────────────────────────────
   //
   // "The riskiest of the batch. Start from what the LISP family actually
@@ -301,10 +352,10 @@ export const UNIT_TYPES = {
   //               the owner, not for tonight.
   //   `doors`   — none. A corner door hangs on cups bored to a pattern nobody
   //               has written down here.
-  CORNER: {
-    id: 'CORNER',
+  L_SHAPE: {
+    id: 'L_SHAPE',
     heightGroup: 'base',
-    label: 'Corner unit',
+    label: 'L-shape unit',
     family: 'kitchen',
     // Named for honesty, not for inheritance: this is the family the shape
     // belongs to. Its own drilling waits for a LISP.
@@ -806,7 +857,35 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER', 'WUD_GLASS', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+/**
+ * ─── TURN 31 (CLAUDE.md F10): THE OLD NAME, KEPT FOREVER ────────────────────
+ *
+ * "rename typeId `CORNER` → `L_SHAPE`, label 'L-shape unit'. MIGRATE saved
+ * projects: on project load, `CORNER` reads as `L_SHAPE` (one-line alias kept
+ * forever); never break an existing save."
+ *
+ * FOREVER is the operative word and it is why this is a table rather than a
+ * migration step. A migration runs once, on a project somebody opens; a saved
+ * file that has been sitting in a drawer for two years is a file the app has
+ * never migrated, and it will open one day. So the OLD NAME never stops being
+ * understood, and the cost of that is this map.
+ *
+ * The rename itself is honest: a CORNER SYSTEM is a carousel, a magic corner,
+ * a bi-fold door — a family of mechanisms this app has none of. What turn 30
+ * shipped is an L-SHAPED CARCASS, and calling it a corner unit promised
+ * something that was never in the box.
+ */
+export const TYPE_ALIASES = Object.freeze({
+  CORNER: 'L_SHAPE',
+});
+
+/** The id a stored unit means, whatever it was called when it was saved. */
+export function resolveTypeId(typeId) {
+  const id = String(typeId ?? '');
+  return TYPE_ALIASES[id] || id;
+}
+
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -865,7 +944,12 @@ export function heightGroupOf(typeId) {
 }
 
 export function getUnitType(typeId) {
-  return UNIT_TYPES[typeId] || UNIT_TYPES.WARDROBE;
+  // Turn 31 (CLAUDE.md F10): an OLD name resolves to the type it was renamed
+  // to. Here rather than only in the store's migration, because every reader in
+  // the app goes through this function — the 3D, the BOM, the drawings, the
+  // library — and a saved project that survives `loadProject` and then fails in
+  // the cut list is a project that has not really been migrated.
+  return UNIT_TYPES[typeId] || UNIT_TYPES[TYPE_ALIASES[typeId]] || UNIT_TYPES.WARDROBE;
 }
 
 /** Resolve a dotted key ("wardrobe.defaults") against the profile. */
@@ -891,7 +975,16 @@ export function defaultParamsFor(typeId, profile) {
     front_type: type.frontType || profile.front.defaultType,
     shelves: 0,
     // BUDR is a three-drawer unit by definition (LISP has no count question).
-    drawers: type.drawerStyle === 'budr' ? profile.baseDrawerUnit.ratio.length : 0,
+    //
+    // ─── TURN 31 (CLAUDE.md F11): …AND A KIT MAY NAME ITS OWN COUNT ────────
+    // The PANTRY's drawers ARE the pantry — turn 30 built the machinery and
+    // left the count at zero, so a joiner who placed one got a tall empty box
+    // and had to know to ask for the thing he had just chosen. A kit whose
+    // defaults block carries `drawers` says so; every kit written before this
+    // line carries none and is exactly what it was.
+    drawers: type.drawerStyle === 'budr'
+      ? profile.baseDrawerUnit.ratio.length
+      : (Number.isFinite(Number(d.drawers)) ? Number(d.drawers) : 0),
     rail: false,
     rail_offset: d.railOffset ?? null,
     hinge: profile.doors.defaultHinge,
@@ -916,6 +1009,12 @@ export function defaultParamsFor(typeId, profile) {
     // line carries no `plinth` key at all and behaves exactly as it did.
     ...(type.plinth ? { plinth: true } : {}),
     ...(type.mount === 'wall' ? { mount_height: d.mountHeight ?? 1500 } : {}),
+    // ─── TURN 31 (CLAUDE.md F9): THE HOOD'S APERTURE ──────────────────────
+    // The clear height the extractor hangs in, at the open bottom of the box.
+    // Spread rather than a constant, so that every kit written before this
+    // line carries no `hood_aperture_mm` at all and the engine subtracts
+    // nothing — which is what keeps every golden fixture untouched.
+    ...(type.appliance === 'extractor' ? { hood_aperture_mm: d.aperture ?? 350 } : {}),
     ...(type.doorExtend ? { door_extend: false } : {}),
     // ─── Turn 30 (CLAUDE.md F15) ───
     // A housing's aperture, read off the KIT'S OWN defaults rather than off the
@@ -929,5 +1028,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', CORNER: 'CR', WUD_GLASS: 'WG',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

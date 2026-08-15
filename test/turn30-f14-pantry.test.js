@@ -184,9 +184,18 @@ test('F14 no kit written before tonight became internal', () => {
 // ─── 4. THE KIT ────────────────────────────────────────────────────────────
 
 test('F14 it arrives at 600 × 2100, from the profile', () => {
-  assert.deepEqual(P.pantryUnit.defaults, { width: 600, height: 2100, depth: 558 });
+  // ─── TURN 31 (CLAUDE.md F11): …AND WITH ITS DRAWERS ──────────────────────
+  // "PANTRY defaults include its drawers (today it computes 6 bare panels
+  // until `drawers` is set)." Turn 30 built the machinery and left the count
+  // at zero, so a joiner who placed a pantry got a tall empty box and had to
+  // know to ask for the thing he had just chosen. Three is what turn 30's own
+  // proof photographed.
+  assert.deepEqual(P.pantryUnit.defaults, {
+    width: 600, height: 2100, depth: 558, drawers: 3,
+  });
   assert.deepEqual(migrateCabinetProfile({}).pantryUnit.defaults, P.pantryUnit.defaults);
   assert.equal(defaultParamsFor('PANTRY', P).width, 600);
+  assert.equal(defaultParamsFor('PANTRY', P).drawers, 3, 'it arrives with its boxes');
 });
 
 test('F14 it names BOTH kits it is made of', () => {

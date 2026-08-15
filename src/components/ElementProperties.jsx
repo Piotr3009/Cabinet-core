@@ -19,6 +19,7 @@ import { chainFromX, xFromChain } from '../engine/partitionPositions.js';
 import { CARCASS_SLOTS, partitionSlot, slotById } from '../engine/thickness.js';
 import NumberField from './NumberField.jsx';
 import UnitWarnings, { DRAWER_WARNING_CODES } from './UnitWarnings.jsx';
+import { sayHingeResult } from '../lib/hingeEdit.js';
 
 // ─── The properties of ONE piece (turn 11, CLAUDE.md F3) ────────────────────
 //
@@ -561,7 +562,7 @@ export default function ElementProperties({
                   data-hinge-row={i}
                   value={mm}
                   title="Above the carcass floor. It cannot pass the hinge above or below it."
-                  onCommit={(v) => setHingePos(unit.id, i, v)}
+                  onCommit={(v) => sayHingeResult(setHingePos(unit.id, i, v), notify)}
                 />
                 <button
                   type="button"
@@ -579,7 +580,7 @@ export default function ElementProperties({
               className="cc-btn w-full"
               data-hinge-add="1"
               title="One more hinge, in the biggest gap in the run"
-              onClick={() => addHinge(unit.id)}
+              onClick={() => sayHingeResult(addHinge(unit.id), notify)}
             >
               + Add a hinge
             </button>

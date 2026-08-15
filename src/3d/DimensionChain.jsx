@@ -101,6 +101,16 @@ function Stroke({
  */
 export default function DimensionChain({
   rows, style, plane = 'xy', at = 0, colour = null, name = null, children = null,
+  // ─── TURN 31 (CLAUDE.md F8): THE FIGURE IS A CONTROL ─────────────────────
+  //
+  // "Double-click the width or height figure on the canvas → a small modal."
+  //
+  // A dimension caption is a SPRITE, and a sprite is a billboard with no
+  // thickness — pointing at one on a canvas showing a kitchen is F7's
+  // pixel-hunting again. So the same answer: an invisible catchment at the
+  // figure's own position, sized off the sprite's own drawn height, carrying
+  // the gesture. Given no `onPick` a chain is exactly what it was.
+  onPick = null,
 }) {
   const drawn = useMemo(() => dimensionSet(rows || [], style), [rows, style]);
   if (!drawn.length) return null;
@@ -144,6 +154,7 @@ export default function DimensionChain({
             plane={plane}
             at={third}
             style={style}
+            onPick={onPick ? (e) => onPick(row, e) : null}
           />
         </group>
       ))}
@@ -160,7 +171,7 @@ export default function DimensionChain({
  * own tone, its own rounding and its own offset.
  */
 function Value({
-  row, plane, at, style,
+  row, plane, at, style, onPick = null,
 }) {
   const text = row.text?.value ?? formatDimension(row.value);
   const u = mm(row.text?.at?.[0] ?? 0);
@@ -170,7 +181,26 @@ function Value({
   // own weight, so it scales with the drawing.
   const lift = mm(style.strokeMm * 3);
   const position = plane === 'xz' ? [u, at + lift, v] : [u, v, at + lift];
-  return <DimensionValue position={position} text={text} style={style} />;
+  return (
+    <>
+      <DimensionValue position={position} text={text} style={style} />
+      {onPick && (
+        // Turn 31 (CLAUDE.md F8): the catchment on the FIGURE. Sized off the
+        // label's own drawn height so it grows and shrinks with the drawing,
+        // and invisible — a dimension that grew a visible button would be a
+        // drawing with a button on it.
+        <mesh
+          position={position}
+          visible={false}
+          userData={{ ccHelper: true, ccNoBounds: true, ccDimensionPick: row.key }}
+          onDoubleClick={(e) => { e.stopPropagation(); onPick(e); }}
+        >
+          <boxGeometry args={[style.labelHeight * 3, style.labelHeight * 1.6, style.labelHeight]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      )}
+    </>
+  );
 }
 
 /**

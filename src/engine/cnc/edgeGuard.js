@@ -238,7 +238,7 @@ function pocketLoop(p) {
 }
 
 /** The loop a pocket record actually writes — its own points where it has them. */
-export function pocketPointsOf(pocket) {
+function pocketPointsOf(pocket) {
   if (Array.isArray(pocket?.pts) && pocket.pts.length >= 3) return pocket.pts;
   return pocketLoop(pocket);
 }

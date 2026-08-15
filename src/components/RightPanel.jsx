@@ -24,6 +24,7 @@ import ElementProperties from './ElementProperties.jsx';
 import CncTree from './CncTree.jsx';
 import UnitWarnings from './UnitWarnings.jsx';
 import ShelfHingeClash from './ShelfHingeClash.jsx';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
@@ -188,7 +189,6 @@ export default function RightPanel() {
   const addDoors = () => {
     const { count } = addDoorsToUnit(unit.id) || {};
     if (!count) return;
-    notify(`${count} door${count === 1 ? '' : 's'} added — the unit is complete.`, 'ok');
     closeRightPanel();          // SPEC 4.10: doors are the last step
     clearSelection();
   };
@@ -200,7 +200,7 @@ export default function RightPanel() {
   // it means the thing you had open becomes the tool for what you are now doing.
   if (viewMode === 'cnc') {
     return (
-      <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
+      <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
         <PanelHeader title="CNC sheet" onClose={closeRightPanel} />
         <div className="flex-1 overflow-y-auto">
           <CncTree />
@@ -211,7 +211,7 @@ export default function RightPanel() {
 
   if (!unit) {
     return (
-      <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
+      <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
         <PanelHeader title="Parameters" onClose={closeRightPanel} />
         <p className="p-3 text-sm text-ink-400">Select a unit in the canvas, or open Library in the menu.</p>
       </aside>
@@ -228,7 +228,7 @@ export default function RightPanel() {
   }
 
   return (
-    <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
+    <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
       <PanelHeader title={type.label} onClose={closeRightPanel}>
         {/* Turn 16 (CLAUDE.md F6): the name is the owner's, edited where it is
             shown. It was `${type.label} · 01` printed into the header.
@@ -309,7 +309,6 @@ export default function RightPanel() {
                 onClick={() => {
                   const { notices } = resetUnitHeight(unit.id) || { notices: [] };
                   for (const n of notices) notify(n, 'warn');
-                  notify(`Back on the project ${heightGroupLabel.toLowerCase()}.`, 'ok');
                 }}
               >
                 Reset
@@ -790,7 +789,6 @@ export default function RightPanel() {
                   title="Space them evenly across the width — equal clear bays"
                   onClick={() => {
                     const moved = centrePartitions(unit.id);
-                    if (moved) notify(moved === 1 ? 'Partition centred — equal bays.' : `${moved} partitions spaced evenly — equal bays.`, 'ok');
                   }}
                 >
                   Equal bays
@@ -865,7 +863,7 @@ export default function RightPanel() {
                         type="button" className="cc-btn-ghost"
                         data-remove-partition={pt.id}
                         title="Remove this partition"
-                        onClick={() => { removeItem(unit.id, pt.id); notify('Partition removed.', 'ok'); }}
+                        onClick={() => removeItem(unit.id, pt.id)}
                       >
                         ×
                       </button>

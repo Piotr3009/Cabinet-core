@@ -45,6 +45,10 @@ export default function CncTree() {
 
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const storedDesign = useProjectStore((s) => s.project.design);
+  // Turn 31 (CLAUDE.md F5): every file this panel writes is named after the job.
+  const projectName = useProjectStore((s) => s.project.name);
+  const runChecks = useProjectStore((s) => s.runChecks);
+  const setCheckOpen = useUiStore((s) => s.setCheckOpen);
 
   const [open, setOpen] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
@@ -112,31 +116,66 @@ export default function CncTree() {
   // sheet for that material" about a board the joiner can still see listed.
   const materialKey = material === 'all' || sections.some((s) => s.key === material) ? material : 'all';
 
-  const downloadMaterial = () => {
+  // ─── TURN 31 (CLAUDE.md F3): THE EXPORT GATE, SAID ────────────────────────
+  //
+  // The gate itself is in lib/cncExport.js, so every one of these three buttons
+  // is guarded whether or not its handler remembers. What belongs HERE is the
+  // sentence and the way out: a RED that NAMES the parts that stayed behind —
+  // red because it stays until it is clicked, which is what makes the button on
+  // it reachable — carrying "Export anyway", which re-runs the very same press
+  // with the owner's own judgement applied.
+  // Turn 31 (CLAUDE.md F6): "…and the same list automatically before Export."
+  // Every button on this panel goes past it. It does not block — it opens the
+  // Check panel and says what is there.
+  const preflight = (exportAnyway) => {
+    if (exportAnyway) return;
+    const found = runChecks();
+    if (!found.length) return;
+    const reds = found.filter((f) => f.level === 'red').length;
+    setCheckOpen(true);
+    notify(
+      `Check: ${reds ? `${reds} fault${reds === 1 ? '' : 's'}` : `${found.length} to look at`} `
+      + 'before this goes to the machine.',
+      reds ? 'error' : 'warn',
+    );
+  };
+
+  const sayGate = (res, again) => {
+    if (res?.gateMessage) notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: again } });
+  };
+
+  const downloadMaterial = (exportAnyway = false) => {
+    preflight(exportAnyway);
     try {
-      const { filename, label, parts } = exportMaterialDxf(entries, {
-        key: materialKey, design: storedDesign, materials, profile,
+      const res = exportMaterialDxf(entries, {
+        key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName,
       });
-      notify(`${filename} — ${parts} parts off ${label}.`, 'ok');
+      notify(`${res.filename} — ${res.parts} parts off ${res.label}.`, 'ok');
+      sayGate(res, () => downloadMaterial(true));
     } catch (e) {
       notify(e?.message || 'DXF export failed.', 'warn');
     }
   };
 
-  const download = (sheet, kind) => {
+  const download = (sheet, kind, exportAnyway = false) => {
+    preflight(exportAnyway);
     const ids = shownIds(sheet.unit.id, sheet.parts);
     if (!ids.length) { notify('Nothing ticked on this unit.', 'warn'); return; }
     if (kind === 'zip') {
       setBusy(true);
-      exportUnitDxfZip(sheet.result, profile)
-        .then(({ filename, files }) => notify(`${filename} — ${files.length} DXF files.`, 'ok'))
+      exportUnitDxfZip(sheet.result, profile, { exportAnyway, project: projectName })
+        .then((res) => {
+          notify(`${res.filename} — ${res.files.length} DXF files.`, 'ok');
+          sayGate(res, () => download(sheet, kind, true));
+        })
         .catch((e) => notify(e?.message || 'DXF export failed.', 'warn'))
         .finally(() => setBusy(false));
       return;
     }
     try {
-      const { filename, parts } = exportSheetDxf(sheet.result, ids, profile);
-      notify(`${filename} — ${parts} parts, laid out as shown.`, 'ok');
+      const res = exportSheetDxf(sheet.result, ids, profile, { exportAnyway, project: projectName });
+      notify(`${res.filename} — ${res.parts} parts, laid out as shown.`, 'ok');
+      sayGate(res, () => download(sheet, kind, true));
     } catch (e) {
       notify(e?.message || 'DXF export failed.', 'warn');
     }
@@ -178,7 +217,7 @@ export default function CncTree() {
           className="cc-btn-gold w-full"
           data-download-material="1"
           disabled={!entries.length}
-          onClick={downloadMaterial}
+          onClick={() => downloadMaterial(false)}
         >
           Download DXF — {materialKey === 'all' ? 'all materials' : (sections.find((s) => s.key === materialKey)?.label || 'material')}
         </button>

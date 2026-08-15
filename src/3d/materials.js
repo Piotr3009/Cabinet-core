@@ -38,7 +38,7 @@ const sources = new Map();
  * machine with no network, a bad url or a bucket that has moved must fall back
  * to our own procedural grain rather than render 400 white panels.
  */
-export function decorSource(url) {
+function decorSource(url) {
   if (!url) return null;
   const known = sources.get(url);
   if (known) return known;

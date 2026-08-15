@@ -16,7 +16,7 @@ import { migrateDesign } from '../engine/design.js';
 import { formatMm, roundTo } from '../engine/format.js';
 import { HANDLE_TYPES, handleClassOf } from '../engine/handles.js';
 import { getUnitType } from '../engine/types.js';
-import { anchorAtPoint } from '../lib/modalAnchor.js';
+import { sayHingeResult } from '../lib/hingeEdit.js';
 
 // ─── ONE MODAL FOR THE DOOR AND ITS HINGES (turn 30, CLAUDE.md F2) ──────────
 //
@@ -74,10 +74,13 @@ export default function DoorModal() {
 
   // The piece was pointed at, so the point IS the object as far as the screen
   // is concerned: a rectangle of zero size at the click (lib/modalAnchor.js).
-  const anchor = useMemo(
-    () => args?.anchor || anchorAtPoint(args?.at?.x, args?.at?.y),
-    [args],
-  );
+  //
+  // ─── TURN 31 (CLAUDE.md F1): AND THAT CONVERSION HAPPENS ONCE ────────────
+  // Turn 11's `{ at }` and turn 12's `{ anchor }` used to be reconciled in four
+  // separate components, each with its own line. The store's own opener does it
+  // now (lib/modalLayer.js `withModalAnchor`), so every window in the app reads
+  // one field and there is one place a click becomes a rectangle.
+  const anchor = useMemo(() => args?.anchor || null, [args]);
 
   // A HINGED front — not an appliance face, which has no cups and no leaf.
   const isDoor = panel?.part === 'FRONT' && panel?.role === 'front' && !panel?.meta?.appliance;
@@ -101,6 +104,7 @@ export default function DoorModal() {
 
   return (
     <Modal
+      name="element"
       // Turn 14 (CLAUDE.md F4): the window says WHICH piece it is about. A
       // door says "Door", because from tonight it is one window with the
       // ironmongery in it and "piece" would be the one thing it must not say.
@@ -297,7 +301,7 @@ function HingeSection({
               className="cc-btn-ghost px-2"
               data-hinge-up={i}
               title="Up — the hinge’s own 5 mm stride"
-              onClick={() => setHingePos(unit.id, i, mm + (profile.editor.hingeNudgeMm || 5))}
+              onClick={() => sayHingeResult(setHingePos(unit.id, i, mm + (profile.editor.hingeNudgeMm || 5)), notify)}
             >
               ↑
             </button>
@@ -306,7 +310,7 @@ function HingeSection({
               className="cc-btn-ghost px-2"
               data-hinge-down={i}
               title="Down — the hinge’s own 5 mm stride"
-              onClick={() => setHingePos(unit.id, i, mm - (profile.editor.hingeNudgeMm || 5))}
+              onClick={() => sayHingeResult(setHingePos(unit.id, i, mm - (profile.editor.hingeNudgeMm || 5)), notify)}
             >
               ↓
             </button>
@@ -315,7 +319,7 @@ function HingeSection({
               data-hinge-modal-row={i}
               value={mm}
               title="Above the carcass floor. It cannot pass the hinge above or below it."
-              onCommit={(v) => setHingePos(unit.id, i, v)}
+              onCommit={(v) => sayHingeResult(setHingePos(unit.id, i, v), notify)}
             />
             <button
               type="button"
@@ -333,7 +337,7 @@ function HingeSection({
           className="cc-btn w-full"
           data-hinge-modal-add="1"
           title="One more hinge, in the biggest gap in the run"
-          onClick={() => addHinge(unit.id)}
+          onClick={() => sayHingeResult(addHinge(unit.id), notify)}
         >
           + Add a hinge
         </button>
@@ -606,8 +610,7 @@ function RemoveDoor({ unit, panel, onDone }) {
         className="cc-btn px-2 text-[11px] text-red-300"
         data-remove-door={panel.id}
         onClick={() => {
-          const res = removeFront(unit.id, panel.id);
-          if (res) notify(res.scope === 'bay' ? 'Door removed from the bay.' : 'Doors removed.');
+          removeFront(unit.id, panel.id);
           onDone?.();
         }}
       >

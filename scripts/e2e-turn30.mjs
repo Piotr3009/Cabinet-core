@@ -1556,7 +1556,10 @@ async function main() {
         JSON.stringify(tight.cut));
       await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.9, 0.55, 2.4]);
       await page.sleep(900);
-      await shot('12b-the-same-run-1mm-tight-the-joint-painted-red-with-its-value');
+      // Turn 31 (CLAUDE.md F11): the name said 1 mm and the banner in the picture
+      // says 2. The PICTURE was right; the name lied, and a proof whose filename
+      // disagrees with its own subject is a proof nobody can cite.
+      await shot('12b-the-same-run-2mm-tight-the-joint-painted-red-with-its-value');
       // …and close on the joint, where the red sliver stands between the two
       // leaves it is about.
       await frameUnits(await page.evaluate('return [window.__t30.b];'), [0.55, 0.2, 1.5]);

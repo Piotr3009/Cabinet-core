@@ -9,6 +9,7 @@ import { buildOutputMenu } from '../lib/outputMenu.js';
 import { buildDatabaseMenu, orderMenus } from '../lib/topMenu.js';
 import { persistProject } from '../lib/persist.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // Frozen layout, SPEC section 7: logo in gold, project name, gold Export button.
 // Turn 4 (BACKLOG #8) puts the classic menu bar in between: File · View ·
@@ -36,6 +37,20 @@ export default function TopBar({
   const openModal = useUiStore((s) => s.openModal);
   const notify = useUiStore((s) => s.notify);
   const goToStart = useUiStore((s) => s.goToStart);
+  const warnIfUnsaved = useUiStore((s) => s.warnIfUnsaved);
+
+  // ─── LEAVING THE PROJECT (turn 31, CLAUDE.md F2) ──────────────────────────
+  //
+  // "Leaving with unsaved work shows a RED 'Save the project — unsaved
+  // changes'." Every door out of the editor is in this bar — New project, Open,
+  // Close project, and the CABINET CORE badge — so this is the one function all
+  // four go through, rather than four remembered lines. It SPEAKS and does not
+  // bar the door (rule 4); the message is a RED, so it stays until it is
+  // clicked and is still there on the screen he has just walked to.
+  const leaveProject = () => {
+    warnIfUnsaved({ dirty, units });
+    goToStart();
+  };
   const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const toggleOutlines = useUiStore((s) => s.toggleOutlines);
@@ -99,13 +114,13 @@ export default function TopBar({
     {
       label: 'File',
       items: [
-        { label: 'New project…', hint: 'Name it and set the room on the start screen', run: goToStart },
-        { label: 'Open…', hint: 'Recent projects and everything saved', run: goToStart },
+        { label: 'New project…', hint: 'Name it and set the room on the start screen', run: leaveProject },
+        { label: 'Open…', hint: 'Recent projects and everything saved', run: leaveProject },
         { divider: true },
         { label: 'Save', hint: dirty ? 'Unsaved changes' : 'Up to date', run: save },
         { label: 'Save as…', run: (e) => openModal('save-as', { anchor: anchorOfEvent(e) }) },
         { divider: true },
-        { label: 'Close project', run: goToStart },
+        { label: 'Close project', run: leaveProject },
       ],
     },
     {
@@ -263,12 +278,12 @@ export default function TopBar({
   ];
 
   return (
-    <header className="h-12 shrink-0 bg-shell-900 border-b border-shell-600 flex items-center px-4 gap-3 z-30">
+    <header className={`h-12 shrink-0 bg-shell-900 border-b border-shell-600 flex items-center px-4 gap-3 ${LAYER_CLASS.chrome}`}>
       <button
         type="button"
         className="font-semibold tracking-[0.18em] text-gold text-sm select-none hover:text-gold-hover transition-colors"
         title="Back to the start screen"
-        onClick={goToStart}
+        onClick={leaveProject}
       >
         CABINET CORE
       </button>

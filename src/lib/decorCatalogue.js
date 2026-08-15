@@ -23,7 +23,7 @@ import { noteStorageBase } from './storageBase.js';
 // Zero new dependencies (CLAUDE.md): fetch is the platform's.
 
 export const DECOR_DIR = 'decors/egger/';
-export const DECOR_FILE = 'egger-decors.json';
+const DECOR_FILE = 'egger-decors.json';
 
 /** Where public/ is served from, whatever base the build was made with. */
 function baseUrl() {

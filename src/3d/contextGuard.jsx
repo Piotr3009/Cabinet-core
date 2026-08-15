@@ -81,7 +81,7 @@ import { useCallback, useEffect, useRef } from 'react';
 const DELIBERATE = new WeakSet();
 
 /** The diagnosis object, created on first use. */
-export function contextDiag() {
+function contextDiag() {
   if (typeof window === 'undefined') return null;
   const cc = (window.__cc = window.__cc || {});
   if (!cc.diag) {

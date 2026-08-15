@@ -46,7 +46,7 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // Wine rack · Small fridge · Twin space — plus the drawer group and the low
   // cabinet, both kits the workshop already builds.
   assert.deepEqual(idsOf('base-units'), [
-    'door-base', 'drawer-unit', 'sink', 'corner', 'l-shape', 'dishwasher',
+    'door-base', 'drawer-unit', 'sink', 'l-shape-unit', 'l-shape', 'dishwasher',
     'oven-base', 'bin-storage', 'wine-rack', 'small-fridge', 'twin-space',
     // Turn 30 (CLAUDE.md F18): the twin cupboard, beside the kits it is made of.
     'twin-cupboard', 'low',
@@ -57,7 +57,8 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
     'tall', 'fridge', 'cargo-300', 'basket-tall', 'pantry', 'pantry-worktop',
     'space-tower', 'oven-tall', 'american-fridge',
   ]);
-  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'l-shape-wall']);
+  // Turn 31 (CLAUDE.md F9): the HOOD unit joins the wall group.
+  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'l-shape-wall']);
   // The new group (F5.2): not cabinets — the pieces that finish a run.
   assert.deepEqual(idsOf('extras'), ['free-standing-panels', 'cornice-pelmet']);
 });
@@ -69,7 +70,9 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
     // wrote the pattern for both, which is exactly the condition they carried.
     // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'CORNER', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS',
+    // Turn 31 (CLAUDE.md F9): WUD_HOOD — the KIT_WUD envelope with its bottom
+    // open, the extractor a BOM line and a GLB slot, and not one fixing hole.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
   ]);
 });
 
@@ -78,7 +81,8 @@ test('a group says how much of it can be placed today', () => {
   // opened — "1/3" on Wall units beats three grey rows discovered afterwards.
   const wall = KITCHEN_LIBRARY.find((g) => g.id === 'wall-units');
   // Turn 30 (CLAUDE.md F21): two of the three can be placed now.
-  assert.deepEqual(groupCounts(wall, P), { total: 3, enabled: 2 });
+  // Turn 31 (CLAUDE.md F9): three of four — the hood joins them.
+  assert.deepEqual(groupCounts(wall, P), { total: 4, enabled: 3 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
   assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 0 });
 });

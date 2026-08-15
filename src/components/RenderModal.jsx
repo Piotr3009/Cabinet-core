@@ -83,6 +83,7 @@ export default function RenderModal({ rig }) {
 
   return (
     <Modal
+      name="render"
       anchor={anchor}
       title="Render"
       width="w-[640px]"

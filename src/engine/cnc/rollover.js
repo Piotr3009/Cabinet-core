@@ -31,8 +31,6 @@ import { cncLayer } from './layers.js';
 import { partSize, partMachinings } from '../drawings/partDetail.js';
 import { formatMm } from '../format.js';
 
-/** The four edges, in the order a draughtsman reads them off a board. */
-export const EDGE_LABELS = { left: 'Left', right: 'Right', bottom: 'Bottom', top: 'Top' };
 
 /**
  * Every hoverable feature of one part, with its readout already worked out.

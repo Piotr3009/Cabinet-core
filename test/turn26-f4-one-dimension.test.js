@@ -112,6 +112,15 @@ test('R11 — every remaining `DimLabel` in the scene is a CHIP, and it is named
       'the ruler’s live span. The user has DRAWN the dimension line himself; '
       + 'the chip is its value',
     ],
+    // ─── TURN 31 (CLAUDE.md F7): THE HOVER AURA'S OWN CHIP ─────────────────
+    '3d/HoverAura.jsx': [
+      'the number the CATCHMENT shows while the cursor is inside it — a handle’s '
+      + 'distance to its nearest front edge, a hinge’s row height. It is a CHIP '
+      + 'and not a dimension: there is no witness line, no arrowhead and no pair '
+      + 'of extension lines, because there is nothing being dimensioned — the '
+      + 'pointer is being told what it is on. It is ORANGE for the same reason '
+      + 'it is not a dimension: red is reserved for Check',
+    ],
   };
   const users = FILES
     .filter((f) => f.path.startsWith('3d/') && f.path !== '3d/DimLabel.jsx')

@@ -13,7 +13,7 @@
 // the engine only has to CARRY the full geometry.
 
 /** Points of one tab on a vertical (right-hand) edge, running bottom → top. */
-export function tabPointsRight(edgeX, centreY, G, pz) {
+function tabPointsRight(edgeX, centreY, G, pz) {
   const { tabHalfOpening: o, tabHalfWidth: t, shoulderDepth: s } = pz;
   return [
     [edgeX, centreY - t], [edgeX, centreY - o],

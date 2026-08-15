@@ -50,7 +50,7 @@ import { layoutPanels } from './layout.js';
  * on the id string: the infill at a run's end is called INFILL-L-FACE in one
  * cabinet and INFILL-T-FACE in another, and both are run parts.
  */
-export const RUN_PART_ROLES = new Set(['infill', 'plinth', 'mask']);
+const RUN_PART_ROLES = new Set(['infill', 'plinth', 'mask']);
 
 export function isRunPart(panel) {
   return RUN_PART_ROLES.has(panel?.role);

@@ -143,11 +143,16 @@ test('F1.3 — the shell owns Back and Escape, and no nested view keeps a histor
   const modal = src('components/Modal.jsx');
   assert.match(modal, /onBack/, 'the shell takes an onBack');
   assert.match(modal, /data-modal-back="1"/, 'the shell renders ← Back');
+  // Turn 31 (CLAUDE.md F1) renamed the shell's close to `close` — ONE close
+  // path, defaulted to the store's `closeModal` so a window cannot ship
+  // without one. The rule this asserts is unchanged: Escape is BACK where
+  // there is a back, and close where there is not.
   assert.match(
     modal,
-    /Escape'\)\s*\(onBack \|\| onClose\)\(\)/,
+    /Escape'\)\s*\(onBack \|\| close\)\(\)/,
     'Escape is BACK where there is a back, and close where there is not',
   );
+  assert.match(modal, /const close = onClose \|\| closeModal;/, 'one close path');
 });
 
 test('F1.3 — the part detail is PUSHED by the editor, never openModal-ed', () => {

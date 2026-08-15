@@ -10,6 +10,7 @@ import { groupCounts, resolveEntry } from '../engine/library.js';
 import { formatMm } from '../engine/format.js';
 import { projectHeights } from '../engine/design.js';
 import { placeBesideAnchor } from '../lib/menuPlacement.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // How far a flyout stands off the row that owns it, and how close it may come
 // to the edge of the screen. The same two numbers `Modal` uses for the rule-15
@@ -129,7 +130,7 @@ export default function LibraryPanel() {
   };
 
   return (
-    <div className="cc-panel absolute w-[248px] z-20 select-none" style={{ left: pos.x, top: pos.y }}>
+    <div className={`cc-panel absolute w-[248px] ${LAYER_CLASS.panel} select-none`} style={{ left: pos.x, top: pos.y }}>
       <div
         className="flex items-center gap-2 px-3 py-2 border-b border-shell-600 cursor-grab active:cursor-grabbing"
         onPointerDown={onPointerDown}
@@ -380,7 +381,7 @@ function Flyout({
     <div
       ref={ref}
       data-library-flyout={id}
-      className="fixed z-30 w-[236px] cc-panel p-2 space-y-1 cc-scroll max-h-[70vh]"
+      className={`fixed ${LAYER_CLASS.flyout} w-[236px] cc-panel p-2 space-y-1 cc-scroll max-h-[70vh]`}
       // Off screen until it has been measured and placed: a flyout that flashes
       // at 0,0 first is a flyout that reads as a bug.
       style={at ? { left: at.left, top: at.top } : { left: -9999, top: 0 }}

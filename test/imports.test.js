@@ -33,6 +33,15 @@ function walk(dir) {
 
 const FILES = walk(SRC);
 
+/**
+ * The DEFAULT exports — the components — kept apart from the rest.
+ *
+ * They are checked STRICTLY: a default-exported component is used as `<Name />`
+ * or `Name(...)` and never as a bare word, and a bare-word test on them finds
+ * "Room", "Hardware" and "Cornice" in the app's own English copy.
+ */
+const DEFAULTS = new Set();
+
 /** Every name exported by any module under src/. */
 function exportedNames() {
   const names = new Set();
@@ -40,6 +49,16 @@ function exportedNames() {
     const text = readFileSync(file, 'utf8');
     for (const m of text.matchAll(/^export\s+(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm)) {
       names.add(m[1]);
+    }
+    // ─── TURN 31: AND THE DEFAULT EXPORTS ───────────────────────────────────
+    //
+    // `export default function CheckPanel()` did not match the pattern above,
+    // so every COMPONENT in this app was invisible to this test — which is the
+    // exact class of bug it was written for, one storey up. Turn 31 caught it
+    // the way turn 5 caught the original: a browser said
+    // "CheckPanel is not defined" on a build whose `npm test` was green.
+    for (const m of text.matchAll(/^export\s+default\s+(?:async\s+)?(?:function|class)\s+([A-Za-z_$][\w$]*)/gm)) {
+      DEFAULTS.add(m[1]);
     }
     for (const m of text.matchAll(/^export\s*\{([^}]*)\}/gm)) {
       for (const part of m[1].split(',')) {
@@ -143,6 +162,14 @@ test('no file uses one of our own exports without importing it', () => {
         || new RegExp(`<${name}[\\s/>]`).test(code)
         || new RegExp(`(?<![.\\w$:])${name}(?![\\w$:])`).test(code);
       if (used) problems.push(`${relative(SRC, file)} uses ${name} without importing it`);
+    }
+
+    // ─── TURN 31: THE COMPONENTS, STRICTLY ─────────────────────────────────
+    for (const name of DEFAULTS) {
+      if (have.has(name) || name.length < TOO_SHORT) continue;
+      const used = new RegExp(`<${name}[\\s/>]`).test(code)
+        || new RegExp(`(?<![.\\w$])${name}\\s*\\(`).test(code);
+      if (used) problems.push(`${relative(SRC, file)} uses <${name}> without importing it`);
     }
   }
 

@@ -207,7 +207,7 @@ function sheetFrame({ frame, block, title, scale, profile, rows }) {
  * estimate: nothing here can measure a glyph, because nothing here is allowed
  * to know about a font (this file is tested in node).
  */
-export function fitInBlock(value, widthMm, textHeight) {
+function fitInBlock(value, widthMm, textHeight) {
   const perChar = textHeight * 0.55;
   const max = Math.max(4, Math.floor(widthMm / perChar));
   if (value.length <= max) return value;
@@ -215,7 +215,3 @@ export function fitInBlock(value, widthMm, textHeight) {
   return `${value.slice(0, max - 3)}...`;
 }
 
-/** The paper box a laid-out sheet fills — used by the tests and the preview. */
-export function sheetBounds(sheet) {
-  return boundsOf(sheet.entities);
-}

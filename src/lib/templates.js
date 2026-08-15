@@ -19,8 +19,8 @@
 
 import { getUnitType } from '../engine/types.js';
 
-export const TEMPLATE_KEY = 'cc.templates.v1';
-export const TEMPLATE_SCHEMA = 1;
+const TEMPLATE_KEY = 'cc.templates.v1';
+const TEMPLATE_SCHEMA = 1;
 export const NAME_MAX = 60;
 
 /** Params that describe WHERE a unit is rather than WHAT it is. */
@@ -64,7 +64,7 @@ export function cleanName(name) {
   return String(name ?? '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX);
 }
 
-export function newTemplateId(seed) {
+function newTemplateId(seed) {
   const rand = seed != null ? String(seed) : Math.random().toString(36).slice(2, 9);
   return `tpl_${rand}`;
 }

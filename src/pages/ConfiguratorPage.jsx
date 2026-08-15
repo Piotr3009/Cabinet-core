@@ -9,9 +9,10 @@ import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
 import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
+import CheckPanel from '../components/CheckPanel.jsx';
 import RenderModal from '../components/RenderModal.jsx';
 import DrawingModal from '../components/DrawingModal.jsx';
-import Toast from '../components/Toast.jsx';
+import Messages from '../components/Messages.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import HandEditsModal from '../components/HandEditsModal.jsx';
 import DoorModal from '../components/DoorModal.jsx';
@@ -19,6 +20,8 @@ import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
 import PartDetailModal from '../components/PartDetailModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
 import UnitFinishModal from '../components/UnitFinishModal.jsx';
+import FrontGapModal from '../components/FrontGapModal.jsx';
+import UnitSizeModal from '../components/UnitSizeModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
@@ -76,6 +79,9 @@ function FirstUnitPlus() {
 export default function ConfiguratorPage() {
   const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
   const bomOpen = useUiStore((s) => s.bomOpen);
+  const checkOpen = useUiStore((s) => s.checkOpen);
+  const setCheckOpen = useUiStore((s) => s.setCheckOpen);
+  const runChecks = useProjectStore((s) => s.runChecks);
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const modal = useUiStore((s) => s.modal);
   const openModal = useUiStore((s) => s.openModal);
@@ -165,9 +171,8 @@ export default function ConfiguratorPage() {
         // the rest — the hinge holes leave with the door and return with it.
         if (panel?.part === 'FRONT' && !panel.meta?.appliance) {
           e.preventDefault();
-          const res = removeFront(unit.id, panel.id);
+          removeFront(unit.id, panel.id);
           clearElement();
-          if (res) notify(res.scope === 'bay' ? 'Door removed from the bay.' : 'Doors removed.', 'ok');
           return;
         }
         const itemId = panel?.meta?.itemId;
@@ -175,15 +180,13 @@ export default function ConfiguratorPage() {
         e.preventDefault();
         removeItem(unit.id, itemId);
         clearElement();
-        notify(`${elementLabel(panel) || 'Piece'} removed.`, 'ok');
-        return;
+            return;
       }
       if (selectedUnitId) {
         e.preventDefault();
         removeUnit(selectedUnitId);
         clearSelection();
-        notify('Cabinet removed.', 'ok');
-      }
+          }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -205,8 +208,33 @@ export default function ConfiguratorPage() {
     return true;
   };
 
+  // ─── CHECK v1, BEFORE EXPORT (turn 31, CLAUDE.md F6) ─────────────────────
+  //
+  // "…and the same list automatically before Export." The SAME call the button
+  // makes, so a pre-export check cannot differ from the one the panel shows —
+  // a second implementation of eleven rules is eleven chances to disagree.
+  //
+  // It does not BLOCK (F6, in as many words: "no blocking anywhere except the
+  // export gate's hold-out"). It opens the panel and says what was found, and
+  // the export goes ahead. The one thing that holds a board back is the gate,
+  // which is a different mechanism with its own "Export anyway".
+  const checkBeforeExport = useCallback(() => {
+    const found = runChecks();
+    if (!found.length) return found;
+    const reds = found.filter((f) => f.level === 'red').length;
+    setCheckOpen(true);
+    notify(
+      `Check: ${reds ? `${reds} fault${reds === 1 ? '' : 's'}` : `${found.length} to look at`} `
+      + 'before this goes to the machine.',
+      reds ? 'error' : 'warn',
+    );
+    return found;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runChecks, setCheckOpen, notify]);
+
   const onExportCsv = useCallback(() => {
     if (!guard()) return;
+    checkBeforeExport();
     exportCuttingListCsv(allResults(), project.name);
     notify('Cutting list exported.', 'ok');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -214,6 +242,7 @@ export default function ConfiguratorPage() {
 
   const onExportPdf = useCallback(() => {
     if (!guard()) return;
+    checkBeforeExport();
     exportProjectPdf({
       entries: allResults(), project, capture: captureRef.current, assignments, materials,
     });
@@ -222,12 +251,22 @@ export default function ConfiguratorPage() {
   }, [allResults, project, assignments, materials, units.length]);
 
   /** Every cut part of the SELECTED unit, as one ZIP (Output ▸ CNC / DXF). */
-  const onExportDxfZip = useCallback(async () => {
+  // The menu hands its `run` the click EVENT, so the flag is read out of an
+  // options object rather than out of argument one: an event is truthy and
+  // would otherwise read as "export anyway".
+  const onExportDxfZip = useCallback(async (opts) => {
+    const exportAnyway = opts?.exportAnyway === true;
+    if (!exportAnyway) checkBeforeExport();
     const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
     if (!unit) { notify('Select a unit first — the DXF export is per unit.', 'warn'); return; }
     try {
-      const { filename, files } = await exportUnitDxfZip(unitResult(unit.id));
-      notify(`${files.length} DXF files exported as ${filename}.`, 'ok');
+      // Turn 31 (CLAUDE.md F3): through the export gate, like the CNC tree's own
+      // three buttons — the guard cannot be reached by one door and not another.
+      const res = await exportUnitDxfZip(unitResult(unit.id), undefined, { exportAnyway, project: project.name });
+      notify(`${res.files.length} DXF files exported as ${res.filename}.`, 'ok');
+      if (res.gateMessage) {
+        notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: () => onExportDxfZip({ exportAnyway: true }) } });
+      }
     } catch (e) {
       notify(e.message || 'This unit has no CNC geometry to export.', 'warn');
     }
@@ -322,6 +361,8 @@ export default function ConfiguratorPage() {
         <LibraryPanel />
         {rightPanelOpen && !bomOpen && <RightPanel />}
         {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} />}
+        {/* Turn 31 (CLAUDE.md F6): the Check panel — a LIST of findings, not toasts. */}
+        {checkOpen && <CheckPanel />}
         {modal === 'room' && <RoomModal />}
         {modal === 'design' && <DesignSettingsModal />}
         {modal === 'auth' && <AuthModal />}
@@ -353,6 +394,10 @@ export default function ConfiguratorPage() {
             palette. It takes a selection, so the same window serves the
             right-click menu over six cabinets (F5.3). */}
         {modal === 'unit-finish' && <UnitFinishModal />}
+        {/* Turn 31 (CLAUDE.md F4.15): the front-gap repair, with its two numbers. */}
+        {modal === 'front-gap' && <FrontGapModal />}
+        {/* Turn 31 (CLAUDE.md F8): the width/height figure, double-clicked. */}
+        {modal === 'unit-size' && <UnitSizeModal />}
         {/* ─── Turn 23 (CLAUDE.md F9.3) ───
             "This part carries manual edits — recompute drops them, continue?"
             It is not a modal in the `modal` slot: it is raised by the STATE of
@@ -360,7 +405,7 @@ export default function ConfiguratorPage() {
             to appear over whatever window the recompute happened in. */}
         <HandEditsModal />
         <ContextMenu />
-        <Toast />
+        <Messages />
       </div>
     </div>
   );

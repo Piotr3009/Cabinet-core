@@ -171,6 +171,44 @@ export const DEFAULT_CABINET_PROFILE = {
     finish: 'gold',
   },
 
+  // ─── TURN 31 (CLAUDE.md F4.4 / F4.4a): APPLIANCE FACES ────────────────────
+  //
+  // An appliance is a BOUGHT thing with a published size, and rule 4a turns on
+  // it: "every front above/below the appliance takes the APPLIANCE's width
+  // (oven 598 → drawer front below is 598)".
+  //
+  // The owner's own two numbers, 15.08.2026. Rule 2 of the turn — no hole
+  // without truth — applies to sizes as well: a machine that is not named here
+  // gets no invented width, and `applianceFaceWidth` falls back to the
+  // carcass less the matrix's own 3 + 3, which is what a 594-in-600 dishwasher
+  // already is.
+  appliances: {
+    faceWidth: {
+      oven: 598,     // the owner's example, verbatim
+      dw: 594,       // 594 in a 600 opening — the appliance provides the 3
+    },
+    defaultInsetMm: 3,
+  },
+
+  // ─── TURN 31 (CLAUDE.md F6): CHECK v1's OWN NUMBERS ───────────────────────
+  //
+  // "Rules, with the owner's colours; thresholds are profile numbers marked as
+  // owner-tunable." Each of these is his, agreed 15.08.2026, and each moves
+  // alone. The rules themselves are engine/checks.js.
+  checks: {
+    // #3 — over this height, a cabinet with shelves and none of them FIXED is
+    // a cabinet whose sides will bow. OWNER'S NUMBER: 1200.
+    tallNoFixHeightMm: 1200,
+    // #5 — the window of OPEN gap above a run that wants a filler. Under 20 is
+    // a shadow line; over 80 is a decision somebody has already made.
+    // OWNER'S NUMBERS: 20–80.
+    openGapFromMm: 20,
+    openGapToMm: 80,
+    // #8 — over this width, a 110° hinge will not open the door far enough to
+    // get a drawer out past it. OWNER'S NUMBER: 600.
+    wideFrontMm: 600,
+  },
+
   // ─── Doors / fronts ───
   doors: {
     // ─── TURN 30 (CLAUDE.md F12): HOW NEAR TWO FRONTS MAY COME ────────────
@@ -184,6 +222,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // shown. It is a WARNING OVERLAY and not a block: the cabinets are built
     // exactly as they were asked for.
     minNeighbourGapMm: 3,
+    // ─── TURN 31 (CLAUDE.md F4.16 / F4.18): AND HOW WIDE IS TOO WIDE ───────
+    //
+    // OWNER'S DEFAULT, 15.08.2026 (his word: "one profile number"). Over this,
+    // the gap is a YELLOW question rather than a fault — "too wide — infill or
+    // front correction?" — because a 9 mm joint is not dangerous, it is ugly,
+    // and which of the two answers is right is the joiner's call.
+    maxNeighbourGapMm: 6,
+    // How far away a thing can be and still be THE NEIGHBOUR of a front.
+    // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named it. A side
+    // filler is at most 120 (autoParts.sideInfill.maxWidth), so 200 catches
+    // everything that is a joint and nothing that is the next cabinet along.
+    neighbourReachMm: 200,
+    // ─── TURN 31 (CLAUDE.md F4.A): THE CLEARANCE MATRIX, THE OWNER'S OWN ───
+    //
+    // How far a front's edge stands INSIDE its own carcass end, decided by what
+    // is beside it. Left and right independent (rule 8). Agreed point by point
+    // on 15.08.2026; the L-shape corner (rule 7) is PARKED with the L-shape
+    // unit and has no number here on purpose — engine/frontClearance.js reads
+    // `null` for it and the Check says "parked" rather than passing it.
+    clearance: {
+      front: 1.5,      // 1. another cabinet's front → 1.5 + 1.5 = the 3 a client sees
+      endPanel: 3,     // 2. an end panel
+      infill: 3,       // 3. an infill/filler — same category as a panel
+      appliance: 0,    // 4. an appliance with its own front provides the 3 itself
+      wall: 3,         // 5. a bare wall, + the yellow "infill? (dust collection)"
+      none: 1.5,       // 6. the end of a run
+    },
     // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
     // width 705 mm (704 is still ONE door — BLOCKERS.md #2)
     widthDeduction: 4,
@@ -217,6 +282,31 @@ export const DEFAULT_CABINET_PROFILE = {
     standardOptions: [2, 3],
     holeDiameter: 5,
     holePairOffset: 16,        // 2 holes per centre at centre ± 16
+    // ─── TURN 31 (CLAUDE.md F3 / Check #10): HOW NEAR TWO ROWS MAY COME ────
+    //
+    // OWNER'S NUMBER, 15.08.2026: 60 mm.
+    //
+    // The fault it stops is live in the app today, not hypothetical:
+    // `hinge_rows [100, 100, 470]` is storable from the editor and makes the
+    // engine emit the cups at 84 and 116 TWICE, on one panel, on one layer, at
+    // one coordinate. On the machine that is a 5 mm bit going back into a hole
+    // it has already made.
+    //
+    // 60 is the physical line as well as the arithmetic one: a CLIP top cup is
+    // 35 across and its plate reaches further again, so two rows inside 60 are
+    // two hinges that cannot both be fitted whatever the drilling says.
+    minSpacingMm: 60,
+    // ─── TURN 31 (CLAUDE.md F4.10 / F4.11 / F4.18) ─────────────────────────
+    // How much a fitted hinge can absorb on its OWN side adjustment. Under
+    // this, a front correction is soaked up silently and the plates on the
+    // carcass never move (rule 10); over it, the Check says "beyond the
+    // hinge's adjustment — check" in yellow (rule 11).
+    // OWNER'S NUMBER, 15.08.2026: ±1.5.
+    sideAdjustMm: 1.5,
+    // CLAUDE.md F3: "One profile line flips block→warn if the owner ever wants
+    // it loose." This is the line. It ships BLOCKING, because what it stops is
+    // a board in the skip; `false` leaves the move allowed and the yellow said.
+    spacingBlocks: true,
     xFromFrontEdge: 37,        // measured from the FRONT edge of the side panel
     layer: 'HINGES_5MM',
     endOffset: 100,            // first/last hinge centre, from panel end
@@ -1004,7 +1094,22 @@ export const DEFAULT_CABINET_PROFILE = {
   // height — the kit it is made of, said once.
   pantryUnit: {
     minHeight: 1100,
-    defaults: { width: 600, height: 2100, depth: 558 },
+    // ─── TURN 31 (CLAUDE.md F11): AND IT ARRIVES WITH ITS DRAWERS ──────────
+    //
+    // "PANTRY defaults include its drawers (today it computes 6 bare panels
+    // until `drawers` is set)."
+    //
+    // He is right, and it is the same class of fault turn 28 fixed on the D/W
+    // panel: a kit whose DRAWERS ARE THE KIT arrived without them, so a joiner
+    // who placed a pantry got a tall empty box and had to know to ask for the
+    // thing he had just chosen. Turn 30 built the machinery — the wardrobe
+    // drawer, hole for hole — and left the count at zero.
+    //
+    // OWNER'S NUMBER, 15.08.2026: three, which is what turn 30's own proof
+    // photographed ("three Blum boxes and no drawer faces").
+    defaults: {
+      width: 600, height: 2100, depth: 558, drawers: 3,
+    },
   },
 
   // ─── Low cabinet (KIT_LOW_CABINET_FULL) ───
@@ -1297,6 +1402,23 @@ export const DEFAULT_CABINET_PROFILE = {
   glassWallUnit: {
     defaults: {
       width: 600, height: 720, depth: 400, mountHeight: 1500,
+    },
+  },
+
+  // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
+  //
+  // The KIT_WUD envelope, with the bottom open. `aperture` is the clear height
+  // the extractor hangs in, and the door is what is left above it.
+  //
+  // OWNER-TUNABLE DEFAULTS, 15.08.2026 — the owner named the FEATURE and not
+  // these numbers. 600 × 720 × 400 is the wall unit's own box (a hood cabinet
+  // is a wall cabinet), the mount height is a wall unit's, and 350 of aperture
+  // is what a standard chimney extractor's body wants under a 720 box while
+  // leaving a door worth having above it. Every one of them is a number the
+  // owner changes in Settings, not a rule.
+  hoodWallUnit: {
+    defaults: {
+      width: 600, height: 720, depth: 400, mountHeight: 1500, aperture: 350,
     },
   },
 
@@ -3165,6 +3287,12 @@ export const DEFAULT_CABINET_PROFILE = {
   // a workshop preference). What belongs here is the sheet metrics.
   cnc: {
     unitNumberLayer: 'UNIT_NUMBER',  // LISP drawText layer for the part label
+    // ─── TURN 31 (CLAUDE.md F6, check #7): THE BOARD ON THE BED ────────────
+    // A panel bigger than the sheet is a panel nobody can cut, and until this
+    // turn nothing in the app ever compared the two. OWNER'S DEFAULT,
+    // 15.08.2026: 2790 × 2060. It is a sheet size, so it moves alone and it
+    // moves the moment the workshop's supplier changes.
+    sheet: { width: 2790, height: 2060 },
     // ─── TURN 20 (CLAUDE.md F4): HALF AGAIN ────────────────────────────────
     // Owner: the wrapping and the placement have been right since turn 18; the
     // SIZE is still double what he wants, on the glass and in the file. 40 was
@@ -3313,6 +3441,24 @@ export const DEFAULT_CABINET_PROFILE = {
     // is a filler's job and not a cabinet's.
     addPlusMinGapMm: 100,
 
+    // ─── TURN 31 (CLAUDE.md F2): THE THREE MESSAGE LEVELS ─────────────────
+    //
+    // The owner, 15.08.2026, on a toast slot of one that erased itself every
+    // four seconds: "he has never seen one." His three rules are contracts and
+    // live in engine/messages.js; these are the two NUMBERS in them, here
+    // because rule 2 says a number lives in the profile.
+    messages: {
+      // "GREY — a few seconds." Three is a few: long enough to read a file
+      // name, short enough that a bulk action does not paper the screen.
+      // OWNER'S DEFAULT, 15.08.2026 — one number, and it moves alone.
+      greyMs: 3000,
+      // How many may stand at once before the queue sheds the least important
+      // OLDEST one. Never a red (engine/messages.js `trimQueue`).
+      // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named it; five
+      // is what fits over a 3D view without becoming the view.
+      maxOnScreen: 5,
+    },
+
     // ─── THE MODAL RULE (turn 12, CLAUDE.md rule 15) ───
     // "Every modal in this application is DRAGGABLE by its header and opens
     // BESIDE the object it concerns — never covering it." The owner said
@@ -3383,6 +3529,27 @@ export const DEFAULT_CABINET_PROFILE = {
   // The clearances the collision clamp enforces. A move STOPS at these values
   // (src/engine/collision.js) — they are not advisory.
   editor: {
+    // ─── TURN 31 (CLAUDE.md F7): THE HOVER AURA ────────────────────────────
+    //
+    // The owner: "Not a snap — a CATCHMENT." An invisible box a little bigger
+    // than the piece, so pointing at a 12 mm bar handle or a 4 mm hinge arm on
+    // a canvas showing a whole kitchen stops being pixel-hunting.
+    hoverAura: {
+      // How far past the piece the catchment reaches, in SCENE mm.
+      // OWNER'S NUMBER, 15.08.2026: ~8.
+      mm: 8,
+      // How long the label stays after the cursor leaves. This is what stops
+      // the flicker: three.js raycasts per frame, and a hand held still on the
+      // boundary crosses it several times a second.
+      // OWNER'S NUMBER, 15.08.2026: ~300.
+      lingerMs: 300,
+      // ORANGE. "red is reserved for Check" — an informational number wearing
+      // the fault colour trains an eye to ignore the fault colour.
+      colour: '#e08a2e',
+      // F7's own note: "one number — default the owner may extend to two".
+      // This is the extension, as one line.
+      showBothAxes: false,
+    },
     snapSteps: [0.5, 1, 32],
     defaultSnap: 1,
     // The precision the WORKSHOP works to (BACKLOG #33). Every millimetre field
@@ -3641,7 +3808,14 @@ export function migrateCabinetProfile(profile) {
     },
     front: { ...D.front, ...profile.front, types: { ...D.front.types, ...profile.front?.types } },
     carcass: { ...D.carcass, ...profile.carcass },
-    doors: { ...D.doors, ...profile.doors },
+    doors: {
+      ...D.doors,
+      ...profile.doors,
+      // Turn 31 (CLAUDE.md F4.18): the clearance matrix, key by key — a
+      // workshop that has tuned ONE of the six keeps the owner's answer for
+      // the rest, and a profile saved before this turn gets all six.
+      clearance: { ...D.doors.clearance, ...profile.doors?.clearance },
+    },
     handles: {
       ...D.handles,
       ...profile.handles,
@@ -3739,6 +3913,10 @@ export function migrateCabinetProfile(profile) {
     wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
     twinCupboard: { ...D.twinCupboard, ...profile.twinCupboard, defaults: { ...D.twinCupboard.defaults, ...profile.twinCupboard?.defaults } },
     cornerUnit: { ...D.cornerUnit, ...profile.cornerUnit, defaults: { ...D.cornerUnit.defaults, ...profile.cornerUnit?.defaults } },
+    hoodWallUnit: {
+      ...D.hoodWallUnit,
+      defaults: { ...D.hoodWallUnit.defaults, ...profile.hoodWallUnit?.defaults },
+    },
     glassWallUnit: {
       ...D.glassWallUnit,
       ...profile.glassWallUnit,
@@ -3986,6 +4164,17 @@ export function migrateCabinetProfile(profile) {
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
     },
     room: { ...D.room, ...profile.room },
+    // Turn 31 (CLAUDE.md F6): key by key, so a profile saved before Check v1
+    // comes back with every threshold rather than with `undefined` millimetres.
+    checks: { ...D.checks, ...profile.checks },
+    // Turn 31 (CLAUDE.md F4.4a): key by key, so a profile saved before the
+    // appliance faces existed comes back with the published widths rather than
+    // with an empty table and an invented number.
+    appliances: {
+      ...D.appliances,
+      ...profile.appliances,
+      faceWidth: { ...D.appliances.faceWidth, ...profile.appliances?.faceWidth },
+    },
     ui: {
       ...D.ui,
       ...profile.ui,
@@ -3997,15 +4186,27 @@ export function migrateCabinetProfile(profile) {
         ...profile.ui?.modal,
         anchorOffset: { ...D.ui.modal.anchorOffset, ...profile.ui?.modal?.anchorOffset },
       },
+      // Turn 31 (CLAUDE.md F2): key by key, like every other nested block — a
+      // profile saved before the message levels existed comes back with a grey
+      // that expires rather than one that hangs on `undefined` milliseconds.
+      messages: { ...D.ui.messages, ...profile.ui?.messages },
     },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's
     // answer for the rest, and a profile saved before this turn gets all of it.
-    cnc: { ...D.cnc, ...profile.cnc, annotation: { ...D.cnc.annotation, ...profile.cnc?.annotation } },
+    cnc: {
+      ...D.cnc,
+      ...profile.cnc,
+      annotation: { ...D.cnc.annotation, ...profile.cnc?.annotation },
+      // Turn 31 (F6 #7): key by key, like every other nested block.
+      sheet: { ...D.cnc.sheet, ...profile.cnc?.sheet },
+    },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: {
       ...D.editor,
       ...profile.editor,
+      // Turn 31 (CLAUDE.md F7): key by key, like every other nested block.
+      hoverAura: { ...D.editor.hoverAura, ...profile.editor?.hoverAura },
       // Turn 20 (CLAUDE.md F6.2): key by key, like every other nested block —
       // a profile saved before the ruler had snaps comes back with all three
       // numbers rather than with a magnet of `undefined` pixels.
@@ -4097,11 +4298,4 @@ export function setActiveCabinetProfile(profile) {
 /** The engine's single read point. Falls back to the Skylon defaults. */
 export function getCabinetProfile() {
   return activeProfile || DEFAULT_CABINET_PROFILE;
-}
-
-/** Temporarily compute with a frozen (snapshot) profile. */
-export function withProfile(profile, fn) {
-  const prev = activeProfile;
-  if (profile) activeProfile = migrateCabinetProfile(profile);
-  try { return fn(); } finally { activeProfile = prev; }
 }

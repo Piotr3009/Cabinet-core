@@ -2,6 +2,7 @@ import jsPDFDefault from 'jspdf';
 import { drawingLayer } from '../engine/drawings/layers.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
 import { slug } from '../engine/render.js';
+import { exportFileName } from '../engine/naming.js';
 import { download } from './exporters.js';
 
 // ─── Getting a drawing off the screen (turn 6, CLAUDE.md F7; turn 7, F1) ───
@@ -28,14 +29,27 @@ import { download } from './exporters.js';
  */
 const jsPDF = jsPDFDefault?.jsPDF || jsPDFDefault;
 
-/** `{project}-{unit}-{view}.{ext}` — the same naming family as a render. */
-export function drawingFilename({ project, unit, view = 'front-elevation', ext = 'svg' }) {
-  return `${slug(project)}-${slug(unit, 'unit')}-${slug(view, 'view')}.${ext}`;
+/**
+ * `{ProjectName}-drawing-{unit}-{view}-{DDMM-HHMM}.{ext}` (turn 31, CLAUDE.md F5).
+ *
+ * "Same pattern for any other export the app writes." A drawing already said
+ * which job and which cabinet; what it did not say is WHEN, so exporting the
+ * same elevation twice after a correction produced two identical names and the
+ * same afternoon the owner lost to `All-materials-cnc`.
+ */
+export function drawingFilename({
+  project, unit, view = 'front-elevation', ext = 'svg', now = new Date(),
+}) {
+  return exportFileName({
+    project, kind: 'drawing', subject: `${slug(unit, 'unit')}-${slug(view, 'view')}`, ext, now,
+  });
 }
 
-/** `{project}-unit-cards.pdf` — the whole job in one document. */
-export function bookletFilename({ project, ext = 'pdf' }) {
-  return `${slug(project)}-unit-cards.${ext}`;
+/** `{ProjectName}-unit-cards-{DDMM-HHMM}.pdf` — the whole job in one document. */
+export function bookletFilename({ project, ext = 'pdf', now = new Date() }) {
+  return exportFileName({
+    project, kind: 'unit-cards', ext, now,
+  });
 }
 
 export function exportDrawingSvg(sheet, { project, unit, view = 'front-elevation' }) {
@@ -107,7 +121,7 @@ function newDoc(sheet) {
 }
 
 /** One laid-out sheet onto the CURRENT page of a jsPDF document. */
-export function drawSheet(doc, sheet) {
+function drawSheet(doc, sheet) {
   const { width, height } = sheet;
   const flip = (y) => height - y;
 

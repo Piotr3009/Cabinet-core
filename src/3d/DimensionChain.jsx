@@ -263,18 +263,41 @@ function DimensionValue({ position, text, style }) {
     const c = canvas.getContext('2d');
     c.font = font;
     c.textBaseline = 'middle';
-    // Square, quiet, and no outline at all — the plate IS the edge.
-    c.fillStyle = style.labelPlate;
-    c.globalAlpha = style.labelAlpha;
-    c.fillRect(0, 0, width, height);
-    c.globalAlpha = 1;
+    // ─── CHAT FIX 15.08.2026: THE HOVER GROUND COMES OFF ────────────────────
+    // Turn 27 (R12) made the dark plate THE one look, and for the standing
+    // chains it stays. The owner's ruling today is about the MOMENTARY ones:
+    // "jak najeżdżamy… można usunąć czarne tło? bo nam zasłania sporo" — a
+    // plate that follows the pointer covers the very board being measured.
+    // So the ONE component grows one switch, `style.labelGround`:
+    //   'plate' (default) — turn 25's flat label, exactly as before;
+    //   'bare'            — no ground at all; the figure wears a white halo
+    //                       so it still reads on dark decors.
+    // Hover chains, the aura and the handle drawing pass 'bare'; every
+    // standing chain and the PDF keep the plate.
+    const bare = style.labelGround === 'bare';
+    if (!bare) {
+      // Square, quiet, and no outline at all — the plate IS the edge.
+      c.fillStyle = style.labelPlate;
+      c.globalAlpha = style.labelAlpha;
+      c.fillRect(0, 0, width, height);
+      c.globalAlpha = 1;
+    }
+    if (bare) {
+      c.lineJoin = 'round';
+      c.lineWidth = Math.max(4, Math.round(size * 0.16));
+      c.strokeStyle = 'rgba(255,255,255,0.9)';
+    }
     c.fillStyle = style.labelInk;
     // Drawn letter by letter, which is the only way a canvas tracks type.
     const total = measure.measureText(text).width + tracking * (text.length - 1);
     let x = (width - total) / 2;
     c.textAlign = 'left';
+    const put = (ch, px) => {
+      if (bare) c.strokeText(ch, px, height / 2 + 1);
+      c.fillText(ch, px, height / 2 + 1);
+    };
     for (const ch of text) {
-      c.fillText(ch, x, height / 2 + 1);
+      put(ch, x);
       x += measure.measureText(ch).width + tracking;
     }
     const tex = new THREE.CanvasTexture(canvas);

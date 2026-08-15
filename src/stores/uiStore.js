@@ -718,6 +718,25 @@ export const useUiStore = create((set, get) => ({
     const now = Date.now();
     const profile = getCabinetProfile();
     const msg = makeMessage(message, tone, { at: now, profile, action: opts?.action || null });
+    // ─── CHAT FIX 15.08.2026: SAY IT ONCE, WITH A COUNT ─────────────────────
+    // Owner, off six identical yellows papering his corner: the SAME sentence
+    // queued again folds into the one already standing — "3 × " in front of
+    // it — instead of a wall of repeats. Different sentences still queue;
+    // a red never folds into anything (an error earns its own line).
+    const twin = msg.level !== 'red' && get().messages.find(
+      (m) => m.level === msg.level && (m.baseMessage || m.message) === message,
+    );
+    if (twin) {
+      const count = (twin.count || 1) + 1;
+      set((s) => ({
+        messages: s.messages.map((m) => (m.id === twin.id
+          ? {
+            ...m, count, baseMessage: message, message: `${count} × ${message}`, at: now,
+          }
+          : m)),
+      }));
+      return twin.id;
+    }
     set((s) => ({ messages: trimQueue(pushMessage(s.messages, msg), queueMax(profile)) }));
     // Only a grey has a clock. A red that expired on its own would be exactly
     // the fault this feature exists to end, so there is no timer for one.

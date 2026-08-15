@@ -71,17 +71,21 @@ test('F4.3 `dimensionStyle` reads it through, so every surface gets one answer',
 
 // ─── F4.1 — the single style, on the one component ──────────────────────────
 
-test('F4.1 the value is painted on the plate, and the halo is gone', () => {
-  // Turn 26's paint, named so it cannot come back unnoticed.
-  assert.doesNotMatch(chain, /strokeText/, 'no white halo');
-  assert.doesNotMatch(chain, /rgba\(255,255,255/, 'no white anything');
-  // Turn 25's plate, back: square corners, the profile's ground, the profile's
-  // ink, and the letter-spacing the app's own label type carries.
-  assert.match(chain, /c\.fillStyle = style\.labelPlate;/);
-  assert.match(chain, /c\.globalAlpha = style\.labelAlpha;/);
-  assert.match(chain, /c\.fillRect\(0, 0, width, height\);/);
-  assert.match(chain, /c\.fillStyle = style\.labelInk;/);
-  assert.doesNotMatch(chain, /roundRect/, 'a rounded plate is a chip, not a dimension');
+test('F4.1 the PLATE is the default and carries no halo; the halo lives ONLY behind the hover switch', () => {
+  // ─── RE-RULED 15.08.2026 (evening) ─────────────────────────────────────
+  // R12's plate stays THE look for every standing chain. What changed is the
+  // owner's own ruling on the MOMENTARY labels: "jak najeżdżamy… można
+  // usunąć czarne tło? bo nam zasłania sporo" — so `labelGround: 'bare'`
+  // exists for hover alone, and the white halo may appear ONLY inside that
+  // branch. The default path must still paint the plate and never stroke.
+  const srcText = readFileSync(new URL('../src/3d/DimensionChain.jsx', import.meta.url), 'utf8');
+  const body = srcText.slice(srcText.indexOf('function DimensionValue'));
+  const bareAt = body.indexOf("const bare = style.labelGround === 'bare';");
+  assert.ok(bareAt > 0, 'the switch exists');
+  assert.match(body, /if \(!bare\) \{[\s\S]{0,600}?fillRect/, 'the plate is painted on the default path');
+  const firstStroke = body.indexOf('strokeText');
+  assert.ok(firstStroke > bareAt, 'no stroke before the switch — the plate path cannot halo');
+  assert.match(body, /if \(bare\) \{\n\s*c\.lineJoin/, 'halo settings live behind the bare switch');
 });
 
 test('F4.1 the INK is the plate’s, not the line’s — as it was before turn 26', () => {

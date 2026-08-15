@@ -133,3 +133,56 @@ test('the drawer side frame agrees with the board the engine cut — every kit',
   }
   assert.ok(seen >= 20, `the battery really carried drawer sides (${seen})`);
 });
+
+// ─── 15.08.2026, night batch: three more owner's rulings, pinned ────────────
+
+test('a wardrobe drawer face is NOT in the run — the matrix skips it, the doors stay', async () => {
+  const { frontsInRoom } = await import('../src/engine/frontClearance.js');
+  const { computeCabinet } = await import('../src/engine/cabinet.js');
+  const { defaultParamsFor } = await import('../src/engine/types.js');
+  const items = [{ id: 'd1', kind: 'drawer', index: 1, mount: 'overlay', height_mm: 200 }];
+  const make = (type, extra) => ({
+    unit: { id: 'u1', type, params: { width: 600, ...extra }, position: { x_mm: 0, wall: 0 } },
+    result: computeCabinet({ ...defaultParamsFor(type, P), unit_num: '01', ...extra }, P),
+  });
+  const w = frontsInRoom([make('WARDROBE', { items, sections: [{ width_mm: 600, items }], doors: { count: 1, hinge: 'L' } })]);
+  assert.ok(!w.some((r) => /-DF\d/.test(r.panelId)), 'the recessed face is out of the matrix');
+  assert.ok(w.some((r) => /-F(\d+)?$/.test(r.panelId)), 'the DOORS of the same wardrobe stay in');
+  // A kitchen drawer unit: its three faces ARE the run, and all three stay.
+  const k = frontsInRoom([make('BUDR', {})]);
+  assert.equal(k.length, 3, 'a kitchen drawer face IS the run and stays');
+});
+
+test('the same sentence folds into a count; a different one queues; a red never folds', async () => {
+  const { useUiStore } = await import('../src/stores/uiStore.js');
+  const ui = () => useUiStore.getState();
+  ui().clearMessages();
+  ui().notify('too wide at W01', 'warn');
+  ui().notify('too wide at W01', 'warn');
+  ui().notify('too wide at W01', 'warn');
+  ui().notify('another thing', 'warn');
+  const texts = ui().messages.map((m) => m.message);
+  assert.ok(texts.includes('3 × too wide at W01'), `folded: ${texts}`);
+  assert.ok(texts.includes('another thing'));
+  ui().notify('broken', 'error');
+  ui().notify('broken', 'error');
+  // A red never wears a count: the queue's own law keeps ONE standing red per
+  // sentence (it re-arms rather than stacks), and the fold must not touch it.
+  const reds = ui().messages.filter((m) => m.level === 'red');
+  assert.equal(reds.length, 1);
+  assert.equal(reds[0].message, 'broken', 'no × prefix on a red, ever');
+  ui().clearMessages();
+});
+
+test('the pretty view outlines the PLAIN board; contour and X-ray keep the machined one', () => {
+  const v = src('3d/UnitView.jsx');
+  assert.match(v, /geometry=\{\(contour \|\| xray\) \? undefined : \(outlinePlain \|\| undefined\)\}/);
+});
+
+test('hover figures go bare; the standing chains keep turn 25\'s plate', () => {
+  const chain = src('3d/DimensionChain.jsx');
+  assert.match(chain, /const bare = style\.labelGround === 'bare';/);
+  assert.match(src('3d/HoverDimensions.jsx'), /labelGround: 'bare'/);
+  assert.match(src('3d/Hardware.jsx'), /labelGround: 'bare'/);
+  assert.match(src('3d/HoverAura.jsx'), /variant="bare"/);
+});

@@ -39,6 +39,10 @@ export default function DimLabel({
 }) {
   const texture = useMemo(() => {
     const flat = variant === 'flat';
+    // CHAT FIX 15.08.2026: 'bare' — the hover look. No ground at all; a white
+    // halo keeps the figure legible on a dark decor. The owner's ruling: a
+    // plate that follows the pointer covers the very thing being measured.
+    const bare = variant === 'bare';
     const pad = flat ? 16 : 12;
     const fontSize = flat ? 38 : 44;
     const shown = flat ? String(text).toUpperCase() : text;
@@ -82,6 +86,13 @@ export default function DimLabel({
       } else {
         c.fillText(shown, width / 2, height / 2 + 1);
       }
+    } else if (bare) {
+      c.lineJoin = 'round';
+      c.lineWidth = Math.max(4, Math.round(fontSize * 0.16));
+      c.strokeStyle = 'rgba(255,255,255,0.9)';
+      c.strokeText(shown, width / 2, height / 2 + 1);
+      c.fillStyle = ink;
+      c.fillText(shown, width / 2, height / 2 + 1);
     } else {
       c.fillStyle = 'rgba(255,255,255,0.92)';
       c.strokeStyle = colour || (tone === 'gold' ? COLORS.gold : '#d0d0cc');

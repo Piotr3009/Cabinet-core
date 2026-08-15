@@ -1254,7 +1254,7 @@ export function FrontHandle({
       <group position={[-pivot[0], -pivot[1], -pivot[2]]}>
         <DimensionChain
           rows={rows}
-          style={dimensionStyle(profile)}
+          style={{ ...dimensionStyle(profile), labelGround: 'bare' }}
           plane="xy"
           at={faceZ + 1}
           name={`handle-dims-${panel.id}`}

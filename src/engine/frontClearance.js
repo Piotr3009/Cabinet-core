@@ -45,6 +45,7 @@
 //
 // Pure functions and pure data. No React, no store, no three.js.
 
+import { getUnitType } from './types.js';
 import { unitVerticals } from './runs.js';
 
 /** What can stand beside a front. */
@@ -129,6 +130,16 @@ function overlaps(a1, a2, b1, b2, slack = 1) {
  * The frame is the room view's: `x` along the wall from its start corner, `y`
  * off the floor, `z` out from the wall.
  */
+/**
+ * Is this unit's drawer face the RECESSED, behind-the-doors kind (the
+ * KIT_WARDROBE construction), rather than a run-facing kitchen front?
+ * Answered off the type's own drawerStyle, so PANTRY — which borrowed the
+ * wardrobe's drawer block wholesale — answers yes with it.
+ */
+function recessedDrawerFace(unit) {
+  return (getUnitType(unit?.type)?.drawerStyle || null) === 'wardrobe';
+}
+
 export function frontsInRoom(entries, baseOf) {
   const out = [];
   for (const { unit, result } of entries || []) {
@@ -138,6 +149,16 @@ export function frontsInRoom(entries, baseOf) {
     const carcassW = Number(unit.params?.width) || 0;
     for (const p of result.panels || []) {
       if (p?.role !== 'front' || !p.box) continue;
+      // ─── CHAT FIX 15.08.2026: A WARDROBE DRAWER FACE IS NOT IN THE RUN ────
+      // Owner, off six yellow rows on his own scene: "69 mm — too wide".
+      // The 69 is the KIT_WARDROBE's own arithmetic — G(18) + filler(30) +
+      // DP(18) + 3 — a drawer face that lives RECESSED between its drawer
+      // panels, behind the doors' line. It does not face the run, so the
+      // run's matrix has nothing to say to it: its neighbour is the DP, and
+      // its width is the LISP's law, not a gap to heal. The DOORS of the same
+      // wardrobe stay measured — they really do stand in the run. A kitchen
+      // drawer face (BUDR family) stays measured too: it IS the run.
+      if (p.part === 'DRAWER-FRONT' && recessedDrawerFace(unit)) continue;
       out.push({
         unitId: unit.id,
         unitNum: result.unitNum || unit.params?.unit_num || '',

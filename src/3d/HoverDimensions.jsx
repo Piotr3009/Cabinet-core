@@ -132,7 +132,7 @@ export default function HoverDimensions({
           moved out of this file is the DRAWING. */}
       <DimensionChain
         rows={drawing.rows}
-        style={style}
+        style={{ ...style, labelGround: 'bare' }}
         plane="xy"
         at={drawing.z + style.strokeMm * 2}
         name={panelId}

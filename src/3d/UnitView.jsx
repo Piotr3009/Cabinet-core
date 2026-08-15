@@ -288,6 +288,28 @@ export function MovingPanel({
     return shakerFrontGeometry(p, panelRecesses(p, drills, { thickness: p.box.d, profile }));
   }, [p, mitre, drills, profile]);
   const machined = shaker || built?.solid || null;
+
+  // ─── CHAT FIX 15.08.2026: THE OUTLINE DRAWS THE BOARD, NOT THE DRILLING ──
+  //
+  // Owner, off his own doors: "pokazuje linie CNC na zawiasach — to
+  // niepotrzebne" — every closed leaf wore its cup rims on the OUTSIDE.
+  // Measured on the running build: the marks survive DrillRings being hidden
+  // and vanish the moment Outlines is toggled off, so the carrier is the
+  // Edges pass — the cup recess is milled into the BACK (that was checked
+  // too), and it is its RIM CREASES that the fat-line pass carries through
+  // 25 mm of board.
+  //
+  // The fix is the owner's own sentence: the pretty view's contour is the
+  // BOARD — silhouette and shaker frame — never the machining. So the Edges
+  // pass gets a PLAIN solid: the same leaf with no recesses bored. The
+  // TECHNICAL views keep every rim — contour and X-ray exist to show the
+  // work, so there the pass still reads the machined geometry.
+  const outlinePlain = useMemo(() => {
+    if (mitre) return null;
+    if (isShakerFront(p)) return shakerFrontGeometry(p);
+    return null;
+  }, [p, mitre]);
+  useEffect(() => () => { outlinePlain?.dispose?.(); }, [outlinePlain]);
   const cuts = built?.cuts || null;
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
 
@@ -540,6 +562,11 @@ export function MovingPanel({
             a fifth of its opacity, the edges ARE the cabinet. */}
         {(outlines || contour || xray) && (
           <Edges
+            // The pretty view outlines the PLAIN board (see the block above);
+            // contour and X-ray keep the machined solid — they are there to
+            // show the work. `undefined` hands the choice back to the parent
+            // mesh's own geometry, which is drei's default.
+            geometry={(contour || xray) ? undefined : (outlinePlain || undefined)}
             threshold={outline.threshold}
             color={outline.colour}
             lineWidth={outline.width}

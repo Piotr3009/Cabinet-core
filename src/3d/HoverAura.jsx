@@ -96,7 +96,7 @@ export default function HoverAura({
       </mesh>
       {hot && dims}
       {text && (
-        <DimLabel
+        <DimLabel variant="bare"
           position={labelAt || [at[0], at[1] + mm(box.h / 2 + 18), at[2]]}
           text={text}
           colour={colour}

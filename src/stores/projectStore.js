@@ -645,11 +645,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     },
   })),
 
-  loadProject: (project, units) => set({
-    project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
-    units: migrateUnits(units),
-    dirty: false,
-  }),
+  loadProject: (project, units) => {
+    set({
+      project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
+      units: migrateUnits(units),
+      dirty: false,
+    });
+    // ─── TURN 33 (CLAUDE.md F5): A LOADED SCENE IS HEALED TOO ───────────────
+    // The consumer sweep's biggest miss: every other path that shapes a front
+    // reaches healFrontGaps, but a project OPENED with yesterday's 1.5/1.5
+    // beside a panel kept it until the first touch — the likeliest source of
+    // the owner's standing fault. The matrix is APPLIED, not offered (T32
+    // F3's law), and each correction says so in its grey note. A healed-open
+    // project is honestly DIRTY: it changed, and the note names how.
+    get().healFrontGaps();
+  },
 
   /**
    * A blank project (turn 4: the start screen's New project).
@@ -3035,6 +3045,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     parts.forEach((item, i) => {
       get().updateItem(unitId, item.id, { x_mm: snapTo(xs[i], profile.editor.mmStep) });
     });
+    // Turn 33 (CLAUDE.md F5): centred dividers re-derive bay-door leaves.
+    get().healFrontGaps();
     return parts.length;
   },
 
@@ -3217,6 +3229,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         };
       }),
     }));
+    // ─── TURN 33 (CLAUDE.md F5): AN OVERRIDE MAY MOVE A NEIGHBOUR ───────────
+    // Removing, restoring or nudging a piece (removeElement / restoreElement /
+    // moveElement all land here) can change what stands beside a front —
+    // INFILL to WALL, panel to nothing — so the matrix runs. The one funnel
+    // covers all three paths the sweep found missing.
+    get().healFrontGaps();
     return get().units.find((u) => u.id === unitId)?.params.element_overrides?.[panelId] || null;
   },
 
@@ -3297,7 +3315,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ? Number(xMm)
       : best.from + (best.size - G) / 2;
     const x = snapTo(Math.min(Math.max(wanted, G), W - G - G), profile.editor.mmStep);
-    return get().addItem(unitId, { kind: 'partition', x_mm: x });
+    const id = get().addItem(unitId, { kind: 'partition', x_mm: x });
+    // Turn 33 (CLAUDE.md F5): with BAY DOORS the leaf widths re-derive from
+    // the partitions — a divider appearing re-shapes the fronts, so the
+    // matrix runs, exactly as it does when a neighbour appears.
+    get().healFrontGaps();
+    return id;
   },
 
   /**
@@ -3328,6 +3351,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (max < min) return { x: self, min, max, blocked: true };
     const x = snapTo(Math.min(Math.max(Number(xRaw) || 0, min), max), profile.editor.mmStep);
     get().updateItem(unitId, itemId, { x_mm: x });
+    // Turn 33 (CLAUDE.md F5): bay-door leaves follow the divider — re-measured.
+    get().healFrontGaps();
     return {
       x, min, max, blocked: false,
     };
@@ -3381,8 +3406,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   removeItem: (unitId, itemId) => {
-    const wasDrawer = get().units.find((u) => u.id === unitId)
-      ?.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.kind === 'drawer';
+    const removedKind = get().units.find((u) => u.id === unitId)
+      ?.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.kind || null;
+    const wasDrawer = removedKind === 'drawer';
+    const wasPartition = removedKind === 'partition';
     set((s) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
@@ -3401,6 +3428,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }),
     }));
     if (wasDrawer) get().reclampShelves(unitId);   // the floor just dropped
+    // Turn 33 (CLAUDE.md F5): a partition leaving re-derives any bay-door
+    // leaves over it — the one removed kind that re-shapes a front.
+    if (wasPartition) get().healFrontGaps();
   },
 
   updateItem: (unitId, itemId, patch) => set((s) => ({
@@ -3634,6 +3664,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_fronts: false } } : u)),
     }));
+    // Turn 33 (CLAUDE.md F5): a BUDR face IS a run front — its neighbours'
+    // wanted clearances change when the face leaves, exactly as a door's do
+    // (setDoors has healed since T32; this path never did).
+    get().healFrontGaps();
     return { removed: count, already: false };
   },
 
@@ -3646,6 +3680,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_fronts: true } } : u)),
     }));
+    // Turn 33 (CLAUDE.md F5): the faces return — measured again, like a door.
+    get().healFrontGaps();
     return { fitted: get().unitResult(unitId)?.panels.filter((p) => p.part === 'DRAWER-FRONT').length || 0, already: false };
   },
 
@@ -3687,14 +3723,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: st.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_heights: next } } : u)),
     }));
+    // Turn 33 (CLAUDE.md F5): a resized BUDR face moves its y-band, and the
+    // y-overlap with the neighbour decides whether the matrix reaches it.
+    get().healFrontGaps();
     return next[index];
   },
 
   /** Hand the stack back to the kit's own ratio. */
-  resetDrawerHeights: (unitId) => set((st) => ({
-    units: st.units.map((u) => (u.id === unitId
-      ? { ...u, params: { ...u.params, drawer_heights: null } } : u)),
-  })),
+  resetDrawerHeights: (unitId) => {
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, drawer_heights: null } } : u)),
+    }));
+    // Turn 33 (CLAUDE.md F5): the stack re-derives — measured again.
+    get().healFrontGaps();
+  },
 
   /**
    * The project's runner variant: T or S (turn 18, CLAUDE.md F6.4).

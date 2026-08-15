@@ -1,62 +1,72 @@
 {
- "f4": {
-  "rows": [
-   {
-    "mm": 1.5,
-    "kind": "endPanel",
-    "level": "red",
-    "text": "▲\n02 02-F → an end panel: 1.5 mm — under the 3 mm minimum."
-   }
-  ],
-  "modal": {
-   "anchored": true,
-   "subject": "02 02-F → an end panel: 1.5 mm — under the 3 mm minimum.",
-   "planMm": 1.5,
-   "planText": "Narrow the front by 1.5 mm on its right edge.",
-   "narrow": "Narrow the front by 1.5 mm",
-   "infill": "Insert an infill",
-   "cost": "Narrowing a front changes the BOM and the drilling."
+ "f6": {
+  "button": {
+   "count": 9,
+   "text": "Check · 9",
+   "besideBom": true
   },
-  "before": {
-   "w": 597,
-   "x": 1.5,
-   "hinge": "L",
-   "cups": [
-    575.5,
-    575.5,
-    575.5
-   ],
-   "ys": [
-    100,
-    470,
-    670
+  "panel": {
+   "count": 9,
+   "summary": "7 FAULTS · 2 TO LOOK AT",
+   "rows": [
+    {
+     "check": 4,
+     "level": "red",
+     "text": "#4 · DOOR TOO HEAVY FOR ITS HINGES\nT01 T01-F: 2097 mm and 20.66 kg on 3 hinge  — the Blum CLIP top table a k  for 5."
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nBUL: HINGES_5MM ⌀5 at (37, 84) i  drilled 2 time  — the bit goe  back into a hole it ha  already made"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nBUL: HINGES_5MM ⌀5 at (37, 116) i  drilled 2 time  — the bit goe  back into a hole it ha  already mad"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_3MM ⌀3 at (566, 77) i  drilled 2 time  — the bit goe  back into a hole it ha  alr"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_35MM ⌀35 at (575.5, 100) i  drilled 2 time  — the bit goe  back into a hole it ha"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_3MM ⌀3 at (566, 123) i  drilled 2 time  — the bit goe  back into a hole it ha  al"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nT01: two hinge row  are both at 100 mm — every hole in that row i  drilled twice."
+    },
+    {
+     "check": 3,
+     "level": "yellow",
+     "text": "#3 · TALL CABINET WITH NO FIXED SHELF\nT01: 2100 mm tall with 2  helve  and none of them fixed — add one fixed  helf."
+    },
+    {
+     "check": 6,
+     "level": "yellow",
+     "text": "#6 · BASE RUN WITH NO PLINTH\nT01:  tanding on leg  with no plinth."
+    }
    ]
   },
-  "after": {
-   "w": 595.5,
-   "x": 1.5,
-   "trim": {
-    "left": 0,
-    "right": 1.5
+  "flight": {
+   "modal": "element",
+   "selected": {
+    "unitId": "u_al1rejs",
+    "elementRef": "T01-F"
    },
-   "cups": [
-    574,
-    574,
-    574
-   ],
-   "ys": [
-    100,
-    470,
-    670
-   ],
-   "rowsLeft": 0
+   "movedM": 0
   },
-  "carcass": {
-   "touching": 0,
-   "apart": 1,
-   "mm": 4,
-   "fix": "close-to-touch",
-   "message": "01 and 02 stand 4 mm apart — carcasses in a run must touch."
+  "preflight": {
+   "panelOpen": true,
+   "message": "Check: 7 faults before this goes to the machine.click to dismiss"
   }
  }
 }

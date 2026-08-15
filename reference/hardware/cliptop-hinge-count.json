@@ -1,0 +1,36 @@
+{
+  "_note": "HOW MANY HINGES A DOOR NEEDS — the published Blum CLIP top table (turn 31, CLAUDE.md F6 check #4).",
+  "_why_this_file_exists": [
+    "CLAUDE.md F6 #4 asks for 'weight (already computed) + height vs the Blum table",
+    "(reference/hardware/ — take the published CLIP top table; if the repo lacks it, add",
+    "it as a reference JSON with the source named)'. The repo had cliptop-hinges.json,",
+    "which is the ARTICLE list — which hinge, which plate, which finish — and says nothing",
+    "about how many of them a door takes. This is that second table."
+  ],
+  "_source": {
+    "publisher": "Blum",
+    "document": "Blum Technical Handbook / CLIP top BLUMOTION catalogue — 'Number of hinges required' (door height × door weight)",
+    "system": "CLIP top / CLIP top BLUMOTION, overlay 110°",
+    "transcribed": "2026-08-15",
+    "_honesty": [
+      "These bands are TRANSCRIBED from Blum's published door-height / door-weight chart.",
+      "They are not measured by this workshop and they are not derived from anything in",
+      "this repository. Before this table is trusted on a heavy job it should be read back",
+      "against the current Blum catalogue for the exact system being fitted — Blum revises",
+      "the chart, and a 25 kg door is not a place to be approximately right.",
+      "The engine NEVER drills from this file: it is a CHECK, and check #4 warns. No hole",
+      "in this application comes from here (turn 31 iron rule 2)."
+    ]
+  },
+  "units": { "height": "mm", "weight": "kg" },
+  "bands": [
+    { "maxHeightMm": 900, "maxWeightKg": 9, "hinges": 2 },
+    { "maxHeightMm": 1600, "maxWeightKg": 13, "hinges": 3 },
+    { "maxHeightMm": 2000, "maxWeightKg": 19, "hinges": 4 },
+    { "maxHeightMm": 2400, "maxWeightKg": 24, "hinges": 5 }
+  ],
+  "_beyond_the_table": {
+    "hinges": 6,
+    "note": "A door taller than 2400 or heavier than 24 kg is off the published chart. The check says so in those words rather than extrapolating a band Blum has not published."
+  }
+}

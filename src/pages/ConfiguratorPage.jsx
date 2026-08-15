@@ -9,6 +9,7 @@ import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
 import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
+import CheckPanel from '../components/CheckPanel.jsx';
 import RenderModal from '../components/RenderModal.jsx';
 import DrawingModal from '../components/DrawingModal.jsx';
 import Messages from '../components/Messages.jsx';
@@ -77,6 +78,9 @@ function FirstUnitPlus() {
 export default function ConfiguratorPage() {
   const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
   const bomOpen = useUiStore((s) => s.bomOpen);
+  const checkOpen = useUiStore((s) => s.checkOpen);
+  const setCheckOpen = useUiStore((s) => s.setCheckOpen);
+  const runChecks = useProjectStore((s) => s.runChecks);
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const modal = useUiStore((s) => s.modal);
   const openModal = useUiStore((s) => s.openModal);
@@ -203,8 +207,33 @@ export default function ConfiguratorPage() {
     return true;
   };
 
+  // ─── CHECK v1, BEFORE EXPORT (turn 31, CLAUDE.md F6) ─────────────────────
+  //
+  // "…and the same list automatically before Export." The SAME call the button
+  // makes, so a pre-export check cannot differ from the one the panel shows —
+  // a second implementation of eleven rules is eleven chances to disagree.
+  //
+  // It does not BLOCK (F6, in as many words: "no blocking anywhere except the
+  // export gate's hold-out"). It opens the panel and says what was found, and
+  // the export goes ahead. The one thing that holds a board back is the gate,
+  // which is a different mechanism with its own "Export anyway".
+  const checkBeforeExport = useCallback(() => {
+    const found = runChecks();
+    if (!found.length) return found;
+    const reds = found.filter((f) => f.level === 'red').length;
+    setCheckOpen(true);
+    notify(
+      `Check: ${reds ? `${reds} fault${reds === 1 ? '' : 's'}` : `${found.length} to look at`} `
+      + 'before this goes to the machine.',
+      reds ? 'error' : 'warn',
+    );
+    return found;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runChecks, setCheckOpen, notify]);
+
   const onExportCsv = useCallback(() => {
     if (!guard()) return;
+    checkBeforeExport();
     exportCuttingListCsv(allResults(), project.name);
     notify('Cutting list exported.', 'ok');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,6 +241,7 @@ export default function ConfiguratorPage() {
 
   const onExportPdf = useCallback(() => {
     if (!guard()) return;
+    checkBeforeExport();
     exportProjectPdf({
       entries: allResults(), project, capture: captureRef.current, assignments, materials,
     });
@@ -225,6 +255,7 @@ export default function ConfiguratorPage() {
   // would otherwise read as "export anyway".
   const onExportDxfZip = useCallback(async (opts) => {
     const exportAnyway = opts?.exportAnyway === true;
+    if (!exportAnyway) checkBeforeExport();
     const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
     if (!unit) { notify('Select a unit first — the DXF export is per unit.', 'warn'); return; }
     try {
@@ -329,6 +360,8 @@ export default function ConfiguratorPage() {
         <LibraryPanel />
         {rightPanelOpen && !bomOpen && <RightPanel />}
         {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} />}
+        {/* Turn 31 (CLAUDE.md F6): the Check panel — a LIST of findings, not toasts. */}
+        {checkOpen && <CheckPanel />}
         {modal === 'room' && <RoomModal />}
         {modal === 'design' && <DesignSettingsModal />}
         {modal === 'auth' && <AuthModal />}

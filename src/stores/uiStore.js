@@ -202,6 +202,15 @@ export const useUiStore = create((set, get) => ({
   bomOpen: false,
   setBomOpen: (v) => set({ bomOpen: v }),
 
+  // ─── CHECK v1 (turn 31, CLAUDE.md F6) ─────────────────────────────────────
+  // "A Check button beside BOM/CNC" — the same shape as the BOM's own flag,
+  // because it is the same kind of thing: a panel, computed live, shown on
+  // demand. Opening one closes the other; two 380 px panels over a 3D view is
+  // a 3D view nobody can see.
+  checkOpen: false,
+  setCheckOpen: (v) => set(v ? { checkOpen: true, bomOpen: false } : { checkOpen: false }),
+  toggleCheck: () => set((s) => (s.checkOpen ? { checkOpen: false } : { checkOpen: true, bomOpen: false })),
+
   // ─── What is on the CNC sheet (turn 11, CLAUDE.md F8.1) ───
   //
   // The sheet shows the WHOLE PROJECT now, grouped per unit, and these are the

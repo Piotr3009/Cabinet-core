@@ -37,6 +37,8 @@ import { worktopEligible, worktopsFor } from '../engine/worktop.js';
 import { frontGapClashes } from '../engine/frontGapClash.js';
 // Turn 31 (CLAUDE.md F4): the owner's 18-point front-gap rulebook.
 import { carcassGaps, frontClearances } from '../engine/frontClearance.js';
+// Turn 31 (CLAUDE.md F6): Check v1, the pre-production controller.
+import { runChecks } from '../engine/checks.js';
 // Turn 31 (CLAUDE.md F3): the drill guard's own number, at the source.
 import { hingeMinSpacingMm, hingeRowClashes, hingeSpacingBlocks } from '../engine/cnc/drillGuard.js';
 import {
@@ -3679,6 +3681,32 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       entries: s.allResults(),
       units: s.units,
       baseOf: (u) => unitBase(u, profile),
+      wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      profile,
+    });
+  },
+
+  /**
+   * ─── CHECK v1 (turn 31, CLAUDE.md F6) ────────────────────────────────────
+   *
+   * Eleven rules over the whole job, in one list. Pressed by the Check button
+   * and run automatically before Export — the SAME call both times, because a
+   * pre-export check that could differ from the one the button gives is a check
+   * nobody would believe.
+   *
+   * It READS. Nothing here blocks, moves or re-cuts (rule 4); the one hold-out
+   * in the app is the export gate's, and that has "Export anyway".
+   */
+  runChecks: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    return runChecks({
+      entries: s.allResults(),
+      units: s.units,
+      room: s.project.room,
+      design: migrateDesign(s.project.design),
+      materials: useMaterialAssignmentStore.getState().materials,
       wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
       profile,
     });

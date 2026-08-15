@@ -839,6 +839,134 @@ async function main() {
       measurements.f4 = f4;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F6 [HIGH] — Check v1, the pre-production controller
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // A PANEL of findings, not toasts — and a row that FLIES to its subject.
+    // The flight is the claim a browser has to settle: pressed with a real
+    // pointer, the camera moves to the piece and the right editor opens.
+    if (want('f6')) {
+      await newRoom('Turn 31 walk — F6');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        // A cabinet carrying several of the eleven faults at once: a tall body
+        // with unfixed shelves (#3), a hand-edited hinge ladder that doubles
+        // the drilling (#10) and is too few for the door's weight (#4).
+        const a = s.addUnit('BUDTALL');
+        s.updateUnitParams(a.id, { width: 600, height: 2100, doors: { count: 1 } });
+        s.addShelves(a.id, 2);
+        s.updateUnitParams(a.id, { hinge_rows: [100, 100, 2000] });
+        const r = s.unitResult(a.id);
+        window.__t31 = {
+          unitA: a.id,
+          leaf: (r.panels.find((p) => p.role === 'front') || {}).id || null,
+        };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.waitFor(`(() => {
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return false;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId === window.__t31.leaf) n += 1; });
+        return n > 0;
+      })()`, { what: 'the leaf to mount', timeout: 30000 });
+      await frameUnits([await page.evaluate('return window.__t31.unitA;')], [0.9, 0.4, 2.4]);
+      await page.sleep(800);
+
+      const f6 = {};
+
+      // ── The BUTTON, beside BOM, pressed ──────────────────────────────────
+      const button = await page.evaluate(`
+        const el = document.querySelector('[data-check-button]');
+        const bom = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'BOM');
+        if (!el || !bom) return null;
+        const a = el.getBoundingClientRect();
+        const b = bom.getBoundingClientRect();
+        return { count: Number(el.getAttribute('data-check-button')), text: el.innerText.trim(), besideBom: a.left > b.left };
+      `);
+      f6.button = button;
+      check('F6 — a Check button sits BESIDE BOM and carries the count',
+        Boolean(button) && button.besideBom === true && button.count > 0,
+        `${button?.text} · beside BOM ${button?.besideBom}`);
+
+      await page.click('[data-check-button]');
+      await page.sleep(500);
+      const panel = await page.evaluate(`
+        const el = document.querySelector('[data-check-panel]');
+        if (!el) return null;
+        const rows = [...el.querySelectorAll('[data-check-finding]')].map((r) => ({
+          check: Number(r.getAttribute('data-check-finding')),
+          level: r.getAttribute('data-check-level'),
+          text: r.innerText.trim().replace(/\s+/g, ' ').slice(0, 120),
+        }));
+        return { count: Number(el.getAttribute('data-check-panel')), summary: (el.querySelector('[data-check-summary]') || {}).innerText, rows };
+      `);
+      f6.panel = panel;
+      check('F6 — the result is a PANEL of findings, not a toast',
+        Boolean(panel) && panel.rows.length > 0, `${panel?.count} findings · ${panel?.summary}`);
+      check('F6 — …with the reds first, and each naming its subject',
+        panel.rows[0]?.level === 'red' && panel.rows.every((r) => r.text.length > 10),
+        panel.rows.map((r) => `#${r.check}/${r.level}`).join(' · '));
+      await shot('6a-the-check-panel-a-list-of-findings-reds-first',
+        { dom: '[data-check-finding]' });
+
+      // ── A ROW IS A DOOR: the F7/T30 flight, on a real click ──────────────
+      const cameraBefore = await page.evaluate(`
+        const v = ${P}.views && ${P}.views.room;
+        return v ? [v.camera.position.x, v.camera.position.y, v.camera.position.z] : null;
+      `);
+      await page.click('[data-check-goto="1"]');
+      await page.sleep(800);
+      const flew = await page.evaluate(`
+        const v = ${P}.views && ${P}.views.room;
+        const el = document.querySelector('[data-modal-shell="1"]');
+        const before = ${JSON.stringify(cameraBefore)};
+        const now = v ? [v.camera.position.x, v.camera.position.y, v.camera.position.z] : null;
+        const moved = before && now
+          ? Math.hypot(now[0] - before[0], now[1] - before[1], now[2] - before[2])
+          : 0;
+        return {
+          modal: el ? el.getAttribute('data-modal-name') : null,
+          selected: ${P}.ui.getState().selectedElement,
+          movedM: Math.round(moved * 1000) / 1000,
+        };
+      `);
+      f6.flight = flew;
+      check('F6 — clicking a finding OPENS THE RIGHT EDITOR on its subject',
+        Boolean(flew.modal) && Boolean(flew.selected),
+        `${flew.modal} on ${JSON.stringify(flew.selected)}`);
+      await shot('6b-a-finding-clicked-the-editor-open-on-its-subject',
+        { dom: '[data-modal-shell="1"]' });
+      await page.key('Escape', { code: 'Escape', windowsVirtualKeyCode: 27 });
+      await page.sleep(300);
+
+      // ── The same list, automatically, before an export ───────────────────
+      await page.evaluate(`${P}.ui.getState().setCheckOpen(false); ${P}.ui.getState().clearMessages(); return true;`);
+      await page.sleep(250);
+      await page.click('header button', 'Output');
+      await page.sleep(250);
+      await page.click('[role="menu"] button', 'Cutting list');
+      await page.sleep(700);
+      const preflight = await page.evaluate(`
+        const el = document.querySelector('[data-check-panel]');
+        const msg = document.querySelector('[data-message-level="red"], [data-message-level="yellow"]');
+        return {
+          panelOpen: Boolean(el),
+          message: msg ? msg.innerText.trim() : null,
+        };
+      `);
+      f6.preflight = preflight;
+      check('F6 — the SAME list runs automatically before an export',
+        preflight.panelOpen === true && /Check:/.test(preflight.message || ''),
+        `${preflight.panelOpen} · ${preflight.message}`);
+      await shot('6c-the-same-list-run-automatically-before-export',
+        { dom: '[data-check-panel]', text: 'Check:' });
+      measurements.f6 = f6;
+      await page.evaluate(`${P}.ui.getState().clearMessages(); ${P}.ui.getState().setCheckOpen(false); return true;`);
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

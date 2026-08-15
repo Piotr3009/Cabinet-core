@@ -6,49 +6,29 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F4.2 / F4.14 — the end-panel joint is measured front↔NEIGHBOUR and is RED",
+   "label": "F6 — a Check button sits BESIDE BOM and carries the count",
    "ok": true,
-   "detail": "1.5 mm to endPanel · red"
+   "detail": "Check · 9 · beside BOM true"
   },
   {
-   "label": "F4.1 — …and the front-to-front joint beside it says nothing at all",
+   "label": "F6 — the result is a PANEL of findings, not a toast",
    "ok": true,
-   "detail": "endPanel:1.5"
+   "detail": "9 findings · 7 FAULTS · 2 TO LOOK AT"
   },
   {
-   "label": "F4.15 — the row opens the repair modal, beside the click",
+   "label": "F6 — …with the reds first, and each naming its subject",
    "ok": true,
-   "detail": "true"
+   "detail": "#4/red · #10/red · #10/red · #10/red · #10/red · #10/red · #10/red · #3/yellow · #6/yellow"
   },
   {
-   "label": "F4.15 — …offering TWO options, EACH WITH ITS NUMBER",
+   "label": "F6 — clicking a finding OPENS THE RIGHT EDITOR on its subject",
    "ok": true,
-   "detail": "[Narrow the front by 1.5 mm] / [Insert an infill]"
+   "detail": "element on {\"unitId\":\"u_al1rejs\",\"elementRef\":\"T01-F\"}"
   },
   {
-   "label": "F4.17 — …and it says what narrowing COSTS before it acts",
+   "label": "F6 — the SAME list runs automatically before an export",
    "ok": true,
-   "detail": "Narrowing a front changes the BOM and the drilling."
-  },
-  {
-   "label": "F4.8 — the correction acted on ONE edge: the width came off once",
-   "ok": true,
-   "detail": "597 → 595.5 · x 1.5 → 1.5 · trim {\"left\":0,\"right\":1.5}"
-  },
-  {
-   "label": "F4.9 — the CUPS rode the edge: still 21.5 from it, same heights",
-   "ok": true,
-   "detail": "21.5,21.5,21.5 → 21.5,21.5,21.5"
-  },
-  {
-   "label": "F4.15 — …and the gap the client sees is closed: the red is gone",
-   "ok": true,
-   "detail": "0 rows left"
-  },
-  {
-   "label": "F4.13 — carcasses that touch are silent; 4 mm apart is RED with ONE fix",
-   "ok": true,
-   "detail": "01 and 02 stand 4 mm apart — carcasses in a run must touch."
+   "detail": "true · Check: 7 faults before this goes to the machine.click to dismiss"
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -58,29 +38,29 @@
  ],
  "shots": [
   {
-   "name": "4a-the-gap-a-client-sees-measured-front-to-neighbour-and-red",
+   "name": "6a-the-check-panel-a-list-of-findings-reds-first",
    "subject": {
-    "dom": "[data-front-gap-level=\"red\"]"
+    "dom": "[data-check-finding]"
    },
    "present": true,
    "detail": "{\"dom\":true}"
   },
   {
-   "name": "4b-the-modal-two-options-each-with-its-number",
+   "name": "6b-a-finding-clicked-the-editor-open-on-its-subject",
    "subject": {
-    "dom": "[data-front-gap-narrow]",
-    "text": "BOM and the drilling"
+    "dom": "[data-modal-shell=\"1\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "6c-the-same-list-run-automatically-before-export",
+   "subject": {
+    "dom": "[data-check-panel]",
+    "text": "Check:"
    },
    "present": true,
    "detail": "{\"dom\":true,\"text\":true}"
-  },
-  {
-   "name": "4c-narrowed-on-one-edge-only-and-the-red-is-gone",
-   "subject": {
-    "mesh": "02-F"
-   },
-   "present": true,
-   "detail": "{\"mesh\":true}"
   }
  ]
 }

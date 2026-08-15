@@ -190,6 +190,25 @@ export const DEFAULT_CABINET_PROFILE = {
     defaultInsetMm: 3,
   },
 
+  // ─── TURN 31 (CLAUDE.md F6): CHECK v1's OWN NUMBERS ───────────────────────
+  //
+  // "Rules, with the owner's colours; thresholds are profile numbers marked as
+  // owner-tunable." Each of these is his, agreed 15.08.2026, and each moves
+  // alone. The rules themselves are engine/checks.js.
+  checks: {
+    // #3 — over this height, a cabinet with shelves and none of them FIXED is
+    // a cabinet whose sides will bow. OWNER'S NUMBER: 1200.
+    tallNoFixHeightMm: 1200,
+    // #5 — the window of OPEN gap above a run that wants a filler. Under 20 is
+    // a shadow line; over 80 is a decision somebody has already made.
+    // OWNER'S NUMBERS: 20–80.
+    openGapFromMm: 20,
+    openGapToMm: 80,
+    // #8 — over this width, a 110° hinge will not open the door far enough to
+    // get a drawer out past it. OWNER'S NUMBER: 600.
+    wideFrontMm: 600,
+  },
+
   // ─── Doors / fronts ───
   doors: {
     // ─── TURN 30 (CLAUDE.md F12): HOW NEAR TWO FRONTS MAY COME ────────────
@@ -3236,6 +3255,12 @@ export const DEFAULT_CABINET_PROFILE = {
   // a workshop preference). What belongs here is the sheet metrics.
   cnc: {
     unitNumberLayer: 'UNIT_NUMBER',  // LISP drawText layer for the part label
+    // ─── TURN 31 (CLAUDE.md F6, check #7): THE BOARD ON THE BED ────────────
+    // A panel bigger than the sheet is a panel nobody can cut, and until this
+    // turn nothing in the app ever compared the two. OWNER'S DEFAULT,
+    // 15.08.2026: 2790 × 2060. It is a sheet size, so it moves alone and it
+    // moves the moment the workshop's supplier changes.
+    sheet: { width: 2790, height: 2060 },
     // ─── TURN 20 (CLAUDE.md F4): HALF AGAIN ────────────────────────────────
     // Owner: the wrapping and the placement have been right since turn 18; the
     // SIZE is still double what he wants, on the glass and in the file. 40 was
@@ -4082,6 +4107,9 @@ export function migrateCabinetProfile(profile) {
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
     },
     room: { ...D.room, ...profile.room },
+    // Turn 31 (CLAUDE.md F6): key by key, so a profile saved before Check v1
+    // comes back with every threshold rather than with `undefined` millimetres.
+    checks: { ...D.checks, ...profile.checks },
     // Turn 31 (CLAUDE.md F4.4a): key by key, so a profile saved before the
     // appliance faces existed comes back with the published widths rather than
     // with an empty table and an invented number.
@@ -4109,7 +4137,13 @@ export function migrateCabinetProfile(profile) {
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's
     // answer for the rest, and a profile saved before this turn gets all of it.
-    cnc: { ...D.cnc, ...profile.cnc, annotation: { ...D.cnc.annotation, ...profile.cnc?.annotation } },
+    cnc: {
+      ...D.cnc,
+      ...profile.cnc,
+      annotation: { ...D.cnc.annotation, ...profile.cnc?.annotation },
+      // Turn 31 (F6 #7): key by key, like every other nested block.
+      sheet: { ...D.cnc.sheet, ...profile.cnc?.sheet },
+    },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     editor: {
       ...D.editor,

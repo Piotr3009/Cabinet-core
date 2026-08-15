@@ -47,6 +47,8 @@ export default function CncTree() {
   const storedDesign = useProjectStore((s) => s.project.design);
   // Turn 31 (CLAUDE.md F5): every file this panel writes is named after the job.
   const projectName = useProjectStore((s) => s.project.name);
+  const runChecks = useProjectStore((s) => s.runChecks);
+  const setCheckOpen = useUiStore((s) => s.setCheckOpen);
 
   const [open, setOpen] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
@@ -122,11 +124,28 @@ export default function CncTree() {
   // red because it stays until it is clicked, which is what makes the button on
   // it reachable — carrying "Export anyway", which re-runs the very same press
   // with the owner's own judgement applied.
+  // Turn 31 (CLAUDE.md F6): "…and the same list automatically before Export."
+  // Every button on this panel goes past it. It does not block — it opens the
+  // Check panel and says what is there.
+  const preflight = (exportAnyway) => {
+    if (exportAnyway) return;
+    const found = runChecks();
+    if (!found.length) return;
+    const reds = found.filter((f) => f.level === 'red').length;
+    setCheckOpen(true);
+    notify(
+      `Check: ${reds ? `${reds} fault${reds === 1 ? '' : 's'}` : `${found.length} to look at`} `
+      + 'before this goes to the machine.',
+      reds ? 'error' : 'warn',
+    );
+  };
+
   const sayGate = (res, again) => {
     if (res?.gateMessage) notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: again } });
   };
 
   const downloadMaterial = (exportAnyway = false) => {
+    preflight(exportAnyway);
     try {
       const res = exportMaterialDxf(entries, {
         key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName,
@@ -139,6 +158,7 @@ export default function CncTree() {
   };
 
   const download = (sheet, kind, exportAnyway = false) => {
+    preflight(exportAnyway);
     const ids = shownIds(sheet.unit.id, sheet.parts);
     if (!ids.length) { notify('Nothing ticked on this unit.', 'warn'); return; }
     if (kind === 'zip') {

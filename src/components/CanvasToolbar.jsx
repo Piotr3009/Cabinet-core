@@ -16,6 +16,9 @@ export default function CanvasToolbar() {
   const showDimensions = useUiStore((s) => s.showDimensions);
   const toggleDimensions = useUiStore((s) => s.toggleDimensions);
   const bomOpen = useUiStore((s) => s.bomOpen);
+  const checkOpen = useUiStore((s) => s.checkOpen);
+  const toggleCheck = useUiStore((s) => s.toggleCheck);
+  const runChecks = useProjectStore((s) => s.runChecks);
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const toggleOutlines = useUiStore((s) => s.toggleOutlines);
@@ -37,6 +40,14 @@ export default function CanvasToolbar() {
   const unitResult = useProjectStore((s) => s.unitResult);
   const openFronts = useUiStore((s) => s.openFronts);
   const toggleAllFronts = useUiStore((s) => s.toggleAllFronts);
+  // ─── Turn 31 (CLAUDE.md F6): the Check's own count, on its button ─────────
+  // Recomputed when the job changes, not per frame: this walks every cabinet
+  // through eleven rules, and doing that sixty times a second is a frame rate
+  // spent on a question nobody has asked.
+  const design = useProjectStore((s) => s.project.design);
+  const checkFindings = useMemo(() => runChecks(), [units, design, runChecks]);
+  const checkCount = checkFindings.length;
+  const checkReds = checkFindings.some((f) => f.level === 'red');
   // ─── TURN 27 (CLAUDE.md F2.1): EVERY FRONT ANSWERS ───────────────────────
   //
   // This filtered out `meta.appliance` — so the one front in the kitchen that
@@ -229,6 +240,24 @@ export default function CanvasToolbar() {
         title="Bill of materials"
       >
         BOM
+      </button>
+
+      {/* ─── CHECK v1 (turn 31, CLAUDE.md F6): "a Check button beside BOM/CNC"
+          — beside it, and built exactly like it, because it is the same kind of
+          thing: a panel, computed live, shown on demand. The count is on the
+          button, so a joiner knows there is something to look at without
+          opening it. */}
+      <button
+        type="button"
+        aria-pressed={checkOpen}
+        data-check-button={checkCount}
+        className={`px-2.5 py-1 text-xs rounded transition-colors ${checkOpen
+          ? 'bg-gold text-shell-900 font-medium'
+          : `text-ink-100 hover:bg-shell-700 ${checkReds ? 'text-status-danger' : ''}`}`}
+        onClick={toggleCheck}
+        title="Eleven pre-production rules over the whole job"
+      >
+        Check{checkCount ? ` · ${checkCount}` : ''}
       </button>
 
       <span className="w-px h-4 bg-shell-600" />

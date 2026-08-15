@@ -2340,6 +2340,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         if (applied.width != null && params.sections?.[0]) {
           params.sections = [{ ...params.sections[0], width_mm: applied.width }];
         }
+        // ─── CHAT FIX 15.08.2026: THE WIDTH RE-DERIVES THE DOOR COUNT ────────
+        // The owner's LISP law: one door while (W − 4) ≤ 700, two above — and
+        // the ENGINE has carried it since turn 1 for the auto case. But
+        // `addDoors` PINS `{ count }` at the width of that moment, and this
+        // function then resized the cabinet around a pinned answer: a 600
+        // wardrobe fitted with its one door and widened to 1200 kept ONE
+        // 1100-odd leaf — the owner's "po moim LSP nie dodaje drzwi powyżej
+        // 700", found on his own scene 15.08.
+        //
+        // The re-derivation is CONDITIONAL on the pinned count being the AUTO
+        // answer for the OLD width: a count somebody chose against the ladder
+        // (a deliberate single wide leaf) is a decision, and a resize must not
+        // overrule a person. `bay_doors` layouts are a different system and
+        // are not touched.
+        if (applied.width != null
+            && params.doors && typeof params.doors === 'object'
+            && !params.bay_doors
+            && Number(params.doors.count) === doorCountFor(unit.params.width, profile)) {
+          const auto = doorCountFor(applied.width, profile);
+          if (auto !== Number(params.doors.count)) {
+            params.doors = { ...params.doors, count: auto };
+            notices.push(`Doors follow the width: ${auto} now (the 700 mm rule).`);
+          }
+        }
         // ─── Turn 8 (CLAUDE.md F2.2) ───
         // The hinge side is stored in TWO places and the engine reads the other
         // one. `params.hinge` is the unit's own; `params.doors` becomes an

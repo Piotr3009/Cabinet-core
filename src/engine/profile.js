@@ -1390,6 +1390,23 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
+  //
+  // The KIT_WUD envelope, with the bottom open. `aperture` is the clear height
+  // the extractor hangs in, and the door is what is left above it.
+  //
+  // OWNER-TUNABLE DEFAULTS, 15.08.2026 — the owner named the FEATURE and not
+  // these numbers. 600 × 720 × 400 is the wall unit's own box (a hood cabinet
+  // is a wall cabinet), the mount height is a wall unit's, and 350 of aperture
+  // is what a standard chimney extractor's body wants under a 720 box while
+  // leaving a door worth having above it. Every one of them is a number the
+  // owner changes in Settings, not a rule.
+  hoodWallUnit: {
+    defaults: {
+      width: 600, height: 720, depth: 400, mountHeight: 1500, aperture: 350,
+    },
+  },
+
   // ─── Corner unit (turn 30, CLAUDE.md F19) ─────────────────────────────────
   //
   // "Ship the L-carcass geometry + BOM; any hinge/drilling beyond the parent
@@ -3881,6 +3898,10 @@ export function migrateCabinetProfile(profile) {
     wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
     twinCupboard: { ...D.twinCupboard, ...profile.twinCupboard, defaults: { ...D.twinCupboard.defaults, ...profile.twinCupboard?.defaults } },
     cornerUnit: { ...D.cornerUnit, ...profile.cornerUnit, defaults: { ...D.cornerUnit.defaults, ...profile.cornerUnit?.defaults } },
+    hoodWallUnit: {
+      ...D.hoodWallUnit,
+      defaults: { ...D.hoodWallUnit.defaults, ...profile.hoodWallUnit?.defaults },
+    },
     glassWallUnit: {
       ...D.glassWallUnit,
       ...profile.glassWallUnit,

@@ -6,19 +6,24 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F8 — a double-click on the WIDTH figure opens the mini modal beside it",
+   "label": "F9 — the aperture is real: no bottom board in the scene, door standing above it",
    "ok": true,
-   "detail": "{\"anchored\":true,\"width\":\"600\",\"height\":\"770\",\"focused\":\"width\",\"active\":\"INPUT:\\\"cc-input text-right w-[110px]\\\"\"} · on screen: {\"name\":\"unit-size\",\"at\":{\"x\":800,\"y\":524}}"
+   "detail": "0 bottoms · door 367 at y=350 vs the wall unit’s 717"
   },
   {
-   "label": "F8 — …with BOTH fields, and the figure that was clicked in focus",
+   "label": "F9 — RULE 2: not one hole the parent kit does not already drill",
    "ok": true,
-   "detail": "w 600 · h 770 · focus width · active INPUT:\"cc-input text-right w-[110px]\""
+   "detail": "FRONT_HINGES_35MM · FRONT_HINGES_3MM · HINGES_5MM · PUZZLE_HOLES_7_5MM · SCREWS_3MM"
   },
   {
-   "label": "F8 — Enter commits through the existing setter, and closes the window",
+   "label": "F9 — the extractor is HARDWARE: a BOM line to the aperture",
    "ok": true,
-   "detail": "width 750 · still open false"
+   "detail": "564 × 350 × 382 mm aperture"
+  },
+  {
+   "label": "F9 — …and a GLB SLOT the scene declares, waiting for a file",
+   "ok": true,
+   "detail": "1 row(s) in the hardware registry"
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -28,20 +33,12 @@
  ],
  "shots": [
   {
-   "name": "8a-the-width-figure-double-clicked-and-its-mini-modal",
+   "name": "9a-a-hood-unit-beside-a-wall-unit-open-underneath-shorter-door",
    "subject": {
-    "dom": "[data-modal-name=\"unit-size\"]"
+    "mesh": "HD02-F"
    },
    "present": true,
-   "detail": "{\"dom\":true}"
-  },
-  {
-   "name": "8b-the-cabinet-at-its-new-width-committed-on-enter",
-   "subject": {
-    "dom": "canvas"
-   },
-   "present": true,
-   "detail": "{\"dom\":true}"
+   "detail": "{\"mesh\":true}"
   }
  ]
 }

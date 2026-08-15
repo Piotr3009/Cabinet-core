@@ -17,7 +17,9 @@ import {
   panelFillOffset, surfaceFor,
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
-import Hardware, { DoorHinges, FrontHandle, hingeSpecsFor } from './Hardware.jsx';
+import Hardware, {
+  DoorHinges, Extractor, FrontHandle, hingeSpecsFor,
+} from './Hardware.jsx';
 import HoverDimensions from './HoverDimensions.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
@@ -1766,6 +1768,21 @@ export default function UnitView({
         />
       )}
 
+      {/* ─── TURN 31 (CLAUDE.md F9): THE EXTRACTOR'S SLOT ───────────────────
+          The machine is HARDWARE — a BOM line and a registry slot for the GLB
+          the owner will upload — and the APERTURE is the geometry. Nothing is
+          drawn: an empty aperture is honest about what the app knows, which is
+          the lesson turn 30 learnt the hard way about procedural stand-ins. */}
+      {result.hardware?.some?.((h) => h.role === 'extractor') && (
+        <Extractor
+          unitId={unit.id}
+          aperture={{
+            w: result.hardware.find((h) => h.role === 'extractor').spec.aperture_width_mm,
+            h: result.hardware.find((h) => h.role === 'extractor').spec.aperture_height_mm,
+            d: result.hardware.find((h) => h.role === 'extractor').spec.aperture_depth_mm,
+          }}
+        />
+      )}
       <Hardware
         instances={hardware}
         profile={profile}

@@ -1250,6 +1250,75 @@ async function main() {
       measurements.f8 = f8;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F9 [MEDIUM] — the hood wall unit, and the extractor as hardware
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f9')) {
+      await newRoom('Turn 31 walk — F9');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const w = s.addUnit('WUD');
+        s.updateUnitParams(w.id, { width: 600, doors: { count: 1 } });
+        const h = s.addUnit('WUD_HOOD', { near: w.id, side: 'right' });
+        s.updateUnitParams(h.id, { width: 600, doors: { count: 1 } });
+        const r = s.unitResult(h.id);
+        window.__t31 = {
+          plain: w.id,
+          hood: h.id,
+          leaf: (r.panels.find((p) => p.role === 'front') || {}).id || null,
+        };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.waitFor(`(() => {
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return false;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId === window.__t31.leaf) n += 1; });
+        return n > 0;
+      })()`, { what: 'the hood’s door to mount', timeout: 30000 });
+      await frameUnits(await page.evaluate('return [window.__t31.plain, window.__t31.hood];'), [0.7, 0.2, 2.3]);
+      await page.sleep(900);
+
+      const f9 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const hood = s.unitResult(window.__t31.hood);
+        const plain = s.unitResult(window.__t31.plain);
+        const front = (r) => r.panels.find((p) => p.role === 'front');
+        const v = ${P}.views.room;
+        let bottoms = 0;
+        v.scene.traverse((o) => {
+          if (o.isMesh && o.userData && o.userData.ccUnitId === window.__t31.hood
+            && o.userData.ccPanelId === 'BOTTOM') bottoms += 1;
+        });
+        const layers = (r) => [...new Set(r.drills.map((d) => d.layer))].sort();
+        return {
+          hoodDoorH: front(hood).h,
+          plainDoorH: front(plain).h,
+          doorY: front(hood).box.y,
+          bottomsInScene: bottoms,
+          hoodLayers: layers(hood),
+          plainLayers: layers(plain),
+          extractor: hood.hardware.find((h) => h.role === 'extractor') || null,
+          registry: (${P}.hardware && ${P}.hardware.of ? ${P}.hardware.of('extractor') : []).length,
+        };
+      `);
+      measurements.f9 = f9;
+      check('F9 — the aperture is real: no bottom board in the scene, door standing above it',
+        f9.bottomsInScene === 0 && f9.doorY > 0 && f9.hoodDoorH === f9.plainDoorH - f9.doorY,
+        `${f9.bottomsInScene} bottoms · door ${f9.hoodDoorH} at y=${f9.doorY} vs the wall unit’s ${f9.plainDoorH}`);
+      check('F9 — RULE 2: not one hole the parent kit does not already drill',
+        f9.hoodLayers.every((l) => f9.plainLayers.includes(l)),
+        f9.hoodLayers.join(' · '));
+      check('F9 — the extractor is HARDWARE: a BOM line to the aperture',
+        Boolean(f9.extractor) && f9.extractor.qty === 1 && /aperture$/.test(f9.extractor.spec_label),
+        f9.extractor ? f9.extractor.spec_label : '(none)');
+      check('F9 — …and a GLB SLOT the scene declares, waiting for a file',
+        f9.registry >= 1, `${f9.registry} row(s) in the hardware registry`);
+      await shot('9a-a-hood-unit-beside-a-wall-unit-open-underneath-shorter-door',
+        { mesh: await page.evaluate('return window.__t31.leaf;') });
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

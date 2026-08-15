@@ -1,15 +1,35 @@
 {
- "f8": {
-  "opened": {
-   "anchored": true,
-   "width": "600",
-   "height": "770",
-   "focused": "width",
-   "active": "INPUT:\"cc-input text-right w-[110px]\""
+ "f9": {
+  "hoodDoorH": 367,
+  "plainDoorH": 717,
+  "doorY": 350,
+  "bottomsInScene": 0,
+  "hoodLayers": [
+   "FRONT_HINGES_35MM",
+   "FRONT_HINGES_3MM",
+   "HINGES_5MM",
+   "PUZZLE_HOLES_7_5MM",
+   "SCREWS_3MM"
+  ],
+  "plainLayers": [
+   "FRONT_HINGES_35MM",
+   "FRONT_HINGES_3MM",
+   "HINGES_5MM",
+   "PUZZLE_HOLES_7_5MM",
+   "SCREWS_3MM"
+  ],
+  "extractor": {
+   "role": "extractor",
+   "label": "Extractor",
+   "qty": 1,
+   "unit": "pcs",
+   "spec": {
+    "aperture_width_mm": 564,
+    "aperture_height_mm": 350,
+    "aperture_depth_mm": 382
+   },
+   "spec_label": "564 × 350 × 382 mm aperture"
   },
-  "after": {
-   "width": 750,
-   "modal": false
-  }
+  "registry": 1
  }
 }

@@ -180,6 +180,9 @@ export const KITCHEN_LIBRARY = [
       // with the recess taken all the way through, and a pane ordered for the
       // hole. Glass SHELVES are a separate question and are not shipped.
       { kind: 'type', id: 'glass-unit', typeId: 'WUD_GLASS', label: 'Glass unit', hint: 'Wall unit with a glazed door — the pane is ordered, not cut' },
+      // Turn 31 (CLAUDE.md F9): the hood cabinet. The APERTURE is geometry; the
+      // extractor is a BOM line and a GLB slot, and not one fixing hole.
+      { kind: 'type', id: 'hood-unit', typeId: 'WUD_HOOD', label: 'Hood unit', hint: 'Wall unit over an extractor — open underneath, shorter door' },
       {
         kind: 'soon', id: 'l-shape-wall', label: 'L-shape wall', hint: 'One carcass on two walls', reason: NO_PATTERN,
       },

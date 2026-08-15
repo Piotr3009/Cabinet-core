@@ -217,8 +217,18 @@ test('F1.4 the kit DECLARES what it is made of, in the keys every kit answers', 
   });
   // …and on every kit that HAS the standard carcass they are still absent, so
   // nothing but those two moved a hundredth.
+  // ─── TURN 31 (CLAUDE.md F9): AND THE HOOD ANSWERS ONE OF THEM ────────────
+  // The KIT_WUD envelope with its BOTTOM open — the aperture the extractor
+  // hangs in. It is the third kit to answer these keys and it answers only the
+  // one it has an opinion about, which is the point of a declaration.
+  assert.equal(UNIT_TYPES.WUD_HOOD.carcass.bottom, 'none');
+  assert.equal(UNIT_TYPES.WUD_HOOD.carcass.sides, undefined, 'a hood has ordinary sides');
+  assert.equal(UNIT_TYPES.WUD_HOOD.carcass.top, 'panel', '…and an ordinary top');
+
+  // …and on every kit that HAS the standard carcass they are still absent, so
+  // nothing but those three moved a hundredth.
   for (const id of UNIT_TYPE_ORDER) {
-    if (id === 'DW_PANEL' || id === 'CORNER') continue;
+    if (id === 'DW_PANEL' || id === 'CORNER' || id === 'WUD_HOOD') continue;
     const { carcass } = UNIT_TYPES[id];
     assert.equal(carcass.sides, undefined, `${id} says nothing about sides`);
     assert.equal(carcass.bottom, undefined, `${id} says nothing about a bottom`);

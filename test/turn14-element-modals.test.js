@@ -113,6 +113,16 @@ test('F4.3 — every wall-unit LIBRARY entry resolves to a type that carries doo
   assert.ok(wall.length >= 1, 'the library offers a wall unit at all');
   for (const e of wall) {
     const type = getUnitType(e.typeId);
+    // ─── TURN 31 (CLAUDE.md F9): ONE HONEST EXCEPTION ──────────────────────
+    // The HOOD unit's door stops ABOVE an open aperture. `door_extend` runs a
+    // front BELOW the carcass, and a door cannot do both — it would hang into
+    // the space the extractor occupies. So the kit says `false`, which is the
+    // whole point of the flag being a kit's own declaration rather than a fact
+    // about where it is mounted.
+    if (type.appliance === 'extractor') {
+      assert.equal(type.doorExtend, false, `${e.typeId} must not run below an open aperture`);
+      continue;
+    }
     assert.equal(type.doorExtend, true,
       `library entry "${e.id}" → ${e.typeId} lost the handleless grab edge`);
   }
@@ -121,6 +131,7 @@ test('F4.3 — every wall-unit LIBRARY entry resolves to a type that carries doo
   for (const id of UNIT_TYPE_ORDER) {
     const type = getUnitType(id);
     if (type.mount !== 'wall') continue;
+    if (type.appliance === 'extractor') continue;   // turn 31 F9, above
     assert.equal(type.doorExtend, true, `${id} hangs on a wall and has no door extend`);
   }
 });

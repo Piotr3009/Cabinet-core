@@ -1128,7 +1128,21 @@ export function computeCabinet(params, profileOverride) {
 
   // ── Doors ──────────────────────────────────────────────────────────────────
   const doorCount = cfg.doorCount;
-  const frontH = H - P.doors.gap + cfg.doorExtend;
+  // ─── TURN 31 (CLAUDE.md F9): A HOOD UNIT'S DOOR IS SHORTER ────────────────
+  //
+  // "hood wall unit (parent geometry KIT_WUD envelope, shorter door above an
+  // open appliance aperture)."
+  //
+  // The APERTURE is the open height at the bottom of the box where the
+  // extractor sits. It is an INPUT (`hood_aperture_mm`) and not a formula, and
+  // it is zero for every kit that is not a hood — so a bare `computeCabinet()`,
+  // every golden fixture, subtracts nothing and cuts what it cut yesterday.
+  //
+  // Rule 2 of the turn — "no invented holes" — is why this is the whole of the
+  // feature's geometry: the aperture is a SHAPE, and the extractor's fixings
+  // wait for a pattern somebody has published.
+  const hoodApertureMm = Math.max(0, Number(params?.hood_aperture_mm) || 0);
+  const frontH = H - P.doors.gap + cfg.doorExtend - hoodApertureMm;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
     : W - P.doors.gap;
@@ -3227,7 +3241,9 @@ export function computeCabinet(params, profileOverride) {
 
   // Door fronts, always last (they close the unit — SPEC 4.10)
   const doorZ = D + P.doors.gap;
-  const doorY = -cfg.doorExtend;      // a wall-unit front may run below the box
+  // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
+  // aperture, which is the same one line seen from the other end (F9).
+  const doorY = -cfg.doorExtend + hoodApertureMm;
   // ─── TURN 21 (CLAUDE.md F12): DOORS ON THE PARTITION ─────────────────────
   //
   // Owner's case: partitions at 600 and 800, three bays, two proper doors and
@@ -4453,6 +4469,27 @@ export function computeCabinet(params, profileOverride) {
         opening_depth_mm: roundTo(internalDepth, 1),
       },
       `${roundTo(internalWidth, 0)} × ${roundTo(openH, 0)} × ${roundTo(internalDepth, 0)} mm opening`);
+  }
+  // ─── TURN 31 (CLAUDE.md F9): THE EXTRACTOR IS HARDWARE ───────────────────
+  //
+  // "The extractor itself is HARDWARE: BOM line + GLB slot for when the owner
+  // uploads a model (the Blum pattern)."
+  //
+  // It is ORDERED to the APERTURE — the clear opening it hangs in — and not to
+  // the carcass, because that is the number a joiner reads off a data sheet
+  // when he buys one. NOT ONE HOLE goes with it: every make of extractor fixes
+  // differently and this repo has no published pattern for any of them, so the
+  // aperture is geometry (the missing bottom board and the shortened door) and
+  // the fixings wait for truth. Rule 2, in the one place it would be easiest
+  // to break.
+  if (hoodApertureMm > 0) {
+    hw('extractor', 'Extractor', 1, 'pcs',
+      {
+        aperture_width_mm: roundTo(internalWidth, 1),
+        aperture_height_mm: roundTo(hoodApertureMm, 1),
+        aperture_depth_mm: roundTo(internalDepth, 1),
+      },
+      `${roundTo(internalWidth, 0)} × ${roundTo(hoodApertureMm, 0)} × ${roundTo(internalDepth, 0)} mm aperture`);
   }
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);

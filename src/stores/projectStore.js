@@ -11,7 +11,7 @@ import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/sh
 import { doorBays } from '../engine/doors.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
@@ -500,8 +500,26 @@ export function migrateUnitFrontStyle(unit, profile = null) {
   };
 }
 
+/**
+ * ─── TURN 31 (CLAUDE.md F10): AN OLD TYPE NAME NEVER BREAKS A SAVE ─────────
+ *
+ * "on project load, `CORNER` reads as `L_SHAPE` (one-line alias kept forever);
+ * never break an existing save."
+ *
+ * The unit's stored `type` is rewritten on the way in, so everything
+ * downstream — the engine, the panel, the BOM, the CNC tree — sees one name.
+ * The TABLE is `engine/types.js TYPE_ALIASES` and it is kept forever: a
+ * migration runs once on a project somebody opens, and a file that has sat in a
+ * drawer for two years has never been migrated at all.
+ */
+function migrateUnitType(unit) {
+  const resolved = resolveTypeId(unit?.type);
+  if (!unit || resolved === unit.type) return unit;
+  return { ...unit, type: resolved, params: { ...unit.params, type: resolved } };
+}
+
 const migrateUnits = (units) => (Array.isArray(units)
-  ? units.map((u) => migrateUnitFrontStyle(migrateUnitShelves(u)))
+  ? units.map((u) => migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))))
   : []);
 
 function loadCache() {

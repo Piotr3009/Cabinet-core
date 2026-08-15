@@ -352,10 +352,10 @@ export const UNIT_TYPES = {
   //               the owner, not for tonight.
   //   `doors`   — none. A corner door hangs on cups bored to a pattern nobody
   //               has written down here.
-  CORNER: {
-    id: 'CORNER',
+  L_SHAPE: {
+    id: 'L_SHAPE',
     heightGroup: 'base',
-    label: 'Corner unit',
+    label: 'L-shape unit',
     family: 'kitchen',
     // Named for honesty, not for inheritance: this is the family the shape
     // belongs to. Its own drilling waits for a LISP.
@@ -857,7 +857,35 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+/**
+ * ─── TURN 31 (CLAUDE.md F10): THE OLD NAME, KEPT FOREVER ────────────────────
+ *
+ * "rename typeId `CORNER` → `L_SHAPE`, label 'L-shape unit'. MIGRATE saved
+ * projects: on project load, `CORNER` reads as `L_SHAPE` (one-line alias kept
+ * forever); never break an existing save."
+ *
+ * FOREVER is the operative word and it is why this is a table rather than a
+ * migration step. A migration runs once, on a project somebody opens; a saved
+ * file that has been sitting in a drawer for two years is a file the app has
+ * never migrated, and it will open one day. So the OLD NAME never stops being
+ * understood, and the cost of that is this map.
+ *
+ * The rename itself is honest: a CORNER SYSTEM is a carousel, a magic corner,
+ * a bi-fold door — a family of mechanisms this app has none of. What turn 30
+ * shipped is an L-SHAPED CARCASS, and calling it a corner unit promised
+ * something that was never in the box.
+ */
+export const TYPE_ALIASES = Object.freeze({
+  CORNER: 'L_SHAPE',
+});
+
+/** The id a stored unit means, whatever it was called when it was saved. */
+export function resolveTypeId(typeId) {
+  const id = String(typeId ?? '');
+  return TYPE_ALIASES[id] || id;
+}
+
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -916,7 +944,12 @@ export function heightGroupOf(typeId) {
 }
 
 export function getUnitType(typeId) {
-  return UNIT_TYPES[typeId] || UNIT_TYPES.WARDROBE;
+  // Turn 31 (CLAUDE.md F10): an OLD name resolves to the type it was renamed
+  // to. Here rather than only in the store's migration, because every reader in
+  // the app goes through this function — the 3D, the BOM, the drawings, the
+  // library — and a saved project that survives `loadProject` and then fails in
+  // the cut list is a project that has not really been migrated.
+  return UNIT_TYPES[typeId] || UNIT_TYPES[TYPE_ALIASES[typeId]] || UNIT_TYPES.WARDROBE;
 }
 
 /** Resolve a dotted key ("wardrobe.defaults") against the profile. */
@@ -986,5 +1019,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', CORNER: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

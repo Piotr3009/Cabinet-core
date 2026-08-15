@@ -46,7 +46,7 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // Wine rack · Small fridge · Twin space — plus the drawer group and the low
   // cabinet, both kits the workshop already builds.
   assert.deepEqual(idsOf('base-units'), [
-    'door-base', 'drawer-unit', 'sink', 'corner', 'l-shape', 'dishwasher',
+    'door-base', 'drawer-unit', 'sink', 'l-shape-unit', 'l-shape', 'dishwasher',
     'oven-base', 'bin-storage', 'wine-rack', 'small-fridge', 'twin-space',
     // Turn 30 (CLAUDE.md F18): the twin cupboard, beside the kits it is made of.
     'twin-cupboard', 'low',
@@ -72,7 +72,7 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
     // Turn 31 (CLAUDE.md F9): WUD_HOOD — the KIT_WUD envelope with its bottom
     // open, the extractor a BOM line and a GLB slot, and not one fixing hole.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'CORNER', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
   ]);
 });
 

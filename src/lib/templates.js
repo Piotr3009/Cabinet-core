@@ -31,6 +31,12 @@ const POSITIONAL_PARAMS = [
   // 20 mm filler appears against a wall that is not there.
   'side_infill_left_mm',
   'side_infill_right_mm',
+  // Turn 32 (CLAUDE.md F3): the front-edge trims are the NEIGHBOURHOOD's,
+  // not the build's — the self-healing pass writes them from what stands
+  // beside the cabinet, and re-writes them the moment the copy lands
+  // somewhere else. Carrying them would dress a copy in the original's
+  // neighbours for one render.
+  'front_edge_trim',
 ];
 
 /**

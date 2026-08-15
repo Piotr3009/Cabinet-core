@@ -141,7 +141,15 @@ export function frontGaps(result) {
     mm: round(W - (rightMost.x + rightMost.w)),
     from: rightMost.x + rightMost.w,
     to: W,
-    at: rightMost.y + rightMost.h / 2,
+    // ─── TURN 32 (CLAUDE.md F3): THE FACING FIGURES STAND APART ────────────
+    // The owner's fault, 15.08: two gap figures overlap when they sit close —
+    // and the classic case is two ADJACENT CABINETS, whose facing to-side
+    // figures both sat at mid-height, three millimetres apart in the room.
+    // The RIGHT figure steps down one label height, deterministically, so any
+    // pair of neighbours reads as two numbers rather than one smudge. A
+    // per-unit collision pass cannot see the neighbour; this asymmetry needs
+    // no sight at all.
+    at: rightMost.y + rightMost.h / 2 - LABEL_STEP_MM,
     a: rightMost.id,
     b: null,
   });
@@ -243,9 +251,45 @@ export function frontSizes(result, profile = null) {
   });
 }
 
+/**
+ * ─── TURN 32 (CLAUDE.md F3): TWO FIGURES MUST NOT SIT ON EACH OTHER ─────────
+ *
+ * The owner's fault, 15.08: "dimension labels overlap when two gap figures
+ * sit close." Every row used to render at offset 0, so a 3 mm between-doors
+ * figure and the to-side figure beside it landed their plates in the same
+ * air. This pass gives each row a LABEL ANCHOR (the middle of its span, at
+ * its `at`) and, when two anchors would stand closer than one plate, bumps
+ * the later row's chain out by one step — the same per-row `offset` the
+ * dimension component has always taken, decided here in the pure layer.
+ *
+ * The step and the reach are drawing ergonomics, not workshop numbers: one
+ * label plate is ~40 mm of world at the zooms a front is read at, and a step
+ * of 18 mm clears one plate height. They are parameters, so a caller with a
+ * bigger typeface can say so.
+ */
+/** One label plate's height of world, the rung the spread pass climbs by. */
+export const LABEL_STEP_MM = 18;
+
+export function spreadOverlappingRows(rows, { labelMm = 40, stepMm = LABEL_STEP_MM } = {}) {
+  const placed = [];
+  return (rows || []).map((row) => {
+    const cx = row.axis === 'h' ? (row.from + row.to) / 2 : row.at;
+    const cy = row.axis === 'h' ? row.at : (row.from + row.to) / 2;
+    let offsetMm = 0;
+    // Climb until this label stands clear of every one already placed at its
+    // own rung. Bounded: each collision moves it one step further out.
+    while (placed.some((p) => Math.abs(p.cx - cx) < labelMm
+      && Math.abs(p.cy - cy) < stepMm && p.offsetMm === offsetMm)) {
+      offsetMm += stepMm;
+    }
+    placed.push({ cx, cy, offsetMm });
+    return offsetMm ? { ...row, offsetMm } : row;
+  });
+}
+
 /** Sizes and gaps together — what the scene draws when the toggle is on. */
 export function frontDimensionRows(result, profile = null) {
-  return [...frontSizes(result, profile), ...frontGaps(result)];
+  return spreadOverlappingRows([...frontSizes(result, profile), ...frontGaps(result)]);
 }
 
 const round = (v) => Math.round((Number(v) || 0) * 100) / 100;

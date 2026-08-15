@@ -480,6 +480,71 @@ export function frontGapRows(clearances, profile) {
   return [...byKey.values()].sort((a, b) => (a.wall - b.wall) || ((a.atX || 0) - (b.atX || 0)));
 }
 
+/**
+ * ─── TURN 32 (CLAUDE.md F3): THE MATRIX IS APPLIED, NOT OFFERED ─────────────
+ *
+ * The owner's verdict on T31's modal: "why bother the client — gaps should
+ * fix themselves." So the matrix changes MODE: this function turns the
+ * clearances T31 already measures into the PLAN of edge trims that makes
+ * every front stand where the law says — on the correct edge (the asymmetry
+ * law rides exactly as T31 built it), by exactly `correctionMm`.
+ *
+ * What it will NOT plan, and why the RED modal survives only there:
+ *
+ *   · a PARKED edge (the L-shape corner) — rule 7, no rule agreed;
+ *   · an APPLIANCE'S OWN FACE — a fridge door is the factory's width, never
+ *     cut (`front.appliance`, off the piece);
+ *   · a WIDENING past the kit's own width — a trim only narrows; an edge that
+ *     wants more front than the kit cut (want < 0 relative to stock) can only
+ *     come back to trim 0;
+ *   · a correction that would leave no board — the engine's own
+ *     FRONT_TRIM_TOO_DEEP refusal, anticipated here so it is never provoked.
+ *
+ * Pure: reads clearances and the current trims, answers patches and the GREY
+ * notes that announce them ("front 02-F −1.5 mm at the end panel") — rule 4:
+ * even the sanctioned auto-fix says what it did. The STORE applies the
+ * patches through the same `front_edge_trim` override channel the modal used;
+ * nothing here or there touches the engine.
+ *
+ * @param {Array} clearances  frontClearances() output
+ * @param {function} trimOf   (unitId, panelId) → {left,right} | null
+ * @returns {{patches:Array<{unitId,panelId,side,trim,deltaMm,kind}>,
+ *            notices:string[], stuck:Array<{unitId,panelId,side,kind,reason}>}}
+ */
+export function healingPlan(clearances, { trimOf }) {
+  const patches = [];
+  const notices = [];
+  const stuck = [];
+  for (const front of clearances || []) {
+    for (const side of ['left', 'right']) {
+      const edge = front.edges?.[side];
+      if (!edge || edge.parked) continue;
+      if (front.appliance) continue;
+      const was = (trimOf ? trimOf(front.unitId, front.panelId) : null) || { left: 0, right: 0 };
+      const old = Number(was[side]) || 0;
+      const next = Math.max(0, round2(old + edge.correctionMm));
+      const delta = round2(next - old);
+      if (Math.abs(delta) < 0.05) continue;
+      if (front.w - delta <= 0) {
+        stuck.push({
+          unitId: front.unitId,
+          panelId: front.panelId,
+          side,
+          kind: edge.kind,
+          reason: `a further ${delta} mm would leave nothing of a ${front.w} mm front`,
+        });
+        continue;
+      }
+      patches.push({
+        unitId: front.unitId, panelId: front.panelId, side, trim: next, deltaMm: delta, kind: edge.kind,
+      });
+      notices.push(`front ${front.unitNum || front.unitId} ${front.panelId} `
+        + `${delta > 0 ? '−' : '+'}${Math.abs(delta)} mm at ${labelOf(edge.kind)}`);
+    }
+  }
+  return { patches, notices, stuck };
+}
+
 /** What a neighbour is CALLED, in a sentence a joiner reads. */
 export function labelOf(kind) {
   return {

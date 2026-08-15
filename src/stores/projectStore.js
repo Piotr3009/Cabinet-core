@@ -36,7 +36,11 @@ import { handleClassCount } from '../engine/handles.js';
 import { worktopEligible, worktopsFor } from '../engine/worktop.js';
 import { frontGapClashes } from '../engine/frontGapClash.js';
 // Turn 31 (CLAUDE.md F4): the owner's 18-point front-gap rulebook.
-import { carcassGaps, frontClearances } from '../engine/frontClearance.js';
+// Turn 32 (CLAUDE.md F3): …and the healing plan that APPLIES it.
+import { carcassGaps, frontClearances, healingPlan } from '../engine/frontClearance.js';
+// Turn 32 (CLAUDE.md F3): the grey notes the self-healing announces itself
+// with. One direction only — uiStore never reads this store.
+import { useUiStore } from './uiStore.js';
 // Turn 31 (CLAUDE.md F6): Check v1, the pre-production controller.
 import { runChecks } from '../engine/checks.js';
 // Turn 31 (CLAUDE.md F3): the drill guard's own number, at the source.
@@ -1144,9 +1148,54 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         };
       }),
     });
+
+    // ─── TURN 32 (CLAUDE.md F3): THE GAPS FIX THEMSELVES ─────────────────────
+    // This is the one choke point every unit-creation, neighbour change,
+    // resize and move already funnels through, so it is where the matrix is
+    // APPLIED rather than offered. The pass converges — a healed edge
+    // measures a correction of 0 next time — so a drag settles instead of
+    // oscillating, and the notes it returns are GREY: the one sanctioned
+    // auto-fix still says what it did.
+    get().healFrontGaps();
+
     return notices;
   },
 
+  /**
+   * ─── TURN 32 (CLAUDE.md F3): SELF-HEALING FRONT GAPS ──────────────────────
+   *
+   * Owner's verdict on T31's modal: "why bother the client — gaps should fix
+   * themselves." The T31 matrix stays law (the numbers, the asymmetry law,
+   * the 21.5 cups riding the edge — all exactly as built); what changes is
+   * the MODE: the plan the modal used to offer is computed and APPLIED here,
+   * through the same `front_edge_trim` override channel, edge by edge.
+   *
+   * Every correction announces itself as a GREY note ("front 02-F −1.5 mm at
+   * an end panel") — never a question. The RED modal survives only where the
+   * plan has no move: a parked corner, an appliance's own face, a front at
+   * its minimum — those are Check's job (#2/#11, unchanged).
+   */
+  healFrontGaps: () => {
+    const rows = get().frontClearances();
+    const plan = healingPlan(rows, {
+      trimOf: (unitId, panelId) => get().units
+        .find((u) => u.id === unitId)?.params?.front_edge_trim?.[panelId] || null,
+    });
+    if (plan.patches.length) {
+      const byPanel = new Map();
+      for (const p of plan.patches) {
+        const key = `${p.unitId}|${p.panelId}`;
+        const entry = byPanel.get(key) || { unitId: p.unitId, panelId: p.panelId, patch: {} };
+        entry.patch[p.side] = p.trim;
+        byPanel.set(key, entry);
+      }
+      for (const entry of byPanel.values()) {
+        get().setFrontEdgeTrim(entry.unitId, entry.panelId, entry.patch);
+      }
+      for (const note of plan.notices) useUiStore.getState().notify(note, 'info');
+    }
+    return plan;
+  },
   /**
    * Drag the top infill up. `heightMm` is the height the pointer asks for; it
    * is clamped to what is left between the unit and the ceiling.
@@ -4178,20 +4227,26 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // The hinge side travels BOTH ways (turn 8, F2.2): fitting doors with a hinge
   // writes it onto the unit as well, so the panel's switch and the engine's
   // input are the same answer and cannot come apart later.
-  setDoors: (unitId, doors) => set((s) => ({
-    units: s.units.map((u) => (u.id === unitId
-      ? {
-        ...u,
-        params: {
-          ...u.params,
-          doors,
-          ...(doors && typeof doors === 'object' && doors.hinge
-            ? { hinge: String(doors.hinge).toUpperCase() === 'R' ? 'R' : 'L' }
-            : {}),
-        },
-      }
-      : u)),
-  })),
+  setDoors: (unitId, doors) => {
+    set((s) => ({
+      units: s.units.map((u) => (u.id === unitId
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            doors,
+            ...(doors && typeof doors === 'object' && doors.hinge
+              ? { hinge: String(doors.hinge).toUpperCase() === 'R' ? 'R' : 'L' }
+              : {}),
+          },
+        }
+        : u)),
+    }));
+    // Turn 32 (CLAUDE.md F3): doors appearing IS fronts appearing — the new
+    // leaves must stand where the matrix says, against whatever was already
+    // beside them (the end panel added before the doors was the day-one bug).
+    get().healFrontGaps();
+  },
 
   /**
    * How much clear WALL there is beside a unit, per side — or null where what

@@ -187,7 +187,6 @@ export default function PartDetailModal() {
     // below is what lets it through afterwards.
     if (!layer) { setAskLayer(op); return; }
     addPartEdit(unit.id, panel.id, { ...op, layer });
-    notify('Added by hand — this print only.', 'ok');
   }, [unit, panel, layer, addPartEdit, notify]);
 
   /** The answer, and the edit that was waiting for it. */
@@ -197,7 +196,6 @@ export default function PartDetailModal() {
     setAskLayer(null);
     if (!op || !unit || !panel) return;
     addPartEdit(unit.id, panel.id, { ...op, layer: chosen });
-    notify(`Added by hand on ${chosen} — this print only.`, 'ok');
   }, [askLayer, unit, panel, addPartEdit, notify]);
 
   /**
@@ -257,7 +255,6 @@ export default function PartDetailModal() {
     if (!feature) return;
     addPartEdit(unit.id, panel.id, { op: 'hide', feature: feature.fid });
     setPicked(null);
-    notify('Removed from this print.', 'ok');
   }, [picked, unit, panel, drawing, features, addPartEdit, notify]);
 
   // ─── THE KEYBOARD (F2.1 / F2.2 / F2.5) ───────────────────────────────────
@@ -526,8 +523,7 @@ export default function PartDetailModal() {
                     onClick={() => {
                       clearPartEdits(unit.id, panel.id);
                       setPicked(null);
-                      notify('Back to computed — this part is stock again.', 'ok');
-                    }}
+                                      }}
                   >
                     Back to computed
                   </button>

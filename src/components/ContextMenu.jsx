@@ -163,7 +163,6 @@ export default function ContextMenu() {
         // wrap them again.
         addDoors: (ids) => {
           const { fitted, already } = addDoorsBulk(ids) || {};
-          if (fitted) notify(`Doors hung on ${fitted} cabinet${fitted === 1 ? '' : 's'}.`, 'ok');
           if (!fitted && already) notify('They already have their doors.', 'info');
         },
         unitColour: (ids) => openModal('unit-finish', { unitIds: ids, anchor: menuAnchor() }),
@@ -176,7 +175,7 @@ export default function ContextMenu() {
         },
         addDrawerFronts: (unitId) => {
           const { fitted } = addDrawerFronts(unitId) || {};
-          notify(fitted ? `${fitted} drawer front${fitted === 1 ? '' : 's'} back on.` : 'They are already on.', fitted ? 'ok' : 'info');
+          if (!fitted) notify('They are already on.', 'info');
         },
         // The options for what was just added are in the panel, not in a modal.
         openPanelSection: (id) => { openRightPanel(); setPanelSection(id, true); },

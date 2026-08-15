@@ -312,7 +312,6 @@ export default function RoomModal({ onClose = null, onApplied = null, anchor: an
     if (shapeIssues.length) { notify(shapeIssues[0], 'warn'); return; }
     const verdict = setRoom(draft);
     if (!verdict.ok) { notify(verdict.message, 'error'); return; }
-    notify('Room updated.', 'ok');
     if (onApplied) { onApplied(); return; }
     closeModal();
   };

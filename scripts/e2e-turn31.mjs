@@ -398,6 +398,136 @@ async function main() {
       measurements.f1 = f1;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F2 [CRITICAL] — one dirty gate + message levels (the owner's colours)
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // "Proof: one of each level on screen, screenshotted."
+    //
+    // ONE OF EACH, AT ONCE, which is the whole point: the old slot could not
+    // hold two. Then each contract is exercised with a real gesture — the
+    // yellow goes when the pointer lands somewhere else, the red does NOT, and
+    // the red only goes when it is clicked itself.
+    if (want('f2')) {
+      await newRoom('Turn 31 walk — F2');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const a = s.addUnit('BUD');
+        s.updateUnitParams(a.id, { width: 800, doors: { count: 2 } });
+        window.__t31 = { unitA: a.id };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await frameUnits([await page.evaluate('return window.__t31.unitA;')], [0.9, 0.7, 2.6]);
+      await page.sleep(700);
+
+      const f2 = {};
+
+      // ── The DIRTY GATE, read off the store rather than off a flag ─────────
+      f2.dirty = await page.evaluate(`
+        const s = ${P}.project.getState;
+        const out = {};
+        s().markSaved();
+        out.afterSave = s().dirty;
+        // A width typed into a cabinet. No action in the store writes the flag
+        // by hand any more — the gate does, on the way past.
+        s().updateUnitParams(window.__t31.unitA, { width: 750 });
+        out.afterEdit = s().dirty;
+        s().markSaved();
+        // …and a piece added, from a completely different neighbourhood of the
+        // 4000-line store.
+        s().addShelves(window.__t31.unitA, 1);
+        out.afterShelf = s().dirty;
+        return out;
+      `);
+      check('F2 — the ONE gate raises the flag from anywhere in the store',
+        f2.dirty.afterSave === false && f2.dirty.afterEdit === true && f2.dirty.afterShelf === true,
+        JSON.stringify(f2.dirty));
+
+      // ── ONE OF EACH LEVEL, ON THE SCREEN AT ONCE ─────────────────────────
+      await page.evaluate(`
+        const ui = ${P}.ui.getState();
+        ui.clearMessages();
+        ui.notify('Export held: 02 BACK has a doubled edge.', 'error');
+        ui.notify('Hinge rows 60 mm apart — moved back.', 'warn');
+        ui.notify('Turn-31-cnc-1508-2130.dxf — 7 parts.', 'ok');
+        return true;
+      `);
+      await page.sleep(400);
+      const levels = await page.evaluate(`
+        const seen = [...document.querySelectorAll('[data-message-level]')]
+          .map((el) => ({ level: el.getAttribute('data-message-level'), text: el.innerText.trim() }));
+        const box = (sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) };
+        };
+        return { seen, centre: box('[data-messages="centre"]'), bottom: box('[data-messages="bottom"]') };
+      `);
+      f2.levels = levels;
+      check('F2 — all THREE levels are on the screen at once (the old slot held one)',
+        levels.seen.length === 3
+        && ['red', 'yellow', 'grey'].every((l) => levels.seen.some((m) => m.level === l)),
+        levels.seen.map((m) => m.level).join(' · '));
+      check('F2 — …and a RED is never buried under a yellow: it is drawn first',
+        levels.seen.filter((m) => m.level !== 'grey')[0]?.level === 'red',
+        levels.seen.map((m) => m.level).join(' → '));
+      check('F2 — GREY stands in the CENTRE, the two that wait stand at the bottom',
+        Boolean(levels.centre) && Boolean(levels.bottom) && levels.centre.y < levels.bottom.y,
+        `grey at y=${levels.centre?.y} · red/yellow at y=${levels.bottom?.y}`);
+      await shot('2a-one-of-each-level-red-yellow-and-grey-on-screen-at-once',
+        { dom: '[data-message-level="red"]' });
+
+      // ── The three contracts, each with a real gesture ─────────────────────
+      // A pointer down on the canvas — "anywhere else".
+      await page.mouse('mousePressed', 300, 500);
+      await page.mouse('mouseReleased', 300, 500, { buttons: 0 });
+      await page.sleep(350);
+      const afterAway = await page.evaluate(`
+        return [...document.querySelectorAll('[data-message-level]')].map((el) => el.getAttribute('data-message-level'));
+      `);
+      f2.afterClickAway = afterAway;
+      check('F2 — a click ANYWHERE ELSE takes the yellow and leaves the red standing',
+        !afterAway.includes('yellow') && afterAway.includes('red'),
+        afterAway.join(' · ') || '(none)');
+      await shot('2b-the-yellow-is-gone-the-red-has-not-moved',
+        { dom: '[data-message-level="red"]' });
+
+      // The red's only exit: clicking IT.
+      await page.click('[data-message-level="red"]');
+      await page.sleep(350);
+      const afterClick = await page.evaluate(`
+        return [...document.querySelectorAll('[data-message-level]')].map((el) => el.getAttribute('data-message-level'));
+      `);
+      f2.afterRedClick = afterClick;
+      check('F2 — …and the red goes when the red itself is clicked, and not before',
+        !afterClick.includes('red'), afterClick.join(' · ') || '(none)');
+
+      // ── LEAVING WITH UNSAVED WORK IS A RED ───────────────────────────────
+      await page.evaluate(`${P}.ui.getState().clearMessages(); return true;`);
+      await page.evaluate(`${P}.project.getState().updateUnitParams(window.__t31.unitA, { width: 820 }); return true;`);
+      await page.sleep(250);
+      // The real door: the CABINET CORE badge in the bar.
+      await page.click('header button', 'CABINET CORE');
+      await page.sleep(500);
+      const leaving = await page.evaluate(`
+        const el = document.querySelector('[data-message-level="red"]');
+        return {
+          screen: ${P}.ui.getState().screen,
+          red: el ? el.innerText.trim() : null,
+        };
+      `);
+      f2.leaving = leaving;
+      check('F2 — leaving with unsaved work shows the RED, and it says the sentence',
+        leaving.screen === 'start' && String(leaving.red || '').includes('Save the project — unsaved changes'),
+        `${leaving.screen} · ${leaving.red}`);
+      await shot('2c-leaving-with-unsaved-work-the-red-that-follows-you-out',
+        { dom: '[data-message-level="red"]', text: 'Save the project' });
+      measurements.f2 = f2;
+      await page.evaluate(`${P}.ui.getState().clearMessages(); return true;`);
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

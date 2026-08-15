@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import ConfiguratorPage from './pages/ConfiguratorPage.jsx';
 import StartScreen from './components/StartScreen.jsx';
-import Toast from './components/Toast.jsx';
+import Messages from './components/Messages.jsx';
 import { useUiStore } from './stores/uiStore.js';
+import { useProjectStore } from './stores/projectStore.js';
+import { UNSAVED_MESSAGE } from './engine/messages.js';
 import { loadDecorCatalogue } from './lib/decorCatalogue.js';
 import { loadRunnerCatalogue } from './lib/runnerCatalogue.js';
 import { onStorageBase } from './lib/storageBase.js';
@@ -62,14 +64,31 @@ export default function App() {
   // is the same catalogue it would have had yesterday.
   useEffect(() => { refreshHardwareCatalogues(); }, []);
 
+  // ─── THE OTHER DOOR OUT (turn 31, CLAUDE.md F2) ─────────────────────────
+  //
+  // The bar's own four doors go through `leaveProject`, which raises the RED.
+  // This is the fifth: closing the tab or reloading it. No page may draw its
+  // own message there — the browser owns that dialog — so the honest thing is
+  // to ASK FOR IT, which is what a non-empty `returnValue` does. Registered
+  // only while there is work to lose, because a page that always asks is a
+  // page whose question stops being read.
+  const dirty = useProjectStore((s) => s.dirty);
+  const unitCount = useProjectStore((s) => s.units.length);
+  useEffect(() => {
+    if (!dirty || !unitCount) return undefined;
+    const onLeave = (e) => { e.preventDefault(); e.returnValue = UNSAVED_MESSAGE; return UNSAVED_MESSAGE; };
+    window.addEventListener('beforeunload', onLeave);
+    return () => window.removeEventListener('beforeunload', onLeave);
+  }, [dirty, unitCount]);
+
 
   if (screen === 'start') {
     return (
       <>
         <StartScreen />
         {/* The start screen can fail to open a project, and has to be able to
-            say so — the configurator's own Toast is not mounted yet. */}
-        <Toast />
+            say so — the configurator's own Messages are not mounted yet. */}
+        <Messages />
       </>
     );
   }

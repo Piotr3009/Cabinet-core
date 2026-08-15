@@ -189,7 +189,6 @@ export default function RightPanel() {
   const addDoors = () => {
     const { count } = addDoorsToUnit(unit.id) || {};
     if (!count) return;
-    notify(`${count} door${count === 1 ? '' : 's'} added — the unit is complete.`, 'ok');
     closeRightPanel();          // SPEC 4.10: doors are the last step
     clearSelection();
   };
@@ -310,7 +309,6 @@ export default function RightPanel() {
                 onClick={() => {
                   const { notices } = resetUnitHeight(unit.id) || { notices: [] };
                   for (const n of notices) notify(n, 'warn');
-                  notify(`Back on the project ${heightGroupLabel.toLowerCase()}.`, 'ok');
                 }}
               >
                 Reset
@@ -791,7 +789,6 @@ export default function RightPanel() {
                   title="Space them evenly across the width — equal clear bays"
                   onClick={() => {
                     const moved = centrePartitions(unit.id);
-                    if (moved) notify(moved === 1 ? 'Partition centred — equal bays.' : `${moved} partitions spaced evenly — equal bays.`, 'ok');
                   }}
                 >
                   Equal bays
@@ -866,7 +863,7 @@ export default function RightPanel() {
                         type="button" className="cc-btn-ghost"
                         data-remove-partition={pt.id}
                         title="Remove this partition"
-                        onClick={() => { removeItem(unit.id, pt.id); notify('Partition removed.', 'ok'); }}
+                        onClick={() => removeItem(unit.id, pt.id)}
                       >
                         ×
                       </button>

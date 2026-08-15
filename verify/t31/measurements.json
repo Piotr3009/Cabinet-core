@@ -1,33 +1,46 @@
 {
- "f1": {
-  "cabinet": {
-   "name": "cabinet",
-   "anchored": true,
-   "coversTheClick": false
+ "f2": {
+  "dirty": {
+   "afterSave": false,
+   "afterEdit": true,
+   "afterShelf": true
   },
-  "cabinetDrag": 286,
-  "door": {
-   "name": "element",
-   "anchored": true,
-   "coversTheClick": false
-  },
-  "doorDrag": 238,
-  "finish": {
-   "name": "unit-finish",
-   "anchored": true,
-   "clear": true,
-   "menu": {
-    "x": 390,
-    "y": 262.5,
-    "width": 180,
-    "height": 729.5
+  "levels": {
+   "seen": [
+    {
+     "level": "grey",
+     "text": "Turn-31-cnc-1508-2130.dxf — 7 parts."
+    },
+    {
+     "level": "red",
+     "text": "Export held: 02 BACK has a doubled edge.click to dismiss"
+    },
+    {
+     "level": "yellow",
+     "text": "Hinge rows 60 mm apart — moved back."
+    }
+   ],
+   "centre": {
+    "x": 650,
+    "y": 505,
+    "w": 301,
+    "h": 38
    },
-   "at": {
-    "x": 480,
-    "y": 706
+   "bottom": {
+    "x": 589,
+    "y": 892,
+    "w": 423,
+    "h": 84
    }
   },
-  "finishDrag": 306,
-  "faults": []
+  "afterClickAway": [
+   "grey",
+   "red"
+  ],
+  "afterRedClick": [],
+  "leaving": {
+   "screen": "start",
+   "red": "Save the project — unsaved changesclick to dismiss"
+  }
  }
 }

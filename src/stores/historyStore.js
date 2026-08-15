@@ -138,7 +138,10 @@ function flush() {
 function apply(snapshot) {
   applying = true;
   try {
-    useProjectStore.setState({ project: snapshot.project, units: snapshot.units, dirty: true });
+    // Turn 31 (CLAUDE.md F2): no `dirty: true` here any more. `setState` on the
+    // project store goes through the ONE gate (stores/dirtyGate.js), and an
+    // undo that changes the project is a change to the project like any other.
+    useProjectStore.setState({ project: snapshot.project, units: snapshot.units });
     // Selection, sensibly: a piece that is no longer there cannot be selected,
     // and pretending otherwise leaves the right-hand panel describing nothing.
     const ui = useUiStore.getState();

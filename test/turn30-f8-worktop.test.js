@@ -277,7 +277,11 @@ test('F8 the button is on the MULTI-selection, and it says how many', () => {
   assert.match(panel, /Add worktop \(\{ids\.length\}\)/);
   assert.match(panel, /addWorktop\(ids\)/);
   // …and a refusal is SAID rather than swallowed.
-  assert.match(panel, /else notify\(res\.error, 'warn'\);/);
+  //
+  // Turn 31 (CLAUDE.md F2) deleted the GREY that confirmed a worktop — the
+  // worktop IS the confirmation, and "an effect visible in 3D needs no toast".
+  // The refusal is the half that was never visible, and it is still said.
+  assert.match(panel, /if \(!res\.ok\) notify\(res\.error, 'warn'\);/);
 });
 
 test('F8 worktopsFor is askable on its own, and drops what it cannot resolve', () => {

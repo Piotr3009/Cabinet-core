@@ -6,59 +6,39 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F1 — the workspace opens maximised and RESTORES to an ordinary window",
+   "label": "F2 — the ONE gate raises the flag from anywhere in the store",
    "ok": true,
-   "detail": "was true · now side right"
+   "detail": "{\"afterSave\":false,\"afterEdit\":true,\"afterShelf\":true}"
   },
   {
-   "label": "F1 — a right-click on a cabinet opens the SHELL, and it knows its object",
+   "label": "F2 — all THREE levels are on the screen at once (the old slot held one)",
    "ok": true,
-   "detail": "cabinet · anchored true · side right"
+   "detail": "grey · red · yellow"
   },
   {
-   "label": "F1 — …and it does not land on the object it is about",
+   "label": "F2 — …and a RED is never buried under a yellow: it is drawn first",
    "ok": true,
-   "detail": "click (440,539) vs window at 860,263"
+   "detail": "grey → red → yellow"
   },
   {
-   "label": "F1 — the header moves it: a real pointer drag, and the window follows",
+   "label": "F2 — GREY stands in the CENTRE, the two that wait stand at the bottom",
    "ok": true,
-   "detail": "286 px by the header"
+   "detail": "grey at y=505 · red/yellow at y=892"
   },
   {
-   "label": "F1 — a double-click on a leaf opens the SHELL, anchored to the leaf",
+   "label": "F2 — a click ANYWHERE ELSE takes the yellow and leaves the red standing",
    "ok": true,
-   "detail": "element · anchored true"
+   "detail": "grey · red"
   },
   {
-   "label": "F1 — …and this one does not land on the door either",
+   "label": "F2 — …and the red goes when the red itself is clicked, and not before",
    "ok": true,
-   "detail": "click (440,539)"
+   "detail": "(none)"
   },
   {
-   "label": "F1 — …and it drags by its header too",
+   "label": "F2 — leaving with unsaved work shows the RED, and it says the sentence",
    "ok": true,
-   "detail": "238 px"
-  },
-  {
-   "label": "F1 — a MENU ENTRY opens the SHELL, anchored to the entry",
-   "ok": true,
-   "detail": "unit-finish · anchored true"
-  },
-  {
-   "label": "F1 — …and stands clear of the menu it was chosen from",
-   "ok": true,
-   "detail": "{\"x\":390,\"y\":262.5,\"width\":180,\"height\":729.5}"
-  },
-  {
-   "label": "F1 — …and the third window drags by its header as well",
-   "ok": true,
-   "detail": "306 px"
-  },
-  {
-   "label": "F1 — the shell guard had nothing to report all phase",
-   "ok": true,
-   "detail": "clean"
+   "detail": "start · Save the project — unsaved changesclick to dismiss"
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -68,52 +48,29 @@
  ],
  "shots": [
   {
-   "name": "1a-the-cabinet-editor-opened-beside-the-cabinet-it-is-about",
+   "name": "2a-one-of-each-level-red-yellow-and-grey-on-screen-at-once",
    "subject": {
-    "dom": "[data-modal-name=\"cabinet\"]"
+    "dom": "[data-message-level=\"red\"]"
    },
    "present": true,
    "detail": "{\"dom\":true}"
   },
   {
-   "name": "1b-the-same-window-dragged-by-its-header",
+   "name": "2b-the-yellow-is-gone-the-red-has-not-moved",
    "subject": {
-    "dom": "[data-modal-name=\"cabinet\"]"
+    "dom": "[data-message-level=\"red\"]"
    },
    "present": true,
    "detail": "{\"dom\":true}"
   },
   {
-   "name": "1c-the-door-window-beside-the-door-it-was-opened-from",
+   "name": "2c-leaving-with-unsaved-work-the-red-that-follows-you-out",
    "subject": {
-    "dom": "[data-modal-name=\"element\"]"
+    "dom": "[data-message-level=\"red\"]",
+    "text": "Save the project"
    },
    "present": true,
-   "detail": "{\"dom\":true}"
-  },
-  {
-   "name": "1d-the-door-window-dragged-by-its-header",
-   "subject": {
-    "dom": "[data-modal-name=\"element\"]"
-   },
-   "present": true,
-   "detail": "{\"dom\":true}"
-  },
-  {
-   "name": "1e-the-unit-finish-window-beside-the-menu-entry-that-opened-it",
-   "subject": {
-    "dom": "[data-modal-name=\"unit-finish\"]"
-   },
-   "present": true,
-   "detail": "{\"dom\":true}"
-  },
-  {
-   "name": "1f-the-third-window-dragged-three-of-three",
-   "subject": {
-    "dom": "[data-modal-name=\"unit-finish\"]"
-   },
-   "present": true,
-   "detail": "{\"dom\":true}"
+   "detail": "{\"dom\":true,\"text\":true}"
   }
  ]
 }

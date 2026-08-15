@@ -3313,6 +3313,24 @@ export const DEFAULT_CABINET_PROFILE = {
     // is a filler's job and not a cabinet's.
     addPlusMinGapMm: 100,
 
+    // ─── TURN 31 (CLAUDE.md F2): THE THREE MESSAGE LEVELS ─────────────────
+    //
+    // The owner, 15.08.2026, on a toast slot of one that erased itself every
+    // four seconds: "he has never seen one." His three rules are contracts and
+    // live in engine/messages.js; these are the two NUMBERS in them, here
+    // because rule 2 says a number lives in the profile.
+    messages: {
+      // "GREY — a few seconds." Three is a few: long enough to read a file
+      // name, short enough that a bulk action does not paper the screen.
+      // OWNER'S DEFAULT, 15.08.2026 — one number, and it moves alone.
+      greyMs: 3000,
+      // How many may stand at once before the queue sheds the least important
+      // OLDEST one. Never a red (engine/messages.js `trimQueue`).
+      // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named it; five
+      // is what fits over a 3D view without becoming the view.
+      maxOnScreen: 5,
+    },
+
     // ─── THE MODAL RULE (turn 12, CLAUDE.md rule 15) ───
     // "Every modal in this application is DRAGGABLE by its header and opens
     // BESIDE the object it concerns — never covering it." The owner said
@@ -3997,6 +4015,10 @@ export function migrateCabinetProfile(profile) {
         ...profile.ui?.modal,
         anchorOffset: { ...D.ui.modal.anchorOffset, ...profile.ui?.modal?.anchorOffset },
       },
+      // Turn 31 (CLAUDE.md F2): key by key, like every other nested block — a
+      // profile saved before the message levels existed comes back with a grey
+      // that expires rather than one that hangs on `undefined` milliseconds.
+      messages: { ...D.ui.messages, ...profile.ui?.messages },
     },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's

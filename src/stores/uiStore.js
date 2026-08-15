@@ -1,11 +1,15 @@
 import { create } from 'zustand';
-import { DEFAULT_CABINET_PROFILE } from '../engine/profile.js';
+import { DEFAULT_CABINET_PROFILE, getCabinetProfile } from '../engine/profile.js';
 import { brightnessScale } from '../engine/lighting.js';
 import { applySelection, primaryOf } from '../lib/selection.js';
 import {
   closeNav, openNav, popNav, pushNav,
 } from '../lib/editorStack.js';
 import { modalAnchorFault, withModalAnchor } from '../lib/modalLayer.js';
+import {
+  dismissedByClickAway, expired, greyMs, leaveWarning, makeMessage, pushMessage, queueMax,
+  trimQueue,
+} from '../engine/messages.js';
 
 // ─── UI state ───
 // Panel geometry, selection and the editor's snap step. Nothing here is
@@ -687,13 +691,57 @@ export const useUiStore = create((set, get) => ({
     set({ snapStep: step });
   },
 
-  // Transient toast messages (validation feedback)
-  toast: null,
+  // ─── THE THREE MESSAGE LEVELS (turn 31, CLAUDE.md F2) ─────────────────────
+  //
+  // What was here: ONE slot, four seconds, each message erasing the last — and
+  // the owner has never seen one. A bulk action fires five in a tick and four
+  // of them are gone before a frame is drawn.
+  //
+  // What is here now is a QUEUE, and the rules that govern it are
+  // engine/messages.js — pure, tested without a browser. This store is the
+  // wiring and the clock, and nothing more. `notify(message, tone)` is
+  // deliberately unchanged: 129 call sites keep working and gain the levels for
+  // free, because the four old tones ARE the three levels
+  // (`messages.js levelOf`).
+  messages: [],
   notify: (message, tone = 'info') => {
-    set({ toast: { message, tone, at: Date.now() } });
-    setTimeout(() => {
-      if (Date.now() - (get().toast?.at ?? 0) >= 3800) set({ toast: null });
-    }, 4000);
+    if (!message) return null;
+    const now = Date.now();
+    const profile = getCabinetProfile();
+    const msg = makeMessage(message, tone, { at: now, profile });
+    set((s) => ({ messages: trimQueue(pushMessage(s.messages, msg), queueMax(profile)) }));
+    // Only a grey has a clock. A red that expired on its own would be exactly
+    // the fault this feature exists to end, so there is no timer for one.
+    if (msg.expiresAt != null) {
+      setTimeout(() => {
+        const gone = expired(get().messages, Date.now());
+        if (gone.length) set((s) => ({ messages: s.messages.filter((m) => !gone.includes(m.id)) }));
+      }, greyMs(profile) + 60);
+    }
+    return msg.id;
   },
-  dismissToast: () => set({ toast: null }),
+  /** One message, clicked. The RED's only exit. */
+  dismissMessage: (id) => set((s) => ({ messages: s.messages.filter((m) => m.id !== id) })),
+  /** A pointer went down somewhere else: the YELLOWS go, the reds stay. */
+  dismissOnClickAway: () => set((s) => {
+    const gone = dismissedByClickAway(s.messages);
+    return gone.length ? { messages: s.messages.filter((m) => !gone.includes(m.id)) } : {};
+  }),
+  clearMessages: () => set({ messages: [] }),
+
+  /**
+   * ─── LEAVING WITH UNSAVED WORK (F2) ──────────────────────────────────────
+   *
+   * "Leaving with unsaved work shows a RED 'Save the project — unsaved
+   * changes'." Every door out of the editor is `goToStart`, so this is the one
+   * place it can be said — and it SPEAKS rather than fixing (rule 4): it does
+   * not save behind the joiner's back and it does not bar the door. The message
+   * is a RED, so it stays until it is clicked, which is what carries it onto
+   * the screen he has just walked to.
+   */
+  warnIfUnsaved: (projectState) => {
+    const warning = leaveWarning(projectState || {});
+    if (warning) get().notify(warning.message, warning.tone);
+    return warning;
+  },
 }));

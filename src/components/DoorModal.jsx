@@ -609,8 +609,7 @@ function RemoveDoor({ unit, panel, onDone }) {
         className="cc-btn px-2 text-[11px] text-red-300"
         data-remove-door={panel.id}
         onClick={() => {
-          const res = removeFront(unit.id, panel.id);
-          if (res) notify(res.scope === 'bay' ? 'Door removed from the bay.' : 'Doors removed.');
+          removeFront(unit.id, panel.id);
           onDone?.();
         }}
       >

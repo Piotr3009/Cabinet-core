@@ -11,7 +11,7 @@ import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
 import RenderModal from '../components/RenderModal.jsx';
 import DrawingModal from '../components/DrawingModal.jsx';
-import Toast from '../components/Toast.jsx';
+import Messages from '../components/Messages.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import HandEditsModal from '../components/HandEditsModal.jsx';
 import DoorModal from '../components/DoorModal.jsx';
@@ -165,9 +165,8 @@ export default function ConfiguratorPage() {
         // the rest — the hinge holes leave with the door and return with it.
         if (panel?.part === 'FRONT' && !panel.meta?.appliance) {
           e.preventDefault();
-          const res = removeFront(unit.id, panel.id);
+          removeFront(unit.id, panel.id);
           clearElement();
-          if (res) notify(res.scope === 'bay' ? 'Door removed from the bay.' : 'Doors removed.', 'ok');
           return;
         }
         const itemId = panel?.meta?.itemId;
@@ -175,15 +174,13 @@ export default function ConfiguratorPage() {
         e.preventDefault();
         removeItem(unit.id, itemId);
         clearElement();
-        notify(`${elementLabel(panel) || 'Piece'} removed.`, 'ok');
-        return;
+            return;
       }
       if (selectedUnitId) {
         e.preventDefault();
         removeUnit(selectedUnitId);
         clearSelection();
-        notify('Cabinet removed.', 'ok');
-      }
+          }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -360,7 +357,7 @@ export default function ConfiguratorPage() {
             to appear over whatever window the recompute happened in. */}
         <HandEditsModal />
         <ContextMenu />
-        <Toast />
+        <Messages />
       </div>
     </div>
   );

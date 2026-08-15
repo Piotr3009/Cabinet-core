@@ -45,7 +45,20 @@ export default function MenuBar({ menus }) {
             // Hover follows the open menu, the way a menu bar is expected to:
             // once one is open, sliding along the bar walks the others.
             onPointerEnter={() => { if (open && !menu.disabled) setOpen(menu.label); }}
-            onClick={() => setOpen(open === menu.label ? null : menu.label)}
+            // ─── TURN 33 (CLAUDE.md F1): A TOP-LEVEL ENTRY MAY BE A BUTTON ──
+            // A menu is DATA in this app, and a new KIND of entry is one
+            // branch — exactly as `divider` and `slider` arrived. An entry
+            // with `run` and no items ACTS instead of dropping down; the
+            // event is handed to the action (turn 12, rule 15) so what it
+            // opens can stand beside this very button.
+            onClick={(e) => {
+              if (menu.run && !menu.items?.length) {
+                setOpen(null);
+                menu.run(e);
+                return;
+              }
+              setOpen(open === menu.label ? null : menu.label);
+            }}
           >
             {menu.label}
             {menu.soon && <span className="cc-tag ml-1.5">soon</span>}

@@ -700,6 +700,37 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     get().refreshAutoParts();
   },
 
+  // ─── TURN 33 (CLAUDE.md F1): THE LIGHT'S OWN SETTERS ──────────────────────
+  //
+  // Everything goes through `setDesign`, so the light is stored, migrated and
+  // undoable exactly like every other project setting. An ITEM is a placed
+  // run — { unitId, kind, ref, depth_mm, count } — and its id is minted here,
+  // where every other id in this store is. LIGHTING DRILLS NOTHING: none of
+  // these reach a hole, a panel or a fixture.
+  setLighting: (patch) => {
+    const lighting = migrateDesign(get().project.design).lighting;
+    get().setDesign({ lighting: { ...lighting, ...patch } });
+  },
+  addLightingItem: (item) => {
+    const id = uid('led');
+    const lighting = migrateDesign(get().project.design).lighting;
+    get().setDesign({ lighting: { ...lighting, items: [...lighting.items, { ...item, id }] } });
+    return id;
+  },
+  updateLightingItem: (id, patch) => {
+    const lighting = migrateDesign(get().project.design).lighting;
+    get().setDesign({
+      lighting: {
+        ...lighting,
+        items: lighting.items.map((it) => (it.id === id ? { ...it, ...patch, id } : it)),
+      },
+    });
+  },
+  removeLightingItem: (id) => {
+    const lighting = migrateDesign(get().project.design).lighting;
+    get().setDesign({ lighting: { ...lighting, items: lighting.items.filter((it) => it.id !== id) } });
+  },
+
   /**
    * ─── Step 5's own setters (turn 11, CLAUDE.md F9) ───
    *

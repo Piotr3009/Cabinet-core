@@ -263,6 +263,15 @@ export default function TopBar({
     // Piotr; a button that opened a half-answer would be worse than one that
     // says "not yet".
     { label: 'Spraying', soon: true, disabled: true, hint: 'Spray finishing — a later phase' },
+    // ─── TURN 33 (CLAUDE.md F1): LIGHTING, BEFORE OUTPUT ─────────────────────
+    // A BUTTON, not a dropdown — it opens the Lighting panel beside itself
+    // (rule 5: draggable, beside, never covering). Its place in the bar is
+    // lib/topMenu.js MENU_ORDER, where the owner's order is data.
+    {
+      label: 'Lighting',
+      hint: 'LED strips, spots and the demo — placed in the scene, counted in the BOM',
+      run: (e) => openModal('lighting', { anchor: anchorOfEvent(e) }),
+    },
     // ── Output (turn 6, CLAUDE.md F1) ── built by lib/outputMenu.js, so its
     // shape is a thing a node test can look at rather than a thing inside a
     // component nobody mounts. Turn 11 moves it to the END of the bar (F7):

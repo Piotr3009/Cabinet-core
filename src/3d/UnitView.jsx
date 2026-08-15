@@ -25,6 +25,7 @@ import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
 import DrillRings from './DrillRings.jsx';
+import LedStrips from './LedStrips.jsx';
 
 // A stable empty list: a fresh [] would rebuild every panel solid on every
 // render.
@@ -1991,6 +1992,14 @@ export default function UnitView({
           <boxGeometry args={[mm(W), 0.006, mm(12)]} />
           <meshStandardMaterial color={profile.appearance.hardware.bracket} roughness={0.5} metalness={0.4} />
         </mesh>
+      )}
+
+      {/* ─── TURN 33 (CLAUDE.md F1): THE PLACED LEDs ─────────────────────────
+          Emissive geometry only, in the unit's own frame so the light rides a
+          moved or rotated cabinet. Not in contour view — that lens is outlines
+          only and a glowing strip is exactly what it exists to remove. */}
+      {!contour && (
+        <LedStrips unit={unit} result={result} design={design} />
       )}
 
       {/* Selection (turn 6, CLAUDE.md F5): a thin dashed navy box standing

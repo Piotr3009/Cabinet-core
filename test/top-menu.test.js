@@ -15,18 +15,21 @@ import { buildOutputMenu } from '../src/lib/outputMenu.js';
 
 const bar = (labels) => labels.map((label) => ({ label, items: [] }));
 
-test('the bar reads File · View · Library · Settings · Database · Spraying · Output', () => {
-  assert.deepEqual(MENU_ORDER, ['File', 'View', 'Library', 'Settings', 'Database', 'Spraying', 'Output']);
+// Turn 33 (CLAUDE.md F1): the owner's order gains LIGHTING, "placed BEFORE
+// Output" in as many words — Output still last, because it is what LEAVES.
+test('the bar reads File · View · Library · Settings · Database · Spraying · Lighting · Output', () => {
+  assert.deepEqual(MENU_ORDER, ['File', 'View', 'Library', 'Settings', 'Database', 'Spraying', 'Lighting', 'Output']);
 });
 
 test('menus handed over in any order come back in the owner’s', () => {
   // The order they are BUILT in is not the order they are shown in — the point
   // of putting this in data.
-  const built = bar(['File', 'View', 'Library', 'Settings', 'Database', 'Spraying']);
+  const built = bar(['File', 'View', 'Library', 'Settings', 'Database', 'Spraying', 'Lighting']);
   built.splice(1, 0, { label: 'Output', items: [] });     // where turn 6 had it
   const shown = orderMenus(built).map((m) => m.label);
   assert.deepEqual(shown, MENU_ORDER);
   assert.equal(shown[shown.length - 1], 'Output', 'Output is last');
+  assert.equal(shown[shown.length - 2], 'Lighting', 'Lighting stands before it');
 });
 
 test('nothing is dropped — a menu nobody has ordered keeps its place at the end', () => {

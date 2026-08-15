@@ -7,6 +7,8 @@ import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/
 // Turn 32 (CLAUDE.md F5): the invoice — materials per decor, ironmongery
 // with articles, yellow named specs where the registry does not know.
 import { ironmongerySummary, materialsSummary, readyBoxLines } from '../engine/bomInvoice.js';
+// Turn 33 (CLAUDE.md F1): the lighting block — yellow named specs throughout.
+import { lightingBomLines } from '../engine/ledStrips.js';
 import { registerLookup } from '../lib/hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
@@ -57,6 +59,14 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
     }),
     ...(readyBoxes ? readyBoxLines(entries) : []),
   ], [entries, bom, migrated, profile, materials, readyBoxes]);
+  // ─── TURN 33 (CLAUDE.md F1): THE LIGHTING BLOCK ──────────────────────────
+  // Its own section under the ironmongery, and the same rows ride the BOM CSV
+  // (lib/exporters.js) — metres per temperature, the driver, the switch, the
+  // spots. All yellow: the register knows no LED articles today (Q4).
+  const lightingLines = useMemo(
+    () => lightingBomLines({ entries, design: migrated, profile }),
+    [entries, migrated, profile],
+  );
   // "BOM warns at the top when Check holds a RED on any counted unit."
   const redFindings = useMemo(
     () => runChecks().filter((f) => f.level === 'red'),
@@ -199,6 +209,33 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                 it never blocks, and nothing is invented or dropped.
               </p>
             </section>
+
+            {/* ─── TURN 33 (CLAUDE.md F1): LIGHTING — metres, driver, switch, spots ── */}
+            {lightingLines.length > 0 && (
+              <section data-bom-lighting="1">
+                <h3 className="text-[10px] uppercase tracking-wide text-ink-400 mb-1">Lighting</h3>
+                <ul className="space-y-0.5">
+                  {lightingLines.map((l, i) => (
+                    <li
+                      key={`${l.role}-${i}`}
+                      className="flex items-baseline gap-2 border-b border-shell-700 py-0.5 text-status-warn"
+                      data-bom-line={l.role}
+                      data-bom-yellow="1"
+                    >
+                      <span className="flex-1">{l.label}</span>
+                      <span className="text-right whitespace-nowrap">{l.qty} {l.unit}</span>
+                      <span className="w-[170px] text-right text-[11px] whitespace-nowrap">
+                        {l.spec_label} · SPEC
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[10px] text-ink-400 mt-1">
+                  Lighting drills nothing and blocks nothing — every line is a named spec until the
+                  register knows the articles.
+                </p>
+              </section>
+            )}
           </div>
         ) : (
           <div className="p-3 space-y-3">

@@ -3446,6 +3446,55 @@ export const DEFAULT_CABINET_PROFILE = {
     sheet: { width: 2800, height: 2070 },
   },
 
+  // ─── TURN 33 (CLAUDE.md F1/F2): THE LED SYSTEM'S OWN NUMBERS ──────────────
+  //
+  // LIGHTING DRILLS NOTHING (rule 3): everything in this block is a picture in
+  // the 3D view and a NAMED SPEC line in the BOM — no number here reaches a
+  // hole, a cut or a fixture. The register knows no LED articles today, so
+  // every BOM line prints yellow until the owner names products (Q4).
+  lighting: {
+    // OWNER'S MENU, 15.08.2026: "3000 / 4000 / 6000 etc" — the list is his and
+    // EXTENDABLE here; a fourth temperature is one more row, not a code change.
+    // The hex is only the tint the VIEW paints the strip in.
+    temperatures: [
+      { k: 3000, label: '3000 K', hint: 'Warm white', hex: '#ffd9a8' },
+      { k: 4000, label: '4000 K', hint: 'Neutral white', hex: '#fff3e0' },
+      { k: 6000, label: '6000 K', hint: 'Cool white', hex: '#eaf4ff' },
+    ],
+    // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named one; 4000 K
+    // ships marked `owner to confirm 15.08` (Q-list travels with the PR).
+    defaultTemperature: 4000,
+    // The drawn strip's cross-section, view-only. `sideLineWidth` is the one
+    // number the OWNER gave (15.08.2026): "a 4 mm line, top to bottom" on the
+    // carcass side's interior face.
+    strip: {
+      width: 12,          // front-to-back, under a shelf / at a plinth line
+      thickness: 3,       // the strip's own height in the picture
+      sideLineWidth: 4,   // OWNER'S NUMBER, 15.08.2026 — the side line is 4 mm
+      // Where the depth slider STARTS for a fresh under-shelf strip, measured
+      // back from the shelf's front edge. Claude's seed, 15.08.2026 — the
+      // owner's ask is the SLIDER ("przesuwasz jak głęboko ma być led"), not
+      // this number; owner-tunable like every default in this block.
+      shelfDepthDefault: 30,
+    },
+    // Under-cabinet spotlights for KITCHEN WALL UNITS ("małe spotlighty w
+    // szafkach wiszących"). Diameter is the disc the VIEW draws; the count is
+    // where the per-unit stepper starts. Both view/BOM-only — no holes.
+    spot: { diameter: 55, defaultCount: 2 },
+    // How bright a placed strip glows in the ORDINARY working view — emissive
+    // only, no real light source (rule: do not tank the frame rate).
+    view: { emissive: 0.85 },
+    // ─── F2: "TURN ON THE LIGHT" — the client demo ────────────────────────
+    // OWNER-TUNABLE DEFAULTS, 15.08.2026 (the owner named the FEATURE, not
+    // the numbers): `dimFactor` scales every lamp of the studio rig down —
+    // the whole rig together, so the balance turn 26 computed does not move —
+    // and `emissiveBoost` is what the placed LEDs come UP by while it is on.
+    // Both derived at render time and never stored, which is what makes
+    // "toggling back restores exactly the previous scene state" true by
+    // construction.
+    demo: { dimFactor: 0.15, emissiveBoost: 2.6 },
+  },
+
   // ─── The room a unit stands in (turn 8, CLAUDE.md F3) ───
   // Not the room's SHAPE — that is the project's (engine/room.js). This is what
   // the workshop knows about walls in general.

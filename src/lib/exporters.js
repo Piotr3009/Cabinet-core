@@ -4,6 +4,9 @@ import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/
 import {
   buildBomCsvText, ironmongerySummary, materialsSummary, readyBoxLines,
 } from '../engine/bomInvoice.js';
+// Turn 33 (CLAUDE.md F1): the lighting block — yellow named specs, metres and
+// counts, never an invented article.
+import { lightingBomLines } from '../engine/ledStrips.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { registerLookup } from './hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
@@ -74,6 +77,10 @@ export function exportBomCsv({
       entries, bom, design: d, profile, materials, lookup,
     }),
     ...(ready ? readyBoxLines(entries) : []),
+    // ─── Turn 33 (CLAUDE.md F1): the LIGHTING block rides the same file ────
+    // Metres per temperature, the driver, the switch and the spots — every
+    // one a yellow NAMED SPEC until the register knows an article (Q4).
+    ...lightingBomLines({ entries, design: d, profile }),
   ];
   const csv = buildBomCsvText({ summary, ironmongery, warnings: redWarnings });
   download(

@@ -1,242 +1,257 @@
-# CLAUDE.md — TURN 32: WARDROBES
+# CLAUDE.md — TURN 33: LIGHT, THE WARDROBE'S INSIDES, AND THE DAY'S FAULTS
 
-Date issued: 15.08.2026. Previous turn: T31 (merged). A chat batch landed on
-main the same day; VERIFY IT FIRST: `src/engine/joinery.js` must contain the
-string `CHAT FIX 15.08.2026: THE SIDE LIES DOWN` and
-`src/engine/thickness.js` `drawerBoxGate` must return `{ blocked: false }`.
-If either is missing, STOP and report — the chat batch is not merged and this
+Date issued: 15.08.2026 (night run). Previous turn: T32 (merged, 947b4de) plus
+an evening CHAT BATCH that rebuilt wizard steps 4–5. VERIFY THE BATCH FIRST:
+`src/components/WizardSettings.jsx` must contain the string
+`data-carcass-container` and `src/engine/design.js` must contain `cncCorner`.
+If either is missing, STOP and report — the chat batch is not on main and this
 turn builds on it.
 
-The owner's direction for this turn, in his own words: kitchens pause;
-wardrobes are the next real project, "including BOM, because that is where we
-learn what BOM needs — and the kitchen inherits the fixes."
+The owner's direction, in his words: interior accessories and LIGHTING are the
+night's meat; L-shape, props and the JoineryCore sync are explicitly "na
+później". He also walked today's build and dictated a list of faults — they
+are features here, not footnotes, because each one is something he hit within
+minutes of testing.
 
 ## Iron rules for this turn
 
-1. **/engineering-discipline governs every feature.** The skill at
-   `.claude/skills` level is adopted project-wide as of today. In particular:
-   Step 4's CONSUMER SWEEP is mandatory — today's lesson twice over: a snap
-   fix died at `runnerModelFits` one call downstream, and a door-count rule
-   lived in the engine while the store pinned it dead. When you change what a
-   function answers, walk every reader of that answer to the end of the chain
-   before you commit.
+1. **/engineering-discipline governs every feature.** Step 4's CONSUMER SWEEP
+   is mandatory — this project's scar tissue: a snap fix died one call
+   downstream, a door rule lived in the engine while the store pinned it dead,
+   and a drawer side stood on end for fourteen turns because nobody measured
+   the scene. When you change what a function answers, walk every reader.
 2. **Engine purity.** Bare `computeCabinet()` = the AutoLISP; golden fixtures
    untouchable. Owner-standard behaviour goes through the OVERRIDE CHANNEL
    (profile/company/project → `paramsForEngine()`).
 3. **No hole without truth.** A drilled hole exists only where a LISP line or
-   a published pattern says so. Hardware articles come from the registry
-   (F6) or arrive as a named SPEC with no number — never invented.
-4. **Guards speak; they never silently fix.** The one sanctioned exception is
-   F3's auto-clearance, which is the OWNER'S OWN RULE for gaps ("po co
-   klientowi dupę zawracać") — and even it says what it did in a grey note.
-5. **Proof screenshots** in `verify/t32/`, each containing its named subject;
-   an empty frame fails the phase. Browser proofs on REAL pointer input where
-   a feature is interactive.
-6. **LIVE-SCENE PROOF for store/UI work.** For every feature that touches the
-   store or a component, the acceptance walk must MEASURE the running app the
-   way the audit now does: drive the real store (`window.__cc.project`), then
-   compare engine numbers against scene bounds per unit (`ccUnitId` on the
-   ancestors — panel ids collide between units). A green unit test on the
-   engine is not proof of the screen; the drawer side stood on end for
-   FOURTEEN TURNS because nobody measured the scene.
-7. All UI copy in English. Commit PER FEATURE, in order F1 → F9; a run that
-   dies early must leave a mergeable head.
-8. **F6 is the only SQL in this turn** and the package must be labelled
-   "SQL PRZED push" in the PR description, with the migration file path named.
+   a published pattern says so. LIGHTING DRILLS NOTHING in this turn — LED
+   strips, drivers, sensors and spots are BOM lines and 3D geometry only.
+   Anything the register does not know prints as a YELLOW named spec — never
+   an invented article number.
+4. **Guards speak; they never silently fix** — except rules that are the
+   owner's own written law (F5's clearance matrix, F6's behind-door setback),
+   which apply themselves and say so in a grey note.
+5. **All modals/panels draggable and opened BESIDE the clicked object**, never
+   covering it — the standing UI law. The new Lighting panel obeys it.
+6. **Proof screenshots** in `verify/t33/`, each containing its NAMED subject;
+   an empty frame fails the phase. Browser proofs on REAL pointer input.
+7. **LIVE-SCENE PROOF for store/UI work**: drive the real store
+   (`window.__cc.project`), compare engine numbers against scene bounds per
+   unit (`ccUnitId` on ancestors). A green unit test is not proof of the
+   screen.
+8. All UI copy in English. Commit PER FEATURE, F1 → F11; a run that dies
+   early must leave a mergeable head.
+9. **No SQL in this turn.** The hardware register (cc_hardware_register,
+   sql/005) already exists; unknown LED/mirror articles degrade to yellow
+   named specs, exactly as designed. Do not add migrations.
+10. **Full test suite** (`rm -rf node_modules && npm install && npm test`,
+    never `--silent`), vite build, and the CNC classifier vs main with
+    **0 named deltas expected** — every feature here is UI/store/BOM/3D or an
+    override-channel value; the bare engine must not move.
 
 ## Features
 
-### F1 [CRITICAL] — The wizard, step 4 rebuilt: one screen, no scrolling
+### F1 [CRITICAL] — LIGHTING: the owner's spec, verbatim
 
-The owner walked the current step 4 on a screenshot and dictated the shape.
-`NewProjectFlow.jsx` (steps exist: info · type · scope · room · settings) —
-the SETTINGS step becomes:
+The owner has now dictated the whole system (15.08, evening). Build exactly
+this; his eye-test is the acceptance.
 
-1. **Top row**: Number · Client · Type — type is a LABEL here (chosen in step
-   2), never a second dropdown.
-2. **Saved settings sets**: a LOAD list at the top ("Skylon standard",
-   "Herbal standard"…), not only "Keep as…". Loading a set fills THIS step
-   and step 5 (F2) completely. A set is every setting on both screens.
-3. **Dimensions, per project type.** For a Wardrobe project: `Default height
-   of wardrobe` + `Plinth height` (default 100) + a LIVE line
-   `total item = wardrobe + legs = X mm`. Guards:
-   * total > room height → error, cannot continue;
-   * room − total < 40 mm → a QUESTION: "To the ceiling, with no infill?"
-     with the warning the owner dictated: "an infill can be scribed to the
-     ceiling's real shape — ceilings are rarely straight."
-   * **Depth seed follows the PROJECT TYPE**: `projectDepth()`
-     (engine/projectSettings.js:148) answers `profile.baseUnit` (558) for
-     every project today — a Wardrobe project must seed from
-     `profile.wardrobe.defaults.depth` (568). One function, read by the
-     wizard row and by `addUnit`; fix it at the source, not in the wizard.
-4. **FRONTS BEFORE MATERIALS** — the owner's explicit order: shape first,
-   colour second. "How many front types in this project? [1] [2] [3]"
-   (kitchens get the same three), then per slot the EXISTING 8-style gallery
-   (Shaker · Flat · Handleless J-type · Grooved · Grooved with frame ·
-   Arched · Arched handleless · Glass — it exists with its parameters;
-   wire it in, do not rebuild it).
-5. **Materials**: the mock swatches (broken white, light grey…) are DELETED.
-   One picker = EGGER tiles ∪ stock materials. `Generic` stays, with the
-   yellow warning it already has. **No assignment → Start designing stays
-   disabled** — choosing generic IS an assignment; choosing nothing is not.
-6. **Sheen** after colours. Ironmongery is NOT here — it is step 5 (F2).
+**Where it lives.** A **`Lighting`** button in the top menu, placed **BEFORE
+`Output`**. It opens the Lighting panel (draggable, beside — rule 5). The
+panel's flow, top to bottom:
 
-### F2 [CRITICAL] — Hardware as its own step 5
+1. **ON / OFF** for the project (`design.lighting.enabled`, default off).
+2. When ON: the **placement tools** (below) and the **choices**:
+   * **Colour temperature**: 3000 K · 4000 K · 6000 K (extendable list —
+     "etc" is his word; ship the three, profile-listed). Default 4000 K,
+     one profile line marked `owner to confirm 15.08`.
+   * **Switching**: for a WARDROBE project — `At the door` / `Sensor`; for a
+     KITCHEN project — `Touchless` (the owner: "kuchnia bezdotykowy").
+     Stored per project (`design.lighting.switch`), the sensible one
+     pre-selected by project type.
+3. **Information + visual instruction** — his explicit ask: "pod tym menu
+   będzie też sporo informacji i może nawet jakaś wizualna instrukcja".
+   Each placement kind gets a small instructional SVG mockup in the panel
+   (the CornerArt grammar from the wizard): shelf-underside diagram with the
+   depth arrow, the side 4 mm line, bottom-at-plinth, top-wash.
 
-The owner: settings screens that scroll get half-read and mis-filled; the
-client-facing choices and the workshop choices are two different heads.
-New wizard step after settings, small and always fully pre-filled from the
-saved set / defaults:
+**Placement kinds** (each an item in `design.lighting.items[]`, shape
+`{ id, unitId, kind, ref, depth_mm?, length_mm (derived), … }`):
 
-* **Metal colour**: chrome / onyx / gold — writes the existing family choice
-  (`design.hardware.shelfSleeve` cascade; the rail already follows it).
-* **Soft-close**: yes / no. Default **[OWNER — unanswered; ship YES and mark
-  the profile line `soft-close default — owner to confirm 15.08`]**.
-* **Plinth**: read-only summary line — plinth height from step 4, and the
-  automatic materials line: clips + clip connectors counted **from FRONT
-  legs only** (the engine counts legs; front legs = the row at z ≈ front).
-  Unassigned plinth material shows the default with the word "(default)".
-* Nothing else. Under ten seconds for a returning user.
+* **SHELF** — the owner's interaction, exactly: the user CLICKS A SHELF in
+  the scene (the hover/pick machinery exists) → "Add LED under this shelf" →
+  the strip appears under that shelf → a **depth slider** ("przesuwasz jak
+  głęboko ma być led") positions it front-to-back. Length = the shelf's
+  clear width.
+* **SIDE** — a **4 mm line, top to bottom** of the carcass side, on the
+  interior face. The instructional mockup shows it.
+* **BOTTOM** — under the cabinet, at the plinth line ("pod szafą koło
+  plinth").
+* **TOP** — above the cabinet, washing upward ("nad szafą w górę") — the
+  wardrobe-to-ceiling wash.
+* **SPOT** — small spotlights in KITCHEN WALL UNITS ("małe spotlighty w
+  szafkach wiszących"): per-unit count, evenly spaced under the wall unit.
 
-**The hardware AUTOMAT behind it** (engine, not wizard): the rule table that
-already picks hinge angles (`hingeAngleFor`: thick front → 95°, internal
-drawer → 155°, standard → 110°) extends to pick the ARTICLE: angle + metal +
-soft-close → one row from the registry (F6). Corner units and thick fronts
-are ROWS IN THE TABLE, not special code. Per-door exceptions stay where they
-are (DoorModal, "Assign other hinge" — already shipped).
+**3D.** Strips are thin emissive geometry (tinted by the chosen temperature);
+spots are small emissive discs. No real-time light sources in normal view —
+emissive only; F2 is where they shine. Do not tank the frame rate.
 
-### F3 [CRITICAL] — Front gaps become SELF-HEALING
+**BOM.** A `Lighting` block: strip METRES per run (per temperature), driver /
+PSU line, switch or sensor line, spot count. Articles: the register knows
+none of these today → every line is a YELLOW named spec ("LED strip 4000 K ·
+2.4 m", "driver", "touchless switch") — rule 3. Nothing blocks.
 
-Owner's verdict on T31's modal: "why bother the client — gaps should fix
-themselves." The T31 matrix (frontClearance.js — the numbers stay law)
-changes MODE:
+**Proofs**: one screenshot per kind with the strip visibly placed and named;
+the shelf flow proven with a REAL click on a shelf and the slider moved;
+BOM screenshot with the yellow lighting block.
 
-* The matrix is APPLIED, not offered: on unit creation, on a neighbour
-  appearing/disappearing, on resize — the front's width corrects itself on
-  the correct edge (asymmetry law and the 21.5 cups ride exactly as T31
-  built them).
-* Every self-correction announces itself as a GREY note ("front 02-F −1.5 mm
-  at the end panel"), never a question.
-* The RED modal survives ONLY where auto has no move: front at its minimum,
-  appliance pinned on both sides. That is Check's job (#2/#11 stay).
-* **Known faults to fix while in here** (owner's testing, 15.08): the matrix
-  is not applied for all unit types — he still sees 1.5/1.5 where a panel
-  neighbour demands 3.0; and DIMENSION LABELS OVERLAP when two gap figures
-  sit close — collision-offset the labels.
+### F2 [CRITICAL] — "Turn on the light": the client demo
 
-### F4 [CRITICAL] — ZONES: the wardrobe's columns
+Pairs with F1. A toggle (`Turn on the light`) in the Lighting panel AND in
+the View menu: the scene environment dims (drop exposure / env intensity to a
+profile-listed demo level) and every placed LED's emissive comes UP. Toggling
+back restores exactly the previous scene state. Proof: the same camera, one
+screenshot pair off/on, visibly different, strips glowing.
 
-The single biggest piece. A vertical partition (rename its label to
-"Vertical partition (divider)") divides the interior into COLUMNS, and each
-column lives independently:
+### F3 [HIGH] — The wardrobe's interior accessories
 
-* per column: shelves / hanging rail / drawers / empty;
-* drawer widths and fronts are computed FROM THE COLUMN'S WALLS (side panel
-  and/or partition), not from the cabinet — boxes, runners, fronts, drilling
-  all follow the column;
-* the drawer zone the engine builds today (bottom, full width, DP + fillers
-  per the LISP) remains the DEFAULT when no partition exists — golden
-  fixtures must not move;
-* **drawers in/out per drawer**: the mechanism exists (T30 F20 built
-  `front: none` + setback for PANTRY internal drawers) — wire it to the
-  wardrobe: AddItems asks overlay/internal (today it HARDCODES 'overlay' at
-  AddItems.jsx:72 and store:138 — the owner set "internal" and nothing
-  listened), the engine honours per-item `mount`, and internal drawers hide
-  behind the doors, revealed when a front opens (the BACKLOG #13 hook
-  exists).
-* **The recessed-partition law** (owner, 15.08): drawers in a column require
-  that column's walls FULL DEPTH at the runner band. `partition_front_mm`
-  exists (store:3945) — adding drawers to a column whose partition is
-  recessed refuses with the number and one button: **[Reset the setback]**
-  (opens the partition editor, F7-pattern). A guard that SPEAKS.
+Each item classified by the standing doctrine (what we CUT vs what we BUY):
 
-### F5 [CRITICAL] — BOM the workshop can invoice from
+| Item | Nature | Cut / bought |
+|---|---|---|
+| **Shoe shelf** | GEOMETRY — tilted shelf, default 15° (profile line, owner-tunable), with a front stop rail (listwa) | Shelf + rail are CUT. No new hole pattern: it rests on the STANDARD pin rows, the front pair set lower — the workshop's own way. |
+| **Shoe drawer** | drawer variant (low box) | box CUT; insert = BOM named spec |
+| **Belt/tie drawer** | low drawer + divider insert | box CUT; insert = BOM named spec |
+| **— glass-top variant** | display drawer: frame + glass | frame CUT; glass = BOM line `Glass W×H` |
+| **Trouser pull-out** | BOUGHT mechanism | BOM named spec + GLB slot; ZERO holes without a published pattern |
+| **Tie rack** | BOUGHT mechanism | BOM named spec + GLB slot |
+| **Pull-down rail** | BOUGHT mechanism | BOM named spec + GLB slot. RULE: when a column's hanging rail sits **> 2000 mm from the floor**, the UI SUGGESTS the pull-down (a grey hint, never a block). |
 
-The owner's words: wardrobes go first "including BOM — that is where we
-learn what BOM needs." Two blocks, one export:
+They live in the WARDROBE library (T32's project-type filter already scopes
+it), placeable per COLUMN through the existing AddItems/zones flow. GLB slots
+follow the cargo/hood grammar: geometry box + BOM + a slot that loads the
+model the day the owner supplies the file — a labelled placeholder until
+then. Proofs: each item placed in a column, screenshot named; BOM lines
+visible; the >2000 hint proven live.
 
-* **Materials summary**, per decor: m² net → +waste % → ~sheets (a DIVISION
-  with the label "~N sheets of 2800×2070", never a cutting plan — nesting is
-  explicitly parked) → edging metres per decor and thickness. FRONTS listed
-  SEPARATELY from carcasses (often another decor, often another supplier).
-  Waste % and sheet size are profile numbers **[OWNER — unanswered; ship 15%
-  and 2800×2070, both marked `owner to confirm`]**.
-* **Ironmongery, counted with articles**: hinges (pcs + plates) via the F2
-  automat; runner PAIRS with their nominal length (snap already answers the
-  length — order the snapped article); hanging rail by the metre + supports;
-  legs; plinth clips + connectors from FRONT legs; shelf supports;
-  confirmats/screws from the drilling counts. Anything the registry (F6)
-  does not know prints as a YELLOW named spec line — never invented, never
-  silently dropped.
-* Ready-made drawer boxes (F7) appear as PURCHASE LINES, and their box
-  parts do NOT appear as cut parts.
-* Export: CSV named `{ProjectName}-bom-{DDMM-HHMM}.csv` (T31 F5's pattern).
-* BOM warns at the top when Check holds a RED on any counted unit.
+### F4 [HIGH] — Mirrors on doors
 
-### F6 [HIGH] — The hardware REGISTRY (the only SQL) — "SQL PRZED push"
+Per-door property: `none / inside / outside` (DoorModal). Visual: a mirror
+plane on the chosen face — high env reflection, thin inset margin. BOM: one
+line per mirrored door, `Mirror W×H`, sized front minus a margin of 20 mm a
+side (ONE profile line, marked `owner to confirm 15.08`). NO holes — mirrors
+are bonded, not drilled; say so in a comment. Proof: three screenshots
+(inside, outside, BOM line), inside-mirror proven with the door OPEN.
 
-The owner's ruling: CabinetCore keeps a registry of EXISTENCE, never of
-stock. Stock lives in JoineryCore; we export to it later (parked).
+### F5 [HIGH] — Clearance self-healing: the sweep it missed
 
-* Table `cc_hardware_register`: `category (hinge|runner|leg|clip|rail|…)` ·
-  `family` · `finish` · `variant (soft|std)` · `angle` · `article` ·
-  `source (own|joinerycore)` · `label`. RLS on, like every other table.
-* Registered = the automat resolves an article. Unregistered = the yellow
-  BOM line (F5). NOTHING BLOCKS on the registry — it informs.
-* Seed: the MOVENTO manifest's 40 articles and the Blum hinge articles the
-  hinge catalogue already carries, imported once by a script.
-* Graceful degradation is the iron rule: mock mode / no table → every lookup
-  answers null → yellow lines, app fully alive.
+Owner, today: "nadal pokazuje 1.5 mm między szafami" where a neighbour
+demands 3.0. T32-F3 made the matrix self-apply, but not on every path. Do the
+CONSUMER SWEEP properly: enumerate EVERY path that creates or re-shapes a
+unit or its neighbourhood — addUnit, kit builders (D/W, oven, sink…),
+duplicate, drag-reorder, resize, neighbour add/remove, wall edit — and prove
+the matrix runs on each. Add a test matrix: unit type × neighbour type ×
+path. The grey self-correction note must appear each time. Fixtures
+untouched: the matrix is app-layer law, not bare-engine law.
 
-### F7 [HIGH] — Ready-made drawer boxes
+### F6 [HIGH] — Drawers in a column BEHIND DOORS: the missing 30
 
-The wizard's materials block (F1.5) asks once per project:
-`Drawer boxes: (•) Same board as carcass  ( ) Ready-made system`.
-Same-board is the default and is ALREADY the engine's behaviour since
-today's chat fix (box inherits the confirmed carcass thickness; a hand-set
-box number still wins). Ready-made: box sides/bottom/back leave the cut
-list, a purchase line appears in BOM (F5), fronts stay ours. The engine
-keeps computing the box GEOMETRY (the drawer still exists in 3D and the
-front still needs its drilling) — only the CUTTING and the BOM change.
+Owner, today: put drawers between a vertical divider and the doors and "nie
+wstawiają automatycznie 30 mm infila i nie odsuwa szuflady — patrz szafy bez
+dividera". The no-divider wardrobe already carries the behind-door law (the
+setback/infill that keeps boxes clear of the door's swing). Find THAT rule at
+its source and make the COLUMN path read the SAME source — one law, two
+readers, zero divergence. A column with doors in front behaves exactly like
+the doored wardrobe always has. Live-scene proof: same wardrobe, drawers in
+a doored column, measured box front vs door plane = the same clearance the
+no-divider case gets.
 
-### F8 [MEDIUM] — Library filtered by project type
+### F7 [HIGH] — DoorModal: one hinge block, and handles measured from the EDGE
 
-Cargo units, bins, pull-outs are KITCHEN items; a Wardrobe project's library
-shows wardrobe things. The category data exists (`UNIT_CATEGORIES`); add the
-project-type filter with "Show all" as the one-click way past it (the same
-grammar the item filter learned in T11 F4.4). No hard blocks.
+Two owner findings, one modal:
 
-### F9 [MEDIUM] — Handle preview, the owner's drawing
+1. **The duplicate hinge block.** The modal shows hinge controls in TWO
+   places. The owner: "ten górny usuń" — DELETE the upper block; the LOWER
+   one (the arrow mover + the hinge picker) is the one that works — MOVE IT
+   UP to where the deleted one sat. One block, at the top.
+2. **Handle offset is edge-relative and MIRRORED.** Today "move left" shifts
+   BOTH handles of a door pair left — 60/40 instead of 50/50. The owner's
+   law: the offset is measured **from the door's own handle edge** and
+   mirrors for a left/right pair — "30" means 30 from the LEFT edge on the
+   left door and 30 from the RIGHT edge on the right door. This reaches the
+   HANDLE DRILLING — consumer-sweep it to the drawing, the 3D and the CNC
+   export. The blue CAD dims (T32-F9) label the edge distance accordingly.
+   Migration: stored offsets are reinterpreted as edge-offsets (dated
+   comment); golden fixtures must not move — if any fixture encodes the old
+   absolute behaviour, STOP and report rather than touch it.
 
-His screenshot is the spec: on hover/selection the handle shows CAD-style
-dimension lines with arrowheads — offset from the top edge (e.g. 50), offset
-from the side edge (e.g. 30), and the HOLE SPACING (e.g. 160) between the
-two drill centres — in the drawing-office blue, replacing the single orange
-number T31 F7 shipped. The aura (catchment) stays; only the label changes.
-Add a GLOBAL toggle "Front dimensions" in the View menu (today it lives only
-inside the door modal).
+### F8 [HIGH] — The shaker frame width returns to the wizard
+
+The chat rebuild lost the field. `design.fronts.shakerFrame` (T25: equal on
+all four sides, 10–200, profile default 70) is alive in the engine — the UI
+control vanished. Put it in the FRONT SLOT CARD of the wizard, visible ONLY
+when that slot's style is Shaker: label `Frame width (all shaker fronts)` —
+it writes the PROJECT-WIDE field, and the label says so. Placement is
+Claude's proposal accepted by silence — marked `[OWNER — placement to
+confirm]` in a comment. Proof: wizard screenshot with a Shaker slot showing
+the field; a non-Shaker slot NOT showing it; the value reaching the scene.
+
+### F9 [HIGH] — The MOVENTO ladder: the owner's list, at last
+
+The owner's list (15.08): lengths **every 50 mm up to 600**. Lower bound: his
+message read "od 00" — shipped as **300** (300 · 350 · 400 · 450 · 500 · 550
+· 600), ONE profile line marked `owner to confirm 15.08 — lower bound read
+as 300`. Wire it: the runner-length SNAP (snap-to-nominal-below, from the
+15.08 chat zip) snaps to THIS ladder; the BOM orders the snapped length; a
+length outside the ladder prints yellow. This closes the long-parked
+"wyrównanie drabinki długości prowadnic — czeka na listę MOVENTO". Consumer
+sweep: `runnerModelFits` and every other reader of the old catalogue list.
+
+### F10 [MEDIUM] — Shelf pins: default 50, the control goes
+
+Owner: "piny do półek default 50 mm bez ustawiania — kiedyś było ustawiane,
+teraz już nie trzeba." The override channel exists (T30-F5,
+`shelves.pinSetback`): set the PROFILE's answer to **50** with a dated
+comment naming the owner; REMOVE the UI control (SettingsPanel field); the
+design field stays for saved projects. The BARE ENGINE stays at 70 — that is
+what the LISP drills and what every golden fixture holds. Honest note in the
+profile comment: app DXF now drills 50 while the workshop's own LISP macros
+drill 70 — the owner's declared standard; the day the LISP moves to 50 the
+bare engine follows it.
+
+### F11 [LOW] — Ready-made drawer INSERTS, catalogued (stretch)
+
+T32 shipped the ready-made BOX mode; the INSERTS (cutlery, tie dividers…)
+are still free-text specs. If time remains: a small profile-listed insert
+catalogue (label + nominal widths) feeding the BOM line. If time does not
+remain, skip cleanly — nothing depends on it.
 
 ## Open questions travelling WITH the push (answer in the PR description)
 
-* Q1 — soft-close default yes? (F2 ships YES, marked.)
-* Q2 — waste % (F5 ships 15) and sheet size (ships 2800×2070)?
-* Q3 — fronts from another supplier: should the BOM split materials by
-  SUPPLIER as well as decor, or is decor enough for now?
+* Q1 — MOVENTO lower bound: shipped 300 (his "od 00" read as 300) — correct?
+* Q2 — Shaker field placement: in the Shaker slot's card, project-wide label
+  — as shipped?
+* Q3 — A fresh vertical partition still BORN with the 20 mm setback (T32
+  observation): should a wardrobe partition be born FULL DEPTH? (One line.)
+* Q4 — LED articles: all lighting BOM lines ship as yellow named specs;
+  register rows to be added when the owner names products.
 
 ## Parked — do NOT start
 
-Nesting/cutting optimisation (the owner: "m² is enough, nesting is a deep
-well") · hood unit rework (owner: "masakra, wrócimy") · sliding doors ·
-L-shape joints and corner handle-reach · appliance GLBs (files arrive from
-the owner) · mirrors on doors, interior accessories (shoe shelves, tie
-drawers), lighting/LED, "turn on the light" demo, clothes props — ALL of it
-is T33 · MOVENTO ladder alignment (waits on the owner's real length list —
-the snap already covers the gap) · per-family hinge fold axes ·
-`71B3550_43192717` re-export · EGGER licence e-mail = BLOCKER #44.
+L-shape joints + corner handle-reach (owner: "zostaw na teraz") · clothes/
+shoe PROPS GLB · JoineryCore full sync, `71B3550_43192717` re-export,
+per-family hinge fold axes (owner: "6, 7 i 8 zostaw na później") · appliance
+GLBs (slots ready — WAITING ON THE OWNER'S FILES) · sliding doors · nesting ·
+hood rework · sheen per-slot vs global (open [OWNER] from the wizard
+rebuild) · sprayed-carcass one-colour-per-project (open [OWNER]) · library
+"Kitchen as top level" re-grouping (discussion pending) · EGGER licence
+e-mail = BLOCKER #44 (before any public demo or sale).
 
 ## Owner-tunable defaults written in this turn
 
-soft-close default (F2, marked) · waste % 15 and sheet 2800×2070 (F5,
-marked) · wardrobe project depth seed 568 (F1) · ceiling-gap question
-threshold 40 mm (F1) · every one of them ONE profile line with a comment
-naming 15.08.2026 and the owner as the source.
+LED default temperature 4000 K (F1, marked) · demo dim level (F2) · shoe
+shelf tilt 15° (F3) · mirror margin 20 mm/side (F4, marked) · pull-down
+suggestion threshold 2000 mm (F3) · MOVENTO ladder 300–600/50 (F9, lower
+bound marked) · shelf-pin profile answer 50 (F10, dated, with the LISP-70
+divergence note) — every one of them ONE profile line with a comment naming
+15.08.2026 and the owner as the source.

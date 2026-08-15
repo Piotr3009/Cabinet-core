@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── TURN 30 F12 — "…and SHOW THE VALUE" ────────────────────────────────────
 //
@@ -34,7 +35,7 @@ export default function FrontGapWarnings() {
   const colour = getCabinetProfile().appearance.frontGapWarning.colour;
   return (
     <div
-      className="absolute left-3 bottom-3 z-20 pointer-events-none max-w-[26rem] space-y-1"
+      className={`absolute left-3 bottom-3 ${LAYER_CLASS.panel} pointer-events-none max-w-[26rem] space-y-1`}
       data-front-gap-warnings={rows.length}
     >
       {rows.map((c) => (

@@ -116,7 +116,14 @@ test('F2 the window is called Door and carries section A and section B', () => {
   // the same three lines every modal in this app is placed by.
   assert.equal((DOOR.match(/<Modal\b/g) || []).length, 1, 'one window, not two nested');
   assert.match(DOOR, /anchor=\{anchor\}/);
-  assert.match(DOOR, /args\?\.anchor \|\| anchorAtPoint\(args\?\.at\?\.x, args\?\.at\?\.y\)/);
+  // ─── TURN 31 (CLAUDE.md F1) ──────────────────────────────────────────────
+  // Turn 30 asserted that THIS component reconciled turn 11's `{ at }` with
+  // turn 12's `{ anchor }`. It no longer does, and that is the improvement:
+  // the conversion happens once, in the store's own opener
+  // (lib/modalLayer.js `withModalAnchor`), so the window reads one field. The
+  // property under test is unchanged — this door opens BESIDE the click.
+  assert.match(DOOR, /const anchor = useMemo\(\(\) => args\?\.anchor \|\| null/);
+  assert.doesNotMatch(DOOR, /anchorAtPoint/);
 });
 
 test('F2 section A is turn 11’s element window, whole', () => {

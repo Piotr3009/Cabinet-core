@@ -33,7 +33,7 @@ const PLAN_H = 260;
  * stays the existing one instead of becoming a second room editor to keep in
  * step. Left out, both fall back to what turn 3 did.
  */
-export default function RoomModal({ onClose = null, onApplied = null }) {
+export default function RoomModal({ onClose = null, onApplied = null, anchor: anchorProp = null }) {
   const room = useProjectStore((s) => s.project.room);
   const units = useProjectStore((s) => s.units);
   const setRoom = useProjectStore((s) => s.setRoom);
@@ -42,7 +42,12 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
   const closeFromStore = useUiStore((s) => s.closeModal);
   // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
   // Nothing to work out here — the opener said, and the shell places it.
-  const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
+  // Turn 31 (CLAUDE.md F1): a prop wins, exactly as `onClose` does. This window
+  // is opened two ways — from the store as a top-level modal, and IN PLACE as a
+  // step of the new-project flow — and the second one has no `modalArgs` to
+  // read. One window, one shell, one anchor, whichever door it came in by.
+  const anchorFromStore = useUiStore((s) => s.modalArgs?.anchor) || null;
+  const anchor = anchorProp || anchorFromStore;
   const closeModal = onClose || closeFromStore;
   const notify = useUiStore((s) => s.notify);
 
@@ -314,6 +319,7 @@ export default function RoomModal({ onClose = null, onApplied = null }) {
 
   return (
     <Modal
+      name="room"
       anchor={anchor}
       title="Room setup"
       onClose={closeModal}

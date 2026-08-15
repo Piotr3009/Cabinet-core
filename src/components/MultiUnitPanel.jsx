@@ -10,6 +10,7 @@ import { doorExtendMm } from '../engine/doors.js';
 import { corniceOption, takesCornice } from '../engine/cornice.js';
 import { formatMm } from '../engine/format.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── The panel over MANY cabinets (turn 13, CLAUDE.md F5.2) ─────────────────
 //
@@ -128,7 +129,7 @@ export default function MultiUnitPanel({ ids, onClose }) {
   };
 
   return (
-    <aside className="absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 z-20 flex flex-col">
+    <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
       <div className="flex items-center px-3 py-2 border-b border-shell-600">
         <h2 className="text-sm text-ink-50 flex-1" data-multi-count={selected.length}>
           {selected.length} cabinets

@@ -29,6 +29,7 @@ import {
   SNAP_KINDS, drawingDimensionRows, placeByNumber, snapAt, snapGeometry,
 } from '../engine/partSnap.js';
 import { usePartSnapStore } from '../stores/partSnapStore.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── The element DETAIL window (turn 14, CLAUDE.md F7) ──────────────────────
 //
@@ -324,6 +325,7 @@ export default function PartDetailModal() {
 
   return (
     <Modal
+      name="part-detail"
       anchor={args?.anchor || null}
       title={(
         <span className="flex items-center gap-2">
@@ -797,7 +799,7 @@ function PartDrawing({
     <div ref={wrapRef} className="w-full h-full relative">
       <button
         type="button"
-        className="absolute right-1 top-1 z-10 cc-btn-ghost text-[11px] px-1.5 py-0.5"
+        className={`absolute right-1 top-1 ${LAYER_CLASS.inPanel} cc-btn-ghost text-[11px] px-1.5 py-0.5`}
         data-part-fit="1"
         title="Fit the part to the window (or double-click the drawing)"
         onClick={view.fit}
@@ -1104,7 +1106,7 @@ function PartDrawing({
           cancels the ENTRY, not the tool. */}
       {typed !== null && (
         <div
-          className="absolute z-20 flex items-center gap-1 rounded border border-gold bg-shell-800 px-1 py-0.5 shadow"
+          className={`absolute ${LAYER_CLASS.panel} flex items-center gap-1 rounded border border-gold bg-shell-800 px-1 py-0.5 shadow`}
           data-typed-entry="1"
           // Kept INSIDE the window. The drawing sits in an `overflow-hidden`
           // frame, so a floating box that ran past its edge would be clipped —
@@ -1140,7 +1142,7 @@ function PartDrawing({
           stamps repeatedly." */}
       {drillPopover && (
         <div
-          className="absolute z-20 rounded border border-gold bg-shell-800 p-2 space-y-1 shadow"
+          className={`absolute ${LAYER_CLASS.panel} rounded border border-gold bg-shell-800 p-2 space-y-1 shadow`}
           data-drill-popover="1"
           // WHERE STAMPING WILL PUT IT. The popover holds a point that was
           // decided before it opened — by the click, or by F2.5's typed

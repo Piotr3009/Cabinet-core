@@ -6,6 +6,7 @@ import { useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES } from '../stores
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
 import { formatMm } from '../engine/format.js';
 import { resolveFinishes } from '../engine/design.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 
 // SPEC 4.11 — the BOM is computed LIVE from the current state at all times;
@@ -50,7 +51,7 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
   const hardwareChoices = materials.filter((m) => m.category === 'hardware');
 
   return (
-    <aside className="absolute right-0 top-0 bottom-0 w-[560px] cc-panel rounded-none border-y-0 border-r-0 z-30 flex flex-col">
+    <aside className={`absolute right-0 top-0 bottom-0 w-[560px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
       <div className="flex items-center px-3 py-2 border-b border-shell-600 gap-2">
         <span className="text-xs uppercase tracking-wide text-ink-200">Bill of materials</span>
         <span className="cc-tag">live</span>

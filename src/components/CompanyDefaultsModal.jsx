@@ -84,6 +84,7 @@ export default function CompanyDefaultsModal() {
 
   return (
     <Modal
+      name="company-defaults"
       anchor={anchor}
       title="Company defaults"
       onClose={closeModal}

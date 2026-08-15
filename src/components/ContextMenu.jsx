@@ -6,6 +6,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { getUnitType } from '../engine/types.js';
 import { groupedActions, menuActions } from '../lib/contextActions.js';
 import { formatMm } from '../engine/format.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
 import { anchorOfElement } from '../lib/modalAnchor.js';
 
@@ -263,7 +264,7 @@ export default function ContextMenu() {
   return (
     <div
       ref={box}
-      className="fixed z-50 w-[180px] cc-panel py-1"
+      className={`fixed ${LAYER_CLASS.menu} w-[180px] cc-panel py-1`}
       // Hidden for exactly one frame: the placement has to MEASURE the menu, and
       // a menu drawn at the raw pointer position first would flash off the
       // bottom of a short screen before it corrected itself.

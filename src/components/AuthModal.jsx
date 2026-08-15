@@ -54,7 +54,13 @@ export default function AuthModal() {
   };
 
   return (
-    <Modal title="Account & projects" onClose={closeModal} anchor={anchor} width="w-[460px]">
+    <Modal
+      name="auth"
+      title="Account & projects"
+      onClose={closeModal}
+      anchor={anchor}
+      width="w-[460px]"
+    >
       {isMockMode ? (
         <div className="space-y-3">
           <p className="text-sm text-ink-100">Running in <span className="text-status-warn">Mock data mode</span>.</p>

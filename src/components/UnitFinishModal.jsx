@@ -73,6 +73,7 @@ export default function UnitFinishModal() {
 
   return (
     <Modal
+      name="unit-finish"
       anchor={anchor}
       title={title}
       onClose={closeModal}

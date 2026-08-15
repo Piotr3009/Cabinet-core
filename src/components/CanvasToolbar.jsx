@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── Canvas toolbar ───
 // The controls that act on the DRAWING, sitting on the drawing (CLAUDE.md turn
@@ -62,7 +63,7 @@ export default function CanvasToolbar() {
   const redo = useHistoryStore((s) => s.redo);
 
   return (
-    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-shell-800/95 border border-shell-600 rounded px-1.5 py-1 shadow-lg">
+    <div className={`absolute top-3 left-1/2 -translate-x-1/2 ${LAYER_CLASS.panel} flex items-center gap-1.5 bg-shell-800/95 border border-shell-600 rounded px-1.5 py-1 shadow-lg`}>
       {/* First on the bar, where a hand reaching for "no, not that" goes. */}
       <button
         type="button"

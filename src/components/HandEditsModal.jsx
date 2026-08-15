@@ -57,6 +57,7 @@ export default function HandEditsModal() {
 
   return (
     <Modal
+      name="hand-edits"
       title="This part carries manual edits"
       onClose={() => setDismissed(key)}
       width="w-[460px]"

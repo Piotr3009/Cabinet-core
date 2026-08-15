@@ -5,6 +5,7 @@ import { applySelection, primaryOf } from '../lib/selection.js';
 import {
   closeNav, openNav, popNav, pushNav,
 } from '../lib/editorStack.js';
+import { modalAnchorFault, withModalAnchor } from '../lib/modalLayer.js';
 
 // ─── UI state ───
 // Panel geometry, selection and the editor's snap step. Nothing here is
@@ -104,6 +105,44 @@ const nextNav = (nav) => ({
   // that is no longer on screen.
   viewSnapshot: null,
 });
+
+// ─── TURN 31 (CLAUDE.md F1): THE SHELL'S OWN DOOR ───────────────────────────
+//
+// Every window in the app arrives through `openModal` / `pushModal`, so the two
+// things F1 asks for that are not the shell's own drawing happen HERE, once:
+//
+//   • a click point becomes an ANCHOR. Turn 11's `{ at: {x, y} }` and turn 12's
+//     `{ anchor: rect }` were reconciled in four different components, each with
+//     its own line; now they are reconciled on the way in, and a modal reads
+//     `args.anchor` and nothing else.
+//
+//   • a modal that is ABOUT AN OBJECT and was opened without one is NAMED.
+//     Rule 4: the guard speaks, it never silently fixes. Nothing is invented,
+//     the window still opens (a window that refuses to open because its opener
+//     forgot an argument is a window nobody can use) — the fault is recorded
+//     on the store and printed once, and the fix belongs in the caller.
+const modalFaults = [];
+
+/** Normalise the args and record any fault. Returns the args to store. */
+function throughTheShell(name, args) {
+  const next = withModalAnchor(args);
+  const fault = modalAnchorFault(name, next);
+  if (fault) {
+    modalFaults.push({ modal: name, message: fault, at: Date.now() });
+    // Once per modal kind: a guard that prints on every open is a guard the
+    // console teaches you to scroll past.
+    if (modalFaults.filter((f) => f.modal === name).length === 1) {
+      // eslint-disable-next-line no-console
+      console.warn(`[modal shell] ${fault}`);
+    }
+  }
+  return next;
+}
+
+/** What the shell has had to complain about this session (read by the walk). */
+export function modalShellFaults() {
+  return modalFaults.slice();
+}
 
 /** How the view on screen says it was left. Never allowed to throw. */
 function readSnapshot(s) {
@@ -493,10 +532,12 @@ export const useUiStore = create((set, get) => ({
   modalStack: [],
   viewSnapshot: null,
   viewRestore: null,
-  openModal: (name, args = null) => set((s) => nextNav(openNav(navOf(s), name, args))),
+  openModal: (name, args = null) => set((s) => nextNav(
+    openNav(navOf(s), name, throughTheShell(name, args)),
+  )),
   /** Enter a NESTED editor surface, suspending the one on screen. */
   pushModal: (name, args = null) => set((s) => nextNav(
-    pushNav(navOf(s), name, args, readSnapshot(s)),
+    pushNav(navOf(s), name, throughTheShell(name, args), readSnapshot(s)),
   )),
   /** ← Back, and Escape: one level, restoring the parent exactly as it was. */
   popModal: () => set((s) => nextNav(popNav(navOf(s)))),

@@ -1,0 +1,119 @@
+{
+ "steps": [
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "F1 — the workspace opens maximised and RESTORES to an ordinary window",
+   "ok": true,
+   "detail": "was true · now side right"
+  },
+  {
+   "label": "F1 — a right-click on a cabinet opens the SHELL, and it knows its object",
+   "ok": true,
+   "detail": "cabinet · anchored true · side right"
+  },
+  {
+   "label": "F1 — …and it does not land on the object it is about",
+   "ok": true,
+   "detail": "click (440,539) vs window at 860,263"
+  },
+  {
+   "label": "F1 — the header moves it: a real pointer drag, and the window follows",
+   "ok": true,
+   "detail": "286 px by the header"
+  },
+  {
+   "label": "F1 — a double-click on a leaf opens the SHELL, anchored to the leaf",
+   "ok": true,
+   "detail": "element · anchored true"
+  },
+  {
+   "label": "F1 — …and this one does not land on the door either",
+   "ok": true,
+   "detail": "click (440,539)"
+  },
+  {
+   "label": "F1 — …and it drags by its header too",
+   "ok": true,
+   "detail": "238 px"
+  },
+  {
+   "label": "F1 — a MENU ENTRY opens the SHELL, anchored to the entry",
+   "ok": true,
+   "detail": "unit-finish · anchored true"
+  },
+  {
+   "label": "F1 — …and stands clear of the menu it was chosen from",
+   "ok": true,
+   "detail": "{\"x\":390,\"y\":262.5,\"width\":180,\"height\":729.5}"
+  },
+  {
+   "label": "F1 — …and the third window drags by its header as well",
+   "ok": true,
+   "detail": "306 px"
+  },
+  {
+   "label": "F1 — the shell guard had nothing to report all phase",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "label": "R6 — the console is clean for the whole walk",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "shots": [
+  {
+   "name": "1a-the-cabinet-editor-opened-beside-the-cabinet-it-is-about",
+   "subject": {
+    "dom": "[data-modal-name=\"cabinet\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "1b-the-same-window-dragged-by-its-header",
+   "subject": {
+    "dom": "[data-modal-name=\"cabinet\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "1c-the-door-window-beside-the-door-it-was-opened-from",
+   "subject": {
+    "dom": "[data-modal-name=\"element\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "1d-the-door-window-dragged-by-its-header",
+   "subject": {
+    "dom": "[data-modal-name=\"element\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "1e-the-unit-finish-window-beside-the-menu-entry-that-opened-it",
+   "subject": {
+    "dom": "[data-modal-name=\"unit-finish\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "1f-the-third-window-dragged-three-of-three",
+   "subject": {
+    "dom": "[data-modal-name=\"unit-finish\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  }
+ ]
+}

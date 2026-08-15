@@ -9,6 +9,7 @@ import { buildOutputMenu } from '../lib/outputMenu.js';
 import { buildDatabaseMenu, orderMenus } from '../lib/topMenu.js';
 import { persistProject } from '../lib/persist.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // Frozen layout, SPEC section 7: logo in gold, project name, gold Export button.
 // Turn 4 (BACKLOG #8) puts the classic menu bar in between: File · View ·
@@ -263,7 +264,7 @@ export default function TopBar({
   ];
 
   return (
-    <header className="h-12 shrink-0 bg-shell-900 border-b border-shell-600 flex items-center px-4 gap-3 z-30">
+    <header className={`h-12 shrink-0 bg-shell-900 border-b border-shell-600 flex items-center px-4 gap-3 ${LAYER_CLASS.chrome}`}>
       <button
         type="button"
         className="font-semibold tracking-[0.18em] text-gold text-sm select-none hover:text-gold-hover transition-colors"

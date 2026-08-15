@@ -56,6 +56,7 @@ export default function AddItemsModal() {
 
   return (
     <Modal
+      name="add-items"
       anchor={anchor}
       title={`${unit.params.unit_num} · ${type.label}`}
       onClose={() => { setZoneHint(null); closeModal(); }}

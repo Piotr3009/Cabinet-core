@@ -3,6 +3,8 @@ import {
 } from 'react';
 import { clampToViewport, maximiseInViewport, placeAnchoredModal } from '../lib/menuPlacement.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
+import { useUiStore } from '../stores/uiStore.js';
 
 // ─── THE MODAL SHELL (turn 12, CLAUDE.md rule 15 / F2) ──────────────────────
 //
@@ -62,6 +64,11 @@ import { getCabinetProfile } from '../engine/profile.js';
  *             told when that toggles, so a workspace can lay itself out for the
  *             room it has — the shell decides the WINDOW, the content decides
  *             what to do with it.
+ *   name      turn 31, F1. WHICH modal this is — the registry key from
+ *             lib/modalLayer.js. Stamped on the panel as `data-modal-name` so
+ *             the shell contract can be checked from outside (a browser walk
+ *             can ask "is the thing on screen a shell window, and which"),
+ *             and left out only by a window that has no registry entry.
  *   onBack    turn 23, F1. This window is a NESTED editor surface and there is
  *             a level under it. Given, the shell renders ← Back beside the
  *             title and Escape means BACK ONE LEVEL rather than close-
@@ -73,9 +80,18 @@ import { getCabinetProfile } from '../engine/profile.js';
 export default function Modal({
   title, onClose, children, footer, width = 'w-[420px]',
   anchor = null, prefer = null, dim = null, className = '', maximised = false,
-  onMaximisedChange = null, onBack = null, backLabel = '',
+  onMaximisedChange = null, onBack = null, backLabel = '', name = '',
 }) {
   const box = useRef(null);
+  // ─── TURN 31 (CLAUDE.md F1): ONE CLOSE PATH ────────────────────────────────
+  // Every window in the app closes through the store's `closeModal`, and the
+  // shell now knows that rather than each caller having to remember it. A
+  // window with a close of its OWN — the new-project flow, which cancels a
+  // local flow rather than a store modal — still passes one, and it wins. What
+  // is gone is the third possibility: a modal with no close path at all, which
+  // Escape and the × both fell through.
+  const closeModal = useUiStore((s) => s.closeModal);
+  const close = onClose || closeModal;
   // `null` until the first layout pass has MEASURED the panel. Until then it is
   // rendered invisible — a modal drawn at a guessed position first would flash
   // across the screen before it corrected itself, which turn 11 already learnt
@@ -101,10 +117,10 @@ export default function Modal({
   // so no nested view has to argue with the modal's own handler — which is
   // exactly the class of duplicate the stack exists to kill.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') (onBack || onClose)(); };
+    const onKey = (e) => { if (e.key === 'Escape') (onBack || close)(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, onBack]);
+  }, [close, onBack]);
 
   const measure = useCallback(() => {
     const el = box.current;
@@ -243,14 +259,16 @@ export default function Modal({
 
   return (
     <div
-      className={`fixed inset-0 z-40 ${darken ? 'bg-black/45' : ''}`}
-      onPointerDown={onClose}
+      className={`fixed inset-0 ${LAYER_CLASS.modal} ${darken ? 'bg-black/45' : ''}`}
+      onPointerDown={close}
     >
       <div
         ref={box}
         role="dialog"
         aria-label={typeof title === 'string' ? title : undefined}
         data-modal-shell="1"
+        data-modal-name={name || undefined}
+        data-modal-anchored={anchor ? '1' : '0'}
         data-modal-side={big ? 'maximised' : (at?.side || '')}
         data-modal-maximised={big ? '1' : '0'}
         className={`fixed cc-panel ${big ? '' : `${width} max-h-[90vh]`} flex flex-col shadow-xl ${className}`}
@@ -325,7 +343,7 @@ export default function Modal({
               {big ? '❐' : '▢'}
             </button>
           )}
-          <button type="button" className="cc-btn-ghost" title="Close (Esc)" onClick={onClose}>×</button>
+          <button type="button" className="cc-btn-ghost" title="Close (Esc)" onClick={close}>×</button>
         </div>
         <div className="p-4 overflow-y-auto flex-1 min-h-0">{children}</div>
         {footer && <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2">{footer}</div>}

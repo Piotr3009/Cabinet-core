@@ -23,6 +23,7 @@ export default function DesignSettingsModal() {
 
   return (
     <Modal
+      name="design"
       anchor={anchor}
       title="Settings"
       onClose={closeModal}

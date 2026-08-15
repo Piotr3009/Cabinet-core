@@ -9,6 +9,7 @@ import {
 } from '../lib/projectLibrary.js';
 import { listProjects, loadProject as loadCloudProject } from '../lib/cloudSync.js';
 import { isMockMode } from '../lib/supabase.js';
+import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
 import { useHistoryStore } from '../stores/historyStore.js';
@@ -131,7 +132,12 @@ export default function StartScreen() {
               <button
                 type="button"
                 className="cc-btn-gold w-full"
-                onClick={() => setFlow({ number: nextProjectNumber(storage) })}
+                onClick={(e) => setFlow({
+                  number: nextProjectNumber(storage),
+                  // Turn 31 (CLAUDE.md F1): the flow is a window like any
+                  // other, so it stands beside the button that opened it.
+                  anchor: anchorOfEvent(e),
+                })}
               >
                 New project
               </button>
@@ -206,6 +212,7 @@ export default function StartScreen() {
       {flow && (
         <NewProjectFlow
           initialNumber={flow.number}
+          anchor={flow.anchor}
           onCancel={() => setFlow(null)}
           onStart={onFlowStart}
         />

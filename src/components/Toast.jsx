@@ -1,4 +1,5 @@
 import { useUiStore } from '../stores/uiStore.js';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 const TONES = {
   info:  'border-shell-600 bg-shell-800 text-ink-100',
@@ -15,7 +16,7 @@ export default function Toast() {
     <button
       type="button"
       onClick={dismiss}
-      className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded border text-sm shadow-panel ${TONES[toast.tone] || TONES.info}`}
+      className={`absolute bottom-6 left-1/2 -translate-x-1/2 ${LAYER_CLASS.message} px-4 py-2 rounded border text-sm shadow-panel ${TONES[toast.tone] || TONES.info}`}
     >
       {toast.message}
     </button>

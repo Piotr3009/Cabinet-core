@@ -26,7 +26,9 @@ import { useHistoryStore } from '../stores/historyStore.js';
 
 const STEPS = ['info', 'type', 'scope', 'room', 'settings'];
 
-export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }) {
+export default function NewProjectFlow({
+  initialNumber = '', onCancel, onStart, anchor = null,
+}) {
   const newProject = useProjectStore((s) => s.newProject);
   const setProjectInfo = useProjectStore((s) => s.setProjectInfo);
   const setDesign = useProjectStore((s) => s.setDesign);
@@ -117,6 +119,7 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
   if (step === 'room') {
     return (
       <RoomModal
+        anchor={anchor}
         onClose={() => setStep('scope')}
         onApplied={() => setStep('settings')}
       />
@@ -125,7 +128,9 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart }
 
   return (
     <Modal
+      name="new-project"
       title="New project"
+      anchor={anchor}
       width="w-[760px]"
       onClose={onCancel}
       footer={(

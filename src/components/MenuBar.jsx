@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── Classic top menu (BACKLOG #8) ───
 //
@@ -104,7 +105,7 @@ function Dropdown({ items, onClose, nested = false }) {
   return (
     <div
       role="menu"
-      className={`absolute z-50 min-w-[210px] cc-panel py-1 ${nested ? 'left-full -top-1 ml-0.5' : 'left-0 top-full mt-1'}`}
+      className={`absolute ${LAYER_CLASS.menu} min-w-[210px] cc-panel py-1 ${nested ? 'left-full -top-1 ml-0.5' : 'left-0 top-full mt-1'}`}
     >
       {items.map((item, i) => {
         if (item.divider) return <div key={`div-${i}`} className="cc-divider !my-1" />;

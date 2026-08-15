@@ -1,0 +1,33 @@
+{
+ "f1": {
+  "cabinet": {
+   "name": "cabinet",
+   "anchored": true,
+   "coversTheClick": false
+  },
+  "cabinetDrag": 286,
+  "door": {
+   "name": "element",
+   "anchored": true,
+   "coversTheClick": false
+  },
+  "doorDrag": 238,
+  "finish": {
+   "name": "unit-finish",
+   "anchored": true,
+   "clear": true,
+   "menu": {
+    "x": 390,
+    "y": 262.5,
+    "width": 180,
+    "height": 729.5
+   },
+   "at": {
+    "x": 480,
+    "y": 706
+   }
+  },
+  "finishDrag": 306,
+  "faults": []
+ }
+}

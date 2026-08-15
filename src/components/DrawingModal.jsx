@@ -107,6 +107,7 @@ export default function DrawingModal() {
 
   return (
     <Modal
+      name="drawing"
       anchor={anchor}
       title={kind === 'front-elevation' ? 'Front elevation' : 'Unit card'}
       width="w-[880px]"

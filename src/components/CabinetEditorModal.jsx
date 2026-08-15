@@ -25,7 +25,6 @@ import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { cabinetBounds, explodeOffsets, explodeSettings } from '../engine/explode.js';
 import { elementLabel, isSelectableElement } from '../engine/elements.js';
 import { getUnitType } from '../engine/types.js';
-import { anchorAtPoint } from '../lib/modalAnchor.js';
 
 // ─── The cabinet editor window (turn 12, CLAUDE.md F4) ──────────────────────
 //
@@ -99,7 +98,9 @@ export default function CabinetEditorModal() {
   // The click point travels with the request when the window is opened by a
   // double-click in 3D (turn 20, F11.1), exactly as the element and hinge
   // modals take theirs — so the shell puts it beside what was clicked.
-  const anchor = args?.anchor || anchorAtPoint(args?.at?.x, args?.at?.y);
+  // Turn 31 (CLAUDE.md F1): one field. The click-point → rectangle conversion
+  // is the store opener's, once, for every window in the app.
+  const anchor = args?.anchor || null;
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
   const storedDesign = useProjectStore((s) => s.project.design);
@@ -291,6 +292,7 @@ export default function CabinetEditorModal() {
 
   return (
     <Modal
+      name="cabinet"
       anchor={anchor}
       title={drawer
         ? `${unit.params.unit_num} · Drawer ${drawer} — edit drawer`

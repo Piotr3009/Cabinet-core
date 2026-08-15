@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { useProjectStore } from './stores/projectStore.js';
-import { useUiStore } from './stores/uiStore.js';
+import { modalShellFaults, useUiStore } from './stores/uiStore.js';
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
 import { useMaterialAssignmentStore } from './stores/materialAssignmentStore.js';
@@ -151,6 +151,13 @@ if (typeof window !== 'undefined') {
   window.__ccT28 = {
     shelfHeights, bevel, hardwareFinish, decors, dimensions, frontDimensions,
   };
+  // ─── Turn 31 (CLAUDE.md F1) ───
+  // The shell's own guard, published for the same reason every reader above is:
+  // R4 says a claim is proven by asking the APP. "No modal opened without
+  // knowing what it is about" is a claim about a session, and this is the
+  // session's own record of it — the guard SPEAKS (rule 4) and this is where
+  // it can be heard from outside.
+  window.__cc.modalFaults = modalShellFaults;
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

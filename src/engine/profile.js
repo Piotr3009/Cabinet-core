@@ -3497,6 +3497,27 @@ export const DEFAULT_CABINET_PROFILE = {
   // The clearances the collision clamp enforces. A move STOPS at these values
   // (src/engine/collision.js) — they are not advisory.
   editor: {
+    // ─── TURN 31 (CLAUDE.md F7): THE HOVER AURA ────────────────────────────
+    //
+    // The owner: "Not a snap — a CATCHMENT." An invisible box a little bigger
+    // than the piece, so pointing at a 12 mm bar handle or a 4 mm hinge arm on
+    // a canvas showing a whole kitchen stops being pixel-hunting.
+    hoverAura: {
+      // How far past the piece the catchment reaches, in SCENE mm.
+      // OWNER'S NUMBER, 15.08.2026: ~8.
+      mm: 8,
+      // How long the label stays after the cursor leaves. This is what stops
+      // the flicker: three.js raycasts per frame, and a hand held still on the
+      // boundary crosses it several times a second.
+      // OWNER'S NUMBER, 15.08.2026: ~300.
+      lingerMs: 300,
+      // ORANGE. "red is reserved for Check" — an informational number wearing
+      // the fault colour trains an eye to ignore the fault colour.
+      colour: '#e08a2e',
+      // F7's own note: "one number — default the owner may extend to two".
+      // This is the extension, as one line.
+      showBothAxes: false,
+    },
     snapSteps: [0.5, 1, 32],
     defaultSnap: 1,
     // The precision the WORKSHOP works to (BACKLOG #33). Every millimetre field
@@ -4148,6 +4169,8 @@ export function migrateCabinetProfile(profile) {
     editor: {
       ...D.editor,
       ...profile.editor,
+      // Turn 31 (CLAUDE.md F7): key by key, like every other nested block.
+      hoverAura: { ...D.editor.hoverAura, ...profile.editor?.hoverAura },
       // Turn 20 (CLAUDE.md F6.2): key by key, like every other nested block —
       // a profile saved before the ruler had snaps comes back with all three
       // numbers rather than with a magnet of `undefined` pixels.

@@ -6,29 +6,19 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F6 — a Check button sits BESIDE BOM and carries the count",
+   "label": "F7 — every handle and every hinge carries a catchment",
    "ok": true,
-   "detail": "Check · 9 · beside BOM true"
+   "detail": "hinge · hinge · hinge · handle"
   },
   {
-   "label": "F6 — the result is a PANEL of findings, not a toast",
+   "label": "F7 — a pointer BESIDE the piece, inside its aura, brings the label up",
    "ok": true,
-   "detail": "9 findings · 7 FAULTS · 2 TO LOOK AT"
+   "detail": "1 label(s) · beside (813,525) vs centre (800,524) · axis x · box [28,184,60]"
   },
   {
-   "label": "F6 — …with the reds first, and each naming its subject",
+   "label": "F7 — …and it LINGERS after the cursor leaves, then goes",
    "ok": true,
-   "detail": "#4/red · #10/red · #10/red · #10/red · #10/red · #10/red · #10/red · #3/yellow · #6/yellow"
-  },
-  {
-   "label": "F6 — clicking a finding OPENS THE RIGHT EDITOR on its subject",
-   "ok": true,
-   "detail": "element on {\"unitId\":\"u_al1rejs\",\"elementRef\":\"T01-F\"}"
-  },
-  {
-   "label": "F6 — the SAME list runs automatically before an export",
-   "ok": true,
-   "detail": "true · Check: 7 faults before this goes to the machine.click to dismiss"
+   "detail": "1 label(s) at once, 0 after 300 ms"
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -38,29 +28,12 @@
  ],
  "shots": [
   {
-   "name": "6a-the-check-panel-a-list-of-findings-reds-first",
+   "name": "7a-the-catchment-a-pointer-beside-the-handle-and-its-number",
    "subject": {
-    "dom": "[data-check-finding]"
+    "dom": "canvas"
    },
    "present": true,
    "detail": "{\"dom\":true}"
-  },
-  {
-   "name": "6b-a-finding-clicked-the-editor-open-on-its-subject",
-   "subject": {
-    "dom": "[data-modal-shell=\"1\"]"
-   },
-   "present": true,
-   "detail": "{\"dom\":true}"
-  },
-  {
-   "name": "6c-the-same-list-run-automatically-before-export",
-   "subject": {
-    "dom": "[data-check-panel]",
-    "text": "Check:"
-   },
-   "present": true,
-   "detail": "{\"dom\":true,\"text\":true}"
   }
  ]
 }

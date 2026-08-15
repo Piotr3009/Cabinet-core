@@ -967,6 +967,165 @@ async function main() {
       await page.evaluate(`${P}.ui.getState().clearMessages(); ${P}.ui.getState().setCheckOpen(false); return true;`);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F7 [HIGH] — the hover aura on handles and hinges
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // "Not a snap — a CATCHMENT." The claim only a browser can settle is that
+    // a pointer aimed BESIDE the piece — in the aura, not on the rail — brings
+    // the label up, and that leaving it does not make the label strobe.
+    if (want('f7')) {
+      await newRoom('Turn 31 walk — F7');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const a = s.addUnit('BUD');
+        s.updateUnitParams(a.id, { width: 600, doors: { count: 1 } });
+        s.setProjectHandle({ type: 'bar', centres: 128 });
+        ${P}.ui.getState().setShowHinges(true);
+        const r = s.unitResult(a.id);
+        window.__t31 = {
+          unitA: a.id,
+          leaf: (r.panels.find((p) => p.role === 'front') || {}).id || null,
+        };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.waitFor(`(() => {
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return false;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.userData && o.userData.ccAuraKind) n += 1; });
+        return n >= 2;
+      })()`, { what: 'the auras to mount', timeout: 30000 });
+      await frameUnits([await page.evaluate('return window.__t31.unitA;')], [0.6, 0.25, 1.9]);
+      await page.sleep(600);
+      // ─── AND THEN LOOK AT THE HANDLE ITSELF ──────────────────────────────
+      // A cabinet framed on its own bounds puts a base unit's handle near the
+      // TOP of the canvas, which is where this app's toolbar is — so the
+      // pointer lands on DOM chrome and never reaches the scene at all. The
+      // camera is re-aimed at the piece under test, off the piece's own world
+      // position, so the point being clicked is glass.
+      await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        let mesh = null;
+        v.scene.updateMatrixWorld(true);
+        v.scene.traverse((o) => { if (!mesh && o.userData && o.userData.ccAuraKind === 'handle') mesh = o; });
+        if (!mesh) return null;
+        const c = mesh.getWorldPosition(new THREE.Vector3());
+        if (v.controls) v.controls.enableDamping = false;
+        if (v.controls && v.controls.target) v.controls.target.copy(c);
+        v.camera.position.set(c.x + 0.35, c.y + 0.15, c.z + 1.1);
+        v.camera.up.set(0, 1, 0);
+        v.camera.lookAt(c);
+        v.camera.updateProjectionMatrix();
+        if (v.controls) v.controls.update();
+        return true;
+      `);
+      await page.sleep(700);
+
+      const f7 = {};
+
+      // ── The boxes really are the piece plus the profile's own catchment ──
+      f7.boxes = await page.evaluate(`
+        const v = ${P}.views.room;
+        const out = [];
+        v.scene.traverse((o) => {
+          if (!o.userData || !o.userData.ccAuraKind) return;
+          out.push({ kind: o.userData.ccAuraKind, id: o.userData.ccAuraId, mm: o.userData.ccAuraMm });
+        });
+        return { auras: out, profileMm: ${P}.profile.getState().profile.editor.hoverAura.mm };
+      `);
+      check('F7 — every handle and every hinge carries a catchment',
+        f7.boxes.auras.some((a) => a.kind === 'handle') && f7.boxes.auras.some((a) => a.kind === 'hinge'),
+        f7.boxes.auras.map((a) => a.kind).join(' · '));
+
+      // ── A pointer BESIDE the piece — in the aura, off the rail ───────────
+      //
+      // The point is chosen by projecting the aura's own corner region: a
+      // millimetre outside the handle's own geometry and inside its box. If the
+      // label comes up there, the catchment is real; if it only comes up on the
+      // rail itself, this feature does not exist.
+      const spot = await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        let mesh = null;
+        v.scene.traverse((o) => {
+          if (!mesh && o.userData && o.userData.ccAuraKind === 'handle') mesh = o;
+        });
+        if (!mesh) return null;
+        v.scene.updateMatrixWorld(true);
+        const c = mesh.getWorldPosition(new THREE.Vector3());
+        // ─── OFF THE RAIL, INSIDE THE BOX ────────────────────────────────
+        // Along the aura's THINNEST axis, at 80 % of its half-width. For a
+        // vertical bar that is ~11 mm sideways off a 12 mm rod: comfortably
+        // clear of the piece, comfortably inside the catchment, and a small
+        // enough step that the point stays on the canvas at any framing.
+        const mmBox = mesh.userData.ccAuraMm;
+        const axis = mmBox[0] <= mmBox[1] ? 'x' : 'y';
+        const half = (Math.min(mmBox[0], mmBox[1]) / 2) * 0.001;
+        const p = c.clone();
+        p[axis] += half * 0.8;
+        const s = p.project(v.camera);
+        const cs = c.clone().project(v.camera);
+        const r = v.gl.domElement.getBoundingClientRect();
+        const to = (q) => ({ x: r.left + ((q.x + 1) / 2) * r.width, y: r.top + ((1 - q.y) / 2) * r.height });
+        return { beside: to(s), centre: to(cs), axis, halfMm: Math.min(mmBox[0], mmBox[1]) / 2, box: mmBox };
+      `);
+      await page.mouse('mouseMoved', spot.beside.x, spot.beside.y, { buttons: 0, clickCount: 0 });
+      await page.sleep(450);
+      const showing = await page.evaluate(`
+        const v = ${P}.views.room;
+        let n = 0;
+        let text = null;
+        v.scene.traverse((o) => {
+          if (o.userData && o.userData.ccHoverAura && o.children) {
+            for (const k of o.children) {
+              if (k.isSprite) { n += 1; text = (k.userData && k.userData.ccLabelText) || 'sprite'; }
+            }
+          }
+        });
+        return { sprites: n, text };
+      `);
+      f7.showing = showing;
+      check('F7 — a pointer BESIDE the piece, inside its aura, brings the label up',
+        showing.sprites > 0,
+        `${showing.sprites} label(s) · beside (${Math.round(spot.beside.x)},${Math.round(spot.beside.y)})`
+        + ` vs centre (${Math.round(spot.centre.x)},${Math.round(spot.centre.y)}) · axis ${spot.axis}`
+        + ` · box ${JSON.stringify(spot.box)}`);
+      await shot('7a-the-catchment-a-pointer-beside-the-handle-and-its-number',
+        { dom: 'canvas' });
+
+      // ── And it LINGERS: the label survives the moment after leaving ──────
+      await page.mouse('mouseMoved', 40, 900, { buttons: 0, clickCount: 0 });
+      const immediately = await page.evaluate(`
+        const v = ${P}.views.room;
+        let n = 0;
+        v.scene.traverse((o) => {
+          if (o.userData && o.userData.ccHoverAura && o.children) {
+            for (const k of o.children) if (k.isSprite) n += 1;
+          }
+        });
+        return n;
+      `);
+      await page.sleep(700);
+      const afterLinger = await page.evaluate(`
+        const v = ${P}.views.room;
+        let n = 0;
+        v.scene.traverse((o) => {
+          if (o.userData && o.userData.ccHoverAura && o.children) {
+            for (const k of o.children) if (k.isSprite) n += 1;
+          }
+        });
+        return n;
+      `);
+      f7.linger = { immediately, afterLinger, ms: await page.evaluate(`return ${P}.profile.getState().profile.editor.hoverAura.lingerMs;`) };
+      check('F7 — …and it LINGERS after the cursor leaves, then goes',
+        immediately > 0 && afterLinger === 0,
+        `${immediately} label(s) at once, ${afterLinger} after ${f7.linger.ms} ms`);
+      measurements.f7 = f7;
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

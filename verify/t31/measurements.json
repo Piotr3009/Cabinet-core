@@ -1,72 +1,54 @@
 {
- "f6": {
-  "button": {
-   "count": 9,
-   "text": "Check · 9",
-   "besideBom": true
-  },
-  "panel": {
-   "count": 9,
-   "summary": "7 FAULTS · 2 TO LOOK AT",
-   "rows": [
+ "f7": {
+  "boxes": {
+   "auras": [
     {
-     "check": 4,
-     "level": "red",
-     "text": "#4 · DOOR TOO HEAVY FOR ITS HINGES\nT01 T01-F: 2097 mm and 20.66 kg on 3 hinge  — the Blum CLIP top table a k  for 5."
+     "kind": "hinge",
+     "id": "01-F-100",
+     "mm": [
+      38,
+      27,
+      78
+     ]
     },
     {
-     "check": 10,
-     "level": "red",
-     "text": "#10 · DRILL FAULTS\nBUL: HINGES_5MM ⌀5 at (37, 84) i  drilled 2 time  — the bit goe  back into a hole it ha  already made"
+     "kind": "hinge",
+     "id": "01-F-470",
+     "mm": [
+      38,
+      27,
+      78
+     ]
     },
     {
-     "check": 10,
-     "level": "red",
-     "text": "#10 · DRILL FAULTS\nBUL: HINGES_5MM ⌀5 at (37, 116) i  drilled 2 time  — the bit goe  back into a hole it ha  already mad"
+     "kind": "hinge",
+     "id": "01-F-670",
+     "mm": [
+      38,
+      27,
+      78
+     ]
     },
     {
-     "check": 10,
-     "level": "red",
-     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_3MM ⌀3 at (566, 77) i  drilled 2 time  — the bit goe  back into a hole it ha  alr"
-    },
-    {
-     "check": 10,
-     "level": "red",
-     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_35MM ⌀35 at (575.5, 100) i  drilled 2 time  — the bit goe  back into a hole it ha"
-    },
-    {
-     "check": 10,
-     "level": "red",
-     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_3MM ⌀3 at (566, 123) i  drilled 2 time  — the bit goe  back into a hole it ha  al"
-    },
-    {
-     "check": 10,
-     "level": "red",
-     "text": "#10 · DRILL FAULTS\nT01: two hinge row  are both at 100 mm — every hole in that row i  drilled twice."
-    },
-    {
-     "check": 3,
-     "level": "yellow",
-     "text": "#3 · TALL CABINET WITH NO FIXED SHELF\nT01: 2100 mm tall with 2  helve  and none of them fixed — add one fixed  helf."
-    },
-    {
-     "check": 6,
-     "level": "yellow",
-     "text": "#6 · BASE RUN WITH NO PLINTH\nT01:  tanding on leg  with no plinth."
+     "kind": "handle",
+     "id": "01-F",
+     "mm": [
+      28,
+      184,
+      60
+     ]
     }
-   ]
+   ],
+   "profileMm": 8
   },
-  "flight": {
-   "modal": "element",
-   "selected": {
-    "unitId": "u_al1rejs",
-    "elementRef": "T01-F"
-   },
-   "movedM": 0
+  "showing": {
+   "sprites": 1,
+   "text": "sprite"
   },
-  "preflight": {
-   "panelOpen": true,
-   "message": "Check: 7 faults before this goes to the machine.click to dismiss"
+  "linger": {
+   "immediately": 1,
+   "afterLinger": 0,
+   "ms": 300
   }
  }
 }

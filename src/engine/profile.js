@@ -3206,6 +3206,19 @@ export const DEFAULT_CABINET_PROFILE = {
         // something the wrong size (F6.6).
         lengthTolerance: 5,
 
+        // ─── TURN 33 (CLAUDE.md F9): THE OWNER'S LADDER, AT LAST ──────────
+        // His list, 15.08.2026: runner lengths EVERY 50 mm UP TO 600. The
+        // LOWER BOUND is marked: his message read "od 00" — shipped as 300,
+        // owner to confirm (Q1 travels with the PR). ONE profile line; the
+        // snap (engine/runners.js runnerEntry) lands on a RUNG of this
+        // ladder and orders the article standing there — a rung the bucket
+        // has no article for prints YELLOW in the BOM, never a substitute.
+        // This closes the long-parked "wyrównanie drabinki długości
+        // prowadnic — czeka na listę MOVENTO". The BOX ladder
+        // (wardrobe.drawers.depthSteps — what the saw cuts) is untouched:
+        // that one is the LISP's, and the fixtures stand on it.
+        nominalLadder: [300, 350, 400, 450, 500, 550, 600],
+
         // ─── THE SYNCHRONISATION ROD (F6.5) ───────────────────────────────
         // Catalogue thresholds, on the CABINET OPENING width — blum.com,
         // TIP-ON BLUMOTION for MOVENTO. Written out because they are exactly

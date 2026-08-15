@@ -5035,10 +5035,17 @@ export function computeCabinet(params, profileOverride) {
   }
   for (const [variant, qty] of byVariant) {
     const spec = runnerPairSpec({ nl: runnerLength, variant, profile: P });
+    // Turn 33 (CLAUDE.md F9): the BOM ORDERS THE SNAPPED LENGTH — the rung of
+    // the owner's ladder the box depth landed on, named beside the cut depth
+    // whenever the two differ. An ask below the ladder says so out loud and
+    // the line prints yellow (no article is ever invented).
     hw('runner_pairs', 'Drawer runners', qty, 'pairs',
       { length_mm: runnerLength, ...spec },
       runnerLength
-        ? [`${roundTo(runnerLength, 0)} mm`, `MOVENTO ${spec.system}`, spec.variant,
+        ? [`${roundTo(runnerLength, 0)} mm`,
+          spec.nl && spec.nl !== runnerLength ? `orders NL ${spec.nl}` : null,
+          spec.on_ladder === false ? 'below the ladder' : null,
+          `MOVENTO ${spec.system}`, spec.variant,
           spec.complete ? `${spec.articles.L} / ${spec.articles.R}` : null]
           .filter(Boolean).join(' · ')
         : '');

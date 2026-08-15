@@ -4,7 +4,7 @@ import {
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { mm } from './constants.js';
-import { runnerEntry, runnerModelSrc } from '../engine/runners.js';
+import { runnerEntry, runnerLadder, runnerModelSrc } from '../engine/runners.js';
 import { hingeModelSrc } from '../engine/hinges.js';
 import { clearHardwareSurface, reportHardware } from './hardwareRegistry.js';
 import {
@@ -824,7 +824,10 @@ function Runners({
   const wanted = useMemo(() => items.map((r) => {
     const variant = variants?.[r.drawer] || M.defaultVariant;
     const entry = runnerEntry({
-      system: M.system, nl: r.length, variant, side: r.side,
+      // Turn 33 (CLAUDE.md F9): the owner's ladder rules the snap — the model
+      // drawn is the article the BOM orders, or the grey box where a rung has
+      // no article. One law, the view and the order alike.
+      system: M.system, nl: r.length, variant, side: r.side, ladder: runnerLadder(profile),
     });
     return {
       row: r,

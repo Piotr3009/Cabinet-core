@@ -310,8 +310,9 @@ test('…and the SAME list runs automatically before every export', () => {
   // The same call the button makes — a second implementation of eleven rules
   // is eleven chances to disagree.
   assert.match(page, /const found = runChecks\(\);/);
-  // The three the page owns: the cutting list, the project PDF and the DXF ZIP.
-  assert.equal([...page.matchAll(/checkBeforeExport\(\);/g)].length, 3, 'an export slipped past it');
+  // The four the page owns: the cutting list, the BOM CSV (turn 32, F5), the
+  // project PDF and the DXF ZIP.
+  assert.equal([...page.matchAll(/checkBeforeExport\(\);/g)].length, 4, 'an export slipped past it');
   const tree = readFileSync(new URL('../src/components/CncTree.jsx', import.meta.url), 'utf8');
   assert.match(tree, /preflight\(exportAnyway\)/);
 });

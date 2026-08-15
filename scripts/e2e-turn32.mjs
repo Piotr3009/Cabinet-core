@@ -658,6 +658,84 @@ async function main() {
         { mesh: 'Z2D1-SL' });
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F5 [CRITICAL] — the BOM the workshop can invoice from
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f5')) {
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        s.newProject('Turn 32 walk — F5', {
+          room: { height: 2600, corners: [{ x: 0, y: 0 }, { x: 12000, y: 0 }, { x: 12000, y: 3600 }, { x: 0, y: 3600 }] },
+        });
+        ${P}.ui.getState().openEditor();
+        ${P}.ui.getState().closeModal();
+        ${P}.ui.getState().closeLibrary();
+        const a = s.addUnit('WARDROBE');
+        ${P}.project.getState().updateUnitParams(a.id, { width: 900 });
+        ${P}.project.getState().addPlinth(a.id);
+        ${P}.project.getState().addDrawers(a.id, 2, 'overlay', 220);
+        ${P}.project.getState().addShelves(a.id, 2);
+        ${P}.project.getState().addHangerRail(a.id);
+        ${P}.project.getState().setDoors(a.id, { count: 2, hinge: 'L' });
+        ${P}.ui.getState().closeAllFronts();
+        window.__t32f5 = { unitId: a.id };
+        return true;
+      `);
+      await page.waitFor(`[...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'BOM')`, { what: 'the toolbar' });
+      await page.click('button', 'BOM', { exact: true });
+      await page.waitFor(`document.querySelector('[data-bom-order-tab="1"]')`, { what: 'the BOM panel' });
+      await page.click('[data-bom-order-tab="1"]');
+      await page.waitFor(`document.querySelector('[data-bom-order="1"]')`, { what: 'the Order tab' });
+
+      // ── THE LIVE MEASURE ── the screen against the app's OWN functions —
+      // never a re-implementation beside them (R4).
+      const order = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const profile = ${P}.profile.getState().profile;
+        const design = s.project.design;
+        const materials = ${P}.materials.getState().materials;
+        const entries = s.allResults();
+        const bom = window.__ccT32.bomCore.buildBom(entries, { design, profile, materials });
+        const summary = window.__ccT32.bomInvoice.materialsSummary(bom, profile);
+        const iron = window.__ccT32.bomInvoice.ironmongerySummary({ entries, bom, design, profile, materials });
+        const dom = document.querySelector('[data-bom-order="1"]').innerText;
+        const fronts = document.querySelector('[data-bom-materials="fronts"]');
+        const yellows = document.querySelectorAll('[data-bom-yellow="1"]').length;
+        return {
+          firstSheetLabel: summary[0] ? summary[0].sheet_label : null,
+          domHasSheetLabel: summary[0] ? dom.includes(summary[0].sheet_label) : false,
+          frontsApart: Boolean(fronts),
+          yellowsOnScreen: yellows,
+          yellowsInEngine: iron.filter((l) => l.yellow).length,
+          clips: iron.find((l) => l.role === 'plinth_clips')?.qty ?? null,
+          railUnit: iron.find((l) => l.role === 'rail')?.unit ?? null,
+          screws: iron.filter((l) => l.role.startsWith('screws:')).length,
+        };
+      `);
+      measurements.f5 = { order };
+      check('F5 — the sheets line is a DIVISION with the label, on screen',
+        /sheets? of 2800×2070/.test(order.firstSheetLabel || '') && order.domHasSheetLabel,
+        order.firstSheetLabel);
+      check('F5 — FRONTS are listed separately from carcasses', order.frontsApart);
+      check('F5 — LIVE MEASURE: every engine yellow is a yellow on screen',
+        order.yellowsOnScreen === order.yellowsInEngine && order.yellowsInEngine > 0,
+        `screen ${order.yellowsOnScreen} · engine ${order.yellowsInEngine}`);
+      check('F5 — clips from FRONT legs only; the rail by the METRE; screws off the drilling',
+        order.clips === 2 && order.railUnit === 'm' && order.screws >= 2, JSON.stringify(order));
+      await shot('5a-the-order-two-blocks-the-workshop-can-invoice-from',
+        { dom: '[data-bom-order="1"]', text: 'sheets of 2800×2070' });
+      await shot('5b-yellow-named-spec-lines-where-no-article-exists',
+        { dom: '[data-bom-yellow="1"]' });
+
+      await page.click('[data-bom-export="1"]');
+      await page.sleep(400);
+      const exported = await page.evaluate(`
+        return ${P}.ui.getState().messages.some((m) => /BOM exported/.test(m.message));
+      `);
+      check('F5 — one export: {ProjectName}-bom-{DDMM-HHMM}.csv leaves the building', exported);
+      await page.evaluate(`${P}.ui.getState().setBomOpen(false); return true;`);
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

@@ -4,8 +4,11 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES } from '../stores/materialAssignmentStore.js';
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
+// Turn 32 (CLAUDE.md F5): the invoice — materials per decor, ironmongery
+// with articles, yellow named specs where the registry does not know.
+import { ironmongerySummary, materialsSummary, readyBoxLines } from '../engine/bomInvoice.js';
 import { formatMm } from '../engine/format.js';
-import { resolveFinishes } from '../engine/design.js';
+import { migrateDesign, resolveFinishes } from '../engine/design.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 
@@ -13,7 +16,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 // this panel only decides when to SHOW it. Exports are a snapshot of the same
 // live numbers, so "materials first, doors after" cannot produce a BOM without
 // fronts.
-export default function BomPanel({ onExportCsv, onExportPdf }) {
+export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const notify = useUiStore((s) => s.notify);
   const allResults = useProjectStore((s) => s.allResults);
@@ -27,11 +30,33 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
   const profile = useCabinetProfileStore((s) => s.profile);
 
   const [tab, setTab] = useState('parts');
+  const runChecks = useProjectStore((s) => s.runChecks);
   const entries = useMemo(() => allResults(), [units, allResults]);
   // The design and the profile go in so every row carries the finish it is cut
   // from — a sprayed front says "RAL 3005 Wine Red spray", an overridden shelf
-  // says its own material (turn 9, CLAUDE.md F4.5 / F6.3).
-  const bom = useMemo(() => buildBom(entries, { design, profile }), [entries, design, profile]);
+  // says its own material (turn 9, CLAUDE.md F4.5 / F6.3). Turn 32 (F5): and
+  // the STOCK LIST goes in at last — an assigned board with no finish of its
+  // own was named by its slot instead of its stock name, because `materials`
+  // was accepted here since turn 16 and never once passed.
+  const bom = useMemo(() => buildBom(entries, { design, profile, materials }), [entries, design, profile, materials]);
+  // ─── TURN 32 (CLAUDE.md F5): THE INVOICE ─────────────────────────────────
+  const migrated = useMemo(() => migrateDesign(design), [design]);
+  const readyBoxes = migrated.drawerBoxes?.mode === 'ready';
+  const invoiceSummary = useMemo(
+    () => materialsSummary(bom, profile, { excludeDrawerBoxes: readyBoxes }),
+    [bom, profile, readyBoxes],
+  );
+  const invoiceIron = useMemo(() => [
+    ...ironmongerySummary({
+      entries, bom, design: migrated, profile, materials,
+    }),
+    ...(readyBoxes ? readyBoxLines(entries) : []),
+  ], [entries, bom, migrated, profile, materials, readyBoxes]);
+  // "BOM warns at the top when Check holds a RED on any counted unit."
+  const redFindings = useMemo(
+    () => runChecks().filter((f) => f.level === 'red'),
+    [units, design, runChecks],
+  );
   const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
   const hardware = useMemo(() => hardwareDemand(bom, assignments, materials), [bom, assignments, materials]);
   const boardCost = demandCost(demand);
@@ -58,6 +83,7 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
         <span className="flex-1" />
         <button type="button" className={tab === 'parts' ? 'cc-btn border-gold text-gold' : 'cc-btn'} onClick={() => setTab('parts')}>Parts</button>
         <button type="button" className={tab === 'materials' ? 'cc-btn border-gold text-gold' : 'cc-btn'} onClick={() => setTab('materials')}>Materials</button>
+        <button type="button" data-bom-order-tab="1" className={tab === 'order' ? 'cc-btn border-gold text-gold' : 'cc-btn'} onClick={() => setTab('order')}>Order</button>
         <button type="button" className="cc-btn-ghost" onClick={() => setBomOpen(false)}>×</button>
       </div>
 
@@ -89,6 +115,86 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
               ))}
             </tbody>
           </table>
+        ) : tab === 'order' ? (
+          /* ─── TURN 32 (CLAUDE.md F5): THE ORDER — what the workshop buys ── */
+          <div className="p-3 space-y-3 text-[12px]" data-bom-order="1">
+            {redFindings.length > 0 && (
+              <p
+                className="border border-status-danger/60 bg-status-danger/10 text-status-danger rounded px-2 py-1.5 text-[11px]"
+                data-bom-red-warning={redFindings.length}
+              >
+                Check holds {redFindings.length} RED finding{redFindings.length === 1 ? '' : 's'} on
+                counted units — the numbers below include them.
+              </p>
+            )}
+
+            {['carcasses', 'fronts'].map((kind) => {
+              const rows = invoiceSummary.filter((g) => g.kind === kind);
+              if (!rows.length) return null;
+              return (
+                <section key={kind} data-bom-materials={kind}>
+                  <h3 className="text-[10px] uppercase tracking-wide text-ink-400 mb-1">
+                    Materials — {kind}
+                  </h3>
+                  <table className="w-full text-[11px]">
+                    <thead className="text-ink-400 border-b border-shell-600">
+                      <tr>
+                        <th className="text-left py-0.5">Decor</th>
+                        <th className="text-right">mm</th>
+                        <th className="text-right">net m²</th>
+                        <th className="text-right">+{rows[0].waste_pct} %</th>
+                        <th className="text-right">sheets</th>
+                        <th className="text-right">edging</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((g) => (
+                        <tr key={`${g.label}-${g.thickness}`} className="border-b border-shell-700">
+                          <td className="py-0.5 pr-2">{g.label}</td>
+                          <td className="text-right">{g.thickness}</td>
+                          <td className="text-right">{g.net_m2.toFixed(3)}</td>
+                          <td className="text-right">{g.order_m2.toFixed(3)}</td>
+                          <td className="text-right whitespace-nowrap">{g.sheet_label}</td>
+                          <td className="text-right">{g.edging_m.toFixed(2)} m</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+              );
+            })}
+            <p className="text-[10px] text-ink-400">
+              Sheets are a division with a label, never a cutting plan. Waste {invoiceSummary[0]?.waste_pct ?? 15} %
+              and the {profile.bom?.sheet?.width ?? 2800}×{profile.bom?.sheet?.height ?? 2070} sheet are
+              profile numbers — owner to confirm (15.08.2026).
+            </p>
+
+            <section data-bom-ironmongery="1">
+              <h3 className="text-[10px] uppercase tracking-wide text-ink-400 mb-1">Ironmongery</h3>
+              <ul className="space-y-0.5">
+                {invoiceIron.map((l, i) => (
+                  <li
+                    key={`${l.role}-${i}`}
+                    className={`flex items-baseline gap-2 border-b border-shell-700 py-0.5 ${l.yellow ? 'text-status-warn' : ''}`}
+                    data-bom-line={l.role}
+                    data-bom-yellow={l.yellow ? '1' : undefined}
+                  >
+                    <span className="flex-1">{l.label}</span>
+                    <span className="text-right whitespace-nowrap">{l.qty} {l.unit}</span>
+                    <span className="w-[170px] text-right text-[11px] whitespace-nowrap">
+                      {l.article
+                        ? <>art. {l.article}</>
+                        : <>{l.spec_label} · SPEC</>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[10px] text-ink-400 mt-1">
+                A yellow line is a NAMED SPEC the registry does not know an article for — it informs,
+                it never blocks, and nothing is invented or dropped.
+              </p>
+            </section>
+          </div>
         ) : (
           <div className="p-3 space-y-3">
             <p className="text-[11px] text-ink-400">
@@ -228,6 +334,7 @@ export default function BomPanel({ onExportCsv, onExportPdf }) {
         </div>
         <div className="flex gap-2">
           <button type="button" className="cc-btn flex-1" onClick={onExportCsv}>Cutting list CSV</button>
+          <button type="button" className="cc-btn flex-1" data-bom-export="1" onClick={onExportBom}>BOM CSV</button>
           <button type="button" className="cc-btn flex-1" onClick={onExportPdf}>PDF</button>
           <button
             type="button"

@@ -3430,6 +3430,22 @@ export const DEFAULT_CABINET_PROFILE = {
     codes: { left: '<', right: '>', topBottom: '^v', all: '<>^v', none: '' },
   },
 
+  // ─── TURN 32 (CLAUDE.md F5): THE BOM THE WORKSHOP CAN INVOICE FROM ────────
+  //
+  // The sheets question is a DIVISION with a label ("~N sheets of
+  // 2800×2070"), never a cutting plan — nesting is explicitly parked. The
+  // PURCHASE sheet here is not the CNC bed above (`cnc.sheet`, the owner's
+  // 2790×2060): one is what the supplier sells, the other is what the
+  // machine holds, and they move separately.
+  //
+  //   wastePct — OWNER — unanswered; ship 15, owner to confirm (15.08.2026).
+  //   sheet    — OWNER — unanswered; ship 2800×2070, owner to confirm
+  //              (15.08.2026).
+  bom: {
+    wastePct: 15,
+    sheet: { width: 2800, height: 2070 },
+  },
+
   // ─── The room a unit stands in (turn 8, CLAUDE.md F3) ───
   // Not the room's SHAPE — that is the project's (engine/room.js). This is what
   // the workshop knows about walls in general.
@@ -4231,6 +4247,8 @@ export function migrateCabinetProfile(profile) {
       sheet: { ...D.cnc.sheet, ...profile.cnc?.sheet },
     },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
+    // Turn 32 (CLAUDE.md F5): key by key, like every other nested block.
+    bom: { ...D.bom, ...profile.bom, sheet: { ...D.bom.sheet, ...profile.bom?.sheet } },
     editor: {
       ...D.editor,
       ...profile.editor,

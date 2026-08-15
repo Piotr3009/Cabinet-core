@@ -289,9 +289,11 @@ export function metalHingeFinish(profile, metal) {
  *            spec_label:string}}
  */
 export function hingeAutomat({
-  frontThickness = null, innerDrawer = false, metal = null, softClose = true,
+  frontThickness = null, innerDrawer = false, metal = null, softClose = true, angle: angleIn = null,
 } = {}, { profile = null, lookup = null } = {}) {
-  const angle = hingeAngleFor({ frontThickness, innerDrawer });
+  // Turn 32 (CLAUDE.md F5): the BOM's groups already KNOW their angle (the
+  // engine resolved it per door); a caller that says so skips the rule.
+  const angle = angleIn ?? hingeAngleFor({ frontThickness, innerDrawer });
   const variant = softClose ? 'soft' : 'std';
   const finish = metalHingeFinish(profile, metal);
   let row = null;

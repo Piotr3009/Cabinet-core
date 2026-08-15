@@ -101,10 +101,14 @@ export default function NewProjectFlow({
   // not want to is one click from the canvas. It is asked HERE and nowhere else.
   const [asking, setAsking] = useState(false);
   const [setName, setSetName] = useState('');
+  // ─── CHAT FIX 15.08.2026 (evening): THE TWO CONTAINER GATES ───
+  // The mockup's rule — the fronts open when the CARCASSES are saved, and
+  // "Next — hardware" opens when BOTH containers are. WizardSettings owns the
+  // buttons; this only listens.
+  const [gates, setGates] = useState({ carcasses: false, fronts: false });
   const saveSet = useSettingsSetsStore((s) => s.save);
 
   const start = () => {
-    if (asking) { onStart(); return; }
     setAsking(true);
     setSetName(info.name.trim() || `${type.label} standard`);
   };
@@ -173,8 +177,12 @@ export default function NewProjectFlow({
             <button
               type="button"
               className="cc-btn-gold"
-              disabled={blocked}
-              title={blocked ? blockers.map((b) => b.message).join('\n') : undefined}
+              disabled={blocked || !gates.carcasses || !gates.fronts}
+              title={blocked
+                ? blockers.map((b) => b.message).join('\n')
+                : (!gates.carcasses || !gates.fronts
+                  ? 'Save the carcasses and the fronts to continue'
+                  : undefined)}
               data-next-hardware="1"
               onClick={() => setStep('hardware')}
             >
@@ -182,16 +190,30 @@ export default function NewProjectFlow({
             </button>
           )}
           {step === 'hardware' && !asking && (
-            <button
-              type="button"
-              className="cc-btn-gold"
-              disabled={blockers.length > 0}
-              title={blockers.length ? blockers.map((b) => b.message).join('\n') : undefined}
-              data-start-designing="1"
-              onClick={start}
-            >
-              Start designing
-            </button>
+            <>
+              {/* CHAT FIX 15.08.2026 (evening): the owner's order — Start is
+                  the FIRST answer and starts at once; keeping a set is the
+                  second, and only IT asks for a name. */}
+              <button
+                type="button"
+                className="cc-btn"
+                disabled={blockers.length > 0}
+                data-save-as-set="1"
+                onClick={start}
+              >
+                Save as set &amp; start
+              </button>
+              <button
+                type="button"
+                className="cc-btn-gold"
+                disabled={blockers.length > 0}
+                title={blockers.length ? blockers.map((b) => b.message).join('\n') : undefined}
+                data-start-designing="1"
+                onClick={() => onStart()}
+              >
+                Start designing
+              </button>
+            </>
           )}
           {step === 'hardware' && asking && (
             <>
@@ -343,7 +365,10 @@ export default function NewProjectFlow({
               the SAME store setters Design Settings uses, so nothing set
               here can fail to reach the furniture. The full panel stays in
               the Settings menu. */
-          <WizardSettings onRoomSetup={() => setStep('room')} />
+          <WizardSettings
+            onRoomSetup={() => setStep('room')}
+            onGate={(carcasses, fronts) => setGates({ carcasses, fronts })}
+          />
         )}
 
         {step === 'hardware' && (

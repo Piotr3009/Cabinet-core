@@ -254,6 +254,13 @@ export const DEFAULT_DESIGN = {
   // line in the BOM; the GEOMETRY stays computed — the drawer still exists
   // in 3D and the front still needs its drilling. `null` = nobody has said,
   // which is 'same'.
+  // ─── CHAT FIX 15.08.2026 (evening): THE CNC CORNER, RECORDED ─────────────
+  // The owner: the dog-bone choice and its drawing "zginął nam… to będzie
+  // ważne na przyszłość — trzeba przywrócić." The MACHINING already cuts the
+  // relief the LISP draws; this field RECORDS the project's choice ('dogbone'
+  // | 'square') for the day the export branches on it. Nothing reads it into
+  // a hole yet — recorded, not consumed — so every golden fixture stands.
+  cncCorner: 'dogbone',
   drawerBoxes: { mode: null },
   // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
   // which is what a project that has never opened the section means. Resolved
@@ -354,6 +361,8 @@ export function migrateDesign(design) {
     drawerBoxes: {
       mode: d.drawerBoxes?.mode === 'ready' || d.drawerBoxes?.mode === 'same' ? d.drawerBoxes.mode : null,
     },
+    // CHAT FIX 15.08.2026 (evening): the recorded CNC corner — see the base.
+    cncCorner: d.cncCorner === 'square' ? 'square' : 'dogbone',
     runners: {
       system: d.runners?.system ? String(d.runners.system) : null,
       // Only a variant the PROFILE offers survives the migration: a project

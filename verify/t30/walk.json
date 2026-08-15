@@ -12,34 +12,29 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F9 — the per-unit control’s own buttons are on the MULTI-selection",
+   "label": "F10 — the job starts on the workshop’s own default, and one cabinet is grooved by hand",
    "ok": true,
-   "detail": "3 buttons (None + the profile's two heights)"
+   "detail": "project S · cut S/S/G"
   },
   {
-   "label": "F9 — nothing is fitted to start with",
+   "label": "F10 — choosing Flat in the menu sets the PROJECT default",
    "ok": true,
-   "detail": "0"
+   "detail": "F"
   },
   {
-   "label": "F9 — ONE press fits it to all three",
+   "label": "F10 — …and every front WITHOUT its own override follows, in the CUT",
    "ok": true,
-   "detail": "heights 100"
+   "detail": "abwx:F · 26r9:F · 4jrq:G"
   },
   {
-   "label": "F9 — …and it is ONE MOULDING across the run, not three",
+   "label": "F10 — …while the one somebody made GROOVED survives",
    "ok": true,
-   "detail": "1 owner spanning 3 cabinets, 1800 mm long"
+   "detail": "G"
   },
   {
-   "label": "F9 — …with the infill it is fixed to asked for, exactly as the per-unit press does",
+   "label": "F10 — and it is the CUT that moved: a shaker is machined, a flat front is not",
    "ok": true,
-   "detail": "40 mm of top infill"
-  },
-  {
-   "label": "F9 — and one press takes it off again",
-   "ok": true,
-   "detail": "0"
+   "detail": "1 pockets → 0"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

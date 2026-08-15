@@ -29,7 +29,7 @@ import {
 } from '../engine/room.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, normaliseHandle, projectHeights,
-  setCarcassTypeCount, withFrontColour, withRunMaterial,
+  resolveUnitDesign, setCarcassTypeCount, withFrontColour, withRunMaterial,
 } from '../engine/design.js';
 import { handleClassCount } from '../engine/handles.js';
 // Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
@@ -103,6 +103,19 @@ function applyDesignPatch(stored, patch) {
 function newUnit(typeId, profile, index, design) {
   const type = getUnitType(typeId);
   const params = defaultParamsFor(type.id, profile);
+  // ─── TURN 30 (CLAUDE.md F10): A NEW CABINET HAS NO STYLE OF ITS OWN ──────
+  //
+  // `defaultParamsFor` stamps the profile's default front type, and that stamp
+  // is the FIXTURE contract for a bare `computeCabinet()` — it must not move
+  // there. Inside a PROJECT it is the wrong answer: a cabinet somebody has just
+  // placed has expressed no opinion about its front style, and stamping one
+  // made the project's own answer unreachable for ever after.
+  //
+  // `null` is "nobody has said", which is the same null every other layer in
+  // this app uses for it, and `paramsForEngine` resolves it through
+  // `resolveUnitDesign`'s cascade: this unit → its door style → the PROJECT.
+  params.front_type = null;
+  params.front_style_schema = FRONT_STYLE_SCHEMA;
   // A drawer unit IS its drawers — the LISP kit has no "how many" question, so
   // the stack exists from the moment the unit is placed.
   //
@@ -316,6 +329,26 @@ function paramsForEngine(unit, design = null) {
     // Travels exactly as the hinge standard and the runner variant do: an INPUT
     // in the design layer, never a formula in the engine. Left out — a bare kit
     // call, every golden fixture — the engine falls back to the profile's 70.
+    // ─── TURN 30 (CLAUDE.md F10): THE PROJECT'S FRONT STYLE PROPAGATES ─────
+    //
+    // Choose "Flat" in the main menu and every front without its own override
+    // follows. It did NOT: the project's answer lived in `design.fronts.style`
+    // and stopped there, because the engine reads `params.front_type` and
+    // falls back to `profile.front.defaultType` — the workshop's Shaker — so a
+    // whole job set to Flat was still CUT as Shaker.
+    //
+    // The cascade already existed and was already correct; what was missing was
+    // that it never reached the engine. `resolveUnitDesign` is that cascade,
+    // written once in turn 13 and read by the 3-D, the drawings and the BOM:
+    //
+    //     this unit's own `front_type`  →  its door STYLE's  →  the PROJECT's
+    //
+    // so per-unit overrides survive by construction, exactly as the hinge
+    // finish's do. It is passed HERE, on the override channel, and never as a
+    // formula in the engine: a bare `computeCabinet()` — every golden fixture —
+    // is handed no design at all and falls back to the profile's own default,
+    // which is what the AutoLISP cuts.
+    front_type: design ? resolveUnitDesign(unit, design).frontType : p.front_type,
     shaker_frame_mm: design?.fronts?.shakerFrame ?? null,
     // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ─────────────────────
     // The owner's standard is 50 and the LISP's is 70, so 70 stays the ENGINE's
@@ -390,7 +423,48 @@ export function migrateUnitShelves(unit) {
   };
 }
 
-const migrateUnits = (units) => (Array.isArray(units) ? units.map(migrateUnitShelves) : []);
+// ─── FRONT-STYLE SCHEMA (turn 30, CLAUDE.md F10) ───────────────────────────
+//
+// Owner: choosing "flat" in the main menu must set the PROJECT default front
+// style, and every front without its own override must follow. It did not, and
+// the reason was not the cascade — `engine/design.js resolveUnitDesign` has had
+// it right since turn 13 — it was that NO UNIT COULD SAY "I have no override".
+//
+// `defaultParamsFor` stamps `front_type: profile.front.defaultType` on every
+// cabinet at birth. That value is the fixture contract for a bare
+// `computeCabinet()` and must not move. But inside a PROJECT it made every
+// cabinet look like it had chosen Shaker on purpose, so the project's own
+// answer could never reach one, and a job set to Flat was still CUT as Shaker.
+//
+// So: a stored value EQUAL TO THE PROFILE'S DEFAULT is a STAMP, not a choice —
+// until tonight there was no way to express the difference — and it is read as
+// "nobody has said". A value that differs is a genuine override and is left
+// exactly alone. A migration with a stamp, the same shape SHELF_SCHEMA above
+// has, so it happens once and says so.
+//
+// THE COST, NAMED: a workshop that had deliberately set Shaker on ONE cabinet
+// of a Flat job loses that one exception, and gets it back with one press of
+// the unit's own Front type select — which from tonight also offers "Project
+// default" and can therefore express the other half of the question.
+const FRONT_STYLE_SCHEMA = 1;
+
+export function migrateUnitFrontStyle(unit, profile = null) {
+  if (!unit?.params || unit.params.front_style_schema === FRONT_STYLE_SCHEMA) return unit;
+  const stamp = (profile || getCabinetProfile())?.front?.defaultType;
+  const own = unit.params.front_type;
+  return {
+    ...unit,
+    params: {
+      ...unit.params,
+      front_style_schema: FRONT_STYLE_SCHEMA,
+      front_type: own === stamp ? null : own,
+    },
+  };
+}
+
+const migrateUnits = (units) => (Array.isArray(units)
+  ? units.map((u) => migrateUnitFrontStyle(migrateUnitShelves(u)))
+  : []);
 
 function loadCache() {
   try {

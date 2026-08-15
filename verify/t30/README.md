@@ -417,3 +417,42 @@ panel and appears; not one hole is added.
 | `9a-three-tall-units-selected-the-bulk-cornice-buttons.png` | the buttons on the selection |
 | `9b-one-cornice-across-all-three-from-one-press.png` | one moulding across the run |
 | `9c-and-one-press-takes-it-off-again.png` | and off again |
+
+---
+
+## F10 [MEDIUM] — the project's front style propagates
+
+**The cascade was never wrong.** `engine/design.js resolveUnitDesign` has had it
+right since turn 13: *this unit's own `front_type` → its door STYLE's → the
+PROJECT's*.
+
+The fault was that **no cabinet could say it had no override**.
+`defaultParamsFor` stamps `front_type: profile.front.defaultType` on every unit
+at birth — the fixture contract for a bare `computeCabinet()`, which must not
+move — so inside a project every cabinet looked like it had chosen Shaker on
+purpose. A job set to Flat was still **cut** as Shaker.
+
+Two changes, neither a formula: a cabinet placed in a project is born with
+`front_type: null`, and the answer travels the override channel in
+`paramsForEngine` through the cascade that already existed. A project saved
+before tonight is migrated with a stamp — a stored value **equal to the
+profile's default** is read as a stamp, a value that **differs** is a real
+override and is left alone.
+
+### Read off the running app, three cabinets, one of them grooved by hand
+
+`node scripts/e2e-turn30.mjs --only f10` → **7 ok · 0 failed**.
+
+| | |
+| --- | --- |
+| before | project `S`, cut `S/S/G` |
+| pressing **Flat** in the front-style gallery | project `F` |
+| the two with no override | `F` · `F` — in the **cut**, not a label |
+| the one somebody made grooved | `G`, untouched |
+| and it really is the cut | the shaker's panel pocket **1 → 0** |
+
+| file | |
+| --- | --- |
+| `10a-a-shaker-job-with-one-grooved-front.png` | before |
+| `10b-the-front-style-gallery-in-the-main-menu.png` | the menu control |
+| `10c-flat-everywhere-except-the-front-with-its-own-answer.png` | after |

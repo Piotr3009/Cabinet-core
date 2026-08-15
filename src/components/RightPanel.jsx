@@ -91,6 +91,9 @@ export default function RightPanel() {
   // which React reports as "Maximum update depth exceeded".
   const storedDesign = useProjectStore((s) => s.project.design);
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
+  // Turn 30 (CLAUDE.md F10): what the PROJECT resolves a front style to, so
+  // "Project default" can name it rather than being a blank line.
+  const projectFrontStyle = design.fronts.style;
   const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
   const walls = useMemo(() => roomWalls(room), [room]);
@@ -405,8 +408,24 @@ export default function RightPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
+              {/* ─── TURN 30 (CLAUDE.md F10): …AND "PROJECT DEFAULT" ─────────
+                  The project's front style propagates to every front WITHOUT
+                  ITS OWN OVERRIDE, and until tonight no cabinet could say it
+                  had none: `defaultParamsFor` stamped one at birth, so this
+                  select could only ever show a choice. The empty value is that
+                  missing answer — the same "Reset to project" grammar the
+                  front-type PALETTE already uses — and it names the style the
+                  project resolves to, so the field is never a blank. */}
               <span className="cc-label">Front type</span>
-              <select className="cc-input" value={unit.params.front_type} onChange={(e) => updateUnitParams(unit.id, { front_type: e.target.value })}>
+              <select
+                className="cc-input"
+                data-unit-front-type="1"
+                value={unit.params.front_type || ''}
+                onChange={(e) => updateUnitParams(unit.id, { front_type: e.target.value || null })}
+              >
+                <option value="">
+                  Project default ({profile.front.types[projectFrontStyle]?.label || projectFrontStyle})
+                </option>
                 {Object.entries(profile.front.types).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>

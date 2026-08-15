@@ -1288,6 +1288,75 @@ async function main() {
       await shot('9c-and-one-press-takes-it-off-again');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F10 [MEDIUM] — the project's front style propagates
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f10')) {
+      await newRoom('Turn 30 walk — F10');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const ids = [];
+        let near = null;
+        for (let i = 0; i < 3; i += 1) {
+          const u = near ? s.addUnit('BUD', { near, side: 'right' }) : s.addUnit('BUD');
+          s.updateUnitParams(u.id, { width: 600, doors: true });
+          ids.push(u.id);
+          near = u.id;
+        }
+        // …and ONE of them told to be grooved, by hand, so the survival of an
+        // override is proved rather than promised.
+        s.updateUnitParams(ids[2], { front_type: 'G' });
+        window.__t30 = { ids };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+
+      const readFronts = `
+        const s = ${P}.project.getState();
+        return {
+          project: s.project.design.fronts.style,
+          cut: window.__t30.ids.map((id) => {
+            const r = s.unitResult(id);
+            const f = r.panels.find((p) => p.part === 'FRONT');
+            return { id, type: r.params.front_type, pockets: (f && f.cnc && f.cnc.pockets ? f.cnc.pockets : []).length };
+          }),
+        };
+      `;
+      const before = await page.evaluate(readFronts);
+      check('F10 — the job starts on the workshop’s own default, and one cabinet is grooved by hand',
+        before.project === 'S' && before.cut[0].type === 'S' && before.cut[2].type === 'G',
+        `project ${before.project} · cut ${before.cut.map((c) => c.type).join('/')}`);
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.35, 0.35, 1.35]);
+      await page.sleep(900);
+      await shot('10a-a-shaker-job-with-one-grooved-front');
+
+      // The main menu's own control: Settings, the front-style gallery, Flat.
+      await page.evaluate(`${P}.ui.getState().openModal('design', { at: { x: 320, y: 200 } }); return true;`);
+      await page.sleep(800);
+      await shot('10b-the-front-style-gallery-in-the-main-menu');
+      await page.click('[data-style-tile="F"]');
+      await page.sleep(1200);
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(900);
+
+      const after = await page.evaluate(readFronts);
+      measurements.f10 = { before, after };
+      check('F10 — choosing Flat in the menu sets the PROJECT default',
+        after.project === 'F', after.project);
+      check('F10 — …and every front WITHOUT its own override follows, in the CUT',
+        after.cut[0].type === 'F' && after.cut[1].type === 'F',
+        after.cut.map((c) => `${c.id.slice(-4)}:${c.type}`).join(' · '));
+      check('F10 — …while the one somebody made GROOVED survives',
+        after.cut[2].type === 'G', after.cut[2].type);
+      check('F10 — and it is the CUT that moved: a shaker is machined, a flat front is not',
+        before.cut[0].pockets > 0 && after.cut[0].pockets === 0,
+        `${before.cut[0].pockets} pockets → ${after.cut[0].pockets}`);
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.35, 0.35, 1.35]);
+      await page.sleep(900);
+      await shot('10c-flat-everywhere-except-the-front-with-its-own-answer');
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

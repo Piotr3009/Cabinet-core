@@ -1,95 +1,43 @@
 {
- "f9": {
+ "f10": {
   "before": {
-   "runs": [
+   "project": "S",
+   "cut": [
     {
-     "cornice": 0,
-     "infill": 0,
-     "run": null
+     "id": "u_ffmabwx",
+     "type": "S",
+     "pockets": 1
     },
     {
-     "cornice": 0,
-     "infill": 0,
-     "run": null
+     "id": "u_8y126r9",
+     "type": "S",
+     "pockets": 1
     },
     {
-     "cornice": 0,
-     "infill": 0,
-     "run": null
+     "id": "u_6nm4jrq",
+     "type": "G",
+     "pockets": 0
     }
-   ],
-   "owners": 0,
-   "length": null,
-   "spans": 0,
-   "heights": [
-    0
-   ],
-   "infills": [
-    0
    ]
   },
   "after": {
-   "runs": [
+   "project": "F",
+   "cut": [
     {
-     "cornice": 100,
-     "infill": 40,
-     "run": {
-      "role": "owner",
-      "height": 100,
-      "projection": 65,
-      "offset": 0,
-      "length": 1800,
-      "ends": {
-       "left": "open",
-       "right": "open"
-      },
-      "mitres": {
-       "left": true,
-       "right": true
-      },
-      "corners": {
-       "left": null,
-       "right": null
-      },
-      "returns": {
-       "left": 596,
-       "right": 596
-      },
-      "infillHeight": 40,
-      "rise": 60,
-      "top": 2350,
-      "unitIds": [
-       "u_4aagtie",
-       "u_ubchxno",
-       "u_inuaid5"
-      ]
-     }
+     "id": "u_ffmabwx",
+     "type": "F",
+     "pockets": 0
     },
     {
-     "cornice": 100,
-     "infill": 40,
-     "run": {
-      "role": "member",
-      "ownerId": "u_4aagtie"
-     }
+     "id": "u_8y126r9",
+     "type": "F",
+     "pockets": 0
     },
     {
-     "cornice": 100,
-     "infill": 40,
-     "run": {
-      "role": "member",
-      "ownerId": "u_4aagtie"
-     }
+     "id": "u_6nm4jrq",
+     "type": "G",
+     "pockets": 0
     }
-   ],
-   "owners": 1,
-   "length": 1800,
-   "spans": 3,
-   "heights": [
-    100
-   ],
-   "infills": [
-    40
    ]
   }
  }

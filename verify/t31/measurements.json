@@ -1,4 +1,357 @@
 {
+ "f1": {
+  "cabinet": {
+   "name": "cabinet",
+   "anchored": true,
+   "coversTheClick": false
+  },
+  "cabinetDrag": 286,
+  "door": {
+   "name": "element",
+   "anchored": true,
+   "coversTheClick": false
+  },
+  "doorDrag": 238,
+  "finish": {
+   "name": "unit-finish",
+   "anchored": true,
+   "clear": true,
+   "menu": {
+    "x": 390,
+    "y": 262.5,
+    "width": 180,
+    "height": 729.5
+   },
+   "at": {
+    "x": 480,
+    "y": 706
+   }
+  },
+  "finishDrag": 306,
+  "faults": []
+ },
+ "f2": {
+  "dirty": {
+   "afterSave": false,
+   "afterEdit": true,
+   "afterShelf": true
+  },
+  "levels": {
+   "seen": [
+    {
+     "level": "grey",
+     "text": "Turn-31-cnc-1508-2130.dxf — 7 parts."
+    },
+    {
+     "level": "red",
+     "text": "Export held: 02 BACK has a doubled edge.click to dismiss"
+    },
+    {
+     "level": "yellow",
+     "text": "Hinge rows 60 mm apart — moved back."
+    }
+   ],
+   "centre": {
+    "x": 650,
+    "y": 505,
+    "w": 301,
+    "h": 38
+   },
+   "bottom": {
+    "x": 589,
+    "y": 892,
+    "w": 423,
+    "h": 84
+   }
+  },
+  "afterClickAway": [
+   "red"
+  ],
+  "afterRedClick": [],
+  "leaving": {
+   "screen": "start",
+   "red": "Save the project — unsaved changesclick to dismiss"
+  }
+ },
+ "f3": {
+  "rowsBefore": [
+   100,
+   470,
+   670
+  ],
+  "nudges": 63,
+  "blocked": {
+   "message": "01: hinge rows at 100 and 155 mm are 55 mm apart — under the 60 mm minimum, so both hinges cannot be fitted.",
+   "rows": [
+    100,
+    160,
+    670
+   ],
+   "gap": 60
+  },
+  "guarded": {
+   "rows": [
+    100,
+    100,
+    470
+   ],
+   "findings": [
+    {
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "01-F"
+    },
+    {
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "01-F"
+    },
+    {
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "01-F"
+    },
+    {
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "BUL"
+    },
+    {
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "BUL"
+    },
+    {
+     "check": 10,
+     "code": "hinge-rows-too-close",
+     "level": "red",
+     "panel": null
+    }
+   ],
+   "held": [
+    "01-F",
+    "BUL"
+   ],
+   "message": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway."
+  },
+  "exported": {
+   "filename": "01-cnc-custom.dxf",
+   "parts": 4,
+   "all": 6,
+   "held": 2,
+   "gateMessage": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway."
+  },
+  "shown": {
+   "text": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway.click to dismiss\nExport anyway",
+   "action": "Export anyway"
+  },
+  "clean": {
+   "parts": 6,
+   "all": 6,
+   "held": 0,
+   "gateMessage": null
+  }
+ },
+ "f4": {
+  "rows": [
+   {
+    "mm": 1.5,
+    "kind": "endPanel",
+    "level": "red",
+    "text": "▲\n02 02-F → an end panel: 1.5 mm — under the 3 mm minimum."
+   }
+  ],
+  "modal": {
+   "anchored": true,
+   "subject": "02 02-F → an end panel: 1.5 mm — under the 3 mm minimum.",
+   "planMm": 1.5,
+   "planText": "Narrow the front by 1.5 mm on its right edge.",
+   "narrow": "Narrow the front by 1.5 mm",
+   "infill": "Insert an infill",
+   "cost": "Narrowing a front changes the BOM and the drilling."
+  },
+  "before": {
+   "w": 597,
+   "x": 1.5,
+   "hinge": "L",
+   "cups": [
+    575.5,
+    575.5,
+    575.5
+   ],
+   "ys": [
+    100,
+    470,
+    670
+   ]
+  },
+  "after": {
+   "w": 595.5,
+   "x": 1.5,
+   "trim": {
+    "left": 0,
+    "right": 1.5
+   },
+   "cups": [
+    574,
+    574,
+    574
+   ],
+   "ys": [
+    100,
+    470,
+    670
+   ],
+   "rowsLeft": 0
+  },
+  "carcass": {
+   "touching": 0,
+   "apart": 1,
+   "mm": 4,
+   "fix": "close-to-touch",
+   "message": "01 and 02 stand 4 mm apart — carcasses in a run must touch."
+  }
+ },
+ "f6": {
+  "button": {
+   "count": 9,
+   "text": "Check · 9",
+   "besideBom": true
+  },
+  "panel": {
+   "count": 9,
+   "summary": "7 FAULTS · 2 TO LOOK AT",
+   "rows": [
+    {
+     "check": 4,
+     "level": "red",
+     "text": "#4 · DOOR TOO HEAVY FOR ITS HINGES\nT01 T01-F: 2097 mm and 20.66 kg on 3 hinge  — the Blum CLIP top table a k  for 5."
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nBUL: HINGES_5MM ⌀5 at (37, 84) i  drilled 2 time  — the bit goe  back into a hole it ha  already made"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nBUL: HINGES_5MM ⌀5 at (37, 116) i  drilled 2 time  — the bit goe  back into a hole it ha  already mad"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_3MM ⌀3 at (566, 77) i  drilled 2 time  — the bit goe  back into a hole it ha  alr"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_35MM ⌀35 at (575.5, 100) i  drilled 2 time  — the bit goe  back into a hole it ha"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nT01-F: FRONT_HINGES_3MM ⌀3 at (566, 123) i  drilled 2 time  — the bit goe  back into a hole it ha  al"
+    },
+    {
+     "check": 10,
+     "level": "red",
+     "text": "#10 · DRILL FAULTS\nT01: two hinge row  are both at 100 mm — every hole in that row i  drilled twice."
+    },
+    {
+     "check": 3,
+     "level": "yellow",
+     "text": "#3 · TALL CABINET WITH NO FIXED SHELF\nT01: 2100 mm tall with 2  helve  and none of them fixed — add one fixed  helf."
+    },
+    {
+     "check": 6,
+     "level": "yellow",
+     "text": "#6 · BASE RUN WITH NO PLINTH\nT01:  tanding on leg  with no plinth."
+    }
+   ]
+  },
+  "flight": {
+   "modal": "element",
+   "selected": {
+    "unitId": "u_r5zq1g4",
+    "elementRef": "T01-F"
+   },
+   "movedM": 0
+  },
+  "preflight": {
+   "panelOpen": true,
+   "message": "Check: 7 faults before this goes to the machine.click to dismiss"
+  }
+ },
+ "f7": {
+  "boxes": {
+   "auras": [
+    {
+     "kind": "hinge",
+     "id": "01-F-100",
+     "mm": [
+      38,
+      27,
+      78
+     ]
+    },
+    {
+     "kind": "hinge",
+     "id": "01-F-470",
+     "mm": [
+      38,
+      27,
+      78
+     ]
+    },
+    {
+     "kind": "hinge",
+     "id": "01-F-670",
+     "mm": [
+      38,
+      27,
+      78
+     ]
+    },
+    {
+     "kind": "handle",
+     "id": "01-F",
+     "mm": [
+      28,
+      184,
+      60
+     ]
+    }
+   ],
+   "profileMm": 8
+  },
+  "showing": {
+   "sprites": 1,
+   "text": "sprite"
+  },
+  "linger": {
+   "immediately": 1,
+   "afterLinger": 0,
+   "ms": 300
+  }
+ },
+ "f8": {
+  "opened": {
+   "anchored": true,
+   "width": "600",
+   "height": "770",
+   "focused": "width",
+   "active": "INPUT:\"cc-input text-right w-[110px]\""
+  },
+  "after": {
+   "width": 750,
+   "modal": false
+  }
+ },
  "f9": {
   "hoodDoorH": 367,
   "plainDoorH": 717,

@@ -115,10 +115,27 @@ export default function DoorModal() {
       anchor={anchor}
       width="w-[340px]"
     >
-      <div data-door-modal={panel.id} data-door-modal-sections={isDoor ? 'A,B' : 'A'}>
+      <div data-door-modal={panel.id} data-door-modal-sections={isDoor ? 'B,A' : 'A'}>
+        {/* ─── TURN 33 (CLAUDE.md F7): ONE HINGE BLOCK, AT THE TOP ─────────
+            The owner walked the modal and found hinge controls in TWO places:
+            the field list's rows (no arrows, no picker) and turn 19's full
+            section below. "Ten górny usuń" — the upper one is GONE (the
+            `omit` below keeps the right-hand panel's own rows untouched) and
+            the WORKING block — the arrow mover and the hinge picker — stands
+            where it sat: one block, at the top. */}
+        {isDoor ? (
+          <HingeSection
+            ref={hingesRef}
+            unit={unit}
+            panel={panel}
+            result={result}
+            row={Number.isFinite(Number(args?.hingeIndex)) ? Number(args.hingeIndex) : null}
+          />
+        ) : null}
+
         {/* ─── SECTION A — the piece ─────────────────────────────────────── */}
         <section data-door-section="A">
-          <ElementProperties unit={unit} panel={panel} item={item} compact />
+          <ElementProperties unit={unit} panel={panel} item={item} compact omit={['hinges']} />
           {/* ─── Turn 25 (CLAUDE.md F4): ADD HANDLE ───
               Two questions and no more: which TYPE, and — for a bar — the
               screw CENTRES. Where it goes is the owner's law
@@ -143,17 +160,6 @@ export default function DoorModal() {
               cannot see the weight cannot argue with the proposal. */}
           <PieceWeight unit={unit} panel={panel} />
         </section>
-
-        {/* ─── SECTION B — the hinges ────────────────────────────────────── */}
-        {isDoor ? (
-          <HingeSection
-            ref={hingesRef}
-            unit={unit}
-            panel={panel}
-            result={result}
-            row={Number.isFinite(Number(args?.hingeIndex)) ? Number(args.hingeIndex) : null}
-          />
-        ) : null}
 
         <p className="text-[11px] text-ink-400 mt-2">
           The same fields are in the right-hand panel, which is already showing this piece.
@@ -567,7 +573,14 @@ function HandleSection({ unit, panel }) {
             {spec.problem ? ` · ${spec.problem}` : ''}
           </p>
 
-          <div className="flex items-center gap-1 flex-wrap">
+          <div
+            className="flex items-center gap-1 flex-wrap"
+            // ─── TURN 33 (CLAUDE.md F7): the owner's law, said where the hand
+            // is: x is measured from THIS door's own handle edge, so a pair
+            // mirrors — 30 from the left edge on one leaf, 30 from the right
+            // on the other. 50/50, never 60/40.
+            title="x is measured from this door’s own handle edge — a left/right pair mirrors, so the handles stay symmetric."
+          >
             <span className="text-[11px] text-ink-400">Move</span>
             {[['x', -10], ['x', 10], ['y', -10], ['y', 10]].map(([axis, mm]) => (
               <button

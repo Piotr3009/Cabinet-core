@@ -316,11 +316,36 @@ export function resolveHandle({
   // A PROJECT offset is stored PER CLASS — "moving one moves all" moves the
   // base doors without touching the wall doors, because those two lines were
   // never meant to agree with each other. A FRONT's own offset is its own.
+  //
+  // ─── TURN 33 (CLAUDE.md F7): THE OFFSET IS EDGE-RELATIVE, AND MIRRORS ────
+  //
+  // The owner's law, off his own pair: "30 means 30 from the LEFT edge on the
+  // left door and 30 from the RIGHT edge on the right door" — the offset is
+  // measured FROM THE DOOR'S OWN HANDLE EDGE, so a pair stays 50/50, never
+  // 60/40. The fault was one line: `x: base.x + offset.x` added the stored
+  // number in the SHEET frame, whose +x runs the same room direction on every
+  // leaf — so "move left" walked both handles of a pair the same way, one
+  // toward its edge and one away.
+  //
+  // The law, in the frame it is written into: positive `offset.x` moves the
+  // handle AWAY from its own handle (opening) edge, INTO the door — sheet +x
+  // on an L-hinged leaf (its edge is at the sheet origin), sheet −x on an
+  // R-hinged one. One sign, exactly where the BASE is already hand-mirrored
+  // (`openingAtSheetOrigin`, handleReference above). A horizontal front is
+  // one centred piece with no pair to mirror against and keeps the plain
+  // sheet reading it has always had.
+  //
+  // MIGRATION, 15.08.2026 (dated, the spec's own ask): stored offsets are
+  // REINTERPRETED as edge-offsets — for every L-hinged door the two readings
+  // are the same number; an R-hinged door's stored x now reads mirrored,
+  // which is the behaviour the owner reported as the fault. No data moves;
+  // golden fixtures carry no handle offsets (bare calls pass no handle).
   const offset = own?.offset || chosen.offsets?.[handleClass] || chosen.offset || null;
+  const intoDoor = base.axis === 'vertical' && hinge === 'R' ? -1 : 1;
   const reference = offset
     ? {
       ...base,
-      x: base.x + (Number(offset.x) || 0),
+      x: base.x + intoDoor * (Number(offset.x) || 0),
       y: base.y + (Number(offset.y) || 0),
     }
     : base;

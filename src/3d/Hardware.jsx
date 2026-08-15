@@ -823,7 +823,6 @@ function Runners({
     });
     return {
       row: r,
-      entry,
       // Turn 21 (CLAUDE.md F2.1): the hinges' own helper, for the same reason.
       url: entry ? runnerModelSrc(entry, profile, storageBase) : null,
       // The manifest names L and R separately. Where it gives one file for
@@ -842,12 +841,7 @@ function Runners({
   const models = useMemo(() => wanted.map((w) => {
     if (!w.url) return null;
     const source = runnerSource(w.url);
-    // ─── CHAT FIX 15.08.2026: FIT AGAINST WHAT THE CATALOGUE SENT ──────────
-    // The snap (engine/runners.js) may honestly answer one step SHORTER than
-    // the ladder asked; judging that file against the ASK re-rejected every
-    // snapped model and the grey profile survived the very fix that found
-    // the file. The model must match what the catalogue SAYS it is.
-    if (!source?.loaded || !runnerModelFits(source, w.entry?.nl ?? w.row.length, profile)) return null;
+    if (!source?.loaded || !runnerModelFits(source, w.row.length, profile)) return null;
     // Turn 23 (CLAUDE.md F4.3): the same override helper the hinges use. The
     // runner finish is a project setting the profile does not yet carry
     // numbers for, so this asks for the default and gets one neutral metal —

@@ -258,7 +258,7 @@ test('#1, #9, #10 and #11 come from the modules that own them', () => {
   for (const f of drill) assert.ok(f.subject, `#10 finding with no subject: ${f.message}`);
 });
 
-test('#2 uses F4’s NEIGHBOUR measure, not turn 30’s front-to-front one', () => {
+test('#2 uses F4’s NEIGHBOUR measure — and since T32 fires only where auto has no move', () => {
   project();
   const a = store().addUnit('BUD');
   store().updateUnitParams(a.id, { width: 600, doors: { count: 1 } });
@@ -266,13 +266,15 @@ test('#2 uses F4’s NEIGHBOUR measure, not turn 30’s front-to-front one', () 
   store().updateUnitParams(b.id, { width: 600, doors: { count: 1 } });
   // A butted pair is silent…
   assert.deepEqual(of(2).filter((f) => f.level === 'red'), []);
-  // …and an END PANEL makes the very same joint a fault, which turn 30's
-  // front-to-front measure could not see at all.
+  // ─── TURN 32 (CLAUDE.md F3): an END PANEL no longer reaches Check at all —
+  // the front narrows itself on that edge the moment the panel appears, which
+  // only the NEIGHBOUR measure could have decided (turn 30's front-to-front
+  // measure never saw the panel). The healed trim is the proof the measure
+  // ran; the empty findings list is the proof the fix is no longer a question.
   store().addEndPanel(b.id, { side: 'R' });
-  const found = of(2).filter((f) => f.level === 'red');
-  assert.equal(found.length, 1);
-  assert.match(found[0].message, /end panel/);
-  assert.ok(found[0].subject?.panelId, 'the finding cannot be flown to');
+  assert.deepEqual(of(2).filter((f) => f.level === 'red'), [], 'the gap healed itself');
+  const front = store().unitResult(b.id).panels.find((p) => p.role === 'front');
+  assert.deepEqual(front.meta.edgeTrim, { left: 0, right: 1.5 });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -308,8 +310,9 @@ test('…and the SAME list runs automatically before every export', () => {
   // The same call the button makes — a second implementation of eleven rules
   // is eleven chances to disagree.
   assert.match(page, /const found = runChecks\(\);/);
-  // The three the page owns: the cutting list, the project PDF and the DXF ZIP.
-  assert.equal([...page.matchAll(/checkBeforeExport\(\);/g)].length, 3, 'an export slipped past it');
+  // The four the page owns: the cutting list, the BOM CSV (turn 32, F5), the
+  // project PDF and the DXF ZIP.
+  assert.equal([...page.matchAll(/checkBeforeExport\(\);/g)].length, 4, 'an export slipped past it');
   const tree = readFileSync(new URL('../src/components/CncTree.jsx', import.meta.url), 'utf8');
   assert.match(tree, /preflight\(exportAnyway\)/);
 });

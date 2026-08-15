@@ -246,6 +246,15 @@ export const DEFAULT_DESIGN = {
   // identical for both, so nothing in the engine branches on it. It decides
   // which model the view loads and which article the BOM orders.
   runners: { system: null, variant: null },
+  // ─── TURN 32 (CLAUDE.md F7): READY-MADE DRAWER BOXES ──────────────────────
+  // The wizard's materials block asks ONCE per project: same board as the
+  // carcass (the default — the engine's own behaviour since the 15.08 chat
+  // fix, the box inherits the confirmed carcass thickness), or a ready-made
+  // system. 'ready' takes the box parts off the CUTTING and puts a purchase
+  // line in the BOM; the GEOMETRY stays computed — the drawer still exists
+  // in 3D and the front still needs its drilling. `null` = nobody has said,
+  // which is 'same'.
+  drawerBoxes: { mode: null },
   // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
   // which is what a project that has never opened the section means. Resolved
   // through projectHeights() below, so a stored null and a stored number behave
@@ -260,6 +269,13 @@ export const DEFAULT_DESIGN = {
   // falls back exactly as it did before turn 7.
   projectType: null,
   scope: 'room',                 // 'room' | 'wall'
+  // ─── TURN 32 (CLAUDE.md F1.3): THE CEILING ANSWER ────────────────────────
+  // When a wardrobe stands within the question gap of the ceiling, the wizard
+  // asks: "To the ceiling, with no infill?" — `'flush'` is yes (scribe the
+  // door/carcass to the ceiling's real shape), `'infill'` is no (keep an
+  // infill above). `null` = never asked, which is every project saved before
+  // this turn and every project the question does not apply to.
+  ceiling: null,
   // How the carcass is held together (profile.joinery). null = the profile's
   // default, which today is the only one there is.
   joinery: null,
@@ -313,7 +329,9 @@ export function migrateDesign(design) {
     hardware: {
       hinges: d.hardware?.hinges ? String(d.hardware.hinges) : null,
       runners: d.hardware?.runners ? String(d.hardware.runners) : null,
-      shelfSleeve: d.hardware?.shelfSleeve === 'gold' || d.hardware?.shelfSleeve === 'silver'
+      // Turn 32 (CLAUDE.md F2): chrome and onyx joined the palette — the
+      // wizard's metal colours. Anything else is still "nobody has said".
+      shelfSleeve: ['gold', 'silver', 'chrome', 'onyx'].includes(d.hardware?.shelfSleeve)
         ? d.hardware.shelfSleeve
         : null,
       handles: d.hardware?.handles ? String(d.hardware.handles) : null,
@@ -330,6 +348,11 @@ export function migrateDesign(design) {
       system: d.hinges?.system ? String(d.hinges.system) : null,
       finish: d.hinges?.finish ? String(d.hinges.finish).toLowerCase() : null,
       plate: d.hinges?.plate ? String(d.hinges.plate) : null,
+    },
+    // Turn 32 (CLAUDE.md F7): only the two answers survive; anything else is
+    // "nobody has said", which cuts the box from the carcass board as ever.
+    drawerBoxes: {
+      mode: d.drawerBoxes?.mode === 'ready' || d.drawerBoxes?.mode === 'same' ? d.drawerBoxes.mode : null,
     },
     runners: {
       system: d.runners?.system ? String(d.runners.system) : null,
@@ -387,6 +410,9 @@ export function migrateDesign(design) {
     ])),
     projectType: d.projectType ? String(d.projectType) : null,
     scope: d.scope === 'wall' ? 'wall' : 'room',
+    // Turn 32 (CLAUDE.md F1.3): only the two answers survive; anything else
+    // is "never asked".
+    ceiling: d.ceiling === 'flush' || d.ceiling === 'infill' ? d.ceiling : null,
     joinery: d.joinery ? String(d.joinery) : null,
     // `== null` and not a truthiness test: Number(null) is 0, and a shortcut
     // that treats 0 as "not set" would also treat a real stored 0 that way.
@@ -444,7 +470,8 @@ function migrateRunMaterials(stored, base) {
 /** The colours of the project's front types, with type 1 and `colour.front` agreed. */
 function coupleFrontTypes(d) {
   const types = Array.isArray(d?.fronts?.types)
-    ? d.fronts.types.slice(0, 2).map((t, i) => ({
+    // Turn 32 (CLAUDE.md F1.4): three slots now — the owner's [1] [2] [3].
+    ? d.fronts.types.slice(0, 3).map((t, i) => ({
       id: t.id || `f${i + 1}`,
       label: t.label || `Front ${i + 1}`,
       // Owner, 09.08: 'ral' and 'fb' collapsed into ONE 'spray' source — the
@@ -461,6 +488,10 @@ function coupleFrontTypes(d) {
       // `projectFrontColour` below is where that is enforced: a faced front is
       // not a painted one.
       finish_id: t.finish_id ?? null,
+      // ─── Turn 32 (CLAUDE.md F1.4): SHAPE FIRST, COLOUR SECOND ────────────
+      // The slot's own door shape from the 8-style gallery; null = the
+      // project's `fronts.style`, which is what every older slot meant.
+      style: FRONT_STYLE_OPTIONS.some((o) => o.id === t.style) ? t.style : null,
     }))
     : [];
   if (!types.length) return types;
@@ -769,8 +800,18 @@ export function resolveUnitDesign(unit, design) {
   const styleId = unit?.params?.door_style_id || null;
   const style = d.doorStyles.find((s) => s.id === styleId) || null;
 
+  // ─── Turn 32 (CLAUDE.md F1.4): THE SLOT'S OWN SHAPE ───────────────────────
+  // Each front type carries a door shape from the gallery now, so the cascade
+  // gains one rung: this unit's own answer, then its door style, then the
+  // front-type slot it wears, then the project. A slot whose style is null
+  // falls straight through to `fronts.style`, which is what every project
+  // saved before this turn does everywhere.
+  const wornType = paletteFrontTypes(d)
+    .find((t) => t.id === unit?.params?.front_type_id) || null;
+
   const frontType = unit?.params?.front_type
     || style?.frontType
+    || wornType?.style
     || d.fronts.style;
 
   // ─── Turn 13 (CLAUDE.md F3.1): THE UNIT LEVEL, WHICH WAS MISSING ───
@@ -787,8 +828,7 @@ export function resolveUnitDesign(unit, design) {
   // grows in Settings" true: change Front 2 in Settings and every cabinet
   // wearing Front 2 follows, which is what a workshop means by a second front
   // material.
-  const frontPalette = paletteFrontTypes(d);
-  const unitFrontType = frontPalette.find((t) => t.id === unit?.params?.front_type_id) || null;
+  const unitFrontType = wornType;
 
   // ─── Turn 16 (CLAUDE.md F1.1): A FACED FRONT TYPE IS NOT A PAINTED ONE ────
   //

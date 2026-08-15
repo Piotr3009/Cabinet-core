@@ -144,10 +144,18 @@ export function projectFrontThickness(design, profile, materials = []) {
  * One number for the whole job, because that is how a kitchen is built and
  * because a run whose cabinets are 558 and 560 has a step down the front of it.
  * A unit may still be given its own; this is where it starts.
+ *
+ * ─── TURN 32 (CLAUDE.md F1.3): THE SEED FOLLOWS THE PROJECT TYPE ────────────
+ * OWNER'S RULE, 15.08.2026: a Wardrobe project seeds from the wardrobe's own
+ * 568 (an 18 back leaves a 550 clear interior), not the kitchen's 558. One
+ * function, read by the wizard row and by `addUnit` — fixed at the source, so
+ * both readers agree without either knowing why. A typed project depth still
+ * wins outright, exactly as before.
  */
 export function projectDepth(design, profile) {
   const own = Number(design?.depth);
   if (Number.isFinite(own) && own > 0) return own;
+  if (design?.projectType === 'wardrobe') return profile.wardrobe.defaults.depth;
   return profile.baseUnit.defaults.depth;
 }
 
@@ -198,6 +206,11 @@ export function normaliseFrontTypes(types, profile) {
     material_id: t.material_id ?? null,
     // What a BOARD front is faced with — a decor or a veneer (turn 15, F3).
     finish_id: t.finish_id ?? null,
+    // ─── TURN 32 (CLAUDE.md F1.4): SHAPE FIRST, COLOUR SECOND ───────────────
+    // Each front type carries its own door SHAPE from the 8-style gallery.
+    // `null` means "the project's style" (design.fronts.style), which is what
+    // every slot saved before this turn is.
+    style: t.style ?? null,
   }));
 }
 
@@ -214,9 +227,132 @@ export function setFrontTypeCount(types, count, profile) {
       colour: null,
       material_id: null,
       finish_id: null,
+      style: null,
     });
   }
   return next.slice(0, n);
+}
+
+// ─── TURN 32 (CLAUDE.md F1.3): THE WARDROBE AND THE CEILING ─────────────────
+//
+// The wizard's wardrobe dimensions are two numbers and a sum: the wardrobe's
+// height, the plinth it stands on, and `total item = wardrobe + legs`. The
+// GUARDS are pure functions of that sum and the room:
+//
+//   total > room                    → an ERROR, the flow cannot continue;
+//   room − total < the question gap → a QUESTION: "To the ceiling, with no
+//                                     infill?" — because an infill can be
+//                                     scribed to the ceiling's real shape,
+//                                     and ceilings are rarely straight.
+//
+// Pure and node-tested; the wizard renders the answers, it decides nothing.
+
+/** Under this headroom, the wizard asks the ceiling question. */
+export function ceilingQuestionMm(profile) {
+  const own = Number(settingsOf(profile).ceilingQuestionMm);
+  return Number.isFinite(own) && own > 0 ? own : 40;
+}
+
+/** `total item = wardrobe + legs`, off the resolved project heights. */
+export function wardrobeStack(heights) {
+  const height = Number(heights?.tall) || 0;
+  const plinth = Number(heights?.toeKick) || 0;
+  return { height, plinth, total: height + plinth };
+}
+
+/**
+ * How the stack meets the ceiling.
+ *
+ * @returns {{gap:number|null, state:'over'|'question'|'ok'}}
+ */
+export function ceilingFit({ total, roomHeight, profile }) {
+  const roomH = Number(roomHeight) || 0;
+  const t = Number(total) || 0;
+  if (!(roomH > 0) || !(t > 0)) return { gap: null, state: 'ok' };
+  const gap = roomH - t;
+  if (gap < 0) return { gap, state: 'over' };
+  if (gap < ceilingQuestionMm(profile)) return { gap, state: 'question' };
+  return { gap, state: 'ok' };
+}
+
+/**
+ * Is every material slot ANSWERED? (CLAUDE.md T32 F1.5)
+ *
+ * The owner's sentence exactly: "choosing generic IS an assignment; choosing
+ * nothing is not." A slot is assigned when it carries a board (`material_id`,
+ * generic included), a facing (`finish_id`) or a sprayed colour — the three
+ * ways this app has ever answered "what is it made of". The carcass's sprayed
+ * colour is project-wide (`design.colour.carcass`), so it answers for every
+ * carcass slot that has nothing more specific.
+ */
+export function materialsAssigned(design, profile) {
+  const d = design || {};
+  const carcassTypes = d.carcass?.types?.length
+    ? d.carcass.types
+    : [{ id: 'c1', label: 'Carcass 1' }];
+  const carcass = carcassTypes.map((t) => ({
+    id: t.id,
+    label: t.label || 'Carcass',
+    kind: 'carcass',
+    assigned: Boolean(t.material_id || t.finish_id || d.colour?.carcass),
+  }));
+  const storedFronts = d.fronts?.types?.length
+    ? normaliseFrontTypes(d.fronts.types, profile)
+    // A project that never grew front slots still answers through the older
+    // project-wide fields — the same fallback `paletteFrontTypes` makes.
+    : [{
+      id: 'f1', label: 'Front 1', material_id: null, finish_id: d.finish?.front ?? null, colour: d.colour?.front ?? null,
+    }];
+  const fronts = storedFronts.map((t) => ({
+    id: t.id,
+    label: t.label || 'Front',
+    kind: 'front',
+    assigned: Boolean(t.material_id || t.finish_id || t.colour),
+  }));
+  const missing = [...carcass, ...fronts].filter((s) => !s.assigned);
+  return {
+    carcass, fronts, missing, all: missing.length === 0,
+  };
+}
+
+/**
+ * Everything standing between the settings step and "Start designing".
+ *
+ * @param {object} args  { design, heights, roomHeight, profile } — `heights`
+ *   already resolved through `projectHeights`, `roomHeight` the room's own.
+ * @returns {{blockers:Array<{code:string,message:string}>, stack, fit, materials}}
+ */
+export function wizardStartBlockers({
+  design, heights, roomHeight, profile,
+}) {
+  const blockers = [];
+  const stack = wardrobeStack(heights);
+  const isWardrobe = design?.projectType === 'wardrobe';
+  const fit = isWardrobe
+    ? ceilingFit({ total: stack.total, roomHeight, profile })
+    : { gap: null, state: 'ok' };
+  if (fit.state === 'over') {
+    blockers.push({
+      code: 'over-ceiling',
+      message: `Total item ${stack.total} mm is ${Math.abs(fit.gap)} mm taller than the ${Math.round(Number(roomHeight))} mm room — lower the wardrobe or the plinth.`,
+    });
+  }
+  if (fit.state === 'question' && design?.ceiling !== 'flush' && design?.ceiling !== 'infill') {
+    blockers.push({
+      code: 'ceiling-question',
+      message: `Only ${fit.gap} mm to the ceiling — answer the question: to the ceiling, with no infill?`,
+    });
+  }
+  const materials = materialsAssigned(design, profile);
+  if (!materials.all) {
+    blockers.push({
+      code: 'materials',
+      message: `Assign a material to ${materials.missing.map((s) => s.label).join(', ')} — Generic counts, nothing does not.`,
+    });
+  }
+  return {
+    blockers, stack, fit, materials,
+  };
 }
 
 /**

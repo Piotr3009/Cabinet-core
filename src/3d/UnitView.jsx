@@ -882,7 +882,9 @@ export default function UnitView({
       key: `${row.kind}-${row.a || ''}-${row.b || ''}-${i}`,
       from: row.axis === 'h' ? [row.from, row.at] : [row.at, row.from],
       to: row.axis === 'h' ? [row.to, row.at] : [row.at, row.to],
-      offset: 0,
+      // Turn 32 (CLAUDE.md F3): the engine's collision pass decided this —
+      // two gap figures that sit close stand on different rungs.
+      offset: row.offsetMm || 0,
     }));
   }, [showFrontDimensions, result, profile]);
   // A hair proud of the door plane, so the chain is not buried in it.

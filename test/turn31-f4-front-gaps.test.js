@@ -80,17 +80,22 @@ test('1. two cabinets’ fronts: 1.5 each, and the 3 a client sees', () => {
   assert.equal(gapVerdict(edge.gapMm, P).level, 'ok');
 });
 
-test('2. an END PANEL wants 3, so a stock front is 1.5 short on that edge', () => {
+test('2. an END PANEL wants 3 — and since T32 the front GIVES it, by itself', () => {
   const ids = run(2);
   store().addEndPanel(ids[1], { side: 'R' });
   const r = store().unitResult(ids[1]);
   const front = frontOf(ids[1], r.panels.find((p) => p.role === 'front').id);
   assert.equal(front.edges.right.kind, NEIGHBOUR.END_PANEL);
   assert.equal(front.edges.right.wantClearanceMm, 3);
-  assert.equal(front.edges.right.haveClearanceMm, 1.5);
-  // The correction the rulebook asks for, on THAT edge and no other (rule 8).
-  assert.equal(front.edges.right.correctionMm, 1.5);
-  assert.equal(front.edges.left.correctionMm, 0, 'the other edge was touched');
+  // ─── TURN 32 (CLAUDE.md F3): the matrix is APPLIED, not offered ───
+  // The moment the panel appeared, the store healed the edge: the front now
+  // STANDS at the 3 the rulebook wants, wearing a 1.5 trim on THAT edge and
+  // no other (rule 8 rides exactly as T31 built it).
+  assert.equal(front.edges.right.haveClearanceMm, 3);
+  assert.equal(front.edges.right.correctionMm, 0, 'healed: nothing left to correct');
+  assert.equal(front.edges.left.correctionMm, 0, 'the other edge was never touched');
+  const unit = store().units.find((u) => u.id === ids[1]);
+  assert.deepEqual(unit.params.front_edge_trim[front.panelId], { left: 0, right: 1.5 });
 });
 
 test('3. an INFILL is the same category as a panel — a rigid neighbour', () => {
@@ -390,19 +395,20 @@ test('13. a FRONT gap is never repaired by moving a cabinet', () => {
 // D. DETECTION AND REPAIR (rules 14–18)
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('14. the shown gap is front↔NEIGHBOUR, never front↔its own carcass', () => {
+test('14. the shown gap is front↔NEIGHBOUR — and the healed joint measures OK', () => {
   const ids = run(2);
   store().addEndPanel(ids[1], { side: 'R' });
   const r = store().unitResult(ids[1]);
   const front = frontOf(ids[1], r.panels.find((p) => p.role === 'front').id);
   // The measured gap on the panel side is the daylight to the PANEL's face…
   assert.equal(front.edges.right.kind, NEIGHBOUR.END_PANEL);
-  assert.equal(front.edges.right.gapMm, 1.5);
-  // …which is NOT the same as its clearance from its own carcass end, and the
-  // difference is the whole of rule 14: the client sees 1.5, the drawing says
-  // the front is 1.5 inside its carcass, and only the first number is a fault.
-  assert.equal(front.edges.right.haveClearanceMm, 1.5);
-  assert.equal(gapVerdict(front.edges.right.gapMm, P).level, 'red');
+  // ─── TURN 32 (CLAUDE.md F3): the joint healed itself the moment the panel
+  // appeared — the daylight the client sees is the 3 the rulebook wants, and
+  // rule 14's measure (front↔neighbour, never front↔its own carcass) is what
+  // proves it: both numbers now agree because the EDGE moved.
+  assert.equal(front.edges.right.gapMm, 3);
+  assert.equal(front.edges.right.haveClearanceMm, 3);
+  assert.equal(gapVerdict(front.edges.right.gapMm, P).level, 'ok');
 });
 
 test('15. under 3 mm is RED, and the plan halves the shortfall between two', () => {
@@ -435,21 +441,25 @@ test('15. under 3 mm is RED, and the plan halves the shortfall between two', () 
   assert.equal(narrowingPlan({ fronts: [{}], shortfallMm: 0, profile: P }), null);
 });
 
-test('15. …and the repair, applied end to end, really closes the gap', () => {
+test('15. …and since T32 the repair applies ITSELF, end to end', () => {
   const ids = run(2);
   store().addEndPanel(ids[1], { side: 'R' });
-  let row = rowsOf().find((r) => r.kind === NEIGHBOUR.END_PANEL && r.level === 'red');
-  assert.ok(row, 'no red row for the end panel');
-  assert.equal(row.shortfallMm, 1.5);
-
-  const plan = narrowingPlan({ fronts: row.fronts, shortfallMm: row.shortfallMm, profile: P });
-  store().narrowFronts(plan.trims);
-
-  row = rowsOf().find((r) => r.kind === NEIGHBOUR.END_PANEL && r.level === 'red');
-  assert.equal(row, undefined, 'the gap is still red after the repair');
+  // ─── TURN 32 (CLAUDE.md F3): nobody opened a modal, nobody clicked. The
+  // red row never reaches the screen because the store healed the edge the
+  // moment the neighbour appeared — exactly the trim narrowingPlan would
+  // have offered, without the question.
+  const row = rowsOf().find((r) => r.kind === NEIGHBOUR.END_PANEL && r.level === 'red');
+  assert.equal(row, undefined, 'no red row survives — the gap fixed itself');
   // …and the front really is narrower, on that edge only.
   const front = store().unitResult(ids[1]).panels.find((p) => p.role === 'front');
   assert.deepEqual(front.meta.edgeTrim, { left: 0, right: 1.5 });
+
+  // Taking the panel away gives the edge back: the trim returns to nothing
+  // and the front is the kit's own width again — healing works both ways.
+  const ep = store().units.find((u) => u.id === ids[1]).params.end_panels.find((e) => e.side === 'R');
+  store().removeEndPanel(ids[1], ep.id);
+  const back = store().unitResult(ids[1]).panels.find((p) => p.role === 'front');
+  assert.equal(back.meta.edgeTrim, undefined, 'the trim is gone with the panel');
 });
 
 test('16. over 6 mm is a YELLOW question, not a fault', () => {

@@ -98,7 +98,8 @@ test('the palette never exceeds the project settings’ own maxima', () => {
   });
   const palette = projectPalette(many, P);
   assert.equal(palette.filter((p) => p.kind === 'carcass').length, 3, 'three carcass types is the ceiling');
-  assert.equal(palette.filter((p) => p.kind === 'front').length, 2, '…and two front types');
+  // Turn 32 (CLAUDE.md F1.4): the owner's [1] [2] [3] — three front types now.
+  assert.equal(palette.filter((p) => p.kind === 'front').length, 3, '…and three front types');
 });
 
 // ─── F3.1 / F3.3 — the resolution order ─────────────────────────────────────

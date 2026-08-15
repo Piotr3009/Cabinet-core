@@ -1,9 +1,14 @@
 import jsPDF from 'jspdf';
 import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
+// Turn 32 (CLAUDE.md F5): the invoice blocks and their one CSV.
+import {
+  buildBomCsvText, ironmongerySummary, materialsSummary, readyBoxLines,
+} from '../engine/bomInvoice.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { registerLookup } from './hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
 import { exportFileName } from '../engine/naming.js';
-import { resolveFinishes } from '../engine/design.js';
+import { migrateDesign, resolveFinishes } from '../engine/design.js';
 
 // ─── Exports ───
 // An export is a SNAPSHOT of the always-live engine state (SPEC 4.11), so the
@@ -46,6 +51,36 @@ export function buildCuttingListCsv(entries, profile = getCabinetProfile()) {
   // Trailing terminator: the LISP writes every row with write-line, so the
   // file ends with a newline and the last row is not special.
   return `${lines.join('\r\n')}\r\n`;
+}
+
+/**
+ * ─── TURN 32 (CLAUDE.md F5): THE BOM CSV — `{ProjectName}-bom-{DDMM-HHMM}` ──
+ * Two blocks, one file: materials per decor (fronts apart) and ironmongery
+ * with articles. RED Check findings ride at the top as WARNING rows; ready-
+ * made boxes (F7) drop their cut parts and appear as purchase lines.
+ */
+export function exportBomCsv({
+  entries, design = null, profile = getCabinetProfile(), materials = [],
+  projectName = 'project', redWarnings = [], lookup = registerLookup,
+}) {
+  const d = migrateDesign(design);
+  const ready = d.drawerBoxes?.mode === 'ready';
+  const bom = buildBom(entries, {
+    design: d, profile, materials, excludeDrawerBoxes: ready,
+  });
+  const summary = materialsSummary(bom, profile, { excludeDrawerBoxes: ready });
+  const ironmongery = [
+    ...ironmongerySummary({
+      entries, bom, design: d, profile, materials, lookup,
+    }),
+    ...(ready ? readyBoxLines(entries) : []),
+  ];
+  const csv = buildBomCsvText({ summary, ironmongery, warnings: redWarnings });
+  download(
+    exportFilename('bom', 'csv', new Date(), projectName),
+    new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
+  );
+  return csv;
 }
 
 export function exportCuttingListCsv(entries, projectName = 'project') {

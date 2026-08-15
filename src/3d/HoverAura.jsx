@@ -46,6 +46,11 @@ import {
  */
 export default function HoverAura({
   at, size, subject, profile, onActivate = null, labelAt = null,
+  // ─── TURN 32 (CLAUDE.md F9): THE OWNER'S DRAWING ─────────────────────────
+  // A rendered node shown INSTEAD of the single label while the aura is hot —
+  // the handle's CAD dimension chain. The catchment, the linger and the
+  // double-click are exactly what T31 built; only the label changes.
+  dims = null,
 }) {
   const [hot, setHot] = useState(false);
   const timer = useRef(null);
@@ -66,7 +71,7 @@ export default function HoverAura({
   }, [linger]);
 
   const box = auraBox(size, profile);
-  const text = hot ? auraLabel(subject, profile) : null;
+  const text = hot && !dims ? auraLabel(subject, profile) : null;
   const colour = auraColour(profile);
 
   return (
@@ -89,6 +94,7 @@ export default function HoverAura({
         <boxGeometry args={[mm(box.w), mm(box.h), mm(box.d)]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
+      {hot && dims}
       {text && (
         <DimLabel
           position={labelAt || [at[0], at[1] + mm(box.h / 2 + 18), at[2]]}

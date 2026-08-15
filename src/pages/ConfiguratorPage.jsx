@@ -33,7 +33,7 @@ import { elementLabel } from '../engine/elements.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
-import { exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
+import { exportBomCsv, exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
 import { exportUnitDxfZip } from '../lib/cncExport.js';
 import { persistProject } from '../lib/persist.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -107,6 +107,9 @@ export default function ConfiguratorPage() {
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const profile = useCabinetProfileStore((s) => s.profile);
+  // Turn 32 (CLAUDE.md F5): the BOM export resolves per-piece materials, so
+  // it needs the design — this component never subscribed to it before.
+  const design = useProjectStore((s) => s.project.design);
 
   // ─── Escape steps back OUT (turn 9, CLAUDE.md F4.1) ───
   // One level at a time, which is what a person expects of it: the first press
@@ -240,6 +243,23 @@ export default function ConfiguratorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allResults, project.name, units.length]);
 
+  // ─── TURN 32 (CLAUDE.md F5): the BOM the workshop can invoice from ───────
+  // The RED findings ride at the top of the file, so a printed order carries
+  // the same warning the panel shows.
+  const onExportBom = useCallback(() => {
+    if (!guard()) return;
+    const found = checkBeforeExport();
+    exportBomCsv({
+      entries: allResults(),
+      design,
+      materials,
+      projectName: project.name,
+      redWarnings: found.filter((f) => f.level === 'red').map((f) => f.message),
+    });
+    notify('BOM exported.', 'ok');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allResults, design, materials, project.name, units.length]);
+
   const onExportPdf = useCallback(() => {
     if (!guard()) return;
     checkBeforeExport();
@@ -360,7 +380,7 @@ export default function ConfiguratorPage() {
 
         <LibraryPanel />
         {rightPanelOpen && !bomOpen && <RightPanel />}
-        {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} />}
+        {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} onExportBom={onExportBom} />}
         {/* Turn 31 (CLAUDE.md F6): the Check panel — a LIST of findings, not toasts. */}
         {checkOpen && <CheckPanel />}
         {modal === 'room' && <RoomModal />}

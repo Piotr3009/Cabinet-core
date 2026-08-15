@@ -407,16 +407,17 @@ function legInstances(result) {
 
 /** The hanging rail, if this unit has one: a tube at the profile's diameter. */
 function railInstances(result, profile) {
-  const rail = result.assemblies.rail;
-  if (!rail) return [];
-  return [{
+  // Turn 32 (CLAUDE.md F4): a column may hang its own rail — the unit-wide
+  // one and the columns' stand side by side, each cut to its own light.
+  const all = [result.assemblies.rail, ...(result.assemblies.columnRails || [])].filter(Boolean);
+  return all.map((rail) => ({
     kind: 'rail',
     x: (rail.x1 + rail.x2) / 2,
     y: rail.y,
     z: rail.z,
     length: rail.x2 - rail.x1,
     diameter: profile.hardware.rail.diameter,
-  }];
+  }));
 }
 
 /**

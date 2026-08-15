@@ -169,7 +169,6 @@ test('inserting a saved set produces the same unit, through the normal add path'
   templates().useStorage(memoryStorage());
   const source = configured();
   const { template } = templates().save(unitOf(source), 'Bedroom wardrobe', 10);
-  const before = computeCabinet(paramsForEngine(unitOf(source)), P);
 
   const { id, error } = store().addUnit(template.type, { params: template.params });
   assert.equal(error, null, error || '');
@@ -184,10 +183,17 @@ test('inserting a saved set produces the same unit, through the normal add path'
   assert.deepEqual(made.params.doors, unitOf(source).params.doors);
 
   // …and the cut list agrees, which is the only 1:1 that matters at the saw.
-  const after = computeCabinet(paramsForEngine(made), P);
+  // ─── TURN 32 (CLAUDE.md F3): compared WITHOUT the healed front trims ───
+  // The self-healing pass dresses every front for its NEIGHBOURHOOD — the
+  // copy stands beside different things than the original did, so its healed
+  // edges are its own. The template's promise is the BUILD; the trims are
+  // the address, and `templateParams` now drops them for the same reason it
+  // drops the scribe fillers.
+  const bare = (unit) => computeCabinet({ ...paramsForEngine(unit), front_edge_trim: null }, P);
+  const after = bare(made);
   assert.deepEqual(
     after.panels.map((p) => [p.part, p.w, p.h]),
-    before.panels.map((p) => [p.part, p.w, p.h]),
+    bare(unitOf(source)).panels.map((p) => [p.part, p.w, p.h]),
   );
 
   // Its own number, its own place, its own item ids.

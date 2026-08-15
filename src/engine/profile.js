@@ -976,7 +976,15 @@ export const DEFAULT_CABINET_PROFILE = {
     // it is the absence of a choice from it, and the number is then typed.
     boardThicknessOptions: [18, 22, 25],
     maxCarcassTypes: 3,
-    maxFrontTypes: 2,
+    // ─── TURN 32 (CLAUDE.md F1.4): THREE FRONT TYPES ────────────────────────
+    // OWNER'S NUMBER, 15.08.2026: "How many front types in this project?
+    // [1] [2] [3]" — kitchens get the same three. Was 2 since turn 11.
+    maxFrontTypes: 3,
+    // ─── TURN 32 (CLAUDE.md F1.3): THE CEILING QUESTION ─────────────────────
+    // OWNER-TUNABLE DEFAULT, 15.08.2026: under this much headroom the wizard
+    // asks "To the ceiling, with no infill?" — an infill can be scribed to the
+    // ceiling's real shape; ceilings are rarely straight.
+    ceilingQuestionMm: 40,
     // The ironmongery. Every one of these is FITTED AUTOMATICALLY — the plinth
     // gets its legs, bases and clips, a door gets its hinges, a drawer gets its
     // runners, a wall unit gets its handles, and every cut edge that shows gets
@@ -990,6 +998,8 @@ export const DEFAULT_CABINET_PROFILE = {
           { id: 'soft-close', label: 'Soft-close' },
           { id: 'standard', label: 'Standard' },
         ],
+        // soft-close default — owner to confirm 15.08 (TURN 32 F2 ships YES;
+        // the question travels with the PR as Q1).
         default: 'soft-close',
         automat: 'hinge',
       },
@@ -2430,8 +2440,22 @@ export const DEFAULT_CABINET_PROFILE = {
     metals: {
       gold: { label: 'Gold', colour: '#c9a227', metalness: 0.95, roughness: 0.22 },
       silver: { label: 'Silver', colour: '#c8ccd0', metalness: 0.95, roughness: 0.18 },
+      // ─── TURN 32 (CLAUDE.md F2): THE WIZARD'S METAL COLOURS ───────────────
+      // OWNER'S MENU, 15.08.2026: chrome / onyx / gold on the Hardware step.
+      // Chrome and onyx join the palette; silver stays for the projects that
+      // already carry it. Same three numbers as every plated surface here.
+      chrome: { label: 'Chrome', colour: '#cfd4d8', metalness: 0.95, roughness: 0.12 },
+      onyx: { label: 'Onyx', colour: '#2f2f33', metalness: 0.9, roughness: 0.35 },
     },
     metalDefault: 'gold',
+    // ─── TURN 32 (CLAUDE.md F2): THE AUTOMAT'S FINISH ROW ───────────────────
+    // Which PUBLISHED hinge finish each metal colour buys — a rule-table row,
+    // never code. Blum publishes nickel and onyx; a gold hinge has no
+    // published article, so gold answers null and the BOM prints a NAMED SPEC
+    // line rather than an invented number (CLAUDE.md rule 3).
+    metalHingeFinish: {
+      chrome: 'nickel', silver: 'nickel', onyx: 'onyx', gold: null,
+    },
     hardware: {
       rail: '#8d8d92', leg: '#4a4a4a', bracket: '#8d8d92', hinge: '#5b5f63',
       // ─── Turn 13 (CLAUDE.md F7) ───
@@ -3406,6 +3430,22 @@ export const DEFAULT_CABINET_PROFILE = {
     codes: { left: '<', right: '>', topBottom: '^v', all: '<>^v', none: '' },
   },
 
+  // ─── TURN 32 (CLAUDE.md F5): THE BOM THE WORKSHOP CAN INVOICE FROM ────────
+  //
+  // The sheets question is a DIVISION with a label ("~N sheets of
+  // 2800×2070"), never a cutting plan — nesting is explicitly parked. The
+  // PURCHASE sheet here is not the CNC bed above (`cnc.sheet`, the owner's
+  // 2790×2060): one is what the supplier sells, the other is what the
+  // machine holds, and they move separately.
+  //
+  //   wastePct — OWNER — unanswered; ship 15, owner to confirm (15.08.2026).
+  //   sheet    — OWNER — unanswered; ship 2800×2070, owner to confirm
+  //              (15.08.2026).
+  bom: {
+    wastePct: 15,
+    sheet: { width: 2800, height: 2070 },
+  },
+
   // ─── The room a unit stands in (turn 8, CLAUDE.md F3) ───
   // Not the room's SHAPE — that is the project's (engine/room.js). This is what
   // the workshop knows about walls in general.
@@ -4207,6 +4247,8 @@ export function migrateCabinetProfile(profile) {
       sheet: { ...D.cnc.sheet, ...profile.cnc?.sheet },
     },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
+    // Turn 32 (CLAUDE.md F5): key by key, like every other nested block.
+    bom: { ...D.bom, ...profile.bom, sheet: { ...D.bom.sheet, ...profile.bom?.sheet } },
     editor: {
       ...D.editor,
       ...profile.editor,

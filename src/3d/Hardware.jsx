@@ -17,6 +17,11 @@ import {
 import { shelfSupportMetal } from './hardwareFinish.js';
 // Turn 31 (CLAUDE.md F7): the catchment around every handle and hinge.
 import HoverAura from './HoverAura.jsx';
+// Turn 32 (CLAUDE.md F9): the owner's drawing — CAD dimension lines on the
+// hovered handle, in the drawing-office blue, replacing the orange number.
+import DimensionChain from './DimensionChain.jsx';
+import { handleCadRows } from '../engine/hoverAura.js';
+import { dimensionStyle } from '../engine/dimensionArrows.js';
 
 // ─── The hardware, in 3D (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
 //
@@ -1230,6 +1235,34 @@ export function FrontHandle({
     <meshStandardMaterial color={metal.colour} metalness={metal.metalness} roughness={metal.roughness} />
   );
 
+  // ─── TURN 32 (CLAUDE.md F9): THE OWNER'S DRAWING ──────────────────────────
+  // The hovered handle shows CAD dimension lines with arrowheads — top-edge
+  // offset, side-edge offset, and the hole spacing between the two drill
+  // centres — in the drawing-office blue (the momentary hover ink), instead
+  // of T31's single orange number. Pure geometry from engine/hoverAura.js;
+  // the chain rides the leaf's own frame, so an open door carries its
+  // drawing with it.
+  const cadDims = (worldHoles) => {
+    const rows = handleCadRows({
+      holes: worldHoles,
+      top: box.y + box.h,
+      sides: [box.x, box.x + box.w],
+      axis: spec.axis || 'vertical',
+    });
+    if (!rows.length) return null;
+    return (
+      <group position={[-pivot[0], -pivot[1], -pivot[2]]}>
+        <DimensionChain
+          rows={rows}
+          style={dimensionStyle(profile)}
+          plane="xy"
+          at={faceZ + 1}
+          name={`handle-dims-${panel.id}`}
+        />
+      </group>
+    );
+  };
+
   if (spec.type === 'knob') {
     const r = H.knob.diameter / 2;
     const stem = H.knob.standoff;
@@ -1244,6 +1277,7 @@ export function FrontHandle({
           size={{ w: H.knob.diameter, h: H.knob.diameter, d: stem + r }}
           subject={{ kind: 'handle', id: panel.id, panel }}
           profile={profile}
+          dims={cadDims([[wx, wy]])}
         />
         <mesh position={at(wx, wy, faceZ + stem / 2)} userData={{ ccNoBounds: true }}>
           <cylinderGeometry args={[mm(H.knob.stemDiameter / 2), mm(H.knob.stemDiameter / 2), mm(stem), 12]} />
@@ -1293,6 +1327,7 @@ export function FrontHandle({
           : { w: H.bar.rodDiameter, h: rodLen, d: H.bar.standoff + H.bar.rodDiameter }}
         subject={{ kind: 'handle', id: panel.id, panel }}
         profile={profile}
+        dims={cadDims(holes ? postAt : [[wx, wy]])}
       />
       {postAt.map(([px, py], i) => (
         <mesh

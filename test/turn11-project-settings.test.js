@@ -84,13 +84,14 @@ test('a front comes from one of the FOUR sources — spray is one, not two (owne
   assert.equal(sourceById(frontSources(P), 'wood').coloursSoon, true);
 });
 
-test('at most two front types, and they start answered', () => {
+test('front types are capped at the profile maximum, and they start answered', () => {
   const one = setFrontTypeCount([], 1, P);
   assert.equal(one.length, 1);
   assert.equal(one[0].source, 'spray', 'the first source is the default, not null');
 
   assert.equal(setFrontTypeCount([], 2, P).length, 2);
-  assert.equal(setFrontTypeCount([], 9, P).length, P.projectSettings.maxFrontTypes, 'capped at two');
+  // Turn 32 (CLAUDE.md F1.4): the cap is the profile's own, 3 as of today.
+  assert.equal(setFrontTypeCount([], 9, P).length, P.projectSettings.maxFrontTypes, 'capped at the maximum');
   assert.equal(setFrontTypeCount([], 0, P).length, 1, 'and never none');
 
   // Growing keeps what is already answered.
@@ -103,7 +104,9 @@ test('normalising a front type fills every field, so no consumer guesses', () =>
   const [t] = normaliseFrontTypes([{}], P);
   // `finish_id` joined the shape in turn 15 (CLAUDE.md F3): what a BOARD front
   // is faced with — the decor of a laminate, the veneer of a veneer.
-  assert.deepEqual(Object.keys(t).sort(), ['colour', 'finish_id', 'id', 'label', 'material_id', 'source']);
+  // `style` joined in turn 32 (CLAUDE.md F1.4): the slot's own door shape;
+  // null = the project's `fronts.style`, which is what every older slot meant.
+  assert.deepEqual(Object.keys(t).sort(), ['colour', 'finish_id', 'id', 'label', 'material_id', 'source', 'style']);
 });
 
 test('every piece of ironmongery is automatic; only the VARIANT is a question', () => {

@@ -736,6 +736,72 @@ async function main() {
       await page.evaluate(`${P}.ui.getState().setBomOpen(false); return true;`);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F6 [HIGH] — the hardware REGISTER: it informs, it never blocks
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // Runs on the f5 project, with the BOM's Order tab as the witness: in
+    // mock mode every lookup answers null (the yellow lines are the proof the
+    // app lives), and a seeded row turns its line from a named spec into an
+    // article — the register OVERRULES, nothing else moves.
+    if (want('f6')) {
+      await page.waitFor(`[...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'BOM')`, { what: 'the editor' });
+      const mock = await page.evaluate(`
+        const reg = window.__ccT32.hardwareRegister;
+        return {
+          mockRows: reg.hardwareRegisterRows().length,
+          mockAnswer: reg.registerLookup({ category: 'clip' }),
+          badge: document.body.innerText.includes('MOCK DATA MODE'),
+        };
+      `);
+      check('F6 — mock mode: the register holds nothing and answers null, app fully alive',
+        mock.mockRows === 0 && mock.mockAnswer === null && mock.badge, JSON.stringify(mock));
+
+      await page.evaluate(`
+        ${P}.ui.getState().setCheckOpen(false);
+        ${P}.ui.getState().clearMessages();
+        ${P}.ui.getState().setBomOpen(true);
+        return true;
+      `);
+      await page.waitFor(`document.querySelector('[data-bom-order-tab="1"]')`, { what: 'the BOM' });
+      await page.sleep(300);
+      await page.click('[data-bom-order-tab="1"]');
+      await page.sleep(300);
+      if (!await page.evaluate(`return Boolean(document.querySelector('[data-bom-order="1"]'));`)) {
+        await page.click('[data-bom-order-tab="1"]');
+      }
+      await page.waitFor(`document.querySelector('[data-bom-order="1"]')`, { what: 'the Order tab' });
+      const seeded = await page.evaluate(`
+        const before = document.querySelectorAll('[data-bom-yellow="1"]').length;
+        // The seed, as the script would install it — a workshop clip row.
+        window.__ccT32.hardwareRegister.installHardwareRegister([
+          { category: 'clip', family: 'K10', article: 'CL-100', label: 'Plinth clip K10' },
+        ]);
+        // A design touch re-derives the panel, exactly as any edit would.
+        ${P}.project.getState().setDesign({});
+        return { before };
+      `);
+      await page.sleep(400);
+      const after = await page.evaluate(`
+        const clips = [...document.querySelectorAll('[data-bom-line="plinth_clips"]')][0];
+        return {
+          yellows: document.querySelectorAll('[data-bom-yellow="1"]').length,
+          clipsText: clips ? clips.innerText : '',
+        };
+      `);
+      measurements.f6 = { ...seeded, ...after };
+      check('F6 — a REGISTERED row resolves its article; the register informs, nothing blocks',
+        after.yellows === seeded.before - 1 && /art\. CL-100/.test(after.clipsText),
+        JSON.stringify({ before: seeded.before, after: after.yellows, clips: after.clipsText }));
+      await shot('6a-the-registered-clip-buying-by-article-beside-the-yellow-specs',
+        { dom: '[data-bom-line="plinth_clips"]', text: 'CL-100' });
+      await page.evaluate(`
+        window.__ccT32.hardwareRegister.clearHardwareRegister();
+        ${P}.ui.getState().setBomOpen(false);
+        return true;
+      `);
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

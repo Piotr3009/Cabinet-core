@@ -12,6 +12,9 @@ import * as frontClearance from './engine/frontClearance.js';
 // about the BOM is proven by asking the app's own functions).
 import * as bomInvoice from './engine/bomInvoice.js';
 import * as bomCore from './engine/bom.js';
+// Turn 32 (CLAUDE.md F6): the register, drivable from the walk — mock mode's
+// null answers and a seeded row's overrule are both claims about the APP.
+import * as hardwareRegister from './lib/hardwareRegister.js';
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
 import { useMaterialAssignmentStore } from './stores/materialAssignmentStore.js';
@@ -171,8 +174,8 @@ if (typeof window !== 'undefined') {
   // reader above is: a claim about what the EXPORT does has to be read off the
   // functions the export button calls, not off a re-implementation beside it.
   window.__ccT31 = { exportGate, drillGuard, cncExport, frontClearance };
-  // ─── Turn 32 (CLAUDE.md F5) ───
-  window.__ccT32 = { bomInvoice, bomCore };
+  // ─── Turn 32 (CLAUDE.md F5/F6) ───
+  window.__ccT32 = { bomInvoice, bomCore, hardwareRegister };
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

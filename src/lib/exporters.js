@@ -5,6 +5,7 @@ import {
   buildBomCsvText, ironmongerySummary, materialsSummary, readyBoxLines,
 } from '../engine/bomInvoice.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { registerLookup } from './hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
 import { exportFileName } from '../engine/naming.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
@@ -60,7 +61,7 @@ export function buildCuttingListCsv(entries, profile = getCabinetProfile()) {
  */
 export function exportBomCsv({
   entries, design = null, profile = getCabinetProfile(), materials = [],
-  projectName = 'project', redWarnings = [], lookup = null,
+  projectName = 'project', redWarnings = [], lookup = registerLookup,
 }) {
   const d = migrateDesign(design);
   const bom = buildBom(entries, { design: d, profile, materials });

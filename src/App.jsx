@@ -10,6 +10,7 @@ import { loadRunnerCatalogue } from './lib/runnerCatalogue.js';
 import { onStorageBase } from './lib/storageBase.js';
 import { loadHardwareCatalogues } from './lib/hardwareCatalogue.js';
 import { refreshHardwareCatalogues } from './lib/hardwareHealth.js';
+import { loadHardwareRegister } from './lib/hardwareRegister.js';
 
 // ─── THE KNOWLEDGE FILES (turn 19, CLAUDE.md F0.3) ──────────────────────────
 //
@@ -63,6 +64,13 @@ export default function App() {
   // before the row lands is computed against the catalogue that ships, which
   // is the same catalogue it would have had yesterday.
   useEffect(() => { refreshHardwareCatalogues(); }, []);
+
+  // ─── THE HARDWARE REGISTER (turn 32, CLAUDE.md F6) ──────────────────────
+  // The registry of EXISTENCE — which articles the automat may write into
+  // the BOM. Loaded once, never awaited, never blocking: mock mode or no
+  // table leaves an empty cache, every lookup answers null, and the BOM's
+  // yellow named-spec lines do the honest talking.
+  useEffect(() => { loadHardwareRegister(); }, []);
 
   // ─── THE OTHER DOOR OUT (turn 31, CLAUDE.md F2) ─────────────────────────
   //

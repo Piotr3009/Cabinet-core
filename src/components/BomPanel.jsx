@@ -7,6 +7,7 @@ import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/
 // Turn 32 (CLAUDE.md F5): the invoice — materials per decor, ironmongery
 // with articles, yellow named specs where the registry does not know.
 import { ironmongerySummary, materialsSummary, readyBoxLines } from '../engine/bomInvoice.js';
+import { registerLookup } from '../lib/hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
@@ -48,7 +49,9 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   );
   const invoiceIron = useMemo(() => [
     ...ironmongerySummary({
-      entries, bom, design: migrated, profile, materials,
+      // Turn 32 (F6): the REGISTRY answers first; in mock mode it answers
+      // null and the yellow lines stand — it informs, it never blocks.
+      entries, bom, design: migrated, profile, materials, lookup: registerLookup,
     }),
     ...(readyBoxes ? readyBoxLines(entries) : []),
   ], [entries, bom, migrated, profile, materials, readyBoxes]);

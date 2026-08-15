@@ -5,6 +5,7 @@ import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js
 import { migrateDesign, projectHeights } from '../engine/design.js';
 import { hardwareVariant, projectFrontThickness } from '../engine/projectSettings.js';
 import { hingeAutomat } from '../engine/hinges.js';
+import { registerLookup } from '../lib/hardwareRegister.js';
 
 // ─── TURN 32 (CLAUDE.md F2): HARDWARE AS ITS OWN STEP 5 ─────────────────────
 //
@@ -45,7 +46,7 @@ export default function WizardHardware() {
     frontThickness: projectFrontThickness(design, profile, materials),
     metal,
     softClose,
-  }, { profile }), [design, profile, materials, metal, softClose]);
+  }, { profile, lookup: registerLookup }), [design, profile, materials, metal, softClose]);
 
   const plinthSetting = design.runMaterials.plinth;
   const plinthBoard = materials.find((m) => m.id === plinthSetting.material_id) || null;

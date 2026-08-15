@@ -69,6 +69,9 @@ export default function TopBar({
   const toggleHideFronts = useUiStore((s) => s.toggleHideFronts);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
+  // Turn 33 (CLAUDE.md F2): the client demo — one flag, two controls.
+  const lightDemo = useUiStore((s) => s.lightDemo);
+  const toggleLightDemo = useUiStore((s) => s.toggleLightDemo);
   // Turn 26 (CLAUDE.md F10.3): the brightness slider's value and its setter.
   const brightness = useUiStore((s) => s.brightness);
   const setBrightness = useUiStore((s) => s.setBrightness);
@@ -186,6 +189,18 @@ export default function TopBar({
           checked: realisticLighting,
           disabled: viewMode !== '3d',
           run: toggleRealisticLighting,
+        },
+        {
+          // ─── TURN 33 (CLAUDE.md F2): THE CLIENT DEMO ─────────────────────
+          // The room dims to the profile's demo level, the placed LEDs come
+          // up. In the View menu AND in the Lighting panel — one flag, two
+          // controls, the front-dimensions grammar. A lens: toggling back
+          // restores the scene exactly, because nothing stored moves.
+          label: 'Turn on the light',
+          hint: 'Dim the room and let the placed LEDs shine — the client demo. Toggling back restores the view exactly.',
+          checked: lightDemo,
+          disabled: viewMode !== '3d',
+          run: toggleLightDemo,
         },
         {
           // Turn 7 (BACKLOG #42). A way of LOOKING, like Contour view beside

@@ -101,6 +101,9 @@ export default function LightingPanel() {
   const notify = useUiStore((s) => s.notify);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectedElement = useUiStore((s) => s.selectedElement);
+  // Turn 33 (CLAUDE.md F2): the demo — the same flag the View menu carries.
+  const lightDemo = useUiStore((s) => s.lightDemo);
+  const toggleLightDemo = useUiStore((s) => s.toggleLightDemo);
 
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
@@ -211,6 +214,18 @@ export default function LightingPanel() {
                 ))}
               </div>
             </div>
+
+            {/* ─── F2: the client demo — one flag, two controls (View menu) ── */}
+            <label className="flex items-center gap-2 pt-1 border-t border-shell-600">
+              <input
+                type="checkbox"
+                data-lighting-demo
+                checked={lightDemo}
+                onChange={toggleLightDemo}
+              />
+              <span className="text-[12px] text-ink-100">Turn on the light</span>
+              <span className="text-[10px] text-ink-400">— the room dims, the LEDs shine</span>
+            </label>
 
             {/* ─── placements ───────────────────────────────────────────── */}
             <div className="space-y-2 pt-1 border-t border-shell-600">

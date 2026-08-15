@@ -81,6 +81,18 @@ export function defaultSwitchFor(projectTypeId) {
   return switchChoicesFor(projectTypeId)[0]?.id || 'sensor';
 }
 
+/**
+ * ─── F2: THE DEMO'S DIM (one factor, derived, never stored) ────────────────
+ * What the WHOLE studio rig is multiplied by while "Turn on the light" is on.
+ * One number on every lamp and on the environment together, so the balance
+ * turn 26 computed — the ceiling against the jupiters, the key against the
+ * fill — does not move; the room only goes down, and comes back exactly
+ * because nothing was written anywhere.
+ */
+export function demoDimFactor(on, profile) {
+  return on ? lightingSpec(profile).demo.dimFactor : 1;
+}
+
 /** One temperature row, by kelvin — the nearest the list has, never nothing. */
 export function temperatureEntry(k, profile) {
   const spec = lightingSpec(profile);

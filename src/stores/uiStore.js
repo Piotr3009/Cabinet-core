@@ -419,6 +419,17 @@ export const useUiStore = create((set, get) => ({
   setRealisticLighting: (v) => set({ realisticLighting: Boolean(v) }),
   toggleRealisticLighting: () => set((s) => ({ realisticLighting: !s.realisticLighting })),
 
+  // ─── TURN 33 (CLAUDE.md F2): "TURN ON THE LIGHT" — the client demo ────────
+  // The room dims to the profile's demo level and every placed LED's emissive
+  // comes UP. A LENS, exactly as X-ray is: everything it changes is DERIVED at
+  // render time from this one flag (3d/Scene.jsx, 3d/LedStrips.jsx), nothing
+  // stored is touched — which is what makes "toggling back restores exactly
+  // the previous scene state" true by construction. Session-only on purpose:
+  // a demo is a moment, not a way of working.
+  lightDemo: false,
+  setLightDemo: (v) => set({ lightDemo: Boolean(v) }),
+  toggleLightDemo: () => set((s) => ({ lightDemo: !s.lightDemo })),
+
   // ─── Turn 26 (CLAUDE.md F10.3): how bright the room is ───────────────────
   // ONE multiplier on every lamp — the ratios the rig was balanced at are the
   // ones turn 10 measured, whatever this says. Remembered, like X-ray and the

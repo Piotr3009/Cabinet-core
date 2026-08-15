@@ -15,6 +15,8 @@ import AddPlus from './AddPlus.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
 import { useViewHandle } from './viewHandle.js';
 import { balanceRig, brightnessScale } from '../engine/lighting.js';
+// Turn 33 (CLAUDE.md F2): the demo's one dim factor — derived, never stored.
+import { demoDimFactor } from '../engine/ledStrips.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
 import {
@@ -885,7 +887,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   // Turn 26 (CLAUDE.md F10.3): the View menu's brightness, remembered.
   const brightness = useUiStore((s) => s.brightness);
+  // Turn 33 (CLAUDE.md F2): the demo — one derived factor, profile-listed.
+  const lightDemo = useUiStore((s) => s.lightDemo);
   const profile = useCabinetProfileStore((s) => s.profile);
+  const demoDim = demoDimFactor(lightDemo, profile);
 
   // `units` is the subscription that drives the re-render; allResults() is a
   // stable store function, so deriving from it alone would never update.
@@ -1074,7 +1079,12 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
     >
       <color attach="background" args={[background]} />
       <ToneMapping exposure={studio.exposure} />
-      <Environment intensity={profile.appearance.environment.intensity} on={realisticLighting} />
+      {/* ─── TURN 33 (CLAUDE.md F2): "TURN ON THE LIGHT" ─────────────────────
+          ONE factor multiplies the whole rig and the environment together —
+          the balance turn 26 computed does not move, the room only goes down
+          — and the placed LEDs come up in 3d/LedStrips.jsx off the same flag.
+          Derived here, stored nowhere: toggling back IS the previous state. */}
+      <Environment intensity={profile.appearance.environment.intensity * demoDim} on={realisticLighting} />
       <Lights
         roomHeight={roomH}
         roomWidth={roomW}
@@ -1082,7 +1092,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         studio={studio}
         subject={subject}
         // Turn 26 (CLAUDE.md F10.3): the View menu's slider, remembered.
-        brightness={brightnessScale(brightness, profile)}
+        brightness={brightnessScale(brightness, profile) * demoDim}
       />
       <ShadowFit signal={results} unitsRef={unitGroups} onFit={setSubject} />
       {/* ─── Turn 17 (CLAUDE.md F11): the ruler ───

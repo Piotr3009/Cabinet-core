@@ -704,11 +704,11 @@ export const useUiStore = create((set, get) => ({
   // free, because the four old tones ARE the three levels
   // (`messages.js levelOf`).
   messages: [],
-  notify: (message, tone = 'info') => {
+  notify: (message, tone = 'info', opts = null) => {
     if (!message) return null;
     const now = Date.now();
     const profile = getCabinetProfile();
-    const msg = makeMessage(message, tone, { at: now, profile });
+    const msg = makeMessage(message, tone, { at: now, profile, action: opts?.action || null });
     set((s) => ({ messages: trimQueue(pushMessage(s.messages, msg), queueMax(profile)) }));
     // Only a grey has a clock. A red that expired on its own would be exactly
     // the fault this feature exists to end, so there is no timer for one.

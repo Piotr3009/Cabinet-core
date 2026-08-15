@@ -528,6 +528,163 @@ async function main() {
       await page.evaluate(`${P}.ui.getState().clearMessages(); return true;`);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F3 [CRITICAL] — the guards, wired: Check #9 / #10 + the export gate
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // The centre of this phase is the owner's own proven bug — hinge_rows
+    // [100, 100, 470] — driven with REAL pointer input through the door
+    // window's own hinge rows, because "the store refuses it" is a claim about
+    // the app rather than about a function.
+    if (want('f3')) {
+      await newRoom('Turn 31 walk — F3');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const a = s.addUnit('BUD');
+        s.updateUnitParams(a.id, { width: 600, doors: { count: 1 } });
+        const r = s.unitResult(a.id);
+        window.__t31 = {
+          unitA: a.id,
+          leaf: (r.panels.find((p) => p.part === 'FRONT') || {}).id || null,
+          rows: r.drillSummary.hinge_centers,
+        };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.waitFor(`(() => {
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return false;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId === window.__t31.leaf) n += 1; });
+        return n > 0;
+      })()`, { what: 'the leaf to mount', timeout: 30000 });
+      await frameUnits([await page.evaluate('return window.__t31.unitA;')], [0.9, 0.5, 2.4]);
+      await page.sleep(800);
+
+      const f3 = {};
+      f3.rowsBefore = await page.evaluate('return window.__t31.rows;');
+
+      // ── The door window, opened by a real double-click on the leaf ────────
+      const atLeaf = await screenOf(await page.evaluate('return window.__t31.leaf;'));
+      await page.dblclick(atLeaf.x, atLeaf.y);
+      await page.sleep(700);
+      const gotWindow = await page.evaluate(`return Boolean(document.querySelector('[data-hinge-modal-row="1"]'));`);
+      check('F3 — the door window is open at its hinge rows', gotWindow === true, String(gotWindow));
+
+      // ── The gesture that makes the bug: drive row 1 onto row 0 ───────────
+      // The ↓ button is the hinge's own 5 mm stride, so this is a joiner
+      // nudging a hinge down towards the one below it, over and over.
+      let nudges = 0;
+      for (let i = 0; i < 120; i += 1) {
+        await page.click('[data-hinge-down="1"]');
+        nudges += 1;
+        // Stop when the app REFUSES, not when the arithmetic says it is about
+        // to: the whole claim is that the refusal happens and is said out loud.
+        const stop = await page.evaluate(
+          `return Boolean(document.querySelector('[data-message-level="yellow"]'));`,
+        );
+        if (stop) break;
+      }
+      f3.nudges = nudges;
+      const blocked = await page.evaluate(`
+        const el = document.querySelector('[data-message-level="yellow"]');
+        const rows = ${P}.project.getState().hingeRowsOf(window.__t31.unitA);
+        return { message: el ? el.innerText.trim() : null, rows, gap: Math.round((rows[1] - rows[0]) * 100) / 100 };
+      `);
+      f3.blocked = blocked;
+      check('F3 — the setter REFUSES to bring two rows inside the 60 mm minimum',
+        blocked.gap >= 60, `rows ${JSON.stringify(blocked.rows)} · gap ${blocked.gap}`);
+      check('F3 — …and the refusal is a YELLOW that carries the number',
+        Boolean(blocked.message) && /60/.test(blocked.message), blocked.message || '(silent)');
+      await shot('3a-the-blocked-hinge-move-a-yellow-with-the-number-in-it',
+        { dom: '[data-message-level="yellow"]', text: '60' });
+
+      // ── The bug, forced past the setter, and the guard on it ─────────────
+      // A saved or imported job never passed through the setter, so the guard
+      // is the line that has to hold. `updateUnitParams` is that door.
+      const guarded = await page.evaluate(`
+        const s = ${P}.project.getState();
+        s.updateUnitParams(window.__t31.unitA, { hinge_rows: [100, 100, 470] });
+        const r = s.unitResult(window.__t31.unitA);
+        const G = window.__ccT31.exportGate;
+        const gate = G.exportGate([{ unit: { id: window.__t31.unitA }, result: r }],
+          { profile: ${P}.profile.getState().profile });
+        return {
+          rows: r.drillSummary.hinge_centers,
+          findings: gate.findings.map((f) => ({ check: f.check, code: f.code, level: f.level, panel: f.panel })),
+          held: gate.held.map((h) => h.panelId),
+          message: gate.message,
+        };
+      `);
+      f3.guarded = guarded;
+      check('F3 — Check #10 FAILS the [100,100,470] case, red, with both codes',
+        guarded.findings.some((f) => f.check === 10 && f.code === 'duplicate-drill' && f.level === 'red')
+        && guarded.findings.some((f) => f.code === 'hinge-rows-too-close'),
+        guarded.findings.map((f) => `#${f.check} ${f.code}`).join(' · '));
+      check('F3 — the export gate HOLDS the faulty parts out, and NAMES them',
+        guarded.held.length > 0 && guarded.held.every((id) => guarded.message.includes(id)),
+        `${guarded.held.join(', ')} — "${guarded.message}"`);
+
+      // ── The export button itself, pressed, with the gate on it ───────────
+      await page.evaluate(`${P}.ui.getState().clearMessages(); return true;`);
+      const exported = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t31.unitA);
+        const ids = r.panels.map((p) => p.id);
+        const res = window.__ccT31.cncExport.exportSheetDxf(r, ids, ${P}.profile.getState().profile);
+        return { filename: res.filename, parts: res.parts, all: ids.length, held: res.held.length, gateMessage: res.gateMessage };
+      `);
+      f3.exported = exported;
+      check('F3 — the file is WRITTEN, with the faulty parts left out of it',
+        exported.parts > 0 && exported.parts < exported.all && exported.held > 0,
+        `${exported.parts} of ${exported.all} parts · ${exported.held} held · ${exported.filename}`);
+
+      // …and the message the app shows for it, with its way out.
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t31.unitA);
+        const ids = r.panels.map((p) => p.id);
+        const res = window.__ccT31.cncExport.exportSheetDxf(r, ids, ${P}.profile.getState().profile);
+        if (res.gateMessage) {
+          ${P}.ui.getState().notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: () => {} } });
+        }
+        return true;
+      `);
+      await page.sleep(400);
+      const shown = await page.evaluate(`
+        const el = document.querySelector('[data-message-level="red"]');
+        const btn = document.querySelector('[data-message-action]');
+        return { text: el ? el.innerText.trim() : null, action: btn ? btn.innerText.trim() : null };
+      `);
+      f3.shown = shown;
+      check('F3 — the app SHOWS it: a red naming the held parts, with "Export anyway"',
+        Boolean(shown.text) && /held out of this export/.test(shown.text) && shown.action === 'Export anyway',
+        `${shown.action} · ${shown.text}`);
+      await shot('3b-the-export-gate-a-red-naming-the-held-parts-and-export-anyway',
+        { dom: '[data-message-action]', text: 'Export anyway' });
+
+      // ── And a CLEAN job exports normally, which is the other half ────────
+      await page.evaluate(`
+        ${P}.ui.getState().clearMessages();
+        ${P}.project.getState().resetHinges(window.__t31.unitA);
+        return true;
+      `);
+      await page.sleep(300);
+      const clean = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t31.unitA);
+        const ids = r.panels.map((p) => p.id);
+        const res = window.__ccT31.cncExport.exportSheetDxf(r, ids, ${P}.profile.getState().profile);
+        return { parts: res.parts, all: ids.length, held: res.held.length, gateMessage: res.gateMessage };
+      `);
+      f3.clean = clean;
+      check('F3 — everything clean exports normally: nothing held, nothing said',
+        clean.held === 0 && clean.gateMessage === null && clean.parts === clean.all,
+        `${clean.parts} of ${clean.all} parts`);
+      measurements.f3 = f3;
+      await page.evaluate(`${P}.ui.getState().clearMessages(); return true;`);
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

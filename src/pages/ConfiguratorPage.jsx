@@ -219,12 +219,21 @@ export default function ConfiguratorPage() {
   }, [allResults, project, assignments, materials, units.length]);
 
   /** Every cut part of the SELECTED unit, as one ZIP (Output ▸ CNC / DXF). */
-  const onExportDxfZip = useCallback(async () => {
+  // The menu hands its `run` the click EVENT, so the flag is read out of an
+  // options object rather than out of argument one: an event is truthy and
+  // would otherwise read as "export anyway".
+  const onExportDxfZip = useCallback(async (opts) => {
+    const exportAnyway = opts?.exportAnyway === true;
     const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
     if (!unit) { notify('Select a unit first — the DXF export is per unit.', 'warn'); return; }
     try {
-      const { filename, files } = await exportUnitDxfZip(unitResult(unit.id));
-      notify(`${files.length} DXF files exported as ${filename}.`, 'ok');
+      // Turn 31 (CLAUDE.md F3): through the export gate, like the CNC tree's own
+      // three buttons — the guard cannot be reached by one door and not another.
+      const res = await exportUnitDxfZip(unitResult(unit.id), undefined, { exportAnyway });
+      notify(`${res.files.length} DXF files exported as ${res.filename}.`, 'ok');
+      if (res.gateMessage) {
+        notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: () => onExportDxfZip({ exportAnyway: true }) } });
+      }
     } catch (e) {
       notify(e.message || 'This unit has no CNC geometry to export.', 'warn');
     }

@@ -16,6 +16,7 @@ import { migrateDesign } from '../engine/design.js';
 import { formatMm, roundTo } from '../engine/format.js';
 import { HANDLE_TYPES, handleClassOf } from '../engine/handles.js';
 import { getUnitType } from '../engine/types.js';
+import { sayHingeResult } from '../lib/hingeEdit.js';
 
 // ─── ONE MODAL FOR THE DOOR AND ITS HINGES (turn 30, CLAUDE.md F2) ──────────
 //
@@ -300,7 +301,7 @@ function HingeSection({
               className="cc-btn-ghost px-2"
               data-hinge-up={i}
               title="Up — the hinge’s own 5 mm stride"
-              onClick={() => setHingePos(unit.id, i, mm + (profile.editor.hingeNudgeMm || 5))}
+              onClick={() => sayHingeResult(setHingePos(unit.id, i, mm + (profile.editor.hingeNudgeMm || 5)), notify)}
             >
               ↑
             </button>
@@ -309,7 +310,7 @@ function HingeSection({
               className="cc-btn-ghost px-2"
               data-hinge-down={i}
               title="Down — the hinge’s own 5 mm stride"
-              onClick={() => setHingePos(unit.id, i, mm - (profile.editor.hingeNudgeMm || 5))}
+              onClick={() => sayHingeResult(setHingePos(unit.id, i, mm - (profile.editor.hingeNudgeMm || 5)), notify)}
             >
               ↓
             </button>
@@ -318,7 +319,7 @@ function HingeSection({
               data-hinge-modal-row={i}
               value={mm}
               title="Above the carcass floor. It cannot pass the hinge above or below it."
-              onCommit={(v) => setHingePos(unit.id, i, v)}
+              onCommit={(v) => sayHingeResult(setHingePos(unit.id, i, v), notify)}
             />
             <button
               type="button"
@@ -336,7 +337,7 @@ function HingeSection({
           className="cc-btn w-full"
           data-hinge-modal-add="1"
           title="One more hinge, in the biggest gap in the run"
-          onClick={() => addHinge(unit.id)}
+          onClick={() => sayHingeResult(addHinge(unit.id), notify)}
         >
           + Add a hinge
         </button>

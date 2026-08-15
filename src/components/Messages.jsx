@@ -36,27 +36,55 @@ function Line({ msg, onDismiss }) {
   const body = msg.count > 1 ? `${msg.message} · ×${msg.count}` : msg.message;
   const cls = `px-4 py-2 rounded border text-sm shadow-panel text-left ${TONE[msg.level] || TONE.grey}`;
   if (msg.level === 'red') {
+    // A DIV with a button inside it, not a button: the body dismisses, and the
+    // WAY OUT beside it (F3's "Export anyway") must not dismiss as a side
+    // effect of being pressed.
     return (
-      <button
-        type="button"
+      <div
         data-message={msg.id}
         data-message-level="red"
-        className={`${cls} block w-full`}
-        title="Click to dismiss"
-        onClick={() => onDismiss(msg.id)}
+        className={`${cls} flex items-center gap-3`}
       >
-        {body}
-        <span className="ml-2 opacity-60 text-[11px]">click to dismiss</span>
-      </button>
+        <button
+          type="button"
+          className="flex-1 text-left"
+          data-message-dismiss={msg.id}
+          title="Click to dismiss"
+          onClick={() => onDismiss(msg.id)}
+        >
+          {body}
+          <span className="ml-2 opacity-60 text-[11px]">click to dismiss</span>
+        </button>
+        {msg.action && (
+          <button
+            type="button"
+            className="cc-btn shrink-0"
+            data-message-action={msg.id}
+            onClick={() => { onDismiss(msg.id); msg.action.run?.(); }}
+          >
+            {msg.action.label}
+          </button>
+        )}
+      </div>
     );
   }
   return (
     <div
       data-message={msg.id}
       data-message-level={msg.level}
-      className={`${cls} ${msg.level === 'grey' ? 'pointer-events-none' : ''}`}
+      className={`${cls} ${msg.level === 'grey' ? 'pointer-events-none' : 'flex items-center gap-3'}`}
     >
-      {body}
+      <span className={msg.level === 'grey' ? '' : 'flex-1'}>{body}</span>
+      {msg.action && (
+        <button
+          type="button"
+          className="cc-btn shrink-0"
+          data-message-action={msg.id}
+          onClick={() => { onDismiss(msg.id); msg.action.run?.(); }}
+        >
+          {msg.action.label}
+        </button>
+      )}
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { layoutPanels } from '../engine/cnc/layout.js';
 import { exportablePanels, presetOfSelection } from '../engine/cnc/groups.js';
 import { materialExportSection } from '../engine/cnc/views.js';
 import { fileSafeName } from '../engine/naming.js';
+// Turn 31 (CLAUDE.md F3): both guards run before any file is written.
+import { exportGate, panelsThatGo } from '../engine/cnc/exportGate.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { download } from './exporters.js';
 
@@ -13,6 +15,21 @@ import { download } from './exporters.js';
 // The ZIP wrapper around the pure-JS DXF generator. jszip lives HERE and not in
 // src/engine/ so the engine stays dependency-free (CLAUDE.md rule 2); the
 // generator is fully testable in node without ever touching this file.
+//
+// ─── TURN 31 (CLAUDE.md F3): THE EXPORT GATE ────────────────────────────────
+//
+// "Both guards run before files are written. A faulty panel is HELD OUT of the
+// export — message names it — with an explicit 'Export anyway'."
+//
+// Turn 25's outline guard was tested from turn 25 and was never once consulted
+// by the button the owner actually presses. It is now, together with turn 31's
+// drill guard, and it happens HERE rather than in each of the three export
+// functions' callers: a gate one caller can forget is a gate.
+//
+// Every function below takes `{ exportAnyway }` and returns `held` and
+// `gateMessage` beside its filename. The DECISION is the caller's — this layer
+// sorts the panels into two piles and writes the sentence (rule 4: it speaks,
+// it never fixes).
 
 /**
  * One ZIP per unit: `{unitNum}-dxf.zip`, containing `{unitNum}-{PANEL_ID}.dxf`
@@ -22,9 +39,18 @@ import { download } from './exporters.js';
  * @param {object} [profile]
  * @returns {Promise<{filename:string, files:string[]}>}
  */
-export async function exportUnitDxfZip(result, profile = getCabinetProfile()) {
-  const files = buildUnitDxfFiles(result, profile);
-  if (!files.length) throw new Error('This unit has no CNC geometry to export.');
+export async function exportUnitDxfZip(result, profile = getCabinetProfile(), { exportAnyway = false } = {}) {
+  const gate = exportGate([{ result }], { profile });
+  const held = new Set(gate.held.map((h) => h.panelId));
+  const safe = exportAnyway || gate.ok
+    ? result
+    : { ...result, panels: (result.panels || []).filter((p) => !held.has(p.id)) };
+  const files = buildUnitDxfFiles(safe, profile);
+  if (!files.length) {
+    throw new Error(gate.ok
+      ? 'This unit has no CNC geometry to export.'
+      : `Every part of this unit is held back: ${gate.message}`);
+  }
 
   const zip = new JSZip();
   for (const f of files) zip.file(f.name, f.dxf);
@@ -38,7 +64,12 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile()) {
   // up. An automatic name ("01", "WU05") passes through untouched.
   const filename = `${fileSafeName(result.unitNum, 'unit')}-dxf.zip`;
   download(filename, blob);
-  return { filename, files: files.map((f) => f.name) };
+  return {
+    filename,
+    files: files.map((f) => f.name),
+    held: exportAnyway ? [] : gate.held,
+    gateMessage: exportAnyway ? null : gate.message,
+  };
 }
 
 /**
@@ -51,10 +82,13 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile()) {
  * @param {string[]} selectedIds  panel ids to include
  * @param {object} [profile]
  */
-export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile()) {
+export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(), { exportAnyway = false } = {}) {
   const wanted = new Set(selectedIds);
-  const panels = exportablePanels(result.panels).filter((p) => wanted.has(p.id));
-  if (!panels.length) throw new Error('Nothing selected to export.');
+  const chosen = exportablePanels(result.panels).filter((p) => wanted.has(p.id));
+  if (!chosen.length) throw new Error('Nothing selected to export.');
+  const gate = exportGate([{ result, panels: chosen }], { profile });
+  const panels = panelsThatGo(chosen, { gate, unitId: result.unitId || null, exportAnyway });
+  if (!panels.length) throw new Error(`Every selected part is held back: ${gate.message}`);
 
   const layout = layoutPanels(panels, result.drills, {
     gap: profile.cnc.layoutGap,
@@ -66,7 +100,13 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   });
   const filename = sheetDxfFileName(result.unitNum, presetId);
   download(filename, new Blob([dxf], { type: 'application/dxf' }));
-  return { filename, parts: panels.length, presetId };
+  return {
+    filename,
+    parts: panels.length,
+    presetId,
+    held: exportAnyway ? [] : gate.held,
+    gateMessage: exportAnyway ? null : gate.message,
+  };
 }
 
 /**
@@ -87,12 +127,24 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
  * @param {object} opts    { key, design, materials, profile }
  */
 export function exportMaterialDxf(entries, {
-  key = 'all', design = null, materials = [], profile = getCabinetProfile(),
+  key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,
 } = {}) {
-  const section = materialExportSection(entries, {
+  const gate = exportGate(entries, { profile });
+  // The held-back parts leave the SELECTION before the section is laid out, so
+  // the sheet the file carries is the sheet that was actually cut — no gap
+  // where a board was quietly dropped afterwards.
+  const passed = exportAnyway || gate.ok ? entries : (entries || []).map((e) => ({
+    ...e,
+    panels: (e.panels || []).filter((p) => !gate.heldPanelIds.has(`${e.unit?.id || null}::${p.id}`)),
+  }));
+  const section = materialExportSection(passed, {
     key, design, profile, materials,
   });
-  if (!section || !section.blocks.length) throw new Error('Nothing on the sheet for that material.');
+  if (!section || !section.blocks.length) {
+    throw new Error(gate.ok
+      ? 'Nothing on the sheet for that material.'
+      : `Every part on this sheet is held back: ${gate.message}`);
+  }
 
   const dxf = materialSheetDxf({
     blocks: section.blocks, gap: profile.cnc.layoutGap, profile,
@@ -104,5 +156,7 @@ export function exportMaterialDxf(entries, {
     label: section.label,
     parts: section.blocks.reduce((n, b) => n + b.panels.length, 0),
     units: section.blocks.length,
+    held: exportAnyway ? [] : gate.held,
+    gateMessage: exportAnyway ? null : gate.message,
   };
 }

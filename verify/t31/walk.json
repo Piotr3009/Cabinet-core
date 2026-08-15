@@ -6,39 +6,44 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F2 — the ONE gate raises the flag from anywhere in the store",
+   "label": "F3 — the door window is open at its hinge rows",
    "ok": true,
-   "detail": "{\"afterSave\":false,\"afterEdit\":true,\"afterShelf\":true}"
+   "detail": "true"
   },
   {
-   "label": "F2 — all THREE levels are on the screen at once (the old slot held one)",
+   "label": "F3 — the setter REFUSES to bring two rows inside the 60 mm minimum",
    "ok": true,
-   "detail": "grey · red · yellow"
+   "detail": "rows [100,160,670] · gap 60"
   },
   {
-   "label": "F2 — …and a RED is never buried under a yellow: it is drawn first",
+   "label": "F3 — …and the refusal is a YELLOW that carries the number",
    "ok": true,
-   "detail": "grey → red → yellow"
+   "detail": "01: hinge rows at 100 and 155 mm are 55 mm apart — under the 60 mm minimum, so both hinges cannot be fitted."
   },
   {
-   "label": "F2 — GREY stands in the CENTRE, the two that wait stand at the bottom",
+   "label": "F3 — Check #10 FAILS the [100,100,470] case, red, with both codes",
    "ok": true,
-   "detail": "grey at y=505 · red/yellow at y=892"
+   "detail": "#10 duplicate-drill · #10 duplicate-drill · #10 duplicate-drill · #10 duplicate-drill · #10 duplicate-drill · #10 hinge-rows-too-close"
   },
   {
-   "label": "F2 — a click ANYWHERE ELSE takes the yellow and leaves the red standing",
+   "label": "F3 — the export gate HOLDS the faulty parts out, and NAMES them",
    "ok": true,
-   "detail": "grey · red"
+   "detail": "01-F, BUL — \"2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway.\""
   },
   {
-   "label": "F2 — …and the red goes when the red itself is clicked, and not before",
+   "label": "F3 — the file is WRITTEN, with the faulty parts left out of it",
    "ok": true,
-   "detail": "(none)"
+   "detail": "4 of 6 parts · 2 held · 01-cnc-custom.dxf"
   },
   {
-   "label": "F2 — leaving with unsaved work shows the RED, and it says the sentence",
+   "label": "F3 — the app SHOWS it: a red naming the held parts, with \"Export anyway\"",
    "ok": true,
-   "detail": "start · Save the project — unsaved changesclick to dismiss"
+   "detail": "Export anyway · 2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway.click to dismiss\nExport anyway"
+  },
+  {
+   "label": "F3 — everything clean exports normally: nothing held, nothing said",
+   "ok": true,
+   "detail": "6 of 6 parts"
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -48,26 +53,19 @@
  ],
  "shots": [
   {
-   "name": "2a-one-of-each-level-red-yellow-and-grey-on-screen-at-once",
+   "name": "3a-the-blocked-hinge-move-a-yellow-with-the-number-in-it",
    "subject": {
-    "dom": "[data-message-level=\"red\"]"
+    "dom": "[data-message-level=\"yellow\"]",
+    "text": "60"
    },
    "present": true,
-   "detail": "{\"dom\":true}"
+   "detail": "{\"dom\":true,\"text\":true}"
   },
   {
-   "name": "2b-the-yellow-is-gone-the-red-has-not-moved",
+   "name": "3b-the-export-gate-a-red-naming-the-held-parts-and-export-anyway",
    "subject": {
-    "dom": "[data-message-level=\"red\"]"
-   },
-   "present": true,
-   "detail": "{\"dom\":true}"
-  },
-  {
-   "name": "2c-leaving-with-unsaved-work-the-red-that-follows-you-out",
-   "subject": {
-    "dom": "[data-message-level=\"red\"]",
-    "text": "Save the project"
+    "dom": "[data-message-action]",
+    "text": "Export anyway"
    },
    "present": true,
    "detail": "{\"dom\":true,\"text\":true}"

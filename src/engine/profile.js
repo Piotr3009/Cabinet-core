@@ -217,6 +217,24 @@ export const DEFAULT_CABINET_PROFILE = {
     standardOptions: [2, 3],
     holeDiameter: 5,
     holePairOffset: 16,        // 2 holes per centre at centre ± 16
+    // ─── TURN 31 (CLAUDE.md F3 / Check #10): HOW NEAR TWO ROWS MAY COME ────
+    //
+    // OWNER'S NUMBER, 15.08.2026: 60 mm.
+    //
+    // The fault it stops is live in the app today, not hypothetical:
+    // `hinge_rows [100, 100, 470]` is storable from the editor and makes the
+    // engine emit the cups at 84 and 116 TWICE, on one panel, on one layer, at
+    // one coordinate. On the machine that is a 5 mm bit going back into a hole
+    // it has already made.
+    //
+    // 60 is the physical line as well as the arithmetic one: a CLIP top cup is
+    // 35 across and its plate reaches further again, so two rows inside 60 are
+    // two hinges that cannot both be fitted whatever the drilling says.
+    minSpacingMm: 60,
+    // CLAUDE.md F3: "One profile line flips block→warn if the owner ever wants
+    // it loose." This is the line. It ships BLOCKING, because what it stops is
+    // a board in the skip; `false` leaves the move allowed and the yellow said.
+    spacingBlocks: true,
     xFromFrontEdge: 37,        // measured from the FRONT edge of the side panel
     layer: 'HINGES_5MM',
     endOffset: 100,            // first/last hinge centre, from panel end

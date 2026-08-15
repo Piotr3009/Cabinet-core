@@ -35,6 +35,8 @@ import { handleClassCount } from '../engine/handles.js';
 // Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
 import { worktopEligible, worktopsFor } from '../engine/worktop.js';
 import { frontGapClashes } from '../engine/frontGapClash.js';
+// Turn 31 (CLAUDE.md F3): the drill guard's own number, at the source.
+import { hingeMinSpacingMm, hingeRowClashes, hingeSpacingBlocks } from '../engine/cnc/drillGuard.js';
 import {
   carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
   projectFrontThickness, setFrontTypeCount, sourceById, sourceTakesFacing,
@@ -3234,7 +3236,32 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return result?.drillSummary?.hinge_centers || [];
   },
 
-  /** Move one hinge. Clamped to the carcass and snapped to the workshop grid. */
+  /**
+   * Move one hinge. Clamped to the carcass and snapped to the workshop grid.
+   *
+   * ─── TURN 31 (CLAUDE.md F3): AND REFUSED AT THE SOURCE ───────────────────
+   *
+   * The proven live bug: `hinge_rows [100, 100, 470]` is storable from this
+   * setter today, and `computeCabinet()` then emits the cups at 84 and 116
+   * TWICE — same panel, same layer, same coordinate. A 5 mm bit going back into
+   * a hole it has already made.
+   *
+   * Turn 17's clamp was already trying to stop it ("never on top of the one
+   * next to it") and it was TOO SMALL: `holePairOffset * 2` is 32 mm, which is
+   * the two holes of ONE hinge, not the room two hinges need. The line is
+   * `hingeMinSpacingMm` — profile, 60, the owner's number — and it is the SAME
+   * number the guard reports at (engine/cnc/drillGuard.js), so the setter and
+   * the Check can never disagree about what is legal.
+   *
+   * And it REFUSES rather than repairing: turn 17's clamp slid the row to the
+   * nearest legal place, which is the app deciding where a hinge goes. Rule 4 —
+   * the guard SPEAKS. A blocked move returns the reason with the number in it
+   * and leaves the ladder exactly as it was; `hinges.spacingBlocks: false` is
+   * the one profile line that turns the refusal into a warning.
+   *
+   * @returns {number|null} the position it landed at, or null when refused —
+   *          with `{ blocked, message }` on the object either way.
+   */
   setHingePos: (unitId, index, mm) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
@@ -3243,21 +3270,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const rows = [...s.hingeRowsOf(unitId)];
     if (index < 0 || index >= rows.length) return null;
     const H = Number(unit.params.height) || 0;
-    // A hinge lives on the carcass, so the carcass is the clamp — and never on
-    // top of the one next to it: two cups at the same height is one hinge and a
-    // hole in a door.
-    const gap = profile.hinges.holePairOffset * 2;
-    const below = index > 0 ? rows[index - 1] + gap : 0;
-    const above = index < rows.length - 1 ? rows[index + 1] - gap : H;
-    const pos = Math.min(Math.max(snapTo(Number(mm) || 0, profile.editor.mmStep), below), Math.max(below, above));
-    rows[index] = pos;
+    const min = hingeMinSpacingMm(profile);
+    // The carcass is still the clamp: a hinge cannot be off the board.
+    const pos = Math.min(Math.max(snapTo(Number(mm) || 0, profile.editor.mmStep), 0), H);
+    const next = rows.map((v, i) => (i === index ? pos : v));
+    const clash = hingeRowClashes(next, { minSpacingMm: min, unitNum: unit.params.unit_num });
+    if (clash.length && hingeSpacingBlocks(profile)) {
+      return { blocked: true, message: clash[0].message, minSpacingMm: min };
+    }
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: rows } } : u)),
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: next } } : u)),
     }));
-    return pos;
+    return clash.length
+      ? { pos, blocked: false, message: clash[0].message, minSpacingMm: min }
+      : pos;
   },
 
-  /** One more hinge, in the biggest gap in the run — where a joiner would put it. */
+  /**
+   * One more hinge, in the biggest gap in the run — where a joiner would put it.
+   *
+   * Turn 31 (CLAUDE.md F3): and REFUSED where the biggest gap is not big
+   * enough. A ladder with no room left for another hinge is a ladder that gets
+   * one dropped on top of an existing row, which is the doubled hole again by a
+   * different door.
+   */
   addHinge: (unitId) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
@@ -3265,6 +3301,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const profile = getCabinetProfile();
     const rows = [...s.hingeRowsOf(unitId)];
     const H = Number(unit.params.height) || 0;
+    const min = hingeMinSpacingMm(profile);
     if (!rows.length) {
       const at = snapTo(H / 2, profile.editor.mmStep);
       set((st) => ({
@@ -3283,6 +3320,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (bestAt == null) bestAt = Math.min(H, rows[0] + profile.hinges.endOffset);
     const at = snapTo(bestAt, profile.editor.mmStep);
     const next = [...rows, at].sort((a, b) => a - b);
+    const clash = hingeRowClashes(next, { minSpacingMm: min, unitNum: unit.params.unit_num });
+    if (clash.length && hingeSpacingBlocks(profile)) {
+      return {
+        blocked: true,
+        message: `No room for another hinge: ${clash[0].message}`,
+        minSpacingMm: min,
+      };
+    }
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: next } } : u)),
     }));

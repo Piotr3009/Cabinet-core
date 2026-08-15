@@ -103,13 +103,25 @@ export function queueMax(profile) {
  * @param {string} tone     a level name, or one of the four legacy tones
  * @param {object} opts     { id, at, profile }
  */
-export function makeMessage(message, tone = 'grey', { id = null, at = 0, profile = null } = {}) {
+export function makeMessage(message, tone = 'grey', {
+  id = null, at = 0, profile = null, action = null,
+} = {}) {
   const level = levelOf(tone);
   const spec = LEVELS[level];
   return {
     id: id || `m${at}_${Math.random().toString(36).slice(2, 8)}`,
     message: String(message ?? ''),
     level,
+    // ─── TURN 31 (CLAUDE.md F3): A MESSAGE MAY OFFER A WAY OUT ─────────────
+    //
+    // "…with an explicit 'Export anyway' for the owner's own judgement." A
+    // message that names a held-back panel and offers no way past it is a
+    // message that turns into a support call. `{ label, run }`, and only ever
+    // on a level that WAITS for a person — a grey is gone in three seconds and
+    // a button on one is a button nobody can reach.
+    action: action && spec.until !== 'time'
+      ? { label: String(action.label || 'Do it'), run: action.run }
+      : null,
     until: spec.until,
     place: spec.place,
     rank: spec.rank,
@@ -153,7 +165,13 @@ export function pushMessage(list, msg) {
   if (same) {
     return queue.map((m) => (m === same
       ? {
-        ...m, at: msg.at, expiresAt: msg.expiresAt, count: (m.count || 1) + 1,
+        ...m,
+        at: msg.at,
+        expiresAt: msg.expiresAt,
+        // The NEWER way out: an "Export anyway" from the second press has to
+        // re-run the second press, not the first.
+        action: msg.action || m.action,
+        count: (m.count || 1) + 1,
       }
       : m));
   }

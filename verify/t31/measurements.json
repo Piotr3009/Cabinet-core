@@ -1,46 +1,86 @@
 {
- "f2": {
-  "dirty": {
-   "afterSave": false,
-   "afterEdit": true,
-   "afterShelf": true
+ "f3": {
+  "rowsBefore": [
+   100,
+   470,
+   670
+  ],
+  "nudges": 63,
+  "blocked": {
+   "message": "01: hinge rows at 100 and 155 mm are 55 mm apart — under the 60 mm minimum, so both hinges cannot be fitted.",
+   "rows": [
+    100,
+    160,
+    670
+   ],
+   "gap": 60
   },
-  "levels": {
-   "seen": [
+  "guarded": {
+   "rows": [
+    100,
+    100,
+    470
+   ],
+   "findings": [
     {
-     "level": "grey",
-     "text": "Turn-31-cnc-1508-2130.dxf — 7 parts."
-    },
-    {
+     "check": 10,
+     "code": "duplicate-drill",
      "level": "red",
-     "text": "Export held: 02 BACK has a doubled edge.click to dismiss"
+     "panel": "01-F"
     },
     {
-     "level": "yellow",
-     "text": "Hinge rows 60 mm apart — moved back."
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "01-F"
+    },
+    {
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "01-F"
+    },
+    {
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "BUL"
+    },
+    {
+     "check": 10,
+     "code": "duplicate-drill",
+     "level": "red",
+     "panel": "BUL"
+    },
+    {
+     "check": 10,
+     "code": "hinge-rows-too-close",
+     "level": "red",
+     "panel": null
     }
    ],
-   "centre": {
-    "x": 650,
-    "y": 505,
-    "w": 301,
-    "h": 38
-   },
-   "bottom": {
-    "x": 589,
-    "y": 892,
-    "w": 423,
-    "h": 84
-   }
+   "held": [
+    "01-F",
+    "BUL"
+   ],
+   "message": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway."
   },
-  "afterClickAway": [
-   "grey",
-   "red"
-  ],
-  "afterRedClick": [],
-  "leaving": {
-   "screen": "start",
-   "red": "Save the project — unsaved changesclick to dismiss"
+  "exported": {
+   "filename": "01-cnc-custom.dxf",
+   "parts": 4,
+   "all": 6,
+   "held": 2,
+   "gateMessage": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway."
+  },
+  "shown": {
+   "text": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway.click to dismiss\nExport anyway",
+   "action": "Export anyway"
+  },
+  "clean": {
+   "parts": 6,
+   "all": 6,
+   "held": 0,
+   "gateMessage": null
   }
  }
 }

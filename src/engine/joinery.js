@@ -282,20 +282,77 @@ export function panelPlacement(panel) {
     //
     // The frames are otherwise turn 17's — the same two, on the other faces, so
     // handedness and the x-runs-up rule are untouched.
-    case 'DRAWER-SIDE':
+    // ─── CHAT FIX 15.08.2026: THE SIDE LIES DOWN — WHERE IT IS DRAWN LYING ──
+    //
+    // Owner, off his own scene: "boki szuflad stoją". Measured in the running
+    // app — engine `18 × 164 × 440` (w × h × d), scene `18 × 440 × 164`: in a
+    // WARDROBE the board stood on its end, 440 tall and 164 deep.
+    //
+    // And the reason it was right in a kitchen and wrong in a wardrobe is that
+    // the two kits DRAW THE SAME PART DIFFERENTLY, which nothing here knew:
+    //
+    //   BUDR  (kitchen)   cnc.outline 237 × 490 — x is the board's HEIGHT
+    //   WARDROBE          cnc.outline 440 × 164 — x is the board's DEPTH
+    //
+    // Turn 17 wrote ONE frame for the part name and it matched the kitchen, so
+    // a wardrobe drawer has stood on end ever since. A second fixed frame would
+    // only move the fault to the next kit that draws it the other way, so the
+    // frame is READ OFF THE RECTANGLE THE ENGINE ACTUALLY DREW: whichever of
+    // the board's own dimensions the drawn width matches is the direction CNC
+    // x runs in. Self-correcting, and it cannot disagree with the sheet.
+    //
+    // The machined face is the INNER one in both readings (the runner
+    // reduction and the bottom groove are milled inboard, for the reasons the
+    // profile gives above), and handedness is the file's own rule, u × v = −n,
+    // in all four branches:
+    //   x up,    L: [0,1,0] × [0,0,−1] = [−1,0,0] = −[1,0,0]   ✓  (turn 17's)
+    //   x up,    R: [0,1,0] × [0,0,1]  = [1,0,0]  = −[−1,0,0]  ✓  (turn 17's)
+    //   x depth, L: [0,0,1] × [0,1,0]  = [−1,0,0] = −[1,0,0]   ✓
+    //   x depth, R: [0,0,−1] × [0,1,0] = [1,0,0]  = −[−1,0,0]  ✓
+    //
+    // The DXF cannot move: `panelPlacement` is read by the VIEW alone —
+    // 3d/panelSolid.js and joinery's own `jointLines`/`machiningLines` — and
+    // the writer (engine/cnc/dxf.js) never asks it. Checked by the named-delta
+    // classifier before this shipped: zero entities changed.
+    case 'DRAWER-SIDE': {
+      const drawnW = (panel.cnc?.outline || []).reduce((m, q) => Math.max(m, q[0]), 0);
+      // Which of the board's own dimensions IS that drawn width? A tie cannot
+      // arise on a real board (a side is never as tall as it is deep), and a
+      // panel with no outline at all keeps turn 17's answer.
+      const xRunsUp = !(drawnW > 0) || Math.abs(drawnW - box.h) <= Math.abs(drawnW - box.d);
+      if (xRunsUp) {
+        // Turn 17's own frames, untouched — this is what a KITCHEN drawer is.
+        return panel.meta?.side === 'R'
+          ? {
+            origin: [box.x, box.y, box.z],
+            u: [0, 1, 0],
+            v: [0, 0, 1],
+            n: [-1, 0, 0],
+          }
+          : {
+            origin: [box.x + box.w, box.y, box.z + box.d],
+            u: [0, 1, 0],
+            v: [0, 0, -1],
+            n: [1, 0, 0],
+          };
+      }
+      // Drawn lying down — the WARDROBE's own drawing. x runs along the depth,
+      // y runs up, and the right side's x runs front-to-back so its machined
+      // face still looks inboard.
       return panel.meta?.side === 'R'
         ? {
-          origin: [box.x, box.y, box.z],
-          u: [0, 1, 0],
-          v: [0, 0, 1],
+          origin: [box.x, box.y, box.z + box.d],
+          u: [0, 0, -1],
+          v: [0, 1, 0],
           n: [-1, 0, 0],
         }
         : {
-          origin: [box.x + box.w, box.y, box.z + box.d],
-          u: [0, 1, 0],
-          v: [0, 0, -1],
+          origin: [box.x + box.w, box.y, box.z],
+          u: [0, 0, 1],
+          v: [0, 1, 0],
           n: [1, 0, 0],
         };
+    }
 
     // The box front and back, also drawn rotated (`drawn_w` is the box height).
     // The front carries two ⌀3 screws at 50 mm in from its own bottom corner

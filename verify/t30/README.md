@@ -277,3 +277,21 @@ owner's standard is 50 at the front and the sink's own number at the back.
 | `5c-the-owners-50-mm-pin-columns-on-the-same-board.png` | the same board, the shop's standard |
 
 ---
+
+## F6 [MEDIUM] — moving a handle stops asking a strange question
+
+Owner: moving a handle by 10 mm asks a *"dziwne pytanie"* every time. It did — a
+`window.confirm` naming a count, in front of an action that is ONE Ctrl+Z away,
+on the gesture a person repeats most often in a session.
+
+The move applies **directly** now. The count is still said — as a toast, after
+the fact, with "Ctrl+Z puts them back" — because *how wide did that go* is a
+real question; being asked it before anything happens is not.
+
+**What is not removed**: the warning that guards an actual conflict. A 224 mm
+bar whose holes fall off a 197 mm front is `handleFitProblem`
+(`engine/handles.js`); the front is **not drilled** and the sentence is printed
+under the buttons whether anybody presses one or not. The test exercises that
+guard rather than asserting it by name, so it cannot be swept out with the nag —
+and it sweeps the whole of `src/` for any other `window.confirm`, which now
+returns none.

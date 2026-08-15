@@ -433,6 +433,26 @@ function HandleSection({ unit, panel }) {
     }
   };
 
+  // ─── TURN 30 (CLAUDE.md F6): THE NAG IS GONE ─────────────────────────────
+  //
+  // The owner, of moving a handle by ten millimetres: it asks a "dziwne
+  // pytanie" every single time. It did — a `window.confirm` naming the count,
+  // standing in front of an action that is ONE Ctrl+Z away, on the gesture a
+  // person repeats most often in a session. A dialog in front of something that
+  // cheap to undo is a dialog that only ever gets dismissed, and turn 25 wrote
+  // that sentence itself for Remove door two sections down and then did not
+  // apply it here.
+  //
+  // So the move APPLIES DIRECTLY and one undo step covers it, which is what
+  // CLAUDE.md asks for in as many words. The count is still said — as a TOAST,
+  // after the fact — because "how wide did that go" is a real question; what is
+  // gone is being asked it before anything happens.
+  //
+  // WHAT IS NOT REMOVED: any warning that guards an actual conflict. A handle
+  // driven off its own front is `handleFitProblem` (engine/handles.js) and is
+  // printed under these very buttons, whether anybody presses one or not — a
+  // conflict is a FACT about the job, and the count was a question about an
+  // undo.
   const nudge = (axis, mm) => {
     const base = own?.offset || design.fronts.handleOffsets?.[handleClass] || { x: 0, y: 0 };
     const offset = { ...base, [axis]: (Number(base[axis]) || 0) + mm };
@@ -441,16 +461,13 @@ function HandleSection({ unit, panel }) {
       notify(`Handle moved on this front only — it now differs from the other ${handleClass.replace('-', ' ')}s.`);
       return;
     }
+    // Counted off the COMPUTED units, so it is the fronts that exist rather
+    // than a guess — the same number the confirmation used to name.
     const count = handleClassCountOf(handleClass);
-    // The confirmation NAMES THE COUNT (F4.4). It is counted off the computed
-    // units, so it is the fronts that exist rather than a guess.
-    // eslint-disable-next-line no-alert, no-restricted-globals
-    const ok = typeof window === 'undefined' || window.confirm(
-      `This moves handles on ${count.total} front${count.total === 1 ? '' : 's'}`
-      + `${count.deviating ? ` (${count.deviating} with a handle of their own will not move)` : ''}.`,
-    );
-    if (!ok) return;
     moveHandleClass(handleClass, offset);
+    notify(`Handle moved on ${count.total} front${count.total === 1 ? '' : 's'}`
+      + `${count.deviating ? ` (${count.deviating} with a handle of their own did not move)` : ''}`
+      + ' — Ctrl+Z puts them back.');
   };
 
   return (

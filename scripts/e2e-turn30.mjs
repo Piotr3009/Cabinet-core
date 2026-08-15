@@ -862,6 +862,93 @@ async function main() {
       await shot('3c-the-same-divider-bored-on-its-right-face');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F4 [HIGH] — the divider's foot, restored from the LISP
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f4')) {
+      await newRoom('Turn 30 walk — F4');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        // A drawer stack is GATED on the drawer-box board being measured
+        // (turn 24 F3.1: "no thickness, no drawers"), so the walk does what the
+        // gate's own message tells a joiner to do — Project setup, the caliper,
+        // the tick — before asking for the drawers the divider belongs to.
+        s.setSlotThickness('box', { measured: 15, confirmed: true });
+        const u = s.addUnit('WARDROBE');
+        s.updateUnitParams(u.id, { width: 600, doors: true });
+        // A wardrobe's drawers are ITEMS, which is what puts the DRAWER PANEL
+        // — the very divider drawWardrobeDPHolesBOTTOM is written for — into
+        // the carcass. addDrawers is the call the app's own control makes.
+        const added = s.addDrawers(u.id, 3);
+        window.__t30 = { unitId: u.id, added };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1800);
+
+      const f4 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t30.unitId);
+        const bottom = r.panels.find((p) => p.part === 'BOTTOM');
+        const top = r.panels.find((p) => p.part === 'TOP');
+        const dp = r.panels.find((p) => p.part === 'DP');
+        const on = r.drills.filter((d) => d.kind === 'partition_foot_screw');
+        return {
+          feet: on.map((d) => ({ panel: d.panel, layer: d.layer, d: d.d, fromFront: bottom.box.d - d.x, across: d.y })),
+          topDrills: r.drills.filter((d) => d.panel === top.id).length,
+          dpDepth: dp ? dp.box.d : null,
+          centre: dp ? dp.box.x + dp.box.w / 2 - bottom.box.x : null,
+          bottomId: bottom.id,
+        };
+      `);
+      measurements.f4 = f4;
+      check('F4 — the divider’s foot is screwed through the BOTTOM again',
+        f4.feet.length === 2 && f4.feet.every((h) => h.panel === f4.bottomId && h.layer === 'SCREWS_3MM' && h.d === 3),
+        f4.feet.map((h) => `${h.panel} ⌀${h.d} ${h.layer}`).join(' · ') || 'nothing');
+      check('F4 — …at the LISP’s own two points: 99 from the front, and the divider’s depth less 50',
+        JSON.stringify(f4.feet.map((h) => h.fromFront).sort((a, b) => a - b)) === JSON.stringify([99, f4.dpDepth - 50]),
+        `${f4.feet.map((h) => h.fromFront).sort((a, b) => a - b).join(' and ')} mm from the front (the divider is ${f4.dpDepth} deep)`);
+      check('F4 — …on the divider’s own centre line across the width',
+        f4.feet.every((h) => Math.abs(h.across - f4.centre) < 1e-6),
+        `${[...new Set(f4.feet.map((h) => h.across))].join(', ')} mm (dpInsetCenter)`);
+      check('F4 — and the TOP takes NOTHING, which is the LISP and not an oversight',
+        f4.topDrills === 0,
+        `${f4.topDrills} holes in the top board`);
+
+      // The picture: the two ⌀3 in the bottom board, drawn by the SCENE — the
+      // whole point of R10's parity is that the sheet and the picture bore the
+      // same holes, so a photograph of the recess is a photograph of the cut.
+      const sceneBores = await page.evaluate(`
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return null;
+        const THREE = v.three;
+        let mesh = null;
+        v.scene.traverse((o) => { if (!mesh && o.isMesh && o.userData && o.userData.ccPanelId === ${JSON.stringify('BOTTOM')}) mesh = o; });
+        return mesh ? { mounted: true } : { mounted: false };
+      `);
+      check('F4 — the bottom board is mounted, so the picture can be looked at',
+        sceneBores?.mounted === true, JSON.stringify(sceneBores));
+      // Hide the fronts and look down into the carcass, at the foot of the
+      // divider — which is where the two screws are.
+      await page.evaluate(`
+        const ids = {};
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t30.unitId);
+        for (const p of r.panels.filter((x) => x.part === 'FRONT' || x.part === 'DRAWER-FRONT')) ids[p.id] = 1;
+        ${P}.ui.setState((st) => ({ openFronts: { ...st.openFronts, [window.__t30.unitId]: ids } }));
+        return true;
+      `);
+      await page.sleep(1500);
+      await frameOn('BOTTOM', [0.15, 1.05, 0.55]);
+      await page.sleep(900);
+      await shot('4a-the-dividers-foot-two-screws-in-the-bottom-board');
+      await frameUnits([await page.evaluate('return window.__t30.unitId;')], [0.5, 0.6, 1.0]);
+      await page.sleep(900);
+      await shot('4b-the-divider-standing-on-the-board-it-is-screwed-to');
+      await page.evaluate(`${P}.ui.setState({ openFronts: {} }); return true;`);
+      await page.sleep(400);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

@@ -205,7 +205,27 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // ─── 12.08.2026 (owner's bench): ce75028e → 3439a402 ─────────────────────
   // `shoulderDepth` 10.5 → 13 reaches every tabbed carcass board on this
   // sheet; the shelves, doors and labels do not move a hundredth.
-  assert.equal(fingerprint(sheetOf(result, all)), '3439a402', 'the whole-unit sheet has changed');
+  // ─── TURN 30 (CLAUDE.md F4), 15.08.2026: 3439a402 → 2cf80012 ─────────────
+  // THE DIVIDER'S FOOT, RESTORED, and nothing else on this sheet.
+  //
+  // Owner: "chyba kiedyś było ale się zagineło." It was. Turn 13 put the
+  // owner's BISCUIT set where a divider meets the board it stands on; turn 23
+  // removed it — rightly, no kit in `reference/lisp/` names `BISCUIT_4MM` — but
+  // read `drawWDR_PARTITION_PANEL`, which is the HORIZONTAL partition, and so
+  // also removed the LISP's own fixing for the VERTICAL one:
+  //
+  //     drawWardrobeDPHolesBOTTOM — reference/lisp/KIT_WARDROBE_FULL.lsp
+  //                                 L377-385, called on the BOTTOM at L934
+  //
+  // TWO ⌀3 screws per divider, up through the bottom board into its foot, on
+  // its centre line across the width. This sheet's wardrobe has ONE drawer
+  // panel, so the delta is EXACTLY TWO CIRCLE entities on `SCREWS_3MM`
+  // (50 → 52) and not one other entity, coordinate or layer moves. The TOP
+  // takes nothing, which is also the LISP: there is no `…HolesTOP` anywhere.
+  //
+  // This is CLAUDE.md rule 1's ONE SANCTIONED FIXTURE CHANGE for turn 30, and
+  // it is a RESTORATION: the engine had lost drilling the AutoLISP cuts.
+  assert.equal(fingerprint(sheetOf(result, all)), '2cf80012', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -239,10 +259,14 @@ test('…and so is each preset’s', () => {
   // that carry a carcass move and the two that are doors and drawer faces do
   // not — the pair that stands still is again the proof the delta is what it
   // says it is.
+  // ─── TURN 30 (CLAUDE.md F4): AND THE SAME CENSUS LOGIC ONCE MORE ────────
+  // The divider's foot is drilled in the BOTTOM, so the two sheets that carry
+  // a carcass move and the two that are doors and drawer faces do not — the
+  // pair that stands still is again the proof the delta is what it says it is.
   const expected = {
-    all: '3439a402',           // was ce75028e — every tab shoulder, 10.5 → 13
-    'non-sprayed': '07a0d206', // was 13ba3fd2 — the same shoulders
-    sprayed: '8a6498da',       // UNCHANGED — no tab is on a door
+    all: '2cf80012',           // was 3439a402 — the divider's foot, +2 ⌀3
+    'non-sprayed': 'f5aa169e', // was 07a0d206 — the same two screws
+    sprayed: '8a6498da',       // UNCHANGED — no divider stands on a door
     fronts: '8a6498da',        // UNCHANGED, for the same reason
   };
   for (const [preset, print] of Object.entries(expected)) {
@@ -282,7 +306,13 @@ test('the entities are grouped by layer exactly as before', () => {
     PUZZLE_HOLES_7_5MM: 36,
     PUZZLE_SOCKET: 18,
     RUNNERS_3MM: 18,
-    SCREWS_3MM: 50,
+    // ─── TURN 30 (CLAUDE.md F4): 50 → 52, AND THE WHOLE DELTA IS THESE TWO
+    // The divider's foot: `drawWardrobeDPHolesBOTTOM` (KIT_WARDROBE_FULL.lsp
+    // L377-385, called at L934) screws a vertical divider up through the
+    // bottom board, two ⌀3 per divider. This wardrobe has ONE drawer panel.
+    // Every other line on this census is to the digit what it was, which is
+    // what says the restoration reached the BOTTOM board and nothing else.
+    SCREWS_3MM: 52,
     SHELVES_7_5MM: 24,
     // ─── TURN 25 (CLAUDE.md F3.4): ONE NEW LINE, AND ONLY ONE ──────────────
     // The shaker panel pocket. THREE, not four: this wardrobe carries a door
@@ -497,5 +527,5 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   const cuttable = exportablePanels(result.panels);
   const hidden = new Set(panelIdsForPreset(cuttable, 'sprayed'));
   const ids = cuttable.map((p) => p.id).filter((id) => !hidden.has(id));
-  assert.equal(fingerprint(sheetOf(result, ids)), '07a0d206'); // 12.08.2026: was 13ba3fd2 — the shoulders, same sheet as the preset's
+  assert.equal(fingerprint(sheetOf(result, ids)), 'f5aa169e'); // turn 30 F4: was 07a0d206 — the divider's foot, same sheet as the preset's
 });

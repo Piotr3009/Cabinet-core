@@ -509,6 +509,42 @@ export const DEFAULT_CABINET_PROFILE = {
     layer: 'SCREWS_3MM',       // the LISP's own layer — joined, never duplicated
   },
 
+  // ─── THE DIVIDER'S FOOT (turn 30, CLAUDE.md F4) ─────────────────────────
+  //
+  // Owner, of the joint where a divider meets the board it stands on: "chyba
+  // kiedyś było ale się zagineło." It was — turn 13 put the owner's BISCUIT set
+  // there, turn 23 correctly removed it (no kit names `BISCUIT_4MM`), and in
+  // doing so it also removed the LISP's OWN fixing for the same joint, which is
+  // not a biscuit at all:
+  //
+  //     (defun drawWardrobeDPHolesBOTTOM …
+  //       (drawCircle "SCREWS_3MM" (+ x0 dpScrewDepth)       (+ y0 dpInsetCenter) 1.5)
+  //       (drawCircle "SCREWS_3MM" (+ x0 drawerPanelD -50.0) (+ y0 dpInsetCenter) 1.5) …)
+  //                            — reference/lisp/KIT_WARDROBE_FULL.lsp L377-385,
+  //                              called on the BOTTOM panel at L934
+  //
+  // TWO ⌀3 screws per divider, up through the bottom board into the divider's
+  // own bottom edge, on its centre line across the width. Both numbers are
+  // stated FROM THE FRONT EDGE — the LISP's own comment says so — and
+  // `engine/partitionFixings.js` converts them into the BOTTOM's own rotated
+  // frame, which runs from the back.
+  //
+  // `fromFrontEdge` is the SAME 99 that `wardrobe.drawerPanel.screwDepth`
+  // carries for this divider's side holes; a test asserts the two agree, so the
+  // day somebody re-measures it they cannot drift apart.
+  //
+  // THE TOP TAKES NOTHING, and that is the LISP too: there is no
+  // `drawWardrobeDPHolesTOP`, because in that kit the divider stops at the
+  // horizontal partition over the drawers and never reaches the top. No kit in
+  // `reference/lisp/` drills a TOP for a vertical member, so nothing is
+  // invented — the gap is named in the report instead.
+  partitionFoot: {
+    fromFrontEdge: 99,         // the LISP's `dpScrewDepth`
+    fromFarEnd: 50,            // the LISP's `drawerPanelD − 50`, reproduced verbatim
+    screwDiameter: 3,
+    layer: 'SCREWS_3MM',
+  },
+
   // ─── Partition fixing: the biscuit set (turn 13, CLAUDE.md F8 / #59) ─────
   //
   // The owner's workshop truth, given as the reference pattern for a butt
@@ -3438,6 +3474,8 @@ export function migrateCabinetProfile(profile) {
     // Turn 23 (F6 / F8): stored profiles made before these blocks existed come
     // back with them, like every other block here.
     partitionBack: { ...D.partitionBack, ...profile.partitionBack },
+    // Turn 30 (CLAUDE.md F4): the divider's foot, restored from the LISP.
+    partitionFoot: { ...D.partitionFoot, ...profile.partitionFoot },
     hoverDimensions: {
       ...D.hoverDimensions,
       ...profile.hoverDimensions,

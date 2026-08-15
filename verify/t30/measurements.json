@@ -1,115 +1,68 @@
 {
- "f2": {
-  "atLeaf": {
-   "x": 169.4511251278307,
-   "y": 591.9710049538454,
-   "found": 1
-  },
-  "fromLeaf": {
-   "open": true,
-   "of": "01-FL",
-   "sections": "A,B",
-   "title": "01 · Door · left",
-   "hasA": true,
-   "hasB": true,
-   "rows": 6,
-   "ringedRow": null,
-   "scrolledTo": 654,
-   "scrollTop": 0,
-   "maxScroll": 344,
-   "bodyH": 849,
-   "controls": [
-    "data-hinge-assign",
-    "data-hinge-modal-rows",
-    "data-hinge-modal-add",
-    "data-hinge-up",
-    "data-hinge-down",
-    "data-hinge-modal-remove",
-    "data-handle-section",
-    "data-remove-door",
-    "data-piece-weight"
-   ]
-  },
-  "atHinge": {
-   "x": 807.1765372203039,
-   "y": 377.0091893452414,
-   "found": 3
-  },
-  "fromHinge": {
-   "open": true,
-   "of": "01-FL",
-   "sections": "A,B",
-   "title": "01 · Door · left",
-   "hasA": true,
-   "hasB": true,
-   "rows": 6,
-   "ringedRow": 1,
-   "scrolledTo": 310,
-   "scrollTop": 344,
-   "maxScroll": 344,
-   "bodyH": 849,
-   "controls": [
-    "data-hinge-assign",
-    "data-hinge-modal-rows",
-    "data-hinge-modal-add",
-    "data-hinge-up",
-    "data-hinge-down",
-    "data-hinge-modal-remove",
-    "data-handle-section",
-    "data-remove-door",
-    "data-piece-weight"
-   ]
-  },
-  "rows": {
-   "before": [
-    100,
-    470,
-    670
-   ],
-   "after": [
-    105,
-    470,
-    670
-   ],
-   "nudge": 5
-  }
+ "f4": {
+  "feet": [
+   {
+    "panel": "BOTTOM",
+    "layer": "SCREWS_3MM",
+    "d": 3,
+    "fromFront": 99,
+    "across": 39
+   },
+   {
+    "panel": "BOTTOM",
+    "layer": "SCREWS_3MM",
+    "d": 3,
+    "fromFront": 440,
+    "across": 39
+   }
+  ],
+  "topDrills": 0,
+  "dpDepth": 490,
+  "centre": 39,
+  "bottomId": "BOTTOM"
  },
- "f3": {
-  "left": {
-   "panel": "VPART-1",
-   "face": "L",
-   "summary": {
-    "VPART-1": "L"
-   },
-   "holes": 6,
-   "distinct": 6,
-   "rows": [
-    732,
-    782,
-    832
+ "f5": {
+  "bare": {
+   "xs": [
+    70,
+    470
    ],
-   "sides": {
-    "BUL": 6,
-    "BUR": 6
-   }
+   "depth": 540,
+   "fromFront": [
+    70,
+    470
+   ],
+   "fromBack": [
+    70,
+    470
+   ],
+   "summary": [
+    70,
+    470
+   ],
+   "holes": 24,
+   "said": null
   },
-  "right": {
-   "panel": "VPART-1",
-   "face": "R",
-   "summary": {
-    "VPART-1": "R"
-   },
-   "holes": 6,
-   "distinct": 6,
-   "rows": [
-    1332,
-    1382,
-    1432
+  "at50": {
+   "xs": [
+    50,
+    490
    ],
-   "sides": {
-    "BUL": 6,
-    "BUR": 6
-   }
+   "depth": 540,
+   "fromFront": [
+    50,
+    490
+   ],
+   "fromBack": [
+    50,
+    490
+   ],
+   "summary": [
+    50,
+    490
+   ],
+   "holes": 24,
+   "said": 50
   }
  }
 }

@@ -168,3 +168,75 @@ cabinet with no divider in it, and the emission order is still BUL then BUR.
 | `3a-the-divider-bored-on-its-left-face-only.png` | the divider from the left |
 | `3b-the-L-R-setting-in-the-dividers-modal.png` | the setting, in the divider's own window |
 | `3c-the-same-divider-bored-on-its-right-face.png` | and from the right, after pressing Right |
+
+---
+
+## F4 [HIGH] — the divider's foot, restored from the LISP
+
+Owner: *"chyba kiedyś było ale się zagineło."* Both halves of that sentence are
+true, and the audit is the feature.
+
+Turn 13 gave the vertical partition the owner's **biscuit set** on the top and
+the bottom. Turn 23 removed it, and its reason was right as far as it went —
+`drawWDR_PARTITION_PANEL` (KIT_WARDROBE_FULL.lsp L254-257) is an outline and a
+label, and **no kit in `reference/lisp/` names `BISCUIT_4MM` anywhere**. The
+biscuits stay gone.
+
+**But that is the HORIZONTAL partition.** The vertical divider in that kit is
+the DRAWER PANEL, and the LISP most certainly drills it into the board it stands
+on:
+
+```
+(defun drawWardrobeDPHolesBOTTOM (x0 y0 szerBOT dpLeft dpRight
+                                  dpInsetCenter dpScrewDepth drawerPanelD /)
+  (drawCircle "SCREWS_3MM" (+ x0 dpScrewDepth)       (+ y0 dpInsetCenter) 1.5)
+  (drawCircle "SCREWS_3MM" (+ x0 drawerPanelD -50.0) (+ y0 dpInsetCenter) 1.5) …)
+                        — KIT_WARDROBE_FULL.lsp L377-385, called at L934
+```
+
+Turn 23 restored `…HolesBACK`, `…HolesBUL` and `…HolesBUR` and left this one
+out — so the engine drilled a divider's back and its sides and **never its
+foot**. It is back, for the wardrobe's drawer panel and for the interactive
+divider alike.
+
+**The TOP takes nothing, and that is the LISP too.** There is no
+`drawWardrobeDPHolesTOP` in any kit — in that kit the divider stops at the
+partition over the drawers and never reaches the top. Nothing is invented; the
+gap is named here and asserted in the test, so it is a recorded decision rather
+than an omission somebody rediscovers.
+
+### THE SANCTIONED FIXTURE CHANGE, and its exact drill-count delta
+
+CLAUDE.md rule 1's one exception, dated **15.08.2026**, taken in
+`test/cnc-export-identity.test.js` with the LISP lines named beside it:
+
+| | before | after |
+| --- | --- | --- |
+| whole-unit sheet | `3439a402` | `2cf80012` |
+| `non-sprayed` | `07a0d206` | `f5aa169e` |
+| `sprayed` | `8a6498da` | **unchanged** |
+| `fronts` | `8a6498da` | **unchanged** |
+| layer census `SCREWS_3MM` | 50 | **52** |
+
+**+2 CIRCLE entities, and nothing else on the census moves by one digit.** The
+two sheets that carry a carcass move; the two that are doors and drawer faces do
+not — the same census logic every delta before it has been read by, and the pair
+that stands still is the proof the delta is what it says it is.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f4` →
+
+| | |
+| --- | --- |
+| the foot | 2 × ⌀3 on `SCREWS_3MM`, in the BOTTOM |
+| at the LISP's own two points | **99** and **440** mm from the front (that divider is 490 deep) |
+| across the width | **39 mm** — `dpInsetCenter`, the divider's own centre line |
+| the TOP | **0 holes** |
+
+| file | |
+| --- | --- |
+| `4a-the-dividers-foot-two-screws-in-the-bottom-board.png` | down into the carcass, at the foot |
+| `4b-the-divider-standing-on-the-board-it-is-screwed-to.png` | the divider and its board together |
+
+---

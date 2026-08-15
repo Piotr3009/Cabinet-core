@@ -52,6 +52,7 @@ import {
 } from './cornice.js';
 import {
   partitionBackScrewRun, partitionBackScrews, partitionBackSpec,
+  partitionFootScrews, partitionFootSpec,
 } from './partitionFixings.js';
 // Turn 24 (CLAUDE.md F7): the owner's butt-joint set, given the consumer it
 // was written for — a FIX shelf.
@@ -3758,6 +3759,48 @@ export function computeCabinet(params, profileOverride) {
         backPanel.id, 'partition_back_screw', spec.layer,
         x - backPanel.box.x, y - backPanel.box.y, spec.diameter,
       );
+    }
+  }
+
+  // ─── THE DIVIDER'S FOOT (turn 30, CLAUDE.md F4) ──────────────────────────
+  //
+  // Owner: "chyba kiedyś było ale się zagineło." It was. Turn 13 put the
+  // owner's BISCUIT set where a divider meets the boards above and below it;
+  // turn 23 removed it — rightly, no kit names `BISCUIT_4MM` — and in the same
+  // stroke removed the LISP's OWN fixing for that joint, which is not a biscuit
+  // at all but two ⌀3 screws up through the bottom board:
+  //
+  //     drawWardrobeDPHolesBOTTOM — reference/lisp/KIT_WARDROBE_FULL.lsp
+  //                                 L377-385, called on the BOTTOM at L934
+  //
+  // Every number, the frame conversion and the reason the second one is odd are
+  // `engine/partitionFixings.js`. What is here is WHICH PIECES ask for it, and
+  // it is both of the pieces that are the same thing under two names:
+  //
+  //   DP     the wardrobe kit's own drawer panel — the very piece the LISP
+  //          lines above are written for, and the one whose foot was missing
+  //          while its back and its side were drilled;
+  //   VPART  the interactive vertical divider, when it STANDS ON the bottom.
+  //          A divider that starts higher up (turn 21's F9 — one that begins
+  //          on a fixed shelf) has no foot on this board and takes nothing.
+  //
+  // THE TOP TAKES NOTHING. There is no `drawWardrobeDPHolesTOP` in any kit —
+  // the wardrobe's divider stops at the partition over the drawers and never
+  // reaches the top — so no hole is invented there. The gap is named in the
+  // turn's report rather than filled overnight.
+  const bottomPanel = panels.find((x) => x.part === 'BOTTOM');
+  if (bottomPanel) {
+    const spec = partitionFootSpec(P);
+    const feet = [
+      ...panels.filter((x) => x.part === 'DP' && x.box),
+      ...verticalPartitions.filter((x) => Math.abs(x.box.y - (bottomPanel.box.y + bottomPanel.box.h)) < 1e-6),
+    ];
+    for (const divider of feet) {
+      for (const { x, y } of partitionFootScrews({
+        divider: divider.box, bottom: bottomPanel.box, profile: P,
+      })) {
+        addDrill(bottomPanel.id, 'partition_foot_screw', spec.layer, x, y, spec.diameter);
+      }
     }
   }
 

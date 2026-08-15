@@ -1,26 +1,39 @@
 {
- "f19": {
-  "type": "CORNER",
-  "size": [
-   1000,
-   770,
-   1000
+ "f20": {
+  "faces": [
+   {
+    "id": "DR02-F1",
+    "h": 338,
+    "y": 0
+   },
+   {
+    "id": "DR02-F3",
+    "h": 426,
+    "y": 341
+   }
   ],
-  "parts": [
-   "BACK",
-   "BACK",
-   "SIDE",
-   "SIDE",
-   "BOTTOM",
-   "BOTTOM",
-   "TOP",
-   "TOP"
+  "plainFaces": [
+   {
+    "id": "DR01-F1",
+    "h": 338,
+    "y": 0
+   },
+   {
+    "id": "DR01-F2",
+    "h": 254,
+    "y": 341
+   },
+   {
+    "id": "DR01-F3",
+    "h": 169,
+    "y": 598
+   }
   ],
-  "drills": 0,
-  "hardware": 0,
-  "fronts": 0,
-  "drawn": 8,
-  "onSheet": 8,
-  "negative": 0
+  "boxes": 3,
+  "plainBoxes": 3,
+  "drawnFaces": 2,
+  "sameCarcass": true,
+  "runners": 3,
+  "plainRunners": 3
  }
 }

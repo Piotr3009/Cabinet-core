@@ -930,3 +930,61 @@ see and a cut list he can cut.
 | `19a-the-corner-row-open-in-the-library-and-what-it-says.png` | the row, and its reason |
 | `19b-the-l-carcass-two-arms-meeting-in-the-corner.png` | the carcass |
 | `19c-its-sheet-eight-plain-boards-and-no-drilling-at-all.png` | the cut |
+
+---
+
+## F20 [HIGH] — two fronts, one hidden drawer behind them
+
+The **mechanism was built once, in F14** — `internalDrawerSet` — exactly as
+CLAUDE.md instructs, and it is not touched here. What F20 adds is the visible
+half, and it is the half CLAUDE.md names in four words: *"sitting behind the
+front above it"*.
+
+A hidden drawer would leave a **hole in the façade** unless the front over it
+grows down across its zone. So the front above takes in the run of internal
+drawers immediately below it, **and the gaps between them**, measured off the
+kit's own `frontY` table — never a second set of numbers. A three-drawer unit
+with the middle one hidden shows **two fronts and has three boxes**, and the
+face is continuous:
+
+| | plain | one hidden |
+| --- | --- | --- |
+| fronts | `F1` 338 · `F2` 254 · `F3` 169 | `F1` 338 · **`F3` 426** |
+| where `F3` starts | 598 | **341** — where `F2` used to |
+| boxes / runner pairs | 3 / 3 | 3 / 3 |
+
+`426 = 254 + 3 + 169` — the two zones and the kit's own gap.
+
+### The thing that goes wrong quietly
+
+A façade is measured from **its own bottom edge**. Grown downward, its screw row
+would follow the edge and screw itself to thin air. It does not: the row keeps
+its **absolute** height (694.5 mm on the default unit, before and after), so it
+stays on its own box. Asserted.
+
+### And the drawer itself is untouched
+
+Not one hole moved — the carcass and the box fingerprints are identical, the
+runner rows are in the same places, the order form is the same, and the cut list
+shrank by **exactly one board**.
+
+Hiding the **top** drawer takes a board off the face instead of growing another,
+because there is no front above it. That is the mechanism being honest rather
+than clever, and it is asserted too.
+
+### The gap, named
+
+**None** — box, runners and drilling are all existing MOVENTO/LISP truth. The
+hidden drawer's own **pull** (an inner drawer usually opens by its box, not by a
+handle) is not specified and nothing is drilled for one.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f20` → **7 ok · 0 failed**, two drawer units
+side by side with the right-hand one's middle drawer hidden.
+
+| file | |
+| --- | --- |
+| `20a-two-drawer-units-three-fronts-each.png` | before |
+| `20b-the-trend-two-fronts-on-the-right-three-drawers-behind-them.png` | after |
+| `20c-fronts-hidden-the-third-box-is-really-there.png` | the third box |

@@ -2601,8 +2601,21 @@ export function computeCabinet(params, profileOverride) {
       const first = i === 1;
       // The bottom front is shortened to clear the base; the rest are the
       // drawer's own height (LISP: 200 everywhere, 197 for the first).
-      const dfH = first ? drawerHeights[0] - DR.firstFrontAdjust : drawerHeights[i - 1];
-      const dfY = first ? zoneY + DR.firstFrontAdjust : zoneY;
+      const ownH = first ? drawerHeights[0] - DR.firstFrontAdjust : drawerHeights[i - 1];
+      const ownY = first ? zoneY + DR.firstFrontAdjust : zoneY;
+      // ─── TURN 30 (CLAUDE.md F20): THE FRONT ABOVE COVERS IT ───────────────
+      // "…sitting BEHIND THE FRONT ABOVE IT." A hidden drawer leaves a hole in
+      // the façade unless the front over it grows down across its zone, and
+      // that is the whole visible half of the feature: two fronts, three
+      // drawers. It takes in the run of internal drawers immediately below and
+      // the gaps between them — measured off the same zone table, never a
+      // second set of numbers.
+      let bottom = i;
+      while (bottom > 1 && cfg.internalDrawers.has(bottom - 1)) bottom -= 1;
+      const dfY = bottom === i
+        ? ownY
+        : (bottom === 1 ? G + zoneOffsets[0] + DR.firstFrontAdjust : G + zoneOffsets[bottom - 1]);
+      const dfH = ownY + ownH - dfY;
       panels.push(panel({
         id: `${unitNum}-DF${i}`, part: 'DRAWER-FRONT', role: 'front', w: drawerFrontW, h: dfH, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * drawerFrontW + 2 * dfH),
@@ -2707,11 +2720,22 @@ export function computeCabinet(params, profileOverride) {
     // is the two-drawer front with a hidden drawer behind it.
     for (let i = 1; i <= budr.count; i += 1) {
       if (cfg.internalDrawers.has(i)) continue;
-      const fh = budr.heights[i - 1];
+      // ─── TURN 30 (CLAUDE.md F20): THE FRONT ABOVE COVERS IT ───────────────
+      // The two-drawer front with one hidden drawer behind it: this façade
+      // takes in the run of internal drawers immediately below, and the gaps
+      // between them, off the kit's own `frontY` table.
+      let bottom = i;
+      while (bottom > 1 && cfg.internalDrawers.has(bottom - 1)) bottom -= 1;
+      // How much lower this façade now starts. Zero on every unit that has no
+      // internal drawer, which is every unit written before tonight.
+      const drop = budr.frontY[i - 1] - budr.frontY[bottom - 1];
+      const fh = budr.heights[i - 1] + drop;
       const geom = rectGeometry(budr.frontWidth, fh);
       // The bottom façade runs one CARCASS board lower to cover the floor, so
       // its screw line rises by that board (turn 24, F3.2: the carcass's).
-      const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0);
+      // …and a façade that has GROWN downward keeps its screws on its own box,
+      // which is `drop` higher up the board than its new bottom edge.
+      const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0) + drop;
       // …and the 50 is measured from the BOX's own side, which stands one
       // CARCASS board and one BOX board in from the façade's edge. Two boards,
       // two slots — the LISP's `2×G` collapsed them because both measured 18.
@@ -2722,7 +2746,7 @@ export function computeCabinet(params, profileOverride) {
       panels.push(panel({
         id: `${unitNum}-F${i}`, part: 'DRAWER-FRONT', role: 'front', w: budr.frontWidth, h: fh, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * budr.frontWidth + 2 * fh),
-        box: { x: B.frontWidthDeduction / 2, y: budr.frontY[i - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
+        box: { x: B.frontWidthDeduction / 2, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
         cnc: geom, meta: { drawer: i, frontType: cfg.frontType },
       }));
     }

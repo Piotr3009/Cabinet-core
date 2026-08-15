@@ -12,24 +12,29 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F19 — the Library places a corner unit, and it is an L of eight boards",
+   "label": "F20 — the face shows TWO fronts where the other shows three",
    "ok": true,
-   "detail": "CORNER 1000 × 770 × 1000 — BACK BACK SIDE SIDE BOTTOM BOTTOM TOP TOP"
+   "detail": "2 fronts vs 3"
   },
   {
-   "label": "F19 — NOT ONE HOLE is drilled in it, and nothing is bought for it",
+   "label": "F20 — …and the room draws two, so the picture agrees with the sheet",
    "ok": true,
-   "detail": "0 holes · 0 order lines · 0 doors"
+   "detail": "2 façades in the scene"
   },
   {
-   "label": "F19 — the room draws every board, and every board has a real size",
+   "label": "F20 — the front ABOVE grew over the hidden drawer: the face is continuous",
    "ok": true,
-   "detail": "8 boards drawn · 0 inverted"
+   "detail": "DR02-F1 338mm@0 · DR02-F3 426mm@341"
   },
   {
-   "label": "F19 — …and every one of them is on the CUT LIST",
+   "label": "F20 — THREE drawers are still there: three boxes, three pairs of runners",
    "ok": true,
-   "detail": "8 of 8"
+   "detail": "3 boxes · 3 runner pairs"
+  },
+  {
+   "label": "F20 — and not one hole moved: the carcass and the boxes are identical",
+   "ok": true,
+   "detail": "same fingerprint"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

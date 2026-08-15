@@ -152,9 +152,21 @@ test('F14 the mechanism cannot reach a hole, a box or an order line', () => {
   for (const forbidden of ['drills.push', 'hw(', 'panels.push', 'runner']) {
     assert.ok(!body.includes(forbidden), `${forbidden} must not appear in it`);
   }
-  // It is consulted in exactly the two front loops and nowhere else.
+  // It is consulted in the two FRONT loops and nowhere else — twice in each:
+  // once to skip the hidden drawer's board, and once (turn 30, F20) to let the
+  // front above it grow down over its zone. Both are about a façade; neither
+  // can reach a box, a runner row or an order line.
   const uses = src.split('cfg.internalDrawers').length - 1;
-  assert.equal(uses, 2, `${uses} uses — the wardrobe stack and the BUDR stack`);
+  assert.equal(uses, 4, `${uses} uses — two per stack, both in its front loop`);
+  for (const stack of [
+    'an INTERNAL drawer is given no face',            // the wardrobe stack's
+    'is the two-drawer front with a hidden drawer behind it.', // the BUDR stack's
+  ]) {
+    const at = src.indexOf(stack);
+    assert.ok(at > 0, stack);
+    const body = src.slice(at, at + 2500);
+    assert.equal(body.split('cfg.internalDrawers').length - 1, 2, stack);
+  }
 });
 
 test('F14 no kit written before tonight became internal', () => {

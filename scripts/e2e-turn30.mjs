@@ -2045,6 +2045,95 @@ async function main() {
       await page.sleep(900);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F20 [HIGH] — two fronts, one hidden drawer behind them
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f20')) {
+      await newRoom('Turn 30 walk — F20');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        s.setSlotThickness('box', { measured: 15, confirmed: true });
+        const a = s.addUnit('BUDR');
+        const b = s.addUnit('BUDR', { near: a.id, side: 'right' });
+        window.__t30 = { plain: a.id, trend: b.id, ids: [a.id, b.id] };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.85, 0.5, 1.9]);
+      await page.sleep(900);
+      await shot('20a-two-drawer-units-three-fronts-each');
+
+      // Hide the MIDDLE drawer of the right-hand one.
+      await page.evaluate(`
+        ${P}.project.getState().updateUnitParams(window.__t30.trend, { internal_drawers: [2] });
+        return true;
+      `);
+      await page.sleep(1600);
+
+      const f20 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const part = (id) => String(id).replace(/^[^-]*-/, '');
+        // The carcass and the BOXES only — the façades are what changed.
+        const carcass = (x) => x.drills
+          .filter((d) => !/^[^-]*-F\\d/.test(String(d.panel)))
+          .map((d) => part(d.panel) + '|' + d.layer + '|' + d.kind + '|' + d.x + '|' + d.y + '|' + d.d)
+          .sort().join(',');
+        const faces = (x) => x.panels.filter((p) => p.part === 'DRAWER-FRONT');
+        const r = s.unitResult(window.__t30.trend);
+        const rp = s.unitResult(window.__t30.plain);
+        const v = ${P}.views && ${P}.views.room;
+        let drawnFaces = 0;
+        if (v) {
+          v.scene.traverse((o) => {
+            if (o.userData && o.userData.ccUnitId === window.__t30.trend) {
+              o.traverse((n) => {
+                if (n.isMesh && n.userData && /-F\\d$/.test(String(n.userData.ccPanelId || ''))) drawnFaces += 1;
+              });
+            }
+          });
+        }
+        const runners = (x) => (x.hardware.find((h) => h.role === 'runner_pairs') || {}).qty || 0;
+        return {
+          faces: faces(r).map((p) => ({ id: p.id, h: p.h, y: p.box.y })),
+          plainFaces: faces(rp).map((p) => ({ id: p.id, h: p.h, y: p.box.y })),
+          boxes: r.panels.filter((p) => p.part === 'DRAWER-SIDE').length / 2,
+          plainBoxes: rp.panels.filter((p) => p.part === 'DRAWER-SIDE').length / 2,
+          drawnFaces,
+          sameCarcass: carcass(r) === carcass(rp),
+          runners: runners(r),
+          plainRunners: runners(rp),
+        };
+      `);
+      measurements.f20 = f20;
+      check('F20 — the face shows TWO fronts where the other shows three',
+        f20.faces.length === 2 && f20.plainFaces.length === 3,
+        `${f20.faces.length} fronts vs ${f20.plainFaces.length}`);
+      check('F20 — …and the room draws two, so the picture agrees with the sheet',
+        f20.drawnFaces === 2, `${f20.drawnFaces} façades in the scene`);
+      check('F20 — the front ABOVE grew over the hidden drawer: the face is continuous',
+        f20.faces[1] && f20.plainFaces[1]
+        && f20.faces[1].y === f20.plainFaces[1].y
+        && f20.faces[1].h > f20.plainFaces[2].h,
+        f20.faces.map((f) => `${f.id} ${f.h}mm@${f.y}`).join(' · '));
+      check('F20 — THREE drawers are still there: three boxes, three pairs of runners',
+        f20.boxes === 3 && f20.runners === 3 && f20.runners === f20.plainRunners,
+        `${f20.boxes} boxes · ${f20.runners} runner pairs`);
+      check('F20 — and not one hole moved: the carcass and the boxes are identical',
+        f20.sameCarcass === true, 'same fingerprint');
+
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.85, 0.5, 1.9]);
+      await page.sleep(900);
+      await shot('20b-the-trend-two-fronts-on-the-right-three-drawers-behind-them');
+      await page.click('[data-hide-fronts]');
+      await page.sleep(1400);
+      await frameUnits(await page.evaluate('return [window.__t30.trend];'), [1.1, 0.6, 2.0]);
+      await page.sleep(900);
+      await shot('20c-fronts-hidden-the-third-box-is-really-there');
+      await page.click('[data-hide-fronts]');
+      await page.sleep(900);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

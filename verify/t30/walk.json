@@ -12,29 +12,24 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F15 — the Library places an american housing, 1000 wide",
+   "label": "F16 — the Library places a bin unit on KIT_BUD’s carcass",
    "ok": true,
-   "detail": "FRIDGE_US 1000 × 2150 · aperture 1900"
+   "detail": "BIN"
   },
   {
-   "label": "F15 — it is KIT_FRIDGE’s own carcass: two back rails, fixed and spurs panels",
+   "label": "F16 — it is drilled EXACTLY as a base unit: hole for hole",
    "ok": true,
-   "detail": "BUL BUR TOP BOTTOM FIXED BACK-RAIL BACK-RAIL BACK SPURS FRONT FRONT"
+   "detail": "77 holes vs the base unit’s 77"
   },
   {
-   "label": "F15 — a 1000 mm face is TWO doors, by the door rule and not a new one",
+   "label": "F16 — the pull-out is ORDERED: one BOM line, to the opening",
    "ok": true,
-   "detail": "2 leaves"
+   "detail": "Pull-out bin unit — 564 × 734 × 540 mm opening"
   },
   {
-   "label": "F15 — and it is drilled EXACTLY as the built-in housing at that size",
+   "label": "F16 — …and the room shows the SPACE it takes, marked a placeholder",
    "ok": true,
-   "detail": "127 holes vs the built-in’s 127"
-  },
-  {
-   "label": "F15 — every board it cuts has a positive size",
-   "ok": true,
-   "detail": "0 inverted boards"
+   "detail": "bin_pullout"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

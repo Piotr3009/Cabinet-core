@@ -709,3 +709,50 @@ built-in housing cut to the same size beside it.
 | --- | --- |
 | `15a-an-american-fridge-housing-1000-wide-on-the-fridge-kit.png` | the cabinet |
 | `15b-its-sheet-the-fridge-kits-own-boards-at-american-sizes.png` | the cut |
+
+---
+
+## F16 [MEDIUM] — the bin unit
+
+A bin unit **is a base unit**: `KIT_BUD_FULL.lsp`, drilled hole for hole as
+KIT_BUD drills one — asserted at three sizes and with the door hung either way,
+and its door machined identically to a base unit's. The pull-out screws to the
+door and to the carcass floor per its own manufacturer, and **neither fixing is
+written in any LISP line or published pattern this repo holds**, so neither is
+bored.
+
+### "BOM + visual", honestly
+
+* **BOM** — one line, `bin_pullout` × 1, specified by the clear opening
+  (564 × 734 × 540 on the default).
+* **Visual** — there is no drawing of a bin here, and inventing one would be
+  fiction of the same kind as an invented hole. What is drawn is the **space the
+  mechanism occupies**: `kitInstances` reads the *same* opening the order line
+  is specified by, insets it on every side, and marks it `placeholder: true`.
+  `KitBodies` draws it as five translucent faces, open at the top, in the
+  bracket grey the bought ironmongery uses. It reaches no cut list, no drill and
+  no quantity — asserted.
+
+`hardwareKit.body` is what asks for one, so the cargo frame (F13) keeps its
+**empty slot** — a larder frame's floor-and-top fixing is the manufacturer's and
+the app draws nothing for it.
+
+### The gap, named
+
+The **mechanism's own fixings** — the door bracket and the floor plate — are not
+drilled. No LISP line, no published pattern.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f16` → **6 ok · 0 failed**.
+
+| | bin unit | base unit, same size |
+| --- | --- | --- |
+| holes | 77 | 77, **same fingerprint** |
+| pull-out on the order | 1 × *564 × 734 × 540 mm opening* | 0 |
+| placeholder bodies in the room | 1, `ccKitPlaceholder` | 0 |
+
+| file | |
+| --- | --- |
+| `16a-a-bin-unit-the-space-the-pull-out-takes-inside-kit-buds-carcass.png` | the volume |
+| `16b-closed-beside-the-base-unit-it-is-cut-exactly-like.png` | the pair |

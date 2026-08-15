@@ -1271,6 +1271,17 @@ export const DEFAULT_CABINET_PROFILE = {
     fixedScrewFromEnd: 50,
   },
 
+  // ─── Bin unit (turn 30, CLAUDE.md F16) ────────────────────────────────────
+  //
+  // "Parent: KIT_BUD. Pull-out bin = hardware on the door/carcass per
+  // manufacturer: BOM + visual, no invented holes."
+  //
+  // A base unit at the width a bin pull-out is bought at, and nothing else of
+  // its own. Every hole is KIT_BUD_FULL's.
+  binUnit: {
+    defaults: { width: 600, height: 770, depth: 558 },
+  },
+
   // ─── American fridge housing (turn 30, CLAUDE.md F15) ─────────────────────
   //
   // "Parent: KIT_FRIDGE.lsp — it EXISTS and is the truth. Widen the parameter
@@ -3656,6 +3667,7 @@ export function migrateCabinetProfile(profile) {
     },
     dwPanel: { ...D.dwPanel, ...profile.dwPanel, defaults: { ...D.dwPanel.defaults, ...profile.dwPanel?.defaults } },
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
+    binUnit: { ...D.binUnit, ...profile.binUnit, defaults: { ...D.binUnit.defaults, ...profile.binUnit?.defaults } },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,
       ...profile.americanFridgeUnit,

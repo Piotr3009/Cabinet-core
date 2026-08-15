@@ -31,6 +31,7 @@
 import { panelPlacement } from './joinery.js';
 import { cupBoreOf, doorHingeDatum } from './doors.js';
 import { machiningFor } from './machining.js';
+import { getUnitType } from './types.js';
 
 export function hardwareInstances(result, profile) {
   return {
@@ -45,7 +46,48 @@ export function hardwareInstances(result, profile) {
     // on. Display only — every one of them is read off a ⌀7.5 hole the machine
     // already bores, so nothing here reaches the cut list.
     shelfSupports: shelfSupportInstances(result, profile),
+    // Turn 30 (CLAUDE.md F16): the PLACEHOLDER volume a bought mechanism
+    // occupies, on the kits that ask for one. See `kitInstances`.
+    kits: kitInstances(result),
   };
+}
+
+/**
+ * ─── TURN 30 (CLAUDE.md F16): "BOM + VISUAL" ────────────────────────────────
+ *
+ * A bought mechanism — a pull-out bin — is not a board and is not a hole, and
+ * this repo has no drawing of one. What it CAN say honestly is the space the
+ * mechanism takes up, and it says it from numbers it already has: the BOM
+ * line's own `opening_*` spec, which the engine measured off the carcass.
+ *
+ * So this is a PLACEHOLDER and it is marked as one. It reaches no cut list, no
+ * drill and no order quantity; it is inset from the opening on every side by a
+ * visible margin, so that nobody can read it as the outline of a product; and
+ * it exists only for a kit that asked for a body. The day the owner uploads a
+ * GLB it is replaced by the model, exactly as the cargo frame's empty slot is.
+ */
+export function kitInstances(result) {
+  const kit = getUnitType(result?.type)?.hardwareKit;
+  if (!kit?.body) return [];
+  const line = (result.hardware || []).find((h) => h.role === kit.role);
+  const spec = line?.spec;
+  if (!spec?.opening_width_mm) return [];
+  // A tenth of the opening, capped — enough that the box inside is plainly
+  // smaller than the space, at any cabinet size.
+  const inset = Math.min(40, spec.opening_width_mm / 10);
+  const board = result.derived?.board_t ?? 18;
+  return [{
+    kind: 'kit',
+    role: kit.role,
+    body: kit.body,
+    placeholder: true,
+    x: board + inset,
+    y: board + inset,
+    z: inset,
+    w: spec.opening_width_mm - 2 * inset,
+    h: spec.opening_height_mm - 2 * inset,
+    d: spec.opening_depth_mm - 2 * inset,
+  }];
 }
 
 /**

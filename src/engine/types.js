@@ -234,6 +234,53 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F16): THE BIN UNIT ────────────────────────────────
+  //
+  // "Parent: KIT_BUD. Pull-out bin = hardware on the door/carcass per
+  // manufacturer: BOM + visual, no invented holes."
+  //
+  // So it is a BUD, to the letter — the same LISP, the same hinge rule, the
+  // same cup rule, the same everything — and the test asserts that its carcass
+  // and door are drilled hole for hole as a base unit of the same size. The
+  // pull-out is a bought mechanism: `hardwareKit` puts it on the order form,
+  // and `body: 'bin'` gives it the PLACEHOLDER volume F16 asks to see. Not one
+  // hole is bored for it, because the manufacturer's own fixing — into the
+  // door and into the carcass floor — is not written in any LISP line or
+  // published pattern this repo holds.
+  //
+  // It offers no shelves: the pull-out fills the carcass, which is what makes
+  // it a bin unit rather than a base unit somebody keeps bins in.
+  BIN: {
+    id: 'BIN',
+    heightGroup: 'base',
+    label: 'Bin unit',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'binUnit.defaults',
+    hardwareKit: {
+      role: 'bin_pullout',
+      label: 'Pull-out bin unit',
+      by: 'opening',
+      // "BOM + visual": the SPACE the mechanism occupies, read off the opening
+      // the engine already measured — a placeholder, marked as one, replaced
+      // the day a model arrives. See engine/hardware3d.js kitInstances.
+      body: 'bin',
+    },
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: false,
+    },
+    available: true,
+  },
   // ─── TURN 30 (CLAUDE.md F13): CARGO 300, THE PULL-OUT LARDER ──────────────
   //
   // "Parent geometry: KIT_BUDTALL. Proposed width 300. Carcass + full door per
@@ -580,7 +627,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -700,5 +747,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN',
 };

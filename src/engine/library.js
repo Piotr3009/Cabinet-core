@@ -89,9 +89,11 @@ export const KITCHEN_LIBRARY = [
       // BLOCKERS and is not in the kits.
       { kind: 'type', id: 'dishwasher', typeId: 'DW_PANEL', label: 'D/W panel', hint: 'Dishwasher, washing machine or fridge front — a front and nothing else' },
       { kind: 'type', id: 'oven-base', typeId: 'OVEN_BASE', label: 'Oven', hint: 'Built-under oven, on its shelf, with a drawer below' },
-      {
-        kind: 'soon', id: 'bin-storage', label: 'Bin storage', hint: 'Pull-out bins', reason: NO_PATTERN,
-      },
+      // ─── Turn 30 (CLAUDE.md F16): the bin unit OPENS ────────────────────
+      // KIT_BUD's carcass and door, hole for hole. The pull-out itself is a
+      // bought mechanism: a BOM line and a placeholder volume, because the
+      // manufacturer's own fixing is not this repo's truth.
+      { kind: 'type', id: 'bin-storage', typeId: 'BIN', label: 'Bin storage', hint: 'Base unit for a pull-out bin — the mechanism is ordered, not cut' },
       {
         kind: 'soon', id: 'wine-rack', label: 'Wine rack', hint: 'Bottle cradles instead of shelves', reason: NO_PATTERN,
       },

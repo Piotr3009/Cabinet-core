@@ -1768,6 +1768,78 @@ async function main() {
       await page.sleep(900);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F16 [MEDIUM] — the bin unit
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f16')) {
+      await newRoom('Turn 30 walk — F16');
+      await page.evaluate(`${P}.ui.getState().setLibraryCategory('kitchen'); return true;`);
+      await page.sleep(700);
+      await page.click('[data-library-group="base-units"]');
+      await page.sleep(700);
+      await page.click('[data-library-entry="bin-storage"]');
+      await page.sleep(1500);
+      await page.evaluate(`${P}.ui.getState().closeLibrary(); return true;`);
+      await page.sleep(1000);
+
+      const f16 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units[0];
+        s.updateUnitParams(u.id, { doors: true });
+        const b = s.addUnit('BUD', { near: u.id, side: 'right' });
+        s.updateUnitParams(b.id, {
+          width: u.params.width, height: u.params.height, depth: u.params.depth, doors: true,
+        });
+        window.__t30 = { bin: u.id, bud: b.id, ids: [u.id, b.id] };
+        const part = (id) => String(id).replace(/^[^-]*-/, '');
+        const holes = (x) => x.drills.map((d) => part(d.panel) + '|' + d.layer + '|' + d.kind + '|' + d.x + '|' + d.y + '|' + d.d).sort().join(',');
+        const r = s.unitResult(u.id);
+        const rb = s.unitResult(b.id);
+        const v = ${P}.views && ${P}.views.room;
+        const bodies = [];
+        if (v) {
+          v.scene.traverse((o) => {
+            if (o.userData && o.userData.ccKitBody) {
+              bodies.push({ role: o.userData.ccKitBody, placeholder: o.userData.ccKitPlaceholder });
+            }
+          });
+        }
+        return {
+          type: u.type,
+          same: holes(r) === holes(rb),
+          drills: r.drills.length,
+          budDrills: rb.drills.length,
+          line: r.hardware.filter((h) => h.role === 'bin_pullout'),
+          budLine: rb.hardware.filter((h) => h.role === 'bin_pullout').length,
+          bodies,
+        };
+      `);
+      measurements.f16 = f16;
+      check('F16 — the Library places a bin unit on KIT_BUD’s carcass',
+        f16.type === 'BIN', f16.type);
+      check('F16 — it is drilled EXACTLY as a base unit: hole for hole',
+        f16.same === true && f16.drills === f16.budDrills,
+        `${f16.drills} holes vs the base unit’s ${f16.budDrills}`);
+      check('F16 — the pull-out is ORDERED: one BOM line, to the opening',
+        f16.line.length === 1 && f16.budLine === 0,
+        f16.line[0] ? `${f16.line[0].label} — ${f16.line[0].spec_label}` : '(none)');
+      check('F16 — …and the room shows the SPACE it takes, marked a placeholder',
+        f16.bodies.length === 1 && f16.bodies[0].role === 'bin_pullout'
+        && f16.bodies[0].placeholder === true,
+        f16.bodies.map((b) => b.role).join(' ') || '(none)');
+
+      await page.click('[data-hide-fronts]');
+      await page.sleep(1400);
+      await frameUnits(await page.evaluate('return [window.__t30.bin];'), [1.4, 0.9, 2.6]);
+      await page.sleep(900);
+      await shot('16a-a-bin-unit-the-space-the-pull-out-takes-inside-kit-buds-carcass');
+      await page.click('[data-hide-fronts]');
+      await page.sleep(900);
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.9, 0.55, 1.9]);
+      await page.sleep(900);
+      await shot('16b-closed-beside-the-base-unit-it-is-cut-exactly-like');
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

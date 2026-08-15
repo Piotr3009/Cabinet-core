@@ -110,7 +110,8 @@ test('F13 the kit flag is DATA, and no kit written before tonight carries it', (
   // type buys a mechanism by declaring one, not by an engine change.
   assert.deepEqual(getUnitType('CARGO').hardwareKit,
     { role: 'cargo_frame', label: 'Pull-out larder frame', by: 'opening' });
-  const older = UNIT_TYPE_ORDER.filter((id) => id !== 'CARGO');
+  // …and the OTHER kits that buy a mechanism buy their own, not this one.
+  const older = UNIT_TYPE_ORDER.filter((id) => !['CARGO', 'BIN'].includes(id));
   for (const id of older) {
     assert.equal(getUnitType(id).hardwareKit, undefined, `${id} must not have gained one`);
   }

@@ -1,28 +1,29 @@
 {
- "f15": {
-  "type": "FRIDGE_US",
-  "size": [
-   1000,
-   2150
-  ],
-  "aperture": 1900,
-  "parts": [
-   "BUL",
-   "BUR",
-   "TOP",
-   "BOTTOM",
-   "FIXED",
-   "BACK-RAIL",
-   "BACK-RAIL",
-   "BACK",
-   "SPURS",
-   "FRONT",
-   "FRONT"
-  ],
-  "doors": 2,
-  "drills": 127,
-  "builtDrills": 127,
+ "f16": {
+  "type": "BIN",
   "same": true,
-  "negative": 0
+  "drills": 77,
+  "budDrills": 77,
+  "line": [
+   {
+    "role": "bin_pullout",
+    "label": "Pull-out bin unit",
+    "qty": 1,
+    "unit": "pcs",
+    "spec": {
+     "opening_width_mm": 564,
+     "opening_height_mm": 734,
+     "opening_depth_mm": 540
+    },
+    "spec_label": "564 × 734 × 540 mm opening"
+   }
+  ],
+  "budLine": 0,
+  "bodies": [
+   {
+    "role": "bin_pullout",
+    "placeholder": true
+   }
+  ]
  }
 }

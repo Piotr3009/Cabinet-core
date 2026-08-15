@@ -1,39 +1,42 @@
 {
- "f20": {
-  "faces": [
+ "f21": {
+  "type": "WUD_GLASS",
+  "style": "GL",
+  "glass": {
+   "frame": 70,
+   "aperture": {
+    "w": 457,
+    "h": 577
+   }
+  },
+  "aperture": [
    {
-    "id": "DR02-F1",
-    "h": 338,
-    "y": 0
-   },
-   {
-    "id": "DR02-F3",
-    "h": 426,
-    "y": 341
+    "layer": "GLASS_APERTURE",
+    "x1": 70,
+    "y1": 70,
+    "x2": 527,
+    "y2": 647,
+    "depth": 25,
+    "cutout": true
    }
   ],
-  "plainFaces": [
+  "panes": 1,
+  "same": true,
+  "drills": 81,
+  "wallDrills": 81,
+  "pane": [
    {
-    "id": "DR01-F1",
-    "h": 338,
-    "y": 0
-   },
-   {
-    "id": "DR01-F2",
-    "h": 254,
-    "y": 341
-   },
-   {
-    "id": "DR01-F3",
-    "h": 169,
-    "y": 598
+    "role": "glass_pane",
+    "label": "Glass pane",
+    "qty": 1,
+    "unit": "pcs",
+    "spec": {
+     "aperture_w_mm": 457,
+     "aperture_h_mm": 577
+    },
+    "spec_label": "457 × 577 mm aperture"
    }
   ],
-  "boxes": 3,
-  "plainBoxes": 3,
-  "drawnFaces": 2,
-  "sameCarcass": true,
-  "runners": 3,
-  "plainRunners": 3
+  "wallPane": 0
  }
 }

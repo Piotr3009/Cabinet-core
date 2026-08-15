@@ -45,6 +45,9 @@ export const FRONT_STYLE_OPTIONS = [
   { id: 'GF', label: 'Grooved with frame' },
   { id: 'A', label: 'Arched' },
   { id: 'AH', label: 'Arched handleless' },
+  // Turn 30 (CLAUDE.md F21): the glass door — a shaker frame with the panel
+  // taken all the way through, and a pane ordered for the hole.
+  { id: 'GL', label: 'Glass' },
 ];
 
 /**

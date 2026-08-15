@@ -115,7 +115,14 @@ function newUnit(typeId, profile, index, design) {
   // `null` is "nobody has said", which is the same null every other layer in
   // this app uses for it, and `paramsForEngine` resolves it through
   // `resolveUnitDesign`'s cascade: this unit → its door style → the PROJECT.
-  params.front_type = null;
+  //
+  // ─── TURN 30 (CLAUDE.md F21): …UNLESS THE KIT IS ITS FACE ────────────────
+  // Picking "Glass unit" out of the library IS saying something about the
+  // front style — it is the whole reason that row exists — so a kit that
+  // declares a `frontType` places its cabinets wearing it, as the unit's own
+  // answer. That leaves it exactly as editable as any other: one write of
+  // `null` in the front-style select hands it back to the project.
+  params.front_type = type.frontType || null;
   params.front_style_schema = FRONT_STYLE_SCHEMA;
   // A drawer unit IS its drawers — the LISP kit has no "how many" question, so
   // the stack exists from the moment the unit is placed.

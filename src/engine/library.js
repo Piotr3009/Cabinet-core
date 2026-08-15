@@ -174,13 +174,12 @@ export const KITCHEN_LIBRARY = [
     hint: 'Hung above the worktop',
     items: [
       { kind: 'type', id: 'wall', typeId: 'WUD', label: 'Standard' },
-      {
-        kind: 'soon',
-        id: 'glass-unit',
-        label: 'Glass unit',
-        hint: 'Glass shelves behind a glass front',
-        reason: 'Glass is not a board — no kit defines the frame, the shelf fixing or the cut list yet',
-      },
+      // ─── Turn 30 (CLAUDE.md F21): the glass wall unit OPENS ──────────────
+      // KIT_WUD's carcass and door, hole for hole — a glass door takes the
+      // same cups. What is new is the FRONT STYLE: the shaker's own frame,
+      // with the recess taken all the way through, and a pane ordered for the
+      // hole. Glass SHELVES are a separate question and are not shipped.
+      { kind: 'type', id: 'glass-unit', typeId: 'WUD_GLASS', label: 'Glass unit', hint: 'Wall unit with a glazed door — the pane is ordered, not cut' },
       {
         kind: 'soon', id: 'l-shape-wall', label: 'L-shape wall', hint: 'One carcass on two walls', reason: NO_PATTERN,
       },

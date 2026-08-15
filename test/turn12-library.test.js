@@ -69,7 +69,7 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
     // wrote the pattern for both, which is exactly the condition they carried.
     // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'CORNER', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD',
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'CORNER', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS',
   ]);
 });
 
@@ -77,7 +77,8 @@ test('a group says how much of it can be placed today', () => {
   // A long list that is mostly held open has to be honest about it before it is
   // opened — "1/3" on Wall units beats three grey rows discovered afterwards.
   const wall = KITCHEN_LIBRARY.find((g) => g.id === 'wall-units');
-  assert.deepEqual(groupCounts(wall, P), { total: 3, enabled: 1 });
+  // Turn 30 (CLAUDE.md F21): two of the three can be placed now.
+  assert.deepEqual(groupCounts(wall, P), { total: 3, enabled: 2 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
   assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 0 });
 });
@@ -138,7 +139,10 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // Turn 30 (CLAUDE.md F15): 'american-fridge' left it too — KIT_FRIDGE.lsp
     // exists and is the truth, so an american size is a wider envelope.
     'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall',
-    'glass-unit', 'l-shape-wall',
+    // Turn 30 (CLAUDE.md F21): 'glass-unit' left this list — KIT_WUD's own
+    // carcass and door, with the shaker frame taken through and a pane
+    // ordered for the hole.
+    'l-shape-wall',
     'free-standing-panels', 'cornice-pelmet',
   ]);
   for (const entry of soon) {

@@ -2134,6 +2134,86 @@ async function main() {
       await page.sleep(900);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F21 [MEDIUM] — glass wall units
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f21')) {
+      await newRoom('Turn 30 walk — F21');
+      await page.evaluate(`${P}.ui.getState().setLibraryCategory('kitchen'); return true;`);
+      await page.sleep(700);
+      await page.click('[data-library-group="wall-units"]');
+      await page.sleep(700);
+      await page.click('[data-library-entry="glass-unit"]');
+      await page.sleep(1500);
+      await page.evaluate(`${P}.ui.getState().closeLibrary(); return true;`);
+      await page.sleep(1000);
+
+      // The cabinets FIRST, and then a pause: the scene is read below, and a
+      // store write and a traverse in one synchronous block reads the room as
+      // it was before React drew the change.
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units[0];
+        s.updateUnitParams(u.id, { doors: true });
+        const w = s.addUnit('WUD', { near: u.id, side: 'right' });
+        s.updateUnitParams(w.id, {
+          width: u.params.width, height: u.params.height, depth: u.params.depth, doors: true,
+        });
+        window.__t30 = { glass: u.id, wall: w.id, ids: [u.id, w.id] };
+        return true;
+      `);
+      await page.sleep(1800);
+
+      const f21 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units.find((x) => x.id === window.__t30.glass);
+        const w = s.units.find((x) => x.id === window.__t30.wall);
+        const part = (id) => String(id).replace(/^[^-]*-/, '');
+        const holes = (x) => x.drills.map((d) => part(d.panel) + '|' + d.layer + '|' + d.kind + '|' + d.x + '|' + d.y + '|' + d.d).sort().join(',');
+        const r = s.unitResult(window.__t30.glass);
+        const rw = s.unitResult(window.__t30.wall);
+        const leaf = (x) => x.panels.find((p) => p.role === 'front');
+        const v = ${P}.views && ${P}.views.room;
+        let panes = 0;
+        if (v) v.scene.traverse((o) => { if (o.userData && o.userData.ccGlassPane) panes += 1; });
+        return {
+          type: u.type,
+          style: leaf(r).meta.frontType,
+          glass: leaf(r).meta.glass || null,
+          aperture: (leaf(r).cnc.pockets || []).filter((k) => k.layer === 'GLASS_APERTURE'),
+          panes,
+          same: holes(r) === holes(rw),
+          drills: r.drills.length,
+          wallDrills: rw.drills.length,
+          pane: r.hardware.filter((h) => h.role === 'glass_pane'),
+          wallPane: rw.hardware.filter((h) => h.role === 'glass_pane').length,
+        };
+      `);
+      measurements.f21 = f21;
+      check('F21 — the Library places a glass wall unit, and its door is GLASS',
+        f21.type === 'WUD_GLASS' && f21.style === 'GL' && f21.glass,
+        `${f21.type} · style ${f21.style} · ${f21.glass ? f21.glass.frame + ' mm frame' : '?'}`);
+      check('F21 — the aperture is cut ALL THE WAY THROUGH, so what is left is a frame',
+        f21.aperture.length === 1 && f21.aperture[0].cutout === true
+        && f21.aperture[0].depth === 25,
+        f21.aperture[0] ? `${f21.aperture[0].depth} mm through a 25 mm door` : '(none)');
+      check('F21 — …and the room draws the PANE in it',
+        f21.panes === 1, `${f21.panes} panes in the scene`);
+      check('F21 — the HINGE RULE is unchanged: the same cups as a solid door',
+        f21.same === true && f21.drills === f21.wallDrills,
+        `${f21.drills} holes vs the solid wall unit’s ${f21.wallDrills}`);
+      check('F21 — the BOM says glass door: a pane, ordered to the aperture',
+        f21.pane.length === 1 && f21.pane[0].qty === 1 && f21.wallPane === 0,
+        f21.pane[0] ? `${f21.pane[0].label} — ${f21.pane[0].spec_label}` : '(none)');
+
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [1.3, 0.55, 2.7]);
+      await page.sleep(900);
+      await shot('21a-a-glass-wall-unit-beside-a-solid-one-frame-and-pane');
+      await frameUnits(await page.evaluate('return [window.__t30.glass];'), [0.75, 0.3, 2.1]);
+      await page.sleep(900);
+      await shot('21b-the-door-itself-a-shaker-frame-with-the-panel-taken-through');
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

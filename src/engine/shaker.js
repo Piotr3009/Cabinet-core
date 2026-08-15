@@ -179,6 +179,42 @@ export function isShakerFront(panel) {
 }
 
 /**
+ * ─── TURN 30 (CLAUDE.md F21): AND A GLASS DOOR IS A FRAME TOO ───────────────
+ *
+ * Same question, same place, same answer off the PIECE's own `meta.frontType`.
+ * A glass door is a shaker whose panel is not there: the frame is the shaker's,
+ * of the shaker's width, and the recess goes all the way through.
+ */
+export function isGlassFront(panel) {
+  if (panel?.role !== 'front') return false;
+  return panel?.meta?.frontType === 'GL';
+}
+
+/**
+ * The APERTURE a glass door's pane goes in: the shaker's own panel rectangle,
+ * cut through the board instead of 6 mm into it.
+ *
+ * Returns null on a leaf the frame will not fit, exactly as `shakerPocket`
+ * does — a 200 mm frame on a 300 mm door is two frames overlapping whether the
+ * middle is glass or oak.
+ */
+export function glassAperture({ w, h, frame, thickness }, profile) {
+  const rect = shakerPanelRect({ w, h, frame }, profile);
+  if (!rect) return null;
+  const layer = profile?.front?.types?.GL?.apertureLayer || 'GLASS_APERTURE';
+  return {
+    layer,
+    x1: rect.x1,
+    y1: rect.y1,
+    x2: rect.x2,
+    y2: rect.y2,
+    // All the way through: the pane, not a recess.
+    depth: Number(thickness) || rect.depth,
+    cutout: true,
+  };
+}
+
+/**
  * How far the panel floor sits below the front's face.
  *
  * ─── F3.5: THE HINGE RULE READS THE FULL BOARD ──────────────────────────────

@@ -234,6 +234,47 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F21): THE GLASS WALL UNIT ─────────────────────────
+  //
+  // "Parent: KIT_WUD. Front style `glass`: frame + translucent panel in 3D, BOM
+  // says glass door; hinge rule unchanged (glass doors take the same cups
+  // unless the owner says otherwise — note it in the report)."
+  //
+  // Every field is WUD's, to the letter, INCLUDING the hinge rule and the cup
+  // rule: a glass door is hung on the same cups, bored in the same places, and
+  // the test asserts that hole for hole against a wall unit with a solid door.
+  // That is the owner's own instruction and it is noted in the report as asked.
+  //
+  // The one thing of its own is the front style it arrives wearing — and that
+  // is a DEFAULT rather than a law, so a joiner can put a solid door on a glass
+  // unit or a glass door on any other kit. `frontType` is a per-front answer
+  // and always has been (turn 13's cascade, turn 30's F10).
+  WUD_GLASS: {
+    id: 'WUD_GLASS',
+    heightGroup: 'wall',
+    label: 'Glass wall unit',
+    family: 'kitchen',
+    lisp: 'KIT_WUD_FULL.lsp',
+    // WUD's own, to the letter — a glass door takes the same cups.
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: null,
+    hangers: true,
+    doorExtend: true,
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    // What it arrives wearing. See `defaultParamsFor`.
+    frontType: 'GL',
+    minHeightKey: null,
+    defaultsKey: 'glassWallUnit.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
   // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT ─────────────────────────────
   //
   // "The riskiest of the batch. Start from what the LISP family actually
@@ -765,7 +806,7 @@ export const UNIT_TYPES = {
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER', 'WUD_GLASS', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -844,7 +885,10 @@ export function defaultParamsFor(typeId, profile) {
     depth: d.depth ?? 558,
     board_t: profile.board.thickness,
     front_t: profile.front.thickness,
-    front_type: profile.front.defaultType,
+    // Turn 30 (CLAUDE.md F21): a kit whose FACE is its identity says so. Every
+    // kit written before tonight has no `frontType` and takes the workshop's
+    // own default, exactly as it always has.
+    front_type: type.frontType || profile.front.defaultType,
     shelves: 0,
     // BUDR is a three-drawer unit by definition (LISP has no count question).
     drawers: type.drawerStyle === 'budr' ? profile.baseDrawerUnit.ratio.length : 0,
@@ -885,5 +929,5 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', CORNER: 'CR',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', CORNER: 'CR', WUD_GLASS: 'WG',
 };

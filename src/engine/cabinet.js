@@ -31,7 +31,7 @@ import {
 } from './shelfBearers.js';
 // Turn 21 (CLAUDE.md F12): the owner's door-width law, as pure geometry.
 import {
-  isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
+  glassAperture, isGlassFront, isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
 } from './shaker.js';
 import { resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
@@ -3405,6 +3405,39 @@ export function computeCabinet(params, profileOverride) {
     };
   }
 
+  // ─── TURN 30 (CLAUDE.md F21): THE GLASS DOOR'S APERTURE ──────────────────
+  //
+  // "Front style `glass`: frame + translucent panel in 3D, BOM says glass
+  // door; hinge rule unchanged."
+  //
+  // The same pass, the same frame and the same refusal as the shaker above —
+  // the recess simply goes all the way through, and what is left is the frame.
+  // The pane itself is BOUGHT: it is on the order form to the aperture it has
+  // to fill, and it reaches no cut list, because glass is not board.
+  const glassFronts = panels.filter((x) => isGlassFront(x));
+  for (const pnl of glassFronts) {
+    const aperture = glassAperture({
+      w: pnl.w, h: pnl.h, frame: shakerFrame, thickness: pnl.thickness,
+    }, P);
+    if (!aperture) {
+      warnings.push({
+        code: 'GLASS_FRAME_TOO_WIDE',
+        panel: pnl.id,
+        message: `${pnl.id}: ${shakerProblem({ w: pnl.w, h: pnl.h, frame: shakerFrame }, P)}`,
+      });
+      continue;
+    }
+    pnl.cnc.pockets = [...(pnl.cnc.pockets || []), aperture];
+    // On the PIECE, so the 3-D pane and the order line read one answer.
+    pnl.meta.glass = {
+      frame: shakerFrame,
+      aperture: {
+        w: roundTo(aperture.x2 - aperture.x1, 1),
+        h: roundTo(aperture.y2 - aperture.y1, 1),
+      },
+    };
+  }
+
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];
   // ─── TURN 26 (CLAUDE.md R10 / F1.4): A DRILL MAY STATE ITS DEPTH ──────────
@@ -4307,6 +4340,22 @@ export function computeCabinet(params, profileOverride) {
     [`${roundTo(internalWidth, 0)} mm`, railProduct].filter(Boolean).join(' · '));
   hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',
     { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
+  // ─── TURN 30 (CLAUDE.md F21): "BOM SAYS GLASS DOOR" ──────────────────────
+  // One pane per glass leaf, to the aperture it fills. Glass is not board, so
+  // it is ORDERED and never cut: it reaches no panel, no sheet and no CSV line.
+  // Two doors of the same size are one order line of two, which is what the
+  // hardware merge key (role + spec label) already does for every other bought
+  // thing in this list.
+  for (const pane of [...new Set(panels
+    .filter((x) => x.meta?.glass)
+    .map((x) => `${x.meta.glass.aperture.w}×${x.meta.glass.aperture.h}`))]) {
+    const [aw, ah] = pane.split('×').map(Number);
+    const count = panels.filter((x) => x.meta?.glass
+      && `${x.meta.glass.aperture.w}×${x.meta.glass.aperture.h}` === pane).length;
+    hw('glass_pane', 'Glass pane', count, 'pcs',
+      { aperture_w_mm: aw, aperture_h_mm: ah },
+      `${aw} × ${ah} mm aperture`);
+  }
   // ─── TURN 30 (CLAUDE.md F13–F21): A BOUGHT MECHANISM IS A LINE TO ORDER ───
   //
   // "A drilled hole exists only where a LISP line or a published Blum pattern

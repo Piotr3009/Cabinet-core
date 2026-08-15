@@ -988,3 +988,70 @@ side by side with the right-hand one's middle drawer hidden.
 | `20a-two-drawer-units-three-fronts-each.png` | before |
 | `20b-the-trend-two-fronts-on-the-right-three-drawers-behind-them.png` | after |
 | `20c-fronts-hidden-the-third-box-is-really-there.png` | the third box |
+
+---
+
+## F21 [MEDIUM] — glass wall units
+
+**A glass door is a shaker whose panel is not there.** That sentence is the
+whole design: the frame is the shaker's — the same number, cut by the same
+arithmetic in `engine/shaker.js` — and the recess goes **all the way through**
+instead of 6 mm deep. Asserted: the aperture rectangle is *identical* to the one
+a shaker of the same leaf would recess.
+
+Borrowing the frame rather than giving glass one of its own is deliberate. A
+kitchen whose glass doors wear a different frame from its solid ones is a
+kitchen nobody meant to build, and one law is one thing to get right. It is
+**refused, not clamped**, exactly as the shaker is: a 200 mm frame on a 300 mm
+door raises `GLASS_FRAME_TOO_WIDE`, the front is cut plain, and no pane is
+ordered for a hole that is not there.
+
+### ⚠ NOTE FOR THE OWNER, as CLAUDE.md asks
+
+> *"hinge rule unchanged (glass doors take the same cups unless the owner says
+> otherwise — **note it in the report**)"*
+
+**A glass wall unit is drilled hole for hole as a wall unit with a solid door** —
+the same three hinges, the same cups in the same places, the same board
+thickness read by the hinge ladder. That is your instruction, carried out
+literally and asserted twice. If a glazed door should take a different hinge in
+your workshop, that is a one-line change and it needs your word.
+
+### "BOM says glass door"
+
+One `glass_pane` line per leaf, to the **aperture** it fills (457 × 577 on the
+default unit); two glass leaves are one line of two. **Glass is not board**: it
+reaches no panel, no sheet and no CSV line. In 3D the board's own aperture is a
+full-depth cutout, so `panelSolids` leaves a frame, and a translucent pane is
+drawn in the hole inside the group that animates — it swings with its door.
+
+`glass` is a front **style**, not a kit: a base unit can wear it, and a glass
+unit can wear a solid door. `WUD_GLASS` copies every field of `WUD` and adds
+`frontType: 'GL'` — what it *arrives* wearing. Picking "Glass unit" from the
+library is saying something about the front style, so it lands as the unit's own
+answer and one write of `null` hands it back to the project.
+
+### The gap, named
+
+**The glazing rebate.** No LISP line and no published pattern states how the
+pane is held — rebate depth, bead, or channel — so **nothing is cut for it**.
+The aperture is straight through and the glazier works to it. **Glass shelves**
+are a separate question and are not shipped.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f21` → **7 ok · 0 failed**, beside a solid
+wall unit of the same size.
+
+| | glass | solid |
+| --- | --- | --- |
+| front style | `GL`, 70 mm frame | the project's |
+| aperture | 25 mm through a 25 mm door | — |
+| panes drawn in the room | 1 | 0 |
+| holes | 81 | 81, **same fingerprint** |
+| pane ordered | 1 × *457 × 577 mm aperture* | 0 |
+
+| file | |
+| --- | --- |
+| `21a-a-glass-wall-unit-beside-a-solid-one-frame-and-pane.png` | the pair |
+| `21b-the-door-itself-a-shaker-frame-with-the-panel-taken-through.png` | the door |

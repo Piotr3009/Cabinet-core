@@ -87,6 +87,24 @@ export const DEFAULT_CABINET_PROFILE = {
       },
       H: { label: 'Handleless (J-groove)', grooveDepth: 30 },
       F: { label: 'Flat' },
+      // ─── TURN 30 (CLAUDE.md F21): THE GLASS DOOR ──────────────────────────
+      //
+      // "Front style `glass`: frame + translucent panel in 3D, BOM says glass
+      // door; hinge rule unchanged."
+      //
+      // A glass door is a SHAKER whose panel is not there: the same frame, of
+      // the same width, cut by the same arithmetic — `engine/shaker.js` — and
+      // the recess taken all the way through instead of 6 mm deep. Borrowing
+      // the frame rather than giving glass a number of its own is deliberate:
+      // a kitchen whose glass doors wear a different frame from its solid ones
+      // is a kitchen nobody meant to build, and one law is one thing to get
+      // right.
+      //
+      // What is NOT here is a rebate. The glass sits in the aperture the way
+      // this workshop glazes a door, and no LISP line and no published pattern
+      // states that detail — so nothing is cut for it and the gap is named in
+      // the report.
+      GL: { label: 'Glass', apertureLayer: 'GLASS_APERTURE' },
     },
     defaultType: 'S',
   },
@@ -1269,6 +1287,17 @@ export const DEFAULT_CABINET_PROFILE = {
     blockScrewOffsets: [37.5, 87.5],
     blockScrewFromTop: 50,
     fixedScrewFromEnd: 50,
+  },
+
+  // ─── Glass wall unit (turn 30, CLAUDE.md F21) ─────────────────────────────
+  //
+  // KIT_WUD_FULL's own defaults, said again so the kit has a home of its own to
+  // be tuned in. A glass wall unit is a wall unit; what differs is the FRONT
+  // STYLE it arrives wearing.
+  glassWallUnit: {
+    defaults: {
+      width: 600, height: 720, depth: 400, mountHeight: 1500,
+    },
   },
 
   // ─── Corner unit (turn 30, CLAUDE.md F19) ─────────────────────────────────
@@ -3710,6 +3739,11 @@ export function migrateCabinetProfile(profile) {
     wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
     twinCupboard: { ...D.twinCupboard, ...profile.twinCupboard, defaults: { ...D.twinCupboard.defaults, ...profile.twinCupboard?.defaults } },
     cornerUnit: { ...D.cornerUnit, ...profile.cornerUnit, defaults: { ...D.cornerUnit.defaults, ...profile.cornerUnit?.defaults } },
+    glassWallUnit: {
+      ...D.glassWallUnit,
+      ...profile.glassWallUnit,
+      defaults: { ...D.glassWallUnit.defaults, ...profile.glassWallUnit?.defaults },
+    },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,
       ...profile.americanFridgeUnit,

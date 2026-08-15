@@ -1947,6 +1947,20 @@ export function computeCabinet(params, profileOverride) {
       cnc: railCnc(false),
       meta: { index: 2 },
     }));
+    // ─── TURN 30 (CLAUDE.md F15): AN IMPOSSIBLE APERTURE CUTS NO BOARD ──────
+    //
+    // `FRIDGE_ZONE_TOO_TALL` has warned since turn 12 that an aperture taller
+    // than its carcass leaves no room for the pieces above the fixed panel —
+    // and the two pieces were cut anyway, at NEGATIVE height. A board of −68 mm
+    // is not a warning, it is an inverted outline on a machine file, and the
+    // edge guard (turn 25, F1.3) finds it as a clockwise loop.
+    //
+    // This is not a formula: a cabinet the engine has already refused to
+    // believe in emits no boards for the part it cannot build. Every valid
+    // housing — every fixture — has `spursH > G` by construction and is
+    // untouched. Found by widening the envelope to american sizes; it was true
+    // of the built-in housing too.
+    if (fridge.spursH > G) {
     // Turn 24 (CLAUDE.md F4): the board's own centre line, and nothing on top.
     const S = thicknessOf('BUL', cfg.thicknesses) / 2;
     const backTopScrews = [
@@ -1981,6 +1995,7 @@ export function computeCabinet(params, profileOverride) {
       box: { x: G + FR.spursWidthClearance / 2, y: fridge.fixedPanelY + G, z: D - FR.spursFromFront - G, w: fridge.spursW, h: fridge.spursPanelH, d: G },
       cnc: rectGeometry(fridge.spursPanelH, fridge.spursW),
     }));
+    }
   }
 
   // ─── The ZONE model (turn 12, CLAUDE.md F5.3) ───

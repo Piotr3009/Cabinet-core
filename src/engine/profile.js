@@ -1271,6 +1271,33 @@ export const DEFAULT_CABINET_PROFILE = {
     fixedScrewFromEnd: 50,
   },
 
+  // ─── American fridge housing (turn 30, CLAUDE.md F15) ─────────────────────
+  //
+  // "Parent: KIT_FRIDGE.lsp — it EXISTS and is the truth. Widen the parameter
+  // envelope to american sizes; drilling stays the kit's own."
+  //
+  // So this block is a SIZE and nothing else. Every panel of KIT_FRIDGE already
+  // follows the width and the aperture height — the fixed panel, the spurs
+  // panel, the two back rails and the back above them are all written in terms
+  // of them — and the drilling follows the panels. Widening the envelope is
+  // therefore a set of defaults, not a change to the kit, and the test asserts
+  // that a US housing is drilled exactly as KIT_FRIDGE drills a housing of the
+  // same size.
+  //
+  // The numbers are a STARTING SIZE for a side-by-side, not a specification:
+  // a joiner types the appliance's own width and height off its data sheet, as
+  // he does today for a built-in. The depth stays the run's, because an
+  // american fridge stands proud of the units and always has.
+  americanFridgeUnit: {
+    // The minimum has to clear the kit's OWN aperture: above the fixed panel
+    // KIT_FRIDGE puts a spurs panel and the back over it, and `spursH` must be
+    // more than a board for either to exist. 1900 of appliance + the fixed
+    // panel + a spurs panel worth of room is 2000, so 2000 it is — the same
+    // question `fridgeUnit.minHeight` answers for a 1786 built-in.
+    minHeight: 2000,
+    defaults: { width: 1000, height: 2100, depth: 558, fridgeH: 1900 },
+  },
+
   // ─── Construction automatics (turn 3, phase 7) ───
   // Parts nobody draws by hand: the plinth under a run of units, the scribe
   // filler between a unit and the wall, and the panel that closes the gap
@@ -3629,6 +3656,11 @@ export function migrateCabinetProfile(profile) {
     },
     dwPanel: { ...D.dwPanel, ...profile.dwPanel, defaults: { ...D.dwPanel.defaults, ...profile.dwPanel?.defaults } },
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
+    americanFridgeUnit: {
+      ...D.americanFridgeUnit,
+      ...profile.americanFridgeUnit,
+      defaults: { ...D.americanFridgeUnit.defaults, ...profile.americanFridgeUnit?.defaults },
+    },
     autoParts: {
       ...D.autoParts, ...profile.autoParts,
       plinth: { ...D.autoParts.plinth, ...profile.autoParts?.plinth },

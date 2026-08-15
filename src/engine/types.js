@@ -538,10 +538,49 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F15): THE AMERICAN HOUSING ────────────────────────
+  //
+  // "Parent: KIT_FRIDGE.lsp — it EXISTS and is the truth. Widen the parameter
+  // envelope to american sizes; drilling stays the kit's own."
+  //
+  // Every field below is FRIDGE's, to the letter — the back on two rails, the
+  // fixed panel, the spurs panel on its 25 × 25 blocks, the six hinges, the
+  // legs. The ONLY difference is `defaultsKey`, which is the envelope: KIT_
+  // FRIDGE writes every panel in terms of the width and the aperture height, so
+  // a 1000 mm side-by-side housing is the same kit given bigger numbers, and
+  // the test asserts it hole for hole.
+  //
+  // It is a SEPARATE TYPE rather than a wider default on FRIDGE because a
+  // built-in housing and an american one are two things a joiner picks between
+  // in the library, and because widening FRIDGE's own defaults would move a
+  // kit every existing project uses.
+  FRIDGE_US: {
+    id: 'FRIDGE_US',
+    heightGroup: 'tall',
+    label: 'American fridge',
+    family: 'kitchen',
+    lisp: 'KIT_FRIDGE.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'rails' },
+    drawerStyle: null,
+    minHeightKey: 'americanFridgeUnit.minHeight',
+    defaultsKey: 'americanFridgeUnit.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -649,12 +688,17 @@ export function defaultParamsFor(typeId, profile) {
     ...(type.plinth ? { plinth: true } : {}),
     ...(type.mount === 'wall' ? { mount_height: d.mountHeight ?? 1500 } : {}),
     ...(type.doorExtend ? { door_extend: false } : {}),
-    ...(type.id === 'FRIDGE' ? { fridge_h: profile.fridgeUnit.defaults.fridgeH } : {}),
+    // ─── Turn 30 (CLAUDE.md F15) ───
+    // A housing's aperture, read off the KIT'S OWN defaults rather than off the
+    // type id: the american housing (`americanFridgeUnit`) is the same KIT_
+    // FRIDGE with a bigger envelope, and a kit that has an aperture says so by
+    // having one in its defaults.
+    ...(d.fridgeH != null ? { fridge_h: d.fridgeH } : {}),
     unit_num: '01',
   };
 }
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF',
 };

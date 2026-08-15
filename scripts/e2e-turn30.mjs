@@ -1700,6 +1700,74 @@ async function main() {
       await page.sleep(900);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F15 [MEDIUM] — the american fridge housing
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f15')) {
+      await newRoom('Turn 30 walk — F15');
+      await page.evaluate(`${P}.ui.getState().setLibraryCategory('kitchen'); return true;`);
+      await page.sleep(700);
+      await page.click('[data-library-group="tall-units"]');
+      await page.sleep(700);
+      await page.click('[data-library-entry="american-fridge"]');
+      await page.sleep(1500);
+      await page.evaluate(`${P}.ui.getState().closeLibrary(); return true;`);
+      await page.sleep(1000);
+
+      const f15 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.units[0];
+        s.updateUnitParams(u.id, { doors: true });
+        // The BUILT-IN housing cut to the american one's size, beside it: same
+        // kit, same holes, and the envelope is the only difference.
+        const b = s.addUnit('FRIDGE', { near: u.id, side: 'right' });
+        s.updateUnitParams(b.id, {
+          width: u.params.width, height: u.params.height, depth: u.params.depth,
+          fridge_h: u.params.fridge_h, doors: true,
+        });
+        window.__t30 = { us: u.id, built: b.id, ids: [u.id, b.id] };
+        const part = (id) => String(id).replace(/^[^-]*-/, '');
+        const holes = (x) => x.drills.map((d) => part(d.panel) + '|' + d.layer + '|' + d.kind + '|' + d.x + '|' + d.y + '|' + d.d).sort().join(',');
+        const r = s.unitResult(u.id);
+        const rb = s.unitResult(b.id);
+        return {
+          type: u.type,
+          size: [u.params.width, u.params.height],
+          aperture: u.params.fridge_h,
+          parts: r.panels.map((p) => p.part),
+          doors: r.panels.filter((p) => p.role === 'front').length,
+          drills: r.drills.length,
+          builtDrills: rb.drills.length,
+          same: holes(r) === holes(rb),
+          negative: r.panels.filter((p) => !(p.w > 0) || !(p.h > 0)).length,
+        };
+      `);
+      measurements.f15 = f15;
+      check('F15 — the Library places an american housing, 1000 wide',
+        f15.type === 'FRIDGE_US' && f15.size[0] === 1000,
+        `${f15.type} ${f15.size.join(' × ')} · aperture ${f15.aperture}`);
+      check('F15 — it is KIT_FRIDGE’s own carcass: two back rails, fixed and spurs panels',
+        f15.parts.filter((p) => p === 'BACK-RAIL').length === 2
+        && f15.parts.includes('FIXED') && f15.parts.includes('SPURS'),
+        f15.parts.join(' '));
+      check('F15 — a 1000 mm face is TWO doors, by the door rule and not a new one',
+        f15.doors === 2, `${f15.doors} leaves`);
+      check('F15 — and it is drilled EXACTLY as the built-in housing at that size',
+        f15.same === true && f15.drills === f15.builtDrills,
+        `${f15.drills} holes vs the built-in’s ${f15.builtDrills}`);
+      check('F15 — every board it cuts has a positive size',
+        f15.negative === 0, `${f15.negative} inverted boards`);
+
+      await frameUnits(await page.evaluate('return [window.__t30.us];'), [1.5, 0.85, 2.8]);
+      await page.sleep(900);
+      await shot('15a-an-american-fridge-housing-1000-wide-on-the-fridge-kit');
+      await page.evaluate(`${P}.ui.getState().setViewMode('cnc'); return true;`);
+      await page.sleep(1600);
+      await shot('15b-its-sheet-the-fridge-kits-own-boards-at-american-sizes');
+      await page.evaluate(`${P}.ui.getState().setViewMode('3d'); return true;`);
+      await page.sleep(900);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

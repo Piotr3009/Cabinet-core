@@ -3,7 +3,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
+import { HEIGHT_GROUPS, getUnitType, profilePath } from '../engine/types.js';
 import { doorCountFor, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
@@ -106,6 +106,11 @@ export default function RightPanel() {
   const unit = units.find((u) => u.id === selectedUnitId) || null;
   const result = unit ? unitResult(unit.id) : null;
   const type = unit ? getUnitType(unit.type) : null;
+  // Turn 30 (CLAUDE.md F15): a kit that houses an appliance has an APERTURE in
+  // its own defaults — the built-in fridge and the american one are the same
+  // KIT_FRIDGE with different envelopes, so the control asks the kit rather
+  // than naming a type.
+  const apertureDefault = type ? (profilePath(profile, type.defaultsKey)?.fridgeH ?? null) : null;
   // Turn 22 (CLAUDE.md F1.1): the per-unit cornice option, resolved. A stored
   // value this workshop does not buy reads as 'none' rather than as itself.
   const corniceValue = unit ? corniceOption(unit.params.cornice, profile) : 0;
@@ -452,7 +457,7 @@ export default function RightPanel() {
           )}
 
           {/* per-type parameters: only the ones this kit actually has */}
-          {(type.mount === 'wall' || type.doorExtend || unit.type === 'FRIDGE') && (
+          {(type.mount === 'wall' || type.doorExtend || apertureDefault != null) && (
             <div className="grid grid-cols-2 gap-2">
               {type.mount === 'wall' && (
                 <div>
@@ -464,12 +469,16 @@ export default function RightPanel() {
                   />
                 </div>
               )}
-              {unit.type === 'FRIDGE' && (
+              {/* Turn 30 (CLAUDE.md F15): the aperture is offered by any kit
+                  that HAS one — the built-in housing and the american one are
+                  the same KIT_FRIDGE with different envelopes, so this asks the
+                  kit rather than the type id. */}
+              {apertureDefault != null && (
                 <div>
                   <span className="cc-label">Fridge height</span>
                   <NumberField
                     title="Inner clearance for the appliance"
-                    value={unit.params.fridge_h ?? profile.fridgeUnit.defaults.fridgeH}
+                    value={unit.params.fridge_h ?? apertureDefault}
                     onCommit={(v) => updateUnitParams(unit.id, { fridge_h: v })}
                   />
                 </div>

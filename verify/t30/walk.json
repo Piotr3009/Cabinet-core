@@ -12,29 +12,29 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F14 — the Library places a Pantry on the tall unit’s carcass",
+   "label": "F15 — the Library places an american housing, 1000 wide",
    "ok": true,
-   "detail": "PANTRY 600 × 2150"
+   "detail": "FRIDGE_US 1000 × 2150 · aperture 1900"
   },
   {
-   "label": "F14 — three Blum boxes inside it, and NOT one drawer face",
+   "label": "F15 — it is KIT_FRIDGE’s own carcass: two back rails, fixed and spurs panels",
    "ok": true,
-   "detail": "3 boxes · 0 faces · 1 door"
+   "detail": "BUL BUR TOP BOTTOM FIXED BACK-RAIL BACK-RAIL BACK SPURS FRONT FRONT"
   },
   {
-   "label": "F14 — the runner drilling is the existing MOVENTO truth",
+   "label": "F15 — a 1000 mm face is TWO doors, by the door rule and not a new one",
    "ok": true,
-   "detail": "18 holes on RUNNERS_3MM"
+   "detail": "2 leaves"
   },
   {
-   "label": "F14 — and it is drilled EXACTLY as a wardrobe with its fronts off",
+   "label": "F15 — and it is drilled EXACTLY as the built-in housing at that size",
    "ok": true,
-   "detail": "125 holes vs the wardrobe’s 125"
+   "detail": "127 holes vs the built-in’s 127"
   },
   {
-   "label": "F14 — the BOM buys the runners, because the boxes are really there",
+   "label": "F15 — every board it cuts has a positive size",
    "ok": true,
-   "detail": "3 pairs"
+   "detail": "0 inverted boards"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

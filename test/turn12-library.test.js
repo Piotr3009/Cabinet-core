@@ -67,7 +67,7 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
     // wrote the pattern for both, which is exactly the condition they carried.
     // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'WUD',
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD',
   ]);
 });
 
@@ -126,7 +126,9 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     'small-fridge', 'twin-space',
     // Turn 30 (CLAUDE.md F14): 'pantry' left this list — KIT_BUDTALL's carcass
     // with the wardrobe kit's own internal drawer machinery in it.
-    'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall', 'american-fridge',
+    // Turn 30 (CLAUDE.md F15): 'american-fridge' left it too — KIT_FRIDGE.lsp
+    // exists and is the truth, so an american size is a wider envelope.
+    'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall',
     'glass-unit', 'l-shape-wall',
     'free-standing-panels', 'cornice-pelmet',
   ]);

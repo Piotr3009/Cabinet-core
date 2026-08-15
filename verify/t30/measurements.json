@@ -1,19 +1,28 @@
 {
- "f14": {
-  "type": "PANTRY",
+ "f15": {
+  "type": "FRIDGE_US",
   "size": [
-   600,
+   1000,
    2150
   ],
-  "boxes": 3,
-  "faces": 0,
-  "doors": 1,
-  "runnerHoles": 18,
+  "aperture": 1900,
+  "parts": [
+   "BUL",
+   "BUR",
+   "TOP",
+   "BOTTOM",
+   "FIXED",
+   "BACK-RAIL",
+   "BACK-RAIL",
+   "BACK",
+   "SPURS",
+   "FRONT",
+   "FRONT"
+  ],
+  "doors": 2,
+  "drills": 127,
+  "builtDrills": 127,
   "same": true,
-  "drills": 125,
-  "wardrobeDrills": 125,
-  "runners": [
-   3
-  ]
+  "negative": 0
  }
 }

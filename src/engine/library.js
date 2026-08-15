@@ -151,13 +151,11 @@ export const KITCHEN_LIBRARY = [
         hint: 'Single or double appliance housing',
         reason: 'No kit defines the appliance aperture yet — the pattern comes first',
       },
-      {
-        kind: 'soon',
-        id: 'american-fridge',
-        label: 'American fridge',
-        hint: 'Side-by-side housing',
-        reason: 'The owner writes this pattern with the assistant first',
-      },
+      // ─── Turn 30 (CLAUDE.md F15): the american housing OPENS ─────────────
+      // KIT_FRIDGE.lsp is the truth and it EXISTS: every panel it cuts already
+      // follows the width and the aperture, so an american size is a wider
+      // envelope rather than a new carcass. The drilling stays the kit's own.
+      { kind: 'type', id: 'american-fridge', typeId: 'FRIDGE_US', hint: 'Side-by-side housing — KIT_FRIDGE at american sizes' },
     ],
   },
   {

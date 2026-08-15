@@ -653,3 +653,59 @@ wardrobe cut to the same size with its fronts off, standing beside it.
 | `14a-a-pantry-closed-a-tall-cupboard-with-doors.png` | closed |
 | `14b-the-same-pantry-open-three-blum-boxes-and-no-drawer-faces.png` | open |
 | `14c-fronts-hidden-the-boxes-and-their-runners-behind-the-doors.png` | fronts hidden |
+
+---
+
+## F15 [MEDIUM] — the american fridge housing
+
+`KIT_FRIDGE.lsp` **exists and is the truth**, and it writes every panel it cuts
+in terms of the **width** and the **aperture height** — the fixed panel, the
+spurs panel on its 25 × 25 blocks, the two back rails and the back above them.
+So an american housing is that kit given bigger numbers, and *"widen the
+parameter envelope"* is a block of **defaults**, not a change to anything that
+cuts.
+
+`FRIDGE_US` copies every field of `FRIDGE` — the LISP, the hinge ladder, the
+cup rule, the legs, `carcass.back: 'rails'`, the supports — and differs in
+`defaultsKey` alone. **1000 × 2100, aperture 1900**, depth left at the run's,
+because an american fridge stands proud of the units. Those are a *starting
+size*, not a specification: a joiner types the appliance's numbers and the kit
+follows them, asserted at 1200 × 1950 as well.
+
+A separate type rather than wider defaults on `FRIDGE`, so the kit every
+existing project uses does not move — asserted.
+
+The **aperture control** no longer names a kit: `RightPanel` asks
+`profilePath(profile, type.defaultsKey)?.fridgeH`, and `defaultParamsFor` does
+the same, so a housing has an aperture by *having* one.
+
+### A bug the wider envelope found — in the BUILT-IN housing
+
+`FRIDGE_ZONE_TOO_TALL` has warned since turn 12 that an aperture taller than its
+carcass leaves no room for the pieces above the fixed panel — **and the two
+pieces were cut anyway, at negative height**. `FRIDGE` at 1900 high with a 1950
+aperture cut a BACK of **600 × −68**: an inverted outline on a machine file,
+which turn 25's edge guard finds as a clockwise loop. A cabinet the engine has
+already refused to believe in now emits no boards for the part it cannot build.
+Every valid housing has `spursH > G` by construction and is untouched.
+
+### The gap, named
+
+**None** — every hole is `KIT_FRIDGE.lsp`'s own, at whatever size it is given.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f15` → **7 ok · 0 failed**, against a
+built-in housing cut to the same size beside it.
+
+| | american | built-in, same size |
+| --- | --- | --- |
+| size · aperture | 1000 × 2150 · 1900 | 1000 × 2150 · 1900 |
+| boards | BUL BUR TOP BOTTOM FIXED BACK-RAIL ×2 BACK SPURS FRONT ×2 | the same |
+| holes | 127 | 127, **same fingerprint** |
+| inverted boards | 0 | 0 |
+
+| file | |
+| --- | --- |
+| `15a-an-american-fridge-housing-1000-wide-on-the-fridge-kit.png` | the cabinet |
+| `15b-its-sheet-the-fridge-kits-own-boards-at-american-sizes.png` | the cut |

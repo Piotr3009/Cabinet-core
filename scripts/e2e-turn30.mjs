@@ -222,6 +222,13 @@ async function main() {
     if (!v) return null;
     const THREE = v.three;
     const want = new Set(${JSON.stringify(unitIds)});
+    // ─── THE WORLD MATRICES FIRST ─────────────────────────────────────────
+    // A box is expanded by a mesh's WORLD transform, and a cabinet placed a
+    // moment ago has not had one computed yet — so without this the frame is
+    // taken around a cabinet standing at the origin, and the click that
+    // follows lands off the canvas. The same lesson as the hinge reader above:
+    // three only refreshes these when it renders.
+    v.scene.updateMatrixWorld(true);
     const box = new THREE.Box3();
     let found = 0;
     v.scene.traverse((g) => {
@@ -236,10 +243,25 @@ async function main() {
     const c = box.getCenter(new THREE.Vector3());
     const r = Math.max(0.3, box.getSize(new THREE.Vector3()).length() / 2);
     const off = ${JSON.stringify(offset)};
+    // ─── THE TARGET FIRST, AND THE UPDATE LAST ────────────────────────────
+    // OrbitControls derives the camera's attitude from position minus target
+    // on every update(). Setting the position first and the target afterwards
+    // hands it one frame of the OLD target — which, after a phase that framed
+    // something tiny, leaves the camera looking somewhere else and a projected
+    // click point off the top of the canvas. (It did: F2 passed on its own and
+    // failed after F1, which is why this walk is run end to end as well.)
+    // …and with DAMPING off. A damped OrbitControls eases toward whatever it
+    // was heading for, so a camera placed by hand drifts back over the next
+    // frames — invisible when the previous frame was the default, and a click
+    // off the top of the canvas after a phase that framed a hinge.
+    if (v.controls) v.controls.enableDamping = false;
+    if (v.controls && v.controls.target) v.controls.target.copy(c);
     v.camera.position.set(c.x + off[0] * r, c.y + off[1] * r, c.z + off[2] * r);
+    v.camera.up.set(0, 1, 0);
     v.camera.lookAt(c);
     v.camera.updateProjectionMatrix();
-    if (v.controls && v.controls.target) { v.controls.target.copy(c); v.controls.update(); }
+    v.camera.updateMatrixWorld(true);
+    if (v.controls && v.controls.update) v.controls.update();
     return found;
   `);
 
@@ -396,6 +418,13 @@ async function main() {
       ${P}.ui.getState().openEditor();
       ${P}.ui.getState().closeModal();
       ${P}.ui.getState().closeLibrary();
+      // A new room is a new room: any door a previous phase swung open, any
+      // selection and any workshop overlay goes with the old project. Without
+      // this, a phase that runs SECOND is looking at the phase before it —
+      // which is exactly why a walk that passes one phase at a time has to be
+      // run end to end as well.
+      ${P}.ui.getState().closeAllFronts();
+      ${P}.ui.getState().selectUnit(null);
       return true;
     `);
 

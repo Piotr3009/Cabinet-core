@@ -1055,3 +1055,33 @@ wall unit of the same size.
 | --- | --- |
 | `21a-a-glass-wall-unit-beside-a-solid-one-frame-and-pane.png` | the pair |
 | `21b-the-door-itself-a-shaker-frame-with-the-panel-taken-through.png` | the door |
+
+---
+
+## The walk, end to end
+
+Every phase above was proved on its own as it was built. Running the whole thing
+in one go found two faults **in the harness** — both of which had been hidden by
+running one phase at a time, which is the reason to run it end to end at all:
+
+1. `frameUnits` measured a **stale world matrix**. A `Box3` is expanded by a
+   mesh's WORLD transform and a cabinet placed a moment ago has not had one
+   computed — three only refreshes them when it renders — so the frame was taken
+   around a cabinet standing at the origin and the click that followed landed
+   off the top of the canvas. `scene.updateMatrixWorld(true)` first. (The same
+   lesson the hinge reader learned in F1.)
+2. OrbitControls derives the camera's attitude from *position − target* on every
+   `update()`, so the **target is set first** now and the update comes last,
+   with damping off — a damped controller eases back toward wherever it was
+   heading, which after a phase that framed a hinge is somewhere else entirely.
+
+A new room also clears the view state it inherits — open doors, the selection —
+because a phase that runs second was otherwise looking at the phase before it.
+
+`node scripts/e2e-turn30.mjs` → **112 ok · 0 failed · 1 blocked**.
+
+The one blocked step is **R2**: this container's egress policy answers 403 for
+the live hardware bucket, so every hinge, runner and plate in these proofs comes
+from the SILENT SHOWROOM (`scripts/make-fixture-hardware.mjs` → a local server,
+reached through `localStorage['cc.hardwareBase']`). The GLB *placement* is
+therefore proved; the bucket's own contents are not reachable from here.

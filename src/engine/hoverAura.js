@@ -133,6 +133,61 @@ export function handleEdgeDistances(panel) {
   };
 }
 
+/**
+ * ─── TURN 32 (CLAUDE.md F9): THE OWNER'S DRAWING ────────────────────────────
+ *
+ * His screenshot is the spec: on hover the handle shows CAD-style dimension
+ * lines with arrowheads — the offset from the TOP edge (e.g. 50), the offset
+ * from the SIDE edge (e.g. 30), and the HOLE SPACING (e.g. 160) between the
+ * two drill centres — in the drawing-office blue, replacing the single
+ * orange number T31 F7 shipped. The aura (the catchment) stays.
+ *
+ * Pure geometry in the LEAF'S OWN WORLD FRAME: the caller hands the drill
+ * centres and the edges as they stand in the scene (mirroring already
+ * applied), and gets DimensionChain rows back. A knob has one hole and no
+ * spacing row; a bar measures its spacing along its own axis.
+ *
+ * @param {object} args
+ *   holes  [[x,y]] or [[x,y],[x,y]] — the drill centres, world mm
+ *   top    the leaf's top edge, world y
+ *   sides  [leftX, rightX] — the leaf's two side edges, world x
+ *   axis   'horizontal' | 'vertical' — the bar's run
+ * @returns {Array<{key, from:[x,y], to:[x,y], offset:number}>}
+ */
+export function handleCadRows({
+  holes = [], top = null, sides = null, axis = 'vertical',
+} = {}) {
+  const list = (holes || []).filter((h) => Array.isArray(h) && h.length === 2);
+  if (!list.length || top == null || !Array.isArray(sides)) return [];
+  // The reference hole is the one nearest a side edge — the one the owner's
+  // offsets are written from.
+  const nearestSide = (h) => Math.min(Math.abs(h[0] - sides[0]), Math.abs(h[0] - sides[1]));
+  const ref = [...list].sort((a, b) => nearestSide(a) - nearestSide(b))[0];
+  const edgeX = Math.abs(ref[0] - sides[0]) <= Math.abs(ref[0] - sides[1]) ? sides[0] : sides[1];
+  const rows = [
+    // Offset from the TOP edge, standing on the hole's own vertical.
+    {
+      key: 'handle-top', from: [ref[0], ref[1]], to: [ref[0], top], offset: 0,
+    },
+    // Offset from the SIDE edge, on the hole's own horizontal.
+    {
+      key: 'handle-side', from: [edgeX, ref[1]], to: [ref[0], ref[1]], offset: 0,
+    },
+  ];
+  if (list.length === 2) {
+    const [a, b] = list;
+    rows.push({
+      key: 'handle-centres',
+      from: [a[0], a[1]],
+      to: [b[0], b[1]],
+      // The spacing line steps one label height clear of the two offset
+      // rows, which meet at the same reference hole.
+      offset: axis === 'horizontal' ? -18 : 18,
+    });
+  }
+  return rows;
+}
+
 /** Does the owner want both numbers? One profile line (F7's own note). */
 export function showsBothAxes(profile) {
   return profile?.editor?.hoverAura?.showBothAxes === true;

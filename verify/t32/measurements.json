@@ -1,19 +1,11 @@
 {
- "f5": {
-  "order": {
-   "firstSheetLabel": "~2 sheets of 2800×2070",
-   "domHasSheetLabel": true,
-   "frontsApart": true,
-   "yellowsOnScreen": 14,
-   "yellowsInEngine": 14,
-   "clips": 2,
-   "railUnit": "m",
-   "screws": 6
-  }
- },
- "f8": {
-  "baseUnitsGone": true,
-  "wallUnitsGone": true,
-  "escape": "▾ Show all (20 more)"
+ "f9": {
+  "chain": {
+   "ccHelper": true,
+   "ccNoBounds": true,
+   "ccDimensionChain": "handle-dims-01-F",
+   "ccDimensionRows": 3
+  },
+  "auraSprites": 0
  }
 }

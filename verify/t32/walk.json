@@ -6,42 +6,17 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F5 — the sheets line is a DIVISION with the label, on screen",
+   "label": "F9 — the hovered handle shows the owner’s DRAWING: three CAD figures",
    "ok": true,
-   "detail": "~2 sheets of 2800×2070"
+   "detail": "{\"ccHelper\":true,\"ccNoBounds\":true,\"ccDimensionChain\":\"handle-dims-01-F\",\"ccDimensionRows\":3}"
   },
   {
-   "label": "F5 — FRONTS are listed separately from carcasses",
+   "label": "F9 — …REPLACING the single orange number (the aura itself carries no label)",
    "ok": true,
-   "detail": ""
+   "detail": "0 sprite(s) on the aura"
   },
   {
-   "label": "F5 — LIVE MEASURE: every engine yellow is a yellow on screen",
-   "ok": true,
-   "detail": "screen 14 · engine 14"
-  },
-  {
-   "label": "F5 — clips from FRONT legs only; the rail by the METRE; screws off the drilling",
-   "ok": true,
-   "detail": "{\"firstSheetLabel\":\"~2 sheets of 2800×2070\",\"domHasSheetLabel\":true,\"frontsApart\":true,\"yellowsOnScreen\":14,\"yellowsInEngine\":14,\"clips\":2,\"railUnit\":\"m\",\"screws\":6}"
-  },
-  {
-   "label": "F5 — one export: {ProjectName}-bom-{DDMM-HHMM}.csv leaves the building",
-   "ok": true,
-   "detail": ""
-  },
-  {
-   "label": "F8 — a wardrobe project’s Kitchen shelf hides the kitchen-only kits",
-   "ok": true,
-   "detail": "{\"baseUnitsGone\":true,\"wallUnitsGone\":true,\"escape\":\"▾ Show all (20 more)\"}"
-  },
-  {
-   "label": "F8 — \"Show all\" is the one-click way past it — a filter, never a block",
-   "ok": true,
-   "detail": "▾ Show all (20 more)"
-  },
-  {
-   "label": "F8 — one real click and everything is back",
+   "label": "F9 — the GLOBAL \"Front dimensions\" toggle stands in the View menu",
    "ok": true,
    "detail": ""
   },
@@ -53,39 +28,20 @@
  ],
  "shots": [
   {
-   "name": "5a-the-order-two-blocks-the-workshop-can-invoice-from",
+   "name": "9a-the-owners-drawing-top-side-and-spacing-on-the-hovered-handle",
    "subject": {
-    "dom": "[data-bom-order=\"1\"]",
-    "text": "sheets of 2800×2070"
-   },
-   "present": true,
-   "detail": "{\"dom\":true,\"text\":true}"
-  },
-  {
-   "name": "5b-yellow-named-spec-lines-where-no-article-exists",
-   "subject": {
-    "dom": "[data-bom-yellow=\"1\"]"
+    "dom": "canvas"
    },
    "present": true,
    "detail": "{\"dom\":true}"
   },
   {
-   "name": "8a-the-wardrobe-librarys-kitchen-shelf-filtered-with-show-all",
+   "name": "9b-the-global-front-dimensions-toggle-in-the-view-menu",
    "subject": {
-    "dom": "[data-library-show-all=\"1\"]",
-    "text": "Show all"
+    "text": "Show front dimensions"
    },
    "present": true,
-   "detail": "{\"dom\":true,\"text\":true}"
-  },
-  {
-   "name": "8b-show-all-brings-the-kitchen-kits-back",
-   "subject": {
-    "dom": "[data-library-list=\"1\"]",
-    "text": "Base units"
-   },
-   "present": true,
-   "detail": "{\"dom\":true,\"text\":true}"
+   "detail": "{\"text\":true}"
   }
  ]
 }

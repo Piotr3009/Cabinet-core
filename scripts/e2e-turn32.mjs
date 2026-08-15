@@ -915,6 +915,100 @@ async function main() {
       `);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F9 [MEDIUM] — the handle preview: the owner's drawing, and the toggle
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f9')) {
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        s.newProject('Turn 32 walk — F9', {
+          room: { height: 2500, corners: [{ x: 0, y: 0 }, { x: 12000, y: 0 }, { x: 12000, y: 3600 }, { x: 0, y: 3600 }] },
+        });
+        ${P}.ui.getState().openEditor();
+        ${P}.ui.getState().closeModal();
+        ${P}.ui.getState().closeLibrary();
+        const a = s.addUnit('BUD');
+        ${P}.project.getState().updateUnitParams(a.id, { width: 600, doors: { count: 1 } });
+        ${P}.project.getState().setProjectHandle({ type: 'bar', centres: 160 });
+        window.__t32f9 = { unitId: a.id };
+        return true;
+      `);
+      await page.waitFor(`(() => {
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return false;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.userData && o.userData.ccAuraKind === 'handle') n += 1; });
+        return n >= 1;
+      })()`, { what: 'the handle aura', timeout: 30000 });
+      // Aim the camera at the handle itself, off its own world position.
+      await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        let mesh = null;
+        v.scene.updateMatrixWorld(true);
+        v.scene.traverse((o) => { if (!mesh && o.userData && o.userData.ccAuraKind === 'handle') mesh = o; });
+        const c = mesh.getWorldPosition(new THREE.Vector3());
+        if (v.controls) v.controls.enableDamping = false;
+        if (v.controls && v.controls.target) v.controls.target.copy(c);
+        v.camera.position.set(c.x + 0.3, c.y + 0.12, c.z + 0.9);
+        v.camera.up.set(0, 1, 0);
+        v.camera.lookAt(c);
+        v.camera.updateProjectionMatrix();
+        if (v.controls) v.controls.update();
+        return true;
+      `);
+      await page.sleep(600);
+      // A REAL pointer, into the catchment.
+      const spot = await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        let mesh = null;
+        v.scene.traverse((o) => { if (!mesh && o.userData && o.userData.ccAuraKind === 'handle') mesh = o; });
+        const c = mesh.getWorldPosition(new THREE.Vector3()).project(v.camera);
+        const r = v.gl.domElement.getBoundingClientRect();
+        return { x: r.left + ((c.x + 1) / 2) * r.width, y: r.top + ((1 - c.y) / 2) * r.height };
+      `);
+      await page.mouse('mouseMoved', spot.x, spot.y, { buttons: 0, clickCount: 0 });
+      await page.sleep(400);
+      const f9 = await page.evaluate(`
+        const v = ${P}.views.room;
+        let chain = null;
+        v.scene.traverse((o) => {
+          if (!chain && o.userData && /^handle-dims-/.test(String(o.userData.ccDimensionChain || ''))) chain = o.userData;
+        });
+        // The old single orange label was a sprite child of the aura GROUP —
+        // with the drawing in its place, the aura group carries no sprite of
+        // its own (the chain's captions are its own children).
+        let auraSprites = 0;
+        v.scene.traverse((o) => {
+          if (o.userData && o.userData.ccHoverAura) {
+            for (const child of o.children) if (child.isSprite) auraSprites += 1;
+          }
+        });
+        return { chain, auraSprites };
+      `);
+      measurements.f9 = f9;
+      check('F9 — the hovered handle shows the owner’s DRAWING: three CAD figures',
+        f9.chain && f9.chain.ccDimensionRows === 3, JSON.stringify(f9.chain));
+      check('F9 — …REPLACING the single orange number (the aura itself carries no label)',
+        f9.auraSprites === 0, `${f9.auraSprites} sprite(s) on the aura`);
+      await shot('9a-the-owners-drawing-top-side-and-spacing-on-the-hovered-handle',
+        { dom: 'canvas' });
+
+      // The GLOBAL toggle, in the View menu — a real click opens the menu.
+      await page.mouse('mouseMoved', 40, 900, { buttons: 0, clickCount: 0 });
+      await page.sleep(800);
+      await page.click('button', 'View', { exact: true });
+      await page.sleep(300);
+      const toggle = await page.evaluate(`
+        return document.body.innerText.includes('Show front dimensions');
+      `);
+      check('F9 — the GLOBAL "Front dimensions" toggle stands in the View menu', toggle);
+      await shot('9b-the-global-front-dimensions-toggle-in-the-view-menu',
+        { text: 'Show front dimensions' });
+      await page.key('Escape', { code: 'Escape', windowsVirtualKeyCode: 27 });
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

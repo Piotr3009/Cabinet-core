@@ -12,34 +12,34 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F7 — the clash is FOUND, and the number is the derived 71.25 mm window",
+   "label": "F8 — the button is on the MULTI-selection",
    "ok": true,
-   "detail": "rows 470 vs hinges 100/470/670 — 0 mm apart"
+   "detail": "1 buttons"
   },
   {
-   "label": "F7 — …and it is SHOWN, with the two choices the owner named",
+   "label": "F8 — ONE slab covers all three, and the scene drew exactly one",
    "ok": true,
-   "detail": "1 prompt · 1 + 1 buttons"
+   "detail": "1 stored · 1 drawn"
   },
   {
-   "label": "F7 — …saying the number rather than \"too close\"",
+   "label": "F8 — …38 mm thick, the decided UK standard",
    "ok": true,
-   "detail": "▲A shelf at 470 mm and a hinge at 470 mm are 0 mm apart — closer than the 71.25 mm the cup and the shelf’s own sleeves need between them.Remove sleeves at this shelfMove the hinge"
+   "detail": "38 mm"
   },
   {
-   "label": "F7 — \"Remove sleeves at this shelf\" opens THAT SHELF’s own window",
+   "label": "F8 — …20 mm proud of the DOOR plane, and flush at the wall",
    "ok": true,
-   "detail": "{\"of\":\"SHELF-1\",\"sections\":\"A\"}"
+   "detail": "606 deep over a 558 carcass + 3 gap + 25 door + 20"
   },
   {
-   "label": "F7 — \"Move the hinge\" opens the DOOR’s window at section B, on that row",
+   "label": "F8 — …and it runs PAST the end panel rather than stopping at the carcass",
    "ok": true,
-   "detail": "01 · Door · left — ringed row 1, wanted 1"
+   "detail": "1845 mm over an 1800 run (1820 without a panel)"
   },
   {
-   "label": "F7 — NO SILENT AUTO-FIX: pressing both buttons changed no hole at all",
+   "label": "F8 — the cabinets under it are cut exactly as they were",
    "ok": true,
-   "detail": "rows 470 · hinges 100/470/670 · still 1 clash"
+   "detail": "7 panels, 77 holes — and the engine has never heard of a worktop"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

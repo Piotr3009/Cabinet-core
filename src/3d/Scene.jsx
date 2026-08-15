@@ -471,6 +471,59 @@ function Lights({
 }
 
 /**
+ * ─── THE WORKTOP (turn 30, CLAUDE.md F8) ────────────────────────────────────
+ *
+ * One slab over a run of base cabinets, "od ściany aż do paneli". It is a
+ * DESIGN-LAYER auto-part like the end panels — the project stores it, this
+ * draws it, and `computeCabinet()` neither knows nor asks about it, so no hole
+ * and no fixture can move because of it.
+ *
+ * Every number in the geometry is `engine/worktop.js`'s: the front overhang,
+ * the side overhang past the end panels, the flush wall side and the decided
+ * 38 mm. What is HERE is the wall frame — along the wall from its start
+ * corner, out by half the slab's own depth, at the height the carcasses stand
+ * at — which is the same three lines `AddPluses` below and `UnitView`'s own
+ * origin are built from, so a slab and the cabinets under it cannot disagree
+ * about where the wall is.
+ */
+function Worktops({
+  worktops, walls, roomCentre, colour,
+}) {
+  return worktops.map((w) => {
+    const g = w.geometry;
+    const wall = walls[g.wall] || walls[0];
+    if (!wall) return null;
+    const along = new THREE.Vector3(wall.along.x, 0, wall.along.y);
+    const inward = new THREE.Vector3(wall.inward.x, 0, wall.inward.y);
+    const centre = new THREE.Vector3(
+      mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+    )
+      .addScaledVector(along, mm(g.x + g.w / 2))
+      .addScaledVector(inward, mm(g.d / 2))
+      .setY(mm(g.y + g.h / 2));
+    return (
+      <mesh
+        key={w.id}
+        position={centre.toArray()}
+        rotation={[0, wall.angle, 0]}
+        castShadow
+        receiveShadow
+        userData={{
+          ccWorktopId: w.id,
+          ccWorktopUnits: g.unitIds,
+          ccWorktopMm: {
+            w: g.w, d: g.d, t: g.h, y: g.y, overhang: g.overhang,
+          },
+        }}
+      >
+        <boxGeometry args={[mm(g.w), mm(g.h), mm(g.d)]} />
+        <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} />
+      </mesh>
+    );
+  });
+}
+
+/**
  * ─── The pluses at the ends of the runs (turn 9, CLAUDE.md F2) ───
  *
  * Where they GO is `engine/runs.js addPlusPoints`, which is pure arithmetic and
@@ -894,6 +947,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const roomH = mm(room.height ?? 2500);
   // What the project's sprayed surfaces are polished to, on Piotr's 0–25 scale.
   const sheen = useMemo(() => projectSheen(design, profile), [design, profile]);
+  // Turn 30 (CLAUDE.md F8): the slabs this project carries, geometry resolved.
+  const worktopsOf = useProjectStore((s) => s.worktopsOf);
+  const worktops = useMemo(() => worktopsOf(), [units, design, worktopsOf]);
   const studio = profile.appearance.studio;
   // ─── Turn 10 (CLAUDE.md F3) ───
   // The lightest of the room's three tones, and the only one that is not a
@@ -1151,6 +1207,19 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           accident. The library opens at the category the cabinet you clicked
           beside belongs to, carrying the place with it, so a wall unit's plus
           offers wall units. */}
+      {/* ─── Turn 30 (CLAUDE.md F8): THE WORKTOP ─────────────────────────
+          A design-layer auto-part over a run of base cabinets. Drawn AFTER the
+          units so it lies on them, and only in the solid view — a contour
+          drawing is the machine's picture and a worktop is not cut on it. */}
+      {!contourView && worktops.length > 0 && (
+        <Worktops
+          worktops={worktops}
+          walls={walls}
+          roomCentre={bounds.centre}
+          colour={profile.appearance.worktop.colour}
+        />
+      )}
+
       {!contourView && !shelfDrag && (
         <AddPluses
           units={units}

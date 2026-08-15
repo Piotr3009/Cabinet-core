@@ -343,3 +343,42 @@ prompt nobody sees, and the test now asserts the placement.
 | `7a-the-conflict-prompt-with-its-two-choices.png` | the prompt, with the number in it |
 | `7b-the-shelfs-own-window-opened-by-the-first-choice.png` | choice one |
 | `7c-the-doors-window-at-its-hinges-that-row-ringed.png` | choice two, on that row |
+
+---
+
+## F8 [MEDIUM] — one worktop over a multi-selection
+
+The owner: select two or more base cabinets and ONE worktop covers the run
+**"od ściany aż do paneli"**.
+
+Three overhangs, each its own sentence: **front 20 mm** proud of the door plane,
+**sides 10 mm past an END PANEL** (past the panel, not the carcass), **wall
+flush** — nothing hangs over a wall.
+
+CLAUDE.md decided the rest so this turn did not have to: thickness **38 mm** (UK
+standard — 770 + 100 legs + 38 lands on the 900 line), material = the project's
+worktop decor by default, per-worktop override a later chat-fix. All three are
+values in `profile.autoParts.worktop` and in the design record.
+
+**A design-layer auto-part, like the end panels: no hole, no fixture.**
+`computeCabinet()` neither imports the module nor reads a record — asserted, not
+assumed — so every golden fixture is untouched by construction.
+
+### Read off the running app, on three 600s with an end panel on the far end
+
+`node scripts/e2e-turn30.mjs --only f8` → **8 ok · 0 failed**.
+
+| | |
+| --- | --- |
+| the button | on the multi-selection, saying **Add worktop (3)** |
+| after one real press | **1 stored · 1 drawn** — one slab, not three |
+| thickness | **38 mm** on the record and on the mesh |
+| depth | **606** = 558 carcass + 3 gap + 25 door + **20** — and flush at the wall (`z 0`) |
+| length | **1845** over an 1800 run — 1820 without a panel, so it really does step past it |
+| the cabinets under it | 7 panels, 77 holes, unchanged |
+
+| file | |
+| --- | --- |
+| `8a-three-base-cabinets-selected-no-worktop-yet.png` | before |
+| `8b-one-worktop-over-the-run-from-the-wall-out-past-the-panel.png` | one slab across all three |
+| `8c-the-overhang-20-proud-of-the-doors-flush-at-the-wall.png` | the overhang, from the end |

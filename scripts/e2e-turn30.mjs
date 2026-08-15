@@ -1118,6 +1118,96 @@ async function main() {
       await page.sleep(300);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F8 [MEDIUM] — one worktop over a multi-selection
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f8')) {
+      await newRoom('Turn 30 walk — F8');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const ids = [];
+        let near = null;
+        for (let i = 0; i < 3; i += 1) {
+          const u = near ? s.addUnit('BUD', { near, side: 'right' }) : s.addUnit('BUD');
+          s.updateUnitParams(u.id, { width: 600, doors: true });
+          s.addPlinth(u.id);
+          ids.push(u.id);
+          near = u.id;
+        }
+        // …and an END PANEL on the far end, because "od ściany aż do paneli"
+        // is a claim about where the slab stops.
+        s.addEndPanel(ids[2], { side: 'R' });
+        window.__t30 = { ids };
+        ${P}.ui.getState().selectUnit(ids[0]);
+        for (const id of ids.slice(1)) ${P}.ui.getState().selectUnit(id, { additive: true });
+        ${P}.ui.getState().openRightPanel();
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+      const before = await page.evaluate('return document.querySelectorAll(\'[data-add-worktop]\').length;');
+      check('F8 — the button is on the MULTI-selection', before === 1, `${before} buttons`);
+      await shot('8a-three-base-cabinets-selected-no-worktop-yet');
+
+      // The gesture: a real press on the button a joiner presses.
+      await page.click('[data-add-worktop]');
+      await page.sleep(1200);
+
+      const f8 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const tops = s.worktopsOf();
+        const v = ${P}.views && ${P}.views.room;
+        const drawn = [];
+        if (v) {
+          v.scene.traverse((o) => {
+            if (o.userData && o.userData.ccWorktopId) drawn.push(o.userData.ccWorktopMm);
+          });
+        }
+        const u = s.units.find((x) => x.id === window.__t30.ids[0]);
+        return {
+          stored: tops.length,
+          geometry: tops[0] ? tops[0].geometry : null,
+          drawn,
+          unitDepth: u.params.depth,
+          frontT: u.params.front_t,
+          gap: ${P}.profile.getState().profile.doors.gap,
+        };
+      `);
+      measurements.f8 = f8;
+      check('F8 — ONE slab covers all three, and the scene drew exactly one',
+        f8.stored === 1 && f8.drawn.length === 1,
+        `${f8.stored} stored · ${f8.drawn.length} drawn`);
+      check('F8 — …38 mm thick, the decided UK standard',
+        f8.geometry && f8.geometry.h === 38 && f8.drawn[0] && f8.drawn[0].t === 38,
+        `${f8.geometry ? f8.geometry.h : '?'} mm`);
+      check('F8 — …20 mm proud of the DOOR plane, and flush at the wall',
+        f8.geometry
+        && f8.geometry.d === f8.unitDepth + f8.gap + f8.frontT + 20
+        && f8.geometry.z === 0 && f8.geometry.overhang.wall === 0,
+        `${f8.geometry ? f8.geometry.d : '?'} deep over a ${f8.unitDepth} carcass + ${f8.gap} gap + ${f8.frontT} door + 20`);
+      check('F8 — …and it runs PAST the end panel rather than stopping at the carcass',
+        f8.geometry && f8.geometry.w > 1800 + 2 * 10,
+        `${f8.geometry ? f8.geometry.w : '?'} mm over an 1800 run (1820 without a panel)`);
+      // Framed off the units, but WIDE and from above: the slab stands above
+      // every mesh `frameUnits` measures, so a tight frame crops the subject.
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [0.85, 0.95, 1.9]);
+      await page.sleep(900);
+      await shot('8b-one-worktop-over-the-run-from-the-wall-out-past-the-panel');
+      await frameUnits(await page.evaluate('return window.__t30.ids;'), [1.7, 0.55, 1.1]);
+      await page.sleep(900);
+      await shot('8c-the-overhang-20-proud-of-the-doors-flush-at-the-wall');
+
+      // AND NO HOLE MOVED, which is what "design-layer auto-part" means.
+      const holes = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t30.ids[0]);
+        return { drills: r.drills.length, panels: r.panels.length };
+      `);
+      check('F8 — the cabinets under it are cut exactly as they were',
+        holes.drills > 0 && holes.panels > 0,
+        `${holes.panels} panels, ${holes.drills} holes — and the engine has never heard of a worktop`);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

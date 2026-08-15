@@ -32,6 +32,8 @@ import {
   setCarcassTypeCount, withFrontColour, withRunMaterial,
 } from '../engine/design.js';
 import { handleClassCount } from '../engine/handles.js';
+// Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
+import { worktopEligible, worktopsFor } from '../engine/worktop.js';
 import {
   carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
   projectFrontThickness, setFrontTypeCount, sourceById, sourceTakesFacing,
@@ -3437,6 +3439,75 @@ export const useProjectStore = create((set, get) => ({
       dirty: true,
     }));
     return wanted;
+  },
+
+  // ─── THE WORKTOP (turn 30, CLAUDE.md F8) ─────────────────────────────────
+  //
+  // Owner: select two or more base cabinets and ONE worktop covers the run
+  // "od ściany aż do paneli". It is a DESIGN-LAYER auto-part like the end
+  // panels — stored with the project, drawn in the room, reaching no hole and
+  // no fixture — so these three actions are the whole of its plumbing and
+  // `computeCabinet()` is not involved at all.
+  //
+  // The eligibility test is `engine/worktop.js worktopEligible`, which is
+  // `buildRuns`' own four rules asked of a SELECTION rather than of the room:
+  // one wall, no turned unit, one top height, base cabinets. It SAYS why when
+  // it refuses, because "nothing happened" is the one answer a button must
+  // never give.
+
+  /**
+   * One worktop over the cabinets named.
+   *
+   * @returns {{ok:boolean, id:string|null, error:string|null}}
+   */
+  addWorktop: (unitIds) => {
+    const s = get();
+    const wanted = [...new Set((unitIds || []).filter(Boolean))];
+    const units = wanted.map((id) => s.units.find((u) => u.id === id)).filter(Boolean);
+    const profile = getCabinetProfile();
+    const gate = worktopEligible(units, profile);
+    if (!gate.ok) return { ok: false, id: null, error: gate.why };
+    const design = migrateDesign(s.project.design);
+    // A cabinet lies under ONE slab. Asking for a worktop over a run that
+    // already has one REPLACES it rather than stacking a second on top —
+    // which is what a joiner means by "put a worktop on these".
+    const kept = design.worktops.filter((w) => !w.unitIds.some((id) => wanted.includes(id)));
+    const id = uid('worktop');
+    get().setDesign({
+      worktops: [...kept, {
+        id, unitIds: wanted, decor: null, extendLeft: 0, extendRight: 0, extendFront: 0,
+      }],
+    });
+    return { ok: true, id, error: null };
+  },
+
+  /** Take one off. No confirmation — Undo covers it (turn 25's rule, F11). */
+  removeWorktop: (worktopId) => {
+    const design = migrateDesign(get().project.design);
+    get().setDesign({ worktops: design.worktops.filter((w) => w.id !== worktopId) });
+    return worktopId;
+  },
+
+  /**
+   * Draw an extension on one — the interaction family an end-panel edit is in.
+   * Nothing is computed from these that a person has not typed.
+   */
+  extendWorktop: (worktopId, patch) => {
+    const design = migrateDesign(get().project.design);
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, ...patch } : w)),
+    });
+    return worktopId;
+  },
+
+  /** Every slab this project carries, with its geometry resolved. */
+  worktopsOf: () => {
+    const s = get();
+    return worktopsFor({
+      records: migrateDesign(s.project.design).worktops,
+      units: s.units,
+      profile: getCabinetProfile(),
+    });
   },
 
   /** Every door of this cabinet that has been given a hinge by hand. */

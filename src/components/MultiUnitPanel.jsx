@@ -62,6 +62,15 @@ export default function MultiUnitPanel({ ids, onClose }) {
   // profile's 38 where they do not. `commonValue` is the same tested helper
   // every other shared field here uses — a field that disagrees says "mixed"
   // and writes nothing until a human types.
+  // Turn 30 (CLAUDE.md F8): the slab over this selection, where there is one.
+  const addWorktop = useProjectStore((s) => s.addWorktop);
+  const removeWorktop = useProjectStore((s) => s.removeWorktop);
+  const worktopsOf = useProjectStore((s) => s.worktopsOf);
+  const worktopHere = useMemo(
+    () => worktopsOf().find((w) => ids.every((id) => w.unitIds.includes(id))) || null,
+    [worktopsOf, ids, units],
+  );
+
   const extendable = selected.filter((u) => getUnitType(u.type)?.doorExtend).length;
   const extendCommon = commonValue(
     selected.filter((u) => getUnitType(u.type)?.doorExtend),
@@ -274,6 +283,40 @@ export default function MultiUnitPanel({ ids, onClose }) {
               Remove doors {withDoors ? `(${withDoors})` : ''}
             </button>
           </div>
+          {/* ─── TURN 30 (CLAUDE.md F8): ONE WORKTOP OVER THE RUN ──────────
+              The owner: select two or more base cabinets and one slab covers
+              them "od ściany aż do paneli". It is a DESIGN-LAYER auto-part
+              like the end panels — it reaches no hole and no fixture — and the
+              button SAYS WHY when it cannot: one wall, no turned unit, one top
+              height, base cabinets. "Nothing happened" is the one answer a
+              button must never give. */}
+          <div className="flex gap-1" data-bulk-worktop="1">
+            <button
+              type="button"
+              className="cc-btn flex-1"
+              data-add-worktop="1"
+              title="One worktop over these cabinets — from the wall out past the end panels"
+              onClick={() => {
+                const res = addWorktop(ids);
+                if (res.ok) notify(`Worktop over ${ids.length} cabinets — 38 mm, 20 mm proud of the doors.`, 'ok');
+                else notify(res.error, 'warn');
+              }}
+            >
+              Add worktop ({ids.length})
+            </button>
+            {worktopHere ? (
+              <button
+                type="button"
+                className="cc-btn px-2"
+                data-remove-worktop={worktopHere.id}
+                title="Take it off — Undo puts it back"
+                onClick={() => { removeWorktop(worktopHere.id); notify('Worktop removed.'); }}
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
+
           {/* ─── Turn 16 (CLAUDE.md F4.2): DOOR EXTEND, over a selection ───
               "The function is MISSING there entirely. Add it beside Add/Remove
               doors: one action, one undo step, same default-38-editable field,

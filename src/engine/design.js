@@ -100,6 +100,18 @@ export const DEFAULT_DESIGN = {
   shelves: {
     pinSetback: null,
   },
+  // ─── TURN 30 (CLAUDE.md F8): THE WORKTOPS ────────────────────────────────
+  //
+  // One record per slab: which cabinets it covers, the decor it is cut from
+  // and the extensions somebody has drawn on it afterwards. A DESIGN-layer
+  // auto-part like the end panels — stored with the project, reaching no hole
+  // and no fixture — so a project saved before this turn opens with an empty
+  // list and every golden fixture is untouched by construction.
+  //
+  // The material is the PROJECT's worktop decor by default (`decor: null`);
+  // CLAUDE.md puts a per-worktop override in a later chat-fix, and the field
+  // is here so that fix is a value rather than a shape change.
+  worktops: [],
   fronts: {
     style: 'S',
     // Handles are a later phase — the slot is here so the shape does not change
@@ -325,6 +337,18 @@ export function migrateDesign(design) {
     shelves: {
       pinSetback: Number(d.shelves?.pinSetback) > 0 ? Number(d.shelves.pinSetback) : null,
     },
+    // Turn 30 (CLAUDE.md F8): a worktop needs an id and at least two cabinets
+    // to lie on; anything else in a stored record is not a worktop.
+    worktops: (Array.isArray(d.worktops) ? d.worktops : [])
+      .map((w) => ({
+        id: String(w?.id || ''),
+        unitIds: Array.isArray(w?.unitIds) ? w.unitIds.map(String).filter(Boolean) : [],
+        decor: w?.decor ?? null,
+        extendLeft: Number(w?.extendLeft) > 0 ? Number(w.extendLeft) : 0,
+        extendRight: Number(w?.extendRight) > 0 ? Number(w.extendRight) : 0,
+        extendFront: Number(w?.extendFront) > 0 ? Number(w.extendFront) : 0,
+      }))
+      .filter((w) => w.id && w.unitIds.length >= 2),
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: normaliseHandle(d.fronts?.handle),

@@ -1239,6 +1239,30 @@ export const DEFAULT_CABINET_PROFILE = {
       setback: 50,          // recessed from the front face (toe kick)
       thickness: null,      // null = the unit's board thickness
     },
+    // ─── THE WORKTOP (turn 30, CLAUDE.md F8) ───────────────────────────
+    //
+    // Owner: two or more base cabinets take ONE worktop "od ściany aż do
+    // paneli" — from the wall right out to the end panels. CLAUDE.md decides
+    // the three numbers so this turn does not have to, and they live here
+    // rather than in the engine because they are the workshop's:
+    //
+    //   thickness 38    UK standard. 770 carcass + 100 legs + 38 lands on the
+    //                   900 line, which is why it is 38 and not 40.
+    //   front 20        proud of the DOOR plane. A slab flush with the doors
+    //                   would drip down them.
+    //   side 10         past an END PANEL — past the panel, not the carcass.
+    //   wall            flush, and there is no number for it: nothing hangs
+    //                   over a wall, and the scribe closes that side.
+    //
+    // A DESIGN-LAYER auto-part like the end panels: it reaches no hole and no
+    // fixture, and `computeCabinet()` neither knows nor asks about it.
+    worktop: {
+      enabled: true,
+      thickness: 38,
+      frontOverhang: 20,
+      sideOverhang: 10,
+      minUnits: 2,          // "select 2+ base cabinets"
+    },
     topInfill: {
       defaultHeight: 40,    // the visible face; "40" is what a workshop says
       minHeight: 10,
@@ -2241,6 +2265,12 @@ export const DEFAULT_CABINET_PROFILE = {
     // `run` is the app's selection blue, which is where it started; `inner` is
     // the app's gold, the colour every other "this is the thing you are working
     // on" mark in the app already wears.
+    // ─── TURN 30 (CLAUDE.md F8): WHAT A WORKTOP LOOKS LIKE ────────────────
+    // Until a per-worktop decor arrives (CLAUDE.md puts it in a later
+    // chat-fix), a slab is drawn in the workshop's own worktop grey. It is a
+    // PICTURE number and nothing downstream of it is cut.
+    worktop: { colour: '#6f6f72' },
+
     addPlus: { run: '#2B6CB0', inner: '#C9A227' },
   },
 
@@ -3583,6 +3613,9 @@ export function migrateCabinetProfile(profile) {
         },
       },
       sheen: { ...D.appearance.sheen, ...profile.appearance?.sheen },
+      // Turn 30 (CLAUDE.md F8): a profile saved before the worktop existed has
+      // no colour for one, and a slab drawn in `undefined` is a black slab.
+      worktop: { ...D.appearance.worktop, ...profile.appearance?.worktop },
       // Turn 21 (CLAUDE.md F3): a profile stored before this turn has no
       // `cuts` at all and must read as the default — off.
       cuts: { ...D.appearance.cuts, ...profile.appearance?.cuts },

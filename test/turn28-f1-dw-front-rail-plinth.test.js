@@ -208,10 +208,17 @@ test('F1.4 the kit DECLARES what it is made of, in the keys every kit answers', 
   assert.deepEqual(getUnitType('DW_PANEL').carcass, {
     top: 'rail', sides: 'none', bottom: 'none', back: 'none',
   });
-  // `sides` and `bottom` are QUESTIONS now, and absent on every kit that has
-  // them — so nothing but the D/W moved a hundredth.
+  // Turn 30 (CLAUDE.md F19): the corner unit answers all four with 'none' —
+  // its carcass is an L and the standard one is not that shape, so the engine
+  // emits none of it and the L builder puts the boards in instead. It is the
+  // second kit to answer these keys, and it answers them in the same words.
+  assert.deepEqual(getUnitType('CORNER').carcass, {
+    top: 'none', sides: 'none', bottom: 'none', back: 'none',
+  });
+  // …and on every kit that HAS the standard carcass they are still absent, so
+  // nothing but those two moved a hundredth.
   for (const id of UNIT_TYPE_ORDER) {
-    if (id === 'DW_PANEL') continue;
+    if (id === 'DW_PANEL' || id === 'CORNER') continue;
     const { carcass } = UNIT_TYPES[id];
     assert.equal(carcass.sides, undefined, `${id} says nothing about sides`);
     assert.equal(carcass.bottom, undefined, `${id} says nothing about a bottom`);

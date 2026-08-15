@@ -3,7 +3,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { HEIGHT_GROUPS, getUnitType } from '../engine/types.js';
+import { HEIGHT_GROUPS, getUnitType, profilePath } from '../engine/types.js';
 import { doorCountFor, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls } from '../engine/room.js';
@@ -23,6 +23,7 @@ import Section from './Section.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import CncTree from './CncTree.jsx';
 import UnitWarnings from './UnitWarnings.jsx';
+import ShelfHingeClash from './ShelfHingeClash.jsx';
 
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
@@ -90,6 +91,9 @@ export default function RightPanel() {
   // which React reports as "Maximum update depth exceeded".
   const storedDesign = useProjectStore((s) => s.project.design);
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
+  // Turn 30 (CLAUDE.md F10): what the PROJECT resolves a front style to, so
+  // "Project default" can name it rather than being a blank line.
+  const projectFrontStyle = design.fronts.style;
   const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
   const walls = useMemo(() => roomWalls(room), [room]);
@@ -102,6 +106,11 @@ export default function RightPanel() {
   const unit = units.find((u) => u.id === selectedUnitId) || null;
   const result = unit ? unitResult(unit.id) : null;
   const type = unit ? getUnitType(unit.type) : null;
+  // Turn 30 (CLAUDE.md F15): a kit that houses an appliance has an APERTURE in
+  // its own defaults — the built-in fridge and the american one are the same
+  // KIT_FRIDGE with different envelopes, so the control asks the kit rather
+  // than naming a type.
+  const apertureDefault = type ? (profilePath(profile, type.defaultsKey)?.fridgeH ?? null) : null;
   // Turn 22 (CLAUDE.md F1.1): the per-unit cornice option, resolved. A stored
   // value this workshop does not buy reads as 'none' rather than as itself.
   const corniceValue = unit ? corniceOption(unit.params.cornice, profile) : 0;
@@ -239,6 +248,15 @@ export default function RightPanel() {
         {element && (
           <ElementSection unit={unit} element={element} onClose={clearElement} />
         )}
+
+        {/* ─── TURN 30 (CLAUDE.md F7): A SHELF AND A HINGE AT ONE HEIGHT ────
+            ABOVE the sections and outside every one of them, deliberately: a
+            conflict prompt folded inside a collapsed "Carcass" is a prompt
+            nobody ever expands to find. It shows only when there IS a clash,
+            so the panel is not permanently a row longer, and it ASKS rather
+            than fixes — two buttons, each opening the editor where the
+            decision belongs. No silent auto-fix. */}
+        <ShelfHingeClash unitId={unit.id} />
 
         {/* ── carcass ── */}
         <Section
@@ -395,8 +413,24 @@ export default function RightPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
+              {/* ─── TURN 30 (CLAUDE.md F10): …AND "PROJECT DEFAULT" ─────────
+                  The project's front style propagates to every front WITHOUT
+                  ITS OWN OVERRIDE, and until tonight no cabinet could say it
+                  had none: `defaultParamsFor` stamped one at birth, so this
+                  select could only ever show a choice. The empty value is that
+                  missing answer — the same "Reset to project" grammar the
+                  front-type PALETTE already uses — and it names the style the
+                  project resolves to, so the field is never a blank. */}
               <span className="cc-label">Front type</span>
-              <select className="cc-input" value={unit.params.front_type} onChange={(e) => updateUnitParams(unit.id, { front_type: e.target.value })}>
+              <select
+                className="cc-input"
+                data-unit-front-type="1"
+                value={unit.params.front_type || ''}
+                onChange={(e) => updateUnitParams(unit.id, { front_type: e.target.value || null })}
+              >
+                <option value="">
+                  Project default ({profile.front.types[projectFrontStyle]?.label || projectFrontStyle})
+                </option>
                 {Object.entries(profile.front.types).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
@@ -423,7 +457,7 @@ export default function RightPanel() {
           )}
 
           {/* per-type parameters: only the ones this kit actually has */}
-          {(type.mount === 'wall' || type.doorExtend || unit.type === 'FRIDGE') && (
+          {(type.mount === 'wall' || type.doorExtend || apertureDefault != null) && (
             <div className="grid grid-cols-2 gap-2">
               {type.mount === 'wall' && (
                 <div>
@@ -435,12 +469,16 @@ export default function RightPanel() {
                   />
                 </div>
               )}
-              {unit.type === 'FRIDGE' && (
+              {/* Turn 30 (CLAUDE.md F15): the aperture is offered by any kit
+                  that HAS one — the built-in housing and the american one are
+                  the same KIT_FRIDGE with different envelopes, so this asks the
+                  kit rather than the type id. */}
+              {apertureDefault != null && (
                 <div>
                   <span className="cc-label">Fridge height</span>
                   <NumberField
                     title="Inner clearance for the appliance"
-                    value={unit.params.fridge_h ?? profile.fridgeUnit.defaults.fridgeH}
+                    value={unit.params.fridge_h ?? apertureDefault}
                     onCommit={(v) => updateUnitParams(unit.id, { fridge_h: v })}
                   />
                 </div>

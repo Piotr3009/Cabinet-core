@@ -59,6 +59,14 @@ test('F1.2 — the model’s flange plane is DERIVED from the bore, not typed', 
   const flange = C.cupBoreFileZ - H.cupDepth;
   assert.equal(flange, 40.3);
   assert.equal(Math.round((C.fileMinZ - flange) * 100) / 100, C.modelOrigin.z);
+  // ─── TURN 30 (CLAUDE.md F1): AND THE SAME FLANGE IS THE DATUM ───────────
+  // `modelOrigin` says how far THIS file's bbox corner moves; `fileDatum` says
+  // which point of the SHARED authoring frame stands on the drilled cup. The
+  // flange plane is the same plane in both, so the identity has a third leg
+  // now and a re-measured bore still cannot leave one of them behind.
+  assert.equal(C.fileDatum.z, flange, 'the datum’s z IS the flange plane');
+  assert.equal(C.fileDatum.x, -7.75, 'and its x is the cup’s own centre line');
+  assert.equal(C.fileDatum.y, 0, 'and it sits on the hinge row');
 
   // …and the measurements really are the file's.
   const box = hingeFileBox();
@@ -198,7 +206,11 @@ test('F1.3 — and the guard would CATCH the fault it was written for', () => {
   const r = cabinets().plain;
   const leaf = leaves(r)[0];
   const h = hardwareInstances(r, P).hinges.find((x) => x.panelId === leaf.id);
-  const before = { ...C, modelOrigin: { ...C.modelOrigin, z: -64.78 } };
+  // Turn 30 (CLAUDE.md F1): the body is placed by `fileDatum` now, so turn
+  // 24's fault is restored where turn 24's fault actually lived — on the
+  // flange plane, read as the cup slab's NEAR end (35.3) instead of its far
+  // end less the bore (40.3). Same wrong picture, same 16 mm, one number.
+  const before = { ...C, fileDatum: { ...C.fileDatum, z: 35.3 } };
   const was = hingeReach(leaf, h, 0, before);
   const floor = doorHingeDatum(leaf).innerZ + h.cupDepth;
   assert.ok(Math.abs(was.a - (leaf.box.z + 16)) < 0.01, `the old datum reached ${was.a - leaf.box.z} into the leaf`);

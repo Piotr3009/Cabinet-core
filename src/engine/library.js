@@ -72,13 +72,12 @@ export const KITCHEN_LIBRARY = [
         ],
       },
       { kind: 'type', id: 'sink', typeId: 'SINK', label: 'Sink' },
-      {
-        kind: 'soon',
-        id: 'corner',
-        label: 'Corner',
-        hint: 'The cabinet that turns a run — L-shelves, left or right',
-        reason: NO_PATTERN,
-      },
+      // ─── Turn 30 (CLAUDE.md F19): the corner unit, as GEOMETRY ───────────
+      // KIT_BUDR_FULL turned out to be the three-drawer base unit, so there is
+      // NO parent kit for a corner — and therefore no lines to inherit. The
+      // L-carcass ships as boards and a BOM, with not one hole in it, and the
+      // row says so.
+      { kind: 'type', id: 'corner', typeId: 'CORNER', label: 'Corner', hint: 'The cabinet that turns a run — L-carcass only, no LISP defines its drilling' },
       {
         kind: 'soon', id: 'l-shape', label: 'L-shape', hint: 'One carcass on two walls', reason: NO_PATTERN,
       },
@@ -89,12 +88,16 @@ export const KITCHEN_LIBRARY = [
       // BLOCKERS and is not in the kits.
       { kind: 'type', id: 'dishwasher', typeId: 'DW_PANEL', label: 'D/W panel', hint: 'Dishwasher, washing machine or fridge front — a front and nothing else' },
       { kind: 'type', id: 'oven-base', typeId: 'OVEN_BASE', label: 'Oven', hint: 'Built-under oven, on its shelf, with a drawer below' },
-      {
-        kind: 'soon', id: 'bin-storage', label: 'Bin storage', hint: 'Pull-out bins', reason: NO_PATTERN,
-      },
-      {
-        kind: 'soon', id: 'wine-rack', label: 'Wine rack', hint: 'Bottle cradles instead of shelves', reason: NO_PATTERN,
-      },
+      // ─── Turn 30 (CLAUDE.md F16): the bin unit OPENS ────────────────────
+      // KIT_BUD's carcass and door, hole for hole. The pull-out itself is a
+      // bought mechanism: a BOM line and a placeholder volume, because the
+      // manufacturer's own fixing is not this repo's truth.
+      { kind: 'type', id: 'bin-storage', typeId: 'BIN', label: 'Bin storage', hint: 'Base unit for a pull-out bin — the mechanism is ordered, not cut' },
+      // ─── Turn 30 (CLAUDE.md F17): the wine rack OPENS, as GEOMETRY ───────
+      // KIT_BUD's carcass with a lattice of plain boards in it. No LISP line
+      // and no published pattern states a wine rack's joints, so the boards
+      // ship UNDRILLED and unnotched and the gap is named in the report.
+      { kind: 'type', id: 'wine-rack', typeId: 'WINE', label: 'Wine rack', hint: 'Open lattice of cells — boards only, no drilling truth exists yet' },
       {
         kind: 'soon',
         id: 'small-fridge',
@@ -109,6 +112,12 @@ export const KITCHEN_LIBRARY = [
         hint: 'The slimline filler unit — baskets or not',
         reason: NO_PATTERN,
       },
+      // ─── Turn 30 (CLAUDE.md F18): the twin cupboard ──────────────────────
+      // A cupboard whose face is TWO leaves, at the width a pair is worth
+      // hanging at. KIT_BUD_FULL cuts it and the two-leaf arithmetic is the
+      // engine's own; see engine/types.js TWIN for what KIT_DOOR_DOUBLE.lsp
+      // turned out to be.
+      { kind: 'type', id: 'twin-cupboard', typeId: 'TWIN', label: 'Twin cupboard', hint: 'Base cupboard with a pair of doors' },
       // Kept rather than culled: it is a kit the workshop already builds.
       { kind: 'type', id: 'low', typeId: 'LOW_CABINET' },
     ],
@@ -121,12 +130,19 @@ export const KITCHEN_LIBRARY = [
     items: [
       { kind: 'type', id: 'tall', typeId: 'BUDTALL', label: 'Standard' },
       { kind: 'type', id: 'fridge', typeId: 'FRIDGE', label: 'Fridge housing' },
+      // ─── Turn 30 (CLAUDE.md F13): CARGO 300 ─────────────────────────────
+      // KIT_BUDTALL's carcass and door at 300 wide. The pull-out frame is a
+      // bought mechanism: it is in the BOM and it drills nothing, because the
+      // manufacturer's floor-and-top fixing is not this repo's truth yet.
+      { kind: 'type', id: 'cargo-300', typeId: 'CARGO', hint: 'Tall pull-out larder — the frame is ordered, not cut' },
       {
         kind: 'soon', id: 'basket-tall', label: 'Basket tall', hint: 'Wire baskets top to bottom', reason: NO_PATTERN,
       },
-      {
-        kind: 'soon', id: 'pantry', label: 'Pantry', hint: 'Shelved larder with door racks', reason: NO_PATTERN,
-      },
+      // ─── Turn 30 (CLAUDE.md F14): the pantry OPENS ───────────────────────
+      // KIT_BUDTALL's carcass and door with the wardrobe kit's own internal
+      // drawer machinery inside it — boxes, MOVENTO runner rows and all. The
+      // drawers live behind the doors and have no faces.
+      { kind: 'type', id: 'pantry', typeId: 'PANTRY', hint: 'Larder with internal Blum drawers behind its doors' },
       {
         kind: 'soon',
         id: 'pantry-worktop',
@@ -144,13 +160,11 @@ export const KITCHEN_LIBRARY = [
         hint: 'Single or double appliance housing',
         reason: 'No kit defines the appliance aperture yet — the pattern comes first',
       },
-      {
-        kind: 'soon',
-        id: 'american-fridge',
-        label: 'American fridge',
-        hint: 'Side-by-side housing',
-        reason: 'The owner writes this pattern with the assistant first',
-      },
+      // ─── Turn 30 (CLAUDE.md F15): the american housing OPENS ─────────────
+      // KIT_FRIDGE.lsp is the truth and it EXISTS: every panel it cuts already
+      // follows the width and the aperture, so an american size is a wider
+      // envelope rather than a new carcass. The drilling stays the kit's own.
+      { kind: 'type', id: 'american-fridge', typeId: 'FRIDGE_US', hint: 'Side-by-side housing — KIT_FRIDGE at american sizes' },
     ],
   },
   {
@@ -160,13 +174,12 @@ export const KITCHEN_LIBRARY = [
     hint: 'Hung above the worktop',
     items: [
       { kind: 'type', id: 'wall', typeId: 'WUD', label: 'Standard' },
-      {
-        kind: 'soon',
-        id: 'glass-unit',
-        label: 'Glass unit',
-        hint: 'Glass shelves behind a glass front',
-        reason: 'Glass is not a board — no kit defines the frame, the shelf fixing or the cut list yet',
-      },
+      // ─── Turn 30 (CLAUDE.md F21): the glass wall unit OPENS ──────────────
+      // KIT_WUD's carcass and door, hole for hole — a glass door takes the
+      // same cups. What is new is the FRONT STYLE: the shaker's own frame,
+      // with the recess taken all the way through, and a pane ordered for the
+      // hole. Glass SHELVES are a separate question and are not shipped.
+      { kind: 'type', id: 'glass-unit', typeId: 'WUD_GLASS', label: 'Glass unit', hint: 'Wall unit with a glazed door — the pane is ordered, not cut' },
       {
         kind: 'soon', id: 'l-shape-wall', label: 'L-shape wall', hint: 'One carcass on two walls', reason: NO_PATTERN,
       },

@@ -1,0 +1,570 @@
+{
+ "steps": [
+  {
+   "label": "R2 — the live bucket",
+   "ok": null,
+   "blocked": "this session's egress policy refuses the storage host",
+   "detail": "runners: manifest answered 403 · hinges: manifest answered 403"
+  },
+  {
+   "label": "R8 — the app is pointed at the silent showroom",
+   "ok": true,
+   "detail": "http://127.0.0.1:4174"
+  },
+  {
+   "label": "F1 — the leaves really are wearing the 110° file",
+   "ok": true,
+   "detail": "01-FL: 71B3550_10001.glb (110°) · 01-FR: 71B3550_10001.glb (110°)"
+  },
+  {
+   "label": "F1 — the leaves really are wearing the 155° file",
+   "ok": true,
+   "detail": "01-FL: 71B7550_15001.glb (155°) · 01-FR: 71B7550_15001.glb (155°)"
+  },
+  {
+   "label": "F1 — the 110° CUP reaches no deeper than its own ⌀35 bore, at 0°/90°/110°, both hands",
+   "ok": true,
+   "detail": "L@0°: 11.00 · R@0°: 11.00 · L@90°: 11.00 · R@90°: 11.00 · L@110°: 11.00 · R@110°: 11.00 mm into a 25 mm leaf (bore 11)"
+  },
+  {
+   "label": "F1 — …and with the door SHUT the 110° ARM lies behind the leaf, not in it",
+   "ok": true,
+   "detail": "L: -14.10 mm · R: -14.10 mm"
+  },
+  {
+   "label": "F1 — the 155° CUP reaches no deeper than its own ⌀35 bore, at 0°/90°/110°, both hands",
+   "ok": true,
+   "detail": "L@0°: 11.00 · R@0°: 11.00 · L@90°: 11.00 · R@90°: 11.00 · L@110°: 11.00 · R@110°: 11.00 mm into a 25 mm leaf (bore 11)"
+  },
+  {
+   "label": "F1 — …and with the door SHUT the 155° ARM lies behind the leaf, not in it",
+   "ok": true,
+   "detail": "L: -14.10 mm · R: -14.10 mm"
+  },
+  {
+   "label": "F1 — the 155° cup sits exactly where the 110° cup sits",
+   "ok": true,
+   "detail": "L@0°: 11.00 vs 11.00 · R@0°: 11.00 vs 11.00 · L@90°: 11.00 vs 11.00 · R@90°: 11.00 vs 11.00 · L@110°: 11.00 vs 11.00 · R@110°: 11.00 vs 11.00"
+  },
+  {
+   "label": "F1 — the 155° hinge’s knuckle is still ONE point, at 0°/90°/110°, both hands",
+   "ok": true,
+   "detail": "L@0°: 0.000 mm · R@0°: 0.000 mm · L@90°: 0.000 mm · R@90°: 0.000 mm · L@110°: 0.000 mm · R@110°: 0.000 mm"
+  },
+  {
+   "label": "F1 — …on the MEASURED pin, unmoved by the bigger file",
+   "ok": true,
+   "detail": "(-10.329999999999998, 0, 2.5600000000000023) mm from the cup centre"
+  },
+  {
+   "label": "F1 — …and the arm still keeps the CARCASS’s attitude",
+   "ok": true,
+   "detail": "L@0°: 0.000° · R@0°: 0.000° · L@90°: 0.000° · R@90°: 0.000° · L@110°: 0.000° · R@110°: 0.000°"
+  },
+  {
+   "label": "F2 — double-clicking the LEAF opens ONE window, and it is the DOOR’s",
+   "ok": true,
+   "detail": "01 · Door · left — of 01-FL"
+  },
+  {
+   "label": "F2 — …carrying BOTH sections: the piece and its hinges",
+   "ok": true,
+   "detail": "sections A,B · 6 hinge rows"
+  },
+  {
+   "label": "F2 — …and every control of the two old windows is in it",
+   "ok": true,
+   "detail": "data-hinge-assign · data-hinge-modal-rows · data-hinge-modal-add · data-hinge-up · data-hinge-down · data-hinge-modal-remove · data-handle-section · data-remove-door · data-piece-weight"
+  },
+  {
+   "label": "F2 — …opened at section A: the window is not scrolled",
+   "ok": true,
+   "detail": "scrollTop 0, ringed row null"
+  },
+  {
+   "label": "F2 — …and there is exactly ONE of it on the screen",
+   "ok": true,
+   "detail": "1 windows"
+  },
+  {
+   "label": "F2 — double-clicking a HINGE opens the SAME window, on the same door",
+   "ok": true,
+   "detail": "01 · Door · left — of 01-FL"
+  },
+  {
+   "label": "F2 — …scrolled to section B, which was NOT scrolled to from the leaf",
+   "ok": true,
+   "detail": "scrollTop 344 of 344, section B 310 px down a 849 px body (from the leaf: 0)"
+  },
+  {
+   "label": "F2 — …with THAT hinge’s row ringed",
+   "ok": true,
+   "detail": "row 1 of 6"
+  },
+  {
+   "label": "F2 — …and it is still ONE window, with section A still in it",
+   "ok": true,
+   "detail": "sections A,B"
+  },
+  {
+   "label": "F2 — the ±5 mm arrow in section B still moves the hinge it always moved",
+   "ok": true,
+   "detail": "100 → 105 mm (stride 5)"
+  },
+  {
+   "label": "F3 — the divider takes ONE ladder, not two stacked on each other",
+   "ok": true,
+   "detail": "6 holes at 6 distinct points"
+  },
+  {
+   "label": "F3 — …and nothing said means LEFT, the profile’s own one line",
+   "ok": true,
+   "detail": "face L, summary {\"VPART-1\":\"L\"}"
+  },
+  {
+   "label": "F3 — …the LEFT bay’s shelf is the one that put them there",
+   "ok": true,
+   "detail": "rows 732, 782, 832 (the left shelf is at 800 world, the divider stands one board up)"
+  },
+  {
+   "label": "F3 — the L / R setting is in the DIVIDER’s own modal",
+   "ok": true,
+   "detail": "2 buttons"
+  },
+  {
+   "label": "F3 — pressing Right moves the ladder to the RIGHT bay’s shelf",
+   "ok": true,
+   "detail": "face R, rows 1332, 1382, 1432"
+  },
+  {
+   "label": "F3 — …and the SIDES are untouched by any of it",
+   "ok": true,
+   "detail": "BUL 6→6, BUR 6→6"
+  },
+  {
+   "label": "F4 — the divider’s foot is screwed through the BOTTOM again",
+   "ok": true,
+   "detail": "BOTTOM ⌀3 SCREWS_3MM · BOTTOM ⌀3 SCREWS_3MM"
+  },
+  {
+   "label": "F4 — …at the LISP’s own two points: 99 from the front, and the divider’s depth less 50",
+   "ok": true,
+   "detail": "99 and 440 mm from the front (the divider is 490 deep)"
+  },
+  {
+   "label": "F4 — …on the divider’s own centre line across the width",
+   "ok": true,
+   "detail": "39 mm (dpInsetCenter)"
+  },
+  {
+   "label": "F4 — and the TOP takes NOTHING, which is the LISP and not an oversight",
+   "ok": true,
+   "detail": "0 holes in the top board"
+  },
+  {
+   "label": "F4 — the bottom board is mounted, so the picture can be looked at",
+   "ok": true,
+   "detail": "{\"mounted\":true}"
+  },
+  {
+   "label": "F5 — with nothing said the app drills the LISP’s 70, front and back",
+   "ok": true,
+   "detail": "columns at 70 and 470 on a 540 mm board · project says null"
+  },
+  {
+   "label": "F5 — the setback has a control of its own in Settings",
+   "ok": true,
+   "detail": "1 fields"
+  },
+  {
+   "label": "F5 — the owner’s 50 moves BOTH columns, and moves the same number of holes",
+   "ok": true,
+   "detail": "columns at 50 and 490 · 24 holes, same as 24"
+  },
+  {
+   "label": "F5 — …and the summary the drawings and the BOM read moved with it",
+   "ok": true,
+   "detail": "[50,490]"
+  },
+  {
+   "label": "F7 — the clash is FOUND, and the number is the derived 71.25 mm window",
+   "ok": true,
+   "detail": "rows 470 vs hinges 100/470/670 — 0 mm apart"
+  },
+  {
+   "label": "F7 — …and it is SHOWN, with the two choices the owner named",
+   "ok": true,
+   "detail": "1 prompt · 1 + 1 buttons"
+  },
+  {
+   "label": "F7 — …saying the number rather than \"too close\"",
+   "ok": true,
+   "detail": "▲A shelf at 470 mm and a hinge at 470 mm are 0 mm apart — closer than the 71.25 mm the cup and the shelf’s own sleeves need between them.Remove sleeves at this shelfMove the hinge"
+  },
+  {
+   "label": "F7 — \"Remove sleeves at this shelf\" opens THAT SHELF’s own window",
+   "ok": true,
+   "detail": "{\"of\":\"SHELF-1\",\"sections\":\"A\"}"
+  },
+  {
+   "label": "F7 — \"Move the hinge\" opens the DOOR’s window at section B, on that row",
+   "ok": true,
+   "detail": "01 · Door · left — ringed row 1, wanted 1"
+  },
+  {
+   "label": "F7 — NO SILENT AUTO-FIX: pressing both buttons changed no hole at all",
+   "ok": true,
+   "detail": "rows 470 · hinges 100/470/670 · still 1 clash"
+  },
+  {
+   "label": "F8 — the button is on the MULTI-selection",
+   "ok": true,
+   "detail": "1 buttons"
+  },
+  {
+   "label": "F8 — ONE slab covers all three, and the scene drew exactly one",
+   "ok": true,
+   "detail": "1 stored · 1 drawn"
+  },
+  {
+   "label": "F8 — …38 mm thick, the decided UK standard",
+   "ok": true,
+   "detail": "38 mm"
+  },
+  {
+   "label": "F8 — …20 mm proud of the DOOR plane, and flush at the wall",
+   "ok": true,
+   "detail": "606 deep over a 558 carcass + 3 gap + 25 door + 20"
+  },
+  {
+   "label": "F8 — …and it runs PAST the end panel rather than stopping at the carcass",
+   "ok": true,
+   "detail": "1845 mm over an 1800 run (1820 without a panel)"
+  },
+  {
+   "label": "F8 — the cabinets under it are cut exactly as they were",
+   "ok": true,
+   "detail": "7 panels, 77 holes — and the engine has never heard of a worktop"
+  },
+  {
+   "label": "F9 — the per-unit control’s own buttons are on the MULTI-selection",
+   "ok": true,
+   "detail": "3 buttons (None + the profile's two heights)"
+  },
+  {
+   "label": "F9 — nothing is fitted to start with",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "label": "F9 — ONE press fits it to all three",
+   "ok": true,
+   "detail": "heights 100"
+  },
+  {
+   "label": "F9 — …and it is ONE MOULDING across the run, not three",
+   "ok": true,
+   "detail": "1 owner spanning 3 cabinets, 1800 mm long"
+  },
+  {
+   "label": "F9 — …with the infill it is fixed to asked for, exactly as the per-unit press does",
+   "ok": true,
+   "detail": "40 mm of top infill"
+  },
+  {
+   "label": "F9 — and one press takes it off again",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "label": "F10 — the job starts on the workshop’s own default, and one cabinet is grooved by hand",
+   "ok": true,
+   "detail": "project S · cut S/S/G"
+  },
+  {
+   "label": "F10 — choosing Flat in the menu sets the PROJECT default",
+   "ok": true,
+   "detail": "F"
+  },
+  {
+   "label": "F10 — …and every front WITHOUT its own override follows, in the CUT",
+   "ok": true,
+   "detail": "gtm8:F · mxcq:F · 2z6h:G"
+  },
+  {
+   "label": "F10 — …while the one somebody made GROOVED survives",
+   "ok": true,
+   "detail": "G"
+  },
+  {
+   "label": "F10 — and it is the CUT that moved: a shaker is machined, a flat front is not",
+   "ok": true,
+   "detail": "1 pockets → 0"
+  },
+  {
+   "label": "F11 — with nothing said the LISP ladder stands: Base is ALWAYS three",
+   "ok": true,
+   "detail": "short 100/200/400 · tall 100/470/670"
+  },
+  {
+   "label": "F11 — the owner’s 600 puts the SHORT door on two, at 100 and wys − 100",
+   "ok": true,
+   "detail": "short 100/400"
+  },
+  {
+   "label": "F11 — …and leaves the FULL door exactly where the ladder put it",
+   "ok": true,
+   "detail": "tall 100/470/670"
+  },
+  {
+   "label": "F11 — …and the CUPS followed: two hinges, two bores",
+   "ok": true,
+   "detail": "short 2 cups · tall 3"
+  },
+  {
+   "label": "F11 — a door edited BY HAND wins over the standard",
+   "ok": true,
+   "detail": "short 140/400"
+  },
+  {
+   "label": "F12 — a correctly laid out run is SILENT: no red, no number",
+   "ok": true,
+   "detail": "0 faults · 0 marks · 0 rows"
+  },
+  {
+   "label": "F12 — a job opened 1 mm tight is CAUGHT, and the room paints it red",
+   "ok": true,
+   "detail": "1 faults · 1 marks"
+  },
+  {
+   "label": "F12 — …the value is on the mark itself: 2 mm, under the 3 mm minimum",
+   "ok": true,
+   "detail": "2 mm"
+  },
+  {
+   "label": "F12 — …it names the PAIR of leaves that meet there",
+   "ok": true,
+   "detail": "01-F + 02-F"
+  },
+  {
+   "label": "F12 — …and the readout SHOWS the value beside it",
+   "ok": true,
+   "detail": "▲2 mm between 01's 01-F and 02's 02-F — under the 3 mm minimum."
+  },
+  {
+   "label": "F12 — it is a WARNING and not a block: both cabinets are cut as before",
+   "ok": true,
+   "detail": "[{\"panels\":6,\"drills\":77},{\"panels\":6,\"drills\":77}]"
+  },
+  {
+   "label": "F13 — the Library places a Cargo: 300 wide, on the run’s own tall height",
+   "ok": true,
+   "detail": "CARGO 300 × 2150 × 558"
+  },
+  {
+   "label": "F13 — it is KIT_BUDTALL’s carcass and a full door",
+   "ok": true,
+   "detail": "BUL BUR TOP BOTTOM BACK FRONT"
+  },
+  {
+   "label": "F13 — and it is drilled EXACTLY as a tall unit its size: hole for hole",
+   "ok": true,
+   "detail": "88 holes vs the tall unit’s 88"
+  },
+  {
+   "label": "F13 — the pull-out frame is ORDERED: one BOM line, to the opening",
+   "ok": true,
+   "detail": "Pull-out larder frame — 264 × 2114 × 540 mm opening"
+  },
+  {
+   "label": "F13 — …and it drills NOTHING the kit does not drill",
+   "ok": true,
+   "detail": "88 holes, none of them a frame fixing"
+  },
+  {
+   "label": "F14 — the Library places a Pantry on the tall unit’s carcass",
+   "ok": true,
+   "detail": "PANTRY 600 × 2150"
+  },
+  {
+   "label": "F14 — three Blum boxes inside it, and NOT one drawer face",
+   "ok": true,
+   "detail": "3 boxes · 0 faces · 1 door"
+  },
+  {
+   "label": "F14 — the runner drilling is the existing MOVENTO truth",
+   "ok": true,
+   "detail": "18 holes on RUNNERS_3MM"
+  },
+  {
+   "label": "F14 — and it is drilled EXACTLY as a wardrobe with its fronts off",
+   "ok": true,
+   "detail": "125 holes vs the wardrobe’s 125"
+  },
+  {
+   "label": "F14 — the BOM buys the runners, because the boxes are really there",
+   "ok": true,
+   "detail": "3 pairs"
+  },
+  {
+   "label": "F15 — the Library places an american housing, 1000 wide",
+   "ok": true,
+   "detail": "FRIDGE_US 1000 × 2150 · aperture 1900"
+  },
+  {
+   "label": "F15 — it is KIT_FRIDGE’s own carcass: two back rails, fixed and spurs panels",
+   "ok": true,
+   "detail": "BUL BUR TOP BOTTOM FIXED BACK-RAIL BACK-RAIL BACK SPURS FRONT FRONT"
+  },
+  {
+   "label": "F15 — a 1000 mm face is TWO doors, by the door rule and not a new one",
+   "ok": true,
+   "detail": "2 leaves"
+  },
+  {
+   "label": "F15 — and it is drilled EXACTLY as the built-in housing at that size",
+   "ok": true,
+   "detail": "127 holes vs the built-in’s 127"
+  },
+  {
+   "label": "F15 — every board it cuts has a positive size",
+   "ok": true,
+   "detail": "0 inverted boards"
+  },
+  {
+   "label": "F16 — the Library places a bin unit on KIT_BUD’s carcass",
+   "ok": true,
+   "detail": "BIN"
+  },
+  {
+   "label": "F16 — it is drilled EXACTLY as a base unit: hole for hole",
+   "ok": true,
+   "detail": "77 holes vs the base unit’s 77"
+  },
+  {
+   "label": "F16 — the pull-out is ORDERED: one BOM line, to the opening",
+   "ok": true,
+   "detail": "Pull-out bin unit — 564 × 734 × 540 mm opening"
+  },
+  {
+   "label": "F16 — …and the room shows the SPACE it takes, marked a placeholder",
+   "ok": true,
+   "detail": "bin_pullout"
+  },
+  {
+   "label": "F17 — the Library places a wine rack, and it has a LATTICE in it",
+   "ok": true,
+   "detail": "3 uprights · 20 shelves"
+  },
+  {
+   "label": "F17 — the room draws every one of those boards",
+   "ok": true,
+   "detail": "23 lattice boards in the scene"
+  },
+  {
+   "label": "F17 — and every one is a PLAIN rectangle: no hole, no pocket, no notch",
+   "ok": true,
+   "detail": "0 machined lattice boards"
+  },
+  {
+   "label": "F17 — the CARCASS is drilled exactly as KIT_BUD drills one",
+   "ok": true,
+   "detail": "62 holes vs the base unit’s 62"
+  },
+  {
+   "label": "F17 — …and the lattice is on the CUT LIST, board for board",
+   "ok": true,
+   "detail": "23 of 23 on the sheet"
+  },
+  {
+   "label": "F18 — the Library places a twin cupboard, 900 wide, with a PAIR of doors",
+   "ok": true,
+   "detail": "TWIN · 2 leaves of 447 + 447 mm"
+  },
+  {
+   "label": "F18 — it is drilled EXACTLY as a base unit of the same size",
+   "ok": true,
+   "detail": "92 holes vs the base unit’s 92"
+  },
+  {
+   "label": "F18 — and at 700 it is STILL a pair, where a base unit is a single",
+   "ok": true,
+   "detail": "twin 2 leaves · base unit 1"
+  },
+  {
+   "label": "F19 — the Library places a corner unit, and it is an L of eight boards",
+   "ok": true,
+   "detail": "CORNER 1000 × 770 × 1000 — BACK BACK SIDE SIDE BOTTOM BOTTOM TOP TOP"
+  },
+  {
+   "label": "F19 — NOT ONE HOLE is drilled in it, and nothing is bought for it",
+   "ok": true,
+   "detail": "0 holes · 0 order lines · 0 doors"
+  },
+  {
+   "label": "F19 — the room draws every board, and every board has a real size",
+   "ok": true,
+   "detail": "8 boards drawn · 0 inverted"
+  },
+  {
+   "label": "F19 — …and every one of them is on the CUT LIST",
+   "ok": true,
+   "detail": "8 of 8"
+  },
+  {
+   "label": "F20 — the face shows TWO fronts where the other shows three",
+   "ok": true,
+   "detail": "2 fronts vs 3"
+  },
+  {
+   "label": "F20 — …and the room draws two, so the picture agrees with the sheet",
+   "ok": true,
+   "detail": "2 façades in the scene"
+  },
+  {
+   "label": "F20 — the front ABOVE grew over the hidden drawer: the face is continuous",
+   "ok": true,
+   "detail": "DR02-F1 338mm@0 · DR02-F3 426mm@341"
+  },
+  {
+   "label": "F20 — THREE drawers are still there: three boxes, three pairs of runners",
+   "ok": true,
+   "detail": "3 boxes · 3 runner pairs"
+  },
+  {
+   "label": "F20 — and not one hole moved: the carcass and the boxes are identical",
+   "ok": true,
+   "detail": "same fingerprint"
+  },
+  {
+   "label": "F21 — the Library places a glass wall unit, and its door is GLASS",
+   "ok": true,
+   "detail": "WUD_GLASS · style GL · 70 mm frame"
+  },
+  {
+   "label": "F21 — the aperture is cut ALL THE WAY THROUGH, so what is left is a frame",
+   "ok": true,
+   "detail": "25 mm through a 25 mm door"
+  },
+  {
+   "label": "F21 — …and the room draws the PANE in it",
+   "ok": true,
+   "detail": "1 panes in the scene"
+  },
+  {
+   "label": "F21 — the HINGE RULE is unchanged: the same cups as a solid door",
+   "ok": true,
+   "detail": "81 holes vs the solid wall unit’s 81"
+  },
+  {
+   "label": "F21 — the BOM says glass door: a pane, ordered to the aperture",
+   "ok": true,
+   "detail": "Glass pane — 457 × 577 mm aperture"
+  },
+  {
+   "label": "R6 — the console is clean for the whole walk",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

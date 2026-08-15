@@ -5,6 +5,12 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
+
+// ─── Turn 30 (CLAUDE.md F21): how thick the PANE is drawn ────────────────────
+// 4 mm is what a cabinet door is glazed with. It is a picture and not a cut —
+// glass is ordered, never machined here — so it is a constant in the view
+// rather than a number in the profile a workshop might mistake for a spec.
+const GLASS_PANE_MM = 4;
 import {
   contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor,
   panelOutlineOffset,
@@ -411,6 +417,40 @@ export function MovingPanel({
           outside, because `pivot` is what a handle has to be backed out by and
           a door's pivot is its hinge edge while a drawer front's is its middle
           — one formula, in the one place that already knows which. */}
+      {/* ─── Turn 30 (CLAUDE.md F21): THE PANE ───────────────────────────
+          "frame + translucent panel in 3D". The FRAME is the board itself —
+          its aperture is a full-depth cutout, so `panelSolids` takes it out
+          and what is left is a frame. This is the glass in the hole: one
+          translucent slab, at the aperture the engine measured and the order
+          form is written to, inside the group that animates so it swings with
+          its door. It is not a board and it is not machined; it is what the
+          glazier delivers. */}
+      {p.meta?.glass && (
+        <mesh
+          position={[
+            -pivot[0] + mm((p.meta.glass.frame + p.meta.glass.aperture.w / 2) - p.box.w / 2),
+            -pivot[1],
+            -pivot[2],
+          ]}
+          userData={{ ccGlassPane: p.id, ccNoBounds: true }}
+        >
+          <boxGeometry args={[
+            mm(p.meta.glass.aperture.w),
+            mm(p.meta.glass.aperture.h),
+            mm(GLASS_PANE_MM),
+          ]}
+          />
+          <meshPhysicalMaterial
+            color="#eef3f4"
+            transparent
+            opacity={0.42}
+            roughness={0.06}
+            metalness={0}
+            transmission={0.85}
+            thickness={0.004}
+          />
+        </mesh>
+      )}
       {p.meta?.handle && (
         // The surface is the PANEL's own, not `<Hardware>`'s: a handle is
         // mounted by the front it is screwed through, and reporting it on the

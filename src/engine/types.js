@@ -234,6 +234,319 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F21): THE GLASS WALL UNIT ─────────────────────────
+  //
+  // "Parent: KIT_WUD. Front style `glass`: frame + translucent panel in 3D, BOM
+  // says glass door; hinge rule unchanged (glass doors take the same cups
+  // unless the owner says otherwise — note it in the report)."
+  //
+  // Every field is WUD's, to the letter, INCLUDING the hinge rule and the cup
+  // rule: a glass door is hung on the same cups, bored in the same places, and
+  // the test asserts that hole for hole against a wall unit with a solid door.
+  // That is the owner's own instruction and it is noted in the report as asked.
+  //
+  // The one thing of its own is the front style it arrives wearing — and that
+  // is a DEFAULT rather than a law, so a joiner can put a solid door on a glass
+  // unit or a glass door on any other kit. `frontType` is a per-front answer
+  // and always has been (turn 13's cascade, turn 30's F10).
+  WUD_GLASS: {
+    id: 'WUD_GLASS',
+    heightGroup: 'wall',
+    label: 'Glass wall unit',
+    family: 'kitchen',
+    lisp: 'KIT_WUD_FULL.lsp',
+    // WUD's own, to the letter — a glass door takes the same cups.
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: null,
+    hangers: true,
+    doorExtend: true,
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    // What it arrives wearing. See `defaultParamsFor`.
+    frontType: 'GL',
+    minHeightKey: null,
+    defaultsKey: 'glassWallUnit.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+  // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT ─────────────────────────────
+  //
+  // "The riskiest of the batch. Start from what the LISP family actually
+  // supports (KIT_BUDR is in the repo — READ it first and say in the PR what it
+  // is); ship the L-carcass geometry + BOM; any hinge/drilling beyond the
+  // parent kit's own lines waits for a LISP. Do not improvise corner-post
+  // drilling overnight."
+  //
+  // KIT_BUDR_FULL.lsp was read. Its header: "Base Unit Drawer - 3 drawers
+  // (4:3:2 ratio)", and its body is the MOVENTO runner outline drawn line by
+  // line. It is the THREE-DRAWER BASE UNIT this app has shipped since turn 3 —
+  // `BUDR` above is already built from it — and there is not one corner in it.
+  //
+  // So there is no parent kit for a corner unit, and no parent lines to
+  // inherit. The batch rule then settles the whole feature: GEOMETRY and a BOM,
+  // and NOT ONE HOLE. No cup, no shelf sleeve, no leg plate, no corner post.
+  //
+  //   `carcass` — all four 'none': the standard carcass is not this shape, so
+  //               none of it is emitted and the L builder in cabinet.js puts
+  //               the boards in instead.
+  //   `legs`    — false. A leg's position comes from a RECTANGULAR footprint,
+  //               and one of the four would stand in the L's missing corner.
+  //               Where a corner cabinet is really footed is a question for
+  //               the owner, not for tonight.
+  //   `doors`   — none. A corner door hangs on cups bored to a pattern nobody
+  //               has written down here.
+  CORNER: {
+    id: 'CORNER',
+    heightGroup: 'base',
+    label: 'Corner unit',
+    family: 'kitchen',
+    // Named for honesty, not for inheritance: this is the family the shape
+    // belongs to. Its own drilling waits for a LISP.
+    lisp: null,
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: {
+      top: 'none', back: 'none', sides: 'none', bottom: 'none',
+    },
+    drawerStyle: null,
+    corner: true,
+    // Its depth is its identity, like a wall unit's 400: a corner unit turns
+    // the run, and a 558 corner is not a corner. See projectHeightParams.
+    ownDepth: true,
+    minHeightKey: null,
+    defaultsKey: 'cornerUnit.defaults',
+    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    available: true,
+  },
+  // ─── TURN 30 (CLAUDE.md F18): THE TWIN CUPBOARD ───────────────────────────
+  //
+  // CLAUDE.md: "Twin cupboard. Parent: KIT_DOOR_DOUBLE — it exists. Expose it
+  // in the Kitchen category with its own defaults."
+  //
+  // ─── WHAT KIT_DOOR_DOUBLE.lsp ACTUALLY IS ──────────────────────────────────
+  //
+  // It exists, and it is not a cupboard. Read it: it is an INTERIOR DOUBLE DOOR
+  // SET in a lining — its own header says "Double Doors with Frame", its
+  // command is DOOR_DOUBLE, its base point is "bottom-left of left door leaf",
+  // its layers are FRAME / DOOR_OUTSIDE / DOOR_INSIDE / DOOR_IRONMONGERY, and
+  // it asks for an overall FRAME width of 1603, a frame height of 2083, a frame
+  // DEPTH of 100 and a door number of "DD01". There is no carcass in it, no
+  // shelf, no leg and no cup bored into a cabinet side. It is a pair of room
+  // doors, and a kitchen cupboard cannot be built from it.
+  //
+  // ─── SO WHAT SHIPS ────────────────────────────────────────────────────────
+  //
+  // The deliverable that survives the correction, which is the one the owner
+  // asked for: a twin cupboard in the Kitchen category with its own defaults.
+  // The kit that actually cuts one is KIT_BUD_FULL, and the two-leaf face is
+  // the engine's own `doors.doubleTotalGap` arithmetic — LISP truth since turn
+  // 1, and the same two leaves any 900 mm base unit has always been given.
+  //
+  // What is NEW is that it is a KIT: `doorCount: 2` means a pair whatever the
+  // width, so a 700 mm twin is a twin rather than a single. Nothing else about
+  // it differs from a base unit, and the test asserts that hole for hole.
+  TWIN: {
+    id: 'TWIN',
+    heightGroup: 'base',
+    label: 'Twin cupboard',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    // A pair of leaves, at any width — the one thing that makes it a twin.
+    doorCount: 2,
+    minHeightKey: null,
+    defaultsKey: 'twinCupboard.defaults',
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    available: true,
+  },
+  // ─── TURN 30 (CLAUDE.md F17): THE WINE RACK ───────────────────────────────
+  //
+  // "Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
+  // panels in the BOM. No drilling truth exists → no drilling ships."
+  //
+  // The carcass is KIT_BUD's and is drilled exactly as KIT_BUD drills it. The
+  // LATTICE is `lattice: true` — a grid of plain rectangles, emitted in
+  // cabinet.js, carrying no machining of any kind. It is an OPEN unit: no
+  // doors, because there is nothing in the kits about hanging one on a rack,
+  // and no shelves, because the lattice is what a wine rack has instead.
+  //
+  // THE GAP, and it is named here as well as in the report: the cross-halving
+  // joints that hold a real lattice together are not cut. No LISP line and no
+  // published pattern states them, and an invented notch is a miscut.
+  WINE: {
+    id: 'WINE',
+    heightGroup: 'base',
+    label: 'Wine rack',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    lattice: true,
+    minHeightKey: null,
+    defaultsKey: 'wineRack.defaults',
+    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    available: true,
+  },
+  // ─── TURN 30 (CLAUDE.md F16): THE BIN UNIT ────────────────────────────────
+  //
+  // "Parent: KIT_BUD. Pull-out bin = hardware on the door/carcass per
+  // manufacturer: BOM + visual, no invented holes."
+  //
+  // So it is a BUD, to the letter — the same LISP, the same hinge rule, the
+  // same cup rule, the same everything — and the test asserts that its carcass
+  // and door are drilled hole for hole as a base unit of the same size. The
+  // pull-out is a bought mechanism: `hardwareKit` puts it on the order form,
+  // and `body: 'bin'` gives it the PLACEHOLDER volume F16 asks to see. Not one
+  // hole is bored for it, because the manufacturer's own fixing — into the
+  // door and into the carcass floor — is not written in any LISP line or
+  // published pattern this repo holds.
+  //
+  // It offers no shelves: the pull-out fills the carcass, which is what makes
+  // it a bin unit rather than a base unit somebody keeps bins in.
+  BIN: {
+    id: 'BIN',
+    heightGroup: 'base',
+    label: 'Bin unit',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'binUnit.defaults',
+    hardwareKit: {
+      role: 'bin_pullout',
+      label: 'Pull-out bin unit',
+      by: 'opening',
+      // "BOM + visual": the SPACE the mechanism occupies, read off the opening
+      // the engine already measured — a placeholder, marked as one, replaced
+      // the day a model arrives. See engine/hardware3d.js kitInstances.
+      body: 'bin',
+    },
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: false,
+    },
+    available: true,
+  },
+  // ─── TURN 30 (CLAUDE.md F13): CARGO 300, THE PULL-OUT LARDER ──────────────
+  //
+  // "Parent geometry: KIT_BUDTALL. Proposed width 300. Carcass + full door per
+  // the kit; the pull-out frame is HARDWARE (BOM + GLB slot when the owner
+  // uploads one), no invented runners drilling — the mechanism mounts to floor
+  // and top per manufacturer, which is not this repo's truth yet."
+  //
+  // Every field below is BUDTALL's, because that is what "parent geometry"
+  // means: the carcass, the door, the hinge ladder and every hole in them are
+  // KIT_BUDTALL_FULL's own, and the test asserts that hole for hole against a
+  // tall unit of the same size. What is different is the WIDTH it arrives at,
+  // that it holds no shelves — the frame is what fills it — and the frame in
+  // the BOM.
+  //
+  // `hardwareKit` is the library rule in one field: a bought mechanism gets a
+  // LINE TO ORDER and nothing else. No hole, no runner row, no invented model.
+  CARGO: {
+    id: 'CARGO',
+    heightGroup: 'tall',
+    label: 'Cargo 300',
+    family: 'kitchen',
+    lisp: 'KIT_BUDTALL_FULL.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    minHeightKey: 'cargoUnit.minHeight',
+    defaultsKey: 'cargoUnit.defaults',
+    hardwareKit: {
+      role: 'cargo_frame',
+      label: 'Pull-out larder frame',
+      // What a joiner orders it BY. The mechanism mounts to the floor and the
+      // top of the carcass per the manufacturer's own instructions, so what
+      // this repo can honestly say is the opening it has to fit.
+      by: 'opening',
+    },
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+  // ─── TURN 30 (CLAUDE.md F14): THE PANTRY, WITH BLUM DRAWERS ("koniecznie") ─
+  //
+  // "Parent: KIT_BUDTALL + the existing drawer machinery (KIT_LOW/KIT_SINK
+  // rows, MOVENTO catalogue). Internal drawers behind doors: existing drawer
+  // boxes and runner drilling, front omitted (see F20's mechanism — build it
+  // once, use it in both)."
+  //
+  // So it is BUDTALL's carcass and door, wearing `drawerStyle: 'wardrobe'` —
+  // the INTERNAL drawer machinery this engine has had since turn 3: the drawer
+  // panels the runners screw to, the MOVENTO rows on `RUNNERS_3MM`, the box
+  // sides, backs and bottoms, and the sync rod. Not one of those numbers is
+  // touched here; a pantry's drawer holes are the same holes a wardrobe of the
+  // same size is drilled with, which is what the test asserts.
+  //
+  // `internalDrawers: 'all'` is F20's mechanism, declared once on the kit: a
+  // pantry's drawers live BEHIND ITS DOORS and never had faces.
+  PANTRY: {
+    id: 'PANTRY',
+    heightGroup: 'tall',
+    label: 'Pantry',
+    family: 'kitchen',
+    lisp: 'KIT_BUDTALL_FULL.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'wardrobe',
+    internalDrawers: 'all',
+    minHeightKey: 'pantryUnit.minHeight',
+    defaultsKey: 'pantryUnit.defaults',
+    supports: {
+      drawers: true, shelves: true, rail: false, pulldown: false, partition: true, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
   LOW_CABINET: {
     id: 'LOW_CABINET',
     // A low cabinet that inherits the 720 mm base height is a base unit with
@@ -451,10 +764,49 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 30 (CLAUDE.md F15): THE AMERICAN HOUSING ────────────────────────
+  //
+  // "Parent: KIT_FRIDGE.lsp — it EXISTS and is the truth. Widen the parameter
+  // envelope to american sizes; drilling stays the kit's own."
+  //
+  // Every field below is FRIDGE's, to the letter — the back on two rails, the
+  // fixed panel, the spurs panel on its 25 × 25 blocks, the six hinges, the
+  // legs. The ONLY difference is `defaultsKey`, which is the envelope: KIT_
+  // FRIDGE writes every panel in terms of the width and the aperture height, so
+  // a 1000 mm side-by-side housing is the same kit given bigger numbers, and
+  // the test asserts it hole for hole.
+  //
+  // It is a SEPARATE TYPE rather than a wider default on FRIDGE because a
+  // built-in housing and an american one are two things a joiner picks between
+  // in the library, and because widening FRIDGE's own defaults would move a
+  // kit every existing project uses.
+  FRIDGE_US: {
+    id: 'FRIDGE_US',
+    heightGroup: 'tall',
+    label: 'American fridge',
+    family: 'kitchen',
+    lisp: 'KIT_FRIDGE.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'rails' },
+    drawerStyle: null,
+    minHeightKey: 'americanFridgeUnit.minHeight',
+    defaultsKey: 'americanFridgeUnit.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'LOW_CABINET', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER', 'WUD_GLASS', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -533,7 +885,10 @@ export function defaultParamsFor(typeId, profile) {
     depth: d.depth ?? 558,
     board_t: profile.board.thickness,
     front_t: profile.front.thickness,
-    front_type: profile.front.defaultType,
+    // Turn 30 (CLAUDE.md F21): a kit whose FACE is its identity says so. Every
+    // kit written before tonight has no `frontType` and takes the workshop's
+    // own default, exactly as it always has.
+    front_type: type.frontType || profile.front.defaultType,
     shelves: 0,
     // BUDR is a three-drawer unit by definition (LISP has no count question).
     drawers: type.drawerStyle === 'budr' ? profile.baseDrawerUnit.ratio.length : 0,
@@ -562,12 +917,17 @@ export function defaultParamsFor(typeId, profile) {
     ...(type.plinth ? { plinth: true } : {}),
     ...(type.mount === 'wall' ? { mount_height: d.mountHeight ?? 1500 } : {}),
     ...(type.doorExtend ? { door_extend: false } : {}),
-    ...(type.id === 'FRIDGE' ? { fridge_h: profile.fridgeUnit.defaults.fridgeH } : {}),
+    // ─── Turn 30 (CLAUDE.md F15) ───
+    // A housing's aperture, read off the KIT'S OWN defaults rather than off the
+    // type id: the american housing (`americanFridgeUnit`) is the same KIT_
+    // FRIDGE with a bigger envelope, and a kit that has an aperture says so by
+    // having one in its defaults.
+    ...(d.fridgeH != null ? { fridge_h: d.fridgeH } : {}),
     unit_num: '01',
   };
 }
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F',
+  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', CORNER: 'CR', WUD_GLASS: 'WG',
 };

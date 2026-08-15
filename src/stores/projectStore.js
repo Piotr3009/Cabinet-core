@@ -29,9 +29,12 @@ import {
 } from '../engine/room.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, normaliseHandle, projectHeights,
-  setCarcassTypeCount, withFrontColour, withRunMaterial,
+  resolveUnitDesign, setCarcassTypeCount, withFrontColour, withRunMaterial,
 } from '../engine/design.js';
 import { handleClassCount } from '../engine/handles.js';
+// Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
+import { worktopEligible, worktopsFor } from '../engine/worktop.js';
+import { frontGapClashes } from '../engine/frontGapClash.js';
 import {
   carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
   projectFrontThickness, setFrontTypeCount, sourceById, sourceTakesFacing,
@@ -101,6 +104,26 @@ function applyDesignPatch(stored, patch) {
 function newUnit(typeId, profile, index, design) {
   const type = getUnitType(typeId);
   const params = defaultParamsFor(type.id, profile);
+  // ─── TURN 30 (CLAUDE.md F10): A NEW CABINET HAS NO STYLE OF ITS OWN ──────
+  //
+  // `defaultParamsFor` stamps the profile's default front type, and that stamp
+  // is the FIXTURE contract for a bare `computeCabinet()` — it must not move
+  // there. Inside a PROJECT it is the wrong answer: a cabinet somebody has just
+  // placed has expressed no opinion about its front style, and stamping one
+  // made the project's own answer unreachable for ever after.
+  //
+  // `null` is "nobody has said", which is the same null every other layer in
+  // this app uses for it, and `paramsForEngine` resolves it through
+  // `resolveUnitDesign`'s cascade: this unit → its door style → the PROJECT.
+  //
+  // ─── TURN 30 (CLAUDE.md F21): …UNLESS THE KIT IS ITS FACE ────────────────
+  // Picking "Glass unit" out of the library IS saying something about the
+  // front style — it is the whole reason that row exists — so a kit that
+  // declares a `frontType` places its cabinets wearing it, as the unit's own
+  // answer. That leaves it exactly as editable as any other: one write of
+  // `null` in the front-style select hands it back to the project.
+  params.front_type = type.frontType || null;
+  params.front_style_schema = FRONT_STYLE_SCHEMA;
   // A drawer unit IS its drawers — the LISP kit has no "how many" question, so
   // the stack exists from the moment the unit is placed.
   //
@@ -201,7 +224,13 @@ function projectHeightParams(type, design, profile) {
     //
     // A WALL unit keeps its own depth: 400 is what a wall unit is, and a 558 mm
     // one over a worktop is a cabinet you walk into.
-    ...(type.mount === 'wall' ? {} : { depth: projectDepth(design, profile) }),
+    //
+    // ─── Turn 30 (CLAUDE.md F19) ───
+    // …and so does a kit whose depth IS its identity. A corner unit turns the
+    // run: its depth is the second wall's arm, not the run's front line, and a
+    // 558 corner is not a corner. `ownDepth` is the same sentence the wall
+    // unit's `mount` says, said by a kit that is not on a wall.
+    ...(type.mount === 'wall' || type.ownDepth ? {} : { depth: projectDepth(design, profile) }),
     board_t: projectBoardThickness(design, profile),
     // Turn 16 (CLAUDE.md F1.1): front type 1's ASSIGNED BOARD pins this where
     // there is one, exactly as carcass 1's does for the carcass. The stock list
@@ -314,7 +343,46 @@ function paramsForEngine(unit, design = null) {
     // Travels exactly as the hinge standard and the runner variant do: an INPUT
     // in the design layer, never a formula in the engine. Left out — a bare kit
     // call, every golden fixture — the engine falls back to the profile's 70.
+    // ─── TURN 30 (CLAUDE.md F10): THE PROJECT'S FRONT STYLE PROPAGATES ─────
+    //
+    // Choose "Flat" in the main menu and every front without its own override
+    // follows. It did NOT: the project's answer lived in `design.fronts.style`
+    // and stopped there, because the engine reads `params.front_type` and
+    // falls back to `profile.front.defaultType` — the workshop's Shaker — so a
+    // whole job set to Flat was still CUT as Shaker.
+    //
+    // The cascade already existed and was already correct; what was missing was
+    // that it never reached the engine. `resolveUnitDesign` is that cascade,
+    // written once in turn 13 and read by the 3-D, the drawings and the BOM:
+    //
+    //     this unit's own `front_type`  →  its door STYLE's  →  the PROJECT's
+    //
+    // so per-unit overrides survive by construction, exactly as the hinge
+    // finish's do. It is passed HERE, on the override channel, and never as a
+    // formula in the engine: a bare `computeCabinet()` — every golden fixture —
+    // is handed no design at all and falls back to the profile's own default,
+    // which is what the AutoLISP cuts.
+    front_type: design ? resolveUnitDesign(unit, design).frontType : p.front_type,
     shaker_frame_mm: design?.fronts?.shakerFrame ?? null,
+    // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ─────────────────────
+    // The owner's standard is 50 and the LISP's is 70, so 70 stays the ENGINE's
+    // bare answer and this is the override channel — travelling exactly as the
+    // plinth, the hinge standard, the runner variant and the shaker frame do:
+    // an INPUT in the design layer, never a formula in the engine. Left out —
+    // a bare kit call, every golden fixture — the engine falls back to the
+    // profile's 70 and drills what the AutoLISP drills.
+    //
+    // The COMPANY row has already been folded into the design by
+    // `prefillDesignFromCompany` at `newProject`, which is where every other
+    // company preference is resolved; a project that has said something of its
+    // own keeps saying it.
+    shelf_pin_setback_mm: design?.shelves?.pinSetback ?? null,
+    // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER 600 ─────────────────────
+    // The owner's standard, on the same road as the setback above it and the
+    // plinth before both: an INPUT in the design layer, never a formula in the
+    // engine. Left out — a bare kit call, every golden fixture — the engine
+    // uses the LISP's own ladders and drills what the AutoLISP drills.
+    hinge_two_below_mm: design?.hingeTwoBelow ?? null,
     // ─── TURN 25 (CLAUDE.md F4): THE HANDLE, AND ONE FRONT'S OWN ───────────
     // The project's choice with its per-class offsets, and this cabinet's own
     // exceptions keyed by panel id — the same two-level shape turn 19 gave the
@@ -375,7 +443,48 @@ export function migrateUnitShelves(unit) {
   };
 }
 
-const migrateUnits = (units) => (Array.isArray(units) ? units.map(migrateUnitShelves) : []);
+// ─── FRONT-STYLE SCHEMA (turn 30, CLAUDE.md F10) ───────────────────────────
+//
+// Owner: choosing "flat" in the main menu must set the PROJECT default front
+// style, and every front without its own override must follow. It did not, and
+// the reason was not the cascade — `engine/design.js resolveUnitDesign` has had
+// it right since turn 13 — it was that NO UNIT COULD SAY "I have no override".
+//
+// `defaultParamsFor` stamps `front_type: profile.front.defaultType` on every
+// cabinet at birth. That value is the fixture contract for a bare
+// `computeCabinet()` and must not move. But inside a PROJECT it made every
+// cabinet look like it had chosen Shaker on purpose, so the project's own
+// answer could never reach one, and a job set to Flat was still CUT as Shaker.
+//
+// So: a stored value EQUAL TO THE PROFILE'S DEFAULT is a STAMP, not a choice —
+// until tonight there was no way to express the difference — and it is read as
+// "nobody has said". A value that differs is a genuine override and is left
+// exactly alone. A migration with a stamp, the same shape SHELF_SCHEMA above
+// has, so it happens once and says so.
+//
+// THE COST, NAMED: a workshop that had deliberately set Shaker on ONE cabinet
+// of a Flat job loses that one exception, and gets it back with one press of
+// the unit's own Front type select — which from tonight also offers "Project
+// default" and can therefore express the other half of the question.
+const FRONT_STYLE_SCHEMA = 1;
+
+export function migrateUnitFrontStyle(unit, profile = null) {
+  if (!unit?.params || unit.params.front_style_schema === FRONT_STYLE_SCHEMA) return unit;
+  const stamp = (profile || getCabinetProfile())?.front?.defaultType;
+  const own = unit.params.front_type;
+  return {
+    ...unit,
+    params: {
+      ...unit.params,
+      front_style_schema: FRONT_STYLE_SCHEMA,
+      front_type: own === stamp ? null : own,
+    },
+  };
+}
+
+const migrateUnits = (units) => (Array.isArray(units)
+  ? units.map((u) => migrateUnitFrontStyle(migrateUnitShelves(u)))
+  : []);
 
 function loadCache() {
   try {
@@ -628,6 +737,25 @@ export const useProjectStore = create((set, get) => ({
     const slot = CARCASS_SLOTS.includes(String(slotId)) ? String(slotId) : CARCASS_SLOTS[0];
     get().updateItem(unitId, itemId, { slot });
     return slot;
+  },
+
+  /**
+   * WHICH FACE OF ONE DIVIDER IS BORED (turn 30, CLAUDE.md F3).
+   *
+   * The owner: a partition shows shelf-pin drilling on BOTH faces, and a
+   * machine drills one. It is the ITEM's own field, exactly like its slot and
+   * its setback above — one piece, one answer — and `null` hands the divider
+   * back to `profile.shelfHoles.partitionFace`, which ships LEFT tonight.
+   *
+   * Nothing here invalidates a fixture: the DRILLING moves, so the recompute
+   * is the ordinary one every item edit takes, and the 3-D and the DXF follow
+   * because both read `result.drills`.
+   */
+  setPartitionDrillFace: (unitId, itemId, face) => {
+    const said = String(face || '').toUpperCase();
+    const value = said === 'L' || said === 'R' ? said : null;
+    get().updateItem(unitId, itemId, { drill_face: value });
+    return value;
   },
 
   /** How many FRONT types this project runs (1–2, CLAUDE.md F9.2). */
@@ -1683,6 +1811,47 @@ export const useProjectStore = create((set, get) => ({
       for (const n of res.notices || []) notices.push(`${unit.params.unit_num}: ${n}`);
     }
     return { notices };
+  }),
+
+  /**
+   * ─── TURN 30 (CLAUDE.md F9): THE CORNICE OVER A SELECTION ────────────────
+   *
+   * "Today cornice is per-cabinet; the infill already knows multi-select. Reuse
+   * that flow: select 2+ → one cornice across. Same design layer, no drilling."
+   *
+   * REUSE is the whole of it, and it is reuse in BOTH directions:
+   *
+   *   the ACTION is `setCornice`, once per cabinet, inside one batch — which
+   *   is what every bulk action in this store is, and what makes it one undo
+   *   step without anybody remembering to make it one;
+   *
+   *   the RUN is `engine/cornice.js runCorniceParams`, which has made a
+   *   cornice ONE MOULDING across adjacent cornice-bearing cabinets since turn
+   *   22 (the top infill's own lesson from turn 6). Nothing about the piece is
+   *   recomputed here. What was missing was never the run — it was the
+   *   ENTRANCE: a joiner who had selected six cabinets had no way in.
+   *
+   * A cabinet whose kit takes no cornice is SKIPPED rather than refused, the
+   * way a wall unit is skipped by the back inset below: somebody who selected a
+   * run with a base unit in it has not asked for a moulding on the base unit.
+   *
+   * @returns {{done:number, skipped:number, notices:string[]}}
+   */
+  setCorniceBulk: (unitIds, value) => runBatch(() => {
+    const notices = [];
+    let done = 0;
+    let skipped = 0;
+    for (const id of unitIds || []) {
+      const unit = get().units.find((u) => u.id === id);
+      if (!unit) continue;
+      if (!takesCornice(unit.type)) { skipped += 1; continue; }
+      const res = get().setCornice(id, value) || { notices: [] };
+      done += 1;
+      for (const n of res.notices || []) notices.push(n);
+    }
+    // The run is recomputed once per call inside `setCornice`; the notices it
+    // returns are the CEILING's, and a duplicate of one says nothing new.
+    return { done, skipped, notices: [...new Set(notices)] };
   }),
 
   /**
@@ -3405,6 +3574,95 @@ export const useProjectStore = create((set, get) => ({
       dirty: true,
     }));
     return wanted;
+  },
+
+  // ─── THE WORKTOP (turn 30, CLAUDE.md F8) ─────────────────────────────────
+  //
+  // Owner: select two or more base cabinets and ONE worktop covers the run
+  // "od ściany aż do paneli". It is a DESIGN-LAYER auto-part like the end
+  // panels — stored with the project, drawn in the room, reaching no hole and
+  // no fixture — so these three actions are the whole of its plumbing and
+  // `computeCabinet()` is not involved at all.
+  //
+  // The eligibility test is `engine/worktop.js worktopEligible`, which is
+  // `buildRuns`' own four rules asked of a SELECTION rather than of the room:
+  // one wall, no turned unit, one top height, base cabinets. It SAYS why when
+  // it refuses, because "nothing happened" is the one answer a button must
+  // never give.
+
+  /**
+   * One worktop over the cabinets named.
+   *
+   * @returns {{ok:boolean, id:string|null, error:string|null}}
+   */
+  addWorktop: (unitIds) => {
+    const s = get();
+    const wanted = [...new Set((unitIds || []).filter(Boolean))];
+    const units = wanted.map((id) => s.units.find((u) => u.id === id)).filter(Boolean);
+    const profile = getCabinetProfile();
+    const gate = worktopEligible(units, profile);
+    if (!gate.ok) return { ok: false, id: null, error: gate.why };
+    const design = migrateDesign(s.project.design);
+    // A cabinet lies under ONE slab. Asking for a worktop over a run that
+    // already has one REPLACES it rather than stacking a second on top —
+    // which is what a joiner means by "put a worktop on these".
+    const kept = design.worktops.filter((w) => !w.unitIds.some((id) => wanted.includes(id)));
+    const id = uid('worktop');
+    get().setDesign({
+      worktops: [...kept, {
+        id, unitIds: wanted, decor: null, extendLeft: 0, extendRight: 0, extendFront: 0,
+      }],
+    });
+    return { ok: true, id, error: null };
+  },
+
+  /** Take one off. No confirmation — Undo covers it (turn 25's rule, F11). */
+  removeWorktop: (worktopId) => {
+    const design = migrateDesign(get().project.design);
+    get().setDesign({ worktops: design.worktops.filter((w) => w.id !== worktopId) });
+    return worktopId;
+  },
+
+  /**
+   * Draw an extension on one — the interaction family an end-panel edit is in.
+   * Nothing is computed from these that a person has not typed.
+   */
+  extendWorktop: (worktopId, patch) => {
+    const design = migrateDesign(get().project.design);
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, ...patch } : w)),
+    });
+    return worktopId;
+  },
+
+  /** Every slab this project carries, with its geometry resolved. */
+  worktopsOf: () => {
+    const s = get();
+    return worktopsFor({
+      records: migrateDesign(s.project.design).worktops,
+      units: s.units,
+      profile: getCabinetProfile(),
+    });
+  },
+
+  /**
+   * ─── Turn 30 (CLAUDE.md F12): neighbouring fronts that come too close ─────
+   *
+   * "Room level: compute the gap between neighbouring fronts in a run; when a
+   * gap is < 3 mm, paint the pair's meeting edges red and show the value."
+   *
+   * ONE answer for both surfaces — the red marks in the room and the readout
+   * that says the number — so a mark can never appear without its millimetres,
+   * or the other way round. It READS and it warns; nothing here writes.
+   */
+  frontGapWarnings: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    return frontGapClashes({
+      entries: s.allResults(),
+      baseOf: (u) => unitBase(u, profile),
+      profile,
+    });
   },
 
   /** Every door of this cabinet that has been given a hinge by hand. */

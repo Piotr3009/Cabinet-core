@@ -88,6 +88,22 @@ export const FRONT_STYLE_ART = {
         + ` L ${OUTER.x + OUTER.w - 14} ${OUTER.y + OUTER.h - 16} Z`,
     },
   ],
+  // ─── Turn 30 (CLAUDE.md F21): GLASS ────────────────────────────────────
+  // The shaker's own frame — because that is literally what it is cut with —
+  // with the panel drawn as a pane rather than as a board: two soft diagonals,
+  // which is how a glazed door has been drawn on an elevation for a century.
+  GL: [
+    { rect: [OUTER.x, OUTER.y, OUTER.w, OUTER.h] },
+    { rect: [OUTER.x + 14, OUTER.y + 16, OUTER.w - 28, OUTER.h - 32] },
+    {
+      line: [OUTER.x + 20, OUTER.y + OUTER.h - 22, OUTER.x + OUTER.w - 20, OUTER.y + 22],
+      soft: true,
+    },
+    {
+      line: [OUTER.x + 20, OUTER.y + OUTER.h - 44, OUTER.x + OUTER.w - 42, OUTER.y + 22],
+      soft: true,
+    },
+  ],
   // Arched handleless: the arch, and the J lip along the top instead of a knob.
   AH: [
     { rect: [OUTER.x, OUTER.y, OUTER.w, OUTER.h] },

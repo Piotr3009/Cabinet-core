@@ -62,14 +62,34 @@ export function hingeModelFits(entry, profile) {
  * carcass side and a hinge body is clipped into the door, so they are two
  * datums and two corrections. Both are zero until somebody has looked at a real
  * model beside a real cabinet, which is what profile.js says in as many words.
+ *
+ * ─── TURN 30 (CLAUDE.md F1): THE BODY GOES ON ITS ABSOLUTE DATUM ───────────
+ *
+ * The owner's 155° hinge sat SEVENTEEN millimetres inside an eighteen
+ * millimetre leaf and would not open. The cause was not the number — it was the
+ * kind of number. `modelOrigin` is min-relative: it places `42542984` correctly
+ * because `42542984`'s own bounding box was baked into it, and a 155° file has
+ * more metal, a different min and therefore a different landing.
+ *
+ * Every Blum hinge GLB in the bucket shares ONE authoring frame (lab, 14.08),
+ * so the BODY is placed by that frame's own cup datum — `fileDatum`, absolute,
+ * bounding box not consulted. On `42542984` the two transforms are byte-for-
+ * byte the same by construction and a test proves it; on every other file the
+ * datum is right and the min-math was never going to be.
+ *
+ * The PLATE keeps `plateOrigin` and keeps the min-math with it. A plate is a
+ * separate question, the owner's plate is right today, and CLAUDE.md says so.
  */
 export function hingeModel(url, {
   profile, plate = false, mirror = false, finish = null,
 }) {
   const C = profile.hardware.hinge.cliptop;
   const O = plate ? C.plateOrigin : C.modelOrigin;
+  const D = plate ? null : C.fileDatum;
   const clone = glbClone(url, {
-    origin: { x: mm(O.x), y: mm(O.y), z: mm(O.z) },
+    ...(D
+      ? { datum: { x: mm(D.x), y: mm(D.y), z: mm(D.z) } }
+      : { origin: { x: mm(O.x), y: mm(O.y), z: mm(O.z) } }),
     mirror,
   });
   // ─── CHAT FIX 14.08.2026: THE PLATE'S HALF TURN ──────────────────────────
@@ -281,33 +301,48 @@ export function offsetArmNode(inner, profile) {
  *
  * The two profile numbers are in FILE coordinates, because that is the frame a
  * mesh table is read in and the frame the first person to correct them will be
- * looking at. `glbClone` places the file by `−min + modelOrigin`, so the axis
- * goes through exactly the same transform — which is the whole reason this is
- * a derivation and not a third measured number that could disagree with the
- * other two.
+ * looking at. It goes through the SAME transform the body itself goes through —
+ * which is the whole reason this is a derivation and not a third measured
+ * number that could disagree with the other two.
  *
- * On the measured 71B3550 (min −26.5, −28.5, −29.48; origin −18.75, −28.5,
- * −64.78; axis x −7.75, z 33.5) it comes to **(0, 0, −1.8) mm** — on the cup's
- * own centre line, 1.8 mm behind the door's back face, which is where the arm
- * of a CLIP top folds.
+ * ─── TURN 30 (CLAUDE.md F1): AND THE TRANSFORM IS NOW A SUBTRACTION ────────
+ *
+ * Turn 24 wrote it as `axis − min + modelOrigin`, because that was the shift
+ * `glbClone` placed the body by. F1 places the body on its ABSOLUTE datum, so
+ * the pin follows and the whole thing collapses to
+ *
+ *     pivot = axis − fileDatum
+ *
+ * — two profile numbers and one minus sign, with the file's bounding box out of
+ * it altogether. On `42542984` this is the very same point turn 29 measured,
+ * because `modelOrigin = min − fileDatum` there by construction:
+ *
+ *   x  −18.08 − (−7.75) = −10.33   ten millimetres towards the arm, off the
+ *                                  cup's own centre line
+ *   z   42.86 − 40.3    = +2.56    a whisker INSIDE the leaf, which is where
+ *                                  a CLIP top's knuckle sits
+ *
+ * and on a 155° file it is the same pin rather than the same arithmetic on a
+ * different bounding box.
  *
  * @param {object} args
- *   min      { x, y, z } — the FILE's bounding-box minimum, in millimetres
+ *   min      the FILE's bounding-box minimum. NO LONGER READ — the pin is
+ *            absolute now — and accepted so the callers that measured it may
+ *            go on passing it while they are read.
  *   profile
  * @returns {{x:number, y:number, z:number}|null}
  */
-export function foldPivotMm({ min, profile }) {
+export function foldPivotMm({ profile }) {
   const C = profile?.hardware?.hinge?.cliptop;
   const axis = C?.rig?.axis;
-  const O = C?.modelOrigin;
-  if (!axis || !O || !min) return null;
-  const at = (a, m, o) => Number(a) - Number(m) + Number(o);
+  const D = C?.fileDatum;
+  if (!axis || !D) return null;
   return {
-    x: at(axis.x ?? 0, min.x ?? 0, O.x ?? 0),
+    x: Number(axis.x ?? 0) - Number(D.x ?? 0),
     // The axis is HORIZONTAL and parallel to the hinge row (F1.2), so it has
     // no height of its own: it runs through the model at the row's own y.
     y: 0,
-    z: at(axis.z ?? 0, min.z ?? 0, O.z ?? 0),
+    z: Number(axis.z ?? 0) - Number(D.z ?? 0),
   };
 }
 
@@ -334,11 +369,11 @@ export function hingeMembers(url, args) {
   const cup = keepMember(hingeModel(url, args), profile, 'A');
   const inner = offsetArmNode(keepMember(hingeModel(url, args), profile, 'B'), profile);
 
-  const entry = glbSource(url);
-  const min = entry?.min
-    ? { x: entry.min.x / mm(1), y: entry.min.y / mm(1), z: entry.min.z / mm(1) }
-    : null;
-  const pivot = foldPivotMm({ min, profile });
+  // Turn 30 (CLAUDE.md F1): the pin is `axis − fileDatum`, so it no longer
+  // asks the decoded file for its bounding box. That is not a tidy-up — it is
+  // the same correction the body itself got: a pin derived from one file's min
+  // is a pin that moves when a 155° export arrives with more metal round it.
+  const pivot = foldPivotMm({ profile });
   // A mirrored clone renders its x negated (the group carries `scale.x = −1`),
   // so the pivot's rendered position follows it and the two hands fold about
   // the same physical point.

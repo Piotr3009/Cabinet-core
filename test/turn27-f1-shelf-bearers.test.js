@@ -55,8 +55,15 @@ const shelfClassEntities = (r, panelId) => {
 // ─── F1.1 — the two boards that carry it ────────────────────────────────────
 
 test('F1.1 a shelf between BUR and a partition drills BUR and the partition — never BUL', () => {
+  // ─── TURN 30 (CLAUDE.md F3): THE DIVIDER STATES ITS DRILLED FACE ───────
+  // This shelf is in the RIGHT bay, so it lands on the partition's RIGHT
+  // face, and a divider is bored from one face. `drill_face: 'R'` is that
+  // face said out loud — without it the divider is bored from the LEFT
+  // (`profile.shelfHoles.partitionFace`) and this bay's shelf puts no pins in
+  // it, which is F3's whole point and is asserted in `test/turn30-f3`. What
+  // turn 27 is about is WHICH TWO BOARDS carry a shelf, and that is unchanged.
   const r = unit([
-    { id: 'p1', kind: 'partition', x_mm: 450 },
+    { id: 'p1', kind: 'partition', x_mm: 450, drill_face: 'R' },
     { id: 's1', kind: 'shelf', pos_mm: 400, zone: 1 },
   ], { width: 900 });
 
@@ -75,6 +82,10 @@ test('F1.1 a shelf between BUR and a partition drills BUR and the partition — 
 });
 
 test('F1.1 the mirror case — a shelf between BUL and a partition leaves BUR bare', () => {
+  // No `drill_face` here on purpose: this shelf is in the LEFT bay and lands
+  // on the partition's LEFT face, which is the face `profile.shelfHoles
+  // .partitionFace` bores by default (turn 30, F3). The divider is bored from
+  // the face the shelf is actually on, and nothing had to be said.
   const r = unit([
     { id: 'p1', kind: 'partition', x_mm: 450 },
     { id: 's1', kind: 'shelf', pos_mm: 400, zone: 0 },
@@ -105,8 +116,10 @@ test('F1.1 the resolver names the PAIR, and the pair is the shelf’s own run', 
 // ─── F1.2 — each bearer in its own frame ────────────────────────────────────
 
 test('F1.2 the partition’s hole heights are the shelf’s height minus its own base', () => {
+  // Turn 30 (F3): the right bay's shelf, so the divider is bored from its
+  // RIGHT face. The FRAME conversion this test is about is the same either way.
   const r = unit([
-    { id: 'p1', kind: 'partition', x_mm: 450 },
+    { id: 'p1', kind: 'partition', x_mm: 450, drill_face: 'R' },
     { id: 's1', kind: 'shelf', pos_mm: 400, zone: 1 },
   ], { width: 900 });
   const part = r.panels.find((p) => p.part === 'VPART');
@@ -150,7 +163,7 @@ test('F1.2 the pin COLUMNS are each board’s own depth, not the side’s', () =
   // column moves forward with it. One formula, asked of whichever board is
   // actually there.
   const r = unit([
-    { id: 'p1', kind: 'partition', x_mm: 450, front_mm: 80 },
+    { id: 'p1', kind: 'partition', x_mm: 450, front_mm: 80, drill_face: 'R' },
     { id: 's1', kind: 'shelf', pos_mm: 400, zone: 1 },
   ], { width: 900 });
   const part = r.panels.find((p) => p.part === 'VPART');
@@ -206,9 +219,11 @@ test('F1.3 an undivided cabinet still measures its full internal width', () => {
 });
 
 test('F1.3 the dimension and the drilling come out of ONE resolution', () => {
+  // Turn 30 (F3): the middle bay's shelf lands on p1's RIGHT face and p2's
+  // LEFT, so each divider is bored from the face this shelf is actually on.
   const r = unit([
-    { id: 'p1', kind: 'partition', x_mm: 400 },
-    { id: 'p2', kind: 'partition', x_mm: 800 },
+    { id: 'p1', kind: 'partition', x_mm: 400, drill_face: 'R' },
+    { id: 'p2', kind: 'partition', x_mm: 800, drill_face: 'L' },
     { id: 's1', kind: 'shelf', pos_mm: 400, zone: 1 },
   ], { width: 1200 });
   const shelf = r.panels.find((p) => p.part === 'SHELF');
@@ -246,9 +261,11 @@ test('F1.4 a cabinet with no partition drills BUL and BUR, exactly as it always 
 // ─── F1.5 — both two-partition cases ────────────────────────────────────────
 
 test('F1.5 a shelf in the MIDDLE bay drills the two partitions and neither side', () => {
+  // Turn 30 (F3): p1's RIGHT face and p2's LEFT are the two this shelf lands
+  // on, and a divider is bored from one face.
   const r = unit([
-    { id: 'p1', kind: 'partition', x_mm: 400 },
-    { id: 'p2', kind: 'partition', x_mm: 800 },
+    { id: 'p1', kind: 'partition', x_mm: 400, drill_face: 'R' },
+    { id: 'p2', kind: 'partition', x_mm: 800, drill_face: 'L' },
     { id: 's1', kind: 'shelf', pos_mm: 400, zone: 1 },
   ], { width: 1200 });
   const parts = r.panels.filter((p) => p.part === 'VPART');
@@ -269,9 +286,10 @@ test('F1.5 a shelf in the MIDDLE bay drills the two partitions and neither side'
 });
 
 test('F1.5 a shelf in an END bay drills one partition and one side', () => {
+  // Turn 30 (F3): the right-hand end bay, so it lands on p2's RIGHT face.
   const r = unit([
     { id: 'p1', kind: 'partition', x_mm: 400 },
-    { id: 'p2', kind: 'partition', x_mm: 800 },
+    { id: 'p2', kind: 'partition', x_mm: 800, drill_face: 'R' },
     { id: 's1', kind: 'shelf', pos_mm: 400, zone: 2 },
   ], { width: 1200 });
   const [p1, p2] = r.panels.filter((p) => p.part === 'VPART');

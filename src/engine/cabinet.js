@@ -31,7 +31,7 @@ import {
 } from './shelfBearers.js';
 // Turn 21 (CLAUDE.md F12): the owner's door-width law, as pure geometry.
 import {
-  isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
+  glassAperture, isGlassFront, isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
 } from './shaker.js';
 import { resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
@@ -52,7 +52,10 @@ import {
 } from './cornice.js';
 import {
   partitionBackScrewRun, partitionBackScrews, partitionBackSpec,
+  partitionFootScrews, partitionFootSpec,
 } from './partitionFixings.js';
+// Turn 30 (CLAUDE.md F7): a shelf row and a hinge cup at one height.
+import { shelfHingeClashes } from './shelfHingeClash.js';
 // Turn 24 (CLAUDE.md F7): the owner's butt-joint set, given the consumer it
 // was written for — a FIX shelf.
 import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
@@ -148,13 +151,43 @@ export function middleHingeIndex(centres) {
  *   own       an explicit list the joiner has edited (F7.2), or null
  * @param {object} profile
  */
-export function hingeRows({ height, rule, standard = 3, own = null }, profile) {
+export function hingeRows({
+  height, rule, standard = 3, own = null, doorHeight = null, twoBelowMm = null,
+}, profile) {
   if (Array.isArray(own) && own.length) {
     const H = Number(height) || 0;
     return [...own]
       .map((v) => Number(v))
       .filter((v) => Number.isFinite(v) && v >= 0 && v <= H)
       .sort((a, b) => a - b);
+  }
+  // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER 600 ───────────────────────
+  //
+  // The LISP's ladders are what they are — Base is ALWAYS three, Low takes two
+  // under 800 — and they stay the engine's bare answer. The owner's standard is
+  // different and simpler: ANY door under 600 mm takes TWO, at 100 and
+  // `wys − 100`.
+  //
+  // So it arrives the way F5's setback arrives and the plinth before it: an
+  // INPUT on the override channel, `hinge_two_below_mm`, default null. Null is
+  // "the LISP ladders", which is what every golden fixture passes and therefore
+  // what a bare `computeCabinet()` still drills.
+  //
+  // The two centres are `[endOffset, H − endOffset]` — the LISP's own outer
+  // pair, written in the CARCASS frame the rows live in — so "100 / wys − 100"
+  // is his sentence and not a second set of numbers. The threshold is measured
+  // against the DOOR's own height, because that is what he said and because a
+  // door is what a hinge hangs.
+  //
+  // A DOOR SOMEBODY HAS EDITED BY HAND is untouched: the `own` list above
+  // returns before this line ever runs, which is CLAUDE.md's "respect per-door
+  // manual hinge edits — they win", as control flow rather than as a promise.
+  const below = Number(twoBelowMm);
+  const leaf = Number(doorHeight);
+  if (below > 0 && leaf > 0 && leaf < below) {
+    const end = Number(profile?.hinges?.endOffset) || 0;
+    const H = Number(height) || 0;
+    return [end, H - end];
   }
   const centres = hingeCentres(height, rule, profile);
   if (hingeStandard(standard, profile) !== 2) return centres;
@@ -166,6 +199,38 @@ export function hingeRows({ height, rule, standard = 3, own = null }, profile) {
 export function doorCountFor(width, profile) {
   const d = profile.doors;
   return (Number(width) - d.widthDeduction) <= d.singleDoorMaxWidth ? 1 : 2;
+}
+
+/**
+ * ─── TURN 30 (CLAUDE.md F14 / F20): WHICH DRAWERS ARE INTERNAL ─────────────
+ *
+ * Which drawers in the stack get NO FRONT — 1-based, as a Set.
+ *
+ * Three ways of saying it, one answer:
+ *   `internal_drawers: [2]`   the job's own — F20's hidden drawer;
+ *   `internalDrawers: 'all'`  the KIT's — F14's pantry, whose drawers live
+ *                             behind doors and never had faces;
+ *   `drawer_fronts: false`    turn 17's "the fronts come off", unchanged.
+ *
+ * It decides one thing only: whether a DRAWER-FRONT panel is cut. The box, the
+ * runner rows, the drilling and the BOM are the existing machinery and are not
+ * consulted here — which is exactly what makes an internal drawer safe under
+ * the batch rule: it removes a board, it invents nothing.
+ */
+export function internalDrawerSet(params, type, count) {
+  const n = Number(count) || 0;
+  const all = () => new Set(Array.from({ length: n }, (_, i) => i + 1));
+  if (params?.drawer_fronts === false) return all();
+  const own = params?.internal_drawers;
+  if (Array.isArray(own)) {
+    return new Set(own.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v >= 1 && v <= n));
+  }
+  if (own === 'all') return all();
+  // A kit whose drawers are internal BY DEFINITION — a pantry's drawers are
+  // behind its doors — says so once, on the type, and a job can still hand a
+  // list of its own above.
+  if (type?.internalDrawers === 'all' && own !== false) return all();
+  return new Set();
 }
 
 /** Largest standard runner length that fits the usable depth, or null. */
@@ -516,7 +581,11 @@ function normalizeParams(raw, profile) {
     doorCount = Number.isFinite(Number(p.doors.count)) ? Number(p.doors.count) : doorCountFor(p.width, profile);
     if (p.doors.hinge) hinge = String(p.doors.hinge).toUpperCase() === 'R' ? 'R' : 'L';
   } else {
-    doorCount = doorCountFor(p.width, profile);
+    // ─── TURN 30 (CLAUDE.md F18) ───
+    // A kit whose face IS two leaves says so, and says it once. Everything
+    // written before tonight has no `doorCount` and reads the width threshold
+    // exactly as it always has, so no fixture can move.
+    doorCount = Number(type.doorCount) > 0 ? Number(type.doorCount) : doorCountFor(p.width, profile);
   }
 
   // Wall units may run their fronts below the carcass (handleless grab edge).
@@ -561,6 +630,10 @@ function normalizeParams(raw, profile) {
     frontHandles: p.front_handles && typeof p.front_handles === 'object' ? p.front_handles : null,
     hingeStandard: p.hinge_standard,
     hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
+    // Turn 30 (CLAUDE.md F11): the owner's "any door under 600 takes two". An
+    // INPUT, exactly like the standard above it — null is the LISP's ladders,
+    // which is what every golden fixture passes.
+    hingeTwoBelowMm: Number(p.hinge_two_below_mm) > 0 ? Number(p.hinge_two_below_mm) : null,
     // ─── Turn 19 (CLAUDE.md F1): WHICH HINGE, NOT HOW MANY ──────────────────
     // The project's finish and system, and any per-door exception a joiner has
     // assigned — design-layer inputs travelling exactly as the hinge standard
@@ -583,9 +656,30 @@ function normalizeParams(raw, profile) {
     // that has never heard of this — keeps its fronts, which is what every
     // fixture and every saved project is.
     drawerFronts: p.drawer_fronts !== false,
+    // ─── TURN 30 (CLAUDE.md F14 / F20): THE INTERNAL DRAWER ─────────────────
+    //
+    // "An INTERNAL drawer = existing box + runner rows, `front: none`, sitting
+    // behind the front above it." (F20) — and F14's pantry is the same
+    // mechanism with every drawer in the stack internal, which is why CLAUDE.md
+    // says *"build it once, use it in both"*.
+    //
+    // It is a LIST of 1-based drawer numbers and nothing else. The box, the
+    // runner rows, the BOM and every hole are untouched: an internal drawer is
+    // a drawer that is not given a face, so the only thing this can change is
+    // whether a DRAWER-FRONT panel is emitted. A kit that wants the whole stack
+    // internal — the pantry — says so on the type, and a job that hides one
+    // drawer behind the front above it passes the one number.
+    //
+    // `drawer_fronts: false` (turn 17) keeps its exact meaning: the WHOLE face
+    // comes off. It is the same answer said the short way, so it is folded in
+    // here rather than living as a second rule further down.
+    internalDrawers: internalDrawerSet(p, type, drawers),
     drawerHeights,
     rail,
     railOffset: Number(p.rail_offset ?? railDefault),
+    // Turn 30 (CLAUDE.md F19): the depth of each arm of a corner unit's L. An
+    // INPUT, defaulting to the profile's, like every other number a kit has.
+    cornerArm: Number(p.corner_arm_mm) > 0 ? Number(p.corner_arm_mm) : profile.cornerUnit.armMm,
     fridgeH: Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
     mountHeight: Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
     // Toe kick, per unit (turn 5, BACKLOG #29). The project sets it in Design
@@ -1054,7 +1148,15 @@ export function computeCabinet(params, profileOverride) {
   // fixture — passes neither of the last two and gets `hingeCentres` unchanged,
   // which is what keeps the AutoLISP's drilling exactly where it is.
   const centres = hingeRows({
-    height: H, rule: hingeRule, standard: cfg.hingeStandard, own: cfg.hingeRows,
+    height: H,
+    rule: hingeRule,
+    standard: cfg.hingeStandard,
+    own: cfg.hingeRows,
+    // Turn 30 (CLAUDE.md F11): the owner's "any door under 600 takes two".
+    // Both of these are INPUTS — a bare kit call passes neither and gets the
+    // LISP's ladder unchanged.
+    doorHeight: frontH,
+    twoBelowMm: cfg.hingeTwoBelowMm,
   }, P);
   // ─── THE CUPS FOLLOW THE HINGES (turn 17, CLAUDE.md F7.3) ────────────────
   //
@@ -1531,13 +1633,31 @@ export function computeCabinet(params, profileOverride) {
     const spacing = (zoneTop - zoneBottom) / (numShelves + 1);
     for (let i = 1; i <= numShelves; i += 1) shelfRows.push(zoneBottom + spacing * i);
   }
-  // The sink's back pin column moves forward — its back panel is inside the box.
-  const shelfBackColumn = backStyle === 'inset' ? SK.shelfBackColumnFromEdge : SH.columnFromEdge;
-  const shelfHoleX = [SH.columnFromEdge, sideW - shelfBackColumn];
+  // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK, AS AN INPUT ──────────
+  //
+  // The LISP drills sleeves 70 mm in from each edge — SKYLON_COMMON's own
+  // shelf-hole block, `(drawCircle "SHELVES_7_5MM" (+ x0 70.0) …)` and
+  // `(+ x0 szer -70.0)` — so **70 stays this engine's bare answer** and a
+  // `computeCabinet()` with nothing said cuts exactly that.
+  //
+  // The owner's workshop standard is 50, and it arrives the way every
+  // owner-standard number in this app arrives: as an INPUT travelling the
+  // plinth's own road (profile default → company row → project →
+  // `paramsForEngine()`), never as a changed formula. Rule 1, in one line.
+  const shelfPinSetback = Number(params?.shelf_pin_setback_mm) > 0
+    ? Number(params.shelf_pin_setback_mm)
+    : SH.columnFromEdge;
+  // The sink's back pin column moves forward — its back panel is inside the
+  // box — and that is a fact about the KIT rather than a workshop preference,
+  // so the override does not reach it. A sink with the owner's 50 is 50 at the
+  // front and the sink's own number at the back, which is what both of those
+  // sentences mean at once.
+  const shelfBackColumn = backStyle === 'inset' ? SK.shelfBackColumnFromEdge : shelfPinSetback;
+  const shelfHoleX = [shelfPinSetback, sideW - shelfBackColumn];
   // The mirrored board's own columns (see shelfBearers.pinColumns): back
   // column from ITS x=0, front column at depth − 70. Same SET as `shelfHoleX`
   // whenever the columns are symmetric — only the sink tells them apart.
-  const shelfHoleXBur = [shelfBackColumn, sideW - SH.columnFromEdge];
+  const shelfHoleXBur = [shelfBackColumn, sideW - shelfPinSetback];
 
   // ── Panels ─────────────────────────────────────────────────────────────────
   const panels = [];
@@ -1834,6 +1954,20 @@ export function computeCabinet(params, profileOverride) {
       cnc: railCnc(false),
       meta: { index: 2 },
     }));
+    // ─── TURN 30 (CLAUDE.md F15): AN IMPOSSIBLE APERTURE CUTS NO BOARD ──────
+    //
+    // `FRIDGE_ZONE_TOO_TALL` has warned since turn 12 that an aperture taller
+    // than its carcass leaves no room for the pieces above the fixed panel —
+    // and the two pieces were cut anyway, at NEGATIVE height. A board of −68 mm
+    // is not a warning, it is an inverted outline on a machine file, and the
+    // edge guard (turn 25, F1.3) finds it as a clockwise loop.
+    //
+    // This is not a formula: a cabinet the engine has already refused to
+    // believe in emits no boards for the part it cannot build. Every valid
+    // housing — every fixture — has `spursH > G` by construction and is
+    // untouched. Found by widening the envelope to american sizes; it was true
+    // of the built-in housing too.
+    if (fridge.spursH > G) {
     // Turn 24 (CLAUDE.md F4): the board's own centre line, and nothing on top.
     const S = thicknessOf('BUL', cfg.thicknesses) / 2;
     const backTopScrews = [
@@ -1868,6 +2002,125 @@ export function computeCabinet(params, profileOverride) {
       box: { x: G + FR.spursWidthClearance / 2, y: fridge.fixedPanelY + G, z: D - FR.spursFromFront - G, w: fridge.spursW, h: fridge.spursPanelH, d: G },
       cnc: rectGeometry(fridge.spursPanelH, fridge.spursW),
     }));
+    }
+  }
+
+  // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT'S L-CARCASS ─────────────────
+  //
+  // "The riskiest of the batch. Start from what the LISP family actually
+  // supports (KIT_BUDR is in the repo — READ it first and say in the PR what it
+  // is); ship the L-carcass geometry + BOM; any hinge/drilling beyond the
+  // parent kit's own lines waits for a LISP. Do not improvise corner-post
+  // drilling overnight."
+  //
+  // KIT_BUDR_FULL.lsp was read. Its own header says "Base Unit Drawer - 3
+  // drawers (4:3:2 ratio)" and its body is the MOVENTO runner outline drawn
+  // line by line. It is the THREE-DRAWER BASE UNIT this app has shipped since
+  // turn 3, and there is not one corner in it. So there is no parent kit for a
+  // corner unit, which means there are no parent lines to inherit — and by the
+  // batch rule that settles it: this ships GEOMETRY and a BOM, and NOT ONE
+  // HOLE.
+  //
+  // ─── THE SHAPE, AND WHY IT IS MADE OF RECTANGLES ──────────────────────────
+  //
+  // Two arms meeting in the corner, inside the footprint the room already
+  // understands (W × D, backed onto both walls):
+  //
+  //     z=D  ┌──────┐              arm A: x 0..W,   z 0..arm
+  //          │  B   │              arm B: x 0..arm, z 0..D
+  //   z=arm  ├──────┴───────┐      the bite at (arm, arm) is the open front
+  //          │      A       │      corner, where two door openings meet
+  //     z=0  └──────────────┘
+  //          x=0   x=arm    x=W
+  //
+  // Every board is a plain RECTANGLE — the L floor and the L top are each cut
+  // as two pieces rather than as one L-shaped board, because two rectangles are
+  // two boards a machine cuts today, and an L outline is a shape nobody's LISP
+  // has drawn. Nothing here is notched, bored or jointed.
+  if (type.corner && W > 0 && D > 0) {
+    const CN = P.cornerUnit;
+    const arm = Math.min(cfg.cornerArm || CN.armMm, Math.min(W, D) - G);
+    const board = (id, part, w, h, box, meta) => panels.push(panel({
+      id, part, role: 'side', w, h, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(w), box, cnc: rectGeometry(w, h), meta,
+    }));
+    // The two walls it stands against.
+    board(`${unitNum}-BACK-A`, 'BACK', W, H, { x: 0, y: 0, z: 0, w: W, h: H, d: G }, { corner: 'wallA' });
+    board(`${unitNum}-BACK-B`, 'BACK', D - G, H, { x: 0, y: 0, z: G, w: G, h: H, d: D - G }, { corner: 'wallB' });
+    // The two ends, one at the far end of each arm.
+    board(`${unitNum}-SIDE-A`, 'SIDE', arm, H, { x: W - G, y: 0, z: 0, w: G, h: H, d: arm }, { corner: 'endA' });
+    board(`${unitNum}-SIDE-B`, 'SIDE', arm - G, H, { x: G, y: 0, z: D - G, w: arm - G, h: H, d: G }, { corner: 'endB' });
+    // …and the floor and the top, each as the two rectangles the L is made of.
+    const aW = W - 2 * G;
+    const aD = arm - G;
+    const bW = arm - 2 * G;
+    const bD = D - arm - G;
+    for (const [name, y] of [['BOTTOM', G], ['TOP', H - G]]) {
+      board(`${unitNum}-${name}-A`, name, aW, aD, {
+        x: G, y: y - (name === 'TOP' ? 0 : G), z: G, w: aW, h: G, d: aD,
+      }, { corner: 'armA' });
+      if (bD > 0 && bW > 0) {
+        board(`${unitNum}-${name}-B`, name, bW, bD, {
+          x: G, y: y - (name === 'TOP' ? 0 : G), z: arm, w: bW, h: G, d: bD,
+        }, { corner: 'armB' });
+      }
+    }
+  }
+
+  // ─── TURN 30 (CLAUDE.md F17): THE WINE RACK'S LATTICE ─────────────────────
+  //
+  // "Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
+  // panels in the BOM. No drilling truth exists → no drilling ships."
+  //
+  // So this emits BOARDS and nothing else. Every piece below is a plain
+  // rectangle with no machining of any kind: no notch, no dowel, no screw, no
+  // pin. The cross-halving joints a lattice is really made with are exactly the
+  // truth this repo does not hold, and they are named in the report instead of
+  // being guessed at overnight.
+  //
+  // ─── HOW MANY CELLS ─────────────────────────────────────────────────────
+  //
+  // The cell is a PROFILE number — the bottle, in effect — and the count is
+  // whatever fits the opening whole. `cell + G` is one cell and the board that
+  // divides it from the next, so the arithmetic is the same one a joiner does
+  // with a tape: how many of these go in, and then share the rest out evenly.
+  // Nothing is cut to a remainder.
+  if (type.lattice && H > 4 * G && internalWidth > 0) {
+    const LR = P.wineRack;
+    const openH = H - 2 * G;
+    const latticeDepth = internalDepth;
+    const fit = (span) => Math.max(1, Math.floor((span + G) / (LR.cellMm + G)));
+    const cols = fit(internalWidth);
+    const rows = fit(openH);
+    const cellW = (internalWidth - (cols - 1) * G) / cols;
+    const cellH = (openH - (rows - 1) * G) / rows;
+    // The uprights: full height of the opening, one between each pair of cells.
+    for (let i = 1; i < cols; i += 1) {
+      const x = G + i * cellW + (i - 1) * G;
+      panels.push(panel({
+        id: `LATTICE-V${i}`, part: 'LATTICE-V', role: 'shelf', w: openH, h: latticeDepth, thickness: G,
+        edgeCode: codes.right, edgeLen: metres(openH),
+        box: { x, y: G, z: 0, w: G, h: openH, d: latticeDepth },
+        cnc: rectGeometry(openH, latticeDepth),
+        meta: { lattice: 'upright', column: i },
+      }));
+    }
+    // …and the shelves, cut PER CELL rather than run through the uprights, so
+    // that every board in the list is a board that can be cut and dropped in
+    // without a joint this repo cannot specify.
+    for (let r = 1; r < rows; r += 1) {
+      const y = G + r * cellH + (r - 1) * G;
+      for (let c = 0; c < cols; c += 1) {
+        const x = G + c * (cellW + G);
+        panels.push(panel({
+          id: `LATTICE-H${r}-${c + 1}`, part: 'LATTICE-H', role: 'shelf', w: cellW, h: latticeDepth, thickness: G,
+          edgeCode: codes.right, edgeLen: metres(cellW),
+          box: { x, y, z: 0, w: cellW, h: G, d: latticeDepth },
+          cnc: rectGeometry(cellW, latticeDepth),
+          meta: { lattice: 'shelf', row: r, column: c + 1 },
+        }));
+      }
+    }
   }
 
   // ─── The ZONE model (turn 12, CLAUDE.md F5.3) ───
@@ -2157,6 +2410,17 @@ export function computeCabinet(params, profileOverride) {
           itemId: item.id || null,
           x_mm: x,
           front_mm: span.front_mm,
+          // ─── TURN 30 (CLAUDE.md F3): WHICH FACE THIS DIVIDER IS BORED FROM
+          // On the PANEL, so the 3-D, the properties panel, the divider's own
+          // modal and the drill loop below are one answer rather than four
+          // places that each work it out. The item's own `drill_face` where it
+          // has been asked; `profile.shelfHoles.partitionFace` where it has
+          // not — LEFT tonight, and one line to change.
+          drillFace: (() => {
+            const said = String(item?.drill_face || '').toUpperCase();
+            if (said === 'L' || said === 'R') return said;
+            return String(P.shelfHoles?.partitionFace || 'L').toUpperCase() === 'R' ? 'R' : 'L';
+          })(),
           // Turn 21 (CLAUDE.md F8): 0 is what a door on this partition needs,
           // and the view and F12 both ask the panel rather than the unit.
           setback: span.front_mm,
@@ -2329,13 +2593,29 @@ export function computeCabinet(params, profileOverride) {
       }));
     }
 
-    for (let i = 1; cfg.drawerFronts && i <= numDrawers; i += 1) {
+    for (let i = 1; i <= numDrawers; i += 1) {
+      // Turn 30 (CLAUDE.md F14/F20): an INTERNAL drawer is given no face. Its
+      // box, its runners and its holes are above and are untouched.
+      if (cfg.internalDrawers.has(i)) continue;
       const zoneY = G + zoneOffsets[i - 1];
       const first = i === 1;
       // The bottom front is shortened to clear the base; the rest are the
       // drawer's own height (LISP: 200 everywhere, 197 for the first).
-      const dfH = first ? drawerHeights[0] - DR.firstFrontAdjust : drawerHeights[i - 1];
-      const dfY = first ? zoneY + DR.firstFrontAdjust : zoneY;
+      const ownH = first ? drawerHeights[0] - DR.firstFrontAdjust : drawerHeights[i - 1];
+      const ownY = first ? zoneY + DR.firstFrontAdjust : zoneY;
+      // ─── TURN 30 (CLAUDE.md F20): THE FRONT ABOVE COVERS IT ───────────────
+      // "…sitting BEHIND THE FRONT ABOVE IT." A hidden drawer leaves a hole in
+      // the façade unless the front over it grows down across its zone, and
+      // that is the whole visible half of the feature: two fronts, three
+      // drawers. It takes in the run of internal drawers immediately below and
+      // the gaps between them — measured off the same zone table, never a
+      // second set of numbers.
+      let bottom = i;
+      while (bottom > 1 && cfg.internalDrawers.has(bottom - 1)) bottom -= 1;
+      const dfY = bottom === i
+        ? ownY
+        : (bottom === 1 ? G + zoneOffsets[0] + DR.firstFrontAdjust : G + zoneOffsets[bottom - 1]);
+      const dfH = ownY + ownH - dfY;
       panels.push(panel({
         id: `${unitNum}-DF${i}`, part: 'DRAWER-FRONT', role: 'front', w: drawerFrontW, h: dfH, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * drawerFrontW + 2 * dfH),
@@ -2436,12 +2716,26 @@ export function computeCabinet(params, profileOverride) {
     }
     // Turn 17 (CLAUDE.md F8.1): with the fronts off, the loop simply does not
     // run — the boxes, their runners and the carcass are exactly what they were.
-    for (let i = 1; cfg.drawerFronts && i <= budr.count; i += 1) {
-      const fh = budr.heights[i - 1];
+    // Turn 30 (CLAUDE.md F20): …and ONE of them can come off on its own, which
+    // is the two-drawer front with a hidden drawer behind it.
+    for (let i = 1; i <= budr.count; i += 1) {
+      if (cfg.internalDrawers.has(i)) continue;
+      // ─── TURN 30 (CLAUDE.md F20): THE FRONT ABOVE COVERS IT ───────────────
+      // The two-drawer front with one hidden drawer behind it: this façade
+      // takes in the run of internal drawers immediately below, and the gaps
+      // between them, off the kit's own `frontY` table.
+      let bottom = i;
+      while (bottom > 1 && cfg.internalDrawers.has(bottom - 1)) bottom -= 1;
+      // How much lower this façade now starts. Zero on every unit that has no
+      // internal drawer, which is every unit written before tonight.
+      const drop = budr.frontY[i - 1] - budr.frontY[bottom - 1];
+      const fh = budr.heights[i - 1] + drop;
       const geom = rectGeometry(budr.frontWidth, fh);
       // The bottom façade runs one CARCASS board lower to cover the floor, so
       // its screw line rises by that board (turn 24, F3.2: the carcass's).
-      const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0);
+      // …and a façade that has GROWN downward keeps its screws on its own box,
+      // which is `drop` higher up the board than its new bottom edge.
+      const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0) + drop;
       // …and the 50 is measured from the BOX's own side, which stands one
       // CARCASS board and one BOX board in from the façade's edge. Two boards,
       // two slots — the LISP's `2×G` collapsed them because both measured 18.
@@ -2452,7 +2746,7 @@ export function computeCabinet(params, profileOverride) {
       panels.push(panel({
         id: `${unitNum}-F${i}`, part: 'DRAWER-FRONT', role: 'front', w: budr.frontWidth, h: fh, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * budr.frontWidth + 2 * fh),
-        box: { x: B.frontWidthDeduction / 2, y: budr.frontY[i - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
+        box: { x: B.frontWidthDeduction / 2, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
         cnc: geom, meta: { drawer: i, frontType: cfg.frontType },
       }));
     }
@@ -3111,6 +3405,39 @@ export function computeCabinet(params, profileOverride) {
     };
   }
 
+  // ─── TURN 30 (CLAUDE.md F21): THE GLASS DOOR'S APERTURE ──────────────────
+  //
+  // "Front style `glass`: frame + translucent panel in 3D, BOM says glass
+  // door; hinge rule unchanged."
+  //
+  // The same pass, the same frame and the same refusal as the shaker above —
+  // the recess simply goes all the way through, and what is left is the frame.
+  // The pane itself is BOUGHT: it is on the order form to the aperture it has
+  // to fill, and it reaches no cut list, because glass is not board.
+  const glassFronts = panels.filter((x) => isGlassFront(x));
+  for (const pnl of glassFronts) {
+    const aperture = glassAperture({
+      w: pnl.w, h: pnl.h, frame: shakerFrame, thickness: pnl.thickness,
+    }, P);
+    if (!aperture) {
+      warnings.push({
+        code: 'GLASS_FRAME_TOO_WIDE',
+        panel: pnl.id,
+        message: `${pnl.id}: ${shakerProblem({ w: pnl.w, h: pnl.h, frame: shakerFrame }, P)}`,
+      });
+      continue;
+    }
+    pnl.cnc.pockets = [...(pnl.cnc.pockets || []), aperture];
+    // On the PIECE, so the 3-D pane and the order line read one answer.
+    pnl.meta.glass = {
+      frame: shakerFrame,
+      aperture: {
+        w: roundTo(aperture.x2 - aperture.x1, 1),
+        h: roundTo(aperture.y2 - aperture.y1, 1),
+      },
+    };
+  }
+
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];
   // ─── TURN 26 (CLAUDE.md R10 / F1.4): A DRILL MAY STATE ITS DEPTH ──────────
@@ -3246,6 +3573,23 @@ export function computeCabinet(params, profileOverride) {
   // shelf's own run: `engine/shelfBearers.js` resolves them, and the pins, the
   // fix joint below and the shelf's dimension chain all ask it, so a picture
   // and a sheet cannot disagree about which boards a shelf is on.
+  // ─── TURN 30 (CLAUDE.md F3): THE FACE THIS DIVIDER IS BORED FROM ─────────
+  //
+  // Per divider, from the divider's own item (`drill_face`, written by its
+  // modal), falling back to the profile's one line. LEFT ships tonight and
+  // CLAUDE.md says why: the owner wants a longer conversation about dividers,
+  // so this is the SAFE PLACEHOLDER — `profile.shelfHoles.partitionFace` — and
+  // the setting itself is not in question. One line to change, and every
+  // divider that has not been asked follows it.
+  //
+  // Read off the PANEL's own `meta.itemId`, so a partition the engine has
+  // clamped or re-ordered still answers for the item a person edited.
+  const partitionFaceDefault = String(P.shelfHoles?.partitionFace || 'L').toUpperCase() === 'R' ? 'R' : 'L';
+  const partitionFaceOf = (panelId) => {
+    const said = String(panels.find((x) => x.id === panelId)?.meta?.drillFace || '').toUpperCase();
+    return said === 'L' || said === 'R' ? said : partitionFaceDefault;
+  };
+
   const shelfPinRows = [];
   const shelfScrewRows = [];
   for (let i = 0; i < shelfRows.length; i += 1) {
@@ -3287,6 +3631,20 @@ export function computeCabinet(params, profileOverride) {
       tolerance: C.shelfWidthClearance,
     });
     for (const bearer of bearerList(bearers)) {
+      // ─── TURN 30 (CLAUDE.md F3): A DIVIDER IS BORED FROM ONE FACE ────────
+      //
+      // The owner: a partition shows shelf-pin drilling on BOTH faces, and a
+      // machine drills one. It was worse than a picture — a partition serving
+      // two bays had the SAME ladder pushed twice, once for the left bay's
+      // shelves and once for the right's, at identical x and y. Six positions,
+      // twelve holes, the bit going down each one a second time.
+      //
+      // So the divider states WHICH FACE it is bored from and the other bay's
+      // shelves put no pins in it. `bearer.side` is which of this board's two
+      // faces the shelf actually lands against (engine/shelfBearers.js), and a
+      // SIDE panel is not asked at all: it has one face that matters and a
+      // shelf can only ever land on that one.
+      if (bearer.kind === 'partition' && bearer.side !== partitionFaceOf(bearer.id)) continue;
       const slot = pinWork.get(bearer.id) || { bearer, rows: [] };
       slot.rows.push(row.y);
       pinWork.set(bearer.id, slot);
@@ -3299,7 +3657,10 @@ export function computeCabinet(params, profileOverride) {
     // front edge, one `shelfBackColumn` from the back of its own depth — so a
     // partition set back from the face has its back column set back with it.
     const columns = pinColumns(slot.bearer, {
-      columnFromEdge: SH.columnFromEdge, backColumn: shelfBackColumn,
+      // Turn 30 (CLAUDE.md F5): the workshop's own setback where it has one,
+      // and the LISP's 70 where it has not. ONE resolution, so a partition and
+      // a side cannot be drilled to two different standards.
+      columnFromEdge: shelfPinSetback, backColumn: shelfBackColumn,
     });
     for (const rowY of slot.rows) {
       for (const dy of SH.clusterOffsets) {
@@ -3719,6 +4080,48 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── THE DIVIDER'S FOOT (turn 30, CLAUDE.md F4) ──────────────────────────
+  //
+  // Owner: "chyba kiedyś było ale się zagineło." It was. Turn 13 put the
+  // owner's BISCUIT set where a divider meets the boards above and below it;
+  // turn 23 removed it — rightly, no kit names `BISCUIT_4MM` — and in the same
+  // stroke removed the LISP's OWN fixing for that joint, which is not a biscuit
+  // at all but two ⌀3 screws up through the bottom board:
+  //
+  //     drawWardrobeDPHolesBOTTOM — reference/lisp/KIT_WARDROBE_FULL.lsp
+  //                                 L377-385, called on the BOTTOM at L934
+  //
+  // Every number, the frame conversion and the reason the second one is odd are
+  // `engine/partitionFixings.js`. What is here is WHICH PIECES ask for it, and
+  // it is both of the pieces that are the same thing under two names:
+  //
+  //   DP     the wardrobe kit's own drawer panel — the very piece the LISP
+  //          lines above are written for, and the one whose foot was missing
+  //          while its back and its side were drilled;
+  //   VPART  the interactive vertical divider, when it STANDS ON the bottom.
+  //          A divider that starts higher up (turn 21's F9 — one that begins
+  //          on a fixed shelf) has no foot on this board and takes nothing.
+  //
+  // THE TOP TAKES NOTHING. There is no `drawWardrobeDPHolesTOP` in any kit —
+  // the wardrobe's divider stops at the partition over the drawers and never
+  // reaches the top — so no hole is invented there. The gap is named in the
+  // turn's report rather than filled overnight.
+  const bottomPanel = panels.find((x) => x.part === 'BOTTOM');
+  if (bottomPanel) {
+    const spec = partitionFootSpec(P);
+    const feet = [
+      ...panels.filter((x) => x.part === 'DP' && x.box),
+      ...verticalPartitions.filter((x) => Math.abs(x.box.y - (bottomPanel.box.y + bottomPanel.box.h)) < 1e-6),
+    ];
+    for (const divider of feet) {
+      for (const { x, y } of partitionFootScrews({
+        divider: divider.box, bottom: bottomPanel.box, profile: P,
+      })) {
+        addDrill(bottomPanel.id, 'partition_foot_screw', spec.layer, x, y, spec.diameter);
+      }
+    }
+  }
+
   // ── Totals ─────────────────────────────────────────────────────────────────
   const boardPanels = panels.filter((x) => x.material_role === 'board');
   const frontPanels = panels.filter((x) => x.material_role === 'front');
@@ -3937,6 +4340,51 @@ export function computeCabinet(params, profileOverride) {
     [`${roundTo(internalWidth, 0)} mm`, railProduct].filter(Boolean).join(' · '));
   hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',
     { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf }, `⌀${SH.diameter}`);
+  // ─── TURN 30 (CLAUDE.md F21): "BOM SAYS GLASS DOOR" ──────────────────────
+  // One pane per glass leaf, to the aperture it fills. Glass is not board, so
+  // it is ORDERED and never cut: it reaches no panel, no sheet and no CSV line.
+  // Two doors of the same size are one order line of two, which is what the
+  // hardware merge key (role + spec label) already does for every other bought
+  // thing in this list.
+  for (const pane of [...new Set(panels
+    .filter((x) => x.meta?.glass)
+    .map((x) => `${x.meta.glass.aperture.w}×${x.meta.glass.aperture.h}`))]) {
+    const [aw, ah] = pane.split('×').map(Number);
+    const count = panels.filter((x) => x.meta?.glass
+      && `${x.meta.glass.aperture.w}×${x.meta.glass.aperture.h}` === pane).length;
+    hw('glass_pane', 'Glass pane', count, 'pcs',
+      { aperture_w_mm: aw, aperture_h_mm: ah },
+      `${aw} × ${ah} mm aperture`);
+  }
+  // ─── TURN 30 (CLAUDE.md F13–F21): A BOUGHT MECHANISM IS A LINE TO ORDER ───
+  //
+  // "A drilled hole exists only where a LISP line or a published Blum pattern
+  // says so. A type with no such truth ships GEOMETRY + BOM and its panels
+  // ship UNDRILLED, with the gap named in the report."
+  //
+  // This is the BOM half of that rule, and it is deliberately ONE line of
+  // arithmetic: a kit that declares `hardwareKit` buys one mechanism, to the
+  // size of the opening it has to fit. It reaches no drill, no runner row and
+  // no 3D body — a mechanism whose fixing this repo cannot state is a mechanism
+  // this repo does not place. Types written before tonight carry no
+  // `hardwareKit` at all, so not one fixture can move.
+  if (type.hardwareKit) {
+    const kit = type.hardwareKit;
+    // The clear opening: between the sides, between the bottom and the top,
+    // and from the back to the inside of the door. Read off the carcass the
+    // kit actually cut rather than off the nominal size, because a mechanism
+    // is ordered to what it has to fit inside.
+    const openH = H
+      - (type.carcass.top === 'panel' ? G : 0)
+      - (type.carcass.bottom === 'none' ? 0 : G);
+    hw(kit.role, kit.label, 1, 'pcs',
+      {
+        opening_width_mm: roundTo(internalWidth, 1),
+        opening_height_mm: roundTo(openH, 1),
+        opening_depth_mm: roundTo(internalDepth, 1),
+      },
+      `${roundTo(internalWidth, 0)} × ${roundTo(openH, 0)} × ${roundTo(internalDepth, 0)} mm opening`);
+  }
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
   // ─── Turn 22 (CLAUDE.md F1.4): THE CORNICE IS ORDERED, NOT CUT ───────────
@@ -4123,6 +4571,18 @@ export function computeCabinet(params, profileOverride) {
     // stays every shelf, because it is where the shelves ARE and the drawings
     // dimension it; these two say how each one is held.
     shelf_pin_row_y: shelfPinRows.map((row) => roundTo(row.y, 4)),
+    // ─── TURN 30 (CLAUDE.md F3): WHICH FACE EACH DIVIDER IS BORED FROM ─────
+    // Published rather than re-derived, exactly as `handles` is: the 3-D, the
+    // sheet, the divider's own modal and the report all ask one list. Absent
+    // on a cabinet with no divider in it, so a golden box's summary is the
+    // summary it has always had, key for key.
+    ...(panels.some((p) => p.part === 'VPART')
+      ? {
+        partition_drill_face: Object.fromEntries(panels
+          .filter((p) => p.part === 'VPART')
+          .map((p) => [p.id, p.meta.drillFace])),
+      }
+      : {}),
     // On the SHELF's own centre line, not the carcass board's — a shelf
     // somebody made 25 mm is screwed through its own middle (turn 9, F4).
     shelf_screw_row_y: shelfScrewRows.map((r) => roundTo(r.y + r.thickness / 2, 4)),
@@ -4247,6 +4707,22 @@ export function computeCabinet(params, profileOverride) {
     csvLines: buildCsvLines(unitNum, panels, P),
     warnings,
     assemblies,
+    // ─── TURN 30 (CLAUDE.md F7): A SHELF AND A HINGE AT ONE HEIGHT ─────────
+    //
+    // Reported, never fixed. `engine/shelfHingeClash.js` holds the arithmetic
+    // and the derivation of the window; this is where the answer is published,
+    // and it is published EMPTY as an empty array rather than as a missing key
+    // so a reader never has to ask which it is.
+    //
+    // Nothing here reaches a hole: the cabinet is cut exactly as it was asked
+    // for, and the app says what it found. "No silent auto-fix" is CLAUDE.md's
+    // own sentence and this is it obeyed.
+    clashes: shelfHingeClashes({
+      result: {
+        panels, drillSummary,
+      },
+      profile: P,
+    }),
   };
 }
 

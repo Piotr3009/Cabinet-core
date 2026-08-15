@@ -87,6 +87,24 @@ export const DEFAULT_CABINET_PROFILE = {
       },
       H: { label: 'Handleless (J-groove)', grooveDepth: 30 },
       F: { label: 'Flat' },
+      // ─── TURN 30 (CLAUDE.md F21): THE GLASS DOOR ──────────────────────────
+      //
+      // "Front style `glass`: frame + translucent panel in 3D, BOM says glass
+      // door; hinge rule unchanged."
+      //
+      // A glass door is a SHAKER whose panel is not there: the same frame, of
+      // the same width, cut by the same arithmetic — `engine/shaker.js` — and
+      // the recess taken all the way through instead of 6 mm deep. Borrowing
+      // the frame rather than giving glass a number of its own is deliberate:
+      // a kitchen whose glass doors wear a different frame from its solid ones
+      // is a kitchen nobody meant to build, and one law is one thing to get
+      // right.
+      //
+      // What is NOT here is a rebate. The glass sits in the aperture the way
+      // this workshop glazes a door, and no LISP line and no published pattern
+      // states that detail — so nothing is cut for it and the gap is named in
+      // the report.
+      GL: { label: 'Glass', apertureLayer: 'GLASS_APERTURE' },
     },
     defaultType: 'S',
   },
@@ -155,6 +173,17 @@ export const DEFAULT_CABINET_PROFILE = {
 
   // ─── Doors / fronts ───
   doors: {
+    // ─── TURN 30 (CLAUDE.md F12): HOW NEAR TWO FRONTS MAY COME ────────────
+    //
+    // Room level: the gap between NEIGHBOURING fronts in a run — the last door
+    // of one cabinet and the first of the next. Two cabinets that each measure
+    // perfectly can still be set out 1.5 mm apart, and nothing in this app said
+    // so until tonight.
+    //
+    // Under this, the pair's meeting edges are painted RED and the value is
+    // shown. It is a WARNING OVERLAY and not a block: the cabinets are built
+    // exactly as they were asked for.
+    minNeighbourGapMm: 3,
     // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
     // width 705 mm (704 is still ONE door — BLOCKERS.md #2)
     widthDeduction: 4,
@@ -191,6 +220,16 @@ export const DEFAULT_CABINET_PROFILE = {
     xFromFrontEdge: 37,        // measured from the FRONT edge of the side panel
     layer: 'HINGES_5MM',
     endOffset: 100,            // first/last hinge centre, from panel end
+    // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER … ───────────────────────
+    //
+    // The LISP's ladders are what they are — Base is ALWAYS three, Low takes
+    // two under 800 — and `null` is those ladders. The owner's own standard is
+    // ANY door under 600 mm on TWO hinges, at 100 and `wys − 100`, and it
+    // arrives on the OVERRIDE CHANNEL (company row → project → `hinge_two_
+    // below_mm`) rather than as a changed ladder. Null here is what keeps a
+    // bare `computeCabinet()` — every golden fixture — drilling the AutoLISP's
+    // own count.
+    twoBelowMm: null,
     // Hinge-count rules per unit family (SKYLON_COMMON calcHingePositions*)
     rules: {
       base: { mode: 'base', secondFromTop: 300 },                 // [100, H−300, H−100]
@@ -231,6 +270,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // When the UI supplies explicit shelf positions, drill the rows there
     // instead of on the even-spacing formula.
     followPositions: true,
+    // ─── TURN 30 (CLAUDE.md F3): WHICH FACE OF A DIVIDER IS BORED ─────────
+    //
+    // The owner: a partition shows shelf-pin drilling on BOTH faces, and a
+    // machine drills one. He is right, and it was worse than a picture: a
+    // partition serving two bays had the SAME ladder emitted twice, once for
+    // each bay's shelves, at identical x and y — six positions, twelve holes,
+    // the bit going down the same hole a second time.
+    //
+    // A divider is bored from ONE face and this is which. It is a per-divider
+    // setting (the item's own `drill_face`, from the divider's modal) and this
+    // is the answer a divider that has not been asked falls back to.
+    //
+    // LEFT ships tonight, and CLAUDE.md is explicit about what that means: the
+    // owner wants a longer conversation about dividers, so this is a SAFE
+    // PLACEHOLDER — one line to change — and the SETTING is not in question.
+    // The Q1 in the push message is this line and nothing else.
+    partitionFace: 'L',
   },
 
   // ─── Skylon puzzle joint (SKYLON_COMMON drawBUL / drawBUR / drawTOP_ROT90) ───
@@ -490,6 +546,42 @@ export const DEFAULT_CABINET_PROFILE = {
     maxPitch: 400,             // the owner's cap on what is left in between
     screwDiameter: 3,          // the ⌀3 the whole carcass is screwed with
     layer: 'SCREWS_3MM',       // the LISP's own layer — joined, never duplicated
+  },
+
+  // ─── THE DIVIDER'S FOOT (turn 30, CLAUDE.md F4) ─────────────────────────
+  //
+  // Owner, of the joint where a divider meets the board it stands on: "chyba
+  // kiedyś było ale się zagineło." It was — turn 13 put the owner's BISCUIT set
+  // there, turn 23 correctly removed it (no kit names `BISCUIT_4MM`), and in
+  // doing so it also removed the LISP's OWN fixing for the same joint, which is
+  // not a biscuit at all:
+  //
+  //     (defun drawWardrobeDPHolesBOTTOM …
+  //       (drawCircle "SCREWS_3MM" (+ x0 dpScrewDepth)       (+ y0 dpInsetCenter) 1.5)
+  //       (drawCircle "SCREWS_3MM" (+ x0 drawerPanelD -50.0) (+ y0 dpInsetCenter) 1.5) …)
+  //                            — reference/lisp/KIT_WARDROBE_FULL.lsp L377-385,
+  //                              called on the BOTTOM panel at L934
+  //
+  // TWO ⌀3 screws per divider, up through the bottom board into the divider's
+  // own bottom edge, on its centre line across the width. Both numbers are
+  // stated FROM THE FRONT EDGE — the LISP's own comment says so — and
+  // `engine/partitionFixings.js` converts them into the BOTTOM's own rotated
+  // frame, which runs from the back.
+  //
+  // `fromFrontEdge` is the SAME 99 that `wardrobe.drawerPanel.screwDepth`
+  // carries for this divider's side holes; a test asserts the two agree, so the
+  // day somebody re-measures it they cannot drift apart.
+  //
+  // THE TOP TAKES NOTHING, and that is the LISP too: there is no
+  // `drawWardrobeDPHolesTOP`, because in that kit the divider stops at the
+  // horizontal partition over the drawers and never reaches the top. No kit in
+  // `reference/lisp/` drills a TOP for a vertical member, so nothing is
+  // invented — the gap is named in the report instead.
+  partitionFoot: {
+    fromFrontEdge: 99,         // the LISP's `dpScrewDepth`
+    fromFarEnd: 50,            // the LISP's `drawerPanelD − 50`, reproduced verbatim
+    screwDiameter: 3,
+    layer: 'SCREWS_3MM',
   },
 
   // ─── Partition fixing: the biscuit set (turn 13, CLAUDE.md F8 / #59) ─────
@@ -890,6 +982,31 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 600, height: 2100, depth: 558 },
   },
 
+  // ─── Cargo 300, the pull-out larder (turn 30, CLAUDE.md F13) ───────────────
+  //
+  // "Parent geometry: KIT_BUDTALL. Proposed width 300. Carcass + full door per
+  // the kit; the pull-out frame is HARDWARE (BOM + GLB slot when the owner
+  // uploads one), no invented runners drilling — the mechanism mounts to floor
+  // and top per manufacturer, which is not this repo's truth yet."
+  //
+  // So the only thing that is its OWN here is the width. The carcass, the door
+  // and every hole in both are KIT_BUDTALL_FULL's, and the test asserts that
+  // hole for hole against a tall unit of the same size.
+  cargoUnit: {
+    minHeight: 1100,
+    defaults: { width: 300, height: 2100, depth: 558 },
+  },
+
+  // ─── Pantry (turn 30, CLAUDE.md F14) ──────────────────────────────────────
+  //
+  // KIT_BUDTALL's carcass wearing the wardrobe kit's INTERNAL drawer machinery.
+  // 600 is the width a larder is built at and 2100 is the tall unit's own
+  // height — the kit it is made of, said once.
+  pantryUnit: {
+    minHeight: 1100,
+    defaults: { width: 600, height: 2100, depth: 558 },
+  },
+
   // ─── Low cabinet (KIT_LOW_CABINET_FULL) ───
   lowCabinet: {
     minHeight: 300,
@@ -1172,6 +1289,94 @@ export const DEFAULT_CABINET_PROFILE = {
     fixedScrewFromEnd: 50,
   },
 
+  // ─── Glass wall unit (turn 30, CLAUDE.md F21) ─────────────────────────────
+  //
+  // KIT_WUD_FULL's own defaults, said again so the kit has a home of its own to
+  // be tuned in. A glass wall unit is a wall unit; what differs is the FRONT
+  // STYLE it arrives wearing.
+  glassWallUnit: {
+    defaults: {
+      width: 600, height: 720, depth: 400, mountHeight: 1500,
+    },
+  },
+
+  // ─── Corner unit (turn 30, CLAUDE.md F19) ─────────────────────────────────
+  //
+  // "Ship the L-carcass geometry + BOM; any hinge/drilling beyond the parent
+  // kit's own lines waits for a LISP."
+  //
+  // There IS no parent kit — KIT_BUDR_FULL turned out to be the three-drawer
+  // base unit — so these numbers are a SHAPE and nothing more. `armMm` is the
+  // depth of each arm of the L; the two openings it leaves are `width − armMm`
+  // and `depth − armMm`, which at 1000 / 600 is 400 apiece.
+  cornerUnit: {
+    defaults: { width: 1000, height: 770, depth: 1000 },
+    armMm: 600,
+  },
+
+  // ─── Twin cupboard (turn 30, CLAUDE.md F18) ───────────────────────────────
+  //
+  // "Expose it in the Kitchen category with its own defaults." A two-door base
+  // cupboard: 900 is the width a pair of leaves is worth hanging at, and the
+  // leaves themselves are `doors.doubleTotalGap` — the engine's own arithmetic
+  // since turn 1, which is KIT_BUD_FULL's.
+  //
+  // See the type for what KIT_DOOR_DOUBLE.lsp actually turned out to be.
+  twinCupboard: {
+    defaults: { width: 900, height: 770, depth: 558 },
+  },
+
+  // ─── Wine rack (turn 30, CLAUDE.md F17) ───────────────────────────────────
+  //
+  // "Geometry-only type: carcass per KIT_BUD/KIT_WUD envelope + the lattice as
+  // panels in the BOM. No drilling truth exists → no drilling ships."
+  //
+  // `cellMm` is the bottle, in effect: the clear opening one cradle wants. The
+  // engine fits as many whole cells as the carcass takes and shares the rest
+  // out evenly, so a wider rack gets MORE cells rather than fatter ones.
+  wineRack: {
+    defaults: { width: 600, height: 770, depth: 558 },
+    cellMm: 100,
+  },
+
+  // ─── Bin unit (turn 30, CLAUDE.md F16) ────────────────────────────────────
+  //
+  // "Parent: KIT_BUD. Pull-out bin = hardware on the door/carcass per
+  // manufacturer: BOM + visual, no invented holes."
+  //
+  // A base unit at the width a bin pull-out is bought at, and nothing else of
+  // its own. Every hole is KIT_BUD_FULL's.
+  binUnit: {
+    defaults: { width: 600, height: 770, depth: 558 },
+  },
+
+  // ─── American fridge housing (turn 30, CLAUDE.md F15) ─────────────────────
+  //
+  // "Parent: KIT_FRIDGE.lsp — it EXISTS and is the truth. Widen the parameter
+  // envelope to american sizes; drilling stays the kit's own."
+  //
+  // So this block is a SIZE and nothing else. Every panel of KIT_FRIDGE already
+  // follows the width and the aperture height — the fixed panel, the spurs
+  // panel, the two back rails and the back above them are all written in terms
+  // of them — and the drilling follows the panels. Widening the envelope is
+  // therefore a set of defaults, not a change to the kit, and the test asserts
+  // that a US housing is drilled exactly as KIT_FRIDGE drills a housing of the
+  // same size.
+  //
+  // The numbers are a STARTING SIZE for a side-by-side, not a specification:
+  // a joiner types the appliance's own width and height off its data sheet, as
+  // he does today for a built-in. The depth stays the run's, because an
+  // american fridge stands proud of the units and always has.
+  americanFridgeUnit: {
+    // The minimum has to clear the kit's OWN aperture: above the fixed panel
+    // KIT_FRIDGE puts a spurs panel and the back over it, and `spursH` must be
+    // more than a board for either to exist. 1900 of appliance + the fixed
+    // panel + a spurs panel worth of room is 2000, so 2000 it is — the same
+    // question `fridgeUnit.minHeight` answers for a 1786 built-in.
+    minHeight: 2000,
+    defaults: { width: 1000, height: 2100, depth: 558, fridgeH: 1900 },
+  },
+
   // ─── Construction automatics (turn 3, phase 7) ───
   // Parts nobody draws by hand: the plinth under a run of units, the scribe
   // filler between a unit and the wall, and the panel that closes the gap
@@ -1185,6 +1390,30 @@ export const DEFAULT_CABINET_PROFILE = {
       height: null,
       setback: 50,          // recessed from the front face (toe kick)
       thickness: null,      // null = the unit's board thickness
+    },
+    // ─── THE WORKTOP (turn 30, CLAUDE.md F8) ───────────────────────────
+    //
+    // Owner: two or more base cabinets take ONE worktop "od ściany aż do
+    // paneli" — from the wall right out to the end panels. CLAUDE.md decides
+    // the three numbers so this turn does not have to, and they live here
+    // rather than in the engine because they are the workshop's:
+    //
+    //   thickness 38    UK standard. 770 carcass + 100 legs + 38 lands on the
+    //                   900 line, which is why it is 38 and not 40.
+    //   front 20        proud of the DOOR plane. A slab flush with the doors
+    //                   would drip down them.
+    //   side 10         past an END PANEL — past the panel, not the carcass.
+    //   wall            flush, and there is no number for it: nothing hangs
+    //                   over a wall, and the scribe closes that side.
+    //
+    // A DESIGN-LAYER auto-part like the end panels: it reaches no hole and no
+    // fixture, and `computeCabinet()` neither knows nor asks about it.
+    worktop: {
+      enabled: true,
+      thickness: 38,
+      frontOverhang: 20,
+      sideOverhang: 10,
+      minUnits: 2,          // "select 2+ base cabinets"
     },
     topInfill: {
       defaultHeight: 40,    // the visible face; "40" is what a workshop says
@@ -2188,6 +2417,16 @@ export const DEFAULT_CABINET_PROFILE = {
     // `run` is the app's selection blue, which is where it started; `inner` is
     // the app's gold, the colour every other "this is the thing you are working
     // on" mark in the app already wears.
+    // ─── TURN 30 (CLAUDE.md F12): THE COLOUR OF A FRONT-GAP FAULT ─────────
+    // Red, because that is what CLAUDE.md asks for and what everybody already
+    // means by it. A PICTURE number: nothing downstream of it is cut.
+    frontGapWarning: { colour: '#e2483c' },
+    // ─── TURN 30 (CLAUDE.md F8): WHAT A WORKTOP LOOKS LIKE ────────────────
+    // Until a per-worktop decor arrives (CLAUDE.md puts it in a later
+    // chat-fix), a slab is drawn in the workshop's own worktop grey. It is a
+    // PICTURE number and nothing downstream of it is cut.
+    worktop: { colour: '#6f6f72' },
+
     addPlus: { run: '#2B6CB0', inner: '#C9A227' },
   },
 
@@ -2487,6 +2726,38 @@ export const DEFAULT_CABINET_PROFILE = {
         // from. A pack whose cup is authored differently changes this line.
         cupBoreFileZ: 51.3,
         fileMinZ: -29.48,
+        // ─── HISTORY (turns 19–29): `modelOrigin` is MIN-RELATIVE ──────────
+        // It answers "how far must this file's bounding-box corner move so the
+        // cup lands on the drilled point" — and the answer is only right for
+        // the file whose min was baked into it (`fileMinZ` above, the
+        // `42542984` export). It keeps that job for the PLATE path, where the
+        // owner's plate is right today and where a second family has not yet
+        // arrived to disagree with it.
+        //
+        // ─── TURN 30 F1: `fileDatum` IS THE JOB ────────────────────────────
+        //
+        // The owner, of a 155° wardrobe hinge: "jest za głęboko osadzony w
+        // drzwiach i się nie otwiera." Measured in the chat lab 14.08.2026 and
+        // FINAL: every Blum hinge GLB in the bucket shares ONE authoring
+        // frame, and the cup datum sits at this point in FILE millimetres,
+        // ABSOLUTE — x on the cup's own centre line, y on the row, z the
+        // FLANGE PLANE (the same 40.3 the bore derivation above produces:
+        // `cupBoreFileZ − hardware.hinge.cupDepth`).
+        //
+        // Absolute is the whole of the fix. A 155° file has a bigger body and
+        // therefore a different `min`; placed by `−min + modelOrigin` it lands
+        // ~17 mm deep in an 18 mm leaf — a hinge in the last millimetre of the
+        // board, which is the door that would not open. Placed by `−fileDatum`
+        // it lands on the flange plane whatever the body around it is.
+        //
+        // For `42542984` the two transforms are BYTE-IDENTICAL by
+        // construction, because `modelOrigin` was derived from this very
+        // datum and that file's own min:
+        //   −min + modelOrigin = −min + (min − fileDatum) = −fileDatum
+        // `test/turn30-f1-hinge-datum.test.js` proves that identity rather
+        // than asserting it, so the day somebody re-measures the cup the two
+        // cannot drift apart in silence.
+        fileDatum: { x: -7.75, y: 0, z: 40.3 },
         modelOrigin: { x: -18.75, y: -28.5, z: -69.78 },
         plateOrigin: { x: 0, y: -26.5, z: -20.75 },
         // ─── CHAT FIX 14.08.2026: THE PLATE FACES ITS PANEL ────────────────
@@ -3389,6 +3660,8 @@ export function migrateCabinetProfile(profile) {
     // Turn 23 (F6 / F8): stored profiles made before these blocks existed come
     // back with them, like every other block here.
     partitionBack: { ...D.partitionBack, ...profile.partitionBack },
+    // Turn 30 (CLAUDE.md F4): the divider's foot, restored from the LISP.
+    partitionFoot: { ...D.partitionFoot, ...profile.partitionFoot },
     hoverDimensions: {
       ...D.hoverDimensions,
       ...profile.hoverDimensions,
@@ -3434,6 +3707,8 @@ export function migrateCabinetProfile(profile) {
       hangers: { ...D.wallUnit.hangers, ...profile.wallUnit?.hangers },
     },
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
+    cargoUnit: { ...D.cargoUnit, ...profile.cargoUnit, defaults: { ...D.cargoUnit.defaults, ...profile.cargoUnit?.defaults } },
+    pantryUnit: { ...D.pantryUnit, ...profile.pantryUnit, defaults: { ...D.pantryUnit.defaults, ...profile.pantryUnit?.defaults } },
     lowCabinet: { ...D.lowCabinet, ...profile.lowCabinet, defaults: { ...D.lowCabinet.defaults, ...profile.lowCabinet?.defaults } },
     baseDrawerUnit: {
       ...D.baseDrawerUnit,
@@ -3460,6 +3735,20 @@ export function migrateCabinetProfile(profile) {
     },
     dwPanel: { ...D.dwPanel, ...profile.dwPanel, defaults: { ...D.dwPanel.defaults, ...profile.dwPanel?.defaults } },
     fridgeUnit: { ...D.fridgeUnit, ...profile.fridgeUnit, defaults: { ...D.fridgeUnit.defaults, ...profile.fridgeUnit?.defaults } },
+    binUnit: { ...D.binUnit, ...profile.binUnit, defaults: { ...D.binUnit.defaults, ...profile.binUnit?.defaults } },
+    wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
+    twinCupboard: { ...D.twinCupboard, ...profile.twinCupboard, defaults: { ...D.twinCupboard.defaults, ...profile.twinCupboard?.defaults } },
+    cornerUnit: { ...D.cornerUnit, ...profile.cornerUnit, defaults: { ...D.cornerUnit.defaults, ...profile.cornerUnit?.defaults } },
+    glassWallUnit: {
+      ...D.glassWallUnit,
+      ...profile.glassWallUnit,
+      defaults: { ...D.glassWallUnit.defaults, ...profile.glassWallUnit?.defaults },
+    },
+    americanFridgeUnit: {
+      ...D.americanFridgeUnit,
+      ...profile.americanFridgeUnit,
+      defaults: { ...D.americanFridgeUnit.defaults, ...profile.americanFridgeUnit?.defaults },
+    },
     autoParts: {
       ...D.autoParts, ...profile.autoParts,
       plinth: { ...D.autoParts.plinth, ...profile.autoParts?.plinth },
@@ -3496,6 +3785,11 @@ export function migrateCabinetProfile(profile) {
         },
       },
       sheen: { ...D.appearance.sheen, ...profile.appearance?.sheen },
+      // Turn 30 (CLAUDE.md F8): a profile saved before the worktop existed has
+      // no colour for one, and a slab drawn in `undefined` is a black slab.
+      worktop: { ...D.appearance.worktop, ...profile.appearance?.worktop },
+      // Turn 30 (CLAUDE.md F12): and the colour a too-near pair is painted.
+      frontGapWarning: { ...D.appearance.frontGapWarning, ...profile.appearance?.frontGapWarning },
       // Turn 21 (CLAUDE.md F3): a profile stored before this turn has no
       // `cuts` at all and must read as the default — off.
       cuts: { ...D.appearance.cuts, ...profile.appearance?.cuts },
@@ -3608,6 +3902,14 @@ export function migrateCabinetProfile(profile) {
           // knows how to drill (F1.5), not a workshop preference, and a saved
           // profile must not be able to switch it on.
           plates: D.hardware.hinge.cliptop.plates,
+          // Turn 30 (CLAUDE.md F1): the ABSOLUTE cup datum the hinge BODY is
+          // placed by. Merged key by key like the origins beside it, so a
+          // profile saved before this turn — which has no datum at all — comes
+          // back able to place a hinge that is not `42542984`.
+          fileDatum: {
+            ...D.hardware.hinge.cliptop.fileDatum,
+            ...profile.hardware?.hinge?.cliptop?.fileDatum,
+          },
           modelOrigin: {
             ...D.hardware.hinge.cliptop.modelOrigin,
             ...profile.hardware?.hinge?.cliptop?.modelOrigin,

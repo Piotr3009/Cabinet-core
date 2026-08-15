@@ -45,6 +45,9 @@ export const FRONT_STYLE_OPTIONS = [
   { id: 'GF', label: 'Grooved with frame' },
   { id: 'A', label: 'Arched' },
   { id: 'AH', label: 'Arched handleless' },
+  // Turn 30 (CLAUDE.md F21): the glass door — a shaker frame with the panel
+  // taken all the way through, and a pane ordered for the hole.
+  { id: 'GL', label: 'Glass' },
 ];
 
 /**
@@ -87,6 +90,37 @@ export const DEFAULT_DESIGN = {
     // it costs. A decor is chosen per material type, not per unit.
     types: [{ id: 'c1', label: 'Carcass 1', material_id: null, finish_id: null }],
   },
+  // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ────────────────────────
+  //
+  // The owner's standard is 50; the LISP drills 70 (SKYLON_COMMON `drawBUL`,
+  // the shelf-hole block — `(+ x0 70.0)` and `(+ x0 szer -70.0)`), so 70 stays
+  // the ENGINE's bare answer and this is the OVERRIDE CHANNEL, exactly as the
+  // plinth, the hinge standard and the runner variant travel: an INPUT in the
+  // design layer, never a formula in the engine.
+  //
+  // `null` means "nobody has said", and the profile's 70 answers it — which is
+  // what keeps every golden fixture cutting what the AutoLISP cuts.
+  shelves: {
+    pinSetback: null,
+  },
+  // Turn 30 (CLAUDE.md F11): the owner's "any door under 600 takes two". The
+  // hinge group of the design layer already carries the STANDARD (2 / 3) and
+  // the finish; this is the same kind of answer and lives beside them.
+  //   null = the LISP's own ladders — Base always three, Low two under 800 —
+  //   which is what every golden fixture cuts.
+  hingeTwoBelow: null,
+  // ─── TURN 30 (CLAUDE.md F8): THE WORKTOPS ────────────────────────────────
+  //
+  // One record per slab: which cabinets it covers, the decor it is cut from
+  // and the extensions somebody has drawn on it afterwards. A DESIGN-layer
+  // auto-part like the end panels — stored with the project, reaching no hole
+  // and no fixture — so a project saved before this turn opens with an empty
+  // list and every golden fixture is untouched by construction.
+  //
+  // The material is the PROJECT's worktop decor by default (`decor: null`);
+  // CLAUDE.md puts a per-worktop override in a later chat-fix, and the field
+  // is here so that fix is a value rather than a shape change.
+  worktops: [],
   fronts: {
     style: 'S',
     // Handles are a later phase — the slot is here so the shape does not change
@@ -307,6 +341,25 @@ export function migrateDesign(design) {
         ? String(d.runners.variant).toUpperCase()
         : null,
     },
+    // Turn 30 (CLAUDE.md F5): the shelf-pin setback, migrated like the shaker
+    // frame above it — a positive number or nothing at all.
+    shelves: {
+      pinSetback: Number(d.shelves?.pinSetback) > 0 ? Number(d.shelves.pinSetback) : null,
+    },
+    // Turn 30 (CLAUDE.md F11): a positive number of millimetres, or nothing.
+    hingeTwoBelow: Number(d.hingeTwoBelow) > 0 ? Number(d.hingeTwoBelow) : null,
+    // Turn 30 (CLAUDE.md F8): a worktop needs an id and at least two cabinets
+    // to lie on; anything else in a stored record is not a worktop.
+    worktops: (Array.isArray(d.worktops) ? d.worktops : [])
+      .map((w) => ({
+        id: String(w?.id || ''),
+        unitIds: Array.isArray(w?.unitIds) ? w.unitIds.map(String).filter(Boolean) : [],
+        decor: w?.decor ?? null,
+        extendLeft: Number(w?.extendLeft) > 0 ? Number(w.extendLeft) : 0,
+        extendRight: Number(w?.extendRight) > 0 ? Number(w.extendRight) : 0,
+        extendFront: Number(w?.extendFront) > 0 ? Number(w.extendFront) : 0,
+      }))
+      .filter((w) => w.id && w.unitIds.length >= 2),
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: normaliseHandle(d.fronts?.handle),

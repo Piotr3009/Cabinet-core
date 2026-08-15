@@ -351,7 +351,34 @@ const MATERIALS = [
 // reproduces the table `verify/t24/rig-members.md` records, node for node.
 const KNUCKLE = { x: -18.08, z: 42.86, r: 2 };
 
-function hingeParts() {
+// ─── TURN 30 (CLAUDE.md F1): THE 155° BODY, AND WHY IT IS BIGGER ────────────
+//
+// The owner's fault report is about a file this showroom did not have: "155°
+// jest za głęboko osadzony w drzwiach i się nie otwiera." A showroom that only
+// carries `71B3550` can never reproduce it, because `modelOrigin` was derived
+// from `71B3550`'s own bounding box and is therefore right on `71B3550` by
+// construction — which is exactly how the fault survived three turns of green
+// walks.
+//
+// So the 155° family is written here, and the ONE thing that makes it a 155°
+// hinge in this argument is the one thing the lab measured: the CUP is at the
+// same absolute place (every Blum hinge GLB in the bucket shares one authoring
+// frame) and the ARM is longer and wider, because a hinge that folds to 155°
+// needs more travel behind the leaf. That moves `min`, and nothing else.
+//
+//   arm  x −34 … 4   (was −20 … 4)      z −46.5 … 46.2  (was −28 … 46.2)
+//   min  (−34, −28.5, −46.5)            (was (−26.5, −28.5, −29.48))
+//
+// Placed by turn 29's min-relative math, the flange plane lands
+// `−29.48 − (−46.5)` = **17.02 mm inside the leaf** — the owner's "za głęboko",
+// in an 18 mm door, arithmetically. Placed by F1's absolute `fileDatum` it
+// lands on 0 with the bore bottom at 11, the same as every other file in the
+// family. `test/turn30-f1-hinge-datum.test.js` reads both numbers off these
+// very bytes.
+const ARM_155 = { x0: -34, z0: -46.5 };
+
+function hingeParts({ wide = false } = {}) {
+  const arm = wide ? ARM_155 : { x0: -20, z0: -28 };
   return [
     // MEMBER A ─ the ⌀35 cup, bored along the depth, its centre at the x the
     // real file puts it at (−7.75) — which is what makes `modelOrigin` land it
@@ -380,13 +407,14 @@ function hingeParts() {
         x0: -22, x1: 6, y0: -14, y1: 14, z0: 31.1, z1: 44.9,
       }),
     },
-    // MEMBER B ─ the arm and the rear body, −28 … 46.2. It CROSSES the 30 mm
-    // threshold, which is the whole reason the split is by name.
+    // MEMBER B ─ the arm and the rear body, −28 … 46.2 on the 110° body and
+    // −46.5 … 46.2 on the 155° one. It CROSSES the 30 mm threshold, which is
+    // the whole reason the split is by name.
     {
       name: 'bau0015088251_v(70T310M0201)',
       material: 'metal_nickel_raw',
       geometry: box({
-        x0: -20, x1: 4, y0: -11, y1: 11, z0: -28, z1: 46.2,
+        x0: arm.x0, x1: 4, y0: -11, y1: 11, z0: arm.z0, z1: 46.2,
       }),
     },
     // MEMBER B ─ the CLIP release lever, −29.48 … 22.5. The one piece of a real
@@ -506,6 +534,23 @@ function hingeManifest() {
       });
     }
   }
+  // ─── TURN 30 (CLAUDE.md F1): AND THE 155° FAMILY ───────────────────────
+  // `71B7550` / `71B7590` are the bucket's own names for the wardrobe hinge
+  // the catalogue's `hinge_wardrobe_inner_drawer` rule reaches for. Without
+  // them the showroom could not mount the very file the owner's fault is
+  // about, and F1 would be provable only by arithmetic.
+  for (const [family, finish] of [['71B7550', 'nickel'], ['71B7590', 'onyx']]) {
+    for (const article of [`1500${finish === 'nickel' ? '1' : '3'}`, `1500${finish === 'nickel' ? '2' : '4'}`]) {
+      items.push({
+        file: `hardware/hinges/blum/cliptop/${family}_${article}.glb`,
+        family,
+        article,
+        role: 'hinge',
+        angle: 155,
+        finish,
+      });
+    }
+  }
   for (const [family, finish] of [['173L6100', 'nickel'], ['173L6130', 'onyx']]) {
     items.push({
       file: `hardware/hinges/blum/cliptop/${family}_2000${finish === 'nickel' ? '1' : '2'}.glb`,
@@ -571,7 +616,11 @@ const hinges = hingeManifest();
 written.push(write(join(hingeDir, 'manifest.json'), `${JSON.stringify(hinges, null, 1)}\n`));
 for (const row of hinges.items) {
   const name = row.file.split('/').pop();
-  const parts = row.role === 'hinge' ? hingeParts() : plateParts();
+  // Turn 30 (CLAUDE.md F1): the 155° families carry the WIDE body — the whole
+  // reason they exist here is that their `min` is not `71B3550`'s.
+  const parts = row.role === 'hinge'
+    ? hingeParts({ wide: row.angle === 155 })
+    : plateParts();
   written.push(write(join(hingeDir, name), glb(parts, MATERIALS, GEN)));
 }
 

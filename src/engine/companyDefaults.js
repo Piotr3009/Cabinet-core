@@ -53,6 +53,19 @@ export const DEFAULT_COMPANY_DEFAULTS = {
   hinge_finish: null,       // nickel | onyx
   plate: null,              // the mounting plate the shop drills for
   runner_variant: null,     // T | S
+  // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ───────────────────────
+  // "LISP drills sleeves at 70 mm from each edge — so 70 stays the engine's
+  // bare answer." This is the storey between the code and the project saying
+  // the shop's own number instead: the owner's is 50. It passes F2b.1's test —
+  // nothing in this app KNOWS where a workshop likes its pin columns, and no
+  // rule computes it. `null` is "the shop has not said".
+  shelf_pin_setback_mm: null,
+  // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER … ─────────────────────────
+  // The LISP ladders are the engine's bare answer; the owner's standard is ANY
+  // door under 600 mm on two hinges. It passes F2b.1's test — no rule in this
+  // app computes where a workshop draws that line, and the ANGLE is still
+  // derived from the front's thickness and is still forbidden here.
+  hinge_two_below_mm: null,
   // Per-family board defaults: what a wardrobe is built from in this shop, and
   // what a kitchen is. Thicknesses and stock ids — never a rule.
   boards: {},
@@ -173,6 +186,37 @@ export function validateCompanyDefaults(raw, profile) {
     normalise: (v) => String(v).trim().toUpperCase(),
   });
 
+  // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ───────────────────────
+  // A distance rather than an id, so the gate is a RANGE rather than a menu:
+  // anything from 20 to 200 is a setback somebody could actually drill, and a
+  // number outside it is a typing mistake that must be SAID rather than
+  // obeyed — a 5 mm column is a pin hole in the edge banding.
+  {
+    // Turn 30 (CLAUDE.md F11): a door height, gated as a RANGE for the same
+    // reason the setback is — a 60 mm "door" is a typing mistake, and a
+    // mistake must be SAID rather than obeyed.
+    const stated = source.hinge_two_below_mm;
+    if (stated != null && stated !== '') {
+      const n = Number(stated);
+      if (!Number.isFinite(n) || n < 200 || n > 2500) {
+        rejected.push({ key: 'hinge_two_below_mm', why: `${stated} is not a door height (200–2500 mm)` });
+      } else {
+        value.hinge_two_below_mm = n;
+      }
+    }
+  }
+  {
+    const stated = source.shelf_pin_setback_mm;
+    if (stated != null && stated !== '') {
+      const n = Number(stated);
+      if (!Number.isFinite(n) || n < 20 || n > 200) {
+        rejected.push({ key: 'shelf_pin_setback_mm', why: `${stated} is not a setback a shelf pin can be drilled at (20–200 mm)` });
+      } else {
+        value.shelf_pin_setback_mm = n;
+      }
+    }
+  }
+
   // ── per-family boards ──
   const boards = source.boards && typeof source.boards === 'object' ? source.boards : {};
   const thicknesses = new Set(profile?.board?.thicknessOptions || []);
@@ -216,6 +260,11 @@ export function validateCompanyDefaults(raw, profile) {
 export function hasCompanyDefaults(row) {
   if (!row) return false;
   if (row.hinge_system || row.hinge_finish || row.plate || row.runner_variant) return true;
+  // Turn 30 (CLAUDE.md F5): a row whose ONLY entry is the shop's shelf-pin
+  // setback is a row that is saying something, and a prefill that skipped it
+  // would be the storey silently not existing for the one shop that used it.
+  if (Number(row.shelf_pin_setback_mm) > 0) return true;
+  if (Number(row.hinge_two_below_mm) > 0) return true;
   return Object.keys(row.boards || {}).length > 0;
 }
 
@@ -274,7 +323,19 @@ export function prefillDesignFromCompany(design, company, profile) {
   if (hinges.plate == null && row.plate) hinges.plate = row.plate;
   if (runners.variant == null && row.runner_variant) runners.variant = row.runner_variant;
 
-  const next = { ...d, hinges, runners };
+  // Turn 30 (CLAUDE.md F5): the shop's shelf-pin setback, prefilled the same
+  // way — the PROJECT still wins where it has said something of its own.
+  const shelves = { ...(d.shelves || {}) };
+  if (shelves.pinSetback == null && Number(row.shelf_pin_setback_mm) > 0) {
+    shelves.pinSetback = Number(row.shelf_pin_setback_mm);
+  }
+
+  const next = { ...d, hinges, runners, shelves };
+  // Turn 30 (CLAUDE.md F11): and the shop's "two hinges under …", prefilled the
+  // same way — the PROJECT still wins where it has said something of its own.
+  if (next.hingeTwoBelow == null && Number(row.hinge_two_below_mm) > 0) {
+    next.hingeTwoBelow = Number(row.hinge_two_below_mm);
+  }
 
   // The board a KITCHEN is built from is the project's board: one G per
   // project (#58), and the family a job mostly is decides it. A wardrobe shop

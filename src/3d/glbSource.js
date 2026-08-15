@@ -134,21 +134,41 @@ export function glbStats(filter = null) {
  * measured correction goes — which is what stops the offset being scattered
  * through the view code.
  *
+ * ─── TURN 30 (CLAUDE.md F1): OR BY THE FILE'S OWN DATUM, ABSOLUTELY ─────────
+ *
+ * `origin` is MIN-RELATIVE and that is a measurement of ONE file: it says how
+ * far that file's bounding-box corner must move, so a second export of the same
+ * part with more metal around it lands somewhere else. Where a FAMILY of files
+ * shares one authoring frame — which the Blum hinge bucket does — the honest
+ * placement is the datum itself: `datum` puts the named point of the FILE's own
+ * coordinates on the group's origin and never asks the bounding box anything.
+ *
+ * The two are the same transform whenever `origin = min − datum`, which is how
+ * every `modelOrigin` in profile.js was derived; `datum` is what keeps that true
+ * for the next file as well as for the one that was measured.
+ *
  * @param {string} url
  * @param {object} args
  *   origin   { x, y, z } in millimetres, already converted by the caller's `mm`
+ *   datum    { x, y, z } in the same units — the FILE's own point to stand on
+ *            the origin. Takes precedence over `origin`, and the bounding box
+ *            plays no part in it.
  *   mirror   flip across x — for a pair file used for the other hand
  * @returns {THREE.Object3D|null} null while the file is still on its way
  */
-export function glbClone(url, { origin = null, mirror = false } = {}) {
+export function glbClone(url, { origin = null, datum = null, mirror = false } = {}) {
   const entry = glbSource(url);
   if (!entry?.loaded || !entry.scene || entry.failed) return null;
   const clone = entry.scene.clone(true);
-  clone.position.set(-entry.min.x, -entry.min.y, -entry.min.z);
-  if (origin) {
-    clone.position.x += origin.x || 0;
-    clone.position.y += origin.y || 0;
-    clone.position.z += origin.z || 0;
+  if (datum) {
+    clone.position.set(-(datum.x || 0), -(datum.y || 0), -(datum.z || 0));
+  } else {
+    clone.position.set(-entry.min.x, -entry.min.y, -entry.min.z);
+    if (origin) {
+      clone.position.x += origin.x || 0;
+      clone.position.y += origin.y || 0;
+      clone.position.z += origin.z || 0;
+    }
   }
   const group = new THREE.Group();
   group.add(clone);

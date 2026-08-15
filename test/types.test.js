@@ -208,7 +208,15 @@ for (const [file, typeId] of FILES) {
 test('every library type is configured, available and buildable', () => {
   // Turn 12 (CLAUDE.md F3.2): two more drawer-unit variants, 2x and 4x.
   // Turn 17 (CLAUDE.md F9/F10): the D/W panel and the oven base unit.
-  assert.equal(UNIT_TYPE_ORDER.length, 12, 'wardrobe + 11 kitchen kits');
+  // Turn 30 (CLAUDE.md F13): Cargo 300, the tall pull-out larder.
+  // Turn 30 (CLAUDE.md F14): the pantry, with internal Blum drawers.
+  // Turn 30 (CLAUDE.md F15): the american fridge housing.
+  // Turn 30 (CLAUDE.md F16): the bin unit.
+  // Turn 30 (CLAUDE.md F17): the wine rack.
+  // Turn 30 (CLAUDE.md F18): the twin cupboard.
+  // Turn 30 (CLAUDE.md F19): the corner unit — geometry only.
+  // Turn 30 (CLAUDE.md F21): the glass wall unit.
+  assert.equal(UNIT_TYPE_ORDER.length, 20, 'wardrobe + 19 kitchen kits');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

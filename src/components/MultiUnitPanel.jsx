@@ -6,6 +6,8 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { getUnitType } from '../engine/types.js';
 import { commonValue, MIXED } from '../lib/selection.js';
 import { doorExtendMm } from '../engine/doors.js';
+// Turn 30 (CLAUDE.md F9): the cornice, over a selection.
+import { corniceOption, takesCornice } from '../engine/cornice.js';
 import { formatMm } from '../engine/format.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 
@@ -62,6 +64,25 @@ export default function MultiUnitPanel({ ids, onClose }) {
   // profile's 38 where they do not. `commonValue` is the same tested helper
   // every other shared field here uses — a field that disagrees says "mixed"
   // and writes nothing until a human types.
+  // Turn 30 (CLAUDE.md F9): the cornice over this selection. `commonValue` is
+  // the same tested helper every other shared field here uses — a selection
+  // that disagrees says nothing rather than picking one cabinet's answer.
+  const setCorniceBulk = useProjectStore((s) => s.setCorniceBulk);
+  const corniceable = selected.filter((u) => takesCornice(u.type)).length;
+  const corniceCommon = commonValue(
+    selected.filter((u) => takesCornice(u.type)),
+    (u) => corniceOption(u.params.cornice, profile),
+  );
+
+  // Turn 30 (CLAUDE.md F8): the slab over this selection, where there is one.
+  const addWorktop = useProjectStore((s) => s.addWorktop);
+  const removeWorktop = useProjectStore((s) => s.removeWorktop);
+  const worktopsOf = useProjectStore((s) => s.worktopsOf);
+  const worktopHere = useMemo(
+    () => worktopsOf().find((w) => ids.every((id) => w.unitIds.includes(id))) || null,
+    [worktopsOf, ids, units],
+  );
+
   const extendable = selected.filter((u) => getUnitType(u.type)?.doorExtend).length;
   const extendCommon = commonValue(
     selected.filter((u) => getUnitType(u.type)?.doorExtend),
@@ -274,6 +295,81 @@ export default function MultiUnitPanel({ ids, onClose }) {
               Remove doors {withDoors ? `(${withDoors})` : ''}
             </button>
           </div>
+          {/* ─── TURN 30 (CLAUDE.md F9): ONE CORNICE ACROSS THE SELECTION ──
+              The cornice has been per-cabinet since turn 22 while the piece
+              itself has been ONE MOULDING across adjacent cabinets for just as
+              long — `engine/cornice.js runCorniceParams` does that and is not
+              touched here. What was missing was the ENTRANCE, so this is the
+              per-unit control's own three buttons over a selection, through
+              the per-unit action, in one undo step. Same design layer, no
+              drilling. */}
+          {corniceable > 0 && (
+            <div className="cc-row" data-bulk-cornice="1">
+              <div className="flex flex-col">
+                <span className="text-sm text-ink-100">Cornice</span>
+                <span className="text-[11px] text-ink-400">
+                  {corniceable} of {ids.length} take one — one moulding across the run
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {[0, ...profile.autoParts.cornice.heights].map((h) => (
+                  <button
+                    key={h}
+                    type="button"
+                    data-bulk-cornice-height={h}
+                    className={corniceCommon.value === h && !corniceCommon.mixed ? 'cc-btn-gold' : 'cc-btn'}
+                    onClick={() => {
+                      const { done, skipped, notices } = setCorniceBulk(ids, h) || {};
+                      if (done) {
+                        notify(h
+                          ? `${h} mm cornice across ${done} cabinet${done === 1 ? '' : 's'}.`
+                          : `Cornice off ${done} cabinet${done === 1 ? '' : 's'}.`, 'ok');
+                      }
+                      if (skipped) notify(`${skipped} of them take no cornice.`, 'info');
+                      for (const n of notices || []) notify(n, 'warn');
+                    }}
+                  >
+                    {h === 0 ? 'None' : `${h}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─── TURN 30 (CLAUDE.md F8): ONE WORKTOP OVER THE RUN ──────────
+              The owner: select two or more base cabinets and one slab covers
+              them "od ściany aż do paneli". It is a DESIGN-LAYER auto-part
+              like the end panels — it reaches no hole and no fixture — and the
+              button SAYS WHY when it cannot: one wall, no turned unit, one top
+              height, base cabinets. "Nothing happened" is the one answer a
+              button must never give. */}
+          <div className="flex gap-1" data-bulk-worktop="1">
+            <button
+              type="button"
+              className="cc-btn flex-1"
+              data-add-worktop="1"
+              title="One worktop over these cabinets — from the wall out past the end panels"
+              onClick={() => {
+                const res = addWorktop(ids);
+                if (res.ok) notify(`Worktop over ${ids.length} cabinets — 38 mm, 20 mm proud of the doors.`, 'ok');
+                else notify(res.error, 'warn');
+              }}
+            >
+              Add worktop ({ids.length})
+            </button>
+            {worktopHere ? (
+              <button
+                type="button"
+                className="cc-btn px-2"
+                data-remove-worktop={worktopHere.id}
+                title="Take it off — Undo puts it back"
+                onClick={() => { removeWorktop(worktopHere.id); notify('Worktop removed.'); }}
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
+
           {/* ─── Turn 16 (CLAUDE.md F4.2): DOOR EXTEND, over a selection ───
               "The function is MISSING there entirely. Add it beside Add/Remove
               doors: one action, one undo step, same default-38-editable field,

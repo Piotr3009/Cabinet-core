@@ -173,9 +173,24 @@ test('R10 — a class with an EMPTY record has an empty picture, and that is par
       assert.equal(sceneHoles(result, panel).length, 0, `${job}/${panel.id}: so the picture bores nothing`);
     }
     for (const panel of result.panels.filter((p) => p.box && CLASSES['TOP/BOTTOM'](p))) {
+      // ─── TURN 30 (CLAUDE.md F4): ONE THING IS DRILLED IN A WIENIEC ──────
+      //
+      // Turn 26 wrote "nothing is DRILLED in a wieniec in these kits", and it
+      // was true — because the thing that belonged there had been LOST. The
+      // LISP screws a vertical divider's FOOT up through the bottom board
+      // (`drawWardrobeDPHolesBOTTOM`, KIT_WARDROBE_FULL.lsp L377-385, called
+      // at L934) and turn 23 removed it along with the biscuits that never
+      // belonged. It is back, so the sentence is corrected rather than
+      // widened: a wieniec carries the divider's foot AND NOTHING ELSE, and
+      // the picture bores exactly that — which is what R10 is for.
+      const drilled = result.drills.filter((d) => d.panel === panel.id);
+      assert.deepEqual(
+        [...new Set(drilled.map((d) => d.kind))].sort(), drilled.length ? ['partition_foot_screw'] : [],
+        `${job}/${panel.id}: a wieniec takes the divider's foot and nothing else`,
+      );
       assert.equal(
-        result.drills.filter((d) => d.panel === panel.id).length, 0,
-        `${job}/${panel.id}: nothing is DRILLED in a wieniec in these kits`,
+        sceneHoles(result, panel).length, drilled.length,
+        `${job}/${panel.id}: and the picture bores exactly the record's own holes`,
       );
       // What it does carry is the joint: dog-bone relief, which the picture cuts,
       // and (on the boards that take them) the sockets the outline already cuts.

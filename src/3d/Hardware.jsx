@@ -104,6 +104,13 @@ export default function Hardware({
   return (
     <group userData={{ ccHardware: true }}>
       <Legs items={instances.legs} profile={profile} colour={colours.leg} />
+      {/* ─── Turn 30 (CLAUDE.md F16): "BOM + visual" ──────────────────────
+          The SPACE a bought mechanism occupies, on the kits that ask for one.
+          It is a PLACEHOLDER and it looks like one: an open, wireframe-thin
+          box standing well inside the opening it was measured from, in the
+          bracket grey the rest of the bought ironmongery is drawn in. It cuts
+          nothing and it is drilled for nothing. */}
+      <KitBodies items={instances.kits || []} colour={colours.bracket} />
       {/* ─── Turn 25 (CLAUDE.md F6): the adjustable shelf's sleeves and pins ───
           Always drawn, like the legs and the rail — a fitting a joiner looks
           for, not a workshop overlay. A FIX shelf has no pin holes and so
@@ -986,6 +993,56 @@ function Rods({ items, colour }) {
  * Plate, stem, foot — the three parts of an adjustable leg, which is what turn
  * 7 replaces the single box with. Always visible, as legs have always been.
  */
+/**
+ * ─── TURN 30 (CLAUDE.md F16): THE PLACEHOLDER A MECHANISM STANDS IN ────────
+ *
+ * A pull-out bin is bought, not cut, and this repo holds no drawing of one. So
+ * what is drawn is the SPACE it takes — `engine/hardware3d.js kitInstances`,
+ * measured off the same opening the BOM line is specified by — as four thin
+ * walls and a floor, open at the top.
+ *
+ * It is deliberately not a bin. It is the room for one, and a joiner reading
+ * the picture sees a volume rather than a product he might try to order from.
+ */
+function KitBodies({ items, colour }) {
+  if (!items.length) return null;
+  const T = 6;                       // the placeholder's own wall, in mm
+  return items.map((k) => {
+    const walls = [
+      // floor, back, front, left, right — in the cabinet's own frame
+      { x: k.w / 2, y: T / 2, z: k.d / 2, w: k.w, h: T, d: k.d },
+      { x: k.w / 2, y: k.h / 2, z: T / 2, w: k.w, h: k.h, d: T },
+      { x: k.w / 2, y: k.h / 2, z: k.d - T / 2, w: k.w, h: k.h, d: T },
+      { x: T / 2, y: k.h / 2, z: k.d / 2, w: T, h: k.h, d: k.d },
+      { x: k.w - T / 2, y: k.h / 2, z: k.d / 2, w: T, h: k.h, d: k.d },
+    ];
+    return (
+      <group
+        key={k.role}
+        position={[mm(k.x), mm(k.y), mm(k.z)]}
+        userData={{ ccKitBody: k.role, ccKitPlaceholder: true, ccNoBounds: true }}
+      >
+        {walls.map((p, i) => (
+          <mesh
+            // eslint-disable-next-line react/no-array-index-key
+            key={i}
+            position={[mm(p.x), mm(p.y), mm(p.z)]}
+          >
+            <boxGeometry args={[mm(p.w), mm(p.h), mm(p.d)]} />
+            <meshStandardMaterial
+              color={colour}
+              roughness={0.7}
+              metalness={0.1}
+              transparent
+              opacity={0.45}
+            />
+          </mesh>
+        ))}
+      </group>
+    );
+  });
+}
+
 function Legs({ items, profile, colour }) {
   const L = profile.hardware.leg;
 

@@ -47,11 +47,15 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // cabinet, both kits the workshop already builds.
   assert.deepEqual(idsOf('base-units'), [
     'door-base', 'drawer-unit', 'sink', 'corner', 'l-shape', 'dishwasher',
-    'oven-base', 'bin-storage', 'wine-rack', 'small-fridge', 'twin-space', 'low',
+    'oven-base', 'bin-storage', 'wine-rack', 'small-fridge', 'twin-space',
+    // Turn 30 (CLAUDE.md F18): the twin cupboard, beside the kits it is made of.
+    'twin-cupboard', 'low',
   ]);
+  // Turn 30 (CLAUDE.md F13/F14): Cargo 300 and the pantry land beside the kits
+  // they are made of; the pantry's held-open row became a kit.
   assert.deepEqual(idsOf('tall-units'), [
-    'tall', 'fridge', 'basket-tall', 'pantry', 'pantry-worktop', 'space-tower',
-    'oven-tall', 'american-fridge',
+    'tall', 'fridge', 'cargo-300', 'basket-tall', 'pantry', 'pantry-worktop',
+    'space-tower', 'oven-tall', 'american-fridge',
   ]);
   assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'l-shape-wall']);
   // The new group (F5.2): not cabinets — the pieces that finish a run.
@@ -64,7 +68,8 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
   assert.deepEqual(libraryTypeIds(), [
     // Turn 17 (CLAUDE.md F9/F10): two of the held-open rows OPEN — the owner
     // wrote the pattern for both, which is exactly the condition they carried.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'WUD',
+    // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'CORNER', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS',
   ]);
 });
 
@@ -72,7 +77,8 @@ test('a group says how much of it can be placed today', () => {
   // A long list that is mostly held open has to be honest about it before it is
   // opened — "1/3" on Wall units beats three grey rows discovered afterwards.
   const wall = KITCHEN_LIBRARY.find((g) => g.id === 'wall-units');
-  assert.deepEqual(groupCounts(wall, P), { total: 3, enabled: 1 });
+  // Turn 30 (CLAUDE.md F21): two of the three can be placed now.
+  assert.deepEqual(groupCounts(wall, P), { total: 3, enabled: 2 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
   assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 0 });
 });
@@ -119,10 +125,24 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // Turn 17 (CLAUDE.md F9/F10): 'dishwasher' and 'oven-base' left this list.
     // The owner wrote the pattern for both, which is the condition the reason
     // attached to them stated — so they are kits now, not grey rows.
-    'corner', 'l-shape', 'bin-storage', 'wine-rack',
+    // Turn 30 (CLAUDE.md F16): 'bin-storage' left this list — KIT_BUD's own
+    // carcass, with the pull-out ordered rather than cut.
+    // Turn 30 (CLAUDE.md F17): 'wine-rack' left it too — KIT_BUD's carcass
+    // with a lattice of plain boards, and the joints named as the gap.
+    // Turn 30 (CLAUDE.md F19): 'corner' left it too — as GEOMETRY, since
+    // KIT_BUDR_FULL turned out to be the three-drawer base unit and there is
+    // no corner kit to inherit a hole from.
+    'l-shape',
     'small-fridge', 'twin-space',
-    'basket-tall', 'pantry', 'pantry-worktop', 'space-tower', 'oven-tall', 'american-fridge',
-    'glass-unit', 'l-shape-wall',
+    // Turn 30 (CLAUDE.md F14): 'pantry' left this list — KIT_BUDTALL's carcass
+    // with the wardrobe kit's own internal drawer machinery in it.
+    // Turn 30 (CLAUDE.md F15): 'american-fridge' left it too — KIT_FRIDGE.lsp
+    // exists and is the truth, so an american size is a wider envelope.
+    'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall',
+    // Turn 30 (CLAUDE.md F21): 'glass-unit' left this list — KIT_WUD's own
+    // carcass and door, with the shaker frame taken through and a pane
+    // ordered for the hole.
+    'l-shape-wall',
     'free-standing-panels', 'cornice-pelmet',
   ]);
   for (const entry of soon) {

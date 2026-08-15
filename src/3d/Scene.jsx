@@ -21,6 +21,8 @@ import {
   addPlusPoints, unitBase, unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
 import { dimensionCarriers } from '../engine/dimensions.js';
+// Turn 30 (CLAUDE.md F12): neighbouring fronts that come too close.
+import { frontGapClashes } from '../engine/frontGapClash.js';
 import { backStandoff, wallClearance } from '../engine/collision.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -471,6 +473,111 @@ function Lights({
 }
 
 /**
+ * ─── FRONT TO FRONT, IN RED (turn 30, CLAUDE.md F12) ────────────────────────
+ *
+ * "when a gap is < 3 mm, paint the pair's meeting edges red and show the value.
+ * It is a WARNING overlay, not a block."
+ *
+ * So it paints and it says the number, and it changes nothing: the pairs and
+ * the millimetres are `engine/frontGapClash.js`'s, the threshold is the
+ * profile's, and the cabinets under the paint are cut exactly as they were
+ * asked for.
+ *
+ * The mark is drawn ON the meeting line, standing a whisker proud of the door
+ * plane so it is not z-fought by the leaves it is about, and it spans only the
+ * height the two fronts actually SHARE — a 1.5 mm gap between a tall door and a
+ * short one is a fault along the short one's own edge and nowhere else.
+ */
+function FrontGapMarks({
+  clashes, walls, roomCentre, colour, doorPlaneOf,
+}) {
+  return clashes.map((c, i) => {
+    const wall = walls[c.wall] || walls[0];
+    if (!wall) return null;
+    const along = new THREE.Vector3(wall.along.x, 0, wall.along.y);
+    const inward = new THREE.Vector3(wall.inward.x, 0, wall.inward.y);
+    const centre = new THREE.Vector3(
+      mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+    )
+      .addScaledVector(along, mm(c.atX))
+      .addScaledVector(inward, mm(doorPlaneOf(c)))
+      .setY(mm((c.fromY + c.toY) / 2));
+    const height = mm(Math.max(1, c.toY - c.fromY));
+    return (
+      <mesh
+        // eslint-disable-next-line react/no-array-index-key
+        key={`${c.wall}-${c.atX}-${i}`}
+        position={centre.toArray()}
+        rotation={[0, wall.angle, 0]}
+        renderOrder={12}
+        userData={{
+          ccFrontGapMm: c.mm,
+          ccFrontGapPair: [c.a.panelId, c.b.panelId],
+          ccFrontGapThreshold: c.thresholdMm,
+          ccNoBounds: true,
+        }}
+      >
+        <boxGeometry args={[mm(6), height, mm(2)]} />
+        <meshBasicMaterial color={colour} depthTest={false} toneMapped={false} />
+      </mesh>
+    );
+  });
+}
+
+/**
+ * ─── THE WORKTOP (turn 30, CLAUDE.md F8) ────────────────────────────────────
+ *
+ * One slab over a run of base cabinets, "od ściany aż do paneli". It is a
+ * DESIGN-LAYER auto-part like the end panels — the project stores it, this
+ * draws it, and `computeCabinet()` neither knows nor asks about it, so no hole
+ * and no fixture can move because of it.
+ *
+ * Every number in the geometry is `engine/worktop.js`'s: the front overhang,
+ * the side overhang past the end panels, the flush wall side and the decided
+ * 38 mm. What is HERE is the wall frame — along the wall from its start
+ * corner, out by half the slab's own depth, at the height the carcasses stand
+ * at — which is the same three lines `AddPluses` below and `UnitView`'s own
+ * origin are built from, so a slab and the cabinets under it cannot disagree
+ * about where the wall is.
+ */
+function Worktops({
+  worktops, walls, roomCentre, colour,
+}) {
+  return worktops.map((w) => {
+    const g = w.geometry;
+    const wall = walls[g.wall] || walls[0];
+    if (!wall) return null;
+    const along = new THREE.Vector3(wall.along.x, 0, wall.along.y);
+    const inward = new THREE.Vector3(wall.inward.x, 0, wall.inward.y);
+    const centre = new THREE.Vector3(
+      mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+    )
+      .addScaledVector(along, mm(g.x + g.w / 2))
+      .addScaledVector(inward, mm(g.d / 2))
+      .setY(mm(g.y + g.h / 2));
+    return (
+      <mesh
+        key={w.id}
+        position={centre.toArray()}
+        rotation={[0, wall.angle, 0]}
+        castShadow
+        receiveShadow
+        userData={{
+          ccWorktopId: w.id,
+          ccWorktopUnits: g.unitIds,
+          ccWorktopMm: {
+            w: g.w, d: g.d, t: g.h, y: g.y, overhang: g.overhang,
+          },
+        }}
+      >
+        <boxGeometry args={[mm(g.w), mm(g.h), mm(g.d)]} />
+        <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} />
+      </mesh>
+    );
+  });
+}
+
+/**
  * ─── The pluses at the ends of the runs (turn 9, CLAUDE.md F2) ───
  *
  * Where they GO is `engine/runs.js addPlusPoints`, which is pure arithmetic and
@@ -894,6 +1001,20 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const roomH = mm(room.height ?? 2500);
   // What the project's sprayed surfaces are polished to, on Piotr's 0–25 scale.
   const sheen = useMemo(() => projectSheen(design, profile), [design, profile]);
+  // Turn 30 (CLAUDE.md F8): the slabs this project carries, geometry resolved.
+  const worktopsOf = useProjectStore((s) => s.worktopsOf);
+  const worktops = useMemo(() => worktopsOf(), [units, design, worktopsOf]);
+  // Turn 30 (CLAUDE.md F12): neighbouring fronts that come closer than the
+  // profile's minimum. Room level — across cabinets, which is the fault a
+  // per-cabinet reader cannot see.
+  const frontGapClashList = useMemo(
+    () => frontGapClashes({
+      entries: results,
+      baseOf: (u) => unitBase(u, profile),
+      profile,
+    }),
+    [results, profile],
+  );
   const studio = profile.appearance.studio;
   // ─── Turn 10 (CLAUDE.md F3) ───
   // The lightest of the room's three tones, and the only one that is not a
@@ -1099,10 +1220,18 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // THIS door. The click point travels with the request, and turn 19's
           // shell (F3) puts the window up and to the RIGHT of it — which is the
           // whole of what the owner complained about.
+          //
+          // ─── Turn 30 (CLAUDE.md F2) ───
+          // …and it is the SAME window the leaf opens, because the hinge is
+          // screwed to the leaf. One modal kind, opened on the DOOR with the
+          // section to scroll to and the row to light up: `section: 'hinges'`
+          // takes the eye to section B, `hingeIndex` puts the gold ring on the
+          // row that was pointed at. A second modal kind here is exactly what
+          // made "what is open" two answers instead of one.
           onEditHinge={({ panelId, index, at }) => {
             selectUnit(unit.id);
-            openModal('hinge', {
-              unitId: unit.id, panelId, hingeIndex: index, at,
+            openModal('element', {
+              unitId: unit.id, panelId, hingeIndex: index, section: 'hinges', at,
             });
           }}
           // The inner "+" (turn 11, CLAUDE.md F4.3): the unit STAYS selected and
@@ -1143,6 +1272,35 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           accident. The library opens at the category the cabinet you clicked
           beside belongs to, carrying the place with it, so a wall unit's plus
           offers wall units. */}
+      {/* ─── Turn 30 (CLAUDE.md F12): FRONT TO FRONT, IN RED ──────────────
+          A WARNING OVERLAY and not a block: the pair's meeting edges, painted,
+          with the value on the mark for a walk to read. Solid view only — a
+          contour drawing is the machine's picture and a warning is not cut. */}
+      {!contourView && frontGapClashList.length > 0 && (
+        <FrontGapMarks
+          clashes={frontGapClashList}
+          walls={walls}
+          roomCentre={bounds.centre}
+          colour={profile.appearance.frontGapWarning.colour}
+          // The leaf's OWN plane, off the pair itself — a whisker proud of it
+          // so the mark is not z-fought by the doors it is about.
+          doorPlaneOf={(c) => c.a.z + c.a.d + 1}
+        />
+      )}
+
+      {/* ─── Turn 30 (CLAUDE.md F8): THE WORKTOP ─────────────────────────
+          A design-layer auto-part over a run of base cabinets. Drawn AFTER the
+          units so it lies on them, and only in the solid view — a contour
+          drawing is the machine's picture and a worktop is not cut on it. */}
+      {!contourView && worktops.length > 0 && (
+        <Worktops
+          worktops={worktops}
+          walls={walls}
+          roomCentre={bounds.centre}
+          colour={profile.appearance.worktop.colour}
+        />
+      )}
+
       {!contourView && !shelfDrag && (
         <AddPluses
           units={units}

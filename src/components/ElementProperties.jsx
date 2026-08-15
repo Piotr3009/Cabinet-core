@@ -49,6 +49,8 @@ export default function ElementProperties({
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
   // Turn 24 (CLAUDE.md F3.3): which carcass board this partition is cut from.
   const setPartitionSlot = useProjectStore((s) => s.setPartitionSlot);
+  // Turn 30 (CLAUDE.md F3): which face of this divider the machine bores.
+  const setPartitionDrillFace = useProjectStore((s) => s.setPartitionDrillFace);
   const setElementDepth = useProjectStore((s) => s.setElementDepth);
   const setElementThickness = useProjectStore((s) => s.setElementThickness);
   const setElementMaterial = useProjectStore((s) => s.setElementMaterial);
@@ -219,6 +221,47 @@ export default function ElementProperties({
                 <option key={id} value={id}>{slotById(id)?.label || id}</option>
               ))}
             </select>
+          </Field>
+        );
+      // ─── TURN 30 (CLAUDE.md F3): WHICH FACE THE MACHINE BORES ────────────
+      //
+      // The owner: a partition shows shelf-pin drilling on BOTH faces, and a
+      // machine drills one. It was worse than a picture — the same ladder was
+      // emitted twice at identical x and y, once for each bay's shelves — so
+      // this is not a display option: choosing a face is choosing which bay's
+      // shelves put pins in this board, and the 3-D and the DXF both follow
+      // because both read the drilling.
+      //
+      // LEFT is the profile's answer tonight and the sentence under the
+      // control says whose placeholder it is, so nobody reads it as settled.
+      case 'partition-drill-face':
+        return (
+          <Field key={key} label="Drill face">
+            <div className="flex items-center gap-1">
+              {[['L', 'Left'], ['R', 'Right']].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`cc-btn px-2 text-[11px] ${panel.meta?.drillFace === id ? 'border-gold text-ink-50' : ''}`}
+                  data-partition-drill-face={id}
+                  title={`Bore the shelf-pin ladder in this divider's ${label.toLowerCase()} face — the ${label.toLowerCase()} bay's shelves. A machine drills one face; the other bay's shelves put no pins in this board.`}
+                  onClick={() => setPartitionDrillFace(unit.id, item.id, id)}
+                >
+                  {label}
+                </button>
+              ))}
+              {item?.drill_face ? (
+                <button
+                  type="button"
+                  className="cc-btn-ghost px-2 text-[11px]"
+                  data-partition-drill-face-reset="1"
+                  title="Back to the project's own answer"
+                  onClick={() => setPartitionDrillFace(unit.id, item.id, null)}
+                >
+                  Reset
+                </button>
+              ) : null}
+            </div>
           </Field>
         );
       case 'setback':

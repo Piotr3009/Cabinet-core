@@ -35,6 +35,8 @@ import { handleClassCount } from '../engine/handles.js';
 // Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
 import { worktopEligible, worktopsFor } from '../engine/worktop.js';
 import { frontGapClashes } from '../engine/frontGapClash.js';
+// Turn 31 (CLAUDE.md F4): the owner's 18-point front-gap rulebook.
+import { carcassGaps, frontClearances } from '../engine/frontClearance.js';
 // Turn 31 (CLAUDE.md F3): the drill guard's own number, at the source.
 import { hingeMinSpacingMm, hingeRowClashes, hingeSpacingBlocks } from '../engine/cnc/drillGuard.js';
 import {
@@ -367,6 +369,16 @@ function paramsForEngine(unit, design = null) {
     // is handed no design at all and falls back to the profile's own default,
     // which is what the AutoLISP cuts.
     front_type: design ? resolveUnitDesign(unit, design).frontType : p.front_type,
+    // ─── TURN 31 (CLAUDE.md F4.8): THE ASYMMETRY LAW'S OWN INPUT ───────────
+    //
+    // Per-front, per-EDGE millimetres, decided by the owner's clearance matrix
+    // (engine/frontClearance.js) and applied by one pass in the engine. It
+    // travels the override channel exactly as the plinth, the hinge standard,
+    // the shaker frame and the shelf-pin setback do: an INPUT in the project
+    // layer, never a formula in the kit. Left out — a bare `computeCabinet()`,
+    // every golden fixture — the pass does nothing at all and the kit cuts what
+    // the AutoLISP cuts.
+    front_edge_trim: p.front_edge_trim || null,
     shaker_frame_mm: design?.fronts?.shakerFrame ?? null,
     // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ─────────────────────
     // The owner's standard is 50 and the LISP's is 70, so 70 stays the ENGINE's
@@ -3645,6 +3657,125 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       baseOf: (u) => unitBase(u, profile),
       profile,
     });
+  },
+
+  /**
+   * ─── TURN 31 (CLAUDE.md F4): THE RULEBOOK, READ ──────────────────────────
+   *
+   * Every front in the room with what stands on each of its two edges, what the
+   * owner's matrix wants there and what it actually has. ONE answer for the
+   * overlay, the Check and the repair modal, exactly as `frontGapWarnings` is
+   * one answer for the red marks and their millimetres — a display that
+   * measured one thing while the Check measured another is how a joiner ends up
+   * arguing with his own app.
+   *
+   * It READS. Nothing here writes, moves a cabinet or narrows a board.
+   */
+  frontClearances: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    return frontClearances({
+      entries: s.allResults(),
+      units: s.units,
+      baseOf: (u) => unitBase(u, profile),
+      wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      profile,
+    });
+  },
+
+  /** Rule 13: carcasses in a run that are not touching. RED in the Check. */
+  carcassGapWarnings: () => carcassGaps(get().units, getCabinetProfile()),
+
+  /**
+   * ─── RULE 8, WRITTEN: A CORRECTION ON ONE EDGE ───────────────────────────
+   *
+   * "A width correction acts ONLY on the edge whose neighbour demands it —
+   * never symmetrically."
+   *
+   * It lands on the OVERRIDE CHANNEL (`params.front_edge_trim`, applied by
+   * `paramsForEngine` and consumed by one pass in the engine), so a bare
+   * `computeCabinet()` — every golden fixture — never sees it. The engine
+   * applies it BEFORE the drilling, which is what makes rules 9 and 12 true by
+   * construction: the cups stay 21.5 from the front's own edge and the handle
+   * keeps its distance from its own edge, because both are derived from the
+   * width that has just changed.
+   *
+   * Rule 17 — "narrowing a front warns 'changes BOM and drilling' before it
+   * acts" — is the CALLER's, and it is a warning rather than a veto: this
+   * setter does what it is told.
+   *
+   * @param {string} unitId
+   * @param {string} panelId
+   * @param {object} patch  { left, right } in mm — absolute, not cumulative
+   * @returns {object|null} the trim now stored for that front
+   */
+  setFrontEdgeTrim: (unitId, panelId, patch) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !panelId) return null;
+    const current = unit.params.front_edge_trim || {};
+    const was = current[panelId] || { left: 0, right: 0 };
+    const next = {
+      left: Math.max(0, Number(patch?.left ?? was.left) || 0),
+      right: Math.max(0, Number(patch?.right ?? was.right) || 0),
+    };
+    const map = { ...current };
+    // A correction of nothing is no correction: an empty entry left behind
+    // would put `edgeTrim: {0,0}` on the piece and make a stock front look
+    // hand-corrected on the sheet.
+    if (next.left <= 0 && next.right <= 0) delete map[panelId];
+    else map[panelId] = next;
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, front_edge_trim: Object.keys(map).length ? map : null } }
+        : u)),
+    }));
+    return map[panelId] || null;
+  },
+
+  /** Hand this front back to the kit's own width. */
+  clearFrontEdgeTrim: (unitId, panelId) => get().setFrontEdgeTrim(unitId, panelId, { left: 0, right: 0 }),
+
+  /**
+   * Rule 15's first option, applied: NARROW THE FRONT(S).
+   *
+   * The plan is the engine's (`narrowingPlan` — halves of the shortfall, the
+   * asymmetry law, the hinge-adjustment flag); this is one batch so the whole
+   * repair is ONE step of undo. A repair a joiner has to undo twice is a repair
+   * he stops trusting.
+   */
+  narrowFronts: (trims) => runBatch(() => {
+    const done = [];
+    for (const t of trims || []) {
+      if (!t?.unitId || !t?.panelId || !(t.mm > 0)) continue;
+      const unit = get().units.find((u) => u.id === t.unitId);
+      const was = unit?.params?.front_edge_trim?.[t.panelId] || { left: 0, right: 0 };
+      const side = t.side === 'left' ? 'left' : 'right';
+      done.push(get().setFrontEdgeTrim(t.unitId, t.panelId, {
+        // CUMULATIVE on that edge: a second correction on a front that has
+        // already been narrowed once adds to it, because the first correction
+        // is part of the width the second one measured against.
+        [side]: Math.round((Number(was[side]) || 0) + Number(t.mm)) === 0
+          ? 0 : (Number(was[side]) || 0) + Number(t.mm),
+      }));
+    }
+    return done;
+  }),
+
+  /**
+   * Rule 13's ONE fix: close the run to touch.
+   *
+   * "The only fix offered is closing to touch. Cabinets are NEVER moved to fix
+   * a FRONT gap." Both halves matter, and the second one is why this action
+   * exists at all rather than the app quietly sliding a cabinet whenever a
+   * front measures short: a carcass gap is its own fault with its own fix, and
+   * a front gap is never repaired by moving furniture.
+   */
+  closeCarcassGap: (rightUnitId, mm) => {
+    const unit = get().units.find((u) => u.id === rightUnitId);
+    if (!unit || !(Math.abs(Number(mm)) > 0)) return null;
+    const to = (Number(unit.position?.x_mm) || 0) - Math.abs(Number(mm));
+    return get().moveUnit(rightUnitId, to);
   },
 
   /** Every door of this cabinet that has been given a hinge by hand. */

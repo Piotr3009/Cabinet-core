@@ -3369,6 +3369,75 @@ export function computeCabinet(params, profileOverride) {
     }));
   }
 
+  // ─── TURN 31 (CLAUDE.md F4.8): THE ASYMMETRY LAW, AS ONE PASS ────────────
+  //
+  // The owner's rule 8, verbatim: "A width correction acts ONLY on the edge
+  // whose neighbour demands it — never symmetrically."
+  //
+  // A front standing beside an end panel needs 3 mm on THAT side and 1.5 on the
+  // other; a front beside a dishwasher needs 0 on that side. Every one of those
+  // is one EDGE moving, and a symmetric narrowing — the obvious implementation
+  // — is wrong twice: it opens a gap on the edge that was already right, and it
+  // moves the hinge edge on a door whose plates are already screwed to the
+  // carcass.
+  //
+  // ─── IT IS AN INPUT, NOT A FORMULA (iron rule 1) ─────────────────────────
+  //
+  // `front_edge_trim` arrives on the OVERRIDE CHANNEL exactly as the plinth,
+  // the hinge standard, the shaker frame and the shelf-pin setback do. A bare
+  // `computeCabinet()` — every golden fixture — is handed none, this loop does
+  // nothing at all, and the kit cuts what the AutoLISP cuts. The rulebook that
+  // DECIDES the numbers is engine/frontClearance.js and it never touches this
+  // file; it produces millimetres, and this applies them.
+  //
+  // ─── AND IT RUNS BEFORE THE DRILLING, WHICH IS RULES 9 AND 12 ────────────
+  //
+  //   9.  "Cups sit 21.5 from the front's edge, ALWAYS — they travel WITH the
+  //       edge on every correction; the drilling pattern is untouchable."
+  //   12. "Handle: centred stays centred (recomputed to the new width);
+  //       edge-set keeps ITS edge at ITS distance."
+  //
+  // Both are true BY CONSTRUCTION rather than by a second rule here, and that
+  // is the whole reason the trim is a pass over `pnl.w` at this point in the
+  // file: the cup pass below reads `pnl.w - cups.xFromHingeEdge`, and the
+  // handle law reads `w - inset`. Change the width first and every hole in the
+  // board follows its own edge without knowing anything happened. A trim
+  // applied AFTER the drilling — or applied to the box and not to the panel —
+  // would leave a cup 21.5 from where the edge used to be, which is a door
+  // that does not shut.
+  const edgeTrim = params?.front_edge_trim || null;
+  if (edgeTrim) {
+    for (const pnl of panels.filter((x) => x.role === 'front')) {
+      const trim = edgeTrim[pnl.id];
+      if (!trim) continue;
+      const left = Math.max(0, Number(trim.left) || 0);
+      const right = Math.max(0, Number(trim.right) || 0);
+      if (!(left > 0 || right > 0)) continue;
+      const w = roundTo(pnl.w - left - right, 4);
+      if (!(w > 0)) {
+        // Rule 4 of the turn: a guard SPEAKS. A correction that would leave no
+        // board is refused and named — never clamped to something the joiner
+        // did not ask for.
+        warnings.push({
+          code: 'FRONT_TRIM_TOO_DEEP',
+          panel: pnl.id,
+          message: `${pnl.id}: a correction of ${left} + ${right} mm would leave nothing of a ${pnl.w} mm front.`,
+        });
+        continue;
+      }
+      pnl.w = w;
+      pnl.edgeLen = metres(2 * w + 2 * pnl.h);
+      pnl.cnc = { ...pnl.cnc, ...rectGeometry(w, pnl.h) };
+      if (pnl.box) pnl.box = { ...pnl.box, x: roundTo(pnl.box.x + left, 4), w };
+      pnl.meta = {
+        ...pnl.meta,
+        // What was done, on the piece, so the sheet and the BOM can say so
+        // (rule 17: "narrowing a front changes BOM and drilling").
+        edgeTrim: { left, right },
+      };
+    }
+  }
+
   // ─── TURN 25 (CLAUDE.md F3): THE SHAKER GETS ITS RECESS ──────────────────
   //
   // One pass over the fronts, here, rather than a line at each of the five

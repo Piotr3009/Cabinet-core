@@ -6,44 +6,49 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F3 — the door window is open at its hinge rows",
+   "label": "F4.2 / F4.14 — the end-panel joint is measured front↔NEIGHBOUR and is RED",
+   "ok": true,
+   "detail": "1.5 mm to endPanel · red"
+  },
+  {
+   "label": "F4.1 — …and the front-to-front joint beside it says nothing at all",
+   "ok": true,
+   "detail": "endPanel:1.5"
+  },
+  {
+   "label": "F4.15 — the row opens the repair modal, beside the click",
    "ok": true,
    "detail": "true"
   },
   {
-   "label": "F3 — the setter REFUSES to bring two rows inside the 60 mm minimum",
+   "label": "F4.15 — …offering TWO options, EACH WITH ITS NUMBER",
    "ok": true,
-   "detail": "rows [100,160,670] · gap 60"
+   "detail": "[Narrow the front by 1.5 mm] / [Insert an infill]"
   },
   {
-   "label": "F3 — …and the refusal is a YELLOW that carries the number",
+   "label": "F4.17 — …and it says what narrowing COSTS before it acts",
    "ok": true,
-   "detail": "01: hinge rows at 100 and 155 mm are 55 mm apart — under the 60 mm minimum, so both hinges cannot be fitted."
+   "detail": "Narrowing a front changes the BOM and the drilling."
   },
   {
-   "label": "F3 — Check #10 FAILS the [100,100,470] case, red, with both codes",
+   "label": "F4.8 — the correction acted on ONE edge: the width came off once",
    "ok": true,
-   "detail": "#10 duplicate-drill · #10 duplicate-drill · #10 duplicate-drill · #10 duplicate-drill · #10 duplicate-drill · #10 hinge-rows-too-close"
+   "detail": "597 → 595.5 · x 1.5 → 1.5 · trim {\"left\":0,\"right\":1.5}"
   },
   {
-   "label": "F3 — the export gate HOLDS the faulty parts out, and NAMES them",
+   "label": "F4.9 — the CUPS rode the edge: still 21.5 from it, same heights",
    "ok": true,
-   "detail": "01-F, BUL — \"2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway.\""
+   "detail": "21.5,21.5,21.5 → 21.5,21.5,21.5"
   },
   {
-   "label": "F3 — the file is WRITTEN, with the faulty parts left out of it",
+   "label": "F4.15 — …and the gap the client sees is closed: the red is gone",
    "ok": true,
-   "detail": "4 of 6 parts · 2 held · 01-cnc-custom.dxf"
+   "detail": "0 rows left"
   },
   {
-   "label": "F3 — the app SHOWS it: a red naming the held parts, with \"Export anyway\"",
+   "label": "F4.13 — carcasses that touch are silent; 4 mm apart is RED with ONE fix",
    "ok": true,
-   "detail": "Export anyway · 2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway.click to dismiss\nExport anyway"
-  },
-  {
-   "label": "F3 — everything clean exports normally: nothing held, nothing said",
-   "ok": true,
-   "detail": "6 of 6 parts"
+   "detail": "01 and 02 stand 4 mm apart — carcasses in a run must touch."
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -53,22 +58,29 @@
  ],
  "shots": [
   {
-   "name": "3a-the-blocked-hinge-move-a-yellow-with-the-number-in-it",
+   "name": "4a-the-gap-a-client-sees-measured-front-to-neighbour-and-red",
    "subject": {
-    "dom": "[data-message-level=\"yellow\"]",
-    "text": "60"
+    "dom": "[data-front-gap-level=\"red\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "4b-the-modal-two-options-each-with-its-number",
+   "subject": {
+    "dom": "[data-front-gap-narrow]",
+    "text": "BOM and the drilling"
    },
    "present": true,
    "detail": "{\"dom\":true,\"text\":true}"
   },
   {
-   "name": "3b-the-export-gate-a-red-naming-the-held-parts-and-export-anyway",
+   "name": "4c-narrowed-on-one-edge-only-and-the-red-is-gone",
    "subject": {
-    "dom": "[data-message-action]",
-    "text": "Export anyway"
+    "mesh": "02-F"
    },
    "present": true,
-   "detail": "{\"dom\":true,\"text\":true}"
+   "detail": "{\"mesh\":true}"
   }
  ]
 }

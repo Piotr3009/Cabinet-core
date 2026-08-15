@@ -1,86 +1,62 @@
 {
- "f3": {
-  "rowsBefore": [
-   100,
-   470,
-   670
+ "f4": {
+  "rows": [
+   {
+    "mm": 1.5,
+    "kind": "endPanel",
+    "level": "red",
+    "text": "▲\n02 02-F → an end panel: 1.5 mm — under the 3 mm minimum."
+   }
   ],
-  "nudges": 63,
-  "blocked": {
-   "message": "01: hinge rows at 100 and 155 mm are 55 mm apart — under the 60 mm minimum, so both hinges cannot be fitted.",
-   "rows": [
+  "modal": {
+   "anchored": true,
+   "subject": "02 02-F → an end panel: 1.5 mm — under the 3 mm minimum.",
+   "planMm": 1.5,
+   "planText": "Narrow the front by 1.5 mm on its right edge.",
+   "narrow": "Narrow the front by 1.5 mm",
+   "infill": "Insert an infill",
+   "cost": "Narrowing a front changes the BOM and the drilling."
+  },
+  "before": {
+   "w": 597,
+   "x": 1.5,
+   "hinge": "L",
+   "cups": [
+    575.5,
+    575.5,
+    575.5
+   ],
+   "ys": [
     100,
-    160,
+    470,
+    670
+   ]
+  },
+  "after": {
+   "w": 595.5,
+   "x": 1.5,
+   "trim": {
+    "left": 0,
+    "right": 1.5
+   },
+   "cups": [
+    574,
+    574,
+    574
+   ],
+   "ys": [
+    100,
+    470,
     670
    ],
-   "gap": 60
+   "rowsLeft": 0
   },
-  "guarded": {
-   "rows": [
-    100,
-    100,
-    470
-   ],
-   "findings": [
-    {
-     "check": 10,
-     "code": "duplicate-drill",
-     "level": "red",
-     "panel": "01-F"
-    },
-    {
-     "check": 10,
-     "code": "duplicate-drill",
-     "level": "red",
-     "panel": "01-F"
-    },
-    {
-     "check": 10,
-     "code": "duplicate-drill",
-     "level": "red",
-     "panel": "01-F"
-    },
-    {
-     "check": 10,
-     "code": "duplicate-drill",
-     "level": "red",
-     "panel": "BUL"
-    },
-    {
-     "check": 10,
-     "code": "duplicate-drill",
-     "level": "red",
-     "panel": "BUL"
-    },
-    {
-     "check": 10,
-     "code": "hinge-rows-too-close",
-     "level": "red",
-     "panel": null
-    }
-   ],
-   "held": [
-    "01-F",
-    "BUL"
-   ],
-   "message": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway."
-  },
-  "exported": {
-   "filename": "01-cnc-custom.dxf",
-   "parts": 4,
-   "all": 6,
-   "held": 2,
-   "gateMessage": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway."
-  },
-  "shown": {
-   "text": "2 parts held out of this export — 01 01-F, 01 BUL. Fix the fault, or export anyway.click to dismiss\nExport anyway",
-   "action": "Export anyway"
-  },
-  "clean": {
-   "parts": 6,
-   "all": 6,
-   "held": 0,
-   "gateMessage": null
+  "carcass": {
+   "touching": 0,
+   "apart": 1,
+   "mm": 4,
+   "fix": "close-to-touch",
+   "message": "01 and 02 stand 4 mm apart — carcasses in a run must touch."
   }
  }
 }

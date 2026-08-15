@@ -294,11 +294,17 @@ test('F12 the room paints it and the readout says it — from the SAME list', ()
   assert.match(scene, /!contourView && frontGapClashList\.length > 0/);
   // The readout says the value and names the pair.
   assert.match(read, /data-front-gap-warnings=\{rows\.length\}/);
-  assert.match(read, /data-front-gap-mm=\{c\.mm\}/);
-  assert.match(read, /\{c\.message\}/);
-  // It has no buttons and it changes nothing — it is an overlay.
-  assert.doesNotMatch(read, /<button|onClick/);
-  assert.match(read, /pointer-events-none/);
+  assert.match(read, /data-front-gap-mm=\{r\.mm\}/);
+  assert.match(read, /\{r\.message\}/);
+  // ─── SUPERSEDED BY TURN 31 (CLAUDE.md F4.15) ─────────────────────────────
+  //
+  // Turn 30 asserted that this overlay had NO BUTTONS and changed nothing, and
+  // that was right for turn 30: it warned about a layout nothing in the app
+  // could repair. The owner's rulebook gives it a repair — "the modal offers
+  // TWO options, each with its number" — so a row is now a button that opens
+  // that modal beside the click. The property this test protects is unchanged
+  // and is asserted below: ONE list feeds the paint and the readout.
+  assert.match(read, /openModal\('front-gap'/);
 });
 
 test('F12 the colour is the profile’s red, not a literal in a component', () => {

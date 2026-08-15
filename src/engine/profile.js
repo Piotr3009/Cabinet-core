@@ -171,6 +171,25 @@ export const DEFAULT_CABINET_PROFILE = {
     finish: 'gold',
   },
 
+  // ─── TURN 31 (CLAUDE.md F4.4 / F4.4a): APPLIANCE FACES ────────────────────
+  //
+  // An appliance is a BOUGHT thing with a published size, and rule 4a turns on
+  // it: "every front above/below the appliance takes the APPLIANCE's width
+  // (oven 598 → drawer front below is 598)".
+  //
+  // The owner's own two numbers, 15.08.2026. Rule 2 of the turn — no hole
+  // without truth — applies to sizes as well: a machine that is not named here
+  // gets no invented width, and `applianceFaceWidth` falls back to the
+  // carcass less the matrix's own 3 + 3, which is what a 594-in-600 dishwasher
+  // already is.
+  appliances: {
+    faceWidth: {
+      oven: 598,     // the owner's example, verbatim
+      dw: 594,       // 594 in a 600 opening — the appliance provides the 3
+    },
+    defaultInsetMm: 3,
+  },
+
   // ─── Doors / fronts ───
   doors: {
     // ─── TURN 30 (CLAUDE.md F12): HOW NEAR TWO FRONTS MAY COME ────────────
@@ -184,6 +203,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // shown. It is a WARNING OVERLAY and not a block: the cabinets are built
     // exactly as they were asked for.
     minNeighbourGapMm: 3,
+    // ─── TURN 31 (CLAUDE.md F4.16 / F4.18): AND HOW WIDE IS TOO WIDE ───────
+    //
+    // OWNER'S DEFAULT, 15.08.2026 (his word: "one profile number"). Over this,
+    // the gap is a YELLOW question rather than a fault — "too wide — infill or
+    // front correction?" — because a 9 mm joint is not dangerous, it is ugly,
+    // and which of the two answers is right is the joiner's call.
+    maxNeighbourGapMm: 6,
+    // How far away a thing can be and still be THE NEIGHBOUR of a front.
+    // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named it. A side
+    // filler is at most 120 (autoParts.sideInfill.maxWidth), so 200 catches
+    // everything that is a joint and nothing that is the next cabinet along.
+    neighbourReachMm: 200,
+    // ─── TURN 31 (CLAUDE.md F4.A): THE CLEARANCE MATRIX, THE OWNER'S OWN ───
+    //
+    // How far a front's edge stands INSIDE its own carcass end, decided by what
+    // is beside it. Left and right independent (rule 8). Agreed point by point
+    // on 15.08.2026; the L-shape corner (rule 7) is PARKED with the L-shape
+    // unit and has no number here on purpose — engine/frontClearance.js reads
+    // `null` for it and the Check says "parked" rather than passing it.
+    clearance: {
+      front: 1.5,      // 1. another cabinet's front → 1.5 + 1.5 = the 3 a client sees
+      endPanel: 3,     // 2. an end panel
+      infill: 3,       // 3. an infill/filler — same category as a panel
+      appliance: 0,    // 4. an appliance with its own front provides the 3 itself
+      wall: 3,         // 5. a bare wall, + the yellow "infill? (dust collection)"
+      none: 1.5,       // 6. the end of a run
+    },
     // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
     // width 705 mm (704 is still ONE door — BLOCKERS.md #2)
     widthDeduction: 4,
@@ -231,6 +277,13 @@ export const DEFAULT_CABINET_PROFILE = {
     // 35 across and its plate reaches further again, so two rows inside 60 are
     // two hinges that cannot both be fitted whatever the drilling says.
     minSpacingMm: 60,
+    // ─── TURN 31 (CLAUDE.md F4.10 / F4.11 / F4.18) ─────────────────────────
+    // How much a fitted hinge can absorb on its OWN side adjustment. Under
+    // this, a front correction is soaked up silently and the plates on the
+    // carcass never move (rule 10); over it, the Check says "beyond the
+    // hinge's adjustment — check" in yellow (rule 11).
+    // OWNER'S NUMBER, 15.08.2026: ±1.5.
+    sideAdjustMm: 1.5,
     // CLAUDE.md F3: "One profile line flips block→warn if the owner ever wants
     // it loose." This is the line. It ships BLOCKING, because what it stops is
     // a board in the skip; `false` leaves the move allowed and the yellow said.
@@ -3677,7 +3730,14 @@ export function migrateCabinetProfile(profile) {
     },
     front: { ...D.front, ...profile.front, types: { ...D.front.types, ...profile.front?.types } },
     carcass: { ...D.carcass, ...profile.carcass },
-    doors: { ...D.doors, ...profile.doors },
+    doors: {
+      ...D.doors,
+      ...profile.doors,
+      // Turn 31 (CLAUDE.md F4.18): the clearance matrix, key by key — a
+      // workshop that has tuned ONE of the six keeps the owner's answer for
+      // the rest, and a profile saved before this turn gets all six.
+      clearance: { ...D.doors.clearance, ...profile.doors?.clearance },
+    },
     handles: {
       ...D.handles,
       ...profile.handles,
@@ -4022,6 +4082,14 @@ export function migrateCabinetProfile(profile) {
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
     },
     room: { ...D.room, ...profile.room },
+    // Turn 31 (CLAUDE.md F4.4a): key by key, so a profile saved before the
+    // appliance faces existed comes back with the published widths rather than
+    // with an empty table and an invented number.
+    appliances: {
+      ...D.appliances,
+      ...profile.appliances,
+      faceWidth: { ...D.appliances.faceWidth, ...profile.appliances?.faceWidth },
+    },
     ui: {
       ...D.ui,
       ...profile.ui,

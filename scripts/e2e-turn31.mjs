@@ -685,6 +685,160 @@ async function main() {
       await page.evaluate(`${P}.ui.getState().clearMessages(); return true;`);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F4 [CRITICAL] — front gaps: the owner's rulebook (18 points)
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // The claim a browser has to settle is rule 14 — "shown gap =
+    // front↔neighbour" — and rule 15's repair, driven with a real pointer: the
+    // row on the screen is a door, the modal beside it carries TWO options each
+    // with its number, and pressing the first one really closes the gap while
+    // the cups ride the edge they were 21.5 from.
+    if (want('f4')) {
+      await newRoom('Turn 31 walk — F4');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const a = s.addUnit('BUD');
+        s.updateUnitParams(a.id, { width: 600, doors: { count: 1 } });
+        const b = s.addUnit('BUD', { near: a.id, side: 'right' });
+        s.updateUnitParams(b.id, { width: 600, doors: { count: 1 } });
+        // An END PANEL on the far end: rule 2 wants 3 mm there and the kit
+        // builds 1.5, so the joint a client sees is 1.5 — a RED.
+        s.addEndPanel(b.id, { side: 'R' });
+        const rb = s.unitResult(b.id);
+        window.__t31 = {
+          unitA: a.id, unitB: b.id,
+          leafB: (rb.panels.find((p) => p.role === 'front') || {}).id || null,
+        };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.waitFor(`(() => {
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return false;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId === window.__t31.leafB) n += 1; });
+        return n > 0;
+      })()`, { what: 'the leaf to mount', timeout: 30000 });
+      await frameUnits(await page.evaluate('return [window.__t31.unitA, window.__t31.unitB];'), [0.9, 0.6, 2.4]);
+      await page.sleep(900);
+
+      const f4 = {};
+
+      // ── Rule 14: what the screen says, and WHAT IT MEASURED ──────────────
+      const seen = await page.evaluate(`
+        const els = [...document.querySelectorAll('[data-front-gap-mm]')];
+        return els.map((el) => ({
+          mm: Number(el.getAttribute('data-front-gap-mm')),
+          kind: el.getAttribute('data-front-gap-kind'),
+          level: el.getAttribute('data-front-gap-level'),
+          text: el.innerText.trim(),
+        }));
+      `);
+      f4.rows = seen;
+      const panelRow = seen.find((r) => r.kind === 'endPanel');
+      check('F4.2 / F4.14 — the end-panel joint is measured front↔NEIGHBOUR and is RED',
+        Boolean(panelRow) && panelRow.level === 'red' && panelRow.mm === 1.5,
+        panelRow ? `${panelRow.mm} mm to ${panelRow.kind} · ${panelRow.level}` : JSON.stringify(seen));
+      check('F4.1 — …and the front-to-front joint beside it says nothing at all',
+        !seen.some((r) => r.kind === 'front'),
+        seen.map((r) => `${r.kind}:${r.mm}`).join(' · ') || 'silent');
+      await shot('4a-the-gap-a-client-sees-measured-front-to-neighbour-and-red',
+        { dom: '[data-front-gap-level="red"]' });
+
+      // ── Rule 15: the row is a DOOR, and the modal carries two numbers ─────
+      await page.click('[data-front-gap-kind="endPanel"]');
+      await page.sleep(500);
+      const modal = await page.evaluate(`
+        const el = document.querySelector('[data-modal-name="front-gap"]');
+        if (!el) return null;
+        const plan = el.querySelector('[data-front-gap-plan]');
+        return {
+          anchored: el.getAttribute('data-modal-anchored') === '1',
+          subject: (el.querySelector('[data-front-gap-subject]') || {}).innerText || null,
+          planMm: plan ? Number(plan.getAttribute('data-front-gap-plan')) : null,
+          planText: plan ? plan.innerText.trim() : null,
+          narrow: (el.querySelector('[data-front-gap-narrow]') || {}).innerText || null,
+          infill: (el.querySelector('[data-front-gap-infill]') || {}).innerText || null,
+          cost: (el.querySelector('[data-front-gap-cost]') || {}).innerText || null,
+        };
+      `);
+      f4.modal = modal;
+      check('F4.15 — the row opens the repair modal, beside the click',
+        Boolean(modal) && modal.anchored === true, JSON.stringify(modal?.anchored));
+      check('F4.15 — …offering TWO options, EACH WITH ITS NUMBER',
+        Boolean(modal?.narrow) && Boolean(modal?.infill) && modal.planMm === 1.5
+        && /1\.5/.test(modal.narrow),
+        `[${modal?.narrow}] / [${modal?.infill}]`);
+      check('F4.17 — …and it says what narrowing COSTS before it acts',
+        /BOM and the drilling/.test(modal?.cost || ''), modal?.cost || '(silent)');
+      await shot('4b-the-modal-two-options-each-with-its-number',
+        { dom: '[data-front-gap-narrow]', text: 'BOM and the drilling' });
+
+      // ── Rule 8/9: press it, and see the asymmetry law act ────────────────
+      const before = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t31.unitB);
+        const f = r.panels.find((p) => p.id === window.__t31.leafB);
+        const cups = r.drills.filter((d) => d.panel === f.id && d.kind === 'cup');
+        return { w: f.w, x: f.box.x, hinge: f.meta.hinge, cups: cups.map((d) => d.x), ys: cups.map((d) => d.y) };
+      `);
+      await page.click('[data-front-gap-narrow="1"]');
+      await page.sleep(600);
+      const after = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t31.unitB);
+        const f = r.panels.find((p) => p.id === window.__t31.leafB);
+        const cups = r.drills.filter((d) => d.panel === f.id && d.kind === 'cup');
+        const rows = [...document.querySelectorAll('[data-front-gap-kind="endPanel"]')].length;
+        return {
+          w: f.w, x: f.box.x, trim: f.meta.edgeTrim, cups: cups.map((d) => d.x), ys: cups.map((d) => d.y),
+          rowsLeft: rows,
+        };
+      `);
+      f4.before = before;
+      f4.after = after;
+      const fromEdge = (w, x) => (before.hinge === 'L' ? w - x : x);
+      check('F4.8 — the correction acted on ONE edge: the width came off once',
+        after.w === before.w - 1.5 && after.x === before.x,
+        `${before.w} → ${after.w} · x ${before.x} → ${after.x} · trim ${JSON.stringify(after.trim)}`);
+      check('F4.9 — the CUPS rode the edge: still 21.5 from it, same heights',
+        after.cups.every((x) => Math.abs(fromEdge(after.w, x) - 21.5) < 1e-6)
+        && JSON.stringify(after.ys) === JSON.stringify(before.ys),
+        `${before.cups.map((x) => fromEdge(before.w, x)).join(',')} → ${after.cups.map((x) => fromEdge(after.w, x)).join(',')}`);
+      check('F4.15 — …and the gap the client sees is closed: the red is gone',
+        after.rowsLeft === 0, `${after.rowsLeft} rows left`);
+      await frameUnits(await page.evaluate('return [window.__t31.unitB];'), [0.7, 0.3, 2.0]);
+      await page.sleep(800);
+      await shot('4c-narrowed-on-one-edge-only-and-the-red-is-gone',
+        { mesh: await page.evaluate('return window.__t31.leafB;') });
+
+      // ── Rule 13: a carcass gap is its own fault, with its own fix ────────
+      const carcass = await page.evaluate(`
+        const F = window.__ccT31.frontClearance;
+        const P2 = ${P}.profile.getState().profile;
+        const at = (lx, rx) => ([
+          { id: 'a', type: 'BUD', position: { wall: 0, x_mm: lx, rotation_deg: 0 }, params: { width: 600, height: 770, unit_num: '01' } },
+          { id: 'b', type: 'BUD', position: { wall: 0, x_mm: rx, rotation_deg: 0 }, params: { width: 600, height: 770, unit_num: '02' } },
+        ]);
+        const touching = F.carcassGaps(at(0, 600), P2);
+        const apart = F.carcassGaps(at(0, 604), P2);
+        return {
+          touching: touching.length,
+          apart: apart.length,
+          mm: apart[0] ? apart[0].mm : null,
+          fix: apart[0] ? apart[0].fix.kind : null,
+          message: apart[0] ? apart[0].message : null,
+        };
+      `);
+      f4.carcass = carcass;
+      check('F4.13 — carcasses that touch are silent; 4 mm apart is RED with ONE fix',
+        carcass.touching === 0 && carcass.apart === 1 && carcass.mm === 4
+        && carcass.fix === 'close-to-touch',
+        carcass.message || JSON.stringify(carcass));
+      measurements.f4 = f4;
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

@@ -120,6 +120,8 @@ export const MODAL_KINDS = Object.freeze({
   'unit-finish': { about: 'object', label: 'Unit finish' },
   // Turn 31 F8: the width/height figure on the canvas, double-clicked.
   'unit-size': { about: 'object', label: 'Cabinet size' },
+  // Turn 31 F4.15: the front-gap repair, offering its two numbered options.
+  'front-gap': { about: 'object', label: 'Front gap' },
 });
 
 /** Every modal name the app knows, as a list. */

@@ -19,6 +19,7 @@ import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
 import PartDetailModal from '../components/PartDetailModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
 import UnitFinishModal from '../components/UnitFinishModal.jsx';
+import FrontGapModal from '../components/FrontGapModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
@@ -359,6 +360,8 @@ export default function ConfiguratorPage() {
             palette. It takes a selection, so the same window serves the
             right-click menu over six cabinets (F5.3). */}
         {modal === 'unit-finish' && <UnitFinishModal />}
+        {/* Turn 31 (CLAUDE.md F4.15): the front-gap repair, with its two numbers. */}
+        {modal === 'front-gap' && <FrontGapModal />}
         {/* ─── Turn 23 (CLAUDE.md F9.3) ───
             "This part carries manual edits — recompute drops them, continue?"
             It is not a modal in the `modal` slot: it is raised by the STATE of

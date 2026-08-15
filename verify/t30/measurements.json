@@ -1,68 +1,31 @@
 {
- "f4": {
-  "feet": [
+ "f7": {
+  "clashes": [
    {
-    "panel": "BOTTOM",
-    "layer": "SCREWS_3MM",
-    "d": 3,
-    "fromFront": 99,
-    "across": 39
-   },
-   {
-    "panel": "BOTTOM",
-    "layer": "SCREWS_3MM",
-    "d": 3,
-    "fromFront": 440,
-    "across": 39
+    "shelfY": 470,
+    "hingeY": 470,
+    "gapMm": 0,
+    "windowMm": 71.25,
+    "shelfPanelId": "SHELF-1",
+    "shelfItemId": "shelf_tayhf7g",
+    "hingeIndex": 1,
+    "doorPanelId": "01-F",
+    "message": "A shelf at 470 mm and a hinge at 470 mm are 0 mm apart — closer than the 71.25 mm the cup and the shelf’s own sleeves need between them."
    }
   ],
-  "topDrills": 0,
-  "dpDepth": 490,
-  "centre": 39,
-  "bottomId": "BOTTOM"
- },
- "f5": {
-  "bare": {
-   "xs": [
-    70,
-    470
-   ],
-   "depth": 540,
-   "fromFront": [
-    70,
-    470
-   ],
-   "fromBack": [
-    70,
-    470
-   ],
-   "summary": [
-    70,
-    470
-   ],
-   "holes": 24,
-   "said": null
+  "shown": 1,
+  "text": "▲A shelf at 470 mm and a hinge at 470 mm are 0 mm apart — closer than the 71.25 mm the cup and the shelf’s own sleeves need between them.Remove sleeves at this shelfMove the hinge",
+  "buttons": {
+   "sleeves": 1,
+   "hinge": 1
   },
-  "at50": {
-   "xs": [
-    50,
-    490
-   ],
-   "depth": 540,
-   "fromFront": [
-    50,
-    490
-   ],
-   "fromBack": [
-    50,
-    490
-   ],
-   "summary": [
-    50,
-    490
-   ],
-   "holes": 24,
-   "said": 50
-  }
+  "rows": [
+   470
+  ],
+  "hinges": [
+   100,
+   470,
+   670
+  ]
  }
 }

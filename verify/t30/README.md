@@ -295,3 +295,51 @@ under the buttons whether anybody presses one or not. The test exercises that
 guard rather than asserting it by name, so it cannot be swept out with the nag —
 and it sweeps the whole of `src/` for any other `window.confirm`, which now
 returns none.
+
+---
+
+## F7 [HIGH] — a shelf and a hinge at one height: ASK, then open the editor
+
+The owner's case: a shelf row and a hinge cup land level with each other and the
+cabinet is cut anyway.
+
+**The window is derived, not felt.** CLAUDE.md asks for the number to be written
+down, so it is an arithmetic over values that already exist for their own
+reasons:
+
+```
+  cup half        hardware.hinge.cupDiameter / 2      17.5
++ cluster reach   max |shelfHoles.clusterOffsets|     50
++ sleeve half     shelfHoles.diameter / 2              3.75
+= 71.25 mm
+```
+
+Re-measure the cup and the window moves with it — the test proves that by
+widening the cup to ⌀40 and reading 73.75 back. A 71.25 typed into a file would
+not have.
+
+**It asks. It does not fix.** Neither button changes anything: each opens the
+editor where the decision belongs, on the row that is in conflict.
+
+### Read off the running app
+
+`node scripts/e2e-turn30.mjs --only f7` → **8 ok · 0 failed**.
+
+| | |
+| --- | --- |
+| the clash | a shelf at 470 and a hinge at 470 — **0 mm apart**, against the 71.25 window |
+| the prompt | 1 prompt, 2 buttons, saying *"…are 0 mm apart — closer than the 71.25 mm the cup and the shelf's own sleeves need between them"* |
+| **Remove sleeves at this shelf** | opens `SHELF-1`'s own window (`sections: A`) |
+| **Move the hinge** | opens `01 · Door · left` at section B, **ringed row 1** — the hinge that clashed |
+| after pressing both | rows `470`, hinges `100/470/670`, **still 1 clash** — no silent auto-fix |
+
+The prompt sits **above** the collapsible sections. The first run of this walk
+photographed a panel with no prompt in it, because it had been placed inside the
+"Carcass" section — a conflict prompt nobody expands to find is a conflict
+prompt nobody sees, and the test now asserts the placement.
+
+| file | |
+| --- | --- |
+| `7a-the-conflict-prompt-with-its-two-choices.png` | the prompt, with the number in it |
+| `7b-the-shelfs-own-window-opened-by-the-first-choice.png` | choice one |
+| `7c-the-doors-window-at-its-hinges-that-row-ringed.png` | choice two, on that row |

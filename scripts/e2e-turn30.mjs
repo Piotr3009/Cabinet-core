@@ -1028,6 +1028,96 @@ async function main() {
       await shot('5c-the-owners-50-mm-pin-columns-on-the-same-board');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F7 [HIGH] — a shelf and a hinge at one height: ASK, then open the editor
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f7')) {
+      await newRoom('Turn 30 walk — F7');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.addUnit('BUD');
+        // The owner's own case, at its starkest: a base unit with doors, and a
+        // shelf put DEAD LEVEL with the middle hinge. A shelf is an ITEM — the
+        // "+" adds one and a saved project carries it — so this is the gesture
+        // rather than a count typed into the params.
+        s.updateUnitParams(u.id, { width: 600, doors: true });
+        s.addItem(u.id, { kind: 'shelf', pos_mm: 470 });
+        ${P}.ui.getState().selectUnit(u.id);
+        ${P}.ui.getState().openRightPanel();
+        window.__t30 = { unitId: u.id };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+
+      const f7 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t30.unitId);
+        const el = document.querySelector('[data-shelf-hinge-clash]');
+        return {
+          clashes: r.clashes,
+          shown: el ? Number(el.getAttribute('data-shelf-hinge-clash')) : 0,
+          text: el ? el.textContent.replace(/\\s+/g, ' ').trim().slice(0, 200) : null,
+          buttons: {
+            sleeves: document.querySelectorAll('[data-clash-remove-sleeves]').length,
+            hinge: document.querySelectorAll('[data-clash-move-hinge]').length,
+          },
+          rows: r.drillSummary.shelf_pin_row_y,
+          hinges: r.drillSummary.hinge_centers,
+        };
+      `);
+      measurements.f7 = f7;
+      check('F7 — the clash is FOUND, and the number is the derived 71.25 mm window',
+        f7.clashes.length === 1 && f7.clashes[0].gapMm === 0
+        && f7.clashes[0].windowMm === 71.25,
+        `rows ${f7.rows.map((v) => Math.round(v)).join('/')} vs hinges ${f7.hinges.join('/')} — ${f7.clashes[0] ? f7.clashes[0].gapMm : '?'} mm apart`);
+      check('F7 — …and it is SHOWN, with the two choices the owner named',
+        f7.shown === 1 && f7.buttons.sleeves === 1 && f7.buttons.hinge === 1,
+        `${f7.shown} prompt · ${f7.buttons.sleeves} + ${f7.buttons.hinge} buttons`);
+      check('F7 — …saying the number rather than "too close"',
+        /0 mm apart/.test(f7.text || '') && /71\.25 mm/.test(f7.text || ''),
+        f7.text || 'no text');
+      await shot('7a-the-conflict-prompt-with-its-two-choices');
+
+      // ── CHOICE ONE: the SHELF's own window, at that shelf ──────────────
+      await page.click('[data-clash-remove-sleeves]');
+      await page.sleep(700);
+      const openedShelf = await page.evaluate(`
+        const el = document.querySelector('[data-door-modal]');
+        return el ? { of: el.getAttribute('data-door-modal'), sections: el.getAttribute('data-door-modal-sections') } : null;
+      `);
+      check('F7 — "Remove sleeves at this shelf" opens THAT SHELF’s own window',
+        openedShelf && openedShelf.of === (f7.clashes[0] || {}).shelfPanelId && openedShelf.sections === 'A',
+        JSON.stringify(openedShelf));
+      await shot('7b-the-shelfs-own-window-opened-by-the-first-choice');
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(400);
+
+      // ── CHOICE TWO: the DOOR's window at section B, that row ringed ────
+      await page.click('[data-clash-move-hinge]');
+      await page.sleep(900);
+      const openedHinge = await page.evaluate(modalJs);
+      check('F7 — "Move the hinge" opens the DOOR’s window at section B, on that row',
+        openedHinge.open && openedHinge.of === (f7.clashes[0] || {}).doorPanelId
+        && openedHinge.hasB && openedHinge.ringedRow === (f7.clashes[0] || {}).hingeIndex,
+        `${openedHinge.title} — ringed row ${openedHinge.ringedRow}, wanted ${(f7.clashes[0] || {}).hingeIndex}`);
+      await shot('7c-the-doors-window-at-its-hinges-that-row-ringed');
+
+      // ── AND NOTHING WAS FIXED BEHIND ANYBODY'S BACK ───────────────────
+      const after = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t30.unitId);
+        return { rows: r.drillSummary.shelf_pin_row_y, hinges: r.drillSummary.hinge_centers, clashes: r.clashes.length };
+      `);
+      check('F7 — NO SILENT AUTO-FIX: pressing both buttons changed no hole at all',
+        JSON.stringify(after.rows) === JSON.stringify(f7.rows)
+        && JSON.stringify(after.hinges) === JSON.stringify(f7.hinges)
+        && after.clashes === 1,
+        `rows ${after.rows.map((v) => Math.round(v)).join('/')} · hinges ${after.hinges.join('/')} · still ${after.clashes} clash`);
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(300);
+    }
+
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

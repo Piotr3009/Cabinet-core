@@ -23,6 +23,7 @@ import Section from './Section.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import CncTree from './CncTree.jsx';
 import UnitWarnings from './UnitWarnings.jsx';
+import ShelfHingeClash from './ShelfHingeClash.jsx';
 
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
@@ -239,6 +240,15 @@ export default function RightPanel() {
         {element && (
           <ElementSection unit={unit} element={element} onClose={clearElement} />
         )}
+
+        {/* ─── TURN 30 (CLAUDE.md F7): A SHELF AND A HINGE AT ONE HEIGHT ────
+            ABOVE the sections and outside every one of them, deliberately: a
+            conflict prompt folded inside a collapsed "Carcass" is a prompt
+            nobody ever expands to find. It shows only when there IS a clash,
+            so the panel is not permanently a row longer, and it ASKS rather
+            than fixes — two buttons, each opening the editor where the
+            decision belongs. No silent auto-fix. */}
+        <ShelfHingeClash unitId={unit.id} />
 
         {/* ── carcass ── */}
         <Section

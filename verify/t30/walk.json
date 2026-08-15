@@ -12,49 +12,34 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F4 — the divider’s foot is screwed through the BOTTOM again",
+   "label": "F7 — the clash is FOUND, and the number is the derived 71.25 mm window",
    "ok": true,
-   "detail": "BOTTOM ⌀3 SCREWS_3MM · BOTTOM ⌀3 SCREWS_3MM"
+   "detail": "rows 470 vs hinges 100/470/670 — 0 mm apart"
   },
   {
-   "label": "F4 — …at the LISP’s own two points: 99 from the front, and the divider’s depth less 50",
+   "label": "F7 — …and it is SHOWN, with the two choices the owner named",
    "ok": true,
-   "detail": "99 and 440 mm from the front (the divider is 490 deep)"
+   "detail": "1 prompt · 1 + 1 buttons"
   },
   {
-   "label": "F4 — …on the divider’s own centre line across the width",
+   "label": "F7 — …saying the number rather than \"too close\"",
    "ok": true,
-   "detail": "39 mm (dpInsetCenter)"
+   "detail": "▲A shelf at 470 mm and a hinge at 470 mm are 0 mm apart — closer than the 71.25 mm the cup and the shelf’s own sleeves need between them.Remove sleeves at this shelfMove the hinge"
   },
   {
-   "label": "F4 — and the TOP takes NOTHING, which is the LISP and not an oversight",
+   "label": "F7 — \"Remove sleeves at this shelf\" opens THAT SHELF’s own window",
    "ok": true,
-   "detail": "0 holes in the top board"
+   "detail": "{\"of\":\"SHELF-1\",\"sections\":\"A\"}"
   },
   {
-   "label": "F4 — the bottom board is mounted, so the picture can be looked at",
+   "label": "F7 — \"Move the hinge\" opens the DOOR’s window at section B, on that row",
    "ok": true,
-   "detail": "{\"mounted\":true}"
+   "detail": "01 · Door · left — ringed row 1, wanted 1"
   },
   {
-   "label": "F5 — with nothing said the app drills the LISP’s 70, front and back",
+   "label": "F7 — NO SILENT AUTO-FIX: pressing both buttons changed no hole at all",
    "ok": true,
-   "detail": "columns at 70 and 470 on a 540 mm board · project says null"
-  },
-  {
-   "label": "F5 — the setback has a control of its own in Settings",
-   "ok": true,
-   "detail": "1 fields"
-  },
-  {
-   "label": "F5 — the owner’s 50 moves BOTH columns, and moves the same number of holes",
-   "ok": true,
-   "detail": "columns at 50 and 490 · 24 holes, same as 24"
-  },
-  {
-   "label": "F5 — …and the summary the drawings and the BOM read moved with it",
-   "ok": true,
-   "detail": "[50,490]"
+   "detail": "rows 470 · hinges 100/470/670 · still 1 clash"
   },
   {
    "label": "R6 — the console is clean for the whole walk",

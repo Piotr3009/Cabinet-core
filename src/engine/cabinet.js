@@ -54,6 +54,8 @@ import {
   partitionBackScrewRun, partitionBackScrews, partitionBackSpec,
   partitionFootScrews, partitionFootSpec,
 } from './partitionFixings.js';
+// Turn 30 (CLAUDE.md F7): a shelf row and a hinge cup at one height.
+import { shelfHingeClashes } from './shelfHingeClash.js';
 // Turn 24 (CLAUDE.md F7): the owner's butt-joint set, given the consumer it
 // was written for — a FIX shelf.
 import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
@@ -4365,6 +4367,22 @@ export function computeCabinet(params, profileOverride) {
     csvLines: buildCsvLines(unitNum, panels, P),
     warnings,
     assemblies,
+    // ─── TURN 30 (CLAUDE.md F7): A SHELF AND A HINGE AT ONE HEIGHT ─────────
+    //
+    // Reported, never fixed. `engine/shelfHingeClash.js` holds the arithmetic
+    // and the derivation of the window; this is where the answer is published,
+    // and it is published EMPTY as an empty array rather than as a missing key
+    // so a reader never has to ask which it is.
+    //
+    // Nothing here reaches a hole: the cabinet is cut exactly as it was asked
+    // for, and the app says what it found. "No silent auto-fix" is CLAUDE.md's
+    // own sentence and this is it obeyed.
+    clashes: shelfHingeClashes({
+      result: {
+        panels, drillSummary,
+      },
+      profile: P,
+    }),
   };
 }
 

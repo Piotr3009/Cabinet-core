@@ -21,6 +21,7 @@ import PartDetailModal from '../components/PartDetailModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
 import UnitFinishModal from '../components/UnitFinishModal.jsx';
 import FrontGapModal from '../components/FrontGapModal.jsx';
+import UnitSizeModal from '../components/UnitSizeModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
@@ -395,6 +396,8 @@ export default function ConfiguratorPage() {
         {modal === 'unit-finish' && <UnitFinishModal />}
         {/* Turn 31 (CLAUDE.md F4.15): the front-gap repair, with its two numbers. */}
         {modal === 'front-gap' && <FrontGapModal />}
+        {/* Turn 31 (CLAUDE.md F8): the width/height figure, double-clicked. */}
+        {modal === 'unit-size' && <UnitSizeModal />}
         {/* ─── Turn 23 (CLAUDE.md F9.3) ───
             "This part carries manual edits — recompute drops them, continue?"
             It is not a modal in the `modal` slot: it is raised by the STATE of

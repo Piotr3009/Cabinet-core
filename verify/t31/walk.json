@@ -6,19 +6,19 @@
    "detail": "http://127.0.0.1:4174"
   },
   {
-   "label": "F7 — every handle and every hinge carries a catchment",
+   "label": "F8 — a double-click on the WIDTH figure opens the mini modal beside it",
    "ok": true,
-   "detail": "hinge · hinge · hinge · handle"
+   "detail": "{\"anchored\":true,\"width\":\"600\",\"height\":\"770\",\"focused\":\"width\",\"active\":\"INPUT:\\\"cc-input text-right w-[110px]\\\"\"} · on screen: {\"name\":\"unit-size\",\"at\":{\"x\":800,\"y\":524}}"
   },
   {
-   "label": "F7 — a pointer BESIDE the piece, inside its aura, brings the label up",
+   "label": "F8 — …with BOTH fields, and the figure that was clicked in focus",
    "ok": true,
-   "detail": "1 label(s) · beside (813,525) vs centre (800,524) · axis x · box [28,184,60]"
+   "detail": "w 600 · h 770 · focus width · active INPUT:\"cc-input text-right w-[110px]\""
   },
   {
-   "label": "F7 — …and it LINGERS after the cursor leaves, then goes",
+   "label": "F8 — Enter commits through the existing setter, and closes the window",
    "ok": true,
-   "detail": "1 label(s) at once, 0 after 300 ms"
+   "detail": "width 750 · still open false"
   },
   {
    "label": "R6 — the console is clean for the whole walk",
@@ -28,7 +28,15 @@
  ],
  "shots": [
   {
-   "name": "7a-the-catchment-a-pointer-beside-the-handle-and-its-number",
+   "name": "8a-the-width-figure-double-clicked-and-its-mini-modal",
+   "subject": {
+    "dom": "[data-modal-name=\"unit-size\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "8b-the-cabinet-at-its-new-width-committed-on-enter",
    "subject": {
     "dom": "canvas"
    },

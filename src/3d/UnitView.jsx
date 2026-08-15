@@ -603,6 +603,8 @@ export default function UnitView({
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
   selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
+  // Turn 31 (CLAUDE.md F8): double-click the width or height FIGURE.
+  onEditSize = null,
   // Turn 19 (CLAUDE.md F1.3): double-click a hinge and its modal opens.
   onEditHinge = null,
   // The ink every dimension caption on this cabinet is written in (turn 11,
@@ -2006,6 +2008,9 @@ export default function UnitView({
                 at={floorY}
                 colour={selected ? COLORS.gold : dimensionColour}
                 name={`w-${unit.id}`}
+                onPick={onEditSize ? (row, e) => onEditSize({
+                  field: 'width', at: { x: e.clientX, y: e.clientY }, row: row.key,
+                }) : null}
               />
               {/* ─── TURN 29 (CLAUDE.md F2.1): THE 100 THE OWNER CANNOT SEE ──
                   *"nie ma 100, plinthu nie pokazuje."* The chain ran the whole
@@ -2024,6 +2029,9 @@ export default function UnitView({
                 at={D}
                 colour={selected ? COLORS.gold : dimensionColour}
                 name={`h-${unit.id}`}
+                onPick={onEditSize ? (row, e) => onEditSize({
+                  field: 'height', at: { x: e.clientX, y: e.clientY }, row: row.key,
+                }) : null}
               />
             </>
           )}

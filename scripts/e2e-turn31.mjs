@@ -208,6 +208,19 @@ async function main() {
     return { before, after, moved: Math.round(Math.hypot(after.x - before.x, after.y - before.y)) };
   };
 
+  /**
+   * Type into whatever has focus, with REAL input.
+   *
+   * `Input.dispatchKeyEvent` with `rawKeyDown` carries no text — it is the
+   * shape a SHORTCUT needs — so a field typed with it never changes. This is
+   * CDP's own text path and is as real as a keyboard; R1 bans synthetic DOM
+   * events, not the protocol.
+   */
+  const typeText = async (text) => {
+    await page.send('Input.insertText', { text });
+    await page.sleep(120);
+  };
+
   const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width
     && a.y < b.y + b.height && b.y < a.y + a.height;
 
@@ -1124,6 +1137,117 @@ async function main() {
         immediately > 0 && afterLinger === 0,
         `${immediately} label(s) at once, ${afterLinger} after ${f7.linger.ms} ms`);
       measurements.f7 = f7;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // F8 [MEDIUM] — double-click a cabinet dimension → mini modal
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f8')) {
+      await newRoom('Turn 31 walk — F8');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const a = s.addUnit('BUD');
+        s.updateUnitParams(a.id, { width: 600, doors: { count: 1 } });
+        ${P}.ui.getState().setShowDimensions(true);
+        window.__t31 = { unitA: a.id };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.waitFor(`(() => {
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return false;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.userData && o.userData.ccDimensionPick) n += 1; });
+        return n > 0;
+      })()`, { what: 'the dimension figures to become controls', timeout: 30000 });
+      await frameUnits([await page.evaluate('return window.__t31.unitA;')], [0.6, 0.5, 2.4]);
+      await page.sleep(600);
+      // The WIDTH figure lies on the floor in front of the cabinet, which a
+      // frame taken on the cabinet's own bounds puts below the viewport. The
+      // camera is re-aimed at the figure itself — off its own world position,
+      // never a typed one — so the point being double-clicked is on the canvas.
+      await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        let mesh = null;
+        v.scene.updateMatrixWorld(true);
+        v.scene.traverse((o) => { if (!mesh && o.userData && o.userData.ccDimensionPick === 'w') mesh = o; });
+        if (!mesh) return null;
+        const c = mesh.getWorldPosition(new THREE.Vector3());
+        if (v.controls) v.controls.enableDamping = false;
+        if (v.controls && v.controls.target) v.controls.target.copy(c);
+        v.camera.position.set(c.x + 0.5, c.y + 0.9, c.z + 1.8);
+        v.camera.up.set(0, 1, 0);
+        v.camera.lookAt(c);
+        v.camera.updateProjectionMatrix();
+        if (v.controls) v.controls.update();
+        return true;
+      `);
+      await page.sleep(700);
+
+      const f8 = {};
+      const at = await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        let mesh = null;
+        v.scene.updateMatrixWorld(true);
+        v.scene.traverse((o) => { if (!mesh && o.userData && o.userData.ccDimensionPick === 'w') mesh = o; });
+        if (!mesh) return null;
+        const c = mesh.getWorldPosition(new THREE.Vector3()).project(v.camera);
+        const r = v.gl.domElement.getBoundingClientRect();
+        return { x: r.left + ((c.x + 1) / 2) * r.width, y: r.top + ((1 - c.y) / 2) * r.height };
+      `);
+      await page.dblclick(at.x, at.y);
+      await page.sleep(600);
+      const opened = await page.evaluate(`
+        const el = document.querySelector('[data-modal-name="unit-size"]');
+        if (!el) return null;
+        const w = el.querySelector('[data-unit-size-width]');
+        const h = el.querySelector('[data-unit-size-height]');
+        return {
+          anchored: el.getAttribute('data-modal-anchored') === '1',
+          width: w ? w.value : null,
+          height: h ? h.value : null,
+          focused: document.activeElement === w ? 'width' : (document.activeElement === h ? 'height' : null),
+          active: document.activeElement ? (document.activeElement.tagName + ':' + JSON.stringify(document.activeElement.className || '').slice(0, 40)) : null,
+        };
+      `);
+      f8.opened = opened;
+      const whatOpened = await page.evaluate(`
+        const el = document.querySelector('[data-modal-shell="1"]');
+        return { name: el ? el.getAttribute('data-modal-name') : null, at: ${JSON.stringify(at)} };
+      `);
+      check('F8 — a double-click on the WIDTH figure opens the mini modal beside it',
+        Boolean(opened) && opened.anchored === true,
+        `${JSON.stringify(opened)} · on screen: ${JSON.stringify(whatOpened)}`);
+      check('F8 — …with BOTH fields, and the figure that was clicked in focus',
+        opened.width === '600' && opened.height === '770' && opened.focused === 'width',
+        `w ${opened.width} · h ${opened.height} · focus ${opened.focused} · active ${opened.active}`);
+      await shot('8a-the-width-figure-double-clicked-and-its-mini-modal',
+        { dom: '[data-modal-name="unit-size"]' });
+
+      // ── Typed, and committed on ENTER, through the EXISTING setter ───────
+      await page.evaluate(`
+        const el = document.querySelector('[data-unit-size-width]');
+        el.focus();
+        el.select();
+        return true;
+      `);
+      await typeText('750');
+      await page.key('Enter', { code: 'Enter', windowsVirtualKeyCode: 13 });
+      await page.sleep(600);
+      const after = await page.evaluate(`
+        return {
+          width: ${P}.project.getState().units.find((u) => u.id === window.__t31.unitA).params.width,
+          modal: Boolean(document.querySelector('[data-modal-name="unit-size"]')),
+        };
+      `);
+      f8.after = after;
+      check('F8 — Enter commits through the existing setter, and closes the window',
+        after.width === 750 && after.modal === false, `width ${after.width} · still open ${after.modal}`);
+      await shot('8b-the-cabinet-at-its-new-width-committed-on-enter',
+        { dom: 'canvas' });
+      measurements.f8 = f8;
     }
 
     // ─── R6, as an assertion at the end ────────────────────────────────────

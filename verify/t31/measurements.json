@@ -1,54 +1,15 @@
 {
- "f7": {
-  "boxes": {
-   "auras": [
-    {
-     "kind": "hinge",
-     "id": "01-F-100",
-     "mm": [
-      38,
-      27,
-      78
-     ]
-    },
-    {
-     "kind": "hinge",
-     "id": "01-F-470",
-     "mm": [
-      38,
-      27,
-      78
-     ]
-    },
-    {
-     "kind": "hinge",
-     "id": "01-F-670",
-     "mm": [
-      38,
-      27,
-      78
-     ]
-    },
-    {
-     "kind": "handle",
-     "id": "01-F",
-     "mm": [
-      28,
-      184,
-      60
-     ]
-    }
-   ],
-   "profileMm": 8
+ "f8": {
+  "opened": {
+   "anchored": true,
+   "width": "600",
+   "height": "770",
+   "focused": "width",
+   "active": "INPUT:\"cc-input text-right w-[110px]\""
   },
-  "showing": {
-   "sprites": 1,
-   "text": "sprite"
-  },
-  "linger": {
-   "immediately": 1,
-   "afterLinger": 0,
-   "ms": 300
+  "after": {
+   "width": 750,
+   "modal": false
   }
  }
 }

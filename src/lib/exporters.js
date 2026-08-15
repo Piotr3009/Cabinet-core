@@ -64,8 +64,10 @@ export function exportBomCsv({
   projectName = 'project', redWarnings = [], lookup = registerLookup,
 }) {
   const d = migrateDesign(design);
-  const bom = buildBom(entries, { design: d, profile, materials });
   const ready = d.drawerBoxes?.mode === 'ready';
+  const bom = buildBom(entries, {
+    design: d, profile, materials, excludeDrawerBoxes: ready,
+  });
   const summary = materialsSummary(bom, profile, { excludeDrawerBoxes: ready });
   const ironmongery = [
     ...ironmongerySummary({

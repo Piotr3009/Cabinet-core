@@ -421,6 +421,10 @@ function paramsForEngine(unit, design = null) {
     // do — an INPUT in the design layer, never a formula in the engine — so a
     // bare `computeCabinet()` and every golden fixture pass none of them and
     // resolve to `board_t` and `front_t`, which is what they cut yesterday.
+    // ─── TURN 32 (CLAUDE.md F7): READY-MADE BOXES, ON THE SAME ROAD ────────
+    // The wizard's one answer travels as an input; the engine keeps cutting
+    // every board for a project that never said otherwise.
+    drawer_boxes: design?.drawerBoxes?.mode ?? null,
     thickness_slots: design
       ? projectThicknesses({ design, profile, materials: workshopMaterials() })
       : null,

@@ -41,6 +41,21 @@
    "detail": "{\"before\":14,\"after\":13,\"clips\":\"Plinth clips\\n2 pcs\\nart. CL-100\"}"
   },
   {
+   "label": "F7 — the box parts LEAVE the cutting list; the faces stay ours",
+   "ok": true,
+   "detail": "{\"boxLinesBefore\":10,\"boxLinesAfter\":0,\"frontsStillCut\":2,\"meshesBefore\":10}"
+  },
+  {
+   "label": "F7 — LIVE SCENE: the geometry stays — every box board still stands in 3D",
+   "ok": true,
+   "detail": "meshes before 10 · after 10"
+  },
+  {
+   "label": "F7 — a PURCHASE LINE per bought box, as a named spec",
+   "ok": true,
+   "detail": "[\"Ready-made drawer box 440×184 · 2 pcs · Ready-made drawer box · depth×side 440×184 mm · SPEC\"]"
+  },
+  {
    "label": "R6 — the console is clean for the whole walk",
    "ok": true,
    "detail": ""
@@ -69,6 +84,15 @@
    "subject": {
     "dom": "[data-bom-line=\"plinth_clips\"]",
     "text": "CL-100"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "7a-ready-made-boxes-bought-as-purchase-lines-not-cut-parts",
+   "subject": {
+    "dom": "[data-bom-line=\"ready_boxes\"]",
+    "text": "Ready-made drawer box"
    },
    "present": true,
    "detail": "{\"dom\":true,\"text\":true}"

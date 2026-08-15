@@ -5202,7 +5202,16 @@ export function computeCabinet(params, profileOverride) {
     drillSummary,
     hardware,
     totals,
-    csvLines: buildCsvLines(unitNum, panels, P),
+    // ─── TURN 32 (CLAUDE.md F7): A BOUGHT BOX IS NOT CUT ────────────────────
+    // `drawer_boxes: 'ready'` (the wizard's one question, on the override
+    // channel) takes the box parts off the CUTTING LIST — and off nothing
+    // else: the panels above stay, the 3D stays, the front's drilling stays.
+    // A bare computeCabinet() passes nothing and cuts every board, as ever.
+    csvLines: buildCsvLines(
+      unitNum,
+      params?.drawer_boxes === 'ready' ? panels.filter((p) => p.role !== 'drawer_box') : panels,
+      P,
+    ),
     warnings,
     assemblies,
     // ─── TURN 30 (CLAUDE.md F7): A SHELF AND A HINGE AT ONE HEIGHT ─────────

@@ -45,7 +45,9 @@ function partMaterialLabel(panel, resolved) {
  *                            name rather than by its slot.
  * @returns aggregated BOM
  */
-export function buildBom(entries, { design = null, profile = null, materials = [] } = {}) {
+export function buildBom(entries, {
+  design = null, profile = null, materials = [], excludeDrawerBoxes = false,
+} = {}) {
   const units = [];
   const roleTotals = {};
   const cutRows = new Map();       // identical pieces merge across the project
@@ -61,7 +63,13 @@ export function buildBom(entries, { design = null, profile = null, materials = [
     // Per PIECE, not per project and not per unit: a cabinet on its own door
     // style is finished in that style's material, a run piece on its own board
     // is cut from that board, and the cut list has to say so for each of them.
-    const rows = result.panels.map((p) => {
+    // ─── Turn 32 (CLAUDE.md F7): a BOUGHT box is not a cut part ────────────
+    // Its purchase line is bomInvoice's business; here it simply leaves the
+    // rows, the areas, the edging and the counts.
+    const counted = excludeDrawerBoxes
+      ? result.panels.filter((p) => p.role !== 'drawer_box')
+      : result.panels;
+    const rows = counted.map((p) => {
       const resolved = design ? resolvePanelMaterial(p, unit, design, profile, materials) : null;
       return {
         unit_num: result.unitNum,

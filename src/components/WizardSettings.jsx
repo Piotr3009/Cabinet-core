@@ -404,6 +404,25 @@ export default function WizardSettings({ onRoomSetup }) {
             </div>
           </div>
         )}
+        {/* ─── TURN 32 (CLAUDE.md F7): DRAWER BOXES, ASKED ONCE PER PROJECT ──
+            Same-board is the default and is ALREADY the engine's behaviour
+            (the box inherits the confirmed carcass thickness — chat fix
+            15.08). Ready-made: the box parts leave the cutting list and a
+            purchase line appears in the BOM; the geometry stays computed. */}
+        <div className="cc-row mt-1.5" data-drawer-boxes="1">
+          <span className="text-[11px] text-ink-200 shrink-0">Drawer boxes</span>
+          {[['same', 'Same board as carcass'], ['ready', 'Ready-made system']].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              data-drawer-boxes-option={id}
+              className={`cc-btn px-2 ${(design.drawerBoxes.mode ?? 'same') === id ? 'border-gold text-gold' : ''}`}
+              onClick={() => setDesign({ drawerBoxes: { mode: id } })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         {!assignment.all && (
           <p className="text-[11px] text-status-warn mt-1" data-materials-missing="1">
             {assignment.missing.map((s) => s.label).join(', ')} — no material yet. Generic counts as an

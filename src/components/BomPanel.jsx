@@ -39,10 +39,12 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   // the STOCK LIST goes in at last — an assigned board with no finish of its
   // own was named by its slot instead of its stock name, because `materials`
   // was accepted here since turn 16 and never once passed.
-  const bom = useMemo(() => buildBom(entries, { design, profile, materials }), [entries, design, profile, materials]);
-  // ─── TURN 32 (CLAUDE.md F5): THE INVOICE ─────────────────────────────────
+  // ─── TURN 32 (CLAUDE.md F5/F7): THE INVOICE ──────────────────────────────
   const migrated = useMemo(() => migrateDesign(design), [design]);
   const readyBoxes = migrated.drawerBoxes?.mode === 'ready';
+  const bom = useMemo(() => buildBom(entries, {
+    design, profile, materials, excludeDrawerBoxes: readyBoxes,
+  }), [entries, design, profile, materials, readyBoxes]);
   const invoiceSummary = useMemo(
     () => materialsSummary(bom, profile, { excludeDrawerBoxes: readyBoxes }),
     [bom, profile, readyBoxes],

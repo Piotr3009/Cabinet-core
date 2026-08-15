@@ -246,6 +246,15 @@ export const DEFAULT_DESIGN = {
   // identical for both, so nothing in the engine branches on it. It decides
   // which model the view loads and which article the BOM orders.
   runners: { system: null, variant: null },
+  // ─── TURN 32 (CLAUDE.md F7): READY-MADE DRAWER BOXES ──────────────────────
+  // The wizard's materials block asks ONCE per project: same board as the
+  // carcass (the default — the engine's own behaviour since the 15.08 chat
+  // fix, the box inherits the confirmed carcass thickness), or a ready-made
+  // system. 'ready' takes the box parts off the CUTTING and puts a purchase
+  // line in the BOM; the GEOMETRY stays computed — the drawer still exists
+  // in 3D and the front still needs its drilling. `null` = nobody has said,
+  // which is 'same'.
+  drawerBoxes: { mode: null },
   // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
   // which is what a project that has never opened the section means. Resolved
   // through projectHeights() below, so a stored null and a stored number behave
@@ -339,6 +348,11 @@ export function migrateDesign(design) {
       system: d.hinges?.system ? String(d.hinges.system) : null,
       finish: d.hinges?.finish ? String(d.hinges.finish).toLowerCase() : null,
       plate: d.hinges?.plate ? String(d.hinges.plate) : null,
+    },
+    // Turn 32 (CLAUDE.md F7): only the two answers survive; anything else is
+    // "nobody has said", which cuts the box from the carcass board as ever.
+    drawerBoxes: {
+      mode: d.drawerBoxes?.mode === 'ready' || d.drawerBoxes?.mode === 'same' ? d.drawerBoxes.mode : null,
     },
     runners: {
       system: d.runners?.system ? String(d.runners.system) : null,

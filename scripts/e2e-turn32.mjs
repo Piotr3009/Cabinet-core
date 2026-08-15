@@ -802,6 +802,78 @@ async function main() {
       `);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F7 [HIGH] — ready-made drawer boxes: bought, not cut; still drawn
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f7')) {
+      await page.waitFor(`[...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'BOM')`, { what: 'the editor' });
+      const f7 = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const unit = s.units[0];
+        const before = s.unitResult(unit.id);
+        const boxLinesBefore = before.csvLines.filter((l) => /D\\d-(SL|SR|BF|BB|DNO)/.test(l)).length;
+        const meshCount = (id) => {
+          const v = ${P}.views.room;
+          let n = 0;
+          v.scene.traverse((g) => {
+            if (!g.userData || g.userData.ccUnitId !== id) return;
+            g.traverse((o) => { if (o.isMesh && o.userData && /D\\d-(SL|SR|BF|BB|DNO)/.test(String(o.userData.ccPanelId || ''))) n += 1; });
+          });
+          return n;
+        };
+        const meshesBefore = meshCount(unit.id);
+        s.setDesign({ drawerBoxes: { mode: 'ready' } });
+        const after = ${P}.project.getState().unitResult(unit.id);
+        window.__t32f7 = { unitId: unit.id };
+        return {
+          boxLinesBefore,
+          boxLinesAfter: after.csvLines.filter((l) => /D\\d-(SL|SR|BF|BB|DNO)/.test(l)).length,
+          frontsStillCut: after.csvLines.filter((l) => /-DF\\d/.test(l)).length,
+          meshesBefore,
+        };
+      `);
+      await page.sleep(600);
+      const f7scene = await page.evaluate(`
+        const v = ${P}.views.room;
+        let n = 0;
+        v.scene.traverse((g) => {
+          if (!g.userData || g.userData.ccUnitId !== window.__t32f7.unitId) return;
+          g.traverse((o) => { if (o.isMesh && o.userData && /D\\d-(SL|SR|BF|BB|DNO)/.test(String(o.userData.ccPanelId || ''))) n += 1; });
+        });
+        return n;
+      `);
+      measurements.f7 = { ...f7, meshesAfter: f7scene };
+      check('F7 — the box parts LEAVE the cutting list; the faces stay ours',
+        f7.boxLinesBefore >= 8 && f7.boxLinesAfter === 0 && f7.frontsStillCut > 0,
+        JSON.stringify(f7));
+      check('F7 — LIVE SCENE: the geometry stays — every box board still stands in 3D',
+        f7scene === f7.meshesBefore && f7scene >= 8,
+        `meshes before ${f7.meshesBefore} · after ${f7scene}`);
+      await page.evaluate(`
+        ${P}.ui.getState().setCheckOpen(false);
+        ${P}.ui.getState().clearMessages();
+        ${P}.ui.getState().setBomOpen(true);
+        return true;
+      `);
+      await page.waitFor(`document.querySelector('[data-bom-order-tab="1"]')`, { what: 'the BOM' });
+      await page.sleep(300);
+      await page.click('[data-bom-order-tab="1"]');
+      await page.waitFor(`document.querySelector('[data-bom-order="1"]')`, { what: 'the Order tab' });
+      const purchase = await page.evaluate(`
+        const el = [...document.querySelectorAll('[data-bom-line="ready_boxes"]')];
+        return el.map((x) => x.innerText.replace(/\\n/g, ' · '));
+      `);
+      check('F7 — a PURCHASE LINE per bought box, as a named spec',
+        purchase.length >= 1 && /Ready-made drawer box/.test(purchase[0] || ''), JSON.stringify(purchase));
+      await shot('7a-ready-made-boxes-bought-as-purchase-lines-not-cut-parts',
+        { dom: '[data-bom-line="ready_boxes"]', text: 'Ready-made drawer box' });
+      await page.evaluate(`
+        ${P}.project.getState().setDesign({ drawerBoxes: { mode: 'same' } });
+        ${P}.ui.getState().setBomOpen(false);
+        return true;
+      `);
+    }
+
     // ─── R6, as an assertion at the end ────────────────────────────────────
     const errs = realErrors(page.errors);
     check('R6 — the console is clean for the whole walk', errs.length === 0, errs.slice(0, 3).join(' | '));

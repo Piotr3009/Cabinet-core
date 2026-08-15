@@ -15,5 +15,12 @@
   "before": 14,
   "yellows": 13,
   "clipsText": "Plinth clips\n2 pcs\nart. CL-100"
+ },
+ "f7": {
+  "boxLinesBefore": 10,
+  "boxLinesAfter": 0,
+  "frontsStillCut": 2,
+  "meshesBefore": 10,
+  "meshesAfter": 10
  }
 }

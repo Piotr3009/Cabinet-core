@@ -267,6 +267,90 @@ async function main() {
     return found;
   `);
 
+  /**
+   * Where a mounted thing is ON THE SCREEN, in client pixels.
+   *
+   * R1 asks that a pointer gesture be proved with a real pointer, and a real
+   * pointer needs a coordinate. Projecting the mesh the app itself mounted is
+   * how a double-click lands on the DOOR rather than on a number somebody
+   * typed — and it is the only way the click survives the camera moving.
+   *
+   * `what` is either { panel: id } or { hinge: panelId, index } — the leaf, or
+   * ONE of the pieces of ironmongery screwed to it. One rather than all of
+   * them: the union box of three hinges has its centre in the air between two
+   * of them, and a pointer aimed there hits the carcass behind.
+   */
+  const screenOf = async (what) => page.evaluate(`
+    const v = ${P}.views && ${P}.views.room;
+    if (!v) return null;
+    const THREE = v.three;
+    const want = ${JSON.stringify(what)};
+    const hits = [];
+    v.scene.traverse((o) => {
+      const u = o.userData;
+      if (!u) return;
+      // The ARM is what carries the hinge's own double-click (3d/Hardware.jsx),
+      // so that is the member the pointer is aimed at.
+      const hit = want.panel ? (o.isMesh && u.ccPanelId === want.panel)
+        : (u.ccHingePanel === want.hinge && u.ccHingeMember === 'B');
+      if (hit) hits.push(o);
+    });
+    if (!hits.length) return null;
+    // A stable order — down the hinge row — so "the second hinge" means the
+    // same piece to the walk and to the window that opens.
+    hits.sort((a, b) => a.getWorldPosition(new THREE.Vector3()).y
+      - b.getWorldPosition(new THREE.Vector3()).y);
+    const pick = hits[Math.min(Number(want.index) || 0, hits.length - 1)];
+    const c = new THREE.Box3().setFromObject(pick).getCenter(new THREE.Vector3()).project(v.camera);
+    const el = v.gl && v.gl.domElement;
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.left + ((c.x + 1) / 2) * r.width,
+      y: r.top + ((1 - c.y) / 2) * r.height,
+      found: hits.length,
+    };
+  `);
+
+  /** What the ONE modal is showing right now — read off the DOM it rendered. */
+  const modalJs = `
+    const el = document.querySelector('[data-door-modal]');
+    if (!el) return { open: false };
+    const panel = el.closest('.cc-panel') || el.parentElement;
+    const head = panel ? panel.querySelector('h2, h3, header, [data-modal-title]') : null;
+    const rows = [...el.querySelectorAll('[data-hinge-row]')];
+    const ringed = rows.filter((r) => (r.className || '').includes('ring-gold'));
+    const body = el.closest('.overflow-y-auto');
+    const sectionB = el.querySelector('[data-door-section="B"]');
+    return {
+      open: true,
+      of: el.getAttribute('data-door-modal'),
+      sections: el.getAttribute('data-door-modal-sections'),
+      title: (head && head.textContent || '').trim() || (panel && panel.textContent || '').slice(0, 60),
+      hasA: Boolean(el.querySelector('[data-door-section="A"]')),
+      hasB: Boolean(sectionB),
+      rows: rows.length,
+      ringedRow: ringed.length ? Number(ringed[0].getAttribute('data-hinge-row')) : null,
+      // Did the window actually SCROLL to section B, or is B merely present?
+      // scrolledTo is B's top relative to the body's own viewport, so 0 is
+      // "at the top of the window" and anything inside bodyH is "visible".
+      scrolledTo: body && sectionB
+        ? Math.round(sectionB.getBoundingClientRect().top - body.getBoundingClientRect().top)
+        : null,
+      scrollTop: body ? Math.round(body.scrollTop) : null,
+      // …and how far it COULD scroll. A section that is the last thing in the
+      // window cannot be brought to the very top — the browser stops at the
+      // bottom of the content — so "scrolled to B" means B is visible and the
+      // window has gone as far as there is to go, not that B's top is zero.
+      maxScroll: body ? Math.round(body.scrollHeight - body.clientHeight) : null,
+      bodyH: body ? Math.round(body.clientHeight) : null,
+      controls: [
+        'data-hinge-assign', 'data-hinge-modal-rows', 'data-hinge-modal-add',
+        'data-hinge-up', 'data-hinge-down', 'data-hinge-modal-remove',
+        'data-handle-section', 'data-remove-door', 'data-piece-weight',
+      ].filter((a) => el.querySelector('[' + a + ']')),
+    };
+  `;
+
   const measurements = {};
   const want = (id) => !ONLY || ONLY.split(',').includes(id);
 
@@ -559,6 +643,223 @@ async function main() {
       await shot('1e-110-right-hand-110-cup-in-its-bore');
       await page.evaluate(`${P}.ui.setState({ openFronts: {} }); return true;`);
       await page.sleep(500);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // F2 [CRITICAL] — ONE modal for the door and its hinges
+    // ═══════════════════════════════════════════════════════════════════════
+    //
+    // Two gestures, both with a REAL POINTER (R1) at a coordinate PROJECTED
+    // from the mesh the app itself mounted — so what is proved is the whole
+    // path a joiner takes, from the metal on the screen to the window that
+    // opens, and not a store call standing in for it.
+    if (want('f2')) {
+      await newRoom('Turn 30 walk — F2');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.addUnit('BUD');
+        s.updateUnitParams(u.id, { width: 900, doors: { count: 2 } });
+        const r = s.unitResult(u.id);
+        window.__t30 = {
+          unitId: u.id,
+          leaves: r.panels.filter((p) => p.part === 'FRONT').map((p) => ({ id: p.id, hinge: p.meta.hinge })),
+        };
+        ${P}.ui.getState().setShowHinges(true);
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.waitFor(`(() => {
+        const v = ${P}.views && ${P}.views.room;
+        if (!v) return false;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.userData && o.userData.ccHingeMember === 'B') n += 1; });
+        return n >= 2;
+      })()`, { what: 'the hinge arms to mount', timeout: 30000 });
+      const f2unit = await page.evaluate('return window.__t30.unitId;');
+      const f2leaves = await page.evaluate('return window.__t30.leaves;');
+      const leaf = f2leaves[0];
+      // Frame the cabinet so both the leaf and its ironmongery are on screen
+      // and a projected click lands on the thing rather than off the canvas.
+      await frameUnits([f2unit], [0.55, 0.28, 1.15]);
+      await page.sleep(900);
+
+      // ── GESTURE 1: double-click the LEAF ──────────────────────────────
+      const atLeaf = await screenOf({ panel: leaf.id });
+      await page.dblclick(atLeaf.x, atLeaf.y);
+      await page.sleep(700);
+      const fromLeaf = await page.evaluate(modalJs);
+      measurements.f2 = { atLeaf, fromLeaf };
+
+      check('F2 — double-clicking the LEAF opens ONE window, and it is the DOOR’s',
+        fromLeaf.open && fromLeaf.of === leaf.id && /Door/.test(fromLeaf.title),
+        `${fromLeaf.title || 'nothing opened'} — of ${fromLeaf.of}`);
+      check('F2 — …carrying BOTH sections: the piece and its hinges',
+        fromLeaf.hasA && fromLeaf.hasB && fromLeaf.sections === 'A,B',
+        `sections ${fromLeaf.sections} · ${fromLeaf.rows} hinge rows`);
+      check('F2 — …and every control of the two old windows is in it',
+        fromLeaf.controls.length === 9,
+        fromLeaf.controls.join(' · '));
+      check('F2 — …opened at section A: the window is not scrolled',
+        fromLeaf.scrollTop === 0 && fromLeaf.ringedRow === null,
+        `scrollTop ${fromLeaf.scrollTop}, ringed row ${fromLeaf.ringedRow}`);
+      // There is ONE window in the DOM, which is the whole of "one registry of
+      // what is open" — the fault was two components fighting over one slot.
+      const windows = await page.evaluate('return document.querySelectorAll(\'[data-door-modal]\').length;');
+      check('F2 — …and there is exactly ONE of it on the screen', windows === 1, `${windows} windows`);
+      await shot('2a-the-door-window-opened-from-the-leaf-section-A');
+
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(400);
+
+      // ── GESTURE 2: double-click a HINGE ───────────────────────────────
+      //
+      // With the door SHUT the ironmongery is behind the leaf, and a pointer
+      // aimed at it hits the door — which is true of the app and true of a
+      // real cabinet. So the leaf is opened first, exactly as a joiner opens
+      // it to get at a hinge, and the pointer goes to ONE arm.
+      const f2swing = await page.evaluate(`
+        const s = ${P}.project.getState();
+        const profile = ${P}.profile.getState().profile;
+        const r = s.unitResult(window.__t30.unitId);
+        const l = r.panels.find((p) => p.part === 'FRONT');
+        return (window.__ccT21.doors.doorOpenAngle({
+          doorWidth: l.w, hingeOffset: profile.doors.gap / 2, gapToWall: null,
+        }, profile) * 180) / Math.PI;
+      `);
+      await swingTo(f2unit, [leaf.id], 90, f2swing);
+      await frameHinges(leaf.id, [1.9, 0.1, 1.6]);
+      await page.sleep(900);
+      // The MIDDLE hinge of the row, so the row that lights up is one a reader
+      // can tell apart from "the first one, which it would have been anyway".
+      const atHinge = await screenOf({ hinge: leaf.id, index: 1 });
+      await page.dblclick(atHinge.x, atHinge.y);
+      await page.sleep(900);
+      const fromHinge = await page.evaluate(modalJs);
+      measurements.f2.atHinge = atHinge;
+      measurements.f2.fromHinge = fromHinge;
+
+      check('F2 — double-clicking a HINGE opens the SAME window, on the same door',
+        fromHinge.open && fromHinge.of === leaf.id && /Door/.test(fromHinge.title),
+        `${fromHinge.title || 'nothing opened'} — of ${fromHinge.of}`);
+      check('F2 — …scrolled to section B, which was NOT scrolled to from the leaf',
+        fromHinge.scrollTop > 0
+        && fromLeaf.scrollTop === 0
+        && fromHinge.scrolledTo >= 0 && fromHinge.scrolledTo < fromHinge.bodyH
+        && (fromHinge.scrolledTo < 6 || fromHinge.scrollTop >= fromHinge.maxScroll - 1),
+        `scrollTop ${fromHinge.scrollTop} of ${fromHinge.maxScroll}, section B ${fromHinge.scrolledTo} px down a ${fromHinge.bodyH} px body (from the leaf: ${fromLeaf.scrollTop})`);
+      check('F2 — …with THAT hinge’s row ringed',
+        Number.isFinite(fromHinge.ringedRow),
+        `row ${fromHinge.ringedRow} of ${fromHinge.rows}`);
+      check('F2 — …and it is still ONE window, with section A still in it',
+        fromHinge.hasA && fromHinge.hasB,
+        `sections ${fromHinge.sections}`);
+      await shot('2b-the-same-window-opened-from-a-hinge-section-B');
+
+      // ── AND THE CONTROLS STILL WORK ───────────────────────────────────
+      // The ±5 mm arrow, pressed with a real mouse, read off the STORE. A
+      // window that opened and could not move a hinge would be a window that
+      // had lost the thing it was for.
+      const before = await page.evaluate(`return ${P}.project.getState().hingeRowsOf(${JSON.stringify(f2unit)});`);
+      await page.click('[data-hinge-up="0"]');
+      await page.sleep(400);
+      const after = await page.evaluate(`return ${P}.project.getState().hingeRowsOf(${JSON.stringify(f2unit)});`);
+      const nudge = await page.evaluate(`return ${P}.profile.getState().profile.editor.hingeNudgeMm;`);
+      check('F2 — the ±5 mm arrow in section B still moves the hinge it always moved',
+        Array.isArray(after) && Math.abs((after[0] - before[0]) - nudge) < 1e-9,
+        `${before?.[0]} → ${after?.[0]} mm (stride ${nudge})`);
+      measurements.f2.rows = { before, after, nudge };
+      await shot('2c-the-hinge-moved-from-inside-the-doors-own-window');
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(300);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // F3 [HIGH] — a divider is bored from ONE face, and it says which
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f3')) {
+      await newRoom('Turn 30 walk — F3');
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const u = s.addUnit('WARDROBE');
+        s.updateUnitParams(u.id, { width: 1200, doors: false });
+        // A divider with a shelf in EACH bay, at two different heights, so the
+        // ladder that comes out names the bay it came from.
+        const part = s.addPartition(u.id);
+        const r0 = s.unitResult(u.id);
+        const pid = (r0.panels.find((p) => p.part === 'VPART') || {}).meta.itemId;
+        s.updateItem(u.id, pid, { x_mm: 600 });
+        s.addItem(u.id, { kind: 'shelf', pos_mm: 800, zone: 0 });
+        s.addItem(u.id, { kind: 'shelf', pos_mm: 1400, zone: 1 });
+        window.__t30 = { unitId: u.id, partItem: pid };
+        return true;
+      `);
+      await page.waitFor('document.querySelector("canvas")', { what: 'the 3D canvas' });
+      await page.sleep(1600);
+
+      // What the ENGINE cut, read through the app's own store, and what the
+      // SCENE mounted — the two have to be the same holes or the picture and
+      // the sheet disagree, which is the fault F3 is about.
+      const boreJs = `
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t30.unitId);
+        const layer = ${P}.profile.getState().profile.shelfHoles.layer;
+        const part = r.panels.find((p) => p.part === 'VPART');
+        const on = r.drills.filter((d) => d.panel === part.id && d.layer === layer);
+        const at = new Set(on.map((d) => d.x + ',' + d.y));
+        return {
+          panel: part.id,
+          face: part.meta.drillFace,
+          summary: r.drillSummary.partition_drill_face,
+          holes: on.length,
+          distinct: at.size,
+          rows: [...new Set(on.map((d) => d.y))].sort((a, b) => a - b),
+          sides: { BUL: r.drills.filter((d) => d.panel === 'BUL' && d.layer === layer).length,
+                   BUR: r.drills.filter((d) => d.panel === 'BUR' && d.layer === layer).length },
+        };
+      `;
+      const f3left = await page.evaluate(boreJs);
+      check('F3 — the divider takes ONE ladder, not two stacked on each other',
+        f3left.holes === 6 && f3left.distinct === 6,
+        `${f3left.holes} holes at ${f3left.distinct} distinct points`);
+      check('F3 — …and nothing said means LEFT, the profile’s own one line',
+        f3left.face === 'L' && f3left.summary[f3left.panel] === 'L',
+        `face ${f3left.face}, summary ${JSON.stringify(f3left.summary)}`);
+      check('F3 — …the LEFT bay’s shelf is the one that put them there',
+        JSON.stringify(f3left.rows) === JSON.stringify([732, 782, 832]),
+        `rows ${f3left.rows.join(', ')} (the left shelf is at 800 world, the divider stands one board up)`);
+      await frameUnits([await page.evaluate('return window.__t30.unitId;')], [-1.0, 0.35, 0.95]);
+      await page.sleep(900);
+      await shot('3a-the-divider-bored-on-its-left-face-only');
+
+      // ── the setting, pressed in the divider's own modal ────────────────
+      await page.evaluate(`
+        const s = ${P}.project.getState();
+        const r = s.unitResult(window.__t30.unitId);
+        const part = r.panels.find((p) => p.part === 'VPART');
+        ${P}.ui.getState().openModal('element', { unitId: window.__t30.unitId, panelId: part.id, at: { x: 300, y: 300 } });
+        return true;
+      `);
+      await page.sleep(600);
+      const hasControl = await page.evaluate('return document.querySelectorAll(\'[data-partition-drill-face]\').length;');
+      check('F3 — the L / R setting is in the DIVIDER’s own modal', hasControl === 2, `${hasControl} buttons`);
+      await shot('3b-the-L-R-setting-in-the-dividers-modal');
+      await page.click('[data-partition-drill-face="R"]');
+      await page.sleep(700);
+      const f3right = await page.evaluate(boreJs);
+      check('F3 — pressing Right moves the ladder to the RIGHT bay’s shelf',
+        f3right.face === 'R' && f3right.holes === 6 && f3right.distinct === 6
+        && JSON.stringify(f3right.rows) === JSON.stringify([1332, 1382, 1432]),
+        `face ${f3right.face}, rows ${f3right.rows.join(', ')}`);
+      check('F3 — …and the SIDES are untouched by any of it',
+        f3left.sides.BUL === f3right.sides.BUL && f3left.sides.BUR === f3right.sides.BUR
+        && f3left.sides.BUL === 6 && f3left.sides.BUR === 6,
+        `BUL ${f3left.sides.BUL}→${f3right.sides.BUL}, BUR ${f3left.sides.BUR}→${f3right.sides.BUR}`);
+      measurements.f3 = { left: f3left, right: f3right };
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(500);
+      await frameUnits([await page.evaluate('return window.__t30.unitId;')], [1.0, 0.35, 0.95]);
+      await page.sleep(900);
+      await shot('3c-the-same-divider-bored-on-its-right-face');
     }
 
     // ─── R5 + R6, as an assertion at the end ────────────────────────────────

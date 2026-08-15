@@ -14,8 +14,7 @@ import DrawingModal from '../components/DrawingModal.jsx';
 import Toast from '../components/Toast.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import HandEditsModal from '../components/HandEditsModal.jsx';
-import ElementModal from '../components/ElementModal.jsx';
-import HingeModal from '../components/HingeModal.jsx';
+import DoorModal from '../components/DoorModal.jsx';
 import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
 import PartDetailModal from '../components/PartDetailModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
@@ -326,12 +325,13 @@ export default function ConfiguratorPage() {
         {modal === 'render' && <RenderModal rig={renderRig} />}
         {modal === 'drawing' && <DrawingModal />}
         {/* Turn 11 (CLAUDE.md F3.3): the piece you double-clicked, edited where
-            you clicked it. Not a centred dialog — see ElementModal. */}
-        {modal === 'element' && <ElementModal />}
-        {/* ─── Turn 19 (CLAUDE.md F1.3) ───
-            Double-click a HINGE: the rows that move it, and the dropdown that
-            assigns another one to this door alone. */}
-        {modal === 'hinge' && <HingeModal />}
+            you clicked it. Not a centred dialog — see DoorModal.
+            ─── Turn 30 (CLAUDE.md F2) ───
+            ONE window, two sections: the piece, and — on a hinged front — its
+            hinges. Double-clicking the ironmongery opens THIS modal scrolled to
+            section B rather than a second modal of its own, so there is one
+            component, one open/close path and one registry of what is open. */}
+        {modal === 'element' && <DoorModal />}
         {/* Turn 12 (CLAUDE.md F4): one cabinet, its own canvas, mounted only
             while the window is open. */}
         {modal === 'cabinet' && <CabinetEditorModal />}

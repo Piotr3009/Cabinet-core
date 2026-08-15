@@ -283,9 +283,13 @@ async function main() {
         const s = ${P}.project.getState();
         const r = s.unitResult(${JSON.stringify(ids.thin)});
         const door = r.panels.find((p) => p.part === 'FRONT');
-        ${P}.ui.getState().openModal('hinge', {
+        // Turn 30 (CLAUDE.md F2) folded the hinge window into the DOOR's own
+        // as section B, so there is one modal kind where there were two. The
+        // gesture this walk proves — "opened beside the click, never over it" —
+        // is the shell's and is unchanged; only the name it is opened by moved.
+        ${P}.ui.getState().openModal('element', {
           unitId: ${JSON.stringify(ids.thin)}, panelId: door.id, hingeIndex: 0,
-          at: { x: ${x}, y: ${y} },
+          section: 'hinges', at: { x: ${x}, y: ${y} },
         });
         return true;
       `);

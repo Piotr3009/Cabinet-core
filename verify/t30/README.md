@@ -95,3 +95,37 @@ keeps the carcass's attitude to 0.000°.
 | `1e-110-right-hand-110-cup-in-its-bore.png` | and the other hand |
 
 ---
+
+## F2 [CRITICAL] — ONE modal for the door and its hinges
+
+Until tonight a door had two windows, and `openModal` has one slot — so
+double-clicking a hinge REPLACED the door's window with the hinge's, and a
+joiner moving a cup by five millimetres could not see the leaf he was moving it
+on. Two components, two open paths, two answers to "what is open".
+
+`src/components/DoorModal.jsx` is now the only one. Section A is turn 11's
+element window, whole; section B is turn 19's hinge window, whole.
+`ElementModal.jsx` and `HingeModal.jsx` are DELETED, and the `hinge` modal kind
+is gone from the app entirely — the hinge gesture opens `element` with a section
+and a row. Every store action section B calls is the one turn 19 called, so the
+clamp, the grid and the undo step are the ones a joiner already knows.
+
+### Both gestures, with a REAL pointer
+
+R1: the click coordinate is PROJECTED from the mesh the app itself mounted, so
+what is proved is the whole path from the metal on the screen to the window that
+opens — not a store call standing in for it.
+
+| | |
+| --- | --- |
+| double-click the LEAF | `01 · Door · left`, sections `A,B`, 6 hinge rows, all 9 controls of the two old windows, **one** window on the screen, `scrollTop 0` |
+| double-click a HINGE (the middle one) | the **same** window, same door, scrolled to section B (`scrollTop 344 of 344`, B is 310 px down an 849 px body), **row 1 ringed**, section A still in it |
+| press ↑ in section B | `100 → 105 mm`, the profile's own 5 mm stride, through `setHingePos` |
+
+| file | |
+| --- | --- |
+| `2a-the-door-window-opened-from-the-leaf-section-A.png` | opened from the leaf, at the top |
+| `2b-the-same-window-opened-from-a-hinge-section-B.png` | the same window from the ironmongery: HINGES in view, row 2 in gold, section A above it |
+| `2c-the-hinge-moved-from-inside-the-doors-own-window.png` | and the row moved |
+
+---

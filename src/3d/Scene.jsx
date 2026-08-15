@@ -1099,10 +1099,18 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // THIS door. The click point travels with the request, and turn 19's
           // shell (F3) puts the window up and to the RIGHT of it — which is the
           // whole of what the owner complained about.
+          //
+          // ─── Turn 30 (CLAUDE.md F2) ───
+          // …and it is the SAME window the leaf opens, because the hinge is
+          // screwed to the leaf. One modal kind, opened on the DOOR with the
+          // section to scroll to and the row to light up: `section: 'hinges'`
+          // takes the eye to section B, `hingeIndex` puts the gold ring on the
+          // row that was pointed at. A second modal kind here is exactly what
+          // made "what is open" two answers instead of one.
           onEditHinge={({ panelId, index, at }) => {
             selectUnit(unit.id);
-            openModal('hinge', {
-              unitId: unit.id, panelId, hingeIndex: index, at,
+            openModal('element', {
+              unitId: unit.id, panelId, hingeIndex: index, section: 'hinges', at,
             });
           }}
           // The inner "+" (turn 11, CLAUDE.md F4.3): the unit STAYS selected and

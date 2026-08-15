@@ -1502,7 +1502,7 @@ function runnerVariantHint(profile, chosen) {
 // The owner's model has two levels and this is the top one: "jeden główny wybór
 // przypisany… a jak jedna szafka będzie miała inne hinges, to po podwójnym
 // kliknięciu na hinge otworzy się modal". The exception lives on the door
-// (components/HingeModal.jsx); this is the answer every door starts from.
+// (components/DoorModal.jsx, section B); this is the answer every door starts from.
 //
 // THREE controls, and the thing that is NOT one of them is the point:
 //

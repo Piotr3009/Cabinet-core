@@ -365,7 +365,7 @@ test('what a unit offers is decided by its FAMILY, as data', () => {
   // shoe shelf and the two bought mechanisms beside the pull-down.
   assert.deepEqual(
     P.itemsByContext.wardrobe,
-    ['shelves', 'shoe_shelf', 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
+    ['shelves', 'shoe_box' /* CHAT-FIX 16.08: the box took the shelf's slot in the offer */, 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
   );
   // A kitchen unit is not offered a hanging rail first, and a wardrobe is.
   assert.ok(!P.itemsByContext.kitchen.includes('hanger'));

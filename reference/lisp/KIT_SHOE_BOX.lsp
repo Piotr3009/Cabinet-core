@@ -37,6 +37,10 @@
 ;;;     (default 0, or directly above the drawer stack). Templates below
 ;;;     take posZ and place every carcass-side hole from it.
 ;;; [OWNER - accepted by silence, engine mirrors these]:
+;;;   - DRAWER behind a hinged door: per hinged side ONE solid BATTEN
+;;;     30 thick x 70 high, the box's whole depth, outer face on the bay
+;;;     side (owner v2, 16.08: "boczek 30 x 70 mm, bedzie latwiej, wzdluz
+;;;     szuflady") - the runner for that side mounts on the batten
 ;;;   - screw row spacing: 50 from each box end + middle, at box mid
 ;;;     height (posZ + 40)
 ;;;   - runner fixing holes dia 5.0 (euro), axis at posZ + 40
@@ -65,6 +69,7 @@
 (setq SHOE_FIX_AXIS   40.0)   ;; pilot/runner axis above box floor
 (setq SHOE_SETBACK_X   3.0)   ;; runner face = frontT + this, from carcass front
 (setq SHOE_INFILL     30.0)   ;; per hinged side, behind doors (dpSideLaw)
+(setq SHOE_BATTEN_H   70.0)   ;; the batten's height (thickness = SHOE_INFILL)
 
 ;;; Runner rear-fixing column per NL - the owner's sheet, 16.08.
 ;;; First fixing is ALWAYS at 37.0 from the runner front face.
@@ -186,11 +191,11 @@
 ;;; at SHOE_INFILL (30) from the carcass side - the runner for that side
 ;;; mounts on THIS board, and the door's arc clears the 30 - G behind it.
 (defun drawSHOE_INFILL (x0 y0 depth G sideLbl / )
-  (drawRect "OUTLINE" x0 y0 (+ x0 depth) (+ y0 SHOE_FRONT_H))
-  (drawText "SUMMARY" (+ x0 (/ depth 2.0)) (+ y0 SHOE_FRONT_H 12.0) 8.0
-    (strcat "INFILL " sideLbl "  " (rtos depth 2 0) " x "
-            (rtos SHOE_FRONT_H 2 0)
-            "  inner face at " (rtos SHOE_INFILL 2 0) " from carcass side")))
+  (drawRect "OUTLINE" x0 y0 (+ x0 depth) (+ y0 SHOE_BATTEN_H))
+  (drawText "SUMMARY" (+ x0 (/ depth 2.0)) (+ y0 SHOE_BATTEN_H 12.0) 8.0
+    (strcat "BATTEN " sideLbl "  " (rtos depth 2 0) " x "
+            (rtos SHOE_BATTEN_H 2 0) " x " (rtos SHOE_INFILL 2 0)
+            " thick  outer face ON the bay side")))
 
 ;;; FRONT panel (decorative, both variants): outline only - the material
 ;;; family is the project's law (FIX = carcass board, DRAWER = fronts

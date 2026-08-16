@@ -61,6 +61,7 @@ export function shoeConst(profile) {
     fixAxis: n(s.fixAxis, 40),
     setbackX: n(s.setbackX, 3),
     infill: n(s.infill, 30),
+    battenH: n(s.battenH, 70),
     runnerFrontFix: n(s.runnerFrontFix, 37),
     layers: Object.freeze({
       groove: s.layers?.groove || 'SHOE_GROOVE_6MM',
@@ -340,28 +341,27 @@ export function shoeBoxPlan({
       });
     }
 
-    // ─── CHAT-FIX 16.08 (owner): THE INFILL IS A BOARD, NOT AN ABSENCE ────
-    // "jak wstawiamy szufladę shoe, to nie zapomnij dodać ten [infill] 30 mm,
-    // czyli boczną ściankę, bo zawiasy". Narrowing the box left 30 mm of AIR
-    // — but the runner has to screw into SOMETHING. Per hinged side one
-    // vertical board goes in: depth of the box, height of the front (120),
-    // its INNER face 30 from the carcass side (the wardrobe's own dpSideLaw
-    // number), so the runner mounts on it and the door's arc still clears
-    // the 30 − G behind it. BOM part SHOE-INFILL; the runner drilling for a
-    // hinged side goes into THIS board, not the carcass.
+    // ─── CHAT-FIX 16.08 (owner, v2 the same evening): A BATTEN, NOT A WALL ─
+    // First ruling: "nie zapomnij dodać ten [infill] 30 mm, czyli boczną
+    // ściankę, bo zawiasy" — the runner has to screw into something. Second,
+    // seeing the tall board: "powinien być może jakiś boczek 30 × 70 mm,
+    // będzie łatwiej — i wzdłuż szuflady". So per hinged side ONE solid
+    // batten: 30 thick (it FILLS the infill zone, inner face lands exactly
+    // 30 from the carcass side), 70 high (the runner axis at 40 sits well
+    // inside it), running the box's whole depth. The runner for a hinged
+    // side mounts on THIS batten, not the carcass; the door's arc owns the
+    // space in front of the box. BOM part SHOEBOX-BATTEN.
     if (v === 'D') {
       for (const side of [hingedLeft ? 'L' : null, hingedRight ? 'R' : null]) {
         if (!side) continue;
         panels.push({
-          role: 'infill',
+          role: 'batten',
           side,
           w: r2(d),
-          h: C.frontH,
-          thickness: G,
+          h: C.battenH,
+          thickness: C.infill,
           grain: 'w',
           pockets: [],
-          // Where it stands: inner face at C.infill from the carcass side.
-          seat: { innerFaceAtMm: C.infill },
         });
       }
     }

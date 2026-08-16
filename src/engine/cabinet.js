@@ -1130,6 +1130,20 @@ function shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }) {
         h: wallH,
         d: t,
       };
+    case 'batten': {
+      // CHAT-FIX 16.08 (owner): the 30 × 70 batten per hinged side, along the
+      // box — solid in the infill zone, so its OUTER face touches the bay
+      // side and its INNER face lands exactly 30 in, where the runner mounts.
+      const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
+      return {
+        x: piece.side === 'L' ? bayFrom : bayFrom + plan.openingW - t,
+        y,
+        z: boxZ,
+        w: t,
+        h: piece.h,
+        d: depth,
+      };
+    }
     case 'front':
       // Mounted from INSIDE — nothing visible on the face — and standing
       // proud of the box front by its own thickness.
@@ -3307,6 +3321,7 @@ export function computeCabinet(params, profileOverride) {
         boxFront: 'BF',
         bottom: 'BT',
         divider: 'DV',
+        batten: 'BATTEN',
         front: 'FR',
       }[piece.role] || piece.role.toUpperCase();
       const geom = rectGeometry(piece.w, piece.h);

@@ -1158,7 +1158,10 @@ export const DEFAULT_CABINET_PROFILE = {
     kitchen: ['shelves', 'drawers', 'partition', 'cargo', 'bins'],
     // Turn 33 (CLAUDE.md F3): the wardrobe's interior grows its accessories —
     // the shoe shelf (cut) and the two bought mechanisms beside the pull-down.
-    wardrobe: ['shelves', 'shoe_shelf', 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
+    // CHAT-FIX 16.08 (owner): the shoe BOX takes the shelf's slot in the
+    // wardrobe's own offer — "modal plusika ma zwinięte menu i trzeba
+    // rozwijać, żeby zobaczyć, że jest shoe box; niech będzie [widoczny]".
+    wardrobe: ['shelves', 'shoe_box', 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
     // Anything whose family is not listed. Deliberately the plain furniture
     // answer rather than a union of the two.
     default: ['shelves', 'drawers', 'partition'],

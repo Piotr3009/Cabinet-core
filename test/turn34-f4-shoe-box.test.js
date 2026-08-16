@@ -392,7 +392,7 @@ test('the box is ONE selectable element with its own modal — any board reaches
   // CHAT-FIX 16.08 (owner): a DRAWER box behind hinged doors carries a
   // physical SHOE-INFILL board per hinged side ("boczna ścianka, bo
   // zawiasy") — the default 900 wardrobe has two doors, so 7 + 2.
-  const infills = boards.filter((p) => p.part === 'SHOEBOX-INFILL');
+  const infills = boards.filter((p) => p.part === 'SHOEBOX-BATTEN');
   assert.equal(infills.length, 2, 'one board per hinged side');
   assert.equal(boards.length, 9);
   for (const b of boards) {

@@ -366,7 +366,10 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                     <div className="flex gap-1 flex-wrap">
                       {[
                         [null, 'Standard', 'The plain box'],
-                        ['shoe', 'Shoe', 'Low box; the shoe insert is a purchase line'],
+                        // CHAT-FIX 16.08 (owner): the SHOE drawer variant is
+                        // retired from the offer — "to shoe nadal jest w
+                        // drawers, teraz już nie ma sensu, bo jest osobno".
+                        // Saved projects keep rendering theirs; nothing NEW.
                         ['belt_tie', 'Belt/tie', 'Low box; the divider insert is a purchase line'],
                         ['belt_tie_glass', 'Belt/tie + glass', 'Display drawer: the glass is ordered to the box'],
                       ].map(([id, label, hint]) => (

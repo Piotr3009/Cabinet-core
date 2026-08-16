@@ -18,6 +18,11 @@
 // leaf and puts every differing path into exactly one bucket:
 //
 //   RUNNER_PAIR_LINE  a leaf under a `runner_pairs` hardware entry. NAMED: F3.
+//   SHAKER_FRAME_60   a FRONT's `meta.shaker.frame` or its shaker panel
+//                     pocket, moved by exactly 10 mm. NAMED: F7 — see the
+//                     long note beside `isShakerFrameLeaf`, and the PR body,
+//                     for why this delta exists at all when rule 2's own list
+//                     does not include F7.
 //   UNNAMED           anything else at all.
 //
 // A green run is `UNNAMED 0`. Anything in UNNAMED exits 1, because a delta the
@@ -119,6 +124,66 @@ function isRunnerPairLeaf(path, tree) {
   return entry?.role === 'runner_pairs';
 }
 
+/**
+ * ─── THE FOURTH NAMED DELTA: F7's SHAKER FRAME (reported in the PR body) ────
+ *
+ * Iron rule 2 lists F3, F4 and F6 as the turn's engine changes and asks for
+ * byte-identity elsewhere. F7 — *"zmienimy default z 70 na 60"* — is written
+ * as a [LOW] project-level default, but `profile.front.types.S.frameWidth` is
+ * read by the BARE ENGINE, and `front.defaultType` is `S`: every standard
+ * config's door is a shaker, so the default moves all six.
+ *
+ * That is a contradiction inside the spec, not a fault in the build, and the
+ * remedy rule 2 itself prescribes is to NAME it. The bucket is deliberately
+ * narrow, so it can swallow nothing else:
+ *
+ *   · `meta.shaker.*` on a FRONT panel — the frame narrowing 70 → 60;
+ *   · that same front's SHAKER PANEL POCKET, moving with it;
+ *   · the SHAKER-FRAME REFUSAL's own sentence, which quotes the number
+ *     ("a 70 mm shaker frame needs a front at least 200 mm across" → 60/180).
+ *
+ * The third consequence is the one worth spelling out, because it is a
+ * STRUCTURAL change and not a shift: a front between 180 and 200 mm across was
+ * too narrow for a 70 mm frame and was cut PLAIN; at 60 it fits, so it gains a
+ * shaker pocket it did not have. That is F7 working exactly as the owner asked
+ * — and it is why this bucket accepts a pocket APPEARING and not only moving.
+ *
+ * It is still bounded to shaker geometry on FRONT panels and to the shaker
+ * refusal's own text. Any other panel, any other layer, any other warning is
+ * UNNAMED and still fails the run.
+ */
+function isShakerFrameLeaf(path, base, head) {
+  // ─── The shaker refusal, SHAKER_FRAME_TOO_WIDE ───
+  // It quotes the frame width in its own sentence, so its text moves with the
+  // default — and a front between 180 and 200 mm across stops earning it
+  // altogether, because at 60 the frame now fits. Both are F7, and only a
+  // warning of THAT code counts.
+  const shakerWarning = (row) => row?.code === 'SHAKER_FRAME_TOO_WIDE';
+  const w = /^\$\.warnings\[(\d+)\]\./.exec(path);
+  if (w) {
+    const i = Number(w[1]);
+    return shakerWarning(base?.warnings?.[i]) || shakerWarning(head?.warnings?.[i]);
+  }
+  if (path === '$.warnings.length') {
+    const all = [...(base?.warnings || []), ...(head?.warnings || [])];
+    return all.length > 0 && all.every(shakerWarning);
+  }
+  const m = /^\$\.panels\[(\d+)\]\.(meta\.shaker(\.\w+)?|cnc\.pockets(\.length|\[(\d+)\]\.\w+))$/.exec(path);
+  if (!m) return false;
+  const i = Number(m[1]);
+  const panel = head?.panels?.[i] || base?.panels?.[i];
+  if (panel?.role !== 'front') return false;
+  if (m[2].startsWith('meta.shaker')) return true;
+  if (m[2] === 'cnc.pockets.length') {
+    // Only where the front's pockets are shaker pockets and nothing else.
+    const all = [...(head?.panels?.[i]?.cnc?.pockets || []), ...(base?.panels?.[i]?.cnc?.pockets || [])];
+    return all.length > 0 && all.every((k) => k.layer === 'SHAKER_PANEL_POCKET');
+  }
+  const pocket = (head?.panels?.[i]?.cnc?.pockets || [])[Number(m[5])]
+    || (base?.panels?.[i]?.cnc?.pockets || [])[Number(m[5])];
+  return pocket?.layer === 'SHAKER_PANEL_POCKET';
+}
+
 export function classify(base, head) {
   const rows = [];
   let unnamed = 0;
@@ -144,8 +209,10 @@ export function classify(base, head) {
       const now = lh.get(p);
       if (canonical(was) === canonical(now)) continue;
       const runner = isRunnerPairLeaf(p, b.tree) || isRunnerPairLeaf(p, h.tree);
-      if (runner) named += 1; else unnamed += 1;
-      deltas.push({ path: p, was, now, bucket: runner ? 'RUNNER_PAIR_LINE' : 'UNNAMED' });
+      const shaker = !runner && isShakerFrameLeaf(p, b.tree, h.tree);
+      const bucket = runner ? 'RUNNER_PAIR_LINE' : (shaker ? 'SHAKER_FRAME_60' : 'UNNAMED');
+      if (bucket === 'UNNAMED') unnamed += 1; else named += 1;
+      deltas.push({ path: p, was, now, bucket });
     }
     rows.push(`${cfg.id}  CHANGED  ${b.sha256} → ${h.sha256}`);
     for (const d of deltas) {
@@ -163,7 +230,7 @@ if (argv.includes('--dump')) {
   const head = JSON.parse(readFileSync(argv[1], 'utf8'));
   const { rows, named, unnamed } = classify(base, head);
   process.stdout.write(`${rows.join('\n')}\n`);
-  process.stdout.write(`\nNAMED (runner-pair line, F3): ${named}\nUNNAMED: ${unnamed}\n`);
+  process.stdout.write(`\nNAMED (F3 runner-pair line + F7 shaker frame): ${named}\nUNNAMED: ${unnamed}\n`);
   process.exit(unnamed === 0 ? 0 : 1);
 } else {
   const d = dump();

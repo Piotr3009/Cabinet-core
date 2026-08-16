@@ -76,9 +76,20 @@ export const DEFAULT_CABINET_PROFILE = {
       // a panel — and it is a DEFAULT in the profile, so a workshop that
       // disagrees changes one line. What it must never do is silently move the
       // frame instead (F3.2).
+      // ─── TURN 34 (CLAUDE.md F7): THE DEFAULT BECOMES 60 ──────────────────
+      // The owner, 16.08.2026: *"zmienimy default z 70 na 60, ale nie teraz"*
+      // — "nie teraz" was the chat; the turn is now. It is a DEFAULT for NEW
+      // projects and nothing more: a saved job with Shaker in it and no
+      // explicit `fronts.shakerFrame` is PINNED to 70 on the way in
+      // (`engine/shaker.js legacyShakerFrame`, applied by `loadProject`),
+      // because a changed default must never redraw a job that is already
+      // cut. The range, 10–200, does not move.
       S: {
         label: 'Shaker',
-        frameWidth: 70,          // equal on all four sides
+        frameWidth: 60,          // equal on all four sides
+        // What a project saved BEFORE 16.08.2026 was cut to. Read only by the
+        // pin above; nothing else in the app may use it as an answer.
+        legacyFrameWidth: 70,
         frameMin: 10,
         frameMax: 200,
         recessDepth: 6,          // panel face sits at frontT − 6

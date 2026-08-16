@@ -44,6 +44,9 @@ import { deletePlan } from '../engine/deleteElement.js';
 // Turn 34 (CLAUDE.md F5): one figure at a touch, three apart — off the same
 // clearances the matrix heals, never re-derived.
 import { meetingDimensions } from '../engine/meetingDimensions.js';
+// Turn 34 (CLAUDE.md F7): the frame a saved shaker job was cut to, pinned on
+// the way in — a changed default never redraws a job already on the bench.
+import { legacyShakerFrame } from '../engine/shaker.js';
 // Turn 32 (CLAUDE.md F3): the grey notes the self-healing announces itself
 // with. One direction only — uiStore never reads this store.
 import { useUiStore } from './uiStore.js';
@@ -658,8 +661,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   })),
 
   loadProject: (project, units) => {
+    // ─── TURN 34 (CLAUDE.md F7): THE SHAKER FRAME A SAVED JOB WAS CUT TO ────
+    // "zmienimy default z 70 na 60" — for NEW projects. A job already on the
+    // bench was quoted and cut at 70, so opening it pins 70 onto it explicitly
+    // rather than letting a changed default redraw every door by 10 mm. Only
+    // where there IS a shaker and the project has never stated a width of its
+    // own; the decision is `engine/shaker.js legacyShakerFrame`'s.
+    const migrated = migrateDesign(project?.design);
+    // Only a job that EXISTS is protected: one with an id, or one that already
+    // has cabinets in it. A blank scene has nothing cut, so there is nothing a
+    // changed default could redraw — and pinning 70 onto it would be the
+    // opposite of what the owner asked for.
+    const isSavedJob = Boolean(project?.id) || (Array.isArray(units) && units.length > 0);
+    const pin = isSavedJob ? legacyShakerFrame(migrated, getCabinetProfile()) : null;
     set({
-      project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
+      project: {
+        ...project,
+        room: migrateRoom(project?.room),
+        design: pin ? { ...migrated, ...pin } : migrated,
+      },
       units: migrateUnits(units),
       dirty: false,
     });

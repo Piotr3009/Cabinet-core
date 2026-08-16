@@ -40,7 +40,54 @@ export function shakerSpec(profile) {
     recessDepth: Number(s.recessDepth) || 0,
     minPanel: Number(s.minPanel) || 0,
     pocketLayer: s.pocketLayer || 'SHAKER_PANEL_POCKET',
+    // Turn 34 (CLAUDE.md F7): what a project saved before 16.08.2026 was cut
+    // to, for the pin below and for nothing else.
+    legacyFrameWidth: Number(s.legacyFrameWidth) || 0,
   };
+}
+
+/**
+ * ─── TURN 34 (CLAUDE.md F7): A CHANGED DEFAULT NEVER REDRAWS A SAVED JOB ────
+ *
+ * The owner, 16.08.2026: *"zmienimy default z 70 na 60, ale nie teraz"* — and
+ * the turn is now. The profile's `frameWidth` is 60 from this turn on, so a
+ * NEW project's shakers are 60 mm framed.
+ *
+ * A project already on somebody's bench is a different matter entirely. It was
+ * quoted, cut and possibly hung at 70, and opening it must not silently make
+ * every door 10 mm different. So on the way in, a project that HAS SHAKER
+ * ANYWHERE and has never said a frame width of its own gets 70 written onto
+ * it, explicitly — the F7-handles precedent, in as many words.
+ *
+ * Two things this deliberately does NOT do: it does not touch a project that
+ * states its own number (that IS the answer, whatever it is), and it does not
+ * touch a project with no shaker in it (there is nothing to pin, and writing a
+ * field onto a job that has no use for it is how a diff becomes unreadable).
+ *
+ * @param {object|null} design  a MIGRATED design
+ * @param {object} profile
+ * @returns {object|null} the patch to merge, or null where nothing is owed
+ */
+export function legacyShakerFrame(design, profile) {
+  const spec = shakerSpec(profile);
+  if (!(spec.legacyFrameWidth > 0)) return null;
+  // Already answered — by the project, at any value. Never overwritten.
+  if (Number.isFinite(Number(design?.fronts?.shakerFrame))
+    && Number(design.fronts.shakerFrame) > 0) return null;
+  if (!hasShakerAnywhere(design)) return null;
+  return { fronts: { ...(design?.fronts || {}), shakerFrame: spec.legacyFrameWidth } };
+}
+
+/** Is there a Shaker front anywhere in this project's design? */
+export function hasShakerAnywhere(design) {
+  if (design?.fronts?.style === 'S') return true;
+  const types = design?.fronts?.types;
+  if (Array.isArray(types) && types.some((t) => t?.style === 'S')) return true;
+  // A saved DOOR STYLE is still a shaker in the job — `frontType` is the field
+  // (engine/design.js `normaliseDoorStyle`), and a style with no id is not a
+  // style at all.
+  const doorStyles = design?.doorStyles;
+  return Array.isArray(doorStyles) && doorStyles.some((d) => d?.frontType === 'S');
 }
 
 /**

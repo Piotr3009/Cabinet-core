@@ -31,6 +31,7 @@ const KIND_WORDS = {
   side: 'Side line (4 mm)',
   bottom: 'Bottom, at the plinth',
   top: 'Top wash',
+  top_under: 'Under the top',
   spot: 'Spotlights',
 };
 
@@ -333,6 +334,29 @@ export default function LightingPanel() {
                     </div>
                   </div>
 
+                  {/* CHAT-FIX 16.08 (owner): "mamy ledy na górnym wieńcu, ale
+                      od góry tylko — a nie ma od dołu jak półka" — the same
+                      strip on the UNDERSIDE of the top, shining down. */}
+                  <div className="flex items-start gap-2" data-lighting-tool="top_under">
+                    <LightArt kind="top" />
+                    <div className="flex-1 space-y-1">
+                      <span className="text-[11px] text-ink-100">{KIND_WORDS.top_under}</span>
+                      <button
+                        type="button"
+                        className="cc-btn w-full text-[11px]"
+                        data-lighting-add-top-under="1"
+                        disabled={hasOf('top_under')}
+                        title="On the underside of the top board, shining down into the cabinet — the top behaves like one more shelf"
+                        onClick={() => add(
+                          { unitId: unit.id, kind: 'top_under' },
+                          `Under-the-top strip · ${numOf(unit.id)}.`,
+                        )}
+                      >
+                        Add under the top · {unit.params.unit_num}
+                      </button>
+                    </div>
+                  </div>
+
                   {unitType?.mount === 'wall' && (
                     <div className="flex items-start gap-2" data-lighting-tool="spot">
                       <LightArt kind="spot" />
@@ -369,6 +393,48 @@ export default function LightingPanel() {
                 <span className="text-[11px] uppercase tracking-wide text-ink-400">
                   Placed · {lighting.items.length}
                 </span>
+                {/* ─── CHAT-FIX 16.08 (owner): ONE SLIDER, ALL STRIPS ──────
+                    "przesuwanie pasków ma być na każdej szafie tak samo —
+                    jeden przesuwak i wszystkie się przesuwają". The master
+                    writes the SAME inset onto EVERY placed strip in the
+                    project (spots have no edge). It shows the common value
+                    when they agree and the default when they differ; the
+                    per-strip rows below still override one at a time. */}
+                {(() => {
+                  const strips = lighting.items.filter((i) => i.kind !== 'spot');
+                  if (!strips.length) return null;
+                  const first = strips[0].inset_mm ?? spec.strip.insetDefault;
+                  const common = strips.every(
+                    (i) => (i.inset_mm ?? spec.strip.insetDefault) === first,
+                  ) ? first : null;
+                  const setAll = (v) => strips.forEach(
+                    (i) => updateLightingItem(i.id, { inset_mm: v }),
+                  );
+                  return (
+                    <div className="flex items-center gap-2 pb-1" data-lighting-inset-all="1">
+                      <span className="text-[10px] text-ink-400 shrink-0">All strips, off the edge</span>
+                      <input
+                        type="range"
+                        className="flex-1 accent-gold"
+                        min={0}
+                        max={spec.strip.insetMax}
+                        step={10}
+                        value={common ?? spec.strip.insetDefault}
+                        onChange={(e) => setAll(Number(e.target.value))}
+                      />
+                      <input
+                        type="number"
+                        className="cc-input w-16 text-right"
+                        min={0}
+                        step={1}
+                        value={common ?? ''}
+                        placeholder="—"
+                        onChange={(e) => setAll(Number(e.target.value))}
+                      />
+                      <span className="text-[10px] text-ink-400">mm</span>
+                    </div>
+                  );
+                })()}
                 {lighting.items.map((it) => {
                   const strip = it.unitId === unit?.id ? stripOf(it.id) : null;
                   return (

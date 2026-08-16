@@ -447,7 +447,7 @@ export function migrateDesign(design) {
 // The five placement kinds the owner dictated, and nothing else survives a
 // stored project. `ref` is a panel id for a shelf run ('SHELF-2'), a side for
 // the 4 mm line ('L' | 'R'), and nothing for the rest.
-const LIGHTING_KINDS = new Set(['shelf', 'side', 'bottom', 'top', 'spot']);
+const LIGHTING_KINDS = new Set(['shelf', 'side', 'bottom', 'top', 'spot', 'top_under']);
 const LIGHTING_SWITCHES = new Set(['door', 'sensor', 'touchless']);
 
 function migrateLighting(raw) {

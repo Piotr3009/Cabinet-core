@@ -142,11 +142,26 @@ const r4 = (v) => Math.round(Number(v) * 10000) / 10000;
  * (*"co łatwiej obliczać? dla mnie bez różnicy"*) and this is the single-formula
  * law he was offered.
  */
-export function shoeRearEdge(run, profile) {
+export function shoeRearEdge(run, profile, G = 18) {
   const C = shoeConst(profile);
   const r = Number(run);
   if (!(r > 0)) return 0;
-  return Math.min(C.wallH, r * Math.tan(rad(C.angleMaxDeg)));
+  // ─── LAW v2, CHAT-FIX 16.08 (owner): "dno ma za duży skos, wychodzi poza
+  // obręb boxa" ─────────────────────────────────────────────────────────────
+  // v1 capped the UNDERSIDE at the wall top, so the board's own thickness
+  // (and the groove) broke out above the side at the rear. The cap now
+  // subtracts the board standing perpendicular on the slope: the WHOLE
+  // bottom — thickness, groove and play included — finishes inside the box.
+  const first = Math.min(C.wallH, r * Math.tan(rad(C.angleMaxDeg)));
+  const board = (Number(G) > 0 ? Number(G) : 18) + C.groovePlay;
+  // The cap depends on the angle and the angle on the cap — three passes of
+  // the fixed point settle it to well under a hundredth of a millimetre.
+  let rear = first;
+  for (let i = 0; i < 3; i += 1) {
+    const cap = Math.max(0, C.wallH - board * Math.cos(Math.atan2(rear, r)));
+    rear = Math.min(first, cap);
+  }
+  return rear;
 }
 
 /** The DERIVED angle, in degrees. Informational — the geometry above is law. */
@@ -206,7 +221,7 @@ export function shoeBoxPlan({
 
   // ── the slope law ──
   const run = r2(d - 2 * G);
-  const rear = r2(shoeRearEdge(run, profile));
+  const rear = r2(shoeRearEdge(run, profile, G));
   const angleDeg = r2(shoeAngleDeg(run, rear));
   const slopeLen = r2(Math.sqrt(run * run + rear * rear));
   const grooveW = r2(G + C.groovePlay);
@@ -323,6 +338,32 @@ export function shoeBoxPlan({
         // rectangle (the kit scribes the edges on site).
         seat: { atRunMm: r2(run / 2), heightMm: r2((rear * (run / 2)) / (run || 1)) },
       });
+    }
+
+    // ─── CHAT-FIX 16.08 (owner): THE INFILL IS A BOARD, NOT AN ABSENCE ────
+    // "jak wstawiamy szufladę shoe, to nie zapomnij dodać ten [infill] 30 mm,
+    // czyli boczną ściankę, bo zawiasy". Narrowing the box left 30 mm of AIR
+    // — but the runner has to screw into SOMETHING. Per hinged side one
+    // vertical board goes in: depth of the box, height of the front (120),
+    // its INNER face 30 from the carcass side (the wardrobe's own dpSideLaw
+    // number), so the runner mounts on it and the door's arc still clears
+    // the 30 − G behind it. BOM part SHOE-INFILL; the runner drilling for a
+    // hinged side goes into THIS board, not the carcass.
+    if (v === 'D') {
+      for (const side of [hingedLeft ? 'L' : null, hingedRight ? 'R' : null]) {
+        if (!side) continue;
+        panels.push({
+          role: 'infill',
+          side,
+          w: r2(d),
+          h: C.frontH,
+          thickness: G,
+          grain: 'w',
+          pockets: [],
+          // Where it stands: inner face at C.infill from the carcass side.
+          seat: { innerFaceAtMm: C.infill },
+        });
+      }
     }
 
     // FRONT, on BOTH variants — his 16.08 change: *"jak będzie fix to też

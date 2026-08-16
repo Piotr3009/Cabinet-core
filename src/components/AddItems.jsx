@@ -195,19 +195,13 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       why: ratioDrawers ? 'this kit IS its drawers' : 'not for this type',
     },
     { id: 'shelves', label: 'Shelves', disabled: !type.supports.shelves, why: 'not for this type' },
-    // ─── TURN 33 (CLAUDE.md F3): THE SHOE SHELF ─────────────────────────────
-    // CUT, both pieces: the board tilted 15° on the STANDARD pin rows (the
-    // front pair set lower — the workshop's own way) and its stop rail.
-    {
-      id: 'shoe_shelf',
-      label: 'Shoe shelf',
-      disabled: !type.supports.shelves || type.family !== 'wardrobe',
-      why: 'a wardrobe thing',
-    },
-    // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ───────────────────────────────
-    // The owner retired the pinned 15° shelf on 16.08: "jeżeli nie jest
-    // szuflada to powinien być fix, nie z pinami — tu jest błąd". A NEW shoe
-    // accessory makes the BOX; the shelf above stays for saved projects.
+    // ─── TURN 34 (CLAUDE.md F4) + CHAT-FIX 16.08 (owner): THE SHOE BOX ──────
+    // The pinned 15° shelf is RETIRED FROM THE OFFER — his word, twice: first
+    // "jeżeli nie jest szuflada to powinien być fix, nie z pinami — tu jest
+    // błąd" (spec), then "usuń proszę inne shoe shelf, a ten shoe box wstaw
+    // w miejsce tamtego" (today, seeing both listed). Saved projects with the
+    // old shelf keep rendering; nothing NEW is made of it. The box takes the
+    // shelf's own slot in this list.
     {
       id: 'shoe_box',
       label: 'Shoe box',
@@ -392,50 +386,6 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                   <p className="text-[11px] text-ink-400">
                     Stacked from the bottom, {DR.minFrontHeight}–{DR.maxFrontHeight} mm each. A partition closes the
                     stack automatically (SPEC 4.7), and the doors open so you can see them.
-                  </p>
-                </>
-              )}
-
-              {kind.id === 'shoe_shelf' && (
-                <>
-                  {zones.length > 1 && (
-                    <div className="space-y-1">
-                      <span className="cc-label">Which bay</span>
-                      <div className="flex flex-wrap gap-1">
-                        {zones.map((z) => (
-                          <button
-                            key={z.id}
-                            type="button"
-                            data-shoe-zone={z.index}
-                            className={`cc-btn px-2 ${shelfZone === z.index ? 'border-gold text-gold' : ''}`}
-                            title={`${formatMm(z.size)} mm clear`}
-                            onPointerEnter={() => onZoneHover?.(z.index)}
-                            onPointerLeave={() => onZoneHover?.(shelfZone)}
-                            onClick={() => { setShelfZone(z.index); onZoneHover?.(z.index); }}
-                          >
-                            Bay {z.index + 1} · {formatMm(z.size)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    className="cc-btn-gold w-full"
-                    data-add-shoe-shelf="1"
-                    disabled={zones.length > 1 && shelfZone == null}
-                    onClick={() => {
-                      const { added } = addShelves(unit.id, 1, zones.length > 1 ? shelfZone : null, 'shoe');
-                      if (!added) notify('Not enough clear height for a shoe shelf.', 'warn');
-                      done();
-                    }}
-                  >
-                    Add a shoe shelf
-                  </button>
-                  <p className="text-[11px] text-ink-400">
-                    The board leans {profile.wardrobeAccessories?.shoeShelf?.tiltDeg ?? 15}° on the standard pin
-                    rows — the front pair set lower, the workshop&apos;s own way — with a stop rail cut along its
-                    front edge. Nothing new is drilled.
                   </p>
                 </>
               )}

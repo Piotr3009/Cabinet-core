@@ -93,24 +93,30 @@ test('SHOE_RUNNER_MAP: the engine mirrors the owner\'s sheet, rung for rung', ()
 
 // ─── section B: the angle law ──────────────────────────────────────────────
 
-test('the angle law is min(80, run · tan 10°) — one board, one formula', () => {
-  // Shallow: exactly 10°.
-  const shallow = shoeRearEdge(300, P);
+test('angle law v2: the WHOLE bottom stays inside — cap = wall − board·cos a', () => {
+  // ─── REWRITTEN 16.08.2026 (chat-fix, owner): "dno ma za duży skos,
+  // wychodzi poza obręb boxa" ── v1 capped the UNDERSIDE at the wall top and
+  // the board's thickness broke out above the side. v2's cap subtracts the
+  // board (G + groove play) standing on the slope.
+  const G = 18;
+  const board = G + C.groovePlay;
+
+  // Shallow: exactly 10°, nowhere near any cap.
+  const shallow = shoeRearEdge(300, P, G);
   assert.ok(Math.abs(shallow - 300 * Math.tan((10 * Math.PI) / 180)) < 1e-9);
-  assert.ok(shallow < C.wallH);
   assert.ok(Math.abs(shoeAngleDeg(300, shallow) - 10) < 1e-9, 'exactly 10°');
 
-  // Deep: the rear edge PINS at 80 and the angle comes out under 10 — the
-  // spec's own worked example, 600 ⇒ ≈7.6°.
-  const deep = shoeRearEdge(600, P);
-  assert.equal(deep, C.wallH, 'pinned at the wall height, never above it');
-  const a = shoeAngleDeg(600, deep);
-  assert.ok(a < 10 && Math.abs(a - 7.6) < 0.05, `600 ⇒ ${a.toFixed(2)}°`);
+  // Deep: the rear edge pins BELOW the wall by the board's own height on the
+  // slope — the top of the bottom finishes flush with (never above) the wall.
+  const deep = shoeRearEdge(600, P, G);
+  const aDeep = Math.atan2(deep, 600);
+  assert.ok(deep < C.wallH, 'below the wall, not at it — the board needs its room');
+  assert.ok(deep + board * Math.cos(aDeep) <= C.wallH + 1e-6,
+    'underside + board thickness stays inside the box');
+  assert.ok(shoeAngleDeg(600, deep) < 10);
 
-  // And the boundary: the run at which the two readings meet.
-  const knee = C.wallH / Math.tan((10 * Math.PI) / 180);
-  assert.ok(Math.abs(shoeAngleDeg(knee, shoeRearEdge(knee, P)) - 10) < 1e-6);
-  assert.ok(shoeAngleDeg(knee + 1, shoeRearEdge(knee + 1, P)) < 10);
+  // The cap never goes negative on any sane depth.
+  assert.ok(shoeRearEdge(50, P, G) >= 0);
 });
 
 // ─── the width law, both variants ──────────────────────────────────────────
@@ -383,7 +389,12 @@ test('a bay too small for a box is REFUSED and named — never half-cut', () => 
 test('the box is ONE selectable element with its own modal — any board reaches it', () => {
   const r = wardrobe([{ id: 'sb1', kind: 'shoe_box', variant: 'D', dividers: 1 }], { width: 900 });
   const boards = r.panels.filter((p) => p.id.startsWith('SHOE1-'));
-  assert.equal(boards.length, 7);
+  // CHAT-FIX 16.08 (owner): a DRAWER box behind hinged doors carries a
+  // physical SHOE-INFILL board per hinged side ("boczna ścianka, bo
+  // zawiasy") — the default 900 wardrobe has two doors, so 7 + 2.
+  const infills = boards.filter((p) => p.part === 'SHOEBOX-INFILL');
+  assert.equal(infills.length, 2, 'one board per hinged side');
+  assert.equal(boards.length, 9);
   for (const b of boards) {
     assert.equal(elementKind(b), 'shoe-box');
     assert.ok(isMainViewElement(b), 'clickable in the room, like a shelf');

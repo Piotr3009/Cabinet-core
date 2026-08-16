@@ -28,7 +28,12 @@ export default defineConfig({
           try { execSync('git fetch --unshallow --quiet', { stdio: 'ignore' }); shallow = 'false'; } catch { /* offline build */ }
         }
         if (shallow !== 'true') {
-          count = `#${execSync('git rev-list --count HEAD').toString().trim()} · `;
+          const n = Number(execSync('git rev-list --count HEAD').toString().trim());
+          // A partial fetch can answer "not shallow" and still hold a stub of
+          // history (the owner saw "#11" on a ~370-commit repo). A number
+          // that cannot be trusted is not shown: below 50 it is dropped and
+          // the date + SHA carry the identity alone.
+          if (Number.isFinite(n) && n >= 50) count = `#${n} · `;
         }
       } catch { /* not a git checkout — date (+sha from env) is enough */ }
       return `${count}${when}${sha ? ` · ${sha}` : ''}`;

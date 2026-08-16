@@ -297,6 +297,24 @@ export function stripsForUnit({
         temperature: lighting.temperature,
         hex,
       });
+    } else if (item.kind === 'top_under') {
+      // ─── CHAT-FIX 16.08 (owner): UNDER the top — "mamy ledy na górnym
+      // wieńcu, ale od góry tylko, a nie ma od dołu jak półka" ──────────────
+      // The same strip the top wash is, hung on the UNDERSIDE of the top
+      // board, shining down into the cabinet — the top behaves like one more
+      // shelf. Same width law, same inset, same everything.
+      out.push({
+        id: item.id,
+        kind: 'top_under',
+        box: {
+          x: G, y: H - G - t, z: D - sw - inset, w: Math.max(0, W - 2 * G), h: t, d: sw,
+        },
+        round: false,
+        length_mm: Math.max(0, W - 2 * G),
+        inset_mm: inset,
+        temperature: lighting.temperature,
+        hex,
+      });
     } else if (item.kind === 'spot') {
       // Kitchen WALL units only — the owner's "małe spotlighty w szafkach
       // wiszących". Evenly spaced under the carcass, count from the item.

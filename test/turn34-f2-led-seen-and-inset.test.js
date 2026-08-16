@@ -242,7 +242,9 @@ test('the panel offers the field beside the depth control, on every kind', () =>
   // no edge to be off. The depth slider is still shelf-only AND
   // selection-bound (its clamp needs the computed strip) — the inset is
   // neither.
-  const insetAt = src.indexOf('data-lighting-inset');
+  // (16.08, master slider: `data-lighting-inset-all` sits ABOVE the list, so
+  // the anchor is the PER-ITEM attribute, unique to the row under the guard.)
+  const insetAt = src.indexOf('data-lighting-inset={it.id}');
   const kindGuard = src.lastIndexOf("{it.kind !== 'spot' && (", insetAt);
   assert.ok(kindGuard > 0 && kindGuard < insetAt,
     'the inset row stands behind the kind guard (everything but spots)');

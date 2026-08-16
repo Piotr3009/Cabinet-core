@@ -80,9 +80,23 @@
 
 ;;; Slope rear-edge height (UNDERSIDE of the bottom at the inner back
 ;;; face). run = clear inner depth between front and back inner faces.
-(defun shoeRearEdge (run / a)
+;;; LAW v2 - owner, 16.08.2026 (eye-test): "dno ma za duzy skos, wychodzi
+;;; poza obreb boxa". v1 capped the UNDERSIDE at the wall top and the board's
+;;; own thickness broke out above the side at the rear. The cap now subtracts
+;;; the board (G + groove play) standing perpendicular on the slope, settled
+;;; by three passes of the fixed point - the WHOLE bottom, groove included,
+;;; finishes inside the box. Takes the board thickness G.
+(defun shoeRearEdge (run G / a first board rear cap i)
   (setq a (* SHOE_ANGLE_MAX (/ pi 180.0)))
-  (min SHOE_WALL_H (* run (/ (sin a) (cos a)))))
+  (setq first (min SHOE_WALL_H (* run (/ (sin a) (cos a)))))
+  (setq board (+ G SHOE_GROOVE_PLAY))
+  (setq rear first)
+  (setq i 0)
+  (while (< i 3)
+    (setq cap (max 0.0 (- SHOE_WALL_H (* board (cos (atan rear run))))))
+    (setq rear (min first cap))
+    (setq i (1+ i)))
+  rear)
 
 ;;; The derived angle in radians (informational; the geometry above is
 ;;; the law - deep box comes out under 10 degrees by construction).
@@ -164,6 +178,19 @@
   (drawText "SUMMARY" (+ x0 (/ innerW 2.0)) (+ y0 SHOE_DIV_H 12.0) 8.0
     (strcat "DIVIDER  " (rtos innerW 2 0) " x " (rtos SHOE_DIV_H 2 0)
             "  across the width - 2 shoe rows")))
+
+;;; INFILL side wall - owner, 16.08.2026: "jak wstawiamy szuflade shoe, to
+;;; nie zapomnij dodac ten [infill] 30 mm, czyli boczna scianke, bo zawiasy".
+;;; DRAWER variant behind a hinged door: per hinged side ONE vertical board,
+;;; depth of the box, height of the FRONT (120), thickness G, its INNER face
+;;; at SHOE_INFILL (30) from the carcass side - the runner for that side
+;;; mounts on THIS board, and the door's arc clears the 30 - G behind it.
+(defun drawSHOE_INFILL (x0 y0 depth G sideLbl / )
+  (drawRect "OUTLINE" x0 y0 (+ x0 depth) (+ y0 SHOE_FRONT_H))
+  (drawText "SUMMARY" (+ x0 (/ depth 2.0)) (+ y0 SHOE_FRONT_H 12.0) 8.0
+    (strcat "INFILL " sideLbl "  " (rtos depth 2 0) " x "
+            (rtos SHOE_FRONT_H 2 0)
+            "  inner face at " (rtos SHOE_INFILL 2 0) " from carcass side")))
 
 ;;; FRONT panel (decorative, both variants): outline only - the material
 ;;; family is the project's law (FIX = carcass board, DRAWER = fronts
@@ -292,7 +319,7 @@
 
   ;; === SLOPE LAW ===
   (setq run (- depth (* 2.0 G)))
-  (setq rear (shoeRearEdge run))
+  (setq rear (shoeRearEdge run G))
   (setq ang (shoeAngle run rear))
   (setq slopeLen (sqrt (+ (* run run) (* rear rear))))
 
@@ -320,6 +347,14 @@
       (setq cx (+ cx innerW odstep))))
   (drawSHOE_FRONT cx y0 (if (= variant "F") openingW boxW) variant)
   (setq cx (+ cx (if (= variant "F") openingW boxW) odstep))
+
+  ;; INFILL per hinged side (DRAWER only) - law above.
+  (if (and (= variant "D") (= hingedL 1))
+    (progn (drawSHOE_INFILL cx y0 depth G "L")
+           (setq cx (+ cx depth odstep))))
+  (if (and (= variant "D") (= hingedR 1))
+    (progn (drawSHOE_INFILL cx y0 depth G "R")
+           (setq cx (+ cx depth odstep))))
 
   ;; Carcass-side template (second row, above the panels)
   (setq boxFrontX (+ frontT SHOE_SETBACK_X))

@@ -223,7 +223,52 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
   const carcassMissing = assignment.carcass.filter((a) => !a.assigned);
   const frontsMissing = assignment.fronts.filter((a) => !a.assigned);
 
+  // ─── TURN 34 (CLAUDE.md F1): THE BOARD BEHIND EVERY LOOK ───────────────────
+  //
+  // The owner, 16.08, on finding the fronts container without a board
+  // assignment: "w ustawieniach frontów nie ma przypisania materiałów, jest w
+  // carcasach ale nie ma we frontach — to jest karygodne, niewybaczalne,
+  // podstawowe przypisanie materiałów to podstawa tego programu." And the
+  // scope: "przywracamy przypisanie materiałów bez różnicy jaki to wybór —
+  // czy laminat czy mdf czy spray etc".
+  //
+  // Turn 16 F1.1 had already answered this once — "a front had a colour and NO
+  // stock, so 'what board are these doors cut from' had no answer" — and the
+  // 15.08 chat rebuild reintroduced the hole on two paths: `slotPicker` grew
+  // the select ONLY on the decor grid, so Spraying (the DEFAULT front source)
+  // and the carcass's veneer both came back with a bare picker.
+  //
+  // So the select is ONE thing now, lifted out of the decor branch, rendered on
+  // EVERY path and for BOTH kinds. One select, one grammar (Generic optgroup +
+  // Stock optgroup), the same `pickFrontBoard` / `pickCarcassBoard` wiring.
+  const stockBoardSelect = (kind, t) => (
+    <div className="cc-row">
+      <span className="text-[11px] text-ink-400 shrink-0">Stock board</span>
+      <select
+        className="cc-input flex-1"
+        data-stock-board={`${kind}:${t.id}`}
+        value={t.material_id || ''}
+        onChange={(e) => (kind === 'carcass'
+          ? pickCarcassBoard(t.id, e.target.value || null)
+          : pickFrontBoard(t.id, e.target.value || null))}
+      >
+        <option value="">No stock board…</option>
+        <optgroup label="Generic — geometry only, assign a real board before check-out">
+          {boardMaterials.filter((m) => m.placeholder).map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </optgroup>
+        <optgroup label="Stock">
+          {boardMaterials.filter((m) => !m.placeholder).map((m) => (
+            <option key={m.id} value={m.id}>{`${m.code ? `${m.code} · ` : ''}${m.name}`}</option>
+          ))}
+        </optgroup>
+      </select>
+    </div>
+  );
+
   // ── the picker a slot's source asks for, rendered inline in the open slot ──
+  // Whatever the picker, the SAME stock-board select stands under it (F1).
   const slotPicker = (kind, t) => {
     const list = kind === 'carcass' ? carcassSources(profile) : frontSources(profile);
     const src = sourceById(list, t.source) || sourceById(list, kind === 'carcass' ? 'egger' : 'laminate');
@@ -231,21 +276,27 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
     if (picker === 'colour') {
       const current = kind === 'carcass' ? design.colour.carcass : t.colour;
       return (
-        <div data-spray-picker={`${kind}:${t.id}`}>
-          <ColourPicker
-            value={current}
-            onChange={(c) => (kind === 'carcass' ? pickCarcassColour(c) : pickFrontColour(t.id, c))}
-          />
+        <div className="space-y-2">
+          <div data-spray-picker={`${kind}:${t.id}`}>
+            <ColourPicker
+              value={current}
+              onChange={(c) => (kind === 'carcass' ? pickCarcassColour(c) : pickFrontColour(t.id, c))}
+            />
+          </div>
+          {stockBoardSelect(kind, t)}
         </div>
       );
     }
     if (picker === 'veneer' && kind === 'carcass') {
       return (
-        <VeneerPicker
-          value={t.finish_id}
-          onPick={(id) => pickCarcassVeneer(t.id, id)}
-          onClear={() => { touchCarcass(); setCarcassFinish(t.id, null); }}
-        />
+        <div className="space-y-2">
+          <VeneerPicker
+            value={t.finish_id}
+            onPick={(id) => pickCarcassVeneer(t.id, id)}
+            onClear={() => { touchCarcass(); setCarcassFinish(t.id, null); }}
+          />
+          {stockBoardSelect(kind, t)}
+        </div>
       );
     }
     // decor grid — laminate always; the FRONT's veneer too (turn 20 F12.3:
@@ -263,28 +314,7 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
               : (touchFronts(), setFrontType(t.id, { finish_id: null })))}
           />
         </div>
-        <div className="cc-row">
-          <span className="text-[11px] text-ink-400 shrink-0">Stock board</span>
-          <select
-            className="cc-input flex-1"
-            value={t.material_id || ''}
-            onChange={(e) => (kind === 'carcass'
-              ? pickCarcassBoard(t.id, e.target.value || null)
-              : pickFrontBoard(t.id, e.target.value || null))}
-          >
-            <option value="">No stock board…</option>
-            <optgroup label="Generic — geometry only, assign a real board before check-out">
-              {boardMaterials.filter((m) => m.placeholder).map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Stock">
-              {boardMaterials.filter((m) => !m.placeholder).map((m) => (
-                <option key={m.id} value={m.id}>{`${m.code ? `${m.code} · ` : ''}${m.name}`}</option>
-              ))}
-            </optgroup>
-          </select>
-        </div>
+        {stockBoardSelect(kind, t)}
       </div>
     );
   };
@@ -577,8 +607,8 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
         <div className="flex items-center gap-2 border-t border-dashed border-shell-600 pt-2">
           {carcassMissing.length > 0 ? (
             <span className="flex-1 text-[11px] text-status-warn" data-carcass-missing="1">
-              {carcassMissing.map((s) => s.label).join(', ')} — no material yet. Generic counts as an
-              assignment; nothing does not.
+              {carcassMissing.map((s) => s.label).join(', ')} — no stock board yet. Generic counts as an
+              assignment; a colour or a decor alone does not.
             </span>
           ) : (
             <span className="flex-1 text-[11px] text-status-ok" data-carcass-ok="1">
@@ -729,7 +759,8 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
         <div className="flex items-center gap-2 border-t border-dashed border-shell-600 pt-2">
           {frontsMissing.length > 0 ? (
             <span className="flex-1 text-[11px] text-status-warn" data-fronts-missing="1">
-              {frontsMissing.map((s) => s.label).join(', ')} — no material yet.
+              {frontsMissing.map((s) => s.label).join(', ')} — no stock board yet. Generic counts as an
+              assignment; a colour or a decor alone does not.
             </span>
           ) : (
             <span className="flex-1 text-[11px] text-status-ok" data-fronts-ok="1">

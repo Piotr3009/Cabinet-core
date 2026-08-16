@@ -139,19 +139,37 @@ test('choosing generic IS an assignment; choosing nothing is not', () => {
   assert.equal(materialsAssigned(generic, P).all, true);
 });
 
-test('a facing or a colour answers a slot exactly as a board does', () => {
+// ─── SUPERSEDED 16.08.2026 (turn 34, CLAUDE.md F1) ─────────────────────────
+// This row read "a facing or a colour answers a slot exactly as a board does".
+// The owner walked the fronts container that day and ruled the opposite:
+// "przywracamy przypisanie materiałów bez różnicy jaki to wybór — czy laminat
+// czy mdf czy spray etc" … "bez przypisania materiałów nie powinno puścić
+// dalej". A colour is what a front LOOKS like; the board is what it is CUT
+// FROM, and only the board answers. Rewritten to the new law, and the full
+// sweep lives in test/turn34-f1-wizard-stock-gate.test.js.
+test('a facing or a colour does NOT answer a slot — only the board does (T34 F1)', () => {
   const faced = migrateDesign({
     carcass: { types: [{ id: 'c1', label: 'Carcass 1', finish_id: 'decor:W1000' }] },
     fronts: { types: [{ id: 'f1', label: 'Front 1', colour: { hex: '#334455', name: 'Hague Blue' } }] },
   });
-  assert.equal(materialsAssigned(faced, P).all, true);
-  // The carcass's sprayed colour is project-wide, and it answers for the slot.
+  assert.equal(materialsAssigned(faced, P).all, false);
+  assert.deepEqual(materialsAssigned(faced, P).missing.map((s) => s.label), ['Carcass 1', 'Front 1']);
+  // The carcass's project-wide sprayed colour does not answer for the slot
+  // either — it never said what board the box is cut from.
   const sprayed = migrateDesign({
     colour: { carcass: { hex: '#ffffff', name: 'White' } },
     carcass: { types: [{ id: 'c1', label: 'Carcass 1' }] },
     fronts: { types: [{ id: 'f1', label: 'Front 1', material_id: 'generic-18' }] },
   });
-  assert.equal(materialsAssigned(sprayed, P).all, true);
+  assert.equal(materialsAssigned(sprayed, P).all, false);
+  assert.deepEqual(materialsAssigned(sprayed, P).missing.map((s) => s.label), ['Carcass 1']);
+  // …and with the board on it, it does.
+  const boarded = migrateDesign({
+    colour: { carcass: { hex: '#ffffff', name: 'White' } },
+    carcass: { types: [{ id: 'c1', label: 'Carcass 1', material_id: 'generic-18' }] },
+    fronts: { types: [{ id: 'f1', label: 'Front 1', material_id: 'generic-18' }] },
+  });
+  assert.equal(materialsAssigned(boarded, P).all, true);
 });
 
 test('the blockers only ever speak for the settings step’s own rules', () => {

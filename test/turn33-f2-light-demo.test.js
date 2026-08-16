@@ -20,7 +20,19 @@ test('the demo levels are ONE profile line each — dim and boost, owner-tunable
   assert.ok(spec.demo.dimFactor > 0 && spec.demo.dimFactor < 1, 'the room goes DOWN');
   assert.ok(spec.demo.emissiveBoost > 1, 'the LEDs come UP');
   assert.equal(spec.demo.dimFactor, P.lighting.demo.dimFactor);
-  assert.equal(spec.demo.emissiveBoost, P.lighting.demo.emissiveBoost);
+  // ─── AMENDED 16.08.2026 (turn 34, CLAUDE.md F2) ────────────────────────
+  // The owner: "turn on the light działa ale ledy za słabo świecą". The BOOST
+  // moved to `profile.appearance.lighting.emissiveBoost` — the T34 spec's own
+  // home for the emission numbers — and rose. It is still ONE profile line
+  // and still owner-tunable; `profile.lighting.demo.emissiveBoost` remains
+  // the fallback so a profile saved before T34 keeps its own answer. The DIM
+  // did not move: his complaint was the LEDs, not the room.
+  assert.equal(spec.demo.emissiveBoost, P.appearance.lighting.emissiveBoost);
+  assert.equal(
+    lightingSpec({ ...P, appearance: { ...P.appearance, lighting: undefined } }).demo.emissiveBoost,
+    P.lighting.demo.emissiveBoost,
+    'the T33 line still answers where the new one is absent',
+  );
 });
 
 test('the factor is derived: off is EXACTLY 1, on is EXACTLY the profile level', () => {

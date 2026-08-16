@@ -459,6 +459,13 @@ function migrateLighting(raw) {
       const unitId = it.unitId ? String(it.unitId) : null;
       if (!kind || !id || !unitId) return null;
       const out = { id, unitId, kind };
+      // ─── TURN 34 (CLAUDE.md F2): HOW FAR OFF THE FRONT EDGE ──────────────
+      // The owner, 16.08.2026: *"nie ma możliwości ustawienia jak daleko od
+      // edge"*. One number per strip, on EVERY kind — the shelf's depth
+      // slider only ever answered for shelves. `null` (absent) is T33's own
+      // placement exactly, so every saved project renders byte-identically
+      // until he touches the field.
+      out.inset_mm = Number(it.inset_mm) >= 0 ? Number(it.inset_mm) : null;
       if (kind === 'shelf') {
         if (!it.ref) return null;               // a shelf run IS its shelf
         out.ref = String(it.ref);

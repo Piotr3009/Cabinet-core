@@ -47,6 +47,12 @@ export function lightingSpec(profile) {
       thickness: Number(strip.thickness) > 0 ? Number(strip.thickness) : 3,
       sideLineWidth: Number(strip.sideLineWidth) > 0 ? Number(strip.sideLineWidth) : 4,
       shelfDepthDefault: Number(strip.shelfDepthDefault) >= 0 ? Number(strip.shelfDepthDefault) : 30,
+      // CHAT-FIX 16.08 (owner, variant A): the edge-offset default is 80 for
+      // EVERY strip, saved projects included; the slider walks 0…insetMax in
+      // 10s beside a type-in field. Profile keys win when a profile names
+      // them — these literals are the fallback, same as width/thickness.
+      insetDefault: Number(strip.insetDefault) >= 0 ? Number(strip.insetDefault) : 80,
+      insetMax: Number(strip.insetMax) > 0 ? Number(strip.insetMax) : 200,
     },
     spot: {
       diameter: Number(spot.diameter) > 0 ? Number(spot.diameter) : 55,
@@ -173,12 +179,23 @@ export function stripsForUnit({
   // "nie ma możliwości ustawienia jak daleko od edge" (owner, 16.08.2026).
   // ONE number per strip, applied along DEPTH and to nothing else: the strip
   // moves back from the front edge by `inset_mm` and keeps its length, its
-  // width and its height. Absent or 0 reproduces T33's geometry exactly.
+  // width and its height.
+  //
+  // CHAT-FIX 16.08 (owner, variant A — his word): *"default 80 mm wszystkie"*
+  // — a strip with NO answer sits 80 off the edge, and that includes every
+  // strip already placed in a saved project. An EXPLICIT 0 is still the
+  // owner's own hand saying "flush at the edge" and stays T33's geometry.
   //
   // DRILLING STAYS ZERO — this module has never touched `result.drills` and
   // this feature does not begin (T33 rule 3, verbatim).
   const insetOf = (item) => {
-    const n = Number(item?.inset_mm);
+    if (item?.inset_mm === undefined || item?.inset_mm === null) {
+      // Variant A is a STRIP law — the panel offers no edge field for a
+      // spot ("spots have no edge to be off"), so a silent 80 would move
+      // what no hand can put back. A spot with no answer stays put.
+      return item?.kind === 'spot' ? 0 : spec.strip.insetDefault;
+    }
+    const n = Number(item.inset_mm);
     return Number.isFinite(n) && n > 0 ? n : 0;
   };
 
@@ -187,7 +204,10 @@ export function stripsForUnit({
     if (item.kind === 'shelf') {
       const panel = (result?.panels || []).find((p) => p.id === item.ref && p.box);
       if (!panel || panel.role !== 'shelf') continue;      // no shelf, no strip
-      const depthMax = Math.max(0, panel.box.d - sw);
+      // CHAT-FIX 16.08 (variant A): the clamp counts the INSET too — with a
+      // default 80 a full-depth strip used to poke 80 through the shelf's
+      // back. The strip lives within the shelf, inset included.
+      const depthMax = Math.max(0, panel.box.d - sw - inset);
       const depth = Math.min(
         depthMax,
         Math.max(0, item.depth_mm == null ? spec.strip.shelfDepthDefault : item.depth_mm),

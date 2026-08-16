@@ -462,10 +462,15 @@ function migrateLighting(raw) {
       // ─── TURN 34 (CLAUDE.md F2): HOW FAR OFF THE FRONT EDGE ──────────────
       // The owner, 16.08.2026: *"nie ma możliwości ustawienia jak daleko od
       // edge"*. One number per strip, on EVERY kind — the shelf's depth
-      // slider only ever answered for shelves. `null` (absent) is T33's own
-      // placement exactly, so every saved project renders byte-identically
-      // until he touches the field.
-      out.inset_mm = Number(it.inset_mm) >= 0 ? Number(it.inset_mm) : null;
+      // slider only ever answered for shelves.
+      // CHAT-FIX 16.08 (owner, variant A): `null` means NO ANSWER and the
+      // engine answers it with the profile default (80). The old coercion
+      // `Number(null) = 0 >= 0` turned a second migration pass into "the
+      // owner said flush" — a migration must be idempotent, so null STAYS
+      // null and only a real number is a number.
+      out.inset_mm = (it.inset_mm === undefined || it.inset_mm === null)
+        ? null
+        : (Number(it.inset_mm) >= 0 ? Number(it.inset_mm) : null);
       if (kind === 'shelf') {
         if (!it.ref) return null;               // a shelf run IS its shelf
         out.ref = String(it.ref);

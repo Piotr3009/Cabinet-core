@@ -426,12 +426,29 @@ export default function LightingPanel() {
                       {it.kind !== 'spot' && (
                         <div className="flex items-center gap-2 pl-1">
                           <span className="text-[10px] text-ink-400 shrink-0">Off the front edge</span>
+                          {/* CHAT-FIX 16.08 (owner): *"paski co 10 mm są
+                              lepsze — przesuwki plus pole do wpisywania"* —
+                              a 10 mm slider BESIDE the field. The value shown
+                              is the EFFECTIVE one: no answer = the profile's
+                              80 default (variant A, his word: "default 80 mm
+                              wszystkie"), an explicit 0 = flush at the edge. */}
+                          <input
+                            type="range"
+                            className="flex-1 accent-gold"
+                            min={0}
+                            max={spec.strip.insetMax}
+                            step={10}
+                            value={it.inset_mm ?? spec.strip.insetDefault}
+                            data-lighting-inset-slider={it.id}
+                            aria-label="How far back from the front edge the LED sits"
+                            onChange={(e) => updateLightingItem(it.id, { inset_mm: Number(e.target.value) })}
+                          />
                           <input
                             type="number"
                             className="cc-input w-16 text-right"
                             min={0}
                             step={1}
-                            value={Number(it.inset_mm) > 0 ? it.inset_mm : 0}
+                            value={it.inset_mm ?? spec.strip.insetDefault}
                             data-lighting-inset={it.id}
                             aria-label="How far back from the front edge the LED sits"
                             onChange={(e) => updateLightingItem(it.id, { inset_mm: Number(e.target.value) })}

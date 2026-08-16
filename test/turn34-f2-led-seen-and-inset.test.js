@@ -93,22 +93,31 @@ test('a migrated profile carries the new block', () => {
 
 // ─── (b) the edge offset ───────────────────────────────────────────────────
 
-test('DEFAULT: no inset reproduces T33 geometry EXACTLY, on every kind', () => {
+test('DEFAULT: no answer sits 80 off the edge (variant A); an explicit 0 is T33 flush', () => {
+  // ─── REWRITTEN 16.08.2026 (chat-fix, owner) ────────────────────────────
+  // The original pinned "absent = 0 = T33 flush". The owner's variant A,
+  // his word: *"default 80 mm wszystkie"* — a strip with NO answer sits at
+  // the profile default (80), saved projects included. An explicit 0 is
+  // still his own hand saying "flush at the edge" and stays T33's geometry.
   const items = [
     { id: 'l1', unitId: 'u1', kind: 'shelf', ref: shelf.id },
     { id: 'l2', unitId: 'u1', kind: 'side', ref: 'L' },
     { id: 'l3', unitId: 'u1', kind: 'bottom' },
     { id: 'l4', unitId: 'u1', kind: 'top' },
   ];
-  // The field ABSENT and the field at 0 must be the same scene…
+  const DEF = lightingSpec(P).strip.insetDefault;
+  assert.equal(DEF, 80, 'the profile default is the owner\'s 80');
+  // ABSENT = the default: the same scene as an explicit 80…
   const absent = strips(items);
+  const at80 = strips(items.map((i) => ({ ...i, inset_mm: 80 })));
+  assert.deepEqual(absent.map((s) => s.box), at80.map((s) => s.box));
+  assert.ok(absent.every((s) => s.inset_mm === DEF));
+  // …and an EXPLICIT 0 is T33's: every strip flush at the front edge.
   const zero = strips(items.map((i) => ({ ...i, inset_mm: 0 })));
-  assert.deepEqual(zero.map((s) => s.box), absent.map((s) => s.box));
-  // …and that scene is T33's: every strip flush at the front edge.
   const D = unit.params.depth;
   const sw = lightingSpec(P).strip.width;
   const line = lightingSpec(P).strip.sideLineWidth;
-  const byKind = Object.fromEntries(absent.map((s) => [s.kind, s]));
+  const byKind = Object.fromEntries(zero.map((s) => [s.kind, s]));
   assert.equal(byKind.side.box.z, D - line);
   assert.equal(byKind.bottom.box.z, D - sw);
   assert.equal(byKind.top.box.z, D - sw);
@@ -117,9 +126,11 @@ test('DEFAULT: no inset reproduces T33 geometry EXACTLY, on every kind', () => {
 });
 
 test('an inset moves the strip back — and ONLY the strip', () => {
+  // REWRITTEN 16.08.2026 (chat-fix, variant A): the baseline is an EXPLICIT
+  // 0 — "absent" now answers 80 by law, so flush must be asked for by name.
   for (const kind of ['shelf', 'side', 'bottom', 'top']) {
     const base = {
-      id: 'l1', unitId: 'u1', kind, ...(kind === 'shelf' ? { ref: shelf.id } : {}), ...(kind === 'side' ? { ref: 'L' } : {}),
+      id: 'l1', unitId: 'u1', kind, inset_mm: 0, ...(kind === 'shelf' ? { ref: shelf.id } : {}), ...(kind === 'side' ? { ref: 'L' } : {}),
     };
     const [was] = strips([base]);
     const [now] = strips([{ ...base, inset_mm: 25 }]);

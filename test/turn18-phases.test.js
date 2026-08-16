@@ -20,7 +20,7 @@ import { panelLabel, panelLabelBlock, parseDxf, panelDxf } from '../src/engine/c
 import { partLabelText } from '../src/engine/cnc/partLabel.js';
 import {
   clearRunnerCatalogue, parseRunnerManifest, resolveRunnerVariant, runnerEntry,
-  runnerModelUrl, runnerNominalLength, runnerPairSpec, setRunnerCatalogue, syncRodFor,
+  runnerAskFor, runnerModelUrl, runnerNominalLength, runnerPairSpec, setRunnerCatalogue, syncRodFor,
 } from '../src/engine/runners.js';
 import { hardwareInstances } from '../src/engine/hardware3d.js';
 import { DEFAULT_DESIGN, migrateDesign } from '../src/engine/design.js';
@@ -541,16 +541,22 @@ test('F6.6 — with no catalogue the app still knows what to order, and says wha
 });
 
 test('F6.7/F6.8 — the manifest IS the catalogue, and the BOM orders by article', () => {
-  // Turn 33 (CLAUDE.md F9): the manifest rows stand at 450 — a rung of the
-  // owner's ladder — because what the BOM orders now IS a rung; a 490 box
-  // lands on 450 and buys what stands there. The test's property is the
-  // same as ever: manifest rows become ordered articles, nothing guessed.
+  // Turn 33 (CLAUDE.md F9): what the BOM orders IS a rung of the owner's
+  // ladder, and the manifest rows stand at that rung.
+  //
+  // ─── AMENDED 16.08.2026 (turn 34, CLAUDE.md F3) ─────────────────────────
+  // The rung moved, because the ASK moved: *"powinien być skrzynka +10 mm"*.
+  // A 490 box asks 500 and buys what stands at 500 — it used to ask 490 and
+  // buy the 450 beneath it, which is the runner the workshop does NOT fit.
+  // So the rows in this fixture move 450 → 500 with it. The test's own
+  // property is untouched: manifest rows become ordered articles, nothing
+  // guessed, half an entry dropped.
   const parsed = setRunnerCatalogue({
     files: [
-      { file: 'movento-760h-450-T-L.glb', system: '760H', nl: 450, variant: 'T', article: '760H4500T-L' },
-      { file: 'movento-760h-450-T-R.glb', system: '760H', nl: 450, variant: 'T', article: '760H4500T-R' },
-      { file: 'movento-760h-450-S-L.glb', system: '760H', nl: 450, variant: 'S', side: 'L', article: '760H4500S-L' },
-      { file: 'movento-760h-450-SU-L.glb', system: '760H', nl: 450, variant: 'SU', side: 'L', article: 'x' },
+      { file: 'movento-760h-500-T-L.glb', system: '760H', nl: 500, variant: 'T', article: '760H5000T-L' },
+      { file: 'movento-760h-500-T-R.glb', system: '760H', nl: 500, variant: 'T', article: '760H5000T-R' },
+      { file: 'movento-760h-500-S-L.glb', system: '760H', nl: 500, variant: 'S', side: 'L', article: '760H5000S-L' },
+      { file: 'movento-760h-500-SU-L.glb', system: '760H', nl: 500, variant: 'SU', side: 'L', article: 'x' },
       { file: 'broken.glb', system: '', nl: 0, variant: '', article: null },
     ],
   });
@@ -558,28 +564,32 @@ test('F6.7/F6.8 — the manifest IS the catalogue, and the BOM orders by article
   // The side is read off the row where it is given and off the FILE NAME where
   // it is not — neither is guessed.
   assert.equal(runnerEntry({
-    system: '760H', nl: 450, variant: 'T', side: 'R',
-  }).article, '760H4500T-R');
+    system: '760H', nl: 500, variant: 'T', side: 'R',
+  }).article, '760H5000T-R');
 
-  const spec = runnerPairSpec({ nl: 490, variant: 'T', profile: P });
-  assert.equal(spec.nl, 450, 'the 490 box orders the 450 rung');
+  const spec = runnerPairSpec({ nl: runnerAskFor(490, P), variant: 'T', profile: P });
+  assert.equal(spec.nl, 500, 'the 490 box asks 500 and orders the 500 rung');
+  assert.equal(spec.asked_nl, 500);
   assert.equal(spec.complete, true);
-  assert.deepEqual(spec.articles, { L: '760H4500T-L', R: '760H4500T-R' });
+  assert.deepEqual(spec.articles, { L: '760H5000T-L', R: '760H5000T-R' });
 
   const r = unit('BUDR2');
   const line = r.hardware.find((h) => h.role === 'runner_pairs');
-  assert.match(line.spec_label, /760H4500T-L \/ 760H4500T-R/);
-  assert.match(line.spec_label, /orders NL 450/, 'the label names the rung beside the cut depth');
-  assert.equal(line.spec.articles.L, '760H4500T-L');
+  assert.match(line.spec_label, /760H5000T-L \/ 760H5000T-R/);
+  assert.match(line.spec_label, /^490 mm · orders NL 500/,
+    'the label names the rung beside the CUT depth — the box is still 490');
+  assert.equal(line.spec.articles.L, '760H5000T-L');
+  assert.equal(line.spec.length_mm, 490, 'length_mm stays the box, not the nominal');
+  assert.equal(line.spec.asked_nl, 500, 'asked_nl carries the +10');
 
   // …and the model url is the folder the manifest itself was read from, with
   // the row's BASENAME on the end (turn 20, CLAUDE.md F2.1/F2.3 — this line
   // used to assert `…/hardware/hardware/runners/…`, which is the 400 the owner
   // was looking at, written down as an expectation).
   const url = runnerModelUrl(runnerEntry({
-    system: '760H', nl: 450, variant: 'T', side: 'L',
+    system: '760H', nl: 500, variant: 'T', side: 'L',
   }), P, 'https://x.supabase.co/storage/v1/object/public');
-  assert.equal(url, 'https://x.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/movento-760h-450-T-L.glb');
+  assert.equal(url, 'https://x.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/movento-760h-500-T-L.glb');
 
   clearRunnerCatalogue();
 });

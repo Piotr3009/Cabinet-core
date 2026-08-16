@@ -43,7 +43,9 @@ import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
-import { resolveRunnerVariant, runnerPairSpec, syncRodFor } from './runners.js';
+import {
+  resolveRunnerVariant, runnerAskFor, runnerPairSpec, syncRodFor,
+} from './runners.js';
 // Turn 33 (CLAUDE.md F11): the insert catalogue — specs with nominals, never
 // articles; the BOM line names the nominal that drops into the box.
 import { insertFor } from './drawerInserts.js';
@@ -5045,10 +5047,16 @@ export function computeCabinet(params, profileOverride) {
     });
     byVariant.set(v, (byVariant.get(v) || 0) + 1);
   }
+  // ─── TURN 34 (CLAUDE.md F3): THE ASK IS THE BOX + 10 ──────────────────────
+  // "powinien być skrzynka +10 mm" (owner, 16.08.2026). `runnerLength` is the
+  // BOX's cut depth and stays the BOX's cut depth — it is what the label names
+  // and what the saw does. What the ladder is asked for is the NOMINAL, which
+  // is ten more, through the one adder in engine/runners.js.
+  const runnerAsk = runnerAskFor(runnerLength, P);
   for (const [variant, qty] of byVariant) {
-    const spec = runnerPairSpec({ nl: runnerLength, variant, profile: P });
+    const spec = runnerPairSpec({ nl: runnerAsk, variant, profile: P });
     // Turn 33 (CLAUDE.md F9): the BOM ORDERS THE SNAPPED LENGTH — the rung of
-    // the owner's ladder the box depth landed on, named beside the cut depth
+    // the owner's ladder the ask landed on, named beside the cut depth
     // whenever the two differ. An ask below the ladder says so out loud and
     // the line prints yellow (no article is ever invented).
     hw('runner_pairs', 'Drawer runners', qty, 'pairs',

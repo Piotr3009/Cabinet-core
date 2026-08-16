@@ -169,10 +169,34 @@ export function resolveRunnerVariant({
 }
 
 /**
+ * ─── TURN 34 (CLAUDE.md F3): THE NOMINAL IS THE BOX + 10 ────────────────────
+ *
+ * The owner, 16.08.2026, closing the T33-F9 review: *"powinien być skrzynka
+ * +10 mm"* — the MOVENTO nominal a workshop orders against a box is the box
+ * plus ten (his standing rule, stated the other way round for years: nominal
+ * 450 ↔ box 440, 500 ↔ 490). T33 fed the ladder the BOX DEPTH, so a 490 box
+ * ordered an NL450 — one rung short of the runner that actually goes in.
+ *
+ * This is the ONE place the +10 is applied. Every caller that has a BOX DEPTH
+ * in its hand and wants a nominal asks here; nobody adds ten of their own.
+ *
+ * @param {number|null} boxDepth  the drawer box's own cut depth, in mm
+ * @returns {number|null} the nominal to ask the ladder for, or null
+ */
+export function runnerAskFor(boxDepth, profile) {
+  const d = Number(boxDepth);
+  if (!Number.isFinite(d) || d <= 0) return null;
+  const over = Number(profile?.hardware?.runner?.movento?.nominalOverBoxMm);
+  return d + (Number.isFinite(over) ? over : 0);
+}
+
+/**
  * ─── TURN 33 (CLAUDE.md F9): THE OWNER'S LADDER ─────────────────────────────
- * The runner lengths this workshop orders — every 50 up to 600, lower bound
- * read as 300 (marked, Q1). ONE profile line; null where a profile has none,
- * which keeps every caller that predates the list on the catalogue snap.
+ * The runner lengths this workshop orders. T33 shipped 300–600 every 50 with
+ * the lower bound MARKED (Q1, "od 00"); turn 34 has his answer — *"od 250"* …
+ * *"dopisujemy do 700"* — so the line reads 250–700 and the marker is gone.
+ * ONE profile line; null where a profile has none, which keeps every caller
+ * that predates the list on the catalogue snap.
  */
 export function runnerLadder(profile) {
   const l = profile?.hardware?.runner?.movento?.nominalLadder;

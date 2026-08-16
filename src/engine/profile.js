@@ -3228,7 +3228,20 @@ export const DEFAULT_CABINET_PROFILE = {
         // prowadnic — czeka na listę MOVENTO". The BOX ladder
         // (wardrobe.drawers.depthSteps — what the saw cuts) is untouched:
         // that one is the LISP's, and the fixtures stand on it.
-        nominalLadder: [300, 350, 400, 450, 500, 550, 600],
+        // ─── TURN 34 (CLAUDE.md F3), 16.08.2026 ──────────────────────────
+        // The owner closed the F9 review with the bounds — "od 250" …
+        // "dopisujemy do 700" — so Q1's marked lower bound is answered and
+        // the ladder runs 250 to 700 every 50.
+        nominalLadder: [250, 300, 350, 400, 450, 500, 550, 600, 650, 700],
+
+        // ─── TURN 34 (CLAUDE.md F3): THE NOMINAL IS THE BOX + 10 ──────────
+        // His standing workshop rule, said out loud on 16.08.2026 while
+        // closing the F9 review: *"powinien być skrzynka +10 mm"* — nominal
+        // 450 ↔ box 440, 500 ↔ 490. T33 asked the ladder for the BOX depth
+        // and every drawer in the app landed one rung SHORT of the runner
+        // the workshop actually orders. ONE profile line, one adder, read by
+        // `engine/runners.js runnerAskFor` and by nothing else.
+        nominalOverBoxMm: 10,
 
         // ─── THE SYNCHRONISATION ROD (F6.5) ───────────────────────────────
         // Catalogue thresholds, on the CABINET OPENING width — blum.com,

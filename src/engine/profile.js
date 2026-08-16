@@ -1868,10 +1868,14 @@ export const DEFAULT_CABINET_PROFILE = {
       // What a placed strip glows at in the ORDINARY working view. Emissive
       // only — no real light source, because a point light per strip costs the
       // whole scene (T33's rule, unchanged).
-      emissive: 3.4,
-      // …and what it comes UP by while "Turn on the light" is on: 3.4 × 3.2 =
-      // 10.88, unmistakable at the default exposure.
-      emissiveBoost: 3.2,
+      // CHAT-FIX 16.08 (owner, after seeing 3.4 live): *"za słabo świecą —
+      // w rzeczywistości świecą o wiele lepiej"*. First swing of the tuning
+      // loop: 8.0 burns a hot white core at the default exposure. The demo
+      // boost comes DOWN so the demo lands ~24 and not 34 — hot, not nuclear.
+      emissive: 8.0,
+      // …and what it comes UP by while "Turn on the light" is on: 8.0 × 3.0 =
+      // 24, unmistakable at the default exposure.
+      emissiveBoost: 3.0,
       // The spot discs read smaller than a strip, so they carry their own
       // multiplier rather than borrowing the strip's and looking dim.
       spotEmissiveMultiplier: 1.35,
@@ -3661,9 +3665,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // EXTENDABLE here; a fourth temperature is one more row, not a code change.
     // The hex is only the tint the VIEW paints the strip in.
     temperatures: [
-      { k: 3000, label: '3000 K', hint: 'Warm white', hex: '#ffd9a8' },
-      { k: 4000, label: '4000 K', hint: 'Neutral white', hex: '#fff3e0' },
-      { k: 6000, label: '6000 K', hint: 'Cool white', hex: '#eaf4ff' },
+      // CHAT-FIX 16.08 (owner): *"nie widać zmiany pomiędzy 3, 4 i 6 k"*.
+      // At a hot emissive the CENTRE of every strip clips to white under
+      // ACES — the tint lives on the fringe, so the hexes must be SATURATED
+      // enough to survive that. T33's near-whites (#ffd9a8/#fff3e0/#eaf4ff)
+      // all read as the same strip; these three read warm / neutral / cool.
+      { k: 3000, label: '3000 K', hint: 'Warm white', hex: '#ffa94d' },
+      { k: 4000, label: '4000 K', hint: 'Neutral white', hex: '#ffe9c2' },
+      { k: 6000, label: '6000 K', hint: 'Cool white', hex: '#a8d0ff' },
     ],
     // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named one; 4000 K
     // ships marked `owner to confirm 15.08` (Q-list travels with the PR).

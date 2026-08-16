@@ -175,11 +175,14 @@ test('F5 the COMPANY row has a place to say it, and it prefills the project', ()
 
 test('F5 `paramsForEngine` is what carries it, and it carries it like the plinth', () => {
   const store = readFileSync(new URL('../src/stores/projectStore.js', import.meta.url), 'utf8');
-  assert.match(store, /shelf_pin_setback_mm: design\?\.shelves\?\.pinSetback \?\? null,/);
+  // Turn 33 (CLAUDE.md F10): the owner declared his standard — the PROFILE's
+  // 50 answers where the design says nothing; the design's own number still
+  // rides first, on the same road.
+  assert.match(store, /shelf_pin_setback_mm: design\?\.shelves\?\.pinSetback\n\s+\?\? getCabinetProfile\(\)\.shelfHoles\.ownerPinSetback/);
   // The comment beside it names the road, because that is the rule this feature
   // exists to obey rather than to bend.
   const at = store.indexOf('shelf_pin_setback_mm:');
-  const above = store.slice(Math.max(0, at - 900), at);
+  const above = store.slice(Math.max(0, at - 1200), at);
   assert.match(above, /override channel/i);
   assert.match(above, /golden fixture/);
   // …and the ENGINE reads the input rather than a new formula.
@@ -188,13 +191,14 @@ test('F5 `paramsForEngine` is what carries it, and it carries it like the plinth
   assert.match(engine, /: SH\.columnFromEdge;/);
 });
 
-test('F5 and there is a control to type it into', () => {
+test('F5 the control is gone — turn 33’s sanctioned removal, said in place', () => {
+  // Turn 33 (CLAUDE.md F10): the owner — "default 50 mm bez ustawiania —
+  // kiedyś było ustawiane, teraz już nie trzeba." The T30 field left the
+  // panel; the design FIELD stays honoured for saved projects, and the spot
+  // in the panel says why rather than going silent.
   const panel = readFileSync(new URL('../src/components/SettingsPanel.jsx', import.meta.url), 'utf8');
-  assert.match(panel, /data-shelf-pin-setback="1"/);
-  assert.match(panel, /setDesign\(\{ shelves: \{ \.\.\.design\.shelves, pinSetback: v \} \}\)/);
-  // It shows the PROFILE's number when the project has said nothing, so an
-  // empty field never reads as zero.
-  assert.match(panel, /: profile\.shelfHoles\.columnFromEdge\}/);
+  assert.ok(!panel.includes('data-shelf-pin-setback'), 'the field left the panel');
+  assert.match(panel, /TURN 33 \(CLAUDE\.md F10\)/);
 });
 
 // ─── 4. THE 3-D FOLLOWS, BECAUSE IT READS THE DRILLING ─────────────────────

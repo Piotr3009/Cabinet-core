@@ -356,6 +356,17 @@ export const DEFAULT_CABINET_PROFILE = {
     diameter: 7.5,
     clusterOffsets: [-50, 0, 50],   // 3 holes per row
     columnFromEdge: 70,             // x = 70 and panelWidth − 70
+    // ─── TURN 33 (CLAUDE.md F10): THE OWNER'S DECLARED STANDARD ────────────
+    // OWNER, 15.08.2026: "piny do półek default 50 mm bez ustawiania —
+    // kiedyś było ustawiane, teraz już nie trzeba." This is the PROFILE'S
+    // ANSWER on the OVERRIDE CHANNEL — every app project drills 50 unless a
+    // saved design still carries its own number (that field stays honoured).
+    // HONEST NOTE, written where the numbers sit: the app's DXF now drills
+    // 50 while the workshop's own LISP macros drill 70 (`columnFromEdge`
+    // above — the BARE engine's answer, which every golden fixture holds);
+    // the day the LISP moves to 50, the bare engine follows it. ONE line,
+    // owner-tunable.
+    ownerPinSetback: 50,
     pinsPerShelf: 4,                // one pin in each corner — the hardware count
     layer: 'SHELVES_7_5MM',
     // Row spacing is (H − 2×G)/(n+1) measured over the FULL carcass height,

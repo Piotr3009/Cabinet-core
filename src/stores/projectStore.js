@@ -404,7 +404,13 @@ function paramsForEngine(unit, design = null) {
     // `prefillDesignFromCompany` at `newProject`, which is where every other
     // company preference is resolved; a project that has said something of its
     // own keeps saying it.
-    shelf_pin_setback_mm: design?.shelves?.pinSetback ?? null,
+    // ─── TURN 33 (CLAUDE.md F10): THE PROFILE ANSWERS 50 ────────────────────
+    // The owner's declared standard ("default 50 mm bez ustawiania") stands
+    // where the design says nothing; a saved project that set its own number
+    // keeps it. A BARE kit call still passes nothing and drills the LISP's 70.
+    shelf_pin_setback_mm: design?.shelves?.pinSetback
+      ?? getCabinetProfile().shelfHoles.ownerPinSetback
+      ?? null,
     // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER 600 ─────────────────────
     // The owner's standard, on the same road as the setback above it and the
     // plinth before both: an INPUT in the design layer, never a formula in the

@@ -4259,6 +4259,12 @@ export function migrateCabinetProfile(profile) {
       // The finish LIST is the app's, not the stored profile's: a project saved
       // before a decor existed must still be able to show it.
       finishes: mergeFinishes(D.appearance.finishes, profile.appearance?.finishes),
+      // CHAT-FIX 16.08 (owner's tuning loop): the LED emission numbers are the
+      // APP'S LOOK, not workshop data — a browser that persisted yesterday's
+      // profile froze `appearance.lighting` and every knob turned in code
+      // never reached the owner's screen ("nic nie widzę co powinno się
+      // zmienić"). Code wins, always — same law as the finish list above.
+      lighting: { ...D.appearance.lighting },
       outline: {
         ...D.appearance.outline,
         ...profile.appearance?.outline,

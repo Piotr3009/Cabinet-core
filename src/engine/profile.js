@@ -890,7 +890,9 @@ export const DEFAULT_CABINET_PROFILE = {
       runnerW: 13,        // SHOE_RUNNER_W — per side ("runners 13 mm szerokości")
       grooveDepth: 6,     // SHOE_GROOVE_D — in all FOUR walls
       groovePlay: 0.2,    // SHOE_GROOVE_PLAY — groove width = bottom G + this
-      angleMaxDeg: 10,    // SHOE_ANGLE_MAX — the ceiling, never exceeded
+      // Owner, 16.08 (second eye-test): "około 6-7 stopni, więcej nie będzie
+    // trzeba" — 10 → 7, the LISP constant moved with it.
+    angleMaxDeg: 7,    // SHOE_ANGLE_MAX — the ceiling, never exceeded
       pilotD: 3,          // SHOE_PILOT_D — FIX through-pilot
       pilotN: 3,          // SHOE_PILOT_N
       pilotEnd: 50,       // SHOE_PILOT_END — first/last from the box ends

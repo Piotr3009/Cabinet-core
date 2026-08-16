@@ -61,7 +61,9 @@
 (setq SHOE_RUNNER_W   13.0)   ;; side runner thickness, per side
 (setq SHOE_GROOVE_D    6.0)   ;; groove depth in every wall
 (setq SHOE_GROOVE_PLAY 0.2)   ;; groove width = bottom G + this
-(setq SHOE_ANGLE_MAX  10.0)   ;; degrees - the ceiling, never exceeded
+(setq SHOE_ANGLE_MAX   7.0)   ;; degrees - the ceiling, never exceeded
+;;;   ^ owner, 16.08.2026 (eye-test, second pass): "zrob jeszcze mniejszy -
+;;;     mysle ze okolo 6-7 stopni, wiecej nie bedzie trzeba". Was 10.
 (setq SHOE_PILOT_D     3.0)   ;; FIX: through-pilot in carcass side
 (setq SHOE_PILOT_N     3)     ;; FIX: pilots per side, in a row
 (setq SHOE_PILOT_END  50.0)   ;; FIX: first/last pilot from box ends

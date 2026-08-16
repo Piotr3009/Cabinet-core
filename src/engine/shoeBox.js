@@ -53,7 +53,9 @@ export function shoeConst(profile) {
     runnerW: n(s.runnerW, 13),
     grooveDepth: n(s.grooveDepth, 6),
     groovePlay: n(s.groovePlay, 0.2),
-    angleMaxDeg: n(s.angleMaxDeg, 10),
+    // Owner, 16.08 (second eye-test): 10° → 7° — "około 6-7 stopni, więcej
+    // nie będzie trzeba". The LISP constant moved with it.
+    angleMaxDeg: n(s.angleMaxDeg, 7),
     pilotD: n(s.pilotD, 3),
     pilotN: n(s.pilotN, 3),
     pilotEnd: n(s.pilotEnd, 50),

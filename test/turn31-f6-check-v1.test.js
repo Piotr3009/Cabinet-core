@@ -42,9 +42,11 @@ const of = (n) => check().filter((f) => f.check === n);
 // THE SHAPE
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('eleven rules, each with the owner’s colour', () => {
-  assert.equal(CHECKS.length, 11);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+test('the rules, each with the owner’s colour', () => {
+  // 16.08.2026 (chat-fix, decision C): rule 12 joined — "Shoe box × hinge
+  // collision" — eleven became twelve.
+  assert.equal(CHECKS.length, 12);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -59,6 +61,7 @@ test('eleven rules, each with the owner’s colour', () => {
     9: 'red',
     10: 'red',
     11: 'red',
+    12: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

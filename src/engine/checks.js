@@ -61,6 +61,10 @@ export const CHECKS = Object.freeze([
   { n: 9, level: 'red', label: 'Outline faults' },
   { n: 10, level: 'red', label: 'Drill faults' },
   { n: 11, level: 'red', label: 'Carcass gap in a run' },
+  // CHAT-FIX 16.08 (owner, decision C): a FULL-WIDTH fixed shoe box behind a
+  // hinged door stands where the arm swings — "jest clash hinges i fix shelf
+  // i nie pokazuje tego problemu". Report, never fix (the house grammar).
+  { n: 12, level: 'red', label: 'Shoe box × hinge collision' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -195,6 +199,30 @@ export function runChecks({
           }
           : null,
       })));
+    }
+
+    // ── #12 a fixed shoe box in the swing of a hinge arm (16.08, C) ───────
+    {
+      const centres = result?.drillSummary?.hinge_centers || [];
+      const boxes = (result?.assemblies?.shoeBoxes || []).filter((b) => b.variant === 'F');
+      for (const b of boxes) {
+        // The box's FRONT band: from its floor to the top of the 120 front.
+        const from = Number(b.posZ) || 0;
+        // The band the swing meets: the box floor to the top of the 120 front.
+        const to = from + 120;
+        for (const y of centres) {
+          if (y >= from - 1e-6 && y <= to + 1e-6) {
+            const frontPanel = (result.panels || []).find(
+              (pp) => pp.part === 'SHOEBOX-FR' && pp.meta?.itemId === b.id,
+            );
+            out.push(finding(12, 'red', at(frontPanel?.id || null, {
+              message: `${unitNum}: fixed shoe box stands in the swing of the hinge at ${Math.round(y)} — raise the box or move the hinge`,
+              subject: { unitId, ...(frontPanel ? { panelId: frontPanel.id } : {}), editor: 'element' },
+            })));
+            break;
+          }
+        }
+      }
     }
 
     // ── #3 a tall cabinet with no FIXED shelf ─────────────────────────────

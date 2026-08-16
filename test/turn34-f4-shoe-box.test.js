@@ -102,9 +102,9 @@ test('angle law v2: the WHOLE bottom stays inside — cap = wall − board·cos 
   const board = G + C.groovePlay;
 
   // Shallow: exactly 10°, nowhere near any cap.
-  const shallow = shoeRearEdge(300, P, G);
-  assert.ok(Math.abs(shallow - 300 * Math.tan((10 * Math.PI) / 180)) < 1e-9);
-  assert.ok(Math.abs(shoeAngleDeg(300, shallow) - 10) < 1e-9, 'exactly 10°');
+  const shallow = shoeRearEdge(300, P, G); // angle law: owner's 7° since 16.08 (was 10)
+  assert.ok(Math.abs(shallow - 300 * Math.tan((7 * Math.PI) / 180)) < 1e-9);
+  assert.ok(Math.abs(shoeAngleDeg(300, shallow) - 7) < 1e-9, 'exactly 7°');
 
   // Deep: the rear edge pins BELOW the wall by the board's own height on the
   // slope — the top of the bottom finishes flush with (never above) the wall.
@@ -113,7 +113,7 @@ test('angle law v2: the WHOLE bottom stays inside — cap = wall − board·cos 
   assert.ok(deep < C.wallH, 'below the wall, not at it — the board needs its room');
   assert.ok(deep + board * Math.cos(aDeep) <= C.wallH + 1e-6,
     'underside + board thickness stays inside the box');
-  assert.ok(shoeAngleDeg(600, deep) < 10);
+  assert.ok(shoeAngleDeg(600, deep) <= 7 + 1e-9);
 
   // The cap never goes negative on any sane depth.
   assert.ok(shoeRearEdge(50, P, G) >= 0);
@@ -436,4 +436,32 @@ test('the wizard-free UI half is wired: an Add-items entry and a grey note', () 
   for (const f of ['shoe-box-variant', 'shoe-box-dividers', 'shoe-box-height']) {
     assert.ok(props.includes(`case '${f}':`), `${f} has a control`);
   }
+});
+
+
+// ─── CHECK #12 — CHAT-FIX 16.08 (owner, decision C) ─────────────────────────
+// "jest clash hinges i fix shelf i nie pokazuje tego problemu" — the rule
+// REPORTS (house grammar: never fixes): a FULL-WIDTH fixed box whose front
+// band (posZ … posZ+120) contains a hinge centre goes red; raised clear, it
+// goes silent.
+test('check #12: a fixed shoe box in the swing of a hinge arm goes red', async () => {
+  const { runChecks } = await import('../src/engine/checks.js');
+  const mk = (pos) => ({
+    ...defaultParamsFor('WARDROBE', P),
+    width: 900,
+    unit_num: '01',
+    sections: [{ width_mm: 900, items: [{ id: 'sb1', kind: 'shoe_box', variant: 'F', ...(pos != null ? { pos_mm: pos } : {}) }] }],
+  });
+  const run = (params) => runChecks({
+    entries: [{ unit: { id: 'u1', type: 'WARDROBE', params }, result: computeCabinet(params, P) }],
+    profile: P,
+  }).filter((f) => f.check === 12);
+
+  const onFloor = run(mk(null));
+  assert.equal(onFloor.length, 1, 'hinge at 100 sits inside the 0–120 band');
+  assert.equal(onFloor[0].level, 'red');
+  assert.match(onFloor[0].message, /raise the box or move the hinge/);
+
+  const raised = run(mk(150));
+  assert.equal(raised.length, 0, 'band 150–270 clears the 100 and 490 hinges');
 });

@@ -174,16 +174,16 @@ test('the angled groove is inside its board\'s own bounds, and lays out with it'
     assert.ok(x >= -1e-6 && x <= side.w + 1e-6, 'the groove\'s lower edge stays on the board');
     assert.ok(y >= -1e-6 && y <= side.h + 1e-6);
   }
-  // Its UPPER edge, however, climbs past the 80 mm wall at the rear — because
-  // KIT_SHOE_BOX.lsp draws it that way on a board its own SHOE_WALL_H high,
-  // and the engine matches the kit rather than interpreting it. Physically it
-  // reads correctly (the bottom's rear corner finishes flush with the top of
-  // the side), and it is the drawer box's own deliberate pocket overshoot in
-  // another shape. Pinned so a future turn cannot "tidy" it without saying so.
+  // ─── REWRITTEN 16.08.2026 (chat-fix, owner) ──────────────────────────────
+  // The overshoot this block used to PIN is the very thing the owner called
+  // a bug on sight: "dno ma za duży skos, wychodzi poza obręb boxa". Law v2
+  // (cap = wall − board·cos a, fixed point) plus his 7° ceiling put the WHOLE
+  // groove inside the board — the upper edge now finishes at or under the
+  // wall's own 80, and the kit's law moved first.
   const [, , upperRear] = side.cnc.pockets[0].pts;
-  assert.ok(upperRear[1] > side.h,
-    'the kit\'s groove breaks out at the top rear — named, not clipped');
-  assert.ok(upperRear[1] < side.h + 20, 'and by the bottom\'s own thickness, no more');
+  assert.ok(upperRear[1] <= side.h + 1e-6,
+    'the groove finishes inside the board — the owner\'s v2 law');
+  assert.ok(upperRear[1] > 0, 'and it exists');
   // …and the sheet places it: `sheetRect` answers real numbers for a `pts`
   // pocket (the hover target), rather than NaN.
   const layout = layoutPanels(r.panels.filter((p) => p.cnc?.outline?.length), r.drills, {

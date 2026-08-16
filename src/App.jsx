@@ -1,3 +1,4 @@
+import { LAYER_CLASS } from './lib/modalLayer.js';
 import { useEffect } from 'react';
 import ConfiguratorPage from './pages/ConfiguratorPage.jsx';
 import StartScreen from './components/StartScreen.jsx';
@@ -90,6 +91,25 @@ export default function App() {
   }, [dirty, unitCount]);
 
 
+  // ─── CHAT-FIX 16.08 (owner): THE BUILD STAMP ──────────────────────────────
+  // "nic nie weszło" vs "the bundle has it" cost an afternoon — from now on
+  // the app SAYS which build it is: a small corner badge and one console
+  // line. `__BUILD_STAMP__` is burned in by vite.config's define at build
+  // time; `dev` when running un-built.
+  const buildStamp = typeof __BUILD_STAMP__ !== 'undefined' ? __BUILD_STAMP__ : 'dev';
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.info(`Cabinet Core build: ${buildStamp}`);
+  }, [buildStamp]);
+  const buildBadge = (
+    <div
+      data-build-stamp={buildStamp}
+      className={`fixed bottom-1 right-2 ${LAYER_CLASS.chrome} text-[9px] text-ink-400/70 pointer-events-none select-none`}
+    >
+      {buildStamp}
+    </div>
+  );
+
   if (screen === 'start') {
     return (
       <>
@@ -97,8 +117,14 @@ export default function App() {
         {/* The start screen can fail to open a project, and has to be able to
             say so — the configurator's own Messages are not mounted yet. */}
         <Messages />
+        {buildBadge}
       </>
     );
   }
-  return <ConfiguratorPage />;
+  return (
+    <>
+      <ConfiguratorPage />
+      {buildBadge}
+    </>
+  );
 }

@@ -4114,6 +4114,22 @@ export function migrateCabinetProfile(profile) {
       },
     },
     front: { ...D.front, ...profile.front, types: { ...D.front.types, ...profile.front?.types } },
+    // ─── CHAT-FIX 16.08 (owner): THE LIGHTING SPEC IS THE APP'S ─────────────
+    // There was NO merge for top-level `lighting`, so a stored profile
+    // replaced it WHOLESALE — the owner switched 3000/4000/6000 K and saw
+    // nothing, because his browser's old near-white hexes outvoted the code
+    // ("nie zmienia się jak zmienię 3, 4 lub 6 k"). The LOOK is the app's:
+    // the temperature list and the strip/spot geometry come from code, same
+    // law as the finish list and `appearance.lighting`. What stays his:
+    // `defaultTemperature` (an owner-tunable, T33) and anything else a
+    // profile names that the look does not own.
+    lighting: {
+      ...D.lighting,
+      ...profile.lighting,
+      temperatures: D.lighting.temperatures.map((t) => ({ ...t })),
+      strip: { ...D.lighting.strip },
+      spot: { ...D.lighting.spot },
+    },
     carcass: { ...D.carcass, ...profile.carcass },
     doors: {
       ...D.doors,

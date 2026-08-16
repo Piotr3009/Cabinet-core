@@ -414,8 +414,16 @@ export default function LightingPanel() {
                           jak daleko od edge". A number field BESIDE the depth
                           control, on EVERY kind — the depth slider only ever
                           answered for shelves. Blank/0 is T33's own placement,
-                          so nothing moves until he types in it. */}
-                      {strip && (
+                          so nothing moves until he types in it.
+                          CHAT-FIX 16.08 (owner): the field was gated on
+                          `strip`, i.e. it VANISHED whenever the item's unit
+                          was not the selected one — "modal się zwija …
+                          klient tego nigdy nie zobaczy". The value lives on
+                          the ITEM, not on the computed strip, so the field
+                          stands for every placed line, always. Only the
+                          depth slider still needs the computed strip (its
+                          clamp does). Spots have no edge to be off. */}
+                      {it.kind !== 'spot' && (
                         <div className="flex items-center gap-2 pl-1">
                           <span className="text-[10px] text-ink-400 shrink-0">Off the front edge</span>
                           <input

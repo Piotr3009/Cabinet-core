@@ -211,8 +211,20 @@ test('the panel offers the field beside the depth control, on every kind', () =>
   assert.match(src, /data-lighting-inset=\{it\.id\}/);
   assert.match(src, /Off the front edge/);
   assert.match(src, /updateLightingItem\(it\.id, \{ inset_mm: Number\(e\.target\.value\) \}\)/);
-  // The depth slider is still shelf-only; the inset is not.
+  // ─── REWRITTEN 16.08.2026 (chat-fix, owner) ────────────────────────────
+  // The original row stood behind `{strip && (` — a guard that is TRUE only
+  // while the item's own unit is the selected one, so the field VANISHED the
+  // moment the hand clicked elsewhere. The owner, same day: "modal się zwija
+  // z ustawieniem … klient tego nigdy nie zobaczy". The value lives on the
+  // ITEM, so the field stands for every placed line, always; only spots have
+  // no edge to be off. The depth slider is still shelf-only AND
+  // selection-bound (its clamp needs the computed strip) — the inset is
+  // neither.
   const insetAt = src.indexOf('data-lighting-inset');
-  const guard = src.lastIndexOf('{strip && (', insetAt);
-  assert.ok(guard > 0 && guard < insetAt, 'the inset row is not behind the shelf guard');
+  const kindGuard = src.lastIndexOf("{it.kind !== 'spot' && (", insetAt);
+  assert.ok(kindGuard > 0 && kindGuard < insetAt,
+    'the inset row stands behind the kind guard (everything but spots)');
+  const stripGuard = src.lastIndexOf('{strip && (', insetAt);
+  assert.ok(stripGuard < kindGuard,
+    'the inset row is NOT behind the selection-bound strip guard any more');
 });

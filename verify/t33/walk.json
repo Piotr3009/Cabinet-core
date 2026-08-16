@@ -1,0 +1,342 @@
+{
+  "steps": [
+    {
+      "label": "R8 — the app is pointed at the silent showroom",
+      "ok": true,
+      "detail": "http://127.0.0.1:4174"
+    },
+    {
+      "label": "F1 — the Lighting button stands BEFORE Output in the bar",
+      "ok": true,
+      "detail": "{\"lighting\":6,\"output\":7}"
+    },
+    {
+      "label": "F1 — the panel opens BESIDE its button (rule 5), draggable shell",
+      "ok": true,
+      "detail": "{\"x\":992,\"y\":8,\"w\":360}"
+    },
+    {
+      "label": "F1 — ON/OFF writes design.lighting.enabled",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "label": "F1 — temperatures are the owner’s menu and the switching is the wardrobe’s (door/sensor)",
+      "ok": true,
+      "detail": "{\"k6\":6000,\"swWords\":[\"door\",\"sensor\"]}"
+    },
+    {
+      "label": "F1 — a real pointer clicked the shelf in the scene",
+      "ok": true,
+      "detail": "SHELF-1"
+    },
+    {
+      "label": "F1 — …and the panel offers \"Add LED under this shelf\"",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F1 — the strip appears under that shelf, its run the shelf’s own width",
+      "ok": true,
+      "detail": "{\"z\":-948,\"len\":960}"
+    },
+    {
+      "label": "F1 — the depth slider MOVES the strip front-to-back in the scene",
+      "ok": true,
+      "detail": "z -948 → -1398 mm"
+    },
+    {
+      "label": "F1 — side, bottom and top strips all stand in the scene",
+      "ok": true,
+      "detail": "{\"shelf\":1,\"side\":1,\"bottom\":1,\"top\":1}"
+    },
+    {
+      "label": "F1 — the SPOT tool appears for a wall unit",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F1 — spots under the wall unit, the profile’s count",
+      "ok": true,
+      "detail": "2 discs"
+    },
+    {
+      "label": "F1 — the BOM carries the Lighting block: strip metres, driver, switch, spots — all named specs",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F2 — the room dims to the profile level and the LEDs come UP",
+      "ok": true,
+      "detail": "{\"before\":{\"env\":0.5,\"emissive\":0.85},\"during\":{\"env\":0.075,\"emissive\":2.21}}"
+    },
+    {
+      "label": "F2 — toggling back restores the scene EXACTLY (derived, nothing stored)",
+      "ok": true,
+      "detail": "env 0.5 → 0.075 → 0.5"
+    },
+    {
+      "label": "F3 — the glass-top stack stands in its column",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F3 — the shoe shelf CUT with its stop rail, leaning the profile’s 15°",
+      "ok": true,
+      "detail": "{\"shoeRail\":true,\"tilt\":15,\"glass\":3,\"kit\":\"Trouser pull-out · 673 mm opening\",\"insert\":\"Belt/tie divider insert · 627 × 404 mm · fits nominal 600\"}"
+    },
+    {
+      "label": "F3 — the display drawer’s glass drawn and its insert ORDERED",
+      "ok": true,
+      "detail": "Belt/tie divider insert · 627 × 404 mm · fits nominal 600"
+    },
+    {
+      "label": "F3 — the trouser pull-out is a purchase line at the column’s opening",
+      "ok": true,
+      "detail": "Trouser pull-out · 673 mm opening"
+    },
+    {
+      "label": "F3 — the >2000 pull-down HINT speaks, grey, with the measured height",
+      "ok": true,
+      "detail": "{\"railMm\":2118,\"hint\":\"Rail at 2118 mm — above 2000, a pull-down rail brings it to hand. Add items ▸ Pull-down rail.\"}"
+    },
+    {
+      "label": "F7 — the door modal opened by pointer shows ONE hinge block, at the TOP",
+      "ok": true,
+      "detail": "{\"open\":true,\"hingeBlocks\":1,\"first\":\"B\",\"sections\":\"B,A\"}"
+    },
+    {
+      "label": "F4 — the INSIDE mirror shows on the OPEN door",
+      "ok": true,
+      "detail": "inside"
+    },
+    {
+      "label": "F4 — the BOM orders the glass at the front minus 20 a side",
+      "ok": true,
+      "detail": "Mirror 457 × 2107 mm · inside"
+    },
+    {
+      "label": "F7 — the pair’s handles sit MIRRORED (50/50, never 60/40), measured in the scene",
+      "ok": true,
+      "detail": "±0.0 mm about the pair centre"
+    },
+    {
+      "label": "F5 — the self-correction announces itself as a GREY note",
+      "ok": true,
+      "detail": "front 07 07-F −1.5 mm at an end panel"
+    },
+    {
+      "label": "F5 — no healable correction left standing anywhere on the floor",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "label": "F5 — the healed front’s width in the SCENE equals the engine’s trimmed width",
+      "ok": true,
+      "detail": "595 vs 595.5 mm"
+    },
+    {
+      "label": "F6 — the column box stands off the hinged side EXACTLY as the no-divider box (scene-measured)",
+      "ok": true,
+      "detail": "-71 vs -71 mm off the carcass side"
+    },
+    {
+      "label": "F6 — …and its front sits at the same setback behind the door plane",
+      "ok": true,
+      "detail": "515 vs 515 mm"
+    },
+    {
+      "label": "F6 — the DP and its two fillers are CUT for the column, and the door takes the 155°",
+      "ok": true,
+      "detail": "{\"dp\":true,\"fillers\":2,\"hinge\":155}"
+    },
+    {
+      "label": "F9 — a drawer’s BOM line ORDERS the ladder rung beside the cut depth",
+      "ok": true,
+      "detail": "440 mm · orders NL 400 · MOVENTO 760H · T · 3000400T / 3000400T"
+    },
+    {
+      "label": "F11 — an insert line names the catalogue nominal that drops in",
+      "ok": true,
+      "detail": "Belt/tie divider insert · 627 × 404 mm · fits nominal 600"
+    },
+    {
+      "label": "F10 — the app project drills its shelf pins at the owner’s 50",
+      "ok": true,
+      "detail": "{\"x\":50,\"layer\":\"SHELVES_7_5MM\"}"
+    },
+    {
+      "label": "F10 — the shelf-pin control has left the settings panel (sanctioned removal)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F8 — the Shaker slot card carries \"Frame width (all shaker fronts)\"",
+      "ok": true,
+      "detail": "{\"slot\":true,\"label\":true}"
+    },
+    {
+      "label": "F8 — a non-Shaker slot hides the field",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F8 — the field writes the PROJECT-WIDE design.fronts.shakerFrame",
+      "ok": true,
+      "detail": "90"
+    },
+    {
+      "label": "R6 — the whole walk ends with a clean console",
+      "ok": true,
+      "detail": "0 error(s)"
+    }
+  ],
+  "shots": [
+    {
+      "name": "1a-the-lighting-panel-choices-and-instructional-drawings",
+      "subject": {
+        "dom": "[data-lighting-panel]",
+        "text": "4000 K"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"text\":true}"
+    },
+    {
+      "name": "1b-add-led-under-this-shelf-the-strip-appears",
+      "subject": {
+        "marked": "ccLedStrip"
+      },
+      "present": true,
+      "detail": "{\"marked\":true}"
+    },
+    {
+      "name": "1c-the-depth-slider-slid-the-strip-toward-the-back",
+      "subject": {
+        "marked": "ccLedStrip"
+      },
+      "present": true,
+      "detail": "{\"marked\":true}"
+    },
+    {
+      "name": "1d-side-4mm-line-bottom-at-plinth-top-wash-all-placed",
+      "subject": {
+        "marked": "ccLedStrip"
+      },
+      "present": true,
+      "detail": "{\"marked\":true}"
+    },
+    {
+      "name": "1e-spotlights-under-the-kitchen-wall-unit",
+      "subject": {
+        "marked": "ccLedStrip"
+      },
+      "present": true,
+      "detail": "{\"marked\":true}"
+    },
+    {
+      "name": "1f-the-bom-lighting-block-yellow-named-specs",
+      "subject": {
+        "dom": "[data-bom-lighting]",
+        "text": "LED strip 4000 K"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"text\":true}"
+    },
+    {
+      "name": "2a-the-same-camera-demo-off",
+      "subject": {
+        "dom": "canvas"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "2b-the-same-camera-turn-on-the-light",
+      "subject": {
+        "dom": "canvas"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "3a-shoe-shelf-tilted-with-stop-rail-glass-drawer-and-trouser-placeholder",
+      "subject": {
+        "mesh": "SHOE-RAIL-1"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "3b-the-pulldown-suggestion-grey-hint-with-the-height",
+      "subject": {
+        "text": "pull-down"
+      },
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "7a-one-hinge-block-at-the-top-of-the-door-modal",
+      "subject": {
+        "dom": "[data-hinge-assign=\"1\"]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "4a-inside-mirror-on-the-open-door",
+      "subject": {
+        "marked": "ccDoorMirror"
+      },
+      "present": true,
+      "detail": "{\"marked\":true}"
+    },
+    {
+      "name": "7b-the-pair-mirrored-after-three-x10-nudges",
+      "subject": {
+        "dom": "canvas"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "5a-the-grey-note-of-the-self-healing",
+      "subject": {
+        "text": "at an end panel"
+      },
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "6a-column-drawers-behind-open-doors-dp-and-fillers-standing",
+      "subject": {
+        "mesh": "Z1-DP-L"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "10a-settings-panel-without-the-shelf-pin-control",
+      "subject": {
+        "dom": "[data-modal-name=\"design\"]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "8a-shaker-slot-with-the-frame-width-field",
+      "subject": {
+        "dom": "[data-shaker-frame-slot]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "8b-flat-slot-no-frame-field",
+      "subject": {
+        "dom": "[data-front-slot]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    }
+  ]
+}

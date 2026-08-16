@@ -81,6 +81,14 @@ export default function Modal({
   title, onClose, children, footer, width = 'w-[420px]',
   anchor = null, prefer = null, dim = null, className = '', maximised = false,
   onMaximisedChange = null, onBack = null, backLabel = '', name = '',
+  // ─── TURN 33 (CLAUDE.md F1): A TOOL PANEL WORKS THE SCENE ─────────────────
+  // `sticky` = this window is a placement TOOL, not a dialog about one thing:
+  // pointer-downs OUTSIDE it pass through to the scene (the owner's lighting
+  // flow — "click a shelf while the panel stands open" — cannot exist under a
+  // wrapper that eats the click and closes the window). Escape and the ×
+  // still close it; everything else of the shell — the anchor, the drag, the
+  // registry — is exactly the same shell.
+  sticky = false,
 }) {
   const box = useRef(null);
   // ─── TURN 31 (CLAUDE.md F1): ONE CLOSE PATH ────────────────────────────────
@@ -259,8 +267,8 @@ export default function Modal({
 
   return (
     <div
-      className={`fixed inset-0 ${LAYER_CLASS.modal} ${darken ? 'bg-black/45' : ''}`}
-      onPointerDown={close}
+      className={`fixed inset-0 ${LAYER_CLASS.modal} ${darken && !sticky ? 'bg-black/45' : ''} ${sticky ? 'pointer-events-none' : ''}`}
+      onPointerDown={sticky ? undefined : close}
     >
       <div
         ref={box}
@@ -269,9 +277,10 @@ export default function Modal({
         data-modal-shell="1"
         data-modal-name={name || undefined}
         data-modal-anchored={anchor ? '1' : '0'}
+        data-modal-sticky={sticky ? '1' : undefined}
         data-modal-side={big ? 'maximised' : (at?.side || '')}
         data-modal-maximised={big ? '1' : '0'}
-        className={`fixed cc-panel ${big ? '' : `${width} max-h-[90vh]`} flex flex-col shadow-xl ${className}`}
+        className={`fixed cc-panel pointer-events-auto ${big ? '' : `${width} max-h-[90vh]`} flex flex-col shadow-xl ${className}`}
         style={full ? {
           left: full.left, top: full.top, width: full.width, height: full.height, visibility: 'visible',
         } : {

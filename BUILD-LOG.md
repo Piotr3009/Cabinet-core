@@ -8078,3 +8078,162 @@ Nothing shrank. Parked stays parked: nesting, hood rework, sliding doors,
 L-shape joints, appliance GLBs, mirrors/accessories/lighting (T33), MOVENTO
 ladder alignment, per-family hinge fold axes, the EGGER licence e-mail
 (#44). Open questions Q1–Q3 travel with the PR.
+
+# TURN 33 — Light, the wardrobe's insides, and the day's faults
+
+## The turn in one line
+
+The owner dictated a whole lighting system and a list of faults he hit
+within minutes of testing — so the night built the light (BOM lines and
+emissive geometry, not one hole), filled the wardrobe's interior with the
+cut-or-bought accessories, and closed the day's faults at their sources:
+the healing sweep's missed paths, the column drawers' missing 30, the
+doubled hinge block, the 60/40 handles, the lost shaker field, the MOVENTO
+ladder, and the shelf pins' 50.
+
+## F1 — LIGHTING: the owner's spec, verbatim [CRITICAL]
+
+A `Lighting` button in the top bar BEFORE `Output`, opening a draggable
+panel beside itself (rule 5 — and the walk found the modal shell's
+full-screen wrapper ate scene clicks, so the shell learned a `sticky` mode:
+the panel stands while the pointer works the room). ON/OFF writes
+`design.lighting.enabled`; temperatures 3000/4000/6000 K profile-listed
+(default 4000, marked); switching by project type — wardrobe `At the door`
+/ `Sensor`, kitchen `Touchless`. Five placement kinds as items
+(`design.lighting.items[]`): SHELF by CLICKING A SHELF IN THE SCENE
+("Add LED under this shelf" + the depth slider, front-to-back), SIDE as
+the 4 mm top-to-bottom line, BOTTOM at the plinth, TOP washing up, SPOT
+discs under kitchen wall units at the profile count. Each kind carries its
+instructional SVG in the panel (the CornerArt grammar). 3D is emissive
+strips/discs tinted by temperature — engine/ledStrips.js computes
+unit-frame boxes; LedStrips.jsx renders them. The BOM's Lighting block:
+strip metres per temperature, driver, switch/sensor, spots — every line a
+YELLOW named spec (the register knows no lighting articles — rule 3).
+LIGHTING DRILLS NOTHING.
+
+## F2 — "Turn on the light": the client demo [CRITICAL]
+
+One toggle in the Lighting panel AND the View menu (session-only uiStore
+flag, never stored): environment intensity drops to the profile's demo dim
+(0.5 → 0.075 measured) while every strip's emissive comes up by the
+profile boost (0.85 → 2.21). Toggling back restores the scene EXACTLY —
+derived at render, nothing written. Proof pair off/on on the same camera.
+
+## F3 — The wardrobe's interior accessories [HIGH]
+
+The doctrine held per item: the SHOE SHELF is CUT — a shelf variant leaning
+the profile's 15° with its stop rail cut to the shelf's own width, riding
+the STANDARD pin rows (the walk and the suite prove drills identical to an
+adjustable shelf — zero new holes). Shoe / belt-tie / belt-tie-glass are
+DRAWER VARIANTS: the box cuts unchanged, the insert is a BOM named spec,
+the glass pane a `Glass W × D` line drawn in 3D. Trouser pull-out, tie
+rack and pull-down rail are BOUGHT mechanisms — named specs ordered to the
+column's own opening, labelled placeholder bodies until the owner's GLBs
+arrive, one per kind per column, ZERO holes. And the owner's rule: a rail
+hung above 2000 mm gets a grey SUGGESTION of the pull-down
+(`railHeightsAboveFloor` + the profile threshold), never a block.
+
+## F4 — Mirrors on doors [HIGH]
+
+Per-door `none / inside / outside` in the DoorModal; a reflective plane on
+the chosen face; one BOM line per mirrored door at the front minus the
+profile's 20 mm a side (marked). Mirrors are BONDED, not drilled — said in
+the comment. The inside mirror proven on the OPEN leaf.
+
+## F5 — Clearance self-healing: the sweep it missed [HIGH]
+
+The owner still saw 1.5 where a panel demands 3.0 — the matrix was law but
+not on every path. The sweep walked every creator and re-shaper to
+`healFrontGaps`: loadProject (yesterday's projects heal on open, each
+correction speaking), drawer-front add/remove, drawer-height set/reset,
+partition add/move/centre/remove, element overrides — beside the
+refreshAutoParts choke point T32 already held. The test matrix pins the
+paths; the walk proves the grey note live and measures the healed front in
+the scene at the engine's own trimmed width.
+
+## F6 — Drawers in a column BEHIND DOORS: the missing 30 [HIGH]
+
+One law, two readers, zero divergence: the column path now reads the SAME
+`dpSideLaw` source the no-divider wardrobe always carried — DP + fillers
+cut for the column (`Z{k}-DP`/fillers emitted), the box standing off the
+hinged side and back from the door plane exactly as the no-divider box
+(−71 vs −71, 515 vs 515, scene-measured), and the door taking the 155°.
+Found dead consumers on the way: `derived.drawers`/`column_drawers` were
+read by the hinge automat and DoorModal but never published — published.
+
+## F7 — DoorModal: one hinge block, and handles from the EDGE [HIGH]
+
+The upper hinge block DELETED (the sanctioned removal), the working block
+moved to the TOP (sections reordered, ElementProperties learns `omit`).
+Handle offsets are now EDGE-RELATIVE and MIRRORED: "30" means 30 from the
+left edge on the left leaf and 30 from the right edge on the right leaf —
+`resolveHandle` flips the x offset by hinge hand (dated migration
+comment), consumer-swept through the drawing, the 3D and the CNC export.
+The walk nudges one leaf three ×10 and measures the pair mirrored
+498.5/498.5 about its centre — ±0.0 mm.
+
+## F8 — The shaker frame width returns to the wizard [HIGH]
+
+The chat rebuild lost the field; it returns in the FRONT SLOT CARD,
+visible only when that slot's style is Shaker, labelled
+`Frame width (all shaker fronts)` — writing the PROJECT-WIDE
+`design.fronts.shakerFrame`, placement marked `[OWNER — placement to
+confirm]`. Proven shown on Shaker, hidden on Flat, stored 90.
+
+## F9 — The MOVENTO ladder: the owner's list, at last [HIGH]
+
+300 · 350 · 400 · 450 · 500 · 550 · 600 — one profile line, lower bound
+marked (`od 00` read as 300, Q1). The runner snap snaps to THIS ladder,
+the BOM orders the snapped rung beside the cut depth ("440 mm · orders NL
+400"), off-ladder lengths print yellow, and `runnerModelFits` plus every
+other reader of the old catalogue list was walked (turn18 pins moved to
+the ladder law). The long-parked "wyrównanie drabinki" closes.
+
+## F10 — Shelf pins: default 50, the control goes [MEDIUM]
+
+The profile's answer is 50, dated, naming the owner — with the honest
+divergence note: the app's DXF drills 50 while the workshop's own LISP
+macros still drill 70; the BARE ENGINE stays at 70 with the fixtures. The
+SettingsPanel control REMOVED (the second sanctioned removal); the design
+field lives on for saved projects.
+
+## F11 — Ready-made drawer INSERTS, catalogued (stretch) [LOW]
+
+The small catalogue shipped: profile-listed rows (label + nominal widths,
+specs and never articles), `insertFor` answering snap-below — the BOM
+insert line now names the largest nominal that drops into the box
+("fits nominal 600" beside the box's own 627 × 404). No row, no invention.
+
+## The export
+
+No SQL this turn (rule 9 held). Owner-tunable defaults written, each ONE
+profile line dated 15.08.2026: LED default temperature 4000 K (marked) ·
+demo dim 0.15 / emissive boost 2.6 · shoe shelf tilt 15° with its stop
+rail seed · mirror margin 20 mm/side (marked) · pull-down threshold
+2000 mm · MOVENTO ladder 300–600/50 (lower bound marked) · shelf-pin
+answer 50 (dated, LISP-70 divergence note) · the insert catalogue seed.
+
+## The walk
+
+scripts/e2e-turn33.mjs — 38 checks, 18 proofs, 0 empty, console clean;
+real pointer input under the R1 guard, live-scene measures per unit. The
+shelf clicked in the scene and its strip measured moving 450 mm on the
+slider; the demo's numbers off the running renderer; the healed front at
+595.5 in the scene with its grey note in the frame; the column box at the
+no-divider box's own numbers; the mirrored handles at ±0.0. The walk also
+taught two things worth keeping: the F5/F6 scenes are PINNED to the far
+wall (a crowded floor sits a unit where the proof needs a panel), and the
+modal shell's `sticky` mode was a product fix the walk itself forced —
+the Lighting panel must stand while the pointer works the room.
+Proofs in verify/t33/.
+
+## What did not shrink, and what is left
+
+Nothing shrank. Parked stays parked: L-shape, props GLBs, JoineryCore
+sync, appliance GLBs (slots wait on the owner's files), sliding doors,
+nesting, hood rework, the wizard's open [OWNER] sheen/spray questions,
+library re-grouping, EGGER licence e-mail (#44). Known small notes ride
+the PR: the glass pane does not yet slide with an opened box; wardrobe-kit
+removal has no dedicated UI beyond the generic item paths; openings
+add/update/remove do not re-heal (minor, mapped). Q1–Q4 travel with the
+push.

@@ -160,6 +160,9 @@ export default function LightingPanel() {
       onClose={closeModal}
       anchor={args?.anchor || null}
       width="w-[360px]"
+      // The owner's flow: the panel stands open while the hand works the
+      // scene — a shelf is CLICKED with this window up (Modal's own note).
+      sticky
     >
       <div data-lighting-panel="1" className="space-y-3">
         {/* ─── ON / OFF for the project ──────────────────────────────────── */}

@@ -1,0 +1,77 @@
+{
+  "f1_strip_before_slide": {
+    "z": -948,
+    "len": 960
+  },
+  "f1_strip_after_slide": {
+    "z": -1398
+  },
+  "f1_kinds": {
+    "shelf": 1,
+    "side": 1,
+    "bottom": 1,
+    "top": 1
+  },
+  "f2": {
+    "before": {
+      "env": 0.5,
+      "emissive": 0.85
+    },
+    "during": {
+      "env": 0.075,
+      "emissive": 2.21
+    }
+  },
+  "f3": {
+    "shoeRail": true,
+    "tilt": 15,
+    "glass": 3,
+    "kit": "Trouser pull-out · 673 mm opening",
+    "insert": "Belt/tie divider insert · 627 × 404 mm · fits nominal 600"
+  },
+  "f3_rail": {
+    "hint": "Rail at 2118 mm — above 2000, a pull-down rail brings it to hand. Add items ▸ Pull-down rail.",
+    "railMm": 2118
+  },
+  "f4": {
+    "bomLine": "Mirror 457 × 2107 mm · inside"
+  },
+  "f7_handles": {
+    "pair": [
+      -2058.5,
+      -1061.5
+    ],
+    "left": 498.5,
+    "right": 498.5
+  },
+  "f5": {
+    "engine": 595.5,
+    "scene": 595
+  },
+  "f6": {
+    "standoff": {
+      "plain": -71,
+      "column": -71
+    },
+    "boxFront": {
+      "plain": 515,
+      "column": 515
+    }
+  },
+  "f6_cut": {
+    "dp": true,
+    "fillers": 2,
+    "hinge": 155
+  },
+  "f9_f10_f11": {
+    "pin": {
+      "x": 50,
+      "layer": "SHELVES_7_5MM"
+    },
+    "runner": "440 mm · orders NL 400 · MOVENTO 760H · T · 3000400T / 3000400T",
+    "insert": "Belt/tie divider insert · 627 × 404 mm · fits nominal 600"
+  },
+  "f8": {
+    "stored": 90
+  }
+}

@@ -119,7 +119,8 @@ test('a shoe drawer in a COLUMN orders its insert to the column’s own box', ()
   const result = store().unitResult(id);
   const insert = result.hardware.find((h) => h.role === 'drawer_insert');
   assert.ok(insert, 'the column drawer orders its insert');
-  assert.match(insert.spec_label, /^Shoe drawer insert · \d+ × \d+ mm$/);
+  // F11 may append the catalogue's `· fits nominal NNN` — the spec core holds.
+  assert.match(insert.spec_label, /^Shoe drawer insert · \d+ × \d+ mm/);
   assert.ok(result.assemblies.columnDrawers.length >= 1, 'the stack stands in its column');
 });
 

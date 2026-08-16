@@ -44,6 +44,9 @@ import {
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
 import { resolveRunnerVariant, runnerPairSpec, syncRodFor } from './runners.js';
+// Turn 33 (CLAUDE.md F11): the insert catalogue — specs with nominals, never
+// articles; the BOM line names the nominal that drops into the box.
+import { insertFor } from './drawerInserts.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import { impliedLegHeight, maskDepthExtra, standsOnLegHeight } from './runs.js';
@@ -4886,9 +4889,18 @@ export function computeCabinet(params, profileOverride) {
     };
     const orderInsert = (variant, wInt, dInt) => {
       if (!variant) return;
+      // ─── TURN 33 (CLAUDE.md F11): THE CATALOGUE NAMES THE NOMINAL ─────────
+      // Where the profile's insert catalogue holds a nominal that drops into
+      // this box, the line says which one to shop for — snap-below, the
+      // runner ladder's own grammar. No row, no fit → the plain spec stands.
+      const fit = insertFor(variant, wInt, P);
       hw('drawer_insert', insertWords[variant], 1, 'pcs',
-        { width_mm: roundTo(wInt, 0), depth_mm: roundTo(dInt, 0), variant },
-        `${insertWords[variant]} · ${roundTo(wInt, 0)} × ${roundTo(dInt, 0)} mm`);
+        {
+          width_mm: roundTo(wInt, 0), depth_mm: roundTo(dInt, 0), variant,
+          ...(fit ? { nominal_mm: fit.nominal } : {}),
+        },
+        `${insertWords[variant]} · ${roundTo(wInt, 0)} × ${roundTo(dInt, 0)} mm`
+        + (fit ? ` · fits nominal ${fit.nominal}` : ''));
       if (variant === 'belt_tie_glass') {
         hw('drawer_glass', 'Glass — display drawer top', 1, 'pcs',
           { width_mm: roundTo(wInt, 0), depth_mm: roundTo(dInt, 0) },

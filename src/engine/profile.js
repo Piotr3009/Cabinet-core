@@ -3513,6 +3513,21 @@ export const DEFAULT_CABINET_PROFILE = {
     sheet: { width: 2800, height: 2070 },
   },
 
+  // ─── TURN 33 (CLAUDE.md F11): THE INSERT CATALOGUE — specs, never articles ─
+  //
+  // Label + NOMINAL WIDTHS per insert kind, profile-listed. The BOM's insert
+  // line names the largest nominal not above the box's interior (the runner
+  // ladder's own snap-below grammar); a box no nominal fits keeps the plain
+  // named spec. SEEDED by Claude 15.08.2026 with a plain 50-step width run —
+  // the owner fills the real trade list; every line stays YELLOW until the
+  // register (F6, T32) knows products. No number here reaches a hole or a cut.
+  drawerInserts: {
+    catalogue: [
+      { id: 'shoe', label: 'Shoe drawer insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
+      { id: 'belt_tie', label: 'Belt/tie divider insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
+    ],
+  },
+
   // ─── TURN 33 (CLAUDE.md F1/F2): THE LED SYSTEM'S OWN NUMBERS ──────────────
   //
   // LIGHTING DRILLS NOTHING (rule 3): everything in this block is a picture in

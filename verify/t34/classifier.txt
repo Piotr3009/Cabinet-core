@@ -1,0 +1,106 @@
+WARDROBE  CHANGED  374483e22886601208bdddd1e868b8860c2b182c447fe8c8688b5d5ff3e46991 → b65e002e59cd5309f5c182fe73d03a999fb3d5bda3b6248b561b89768fdf18e7
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].x1  70 → 60
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].x2  527 → 537
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].y1  70 → 60
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].y2  2077 → 2087
+    SHAKER_FRAME_60  $.panels[5].meta.shaker.frame  70 → 60
+BUD  CHANGED  28ea495ab4fc37a2329e9a1566dbed8f975b216cab223f340069a224d5406cc4 → d0e3e8ff7db70371c0bdff7c2ef5a42429b20d492791dbc63df7626b1520d327
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].x1  70 → 60
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].x2  527 → 537
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].y1  70 → 60
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].y2  697 → 707
+    SHAKER_FRAME_60  $.panels[5].meta.shaker.frame  70 → 60
+WUD  CHANGED  458924a8cdc801c07ffb799767dd1fdd0d148f472a8ef9d1d27a57351af8b758 → 161f6cc67990a92f45273b86303fe9f1b0e7b666b4890eb8d84b14342edd573d
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].x1  70 → 60
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].x2  527 → 537
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].y1  70 → 60
+    SHAKER_FRAME_60  $.panels[5].cnc.pockets[0].y2  647 → 657
+    SHAKER_FRAME_60  $.panels[5].meta.shaker.frame  70 → 60
+BUDR  CHANGED  5a8af0d3d46b871800976abd2b00d406213e9d8570bc3fe64e550e570cd5c135 → f12e995d3782097a478eab73b6577638710d79d4aa709ad174ca6f7db743f8bc
+    RUNNER_PAIR_LINE $.hardware[0].spec.asked_nl  490 → 500
+    RUNNER_PAIR_LINE $.hardware[0].spec.nl  450 → 500
+    RUNNER_PAIR_LINE $.hardware[0].spec_label  "490 mm · orders NL 450 · MOVENTO 760H · T" → "490 mm · orders NL 500 · MOVENTO 760H · T"
+    SHAKER_FRAME_60  $.panels[20].cnc.pockets[0].x1  70 → 60
+    SHAKER_FRAME_60  $.panels[20].cnc.pockets[0].x2  527 → 537
+    SHAKER_FRAME_60  $.panels[20].cnc.pockets[0].y1  70 → 60
+    SHAKER_FRAME_60  $.panels[20].cnc.pockets[0].y2  268 → 278
+    SHAKER_FRAME_60  $.panels[20].meta.shaker.frame  70 → 60
+    SHAKER_FRAME_60  $.panels[21].cnc.pockets[0].x1  70 → 60
+    SHAKER_FRAME_60  $.panels[21].cnc.pockets[0].x2  527 → 537
+    SHAKER_FRAME_60  $.panels[21].cnc.pockets[0].y1  70 → 60
+    SHAKER_FRAME_60  $.panels[21].cnc.pockets[0].y2  184 → 194
+    SHAKER_FRAME_60  $.panels[21].meta.shaker.frame  70 → 60
+    SHAKER_FRAME_60  $.warnings[0].message  "01-F3: A 70 mm shaker frame needs a front at least 200 mm across (2 × 70 + 60 mm of panel); this one is 169 mm high. It is cut plain." → "01-F3: A 60 mm shaker frame needs a front at least 180 mm across (2 × 60 + 60 mm of panel); this one is 169 mm high. It is cut plain."
+BUDR4  CHANGED  d9f6982967d073febf6344e45cf6e4b43933b37adf78775f1ca24de294b134ba → e7e1a80b497058369550fee11135ab77171ebf733fa0e6b916f8937a2d269c80
+    RUNNER_PAIR_LINE $.hardware[0].spec.asked_nl  490 → 500
+    RUNNER_PAIR_LINE $.hardware[0].spec.nl  450 → 500
+    RUNNER_PAIR_LINE $.hardware[0].spec_label  "490 mm · orders NL 450 · MOVENTO 760H · T" → "490 mm · orders NL 500 · MOVENTO 760H · T"
+    SHAKER_FRAME_60  $.panels[25].cnc.pockets.length  0 → 1
+    SHAKER_FRAME_60  $.panels[25].cnc.pockets[0].cutout  undefined → true
+    SHAKER_FRAME_60  $.panels[25].cnc.pockets[0].depth  undefined → 6
+    SHAKER_FRAME_60  $.panels[25].cnc.pockets[0].layer  undefined → "SHAKER_PANEL_POCKET"
+    SHAKER_FRAME_60  $.panels[25].cnc.pockets[0].x1  undefined → 60
+    SHAKER_FRAME_60  $.panels[25].cnc.pockets[0].x2  undefined → 537
+    SHAKER_FRAME_60  $.panels[25].cnc.pockets[0].y1  undefined → 60
+    SHAKER_FRAME_60  $.panels[25].cnc.pockets[0].y2  undefined → 130
+    SHAKER_FRAME_60  $.panels[25].meta.shaker.depth  undefined → 6
+    SHAKER_FRAME_60  $.panels[25].meta.shaker.frame  undefined → 60
+    SHAKER_FRAME_60  $.panels[25].meta.shaker.panelFloor  undefined → 19
+    SHAKER_FRAME_60  $.panels[26].cnc.pockets.length  0 → 1
+    SHAKER_FRAME_60  $.panels[26].cnc.pockets[0].cutout  undefined → true
+    SHAKER_FRAME_60  $.panels[26].cnc.pockets[0].depth  undefined → 6
+    SHAKER_FRAME_60  $.panels[26].cnc.pockets[0].layer  undefined → "SHAKER_PANEL_POCKET"
+    SHAKER_FRAME_60  $.panels[26].cnc.pockets[0].x1  undefined → 60
+    SHAKER_FRAME_60  $.panels[26].cnc.pockets[0].x2  undefined → 537
+    SHAKER_FRAME_60  $.panels[26].cnc.pockets[0].y1  undefined → 60
+    SHAKER_FRAME_60  $.panels[26].cnc.pockets[0].y2  undefined → 130
+    SHAKER_FRAME_60  $.panels[26].meta.shaker.depth  undefined → 6
+    SHAKER_FRAME_60  $.panels[26].meta.shaker.frame  undefined → 60
+    SHAKER_FRAME_60  $.panels[26].meta.shaker.panelFloor  undefined → 19
+    SHAKER_FRAME_60  $.panels[27].cnc.pockets.length  0 → 1
+    SHAKER_FRAME_60  $.panels[27].cnc.pockets[0].cutout  undefined → true
+    SHAKER_FRAME_60  $.panels[27].cnc.pockets[0].depth  undefined → 6
+    SHAKER_FRAME_60  $.panels[27].cnc.pockets[0].layer  undefined → "SHAKER_PANEL_POCKET"
+    SHAKER_FRAME_60  $.panels[27].cnc.pockets[0].x1  undefined → 60
+    SHAKER_FRAME_60  $.panels[27].cnc.pockets[0].x2  undefined → 537
+    SHAKER_FRAME_60  $.panels[27].cnc.pockets[0].y1  undefined → 60
+    SHAKER_FRAME_60  $.panels[27].cnc.pockets[0].y2  undefined → 130
+    SHAKER_FRAME_60  $.panels[27].meta.shaker.depth  undefined → 6
+    SHAKER_FRAME_60  $.panels[27].meta.shaker.frame  undefined → 60
+    SHAKER_FRAME_60  $.panels[27].meta.shaker.panelFloor  undefined → 19
+    SHAKER_FRAME_60  $.panels[28].cnc.pockets.length  0 → 1
+    SHAKER_FRAME_60  $.panels[28].cnc.pockets[0].cutout  undefined → true
+    SHAKER_FRAME_60  $.panels[28].cnc.pockets[0].depth  undefined → 6
+    SHAKER_FRAME_60  $.panels[28].cnc.pockets[0].layer  undefined → "SHAKER_PANEL_POCKET"
+    SHAKER_FRAME_60  $.panels[28].cnc.pockets[0].x1  undefined → 60
+    SHAKER_FRAME_60  $.panels[28].cnc.pockets[0].x2  undefined → 537
+    SHAKER_FRAME_60  $.panels[28].cnc.pockets[0].y1  undefined → 60
+    SHAKER_FRAME_60  $.panels[28].cnc.pockets[0].y2  undefined → 128
+    SHAKER_FRAME_60  $.panels[28].meta.shaker.depth  undefined → 6
+    SHAKER_FRAME_60  $.panels[28].meta.shaker.frame  undefined → 60
+    SHAKER_FRAME_60  $.panels[28].meta.shaker.panelFloor  undefined → 19
+    SHAKER_FRAME_60  $.warnings.length  4 → 0
+    SHAKER_FRAME_60  $.warnings[0].code  "SHAKER_FRAME_TOO_WIDE" → undefined
+    SHAKER_FRAME_60  $.warnings[0].message  "01-F1: A 70 mm shaker frame needs a front at least 200 mm across (2 × 70 + 60 mm of panel); this one is 190 mm high. It is cut plain." → undefined
+    SHAKER_FRAME_60  $.warnings[0].panel  "01-F1" → undefined
+    SHAKER_FRAME_60  $.warnings[1].code  "SHAKER_FRAME_TOO_WIDE" → undefined
+    SHAKER_FRAME_60  $.warnings[1].message  "01-F2: A 70 mm shaker frame needs a front at least 200 mm across (2 × 70 + 60 mm of panel); this one is 190 mm high. It is cut plain." → undefined
+    SHAKER_FRAME_60  $.warnings[1].panel  "01-F2" → undefined
+    SHAKER_FRAME_60  $.warnings[2].code  "SHAKER_FRAME_TOO_WIDE" → undefined
+    SHAKER_FRAME_60  $.warnings[2].message  "01-F3: A 70 mm shaker frame needs a front at least 200 mm across (2 × 70 + 60 mm of panel); this one is 190 mm high. It is cut plain." → undefined
+    SHAKER_FRAME_60  $.warnings[2].panel  "01-F3" → undefined
+    SHAKER_FRAME_60  $.warnings[3].code  "SHAKER_FRAME_TOO_WIDE" → undefined
+    SHAKER_FRAME_60  $.warnings[3].message  "01-F4: A 70 mm shaker frame needs a front at least 200 mm across (2 × 70 + 60 mm of panel); this one is 188 mm high. It is cut plain." → undefined
+    SHAKER_FRAME_60  $.warnings[3].panel  "01-F4" → undefined
+PANTRY  CHANGED  3e806eb9d6c0178fc0f4afbe24aab20356c412867ccf43438fbc7fd98ea6718c → c7dd9b679f13c7bc33576a5acc3e94081556c5d30fd41d67f1264b2912839565
+    RUNNER_PAIR_LINE $.hardware[1].spec.asked_nl  440 → 450
+    RUNNER_PAIR_LINE $.hardware[1].spec.nl  400 → 450
+    RUNNER_PAIR_LINE $.hardware[1].spec_label  "440 mm · orders NL 400 · MOVENTO 760H · T" → "440 mm · orders NL 450 · MOVENTO 760H · T"
+    SHAKER_FRAME_60  $.panels[24].cnc.pockets[0].x1  70 → 60
+    SHAKER_FRAME_60  $.panels[24].cnc.pockets[0].x2  527 → 537
+    SHAKER_FRAME_60  $.panels[24].cnc.pockets[0].y1  70 → 60
+    SHAKER_FRAME_60  $.panels[24].cnc.pockets[0].y2  2027 → 2037
+    SHAKER_FRAME_60  $.panels[24].meta.shaker.frame  70 → 60
+
+NAMED (F3 runner-pair line + F7 shaker frame): 97
+UNNAMED: 0

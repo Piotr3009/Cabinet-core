@@ -8237,3 +8237,149 @@ the PR: the glass pane does not yet slide with an opened box; wardrobe-kit
 removal has no dedicated UI beyond the generic item paths; openings
 add/update/remove do not re-heal (minor, mapped). Q1–Q4 travel with the
 push.
+
+# TURN 34 — THE BOARD BEHIND EVERY FRONT, THE SHOE BOX, AND THE DAY'S VERDICTS
+
+Date: 16.08.2026 (night run). Nine features, nine commits, F1 → F9 in the
+spec's own order of work. Suite 3017/3017; build clean; the walk 31 checks,
+10 proofs, 0 empty frames, console clean. Both verify gates passed at the
+head: `healingPlan` and `runnerLadder` were on main, and
+`reference/lisp/KIT_SHOE_BOX.lsp` arrived with the spec carrying its marker.
+
+## The audit instrument, first
+
+Iron rule 2 writes the permitted deltas down in advance, so the run needed a
+machine that could hold it to them. `scripts/t34-classify.mjs` takes a sha256
+of the BARE `computeCabinet()` answer for six standard configs — three with no
+drawers and no appliance, three with drawers at two box depths — and where two
+runs disagree it walks every differing leaf into exactly one bucket. UNNAMED
+> 0 exits 1. It found the one thing rule 2 had not anticipated (F7, below).
+
+## F1 — the board behind EVERY look, and a gate that holds [CRITICAL]
+
+"Karygodne, niewybaczalne." `slotPicker()` grew the Stock board select inside
+the DECOR branch, so Spraying — the default front source — and the carcass
+veneer path both returned a bare picker: turn 16 F1.1's whole point,
+reintroduced by the 15.08 rebuild. The select is ONE shared helper now,
+rendered on all three paths for both kinds. And the gate holds: a slot is
+assigned only when `material_id` is set. A colour is what a front looks like;
+the board is what it is cut from.
+
+## F3 — the nominal is the BOX + 10 [HIGH]
+
+"Powinien być skrzynka +10 mm." T33 fed the ladder the box depth, so every
+drawer in the app ordered one rung short of the runner that goes in. The
+ladder is 250–700 (his "od 250" … "do 700" answers T33's marked Q1), the
+adder is ONE profile line, and `runnerAskFor` is the ONE place it is applied.
+`length_mm` stays the box; `asked_nl` carries the +10.
+
+## F6 — the appliance exception [MEDIUM]
+
+"Raczej tylko przy appliance'ach." The floor became kind-dependent in exactly
+one kind: at an appliance a trim may go NEGATIVE — an extension — capped at
+closing the stock clearance to 0. The clamp lived in THREE places and all
+three had to move, or the plan announced a correction that never happened.
+The trim still runs BEFORE the drilling, so a cup 21.5 from the hinge edge
+stays 21.5 when that edge extends (597 → 600, cups 575.5 → 578.5).
+
+## F4 — the shoe box: one construction, two mounting laws [HIGH]
+
+The retired 15° shelf, replaced. `reference/lisp/KIT_SHOE_BOX.lsp` is the
+record and the ENGINE MATCHES IT: the tests parse constants block A off disk
+and hold `engine/shoeBox.js` against it, so a kit whose numbers move fails the
+suite. Walls 80 from the carcass board, groove 6 in all four walls at bottom
++ 0.2, `rear = min(80, run·tan10°)`, bottom cut inner+12 × slope+12 with the
+GRAIN ACROSS, divider 0 or 1 at 50 across the width, a 120 front on both
+variants from two different families. FIX: three ⌀3 through-pilots a side from
+outside. DRAWER: W − 26 − 30 per hinged side off the ONE `dpSideLaw`, the
+runner face at frontT + 3, first fix 37, rear at the sheet's own column, and a
+YELLOW named spec because the register knows no article. Two new DXF layers,
+both the kit's own, both with a machining policy and a row in the record
+document; the T25 duplicate-edge guard runs over both variants on every probe
+scenario. The T33 shelf is untouched to the character — the box's parts are
+prefixed `SHOEBOX-` precisely so `SHOE-RAIL` stays unselectable — and the
+shelf's modal gains one grey note saying what replaced it.
+
+**The divergence, named:** the kit's own `drawSHOE_SIDE` draws the groove's
+upper edge past the 80 mm wall at the rear. The engine emits the kit's four
+points verbatim rather than clipping — clipping would be interpreting — and a
+test pins the overshoot so no future turn tidies it silently.
+
+## F2 — LED: seen, and placed off the edge [HIGH]
+
+"Nic nie widać." 0.85 × 2.6 = 2.21 was a pale strip under ACES Filmic. The
+numbers moved to `profile.appearance.lighting.*` and rose: 3.4, boost 3.2
+(10.88 on), plus a spot multiplier so a small disc reads like the strips
+beside it. The T33 block is still the FALLBACK, so a profile saved before this
+turn keeps its own answer. And `inset_mm` per strip, on EVERY kind — the depth
+slider only ever answered for shelves. Absent or 0 reproduces T33's geometry
+to the number on all five kinds; drilling stays zero.
+
+## F8 — Delete: the key, the button, one per press [HIGH]
+
+T12 already had a Delete key and it read `meta.itemId`, which is why a DRAWER
+could never be deleted: a drawer front carries its index, not its item. One
+store action over one pure decision now, behind both doors. The selection
+falls to the drawer BELOW, so three presses clear a stack of three without the
+pointer moving. The guard is one question in one place: inert in an input, a
+textarea, a select, anything contenteditable, inert when the focus is in a
+field even if the event came from elsewhere, and inert under a modifier —
+⌘⌫ is somebody else's gesture. Every removal runs the T33-F5 heal sweep.
+
+## F5 — one "3" at a touch, the truth apart [MEDIUM]
+
+A SCENE-level dimension, because a cabinet cannot see the one beside it. The
+difference between one figure and three is a FACT about the carcasses and it
+is read off the matrix: `carcassGap = leafGap − ownLeft − ownRight`, on
+`carcassGaps`' own 0.5 tolerance so the pair the Check calls touching and the
+pair that merges are the same pair. `frontDimensionRows` grew an optional
+suppression set; an absent or empty one is turn 25's answer to the byte.
+
+## F9 — "Front dimensions", the twin toggle [LOW]
+
+Beside its twin, the same button in every respect, on the flag that already
+existed and already persisted. One layer, one switch: F5's merged figure is
+concatenated into the same row list inside the same guard.
+
+## F7 — the default becomes 60, old projects keep 70 [LOW]
+
+"Zmienimy default z 70 na 60, ale nie teraz" — the turn is now. New jobs frame
+at 60; a job with shaker anywhere that has never stated a width is PINNED to
+70 on the way in, and a blank scene is not a saved job.
+
+**The divergence, named:** rule 2 lists F3, F4 and F6 as the turn's engine
+changes, but `frameWidth` is read by the BARE engine and `front.defaultType`
+is `S` — so this [LOW] "project default" moves all six standard configs. Rule
+2's own remedy is to name a delta, so the classifier gained a fourth bucket
+bounded to shaker geometry on FRONT panels and the `SHAKER_FRAME_TOO_WIDE`
+refusal. The structural half is worth reading twice: a front between 180 and
+200 mm across was refused at 70 and is CUT at 60 — it gains the recess and
+loses its refusal, which is the owner's own gain.
+
+## The export
+
+No SQL (rule 9 held). No new dependency. Owner-tunable numbers written, each
+dated 16.08.2026: the MOVENTO ladder 250–700 and its +10 adder · the whole
+shoe-box constants block and the runner drill map, straight out of the kit ·
+the side-shoe hardware family (article unknown, yellow) · LED emissive 3.4,
+boost 3.2, spot ×1.35 · shaker frame 60 with the legacy 70 beside it.
+
+## The walk
+
+31 checks, 10 proofs, 0 empty, console clean. Two staging lessons it taught
+and which are now in the harness: every phase gets its OWN floor, and
+`frameFacing()` replaces `frameUnits()` for anything photographed — offsetting
+along the world axes puts the lens THROUGH the wall a cabinet stands against,
+and the frame comes back showing plaster while passing a mesh-presence check.
+Proofs in `verify/t34/`.
+
+## What did not shrink, and what is left
+
+Nothing shrank. Parked stays parked: `depthSteps`, the golden fixtures,
+L-shape and corner reach, props GLB, JoineryCore sync, AGD GLB, sliding doors,
+nesting, hood, the Kitchen top-level library, sheen per-slot, the 15 mm hinge
+arm, the internal metal default. EGGER stays BLOCKER #44. Known notes ride the
+PR: the shoe box has no drag (its height field is where it stands, because
+that is the number the carcass side is drilled for), and the merged
+meeting-line figure is carried by the LEFT cabinet of a pair rather than by a
+room-level dimension layer.

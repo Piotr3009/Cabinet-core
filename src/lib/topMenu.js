@@ -15,7 +15,12 @@
 // literal inside a header that has to be mounted to exist.
 
 /** The order Piotr asked for, top to bottom of the bar, left to right. */
-export const MENU_ORDER = ['File', 'View', 'Library', 'Settings', 'Database', 'Spraying', 'Output'];
+// ─── TURN 33 (CLAUDE.md F1): LIGHTING, BEFORE OUTPUT ────────────────────────
+// The owner's placement, in as many words: "a Lighting button in the top menu,
+// placed BEFORE Output." It is a BUTTON and not a dropdown — it opens the
+// Lighting panel beside itself — which MenuBar's data grammar carries as a
+// top-level entry with `run` and no `items`.
+export const MENU_ORDER = ['File', 'View', 'Library', 'Settings', 'Database', 'Spraying', 'Lighting', 'Output'];
 
 /**
  * Put the menus in the owner's order.

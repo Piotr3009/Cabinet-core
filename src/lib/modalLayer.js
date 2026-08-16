@@ -122,6 +122,9 @@ export const MODAL_KINDS = Object.freeze({
   'unit-size': { about: 'object', label: 'Cabinet size' },
   // Turn 31 F4.15: the front-gap repair, offering its two numbered options.
   'front-gap': { about: 'object', label: 'Front gap' },
+  // Turn 33 F1: the LED system — a project window opened beside its own
+  // menu button, working the SCENE's selection for placements.
+  lighting: { about: 'project', label: 'Lighting' },
 });
 
 /** Every modal name the app knows, as a list. */

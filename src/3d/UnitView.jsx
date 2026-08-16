@@ -25,6 +25,7 @@ import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
 import DrillRings from './DrillRings.jsx';
+import LedStrips from './LedStrips.jsx';
 
 // A stable empty list: a fresh [] would rebuild every panel solid on every
 // render.
@@ -411,7 +412,7 @@ export function MovingPanel({
   const faded = contour ? surface.opacity : (xray ? (front ? X.front : X.carcass) : 1);
   const translucent = faded < 1;
 
-  return (
+  const body = (
     <group ref={group} position={pivot}>
       {/* Anything screwed TO this piece and travelling with it — the door half
           of a hinge (turn 12, CLAUDE.md F6.1). Inside the group, so the swing
@@ -449,6 +450,32 @@ export function MovingPanel({
           form is written to, inside the group that animates so it swings with
           its door. It is not a board and it is not machined; it is what the
           glazier delivers. */}
+      {/* ─── TURN 33 (CLAUDE.md F4): THE MIRROR, ON ITS CHOSEN FACE ───────
+          Bonded to the door — inside or outside — so it lives in the group
+          that swings: open the door and the inside mirror shows. A thin
+          metallic plane with the environment in it (realistic lighting is
+          where it reads as glass); the ORDER is the engine's own
+          `Mirror W × H` line, front minus the profile's margin a side. */}
+      {p.meta?.mirror && (
+        <mesh
+          position={[
+            mm(p.box.x + p.box.w / 2) - pivot[0],
+            mm(p.box.y + p.box.h / 2) - pivot[1],
+            (p.meta.mirror.face === 'outside'
+              ? mm(p.box.z + p.box.d) + 0.0012
+              : mm(p.box.z) - 0.0012) - pivot[2],
+          ]}
+          userData={{ ccDoorMirror: p.meta.mirror.face, ccNoBounds: true }}
+        >
+          <boxGeometry args={[mm(p.meta.mirror.w), mm(p.meta.mirror.h), 0.002]} />
+          <meshPhysicalMaterial
+            color="#e8edf0"
+            metalness={1}
+            roughness={0.03}
+            envMapIntensity={2.2}
+          />
+        </mesh>
+      )}
       {p.meta?.glass && (
         <mesh
           position={[
@@ -604,6 +631,23 @@ export function MovingPanel({
           </mesh>
         )}
       </mesh>
+    </group>
+  );
+
+  // ─── TURN 33 (CLAUDE.md F3): THE SHOE SHELF LEANS ─────────────────────────
+  // The CUT is a plain rectangle and the pins are the standard rows; the LEAN
+  // is a picture — the board (and its stop rail, which carries the same meta)
+  // rotates about the shelf's back-bottom edge by the profile's 15°. Positive
+  // rotation about x drops the FRONT edge, which is what a shoe shelf does.
+  const tiltDeg = Number(p.meta?.tilt_deg) || 0;
+  const tiltPivot = p.meta?.tilt_pivot || null;
+  if (!tiltDeg || !tiltPivot) return body;
+  return (
+    <group
+      position={[0, mm(tiltPivot.y), mm(tiltPivot.z)]}
+      rotation={[THREE.MathUtils.degToRad(tiltDeg), 0, 0]}
+    >
+      <group position={[0, -mm(tiltPivot.y), -mm(tiltPivot.z)]}>{body}</group>
     </group>
   );
 }
@@ -1992,6 +2036,42 @@ export default function UnitView({
           <meshStandardMaterial color={profile.appearance.hardware.bracket} roughness={0.5} metalness={0.4} />
         </mesh>
       )}
+
+      {/* ─── TURN 33 (CLAUDE.md F1): THE PLACED LEDs ─────────────────────────
+          Emissive geometry only, in the unit's own frame so the light rides a
+          moved or rotated cabinet. Not in contour view — that lens is outlines
+          only and a glowing strip is exactly what it exists to remove. */}
+      {!contour && (
+        <LedStrips unit={unit} result={result} design={design} />
+      )}
+
+      {/* ─── TURN 33 (CLAUDE.md F3): THE DISPLAY DRAWER'S GLASS ──────────────
+          Lying on the box's own rim, drawn with the glass door's material —
+          a picture of what the BOM orders (`Glass W × D`), never a cut. It
+          does not ride an opened box tonight: the pane is drawn at rest, and
+          the walk photographs it shut. */}
+      {!contour && (result.assemblies.drawerGlass || []).map((pane) => (
+        <mesh
+          key={`glass-${pane.zone ?? 'w'}-${pane.drawer}`}
+          position={[
+            mm(pane.box.x + pane.box.w / 2),
+            mm(pane.box.y + pane.box.h / 2),
+            mm(pane.box.z + pane.box.d / 2),
+          ]}
+          userData={{ ccDrawerGlass: true, ccNoBounds: true }}
+        >
+          <boxGeometry args={[mm(pane.box.w), mm(pane.box.h), mm(pane.box.d)]} />
+          <meshPhysicalMaterial
+            color="#eef3f4"
+            transparent
+            opacity={0.42}
+            roughness={0.06}
+            metalness={0}
+            transmission={0.85}
+            thickness={0.004}
+          />
+        </mesh>
+      ))}
 
       {/* Selection (turn 6, CLAUDE.md F5): a thin dashed navy box standing
           clear of the SOLID — doors stand proud of the carcass and an end panel

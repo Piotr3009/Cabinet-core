@@ -222,6 +222,11 @@ export const DEFAULT_CABINET_PROFILE = {
     // shown. It is a WARNING OVERLAY and not a block: the cabinets are built
     // exactly as they were asked for.
     minNeighbourGapMm: 3,
+    // ─── TURN 33 (CLAUDE.md F4): MIRRORS ON DOORS ──────────────────────────
+    // The ordered glass is the FRONT minus this margin a side. ONE profile
+    // line, 15.08.2026 — 20 ships marked `owner to confirm`. A mirror is
+    // BONDED, never drilled: no number in this block can reach a hole.
+    mirror: { marginPerSide: 20 },
     // ─── TURN 31 (CLAUDE.md F4.16 / F4.18): AND HOW WIDE IS TOO WIDE ───────
     //
     // OWNER'S DEFAULT, 15.08.2026 (his word: "one profile number"). Over this,
@@ -351,6 +356,17 @@ export const DEFAULT_CABINET_PROFILE = {
     diameter: 7.5,
     clusterOffsets: [-50, 0, 50],   // 3 holes per row
     columnFromEdge: 70,             // x = 70 and panelWidth − 70
+    // ─── TURN 33 (CLAUDE.md F10): THE OWNER'S DECLARED STANDARD ────────────
+    // OWNER, 15.08.2026: "piny do półek default 50 mm bez ustawiania —
+    // kiedyś było ustawiane, teraz już nie trzeba." This is the PROFILE'S
+    // ANSWER on the OVERRIDE CHANNEL — every app project drills 50 unless a
+    // saved design still carries its own number (that field stays honoured).
+    // HONEST NOTE, written where the numbers sit: the app's DXF now drills
+    // 50 while the workshop's own LISP macros drill 70 (`columnFromEdge`
+    // above — the BARE engine's answer, which every golden fixture holds);
+    // the day the LISP moves to 50, the bare engine follows it. ONE line,
+    // owner-tunable.
+    ownerPinSetback: 50,
     pinsPerShelf: 4,                // one pin in each corner — the hardware count
     layer: 'SHELVES_7_5MM',
     // Row spacing is (H − 2×G)/(n+1) measured over the FULL carcass height,
@@ -824,6 +840,42 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── TURN 33 (CLAUDE.md F3): THE WARDROBE'S INTERIOR ACCESSORIES ──────────
+  //
+  // The standing doctrine: what we CUT and what we BUY. The shoe shelf and its
+  // stop rail are CUT; the trouser pull-out, the tie rack and the pull-down
+  // rail are BOUGHT — a named BOM spec and a labelled placeholder body until
+  // the owner supplies files and articles. ZERO holes ride any of this: the
+  // shoe shelf rests on the STANDARD ⌀7.5 pin rows the kit has always drilled
+  // (the front pair simply set lower — the workshop's own way), and no bought
+  // mechanism has a published fixing pattern (rule 3).
+  wardrobeAccessories: {
+    shoeShelf: {
+      // OWNER'S NUMBER, 15.08.2026: the shoe shelf tilts 15° — owner-tunable.
+      tiltDeg: 15,
+      // The front stop rail (listwa) the owner named, CUT with the shelf.
+      // Its SECTION is Claude's seed, 15.08.2026 — the owner named the piece,
+      // not the numbers; owner-tunable like everything in this block. It ships
+      // UNDRILLED: no LISP line fixes a listwa, so the fixing is the
+      // workshop's own (the WINE lattice precedent).
+      stopRail: { height: 60, thickness: 18 },
+    },
+    // OWNER'S THRESHOLD, 15.08.2026: a column's hanging rail above this many
+    // millimetres FROM THE FLOOR makes the UI SUGGEST the pull-down — a grey
+    // hint, never a block.
+    pulldownSuggestMm: 2000,
+    // The BOUGHT mechanisms' placeholder bodies — VIEW numbers only (the room
+    // each one takes, drawn translucent until a GLB arrives), never a cut and
+    // never a hole. `posMm` is where the body's underside sits above the
+    // carcass base when the item does not say; the pull-down hangs down from
+    // the top by `topDrop` instead, because that is where such a rail lives.
+    kits: {
+      trouser: { label: 'Trouser pull-out', bodyHeight: 120, posMm: 900 },
+      tie_rack: { label: 'Tie rack', bodyHeight: 300, posMm: 1100 },
+      pulldown_rail: { label: 'Pull-down rail', bodyHeight: 140, topDrop: 50 },
+    },
+  },
+
   // ─── Base unit (kitchen) specifics ───
   baseUnit: {
     legHeight: 100,
@@ -1043,7 +1095,9 @@ export const DEFAULT_CABINET_PROFILE = {
   // characters here rather than arguing with a component.
   itemsByContext: {
     kitchen: ['shelves', 'drawers', 'partition', 'cargo', 'bins'],
-    wardrobe: ['shelves', 'hanger', 'drawers', 'partition', 'pulldown'],
+    // Turn 33 (CLAUDE.md F3): the wardrobe's interior grows its accessories —
+    // the shoe shelf (cut) and the two bought mechanisms beside the pull-down.
+    wardrobe: ['shelves', 'shoe_shelf', 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
     // Anything whose family is not listed. Deliberately the plain furniture
     // answer rather than a union of the two.
     default: ['shelves', 'drawers', 'partition'],
@@ -3163,6 +3217,19 @@ export const DEFAULT_CABINET_PROFILE = {
         // something the wrong size (F6.6).
         lengthTolerance: 5,
 
+        // ─── TURN 33 (CLAUDE.md F9): THE OWNER'S LADDER, AT LAST ──────────
+        // His list, 15.08.2026: runner lengths EVERY 50 mm UP TO 600. The
+        // LOWER BOUND is marked: his message read "od 00" — shipped as 300,
+        // owner to confirm (Q1 travels with the PR). ONE profile line; the
+        // snap (engine/runners.js runnerEntry) lands on a RUNG of this
+        // ladder and orders the article standing there — a rung the bucket
+        // has no article for prints YELLOW in the BOM, never a substitute.
+        // This closes the long-parked "wyrównanie drabinki długości
+        // prowadnic — czeka na listę MOVENTO". The BOX ladder
+        // (wardrobe.drawers.depthSteps — what the saw cuts) is untouched:
+        // that one is the LISP's, and the fixtures stand on it.
+        nominalLadder: [300, 350, 400, 450, 500, 550, 600],
+
         // ─── THE SYNCHRONISATION ROD (F6.5) ───────────────────────────────
         // Catalogue thresholds, on the CABINET OPENING width — blum.com,
         // TIP-ON BLUMOTION for MOVENTO. Written out because they are exactly
@@ -3444,6 +3511,70 @@ export const DEFAULT_CABINET_PROFILE = {
   bom: {
     wastePct: 15,
     sheet: { width: 2800, height: 2070 },
+  },
+
+  // ─── TURN 33 (CLAUDE.md F11): THE INSERT CATALOGUE — specs, never articles ─
+  //
+  // Label + NOMINAL WIDTHS per insert kind, profile-listed. The BOM's insert
+  // line names the largest nominal not above the box's interior (the runner
+  // ladder's own snap-below grammar); a box no nominal fits keeps the plain
+  // named spec. SEEDED by Claude 15.08.2026 with a plain 50-step width run —
+  // the owner fills the real trade list; every line stays YELLOW until the
+  // register (F6, T32) knows products. No number here reaches a hole or a cut.
+  drawerInserts: {
+    catalogue: [
+      { id: 'shoe', label: 'Shoe drawer insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
+      { id: 'belt_tie', label: 'Belt/tie divider insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
+    ],
+  },
+
+  // ─── TURN 33 (CLAUDE.md F1/F2): THE LED SYSTEM'S OWN NUMBERS ──────────────
+  //
+  // LIGHTING DRILLS NOTHING (rule 3): everything in this block is a picture in
+  // the 3D view and a NAMED SPEC line in the BOM — no number here reaches a
+  // hole, a cut or a fixture. The register knows no LED articles today, so
+  // every BOM line prints yellow until the owner names products (Q4).
+  lighting: {
+    // OWNER'S MENU, 15.08.2026: "3000 / 4000 / 6000 etc" — the list is his and
+    // EXTENDABLE here; a fourth temperature is one more row, not a code change.
+    // The hex is only the tint the VIEW paints the strip in.
+    temperatures: [
+      { k: 3000, label: '3000 K', hint: 'Warm white', hex: '#ffd9a8' },
+      { k: 4000, label: '4000 K', hint: 'Neutral white', hex: '#fff3e0' },
+      { k: 6000, label: '6000 K', hint: 'Cool white', hex: '#eaf4ff' },
+    ],
+    // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named one; 4000 K
+    // ships marked `owner to confirm 15.08` (Q-list travels with the PR).
+    defaultTemperature: 4000,
+    // The drawn strip's cross-section, view-only. `sideLineWidth` is the one
+    // number the OWNER gave (15.08.2026): "a 4 mm line, top to bottom" on the
+    // carcass side's interior face.
+    strip: {
+      width: 12,          // front-to-back, under a shelf / at a plinth line
+      thickness: 3,       // the strip's own height in the picture
+      sideLineWidth: 4,   // OWNER'S NUMBER, 15.08.2026 — the side line is 4 mm
+      // Where the depth slider STARTS for a fresh under-shelf strip, measured
+      // back from the shelf's front edge. Claude's seed, 15.08.2026 — the
+      // owner's ask is the SLIDER ("przesuwasz jak głęboko ma być led"), not
+      // this number; owner-tunable like every default in this block.
+      shelfDepthDefault: 30,
+    },
+    // Under-cabinet spotlights for KITCHEN WALL UNITS ("małe spotlighty w
+    // szafkach wiszących"). Diameter is the disc the VIEW draws; the count is
+    // where the per-unit stepper starts. Both view/BOM-only — no holes.
+    spot: { diameter: 55, defaultCount: 2 },
+    // How bright a placed strip glows in the ORDINARY working view — emissive
+    // only, no real light source (rule: do not tank the frame rate).
+    view: { emissive: 0.85 },
+    // ─── F2: "TURN ON THE LIGHT" — the client demo ────────────────────────
+    // OWNER-TUNABLE DEFAULTS, 15.08.2026 (the owner named the FEATURE, not
+    // the numbers): `dimFactor` scales every lamp of the studio rig down —
+    // the whole rig together, so the balance turn 26 computed does not move —
+    // and `emissiveBoost` is what the placed LEDs come UP by while it is on.
+    // Both derived at render time and never stored, which is what makes
+    // "toggling back restores exactly the previous scene state" true by
+    // construction.
+    demo: { dimFactor: 0.15, emissiveBoost: 2.6 },
   },
 
   // ─── The room a unit stands in (turn 8, CLAUDE.md F3) ───

@@ -4,7 +4,7 @@ import {
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { mm } from './constants.js';
-import { runnerEntry, runnerModelSrc } from '../engine/runners.js';
+import { runnerEntry, runnerLadder, runnerModelSrc } from '../engine/runners.js';
 import { hingeModelSrc } from '../engine/hinges.js';
 import { clearHardwareSurface, reportHardware } from './hardwareRegistry.js';
 import {
@@ -824,7 +824,10 @@ function Runners({
   const wanted = useMemo(() => items.map((r) => {
     const variant = variants?.[r.drawer] || M.defaultVariant;
     const entry = runnerEntry({
-      system: M.system, nl: r.length, variant, side: r.side,
+      // Turn 33 (CLAUDE.md F9): the owner's ladder rules the snap — the model
+      // drawn is the article the BOM orders, or the grey box where a rung has
+      // no article. One law, the view and the order alike.
+      system: M.system, nl: r.length, variant, side: r.side, ladder: runnerLadder(profile),
     });
     return {
       row: r,
@@ -1072,7 +1075,9 @@ function KitBodies({ items, colour }) {
     ];
     return (
       <group
-        key={k.role}
+        // Turn 33 (F3): two mechanisms may share a role across columns — the
+        // instance's own id keys them apart; a kit without one keys as before.
+        key={k.id || k.role}
         position={[mm(k.x), mm(k.y), mm(k.z)]}
         userData={{ ccKitBody: k.role, ccKitPlaceholder: true, ccNoBounds: true }}
       >

@@ -128,7 +128,11 @@ test('F2 the window is called Door and carries section A and section B', () => {
 
 test('F2 section A is turn 11’s element window, whole', () => {
   for (const piece of [
-    /<ElementProperties unit=\{unit\} panel=\{panel\} item=\{item\} compact \/>/,
+    // Turn 33 (CLAUDE.md F7): the owner's "ten górny usuń" — the field list
+    // OMITS its duplicate hinge rows in this modal (the working HingeSection
+    // stands alone at the top); everything else of turn 11's window is whole,
+    // and the right-hand panel keeps every row it ever had.
+    /<ElementProperties unit=\{unit\} panel=\{panel\} item=\{item\} compact omit=\{\['hinges'\]\} \/>/,
     /<HandleSection unit=\{unit\} panel=\{panel\} \/>/,
     /<FrontDimensionsToggle panel=\{panel\} \/>/,
     /<RemoveDoor unit=\{unit\} panel=\{panel\} onDone=\{closeModal\} \/>/,

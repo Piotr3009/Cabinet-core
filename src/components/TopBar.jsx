@@ -69,6 +69,9 @@ export default function TopBar({
   const toggleHideFronts = useUiStore((s) => s.toggleHideFronts);
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
+  // Turn 33 (CLAUDE.md F2): the client demo — one flag, two controls.
+  const lightDemo = useUiStore((s) => s.lightDemo);
+  const toggleLightDemo = useUiStore((s) => s.toggleLightDemo);
   // Turn 26 (CLAUDE.md F10.3): the brightness slider's value and its setter.
   const brightness = useUiStore((s) => s.brightness);
   const setBrightness = useUiStore((s) => s.setBrightness);
@@ -188,6 +191,18 @@ export default function TopBar({
           run: toggleRealisticLighting,
         },
         {
+          // ─── TURN 33 (CLAUDE.md F2): THE CLIENT DEMO ─────────────────────
+          // The room dims to the profile's demo level, the placed LEDs come
+          // up. In the View menu AND in the Lighting panel — one flag, two
+          // controls, the front-dimensions grammar. A lens: toggling back
+          // restores the scene exactly, because nothing stored moves.
+          label: 'Turn on the light',
+          hint: 'Dim the room and let the placed LEDs shine — the client demo. Toggling back restores the view exactly.',
+          checked: lightDemo,
+          disabled: viewMode !== '3d',
+          run: toggleLightDemo,
+        },
+        {
           // Turn 7 (BACKLOG #42). A way of LOOKING, like Contour view beside
           // it: nothing about it reaches the BOM or the CNC sheet.
           label: 'X-ray',
@@ -263,6 +278,15 @@ export default function TopBar({
     // Piotr; a button that opened a half-answer would be worse than one that
     // says "not yet".
     { label: 'Spraying', soon: true, disabled: true, hint: 'Spray finishing — a later phase' },
+    // ─── TURN 33 (CLAUDE.md F1): LIGHTING, BEFORE OUTPUT ─────────────────────
+    // A BUTTON, not a dropdown — it opens the Lighting panel beside itself
+    // (rule 5: draggable, beside, never covering). Its place in the bar is
+    // lib/topMenu.js MENU_ORDER, where the owner's order is data.
+    {
+      label: 'Lighting',
+      hint: 'LED strips, spots and the demo — placed in the scene, counted in the BOM',
+      run: (e) => openModal('lighting', { anchor: anchorOfEvent(e) }),
+    },
     // ── Output (turn 6, CLAUDE.md F1) ── built by lib/outputMenu.js, so its
     // shape is a thing a node test can look at rather than a thing inside a
     // component nobody mounts. Turn 11 moves it to the END of the bar (F7):

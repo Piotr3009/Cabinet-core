@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
-  minDrawerFrontHeight, SHELF_VARIANTS,
+  minDrawerFrontHeight, SHELF_VARIANTS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
   applyPartEdits, partSignature, withPartEdit, withoutLastPartEdit, withoutPartEdits,
@@ -345,6 +345,12 @@ function paramsForEngine(unit, design = null) {
     project_hinge_finish: resolveHingeFinish(design, profile),
     project_hinge_system_label: profile.hardware.hinge.cliptop.systemLabel,
     door_hinges: p.door_hinges || null,
+    // ─── TURN 33 (CLAUDE.md F4): MIRRORS ON DOORS ───────────────────────────
+    // Per-door, keyed by the engine panel id like door_hinges above: 'inside'
+    // | 'outside'; absence is none. A mirror is BONDED, never drilled — the
+    // engine stamps a meta face, draws a plane and orders the glass, and NOT
+    // ONE hole travels with it.
+    door_mirrors: p.door_mirrors || null,
     // ─── Turn 18 (CLAUDE.md F6.4) ───
     // The PROJECT's runner variant, travelling exactly as the hinge standard
     // does. It is deliberately NOT `runner_variant` — that name belongs to the
@@ -398,7 +404,13 @@ function paramsForEngine(unit, design = null) {
     // `prefillDesignFromCompany` at `newProject`, which is where every other
     // company preference is resolved; a project that has said something of its
     // own keeps saying it.
-    shelf_pin_setback_mm: design?.shelves?.pinSetback ?? null,
+    // ─── TURN 33 (CLAUDE.md F10): THE PROFILE ANSWERS 50 ────────────────────
+    // The owner's declared standard ("default 50 mm bez ustawiania") stands
+    // where the design says nothing; a saved project that set its own number
+    // keeps it. A BARE kit call still passes nothing and drills the LISP's 70.
+    shelf_pin_setback_mm: design?.shelves?.pinSetback
+      ?? getCabinetProfile().shelfHoles.ownerPinSetback
+      ?? null,
     // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER 600 ─────────────────────
     // The owner's standard, on the same road as the setback above it and the
     // plinth before both: an INPUT in the design layer, never a formula in the
@@ -639,11 +651,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     },
   })),
 
-  loadProject: (project, units) => set({
-    project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
-    units: migrateUnits(units),
-    dirty: false,
-  }),
+  loadProject: (project, units) => {
+    set({
+      project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
+      units: migrateUnits(units),
+      dirty: false,
+    });
+    // ─── TURN 33 (CLAUDE.md F5): A LOADED SCENE IS HEALED TOO ───────────────
+    // The consumer sweep's biggest miss: every other path that shapes a front
+    // reaches healFrontGaps, but a project OPENED with yesterday's 1.5/1.5
+    // beside a panel kept it until the first touch — the likeliest source of
+    // the owner's standing fault. The matrix is APPLIED, not offered (T32
+    // F3's law), and each correction says so in its grey note. A healed-open
+    // project is honestly DIRTY: it changed, and the note names how.
+    get().healFrontGaps();
+  },
 
   /**
    * A blank project (turn 4: the start screen's New project).
@@ -698,6 +720,37 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // The infill width lives in Design Settings, so changing it re-cuts the
     // fillers everywhere.
     get().refreshAutoParts();
+  },
+
+  // ─── TURN 33 (CLAUDE.md F1): THE LIGHT'S OWN SETTERS ──────────────────────
+  //
+  // Everything goes through `setDesign`, so the light is stored, migrated and
+  // undoable exactly like every other project setting. An ITEM is a placed
+  // run — { unitId, kind, ref, depth_mm, count } — and its id is minted here,
+  // where every other id in this store is. LIGHTING DRILLS NOTHING: none of
+  // these reach a hole, a panel or a fixture.
+  setLighting: (patch) => {
+    const lighting = migrateDesign(get().project.design).lighting;
+    get().setDesign({ lighting: { ...lighting, ...patch } });
+  },
+  addLightingItem: (item) => {
+    const id = uid('led');
+    const lighting = migrateDesign(get().project.design).lighting;
+    get().setDesign({ lighting: { ...lighting, items: [...lighting.items, { ...item, id }] } });
+    return id;
+  },
+  updateLightingItem: (id, patch) => {
+    const lighting = migrateDesign(get().project.design).lighting;
+    get().setDesign({
+      lighting: {
+        ...lighting,
+        items: lighting.items.map((it) => (it.id === id ? { ...it, ...patch, id } : it)),
+      },
+    });
+  },
+  removeLightingItem: (id) => {
+    const lighting = migrateDesign(get().project.design).lighting;
+    get().setDesign({ lighting: { ...lighting, items: lighting.items.filter((it) => it.id !== id) } });
   },
 
   /**
@@ -2756,7 +2809,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * heights already set on surviving drawers are kept, so bumping the count
    * from 2 to 3 does not silently reset the two the user already sized.
    */
-  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null) => {
+  // Turn 33 (CLAUDE.md F3): `variant` rides in — null is the plain box every
+  // drawer has always been; 'shoe' | 'belt_tie' | 'belt_tie_glass' add the
+  // BOUGHT insert (and the glass) to the BOM. The box itself cuts unchanged.
+  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null, variant = null) => {
     // Turn 24 (CLAUDE.md F3.1): the hard gate. Removing the last drawer is
     // always allowed — a gate that trapped a stack somebody wanted rid of
     // would be a gate on the wrong side of the door.
@@ -2794,6 +2850,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           index: i + 1,
           mount,
           ...(wantZone == null ? {} : { zone: wantZone }),
+          // Turn 33 (F3): the whole stack takes the asked-for variant; a
+          // re-add with none keeps each drawer's own previous answer.
+          ...(variant != null ? { variant } : (previous[i]?.variant ? { variant: previous[i].variant } : {})),
           height_mm: Number(previous[i]?.height_mm) > 0 ? Number(previous[i].height_mm) : fallback,
         }));
         return { ...u, params: { ...u.params, sections: [{ ...section, items: [...drawers, ...kept] }] } };
@@ -2905,7 +2964,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * definition the one with the most room in it, and the clamp has the last
    * word as it does on every other path.
    */
-  addShelves: (unitId, count = 1, zone = null) => {
+  // Turn 33 (CLAUDE.md F3): `variant` rides in — 'shoe' places the tilted
+  // shoe shelf (standard pins, front pair set lower; stop rail cut with it).
+  addShelves: (unitId, count = 1, zone = null, variant = 'adjustable') => {
     const profile = getCabinetProfile();
     let added = 0;
     for (let i = 0; i < Math.max(1, Math.trunc(count)); i += 1) {
@@ -2930,9 +2991,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (pos == null) break;
       // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
       // you can move; `fixed` means screwed now, and a shelf arriving screwed
-      // in is a decision nobody made.
+      // in is a decision nobody made. Turn 33 (F3): a SHOE shelf arrives as
+      // itself; anything unrecognised lands on adjustable, never on nothing.
       get().addItem(unitId, {
-        kind: 'shelf', variant: 'adjustable', pos_mm: pos, ...(bay == null ? {} : { zone: bay }),
+        kind: 'shelf',
+        variant: SHELF_VARIANTS.includes(variant) ? variant : 'adjustable',
+        pos_mm: pos,
+        ...(bay == null ? {} : { zone: bay }),
       });
       added += 1;
     }
@@ -2986,6 +3051,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     parts.forEach((item, i) => {
       get().updateItem(unitId, item.id, { x_mm: snapTo(xs[i], profile.editor.mmStep) });
     });
+    // Turn 33 (CLAUDE.md F5): centred dividers re-derive bay-door leaves.
+    get().healFrontGaps();
     return parts.length;
   },
 
@@ -3026,6 +3093,45 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       material_id: materialId,
       material_label: materialLabel,
     });
+  },
+
+  // ─── TURN 33 (CLAUDE.md F3): A BOUGHT MECHANISM IN A COLUMN ───────────────
+  //
+  // Trouser pull-out, tie rack, pull-down rail — an ITEM like a shelf, one
+  // per column per kind (a second of the same kind in the same opening is a
+  // mechanism nobody can fit). The engine answers with a purchase line and a
+  // labelled placeholder; ZERO holes travel with it.
+  addWardrobeKit: (unitId, kind, zone = null) => {
+    if (!WARDROBE_KIT_KINDS.includes(kind)) return null;
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
+    const items = unit.params.sections?.[0]?.items || [];
+    const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    if (items.some((i) => i.kind === kind && zoneOf(i) === wantZone)) return null;
+    return get().addItem(unitId, {
+      kind,
+      ...(wantZone == null ? {} : { zone: wantZone }),
+    });
+  },
+
+  /**
+   * ─── TURN 33 (CLAUDE.md F3): HOW HIGH THE RAIL STANDS, OFF THE FLOOR ──────
+   *
+   * The pull-down suggestion's own measure: the rail's carcass-local y plus
+   * the legs under the carcass. Asked of the computed result so the UI and a
+   * test read the same number the scene draws.
+   */
+  railHeightsAboveFloor: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return [];
+    const result = get().unitResult(unitId);
+    const legH = result.assemblies.carcass.legHeight || 0;
+    const out = [];
+    if (result.assemblies.rail) out.push({ zone: null, mm: result.assemblies.rail.y + legH });
+    for (const r of result.assemblies.columnRails || []) out.push({ zone: r.zone, mm: r.y + legH });
+    return out;
   },
 
   // ─── Per-element overrides (turn 9, CLAUDE.md F4) ───
@@ -3129,6 +3235,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         };
       }),
     }));
+    // ─── TURN 33 (CLAUDE.md F5): AN OVERRIDE MAY MOVE A NEIGHBOUR ───────────
+    // Removing, restoring or nudging a piece (removeElement / restoreElement /
+    // moveElement all land here) can change what stands beside a front —
+    // INFILL to WALL, panel to nothing — so the matrix runs. The one funnel
+    // covers all three paths the sweep found missing.
+    get().healFrontGaps();
     return get().units.find((u) => u.id === unitId)?.params.element_overrides?.[panelId] || null;
   },
 
@@ -3209,7 +3321,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ? Number(xMm)
       : best.from + (best.size - G) / 2;
     const x = snapTo(Math.min(Math.max(wanted, G), W - G - G), profile.editor.mmStep);
-    return get().addItem(unitId, { kind: 'partition', x_mm: x });
+    const id = get().addItem(unitId, { kind: 'partition', x_mm: x });
+    // Turn 33 (CLAUDE.md F5): with BAY DOORS the leaf widths re-derive from
+    // the partitions — a divider appearing re-shapes the fronts, so the
+    // matrix runs, exactly as it does when a neighbour appears.
+    get().healFrontGaps();
+    return id;
   },
 
   /**
@@ -3240,6 +3357,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (max < min) return { x: self, min, max, blocked: true };
     const x = snapTo(Math.min(Math.max(Number(xRaw) || 0, min), max), profile.editor.mmStep);
     get().updateItem(unitId, itemId, { x_mm: x });
+    // Turn 33 (CLAUDE.md F5): bay-door leaves follow the divider — re-measured.
+    get().healFrontGaps();
     return {
       x, min, max, blocked: false,
     };
@@ -3293,8 +3412,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   removeItem: (unitId, itemId) => {
-    const wasDrawer = get().units.find((u) => u.id === unitId)
-      ?.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.kind === 'drawer';
+    const removedKind = get().units.find((u) => u.id === unitId)
+      ?.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.kind || null;
+    const wasDrawer = removedKind === 'drawer';
+    const wasPartition = removedKind === 'partition';
     set((s) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
@@ -3313,6 +3434,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }),
     }));
     if (wasDrawer) get().reclampShelves(unitId);   // the floor just dropped
+    // Turn 33 (CLAUDE.md F5): a partition leaving re-derives any bay-door
+    // leaves over it — the one removed kind that re-shapes a front.
+    if (wasPartition) get().healFrontGaps();
   },
 
   updateItem: (unitId, itemId, patch) => set((s) => ({
@@ -3546,6 +3670,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_fronts: false } } : u)),
     }));
+    // Turn 33 (CLAUDE.md F5): a BUDR face IS a run front — its neighbours'
+    // wanted clearances change when the face leaves, exactly as a door's do
+    // (setDoors has healed since T32; this path never did).
+    get().healFrontGaps();
     return { removed: count, already: false };
   },
 
@@ -3558,6 +3686,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_fronts: true } } : u)),
     }));
+    // Turn 33 (CLAUDE.md F5): the faces return — measured again, like a door.
+    get().healFrontGaps();
     return { fitted: get().unitResult(unitId)?.panels.filter((p) => p.part === 'DRAWER-FRONT').length || 0, already: false };
   },
 
@@ -3599,14 +3729,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: st.units.map((u) => (u.id === unitId
         ? { ...u, params: { ...u.params, drawer_heights: next } } : u)),
     }));
+    // Turn 33 (CLAUDE.md F5): a resized BUDR face moves its y-band, and the
+    // y-overlap with the neighbour decides whether the matrix reaches it.
+    get().healFrontGaps();
     return next[index];
   },
 
   /** Hand the stack back to the kit's own ratio. */
-  resetDrawerHeights: (unitId) => set((st) => ({
-    units: st.units.map((u) => (u.id === unitId
-      ? { ...u, params: { ...u.params, drawer_heights: null } } : u)),
-  })),
+  resetDrawerHeights: (unitId) => {
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, drawer_heights: null } } : u)),
+    }));
+    // Turn 33 (CLAUDE.md F5): the stack re-derives — measured again.
+    get().healFrontGaps();
+  },
 
   /**
    * The project's runner variant: T or S (turn 18, CLAUDE.md F6.4).
@@ -3973,6 +4110,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /** Every door of this cabinet that has been given a hinge by hand. */
+  // ─── TURN 33 (CLAUDE.md F4): ONE DOOR'S MIRROR ────────────────────────────
+  // 'inside' | 'outside' | null, per panel id — the exact grammar
+  // assignDoorHinge speaks. Bonded, never drilled: nothing here can reach a
+  // hole, and the BOM line is the engine's own answer.
+  setDoorMirror: (unitId, panelId, face) => {
+    const want = face === 'inside' || face === 'outside' ? face : null;
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const map = { ...(u.params.door_mirrors || {}) };
+        if (want) map[panelId] = want;
+        else delete map[panelId];
+        return {
+          ...u,
+          params: { ...u.params, door_mirrors: Object.keys(map).length ? map : null },
+        };
+      }),
+    }));
+  },
+  doorMirrorsOf: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    return unit?.params?.door_mirrors || null;
+  },
+
   doorHingesOf: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     return unit?.params?.door_hinges || null;

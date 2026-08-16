@@ -262,6 +262,17 @@ export const DEFAULT_DESIGN = {
   // a hole yet — recorded, not consumed — so every golden fixture stands.
   cncCorner: 'dogbone',
   drawerBoxes: { mode: null },
+  // ─── TURN 33 (CLAUDE.md F1): THE PROJECT'S LIGHT ─────────────────────────
+  // Off until somebody turns it on, which is every project saved before this
+  // turn. `temperature: null` = the profile's default (4000 K, marked owner to
+  // confirm); `switch: null` = the sensible answer for the PROJECT TYPE
+  // (wardrobe: at the door; kitchen: touchless — "kuchnia bezdotykowy"),
+  // resolved where it is read (engine/ledStrips.js), never stored by guess.
+  // `items` are the placed runs: { id, unitId, kind, ref, depth_mm, count }.
+  // LIGHTING DRILLS NOTHING — an item is 3D geometry and a yellow BOM line.
+  lighting: {
+    enabled: false, temperature: null, switch: null, items: [],
+  },
   // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
   // which is what a project that has never opened the section means. Resolved
   // through projectHeights() below, so a stored null and a stored number behave
@@ -361,6 +372,9 @@ export function migrateDesign(design) {
     drawerBoxes: {
       mode: d.drawerBoxes?.mode === 'ready' || d.drawerBoxes?.mode === 'same' ? d.drawerBoxes.mode : null,
     },
+    // Turn 33 (CLAUDE.md F1): the light. Unknown kinds and refless shelf runs
+    // do not survive — an item that cannot find its shelf is not a strip.
+    lighting: migrateLighting(d.lighting),
     // CHAT FIX 15.08.2026 (evening): the recorded CNC corner — see the base.
     cncCorner: d.cncCorner === 'square' ? 'square' : 'dogbone',
     runners: {
@@ -426,6 +440,40 @@ export function migrateDesign(design) {
     // `== null` and not a truthiness test: Number(null) is 0, and a shortcut
     // that treats 0 as "not set" would also treat a real stored 0 that way.
     sheen: migrateSheen(d),
+  };
+}
+
+// ─── TURN 33 (CLAUDE.md F1): THE LIGHTING FIELD, NORMALISED ─────────────────
+// The five placement kinds the owner dictated, and nothing else survives a
+// stored project. `ref` is a panel id for a shelf run ('SHELF-2'), a side for
+// the 4 mm line ('L' | 'R'), and nothing for the rest.
+const LIGHTING_KINDS = new Set(['shelf', 'side', 'bottom', 'top', 'spot']);
+const LIGHTING_SWITCHES = new Set(['door', 'sensor', 'touchless']);
+
+function migrateLighting(raw) {
+  const items = (Array.isArray(raw?.items) ? raw.items : [])
+    .map((it) => {
+      if (!it || typeof it !== 'object') return null;
+      const kind = LIGHTING_KINDS.has(it.kind) ? it.kind : null;
+      const id = it.id ? String(it.id) : null;
+      const unitId = it.unitId ? String(it.unitId) : null;
+      if (!kind || !id || !unitId) return null;
+      const out = { id, unitId, kind };
+      if (kind === 'shelf') {
+        if (!it.ref) return null;               // a shelf run IS its shelf
+        out.ref = String(it.ref);
+        out.depth_mm = Number(it.depth_mm) >= 0 ? Number(it.depth_mm) : null;
+      }
+      if (kind === 'side') out.ref = it.ref === 'R' ? 'R' : 'L';
+      if (kind === 'spot') out.count = Number(it.count) > 0 ? Math.trunc(Number(it.count)) : null;
+      return out;
+    })
+    .filter(Boolean);
+  return {
+    enabled: raw?.enabled === true,
+    temperature: Number(raw?.temperature) > 0 ? Number(raw.temperature) : null,
+    switch: LIGHTING_SWITCHES.has(raw?.switch) ? raw.switch : null,
+    items,
   };
 }
 

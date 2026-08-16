@@ -21,6 +21,9 @@ import ColourPicker from './ColourPicker.jsx';
 import JoineryPreview from './JoineryPreview.jsx';
 import SheenSlider from './SheenSlider.jsx';
 import NumberField from './NumberField.jsx';
+// Turn 33 (CLAUDE.md F8): the shaker frame's one resolver — the same number
+// the engine cuts pockets to and the settings panel edits.
+import { shakerFrameMm } from '../engine/shaker.js';
 
 // ─── TURN 32 (CLAUDE.md F1), RE-SHAPED 15.08.2026 EVENING — THE MOCKUP ──────
 //
@@ -658,6 +661,31 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
                     Choose…
                   </button>
                 </div>
+                {/* ─── TURN 33 (CLAUDE.md F8): THE SHAKER FRAME RETURNS ─────
+                    The chat rebuild lost the field; the engine's number
+                    (T25: equal on all four sides, 10–200, profile default
+                    70) never stopped being read. Shown ONLY when this slot's
+                    style is Shaker — a slot with no style of its own is
+                    Shaker when the project is — and it writes the
+                    PROJECT-WIDE fronts.shakerFrame, which the label says.
+                    [OWNER — placement to confirm]: in the Shaker slot's
+                    card, accepted by silence. */}
+                {(t.style || design.fronts.style) === 'S' && (
+                  <div className="flex items-center gap-1.5" data-shaker-frame-slot={t.id}>
+                    <span className="text-[10px] text-ink-400 shrink-0">Frame width (all shaker fronts)</span>
+                    <NumberField
+                      className="cc-input w-16 text-right"
+                      value={shakerFrameMm(design, profile)}
+                      min={profile.front.types.S.frameMin}
+                      max={profile.front.types.S.frameMax}
+                      onCommit={(v) => {
+                        touchFronts();
+                        setDesign({ fronts: { ...design.fronts, shakerFrame: v } });
+                      }}
+                    />
+                    <span className="text-[10px] text-ink-400">mm</span>
+                  </div>
+                )}
               </div>
             );
           })}

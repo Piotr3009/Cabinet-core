@@ -68,6 +68,19 @@ export const SHELF_TYPES = [
     hint: 'A flat drawer on MOVENTO: the bay gets the drawer machinery’s own runner rows. '
       + 'Waiting on ONE workshop number — how tall the tray side is. BLOCKERS carries the ask.',
   },
+  // ─── TURN 33 (CLAUDE.md F3): THE SHOE SHELF ───────────────────────────────
+  // GEOMETRY, and cut: the same board tilted 15° (profile, owner-tunable) with
+  // a front stop rail. NO NEW HOLE PATTERN — it rests on the STANDARD ⌀7.5
+  // pin rows the kit has always drilled; the front pair is simply set lower,
+  // which is the workshop's own act with the pins, not a drilling change.
+  {
+    id: 'shoe',
+    variant: 'shoe',
+    label: 'Shoe shelf',
+    enabled: true,
+    hint: 'The board tilted 15° on the standard pin rows — front pins set lower — with a stop '
+      + 'rail along the front edge. Both pieces are cut; nothing new is drilled.',
+  },
 ];
 
 const BY_ID = new Map(SHELF_TYPES.map((t) => [t.id, t]));
@@ -128,5 +141,8 @@ export function shelfBuild(item) {
       blocked: 'The pull-out tray’s side height is a workshop number the owner has not given yet.',
     };
   }
+  // Turn 33 (F3): 'shoe' falls through here on purpose — a shoe shelf IS a
+  // pinned shelf as far as any hole is concerned. The tilt and the stop rail
+  // are geometry, not drilling.
   return { kind: 'pinned', blocked: null };
 }

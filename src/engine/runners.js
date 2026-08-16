@@ -169,15 +169,58 @@ export function resolveRunnerVariant({
 }
 
 /**
+ * ─── TURN 33 (CLAUDE.md F9): THE OWNER'S LADDER ─────────────────────────────
+ * The runner lengths this workshop orders — every 50 up to 600, lower bound
+ * read as 300 (marked, Q1). ONE profile line; null where a profile has none,
+ * which keeps every caller that predates the list on the catalogue snap.
+ */
+export function runnerLadder(profile) {
+  const l = profile?.hardware?.runner?.movento?.nominalLadder;
+  if (!Array.isArray(l) || !l.length) return null;
+  return [...l].map(Number).filter((n) => n > 0).sort((a, b) => a - b);
+}
+
+/** The rung an asked-for length lands on: the largest not above the ask. */
+export function ladderRungFor(nl, profile) {
+  const ladder = runnerLadder(profile);
+  if (!ladder) return Number(nl) || null;
+  let best = null;
+  for (const rung of ladder) if (rung <= Number(nl)) best = rung;
+  return best;
+}
+
+/**
  * The catalogue entry for one runner, or null where the bucket has not been
  * read (or has nothing that matches).
+ *
+ * ─── TURN 33 (CLAUDE.md F9): THE LADDER RULES THE SNAP ──────────────────────
+ * With a `ladder` in hand (the owner's 300–600/50), the ask lands on ITS rung
+ * first — the largest not above the ask — and the article is what stands at
+ * exactly that rung. A rung the bucket has no article for answers null and
+ * the BOM prints the YELLOW named spec (never a shorter substitute); an ask
+ * below the whole ladder answers null the same way. Without a ladder the
+ * 15.08 chat-fix behaviour stands unchanged: snap down to the catalogue.
  */
 export function runnerEntry({
-  system, nl, variant, side = null,
+  system, nl, variant, side = null, ladder = null,
 }) {
   const cat = CATALOGUE;
   if (!cat) return null;
   const want = String(variant || '').toUpperCase();
+
+  if (Array.isArray(ladder) && ladder.length) {
+    let rung = null;
+    for (const step of [...ladder].sort((a, b) => a - b)) if (step <= Number(nl)) rung = step;
+    if (rung == null) return null;               // below the ladder: yellow
+    const knowsSys = system && cat.files.some((f) => f.system === system);
+    const rows = cat.files.filter((f) => (!knowsSys || f.system === system)
+      && f.nl === rung
+      && f.variant === want
+      && (side == null || f.side == null || f.side === side));
+    const hit = rows.find((f) => f.side === side) || rows[0] || null;
+    if (!hit) return null;                       // a rung with no article: yellow
+    return rung === Number(nl) ? hit : { ...hit, snappedFromNl: Number(nl) };
+  }
   // ─── TURN 20 (CLAUDE.md F2.3): SYSTEM SELECTS THE CATALOGUE, NOT THE ROW ──
   // `system` used to be a per-row filter here, so a manifest whose header says
   // `movento` and whose rows say nothing could never match a profile asking
@@ -252,13 +295,21 @@ export function runnerModelSrc(entry, profile, storageBase = '') {
  */
 export function runnerPairSpec({ nl, variant, profile }) {
   const M = profile.hardware.runner.movento;
+  // Turn 33 (CLAUDE.md F9): the owner's ladder rules — the ORDERED length is
+  // the rung the ask lands on, and the articles are what stands at that rung.
+  const ladder = runnerLadder(profile);
+  const rung = ladderRungFor(nl, profile);
   const article = (side) => runnerEntry({
-    system: M.system, nl, variant, side,
+    system: M.system, nl, variant, side, ladder,
   })?.article ?? null;
   const articles = { L: article('L'), R: article('R') };
   return {
     system: M.system,
-    nl: Number(nl) || null,
+    // The SNAPPED length is what the BOM orders; the ask rides beside it so a
+    // label can say both. `null` rung = the ask fell below the whole ladder.
+    nl: rung ?? null,
+    asked_nl: Number(nl) || null,
+    on_ladder: rung != null,
     variant: String(variant || M.defaultVariant).toUpperCase(),
     articles,
     complete: Boolean(articles.L && articles.R),

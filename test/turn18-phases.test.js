@@ -526,7 +526,10 @@ test('F6.6 — with no catalogue the app still knows what to order, and says wha
   clearRunnerCatalogue();
   const spec = runnerPairSpec({ nl: 490, variant: 'T', profile: P });
   assert.equal(spec.system, '760H');
-  assert.equal(spec.nl, 490);
+  // Turn 33 (CLAUDE.md F9): the owner's ladder arrived — what is ORDERED is
+  // the rung the 490 box lands on (450), the ask riding beside it.
+  assert.equal(spec.nl, 450);
+  assert.equal(spec.asked_nl, 490);
   assert.equal(spec.complete, false, 'no bucket, no article — and it says so rather than inventing one');
   assert.deepEqual(spec.articles, { L: null, R: null });
   assert.equal(runnerEntry({ system: '760H', nl: 490, variant: 'T', side: 'L' }), null);
@@ -538,12 +541,16 @@ test('F6.6 — with no catalogue the app still knows what to order, and says wha
 });
 
 test('F6.7/F6.8 — the manifest IS the catalogue, and the BOM orders by article', () => {
+  // Turn 33 (CLAUDE.md F9): the manifest rows stand at 450 — a rung of the
+  // owner's ladder — because what the BOM orders now IS a rung; a 490 box
+  // lands on 450 and buys what stands there. The test's property is the
+  // same as ever: manifest rows become ordered articles, nothing guessed.
   const parsed = setRunnerCatalogue({
     files: [
-      { file: 'movento-760h-490-T-L.glb', system: '760H', nl: 490, variant: 'T', article: '760H4900T-L' },
-      { file: 'movento-760h-490-T-R.glb', system: '760H', nl: 490, variant: 'T', article: '760H4900T-R' },
-      { file: 'movento-760h-490-S-L.glb', system: '760H', nl: 490, variant: 'S', side: 'L', article: '760H4900S-L' },
-      { file: 'movento-760h-490-SU-L.glb', system: '760H', nl: 490, variant: 'SU', side: 'L', article: 'x' },
+      { file: 'movento-760h-450-T-L.glb', system: '760H', nl: 450, variant: 'T', article: '760H4500T-L' },
+      { file: 'movento-760h-450-T-R.glb', system: '760H', nl: 450, variant: 'T', article: '760H4500T-R' },
+      { file: 'movento-760h-450-S-L.glb', system: '760H', nl: 450, variant: 'S', side: 'L', article: '760H4500S-L' },
+      { file: 'movento-760h-450-SU-L.glb', system: '760H', nl: 450, variant: 'SU', side: 'L', article: 'x' },
       { file: 'broken.glb', system: '', nl: 0, variant: '', article: null },
     ],
   });
@@ -551,26 +558,28 @@ test('F6.7/F6.8 — the manifest IS the catalogue, and the BOM orders by article
   // The side is read off the row where it is given and off the FILE NAME where
   // it is not — neither is guessed.
   assert.equal(runnerEntry({
-    system: '760H', nl: 490, variant: 'T', side: 'R',
-  }).article, '760H4900T-R');
+    system: '760H', nl: 450, variant: 'T', side: 'R',
+  }).article, '760H4500T-R');
 
   const spec = runnerPairSpec({ nl: 490, variant: 'T', profile: P });
+  assert.equal(spec.nl, 450, 'the 490 box orders the 450 rung');
   assert.equal(spec.complete, true);
-  assert.deepEqual(spec.articles, { L: '760H4900T-L', R: '760H4900T-R' });
+  assert.deepEqual(spec.articles, { L: '760H4500T-L', R: '760H4500T-R' });
 
   const r = unit('BUDR2');
   const line = r.hardware.find((h) => h.role === 'runner_pairs');
-  assert.match(line.spec_label, /760H4900T-L \/ 760H4900T-R/);
-  assert.equal(line.spec.articles.L, '760H4900T-L');
+  assert.match(line.spec_label, /760H4500T-L \/ 760H4500T-R/);
+  assert.match(line.spec_label, /orders NL 450/, 'the label names the rung beside the cut depth');
+  assert.equal(line.spec.articles.L, '760H4500T-L');
 
   // …and the model url is the folder the manifest itself was read from, with
   // the row's BASENAME on the end (turn 20, CLAUDE.md F2.1/F2.3 — this line
   // used to assert `…/hardware/hardware/runners/…`, which is the 400 the owner
   // was looking at, written down as an expectation).
   const url = runnerModelUrl(runnerEntry({
-    system: '760H', nl: 490, variant: 'T', side: 'L',
+    system: '760H', nl: 450, variant: 'T', side: 'L',
   }), P, 'https://x.supabase.co/storage/v1/object/public');
-  assert.equal(url, 'https://x.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/movento-760h-490-T-L.glb');
+  assert.equal(url, 'https://x.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/movento-760h-450-T-L.glb');
 
   clearRunnerCatalogue();
 });

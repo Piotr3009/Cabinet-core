@@ -1205,29 +1205,13 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           </div>
         )}
 
-        {/* ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ───
-            The LISP drills sleeves 70 mm in from each edge and that stays the
-            engine's bare answer; the owner's workshop standard is 50. This is
-            the OVERRIDE CHANNEL and nothing else — a project-layer input that
-            travels through `paramsForEngine()` exactly as the shaker frame
-            above it does. Empty is "the workshop's own", which is 70. */}
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-ink-400 w-28">Shelf-pin setback</span>
-          <NumberField
-            className="cc-input w-24"
-            data-shelf-pin-setback="1"
-            value={Number(design.shelves?.pinSetback) > 0
-              ? Number(design.shelves.pinSetback)
-              : profile.shelfHoles.columnFromEdge}
-            min={20}
-            max={200}
-            onCommit={(v) => setDesign({ shelves: { ...design.shelves, pinSetback: v } })}
-          />
-          <span className="text-[11px] text-ink-400">
-            mm in from the front and back edges · the kits&apos; own answer is
-            {' '}{profile.shelfHoles.columnFromEdge}
-          </span>
-        </div>
+        {/* ─── TURN 33 (CLAUDE.md F10): THE SHELF-PIN CONTROL IS GONE ───
+            The owner: "piny do półek default 50 mm bez ustawiania — kiedyś
+            było ustawiane, teraz już nie trzeba." The T30 field that stood
+            here is the turn's ONE SANCTIONED REMOVAL beside F7's hinge
+            block: the profile answers 50 (shelfHoles.ownerPinSetback, dated),
+            a saved project's own number is still honoured through the same
+            design field, and the BARE engine stays on the LISP's 70. */}
 
         <div className="cc-divider" />
         <span className="text-[11px] uppercase tracking-wide text-ink-400">The workshop&apos;s own styles</span>

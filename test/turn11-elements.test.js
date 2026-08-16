@@ -361,7 +361,12 @@ test('entering CNC opens the right panel and closes nothing', () => {
 
 test('what a unit offers is decided by its FAMILY, as data', () => {
   assert.deepEqual(P.itemsByContext.kitchen, ['shelves', 'drawers', 'partition', 'cargo', 'bins']);
-  assert.deepEqual(P.itemsByContext.wardrobe, ['shelves', 'hanger', 'drawers', 'partition', 'pulldown']);
+  // Turn 33 (CLAUDE.md F3): the wardrobe's list grew its accessories — the
+  // shoe shelf and the two bought mechanisms beside the pull-down.
+  assert.deepEqual(
+    P.itemsByContext.wardrobe,
+    ['shelves', 'shoe_shelf', 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
+  );
   // A kitchen unit is not offered a hanging rail first, and a wardrobe is.
   assert.ok(!P.itemsByContext.kitchen.includes('hanger'));
   assert.ok(P.itemsByContext.wardrobe.includes('hanger'));

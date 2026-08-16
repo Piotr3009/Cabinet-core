@@ -36,7 +36,7 @@ import { sayHingeResult } from '../lib/hingeEdit.js';
 // component that also lays out a panel.
 
 export default function ElementProperties({
-  unit, panel, item = null, compact = false, actions = false,
+  unit, panel, item = null, compact = false, actions = false, omit = [],
 }) {
   const profile = useCabinetProfileStore((s) => s.profile);
   const materials = useMaterialAssignmentStore((s) => s.materials);
@@ -86,7 +86,15 @@ export default function ElementProperties({
   const unitResult = useProjectStore((s) => s.unitResult);
 
   const type = useMemo(() => getUnitType(unit.type), [unit.type]);
-  const fields = useMemo(() => elementFields(panel, type), [panel, type]);
+  // ─── TURN 33 (CLAUDE.md F7): A CALLER MAY OMIT A FIELD IT CARRIES ITSELF ──
+  // The door modal shows THE hinge block (its own HingeSection, at the top —
+  // the owner's "ten górny usuń" deleted the duplicate this list used to add
+  // under it). The right-hand panel passes nothing and keeps every field it
+  // has always had.
+  const fields = useMemo(
+    () => elementFields(panel, type).filter((f) => !omit.includes(f)),
+    [panel, type, omit],
+  );
   const bounds = useMemo(() => elementDepthBoundsFor(unit, profile), [unit, profile]);
   const choices = useMemo(
     () => elementMaterialChoices(design, profile, materials),

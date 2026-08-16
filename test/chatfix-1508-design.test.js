@@ -16,7 +16,12 @@ const src = (p) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8')
 
 test('the rail hangs MID-DEPTH — no longer borrowing the drawer setback', () => {
   const c = src('engine/cabinet.js');
-  assert.match(c, /rail: hasRail \? \{ y: railY, x1: G, x2: W - G, z: \(D \+ G\) \/ 2 \} : null,/);
+  // T35-F1 gave the rail a NAMED datum, so its assembly row grew fields and no
+  // longer fits on one line. What this test is actually about is the DEPTH —
+  // mid-depth, not the drawer setback — so it is asserted as the two facts it
+  // has always been, rather than as one line's formatting.
+  assert.match(c, /rail: hasRail\s*\?\s*\{/);
+  assert.match(c, /y: railY,\s*\n?\s*x1: G,\s*\n?\s*x2: W - G,\s*\n?\s*z: \(D \+ G\) \/ 2,/);
   assert.doesNotMatch(c, /z: D - DR\.setback \} : null/);
 });
 

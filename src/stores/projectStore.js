@@ -75,6 +75,8 @@ import { mountHeightAlignedWith } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
 } from '../engine/items.js';
+// ─── TURN 35 (CLAUDE.md F1): the rail's datum, answered where it is knowable ─
+import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
 import { endPanelHeightDefault } from '../engine/autoparts.js';
 // Turn 24 (CLAUDE.md F3): the caliper's six numbers, and the drawer gate.
 import {
@@ -453,6 +455,10 @@ function paramsForEngine(unit, design = null) {
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
     rail_offset: items.find((i) => i.kind === 'hanger')?.pos_mm ?? p.rail_offset,
+    // T35-F1: and WHICH board that number is measured from. Absent on every
+    // project saved before this turn, which is exactly what makes those
+    // projects render unchanged.
+    rail_datum: items.find((i) => i.kind === 'hanger')?.datum ?? p.rail_datum ?? null,
     // Which rail was chosen from the hardware list, so the BOM line names the
     // product and not just a length (turn 4, BACKLOG #14).
     rail_material_id: items.find((i) => i.kind === 'hanger')?.material_id ?? null,
@@ -3112,9 +3118,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       zoneBase,
       fallback: unit.params.rail_offset,
     }, profile);
+    // T35-F1: a NEW rail answers the datum question at birth, from where the
+    // automatic placement actually put it — the nearest thing below it.
+    const bornAt = snapTo(offset, profile.editor.mmStep);
+    const born = railDatumFor({
+      supports: railSupportTops({
+        floor: G,
+        stackTop: wantZone == null && result.assemblies.drawerZone
+          ? result.assemblies.drawerZone.top + G
+          : (columnStack ? columnStack.top + G : null),
+        shelves: (unit.params.sections?.[0]?.items || [])
+          .filter((i) => i.kind === 'shelf')
+          .map((i) => ({ id: i.id, top: (Number(i.pos_mm) || 0) + (Number(i.thickness_mm) || G) })),
+        ceiling: (Number(unit.params?.height) || 0) - G,
+      }),
+      axis: (Number(zoneBase) || 0) + bornAt,
+    });
     return get().addItem(unitId, {
       kind: 'hanger',
-      pos_mm: snapTo(offset, profile.editor.mmStep),
+      // The number is measured from the datum that was just chosen, so the rod
+      // lands EXACTLY where the automatic placement put it — `railDatumFor`
+      // returns the pair, and taking one without the other is what would move
+      // it.
+      pos_mm: snapTo(born.offset, profile.editor.mmStep),
+      datum: born.datum,
       ...(wantZone == null ? {} : { zone: wantZone }),
       material_id: materialId,
       material_label: materialLabel,
@@ -3560,6 +3587,35 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // Turn 33 (CLAUDE.md F5): a partition leaving re-derives any bay-door
     // leaves over it — the one removed kind that re-shapes a front.
     if (wasPartition) get().healFrontGaps();
+  },
+
+  /**
+   * ─── TURN 35 (CLAUDE.md F1): THE RAIL'S HEIGHT, EDITED ──────────────────
+   *
+   * The owner: *"nie mogę ustawić wysokości raila — sam się wstawia, i jak
+   * edytuję dwuklikiem, to nie ma opcji ustawienia wysokości."* This is that
+   * option. The number is HEIGHT ABOVE THE SUPPORT — `engine/railDatum.js`
+   * decides which board that is at compute time — so it is written straight
+   * onto the item and nothing here resolves anything. Refused below zero: a
+   * rail under its own support is not a number anybody meant.
+   *
+   * @returns {{ok:boolean, mm:number}|{ok:false, error:string}}
+   */
+  setRailHeight: (unitId, itemId, mmRaw) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, error: 'No such cabinet.' };
+    const item = (unit.params.sections?.[0]?.items || [])
+      .find((i) => i.id === itemId && i.kind === 'hanger');
+    if (!item) return { ok: false, error: 'That is not a hanging rail.' };
+    const profile = getCabinetProfile();
+    const mm = snapTo(Math.max(0, Number(mmRaw) || 0), profile.editor.mmStep);
+    // The DATUM does not move when the number does. "Height above support"
+    // means this far above THE BOARD IT HANGS FROM, and typing a bigger number
+    // raises the rod — it does not re-hang it on something else. The datum is
+    // answered once, when the rail is placed (`addHangerRail`), and re-answered
+    // only by the engine's own fallback if that board is later taken out.
+    get().updateItem(unitId, itemId, { pos_mm: mm });
+    return { ok: true, mm, datum: item.datum || null };
   },
 
   updateItem: (unitId, itemId, patch) => set((s) => ({

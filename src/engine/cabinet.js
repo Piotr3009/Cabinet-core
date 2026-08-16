@@ -49,6 +49,8 @@ import {
 // Turn 34 (CLAUDE.md F4): the shoe box's geometry, matched to
 // reference/lisp/KIT_SHOE_BOX.lsp. This file cuts what that module answers.
 import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
+// ─── TURN 35 (CLAUDE.md F1): the rail hangs from the nearest thing below it ──
+import { railSupportTops, resolveRailAxis } from './railDatum.js';
 // Turn 33 (CLAUDE.md F11): the insert catalogue — specs with nominals, never
 // articles; the BOM line names the nominal that drops into the box.
 import { insertFor } from './drawerInserts.js';
@@ -733,6 +735,7 @@ function normalizeParams(raw, profile) {
     columnRails: columnRailItems.map((i) => ({
       zone: Math.trunc(Number(i.zone)),
       offset: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
+      datum: i.datum || null,                    // T35-F1
       material_id: i.material_id ?? null,
       material_label: i.material_label ?? null,
     })),
@@ -764,6 +767,9 @@ function normalizeParams(raw, profile) {
     drawerHeights,
     rail,
     railOffset: Number(p.rail_offset ?? railDefault),
+    // T35-F1: WHICH board the rail's number is measured from. Nothing said —
+    // every project before this turn, every bare kit call — reads the old way.
+    railDatum: hangerFromItems?.datum || p.rail_datum || null,
     // Turn 30 (CLAUDE.md F19): the depth of each arm of a corner unit's L. An
     // INPUT, defaulting to the profile's, like every other number a kit has.
     cornerArm: Number(p.corner_arm_mm) > 0 ? Number(p.corner_arm_mm) : profile.cornerUnit.armMm,
@@ -1704,11 +1710,42 @@ export function computeCabinet(params, profileOverride) {
   }
 
   // ── Hanging rail ───────────────────────────────────────────────────────────
+  //
+  // ─── TURN 35 (CLAUDE.md F1): THE RAIL'S OWN DATUM ────────────────────────
+  // The owner: *"drążek ustawiamy zawsze od najbliższej czegoś od dołu — albo
+  // od szuflad, albo od półek."* Until this turn the datum was the drawer
+  // stack or the floor and NOTHING else, which is the LISP's own law
+  // (KIT_WARDROBE_FULL L667) — and a shelf standing under the rail was simply
+  // not seen. `engine/railDatum.js` widens the candidate set to the shelves
+  // and resolves which one the rail actually hangs above; with no shelf below
+  // it the answer is bit-for-bit what this line has always returned, which is
+  // why a standard wardrobe does not move and F1 names no classifier bucket.
   const RL = P.wardrobe.rail;
   const hasRail = type.supports.rail && cfg.rail;
   let railY = null; let railPartY = null; let railPartCentreY = null;
+  let railSupportY = null; let railFits = true; let railWanted = null;
   if (hasRail) {
-    railY = (hasDrawers ? partitionY + G : G) + cfg.railOffset;
+    const railCeiling = H - G;
+    const railSupports = railSupportTops({
+      floor: G,
+      stackTop: hasDrawers ? partitionY + G : null,
+      // Unit-wide rail, unit-wide shelves: a shelf that belongs to one BAY
+      // does not hold up a rod that runs the whole carcass.
+      shelves: (cfg.shelfItems || [])
+        .filter((it) => it?.zone == null || !Number.isFinite(Number(it.zone)))
+        .map((it) => ({ id: it?.id ?? null, top: (Number(it?.pos_mm) || 0) + shelfThickness(it, G) })),
+      ceiling: railCeiling,
+    });
+    const resolved = resolveRailAxis({
+      supports: railSupports,
+      datum: cfg.railDatum,
+      offset: cfg.railOffset,
+      ceiling: railCeiling,
+    });
+    railSupportY = resolved.support;
+    railFits = resolved.fits;
+    railWanted = resolved.axis;
+    railY = resolved.axis;
     railPartY = railY + RL.partitionAbove;
     if (railPartY + G > H - G - RL.topClearance) {
       warnings.push({ code: 'RAIL_TOO_HIGH', message: 'Rail too high for the carcass — lowered to fit under the top.' });
@@ -3170,8 +3207,24 @@ export function computeCabinet(params, profileOverride) {
       const bay = bays[k];
       if (!bay) continue;
       const stack = columnDrawerSets.find((s) => s.zone === k) || null;
-      const base = stack ? stack.partY + G : G;
-      let colRailY = base + (Number(spec.offset) > 0 ? Number(spec.offset) : cfg.railOffset);
+      // T35-F1: the same datum law as the unit-wide rail, asked of THIS bay —
+      // its own drawer stack, its own shelves, its own floor.
+      const colCeiling = H - G;
+      const colSupports = railSupportTops({
+        floor: G,
+        stackTop: stack ? stack.partY + G : null,
+        shelves: (cfg.shelfItems || [])
+          .filter((it) => Number.isFinite(Number(it?.zone)) && Math.trunc(Number(it.zone)) === k)
+          .map((it) => ({ id: it?.id ?? null, top: (Number(it?.pos_mm) || 0) + shelfThickness(it, G) })),
+        ceiling: colCeiling,
+      });
+      const colResolved = resolveRailAxis({
+        supports: colSupports,
+        datum: spec.datum || null,
+        offset: Number(spec.offset) > 0 ? Number(spec.offset) : cfg.railOffset,
+        ceiling: colCeiling,
+      });
+      let colRailY = colResolved.axis;
       let colRailPartY = colRailY + RL.partitionAbove;
       if (colRailPartY + G > H - G - RL.topClearance) {
         warnings.push({
@@ -3189,6 +3242,7 @@ export function computeCabinet(params, profileOverride) {
           right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
         },
         railY: colRailY,
+        support: colResolved.support,
         railPartY: colRailPartY,
         material_id: spec.material_id ?? null,
         material_label: spec.material_label ?? null,
@@ -5640,7 +5694,7 @@ export function computeCabinet(params, profileOverride) {
       drawer_front_y: [...budr.frontY],
       drawer_heights: [...budr.heights],
     } : {}),
-    ...(hasRail ? { rail_y: railY, rail_partition_y: railPartY } : {}),
+    ...(hasRail ? { rail_y: railY, rail_partition_y: railPartY, rail_support_y: railSupportY } : {}),
     ...(sinkBack ? { back_w: sinkBack.w, back_h: sinkBack.h, holder_w: internalWidth, holder_h: SK.railHeight } : {}),
     ...(fridge ? {
       fixed_panel_y: fridge.fixedPanelY,
@@ -5751,7 +5805,26 @@ export function computeCabinet(params, profileOverride) {
     // interior: halfway between the back panel's face (G) and the front (D).
     // View-only: the rail has no CNC of its own (HANGER_HOLE is the wall
     // bracket in a wall unit's back, a different thing entirely).
-    rail: hasRail ? { y: railY, x1: G, x2: W - G, z: (D + G) / 2 } : null,
+    // T35-F1: `support` is what the rail's number is measured FROM — published
+    // so the modal can name the datum instead of showing a bare number, and so
+    // check #13 has the opening it must fit in.
+    rail: hasRail
+      ? {
+        y: railY,
+        x1: G,
+        x2: W - G,
+        z: (D + G) / 2,
+        support: railSupportY,
+        ceiling: H - G,
+        // T35-F1: where the datum ASKED for the rod, before the kit's own
+        // too-high clamp below tidied it. The clamp stays — nothing is
+        // deleted — but check #13 measures the number the owner typed
+        // rather than the number the clamp settled for, because "never an
+        // auto-fix" means he has to be TOLD, not quietly obeyed.
+        fits: railFits,
+        wanted: railWanted,
+      }
+      : null,
     // Turn 32 (CLAUDE.md F4): the columns' own rails, beside the unit-wide one.
     columnRails: columnRailSets.map((set) => ({
       zone: set.zone, y: set.railY, x1: set.bay.from, x2: set.bay.to, z: (D + G) / 2,

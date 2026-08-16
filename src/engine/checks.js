@@ -43,6 +43,7 @@ import { frontClearances, frontGapRows, carcassGaps } from './frontClearance.js'
 import { unitFindings } from './cnc/exportGate.js';
 import { unitBase, unitTop, hasTopInfill } from './runs.js';
 import { shelfTypeOf } from './shelfTypes.js';
+import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
 import { panelWeight } from './lifts.js';
 import { resolvePanelMaterial } from './materials.js';
@@ -65,6 +66,12 @@ export const CHECKS = Object.freeze([
   // hinged door stands where the arm swings — "jest clash hinges i fix shelf
   // i nie pokazuje tego problemu". Report, never fix (the house grammar).
   { n: 12, level: 'red', label: 'Shoe box × hinge collision' },
+  // ─── TURN 35 (CLAUDE.md F1): the rail's own datum brought its own fault ──
+  // A rod hung a number above its support can end up through the board over
+  // it. The law is REPORT, never auto-fix — "never an auto-fix" is the spec's
+  // own phrase — so the rail stays exactly where the owner's number puts it
+  // and this says, in red, that it will not hang there.
+  { n: 13, level: 'red', label: 'Rail × obstacle above' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -95,6 +102,17 @@ export function sheetSizeMm(profile) {
     width: Number.isFinite(w) && w > 0 ? w : 2790,
     height: Number.isFinite(h) && h > 0 ? h : 2060,
   };
+}
+
+/**
+ * #13: the room a hanger's hook takes over the rod's axis, before the rail is
+ * fouling what is above it. The profile's `wardrobe.rail.partitionAbove` is
+ * that number already — it is where the rail's own partitioner board stands —
+ * so the check asks for no new constant the workshop would have to answer.
+ */
+export function railClearanceMm(profile) {
+  const n = Number(profile?.wardrobe?.rail?.partitionAbove);
+  return Number.isFinite(n) && n > 0 ? n : 40;
 }
 
 /** #8: over this width at 110°, consider a 155°. Owner: 600. */
@@ -199,6 +217,47 @@ export function runChecks({
           }
           : null,
       })));
+    }
+
+    // ── #13 the rail, and what stands over it (T35-F1) ───────────────────
+    {
+      const clearance = railClearanceMm(profile);
+      const rails = [
+        ...(result?.assemblies?.rail ? [{ ...result.assemblies.rail, zone: null }] : []),
+        ...(result?.assemblies?.columnRails || []),
+      ];
+      for (const r of rails) {
+        // What closes the opening this rod hangs in: the next board up in its
+        // own bay, or the carcass top. The engine publishes the support it
+        // resolved, so the check reads the SAME datum the rail was placed
+        // from rather than deriving a second opinion.
+        const ceiling = Number.isFinite(Number(r.ceiling))
+          ? Number(r.ceiling)
+          : (Number(result?.params?.height) || 0) - (Number(result?.params?.board_t) || 0);
+        // The rod where the OWNER'S NUMBER puts it — `wanted` — and not where
+        // the kit's clamp settled for. A clamped rail is a rail that did not
+        // fit, and this rule exists to say so.
+        const axis = Number.isFinite(Number(r.wanted)) ? Number(r.wanted) : Number(r.y);
+        const boards = (result.panels || [])
+          .filter((p) => p.role === 'shelf' && p.box && p.part !== 'VPART' && p.part !== 'RAIL-PART')
+          .map((p) => Number(p.box.y))
+          .filter((y) => Number.isFinite(y) && y > axis + 1e-6);
+        const above = boards.length ? Math.min(...boards, ceiling) : ceiling;
+        const { clash, room } = railObstruction({ axis, clearance, ceiling: above });
+        // `fits === false` is the rail the DATUM asked for, before the kit's
+        // own too-high clamp lowered it. The clamp is still there and still
+        // protects the drawing; this rule reports the number the owner typed,
+        // because "never an auto-fix" means he has to be told, not obeyed
+        // silently.
+        if (!clash && r.fits !== false) continue;
+        out.push(finding(13, 'red', at(null, {
+          message: `${unitNum}: hanging rail at ${Math.round(axis)} needs ${clearance} mm over it `
+            + `and has ${Math.round(Math.max(0, above - axis))} — lower it or move what is above it`,
+          subject: { unitId, editor: 'cabinet' },
+          railShortfallMm: round2(-room),
+          ...(r.zone == null ? {} : { zone: r.zone }),
+        })));
+      }
     }
 
     // ── #12 a fixed shoe box in the swing of a hinge arm (16.08, C) ───────

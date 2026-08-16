@@ -52,6 +52,10 @@ export function lightingSpec(profile) {
       // 10s beside a type-in field. Profile keys win when a profile names
       // them — these literals are the fallback, same as width/thickness.
       insetDefault: Number(strip.insetDefault) >= 0 ? Number(strip.insetDefault) : 80,
+      // CHAT-FIX 16.08 (owner): "światła pod plinthem na stałe 10 mm od
+      // krawędzi, bez możliwości zmiany" — the bottom strip's inset is LAW,
+      // not a setting: the engine ignores the item's own number.
+      plinthInset: Number(strip.plinthInset) >= 0 ? Number(strip.plinthInset) : 10,
       insetMax: Number(strip.insetMax) > 0 ? Number(strip.insetMax) : 200,
     },
     // ─── CHAT-FIX 16.08 (owner, point 2): THE HALO ───────────────────────────
@@ -206,6 +210,9 @@ export function stripsForUnit({
   // DRILLING STAYS ZERO — this module has never touched `result.drills` and
   // this feature does not begin (T33 rule 3, verbatim).
   const insetOf = (item) => {
+    // The plinth line is FIXED (owner, 16.08): always the profile's 10, the
+    // item's own number — old or new — is not read.
+    if (item?.kind === 'bottom') return spec.strip.plinthInset;
     if (item?.inset_mm === undefined || item?.inset_mm === null) {
       // Variant A is a STRIP law — the panel offers no edge field for a
       // spot ("spots have no edge to be off"), so a silent 80 would move

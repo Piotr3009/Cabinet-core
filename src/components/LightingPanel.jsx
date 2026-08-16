@@ -401,7 +401,11 @@ export default function LightingPanel() {
                     when they agree and the default when they differ; the
                     per-strip rows below still override one at a time. */}
                 {(() => {
-                  const strips = lighting.items.filter((i) => i.kind !== 'spot');
+                  const strips = lighting.items.filter(
+                    // The plinth line is pinned at the profile's 10 (owner,
+                    // 16.08) — the master leaves it alone, like the spots.
+                    (i) => i.kind !== 'spot' && i.kind !== 'bottom',
+                  );
                   if (!strips.length) return null;
                   const first = strips[0].inset_mm ?? spec.strip.insetDefault;
                   const common = strips.every(
@@ -489,7 +493,7 @@ export default function LightingPanel() {
                           stands for every placed line, always. Only the
                           depth slider still needs the computed strip (its
                           clamp does). Spots have no edge to be off. */}
-                      {it.kind !== 'spot' && (
+                      {it.kind !== 'spot' && it.kind !== 'bottom' && (
                         <div className="flex items-center gap-2 pl-1">
                           <span className="text-[10px] text-ink-400 shrink-0">Off the front edge</span>
                           {/* CHAT-FIX 16.08 (owner): *"paski co 10 mm są

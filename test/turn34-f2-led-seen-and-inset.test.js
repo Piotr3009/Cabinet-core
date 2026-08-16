@@ -118,11 +118,23 @@ test('DEFAULT: no answer sits 80 off the edge (variant A); an explicit 0 is T33 
   ];
   const DEF = lightingSpec(P).strip.insetDefault;
   assert.equal(DEF, 80, 'the profile default is the owner\'s 80');
-  // ABSENT = the default: the same scene as an explicit 80…
+  // ABSENT = the default: the same scene as an explicit 80 — except the
+  // PLINTH line, which is LAW at the profile's 10 (owner, 16.08: "na stałe
+  // 10 mm od krawędzi, bez możliwości zmiany") and ignores any number.
   const absent = strips(items);
   const at80 = strips(items.map((i) => ({ ...i, inset_mm: 80 })));
-  assert.deepEqual(absent.map((s) => s.box), at80.map((s) => s.box));
-  assert.ok(absent.every((s) => s.inset_mm === DEF));
+  const notBottom = (s) => s.kind !== 'bottom';
+  assert.deepEqual(
+    absent.filter(notBottom).map((s) => s.box),
+    at80.filter(notBottom).map((s) => s.box),
+  );
+  assert.ok(absent.filter(notBottom).every((s) => s.inset_mm === DEF));
+  const PL = lightingSpec(P).strip.plinthInset;
+  assert.equal(PL, 10, 'the plinth law is the owner\'s 10');
+  for (const set of [absent, at80]) {
+    const b = set.find((s) => s.kind === 'bottom');
+    assert.equal(b.inset_mm, PL, 'the plinth ignores the item\'s own number');
+  }
   // …and an EXPLICIT 0 is T33's: every strip flush at the front edge.
   const zero = strips(items.map((i) => ({ ...i, inset_mm: 0 })));
   const D = unit.params.depth;
@@ -130,7 +142,8 @@ test('DEFAULT: no answer sits 80 off the edge (variant A); an explicit 0 is T33 
   const line = lightingSpec(P).strip.sideLineWidth;
   const byKind = Object.fromEntries(zero.map((s) => [s.kind, s]));
   assert.equal(byKind.side.box.z, D - line);
-  assert.equal(byKind.bottom.box.z, D - sw);
+  // The plinth is 10 by law even when the hand says 0 (owner, 16.08).
+  assert.equal(byKind.bottom.box.z, D - sw - PL);
   assert.equal(byKind.top.box.z, D - sw);
   assert.equal(byKind.shelf.box.z,
     shelf.box.z + shelf.box.d - byKind.shelf.depth_mm - sw);
@@ -139,7 +152,8 @@ test('DEFAULT: no answer sits 80 off the edge (variant A); an explicit 0 is T33 
 test('an inset moves the strip back — and ONLY the strip', () => {
   // REWRITTEN 16.08.2026 (chat-fix, variant A): the baseline is an EXPLICIT
   // 0 — "absent" now answers 80 by law, so flush must be asked for by name.
-  for (const kind of ['shelf', 'side', 'bottom', 'top']) {
+  // (16.08: 'bottom' left the loop — the plinth is pinned at 10 by law.)
+  for (const kind of ['shelf', 'side', 'top']) {
     const base = {
       id: 'l1', unitId: 'u1', kind, inset_mm: 0, ...(kind === 'shelf' ? { ref: shelf.id } : {}), ...(kind === 'side' ? { ref: 'L' } : {}),
     };
@@ -245,7 +259,7 @@ test('the panel offers the field beside the depth control, on every kind', () =>
   // (16.08, master slider: `data-lighting-inset-all` sits ABOVE the list, so
   // the anchor is the PER-ITEM attribute, unique to the row under the guard.)
   const insetAt = src.indexOf('data-lighting-inset={it.id}');
-  const kindGuard = src.lastIndexOf("{it.kind !== 'spot' && (", insetAt);
+  const kindGuard = src.lastIndexOf("{it.kind !== 'spot' && it.kind !== 'bottom' && (", insetAt);
   assert.ok(kindGuard > 0 && kindGuard < insetAt,
     'the inset row stands behind the kind guard (everything but spots)');
   const stripGuard = src.lastIndexOf('{strip && (', insetAt);

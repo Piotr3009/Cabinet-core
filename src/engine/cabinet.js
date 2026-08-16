@@ -3922,9 +3922,16 @@ export function computeCabinet(params, profileOverride) {
     for (const pnl of panels.filter((x) => x.role === 'front')) {
       const trim = edgeTrim[pnl.id];
       if (!trim) continue;
-      const left = Math.max(0, Number(trim.left) || 0);
-      const right = Math.max(0, Number(trim.right) || 0);
-      if (!(left > 0 || right > 0)) continue;
+      // ─── TURN 34 (CLAUDE.md F6): A NEGATIVE VALUE IS AN EXTENSION ───────
+      // "raczej tylko przy appliance'ach — silnik powinien pilnować, żeby
+      // zawsze było 3" (owner, 16.08.2026). The channel used to clamp at 0
+      // here as well as in the plan, so even a planned extension arrived as a
+      // no-op. It no longer clamps: the DECISION about when an edge may extend
+      // is engine/frontClearance.js `healingPlan`'s alone (appliance only,
+      // capped at the stock clearance), and this file applies millimetres.
+      const left = Number(trim.left) || 0;
+      const right = Number(trim.right) || 0;
+      if (!left && !right) continue;
       const w = roundTo(pnl.w - left - right, 4);
       if (!(w > 0)) {
         // Rule 4 of the turn: a guard SPEAKS. A correction that would leave no

@@ -517,9 +517,32 @@ export function frontGapRows(clearances, profile) {
  *     cut (`front.appliance`, off the piece);
  *   · a WIDENING past the kit's own width — a trim only narrows; an edge that
  *     wants more front than the kit cut (want < 0 relative to stock) can only
- *     come back to trim 0;
+ *     come back to trim 0. THE ONE EXCEPTION IS THE APPLIANCE — see below;
  *   · a correction that would leave no board — the engine's own
  *     FRONT_TRIM_TOO_DEEP refusal, anticipated here so it is never provoked.
+ *
+ * ─── TURN 34 (CLAUDE.md F6): THE APPLIANCE EXCEPTION ────────────────────────
+ *
+ * The owner, 16.08.2026: *"raczej tylko przy appliance'ach — silnik powinien
+ * pilnować, żeby zawsze było 3"*.
+ *
+ * Rule 4 has always said an appliance neighbour wants clearance 0, because the
+ * machine's own face is already inset (a dishwasher door is 594 in a 600
+ * opening, so it provides the 3 itself and our front runs to the carcass end).
+ * The T32 floor could never deliver that: a front the kit cut 3 mm inside its
+ * own carcass end stood 3 + 3 = 6 from the appliance door, the correction was
+ * NEGATIVE, and `Math.max(0, …)` threw it away on every heal path.
+ *
+ * So the floor is KIND-DEPENDENT, in exactly one kind. At
+ * `NEIGHBOUR.APPLIANCE` the trim may go NEGATIVE — a negative trim is an
+ * EXTENSION, and engine/cabinet.js applies it as one — capped at CLOSING THE
+ * STOCK CLEARANCE TO 0 and never a micrometre wider than the carcass end. The
+ * clearance the kit cut is `have − old` (the trim narrows the edge, so what it
+ * stands at now is stock + trim), which makes the cap `old − have` in trim
+ * terms. Every other kind keeps "a trim only narrows" verbatim, and the pass
+ * still converges: a closed appliance edge measures a correction of 0 next
+ * time round. `doors.gap` stays the single source, so the owner's future
+ * one-knob gap setting ("nie teraz") is still one line away.
  *
  * Pure: reads clearances and the current trims, answers patches and the GREY
  * notes that announce them ("front 02-F −1.5 mm at the end panel") — rule 4:
@@ -543,7 +566,13 @@ export function healingPlan(clearances, { trimOf }) {
       if (front.appliance) continue;
       const was = (trimOf ? trimOf(front.unitId, front.panelId) : null) || { left: 0, right: 0 };
       const old = Number(was[side]) || 0;
-      const next = Math.max(0, round2(old + edge.correctionMm));
+      // T34 F6: the floor is kind-dependent. Everywhere but an appliance it is
+      // 0 (a trim only narrows); at an appliance it is the extension that
+      // closes the STOCK clearance to exactly 0, and no further.
+      const floor = edge.kind === NEIGHBOUR.APPLIANCE
+        ? round2(old - (Number(edge.haveClearanceMm) || 0))
+        : 0;
+      const next = Math.max(floor, round2(old + edge.correctionMm));
       const delta = round2(next - old);
       if (Math.abs(delta) < 0.05) continue;
       if (front.w - delta <= 0) {

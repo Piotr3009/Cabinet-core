@@ -4046,15 +4046,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!unit || !panelId) return null;
     const current = unit.params.front_edge_trim || {};
     const was = current[panelId] || { left: 0, right: 0 };
+    // T34 F6: a NEGATIVE value is an extension, and the channel carries it.
+    // The clamp used to live here too, so a plan that asked an appliance-side
+    // edge to extend arrived as 0 and the grey note announced a move that never
+    // happened. Who may extend is `healingPlan`'s decision; this stores mm.
     const next = {
-      left: Math.max(0, Number(patch?.left ?? was.left) || 0),
-      right: Math.max(0, Number(patch?.right ?? was.right) || 0),
+      left: Number(patch?.left ?? was.left) || 0,
+      right: Number(patch?.right ?? was.right) || 0,
     };
     const map = { ...current };
     // A correction of nothing is no correction: an empty entry left behind
     // would put `edgeTrim: {0,0}` on the piece and make a stock front look
     // hand-corrected on the sheet.
-    if (next.left <= 0 && next.right <= 0) delete map[panelId];
+    if (next.left === 0 && next.right === 0) delete map[panelId];
     else map[panelId] = next;
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId

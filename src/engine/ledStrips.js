@@ -61,8 +61,8 @@ export function lightingSpec(profile) {
     // additive glow quad around the line itself. Numbers here are fallbacks;
     // a profile that names `lighting.halo.*` wins.
     halo: {
-      area: Number(l.halo?.area) > 0 ? Number(l.halo.area) : 60,
-      glowOpacity: Number(l.halo?.glowOpacity) > 0 ? Number(l.halo.glowOpacity) : 0.5,
+      area: Number(l.halo?.area) > 0 ? Number(l.halo.area) : 22,
+      glowOpacity: Number(l.halo?.glowOpacity) > 0 ? Number(l.halo.glowOpacity) : 0.32,
       glowScale: Number(l.halo?.glowScale) > 0 ? Number(l.halo.glowScale) : 6,
       maxAreaLights: Number(l.halo?.maxAreaLights) > 0 ? Number(l.halo.maxAreaLights) : 16,
     },
@@ -79,6 +79,11 @@ export function lightingSpec(profile) {
     view: {
       emissive: pos(a.emissive, pos(l.view?.emissive, 0.85)),
       spotMultiplier: pos(a.spotEmissiveMultiplier, 1),
+      // CHAT-FIX 16.08 (owner): "jak wyłączę światło, to się LED-y nie
+      // wyłączają, a powinny" — the switch is a SWITCH now. Off = the strip
+      // is dark plastic (a whisper of emissive so the geometry still reads),
+      // no aura, no lamp.
+      offEmissive: pos(a.offEmissive, 0.1),
     },
     demo: {
       dimFactor: pos(a.demoDimFactor, pos(l.demo?.dimFactor, 0.15)),

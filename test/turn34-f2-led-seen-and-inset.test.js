@@ -84,8 +84,12 @@ test('the 3D reads the profile and never a literal', () => {
   // named once (`boost`) and the emissive line reads `spec.view.emissive *
   // boost`. Same law, one factored name.
   const src = readFileSync(new URL('../src/3d/LedStrips.jsx', import.meta.url), 'utf8');
-  assert.match(src, /const boost = lightDemo \? spec\.demo\.emissiveBoost : 1/);
+  // RE-DATED 16.08 (halo v2): the demo toggle became the LIGHT SWITCH
+  // ("jak wyłączę światło, to się LED-y nie wyłączają, a powinny") — the
+  // variable is `lightOn`, and OFF reads the profile's `offEmissive`.
+  assert.match(src, /const boost = lightOn \? spec\.demo\.emissiveBoost : 1/);
   assert.match(src, /spec\.view\.emissive \* boost/);
+  assert.match(src, /spec\.view\.offEmissive/, 'off is a real off, profile-listed');
   assert.match(src, /spec\.view\.spotMultiplier/);
   assert.match(src, /spec\.halo\.area \* boost/, 'the lamp obeys the same demo boost');
   assert.match(src, /spec\.halo\.glowOpacity \* boost/, 'the aura too');

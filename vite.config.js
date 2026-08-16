@@ -22,7 +22,11 @@ export default defineConfig({
       let count = '';
       try {
         if (!sha) sha = execSync('git rev-parse --short HEAD').toString().trim();
-        const shallow = execSync('git rev-parse --is-shallow-repository').toString().trim();
+        let shallow = execSync('git rev-parse --is-shallow-repository').toString().trim();
+        if (shallow === 'true') {
+          // Vercel clones shallow — one fetch and the count is TRUE, not a lie.
+          try { execSync('git fetch --unshallow --quiet', { stdio: 'ignore' }); shallow = 'false'; } catch { /* offline build */ }
+        }
         if (shallow !== 'true') {
           count = `#${execSync('git rev-list --count HEAD').toString().trim()} · `;
         }

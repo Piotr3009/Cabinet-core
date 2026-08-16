@@ -104,7 +104,7 @@ export default function App() {
   const buildBadge = (
     <div
       data-build-stamp={buildStamp}
-      className={`fixed bottom-1 right-2 ${LAYER_CLASS.chrome} text-[9px] text-ink-400/70 pointer-events-none select-none`}
+      className={`fixed bottom-1 right-2 ${LAYER_CLASS.chrome} text-xs font-mono text-ink-300 bg-shell-900/80 px-2 py-0.5 rounded pointer-events-none select-none`}
     >
       {buildStamp}
     </div>

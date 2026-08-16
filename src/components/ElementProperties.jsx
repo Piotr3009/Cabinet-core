@@ -47,6 +47,8 @@ export default function ElementProperties({
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const setShelfType = useProjectStore((s) => s.setShelfType);
+  // Turn 34 (CLAUDE.md F4): the shoe box's three decisions, on its item.
+  const setShoeBox = useProjectStore((s) => s.setShoeBox);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
   // Turn 24 (CLAUDE.md F3.3): which carcass board this partition is cut from.
   const setPartitionSlot = useProjectStore((s) => s.setPartitionSlot);
@@ -140,8 +142,68 @@ export default function ElementProperties({
     else setElementOverride(unit.id, panel.id, patch);
   };
 
+  // ─── TURN 34 (CLAUDE.md F4): the shoe box's own item ──────────────────────
+  // The three decisions live on the ITEM, exactly as a shelf's do; the panel
+  // carries its id (`meta.shoe_box`) so any of the seven boards reaches it.
+  const shoeBoxItem = (unit.params.sections?.[0]?.items || [])
+    .find((i) => i.kind === 'shoe_box' && i.id === panel?.meta?.shoe_box) || null;
+
   const row = (key) => {
     switch (key) {
+      // ─── TURN 34 (CLAUDE.md F4): FIX OR DRAWER ────────────────────────────
+      // "jeżeli nie jest szuflada to powinien być fix, nie z pinami — tu jest
+      // błąd" (owner, 16.08.2026). ONE construction; the variant is the only
+      // thing that changes — the box narrows by its runners and the carcass
+      // side is drilled differently.
+      case 'shoe-box-variant':
+        return (
+          <Field key={key} label="Mounting">
+            <select
+              className="cc-input w-full"
+              data-shoe-box-variant="1"
+              value={shoeBoxItem?.variant === 'D' ? 'D' : 'F'}
+              title="Fix is screwed from outside the carcass; drawer rides 13 mm side runners"
+              onChange={(e) => setShoeBox(unit.id, shoeBoxItem.id, { variant: e.target.value })}
+            >
+              <option value="F">Fix (screwed from outside)</option>
+              <option value="D">Drawer (side runners)</option>
+            </select>
+          </Field>
+        );
+      // "jedna lub 0 przegródek — 2 nie mają sensu" — across the width, so the
+      // box takes two rows of shoes rather than two columns of one.
+      case 'shoe-box-dividers':
+        return (
+          <Field key={key} label="Divider">
+            <select
+              className="cc-input w-full"
+              data-shoe-box-dividers="1"
+              value={Number(shoeBoxItem?.dividers) >= 1 ? '1' : '0'}
+              title="Across the width — two rows of shoes"
+              onChange={(e) => setShoeBox(unit.id, shoeBoxItem.id, { dividers: e.target.value })}
+            >
+              <option value="0">None</option>
+              <option value="1">One (2 shoe rows)</option>
+            </select>
+          </Field>
+        );
+      // "pozycja jak proponujesz" — default 0 (on the bay floor), or directly
+      // above the drawer stack where the bay has one. The pilots are drilled
+      // where this says: a position is a pre-export decision.
+      case 'shoe-box-height':
+        return (
+          <Field key={key} label="Height from bay floor">
+            <NumberField
+              className="cc-input text-right"
+              data-shoe-box-height="1"
+              value={Number(shoeBoxItem?.pos_mm ?? panel?.box?.y ?? 0)}
+              min={0}
+              step={1}
+              title="Where the box stands off the bay floor — the carcass side is drilled for this number"
+              onCommit={(v) => setShoeBox(unit.id, shoeBoxItem.id, { pos_mm: v })}
+            />
+          </Field>
+        );
       // ─── TURN 21 (CLAUDE.md F7): fix / adjustable / pull-out ──────────────
       case 'shelf-type':
         return (
@@ -160,6 +222,19 @@ export default function ElementProperties({
                 </option>
               ))}
             </select>
+            {/* ─── TURN 34 (CLAUDE.md F4): ONE GREY NOTE, ON THE OLD SHELF ──
+                The owner retired the pinned 15° shoe shelf on 16.08 — "jeżeli
+                nie jest szuflada to powinien być fix, nie z pinami — tu jest
+                błąd". A project already built with one keeps rendering
+                exactly as saved (no silent migration), so the only thing this
+                turn owes it is a sentence saying what replaced it. */}
+            {shelfTypeOf(item) === 'shoe' && (
+              <p className="mt-1 text-[10px] text-ink-400" data-shoe-shelf-note="1">
+                This is the older pinned shoe shelf. It stays exactly as saved — new shoe
+                accessories are built as the Shoe box (Add items → Shoe box): a boxed insert,
+                fixed or on runners, never on pins.
+              </p>
+            )}
           </Field>
         );
       // ─── TURN 21 (CLAUDE.md F10): ONE TRUTH, THE INTERIOR DATUM ───────────

@@ -313,6 +313,32 @@ export function cases() {
     // cabinet with a FULL stack is where it bites: the top box would stand
     // 4.5 mm under the panel and is cut back to leave the owner's 5.
     out.push({ id: `${type}+drawers-capped`, params: { ...base, height: 500, drawers: 4 } });
+    // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX, BOTH MOUNTING LAWS ──────────
+    //
+    // The box is a NEW family of panels — four grooved walls, a sloped bottom
+    // cut to its own hypotenuse, a divider and a front — and every one of them
+    // has to go through the T25 duplicate-edge guard like any other board (the
+    // spec asks for exactly that, in as many words). It is an ITEM, so a bare
+    // kit call cuts none of it and every golden default is untouched; these
+    // rows show in the diff as ADDITIONS on named files.
+    //
+    // Both variants, because they cut different widths and drill different
+    // holes: the FIX screwed through the carcass side (3 × ⌀3), the DRAWER on
+    // side runners (⌀5 at the sheet's own column).
+    for (const variant of ['F', 'D']) {
+      out.push({
+        id: `${type}+shoe-box-${variant === 'F' ? 'fix' : 'drawer'}`,
+        params: {
+          ...base,
+          sections: [{
+            width_mm: base.width,
+            items: [{
+              id: 'sb1', kind: 'shoe_box', variant, dividers: 1,
+            }],
+          }],
+        },
+      });
+    }
   }
   return out;
 }

@@ -3117,6 +3117,44 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ─────────────────────────────────
+   *
+   * The owner, 16.08.2026: *"jeżeli nie jest szuflada to powinien być fix, nie
+   * z pinami — tu jest błąd"*. ONE construction, TWO mounting laws — the
+   * variant is the only thing that changes at the door.
+   *
+   * An ITEM like a shelf, one per column (two shoe boxes in one opening is a
+   * thing nobody can fit). The engine cuts the seven boards and drills the
+   * carcass sides; this stores the joiner's four decisions and nothing else.
+   */
+  addShoeBox: (unitId, { variant = 'F', zone = null, dividers = 1, pos_mm = null } = {}) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
+    const items = unit.params.sections?.[0]?.items || [];
+    const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    if (items.some((i) => i.kind === 'shoe_box' && zoneOf(i) === wantZone)) return null;
+    return get().addItem(unitId, {
+      kind: 'shoe_box',
+      variant: variant === 'D' ? 'D' : 'F',
+      dividers: Number(dividers) >= 1 ? 1 : 0,
+      ...(pos_mm == null ? {} : { pos_mm: Math.max(0, Math.round(Number(pos_mm) || 0)) }),
+      ...(wantZone == null ? {} : { zone: wantZone }),
+    });
+  },
+
+  /** One shoe box's own fields, patched on the item. */
+  setShoeBox: (unitId, itemId, patch) => {
+    const clean = {};
+    if (patch?.variant != null) clean.variant = patch.variant === 'D' ? 'D' : 'F';
+    if (patch?.dividers != null) clean.dividers = Number(patch.dividers) >= 1 ? 1 : 0;
+    if (patch?.pos_mm != null) clean.pos_mm = Math.max(0, Math.round(Number(patch.pos_mm) || 0));
+    if (!Object.keys(clean).length) return null;
+    return get().updateItem(unitId, itemId, clean);
+  },
+
+  /**
    * ─── TURN 33 (CLAUDE.md F3): HOW HIGH THE RAIL STANDS, OFF THE FLOOR ──────
    *
    * The pull-down suggestion's own measure: the rail's carcass-local y plus

@@ -860,6 +860,56 @@ export const DEFAULT_CABINET_PROFILE = {
       // workshop's own (the WINE lattice precedent).
       stopRail: { height: 60, thickness: 18 },
     },
+
+    // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ────────────────────────────
+    //
+    // The owner retired the pinned 15° shelf on 16.08.2026 — *"jeżeli nie
+    // jest szuflada to powinien być fix, nie z pinami — tu jest błąd"* — and
+    // designed its replacement line by line the same day. The record is
+    // `reference/lisp/KIT_SHOE_BOX.lsp`; every number here is its constants
+    // block A, name for name, and `engine/shoeBox.js` MATCHES the kit rather
+    // than interpreting it (iron rule 3).
+    //
+    // The T33 shoeShelf block above is UNTOUCHED: a saved project built as
+    // the pinned shelf keeps rendering exactly as saved. No silent migration.
+    shoeBox: {
+      wallH: 80,          // SHOE_WALL_H — sides, back and box front
+      frontH: 120,        // SHOE_FRONT_H — the front, BOTH variants
+      dividerH: 50,       // SHOE_DIV_H
+      runnerW: 13,        // SHOE_RUNNER_W — per side ("runners 13 mm szerokości")
+      grooveDepth: 6,     // SHOE_GROOVE_D — in all FOUR walls
+      groovePlay: 0.2,    // SHOE_GROOVE_PLAY — groove width = bottom G + this
+      angleMaxDeg: 10,    // SHOE_ANGLE_MAX — the ceiling, never exceeded
+      pilotD: 3,          // SHOE_PILOT_D — FIX through-pilot
+      pilotN: 3,          // SHOE_PILOT_N
+      pilotEnd: 50,       // SHOE_PILOT_END — first/last from the box ends
+      runnerFixD: 5,      // SHOE_RUNFIX_D — euro
+      fixAxis: 40,        // SHOE_FIX_AXIS — above the box floor
+      setbackX: 3,        // SHOE_SETBACK_X — runner face = frontT + this
+      infill: 30,         // SHOE_INFILL — per hinged side, behind doors
+      runnerFrontFix: 37, // SHOE_RUNNER_FRONT_FIX — always, from the face
+      // SHOE_RUNNER_MAP — the owner's own sheet, 16.08.2026 (Hafele-type):
+      // the REAR fixing's system column per NL. An NL that is not a key here
+      // drills NOTHING and says so, which is why this is a table and not a
+      // formula. Owner-extendable, one line per rung.
+      drillMap: {
+        150: 77.2,
+        200: 128,
+        250: 128,
+        300: 224,
+        350: 224,
+        400: 320,
+        450: 352,
+        500: 416,
+        550: 448,
+        600: 480,
+        650: 544,
+        700: 544,
+      },
+      // The kit's own C section. `SCREWS_3MM` is REUSED — the FIX pilots are
+      // ordinary ⌀3 screw holes — and the two new names are the kit's.
+      layers: { groove: 'SHOE_GROOVE_6MM', runner: 'SHOE_RUNNER_5MM', screw: 'SCREWS_3MM' },
+    },
     // OWNER'S THRESHOLD, 15.08.2026: a column's hanging rail above this many
     // millimetres FROM THE FLOOR makes the UI SUGGEST the pull-down — a grey
     // hint, never a block.
@@ -3257,6 +3307,22 @@ export const DEFAULT_CABINET_PROFILE = {
           endAllowance: 16,
           diameter: 10,
         },
+      },
+
+      // ─── TURN 34 (CLAUDE.md F4): THE SIDE-MOUNTED SHOE RUNNER ───────────
+      //
+      // A NEW hardware family and deliberately NOT MOVENTO — the shoe box's
+      // drawer variant rides 13 mm side runners in the carcass sides, on the
+      // owner's own drilling sheet of 16.08.2026 (the map lives with the box,
+      // `wardrobeAccessories.shoeBox.drillMap`, because it is the KIT's
+      // record and the kit is the law).
+      //
+      // Articles are UNKNOWN. Iron rule 9: the BOM prints a YELLOW NAMED SPEC
+      // and never an invented number, until the owner fills the register.
+      sideShoe: {
+        system: 'Side-mount shoe runner',
+        widthPerSide: 13,
+        note: 'article unknown — the owner has not filled the register',
       },
     },
     // An adjustable leg: a plate, a stem and a foot.

@@ -70,7 +70,10 @@ const MECHANISM_PARTS = new Set(['DP', 'FILLER']);
  * there on purpose and moves by hand, and taking the click away from them would
  * take the drag with it.
  */
-const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
+// Turn 34 (CLAUDE.md F4): the SHOE BOX joins them — it is exactly what the
+// sentence above describes, a thing a joiner put inside a carcass on purpose,
+// and it has its own modal (variant, divider, height from the bay floor).
+const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf', 'shoe-box']);
 
 /**
  * The kinds that are ATTACHED to a carcass rather than part of it (turn 14,
@@ -147,7 +150,18 @@ export function elementKind(panel) {
     case 'MASK': return 'masking-panel';
     case 'FRONT': return 'door';
     case 'DRAWER-FRONT': return 'drawer-front';
-    default: return null;
+    default:
+      // ─── Turn 34 (CLAUDE.md F4): the shoe box's seven boards ───
+      // `SHOEBOX-SL`, `SHOEBOX-BK`, `SHOEBOX-BT`, `SHOEBOX-FR` … — one kind,
+      // because the decisions a joiner makes are about the BOX, not about its
+      // back panel. Clicking any board of it opens the box's own modal, the
+      // way clicking any board of a drawer opens the drawer's.
+      //
+      // The prefix is `SHOEBOX-` and not `SHOE-` on purpose: the T33 shoe
+      // SHELF's stop rail is `SHOE-RAIL`, it has never been selectable, and a
+      // turn that retires the shelf must not quietly change what a saved
+      // project's pieces are.
+      return String(part).startsWith('SHOEBOX-') ? 'shoe-box' : null;
   }
 }
 
@@ -168,6 +182,17 @@ const LABELS = {
   door: 'Door',
   'drawer-front': 'Drawer front',
   drawer: 'Drawer box',
+  'shoe-box': 'Shoe box',
+};
+
+/** What each board of a SHOE BOX is called, in a joiner's words (T34 F4). */
+const SHOE_PIECES = {
+  side: 'side',
+  back: 'back',
+  boxFront: 'box front',
+  bottom: 'sloped bottom',
+  divider: 'divider',
+  front: 'front',
 };
 
 /** What each board of a drawer box is called, in a joiner's words. */
@@ -196,6 +221,12 @@ export function elementLabel(panel) {
     const piece = DRAWER_PIECES[panel.part];
     const side = panel.meta?.side === 'R' ? ' (right)' : (panel.meta?.side === 'L' ? ' (left)' : '');
     return `Drawer ${n ?? ''}${piece ? ` — ${piece}${side}` : ''}`.replace(/\s+/g, ' ').trim();
+  }
+  // Turn 34 (F4): which board of which box, and which way it is mounted.
+  if (kind === 'shoe-box') {
+    const piece = SHOE_PIECES[panel.meta?.shoe_role] || 'piece';
+    const how = panel.meta?.shoe_variant === 'D' ? 'drawer' : 'fix';
+    return `Shoe box (${how}) — ${piece}`;
   }
   return LABELS[kind] || 'Piece';
 }
@@ -272,6 +303,13 @@ const FIELDS = {
   // clicks — so the drawer's height is edited on it as well as on its front.
   // One field id, one control, two places it can be reached from.
   drawer: ['drawer-height', 'runner-variant', 'material'],
+  // ─── Turn 34 (CLAUDE.md F4): the shoe box's own three decisions ──────────
+  // The owner named exactly these on 16.08 and no others: fix or drawer
+  // ("jeżeli nie jest szuflada to powinien być fix"), one divider or none
+  // ("jedna lub 0 przegródek — 2 nie mają sensu"), and how high off the bay
+  // floor it stands ("pozycja jak proponujesz" — default 0, or above the
+  // drawer stack). Everything else about the box is the kit's law.
+  'shoe-box': ['shoe-box-variant', 'shoe-box-dividers', 'shoe-box-height', 'material'],
 };
 
 /**
@@ -294,6 +332,11 @@ export function elementFields(panel, type = null) {
   // horizontal partition above a drawer stack follows the stack, and a shelf
   // that arrived as a bare count has no id. Those lose the fields that need one.
   if ((kind === 'shelf' || kind === 'partition') && !panel.meta?.itemId) {
+    return fields.filter((f) => f === 'material');
+  }
+  // Turn 34 (F4): the box's three decisions live on its ITEM, so a box with
+  // no item behind it keeps only what a board can answer for itself.
+  if (kind === 'shoe-box' && !panel.meta?.shoe_box) {
     return fields.filter((f) => f === 'material');
   }
   return fields;
@@ -342,6 +385,11 @@ const ACTIONS = {
   spurs: { remove: true, move: true, why: null },
   shelf: { remove: true, move: true, why: null },
   partition: { remove: true, move: true, why: null },
+  // Turn 34 (F4): the box comes out in one piece — it is one thing a joiner
+  // put in. It is not DRAGGED: where it stands is the "Height from bay floor"
+  // field, because the pilots are drilled where that number says and a
+  // position is a pre-export decision, not a hardware adjustment.
+  'shoe-box': { remove: true, move: false, why: 'The box stands where its "Height from bay floor" says — the carcass side is drilled for that number.' },
   door: { remove: true, move: false, why: 'A door hangs on its hinges — the hinge side is a door property.' },
   'end-panel': { remove: true, move: false, why: 'An end panel is screwed to the side it masks.' },
   infill: { remove: true, move: false, why: 'A filler IS the gap it closes.' },

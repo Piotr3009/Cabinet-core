@@ -146,6 +146,17 @@ const CLASSES = [
     draw: true,
     reason: 'the wall bracket’s cut-out in the back panel — the bracket passes through it.',
   },
+  // ─── Turn 34 (CLAUDE.md F4): the shoe box's two classes ───
+  {
+    layer: 'SHOE_GROOVE_6MM',
+    draw: true,
+    reason: 'the sloped bottom’s seat, 6 mm deep in all four walls of the box — a groove cut to the depth its own record states, exactly as the drawer box’s two grooves are, and the board that sits in it is 6 mm into every wall.',
+  },
+  {
+    layer: 'SHOE_RUNNER_5MM',
+    draw: true,
+    reason: 'the side runner’s euro fixings in the carcass side, on the owner’s own 16.08 sheet. BLIND: a ⌀5 broken through the outer face of a wardrobe side would show in the room, exactly as the hinge plate’s dowels would.',
+  },
   {
     layer: 'UNIT_NUMBER',
     draw: false,

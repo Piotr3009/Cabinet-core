@@ -119,6 +119,18 @@ export function writeDxf(entities, layers, extents) {
  * hole machined to its own outside.
  */
 function pocketPoints(p) {
+  // ─── Turn 34 (CLAUDE.md F4): a pocket may carry its OWN points ───────────
+  // The shoe box's side groove is a PARALLELOGRAM — six deep, running at the
+  // slope's own angle from (G, 0) to (depth − G, rear), its width taken
+  // PERPENDICULAR to that slope (KIT_SHOE_BOX.lsp `drawSHOE_SIDE`, a
+  // `makePolyline`). A rectangle cannot say that. `cnc/edgeGuard.js` has read
+  // `pocket.pts` since turn 25; this is the writer learning the same field.
+  // A pocket without it is the axis-aligned rectangle it has always been, so
+  // no existing byte moves.
+  if (Array.isArray(p?.pts) && p.pts.length >= 3) {
+    const own = p.pts.map(([x, y]) => [x, y]);
+    return p.cutout ? own.reverse() : own;
+  }
   const pts = [[p.x1, p.y1], [p.x2, p.y1], [p.x2, p.y2], [p.x1, p.y2]];
   return p.cutout ? pts.reverse() : pts;
 }

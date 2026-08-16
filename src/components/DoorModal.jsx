@@ -10,6 +10,8 @@ import {
   doorHingeAssignment, hingeChoices, resolveDoorHinge, resolveHingeFinish,
 } from '../engine/hinges.js';
 import { elementLabel } from '../engine/elements.js';
+// Turn 34 (CLAUDE.md F8): what one Delete removes, and whether it may.
+import { deletePlan } from '../engine/deleteElement.js';
 import { panelWeight } from '../engine/lifts.js';
 import { resolvePanelMaterial } from '../engine/materials.js';
 import { migrateDesign } from '../engine/design.js';
@@ -155,6 +157,11 @@ export default function DoorModal() {
           {/* ─── Turn 25 (CLAUDE.md F11): REMOVE DOOR ───
               No confirmation — Undo covers it. */}
           <RemoveDoor unit={unit} panel={panel} onDone={closeModal} />
+          {/* ─── TURN 34 (CLAUDE.md F8): DELETE, IN THE MODAL ───
+              "w modalu pokaż też Delete" (owner, 16.08.2026). The SAME action
+              the key runs — one store call, one plan, one heal sweep — so the
+              button and the keyboard can never mean two different things. */}
+          <DeleteElement unit={unit} panel={panel} onDone={closeModal} />
           {/* ─── Turn 19 (CLAUDE.md F5.1): WHAT IT WEIGHS ───
               An AVENTOS is chosen on the weight of the front, and a joiner who
               cannot see the weight cannot argue with the proposal. */}
@@ -681,6 +688,54 @@ function RemoveDoor({ unit, panel, onDone }) {
         }}
       >
         Remove door
+      </button>
+    </div>
+  );
+}
+
+/**
+ * ─── DELETE (turn 34, CLAUDE.md F8) ─────────────────────────────────────────
+ *
+ * The owner, 16.08.2026: *"szuflady i wszystkie inne elementy: po naciśnięciu
+ * i podświetleniu — usunięcie przez naciśnięcie Delete; w modalu pokaż też
+ * Delete."*
+ *
+ * The button and the key are ONE action (`deleteSelectedElement`), so what it
+ * removes, where the selection falls and the heal sweep that follows are the
+ * same on both. Where the piece cannot go, this SAYS SO in the plan's own
+ * sentence rather than offering a button that refuses — the #58 pattern.
+ *
+ * NO UNDO SYSTEM EXISTS, and the button says what it does: this is immediate.
+ */
+function DeleteElement({ unit, panel, onDone }) {
+  const deleteSelectedElement = useProjectStore((s) => s.deleteSelectedElement);
+  const notify = useUiStore((s) => s.notify);
+  const plan = useMemo(() => deletePlan({ unit, panel }), [unit, panel]);
+  // The door already has its own Remove button, in its own words, right above.
+  if (panel?.part === 'FRONT' && !panel?.meta?.appliance) return null;
+  if (!plan.allowed) {
+    return (
+      <p className="mt-2 pt-2 border-t border-shell-600 text-[11px] text-ink-400" data-element-delete-why="1">
+        <span className="text-ink-200">Cannot be deleted.</span> {plan.reason}
+      </p>
+    );
+  }
+  return (
+    <div className="mt-2 pt-2 border-t border-shell-600">
+      <button
+        type="button"
+        className="cc-btn px-2 text-[11px] text-red-300"
+        data-element-delete={panel.id}
+        title="Removes it now — there is no undo for this."
+        onClick={() => {
+          const res = deleteSelectedElement({ unitId: unit.id, elementRef: panel.id });
+          if (!res.ok) { notify(res.error || 'Nothing was deleted.', 'warn'); return; }
+          // A drawer stack decrements one per press and the selection falls to
+          // the next drawer down, so the window stays open on it.
+          if (!res.next) onDone?.();
+        }}
+      >
+        Delete {plan.label ? plan.label.toLowerCase() : 'this element'} — no undo
       </button>
     </div>
   );

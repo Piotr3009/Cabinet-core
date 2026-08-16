@@ -28,6 +28,11 @@ export default function LedStrips({
   if (!strips.length) return null;
 
   const spec = lightingSpec(profile);
+  // ─── TURN 34 (CLAUDE.md F2): BRIGHT ENOUGH TO SEE ─────────────────────────
+  // "są zbyt słabe — nic nie widać, za słabo świecą" (owner, 16.08.2026). The
+  // numbers are the profile's (`appearance.lighting.*`), never literals here;
+  // a spot disc reads smaller than a strip and carries its own multiplier so
+  // the two look like the same light.
   const intensity = spec.view.emissive * (lightDemo ? spec.demo.emissiveBoost : 1);
 
   return strips.map((s) => {
@@ -46,7 +51,7 @@ export default function LedStrips({
         <meshStandardMaterial
           color={s.hex}
           emissive={s.hex}
-          emissiveIntensity={intensity}
+          emissiveIntensity={intensity * (s.kind === 'spot' ? spec.view.spotMultiplier : 1)}
           roughness={0.4}
         />
       </mesh>

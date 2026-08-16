@@ -28,9 +28,13 @@ import { roundTo } from './format.js';
 /** The five placement kinds the owner dictated, 15.08.2026. */
 export const LIGHTING_KINDS = ['shelf', 'side', 'bottom', 'top', 'spot'];
 
+const pos = (v, fallback) => (Number(v) > 0 ? Number(v) : fallback);
+
 /** The profile's lighting block, with every field present. */
 export function lightingSpec(profile) {
   const l = profile?.lighting || {};
+  // Turn 34 (CLAUDE.md F2): the EMISSION numbers live here now.
+  const a = profile?.appearance?.lighting || {};
   const strip = l.strip || {};
   const spot = l.spot || {};
   return {
@@ -48,10 +52,19 @@ export function lightingSpec(profile) {
       diameter: Number(spot.diameter) > 0 ? Number(spot.diameter) : 55,
       defaultCount: Number(spot.defaultCount) > 0 ? Math.trunc(Number(spot.defaultCount)) : 2,
     },
-    view: { emissive: Number(l.view?.emissive) > 0 ? Number(l.view.emissive) : 0.85 },
+    // ─── TURN 34 (CLAUDE.md F2): THE BRIGHTNESS LIVES IN `appearance` ───────
+    // "są zbyt słabe — nic nie widać, za słabo świecą" (owner, 16.08.2026).
+    // The numbers moved to `profile.appearance.lighting.*` — the spec's own
+    // home for them — and rose. `profile.lighting.view/demo` is still read as
+    // the fallback, so a profile saved before this turn keeps its own answer
+    // rather than being silently brightened.
+    view: {
+      emissive: pos(a.emissive, pos(l.view?.emissive, 0.85)),
+      spotMultiplier: pos(a.spotEmissiveMultiplier, 1),
+    },
     demo: {
-      dimFactor: Number(l.demo?.dimFactor) > 0 ? Number(l.demo.dimFactor) : 0.15,
-      emissiveBoost: Number(l.demo?.emissiveBoost) > 0 ? Number(l.demo.emissiveBoost) : 2.6,
+      dimFactor: pos(a.demoDimFactor, pos(l.demo?.dimFactor, 0.15)),
+      emissiveBoost: pos(a.emissiveBoost, pos(l.demo?.emissiveBoost, 2.6)),
     },
   };
 }
@@ -156,7 +169,21 @@ export function stripsForUnit({
   const hex = lighting.temperatureEntry?.hex || '#fff3e0';
   const out = [];
 
+  // ─── TURN 34 (CLAUDE.md F2): THE EDGE OFFSET ──────────────────────────────
+  // "nie ma możliwości ustawienia jak daleko od edge" (owner, 16.08.2026).
+  // ONE number per strip, applied along DEPTH and to nothing else: the strip
+  // moves back from the front edge by `inset_mm` and keeps its length, its
+  // width and its height. Absent or 0 reproduces T33's geometry exactly.
+  //
+  // DRILLING STAYS ZERO — this module has never touched `result.drills` and
+  // this feature does not begin (T33 rule 3, verbatim).
+  const insetOf = (item) => {
+    const n = Number(item?.inset_mm);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
+
   for (const item of mine) {
+    const inset = insetOf(item);
     if (item.kind === 'shelf') {
       const panel = (result?.panels || []).find((p) => p.id === item.ref && p.box);
       if (!panel || panel.role !== 'shelf') continue;      // no shelf, no strip
@@ -172,7 +199,7 @@ export function stripsForUnit({
         box: {
           x: panel.box.x,
           y: panel.box.y - t,
-          z: panel.box.z + panel.box.d - depth - sw,
+          z: panel.box.z + panel.box.d - depth - sw - inset,
           w: panel.box.w,
           h: t,
           d: sw,
@@ -180,6 +207,7 @@ export function stripsForUnit({
         round: false,
         length_mm: panel.box.w,
         depth_mm: depth,
+        inset_mm: inset,
         depth_max: depthMax,
         temperature: lighting.temperature,
         hex,
@@ -193,10 +221,11 @@ export function stripsForUnit({
         id: item.id,
         kind: 'side',
         box: {
-          x, y: G, z: D - line, w: t, h: Math.max(0, H - 2 * G), d: line,
+          x, y: G, z: D - line - inset, w: t, h: Math.max(0, H - 2 * G), d: line,
         },
         round: false,
         length_mm: Math.max(0, H - 2 * G),
+        inset_mm: inset,
         temperature: lighting.temperature,
         hex,
       });
@@ -207,10 +236,11 @@ export function stripsForUnit({
         id: item.id,
         kind: 'bottom',
         box: {
-          x: G, y: -t, z: D - sw, w: Math.max(0, W - 2 * G), h: t, d: sw,
+          x: G, y: -t, z: D - sw - inset, w: Math.max(0, W - 2 * G), h: t, d: sw,
         },
         round: false,
         length_mm: Math.max(0, W - 2 * G),
+        inset_mm: inset,
         temperature: lighting.temperature,
         hex,
       });
@@ -221,10 +251,11 @@ export function stripsForUnit({
         id: item.id,
         kind: 'top',
         box: {
-          x: G, y: H, z: D - sw, w: Math.max(0, W - 2 * G), h: t, d: sw,
+          x: G, y: H, z: D - sw - inset, w: Math.max(0, W - 2 * G), h: t, d: sw,
         },
         round: false,
         length_mm: Math.max(0, W - 2 * G),
+        inset_mm: inset,
         temperature: lighting.temperature,
         hex,
       });
@@ -241,10 +272,11 @@ export function stripsForUnit({
           itemId: item.id,
           kind: 'spot',
           box: {
-            x: cx - dia / 2, y: -t, z: D / 2 - dia / 2, w: dia, h: t, d: dia,
+            x: cx - dia / 2, y: -t, z: D / 2 - dia / 2 - inset, w: dia, h: t, d: dia,
           },
           round: true,
           length_mm: 0,
+          inset_mm: inset,
           temperature: lighting.temperature,
           hex,
         });

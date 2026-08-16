@@ -1,0 +1,241 @@
+{
+  "steps": [
+    {
+      "label": "R8 — the app is pointed at the silent showroom",
+      "ok": true,
+      "detail": "http://127.0.0.1:4174"
+    },
+    {
+      "label": "F4 — the FIX box takes the whole opening, walls 80, one divider",
+      "ok": true,
+      "detail": "{\"boxW\":864,\"opening\":864}"
+    },
+    {
+      "label": "F4 — rearEdge = min(80, run · tan 10°), and the angle follows it",
+      "ok": true,
+      "detail": "{\"run\":439,\"rear\":77.41,\"angleDeg\":10,\"slopeLen\":445.77,\"grooveW\":18.2,\"grooveDepth\":6}"
+    },
+    {
+      "label": "F4 — all seven boards of the box are DRAWN in the scene",
+      "ok": true,
+      "detail": "SHOE1-BF SHOE1-BK SHOE1-BT SHOE1-DV SHOE1-FR SHOE1-SL SHOE1-SR"
+    },
+    {
+      "label": "F4 — the bottom’s GRAIN runs ACROSS, along its width",
+      "ok": true,
+      "detail": "{\"grain\":\"w\",\"w\":840,\"h\":457.77}"
+    },
+    {
+      "label": "F4 — 3 × ⌀3 through-pilots per carcass side, driven from OUTSIDE",
+      "ok": true,
+      "detail": "6 holes"
+    },
+    {
+      "label": "F4 — the DRAWER box loses 2 × 13 of runner and 30 per hinged side",
+      "ok": true,
+      "detail": "opening 964 → box 878 (lost 86)"
+    },
+    {
+      "label": "F4 — the runner face is frontT + 3, first fix 37, rear at the sheet’s column",
+      "ok": true,
+      "detail": "{\"nl\":450,\"column\":352,\"faceX\":28,\"axisY\":40,\"onSheet\":true}"
+    },
+    {
+      "label": "F4 — the pair is a YELLOW NAMED SPEC — no article invented",
+      "ok": true,
+      "detail": "Side-mount shoe runner · NL 450 · 13 mm per side · article unknown — the owner has not filled the register"
+    },
+    {
+      "label": "F2 — the LEDs are UNMISTAKABLE: the working view is over T33’s brightest",
+      "ok": true,
+      "detail": "off 3.4"
+    },
+    {
+      "label": "F2 — and \"Turn on the light\" raises them further still",
+      "ok": true,
+      "detail": "on 10.88"
+    },
+    {
+      "label": "F2 — the edge offset moves the strip 60 mm back, MEASURED in the scene",
+      "ok": true,
+      "detail": "z -948 → -1008 mm"
+    },
+    {
+      "label": "F2 — …and ONLY the strip: its length law is untouched",
+      "ok": true,
+      "detail": "960 mm both times"
+    },
+    {
+      "label": "F9 — the \"Front dimensions\" button beside its twin turns the layer ON",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "label": "F5 — touching carcasses give ONE leaf-to-leaf figure, and it is 3.00",
+      "ok": true,
+      "detail": "{\"mm\":3,\"rows\":1}"
+    },
+    {
+      "label": "F5 — …and the pair of 1.5s at that line stands down",
+      "ok": true,
+      "detail": "{\"rows\":1}"
+    },
+    {
+      "label": "F5 — apart, the owner’s triplet stands: 1.5 · the distance · 1.5",
+      "ok": true,
+      "detail": "[1.5,100,1.5]"
+    },
+    {
+      "label": "F9 — OFF hides the whole front-dimension layer, merged figure and all",
+      "ok": true,
+      "detail": "0 rows drawn"
+    },
+    {
+      "label": "F8 — a stack of three stands",
+      "ok": true,
+      "detail": "W01-DF1 W01-DF2 W01-DF3"
+    },
+    {
+      "label": "F8 — the top drawer front is the selected element",
+      "ok": true,
+      "detail": "{\"unitId\":\"u_ady9pb0\",\"elementRef\":\"W01-DF3\"}"
+    },
+    {
+      "label": "F8 — three presses clear a stack of three, one per press",
+      "ok": true,
+      "detail": "3 → 2 → 1 → 0"
+    },
+    {
+      "label": "F8 — …and with the stack empty the selection is cleared",
+      "ok": true,
+      "detail": "null"
+    },
+    {
+      "label": "F8 — the key is INERT while a field owns the keyboard",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "label": "F1 — a spray front with a colour and NO board is MISSING, on the live engine",
+      "ok": true,
+      "detail": "[\"Carcass 1\",\"Front 1\"]"
+    },
+    {
+      "label": "F1 — …and assigning Generic clears it (the soft-start law stands)",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "label": "F3 — the BOM orders the BOX + 10: a 490 box asks 500 and orders NL 500",
+      "ok": true,
+      "detail": "490 mm · orders NL 500 · MOVENTO 760H · T · 3000500T / 3000500T"
+    },
+    {
+      "label": "F6 — a front beside an appliance runs to its own carcass end: the sum is 3",
+      "ok": true,
+      "detail": "[{\"panelId\":\"02-F\",\"side\":\"left\",\"have\":0,\"correction\":0}]"
+    },
+    {
+      "label": "F6 — …and the trim that did it is NEGATIVE — an extension, on that edge only",
+      "ok": true,
+      "detail": "{\"02-F\":{\"left\":-1.5,\"right\":0}}"
+    },
+    {
+      "label": "F7 — a NEW project frames its shakers at 60",
+      "ok": true,
+      "detail": "60"
+    },
+    {
+      "label": "F7 — …and a job saved before 16.08 opens PINNED at 70",
+      "ok": true,
+      "detail": "70"
+    },
+    {
+      "label": "R6 — the whole walk ends with a clean console",
+      "ok": true,
+      "detail": "0 error(s)"
+    }
+  ],
+  "shots": [
+    {
+      "name": "4a-the-fix-shoe-box-in-an-open-bay",
+      "subject": {
+        "mesh": "SHOE1-BT"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "4b-the-drawer-shoe-box-behind-open-doors-showing-the-30",
+      "subject": {
+        "mesh": "SHOE1-BT"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f2-led-off",
+      "subject": {
+        "marked": "ccLedStrip"
+      },
+      "present": true,
+      "detail": "{\"marked\":true}"
+    },
+    {
+      "name": "f2-led-on",
+      "subject": {
+        "marked": "ccLedStrip"
+      },
+      "present": true,
+      "detail": "{\"marked\":true}"
+    },
+    {
+      "name": "2a-the-led-set-60-off-the-front-edge",
+      "subject": {
+        "marked": "ccLedStrip"
+      },
+      "present": true,
+      "detail": "{\"marked\":true}"
+    },
+    {
+      "name": "5a-one-figure-at-the-meeting-line-with-front-dimensions-on",
+      "subject": {
+        "dom": "canvas"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "5b-apart-the-truth-in-three-figures",
+      "subject": {
+        "dom": "canvas"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "9a-the-twin-toggle-off-nothing-drawn",
+      "subject": {
+        "dom": "[data-front-dimensions-toggle]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "8a-the-stack-of-three-before-any-press",
+      "subject": {
+        "mesh": "W01-DF3"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "8b-three-presses-later-the-bay-is-empty",
+      "subject": {
+        "dom": "canvas"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    }
+  ]
+}

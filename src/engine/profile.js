@@ -76,9 +76,20 @@ export const DEFAULT_CABINET_PROFILE = {
       // a panel — and it is a DEFAULT in the profile, so a workshop that
       // disagrees changes one line. What it must never do is silently move the
       // frame instead (F3.2).
+      // ─── TURN 34 (CLAUDE.md F7): THE DEFAULT BECOMES 60 ──────────────────
+      // The owner, 16.08.2026: *"zmienimy default z 70 na 60, ale nie teraz"*
+      // — "nie teraz" was the chat; the turn is now. It is a DEFAULT for NEW
+      // projects and nothing more: a saved job with Shaker in it and no
+      // explicit `fronts.shakerFrame` is PINNED to 70 on the way in
+      // (`engine/shaker.js legacyShakerFrame`, applied by `loadProject`),
+      // because a changed default must never redraw a job that is already
+      // cut. The range, 10–200, does not move.
       S: {
         label: 'Shaker',
-        frameWidth: 70,          // equal on all four sides
+        frameWidth: 60,          // equal on all four sides
+        // What a project saved BEFORE 16.08.2026 was cut to. Read only by the
+        // pin above; nothing else in the app may use it as an answer.
+        legacyFrameWidth: 70,
         frameMin: 10,
         frameMax: 200,
         recessDepth: 6,          // panel face sits at frontT − 6
@@ -859,6 +870,56 @@ export const DEFAULT_CABINET_PROFILE = {
       // UNDRILLED: no LISP line fixes a listwa, so the fixing is the
       // workshop's own (the WINE lattice precedent).
       stopRail: { height: 60, thickness: 18 },
+    },
+
+    // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ────────────────────────────
+    //
+    // The owner retired the pinned 15° shelf on 16.08.2026 — *"jeżeli nie
+    // jest szuflada to powinien być fix, nie z pinami — tu jest błąd"* — and
+    // designed its replacement line by line the same day. The record is
+    // `reference/lisp/KIT_SHOE_BOX.lsp`; every number here is its constants
+    // block A, name for name, and `engine/shoeBox.js` MATCHES the kit rather
+    // than interpreting it (iron rule 3).
+    //
+    // The T33 shoeShelf block above is UNTOUCHED: a saved project built as
+    // the pinned shelf keeps rendering exactly as saved. No silent migration.
+    shoeBox: {
+      wallH: 80,          // SHOE_WALL_H — sides, back and box front
+      frontH: 120,        // SHOE_FRONT_H — the front, BOTH variants
+      dividerH: 50,       // SHOE_DIV_H
+      runnerW: 13,        // SHOE_RUNNER_W — per side ("runners 13 mm szerokości")
+      grooveDepth: 6,     // SHOE_GROOVE_D — in all FOUR walls
+      groovePlay: 0.2,    // SHOE_GROOVE_PLAY — groove width = bottom G + this
+      angleMaxDeg: 10,    // SHOE_ANGLE_MAX — the ceiling, never exceeded
+      pilotD: 3,          // SHOE_PILOT_D — FIX through-pilot
+      pilotN: 3,          // SHOE_PILOT_N
+      pilotEnd: 50,       // SHOE_PILOT_END — first/last from the box ends
+      runnerFixD: 5,      // SHOE_RUNFIX_D — euro
+      fixAxis: 40,        // SHOE_FIX_AXIS — above the box floor
+      setbackX: 3,        // SHOE_SETBACK_X — runner face = frontT + this
+      infill: 30,         // SHOE_INFILL — per hinged side, behind doors
+      runnerFrontFix: 37, // SHOE_RUNNER_FRONT_FIX — always, from the face
+      // SHOE_RUNNER_MAP — the owner's own sheet, 16.08.2026 (Hafele-type):
+      // the REAR fixing's system column per NL. An NL that is not a key here
+      // drills NOTHING and says so, which is why this is a table and not a
+      // formula. Owner-extendable, one line per rung.
+      drillMap: {
+        150: 77.2,
+        200: 128,
+        250: 128,
+        300: 224,
+        350: 224,
+        400: 320,
+        450: 352,
+        500: 416,
+        550: 448,
+        600: 480,
+        650: 544,
+        700: 544,
+      },
+      // The kit's own C section. `SCREWS_3MM` is REUSED — the FIX pilots are
+      // ordinary ⌀3 screw holes — and the two new names are the kit's.
+      layers: { groove: 'SHOE_GROOVE_6MM', runner: 'SHOE_RUNNER_5MM', screw: 'SCREWS_3MM' },
     },
     // OWNER'S THRESHOLD, 15.08.2026: a column's hanging rail above this many
     // millimetres FROM THE FLOOR makes the UI SUGGEST the pull-down — a grey
@@ -1787,6 +1848,38 @@ export const DEFAULT_CABINET_PROFILE = {
   // white"), so it lives here with every other number rather than as literals
   // scattered through the 3D view.
   appearance: {
+    // ─── TURN 34 (CLAUDE.md F2): THE LEDs THE OWNER CAN SEE ────────────────
+    //
+    // His two verdicts, 16.08.2026: F1 lighting *"działa super ale … są zbyt
+    // słabe — nic nie widać, za słabo świecą"*, and on the demo *"turn on the
+    // light działa ale ledy za słabo świecą"*.
+    //
+    // T33 shipped emissive 0.85 with a ×2.6 demo boost — 2.21 at its
+    // brightest — which under ACES Filmic at the default viewport exposure is
+    // a slightly pale strip and not a light. Three.js r180 with physical
+    // light units: an emissive surface is not tone-mapped away, it is ADDED
+    // after the lighting, so what it needs is simply a bigger number.
+    //
+    // These are the SPEC's own home for them (`profile.appearance.lighting.*`,
+    // never a literal in a component). `engine/ledStrips.js lightingSpec`
+    // prefers them and falls back to `profile.lighting.view/demo` — a profile
+    // saved before this turn keeps working and keeps its own numbers.
+    lighting: {
+      // What a placed strip glows at in the ORDINARY working view. Emissive
+      // only — no real light source, because a point light per strip costs the
+      // whole scene (T33's rule, unchanged).
+      emissive: 3.4,
+      // …and what it comes UP by while "Turn on the light" is on: 3.4 × 3.2 =
+      // 10.88, unmistakable at the default exposure.
+      emissiveBoost: 3.2,
+      // The spot discs read smaller than a strip, so they carry their own
+      // multiplier rather than borrowing the strip's and looking dim.
+      spotEmissiveMultiplier: 1.35,
+      // How far the whole studio rig is scaled down in the demo — the T33
+      // number, unmoved, because the owner's complaint was the LEDs and not
+      // the room (0.15, `profile.lighting.demo.dimFactor`, still the source).
+      demoDimFactor: 0.15,
+    },
     // The finishes a project can pick from. `colour` is a painted/melamine
     // board; `decor` is a wood decor whose image is generated by
     // scripts/gen-textures.mjs (no downloaded artwork — BACKLOG #19).
@@ -3228,7 +3321,20 @@ export const DEFAULT_CABINET_PROFILE = {
         // prowadnic — czeka na listę MOVENTO". The BOX ladder
         // (wardrobe.drawers.depthSteps — what the saw cuts) is untouched:
         // that one is the LISP's, and the fixtures stand on it.
-        nominalLadder: [300, 350, 400, 450, 500, 550, 600],
+        // ─── TURN 34 (CLAUDE.md F3), 16.08.2026 ──────────────────────────
+        // The owner closed the F9 review with the bounds — "od 250" …
+        // "dopisujemy do 700" — so Q1's marked lower bound is answered and
+        // the ladder runs 250 to 700 every 50.
+        nominalLadder: [250, 300, 350, 400, 450, 500, 550, 600, 650, 700],
+
+        // ─── TURN 34 (CLAUDE.md F3): THE NOMINAL IS THE BOX + 10 ──────────
+        // His standing workshop rule, said out loud on 16.08.2026 while
+        // closing the F9 review: *"powinien być skrzynka +10 mm"* — nominal
+        // 450 ↔ box 440, 500 ↔ 490. T33 asked the ladder for the BOX depth
+        // and every drawer in the app landed one rung SHORT of the runner
+        // the workshop actually orders. ONE profile line, one adder, read by
+        // `engine/runners.js runnerAskFor` and by nothing else.
+        nominalOverBoxMm: 10,
 
         // ─── THE SYNCHRONISATION ROD (F6.5) ───────────────────────────────
         // Catalogue thresholds, on the CABINET OPENING width — blum.com,
@@ -3244,6 +3350,22 @@ export const DEFAULT_CABINET_PROFILE = {
           endAllowance: 16,
           diameter: 10,
         },
+      },
+
+      // ─── TURN 34 (CLAUDE.md F4): THE SIDE-MOUNTED SHOE RUNNER ───────────
+      //
+      // A NEW hardware family and deliberately NOT MOVENTO — the shoe box's
+      // drawer variant rides 13 mm side runners in the carcass sides, on the
+      // owner's own drilling sheet of 16.08.2026 (the map lives with the box,
+      // `wardrobeAccessories.shoeBox.drillMap`, because it is the KIT's
+      // record and the kit is the law).
+      //
+      // Articles are UNKNOWN. Iron rule 9: the BOM prints a YELLOW NAMED SPEC
+      // and never an invented number, until the owner fills the register.
+      sideShoe: {
+        system: 'Side-mount shoe runner',
+        widthPerSide: 13,
+        note: 'article unknown — the owner has not filled the register',
       },
     },
     // An adjustable leg: a plate, a stem and a foot.

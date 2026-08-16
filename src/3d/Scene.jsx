@@ -845,6 +845,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const moveUnitToWall = useProjectStore((s) => s.moveUnitToWall);
   const allResults = useProjectStore((s) => s.allResults);
   const wallGapsFor = useProjectStore((s) => s.wallGapsFor);
+  // Turn 34 (CLAUDE.md F5): the merged meeting-line figure, and the per-unit
+  // edge figures it replaces.
+  const meetingDimensionsFor = useProjectStore((s) => s.meetingDimensionsFor);
   const moveShelf = useProjectStore((s) => s.moveShelf);
   const setElementDepth = useProjectStore((s) => s.setElementDepth);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
@@ -1035,6 +1038,16 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
     [units, wallGapsFor],
   );
 
+  // ─── TURN 34 (CLAUDE.md F5): ONE FIGURE AT A TOUCH ────────────────────────
+  // "przy dojechaniu do szafki żeby się sumowały i pokazywało 3" (owner,
+  // 16.08.2026). Computed at ROOM level because a cabinet cannot see the one
+  // beside it, and off `frontClearances` so the figure the scene draws is the
+  // figure the matrix healed. Recomputed with the units, like the wall gaps.
+  const meetingDims = useMemo(
+    () => Object.fromEntries(units.map((u) => [u.id, meetingDimensionsFor(u.id)])),
+    [units, meetingDimensionsFor],
+  );
+
   // "Nothing is selected" — one function, called from the two places a click can
   // land on nothing: empty space (the canvas's own miss) and the room's own
   // surfaces (turn 11, CLAUDE.md F1.1).
@@ -1193,6 +1206,11 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // cabinet — so a gap between two units' fronts is on or off, never
           // half of each.
           showFrontDimensions={showFrontDimensions}
+          // Turn 34 (CLAUDE.md F5): at a TOUCH the pair of 1.5s at the meeting
+          // line stands down and ONE leaf-to-leaf figure is drawn instead;
+          // APART, all three figures are the truth and all three stay.
+          suppressEdgeDims={meetingDims[unit.id]?.suppress || null}
+          meetingDimRows={meetingDims[unit.id]?.rows || null}
           zoneHint={selectedUnitId === unit.id ? zoneHint : null}
           // The ink every dimension caption on this cabinet is written in
           // (turn 11, CLAUDE.md F1.5) — the same one the distance arrows use,

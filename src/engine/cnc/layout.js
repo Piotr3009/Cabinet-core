@@ -98,7 +98,16 @@ export function panelBounds(panel, drills = []) {
   };
 
   for (const [x, y] of panel.cnc?.outline || []) hit(x, y);
-  for (const p of panel.cnc?.pockets || []) { hit(p.x1, p.y1); hit(p.x2, p.y2); }
+  for (const p of panel.cnc?.pockets || []) {
+    // Turn 34 (CLAUDE.md F4): a pocket carrying its OWN points (the shoe box's
+    // angled groove) is bounded by them; everything else is its rectangle,
+    // exactly as before — so no existing layout moves.
+    if (Array.isArray(p.pts) && p.pts.length >= 3) {
+      for (const [x, y] of p.pts) hit(x, y);
+    } else {
+      hit(p.x1, p.y1); hit(p.x2, p.y2);
+    }
+  }
   for (const d of drills) {
     if (d.panel !== panel.id) continue;
     const r = d.d / 2;
@@ -180,6 +189,20 @@ export function sheetPolygon(place, points) {
  * top-left corner and two positive extents whichever way round the part lies.
  */
 export function sheetRect(place, pocket) {
+  // Turn 34 (CLAUDE.md F4): a pocket with its OWN points (the shoe box's
+  // angled groove) has no x1/x2 — its rectangle is the BOUNDS of those points,
+  // which is what the hover target and the too-small-to-draw test want.
+  if (Array.isArray(pocket?.pts) && pocket.pts.length >= 3) {
+    const mapped = pocket.pts.map(([x, y]) => toSheet(place, x, y));
+    const xs = mapped.map((m) => m[0]);
+    const ys = mapped.map((m) => m[1]);
+    return {
+      x: Math.min(...xs),
+      y: Math.min(...ys),
+      w: Math.max(...xs) - Math.min(...xs),
+      h: Math.max(...ys) - Math.min(...ys),
+    };
+  }
   const a = toSheet(place, pocket.x1, pocket.y1);
   const b = toSheet(place, pocket.x2, pocket.y2);
   return {

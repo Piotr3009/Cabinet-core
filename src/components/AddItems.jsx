@@ -46,6 +46,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // Turn 33 (CLAUDE.md F3): the bought mechanisms and the rail-height measure
   // behind the pull-down suggestion.
   const addWardrobeKit = useProjectStore((s) => s.addWardrobeKit);
+  // Turn 34 (CLAUDE.md F4): the shoe BOX — one construction, two mounting laws.
+  const addShoeBox = useProjectStore((s) => s.addShoeBox);
   const railHeightsAboveFloor = useProjectStore((s) => s.railHeightsAboveFloor);
   const unitResult = useProjectStore((s) => s.unitResult);
   const zonesOf = useProjectStore((s) => s.zonesOf);
@@ -67,6 +69,15 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // COLUMN, when the cabinet is divided — same grammar as the shelves.
   const [drawerMount, setDrawerMount] = useState('overlay');
   const [drawerZone, setDrawerZone] = useState(null);
+  // ─── TURN 34 (CLAUDE.md F4): the shoe box's four decisions ───────────────
+  // FIX (screwed from outside) or DRAWER (side runners); 0 or 1 divider —
+  // "jedna lub 0 przegródek — 2 nie mają sensu"; which bay; and how high off
+  // the bay floor it stands. The height's DEFAULT is the engine's own answer
+  // (0, or directly above a drawer stack), so leaving it blank is an answer.
+  const [shoeBoxVariant, setShoeBoxVariant] = useState('F');
+  const [shoeBoxDividers, setShoeBoxDividers] = useState(1);
+  const [shoeBoxZone, setShoeBoxZone] = useState(null);
+  const [shoeBoxHeight, setShoeBoxHeight] = useState('');
   // ─── TURN 33 (CLAUDE.md F3): the drawer's VARIANT — the insert is bought,
   // the box is cut unchanged. null = the plain drawer, as ever.
   const [drawerVariant, setDrawerVariant] = useState(null);
@@ -190,6 +201,16 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     {
       id: 'shoe_shelf',
       label: 'Shoe shelf',
+      disabled: !type.supports.shelves || type.family !== 'wardrobe',
+      why: 'a wardrobe thing',
+    },
+    // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ───────────────────────────────
+    // The owner retired the pinned 15° shelf on 16.08: "jeżeli nie jest
+    // szuflada to powinien być fix, nie z pinami — tu jest błąd". A NEW shoe
+    // accessory makes the BOX; the shelf above stays for saved projects.
+    {
+      id: 'shoe_box',
+      label: 'Shoe box',
       disabled: !type.supports.shelves || type.family !== 'wardrobe',
       why: 'a wardrobe thing',
     },
@@ -415,6 +436,116 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                     The board leans {profile.wardrobeAccessories?.shoeShelf?.tiltDeg ?? 15}° on the standard pin
                     rows — the front pair set lower, the workshop&apos;s own way — with a stop rail cut along its
                     front edge. Nothing new is drilled.
+                  </p>
+                </>
+              )}
+
+              {/* ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ─────────────────
+                  One construction, two mounting laws. The four decisions the
+                  owner named on 16.08 and nothing else: fix or drawer, a
+                  divider or none, which bay, and how high off the bay floor. */}
+              {kind.id === 'shoe_box' && (
+                <>
+                  <div className="space-y-1">
+                    <span className="cc-label">Mounting</span>
+                    <div className="flex gap-1">
+                      {[['F', 'Fix (screwed)'], ['D', 'Drawer (side runners)']].map(([id, label]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          data-shoe-box-variant={id}
+                          className={`cc-btn px-2 flex-1 ${shoeBoxVariant === id ? 'border-gold text-gold' : ''}`}
+                          onClick={() => setShoeBoxVariant(id)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="cc-label">Divider</span>
+                    <div className="flex gap-1">
+                      {[[0, 'None'], [1, 'One (2 shoe rows)']].map(([n, label]) => (
+                        <button
+                          key={n}
+                          type="button"
+                          data-shoe-box-dividers={n}
+                          className={`cc-btn px-2 flex-1 ${shoeBoxDividers === n ? 'border-gold text-gold' : ''}`}
+                          onClick={() => setShoeBoxDividers(n)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {zones.length > 1 && (
+                    <div className="space-y-1">
+                      <span className="cc-label">Which bay</span>
+                      <div className="flex flex-wrap gap-1">
+                        {zones.map((z) => (
+                          <button
+                            key={z.id}
+                            type="button"
+                            data-shoe-box-zone={z.index}
+                            className={`cc-btn px-2 ${shoeBoxZone === z.index ? 'border-gold text-gold' : ''}`}
+                            title={`${formatMm(z.size)} mm clear`}
+                            onPointerEnter={() => onZoneHover?.(z.index)}
+                            onPointerLeave={() => onZoneHover?.(shoeBoxZone)}
+                            onClick={() => { setShoeBoxZone(z.index); onZoneHover?.(z.index); }}
+                          >
+                            Bay {z.index + 1} · {formatMm(z.size)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <label className="flex items-center gap-1.5">
+                    <span className="cc-label shrink-0">Height from bay floor</span>
+                    <input
+                      className="cc-input w-20 text-right"
+                      type="number"
+                      min={0}
+                      step={1}
+                      placeholder="0"
+                      data-shoe-box-height="1"
+                      value={shoeBoxHeight}
+                      onChange={(e) => setShoeBoxHeight(e.target.value)}
+                    />
+                    <span className="text-[10px] text-ink-400">mm</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    className="cc-btn-gold w-full"
+                    data-add-shoe-box="1"
+                    disabled={zones.length > 1 && shoeBoxZone == null}
+                    onClick={() => {
+                      const id = addShoeBox(unit.id, {
+                        variant: shoeBoxVariant,
+                        dividers: shoeBoxDividers,
+                        zone: zones.length > 1 ? shoeBoxZone : null,
+                        pos_mm: shoeBoxHeight === '' ? null : Number(shoeBoxHeight),
+                      });
+                      if (!id) notify('There is already a shoe box in that opening.', 'warn');
+                      done();
+                    }}
+                  >
+                    Add a shoe box
+                  </button>
+                  <p className="text-[11px] text-ink-400">
+                    Sides, back and box front {profile.wardrobeAccessories?.shoeBox?.wallH ?? 80} mm high, from the
+                    project carcass board, with a sloped bottom seated in a{' '}
+                    {profile.wardrobeAccessories?.shoeBox?.grooveDepth ?? 6} mm groove in all four walls and its
+                    grain running across. A {profile.wardrobeAccessories?.shoeBox?.frontH ?? 120} mm front on both
+                    variants — carcass board on the fix, a normal front on the drawer.
+                    {shoeBoxVariant === 'F'
+                      ? ' Fix: three ⌀3 pilots per side, driven from outside the carcass — nothing shows.'
+                      : ` Drawer: 13 mm side runners, drilled to the owner's own sheet; the pair prints as a
+                          named spec until the register has an article.`}
+                    {' '}Leave the height blank for the bay floor, or above the drawer stack where there is one.
                   </p>
                 </>
               )}

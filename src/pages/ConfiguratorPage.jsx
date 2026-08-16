@@ -41,6 +41,8 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
 import { exportBookletPdf, exportDrawingPdf, exportDrawingSvg } from '../lib/drawingExport.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
+// Turn 34 (CLAUDE.md F8): when Delete is the delete key, and not a character.
+import { isDeleteKey } from '../lib/deleteKey.js';
 
 /**
  * ─── "Add first unit" (turn 11, CLAUDE.md F4.2) ───
@@ -100,6 +102,8 @@ export default function ConfiguratorPage() {
   const clearSelection = useUiStore((s) => s.clearSelection);
   const removeItem = useProjectStore((s) => s.removeItem);
   const removeUnit = useProjectStore((s) => s.removeUnit);
+  // Turn 34 (CLAUDE.md F8): ONE action behind the key and the modal button.
+  const deleteSelectedElement = useProjectStore((s) => s.deleteSelectedElement);
   // Turn 25 (CLAUDE.md F11): the same action the front's modal calls.
   const removeFront = useProjectStore((s) => s.removeFront);
   const undo = useHistoryStore((s) => s.undo);
@@ -156,7 +160,15 @@ export default function ConfiguratorPage() {
       // partition, a rail. A side panel is not a thing you delete, it is a
       // thing the kit has, and Delete on one must do nothing rather than
       // something surprising.
-      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      // ─── TURN 34 (CLAUDE.md F8): THE KEY, WITH ITS GUARD ─────────────────
+      // The owner, 16.08.2026: "szuflady i wszystkie inne elementy: po
+      // naciśnięciu i podświetleniu — usunięcie przez naciśnięcie Delete".
+      // The guard is one question asked in one place (`lib/deleteKey.js`), so
+      // the hook and its test agree: inert in an input, a textarea, a select,
+      // anything contenteditable, and inert under a modifier — ⌘⌫ is somebody
+      // else's gesture. `Backspace` rides with it because a Mac keyboard's ⌫
+      // IS the delete key, and the owner's machines are Macs.
+      if (!isDeleteKey(e)) return;
       if (selectedElement) {
         const unit = units.find((u) => u.id === selectedElement.unitId);
         const panel = unit ? unitResult(unit.id)?.panels
@@ -179,12 +191,25 @@ export default function ConfiguratorPage() {
           clearElement();
           return;
         }
-        const itemId = panel?.meta?.itemId;
-        if (!itemId) return;
+        // ─── TURN 34 (CLAUDE.md F8): EVERYTHING ELSE, THROUGH ONE ACTION ───
+        //
+        // T12 read `meta.itemId` here and did nothing where there was none —
+        // which is why a DRAWER could never be deleted: a drawer front carries
+        // its index and not its item. `deleteSelectedElement` is the one
+        // action behind the key AND the modal button; it asks
+        // `engine/deleteElement.js deletePlan` what goes, moves the selection
+        // to the next drawer DOWN so three presses clear a stack of three, and
+        // runs the T33-F5 heal sweep after every removal.
+        //
+        // A piece that may not be removed answers with a SENTENCE rather than
+        // silence — the #58 pattern — and nothing at all happens.
+        if (!panel) return;
         e.preventDefault();
-        removeItem(unit.id, itemId);
-        clearElement();
-            return;
+        const res = deleteSelectedElement({ unitId: unit.id, elementRef: panel.id });
+        if (!res.ok && res.error && res.error !== 'Nothing is selected.') {
+          notify(res.error, 'warn');
+        }
+        return;
       }
       if (selectedUnitId) {
         e.preventDefault();
@@ -195,7 +220,8 @@ export default function ConfiguratorPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedElement, selectedUnitId, clearElement, clearSelection,
-    units, unitResult, removeItem, removeUnit, removeFront, notify, undo, redo]);
+    units, unitResult, removeItem, removeUnit, removeFront, deleteSelectedElement,
+    notify, undo, redo]);
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);

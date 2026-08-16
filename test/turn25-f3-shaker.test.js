@@ -27,9 +27,15 @@ const doorOf = (r) => r.panels.find((p) => p.id === '01-F');
 
 // ─── F3.1 — the geometry ────────────────────────────────────────────────────
 
-test('F3.1 — 6 mm deep, 70 by default, 10…200, equal on all four sides', () => {
+// ─── AMENDED 16.08.2026 (turn 34, CLAUDE.md F7) ───────────────────────────
+// The owner: *"zmienimy default z 70 na 60, ale nie teraz"* — and the turn is
+// now. The DEFAULT moved; the range, the depth and the one-number law did not.
+// What a saved job was cut to is pinned on the way in (`legacyShakerFrame`),
+// and turn34-f7-shaker-frame.test.js holds both halves.
+test('F3.1 — 6 mm deep, 60 by default (T34 F7), 10…200, equal on all four sides', () => {
   assert.equal(spec.recessDepth, 6);
-  assert.equal(spec.frameWidth, 70);
+  assert.equal(spec.frameWidth, 60);
+  assert.equal(spec.legacyFrameWidth, 70, 'and what a job cut before 16.08 was built to');
   assert.equal(spec.frameMin, 10);
   assert.equal(spec.frameMax, 200);
   // ONE number. A rail/stile pair would be a second thing to get wrong, and the
@@ -55,12 +61,13 @@ test('F3.1 — the frame is equal on all four sides, on any leaf', () => {
 });
 
 test('F3.1 — the project setting is read where it is set, the profile where it is not', () => {
-  assert.equal(shakerFrameMm(null, P), 70);
-  assert.equal(shakerFrameMm({ fronts: { shakerFrame: null } }, P), 70);
+  // T34 F7: the default is 60 now; everything else about this row is the same.
+  assert.equal(shakerFrameMm(null, P), 60);
+  assert.equal(shakerFrameMm({ fronts: { shakerFrame: null } }, P), 60);
   assert.equal(shakerFrameMm({ fronts: { shakerFrame: 120 } }, P), 120);
   // A number outside the profile's own range is a project saved by a different
   // profile, and the default is the honest answer to it.
-  assert.equal(shakerFrameMm({ fronts: { shakerFrame: 400 } }, P), 70);
+  assert.equal(shakerFrameMm({ fronts: { shakerFrame: 400 } }, P), 60);
   assert.equal(unit({ shaker_frame_mm: 100 }).panels.find((p) => p.id === '01-F').meta.shaker.frame, 100);
 });
 
@@ -237,11 +244,18 @@ test('F3 — the elevation draws the frame the machine pockets', () => {
   const box = { x: 0, y: 0, w: 597, h: 767 };
   const [drawn] = frontDetail(box, 'S', P);
   assert.ok(drawn, 'a 597 × 767 door has a frame');
-  assert.equal(drawn.x, 70);
-  assert.equal(drawn.w, 597 - 140);
+  // T34 F7: the default is 60, and the elevation follows it because there is
+  // ONE number — the picture and the door still cannot disagree.
+  assert.equal(drawn.x, 60);
+  assert.equal(drawn.w, 597 - 120);
 
-  // …and where the machine refuses, the drawing draws nothing.
-  assert.deepEqual(frontDetail({ x: 0, y: 0, w: 597, h: 197 }, 'S', P), []);
+  // …and where the machine refuses, the drawing draws nothing. At 60 the
+  // refusal starts lower — 2 × 60 + 60 = 180 — so the case is stated at a
+  // width the new default really does refuse.
+  assert.deepEqual(frontDetail({ x: 0, y: 0, w: 597, h: 179 }, 'S', P), []);
+  // …and the 197 mm front turn 25 refused at 70 is now drawn, because the
+  // machine now cuts it.
+  assert.equal(frontDetail({ x: 0, y: 0, w: 597, h: 197 }, 'S', P).length, 1);
   // The frame the caller is holding wins over the profile's default.
   const [wide] = frontDetail(box, 'S', P, 100);
   assert.equal(wide.x, 100);

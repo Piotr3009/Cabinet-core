@@ -38,6 +38,8 @@ wins; the table is only the default, and it is the workshop's own
 | `DRAWER_RUNNER_POCKET` | **yes** | through | a groove in the box side, cut to the depth its own record states. |
 | `DRAWER_BOTTOM_POCKET` | **yes** | through | a groove in the box side, cut to the depth its own record states. |
 | `HANGER_HOLE` | **yes** | through | the wall bracket’s cut-out in the back panel — the bracket passes through it. |
+| `SHOE_GROOVE_6MM` | **yes** | through | the sloped bottom’s seat, 6 mm deep in all four walls of the box — a groove cut to the depth its own record states, exactly as the drawer box’s two grooves are, and the board that sits in it is 6 mm into every wall. |
+| `SHOE_RUNNER_5MM` | **yes** | through | the side runner’s euro fixings in the carcass side, on the owner’s own 16.08 sheet. BLIND: a ⌀5 broken through the outer face of a wardrobe side would show in the room, exactly as the hinge plate’s dowels would. |
 | `UNIT_NUMBER` | no | — | text, not machining — the label is engraved or printed and is drawn as type by the CNC preview. |
 
 ### the deliberate omissions, gathered

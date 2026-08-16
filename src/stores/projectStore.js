@@ -38,6 +38,15 @@ import { frontGapClashes } from '../engine/frontGapClash.js';
 // Turn 31 (CLAUDE.md F4): the owner's 18-point front-gap rulebook.
 // Turn 32 (CLAUDE.md F3): …and the healing plan that APPLIES it.
 import { carcassGaps, frontClearances, healingPlan } from '../engine/frontClearance.js';
+// Turn 34 (CLAUDE.md F8): what one press of Delete removes, and what the
+// selection falls to — one pure decision behind the key and the button alike.
+import { deletePlan } from '../engine/deleteElement.js';
+// Turn 34 (CLAUDE.md F5): one figure at a touch, three apart — off the same
+// clearances the matrix heals, never re-derived.
+import { meetingDimensions } from '../engine/meetingDimensions.js';
+// Turn 34 (CLAUDE.md F7): the frame a saved shaker job was cut to, pinned on
+// the way in — a changed default never redraws a job already on the bench.
+import { legacyShakerFrame } from '../engine/shaker.js';
 // Turn 32 (CLAUDE.md F3): the grey notes the self-healing announces itself
 // with. One direction only — uiStore never reads this store.
 import { useUiStore } from './uiStore.js';
@@ -652,8 +661,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   })),
 
   loadProject: (project, units) => {
+    // ─── TURN 34 (CLAUDE.md F7): THE SHAKER FRAME A SAVED JOB WAS CUT TO ────
+    // "zmienimy default z 70 na 60" — for NEW projects. A job already on the
+    // bench was quoted and cut at 70, so opening it pins 70 onto it explicitly
+    // rather than letting a changed default redraw every door by 10 mm. Only
+    // where there IS a shaker and the project has never stated a width of its
+    // own; the decision is `engine/shaker.js legacyShakerFrame`'s.
+    const migrated = migrateDesign(project?.design);
+    // Only a job that EXISTS is protected: one with an id, or one that already
+    // has cabinets in it. A blank scene has nothing cut, so there is nothing a
+    // changed default could redraw — and pinning 70 onto it would be the
+    // opposite of what the owner asked for.
+    const isSavedJob = Boolean(project?.id) || (Array.isArray(units) && units.length > 0);
+    const pin = isSavedJob ? legacyShakerFrame(migrated, getCabinetProfile()) : null;
     set({
-      project: { ...project, room: migrateRoom(project?.room), design: migrateDesign(project?.design) },
+      project: {
+        ...project,
+        room: migrateRoom(project?.room),
+        design: pin ? { ...migrated, ...pin } : migrated,
+      },
       units: migrateUnits(units),
       dirty: false,
     });
@@ -3117,6 +3143,44 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ─────────────────────────────────
+   *
+   * The owner, 16.08.2026: *"jeżeli nie jest szuflada to powinien być fix, nie
+   * z pinami — tu jest błąd"*. ONE construction, TWO mounting laws — the
+   * variant is the only thing that changes at the door.
+   *
+   * An ITEM like a shelf, one per column (two shoe boxes in one opening is a
+   * thing nobody can fit). The engine cuts the seven boards and drills the
+   * carcass sides; this stores the joiner's four decisions and nothing else.
+   */
+  addShoeBox: (unitId, { variant = 'F', zone = null, dividers = 1, pos_mm = null } = {}) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
+    const items = unit.params.sections?.[0]?.items || [];
+    const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    if (items.some((i) => i.kind === 'shoe_box' && zoneOf(i) === wantZone)) return null;
+    return get().addItem(unitId, {
+      kind: 'shoe_box',
+      variant: variant === 'D' ? 'D' : 'F',
+      dividers: Number(dividers) >= 1 ? 1 : 0,
+      ...(pos_mm == null ? {} : { pos_mm: Math.max(0, Math.round(Number(pos_mm) || 0)) }),
+      ...(wantZone == null ? {} : { zone: wantZone }),
+    });
+  },
+
+  /** One shoe box's own fields, patched on the item. */
+  setShoeBox: (unitId, itemId, patch) => {
+    const clean = {};
+    if (patch?.variant != null) clean.variant = patch.variant === 'D' ? 'D' : 'F';
+    if (patch?.dividers != null) clean.dividers = Number(patch.dividers) >= 1 ? 1 : 0;
+    if (patch?.pos_mm != null) clean.pos_mm = Math.max(0, Math.round(Number(patch.pos_mm) || 0));
+    if (!Object.keys(clean).length) return null;
+    return get().updateItem(unitId, itemId, clean);
+  },
+
+  /**
    * ─── TURN 33 (CLAUDE.md F3): HOW HIGH THE RAIL STANDS, OFF THE FLOOR ──────
    *
    * The pull-down suggestion's own measure: the rail's carcass-local y plus
@@ -3266,6 +3330,65 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (itemId) { get().removeItem(unitId, itemId); return 'item'; }
     get().setElementOverride(unitId, panelId, { removed: true });
     return 'override';
+  },
+
+  /**
+   * ─── TURN 34 (CLAUDE.md F8): DELETE THE SELECTED ELEMENT ──────────────────
+   *
+   * The owner, 16.08.2026: *"szuflady i wszystkie inne elementy: po naciśnięciu
+   * i podświetleniu — usunięcie przez naciśnięcie Delete; w modalu pokaż też
+   * Delete. Jak mamy 3 szuflady, niech usuwają się po jednej, tak jak
+   * naciskasz."*
+   *
+   * ONE action behind BOTH doors — the key and the modal button — because two
+   * would drift the first time either learnt something. What it removes and
+   * what the selection falls to is `engine/deleteElement.js deletePlan`'s
+   * decision; this applies it, moves the selection and runs the heal sweep.
+   *
+   * There is no undo system: the deletion is immediate and says what it did.
+   *
+   * @param {object|null} at  { unitId, elementRef } — the UI's own selection
+   *                          shape; omitted, the current selection is used.
+   * @returns {{ok:boolean, error?:string, removed?:string, next?:string|null}}
+   */
+  deleteSelectedElement: (at = null) => {
+    const sel = at || useUiStore.getState().selectedElement;
+    const unitId = sel?.unitId || null;
+    const panelId = sel?.elementRef || sel?.panelId || null;
+    if (!unitId || !panelId) return { ok: false, error: 'Nothing is selected.' };
+    const unit = get().units.find((u) => u.id === unitId);
+    const panel = get().unitResult(unitId)?.panels.find((p) => p.id === panelId) || null;
+    const plan = deletePlan({ unit, panel });
+    if (!plan.allowed) return { ok: false, error: plan.reason };
+
+    return runBatch(() => {
+      if (plan.target === 'item') get().removeItem(unitId, plan.itemId);
+      else get().setElementOverride(unitId, panelId, { removed: true });
+
+      // ─── THE SELECTION FALLS (F8, the drawer stack) ───────────────────────
+      // Re-read the cabinet AFTER the removal — the stack has renumbered
+      // itself — and land on the drawer the plan named, so the next press
+      // takes the next one down without the pointer moving.
+      let next = null;
+      if (plan.nextDrawer != null) {
+        const after = get().unitResult(unitId);
+        const family = panel.part === 'DRAWER-FRONT' ? 'DRAWER-FRONT' : panel.part;
+        next = after?.panels.find((p) => p.part === family
+          && Number(p.meta?.drawer) === plan.nextDrawer)?.id
+          || after?.panels.find((p) => Number(p.meta?.drawer) === plan.nextDrawer)?.id
+          || null;
+      }
+      if (next) useUiStore.getState().selectElement(unitId, next);
+      else useUiStore.getState().clearElement();
+
+      // ─── AND EVERY REMOVAL PATH RUNS THE SWEEP (F8 → T33-F5) ─────────────
+      // A piece leaving re-shapes what stands beside a front — an end panel
+      // gone, a drawer gone from under a bay door — so the matrix is applied
+      // here exactly as it is on every other path that re-shapes one. No
+      // healable correction may be left standing after a delete.
+      get().healFrontGaps();
+      return { ok: true, removed: plan.itemId || panelId, next };
+    });
   },
 
   /** Put a removed piece back — the override is a decision, and it is undone. */
@@ -3990,6 +4113,69 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── TURN 34 (CLAUDE.md F5): THE MEETING LINE, MEASURED ONCE ─────────────
+   *
+   * The owner, 16.08.2026: *"czasami pokazuje 2 wymiary 1.5 i 1.5, a mi
+   * zależało żeby zawsze pokazywało jeden — przy dojechaniu do szafki żeby się
+   * sumowały i pokazywało 3"* … *"oczywiście, że 1.5, 100 i 1.5 — bo tak jest
+   * w rzeczywistości; dopiero jak dojeżdżają do siebie, to 3."*
+   *
+   * The numbers come from `frontClearances` — the matrix that healed them — so
+   * the figure the scene draws and the figure the Check argues about cannot
+   * disagree. The view asks for the rows and for the set of per-unit edge
+   * figures they replace.
+   */
+  meetingDimensions: () => meetingDimensions(get().frontClearances()),
+
+  /**
+   * The meeting-line figures a run draws, resolved into the frames the SCENE
+   * already draws in — so the view still decides nothing.
+   *
+   * Two answers per unit:
+   *
+   *   rows      the MERGED leaf-to-leaf dimension(s) this unit carries. A
+   *             touching pair's one figure is drawn by the LEFT cabinet of the
+   *             two, in its own frame, through the very same `DimensionChain`
+   *             every other front dimension goes through — so there is no
+   *             second dimension renderer to keep in step.
+   *   suppress  the `panelId|side` keys whose per-unit edge figure that merged
+   *             one replaces (`engine/frontDimensions.js frontDimensionRows`).
+   *
+   * A run standing APART returns no merged rows and suppresses nothing: the
+   * owner's own ruling — "1.5, 100 i 1.5 — bo tak jest w rzeczywistości" — is
+   * exactly the three figures the app already drew.
+   */
+  meetingDimensionsFor: (unitId) => {
+    const s = get();
+    const meetings = s.meetingDimensions();
+    const rows = [];
+    const suppress = new Set();
+    for (const m of meetings) {
+      for (const k of m.suppress) {
+        if (k.unitId === unitId) suppress.add(`${k.panelId}|${k.side}`);
+      }
+      if (!m.touching) continue;
+      // The LEFT front of the pair carries the figure — it is the one whose
+      // own frame the meeting line stands at the far edge of.
+      const left = m.suppress.find((k) => k.side === 'right');
+      if (!left || left.unitId !== unitId) continue;
+      const panel = s.unitResult(unitId)?.panels.find((p) => p.id === left.panelId);
+      if (!panel?.box) continue;
+      rows.push({
+        kind: 'meeting',
+        axis: 'h',
+        mm: m.leafGapMm,
+        from: panel.box.x + panel.box.w,
+        to: panel.box.x + panel.box.w + m.leafGapMm,
+        at: panel.box.y + panel.box.h / 2,
+        a: left.panelId,
+        b: null,
+      });
+    }
+    return { rows, suppress };
+  },
+
+  /**
    * ─── CHECK v1 (turn 31, CLAUDE.md F6) ────────────────────────────────────
    *
    * Eleven rules over the whole job, in one list. Pressed by the Check button
@@ -4046,15 +4232,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!unit || !panelId) return null;
     const current = unit.params.front_edge_trim || {};
     const was = current[panelId] || { left: 0, right: 0 };
+    // T34 F6: a NEGATIVE value is an extension, and the channel carries it.
+    // The clamp used to live here too, so a plan that asked an appliance-side
+    // edge to extend arrived as 0 and the grey note announced a move that never
+    // happened. Who may extend is `healingPlan`'s decision; this stores mm.
     const next = {
-      left: Math.max(0, Number(patch?.left ?? was.left) || 0),
-      right: Math.max(0, Number(patch?.right ?? was.right) || 0),
+      left: Number(patch?.left ?? was.left) || 0,
+      right: Number(patch?.right ?? was.right) || 0,
     };
     const map = { ...current };
     // A correction of nothing is no correction: an empty entry left behind
     // would put `edgeTrim: {0,0}` on the piece and make a stock front look
     // hand-corrected on the sheet.
-    if (next.left <= 0 && next.right <= 0) delete map[panelId];
+    if (next.left === 0 && next.right === 0) delete map[panelId];
     else map[panelId] = next;
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId

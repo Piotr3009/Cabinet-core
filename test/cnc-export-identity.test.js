@@ -225,7 +225,7 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   //
   // This is CLAUDE.md rule 1's ONE SANCTIONED FIXTURE CHANGE for turn 30, and
   // it is a RESTORATION: the engine had lost drilling the AutoLISP cuts.
-  assert.equal(fingerprint(sheetOf(result, all)), '2cf80012', 'the whole-unit sheet has changed');
+  assert.equal(fingerprint(sheetOf(result, all)), '49b23ea5', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -263,11 +263,16 @@ test('…and so is each preset’s', () => {
   // The divider's foot is drilled in the BOTTOM, so the two sheets that carry
   // a carcass move and the two that are doors and drawer faces do not — the
   // pair that stands still is again the proof the delta is what it says it is.
+  // ─── TURN 34 (CLAUDE.md F7): AND THE CENSUS LOGIC INVERTS, EXACTLY ──────
+  // The shaker frame is a FRONT's recess, so this time it is the two sheets
+  // that carry the DOORS that move and the carcass-only one that stands still
+  // — the mirror image of every delta above it, and the same proof: a delta
+  // that lands where its own cause is.
   const expected = {
-    all: '2cf80012',           // was 3439a402 — the divider's foot, +2 ⌀3
-    'non-sprayed': 'f5aa169e', // was 07a0d206 — the same two screws
-    sprayed: '8a6498da',       // UNCHANGED — no divider stands on a door
-    fronts: '8a6498da',        // UNCHANGED, for the same reason
+    all: '49b23ea5',           // was 2cf80012 — the frame 70 → 60, + the 197 front
+    'non-sprayed': 'f5aa169e', // UNCHANGED — a carcass has no shaker on it
+    sprayed: '5637b58d',       // was 8a6498da — the doors and faces narrow their frame
+    fronts: '5637b58d',        // the same fronts, the same delta
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -320,7 +325,12 @@ test('the entities are grouped by layer exactly as before', () => {
     // three short of the 200 a 70 mm frame needs — so it is REFUSED and cut
     // plain (F3.2), with the cabinet carrying the message. A census that said
     // 4 would be a census of an app that clamped.
-    SHAKER_PANEL_POCKET: 3,
+    // ─── TURN 34 (CLAUDE.md F7), 16.08.2026: 3 → 4 ───
+    // The frame default fell 70 → 60, so the 197 mm drawer front turn 25
+    // refused — "three short of the 200 a 70 mm frame needs" — now clears the
+    // 180 a 60 mm frame needs and takes its recess. One entity, and it is the
+    // one the owner asked for.
+    SHAKER_PANEL_POCKET: 4,
     // DELTA 1 — one label per part still, but written as a BLOCK: 31 parts,
     // 72 lines between them. Nothing else on this list moves by one.
     UNIT_NUMBER: 72,

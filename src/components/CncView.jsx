@@ -595,11 +595,22 @@ function Part({
         const gh = Math.max(r.h, graceMm);
         return (
           <g key={`p${i}`}>
-            <rect
-              x={r.x} y={r.y} width={r.w} height={r.h}
-              fill="none" stroke={layerScreenColor(p.layer)}
-              strokeWidth={hovered(id) ? 2.4 : 1} vectorEffect="non-scaling-stroke"
-            />
+            {/* Turn 34 (F4): a pocket that carries its own points is DRAWN as
+                them — the shoe box's groove runs at the slope's angle, and a
+                bounding rectangle would show a cut the machine never makes. */}
+            {Array.isArray(p.pts) && p.pts.length >= 3 ? (
+              <polygon
+                points={sheetPolygon(place, p.pts)}
+                fill="none" stroke={layerScreenColor(p.layer)}
+                strokeWidth={hovered(id) ? 2.4 : 1} vectorEffect="non-scaling-stroke"
+              />
+            ) : (
+              <rect
+                x={r.x} y={r.y} width={r.w} height={r.h}
+                fill="none" stroke={layerScreenColor(p.layer)}
+                strokeWidth={hovered(id) ? 2.4 : 1} vectorEffect="non-scaling-stroke"
+              />
+            )}
             <rect
               x={r.x - (gw - r.w) / 2} y={r.y - (gh - r.h) / 2} width={gw} height={gh}
               fill="transparent" stroke="none" data-cnc-feature={id}

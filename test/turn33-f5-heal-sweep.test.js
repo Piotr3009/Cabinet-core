@@ -41,13 +41,24 @@ function runWithPanel(type, params = null) {
   return [a.id, b.id];
 }
 
-/** No healable correction standing: every positive correction is parked/stuck. */
+/**
+ * No healable correction standing: every positive correction is parked/stuck.
+ *
+ * ─── TURN 34 (CLAUDE.md F6): THE APPLIANCE COLUMN ──────────────────────────
+ * A correction was "healable" only when POSITIVE, because a trim only ever
+ * narrowed. At an appliance neighbour it may now EXTEND, so a NEGATIVE
+ * correction standing at that one kind is a correction the sweep missed too.
+ */
 function assertHealed(where) {
   const rows = store().frontClearances();
+  const healable = (edge) => {
+    if (!edge || edge.parked) return false;
+    const c = Number(edge.correctionMm) || 0;
+    if (c > 0.01) return true;
+    return edge.kind === 'appliance' && c < -0.01;
+  };
   const standing = rows.flatMap((r) => ['left', 'right']
-    .filter((side) => r.edges?.[side]
-      && !r.edges[side].parked
-      && Number(r.edges[side].correctionMm) > 0.01)
+    .filter((side) => healable(r.edges?.[side]) && !r.appliance)
     .map((side) => `${r.panelId}:${side}:${r.edges[side].correctionMm}`));
   assert.deepEqual(standing, [], `${where}: the matrix left healable corrections standing`);
 }
@@ -111,6 +122,49 @@ test('BUD × end panel × element overrides — every override path re-measures'
   assertHealed('after removeElement');
   store().restoreElement(b, endPanel.id);
   assertHealed('after restoreElement');
+});
+
+// ─── TURN 34 (CLAUDE.md F6): the APPLIANCE column of the same matrix ───────
+//
+// "raczej tylko przy appliance'ach — silnik powinien pilnować, żeby zawsze
+// było 3" (owner, 16.08.2026). The heal paths that closed a panel edge must
+// close an appliance edge too — the other way, by EXTENDING — and the sum the
+// client sees must be the 3 the machine already provides.
+
+test('BUD × appliance × addUnit — the front beside a dishwasher extends to touch', () => {
+  project();
+  const dw = store().addUnit('DW_PANEL');
+  const b = store().addUnit('BUD', { near: dw.id, side: 'right' }).id;
+  store().updateUnitParams(b, { doors: { count: 1 } });
+  assertHealed('BUD beside a DW_PANEL');
+
+  const rows = store().frontClearances().filter((r) => r.unitId === b && !r.appliance);
+  const atAppliance = rows.flatMap((r) => ['left', 'right']
+    .filter((s) => r.edges?.[s]?.kind === 'appliance')
+    .map((s) => ({ panelId: r.panelId, side: s, edge: r.edges[s] })));
+  assert.ok(atAppliance.length >= 1, 'the appliance was recognised as the neighbour');
+  for (const hit of atAppliance) {
+    assert.ok(Math.abs(Number(hit.edge.haveClearanceMm)) < 0.01,
+      `${hit.panelId}:${hit.side}: the front runs to its own carcass end (clearance 0)`);
+    assert.ok(Math.abs(Number(hit.edge.correctionMm)) < 0.01, 'and nothing is left owed');
+  }
+  // The trim that did it is NEGATIVE — an extension, on that edge only.
+  const trims = store().units.find((u) => u.id === b).params.front_edge_trim || {};
+  const negatives = Object.values(trims)
+    .flatMap((t) => [Number(t.left) || 0, Number(t.right) || 0])
+    .filter((v) => v < 0);
+  assert.ok(negatives.length >= 1, 'a negative trim was written — the extension');
+});
+
+test('the appliance heal CONVERGES — a second pass asks for nothing', () => {
+  project();
+  const dw = store().addUnit('DW_PANEL');
+  const b = store().addUnit('BUD', { near: dw.id, side: 'right' }).id;
+  store().updateUnitParams(b, { doors: { count: 1 } });
+  const first = store().units.find((u) => u.id === b).params.front_edge_trim;
+  const plan = store().healFrontGaps();
+  assert.deepEqual(plan.patches, [], 'a settled edge plans nothing');
+  assert.deepEqual(store().units.find((u) => u.id === b).params.front_edge_trim, first);
 });
 
 // ─── the grey note speaks, once per correction ──────────────────────────────

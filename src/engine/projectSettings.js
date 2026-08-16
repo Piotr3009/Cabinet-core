@@ -276,14 +276,26 @@ export function ceilingFit({ total, roomHeight, profile }) {
 }
 
 /**
- * Is every material slot ANSWERED? (CLAUDE.md T32 F1.5)
+ * Is every material slot ANSWERED?
  *
- * The owner's sentence exactly: "choosing generic IS an assignment; choosing
- * nothing is not." A slot is assigned when it carries a board (`material_id`,
- * generic included), a facing (`finish_id`) or a sprayed colour — the three
- * ways this app has ever answered "what is it made of". The carcass's sprayed
- * colour is project-wide (`design.colour.carcass`), so it answers for every
- * carcass slot that has nothing more specific.
+ * ─── TURN 32 (F1.5), AS TURN 34 (F1) CORRECTS IT ───────────────────────────
+ *
+ * T32 wrote the owner's sentence "choosing generic IS an assignment; choosing
+ * nothing is not" — and read a facing or a sprayed colour as an answer too.
+ *
+ * The owner, 16.08.2026, walking the fronts container: *"przywracamy
+ * przypisanie materiałów bez różnicy jaki to wybór — czy laminat czy mdf czy
+ * spray etc — to jest podstawa wszystkiego"* … *"bez przypisania materiałów nie
+ * powinno puścić dalej — to jest mega ważne."* A colour is what a front LOOKS
+ * like; it is not what it is CUT FROM. So the question this function asks is
+ * now one question with one answer on every source:
+ *
+ *   a slot is assigned when, and only when, `material_id` is set.
+ *
+ * Generic placeholders still count (the soft-start law stands, T32's whole
+ * point) — what no longer counts is a spray colour or an EGGER decor standing
+ * alone with no board behind it. The wizard renders the same select on every
+ * picker path (WizardSettings `stockBoardSelect`) so every slot can answer it.
  */
 export function materialsAssigned(design, profile) {
   const d = design || {};
@@ -294,7 +306,7 @@ export function materialsAssigned(design, profile) {
     id: t.id,
     label: t.label || 'Carcass',
     kind: 'carcass',
-    assigned: Boolean(t.material_id || t.finish_id || d.colour?.carcass),
+    assigned: Boolean(t.material_id),
   }));
   const storedFronts = d.fronts?.types?.length
     ? normaliseFrontTypes(d.fronts.types, profile)
@@ -307,7 +319,7 @@ export function materialsAssigned(design, profile) {
     id: t.id,
     label: t.label || 'Front',
     kind: 'front',
-    assigned: Boolean(t.material_id || t.finish_id || t.colour),
+    assigned: Boolean(t.material_id),
   }));
   const missing = [...carcass, ...fronts].filter((s) => !s.assigned);
   return {
@@ -347,7 +359,7 @@ export function wizardStartBlockers({
   if (!materials.all) {
     blockers.push({
       code: 'materials',
-      message: `Assign a material to ${materials.missing.map((s) => s.label).join(', ')} — Generic counts, nothing does not.`,
+      message: `Assign a stock board to ${materials.missing.map((s) => s.label).join(', ')} — Generic counts, a colour or a decor alone does not.`,
     });
   }
   return {

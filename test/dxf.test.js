@@ -300,6 +300,16 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // hinge plate's ⌀5 would be drilled by the plate's program, on the plate's
     // side of the door. ACI 42, again unused by the LISP's table.
     HANDLES_5MM: 42,
+    // ─── TURN 34 (CLAUDE.md F4): TWO NEW NAMES, AND THEY ARE A KIT'S ───────
+    // `reference/lisp/KIT_SHOE_BOX.lsp shoeMakeLayers` — so unlike the four
+    // above these two ARE the LISP's, written by the kit delivered with the
+    // T34 spec, ACI colours included. The sloped bottom's groove (6 deep, in
+    // all four walls of the box) and the side runner's ⌀5 euro fixings in the
+    // carcass side. The FIX variant's three through-pilots reuse SCREWS_3MM
+    // exactly as the kit reuses it. NO TEXT STYLE rides either of them — the
+    // 02.08 VCarve crash law.
+    SHOE_GROOVE_6MM: 1,
+    SHOE_RUNNER_5MM: 5,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

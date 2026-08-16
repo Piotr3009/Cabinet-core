@@ -409,6 +409,28 @@ export default function LightingPanel() {
                           </span>
                         </div>
                       )}
+                      {/* ─── TURN 34 (CLAUDE.md F2): HOW FAR OFF THE EDGE ───
+                          The owner, 16.08.2026: "nie ma możliwości ustawienia
+                          jak daleko od edge". A number field BESIDE the depth
+                          control, on EVERY kind — the depth slider only ever
+                          answered for shelves. Blank/0 is T33's own placement,
+                          so nothing moves until he types in it. */}
+                      {strip && (
+                        <div className="flex items-center gap-2 pl-1">
+                          <span className="text-[10px] text-ink-400 shrink-0">Off the front edge</span>
+                          <input
+                            type="number"
+                            className="cc-input w-16 text-right"
+                            min={0}
+                            step={1}
+                            value={Number(it.inset_mm) > 0 ? it.inset_mm : 0}
+                            data-lighting-inset={it.id}
+                            aria-label="How far back from the front edge the LED sits"
+                            onChange={(e) => updateLightingItem(it.id, { inset_mm: Number(e.target.value) })}
+                          />
+                          <span className="text-[10px] text-ink-400">mm</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

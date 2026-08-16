@@ -8,10 +8,11 @@ VERIFY FIRST — this turn builds on T33 being on main:
 `src/engine/runners.js` must export `runnerLadder`. If either is missing,
 STOP and report.
 
-VERIFY SECOND — F4's law arrives as a file: `reference/lisp/KIT_WARDROBE_FULL.lsp`
-must contain the marker `;; ─── SHOE BOX (T34)`. If it does not, STOP and
-report — the LISP section is pushed together with this spec and F4 must not be
-guessed at.
+VERIFY SECOND — F4's law arrives as its OWN file:
+`reference/lisp/KIT_SHOE_BOX.lsp` must exist and contain the marker
+`;;; KIT_SHOE_BOX.lsp`. If it does not, STOP and report — the file is pushed
+together with this spec and F4 must not be guessed at. The existing eleven
+kits are NOT touched by this turn — not one character.
 
 The owner spent 16.08 walking T33 feature by feature. Every verdict below is
 his, dated, verbatim where it matters. This turn is the verdicts turned into
@@ -38,8 +39,8 @@ geometry closed line by line in chat, all of it pinned here.
      contribute **zero** deltas to the fingerprint set.
    Anything unnamed = the run fails its own audit.
 3. **LISP is law.** F4's geometry, screw row and runner drill map are written
-   in `KIT_WARDROBE_FULL.lsp` (section `SHOE BOX (T34)`, delivered with this
-   spec). The engine MATCHES that section; it does not interpret it. Where
+   in `reference/lisp/KIT_SHOE_BOX.lsp` (its own kit, the house pattern —
+   eleven kits already live as separate files; delivered with this spec). The engine MATCHES that section; it does not interpret it. Where
    this file and the LISP disagree, the LISP wins and the disagreement is
    reported in the PR body.
 4. **No hole without truth.** Every new drill this turn (shoe-box side pilots,
@@ -170,9 +171,11 @@ drawer-bearing configs' ONLY delta is the runner hardware line (rule 2).
 The owner retired the pinned 15° shelf in one sentence, 16.08: *"jeżeli nie
 jest szuflada to powinien być fix, nie z pinami — tu jest błąd"*. What
 replaces it he designed line by line in chat; every number below is his,
-same day. **The LISP section `SHOE BOX (T34)` in `KIT_WARDROBE_FULL.lsp`
-(delivered with this spec) is the record — read it before writing a line of
-engine.**
+same day. **`reference/lisp/KIT_SHOE_BOX.lsp` (delivered with this spec) is the
+record — read it before writing a line of engine. Constants block A is the
+contract: 80/120/50/13/6/0.2/10°/⌀3×3/⌀5/axis 40/setback front+3/infill 30
+and the NL→column map. New DXF layers it introduces: `SHOE_GROOVE_6MM`,
+`SHOE_RUNNER_5MM`; `SCREWS_3MM` is reused. No text styles anywhere.**
 
 **The box** (shared by both variants — his plan: *"jak zrobimy szufladę to tę
 samą skrzyneczkę wykorzystamy, tylko dodamy prowadnice po bokach i zwęzimy —
@@ -213,8 +216,9 @@ całość pozostanie bez zmian, będzie prościej"*):
 **FIX variant:**
 * Box width = the bay's clear opening. Mounted by **3 screws per side, in a
   row, driven from OUTSIDE the carcass side** — *"środek: nie widać nic"*.
-  CNC: a row of **3 × ⌀3 mm** through-pilots in each carcass side, positions
-  per the LISP section.
+  CNC: a row of **3 × ⌀3 mm** through-pilots in each carcass side — row at
+  box mid height (posZ + 40), 50 from each box end + middle, exactly as
+  `drawSHOE_FIX_TEMPLATE` draws it [OWNER — by silence].
 * **Position**: modal field "Height from bay floor" in mm, step 1,
   **default 0** (on the floor) — or **directly above the drawer stack** when
   the bay has drawers (*"pozycja jak proponujesz"*). The pilots are drilled
@@ -230,8 +234,11 @@ całość pozostanie bez zmian, będzie prościej"*):
   Hafele-type pattern): first fixing **37 mm from the runner front face**,
   then the rear fixing at the system column per NL —
   `{150: 77.2, 200: 128, 250: 128, 300: 224, 350: 224, 400: 320, 450: 352,
-  500: 416, 550: 448, 600: 480, 650: 544, 700: 544}` — the LISP section
-  holds the record; the engine mirrors it (`drillMap`, profile-listed).
+  500: 416, 550: 448, 600: 480, 650: 544, 700: 544}` — `SHOE_RUNNER_MAP` in
+  the kit holds the record; the engine mirrors it (`drillMap`,
+  profile-listed). Fixing holes ⌀5 (euro), axis posZ + 40 [OWNER — by
+  silence]. An NL off the map drills NOTHING and says so — the kit's own
+  refusal grammar.
 * **Runner front setback** from the carcass front edge = **front thickness
   + 3 mm** (*"pamiętaj żeby cofnąć na front + 3 mm"*).
 * Behind hinged doors: **+ 30 mm infill per hinged side**, read from the ONE

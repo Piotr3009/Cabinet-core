@@ -41,6 +41,9 @@ import { carcassGaps, frontClearances, healingPlan } from '../engine/frontCleara
 // Turn 34 (CLAUDE.md F8): what one press of Delete removes, and what the
 // selection falls to — one pure decision behind the key and the button alike.
 import { deletePlan } from '../engine/deleteElement.js';
+// Turn 34 (CLAUDE.md F5): one figure at a touch, three apart — off the same
+// clearances the matrix heals, never re-derived.
+import { meetingDimensions } from '../engine/meetingDimensions.js';
 // Turn 32 (CLAUDE.md F3): the grey notes the self-healing announces itself
 // with. One direction only — uiStore never reads this store.
 import { useUiStore } from './uiStore.js';
@@ -4087,6 +4090,69 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
       profile,
     });
+  },
+
+  /**
+   * ─── TURN 34 (CLAUDE.md F5): THE MEETING LINE, MEASURED ONCE ─────────────
+   *
+   * The owner, 16.08.2026: *"czasami pokazuje 2 wymiary 1.5 i 1.5, a mi
+   * zależało żeby zawsze pokazywało jeden — przy dojechaniu do szafki żeby się
+   * sumowały i pokazywało 3"* … *"oczywiście, że 1.5, 100 i 1.5 — bo tak jest
+   * w rzeczywistości; dopiero jak dojeżdżają do siebie, to 3."*
+   *
+   * The numbers come from `frontClearances` — the matrix that healed them — so
+   * the figure the scene draws and the figure the Check argues about cannot
+   * disagree. The view asks for the rows and for the set of per-unit edge
+   * figures they replace.
+   */
+  meetingDimensions: () => meetingDimensions(get().frontClearances()),
+
+  /**
+   * The meeting-line figures a run draws, resolved into the frames the SCENE
+   * already draws in — so the view still decides nothing.
+   *
+   * Two answers per unit:
+   *
+   *   rows      the MERGED leaf-to-leaf dimension(s) this unit carries. A
+   *             touching pair's one figure is drawn by the LEFT cabinet of the
+   *             two, in its own frame, through the very same `DimensionChain`
+   *             every other front dimension goes through — so there is no
+   *             second dimension renderer to keep in step.
+   *   suppress  the `panelId|side` keys whose per-unit edge figure that merged
+   *             one replaces (`engine/frontDimensions.js frontDimensionRows`).
+   *
+   * A run standing APART returns no merged rows and suppresses nothing: the
+   * owner's own ruling — "1.5, 100 i 1.5 — bo tak jest w rzeczywistości" — is
+   * exactly the three figures the app already drew.
+   */
+  meetingDimensionsFor: (unitId) => {
+    const s = get();
+    const meetings = s.meetingDimensions();
+    const rows = [];
+    const suppress = new Set();
+    for (const m of meetings) {
+      for (const k of m.suppress) {
+        if (k.unitId === unitId) suppress.add(`${k.panelId}|${k.side}`);
+      }
+      if (!m.touching) continue;
+      // The LEFT front of the pair carries the figure — it is the one whose
+      // own frame the meeting line stands at the far edge of.
+      const left = m.suppress.find((k) => k.side === 'right');
+      if (!left || left.unitId !== unitId) continue;
+      const panel = s.unitResult(unitId)?.panels.find((p) => p.id === left.panelId);
+      if (!panel?.box) continue;
+      rows.push({
+        kind: 'meeting',
+        axis: 'h',
+        mm: m.leafGapMm,
+        from: panel.box.x + panel.box.w,
+        to: panel.box.x + panel.box.w + m.leafGapMm,
+        at: panel.box.y + panel.box.h / 2,
+        a: left.panelId,
+        b: null,
+      });
+    }
+    return { rows, suppress };
   },
 
   /**

@@ -287,9 +287,38 @@ export function spreadOverlappingRows(rows, { labelMm = 40, stepMm = LABEL_STEP_
   });
 }
 
-/** Sizes and gaps together — what the scene draws when the toggle is on. */
-export function frontDimensionRows(result, profile = null) {
-  return spreadOverlappingRows([...frontSizes(result, profile), ...frontGaps(result)]);
+/**
+ * Sizes and gaps together — what the scene draws when the toggle is on.
+ *
+ * ─── TURN 34 (CLAUDE.md F5): ONE FIGURE AT A MEETING LINE ─────────────────
+ *
+ * The owner, 16.08.2026: *"czasami pokazuje 2 wymiary 1.5 i 1.5, a mi zależało
+ * żeby zawsze pokazywało jeden — przy dojechaniu do szafki żeby się sumowały i
+ * pokazywało 3"*.
+ *
+ * A `to-side` figure is this cabinet's own edge clearance, and it is the
+ * truth — except where the cabinet next door is TOUCHING, in which case the
+ * client sees ONE gap and the scene draws one leaf-to-leaf dimension in place
+ * of the pair (`engine/meetingDimensions.js`). `suppress` is the set of
+ * `panelId|side` keys that dimension replaces; it is decided at ROOM level,
+ * because a cabinet cannot see the one beside it.
+ *
+ * Nothing else moves: every other row this function has ever produced — the
+ * sizes, the door-to-door and drawer-to-drawer gaps, to-top, to-floor — is
+ * exactly what it was, and an empty set is turn 25's own answer to the byte.
+ */
+export function frontDimensionRows(result, profile = null, suppress = null) {
+  const gaps = frontGaps(result);
+  const kept = suppress instanceof Set && suppress.size
+    ? gaps.filter((row) => {
+      if (row.kind !== 'to-side') return true;
+      // The LEFT figure runs to `b`'s left edge; the RIGHT one from `a`'s.
+      const panelId = row.a || row.b;
+      const side = row.a ? 'right' : 'left';
+      return !suppress.has(`${panelId}|${side}`);
+    })
+    : gaps;
+  return spreadOverlappingRows([...frontSizes(result, profile), ...kept]);
 }
 
 const round = (v) => Math.round((Number(v) || 0) * 100) / 100;

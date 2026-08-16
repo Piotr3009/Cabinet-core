@@ -671,6 +671,14 @@ export default function UnitView({
   // Turn 25 (CLAUDE.md F13): project-wide, so it arrives as a prop rather than
   // being read out of the store in here.
   showFrontDimensions = false,
+  // Turn 34 (CLAUDE.md F5): `panelId|side` keys whose per-unit edge figure the
+  // room draws as one merged leaf-to-leaf dimension instead. Null = every
+  // figure this cabinet has always drawn (turn 25's own answer, to the byte).
+  suppressEdgeDims = null,
+  // …and the MERGED leaf-to-leaf figure(s) this cabinet carries in their place
+  // — already in this unit's own frame, in `frontDimensionRows`' own shape, so
+  // they go through the one DimensionChain like every other front figure.
+  meetingDimRows = null,
   // ─── One element inside this cabinet (turn 9, CLAUDE.md F4) ───
   // `selectedElement` is the ENGINE's own panel id (`SHELF-2`) or null, which
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
@@ -949,7 +957,13 @@ export default function UnitView({
     if (!showFrontDimensions) return [];
     // Turn 28 (CLAUDE.md F8.3/F8.4): where the two labels sit is the PROFILE's
     // answer, resolved in the engine, so the scene still decides nothing.
-    return frontDimensionRows(result, profile).map((row, i) => ({
+    // Turn 34 (CLAUDE.md F5): the edge figures the room replaced with ONE
+    // leaf-to-leaf dimension at a meeting line — decided at room level,
+    // because a cabinet cannot see the one beside it.
+    return [
+      ...frontDimensionRows(result, profile, suppressEdgeDims),
+      ...(meetingDimRows || []),
+    ].map((row, i) => ({
       key: `${row.kind}-${row.a || ''}-${row.b || ''}-${i}`,
       from: row.axis === 'h' ? [row.from, row.at] : [row.at, row.from],
       to: row.axis === 'h' ? [row.to, row.at] : [row.at, row.to],
@@ -957,7 +971,7 @@ export default function UnitView({
       // two gap figures that sit close stand on different rungs.
       offset: row.offsetMm || 0,
     }));
-  }, [showFrontDimensions, result, profile]);
+  }, [showFrontDimensions, result, profile, suppressEdgeDims, meetingDimRows]);
   // A hair proud of the door plane, so the chain is not buried in it.
   const frontDimZ = result.params.depth + profile.doors.gap + (result.params.front_t || 25) + 1;
 

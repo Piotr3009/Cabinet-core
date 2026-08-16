@@ -205,5 +205,12 @@ test('F8.3/F8.4 the numbers are the PROFILE’s, and a caller with none draws th
   const f = frontRects(r)[0];
   assert.equal(moved.find((x) => x.kind === 'front-w').at, f.y + f.h / 2);
   assert.equal(moved.find((x) => x.kind === 'front-h').at, f.x + f.w / 2);
-  assert.match(VIEW, /frontDimensionRows\(result, profile\)/, 'the view hands the profile in');
+  // ─── AMENDED 16.08.2026 (turn 34, CLAUDE.md F5) ────────────────────────
+  // The call grew a THIRD argument — the set of per-unit edge figures the room
+  // replaced with one merged leaf-to-leaf dimension at a meeting line ("przy
+  // dojechaniu do szafki żeby się sumowały i pokazywało 3"). The assertion's
+  // own property is untouched: the view hands the PROFILE in and decides no
+  // number of its own.
+  assert.match(VIEW, /frontDimensionRows\(result, profile, suppressEdgeDims\)/,
+    'the view hands the profile in');
 });

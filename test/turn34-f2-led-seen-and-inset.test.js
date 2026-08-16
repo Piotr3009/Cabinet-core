@@ -79,9 +79,16 @@ test('a profile saved BEFORE this turn keeps its own numbers — no silent brigh
 });
 
 test('the 3D reads the profile and never a literal', () => {
+  // REWRITTEN 16.08.2026 (chat-fix, point 2 — the halo): the demo boost now
+  // feeds THREE consumers (emissive, the RectAreaLight, the aura), so it is
+  // named once (`boost`) and the emissive line reads `spec.view.emissive *
+  // boost`. Same law, one factored name.
   const src = readFileSync(new URL('../src/3d/LedStrips.jsx', import.meta.url), 'utf8');
-  assert.match(src, /spec\.view\.emissive \* \(lightDemo \? spec\.demo\.emissiveBoost : 1\)/);
+  assert.match(src, /const boost = lightDemo \? spec\.demo\.emissiveBoost : 1/);
+  assert.match(src, /spec\.view\.emissive \* boost/);
   assert.match(src, /spec\.view\.spotMultiplier/);
+  assert.match(src, /spec\.halo\.area \* boost/, 'the lamp obeys the same demo boost');
+  assert.match(src, /spec\.halo\.glowOpacity \* boost/, 'the aura too');
   // No bare emissive number anywhere in the component.
   assert.ok(!/emissiveIntensity=\{[\d.]+\}/.test(src), 'a literal crept into the view');
 });

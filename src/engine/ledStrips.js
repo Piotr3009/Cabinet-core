@@ -54,6 +54,18 @@ export function lightingSpec(profile) {
       insetDefault: Number(strip.insetDefault) >= 0 ? Number(strip.insetDefault) : 80,
       insetMax: Number(strip.insetMax) > 0 ? Number(strip.insetMax) : 200,
     },
+    // ─── CHAT-FIX 16.08 (owner, point 2): THE HALO ───────────────────────────
+    // "nie daje światła typowo wychodzącego ze stripów … nie widzę poświaty,
+    // promieni od tej linii". Two parts, both in-core (zero new deps): a
+    // RectAreaLight per strip (real light falling on the boards) and an
+    // additive glow quad around the line itself. Numbers here are fallbacks;
+    // a profile that names `lighting.halo.*` wins.
+    halo: {
+      area: Number(l.halo?.area) > 0 ? Number(l.halo.area) : 60,
+      glowOpacity: Number(l.halo?.glowOpacity) > 0 ? Number(l.halo.glowOpacity) : 0.5,
+      glowScale: Number(l.halo?.glowScale) > 0 ? Number(l.halo.glowScale) : 6,
+      maxAreaLights: Number(l.halo?.maxAreaLights) > 0 ? Number(l.halo.maxAreaLights) : 16,
+    },
     spot: {
       diameter: Number(spot.diameter) > 0 ? Number(spot.diameter) : 55,
       defaultCount: Number(spot.defaultCount) > 0 ? Math.trunc(Number(spot.defaultCount)) : 2,
@@ -240,6 +252,7 @@ export function stripsForUnit({
       out.push({
         id: item.id,
         kind: 'side',
+        side: item.ref === 'R' ? 'R' : 'L',
         box: {
           x, y: G, z: D - line - inset, w: t, h: Math.max(0, H - 2 * G), d: line,
         },

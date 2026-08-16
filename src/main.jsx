@@ -47,6 +47,12 @@ import * as hardwareFinish from './3d/hardwareFinish.js';
 import * as decors from './engine/decors.js';
 import * as dimensions from './engine/dimensions.js';
 import * as frontDimensions from './engine/frontDimensions.js';
+// Turn 34 (CLAUDE.md F1/F4/F7/F8): the four readers the acceptance walk asks.
+import * as projectSettings from './engine/projectSettings.js';
+import * as shoeBox from './engine/shoeBox.js';
+import * as deleteElement from './engine/deleteElement.js';
+import * as shaker from './engine/shaker.js';
+import * as design from './engine/design.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -176,6 +182,16 @@ if (typeof window !== 'undefined') {
   window.__ccT31 = { exportGate, drillGuard, cncExport, frontClearance };
   // ─── Turn 32 (CLAUDE.md F5/F6) ───
   window.__ccT32 = { bomInvoice, bomCore, hardwareRegister };
+  // ─── Turn 34 (CLAUDE.md F1/F4/F7/F8) ───
+  // Four readers the walk has to ask questions OF, for the same reason every
+  // one above is here: a claim about the wizard's GATE has to be read off the
+  // function the Save button is disabled by, a claim about the shoe box off
+  // the module that mirrors the kit, a claim about what Delete removes off the
+  // decision both doors run, and a claim about the shaker pin off the function
+  // `loadProject` calls. All four are pure.
+  window.__ccT34 = {
+    projectSettings, shoeBox, deleteElement, shaker, design,
+  };
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

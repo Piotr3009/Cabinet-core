@@ -1,0 +1,334 @@
+{
+  "f4_fix_plan": {
+    "id": "shoe_box_x30g2py",
+    "zone": null,
+    "variant": "F",
+    "openingW": 864,
+    "boxW": 864,
+    "innerW": 828,
+    "depth": 475,
+    "posZ": 0,
+    "dividers": 1,
+    "slope": {
+      "run": 439,
+      "rear": 77.41,
+      "angleDeg": 10,
+      "slopeLen": 445.77,
+      "grooveW": 18.2,
+      "grooveDepth": 6
+    },
+    "hinged": {
+      "left": true,
+      "right": false
+    },
+    "runner": null,
+    "boxFrontX": 28,
+    "axisY": 40
+  },
+  "f4_scene_boards": [
+    "SHOE1-BF",
+    "SHOE1-BK",
+    "SHOE1-BT",
+    "SHOE1-DV",
+    "SHOE1-FR",
+    "SHOE1-SL",
+    "SHOE1-SR"
+  ],
+  "f4_bottom": {
+    "grain": "w",
+    "w": 840,
+    "h": 457.77
+  },
+  "f4_pilots": [
+    {
+      "panel": "BUL",
+      "kind": "shoe_pilot",
+      "layer": "SCREWS_3MM",
+      "x": 78,
+      "y": 58,
+      "d": 3
+    },
+    {
+      "panel": "BUR",
+      "kind": "shoe_pilot",
+      "layer": "SCREWS_3MM",
+      "x": 472,
+      "y": 58,
+      "d": 3
+    },
+    {
+      "panel": "BUL",
+      "kind": "shoe_pilot",
+      "layer": "SCREWS_3MM",
+      "x": 265.5,
+      "y": 58,
+      "d": 3
+    },
+    {
+      "panel": "BUR",
+      "kind": "shoe_pilot",
+      "layer": "SCREWS_3MM",
+      "x": 284.5,
+      "y": 58,
+      "d": 3
+    },
+    {
+      "panel": "BUL",
+      "kind": "shoe_pilot",
+      "layer": "SCREWS_3MM",
+      "x": 453,
+      "y": 58,
+      "d": 3
+    },
+    {
+      "panel": "BUR",
+      "kind": "shoe_pilot",
+      "layer": "SCREWS_3MM",
+      "x": 97,
+      "y": 58,
+      "d": 3
+    }
+  ],
+  "f4_drawer_plan": {
+    "id": "shoe_box_axh5xxy",
+    "zone": null,
+    "variant": "D",
+    "openingW": 964,
+    "boxW": 878,
+    "innerW": 842,
+    "depth": 475,
+    "posZ": 0,
+    "dividers": 0,
+    "slope": {
+      "run": 439,
+      "rear": 77.41,
+      "angleDeg": 10,
+      "slopeLen": 445.77,
+      "grooveW": 18.2,
+      "grooveDepth": 6
+    },
+    "hinged": {
+      "left": true,
+      "right": true
+    },
+    "runner": {
+      "nl": 450,
+      "column": 352,
+      "faceX": 28,
+      "axisY": 40,
+      "onSheet": true
+    },
+    "boxFrontX": 28,
+    "axisY": 40
+  },
+  "f4_runner_drills": {
+    "runner": [
+      {
+        "panel": "BUL",
+        "kind": "shoe_runner_fix",
+        "layer": "SHOE_RUNNER_5MM",
+        "x": 65,
+        "y": 58,
+        "d": 5
+      },
+      {
+        "panel": "BUR",
+        "kind": "shoe_runner_fix",
+        "layer": "SHOE_RUNNER_5MM",
+        "x": 485,
+        "y": 58,
+        "d": 5
+      },
+      {
+        "panel": "BUL",
+        "kind": "shoe_runner_fix",
+        "layer": "SHOE_RUNNER_5MM",
+        "x": 380,
+        "y": 58,
+        "d": 5
+      },
+      {
+        "panel": "BUR",
+        "kind": "shoe_runner_fix",
+        "layer": "SHOE_RUNNER_5MM",
+        "x": 170,
+        "y": 58,
+        "d": 5
+      }
+    ],
+    "plan": {
+      "nl": 450,
+      "column": 352,
+      "faceX": 28,
+      "axisY": 40,
+      "onSheet": true
+    }
+  },
+  "f4_runner_bom": {
+    "role": "shoe_runner_pairs",
+    "label": "Shoe-box side runners",
+    "qty": 1,
+    "unit": "pairs",
+    "spec": {
+      "system": "Side-mount shoe runner",
+      "nl": 450,
+      "width_mm": 13,
+      "on_sheet": true,
+      "articles": {
+        "L": null,
+        "R": null
+      },
+      "complete": false,
+      "note": "article unknown — the owner has not filled the register",
+      "zone": null,
+      "box_width_mm": 878
+    },
+    "spec_label": "Side-mount shoe runner · NL 450 · 13 mm per side · article unknown — the owner has not filled the register"
+  },
+  "f2_emissive": {
+    "off": {
+      "emissive": 3.4
+    },
+    "on": {
+      "emissive": 10.88
+    }
+  },
+  "f2_inset": {
+    "before": {
+      "z": -948,
+      "len": 960
+    },
+    "after": {
+      "z": -1008,
+      "len": 960
+    }
+  },
+  "f5_touching": {
+    "key": "meet|u_5dghr6p:01-F|u_tvi0knc:02-F",
+    "wall": 0,
+    "atX": null,
+    "touching": true,
+    "mm": 3,
+    "leafGapMm": 3,
+    "carcassGapMm": 0,
+    "rows": [
+      {
+        "kind": "leaf-to-leaf",
+        "mm": 3,
+        "unitId": null,
+        "panelId": null,
+        "side": null
+      }
+    ],
+    "suppress": [
+      {
+        "unitId": "u_5dghr6p",
+        "panelId": "01-F",
+        "side": "right"
+      },
+      {
+        "unitId": "u_tvi0knc",
+        "panelId": "02-F",
+        "side": "left"
+      }
+    ]
+  },
+  "f5_apart": {
+    "key": "meet|u_5dghr6p:01-F|u_tvi0knc:02-F",
+    "wall": 0,
+    "atX": null,
+    "touching": false,
+    "mm": 100,
+    "leafGapMm": 103,
+    "carcassGapMm": 100,
+    "rows": [
+      {
+        "kind": "own-clearance",
+        "mm": 1.5,
+        "unitId": "u_5dghr6p",
+        "panelId": "01-F",
+        "side": "right"
+      },
+      {
+        "kind": "carcass-gap",
+        "mm": 100,
+        "unitId": null,
+        "panelId": null,
+        "side": null
+      },
+      {
+        "kind": "own-clearance",
+        "mm": 1.5,
+        "unitId": "u_tvi0knc",
+        "panelId": "02-F",
+        "side": "left"
+      }
+    ],
+    "suppress": []
+  },
+  "f9_hidden": 0,
+  "f8_selected": {
+    "unitId": "u_ady9pb0",
+    "elementRef": "W01-DF3"
+  },
+  "f8_stack": {
+    "start": 3,
+    "after": [
+      2,
+      1,
+      0
+    ]
+  },
+  "f8_guard": {
+    "stillThere": true
+  },
+  "f1_gate": {
+    "missing": [
+      "Carcass 1",
+      "Front 1"
+    ],
+    "all": true
+  },
+  "f3_runner": {
+    "role": "runner_pairs",
+    "label": "Drawer runners",
+    "qty": 3,
+    "unit": "pairs",
+    "spec": {
+      "length_mm": 490,
+      "system": "760H",
+      "nl": 500,
+      "asked_nl": 500,
+      "on_ladder": true,
+      "variant": "T",
+      "articles": {
+        "L": "3000500T",
+        "R": "3000500T"
+      },
+      "complete": true
+    },
+    "spec_label": "490 mm · orders NL 500 · MOVENTO 760H · T · 3000500T / 3000500T"
+  },
+  "f6_appliance": {
+    "units": [
+      "u_sgouurg",
+      "u_huic5g8"
+    ],
+    "edges": [
+      {
+        "panelId": "02-F",
+        "side": "left",
+        "have": 0,
+        "correction": 0
+      }
+    ]
+  },
+  "f6_trim": {
+    "02-F": {
+      "left": -1.5,
+      "right": 0
+    }
+  },
+  "f7_new": 60,
+  "f7_legacy": 70
+}

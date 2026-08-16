@@ -38,6 +38,9 @@ import { frontGapClashes } from '../engine/frontGapClash.js';
 // Turn 31 (CLAUDE.md F4): the owner's 18-point front-gap rulebook.
 // Turn 32 (CLAUDE.md F3): …and the healing plan that APPLIES it.
 import { carcassGaps, frontClearances, healingPlan } from '../engine/frontClearance.js';
+// Turn 34 (CLAUDE.md F8): what one press of Delete removes, and what the
+// selection falls to — one pure decision behind the key and the button alike.
+import { deletePlan } from '../engine/deleteElement.js';
 // Turn 32 (CLAUDE.md F3): the grey notes the self-healing announces itself
 // with. One direction only — uiStore never reads this store.
 import { useUiStore } from './uiStore.js';
@@ -3304,6 +3307,65 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (itemId) { get().removeItem(unitId, itemId); return 'item'; }
     get().setElementOverride(unitId, panelId, { removed: true });
     return 'override';
+  },
+
+  /**
+   * ─── TURN 34 (CLAUDE.md F8): DELETE THE SELECTED ELEMENT ──────────────────
+   *
+   * The owner, 16.08.2026: *"szuflady i wszystkie inne elementy: po naciśnięciu
+   * i podświetleniu — usunięcie przez naciśnięcie Delete; w modalu pokaż też
+   * Delete. Jak mamy 3 szuflady, niech usuwają się po jednej, tak jak
+   * naciskasz."*
+   *
+   * ONE action behind BOTH doors — the key and the modal button — because two
+   * would drift the first time either learnt something. What it removes and
+   * what the selection falls to is `engine/deleteElement.js deletePlan`'s
+   * decision; this applies it, moves the selection and runs the heal sweep.
+   *
+   * There is no undo system: the deletion is immediate and says what it did.
+   *
+   * @param {object|null} at  { unitId, elementRef } — the UI's own selection
+   *                          shape; omitted, the current selection is used.
+   * @returns {{ok:boolean, error?:string, removed?:string, next?:string|null}}
+   */
+  deleteSelectedElement: (at = null) => {
+    const sel = at || useUiStore.getState().selectedElement;
+    const unitId = sel?.unitId || null;
+    const panelId = sel?.elementRef || sel?.panelId || null;
+    if (!unitId || !panelId) return { ok: false, error: 'Nothing is selected.' };
+    const unit = get().units.find((u) => u.id === unitId);
+    const panel = get().unitResult(unitId)?.panels.find((p) => p.id === panelId) || null;
+    const plan = deletePlan({ unit, panel });
+    if (!plan.allowed) return { ok: false, error: plan.reason };
+
+    return runBatch(() => {
+      if (plan.target === 'item') get().removeItem(unitId, plan.itemId);
+      else get().setElementOverride(unitId, panelId, { removed: true });
+
+      // ─── THE SELECTION FALLS (F8, the drawer stack) ───────────────────────
+      // Re-read the cabinet AFTER the removal — the stack has renumbered
+      // itself — and land on the drawer the plan named, so the next press
+      // takes the next one down without the pointer moving.
+      let next = null;
+      if (plan.nextDrawer != null) {
+        const after = get().unitResult(unitId);
+        const family = panel.part === 'DRAWER-FRONT' ? 'DRAWER-FRONT' : panel.part;
+        next = after?.panels.find((p) => p.part === family
+          && Number(p.meta?.drawer) === plan.nextDrawer)?.id
+          || after?.panels.find((p) => Number(p.meta?.drawer) === plan.nextDrawer)?.id
+          || null;
+      }
+      if (next) useUiStore.getState().selectElement(unitId, next);
+      else useUiStore.getState().clearElement();
+
+      // ─── AND EVERY REMOVAL PATH RUNS THE SWEEP (F8 → T33-F5) ─────────────
+      // A piece leaving re-shapes what stands beside a front — an end panel
+      // gone, a drawer gone from under a bay door — so the matrix is applied
+      // here exactly as it is on every other path that re-shapes one. No
+      // healable correction may be left standing after a delete.
+      get().healFrontGaps();
+      return { ok: true, removed: plan.itemId || panelId, next };
+    });
   },
 
   /** Put a removed piece back — the override is a decision, and it is undone. */

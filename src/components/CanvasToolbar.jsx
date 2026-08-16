@@ -15,6 +15,13 @@ export default function CanvasToolbar() {
   const setViewMode = useUiStore((s) => s.setViewMode);
   const showDimensions = useUiStore((s) => s.showDimensions);
   const toggleDimensions = useUiStore((s) => s.toggleDimensions);
+  // ─── TURN 34 (CLAUDE.md F9): THE TWIN ─────────────────────────────────────
+  // The owner, 16.08.2026: "górne menu: obok 3D dimensions dodaj taki sam
+  // przycisk — Front dimensions (show front dimensions)." Same look, same
+  // grammar, same persistence — one flag it has carried since turn 25, so
+  // nothing changes until it is clicked.
+  const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
+  const toggleFrontDimensions = useUiStore((s) => s.toggleFrontDimensions);
   const bomOpen = useUiStore((s) => s.bomOpen);
   const checkOpen = useUiStore((s) => s.checkOpen);
   const toggleCheck = useUiStore((s) => s.toggleCheck);
@@ -115,6 +122,29 @@ export default function CanvasToolbar() {
         title={showDimensions ? 'Hide dimensions and distance arrows' : 'Show dimensions and distance arrows'}
       >
         {showDimensions ? 'Hide dimensions' : 'Show dimensions'}
+      </button>
+
+      {/* ─── TURN 34 (CLAUDE.md F9): FRONT DIMENSIONS, BESIDE ITS TWIN ─────
+          "obok 3D dimensions dodaj taki sam przycisk" — beside it, and the
+          same button in every respect: the same classes, the same disabled
+          rule in CNC, the same aria, the same persisted flag. It switches the
+          WHOLE front-dimension layer — every front's own figures AND F5's
+          merged meeting-line figure, which is one layer with one switch. */}
+      <button
+        type="button"
+        aria-pressed={showFrontDimensions}
+        disabled={viewMode !== '3d'}
+        data-front-dimensions-toggle="1"
+        className={`px-2.5 py-1 text-xs rounded transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
+          showFrontDimensions && viewMode === '3d'
+            ? 'bg-gold text-shell-900 font-medium'
+            : 'text-ink-100 hover:bg-shell-700'}`}
+        onClick={toggleFrontDimensions}
+        title={showFrontDimensions
+          ? 'Hide front dimensions — sizes, gaps and the merged run figure'
+          : 'Show front dimensions — sizes, gaps and the merged run figure'}
+      >
+        {showFrontDimensions ? 'Hide front dimensions' : 'Front dimensions'}
       </button>
 
       <span className="w-px h-4 bg-shell-600" />

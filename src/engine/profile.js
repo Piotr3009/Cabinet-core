@@ -297,6 +297,25 @@ export const DEFAULT_CABINET_PROFILE = {
     standard: 3,
     standardOptions: [2, 3],
     holeDiameter: 5,
+    // ─── TURN 35 (CLAUDE.md F8): THE PILOT THE PLATE IS SCREWED WITH ────────
+    //
+    // Owner, 16.08.2026: *"nie mamy ustawienia w ogóle 5 mm czy 3 mm screws
+    // zawiasy wiercenie — niektórzy używają tak, inni inaczej"*; where it
+    // goes: *"to ustawienie musi być w hardware ustawieniach"*; and the
+    // default: *"5, jak jest teraz"*.
+    //
+    // `holeDiameter` above is the number this app has drilled since turn 1 and
+    // it does not move — it is what a bare `computeCabinet()` and every golden
+    // fixture take. `platePilotD` is the WORKSHOP's answer, and it opens on
+    // the same 5, so nothing that has never touched the setting is re-cut. A
+    // shop that knocks its plates in on ⌀3 screws says so once here.
+    //
+    // The diameter travels in the LAYER NAME and nowhere else — `HINGES_3MM`
+    // beside `HINGES_5MM` in engine/cnc/layers.js. NO text style rides with
+    // it: the DXF writer has no STYLE table, which is the 02.08 VCarve crash
+    // law, and a layer name is what VCarve maps a tool by anyway.
+    platePilotD: 5,
+    platePilotOptions: [3, 5],
     holePairOffset: 16,        // 2 holes per centre at centre ± 16
     // ─── TURN 31 (CLAUDE.md F3 / Check #10): HOW NEAR TWO ROWS MAY COME ────
     //
@@ -4020,6 +4039,10 @@ export const DEFAULT_CABINET_PROFILE = {
       SCREWS_3MM: { d: 3, depth: 0 },
       SHELVES_7_5MM: { d: 7.5, depth: 12 },
       HINGES_5MM: { d: 5, depth: 12 },
+      // Turn 35 (CLAUDE.md F8): the ⌀3 pilot the other half of the trade uses
+      // for the same plate. Same depth — it is the same plate in the same
+      // board; only the screw is different.
+      HINGES_3MM: { d: 3, depth: 12 },
       // The owner measured the cup: ELEVEN, not 12.5 (CLAUDE.md F1.1). The
       // engine states this depth on the hole itself, so the record is what is
       // actually bored; this row is what a hand-stamped cup takes.

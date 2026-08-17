@@ -71,6 +71,8 @@ import { shelfHingeClashes } from './shelfHingeClash.js';
 import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
 // Turn 24 (CLAUDE.md F3): G is a property of the PART, and this is the door.
 import { partitionSlot, thicknessOf } from './thickness.js';
+// Turn 35 (CLAUDE.md F8): ⌀3 or ⌀5 → the layer that carries the diameter.
+import { hingePlateLayer } from './cnc/layers.js';
 
 // ─── Hinge centres (SKYLON_COMMON calcHingePositions*) ───
 
@@ -137,6 +139,35 @@ export function hingeStandard(value, profile) {
   const n = Math.trunc(Number(value));
   const allowed = profile?.hinges?.standardOptions || [2, 3];
   return allowed.includes(n) ? n : (Number(profile?.hinges?.standard) || 3);
+}
+
+// ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ───────────────
+//
+// Owner, 16.08.2026: *"nie mamy ustawienia w ogóle 5 mm czy 3 mm screws zawiasy
+// wiercenie — niektórzy używają tak, inni inaczej"*; where it lives: *"to
+// ustawienie musi być w hardware ustawieniach"*; the default: *"5, jak jest
+// teraz"*.
+//
+// ONE resolver, exported, so the Settings row and the drilling can never
+// disagree about what this job is drilling. The cascade is the SHELF-PIN
+// SETBACK's own (turn 30, F5): the project's `params.hinge_plate_pilot_d`
+// first, the workshop profile's `platePilotD` behind it, and `holeDiameter` —
+// the number this app has drilled since turn 1 — under both. A bare
+// `computeCabinet()` says nothing at all and therefore still drills ⌀5.
+//
+// An unrecognised diameter is not honoured: `platePilotOptions` is the list of
+// diameters this app has a layer for, and a hole on a layer no tool is mapped
+// to is a hole nobody cuts.
+
+/** The plate pilot this job drills: ⌀3 or ⌀5, project over profile over ⌀5. */
+export function hingePlatePilotD(profile, params = null) {
+  const allowed = profile?.hinges?.platePilotOptions || [3, 5];
+  const base = Number(profile?.hinges?.holeDiameter) > 0 ? Number(profile.hinges.holeDiameter) : 5;
+  const shop = Number(profile?.hinges?.platePilotD);
+  const job = Number(params?.hinge_plate_pilot_d);
+  if (allowed.includes(job)) return job;
+  if (allowed.includes(shop)) return shop;
+  return base;
 }
 
 /** The index of the inner hinge nearest the middle of the door — the one that goes. */
@@ -4383,6 +4414,28 @@ export function computeCabinet(params, profileOverride) {
     for (const hole of pnl.cnc?.holes || []) addDrill(pnl.id, hole.kind, hole.layer, hole.x, hole.y, hole.d);
   }
 
+  // ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ─────────────
+  //
+  // Owner, 16.08.2026: *"nie mamy ustawienia w ogóle 5 mm czy 3 mm screws
+  // zawiasy wiercenie — niektórzy używają tak, inni inaczej"*, default *"5,
+  // jak jest teraz"*.
+  //
+  // It arrives on the road every owner-standard number in this app arrives on
+  // — the SHELF-PIN SETBACK's own road, three hundred lines up: profile
+  // default → company row → project → `paramsForEngine()` → `params`, never as
+  // a changed formula and never as a new branch in the geometry. `holeDiameter`
+  // is untouched and remains what a BARE `computeCabinet()` drills, which is
+  // what keeps every golden fixture on ⌀5 and `HINGES_5MM`.
+  //
+  // The diameter and its LAYER move together, always: a ⌀3 hole on the ⌀5
+  // layer is a 5 mm bit going into a 3 mm hole on the machine, so the layer is
+  // DERIVED from the number rather than stored beside it.
+  //
+  // `wallUnit.hangers` reuses `HINGES_5MM` for a hanger cut-out and is NOT a
+  // hinge plate — it does not follow this setting and must never be made to.
+  const platePilotD = hingePlatePilotD(P, params);
+  const platePilotLayer = hingePlateLayer(platePilotD, P.hinges.layer);
+
   // Hinge holes on the hinged carcass sides
   const hingeHolePairs = centres.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset]);
   // Turn 21 (CLAUDE.md F12.2): with doors in the bays it is the LEAVES that
@@ -4396,7 +4449,7 @@ export function computeCabinet(params, profileOverride) {
   for (const sideId of platedSides) {
     const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
     for (const pair of hingeHolePairs) {
-      for (const y of pair) addDrill(sideId, 'hinge', P.hinges.layer, x, y, P.hinges.holeDiameter);
+      for (const y of pair) addDrill(sideId, 'hinge', platePilotLayer, x, y, platePilotD);
     }
   }
   // ─── TURN 21 (CLAUDE.md F12.2): THE PLATE PATTERN, ON A NEW PANEL ────────
@@ -4440,7 +4493,9 @@ export function computeCabinet(params, profileOverride) {
         // front and the other `depth − 37`), so it becomes `depth − v` here.
         // The row is the carcass's; the height starts at the partition's own
         // bottom, which on a full-height piece is one board up.
-        addDrill(part.id, 'hinge', P.hinges.layer, depth - v, y - part.box.y, P.hinges.holeDiameter);
+        // Turn 35 (CLAUDE.md F8): the plate pilot is one number for the whole
+        // cabinet — a partition's plate is the same plate as a side's.
+        addDrill(part.id, 'hinge', platePilotLayer, depth - v, y - part.box.y, platePilotD);
       }
     }
   }

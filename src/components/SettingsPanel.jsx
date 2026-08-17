@@ -15,7 +15,7 @@ import {
 import { formatMm } from '../engine/format.js';
 // ─── TURN 24 (CLAUDE.md F3): THE CALIPER, NOT THE LABEL ─────────────────────
 import { drawerBoxGate, thicknessSlotRows } from '../engine/thickness.js';
-import { doorCountFor, hingeStandard } from '../engine/cabinet.js';
+import { doorCountFor, hingePlatePilotD, hingeStandard } from '../engine/cabinet.js';
 import { UNIT_TYPES } from '../engine/types.js';
 import {
   hingeAngleFor, hingeReResolve, resolveHingeFinish, resolveHingePlate, resolveHingeSystem,
@@ -92,6 +92,16 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setRunnerVariant = useProjectStore((s) => s.setRunnerVariant);
   // Turn 19 (CLAUDE.md F1.1): …and which HINGE — system, finish, plate.
   const setHingeHardware = useProjectStore((s) => s.setHingeHardware);
+  // ─── TURN 35 (CLAUDE.md F8 / F15) ────────────────────────────────────────
+  // Two WORKSHOP numbers land in this panel this turn — the hinge-plate pilot
+  // and the two sheet sizes — and a workshop number is the profile's, not the
+  // project's, so they are written through the profile store rather than
+  // through `setDesign`. `setProfile` migrates, persists and pushes into the
+  // engine's single read point in one call (stores/cabinetProfileStore.js).
+  const setProfile = useCabinetProfileStore((s) => s.setProfile);
+  // F8: what this job's plates are pilot-drilled at — the engine's own
+  // resolver, so the buttons and the drilling read one answer.
+  const platePilot = hingePlatePilotD(profile);
   const setShelfSleeve = useProjectStore((s) => s.setShelfSleeve);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
@@ -926,6 +936,40 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           frontThickness={projectFrontThickness(design, profile, materials)}
           onChange={setHingeHardware}
         />
+
+        {/* ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT ─────────────────
+            Owner, 16.08.2026: "nie mamy ustawienia w ogóle 5 mm czy 3 mm
+            screws zawiasy wiercenie — niektórzy używają tak, inni inaczej",
+            and where it belongs: "to ustawienie musi być w hardware
+            ustawieniach". Default "5, jak jest teraz", so a shop that never
+            opens this drills exactly what it drilled yesterday.
+
+            The diameter goes into the CNC file the only way a diameter has
+            ever gone into one here — in the LAYER NAME, HINGES_3MM beside
+            HINGES_5MM. No text style rides with it (the 02.08 VCarve law). */}
+        <div className="cc-row" data-hinge-plate-pilot="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Hinge plate pilot</span>
+            <span className="text-[11px] text-ink-400">
+              What the plate is fixed with. ⌀5 knocks in, ⌀3 screws — the holes land on
+              HINGES_{platePilot === 3 ? '3' : '5'}MM, which is what the machine maps its tool by.
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {profile.hinges.platePilotOptions.map((d) => (
+              <button
+                key={d}
+                type="button"
+                data-hinge-plate-pilot-option={d}
+                aria-pressed={platePilot === d}
+                className={`cc-btn px-2 ${platePilot === d ? 'border-gold text-gold' : ''}`}
+                onClick={() => setProfile({ ...profile, hinges: { ...profile.hinges, platePilotD: d } })}
+              >
+                ⌀{d}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* ─── Turn 25 (CLAUDE.md F6.1): THE SHELF SUPPORTS ──────────────────
             "He wants to SEE gold or silver sleeves." Two buttons, beside the

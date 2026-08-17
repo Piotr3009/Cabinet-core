@@ -310,6 +310,18 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // 02.08 VCarve crash law.
     SHOE_GROOVE_6MM: 1,
     SHOE_RUNNER_5MM: 5,
+    // ─── TURN 35 (CLAUDE.md F8): ONE NEW NAME, AND IT IS A DIAMETER ───────
+    // "Settings → Hardware gains Hinge plate pilot: ⌀3 / ⌀5 (default 5). The
+    // CNC hinge-plate pilots take the chosen diameter, the layer name carries
+    // it (the DXF grammar the house already uses — NO text styles)."
+    //
+    // So it is the SAME feature as HINGES_5MM at the other diameter, and the
+    // house grammar `{FEATURE}_{DIAMETER}MM` is the whole of the mechanism:
+    // VCarve maps the tool by layer name, and a ⌀3 hole announcing itself on
+    // the ⌀5 layer would be a 5 mm bit going into a 3 mm hole. ACI 43 sits
+    // beyond the handles' 42 and is unused by the LISP's own table, so nothing
+    // AutoCAD already draws changes colour.
+    HINGES_3MM: 43,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

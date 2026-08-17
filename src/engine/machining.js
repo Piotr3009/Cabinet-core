@@ -111,6 +111,16 @@ const CLASSES = [
     draw: true,
     reason: 'the knock-in plate’s two ⌀5 dowels. BLIND: a dowel that broke through the outer face of a side panel would be visible in the room.',
   },
+  // ─── TURN 35 (CLAUDE.md F8) ───
+  // The same two plate holes on a workshop that screws its plates in on ⌀3
+  // ("niektórzy używają tak, inni inaczej"). Same feature, same blindness, one
+  // diameter smaller — a row of its own because this table is keyed by LAYER
+  // NAME and the diameter is what the layer name carries.
+  {
+    layer: 'HINGES_3MM',
+    draw: true,
+    reason: 'the knock-in plate’s two fixing pilots, drilled ⌀3 where the workshop screws rather than knocks them in. BLIND for the same reason the ⌀5 is: a hole through the outer face of a side panel would be visible in the room.',
+  },
   {
     layer: 'SHELVES_7_5MM',
     draw: true,

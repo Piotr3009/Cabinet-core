@@ -16,7 +16,8 @@ import { captureRender, furnitureBounds } from './renderCapture.js';
 import { useViewHandle } from './viewHandle.js';
 import { balanceRig, brightnessScale } from '../engine/lighting.js';
 // Turn 33 (CLAUDE.md F2): the demo's one dim factor — derived, never stored.
-import { demoDimFactor } from '../engine/ledStrips.js';
+// Turn 35 (CLAUDE.md F10): …and the ONE state it rides, off the project.
+import { demoDimFactor, resolveLighting } from '../engine/ledStrips.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
 import {
@@ -891,9 +892,19 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // Turn 26 (CLAUDE.md F10.3): the View menu's brightness, remembered.
   const brightness = useUiStore((s) => s.brightness);
   // Turn 33 (CLAUDE.md F2): the demo — one derived factor, profile-listed.
-  const lightDemo = useUiStore((s) => s.lightDemo);
+  //
+  // ─── TURN 35 (CLAUDE.md F10): …AND THE FLAG IT RIDES IS THE PROJECT'S ─────
+  // The owner's two buttons merged "lighting in this project" with "turn on
+  // the light", so the room dims off `design.lighting.on` — read here from the
+  // design this scene already subscribes to. `uiStore.lightDemo` stays alive as
+  // the SESSION SHADOW of that answer (uiStore never reads this store — the one
+  // direction projectStore.js states — so the sync is written here, at the one
+  // place the lens is consumed) and can therefore never hold a second opinion.
+  const setLightDemo = useUiStore((s) => s.setLightDemo);
   const profile = useCabinetProfileStore((s) => s.profile);
-  const demoDim = demoDimFactor(lightDemo, profile);
+  const lightOn = useMemo(() => resolveLighting(design, profile).on, [design, profile]);
+  useEffect(() => { setLightDemo(lightOn); }, [lightOn, setLightDemo]);
+  const demoDim = demoDimFactor(lightOn, profile);
 
   // `units` is the subscription that drives the re-render; allResults() is a
   // stable store function, so deriving from it alone would never update.

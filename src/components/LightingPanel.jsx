@@ -102,9 +102,10 @@ export default function LightingPanel() {
   const notify = useUiStore((s) => s.notify);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectedElement = useUiStore((s) => s.selectedElement);
-  // Turn 33 (CLAUDE.md F2): the demo — the same flag the View menu carries.
-  const lightDemo = useUiStore((s) => s.lightDemo);
-  const toggleLightDemo = useUiStore((s) => s.toggleLightDemo);
+  // Turn 33 (CLAUDE.md F2) put the demo flag here beside the panel's own
+  // checkbox. TURN 35 (CLAUDE.md F10) merged the two into the project's
+  // `lighting.on`, read below through resolveLighting — the panel reads the
+  // ONE state and nothing else.
 
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
@@ -166,18 +167,51 @@ export default function LightingPanel() {
       sticky
     >
       <div data-lighting-panel="1" className="space-y-3">
-        {/* ─── ON / OFF for the project ──────────────────────────────────── */}
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+        {/* ─── TURN 35 (CLAUDE.md F10): INTERNAL LIGHTS — ON / OFF ────────────
+            The owner crossed BOTH checkboxes off the screenshot and drew this
+            pair in their place: *"te 2 funkcje usuń i na to miejsce dodaj duże
+            zielony i czerwony przycisk ON i OFF — internal lights"*. So
+            "Lighting in this project" and "Turn on the light" are gone and the
+            two flags they wrote are ONE — `design.lighting.on`, persisted and
+            migrated (engine/design.js migrateLighting). ON: the room dims, the
+            placed LEDs shine, halo and lamps come up. OFF: dark.
+            The colours are the house's own status pair, never a raw hex. */}
+        <div className="flex gap-2" data-lighting-onoff="1">
+          <button
+            type="button"
+            data-lighting-on
+            // The T33 walk clicks this hook to light the project up; it now
+            // lands on the ON button, which is the same act.
             data-lighting-enabled
-            checked={lighting.enabled}
-            onChange={(e) => setLighting({ enabled: e.target.checked })}
-          />
-          <span className="text-sm text-ink-50">Lighting in this project</span>
-        </label>
+            aria-pressed={lighting.on}
+            className={`flex-1 h-11 rounded border text-base font-semibold tracking-wide ${
+              lighting.on
+                ? 'bg-status-ok border-status-ok text-shell-900'
+                : 'border-shell-600 text-ink-400 hover:border-ink-200'
+            }`}
+            onClick={() => setLighting({ on: true })}
+          >
+            ON
+          </button>
+          <button
+            type="button"
+            data-lighting-off
+            aria-pressed={!lighting.on}
+            className={`flex-1 h-11 rounded border text-base font-semibold tracking-wide ${
+              lighting.on
+                ? 'border-shell-600 text-ink-400 hover:border-ink-200'
+                : 'bg-status-danger border-status-danger text-shell-900'
+            }`}
+            onClick={() => setLighting({ on: false })}
+          >
+            OFF
+          </button>
+        </div>
+        <p className="text-[10px] text-ink-400">
+          Internal lights — ON dims the room and lets the placed LEDs shine.
+        </p>
 
-        {lighting.enabled && (
+        {lighting.on && (
           <>
             {/* ─── the choices ──────────────────────────────────────────── */}
             <div className="space-y-1">
@@ -219,17 +253,11 @@ export default function LightingPanel() {
               </div>
             </div>
 
-            {/* ─── F2: the client demo — one flag, two controls (View menu) ── */}
-            <label className="flex items-center gap-2 pt-1 border-t border-shell-600">
-              <input
-                type="checkbox"
-                data-lighting-demo
-                checked={lightDemo}
-                onChange={toggleLightDemo}
-              />
-              <span className="text-[12px] text-ink-100">Turn on the light</span>
-              <span className="text-[10px] text-ink-400">— the room dims, the LEDs shine</span>
-            </label>
+            {/* ─── TURN 35 (CLAUDE.md F10) ────────────────────────────────
+                T33-F2's "Turn on the light" checkbox stood here. It is the
+                second of the owner's two crossed-out boxes: its flag is the ON
+                button above now, and the View menu's twin control writes the
+                same one state. */}
 
             {/* ─── placements ───────────────────────────────────────────── */}
             <div className="space-y-2 pt-1 border-t border-shell-600">

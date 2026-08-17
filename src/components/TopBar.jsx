@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import {
+  useEffect, useMemo, useRef, useState,
+} from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import MockModeBadge from './MockModeBadge.jsx';
 import MenuBar from './MenuBar.jsx';
 import { UNIT_CATEGORIES } from '../engine/types.js';
+// Turn 35 (CLAUDE.md F10): the View item reads the project's ONE lighting state.
+import { migrateDesign } from '../engine/design.js';
 import { buildOutputMenu } from '../lib/outputMenu.js';
 import { buildDatabaseMenu, orderMenus } from '../lib/topMenu.js';
 import { persistProject } from '../lib/persist.js';
@@ -70,8 +74,14 @@ export default function TopBar({
   const realisticLighting = useUiStore((s) => s.realisticLighting);
   const toggleRealisticLighting = useUiStore((s) => s.toggleRealisticLighting);
   // Turn 33 (CLAUDE.md F2): the client demo — one flag, two controls.
-  const lightDemo = useUiStore((s) => s.lightDemo);
-  const toggleLightDemo = useUiStore((s) => s.toggleLightDemo);
+  // ─── TURN 35 (CLAUDE.md F10) ────────────────────────────────────────────
+  // Still one flag and still two controls; the flag is the PROJECT'S now
+  // (`design.lighting.on`, the owner's merged ON/OFF), so this item writes the
+  // very state the Lighting panel's two buttons write. Migrated on the way in,
+  // because a project saved before tonight answers with `enabled`.
+  const storedDesign = useProjectStore((s) => s.project.design);
+  const setLighting = useProjectStore((s) => s.setLighting);
+  const lightOn = useMemo(() => migrateDesign(storedDesign).lighting.on, [storedDesign]);
   // Turn 26 (CLAUDE.md F10.3): the brightness slider's value and its setter.
   const brightness = useUiStore((s) => s.brightness);
   const setBrightness = useUiStore((s) => s.setBrightness);
@@ -194,13 +204,19 @@ export default function TopBar({
           // ─── TURN 33 (CLAUDE.md F2): THE CLIENT DEMO ─────────────────────
           // The room dims to the profile's demo level, the placed LEDs come
           // up. In the View menu AND in the Lighting panel — one flag, two
-          // controls, the front-dimensions grammar. A lens: toggling back
-          // restores the scene exactly, because nothing stored moves.
+          // controls, the front-dimensions grammar.
+          //
+          // ─── TURN 35 (CLAUDE.md F10): IT IS THE PROJECT'S SWITCH NOW ─────
+          // The owner's ON/OFF buttons merged this with "Lighting in this
+          // project", so the twin control here writes the same single state
+          // and a job that goes home with the light on comes back with it on.
+          // Toggling back still restores the view exactly — nothing but the
+          // flag moves — but the flag is saved, which is what he asked for.
           label: 'Turn on the light',
-          hint: 'Dim the room and let the placed LEDs shine — the client demo. Toggling back restores the view exactly.',
-          checked: lightDemo,
+          hint: 'Internal lights ON — the room dims and the placed LEDs shine. The same switch as the Lighting panel’s ON / OFF.',
+          checked: lightOn,
           disabled: viewMode !== '3d',
-          run: toggleLightDemo,
+          run: () => setLighting({ on: !lightOn }),
         },
         {
           // Turn 7 (BACKLOG #42). A way of LOOKING, like Contour view beside

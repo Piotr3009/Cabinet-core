@@ -36,8 +36,14 @@ function project(design = {}) {
 
 test('a stored project without lighting opens dark, whole and valid', () => {
   const d = migrateDesign({});
+  // ─── AMENDED 16.08.2026 (turn 35, CLAUDE.md F10) ──────────────────────────
+  // `enabled` is `on`: the owner replaced the panel's two checkboxes with one
+  // pair of ON/OFF buttons, so the project's "has lighting" flag and the
+  // session's "and it is shining" flag became ONE persisted answer. The law
+  // this test holds is untouched — a project that has never said anything
+  // opens DARK, whole and valid — only the key it is spelled with moved.
   assert.deepEqual(d.lighting, {
-    enabled: false, temperature: null, switch: null, items: [],
+    on: false, temperature: null, switch: null, items: [],
   });
 });
 
@@ -56,7 +62,9 @@ test('unknown kinds and refless shelf runs do not survive the migration', () => 
       ],
     },
   });
-  assert.equal(d.lighting.enabled, true);
+  // T35 F10: the stored `enabled: true` above is a PRE-T35 payload, and it
+  // still means ON — the legacy rule in design.js migrateLighting.
+  assert.equal(d.lighting.on, true);
   assert.deepEqual(d.lighting.items.map((i) => i.id), ['a', 'd']);
   assert.equal(d.lighting.items[1].ref, 'L', 'a nonsense side lands on L, never on nothing');
 });
@@ -311,7 +319,7 @@ test('the five kinds are the owner’s five and no more', () => {
 
 test('the store places, slides and removes a strip through the design channel', () => {
   const { unit, shelf } = wardrobeWithShelf();
-  store().setLighting({ enabled: true });
+  store().setLighting({ on: true });        // T35 F10: the one state's key
   const id = store().addLightingItem({ unitId: unit.id, kind: 'shelf', ref: shelf.id });
   assert.ok(id, 'the id is minted in the store');
   let d = migrateDesign(store().project.design);
@@ -324,5 +332,5 @@ test('the store places, slides and removes a strip through the design channel', 
   store().removeLightingItem(id);
   d = migrateDesign(store().project.design);
   assert.equal(d.lighting.items.length, 0);
-  assert.equal(d.lighting.enabled, true, 'removing a strip does not turn the light off');
+  assert.equal(d.lighting.on, true, 'removing a strip does not turn the light off');
 });

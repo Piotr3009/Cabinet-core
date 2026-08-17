@@ -392,7 +392,13 @@ test('F4c — Escape is off for THIS window, and on for every other one', () => 
 });
 
 test('F4c — the × still closes it, and it is the only thing that does', () => {
-  assert.match(SHELL, /title="Close \(Esc\)" onClick=\{close\}/);
+  // AMENDED in the same turn: the button gained a `data-modal-close` hook — a
+  // proof that only its X closes it has to be able to press its X — and its
+  // tooltip stopped promising Escape to the one window that has declined the
+  // key. The handler is the same `close` it has always been.
+  assert.match(SHELL, /data-modal-close="1"/);
+  assert.match(SHELL, /title=\{escapeCloses \? 'Close \(Esc\)' : 'Close'\}/);
+  assert.match(SHELL, /onClick=\{close\}/);
   assert.match(DOOR, /onClose=\{closeModal\}/);
 });
 

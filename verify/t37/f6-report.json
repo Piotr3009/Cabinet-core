@@ -1,0 +1,252 @@
+{
+  "turn": 37,
+  "feature": "F6 — the batten steps back, the front covers it",
+  "when": "2026-08-17T20:18:46.647Z",
+  "steps": [
+    {
+      "label": "R8 — the app is pointed at the silent showroom",
+      "ok": true,
+      "detail": "http://127.0.0.1:4176"
+    },
+    {
+      "label": "F6 — a DRAWER shoe box, behind two hinged doors",
+      "ok": true,
+      "detail": "{\"opening\":864,\"boxW\":778,\"depth\":475}"
+    },
+    {
+      "label": "F6 — the FRONT is cut at the opening less 2 × 10",
+      "ok": true,
+      "detail": "front 844 vs opening 864"
+    },
+    {
+      "label": "F6 — the BATTEN is cut at the box depth less 30",
+      "ok": true,
+      "detail": "batten 445 vs depth 475"
+    },
+    {
+      "label": "F6 — IN THE SCENE: 10 mm of reveal to BUL and 10 mm to BUR",
+      "ok": true,
+      "detail": "left 10 mm · right 10 mm"
+    },
+    {
+      "label": "F6 — IN THE SCENE: the batten stops 30 mm short of the box front",
+      "ok": true,
+      "detail": "30 mm of daylight in front of the batten"
+    },
+    {
+      "label": "F6 — …and its REAR still lands on the box back (it was SHORTENED, not moved)",
+      "ok": true,
+      "detail": "batten rear -1425 vs box back -1425"
+    },
+    {
+      "label": "R1 — a REAL pointer click lands on the widened face",
+      "ok": true,
+      "detail": "selectedElement.elementRef = SHOE1-FR"
+    },
+    {
+      "label": "F6 — the FIX front is UNTOUCHED: still the whole opening, no reveal",
+      "ok": true,
+      "detail": "fix front 864 = opening 864"
+    }
+  ],
+  "shots": [
+    {
+      "name": "f6-the-drawer-front-closed-10mm-reveals-to-BUL-and-BUR",
+      "subject": {
+        "mesh": "SHOE1-FR"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f6-the-widened-face-selected-by-a-real-click",
+      "subject": {
+        "mesh": "SHOE1-FR"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f6-the-batten-stepped-back-30mm-behind-the-box-front",
+      "subject": {
+        "mesh": "SHOE1-BATTEN"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f6-the-FIX-front-unchanged-full-opening-no-reveal",
+      "subject": {
+        "mesh": "SHOE1-FR"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    }
+  ],
+  "measurements": {
+    "f6_plan": {
+      "id": "shoe_box_po96vwg",
+      "zone": null,
+      "variant": "D",
+      "openingW": 864,
+      "boxW": 778,
+      "innerW": 742,
+      "depth": 475,
+      "posZ": 0,
+      "dividers": 1,
+      "front": true,
+      "slope": {
+        "run": 439,
+        "rear": 53.9,
+        "angleDeg": 7,
+        "slopeLen": 442.3,
+        "grooveW": 18.2,
+        "grooveDepth": 6
+      },
+      "hinged": {
+        "left": true,
+        "right": true
+      },
+      "runner": {
+        "nl": 450,
+        "column": 352,
+        "faceX": 28,
+        "axisY": 40,
+        "onSheet": true
+      },
+      "boxFrontX": 28,
+      "axisY": 40
+    },
+    "f6_cut_list": [
+      {
+        "id": "SHOE1-SL",
+        "part": "SHOEBOX-SL",
+        "w": 475,
+        "h": 80
+      },
+      {
+        "id": "SHOE1-SR",
+        "part": "SHOEBOX-SR",
+        "w": 475,
+        "h": 80
+      },
+      {
+        "id": "SHOE1-BK",
+        "part": "SHOEBOX-BK",
+        "w": 742,
+        "h": 80
+      },
+      {
+        "id": "SHOE1-BF",
+        "part": "SHOEBOX-BF",
+        "w": 742,
+        "h": 80
+      },
+      {
+        "id": "SHOE1-BT",
+        "part": "SHOEBOX-BT",
+        "w": 754,
+        "h": 454.3
+      },
+      {
+        "id": "SHOE1-DV",
+        "part": "SHOEBOX-DV",
+        "w": 742,
+        "h": 50
+      },
+      {
+        "id": "SHOE1-BATTEN",
+        "part": "SHOEBOX-BATTEN",
+        "w": 445,
+        "h": 70
+      },
+      {
+        "id": "SHOE1-BATTEN",
+        "part": "SHOEBOX-BATTEN",
+        "w": 445,
+        "h": 70
+      },
+      {
+        "id": "SHOE1-FR",
+        "part": "SHOEBOX-FR",
+        "w": 844,
+        "h": 120
+      }
+    ],
+    "f6_scene": {
+      "bul": {
+        "minX": -300,
+        "maxX": -282,
+        "minY": 100,
+        "maxY": 1900,
+        "minZ": -1490,
+        "maxZ": -922
+      },
+      "bur": {
+        "minX": 582,
+        "maxX": 600,
+        "minY": 100,
+        "maxY": 1900,
+        "minZ": -1490,
+        "maxZ": -922
+      },
+      "fr": {
+        "minX": -272,
+        "maxX": 572,
+        "minY": 100,
+        "maxY": 220,
+        "minZ": -950,
+        "maxZ": -925
+      },
+      "bf": {
+        "minX": -221,
+        "maxX": 521,
+        "minY": 100,
+        "maxY": 180,
+        "minZ": -968,
+        "maxZ": -950
+      },
+      "bat": {
+        "minX": -282,
+        "maxX": -252,
+        "minY": 100,
+        "maxY": 170,
+        "minZ": -1425,
+        "maxZ": -980
+      }
+    },
+    "f6_fix": {
+      "plan": {
+        "id": "shoe_box_ldgqpbr",
+        "zone": null,
+        "variant": "F",
+        "openingW": 864,
+        "boxW": 864,
+        "innerW": 828,
+        "depth": 475,
+        "posZ": 0,
+        "dividers": 1,
+        "front": true,
+        "slope": {
+          "run": 439,
+          "rear": 53.9,
+          "angleDeg": 7,
+          "slopeLen": 442.3,
+          "grooveW": 18.2,
+          "grooveDepth": 6
+        },
+        "hinged": {
+          "left": true,
+          "right": false
+        },
+        "runner": null,
+        "boxFrontX": 28,
+        "axisY": 40
+      },
+      "faceW": 864
+    }
+  },
+  "notes": [
+    "CLAUDE.md asks for the drawer \"closed and open\". CLOSED is shot. OPEN is not a slide: engine/drawerMotion.js travels parts keyed on meta.drawer, which the shoe box has never carried, so a shoe box does not animate in this app and F6 adds no motion (\"Box, runners, drilling: unchanged\"). What the owner was ruling on with \"a i tak się otworzy\" is photographed instead: the doors swung clear and the 30 mm the batten stepped back to give."
+  ]
+}

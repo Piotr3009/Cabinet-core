@@ -1,0 +1,258 @@
+{
+  "steps": [
+    {
+      "label": "F2 — one press made an ASSEMBLY: a FIX shelf and a rail that names it",
+      "ok": true,
+      "detail": "{\"mount\":\"shelf\",\"variant\":\"fixed\"}"
+    },
+    {
+      "label": "F2 — the rod hangs the bracket's own drop under the shelf, and no partitioner is cut",
+      "ok": true,
+      "detail": "shelf 1458 · rod 1418 · RAIL-PART false"
+    },
+    {
+      "label": "F2 — the SHELF was dragged by hand, and it moved",
+      "ok": true,
+      "detail": "1458 → 1197"
+    },
+    {
+      "label": "F2 — and the ROD RODE IT, still exactly the drop below",
+      "ok": true,
+      "detail": "shelf 1197 · rod 1157"
+    },
+    {
+      "label": "F2 — double-clicking the ROD opens the SHELF's modal",
+      "ok": true,
+      "detail": "SHELF-1 → SHELF-1"
+    },
+    {
+      "label": "F1 — three cabinets, two shelves each",
+      "ok": true,
+      "detail": "2+2+2"
+    },
+    {
+      "label": "F1 — Ctrl+click built ONE set of six, across THREE cabinets",
+      "ok": true,
+      "detail": "6 members in 3 cabinets"
+    },
+    {
+      "label": "F1 — every member is MARKED, in every cabinet",
+      "ok": true,
+      "detail": "6 outlines"
+    },
+    {
+      "label": "F1 — ONE plain drag moved shelves in ALL THREE cabinets, UP",
+      "ok": true,
+      "detail": "213 212 213 212 213 212"
+    },
+    {
+      "label": "F1 — ALT+drag is still the DEPTH drag: nothing was taken away",
+      "ok": true,
+      "detail": "20 20 → 0 20"
+    },
+    {
+      "label": "F3 — the profile carries the deeper bite",
+      "ok": true,
+      "detail": "10 mm"
+    },
+    {
+      "label": "F3 — [skip-and-note] no plate GLB in the showroom fixture to measure",
+      "ok": true,
+      "detail": "the profile assertion and the close-up stand in its place"
+    },
+    {
+      "label": "F7 — every stated grain stands UP the sheet",
+      "ok": true,
+      "detail": "{\"DRAWER-SIDE\":{\"grain\":\"h\",\"turn\":0},\"DRAWER-BOX-FRONT\":{\"grain\":\"h\",\"turn\":0},\"DRAWER-BOX-BACK\":{\"grain\":\"h\",\"turn\":0},\"DRAWER-BOTTOM\":{\"grain\":\"w\",\"turn\":90},\"DRAWER-FRONT\":{\"grain\":\"h\",\"turn\":0}}"
+    },
+    {
+      "label": "F5a — a top box is born with the MAIN'S WIDTH",
+      "ok": true,
+      "detail": "main 900 · box 900"
+    },
+    {
+      "label": "F5c — the box stands ON the main's top, never through it",
+      "ok": true,
+      "detail": "base 2100 · main top 2100 · #15 0"
+    },
+    {
+      "label": "F5c — an impossible drop cannot be made to stick, and leaves no red",
+      "ok": true,
+      "detail": "{\"base\":2100,\"reds\":0}"
+    },
+    {
+      "label": "F5c — …and the clamp puts it back, with no red left standing",
+      "ok": true,
+      "detail": "{\"base\":2100,\"reds\":0}"
+    },
+    {
+      "label": "F5e — the main's door took the 3 mm top gap for the box above it",
+      "ok": true,
+      "detail": "{\"gap\":3,\"carcassH\":2000}"
+    },
+    {
+      "label": "F5d — the box's sides run the MAIN'S own side law: up the panel",
+      "ok": true,
+      "detail": "{\"boxL\":\"h\",\"boxR\":\"h\",\"mainL\":\"h\"}"
+    },
+    {
+      "label": "F5b — BOTH heights are drawn: the main's and the box's",
+      "ok": true,
+      "detail": "{\"u_1115lux\":1,\"u_ynjghrq\":1}"
+    },
+    {
+      "label": "F4 — two leaves to swap between",
+      "ok": true,
+      "detail": "W01-FL W01-FR"
+    },
+    {
+      "label": "F4c — the doors modal DOCKS hard left, full height",
+      "ok": true,
+      "detail": "{\"open\":true,\"left\":0,\"height\":1234,\"viewport\":1250,\"subject\":\"W01-FL\",\"split\":true,\"title\":null}"
+    },
+    {
+      "label": "F4b — …and the SPLIT field is in it, its own full-width row",
+      "ok": true,
+      "detail": "split field: true"
+    },
+    {
+      "label": "F4c — a scene click does NOT close it",
+      "ok": true,
+      "detail": "{\"open\":true}"
+    },
+    {
+      "label": "F4c — clicking another leaf SWAPS the subject, without closing",
+      "ok": true,
+      "detail": "W01-FL → W01-FR"
+    },
+    {
+      "label": "F4c — only its X closes it, and its X does",
+      "ok": true,
+      "detail": "{\"open\":false,\"hadX\":true}"
+    },
+    {
+      "label": "R6 — the whole walk ends with a clean console",
+      "ok": true,
+      "detail": "0 error(s)"
+    }
+  ],
+  "shots": [
+    {
+      "name": "f2a-the-rail-is-a-shelf-with-a-rod-under-it",
+      "subject": {
+        "mesh": "SHELF-1"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f2b-a-rail-dragged-by-its-shelf-to-a-new-height",
+      "subject": {
+        "mesh": "SHELF-1"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f2c-the-rod-opens-the-shelf-that-carries-it",
+      "subject": {
+        "dom": "[data-rail-rider]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f1a-six-shelves-ticked-across-three-cabinets",
+      "subject": {
+        "meshes": [
+          "SHELF-1",
+          "SHELF-2",
+          "SHELF-1",
+          "SHELF-2",
+          "SHELF-1",
+          "SHELF-2"
+        ]
+      },
+      "present": true,
+      "detail": "{\"meshes\":true}"
+    },
+    {
+      "name": "f1b-six-shelves-in-three-cabinets-moved-in-one-drag",
+      "subject": {
+        "meshes": [
+          "SHELF-1",
+          "SHELF-2",
+          "SHELF-1",
+          "SHELF-2",
+          "SHELF-1",
+          "SHELF-2"
+        ]
+      },
+      "present": true,
+      "detail": "{\"meshes\":true}"
+    },
+    {
+      "name": "f1c-alt-drag-still-sets-the-depth",
+      "subject": {
+        "meshes": [
+          "SHELF-1",
+          "SHELF-2",
+          "SHELF-1",
+          "SHELF-2",
+          "SHELF-1",
+          "SHELF-2"
+        ]
+      },
+      "present": true,
+      "detail": "{\"meshes\":true}"
+    },
+    {
+      "name": "f3a-the-plate-seated-10mm-into-the-side",
+      "subject": {
+        "mesh": "BUL"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f7a-the-drawer-parts-stand-up-the-page",
+      "subject": {
+        "mesh": "BUL"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f5a-the-pair-with-both-height-dims-and-the-shortened-door",
+      "subject": {
+        "meshes": [
+          "BUL",
+          "BUR"
+        ]
+      },
+      "present": true,
+      "detail": "{\"meshes\":true}"
+    },
+    {
+      "name": "f4a-the-doors-modal-docked-hard-left-with-the-split-field",
+      "subject": {
+        "all": [
+          "[data-modal-dock=\"left\"]",
+          "[data-split-top-modal]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f4b-the-docked-modal-swapped-its-leaf-without-closing",
+      "subject": {
+        "all": [
+          "[data-modal-dock=\"left\"]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    }
+  ]
+}

@@ -399,7 +399,21 @@ export default function Modal({
               {big ? '❐' : '▢'}
             </button>
           )}
-          <button type="button" className="cc-btn-ghost" title="Close (Esc)" onClick={close}>×</button>
+          {/* ─── TURN 37 (CLAUDE.md F4c) ─────────────────────────────────
+              *"niech się nie wyłącza za każdym razem jak kliknę — dopiero
+              krzyżykiem."* On a window that has declined Escape this button is
+              the ONLY way out, so it says so rather than promising a key that
+              does nothing here — and it carries a hook, because a proof that
+              only its X closes it has to be able to press its X. */}
+          <button
+            type="button"
+            className="cc-btn-ghost"
+            data-modal-close="1"
+            title={escapeCloses ? 'Close (Esc)' : 'Close'}
+            onClick={close}
+          >
+            ×
+          </button>
         </div>
         <div className="p-4 overflow-y-auto flex-1 min-h-0">{children}</div>
         {footer && <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2">{footer}</div>}

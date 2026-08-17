@@ -208,7 +208,25 @@ export function topNeighbourDemand(params, profile) {
   const corniceRun = params?.run_cornice;
   const cornice = (corniceRun && typeof corniceRun === 'object')
     || (params?.cornice != null && params.cornice !== 'none' && Number(params.cornice) > 0);
-  return infill || cornice ? gap : 0;
+  // ─── TURN 37 (CLAUDE.md F5e): A TOP BOX IS AN ABOVE NEIGHBOUR ────────────
+  //
+  // The owner, walking T36-F7: adding a Top box must shorten the door under
+  // it, *"and grows back when the box is removed"*. It is the same physical
+  // fact the infill and the cornice already state — there is a carcass
+  // standing on this door's top edge, and a door swinging into it is a door
+  // that fouls — so it joins them here rather than growing a second law.
+  //
+  // `ridden_by` is stamped on the HOST by `engine/topBox.js settleRiders`,
+  // which runs on every path that could move a main. That is what makes this
+  // self-healing in both directions: the box leaves, the stamp goes, the
+  // demand falls back to 0 and the door grows back, without anybody
+  // remembering to ask.
+  //
+  // A cabinet nothing rides — every unit in every project before tonight, and
+  // every bare `computeCabinet()` — has no such param and reads 0, which is
+  // why F5 moves no fixture and names no classifier bucket.
+  const ridden = Boolean(params?.ridden_by);
+  return infill || cornice || ridden ? gap : 0;
 }
 
 // ─── DOORS ON THE PARTITION (turn 21, CLAUDE.md F12) ────────────────────────

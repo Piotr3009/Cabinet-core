@@ -2457,6 +2457,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (riderHost) {
       placed = { wall: riderHost.position?.wall ?? 0, x: riderHost.position?.x_mm ?? 0 };
       unit.params.rides_on = riderHost.id;
+      // ─── TURN 37 (CLAUDE.md F5a): BORN MATCHED ────────────────────────────
+      //
+      // The owner, walking T36-F7: *"nadstawka działa super, ale…"* — a Top
+      // box placed on a main takes THE MAIN'S WIDTH. T36 gave it the profile's
+      // 600 whatever it stood on, so a box on a 900 wardrobe arrived 300 short
+      // and had to be typed every single time (the T36 walk itself worked
+      // round it with an `updateUnitParams(box, { width: 900 })`).
+      //
+      // BORN matched, and only born: the width is written here, once, at
+      // placement — not in `settleRiders`, which runs on every mutation and
+      // would stamp on a joiner who had deliberately made his box narrower.
+      // The DEPTH is settled continuously and stays that way, because a box
+      // that overhangs its own carcass is not a box, it is a mistake.
+      const hostW = Number(riderHost.params?.width);
+      if (Number.isFinite(hostW) && hostW > 0) unit.params.width = hostW;
     }
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".

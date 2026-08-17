@@ -6,39 +6,29 @@
       "detail": "http://127.0.0.1:4174"
     },
     {
-      "label": "F6 — the number typed into the panel reached the engine",
+      "label": "F4a — the scene mounts a plate per hinge, all on the CARCASS",
       "ok": true,
-      "detail": "{\"top\":600,\"opening\":2150}"
+      "detail": "{\"count\":6,\"modelled\":6,\"parents\":[\"carcass\"]}"
     },
     {
-      "label": "F6 — top + 3 + bottom = the opening, exactly",
+      "label": "F4b — the profile carries the 5 mm bite",
       "ok": true,
-      "detail": "600 + 3 + 1547 = 2150"
+      "detail": "5 mm"
     },
     {
-      "label": "F6 — the segments are listed TOP FIRST",
+      "label": "F4b — every plate is seated INTO the side, not standing on its face",
       "ok": true,
-      "detail": "T,B"
+      "detail": "[21,21,21,21,21,21,30,30,30,30,30,30,5,5,5,5,5,5]"
     },
     {
-      "label": "F6 — hinges are counted PER SEGMENT, never the whole door halved",
+      "label": "F4c — the modal lists the hinge rows by Y DESCENDING — top first",
       "ok": true,
-      "detail": "T:2 B:3"
+      "detail": "[1900,1540,1180,820,460,100]"
     },
     {
-      "label": "F6 — ONE fix shelf on the line, FULL depth, flush with the face",
+      "label": "F4c — …and each row still carries the ENGINE index it writes with",
       "ok": true,
-      "detail": "{\"id\":\"SPLIT-1\",\"w\":864,\"depth\":550,\"t\":18,\"y\":1547,\"frontZ\":568,\"D\":568}"
-    },
-    {
-      "label": "F6 — every segment AND the divider stand in the scene",
-      "ok": true,
-      "detail": "5/5 · SPLIT-1 W01-FL-B W01-FL-T W01-FR-B W01-FR-T"
-    },
-    {
-      "label": "F6 — the modal lists the segments TOP FIRST",
-      "ok": true,
-      "detail": "[\"T\",\"B\"]"
+      "detail": "[\"5\",\"4\",\"3\",\"2\",\"1\",\"0\"]"
     },
     {
       "label": "R6 — the whole walk ends with a clean console",
@@ -48,20 +38,19 @@
   ],
   "shots": [
     {
-      "name": "f6a-a-split-bay-open-in-the-scene",
+      "name": "f4a-a-side-with-its-plates-seated",
       "subject": {
-        "mesh": "SPLIT-1"
+        "mesh": "BUL"
       },
       "present": true,
       "detail": "{\"mesh\":true}"
     },
     {
-      "name": "f6b-the-split-modal-lists-its-segments-top-first",
+      "name": "f4b-the-hinge-modal-listing-top-first",
       "subject": {
         "all": [
-          "[data-split-modal]",
-          "[data-split-segment-tab=\"T\"]",
-          "[data-split-segment-tab=\"B\"]"
+          "[data-hinge-modal=\"1\"], [data-door-modal]",
+          "[data-hinge-modal-row]"
         ]
       },
       "present": true,

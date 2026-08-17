@@ -2872,6 +2872,15 @@ export const DEFAULT_CABINET_PROFILE = {
       plateLength: 56,       // mounting plate on the carcass side, front to back
       plateWidth: 34,
       plateThickness: 12,
+      // ─── TURN 36 (CLAUDE.md F4b): THE PLATE BITES INTO THE SIDE ─────────
+      // The owner, re-issued from T35-F5: the plate GLB stood ON the inner
+      // face of the carcass side, so its knock-in dowels and its screws sat
+      // in air. It moves 5 mm INTO the board, which is where the ⌀5 pattern
+      // this app has drilled since turn 1 actually goes. A number in the
+      // profile, not in a component: a workshop that fits a different plate
+      // changes one line here. It reaches the PICTURE and nothing else — no
+      // hole, no cut and no BOM line moves with it.
+      plateBiteMm: 5,
 
       // ─── BLUM CLIP top BLUMOTION (turn 19, CLAUDE.md F1) ────────────────
       //

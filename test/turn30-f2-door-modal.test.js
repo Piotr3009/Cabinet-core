@@ -103,7 +103,14 @@ test('F2 the window scrolls to section B and rings the row it was opened on', ()
   assert.match(DOOR, /node\?\.scrollIntoView/);
   // Turn 19's own row style, unchanged — `ring-gold` on the row whose index
   // arrived with the click.
-  assert.match(DOOR, /row === i \? 'ring-1 ring-gold\/70' : ''/);
+  //
+  // ─── TURN 36 (CLAUDE.md F4c): THE ROWS READ TOP-DOWN NOW ─────────────────
+  // The owner: *the modal's hinge rows sort by Y DESCENDING — top hinge
+  // first.* So the loop counter `i` is gone and every row carries the ENGINE's
+  // own index (`engine/items.js hingeRows`) — which is what the click brings
+  // with it, because the 3-D pick counts bottom-up. The RING is unchanged: the
+  // same class on the same row, matched on the same number.
+  assert.match(DOOR, /row === hr\.index \? 'ring-1 ring-gold\/70' : ''/);
 });
 
 // ─── BOTH SECTIONS ARE IN ONE WINDOW ────────────────────────────────────────

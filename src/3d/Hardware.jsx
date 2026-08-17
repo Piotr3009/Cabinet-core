@@ -442,14 +442,28 @@ function CarcassHinges({
     })), scope);
   }, [surface, scope, items, urls, models]);
 
-  const drawnModel = models.some((m) => m.model);
-
-  // The plate, screwed to the inner face of the side panel the door hangs from.
-  const placePlate = useMemo(() => (i, m) => {
-    const h = items[i];
-    const x = h.plateX + h.dir * (H.plateThickness / 2);
-    put(m, new THREE.Vector3(mm(x), mm(h.y), mm(h.plateZ)));
-  }, [items, H.plateThickness]);
+  // ─── TURN 36 (CLAUDE.md F4a/F4b): THE PLATE STAND-IN IS GONE, AND THE
+  // PLATE BITES 5 mm INTO THE SIDE ──────────────────────────────────────────
+  //
+  // (a) The owner's order, re-issued from T35-F5 and the one removal this
+  //     turn is licensed to make: *a plate is the downloaded GLB or nothing.*
+  //     The instanced box that stood in for a missing plate — and, on a
+  //     restored project, stood ON TOP of a correctly loaded one — is gone,
+  //     exactly as the cup, the boss and the arm went on 14.08. Its placement
+  //     helper goes with it: a `place` function for a piece that is never
+  //     drawn is the next turn's ghost. The REGISTRY report above is
+  //     untouched, so the acceptance walk still reads which plate loaded and
+  //     why. CarcassHinges has no pick gesture of its own — the invisible
+  //     pick target the owner asked to keep is the ARM's, in DoorHinges, and
+  //     it is where it was.
+  //
+  // (b) *the plate GLB moves 5 mm INTO the side so screws sit in timber.*
+  //     `dir` is +1 towards the middle of the door for a left hinge and −1
+  //     for a right one, so INTO the side is `−dir`. The number is
+  //     profile-listed (`hardware.hinge.plateBiteMm`) and read through the
+  //     profile, never written here: a workshop that fits a different plate
+  //     changes one number in one file.
+  const bite = Number(H.plateBiteMm) || 0;
 
   return (
     <>
@@ -457,12 +471,9 @@ function CarcassHinges({
         <primitive
           key={`pm${items[i].panelId}-${items[i].y}`}
           object={m.model}
-          position={[mm(items[i].plateX), mm(items[i].y), mm(items[i].plateZ)]}
+          position={[mm(items[i].plateX - items[i].dir * bite), mm(items[i].y), mm(items[i].plateZ)]}
         />
       ) : null))}
-      <Pieces count={items.length} place={placePlate} colour={colour} visible={!drawnModel}>
-        <boxGeometry args={[mm(H.plateThickness), mm(H.plateWidth), mm(H.plateLength)]} />
-      </Pieces>
     </>
   );
 }

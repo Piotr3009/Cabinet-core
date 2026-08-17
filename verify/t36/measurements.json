@@ -1,50 +1,49 @@
 {
-  "f6_record": {
-    "leaf": "W01-FL",
-    "bay": null,
-    "opening": 2150,
-    "topMm": 600,
-    "gapMm": 3,
-    "segments": [
-      {
-        "id": "T",
-        "label": "Top",
-        "panelId": "W01-FL-T",
-        "h": 600,
-        "y": 1550,
-        "hinges": 2
-      },
-      {
-        "id": "B",
-        "label": "Bottom",
-        "panelId": "W01-FL-B",
-        "h": 1547,
-        "y": 0,
-        "hinges": 3
-      }
+  "f4_plate_registry": {
+    "count": 6,
+    "modelled": 6,
+    "parents": [
+      "carcass"
     ]
   },
-  "f6_divider": {
-    "id": "SPLIT-1",
-    "w": 864,
-    "depth": 550,
-    "t": 18,
-    "y": 1547,
-    "frontZ": 568,
-    "D": 568
+  "f4_bite": 5,
+  "f4_seated": {
+    "innerX": -282,
+    "into": [
+      21,
+      21,
+      21,
+      21,
+      21,
+      21,
+      30,
+      30,
+      30,
+      30,
+      30,
+      30,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ]
   },
-  "f6_scene": {
-    "drawn": [
-      "SPLIT-1",
-      "W01-FL-B",
-      "W01-FL-T",
-      "W01-FR-B",
-      "W01-FR-T"
-    ],
-    "expected": 5
-  },
-  "f6_modal_tabs": [
-    "T",
-    "B"
+  "f4_modal_order": [
+    1900,
+    1540,
+    1180,
+    820,
+    460,
+    100
+  ],
+  "f4_modal_indices": [
+    "5",
+    "4",
+    "3",
+    "2",
+    "1",
+    "0"
   ]
 }

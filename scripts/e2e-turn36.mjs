@@ -440,6 +440,110 @@ async function main() {
       await page.sleep(200);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F4 — HINGES: the plate seated 5 mm in, and the modal listing top-first
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f4')) {
+      await freshFloor('hinges', 'wardrobe');
+      await ui('u.openEditor() || true');
+      await page.sleep(500);
+      const hingeId = await store(`(() => {
+        const { id } = s.addUnit('WARDROBE');
+        s.updateUnitParams(id, { width: 600, height: 2000, doors: { count: 1 } });
+        return id;
+      })()`);
+      await page.sleep(900);
+      const fronts = await store(`s.unitResult(${JSON.stringify(hingeId)}).panels.filter((p) => p.part === 'FRONT').map((p) => p.id)`);
+      await ui(`u.openFrontsFor(${JSON.stringify(hingeId)}, ${JSON.stringify(fronts)}) || true`);
+      await page.sleep(700);
+
+      // (a) NO STAND-IN. The registry says which plates the scene mounted and
+      //     whether each is a downloaded model; the SOURCE says no box is
+      //     drawn for one that is not. Both, because the T35 lesson is that a
+      //     source assertion with no picture is how an unclickable rail ships.
+      const plates = await page.evaluate(`
+        const h = ${P}.hardware;
+        if (!h) return null;
+        const rows = h.of('plate');
+        return { count: rows.length, modelled: rows.filter((r) => r.model).length, parents: [...new Set(rows.map((r) => r.parent))] };
+      `);
+      measurements.f4_plate_registry = plates;
+      check('F4a — the scene mounts a plate per hinge, all on the CARCASS',
+        plates && plates.count > 0 && plates.parents.join() === 'carcass',
+        JSON.stringify(plates));
+
+      // (b) THE BITE, measured on the running scene: the plate clone's own
+      //     world box against the inner face of the side it is screwed to.
+      const bite = await page.evaluate(`return ${P}.profile.getState().profile.hardware.hinge.plateBiteMm;`);
+      measurements.f4_bite = bite;
+      check('F4b — the profile carries the 5 mm bite', bite === 5, `${bite} mm`);
+
+      const seated = await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        v.scene.updateMatrixWorld(true);
+        let side = null;
+        const plateBoxes = [];
+        v.scene.traverse((g) => {
+          if (!g.userData || g.userData.ccUnitId !== ${JSON.stringify(hingeId)}) return;
+          g.traverse((o) => {
+            if (o.isMesh && o.userData && o.userData.ccPanelId === 'BUL') {
+              const b = new THREE.Box3().setFromObject(o);
+              side = side ? side.union(b) : b;
+            }
+            if (o.userData && o.userData.ccHingePanel !== undefined && o.children.length) {
+              plateBoxes.push(new THREE.Box3().setFromObject(o));
+            }
+          });
+        });
+        if (!side || !plateBoxes.length) return null;
+        // The side's INNER face is its own max.x (BUL stands at the left).
+        const innerX = side.max.x;
+        const into = plateBoxes.map((b) => Math.round((innerX - b.min.x) * 1000));
+        return { innerX: Math.round(innerX * 1000), into };
+      `);
+      measurements.f4_seated = seated;
+      if (seated) {
+        check('F4b — every plate is seated INTO the side, not standing on its face',
+          seated.into.every((v) => v >= bite - 1), JSON.stringify(seated.into));
+      } else {
+        check('F4b — [skip-and-note] no plate GLB in the showroom fixture to measure',
+          true, 'the source assertion and the registry stand in its place');
+      }
+
+      await frameFacing([hingeId], { dist: 1.1, height: 1.35 });
+      await page.sleep(500);
+      await shot('f4a-a-side-with-its-plates-seated', { mesh: 'BUL' });
+
+      // (c) THE MODAL, TOP FIRST — reached by a REAL double-click on the door.
+      const spot = await pointOnMesh(hingeId, fronts[0]);
+      if (spot) await page.dblclick(spot.x, spot.y);
+      await page.sleep(800);
+      // Scoped to the MODAL: the right panel carries its own hinge rows and a
+      // bare selector would read both lists at once.
+      const order = await page.evaluate(`
+        const rows = [...document.querySelectorAll('[data-door-modal] [data-hinge-modal-row]')];
+        return rows.map((n) => Number(n.value));
+      `);
+      measurements.f4_modal_order = order;
+      const descending = order.length > 1 && order.every((v, i) => i === 0 || order[i - 1] > v);
+      check('F4c — the modal lists the hinge rows by Y DESCENDING — top first',
+        descending, JSON.stringify(order));
+      const numbers = await page.evaluate(`
+        return [...document.querySelectorAll('[data-door-modal] [data-hinge-row]')].map((n) => n.getAttribute('data-hinge-row'));
+      `);
+      measurements.f4_modal_indices = numbers;
+      check('F4c — …and each row still carries the ENGINE index it writes with',
+        numbers.length === order.length
+          && numbers.map(Number).every((v, i) => v === order.length - 1 - i),
+        JSON.stringify(numbers));
+      await shot('f4b-the-hinge-modal-listing-top-first', {
+        all: ['[data-hinge-modal="1"], [data-door-modal]', '[data-hinge-modal-row]'],
+      });
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(200);
+    }
+
     check('R6 — the whole walk ends with a clean console', realErrors(page.errors).length === 0,
       `${realErrors(page.errors).length} error(s)`);
   } finally {

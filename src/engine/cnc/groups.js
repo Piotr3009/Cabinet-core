@@ -72,6 +72,44 @@ export function panelIdsForQuickSelect(panels, id) {
 }
 
 /**
+ * ─── TURN 35 (CLAUDE.md F9): THE SAME LIST, ASKED OF THE WHOLE PROJECT ──────
+ *
+ * The owner, 16.08: "wybór all carcases, infill, shelves etc powinien też być
+ * dla wszystkich szafek, nie tylko pojedynczych — mogę na przykład tylko
+ * eksportować shelves. Ale export poprzez materiał zostaw jak jest."
+ *
+ * `panelIdsForQuickSelect` above was ALREADY unit-agnostic — it takes a flat
+ * list of parts and never asks whose they are. What was per-unit was the
+ * CALLER: the button row lives inside the tree's per-cabinet branch, so the
+ * list could only ever be applied to the one cabinet whose caret was open.
+ *
+ * This asks the same question of every cabinet at once. It returns a PLAN
+ * rather than a flat set of ids, because the ticks are stored per unit
+ * (`uiStore.cncHiddenParts[unitId]`) and the plan is what a caller replays
+ * into that store with the action it already has — everything off, then this
+ * type on, one cabinet at a time. Nothing here writes, and nothing here
+ * exports: this is the selection, and the export is the one the app already
+ * had (rule 4 — export by material is untouched).
+ *
+ * A cabinet with none of the wanted type comes back with an empty `ids` and is
+ * therefore emptied. That is the point rather than an edge case: "only
+ * shelves" across a job means a shelf-less cabinet is OFF the sheet, not that
+ * it quietly keeps its doors on it.
+ *
+ * @param {Array} units [{ unitId, panels }] — every cabinet and its cut parts
+ * @param {string} id    one of `QUICK_SELECTS`
+ * @returns {Array} [{ unitId, all: string[], ids: string[] }]
+ */
+export function projectQuickSelect(units, id) {
+  if (!QUICK_SELECTS.some((q) => q.id === id)) return [];
+  return (units || []).map((u) => ({
+    unitId: u?.unitId,
+    all: (u?.panels || []).map((p) => p.id),
+    ids: panelIdsForQuickSelect(u?.panels, id),
+  }));
+}
+
+/**
  * Which group a cut part belongs to.
  *
  * Decided on the engine's own `part` and `role`, never on the id string: a

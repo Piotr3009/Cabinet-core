@@ -1202,6 +1202,14 @@ function shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }) {
       // CHAT-FIX 16.08 (owner): the 30 × 70 batten per hinged side, along the
       // box — solid in the infill zone, so its OUTER face touches the bay
       // side and its INNER face lands exactly 30 in, where the runner mounts.
+      //
+      // ─── T37-F6, 17.08.2026: IT STEPS BACK ────────────────────────────────
+      // *"cofnij o około 30 mm do tyłu (skróć) ten klocek"*. `d` was `depth`
+      // (the box's whole depth) until this date; it is now the batten's OWN
+      // length, which `shoeBox.js` has already shortened by 30. `z` stays
+      // `boxZ` — the box's back — so the 30 mm it gives up is the 30 nearest
+      // the room, which is the "do tyłu" he asked for and the room the door's
+      // arc now has. Everything else about the board is untouched.
       const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
       return {
         x: piece.side === 'L' ? bayFrom : bayFrom + plan.openingW - t,
@@ -1209,20 +1217,33 @@ function shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }) {
         z: boxZ,
         w: t,
         h: piece.h,
-        d: depth,
+        d: piece.w,
       };
     }
-    case 'front':
+    case 'front': {
       // Mounted from INSIDE — nothing visible on the face — and standing
       // proud of the box front by its own thickness.
+      //
+      // ─── T37-F6, 17.08.2026: CENTRED IN THE BAY, WHATEVER ITS WIDTH ───────
+      // This used to read "the FIX face sits at the bay's left edge, the
+      // DRAWER face sits at the box's left edge", which was the same sentence
+      // twice while the drawer face WAS the box's width. It is not any more —
+      // *"rozszerz front szuflady, tak żeby zostało po prawej i po lewej od
+      // BUR i BUL około 10 mm"* — so the law is stated once, as what it always
+      // physically was: the face is CENTRED IN THE BAY OPENING. FIX (face =
+      // opening) lands at `bayFrom` exactly as before; DRAWER (face = opening
+      // − 20) lands 10 in from BUL and leaves 10 to BUR, overhanging the box
+      // it hangs on and covering the batten-and-runner zone behind it.
+      const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
       return {
-        x: plan.variant === 'F' ? boxX - (plan.openingW - plan.boxW) / 2 : boxX,
+        x: bayFrom + (plan.openingW - piece.w) / 2,
         y,
         z: boxZ + depth,
         w: piece.w,
         h: wallH,
         d: t,
       };
+    }
     default:
       return { x: boxX, y, z: boxZ, w: piece.w, h: wallH, d: t };
   }

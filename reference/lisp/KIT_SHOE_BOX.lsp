@@ -42,11 +42,30 @@
 ;;;   - Position: a pre-export decision - "height from bay floor" in mm
 ;;;     (default 0, or directly above the drawer stack). Templates below
 ;;;     take posZ and place every carcass-side hole from it.
+;;;   - T37 (17.08.2026) - THE BATTEN STEPS BACK, THE FRONT COVERS IT.
+;;;     The owner, seeing the drawer variant live: "cofnij o okolo 30 mm
+;;;     do tylu (skroc) ten klocek i rozszerz front szuflady, tak zeby
+;;;     zostalo po prawej i po lewej od BUR i BUL okolo 10 mm - bedzie
+;;;     wygladac lepiej, a i tak sie otworzy."  TWO numbers, both of them
+;;;     constants in block A below:
+;;;       batten length      = box depth - SHOE_BATTEN_BACK (30)
+;;;       DRAWER front width = opening   - 2 x SHOE_FRONT_REVEAL (10)
+;;;     The batten is shortened AT THE FRONT - its rear end still lands on
+;;;     the box's back, so the 30 mm it gives up is the 30 mm nearest the
+;;;     room. The drawer front is now WIDER than the box it hangs on and
+;;;     covers the batten-and-runner zone, leaving 10 mm of reveal to BUL
+;;;     and to BUR. Box, runners, drilling: NOT ONE NUMBER MOVES. The FIX
+;;;     front still takes the whole opening - the owner spoke about the
+;;;     drawer, and "a i tak sie otworzy" is his ruling on the arc, not a
+;;;     licence to stop checking it.
 ;;; [OWNER - accepted by silence, engine mirrors these]:
 ;;;   - DRAWER behind a hinged door: per hinged side ONE solid BATTEN
 ;;;     30 thick x 70 high, the box's whole depth, outer face on the bay
 ;;;     side (owner v2, 16.08: "boczek 30 x 70 mm, bedzie latwiej, wzdluz
 ;;;     szuflady") - the runner for that side mounts on the batten
+;;;     [AMENDED T37, 17.08.2026: "the box's whole depth" was the T34/T36
+;;;      law and stays written here as the record of what was cut before
+;;;      that date; from T37 the length is depth - SHOE_BATTEN_BACK]
 ;;;   - screw row spacing: 50 from each box end + middle, at box mid
 ;;;     height (posZ + 40)
 ;;;   - runner fixing holes dia 5.0 (euro), axis at posZ + 40
@@ -78,6 +97,16 @@
 (setq SHOE_SETBACK_X   3.0)   ;; runner face = frontT + this, from carcass front
 (setq SHOE_INFILL     30.0)   ;; per hinged side, behind doors (dpSideLaw)
 (setq SHOE_BATTEN_H   70.0)   ;; the batten's height (thickness = SHOE_INFILL)
+(setq SHOE_BATTEN_BACK 30.0)  ;; T37: batten length = box depth - this
+;;;   ^ owner, 17.08.2026 (eye-test on the live drawer): "cofnij o okolo
+;;;     30 mm do tylu (skroc) ten klocek". Was 0 - the batten ran the box's
+;;;     whole depth from T34 until this date. Set back AT THE FRONT.
+(setq SHOE_FRONT_REVEAL 10.0) ;; T37: DRAWER front = opening - 2 x this
+;;;   ^ same breath: "rozszerz front szuflady, tak zeby zostalo po prawej i
+;;;     po lewej od BUR i BUL okolo 10 mm". Was the box's own width (i.e.
+;;;     opening - 2 x SHOE_RUNNER_W - SHOE_INFILL per hinged side, which
+;;;     left 43 mm of daylight each side behind a hinged door). The FIX
+;;;     front is NOT governed by this - it still takes the whole opening.
 
 ;;; Runner rear-fixing column per NL - the owner's sheet, 16.08.
 ;;; First fixing is ALWAYS at 37.0 from the runner front face.
@@ -115,6 +144,25 @@
 ;;; the law - deep box comes out under 10 degrees by construction).
 (defun shoeAngle (run rear)
   (atan rear run))
+
+;;; T37 (17.08.2026) - THE BATTEN'S LENGTH. "cofnij o okolo 30 mm do tylu
+;;; (skroc) ten klocek": the box depth less SHOE_BATTEN_BACK, the 30 taken
+;;; off the FRONT end. Never negative - a box too shallow to carry a batten
+;;; carries none rather than a board of minus millimetres.
+(defun shoeBattenLen (depth)
+  (max 0.0 (- depth SHOE_BATTEN_BACK)))
+
+;;; T37 (17.08.2026) - THE DECORATIVE FRONT'S WIDTH, per variant.
+;;;   FIX    = the whole opening (T34 law, untouched - the FIX front covers
+;;;            the cut edges of a full-width carcass-board box).
+;;;   DRAWER = the opening less 2 x SHOE_FRONT_REVEAL, so 10 mm of reveal
+;;;            is left to BUL and to BUR and the batten-and-runner zone is
+;;;            covered. This is WIDER than the box (which lost 13 per side
+;;;            to the runner and 30 more per hinged side), and deliberately.
+(defun shoeFrontW (variant openingW)
+  (if (= variant "F")
+    openingW
+    (max 0.0 (- openingW (* 2.0 SHOE_FRONT_REVEAL)))))
 
 ;;;========================================
 ;;; C. LAYERS
@@ -198,12 +246,16 @@
 ;;; depth of the box, height of the FRONT (120), thickness G, its INNER face
 ;;; at SHOE_INFILL (30) from the carcass side - the runner for that side
 ;;; mounts on THIS board, and the door's arc clears the 30 - G behind it.
-(defun drawSHOE_INFILL (x0 y0 depth G sideLbl / )
-  (drawRect "OUTLINE" x0 y0 (+ x0 depth) (+ y0 SHOE_BATTEN_H))
-  (drawText "SUMMARY" (+ x0 (/ depth 2.0)) (+ y0 SHOE_BATTEN_H 12.0) 8.0
-    (strcat "BATTEN " sideLbl "  " (rtos depth 2 0) " x "
+;;; T37, 17.08.2026: the board is no longer the box's whole depth - it is
+;;; (shoeBattenLen depth), 30 shorter, the 30 taken off the FRONT end.
+(defun drawSHOE_INFILL (x0 y0 depth G sideLbl / len)
+  (setq len (shoeBattenLen depth))
+  (drawRect "OUTLINE" x0 y0 (+ x0 len) (+ y0 SHOE_BATTEN_H))
+  (drawText "SUMMARY" (+ x0 (/ len 2.0)) (+ y0 SHOE_BATTEN_H 12.0) 8.0
+    (strcat "BATTEN " sideLbl "  " (rtos len 2 0) " x "
             (rtos SHOE_BATTEN_H 2 0) " x " (rtos SHOE_INFILL 2 0)
-            " thick  outer face ON the bay side")))
+            " thick  set back " (rtos SHOE_BATTEN_BACK 2 0)
+            " from the box front  outer face ON the bay side")))
 
 ;;; FRONT panel (decorative, both variants): outline only - the material
 ;;; family is the project's law (FIX = carcass board, DRAWER = fronts
@@ -262,7 +314,7 @@
 
 (defun c:SHOE_BOX ( / variant openingW depth G frontT hingedL hingedR
                      nDiv posZ nl boxW innerW run rear ang slopeLen
-                     pt x0 y0 cx odstep boxFrontX
+                     pt x0 y0 cx odstep boxFrontX frontW battenLen
                      _oldCmdecho _oldOsmode _oldClayer _olderr)
 
   ;; Save state
@@ -336,6 +388,12 @@
   (setq ang (shoeAngle run rear))
   (setq slopeLen (sqrt (+ (* run run) (* rear rear))))
 
+  ;; === T37 (17.08.2026): THE FRONT'S WIDTH AND THE BATTEN'S LENGTH ===
+  ;; Both off section B, so the panel, the layout advance and the summary
+  ;; below read ONE number each and cannot drift.
+  (setq frontW (shoeFrontW variant openingW))
+  (setq battenLen (shoeBattenLen depth))
+
   ;; === PLACE ===
   (setq pt (getpoint "\nInsertion point (bottom-left of the layout): "))
   (if (null pt) (setq pt (list 0.0 0.0 0.0)))
@@ -358,16 +416,18 @@
     (progn
       (drawSHOE_DIVIDER cx y0 innerW)
       (setq cx (+ cx innerW odstep))))
-  (drawSHOE_FRONT cx y0 (if (= variant "F") openingW boxW) variant)
-  (setq cx (+ cx (if (= variant "F") openingW boxW) odstep))
+  ;; T37: the DRAWER front is opening - 2 x 10, not the box's own width.
+  (drawSHOE_FRONT cx y0 frontW variant)
+  (setq cx (+ cx frontW odstep))
 
-  ;; INFILL per hinged side (DRAWER only) - law above.
+  ;; INFILL per hinged side (DRAWER only) - law above. T37: the board is
+  ;; battenLen long, so the layout advances by battenLen and not by depth.
   (if (and (= variant "D") (= hingedL 1))
     (progn (drawSHOE_INFILL cx y0 depth G "L")
-           (setq cx (+ cx depth odstep))))
+           (setq cx (+ cx battenLen odstep))))
   (if (and (= variant "D") (= hingedR 1))
     (progn (drawSHOE_INFILL cx y0 depth G "R")
-           (setq cx (+ cx depth odstep))))
+           (setq cx (+ cx battenLen odstep))))
 
   ;; Carcass-side template (second row, above the panels)
   (setq boxFrontX (+ frontT SHOE_SETBACK_X))
@@ -379,6 +439,8 @@
   (drawText "SUMMARY" x0 (- y0 30.0) 10.0
     (strcat "SHOE BOX " (if (= variant "F") "FIX" "DRAWER")
             "  boxW=" (rtos boxW 2 1)
+            "  frontW=" (rtos frontW 2 1)
+            "  battenLen=" (rtos battenLen 2 0)
             "  depth=" (rtos depth 2 0)
             "  rear=" (rtos rear 2 1)
             "  angle=" (rtos (/ (* ang 180.0) pi) 2 1) "deg"

@@ -77,12 +77,20 @@ test('F10 nothing else about the lighting changed', () => {
 
 // ─── F11 — the layer list leaves the toolbar ────────────────────────────────
 
-/** The toolbar box, from its own marker to the element after it. */
+/**
+ * The toolbar box, from its own marker to the element after it.
+ *
+ * ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F2) ──────────────────────────
+ * The box used to run down to the layer question, which stood directly under
+ * it. F2's shell puts the CANVAS under the toolbar and floats the question
+ * over the drawing, so the block now ends where the canvas begins — the same
+ * question asked of the same file, against the shell it actually has.
+ */
 function toolbarBlock(src) {
   const at = src.indexOf('data-part-tools="1"');
   assert.ok(at > 0, 'the toolbar is there');
-  const end = src.indexOf('{/* ─── TURN 26 (CLAUDE.md F12.1): WHICH LAYER SHOULD THESE GO ON? ──', at);
-  assert.ok(end > at, 'and the layer question comes after it');
+  const end = src.indexOf('data-editor-canvas="1"', at);
+  assert.ok(end > at, 'and the canvas comes after it');
   return src.slice(at, end);
 }
 
@@ -94,24 +102,41 @@ test('F11 the toolbar carries NO layer list — not a dropdown, not the question
 });
 
 test('F11 …and everything else on it is exactly where it was (R12)', () => {
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F2) ────────────────────────
+  //
+  // R12 was "nothing else on the toolbar moved", and turn 38 is the turn that
+  // moves things on purpose: F2 rebuilds the window round the canvas, and the
+  // readouts — the prompt, the pitch, the drill spec, the Delete button, the
+  // layer this session is on — go to the STATUS BAR, which is where F2 puts
+  // every persistent readout. What this test protects is that none of them was
+  // LOST, so it asks the file rather than the bar.
   const bar = toolbarBlock(PART);
+  assert.ok(bar.includes('data-part-tool={t.id}'), 'every tool stamps its own id');
+  const TOOLS_SRC = read('lib/partTools.js');
   for (const tool of ['select', 'drill', 'line', 'dowels']) {
-    assert.ok(bar.includes(`['${tool}',`), `${tool} is still on the toolbar`);
+    assert.ok(TOOLS_SRC.includes(`id: '${tool}'`), `${tool} is still on the toolbar`);
   }
+  for (const marker of ['data-part-undo="1"', 'data-back-to-computed="1"']) {
+    assert.ok(bar.includes(marker), `${marker} did not move`);
+  }
+  const statusAt = PART.indexOf('data-editor-status="1"');
+  assert.ok(statusAt > 0, 'F2 gave the window a status bar');
+  const status = PART.slice(statusAt);
   for (const marker of [
-    'data-part-undo="1"',
-    'data-back-to-computed="1"',
     'data-part-prompt="1"',
     'data-delete-feature="1"',
     'data-part-pitch="1"',
     'data-part-drill-spec="1"',
-    'data-snap-panel="1"',
   ]) {
-    assert.ok(bar.includes(marker), `${marker} did not move`);
+    assert.ok(status.includes(marker), `${marker} is on the status bar`);
   }
+  // The snap panel is the `snap ▾` dropdown now (F4) — a re-housing of the
+  // very same `partSnapStore` state, which is F4's own word for it.
+  assert.ok(bar.includes('data-snap-menu="1"'), 'the snaps are a dropdown on the bar');
+  assert.ok(PART.includes('data-snap-panel="1"'), '…and the panel itself still exists');
   // …including the one-word readout of which layer this session is on, which
   // is not a list and was never the complaint.
-  assert.ok(bar.includes('data-part-layer-chosen={layer}'));
+  assert.ok(status.includes('data-part-layer-chosen={layer || undefined}'));
 });
 
 test('F11 the question is asked ONCE, at the commit, and it is its own strip', () => {
@@ -128,15 +153,32 @@ test('F11 the question is asked ONCE, at the commit, and it is its own strip', (
   assert.match(PART, /data-layer-ask-list="1"/);
   assert.match(PART, /data-layer-ask-ok="1"/);
   assert.match(PART, /data-layer-ask-cancel="1"/);
-  // The list is the EXISTING one; custom layers are still parked.
-  assert.match(PART, /\{CNC_LAYERS\.map\(\(l\) => \(/);
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F3) ────────────────────────
+  // "Custom layers are still parked" was true when this line was written and
+  // the owner unparked them on 17.08. The list the question offers is ONE
+  // list — the CNC table plus this project's own — which is what `layerList`
+  // is and why there is only one of it.
+  assert.match(PART, /\{layerList\.map\(\(l\) => \(/);
 });
 
 test('F11 the toolbar’s own note no longer promises a layer picker', () => {
-  const at = PART.indexOf('THE TOOLBAR, AS DRAWN');
-  assert.ok(at > 0);
-  const note = PART.slice(at, at + 900);
-  assert.match(note, /Select · Drill · Line · Dowel line\. Esc goes back to Select\./);
-  assert.doesNotMatch(note.slice(0, 200), /and a LAYER picker/, 'the promise is gone with the control');
-  assert.match(note, /TURN 28 \(CLAUDE\.md F11\)/, '…and the reason is written down');
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F2/F3) ─────────────────────
+  //
+  // Turn 28's note said the toolbar is *"Select · Drill · Line · Dowel line"*
+  // and carries no layer list. F2 rewrote the bar — seventeen tools in three
+  // groups — and F3 put `layers ▾` on it deliberately, as a DROPDOWN of the
+  // one list, which is the opposite of the permanent per-layer control turn 26
+  // and turn 28 were both removing.
+  //
+  // What survives is the fact underneath: the bar does not make a joiner pick
+  // a layer before he draws. The question is still asked ONCE, at the commit.
+  const TOOLS_SRC = read('lib/partTools.js');
+  const at = TOOLS_SRC.indexOf('THE TOOLBAR, IN AUTOCAD');
+  assert.ok(at > 0, 'the toolbar says what it is');
+  const note = TOOLS_SRC.slice(at, at + 900);
+  assert.match(note, /Draw, then modify, then measure/);
+  assert.doesNotMatch(note, /and a LAYER picker/, 'the promise is gone with the control');
+  const bar = toolbarBlock(PART);
+  assert.doesNotMatch(bar, /data-part-layer="1"/, 'no permanent per-layer control');
+  assert.match(bar, /data-layers-menu="1"/, '…a dropdown of the one list instead (F3)');
 });

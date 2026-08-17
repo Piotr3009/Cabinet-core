@@ -143,18 +143,29 @@ test('F12.2 — Back is at the TOP CENTRE of a workspace, and it is large', () =
   assert.match(read('components/PartDetailModal.jsx'), /^\s*maximised$/m);
 });
 
-test('F12.3 — the split is 25 % view, 75 % sheet', () => {
+test('F12.3 — the sheet takes the window, and the piece takes none of its width', () => {
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F2/F8) ────────────────────
+  //
+  // Turn 26 shrank the 3-D view to 25 % and gave the sheet 75 %, and this test
+  // pinned those two CSS variables. Turn 38 takes the same decision to its
+  // end: *"Canvas takes everything else"* — the drawing area is the rest of
+  // the viewport — and the view of the piece becomes a THUMBNAIL that floats
+  // over the canvas and *"never resizes the drawing area"* (F8).
+  //
+  // So what F12.3 was about is MORE true than it was, and what is pinned is
+  // the fact rather than the two variables that used to carry it: the piece
+  // pane takes no width from the sheet at all.
   const src = read('components/PartDetailModal.jsx');
-  assert.match(src, /data-editor-split="25\/75"/, 'the walk can read it off the DOM');
-  assert.match(src, /'--cc-editor-view': '25%'/, 'the view of the piece shrinks');
-  assert.match(src, /'--cc-editor-sheet': '75%'/, 'and the sheet takes the rest');
-  // The two panes take their width FROM those variables, so the pair is one
-  // decision — a hard-coded basis on one of them would be the drift this is
-  // written to avoid.
-  assert.match(src, /md:basis-\[var\(--cc-editor-view\)\]/);
-  assert.match(src, /md:basis-\[var\(--cc-editor-sheet\)\]/);
-  // …and they were HALF AND HALF, which is what moved.
-  assert.ok(!/data-part-canvas="1"[\s\S]{0,120}flex-1/.test(src), 'the piece pane is no longer flex-1');
+  const at = src.indexOf('data-part-canvas="1"');
+  assert.ok(at > 0, 'the piece is still shown');
+  const block = src.slice(at - 400, at + 400);
+  assert.match(block, /absolute left-2 bottom-2/, 'it FLOATS at the corner of the canvas');
+  assert.match(block, /data-thumb-size=/, '…at one of F8’s three sizes');
+  assert.ok(!/data-part-canvas="1"[\s\S]{0,120}flex-1/.test(src), 'the piece pane is not flex-1');
+  assert.ok(!/basis-\[var\(--cc-editor-view\)\]/.test(src), 'and it takes no basis from the split');
+  // The canvas is what fills the window now.
+  assert.match(src, /data-editor-canvas="1"/);
+  assert.match(src, /className="flex-1 min-h-0 relative/, 'the drawing takes everything left');
 });
 
 test('F12.1 — the layer list is OFF the toolbar, and asked ONCE at commit', () => {
@@ -173,9 +184,15 @@ test('F12.1 — the layer list is OFF the toolbar, and asked ONCE at commit', ()
   // again — the same grammar the drill's ⌀-and-depth popover has used since
   // turn 24.
   assert.match(src, /setLayer\(chosen\);/);
-  assert.match(src, /data-part-layer-chosen=\{layer\}/, 'and the session says which layer it is on');
-  // The list is the EXISTING one; custom layers are parked.
-  assert.match(src, /\{CNC_LAYERS\.map\(\(l\) => \(/);
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F2/F3) ────────────────────
+  // The readout is in the STATUS BAR now — F2 moved every persistent readout
+  // there — so it is written `{layer || undefined}`: an attribute that is
+  // absent while nobody has said, rather than one that says "null".
+  assert.match(src, /data-part-layer-chosen=\{layer \|\| undefined\}/, 'and the session says which layer it is on');
+  // …and the list is the app's own PLUS this project's, which is F3. Custom
+  // layers were parked when this line was written; the owner asked for them
+  // on 17.08.
+  assert.match(src, /\{layerList\.map\(\(l\) => \(/);
 });
 
 test('F12.4 — Delete really deletes, and the disabled button is STATE not a bug', () => {
@@ -186,9 +203,15 @@ test('F12.4 — Delete really deletes, and the disabled button is STATE not a bu
   const at = src.indexOf('data-delete-feature="1"');
   assert.ok(at > 0, 'the button exists');
   const around = src.slice(at, at + 400);
-  assert.match(around, /disabled=\{!picked\}/, 'disabled ONLY while nothing is selected');
-  assert.match(around, /onClick=\{deletePicked\}/, 'and wired to the deletion');
-  assert.match(around, /title=\{picked \? '[^']+' : '[^']+'\}/, '…and it says which it is');
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F6) ───────────────────────
+  // Still STATE and still the honest answer to "delete what?" — and there are
+  // two kinds of thing to delete now: a computed feature taken off this print
+  // (turn 23's flow, untouched) and the manual objects a hand is holding (F6).
+  // So the button is disabled while NEITHER is held, and it deletes whichever
+  // it is.
+  assert.match(around, /disabled=\{!picked && !selected\.length\}/, 'disabled ONLY while nothing is held');
+  assert.match(around, /selected\.length \? deleteSelected\(\) : deletePicked\(\)/, 'and wired to both deletions');
+  assert.match(around, /title=\{picked \|\| selected\.length \? '[^']+' : '[^']+'\}/, '…and it says which it is');
   // The keyboard reaches the same function, so the two cannot drift.
   assert.match(src, /if \(tool === 'select' && picked\) \{ e\.preventDefault\(\); deletePicked\(\); \}/);
   // And what it does is a real edit on the project's own part.

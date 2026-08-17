@@ -306,15 +306,24 @@ test('F9.1 — the four tools are in the PART DETAIL, with a layer picked from a
   // him: **Select · Drill · Line · Dowel line**, from one list, with the layer
   // picker beside them. What this test has always been about — one list, the
   // EXISTING layers, no custom layers — is untouched.
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F2/F3) ────────────────────
+  // The four are still four and still the first four a hand reaches for; what
+  // moved is HOW the toolbar is written. Turn 24's `[['select', 'Select'], …]`
+  // pairs became a TOOLS table with a glyph, a hint and how many points each
+  // gesture takes, because the bar now carries seventeen tools in AutoCAD's
+  // own three groups and a pair of strings cannot say any of that.
+  const tools = src('lib/partTools.js');
   for (const tool of ['select', 'drill', 'line', 'dowels']) {
-    assert.match(detail, new RegExp(`\\['${tool}', '`), `the ${tool} tool`);
+    assert.match(tools, new RegExp(`id: '${tool}'`), `the ${tool} tool`);
   }
-  assert.match(detail, /data-part-tool=\{id\}/);
-  assert.match(detail, /CNC_LAYERS\.map/, 'the layer comes from the EXISTING list');
+  assert.match(detail, /data-part-tool=\{t\.id\}/);
+  // …and the layer list is the app's own PLUS the project's, which is F3 and
+  // is the belief this line used to pin the other way ("no custom layers this
+  // turn — parked by the owner's word"). He asked for them on 17.08.
+  assert.match(detail, /layerList\.map/, 'the layer comes from one list');
+  assert.match(detail, /allLayers\(projectLayersRaw\)/, '…the CNC table plus this project’s own');
   assert.match(detail, /data-back-to-computed="1"/);
   assert.match(detail, /data-hand-edited=/);
-  // No custom layers this turn either — parked by the owner's word.
-  assert.doesNotMatch(detail, /addLayer|customLayer/i);
 });
 
 test('F9.4 — the detail draws the part as the SHEET lays it', () => {

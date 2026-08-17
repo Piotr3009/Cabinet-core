@@ -58,8 +58,15 @@ test('the rules, each with the owner’s colour', () => {
   // this rule should never fire — which is exactly why it exists: a clamp with
   // no witness is a clamp nobody finds out has stopped working. Report, never
   // fix, like the fourteen before it, and every one of them is untouched.
-  assert.equal(CHECKS.length, 15);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F9) ────────────────────────
+  // Two more, and they are the first two rules in this list that are about
+  // what a HAND has drawn rather than what the engine has computed: #16 a
+  // manual shape that runs off the board, #17 a manual shape on OUTLINE — the
+  // cut boundary. Both YELLOW, because "Both are warnings, not gates" is
+  // CLAUDE.md's own line. The fifteen before them are untouched, which is what
+  // the deep-equal below is for.
+  assert.equal(CHECKS.length, 17);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -78,6 +85,9 @@ test('the rules, each with the owner’s colour', () => {
     13: 'red',
     14: 'red',
     15: 'red',
+    // T38-F9: yellow, because both are warnings and neither is a gate.
+    16: 'yellow',
+    17: 'yellow',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

@@ -24,7 +24,12 @@
 //
 // Pure functions — no React, no store imports, no three.js.
 
-import { cncLayer } from '../cnc/layers.js';
+// ─── TURN 38 (CLAUDE.md F3): …AND THE PROJECT'S OWN LAYERS ─────────────────
+// A user layer is a NAME and a COLOUR (`engine/partLayers.js`), and the legend
+// has to be able to paint one. `resolveLayer` answers built-in and user alike,
+// so this module never has to ask which kind it is holding.
+import { resolveLayer } from '../partLayers.js';
+import { arcSweep } from '../partObjects.js';
 import { dimensionEntities } from './frontElevation.js';
 import { formatMm } from '../format.js';
 
@@ -39,10 +44,11 @@ export function partSize(panel) {
 }
 
 /** Every machined path on this part, each with an id, a layer and a note. */
-export function partMachinings(panel, drills = [], profile = null) {
+export function partMachinings(panel, drills = [], profile = null, userLayers = []) {
   const cnc = panel?.cnc || {};
   const out = [];
   const outlineLayer = cnc.layer || profile?.puzzle?.layers?.outline || 'OUTLINE';
+  const label = (name) => resolveLayer(name, userLayers).label;
 
   (cnc.pockets || []).forEach((p, i) => {
     const w = Math.abs(p.x2 - p.x1);
@@ -63,7 +69,7 @@ export function partMachinings(panel, drills = [], profile = null) {
       depth: Number(p.depth) > 0 ? Number(p.depth) : null,
       at: [Math.min(p.x1, p.x2) + w / 2, Math.min(p.y1, p.y2) + h / 2],
       // What a joiner would say about it: what it is, how big, how deep, where.
-      note: `${cncLayer(p.layer).label} · ${formatMm(w)} × ${formatMm(h)}${deep} pocket at ${formatMm(Math.min(p.x1, p.x2) + w / 2)}, ${formatMm(Math.min(p.y1, p.y2) + h / 2)}`,
+      note: `${label(p.layer)} · ${formatMm(w)} × ${formatMm(h)}${deep} pocket at ${formatMm(Math.min(p.x1, p.x2) + w / 2)}, ${formatMm(Math.min(p.y1, p.y2) + h / 2)}`,
     });
   });
 
@@ -76,7 +82,8 @@ export function partMachinings(panel, drills = [], profile = null) {
       from: m.from,
       to: m.to,
       at: [(m.from[0] + m.to[0]) / 2, (m.from[1] + m.to[1]) / 2],
-      note: `${cncLayer(m.layer).label} · ${formatMm(length)} cutter pass from ${formatMm(m.from[0])}, ${formatMm(m.from[1])}`,
+      ...(m.opId ? { opId: m.opId } : {}),
+      note: `${label(m.layer)} · ${formatMm(length)} cutter pass from ${formatMm(m.from[0])}, ${formatMm(m.from[1])}`,
     });
   });
 
@@ -91,7 +98,52 @@ export function partMachinings(panel, drills = [], profile = null) {
       y: d.y,
       d: d.d,
       at: [d.x, d.y],
-      note: `${cncLayer(d.layer).label} · ⌀${formatMm(d.d)} at ${formatMm(d.x)}, ${formatMm(d.y)}`,
+      // Turn 38 (F6): WHICH manual op drew this, where one did. Engine-computed
+      // geometry has no `opId` at all, which is exactly how the editor's verbs
+      // tell "the print" from "what a hand put on it" without a second list.
+      ...(d.opId ? { opId: d.opId } : {}),
+      note: `${label(d.layer)} · ⌀${formatMm(d.d)} at ${formatMm(d.x)}, ${formatMm(d.y)}`,
+    });
+  });
+
+  // ─── TURN 38 (CLAUDE.md F5): THE DRAWN RUNS ────────────────────────────
+  // A polyline and a rectangle arrive on `cnc.paths`; a circle and an arc on
+  // `cnc.curves`. Both channels are ABSENT on a part nobody has drawn on, so
+  // every print in the app that predates tonight walks the same three loops it
+  // always did.
+  (cnc.paths || []).forEach((pth, i) => {
+    const pts = pth.pts || [];
+    let run = 0;
+    for (let k = 0; k + 1 < pts.length; k += 1) run += Math.hypot(pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1]);
+    if (pth.closed && pts.length > 2) run += Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]);
+    out.push({
+      id: `path-${i}`,
+      kind: 'path',
+      layer: pth.layer,
+      pts,
+      closed: Boolean(pth.closed),
+      at: pts.length ? [pts.reduce((s2, p) => s2 + p[0], 0) / pts.length, pts.reduce((s2, p) => s2 + p[1], 0) / pts.length] : [0, 0],
+      ...(pth.opId ? { opId: pth.opId } : {}),
+      note: `${label(pth.layer)} · ${pth.closed ? 'closed ' : ''}${pts.length}-point run, ${formatMm(run)} long`,
+    });
+  });
+
+  (cnc.curves || []).forEach((c, i) => {
+    const isArc = c.kind === 'arc';
+    const sweep = isArc ? arcSweep(c) : 360;
+    out.push({
+      id: `curve-${i}`,
+      kind: isArc ? 'arc' : 'circle',
+      layer: c.layer,
+      cx: c.cx,
+      cy: c.cy,
+      r: c.r,
+      ...(isArc ? { start: c.start, end: c.end } : {}),
+      at: [c.cx, c.cy],
+      ...(c.opId ? { opId: c.opId } : {}),
+      note: isArc
+        ? `${label(c.layer)} · arc R${formatMm(c.r)}, ${Math.round(sweep)}° at ${formatMm(c.cx)}, ${formatMm(c.cy)}`
+        : `${label(c.layer)} · circle ⌀${formatMm(c.r * 2)} at ${formatMm(c.cx)}, ${formatMm(c.cy)}`,
     });
   });
 
@@ -106,11 +158,11 @@ export function partMachinings(panel, drills = [], profile = null) {
  * legend listing fourteen layers of which two are present is a legend nobody
  * reads. The outline counts as one entry, which is what it is.
  */
-export function partLegend(outlineLayer, machinings) {
+export function partLegend(outlineLayer, machinings, userLayers = []) {
   const counts = new Map([[outlineLayer, 1]]);
   for (const m of machinings) counts.set(m.layer, (counts.get(m.layer) || 0) + 1);
   return [...counts.entries()].map(([name, count]) => {
-    const layer = cncLayer(name);
+    const layer = resolveLayer(name, userLayers);
     return {
       name, count, colour: layer.screen, label: layer.label, kind: layer.kind,
     };
@@ -124,10 +176,12 @@ export function partLegend(outlineLayer, machinings) {
  * `textHeight` is in drawing millimetres, like everything else here; the
  * component scales the picture, not the numbers.
  */
-export function partDetailDrawing(panel, { drills = [], profile = null, textHeight = null } = {}) {
+export function partDetailDrawing(panel, {
+  drills = [], profile = null, textHeight = null, userLayers = [],
+} = {}) {
   if (!panel) return null;
   const size = partSize(panel);
-  const { outlineLayer, machinings } = partMachinings(panel, drills, profile);
+  const { outlineLayer, machinings } = partMachinings(panel, drills, profile, userLayers);
   const height = Number(textHeight) || Math.max(8, Math.min(size.w, size.h) * 0.06);
   const offset = height * 2.4;
 
@@ -150,7 +204,7 @@ export function partDetailDrawing(panel, { drills = [], profile = null, textHeig
     outline: panel.cnc?.outline || [],
     outlineLayer,
     machinings,
-    legend: partLegend(outlineLayer, machinings),
+    legend: partLegend(outlineLayer, machinings, userLayers),
     dimensions,
     textHeight: height,
     dimensionOffset: offset,

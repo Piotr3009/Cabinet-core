@@ -90,8 +90,18 @@ test('F7.2 — nothing about the DRAWING changes: it is presentation only', () =
 test('F7.1 — the fit control exists and the double-click is wired to it', () => {
   const detail = src('components/PartDetailModal.jsx');
   assert.match(detail, /data-part-fit="1"/);
-  assert.match(detail, /onDoubleClick=\{view\.fit\}/);
   assert.match(detail, /onClick=\{view\.fit\}/);
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F5) ────────────────────────
+  // This read `onDoubleClick={view.fit}` — the bare handler — and F5 gave the
+  // double-click a SECOND job: it ends a polyline that is running. So the
+  // handler is a guard round the same call, and what is pinned is that the
+  // call is still there and still unconditional for every other gesture.
+  // The SVG's own handler, not the F8 thumbnail's (which cycles its size).
+  const at = detail.indexOf('onDoubleClick={(e) => {');
+  assert.ok(at > 0, 'the double-click is wired');
+  const block = detail.slice(at, at + 420);
+  assert.match(block, /view\.fit\(\)/, 'and it still fits the part');
+  assert.match(block, /onEndRun/, '…unless a polyline is running, which it ends');
 });
 
 // ─── F8 — hover dimensions become drawings ─────────────────────────────────

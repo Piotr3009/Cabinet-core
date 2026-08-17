@@ -87,6 +87,20 @@ export function writeDxf(entities, layers, extents) {
       put(0, 'CIRCLE'); put(8, e.layer);
       put(10, fmt(e.cx)); put(20, fmt(e.cy)); put(30, 0);
       put(40, fmt(e.r));
+    } else if (e.type === 'arc') {
+      // ─── TURN 38 (CLAUDE.md F10): AND R12 HAS AN ARC ────────────────────
+      // ARC is in AC1009 exactly as CIRCLE is — centre, radius, then group
+      // codes 50 and 51, the start and end angles in DEGREES, swept
+      // ANTICLOCKWISE from 50 to 51. `engine/partObjects.js` stores an arc in
+      // that convention for this reason: one convention, no conversion, and
+      // therefore nothing to be wrong at the wrap past 360.
+      //
+      // It is ADDITIVE. No engine-computed geometry in this app emits an arc,
+      // so every DXF the app wrote before tonight is byte-for-byte what it was.
+      put(0, 'ARC'); put(8, e.layer);
+      put(10, fmt(e.cx)); put(20, fmt(e.cy)); put(30, 0);
+      put(40, fmt(e.r));
+      put(50, fmt(e.start)); put(51, fmt(e.end));
     } else if (e.type === 'text') {
       put(0, 'TEXT'); put(8, e.layer);
       put(10, fmt(e.x)); put(20, fmt(e.y)); put(30, 0);
@@ -255,6 +269,40 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
     entities.push({ type: 'poly', layer: mark.layer, closed: false, pts: [mark.from, mark.to] });
   }
 
+  // ─── TURN 38 (CLAUDE.md F10): EVERYTHING DRAWN EXPORTS ────────────────────
+  //
+  // "Lines, polylines (LWPOLYLINE), circles, arcs, rects (as closed
+  // LWPOLYLINE), dowel-line holes as today, on their layer."
+  //
+  // R12 HAS NO LWPOLYLINE — this file's own header records why the dialect is
+  // R12 and not something newer (an AC1015 attempt died in VCarve's parser on
+  // 02.08.2026) — so a polyline is written the R12 way, POLYLINE + VERTEX… +
+  // SEQEND with the closed flag, which is the very shape `marks` and every
+  // pocket in this app have used since turn 3. Same points, same closed flag,
+  // same layer; spelled in the dialect that is known to import.
+  //
+  // A RECT is a closed run of its four corners, which `partEdits.js` has
+  // already resolved onto `cnc.paths` — the writer is not asked to know what a
+  // rectangle is, only how to write a closed polyline.
+  for (const path of panel.cnc?.paths || []) {
+    if (!Array.isArray(path.pts) || path.pts.length < 2) continue;
+    entities.push({
+      type: 'poly', layer: path.layer, closed: Boolean(path.closed), pts: path.pts.map(([x, y]) => [x, y]),
+    });
+  }
+
+  for (const curve of panel.cnc?.curves || []) {
+    if (curve.kind === 'arc') {
+      entities.push({
+        type: 'arc', layer: curve.layer, cx: curve.cx, cy: curve.cy, r: curve.r, start: curve.start, end: curve.end,
+      });
+      continue;
+    }
+    entities.push({
+      type: 'circle', layer: curve.layer, cx: curve.cx, cy: curve.cy, r: curve.r,
+    });
+  }
+
   for (const hole of drills) {
     if (hole.panel !== panel.id) continue;
     entities.push({ type: 'circle', layer: hole.layer, cx: hole.x, cy: hole.y, r: hole.d / 2 });
@@ -302,7 +350,7 @@ export function entitiesExtents(entities) {
   };
   for (const e of entities) {
     if (e.type === 'poly') for (const [x, y] of e.pts) hit(x, y);
-    else if (e.type === 'circle') { hit(e.cx - e.r, e.cy - e.r); hit(e.cx + e.r, e.cy + e.r); }
+    else if (e.type === 'circle' || e.type === 'arc') { hit(e.cx - e.r, e.cy - e.r); hit(e.cx + e.r, e.cy + e.r); }
     else if (e.type === 'text') hit(e.x, e.y);
   }
   if (!Number.isFinite(minX)) return { min: [0, 0], max: [0, 0] };
@@ -320,7 +368,7 @@ export function dxfFileName(unitNum, panelId) {
 /** Complete DXF text for one part. */
 export function panelDxf(panel, drills, opts) {
   const entities = panelEntities(panel, drills, opts);
-  const layers = layerTableFor(entities.map((e) => e.layer));
+  const layers = layerTableFor(entities.map((e) => e.layer), opts?.userLayers);
   return writeDxf(entities, layers, entitiesExtents(entities));
 }
 
@@ -334,13 +382,13 @@ export function panelDxf(panel, drills, opts) {
  * @param {object} profile the profile the result was computed with
  * @returns {{name:string, panelId:string, dxf:string, entities:object[]}[]}
  */
-export function buildUnitDxfFiles(result, profile) {
+export function buildUnitDxfFiles(result, profile, { userLayers = [] } = {}) {
   const unitNum = result.unitNum;
   return result.panels
     .filter((p) => p.cnc && Array.isArray(p.cnc.outline) && p.cnc.outline.length >= 2)
     .map((panel) => {
       const entities = panelEntities(panel, result.drills, { unitNum, profile });
-      const layers = layerTableFor(entities.map((e) => e.layer));
+      const layers = layerTableFor(entities.map((e) => e.layer), userLayers);
       return {
         name: dxfFileName(unitNum, panel.id),
         panelId: panel.id,
@@ -397,6 +445,15 @@ export function sheetEntities({
       else if (e.type === 'circle') {
         const [cx, cy] = at(e.cx, e.cy);
         entities.push({ ...e, cx, cy });
+      } else if (e.type === 'arc') {
+        // Turn 38 (F10): an arc turns with the board like everything else on
+        // it — its centre goes through the same transform, and its two angles
+        // take the turn, which is the whole of what turning a circle's sector
+        // means.
+        const [cx, cy] = at(e.cx, e.cy);
+        entities.push({
+          ...e, cx, cy, start: ((e.start + turn) % 360 + 360) % 360, end: ((e.end + turn) % 360 + 360) % 360,
+        });
       } else if (e.type === 'text') {
         const [x, y] = at(e.x, e.y);
         // The caption is cut INTO the board, so it turns with the board.
@@ -431,7 +488,7 @@ export function sheetDxfFileName(unitNum, presetId, { project = null, now = new 
 /** Complete DXF text for a whole sheet of selected parts. */
 export function sheetDxf(args) {
   const entities = sheetEntities(args);
-  const layers = layerTableFor(entities.map((e) => e.layer));
+  const layers = layerTableFor(entities.map((e) => e.layer), args?.userLayers);
   return writeDxf(entities, layers, entitiesExtents(entities));
 }
 
@@ -497,7 +554,7 @@ export function materialDxfFileName(label, { project = null, now = new Date() } 
 /** Complete DXF text for one material's worth of parts, across every cabinet. */
 export function materialSheetDxf(args) {
   const entities = materialSheetEntities(args);
-  const layers = layerTableFor(entities.map((e) => e.layer));
+  const layers = layerTableFor(entities.map((e) => e.layer), args?.userLayers);
   return writeDxf(entities, layers, entitiesExtents(entities));
 }
 
@@ -552,6 +609,7 @@ export function parseDxf(text) {
       flush();
       if (raw === 'POLYLINE') current = { type: 'poly', layer: null, closed: false, pts: [] };
       else if (raw === 'CIRCLE') current = { type: 'circle', layer: null };
+      else if (raw === 'ARC') current = { type: 'arc', layer: null };
       else if (raw === 'TEXT') current = { type: 'text', layer: null };
       else current = null;
       continue;
@@ -577,10 +635,12 @@ export function parseDxf(text) {
         else current._seenHeader = true;
         continue;
       }
-    } else if (current.type === 'circle') {
+    } else if (current.type === 'circle' || current.type === 'arc') {
       if (code === 10) { current.cx = Number(raw); continue; }
       if (code === 20) { current.cy = Number(raw); continue; }
       if (code === 40) { current.r = Number(raw); continue; }
+      if (code === 50) { current.start = Number(raw); continue; }
+      if (code === 51) { current.end = Number(raw); continue; }
     } else if (current.type === 'text') {
       if (code === 10 && current.x == null) { current.x = Number(raw); continue; }
       if (code === 20 && current.y == null) { current.y = Number(raw); continue; }

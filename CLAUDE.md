@@ -1,172 +1,219 @@
-# CLAUDE.md — TURN 36: ONE SETTINGS MODAL, AND EVERYTHING THE NIGHT LEFT BEHIND
+# CLAUDE.md — TURN 37: THE EYE-TEST'S CORRECTIONS, AND THE RAIL DONE RIGHT
 
-Date issued: 17.08.2026. Previous turn: T35 (partial — 10/16 merged; the
-morning audit named the gaps, the owner's eye-test named three more). This
-turn closes ALL of it. Nothing here is new invention: every feature below is
-either a T35 spec section re-issued or an owner ruling from 16–17.08.
+Date issued: 17.08.2026, evening. Previous turn: T36 (merged whole, 10/10).
+The owner walked every feature the same day; this turn is his verdicts —
+six corrections, one redesign, two frame-of-reference bugs he smelled and
+the audit confirmed, and five dead functions he has licensed for removal.
 
-VERIFY FIRST — T35 must be on main: `src/engine/cabinet.js` contains
-`front_top_gap_mm`, `reference/lisp/KIT_WARDROBE_FULL.lsp` contains the
-`SPLIT DOORS (T35)` section, and the hanger modal contains
-`Height above support`. Any missing → STOP and report.
+VERIFY FIRST — T36 on main: `src/components/WizardSettings.jsx` contains
+`data-settings-section="sheet"`, `src/engine/splitDoors.js` exists, and
+`src/engine/profile.js` contains `plateBiteMm`. Any missing → STOP, report.
 
 ## Iron rules for this turn
 
 1. **/engineering-discipline. CONSUMER SWEEP mandatory.**
-2. **Engine purity, named deltas.** Sibling `scripts/t36-classify.mjs`; the
-   contract vs main: `GRAIN_AXIS` (F5 — drawer boxes, drawer fronts,
-   plinths) is the ONLY expected bucket. Split doors default to "no split"
-   and the top box is a new type, so neither may move the six configs.
-   UNNAMED = 0 or the run failed its own contract.
-3. **LISP is law.** F6 implements the engine against the ALREADY-MERGED
-   `SPLIT DOORS (T35)` kit section — the engine matches it, never
-   interprets; a divergence is reported, not resolved. Any further LISP
-   edit only inside that named section, paren-balance test standing guard.
-4. **THE OWNER'S SANCTITY RULE, verbatim:** *"nigdy nie kasuj bez mojej
-   zgody jakichkolwiek funkcji — to jest świętość."* This turn DELETES
-   NOTHING. F1 re-wires which modal opens; the old `SettingsPanel.jsx`
-   STAYS IN THE TREE, un-deleted, and export by material stays
-   byte-for-byte. The only removal already licensed and still pending from
-   T35: the hinge-plate stand-in (F4 below — his explicit order, quoted).
-5. **Fixtures, `depthSteps`, check rules' existing behaviour: untouchable.**
-   Modals draggable, beside their object.
-6. **PROOFS ARE NOT OPTIONAL — the T35 lesson.** T35-F1 shipped an engine
-   and a modal but no clickable target, and no screenshot existed to catch
-   it. This turn: EVERY feature with a visible surface ships at least one
-   `verify/t36/` proof with its named subject, driven by real pointer
-   input, or the feature is not done. Commit per feature, mergeable head,
-   skip-and-note, PR before morning, full suite never `--silent`,
-   clean-room, vite build, zero new dependencies. Use parallel subagents
-   for independent features; engine-law features tests-first.
+2. **Engine purity — this turn's contract is BYTE-IDENTITY.** Sibling
+   `scripts/t37-classify.mjs`: NO named buckets are expected. Every change
+   here is UI-side, 3D-side, layout-side, project-level law, or touches
+   parts absent from the six configs (rails, split, top box, shoe). Any
+   delta at all = UNNAMED = exit 1.
+3. **LISP is law.** The shoe batten/front change (F6) amends
+   `KIT_SHOE_BOX.lsp` FIRST (its own file, its own section — no other kit
+   moves a character); paren-balance test stands guard.
+4. **SANCTITY, verbatim:** *"nigdy nie kasuj bez mojej zgody jakichkolwiek
+   funkcji — to jest świętość."* The owner licensed EXACTLY FIVE removals
+   today (17.08, after the dead-code audit he ordered): the unused exports
+   `getDecorScale` (decors.js), `neighbourOn` (frontClearance.js),
+   `holeWorldY`, `facadePilotRow`, `boxPilotRow` (drawerPilots.js) — each
+   verified un-called by code, tests and scripts. Remove those five and
+   NOTHING else; each removal named in the F9 commit message. Everything
+   else in the tree — including `SettingsPanel.jsx` — stays.
+5. **Fixtures, `depthSteps`: untouchable.** Modals draggable, beside their
+   object — except where F4c states the doors modal's own new docking law.
+6. **PROOFS ARE NOT OPTIONAL.** Every feature with a visible surface ships
+   a `verify/t37/` screenshot with its named subject from real pointer
+   input, or it is not done. Commit per feature, mergeable head,
+   skip-and-note, PR before morning, suite never `--silent`, clean-room,
+   vite build, zero new dependencies, parallel subagents where independent.
 
 ## Features
 
-### F1 [CRITICAL] — ONE SETTINGS MODAL: the wizard's panel becomes the only
-### one, and it gains everything the old one has
+### F1 [HIGH] — MULTI-SELECT v2: across cabinets, and the handle that
+### moves UP AND DOWN
 
-The owner, seeing sheet sizes appear in one panel and not the other:
-*"mamy new project i edit project — 2 różne setup modale, a powinien to być
-ten sam modal. Sprawdź dokładnie i dołóż wszystkie funkcje ze starego do
-nowego."*
-
-The audited facts: NEW project → `NewProjectFlow` → `WizardSettings`;
-EDIT project → `DesignSettingsModal` → `SettingsPanel` (the old panel).
-T35 landed sheet sizes (F15) and the hinge pilot (F8) in the OLD one only.
+The owner on T36-F2: *"chodziło mi o półki z 2–3 szaf obok siebie, a nie
+tylko z jednej"* and *"przesuwanie półek up-and-down jest strasznie trudne —
+zazwyczaj catch jest na ustawianie głębokości, co jest najmniej przydatne.
+Nie mogę sobie złapać 6 półek z 3 szaf i przesunąć ich razem."*
 
 **Build:**
-* `WizardSettings` becomes THE settings surface. It gains, section by
-  section, everything the old panel has and it lacks — the inventory,
-  read from the code, to be re-verified against the tree before building:
-  * **thickness** (per-family board thickness with the hard gate);
-  * **sheet sizes** (T35-F15: per-family Jumbo / Standard / 10 ft /
-    Other…);
-  * **door-style** gallery (+ New style, filter, the workshop's own
-    styles, the shaker-frame number);
-  * **runner variant** (standard / tip-on) at project level;
-  * **hinge-plate pilot ⌀3/⌀5** (T35-F8);
-  * ANY other control present in `SettingsPanel` and absent from the
-    wizard — walk the old panel top to bottom and carry every last row.
-* `DesignSettingsModal` (edit-project) opens the SAME unified panel,
-  loaded with the project's values; New-project opens it inside the flow
-  as today. One form, two doors into it.
-* The old `SettingsPanel.jsx` is NOT deleted (iron rule 4) — it simply
-  stops being the thing the edit door opens.
-* Every control keeps its exact behaviour and store wiring — this feature
-  MOVES surfaces, it does not redesign them. Material assignment keeps the
-  T34 hard gate on every source.
+* The Ctrl+click selection set spans UNITS: members carry `{unitId,
+  elementRef}`, the scene highlights across cabinets, and a group edit
+  writes to every member THROUGH ITS OWN UNIT's store path. Six shelves in
+  three wardrobes move as one.
+* The DRAG PRIORITY flips: the default grab on a shelf moves it UP/DOWN
+  (position). Depth stays reachable but secondary (its own smaller handle
+  or a modifier — state which in the PR body). Same for group drags.
+* Group position moves preserve each member's own clamps (a shelf stops at
+  its own neighbours; the group move reports how many hit a stop).
 
-**Tests:** a source-level inventory test — every `data-settings-section`
-and every named control of the old panel has a counterpart in the unified
-one; the edit door opens the unified panel; the existing wizard tests stay
-green. PROOF: screenshots of the unified panel from BOTH doors, same
-sections visible.
+**Tests:** cross-unit set membership and write paths; the drag priority
+pinned at source; clamp-per-member. PROOF: six shelves in three cabinets
+moved in one drag.
 
-### F2 [HIGH] — MULTI-SELECT: Ctrl+click, the group moves as one
-Re-issued from T35-F2, unchanged: Ctrl+click selection set (uiStore),
-scene highlight, group edits — shelves: position and depth to all
-selected; LED strips: inset and depth to all selected; one Delete removes
-the whole set through the heal sweep; plain click = today's single-select,
-untouched. Tests as T35 listed. PROOF: three shelves selected and nudged
-in one shot.
+### F2 [HIGH] — THE RAIL, DONE RIGHT: a fix shelf with a rail under it
 
-### F3 [MEDIUM] — SHOE FIX: the front becomes a switch
-Re-issued from T35-F3, with the owner's closing word ("punkt 3 — tak, z
-przełącznikiem"): modal toggle **Front: on / off**, default ON; front off
-drops SHOEBOX-FR from panels/BOM/3D; `KIT_SHOE_BOX.lsp` gains the
-one-line note. Tests: both states, board count, BOM.
+The owner buried the T35 design in one breath: *"masakra, jakieś dziwne
+wpisywanie... dlaczego drążek nie może być z półką powyżej, i ta półka być
+traktowana jak półka, tylko że fix? Zrób półkę nad drążkiem — półka, a
+drążek dołącz do półki i tyle."*
 
-### F4 [HIGH] — HINGES: the plate joins the 14.08 order, bites 5 mm into
-### the side, and the modal lists them like the wall does
-Re-issued from T35-F5, all three owner findings, verbatim in that spec:
-(a) REMOVE the plate stand-in — a plate is the downloaded GLB or nothing;
-the invisible pick target stays; (b) the plate GLB moves 5 mm INTO the
-side (`hardware.hinge.plateBiteMm: 5`, profile-listed) so screws sit in
-timber; (c) the modal's hinge rows sort by Y DESCENDING — top hinge first.
-Tests: no plate primitive (the 14.08 assertion pattern); the bite from the
-profile; the order pinned. PROOF: a side with plates seated, and the modal
-listing top-first.
+**Build:**
+* ADDING A RAIL adds an ASSEMBLY: one FIX shelf + the rail hung under it.
+  The shelf is an ordinary fix shelf in every way — dragged by hand,
+  snapping to neighbours' heights, listed and dimensioned like any shelf.
+  The rail is its attachment: it rides the shelf, always.
+* The drop (shelf underside → rod axis) is the bracket's own hardware drop,
+  profile-listed (`hardware.hanger.dropMm` — derive the default from the
+  bracket geometry the 3D already draws, so nothing visibly moves)
+  `[OWNER — by silence]`.
+* The T35 "Height above support" field and its support-resolution law are
+  RETIRED FROM THE UI for new rails (the modal shows the shelf's own
+  position instead) — the engine law may remain as dead weight for legacy
+  only; nothing is deleted beyond rule 4's five.
+* LEGACY: existing saved rails keep rendering exactly as saved (grey note
+  in their modal: "old-style rail — re-add to get the shelf-mounted one").
+  No silent migration, no surprise shelf in an old BOM.
+* Double-click the rod → opens the SHELF's modal (the thing you actually
+  edit); the T36 clickability stays.
 
-### F5 [HIGH] — CNC GRAIN: drawer boxes, drawer fronts and the plinth
-### stand along the grain
-Re-issued from T35-F6, verbatim owner law: *"szuflady w pionie, wzdłuż
-słojów; fronty szuflad też; plinth też."* Grain axis per ROLE is law; the
-layout may not rotate these roles off-grain. Tests pin the axis per role
-and the no-flip rule. Named bucket `GRAIN_AXIS` (iron rule 2).
+**Tests:** the assembly's add path (one shelf + one rail, linked); the
+ride; the drop from profile; legacy untouched byte-for-byte. PROOF: a rail
+dragged BY ITS SHELF to a new height in the scene.
 
-### F6 [HIGH] — SPLIT DOORS: the engine and the UI catch up with the kit
-T35 merged the LISP section and its paren test; the engine half never
-landed. Build it now AGAINST that section: bay field "Split door: top
-segment height ___ mm" (0 = none); bottom = opening − top − 3; ONE
-auto fix shelf at the split at FULL depth (no 20 setback — its own law),
-G thick; per-segment hinge sets via `hingesRequired`; per-segment handles
-and mirrors; 3 mm between segments; top edge per T35-F12; BOM/CNC per
-segment from its own hinge edge; modal segments top-first. Tests: the
-arithmetic, the shelf law, hinge counts per segment, modal order. PROOF:
-a split bay open in the scene.
+### F3 [MEDIUM] — HINGE PLATE: five more millimetres of bite
 
-### F7 [HIGH] — THE TOP BOX: a small wardrobe that rides the main one
-Re-issued from T35-F14, verbatim reason (*"wysokie szafy nie wejdą do
-domu"*): library offers Main wardrobe + Top box; the Top box snaps flush
-on a main (same depth, x aligned, y = main's height), rides its moves;
-red fault when orphaned; its own carcass/doors/BOM/CNC. Tests: snap,
-ride, orphan fault, own BOM. PROOF: the pair standing, dims per unit.
+The owner: *"zawiasy — dociśnij o następne 5 mm."*
+`hardware.hinge.plateBiteMm: 5 → 10`. One profile number, the T36 test
+updated and dated. PROOF: a close-up of the seated plate.
 
-### F8 [MEDIUM] — THE RAIL IS CLICKABLE: the missing double-click target
-The owner, eye-testing T35-F1: *"nie ma możliwości 2 kliku i edycji tego
-drążka."* The engine and the modal landed; the `<Rail>` tube in
-`Hardware.jsx` has NO handler — nothing to click. Build: double-click on
-the rail tube opens the hanger modal beside it (the shelves' own
-`onEditElement` grammar); hover aura so the hand can see it is clickable.
-Tests: the handler pinned at source. PROOF: the modal open beside a
-double-clicked rail.
+### F4 [HIGH] — SPLIT DOORS: the divider is a BOUNDARY, the field is
+### VISIBLE, and the doors modal stops fighting the hand
 
-### F9 [LOW] — LIGHTING: a new project starts DARK
-The owner: *"default teraz jest lights on — powinno być odwrotnie: OFF
-default, a ON na życzenie klienta."* New projects start with the F10
-switch OFF; the legacy load mapping from T35-F10 stands unchanged (an old
-project that was shining stays ON). Tests: new-project default, legacy
-mapping untouched.
+Three owner rulings on T36-F6:
+* **(a)** *"dodajemy półkę i powinna być traktowana jak koniec szafy —
+  jeśli daję centruj półki, to ponad tą poprzeczką powinny się centrować
+  według tej poprzeczki, i to samo z dolną — taka sama rola."* The split
+  shelf becomes a CENTRING BOUNDARY: shelf-spacing/centring above it uses
+  it as the floor; below it, as the ceiling — exactly the role the bottom
+  and the top play. One law, wherever centring is computed.
+* **(b)** *"dodanie splitu powinno być w modalu doors też, i to widoczne
+  bardzo — nie mała jakaś malutka pierdółka."* The Doors modal gains the
+  split field PROMINENTLY (its own labelled row, full width, not a
+  footnote); the bay-side field stays.
+* **(c)** THE DOORS MODAL'S CONDUCT, his words: *"włącza i wyłącza się jak
+  pojebane — niech się ustawi po lewej stronie ekranu całkowicie, i niech
+  się nie wyłącza za każdym razem jak kliknę — dopiero krzyżykiem; a niech
+  się przeskakuje tylko nazwa drzwi, które są kliknięte."* LAW: the doors
+  modal DOCKS hard left of the screen; scene clicks do NOT close it; only
+  its X closes it; clicking another door/leaf SWAPS the modal's subject
+  (the title shows which leaf) without closing. This is the doors modal's
+  own docking law and overrides the beside-the-object default for THIS
+  modal only.
 
-### F10 [LOW] — INTERIOR FRONT DIMENSIONS: the law covers every interior
-### front, not only drawers
-The owner: *"front shoe boxa nadal widoczne wymiary przy zamkniętych
-drzwiach."* T35-F11's law generalises: in a unit with doors, the front
-dimensions of ANY interior element — drawer fronts, the shoe box's front,
-anything future — render only while the doors are open. Door dims and
-doorless units untouched. Tests: shoe-box front covered; drawers still
-covered; open shows all.
+**Tests:** the boundary law above/below; the field present in both
+surfaces; the modal's close/swap behaviour pinned. PROOF: the docked modal
+surviving scene clicks and swapping its title between two leaves.
+
+### F5 [HIGH] — TOP BOX: five corrections
+
+The owner on T36-F7 (*"nadstawka działa super, ale…"*):
+* **(a)** WIDTH AUTO: a Top box placed on a main takes the MAIN'S WIDTH
+  (editable after, but born matched).
+* **(b)** HEIGHT DIMENSIONS: the pair shows BOTH heights — the main's and
+  the box's — *"nie widać wymiarów wysokości w ogóle"*.
+* **(c)** NO OVERLAP, EVER: *"nakładają się jedna na drugą, a to jest
+  niedopuszczalne w naszym programie"* — the box CLAMPS to the main's top
+  (never intersects it or neighbours); an impossible drop goes red, the
+  house grammar.
+* **(d)** SIDE ORIENTATION: the box's sides (BUL/BUR) stand VERTICAL —
+  today's horizontal orientation is wrong: *"orientacja boków jest pozioma,
+  a powinna być pionowa."* Match the main wardrobe's own side law, grain
+  included.
+* **(e)** THE DOOR BELOW SHORTENS: adding a Top box is an "above
+  neighbour" — the main's door takes the 3 mm top gap (the T35-F12 matrix;
+  the top box joins infill/cornice as a recognised neighbour), and grows
+  back when the box is removed. Self-healing on every path.
+
+**Tests:** born-matched width; both dims; the clamp and the red; the side
+orientation/grain; F12's matrix with a top-box neighbour, both directions.
+PROOF: the pair with both height dims and the shortened door.
+
+### F6 [MEDIUM] — SHOE DRAWER: the batten steps back, the front covers it
+### — LISP FIRST
+
+The owner, seeing the drawer variant live: *"cofnij o około 30 mm do tyłu
+(skróć) ten klocek i rozszerz front szuflady, tak żeby zostało po prawej i
+po lewej od BUR i BUL około 10 mm — będzie wyglądać lepiej, a i tak się
+otworzy."*
+
+**Build (`KIT_SHOE_BOX.lsp` first — batten length and front width are its
+constants):**
+* Batten length = box depth **− 30** (set back from the front edge).
+* The drawer FRONT widens: its width = bay opening **− 2 × 10** (10 mm to
+  each carcass side), covering the batten-and-runner zone. The hinge-arc
+  check (#12 family) stays vigilant — the owner has ruled it opens; the
+  check still reports if a configuration disagrees.
+* Box, runners, drilling: unchanged.
+
+**Tests:** both numbers pinned in kit and engine; BOM widths; the check
+still armed. PROOF: the drawer closed (10 mm reveals) and open.
+
+### F7 [HIGH] — GRAIN, THE TWO READERS: the sheet learns the field, the 3D
+### learns the frame
+
+The owner's screenshot (drawer parts lying flat) and his nose (*"CNC jest
+ok, ale wizualizacja nie jest — sprawdź, co ci nadpisuje"*). The audit
+found two distinct faults:
+* **(a) THE SHEET:** `cnc/layout.js sheetTurn()` rotates only the old
+  SHELF-board set and NEVER READS `cnc.grain`. Generalise the law: a part
+  with a STATED grain is laid with its grain running up the sheet; the old
+  set folds into the same rule (no behaviour change for parts it already
+  turned). The drawer sides, backs, bottoms, fronts and the plinth stand
+  up the page.
+* **(b) THE 3D:** `decors.js grainRun()` reads the stated `cnc.grain` in
+  the PANEL frame, but the field is written in the CNC DRAWN frame — on a
+  shelf (drawn 530 × 560, grain "h" = its 560 WIDTH) the 3D resolves 530 =
+  DEPTH and paints the figure front-to-back. `grainRun` must TRANSLATE the
+  stated axis from the drawn frame (`cnc.drawn_w/drawn_h`) into the panel
+  frame before use.
+* **Cross-frame tests are the point:** for the same panels (shelf, drawer
+  side, drawer front, plinth) one test asserts the SHEET lay and another
+  the 3D figure axis, from the same stated field — so the two readers can
+  never drift apart silently again.
+
+Byte-identity contract note: (a) changes sheet PLACEMENT only and (b) is a
+3D reader — `computeCabinet()` output must not move (rule 2).
+
+### F8 [LOW] — (reserved) — nothing; kept so the walk's numbering matches
+### the owner's list. Skip with a note.
+
+### F9 [LOW] — THE FIVE LICENSED REMOVALS
+
+Per iron rule 4, remove exactly: `getDecorScale`, `neighbourOn`,
+`holeWorldY`, `facadePilotRow`, `boxPilotRow`. Nothing that imports them
+exists; the suite proves it before and after. One commit, five names in
+its message.
 
 ## What this turn does NOT touch
 
-Export by material (byte-for-byte). `SettingsPanel.jsx` stays in the tree.
-`depthSteps`, golden fixtures. Parked list unchanged (L-shape, props,
-JoineryCore, AGD GLB, sliding, nesting, hood, sheen per-slot, internal
-metal default, hinge arm 15 mm). EGGER stays BLOCKER #44.
+Everything not named. Export by material. `SettingsPanel.jsx`.
+`depthSteps`, golden fixtures. The parked list unchanged. EGGER = BLOCKER
+#44.
 
 ## Order of work
 
-F1 first (the owner called it the problem behind half his evening), then
-F6 (engine against the waiting kit), F4, F5, F2, F7, F8, F3, F10, F9.
-Commit per feature; the morning audit holds this file against the diff
-line by line, the classifier holds rule 2, and rule 6 holds every visible
-feature to a photograph.
+F2 (the rail — the owner's loudest verdict), F1, F5, F4, F7, F6 (LISP
+first), F3, F9. Commit per feature; the morning audit reads this file
+against the diff, the classifier holds byte-identity, and rule 6 holds
+every visible feature to a photograph.

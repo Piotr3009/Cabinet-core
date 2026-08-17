@@ -508,7 +508,13 @@ async function main() {
       //     world box against the inner face of the side it is screwed to.
       const bite = await page.evaluate(`return ${P}.profile.getState().profile.hardware.hinge.plateBiteMm;`);
       measurements.f4_bite = bite;
-      check('F4b — the profile carries the 5 mm bite', bite === 5, `${bite} mm`);
+      // AMENDED 17.08.2026 (T37-F3): the owner walked this very screenshot and
+      // said *"zawiasy — dociśnij o następne 5 mm"* — NASTĘPNE, the next five
+      // on top of T36's, so the profile now carries 10. The walk below is
+      // unchanged: it measures against `bite` itself, so it followed the
+      // number without being touched; only this literal had to.
+      check('F4b — the profile carries the bite (10 mm since T37-F3; was 5)',
+        bite === 10, `${bite} mm`);
 
       const seated = await page.evaluate(`
         const v = ${P}.views.room;

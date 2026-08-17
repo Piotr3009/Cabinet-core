@@ -934,6 +934,14 @@ export const DEFAULT_CABINET_PROFILE = {
       fixAxis: 40,        // SHOE_FIX_AXIS — above the box floor
       setbackX: 3,        // SHOE_SETBACK_X — runner face = frontT + this
       infill: 30,         // SHOE_INFILL — per hinged side, behind doors
+      // ─── TURN 37 (CLAUDE.md F6), 17.08.2026 ──────────────────────────────
+      // The owner on the live drawer: *"cofnij o około 30 mm do tyłu (skróć)
+      // ten klocek i rozszerz front szuflady, tak żeby zostało po prawej i po
+      // lewej od BUR i BUL około 10 mm"*. Both numbers are the KIT's first
+      // (`SHOE_BATTEN_BACK`, `SHOE_FRONT_REVEAL`) and are listed here so they
+      // are tunable in the one place every other shoe constant is.
+      battenBack: 30,     // SHOE_BATTEN_BACK — batten = box depth − this
+      frontReveal: 10,    // SHOE_FRONT_REVEAL — DRAWER front = opening − 2 × this
       runnerFrontFix: 37, // SHOE_RUNNER_FRONT_FIX — always, from the face
       // SHOE_RUNNER_MAP — the owner's own sheet, 16.08.2026 (Hafele-type):
       // the REAR fixing's system column per NL. An NL that is not a key here
@@ -2895,7 +2903,24 @@ export const DEFAULT_CABINET_PROFILE = {
       // profile, not in a component: a workshop that fits a different plate
       // changes one line here. It reaches the PICTURE and nothing else — no
       // hole, no cut and no BOM line moves with it.
-      plateBiteMm: 5,
+      // ─── TURN 37 (CLAUDE.md F3): FIVE MORE MILLIMETRES ──────────────────
+      // The owner walked T36 the same day it merged and looked at the seated
+      // plate: *"zawiasy — dociśnij o następne 5 mm."* Five MORE, on top of
+      // T36's five — so the bite is 10, and the sentence above stays true of
+      // every word of it. He is reading a picture, not a drawing: the plate
+      // GLB's own body is deeper than the 5 mm T36 gave it, so at 5 the
+      // casting still stood proud of the inner face he was looking at. This
+      // is the eye's correction to the eye's number.
+      //
+      // The 10 is still under `plateThickness` (12), which is the only
+      // ceiling this number has — a plate bitten deeper than it is thick
+      // would have its BACK face outside the board, and the picture would be
+      // lying in the other direction. Nothing else constrains it, because
+      // nothing else reads it: `plateHoles`' ⌀5 pattern is drilled from the
+      // hinge law in `engine/hinges.js` and has never consulted this field,
+      // and turn36-f4-hinges.test.js keeps the four engine files honest
+      // about that.
+      plateBiteMm: 10,   // 17.08.2026 (T37-F3), was 5 in T36-F4b
 
       // ─── BLUM CLIP top BLUMOTION (turn 19, CLAUDE.md F1) ────────────────
       //

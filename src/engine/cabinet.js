@@ -49,6 +49,8 @@ import {
 // Turn 34 (CLAUDE.md F4): the shoe box's geometry, matched to
 // reference/lisp/KIT_SHOE_BOX.lsp. This file cuts what that module answers.
 import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
+// Turn 36 (CLAUDE.md F5): the owner's grain law, per ROLE, in one table.
+import { applyGrainAxis } from './grain.js';
 // ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS ────────────────────────────────────
 // The arithmetic is the ALREADY-MERGED `SPLIT DOORS (T35)` section of
 // KIT_WARDROBE_FULL.lsp, mirrored in engine/splitDoors.js. This file cuts what
@@ -5325,6 +5327,19 @@ export function computeCabinet(params, profileOverride) {
       }
     }
   }
+
+  // ─── TURN 36 (CLAUDE.md F5): THE GRAIN, PER ROLE ─────────────────────────
+  //
+  // The owner's law, verbatim: *"szuflady w pionie, wzdłuż słojów; fronty
+  // szuflad też; plinth też."* One pass, one table (engine/grain.js), applied
+  // where every panel of every kit already exists — so the six roles get the
+  // same answer whether they came out of the wardrobe stack, a column, the
+  // BUDR ladder or the plinth run, and there is no seventh place to forget.
+  //
+  // It STATES an axis and moves nothing: `engine/decors.js grainRun` is the
+  // one reader, the drawn frame is untouched, and a piece that already says
+  // something (the shoe box's boards) keeps what it says.
+  applyGrainAxis(panels);
 
   // ── Totals ─────────────────────────────────────────────────────────────────
   const boardPanels = panels.filter((x) => x.material_role === 'board');

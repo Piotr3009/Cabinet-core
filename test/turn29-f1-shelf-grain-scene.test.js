@@ -296,10 +296,20 @@ test('F1 …and the same rule puts every other board where the owner has already
     assert.equal(grainInTheRoom(panel, r, SCAN).axis, axis, `${part}: ${why}`);
     assert.equal(grainInTheRoom(panel, r, TILE).axis, axis, `${part}: ${why} (fallback)`);
   }
-  // A drawer front is WIDE and short, so its grain lies across the kitchen —
-  // which is the saw's own rule and needs nothing said on the piece.
+  // ─── TURN 36 (CLAUDE.md F5): AND THE DRAWER FRONT IS ANSWERED AT LAST ────
+  //
+  // This line asserted 'x': a drawer front is WIDE and short, so the SAW's own
+  // rule laid its grain across the kitchen and nothing on the piece said
+  // otherwise. The owner overruled that, verbatim: *"szuflady w pionie, wzdłuż
+  // słojów; fronty szuflad też; plinth też."* A drawer front runs its figure
+  // UP the front — the same sentence the door two rows above has carried since
+  // turn 29 — and it says so on the piece (`engine/grain.js`), which
+  // `engine/decors.js grainRun` names as "the only statement that could ever
+  // beat the saw". The assertion flips rather than disappearing, so the record
+  // of what the saw used to answer stays beside the law that overruled it.
   const df = rd.panels.find((p) => p.part === 'DRAWER-FRONT');
-  assert.equal(grainInTheRoom(df, rd, SCAN).axis, 'x');
+  assert.equal(grainInTheRoom(df, rd, SCAN).axis, 'y', 'a drawer front runs its figure up the front');
+  assert.equal(grainInTheRoom(df, rd, TILE).axis, 'y', '…on the fallback image too');
 });
 
 test('F1 the shelf and the wieniec above it disagree, and that is the whole point', () => {

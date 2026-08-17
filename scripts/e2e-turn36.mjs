@@ -544,6 +544,63 @@ async function main() {
       await page.sleep(200);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F5 — CNC GRAIN: the drawer boxes, the drawer fronts and the plinth
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f5')) {
+      await freshFloor('the grain', 'kitchen');
+      await ui('u.openEditor() || true');
+      await page.sleep(500);
+      const grainId = await store(`(() => {
+        const { id } = s.addUnit('BUDR');
+        s.updateUnitParams(id, { width: 600 });
+        return id;
+      })()`);
+      await page.sleep(700);
+
+      const axes = await store(`(() => {
+        const r = s.unitResult(${JSON.stringify(grainId)});
+        const of = (part) => { const p = r.panels.find((x) => x.part === part); return p ? { grain: p.cnc.grain, w: p.w, h: p.h } : null; };
+        return {
+          side: of('DRAWER-SIDE'),
+          boxFront: of('DRAWER-BOX-FRONT'),
+          boxBack: of('DRAWER-BOX-BACK'),
+          bottom: of('DRAWER-BOTTOM'),
+          front: of('DRAWER-FRONT'),
+        };
+      })()`);
+      measurements.f5_axes = axes;
+      check('F5 — the drawer BOX stands along the grain',
+        axes.side.grain === 'h' && axes.boxFront.grain === 'h' && axes.boxBack.grain === 'h',
+        JSON.stringify({ side: axes.side.grain, f: axes.boxFront.grain, b: axes.boxBack.grain }));
+      check('F5 — its BOTTOM lies across, as the shoe box already said',
+        axes.bottom.grain === 'w', axes.bottom.grain);
+      check('F5 — the drawer FRONT runs its figure UP the front, against the saw',
+        axes.front.grain === 'h' && axes.front.w > axes.front.h,
+        `${axes.front.w} × ${axes.front.h} → ${axes.front.grain}`);
+
+      const plinth = await store(`(() => {
+        const { id } = s.addUnit('BUD');
+        s.updateUnitParams(id, { width: 600, plinth: true });
+        const r = s.unitResult(id);
+        const p = r.panels.find((x) => x.part === 'PLINTH');
+        return p ? { id, grain: p.cnc.grain, w: p.w, h: p.h } : { id, grain: null };
+      })()`);
+      measurements.f5_plinth = plinth;
+      check('F5 — and the PLINTH does too',
+        plinth.grain === 'h', `${plinth.w} × ${plinth.h} → ${plinth.grain}`);
+
+      // The PICTURE: a wood decor on the fronts, so the figure the law moved is
+      // the figure on the screen. `grainRun` is what the material reads.
+      await store(`s.setDesign({ fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'laminate', finish_id: 'egger:H1180' }] } }) || true`);
+      await page.sleep(900);
+      const frontId = await store(`s.unitResult(${JSON.stringify(grainId)}).panels.find((p) => p.part === 'DRAWER-FRONT').id`);
+      measurements.f5_front_panel = frontId;
+      await frameFacing([grainId], { dist: 1.3, height: 0.6 });
+      await page.sleep(500);
+      await shot('f5a-the-drawer-fronts-run-their-figure-up-the-front', { mesh: frontId });
+    }
+
     check('R6 — the whole walk ends with a clean console', realErrors(page.errors).length === 0,
       `${realErrors(page.errors).length} error(s)`);
   } finally {

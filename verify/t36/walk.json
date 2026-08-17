@@ -6,29 +6,24 @@
       "detail": "http://127.0.0.1:4174"
     },
     {
-      "label": "F4a — the scene mounts a plate per hinge, all on the CARCASS",
+      "label": "F5 — the drawer BOX stands along the grain",
       "ok": true,
-      "detail": "{\"count\":6,\"modelled\":6,\"parents\":[\"carcass\"]}"
+      "detail": "{\"side\":\"h\",\"f\":\"h\",\"b\":\"h\"}"
     },
     {
-      "label": "F4b — the profile carries the 5 mm bite",
+      "label": "F5 — its BOTTOM lies across, as the shoe box already said",
       "ok": true,
-      "detail": "5 mm"
+      "detail": "w"
     },
     {
-      "label": "F4b — every plate is seated INTO the side, not standing on its face",
+      "label": "F5 — the drawer FRONT runs its figure UP the front, against the saw",
       "ok": true,
-      "detail": "[21,21,21,21,21,21,30,30,30,30,30,30,5,5,5,5,5,5]"
+      "detail": "597 × 338 → h"
     },
     {
-      "label": "F4c — the modal lists the hinge rows by Y DESCENDING — top first",
+      "label": "F5 — and the PLINTH does too",
       "ok": true,
-      "detail": "[1900,1540,1180,820,460,100]"
-    },
-    {
-      "label": "F4c — …and each row still carries the ENGINE index it writes with",
-      "ok": true,
-      "detail": "[\"5\",\"4\",\"3\",\"2\",\"1\",\"0\"]"
+      "detail": "600 × 100 → h"
     },
     {
       "label": "R6 — the whole walk ends with a clean console",
@@ -38,23 +33,12 @@
   ],
   "shots": [
     {
-      "name": "f4a-a-side-with-its-plates-seated",
+      "name": "f5a-the-drawer-fronts-run-their-figure-up-the-front",
       "subject": {
-        "mesh": "BUL"
+        "mesh": "DR01-F1"
       },
       "present": true,
       "detail": "{\"mesh\":true}"
-    },
-    {
-      "name": "f4b-the-hinge-modal-listing-top-first",
-      "subject": {
-        "all": [
-          "[data-hinge-modal=\"1\"], [data-door-modal]",
-          "[data-hinge-modal-row]"
-        ]
-      },
-      "present": true,
-      "detail": "{\"all\":true}"
     }
   ]
 }

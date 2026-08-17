@@ -11,6 +11,11 @@ import { labelFit, symbolVisible } from '../engine/cnc/annotation.js';
 import { panelLabelBlock } from '../engine/cnc/dxf.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import { partRollovers } from '../engine/cnc/rollover.js';
+// Turn 38 (F5/F10): an arc on the sheet is its own chord run — one reading of
+// an arc in this app, and it lives with the objects.
+import { arcPoints } from '../engine/partObjects.js';
+// Turn 38 (F3): the CNC table plus this project's own layers — one list.
+import { allLayers, resolveLayer } from '../engine/partLayers.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 
@@ -71,6 +76,8 @@ export default function CncView() {
   // purchasing table (the assignment store's role → board map) is a different
   // question and is no longer asked here.
   const storedDesign = useProjectStore((s) => s.project.design);
+  // Turn 38 (F3): this project's own CNC layers, for the legend and the ink.
+  const projectLayers = useProjectStore((s) => s.project.cncLayers);
 
   const wrapRef = useRef(null);
   const svgRef = useRef(null);
@@ -243,13 +250,27 @@ export default function CncView() {
         // Turn 13 (F8): the biscuit marks are a layer of their own, so the
         // legend has to count them or BISCUIT_4MM never appears in it.
         for (const mk of p.cnc?.marks || []) bump(mk.layer);
+        // ─── TURN 38 (CLAUDE.md F5/F10): AND WHAT A HAND HAS DRAWN ─────────
+        // "What you see is what you cut" is this file's own law, and the DXF
+        // writes `cnc.paths` and `cnc.curves` — so the sheet has to show them
+        // and the legend has to list their layers, or the two disagree about
+        // what is going on the bed. Both channels are ABSENT on a part nobody
+        // has drawn on, so every sheet in the app is unchanged.
+        for (const pt of p.cnc?.paths || []) bump(pt.layer);
+        for (const cv of p.cnc?.curves || []) bump(cv.layer);
       }
       for (const d of s2.result.drills) if (onSheet.has(d.panel)) bump(d.layer);
     }
     return counts;
   }, [blocks, profile.puzzle.layers.outline]);
 
-  const legend = CNC_LAYERS.filter((l) => layerCounts.has(l.name));
+  // ─── TURN 38 (CLAUDE.md F3): …AND THE PROJECT'S OWN LAYERS ARE IN IT ────
+  // A legend that counted a user layer's entities and then refused to list the
+  // layer would be a sheet that draws something it will not name. `allLayers`
+  // is the one list — the CNC table, then this project's own — so the sheet's
+  // legend and the editor's overlay show the same names in the same order.
+  const legend = allLayers(projectLayers).filter((l) => layerCounts.has(l.name));
+  const colourOf = useMemo(() => (name) => resolveLayer(name, projectLayers).screen, [projectLayers]);
   const toggle = (name) => setHidden((prev) => {
     const next = new Set(prev);
     if (next.has(name)) next.delete(name); else next.add(name);
@@ -342,6 +363,7 @@ export default function CncView() {
                       profile={profile}
                       mmPerPx={mmPerPx}
                       visible={visible}
+                      colourOf={colourOf}
                       lit={focus?.unitId === b.unit.id && focus?.panelId === place.panel.id}
                       onOpenInTree={() => focusCncPart(b.unit.id, place.panel.id)}
                       onRollover={setRollover}
@@ -469,6 +491,10 @@ function Caption({
 function Part({
   place, unitNum, drills, outlineLayer, annotation, profile, mmPerPx, visible,
   lit = false, onOpenInTree = null, onRollover = null, rollover = null, handEdits = 0,
+  // Turn 38 (F3): ONE resolver for "what colour is this layer", built-in and
+  // the project's own alike — handed down so this component never has to know
+  // which kind it is holding.
+  colourOf = layerScreenColor,
 }) {
   const { panel } = place;
   const cnc = panel.cnc || {};
@@ -579,7 +605,7 @@ function Part({
         <polygon
           points={sheetPolygon(place, cnc.outline)}
           fill={lit ? 'rgba(224,182,74,0.14)' : 'rgba(255,255,255,0.035)'}
-          stroke={lit ? '#e0b64a' : layerScreenColor(oLayer)}
+          stroke={lit ? '#e0b64a' : colourOf(oLayer)}
           strokeWidth={lit ? 2.4 : 1.4}
           vectorEffect="non-scaling-stroke"
         />
@@ -601,13 +627,13 @@ function Part({
             {Array.isArray(p.pts) && p.pts.length >= 3 ? (
               <polygon
                 points={sheetPolygon(place, p.pts)}
-                fill="none" stroke={layerScreenColor(p.layer)}
+                fill="none" stroke={colourOf(p.layer)}
                 strokeWidth={hovered(id) ? 2.4 : 1} vectorEffect="non-scaling-stroke"
               />
             ) : (
               <rect
                 x={r.x} y={r.y} width={r.w} height={r.h}
-                fill="none" stroke={layerScreenColor(p.layer)}
+                fill="none" stroke={colourOf(p.layer)}
                 strokeWidth={hovered(id) ? 2.4 : 1} vectorEffect="non-scaling-stroke"
               />
             )}
@@ -633,7 +659,7 @@ function Part({
           <g key={`m${i}`}>
             <line
               x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={layerScreenColor(m.layer)} strokeWidth={hovered(id) ? 4 : 2} strokeLinecap="round"
+              stroke={colourOf(m.layer)} strokeWidth={hovered(id) ? 4 : 2} strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
             />
             {/* A line has no area to point at: the grace is its stroke width. */}
@@ -641,6 +667,71 @@ function Part({
               x1={x1} y1={y1} x2={x2} y2={y2}
               stroke="transparent" strokeWidth={Math.max(graceMm, 2 * mmPerPx)} strokeLinecap="round"
               data-cnc-feature={id}
+              {...hoverProps(id)}
+            />
+          </g>
+        );
+      })}
+
+      {/* ─── TURN 38 (CLAUDE.md F5/F10): THE DRAWN RUNS AND CURVES ───────
+          The two channels the editor writes and the DXF exports, drawn on the
+          sheet in their own layer's colour so the preview and the file cannot
+          disagree about what the machine is given. A part with none of them
+          contributes nothing at all, which is what keeps every existing sheet
+          byte-for-byte what it was. */}
+      {(cnc.paths || []).filter((pt) => visible(pt.layer)).map((pt, i) => {
+        const pts = (pt.pts || []).map(([x, y]) => toSheet(place, x, y));
+        if (pts.length < 2) return null;
+        const id = `path-${(cnc.paths || []).indexOf(pt)}`;
+        const d = `${pts.map(([x, y], k) => `${k ? 'L' : 'M'}${x} ${y}`).join(' ')}${pt.closed ? ' Z' : ''}`;
+        return (
+          <g key={`pt${i}`}>
+            <path
+              d={d} fill="none" stroke={colourOf(pt.layer)}
+              strokeWidth={hovered(id) ? 2.4 : 1.4} strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d={d} fill="none" stroke="transparent"
+              strokeWidth={Math.max(graceMm, 2 * mmPerPx)} data-cnc-feature={id}
+              {...hoverProps(id)}
+            />
+          </g>
+        );
+      })}
+
+      {(cnc.curves || []).filter((cv) => visible(cv.layer)).map((cv, i) => {
+        const id = `curve-${(cnc.curves || []).indexOf(cv)}`;
+        const stroke = colourOf(cv.layer);
+        if (cv.kind === 'circle') {
+          const [cx, cy] = toSheet(place, cv.cx, cv.cy);
+          return (
+            <g key={`cv${i}`}>
+              <circle
+                cx={cx} cy={cy} r={cv.r} fill="none" stroke={stroke}
+                strokeWidth={hovered(id) ? 2.4 : 1.4} vectorEffect="non-scaling-stroke"
+              />
+              <circle
+                cx={cx} cy={cy} r={cv.r} fill="none" stroke="transparent"
+                strokeWidth={Math.max(graceMm, 2 * mmPerPx)} data-cnc-feature={id}
+                {...hoverProps(id)}
+              />
+            </g>
+          );
+        }
+        // An ARC is drawn as its own chord run, which is the one reading
+        // `engine/partObjects.js` gives it everywhere in this app.
+        const pts = arcPoints(cv, 48).map(([x, y]) => toSheet(place, x, y));
+        const d = pts.map(([x, y], k) => `${k ? 'L' : 'M'}${x} ${y}`).join(' ');
+        return (
+          <g key={`cv${i}`}>
+            <path
+              d={d} fill="none" stroke={stroke}
+              strokeWidth={hovered(id) ? 2.4 : 1.4} vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d={d} fill="none" stroke="transparent"
+              strokeWidth={Math.max(graceMm, 2 * mmPerPx)} data-cnc-feature={id}
               {...hoverProps(id)}
             />
           </g>
@@ -657,7 +748,7 @@ function Part({
           <g key={`h${i}`}>
             <circle
               cx={cx} cy={cy} r={h.d / 2}
-              fill="none" stroke={layerScreenColor(h.layer)}
+              fill="none" stroke={colourOf(h.layer)}
               strokeWidth={hovered(id) ? 2.6 : 1} vectorEffect="non-scaling-stroke"
             />
             <circle

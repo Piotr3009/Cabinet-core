@@ -85,6 +85,27 @@ test('F2 — the canvas takes everything else, and keeps every gesture it had', 
   assert.match(PART, /MIN_VIEW_MM/);
 });
 
+test('F2 — the chrome’s height is a CONSTANT, so the canvas never moves', () => {
+  // ─── FOUND BY THE ACCEPTANCE WALK, 17.08.2026 ────────────────────────────
+  //
+  // Two clicks meant to be level came out 28 mm apart, every time, and only
+  // ever the FIRST pair after a tool was armed. The cause was the chrome: the
+  // toolbar grew by a button's height the moment a part had its first edit
+  // (Undo and Back to computed appeared), and the status bar grew and shrank
+  // with the tool in hand (Delete with Select, the pitch with the dowel line).
+  // Either one pushes the canvas, the drawing re-fits to its new height, and
+  // the set-out a joiner had lined up moves under his hand mid-gesture.
+  //
+  // So both strips are a fixed height and the two buttons are always there,
+  // disabled until there is something to undo — which is this app's own
+  // grammar for "nothing to act on" (turn 26's F12.4).
+  assert.match(PART, /border-b border-shell-600 shrink-0 h-\[34px\]/, 'the toolbar');
+  assert.match(PART, /border-t border-shell-600 text-\[11px\] text-ink-400 h-\[30px\]/, 'the status bar');
+  assert.match(PART, /data-part-undo="1"\n\s*disabled=\{!changes\}/, 'Undo is always there');
+  assert.match(PART, /data-back-to-computed="1"\n\s*disabled=\{!changes\}/, '…and so is Back to computed');
+  assert.doesNotMatch(PART, /shrink-0 flex-wrap/, 'and nothing on the bar wraps to a second row');
+});
+
 test('F2 — the status bar carries the four things F2 names', () => {
   const at = PART.indexOf('data-editor-status="1"');
   assert.ok(at > 0, 'there is a status bar');

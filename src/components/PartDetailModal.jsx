@@ -561,7 +561,13 @@ export default function PartDetailModal() {
         setEntry((was) => {
           const fields = spec.dims;
           const at = was ? (was.active + 1) % fields.length : 0;
-          return { values: was?.values || {}, active: at };
+          // The field TAB lands on is EMPTIED — an empty field follows the
+          // cursor (which is what it was doing a moment ago) and takes the
+          // next digit as the first digit of a new number, instead of
+          // appending it to a live read-out nobody typed.
+          const values = { ...(was?.values || {}) };
+          values[fields[at]] = values[fields[at]] ?? '';
+          return { values, active: at };
         });
         return;
       }
@@ -659,7 +665,7 @@ export default function PartDetailModal() {
       <div className="h-full min-h-0 flex flex-col" data-editor-shell="1">
         {/* ─── F2: THE TOOLBAR ───────────────────────────────────────────── */}
         <div
-          className="flex items-center gap-1 px-2 py-1 border-b border-shell-600 shrink-0 flex-wrap"
+          className="flex items-center gap-1 px-2 py-1 border-b border-shell-600 shrink-0 h-[34px]"
           data-part-tools="1"
           data-editor-toolbar="1"
         >
@@ -685,26 +691,36 @@ export default function PartDetailModal() {
 
           <span className="flex-1" />
 
-          {changes > 0 && (
-            <>
-              <button
-                type="button" className="cc-btn-ghost px-1.5 text-[11px]"
-                data-part-undo="1"
-                title="Undo the last change on this part"
-                onClick={() => undoPartEdit(unit.id, panel.id)}
-              >
-                Undo
-              </button>
-              <button
-                type="button" className="cc-btn px-1.5 text-[11px]"
-                data-back-to-computed="1"
-                title="Drop every manual change on this part and go back to what the engine computed"
-                onClick={() => { clearPartEdits(unit.id, panel.id); setPicked(null); setSelected([]); }}
-              >
-                Back to computed
-              </button>
-            </>
-          )}
+          {/* ─── TURN 38: ALWAYS THERE, DISABLED UNTIL THERE IS SOMETHING ──
+              These two used to appear the moment the first edit landed — and a
+              toolbar that GROWS is a toolbar that pushes the canvas down under
+              the hand. The drawing then re-fits to its new height and every
+              set-out a joiner had lined up moves a few millimetres, mid-
+              gesture. (The acceptance walk found it the way a bench would: two
+              clicks meant to be level came out 28 mm apart.)
+              So the bar's height is a constant, and "nothing to undo yet" is
+              said the way this app says it everywhere else — a disabled button
+              with a reason on it (F12.4's own grammar). */}
+          <button
+            type="button" className="cc-btn-ghost px-1.5 text-[11px]"
+            data-part-undo="1"
+            disabled={!changes}
+            title={changes ? 'Undo the last change on this part' : 'Nothing has been changed on this part yet'}
+            onClick={() => undoPartEdit(unit.id, panel.id)}
+          >
+            Undo
+          </button>
+          <button
+            type="button" className="cc-btn px-1.5 text-[11px]"
+            data-back-to-computed="1"
+            disabled={!changes}
+            title={changes
+              ? 'Drop every manual change on this part and go back to what the engine computed'
+              : 'This print is exactly what the engine computed'}
+            onClick={() => { clearPartEdits(unit.id, panel.id); setPicked(null); setSelected([]); }}
+          >
+            Back to computed
+          </button>
 
           {/* ─── F3: layers ▾ ─────────────────────────────────────────────── */}
           <div className="relative">
@@ -818,6 +834,10 @@ export default function PartDetailModal() {
             selected={selected}
             onSelect={(ids, additive) => setSelected((was) => (additive
               ? [...new Set([...was, ...ids])] : ids))}
+            onPickObject={(id, additive) => setSelected((was) => {
+              const ids = selectionFor(ops.filter(isObjectOp), id);
+              return additive ? [...new Set([...was, ...ids])] : ids;
+            })}
             onContextMenu={(atPx) => setMenu(atPx)}
             marquee={marquee}
             onMarquee={setMarquee}
@@ -958,7 +978,12 @@ export default function PartDetailModal() {
 
         {/* ─── F2: THE STATUS BAR ─────────────────────────────────────────── */}
         <div
-          className="shrink-0 flex items-center gap-3 px-2 py-1 border-t border-shell-600 text-[11px] text-ink-400"
+          // The bar's height is a CONSTANT for the same reason the toolbar's
+          // is: what it carries changes with the tool in hand — Delete with
+          // Select, the pitch with the dowel line — and a strip that grew by a
+          // button's height would push the canvas up under the hand and move
+          // the drawing mid-gesture.
+          className="shrink-0 flex items-center gap-3 px-2 py-1 border-t border-shell-600 text-[11px] text-ink-400 h-[30px]"
           data-editor-status="1"
         >
           <span className="tabular-nums w-40" data-status-cursor="1">
@@ -1199,7 +1224,7 @@ function PartDrawing({
   onPlace = null, onEndRun = null, typed = null, onTypedChange = null, onTypedSecond = null,
   onTypedCommit = null, onTypedCancel = null,
   drillPopover = null, onDrillPopover = null, onDrillConfirm = null,
-  objects = [], selected = [], onSelect = null, onContextMenu = null,
+  objects = [], selected = [], onSelect = null, onPickObject = null, onContextMenu = null,
   marquee = null, onMarquee = null, measures = [], ghost = null,
   entry = null, onEntryChange = null, onEntryCommit = null, spec = null,
   hiddenLayers = [], userLayers = [], onSnapKind = null,
@@ -1207,12 +1232,20 @@ function PartDrawing({
   const { size } = drawing;
   const svgRef = useRef(null);
   const wrapRef = useRef(null);
+  // ─── F5: TAB MOVES THE CARET, not just a highlight ──────────────────────
+  // `autoFocus` fires on MOUNT and never again, so a box that only re-styled
+  // the active field left the caret in the first one — every digit after the
+  // first TAB went into the wrong number. The focus follows `entry.active`.
+  const dimRefs = useRef([]);
   // Where the hand LAST was on SCREEN — only so the floating boxes sit under
   // it. Nothing geometric is ever measured in pixels, and it is NEVER cleared
   // (turn 24: a floating box is anchored to where the gesture happened, and a
   // gesture that has finished does not move).
   const [screen, setScreen] = useState(null);
   const down = useRef(null);
+  // Whether the gesture that has just finished was a DRAG — see the click
+  // handler below for why the two have to be told apart.
+  const dragged = useRef(false);
   const pad = Math.max(size.w, size.h) * PAD + drawing.dimensionOffset;
   const content = useMemo(() => ({
     x: -pad, y: -size.h - pad, w: size.w + pad * 2, h: size.h + pad * 2,
@@ -1243,6 +1276,11 @@ function PartDrawing({
     : null), [drawingMode, cursor, geometry, snapsOn, magnetMm]);
   const target = snap ? { x: snap.x, y: snap.y } : cursor;
   useEffect(() => { onSnapKind?.(snap?.kind || null); }, [snap, onSnapKind]);
+  const dimActive = entry?.active ?? -1;
+  useEffect(() => {
+    const el = dimRefs.current[dimActive];
+    if (el && document.activeElement !== el) el.focus();
+  }, [dimActive, entry]);
 
   // ─── TURN 23 (CLAUDE.md F8.1): THE HOVER IS A DRAWING ────────────────────
   const style = useMemo(() => dimensionStyle(profile), [profile]);
@@ -1324,28 +1362,55 @@ function PartDrawing({
         {...view.handlers}
         onPointerDown={(e) => {
           view.handlers.onPointerDown?.(e);
+          // A NEW gesture starts clean. The flag below is about the gesture
+          // that has just finished, and leaving a stale one standing is how a
+          // right-click or a release outside the sheet swallowed the next
+          // click entirely.
+          dragged.current = false;
           if (e.button !== 0) return;
           const raw = worldAt(e);
-          down.current = raw;
+          down.current = raw ? { ...raw, moved: false } : null;
           if (tool === 'select' && raw) onMarquee?.({ from: raw, to: raw });
         }}
         onPointerMove={(e) => {
-          view.handlers.onPointerMove?.(e);
+          // ─── TURN 38 (CLAUDE.md F6): A LEFT DRAG IN SELECT IS A MARQUEE ───
+          //
+          // Turn 23's sheet view pans on a left drag, and F6 asks for a
+          // marquee on the same gesture. AutoCAD settles it the way every CAD
+          // package on a joiner's desk does: with the pointer in hand a left
+          // drag is a selection window and the MIDDLE button pans. So the pan
+          // is armed on every press (which is what keeps `lastGesturePanned`
+          // honest) and simply never told about the MOVES of a left drag with
+          // Select in hand. Every other tool, and the middle button, pan
+          // exactly as they did — and the wheel and the double-click, which
+          // are how a part is really framed, are untouched.
+          const marqueeing = tool === 'select' && down.current;
+          if (!marqueeing) view.handlers.onPointerMove?.(e);
           const at = view.pointerToWorld(e.clientX, e.clientY);
           const rect = wrapRef.current?.getBoundingClientRect();
           setScreen(rect ? { x: e.clientX - rect.left, y: e.clientY - rect.top } : null);
           const here = at ? { x: at.x, y: -at.y } : null;
           onCursor?.(here);
-          if (marquee && here && down.current) onMarquee?.({ from: down.current, to: here });
+          // A gesture that has MOVED is a drag, whatever it turns out to be
+          // for. It is recorded on the gesture itself rather than on the
+          // marquee's own state: `marquee` is React state and the first few
+          // moves of a drag run before it has landed, so a drag judged by it
+          // would count as a click.
+          if (here && down.current && Math.hypot(here.x - down.current.x, here.y - down.current.y) > 1e-6) {
+            down.current.moved = true;
+          }
+          if (here && down.current && tool === 'select') onMarquee?.({ from: down.current, to: here });
           if (hovered && !hoverHolds({
             cursor: here, box: featureBox(drawing, hovered), magnetMm: style.hoverMagnetMm,
           })) onHover(null);
         }}
         onPointerUp={(e) => {
           view.handlers.onPointerUp?.(e);
+          if (e.button !== 0) return;
           const raw = worldAt(e);
           const from = down.current;
           down.current = null;
+          dragged.current = Boolean(from?.moved);
           if (tool !== 'select' || !marquee || !from || !raw) { onMarquee?.(null); return; }
           const box = {
             x: Math.min(from.x, raw.x), y: Math.min(from.y, raw.y), w: Math.abs(raw.x - from.x), h: Math.abs(raw.y - from.y),
@@ -1365,7 +1430,14 @@ function PartDrawing({
           down.current = null;
         }}
         onClick={(e) => {
-          if (view.lastGesturePanned()) return;
+          // A MARQUEE is a drag, and a drag's release still fires a click on
+          // the SVG. Letting it through would replace the set the marquee just
+          // took with whatever single shape happened to be under the release.
+          // The flag is cleared FIRST, always: a guard that only resets on the
+          // path it blocks is a guard that gets stuck on.
+          const wasDrag = dragged.current;
+          dragged.current = false;
+          if (wasDrag || view.lastGesturePanned()) return;
           const raw = worldAt(e);
           if (!raw) return;
           if (!drawingMode) { selectAt(raw, e.shiftKey); return; }
@@ -1411,7 +1483,27 @@ function PartDrawing({
               style: { cursor: 'pointer' },
               onPointerEnter: () => onHover(m.id),
               onPointerLeave: () => {},
-              onClick: onPickFeature ? (e) => { e.stopPropagation(); onPickFeature(m.id); } : undefined,
+              // ─── TURN 38: A GRACE SHAPE NEVER SWALLOWS A PLACEMENT ────────
+              //
+              // Turn 24's version stopped the click here unconditionally, so a
+              // tool armed over a feature could not place a point ON it — and
+              // "measure between two holes" (F7) is exactly that gesture, as is
+              // trimming a line by clicking the piece that goes. With a tool
+              // armed the click falls through to the canvas, where the osnap
+              // catches it; the hover still lights and still prints its note,
+              // because that is the pointer's OTHER job and it is unaffected.
+              //
+              // And with SELECT in hand there are two kinds of thing under the
+              // cursor: what the ENGINE cut (picked, and Delete takes it off
+              // this print — turn 23's flow) and what a HAND drew (selected,
+              // and the verbs act on it — F6). `opId` is what tells them apart,
+              // and only a manual op has one.
+              onClick: (e) => {
+                if (drawingMode) return;
+                e.stopPropagation();
+                if (m.opId) { onPickObject?.(m.opId, e.shiftKey); return; }
+                onPickFeature?.(m.id);
+              },
             };
             if (m.kind === 'pocket') {
               return (
@@ -1686,7 +1778,11 @@ function PartDrawing({
           {spec.dims.map((key, i) => {
             const live = liveDimValues({ tool, start: pending[pending.length - 1], cursor });
             const typedValue = entry.values?.[key];
-            const shown = typedValue !== undefined && typedValue !== ''
+            // A field somebody has TOUCHED shows what they typed, empty
+            // included; a field nobody has touched shows what the hand is
+            // saying. That is what makes the box a refinement of the drag
+            // rather than a form standing in front of it.
+            const shown = typedValue !== undefined
               ? typedValue
               : (live[key] === undefined ? '' : formatMm(live[key]));
             return (
@@ -1695,6 +1791,7 @@ function PartDrawing({
                 <input
                   // eslint-disable-next-line jsx-a11y/no-autofocus -- the box IS the gesture
                   autoFocus={i === entry.active}
+                  ref={(el) => { dimRefs.current[i] = el; }}
                   className={`cc-input w-14 text-right text-[12px] ${i === entry.active ? 'border-gold' : ''}`}
                   data-dim-field={key}
                   data-dim-active={i === entry.active ? '1' : undefined}
@@ -1704,10 +1801,10 @@ function PartDrawing({
                   })}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') { e.preventDefault(); onEntryCommit?.(); return; }
-                    if (e.key === 'Tab') {
-                      e.preventDefault();
-                      onEntryChange?.({ values: entry.values || {}, active: (i + 1) % spec.dims.length });
-                    }
+                    // TAB is handled ONCE, by the window's own capture
+                    // listener — the same one that opened this box — so the
+                    // two cannot cycle the field twice between them.
+                    if (e.key === 'Tab') e.preventDefault();
                   }}
                 />
               </label>

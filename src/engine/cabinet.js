@@ -2147,6 +2147,31 @@ export function computeCabinet(params, profileOverride) {
 
   if (backStyle === 'full') {
     const backCnc = { rotated: false, drawn_w: backW, drawn_h: backH, ...backPanelGeometry({ w: backW, h: backH, G, puzzle: pz }) };
+    // ─── TURN 38 (CLAUDE.md F1c): A BACK STANDS UP, HOWEVER SHORT IT IS ─────
+    //
+    // The owner, walking T37: the top box's back *"is laid HORIZONTAL; it must
+    // be VERTICAL"*. It is T37-F5d's fault one board over. A back stands
+    // upright in the carcass and its figure stands up with it — that is what
+    // every back in this app has always been cut like — but `decors.js
+    // grainRun` falls back to the SAW's rule, "the grain runs the longer of
+    // the two cut dimensions", and on a 600 × 2150 wardrobe back the two
+    // answers agree. On a 600 × 500 TOP BOX back they do not, and the figure
+    // went sideways, 90° out from the wardrobe standing under it.
+    //
+    // So the piece SAYS SO, in the one field `grainRun` has always offered for
+    // exactly this — and it says so ONLY where the saw would get it wrong. A
+    // back taller than it is wide is already right and stays SILENT: every
+    // project cut before tonight, every golden fixture and all six standard
+    // configs carry a back with no `grain` key, exactly as they did, which is
+    // what keeps this turn's contract byte-identity. The two readers then do
+    // their own jobs with no further help — `decors.js grainRun` stands the
+    // figure up in the 3-D, and `cnc/layout.js sheetTurn` lays the board with
+    // that stated grain running UP the sheet (T37-F7a's generalised law).
+    //
+    // The condition is "the saw does NOT already say h" and not "wider than it
+    // is tall", so a SQUARE back — the low cabinet's 600 × 600 — is answered
+    // too rather than left to a tie-break nobody wrote down.
+    if (!(backH > backW)) backCnc.grain = 'h';
     if (type.hangers) {
       // Two cut-outs at the top corners take the wall bracket (KIT_WUD L258-260).
       const HG = P.wallUnit.hangers;

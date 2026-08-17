@@ -1,6 +1,247 @@
 {
+  "f1_wizard_door": {
+    "door": "wizard",
+    "sections": [
+      "carcass",
+      "door-style",
+      "fronts",
+      "hardware",
+      "infill",
+      "joinery",
+      "sheet",
+      "thickness"
+    ],
+    "thickness": true,
+    "sheet": true,
+    "doorStyle": true,
+    "runnerVariant": true,
+    "platePilot": true,
+    "hingeStandard": true,
+    "runMaterials": true,
+    "joinery": true,
+    "infill": true,
+    "wallMount": true,
+    "sets": true
+  },
+  "f1_edit_door": {
+    "door": "project",
+    "sections": [
+      "carcass",
+      "door-style",
+      "fronts",
+      "hardware",
+      "infill",
+      "joinery",
+      "sheet",
+      "thickness"
+    ],
+    "thickness": true,
+    "sheet": true,
+    "doorStyle": true,
+    "runnerVariant": true,
+    "platePilot": true,
+    "hingeStandard": true,
+    "runMaterials": true,
+    "joinery": true,
+    "infill": true,
+    "wallMount": true,
+    "sets": true
+  },
+  "f1_plate_pilot": {
+    "before": 5,
+    "after": 3
+  },
+  "f6_record": {
+    "leaf": "W01-FL",
+    "bay": null,
+    "opening": 2150,
+    "topMm": 600,
+    "gapMm": 3,
+    "segments": [
+      {
+        "id": "T",
+        "label": "Top",
+        "panelId": "W01-FL-T",
+        "h": 600,
+        "y": 1550,
+        "hinges": 2
+      },
+      {
+        "id": "B",
+        "label": "Bottom",
+        "panelId": "W01-FL-B",
+        "h": 1547,
+        "y": 0,
+        "hinges": 3
+      }
+    ]
+  },
+  "f6_divider": {
+    "id": "SPLIT-1",
+    "w": 864,
+    "depth": 550,
+    "t": 18,
+    "y": 1547,
+    "frontZ": 568,
+    "D": 568
+  },
+  "f6_scene": {
+    "drawn": [
+      "SPLIT-1",
+      "W01-FL-B",
+      "W01-FL-T",
+      "W01-FR-B",
+      "W01-FR-T"
+    ],
+    "expected": 5
+  },
+  "f6_modal_tabs": [
+    "T",
+    "B"
+  ],
+  "f4_modal_order": [
+    1900,
+    1540,
+    1180,
+    820,
+    460,
+    100
+  ],
+  "f4_modal_indices": [
+    "5",
+    "4",
+    "3",
+    "2",
+    "1",
+    "0"
+  ],
+  "f4_plate_registry": {
+    "count": 6,
+    "modelled": 6,
+    "parents": [
+      "carcass"
+    ]
+  },
+  "f4_bite": 5,
+  "f4_seated": {
+    "innerX": -282,
+    "into": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ]
+  },
+  "f5_axes": {
+    "side": {
+      "grain": "h",
+      "w": 490,
+      "h": 237
+    },
+    "boxFront": {
+      "grain": "h",
+      "w": 518,
+      "h": 203
+    },
+    "boxBack": {
+      "grain": "h",
+      "w": 518,
+      "h": 203
+    },
+    "bottom": {
+      "grain": "w",
+      "w": 531,
+      "h": 490
+    },
+    "front": {
+      "grain": "h",
+      "w": 597,
+      "h": 338
+    }
+  },
+  "f5_plinth": {
+    "id": "u_6bt700r",
+    "grain": "h",
+    "w": 600,
+    "h": 100
+  },
+  "f5_front_panel": "DR01-F1",
+  "f2_shelves": [
+    "SHELF-1",
+    "SHELF-2",
+    "SHELF-3"
+  ],
+  "f2_trail": [
+    [
+      "SHELF-1"
+    ],
+    [
+      "SHELF-1",
+      "SHELF-2"
+    ],
+    [
+      "SHELF-1",
+      "SHELF-2",
+      "SHELF-3"
+    ]
+  ],
+  "f2_set": [
+    "SHELF-1",
+    "SHELF-2",
+    "SHELF-3"
+  ],
+  "f2_marks": 3,
+  "f2_nudge": {
+    "before": [
+      496,
+      991,
+      1487
+    ],
+    "after": [
+      918,
+      958,
+      998
+    ]
+  },
+  "f2_setbacks": [
+    60,
+    60,
+    60
+  ],
+  "f8_rod": {
+    "y": 1418,
+    "z": 293,
+    "x1": 18,
+    "x2": 882
+  },
+  "f8_target": {
+    "panelId": "RAIL-PART",
+    "x": 799.9999899935698,
+    "y": 270.54819665495427
+  },
+  "f8_modal": {
+    "modal": "element",
+    "panelId": "RAIL-PART",
+    "field": true
+  },
+  "f10": {
+    "shut": 20,
+    "open": 22
+  },
+  "f3": {
+    "on": {
+      "boards": 7,
+      "front": true
+    },
+    "off": {
+      "boards": 6,
+      "front": false
+    }
+  },
   "f7_snap": {
-    "ridesOn": "u_9jo7g0h",
+    "ridesOn": "u_zj0cqml",
     "sameHost": true,
     "x": [
       2700,

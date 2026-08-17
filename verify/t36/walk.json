@@ -6,9 +6,184 @@
       "detail": "http://127.0.0.1:4174"
     },
     {
+      "label": "F1 — the NEW-PROJECT door shows the unified panel",
+      "ok": true,
+      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+    },
+    {
+      "label": "F1 — …with the five rows T35 left in the old panel only",
+      "ok": true,
+      "detail": "{\"door\":\"wizard\",\"sections\":[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"],\"thickness\":true,\"sheet\":true,\"doorStyle\":true,\"runnerVariant\":true,\"platePilot\":true,\"hingeStandard\":true,\"runMaterials\":true,\"joinery\":true,\"infill\":true,\"wallMount\":true,\"sets\":true}"
+    },
+    {
+      "label": "F1 — the EDIT door shows the SAME panel, told which door it is",
+      "ok": true,
+      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+    },
+    {
+      "label": "F1 — the two doors show the SAME sections",
+      "ok": true,
+      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"] vs [\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+    },
+    {
+      "label": "F1 — and every named row of the old panel is on it",
+      "ok": true,
+      "detail": "{\"door\":\"project\",\"sections\":[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"],\"thickness\":true,\"sheet\":true,\"doorStyle\":true,\"runnerVariant\":true,\"platePilot\":true,\"hingeStandard\":true,\"runMaterials\":true,\"joinery\":true,\"infill\":true,\"wallMount\":true,\"sets\":true}"
+    },
+    {
+      "label": "F1 — the fronts are NOT locked behind a save from the edit door",
+      "ok": true,
+      "detail": "data-fronts-locked"
+    },
+    {
+      "label": "F1 — the hinge-plate pilot really works from the unified panel",
+      "ok": true,
+      "detail": "⌀5 → ⌀3"
+    },
+    {
+      "label": "F6 — the number typed into the panel reached the engine",
+      "ok": true,
+      "detail": "{\"top\":600,\"opening\":2150}"
+    },
+    {
+      "label": "F6 — top + 3 + bottom = the opening, exactly",
+      "ok": true,
+      "detail": "600 + 3 + 1547 = 2150"
+    },
+    {
+      "label": "F6 — the segments are listed TOP FIRST",
+      "ok": true,
+      "detail": "T,B"
+    },
+    {
+      "label": "F6 — hinges are counted PER SEGMENT, never the whole door halved",
+      "ok": true,
+      "detail": "T:2 B:3"
+    },
+    {
+      "label": "F6 — ONE fix shelf on the line, FULL depth, flush with the face",
+      "ok": true,
+      "detail": "{\"id\":\"SPLIT-1\",\"w\":864,\"depth\":550,\"t\":18,\"y\":1547,\"frontZ\":568,\"D\":568}"
+    },
+    {
+      "label": "F6 — every segment AND the divider stand in the scene",
+      "ok": true,
+      "detail": "5/5 · SPLIT-1 W01-FL-B W01-FL-T W01-FR-B W01-FR-T"
+    },
+    {
+      "label": "F6 — the modal lists the segments TOP FIRST",
+      "ok": true,
+      "detail": "[\"T\",\"B\"]"
+    },
+    {
+      "label": "F4c — the modal lists the hinge rows by Y DESCENDING — top first",
+      "ok": true,
+      "detail": "[1900,1540,1180,820,460,100]"
+    },
+    {
+      "label": "F4c — …and each row still carries the ENGINE index it writes with",
+      "ok": true,
+      "detail": "[\"5\",\"4\",\"3\",\"2\",\"1\",\"0\"]"
+    },
+    {
+      "label": "F4a — the scene mounts a plate per hinge, all on the CARCASS",
+      "ok": true,
+      "detail": "{\"count\":6,\"modelled\":6,\"parents\":[\"carcass\"]}"
+    },
+    {
+      "label": "F4b — the profile carries the 5 mm bite",
+      "ok": true,
+      "detail": "5 mm"
+    },
+    {
+      "label": "F4b — every plate is seated INTO the side, not standing on its face",
+      "ok": true,
+      "detail": "[5,5,5,5,5,5]"
+    },
+    {
+      "label": "F5 — the drawer BOX stands along the grain",
+      "ok": true,
+      "detail": "{\"side\":\"h\",\"f\":\"h\",\"b\":\"h\"}"
+    },
+    {
+      "label": "F5 — its BOTTOM lies across, as the shoe box already said",
+      "ok": true,
+      "detail": "w"
+    },
+    {
+      "label": "F5 — the drawer FRONT runs its figure UP the front, against the saw",
+      "ok": true,
+      "detail": "597 × 338 → h"
+    },
+    {
+      "label": "F5 — and the PLINTH does too",
+      "ok": true,
+      "detail": "600 × 100 → h"
+    },
+    {
+      "label": "F2 — three shelves to work with",
+      "ok": true,
+      "detail": "SHELF-1 SHELF-2 SHELF-3"
+    },
+    {
+      "label": "F2 — Ctrl+click built the SET, three deep",
+      "ok": true,
+      "detail": "[\"SHELF-1\",\"SHELF-2\",\"SHELF-3\"]"
+    },
+    {
+      "label": "F2 — every member of the set is MARKED in the scene",
+      "ok": true,
+      "detail": "3 outlines"
+    },
+    {
+      "label": "F2 — ONE height typed moved the WHOLE set in one shot",
+      "ok": true,
+      "detail": "496 991 1487 → 918 958 998"
+    },
+    {
+      "label": "F2 — …and ONE set-back typed put all three on the same number",
+      "ok": true,
+      "detail": "60 60 60"
+    },
+    {
+      "label": "F8 — the wardrobe has a rod to click",
+      "ok": true,
+      "detail": "{\"y\":1418,\"z\":293,\"x1\":18,\"x2\":882}"
+    },
+    {
+      "label": "F8 — the TUBE itself is in the scene and names its board",
+      "ok": true,
+      "detail": "\"RAIL-PART\""
+    },
+    {
+      "label": "F8 — the double-click on the ROD opened the hanger modal",
+      "ok": true,
+      "detail": "{\"modal\":\"element\",\"panelId\":\"RAIL-PART\",\"field\":true}"
+    },
+    {
+      "label": "F10 — the box face carries FEWER figures behind a shut leaf",
+      "ok": true,
+      "detail": "20 shut → 22 open"
+    },
+    {
+      "label": "F3 — the box modal offers the Front switch",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "label": "F3 — Front: off drops SHOEBOX-FR, and nothing else",
+      "ok": true,
+      "detail": "7 boards → 6"
+    },
+    {
+      "label": "F3 — …and the 3-D stops drawing it, because it reads the same list",
+      "ok": true,
+      "detail": "0 meshes"
+    },
+    {
       "label": "F7 — the box SNAPPED flush on the main it was added beside",
       "ok": true,
-      "detail": "{\"ridesOn\":\"u_9jo7g0h\",\"sameHost\":true,\"x\":[2700,2700],\"wall\":[0,0],\"depth\":[600,600],\"mount\":2100}"
+      "detail": "{\"ridesOn\":\"u_zj0cqml\",\"sameHost\":true,\"x\":[2700,2700],\"wall\":[0,0],\"depth\":[600,600],\"mount\":2100}"
     },
     {
       "label": "F7 — in the SCENE the box sits ON the main, flush and aligned",
@@ -32,6 +207,161 @@
     }
   ],
   "shots": [
+    {
+      "name": "f1a-the-unified-panel-through-the-new-project-door",
+      "subject": {
+        "all": [
+          "[data-settings-surface][data-settings-door=\"wizard\"]",
+          "[data-settings-section=\"thickness\"]",
+          "[data-settings-section=\"sheet\"]",
+          "[data-settings-section=\"door-style\"]",
+          "[data-hinge-plate-pilot]",
+          "[data-runner-variant]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f1b-the-unified-panel-through-the-edit-door",
+      "subject": {
+        "all": [
+          "[data-settings-surface][data-settings-door=\"project\"]",
+          "[data-settings-section=\"thickness\"]",
+          "[data-settings-section=\"sheet\"]",
+          "[data-settings-section=\"door-style\"]",
+          "[data-hinge-plate-pilot]",
+          "[data-runner-variant]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f1c-the-hinge-plate-pilot-and-the-sheet-sizes-on-the-edit-door",
+      "subject": {
+        "all": [
+          "[data-hinge-plate-pilot-option=\"3\"][aria-pressed=\"true\"]",
+          "[data-sheet-family=\"fronts\"]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f6a-a-split-bay-open-in-the-scene",
+      "subject": {
+        "mesh": "SPLIT-1"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f6b-the-split-modal-lists-its-segments-top-first",
+      "subject": {
+        "all": [
+          "[data-split-modal]",
+          "[data-split-segment-tab=\"T\"]",
+          "[data-split-segment-tab=\"B\"]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f4b-the-hinge-modal-listing-top-first",
+      "subject": {
+        "all": [
+          "[data-door-modal]",
+          "[data-hinge-modal-row]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f4a-a-side-with-its-plates-seated",
+      "subject": {
+        "mesh": "BUL"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f5a-the-drawer-fronts-run-their-figure-up-the-front",
+      "subject": {
+        "mesh": "DR01-F1"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f2a-three-shelves-ticked-with-ctrl-click",
+      "subject": {
+        "dom": "[data-group-selection]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f2b-the-group-moved-as-one",
+      "subject": {
+        "dom": "[data-group-selection]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f8a-the-hanger-modal-open-beside-a-double-clicked-rail",
+      "subject": {
+        "all": [
+          "[data-rail-height]"
+        ],
+        "text": "Height above support"
+      },
+      "present": true,
+      "detail": "{\"all\":true,\"text\":true}"
+    },
+    {
+      "name": "f10a-the-shoe-box-front-carries-no-figures-behind-a-shut-door",
+      "subject": {
+        "mesh": "SHOE1-FR"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f10b-and-they-are-back-the-moment-the-leaf-swings",
+      "subject": {
+        "mesh": "SHOE1-FR"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f3a-the-shoe-box-with-its-front-on",
+      "subject": {
+        "mesh": "SHOE1-FR"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f3b-the-front-switch-in-the-shoe-box-modal",
+      "subject": {
+        "dom": "[data-shoe-box-front]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f3c-the-same-box-with-its-front-off",
+      "subject": {
+        "mesh": "SHOE1-BT"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
     {
       "name": "f7a-the-pair-standing-main-and-top-box",
       "subject": {

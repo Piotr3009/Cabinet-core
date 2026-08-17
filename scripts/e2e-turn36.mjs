@@ -454,6 +454,38 @@ async function main() {
       })()`);
       await page.sleep(900);
       const fronts = await store(`s.unitResult(${JSON.stringify(hingeId)}).panels.filter((p) => p.part === 'FRONT').map((p) => p.id)`);
+      // The MODAL is reached first, with the leaf SHUT: a swung door is a
+      // moving target for a real double-click, and the rows it lists are the
+      // cabinet's whether it is open or not.
+      await ui(`u.closeAllFronts(${JSON.stringify(hingeId)}) || true`);
+      await frameFacing([hingeId], { dist: 2.2, height: 0.4 });
+      await page.sleep(600);
+
+      // (c) THE MODAL, TOP FIRST — reached by a REAL double-click on the door.
+      const doorSpot = await pointOnMesh(hingeId, fronts[0]);
+      if (doorSpot) await page.dblclick(doorSpot.x, doorSpot.y);
+      await page.sleep(800);
+      const order = await page.evaluate(`
+        const rows = [...document.querySelectorAll('[data-door-modal] [data-hinge-modal-row]')];
+        return rows.map((n) => Number(n.value));
+      `);
+      measurements.f4_modal_order = order;
+      const descending = order.length > 1 && order.every((v, i) => i === 0 || order[i - 1] > v);
+      check('F4c — the modal lists the hinge rows by Y DESCENDING — top first',
+        descending, JSON.stringify(order));
+      const numbers = await page.evaluate(`
+        return [...document.querySelectorAll('[data-door-modal] [data-hinge-row]')].map((n) => n.getAttribute('data-hinge-row'));
+      `);
+      measurements.f4_modal_indices = numbers;
+      check('F4c — …and each row still carries the ENGINE index it writes with',
+        numbers.length === order.length
+          && numbers.map(Number).every((v, i) => v === order.length - 1 - i),
+        JSON.stringify(numbers));
+      await shot('f4b-the-hinge-modal-listing-top-first', {
+        all: ['[data-door-modal]', '[data-hinge-modal-row]'],
+      });
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(300);
       await ui(`u.openFrontsFor(${JSON.stringify(hingeId)}, ${JSON.stringify(fronts)}) || true`);
       await page.sleep(700);
 
@@ -491,7 +523,10 @@ async function main() {
               const b = new THREE.Box3().setFromObject(o);
               side = side ? side.union(b) : b;
             }
-            if (o.userData && o.userData.ccHingePanel !== undefined && o.children.length) {
+            // PLATES only: the door's own hinge body carries the same panel
+            // stamp and swings with the leaf, so measuring both would be
+            // measuring the arm and calling it the plate.
+            if (o.userData && o.userData.ccHingeMember === 'plate') {
               plateBoxes.push(new THREE.Box3().setFromObject(o));
             }
           });
@@ -515,33 +550,6 @@ async function main() {
       await page.sleep(500);
       await shot('f4a-a-side-with-its-plates-seated', { mesh: 'BUL' });
 
-      // (c) THE MODAL, TOP FIRST — reached by a REAL double-click on the door.
-      const spot = await pointOnMesh(hingeId, fronts[0]);
-      if (spot) await page.dblclick(spot.x, spot.y);
-      await page.sleep(800);
-      // Scoped to the MODAL: the right panel carries its own hinge rows and a
-      // bare selector would read both lists at once.
-      const order = await page.evaluate(`
-        const rows = [...document.querySelectorAll('[data-door-modal] [data-hinge-modal-row]')];
-        return rows.map((n) => Number(n.value));
-      `);
-      measurements.f4_modal_order = order;
-      const descending = order.length > 1 && order.every((v, i) => i === 0 || order[i - 1] > v);
-      check('F4c — the modal lists the hinge rows by Y DESCENDING — top first',
-        descending, JSON.stringify(order));
-      const numbers = await page.evaluate(`
-        return [...document.querySelectorAll('[data-door-modal] [data-hinge-row]')].map((n) => n.getAttribute('data-hinge-row'));
-      `);
-      measurements.f4_modal_indices = numbers;
-      check('F4c — …and each row still carries the ENGINE index it writes with',
-        numbers.length === order.length
-          && numbers.map(Number).every((v, i) => v === order.length - 1 - i),
-        JSON.stringify(numbers));
-      await shot('f4b-the-hinge-modal-listing-top-first', {
-        all: ['[data-hinge-modal="1"], [data-door-modal]', '[data-hinge-modal-row]'],
-      });
-      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
-      await page.sleep(200);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

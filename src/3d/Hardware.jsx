@@ -428,7 +428,14 @@ function CarcassHinges({
   // Nothing in the app reads it back.
   useEffect(() => {
     models.forEach((m, i) => {
-      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+      if (!m?.model) return;
+      m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+      // Turn 36 (CLAUDE.md F4b): WHICH member this clone is. The acceptance
+      // walk measures the PLATE's seating against the side it is screwed to,
+      // and the door's own body carries the same panel stamp — so the walk
+      // needs to be able to tell the two apart. A diagnostic, like the stamp
+      // above it: nothing in the app reads it back.
+      m.model.userData.ccHingeMember = 'plate';
     });
   }, [models, items]);
 

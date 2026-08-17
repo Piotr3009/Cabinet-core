@@ -39,6 +39,9 @@
 // Pure functions — no React, no store, no three.js.
 
 import { shelfHingeClashes } from './shelfHingeClash.js';
+// Turn 35 (CLAUDE.md F15): ONE decider says which family a cut part is in —
+// the same one the export's group checkboxes and the nesting already use.
+import { groupOfPanel } from './cnc/groups.js';
 import { frontClearances, frontGapRows, carcassGaps } from './frontClearance.js';
 import { unitFindings } from './cnc/exportGate.js';
 import { unitBase, unitTop, hasTopInfill } from './runs.js';
@@ -102,6 +105,60 @@ export function sheetSizeMm(profile) {
     width: Number.isFinite(w) && w > 0 ? w : 2790,
     height: Number.isFinite(h) && h > 0 ? h : 2060,
   };
+}
+
+// ─── TURN 35 (CLAUDE.md F15): …AND IT IS TWO BOARDS, NOT ONE ───────────────
+//
+// Owner, 16.08.2026: *"musimy wpisywać wymiary w setup produkcyjne płyt — jak
+// mamy bok 2600 a maksymalna płyta 2400, to niech nie pozwoli"* … *"To musi
+// być w carcases I fronty."*
+//
+// A workshop does not buy its carcass board and its front board off the same
+// rack, so one sheet size for a whole job was never the truth — it was all
+// this rule could say. Now every panel is measured against ITS OWN family's
+// board, and the panel says which family it is in the way the export has
+// always decided it: `cnc/groups.js groupOfPanel`, on the panel's ROLE and
+// never on its id string. Doors, drawer fronts, end panels and the wall unit's
+// masking board are FRONTS; everything else is board that lives in a carcass.
+// One decider, so the sheet a part is checked against and the sheet it is
+// nested on can never disagree.
+//
+// `cnc.sheet` stays exactly what it was and is the FALLBACK under both, so a
+// shop that has never opened the new panel is checked against the same board
+// it has been checked against since turn 31 and nothing it has cut moves.
+
+/** #7: which sheet a cut part is measured against — 'fronts' or 'carcasses'. */
+export function sheetFamilyOfPanel(panel) {
+  return groupOfPanel(panel) === 'fronts' ? 'fronts' : 'carcasses';
+}
+
+/** #7: that family's board, falling back to the one sheet this app had before. */
+export function sheetSizeForFamily(profile, family) {
+  const own = family === 'fronts' ? profile?.cnc?.sheetFronts : profile?.cnc?.sheetCarcass;
+  const w = Number(own?.width);
+  const h = Number(own?.height);
+  // BOTH numbers or neither: half a sheet size is not a sheet, and silently
+  // taking the width from the family and the height from the fallback would
+  // pass a board nobody can buy.
+  if (Number.isFinite(w) && w > 0 && Number.isFinite(h) && h > 0) return { width: w, height: h };
+  return sheetSizeMm(profile);
+}
+
+/**
+ * #7: WHICH listed format a family's board is, for the panel's own buttons.
+ *
+ * Derived from the SIZE rather than stored beside it, so the two can never
+ * drift: a profile that says 1220 × 2440 IS Standard whoever typed it, and a
+ * size no listed format carries is honestly `other` — which is what the
+ * workshop's own 2790 × 2060 has always been, and what the two number fields
+ * are for.
+ */
+export function sheetOptionIdFor(profile, family) {
+  const size = sheetSizeForFamily(profile, family);
+  const hit = (profile?.cnc?.sheetOptions || []).find(
+    (o) => Number(o.width) === size.width && Number(o.height) === size.height,
+  );
+  return hit ? hit.id : 'other';
 }
 
 /**
@@ -193,7 +250,13 @@ export function runChecks({
   const list = units || entries.map((e) => e.unit).filter(Boolean);
   const out = [];
   const roomHeight = Number(room?.height) || 0;
-  const sheet = sheetSizeMm(profile);
+  // Turn 35 (CLAUDE.md F15): two boards now, hoisted once each exactly as the
+  // one board was. `cnc.sheet` is under both, so a shop that has said nothing
+  // is checked against what it has always been checked against.
+  const sheets = {
+    carcasses: sheetSizeForFamily(profile, 'carcasses'),
+    fronts: sheetSizeForFamily(profile, 'fronts'),
+  };
   const tallH = tallNoFixHeightMm(profile);
   const window = openGapWindowMm(profile);
   const wide = wideFrontMm(profile);
@@ -320,19 +383,45 @@ export function runChecks({
       })));
     }
 
-    // ── #7 a panel larger than the sheet ──────────────────────────────────
+    // ── #7 a panel larger than ITS OWN FAMILY's sheet (T35 F15) ───────────
+    //
+    // "Check #7 measures every panel against ITS OWN family's sheet, and the
+    // red message names the way out: *side 2600 > sheet 2400 — split the
+    // wardrobe or add a Top box.* No auto-splitting — the decision is the
+    // owner's; the program only refuses loudly."
+    //
+    // So this rule reports and never fixes, which is the house grammar and is
+    // what it did before. What is new is WHICH board it measures against and
+    // that the message now says what to do about it in the owner's own words.
     for (const panel of result.panels || []) {
       const w = Number(panel.w) || 0;
       const h = Number(panel.h) || 0;
       const long = Math.max(w, h);
       const short = Math.min(w, h);
+      const family = sheetFamilyOfPanel(panel);
+      const sheet = sheets[family];
       const sheetLong = Math.max(sheet.width, sheet.height);
       const sheetShort = Math.min(sheet.width, sheet.height);
       // Either way round: the board can be turned on the bed.
       if (long <= sheetLong && short <= sheetShort) continue;
+      // WHICH dimension is the one that will not go, and what it is up
+      // against. The long side first, because that is the one that fails on a
+      // real cabinet — a 2600 side against a 2400 board.
+      const over = long > sheetLong ? long : short;
+      const limit = long > sheetLong ? sheetLong : sheetShort;
+      // The part in the owner's own vocabulary — "side", "shelf", "front".
+      // `role` is the engine's own word for it and is what `groupOfPanel` just
+      // read; no id-string guessing (cnc/groups.js says why).
+      const what = String(panel.role || panel.part || 'panel').replace(/_/g, ' ');
       out.push(finding(7, 'red', at(panel.id, {
         message: `${unitNum} ${panel.id}: ${Math.round(w)} × ${Math.round(h)} mm `
-          + `will not fit a ${sheet.width} × ${sheet.height} sheet.`,
+          + `will not fit a ${sheet.width} × ${sheet.height} sheet `
+          + `(${family}) — ${what} ${Math.round(over)} > sheet ${Math.round(limit)} `
+          + '— split the wardrobe or add a Top box.',
+        sheetFamily: family,
+        sheetMm: { width: sheet.width, height: sheet.height },
+        overMm: round2(over),
+        limitMm: round2(limit),
       })));
     }
 

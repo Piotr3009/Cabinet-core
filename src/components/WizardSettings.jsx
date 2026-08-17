@@ -1,18 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
+import { isJcMaterial, useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import {
-  FRONT_STYLE_OPTIONS, migrateDesign, projectHeights, resolveJoinery,
+  FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights, resolveJoinery,
 } from '../engine/design.js';
-import { getProjectType } from '../engine/projectTypes.js';
+import { getProjectType, PROJECT_TYPES as PROJECT_TYPE_OPTIONS } from '../engine/projectTypes.js';
 import {
-  carcassSources, ceilingFit, frontSources, materialsAssigned, pickerForSource,
-  projectDepth, projectDimensions, sourceById, wardrobeStack,
+  carcassSources, ceilingFit, frontSources, hardwareChoices, materialsAssigned, pickerForSource,
+  projectBoardThickness, projectDepth, projectDimensions, projectFrontThickness, sourceById,
+  wardrobeStack,
 } from '../engine/projectSettings.js';
+import { RUN_MATERIAL_GROUPS, runMaterialSetting } from '../engine/materials.js';
+import { drawerBoxGate, thicknessSlotRows } from '../engine/thickness.js';
+import { hingePlatePilotD, hingeStandard } from '../engine/cabinet.js';
+import { hingeReResolve } from '../engine/hinges.js';
+import { resolveRunnerVariant } from '../engine/runners.js';
+import { formatMm } from '../engine/format.js';
 import { loadDecorCatalogue } from '../lib/decorCatalogue.js';
+import { contrastInk } from '../lib/pswColors.js';
 import { getVeneers, veneerFinishId } from '../engine/veneers.js';
 import FrontStyleGallery, { FrontStyleArt } from './FrontStyleGallery.jsx';
 import DecorPicker from './DecorPicker.jsx';
@@ -21,6 +29,11 @@ import ColourPicker from './ColourPicker.jsx';
 import JoineryPreview from './JoineryPreview.jsx';
 import SheenSlider from './SheenSlider.jsx';
 import NumberField from './NumberField.jsx';
+// ─── TURN 36 (CLAUDE.md F1): ONE SETTINGS MODAL ─────────────────────────────
+// The two rows the old panel owns and the unified one now shows are IMPORTED
+// from it rather than copied — one implementation, two surfaces, so the sheet
+// buttons and the hinge block cannot drift between the doors.
+import { HingeHardware, SheetSizeRow } from './SettingsPanel.jsx';
 // Turn 33 (CLAUDE.md F8): the shaker frame's one resolver — the same number
 // the engine cuts pockets to and the settings panel edits.
 import { shakerFrameMm } from '../engine/shaker.js';
@@ -100,7 +113,24 @@ function ChosenRow({ who, hex, thumb, text }) {
   );
 }
 
-export default function WizardSettings({ onRoomSetup, onGate }) {
+export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' }) {
+  // ─── TURN 36 (CLAUDE.md F1): TWO DOORS, ONE FORM ──────────────────────────
+  //
+  // The owner: "mamy new project i edit project — 2 różne setup modale, a
+  // powinien to być ten sam modal." This component IS that one modal now. The
+  // door it was opened through changes exactly two things and nothing else:
+  //
+  //   · the PROJECT TYPE is a label in the wizard (step 2 chose it, and a
+  //     second control that could disagree with step 2 is the bug turn 12 was
+  //     about) and an editable select from the menu, where there is no step 2
+  //     to go back to;
+  //   · the two container SAVES gate the wizard's "Next — hardware" button.
+  //     From the menu there is nothing to gate — the project already exists —
+  //     so both start satisfied and no edit re-locks them.
+  //
+  // Everything below that line is the same form, the same store setters and
+  // the same behaviour whichever door was used.
+  const editDoor = door === 'project';
   const project = useProjectStore((s) => s.project);
   const storedDesign = useProjectStore((s) => s.project.design);
   const setProjectInfo = useProjectStore((s) => s.setProjectInfo);
@@ -110,14 +140,31 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
   const setFrontTypes = useProjectStore((s) => s.setFrontTypes);
   const setFrontType = useProjectStore((s) => s.setFrontType);
   const setFrontMaterial = useProjectStore((s) => s.setFrontMaterial);
+  const setFrontColour = useProjectStore((s) => s.setFrontColour);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassSource = useProjectStore((s) => s.setCarcassSource);
   const setCarcassMaterial = useProjectStore((s) => s.setCarcassMaterial);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
+  // ── the rows the old panel owned alone until this turn (F1) ──
+  const setSlotThickness = useProjectStore((s) => s.setSlotThickness);
+  const setHingeStandard = useProjectStore((s) => s.setHingeStandard);
+  const setHingeHardware = useProjectStore((s) => s.setHingeHardware);
+  const setRunnerVariant = useProjectStore((s) => s.setRunnerVariant);
+  const setShelfSleeve = useProjectStore((s) => s.setShelfSleeve);
+  const setRunMaterial = useProjectStore((s) => s.setRunMaterial);
+  const addDoorStyle = useProjectStore((s) => s.addDoorStyle);
+  const updateDoorStyle = useProjectStore((s) => s.updateDoorStyle);
+  const removeDoorStyle = useProjectStore((s) => s.removeDoorStyle);
+  const units = useProjectStore((s) => s.units);
+  const updateUnitParamsBulk = useProjectStore((s) => s.updateUnitParamsBulk);
   const profile = useCabinetProfileStore((s) => s.profile);
+  // F8/F15 are WORKSHOP numbers — the profile's, not the project's.
+  const setProfile = useCabinetProfileStore((s) => s.setProfile);
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const sets = useSettingsSetsStore((s) => s.sets);
   const applyTo = useSettingsSetsStore((s) => s.applyTo);
+  const saveSet = useSettingsSetsStore((s) => s.save);
+  const removeSet = useSettingsSetsStore((s) => s.remove);
   const notify = useUiStore((s) => s.notify);
 
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
@@ -128,11 +175,14 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
   const joinery = resolveJoinery(design, profile);
 
   // ── the two gates: each container SAVED, and any edit un-saves it ──
-  const [carcSaved, setCarcSaved] = useState(false);
-  const [frontsSaved, setFrontsSaved] = useState(false);
+  // From the EDIT door there is nothing to gate (F1): both start satisfied and
+  // an edit does not re-lock them, so the fronts container is never dead under
+  // the hand of somebody editing a project that already exists.
+  const [carcSaved, setCarcSaved] = useState(editDoor);
+  const [frontsSaved, setFrontsSaved] = useState(editDoor);
   useEffect(() => { onGate?.(carcSaved, frontsSaved); }, [carcSaved, frontsSaved, onGate]);
-  const touchCarcass = () => setCarcSaved(false);
-  const touchFronts = () => setFrontsSaved(false);
+  const touchCarcass = () => { if (!editDoor) setCarcSaved(false); };
+  const touchFronts = () => { if (!editDoor) setFrontsSaved(false); };
 
   // One accordion at a time — a slot's picker scrolls inside itself.
   const [open, setOpen] = useState(null); // { kind:'style'|'material', slot:'front'|'carcass', id }
@@ -167,6 +217,60 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
   const carcassTypes = design.carcass.types;
   const assignment = materialsAssigned(design, profile);
   const boardMaterials = materials.filter((m) => m.category === 'board' || m.category === 'front');
+
+  // ─── TURN 36 (CLAUDE.md F1): THE OLD PANEL'S HARD GATES, CARRIED WHOLE ────
+  //
+  // "Every control keeps its exact behaviour and store wiring." The T15-B gate
+  // is the one that matters most here: a board or a source that would change
+  // what the project is DRAWN at, once cabinets exist, asks first. In the
+  // wizard there are no cabinets yet, so it never fires and step 4 behaves
+  // exactly as it did; from the menu it fires exactly as the old panel's did.
+  const unitCount = units.length;
+  const carcass1Board = materials.find((m) => m.id === design.carcass.types[0]?.material_id) || null;
+  const drawnBoardT = carcass1Board?.thickness
+    ?? (design.thickness.custom ?? design.thickness.board ?? 18);
+  const frontBoard = projectFrontThickness(design, profile, materials);
+  const board = projectBoardThickness(design, profile);
+  const pinsThickness = (typeId) => typeId === design.carcass.types[0]?.id;
+  const [thickGate, setThickGate] = useState(null);   // { typeId, thickness, label, apply }
+  const [frontGate, setFrontGate] = useState(null);   // { typeId, thickness, label, apply }
+  const [slotGate, setSlotGate] = useState(null);     // { id, label, was, next }
+  const [editingStyle, setEditingStyle] = useState(null);
+  const [joineryOpen, setJoineryOpen] = useState(false);
+  const [setName, setSetName] = useState('');
+
+  const gateOrApply = (typeId, thickness, label, apply) => {
+    if (unitCount > 0 && pinsThickness(typeId) && Number(thickness) > 0 && thickness !== drawnBoardT) {
+      setThickGate({ typeId, thickness, label, apply });
+      return;
+    }
+    apply();
+    if (pinsThickness(typeId) && Number(thickness) > 0) {
+      setProjectDefaults({ thickness: { board: thickness, custom: null } });
+    }
+  };
+  /** Re-cut every cabinet's fronts at a new board — one action, one undo step. */
+  const recutFronts = (thickness) => updateUnitParamsBulk(units.map((u) => u.id), { front_t: thickness });
+
+  const thicknessRows = useMemo(
+    () => thicknessSlotRows({ design, profile, materials }),
+    [design, profile, materials],
+  );
+  const boxGate = useMemo(() => drawerBoxGate(design), [design]);
+  const commitMeasured = (row, value) => {
+    const next = Number(value);
+    if (!(next > 0) || next === Number(row.measured)) return;
+    if (unitCount > 0 && row.confirmed) {
+      setSlotGate({ id: row.id, label: row.label, was: row.measured, next });
+      return;
+    }
+    setSlotThickness(row.id, { measured: next });
+  };
+
+  const finishes = profile.appearance.finishes;
+  const frontMaterials = materials.filter((m) => m.category === 'front');
+  const platePilot = hingePlatePilotD(profile);
+  const projectRunnerVariant = resolveRunnerVariant({ design, profile });
 
   const stack = wardrobeStack(heights);
   const fit = wardrobe ? ceilingFit({ total: stack.total, roomHeight, profile }) : { gap: null, state: 'ok' };
@@ -209,15 +313,51 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
   };
 
   // ── slot mutations, each un-saving its own container ──
-  const pickCarcassSource = (typeId, src) => { touchCarcass(); setCarcassSource(typeId, src); };
-  const pickCarcassDecor = (typeId, id) => { touchCarcass(); setCarcassSource(typeId, 'egger'); setCarcassFinish(typeId, id); };
-  const pickCarcassVeneer = (typeId, id) => { touchCarcass(); setCarcassSource(typeId, 'veneer'); setCarcassFinish(typeId, id); };
-  const pickCarcassBoard = (typeId, id) => { touchCarcass(); setCarcassMaterial(typeId, id); };
+  //
+  // TURN 36 (F1): every SOURCE and every BOARD now travels through the T15-B
+  // gate — "material assignment keeps the T34 hard gate on every source". The
+  // gate is a no-op until cabinets exist, which is every path the wizard walks.
+  const sourceThickness = (kind, id) => sourceById(
+    kind === 'carcass' ? carcassSources(profile) : frontSources(profile), id,
+  )?.thickness;
+  const pickCarcassSource = (typeId, src) => {
+    touchCarcass();
+    gateOrApply(typeId, sourceThickness('carcass', src), CARCASS_WORDS[src] || 'that source',
+      () => setCarcassSource(typeId, src));
+  };
+  const pickCarcassDecor = (typeId, id) => {
+    touchCarcass();
+    gateOrApply(typeId, sourceThickness('carcass', 'egger'), CARCASS_WORDS.egger,
+      () => { setCarcassSource(typeId, 'egger'); setCarcassFinish(typeId, id); });
+  };
+  const pickCarcassVeneer = (typeId, id) => {
+    touchCarcass();
+    gateOrApply(typeId, sourceThickness('carcass', 'veneer'), CARCASS_WORDS.veneer,
+      () => { setCarcassSource(typeId, 'veneer'); setCarcassFinish(typeId, id); });
+  };
+  const pickCarcassBoard = (typeId, id) => {
+    touchCarcass();
+    const m = boardMaterials.find((x) => x.id === id) || null;
+    if (!m) { setCarcassMaterial(typeId, null); return; }
+    gateOrApply(typeId, m.thickness, m.name, () => setCarcassMaterial(typeId, m.id));
+  };
   const pickCarcassColour = (c) => { touchCarcass(); setDesign({ colour: { ...design.colour, carcass: c } }); };
 
   const pickFrontSource = (typeId, src) => { touchFronts(); setFrontType(typeId, { source: src }); };
   const pickFrontDecor = (typeId, src, id) => { touchFronts(); setFrontType(typeId, { source: src, finish_id: id }); };
-  const pickFrontBoard = (typeId, id) => { touchFronts(); setFrontMaterial(typeId, id); };
+  const pickFrontBoard = (typeId, id) => {
+    touchFronts();
+    const m = boardMaterials.find((x) => x.id === id) || null;
+    if (!m) { setFrontMaterial(typeId, null); return; }
+    const apply = () => setFrontMaterial(typeId, m.id);
+    // Front type 1 pins what every door in the job is cut from — the same rule
+    // carcass 1 follows (#58: one G per project).
+    if (unitCount > 0 && typeId === frontTypes[0]?.id && m.thickness && m.thickness !== frontBoard) {
+      setFrontGate({ typeId, thickness: m.thickness, label: m.name, apply });
+      return;
+    }
+    apply();
+  };
   const pickFrontColour = (typeId, c) => { touchFronts(); setFrontType(typeId, { source: 'spray', colour: c }); };
 
   const carcassMissing = assignment.carcass.filter((a) => !a.assigned);
@@ -241,31 +381,107 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
   // So the select is ONE thing now, lifted out of the decor branch, rendered on
   // EVERY path and for BOTH kinds. One select, one grammar (Generic optgroup +
   // Stock optgroup), the same `pickFrontBoard` / `pickCarcassBoard` wiring.
-  const stockBoardSelect = (kind, t) => (
-    <div className="cc-row">
-      <span className="text-[11px] text-ink-400 shrink-0">Stock board</span>
-      <select
-        className="cc-input flex-1"
-        data-stock-board={`${kind}:${t.id}`}
-        value={t.material_id || ''}
-        onChange={(e) => (kind === 'carcass'
-          ? pickCarcassBoard(t.id, e.target.value || null)
-          : pickFrontBoard(t.id, e.target.value || null))}
-      >
-        <option value="">No stock board…</option>
-        <optgroup label="Generic — geometry only, assign a real board before check-out">
-          {boardMaterials.filter((m) => m.placeholder).map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </optgroup>
-        <optgroup label="Stock">
-          {boardMaterials.filter((m) => !m.placeholder).map((m) => (
-            <option key={m.id} value={m.id}>{`${m.code ? `${m.code} · ` : ''}${m.name}`}</option>
-          ))}
-        </optgroup>
-      </select>
-    </div>
-  );
+  const stockBoardSelect = (kind, t) => {
+    const assigned = materials.find((m) => m.id === t.material_id) || null;
+    const gateHere = kind === 'carcass'
+      ? (thickGate && thickGate.typeId === t.id ? thickGate : null)
+      : (frontGate && frontGate.typeId === t.id ? frontGate : null);
+    return (
+      <div className="space-y-1">
+        <div className="cc-row">
+          <span className="text-[11px] text-ink-400 shrink-0">Stock board</span>
+          <select
+            className="cc-input flex-1"
+            data-stock-board={`${kind}:${t.id}`}
+            data-front-material={kind === 'front' ? t.id : undefined}
+            data-carcass-material={kind === 'carcass' ? t.id : undefined}
+            value={t.material_id || ''}
+            onChange={(e) => (kind === 'carcass'
+              ? pickCarcassBoard(t.id, e.target.value || null)
+              : pickFrontBoard(t.id, e.target.value || null))}
+          >
+            <option value="">No stock board…</option>
+            <optgroup label="Generic — geometry only, assign a real board before check-out">
+              {boardMaterials.filter((m) => m.placeholder).map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Stock">
+              {boardMaterials.filter((m) => !m.placeholder).map((m) => (
+                <option key={m.id} value={m.id}>{`${m.code ? `${m.code} · ` : ''}${m.name}`}</option>
+              ))}
+            </optgroup>
+          </select>
+        </div>
+        <p className="text-[11px] text-ink-400">
+          {assigned
+            ? `${assigned.code ? `${assigned.code} · ` : ''}${assigned.name} · ${formatMm(assigned.thickness)} mm`
+            : 'No board assigned — drawing on the source’s own thickness'}
+          {isJcMaterial(assigned) ? ' · JC' : ''}
+        </p>
+        {/* ─── THE HARD GATE, IN THE OPEN (T15-B, carried here by T36 F1) ───
+            The project is DRAWN at one thickness and this choice is another.
+            Nothing changes until the owner says which truth wins. */}
+        {gateHere && kind === 'carcass' && (
+          <div className="cc-row rounded border border-status-warn/60 bg-status-warn/10 px-2 py-1" data-thickness-gate="1">
+            <span className="text-[11px] text-status-warn flex-1">
+              Project is drawn at {formatMm(drawnBoardT)} mm — {gateHere.label} is {formatMm(gateHere.thickness)} mm.
+            </span>
+            <button
+              type="button"
+              className="cc-btn px-2"
+              data-thickness-gate-apply="1"
+              onClick={() => {
+                gateHere.apply();
+                setProjectDefaults({ thickness: { board: gateHere.thickness, custom: null } });
+                setThickGate(null);
+                notify(`Project recomputed at ${formatMm(gateHere.thickness)} mm`, 'warn');
+              }}
+            >
+              Recompute at {formatMm(gateHere.thickness)}
+            </button>
+            <button type="button" className="cc-btn px-2" data-thickness-gate-keep="1" onClick={() => setThickGate(null)}>
+              Keep {formatMm(drawnBoardT)} — pick another
+            </button>
+          </div>
+        )}
+        {gateHere && kind === 'front' && (
+          <div className="cc-row rounded border border-status-warn/60 bg-status-warn/10 px-2 py-1" data-front-thickness-gate="1">
+            <span className="text-[11px] text-status-warn flex-1">
+              Fronts are drawn at {formatMm(frontBoard)} mm — {gateHere.label} is {formatMm(gateHere.thickness)} mm.
+            </span>
+            <button
+              type="button"
+              className="cc-btn px-2"
+              data-front-thickness-gate-apply="1"
+              onClick={() => {
+                gateHere.apply();
+                // RECOMPUTE means recompute: every cabinet on the floor is
+                // re-cut at the new front board, in one batch and one undo step.
+                const { notices } = recutFronts(gateHere.thickness) || { notices: [] };
+                for (const n of notices) notify(n, 'warn');
+                setFrontGate(null);
+                notify(`Fronts recomputed at ${formatMm(gateHere.thickness)} mm`, 'warn');
+                // T19 F1.4: a thicker front is a different HINGE. Say so.
+                const { message } = hingeReResolve({
+                  fromThickness: frontBoard,
+                  toThickness: gateHere.thickness,
+                  assignedDoors: doorsWithOwnHinge(units),
+                  totalDoors: units.length,
+                });
+                if (message) notify(message, 'warn');
+              }}
+            >
+              Recompute at {formatMm(gateHere.thickness)}
+            </button>
+            <button type="button" className="cc-btn px-2" data-front-thickness-gate-keep="1" onClick={() => setFrontGate(null)}>
+              Keep {formatMm(frontBoard)} — pick another
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // ── the picker a slot's source asks for, rendered inline in the open slot ──
   // Whatever the picker, the SAME stock-board select stands under it (F1).
@@ -331,6 +547,10 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
             type="button"
             className={`cc-btn px-2 ${active === id ? 'border-gold text-gold' : ''}`}
             data-source-option={id}
+            // T36 F1: the old panel's own names for the same buttons, so a
+            // walk written against either door finds them.
+            data-carcass-source={kind === 'carcass' ? id : undefined}
+            data-front-source={kind === 'front' ? id : undefined}
             onClick={() => (kind === 'carcass' ? pickCarcassSource(t.id, id) : pickFrontSource(t.id, id))}
           >
             {words[id]}
@@ -341,7 +561,7 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
   };
 
   return (
-    <div className="space-y-3" data-wizard-settings="1">
+    <div className="space-y-3" data-wizard-settings="1" data-settings-surface="1" data-settings-door={door}>
       {/* ── 1 · Number · Client · Type — the type is a label, never a second dropdown ── */}
       <div className="grid grid-cols-[150px_1fr_180px] gap-3 items-end">
         <label className="block">
@@ -362,36 +582,88 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
         </label>
         <div className="block">
           <span className="cc-label">Type</span>
-          <span
-            className="cc-input flex items-center text-gold cursor-default select-none"
-            title="Chosen in step 2 — go Back to change it"
-            data-wizard-type-label="1"
-          >
-            {type.label}
-          </span>
+          {/* T36 F1: a LABEL in the wizard — step 2 chose it, and a second
+              control that could disagree with step 2 is the turn-12 bug. From
+              the menu there IS no step 2, so the old panel's own select stands
+              here instead. Same field, same setter, one of them shown. */}
+          {editDoor ? (
+            <select
+              className="cc-input"
+              data-project-type="1"
+              value={design.projectType || ''}
+              onChange={(e) => setDesign({ projectType: e.target.value || null })}
+            >
+              <option value="">Not set</option>
+              {PROJECT_TYPE_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          ) : (
+            <span
+              className="cc-input flex items-center text-gold cursor-default select-none"
+              title="Chosen in step 2 — go Back to change it"
+              data-wizard-type-label="1"
+            >
+              {type.label}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* ── 2 · Saved settings sets — a LOAD list, at the top ── */}
-      {sets.length > 0 && (
-        <div data-wizard-sets="1">
-          <SectionLabel>Load saved settings</SectionLabel>
-          <div className="flex flex-wrap gap-1.5">
-            {sets.map((s) => (
+      {/* ── 2 · Saved settings sets — a LOAD list, at the top, and (T36 F1) the
+             old panel's KEEP-AS row beside it, so a set can be made from the
+             surface it was always made from. ── */}
+      <div data-wizard-sets="1" data-settings-sets="1">
+        <SectionLabel>Saved settings sets</SectionLabel>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {sets.map((s) => (
+            <span key={s.id} className="inline-flex items-center border border-shell-600 rounded">
               <button
-                key={s.id}
                 type="button"
-                className="cc-btn px-2"
+                className="px-2 py-1 text-[11px] text-ink-100 hover:text-gold"
                 title="Fills this step and the Hardware step completely"
                 data-set-load={s.id}
                 onClick={() => loadSet(s.id, s.name)}
               >
                 ↧ {s.name}
               </button>
-            ))}
-          </div>
+              <button
+                type="button"
+                className="cc-btn-ghost text-status-danger px-1.5"
+                title="Delete this set"
+                data-set-remove={s.id}
+                onClick={() => removeSet(s.id)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {sets.length === 0 && (
+            <span className="text-[11px] text-ink-400">
+              None yet. A set is every setting on this screen under a name — the next project can start from it.
+            </span>
+          )}
+          <span className="flex-1" />
+          <input
+            className="cc-input w-40"
+            placeholder="Keep as…"
+            data-set-name="1"
+            value={setName}
+            onChange={(e) => setSetName(e.target.value)}
+          />
+          <button
+            type="button"
+            className="cc-btn px-2"
+            data-set-save="1"
+            disabled={!setName.trim()}
+            onClick={() => {
+              const { replaced } = saveSet(setName, design);
+              setSetName('');
+              notify(replaced ? 'Settings set replaced.' : 'Settings set saved.', 'ok');
+            }}
+          >
+            Save set
+          </button>
         </div>
-      )}
+      </div>
 
       {/* ── 3 · Dimensions, per project type ── */}
       <div data-wizard-dimensions="1">
@@ -418,6 +690,7 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
                   max={profile.projectHeights.max}
                   onCommit={(v) => setProjectHeights({ tall: v })}
                   data-wizard-dim="tall"
+                  data-dimension="tall"
                 />
               </label>
               <label className="block">
@@ -428,6 +701,7 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
                   max={profile.projectHeights.max}
                   onCommit={(v) => setProjectHeights({ toeKick: v })}
                   data-wizard-dim="toeKick"
+                  data-dimension="toeKick"
                 />
               </label>
               <label className="block">
@@ -438,6 +712,7 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
                   max={1000}
                   onCommit={(v) => setProjectDefaults({ depth: v })}
                   data-wizard-dim="depth"
+                  data-dimension="depth"
                 />
               </label>
             </div>
@@ -492,17 +767,70 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
                     for (const n of notices) notify(n, 'warn');
                   }}
                   data-wizard-dim={d.key}
+                  data-dimension={d.key}
                 />
               </label>
             ))}
           </div>
         )}
+        {/* ─── TURN 36 (CLAUDE.md F1): THE NUMBERS THE OLD PANEL HAD AND THIS
+            ONE DID NOT ────────────────────────────────────────────────────
+            Rendered BY DIFFERENCE against what the block above already shows,
+            so nothing is asked twice and nothing is missing. The wardrobe
+            headline keeps the owner's three-field shape; the rest of his
+            project dimensions — and the WALL MOUNT HEIGHT, which the wizard
+            never had at all — stand under it. Same setters, so this is not a
+            sixth data path. */}
+        {(() => {
+          const all = projectDimensions(design, profile, heights);
+          const shown = new Set(wardrobe ? ['tall', 'toeKick', 'depth'] : all.map((d) => d.key));
+          const rest = all.filter((d) => !shown.has(d.key));
+          return (
+            <div className="grid grid-cols-6 gap-2 mt-1.5" data-more-dimensions="1">
+              {rest.map((d) => (
+                <label key={d.key} className="block">
+                  <span className="cc-label">{d.label}</span>
+                  <NumberField
+                    className="cc-input text-right"
+                    value={d.value}
+                    onCommit={(v) => {
+                      if (d.key === 'depth') { setProjectDefaults({ depth: v }); return; }
+                      const { notices } = setProjectHeights({ [d.key]: v });
+                      for (const n of notices) notify(n, 'warn');
+                    }}
+                    data-wizard-dim={d.key}
+                    data-dimension={d.key}
+                  />
+                </label>
+              ))}
+              <label className="block">
+                <span className="cc-label">Wall mount height</span>
+                <NumberField
+                  className="cc-input text-right"
+                  value={heights.wallMount}
+                  title="How high a wall unit hangs"
+                  onCommit={(v) => {
+                    const { notices } = setProjectHeights({ wallMount: v });
+                    for (const n of notices) notify(n, 'warn');
+                  }}
+                  data-wizard-dim="wallMount"
+                  data-dimension="wallMount"
+                />
+              </label>
+            </div>
+          );
+        })()}
+        <p className="text-[11px] text-ink-400 mt-1">
+          Pre-filled from the workshop profile — the UK standard. A unit may still be given its own height
+          in the panel; this is where every new one starts.
+        </p>
       </div>
 
       {/* ══ 4 · CARCASSES — its own container, saved before the fronts open ══ */}
       <section
         className={`relative border rounded-lg p-3 pt-2.5 space-y-2 ${carcSaved ? 'border-gold/70' : 'border-shell-600'}`}
         data-carcass-container="1"
+        data-settings-section="carcass"
       >
         <div className="absolute top-2 right-2.5"><CornerArt kind="carcass" /></div>
         <div>
@@ -529,7 +857,7 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
           {carcassTypes.map((t) => {
             const opened = open?.kind === 'material' && open.slot === 'carcass' && open.id === t.id;
             return (
-              <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1.5" data-carcass-slot={t.id}>
+              <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1.5" data-carcass-slot={t.id} data-carcass-type={t.id}>
                 <div className="cc-row">
                   <span className="text-[11px] text-ink-50">{t.label}</span>
                   <span className="flex-1" />
@@ -537,6 +865,9 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
                     type="button"
                     className={`cc-btn px-2 ${opened ? 'border-gold text-gold' : ''}`}
                     data-material-slot={`carcass:${t.id}`}
+                    data-carcass-picker={pickerForSource(
+                      sourceById(carcassSources(profile), t.source || 'egger'),
+                    ) || 'none'}
                     onClick={() => toggle('material', 'carcass', t.id)}
                   >
                     Choose…
@@ -604,6 +935,18 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
           })}
         </div>
 
+        {/* T36 F1: the old panel's thickness sentence — the one number every cut
+            in the job is measured from, said out loud where the boards are
+            chosen. `board` is the engine's own project answer; `drawnBoardT` is
+            what carcass 1's assigned board pins it to. */}
+        <p className="text-[11px] text-ink-400" data-folded-thickness="1" data-carcass-thickness="1">
+          Board thickness: <span className="text-ink-200">{formatMm(drawnBoardT)}</span> mm — from{' '}
+          {carcass1Board ? `${carcass1Board.code ? `${carcass1Board.code} · ` : ''}${carcass1Board.name}` : 'the Generic 18 default'}
+          {Number(board) !== Number(drawnBoardT) ? ` · project computes at ${formatMm(board)} mm` : ''}.
+          One board thickness per project — the kit&apos;s own boundary (#58). Changing it once cabinets
+          exist asks first, and recuts everything.
+        </p>
+
         <div className="flex items-center gap-2 border-t border-dashed border-shell-600 pt-2">
           {carcassMissing.length > 0 ? (
             <span className="flex-1 text-[11px] text-status-warn" data-carcass-missing="1">
@@ -631,6 +974,7 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
       <section
         className={`relative border rounded-lg p-3 pt-2.5 space-y-2 ${frontsSaved ? 'border-gold/70' : 'border-shell-600'} ${carcSaved ? '' : 'opacity-45 pointer-events-none select-none'}`}
         data-fronts-container="1"
+        data-settings-section="fronts"
         data-fronts-locked={carcSaved ? '0' : '1'}
         aria-disabled={!carcSaved}
       >
@@ -663,7 +1007,16 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
             const styleOpen = open?.kind === 'style' && open.id === t.id;
             const matOpen = open?.kind === 'material' && open.slot === 'front' && open.id === t.id;
             return (
-              <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1.5" data-front-slot={t.id}>
+              <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1.5" data-front-slot={t.id} data-front-type={t.id}>
+                {/* T36 F1: what this front is FACED with, named — the old
+                    panel's line, so a laminate faced in H1180 says so here too. */}
+                {t.finish_id && (
+                  <p className="text-[10px] text-ink-200" data-front-facing={t.id}>
+                    Faced in <span className="text-gold">
+                      {finishById(profile, t.finish_id)?.label || String(t.finish_id).replace(/^(decor|egger|veneer):/, '')}
+                    </span>
+                  </p>
+                )}
                 <button
                   type="button"
                   className={`w-full border rounded p-1.5 flex items-center gap-2 text-left transition-colors ${styleOpen
@@ -748,6 +1101,71 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
           ) : null;
         })()}
 
+        {/* ─── TURN 16 (CLAUDE.md F1.2): THE RUN PIECES, carried here by T36 F1 ─
+            "Infills, plinths, end panels and masking panels get a material
+            control with a checkbox 'Same as fronts', DEFAULT ON." The list is
+            RUN_MATERIAL_GROUPS in engine/materials.js and the resolver reads
+            the same four keys, so a fifth run piece is a data entry. */}
+        <div className="border border-shell-600 rounded p-2 space-y-1.5" data-run-materials="1">
+          <span className="text-[10px] uppercase tracking-wide text-ink-400">
+            Infills, plinths, end panels, masking panels
+          </span>
+          {RUN_MATERIAL_GROUPS.map((g) => {
+            const setting = runMaterialSetting(design, g.id);
+            const assigned = materials.find((m) => m.id === setting.material_id) || null;
+            return (
+              <div key={g.id} className="cc-row" data-run-material={g.id}>
+                <span className="text-[11px] text-ink-100 w-28 shrink-0" title={g.hint}>{g.label}</span>
+                <label className="flex items-center gap-1.5 text-[11px] text-ink-200 shrink-0">
+                  <input
+                    type="checkbox"
+                    data-same-as-fronts={g.id}
+                    checked={setting.sameAsFronts}
+                    onChange={(e) => { touchFronts(); setRunMaterial(g.id, { sameAsFronts: e.target.checked }); }}
+                  />
+                  <span>Same as fronts</span>
+                </label>
+                {setting.sameAsFronts ? (
+                  <span className="text-[11px] text-ink-400 flex-1 text-right truncate">
+                    {frontTypes[0]?.label || 'Front 1'}
+                    {materials.find((m) => m.id === frontTypes[0]?.material_id)
+                      ? ` · ${materials.find((m) => m.id === frontTypes[0].material_id).name}`
+                      : ''}
+                  </span>
+                ) : (
+                  <select
+                    className="cc-input flex-1"
+                    data-run-material-stock={g.id}
+                    value={setting.material_id || ''}
+                    onChange={(e) => { touchFronts(); setRunMaterial(g.id, { material_id: e.target.value || null }); }}
+                  >
+                    <option value="">MaterialStock…</option>
+                    <optgroup label="Generic — geometry only, assign a real board before check-out">
+                      {boardMaterials.filter((m) => m.placeholder).map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Stock">
+                      {boardMaterials.filter((m) => !m.placeholder).map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {`${m.code ? `${m.code} · ` : ''}${m.name}`}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                )}
+                {!setting.sameAsFronts && assigned?.placeholder && (
+                  <span className="text-[10px] text-status-warn shrink-0" title="A placeholder board — assign a real one before check-out">⚠</span>
+                )}
+              </div>
+            );
+          })}
+          <p className="text-[10px] text-ink-400">
+            Ticked, these are cut from front 1&apos;s board — which is what a workshop means by
+            &quot;same as the doors&quot;, and what puts them on the same CNC sheet.
+          </p>
+        </div>
+
         {/* the CHOSEN list — mini swatches */}
         <div className="border-t border-dashed border-shell-600 pt-1.5 space-y-1" data-fronts-chosen="1">
           {frontTypes.map((t) => {
@@ -779,8 +1197,463 @@ export default function WizardSettings({ onRoomSetup, onGate }) {
         </div>
       </section>
 
-      {/* ── 6 · Sheen, after the colours — the owner's order. Ironmongery is step 5. ── */}
+      {/* ══ 6 · DOOR STYLE — the gallery, the shaker number, and the workshop's
+             own styles. The old panel's whole section, carried whole (T36 F1) ══ */}
+      <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-settings-section="door-style">
+        <div className="cc-row">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-gold">Door style</span>
+          <span className="flex-1" />
+          <button
+            type="button"
+            className="cc-btn px-2"
+            data-new-style="1"
+            onClick={() => {
+              const id = addDoorStyle({
+                name: `Style ${design.doorStyles.length + 1}`,
+                frontType: design.fronts.style,
+                material_id: frontMaterials[0]?.id || null,
+                colour: design.colour.front,
+              });
+              setEditingStyle(id);
+            }}
+          >
+            + New style
+          </button>
+        </div>
+
+        {/* The gallery, not a dropdown (T15 F4) — a tile per shape with its own
+            drawing, a filter box and a scroll. This one writes the PROJECT's
+            shape; a front SLOT's own shape is picked in its card above. */}
+        <FrontStyleGallery
+          value={design.fronts.style}
+          onPick={(id) => { touchFronts(); setDesign({ fronts: { ...design.fronts, style: id } }); }}
+        />
+
+        {/* T25 F3.1: shaker is equal on all four sides — ONE field, no rail/stile
+            pair beside it, 10…200 mm. */}
+        {design.fronts.style === 'S' && (
+          <div className="flex items-center gap-2" data-shaker-frame="1">
+            <span className="text-[11px] text-ink-400 w-28">Shaker frame</span>
+            <NumberField
+              className="cc-input w-24"
+              value={shakerFrameMm(design, profile)}
+              min={profile.front.types.S.frameMin}
+              max={profile.front.types.S.frameMax}
+              onCommit={(v) => { touchFronts(); setDesign({ fronts: { ...design.fronts, shakerFrame: v } }); }}
+            />
+            <span className="text-[11px] text-ink-400">
+              mm, equal all round · {profile.front.types.S.frameMin}–{profile.front.types.S.frameMax} ·
+              {' '}panel recessed {profile.front.types.S.recessDepth} mm
+            </span>
+          </div>
+        )}
+
+        <div className="cc-divider" />
+        <span className="text-[10px] uppercase tracking-wide text-ink-400">The workshop&apos;s own styles</span>
+
+        {design.doorStyles.length === 0 && (
+          <p className="text-[11px] text-ink-400">
+            No styles yet. A style is a name, a front type and a material/colour — assign it to units from the
+            parameter panel.
+          </p>
+        )}
+
+        <ul className="space-y-2" data-door-styles="1">
+          {design.doorStyles.map((style) => (
+            <li key={style.id} className="border border-shell-600 rounded p-2 space-y-2" data-door-style={style.id}>
+              <div className="flex items-center gap-2">
+                <input
+                  className="cc-input flex-1"
+                  value={style.name}
+                  onChange={(e) => updateDoorStyle(style.id, { name: e.target.value })}
+                />
+                <select
+                  className="cc-input w-28"
+                  value={style.frontType}
+                  onChange={(e) => updateDoorStyle(style.id, { frontType: e.target.value })}
+                >
+                  {FRONT_STYLE_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+                <select
+                  className="cc-input w-40"
+                  value={style.material_id || ''}
+                  onChange={(e) => updateDoorStyle(style.id, { material_id: e.target.value || null })}
+                >
+                  <option value="">No material</option>
+                  {frontMaterials.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+                <select
+                  className="cc-input w-32"
+                  title="What this style looks like"
+                  value={style.finish_id || ''}
+                  onChange={(e) => updateDoorStyle(style.id, { finish_id: e.target.value || null })}
+                >
+                  <option value="">Project finish</option>
+                  {finishes.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+                </select>
+                {style.colour && (
+                  <span
+                    className="px-2 py-0.5 rounded text-[11px] border border-shell-600"
+                    style={{ background: style.colour.hex, color: contrastInk(style.colour.hex) }}
+                    title={colourLabel(style.colour)}
+                  >
+                    {style.colour.name}
+                  </span>
+                )}
+                <button
+                  type="button" className="cc-btn-ghost"
+                  onClick={() => setEditingStyle(editingStyle === style.id ? null : style.id)}
+                >
+                  {editingStyle === style.id ? 'Hide' : 'Colour'}
+                </button>
+                <button type="button" className="cc-btn-ghost text-status-danger" data-door-style-remove={style.id} onClick={() => removeDoorStyle(style.id)}>×</button>
+              </div>
+              {editingStyle === style.id && (
+                <ColourPicker
+                  label={`${style.name} colour`}
+                  value={style.colour}
+                  onChange={(c) => updateDoorStyle(style.id, { colour: c })}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ══ 7 · HARDWARE — every row the old panel had. The Hardware STEP of the
+             wizard keeps its own client-facing four; these are the workshop's,
+             and both write the same fields (T36 F1: surfaces move, wiring does
+             not). ══ */}
+      <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-settings-section="hardware">
+        <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Hardware</span>
+        <div className="space-y-1">
+          {hardwareChoices(design, profile).map((h) => (
+            <div key={h.key} className="cc-row" data-hardware-choice={h.key}>
+              <div className="flex flex-col flex-1">
+                <span className="text-sm text-ink-100">{h.label}</span>
+                <span className="text-[11px] text-ink-400">
+                  {h.fits ? `Fitted automatically: ${h.fits.join(', ')}` : (h.auto || h.hint || 'Fitted automatically')}
+                </span>
+              </div>
+              {h.variants ? (
+                <div className="flex gap-1">
+                  {h.variants.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      data-hardware-choice-option={`${h.key}:${v.id}`}
+                      className={`cc-btn px-2 ${h.chosen === v.id ? 'border-gold text-gold' : ''}`}
+                      onClick={() => setProjectDefaults({ hardware: { [h.key]: v.id } })}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="cc-tag">automatic</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* T17 F7.1 — how many hinges this JOB hangs a door on. */}
+        <div className="cc-row" data-hinge-standard="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Standard hinges</span>
+            <span className="text-[11px] text-ink-400">
+              How many per door. On 2, each door loses one MIDDLE hinge — the outer ones never move.
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {profile.hinges.standardOptions.map((n) => (
+              <button
+                key={n}
+                type="button"
+                data-hinge-standard-option={n}
+                aria-pressed={hingeStandard(design.hinges?.standard, profile) === n}
+                className={`cc-btn px-2 ${hingeStandard(design.hinges?.standard, profile) === n ? 'border-gold text-gold' : ''}`}
+                onClick={() => setHingeStandard(n)}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* T19 F1.1 — WHICH hinge: system, finish, plate. The old panel's own
+            block, imported rather than copied. */}
+        <HingeHardware
+          design={design}
+          profile={profile}
+          frontThickness={frontBoard}
+          onChange={setHingeHardware}
+        />
+
+        {/* T35 F8 — the hinge-plate pilot. A WORKSHOP number: the profile's. */}
+        <div className="cc-row" data-hinge-plate-pilot="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Hinge plate pilot</span>
+            <span className="text-[11px] text-ink-400">
+              What the plate is fixed with. ⌀5 knocks in, ⌀3 screws — the holes land on
+              HINGES_{platePilot === 3 ? '3' : '5'}MM, which is what the machine maps its tool by.
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {profile.hinges.platePilotOptions.map((d) => (
+              <button
+                key={d}
+                type="button"
+                data-hinge-plate-pilot-option={d}
+                aria-pressed={platePilot === d}
+                className={`cc-btn px-2 ${platePilot === d ? 'border-gold text-gold' : ''}`}
+                onClick={() => setProfile({ ...profile, hinges: { ...profile.hinges, platePilotD: d } })}
+              >
+                ⌀{d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* T25 F6.1 — the shelf supports the eye can see. */}
+        <div className="cc-row" data-shelf-sleeve="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Shelf supports</span>
+            <span className="text-[11px] text-ink-400">
+              The sleeve and pin an adjustable shelf stands on — in the ⌀7.5 the machine already
+              bores. A fixed shelf has none, and that is how you tell them apart.
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {Object.entries(profile.appearance.metals).map(([id, m]) => (
+              <button
+                key={id}
+                type="button"
+                data-shelf-sleeve-option={id}
+                aria-pressed={(design.hardware.shelfSleeve || profile.appearance.metalDefault) === id}
+                className={`cc-btn px-2 ${(design.hardware.shelfSleeve || profile.appearance.metalDefault) === id ? 'border-gold text-gold' : ''}`}
+                onClick={() => setShelfSleeve(id)}
+              >
+                <span
+                  className="inline-block w-3 h-3 rounded-full align-middle mr-1 border border-shell-600"
+                  style={{ background: m.colour }}
+                />
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* T18 F6.4 — the runner SYSTEM the shop stocks and the VARIANT this job
+            is fitted with. The variant is the same field the Hardware step's
+            Push-to-open writes; two doors, one number. */}
+        <div className="cc-row" data-runner-system="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Runners</span>
+            <span className="text-[11px] text-ink-400">
+              Blum MOVENTO {profile.hardware.runner.movento.system} — the length follows the cabinet depth.
+            </span>
+          </div>
+          <span className="cc-tag">MOVENTO {profile.hardware.runner.movento.system}</span>
+        </div>
+        <div className="cc-row" data-runner-variant="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Runner variant</span>
+            <span className="text-[11px] text-ink-400">
+              {runnerVariantHint(profile, projectRunnerVariant)}
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {profile.hardware.runner.movento.variants.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                data-runner-variant-option={v.id}
+                aria-pressed={projectRunnerVariant === v.id}
+                title={v.hint}
+                className={`cc-btn px-2 ${projectRunnerVariant === v.id ? 'border-gold text-gold' : ''}`}
+                onClick={() => setRunnerVariant(v.id)}
+              >
+                {v.id}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-[11px] text-ink-400">
+          Every one of these is fitted by the automat and counted in the BOM. You pick the variant; it
+          picks the item. One cabinet&apos;s own hinges can be added, removed and moved by hand —
+          select its door in the editor.
+        </p>
+      </section>
+
+      {/* ══ 8 · JOINERY TYPE — how the carcass is held together ══ */}
+      <section className="space-y-2" data-settings-section="joinery">
+        <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Joinery type</span>
+        <div className="flex flex-wrap gap-2">
+          {profile.joinery.types.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              title={t.hint}
+              data-joinery-option={t.id}
+              aria-pressed={joinery?.id === t.id}
+              className={`border rounded px-3 py-2 text-left transition-colors ${joinery?.id === t.id
+                ? 'border-gold bg-shell-700'
+                : 'border-shell-600 hover:bg-shell-700'}`}
+              onClick={() => {
+                touchCarcass();
+                setDesign({ joinery: t.id });
+                setJoineryOpen((v) => !v || joinery?.id !== t.id);
+              }}
+            >
+              <span className="block text-sm text-ink-50">{t.label}</span>
+              <span className="block text-[10px] text-ink-400">{t.hint}</span>
+            </button>
+          ))}
+        </div>
+        {joineryOpen && joinery ? (
+          <div className="border border-shell-600 rounded p-2 bg-shell-800">
+            <JoineryPreview profile={profile} joinery={joinery} />
+          </div>
+        ) : (
+          <p className="text-[11px] text-ink-400">Click a joinery type again to see the joint.</p>
+        )}
+      </section>
+
+      {/* ══ 9 · INFILL AT THE WALL — the filler between a unit and the wall ══ */}
+      <section className="space-y-2" data-settings-section="infill">
+        <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Infill at the wall</span>
+        <div className="flex items-center gap-2">
+          <NumberField
+            className="cc-input w-24 text-right"
+            data-infill-side-width="1"
+            min={0}
+            value={design.infill.sideWidth}
+            onCommit={(v) => setDesign({ infill: { ...design.infill, sideWidth: v } })}
+          />
+          <span className="text-[11px] text-ink-400">mm — the filler between a unit and the wall</span>
+        </div>
+      </section>
+
+      {/* ── 10 · Sheen, after the colours — the owner's order. ── */}
       <SheenSlider design={design} setDesign={setDesign} profile={profile} />
+
+      {/* ══ 11 · MEASURED THICKNESS — the caliper, not the label (T24 F3) ══ */}
+      <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-settings-section="thickness">
+        <div className="cc-row">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-gold flex-1">Measured thickness</span>
+          {boxGate.blocked && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border border-status-warn text-status-warn" data-box-gate="1">
+              no drawers yet
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-ink-400">
+          The manufacturer never tells you the board is really 18.5 — the caliper does. Type what
+          you measured and tick it; every formula in the app computes from that number and nothing
+          rounds it.
+        </p>
+        <ul className="space-y-1" data-thickness-slots="1">
+          {thicknessRows.map((row) => (
+            <li key={row.id} className="cc-row" data-thickness-slot={row.id}>
+              <span className="text-[12px] text-ink-100 w-24 shrink-0" title={row.hint}>{row.label}</span>
+              <span className="text-[11px] text-ink-400 w-20 shrink-0" data-slot-nominal={row.id}>
+                nominal {formatMm(row.nominal)}
+              </span>
+              <NumberField
+                className="cc-input w-20 text-right"
+                data-slot-measured={row.id}
+                value={row.measured}
+                onCommit={(v) => commitMeasured(row, v)}
+              />
+              <label className="flex items-center gap-1 text-[11px] text-ink-300">
+                <input
+                  type="checkbox"
+                  data-slot-confirmed={row.id}
+                  checked={row.confirmed}
+                  onChange={(e) => setSlotThickness(row.id, { confirmed: e.target.checked })}
+                />
+                measured
+              </label>
+              {row.dirty && (
+                <span className="text-[10px] text-gold" data-slot-dirty={row.id} title="The caliper disagrees with the label — which is normal.">
+                  ≠ label
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+        {slotGate && (
+          <div className="cc-row rounded border border-status-warn/60 bg-status-warn/10 px-2 py-1" data-slot-thickness-gate="1">
+            <span className="text-[11px] text-status-warn flex-1">
+              {slotGate.label} is drawn at {formatMm(slotGate.was)} mm and {unitCount} cabinet
+              {unitCount === 1 ? '' : 's'} {unitCount === 1 ? 'is' : 'are'} cut to it —
+              {' '}{formatMm(slotGate.next)} mm recuts {unitCount === 1 ? 'it' : 'them all'}.
+            </span>
+            <button
+              type="button"
+              className="cc-btn px-2"
+              data-slot-gate-apply="1"
+              onClick={() => {
+                setSlotThickness(slotGate.id, { measured: slotGate.next });
+                notify(`${slotGate.label} recomputed at ${formatMm(slotGate.next)} mm`, 'warn');
+                setSlotGate(null);
+              }}
+            >
+              Recompute at {formatMm(slotGate.next)}
+            </button>
+            <button type="button" className="cc-btn-ghost px-2" data-slot-gate-keep="1" onClick={() => setSlotGate(null)}>
+              Keep {formatMm(slotGate.was)}
+            </button>
+          </div>
+        )}
+        {boxGate.blocked && (
+          <p className="text-[11px] text-status-warn" data-box-gate-message="1">{boxGate.message}</p>
+        )}
+      </section>
+
+      {/* ══ 12 · SHEET SIZES — the board on the bed, per family (T35 F15) ══ */}
+      <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-settings-section="sheet">
+        <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Sheet sizes</span>
+        <p className="text-[11px] text-ink-400">
+          The biggest board the shop can buy in each family. Check #7 refuses a panel that will
+          not fit — loudly, and without splitting anything: that decision is yours.
+        </p>
+        <SheetSizeRow
+          family="carcasses"
+          label="Carcasses"
+          hint="Sides, tops, bottoms, backs, shelves, infills and plinths."
+          profile={profile}
+          onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetCarcass: size } })}
+        />
+        <SheetSizeRow
+          family="fronts"
+          label="Fronts"
+          hint="Doors, drawer fronts, end panels and masking boards."
+          profile={profile}
+          onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetFronts: size } })}
+        />
+      </section>
     </div>
   );
+}
+
+/**
+ * The one-line explanation under the runner variant buttons (turn 18, F6.4),
+ * carried here with the row itself (T36 F1).
+ */
+function runnerVariantHint(profile, chosen) {
+  const list = profile.hardware.runner.movento.variants || [];
+  const v = list.find((x) => x.id === chosen) || list[0];
+  return v ? `${v.id} — ${v.label}. ${v.hint}` : '';
+}
+
+/**
+ * How many doors in this job carry a hinge somebody picked by hand
+ * (turn 19, CLAUDE.md F1.4). These are the doors the re-resolve gate does NOT
+ * touch: an assignment is somebody's decision about that door.
+ */
+function doorsWithOwnHinge(units) {
+  let n = 0;
+  for (const u of units) n += Object.keys(u.params?.door_hinges || {}).length;
+  return n;
 }

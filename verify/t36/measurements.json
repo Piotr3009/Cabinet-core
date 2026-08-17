@@ -1,0 +1,54 @@
+{
+  "f1_wizard_door": {
+    "door": "wizard",
+    "sections": [
+      "carcass",
+      "door-style",
+      "fronts",
+      "hardware",
+      "infill",
+      "joinery",
+      "sheet",
+      "thickness"
+    ],
+    "thickness": true,
+    "sheet": true,
+    "doorStyle": true,
+    "runnerVariant": true,
+    "platePilot": true,
+    "hingeStandard": true,
+    "runMaterials": true,
+    "joinery": true,
+    "infill": true,
+    "wallMount": true,
+    "sets": true
+  },
+  "f1_edit_door": {
+    "door": "project",
+    "sections": [
+      "carcass",
+      "door-style",
+      "fronts",
+      "hardware",
+      "infill",
+      "joinery",
+      "sheet",
+      "thickness"
+    ],
+    "thickness": true,
+    "sheet": true,
+    "doorStyle": true,
+    "runnerVariant": true,
+    "platePilot": true,
+    "hingeStandard": true,
+    "runMaterials": true,
+    "joinery": true,
+    "infill": true,
+    "wallMount": true,
+    "sets": true
+  },
+  "f1_plate_pilot": {
+    "before": 5,
+    "after": 3
+  }
+}

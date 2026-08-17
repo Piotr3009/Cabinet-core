@@ -1,0 +1,92 @@
+{
+  "steps": [
+    {
+      "label": "R8 — the app is pointed at the silent showroom",
+      "ok": true,
+      "detail": "http://127.0.0.1:4174"
+    },
+    {
+      "label": "F1 — the NEW-PROJECT door shows the unified panel",
+      "ok": true,
+      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+    },
+    {
+      "label": "F1 — …with the five rows T35 left in the old panel only",
+      "ok": true,
+      "detail": "{\"door\":\"wizard\",\"sections\":[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"],\"thickness\":true,\"sheet\":true,\"doorStyle\":true,\"runnerVariant\":true,\"platePilot\":true,\"hingeStandard\":true,\"runMaterials\":true,\"joinery\":true,\"infill\":true,\"wallMount\":true,\"sets\":true}"
+    },
+    {
+      "label": "F1 — the EDIT door shows the SAME panel, told which door it is",
+      "ok": true,
+      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+    },
+    {
+      "label": "F1 — the two doors show the SAME sections",
+      "ok": true,
+      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"] vs [\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+    },
+    {
+      "label": "F1 — and every named row of the old panel is on it",
+      "ok": true,
+      "detail": "{\"door\":\"project\",\"sections\":[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"],\"thickness\":true,\"sheet\":true,\"doorStyle\":true,\"runnerVariant\":true,\"platePilot\":true,\"hingeStandard\":true,\"runMaterials\":true,\"joinery\":true,\"infill\":true,\"wallMount\":true,\"sets\":true}"
+    },
+    {
+      "label": "F1 — the fronts are NOT locked behind a save from the edit door",
+      "ok": true,
+      "detail": "data-fronts-locked"
+    },
+    {
+      "label": "F1 — the hinge-plate pilot really works from the unified panel",
+      "ok": true,
+      "detail": "⌀5 → ⌀3"
+    },
+    {
+      "label": "R6 — the whole walk ends with a clean console",
+      "ok": true,
+      "detail": "0 error(s)"
+    }
+  ],
+  "shots": [
+    {
+      "name": "f1a-the-unified-panel-through-the-new-project-door",
+      "subject": {
+        "all": [
+          "[data-settings-surface][data-settings-door=\"wizard\"]",
+          "[data-settings-section=\"thickness\"]",
+          "[data-settings-section=\"sheet\"]",
+          "[data-settings-section=\"door-style\"]",
+          "[data-hinge-plate-pilot]",
+          "[data-runner-variant]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f1b-the-unified-panel-through-the-edit-door",
+      "subject": {
+        "all": [
+          "[data-settings-surface][data-settings-door=\"project\"]",
+          "[data-settings-section=\"thickness\"]",
+          "[data-settings-section=\"sheet\"]",
+          "[data-settings-section=\"door-style\"]",
+          "[data-hinge-plate-pilot]",
+          "[data-runner-variant]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f1c-the-hinge-plate-pilot-and-the-sheet-sizes-on-the-edit-door",
+      "subject": {
+        "all": [
+          "[data-hinge-plate-pilot-option=\"3\"][aria-pressed=\"true\"]",
+          "[data-sheet-family=\"fronts\"]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    }
+  ]
+}

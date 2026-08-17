@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <!-- Cabinet Core — the app's own mark (turn 35, CLAUDE.md F16). A squared C
+       with a knob in its mouth: the initial, and a carcass with a handle.
+       Four rectangles on a 16-unit grid; this file IS the geometry the .ico
+       is cut from. Colours: tailwind.config.js gold / shell-900. -->
+  <rect width="16" height="16" fill="#1a1a1a"/>
+  <rect x="3" y="2" width="3" height="12" fill="#aa8e68"/>
+  <rect x="3" y="2" width="10" height="3" fill="#aa8e68"/>
+  <rect x="3" y="11" width="10" height="3" fill="#aa8e68"/>
+  <rect x="10" y="7" width="2" height="2" fill="#aa8e68"/>
+</svg>

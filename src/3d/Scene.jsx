@@ -35,6 +35,10 @@ import { categoryOf } from '../engine/types.js';
 import Ruler from './Ruler.jsx';
 import useContextGuard from './contextGuard.jsx';
 
+// T36 F2: one frozen empty array, so a unit outside the selection does not
+// get a new `[]` on every render (zustand snapshot identity).
+const EMPTY_SELECTION = Object.freeze([]);
+
 // 3D scaffolding follows Production Core's rig (scene / camera / soft light /
 // capture), not its window geometry. Preview is 3D from the start (SPEC 7).
 
@@ -863,6 +867,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const openRightPanel = useUiStore((s) => s.openRightPanel);
   const setPanelSection = useUiStore((s) => s.setPanelSection);
   const selectedElement = useUiStore((s) => s.selectedElement);
+  // T36 F2: the SET a Ctrl+click builds. A stable empty array for the units
+  // that are not the one being edited — a fresh `[]` per render would make
+  // zustand's snapshot change on every frame.
+  const selectedElements = useUiStore((s) => s.selectedElements);
   const selectElement = useUiStore((s) => s.selectElement);
   const clearSelection = useUiStore((s) => s.clearSelection);
   const snapStep = useUiStore((s) => s.snapStep);
@@ -1234,7 +1242,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // Only ever passed to the unit the element belongs to, so a shelf
           // called SHELF-1 in one cabinet cannot light up SHELF-1 in the next.
           selectedElement={selectedElement?.unitId === unit.id ? selectedElement.elementRef : null}
-          onSelectElement={(panelId) => selectElement(unit.id, panelId)}
+          // T36 F2: …and every other member of the set, for the same unit.
+          selectedElements={selectedElement?.unitId === unit.id ? selectedElements : EMPTY_SELECTION}
+          onSelectElement={(panelId, opts) => selectElement(unit.id, panelId, opts)}
           onMoveElementDepth={(itemId, setback) => setElementDepth(unit.id, itemId, setback)}
           // ─── Turn 11 (CLAUDE.md F3.3) ───
           // Double-click a piece: an edit modal opens NEXT TO IT (the click

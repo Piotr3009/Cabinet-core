@@ -787,6 +787,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       },
     });
   },
+  /**
+   * ─── TURN 36 (CLAUDE.md F2): THE SAME PATCH ON A SET OF STRIPS ────────────
+   *
+   * "LED strips: inset and depth to all selected." One `setDesign`, so it is
+   * ONE undo step and one recompute — the panel's master control used to loop
+   * `updateLightingItem`, which wrote the design once per strip and gave a
+   * twelve-strip job twelve undo steps.
+   */
+  updateLightingItemsBulk: (ids, patch) => {
+    const want = new Set((ids || []).filter(Boolean));
+    if (!want.size || !patch) return 0;
+    const lighting = migrateDesign(get().project.design).lighting;
+    let touched = 0;
+    const items = lighting.items.map((it) => {
+      if (!want.has(it.id)) return it;
+      touched += 1;
+      return { ...it, ...patch, id: it.id };
+    });
+    if (!touched) return 0;
+    get().setDesign({ lighting: { ...lighting, items } });
+    return touched;
+  },
+
   removeLightingItem: (id) => {
     const lighting = migrateDesign(get().project.design).lighting;
     get().setDesign({ lighting: { ...lighting, items: lighting.items.filter((it) => it.id !== id) } });
@@ -3390,6 +3413,52 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {'item'|'override'|null} which path it took
    */
+  /**
+   * ─── TURN 36 (CLAUDE.md F2): THE WHOLE SET, IN ONE BATCH ──────────────────
+   *
+   * Every piece in the Ctrl+click set, removed through the SAME plan a single
+   * Delete goes through (`engine/deleteElement.js deletePlan`) — so a piece
+   * the rules refuse is refused here for the same reason and named in the
+   * message, rather than silently skipped.
+   *
+   * The panels are resolved ONCE, up front, against the result as it stands:
+   * removing a drawer renumbers the stack, so a plan taken after the first
+   * removal would be a plan about a different cabinet.
+   *
+   * The HEAL SWEEP runs once at the end. A sweep per removal would trim a
+   * front against gaps that are about to close.
+   */
+  deleteElementSet: (unitId, refs) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const result = unit ? get().unitResult(unitId) : null;
+    if (!unit || !result) return { ok: false, error: 'Nothing is selected.' };
+    const plans = [];
+    const refused = [];
+    for (const ref of refs || []) {
+      const panel = result.panels.find((p) => p.id === ref) || null;
+      const plan = deletePlan({ unit, panel });
+      if (plan.allowed) plans.push({ ref, plan });
+      else refused.push(plan.reason);
+    }
+    if (!plans.length) {
+      return { ok: false, error: refused[0] || 'Nothing in the selection can be removed.' };
+    }
+    return runBatch(() => {
+      for (const { ref, plan } of plans) {
+        if (plan.target === 'item') get().removeItem(unitId, plan.itemId);
+        else get().setElementOverride(unitId, ref, { removed: true });
+      }
+      useUiStore.getState().clearElement();
+      get().healFrontGaps();
+      return {
+        ok: true,
+        removed: plans.map((p) => p.plan.itemId || p.ref),
+        refused,
+        next: null,
+      };
+    });
+  },
+
   removeElement: (unitId, panelId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit || !panelId) return null;
@@ -3425,6 +3494,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unitId = sel?.unitId || null;
     const panelId = sel?.elementRef || sel?.panelId || null;
     if (!unitId || !panelId) return { ok: false, error: 'Nothing is selected.' };
+    // ─── TURN 36 (CLAUDE.md F2): ONE DELETE REMOVES THE WHOLE SET ───────────
+    //
+    // "one Delete removes the whole set through the heal sweep." The SET is
+    // the UI's, the PLAN is still `deletePlan`'s per piece, and the sweep runs
+    // ONCE at the end — a heal per removal would trim a front against gaps
+    // that are about to close, and the joiner would watch his doors twitch.
+    // Everything goes in one batch, so it is one undo step.
+    const set = at ? null : useUiStore.getState().selectedElements;
+    if (Array.isArray(set) && set.length > 1) {
+      return get().deleteElementSet(unitId, set);
+    }
     const unit = get().units.find((u) => u.id === unitId);
     const panel = get().unitResult(unitId)?.panels.find((p) => p.id === panelId) || null;
     const plan = deletePlan({ unit, panel });

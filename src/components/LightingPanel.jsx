@@ -113,12 +113,35 @@ export default function LightingPanel() {
   const setLighting = useProjectStore((s) => s.setLighting);
   const addLightingItem = useProjectStore((s) => s.addLightingItem);
   const updateLightingItem = useProjectStore((s) => s.updateLightingItem);
+  const updateLightingItemsBulk = useProjectStore((s) => s.updateLightingItemsBulk);
   const removeLightingItem = useProjectStore((s) => s.removeLightingItem);
+  // ─── TURN 36 (CLAUDE.md F2): THE SELECTED STRIPS MOVE AS ONE ──────────────
+  //
+  // "LED strips: inset and depth to all selected." A strip is not a panel and
+  // cannot be Ctrl+clicked in 3-D; what CAN be is the SHELF it runs under, and
+  // a shelf strip carries that shelf's panel id in `ref`. So the set the
+  // joiner has already ticked names the strips, and dragging any one of their
+  // sliders moves the lot — in one write, one undo step, one recompute.
+  //
+  // A strip outside the selection is edited alone, exactly as it always was.
+  const selectedElements = useUiStore((s) => s.selectedElements);
+  const selectedUnit = useUiStore((s) => s.selectedElement?.unitId) || null;
   const profile = useCabinetProfileStore((s) => s.profile);
 
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
   const spec = lightingSpec(profile);
   const lighting = useMemo(() => resolveLighting(design, profile), [design, profile]);
+  /** The strips this edit reaches: the whole ticked set, or the one in hand. */
+  const strippedSet = (it) => {
+    const set = Array.isArray(selectedElements) ? selectedElements : [];
+    if (set.length < 2 || it.unitId !== selectedUnit || !set.includes(it.ref)) return [it.id];
+    const ids = lighting.items
+      .filter((x) => x.unitId === selectedUnit && x.kind === it.kind && set.includes(x.ref))
+      .map((x) => x.id);
+    return ids.length ? ids : [it.id];
+  };
+  const setInset = (it, v) => updateLightingItemsBulk(strippedSet(it), { inset_mm: v });
+  const setDepth = (it, v) => updateLightingItemsBulk(strippedSet(it), { depth_mm: v });
   const switches = switchChoicesFor(design.projectType);
 
   const unit = units.find((u) => u.id === selectedUnitId) || null;
@@ -439,8 +462,12 @@ export default function LightingPanel() {
                   const common = strips.every(
                     (i) => (i.inset_mm ?? spec.strip.insetDefault) === first,
                   ) ? first : null;
-                  const setAll = (v) => strips.forEach(
-                    (i) => updateLightingItem(i.id, { inset_mm: v }),
+                  // ─── TURN 36 (CLAUDE.md F2): ONE WRITE, ONE UNDO STEP ─
+                  // This looped `updateLightingItem`, which wrote the design
+                  // once per strip — a twelve-strip job cost twelve undo
+                  // steps and twelve recomputes for one drag of one slider.
+                  const setAll = (v) => updateLightingItemsBulk(
+                    strips.map((i) => i.id), { inset_mm: v },
                   );
                   return (
                     <div className="flex items-center gap-2 pb-1" data-lighting-inset-all="1">
@@ -500,7 +527,7 @@ export default function LightingPanel() {
                             value={strip.depth_mm}
                             data-lighting-depth={it.id}
                             aria-label="How deep the LED sits under the shelf"
-                            onChange={(e) => updateLightingItem(it.id, { depth_mm: Number(e.target.value) })}
+                            onChange={(e) => setDepth(it, Number(e.target.value))}
                           />
                           <span className="text-[10px] text-ink-400 tabular-nums w-14 text-right">
                             {strip.depth_mm} mm
@@ -539,7 +566,7 @@ export default function LightingPanel() {
                             value={it.inset_mm ?? spec.strip.insetDefault}
                             data-lighting-inset-slider={it.id}
                             aria-label="How far back from the front edge the LED sits"
-                            onChange={(e) => updateLightingItem(it.id, { inset_mm: Number(e.target.value) })}
+                            onChange={(e) => setInset(it, Number(e.target.value))}
                           />
                           <input
                             type="number"
@@ -549,7 +576,7 @@ export default function LightingPanel() {
                             value={it.inset_mm ?? spec.strip.insetDefault}
                             data-lighting-inset={it.id}
                             aria-label="How far back from the front edge the LED sits"
-                            onChange={(e) => updateLightingItem(it.id, { inset_mm: Number(e.target.value) })}
+                            onChange={(e) => setInset(it, Number(e.target.value))}
                           />
                           <span className="text-[10px] text-ink-400">mm</span>
                         </div>

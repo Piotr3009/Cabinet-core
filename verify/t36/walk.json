@@ -6,24 +6,29 @@
       "detail": "http://127.0.0.1:4174"
     },
     {
-      "label": "F5 — the drawer BOX stands along the grain",
+      "label": "F2 — three shelves to work with",
       "ok": true,
-      "detail": "{\"side\":\"h\",\"f\":\"h\",\"b\":\"h\"}"
+      "detail": "SHELF-1 SHELF-2 SHELF-3"
     },
     {
-      "label": "F5 — its BOTTOM lies across, as the shoe box already said",
+      "label": "F2 — Ctrl+click built the SET, three deep",
       "ok": true,
-      "detail": "w"
+      "detail": "[\"SHELF-1\",\"SHELF-2\",\"SHELF-3\"]"
     },
     {
-      "label": "F5 — the drawer FRONT runs its figure UP the front, against the saw",
+      "label": "F2 — every member of the set is MARKED in the scene",
       "ok": true,
-      "detail": "597 × 338 → h"
+      "detail": "3 outlines"
     },
     {
-      "label": "F5 — and the PLINTH does too",
+      "label": "F2 — ONE height typed moved the WHOLE set in one shot",
       "ok": true,
-      "detail": "600 × 100 → h"
+      "detail": "496 991 1487 → 918 958 998"
+    },
+    {
+      "label": "F2 — …and ONE set-back typed put all three on the same number",
+      "ok": true,
+      "detail": "60 60 60"
     },
     {
       "label": "R6 — the whole walk ends with a clean console",
@@ -33,12 +38,20 @@
   ],
   "shots": [
     {
-      "name": "f5a-the-drawer-fronts-run-their-figure-up-the-front",
+      "name": "f2a-three-shelves-ticked-with-ctrl-click",
       "subject": {
-        "mesh": "DR01-F1"
+        "dom": "[data-group-selection]"
       },
       "present": true,
-      "detail": "{\"mesh\":true}"
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f2b-the-group-moved-as-one",
+      "subject": {
+        "dom": "[data-group-selection]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
     }
   ]
 }

@@ -601,6 +601,122 @@ async function main() {
       await shot('f5a-the-drawer-fronts-run-their-figure-up-the-front', { mesh: frontId });
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F2 — MULTI-SELECT: three shelves ticked, and nudged in one shot
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f2')) {
+      await freshFloor('multi-select', 'wardrobe');
+      await ui('u.openEditor() || true');
+      await page.sleep(500);
+      const msId = await store(`(() => {
+        const { id } = s.addUnit('WARDROBE');
+        s.updateUnitParams(id, { width: 900, height: 2000, doors: false });
+        s.addShelvesBulk([id], 3);
+        return id;
+      })()`);
+      await page.sleep(800);
+      const shelves = await store(`s.unitResult(${JSON.stringify(msId)}).panels.filter((p) => p.part === 'SHELF').map((p) => p.id)`);
+      measurements.f2_shelves = shelves;
+      check('F2 — three shelves to work with', shelves.length === 3, shelves.join(' '));
+
+      await frameFacing([msId], { dist: 1.9, height: 1.0 });
+      await page.sleep(500);
+
+      // THE GESTURE: a plain click on the first, then CTRL+CLICK on the other
+      // two — real CDP mouse events carrying the real modifier (modifiers: 2).
+      const clickShelf = async (panelId, ctrl) => {
+        const at = await pointOnMesh(msId, panelId);
+        if (!at) return false;
+        const mods = ctrl ? 2 : 0;
+        await page.mouse('mouseMoved', at.x, at.y, { buttons: 0, clickCount: 0, modifiers: mods });
+        await page.mouse('mousePressed', at.x, at.y, { button: 'left', buttons: 1, clickCount: 1, modifiers: mods });
+        await page.mouse('mouseReleased', at.x, at.y, { button: 'left', buttons: 0, clickCount: 1, modifiers: mods });
+        await page.sleep(300);
+        return true;
+      };
+      // CTRL held for all three, which is what a joiner's hand actually does.
+      // The first one lands on an empty set and behaves exactly as a plain
+      // click does (`applySelection([], id, false)`); it also means no SHELF
+      // DRAG is started under the modifier, which is the point of the tick.
+      const trail = [];
+      for (const id of shelves) {
+        await clickShelf(id, true);
+        trail.push(await ui('u.selectedElements'));
+      }
+      measurements.f2_trail = trail;
+
+      const set = await ui('u.selectedElements');
+      measurements.f2_set = set;
+      check('F2 — Ctrl+click built the SET, three deep',
+        Array.isArray(set) && set.length === 3, JSON.stringify(set));
+
+      const marks = await page.evaluate(`
+        const v = ${P}.views.room;
+        let n = 0;
+        v.scene.traverse((o) => { if (o.isLineSegments && o.userData && o.userData.ccHelper && o.visible) n += 1; });
+        return n;
+      `);
+      measurements.f2_marks = marks;
+      check('F2 — every member of the set is MARKED in the scene', marks >= 3, `${marks} outlines`);
+      await shot('f2a-three-shelves-ticked-with-ctrl-click', { dom: '[data-group-selection]' });
+
+      // …and ONE typed height moves all three.
+      const before = await store(`s.unitResult(${JSON.stringify(msId)}).panels.filter((p) => p.part === 'SHELF').map((p) => Math.round(p.box.y))`);
+      const heightField = await page.evaluate(`
+        const el = [...document.querySelectorAll('input')].find((n) => n.title && n.title.includes('The underside'));
+        if (!el) return null;
+        el.scrollIntoView({ block: 'center' });
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      if (heightField) {
+        for (const clickCount of [1, 2, 3]) {
+          await page.mouse('mousePressed', heightField.x, heightField.y, { clickCount });
+          await page.mouse('mouseReleased', heightField.x, heightField.y, { buttons: 0, clickCount });
+        }
+        await page.send('Input.insertText', { text: '900' });
+        await page.key('Enter', { code: 'Enter', windowsVirtualKeyCode: 13 });
+        await page.sleep(600);
+      }
+      const after = await store(`s.unitResult(${JSON.stringify(msId)}).panels.filter((p) => p.part === 'SHELF').map((p) => Math.round(p.box.y))`);
+      measurements.f2_nudge = { before, after };
+      // EVERY shelf moved off where it was, and all three finished within one
+      // shelf-pitch of the typed 900. They do not all land ON 900, and must
+      // not: `setShelfPos` clamps each board between its neighbours, and iron
+      // rule 5 says an existing check's behaviour is untouchable. The group
+      // edit REACHES all three; the clamp decides where each may stop.
+      check('F2 — ONE height typed moved the WHOLE set in one shot',
+        after.length === 3
+          && after.every((v, i) => v !== before[i])
+          && after.every((v) => Math.abs(v - 900) < 150),
+        `${before.join(' ')} → ${after.join(' ')}`);
+
+      // …and the SET-BACK, which has no neighbour to clamp against, lands the
+      // whole set on one number.
+      const depthField = await page.evaluate(`
+        const el = [...document.querySelectorAll('input')].find((n) => n.title && n.title.includes('From the face of the cabinet'));
+        if (!el) return null;
+        el.scrollIntoView({ block: 'center' });
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      if (depthField) {
+        for (const clickCount of [1, 2, 3]) {
+          await page.mouse('mousePressed', depthField.x, depthField.y, { clickCount });
+          await page.mouse('mouseReleased', depthField.x, depthField.y, { buttons: 0, clickCount });
+        }
+        await page.send('Input.insertText', { text: '60' });
+        await page.key('Enter', { code: 'Enter', windowsVirtualKeyCode: 13 });
+        await page.sleep(600);
+      }
+      const setbacks = await store(`s.unitResult(${JSON.stringify(msId)}).panels.filter((p) => p.part === 'SHELF').map((p) => Math.round(Number(p.meta.front_mm)))`);
+      measurements.f2_setbacks = setbacks;
+      check('F2 — …and ONE set-back typed put all three on the same number',
+        setbacks.length === 3 && new Set(setbacks).size === 1 && setbacks[0] === 60,
+        setbacks.join(' '));
+      await shot('f2b-the-group-moved-as-one', { dom: '[data-group-selection]' });
+    }
+
     check('R6 — the whole walk ends with a clean console', realErrors(page.errors).length === 0,
       `${realErrors(page.errors).length} error(s)`);
   } finally {

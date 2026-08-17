@@ -15,7 +15,10 @@ import {
 import { formatMm } from '../engine/format.js';
 // ─── TURN 24 (CLAUDE.md F3): THE CALIPER, NOT THE LABEL ─────────────────────
 import { drawerBoxGate, thicknessSlotRows } from '../engine/thickness.js';
-import { doorCountFor, hingeStandard } from '../engine/cabinet.js';
+import { doorCountFor, hingePlatePilotD, hingeStandard } from '../engine/cabinet.js';
+// Turn 35 (CLAUDE.md F15): the board on the bed, per family — one resolver, so
+// the buttons and check #7 read the same answer.
+import { sheetOptionIdFor, sheetSizeForFamily } from '../engine/checks.js';
 import { UNIT_TYPES } from '../engine/types.js';
 import {
   hingeAngleFor, hingeReResolve, resolveHingeFinish, resolveHingePlate, resolveHingeSystem,
@@ -92,6 +95,16 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setRunnerVariant = useProjectStore((s) => s.setRunnerVariant);
   // Turn 19 (CLAUDE.md F1.1): …and which HINGE — system, finish, plate.
   const setHingeHardware = useProjectStore((s) => s.setHingeHardware);
+  // ─── TURN 35 (CLAUDE.md F8 / F15) ────────────────────────────────────────
+  // Two WORKSHOP numbers land in this panel this turn — the hinge-plate pilot
+  // and the two sheet sizes — and a workshop number is the profile's, not the
+  // project's, so they are written through the profile store rather than
+  // through `setDesign`. `setProfile` migrates, persists and pushes into the
+  // engine's single read point in one call (stores/cabinetProfileStore.js).
+  const setProfile = useCabinetProfileStore((s) => s.setProfile);
+  // F8: what this job's plates are pilot-drilled at — the engine's own
+  // resolver, so the buttons and the drilling read one answer.
+  const platePilot = hingePlatePilotD(profile);
   const setShelfSleeve = useProjectStore((s) => s.setShelfSleeve);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
@@ -927,6 +940,40 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           onChange={setHingeHardware}
         />
 
+        {/* ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT ─────────────────
+            Owner, 16.08.2026: "nie mamy ustawienia w ogóle 5 mm czy 3 mm
+            screws zawiasy wiercenie — niektórzy używają tak, inni inaczej",
+            and where it belongs: "to ustawienie musi być w hardware
+            ustawieniach". Default "5, jak jest teraz", so a shop that never
+            opens this drills exactly what it drilled yesterday.
+
+            The diameter goes into the CNC file the only way a diameter has
+            ever gone into one here — in the LAYER NAME, HINGES_3MM beside
+            HINGES_5MM. No text style rides with it (the 02.08 VCarve law). */}
+        <div className="cc-row" data-hinge-plate-pilot="1">
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-ink-100">Hinge plate pilot</span>
+            <span className="text-[11px] text-ink-400">
+              What the plate is fixed with. ⌀5 knocks in, ⌀3 screws — the holes land on
+              HINGES_{platePilot === 3 ? '3' : '5'}MM, which is what the machine maps its tool by.
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {profile.hinges.platePilotOptions.map((d) => (
+              <button
+                key={d}
+                type="button"
+                data-hinge-plate-pilot-option={d}
+                aria-pressed={platePilot === d}
+                className={`cc-btn px-2 ${platePilot === d ? 'border-gold text-gold' : ''}`}
+                onClick={() => setProfile({ ...profile, hinges: { ...profile.hinges, platePilotD: d } })}
+              >
+                ⌀{d}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* ─── Turn 25 (CLAUDE.md F6.1): THE SHELF SUPPORTS ──────────────────
             "He wants to SEE gold or silver sleeves." Two buttons, beside the
             hinge finish because it is the same kind of decision — what the
@@ -1144,6 +1191,44 @@ export default function SettingsPanel({ onRoomSetup = null }) {
         {boxGate.blocked && (
           <p className="text-[11px] text-status-warn" data-box-gate-message="1">{boxGate.message}</p>
         )}
+      </section>
+
+      <div className="cc-divider" />
+
+      {/* ── TURN 35 (CLAUDE.md F15): THE BOARD ON THE BED, PER FAMILY ──────
+          Owner, 16.08: "musimy wpisywać wymiary w setup produkcyjne płyt —
+          jak mamy bok 2600 a maksymalna płyta 2400, to niech nie pozwoli",
+          and the list: "z listy wybór — Jumbo 2070 × 2800, Standard 1220 ×
+          2440, 10 foot 1020 × 3050, i Other, i tu wpisujemy sami. To musi być
+          w carcases I fronty."
+
+          TWO selectors because a shop does not buy its carcass board and its
+          front board off the same rack. Check #7 then measures every panel
+          against ITS OWN family's sheet and says, in red, what to do about
+          one that will not go — it never splits anything itself. That
+          decision is the owner's. */}
+      <section className="cc-frame space-y-2" data-settings-section="sheet">
+        <div className="cc-row">
+          <span className="text-xs uppercase tracking-wide text-ink-200">Sheet sizes</span>
+        </div>
+        <p className="text-[11px] text-ink-400">
+          The biggest board the shop can buy in each family. Check #7 refuses a panel that will
+          not fit — loudly, and without splitting anything: that decision is yours.
+        </p>
+        <SheetSizeRow
+          family="carcasses"
+          label="Carcasses"
+          hint="Sides, tops, bottoms, backs, shelves, infills and plinths."
+          profile={profile}
+          onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetCarcass: size } })}
+        />
+        <SheetSizeRow
+          family="fronts"
+          label="Fronts"
+          hint="Doors, drawer fronts, end panels and masking boards."
+          profile={profile}
+          onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetFronts: size } })}
+        />
       </section>
 
       <div className="cc-divider" />
@@ -1489,6 +1574,79 @@ function FinishSwatch({ finish }) {
         ...(ownImage ? { backgroundImage: `url(${finish.texture})` } : {}),
       }}
     />
+  );
+}
+
+// ─── TURN 35 (CLAUDE.md F15): ONE FAMILY'S SHEET ───────────────────────────
+//
+// The owner's list, verbatim — "Jumbo 2070 × 2800, Standard 1220 × 2440, 10
+// foot 1020 × 3050, i Other, i tu wpisujemy sami" — as the house's own row:
+// buttons, `aria-pressed`, `border-gold text-gold` on the chosen one. There is
+// no `<select>` in this panel and this did not introduce the first one.
+//
+// WHICH BUTTON IS LIT IS DERIVED FROM THE SIZE, never stored beside it, so the
+// two cannot drift: a profile carrying 1220 × 2440 IS Standard whoever typed
+// it, and a size no listed format carries is honestly `Other…` — which is what
+// the workshop's own 2790 × 2060 has always been. That is why the two number
+// fields open filled rather than empty: they are showing the board this shop
+// has been checked against since turn 31, and nothing has changed under it.
+//
+// Both numbers travel TOGETHER on every write. Half a sheet size is not a
+// sheet, and a width from the family with a height from the fallback would be
+// a board nobody can buy.
+function SheetSizeRow({
+  family, label, hint, profile, onChange,
+}) {
+  const options = profile.cnc.sheetOptions || [];
+  const chosen = sheetOptionIdFor(profile, family);
+  const size = sheetSizeForFamily(profile, family);
+  return (
+    <div className="space-y-1" data-sheet-family={family}>
+      <div className="cc-row">
+        <div className="flex flex-col flex-1">
+          <span className="text-sm text-ink-100">{label}</span>
+          <span className="text-[11px] text-ink-400">{hint}</span>
+        </div>
+        <div className="flex gap-1">
+          {options.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              data-sheet-option={o.id}
+              aria-pressed={chosen === o.id}
+              title={o.label}
+              className={`cc-btn px-2 ${chosen === o.id ? 'border-gold text-gold' : ''}`}
+              // `Other…` keeps the size that is already resolved rather than
+              // blanking it: pressing it means "I will type these", not "I have
+              // no board". A listed format states both of its numbers at once.
+              onClick={() => onChange(o.id === 'other'
+                ? { width: size.width, height: size.height }
+                : { width: o.width, height: o.height })}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {chosen === 'other' && (
+        <div className="cc-row" data-sheet-other={family}>
+          <span className="text-[11px] text-ink-400 flex-1">Sheet width × height, in mm</span>
+          <NumberField
+            className="cc-input w-20 text-right"
+            data-sheet-width={family}
+            value={size.width}
+            onCommit={(v) => (Number(v) > 0 ? onChange({ width: Number(v), height: size.height }) : null)}
+          />
+          <span className="text-[11px] text-ink-400">×</span>
+          <NumberField
+            className="cc-input w-20 text-right"
+            data-sheet-height={family}
+            value={size.height}
+            onCommit={(v) => (Number(v) > 0 ? onChange({ width: size.width, height: Number(v) }) : null)}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -297,6 +297,25 @@ export const DEFAULT_CABINET_PROFILE = {
     standard: 3,
     standardOptions: [2, 3],
     holeDiameter: 5,
+    // ─── TURN 35 (CLAUDE.md F8): THE PILOT THE PLATE IS SCREWED WITH ────────
+    //
+    // Owner, 16.08.2026: *"nie mamy ustawienia w ogóle 5 mm czy 3 mm screws
+    // zawiasy wiercenie — niektórzy używają tak, inni inaczej"*; where it
+    // goes: *"to ustawienie musi być w hardware ustawieniach"*; and the
+    // default: *"5, jak jest teraz"*.
+    //
+    // `holeDiameter` above is the number this app has drilled since turn 1 and
+    // it does not move — it is what a bare `computeCabinet()` and every golden
+    // fixture take. `platePilotD` is the WORKSHOP's answer, and it opens on
+    // the same 5, so nothing that has never touched the setting is re-cut. A
+    // shop that knocks its plates in on ⌀3 screws says so once here.
+    //
+    // The diameter travels in the LAYER NAME and nowhere else — `HINGES_3MM`
+    // beside `HINGES_5MM` in engine/cnc/layers.js. NO text style rides with
+    // it: the DXF writer has no STYLE table, which is the 02.08 VCarve crash
+    // law, and a layer name is what VCarve maps a tool by anyway.
+    platePilotD: 5,
+    platePilotOptions: [3, 5],
     holePairOffset: 16,        // 2 holes per centre at centre ± 16
     // ─── TURN 31 (CLAUDE.md F3 / Check #10): HOW NEAR TWO ROWS MAY COME ────
     //
@@ -3520,6 +3539,43 @@ export const DEFAULT_CABINET_PROFILE = {
     // 15.08.2026: 2790 × 2060. It is a sheet size, so it moves alone and it
     // moves the moment the workshop's supplier changes.
     sheet: { width: 2790, height: 2060 },
+    // ─── TURN 35 (CLAUDE.md F15): A LIST PER FAMILY ────────────────────────
+    //
+    // Owner, 16.08.2026: *"musimy wpisywać wymiary w setup produkcyjne płyt —
+    // jak mamy bok 2600 a maksymalna płyta 2400, to niech nie pozwoli"*, and
+    // the list itself: *"z listy wybór — Jumbo 2070 × 2800, Standard 1220 ×
+    // 2440, 10 foot 1020 × 3050, i Other, i tu wpisujemy sami. To musi być w
+    // carcases I fronty."*
+    //
+    // (His "207" is read as 2070 — the Egger XL format. Flagged in the T35 PR
+    // Q-list; accepted by silence.)
+    //
+    // TWO sheets, because a workshop does not buy its carcass board and its
+    // front board off the same rack: the carcasses come off whatever is
+    // cheapest in 18 mm and the fronts off the range the door is faced in. One
+    // number for both was never the shop's truth, it was just all this app
+    // could say.
+    //
+    // THE OPTIONS ARE THE APP'S SHAPE, NOT THE WORKSHOP'S VALUE. The list is
+    // rebuilt from here on every migration (see `migrateCabinetProfile`), so a
+    // profile stored before a format was added cannot outvote the code that
+    // knows about it — the same law `appearance.lighting` travels under, and
+    // the lesson T35-F7 is written about.
+    sheetOptions: [
+      { id: 'jumbo', label: 'Jumbo 2070 × 2800', width: 2070, height: 2800 },
+      { id: 'standard', label: 'Standard 1220 × 2440', width: 1220, height: 2440 },
+      { id: 'tenfoot', label: '10 ft 1020 × 3050', width: 1020, height: 3050 },
+      // `Other…` is the two number fields, and it carries no size of its own —
+      // what it means is "the width and height below are typed".
+      { id: 'other', label: 'Other…', width: null, height: null },
+    ],
+    // …and the two the workshop has actually chosen. BOTH OPEN ON NOTHING —
+    // `null` is "nobody has said", which falls back to `cnc.sheet` above, so a
+    // shop that never opens this panel is checked against exactly the board it
+    // has been checked against since turn 31 and no cabinet changes. It is the
+    // `twoBelowMm: null` pattern: the default is silence, not a number.
+    sheetCarcass: { width: null, height: null },
+    sheetFronts: { width: null, height: null },
     // ─── TURN 20 (CLAUDE.md F4): HALF AGAIN ────────────────────────────────
     // Owner: the wrapping and the placement have been right since turn 18; the
     // SIZE is still double what he wants, on the glass and in the file. 40 was
@@ -4020,6 +4076,10 @@ export const DEFAULT_CABINET_PROFILE = {
       SCREWS_3MM: { d: 3, depth: 0 },
       SHELVES_7_5MM: { d: 7.5, depth: 12 },
       HINGES_5MM: { d: 5, depth: 12 },
+      // Turn 35 (CLAUDE.md F8): the ⌀3 pilot the other half of the trade uses
+      // for the same plate. Same depth — it is the same plate in the same
+      // board; only the screw is different.
+      HINGES_3MM: { d: 3, depth: 12 },
       // The owner measured the cup: ELEVEN, not 12.5 (CLAUDE.md F1.1). The
       // engine states this depth on the hole itself, so the record is what is
       // actually bored; this row is what a hand-stamped cup takes.
@@ -4534,6 +4594,16 @@ export function migrateCabinetProfile(profile) {
       annotation: { ...D.cnc.annotation, ...profile.cnc?.annotation },
       // Turn 31 (F6 #7): key by key, like every other nested block.
       sheet: { ...D.cnc.sheet, ...profile.cnc?.sheet },
+      // Turn 35 (CLAUDE.md F15): the two family sheets, key by key like the
+      // one above them — so a profile saved before this turn gains both, at
+      // `null`, which is the fallback to `cnc.sheet` and therefore no change.
+      sheetCarcass: { ...D.cnc.sheetCarcass, ...profile.cnc?.sheetCarcass },
+      sheetFronts: { ...D.cnc.sheetFronts, ...profile.cnc?.sheetFronts },
+      // …and the OPTION LIST is taken from the code, never from the store. The
+      // FORM is the app's and the values are the workshop's (T35-F7's law): a
+      // profile saved before a format joined the list must not be able to hide
+      // that format from the panel that now offers it.
+      sheetOptions: D.cnc.sheetOptions,
     },
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     // Turn 32 (CLAUDE.md F5): key by key, like every other nested block.

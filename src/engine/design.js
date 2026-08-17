@@ -270,8 +270,14 @@ export const DEFAULT_DESIGN = {
   // resolved where it is read (engine/ledStrips.js), never stored by guess.
   // `items` are the placed runs: { id, unitId, kind, ref, depth_mm, count }.
   // LIGHTING DRILLS NOTHING — an item is 3D geometry and a yellow BOM line.
+  //
+  // ─── TURN 35 (CLAUDE.md F10): `enabled` IS NOW `on` ──────────────────────
+  // The owner crossed both lighting checkboxes off a screenshot and drew one
+  // pair of buttons in their place, so the two flags they wrote became one
+  // (migrateLighting below carries a saved job across). It stays FALSE for a
+  // project that has never said anything, exactly as `enabled` did.
   lighting: {
-    enabled: false, temperature: null, switch: null, items: [],
+    on: false, temperature: null, switch: null, items: [],
   },
   // Project heights (turn 5, BACKLOG #29). null = "whatever the profile says",
   // which is what a project that has never opened the section means. Resolved
@@ -450,6 +456,39 @@ export function migrateDesign(design) {
 const LIGHTING_KINDS = new Set(['shelf', 'side', 'bottom', 'top', 'spot', 'top_under']);
 const LIGHTING_SWITCHES = new Set(['door', 'sensor', 'touchless']);
 
+// ─── TURN 35 (CLAUDE.md F10): TWO CHECKBOXES, ONE STATE ─────────────────────
+//
+// The owner, on a screenshot with both boxes crossed out: *"te 2 funkcje usuń
+// i na to miejsce dodaj duże zielony i czerwony przycisk ON i OFF — internal
+// lights"*. The two boxes wrote two different flags:
+//   · `design.lighting.enabled` — persisted, "this project has lighting";
+//   · `uiStore.lightDemo`       — SESSION ONLY, "and it is shining now".
+// They merge into `design.lighting.on`, and the merged flag is PERSISTED
+// because it is now the project's answer and not a way of looking at it: a job
+// saved with the light on opens with the light on. The session lens survives
+// as a SHADOW of this one (stores/uiStore.js), never as a second opinion.
+//
+// THE LEGACY RULE, and the trap in it. CLAUDE.md maps a saved project as
+// "enabled AND demo → ON; anything else → OFF". Taken literally against stored
+// data that mapping turns OFF every project the owner ever lit: NO saved
+// project has ever carried a `demo` key — the demo was session state by
+// construction — so `enabled && demo` is `true && undefined`, which is false.
+// An ABSENT `demo` is therefore DON'T-CARE and `enabled === true` alone is ON.
+// A payload that really does carry `demo: false` (hand-written, or an export
+// from some later day) is honoured to the letter, which is the mapping's own
+// words applied to the only data it can apply to.
+//
+// `on` is read FIRST and a stored boolean wins outright, so a write of
+// `{ on: false }` through setLighting survives the next migration pass instead
+// of being overruled by the legacy field beside it — a migration must be
+// idempotent (the T34-F2 inset lesson, one turn old).
+//
+// `enabled` is NOT written back. Two flags merging into one means ONE key.
+function lightingOn(raw) {
+  if (typeof raw?.on === 'boolean') return raw.on;
+  return raw?.enabled === true && raw?.demo !== false;
+}
+
 function migrateLighting(raw) {
   const items = (Array.isArray(raw?.items) ? raw.items : [])
     .map((it) => {
@@ -482,7 +521,7 @@ function migrateLighting(raw) {
     })
     .filter(Boolean);
   return {
-    enabled: raw?.enabled === true,
+    on: lightingOn(raw),
     temperature: Number(raw?.temperature) > 0 ? Number(raw.temperature) : null,
     switch: LIGHTING_SWITCHES.has(raw?.switch) ? raw.switch : null,
     items,

@@ -426,6 +426,16 @@ export const useUiStore = create((set, get) => ({
   // stored is touched — which is what makes "toggling back restores exactly
   // the previous scene state" true by construction. Session-only on purpose:
   // a demo is a moment, not a way of working.
+  //
+  // ─── TURN 35 (CLAUDE.md F10): THE LENS BECOMES A SHADOW ──────────────────
+  // The owner replaced the two lighting checkboxes with one pair of buttons,
+  // so "is the light on" is the PROJECT'S answer now — `design.lighting.on`,
+  // persisted and migrated. This flag is NOT deleted and not a second opinion:
+  // it is that answer's session shadow, written by 3d/Scene.jsx (uiStore never
+  // reads projectStore — the one direction projectStore.js states — so the
+  // sync lives at the one place the lens is consumed). The setters below stay
+  // exactly as they are: a session lens is still a session lens, and anything
+  // that wants one for a moment still has it.
   lightDemo: false,
   setLightDemo: (v) => set({ lightDemo: Boolean(v) }),
   toggleLightDemo: () => set((s) => ({ lightDemo: !s.lightDemo })),

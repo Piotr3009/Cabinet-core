@@ -47,7 +47,7 @@ import {
 } from '../engine/shelfHeights.js';
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
-import { frontDimensionRows } from '../engine/frontDimensions.js';
+import { drawerFrontDimsVisible, frontDimensionRows } from '../engine/frontDimensions.js';
 import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { panelFinish } from '../engine/materials.js';
 import { wallAtPoint } from '../engine/room.js';
@@ -960,8 +960,18 @@ export default function UnitView({
     // Turn 34 (CLAUDE.md F5): the edge figures the room replaced with ONE
     // leaf-to-leaf dimension at a meeting line — decided at room level,
     // because a cabinet cannot see the one beside it.
+    // ─── TURN 35 (CLAUDE.md F11): THE DRAWER FRONTS WAIT FOR THE DOOR ─────
+    // The owner, 16.08: *"jeśli są szuflady w szafie, to nie pokazuj wymiarów
+    // frontów szuflad, dopóki nie otworzysz szafy"*. The decision is the
+    // ENGINE's (`drawerFrontDimsVisible` reads the very same `openFronts` map
+    // the swing animation runs on), so the view still decides nothing; and
+    // where the answer is yes the call is the three-argument one it has been
+    // since turn 34, to the byte.
+    const rows = drawerFrontDimsVisible(result, openFronts)
+      ? frontDimensionRows(result, profile, suppressEdgeDims)
+      : frontDimensionRows(result, profile, suppressEdgeDims, { drawerFronts: false });
     return [
-      ...frontDimensionRows(result, profile, suppressEdgeDims),
+      ...rows,
       ...(meetingDimRows || []),
     ].map((row, i) => ({
       key: `${row.kind}-${row.a || ''}-${row.b || ''}-${i}`,
@@ -971,7 +981,7 @@ export default function UnitView({
       // two gap figures that sit close stand on different rungs.
       offset: row.offsetMm || 0,
     }));
-  }, [showFrontDimensions, result, profile, suppressEdgeDims, meetingDimRows]);
+  }, [showFrontDimensions, result, profile, suppressEdgeDims, meetingDimRows, openFronts]);
   // A hair proud of the door plane, so the chain is not buried in it.
   const frontDimZ = result.params.depth + profile.doors.gap + (result.params.front_t || 25) + 1;
 

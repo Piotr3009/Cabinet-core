@@ -40,6 +40,14 @@ test('the factor is derived: off is EXACTLY 1, on is EXACTLY the profile level',
   assert.equal(demoDimFactor(true, P), P.lighting.demo.dimFactor);
 });
 
+// ─── AMENDED 16.08.2026 (turn 35, CLAUDE.md F10) ──────────────────────────
+// The owner's ON/OFF buttons merged this session flag with the project's
+// `lighting.enabled` into ONE persisted answer, `design.lighting.on`. What
+// stands below is unchanged and un-weakened on purpose: the lens itself was
+// NOT deleted (nothing is, without his word) — it is that answer's session
+// shadow now, written by 3d/Scene.jsx, and it still toggles and still returns
+// to where it started. Which flag the 3D reads is pinned in
+// test/turn35-f10-lighting-onoff.test.js.
 test('the flag toggles, and toggling twice is the identity', () => {
   assert.equal(ui().lightDemo, false, 'a session starts with the demo off');
   ui().toggleLightDemo();

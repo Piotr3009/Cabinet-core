@@ -1,0 +1,260 @@
+{
+  "when": "2026-08-17T00:36:40.716Z",
+  "base": "http://127.0.0.1:5199/",
+  "flips": 10,
+  "readings": [
+    {
+      "at": "after the first project opened",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 1,
+      "released": 0,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 1",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 2,
+      "released": 1,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 2",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 3,
+      "released": 2,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 3",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 4,
+      "released": 3,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 4",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 5,
+      "released": 4,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 5",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 6,
+      "released": 5,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 6",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 7,
+      "released": 6,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 7",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 8,
+      "released": 7,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 8",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 9,
+      "released": 8,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 9",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 10,
+      "released": 9,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 10",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 11,
+      "released": 10,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "after ten flips",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 11,
+      "released": 10,
+      "lost": 0,
+      "restored": 0
+    }
+  ],
+  "steps": [
+    {
+      "label": "one canvas in the DOM when a project is open",
+      "ok": true,
+      "detail": "{\"canvases\":1,\"live\":1,\"names\":[\"room\"],\"created\":1,\"released\":0,\"lost\":0,\"restored\":0}"
+    },
+    {
+      "label": "one live context, and it is the room",
+      "ok": true,
+      "detail": "{\"canvases\":1,\"live\":1,\"names\":[\"room\"],\"created\":1,\"released\":0,\"lost\":0,\"restored\":0}"
+    },
+    {
+      "label": "one context MADE — a simulated unmount is not a second canvas",
+      "ok": true,
+      "detail": "created 1, released 0"
+    },
+    {
+      "label": "the visible canvas still HAS its context 2.6 s in",
+      "ok": true,
+      "detail": "{\"contextLost\":false,\"meshes\":59}"
+    },
+    {
+      "label": "and the scene it draws was not disposed under it",
+      "ok": true,
+      "detail": "{\"contextLost\":false,\"meshes\":59}"
+    },
+    {
+      "label": "ONE canvas after 10 flips",
+      "ok": true,
+      "detail": "{\"canvases\":1,\"live\":1,\"names\":[\"room\"],\"created\":11,\"released\":10,\"lost\":0,\"restored\":0}"
+    },
+    {
+      "label": "ONE live context after 10 flips",
+      "ok": true,
+      "detail": "{\"canvases\":1,\"live\":1,\"names\":[\"room\"],\"created\":11,\"released\":10,\"lost\":0,\"restored\":0}"
+    },
+    {
+      "label": "every context that was made was given back but one",
+      "ok": true,
+      "detail": "created 11, released 10"
+    },
+    {
+      "label": "no loss nobody asked for",
+      "ok": true,
+      "detail": "lost 0"
+    },
+    {
+      "label": "no reading in the whole walk saw two",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "label": "ZERO loseContext errors in the console log",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "a restore would name itself once",
+      "ok": true,
+      "detail": "0 lines, 0 restores"
+    }
+  ],
+  "console": [
+    {
+      "level": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "level": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "level": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "level": "info",
+      "text": "Cabinet Core build: #388 · 2026-08-17 00:33 UTC · 6c66a5b"
+    },
+    {
+      "level": "info",
+      "text": "Cabinet Core build: #388 · 2026-08-17 00:33 UTC · 6c66a5b"
+    },
+    {
+      "level": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "level": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "level": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "level": "info",
+      "text": "Cabinet Core build: #388 · 2026-08-17 00:33 UTC · 6c66a5b"
+    },
+    {
+      "level": "info",
+      "text": "Cabinet Core build: #388 · 2026-08-17 00:33 UTC · 6c66a5b"
+    }
+  ],
+  "errors": [
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json]"
+  ],
+  "rendering": [],
+  "loseContextLines": 0
+}

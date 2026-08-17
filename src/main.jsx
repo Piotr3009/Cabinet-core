@@ -53,6 +53,9 @@ import * as shoeBox from './engine/shoeBox.js';
 import * as deleteElement from './engine/deleteElement.js';
 import * as shaker from './engine/shaker.js';
 import * as design from './engine/design.js';
+// Turn 35 (CLAUDE.md F4): the context guard's own counters, readable before the
+// first canvas has mounted — see below.
+import * as contextGuard from './3d/contextGuard.jsx';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -192,6 +195,14 @@ if (typeof window !== 'undefined') {
   window.__ccT34 = {
     projectSettings, shoeBox, deleteElement, shaker, design,
   };
+  // ─── Turn 35 (CLAUDE.md F4) ───
+  // The WebGL guard, for the same reason every reader above is here: F4's proof
+  // is "one canvas and zero loseContext errors after ten flips", and that is a
+  // claim about the APP's own bookkeeping rather than about pixels. `__cc.diag`
+  // has counted since turn 20 but is BUILT by the first canvas to mount, so a
+  // walk that reads it too early cannot tell "no contexts" from "no counter" —
+  // `contextDiagnosis()` makes it on demand and answers the same object.
+  window.__ccT35 = { contextGuard };
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
@@ -199,6 +210,24 @@ if (typeof window !== 'undefined') {
 // store rather than being called by it — see stores/historyStore.js for why.
 watchProjectHistory();
 
+// ─── STRICT MODE STAYS (turn 35, CLAUDE.md F4) ──────────────────────────────
+//
+// It is named here because it is half of F4's cause and the next person to read
+// that finding will come looking for it. In DEVELOPMENT React runs every effect
+// once, tears it down and runs it again — a "simulated unmount" that touches no
+// DOM. Two things used to happen on that second pass and both of them killed a
+// canvas that was not going anywhere:
+//
+//   • `3d/contextGuard.jsx` released the context, because a cleanup had run;
+//   • `@react-three/fiber`'s `unmountComponentAtNode` scheduled its 500 ms
+//     teardown timer, which then force-lost the context and disposed the scene
+//     the still-visible tree was drawing.
+//
+// Both are answered in `3d/contextGuard.jsx` — a canvas still in the document
+// is React looking twice, and r3f's late call is defused — rather than by
+// taking this wrapper off. StrictMode is a development check that finds exactly
+// this class of bug, and it found this one. It compiles out of the production
+// bundle by itself; nothing here is a cost the owner's build pays.
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />

@@ -151,7 +151,11 @@ export function resolveLighting(design, profile) {
   const spec = lightingSpec(profile);
   const temperature = d.lighting.temperature || spec.defaultTemperature;
   return {
-    enabled: d.lighting.enabled,
+    // ─── TURN 35 (CLAUDE.md F10): ONE FLAG ────────────────────────────────
+    // `enabled` and the session's demo flag are one answer now — `on` — and
+    // this is where everything downstream reads it (design.js migrateLighting
+    // holds the merge and the legacy rule).
+    on: d.lighting.on,
     temperature,
     temperatureEntry: temperatureEntry(temperature, profile),
     switch: d.lighting.switch || defaultSwitchFor(d.projectType),
@@ -183,7 +187,7 @@ export function stripsForUnit({
   unit, result, design, profile,
 }) {
   const lighting = resolveLighting(design, profile);
-  if (!lighting.enabled) return [];
+  if (!lighting.on) return [];                    // T35 F10: the one state
   const mine = lighting.items.filter((it) => it.unitId === unit?.id);
   if (!mine.length) return [];
 
@@ -361,7 +365,7 @@ export function stripsForUnit({
  */
 export function lightingBomLines({ entries = [], design, profile }) {
   const lighting = resolveLighting(design, profile);
-  if (!lighting.enabled) return [];
+  if (!lighting.on) return [];                    // T35 F10: the one state
   const line = (l) => ({
     article: null, articles: [], source: null, yellow: true, note: null, ...l,
   });

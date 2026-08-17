@@ -137,7 +137,14 @@ export function elementKind(panel) {
   switch (part) {
     case 'SHELF': return 'shelf';
     case 'VPART': return 'partition';
-    case 'PARTITION': case 'RAIL-PART': case 'FIXED': return 'fixed-shelf';
+    // ─── TURN 35 (CLAUDE.md F1): the rail gets a modal at last ────────────
+    // Owner: *"nie mogę ustawić wysokości raila … jak edytuję dwuklikiem, to
+    // nie ma opcji ustawienia wysokości."* The rod itself is not a panel and
+    // is not pickable; the board standing 40 mm over it IS, and double-clicking
+    // it has opened a modal since turn 12. So that modal becomes the rail's:
+    // it keeps every field a fixed shelf had and gains the height.
+    case 'RAIL-PART': return 'hanger-rail';
+    case 'PARTITION': case 'FIXED': return 'fixed-shelf';
     case 'BUL': case 'BUR': return 'side';
     case 'TOP': return 'top';
     case 'BOTTOM': return 'bottom';
@@ -169,6 +176,7 @@ const LABELS = {
   shelf: 'Shelf',
   partition: 'Vertical partition',
   'fixed-shelf': 'Fixed shelf',
+  'hanger-rail': 'Hanging rail',
   side: 'Side panel',
   top: 'Top',
   bottom: 'Bottom',
@@ -268,6 +276,9 @@ const FIELDS = {
   // the same piece: what it is, and how the machine meets it.
   partition: ['position-x', 'partition-slot', 'partition-drill-face', 'setback', 'thickness', 'material'],
   'fixed-shelf': ['setback-unit', 'material'],
+  // T35-F1: the height FIRST — it is the question the owner came to ask — and
+  // then everything a fixed shelf offers, because that is what this board is.
+  'hanger-rail': ['rail-height', 'setback-unit', 'material'],
   side: ['carcass-board', 'material'],
   top: ['carcass-board', 'material'],
   bottom: ['carcass-board', 'material'],
@@ -379,6 +390,7 @@ const ACTIONS = {
   bottom: { remove: false, move: false, why: 'The carcass is held together by this board — the tabs are cut for it.' },
   back: { remove: false, move: false, why: 'The back squares the carcass, and the sides are tenoned into it.' },
   'fixed-shelf': { remove: false, move: false, why: 'It follows what is under it — change the stack, or the fridge height, and this follows.' },
+  'hanger-rail': { remove: false, move: false, why: 'The rail stands its "Height above support" over the nearest thing below it — change the number, or move what it stands on.' },
   holder: { remove: false, move: false, why: 'A sink unit has these instead of a top — taking one off opens the carcass.' },
   'drawer-front': { remove: false, move: false, why: 'A drawer front follows its drawer — change the stack.' },
   drawer: { remove: false, move: false, why: 'A drawer box is built from the stack above and below it — change the drawer heights.' },

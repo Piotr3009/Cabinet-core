@@ -20,7 +20,9 @@ import { HANDLE_TYPES, handleClassOf } from '../engine/handles.js';
 import { getUnitType } from '../engine/types.js';
 import { sayHingeResult } from '../lib/hingeEdit.js';
 // Turn 36 (CLAUDE.md F6): a split leaf's two segments, TOP FIRST.
-import { splitSegmentRows } from '../engine/splitDoors.js';
+// T37-F4b: …and what THIS leaf has been asked to split at — one law, read the
+// same way the engine reads it (unit-wide, or this bay's own answer).
+import { splitSegmentRows, splitTopFor } from '../engine/splitDoors.js';
 // Turn 36 (CLAUDE.md F4c): …and a door's hinge rows, TOP FIRST as well.
 import { hingeRows } from '../engine/items.js';
 
@@ -105,6 +107,39 @@ export default function DoorModal() {
     if (node?.scrollIntoView) node.scrollIntoView({ block: 'start' });
   }, [wantHinges, isDoor, args?.panelId, args?.hingeIndex]);
 
+  // ─── TURN 37 (CLAUDE.md F4c): CLICK ANOTHER LEAF, THE WINDOW FOLLOWS ───────
+  //
+  // The owner, of the doors modal: *"niech się nie wyłącza za każdym razem jak
+  // kliknę — dopiero krzyżykiem; a niech się przeskakuje tylko nazwa drzwi,
+  // które są kliknięte."* Two halves of one sentence: the window STAYS (it is
+  // `sticky` and the key is off, below), and what changes when a hand lands on
+  // another leaf is its SUBJECT — the title, the hinges, the split field.
+  //
+  // It is done HERE, on the selection this component already lives beside, and
+  // not in the 3-D: the scene reports what was clicked, exactly as it did
+  // yesterday, and nothing in `src/3d/` learns a second thing about modals.
+  // Re-opening `element` is what SWAPS the subject rather than replacing the
+  // window — the shell keeps its place, because it reads `modalArgs` and holds
+  // no state of its own about which door it is on.
+  //
+  // A shelf's window does not do this: `isDoor` is the guard, and rule 15's
+  // beside-the-object law is untouched for every other piece in the app.
+  const selected = useUiStore((s) => s.selectedElement);
+  useEffect(() => {
+    if (!isDoor || !selected?.unitId || !selected?.elementRef) return;
+    if (selected.unitId === args?.unitId && selected.elementRef === args?.panelId) return;
+    const other = units.find((u) => u.id === selected.unitId);
+    const leaf = other
+      ? (unitResult(other.id)?.panels || []).find((p) => p.id === selected.elementRef)
+      : null;
+    // Only a LEAF swaps the subject. Clicking a shelf while the doors modal
+    // stands open leaves it exactly where it is — it is not a close either.
+    if (!leaf || leaf.part !== 'FRONT' || leaf.role !== 'front' || leaf.meta?.appliance) return;
+    openModal('element', {
+      unitId: selected.unitId, panelId: selected.elementRef, anchor: args?.anchor || null,
+    });
+  }, [selected, isDoor, args, units, unitResult, openModal]);
+
   if (!unit || !panel) return null;
 
   const hand = panel.meta?.hinge === 'R' ? 'right' : 'left';
@@ -120,9 +155,34 @@ export default function DoorModal() {
         : `${unit.params.unit_num} · ${elementLabel(panel) || 'piece'}`}
       onClose={closeModal}
       anchor={anchor}
+      // ─── TURN 37 (CLAUDE.md F4c): THE DOORS MODAL'S OWN CONDUCT ───────────
+      //
+      // The owner, verbatim: *"włącza i wyłącza się jak pojebane — niech się
+      // ustawi po lewej stronie ekranu całkowicie, i niech się nie wyłącza za
+      // każdym razem jak kliknę — dopiero krzyżykiem."*
+      //
+      //   dock          it STANDS at the left edge, always the same place, and
+      //                 never over the door it is about.
+      //   sticky        a pointer-down in the scene reaches the scene: the
+      //                 window does not eat the click and does not close on it.
+      //                 (T33's own prop, unchanged — this is its second user.)
+      //   escapeCloses  the key is off. Only the × closes this window.
+      //
+      // A DOOR ONLY. This one component is still every piece's window, and a
+      // shelf's opens beside the shelf, draggable, Escape-closable — rule 15,
+      // which CLAUDE.md marked permanent and this turn overrides for THIS
+      // modal and no other.
+      dock={isDoor ? 'left' : null}
+      sticky={isDoor}
+      escapeCloses={!isDoor}
       width="w-[340px]"
     >
       <div data-door-modal={panel.id} data-door-modal-sections={isDoor ? 'B,A' : 'A'}>
+        {/* ─── TURN 37 (CLAUDE.md F4b): THE SPLIT, WHERE THE DOOR IS ───────
+            "Dodanie splitu powinno być w modalu doors też, i to widoczne
+            bardzo — nie mała jakaś malutka pierdółka." Its own row, full
+            width, first thing in the window. */}
+        {isDoor ? <SplitDoorField unit={unit} panel={panel} anchor={args?.anchor || null} /> : null}
         {/* ─── TURN 33 (CLAUDE.md F7): ONE HINGE BLOCK, AT THE TOP ─────────
             The owner walked the modal and found hinge controls in TWO places:
             the field list's rows (no arrows, no picker) and turn 19's full
@@ -212,6 +272,100 @@ export default function DoorModal() {
         </p>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * ─── TURN 37 (CLAUDE.md F4b): THE SPLIT FIELD, IN THE DOORS MODAL ───────────
+ *
+ * The owner, 17.08.2026: *"dodanie splitu powinno być w modalu doors też, i to
+ * widoczne bardzo — nie mała jakaś malutka pierdółka."*
+ *
+ * So: its OWN labelled row, FULL WIDTH, at the top of the window — the first
+ * thing in the door's modal, not a line at the bottom of a list. The bay-side
+ * field in the right-hand panel STAYS (CLAUDE.md: "the bay-side field stays");
+ * this is a second surface onto the same one number, and both commit through
+ * the same store setters, so they cannot mean two different things.
+ *
+ * WHICH NUMBER IT WRITES is the leaf's own: a leaf that lives in a BAY writes
+ * that bay's answer (`setBaySplitTop` — 0 there means "not this bay", even
+ * where the unit asked for one), and a leaf across the face writes the unit's
+ * (`setSplitTop`). That is the same hierarchy `engine/splitDoors.js splitTopFor`
+ * reads back, which is why the value below is read through it rather than off
+ * one of the two fields.
+ *
+ * AND THE WINDOW SURVIVES ITS OWN EDIT. Typing 600 RE-CUTS the leaf: `DOOR-1`
+ * becomes `DOOR-1-T` and `DOOR-1-B`, and the panel this window was opened on
+ * stops existing. Rather than going blank — which would be the "wyłącza się jak
+ * pojebane" the owner is complaining about in F4c — it re-points itself at the
+ * TOP segment (or back at the whole leaf when the split is cleared), asking the
+ * ENGINE which of the two ids is actually there rather than guessing: a number
+ * the kit refuses (either segment under 100 mm) leaves the leaf whole, and the
+ * window has to land on the door that exists.
+ */
+function SplitDoorField({ unit, panel, anchor }) {
+  const setSplitTop = useProjectStore((s) => s.setSplitTop);
+  const setBaySplitTop = useProjectStore((s) => s.setBaySplitTop);
+  const openModal = useUiStore((s) => s.openModal);
+  const notify = useUiStore((s) => s.notify);
+
+  // The leaf's own bay, and the leaf's own id — a SEGMENT carries `splitOf`,
+  // which is the whole leaf this pair was cut from.
+  const bay = panel.meta?.bay ?? null;
+  const baseId = panel.meta?.splitOf || panel.id;
+  const value = Number(panel.meta?.splitTopMm)
+    || splitTopFor({ unit: unit.params.split_top_mm, bays: unit.params.bay_doors }, bay)
+    || 0;
+
+  const commit = (v) => {
+    const mm = Math.max(0, Math.round(Number(v) || 0));
+    if (bay == null) setSplitTop(unit.id, mm);
+    else setBaySplitTop(unit.id, bay, mm);
+    const fresh = useProjectStore.getState().unitResult(unit.id);
+    const ids = new Set((fresh?.panels || []).map((p) => p.id));
+    const split = ids.has(`${baseId}-T`);
+    const next = [`${baseId}-T`, baseId].find((id) => ids.has(id));
+    if (next && next !== panel.id) {
+      // The anchor this window was opened with travels on, so the shell has an
+      // object to fall back to if this piece ever stops being a door (T31-F1's
+      // rule: an object-bound window is opened WITH its object).
+      openModal('element', { unitId: unit.id, panelId: next, anchor: anchor || null });
+    }
+    const refused = mm > 0 && !split;
+    notify(split
+      ? `${baseId}: split at ${formatMm(mm)} mm — a fix shelf goes on the line, full depth.`
+      : `${baseId}: one door${refused ? ' — that number leaves a segment under 100 mm, so it was refused' : ''}.`,
+    refused ? 'warn' : 'ok');
+  };
+
+  return (
+    <section
+      className="mb-3 pb-3 border-b border-shell-600 space-y-1"
+      data-split-door-modal={baseId}
+    >
+      <span className="block text-[11px] uppercase tracking-wide text-gold">Split door</span>
+      <div className="flex items-center gap-2 w-full">
+        <span className="text-xs text-ink-200 flex-1">Top segment</span>
+        <NumberField
+          className="cc-input w-24 text-right"
+          data-split-top-modal="1"
+          min={0}
+          value={value}
+          title="The upper leaf's height, in mm. 0 = one door, as before."
+          onCommit={commit}
+        />
+        <span className="text-[11px] text-ink-400">mm</span>
+      </div>
+      <p className="text-[11px] text-ink-400">
+        {bay == null
+          ? 'Every leaf across this face.'
+          : `Bay ${bay + 1} only — the other bays keep their own answer.`}
+        {' '}
+        The bottom segment is what is left after the 3 mm between them, and a fix shelf goes on the
+        line — full depth, no 20 mm setback: that is what a divider is. Shelves centre against it as
+        they do against the top and the base.
+      </p>
+    </section>
   );
 }
 

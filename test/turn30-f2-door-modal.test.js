@@ -121,6 +121,21 @@ test('F2 the window is called Door and carries section A and section B', () => {
   assert.match(DOOR, /\$\{unit\.params\.unit_num\} · Door · \$\{hand\}/);
   // ONE shell, so it is draggable and opens BESIDE the object by rule 15 —
   // the same three lines every modal in this app is placed by.
+  //
+  // ─── TURN 37 (CLAUDE.md F4c), 17.08.2026: …EXCEPT WHERE IT DOCKS ─────────
+  // The owner walked it and ruled: *"niech się ustawi po lewej stronie ekranu
+  // całkowicie."* A DOOR's window now stands at the left edge instead of beside
+  // the leaf — rule 15's one named exception, and CLAUDE.md's own words for it
+  // ("overrides the beside-the-object default for THIS modal only"). Turn 30's
+  // reasoning above is untouched and still describes every OTHER piece this
+  // component serves: open it on a shelf and it is beside the shelf.
+  //
+  // The assertions below stand unchanged and are load-bearing for both: ONE
+  // shell (a docked window is still the shell's window, not a second placement
+  // rule in a component), and the anchor is still handed to it — the shell is
+  // where the choice between the edge and the object is made, and a door that
+  // stopped passing its anchor could never go back to being beside anything.
+  // What guards the new law is `test/turn37-f4-split-boundary.test.js`.
   assert.equal((DOOR.match(/<Modal\b/g) || []).length, 1, 'one window, not two nested');
   assert.match(DOOR, /anchor=\{anchor\}/);
   // ─── TURN 31 (CLAUDE.md F1) ──────────────────────────────────────────────

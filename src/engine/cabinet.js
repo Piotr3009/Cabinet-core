@@ -36,7 +36,7 @@ import {
 import { resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
 import {
-  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays,
+  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
@@ -49,6 +49,8 @@ import {
 // Turn 34 (CLAUDE.md F4): the shoe box's geometry, matched to
 // reference/lisp/KIT_SHOE_BOX.lsp. This file cuts what that module answers.
 import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
+// ─── TURN 35 (CLAUDE.md F1): the rail hangs from the nearest thing below it ──
+import { railSupportTops, resolveRailAxis } from './railDatum.js';
 // Turn 33 (CLAUDE.md F11): the insert catalogue — specs with nominals, never
 // articles; the BOM line names the nominal that drops into the box.
 import { insertFor } from './drawerInserts.js';
@@ -69,6 +71,8 @@ import { shelfHingeClashes } from './shelfHingeClash.js';
 import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
 // Turn 24 (CLAUDE.md F3): G is a property of the PART, and this is the door.
 import { partitionSlot, thicknessOf } from './thickness.js';
+// Turn 35 (CLAUDE.md F8): ⌀3 or ⌀5 → the layer that carries the diameter.
+import { hingePlateLayer } from './cnc/layers.js';
 
 // ─── Hinge centres (SKYLON_COMMON calcHingePositions*) ───
 
@@ -135,6 +139,35 @@ export function hingeStandard(value, profile) {
   const n = Math.trunc(Number(value));
   const allowed = profile?.hinges?.standardOptions || [2, 3];
   return allowed.includes(n) ? n : (Number(profile?.hinges?.standard) || 3);
+}
+
+// ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ───────────────
+//
+// Owner, 16.08.2026: *"nie mamy ustawienia w ogóle 5 mm czy 3 mm screws zawiasy
+// wiercenie — niektórzy używają tak, inni inaczej"*; where it lives: *"to
+// ustawienie musi być w hardware ustawieniach"*; the default: *"5, jak jest
+// teraz"*.
+//
+// ONE resolver, exported, so the Settings row and the drilling can never
+// disagree about what this job is drilling. The cascade is the SHELF-PIN
+// SETBACK's own (turn 30, F5): the project's `params.hinge_plate_pilot_d`
+// first, the workshop profile's `platePilotD` behind it, and `holeDiameter` —
+// the number this app has drilled since turn 1 — under both. A bare
+// `computeCabinet()` says nothing at all and therefore still drills ⌀5.
+//
+// An unrecognised diameter is not honoured: `platePilotOptions` is the list of
+// diameters this app has a layer for, and a hole on a layer no tool is mapped
+// to is a hole nobody cuts.
+
+/** The plate pilot this job drills: ⌀3 or ⌀5, project over profile over ⌀5. */
+export function hingePlatePilotD(profile, params = null) {
+  const allowed = profile?.hinges?.platePilotOptions || [3, 5];
+  const base = Number(profile?.hinges?.holeDiameter) > 0 ? Number(profile.hinges.holeDiameter) : 5;
+  const shop = Number(profile?.hinges?.platePilotD);
+  const job = Number(params?.hinge_plate_pilot_d);
+  if (allowed.includes(job)) return job;
+  if (allowed.includes(shop)) return shop;
+  return base;
 }
 
 /** The index of the inner hinge nearest the middle of the door — the one that goes. */
@@ -733,6 +766,7 @@ function normalizeParams(raw, profile) {
     columnRails: columnRailItems.map((i) => ({
       zone: Math.trunc(Number(i.zone)),
       offset: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
+      datum: i.datum || null,                    // T35-F1
       material_id: i.material_id ?? null,
       material_label: i.material_label ?? null,
     })),
@@ -764,6 +798,9 @@ function normalizeParams(raw, profile) {
     drawerHeights,
     rail,
     railOffset: Number(p.rail_offset ?? railDefault),
+    // T35-F1: WHICH board the rail's number is measured from. Nothing said —
+    // every project before this turn, every bare kit call — reads the old way.
+    railDatum: hangerFromItems?.datum || p.rail_datum || null,
     // Turn 30 (CLAUDE.md F19): the depth of each arm of a corner unit's L. An
     // INPUT, defaulting to the profile's, like every other number a kit has.
     cornerArm: Number(p.corner_arm_mm) > 0 ? Number(p.corner_arm_mm) : profile.cornerUnit.armMm,
@@ -1328,7 +1365,15 @@ export function computeCabinet(params, profileOverride) {
   // feature's geometry: the aperture is a SHAPE, and the extractor's fixings
   // wait for a pattern somebody has published.
   const hoodApertureMm = Math.max(0, Number(params?.hood_aperture_mm) || 0);
-  const frontH = H - P.doors.gap + cfg.doorExtend - hoodApertureMm;
+  // ─── TURN 35 (CLAUDE.md F12): THE DOOR'S TOP EDGE ────────────────────────
+  // Until this line changed, EVERY door in the app lost 3 mm off its top,
+  // always, because that is what every kit cuts. The owner's 16.08 amendment:
+  // the 3 is a CLEARANCE and a clearance needs something to be clear OF — an
+  // infill or a cornice above asks for it, and a cabinet with nothing over it
+  // finishes flush with its own carcass top. `doors.js topDemandMm` is the
+  // whole rule, and it is in doors.js because cabinet.js may not import
+  // frontClearance.js (the layering law, pinned by turn31-f4).
+  const frontH = H - topDemandMm(params, P) + cfg.doorExtend - hoodApertureMm;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
     : W - P.doors.gap;
@@ -1704,11 +1749,42 @@ export function computeCabinet(params, profileOverride) {
   }
 
   // ── Hanging rail ───────────────────────────────────────────────────────────
+  //
+  // ─── TURN 35 (CLAUDE.md F1): THE RAIL'S OWN DATUM ────────────────────────
+  // The owner: *"drążek ustawiamy zawsze od najbliższej czegoś od dołu — albo
+  // od szuflad, albo od półek."* Until this turn the datum was the drawer
+  // stack or the floor and NOTHING else, which is the LISP's own law
+  // (KIT_WARDROBE_FULL L667) — and a shelf standing under the rail was simply
+  // not seen. `engine/railDatum.js` widens the candidate set to the shelves
+  // and resolves which one the rail actually hangs above; with no shelf below
+  // it the answer is bit-for-bit what this line has always returned, which is
+  // why a standard wardrobe does not move and F1 names no classifier bucket.
   const RL = P.wardrobe.rail;
   const hasRail = type.supports.rail && cfg.rail;
   let railY = null; let railPartY = null; let railPartCentreY = null;
+  let railSupportY = null; let railFits = true; let railWanted = null;
   if (hasRail) {
-    railY = (hasDrawers ? partitionY + G : G) + cfg.railOffset;
+    const railCeiling = H - G;
+    const railSupports = railSupportTops({
+      floor: G,
+      stackTop: hasDrawers ? partitionY + G : null,
+      // Unit-wide rail, unit-wide shelves: a shelf that belongs to one BAY
+      // does not hold up a rod that runs the whole carcass.
+      shelves: (cfg.shelfItems || [])
+        .filter((it) => it?.zone == null || !Number.isFinite(Number(it.zone)))
+        .map((it) => ({ id: it?.id ?? null, top: (Number(it?.pos_mm) || 0) + shelfThickness(it, G) })),
+      ceiling: railCeiling,
+    });
+    const resolved = resolveRailAxis({
+      supports: railSupports,
+      datum: cfg.railDatum,
+      offset: cfg.railOffset,
+      ceiling: railCeiling,
+    });
+    railSupportY = resolved.support;
+    railFits = resolved.fits;
+    railWanted = resolved.axis;
+    railY = resolved.axis;
     railPartY = railY + RL.partitionAbove;
     if (railPartY + G > H - G - RL.topClearance) {
       warnings.push({ code: 'RAIL_TOO_HIGH', message: 'Rail too high for the carcass — lowered to fit under the top.' });
@@ -3170,8 +3246,24 @@ export function computeCabinet(params, profileOverride) {
       const bay = bays[k];
       if (!bay) continue;
       const stack = columnDrawerSets.find((s) => s.zone === k) || null;
-      const base = stack ? stack.partY + G : G;
-      let colRailY = base + (Number(spec.offset) > 0 ? Number(spec.offset) : cfg.railOffset);
+      // T35-F1: the same datum law as the unit-wide rail, asked of THIS bay —
+      // its own drawer stack, its own shelves, its own floor.
+      const colCeiling = H - G;
+      const colSupports = railSupportTops({
+        floor: G,
+        stackTop: stack ? stack.partY + G : null,
+        shelves: (cfg.shelfItems || [])
+          .filter((it) => Number.isFinite(Number(it?.zone)) && Math.trunc(Number(it.zone)) === k)
+          .map((it) => ({ id: it?.id ?? null, top: (Number(it?.pos_mm) || 0) + shelfThickness(it, G) })),
+        ceiling: colCeiling,
+      });
+      const colResolved = resolveRailAxis({
+        supports: colSupports,
+        datum: spec.datum || null,
+        offset: Number(spec.offset) > 0 ? Number(spec.offset) : cfg.railOffset,
+        ceiling: colCeiling,
+      });
+      let colRailY = colResolved.axis;
       let colRailPartY = colRailY + RL.partitionAbove;
       if (colRailPartY + G > H - G - RL.topClearance) {
         warnings.push({
@@ -3189,6 +3281,7 @@ export function computeCabinet(params, profileOverride) {
           right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
         },
         railY: colRailY,
+        support: colResolved.support,
         railPartY: colRailPartY,
         material_id: spec.material_id ?? null,
         material_label: spec.material_label ?? null,
@@ -4321,6 +4414,28 @@ export function computeCabinet(params, profileOverride) {
     for (const hole of pnl.cnc?.holes || []) addDrill(pnl.id, hole.kind, hole.layer, hole.x, hole.y, hole.d);
   }
 
+  // ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ─────────────
+  //
+  // Owner, 16.08.2026: *"nie mamy ustawienia w ogóle 5 mm czy 3 mm screws
+  // zawiasy wiercenie — niektórzy używają tak, inni inaczej"*, default *"5,
+  // jak jest teraz"*.
+  //
+  // It arrives on the road every owner-standard number in this app arrives on
+  // — the SHELF-PIN SETBACK's own road, three hundred lines up: profile
+  // default → company row → project → `paramsForEngine()` → `params`, never as
+  // a changed formula and never as a new branch in the geometry. `holeDiameter`
+  // is untouched and remains what a BARE `computeCabinet()` drills, which is
+  // what keeps every golden fixture on ⌀5 and `HINGES_5MM`.
+  //
+  // The diameter and its LAYER move together, always: a ⌀3 hole on the ⌀5
+  // layer is a 5 mm bit going into a 3 mm hole on the machine, so the layer is
+  // DERIVED from the number rather than stored beside it.
+  //
+  // `wallUnit.hangers` reuses `HINGES_5MM` for a hanger cut-out and is NOT a
+  // hinge plate — it does not follow this setting and must never be made to.
+  const platePilotD = hingePlatePilotD(P, params);
+  const platePilotLayer = hingePlateLayer(platePilotD, P.hinges.layer);
+
   // Hinge holes on the hinged carcass sides
   const hingeHolePairs = centres.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset]);
   // Turn 21 (CLAUDE.md F12.2): with doors in the bays it is the LEAVES that
@@ -4334,7 +4449,7 @@ export function computeCabinet(params, profileOverride) {
   for (const sideId of platedSides) {
     const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
     for (const pair of hingeHolePairs) {
-      for (const y of pair) addDrill(sideId, 'hinge', P.hinges.layer, x, y, P.hinges.holeDiameter);
+      for (const y of pair) addDrill(sideId, 'hinge', platePilotLayer, x, y, platePilotD);
     }
   }
   // ─── TURN 21 (CLAUDE.md F12.2): THE PLATE PATTERN, ON A NEW PANEL ────────
@@ -4378,7 +4493,9 @@ export function computeCabinet(params, profileOverride) {
         // front and the other `depth − 37`), so it becomes `depth − v` here.
         // The row is the carcass's; the height starts at the partition's own
         // bottom, which on a full-height piece is one board up.
-        addDrill(part.id, 'hinge', P.hinges.layer, depth - v, y - part.box.y, P.hinges.holeDiameter);
+        // Turn 35 (CLAUDE.md F8): the plate pilot is one number for the whole
+        // cabinet — a partition's plate is the same plate as a side's.
+        addDrill(part.id, 'hinge', platePilotLayer, depth - v, y - part.box.y, platePilotD);
       }
     }
   }
@@ -5640,7 +5757,7 @@ export function computeCabinet(params, profileOverride) {
       drawer_front_y: [...budr.frontY],
       drawer_heights: [...budr.heights],
     } : {}),
-    ...(hasRail ? { rail_y: railY, rail_partition_y: railPartY } : {}),
+    ...(hasRail ? { rail_y: railY, rail_partition_y: railPartY, rail_support_y: railSupportY } : {}),
     ...(sinkBack ? { back_w: sinkBack.w, back_h: sinkBack.h, holder_w: internalWidth, holder_h: SK.railHeight } : {}),
     ...(fridge ? {
       fixed_panel_y: fridge.fixedPanelY,
@@ -5751,7 +5868,26 @@ export function computeCabinet(params, profileOverride) {
     // interior: halfway between the back panel's face (G) and the front (D).
     // View-only: the rail has no CNC of its own (HANGER_HOLE is the wall
     // bracket in a wall unit's back, a different thing entirely).
-    rail: hasRail ? { y: railY, x1: G, x2: W - G, z: (D + G) / 2 } : null,
+    // T35-F1: `support` is what the rail's number is measured FROM — published
+    // so the modal can name the datum instead of showing a bare number, and so
+    // check #13 has the opening it must fit in.
+    rail: hasRail
+      ? {
+        y: railY,
+        x1: G,
+        x2: W - G,
+        z: (D + G) / 2,
+        support: railSupportY,
+        ceiling: H - G,
+        // T35-F1: where the datum ASKED for the rod, before the kit's own
+        // too-high clamp below tidied it. The clamp stays — nothing is
+        // deleted — but check #13 measures the number the owner typed
+        // rather than the number the clamp settled for, because "never an
+        // auto-fix" means he has to be TOLD, not quietly obeyed.
+        fits: railFits,
+        wanted: railWanted,
+      }
+      : null,
     // Turn 32 (CLAUDE.md F4): the columns' own rails, beside the unit-wide one.
     columnRails: columnRailSets.map((set) => ({
       zone: set.zone, y: set.railY, x1: set.bay.from, x2: set.bay.to, z: (D + G) / 2,
@@ -5849,6 +5985,10 @@ export function computeCabinet(params, profileOverride) {
       front_type: cfg.frontType, hinge: cfg.hinge, doors: doorCount,
       shelves: numShelves, drawers: numDrawers, drawer_heights: [...(budr ? budr.heights : drawerHeights)],
       rail: hasRail, rail_offset: cfg.railOffset,
+      // T35-F12: echoed so `doors.js doorHeightOf` — the panel's OTHER reader,
+      // the one the properties panel prints — lands on the same number the
+      // piece was cut to. Two readers of one law must not be able to drift.
+      front_top_gap_mm: topDemandMm(params, P),
       ...(type.doorExtend ? { door_extend: cfg.doorExtend } : {}),
       ...(fridge ? { fridge_h: cfg.fridgeH } : {}),
       ...(type.mount === 'wall' ? { mount_height: cfg.mountHeight } : {}),

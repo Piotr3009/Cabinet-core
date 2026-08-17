@@ -1282,3 +1282,167 @@
 
 (princ "\nKIT_WARDROBE_FULL loaded. Type WARDROBE_FULL to run.")
 (princ)
+
+;;;========================================
+;; --- SPLIT DOORS (T35)
+;;;========================================
+;;; Owner, 16.08.2026: "podzial drzwi na dolne i gorne - wystarcza 2 segmenty;
+;;; wpisywanie GORNEJ czesci; i zawsze musi byc przedzielone polka FIX, ktora
+;;; NIE MA cofniecia 20 mm (automatycznie)."
+;;; Confirmed the same evening: the divider shelf is FULL DEPTH, flush with the
+;;; front, so BOTH segments have something to close against.
+;;;
+;;; THE LAW, in the order the numbers are worked out:
+;;;   1. OPENING - what the pair of segments has to close between them. It is
+;;;      the carcase height less the TOP demand, and that demand is T35-F12's,
+;;;      not a standing 3: an infill or a cornice above asks 3.0, NOTHING above
+;;;      asks 0 and the front stands flush with the carcase top. See the
+;;;      DOOR TOP EDGE (T35) section for the amendment itself; this section
+;;;      takes the demand as a number and does not decide it.
+;;;   2. TOP is the number the owner types - "wpisywanie GORNEJ czesci".
+;;;      0 = no split, and the bay keeps exactly the one door it has today.
+;;;   3. BOTTOM = OPENING - TOP - 3.0. That 3.0 is the front matrix's own gap
+;;;      between two fronts - the same 3 that already stands between a pair of
+;;;      side-by-side doors (doorGap in the main command above).
+;;;   4. The DIVIDER is a FIX shelf on the split line, and it is NOT an
+;;;      ordinary fix shelf. Ordinary shelves here are cut back:
+;;;      `szerSHELF (- szerSzafki (* 2.0 gruboscPlyty) 4.0)` and
+;;;      `wysSHELF   (- glSzafki gruboscPlyty 20.0)`. This one is cut to the
+;;;      PARTITION PANEL's law instead - full width between the sides, full
+;;;      depth to the back panel - so its front edge lands flush with the
+;;;      carcase front and each segment has a face to close against.
+;;;      "NIE MA cofniecia 20 mm (automatycznie)": the zero is not an option
+;;;      offered to the user, it is what a divider IS.
+;;;   5. HINGES are counted PER SEGMENT, from that segment's OWN height and
+;;;      weight. A split is two doors, not one door with a line drawn on it,
+;;;      and it is never the full-height count halved.
+;;;   6. BOM/CNC: two fronts and one divider. Each segment is drilled from its
+;;;      own hinge edge, exactly as a whole door is.
+;;;   7. Side clearances are unchanged; the top edge is F12's; mirrors and
+;;;      handles are asked per segment.
+;;;
+;;; Nothing above this line changes - T35 iron rule 3. This section is additive.
+
+;; The constants of the split. SPLIT_SEG_GAP is the SAME 3.0 as `doorGap` in
+;; the main command; it carries its own name so a reader of this section never
+;; has to guess which 3 is being looked at.
+(setq SPLIT_SEG_GAP    3.0)    ;; mm between the top and the bottom segment
+(setq SPLIT_SHELF_BACK 0.0)    ;; the divider's setback - ZERO, "NIE MA cofniecia 20 mm"
+(setq SPLIT_SEG_MIN    100.0)  ;; a segment shorter than this is a mistyped number
+
+;;; The opening the two segments close between them. `topDemand` is F12's:
+;;; 3.0 with an infill or a cornice above, 0.0 with nothing above.
+(defun splitDoorOpening (wysSzafki topDemand)
+  (- wysSzafki topDemand))
+
+;;; BOTTOM = OPENING - TOP - 3. The arithmetic the tests pin, in one line:
+;;;   top + SPLIT_SEG_GAP + bottom = opening, exactly, at every height.
+(defun splitDoorBottomH (opening topH)
+  (- opening topH SPLIT_SEG_GAP))
+
+;;; 0 = no split. T only when BOTH segments come out real - a 40 mm "door" is a
+;;; mistyped number and not a request, and the bay keeps its single door.
+(defun splitDoorActive (opening topH)
+  (and topH
+       (> topH 0.0)
+       (>= topH SPLIT_SEG_MIN)
+       (>= (splitDoorBottomH opening topH) SPLIT_SEG_MIN)))
+
+;;; The split line, measured from the same datum as the door's bottom edge: the
+;;; UNDERSIDE of the divider is where the bottom segment stops.
+(defun splitDoorLineY (opening topH)
+  (splitDoorBottomH opening topH))
+
+;;; The divider, cut to the PARTITION PANEL's law and NOT the shelf's. Compare
+;;; `szerPART`/`wysPART` in the main command - identical - against
+;;; `szerSHELF`/`wysSHELF`, which take 4.0 off the width and 20.0 off the depth.
+(defun splitDoorShelfW (szerSzafki G) (- szerSzafki (* 2.0 G)))
+(defun splitDoorShelfD (glSzafki G)   (- glSzafki G SPLIT_SHELF_BACK))
+
+;;; HINGES PER SEGMENT. The house counts a wardrobe door's hinges off its own
+;;; height (calcHingePositionsTall, SKYLON_COMMON.lsp) and the application
+;;; counts them off the published Blum door-height / door-weight chart
+;;; (reference/hardware/cliptop-hinge-count.json, check #4). A segment is a
+;;; door: the same question is asked twice, once per segment, each time with
+;;; that segment's own height and weight.
+(defun splitDoorHingeCount (segH segKg)
+  (cond
+    ((and (<= segH  900.0) (<= segKg  9.0)) 2)
+    ((and (<= segH 1600.0) (<= segKg 13.0)) 3)
+    ((and (<= segH 2000.0) (<= segKg 19.0)) 4)
+    ((and (<= segH 2400.0) (<= segKg 24.0)) 5)
+    (T 6)))
+
+;;; The two segments, TOP FIRST - the order the owner reads them in and the
+;;; order the modal lists them in ("gorne zawiasy na gorze listy", T35-F5's
+;;; order law applied to segments). Each entry is (label height hinges).
+(defun splitDoorSegments (opening topH segKg / bottomH)
+  (setq bottomH (splitDoorBottomH opening topH))
+  (list
+    (list "TOP"    topH    (splitDoorHingeCount topH    segKg))
+    (list "BOTTOM" bottomH (splitDoorHingeCount bottomH segKg))))
+
+(princ "\nKIT_WARDROBE_FULL: SPLIT DOORS T35 section loaded.")
+(princ)
+
+
+;;;========================================
+;; --- DOOR TOP EDGE (T35)
+;;;========================================
+;;; Owner, 16.08.2026: "jak nie ma infilla, to wysokosc drzwi szafowych jest
+;;; bez 3 mm przerwy; a jak dolozysz infill lub cornice, to wtedy skracamy o
+;;; 3 mm." Both directions - remove the cornice and the door grows back.
+;;;
+;;; THE AMENDMENT. This kit says, at L865-866:
+;;;
+;;;   (if (= numDoors 1)
+;;;     (setq szerFront (- szerSzafki 3.0) wysFront (- wysSzafki 3.0))
+;;;     (setq szerFront (/ (- szerSzafki 6.0) 2.0) wysFront (- wysSzafki 3.0)))
+;;;
+;;; - three millimetres off the top, unconditionally, in both branches. So do
+;;; KIT_BUD_FULL L200-201, KIT_BUDTALL_FULL L207-208, KIT_LOW_CABINET_FULL
+;;; L374-375 and KIT_WUD_FULL L202-203. The house has cut every door that way
+;;; since turn 1, and it was never wrong: a kit has no ROOM. It is asked for a
+;;; cabinet and it draws a cabinet, and 3 mm off the top is the safe answer
+;;; when you cannot see what is standing over the thing.
+;;;
+;;; The owner CAN see. His amendment does not say the 3 was a mistake; it says
+;;; the 3 is a CLEARANCE, and a clearance needs something to be clear OF:
+;;;
+;;;   TOP DEMAND = 3.0  when an infill or a cornice stands over the carcass
+;;;   TOP DEMAND = 0.0  when nothing does - the front finishes FLUSH with the
+;;;                     top of the carcass top panel
+;;;
+;;; Note that the second line is what KIT_WUD_FULL's own sibling already says
+;;; in prose: reference/lisp/../src/engine/cornice.js has carried the sentence
+;;; "the doors finish FLUSH with the top of the carcass top panel" since the
+;;; cornice was built, while every kit went on cutting H - 3. The amendment
+;;; settles which of the two the house means.
+;;;
+;;; WHAT DID NOT CHANGE, AND WHY THE LINES ABOVE ARE UNTOUCHED. `wysSzafki` is
+;;; all a kit is given; "is there an infill above" is a question about a ROOM
+;;; and this file cannot answer it. So the kit keeps cutting H - 3 - that is
+;;; still the right answer to the only question it is asked - and the demand
+;;; travels to the application as an INPUT, exactly as the shelf-pin setback
+;;; and the shaker frame do. A bare kit call and every golden fixture are
+;;; byte-for-byte what they were.
+;;;
+;;;   TOP_DEMAND_WITH_NEIGHBOUR   3.0   ;; infill or cornice above
+;;;   TOP_DEMAND_NOTHING_ABOVE    0.0   ;; flush with the carcass top
+;;;
+;;; Hinge drilling rides its own edge and does not move: the cups are measured
+;;; from the door's BOTTOM (`hingeCupList` = `hingePositions`, L868, carcass
+;;; centres passed straight through), so a front that grows 3 mm UPWARD leaves
+;;; every cup exactly where it was. That is the whole reason the amendment is
+;;; safe to make on a door that is already drilled.
+
+(setq TOP_DEMAND_WITH_NEIGHBOUR 3.0)   ;; infill or cornice above the carcass
+(setq TOP_DEMAND_NOTHING_ABOVE  0.0)   ;; nothing above - flush with the top
+
+;;; The door height under the amendment. `topDemand` is one of the two
+;;; constants above; the kit itself always passes the first.
+(defun doorHeightAmended (wysSzafki topDemand)
+  (- wysSzafki topDemand))
+
+(princ "\nKIT_WARDROBE_FULL: DOOR TOP EDGE T35 section loaded.")
+(princ)

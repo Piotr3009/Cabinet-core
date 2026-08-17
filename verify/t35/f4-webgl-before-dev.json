@@ -1,0 +1,271 @@
+{
+  "when": "2026-08-17T00:35:11.354Z",
+  "base": "http://127.0.0.1:5198/",
+  "flips": 10,
+  "readings": [
+    {
+      "at": "after the first project opened",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 2,
+      "released": 1,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 1",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 4,
+      "released": 3,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 2",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 6,
+      "released": 5,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 3",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 8,
+      "released": 7,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 4",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 10,
+      "released": 9,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 5",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 12,
+      "released": 11,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 6",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 14,
+      "released": 13,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 7",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 16,
+      "released": 15,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 8",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 18,
+      "released": 17,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 9",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 20,
+      "released": 19,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "flip 10",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 22,
+      "released": 21,
+      "lost": 0,
+      "restored": 0
+    },
+    {
+      "at": "after ten flips",
+      "canvases": 1,
+      "live": 1,
+      "names": [
+        "room"
+      ],
+      "created": 22,
+      "released": 21,
+      "lost": 0,
+      "restored": 0
+    }
+  ],
+  "steps": [
+    {
+      "label": "one canvas in the DOM when a project is open",
+      "ok": true,
+      "detail": "{\"canvases\":1,\"live\":1,\"names\":[\"room\"],\"created\":2,\"released\":1,\"lost\":0,\"restored\":0}"
+    },
+    {
+      "label": "one live context, and it is the room",
+      "ok": true,
+      "detail": "{\"canvases\":1,\"live\":1,\"names\":[\"room\"],\"created\":2,\"released\":1,\"lost\":0,\"restored\":0}"
+    },
+    {
+      "label": "one context MADE — a simulated unmount is not a second canvas",
+      "ok": false,
+      "detail": "created 2, released 1"
+    },
+    {
+      "label": "the visible canvas still HAS its context 2.6 s in",
+      "ok": false,
+      "detail": "{\"contextLost\":true,\"meshes\":null}"
+    },
+    {
+      "label": "and the scene it draws was not disposed under it",
+      "ok": false,
+      "detail": "{\"contextLost\":true,\"meshes\":null}"
+    },
+    {
+      "label": "ONE canvas after 10 flips",
+      "ok": true,
+      "detail": "{\"canvases\":1,\"live\":1,\"names\":[\"room\"],\"created\":22,\"released\":21,\"lost\":0,\"restored\":0}"
+    },
+    {
+      "label": "ONE live context after 10 flips",
+      "ok": true,
+      "detail": "{\"canvases\":1,\"live\":1,\"names\":[\"room\"],\"created\":22,\"released\":21,\"lost\":0,\"restored\":0}"
+    },
+    {
+      "label": "every context that was made was given back but one",
+      "ok": true,
+      "detail": "created 22, released 21"
+    },
+    {
+      "label": "no loss nobody asked for",
+      "ok": true,
+      "detail": "lost 0"
+    },
+    {
+      "label": "no reading in the whole walk saw two",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "label": "ZERO loseContext errors in the console log",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "a restore would name itself once",
+      "ok": true,
+      "detail": "0 lines, 0 restores"
+    }
+  ],
+  "console": [
+    {
+      "level": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "level": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "level": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "level": "info",
+      "text": "Cabinet Core build: 2026-08-17 00:33 UTC"
+    },
+    {
+      "level": "info",
+      "text": "Cabinet Core build: 2026-08-17 00:33 UTC"
+    },
+    {
+      "level": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "level": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "level": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "level": "info",
+      "text": "Cabinet Core build: 2026-08-17 00:33 UTC"
+    },
+    {
+      "level": "info",
+      "text": "Cabinet Core build: 2026-08-17 00:33 UTC"
+    }
+  ],
+  "errors": [
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json]",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)",
+    "TypeError: Cannot read properties of null (reading 'precision')\n    at getMaxPrecision (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33227:71)\n    at new WebGLCapabilities (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:33240:24)\n    at initGLContext (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40495:22)\n    at new WebGLRenderer (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-I6WMMSTM.js:40529:5)\n    at Object.configure (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:13799:16)\n    at run2 (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14397:28)\n    at http://127.0.0.1:5198/node_modules/.vite/deps/chunk-B3PZ27CG.js:14441:7\n    at Object.react_stack_bottom_frame (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:17486:20)\n    at runWithFiberInDEV (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:1485:72)\n    at commitHookEffectListMount (http://127.0.0.1:5198/node_modules/.vite/deps/chunk-PRYVCPEL.js:8460:122)"
+  ],
+  "rendering": [],
+  "loseContextLines": 0
+}

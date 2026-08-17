@@ -5,7 +5,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import {
   PART_GROUPS, QUICK_SELECTS, exportablePanels, groupOfPanel, panelIdsForQuickSelect,
-  treePathOfPanel,
+  projectQuickSelect, treePathOfPanel,
 } from '../engine/cnc/groups.js';
 import { groupByMaterial } from '../engine/cnc/views.js';
 import { exportMaterialDxf, exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
@@ -181,6 +181,44 @@ export default function CncTree() {
     }
   };
 
+  // ─── TURN 35 (CLAUDE.md F9): ONE TYPE, EVERY CABINET ──────────────────────
+  //
+  // "Wybór all carcases, infill, shelves etc powinien też być dla wszystkich
+  // szafek, nie tylko pojedynczych — mogę na przykład tylko eksportować
+  // shelves."
+  //
+  // The five selections were only ever reachable one cabinet at a time,
+  // because the row that carries them lives inside the per-cabinet branch and
+  // only while that branch is open. This is the same five, asked of the whole
+  // project — and it is the SAME two store writes the per-cabinet row makes,
+  // replayed per unit: everything off, then this type on. `setCncParts` is
+  // turn 11's action, unchanged; nothing new writes to the store and nothing
+  // new writes a file. The download beneath these buttons has taken "every
+  // ticked part of every ticked cabinet" since turn 17, so a project-wide
+  // Shelves followed by it IS "eksportować tylko shelves", in one file.
+  //
+  // A cabinet whose parts are OFF the sheet as a whole (its own tick) is left
+  // off: the unit tick says "not this cabinet at all" and a type selection is
+  // not the place to overrule it.
+  const applyProjectWide = (q) => {
+    const plan = projectQuickSelect(
+      sheets.map((s) => ({ unitId: s.unit.id, panels: s.parts })),
+      q.id,
+    );
+    for (const row of plan) {
+      setCncParts(row.unitId, row.all, false);
+      setCncParts(row.unitId, row.ids, true);
+    }
+    const parts = plan.reduce((n, r) => n + r.ids.length, 0);
+    const cabinets = plan.filter((r) => r.ids.length).length;
+    if (!parts) { notify(`No ${q.label.toLowerCase()} anywhere in this project.`, 'warn'); return; }
+    notify(
+      `${q.label} — ${parts} part${parts === 1 ? '' : 's'} across `
+      + `${cabinets} cabinet${cabinets === 1 ? '' : 's'}. The download takes exactly these.`,
+      'ok',
+    );
+  };
+
   if (!units.length) {
     return <p className="p-3 text-sm text-ink-400">Nothing to cut yet — add a unit in 3D.</p>;
   }
@@ -190,6 +228,43 @@ export default function CncTree() {
       <div className="cc-row">
         <span className="text-[11px] uppercase tracking-wide text-ink-400">On the sheet</span>
         <button type="button" className="cc-btn px-2" onClick={resetCncVisibility}>Show all</button>
+      </div>
+
+      {/* ─── Turn 35 (CLAUDE.md F9): THE TYPE LIST, WHOLE PROJECT ───────────
+          "Wybór all carcases, infill, shelves etc powinien też być dla
+          wszystkich szafek, nie tylko pojedynczych."
+
+          The SAME five selections the per-cabinet row carries (they are one
+          list, `QUICK_SELECTS`, so the two rows can never come to mean
+          different things) — here applied to every cabinet at once. It lives
+          OUTSIDE the cabinet loop below on purpose: a project-wide control
+          inside a per-cabinet branch would be a project-wide control you have
+          to open a cabinet to reach.
+
+          It ticks and nothing else. The EXPORT is the one below it, untouched
+          — "export poprzez materiał zostaw jak jest". */}
+      <div className="border border-shell-600 rounded p-2 space-y-1.5" data-cnc-quick-all="1">
+        <span className="text-[11px] uppercase tracking-wide text-ink-400">Select by type — every cabinet</span>
+        <div className="grid grid-cols-2 gap-1">
+          {QUICK_SELECTS.map((q) => (
+            <button
+              key={q.id}
+              type="button"
+              data-cnc-quick-project={q.id}
+              title={q.id === 'all'
+                ? 'Every cut part of every cabinet — back to the whole job'
+                : `${q.hint} — in every cabinet of this project`}
+              className="px-1.5 py-1 text-[10px] rounded border border-shell-600 text-ink-100 hover:bg-shell-700"
+              onClick={() => applyProjectWide(q)}
+            >
+              {q.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px] text-ink-400 leading-snug">
+          Ticks that type in every cabinet and unticks the rest, so the download below sends one type
+          across the whole job. Each cabinet keeps its own row of these below.
+        </p>
       </div>
 
       {/* ─── Turn 17 (CLAUDE.md F2.1): CHOOSE THE MATERIAL, EXPORT THE LOT ───

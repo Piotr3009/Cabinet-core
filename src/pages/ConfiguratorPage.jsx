@@ -428,7 +428,23 @@ export default function ConfiguratorPage() {
             component, one open/close path and one registry of what is open. */}
         {modal === 'element' && <DoorModal />}
         {/* Turn 12 (CLAUDE.md F4): one cabinet, its own canvas, mounted only
-            while the window is open. */}
+            while the window is open.
+            ─── TURN 35 (CLAUDE.md F4): LOOKED AT, AND LEFT ────────────────
+            `modal` is ONE slot, so pushing 'part-detail' from this window
+            unmounts its canvas and builds it again on the way back — two
+            teardowns and two creations per drill-in. Keeping the editor
+            MOUNTED-BUT-HIDDEN behind the detail was tried on paper and does
+            not survive the shell: `components/Modal.jsx` hangs its Escape
+            handler on the WINDOW, so a hidden editor (whose `canBack` is true
+            the moment the detail is pushed) would answer Escape as well as the
+            detail and go back two levels on one press; its ResizeObserver
+            re-places a window whose box has just become 0×0; and its `big`
+            state would survive a pop that today re-opens maximised. A second
+            canvas rendering behind a window nobody can see also works against
+            the very complaint F4 is about. The cure for the contexts was never
+            here — it is that r3f's late teardown timer must not touch a canvas
+            this app has already released, or one it has not
+            (`3d/contextGuard.jsx`). Recorded rather than forced. */}
         {modal === 'cabinet' && <CabinetEditorModal />}
         {/* ─── Turn 14 (CLAUDE.md F7) ───
             One part, in the hand on the left and on the machine on the right.

@@ -45,8 +45,11 @@ const of = (n) => check().filter((f) => f.check === n);
 test('the rules, each with the owner’s colour', () => {
   // 16.08.2026 (chat-fix, decision C): rule 12 joined — "Shoe box × hinge
   // collision" — eleven became twelve.
-  assert.equal(CHECKS.length, 12);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  // T35-F1: and rule 13, "Rail × obstacle above" — the fault the rail's own
+  // datum brought with it. Report, never auto-fix; the twelve before it are
+  // untouched, which is what the list below is for.
+  assert.equal(CHECKS.length, 13);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -62,6 +65,7 @@ test('the rules, each with the owner’s colour', () => {
     10: 'red',
     11: 'red',
     12: 'red',
+    13: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

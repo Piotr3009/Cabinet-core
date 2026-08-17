@@ -2,9 +2,8 @@ import { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { mm } from './constants.js';
-import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { lightingSpec, stripsForUnit } from '../engine/ledStrips.js';
+import { lightingSpec, resolveLighting, stripsForUnit } from '../engine/ledStrips.js';
 
 // ─── TURN 33 (CLAUDE.md F1): THE STRIPS, DRAWN — emissive only ──────────────
 // ─── CHAT-FIX 16.08.2026 (owner, point 2): AMENDED — the halo, v2 ───────────
@@ -85,7 +84,13 @@ export default function LedStrips({
   const profile = useCabinetProfileStore((s) => s.profile);
   // The light switch — "Turn on the light". ON: emissive up, aura, lamps.
   // OFF: dark strips, nothing else (owner, 16.08 — and the frame rate's too).
-  const lightOn = useUiStore((s) => s.lightDemo);
+  //
+  // ─── TURN 35 (CLAUDE.md F10): READ WHERE THE ONE STATE LIVES ──────────────
+  // It used to be the session's `uiStore.lightDemo`. The owner's two buttons
+  // merged that flag with the project's `enabled`, so the switch is the
+  // PROJECT'S answer and the 3D reads it off the design it is already handed —
+  // one flag, no mirror to fall out of step with.
+  const lightOn = useMemo(() => resolveLighting(design, profile).on, [design, profile]);
 
   const strips = useMemo(() => stripsForUnit({
     unit, result, design, profile,

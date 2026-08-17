@@ -288,6 +288,89 @@ export function spreadOverlappingRows(rows, { labelMm = 40, stepMm = LABEL_STEP_
 }
 
 /**
+ * ─── TURN 35 (CLAUDE.md F11): A DRAWER FRONT BEHIND A SHUT DOOR ────────────
+ *
+ * The owner, 16.08.2026: *"jeśli są szuflady w szafie, to nie pokazuj wymiarów
+ * frontów szuflad, dopóki nie otworzysz szafy — w innym przypadku to nie ma
+ * sensu."*
+ *
+ * A wardrobe's internal drawers stand BEHIND its door — z 518 against the
+ * door's 596 on a stock 600 carcass — so with the door shut the client is
+ * looking at one leaf and the scene was writing six more figures across it
+ * for boards nobody can see. The drawer fronts' own numbers wait for the door.
+ *
+ * TWO QUESTIONS, kept apart because they are two different things:
+ *
+ *   `unitHasDoors`  is there anything IN THE WAY? A drawer bank with no door
+ *                   (BUDR) has nothing to wait for and hides nothing, ever.
+ *                   An APPLIANCE face is not a door in this sense — it is the
+ *                   machine's own front, arriving fitted as one of the three
+ *                   pieces the kit is, and there are no drawers of ours behind
+ *                   it to hide.
+ *   `doorsAreOpen`  is one of those doors standing open? The threshold is the
+ *                   store's own `> 0.5` (`uiStore toggleAllFronts`), so a door
+ *                   part-way through its swing already counts — the same
+ *                   ruling F6.7 made for the ironmongery.
+ *
+ * WHAT COUNTS AS "a drawer front dimension", exactly: the figures that are
+ * ABOUT a drawer front and nothing else — its own width, its own height, and
+ * the gap between two drawer fronts. A figure with a CARCASS edge at one end
+ * (`to-side`, `to-top`, `to-floor`) is the cabinet's own clearance and is read
+ * off the leaf that is on show, so it stays; and no door figure moves.
+ */
+
+/** The fronts that are DOORS: not a drawer front, and not an appliance's face. */
+function doorPanels(result) {
+  return (result?.panels || []).filter((p) => p?.role === 'front' && p.box
+    && p.part !== 'DRAWER-FRONT' && !p?.meta?.appliance);
+}
+
+/** Has this cabinet anything that has to be opened before you see inside it? */
+export function unitHasDoors(result) {
+  return doorPanels(result).length > 0;
+}
+
+/**
+ * Is one of this cabinet's doors open?
+ * @param {object} result
+ * @param {object|null} openFronts  uiStore's `openFronts[unitId]`, `{ [panelId]: 0..1 }`
+ */
+export function doorsAreOpen(result, openFronts = null) {
+  if (!openFronts) return false;
+  return doorPanels(result).some((p) => Number(openFronts[p.id]) > 0.5);
+}
+
+/**
+ * THE LAW: does this cabinet draw its drawer fronts' own figures right now?
+ *
+ * No doors → always (a drawer bank is exactly what it was). Doors → only
+ * while one of them is open.
+ */
+export function drawerFrontDimsVisible(result, openFronts = null) {
+  return unitHasDoors(result) ? doorsAreOpen(result, openFronts) : true;
+}
+
+/** Is this row ABOUT a drawer front and nothing else? */
+function isDrawerFrontRow(row, drawerIds) {
+  if (row.kind === 'front-w' || row.kind === 'front-h') return drawerIds.has(row.a);
+  if (row.kind === 'between-drawers') return drawerIds.has(row.a) && drawerIds.has(row.b);
+  return false;
+}
+
+/**
+ * The same rows, with the drawer fronts' own figures taken out.
+ *
+ * Runs BEFORE `spreadOverlappingRows`, so the labels that remain climb only
+ * over each other: a door figure never keeps a rung it was pushed onto by a
+ * figure that is no longer drawn.
+ */
+export function withoutDrawerFrontRows(rows, result) {
+  const drawerIds = new Set(frontRects(result).filter((f) => f.kind === 'drawer').map((f) => f.id));
+  if (!drawerIds.size) return rows || [];
+  return (rows || []).filter((row) => !isDrawerFrontRow(row, drawerIds));
+}
+
+/**
  * Sizes and gaps together — what the scene draws when the toggle is on.
  *
  * ─── TURN 34 (CLAUDE.md F5): ONE FIGURE AT A MEETING LINE ─────────────────
@@ -306,8 +389,18 @@ export function spreadOverlappingRows(rows, { labelMm = 40, stepMm = LABEL_STEP_
  * Nothing else moves: every other row this function has ever produced — the
  * sizes, the door-to-door and drawer-to-drawer gaps, to-top, to-floor — is
  * exactly what it was, and an empty set is turn 25's own answer to the byte.
+ *
+ * ─── TURN 35 (CLAUDE.md F11) ──────────────────────────────────────────────
+ *
+ * `opts.drawerFronts: false` is the one new thing, and it is opt-in: a call
+ * with three arguments — every caller written before tonight, `unitCard.js`
+ * among them — is turn 34's own answer to the byte, because the option is
+ * `undefined` and the branch is not taken. The DECISION is
+ * `drawerFrontDimsVisible`; this only carries it out.
+ *
+ * @param {{drawerFronts?: boolean}|null} [opts]
  */
-export function frontDimensionRows(result, profile = null, suppress = null) {
+export function frontDimensionRows(result, profile = null, suppress = null, opts = null) {
   const gaps = frontGaps(result);
   const kept = suppress instanceof Set && suppress.size
     ? gaps.filter((row) => {
@@ -318,7 +411,10 @@ export function frontDimensionRows(result, profile = null, suppress = null) {
       return !suppress.has(`${panelId}|${side}`);
     })
     : gaps;
-  return spreadOverlappingRows([...frontSizes(result, profile), ...kept]);
+  const rows = [...frontSizes(result, profile), ...kept];
+  return spreadOverlappingRows(
+    opts?.drawerFronts === false ? withoutDrawerFrontRows(rows, result) : rows,
+  );
 }
 
 const round = (v) => Math.round((Number(v) || 0) * 100) / 100;

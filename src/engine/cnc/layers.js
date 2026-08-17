@@ -49,6 +49,20 @@ export const CNC_LAYERS = [
   // ⌀5 would be drilled by the plate's program on the plate's side of the door.
   { name: 'HANDLES_5MM',        aci: 42, screen: '#ffd43b', label: 'Handles ⌀5',    kind: 'hole' },
   { name: 'HINGES_5MM',         aci: 5,  screen: '#74a9ff', label: 'Hinges ⌀5',      kind: 'hole' },
+  // ─── TURN 35 (CLAUDE.md F8): THE SAME PLATE, THE OTHER PILOT ───────────
+  // Owner, 16.08.2026: "nie mamy ustawienia w ogóle 5 mm czy 3 mm screws
+  // zawiasy wiercenie — niektórzy używają tak, inni inaczej". A workshop that
+  // knocks its plates in on ⌀3 screws drills ⌀3, and the diameter says so the
+  // only way this app has ever let a diameter speak: in the LAYER NAME, by the
+  // house grammar `{FEATURE}_{DIAMETER}MM`. No text style rides with it — the
+  // DXF writer has no STYLE table (the 02.08 VCarve crash law), and the name
+  // is what VCarve maps the tool by regardless.
+  //
+  // ACI 43 sits beyond the handles' 42 and is unused by the LISP's own table,
+  // so nothing AutoCAD already draws changes colour. The screen tone is a
+  // DEEPER blue than HINGES_5MM's #74a9ff: the same feature, read at a glance
+  // as the other diameter, never mistaken for it.
+  { name: 'HINGES_3MM',         aci: 43, screen: '#4c6ef5', label: 'Hinges ⌀3',      kind: 'hole' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },
@@ -87,6 +101,26 @@ export function cncLayer(name) {
 /** Screen colour for the CNC preview. */
 export function layerScreenColor(name) {
   return cncLayer(name).screen;
+}
+
+// ─── TURN 35 (CLAUDE.md F8): ⌀3 OR ⌀5 → THE LAYER THAT CARRIES IT ──────────
+//
+// ONE place turns the hinge-plate pilot into a layer name, so the engine, the
+// 3-D bore and the hand-editor's defaults can never disagree about which layer
+// a ⌀3 plate hole lands on. It is the house grammar spelled out —
+// `{FEATURE}_{DIAMETER}MM`, the decimal point written as `_` — and it is
+// deliberately a LOOKUP rather than string arithmetic: a diameter this table
+// has never met falls back to the ⌀5 the app has drilled since turn 1 rather
+// than inventing a layer no machine has a tool mapped to.
+const HINGE_PLATE_LAYERS = { 3: 'HINGES_3MM', 5: 'HINGES_5MM' };
+
+/**
+ * The carcass-side hinge-plate layer for a pilot diameter.
+ * @param {number} d  the pilot, ⌀3 or ⌀5
+ * @param {string} fallback  what an unknown diameter takes — the app's own ⌀5
+ */
+export function hingePlateLayer(d, fallback = 'HINGES_5MM') {
+  return HINGE_PLATE_LAYERS[Math.round(Number(d))] || fallback;
 }
 
 

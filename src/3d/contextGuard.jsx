@@ -67,6 +67,61 @@ import { useCallback, useEffect, useRef } from 'react';
 // It ships in the production bundle for the same reason `window.__cc` does
 // (turn 11): the build that gets verified has to be the build that gets used.
 // It reaches nothing — four counters and a Set of canvases.
+//
+// ─── TURN 35 (CLAUDE.md F4): THE THIRD FINDING, AND IT WAS OURS ─────────────
+//
+// The owner's console, 16.08: a wall of `WebGL: INVALID_OPERATION: loseContext:
+// context already lost`, a frozen viewport, and "renderowanie zabiera sporo
+// pamięci, bo się zacina".
+//
+// Turn 21 had already stopped THIS module shooting a corpse. The lines came
+// back because a SECOND caller shoots the same one, 500 ms later, and it is not
+// ours. `@react-three/fiber` 9.4.0, `unmountComponentAtNode` — the cleanup of
+// `CanvasImpl`'s own `React.useEffect(… return () => unmountComponentAtNode(
+// canvas), [])` — schedules this, verbatim from
+// `node_modules/@react-three/fiber/dist/events-*.esm.js`:
+//
+//     setTimeout(() => {
+//       try {
+//         state.events.disconnect?.();
+//         state.gl?.renderLists?.dispose?.();
+//         state.gl?.forceContextLoss?.();      // ← the second shot
+//         if (state.gl?.xr) state.xr.disconnect();
+//         dispose(state.scene);                // ← and this, on a live scene
+//         _roots.delete(canvas);               // ← and this
+//         if (callback) callback(canvas);
+//       } catch (e) { /* ... */ }
+//     }, 500);
+//
+// TWO different failures come out of that one timer, and they need different
+// answers:
+//
+//   THE CANVAS IS GONE — an ordinary unmount. Our release has already given the
+//   context back (that is this module's whole job), so half a second later
+//   r3f's call finds an already-lost context and the browser prints one line
+//   per canvas. Nothing is broken; the console is. The call is SWALLOWED.
+//
+//   THE CANVAS IS STILL THERE — `<React.StrictMode>` (src/main.jsx). React's
+//   simulated unmount runs every effect cleanup and then runs the effect again
+//   WITHOUT touching the DOM: r3f's cleanup fires, schedules the timer, and the
+//   canvas, the renderer and the whole tree go on living. 500 ms after the
+//   window opens the timer force-loses a LIVE context and disposes the scene
+//   the visible tree is drawing — the frozen viewport, exactly. Here the call
+//   THROWS, because r3f wraps that whole body in ONE try/catch: throwing on the
+//   `forceContextLoss` line is what stops `dispose(state.scene)` and
+//   `_roots.delete(canvas)` from reaching a root that is still in use, and the
+//   exception dies in r3f's own empty catch. (`state.events.disconnect()` and
+//   `renderLists.dispose()` run before it and are left alone: `disconnect` is
+//   called by r3f's own `connect()` too, so a wrapper on it would break event
+//   wiring — and CanvasImpl's layout effect has no dependency array, so the
+//   next render reconnects the events by itself. The render lists rebuild every
+//   frame.)
+//
+// And the first half of that same StrictMode sequence was OURS: the effect
+// cleanup below called `release()` on a canvas that was not going anywhere, so
+// this module killed the live context and then handed the corpse back to a tree
+// that carried on rendering into it. `release()` asks first now — a canvas that
+// is still in the document is not an unmount, it is React looking twice.
 
 /**
  * Canvases whose context THIS MODULE dropped.
@@ -79,6 +134,30 @@ import { useCallback, useEffect, useRef } from 'react';
  * survives the handover. Weak, so nothing is retained.
  */
 const DELIBERATE = new WeakSet();
+
+/**
+ * The handle guarding each canvas — ONE per element, for the life of it.
+ *
+ * Turn 35 (CLAUDE.md F4). `attach` used to make a new handle every time it was
+ * asked, which was true while a ref could only be given one element once.
+ * StrictMode's simulated unmount breaks that: the hook's `held` is cleared by
+ * the cleanup and the ref then re-attaches THE SAME CANVAS, so a second handle
+ * would count a second `created`, hang a second pair of listeners on one
+ * element and leave the first handle holding a renderer nobody will release.
+ * Weak, so a canvas that goes away takes its entry with it.
+ */
+const GUARDED = new WeakMap();
+
+/**
+ * How many times ONE canvas will be brought back from a loss nobody asked for.
+ *
+ * A driver that keeps killing contexts must not be answered forever — three
+ * tries is a hiccup survived, a fourth is a machine saying no.
+ */
+const MAX_RESTORES = 3;
+
+/** The message r3f's own empty catch swallows. See the header. */
+const LATE_TEARDOWN_STOPPED = 'cabinet-core: r3f\'s late teardown was stopped — this canvas is still live';
 
 /** The diagnosis object, created on first use. */
 function contextDiag() {
@@ -112,9 +191,19 @@ function contextDiag() {
 function attach(canvas, name) {
   const diag = contextDiag();
   if (!diag || !canvas) return null;
+  // ─── TURN 35 (CLAUDE.md F4): ONE HANDLE PER CANVAS ────────────────────────
+  // Asked twice for the same element — which is what React's simulated unmount
+  // does, and what a recomposed ref has always been able to do — the answer is
+  // the handle that already guards it. Anything else counts a context that was
+  // never made and leaves a live renderer unguarded. See `GUARDED`.
+  const already = GUARDED.get(canvas);
+  if (already && !already.releasing) return already;
 
   const handle = {
     name, canvas, gl: null, releasing: false,
+    // Turn 35 (F4): the ONE call our own release is allowed to make through
+    // the wrapper below, and the count of restores already attempted.
+    allowForce: false, loseExt: null, restores: 0, deferred: false,
     // ─── TURN 21 (CLAUDE.md F5.1): IS THERE STILL A CONTEXT TO GIVE BACK? ──
     // The owner's console: `WebGL: INVALID_OPERATION: loseContext: context
     // already lost`, ten times, out of `forceContextLoss`. Releasing a context
@@ -136,6 +225,14 @@ function attach(canvas, name) {
     if (!handle.releasing && !DELIBERATE.has(handle.canvas)) {
       diag.lost += 1;
       diag.events.push({ name, kind: 'lost' });
+      // ─── TURN 35 (CLAUDE.md F4): "…AND RESTORES" ────────────────────────
+      // Preventing the default makes a context restorable; it does not restore
+      // it. A context lost through `WEBGL_lose_context` — which is what
+      // `forceContextLoss` is, and what a browser reclaiming the oldest of
+      // sixteen amounts to — comes back only when somebody asks for it. Nobody
+      // ever did, so the guard has been counting a fault it could have healed.
+      // This is a loss NOBODY here asked for: ask.
+      restoreLater(handle);
       return;
     }
     // ─── OUR OWN RELEASE IS NOT AN INCIDENT ────────────────────────────────
@@ -159,6 +256,12 @@ function attach(canvas, name) {
     handle.gone = false;
     diag.restored += 1;
     diag.events.push({ name, kind: 'restored' });
+    // ─── TURN 35 (CLAUDE.md F4): "one console line naming a restore" ───────
+    // ONE line, and it says WHICH surface came back — a restore is the rare
+    // thing in this file that a person actually wants to be told about, and a
+    // console that says it twice is a console that gets read as noise.
+    // eslint-disable-next-line no-console
+    console.info(`[cabinet-core] WebGL context restored — the ${name} canvas is live again.`);
   };
 
   canvas.addEventListener('webglcontextlost', handle.onLost, true);
@@ -166,7 +269,121 @@ function attach(canvas, name) {
   diag.created += 1;
   diag._live.add(handle);
   diag.events.push({ name, kind: 'created' });
+  GUARDED.set(canvas, handle);
   return handle;
+}
+
+/**
+ * Ask for a lost context back — on the NEXT task, and not forever.
+ *
+ * Turn 35 (CLAUDE.md F4). `restoreContext()` may not be called from inside the
+ * `webglcontextlost` handler: the loss has to have been dispatched in full
+ * first, or the browser ignores it. The extension object is the one taken at
+ * `onCreated` time, because `getExtension` on a context that has already gone
+ * answers null and there would be nothing left to ask with.
+ */
+function restoreLater(handle) {
+  if (!handle?.loseExt || handle.restores >= MAX_RESTORES) return;
+  handle.restores += 1;
+  setTimeout(() => {
+    try { handle.loseExt.restoreContext(); } catch { /* the driver said no */ }
+  }, 0);
+}
+
+/**
+ * Take r3f's renderer, and take its `forceContextLoss` with it.
+ *
+ * Turn 35 (CLAUDE.md F4), and the header says why in full. The one line being
+ * defused is `state.gl?.forceContextLoss?.()` inside the 500 ms `setTimeout`
+ * that `unmountComponentAtNode` schedules —
+ * `node_modules/@react-three/fiber/dist/events-*.esm.js`, r3f 9.4.0. An own
+ * property on the renderer INSTANCE shadows three's prototype method, so
+ * nothing global is patched and a renderer this app never adopted is untouched.
+ *
+ *   ours          `release()` raises `allowForce` for exactly one call, which
+ *                 goes straight through to three's own method.
+ *   canvas gone   the context went with it; the call would print
+ *                 `INVALID_OPERATION: loseContext: context already lost` and do
+ *                 nothing else. Swallowed, and r3f's remaining cleanup — the
+ *                 scene disposal, the root de-registration — runs as it should.
+ *   canvas live   StrictMode's simulated unmount. THROW: r3f's timer wraps its
+ *                 whole body in one try/catch, so the throw is what keeps
+ *                 `dispose(state.scene)` and `_roots.delete(canvas)` off a root
+ *                 the visible tree is still rendering into.
+ */
+const WRAPPED = Symbol('cabinet-core.guardedForceContextLoss');
+
+/**
+ * WHAT TO DO with a call to `forceContextLoss` — the whole decision, pure.
+ *
+ * Turn 35 (CLAUDE.md F4). It is three lines and it is the centre of the
+ * feature, so it is a function of its two facts and nothing else: whether the
+ * call is OURS, and whether the canvas is still in the document. Everything
+ * around it — the renderer, the timer, the try/catch it is thrown into — is
+ * wiring, and wiring cannot be asserted in node.
+ *
+ * @returns {'through'|'stop'|'swallow'}
+ *   through  our own release, on a live context: three's own method runs.
+ *   stop     somebody else's call against a canvas that is STILL LIVE. It must
+ *            not happen and the rest of the caller must not happen either.
+ *   swallow  somebody else's call against a canvas that has gone. Harmless,
+ *            except that the browser prints a line about it. Say nothing.
+ */
+export function lateLossVerdict({ ours = false, connected = false } = {}) {
+  if (ours) return 'through';
+  return connected ? 'stop' : 'swallow';
+}
+
+function adoptRenderer(handle, gl) {
+  if (!handle || !gl) return;
+  handle.gl = gl;
+  // The extension, taken while the context is alive — `restoreLater` needs it
+  // after the context is not.
+  if (!handle.loseExt) {
+    try {
+      handle.loseExt = gl.getContext?.()?.getExtension?.('WEBGL_lose_context') || null;
+    } catch { handle.loseExt = null; }
+  }
+  if (typeof gl.forceContextLoss !== 'function' || gl.forceContextLoss[WRAPPED]) return;
+  const native = gl.forceContextLoss.bind(gl);
+  const guarded = function guardedForceContextLoss() {
+    const verdict = lateLossVerdict({
+      ours: handle.allowForce === true,
+      connected: handle.canvas?.isConnected === true,
+    });
+    if (verdict === 'through') {
+      handle.allowForce = false;
+      return native();
+    }
+    if (verdict === 'stop') throw new Error(LATE_TEARDOWN_STOPPED);
+    return undefined;
+  };
+  guarded[WRAPPED] = true;
+  gl.forceContextLoss = guarded;
+}
+
+/**
+ * A canvas that is still in the document has not been unmounted.
+ *
+ * Turn 35 (CLAUDE.md F4). React removes a deleted subtree's DOM in the mutation
+ * phase and runs the passive cleanups afterwards, so at the moment the hook's
+ * cleanup runs a REAL unmount has already detached the canvas — which is what
+ * turn 20 relied on in as many words ("the canvas element is detached by then").
+ * StrictMode's simulated unmount touches no DOM at all, so a connected canvas
+ * is React looking twice and its context must be left exactly where it is.
+ *
+ * The re-check is belt and braces: if some path ever runs the cleanup before
+ * the element goes, the context is still given back one task later rather than
+ * leaked. A canvas that is STILL connected then is simply alive, and the real
+ * unmount will come back through `release` in its own time.
+ */
+function releaseWhenGone(handle) {
+  if (handle.deferred) return;
+  handle.deferred = true;
+  setTimeout(() => {
+    handle.deferred = false;
+    if (!handle.canvas?.isConnected) release(handle);
+  }, 0);
 }
 
 /**
@@ -191,13 +408,21 @@ function stillLive(handle) {
  * Give the context back — ONCE, and only while there is one.
  *
  * Idempotent by `releasing`, which is turn 20's; and quiet on a dead context by
- * `stillLive`, which is turn 21's. The two are different questions: the first
- * is "have I already done this", the second is "is there anything to do".
+ * `stillLive`, which is turn 21's; and turn 35's third question in front of
+ * both — "is this canvas actually going anywhere". Three questions, three
+ * turns, and each one of them cost the owner a console full of red.
  */
 function release(handle) {
   if (!handle || handle.releasing) return;
+  // ─── TURN 35 (CLAUDE.md F4): A SIMULATED UNMOUNT IS NOT AN UNMOUNT ───────
+  // `<React.StrictMode>` runs every cleanup and then runs the effect again
+  // without taking one node out of the document. Releasing here killed a
+  // context the visible tree went on drawing into — this module causing the
+  // very freeze it was written to prevent. See `releaseWhenGone`.
+  if (handle.canvas?.isConnected) { releaseWhenGone(handle); return; }
   const diag = contextDiag();
   handle.releasing = true;
+  GUARDED.delete(handle.canvas);
   diag._live.delete(handle);
   diag.released += 1;
   diag.events.push({ name: handle.name, kind: 'released' });
@@ -222,6 +447,13 @@ function release(handle) {
   // safe on a context that has gone, which is exactly the split turn 20 missed
   // by treating "release" as one indivisible act.
   const live = stillLive(handle);
+  // ─── TURN 35 (CLAUDE.md F4): THE ONE SHOT THE WRAPPER LETS THROUGH ───────
+  // `adoptRenderer` replaced `gl.forceContextLoss` with a guard that refuses
+  // every caller but this one. Raised for the length of the try and lowered
+  // again whatever happens — including the branch where `live` is false and the
+  // call is never made, or r3f's timer half a second later would find the door
+  // open and print the owner's line after all.
+  handle.allowForce = true;
   try {
     if (handle.gl) {
       if (live) handle.gl.forceContextLoss?.();
@@ -230,6 +462,7 @@ function release(handle) {
       loseContextOf(handle.canvas);
     }
   } catch { /* already gone */ }
+  handle.allowForce = false;
   // Whatever happened above, this canvas's context is not ours any more.
   handle.gone = true;
   // `onLost` is deliberately NOT removed. `webglcontextlost` is dispatched
@@ -276,6 +509,14 @@ export default function useContextGuard(name) {
   // THE RELEASE. The owner's unmount, which React runs exactly once and only
   // when the window is really going: the canvas element is detached by then
   // and the handle still holds it, which is all `loseContext` needs.
+  //
+  // ─── TURN 35 (CLAUDE.md F4) ───
+  // Under `<React.StrictMode>` React runs this cleanup on a mount that is NOT
+  // going away, so "exactly once" was never true in development — `release`
+  // asks whether the canvas is still in the document before it does anything,
+  // and `attach` hands the same handle back when the ref comes round again.
+  // Not one character of the line below changes: the question belongs where
+  // both callers of `release` go through it.
   useEffect(() => () => { release(held.current); held.current = null; }, [name]);
 
   const ref = useCallback((canvas) => {
@@ -294,8 +535,35 @@ export default function useContextGuard(name) {
   }, [name]);
 
   const onCreated = useCallback((state) => {
-    if (held.current && state?.gl) held.current.gl = state.gl;
+    const gl = state?.gl;
+    if (!gl) return;
+    // ─── TURN 35 (CLAUDE.md F4) ───
+    // `held` can be empty for a moment — StrictMode's cleanup clears it and the
+    // ref fills it again, and r3f's `onCreated` is the end of an AWAIT, so it
+    // can land in between. The renderer knows its own canvas
+    // (`gl.domElement`), and `GUARDED` knows that canvas's handle, so the
+    // renderer is never adopted by nobody.
+    const handle = held.current || GUARDED.get(gl.domElement) || null;
+    adoptRenderer(handle, gl);
   }, []);
 
   return { ref, onCreated };
+}
+
+/**
+ * The diagnosis, for a walk that has to ASK rather than photograph (R4).
+ *
+ * Turn 35 (CLAUDE.md F4). `window.__cc.diag` has existed since turn 20 but is
+ * built by the first canvas to mount, so a proof script that lands before one
+ * has nothing to read and cannot tell "zero contexts" from "no counter yet".
+ * This is the same object, made on demand — published in `src/main.jsx` beside
+ * every other reader the acceptance walks ask questions of.
+ */
+export function contextDiagnosis() {
+  return contextDiag();
+}
+
+/** Which canvas the guard holds a handle for — the walk's "one canvas" check. */
+export function guardedHandle(canvas) {
+  return GUARDED.get(canvas) || null;
 }

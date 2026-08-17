@@ -49,6 +49,7 @@ export default function ElementProperties({
   const setShelfType = useProjectStore((s) => s.setShelfType);
   // Turn 34 (CLAUDE.md F4): the shoe box's three decisions, on its item.
   const setShoeBox = useProjectStore((s) => s.setShoeBox);
+  const setRailHeight = useProjectStore((s) => s.setRailHeight);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
   // Turn 24 (CLAUDE.md F3.3): which carcass board this partition is cut from.
   const setPartitionSlot = useProjectStore((s) => s.setPartitionSlot);
@@ -148,8 +149,44 @@ export default function ElementProperties({
   const shoeBoxItem = (unit.params.sections?.[0]?.items || [])
     .find((i) => i.kind === 'shoe_box' && i.id === panel?.meta?.shoe_box) || null;
 
+  // ─── TURN 35 (CLAUDE.md F1): the rail's own item ──────────────────────────
+  // A wardrobe carries at most one unit-wide rod plus one per bay. The board
+  // this modal is open on knows its bay (`meta.zone`), so the right rod is
+  // found without a second number to keep in step.
+  const railItem = (unit.params.sections?.[0]?.items || []).find((i) => {
+    if (i.kind !== 'hanger') return false;
+    const mine = panel?.meta?.zone;
+    const its = i.zone;
+    if (mine == null || !Number.isFinite(Number(mine))) return its == null || !Number.isFinite(Number(its));
+    return Math.trunc(Number(its)) === Math.trunc(Number(mine));
+  }) || null;
+
   const row = (key) => {
     switch (key) {
+      // ─── TURN 35 (CLAUDE.md F1): HEIGHT ABOVE SUPPORT ─────────────────────
+      // The owner's law, verbatim: *"drążek ustawiamy zawsze od najbliższej
+      // czegoś od dołu — albo od szuflad, albo od półek. Jeśli napiszę 900, to
+      // niech będzie od półki, chyba że nic nie ma — to wtedy od dna."* So the
+      // label names the DATUM and not a floor, and the hint says which board
+      // answered this time — the base is live, and a rail whose shelf moves
+      // rides with it keeping this same number.
+      case 'rail-height': {
+        const support = Number(unitResult(unit.id)?.derived?.rail_support_y);
+        const named = Number.isFinite(support) ? `${Math.round(support)} mm` : 'the bay floor';
+        return (
+          <Field key={key} label="Height above support">
+            <NumberField
+              className="cc-input text-right"
+              data-rail-height="1"
+              value={Number(railItem?.pos_mm ?? 0)}
+              min={0}
+              step={1}
+              title={`Measured to the rod's axis from the nearest thing below it — right now ${named}`}
+              onCommit={(v) => railItem && setRailHeight(unit.id, railItem.id, v)}
+            />
+          </Field>
+        );
+      }
       // ─── TURN 34 (CLAUDE.md F4): FIX OR DRAWER ────────────────────────────
       // "jeżeli nie jest szuflada to powinien być fix, nie z pinami — tu jest
       // błąd" (owner, 16.08.2026). ONE construction; the variant is the only

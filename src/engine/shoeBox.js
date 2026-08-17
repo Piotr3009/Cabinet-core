@@ -209,6 +209,13 @@ export function shoeBoxWidth({
  */
 export function shoeBoxPlan({
   openingW, depth, boardT, frontT = 18, variant = 'F', dividers = 1,
+  // ─── TURN 36 (CLAUDE.md F3): THE FRONT IS A SWITCH ────────────────────────
+  // The owner's closing word on T35-F3: *"punkt 3 — tak, z przełącznikiem"*.
+  // DEFAULT ON, so a box placed before this turn and a box placed by a bare
+  // kit call are the seven-board box they have always been; off, the
+  // decorative face is not cut, and it leaves the panels, the BOM and the 3-D
+  // together because all three read this one list.
+  front = true,
   posZ = 0, hingedLeft = false, hingedRight = false, runnerNl = null, profile,
 }) {
   const C = shoeConst(profile);
@@ -369,8 +376,9 @@ export function shoeBoxPlan({
     }
 
     // FRONT, on BOTH variants — his 16.08 change: *"jak będzie fix to też
-    // będzie front, ale nie ze spray tylko z materiału carcasowego"*.
-    panels.push({
+    // będzie front, ale nie ze spray tylko z materiału carcasowego"* — and
+    // since T36 F3 it is a SWITCH, default ON. `front: false` cuts no face.
+    if (front) panels.push({
       role: 'front',
       w: v === 'F' ? r2(openingW) : boxW,
       h: C.frontH,
@@ -444,6 +452,8 @@ export function shoeBoxPlan({
     boardT: G,
     posZ: r2(posZ),
     dividers: nDiv,
+    // T36 F3: echoed back so the modal, the 3-D and the walk read ONE answer.
+    front: Boolean(front),
     slope: {
       run, rear, angleDeg, slopeLen, grooveW, grooveDepth: C.grooveDepth,
     },

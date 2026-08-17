@@ -3267,6 +3267,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const clean = {};
     if (patch?.variant != null) clean.variant = patch.variant === 'D' ? 'D' : 'F';
     if (patch?.dividers != null) clean.dividers = Number(patch.dividers) >= 1 ? 1 : 0;
+    // T36 F3: the decorative face, on or off. Stored as a plain boolean so an
+    // item that has never been asked (every box before this turn) reads ON.
+    if (patch?.front != null) clean.front = patch.front !== false && patch.front !== 'false';
     if (patch?.pos_mm != null) clean.pos_mm = Math.max(0, Math.round(Number(patch.pos_mm) || 0));
     if (!Object.keys(clean).length) return null;
     return get().updateItem(unitId, itemId, clean);

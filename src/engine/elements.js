@@ -320,7 +320,7 @@ const FIELDS = {
   // ("jedna lub 0 przegródek — 2 nie mają sensu"), and how high off the bay
   // floor it stands ("pozycja jak proponujesz" — default 0, or above the
   // drawer stack). Everything else about the box is the kit's law.
-  'shoe-box': ['shoe-box-variant', 'shoe-box-dividers', 'shoe-box-height', 'material'],
+  'shoe-box': ['shoe-box-variant', 'shoe-box-front', 'shoe-box-dividers', 'shoe-box-height', 'material'],
 };
 
 /**

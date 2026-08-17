@@ -399,9 +399,15 @@ test('the box is ONE selectable element with its own modal — any board reaches
     assert.equal(elementKind(b), 'shoe-box');
     assert.ok(isMainViewElement(b), 'clickable in the room, like a shelf');
     assert.match(elementLabel(b), /^Shoe box \(drawer\) — /);
-    // The owner's three decisions, and only those.
+    // The owner's decisions, and only those.
+    // ─── TURN 36 (CLAUDE.md F3): A FOURTH ONE — THE FRONT ──────────────────
+    // His closing word on T35-F3: *"punkt 3 — tak, z przełącznikiem"*. The
+    // 120 mm decorative face becomes a switch, DEFAULT ON, so every box cut
+    // before 17.08 is the box it was. It sits beside the variant because it
+    // is the same kind of decision — what this box IS — and before the
+    // divider, which is what is inside it.
     assert.deepEqual(elementFields(b),
-      ['shoe-box-variant', 'shoe-box-dividers', 'shoe-box-height', 'material']);
+      ['shoe-box-variant', 'shoe-box-front', 'shoe-box-dividers', 'shoe-box-height', 'material']);
     // It comes out in one piece; it is not dragged — the height field is where
     // it stands, because that is the number the carcass side is drilled for.
     assert.equal(elementActions(b).remove.allowed, true);

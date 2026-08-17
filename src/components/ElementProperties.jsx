@@ -240,6 +240,27 @@ export default function ElementProperties({
         );
       // "jedna lub 0 przegródek — 2 nie mają sensu" — across the width, so the
       // box takes two rows of shoes rather than two columns of one.
+      // ─── TURN 36 (CLAUDE.md F3): THE FRONT IS A SWITCH ──────────────────
+      // The owner's closing word on T35-F3: *"punkt 3 — tak, z
+      // przełącznikiem"*. Default ON, so a box placed before this turn is the
+      // box it was; off, the decorative face is not cut and leaves the
+      // panels, the BOM and the 3-D together — all three read the engine's
+      // one list.
+      case 'shoe-box-front':
+        return (
+          <Field key={key} label="Front">
+            <select
+              className="cc-input w-full"
+              data-shoe-box-front="1"
+              value={shoeBoxItem?.front === false ? 'off' : 'on'}
+              title="The 120 mm decorative face. Off, the box is open to the room."
+              onChange={(e) => setShoeBox(unit.id, shoeBoxItem.id, { front: e.target.value === 'on' })}
+            >
+              <option value="on">On</option>
+              <option value="off">Off</option>
+            </select>
+          </Field>
+        );
       case 'shoe-box-dividers':
         return (
           <Field key={key} label="Divider">

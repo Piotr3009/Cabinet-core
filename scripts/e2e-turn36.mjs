@@ -792,6 +792,106 @@ async function main() {
       await page.sleep(200);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F3 / F10 — the shoe box's front is a switch, and interior fronts hide
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f3') || want('f10')) {
+      await freshFloor('the shoe box', 'wardrobe');
+      await ui('u.openEditor() || true');
+      await page.sleep(500);
+      const shoeId = await store(`(() => {
+        const { id } = s.addUnit('WARDROBE');
+        s.updateUnitParams(id, { width: 900, height: 1600, doors: { count: 1 } });
+        s.addShoeBox(id, { variant: 'F', dividers: 1 });
+        return id;
+      })()`);
+      await page.sleep(900);
+      const doorIds = await store(`s.unitResult(${JSON.stringify(shoeId)}).panels.filter((p) => p.part === 'FRONT').map((p) => p.id)`);
+
+      if (want('f10')) {
+        // ── the DOOR SHUT: no figure about the box's face ──
+        await ui(`u.closeAllFronts(${JSON.stringify(shoeId)}) || true`);
+        await ui('u.setShowFrontDimensions ? u.setShowFrontDimensions(true) : true');
+        await page.sleep(500);
+        await frameFacing([shoeId], { dist: 2.0, height: 0.7 });
+        await page.sleep(500);
+        // The DIMENSION LABELS in the scene, counted. They carry no id of
+        // their own (R7: a label is drawn, never read), so the proof is the
+        // DELTA — how many figures the same cabinet draws with its leaf shut
+        // and with it open.
+        const labels = () => page.evaluate(`
+          const v = ${P}.views.room;
+          let n = 0;
+          v.scene.traverse((o) => { if (o.isSprite && o.visible) n += 1; });
+          return n;
+        `);
+        const shut = await labels();
+        await shot('f10a-the-shoe-box-front-carries-no-figures-behind-a-shut-door', { mesh: 'SHOE1-FR' });
+        await ui(`u.openFrontsFor(${JSON.stringify(shoeId)}, ${JSON.stringify(doorIds)}) || true`);
+        await page.sleep(800);
+        const open = await labels();
+        measurements.f10 = { shut, open };
+        check('F10 — the box face carries FEWER figures behind a shut leaf',
+          open > shut, `${shut} shut → ${open} open`);
+        await shot('f10b-and-they-are-back-the-moment-the-leaf-swings', { mesh: 'SHOE1-FR' });
+      }
+
+      if (want('f3')) {
+        await ui(`u.openFrontsFor(${JSON.stringify(shoeId)}, ${JSON.stringify(doorIds)}) || true`);
+        await page.sleep(400);
+        await frameFacing([shoeId], { dist: 1.5, height: 0.4, target: 'SHOE1-FR' });
+        await page.sleep(500);
+        const on = await store(`(() => {
+          const r = s.unitResult(${JSON.stringify(shoeId)});
+          return { boards: r.panels.filter((p) => p.id.indexOf('SHOE1-') === 0).length, front: r.assemblies.shoeBoxes[0].front };
+        })()`);
+        await shot('f3a-the-shoe-box-with-its-front-on', { mesh: 'SHOE1-FR' });
+
+        // THE GESTURE: the modal's own switch, reached by a real click.
+        const spot = await pointOnMesh(shoeId, 'SHOE1-FR');
+        if (spot) await page.dblclick(spot.x, spot.y);
+        await page.sleep(700);
+        const hasField = await page.evaluate('return Boolean(document.querySelector(\'[data-shoe-box-front]\'));');
+        check('F3 — the box modal offers the Front switch', hasField, String(hasField));
+        await page.evaluate(`
+          const el = document.querySelector('[data-shoe-box-front]');
+          if (el) el.scrollIntoView({ block: 'center' });
+          return true;
+        `);
+        await shot('f3b-the-front-switch-in-the-shoe-box-modal', { dom: '[data-shoe-box-front]' });
+        // Selects are driven by the store's own action here: a native <select>
+        // popup is an OS window CDP cannot click inside, and the SWITCH itself
+        // is what the picture above proves is on screen and reachable.
+        await store(`(() => {
+          const u = s.units.find((x) => x.id === ${JSON.stringify(shoeId)});
+          const item = (u.params.sections[0].items || []).find((i) => i.kind === 'shoe_box');
+          return s.setShoeBox(${JSON.stringify(shoeId)}, item.id, { front: false }) || true;
+        })()`);
+        await page.sleep(700);
+        const off = await store(`(() => {
+          const r = s.unitResult(${JSON.stringify(shoeId)});
+          return { boards: r.panels.filter((p) => p.id.indexOf('SHOE1-') === 0).length, front: r.assemblies.shoeBoxes[0].front };
+        })()`);
+        measurements.f3 = { on, off };
+        check('F3 — Front: off drops SHOEBOX-FR, and nothing else',
+          on.front === true && off.front === false && off.boards === on.boards - 1,
+          `${on.boards} boards → ${off.boards}`);
+        const drawn = await page.evaluate(`
+          const v = ${P}.views.room;
+          let n = 0;
+          v.scene.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId === 'SHOE1-FR' && o.visible) n += 1; });
+          return n;
+        `);
+        check('F3 — …and the 3-D stops drawing it, because it reads the same list',
+          drawn === 0, `${drawn} meshes`);
+        await frameFacing([shoeId], { dist: 1.5, height: 0.4, target: 'SHOE1-BT' });
+        await page.sleep(400);
+        await shot('f3c-the-same-box-with-its-front-off', { mesh: 'SHOE1-BT' });
+      }
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(200);
+    }
+
     check('R6 — the whole walk ends with a clean console', realErrors(page.errors).length === 0,
       `${realErrors(page.errors).length} error(s)`);
   } finally {

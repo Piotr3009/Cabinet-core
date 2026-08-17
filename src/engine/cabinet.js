@@ -769,6 +769,9 @@ function normalizeParams(raw, profile) {
       zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
       variant: i.variant === 'D' || i.variant === 'drawer' ? 'D' : 'F',
       dividers: Number(i.dividers) >= 1 ? 1 : 0,
+      // T36 F3: the front is a SWITCH, default ON — anything but an explicit
+      // `false` is the box every project has had since T34.
+      front: i.front !== false,
       pos_mm: Number.isFinite(Number(i.pos_mm)) && Number(i.pos_mm) >= 0 ? Number(i.pos_mm) : null,
       depth_mm: Number(i.depth_mm) > 0 ? Number(i.depth_mm) : null,
       runner_nl: Number(i.runner_nl) > 0 ? Number(i.runner_nl) : null,
@@ -3392,6 +3395,7 @@ export function computeCabinet(params, profileOverride) {
         frontT,
         variant: spec.variant,
         dividers: spec.dividers,
+        front: spec.front,
         posZ,
         hingedLeft,
         hingedRight,
@@ -6115,6 +6119,7 @@ export function computeCabinet(params, profileOverride) {
       depth: e.plan.depth,
       posZ: e.plan.posZ,
       dividers: e.plan.dividers,
+      front: e.plan.front,
       slope: e.plan.slope,
       hinged: e.plan.hinged,
       runner: e.plan.runner,

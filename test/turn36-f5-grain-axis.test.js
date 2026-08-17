@@ -119,25 +119,90 @@ test('F5 — every drawer part of every kit is answered, and none is missed', ()
 
 // ═══ 3. THE NO-FLIP RULE ════════════════════════════════════════════════════
 
-test('F5 — the layout turns NOTHING on this list, so nothing lands off-grain', () => {
+test('F5 — the layout turns NOTHING on this list, so nothing lands off-grain'
+  + ' — RE-PINNED 17.08.2026 (T37-F7a): it turns exactly what it must, so nothing lands off-grain', () => {
   // The nester turns the SHELF family and returns 0 for everything else
   // (`sheetTurn`, turn 17 F3), so the no-flip half of the law holds by
   // construction. It is pinned HERE rather than guarded a second time in
   // `layout.js`, because two implementations of one law is how they drift —
   // and because turn 28's own rule stands: the nester does not read the
   // per-piece statement.
+  //
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7a) ────────────────────────────
+  //
+  // The owner, on a nest of drawer parts lying flat: *"CNC jest ok, ale
+  // wizualizacja nie jest — sprawdź, co ci nadpisuje."* The audit found the
+  // sheet at fault too, and this test is where the fault was written down as a
+  // law: "the nester returns 0 for everything on this list, so nothing lands
+  // off-grain". The first half was true and the SECOND HALF DID NOT FOLLOW.
+  //
+  // `sheetTurn` returning 0 lays a part down AS DRAWN. A part whose stated
+  // grain is its drawn WIDTH — `DRAWER-BOTTOM`, "dno — słoje w poprzek", and
+  // every board of the shoe box — was therefore laid with its figure ACROSS the
+  // page: off-grain, which is the very thing this test's own title forbids.
+  //
+  // THE LAW IS UNCHANGED AND THE ASSERTION IS ITS HONEST FORM: the sheet lays a
+  // stated part with its grain running UP the page. That is turn 0 for a part
+  // that states 'h' and turn 90 for one that states 'w' — so the standing roles
+  // are byte-identical and the flat one turns, which is F7a's whole delta.
   const r = unit('BUDR');
   const plinth = unit('BUD', { plinth: true }).panels.find((p) => p.part === 'PLINTH');
+  let turned = 0;
   for (const p of [...r.panels, plinth]) {
     if (!grainLocked(p.part)) continue;
-    assert.equal(sheetTurn(p), 0, `${p.part} is laid the way it is drawn`);
+    const stated = p.cnc?.grain;
+    assert.ok(stated === 'w' || stated === 'h', `${p.part} states its axis`);
+    const want = stated === 'w' ? 90 : 0;
+    if (want) turned += 1;
+    assert.equal(sheetTurn(p), want,
+      `${p.part} states '${stated}' — the sheet stands that axis up the page`);
+  }
+  // …and the two halves are really both present in this cabinet, so neither
+  // branch is asserted against an empty set.
+  assert.ok(turned > 0, 'the flat one — DRAWER-BOTTOM — is the half that turns');
+
+  // The same law said the other way round — which is what "nothing lands
+  // off-grain" was always reaching for, and what it did not actually check.
+  // Measured in millimetres of board rather than in the letter of the turn: the
+  // extent that ends up UP THE PAGE is the one the piece states its grain along.
+  for (const p of [...r.panels, plinth]) {
+    if (!grainLocked(p.part)) continue;
+    const dw = Number(p.cnc?.drawn_w) > 0 ? Number(p.cnc.drawn_w) : p.w;
+    const dh = Number(p.cnc?.drawn_h) > 0 ? Number(p.cnc.drawn_h) : p.h;
+    const alongMm = p.cnc.grain === 'w' ? dw : dh;
+    const acrossMm = p.cnc.grain === 'w' ? dh : dw;
+    // Turn 90 exchanges the drawn axes, so the sheet's own "up" is the drawn w
+    // after a turn and the drawn h without one.
+    const upMm = sheetTurn(p) === 90 ? dw : dh;
+    assert.equal(upMm, alongMm,
+      `${p.part}: the stated grain runs UP the sheet (${alongMm} up, ${acrossMm} across)`);
   }
 });
 
-test('F5 — and the nester still does not read the statement (turn 28\'s rule)', () => {
+test('F5 — and the nester still does not read the statement (turn 28\'s rule)'
+  + ' — RE-PINNED 17.08.2026 (T37-F7a): it now DOES, and the old rule is the fall-through', () => {
   const layout = readFileSync(new URL('../src/engine/cnc/layout.js', import.meta.url), 'utf8');
   const code = layout.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
-  assert.doesNotMatch(code, /grain/, 'the nester turns by the drawn size, not by the figure');
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7a) ─────────────────────────────
+  //
+  // *"CNC jest ok, ale wizualizacja nie jest — sprawdź, co ci nadpisuje."*
+  //
+  // This was `doesNotMatch(code, /grain/)` — "the nester turns by the drawn
+  // size, not by the figure" — and F7a is the ruling that it must turn by the
+  // figure wherever a part states one. It is INVERTED, not dropped, and BOTH
+  // halves of the generalised law are pinned here so neither can be quietly
+  // undone: the statement is read, and the old size rule over the old set is
+  // still exactly what answers a part that states nothing.
+  assert.match(code, /grain/, 'the nester reads the statement (T37-F7a)');
+  assert.match(code, /return w > h \? 90 : 0;/, '…and turn 17 F3\'s size rule is still there');
+  assert.match(code, /SHELF_BOARD_PARTS\.has/, '…still asked of exactly the old set');
+  // And as behaviour rather than as source: a part that states nothing is
+  // answered by the size rule, on both of its branches.
+  const bare = { part: 'PARTITION', w: 564, h: 550, cnc: {} };
+  assert.equal(sheetTurn(bare), 90, 'drawn lying down — the old rule stands it up');
+  assert.equal(sheetTurn({ ...bare, w: 550, h: 564 }), 0, '…and leaves an upright one alone');
+  assert.equal(sheetTurn({ part: 'FRONT', w: 597, h: 200, cnc: {} }), 0,
+    'a part outside the old set is still never turned by size alone');
 });
 
 // ═══ 4. NOTHING ELSE MOVED ══════════════════════════════════════════════════

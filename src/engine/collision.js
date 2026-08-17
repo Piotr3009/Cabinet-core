@@ -45,6 +45,101 @@ export function shelfBand({ height, boardT, floorY }, profile) {
 }
 
 /**
+ * ─── TURN 37 (CLAUDE.md F4a): A CROSSING BOARD IS AN END OF THE CABINET ─────
+ *
+ * The owner, 17.08.2026, walking the split doors he asked for in T36:
+ * *"dodajemy półkę i powinna być traktowana jak koniec szafy — jeśli daję
+ * centruj półki, to ponad tą poprzeczką powinny się centrować według tej
+ * poprzeczki, i to samo z dolną — taka sama rola."*
+ *
+ * He is right, and the reason is that a split divider is not furniture STANDING
+ * IN a column, it is what makes two columns. Nothing above it can be spaced
+ * against the base panel, because the base is not what it sits over; nothing
+ * below it can be centred against the underside of the top, because the top is
+ * not what closes it. Its role is the base's role, upwards, and the top's role,
+ * downwards — "taka sama rola", in as many words.
+ *
+ * So the band a shelf lives in is CUT by the boards that cross it, and each
+ * piece of it is an ordinary band with its own floor, its own ceiling and the
+ * same `minShelfEdgeGap` pulled in at each end — exactly the arithmetic
+ * `shelfBand` above does at the ends of the carcass, because it is the same
+ * question asked about a different pair of faces.
+ *
+ * ONE LAW, and it lives HERE rather than in the three callers that need it:
+ * the store's `shelfBandFor` narrows every band through this, so the drag, the
+ * clamp sweep, the Even button and the add-shelf placement cannot end up
+ * holding three opinions about where a divider is.
+ *
+ * NOTHING CROSSING = ONE SEGMENT, the band itself, returned unchanged key for
+ * key. A cabinet with no split is the cabinet it was yesterday, and that is the
+ * turn's byte-identity contract said in code.
+ *
+ * @param {object} args
+ *   band        shelfBand(): { min, max, floor, ceiling }
+ *   boundaries  the crossing boards, `{ at, thickness }` — `at` is the board's
+ *               UNDERSIDE, the datum `pos_mm` has carried since turn 1. A bare
+ *               number is a board of no thickness, which is a line.
+ * @returns {Array<{min:number,max:number,floor:number,ceiling:number}>}
+ *          bottom-up, one per segment
+ */
+export function bandSegments({ band, boundaries = [] }, profile) {
+  const edge = profile.editor.minShelfEdgeGap;
+  const crossing = (boundaries || [])
+    .map((b) => (b && typeof b === 'object'
+      ? { at: Number(b.at), t: Math.max(0, Number(b.thickness) || 0) }
+      : { at: Number(b), t: 0 }))
+    // Only the boards that actually cross THIS band: a divider in another bay,
+    // or one below the drawer partition a shelf already stands over, is not a
+    // boundary this shelf has ever had to think about.
+    .filter((b) => Number.isFinite(b.at) && b.at + b.t > band.floor && b.at < band.ceiling)
+    .sort((a, b) => a.at - b.at);
+  if (!crossing.length) return [band];
+  // floor → divider underside, divider top → next underside, … last top →
+  // ceiling. The same face walk `centredShelfPos` and `shelfGapLadder` make,
+  // because an opening is measured between FACES everywhere in this engine.
+  const faces = [band.floor, ...crossing.flatMap((b) => [b.at, b.at + b.t]), band.ceiling];
+  const out = [];
+  for (let i = 0; i < faces.length - 1; i += 2) {
+    const floor = Math.max(band.floor, faces[i]);
+    const ceiling = Math.min(band.ceiling, faces[i + 1]);
+    out.push({
+      ...band, floor, ceiling, min: floor + edge, max: ceiling - edge,
+    });
+  }
+  return out;
+}
+
+/**
+ * The one segment a piece at `at` belongs to (turn 37, CLAUDE.md F4a).
+ *
+ * `at` is the shelf's own underside, so a shelf UNDER the divider is handed the
+ * band that stops at the divider and a shelf above it is handed the one that
+ * starts there — which is what makes the drag stop at the boundary instead of
+ * walking through it.
+ *
+ * Nothing said (`at` null) is the WHOLE band, unchanged: a caller that is not
+ * asking about a particular piece — the rail's automatic placement, the panel's
+ * readout of what this cabinet allows — gets the answer it got yesterday.
+ */
+export function bandSegmentAt({ band, boundaries = [], at = null }, profile) {
+  const segments = bandSegments({ band, boundaries }, profile);
+  if (segments.length === 1) return segments[0];
+  // `at == null` FIRST, and not `Number.isFinite(Number(at))` alone: `Number
+  // (null)` is 0, so "nobody said where" would read as "the floor of the
+  // carcass" and every caller that asks about no piece in particular would be
+  // handed the BOTTOM segment. The same trap rule 13 is about.
+  const y = at == null ? NaN : Number(at);
+  if (!Number.isFinite(y)) return band;
+  const inside = segments.find((s) => y >= s.floor && y < s.ceiling);
+  if (inside) return inside;
+  // On the boundary itself, or outside the band altogether: the NEAREST
+  // segment. A shelf is never handed a band it cannot live in — the clamp
+  // above has to have somewhere to put it.
+  const reach = (s) => (y < s.floor ? s.floor - y : y - s.ceiling);
+  return segments.reduce((best, s) => (reach(s) < reach(best) ? s : best));
+}
+
+/**
  * Drag bounds for ONE shelf: the band, narrowed by its immediate neighbours.
  *
  * `below`/`above` are the reference faces for the live dimension readout, so
@@ -59,8 +154,16 @@ export function shelfBounds({ pos, others, band }, profile) {
   return {
     min: Math.max(band.min, below != null ? below + gap : band.min),
     max: Math.min(band.max, above != null ? above - gap : band.max),
-    below: below ?? band.floor,
-    above: above ?? band.ceiling,
+    // ─── TURN 37 (CLAUDE.md F4a): NEVER PAST THE END OF THE BAND ────────────
+    // The reference face is the nearest thing this shelf can actually measure
+    // to, and the band's own ends are things: with a split divider overhead
+    // (`bandSegments`) the neighbour above may be on the FAR SIDE of it, and a
+    // readout naming a shelf through a solid board is a number that is not
+    // about this opening at all. Without a divider the band's ceiling is the
+    // underside of the top and every neighbour is already under it, so this is
+    // the same answer it has given since turn 8.
+    below: Math.max(below ?? band.floor, band.floor),
+    above: Math.min(above ?? band.ceiling, band.ceiling),
   };
 }
 

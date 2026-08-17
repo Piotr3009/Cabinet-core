@@ -49,7 +49,7 @@ import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
 // Turn 36 (CLAUDE.md F7): is this top box standing on anything?
-import { riderIsOrphaned } from './topBox.js';
+import { riderIsOrphaned, riderOverlapMm } from './topBox.js';
 import { panelWeight } from './lifts.js';
 import { resolvePanelMaterial } from './materials.js';
 import HINGE_COUNT from '../../reference/hardware/cliptop-hinge-count.json' with { type: 'json' };
@@ -84,6 +84,14 @@ export const CHECKS = Object.freeze([
   // onto the nearest wardrobe, which would be the program deciding something
   // the joiner has to see. Report, never fix: the house grammar.
   { n: 14, level: 'red', label: 'Top box standing on nothing' },
+  // ─── TURN 37 (CLAUDE.md F5c): …AND ONE STANDING THROUGH IT ───────────────
+  // The owner, walking T36-F7: *"nakładają się jedna na drugą, a to jest
+  // niedopuszczalne w naszym programie."* `settleRiders` clamps the box to its
+  // main's top on every path that could move either of them, so this should
+  // never fire — and that is exactly why it exists. A clamp with no witness is
+  // a clamp nobody finds out has stopped working, and #14's own sentence
+  // applies: report, never fix. The house grammar.
+  { n: 15, level: 'red', label: 'Top box overlapping its main' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -529,6 +537,21 @@ export function runChecks({
       panelId: null,
       message: `${num}: this top box is standing on nothing — put a wardrobe under it, or delete it.`,
       subject: { unitId: unit.id, editor: 'cabinet' },
+    }));
+  }
+
+  // ── #15 a TOP BOX standing THROUGH its main (T37 F5c) ──────────────────
+  for (const unit of list) {
+    const over = riderOverlapMm(unit, list, profile);
+    if (!over.overlap) continue;
+    const num = unit.params?.unit_num || unit.id;
+    out.push(finding(15, 'red', {
+      unitId: unit.id,
+      unitNum: num,
+      panelId: null,
+      message: `${num}: this top box stands ${Math.round(over.mm)} mm THROUGH the cabinet under it — two carcasses cannot occupy the same space.`,
+      subject: { unitId: unit.id, editor: 'cabinet' },
+      overlapMm: over.mm,
     }));
   }
 

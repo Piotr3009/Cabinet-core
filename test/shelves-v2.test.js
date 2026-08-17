@@ -130,10 +130,29 @@ test('a unit in a PROJECT sets its partition back with the shelves', () => {
   const internalDepth = depth - G;
 
   assert.equal(r.panels.find((p) => p.id === 'PARTITION').h, internalDepth - SETBACK);
-  assert.equal(r.panels.find((p) => p.id === 'RAIL-PART').h, internalDepth - SETBACK);
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F2) ─────────────────────────────
+  // Until tonight this line read `RAIL-PART`, and the board it named was the
+  // rail's partitioner. There is no partitioner in a T37 rail: the owner's
+  // *"zrób półkę nad drążkiem — półka, a drążek dołącz do półki i tyle"* makes
+  // the board above the rod an ORDINARY FIX SHELF, so the piece that has to
+  // set back with the partition is that shelf. Same sentence, said about the
+  // board that is actually there. The BARE kit call above still cuts
+  // `RAIL-PART` — a legacy rail keeps everything, and that test is untouched.
+  const railShelfId = store().units.find((u) => u.id === id)
+    .params.sections[0].items.find((i) => i.kind === 'hanger').shelf_id;
+  const railShelf = r.panels.find((p) => p.meta?.itemId === railShelfId);
+  assert.ok(railShelf, 'the rail brought a shelf of its own');
+  assert.equal(railShelf.part, 'SHELF', 'and it is a shelf, not a partitioner');
+  assert.ok(!r.panels.some((p) => p.part === 'RAIL-PART'), 'no partitioner is cut beside it');
+  // Cut like every other shelf: the SHELF's own front clearance, which is the
+  // board a joiner would reach past — not the partitioner's setback, which is
+  // what this piece used to be cut to. (The two numbers happen to be equal in
+  // the default profile, so the assertion names the one that applies.)
+  assert.equal(railShelf.h, internalDepth - P.carcass.shelfDepthClearance,
+    'cut like every other shelf');
   // …and both start at the BACK, so what moved is the front edge.
-  for (const idp of ['PARTITION', 'RAIL-PART']) {
-    assert.equal(r.panels.find((p) => p.id === idp).box.z, G);
+  for (const pnl of [r.panels.find((p) => p.id === 'PARTITION'), railShelf]) {
+    assert.equal(pnl.box.z, G);
   }
 });
 

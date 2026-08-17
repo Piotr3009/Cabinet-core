@@ -89,6 +89,25 @@ export default function Modal({
   // still close it; everything else of the shell — the anchor, the drag, the
   // registry — is exactly the same shell.
   sticky = false,
+  // ─── TURN 37 (CLAUDE.md F4c): A DOCKED WINDOW ────────────────────────────
+  // `dock: 'left'` = this window STANDS at the edge of the screen instead of
+  // beside its object. The owner, of the doors modal: *"niech się ustawi po
+  // lewej stronie ekranu całkowicie."* It is rule 15's ONE new exception and
+  // it is opt-in per window, exactly as `maximised` is — every modal that does
+  // not ask keeps opening beside the piece it is about, which is the rule the
+  // owner marked "na zawsze".
+  //
+  // The header is still the drag handle: docking says where it OPENS, not
+  // where it is nailed. A hand that pushes it aside outranks the arithmetic,
+  // which is the shell's law everywhere else too.
+  dock = null,
+  // ─── TURN 37 (CLAUDE.md F4c): …AND ONE THAT ONLY THE × CLOSES ────────────
+  // The owner: *"niech się nie wyłącza za każdym razem jak kliknę — dopiero
+  // krzyżykiem."* `escapeCloses: false` takes the KEY off this window and
+  // nothing else: the listener below stays exactly where it is, for every
+  // other modal in the app and for every nested editor's Back. Removing it
+  // wholesale would be one window's law imposed on fourteen.
+  escapeCloses = true,
 }) {
   const box = useRef(null);
   // ─── TURN 31 (CLAUDE.md F1): ONE CLOSE PATH ────────────────────────────────
@@ -125,10 +144,18 @@ export default function Modal({
   // so no nested view has to argue with the modal's own handler — which is
   // exactly the class of duplicate the stack exists to kill.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') (onBack || close)(); };
+    const onKey = (e) => {
+      // T37-F4c: a window that has opted the key out (`escapeCloses: false`)
+      // ignores it — unless there is a level UNDER it, because Back is not a
+      // close and a stack the key cannot leave is a trap. The line below is
+      // turn 23's own, untouched: the rule it states still holds for every
+      // window that has not opted out, which is all of them but one.
+      if (!escapeCloses && !onBack) return;
+      if (e.key === 'Escape') (onBack || close)();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [close, onBack]);
+  }, [close, onBack, escapeCloses]);
 
   const measure = useCallback(() => {
     const el = box.current;
@@ -141,6 +168,21 @@ export default function Modal({
     const size = measure();
     if (!size) return;
     const viewport = { width: window.innerWidth, height: window.innerHeight };
+    // ─── TURN 37 (CLAUDE.md F4c): DOCKED — THE EDGE, NOT THE OBJECT ──────────
+    // "Niech się ustawi po lewej stronie ekranu całkowicie": hard against the
+    // left edge and the full height of the screen, so the window has ONE place
+    // it is ever found and the scene beside it is never covered. It outranks
+    // the anchor, because a docked window is not placed by what it is about.
+    if (dock === 'left') {
+      setAt({
+        left: 0,
+        top: marginPx,
+        height: Math.max(0, viewport.height - 2 * marginPx),
+        side: 'dock-left',
+        fits: true,
+      });
+      return;
+    }
     if (!anchor) {
       // No object: the middle of the screen, which is where a dialog about the
       // whole project belongs.
@@ -175,7 +217,7 @@ export default function Modal({
     setAt(placeAnchoredModal({
       anchor, size, viewport, offset: anchorOffset, gap: gapPx, margin: marginPx,
     }));
-  }, [anchor, gapPx, marginPx, anchorOffset, measure]);
+  }, [anchor, dock, gapPx, marginPx, anchorOffset, measure]);
 
   // Placed on the way in, and re-placed if the window is resized — a modal
   // pinned to a corner that is no longer there is a modal you cannot close.
@@ -278,14 +320,19 @@ export default function Modal({
         data-modal-name={name || undefined}
         data-modal-anchored={anchor ? '1' : '0'}
         data-modal-sticky={sticky ? '1' : undefined}
+        // T37-F4c: which edge this window stands at, if it stands at one —
+        // readable from outside, like every other fact about the shell.
+        data-modal-dock={dock || undefined}
         data-modal-side={big ? 'maximised' : (at?.side || '')}
         data-modal-maximised={big ? '1' : '0'}
-        className={`fixed cc-panel pointer-events-auto ${big ? '' : `${width} max-h-[90vh]`} flex flex-col shadow-xl ${className}`}
+        className={`fixed cc-panel pointer-events-auto ${big ? '' : `${width} ${dock ? '' : 'max-h-[90vh]'}`} flex flex-col shadow-xl ${className}`}
         style={full ? {
           left: full.left, top: full.top, width: full.width, height: full.height, visibility: 'visible',
         } : {
           left: at?.left ?? 0,
           top: at?.top ?? 0,
+          // A docked window is sized by the SCREEN, not by what is in it.
+          ...(at?.height ? { height: at.height } : {}),
           visibility: at ? 'visible' : 'hidden',
         }}
         onPointerDown={(e) => e.stopPropagation()}
@@ -352,7 +399,21 @@ export default function Modal({
               {big ? '❐' : '▢'}
             </button>
           )}
-          <button type="button" className="cc-btn-ghost" title="Close (Esc)" onClick={close}>×</button>
+          {/* ─── TURN 37 (CLAUDE.md F4c) ─────────────────────────────────
+              *"niech się nie wyłącza za każdym razem jak kliknę — dopiero
+              krzyżykiem."* On a window that has declined Escape this button is
+              the ONLY way out, so it says so rather than promising a key that
+              does nothing here — and it carries a hook, because a proof that
+              only its X closes it has to be able to press its X. */}
+          <button
+            type="button"
+            className="cc-btn-ghost"
+            data-modal-close="1"
+            title={escapeCloses ? 'Close (Esc)' : 'Close'}
+            onClick={close}
+          >
+            ×
+          </button>
         </div>
         <div className="p-4 overflow-y-auto flex-1 min-h-0">{children}</div>
         {footer && <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2">{footer}</div>}

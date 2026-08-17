@@ -14,6 +14,16 @@ import { hingeRows } from '../src/engine/items.js';
 //   (b) the plate GLB moves 5 mm INTO the side (`hardware.hinge.plateBiteMm`,
 //       profile-listed) so screws sit in timber;
 //   (c) the modal's hinge rows sort by Y DESCENDING — top hinge first.
+//
+// ─── AMENDED 17.08.2026 (TURN 37, CLAUDE.md F3) ─────────────────────────────
+// (b)'s NUMBER moved and (b)'s LAW did not. The owner walked T36 the same day
+// it merged, looked at the seated plate and said *"zawiasy — dociśnij o
+// następne 5 mm"* — five MORE, so `plateBiteMm` is 10. The three findings
+// above are the T36 record and stay as written; the assertion below is
+// re-pinned to 10 and its sibling `turn37-f3-hinge-bite.test.js` carries the
+// reasoning. Everything else T36 proved about the bite — that it is a PROFILE
+// number, that the sign is −dir, that it reaches the picture and nothing else
+// — is unchanged and still proved here.
 
 const src = (p) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8');
 
@@ -57,8 +67,12 @@ test('F4a — the INVISIBLE PICK TARGET stays, exactly where it was', () => {
 
 // ═══ (b) THE 5 mm BITE ══════════════════════════════════════════════════════
 
-test('F4b — the bite is a PROFILE number, and it is 5', () => {
-  assert.equal(P.hardware.hinge.plateBiteMm, 5);
+test('F4b — the bite is a PROFILE number, and it is 10 (T37-F3; was 5 in T36)', () => {
+  // 17.08.2026: the owner's *"dociśnij o następne 5 mm"* moved the number, not
+  // the law. What this test has always been for — the bite is stated in the
+  // PROFILE and listed with the plate's other measurements — is what it still
+  // asserts.
+  assert.equal(P.hardware.hinge.plateBiteMm, 10);
   // Beside the plate's other measurements, where a workshop would look for it.
   const profile = src('engine/profile.js');
   const at = profile.indexOf('plateBiteMm');

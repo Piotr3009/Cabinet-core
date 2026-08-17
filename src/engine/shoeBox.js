@@ -27,6 +27,8 @@
 //   SHOE_FIX_AXIS   40    pilot/runner axis above the box floor
 //   SHOE_SETBACK_X   3    runner face = frontT + this, from the carcass front
 //   SHOE_INFILL     30    per hinged side, behind doors (dpSideLaw)
+//   SHOE_BATTEN_BACK 30   T37: batten length = box depth − this
+//   SHOE_FRONT_REVEAL 10  T37: DRAWER front = opening − 2 × this
 //
 // ONE construction, TWO mounting laws — his plan: *"jak zrobimy szufladę to tę
 // samą skrzyneczkę wykorzystamy, tylko dodamy prowadnice po bokach i zwęzimy —
@@ -64,6 +66,14 @@ export function shoeConst(profile) {
     setbackX: n(s.setbackX, 3),
     infill: n(s.infill, 30),
     battenH: n(s.battenH, 70),
+    // ─── TURN 37 (CLAUDE.md F6), 17.08.2026 ───────────────────────────────
+    // The owner, on the live drawer: *"cofnij o około 30 mm do tyłu (skróć)
+    // ten klocek i rozszerz front szuflady, tak żeby zostało po prawej i po
+    // lewej od BUR i BUL około 10 mm — będzie wyglądać lepiej, a i tak się
+    // otworzy."* Two numbers, and `KIT_SHOE_BOX.lsp` carries both first
+    // (`SHOE_BATTEN_BACK`, `SHOE_FRONT_REVEAL`); this file matches them.
+    battenBack: n(s.battenBack, 30),
+    frontReveal: n(s.frontReveal, 10),
     runnerFrontFix: n(s.runnerFrontFix, 37),
     layers: Object.freeze({
       groove: s.layers?.groove || 'SHOE_GROOVE_6MM',
@@ -190,6 +200,54 @@ export function shoeBoxWidth({
   if (variant !== 'D') return r2(w);
   const hinged = (hingedLeft ? 1 : 0) + (hingedRight ? 1 : 0);
   return r2(w - 2 * C.runnerW - C.infill * hinged);
+}
+
+/**
+ * ─── TURN 37 (CLAUDE.md F6), 17.08.2026: THE BATTEN'S LENGTH ───────────────
+ *
+ * The kit's own `shoeBattenLen`, matched: the box depth less
+ * `SHOE_BATTEN_BACK`, the 30 taken off the FRONT end so the batten's rear
+ * still lands on the box's back and the 30 it gives up is the 30 nearest the
+ * room. The owner, seeing it live: *"cofnij o około 30 mm do tyłu (skróć) ten
+ * klocek"*.
+ *
+ * From T34 until 17.08.2026 this was the box's WHOLE depth. That is why the
+ * subtraction is a named constant and not a literal: the old number is
+ * `battenBack: 0` and the record of it is right here.
+ *
+ * Never negative — a box too shallow to carry a batten carries a zero, not a
+ * board of minus millimetres (`shoeBoxPlan` refuses such a box outright).
+ */
+export function shoeBattenLen(depth, profile) {
+  const C = shoeConst(profile);
+  return r2(Math.max(0, (Number(depth) || 0) - C.battenBack));
+}
+
+/**
+ * ─── TURN 37 (CLAUDE.md F6), 17.08.2026: THE DECORATIVE FRONT'S WIDTH ──────
+ *
+ * The kit's own `shoeFrontW`, matched, and the second half of the same breath:
+ * *"rozszerz front szuflady, tak żeby zostało po prawej i po lewej od BUR i
+ * BUL około 10 mm"*.
+ *
+ *   FIX    → the whole opening. UNTOUCHED — the T34 law stands, because the
+ *            FIX front covers the cut edges of a full-width carcass-board box
+ *            and the owner was talking about the drawer.
+ *   DRAWER → the opening less 2 × `SHOE_FRONT_REVEAL`, so 10 mm of reveal is
+ *            left to BUL and to BUR.
+ *
+ * Note what this means and that it is deliberate: the drawer front is now
+ * WIDER than the box it is screwed to. The box lost 13 mm per side to the
+ * runner and 30 mm more per hinged side to the batten; the face covers that
+ * whole zone rather than sitting inside it — *"będzie wyglądać lepiej, a i
+ * tak się otworzy"*. Before this date the front WAS the box's own width, and
+ * behind two hinged doors that left 43 mm of daylight each side.
+ */
+export function shoeFrontWidth({ openingW, variant, profile }) {
+  const C = shoeConst(profile);
+  const w = Number(openingW) || 0;
+  if (variant !== 'D') return r2(w);
+  return r2(Math.max(0, w - 2 * C.frontReveal));
 }
 
 /**
@@ -360,13 +418,20 @@ export function shoeBoxPlan({
     // inside it), running the box's whole depth. The runner for a hinged
     // side mounts on THIS batten, not the carcass; the door's arc owns the
     // space in front of the box. BOM part SHOEBOX-BATTEN.
+    //
+    // ─── T37-F6, 17.08.2026: AND IT STEPS BACK ─────────────────────────────
+    // *"cofnij o około 30 mm do tyłu (skróć) ten klocek"*. `w` was `r2(d)` —
+    // the box's whole depth — from T34 until this date; it is now the kit's
+    // `shoeBattenLen`, 30 shorter, shortened AT THE FRONT. Nothing else about
+    // the batten moves: same 30 thick, same 70 high, same side, same seat on
+    // the bay side, and the runner still mounts on it.
     if (v === 'D') {
       for (const side of [hingedLeft ? 'L' : null, hingedRight ? 'R' : null]) {
         if (!side) continue;
         panels.push({
           role: 'batten',
           side,
-          w: r2(d),
+          w: shoeBattenLen(d, profile),
           h: C.battenH,
           thickness: C.infill,
           grain: 'w',
@@ -378,9 +443,16 @@ export function shoeBoxPlan({
     // FRONT, on BOTH variants — his 16.08 change: *"jak będzie fix to też
     // będzie front, ale nie ze spray tylko z materiału carcasowego"* — and
     // since T36 F3 it is a SWITCH, default ON. `front: false` cuts no face.
+    //
+    // ─── T37-F6, 17.08.2026: THE DRAWER FACE WIDENS ────────────────────────
+    // *"rozszerz front szuflady, tak żeby zostało po prawej i po lewej od BUR
+    // i BUL około 10 mm"*. The DRAWER width was `boxW` — the narrowed box's
+    // own width — from T34 until this date; it is now the kit's
+    // `shoeFrontWidth`, opening − 2 × 10, which is WIDER than the box and
+    // covers the batten-and-runner zone. The FIX width does not move.
     if (front) panels.push({
       role: 'front',
-      w: v === 'F' ? r2(openingW) : boxW,
+      w: v === 'F' ? r2(openingW) : shoeFrontWidth({ openingW, variant: v, profile }),
       h: C.frontH,
       thickness: v === 'F' ? G : Number(frontT) || G,
       grain: 'w',

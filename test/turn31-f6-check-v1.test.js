@@ -51,8 +51,15 @@ test('the rules, each with the owner’s colour', () => {
   // T36-F7: and rule 14, "Top box standing on nothing" — a carcass BUILT to
   // stand on a main, standing on none. Report, never fix; the thirteen before
   // it are untouched, which is what the list below is for.
-  assert.equal(CHECKS.length, 14);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+  // ─── AMENDED 17.08.2026 (CLAUDE.md T37-F5c) ────────────────────────────
+  // …and rule 15, "Top box overlapping its main". The owner, walking T36-F7:
+  // *"nakładają się jedna na drugą, a to jest niedopuszczalne w naszym
+  // programie."* The clamp that stops it lives in `topBox.js settleRiders`, so
+  // this rule should never fire — which is exactly why it exists: a clamp with
+  // no witness is a clamp nobody finds out has stopped working. Report, never
+  // fix, like the fourteen before it, and every one of them is untouched.
+  assert.equal(CHECKS.length, 15);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -70,6 +77,7 @@ test('the rules, each with the owner’s colour', () => {
     12: 'red',
     13: 'red',
     14: 'red',
+    15: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

@@ -194,7 +194,20 @@ export function frontsInRoom(entries, baseOf) {
  * nothing, and those are two different rules (5 and 6) with two different
  * numbers, so the distinction is made rather than fudged.
  */
-export function neighbourOn(front, side, {
+// ─── LICENSED RETIREMENT OF AN EXPORT, 17.08.2026 (T37-F9, iron rule 4) ────
+//
+// The owner licensed five removals after the dead-code audit, and this is one
+// of them — but the audit was wrong about WHAT was dead. `neighbourOn` is
+// called on line 332 of this very file, inside `frontClearances()`, which the
+// project store, `engine/checks.js`, the scene and six test files all import.
+// Deleting the function would take the whole front-clearance matrix with it.
+//
+// What was genuinely dead is the EXPORT: nothing outside this module has ever
+// named it. That is exactly the category T31-F12 already wrote down —
+// *"47 names were used INSIDE their own file and exported for nobody. The
+// export went; the code did not."* So the export goes and the code does not,
+// which is the licence honoured and the sanctity rule kept, both.
+function neighbourOn(front, side, {
   fronts, verticals, units, wallWidth, profile,
 }) {
   const reach = neighbourReachMm(profile);

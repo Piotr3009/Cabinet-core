@@ -203,9 +203,23 @@ test('a top and a bottom get their grain across the piece', () => {
   const shelf = r.panels.find((x) => x.id === 'SHELF-1');
   assert.equal(shelf.cnc.grain, 'h', 'the shelf says so on the piece');
   const shelfMap = decorMapping(shelf.box, grainRun(shelf).lengthMm);
-  assert.equal(shelfMap.grainAxis, 'v', 'front to back, with the banded long front edge across it');
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7b): 'v' → 'u' ─────────────────
+  // The owner: *"CNC jest ok, ale wizualizacja nie jest — sprawdź, co ci
+  // nadpisuje."* The paragraph above is right that the piece states its own
+  // grain and that the picture follows the sheet. What it got wrong is WHICH
+  // WAY the sheet runs: `cnc.grain` is written in the CNC DRAWN frame, beside
+  // `drawn_w`/`drawn_h`, and a shelf is drawn `depth × width` — so the stated
+  // 'h' is the 1 160, the cabinet's WIDTH, not the 520 depth. `grainRun` now
+  // translates the axis out of the drawn frame before using it.
+  assert.equal(shelf.cnc.drawn_h, shelf.w, 'the drawn h IS the width — the frame the statement is in');
+  assert.equal(shelfMap.grainAxis, 'u', 'left to right, running along the banded long front edge');
   // …and the shelf is the OPPOSITE of the wieniec above it, which is the whole
   // of the owner's turn-29 F1: two horizontal boards, two grain directions.
+  //
+  // RE-PINNED 17.08.2026: they are the SAME now, and that is T37-F7b — both
+  // boards are nested with their grain up the page, so both carry their figure
+  // left-to-right. The wieniec's own answer below has not moved a character; it
+  // is the shelf that came round to it.
   assert.equal(decorMapping(r.panels.find((x) => x.id === 'TOP').box,
     grainRun(r.panels.find((x) => x.id === 'TOP')).lengthMm).grainAxis, 'u');
 });

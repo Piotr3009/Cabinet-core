@@ -1,0 +1,180 @@
+{
+  "f2_born": {
+    "railItem": "hanger_ob00r2c",
+    "mount": "shelf",
+    "shelfItem": "shelf_ltjqyuf",
+    "variant": "fixed",
+    "shelfPos": 1458,
+    "rodY": 1418,
+    "partitioner": false,
+    "shelfPanel": "SHELF-1"
+  },
+  "f2_drag": {
+    "born": {
+      "shelf": 1458,
+      "rod": 1418
+    },
+    "after": {
+      "shelfPos": 1197,
+      "rodY": 1157
+    },
+    "gesture": true
+  },
+  "f2_rod_click": {
+    "names": "SHELF-1",
+    "opened": "SHELF-1",
+    "shelfPanel": "SHELF-1"
+  },
+  "f1_shelves": [
+    {
+      "unitId": "u_wtzwdvy",
+      "panels": [
+        "SHELF-1",
+        "SHELF-2"
+      ]
+    },
+    {
+      "unitId": "u_mcwkobu",
+      "panels": [
+        "SHELF-1",
+        "SHELF-2"
+      ]
+    },
+    {
+      "unitId": "u_mpgo2w0",
+      "panels": [
+        "SHELF-1",
+        "SHELF-2"
+      ]
+    }
+  ],
+  "f1_set": {
+    "ticked": 6,
+    "size": 6,
+    "cabinets": 3
+  },
+  "f1_marks": 6,
+  "f1_group_drag": {
+    "before": [
+      991,
+      496,
+      991,
+      496,
+      991,
+      496
+    ],
+    "after": [
+      1204,
+      708,
+      1204,
+      708,
+      1204,
+      708
+    ],
+    "deltas": [
+      213,
+      212,
+      213,
+      212,
+      213,
+      212
+    ],
+    "gesture": true
+  },
+  "f1_alt_depth": {
+    "before": [
+      20,
+      20
+    ],
+    "after": [
+      0,
+      20
+    ]
+  },
+  "f3_bite": 10,
+  "f3_seated": null,
+  "f7_sheet": {
+    "DRAWER-SIDE": {
+      "grain": "h",
+      "turn": 0
+    },
+    "DRAWER-BOX-FRONT": {
+      "grain": "h",
+      "turn": 0
+    },
+    "DRAWER-BOX-BACK": {
+      "grain": "h",
+      "turn": 0
+    },
+    "DRAWER-BOTTOM": {
+      "grain": "w",
+      "turn": 90
+    },
+    "DRAWER-FRONT": {
+      "grain": "h",
+      "turn": 0
+    }
+  },
+  "f5_born": {
+    "mainW": 900,
+    "boxW": 900,
+    "boxH": 500,
+    "mount": 2100,
+    "ridden": "u_ynjghrq"
+  },
+  "f5_stack": {
+    "base": 2100,
+    "mainTop": 2100,
+    "reds": 0
+  },
+  "f5_forced": {
+    "base": 2100,
+    "reds": 0
+  },
+  "f5_healed": {
+    "base": 2100,
+    "reds": 0
+  },
+  "f5_door": {
+    "gap": 3,
+    "carcassH": 2000
+  },
+  "f5_sides": {
+    "boxL": "h",
+    "boxR": "h",
+    "mainL": "h"
+  },
+  "f5_dims": {
+    "u_1115lux": 1,
+    "u_ynjghrq": 1
+  },
+  "f4_leaves": [
+    "W01-FL",
+    "W01-FR"
+  ],
+  "f4_docked": {
+    "open": true,
+    "left": 0,
+    "height": 1234,
+    "viewport": 1250,
+    "subject": "W01-FL",
+    "split": true,
+    "title": null
+  },
+  "f4_survived": {
+    "open": true
+  },
+  "f4_swapped": {
+    "was": "W01-FL",
+    "now": "W01-FR",
+    "title": null,
+    "open": true,
+    "clickedOn": "canvas",
+    "selected": "W01-FR",
+    "modalArgs": "W01-FR"
+  },
+  "f4_closed": {
+    "open": false,
+    "hadX": true
+  }
+}

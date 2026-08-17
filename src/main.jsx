@@ -56,6 +56,10 @@ import * as design from './engine/design.js';
 // Turn 35 (CLAUDE.md F4): the context guard's own counters, readable before the
 // first canvas has mounted — see below.
 import * as contextGuard from './3d/contextGuard.jsx';
+// ─── Turn 37 (CLAUDE.md F1/F2/F7): the three readers this turn's walk asks ──
+import * as layout from './engine/cnc/layout.js';
+import * as railAssembly from './engine/railAssembly.js';
+import * as selection from './lib/selection.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -203,6 +207,15 @@ if (typeof window !== 'undefined') {
   // walk that reads it too early cannot tell "no contexts" from "no counter" —
   // `contextDiagnosis()` makes it on demand and answers the same object.
   window.__ccT35 = { contextGuard };
+  // ─── Turn 37 (CLAUDE.md F1/F2/F7) ───
+  // Three readers this turn's walk has to ask questions OF, for the same
+  // reason every one above is here — a claim is proven by asking the APP, off
+  // the function the app itself calls, never off a re-implementation beside
+  // it. `layout` answers WHICH WAY a part goes down on the sheet (F7a),
+  // `railAssembly` answers where the rod hangs under its shelf (F2), and
+  // `selection` is how a cross-cabinet member is spelled (F1) — a walk that
+  // parsed the key itself would be a second copy of the separator. All pure.
+  window.__ccT37 = { layout, railAssembly, selection };
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

@@ -60,6 +60,13 @@ test('constants block A: every number the engine uses IS the kit\'s', () => {
   assert.equal(C.fixAxis, lispConst('SHOE_FIX_AXIS'), 'axis 40 above the box floor');
   assert.equal(C.setbackX, lispConst('SHOE_SETBACK_X'), 'front + 3');
   assert.equal(C.infill, lispConst('SHOE_INFILL'), '30 per hinged side');
+  // ─── ADDED 17.08.2026 (T37-F6) ────────────────────────────────────────────
+  // This test's contract is "EVERY number the engine uses IS the kit's", so
+  // the two the owner added on 17.08 belong on the list the day they are
+  // added — otherwise the contract quietly stops being true. Their own proof
+  // (the geometry, the BOM and the room) is turn37-f6-shoe-front.test.js.
+  assert.equal(C.battenBack, lispConst('SHOE_BATTEN_BACK'), '30 off the batten\'s front');
+  assert.equal(C.frontReveal, lispConst('SHOE_FRONT_REVEAL'), '10 of reveal to BUL and BUR');
   assert.equal(C.runnerFrontFix, lispConst('SHOE_RUNNER_FRONT_FIX'), '37 from the runner face');
   // …and the two names the kit's own layer maker writes.
   assert.match(LISP, /"SHOE_GROOVE_6MM"/);
@@ -219,7 +226,25 @@ test('a FRONT on BOTH variants, 120 high — and the material law differs', () =
 
   const drw = plan({ variant: 'D', hingedLeft: true }).panels.find((x) => x.role === 'front');
   assert.equal(drw.h, 120);
-  assert.equal(drw.w, 564 - 26 - 30, 'DRAWER: the narrowed box\'s own width');
+  // ─── RE-PINNED 17.08.2026 (T37-F6) ────────────────────────────────────────
+  // What this line asserted from T34 until this date, and WHY it was right
+  // then, kept verbatim so the history reads:
+  //
+  //     assert.equal(drw.w, 564 - 26 - 30, 'DRAWER: the narrowed box\'s own
+  //                  width');
+  //
+  // The drawer face WAS the box's own width — opening less 2 × 13 of runner
+  // and 30 more for the one hinged side — because the box was what it was
+  // screwed to and nobody had looked at it in the room yet.
+  //
+  // The owner then looked at it: *"rozszerz front szuflady, tak żeby zostało
+  // po prawej i po lewej od BUR i BUL około 10 mm — będzie wyglądać lepiej, a
+  // i tak się otworzy."* So the face is now the OPENING less 2 × 10, which is
+  // 66 mm wider than the box it hangs on and covers the batten-and-runner zone
+  // the old width left as daylight. `SHOE_FRONT_REVEAL` in KIT_SHOE_BOX.lsp is
+  // the law; the whole of it is proved next door in turn37-f6-shoe-front.
+  assert.equal(drw.w, 564 - 20, 'DRAWER: the opening less 10 mm of reveal each side');
+  assert.ok(drw.w > (564 - 26 - 30), 'and it is WIDER than the box — deliberately');
   assert.equal(drw.family, 'fronts', 'a front like every other front');
 });
 

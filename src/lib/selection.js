@@ -43,6 +43,78 @@ export function applySelection(current, id, additive = false) {
   return without;
 }
 
+// ─── TURN 37 (CLAUDE.md F1): THE SET SPANS CABINETS ─────────────────────────
+//
+// The owner, on T36-F2: *"chodziło mi o półki z 2–3 szaf obok siebie, a nie
+// tylko z jednej… Nie mogę sobie złapać 6 półek z 3 szaf i przesunąć ich
+// razem."* T36 built the set one level down from the cabinet and then drew a
+// boundary round the cabinet, which is the one place the owner needed it not
+// to be: a run of three wardrobes is ONE piece of furniture to the person
+// looking at it, and the six shelves in it line up or they do not.
+//
+// A member is `{unitId, elementRef}` — and it is carried as a KEY, one string,
+// so `applySelection` above is reused CHARACTER FOR CHARACTER. That is not
+// tidiness: the add/remove/promote arithmetic is subtle (Ctrl+click on a member
+// already in the set removes it; removing the primary promotes the one touched
+// before it), it is tested, and a second copy of it keyed on object identity
+// would be a second copy that disagrees the first time somebody re-creates a
+// member object in a `useMemo`.
+//
+// The separator is a NUL. A unit id is `u_…` and a panel id is `SHELF-2`, so
+// almost anything would do — but "almost" is how a piece called `a::b` in a
+// cabinet called `x` collides with a piece called `b` in a cabinet called
+// `x::a`, and a character that cannot occur in either is free.
+const MEMBER_SEP = '\u0000';
+
+/** One member of a cross-cabinet piece selection, as a single comparable key. */
+export function memberKey(unitId, elementRef) {
+  return `${unitId}${MEMBER_SEP}${elementRef}`;
+}
+
+/** …and back. Answers null for anything that is not a key. */
+export function parseMember(key) {
+  const text = typeof key === 'string' ? key : '';
+  const at = text.indexOf(MEMBER_SEP);
+  if (at < 0) return null;
+  return { unitId: text.slice(0, at), elementRef: text.slice(at + 1) };
+}
+
+/**
+ * What a click on a PIECE does to the selection, across cabinets.
+ *
+ * Exactly `applySelection`, on keys. A plain click starts a fresh set; Ctrl (or
+ * ⌘) adds and removes — and it no longer matters which cabinet the piece is in.
+ */
+export function applyMemberSelection(current, unitId, elementRef, additive = false) {
+  if (!unitId || !elementRef) return [];
+  return applySelection(current, memberKey(unitId, elementRef), additive);
+}
+
+/**
+ * The members of the set that live in ONE cabinet, as bare panel ids.
+ *
+ * What a `<UnitView>` needs: it draws its own pieces and knows nothing about
+ * the cabinet next door. Returns a stable EMPTY array when this unit has none,
+ * so a scene of twelve cabinets does not re-render eleven of them because a
+ * fresh `[]` was handed down.
+ */
+const NO_MEMBERS = Object.freeze([]);
+
+export function refsForUnit(keys, unitId) {
+  if (!unitId || !(keys || []).length) return NO_MEMBERS;
+  const out = [];
+  for (const k of keys) {
+    const m = parseMember(k);
+    if (m && m.unitId === unitId) out.push(m.elementRef);
+  }
+  return out.length ? out : NO_MEMBERS;
+}
+
+/** Every member, as `{unitId, elementRef}` — what a group EDIT walks. */
+export function membersOf(keys) {
+  return (keys || []).map(parseMember).filter(Boolean);
+}
+
 /** The cabinet the single-unit panels are about: the last one touched. */
 export function primaryOf(ids) {
   const list = (ids || []).filter(Boolean);

@@ -49,6 +49,31 @@
 // way the IMAGE's own grain axis points IN THE ROOM. That is the surface, in
 // millimetres of cabinet, and it is the same read `scripts/e2e-turn29.mjs`
 // performs on the mounted mesh in a live WebGL scene.
+//
+// ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7b) ───────────────────────────────
+//
+// The owner, walking the app again: *"CNC jest ok, ale wizualizacja nie jest —
+// sprawdź, co ci nadpisuje."*
+//
+// EVERY WORD ABOVE ABOUT THE TWO FAMILIES OF IMAGE STILL STANDS. The scan runs
+// down its own V, our procedural tile along its own U, they are 90° apart, and
+// `decorPlacement` still tells them apart with no new field. That machinery is
+// not what moved and none of the measurements below it have changed.
+//
+// What moved is one step BEFORE it: which way the BOARD says its grain runs.
+// Turn 28 read `cnc.grain` as if it were stated in the PANEL frame. It is
+// stated in the CNC DRAWN frame — it is written inside the `cnc` block, beside
+// `drawn_w` and `drawn_h` — and a shelf is drawn `depth × width`, so its 'h' is
+// the 560, the cabinet's WIDTH. This file inherited turn 28's reading and
+// pinned the shelf's figure FRONT-TO-BACK all the way down to the mounted
+// surface. `engine/decors.js statedPanelAxis` now translates the stated axis
+// out of the drawn frame first, and the shelf's figure runs LEFT-TO-RIGHT —
+// parallel to the wieniec above it, which is what the owner is looking at.
+//
+// So the assertions about the SHELF flip; the assertions about the two
+// families, the two textures, the wieniec, the sides and the door do not move a
+// character. Nothing here is deleted: every reversed line keeps the reasoning
+// that produced it and says what overturned it, on the line beneath.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -268,14 +293,22 @@ function grainInTheRoom(panel, result, surface) {
   throw new Error(`no ${['x', 'y', 'z'][thin]}-facing triangle on ${panel.id}`);
 }
 
-test('F1 THE LAW — a decor shelf’s grain runs FRONT-TO-BACK, on the mounted surface', () => {
+test('F1 THE LAW — a decor shelf’s grain runs FRONT-TO-BACK, on the mounted surface'
+  + ' — RE-PINNED 17.08.2026 (T37-F7b): LEFT-TO-RIGHT, along the cabinet’s width', () => {
   const r = unit('BUD', { shelves: 1 });
   const shelf = r.panels.find((p) => p.part === 'SHELF');
   for (const [what, surface] of [['scan', SCAN], ['fallback grain', TILE]]) {
     const { axis, vector } = grainInTheRoom(shelf, r, surface);
-    assert.equal(axis, 'z', `${what}: front to back, along the cabinet's depth`);
+    // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7b): 'z' → 'x' ───────────────
+    // *"CNC jest ok, ale wizualizacja nie jest — sprawdź, co ci nadpisuje."*
+    // The rig below is untouched and this is still the SURFACE being read, not
+    // a flag. What moved is the board's own statement, read at last in the CNC
+    // DRAWN frame it was written in: a shelf drawn `depth × width` states 'h',
+    // and that 'h' is the 560 — the WIDTH. Both families move together, which
+    // is the proof the fault was upstream of them and not in either one.
+    assert.equal(axis, 'x', `${what}: left to right, along the cabinet's width`);
     // …and it is FLAT on the board, not a diagonal that happens to lean that way.
-    assert.ok(Math.abs(vector[0]) < 1e-6, `${what}: nothing of it runs across the shelf`);
+    assert.ok(Math.abs(vector[2]) < 1e-6, `${what}: nothing of it runs front-to-back`);
   }
 });
 
@@ -283,7 +316,13 @@ test('F1 …and the same rule puts every other board where the owner has already
   const r = unit('BUD', { shelves: 1, doors: { count: 1, hinge: 'L' } });
   const rd = unit('BUDR');
   const expected = [
-    ['SHELF', 'z', 'turn 29: front to back, with the sheet'],
+    // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7b): 'z' → 'x' ────────────────
+    // Turn 29 wrote "front to back, WITH THE SHEET" and the second half is the
+    // half that was right: the figure follows the sheet. It is the reading of
+    // the sheet that was wrong. The sheet stands the grain UP THE PAGE — the
+    // drawn y — and on a shelf drawn `depth × width` the drawn y IS the width.
+    // So "with the sheet" now means 'x', and every other row here is untouched.
+    ['SHELF', 'x', 'turn 37 F7b: left to right, with the sheet read in its own frame'],
     ['TOP', 'x', 'turn 13: lewo-prawo, not front-tył'],
     ['BOTTOM', 'x', 'the same board the other way up'],
     ['BUL', 'y', 'turn 8: up the panel, not lying on its side'],
@@ -312,48 +351,93 @@ test('F1 …and the same rule puts every other board where the owner has already
   assert.equal(grainInTheRoom(df, rd, TILE).axis, 'y', '…on the fallback image too');
 });
 
-test('F1 the shelf and the wieniec above it disagree, and that is the whole point', () => {
+test('F1 the shelf and the wieniec above it disagree, and that is the whole point'
+  + ' — RE-PINNED 17.08.2026 (T37-F7b): they AGREE, and THAT is the whole point', () => {
   const r = unit('BUD', { shelves: 1 });
   const shelf = r.panels.find((p) => p.part === 'SHELF');
   const top = r.panels.find((p) => p.part === 'TOP');
   // Two horizontal boards, both lying on their ±Y face, both mapped by the same
   // function — and the figure runs at right angles on them, because the SHEET
   // says so about one of them and the saw says so about the other.
+  //
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7b): AT RIGHT ANGLES → PARALLEL ─
+  // *"CNC jest ok, ale wizualizacja nie jest — sprawdź, co ci nadpisuje."*
+  // The right angle WAS the fault, and it is the picture the owner walked into.
+  // Both boards are nested with their grain up the page: the wieniec is drawn
+  // `depth × width` and turned there (`drawWDR_TOP_ROT90`), the shelf is drawn
+  // `depth × width` and states 'h' for the same reason. Read in the frame it is
+  // written in, the shelf's statement is its WIDTH — the wieniec's own
+  // direction. Two horizontal boards in one carcass now carry one figure, which
+  // is what a joiner would cut and what the owner is looking for.
   for (const surface of [SCAN, TILE]) {
-    assert.equal(grainInTheRoom(shelf, r, surface).axis, 'z');
+    assert.equal(grainInTheRoom(shelf, r, surface).axis, 'x');
     assert.equal(grainInTheRoom(top, r, surface).axis, 'x');
   }
   // The BOARD's own statement is the same for both, and it is opposite on the
   // two pieces; the PICTURE's quarter turn is opposite between the two
   // families. Two independent facts, meeting once.
-  assert.equal(decorMapping(shelf.box, grainRun(shelf).lengthMm).grainAxis, 'v');
+  //
+  // RE-PINNED 17.08.2026: the second of those facts is untouched — the two
+  // families are still 90° apart and `decorPlacement` still turns them
+  // oppositely (the last two lines below, which SWAP because the board they are
+  // asked about turned, not because the rule did). The first is what moved: the
+  // two boards' statements agree once the shelf's is read in its own frame.
+  // Was: shelf 'v', shelf TILE rotate true, shelf SCAN rotate false.
+  assert.equal(decorMapping(shelf.box, grainRun(shelf).lengthMm).grainAxis, 'u');
   assert.equal(decorMapping(top.box, grainRun(top).lengthMm).grainAxis, 'u');
-  assert.equal(decorPlacement(TILE, shelf, P).rotate, true);
-  assert.equal(decorPlacement(SCAN, shelf, P).rotate, false);
+  assert.equal(decorPlacement(TILE, shelf, P).rotate, false);
+  assert.equal(decorPlacement(SCAN, shelf, P).rotate, true);
+  // …and the wieniec's two answers, unmoved, which is what says the SWAP above
+  // is the shelf joining it rather than the rule flipping under both.
+  assert.equal(decorPlacement(TILE, top, P).rotate, false);
+  assert.equal(decorPlacement(SCAN, top, P).rotate, true);
 });
 
-test('F1 the banded edge is still the long FRONT one, and the grain still crosses it', () => {
+test('F1 the banded edge is still the long FRONT one, and the grain still crosses it'
+  + ' — RE-PINNED 17.08.2026 (T37-F7b): the grain runs ALONG it', () => {
   const r = unit('BUD', { shelves: 1 });
   const shelf = r.panels.find((p) => p.part === 'SHELF');
   assert.equal(shelf.edging.code, P.csv.codes.right, 'one long edge');
   assert.ok(Math.abs(shelf.edging.len_m - shelf.w / 1000) < 1e-9, 'and it is the width');
-  assert.equal(grainRun(shelf).acrossMm, shelf.w, 'which the grain runs across');
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7b): ACROSS → ALONG ────────────
+  // The EDGING has not moved a millimetre: still one long front edge, still the
+  // width, still `>`. Only the direction of the figure past it has, and it went
+  // where the wieniec's already runs — a banded front edge with the grain
+  // running along it, which is what the board is banded that way for.
+  // Was: `acrossMm === shelf.w`, "which the grain runs across".
+  assert.equal(grainRun(shelf).lengthMm, shelf.w, 'which the grain now runs along');
+  assert.equal(grainRun(shelf).acrossMm, shelf.h, '…with the depth across the piece');
 });
 
-test('F1 the SCAN path is turn 8’s arithmetic, unmoved — a working bucket sees no change', () => {
+test('F1 the SCAN path is turn 8’s arithmetic, unmoved — a working bucket sees no change'
+  + ' — RE-PINNED 17.08.2026 (T37-F7b): the arithmetic is unmoved, its INPUT is not', () => {
   // The scans were never the fault, and a fix that moved them would have broken
   // the picture the owner sees when the bucket answers. Both branches below are
   // the ones turn 8 shipped, asserted as numbers.
+  //
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7b) ────────────────────────────
+  // *"CNC jest ok, ale wizualizacja nie jest — sprawdź, co ci nadpisuje."*
+  // Turn 8's two branches are STILL the two branches and neither has changed a
+  // character — which is what this test is for, and it still says it: the
+  // wieniec's half below is to the digit what it was. What moved is which
+  // BRANCH a shelf takes, because the board's stated grain now reads as its
+  // width. So a working bucket DOES see a change on a shelf, and it is the
+  // change the owner asked for; it sees none anywhere else.
   const r = unit('BUD', { shelves: 1 });
   const shelf = r.panels.find((p) => p.part === 'SHELF');
   const placed = decorPlacement(SCAN, shelf, P);
-  assert.equal(placed.rotate, false, 'a scan already runs down its own V, and so does the shelf');
+  // Was: rotate false — "a scan already runs down its own V, and so does the
+  // shelf". The shelf's grain runs along its face's U now, so the image takes
+  // the quarter turn, exactly as it does on the wieniec.
+  assert.equal(placed.rotate, true, 'a scan runs down its own V and the shelf now runs across it');
   // No decoded image in node, so the aspect is 1 and along/across are equal;
   // what is asserted is WHICH face extent each repeat divides.
-  assert.ok(Math.abs(placed.repeatX - shelf.box.w / SCAN.scanAlongGrainMm) < 1e-9,
-    'repeat.x spans the face’s U — the WIDTH, across the grain');
-  assert.ok(Math.abs(placed.repeatY - shelf.box.d / SCAN.scanAlongGrainMm) < 1e-9,
-    '…and repeat.y its V — the DEPTH, along the grain');
+  // Was: repeat.x over the WIDTH and repeat.y over the DEPTH — the unturned
+  // branch. Turned, the two trade places, which is turn 8's own arithmetic.
+  assert.ok(Math.abs(placed.repeatX - shelf.box.d / SCAN.scanAlongGrainMm) < 1e-9,
+    'repeat.x spans the DEPTH, across the grain');
+  assert.ok(Math.abs(placed.repeatY - shelf.box.w / SCAN.scanAlongGrainMm) < 1e-9,
+    '…and repeat.y the WIDTH, along the grain');
 
   // A wieniec is the piece a scan HAS to be turned for, and that is turn 8's
   // own branch too.
@@ -364,20 +448,30 @@ test('F1 the SCAN path is turn 8’s arithmetic, unmoved — a working bucket se
   assert.ok(Math.abs(flat.repeatY - top.box.w / SCAN.scanAlongGrainMm) < 1e-9);
 });
 
-test('F1 the TILE path is the one that moves, and a turned tile keeps its proportions', () => {
+test('F1 the TILE path is the one that moves, and a turned tile keeps its proportions'
+  + ' — RE-PINNED 17.08.2026 (T37-F7b): on this board it is the UNTURNED branch now', () => {
   // The fallback is what was wrong, and it is wrong in two ways at once: the
   // quarter turn was decided against the other family's convention, and the
   // repeats were divided the unturned way in both branches — which does not
   // turn the figure but STRETCHES it on any face that is not square.
+  //
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7b) ────────────────────────────
+  // Turn 29's fix to `decorPlacement` is untouched and both of its faults stay
+  // fixed — the proportion check at the bottom is the one that proves it, and
+  // it is asserted on whichever branch the board takes. A shelf takes the other
+  // branch now, because its stated grain reads as its width; the wieniec's
+  // answers at the end of this test have not moved, which is what says the
+  // branch swapped under the BOARD and not under the rule.
   const r = unit('BUD', { shelves: 1 });
   const shelf = r.panels.find((p) => p.part === 'SHELF');
   const placed = decorPlacement(TILE, shelf, P);
-  assert.equal(placed.rotate, true, 'our grain runs the other way and has to be turned');
-  assert.ok(Math.abs(placed.repeatX - shelf.box.d / TILE.repeatMm) < 1e-9);
-  assert.ok(Math.abs(placed.repeatY - shelf.box.w / TILE.repeatMm) < 1e-9);
+  // Was: rotate true — the shelf's grain ran across our tile's own U.
+  assert.equal(placed.rotate, false, 'our grain runs along U, and so does the shelf now');
+  assert.ok(Math.abs(placed.repeatX - shelf.box.w / TILE.repeatMm) < 1e-9);
+  assert.ok(Math.abs(placed.repeatY - shelf.box.d / TILE.repeatMm) < 1e-9);
   // One tile is the same number of millimetres in both directions on the board.
-  const alongMm = shelf.box.d / placed.repeatX;
-  const acrossMm = shelf.box.w / placed.repeatY;
+  const alongMm = shelf.box.w / placed.repeatX;
+  const acrossMm = shelf.box.d / placed.repeatY;
   assert.ok(Math.abs(alongMm - acrossMm) < 1e-9, 'square on the board, as it is square in the file');
   // …and a wieniec takes our tile UNTURNED, which is the opposite of what it
   // does with a scan — two families, two answers, one rule.

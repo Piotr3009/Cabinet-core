@@ -57,6 +57,15 @@ test('F3 — the DRAWER variant switches the same way', () => {
   assert.equal(on.panels.filter((p) => p.role === 'front').length, 1);
   assert.equal(off.panels.filter((p) => p.role === 'front').length, 0);
   assert.deepEqual(off.runner, on.runner, 'the runner does not care about the face');
+  // ─── SWEPT AND EXTENDED 17.08.2026 (T37-F6) ───────────────────────────────
+  // The T37 sweep looked here for a pinned OLD width and found none — this
+  // file has always counted the face rather than measuring it, so nothing
+  // needed re-pinning and no assertion of T36's was changed. One was ADDED:
+  // the switch and the WIDTH law must not drift apart, so the board this
+  // switch drops is pinned as the board T37 widened — the opening less
+  // 2 × SHOE_FRONT_REVEAL, not the box's own width it was until 17.08.
+  assert.equal(on.panels.find((p) => p.role === 'front').w, 864 - 20,
+    'T37-F6: what the switch turns off is the WIDE face');
 });
 
 test('F3 — the ENGINE drops SHOEBOX-FR from the panels', () => {

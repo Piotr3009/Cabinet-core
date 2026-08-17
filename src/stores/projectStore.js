@@ -15,6 +15,9 @@ import {
 } from '../engine/types.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
+// T37-F4a: `bandSegmentAt`/`bandSegments` — a split divider is an END of the
+// cabinet, so the band a shelf lives in is cut by the boards that cross it.
+// That law lives in one place and every path below reads it from there.
 import {
   boxSpansOnWall,
   clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
@@ -22,7 +25,7 @@ import {
   shelfBounds, unitIssues, unitPlanSpan, unitSpan,
   wallClearance,
   wallObstacles,
-  bandsOverlap, unitBand,
+  bandsOverlap, unitBand, bandSegmentAt, bandSegments,
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
@@ -79,6 +82,13 @@ import {
 } from '../engine/items.js';
 // ─── TURN 35 (CLAUDE.md F1): the rail's datum, answered where it is knowable ─
 import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
+// T37-F1: a piece selection spans cabinets — each member carries its own unit.
+import { membersOf, parseMember } from '../lib/selection.js';
+// T37-F2: the rail is a FIX SHELF with a rod hung under it. The link, the drop
+// and where the assembly's shelf stands — `engine/railAssembly.js`.
+import {
+  assemblyShelfPos, hangerDropMm, RAIL_MOUNT, railMountOf, railShelfIdOf,
+} from '../engine/railAssembly.js';
 import { endPanelHeightDefault } from '../engine/autoparts.js';
 // Turn 24 (CLAUDE.md F3): the caliper's six numbers, and the drawer gate.
 import {
@@ -2173,17 +2183,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   setSplitTop: (unitId, mm) => {
     const v = Number(mm);
-    return get().updateUnitParams(unitId, {
+    const out = get().updateUnitParams(unitId, {
       split_top_mm: Number.isFinite(v) && v > 0 ? Math.round(v) : null,
     });
+    // ─── TURN 37 (CLAUDE.md F4a): THE DIVIDER ARRIVES, THE SHELVES SETTLE ────
+    // The divider is an END of the cabinet now, so typing one MOVES the band
+    // every shelf lives in — and a shelf standing where the crossbar is about
+    // to be cut is an overlap nobody dragged. The sweep that already exists for
+    // every other carcass change is the sweep for this one: same clamp, same
+    // one law, no second opinion about where a shelf may stand.
+    get().reclampShelves(unitId);
+    return out;
   },
 
   /** …and one BAY's own split, leaving the other bays alone. */
   setBaySplitTop: (unitId, bay, mm) => {
     const v = Number(mm);
-    return get().setBayDoor(unitId, bay, {
+    const out = get().setBayDoor(unitId, bay, {
       split_top_mm: Number.isFinite(v) && v > 0 ? Math.round(v) : 0,
     });
+    // …and the same settle, for the bay's own column (T37-F4a).
+    get().reclampShelves(unitId);
+    return out;
   },
 
   /** One bay's own answer, leaving the others alone. */
@@ -2436,6 +2457,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (riderHost) {
       placed = { wall: riderHost.position?.wall ?? 0, x: riderHost.position?.x_mm ?? 0 };
       unit.params.rides_on = riderHost.id;
+      // ─── TURN 37 (CLAUDE.md F5a): BORN MATCHED ────────────────────────────
+      //
+      // The owner, walking T36-F7: *"nadstawka działa super, ale…"* — a Top
+      // box placed on a main takes THE MAIN'S WIDTH. T36 gave it the profile's
+      // 600 whatever it stood on, so a box on a 900 wardrobe arrived 300 short
+      // and had to be typed every single time (the T36 walk itself worked
+      // round it with an `updateUnitParams(box, { width: 900 })`).
+      //
+      // BORN matched, and only born: the width is written here, once, at
+      // placement — not in `settleRiders`, which runs on every mutation and
+      // would stamp on a joiner who had deliberately made his box narrower.
+      // The DEPTH is settled continuously and stays that way, because a box
+      // that overhangs its own carcass is not a box, it is a mistake.
+      const hostW = Number(riderHost.params?.width);
+      if (Number.isFinite(hostW) && hostW > 0) unit.params.width = hostW;
     }
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
@@ -3127,9 +3163,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // Turn 32 (CLAUDE.md F4): the band is the BAY's — a shelf over a
         // column's drawer stack starts above that column's closing board.
         band: shelfLimits(unit, profile, bay),
-        positions: shelvesInEngineOrder(items)
-          .filter((sh) => (bay == null ? true : zoneIndexOf(sh.zone) === bay))
-          .map((sh) => sh.pos_mm),
+        positions: [
+          ...shelvesInEngineOrder(items)
+            .filter((sh) => (bay == null ? true : zoneIndexOf(sh.zone) === bay))
+            .map((sh) => sh.pos_mm),
+          // ─── TURN 37 (CLAUDE.md F4a): …AND THE SPLIT DIVIDER IS A BOARD ───
+          // The owner: *"powinna być traktowana jak koniec szafy."* An opening
+          // may not cross it, so the divider is handed in as what it physically
+          // is — a board in this column — and the biggest-opening search stops
+          // at it exactly as it stops at a shelf. The list of them is the SAME
+          // one the band's own segmentation reads (`splitBoundariesFor`), so
+          // the placement and the clamp cannot disagree about where it is.
+          ...splitBoundaryPositions(unit, profile, bay),
+        ],
         boardT: unit.params.board_t ?? profile.board.thickness,
       }, profile);
       if (pos == null) break;
@@ -3204,6 +3250,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * Add the hanging rail, as high as it can go under the lowest shelf and clear
    * of the drawer stack below it (BACKLOG #12: "hangers in between"). The chosen
    * hardware travels with the item, so the BOM names the product.
+   *
+   * ─── TURN 37 (CLAUDE.md F2): IT IS AN ASSEMBLY NOW ────────────────────────
+   *
+   * The owner, 17.08.2026: *"dlaczego drążek nie może być z półką powyżej, i ta
+   * półka być traktowana jak półka, tylko że fix? Zrób półkę nad drążkiem —
+   * półka, a drążek dołącz do półki i tyle."*
+   *
+   * So this makes TWO items, in one undo step: a FIX SHELF, and a rail that
+   * names it. The shelf is an ordinary fix shelf from that moment on — it is
+   * dragged by hand, it clamps against its neighbours, it is listed and
+   * dimensioned and cut like every other shelf — and the rod rides it, because
+   * `engine/railAssembly.js` resolves the rod's height FROM the shelf at
+   * compute time. There is nothing left to type.
+   *
+   * WHERE THE SHELF GOES is not a new placement rule. The old law is run
+   * exactly as it was (`nextHangerOffset` → the automatic rod height), and the
+   * shelf is stood where that rod's PARTITIONER would have stood — `axis +
+   * drop`, with `drop` defaulting to the partitioner's own 40. So the rod comes
+   * out on the same millimetre it came out on yesterday; what is new is the
+   * board above it, and that the joiner can drag it.
+   *
+   * @returns {string|null} the RAIL's item id, as it always has — the shelf is
+   *   reachable from it through `shelf_id`, and `railAssemblyOf` reads the pair.
    */
   addHangerRail: (unitId, { materialId = null, materialLabel = null, zone = null } = {}) => {
     const profile = getCabinetProfile();
@@ -3246,18 +3315,58 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }),
       axis: (Number(zoneBase) || 0) + bornAt,
     });
-    return get().addItem(unitId, {
-      kind: 'hanger',
-      // The number is measured from the datum that was just chosen, so the rod
-      // lands EXACTLY where the automatic placement put it — `railDatumFor`
-      // returns the pair, and taking one without the other is what would move
-      // it.
-      pos_mm: snapTo(born.offset, profile.editor.mmStep),
-      datum: born.datum,
-      ...(wantZone == null ? {} : { zone: wantZone }),
-      material_id: materialId,
-      material_label: materialLabel,
+    // ─── T37-F2: THE ASSEMBLY ────────────────────────────────────────────────
+    // One undo step for two items: a joiner who presses Ctrl+Z after "Add
+    // hanger rail" expects the rail to be gone, not half of it.
+    const drop = hangerDropMm(profile);
+    const railAxis = (Number(zoneBase) || 0) + bornAt;
+    let railId = null;
+    runBatch(() => {
+      const shelfId = get().addItem(unitId, {
+        kind: 'shelf',
+        // FIX, and that is the owner's own word: *"traktowana jak półka, tylko
+        // że fix"*. It carries a rod; a pin shelf would drop it.
+        variant: 'fixed',
+        pos_mm: snapTo(assemblyShelfPos({ railAxis, drop }), profile.editor.mmStep),
+        ...(wantZone == null ? {} : { zone: wantZone }),
+      });
+      if (!shelfId) return;
+      railId = get().addItem(unitId, {
+        kind: 'hanger',
+        // THE LINK. `mount: 'shelf'` plus a shelf id is what makes the engine
+        // read the new law; a rail without both is a legacy rail and is read
+        // by T35's, untouched.
+        mount: 'shelf',
+        shelf_id: shelfId,
+        // The T35 pair is still written, and it is DEAD WEIGHT on purpose
+        // (CLAUDE.md F2: *"the engine law may remain as dead weight for legacy
+        // only"*). It records where the rod hung at birth, so a reader that
+        // has never heard of `mount` — an old export, an old fixture — puts it
+        // on the same millimetre rather than at zero.
+        pos_mm: snapTo(born.offset, profile.editor.mmStep),
+        datum: born.datum,
+        ...(wantZone == null ? {} : { zone: wantZone }),
+        material_id: materialId,
+        material_label: materialLabel,
+      });
     });
+    return railId;
+  },
+
+  /**
+   * T37-F2: the two halves of one rail, for the modal and for the tests.
+   * `null` when the id names nothing, or names a LEGACY rail — which has no
+   * shelf, and must not be given one.
+   *
+   * @returns {{rail:object, shelf:object}|null}
+   */
+  railAssemblyOf: (unitId, railItemId) => {
+    const items = get().units.find((u) => u.id === unitId)
+      ?.params.sections?.[0]?.items || [];
+    const rail = items.find((i) => i.id === railItemId && i.kind === 'hanger') || null;
+    if (!rail || railMountOf(rail) !== RAIL_MOUNT.SHELF) return null;
+    const shelf = items.find((i) => i.kind === 'shelf' && i.id === railShelfIdOf(rail)) || null;
+    return shelf ? { rail, shelf } : null;
   },
 
   // ─── TURN 33 (CLAUDE.md F3): A BOUGHT MECHANISM IN A COLUMN ───────────────
@@ -3478,33 +3587,43 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * The HEAL SWEEP runs once at the end. A sweep per removal would trim a
    * front against gaps that are about to close.
    */
+  // ─── TURN 37 (CLAUDE.md F1): …AND THE SET SPANS CABINETS ─────────────────
+  //
+  // `refs` may now be MEMBER KEYS (`lib/selection.js memberKey`) as well as
+  // bare panel ids. A key carries its own cabinet; a bare id belongs to
+  // `unitId`, which is what every caller before tonight passed and what the
+  // T36 tests still pass. One list, two shapes, no second action — and the
+  // heal sweep still runs ONCE, now per cabinet touched.
   deleteElementSet: (unitId, refs) => {
-    const unit = get().units.find((u) => u.id === unitId);
-    const result = unit ? get().unitResult(unitId) : null;
-    if (!unit || !result) return { ok: false, error: 'Nothing is selected.' };
-    const plans = [];
+    const byUnit = new Map();
     const refused = [];
-    for (const ref of refs || []) {
-      const panel = result.panels.find((p) => p.id === ref) || null;
+    for (const entry of refs || []) {
+      const member = parseMember(entry) || { unitId, elementRef: entry };
+      const unit = get().units.find((u) => u.id === member.unitId);
+      const result = unit ? get().unitResult(member.unitId) : null;
+      if (!unit || !result) continue;
+      const panel = result.panels.find((p) => p.id === member.elementRef) || null;
       const plan = deletePlan({ unit, panel });
-      if (plan.allowed) plans.push({ ref, plan });
-      else refused.push(plan.reason);
+      if (!plan.allowed) { refused.push(plan.reason); continue; }
+      if (!byUnit.has(member.unitId)) byUnit.set(member.unitId, []);
+      byUnit.get(member.unitId).push({ ref: member.elementRef, plan });
     }
-    if (!plans.length) {
+    if (!byUnit.size) {
       return { ok: false, error: refused[0] || 'Nothing in the selection can be removed.' };
     }
     return runBatch(() => {
-      for (const { ref, plan } of plans) {
-        if (plan.target === 'item') get().removeItem(unitId, plan.itemId);
-        else get().setElementOverride(unitId, ref, { removed: true });
+      const removed = [];
+      for (const [uid_, plans] of byUnit) {
+        for (const { ref, plan } of plans) {
+          if (plan.target === 'item') get().removeItem(uid_, plan.itemId);
+          else get().setElementOverride(uid_, ref, { removed: true });
+          removed.push(plan.itemId || ref);
+        }
       }
       useUiStore.getState().clearElement();
       get().healFrontGaps();
       return {
-        ok: true,
-        removed: plans.map((p) => p.plan.itemId || p.ref),
-        refused,
-        next: null,
+        ok: true, removed, refused, next: null,
       };
     });
   },
@@ -3738,11 +3857,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ?.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.kind || null;
     const wasDrawer = removedKind === 'drawer';
     const wasPartition = removedKind === 'partition';
+    // ─── T37-F2: THE ASSEMBLY LEAVES TOGETHER ────────────────────────────────
+    // A rod hangs on ITS shelf and on nothing else. Take the shelf out and the
+    // rod has nothing to hang from — the engine already refuses to draw it
+    // (`railAssembly.js`: a rail whose shelf is gone is not there), so leaving
+    // the item behind would leave an invisible rail in the section and a
+    // hardware line in the BOM for a rod nobody can see. It goes with its
+    // shelf. A LEGACY rail is never touched by this: it names no shelf.
+    const ridersOfRemoved = removedKind === 'shelf'
+      ? (get().units.find((u) => u.id === unitId)?.params.sections?.[0]?.items || [])
+        .filter((i) => i.kind === 'hanger' && railShelfIdOf(i) === itemId)
+        .map((i) => i.id)
+      : [];
+    const goneIds = new Set([itemId, ...ridersOfRemoved]);
     set((s) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections[0];
-        let items = section.items.filter((i) => i.id !== itemId);
+        let items = section.items.filter((i) => !goneIds.has(i.id));
         if (wasDrawer) {
           // Renumber bottom-up, so drawer i keeps meaning "i-th from the floor"
           // for the engine, the runner rows and the cut list.
@@ -3820,32 +3952,60 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * They are assigned bottom-up now, which is the engine's own order (S1 is the
    * lowest shelf everywhere else in the system).
+   *
+   * ─── TURN 37 (CLAUDE.md F4a): AND A SPLIT DIVIDER IS A ZONE BOUNDARY ──────
+   *
+   * The owner, of the divider T36 puts on the split line: *"jeśli daję centruj
+   * półki, to ponad tą poprzeczką powinny się centrować według tej poprzeczki,
+   * i to samo z dolną — taka sama rola."*
+   *
+   * So the button no longer spreads one ladder over the whole carcass and lets
+   * it walk through the divider. The band is cut into SEGMENTS by the one law
+   * (`engine/collision.js bandSegments`, applied in `shelfBandSegmentsFor`),
+   * each shelf stays in the segment it is already in, and the kit's own formula
+   * is run ONCE PER SEGMENT with that segment's own floor and ceiling. Three
+   * shelves under the divider and two above come out as three even openings and
+   * two even openings, which is what a joiner means by "even".
+   *
+   * With NO divider there is exactly one segment and it is the band itself, so
+   * this is the same single call turn 9 wrote, over the same two numbers.
    */
   redistributeShelves: (unitId) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return;
     const profile = getCabinetProfile();
-    const limits = shelfLimits(unit, profile);
+    const segments = shelfBandSegmentsFor(unit, profile);
     const items = unit.params.sections[0].items;
     const shelves = shelvesInEngineOrder(items);
-    const positions = evenShelfPositions({
-      // The kit's own bounds: the top face of whatever closes the space below
-      // (drawer partition, rail partitioner, or the base panel) and the
-      // underside of the top panel.
-      zoneBottom: limits.floor,
-      zoneTop: limits.ceiling,
-      count: shelves.length,
-      // ─── Turn 11 (CLAUDE.md F2.1/F2.2) ───
-      // …and the board itself, which is what turn 9 left out. The zone was
-      // right; the arithmetic accounted a thickness at one end only, so the
-      // LOWEST opening came out one board bigger than every other one — the
-      // 244.5 against 226.5 / 227 on Piotr's screenshot. A shelf THIS unit is
-      // built from, not the profile's: a 22 mm carcass spaces its shelves for
-      // 22 mm shelves.
-      boardT: unit.params.board_t ?? profile.board.thickness,
+    // Which segment each shelf is in NOW. A shelf keeps its side of the
+    // divider — Even is a spacing button, not a re-arrangement, and a board
+    // that jumped the crossbar because the count came out neater would be the
+    // "shelves swapped places" bug turn 9 fixed, one storey up.
+    const mine = (sh) => segments.indexOf(segments.find((b) => sh.pos_mm >= b.floor && sh.pos_mm < b.ceiling)
+      ?? segments[segments.length - 1]);
+    const at = new Map();
+    segments.forEach((limits, index) => {
+      const here = shelves.filter((sh) => (segments.length === 1 ? true : mine(sh) === index));
+      const positions = evenShelfPositions({
+        // The kit's own bounds: the top face of whatever closes the space below
+        // (drawer partition, rail partitioner, or the base panel) and the
+        // underside of the top panel — or, above a split divider, the divider
+        // itself in the base's role (T37-F4a).
+        zoneBottom: limits.floor,
+        zoneTop: limits.ceiling,
+        count: here.length,
+        // ─── Turn 11 (CLAUDE.md F2.1/F2.2) ───
+        // …and the board itself, which is what turn 9 left out. The zone was
+        // right; the arithmetic accounted a thickness at one end only, so the
+        // LOWEST opening came out one board bigger than every other one — the
+        // 244.5 against 226.5 / 227 on Piotr's screenshot. A shelf THIS unit is
+        // built from, not the profile's: a 22 mm carcass spaces its shelves for
+        // 22 mm shelves.
+        boardT: unit.params.board_t ?? profile.board.thickness,
+      });
+      here.forEach((sh, i) => at.set(sh.id, snapTo(positions[i], profile.editor.mmStep)));
     });
-    const at = new Map(shelves.map((sh, i) => [sh.id, snapTo(positions[i], profile.editor.mmStep)]));
     const next = items.map((i) => (at.has(i.id) ? { ...i, pos_mm: at.get(i.id) } : i));
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
@@ -4658,8 +4818,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // typed into the panel is refused exactly as a drag is. `blocked` is the
     // same shape the clamp returns when a shelf has nowhere to go, so the live
     // readout in the 3D view needs no new case.
-    if (isShelfLocked(item)) {
-      const band = shelfBandFor(unit, profile);
+    // ─── TURN 37 (CLAUDE.md F2): …UNLESS IT IS A RAIL'S OWN SHELF ───────────
+    //
+    // The owner's assembly, in his own words: *"ta półka być traktowana jak
+    // półka, tylko że fix"*, and CLAUDE.md spells out what that has to mean —
+    // *"an ordinary fix shelf in every way — DRAGGED BY HAND, snapping to
+    // neighbours' heights, listed and dimensioned like any shelf."* A rail the
+    // joiner cannot move is the T35 rail with extra steps.
+    //
+    // So the freeze is lifted for THIS board and no other. `fixed` still means
+    // SCREWED everywhere it has ever meant it — the drilling is unchanged, the
+    // pins are still not drilled, and every other fix shelf in the app is as
+    // held as it was yesterday. What moved is one sentence: a shelf that
+    // carries a rod is a shelf a joiner is allowed to put where he wants it.
+    const carriesRail = (unit.params.sections?.[0]?.items || [])
+      .some((i) => i.kind === 'hanger' && railShelfIdOf(i) === itemId);
+    if (isShelfLocked(item) && !carriesRail) {
+      // T37-F4a: read off the segment this board is actually in, so the frozen
+      // shelf's own readout names the divider above it rather than the top.
+      const band = shelfBandFor(unit, profile, null, null, item?.pos_mm ?? null);
       const bounds = shelfBounds({ pos: item?.pos_mm ?? band.min, others: otherShelfPositions(unit, itemId), band }, profile);
       return {
         pos: item?.pos_mm ?? band.min, ...bounds, blocked: true, locked: true,
@@ -4672,10 +4849,94 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       pos: snapTo(posRaw, snapStep || profile.editor.mmStep),
       current: item?.pos_mm,
       others: otherShelfPositions(unit, itemId),
-      band: shelfBandFor(unit, profile),
+      // ─── TURN 37 (CLAUDE.md F4a): THE DIVIDER IS THE END OF THIS COLUMN ───
+      // The band is the SEGMENT this shelf is in — asked with the shelf's own
+      // current height, so a board under the split stops at the divider exactly
+      // as it stops at the underside of the top, and one above it stands on the
+      // divider exactly as it would stand on the base. "Taka sama rola."
+      band: shelfBandFor(unit, profile, null, null, item?.pos_mm ?? posRaw),
     }, profile);
     get().updateItem(unitId, itemId, { pos_mm: state.pos });
     return state;
+  },
+
+  /**
+   * ─── TURN 37 (CLAUDE.md F1): SIX SHELVES IN THREE WARDROBES, IN ONE DRAG ──
+   *
+   * The owner: *"Nie mogę sobie złapać 6 półek z 3 szaf i przesunąć ich
+   * razem."* This is that drag, and it is the ONE entry point the 3D calls —
+   * a set of one falls straight through to `moveShelf`, so there is no second
+   * way of moving a shelf and no branch in the view deciding which to use.
+   *
+   * THE ARITHMETIC IS A DELTA, not a position. Six shelves at six different
+   * heights dragged to one absolute Y would stack in a pile; what the hand
+   * means is "all of them, this much further up". The piece IN THE HAND takes
+   * the pointer (magnet and all, through `moveShelf`), and how far IT actually
+   * travelled is what every other member is offered.
+   *
+   * AND EVERY MEMBER KEEPS ITS OWN CLAMP. A shelf that runs into its own
+   * neighbour stops there while the rest carry on — the alternative is either
+   * a group that refuses to move because one member is boxed in, or a group
+   * that quietly stacks two shelves in one slot. The count comes back in
+   * `group.stopped` so the live readout can say so.
+   *
+   * @returns {object} the PRIMARY's own clamp state, plus `group`
+   */
+  moveShelfSet: (unitId, itemId, posRaw, snapStep = 0) => {
+    const members = get().shelfSetMembers();
+    const inHand = members.some((m) => m.unitId === unitId && m.itemId === itemId);
+    // A set of one — or a shelf nobody ticked — is the single drag it has
+    // always been, down to the store call.
+    if (members.length < 2 || !inHand) return get().moveShelf(unitId, itemId, posRaw, snapStep);
+    const was = new Map(members.map((m) => [`${m.unitId} ${m.itemId}`, m.pos]));
+    const from = was.get(`${unitId} ${itemId}`);
+    return runBatch(() => {
+      const state = get().moveShelf(unitId, itemId, posRaw, snapStep);
+      const delta = Number(state?.pos) - Number(from);
+      let stopped = 0;
+      if (Number.isFinite(delta)) {
+        for (const m of members) {
+          if (m.unitId === unitId && m.itemId === itemId) continue;
+          const wanted = m.pos + delta;
+          const r = get().setShelfPos(m.unitId, m.itemId, wanted, snapStep);
+          if (r?.blocked || Math.abs(Number(r?.pos) - wanted) > 0.001) stopped += 1;
+        }
+      }
+      return { ...state, group: { size: members.length, stopped } };
+    });
+  },
+
+  /**
+   * The ticked set, as shelves this store can write to: `{unitId, itemId,
+   * pos}`, across cabinets.
+   *
+   * Read off the UI's selection and resolved through each member's OWN
+   * cabinet's panels — a panel id is only unique inside one unit, which is the
+   * whole reason a member carries the unit with it (`lib/selection.js`).
+   * Anything in the set that is not a movable shelf is simply not in the
+   * answer: a set with a door and three shelves in it moves three shelves.
+   */
+  shelfSetMembers: () => {
+    const keys = useUiStore.getState().selectedElements;
+    if (!Array.isArray(keys) || keys.length < 2) return [];
+    const panelsOf = new Map();
+    const out = [];
+    for (const member of membersOf(keys)) {
+      if (!panelsOf.has(member.unitId)) {
+        panelsOf.set(member.unitId, get().unitResult(member.unitId)?.panels || []);
+      }
+      const p = panelsOf.get(member.unitId).find((x) => x.id === member.elementRef);
+      if (!p || p.part !== 'SHELF' || !p.meta?.itemId) continue;
+      // A screwed shelf holds still; the store would refuse it anyway, and
+      // counting it as a member that "hit a stop" would be a lie about why.
+      // T37-F2: unless it is a rail's own shelf, which is dragged by hand.
+      if (p.meta?.locked && !p.meta?.railItemId) continue;
+      const unit = get().units.find((u) => u.id === member.unitId);
+      const item = (unit?.params.sections?.[0]?.items || []).find((i) => i.id === p.meta.itemId);
+      if (!item) continue;
+      out.push({ unitId: member.unitId, itemId: item.id, pos: Number(item.pos_mm) || 0 });
+    }
+    return out;
   },
 
   /**
@@ -4845,11 +5106,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // in a column clamps above that column's own drawer stack, and shelves
     // in different columns never push each other (they stand side by side).
     const result = computeCabinet(paramsForEngine(unit), profile);
+    // ─── TURN 37 (CLAUDE.md F4a): …AND ONE BAND PER SEGMENT OF THAT BAY ─────
+    // A split divider is an end of the cabinet, so a shelf under it clamps
+    // against IT and not against the underside of the top. The segments are
+    // cached per bay exactly as the bands were; which one a shelf gets is its
+    // own current height, through the one law (`bandSegmentAt`).
     const bands = new Map();
-    const bandOf = (zone) => {
+    const bandOf = (zone, at = null) => {
       const key = zone == null ? 'all' : Math.trunc(Number(zone));
-      if (!bands.has(key)) bands.set(key, shelfBandFor(unit, profile, zone, result));
-      return bands.get(key);
+      if (!bands.has(key)) {
+        bands.set(key, {
+          band: shelfBandFor(unit, profile, zone, result),
+          boundaries: splitBoundariesFor(unit, profile, zone, result),
+        });
+      }
+      const { band, boundaries } = bands.get(key);
+      // No divider in this bay — every cabinet before T36 — is the same object
+      // the sweep clamped against yesterday.
+      return boundaries.length ? bandSegmentAt({ band, boundaries, at }, profile) : band;
     };
     const zoneKeyOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
       ? null : Math.trunc(Number(i.zone)));
@@ -4869,7 +5143,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         .filter((p) => myZone == null || p.zone == null || p.zone === myZone)
         .map((p) => p.pos);
       const state = clampShelfPos({
-        pos: sh.pos_mm, current: sh.pos_mm, others, band: bandOf(myZone),
+        pos: sh.pos_mm, current: sh.pos_mm, others, band: bandOf(myZone, sh.pos_mm),
       }, profile);
       next.set(sh.id, state.pos);
       settled.push({ pos: state.pos, zone: myZone });
@@ -5350,8 +5624,43 @@ function otherShelfPositions(unit, itemId) {
     .map((i) => i.pos_mm);
 }
 
+/**
+ * ─── TURN 37 (CLAUDE.md F4a): THE SPLIT DIVIDERS THIS SHELF HAS TO RESPECT ──
+ *
+ * The owner: *"dodajemy półkę i powinna być traktowana jak koniec szafy."* The
+ * ROLE is `engine/collision.js bandSegments`; this is the ADAPTER that says
+ * WHICH boards play it — the same thin-adapter law every function in this
+ * section follows (the rules live in the engine, the store turns a unit into
+ * the numbers they want).
+ *
+ * `assemblies.splitDividers` is the engine's own published list and the key is
+ * ABSENT on a cabinet with no split (T36-F6, iron rule 2), so a project that
+ * has never typed a split top gets an empty list here and every band below is
+ * the band it was yesterday, key for key.
+ *
+ * WHICH BAY. A divider spans exactly the light its own leaf closes — a bay's
+ * (`bay_doors[i].split_top_mm`) or the whole carcass's — so it is a boundary
+ * for a shelf whose own light OVERLAPS it and for no other. A full-width shelf
+ * (`zone == null`) crosses every bay, so every divider is one of its ends.
+ */
+function splitBoundariesFor(unit, profile, zone, result) {
+  const dividers = result?.assemblies?.splitDividers || [];
+  if (!dividers.length) return [];
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const bay = zone == null ? null : widthZones({
+    width: Number(unit.params.width) || 0,
+    boardT: G,
+    partitions: (unit.params.sections?.[0]?.items || []).filter((i) => i.kind === 'partition'),
+  })[Math.trunc(Number(zone))] || null;
+  return dividers
+    .filter((d) => bay == null || (d.from < bay.to && d.from + d.w > bay.from))
+    // The divider is cut at the carcass board (cabinet.js cuts it `G` thick),
+    // and its `y` is its underside — the same datum a shelf's `pos_mm` is on.
+    .map((d) => ({ at: d.y, thickness: G }));
+}
+
 /** The band this unit's shelves may live in, read off the engine result. */
-function shelfBandFor(unit, profile, zone = null, precomputed = null) {
+function shelfBandFor(unit, profile, zone = null, precomputed = null, at = null) {
   const G = unit.params.board_t ?? profile.board.thickness;
   const result = precomputed || computeCabinet(paramsForEngine(unit), profile);
   // Turn 32 (CLAUDE.md F4): a shelf living in a COLUMN stands on that
@@ -5362,19 +5671,58 @@ function shelfBandFor(unit, profile, zone = null, precomputed = null) {
   const floorY = columnStack
     ? columnStack.top + G
     : (zone == null && result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : null);
-  return shelfBand({
+  const band = shelfBand({
     height: unit.params.height,
     boardT: G,
     // Top face of the drawer partition when there is a stack, else the base.
     floorY,
   }, profile);
+  // ─── T37-F4a: …AND CUT BY THE SPLIT DIVIDER, IF IT CROSSES ────────────────
+  // One law, one place. Every path that clamps, spaces or places a shelf comes
+  // through here, so none of them can disagree about where the boundary is.
+  // No divider — every project before T36, and every one since that has not
+  // typed a split top — gets the same band object back, untouched.
+  return bandSegmentAt({
+    band, boundaries: splitBoundariesFor(unit, profile, zone, result), at,
+  }, profile);
+}
+
+/**
+ * The split dividers crossing this shelf's own light, as bare undersides — the
+ * boards the add-shelf placement may not centre ACROSS (T37-F4a). Same one
+ * source as the band's own segmentation, so the two cannot drift.
+ */
+function splitBoundaryPositions(unit, profile, zone = null, precomputed = null) {
+  const result = precomputed || computeCabinet(paramsForEngine(unit), profile);
+  return splitBoundariesFor(unit, profile, zone, result).map((b) => b.at);
+}
+
+/**
+ * The band cut into its SEGMENTS — for the callers that work on a whole column
+ * at once (the Even button, the add-shelf placement) rather than on one piece.
+ * One segment, the band itself, wherever nothing crosses it (T37-F4a).
+ */
+function shelfBandSegmentsFor(unit, profile, zone = null, precomputed = null) {
+  const result = precomputed || computeCabinet(paramsForEngine(unit), profile);
+  return bandSegments({
+    band: shelfBandFor(unit, profile, zone, result),
+    boundaries: splitBoundariesFor(unit, profile, zone, result),
+  }, profile);
 }
 
 /** The vertical band a shelf may live in: above the drawer stack, below the top. */
-export function shelfLimits(unit, profile, zone = null) {
-  const band = shelfBandFor(unit, profile, zone);
+export function shelfLimits(unit, profile, zone = null, at = null) {
+  const band = shelfBandFor(unit, profile, zone, null, at);
   const G = unit.params.board_t ?? profile.board.thickness;
   return { ...band, drawerTop: band.floor === G ? null : band.floor };
+}
+
+/**
+ * The same, cut by any split divider that crosses it (T37-F4a) — exported for
+ * the surfaces that lay out a whole column: bottom-up, one band per segment.
+ */
+export function shelfLimitSegments(unit, profile, zone = null) {
+  return shelfBandSegmentsFor(unit, profile, zone);
 }
 
 /**

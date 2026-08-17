@@ -612,9 +612,16 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                   >
                     Add hanger rail
                   </button>
-                  <p className="text-[11px] text-ink-400">
-                    Hung as high as it can go under the lowest shelf, above the drawer partition. The rail you pick
-                    is the line that appears in the BOM hardware.
+                  {/* ─── TURN 37 (CLAUDE.md F2) ────────────────────────────
+                      *"Zrób półkę nad drążkiem — półka, a drążek dołącz do
+                      półki i tyle."* The button makes an ASSEMBLY now, and the
+                      copy says so, because a joiner who presses it and gets a
+                      shelf he did not ask for has been surprised by his own
+                      tool. The rod still lands where it always landed. */}
+                  <p className="text-[11px] text-ink-400" data-rail-assembly-hint="1">
+                    Adds a FIX SHELF with the rail hung under it. The shelf is an ordinary shelf — drag it
+                    and the rod rides with it. Hung as high as it can go under the lowest shelf, above the
+                    drawer partition. The rail you pick is the line that appears in the BOM hardware.
                   </p>
                 </>
               )}

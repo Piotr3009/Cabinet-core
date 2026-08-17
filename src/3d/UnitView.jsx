@@ -1609,7 +1609,6 @@ export default function UnitView({
               // is grabbing the cabinet (turn 8, F4). It still selects, because
               // a shelf that cannot move can still be made thicker.
               if (isElement) {
-                const alreadyOn = selectedElement === p.id;
                 // ─── TURN 36 (CLAUDE.md F2): CTRL+CLICK BUILDS A SET ───────
                 // The modifier travels with the click, exactly as it has for
                 // CABINETS since turn 13 — and the NATIVE event is asked
@@ -1632,11 +1631,32 @@ export default function UnitView({
                   return;
                 }
                 onSelectElement?.(p.id);
-                if (isShelfLike && shelfId && alreadyOn && !p.meta?.locked) {
+                // ─── TURN 37 (CLAUDE.md F1): THE PRIORITY FLIPS ────────────
+                //
+                // The owner, on T36-F2: *"przesuwanie półek up-and-down jest
+                // strasznie trudne — zazwyczaj catch jest na ustawianie
+                // głębokości, co jest najmniej przydatne."* He is right, and
+                // the cause is the rule written above this block: once a shelf
+                // is the selected piece — which it becomes the moment you
+                // touch it — the SAME grab pulls it in depth. So the second
+                // grab on any shelf, which is the one a joiner makes when he
+                // wants to nudge it, changed the setback instead of the height.
+                //
+                // The DEFAULT grab moves it UP AND DOWN, whether it is selected
+                // or not. DEPTH is still one gesture away and nothing was
+                // taken out: it is the same drag with ALT held. Alt because
+                // Ctrl and ⌘ already mean "tick this into the set" and Shift is
+                // the orbit's; and Alt reads as "the other axis" the way it
+                // does in every drawing tool a joiner has used.
+                const wantsDepth = Boolean(native.altKey || e.altKey);
+                // A shelf carrying a hanging rail is a T37 assembly and is
+                // dragged like any other, even though it is FIX (F2).
+                const canDrag = isShelfLike && shelfId && (!p.meta?.locked || p.meta?.railItemId);
+                if (canDrag && wantsDepth) {
                   startDepthDrag(e, shelfId, p.meta?.front_mm ?? 0, p.box.y);
                   return;
                 }
-                if (isShelfLike && shelfId && !p.meta?.locked) { startShelfDrag(e, shelfId, p.box.y); return; }
+                if (canDrag) { startShelfDrag(e, shelfId, p.box.y); return; }
               }
               // Everything else still DRAGS THE UNIT. Selecting a side panel is
               // how you look at that piece's properties; grabbing a side panel
@@ -1707,10 +1727,16 @@ export default function UnitView({
             onPointerOver={shelfId
               ? () => {
                 // A screwed or locked shelf does not move, so the cursor must
-                // not promise that it does (turn 8, F4). A SELECTED shelf moves
-                // in depth, so it promises the other axis (turn 9, F4.2).
-                if (p.meta?.locked) document.body.style.cursor = 'default';
-                else document.body.style.cursor = selectedElement === p.id ? 'ew-resize' : 'ns-resize';
+                // not promise that it does (turn 8, F4).
+                // ─── TURN 37 (CLAUDE.md F1) ───
+                // …and every shelf that DOES move now moves UP AND DOWN on the
+                // plain grab, selected or not, so the cursor says so once and
+                // stops changing under the hand. Depth is Alt+drag; the cursor
+                // follows the modifier rather than the selection.
+                // T37-F2: a rail's own fix shelf is dragged like any other.
+                const held = Boolean(p.meta?.locked) && !p.meta?.railItemId;
+                if (held) document.body.style.cursor = 'default';
+                else document.body.style.cursor = 'ns-resize';
                 setHoverShelf(shelfId);
               }
               // ─── TURN 23 (CLAUDE.md F8.2) ───

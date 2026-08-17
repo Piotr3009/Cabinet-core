@@ -55,7 +55,40 @@ const SHELF_BOARD_PARTS = new Set(['SHELF', 'PARTITION', 'RAIL-PART', 'FIXED']);
  * which is the very complaint this delta answers. A shelf in a cabinet deeper
  * than it is wide is the same case from the other direction.
  */
+/**
+ * ─── TURN 37 (CLAUDE.md F7a): THE SHEET LEARNS THE FIELD ────────────────────
+ *
+ * The owner, looking at a nest of drawer parts lying flat: *"CNC jest ok, ale
+ * wizualizacja nie jest — sprawdź, co ci nadpisuje."* The audit found two
+ * faults, and this is the first: the rule above turns by SIZE, and it asks the
+ * question only of four part names. Every board this engine cuts that carries
+ * a STATED grain — the drawer sides, backs, bottoms and fronts, the plinth,
+ * the shoe box's boards — was nested by a rule that had never heard of the
+ * field, so a part whose figure runs across its own drawn frame went down the
+ * page lying flat.
+ *
+ * THE LAW, GENERALISED: a part that STATES its grain is laid with that grain
+ * running UP the sheet. Nothing else changes.
+ *
+ * `cnc.grain` is stated in the CNC DRAWN frame (that is the ruling F7b turns
+ * on, and it is the same field), so at turn 0 the drawn HEIGHT is up the page:
+ * `grain: 'h'` is already standing and `grain: 'w'` is lying down and wants 90.
+ *
+ * And the old set FOLDS IN rather than being bolted beside it: a board with no
+ * stated grain is asked exactly the question it was asked yesterday, by
+ * exactly the code that asked it. Of the four names in that set only SHELF
+ * carries a stated grain, so PARTITION, RAIL-PART and FIXED are byte-identical
+ * — and for a shelf the two rules already AGREE on the ordinary cabinet, which
+ * is why nothing on the standard sheet moves: a shelf is drawn `depth × width`
+ * and states `h`, so both say "leave it". They part company only on a cabinet
+ * DEEPER THAN IT IS WIDE, where the size rule stood the shelf up the page and
+ * put its own stated figure across it. That is the fault this feature is
+ * about, and the stated field wins — recorded here because it is the one place
+ * the fold is not a no-op.
+ */
 export function sheetTurn(panel) {
+  const stated = panel?.cnc?.grain;
+  if (stated === 'w' || stated === 'h') return stated === 'w' ? 90 : 0;
   if (!SHELF_BOARD_PARTS.has(panel?.part)) return 0;
   const w = Number(panel.cnc?.drawn_w) > 0 ? Number(panel.cnc.drawn_w) : Number(panel.w) || 0;
   const h = Number(panel.cnc?.drawn_h) > 0 ? Number(panel.cnc.drawn_h) : Number(panel.h) || 0;

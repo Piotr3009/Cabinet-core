@@ -225,7 +225,34 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   //
   // This is CLAUDE.md rule 1's ONE SANCTIONED FIXTURE CHANGE for turn 30, and
   // it is a RESTORATION: the engine had lost drilling the AutoLISP cuts.
-  assert.equal(fingerprint(sheetOf(result, all)), '49b23ea5', 'the whole-unit sheet has changed');
+  // ─── TURN 37 (CLAUDE.md F7a), 17.08.2026: 49b23ea5 → 0987fb40 ────────────
+  // THE SHEET LEARNS THE FIELD, and it moves THREE PARTS on this sheet.
+  //
+  // The owner, on a nest of drawer parts lying flat: *"CNC jest ok, ale
+  // wizualizacja nie jest — sprawdź, co ci nadpisuje."* The audit found the
+  // sheet at fault too: `sheetTurn` turned by SIZE over four part NAMES and had
+  // never heard of `cnc.grain`, so every board that states its grain and is
+  // drawn across it went down the page lying flat. F7a generalises the law — a
+  // part that STATES its grain is laid with that grain running UP the sheet —
+  // and folds the old set in as the fall-through for parts that state nothing.
+  //
+  // ON THIS SHEET THE WHOLE DELTA IS THE THREE DRAWER BOTTOMS. `DRAWER-BOTTOM`
+  // states 'w' ("dno — słoje w poprzek", turn 36 F5) and is drawn 483 × 440, so
+  // it was laid with its figure across the page; it now turns 90° and stands.
+  // D1-DNO, D2-DNO, D3-DNO: turn 0 → 90, footprint 483×440 → 440×483.
+  //
+  // Nothing else on this sheet turns: the shelves state 'h' and are already
+  // standing (0, as turn 26 F8 left them), the partition and the rail state
+  // nothing and are answered by the old size rule exactly as before (90, both),
+  // and the drawer sides, box fronts, box backs and drawer fronts state 'h' on
+  // an untured frame and stay at 0. NOT ONE ENTITY APPEARS OR DISAPPEARS and
+  // the layer census below is unchanged to the digit — what moves is where the
+  // parts sit, because the three turned footprints reflow the rows after them
+  // and the sheet's own extent goes 3596 × 6000 → 3580 × 6086.
+  //
+  // verify/t37/cnc-export-identity.md carries the before/after and the
+  // entity-level evidence.
+  assert.equal(fingerprint(sheetOf(result, all)), '0987fb40', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -268,11 +295,18 @@ test('…and so is each preset’s', () => {
   // that carry the DOORS that move and the carcass-only one that stands still
   // — the mirror image of every delta above it, and the same proof: a delta
   // that lands where its own cause is.
+  // ─── TURN 37 (CLAUDE.md F7a), 17.08.2026: AND THE CENSUS LOGIC ONCE MORE ─
+  // The sheet learns to read `cnc.grain`, and on this unit the only part whose
+  // stated grain disagrees with the way it is drawn is the DRAWER BOTTOM. A
+  // drawer bottom is a carcass-side part, not a face — so the two sheets that
+  // carry a drawer box move and the two that are doors and drawer faces do not,
+  // to the character. `sprayed` and `fronts` standing still is again the proof
+  // the delta lands where its own cause is.
   const expected = {
-    all: '49b23ea5',           // was 2cf80012 — the frame 70 → 60, + the 197 front
-    'non-sprayed': 'f5aa169e', // UNCHANGED — a carcass has no shaker on it
-    sprayed: '5637b58d',       // was 8a6498da — the doors and faces narrow their frame
-    fronts: '5637b58d',        // the same fronts, the same delta
+    all: '0987fb40',           // was 49b23ea5 — F7a: three drawer bottoms turn 90°
+    'non-sprayed': '9294e301', // was f5aa169e — the same three, on the carcass sheet
+    sprayed: '5637b58d',       // UNCHANGED — no drawer bottom is a face
+    fronts: '5637b58d',        // the same fronts, and the same nothing
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -456,12 +490,41 @@ test('DELTA 3: a shelf stands its long side up the page — and turn 26 does it 
     const shelfBoard = panel.role === 'shelf' && panel.part !== 'VPART';
     // Only a shelf board is ever a candidate, and it is turned only when its
     // own drawing lies down.
-    assert.equal(turned, shelfBoard && w > h, `${panel.id} (${panel.part}) is laid down ${turned ? 'turned' : 'square'}`);
+    //
+    // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7a) ──────────────────────────
+    //
+    // *"CNC jest ok, ale wizualizacja nie jest — sprawdź, co ci nadpisuje."*
+    //
+    // "Only a shelf board is ever a candidate" was the fault, not the rule. It
+    // is the reason every board that STATES its grain — the drawer bottoms
+    // here, and the shoe box's boards elsewhere — went down the page lying
+    // flat: the nester asked its question of four part NAMES and had never
+    // heard of `cnc.grain`. F7a generalises it: a part that states its grain is
+    // laid with that grain running UP the sheet, and the old size rule over the
+    // old set stays as the fall-through for a part that states nothing.
+    //
+    // Both halves are pinned in the one predicate, so neither can be dropped
+    // without this going red. Was: `turned === (shelfBoard && w > h)`.
+    const stated = panel.cnc?.grain;
+    const want = stated === 'w' || stated === 'h'
+      ? stated === 'w'          // the statement, read in the frame it is written in
+      : shelfBoard && w > h;    // turn 17 F3's size rule, untouched, for the rest
+    assert.equal(turned, want, `${panel.id} (${panel.part}) is laid down ${turned ? 'turned' : 'square'}`);
     if (panel.part !== 'SHELF') continue;
     // …and a SHELF's drawing no longer lies down: F8.
     assert.equal(w, panel.h, 'drawn `depth × width`');
     assert.equal(h, panel.w);
     assert.equal(turned, false, 'so the nester has nothing to turn');
+  }
+  // ─── RE-PINNED 17.08.2026 (T37-F7a): and the delta this turn DOES make ────
+  // Named out loud rather than left to the predicate: the three drawer bottoms
+  // are the whole of F7a's movement on this sheet, and they turn because they
+  // state 'w' — "dno — słoje w poprzek" — on a frame drawn 483 × 440.
+  const bottoms = exportablePanels(result.panels).filter((p) => p.part === 'DRAWER-BOTTOM');
+  assert.equal(bottoms.length, 3, 'three drawers, three bottoms');
+  for (const b of bottoms) {
+    assert.equal(b.cnc.grain, 'w', 'słoje w poprzek — turn 36 F5');
+    assert.equal(sheetTurn(b), 90, 'so the sheet stands that axis up the page');
   }
 });
 
@@ -537,5 +600,11 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   const cuttable = exportablePanels(result.panels);
   const hidden = new Set(panelIdsForPreset(cuttable, 'sprayed'));
   const ids = cuttable.map((p) => p.id).filter((id) => !hidden.has(id));
-  assert.equal(fingerprint(sheetOf(result, ids)), 'f5aa169e'); // turn 30 F4: was 07a0d206 — the divider's foot, same sheet as the preset's
+  // turn 30 F4: was 07a0d206 — the divider's foot, same sheet as the preset's
+  // ─── TURN 37 (CLAUDE.md F7a), 17.08.2026: f5aa169e → 9294e301 ────────────
+  // The same number as the `non-sprayed` preset above, moving for the same
+  // three drawer bottoms — which is exactly what this test is for: unticking
+  // the fronts in the tree gives the "non-sprayed" file to the byte, whatever
+  // that file happens to be this turn.
+  assert.equal(fingerprint(sheetOf(result, ids)), '9294e301');
 });

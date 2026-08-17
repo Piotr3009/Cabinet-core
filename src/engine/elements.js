@@ -338,6 +338,12 @@ export function elementFields(panel, type = null) {
   const kind = elementKind(panel);
   if (!kind) return [];
   let fields = [...(FIELDS[kind] || ['material'])];
+  // ─── TURN 37 (CLAUDE.md F2): THE SHELF THAT CARRIES A ROD SAYS SO ────────
+  // A joiner who double-clicks the rail gets the SHELF's modal now — that is
+  // the thing he actually edits. A plain shelf modal with no mention of the
+  // rod he clicked would leave him wondering what he opened, so the board that
+  // carries one puts the fact FIRST, above its own height.
+  if (kind === 'shelf' && panel?.meta?.railItemId) fields = ['rail-rider', ...fields];
   if (type && !type.doorExtend) fields = fields.filter((f) => f !== 'door-extend');
   // A piece the engine DERIVES has no item to hang an override on: the
   // horizontal partition above a drawer stack follows the stack, and a shelf

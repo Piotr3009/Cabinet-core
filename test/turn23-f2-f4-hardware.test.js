@@ -52,7 +52,17 @@ test('F2.1 — the hinge BODY is drawn by the DOOR half, the plate by the carcas
     assert.doesNotMatch(carcass, new RegExp(piece), `CarcassHinges no longer draws ${piece}`);
   }
   assert.match(carcass, /kind: 'plate'/);
-  assert.match(carcass, /placePlate/);
+  // ─── TURN 36 (CLAUDE.md F4a): …AND THE PLATE STAND-IN WENT THE SAME WAY ──
+  //
+  // This line asserted `placePlate` — the placement helper for a `<Pieces>`
+  // box that stood in for a missing plate GLB. The owner's order, re-issued
+  // from T35-F5 and the ONE removal turn 36 is licensed to make: *a plate is
+  // the downloaded GLB or nothing.* It is the same order that took the cup,
+  // the boss and the arm on 14.08, applied to the fourth member, so the
+  // assertion flips rather than disappearing — the record of what was removed
+  // and why lives here beside the three that went before it.
+  assert.doesNotMatch(carcass, /placePlate/, 'the plate stand-in is gone — model or nothing');
+  assert.doesNotMatch(carcass, /<Pieces/, 'and no stand-in surface is left in CarcassHinges');
 });
 
 test('F2.1 — the body is placed in the DOOR\'s frame, which is what makes it swing', () => {

@@ -23,6 +23,12 @@
 ;;;   - Divider 0 or 1 ("2 nie maja sensu"), ACROSS the width
 ;;;     ("od lewej do prawej - 2 rzedy butow"), 50 mm high, standing on
 ;;;     the slope at mid-run.
+;;;   - THE FRONT IS A SWITCH (T36, owner: "punkt 3 - tak, z przelacznikiem"):
+;;;     DEFAULT ON, which is every box cut before 17.08.2026; switched OFF the
+;;;     decorative face is not cut at all and the box is open to the room. The
+;;;     switch is the box's own, per box, and it changes nothing else - the
+;;;     sides, the back, the box front, the bottom, the dividers and every
+;;;     hole stay exactly where this kit puts them.
 ;;;   - A FRONT on BOTH variants, 120 mm high (owner 16.08: "jak bedzie
 ;;;     fix to tez bedzie front, ale nie ze spray tylko z materialu
 ;;;     carcasowego - widac cieta plyte, trzeba przykryc"):

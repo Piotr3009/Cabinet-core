@@ -246,7 +246,16 @@ test('the panel offers the field beside the depth control, on every kind', () =>
   const src = readFileSync(new URL('../src/components/LightingPanel.jsx', import.meta.url), 'utf8');
   assert.match(src, /data-lighting-inset=\{it\.id\}/);
   assert.match(src, /Off the front edge/);
-  assert.match(src, /updateLightingItem\(it\.id, \{ inset_mm: Number\(e\.target\.value\) \}\)/);
+  // ─── TURN 36 (CLAUDE.md F2): THE WRITE GAINED A SET ──────────────────────
+  // The row still writes `inset_mm` from this field and nothing else has
+  // moved; what changed is WHO it reaches. "LED strips: inset and depth to
+  // all selected" — a strip whose shelf is in the Ctrl+click set moves with
+  // the rest of the set, and a strip outside it is edited alone exactly as
+  // before. `setInset` is that one call (LightingPanel), and it goes through
+  // `updateLightingItemsBulk`, so a drag is one undo step rather than one per
+  // strip. The assertion follows the call rather than being dropped.
+  assert.match(src, /onChange=\{\(e\) => setInset\(it, Number\(e\.target\.value\)\)\}/);
+  assert.match(src, /const setInset = \(it, v\) => updateLightingItemsBulk\(strippedSet\(it\), \{ inset_mm: v \}\);/);
   // ─── REWRITTEN 16.08.2026 (chat-fix, owner) ────────────────────────────
   // The original row stood behind `{strip && (` — a guard that is TRUE only
   // while the item's own unit is the selected one, so the field VANISHED the

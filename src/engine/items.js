@@ -59,6 +59,31 @@ export function shelfRows(items = []) {
     .reverse();
 }
 
+/**
+ * ─── TURN 36 (CLAUDE.md F4c): AND THE HINGES ────────────────────────────────
+ *
+ * The owner's third finding of 16.08, re-issued: *the modal's hinge rows sort
+ * by Y DESCENDING — top hinge first.* That is this module's law applied to a
+ * third list, which is why it is written here and not in a component: the
+ * engine counts a door's hinges from the floor (`drillSummary.hinge_centers`
+ * is ascending and `addHinge` re-sorts it that way), and a human reads them
+ * from the ceiling.
+ *
+ * Every row carries the ENGINE's own index beside its display number, and
+ * that is the load-bearing half. `setHingePos(unitId, index, mm)` and
+ * `removeHinge(unitId, index)` index into the ASCENDING list; a view that
+ * reversed the display and went on passing its own loop counter would make
+ * the top row's − delete the bottom hinge.
+ *
+ * @param {number[]} centres  the engine's ascending rows, in mm
+ * @returns {Array<{mm:number, index:number, num:number}>} top first
+ */
+export function hingeRows(centres = []) {
+  return (Array.isArray(centres) ? centres : [])
+    .map((value, index) => ({ mm: value, index, num: index + 1 }))
+    .sort((a, b) => b.mm - a.mm);
+}
+
 // ─── Auto-placement (CLAUDE.md turn 4, F5 / BACKLOG #12) ───
 // Adding an item must never land it on top of one that is already there.
 // Shelves fill from the TOP down, drawers from the bottom up (the engine

@@ -34,6 +34,11 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // the owner's order, and the categories beyond Kitchen are untouched — F3.7
   // says so outright.
   assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['kitchen', 'wardrobe', 'sets', 'media']);
+  // ─── TURN 36 (CLAUDE.md F7): THE WARDROBE CATEGORY GAINS A SECOND KIT ────
+  // "library offers Main wardrobe + Top box." The owner's reason: *"wysokie
+  // szafy nie wejdą do domu"* — a 2600 wardrobe cannot be carried up a
+  // staircase, so it is built as two. Nothing else in the list moved.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP']);
   // Turn 15 (CLAUDE.md F5.2): the same nine kits, in the order the owner's
   // CATALOGUE puts them in — base units, then talls, then walls.
   assert.deepEqual(getCategory('kitchen').types, [
@@ -44,7 +49,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
     // open, standing beside the two wall units it is one of.
     'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
   ]);
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE']);
+  // T36 F7: Main wardrobe + Top box.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP']);
 
   // Turn 5 (BACKLOG #30): Saved sets is real. It holds the workshop's OWN units
   // rather than kits, so it lists no types and is marked `saved` — the panel

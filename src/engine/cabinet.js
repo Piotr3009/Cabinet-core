@@ -49,6 +49,16 @@ import {
 // Turn 34 (CLAUDE.md F4): the shoe box's geometry, matched to
 // reference/lisp/KIT_SHOE_BOX.lsp. This file cuts what that module answers.
 import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
+// Turn 36 (CLAUDE.md F5): the owner's grain law, per ROLE, in one table.
+import { applyGrainAxis } from './grain.js';
+// ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS ────────────────────────────────────
+// The arithmetic is the ALREADY-MERGED `SPLIT DOORS (T35)` section of
+// KIT_WARDROBE_FULL.lsp, mirrored in engine/splitDoors.js. This file cuts what
+// that one says; it does not decide any of it.
+import {
+  SPLIT_SEG_GAP, splitDoorLineY, splitDoorSegments, splitDoorShelfD, splitDoorShelfW,
+  splitSegmentHingeRows, splitTopFor,
+} from './splitDoors.js';
 // ─── TURN 35 (CLAUDE.md F1): the rail hangs from the nearest thing below it ──
 import { railSupportTops, resolveRailAxis } from './railDatum.js';
 // Turn 33 (CLAUDE.md F11): the insert catalogue — specs with nominals, never
@@ -759,6 +769,9 @@ function normalizeParams(raw, profile) {
       zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
       variant: i.variant === 'D' || i.variant === 'drawer' ? 'D' : 'F',
       dividers: Number(i.dividers) >= 1 ? 1 : 0,
+      // T36 F3: the front is a SWITCH, default ON — anything but an explicit
+      // `false` is the box every project has had since T34.
+      front: i.front !== false,
       pos_mm: Number.isFinite(Number(i.pos_mm)) && Number(i.pos_mm) >= 0 ? Number(i.pos_mm) : null,
       depth_mm: Number(i.depth_mm) > 0 ? Number(i.depth_mm) : null,
       runner_nl: Number(i.runner_nl) > 0 ? Number(i.runner_nl) : null,
@@ -3382,6 +3395,7 @@ export function computeCabinet(params, profileOverride) {
         frontT,
         variant: spec.variant,
         dividers: spec.dividers,
+        front: spec.front,
         posZ,
         hingedLeft,
         hingedRight,
@@ -4219,6 +4233,121 @@ export function computeCabinet(params, profileOverride) {
     }));
   }
 
+  // ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS — TWO SEGMENTS AND A DIVIDER ────
+  //
+  // T35 merged `;; --- SPLIT DOORS (T35)` into KIT_WARDROBE_FULL.lsp and the
+  // paren test that guards it; the engine half never landed. This is it, and
+  // it MATCHES that section rather than interpreting it (iron rule 3) — the
+  // arithmetic is engine/splitDoors.js, which quotes the kit line for line.
+  //
+  // It is a PASS OVER THE LEAVES THAT ARE ALREADY CUT, not a fourth way of
+  // cutting one. Every leaf above keeps its width, its x, its z, its hinge
+  // hand, its bay and its `hingeOn`/`hingeFace`; a split one is REPLACED by
+  // two segments that add up to it exactly — `top + 3 + bottom = the leaf` —
+  // and by ONE fix shelf on the line between them.
+  //
+  // Nothing here runs for a door that has not asked. `split_top_mm` absent or
+  // 0 is every door in every project before this turn, which is why the
+  // named-deltas classifier expects the six standard configs not to move.
+  const splitSaid = { unit: params?.split_top_mm, bays: params?.bay_doors };
+  const splitDividers = [];
+  const splitLeaves = [];
+  // How many MORE (or fewer) hinges this cabinet buys because of its splits.
+  // Written as a DELTA against the whole-door count so that a cabinet with no
+  // split adds exactly zero and every total in the file stays where it was.
+  let splitHingeDelta = 0;
+  if (!dropsForward) {
+    for (const pnl of panels.filter((x) => x.part === 'FRONT' && x.role === 'front' && !x.meta?.appliance)) {
+      const bay = pnl.meta?.bay ?? null;
+      const topH = splitTopFor(splitSaid, bay);
+      // The OPENING is the leaf's own cut height. On the wardrobe — the one
+      // kit carrying this section — `doorExtend` is false and `hoodAperture`
+      // is 0, so `frontH === H − topDemandMm(params, P)`, which is the kit's
+      // `splitDoorOpening` to the millimetre. Taking the leaf is also the
+      // honest datum anywhere else: two segments must add up to the one leaf
+      // they replaced, whatever that leaf was cut to.
+      const segments = splitDoorSegments({ opening: pnl.h, topH });
+      if (!segments) continue;
+      splitLeaves.push({ panel: pnl, topH, segments });
+    }
+  }
+  for (const { panel: leaf, topH, segments } of splitLeaves) {
+    const at = panels.indexOf(leaf);
+    splitHingeDelta += segments.reduce((n, s) => n + s.hinges, 0) - centres.length;
+    const made = segments.map((seg) => {
+      // Each segment's own hinge ladder, from its OWN height — "a split is two
+      // doors, not one door with a line drawn on it, and it is never the
+      // full-height count halved".
+      const local = splitSegmentHingeRows(seg.h, seg.hinges, P.hinges.endOffset)
+        .map((v) => roundTo(v, 4));
+      return panel({
+        id: `${leaf.id}-${seg.id}`,
+        part: 'FRONT',
+        role: 'front',
+        w: leaf.w,
+        h: seg.h,
+        thickness: leaf.thickness,
+        edgeCode: codes.all,
+        edgeLen: metres(2 * leaf.w + 2 * seg.h),
+        box: {
+          x: leaf.box.x, y: leaf.box.y + seg.y, z: leaf.box.z, w: leaf.w, h: seg.h, d: leaf.thickness,
+        },
+        cnc: rectGeometry(leaf.w, seg.h),
+        meta: {
+          ...leaf.meta,
+          split: seg.id === 'T' ? 'top' : 'bottom',
+          splitOf: leaf.id,
+          splitTopMm: topH,
+          // The cup ladder in the SEGMENT's own frame (what the sheet drills)
+          // and the plate ladder in the CARCASS's (what the side is bored at).
+          // Two frames, one list, computed once — so a picture and a sheet
+          // cannot disagree about where this segment's hinges are.
+          cupY: local,
+          plateY: local.map((v) => roundTo(leaf.box.y + seg.y + v, 4)),
+        },
+      });
+    });
+    panels.splice(at, 1, ...made);
+
+    // The DIVIDER: a FIX shelf on the split line, cut to the PARTITION's law
+    // and NOT the shelf's — full width between the sides, FULL DEPTH to the
+    // back panel, so its front edge lands flush with the carcase front and
+    // each segment has a face to close against. "NIE MA cofniecia 20 mm
+    // (automatycznie)": the zero is not an option offered to the user, it is
+    // what a divider IS.
+    const bayHere = leaf.meta?.bay ?? null;
+    const light = bayHere != null && bays[bayHere]
+      ? { from: bays[bayHere].from, size: bays[bayHere].size }
+      : { from: G, size: splitDoorShelfW(W, G) };
+    const dividerY = roundTo(leaf.box.y + splitDoorLineY(leaf.h, topH), 4);
+    // Two leaves of one pair split at the same height share ONE board.
+    if (splitDividers.some((d) => d.y === dividerY && d.from === light.from && d.size === light.size)) continue;
+    splitDividers.push({ y: dividerY, from: light.from, size: light.size });
+  }
+  splitDividers.forEach((d, i) => {
+    const depthHere = splitDoorShelfD(D, G);
+    panels.push(panel({
+      id: `SPLIT-${i + 1}`, part: 'SHELF', role: 'shelf', w: d.size, h: depthHere, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(d.size),
+      box: {
+        x: d.from, y: d.y, z: D - depthHere, w: d.size, h: G, d: depthHere,
+      },
+      // The shelf's own drawn frame (T26 F8 / T28 F7): depth up the page, the
+      // grain with it, the banded front edge across. A divider is a shelf on
+      // the sheet whatever it does in the cabinet.
+      cnc: {
+        rotated: true, drawn_w: depthHere, drawn_h: d.size, grain: 'h', ...rectGeometry(depthHere, d.size),
+      },
+      meta: {
+        splitDivider: true,
+        variant: 'fixed',
+        locked: true,
+        front_mm: 0,
+        run: { from: d.from, to: d.from + d.size },
+      },
+    }));
+  });
+
   // ─── TURN 31 (CLAUDE.md F4.8): THE ASYMMETRY LAW, AS ONE PASS ────────────
   //
   // The owner's rule 8, verbatim: "A width correction acts ONLY on the edge
@@ -4438,6 +4567,20 @@ export function computeCabinet(params, profileOverride) {
 
   // Hinge holes on the hinged carcass sides
   const hingeHolePairs = centres.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset]);
+  // ─── TURN 36 (CLAUDE.md F6): A SPLIT LEAF BORES ITS OWN ROWS ─────────────
+  //
+  // The kit counts a split's hinges PER SEGMENT, so the carcass side that
+  // carries one is bored at the SEGMENTS' rows and not at the whole-door
+  // ladder. The rows travel on the panels (`meta.plateY`, the carcass frame),
+  // so there is one derivation and the sheet, the side and the 3-D all read
+  // it. No split leaf → `centres`, which is every cabinet before this turn.
+  const platedRowsFor = (bearerId) => {
+    const rows = panels
+      .filter((p) => p.part === 'FRONT' && p.meta?.split && Array.isArray(p.meta.plateY)
+        && (p.meta.hingeOn ? p.meta.hingeOn === bearerId : true))
+      .flatMap((p) => p.meta.plateY);
+    return rows.length ? [...new Set(rows)].sort((a, b) => a - b) : null;
+  };
   // Turn 21 (CLAUDE.md F12.2): with doors in the bays it is the LEAVES that
   // say which sides are hinged — an outer bay's door hangs on the carcass
   // exactly as a face door does, and a middle bay's hangs on nothing but its
@@ -4448,7 +4591,11 @@ export function computeCabinet(params, profileOverride) {
     : hingedSides;
   for (const sideId of platedSides) {
     const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
-    for (const pair of hingeHolePairs) {
+    const own = platedRowsFor(sideId);
+    const pairs = own
+      ? own.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset])
+      : hingeHolePairs;
+    for (const pair of pairs) {
       for (const y of pair) addDrill(sideId, 'hinge', platePilotLayer, x, y, platePilotD);
     }
   }
@@ -4483,7 +4630,12 @@ export function computeCabinet(params, profileOverride) {
     const v = leaf.hingeFace === 'L'
       ? depth - P.hinges.xFromFrontEdge
       : P.hinges.xFromFrontEdge;
-    for (const pair of hingeHolePairs) {
+    // T36 F6: a SPLIT leaf hung on this partition bores the segments' own rows.
+    const ownRows = platedRowsFor(part.id);
+    const partPairs = ownRows
+      ? ownRows.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset])
+      : hingeHolePairs;
+    for (const pair of partPairs) {
       for (const y of pair) {
         // ─── TURN 24 (CLAUDE.md F8) ───
         // The partition lies along the grain now, so its own frame is
@@ -4558,6 +4710,13 @@ export function computeCabinet(params, profileOverride) {
     } else {
       shelfPinRows.push({ y: shelfRows[i], panel: shelfPanel });
     }
+  }
+  // ─── TURN 36 (CLAUDE.md F6): THE SPLIT DIVIDER IS A FIX SHELF ────────────
+  // It is not one of `cfg.shelfItems` — nobody asked for it, the SPLIT did —
+  // so it is not in the loop above; but it is screwed in exactly as a fix
+  // shelf is, and the machine has to be told.
+  for (const divider of panels.filter((x) => x.part === 'SHELF' && x.meta?.splitDivider)) {
+    shelfScrewRows.push({ y: divider.box.y, thickness: divider.thickness, panel: divider });
   }
   const carryingWalls = bearingWalls(panels);
   // ─── THE ORDER THE MACHINE READS THEM IN ─────────────────────────────────
@@ -4772,7 +4931,10 @@ export function computeCabinet(params, profileOverride) {
     // helper the scene reads (engine/doors.js `cupBoreOf`) — one derivation, so
     // the bore in the picture is the bore on the sheet to the hundredth.
     const cupBore = cupBoreOf(pnl, P);
-    for (const y of cupY) {
+    // T36 F6: a SPLIT segment carries its OWN ladder, in its own frame — "each
+    // segment is drilled from its own hinge edge, exactly as a whole door is".
+    // Everything else reads the cabinet's one ladder, unchanged.
+    for (const y of (Array.isArray(pnl.meta?.cupY) ? pnl.meta.cupY : cupY)) {
       addDrill(pnl.id, 'cup', cups.layer, cupX, y, cups.diameter, cupBore?.depth ?? null);
       addDrill(pnl.id, 'cup_screw', cups.screwLayer, holeX, y + cups.screwOffsetY, cups.screwDiameter);
       addDrill(pnl.id, 'cup_screw', cups.screwLayer, holeX, y - cups.screwOffsetY, cups.screwDiameter);
@@ -5170,6 +5332,19 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── TURN 36 (CLAUDE.md F5): THE GRAIN, PER ROLE ─────────────────────────
+  //
+  // The owner's law, verbatim: *"szuflady w pionie, wzdłuż słojów; fronty
+  // szuflad też; plinth też."* One pass, one table (engine/grain.js), applied
+  // where every panel of every kit already exists — so the six roles get the
+  // same answer whether they came out of the wardrobe stack, a column, the
+  // BUDR ladder or the plinth run, and there is no seventh place to forget.
+  //
+  // It STATES an axis and moves nothing: `engine/decors.js grainRun` is the
+  // one reader, the drawn frame is untouched, and a piece that already says
+  // something (the shoe box's boards) keeps what it says.
+  applyGrainAxis(panels);
+
   // ── Totals ─────────────────────────────────────────────────────────────────
   const boardPanels = panels.filter((x) => x.material_role === 'board');
   const frontPanels = panels.filter((x) => x.material_role === 'front');
@@ -5221,7 +5396,9 @@ export function computeCabinet(params, profileOverride) {
     // hung on a partition needs the same three hinges as one hung on a side.
     // Turn 29 (F3): the HINGED leaves — an appliance face is screwed to the
     // machine's own door and buys nothing to hang itself on.
-    hinges: hingedLeafCount > 0 ? centres.length * hingedLeafCount : 0,
+    // Turn 36 (F6): …plus whatever the SPLITS changed, as a delta, so a
+    // cabinet with none adds exactly zero and this number stays where it was.
+    hinges: hingedLeafCount > 0 ? centres.length * hingedLeafCount + splitHingeDelta : 0,
     runner_pairs: numDrawers,
     hangers: type.hangers ? P.wallUnit.hangers.count : 0,
     rail: hasRail ? 1 : 0,
@@ -5389,7 +5566,12 @@ export function computeCabinet(params, profileOverride) {
     // face, a kit that has had its fronts taken off) still buys hinges for the
     // doors the engine counted — so the LIST is padded to `doorCount` with the
     // cabinet's own answer rather than shrinking the order to the panels.
-    const doors = doorPanels.length === hingedLeafCount ? doorPanels : [];
+    // Turn 36 (F6): a SPLIT leaf is two PANELS and still one LEAF, so the
+    // "are these panels one-per-door" test counts the segments the split
+    // added. Without a split the two numbers are identical and this reads
+    // exactly as it did.
+    const hingedPanelCount = hingedLeafCount + splitLeaves.length;
+    const doors = doorPanels.length === hingedPanelCount ? doorPanels : [];
     const keys = doors.length ? doors : Array.from({ length: hingedLeafCount }, () => null);
     for (const pnl of keys) {
       const spec = resolveDoorHinge({
@@ -5398,16 +5580,22 @@ export function computeCabinet(params, profileOverride) {
         innerDrawer,
         finish: cfg.hingeFinish,
       });
-      const key = `${spec.angle ?? ''}|${spec.finish ?? ''}|${spec.family ?? ''}|${spec.assigned ? 'a' : 'r'}`;
+      // ─── TURN 36 (CLAUDE.md F6): PER-SEGMENT HINGE SETS ──────────────────
+      // "A split is two doors, not one door with a line drawn on it." Each
+      // segment carries its own ladder, so the ORDER is grouped by that count
+      // as well as by the spec — two segments of different heights on one
+      // wardrobe buy 3 + 2, not 5 spread over an average nobody fits.
+      const perDoor = Array.isArray(pnl?.meta?.cupY) ? pnl.meta.cupY.length : centres.length;
+      const key = `${spec.angle ?? ''}|${spec.finish ?? ''}|${spec.family ?? ''}|${spec.assigned ? 'a' : 'r'}|${perDoor}`;
       const bucket = hingeGroups.get(key);
       if (bucket) bucket.doors += 1;
-      else hingeGroups.set(key, { spec, doors: 1 });
+      else hingeGroups.set(key, { spec, doors: 1, perDoor });
     }
   }
-  for (const { spec, doors } of hingeGroups.values()) {
-    hw('hinges', 'Hinges', centres.length * doors, 'pcs',
+  for (const { spec, doors, perDoor } of hingeGroups.values()) {
+    hw('hinges', 'Hinges', perDoor * doors, 'pcs',
       {
-        per_door: centres.length,
+        per_door: perDoor,
         doors,
         cup_diameter_mm: cups.diameter,
         // Additive, every one of them: a caller that only ever read `per_door`
@@ -5421,7 +5609,9 @@ export function computeCabinet(params, profileOverride) {
         assigned: spec.assigned,
       },
       hingeSpecLabel({
-        perDoor: centres.length,
+        // Turn 36 (F6): the GROUP's own count — a split segment's line must
+        // not print the whole-door ladder beside its own quantity.
+        perDoor,
         doors,
         angle: spec.angle,
         finish: spec.finish,
@@ -5771,6 +5961,17 @@ export function computeCabinet(params, profileOverride) {
 
   const drillSummary = {
     hinge_centers: hingedLeafCount > 0 ? centres.map((v) => roundTo(v, 4)) : [],
+    // ─── TURN 36 (CLAUDE.md F6): AND THE ROWS A SPLIT SEGMENT BORES ────────
+    // Additive: `hinge_centers` above is the cabinet's own ladder and has not
+    // moved, so every reader that only ever knew about it reads exactly what
+    // it always did. This says which rows belong to WHICH door — the answer
+    // check #4, the 3-D and the hinge modal need once a door is two segments
+    // of different heights. Empty on a cabinet with no split.
+    hinge_rows_by_panel: Object.fromEntries(
+      panels
+        .filter((p) => p.part === 'FRONT' && Array.isArray(p.meta?.plateY))
+        .map((p) => [p.id, p.meta.plateY]),
+    ),
     side_hinge_holes_y: hingedLeafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
     hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
@@ -5918,12 +6119,40 @@ export function computeCabinet(params, profileOverride) {
       depth: e.plan.depth,
       posZ: e.plan.posZ,
       dividers: e.plan.dividers,
+      front: e.plan.front,
       slope: e.plan.slope,
       hinged: e.plan.hinged,
       runner: e.plan.runner,
       boxFrontX: e.plan.boxFrontX,
       axisY: e.plan.axisY,
     })) } : {}),
+    // ─── TURN 36 (CLAUDE.md F6): the SPLITS, as the kit measured them ───────
+    //
+    // The key appears ONLY where a door is actually split — the same rule the
+    // shoe boxes follow, and for the same reason: iron rule 2 says the six
+    // standard configs may not move, and an empty list published on every
+    // cabinet in the app would be a delta on all six that says nothing.
+    // Readers use `?? []`. TOP FIRST, the owner's order.
+    ...(splitLeaves.length ? {
+      splitDoors: splitLeaves.map(({ panel: leaf, topH, segments }) => ({
+        leaf: leaf.id,
+        bay: leaf.meta?.bay ?? null,
+        opening: roundTo(leaf.h, 4),
+        topMm: roundTo(topH, 4),
+        gapMm: SPLIT_SEG_GAP,
+        segments: segments.map((s) => ({
+          id: s.id,
+          label: s.label,
+          panelId: `${leaf.id}-${s.id}`,
+          h: roundTo(s.h, 4),
+          y: roundTo(leaf.box.y + s.y, 4),
+          hinges: s.hinges,
+        })),
+      })),
+      splitDividers: splitDividers.map((d, i) => ({
+        id: `SPLIT-${i + 1}`, y: d.y, from: d.from, w: d.size, setback: 0,
+      })),
+    } : {}),
     // Turn 32 (CLAUDE.md F4): each column's own stack — its zone index, the
     // top of its closing board and what stands in it — for the store's shelf
     // clamps and the walk's measures.

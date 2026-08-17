@@ -68,6 +68,8 @@ import {
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
+// Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
+import { settleRiders } from '../engine/topBox.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
@@ -593,6 +595,7 @@ function saveCache(state) {
 
 const cached = typeof localStorage !== 'undefined' ? loadCache() : null;
 
+
 export const useProjectStore = create(dirtyGate((set, get) => ({
   // A cached project may predate room v2 — migrate on the way in, so an old
   // tab that reloads gets four walls instead of a crash.
@@ -787,6 +790,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       },
     });
   },
+  /**
+   * ─── TURN 36 (CLAUDE.md F2): THE SAME PATCH ON A SET OF STRIPS ────────────
+   *
+   * "LED strips: inset and depth to all selected." One `setDesign`, so it is
+   * ONE undo step and one recompute — the panel's master control used to loop
+   * `updateLightingItem`, which wrote the design once per strip and gave a
+   * twelve-strip job twelve undo steps.
+   */
+  updateLightingItemsBulk: (ids, patch) => {
+    const want = new Set((ids || []).filter(Boolean));
+    if (!want.size || !patch) return 0;
+    const lighting = migrateDesign(get().project.design).lighting;
+    let touched = 0;
+    const items = lighting.items.map((it) => {
+      if (!want.has(it.id)) return it;
+      touched += 1;
+      return { ...it, ...patch, id: it.id };
+    });
+    if (!touched) return 0;
+    get().setDesign({ lighting: { ...lighting, items } });
+    return touched;
+  },
+
   removeLightingItem: (id) => {
     const lighting = migrateDesign(get().project.design).lighting;
     get().setDesign({ lighting: { ...lighting, items: lighting.items.filter((it) => it.id !== id) } });
@@ -1799,7 +1825,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!Object.keys(applied).length) return { applied: {}, notices: [] };
 
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, ...applied } } : u)),
+      // T36 F7: a main that grew or was raised takes its top box with it.
+      units: settleRiders(
+        st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, ...applied } } : u)),
+        getCabinetProfile(),
+      ),
     }));
 
     const notices = [];
@@ -2111,14 +2141,49 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const bays = get().bayDoorsFor(unitId);
     const next = bays.map((_, i) => {
       const m = modes[i] || {};
+      // ─── TURN 36 (CLAUDE.md F6): THE SPLIT RIDES WITH THE BAY ────────────
+      // `split_top_mm` is carried through this normaliser rather than dropped
+      // by it: a joiner who changes a bay's HINGE must not lose the split he
+      // typed into the same row. 0 / absent = no split, which is every bay
+      // door before this turn.
+      const split = Number(m.split_top_mm);
       return {
         door: String(m.door ?? 'none').toLowerCase() === 'one' ? 'one' : 'none',
         hinge: String(m.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L',
+        // An explicit 0 is KEPT: it is how one bay opts out of a split the
+        // whole unit asked for. Absent is absent, and absent follows the unit.
+        ...(Number.isFinite(split) && split >= 0 ? { split_top_mm: Math.round(split) } : {}),
       };
     });
     // A cabinet with doors in its bays has no door across its face.
     get().updateUnitParams(unitId, { bay_doors: next, doors: false });
     return next;
+  },
+
+  /**
+   * ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS ─────────────────────────────────
+   *
+   * "Split door: top segment height ___ mm" for the WHOLE unit. 0 clears it
+   * and the leaves go back to being one door each, which is what every
+   * project that has never asked for a split already is.
+   *
+   * The engine refuses a mistyped number on its own (`splitDoorActive`: both
+   * segments must be at least 100 mm), so this stores what was typed and lets
+   * the one law decide — a second clamp here would be a second opinion.
+   */
+  setSplitTop: (unitId, mm) => {
+    const v = Number(mm);
+    return get().updateUnitParams(unitId, {
+      split_top_mm: Number.isFinite(v) && v > 0 ? Math.round(v) : null,
+    });
+  },
+
+  /** …and one BAY's own split, leaving the other bays alone. */
+  setBaySplitTop: (unitId, bay, mm) => {
+    const v = Number(mm);
+    return get().setBayDoor(unitId, bay, {
+      split_top_mm: Number.isFinite(v) && v > 0 ? Math.round(v) : 0,
+    });
   },
 
   /** One bay's own answer, leaving the others alone. */
@@ -2350,6 +2415,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const level = getUnitType(typeId).mount;
     const walls = roomWalls(state.project.room);
     let placed = null;
+    // ─── TURN 36 (CLAUDE.md F7): A TOP BOX IS PLACED **ON** SOMETHING ───────
+    //
+    // Every other unit is placed by `freeSlotOnWall`, which looks for a gap
+    // BESIDE its neighbours. A rider has no gap to look for: it stands ON a
+    // main, in exactly that main's place, and the free-slot search would put
+    // it politely next door — where a snap would then have nothing to snap to.
+    //
+    // The host is chosen FIRST: the cabinet the library was opened beside if
+    // that is a main, otherwise the last main placed. With no main on the
+    // floor at all the box is still placed, by the ordinary search, standing
+    // on nothing — and check #14 says so in red rather than the app refusing
+    // to add what the joiner asked for.
+    const riderOf = getUnitType(typeId).ridesOn;
+    const riderHost = riderOf
+      ? [beside, ...[...state.units].reverse()].find((u) => u
+        && getUnitType(u.type).family === riderOf
+        && !getUnitType(u.type).ridesOn)
+      : null;
+    if (riderHost) {
+      placed = { wall: riderHost.position?.wall ?? 0, x: riderHost.position?.x_mm ?? 0 };
+      unit.params.rides_on = riderHost.id;
+    }
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
     // …and when a SIDE was asked for as well, that wall is the only one tried:
@@ -2360,7 +2447,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ? [besideWall]
         : [besideWall, ...walls.filter((wl) => wl.index !== besideWall.index)])
       : walls;
-    for (const wall of ordered) {
+    for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
       const x = freeSlotOnWall({
         width: unit.params.width,
@@ -2397,7 +2484,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // editable field, and the unit can be hung wherever the window allows.
     const aligned = alignedMountFor(state, unit, placed);
     if (aligned != null) unit.params.mount_height = aligned;
-    set((s) => ({ units: [...s.units, unit] }));
+    // T36 F7: a TOP BOX settles on its main the moment it is placed — same
+    // wall, same x, same depth, hung at the main's own top.
+    set((s) => ({ units: settleRiders([...s.units, unit], profile) }));
     // A unit arrives with its SCRIBE FILLERS worked out from where it landed.
     // The plinth and the top infill are decisions and wait to be asked for
     // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
@@ -2406,7 +2495,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   removeUnit: (unitId) => {
-    set((s) => ({ units: s.units.filter((u) => u.id !== unitId) }));
+    // T36 F7: a rider whose main goes is ORPHANED, not moved and not deleted —
+    // the joiner is shown a red fault and decides. `settleRiders` leaves it
+    // exactly where it is, because its link no longer names a cabinet.
+    set((s) => ({ units: settleRiders(s.units.filter((u) => u.id !== unitId), getCabinetProfile()) }));
     get().refreshAutoParts();
   },
 
@@ -2526,6 +2618,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         return { ...u, params };
       }),
     }));
+    // ─── TURN 36 (CLAUDE.md F7): AND ITS TOP BOX FOLLOWS ────────────────────
+    // A main that grew taller, or shallower, or wider takes its rider with it:
+    // the box hangs at the main's own TOP and is cut to the main's own DEPTH,
+    // and both of those have just moved. `settleRiders` is idempotent, so a
+    // cabinet with no box on it costs one array walk and returns the same
+    // array it was given.
+    set((st) => ({ units: settleRiders(st.units, getCabinetProfile()) }));
     // The clamp above keeps the unit inside its slot without moving it; this
     // re-runs the position clamp anyway, so a unit that was already overlapping
     // (an imported project, a room change) still settles legally.
@@ -2670,7 +2769,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const x = result.x - lead;
 
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
+      // T36 F7: …and every top box rides the main it stands on.
+      units: settleRiders(
+        st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
+        getCabinetProfile(),
+      ),
     }));
     // Moving changes which gaps exist — and a gap is a filler.
     get().refreshAutoParts();
@@ -2747,6 +2850,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         error: `Wall ${wallIndex + 1} has no free space for this unit.`,
       };
     }
+    // T36 F7: the main changed WALL — its top box goes with it.
+    set((st) => ({ units: settleRiders(st.units, getCabinetProfile()) }));
     get().refreshAutoParts();
     return {
       wall: wallIndex, x_mm: now?.position.x_mm ?? moved?.x ?? 0, blocked: false, error: null,
@@ -3209,6 +3314,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const clean = {};
     if (patch?.variant != null) clean.variant = patch.variant === 'D' ? 'D' : 'F';
     if (patch?.dividers != null) clean.dividers = Number(patch.dividers) >= 1 ? 1 : 0;
+    // T36 F3: the decorative face, on or off. Stored as a plain boolean so an
+    // item that has never been asked (every box before this turn) reads ON.
+    if (patch?.front != null) clean.front = patch.front !== false && patch.front !== 'false';
     if (patch?.pos_mm != null) clean.pos_mm = Math.max(0, Math.round(Number(patch.pos_mm) || 0));
     if (!Object.keys(clean).length) return null;
     return get().updateItem(unitId, itemId, clean);
@@ -3355,6 +3463,52 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {'item'|'override'|null} which path it took
    */
+  /**
+   * ─── TURN 36 (CLAUDE.md F2): THE WHOLE SET, IN ONE BATCH ──────────────────
+   *
+   * Every piece in the Ctrl+click set, removed through the SAME plan a single
+   * Delete goes through (`engine/deleteElement.js deletePlan`) — so a piece
+   * the rules refuse is refused here for the same reason and named in the
+   * message, rather than silently skipped.
+   *
+   * The panels are resolved ONCE, up front, against the result as it stands:
+   * removing a drawer renumbers the stack, so a plan taken after the first
+   * removal would be a plan about a different cabinet.
+   *
+   * The HEAL SWEEP runs once at the end. A sweep per removal would trim a
+   * front against gaps that are about to close.
+   */
+  deleteElementSet: (unitId, refs) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const result = unit ? get().unitResult(unitId) : null;
+    if (!unit || !result) return { ok: false, error: 'Nothing is selected.' };
+    const plans = [];
+    const refused = [];
+    for (const ref of refs || []) {
+      const panel = result.panels.find((p) => p.id === ref) || null;
+      const plan = deletePlan({ unit, panel });
+      if (plan.allowed) plans.push({ ref, plan });
+      else refused.push(plan.reason);
+    }
+    if (!plans.length) {
+      return { ok: false, error: refused[0] || 'Nothing in the selection can be removed.' };
+    }
+    return runBatch(() => {
+      for (const { ref, plan } of plans) {
+        if (plan.target === 'item') get().removeItem(unitId, plan.itemId);
+        else get().setElementOverride(unitId, ref, { removed: true });
+      }
+      useUiStore.getState().clearElement();
+      get().healFrontGaps();
+      return {
+        ok: true,
+        removed: plans.map((p) => p.plan.itemId || p.ref),
+        refused,
+        next: null,
+      };
+    });
+  },
+
   removeElement: (unitId, panelId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit || !panelId) return null;
@@ -3390,6 +3544,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unitId = sel?.unitId || null;
     const panelId = sel?.elementRef || sel?.panelId || null;
     if (!unitId || !panelId) return { ok: false, error: 'Nothing is selected.' };
+    // ─── TURN 36 (CLAUDE.md F2): ONE DELETE REMOVES THE WHOLE SET ───────────
+    //
+    // "one Delete removes the whole set through the heal sweep." The SET is
+    // the UI's, the PLAN is still `deletePlan`'s per piece, and the sweep runs
+    // ONCE at the end — a heal per removal would trim a front against gaps
+    // that are about to close, and the joiner would watch his doors twitch.
+    // Everything goes in one batch, so it is one undo step.
+    const set = at ? null : useUiStore.getState().selectedElements;
+    if (Array.isArray(set) && set.length > 1) {
+      return get().deleteElementSet(unitId, set);
+    }
     const unit = get().units.find((u) => u.id === unitId);
     const panel = get().unitResult(unitId)?.panels.find((p) => p.id === panelId) || null;
     const plan = deletePlan({ unit, panel });

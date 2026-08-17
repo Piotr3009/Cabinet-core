@@ -217,7 +217,9 @@ test('every library type is configured, available and buildable', () => {
   // Turn 30 (CLAUDE.md F19): the corner unit — geometry only.
   // Turn 30 (CLAUDE.md F21): the glass wall unit.
   // Turn 31 (CLAUDE.md F9): the hood wall unit.
-  assert.equal(UNIT_TYPE_ORDER.length, 21, 'wardrobe + 20 kitchen kits');
+  // Turn 36 (CLAUDE.md F7): the TOP BOX — a second wardrobe kit, because
+  // *"wysokie szafy nie wejdą do domu"*.
+  assert.equal(UNIT_TYPE_ORDER.length, 22, 'two wardrobe kits + 20 kitchen kits');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

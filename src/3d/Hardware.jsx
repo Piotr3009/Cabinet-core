@@ -90,6 +90,9 @@ export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
   hingeSpecs = null, surface = 'room', scope = '',
+  // Turn 36 (CLAUDE.md F8): the shelves' own edit grammar, handed to the rod
+  // so a double-click on the tube opens the hanger modal beside it.
+  onEditElement = null,
   // ─── TURN 28 (CLAUDE.md F5): ONE COLOUR SOURCE FOR THE WHOLE FAMILY ──────
   // Turn 25 handed this component the chosen METAL ID and let it resolve the
   // numbers; `3d/DrillRings.jsx` resolved its own, off its own table, with its
@@ -142,6 +145,8 @@ export default function Hardware({
           rail={rail}
           colour={colours.rail}
           metal={shelfMetal}
+          profile={profile}
+          onEdit={onEditElement}
         />
       ))}
       {/* ─── Turn 11 (CLAUDE.md F3.5): the hinges are furniture ───
@@ -423,7 +428,14 @@ function CarcassHinges({
   // Nothing in the app reads it back.
   useEffect(() => {
     models.forEach((m, i) => {
-      if (m?.model) m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+      if (!m?.model) return;
+      m.model.userData.ccHingePanel = items[i]?.panelId ?? null;
+      // Turn 36 (CLAUDE.md F4b): WHICH member this clone is. The acceptance
+      // walk measures the PLATE's seating against the side it is screwed to,
+      // and the door's own body carries the same panel stamp — so the walk
+      // needs to be able to tell the two apart. A diagnostic, like the stamp
+      // above it: nothing in the app reads it back.
+      m.model.userData.ccHingeMember = 'plate';
     });
   }, [models, items]);
 
@@ -442,14 +454,28 @@ function CarcassHinges({
     })), scope);
   }, [surface, scope, items, urls, models]);
 
-  const drawnModel = models.some((m) => m.model);
-
-  // The plate, screwed to the inner face of the side panel the door hangs from.
-  const placePlate = useMemo(() => (i, m) => {
-    const h = items[i];
-    const x = h.plateX + h.dir * (H.plateThickness / 2);
-    put(m, new THREE.Vector3(mm(x), mm(h.y), mm(h.plateZ)));
-  }, [items, H.plateThickness]);
+  // ─── TURN 36 (CLAUDE.md F4a/F4b): THE PLATE STAND-IN IS GONE, AND THE
+  // PLATE BITES 5 mm INTO THE SIDE ──────────────────────────────────────────
+  //
+  // (a) The owner's order, re-issued from T35-F5 and the one removal this
+  //     turn is licensed to make: *a plate is the downloaded GLB or nothing.*
+  //     The instanced box that stood in for a missing plate — and, on a
+  //     restored project, stood ON TOP of a correctly loaded one — is gone,
+  //     exactly as the cup, the boss and the arm went on 14.08. Its placement
+  //     helper goes with it: a `place` function for a piece that is never
+  //     drawn is the next turn's ghost. The REGISTRY report above is
+  //     untouched, so the acceptance walk still reads which plate loaded and
+  //     why. CarcassHinges has no pick gesture of its own — the invisible
+  //     pick target the owner asked to keep is the ARM's, in DoorHinges, and
+  //     it is where it was.
+  //
+  // (b) *the plate GLB moves 5 mm INTO the side so screws sit in timber.*
+  //     `dir` is +1 towards the middle of the door for a left hinge and −1
+  //     for a right one, so INTO the side is `−dir`. The number is
+  //     profile-listed (`hardware.hinge.plateBiteMm`) and read through the
+  //     profile, never written here: a workshop that fits a different plate
+  //     changes one number in one file.
+  const bite = Number(H.plateBiteMm) || 0;
 
   return (
     <>
@@ -457,12 +483,9 @@ function CarcassHinges({
         <primitive
           key={`pm${items[i].panelId}-${items[i].y}`}
           object={m.model}
-          position={[mm(items[i].plateX), mm(items[i].y), mm(items[i].plateZ)]}
+          position={[mm(items[i].plateX - items[i].dir * bite), mm(items[i].y), mm(items[i].plateZ)]}
         />
       ) : null))}
-      <Pieces count={items.length} place={placePlate} colour={colour} visible={!drawnModel}>
-        <boxGeometry args={[mm(H.plateThickness), mm(H.plateWidth), mm(H.plateLength)]} />
-      </Pieces>
     </>
   );
 }
@@ -1144,16 +1167,57 @@ function Legs({ items, profile, colour }) {
 
 // ─── The rail ───────────────────────────────────────────────────────────────
 
-/** One tube, at the diameter the profile carries. Not instanced: there is one. */
-function Rail({ rail, colour, metal = null }) {
+/**
+ * One tube, at the diameter the profile carries. Not instanced: there is one.
+ *
+ * ─── TURN 36 (CLAUDE.md F8): AND IT IS CLICKABLE ───────────────────────────
+ *
+ * The owner, eye-testing T35-F1: *"nie ma możliwości 2 kliku i edycji tego
+ * drążka."* T35 shipped the rail's DATUM and the rail's MODAL and left the
+ * tube with no handler at all — nothing to click, and no screenshot that
+ * would have said so.
+ *
+ * It opens the modal that ALREADY EXISTS, keyed on the board 40 mm above it
+ * (`RAIL-PART`), which `engine/elements.js` has answered as `hanger-rail`
+ * since T35: one window, and the tube is a second door into it rather than a
+ * second window that could disagree.
+ *
+ * The gesture is the SHELVES' own grammar — `onEditElement(panelId, {x, y})`,
+ * the click point travelling so the modal lands beside the thing — and the
+ * HOVER AURA is the same component the hinge and the handle wear, so the hand
+ * can see the rod is live before it commits to a double-click.
+ */
+function Rail({
+  rail, colour, metal = null, profile = null, pivot = [0, 0, 0], onEdit = null,
+}) {
   // The family metal when the profile carries one (gold/silver, the same pair
   // the shelf sleeves wear); the old neutral grey where it does not.
   const tone = metal?.colour || colour;
+  const open = onEdit && rail.panelId
+    ? (e) => {
+      e.stopPropagation();
+      onEdit(rail.panelId, { x: e.clientX, y: e.clientY });
+    }
+    : null;
   return (
+    <>
+    {open && profile && (
+      <HoverAura
+        at={[mm(rail.x) - pivot[0], mm(rail.y) - pivot[1], mm(rail.z) - pivot[2]]}
+        // A rod is 25 mm across. A grab band the width of the rod is a target
+        // nobody can hit with a mouse, so the aura is a comfortable one — the
+        // same judgement the handle's own aura makes about a 12 mm bar.
+        size={{ w: rail.length, h: Math.max(rail.diameter * 2, 40), d: Math.max(rail.diameter * 2, 40) }}
+        subject={{ kind: 'rail', id: rail.panelId, mm: rail.y }}
+        profile={profile}
+        onActivate={(e) => open(e)}
+      />
+    )}
     <mesh
       position={[mm(rail.x), mm(rail.y), mm(rail.z)]}
       rotation={[0, 0, Math.PI / 2]}
-      userData={{ ccNoBounds: true }}
+      userData={{ ccNoBounds: true, ccRailPanelId: rail.panelId || null }}
+      onDoubleClick={open || undefined}
     >
       <cylinderGeometry args={[mm(rail.diameter / 2), mm(rail.diameter / 2), mm(rail.length), 14]} />
       <meshStandardMaterial
@@ -1162,6 +1226,7 @@ function Rail({ rail, colour, metal = null }) {
         metalness={metal?.metalness ?? 0.6}
       />
     </mesh>
+    </>
   );
 }
 

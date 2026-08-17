@@ -683,7 +683,8 @@ export default function UnitView({
   // `selectedElement` is the ENGINE's own panel id (`SHELF-2`) or null, which
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
-  selectedElement = null, onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
+  selectedElement = null, selectedElements = [],
+  onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
   // Turn 31 (CLAUDE.md F8): double-click the width or height FIGURE.
   onEditSize = null,
   // Turn 19 (CLAUDE.md F1.3): double-click a hinge and its modal opens.
@@ -887,6 +888,16 @@ export default function UnitView({
   const solid = useMemo(() => solidBounds(result.panels), [result.panels]);
 
   // …and the box round the ONE piece that is selected inside it (turn 9, F4.1).
+  // ─── TURN 36 (CLAUDE.md F2): EVERY MEMBER OF THE SET IS MARKED ───────────
+  // The dashed box the PRIMARY piece has worn since turn 9, drawn once per
+  // selected piece. One component, one style, one law — a set that showed
+  // only its last member would be a set nobody can see.
+  const selectedElementBoxes = useMemo(
+    () => (selectedElements || [])
+      .map((id) => result.panels.find((p) => p.id === id && p.box)?.box || null)
+      .filter(Boolean),
+    [selectedElements, result.panels],
+  );
   const selectedElementBox = useMemo(
     () => (selectedElement
       ? result.panels.find((p) => p.id === selectedElement && p.box)?.box || null
@@ -1599,6 +1610,27 @@ export default function UnitView({
               // a shelf that cannot move can still be made thicker.
               if (isElement) {
                 const alreadyOn = selectedElement === p.id;
+                // ─── TURN 36 (CLAUDE.md F2): CTRL+CLICK BUILDS A SET ───────
+                // The modifier travels with the click, exactly as it has for
+                // CABINETS since turn 13 — and the NATIVE event is asked
+                // first for the same reason: react-three-fiber builds its own
+                // event object by spreading the DOM one, which copies own
+                // enumerable properties and leaves every modifier behind.
+                // With the modifier down this is a TICK, not a grab: the
+                // piece joins or leaves the set and stays where it is.
+                const native = e.nativeEvent || e;
+                const additive = Boolean(native.ctrlKey || native.metaKey || e.ctrlKey || e.metaKey);
+                if (additive) {
+                  // …and it must NOT travel on to the boards behind this one.
+                  // Without this the same press reaches the carcass, whose own
+                  // handler reads the same modifier and ticks the CABINET out
+                  // of its selection — which nulls the element selection with
+                  // it, so every Ctrl+click replaced the set instead of
+                  // growing it. Found by the walk, which is what it is for.
+                  e.stopPropagation();
+                  onSelectElement?.(p.id, { additive: true });
+                  return;
+                }
                 onSelectElement?.(p.id);
                 if (isShelfLike && shelfId && alreadyOn && !p.meta?.locked) {
                   startDepthDrag(e, shelfId, p.meta?.front_mm ?? 0, p.box.y);
@@ -1883,6 +1915,10 @@ export default function UnitView({
       <Hardware
         instances={hardware}
         profile={profile}
+        // Turn 36 (CLAUDE.md F8): the hanging rod is a double-click target now,
+        // and it opens the SAME modal the shelves open — the grammar is the
+        // one this component already hands its panels.
+        onEditElement={onEditElement}
         xray={xray && !contour}
         hinges={showHinges && !contour}
         // ─── Turn 18 (CLAUDE.md F6.7) ───
@@ -2117,6 +2153,14 @@ export default function UnitView({
           learnt it once. Drawn from the engine's own panel box, so a shelf
           somebody has made 25 mm and pulled out to the face is outlined at the
           size it will be cut. */}
+      {/* T36 F2: the OTHER members of the set — the primary is drawn below,
+          so a single selection is exactly the one outline it always was. */}
+      {!contour && selectedElementBoxes
+        .filter((b) => b !== selectedElementBox)
+        .map((b, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <SelectionOutline key={`sel-${i}`} box={b} profile={profile} opacity={1} />
+        ))}
       {selectedElementBox && !contour && (
         <SelectionOutline box={selectedElementBox} profile={profile} opacity={1} />
       )}

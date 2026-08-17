@@ -48,8 +48,11 @@ test('the rules, each with the owner’s colour', () => {
   // T35-F1: and rule 13, "Rail × obstacle above" — the fault the rail's own
   // datum brought with it. Report, never auto-fix; the twelve before it are
   // untouched, which is what the list below is for.
-  assert.equal(CHECKS.length, 13);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+  // T36-F7: and rule 14, "Top box standing on nothing" — a carcass BUILT to
+  // stand on a main, standing on none. Report, never fix; the thirteen before
+  // it are untouched, which is what the list below is for.
+  assert.equal(CHECKS.length, 14);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -66,6 +69,7 @@ test('the rules, each with the owner’s colour', () => {
     11: 'red',
     12: 'red',
     13: 'red',
+    14: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

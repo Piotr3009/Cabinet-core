@@ -106,6 +106,37 @@ export default function ElementProperties({
 
   const G = unit.params.board_t ?? profile.board.thickness;
   const locked = Boolean(panel.meta?.locked);
+
+  // ─── TURN 36 (CLAUDE.md F2): THE EDIT REACHES THE WHOLE SET ───────────────
+  //
+  // "group edits — shelves: position and depth to all selected". The panel is
+  // still about the PRIMARY piece and shows the primary's numbers; what
+  // changes is who a COMMIT reaches. Three shelves ticked with Ctrl and one
+  // height typed puts all three there, in ONE batch and therefore one undo
+  // step, which is what "the group moves as one" means.
+  //
+  // A set of one is the single piece it always was, down to the store call.
+  const selectedElements = useUiStore((s) => s.selectedElements);
+  const selectedIsMine = useUiStore((s) => s.selectedElement?.unitId) === unit.id;
+  const batch = useProjectStore((s) => s.batch);
+  const groupItems = useMemo(() => {
+    if (!selectedIsMine || !Array.isArray(selectedElements) || selectedElements.length < 2) return [];
+    const panels = unit ? (useProjectStore.getState().unitResult(unit.id)?.panels || []) : [];
+    return selectedElements
+      .map((id) => panels.find((p) => p.id === id))
+      .filter((p) => p && p.meta?.itemId)
+      .map((p) => ({ id: p.meta.itemId, panelId: p.id, front_mm: p.meta?.front_mm }));
+  }, [selectedElements, selectedIsMine, unit]);
+  const groupSize = groupItems.length;
+  /**
+   * Run one edit over the set — or over the single item, when there is no set.
+   * `fn` is handed `{ id, panelId, front_mm }` and is the SAME call the single
+   * path makes, so there is no second way of writing a height.
+   */
+  const applyToSelection = (fn) => {
+    if (groupSize < 2) return fn({ id: item?.id, panelId: panel.id, front_mm: panel.meta?.front_mm });
+    return batch(() => { for (const row of groupItems) fn(row); });
+  };
   const endPanel = (unit.params.end_panels || []).find((ep) => ep.id === panel.meta?.panelId) || null;
   const infillSide = panel.meta?.side === 'right' ? 'R' : 'L';
   // ─── Turn 16 (CLAUDE.md F1.3): THE PICKER MATCHES BY KEY ────────────────
@@ -209,6 +240,27 @@ export default function ElementProperties({
         );
       // "jedna lub 0 przegródek — 2 nie mają sensu" — across the width, so the
       // box takes two rows of shoes rather than two columns of one.
+      // ─── TURN 36 (CLAUDE.md F3): THE FRONT IS A SWITCH ──────────────────
+      // The owner's closing word on T35-F3: *"punkt 3 — tak, z
+      // przełącznikiem"*. Default ON, so a box placed before this turn is the
+      // box it was; off, the decorative face is not cut and leaves the
+      // panels, the BOM and the 3-D together — all three read the engine's
+      // one list.
+      case 'shoe-box-front':
+        return (
+          <Field key={key} label="Front">
+            <select
+              className="cc-input w-full"
+              data-shoe-box-front="1"
+              value={shoeBoxItem?.front === false ? 'off' : 'on'}
+              title="The 120 mm decorative face. Off, the box is open to the room."
+              onChange={(e) => setShoeBox(unit.id, shoeBoxItem.id, { front: e.target.value === 'on' })}
+            >
+              <option value="on">On</option>
+              <option value="off">Off</option>
+            </select>
+          </Field>
+        );
       case 'shoe-box-dividers':
         return (
           <Field key={key} label="Divider">
@@ -290,7 +342,7 @@ export default function ElementProperties({
               title={locked
                 ? 'Screwed or locked — unlock it to move it'
                 : 'The underside, above the interior floor — the clear light under the shelf. The same clamp the drag obeys.'}
-              onCommit={(v) => setShelfPos(unit.id, item.id, posFromField(v, G))}
+              onCommit={(v) => applyToSelection((row) => setShelfPos(unit.id, row.id, posFromField(v, G)))}
             />
           </Field>
         );
@@ -394,7 +446,7 @@ export default function ElementProperties({
               max={bounds.max}
               value={Number(panel.meta?.front_mm ?? profile.carcass.shelfDepthClearance)}
               title={`From the face of the cabinet. 0 is flush; ${formatMm(bounds.max)} leaves the shallowest piece worth cutting.`}
-              onCommit={(v) => setElementDepth(unit.id, item.id, v)}
+              onCommit={(v) => applyToSelection((row) => setElementDepth(unit.id, row.id, v))}
             />
           </Field>
         );
@@ -884,6 +936,14 @@ export default function ElementProperties({
         {formatMmPair(panel.w, panel.h)} · {formatMm(panel.thickness)} mm
         {chosen ? ` · ${chosen.label}` : ''}
       </div>
+      {/* T36 F2: the panel is about the PRIMARY piece and says so when a
+          commit is going to reach more than it. A set nobody is told about is
+          a set that surprises somebody. */}
+      {groupSize > 1 && (
+        <p className="text-[11px] text-gold" data-group-selection={groupSize}>
+          {groupSize} pieces selected — height and set-back apply to all of them.
+        </p>
+      )}
 
       <div className={compact ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-2 gap-2'}>
         {fields.map(row)}

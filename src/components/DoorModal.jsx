@@ -19,6 +19,10 @@ import { formatMm, roundTo } from '../engine/format.js';
 import { HANDLE_TYPES, handleClassOf } from '../engine/handles.js';
 import { getUnitType } from '../engine/types.js';
 import { sayHingeResult } from '../lib/hingeEdit.js';
+// Turn 36 (CLAUDE.md F6): a split leaf's two segments, TOP FIRST.
+import { splitSegmentRows } from '../engine/splitDoors.js';
+// Turn 36 (CLAUDE.md F4c): …and a door's hinge rows, TOP FIRST as well.
+import { hingeRows } from '../engine/items.js';
 
 // ─── ONE MODAL FOR THE DOOR AND ITS HINGES (turn 30, CLAUDE.md F2) ──────────
 //
@@ -62,6 +66,7 @@ import { sayHingeResult } from '../lib/hingeEdit.js';
 export default function DoorModal() {
   const args = useUiStore((s) => s.modalArgs);
   const closeModal = useUiStore((s) => s.closeModal);
+  const openModal = useUiStore((s) => s.openModal);
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
 
@@ -125,6 +130,40 @@ export default function DoorModal() {
             `omit` below keeps the right-hand panel's own rows untouched) and
             the WORKING block — the arrow mover and the hinge picker — stands
             where it sat: one block, at the top. */}
+        {/* ─── TURN 36 (CLAUDE.md F6): THE SPLIT'S OWN TWO SEGMENTS ────────
+            "modal segments top-first". A split leaf is two doors, each with
+            its own height, its own hinge set and its own window; this row
+            says which one is open and walks to the other. TOP FIRST — the
+            owner's order, the kit's `splitDoorSegments` order, and the same
+            law engine/items.js applies to shelves and drawers. */}
+        {isDoor && panel.meta?.split ? (
+          <section className="mb-2 border-b border-shell-600 pb-2" data-split-modal={panel.meta.splitOf}>
+            <span className="block text-[10px] uppercase tracking-wide text-ink-400 mb-1">
+              Split door — {formatMm(panel.meta.splitTopMm)} mm top
+            </span>
+            <div className="flex gap-1">
+              {splitSegmentRows(result.panels, panel.meta.splitOf).map((seg) => (
+                <button
+                  key={seg.id}
+                  type="button"
+                  data-split-segment-tab={seg.id}
+                  aria-pressed={seg.panel.id === panel.id}
+                  className={`cc-btn px-2 flex-1 ${seg.panel.id === panel.id ? 'border-gold text-gold' : ''}`}
+                  title={`${seg.label} segment — ${formatMm(seg.panel.h)} mm`}
+                  // The sibling window opens WHERE THIS ONE IS STANDING —
+                  // rule 15, and the anchor this modal was given is exactly
+                  // that rectangle.
+                  onClick={() => openModal('element', {
+                    unitId: unit.id, panelId: seg.panel.id, anchor: args?.anchor || null,
+                  })}
+                >
+                  {seg.label} · {formatMm(seg.panel.h)}
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {isDoor ? (
           <HingeSection
             ref={hingesRef}
@@ -313,41 +352,57 @@ function HingeSection({
             </button>
           ) : null}
         </div>
-        {rows.map((mm, i) => (
-          // eslint-disable-next-line react/no-array-index-key
-          <div key={`h${i}`} className={`flex items-center gap-1 rounded ${row === i ? 'ring-1 ring-gold/70' : ''}`} data-hinge-row={i} data-hinge-row-current={row === i ? '1' : ''}>
-            <span className="text-[10px] text-ink-400 w-4 tabular-nums">{i + 1}</span>
+        {/* ─── TURN 36 (CLAUDE.md F4c): TOP HINGE FIRST ────────────────────
+            The owner's third finding, re-issued from T35-F5: *the modal's
+            hinge rows sort by Y DESCENDING.* The order is `engine/items.js
+            hingeRows`, beside the shelf and drawer lists that have read
+            top-down since turn 4 — the engine counts from the floor, a human
+            reads from the ceiling.
+            Every row carries the ENGINE's own index, and that is the
+            load-bearing half: `setHingePos` and `removeHinge` index into the
+            ASCENDING list, so a reversed display that went on passing its own
+            loop counter would make the top row's − delete the bottom hinge.
+            The gold ring reads the same index, because the 3-D pick counts
+            bottom-up too. */}
+        {hingeRows(rows).map((hr) => (
+          <div
+            key={`h${hr.index}`}
+            className={`flex items-center gap-1 rounded ${row === hr.index ? 'ring-1 ring-gold/70' : ''}`}
+            data-hinge-row={hr.index}
+            data-hinge-row-current={row === hr.index ? '1' : ''}
+          >
+            <span className="text-[10px] text-ink-400 w-4 tabular-nums">{hr.num}</span>
             <button
               type="button"
               className="cc-btn-ghost px-2"
-              data-hinge-up={i}
+              data-hinge-up={hr.index}
               title="Up — the hinge’s own 5 mm stride"
-              onClick={() => sayHingeResult(setHingePos(unit.id, i, mm + (profile.editor.hingeNudgeMm || 5)), notify)}
+              onClick={() => sayHingeResult(setHingePos(unit.id, hr.index, hr.mm + (profile.editor.hingeNudgeMm || 5)), notify)}
             >
               ↑
             </button>
             <button
               type="button"
               className="cc-btn-ghost px-2"
-              data-hinge-down={i}
+              data-hinge-down={hr.index}
               title="Down — the hinge’s own 5 mm stride"
-              onClick={() => sayHingeResult(setHingePos(unit.id, i, mm - (profile.editor.hingeNudgeMm || 5)), notify)}
+              onClick={() => sayHingeResult(setHingePos(unit.id, hr.index, hr.mm - (profile.editor.hingeNudgeMm || 5)), notify)}
             >
               ↓
             </button>
             <NumberField
               className="cc-input text-right flex-1"
-              data-hinge-modal-row={i}
-              value={mm}
+              data-hinge-modal-row={hr.index}
+              value={hr.mm}
               title="Above the carcass floor. It cannot pass the hinge above or below it."
-              onCommit={(v) => sayHingeResult(setHingePos(unit.id, i, v), notify)}
+              onCommit={(v) => sayHingeResult(setHingePos(unit.id, hr.index, v), notify)}
             />
             <button
               type="button"
               className="cc-btn-ghost px-2"
-              data-hinge-modal-remove={i}
+              data-hinge-modal-remove={hr.index}
               title="Take this hinge off"
-              onClick={() => removeHinge(unit.id, i)}
+              onClick={() => removeHinge(unit.id, hr.index)}
             >
               −
             </button>

@@ -232,9 +232,19 @@ function hingeInstances(result, profile) {
   const W = result.params.width;
   const G = result.params.board_t;
 
+  // Turn 36 (CLAUDE.md F6): a SPLIT segment hangs on its OWN rows — published
+  // beside the cabinet's ladder as `hinge_rows_by_panel`, so the picture and
+  // the sheet read one derivation. Absent for every door that is not split,
+  // which is every door before this turn.
+  const byPanel = result.drillSummary?.hinge_rows_by_panel || {};
   for (const panel of result.panels) {
     for (const instance of doorHingeInstances(panel, {
-      panels: result.panels, centres, profile, width: W, boardT: G, depth: result.params.depth,
+      panels: result.panels,
+      centres: byPanel[panel.id] || centres,
+      profile,
+      width: W,
+      boardT: G,
+      depth: result.params.depth,
     })) out.push(instance);
   }
   return out;
@@ -444,8 +454,28 @@ function railInstances(result, profile) {
   // Turn 32 (CLAUDE.md F4): a column may hang its own rail — the unit-wide
   // one and the columns' stand side by side, each cut to its own light.
   const all = [result.assemblies.rail, ...(result.assemblies.columnRails || [])].filter(Boolean);
+  // ─── TURN 36 (CLAUDE.md F8): THE ROD CARRIES ITS PANEL'S NAME ─────────────
+  //
+  // The owner, eye-testing T35-F1: *"nie ma możliwości 2 kliku i edycji tego
+  // drążka."* The engine and the modal landed; the tube had no handler, and no
+  // screenshot existed that would have shown it.
+  //
+  // The rod is not a panel and cannot be picked by panel id — but the BOARD 40
+  // mm above it IS (`RAIL-PART`, or `Z<n>-RAIL-PART` in a column), and
+  // double-clicking that board has opened the hanger modal since turn 12
+  // (`engine/elements.js`: "case 'RAIL-PART': return 'hanger-rail'"). So the
+  // instance names it, and the tube opens the modal that already exists rather
+  // than a second one that could disagree with it.
+  const railPanelFor = (zone) => {
+    const want = zone == null || !Number.isFinite(Number(zone))
+      ? 'RAIL-PART'
+      : `Z${Math.trunc(Number(zone)) + 1}-RAIL-PART`;
+    return (result.panels || []).find((p) => p.id === want)?.id || null;
+  };
   return all.map((rail) => ({
     kind: 'rail',
+    panelId: railPanelFor(rail.zone),
+    zone: rail.zone ?? null,
     x: (rail.x1 + rail.x2) / 2,
     y: rail.y,
     z: rail.z,

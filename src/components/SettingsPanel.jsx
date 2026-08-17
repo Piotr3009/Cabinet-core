@@ -1594,7 +1594,9 @@ function FinishSwatch({ finish }) {
 // Both numbers travel TOGETHER on every write. Half a sheet size is not a
 // sheet, and a width from the family with a height from the fallback would be
 // a board nobody can buy.
-function SheetSizeRow({
+// TURN 36 (CLAUDE.md F1): exported — the unified panel shows THIS row rather
+// than a copy of it. Nothing else about it changed.
+export function SheetSizeRow({
   family, label, hint, profile, onChange,
 }) {
   const options = profile.cnc.sheetOptions || [];
@@ -1688,7 +1690,9 @@ function runnerVariantHint(profile, chosen) {
 // says what this job's fronts resolve to today so that the rule is READABLE —
 // a joiner who changes the front board from 18 to 32 sees the answer change
 // under his hand rather than discovering it on an invoice.
-function HingeHardware({
+// TURN 36 (CLAUDE.md F1): exported — the unified panel shows THIS block rather
+// than a copy of it. Nothing else about it changed.
+export function HingeHardware({
   design, profile, frontThickness, onChange,
 }) {
   const C = profile.hardware.hinge.cliptop;

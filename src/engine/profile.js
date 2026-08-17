@@ -772,6 +772,21 @@ export const DEFAULT_CABINET_PROFILE = {
     // answers do not move.
     defaults: { width: 600, height: 2150, depth: 568, railOffset: 1400 },
 
+    // ─── TURN 36 (CLAUDE.md F7): THE TOP BOX ─────────────────────────────
+    //
+    // The owner's reason, verbatim: *"wysokie szafy nie wejdą do domu"* — a
+    // 2600 wardrobe cannot be carried up a staircase and through a door, so
+    // it is BUILT as two: a main carcass and a small one that rides on top of
+    // it. Its DEPTH is not listed here on purpose: a top box takes the depth
+    // of the main it stands on, because a box that overhangs its own carcass
+    // is not a top box, it is a mistake. `minHeight` is a workshop judgement
+    // — under 200 the doors are not worth hanging — and it is a DEFAULT, so a
+    // shop that disagrees changes one line.
+    topBox: {
+      defaults: { width: 600, height: 500, depth: 568 },
+      minHeight: 200,
+    },
+
     drawers: {
       maxCount: 6,
       setback: 50,             // drawer box sits 50 mm behind the carcass front
@@ -2872,6 +2887,15 @@ export const DEFAULT_CABINET_PROFILE = {
       plateLength: 56,       // mounting plate on the carcass side, front to back
       plateWidth: 34,
       plateThickness: 12,
+      // ─── TURN 36 (CLAUDE.md F4b): THE PLATE BITES INTO THE SIDE ─────────
+      // The owner, re-issued from T35-F5: the plate GLB stood ON the inner
+      // face of the carcass side, so its knock-in dowels and its screws sat
+      // in air. It moves 5 mm INTO the board, which is where the ⌀5 pattern
+      // this app has drilled since turn 1 actually goes. A number in the
+      // profile, not in a component: a workshop that fits a different plate
+      // changes one line here. It reaches the PICTURE and nothing else — no
+      // hole, no cut and no BOM line moves with it.
+      plateBiteMm: 5,
 
       // ─── BLUM CLIP top BLUMOTION (turn 19, CLAUDE.md F1) ────────────────
       //

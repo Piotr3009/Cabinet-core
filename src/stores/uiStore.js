@@ -165,7 +165,13 @@ export const useUiStore = create((set, get) => ({
   screen: 'start',                   // 'start' | 'editor'
   openEditor: () => set({ screen: 'editor' }),
   goToStart: () => set({
-    screen: 'start', selectedUnitId: null, selectedUnitIds: [], selectedSection: null, bomOpen: false,
+    screen: 'start',
+    selectedUnitId: null,
+    selectedUnitIds: [],
+    selectedSection: null,
+    selectedElement: null,
+    selectedElements: [],
+    bomOpen: false,
   }),
 
   // Floating Library panel (grab & move — SPEC 4.1). Turn 4: it is opened from
@@ -614,7 +620,11 @@ export const useUiStore = create((set, get) => ({
     });
   },
   clearSelection: () => set({
-    selectedUnitId: null, selectedUnitIds: [], selectedSection: null, selectedElement: null,
+    selectedUnitId: null,
+    selectedUnitIds: [],
+    selectedSection: null,
+    selectedElement: null,
+    selectedElements: [],
   }),
 
   // ─── One ELEMENT inside a unit (turn 9, CLAUDE.md F4.1) ───
@@ -627,16 +637,48 @@ export const useUiStore = create((set, get) => ({
   //
   // Cleared by clicking elsewhere or by Escape, exactly as a unit selection is.
   selectedElement: null,             // { unitId, elementRef } | null
-  selectElement: (unitId, elementRef) => set({
-    selectedUnitId: unitId,
-    // Pointing at a piece is pointing at ONE cabinet: a multi-selection ends
-    // here, because the properties that follow are that piece's.
-    selectedUnitIds: unitId ? [unitId] : [],
-    selectedSection: 0,
-    rightPanelOpen: true,
-    selectedElement: unitId && elementRef ? { unitId, elementRef } : null,
+  // ─── TURN 36 (CLAUDE.md F2): MORE THAN ONE PIECE ──────────────────────────
+  //
+  // The SET, of which `selectedElement` is the last entry — the PRIMARY, the
+  // one the hand is on and the one every single-piece panel in the app is
+  // about. The two are written together and never separately, so nothing that
+  // reads `selectedElement` (which is most of the app) had to learn anything.
+  //
+  // It is the same shape and the same arithmetic the CABINET set has carried
+  // since turn 13 (`lib/selection.js applySelection`), applied one level down:
+  // a plain click replaces, Ctrl (or ⌘) adds and removes, and taking the last
+  // one away leaves nothing selected.
+  //
+  // Every member is in ONE cabinet. A piece belongs to its unit and the edits
+  // that follow are that unit's items, so pointing at a piece in another
+  // cabinet starts a new set rather than growing this one across a boundary
+  // no store action could act over.
+  selectedElements: [],              // string[] — panel ids inside selectedElement.unitId
+  /**
+   * @param {string|null} unitId
+   * @param {string|null} elementRef  the ENGINE's own panel id, e.g. `SHELF-2`
+   * @param {object} opts  { additive } — Ctrl (or ⌘) held, F2
+   */
+  selectElement: (unitId, elementRef, { additive = false } = {}) => set((s) => {
+    // Ctrl+click inside the SAME cabinet grows or shrinks the set; anywhere
+    // else — and every plain click — starts a fresh one.
+    const sameUnit = additive && unitId && s.selectedElement?.unitId === unitId;
+    const next = sameUnit
+      ? applySelection(s.selectedElements, elementRef, true)
+      : applySelection([], elementRef, false);
+    const primary = primaryOf(next);
+    return {
+      selectedUnitId: unitId,
+      // Pointing at a piece is pointing at ONE cabinet: a multi-selection of
+      // CABINETS ends here, because the properties that follow are the piece's.
+      selectedUnitIds: unitId ? [unitId] : [],
+      selectedSection: 0,
+      rightPanelOpen: true,
+      selectedElements: unitId ? next : [],
+      selectedElement: unitId && primary ? { unitId, elementRef: primary } : null,
+    };
   }),
-  clearElement: () => set({ selectedElement: null }),
+  clearElement: () => set({ selectedElement: null, selectedElements: [] }),
 
   // Shelf being dragged in 3D — drives the live dimension readout
   dragging: null,                    // { unitId, itemId, pos_mm, above, below }

@@ -200,11 +200,18 @@ export function showsBothAxes(profile) {
  * its own editor edits and the number the drilling is written in — anything
  * else would be a second way of saying where a hinge is.
  *
- * @param {object} what  { kind: 'handle'|'hinge', panel, mm }
+ * ─── TURN 36 (CLAUDE.md F8): AND A RAIL SAYS ITS OWN HEIGHT ────────────────
+ * The hanging rod's number is the height of its AXIS off the carcass floor —
+ * the same number the scene places it at. Its own field says something
+ * different on purpose ("Height above support", T35-F1, measured from the
+ * nearest thing BELOW it); the aura is a hover readout of where the rod is,
+ * not a second name for the field.
+ *
+ * @param {object} what  { kind: 'handle'|'hinge'|'rail', panel, mm }
  */
 export function auraLabel(what, profile) {
   if (!what) return null;
-  if (what.kind === 'hinge') {
+  if (what.kind === 'hinge' || what.kind === 'rail') {
     const mm = Number(what.mm);
     return Number.isFinite(mm) ? `${round1(mm)} up` : null;
   }

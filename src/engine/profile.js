@@ -3431,6 +3431,24 @@ export const DEFAULT_CABINET_PROFILE = {
     // The hanging rail. The 3D drew a ⌀30 tube with the number written into the
     // mesh; it lives here now, with everything else that is bought and not cut.
     rail: { diameter: 30 },
+    // ─── TURN 37 (CLAUDE.md F2): THE HANGER BRACKET'S OWN DROP ──────────────
+    //
+    // The owner buried T35's "height above support" in one breath: *"dlaczego
+    // drążek nie może być z półką powyżej… Zrób półkę nad drążkiem — półka, a
+    // drążek dołącz do półki i tyle."* A rail is no longer a number typed into
+    // a box; it is a FIX SHELF with a rod hung under it, and the only number
+    // left is the bracket's own drop — shelf UNDERSIDE down to the ROD AXIS.
+    //
+    // The default is DERIVED, not invented: `wardrobe.rail.partitionAbove` is
+    // 40, and it is the distance the rail partitioner has stood above the rod
+    // since turn 1 — the very geometry the 3D already draws. So a rail hung
+    // 40 mm under the board above it is the rail this app has always drawn,
+    // and F2 moves nothing on the screen. `[OWNER — by silence]`: he was
+    // shown the bracket and said only "dołącz do półki".
+    //
+    // A workshop whose bracket drops further changes this one line; the shelf
+    // does not move, the rod does.
+    hanger: { dropMm: 40 },
     // ─── THE SHELF SUPPORT (turn 25, CLAUDE.md F6) ──────────────────────────
     //
     // The owner: he wants to SEE gold or silver sleeves — and they are the
@@ -4561,6 +4579,8 @@ export function migrateCabinetProfile(profile) {
       leg: { ...D.hardware.leg, ...profile.hardware?.leg },
       shelfPin: { ...D.hardware.shelfPin, ...profile.hardware?.shelfPin },
       rail: { ...D.hardware.rail, ...profile.hardware?.rail },
+      // T37-F2: the hanger bracket's drop, shelf underside → rod axis.
+      hanger: { ...D.hardware.hanger, ...profile.hardware?.hanger },
     },
     drawings: {
       ...D.drawings, ...profile.drawings,

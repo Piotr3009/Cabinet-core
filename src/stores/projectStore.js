@@ -79,6 +79,11 @@ import {
 } from '../engine/items.js';
 // ─── TURN 35 (CLAUDE.md F1): the rail's datum, answered where it is knowable ─
 import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
+// T37-F2: the rail is a FIX SHELF with a rod hung under it. The link, the drop
+// and where the assembly's shelf stands — `engine/railAssembly.js`.
+import {
+  assemblyShelfPos, hangerDropMm, RAIL_MOUNT, railMountOf, railShelfIdOf,
+} from '../engine/railAssembly.js';
 import { endPanelHeightDefault } from '../engine/autoparts.js';
 // Turn 24 (CLAUDE.md F3): the caliper's six numbers, and the drawer gate.
 import {
@@ -3204,6 +3209,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * Add the hanging rail, as high as it can go under the lowest shelf and clear
    * of the drawer stack below it (BACKLOG #12: "hangers in between"). The chosen
    * hardware travels with the item, so the BOM names the product.
+   *
+   * ─── TURN 37 (CLAUDE.md F2): IT IS AN ASSEMBLY NOW ────────────────────────
+   *
+   * The owner, 17.08.2026: *"dlaczego drążek nie może być z półką powyżej, i ta
+   * półka być traktowana jak półka, tylko że fix? Zrób półkę nad drążkiem —
+   * półka, a drążek dołącz do półki i tyle."*
+   *
+   * So this makes TWO items, in one undo step: a FIX SHELF, and a rail that
+   * names it. The shelf is an ordinary fix shelf from that moment on — it is
+   * dragged by hand, it clamps against its neighbours, it is listed and
+   * dimensioned and cut like every other shelf — and the rod rides it, because
+   * `engine/railAssembly.js` resolves the rod's height FROM the shelf at
+   * compute time. There is nothing left to type.
+   *
+   * WHERE THE SHELF GOES is not a new placement rule. The old law is run
+   * exactly as it was (`nextHangerOffset` → the automatic rod height), and the
+   * shelf is stood where that rod's PARTITIONER would have stood — `axis +
+   * drop`, with `drop` defaulting to the partitioner's own 40. So the rod comes
+   * out on the same millimetre it came out on yesterday; what is new is the
+   * board above it, and that the joiner can drag it.
+   *
+   * @returns {string|null} the RAIL's item id, as it always has — the shelf is
+   *   reachable from it through `shelf_id`, and `railAssemblyOf` reads the pair.
    */
   addHangerRail: (unitId, { materialId = null, materialLabel = null, zone = null } = {}) => {
     const profile = getCabinetProfile();
@@ -3246,18 +3274,58 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }),
       axis: (Number(zoneBase) || 0) + bornAt,
     });
-    return get().addItem(unitId, {
-      kind: 'hanger',
-      // The number is measured from the datum that was just chosen, so the rod
-      // lands EXACTLY where the automatic placement put it — `railDatumFor`
-      // returns the pair, and taking one without the other is what would move
-      // it.
-      pos_mm: snapTo(born.offset, profile.editor.mmStep),
-      datum: born.datum,
-      ...(wantZone == null ? {} : { zone: wantZone }),
-      material_id: materialId,
-      material_label: materialLabel,
+    // ─── T37-F2: THE ASSEMBLY ────────────────────────────────────────────────
+    // One undo step for two items: a joiner who presses Ctrl+Z after "Add
+    // hanger rail" expects the rail to be gone, not half of it.
+    const drop = hangerDropMm(profile);
+    const railAxis = (Number(zoneBase) || 0) + bornAt;
+    let railId = null;
+    runBatch(() => {
+      const shelfId = get().addItem(unitId, {
+        kind: 'shelf',
+        // FIX, and that is the owner's own word: *"traktowana jak półka, tylko
+        // że fix"*. It carries a rod; a pin shelf would drop it.
+        variant: 'fixed',
+        pos_mm: snapTo(assemblyShelfPos({ railAxis, drop }), profile.editor.mmStep),
+        ...(wantZone == null ? {} : { zone: wantZone }),
+      });
+      if (!shelfId) return;
+      railId = get().addItem(unitId, {
+        kind: 'hanger',
+        // THE LINK. `mount: 'shelf'` plus a shelf id is what makes the engine
+        // read the new law; a rail without both is a legacy rail and is read
+        // by T35's, untouched.
+        mount: 'shelf',
+        shelf_id: shelfId,
+        // The T35 pair is still written, and it is DEAD WEIGHT on purpose
+        // (CLAUDE.md F2: *"the engine law may remain as dead weight for legacy
+        // only"*). It records where the rod hung at birth, so a reader that
+        // has never heard of `mount` — an old export, an old fixture — puts it
+        // on the same millimetre rather than at zero.
+        pos_mm: snapTo(born.offset, profile.editor.mmStep),
+        datum: born.datum,
+        ...(wantZone == null ? {} : { zone: wantZone }),
+        material_id: materialId,
+        material_label: materialLabel,
+      });
     });
+    return railId;
+  },
+
+  /**
+   * T37-F2: the two halves of one rail, for the modal and for the tests.
+   * `null` when the id names nothing, or names a LEGACY rail — which has no
+   * shelf, and must not be given one.
+   *
+   * @returns {{rail:object, shelf:object}|null}
+   */
+  railAssemblyOf: (unitId, railItemId) => {
+    const items = get().units.find((u) => u.id === unitId)
+      ?.params.sections?.[0]?.items || [];
+    const rail = items.find((i) => i.id === railItemId && i.kind === 'hanger') || null;
+    if (!rail || railMountOf(rail) !== RAIL_MOUNT.SHELF) return null;
+    const shelf = items.find((i) => i.kind === 'shelf' && i.id === railShelfIdOf(rail)) || null;
+    return shelf ? { rail, shelf } : null;
   },
 
   // ─── TURN 33 (CLAUDE.md F3): A BOUGHT MECHANISM IN A COLUMN ───────────────
@@ -3738,11 +3806,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ?.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.kind || null;
     const wasDrawer = removedKind === 'drawer';
     const wasPartition = removedKind === 'partition';
+    // ─── T37-F2: THE ASSEMBLY LEAVES TOGETHER ────────────────────────────────
+    // A rod hangs on ITS shelf and on nothing else. Take the shelf out and the
+    // rod has nothing to hang from — the engine already refuses to draw it
+    // (`railAssembly.js`: a rail whose shelf is gone is not there), so leaving
+    // the item behind would leave an invisible rail in the section and a
+    // hardware line in the BOM for a rod nobody can see. It goes with its
+    // shelf. A LEGACY rail is never touched by this: it names no shelf.
+    const ridersOfRemoved = removedKind === 'shelf'
+      ? (get().units.find((u) => u.id === unitId)?.params.sections?.[0]?.items || [])
+        .filter((i) => i.kind === 'hanger' && railShelfIdOf(i) === itemId)
+        .map((i) => i.id)
+      : [];
+    const goneIds = new Set([itemId, ...ridersOfRemoved]);
     set((s) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections[0];
-        let items = section.items.filter((i) => i.id !== itemId);
+        let items = section.items.filter((i) => !goneIds.has(i.id));
         if (wasDrawer) {
           // Renumber bottom-up, so drawer i keeps meaning "i-th from the floor"
           // for the engine, the runner rows and the cut list.
@@ -4658,7 +4739,22 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // typed into the panel is refused exactly as a drag is. `blocked` is the
     // same shape the clamp returns when a shelf has nowhere to go, so the live
     // readout in the 3D view needs no new case.
-    if (isShelfLocked(item)) {
+    // ─── TURN 37 (CLAUDE.md F2): …UNLESS IT IS A RAIL'S OWN SHELF ───────────
+    //
+    // The owner's assembly, in his own words: *"ta półka być traktowana jak
+    // półka, tylko że fix"*, and CLAUDE.md spells out what that has to mean —
+    // *"an ordinary fix shelf in every way — DRAGGED BY HAND, snapping to
+    // neighbours' heights, listed and dimensioned like any shelf."* A rail the
+    // joiner cannot move is the T35 rail with extra steps.
+    //
+    // So the freeze is lifted for THIS board and no other. `fixed` still means
+    // SCREWED everywhere it has ever meant it — the drilling is unchanged, the
+    // pins are still not drilled, and every other fix shelf in the app is as
+    // held as it was yesterday. What moved is one sentence: a shelf that
+    // carries a rod is a shelf a joiner is allowed to put where he wants it.
+    const carriesRail = (unit.params.sections?.[0]?.items || [])
+      .some((i) => i.kind === 'hanger' && railShelfIdOf(i) === itemId);
+    if (isShelfLocked(item) && !carriesRail) {
       const band = shelfBandFor(unit, profile);
       const bounds = shelfBounds({ pos: item?.pos_mm ?? band.min, others: otherShelfPositions(unit, itemId), band }, profile);
       return {

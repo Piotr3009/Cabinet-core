@@ -466,7 +466,21 @@ function railInstances(result, profile) {
   // (`engine/elements.js`: "case 'RAIL-PART': return 'hanger-rail'"). So the
   // instance names it, and the tube opens the modal that already exists rather
   // than a second one that could disagree with it.
-  const railPanelFor = (zone) => {
+  //
+  // ─── TURN 37 (CLAUDE.md F2): …AND THE BOARD IS THE SHELF NOW ─────────────
+  // The owner: *"Double-click the rod → opens the SHELF's modal (the thing you
+  // actually edit); the T36 clickability stays."* A T37 rail cuts no
+  // partitioner, so the board 40 mm above the rod is its own FIX SHELF — the
+  // engine publishes which one (`assemblies.rail.shelfItemId`) and the tube
+  // names that shelf's panel. Legacy rails still name `RAIL-PART`, because a
+  // legacy rail still HAS one. One handler, two boards, no second modal.
+  const railPanelFor = (rail) => {
+    if (rail.shelfItemId) {
+      const mine = (result.panels || [])
+        .find((p) => p.part === 'SHELF' && p.meta?.itemId === rail.shelfItemId);
+      if (mine) return mine.id;
+    }
+    const zone = rail.zone;
     const want = zone == null || !Number.isFinite(Number(zone))
       ? 'RAIL-PART'
       : `Z${Math.trunc(Number(zone)) + 1}-RAIL-PART`;
@@ -474,7 +488,7 @@ function railInstances(result, profile) {
   };
   return all.map((rail) => ({
     kind: 'rail',
-    panelId: railPanelFor(rail.zone),
+    panelId: railPanelFor(rail),
     zone: rail.zone ?? null,
     x: (rail.x1 + rail.x2) / 2,
     y: rail.y,

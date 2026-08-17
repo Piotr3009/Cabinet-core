@@ -14,6 +14,8 @@ import { resolveRunnerVariant } from '../engine/runners.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
 import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
 import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
+// T37-F2: a rail is a fix shelf with a rod under it. The modal edits the SHELF.
+import { hangerDropMm, isLegacyRail, LEGACY_RAIL_NOTE } from '../engine/railAssembly.js';
 import { chainFromX, xFromChain } from '../engine/partitionPositions.js';
 // Turn 24 (CLAUDE.md F3.3): which carcass board a partition is cut from.
 import { CARCASS_SLOTS, partitionSlot, slotById } from '../engine/thickness.js';
@@ -192,8 +194,26 @@ export default function ElementProperties({
     return Math.trunc(Number(its)) === Math.trunc(Number(mine));
   }) || null;
 
+  // ─── TURN 37 (CLAUDE.md F2): …and whether that rod is an ASSEMBLY ─────────
+  // `railAssemblyOf` answers with the pair — the rod and the fix shelf it
+  // rides — or null for a LEGACY rail, which has no shelf and must not be
+  // given one. The modal branches on that and on nothing else.
+  const railAssembly = railItem
+    ? useProjectStore.getState().railAssemblyOf(unit.id, railItem.id)
+    : null;
+
   const row = (key) => {
     switch (key) {
+      // ─── TURN 37 (CLAUDE.md F2): THIS SHELF CARRIES A ROD ─────────────────
+      // Double-clicking the rail opens THIS modal, so it owes the joiner the
+      // sentence that says why. Not a field — there is nothing here to type;
+      // the height below is the rail's height, because the rod rides the shelf.
+      case 'rail-rider':
+        return (
+          <p key={key} className="text-[11px] text-gold/80" data-rail-rider="1">
+            {`Carries a hanging rail — the rod hangs ${Math.round(hangerDropMm(profile))} mm under this shelf and rides with it. Drag the shelf and the rail follows.`}
+          </p>
+        );
       // ─── TURN 35 (CLAUDE.md F1): HEIGHT ABOVE SUPPORT ─────────────────────
       // The owner's law, verbatim: *"drążek ustawiamy zawsze od najbliższej
       // czegoś od dołu — albo od szuflad, albo od półek. Jeśli napiszę 900, to
@@ -201,21 +221,56 @@ export default function ElementProperties({
       // label names the DATUM and not a floor, and the hint says which board
       // answered this time — the base is live, and a rail whose shelf moves
       // rides with it keeping this same number.
+      // ─── TURN 37 (CLAUDE.md F2): …AND THE FIELD IS RETIRED ────────────────
+      // The owner, 17.08.2026: *"masakra, jakieś dziwne wpisywanie."* A T37
+      // rail hangs under its OWN FIX SHELF, so there is no height to type: the
+      // shelf's position is the rail's position, and the shelf is dragged by
+      // hand like any other. This row reads it back instead of asking for it.
+      //
+      // A LEGACY rail — every rod saved before tonight — keeps the field it
+      // was built with, byte for byte, and gets the grey note beside it that
+      // says why it looks different from the one the joiner just added. No
+      // silent migration: what the workshop already built is what it reads.
       case 'rail-height': {
+        if (railAssembly && !isLegacyRail(railItem)) {
+          const shelfPos = Number(railAssembly.shelf.pos_mm);
+          const drop = hangerDropMm(profile);
+          return (
+            <Field key={key} label="Shelf height">
+              <NumberField
+                className="cc-input text-right"
+                data-rail-height="1"
+                data-rail-shelf-height="1"
+                // The SHELF's own field, in the shelf's own datum — the
+                // underside above the interior floor, exactly what
+                // `position-y` shows for every other shelf. One number, one
+                // meaning, wherever a joiner reads it.
+                value={fieldFromPos(Number.isFinite(shelfPos) ? shelfPos : G, G)}
+                min={0}
+                step={1}
+                title={`The rail's own fix shelf — its underside above the interior floor. The rod hangs ${Math.round(drop)} mm under it and rides with it.`}
+                onCommit={(v) => setShelfPos(unit.id, railAssembly.shelf.id, posFromField(v, G))}
+              />
+            </Field>
+          );
+        }
         const support = Number(unitResult(unit.id)?.derived?.rail_support_y);
         const named = Number.isFinite(support) ? `${Math.round(support)} mm` : 'the bay floor';
         return (
-          <Field key={key} label="Height above support">
-            <NumberField
-              className="cc-input text-right"
-              data-rail-height="1"
-              value={Number(railItem?.pos_mm ?? 0)}
-              min={0}
-              step={1}
-              title={`Measured to the rod's axis from the nearest thing below it — right now ${named}`}
-              onCommit={(v) => railItem && setRailHeight(unit.id, railItem.id, v)}
-            />
-          </Field>
+          <div key={key} className="space-y-1">
+            <Field label="Height above support">
+              <NumberField
+                className="cc-input text-right"
+                data-rail-height="1"
+                value={Number(railItem?.pos_mm ?? 0)}
+                min={0}
+                step={1}
+                title={`Measured to the rod's axis from the nearest thing below it — right now ${named}`}
+                onCommit={(v) => railItem && setRailHeight(unit.id, railItem.id, v)}
+              />
+            </Field>
+            <p className="text-[11px] text-ink-400" data-legacy-rail-note="1">{LEGACY_RAIL_NOTE}</p>
+          </div>
         );
       }
       // ─── TURN 34 (CLAUDE.md F4): FIX OR DRAWER ────────────────────────────

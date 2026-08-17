@@ -6,24 +6,24 @@
       "detail": "http://127.0.0.1:4174"
     },
     {
-      "label": "F10 — the box face carries FEWER figures behind a shut leaf",
+      "label": "F7 — the box SNAPPED flush on the main it was added beside",
       "ok": true,
-      "detail": "20 shut → 22 open"
+      "detail": "{\"ridesOn\":\"u_9jo7g0h\",\"sameHost\":true,\"x\":[2700,2700],\"wall\":[0,0],\"depth\":[600,600],\"mount\":2100}"
     },
     {
-      "label": "F3 — the box modal offers the Front switch",
+      "label": "F7 — in the SCENE the box sits ON the main, flush and aligned",
       "ok": true,
-      "detail": "true"
+      "detail": "{\"main\":{\"minY\":100,\"maxY\":2100,\"minX\":-300},\"box\":{\"minY\":2100,\"maxY\":2600,\"minX\":-300}}"
     },
     {
-      "label": "F3 — Front: off drops SHOEBOX-FR, and nothing else",
+      "label": "F7 — the box RIDES the main along the wall",
       "ok": true,
-      "detail": "7 boards → 6"
+      "detail": "2700 → 2000"
     },
     {
-      "label": "F3 — …and the 3-D stops drawing it, because it reads the same list",
+      "label": "F7 — orphaned, it is kept where it is and reported in RED",
       "ok": true,
-      "detail": "0 meshes"
+      "detail": "{\"alive\":true,\"x\":2000,\"reds\":1,\"level\":\"red\",\"message\":\"WT02: this top box is standing on nothing — put a wardrobe under it, or delete it.\"}"
     },
     {
       "label": "R6 — the whole walk ends with a clean console",
@@ -33,44 +33,20 @@
   ],
   "shots": [
     {
-      "name": "f10a-the-shoe-box-front-carries-no-figures-behind-a-shut-door",
+      "name": "f7a-the-pair-standing-main-and-top-box",
       "subject": {
-        "mesh": "SHOE1-FR"
+        "mesh": "WT02-FL"
       },
       "present": true,
       "detail": "{\"mesh\":true}"
     },
     {
-      "name": "f10b-and-they-are-back-the-moment-the-leaf-swings",
+      "name": "f7b-the-orphaned-top-box-reported-in-red",
       "subject": {
-        "mesh": "SHOE1-FR"
+        "text": "standing on nothing"
       },
       "present": true,
-      "detail": "{\"mesh\":true}"
-    },
-    {
-      "name": "f3a-the-shoe-box-with-its-front-on",
-      "subject": {
-        "mesh": "SHOE1-FR"
-      },
-      "present": true,
-      "detail": "{\"mesh\":true}"
-    },
-    {
-      "name": "f3b-the-front-switch-in-the-shoe-box-modal",
-      "subject": {
-        "dom": "[data-shoe-box-front]"
-      },
-      "present": true,
-      "detail": "{\"dom\":true}"
-    },
-    {
-      "name": "f3c-the-same-box-with-its-front-off",
-      "subject": {
-        "mesh": "SHOE1-BT"
-      },
-      "present": true,
-      "detail": "{\"mesh\":true}"
+      "detail": "{\"text\":true}"
     }
   ]
 }

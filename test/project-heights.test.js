@@ -68,7 +68,11 @@ test('every unit type either has a height group or says why not', () => {
       // BASE's height is set by the appliance in it — its shelf is 598 mm from
       // the TOP of the carcass, so a kitchen's base height is not what decides
       // it (turn 17, CLAUDE.md F10).
-      assert.ok(['LOW_CABINET', 'OVEN_BASE'].includes(id), `${id} has no height group and no reason`);
+      // T36 F7: …and the TOP BOX, on purpose too — it is a small carcass that
+      // rides on a main, and its height is the joiner's own answer to "what is
+      // left between the wardrobe and the ceiling". No project default may set
+      // it, which is exactly what `heightGroup: null` says.
+      assert.ok(['LOW_CABINET', 'OVEN_BASE', 'WARDROBE_TOP'].includes(id), `${id} has no height group and no reason`);
       continue;
     }
     assert.ok(known.has(group), `${id} points at a group that does not exist: ${group}`);

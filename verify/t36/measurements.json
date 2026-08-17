@@ -1,16 +1,46 @@
 {
-  "f10": {
-    "shut": 20,
-    "open": 22
+  "f7_snap": {
+    "ridesOn": "u_9jo7g0h",
+    "sameHost": true,
+    "x": [
+      2700,
+      2700
+    ],
+    "wall": [
+      0,
+      0
+    ],
+    "depth": [
+      600,
+      600
+    ],
+    "mount": 2100
   },
-  "f3": {
-    "on": {
-      "boards": 7,
-      "front": true
+  "f7_scene": {
+    "main": {
+      "minY": 100,
+      "maxY": 2100,
+      "minX": -300
     },
-    "off": {
-      "boards": 6,
-      "front": false
+    "box": {
+      "minY": 2100,
+      "maxY": 2600,
+      "minX": -300
     }
+  },
+  "f7_box_door": "WT02-FL",
+  "f7_ride": {
+    "before": 2700,
+    "after": {
+      "main": 2000,
+      "box": 2000
+    }
+  },
+  "f7_orphan": {
+    "alive": true,
+    "x": 2000,
+    "reds": 1,
+    "level": "red",
+    "message": "WT02: this top box is standing on nothing — put a wardrobe under it, or delete it."
   }
 }

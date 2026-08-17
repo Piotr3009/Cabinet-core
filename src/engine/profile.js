@@ -772,6 +772,21 @@ export const DEFAULT_CABINET_PROFILE = {
     // answers do not move.
     defaults: { width: 600, height: 2150, depth: 568, railOffset: 1400 },
 
+    // ─── TURN 36 (CLAUDE.md F7): THE TOP BOX ─────────────────────────────
+    //
+    // The owner's reason, verbatim: *"wysokie szafy nie wejdą do domu"* — a
+    // 2600 wardrobe cannot be carried up a staircase and through a door, so
+    // it is BUILT as two: a main carcass and a small one that rides on top of
+    // it. Its DEPTH is not listed here on purpose: a top box takes the depth
+    // of the main it stands on, because a box that overhangs its own carcass
+    // is not a top box, it is a mistake. `minHeight` is a workshop judgement
+    // — under 200 the doors are not worth hanging — and it is a DEFAULT, so a
+    // shop that disagrees changes one line.
+    topBox: {
+      defaults: { width: 600, height: 500, depth: 568 },
+      minHeight: 200,
+    },
+
     drawers: {
       maxCount: 6,
       setback: 50,             // drawer box sits 50 mm behind the carcass front

@@ -892,6 +892,102 @@ async function main() {
       await page.sleep(200);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F7 — THE TOP BOX: a small wardrobe that rides the main one
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f7')) {
+      await freshFloor('the top box', 'wardrobe');
+      await ui('u.openEditor() || true');
+      await page.sleep(500);
+      const pair = await store(`(() => {
+        const main = s.addUnit('WARDROBE');
+        s.updateUnitParams(main.id, { width: 900, height: 2000, depth: 600, doors: { count: 2 } });
+        const box = s.addUnit('WARDROBE_TOP');
+        s.updateUnitParams(box.id, { width: 900, height: 500, doors: { count: 2 } });
+        return { main: main.id, box: box.id };
+      })()`);
+      await page.sleep(900);
+      const snapped = await store(`(() => {
+        const m = s.units.find((u) => u.id === ${JSON.stringify(pair.main)});
+        const b = s.units.find((u) => u.id === ${JSON.stringify(pair.box)});
+        return {
+          ridesOn: b.params.rides_on, sameHost: b.params.rides_on === m.id,
+          x: [m.position.x_mm, b.position.x_mm],
+          wall: [m.position.wall, b.position.wall],
+          depth: [m.params.depth, b.params.depth],
+          mount: b.params.mount_height,
+        };
+      })()`);
+      measurements.f7_snap = snapped;
+      check('F7 — the box SNAPPED flush on the main it was added beside',
+        snapped.sameHost && snapped.x[0] === snapped.x[1]
+          && snapped.depth[0] === snapped.depth[1] && snapped.wall[0] === snapped.wall[1],
+        JSON.stringify(snapped));
+
+      // LIVE SCENE: the two carcasses stand one on the other, and the box's
+      // underside is the main's top — measured off the meshes, not the store.
+      const stacked = await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        v.scene.updateMatrixWorld(true);
+        const box = {};
+        for (const [key, id] of [['main', ${JSON.stringify(pair.main)}], ['box', ${JSON.stringify(pair.box)}]]) {
+          const b = new THREE.Box3();
+          let n = 0;
+          v.scene.traverse((g) => {
+            if (!g.userData || g.userData.ccUnitId !== id) return;
+            g.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId) { b.expandByObject(o); n += 1; } });
+          });
+          box[key] = n ? { minY: Math.round(b.min.y * 1000), maxY: Math.round(b.max.y * 1000), minX: Math.round(b.min.x * 1000) } : null;
+        }
+        return box;
+      `);
+      measurements.f7_scene = stacked;
+      check('F7 — in the SCENE the box sits ON the main, flush and aligned',
+        stacked.main && stacked.box
+          && Math.abs(stacked.box.minY - stacked.main.maxY) <= 2
+          && Math.abs(stacked.box.minX - stacked.main.minX) <= 2,
+        JSON.stringify(stacked));
+
+      // Far enough back that BOTH carcasses and both unit labels are in the
+      // frame — "the pair standing, dims per unit" is what the spec asks a
+      // picture for, and a close-up of one door is not that.
+      await frameFacing([pair.main, pair.box], { dist: 6.0, height: 0.2 });
+      await page.sleep(600);
+      const boxDoor = await store(`s.unitResult(${JSON.stringify(pair.box)}).panels.find((p) => p.part === 'FRONT').id`);
+      measurements.f7_box_door = boxDoor;
+      await shot('f7a-the-pair-standing-main-and-top-box', { mesh: boxDoor });
+
+      // …and it RIDES: the main is dragged and the box goes with it.
+      const before = await store(`s.units.find((u) => u.id === ${JSON.stringify(pair.box)}).position.x_mm`);
+      await store(`s.moveUnit(${JSON.stringify(pair.main)}, 2000, 1) || true`);
+      await page.sleep(700);
+      const after = await store(`(() => {
+        const m = s.units.find((u) => u.id === ${JSON.stringify(pair.main)});
+        const b = s.units.find((u) => u.id === ${JSON.stringify(pair.box)});
+        return { main: m.position.x_mm, box: b.position.x_mm };
+      })()`);
+      measurements.f7_ride = { before, after };
+      check('F7 — the box RIDES the main along the wall',
+        after.box === after.main && after.box !== before, `${before} → ${after.box}`);
+
+      // …and ORPHANED it says so, in red, and is left where it is.
+      await store(`s.removeUnit(${JSON.stringify(pair.main)}) || true`);
+      await page.sleep(700);
+      const orphan = await store(`(() => {
+        const b = s.units.find((u) => u.id === ${JSON.stringify(pair.box)});
+        const reds = (s.runChecks() || []).filter((f) => f.check === 14);
+        return { alive: Boolean(b), x: b && b.position.x_mm, reds: reds.length, level: reds[0] && reds[0].level, message: reds[0] && reds[0].message };
+      })()`);
+      measurements.f7_orphan = orphan;
+      check('F7 — orphaned, it is kept where it is and reported in RED',
+        orphan.alive && orphan.x === after.box && orphan.reds === 1 && orphan.level === 'red',
+        JSON.stringify(orphan));
+      await ui('u.setCheckOpen ? u.setCheckOpen(true) : (u.toggleCheck && u.toggleCheck())');
+      await page.sleep(600);
+      await shot('f7b-the-orphaned-top-box-reported-in-red', { text: 'standing on nothing' });
+    }
+
     check('R6 — the whole walk ends with a clean console', realErrors(page.errors).length === 0,
       `${realErrors(page.errors).length} error(s)`);
   } finally {

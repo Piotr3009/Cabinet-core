@@ -74,6 +74,52 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── TURN 36 (CLAUDE.md F7): THE TOP BOX ───────────────────────────────
+  //
+  // The owner's reason, verbatim: *"wysokie szafy nie wejdą do domu"*. A
+  // 2600 mm wardrobe cannot be carried up a staircase and through a door, so
+  // it is BUILT as two — a main carcass, and a small one that rides on top.
+  //
+  // It is a WARDROBE in everything that matters to the cut list: the same
+  // kit, the same carcass, the same doors, the same BOM and the same CNC. Two
+  // things differ, and both are about where it STANDS:
+  //
+  //   `mount: 'wall'`  — its vertical position is `params.mount_height`,
+  //                      which is the mechanism a hung unit has used since
+  //                      turn 8. A top box does not stand on legs; it stands
+  //                      on the cabinet under it, and `mount_height` is where
+  //                      the store writes that number.
+  //   `ridesOn: true`  — it is ATTACHED. The store keeps `params.rides_on`
+  //                      pointing at its main, snaps it flush on placement,
+  //                      and moves it with the main. Orphaned, check #14 says
+  //                      so in red.
+  //
+  // `heightGroup: null` because it is not a base, a wall or a tall unit: its
+  // height is its own and no project default may set it.
+  WARDROBE_TOP: {
+    id: 'WARDROBE_TOP',
+    heightGroup: null,
+    label: 'Top box',
+    family: 'wardrobe',
+    lisp: 'KIT_WARDROBE_FULL.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: false,
+    hangers: false,
+    doorExtend: false,
+    mount: 'wall',
+    ridesOn: 'wardrobe',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'wardrobe',
+    minHeightKey: 'wardrobe.topBox.minHeight',
+    defaultsKey: 'wardrobe.topBox.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: true, doors: true,
+      topInfill: true, cornice: true,
+    },
+    available: true,
+  },
+
   BUD: {
     id: 'BUD',
     heightGroup: 'base',
@@ -888,7 +934,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -915,7 +961,8 @@ export const UNIT_CATEGORIES = [
   // CLAUDE.md F3.7 is explicit — "rework is a separate, still-to-be-discussed
   // item — do not touch". The wardrobe is not a kitchen kit and keeps its own
   // place; saved sets and media walls are untouched.
-  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE'] },
+  // Turn 36 (CLAUDE.md F7): "library offers Main wardrobe + Top box".
+  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP'] },
   // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
   // rather than kits, so it carries no `types` — the panel reads them from the
   // template store.
@@ -1031,5 +1078,8 @@ export function defaultParamsFor(typeId, profile) {
 
 /** Unit-number prefix per type, so a project reads like the LISP unit numbers. */
 export const UNIT_NUM_PREFIX = {
-  WARDROBE: 'W', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
+  WARDROBE: 'W',
+  // Turn 36 (F7): its own letter, so a cut list reads WT01 apart from W01 —
+  // two carcasses, two numbers, one wardrobe.
+  WARDROBE_TOP: 'WT', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

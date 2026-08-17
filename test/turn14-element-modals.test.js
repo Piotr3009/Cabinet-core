@@ -132,6 +132,18 @@ test('F4.3 — every wall-unit LIBRARY entry resolves to a type that carries doo
     const type = getUnitType(id);
     if (type.mount !== 'wall') continue;
     if (type.appliance === 'extractor') continue;   // turn 31 F9, above
+    // ─── TURN 36 (CLAUDE.md F7): THE SECOND HONEST EXCEPTION ──────────────
+    // A TOP BOX is `mount: 'wall'` for one reason only — that is the field
+    // this app puts a hung unit's HEIGHT in, and a top box's height is its
+    // main's top. It is not a wall unit: it is a wardrobe carcass standing on
+    // another wardrobe, its door closes on the box under it, and a grab edge
+    // running BELOW its carcass would run down over that box's own door. So
+    // the kit says `false`, which is the whole point of the flag being a
+    // kit's own declaration rather than a fact about where it is mounted.
+    if (type.ridesOn) {
+      assert.equal(type.doorExtend, false, `${id} must not run over the cabinet it stands on`);
+      continue;
+    }
     assert.equal(type.doorExtend, true, `${id} hangs on a wall and has no door extend`);
   }
 });

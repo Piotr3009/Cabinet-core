@@ -48,6 +48,8 @@ import { unitBase, unitTop, hasTopInfill } from './runs.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
+// Turn 36 (CLAUDE.md F7): is this top box standing on anything?
+import { riderIsOrphaned } from './topBox.js';
 import { panelWeight } from './lifts.js';
 import { resolvePanelMaterial } from './materials.js';
 import HINGE_COUNT from '../../reference/hardware/cliptop-hinge-count.json' with { type: 'json' };
@@ -75,6 +77,13 @@ export const CHECKS = Object.freeze([
   // own phrase — so the rail stays exactly where the owner's number puts it
   // and this says, in red, that it will not hang there.
   { n: 13, level: 'red', label: 'Rail × obstacle above' },
+  // ─── TURN 36 (CLAUDE.md F7): THE TOP BOX ────────────────────────────────
+  // The owner's reason for the pair: *"wysokie szafy nie wejdą do domu"*. A
+  // top box is BUILT to stand on a main, so one standing on nothing is not a
+  // cabinet, it is a mistake — and the app SAYS SO rather than dropping it
+  // onto the nearest wardrobe, which would be the program deciding something
+  // the joiner has to see. Report, never fix: the house grammar.
+  { n: 14, level: 'red', label: 'Top box standing on nothing' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -507,6 +516,19 @@ export function runChecks({
       message: g.message,
       subject: { unitId: g.rightUnitId, editor: 'cabinet' },
       carcassGap: g,
+    }));
+  }
+
+  // ── #14 a TOP BOX with no main under it (T36 F7) ───────────────────────
+  for (const unit of list) {
+    if (!riderIsOrphaned(unit, list)) continue;
+    const num = unit.params?.unit_num || unit.id;
+    out.push(finding(14, 'red', {
+      unitId: unit.id,
+      unitNum: num,
+      panelId: null,
+      message: `${num}: this top box is standing on nothing — put a wardrobe under it, or delete it.`,
+      subject: { unitId: unit.id, editor: 'cabinet' },
     }));
   }
 

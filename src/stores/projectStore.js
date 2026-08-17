@@ -68,6 +68,8 @@ import {
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
+// Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
+import { settleRiders } from '../engine/topBox.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
@@ -592,6 +594,7 @@ function saveCache(state) {
 }
 
 const cached = typeof localStorage !== 'undefined' ? loadCache() : null;
+
 
 export const useProjectStore = create(dirtyGate((set, get) => ({
   // A cached project may predate room v2 — migrate on the way in, so an old
@@ -1822,7 +1825,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!Object.keys(applied).length) return { applied: {}, notices: [] };
 
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, ...applied } } : u)),
+      // T36 F7: a main that grew or was raised takes its top box with it.
+      units: settleRiders(
+        st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, ...applied } } : u)),
+        getCabinetProfile(),
+      ),
     }));
 
     const notices = [];
@@ -2408,6 +2415,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const level = getUnitType(typeId).mount;
     const walls = roomWalls(state.project.room);
     let placed = null;
+    // ─── TURN 36 (CLAUDE.md F7): A TOP BOX IS PLACED **ON** SOMETHING ───────
+    //
+    // Every other unit is placed by `freeSlotOnWall`, which looks for a gap
+    // BESIDE its neighbours. A rider has no gap to look for: it stands ON a
+    // main, in exactly that main's place, and the free-slot search would put
+    // it politely next door — where a snap would then have nothing to snap to.
+    //
+    // The host is chosen FIRST: the cabinet the library was opened beside if
+    // that is a main, otherwise the last main placed. With no main on the
+    // floor at all the box is still placed, by the ordinary search, standing
+    // on nothing — and check #14 says so in red rather than the app refusing
+    // to add what the joiner asked for.
+    const riderOf = getUnitType(typeId).ridesOn;
+    const riderHost = riderOf
+      ? [beside, ...[...state.units].reverse()].find((u) => u
+        && getUnitType(u.type).family === riderOf
+        && !getUnitType(u.type).ridesOn)
+      : null;
+    if (riderHost) {
+      placed = { wall: riderHost.position?.wall ?? 0, x: riderHost.position?.x_mm ?? 0 };
+      unit.params.rides_on = riderHost.id;
+    }
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
     // …and when a SIDE was asked for as well, that wall is the only one tried:
@@ -2418,7 +2447,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ? [besideWall]
         : [besideWall, ...walls.filter((wl) => wl.index !== besideWall.index)])
       : walls;
-    for (const wall of ordered) {
+    for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
       const x = freeSlotOnWall({
         width: unit.params.width,
@@ -2455,7 +2484,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // editable field, and the unit can be hung wherever the window allows.
     const aligned = alignedMountFor(state, unit, placed);
     if (aligned != null) unit.params.mount_height = aligned;
-    set((s) => ({ units: [...s.units, unit] }));
+    // T36 F7: a TOP BOX settles on its main the moment it is placed — same
+    // wall, same x, same depth, hung at the main's own top.
+    set((s) => ({ units: settleRiders([...s.units, unit], profile) }));
     // A unit arrives with its SCRIBE FILLERS worked out from where it landed.
     // The plinth and the top infill are decisions and wait to be asked for
     // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
@@ -2464,7 +2495,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   removeUnit: (unitId) => {
-    set((s) => ({ units: s.units.filter((u) => u.id !== unitId) }));
+    // T36 F7: a rider whose main goes is ORPHANED, not moved and not deleted —
+    // the joiner is shown a red fault and decides. `settleRiders` leaves it
+    // exactly where it is, because its link no longer names a cabinet.
+    set((s) => ({ units: settleRiders(s.units.filter((u) => u.id !== unitId), getCabinetProfile()) }));
     get().refreshAutoParts();
   },
 
@@ -2584,6 +2618,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         return { ...u, params };
       }),
     }));
+    // ─── TURN 36 (CLAUDE.md F7): AND ITS TOP BOX FOLLOWS ────────────────────
+    // A main that grew taller, or shallower, or wider takes its rider with it:
+    // the box hangs at the main's own TOP and is cut to the main's own DEPTH,
+    // and both of those have just moved. `settleRiders` is idempotent, so a
+    // cabinet with no box on it costs one array walk and returns the same
+    // array it was given.
+    set((st) => ({ units: settleRiders(st.units, getCabinetProfile()) }));
     // The clamp above keeps the unit inside its slot without moving it; this
     // re-runs the position clamp anyway, so a unit that was already overlapping
     // (an imported project, a room change) still settles legally.
@@ -2728,7 +2769,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const x = result.x - lead;
 
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
+      // T36 F7: …and every top box rides the main it stands on.
+      units: settleRiders(
+        st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
+        getCabinetProfile(),
+      ),
     }));
     // Moving changes which gaps exist — and a gap is a filler.
     get().refreshAutoParts();
@@ -2805,6 +2850,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         error: `Wall ${wallIndex + 1} has no free space for this unit.`,
       };
     }
+    // T36 F7: the main changed WALL — its top box goes with it.
+    set((st) => ({ units: settleRiders(st.units, getCabinetProfile()) }));
     get().refreshAutoParts();
     return {
       wall: wallIndex, x_mm: now?.position.x_mm ?? moved?.x ?? 0, blocked: false, error: null,

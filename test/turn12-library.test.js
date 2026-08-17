@@ -112,7 +112,8 @@ test('the Kitchen category carries the list, and the others are untouched', () =
   // CLAUDE.md F3.7: "Categories beyond Kitchen stay as today — do not touch."
   assert.equal(getCategory('sets').saved, true);
   assert.equal(getCategory('media').soon, true);
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE']);
+  // T36 F7: the wardrobe category gained the Top box, and nothing else moved.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP']);
   // Nothing was lost in the restructure: every kit is still reachable.
   const reachable = new Set(UNIT_CATEGORIES.flatMap((c) => c.types));
   for (const id of UNIT_TYPE_ORDER) assert.ok(reachable.has(id), `${id} is in no category`);

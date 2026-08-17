@@ -1384,3 +1384,65 @@
 
 (princ "\nKIT_WARDROBE_FULL: SPLIT DOORS T35 section loaded.")
 (princ)
+
+
+;;;========================================
+;; --- DOOR TOP EDGE (T35)
+;;;========================================
+;;; Owner, 16.08.2026: "jak nie ma infilla, to wysokosc drzwi szafowych jest
+;;; bez 3 mm przerwy; a jak dolozysz infill lub cornice, to wtedy skracamy o
+;;; 3 mm." Both directions - remove the cornice and the door grows back.
+;;;
+;;; THE AMENDMENT. This kit says, at L865-866:
+;;;
+;;;   (if (= numDoors 1)
+;;;     (setq szerFront (- szerSzafki 3.0) wysFront (- wysSzafki 3.0))
+;;;     (setq szerFront (/ (- szerSzafki 6.0) 2.0) wysFront (- wysSzafki 3.0)))
+;;;
+;;; - three millimetres off the top, unconditionally, in both branches. So do
+;;; KIT_BUD_FULL L200-201, KIT_BUDTALL_FULL L207-208, KIT_LOW_CABINET_FULL
+;;; L374-375 and KIT_WUD_FULL L202-203. The house has cut every door that way
+;;; since turn 1, and it was never wrong: a kit has no ROOM. It is asked for a
+;;; cabinet and it draws a cabinet, and 3 mm off the top is the safe answer
+;;; when you cannot see what is standing over the thing.
+;;;
+;;; The owner CAN see. His amendment does not say the 3 was a mistake; it says
+;;; the 3 is a CLEARANCE, and a clearance needs something to be clear OF:
+;;;
+;;;   TOP DEMAND = 3.0  when an infill or a cornice stands over the carcass
+;;;   TOP DEMAND = 0.0  when nothing does - the front finishes FLUSH with the
+;;;                     top of the carcass top panel
+;;;
+;;; Note that the second line is what KIT_WUD_FULL's own sibling already says
+;;; in prose: reference/lisp/../src/engine/cornice.js has carried the sentence
+;;; "the doors finish FLUSH with the top of the carcass top panel" since the
+;;; cornice was built, while every kit went on cutting H - 3. The amendment
+;;; settles which of the two the house means.
+;;;
+;;; WHAT DID NOT CHANGE, AND WHY THE LINES ABOVE ARE UNTOUCHED. `wysSzafki` is
+;;; all a kit is given; "is there an infill above" is a question about a ROOM
+;;; and this file cannot answer it. So the kit keeps cutting H - 3 - that is
+;;; still the right answer to the only question it is asked - and the demand
+;;; travels to the application as an INPUT, exactly as the shelf-pin setback
+;;; and the shaker frame do. A bare kit call and every golden fixture are
+;;; byte-for-byte what they were.
+;;;
+;;;   TOP_DEMAND_WITH_NEIGHBOUR   3.0   ;; infill or cornice above
+;;;   TOP_DEMAND_NOTHING_ABOVE    0.0   ;; flush with the carcass top
+;;;
+;;; Hinge drilling rides its own edge and does not move: the cups are measured
+;;; from the door's BOTTOM (`hingeCupList` = `hingePositions`, L868, carcass
+;;; centres passed straight through), so a front that grows 3 mm UPWARD leaves
+;;; every cup exactly where it was. That is the whole reason the amendment is
+;;; safe to make on a door that is already drilled.
+
+(setq TOP_DEMAND_WITH_NEIGHBOUR 3.0)   ;; infill or cornice above the carcass
+(setq TOP_DEMAND_NOTHING_ABOVE  0.0)   ;; nothing above - flush with the top
+
+;;; The door height under the amendment. `topDemand` is one of the two
+;;; constants above; the kit itself always passes the first.
+(defun doorHeightAmended (wysSzafki topDemand)
+  (- wysSzafki topDemand))
+
+(princ "\nKIT_WARDROBE_FULL: DOOR TOP EDGE T35 section loaded.")
+(princ)

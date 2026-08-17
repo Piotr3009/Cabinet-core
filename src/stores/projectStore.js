@@ -71,7 +71,7 @@ import {
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
-import { mountHeightAlignedWith } from '../engine/doors.js';
+import { mountHeightAlignedWith, topNeighbourDemand } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
 } from '../engine/items.js';
@@ -454,6 +454,13 @@ function paramsForEngine(unit, design = null) {
     shelves: items.filter((i) => i.kind === 'shelf').length,
     drawers: items.filter((i) => i.kind === 'drawer').length,
     rail: items.some((i) => i.kind === 'hanger'),
+    // ─── TURN 35 (CLAUDE.md F12): THE DOOR'S TOP EDGE ─────────────────────
+    // The owner: *"jak nie ma infilla, to wysokość drzwi szafowych jest bez
+    // 3 mm przerwy; a jak dołożysz infill lub cornice, to wtedy skracamy o
+    // 3 mm."* This IS the self-healing: `paramsForEngine` runs on every
+    // compute, so every path that adds or removes the neighbour above — and
+    // every reload — re-derives the number with nothing to remember.
+    front_top_gap_mm: topNeighbourDemand(p, profile),
     rail_offset: items.find((i) => i.kind === 'hanger')?.pos_mm ?? p.rail_offset,
     // T35-F1: and WHICH board that number is measured from. Absent on every
     // project saved before this turn, which is exactly what makes those

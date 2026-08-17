@@ -36,7 +36,7 @@ import {
 import { resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
 import {
-  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays,
+  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
@@ -1334,7 +1334,15 @@ export function computeCabinet(params, profileOverride) {
   // feature's geometry: the aperture is a SHAPE, and the extractor's fixings
   // wait for a pattern somebody has published.
   const hoodApertureMm = Math.max(0, Number(params?.hood_aperture_mm) || 0);
-  const frontH = H - P.doors.gap + cfg.doorExtend - hoodApertureMm;
+  // ─── TURN 35 (CLAUDE.md F12): THE DOOR'S TOP EDGE ────────────────────────
+  // Until this line changed, EVERY door in the app lost 3 mm off its top,
+  // always, because that is what every kit cuts. The owner's 16.08 amendment:
+  // the 3 is a CLEARANCE and a clearance needs something to be clear OF — an
+  // infill or a cornice above asks for it, and a cabinet with nothing over it
+  // finishes flush with its own carcass top. `doors.js topDemandMm` is the
+  // whole rule, and it is in doors.js because cabinet.js may not import
+  // frontClearance.js (the layering law, pinned by turn31-f4).
+  const frontH = H - topDemandMm(params, P) + cfg.doorExtend - hoodApertureMm;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
     : W - P.doors.gap;
@@ -5922,6 +5930,10 @@ export function computeCabinet(params, profileOverride) {
       front_type: cfg.frontType, hinge: cfg.hinge, doors: doorCount,
       shelves: numShelves, drawers: numDrawers, drawer_heights: [...(budr ? budr.heights : drawerHeights)],
       rail: hasRail, rail_offset: cfg.railOffset,
+      // T35-F12: echoed so `doors.js doorHeightOf` — the panel's OTHER reader,
+      // the one the properties panel prints — lands on the same number the
+      // piece was cut to. Two readers of one law must not be able to drift.
+      front_top_gap_mm: topDemandMm(params, P),
       ...(type.doorExtend ? { door_extend: cfg.doorExtend } : {}),
       ...(fridge ? { fridge_h: cfg.fridgeH } : {}),
       ...(type.mount === 'wall' ? { mount_height: cfg.mountHeight } : {}),

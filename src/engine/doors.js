@@ -127,8 +127,88 @@ export function doorExtendMm(params, profile) {
  */
 export function doorHeightOf(params, profile) {
   const h = Number(params?.height) || 0;
+  return Math.max(0, h - topDemandMm(params, profile) + doorExtendMm(params, profile));
+}
+
+/**
+ * ─── TURN 35 (CLAUDE.md F12): THE DOOR'S TOP EDGE ──────────────────────────
+ *
+ * The owner, 16.08.2026: *"jak nie ma infilla, to wysokość drzwi szafowych
+ * jest bez 3 mm przerwy; a jak dołożysz infill lub cornice, to wtedy skracamy
+ * o 3 mm."* Both directions — remove the cornice and the door grows back.
+ *
+ * This is the front-clearance grammar's LEFT/RIGHT question asked of the TOP,
+ * and it has the same two answers: a NEIGHBOUR above wants the 3, and nothing
+ * above wants none. What is different is what counts as a neighbour up there.
+ * There is no `unitHorizontals()` in this app and there never was: the room
+ * model only ever knew about pieces standing BESIDE a unit. So the neighbour
+ * above is asked of the unit's own params, which is where an infill and a
+ * cornice have always lived:
+ *
+ *   · `top_infill_mm` — a solo unit's own scribe filler, and
+ *   · `run_top_infill` — the run-level object, on the owner AND on every
+ *     member (a member carrying `role: 'member'` still HAS the piece over it,
+ *     which is exactly the trap `runs.js hasTopInfill` was written for), and
+ *   · `cornice` / `run_cornice` — the bought moulding, which produces no panel
+ *     of its own but absolutely does stand on the door's top edge.
+ *
+ * THE DIVERGENCE FROM THE KIT, RECORDED. Every kit in `reference/lisp/` says
+ * `wysFront = (- wysSzafki 3.0)`, unconditionally — KIT_WARDROBE_FULL L865-866,
+ * and the same line in BUD, BUDTALL, LOW_CABINET and WUD. No kit has ever had
+ * an opinion about what stands above a cabinet, because no kit has ever had a
+ * room. The owner's 16.08 amendment overrides that "3 always", and rule 3 says
+ * the kit gets told first: see the `;; --- DOOR TOP EDGE (T35)` section
+ * appended to KIT_WARDROBE_FULL.lsp in this same commit.
+ *
+ * HOW IT TRAVELS, AND WHY IT IS AN INPUT. The bare `computeCabinet()` IS the
+ * AutoLISP (iron rule 2) and every golden fixture is the AutoLISP's own cut
+ * list (iron rule 5), so the kit's 3 cannot simply stop coming off inside the
+ * engine — a bare call with nothing said must still cut `H − 3`, and it does.
+ * The owner's law arrives the way every owner-standard number in this app
+ * arrives: as an INPUT on the road `shelf_pin_setback_mm` already travels —
+ * the room layer knows what stands over a cabinet, so `paramsForEngine()`
+ * states `front_top_gap_mm` and the engine reads it, falling back to the kit's
+ * number when nobody has said anything. Rule 1, in one line.
+ *
+ * That also makes the self-healing free rather than swept for: the demand is
+ * re-derived on EVERY compute from the unit's live params, so adding a
+ * cornice, removing an infill, reloading the project — every path there is or
+ * ever will be — lands on the right number without a heal pass to remember.
+ *
+ * @returns {number} the millimetres coming off the door's TOP edge
+ */
+export function topDemandMm(params, profile) {
+  const stated = Number(params?.front_top_gap_mm);
+  if (Number.isFinite(stated) && stated >= 0) return stated;
+  return Number(profile?.doors?.gap) || 0;
+}
+
+/**
+ * What the ROOM says stands over this cabinet — F12's own question, asked of
+ * the unit's params, answered in millimetres of top clearance.
+ *
+ * There is no `unitHorizontals()` in this app and there never was: the room
+ * model only ever knew about pieces standing BESIDE a unit. So the neighbour
+ * above is read off the unit itself, which is where an infill and a cornice
+ * have always lived:
+ *
+ *   · `top_infill_mm` — a solo unit's own scribe filler, and
+ *   · `run_top_infill` — the run-level object, on the owner AND on every
+ *     member (a member still HAS the piece over it, which is exactly the trap
+ *     `runs.js hasTopInfill` was written for), and
+ *   · `cornice` / `run_cornice` — the bought moulding, which produces no panel
+ *     of its own but absolutely does stand on the door's top edge.
+ *
+ * @returns {number} 3 with something above, 0 with nothing
+ */
+export function topNeighbourDemand(params, profile) {
   const gap = Number(profile?.doors?.gap) || 0;
-  return Math.max(0, h - gap + doorExtendMm(params, profile));
+  const run = params?.run_top_infill;
+  const infill = (Number(params?.top_infill_mm) || 0) > 0 || (run && typeof run === 'object');
+  const corniceRun = params?.run_cornice;
+  const cornice = (corniceRun && typeof corniceRun === 'object')
+    || (params?.cornice != null && params.cornice !== 'none' && Number(params.cornice) > 0);
+  return infill || cornice ? gap : 0;
 }
 
 // ─── DOORS ON THE PARTITION (turn 21, CLAUDE.md F12) ────────────────────────

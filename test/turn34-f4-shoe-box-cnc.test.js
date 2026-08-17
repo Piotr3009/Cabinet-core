@@ -164,7 +164,32 @@ test('the angled groove is inside its board\'s own bounds, and lays out with it'
   // The bounds must have SEEN the parallelogram: a pocket read as {x1..x2}
   // would have contributed NaN and blown the layout.
   assert.ok(Number.isFinite(b.minX) && Number.isFinite(b.maxY));
-  assert.ok(b.w >= side.w - 1e-6 && b.h >= side.h - 1e-6);
+  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7a) ────────────────────────────
+  //
+  // The owner: *"CNC jest ok, ale wizualizacja nie jest — sprawdź, co ci
+  // nadpisuje."* The audit found the SHEET at fault as well: `sheetTurn` had
+  // never read `cnc.grain`, so every board that states its grain and is drawn
+  // across it went down the page lying flat. F7a generalises the law — a stated
+  // grain is laid running UP the sheet — and CLAUDE.md names this box among the
+  // parts it reaches: *"the drawer sides, backs, bottoms, fronts and the plinth
+  // stand up the page."*
+  //
+  // A shoe-box board states `w` (turn 34 F4's own decision, "pamiętaj, żeby dno
+  // były słoje w poprzek"), so it now TURNS 90° on the sheet — and
+  // `panelBounds` returns extents AS IT IS LAID, which is what its own note
+  // says it is for. So the board's two extents trade places in `b`.
+  //
+  // The assertion's POINT is untouched and is stated more exactly than before:
+  // the bounds must COVER the whole board, whichever way round it is laid. Was:
+  // `b.w >= side.w && b.h >= side.h`, which only held while nothing turned this
+  // board — a coincidence of the old rule, not a claim about the bounds.
+  const turned = b.turn === 90 || b.turn === 270;
+  assert.equal(side.cnc.grain, 'w', 'the board states its grain across itself');
+  assert.equal(turned, true, 'so F7a stands that axis up the page');
+  const laidW = turned ? side.h : side.w;
+  const laidH = turned ? side.w : side.h;
+  assert.ok(b.w >= laidW - 1e-6 && b.h >= laidH - 1e-6,
+    `the bounds cover the board as laid (${laidW} × ${laidH}), and the groove that overshoots it`);
 
   // ─── THE DIVERGENCE, PINNED (iron rule 3, reported in the PR body) ───────
   // Along its LENGTH the groove stays on the board — it runs (G, 0) to

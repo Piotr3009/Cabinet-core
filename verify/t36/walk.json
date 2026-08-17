@@ -6,39 +6,39 @@
       "detail": "http://127.0.0.1:4174"
     },
     {
-      "label": "F1 — the NEW-PROJECT door shows the unified panel",
+      "label": "F6 — the number typed into the panel reached the engine",
       "ok": true,
-      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+      "detail": "{\"top\":600,\"opening\":2150}"
     },
     {
-      "label": "F1 — …with the five rows T35 left in the old panel only",
+      "label": "F6 — top + 3 + bottom = the opening, exactly",
       "ok": true,
-      "detail": "{\"door\":\"wizard\",\"sections\":[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"],\"thickness\":true,\"sheet\":true,\"doorStyle\":true,\"runnerVariant\":true,\"platePilot\":true,\"hingeStandard\":true,\"runMaterials\":true,\"joinery\":true,\"infill\":true,\"wallMount\":true,\"sets\":true}"
+      "detail": "600 + 3 + 1547 = 2150"
     },
     {
-      "label": "F1 — the EDIT door shows the SAME panel, told which door it is",
+      "label": "F6 — the segments are listed TOP FIRST",
       "ok": true,
-      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+      "detail": "T,B"
     },
     {
-      "label": "F1 — the two doors show the SAME sections",
+      "label": "F6 — hinges are counted PER SEGMENT, never the whole door halved",
       "ok": true,
-      "detail": "[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"] vs [\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"]"
+      "detail": "T:2 B:3"
     },
     {
-      "label": "F1 — and every named row of the old panel is on it",
+      "label": "F6 — ONE fix shelf on the line, FULL depth, flush with the face",
       "ok": true,
-      "detail": "{\"door\":\"project\",\"sections\":[\"carcass\",\"door-style\",\"fronts\",\"hardware\",\"infill\",\"joinery\",\"sheet\",\"thickness\"],\"thickness\":true,\"sheet\":true,\"doorStyle\":true,\"runnerVariant\":true,\"platePilot\":true,\"hingeStandard\":true,\"runMaterials\":true,\"joinery\":true,\"infill\":true,\"wallMount\":true,\"sets\":true}"
+      "detail": "{\"id\":\"SPLIT-1\",\"w\":864,\"depth\":550,\"t\":18,\"y\":1547,\"frontZ\":568,\"D\":568}"
     },
     {
-      "label": "F1 — the fronts are NOT locked behind a save from the edit door",
+      "label": "F6 — every segment AND the divider stand in the scene",
       "ok": true,
-      "detail": "data-fronts-locked"
+      "detail": "5/5 · SPLIT-1 W01-FL-B W01-FL-T W01-FR-B W01-FR-T"
     },
     {
-      "label": "F1 — the hinge-plate pilot really works from the unified panel",
+      "label": "F6 — the modal lists the segments TOP FIRST",
       "ok": true,
-      "detail": "⌀5 → ⌀3"
+      "detail": "[\"T\",\"B\"]"
     },
     {
       "label": "R6 — the whole walk ends with a clean console",
@@ -48,41 +48,20 @@
   ],
   "shots": [
     {
-      "name": "f1a-the-unified-panel-through-the-new-project-door",
+      "name": "f6a-a-split-bay-open-in-the-scene",
       "subject": {
-        "all": [
-          "[data-settings-surface][data-settings-door=\"wizard\"]",
-          "[data-settings-section=\"thickness\"]",
-          "[data-settings-section=\"sheet\"]",
-          "[data-settings-section=\"door-style\"]",
-          "[data-hinge-plate-pilot]",
-          "[data-runner-variant]"
-        ]
+        "mesh": "SPLIT-1"
       },
       "present": true,
-      "detail": "{\"all\":true}"
+      "detail": "{\"mesh\":true}"
     },
     {
-      "name": "f1b-the-unified-panel-through-the-edit-door",
+      "name": "f6b-the-split-modal-lists-its-segments-top-first",
       "subject": {
         "all": [
-          "[data-settings-surface][data-settings-door=\"project\"]",
-          "[data-settings-section=\"thickness\"]",
-          "[data-settings-section=\"sheet\"]",
-          "[data-settings-section=\"door-style\"]",
-          "[data-hinge-plate-pilot]",
-          "[data-runner-variant]"
-        ]
-      },
-      "present": true,
-      "detail": "{\"all\":true}"
-    },
-    {
-      "name": "f1c-the-hinge-plate-pilot-and-the-sheet-sizes-on-the-edit-door",
-      "subject": {
-        "all": [
-          "[data-hinge-plate-pilot-option=\"3\"][aria-pressed=\"true\"]",
-          "[data-sheet-family=\"fronts\"]"
+          "[data-split-modal]",
+          "[data-split-segment-tab=\"T\"]",
+          "[data-split-segment-tab=\"B\"]"
         ]
       },
       "present": true,

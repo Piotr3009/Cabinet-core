@@ -184,6 +184,26 @@ async function main() {
     return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
   `);
 
+  /**
+   * Type a number into a field the way a joiner does: a REAL triple-click to
+   * select what is in it, real text insertion, and a real Enter to commit.
+   *
+   * `Input.insertText` is a CDP input event — the browser's own text entry
+   * path — which is what R1 asks for. A `value =` assignment would set the
+   * DOM property and never reach React's onChange, and a synthetic event is
+   * banned outright by the guard at the top of this file.
+   */
+  const typeInto = async (selector, text) => {
+    const box = await page.click(selector);
+    for (const clickCount of [1, 2, 3]) {
+      await page.mouse('mousePressed', box.x, box.y, { clickCount });
+      await page.mouse('mouseReleased', box.x, box.y, { buttons: 0, clickCount });
+    }
+    await page.send('Input.insertText', { text: String(text) });
+    await page.key('Enter', { code: 'Enter', windowsVirtualKeyCode: 13 });
+    await page.sleep(300);
+  };
+
   const store = (expr) => page.evaluate(`const s = ${P}.project.getState(); return (${expr});`);
   const ui = (expr) => page.evaluate(`const u = ${P}.ui.getState(); return (${expr});`);
 
@@ -321,6 +341,100 @@ async function main() {
         before === 5 && after === 3, `⌀${before} → ⌀${after}`);
       await shot('f1c-the-hinge-plate-pilot-and-the-sheet-sizes-on-the-edit-door', {
         all: ['[data-hinge-plate-pilot-option="3"][aria-pressed="true"]', '[data-sheet-family="fronts"]'],
+      });
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(200);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // F6 — SPLIT DOORS: two segments, a full-depth divider, hinges per segment
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f6')) {
+      await freshFloor('split doors', 'wardrobe');
+      await ui('u.openEditor() || true');
+      await page.sleep(500);
+      const splitId = await store(`(() => {
+        const { id } = s.addUnit('WARDROBE');
+        s.updateUnitParams(id, { width: 900, height: 2150, doors: { count: 1 } });
+        return id;
+      })()`);
+      await page.sleep(500);
+
+      // THE GESTURE: the number is typed into the panel's own field with a
+      // real keyboard, not written into the store.
+      await ui(`u.selectUnit(${JSON.stringify(splitId)}) || true`);
+      await page.sleep(400);
+      // The right panel folds its sections; the Doors one is opened with a
+      // real click on its own header, exactly as a joiner opens it.
+      await page.click('[data-section="Doors"] button');
+      await page.sleep(300);
+      await typeInto('[data-split-top]', '600');
+      await page.sleep(600);
+
+      const rec = await store(`(s.unitResult(${JSON.stringify(splitId)}).assemblies.splitDoors || [])[0]`);
+      measurements.f6_record = rec;
+      check('F6 — the number typed into the panel reached the engine',
+        rec && rec.topMm === 600, JSON.stringify(rec && { top: rec.topMm, opening: rec.opening }));
+      check('F6 — top + 3 + bottom = the opening, exactly',
+        rec && rec.segments[0].h + rec.gapMm + rec.segments[1].h === rec.opening,
+        rec && `${rec.segments[0].h} + ${rec.gapMm} + ${rec.segments[1].h} = ${rec.opening}`);
+      check('F6 — the segments are listed TOP FIRST',
+        rec && rec.segments[0].id === 'T' && rec.segments[1].id === 'B',
+        rec && rec.segments.map((x) => x.id).join(','));
+      check('F6 — hinges are counted PER SEGMENT, never the whole door halved',
+        rec && rec.segments[0].hinges === 2 && rec.segments[1].hinges === 3,
+        rec && rec.segments.map((x) => `${x.id}:${x.hinges}`).join(' '));
+
+      const divider = await store(`(() => {
+        const r = s.unitResult(${JSON.stringify(splitId)});
+        const d = r.panels.find((p) => p.meta && p.meta.splitDivider);
+        return d ? { id: d.id, w: d.w, depth: d.h, t: d.thickness, y: d.box.y, frontZ: d.box.z + d.box.d, D: r.params.depth } : null;
+      })()`);
+      measurements.f6_divider = divider;
+      check('F6 — ONE fix shelf on the line, FULL depth, flush with the face',
+        divider && divider.frontZ === divider.D && divider.depth === divider.D - 18 && divider.t === 18,
+        JSON.stringify(divider));
+
+      // LIVE SCENE: both segments are actually drawn, and the doors swing.
+      const fronts = await store(`s.unitResult(${JSON.stringify(splitId)}).panels.filter((p) => p.part === 'FRONT').map((p) => p.id)`);
+      await ui(`u.openFrontsFor(${JSON.stringify(splitId)}, ${JSON.stringify(fronts)}) || true`);
+      await page.sleep(500);
+      await frameFacing([splitId], { dist: 2.4, height: 1.1 });
+      await page.sleep(500);
+      const drawn = await page.evaluate(`
+        const v = ${P}.views.room;
+        v.scene.updateMatrixWorld(true);
+        const ids = [];
+        v.scene.traverse((g) => {
+          if (!g.userData || g.userData.ccUnitId !== ${JSON.stringify(splitId)}) return;
+          g.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId && o.visible) ids.push(o.userData.ccPanelId); });
+        });
+        return [...new Set(ids)].filter((id) => /-T$|-B$|^SPLIT-/.test(id)).sort();
+      `);
+      const expected = await store(`(() => {
+        const a = s.unitResult(${JSON.stringify(splitId)}).assemblies;
+        return (a.splitDoors || []).length * 2 + (a.splitDividers || []).length;
+      })()`);
+      measurements.f6_scene = { drawn, expected };
+      check('F6 — every segment AND the divider stand in the scene',
+        drawn.length === expected, `${drawn.length}/${expected} · ${drawn.join(' ')}`);
+      await shot('f6a-a-split-bay-open-in-the-scene', { mesh: 'SPLIT-1' });
+
+      // …and the door modal lists the two segments, top first.
+      const topId = fronts.find((id) => id.endsWith('-T'));
+      const spot = await pointOnMesh(splitId, topId);
+      if (spot) await page.dblclick(spot.x, spot.y);
+      await page.sleep(700);
+      const tabs = await page.evaluate(`
+        const el = document.querySelector('[data-split-modal]');
+        if (!el) return null;
+        return [...el.querySelectorAll('[data-split-segment-tab]')].map((n) => n.getAttribute('data-split-segment-tab'));
+      `);
+      measurements.f6_modal_tabs = tabs;
+      check('F6 — the modal lists the segments TOP FIRST',
+        Array.isArray(tabs) && tabs.join(',') === 'T,B', JSON.stringify(tabs));
+      await shot('f6b-the-split-modal-lists-its-segments-top-first', {
+        all: ['[data-split-modal]', '[data-split-segment-tab="T"]', '[data-split-segment-tab="B"]'],
       });
       await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
       await page.sleep(200);

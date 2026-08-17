@@ -19,6 +19,8 @@ import { formatMm, roundTo } from '../engine/format.js';
 import { HANDLE_TYPES, handleClassOf } from '../engine/handles.js';
 import { getUnitType } from '../engine/types.js';
 import { sayHingeResult } from '../lib/hingeEdit.js';
+// Turn 36 (CLAUDE.md F6): a split leaf's two segments, TOP FIRST.
+import { splitSegmentRows } from '../engine/splitDoors.js';
 
 // ─── ONE MODAL FOR THE DOOR AND ITS HINGES (turn 30, CLAUDE.md F2) ──────────
 //
@@ -62,6 +64,7 @@ import { sayHingeResult } from '../lib/hingeEdit.js';
 export default function DoorModal() {
   const args = useUiStore((s) => s.modalArgs);
   const closeModal = useUiStore((s) => s.closeModal);
+  const openModal = useUiStore((s) => s.openModal);
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
 
@@ -125,6 +128,40 @@ export default function DoorModal() {
             `omit` below keeps the right-hand panel's own rows untouched) and
             the WORKING block — the arrow mover and the hinge picker — stands
             where it sat: one block, at the top. */}
+        {/* ─── TURN 36 (CLAUDE.md F6): THE SPLIT'S OWN TWO SEGMENTS ────────
+            "modal segments top-first". A split leaf is two doors, each with
+            its own height, its own hinge set and its own window; this row
+            says which one is open and walks to the other. TOP FIRST — the
+            owner's order, the kit's `splitDoorSegments` order, and the same
+            law engine/items.js applies to shelves and drawers. */}
+        {isDoor && panel.meta?.split ? (
+          <section className="mb-2 border-b border-shell-600 pb-2" data-split-modal={panel.meta.splitOf}>
+            <span className="block text-[10px] uppercase tracking-wide text-ink-400 mb-1">
+              Split door — {formatMm(panel.meta.splitTopMm)} mm top
+            </span>
+            <div className="flex gap-1">
+              {splitSegmentRows(result.panels, panel.meta.splitOf).map((seg) => (
+                <button
+                  key={seg.id}
+                  type="button"
+                  data-split-segment-tab={seg.id}
+                  aria-pressed={seg.panel.id === panel.id}
+                  className={`cc-btn px-2 flex-1 ${seg.panel.id === panel.id ? 'border-gold text-gold' : ''}`}
+                  title={`${seg.label} segment — ${formatMm(seg.panel.h)} mm`}
+                  // The sibling window opens WHERE THIS ONE IS STANDING —
+                  // rule 15, and the anchor this modal was given is exactly
+                  // that rectangle.
+                  onClick={() => openModal('element', {
+                    unitId: unit.id, panelId: seg.panel.id, anchor: args?.anchor || null,
+                  })}
+                >
+                  {seg.label} · {formatMm(seg.panel.h)}
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {isDoor ? (
           <HingeSection
             ref={hingesRef}

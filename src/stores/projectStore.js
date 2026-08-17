@@ -2111,14 +2111,49 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const bays = get().bayDoorsFor(unitId);
     const next = bays.map((_, i) => {
       const m = modes[i] || {};
+      // ─── TURN 36 (CLAUDE.md F6): THE SPLIT RIDES WITH THE BAY ────────────
+      // `split_top_mm` is carried through this normaliser rather than dropped
+      // by it: a joiner who changes a bay's HINGE must not lose the split he
+      // typed into the same row. 0 / absent = no split, which is every bay
+      // door before this turn.
+      const split = Number(m.split_top_mm);
       return {
         door: String(m.door ?? 'none').toLowerCase() === 'one' ? 'one' : 'none',
         hinge: String(m.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L',
+        // An explicit 0 is KEPT: it is how one bay opts out of a split the
+        // whole unit asked for. Absent is absent, and absent follows the unit.
+        ...(Number.isFinite(split) && split >= 0 ? { split_top_mm: Math.round(split) } : {}),
       };
     });
     // A cabinet with doors in its bays has no door across its face.
     get().updateUnitParams(unitId, { bay_doors: next, doors: false });
     return next;
+  },
+
+  /**
+   * ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS ─────────────────────────────────
+   *
+   * "Split door: top segment height ___ mm" for the WHOLE unit. 0 clears it
+   * and the leaves go back to being one door each, which is what every
+   * project that has never asked for a split already is.
+   *
+   * The engine refuses a mistyped number on its own (`splitDoorActive`: both
+   * segments must be at least 100 mm), so this stores what was typed and lets
+   * the one law decide — a second clamp here would be a second opinion.
+   */
+  setSplitTop: (unitId, mm) => {
+    const v = Number(mm);
+    return get().updateUnitParams(unitId, {
+      split_top_mm: Number.isFinite(v) && v > 0 ? Math.round(v) : null,
+    });
+  },
+
+  /** …and one BAY's own split, leaving the other bays alone. */
+  setBaySplitTop: (unitId, bay, mm) => {
+    const v = Number(mm);
+    return get().setBayDoor(unitId, bay, {
+      split_top_mm: Number.isFinite(v) && v > 0 ? Math.round(v) : 0,
+    });
   },
 
   /** One bay's own answer, leaving the others alone. */

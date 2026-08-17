@@ -56,6 +56,9 @@ export default function RightPanel() {
   // Turn 21 (CLAUDE.md F12): doors on the partition, one per bay.
   const setBayDoors = useProjectStore((s) => s.setBayDoors);
   const setBayDoor = useProjectStore((s) => s.setBayDoor);
+  // Turn 36 (CLAUDE.md F6): the split, per unit and per bay.
+  const setSplitTop = useProjectStore((s) => s.setSplitTop);
+  const setBaySplitTop = useProjectStore((s) => s.setBaySplitTop);
   const bayDoorsFor = useProjectStore((s) => s.bayDoorsFor);
   const setShelfLocked = useProjectStore((s) => s.setShelfLocked);
   const setShelfFront = useProjectStore((s) => s.setShelfFront);
@@ -145,6 +148,11 @@ export default function RightPanel() {
     [unit, bayDoorsFor, result],
   );
   const bayDoorModes = Array.isArray(unit?.params?.bay_doors) ? unit.params.bay_doors : null;
+  // Turn 36 (CLAUDE.md F6): the segments this unit's split doors were cut
+  // into, TOP FIRST — the engine's own published record, never re-derived.
+  const splitRows = (result?.assemblies?.splitDoors || []).flatMap((rec) => rec.segments.map((s) => ({
+    leaf: rec.leaf, id: s.id, label: `${s.label} (${rec.leaf})`, h: s.h, hinges: s.hinges,
+  })));
   const DR = profile.wardrobe.drawers;
   // Turn 23 (CLAUDE.md F10.1): the carcass board, and the CLEAR BAYS this unit
   // divides into. One derivation (`engine/partitionPositions.js`), two
@@ -1102,6 +1110,43 @@ export default function RightPanel() {
               ) : (
                 <button type="button" className="cc-btn-gold w-full" onClick={addDoors}>Add doors — finish unit</button>
               )}
+              {/* ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS ───────────────────
+                  The owner types the TOP segment; the bottom is what is left
+                  after the 3 mm between them. 0 = no split, and a number that
+                  would leave a segment under 100 mm is refused by the engine
+                  rather than cut (engine/splitDoors.js, the kit's own
+                  `SPLIT_SEG_MIN`). A fix shelf appears on the line
+                  automatically — full depth, no 20 setback: that is what a
+                  divider IS. */}
+              {hasDoors && (
+                <div className="cc-row pt-1" data-split-door="1">
+                  <span className="text-xs text-ink-200 flex-1" title="The upper leaf's height. 0 = one door, as before.">
+                    Split door: top segment
+                  </span>
+                  <NumberField
+                    className="cc-input w-20 text-right"
+                    data-split-top="1"
+                    min={0}
+                    value={Number(unit.params.split_top_mm) || 0}
+                    onCommit={(v) => setSplitTop(unit.id, v)}
+                  />
+                  <span className="text-[11px] text-ink-400">mm</span>
+                </div>
+              )}
+              {hasDoors && splitRows.length > 0 && (
+                /* TOP FIRST — the owner's order and the kit's own
+                   `splitDoorSegments`, which is the same law engine/items.js
+                   applies to shelves and drawers: the engine counts from the
+                   floor, a human reads from the ceiling. */
+                <ul className="space-y-0.5 pl-1" data-split-segments="1">
+                  {splitRows.map((row) => (
+                    <li key={row.leaf + row.id} className="text-[11px] text-ink-400" data-split-segment={row.id}>
+                      <span className="text-ink-200">{row.label}</span>
+                      {` ${formatMm(row.h)} mm · ${row.hinges} hinge${row.hinges === 1 ? '' : 's'}`}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {/* ─── Turn 21 (CLAUDE.md F12): A DOOR PER BAY ───
                   Offered only where a partition can actually carry one — full
                   height and flush with the face — because those are physical
@@ -1145,6 +1190,17 @@ export default function RightPanel() {
                         <option value="L">Hinge L</option>
                         <option value="R">Hinge R</option>
                       </select>
+                      {/* T36 F6: this bay's own split, overriding the unit's.
+                          0 here means "not this bay", even where the unit
+                          asked for one. */}
+                      <NumberField
+                        className="cc-input w-16 text-right"
+                        data-bay-split-top={bay.index}
+                        title="Split door: this bay's top segment, in mm. 0 = one door."
+                        min={0}
+                        value={Number(bayDoorModes[i]?.split_top_mm) || 0}
+                        onCommit={(v) => setBaySplitTop(unit.id, i, v)}
+                      />
                     </div>
                   ))}
                 </div>

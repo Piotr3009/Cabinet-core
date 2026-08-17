@@ -1,54 +1,50 @@
 {
-  "f1_wizard_door": {
-    "door": "wizard",
-    "sections": [
-      "carcass",
-      "door-style",
-      "fronts",
-      "hardware",
-      "infill",
-      "joinery",
-      "sheet",
-      "thickness"
-    ],
-    "thickness": true,
-    "sheet": true,
-    "doorStyle": true,
-    "runnerVariant": true,
-    "platePilot": true,
-    "hingeStandard": true,
-    "runMaterials": true,
-    "joinery": true,
-    "infill": true,
-    "wallMount": true,
-    "sets": true
+  "f6_record": {
+    "leaf": "W01-FL",
+    "bay": null,
+    "opening": 2150,
+    "topMm": 600,
+    "gapMm": 3,
+    "segments": [
+      {
+        "id": "T",
+        "label": "Top",
+        "panelId": "W01-FL-T",
+        "h": 600,
+        "y": 1550,
+        "hinges": 2
+      },
+      {
+        "id": "B",
+        "label": "Bottom",
+        "panelId": "W01-FL-B",
+        "h": 1547,
+        "y": 0,
+        "hinges": 3
+      }
+    ]
   },
-  "f1_edit_door": {
-    "door": "project",
-    "sections": [
-      "carcass",
-      "door-style",
-      "fronts",
-      "hardware",
-      "infill",
-      "joinery",
-      "sheet",
-      "thickness"
-    ],
-    "thickness": true,
-    "sheet": true,
-    "doorStyle": true,
-    "runnerVariant": true,
-    "platePilot": true,
-    "hingeStandard": true,
-    "runMaterials": true,
-    "joinery": true,
-    "infill": true,
-    "wallMount": true,
-    "sets": true
+  "f6_divider": {
+    "id": "SPLIT-1",
+    "w": 864,
+    "depth": 550,
+    "t": 18,
+    "y": 1547,
+    "frontZ": 568,
+    "D": 568
   },
-  "f1_plate_pilot": {
-    "before": 5,
-    "after": 3
-  }
+  "f6_scene": {
+    "drawn": [
+      "SPLIT-1",
+      "W01-FL-B",
+      "W01-FL-T",
+      "W01-FR-B",
+      "W01-FR-T"
+    ],
+    "expected": 5
+  },
+  "f6_modal_tabs": [
+    "T",
+    "B"
+  ]
 }

@@ -360,9 +360,14 @@ export function runChecks({
     }
 
     // ── #4 door too heavy / too few hinges ────────────────────────────────
-    const rows = result.drillSummary?.hinge_centers || [];
+    const allRows = result.drillSummary?.hinge_centers || [];
+    // Turn 36 (CLAUDE.md F6): a SPLIT segment is drilled from its own ladder,
+    // so it is audited against its own ladder. Every other door reads the
+    // cabinet's, exactly as it did.
+    const rowsByPanel = result.drillSummary?.hinge_rows_by_panel || {};
     for (const panel of result.panels || []) {
       if (panel.part !== 'FRONT' || panel.role !== 'front' || panel.meta?.appliance) continue;
+      const rows = rowsByPanel[panel.id] || allRows;
       const material = resolvePanelMaterial(panel, unit, design, profile, materials);
       const weight = panelWeight({
         panel, material, materials, profile,

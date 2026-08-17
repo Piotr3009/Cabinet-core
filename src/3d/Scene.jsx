@@ -32,6 +32,8 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { categoryOf } from '../engine/types.js';
+// T37-F1: the piece selection spans cabinets; each unit gets its own members.
+import { refsForUnit } from '../lib/selection.js';
 import Ruler from './Ruler.jsx';
 import useContextGuard from './contextGuard.jsx';
 
@@ -854,6 +856,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // edge figures it replaces.
   const meetingDimensionsFor = useProjectStore((s) => s.meetingDimensionsFor);
   const moveShelf = useProjectStore((s) => s.moveShelf);
+  // T37-F1: …and the whole ticked set, across cabinets, in one drag.
+  const moveShelfSet = useProjectStore((s) => s.moveShelfSet);
   const setElementDepth = useProjectStore((s) => s.setElementDepth);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
@@ -1180,7 +1184,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
             const moved = moveUnitToWall(unit.id, wallIndex, x, step);
             if (moved?.error) notify(moved.error, 'warn');
           }}
-          onMoveShelf={(itemId, pos, step) => moveShelf(unit.id, itemId, pos, step)}
+          // T37-F1: the SET moves as one — `moveShelfSet` falls straight
+          // through to `moveShelf` when the piece in hand is not in a set, so
+          // there is one entry point and no branch in the view.
+          onMoveShelf={(itemId, pos, step) => moveShelfSet(unit.id, itemId, pos, step)}
           onShelfDragState={setShelfDrag}
           shelfDrag={shelfDrag}
           orbitRef={orbitRef}
@@ -1242,8 +1249,14 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // Only ever passed to the unit the element belongs to, so a shelf
           // called SHELF-1 in one cabinet cannot light up SHELF-1 in the next.
           selectedElement={selectedElement?.unitId === unit.id ? selectedElement.elementRef : null}
-          // T36 F2: …and every other member of the set, for the same unit.
-          selectedElements={selectedElement?.unitId === unit.id ? selectedElements : EMPTY_SELECTION}
+          // T36 F2: …and every other member of the set.
+          // ─── TURN 37 (CLAUDE.md F1): THE SET SPANS CABINETS ─────────────
+          // It used to be handed only to the PRIMARY's cabinet, so ticking a
+          // shelf in the wardrobe next door lit nothing. `refsForUnit`
+          // projects the cross-unit set onto THIS unit — its own members, as
+          // bare panel ids, and the frozen empty array when it has none, so a
+          // scene of twelve cabinets does not re-render eleven of them.
+          selectedElements={refsForUnit(selectedElements, unit.id)}
           onSelectElement={(panelId, opts) => selectElement(unit.id, panelId, opts)}
           onMoveElementDepth={(itemId, setback) => setElementDepth(unit.id, itemId, setback)}
           // ─── Turn 11 (CLAUDE.md F3.3) ───

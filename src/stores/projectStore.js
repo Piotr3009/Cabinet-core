@@ -79,6 +79,8 @@ import {
 } from '../engine/items.js';
 // ─── TURN 35 (CLAUDE.md F1): the rail's datum, answered where it is knowable ─
 import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
+// T37-F1: a piece selection spans cabinets — each member carries its own unit.
+import { membersOf, parseMember } from '../lib/selection.js';
 // T37-F2: the rail is a FIX SHELF with a rod hung under it. The link, the drop
 // and where the assembly's shelf stands — `engine/railAssembly.js`.
 import {
@@ -3546,33 +3548,43 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * The HEAL SWEEP runs once at the end. A sweep per removal would trim a
    * front against gaps that are about to close.
    */
+  // ─── TURN 37 (CLAUDE.md F1): …AND THE SET SPANS CABINETS ─────────────────
+  //
+  // `refs` may now be MEMBER KEYS (`lib/selection.js memberKey`) as well as
+  // bare panel ids. A key carries its own cabinet; a bare id belongs to
+  // `unitId`, which is what every caller before tonight passed and what the
+  // T36 tests still pass. One list, two shapes, no second action — and the
+  // heal sweep still runs ONCE, now per cabinet touched.
   deleteElementSet: (unitId, refs) => {
-    const unit = get().units.find((u) => u.id === unitId);
-    const result = unit ? get().unitResult(unitId) : null;
-    if (!unit || !result) return { ok: false, error: 'Nothing is selected.' };
-    const plans = [];
+    const byUnit = new Map();
     const refused = [];
-    for (const ref of refs || []) {
-      const panel = result.panels.find((p) => p.id === ref) || null;
+    for (const entry of refs || []) {
+      const member = parseMember(entry) || { unitId, elementRef: entry };
+      const unit = get().units.find((u) => u.id === member.unitId);
+      const result = unit ? get().unitResult(member.unitId) : null;
+      if (!unit || !result) continue;
+      const panel = result.panels.find((p) => p.id === member.elementRef) || null;
       const plan = deletePlan({ unit, panel });
-      if (plan.allowed) plans.push({ ref, plan });
-      else refused.push(plan.reason);
+      if (!plan.allowed) { refused.push(plan.reason); continue; }
+      if (!byUnit.has(member.unitId)) byUnit.set(member.unitId, []);
+      byUnit.get(member.unitId).push({ ref: member.elementRef, plan });
     }
-    if (!plans.length) {
+    if (!byUnit.size) {
       return { ok: false, error: refused[0] || 'Nothing in the selection can be removed.' };
     }
     return runBatch(() => {
-      for (const { ref, plan } of plans) {
-        if (plan.target === 'item') get().removeItem(unitId, plan.itemId);
-        else get().setElementOverride(unitId, ref, { removed: true });
+      const removed = [];
+      for (const [uid_, plans] of byUnit) {
+        for (const { ref, plan } of plans) {
+          if (plan.target === 'item') get().removeItem(uid_, plan.itemId);
+          else get().setElementOverride(uid_, ref, { removed: true });
+          removed.push(plan.itemId || ref);
+        }
       }
       useUiStore.getState().clearElement();
       get().healFrontGaps();
       return {
-        ok: true,
-        removed: plans.map((p) => p.plan.itemId || p.ref),
-        refused,
-        next: null,
+        ok: true, removed, refused, next: null,
       };
     });
   },
@@ -4772,6 +4784,85 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }, profile);
     get().updateItem(unitId, itemId, { pos_mm: state.pos });
     return state;
+  },
+
+  /**
+   * ─── TURN 37 (CLAUDE.md F1): SIX SHELVES IN THREE WARDROBES, IN ONE DRAG ──
+   *
+   * The owner: *"Nie mogę sobie złapać 6 półek z 3 szaf i przesunąć ich
+   * razem."* This is that drag, and it is the ONE entry point the 3D calls —
+   * a set of one falls straight through to `moveShelf`, so there is no second
+   * way of moving a shelf and no branch in the view deciding which to use.
+   *
+   * THE ARITHMETIC IS A DELTA, not a position. Six shelves at six different
+   * heights dragged to one absolute Y would stack in a pile; what the hand
+   * means is "all of them, this much further up". The piece IN THE HAND takes
+   * the pointer (magnet and all, through `moveShelf`), and how far IT actually
+   * travelled is what every other member is offered.
+   *
+   * AND EVERY MEMBER KEEPS ITS OWN CLAMP. A shelf that runs into its own
+   * neighbour stops there while the rest carry on — the alternative is either
+   * a group that refuses to move because one member is boxed in, or a group
+   * that quietly stacks two shelves in one slot. The count comes back in
+   * `group.stopped` so the live readout can say so.
+   *
+   * @returns {object} the PRIMARY's own clamp state, plus `group`
+   */
+  moveShelfSet: (unitId, itemId, posRaw, snapStep = 0) => {
+    const members = get().shelfSetMembers();
+    const inHand = members.some((m) => m.unitId === unitId && m.itemId === itemId);
+    // A set of one — or a shelf nobody ticked — is the single drag it has
+    // always been, down to the store call.
+    if (members.length < 2 || !inHand) return get().moveShelf(unitId, itemId, posRaw, snapStep);
+    const was = new Map(members.map((m) => [`${m.unitId} ${m.itemId}`, m.pos]));
+    const from = was.get(`${unitId} ${itemId}`);
+    return runBatch(() => {
+      const state = get().moveShelf(unitId, itemId, posRaw, snapStep);
+      const delta = Number(state?.pos) - Number(from);
+      let stopped = 0;
+      if (Number.isFinite(delta)) {
+        for (const m of members) {
+          if (m.unitId === unitId && m.itemId === itemId) continue;
+          const wanted = m.pos + delta;
+          const r = get().setShelfPos(m.unitId, m.itemId, wanted, snapStep);
+          if (r?.blocked || Math.abs(Number(r?.pos) - wanted) > 0.001) stopped += 1;
+        }
+      }
+      return { ...state, group: { size: members.length, stopped } };
+    });
+  },
+
+  /**
+   * The ticked set, as shelves this store can write to: `{unitId, itemId,
+   * pos}`, across cabinets.
+   *
+   * Read off the UI's selection and resolved through each member's OWN
+   * cabinet's panels — a panel id is only unique inside one unit, which is the
+   * whole reason a member carries the unit with it (`lib/selection.js`).
+   * Anything in the set that is not a movable shelf is simply not in the
+   * answer: a set with a door and three shelves in it moves three shelves.
+   */
+  shelfSetMembers: () => {
+    const keys = useUiStore.getState().selectedElements;
+    if (!Array.isArray(keys) || keys.length < 2) return [];
+    const panelsOf = new Map();
+    const out = [];
+    for (const member of membersOf(keys)) {
+      if (!panelsOf.has(member.unitId)) {
+        panelsOf.set(member.unitId, get().unitResult(member.unitId)?.panels || []);
+      }
+      const p = panelsOf.get(member.unitId).find((x) => x.id === member.elementRef);
+      if (!p || p.part !== 'SHELF' || !p.meta?.itemId) continue;
+      // A screwed shelf holds still; the store would refuse it anyway, and
+      // counting it as a member that "hit a stop" would be a lie about why.
+      // T37-F2: unless it is a rail's own shelf, which is dragged by hand.
+      if (p.meta?.locked && !p.meta?.railItemId) continue;
+      const unit = get().units.find((u) => u.id === member.unitId);
+      const item = (unit?.params.sections?.[0]?.items || []).find((i) => i.id === p.meta.itemId);
+      if (!item) continue;
+      out.push({ unitId: member.unitId, itemId: item.id, pos: Number(item.pos_mm) || 0 });
+    }
+    return out;
   },
 
   /**

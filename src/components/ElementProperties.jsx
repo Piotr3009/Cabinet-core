@@ -22,6 +22,8 @@ import { CARCASS_SLOTS, partitionSlot, slotById } from '../engine/thickness.js';
 import NumberField from './NumberField.jsx';
 import UnitWarnings, { DRAWER_WARNING_CODES } from './UnitWarnings.jsx';
 import { sayHingeResult } from '../lib/hingeEdit.js';
+// T37-F1: the piece selection spans cabinets — every member carries its own.
+import { membersOf } from '../lib/selection.js';
 
 // ─── The properties of ONE piece (turn 11, CLAUDE.md F3) ────────────────────
 //
@@ -118,25 +120,46 @@ export default function ElementProperties({
   // step, which is what "the group moves as one" means.
   //
   // A set of one is the single piece it always was, down to the store call.
+  //
+  // ─── TURN 37 (CLAUDE.md F1): …AND ACROSS CABINETS ─────────────────────────
+  //
+  // The owner: *"chodziło mi o półki z 2–3 szaf obok siebie."* Every row now
+  // carries its OWN `unitId`, and every commit writes THROUGH IT. That is the
+  // whole of the cross-unit edit: `setShelfPos(unitId, itemId, mm)` has taken a
+  // cabinet as its first argument since turn 8, so what was missing was never a
+  // store action — it was a row that remembered which cabinet it came from.
+  // T36 hard-coded `unit.id` in both callbacks and gated the set on
+  // `selectedIsMine`; both are gone.
   const selectedElements = useUiStore((s) => s.selectedElements);
-  const selectedIsMine = useUiStore((s) => s.selectedElement?.unitId) === unit.id;
   const batch = useProjectStore((s) => s.batch);
   const groupItems = useMemo(() => {
-    if (!selectedIsMine || !Array.isArray(selectedElements) || selectedElements.length < 2) return [];
-    const panels = unit ? (useProjectStore.getState().unitResult(unit.id)?.panels || []) : [];
-    return selectedElements
-      .map((id) => panels.find((p) => p.id === id))
-      .filter((p) => p && p.meta?.itemId)
-      .map((p) => ({ id: p.meta.itemId, panelId: p.id, front_mm: p.meta?.front_mm }));
-  }, [selectedElements, selectedIsMine, unit]);
+    if (!Array.isArray(selectedElements) || selectedElements.length < 2) return [];
+    const byUnit = new Map();
+    const out = [];
+    for (const member of membersOf(selectedElements)) {
+      if (!byUnit.has(member.unitId)) {
+        byUnit.set(member.unitId, useProjectStore.getState().unitResult(member.unitId)?.panels || []);
+      }
+      const p = byUnit.get(member.unitId).find((x) => x.id === member.elementRef);
+      if (!p || !p.meta?.itemId) continue;
+      out.push({
+        unitId: member.unitId, id: p.meta.itemId, panelId: p.id, front_mm: p.meta?.front_mm,
+      });
+    }
+    return out;
+  }, [selectedElements]);
   const groupSize = groupItems.length;
   /**
    * Run one edit over the set — or over the single item, when there is no set.
-   * `fn` is handed `{ id, panelId, front_mm }` and is the SAME call the single
-   * path makes, so there is no second way of writing a height.
+   * `fn` is handed `{ unitId, id, panelId, front_mm }` and is the SAME call the
+   * single path makes, so there is no second way of writing a height.
    */
   const applyToSelection = (fn) => {
-    if (groupSize < 2) return fn({ id: item?.id, panelId: panel.id, front_mm: panel.meta?.front_mm });
+    if (groupSize < 2) {
+      return fn({
+        unitId: unit.id, id: item?.id, panelId: panel.id, front_mm: panel.meta?.front_mm,
+      });
+    }
     return batch(() => { for (const row of groupItems) fn(row); });
   };
   const endPanel = (unit.params.end_panels || []).find((ep) => ep.id === panel.meta?.panelId) || null;
@@ -397,7 +420,7 @@ export default function ElementProperties({
               title={locked
                 ? 'Screwed or locked — unlock it to move it'
                 : 'The underside, above the interior floor — the clear light under the shelf. The same clamp the drag obeys.'}
-              onCommit={(v) => applyToSelection((row) => setShelfPos(unit.id, row.id, posFromField(v, G)))}
+              onCommit={(v) => applyToSelection((row) => setShelfPos(row.unitId, row.id, posFromField(v, G)))}
             />
           </Field>
         );
@@ -501,7 +524,7 @@ export default function ElementProperties({
               max={bounds.max}
               value={Number(panel.meta?.front_mm ?? profile.carcass.shelfDepthClearance)}
               title={`From the face of the cabinet. 0 is flush; ${formatMm(bounds.max)} leaves the shallowest piece worth cutting.`}
-              onCommit={(v) => applyToSelection((row) => setElementDepth(unit.id, row.id, v))}
+              onCommit={(v) => applyToSelection((row) => setElementDepth(row.unitId, row.id, v))}
             />
           </Field>
         );

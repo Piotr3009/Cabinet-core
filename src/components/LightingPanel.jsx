@@ -8,6 +8,8 @@ import {
   lightingSpec, resolveLighting, stripsForUnit, switchChoicesFor,
 } from '../engine/ledStrips.js';
 import { getUnitType } from '../engine/types.js';
+// T37-F1: the piece selection spans cabinets — members are keyed, not bare refs.
+import { memberKey } from '../lib/selection.js';
 
 // ─── TURN 33 (CLAUDE.md F1): THE LIGHTING PANEL — the owner's spec ──────────
 //
@@ -132,11 +134,15 @@ export default function LightingPanel() {
   const spec = lightingSpec(profile);
   const lighting = useMemo(() => resolveLighting(design, profile), [design, profile]);
   /** The strips this edit reaches: the whole ticked set, or the one in hand. */
+  // ─── TURN 37 (CLAUDE.md F1): …AND ACROSS CABINETS ───────────────────────
+  // The set is `{unitId, elementRef}` members now, so a strip in the wardrobe
+  // next door is reached by the same slider. `selectedUnit` stays as the
+  // PRIMARY's cabinet and is no longer the boundary of the edit.
   const strippedSet = (it) => {
     const set = Array.isArray(selectedElements) ? selectedElements : [];
-    if (set.length < 2 || it.unitId !== selectedUnit || !set.includes(it.ref)) return [it.id];
+    if (set.length < 2 || !set.includes(memberKey(it.unitId, it.ref))) return [it.id];
     const ids = lighting.items
-      .filter((x) => x.unitId === selectedUnit && x.kind === it.kind && set.includes(x.ref))
+      .filter((x) => x.kind === it.kind && set.includes(memberKey(x.unitId, x.ref)))
       .map((x) => x.id);
     return ids.length ? ids : [it.id];
   };

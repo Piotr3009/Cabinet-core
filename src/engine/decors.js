@@ -228,9 +228,12 @@ export function setDecorScale(mm) {
   return scanAlongGrainMm;
 }
 
-export function getDecorScale() {
-  return scanAlongGrainMm;
-}
+// `getDecorScale()` — LICENSED REMOVAL, 17.08.2026 (T37-F9, iron rule 4). It
+// read `scanAlongGrainMm` straight back out and nothing in src/, test/ or
+// scripts/ ever called it. Authorised by the owner after the dead-code audit —
+// not an accident, and not a precedent for anything else in this file. The
+// variable and `setDecorScale()` STAY: the loader pushes through the setter and
+// `decorFinish()` reads the variable itself.
 
 export function setDecorCatalogue(next) {
   const decors = Array.isArray(next) ? next : (next?.decors || []);

@@ -58,7 +58,12 @@ const panelOf = (result, part, drawer) => (result?.panels || []).find(
  * height running along the sheet's x — so which of a hole's two coordinates is
  * a height is the panel's own business and is read off the panel.
  */
-export function holeWorldY(panel, hole) {
+// ─── LICENSED RETIREMENT OF AN EXPORT, 17.08.2026 (T37-F9, iron rule 4) ────
+// Called on line 67 below, inside `oneRow()`. The EXPORT was dead — nothing
+// outside this module ever named it — and that is what the owner licensed;
+// the function stays, because `drawerPilotRows` is imported by the
+// hole-alignment gate (`test/turn21-f1`, `scripts/hole-alignment.mjs`).
+function holeWorldY(panel, hole) {
   return panel.box.y + (panel.cnc?.rotated ? hole.x : hole.y);
 }
 
@@ -73,7 +78,9 @@ function oneRow(panel, holes) {
  *
  * @returns {{y:number, source:'drilled'|'law', panel:string}|null}
  */
-export function facadePilotRow(result, drawer, profile) {
+// ─── LICENSED RETIREMENT OF AN EXPORT, 17.08.2026 (T37-F9, iron rule 4) ────
+// Called on line 122 below, by `drawerPilotRows`. Export retired; code kept.
+function facadePilotRow(result, drawer, profile) {
   const front = panelOf(result, 'DRAWER-FRONT', drawer);
   if (!front) return null;
   const drilled = (front.cnc?.holes || []).filter((h) => h.kind === 'front_screw');
@@ -91,7 +98,9 @@ export function facadePilotRow(result, drawer, profile) {
  *
  * @returns {{y:number, source:'drilled'|'law', panel:string}|null}
  */
-export function boxPilotRow(result, drawer, profile) {
+// ─── LICENSED RETIREMENT OF AN EXPORT, 17.08.2026 (T37-F9, iron rule 4) ────
+// Called on line 123 below, by `drawerPilotRows`. Export retired; code kept.
+function boxPilotRow(result, drawer, profile) {
   const bf = panelOf(result, 'DRAWER-BOX-FRONT', drawer);
   if (!bf) return null;
   // Two pilots, 50 mm in from each END of the box front. Both are the same

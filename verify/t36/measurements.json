@@ -1,44 +1,18 @@
 {
-  "f2_shelves": [
-    "SHELF-1",
-    "SHELF-2",
-    "SHELF-3"
-  ],
-  "f2_trail": [
-    [
-      "SHELF-1"
-    ],
-    [
-      "SHELF-1",
-      "SHELF-2"
-    ],
-    [
-      "SHELF-1",
-      "SHELF-2",
-      "SHELF-3"
-    ]
-  ],
-  "f2_set": [
-    "SHELF-1",
-    "SHELF-2",
-    "SHELF-3"
-  ],
-  "f2_marks": 3,
-  "f2_nudge": {
-    "before": [
-      496,
-      991,
-      1487
-    ],
-    "after": [
-      918,
-      958,
-      998
-    ]
+  "f8_rod": {
+    "y": 1418,
+    "z": 293,
+    "x1": 18,
+    "x2": 882
   },
-  "f2_setbacks": [
-    60,
-    60,
-    60
-  ]
+  "f8_target": {
+    "panelId": "RAIL-PART",
+    "x": 799.9999899935698,
+    "y": 270.54819665495427
+  },
+  "f8_modal": {
+    "modal": "element",
+    "panelId": "RAIL-PART",
+    "field": true
+  }
 }

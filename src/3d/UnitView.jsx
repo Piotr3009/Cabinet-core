@@ -1915,6 +1915,10 @@ export default function UnitView({
       <Hardware
         instances={hardware}
         profile={profile}
+        // Turn 36 (CLAUDE.md F8): the hanging rod is a double-click target now,
+        // and it opens the SAME modal the shelves open — the grammar is the
+        // one this component already hands its panels.
+        onEditElement={onEditElement}
         xray={xray && !contour}
         hinges={showHinges && !contour}
         // ─── Turn 18 (CLAUDE.md F6.7) ───

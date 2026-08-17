@@ -6,29 +6,19 @@
       "detail": "http://127.0.0.1:4174"
     },
     {
-      "label": "F2 — three shelves to work with",
+      "label": "F8 — the wardrobe has a rod to click",
       "ok": true,
-      "detail": "SHELF-1 SHELF-2 SHELF-3"
+      "detail": "{\"y\":1418,\"z\":293,\"x1\":18,\"x2\":882}"
     },
     {
-      "label": "F2 — Ctrl+click built the SET, three deep",
+      "label": "F8 — the TUBE itself is in the scene and names its board",
       "ok": true,
-      "detail": "[\"SHELF-1\",\"SHELF-2\",\"SHELF-3\"]"
+      "detail": "\"RAIL-PART\""
     },
     {
-      "label": "F2 — every member of the set is MARKED in the scene",
+      "label": "F8 — the double-click on the ROD opened the hanger modal",
       "ok": true,
-      "detail": "3 outlines"
-    },
-    {
-      "label": "F2 — ONE height typed moved the WHOLE set in one shot",
-      "ok": true,
-      "detail": "496 991 1487 → 918 958 998"
-    },
-    {
-      "label": "F2 — …and ONE set-back typed put all three on the same number",
-      "ok": true,
-      "detail": "60 60 60"
+      "detail": "{\"modal\":\"element\",\"panelId\":\"RAIL-PART\",\"field\":true}"
     },
     {
       "label": "R6 — the whole walk ends with a clean console",
@@ -38,20 +28,15 @@
   ],
   "shots": [
     {
-      "name": "f2a-three-shelves-ticked-with-ctrl-click",
+      "name": "f8a-the-hanger-modal-open-beside-a-double-clicked-rail",
       "subject": {
-        "dom": "[data-group-selection]"
+        "all": [
+          "[data-rail-height]"
+        ],
+        "text": "Height above support"
       },
       "present": true,
-      "detail": "{\"dom\":true}"
-    },
-    {
-      "name": "f2b-the-group-moved-as-one",
-      "subject": {
-        "dom": "[data-group-selection]"
-      },
-      "present": true,
-      "detail": "{\"dom\":true}"
+      "detail": "{\"all\":true,\"text\":true}"
     }
   ]
 }

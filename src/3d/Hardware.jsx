@@ -90,6 +90,9 @@ export default function Hardware({
   instances, profile, xray = false, hinges = false,
   runners = false, runnerVariants = null, storageBase = '', drawerSlide = null,
   hingeSpecs = null, surface = 'room', scope = '',
+  // Turn 36 (CLAUDE.md F8): the shelves' own edit grammar, handed to the rod
+  // so a double-click on the tube opens the hanger modal beside it.
+  onEditElement = null,
   // ─── TURN 28 (CLAUDE.md F5): ONE COLOUR SOURCE FOR THE WHOLE FAMILY ──────
   // Turn 25 handed this component the chosen METAL ID and let it resolve the
   // numbers; `3d/DrillRings.jsx` resolved its own, off its own table, with its
@@ -142,6 +145,8 @@ export default function Hardware({
           rail={rail}
           colour={colours.rail}
           metal={shelfMetal}
+          profile={profile}
+          onEdit={onEditElement}
         />
       ))}
       {/* ─── Turn 11 (CLAUDE.md F3.5): the hinges are furniture ───
@@ -1155,16 +1160,57 @@ function Legs({ items, profile, colour }) {
 
 // ─── The rail ───────────────────────────────────────────────────────────────
 
-/** One tube, at the diameter the profile carries. Not instanced: there is one. */
-function Rail({ rail, colour, metal = null }) {
+/**
+ * One tube, at the diameter the profile carries. Not instanced: there is one.
+ *
+ * ─── TURN 36 (CLAUDE.md F8): AND IT IS CLICKABLE ───────────────────────────
+ *
+ * The owner, eye-testing T35-F1: *"nie ma możliwości 2 kliku i edycji tego
+ * drążka."* T35 shipped the rail's DATUM and the rail's MODAL and left the
+ * tube with no handler at all — nothing to click, and no screenshot that
+ * would have said so.
+ *
+ * It opens the modal that ALREADY EXISTS, keyed on the board 40 mm above it
+ * (`RAIL-PART`), which `engine/elements.js` has answered as `hanger-rail`
+ * since T35: one window, and the tube is a second door into it rather than a
+ * second window that could disagree.
+ *
+ * The gesture is the SHELVES' own grammar — `onEditElement(panelId, {x, y})`,
+ * the click point travelling so the modal lands beside the thing — and the
+ * HOVER AURA is the same component the hinge and the handle wear, so the hand
+ * can see the rod is live before it commits to a double-click.
+ */
+function Rail({
+  rail, colour, metal = null, profile = null, pivot = [0, 0, 0], onEdit = null,
+}) {
   // The family metal when the profile carries one (gold/silver, the same pair
   // the shelf sleeves wear); the old neutral grey where it does not.
   const tone = metal?.colour || colour;
+  const open = onEdit && rail.panelId
+    ? (e) => {
+      e.stopPropagation();
+      onEdit(rail.panelId, { x: e.clientX, y: e.clientY });
+    }
+    : null;
   return (
+    <>
+    {open && profile && (
+      <HoverAura
+        at={[mm(rail.x) - pivot[0], mm(rail.y) - pivot[1], mm(rail.z) - pivot[2]]}
+        // A rod is 25 mm across. A grab band the width of the rod is a target
+        // nobody can hit with a mouse, so the aura is a comfortable one — the
+        // same judgement the handle's own aura makes about a 12 mm bar.
+        size={{ w: rail.length, h: Math.max(rail.diameter * 2, 40), d: Math.max(rail.diameter * 2, 40) }}
+        subject={{ kind: 'rail', id: rail.panelId, mm: rail.y }}
+        profile={profile}
+        onActivate={(e) => open(e)}
+      />
+    )}
     <mesh
       position={[mm(rail.x), mm(rail.y), mm(rail.z)]}
       rotation={[0, 0, Math.PI / 2]}
-      userData={{ ccNoBounds: true }}
+      userData={{ ccNoBounds: true, ccRailPanelId: rail.panelId || null }}
+      onDoubleClick={open || undefined}
     >
       <cylinderGeometry args={[mm(rail.diameter / 2), mm(rail.diameter / 2), mm(rail.length), 14]} />
       <meshStandardMaterial
@@ -1173,6 +1219,7 @@ function Rail({ rail, colour, metal = null }) {
         metalness={metal?.metalness ?? 0.6}
       />
     </mesh>
+    </>
   );
 }
 

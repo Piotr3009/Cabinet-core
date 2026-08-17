@@ -717,6 +717,81 @@ async function main() {
       await shot('f2b-the-group-moved-as-one', { dom: '[data-group-selection]' });
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // F8 — THE RAIL IS CLICKABLE: the target T35 never shipped
+    // ═══════════════════════════════════════════════════════════════════════
+    if (want('f8')) {
+      await freshFloor('the rail', 'wardrobe');
+      await ui('u.openEditor() || true');
+      await page.sleep(500);
+      const railId = await store(`(() => {
+        const { id } = s.addUnit('WARDROBE');
+        s.updateUnitParams(id, { width: 900, height: 2100, doors: false, rail: true });
+        s.addItem(id, { kind: 'hanger' });
+        return id;
+      })()`);
+      await page.sleep(800);
+      const rod = await store(`(() => {
+        const r = s.unitResult(${JSON.stringify(railId)});
+        const a = r.assemblies.rail;
+        return a ? { y: a.y, z: a.z, x1: a.x1, x2: a.x2 } : null;
+      })()`);
+      measurements.f8_rod = rod;
+      check('F8 — the wardrobe has a rod to click', Boolean(rod), JSON.stringify(rod));
+
+      // The lens goes IN FRONT of the rod, not above the cabinet: at the unit
+      // centre plus 1.85 the camera looks down THROUGH the top panel and the
+      // rod is behind it. (The walk's own lesson, twice now.)
+      await frameFacing([railId], { dist: 1.6, height: 0.5 });
+      await page.sleep(600);
+
+      // THE GESTURE: a REAL double-click on the TUBE itself — not on the board
+      // above it, which is what T35 left as the only way in.
+      const spot = await page.evaluate(`
+        const v = ${P}.views.room;
+        const THREE = v.three;
+        v.scene.updateMatrixWorld(true);
+        let mesh = null;
+        v.scene.traverse((g) => {
+          if (mesh || !g.userData || g.userData.ccUnitId !== ${JSON.stringify(railId)}) return;
+          g.traverse((o) => {
+            if (!mesh && o.isMesh && o.userData && o.userData.ccRailPanelId) mesh = o;
+          });
+        });
+        if (!mesh) return null;
+        const b = new THREE.Box3().setFromObject(mesh);
+        const c = b.getCenter(new THREE.Vector3());
+        const p = new THREE.Vector3(c.x, c.y, b.max.z - 0.001).project(v.camera);
+        const r = v.gl.domElement.getBoundingClientRect();
+        return { panelId: mesh.userData.ccRailPanelId, x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
+      `);
+      measurements.f8_target = spot;
+      check('F8 — the TUBE itself is in the scene and names its board',
+        Boolean(spot && spot.panelId), JSON.stringify(spot && spot.panelId));
+      if (spot) {
+        // Hover first, so the aura is up in the picture — the hand can see the
+        // rod is live before it commits.
+        await page.mouse('mouseMoved', spot.x, spot.y, { buttons: 0, clickCount: 0 });
+        await page.sleep(400);
+        await page.dblclick(spot.x, spot.y);
+        await page.sleep(800);
+      }
+      const opened = await page.evaluate(`
+        const u = ${P}.ui.getState();
+        const el = document.querySelector('[data-rail-height]');
+        return { modal: u.modal, panelId: u.modalArgs && u.modalArgs.panelId, field: Boolean(el && el.getClientRects().length) };
+      `);
+      measurements.f8_modal = opened;
+      check('F8 — the double-click on the ROD opened the hanger modal',
+        opened.modal === 'element' && opened.panelId === (spot && spot.panelId) && opened.field,
+        JSON.stringify(opened));
+      await shot('f8a-the-hanger-modal-open-beside-a-double-clicked-rail', {
+        all: ['[data-rail-height]'], text: 'Height above support',
+      });
+      await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+      await page.sleep(200);
+    }
+
     check('R6 — the whole walk ends with a clean console', realErrors(page.errors).length === 0,
       `${realErrors(page.errors).length} error(s)`);
   } finally {

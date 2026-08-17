@@ -1,18 +1,16 @@
 {
-  "f8_rod": {
-    "y": 1418,
-    "z": 293,
-    "x1": 18,
-    "x2": 882
+  "f10": {
+    "shut": 20,
+    "open": 22
   },
-  "f8_target": {
-    "panelId": "RAIL-PART",
-    "x": 799.9999899935698,
-    "y": 270.54819665495427
-  },
-  "f8_modal": {
-    "modal": "element",
-    "panelId": "RAIL-PART",
-    "field": true
+  "f3": {
+    "on": {
+      "boards": 7,
+      "front": true
+    },
+    "off": {
+      "boards": 6,
+      "front": false
+    }
   }
 }

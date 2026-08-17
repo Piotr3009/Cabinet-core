@@ -6,19 +6,24 @@
       "detail": "http://127.0.0.1:4174"
     },
     {
-      "label": "F8 — the wardrobe has a rod to click",
+      "label": "F10 — the box face carries FEWER figures behind a shut leaf",
       "ok": true,
-      "detail": "{\"y\":1418,\"z\":293,\"x1\":18,\"x2\":882}"
+      "detail": "20 shut → 22 open"
     },
     {
-      "label": "F8 — the TUBE itself is in the scene and names its board",
+      "label": "F3 — the box modal offers the Front switch",
       "ok": true,
-      "detail": "\"RAIL-PART\""
+      "detail": "true"
     },
     {
-      "label": "F8 — the double-click on the ROD opened the hanger modal",
+      "label": "F3 — Front: off drops SHOEBOX-FR, and nothing else",
       "ok": true,
-      "detail": "{\"modal\":\"element\",\"panelId\":\"RAIL-PART\",\"field\":true}"
+      "detail": "7 boards → 6"
+    },
+    {
+      "label": "F3 — …and the 3-D stops drawing it, because it reads the same list",
+      "ok": true,
+      "detail": "0 meshes"
     },
     {
       "label": "R6 — the whole walk ends with a clean console",
@@ -28,15 +33,44 @@
   ],
   "shots": [
     {
-      "name": "f8a-the-hanger-modal-open-beside-a-double-clicked-rail",
+      "name": "f10a-the-shoe-box-front-carries-no-figures-behind-a-shut-door",
       "subject": {
-        "all": [
-          "[data-rail-height]"
-        ],
-        "text": "Height above support"
+        "mesh": "SHOE1-FR"
       },
       "present": true,
-      "detail": "{\"all\":true,\"text\":true}"
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f10b-and-they-are-back-the-moment-the-leaf-swings",
+      "subject": {
+        "mesh": "SHOE1-FR"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f3a-the-shoe-box-with-its-front-on",
+      "subject": {
+        "mesh": "SHOE1-FR"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
+    },
+    {
+      "name": "f3b-the-front-switch-in-the-shoe-box-modal",
+      "subject": {
+        "dom": "[data-shoe-box-front]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f3c-the-same-box-with-its-front-off",
+      "subject": {
+        "mesh": "SHOE1-BT"
+      },
+      "present": true,
+      "detail": "{\"mesh\":true}"
     }
   ]
 }

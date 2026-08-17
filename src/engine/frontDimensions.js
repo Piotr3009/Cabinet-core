@@ -26,6 +26,7 @@
  * measured where the engine has just put it.
  */
 export function frontRects(result) {
+  const outer = outerFrontZ(result);
   return (result?.panels || [])
     .filter((p) => p?.role === 'front' && p.box)
     .map((p) => ({
@@ -36,8 +37,55 @@ export function frontRects(result) {
       h: p.box.h,
       z: p.box.z + p.box.d,
       kind: p.part === 'DRAWER-FRONT' ? 'drawer' : 'door',
+      // ─── TURN 36 (CLAUDE.md F10): IS THIS FRONT INSIDE THE CABINET? ──────
+      // Not "is it a drawer front" — that was T35-F11's question and it is the
+      // one the shoe box walked straight past. A front is INTERIOR when it
+      // stands BEHIND the outermost front plane of its own cabinet, which is
+      // a fact about where the board is rather than a list of part names, and
+      // therefore answers "anything future" as well.
+      interior: isInteriorFront(p, outer),
     }))
     .sort((a, b) => (a.y - b.y) || (a.x - b.x));
+}
+
+/**
+ * ─── TURN 36 (CLAUDE.md F10): THE LAW COVERS EVERY INTERIOR FRONT ───────────
+ *
+ * The owner: *"front shoe boxa nadal widoczne wymiary przy zamkniętych
+ * drzwiach."* T35-F11 hid a DRAWER front behind a shut door by NAMING drawer
+ * fronts; the shoe box's face is `role: 'front'` too, is not a `DRAWER-FRONT`,
+ * and so was neither hidden by the rule nor excluded from the doors that
+ * decide it — a doorless wardrobe with a shoe box in it counted as "having
+ * doors" because of its own shoe box.
+ *
+ * The generalisation is geometric and is the honest question: is this board
+ * INSIDE the cabinet? The outermost front plane is where the leaves are; a
+ * board materially behind it is a piece you cannot see until something opens.
+ * A cabinet whose fronts are all on one plane — a drawer bank, a doorless
+ * wardrobe — has no interior front at all, hides nothing, and reads exactly
+ * as it did before this turn.
+ */
+const INTERIOR_TOLERANCE_MM = 1;
+
+/**
+ * The plane a DOOR stands on: the carcass's own front face.
+ *
+ * Not "the frontmost front in this cabinet", which was the first shape of
+ * this rule and is circular — a wardrobe whose ONLY front is a shoe-box face
+ * would make that face its own outer plane and therefore a door. The carcass
+ * is the fixed thing: a leaf hangs in FRONT of it (`doorZ = D + doors.gap`),
+ * and a piece you have to open something to see stands BEHIND it.
+ */
+function outerFrontZ(result) {
+  const d = Number(result?.params?.depth);
+  return Number.isFinite(d) && d > 0 ? d : null;
+}
+
+/** Does this front stand behind the carcass's own front face? */
+export function isInteriorFront(panel, outer = null) {
+  if (!panel?.box || panel?.meta?.appliance) return false;
+  if (outer === null || !Number.isFinite(outer)) return false;
+  return (panel.box.z + panel.box.d) < outer - INTERIOR_TOLERANCE_MM;
 }
 
 const near = (a, b, tol = 1) => Math.abs(a - b) <= tol;
@@ -321,8 +369,13 @@ export function spreadOverlappingRows(rows, { labelMm = 40, stepMm = LABEL_STEP_
 
 /** The fronts that are DOORS: not a drawer front, and not an appliance's face. */
 function doorPanels(result) {
+  const outer = outerFrontZ(result);
   return (result?.panels || []).filter((p) => p?.role === 'front' && p.box
-    && p.part !== 'DRAWER-FRONT' && !p?.meta?.appliance);
+    && p.part !== 'DRAWER-FRONT' && !p?.meta?.appliance
+    // T36 F10: …and not an INTERIOR front. A shoe box's face is not a door,
+    // and a doorless wardrobe with one in it must not count as doored — that
+    // would have hidden its drawer fronts with nothing standing in the way.
+    && !isInteriorFront(p, outer));
 }
 
 /** Has this cabinet anything that has to be opened before you see inside it? */
@@ -350,7 +403,12 @@ export function drawerFrontDimsVisible(result, openFronts = null) {
   return unitHasDoors(result) ? doorsAreOpen(result, openFronts) : true;
 }
 
-/** Is this row ABOUT a drawer front and nothing else? */
+/** Every interior front in this cabinet, by panel id — the F10 set. */
+export function interiorFrontIds(result) {
+  return frontRects(result).filter((f) => f.interior).map((f) => f.id);
+}
+
+/** Is this row ABOUT an interior front and nothing else? */
 function isDrawerFrontRow(row, drawerIds) {
   if (row.kind === 'front-w' || row.kind === 'front-h') return drawerIds.has(row.a);
   if (row.kind === 'between-drawers') return drawerIds.has(row.a) && drawerIds.has(row.b);
@@ -365,7 +423,11 @@ function isDrawerFrontRow(row, drawerIds) {
  * figure that is no longer drawn.
  */
 export function withoutDrawerFrontRows(rows, result) {
-  const drawerIds = new Set(frontRects(result).filter((f) => f.kind === 'drawer').map((f) => f.id));
+  // T36 F10: the set is every INTERIOR front now, not only the drawer fronts
+  // — "the front dimensions of ANY interior element … render only while the
+  // doors are open". The name stays: it is what UnitView and turn 35's tests
+  // call, and the law it applies has widened rather than moved.
+  const drawerIds = new Set(frontRects(result).filter((f) => f.interior).map((f) => f.id));
   if (!drawerIds.size) return rows || [];
   return (rows || []).filter((row) => !isDrawerFrontRow(row, drawerIds));
 }

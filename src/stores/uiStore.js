@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { DEFAULT_CABINET_PROFILE, getCabinetProfile } from '../engine/profile.js';
 import { brightnessScale } from '../engine/lighting.js';
-import { applyMemberSelection, applySelection, parseMember, primaryOf } from '../lib/selection.js';
+import {
+  applyMemberSelection, applySelection, memberKey, parseMember, primaryOf,
+} from '../lib/selection.js';
 import {
   closeNav, openNav, popNav, pushNav,
 } from '../lib/editorStack.js';
@@ -616,7 +618,11 @@ export const useUiStore = create((set, get) => ({
       // it. Re-selecting the SAME unit leaves the element alone, which is what
       // makes clicking a shelf that is already selected a no-op rather than a
       // reset (turn 9, CLAUDE.md F4.1).
-      ...(primary === get().selectedUnitId ? {} : { selectedElement: null }),
+      // T37-F1: …and the SET goes with it. The two are written together and
+      // never separately — that has been this store's own rule since T36 —
+      // and a set left standing after its primary was nulled is a set no
+      // panel is looking at and every group edit would still write to.
+      ...(primary === get().selectedUnitId ? {} : { selectedElement: null, selectedElements: [] }),
     });
   },
   clearSelection: () => set({
@@ -673,9 +679,26 @@ export const useUiStore = create((set, get) => ({
    * @param {object} opts  { additive } — Ctrl (or ⌘) held, F2
    */
   selectElement: (unitId, elementRef, { additive = false } = {}) => set((s) => {
-    // Ctrl+click ANYWHERE grows or shrinks the set — six shelves in three
-    // wardrobes are one selection. Every plain click starts a fresh one.
-    const next = applyMemberSelection(s.selectedElements, unitId, elementRef, additive);
+    // ─── TURN 37 (CLAUDE.md F1): GRABBING A MEMBER KEEPS THE SET ────────────
+    //
+    // The owner's whole verdict is *"złapać 6 półek z 3 szaf i przesunąć ich
+    // razem"* — and a drag BEGINS with a plain press. T36's law said a plain
+    // press starts a fresh set, so the very gesture that was supposed to move
+    // the six collapsed them to one before the first pointermove arrived. The
+    // walk caught it, which is what the walk is for.
+    //
+    // So a plain press on a piece that is ALREADY IN a set of two or more
+    // KEEPS the set and promotes that piece to primary — the hand is on it, so
+    // it is the one the panels are about. A press anywhere else still starts
+    // fresh, which is every single-select in the app and the T36 pin above.
+    // This is what every drawing tool does, and for this reason.
+    const held = !additive
+      && (s.selectedElements || []).length > 1
+      && (s.selectedElements || []).includes(memberKey(unitId, elementRef));
+    const next = held
+      ? [...s.selectedElements.filter((k) => k !== memberKey(unitId, elementRef)),
+        memberKey(unitId, elementRef)]
+      : applyMemberSelection(s.selectedElements, unitId, elementRef, additive);
     const primary = parseMember(primaryOf(next));
     return {
       // The PRIMARY's cabinet is the one the single-unit panels are about. A

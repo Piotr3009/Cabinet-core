@@ -116,7 +116,7 @@ test('F2 — it is the SAME arithmetic the cabinet set has used since turn 13', 
   assert.deepEqual(applySelection(['a', 'b'], 'a', true), ['b']);
   assert.deepEqual(applySelection(['a', 'b'], 'c', false), ['c']);
   assert.equal(primaryOf(['a', 'b']), 'b');
-  assert.match(src('stores/uiStore.js'), /applyMemberSelection, applySelection, parseMember, primaryOf \} from '\.\.\/lib\/selection\.js'/);
+  assert.match(src('stores/uiStore.js'), /applyMemberSelection, applySelection, memberKey, parseMember, primaryOf,\n\} from '\.\.\/lib\/selection\.js'/);
   // T37-F1: …and the cross-cabinet version is that same function on KEYS, not
   // a second implementation keyed on object identity.
   assert.deepEqual(applySelection([memberKey('u1', 'a')], memberKey('u2', 'a'), true),

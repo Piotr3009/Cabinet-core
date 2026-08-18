@@ -20,6 +20,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { readFileSync } from 'node:fs';
+
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor, UNIT_TYPES } from '../src/engine/types.js';
@@ -36,6 +38,12 @@ const INTERIOR = [
   { id: 'sf0', kind: 'shelf', variant: 'fixed', pos_mm: 500 },
   { id: 's1', kind: 'shelf', pos_mm: 800 },
   { id: 's2', kind: 'shelf', pos_mm: 1100 },
+  // T33's shoe shelf, which is the ONLY way `SHOE-RAIL` ever reaches a cut
+  // list. A walk without it passes while the stop rail drops silently — this
+  // is the casement drop bug in miniature, and it is why the source scan
+  // below exists as well as the walk.
+  { id: 's3', kind: 'shelf', variant: 'shoe', pos_mm: 1400 },
+  { id: 's4', kind: 'shelf', variant: 'pullout', pos_mm: 1600 },
   { id: 'd1', kind: 'drawer', index: 1, mount: 'overlay' },
   { id: 'd2', kind: 'drawer', index: 2, mount: 'overlay' },
   { id: 'h1', kind: 'hanger', pos_mm: 1800 },
@@ -183,6 +191,70 @@ test('every lighting role maps to a real registry id', () => {
   for (const [role, id] of Object.entries(LIGHTING_TO_PART_ID)) {
     assert.ok(PART_REGISTRY[id], `lighting role ${role} → ${id}, which is not in PART_REGISTRY`);
   }
+});
+
+// ─── THE SOURCE SCAN ─────────────────────────────────────────────────────────
+//
+// The walk above is greedy, and greedy is not the same as complete: a part that
+// needs a shelf whose variant is `shoe`, or a kit nobody thought to switch on,
+// exists in the engine and never appears in the walk. So the walk is checked a
+// SECOND way, against `cabinet.js` itself, which is the one and only file that
+// writes `panel.part` in this app.
+//
+// Three producers, and there are no others:
+//   `part: 'X'`             the literal, 28 of them
+//   `board(id, 'X', …)`     the L-shape corner unit's own helper
+//   `part: \`SHOEBOX-\${s}\`` the shoe box, whose suffixes come off one map
+
+const ENGINE_SRC = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
+
+function partNamesInSource() {
+  const names = new Set();
+  for (const m of ENGINE_SRC.matchAll(/part:\s*'([^']+)'/g)) names.add(m[1]);
+  for (const m of ENGINE_SRC.matchAll(/\bboard\(\s*`[^`]*`\s*,\s*'([^']+)'/g)) names.add(m[1]);
+  // The shoe box suffix map, read where it is written rather than copied.
+  const suffixBlock = ENGINE_SRC.match(/const suffix = \{([\s\S]*?)\}\[piece\.role\]/);
+  if (suffixBlock) {
+    // Two characters minimum: the map's `side` row is a ternary on
+    // `piece.side === 'L'`, and 'L' / 'R' there are the QUESTION, not an answer.
+    // Every real suffix — SL SR BK BF BT DV FR BATTEN — is two or more.
+    for (const m of suffixBlock[1].matchAll(/'([A-Z0-9]{2,})'/g)) names.add(`SHOEBOX-${m[1]}`);
+  }
+  return names;
+}
+
+test('the source scan finds the whole vocabulary — 37 names, not the 36 a walk reaches', () => {
+  const names = partNamesInSource();
+  assert.ok(names.size >= 37, `the scan found only ${names.size} part names — its regexes have drifted from cabinet.js`);
+  // Three canaries: one plain literal, one board() helper name, one shoe box
+  // suffix. If any of the three stops being found the scan is broken, not the
+  // registry, and this test says which.
+  assert.ok(names.has('BUL'), 'the `part:` literal scan is broken');
+  assert.ok(names.has('SIDE'), 'the board() helper scan is broken');
+  assert.ok(names.has('SHOEBOX-BATTEN'), 'the shoe box suffix scan is broken');
+  assert.ok(names.has('SHOE-RAIL'), 'the stop rail is gone from the engine — or the scan is');
+});
+
+test('ZERO unmapped part names IN THE SOURCE — the stricter half of the same rule', () => {
+  const unmapped = [...partNamesInSource()].filter((name) => !ELEMENT_TO_PART_ID[name]).sort();
+  assert.deepEqual(
+    unmapped, [],
+    `cabinet.js can emit these part names and the registry does not know them:\n  ${unmapped.join('\n  ')}`,
+  );
+});
+
+test('the registry maps nothing the engine cannot emit', () => {
+  const names = partNamesInSource();
+  const orphans = Object.keys(ELEMENT_TO_PART_ID).filter((n) => !names.has(n)).sort();
+  assert.deepEqual(orphans, [], `mapped part names no engine line writes: ${orphans.join(', ')}`);
+});
+
+test('the walk reaches all but the parts that need a switch nobody flips', () => {
+  const walked = new Set(WALK.partNames.keys());
+  const missed = [...partNamesInSource()].filter((n) => !walked.has(n)).sort();
+  // Nothing is asserted absent — this records WHAT the walk cannot reach, so a
+  // future turn that adds a kit sees the gap rather than inheriting it.
+  assert.ok(missed.length <= 1, `the walk now misses ${missed.length} names: ${missed.join(', ')}`);
 });
 
 // ─── The owner's own collapse ───────────────────────────────────────────────

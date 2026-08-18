@@ -350,6 +350,11 @@ export const ELEMENT_TO_PART_ID = {
   FIXED: 'shelf',
   'LATTICE-H': 'shelf',
   'LATTICE-V': 'shelf',
+  // T33's stop rail: a strip sawn off the same board, along the front edge of a
+  // shoe shelf. It is a CUT part and it is in the list, so it is here — this is
+  // the exact name a greedy walk of the engine can miss, because it needs a
+  // shelf whose variant is `shoe` before it exists at all.
+  'SHOE-RAIL': 'shelf',
 
   // Partitions — horizontal, vertical, and the one that carries a rail.
   PARTITION: 'partition',

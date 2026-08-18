@@ -27,8 +27,8 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor, UNIT_TYPES } from '../src/engine/types.js';
 import {
   PART_REGISTRY, ALL_PARTS, PART_GROUPS, ELEMENT_TO_PART_ID, HARDWARE_TO_PART_ID,
-  LIGHTING_TO_PART_ID, partIdForElement, familyOf, edgePartFor, partsInGroup,
-  VARIANT_ORDER,
+  LIGHTING_TO_PART_ID, INVOICE_TO_PART_ID, partIdForElement, familyOf, edgePartFor,
+  partsInGroup, VARIANT_ORDER,
 } from '../src/engine/partRegistry.js';
 
 // ─── The walk ───────────────────────────────────────────────────────────────
@@ -241,6 +241,60 @@ test('ZERO unmapped part names IN THE SOURCE — the stricter half of the same r
     unmapped, [],
     `cabinet.js can emit these part names and the registry does not know them:\n  ${unmapped.join('\n  ')}`,
   );
+});
+
+// ─── THE SAME SCAN, FOR HARDWARE ────────────────────────────────────────────
+//
+// The walk reaches 12 of the engine's hardware roles. The engine writes 18. A
+// mirror, a cornice, a trouser pull-out and a display drawer's glass all need a
+// kit or an option the walk never switches on — and an unmapped hardware role
+// is the identical bug to an unmapped part name: a line nobody ever sees.
+//
+// Three producers here too:
+//   `hw('role', …)`                        the literal
+//   `hw(\`wardrobe_kit_\${kit.kind}\`, …)`  × WARDROBE_KIT_KINDS
+//   `type.hardwareKit.role`                in types.js — a NEW unit type that
+//                                          declares a bought mechanism MINTS a
+//                                          role, so types.js is scanned as well
+const TYPES_SRC = readFileSync(new URL('../src/engine/types.js', import.meta.url), 'utf8');
+
+function hardwareRolesInSource() {
+  const roles = new Set();
+  for (const m of ENGINE_SRC.matchAll(/\bhw\(\s*'([a-z_]+)'/g)) roles.add(m[1]);
+  const kinds = ENGINE_SRC.match(/WARDROBE_KIT_KINDS\s*=\s*\[([^\]]*)\]/);
+  if (kinds) {
+    for (const m of kinds[1].matchAll(/'([a-z_]+)'/g)) roles.add(`wardrobe_kit_${m[1]}`);
+  }
+  for (const m of TYPES_SRC.matchAll(/hardwareKit:\s*\{\s*role:\s*'([a-z_]+)'/g)) roles.add(m[1]);
+  return roles;
+}
+
+test('the hardware scan finds the whole vocabulary — 18 roles, not the 12 a walk reaches', () => {
+  const roles = hardwareRolesInSource();
+  assert.ok(roles.size >= 18, `the scan found only ${roles.size} hardware roles — its regexes have drifted`);
+  assert.ok(roles.has('hinges'), 'the hw() literal scan is broken');
+  assert.ok(roles.has('wardrobe_kit_pulldown_rail'), 'the WARDROBE_KIT_KINDS scan is broken');
+  assert.ok(roles.has('bin_pullout'), 'the types.js hardwareKit scan is broken');
+});
+
+test('ZERO unmapped hardware roles IN THE SOURCE', () => {
+  const unmapped = [...hardwareRolesInSource()].filter((r) => !HARDWARE_TO_PART_ID[r]).sort();
+  assert.deepEqual(
+    unmapped, [],
+    `computeCabinet() can emit these hardware roles and the registry does not know them:\n  ${unmapped.join('\n  ')}`,
+  );
+});
+
+test('the registry maps no hardware role the engine cannot emit', () => {
+  const roles = hardwareRolesInSource();
+  const orphans = Object.keys(HARDWARE_TO_PART_ID).filter((r) => !roles.has(r)).sort();
+  assert.deepEqual(orphans, [], `mapped hardware roles nothing emits: ${orphans.join(', ')}`);
+});
+
+test('the invoice’s synthesised lines have registry rows too', () => {
+  for (const [role, id] of Object.entries(INVOICE_TO_PART_ID)) {
+    assert.ok(PART_REGISTRY[id], `invoice role ${role} → ${id}, which is not in PART_REGISTRY`);
+  }
 });
 
 test('the registry maps nothing the engine cannot emit', () => {

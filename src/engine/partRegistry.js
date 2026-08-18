@@ -257,6 +257,46 @@ export const PART_REGISTRY = {
     id: 'glass_pane', name: 'Glass panes', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Filed here because it is bought in pieces, not cut from a sheet',
   },
+  drawer_glass: {
+    id: 'drawer_glass', name: 'Glass — display drawer top', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'The pane over a display drawer',
+  },
+  mirror: {
+    id: 'mirror', name: 'Mirrors', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A door’s mirror, inside or outside, bought to the leaf’s size',
+  },
+  cornice: {
+    id: 'cornice', name: 'Cornice moulding', group: G('hardware'), unit: 'm', materialType: 'hardware',
+    note: 'Bought by the metre like the rail tube, not cut from a sheet',
+  },
+  drawer_insert: {
+    id: 'drawer_insert', name: 'Drawer inserts', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Shoe insert, belt / tie divider — a bought tray',
+  },
+  kit_trouser: {
+    id: 'kit_trouser', name: 'Trouser pull-out', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought wardrobe mechanism',
+  },
+  kit_tie_rack: {
+    id: 'kit_tie_rack', name: 'Tie rack', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought wardrobe mechanism',
+  },
+  kit_pulldown_rail: {
+    id: 'kit_pulldown_rail', name: 'Pull-down rail', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought wardrobe mechanism — T33 put it on the order form, zero holes',
+  },
+  plinth_clip: {
+    id: 'plinth_clip', name: 'Plinth clips', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'One per front leg — what holds the toe kick on',
+  },
+  plinth_clip_connector: {
+    id: 'plinth_clip_connector', name: 'Plinth clip connectors', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'The clip’s own fixing into the plinth board',
+  },
+  ready_drawer_box: {
+    id: 'ready_drawer_box', name: 'Ready-made drawer boxes', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'When the project buys its boxes instead of cutting them (turn 32)',
+  },
 
   // ─── LIGHTING ─────────────────────────────────────────────────────────────
   led_strip: {
@@ -436,6 +476,31 @@ export const HARDWARE_TO_PART_ID = {
   cargo_frame: 'cargo_frame',
   extractor: 'extractor',
   glass_pane: 'glass_pane',
+  drawer_glass: 'drawer_glass',
+  mirror: 'mirror',
+  cornice: 'cornice',
+  drawer_insert: 'drawer_insert',
+  // `hw(\`wardrobe_kit_\${kit.kind}\`, …)` — one role per WARDROBE_KIT_KINDS
+  // entry. A template literal is still a role string a BOM has to know.
+  wardrobe_kit_trouser: 'kit_trouser',
+  wardrobe_kit_tie_rack: 'kit_tie_rack',
+  wardrobe_kit_pulldown_rail: 'kit_pulldown_rail',
+};
+
+/**
+ * The lines `engine/bomInvoice.js` SYNTHESISES rather than reads off the
+ * engine — a hinge has a plate, a rail has two supports, a front leg has a
+ * plinth clip. They are counted from the engine's own answer (its hinge count,
+ * its `rail_bracket` drills, its front legs), never invented, and turn 32's
+ * invoice has printed them for four turns. They get registry rows so the same
+ * quantities can be ASSIGNED a product rather than only named.
+ */
+export const INVOICE_TO_PART_ID = {
+  hinge_plates: 'hinge_plate',
+  rail_supports: 'rail_support',
+  plinth_clips: 'plinth_clip',
+  plinth_clip_connectors: 'plinth_clip_connector',
+  ready_boxes: 'ready_drawer_box',
 };
 
 // `engine/ledStrips.js lightingBomLines()` role → part id.

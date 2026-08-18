@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import {
-  buildBom, materialDemand, hardwareDemand, demandCost, purchaseBom, formatQty,
+  buildBom, materialDemand, hardwareDemand, demandCost, purchaseBom,
 } from '../engine/bom.js';
 // Turn 39 (CLAUDE.md F1/F6): the registry the purchase list is grouped by.
 import { PART_GROUPS } from '../engine/partRegistry.js';

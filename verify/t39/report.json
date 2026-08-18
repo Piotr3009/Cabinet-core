@@ -1,6 +1,6 @@
 {
  "turn": 39,
- "when": "2026-08-18T09:12:26.524Z",
+ "when": "2026-08-18T09:22:44.030Z",
  "steps": [
   {
    "label": "the scene is seeded — a wardrobe and a base unit",
@@ -195,12 +195,12 @@
   {
    "label": "a row the joiner typed exists, in the store and on the glass",
    "ok": true,
-   "detail": "{\"count\":1,\"name\":\"DOWELS 8 40\",\"id\":\"custom_msyg25vbsff\",\"row\":1}"
+   "detail": "{\"count\":1,\"name\":\"DOWELS 8 40\",\"id\":\"custom_msygff2coru\",\"row\":1}"
   },
   {
    "label": "the custom row rides the SAME merge path — one board, ONE line",
    "ok": true,
-   "detail": "1 line, parts=carcase_side+carcase_horizontal+custom_msyg25vbsff"
+   "detail": "1 line, parts=carcase_side+carcase_horizontal+custom_msygff2coru"
   },
   {
    "label": "removing the row removes its board with it",
@@ -365,8 +365,8 @@
    "subject": {
     "all": [
      "[data-custom-parts=\"1\"]",
-     "[data-custom-part=\"custom_msyg25vbsff\"]",
-     "[data-material-picker=\"custom_msyg25vbsff\"]"
+     "[data-custom-part=\"custom_msygff2coru\"]",
+     "[data-material-picker=\"custom_msygff2coru\"]"
     ],
     "text": "YOUR OWN CONSUMABLES"
    },

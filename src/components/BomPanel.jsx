@@ -1,9 +1,15 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import NumberField from './NumberField.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES } from '../stores/materialAssignmentStore.js';
-import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
+import {
+  buildBom, materialDemand, hardwareDemand, demandCost, purchaseBom, formatQty,
+} from '../engine/bom.js';
+// ─── Turn 39 (CLAUDE.md F6): THE BOM — what the job COSTS, not what it is cut
+// into. The registry groups it, and the same `purchaseBom()` the CSV writes.
+import { PART_GROUPS } from '../engine/partRegistry.js';
+import { exportPurchaseBomCsv } from '../lib/exporters.js';
 // Turn 32 (CLAUDE.md F5): the invoice — materials per decor, ironmongery
 // with articles, yellow named specs where the registry does not know.
 import { ironmongerySummary, materialsSummary, readyBoxLines } from '../engine/bomInvoice.js';
@@ -30,6 +36,8 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const setYield = useMaterialAssignmentStore((s) => s.setYield);
   const jcConnected = useMaterialAssignmentStore((s) => s.jcConnected);
   const design = useProjectStore((s) => s.project.design);
+  // Turn 39 (F6): the export names its file after the job, like every other.
+  const project = useProjectStore((s) => s.project);
   const profile = useCabinetProfileStore((s) => s.profile);
 
   const [tab, setTab] = useState('parts');
@@ -72,6 +80,23 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
     () => runChecks().filter((f) => f.level === 'red'),
     [units, design, runChecks],
   );
+  // ─── TURN 39 (CLAUDE.md F6): THE PURCHASE LIST ───────────────────────────
+  // Two levels, switchable, and the project one is the SUM of the cabinets by
+  // construction (F5) — so "this cabinet" and "whole project" can never
+  // disagree about a board.
+  const assignmentData = useMaterialAssignmentStore((s) => s.data);
+  const selectedUnitId = useUiStore((s) => s.selectedUnitId);
+  const openModal = useUiStore((s) => s.openModal);
+  const [scope, setScope] = useState('project');
+  const scoped = useMemo(() => {
+    if (scope === 'project') return entries;
+    const one = entries.find((e) => e.unit?.id === selectedUnitId) || entries[0] || null;
+    return one ? [one] : [];
+  }, [entries, scope, selectedUnitId]);
+  const purchase = useMemo(() => purchaseBom(scoped, {
+    assignments: assignmentData, materials, profile, design: migrated,
+  }), [scoped, assignmentData, materials, profile, migrated]);
+
   const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
   const hardware = useMemo(() => hardwareDemand(bom, assignments, materials), [bom, assignments, materials]);
   const boardCost = demandCost(demand);
@@ -91,7 +116,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const hardwareChoices = materials.filter((m) => m.category === 'hardware');
 
   return (
-    <aside className={`absolute right-0 top-0 bottom-0 w-[560px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
+    <aside className={`absolute right-0 top-0 bottom-0 ${tab === 'bom' ? 'w-[720px]' : 'w-[560px]'} cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
       <div className="flex items-center px-3 py-2 border-b border-shell-600 gap-2">
         <span className="text-xs uppercase tracking-wide text-ink-200">Bill of materials</span>
         <span className="cc-tag">live</span>
@@ -99,6 +124,18 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
         <button type="button" className={tab === 'parts' ? 'cc-btn border-gold text-gold' : 'cc-btn'} onClick={() => setTab('parts')}>Parts</button>
         <button type="button" className={tab === 'materials' ? 'cc-btn border-gold text-gold' : 'cc-btn'} onClick={() => setTab('materials')}>Materials</button>
         <button type="button" data-bom-order-tab="1" className={tab === 'order' ? 'cc-btn border-gold text-gold' : 'cc-btn'} onClick={() => setTab('order')}>Order</button>
+        {/* Turn 39 (CLAUDE.md F6): the BOM proper — what the job costs. */}
+        <button
+          type="button"
+          data-bom-purchase-tab="1"
+          className={tab === 'bom' ? 'cc-btn border-gold text-gold' : 'cc-btn'}
+          onClick={() => setTab('bom')}
+        >
+          BOM
+          {purchase.totals.unassigned > 0 && (
+            <span className="ml-1 text-status-warn tabular-nums">{purchase.totals.unassigned}</span>
+          )}
+        </button>
         <button type="button" className="cc-btn-ghost" onClick={() => setBomOpen(false)}>×</button>
       </div>
 
@@ -130,6 +167,164 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
               ))}
             </tbody>
           </table>
+        ) : tab === 'bom' ? (
+          /* ═══ TURN 39 (CLAUDE.md F6): THE BOM ══════════════════════════════
+             What the job COSTS, grouped by the part registry. Unassigned lines
+             at the TOP, marked, each with a button that opens Assign Materials
+             on that exact part — the owner's own loop, closed. */
+          <div className="p-3 space-y-2 text-[12px]" data-bom-purchase="1">
+            <div className="flex items-center gap-2">
+              <span className="cc-label mb-0">Level</span>
+              <button
+                type="button"
+                data-bom-scope="cabinet"
+                className={scope === 'cabinet' ? 'cc-btn border-gold text-gold' : 'cc-btn'}
+                onClick={() => setScope('cabinet')}
+              >
+                This cabinet
+              </button>
+              <button
+                type="button"
+                data-bom-scope="project"
+                className={scope === 'project' ? 'cc-btn border-gold text-gold' : 'cc-btn'}
+                onClick={() => setScope('project')}
+              >
+                Whole project
+              </button>
+              <span className="flex-1" />
+              <span className="text-[11px] text-ink-400 tabular-nums">
+                {purchase.rows.length} line{purchase.rows.length === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            {/* A total with a hole in it is never shown as a confident number. */}
+            {purchase.totals.unassigned > 0 && (
+              <p
+                className="border border-status-warn/60 bg-status-warn/10 text-status-warn rounded px-2 py-1.5 text-[11px]"
+                data-bom-incomplete={String(purchase.totals.unassigned)}
+              >
+                {purchase.totals.unassigned} line{purchase.totals.unassigned === 1 ? ' has' : 's have'} no
+                material assigned — this total is INCOMPLETE, not the price of the job.
+              </p>
+            )}
+
+            {purchase.rows.length === 0 ? (
+              <p className="text-ink-400 text-[11px] py-3">
+                Nothing to buy yet — add a cabinet, then assign its materials.
+              </p>
+            ) : (
+              <table className="w-full text-[11px]">
+                <thead className="sticky top-0 bg-shell-800 text-ink-400 border-b border-shell-600">
+                  <tr>
+                    <th className="text-left font-normal px-1.5 py-1.5">Material</th>
+                    <th className="text-right font-normal px-1.5 py-1.5">Qty</th>
+                    <th className="text-left font-normal px-1.5 py-1.5">Unit</th>
+                    <th className="text-right font-normal px-1.5 py-1.5" title="An ESTIMATE — area ÷ sheet, rounded up. Real nesting is parked.">Sheets*</th>
+                    <th className="text-right font-normal px-1.5 py-1.5">Unit cost</th>
+                    <th className="text-right font-normal px-1.5 py-1.5">Line cost</th>
+                    <th className="text-left font-normal px-1.5 py-1.5">From</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* UNASSIGNED FIRST — CLAUDE.md F6, and `mergeUnitMaterials`
+                      already sorts them there, so the view does not re-decide. */}
+                  {purchase.rows.filter((r) => !r._assigned).length > 0 && (
+                    <tr className="bg-status-warn/10">
+                      <td colSpan={7} className="px-1.5 py-1 text-[10px] uppercase tracking-wide text-status-warn">
+                        Not assigned — nothing can be ordered for these
+                      </td>
+                    </tr>
+                  )}
+                  {purchase.rows.filter((r) => !r._assigned).map((r) => (
+                    <tr key={r.key} className="border-b border-shell-600/40" data-bom-line={r.key}>
+                      <td className="px-1.5 py-1">
+                        <span className="text-status-warn underline decoration-status-warn decoration-2 underline-offset-2">
+                          {r.name}
+                        </span>
+                      </td>
+                      <td className="px-1.5 py-1 text-right tabular-nums">{formatQty(r.qty, r.unit).split(' ')[0]}</td>
+                      <td className="px-1.5 py-1 text-ink-400">{r.unit}</td>
+                      <td className="px-1.5 py-1 text-right tabular-nums text-ink-400">{r.sheets ?? '—'}</td>
+                      <td className="px-1.5 py-1 text-right text-ink-600">—</td>
+                      <td className="px-1.5 py-1 text-right text-ink-600">—</td>
+                      <td className="px-1.5 py-1">
+                        <button
+                          type="button"
+                          className="cc-btn-ghost text-[10px] text-gold"
+                          data-bom-assign={r.parts[0] || ''}
+                          onClick={() => openModal('assign-materials', { partId: r.parts[0] || null })}
+                        >
+                          Assign…
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* …then the assigned lines, GROUPED, with a subtotal each. */}
+                  {PART_GROUPS.map((g) => {
+                    const rows = purchase.rows.filter((r) => r._assigned && r.group === g.id);
+                    if (!rows.length) return null;
+                    const sub = rows.reduce((acc, r) => acc + (r.lineCost || 0), 0);
+                    const sheets = rows.reduce((acc, r) => acc + (r.sheets || 0), 0);
+                    return (
+                      <Fragment key={g.id}>
+                        <tr className="bg-shell-700/60" data-bom-group={g.id}>
+                          <td colSpan={7} className="px-1.5 py-1 text-[10px] uppercase tracking-wide text-gold">
+                            {g.label}
+                          </td>
+                        </tr>
+                        {rows.map((r) => (
+                          <tr key={r.key} className="border-b border-shell-600/40" data-bom-line={r.key}>
+                            <td className="px-1.5 py-1 text-ink-100">{r.name}</td>
+                            <td className="px-1.5 py-1 text-right tabular-nums">{formatQty(r.qty, r.unit).split(' ')[0]}</td>
+                            <td className="px-1.5 py-1 text-ink-400">{r.unit}</td>
+                            <td className="px-1.5 py-1 text-right tabular-nums">{r.sheets ?? '—'}</td>
+                            <td className="px-1.5 py-1 text-right tabular-nums">
+                              {r.costPerUnit > 0 ? r.costPerUnit.toFixed(2) : '—'}
+                            </td>
+                            <td className="px-1.5 py-1 text-right tabular-nums">
+                              {r.lineCost != null && r.lineCost > 0 ? r.lineCost.toFixed(2) : '—'}
+                            </td>
+                            <td className="px-1.5 py-1 text-[10px] text-ink-400 truncate max-w-[150px]" title={r.parts.join(' + ')}>
+                              {r.parts.join(' + ')}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="border-b border-shell-600" data-bom-subtotal={g.id}>
+                          <td colSpan={3} className="px-1.5 py-1 text-[10px] text-ink-400 text-right">
+                            {g.label} subtotal
+                          </td>
+                          <td className="px-1.5 py-1 text-right tabular-nums text-ink-400">{sheets || '—'}</td>
+                          <td />
+                          <td className="px-1.5 py-1 text-right tabular-nums text-ink-200">
+                            {sub > 0 ? sub.toFixed(2) : '—'}
+                          </td>
+                          <td />
+                        </tr>
+                      </Fragment>
+                    );
+                  })}
+
+                  <tr data-bom-total={purchase.totals.complete ? 'complete' : 'incomplete'}>
+                    <td colSpan={3} className="px-1.5 py-2 text-right uppercase tracking-wide text-[10px] text-ink-400">
+                      {scope === 'project' ? 'Project total' : 'Cabinet total'}
+                      {purchase.totals.complete ? '' : ' — INCOMPLETE'}
+                    </td>
+                    <td className="px-1.5 py-2 text-right tabular-nums text-ink-200">{purchase.totals.sheets || '—'}</td>
+                    <td />
+                    <td className={`px-1.5 py-2 text-right tabular-nums ${purchase.totals.complete ? 'text-gold' : 'text-status-warn'}`}>
+                      {purchase.totals.cost.toFixed(2)}
+                    </td>
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            )}
+            <p className="text-[10px] text-ink-600">
+              * Sheets is an ESTIMATE — area × yield ÷ the sheet size for that board family, rounded up.
+              Real nesting is a later turn and this is not it.
+            </p>
+          </div>
         ) : tab === 'order' ? (
           /* ─── TURN 32 (CLAUDE.md F5): THE ORDER — what the workshop buys ── */
           <div className="p-3 space-y-3 text-[12px]" data-bom-order="1">
@@ -377,6 +572,28 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
         <div className="flex gap-2">
           <button type="button" className="cc-btn flex-1" onClick={onExportCsv}>Cutting list CSV</button>
           <button type="button" className="cc-btn flex-1" data-bom-export="1" onClick={onExportBom}>BOM CSV</button>
+          {/* Turn 39 (CLAUDE.md F6): the purchase list, as a file. The SAME
+              `purchaseBom()` the tab above renders — not a second BOM. */}
+          <button
+            type="button"
+            className="cc-btn flex-1"
+            data-bom-purchase-export="1"
+            title="The purchase list, with the unassigned lines in it and the total marked incomplete when there are any"
+            onClick={() => {
+              exportPurchaseBomCsv({
+                entries: scoped,
+                assignments: assignmentData,
+                materials,
+                profile,
+                design: migrated,
+                projectName: project?.name || 'project',
+                scope,
+              });
+              notify(`Purchase BOM exported — ${scope === 'project' ? 'whole project' : 'this cabinet'}.`, 'ok');
+            }}
+          >
+            Purchase CSV
+          </button>
           <button type="button" className="cc-btn flex-1" onClick={onExportPdf}>PDF</button>
           <button
             type="button"

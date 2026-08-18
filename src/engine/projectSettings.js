@@ -17,6 +17,9 @@
 
 import { DEFAULT_CABINET_PROFILE } from './profile.js';
 import { veneerIdFromFinishId } from './veneers.js';
+// Turn 39 (CLAUDE.md F7): the gate asks the assignment store, so it needs the
+// one reader that knows what an assignment is.
+import { assignmentFor } from './partRegistry.js';
 
 const settingsOf = (profile) => profile?.projectSettings || DEFAULT_CABINET_PROFILE.projectSettings;
 
@@ -297,8 +300,37 @@ export function ceilingFit({ total, roomHeight, profile }) {
  * alone with no board behind it. The wizard renders the same select on every
  * picker path (WizardSettings `stockBoardSelect`) so every slot can answer it.
  */
-export function materialsAssigned(design, profile) {
+/**
+ * ─── TURN 39 (CLAUDE.md F7): …AND IT ASKS THE ASSIGNMENT STORE TOO ──────────
+ *
+ * *"The existing hard gate folds into this system rather than living beside it:
+ * the gate now asks the assignment store. Nothing is loosened — a missing board
+ * still blocks."*
+ *
+ * Before tonight there were TWO places a joiner could name the board a carcass
+ * is cut from: the wizard's stock-board select (`design.carcass.types[].
+ * material_id`) and — from tonight — Assign Materials. A gate that knew about
+ * only one of them would block a project whose boards are all chosen, in the
+ * other place, which is the "living beside it" this fixes.
+ *
+ * The question is unchanged and the answer is unchanged where it used to be
+ * yes. What is added is a SECOND way to say yes, and it is the same sentence:
+ * a real board id. Say it nowhere and it still blocks, exactly as it did.
+ *
+ * `assignments` is optional and the caller may always omit it — every existing
+ * caller does, and gets precisely the answer it got before.
+ */
+function registryBoardFor(kind, assignments) {
+  if (!assignments) return null;
+  const partId = kind === 'front' ? 'door' : 'carcase_side';
+  const a = assignmentFor(assignments, partId, null);
+  return a?.material_id || null;
+}
+
+export function materialsAssigned(design, profile, assignments = null) {
   const d = design || {};
+  const carcassBoard = registryBoardFor('carcass', assignments);
+  const frontBoard = registryBoardFor('front', assignments);
   const carcassTypes = d.carcass?.types?.length
     ? d.carcass.types
     : [{ id: 'c1', label: 'Carcass 1' }];
@@ -306,7 +338,10 @@ export function materialsAssigned(design, profile) {
     id: t.id,
     label: t.label || 'Carcass',
     kind: 'carcass',
-    assigned: Boolean(t.material_id),
+    assigned: Boolean(t.material_id || carcassBoard),
+    // WHERE the yes came from, so the wizard can say "assigned in Assign
+    // materials" rather than leaving a joiner hunting for a select he filled.
+    via: t.material_id ? 'slot' : (carcassBoard ? 'assignments' : null),
   }));
   const storedFronts = d.fronts?.types?.length
     ? normaliseFrontTypes(d.fronts.types, profile)
@@ -319,7 +354,8 @@ export function materialsAssigned(design, profile) {
     id: t.id,
     label: t.label || 'Front',
     kind: 'front',
-    assigned: Boolean(t.material_id),
+    assigned: Boolean(t.material_id || frontBoard),
+    via: t.material_id ? 'slot' : (frontBoard ? 'assignments' : null),
   }));
   const missing = [...carcass, ...fronts].filter((s) => !s.assigned);
   return {
@@ -335,7 +371,7 @@ export function materialsAssigned(design, profile) {
  * @returns {{blockers:Array<{code:string,message:string}>, stack, fit, materials}}
  */
 export function wizardStartBlockers({
-  design, heights, roomHeight, profile,
+  design, heights, roomHeight, profile, assignments = null,
 }) {
   const blockers = [];
   const stack = wardrobeStack(heights);
@@ -355,7 +391,7 @@ export function wizardStartBlockers({
       message: `Only ${fit.gap} mm to the ceiling — answer the question: to the ceiling, with no infill?`,
     });
   }
-  const materials = materialsAssigned(design, profile);
+  const materials = materialsAssigned(design, profile, assignments);
   if (!materials.all) {
     blockers.push({
       code: 'materials',

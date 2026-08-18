@@ -10,6 +10,9 @@ import {
 import { groupByMaterial } from '../engine/cnc/views.js';
 import { exportMaterialDxf, exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
 import { formatMm } from '../engine/format.js';
+// Turn 39 (CLAUDE.md F7): the warning a cut file carries when nobody has said
+// what a part is made of.
+import { cncAssignmentWarning } from '../engine/bom.js';
 
 // ─── What is on the sheet (turn 11, CLAUDE.md F8.1/F8.2) ────────────────────
 //
@@ -129,6 +132,15 @@ export default function CncTree() {
   // Check panel and says what is there.
   const preflight = (exportAnyway) => {
     if (exportAnyway) return;
+    // Turn 39 (CLAUDE.md F7): a cut file for a board nobody has chosen is a cut
+    // file for the wrong board. It WARNS — this panel's grammar exactly, and
+    // the export goes ahead either way.
+    const unassigned = cncAssignmentWarning(entries, {
+      assignments: useMaterialAssignmentStore.getState().data,
+      profile,
+      design: storedDesign,
+    });
+    if (unassigned) notify(unassigned, 'warn');
     const found = runChecks();
     if (!found.length) return;
     const reds = found.filter((f) => f.level === 'red').length;

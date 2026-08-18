@@ -333,7 +333,10 @@ test('F9.4 — the detail draws the part as the SHEET lays it', () => {
   const result = stock();
   const back = panelOf(result, 'BACK');
   const layout = src('engine/cnc/layout.js');
-  assert.match(layout, /panel\.cnc\?\.drawn_w/);
+  // RE-PINNED 18.08.2026 (T40-F2): `sheetLay` reads the same field through a
+  // fully optional chain (`panel?.cnc?.drawn_w`), so the pin is on the read and
+  // not on the receiver's spelling. The claim is unchanged: ONE frame.
+  assert.match(layout, /\.cnc\?\.drawn_w/);
   assert.match(src('engine/drawings/partDetail.js'), /cnc\.drawn_w/);
   assert.equal(Number(back.cnc.drawn_w), back.w);
   assert.match(src('components/PartDetailModal.jsx'), /data-part-orientation=/);

@@ -1,0 +1,28 @@
+T40-F2 — THE CNC LAYOUT FINGERPRINTS THAT MOVED, AND THE ONES THAT DID NOT
+
+Generated: node scripts/cnc-fingerprint.mjs, on the branch before F2 and after it.
+Report size: 9452 fingerprints.
+Moved:       206 fingerprints.
+
+WHAT MOVED — the SHEET fingerprint of the drawer-bank kits, and only on the
+presets whose sheet actually carries a drawer box:
+
+  kits:    BUDR, BUDR2, BUDR4, OVEN_BASE
+  presets: all , non-sprayed 
+
+WHY: F2 lays the four drawer-box boards the owner named — the sides SL and SR,
+the box front BF and the box back BB — with the board's OWN HEIGHT standing up
+the page. On a BUDR-style bank those boards are DRAWN `height × depth`, so the
+sheet turns them 90° where it used to leave them at 0. The sheet packs from the
+turned bounds, so every part after them on the page shifts with it and the whole
+sheet's fingerprint moves. That is the feature, not a side effect of it.
+
+WHAT DID NOT MOVE — not one PER-PART fingerprint, in any kit, on any preset.
+A part's own CNC frame is untouched: same outline, same pockets, same holes, same
+drawn size. Only the PLACEMENT changed, which is what a nesting program turns.
+
+THE ENGINE IS A SEPARATE QUESTION and a separate file: verify/t40/byte-identity.txt
+reports all six standard configs IDENTICAL with UNNAMED=0. A CNC layout fingerprint
+is not an engine hash, and CLAUDE.md's iron rule 8 says to keep the two apart.
+
+The full diff is beside this file: f2-cnc-fingerprint-moves.diff

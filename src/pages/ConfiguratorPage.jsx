@@ -6,6 +6,7 @@ import RoomModal from '../components/RoomModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
 import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
+import AssignMaterialsModal from '../components/AssignMaterialsModal.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
 import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
@@ -415,6 +416,9 @@ export default function ConfiguratorPage() {
         {modal === 'auth' && <AuthModal />}
         {/* Turn 22 (CLAUDE.md F2b.2 / F3): Database ▸ Company defaults. */}
         {modal === 'company-defaults' && <CompanyDefaultsModal />}
+        {/* Turn 39 (CLAUDE.md F3): Assign materials — the layer between the
+            engine's part names and the things a joiner buys. */}
+        {modal === 'assign-materials' && <AssignMaterialsModal />}
         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
         {modal === 'save-template' && <SaveTemplateModal />}
         {modal === 'render' && <RenderModal rig={renderRig} />}

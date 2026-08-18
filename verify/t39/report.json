@@ -1,0 +1,129 @@
+{
+ "turn": 39,
+ "when": "2026-08-18T08:31:41.806Z",
+ "steps": [
+  {
+   "label": "the scene is seeded — a wardrobe and a base unit",
+   "ok": true,
+   "detail": "{\"units\":2,\"parts\":30,\"kinds\":\"BACK,BOTTOM,BUL,BUR,DP,DRAWER-BOTTOM,DRAWER-BOX-BACK,DRAWER-BOX-FRONT,DRAWER-FRONT,DRAWER-SIDE,FILLER,FRONT,PARTITION,PLINTH,SHELF,TOP\"}"
+  },
+  {
+   "label": "the modal opens with the seven registry groups",
+   "ok": true,
+   "detail": "{\"counter\":\"21\",\"groups\":7,\"rows\":6}"
+  },
+  {
+   "label": "…and a running counter of what is unassigned",
+   "ok": true,
+   "detail": "counter=21"
+  },
+  {
+   "label": "the counter IS the engine’s own answer",
+   "ok": true,
+   "detail": "screen=21 engine=21"
+  },
+  {
+   "label": "every unassigned row is UNDERLINED and coloured",
+   "ok": true,
+   "detail": "{\"rows\":6,\"missing\":6,\"underlined\":6,\"groupsWithDots\":6}"
+  },
+  {
+   "label": "…and the group list carries a dot for each group with something missing",
+   "ok": true,
+   "detail": "6 groups dotted"
+  },
+  {
+   "label": "a pointer-made assignment reaches the store",
+   "ok": true,
+   "detail": "stored=generic-18 picked=generic-18"
+  },
+  {
+   "label": "…the row stops being marked",
+   "ok": true,
+   "detail": "marked=0"
+  },
+  {
+   "label": "…and the counter drops by exactly one",
+   "ok": true,
+   "detail": "21 → 20"
+  },
+  {
+   "label": "BUL and BUR are ONE assignable row — the owner’s question, on the glass",
+   "ok": true,
+   "detail": "{\"bul\":\"carcase_side\",\"bur\":\"carcase_side\",\"rowsForSides\":1}"
+  },
+  {
+   "label": "the override row offers all five families",
+   "ok": true,
+   "detail": "five families"
+  }
+ ],
+ "shots": [
+  {
+   "name": "f3a-database-menu-carries-assign-materials",
+   "subject": {
+    "text": "Assign materials"
+   },
+   "present": true,
+   "detail": "{\"text\":true}"
+  },
+  {
+   "name": "f3-assign-materials-unassigned-marked",
+   "subject": {
+    "all": [
+     "[data-assign-materials=\"1\"]",
+     "[data-assign-counter]",
+     "[data-assign-group=\"board\"]"
+    ],
+    "text": "parts unassigned",
+    "count": {
+     "[data-assign-part]": 4,
+     "[data-assign-missing=\"1\"]": 3
+    }
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true,\"count\":true}"
+  },
+  {
+   "name": "f3b-material-picker-open-on-carcase-sides",
+   "subject": {
+    "all": [
+     "[data-material-picker-panel=\"1\"]",
+     "[data-material-search=\"1\"]"
+    ],
+    "count": {
+     "[data-material-option]": 3
+    }
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"count\":true}"
+  },
+  {
+   "name": "f3c-carcase-sides-assigned-counter-drops",
+   "subject": {
+    "all": [
+     "[data-assign-part=\"carcase_side\"][data-assign-missing=\"0\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f3d-per-family-override-open",
+   "subject": {
+    "all": [
+     "[data-material-picker=\"carcase_side@wardrobe\"]",
+     "[data-material-picker=\"carcase_side@base\"]"
+    ],
+    "text": "PER CABINET FAMILY",
+    "count": {
+     "[data-material-picker^=\"carcase_side@\"]": 5
+    }
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true,\"count\":true}"
+  }
+ ],
+ "failed": 0,
+ "emptyFrames": 0
+}

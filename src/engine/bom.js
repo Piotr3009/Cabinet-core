@@ -622,3 +622,68 @@ export function purchaseBom(units = [], ctx = {}) {
     },
   };
 }
+
+/**
+ * WHAT THIS PROJECT ACTUALLY USES (turn 39, CLAUDE.md F3 / F7).
+ *
+ * The registry has 54 parts. A one-cabinet job uses a dozen. The Assign
+ * Materials modal must not read "41 parts unassigned" at a joiner who has
+ * assigned everything his kitchen contains, and the CNC warning must not fire
+ * over a shoe box nobody has drawn.
+ *
+ * So this answers the only question either of them is really asking: which
+ * parts does the CURRENT design need, in which cabinet families, and how much.
+ *
+ * @returns {{[partId]: { qty:number, unit:string, families:string[] }}}
+ */
+export function projectPartUsage(entries = [], { profile = null, design = null } = {}) {
+  const rows = Array.isArray(entries) ? entries : [];
+  const out = {};
+  const note = (partId, entry, family) => {
+    if (!entry || !PART_REGISTRY[partId]) return;
+    const amount = entry.m2 ?? entry.m ?? entry.pcs ?? 0;
+    if (!(amount > 0)) return;
+    if (!out[partId]) out[partId] = { qty: 0, unit: entry.unit, families: [] };
+    out[partId].qty += amount;
+    if (family && !out[partId].families.includes(family)) out[partId].families.push(family);
+  };
+  for (const e of rows) {
+    if (!e?.result) continue;
+    const family = cabinetFamilyOf(e.result.type || e.unit?.type);
+    const q = buildCabinetPartQtys(e.result, e.unit, { profile });
+    for (const [partId, entry] of Object.entries(q)) note(partId, entry, family);
+  }
+  if (design && profile && rows.length) {
+    // Lighting is a project fact, so it belongs to no family — a project's own
+    // base assignment is what covers it.
+    for (const [partId, entry] of Object.entries(lightingPartQtys(rows, { design, profile }))) {
+      note(partId, entry, null);
+    }
+  }
+  return out;
+}
+
+/**
+ * The parts this project uses that have NOTHING behind them.
+ *
+ * A part counts as missing when any family that uses it has no material — so a
+ * board assigned for the wardrobes and left blank for the kitchen bases is
+ * still missing, and says which family it is missing for.
+ *
+ * @returns {Array<{ partId:string, part:object, families:string[] }>}
+ */
+export function unassignedInUse(entries = [], {
+  assignments = null, assignmentsData = null, profile = null, design = null,
+} = {}) {
+  const data = normalizeAssignments(assignmentsData || assignments);
+  const usage = projectPartUsage(entries, { profile, design });
+  const out = [];
+  for (const [partId, use] of Object.entries(usage)) {
+    const families = use.families.length ? use.families : [null];
+    const missing = families.filter((f) => !assignmentFor(data, partId, f)?.material_id);
+    if (missing.length) {
+      out.push({ partId, part: PART_REGISTRY[partId], families: missing.filter(Boolean) });
+    }
+  }
+  return out.sort((a, b) => a.part.name.localeCompare(b.part.name));
+}

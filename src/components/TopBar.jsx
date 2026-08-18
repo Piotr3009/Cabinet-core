@@ -288,6 +288,8 @@ export default function TopBar({
       onMaterials: (e) => openModal('design', { anchor: anchorOfEvent(e) }),
       // Turn 22 (CLAUDE.md F2b.2): the second one that is real.
       onCompanyDefaults: (e) => openModal('company-defaults', { anchor: anchorOfEvent(e) }),
+      // Turn 39 (CLAUDE.md F3): the third.
+      onAssignMaterials: (e) => openModal('assign-materials', { anchor: anchorOfEvent(e) }),
     }),
     // BACKLOG #36 — the place in the menu, held open. What goes behind it
     // (finish per element, the list, m², the price) is still being designed with

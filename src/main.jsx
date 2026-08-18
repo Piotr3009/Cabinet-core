@@ -12,6 +12,7 @@ import * as frontClearance from './engine/frontClearance.js';
 // about the BOM is proven by asking the app's own functions).
 import * as bomInvoice from './engine/bomInvoice.js';
 import * as bomCore from './engine/bom.js';
+import * as partRegistry from './engine/partRegistry.js';
 // Turn 32 (CLAUDE.md F6): the register, drivable from the walk — mock mode's
 // null answers and a seeded row's overrule are both claims about the APP.
 import * as hardwareRegister from './lib/hardwareRegister.js';
@@ -216,6 +217,13 @@ if (typeof window !== 'undefined') {
   // `selection` is how a cross-cabinet member is spelled (F1) — a walk that
   // parsed the key itself would be a second copy of the separator. All pure.
   window.__ccT37 = { layout, railAssembly, selection };
+  // ─── Turn 39 (CLAUDE.md F1/F5) ───
+  // The registry and the purchase-list engine, for the same reason every reader
+  // above is here: the walk's claim about what a BOM contains has to be read
+  // off the function the BOM VIEW calls, never off a second copy beside it.
+  // `bomCore` (turn 32) already exposes `engine/bom.js`; this names the two new
+  // things by the turn that added them so a reader of the walk can find them.
+  window.__ccT39 = { partRegistry, bom: bomCore };
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

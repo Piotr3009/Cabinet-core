@@ -1,6 +1,6 @@
 {
  "turn": 39,
- "when": "2026-08-18T08:45:33.131Z",
+ "when": "2026-08-18T08:52:29.018Z",
  "steps": [
   {
    "label": "the scene is seeded — a wardrobe and a base unit",
@@ -8,91 +8,70 @@
    "detail": "{\"units\":2,\"parts\":30,\"kinds\":\"BACK,BOTTOM,BUL,BUR,DP,DRAWER-BOTTOM,DRAWER-BOX-BACK,DRAWER-BOX-FRONT,DRAWER-FRONT,DRAWER-SIDE,FILLER,FRONT,PARTITION,PLINTH,SHELF,TOP\"}"
   },
   {
-   "label": "six parts assigned, four of them to ONE board",
+   "label": "the chosen metal assigned the hinge without being asked",
    "ok": true,
-   "detail": "carcase_side,carcase_horizontal,shelf,partition,back,door"
+   "detail": "{\"hinge\":\"hw_hinge_soft\",\"plate\":\"hw_hinge_clip\",\"leg\":\"hw_leg_100\",\"hingeTagged\":true,\"legTagged\":true,\"runnerWhy\":\"auto: no runner rules — add a nominal-length ladder in the workshop profile\"}"
   },
   {
-   "label": "the unassigned lines sit at the TOP",
+   "label": "…and its plate with it",
    "ok": true,
-   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
+   "detail": "plate=hw_hinge_clip"
   },
   {
-   "label": "…each with a button that opens Assign Materials on that exact part",
+   "label": "the plinth height assigned the leg",
    "ok": true,
-   "detail": "15 buttons"
+   "detail": "leg=hw_leg_100"
   },
   {
-   "label": "the total is marked INCOMPLETE while anything is unassigned",
+   "label": "every automatic wears an \"auto\" tag",
    "ok": true,
-   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
+   "detail": "{\"hinge\":\"hw_hinge_soft\",\"plate\":\"hw_hinge_clip\",\"leg\":\"hw_leg_100\",\"hingeTagged\":true,\"legTagged\":true,\"runnerWhy\":\"auto: no runner rules — add a nominal-length ladder in the workshop profile\"}"
   },
   {
-   "label": "the assigned lines are grouped, each group with a subtotal",
+   "label": "a rule that cannot answer SAYS WHY, beside the part",
    "ok": true,
-   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
+   "detail": "auto: no runner rules — add a nominal-length ladder in the workshop profile"
   },
   {
-   "label": "four parts on one board are ONE line with the summed area — the owner’s sentence",
+   "label": "a hand assignment SURVIVES a rule re-run",
    "ok": true,
-   "detail": "1 line, parts=carcase_horizontal+carcase_side+partition+shelf, qty=8.992192000000001"
+   "detail": "chose=hw_hinge_clip now=hw_hinge_clip"
   },
   {
-   "label": "the project BOM IS the sum of its cabinets’ BOMs",
+   "label": "…and the \"auto\" tag is gone from that part",
    "ok": true,
-   "detail": "project=198.22 sum=198.23"
+   "detail": "{\"leg\":\"hw_hinge_clip\",\"stillTagged\":false,\"hinge\":\"hw_hinge_soft\"}"
   },
   {
-   "label": "the level switch is on \"this cabinet\"",
+   "label": "…while the parts the rule still owns are untouched",
    "ok": true,
-   "detail": "NOT ASSIGNED — NOTHING CAN BE ORDERED FO"
-  },
-  {
-   "label": "the purchase CSV carries the unassigned lines and says INCOMPLETE",
-   "ok": true,
-   "detail": "32 rows"
+   "detail": "hinge=hw_hinge_soft"
   }
  ],
  "shots": [
   {
-   "name": "f6-bom-project-with-unassigned-on-top",
+   "name": "f4-automatics-hinge-and-leg-tagged",
    "subject": {
     "all": [
-     "[data-bom-purchase=\"1\"]",
-     "[data-bom-total=\"incomplete\"]",
-     "[data-bom-scope=\"project\"]"
+     "[data-assign-auto=\"hinge\"]",
+     "[data-assign-auto=\"leg\"]",
+     "[data-assign-why=\"runner\"]"
     ],
-    "text": "NOT ASSIGNED",
-    "count": {
-     "[data-bom-line]": 6,
-     "[data-bom-assign]": 1
-    }
-   },
-   "present": true,
-   "detail": "{\"all\":true,\"text\":true,\"count\":true}"
-  },
-  {
-   "name": "f6c-bom-total-marked-incomplete",
-   "subject": {
-    "all": [
-     "[data-bom-total=\"incomplete\"]",
-     "[data-bom-subtotal=\"board\"]"
-    ],
-    "text": "INCOMPLETE"
+    "text": "auto"
    },
    "present": true,
    "detail": "{\"all\":true,\"text\":true}"
   },
   {
-   "name": "f6b-bom-this-cabinet-level",
+   "name": "f4b-hand-beats-the-rule",
    "subject": {
     "all": [
-     "[data-bom-purchase=\"1\"]"
-    ],
-    "text": "CABINET TOTAL"
+     "[data-material-picker=\"leg\"]",
+     "[data-assign-auto=\"hinge\"]"
+    ]
    },
    "present": true,
-   "detail": "{\"all\":true,\"text\":true}"
+   "detail": "{\"all\":true}"
   }
  ],
  "failed": 0,

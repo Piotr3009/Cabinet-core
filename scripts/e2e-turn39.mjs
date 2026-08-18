@@ -390,6 +390,90 @@ async function main() {
     writeFileSync(`${OUT}f6-purchase-bom.csv`, csv.text);
   });
 
+  // ═════════════════════════════════════════════════════════════════════════
+  // F4 — THE AUTOMATIC ASSIGNMENTS
+  // ═════════════════════════════════════════════════════════════════════════
+  await phase('f4', 'The automatics — the colour picks the hinge, the height picks the leg', async () => {
+    // A workshop's own ladders, written into the profile the way the owner
+    // would: a nickel hinge and its plate, and two legs with real adjustment
+    // ranges and a real GAP between them.
+    await page.evaluate(`
+      const st = ${P}.profile.getState();
+      const p = st.profile;
+      st.setProfile({ ...p, materials: { ...p.materials,
+        hingeRules: [{ material_id: 'hw_hinge_soft', label: 'Soft-close 110° nickel', finish: 'nickel' }],
+        hingePlateRules: [{ material_id: 'hw_hinge_clip', label: 'Knock-in plate nickel', finish: 'nickel' }],
+        legRules: [
+          { material_id: 'hw_leg_100', label: 'Adjustable leg 100', nominal_mm: 100, min_mm: 95, max_mm: 120 },
+        ],
+      } });
+      // The colour the project is already in — one field, no second question.
+      ${P}.project.getState().setDesign({ hardware: { ...${P}.project.getState().project.design.hardware, shelfSleeve: "chrome" } });
+      return true;
+    `);
+    await page.sleep(300);
+
+    await page.evaluate(`${P}.ui.getState().setBomOpen(false); ${P}.ui.getState().openModal('assign-materials'); return true;`);
+    await page.waitFor('document.querySelector(\'[data-assign-materials="1"]\')', { what: 'the modal' });
+    await page.sleep(700);
+    await page.click('[data-assign-group="hardware"]');
+    await page.sleep(400);
+
+    const auto = await page.evaluate(`
+      const m = ${P}.materials.getState();
+      const tag = (id) => document.querySelector('[data-assign-auto="' + id + '"]') != null;
+      return {
+        hinge: m.assignments.hinge ? m.assignments.hinge.material_id : null,
+        plate: m.assignments.hinge_plate ? m.assignments.hinge_plate.material_id : null,
+        leg: m.assignments.leg ? m.assignments.leg.material_id : null,
+        hingeTagged: tag('hinge'),
+        legTagged: tag('leg'),
+        runnerWhy: (document.querySelector('[data-assign-why="runner"]') || {}).innerText || null,
+      };
+    `);
+    check('the chosen metal assigned the hinge without being asked', auto.hinge === 'hw_hinge_soft', JSON.stringify(auto));
+    check('…and its plate with it', auto.plate === 'hw_hinge_clip', `plate=${auto.plate}`);
+    check('the plinth height assigned the leg', auto.leg === 'hw_leg_100', `leg=${auto.leg}`);
+    check('every automatic wears an "auto" tag', auto.hingeTagged && auto.legTagged, JSON.stringify(auto));
+    check('a rule that cannot answer SAYS WHY, beside the part',
+      Boolean(auto.runnerWhy && /no runner rules/.test(auto.runnerWhy)), auto.runnerWhy || 'no sentence');
+
+    await shot('f4-automatics-hinge-and-leg-tagged', {
+      all: ['[data-assign-auto="hinge"]', '[data-assign-auto="leg"]', '[data-assign-why="runner"]'],
+      text: 'auto',
+    });
+
+    // ── THE LAW: A HAND WINS, AND THE RULE NEVER TAKES IT BACK ─────────────
+    await page.click('[data-material-picker="leg"]');
+    await page.waitFor('document.querySelector(\'[data-material-picker-panel="1"]\')', { what: 'the picker' });
+    await page.sleep(250);
+    const byHand = await page.evaluate(`
+      const opts = [...document.querySelectorAll('[data-material-option]')].map((o) => o.getAttribute('data-material-option'));
+      return opts.find((id) => id !== 'hw_leg_100') || opts[0];
+    `);
+    await page.click(`[data-material-option="${byHand}"]`);
+    await page.sleep(400);
+    // Run the automatics again, exactly as the button does.
+    await page.click('[data-assign-auto-run]');
+    await page.sleep(500);
+
+    const afterHand = await page.evaluate(`
+      const m = ${P}.materials.getState();
+      return {
+        leg: m.assignments.leg ? m.assignments.leg.material_id : null,
+        stillTagged: document.querySelector('[data-assign-auto="leg"]') != null,
+        hinge: m.assignments.hinge ? m.assignments.hinge.material_id : null,
+      };
+    `);
+    check('a hand assignment SURVIVES a rule re-run', afterHand.leg === byHand,
+      `chose=${byHand} now=${afterHand.leg}`);
+    check('…and the "auto" tag is gone from that part', afterHand.stillTagged === false, JSON.stringify(afterHand));
+    check('…while the parts the rule still owns are untouched', afterHand.hinge === 'hw_hinge_soft', `hinge=${afterHand.hinge}`);
+    await shot('f4b-hand-beats-the-rule', {
+      all: ['[data-material-picker="leg"]', '[data-assign-auto="hinge"]'],
+    });
+  });
+
   // ─── REPORT ───────────────────────────────────────────────────────────────
   const failed = steps.filter((s) => !s.ok);
   const empty = shots.filter((s) => !s.present);

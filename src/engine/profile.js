@@ -3804,6 +3804,39 @@ export const DEFAULT_CABINET_PROFILE = {
     // Empty for the same reason `defaults` is: every field in a rule but the
     // millimetres is a product this workshop buys, and nobody here knows it.
     legRules: [],
+
+    // ─── THE HINGE LADDER (F4) ──────────────────────────────────────────────
+    //
+    // *"zawiasy automatycznie po wyborze koloru"*. The colour is
+    // `design.hardware.shelfSleeve` (gold | silver | chrome | onyx); the app
+    // already turns it into a HINGE finish through
+    // `appearance.metalHingeFinish` — chrome and silver are nickel, onyx is
+    // onyx, and GOLD IS NULL because Blum publishes no gold cup hinge and this
+    // app does not invent one.
+    //
+    // One rule: { material_id, label, finish, system?, angle?, softClose? }.
+    // `finish` is the hinge finish, not the metal, so one entry covers both the
+    // colours that resolve to it. The best match wins: a rule that names the
+    // system and the angle beats one that names only the finish.
+    hingeRules: [],
+    hingePlateRules: [],
+
+    // ─── THE RUNNER LADDER (F4) ─────────────────────────────────────────────
+    //
+    // Keyed on the SNAPPED nominal length the engine already chose
+    // (`result.hardware[runner_pairs].spec.nl`) — CLAUDE.md F4 is explicit:
+    // *"Do NOT re-derive lengths here; read what the engine already decided."*
+    // One rule: { material_id, label, nl_mm, variant? }.
+    runnerRules: [],
+
+    // ─── LIGHTING (F4) ──────────────────────────────────────────────────────
+    // Straight ids: the strip, the channel it sits in, the driver, the switch
+    // and the spots. The QUANTITY is already the design's own (F5 reads the
+    // metres off the strips the job actually carries); this is only which
+    // product those metres are bought as.
+    ledRules: {
+      strip: null, profile: null, driver: null, switch: null, spot: null,
+    },
   },
 
   // ─── TURN 33 (CLAUDE.md F11): THE INSERT CATALOGUE — specs, never articles ─
@@ -4727,6 +4760,16 @@ export function migrateCabinetProfile(profile) {
       legRules: Array.isArray(profile.materials?.legRules)
         ? profile.materials.legRules
         : D.materials.legRules,
+      hingeRules: Array.isArray(profile.materials?.hingeRules)
+        ? profile.materials.hingeRules
+        : D.materials.hingeRules,
+      hingePlateRules: Array.isArray(profile.materials?.hingePlateRules)
+        ? profile.materials.hingePlateRules
+        : D.materials.hingePlateRules,
+      runnerRules: Array.isArray(profile.materials?.runnerRules)
+        ? profile.materials.runnerRules
+        : D.materials.runnerRules,
+      ledRules: { ...D.materials.ledRules, ...profile.materials?.ledRules },
     },
     editor: {
       ...D.editor,

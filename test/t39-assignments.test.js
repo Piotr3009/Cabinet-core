@@ -184,7 +184,12 @@ test('profile.materials exists, ships EMPTY, and survives a migration', () => {
   // A profile stored before this turn comes back with the block, not without it.
   const old = { ...P };
   delete old.materials;
-  assert.deepEqual(migrateCabinetProfile(old).materials, { defaults: {}, legRules: [] });
+  assert.deepEqual(migrateCabinetProfile(old).materials, P.materials);
+  // …and every ladder F4 adds is empty too, for the same reason.
+  assert.deepEqual(P.materials.hingeRules, []);
+  assert.deepEqual(P.materials.hingePlateRules, []);
+  assert.deepEqual(P.materials.runnerRules, []);
+  assert.deepEqual(Object.values(P.materials.ledRules), [null, null, null, null, null]);
 });
 
 // ─── Round trip ─────────────────────────────────────────────────────────────

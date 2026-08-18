@@ -11,6 +11,8 @@ import {
   PART_GROUPS, partsInGroup, assignmentFor, familyLabel, VARIANT_ORDER,
 } from '../engine/partRegistry.js';
 import { projectPartUsage, formatQty } from '../engine/bom.js';
+// ─── Turn 39 (CLAUDE.md F4): the rules that fill a part in without being asked.
+import { autoAssignments, applicable, refusals } from '../engine/autoAssign.js';
 
 /**
  * ─── ASSIGN MATERIALS (turn 39, CLAUDE.md F3) ───────────────────────────────
@@ -52,6 +54,7 @@ export default function AssignMaterialsModal() {
   const loadMaterials = useMaterialAssignmentStore((s) => s.loadMaterials);
   const markSeen = useMaterialAssignmentStore((s) => s.markSeen);
   const seen = useMaterialAssignmentStore((s) => s.seen);
+  const setAutoAssignment = useMaterialAssignmentStore((s) => s.setAutoAssignment);
 
   const [group, setGroup] = useState(PART_GROUPS[0].id);
   const [showAll, setShowAll] = useState(false);
@@ -106,6 +109,37 @@ export default function AssignMaterialsModal() {
     return () => clearTimeout(t);
   }, [rows, markSeen]);
 
+  // ─── TURN 39 (CLAUDE.md F4): THE AUTOMATICS ──────────────────────────────
+  //
+  // *"zawiasy automatycznie po wyborze koloru, nóżki też automatycznie w
+  // zależności od wysokości."*
+  //
+  // The rules PROPOSE; `setAutoAssignment` decides, and it refuses to touch a
+  // part a hand has set. So running this on open is safe by construction and
+  // running it twice changes nothing the second time.
+  const proposals = useMemo(
+    () => autoAssignments({ entries, design, profile, usage }),
+    [entries, design, profile, usage],
+  );
+  const refusedBy = useMemo(() => {
+    const out = {};
+    for (const r of refusals(proposals)) out[r.partId] = r.why;
+    return out;
+  }, [proposals]);
+
+  const runAutomatics = useMemo(() => () => {
+    for (const p of applicable(proposals)) {
+      setAutoAssignment(p.partId, p.material_id, { variant: null });
+    }
+  }, [proposals, setAutoAssignment]);
+
+  useEffect(() => { runAutomatics(); }, [runAutomatics]);
+
+  const autoCount = useMemo(
+    () => applicable(proposals).filter((p) => assignmentFor(data, p.partId, null)?.material_id === p.material_id).length,
+    [proposals, data],
+  );
+
   // Opened from a BOM line's "assign this" button: jump straight to its group.
   useEffect(() => {
     if (!openPart) return;
@@ -133,6 +167,16 @@ export default function AssignMaterialsModal() {
               ? `${materials.length} materials from this workshop’s stock list`
               : `${materials.length} sample materials — Database ▸ Materials has not been loaded`}
           </span>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={runAutomatics}
+            data-assign-auto-run={String(autoCount)}
+            title="Hinges from the chosen metal, legs from the plinth height, runners from the length the engine snapped to. A material you chose by hand is never overwritten."
+          >
+            Automatics
+            {autoCount > 0 && <span className="ml-1 text-gold tabular-nums">{autoCount}</span>}
+          </button>
           <button
             type="button"
             className="cc-btn"
@@ -244,6 +288,14 @@ export default function AssignMaterialsModal() {
                             {isAuto && <span className="cc-tag" data-assign-auto={part.id}>auto</span>}
                           </div>
                           <div className="text-[10px] text-ink-400 leading-tight">{part.note}</div>
+                          {/* F4: an automatic that could NOT be made says why,
+                              here, beside the part it is about. "Out of range →
+                              leaves it unassigned and says why." */}
+                          {refusedBy[part.id] && !base?.material_id && (
+                            <div className="text-[10px] text-status-warn/80 leading-tight" data-assign-why={part.id}>
+                              auto: {refusedBy[part.id]}
+                            </div>
+                          )}
                         </td>
                         <td className="py-1.5 pr-2 align-top">
                           <MaterialPicker

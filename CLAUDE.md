@@ -1,285 +1,356 @@
-# CLAUDE.md — TURN 39 · ASSIGN MATERIALS → BOM
+# CLAUDE.md — TURN 40 · ONE GRAIN TRUTH, THE SPLIT-DOOR CHAIN, OVERLAY DRAWERS, AND THE WALL DRAWINGS
 
-Owner's verdict, 18.08.2026: *"musi być Assign materials i później BOM."*
-The architecture is NOT invented here — it is lifted from the owner's own
-Production Core (`Piotr3009/Sash-Planner-Web`), where it has been in
-production use. Read those files before writing anything:
-
-- `src/stores/materialAssignmentStore.js` — the part registry and the
-  schema-2 assignment store (base + per-variant overrides, inheritance)
-- `src/engine/bom.js` — `ELEMENT_TO_PART_ID`, `mergeWindowMaterials`,
-  `effectiveAssignment`, the `_assigned` flag
-- `src/engine/partRegistry.js` — `normalizeAssignments`,
-  `expandAssignments`, `legacyToCanonical`
-- `src/components/MaterialPicker.jsx` — the picker UI
-
-Cabinet Core's equivalents get the same SHAPE with cabinet nouns. Where
-this spec and Production Core disagree, this spec wins; where this spec
-is silent, copy Production Core's answer rather than inventing one.
+Dictated by the owner, 18.08.2026, after T39 landed. Read F2 first even if
+you execute it second — its principle ("one source, no exceptions") is the
+reason three previous turns kept re-touching the same code.
 
 ## Iron rules (binding)
 
 1. **Zero-stop overnight run.** Never halt, never ask. Skip-and-note,
    sacrifice whole features from the LOWEST priority upward. PR opens
    before morning regardless.
-2. **Engine contract: BYTE-IDENTITY.** `scripts/t39-classify.mjs`
-   (sibling of t38's), no named buckets, UNNAMED=0. Materials and BOM
-   are a READ-ONLY consumer of the engine's answer — assignment must not
-   move a single byte of `computeCabinet()`. If a feature here seems to
-   need an engine change, it does not: it needs a better read.
-3. **Sanctity.** Zero licensed removals. Delete no function.
-4. **LISP untouched.** `reference/lisp/**` does not change.
+2. **Engine contract: BYTE-IDENTITY.** `scripts/t40-classify.mjs`
+   (sibling of t39's), no named buckets, UNNAMED=0. Every feature here is
+   downstream of `computeCabinet()`, in the drawing layer, in the check
+   layer, or in UI. **If a feature appears to need an engine change,
+   it does not — it needs a better read. Skip it and note it rather than
+   move a byte.** The one exception the owner has NOT granted is the
+   engine; he has said plainly he does not want it touched.
+3. **Sanctity.** Zero licensed removals. Delete no function. If F2's
+   consolidation seems to require deleting a reader, do NOT delete it —
+   make it delegate to the single source and note it for the owner.
+4. **LISP untouched.** `reference/lisp/**` does not change this turn.
 5. **No new dependencies.**
-6. **SQL:** any new table ships as a numbered migration in `sql/`, with
-   RLS on, labelled **"SQL PRZED push"** in the PR body. Code must
-   DEGRADE GRACEFULLY when the migration has not been applied — the app
-   still opens, BOM shows an empty-state, no crash.
-7. **Proofs**: `verify/t39/` screenshot per visible feature, real pointer
-   input, named subject asserted.
-8. Tests first for every pure function (`node:test`), fixtures untouched,
-   suite never `--silent`. One commit per feature, F-number in message.
+6. **Proofs:** `verify/t40/` screenshot per visible feature, real pointer
+   input, named subject asserted. No screenshot = not done.
+7. Tests first for every pure function. Fixtures untouched. Suite never
+   `--silent`. One commit per feature, F-number in the message.
+8. **CNC fingerprints WILL move in F2.** That is the point of F2 and is
+   expected. Engine hashes must NOT move. Keep the two apart in your head
+   and say which is which in the PR body.
+9. After the PR is open, END THE SESSION. Do not schedule check-ins.
 
-## The problem, in the owner's words
+---
 
-> *"teraz mam osobno wszystkie BUL BUR — a po co? Jak powinny być carcase
-> materials (jeśli ten sam wszędzie to połączyć w jedno)?"*
+## F1 [CRITICAL] — the split-door hinge chain
 
-Cabinet Core has no layer between the engine's part names and the things
-a joiner BUYS. Production Core does: `'JAMB LEFT': 'jambs'` and
-`'JAMB RIGHT': 'jambs'` collapse two engine elements into one assignable
-part. That mapping is what F1 builds.
+Owner, verbatim: *"jak wstawiam split doors, to zawiasy chyba nie mają
+żadnej logiki… w modalu doors nie można ich przesuwać, nie widzą półek,
+nie są podzielone na top i bottom"* and *"te zawiasy widzą clash ale nie
+w tym miejscu w którym się pokazują, tylko jakby w starym miejscu przed
+podzieleniem na top i bottom. Cały ten łańcuch trzeba prześledzić i
+dokładnie zbadać co jest nie tak."*
 
-Two collapses, not one — this is the heart of the turn:
+This is an INVESTIGATION first and a fix second. Do not patch the symptom.
+Trace the whole chain and write what you found in the commit body:
 
-- **Collapse 1 (registry):** many engine elements → one assignable PART.
-  BUL and BUR are both `carcase_side`. You assign a board once.
-- **Collapse 2 (BOM):** many parts → one PURCHASE LINE, keyed by the
-  assigned material id (`mat:{id}`, exactly Production Core's `bump()`).
-  If sides, top, bottom, partitions and shelves all point at the same
-  Egger board, the BOM shows ONE line with the summed area. That is the
-  owner's "jeśli ten sam wszędzie to połączyć w jedno" — and it needs no
-  special case, it falls out of keying on material id.
+1. Where split doors are produced (`splitDoors.js`, T37-F6; the
+   `SPLIT DOORS (T35)` section in `KIT_WARDROBE_FULL`).
+2. Where the hinge list for a door is computed, and whether the split
+   produces TWO door records with their own hinge lists or one record the
+   rest of the app still reads as undivided.
+3. Which reader the Doors modal uses when it offers hinge positions —
+   and why it offers none that can be moved for a split door.
+4. Which reader the collision check uses — the T37 stale-hinge fault was
+   an in-memory cache that a reload cleared; establish whether THIS is
+   the same class of fault (test it: does a reload move the reported
+   collision to the right place?) or a genuinely different reader looking
+   at pre-split geometry.
 
-## F1 [CRITICAL] — the part registry (`src/engine/partRegistry.js`)
+Then fix the CAUSE, once:
+- Split doors get hinges as **two independent sets, top leaf and bottom
+  leaf**, each run through the standard hinge law for ITS OWN leaf
+  height — exactly as T39-F1b did for the top box door.
+- Those hinges are **movable in the Doors modal**, like any other door's.
+- The collision check reads the SAME post-split positions the scene
+  draws, so a reported clash is always where the hinge actually is.
+- Hinges see shelves: the shelf × hinge rule applies to split-door leaves
+  as it does to whole doors.
 
-A hardcoded, exported registry: the list of things a cabinet is made of,
-grouped, each with `{ id, name, group, unit, materialType }`, plus
-`ELEMENT_TO_PART_ID` mapping engine part names onto it.
+Tests: a split wardrobe door at a given height produces the leaf-correct
+hinge counts; moving a top-leaf hinge does not move a bottom-leaf hinge;
+the check's reported y equals the drawn y for both leaves.
 
-**Proposed grouping — the owner may veto any row; if the pushed spec
-strikes a row, follow the pushed spec.**
+Proof: `f1-split-door-hinges-two-sets-movable.png`.
 
-```
-BOARD (unit m², materialType 'board')
-  carcase_side        ← BUL, BUR
-  carcase_horizontal  ← TOP, BOTTOM
-  partition           ← PARTITION
-  shelf               ← SHELF                 (fixed and adjustable alike)
-  back                ← BACK                  (SEPARATE — usually 6 mm, not 18)
-  plinth              ← PLINTH
-  top_box_carcase     ← top box sides/top/bottom/back
-  shoe_box_carcase    ← shoe box body parts
+---
 
-FRONT (unit m², materialType 'front')
-  door                ← DOOR, split door leaves
-  drawer_front        ← drawer fronts, shoe box fronts
-  false_front         ← FIX fronts
+## F2 [HIGH] — ONE GRAIN TRUTH: the cut decides, and 3D shows what was cut
 
-DRAWER BOX (unit m², materialType 'board')
-  drawer_box_side     ← drawer box sides/back/front
-  drawer_bottom       ← drawer bottoms        (SEPARATE — thin board)
+Owner, verbatim and decisive, 18.08.2026:
 
-EDGING (unit m, materialType 'edging')
-  edge_carcase, edge_front, edge_shelf
+> *"Jeżeli cięte jest w pionie, słój w pionie, to i tak samo powinien być
+> pokazany element na wizualizacji. Jak tniemy, tak słoje się pokazują.
+> Czyli jak tniemy w pionie a układamy w szafie w poziomie, to i słoje w
+> poziomie. Proste. Nie będzie wyjątków, będzie logicznie i składnie i
+> prościej."*
 
-HARDWARE (unit pcs, materialType 'hardware')
-  hinge, hinge_plate, runner, leg, rail_tube, rail_support,
-  handle, shelf_pin, top_box_connector
+### Why this feature exists
 
-LIGHTING (unit m / pcs, materialType 'lighting')
-  led_strip (m), led_driver (pcs), led_profile (m)
+Today there are TWO independent statements about grain and they can
+disagree:
 
-CONSUMABLE (unit pcs / L, materialType 'consumable')
-  screw_confirmat, dowel, glue, puzzle_screw
-```
+- `src/engine/grain.js` (`GRAIN_AXIS_BY_PART`, T36-F5) states an axis per
+  ROLE — read by `engine/decors.js grainRun()` for the 3D texture.
+- `src/engine/cnc/layout.js sheetTurn()` decides how the part is laid on
+  the sheet. T36-F5's own comment records the split deliberately: *"The
+  DRAWN FRAME is deliberately not touched… nothing turns them today."*
+  T37-F7 then taught `sheetTurn` to read the stated field, where `'h'`
+  maps to 0° — no turn.
 
-Rules the registry must obey:
-- Separate ids where the MATERIAL genuinely differs (back, drawer bottom
-  — thinner board; fronts — sprayed/veneered, not the carcase board).
-  Merged ids where it does not (left/right, top/bottom).
-- Every engine part name that reaches the cut list MUST appear in
-  `ELEMENT_TO_PART_ID`. Anything missing is silently dropped from every
-  BOM — Production Core carries a comment about exactly that bug
-  ("the casement drop bug"). Ship a test that walks a full wardrobe +
-  kitchen cabinet cut list and asserts ZERO unmapped part names.
-- `ALL_PARTS` flat export for lookups, as Production Core has it.
+So a part can be STATED to run one way and CUT another way, and the 3D
+shows the statement while the workshop gets the cut. T35-F6, T36-F5 and
+T37-F7 all touched this same seam. Three turns, one unfixed cause: two
+sources of truth.
 
-Tests: mapping completeness (above), no duplicate ids, every part has a
-unit.
+### The law, from now on
 
-## F2 [CRITICAL] — the assignment store + table
+**THE CUT IS THE ONLY SOURCE.** How a part is laid on the sheet decides
+which way its grain runs. The 3D renders the grain of the part AS CUT,
+carried through the part's mounting orientation in the cabinet. A part
+cut standing and mounted lying shows its grain lying. There is no second
+table, no per-role visual override, no exception list.
 
-`src/stores/materialAssignmentStore.js`, schema-2 shape copied from
-Production Core:
+### What to build
 
-```
-{ schema: 1, base: { [partId]: { material_id, yield, category, subcategory } },
-             overrides: { [partId]: { [variantKey]: {...} } } }
-```
+1. **One function** — the single source: given a part, return how it is
+   laid on the sheet (the turn) and therefore which way its grain runs.
+   `sheetTurn()` is the natural home; it may keep its name.
+2. **`grainRun()` in `decors.js` reads THAT** — the cut result carried
+   into the panel's mounting frame — instead of applying its own rule.
+   Do NOT delete `grainRun` or `GRAIN_AXIS_BY_PART` (iron rule 3): make
+   the reader delegate, and if the role table becomes input to the single
+   source rather than a second answer, say so in the commit.
+3. **These roles are cut STANDING, grain top-to-bottom on the sheet**
+   (the owner's list, 18.08): drawer box back **BB**, drawer box front
+   **BF**, drawer sides **SL** and **SR**, drawer fronts, **PLINTH**, and
+   the left/right **END PANEL**. His reason, recorded because it is the
+   test of whether the answer is right: *"jak będzie się oklejać, to nie
+   chcesz oklejać w poprzek słoja, tylko wzdłuż."*
+4. **Cross-frame tests are mandatory** — the T37-F7 lesson. For each role
+   above: assert the sheet turn, and assert the 3D grain direction
+   DERIVES from it rather than from a separate table. A test that only
+   checks one side of the seam is the bug this feature removes.
 
-- `base` = the project default for that part. `overrides` = per-variant
-  (variant key for Cabinet Core = **cabinet family**: wardrobe / base /
-  wall / tall / pantry). Overrides win, base inherits — same
-  `assignmentFor()` semantics.
-- **`yield`** (waste coefficient, default 1.0) per assignment, as
-  Production Core has it. Board offcuts are real; the BOM must be able
-  to add 10 % without lying about the geometry.
-- Assignments live **per project** (owner: *"każdy jeden projekt powinien
-  mieć Assign materials"*), persisted in Supabase alongside the design.
-- **Profile defaults** (`profile.materials.defaults`) seed a NEW
-  project's `base` — the Egger boards already chosen elsewhere. A project
-  that has never been assigned opens with the defaults already in place,
-  not empty.
-- Migration: `sql/00X_material_assignments.sql`, RLS on, graceful
-  degradation per iron rule 6.
+### The boundary
 
-Tests: base/override inheritance, defaults seeding, yield arithmetic,
-round-trip through save/load.
+`computeCabinet()` output does NOT change. The statements it writes stay
+byte-identical; what changes is who reads them and whether the sheet
+honours them. CNC layout fingerprints WILL move — name them in the PR.
 
-## F3 [CRITICAL] — the Assign Materials modal
+Proofs: `f2a-drawer-parts-and-plinth-stand-on-sheet.png`,
+`f2b-3d-grain-matches-the-cut.png`.
 
-New entry in the project menu: **Assign materials**. Reachable from the
-project, always, not only at creation.
+---
 
-Layout (follow the T38 editor's discipline — no wasted chrome):
-- Left: the registry groups (BOARD / FRONT / DRAWER BOX / EDGING /
-  HARDWARE / LIGHTING / CONSUMABLE) as a list; counts of unassigned per
-  group beside each.
-- Right: the parts of the selected group, one row each:
-  `part name · assigned material (picker) · yield · [override per family]`
-- Picker reads `cc_materials` (Supabase), filtered by `materialType`, with
-  category/subcategory filters as Production Core's `MaterialPicker`.
-- **UNASSIGNED PARTS ARE MARKED** — owner: *"podkreślone nowe materiały
-  nieprzypisane"*. An unassigned row is visually distinct (underline +
-  colour + a dot in the group list). A part that becomes unassigned
-  because the design gained something new (first drawer, first LED strip)
-  shows as **NEW** until touched.
-- A running counter in the header: `N parts unassigned`.
-- The modal is draggable and opens beside, not on top of, per the
-  permanent UI rule.
+## F3 [HIGH] — drawers: the 30 mm strip, and OVERLAY drawers in a wardrobe
 
-Proof: `f3-assign-materials-unassigned-marked.png`.
+### F3a — the strip only exists when a door does
 
-## F4 [HIGH] — the automatic assignments
+Owner: *"jak nie ma drzwi w ogóle, to nie powinno robić 30 mm odstępu
+infill na zawiasy — dopiero po wstawieniu drzwi (ważne)."*
 
-Owner: *"zawiasy automatycznie po wyborze koloru, nóżki też automatycznie
-w zależności od wysokości."* Rule-driven auto-assignment, applied when
-the part is untouched by hand; a manual assignment always wins and is
-never overwritten.
+INTERNAL drawers (behind doors) reserve a 30 mm strip for the hinge. That
+reservation must be conditional on a door actually existing on that side.
+No door → no strip → fronts run the full carcass width. Add a door → the
+strip returns and the fronts narrow. This is a design-layer decision, so
+it belongs in `paramsForEngine()`/the design layer, NOT in the engine.
 
-- **hinge / hinge_plate** — resolved from the chosen hardware finish
-  (the existing internal-metal colour choice) + the hinge type already in
-  the profile. Choosing the finish assigns every hinge part at once.
-- **leg** — resolved from plinth height: a height→product table in the
-  profile (`profile.materials.legRules`), nearest-fitting product, with
-  the adjustment range respected. Out of range → leaves it unassigned and
-  says why.
-- **runner** — from drawer depth and the runner family already chosen
-  (MOVENTO/TANDEM), reusing the existing runner selection law. Do NOT
-  re-derive lengths here; read what the engine already decided.
-- **led_strip / led_profile** — length in metres from the strips the
-  design actually carries.
-- Every auto-assignment is marked as such in the UI (small `auto` tag)
-  and can be overridden by hand, which clears the tag for that part.
+Test: same cabinet, doors off → front width grows by the strip; doors on →
+back to today's number.
 
-Tests: each rule with in-range, out-of-range and boundary inputs; manual
-assignment survives a rule re-run.
+### F3b — OVERLAY drawers in a wardrobe (new)
 
-## F5 [CRITICAL] — the BOM engine (`src/engine/bom.js`)
+Owner: *"nadal nie mamy szuflad nawierzchniowych — w sensie żeby były na
+wierzchu, czyli bez infilla, fronty na szafie, drzwi powyżej szuflad."*
+Confirmed by him, point by point:
 
-Pure functions, no UI, no store reads — arguments in, list out. Shape and
-naming follow Production Core's `bom.js`:
+- **Same logic as BUDR**, but inside a wardrobe. Runner drilling and
+  geometry follow the BUDR law — read it, do not re-derive it.
+- **The stack always sits at the bottom** of the wardrobe.
+- **A FIXED SHELF sits above the stack**, separating it from the section
+  above.
+- **The doors above are shortened** — they start above the stack and run
+  to the top; their hinges follow the standard law for that shortened
+  height.
+- **3 mm gap** — the owner said explicitly not to forget it.
+- **Overlay drawers NEVER have the 30 mm infill**, unconditionally. This
+  is not the same rule as F3a: internal drawers have a conditional strip,
+  overlay drawers have none, ever.
+- **Heights default to EQUAL**, not the 3/2/1 progression a kitchen bank
+  uses — with the per-drawer height slider working as it does elsewhere.
 
-- `buildCabinetPartQtys(computed, unit, settings)` →
-  `{ [partId]: { m2?, m?, pcs?, unit } }`. Areas from the panels the
-  engine already computed; edging length from the perimeter of edged
-  sides (read the existing edging decision, do not invent one); hardware
-  counts from the engine's own hinge/runner/pin lists.
-- `mergeUnitMaterials(units, { assignments, materials, ALL_PARTS })` →
-  the flat purchase list, accumulating with Production Core's `bump()`:
-  - assigned → key `mat:{material_id}`, `_assigned: true`, cost from
-    `cc_materials.cost_per_unit`
-  - unassigned → key `part:{partId}`, `_assigned: false`, cost 0, so the
-    user sees exactly what is missing
-  - yield applied per assignment before summing
-- **Sheet estimate** for board lines: `ceil(area × yield ÷ sheet area)`
-  using the per-family sheet size that T35-F15 already stores. Label it
-  plainly as an ESTIMATE — real nesting is parked and this is not it.
-- Project BOM = simple sum over units, so one cabinet's BOM and the
-  project BOM can never disagree.
+Where it lives: the wardrobe's ADD ITEMS offer, beside the existing
+internal drawers, clearly distinguished (internal vs overlay).
 
-Tests: two parts on one material merge to one line with summed qty; yield
-arithmetic; unassigned parts appear as `part:` lines with zero cost;
-sheet estimate rounds up; a two-cabinet project equals the sum of its
-two single-cabinet BOMs.
+Tests: stack at the bottom; fixed shelf above it; door height = carcass
+minus stack minus gap; equal default heights; no 30 mm strip under any
+combination of doors on/off; runner rows match BUDR at the same drawer
+height.
 
-## F6 [HIGH] — the BOM view
+Proofs: `f3a-no-door-no-strip.png`, `f3b-overlay-drawers-in-wardrobe.png`.
 
-New tab/panel: **BOM**. Two levels, switchable: **this cabinet** /
-**whole project**.
+---
 
-Columns: material name · qty · unit · sheets (board lines only) · unit
-cost · line cost · source group. Grouped by registry group, group
-subtotals, project total at the bottom.
+## F4 [HIGH] — Checks: one message, no twins, and take me there
 
-- Unassigned lines sit at the TOP, marked, with a button that opens
-  Assign Materials on that exact part.
-- Costs show only where a cost exists; a BOM with unassigned lines shows
-  its total as **incomplete**, never as a confident number.
-- Export: CSV (and the existing PDF path if one exists — reuse, do not
-  build a second).
+Three faults, from the owner's screenshots of 18.08.
 
-Proof: `f6-bom-project-with-unassigned-on-top.png`.
+**F4a — the same fault, said twice, differently.** The Check panel shows
+`#1 SHELF × HINGE COLLISION` with one button (*Move the hinge*); the
+cabinet modal shows the same fault with two (*Remove sleeves at this
+shelf*, *Move the hinge*). Owner: *"raczej powinny się pokazywać i tu i
+tu"* — the same fault, the same wording, the SAME buttons, in both
+places. One definition, two renderers.
 
-## F7 [MEDIUM] — the gate
+**F4b — the duplicate.** `#3 TALL CABINET WITH NO FIXED SHELF` appears
+TWICE, identically, for one cabinet. Find why the rule emits twice (a
+per-shelf loop where a per-cabinet answer belongs, most likely) and make
+it emit once. Test with the exact configuration in the screenshot: a 2460
+tall wardrobe with one non-fixed shelf → exactly one instance.
 
-The existing hard gate ("Save blocked without a Stock board assigned for
-spray/veneer sources") folds into this system rather than living beside
-it: the gate now asks the assignment store. Nothing is loosened — a
-missing board still blocks. Add: **Export CNC warns** (warns, not blocks)
-when the project has unassigned parts, because a cut file for a board
-nobody has chosen is a cut file for the wrong board.
+**F4c — clicking a fault must TAKE ME THERE.** Owner: *"super, teraz tak
+robi, ale nie bierze nas dokładnie do tego miejsca… jeśli to ta półka,
+powinno nas wziąć do tej półki, jakby najechać kamerą na nią, lub na
+zawias który jest problemem. Jeśli drzwi zamknięte, to otwiera program
+drzwi i nas tam zabiera."*
 
-Tests: gate still blocks the original case; warning fires and does not
-block.
+- Every fault carries the ID of the OBJECT it is about (that shelf, that
+  hinge), not just the cabinet.
+- Clicking flies the camera to that object: smooth travel (not a jump),
+  object centred and highlighted.
+- **If the object is behind closed doors, the app opens the doors first**,
+  then travels. Doors it opened for this reason may stay open — do not
+  fight the user by closing them again.
+- If a fault genuinely has no single object, fall back to today's
+  behaviour rather than inventing a target.
 
-## F8 [LOW] — user-defined consumables
+Proofs: `f4a-same-fault-same-buttons-both-places.png`,
+`f4b-tall-cabinet-fault-appears-once.png`,
+`f4c-camera-at-the-hinge-doors-opened.png`.
 
-Production Core's `customParts`: the user adds a line ("dowels 8×40",
-qty per cabinet, unit), assigns a material, and it flows into the BOM
-like any registry part. Same shape, same merge path.
+---
+
+## F5 [CRITICAL] — WALL DRAWINGS: the whole run, not one cabinet
+
+Owner: *"nie mamy drawingu całościowego — pokazuje nam tylko pojedyncze
+szafki, a ja bym chciał drawing całości profesjonalny jak z AutoCada."*
+He supplied his own AutoCAD set (Anderson Kitchen rev B) as the standard.
+This is **PDF in Output — not CNC.**
+
+### What his own drawings do (read this as the spec's真 source)
+
+- **A sheet is a WALL.** His set: `Wall A /1`, `Wall A /2`, `Wall B /1`,
+  `Wall B /2`, plus `Horizontal section`. Confirmed by him: **/1 is WITH
+  FRONTS, /2 is the CARCASS view without fronts** — the same split the
+  Unit Card already makes per cabinet, applied to a whole wall.
+- **TWO dimension chains per axis, not one.** Top:每 cabinet's own width
+  with the gaps between them (597.0 · 37 · 501.0 · 501.0 · 37 · 513.0 …).
+  Bottom: the grouped totals (599.5 · 37 · 1011.0 · 36.0 · 1571.0 · 40.0).
+  Right: every front's own height (140.3 · 100.3 · 40.0 · 221.0 · 22.0 …)
+  AND the grouped bands (1550.0 · 770.0 · 100.0 · 30.0). Left: the
+  overall height.
+- **Colour convention:** fronts in magenta, hinge side shown by the grey
+  diagonal X across each door, handles in green, existing building fabric
+  (architrave, walls) in red.
+- **Scale reads "No Scale"** — he does not print to a scale, he trusts the
+  dimensions. Do not invent a scale label.
+- **Cabinet numbers** appear in the plan view, in green.
+- **Title block:** Client Name, Client Address, Project, Drawing name,
+  Date, Job No, Scale, Rev.
+
+### What to build
+
+The project already knows walls: every unit carries
+`position: { wall, x_mm, rotation_deg }` and `projectStore` already groups
+neighbours by wall. Use it. Do not invent a second notion of a run.
+
+Reuse, do not rewrite: `drawings/views.js` (`buildCarcassElevation`,
+`buildTopView`, `planBox`), `drawings/frontElevation.js`,
+`drawings/sheet.js` (`layoutSheet`, `pageFormat`, title block),
+`drawings/primitives.js`, `drawings/svg.js`. A wall drawing is those
+per-unit views composed side by side at their `x_mm` positions, with
+chains drawn across the composition.
+
+- **Per wall, two sheets**: `/1` elevation with fronts, `/2` carcass
+  without fronts.
+- **One horizontal section** per project: the plan, all walls, cabinet
+  numbers.
+- **Both dimension chains** on each axis, as above. This is the single
+  most important detail of the whole feature — one chain is not his
+  drawing.
+- **Output as PDF**, in the Output menu beside the existing Unit Card.
+- **DXF 2D as a SEPARATE output**, same geometry, with text (dimensions,
+  labels, title block). It carries a clear label: **"AutoCAD only — do
+  NOT open in VCarve"**, because DXF text styles crash VCarve's parser
+  (02.08.2026). The CNC export path is untouched by this feature and
+  still ships no text of any kind.
+
+Tests: a two-cabinet wall composes both cabinets at their x positions;
+the detailed chain sums to the grouped chain; a wall with no cabinets
+produces no sheet rather than an empty one; the DXF writer emits text
+only on this path.
+
+Proofs: `f5a-wall-elevation-with-fronts.png`,
+`f5b-wall-carcass-no-fronts.png`, `f5c-horizontal-section.png`,
+`f5d-dxf-drawings-labelled-autocad-only.png`.
+
+---
+
+## F6 [MEDIUM] — the rail: with a shelf, or on its own
+
+Owner: *"następnie dodawanie drążka raz i z półką proszę — wybór w drążek
+modal, to ważne."*
+
+T37-F2 made adding a rail ALWAYS an assembly (a FIX shelf with the rail
+beneath it). The owner now wants the choice: **rail alone**, or **rail
+with shelf**, chosen in the rail modal. Default stays the assembly (that
+was his own verdict in T37 and nothing here overturns it); the modal adds
+the alternative. Legacy rails are untouched, as T37 left them.
+
+Proof: `f6-rail-modal-alone-or-with-shelf.png`.
+
+---
+
+## F7 [LOW] — plateBiteMm: the frozen value
+
+`profile.js` carries `plateBiteMm: 10` (T37-F3, was 5). The owner reports
+seeing no change — the localStorage freeze pattern this project has hit
+repeatedly (LED kelvins, the design migration). Add an explicit
+"code wins" migration for this key, idempotent (`null !== 0` — the T-round
+lesson), so an existing profile picks up 10 without the user rebuilding
+anything. Verify with a stored profile carrying 5.
+
+Proof: `f7-existing-project-picks-up-plate-bite-10.png`.
+
+---
 
 ## Execution order
 
-F1 → F2 → F5 → F3 → F6 → F4 → F7 → F8.
+F1 → F2 → F7 → F5 → F3 → F4 → F6.
 
-The registry and the pure BOM engine come first because everything else
-reads them; the UI follows; the automatic rules and the extras go last,
-so a short night cuts F8, then F7, then F4 — each skip named in the PR.
+F1 and F2 first: both are correctness at the machine, and F2's single
+source is what stops this seam coming back a fourth turn. F7 is ten lines
+and rides along. F5 gets the bulk of the night because the owner called
+the drawings the most important thing on the list. A short night therefore
+cuts F6 first, then F4, then F3 — each skip named in the PR body.
 
 ## What this turn does NOT touch
 
-The CNC editor (T38 is done). `reference/lisp/**`. `SettingsPanel.jsx`.
-Engine output for the six configs. Golden fixtures. Real nesting,
-Cabineo and other joinery systems, the pattern library, pull-down rail,
-L-shape — all parked. Kitchens and kitchen patterns — parked pending the
-owner's inventory pass.
+`computeCabinet()` output. `reference/lisp/**`. `SettingsPanel.jsx`.
+Golden fixtures. `depthSteps`. The CNC export path's no-text rule. The
+materials/BOM system from T39. Parked and not to be started: Cabineo and
+other joinery systems, the drilling-pattern library (the owner has not
+supplied the hole figures), pull-down rail, L-shape, nesting, kitchens
+and kitchen patterns, the shaker 20-vs-60 question, and the internal
+metal Gold→Silver default — the owner said "nie teraz" to the last two on
+18.08.
 
 ## Morning audit will run
 
-Fresh clone → branch → clean-room install → full suite (never --silent)
-→ vite build → t39-classify borrowed onto main → BYTE-IDENTITY,
-UNNAMED=0 → sanctity diff-audit (zero removals) → `reference/lisp/`
-untouched → SQL migration present and labelled → graceful degradation
-verified with the migration NOT applied → verify/t39 complete → verdict
-→ the owner's numbered eye-test list.
+Fresh clone → branch → clean-room install → full suite (never --silent) →
+vite build → t40-classify borrowed onto main → BYTE-IDENTITY, UNNAMED=0
+→ sanctity diff-audit (zero removals) → `reference/lisp/` untouched →
+CNC-fingerprint moves present and NAMED (F2) while engine hashes are
+IDENTICAL → verify/t40 complete → verdict → the owner's numbered eye-test
+list.

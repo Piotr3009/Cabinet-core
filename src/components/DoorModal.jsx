@@ -411,7 +411,19 @@ function HingeSection({
   const profile = useCabinetProfileStore((s) => s.profile);
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
 
-  const rows = hingeRowsOf(unit.id);
+  // ─── TURN 40 (CLAUDE.md F1): THE ROWS OF THIS DOOR, NOT OF A DOOR THAT
+  //     NO LONGER EXISTS ─────────────────────────────────────────────────────
+  //
+  // The owner: *"w modalu doors nie można ich przesuwać"*. This asked the
+  // CABINET for its ladder, and on a split leaf that ladder is the whole-door
+  // one the split replaced — six rows on a 2150 wardrobe where the machine
+  // bores three and two. Moving one wrote `params.hinge_rows`, which the split
+  // pass does not read, so nothing moved. It asks about the PANEL now, and
+  // every setter below is handed the same panel, so what the window shows and
+  // what the arrow moves are one list.
+  const isSplitLeaf = Boolean(panel?.meta?.split);
+  const rows = hingeRowsOf(unit.id, panel.id);
+  const ownSplitRows = Boolean(unit.params.split_hinge_rows && unit.params.split_hinge_rows[panel.id]);
   const finish = resolveHingeFinish(design, profile);
   // Every hinge in the catalogue, whatever its finish — a joiner assigning an
   // exception is allowed to reach for the onyx one on a nickel job, because
@@ -493,14 +505,17 @@ function HingeSection({
       {/* ── move it up and down ──────────────────────────────────────────── */}
       <div className="space-y-1" data-hinge-modal-rows="1">
         <div className="cc-row">
-          <span className="cc-label flex-1">Hinges · {rows.length}</span>
-          {Array.isArray(unit.params.hinge_rows) && unit.params.hinge_rows.length ? (
+          <span className="cc-label flex-1" data-hinge-scope={isSplitLeaf ? panel.meta.split : 'cabinet'}>
+            Hinges · {rows.length}
+            {isSplitLeaf ? ` · ${panel.meta.split} leaf` : ''}
+          </span>
+          {(isSplitLeaf ? ownSplitRows : Array.isArray(unit.params.hinge_rows) && unit.params.hinge_rows.length) ? (
             <button
               type="button"
               className="cc-btn px-2"
               data-hinge-modal-reset="1"
               title="Back to the kit's own spacing and the project standard"
-              onClick={() => resetHinges(unit.id)}
+              onClick={() => resetHinges(unit.id, isSplitLeaf ? panel.id : null)}
             >
               Reset
             </button>
@@ -531,7 +546,7 @@ function HingeSection({
               className="cc-btn-ghost px-2"
               data-hinge-up={hr.index}
               title="Up — the hinge’s own 5 mm stride"
-              onClick={() => sayHingeResult(setHingePos(unit.id, hr.index, hr.mm + (profile.editor.hingeNudgeMm || 5)), notify)}
+              onClick={() => sayHingeResult(setHingePos(unit.id, hr.index, hr.mm + (profile.editor.hingeNudgeMm || 5), isSplitLeaf ? panel.id : null), notify)}
             >
               ↑
             </button>
@@ -540,7 +555,7 @@ function HingeSection({
               className="cc-btn-ghost px-2"
               data-hinge-down={hr.index}
               title="Down — the hinge’s own 5 mm stride"
-              onClick={() => sayHingeResult(setHingePos(unit.id, hr.index, hr.mm - (profile.editor.hingeNudgeMm || 5)), notify)}
+              onClick={() => sayHingeResult(setHingePos(unit.id, hr.index, hr.mm - (profile.editor.hingeNudgeMm || 5), isSplitLeaf ? panel.id : null), notify)}
             >
               ↓
             </button>
@@ -549,14 +564,14 @@ function HingeSection({
               data-hinge-modal-row={hr.index}
               value={hr.mm}
               title="Above the carcass floor. It cannot pass the hinge above or below it."
-              onCommit={(v) => sayHingeResult(setHingePos(unit.id, hr.index, v), notify)}
+              onCommit={(v) => sayHingeResult(setHingePos(unit.id, hr.index, v, isSplitLeaf ? panel.id : null), notify)}
             />
             <button
               type="button"
               className="cc-btn-ghost px-2"
               data-hinge-modal-remove={hr.index}
               title="Take this hinge off"
-              onClick={() => removeHinge(unit.id, hr.index)}
+              onClick={() => removeHinge(unit.id, hr.index, isSplitLeaf ? panel.id : null)}
             >
               −
             </button>
@@ -567,7 +582,7 @@ function HingeSection({
           className="cc-btn w-full"
           data-hinge-modal-add="1"
           title="One more hinge, in the biggest gap in the run"
-          onClick={() => sayHingeResult(addHinge(unit.id), notify)}
+          onClick={() => sayHingeResult(addHinge(unit.id, isSplitLeaf ? panel.id : null), notify)}
         >
           + Add a hinge
         </button>

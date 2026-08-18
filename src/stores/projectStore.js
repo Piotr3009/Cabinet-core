@@ -64,6 +64,11 @@ import { useUiStore } from './uiStore.js';
 import { runChecks } from '../engine/checks.js';
 // Turn 31 (CLAUDE.md F3): the drill guard's own number, at the source.
 import { hingeMinSpacingMm, hingeRowClashes, hingeSpacingBlocks } from '../engine/cnc/drillGuard.js';
+// TURN 40 (CLAUDE.md F1): the ONE post-split hinge reader. A split leaf's two
+// segments each carry their own ladder and the cabinet's `hinge_centers` is
+// the WHOLE-DOOR list it was before the split — which is why the Doors modal
+// offered rows nothing is drilled at.
+import { doorHingeRows, hasOwnHingeRows } from '../engine/hingeLadder.js';
 import {
   carcassSources, facingMatchesSource, frontSources, projectBoardThickness, projectDepth,
   projectFrontThickness, setFrontTypeCount, sourceById, sourceTakesFacing,
@@ -4092,8 +4097,22 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // go, a rule that argued with him would be the app overruling the bench.
   // `resetHinges` hands it back.
 
-  /** This cabinet's hinge rows as they stand — the rule's, or its own. */
-  hingeRowsOf: (unitId) => {
+  /**
+   * This cabinet's hinge rows as they stand — the rule's, or its own.
+   *
+   * ─── TURN 40 (CLAUDE.md F1): ASK IT ABOUT A DOOR ──────────────────────────
+   *
+   * Hand it a PANEL id and it answers about that door. For every door in the
+   * app that is not a leaf of a split that is the cabinet's own ladder, exactly
+   * as it has been since T17 — the carcass carries one hinge column per hinged
+   * side and both leaves are drilled as a set. For a SPLIT SEGMENT it is that
+   * segment's own two-or-three rows, because a split is two doors and each one
+   * hangs on its own.
+   *
+   * Called with no panel — every caller written before tonight — it is the
+   * cabinet's ladder, unchanged.
+   */
+  hingeRowsOf: (unitId, panelId = null) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return [];
     // `drillSummary`, not `derived`: the hinge centres are a DRILLING fact and
@@ -4101,8 +4120,58 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // wrong one gave an empty list, and an empty list is a cabinet the panel
     // offers no hinges to edit.
     const result = get().unitResult(unitId);
+    if (panelId && hasOwnHingeRows(result, panelId)) return doorHingeRows(result, panelId);
     return result?.drillSummary?.hinge_centers || [];
   },
+
+  /**
+   * ─── TURN 40 (CLAUDE.md F1): THE SEGMENT A HINGE EDIT IS ABOUT ────────────
+   *
+   * A split leaf's segment, its own span up the carcass, and its siblings —
+   * the three facts every hinge setter below needs and none of them should
+   * work out twice. Null for a door that is not a split segment, which is the
+   * branch that keeps every path written before tonight exactly where it was.
+   */
+  splitHingeTargetOf: (unitId, panelId) => {
+    if (!panelId) return null;
+    const result = get().unitResult(unitId);
+    if (!hasOwnHingeRows(result, panelId)) return null;
+    const panel = (result.panels || []).find((p) => p.id === panelId);
+    if (!panel?.box) return null;
+    // Its own leaf, and nothing above or below it: a top-leaf hinge that could
+    // be typed down into the bottom leaf would be a hinge screwed to air.
+    const from = Number(panel.box.y) || 0;
+    const to = from + (Number(panel.box.h) || 0);
+    // The OTHER SEGMENTS OF THIS LEAF. They are drilled into one hinge column
+    // — the same side of the carcass, one above the other — so the spacing
+    // rule is asked of them together: a top-leaf hinge dropped onto the split
+    // line and a bottom-leaf hinge just under it are a doubled hole. The other
+    // LEAF of the pair is a different column on the opposite side and its rows
+    // are its own business, which is why this is scoped by `splitOf` and not
+    // by "every segment in the cabinet".
+    const siblings = (result.panels || [])
+      .filter((p) => p.id !== panelId && p.meta?.splitOf && p.meta.splitOf === panel.meta?.splitOf)
+      .flatMap((p) => doorHingeRows(result, p.id));
+    return {
+      panelId, from, to, rows: doorHingeRows(result, panelId), siblings,
+    };
+  },
+
+  /** The one writer for a split segment's ladder. Sorted, and its own key only. */
+  setSplitHingeRows: (unitId, panelId, rows) => set((st) => ({
+    units: st.units.map((u) => (u.id === unitId
+      ? {
+        ...u,
+        params: {
+          ...u.params,
+          split_hinge_rows: {
+            ...(u.params.split_hinge_rows || {}),
+            [panelId]: [...rows].sort((a, b) => a - b),
+          },
+        },
+      }
+      : u)),
+  })),
 
   /**
    * Move one hinge. Clamped to the carcass and snapped to the workshop grid.
@@ -4130,15 +4199,40 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * @returns {number|null} the position it landed at, or null when refused —
    *          with `{ blocked, message }` on the object either way.
    */
-  setHingePos: (unitId, index, mm) => {
+  setHingePos: (unitId, index, mm, panelId = null) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
     const profile = getCabinetProfile();
+    const min = hingeMinSpacingMm(profile);
+    // ─── TURN 40 (CLAUDE.md F1): A SPLIT SEGMENT MOVES ITS OWN ─────────────
+    //
+    // "Those hinges are movable in the Doors modal, like any other door's",
+    // and "moving a top-leaf hinge does not move a bottom-leaf hinge". Both
+    // fall out of writing to the SEGMENT's key rather than to the cabinet's
+    // one list. The clamp is the LEAF and not the carcass, because a hinge
+    // typed past the split line would be screwed to a door that is not there;
+    // the spacing rule is asked of every segment together, because they share
+    // one hinge column in the side.
+    const target = s.splitHingeTargetOf(unitId, panelId);
+    if (target) {
+      const rows = [...target.rows];
+      if (index < 0 || index >= rows.length) return null;
+      const pos = Math.min(Math.max(snapTo(Number(mm) || 0, profile.editor.mmStep), target.from), target.to);
+      const next = rows.map((v, i) => (i === index ? pos : v));
+      const column = [...next, ...target.siblings].sort((a, b) => a - b);
+      const clash = hingeRowClashes(column, { minSpacingMm: min, unitNum: unit.params.unit_num });
+      if (clash.length && hingeSpacingBlocks(profile)) {
+        return { blocked: true, message: clash[0].message, minSpacingMm: min };
+      }
+      s.setSplitHingeRows(unitId, panelId, next);
+      return clash.length
+        ? { pos, blocked: false, message: clash[0].message, minSpacingMm: min }
+        : pos;
+    }
     const rows = [...s.hingeRowsOf(unitId)];
     if (index < 0 || index >= rows.length) return null;
     const H = Number(unit.params.height) || 0;
-    const min = hingeMinSpacingMm(profile);
     // The carcass is still the clamp: a hinge cannot be off the board.
     const pos = Math.min(Math.max(snapTo(Number(mm) || 0, profile.editor.mmStep), 0), H);
     const next = rows.map((v, i) => (i === index ? pos : v));
@@ -4162,14 +4256,40 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * one dropped on top of an existing row, which is the doubled hole again by a
    * different door.
    */
-  addHinge: (unitId) => {
+  addHinge: (unitId, panelId = null) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
     const profile = getCabinetProfile();
+    const min = hingeMinSpacingMm(profile);
+    // TURN 40 (F1): the same gesture on a split segment adds to THAT leaf, in
+    // the biggest gap in ITS OWN run, clamped to its own board.
+    const target = s.splitHingeTargetOf(unitId, panelId);
+    if (target) {
+      const own = [...target.rows];
+      let bestAt = null;
+      let bestGap = -1;
+      for (let i = 0; i < own.length - 1; i += 1) {
+        const span = own[i + 1] - own[i];
+        if (span > bestGap) { bestGap = span; bestAt = (own[i] + own[i + 1]) / 2; }
+      }
+      if (bestAt == null) bestAt = own.length ? own[0] + profile.hinges.endOffset : (target.from + target.to) / 2;
+      const at = Math.min(Math.max(snapTo(bestAt, profile.editor.mmStep), target.from), target.to);
+      const next = [...own, at].sort((a, b) => a - b);
+      const column = [...next, ...target.siblings].sort((a, b) => a - b);
+      const clash = hingeRowClashes(column, { minSpacingMm: min, unitNum: unit.params.unit_num });
+      if (clash.length && hingeSpacingBlocks(profile)) {
+        return {
+          blocked: true,
+          message: `No room for another hinge: ${clash[0].message}`,
+          minSpacingMm: min,
+        };
+      }
+      s.setSplitHingeRows(unitId, panelId, next);
+      return at;
+    }
     const rows = [...s.hingeRowsOf(unitId)];
     const H = Number(unit.params.height) || 0;
-    const min = hingeMinSpacingMm(profile);
     if (!rows.length) {
       const at = snapTo(H / 2, profile.editor.mmStep);
       set((st) => ({
@@ -4203,8 +4323,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /** One fewer. The list is what remains, not a rule with a hole in it. */
-  removeHinge: (unitId, index) => {
+  removeHinge: (unitId, index, panelId = null) => {
     const s = get();
+    // TURN 40 (F1): off THIS leaf, when the door is a split segment.
+    const target = s.splitHingeTargetOf(unitId, panelId);
+    if (target) {
+      if (index < 0 || index >= target.rows.length) return null;
+      const next = target.rows.filter((_, i) => i !== index);
+      s.setSplitHingeRows(unitId, panelId, next);
+      return next.length;
+    }
     const rows = s.hingeRowsOf(unitId);
     if (index < 0 || index >= rows.length) return null;
     const next = rows.filter((_, i) => i !== index);
@@ -4214,9 +4342,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return next.length;
   },
 
-  /** Hand this cabinet back to the kit's own maths and the project standard. */
-  resetHinges: (unitId) => set((st) => ({
-    units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, hinge_rows: null } } : u)),
+  /**
+   * Hand this cabinet back to the kit's own maths and the project standard.
+   *
+   * TURN 40 (F1): named with a split segment it hands back THAT leaf only —
+   * the key is dropped, and the kit's ladder for that segment's own height
+   * answers again. The other leaf keeps whatever it was given.
+   */
+  resetHinges: (unitId, panelId = null) => set((st) => ({
+    units: st.units.map((u) => {
+      if (u.id !== unitId) return u;
+      if (panelId && u.params.split_hinge_rows && u.params.split_hinge_rows[panelId]) {
+        const next = { ...u.params.split_hinge_rows };
+        delete next[panelId];
+        return {
+          ...u,
+          params: {
+            ...u.params,
+            split_hinge_rows: Object.keys(next).length ? next : null,
+          },
+        };
+      }
+      if (panelId) return u;
+      return { ...u, params: { ...u.params, hinge_rows: null } };
+    }),
   })),
 
   // ─── DRAWER FRONTS, AND THE HEIGHTS UNDER THEM (turn 17, CLAUDE.md F8) ───

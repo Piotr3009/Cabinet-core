@@ -783,9 +783,15 @@ export default function ElementProperties({
       // CABINET's, because its doors are drilled as a set and the carcass
       // carries one hinge column per hinged side; the note says so rather than
       // leaving a joiner to discover it by editing the other leaf.
+      // TURN 40 (CLAUDE.md F1): …and a SPLIT leaf's segment is its OWN door, so
+      // this asks about the panel. Every other front asks about the cabinet,
+      // which is what it always asked and what the note below still says.
       case 'hinges': {
-        const rows = hingeRowsOf(unit.id);
-        const own = Array.isArray(unit.params.hinge_rows) && unit.params.hinge_rows.length;
+        const splitLeaf = Boolean(panel?.meta?.split);
+        const rows = hingeRowsOf(unit.id, panel?.id || null);
+        const own = splitLeaf
+          ? Boolean(unit.params.split_hinge_rows && unit.params.split_hinge_rows[panel.id])
+          : Array.isArray(unit.params.hinge_rows) && unit.params.hinge_rows.length;
         if (!rows.length) return null;
         return (
           <div key={key} className="col-span-2 space-y-1" data-hinge-rows="1">
@@ -797,7 +803,7 @@ export default function ElementProperties({
                   className="cc-btn px-2"
                   data-hinges-reset="1"
                   title="Back to the kit's own spacing and the project standard"
-                  onClick={() => resetHinges(unit.id)}
+                  onClick={() => resetHinges(unit.id, splitLeaf ? panel.id : null)}
                 >
                   Reset
                 </button>
@@ -812,14 +818,14 @@ export default function ElementProperties({
                   data-hinge-row={i}
                   value={mm}
                   title="Above the carcass floor. It cannot pass the hinge above or below it."
-                  onCommit={(v) => sayHingeResult(setHingePos(unit.id, i, v), notify)}
+                  onCommit={(v) => sayHingeResult(setHingePos(unit.id, i, v, splitLeaf ? panel.id : null), notify)}
                 />
                 <button
                   type="button"
                   className="cc-btn-ghost px-2"
                   data-hinge-remove={i}
                   title="Take this hinge off"
-                  onClick={() => removeHinge(unit.id, i)}
+                  onClick={() => removeHinge(unit.id, i, splitLeaf ? panel.id : null)}
                 >
                   −
                 </button>
@@ -830,7 +836,7 @@ export default function ElementProperties({
               className="cc-btn w-full"
               data-hinge-add="1"
               title="One more hinge, in the biggest gap in the run"
-              onClick={() => sayHingeResult(addHinge(unit.id), notify)}
+              onClick={() => sayHingeResult(addHinge(unit.id, splitLeaf ? panel.id : null), notify)}
             >
               + Add a hinge
             </button>

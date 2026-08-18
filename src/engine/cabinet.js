@@ -4399,6 +4399,23 @@ export function computeCabinet(params, profileOverride) {
   // 0 is every door in every project before this turn, which is why the
   // named-deltas classifier expects the six standard configs not to move.
   const splitSaid = { unit: params?.split_top_mm, bays: params?.bay_doors };
+  // ─── TURN 40 (CLAUDE.md F1): AND A SEGMENT'S HINGES ARE MOVABLE ──────────
+  //
+  // The owner: *"w modalu doors nie można ich przesuwać"*. A whole door's
+  // ladder has been editable since T17-F7.2 (`params.hinge_rows`, an explicit
+  // list that REPLACES the rule), and a split segment had no such channel at
+  // all — so the modal offered the cabinet's pre-split six, and moving one
+  // wrote a list the split pass never read. Nothing moved.
+  //
+  // This is that channel, keyed by the SEGMENT's own panel id and stated in
+  // the CARCASS's frame — the same frame `hinge_rows` is stated in and the
+  // same frame the modal shows, so a joiner typing 772 gets a hinge at 772.
+  // It arrives exactly as `hinge_rows`, `front_edge_trim` and
+  // `hinge_plate_pilot_d` do: an INPUT on the override channel, never a
+  // formula. A bare `computeCabinet()` — every golden fixture, all six of the
+  // classifier's configs — is handed none, this reads `undefined` at every
+  // segment, and the kit's own ladder answers exactly as it did in T36.
+  const splitRowsSaid = params?.split_hinge_rows || null;
   const splitDividers = [];
   const splitLeaves = [];
   // How many MORE (or fewer) hinges this cabinet buys because of its splits.
@@ -4422,13 +4439,30 @@ export function computeCabinet(params, profileOverride) {
   }
   for (const { panel: leaf, topH, segments } of splitLeaves) {
     const at = panels.indexOf(leaf);
-    splitHingeDelta += segments.reduce((n, s) => n + s.hinges, 0) - centres.length;
     const made = segments.map((seg) => {
       // Each segment's own hinge ladder, from its OWN height — "a split is two
       // doors, not one door with a line drawn on it, and it is never the
       // full-height count halved".
-      const local = splitSegmentHingeRows(seg.h, seg.hinges, P.hinges.endOffset)
-        .map((v) => roundTo(v, 4));
+      //
+      // TURN 40 (F1): unless a joiner has said otherwise for THIS segment, in
+      // which case his list replaces the rule — the same sentence T17 wrote
+      // for a whole door, said for a leaf of a split. The list is stated in
+      // the CARCASS's frame and the segment's own frame is what the sheet
+      // drills, so it is translated once, here, and both ladders below come
+      // out of the one number.
+      const base = leaf.box.y + seg.y;
+      const said = splitRowsSaid ? splitRowsSaid[`${leaf.id}-${seg.id}`] : null;
+      const own = Array.isArray(said)
+        ? said.map(Number).filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
+        : null;
+      const local = own && own.length
+        ? own.map((v) => roundTo(v - base, 4))
+        : splitSegmentHingeRows(seg.h, seg.hinges, P.hinges.endOffset).map((v) => roundTo(v, 4));
+      // What this segment is ACTUALLY drilled for, which is what the BOM buys
+      // and what `assemblies.splitDoors` publishes. Identical to the kit's own
+      // count wherever nobody has said anything, which is every cabinet that
+      // has not been edited by hand.
+      seg.hinges = local.length;
       return panel({
         id: `${leaf.id}-${seg.id}`,
         part: 'FRONT',
@@ -4457,6 +4491,11 @@ export function computeCabinet(params, profileOverride) {
       });
     });
     panels.splice(at, 1, ...made);
+    // The delta is counted from what was MADE, so a hand-edited segment adds
+    // the hinges it actually has. With nothing said this is
+    // `segments.reduce((n, s) => n + s.hinges, 0) − centres.length` to the
+    // number, which is what T36 wrote here.
+    splitHingeDelta += made.reduce((n, p) => n + p.meta.cupY.length, 0) - centres.length;
 
     // The DIVIDER: a FIX shelf on the split line, cut to the PARTITION's law
     // and NOT the shelf's — full width between the sides, FULL DEPTH to the

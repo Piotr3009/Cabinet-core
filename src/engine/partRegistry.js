@@ -647,7 +647,12 @@ function cleanValue(val) {
 export function normalizeAssignments(raw) {
   if (!isObj(raw)) return { schema: ASSIGNMENT_SCHEMA, base: {}, overrides: {}, customParts: [], auto: {} };
 
-  const hasCanonicalShape = isObj(raw.base) || isObj(raw.overrides) || raw.schema != null;
+  // A blob that carries ANY canonical key is canonical. `customParts` and
+  // `auto` count: a project whose only assignment is one custom consumable has
+  // no `base` yet, and reading it as turn 3's flat role map would drop the row
+  // on the floor.
+  const hasCanonicalShape = isObj(raw.base) || isObj(raw.overrides)
+    || Array.isArray(raw.customParts) || isObj(raw.auto) || raw.schema != null;
   const out = {
     schema: ASSIGNMENT_SCHEMA, base: {}, overrides: {}, customParts: [], auto: {},
   };
@@ -655,6 +660,8 @@ export function normalizeAssignments(raw) {
   if (hasCanonicalShape) {
     for (const [id, val] of Object.entries(raw.base || {})) {
       if (!isObj(val)) continue;
+      // A CUSTOM part id (F8) is not in the registry and must not be mapped
+      // through the legacy table — it is its own key and stays its own key.
       const { key } = legacyToCanonical(id);
       // First writer wins. TOP and BOTTOM both collapse onto
       // `carcase_horizontal`, and a legacy blob may carry a value for each; the

@@ -94,6 +94,23 @@ async function main() {
     return present;
   };
 
+  /** A keyDown carrying `text` is what actually inserts a character. */
+  const typeText = async (text) => {
+    for (const ch of text) {
+      const code = /[0-9]/.test(ch) ? `Digit${ch}` : `Key${ch.toUpperCase()}`;
+      await page.send('Input.dispatchKeyEvent', {
+        type: 'keyDown', text: ch, key: ch, code: ch === ' ' ? 'Space' : code,
+        windowsVirtualKeyCode: ch.toUpperCase().charCodeAt(0),
+        nativeVirtualKeyCode: ch.toUpperCase().charCodeAt(0),
+      });
+      await page.send('Input.dispatchKeyEvent', {
+        type: 'keyUp', key: ch, code: ch === ' ' ? 'Space' : code,
+        windowsVirtualKeyCode: ch.toUpperCase().charCodeAt(0),
+      });
+      await page.sleep(60);
+    }
+  };
+
   const phase = async (id, label, fn) => {
     if (!want(id)) { console.log(`  ··  ${id} skipped by --only`); return; }
     console.log(`\n── ${id.toUpperCase()} — ${label}`);
@@ -550,6 +567,77 @@ async function main() {
       all: ['[data-message]'],
       text: 'nobody has said what from',
     });
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // F8 — THE JOINER'S OWN ROWS
+  // ═════════════════════════════════════════════════════════════════════════
+  await phase('f8', 'Custom consumables — typed, assigned, and down the same path', async () => {
+    await page.evaluate(`${P}.ui.getState().openModal('assign-materials'); return true;`);
+    await page.waitFor('document.querySelector(\'[data-assign-materials="1"]\')', { what: 'the modal' });
+    await page.sleep(500);
+    await page.click('[data-assign-group="consumable"]');
+    await page.sleep(350);
+
+    // Typed with a real keyboard into a real field.
+    await page.click('[data-custom-draft-name="1"]');
+    await typeText('DOWELS 8 40');
+    await page.sleep(200);
+    await page.click('[data-custom-add="1"]');
+    await page.sleep(450);
+
+    const added = await page.evaluate(`
+      const cps = ${P}.materials.getState().data.customParts || [];
+      return { count: cps.length, name: cps[0] ? cps[0].name : null, id: cps[0] ? cps[0].id : null,
+               row: document.querySelectorAll('[data-custom-part]').length };
+    `);
+    check('a row the joiner typed exists, in the store and on the glass',
+      added.count === 1 && added.row === 1, JSON.stringify(added));
+
+    // Assign it the SAME board four registry parts already use, so the merge
+    // path is visible rather than asserted.
+    await page.evaluate(`
+      const S = () => ${P}.materials.getState();
+      for (const id of ['carcase_side', 'carcase_horizontal', ${JSON.stringify(added.id)}]) {
+        S().setAssignment(id, 'mat_mfc18_white');
+      }
+      return Object.keys(S().data.base);
+    `);
+    await page.sleep(400);
+    // The row's NAME lives in an <input value>, which `innerText` does not
+    // report — so the named subject is the row itself plus the board it now
+    // carries, both of which are on the glass.
+    await shot('f8-custom-consumable-typed-and-assigned', {
+      all: [
+        '[data-custom-parts="1"]',
+        `[data-custom-part="${added.id}"]`,
+        `[data-material-picker="${added.id}"]`,
+      ],
+      text: 'YOUR OWN CONSUMABLES',
+    });
+
+    const merged = await page.evaluate(`
+      const S = ${P}.project.getState();
+      const m = ${P}.materials.getState();
+      const bom = window.__ccT39.bom.purchaseBom(S.allResults(), {
+        assignments: m.data, materials: m.materials,
+        profile: ${P}.profile.getState().profile, design: S.project.design });
+      const line = bom.rows.find((r) => r.key === 'mat:mat_mfc18_white');
+      return { parts: line ? line.parts : [], lines: bom.rows.filter((r) => r.key === 'mat:mat_mfc18_white').length };
+    `);
+    check('the custom row rides the SAME merge path — one board, ONE line',
+      merged.lines === 1 && merged.parts.includes(added.id),
+      `${merged.lines} line, parts=${merged.parts.join('+')}`);
+
+    // Removing it takes its assignment with it.
+    await page.click(`[data-custom-remove="${added.id}"]`);
+    await page.sleep(400);
+    const gone = await page.evaluate(`
+      const d = ${P}.materials.getState().data;
+      return { rows: (d.customParts || []).length, assignment: Boolean(d.base[${JSON.stringify(added.id)}]) };
+    `);
+    check('removing the row removes its board with it', gone.rows === 0 && gone.assignment === false,
+      JSON.stringify(gone));
   });
 
   // ─── REPORT ───────────────────────────────────────────────────────────────

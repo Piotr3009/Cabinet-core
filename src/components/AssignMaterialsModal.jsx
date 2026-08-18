@@ -55,10 +55,15 @@ export default function AssignMaterialsModal() {
   const markSeen = useMaterialAssignmentStore((s) => s.markSeen);
   const seen = useMaterialAssignmentStore((s) => s.seen);
   const setAutoAssignment = useMaterialAssignmentStore((s) => s.setAutoAssignment);
+  const addCustomPart = useMaterialAssignmentStore((s) => s.addCustomPart);
+  const updateCustomPart = useMaterialAssignmentStore((s) => s.updateCustomPart);
+  const removeCustomPart = useMaterialAssignmentStore((s) => s.removeCustomPart);
 
   const [group, setGroup] = useState(PART_GROUPS[0].id);
   const [showAll, setShowAll] = useState(false);
   const [openOverride, setOpenOverride] = useState(null);
+  // F8: the row a joiner is typing, before it exists.
+  const [draft, setDraft] = useState({ name: '', unit: 'pcs', qtyPerUnit: 1 });
 
   // The workshop's own stock list, once. Mock mode, a dead network and a table
   // that is not there all leave the sample list standing (iron rule 6).
@@ -246,6 +251,103 @@ export default function AssignMaterialsModal() {
                 Nothing in this group is used by this job yet — “Show every part” lists them all.
               </p>
             )}
+            {/* ─── TURN 39 (CLAUDE.md F8): THE JOINER'S OWN ROWS ─────────────
+                Production Core's `customParts`. A line the user types, with a
+                quantity per cabinet, assigned like any registry part and merged
+                down the SAME path — so a dowel on the same board as a shelf
+                lands on the same purchase line. */}
+            {group === 'consumable' && (
+              <div className="mb-2 rounded border border-shell-600 bg-shell-700/30 p-2" data-custom-parts="1">
+                <div className="cc-label mb-1">Your own consumables — a quantity per cabinet</div>
+                {(data?.customParts || []).map((cp) => {
+                  const own = assignmentFor(data, cp.id, null);
+                  return (
+                    <div key={cp.id} className="flex items-center gap-1.5 mb-1" data-custom-part={cp.id}>
+                      <input
+                        className="cc-input flex-1 text-xs"
+                        value={cp.name}
+                        onChange={(e) => updateCustomPart(cp.id, { name: e.target.value })}
+                        aria-label="Name"
+                      />
+                      <NumberField
+                        value={cp.qtyPerUnit}
+                        min={0.01}
+                        max={9999}
+                        integer={false}
+                        decimals={2}
+                        onCommit={(v) => updateCustomPart(cp.id, { qtyPerUnit: Number(v) || 1 })}
+                        className="cc-input w-[70px] text-right"
+                      />
+                      <select
+                        className="cc-input w-[70px] text-xs"
+                        value={cp.unit}
+                        onChange={(e) => updateCustomPart(cp.id, { unit: e.target.value })}
+                        aria-label="Unit"
+                      >
+                        {['pcs', 'm', 'm²', 'L', 'kg', 'tubes'].map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                      <div className="w-[200px]">
+                        <MaterialPicker
+                          materials={materials}
+                          materialType={null}
+                          value={own?.material_id || null}
+                          testId={cp.id}
+                          onSelect={(m) => pick(cp.id, m, null)}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="cc-btn-ghost text-status-danger"
+                        title="Remove this line"
+                        data-custom-remove={cp.id}
+                        onClick={() => removeCustomPart(cp.id)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+                <div className="flex items-center gap-1.5">
+                  <input
+                    className="cc-input flex-1 text-xs"
+                    placeholder="Dowels 8 × 40…"
+                    value={draft.name}
+                    data-custom-draft-name="1"
+                    onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                  />
+                  <NumberField
+                    value={draft.qtyPerUnit}
+                    min={0.01}
+                    max={9999}
+                    integer={false}
+                    decimals={2}
+                    onCommit={(v) => setDraft((d) => ({ ...d, qtyPerUnit: Number(v) || 1 }))}
+                    className="cc-input w-[70px] text-right"
+                  />
+                  <select
+                    className="cc-input w-[70px] text-xs"
+                    value={draft.unit}
+                    data-custom-draft-unit="1"
+                    onChange={(e) => setDraft((d) => ({ ...d, unit: e.target.value }))}
+                  >
+                    {['pcs', 'm', 'm²', 'L', 'kg', 'tubes'].map((u) => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                  <button
+                    type="button"
+                    className="cc-btn"
+                    data-custom-add="1"
+                    disabled={!draft.name.trim()}
+                    onClick={() => {
+                      addCustomPart(draft);
+                      setDraft({ name: '', unit: 'pcs', qtyPerUnit: 1 });
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
+
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-shell-800 text-ink-400 text-[10px] uppercase tracking-wide">
                 <tr>

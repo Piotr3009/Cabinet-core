@@ -1,6 +1,6 @@
 {
  "turn": 39,
- "when": "2026-08-18T09:02:43.868Z",
+ "when": "2026-08-18T09:08:59.365Z",
  "steps": [
   {
    "label": "the scene is seeded — a wardrobe and a base unit",
@@ -171,6 +171,21 @@
    "label": "…and it is a WARNING, not a refusal — the export went ahead",
    "ok": true,
    "detail": "3 message(s), 1 red"
+  },
+  {
+   "label": "a row the joiner typed exists, in the store and on the glass",
+   "ok": true,
+   "detail": "{\"count\":1,\"name\":\"DOWELS 8 40\",\"id\":\"custom_msyfxqrc6c1\",\"row\":1}"
+  },
+  {
+   "label": "the custom row rides the SAME merge path — one board, ONE line",
+   "ok": true,
+   "detail": "1 line, parts=carcase_side+carcase_horizontal+custom_msyfxqrc6c1"
+  },
+  {
+   "label": "removing the row removes its board with it",
+   "ok": true,
+   "detail": "{\"rows\":0,\"assignment\":false}"
   }
  ],
  "shots": [
@@ -309,6 +324,19 @@
      "[data-message]"
     ],
     "text": "nobody has said what from"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  },
+  {
+   "name": "f8-custom-consumable-typed-and-assigned",
+   "subject": {
+    "all": [
+     "[data-custom-parts=\"1\"]",
+     "[data-custom-part=\"custom_msyfxqrc6c1\"]",
+     "[data-material-picker=\"custom_msyfxqrc6c1\"]"
+    ],
+    "text": "YOUR OWN CONSUMABLES"
    },
    "present": true,
    "detail": "{\"all\":true,\"text\":true}"

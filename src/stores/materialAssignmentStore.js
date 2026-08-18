@@ -366,6 +366,62 @@ export const useMaterialAssignmentStore = create((set, get) => ({
     return Boolean(PART_REGISTRY[key]) && !get().seen[key];
   },
 
+  // ─── TURN 39 (CLAUDE.md F8): THE JOINER'S OWN ROWS ────────────────────────
+  //
+  // Production Core's `customParts`, verbatim in shape: the user types a line
+  // ("dowels 8×40", a quantity per cabinet, a unit), assigns a material to it,
+  // and it flows into the BOM through THE SAME merge path every registry part
+  // takes — `engine/bom.js mergeUnitMaterials` reads `data.customParts` beside
+  // `ALL_PARTS` and bumps the same accumulator, so a custom row assigned to a
+  // board a registry part also uses lands on ONE line with it.
+  //
+  // It is a per-cabinet quantity, not a per-project one: a job with nine
+  // cabinets needs nine cabinets' worth of dowels.
+  addCustomPart: ({ name, unit = 'pcs', qtyPerUnit = 1 } = {}) => {
+    let id = null;
+    set((s) => {
+      const d = normalize(s.data);
+      id = `custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+      d.customParts = [...(d.customParts || []), {
+        id,
+        name: String(name || '').trim() || 'Custom consumable',
+        unit: unit || 'pcs',
+        qtyPerUnit: Number(qtyPerUnit) > 0 ? Number(qtyPerUnit) : 1,
+      }];
+      scheduleCloudSave(s.projectId, d);
+      return project(d, s.projectId);
+    });
+    return id;
+  },
+
+  updateCustomPart: (id, patch) => set((s) => {
+    const d = normalize(s.data);
+    d.customParts = (d.customParts || []).map((cp) => (cp.id === id
+      ? {
+        ...cp,
+        ...patch,
+        name: String(patch.name ?? cp.name).trim() || cp.name,
+        qtyPerUnit: Number(patch.qtyPerUnit ?? cp.qtyPerUnit) > 0
+          ? Number(patch.qtyPerUnit ?? cp.qtyPerUnit)
+          : cp.qtyPerUnit,
+      }
+      : cp));
+    scheduleCloudSave(s.projectId, d);
+    return project(d, s.projectId);
+  }),
+
+  removeCustomPart: (id) => set((s) => {
+    const d = normalize(s.data);
+    d.customParts = (d.customParts || []).filter((cp) => cp.id !== id);
+    // …and its assignment with it. A row nobody can see must not keep a board
+    // reserved in a blob nobody can reach.
+    delete d.base[id];
+    delete d.overrides[id];
+    if (d.auto) delete d.auto[id];
+    scheduleCloudSave(s.projectId, d);
+    return project(d, s.projectId);
+  }),
+
   reset: () => set((s) => project(normalize(null), s.projectId)),
 }));
 

@@ -155,6 +155,76 @@ async function main() {
   check('the scene is seeded — a wardrobe and a base unit', seeded.units === 2, JSON.stringify(seeded));
 
   // ═════════════════════════════════════════════════════════════════════════
+  // ITERON RULE 6 — THE APP WITH THE MIGRATION NOT APPLIED
+  // ═════════════════════════════════════════════════════════════════════════
+  //
+  // *"Code must DEGRADE GRACEFULLY when the migration has not been applied —
+  // the app still opens, BOM shows an empty-state, no crash."* … *"prove that
+  // path, it is how the owner will first see it."*
+  //
+  // This build has no Supabase credentials at all, which is the same state as
+  // and STRICTER than "sql/006 has not been run": every call that would reach
+  // `cc_material_assignments` degrades through the identical `withDb` path.
+  // So the whole walk above and below runs on it — and this phase says so out
+  // loud rather than leaving it implied.
+  await phase('deg', 'Iron rule 6 — the migration has NOT been applied', async () => {
+    const mode = await page.evaluate(`
+      return {
+        badge: (document.body.innerText || '').includes('MOCK DATA MODE'),
+        projectId: ${P}.materials.getState().projectId,
+        booted: Boolean(${P}.project && ${P}.materials && ${P}.profile),
+      };
+    `);
+    check('the app is running with NO database behind it', mode.badge && mode.booted, JSON.stringify(mode));
+
+    // Assign, then save, then reopen the job — the round trip F2 claims, made
+    // over the LOCAL shelf because that is the only shelf there is right now.
+    const trip = await page.evaluate(`
+      const S = () => ${P}.project.getState();
+      const M = () => ${P}.materials.getState();
+      M().setAssignment('carcase_side', 'mat_mfc18_white', 1.15);
+      const saved = S().projectForSave();
+      const carried = Boolean(saved.assignments && saved.assignments.base.carcase_side);
+      // Reopen it: the same act loadProject performs when a job comes off the shelf.
+      S().loadProject(saved, S().units);
+      return { carried, after: M().assignments.carcase_side ? M().assignments.carcase_side.material_id : null,
+               yieldKept: M().assignments.carcase_side ? M().assignments.carcase_side.yield : null };
+    `);
+    await page.sleep(400);
+    check('a save carries the assignments with the job', trip.carried, JSON.stringify(trip));
+    check('…and reopening it brings them back, yield and all',
+      trip.after === 'mat_mfc18_white' && trip.yieldKept === 1.15, JSON.stringify(trip));
+
+    // The BOM with nothing assigned: an honest empty state, not a crash and
+    // not a confident zero.
+    await page.evaluate(`
+      const M = ${P}.materials.getState();
+      for (const id of Object.keys(M.data.base)) ${P}.materials.getState().removeAssignment(id);
+      ${P}.ui.getState().setBomOpen(true);
+      return true;
+    `);
+    await page.waitFor('document.querySelector(\'[data-bom-purchase-tab="1"]\')', { what: 'the BOM panel' });
+    await page.click('[data-bom-purchase-tab="1"]');
+    await page.sleep(500);
+    const empty = await page.evaluate(`
+      return {
+        lines: document.querySelectorAll('[data-bom-line]').length,
+        incomplete: document.querySelector('[data-bom-total="incomplete"]') != null,
+        assigned: document.querySelectorAll('[data-bom-line^="mat:"]').length,
+        errors: 0,
+      };
+    `);
+    check('the BOM stands up with nothing assigned — every line a `part:` line',
+      empty.lines > 0 && empty.assigned === 0 && empty.incomplete, JSON.stringify(empty));
+    await shot('deg-no-migration-bom-degrades-honestly', {
+      all: ['[data-bom-purchase="1"]', '[data-bom-total="incomplete"]'],
+      text: 'MOCK DATA MODE',
+    });
+    await page.evaluate(`${P}.ui.getState().setBomOpen(false); return true;`);
+    await page.sleep(200);
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
   // F3 — THE ASSIGN MATERIALS MODAL
   // ═════════════════════════════════════════════════════════════════════════
   await phase('f3', 'Assign materials — the unassigned are marked', async () => {

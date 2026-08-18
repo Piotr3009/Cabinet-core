@@ -1,11 +1,31 @@
 {
  "turn": 39,
- "when": "2026-08-18T09:08:59.365Z",
+ "when": "2026-08-18T09:12:26.524Z",
  "steps": [
   {
    "label": "the scene is seeded — a wardrobe and a base unit",
    "ok": true,
    "detail": "{\"units\":2,\"parts\":30,\"kinds\":\"BACK,BOTTOM,BUL,BUR,DP,DRAWER-BOTTOM,DRAWER-BOX-BACK,DRAWER-BOX-FRONT,DRAWER-FRONT,DRAWER-SIDE,FILLER,FRONT,PARTITION,PLINTH,SHELF,TOP\"}"
+  },
+  {
+   "label": "the app is running with NO database behind it",
+   "ok": true,
+   "detail": "{\"badge\":true,\"projectId\":null,\"booted\":true}"
+  },
+  {
+   "label": "a save carries the assignments with the job",
+   "ok": true,
+   "detail": "{\"carried\":true,\"after\":\"mat_mfc18_white\",\"yieldKept\":1.15}"
+  },
+  {
+   "label": "…and reopening it brings them back, yield and all",
+   "ok": true,
+   "detail": "{\"carried\":true,\"after\":\"mat_mfc18_white\",\"yieldKept\":1.15}"
+  },
+  {
+   "label": "the BOM stands up with nothing assigned — every line a `part:` line",
+   "ok": true,
+   "detail": "{\"lines\":21,\"incomplete\":true,\"assigned\":0,\"errors\":0}"
   },
   {
    "label": "the modal opens with the seven registry groups",
@@ -175,12 +195,12 @@
   {
    "label": "a row the joiner typed exists, in the store and on the glass",
    "ok": true,
-   "detail": "{\"count\":1,\"name\":\"DOWELS 8 40\",\"id\":\"custom_msyfxqrc6c1\",\"row\":1}"
+   "detail": "{\"count\":1,\"name\":\"DOWELS 8 40\",\"id\":\"custom_msyg25vbsff\",\"row\":1}"
   },
   {
    "label": "the custom row rides the SAME merge path — one board, ONE line",
    "ok": true,
-   "detail": "1 line, parts=carcase_side+carcase_horizontal+custom_msyfxqrc6c1"
+   "detail": "1 line, parts=carcase_side+carcase_horizontal+custom_msyg25vbsff"
   },
   {
    "label": "removing the row removes its board with it",
@@ -189,6 +209,18 @@
   }
  ],
  "shots": [
+  {
+   "name": "deg-no-migration-bom-degrades-honestly",
+   "subject": {
+    "all": [
+     "[data-bom-purchase=\"1\"]",
+     "[data-bom-total=\"incomplete\"]"
+    ],
+    "text": "MOCK DATA MODE"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  },
   {
    "name": "f3a-database-menu-carries-assign-materials",
    "subject": {
@@ -333,8 +365,8 @@
    "subject": {
     "all": [
      "[data-custom-parts=\"1\"]",
-     "[data-custom-part=\"custom_msyfxqrc6c1\"]",
-     "[data-material-picker=\"custom_msyfxqrc6c1\"]"
+     "[data-custom-part=\"custom_msyg25vbsff\"]",
+     "[data-material-picker=\"custom_msyg25vbsff\"]"
     ],
     "text": "YOUR OWN CONSUMABLES"
    },

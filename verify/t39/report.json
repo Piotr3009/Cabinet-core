@@ -1,6 +1,6 @@
 {
  "turn": 39,
- "when": "2026-08-18T08:31:41.806Z",
+ "when": "2026-08-18T08:45:33.131Z",
  "steps": [
   {
    "label": "the scene is seeded — a wardrobe and a base unit",
@@ -8,120 +8,91 @@
    "detail": "{\"units\":2,\"parts\":30,\"kinds\":\"BACK,BOTTOM,BUL,BUR,DP,DRAWER-BOTTOM,DRAWER-BOX-BACK,DRAWER-BOX-FRONT,DRAWER-FRONT,DRAWER-SIDE,FILLER,FRONT,PARTITION,PLINTH,SHELF,TOP\"}"
   },
   {
-   "label": "the modal opens with the seven registry groups",
+   "label": "six parts assigned, four of them to ONE board",
    "ok": true,
-   "detail": "{\"counter\":\"21\",\"groups\":7,\"rows\":6}"
+   "detail": "carcase_side,carcase_horizontal,shelf,partition,back,door"
   },
   {
-   "label": "…and a running counter of what is unassigned",
+   "label": "the unassigned lines sit at the TOP",
    "ok": true,
-   "detail": "counter=21"
+   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
   },
   {
-   "label": "the counter IS the engine’s own answer",
+   "label": "…each with a button that opens Assign Materials on that exact part",
    "ok": true,
-   "detail": "screen=21 engine=21"
+   "detail": "15 buttons"
   },
   {
-   "label": "every unassigned row is UNDERLINED and coloured",
+   "label": "the total is marked INCOMPLETE while anything is unassigned",
    "ok": true,
-   "detail": "{\"rows\":6,\"missing\":6,\"underlined\":6,\"groupsWithDots\":6}"
+   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
   },
   {
-   "label": "…and the group list carries a dot for each group with something missing",
+   "label": "the assigned lines are grouped, each group with a subtotal",
    "ok": true,
-   "detail": "6 groups dotted"
+   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
   },
   {
-   "label": "a pointer-made assignment reaches the store",
+   "label": "four parts on one board are ONE line with the summed area — the owner’s sentence",
    "ok": true,
-   "detail": "stored=generic-18 picked=generic-18"
+   "detail": "1 line, parts=carcase_horizontal+carcase_side+partition+shelf, qty=8.992192000000001"
   },
   {
-   "label": "…the row stops being marked",
+   "label": "the project BOM IS the sum of its cabinets’ BOMs",
    "ok": true,
-   "detail": "marked=0"
+   "detail": "project=198.22 sum=198.23"
   },
   {
-   "label": "…and the counter drops by exactly one",
+   "label": "the level switch is on \"this cabinet\"",
    "ok": true,
-   "detail": "21 → 20"
+   "detail": "NOT ASSIGNED — NOTHING CAN BE ORDERED FO"
   },
   {
-   "label": "BUL and BUR are ONE assignable row — the owner’s question, on the glass",
+   "label": "the purchase CSV carries the unassigned lines and says INCOMPLETE",
    "ok": true,
-   "detail": "{\"bul\":\"carcase_side\",\"bur\":\"carcase_side\",\"rowsForSides\":1}"
-  },
-  {
-   "label": "the override row offers all five families",
-   "ok": true,
-   "detail": "five families"
+   "detail": "32 rows"
   }
  ],
  "shots": [
   {
-   "name": "f3a-database-menu-carries-assign-materials",
-   "subject": {
-    "text": "Assign materials"
-   },
-   "present": true,
-   "detail": "{\"text\":true}"
-  },
-  {
-   "name": "f3-assign-materials-unassigned-marked",
+   "name": "f6-bom-project-with-unassigned-on-top",
    "subject": {
     "all": [
-     "[data-assign-materials=\"1\"]",
-     "[data-assign-counter]",
-     "[data-assign-group=\"board\"]"
+     "[data-bom-purchase=\"1\"]",
+     "[data-bom-total=\"incomplete\"]",
+     "[data-bom-scope=\"project\"]"
     ],
-    "text": "parts unassigned",
+    "text": "NOT ASSIGNED",
     "count": {
-     "[data-assign-part]": 4,
-     "[data-assign-missing=\"1\"]": 3
+     "[data-bom-line]": 6,
+     "[data-bom-assign]": 1
     }
    },
    "present": true,
    "detail": "{\"all\":true,\"text\":true,\"count\":true}"
   },
   {
-   "name": "f3b-material-picker-open-on-carcase-sides",
+   "name": "f6c-bom-total-marked-incomplete",
    "subject": {
     "all": [
-     "[data-material-picker-panel=\"1\"]",
-     "[data-material-search=\"1\"]"
+     "[data-bom-total=\"incomplete\"]",
+     "[data-bom-subtotal=\"board\"]"
     ],
-    "count": {
-     "[data-material-option]": 3
-    }
+    "text": "INCOMPLETE"
    },
    "present": true,
-   "detail": "{\"all\":true,\"count\":true}"
+   "detail": "{\"all\":true,\"text\":true}"
   },
   {
-   "name": "f3c-carcase-sides-assigned-counter-drops",
+   "name": "f6b-bom-this-cabinet-level",
    "subject": {
     "all": [
-     "[data-assign-part=\"carcase_side\"][data-assign-missing=\"0\"]"
-    ]
-   },
-   "present": true,
-   "detail": "{\"all\":true}"
-  },
-  {
-   "name": "f3d-per-family-override-open",
-   "subject": {
-    "all": [
-     "[data-material-picker=\"carcase_side@wardrobe\"]",
-     "[data-material-picker=\"carcase_side@base\"]"
+     "[data-bom-purchase=\"1\"]"
     ],
-    "text": "PER CABINET FAMILY",
-    "count": {
-     "[data-material-picker^=\"carcase_side@\"]": 5
-    }
+    "text": "CABINET TOTAL"
    },
    "present": true,
-   "detail": "{\"all\":true,\"text\":true,\"count\":true}"
+   "detail": "{\"all\":true,\"text\":true}"
   }
  ],
  "failed": 0,

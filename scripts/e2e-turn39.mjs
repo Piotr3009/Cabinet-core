@@ -259,6 +259,137 @@ async function main() {
       'five families');
   });
 
+  // ═════════════════════════════════════════════════════════════════════════
+  // F6 — THE BOM VIEW
+  // ═════════════════════════════════════════════════════════════════════════
+  await phase('f6', 'The BOM — unassigned on top, two levels, incomplete says so', async () => {
+    // Close the modal with a real pointer on its own × before opening the panel.
+    await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+    await page.sleep(200);
+
+    // Assign a few parts to the SAME board so the second collapse is visible on
+    // the glass: many parts, one purchase line.
+    const assigned = await page.evaluate(`
+      const m = ${P}.materials.getState();
+      for (const id of ['carcase_side', 'carcase_horizontal', 'shelf', 'partition']) {
+        m.setAssignment(id, 'mat_mfc18_white', 1.1);
+      }
+      ${P}.materials.getState().setAssignment('back', 'mat_hdf6_back');
+      ${P}.materials.getState().setAssignment('door', 'mat_mdf25_shaker');
+      return Object.keys(${P}.materials.getState().data.base);
+    `);
+    check('six parts assigned, four of them to ONE board', assigned.length === 6, assigned.join(','));
+
+    // The panel itself is a toolbar toggle; the TAB inside it is what F6 adds,
+    // and it is the tab that gets the real pointer.
+    await page.evaluate(`${P}.ui.getState().setBomOpen(true); return true;`);
+    await page.waitFor('document.querySelector(\'[data-bom-purchase-tab="1"]\')', { what: 'the BOM panel' });
+    await page.sleep(300);
+    await page.click('[data-bom-purchase-tab="1"]');
+    await page.waitFor('document.querySelector(\'[data-bom-purchase="1"]\')', { what: 'the BOM tab' });
+    await page.sleep(400);
+
+    const view = await page.evaluate(`
+      const rows = [...document.querySelectorAll('[data-bom-line]')].map((r) => r.getAttribute('data-bom-line'));
+      const firstAssigned = rows.findIndex((k) => k.startsWith('mat:'));
+      const lastUnassigned = rows.map((k) => k.startsWith('part:')).lastIndexOf(true);
+      return {
+        lines: rows.length,
+        firstAssigned,
+        lastUnassigned,
+        incomplete: document.querySelector('[data-bom-incomplete]') ? document.querySelector('[data-bom-incomplete]').getAttribute('data-bom-incomplete') : null,
+        total: document.querySelector('[data-bom-total]').getAttribute('data-bom-total'),
+        groups: document.querySelectorAll('[data-bom-group]').length,
+        subtotals: document.querySelectorAll('[data-bom-subtotal]').length,
+        assignButtons: document.querySelectorAll('[data-bom-assign]').length,
+      };
+    `);
+    check('the unassigned lines sit at the TOP', view.lastUnassigned < view.firstAssigned, JSON.stringify(view));
+    check('…each with a button that opens Assign Materials on that exact part',
+      view.assignButtons > 0, `${view.assignButtons} buttons`);
+    check('the total is marked INCOMPLETE while anything is unassigned',
+      view.total === 'incomplete' && Number(view.incomplete) > 0, JSON.stringify(view));
+    check('the assigned lines are grouped, each group with a subtotal',
+      view.groups > 0 && view.subtotals === view.groups, JSON.stringify(view));
+
+    await shot('f6-bom-project-with-unassigned-on-top', {
+      all: ['[data-bom-purchase="1"]', '[data-bom-total="incomplete"]', '[data-bom-scope="project"]'],
+      // UPPER CASE because the group header is `uppercase` and `innerText`
+      // reports what is on the glass, not what is in the JSX.
+      text: 'NOT ASSIGNED',
+      count: { '[data-bom-line]': 6, '[data-bom-assign]': 1 },
+    });
+
+    // The list is longer than the panel, so the TOTAL needs its own frame — a
+    // picture that asserts a subject nobody can see is half a proof.
+    await page.evaluate(`
+      const el = document.querySelector('[data-bom-purchase="1"]').closest('.overflow-y-auto');
+      if (el) el.scrollTop = el.scrollHeight;
+      return true;
+    `);
+    await page.sleep(350);
+    await shot('f6c-bom-total-marked-incomplete', {
+      all: ['[data-bom-total="incomplete"]', '[data-bom-subtotal="board"]'],
+      text: 'INCOMPLETE',
+    });
+
+    // ── THE SECOND COLLAPSE, ON THE GLASS ──────────────────────────────────
+    const collapse = await page.evaluate(`
+      const s = ${P}.project.getState();
+      const entries = s.allResults();
+      const profile = ${P}.profile.getState().profile;
+      const mats = ${P}.materials.getState();
+      const bom = window.__ccT39.bom.purchaseBom(entries, {
+        assignments: mats.data, materials: mats.materials, profile, design: s.project.design });
+      const line = bom.rows.find((r) => r.key === 'mat:mat_mfc18_white');
+      const shown = [...document.querySelectorAll('[data-bom-line="mat:mat_mfc18_white"]')].length;
+      return { parts: line ? line.parts.sort() : null, qty: line ? line.qty : null, shown };
+    `);
+    check('four parts on one board are ONE line with the summed area — the owner’s sentence',
+      collapse.shown === 1 && collapse.parts.length === 4,
+      `${collapse.shown} line, parts=${(collapse.parts || []).join('+')}, qty=${collapse.qty}`);
+
+    // ── THIS CABINET vs THE WHOLE PROJECT ──────────────────────────────────
+    const projectTotal = await page.evaluate(`
+      return document.querySelector('[data-bom-total]').parentElement.innerText;
+    `);
+    await page.click('[data-bom-scope="cabinet"]');
+    await page.sleep(400);
+    const levels = await page.evaluate(`
+      const s = ${P}.project.getState();
+      const profile = ${P}.profile.getState().profile;
+      const mats = ${P}.materials.getState();
+      const ctx = { assignments: mats.data, materials: mats.materials, profile, design: s.project.design };
+      const entries = s.allResults();
+      const all = window.__ccT39.bom.purchaseBom(entries, ctx);
+      const parts = entries.map((e) => window.__ccT39.bom.purchaseBom([e], ctx));
+      const sum = parts.reduce((a, b) => a + b.totals.cost, 0);
+      return { project: all.totals.cost, sumOfCabinets: Math.round(sum * 100) / 100,
+               onScreen: document.querySelector('[data-bom-scope="cabinet"]').className.includes('border-gold') };
+    `);
+    check('the project BOM IS the sum of its cabinets’ BOMs',
+      Math.abs(levels.project - levels.sumOfCabinets) < 0.02,
+      `project=${levels.project} sum=${levels.sumOfCabinets}`);
+    check('the level switch is on "this cabinet"', levels.onScreen, projectTotal.slice(0, 40));
+    await shot('f6b-bom-this-cabinet-level', {
+      all: ['[data-bom-purchase="1"]'],
+      text: 'CABINET TOTAL',
+    });
+
+    // ── THE CSV IS THE SAME NUMBERS ────────────────────────────────────────
+    const csv = await page.evaluate(`
+      const s = ${P}.project.getState();
+      const profile = ${P}.profile.getState().profile;
+      const mats = ${P}.materials.getState();
+      const bom = window.__ccT39.bom.purchaseBom(s.allResults(), {
+        assignments: mats.data, materials: mats.materials, profile, design: s.project.design });
+      return { text: window.__ccT39.csv(bom, { scope: 'project' }), total: bom.totals.cost };
+    `);
+    check('the purchase CSV carries the unassigned lines and says INCOMPLETE',
+      /,NO,/.test(csv.text) && /TOTAL \(INCOMPLETE\)/.test(csv.text), `${csv.text.split('\n').length} rows`);
+    writeFileSync(`${OUT}f6-purchase-bom.csv`, csv.text);
+  });
+
   // ─── REPORT ───────────────────────────────────────────────────────────────
   const failed = steps.filter((s) => !s.ok);
   const empty = shots.filter((s) => !s.present);

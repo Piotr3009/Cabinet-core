@@ -1,5 +1,9 @@
 import jsPDF from 'jspdf';
-import { buildBom, materialDemand, hardwareDemand, demandCost } from '../engine/bom.js';
+import {
+  buildBom, materialDemand, hardwareDemand, demandCost, purchaseBom, formatQty,
+} from '../engine/bom.js';
+// Turn 39 (CLAUDE.md F1/F6): the registry the purchase list is grouped by.
+import { PART_GROUPS } from '../engine/partRegistry.js';
 // Turn 32 (CLAUDE.md F5): the invoice blocks and their one CSV.
 import {
   buildBomCsvText, ironmongerySummary, materialsSummary, readyBoxLines,
@@ -85,6 +89,67 @@ export function exportBomCsv({
   const csv = buildBomCsvText({ summary, ironmongery, warnings: redWarnings });
   download(
     exportFilename('bom', 'csv', new Date(), projectName),
+    new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
+  );
+  return csv;
+}
+
+/**
+ * ─── TURN 39 (CLAUDE.md F6): THE PURCHASE LIST, AS A FILE ───────────────────
+ *
+ * The BOM view's own CSV. Not a second BOM — the SAME `purchaseBom()` the view
+ * renders, written out, so a printed order and the screen it was read off can
+ * never disagree.
+ *
+ * Two things about the shape are deliberate:
+ *   • UNASSIGNED LINES ARE IN IT, at the top, with no cost. A purchase order
+ *     that silently dropped the parts nobody has chosen a board for would be an
+ *     order for half a kitchen.
+ *   • The total is labelled INCOMPLETE whenever one of those lines exists.
+ *     CLAUDE.md F6: never a confident number.
+ */
+export function buildPurchaseBomCsvText(bom, { scope = 'project' } = {}) {
+  const q = (v) => {
+    const t = String(v ?? '');
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const money = (v) => (v == null ? '' : Number(v).toFixed(2));
+  const lines = [`SCOPE,${q(scope)}`, ''];
+  lines.push('GROUP,MATERIAL,ASSIGNED,QTY,UNIT,SHEETS,UNIT_COST,LINE_COST,PARTS');
+  const groupOf = (id) => PART_GROUPS.find((g) => g.id === id)?.label || 'OTHER';
+  for (const g of [null, ...PART_GROUPS.map((x) => x.id)]) {
+    const rows = bom.rows.filter((r) => (g === null ? !r.group : r.group === g));
+    if (!rows.length) continue;
+    for (const r of rows) {
+      lines.push([
+        q(g ? groupOf(g) : 'OTHER'), q(r.name), r._assigned ? 'yes' : 'NO',
+        Number(r.qty).toFixed(3), q(r.unit), r.sheets ?? '',
+        money(r._assigned ? r.costPerUnit : null), money(r.lineCost), q(r.parts.join(' + ')),
+      ].join(','));
+    }
+    const sub = rows.reduce((s2, r) => s2 + (r.lineCost || 0), 0);
+    lines.push(`,${q(`${g ? groupOf(g) : 'OTHER'} subtotal`)},,,,,,${money(sub)},`);
+  }
+  lines.push('');
+  lines.push(`,TOTAL${bom.totals.complete ? '' : ' (INCOMPLETE)'},,,,${bom.totals.sheets || ''},,${money(bom.totals.cost)},`);
+  if (!bom.totals.complete) {
+    lines.push('');
+    lines.push(`WARNING,${q(`${bom.totals.unassigned} line(s) have no material assigned — this total is not the price of the job`)}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+/** The BOM view's export button. Same numbers, written to a file. */
+export function exportPurchaseBomCsv({
+  entries, assignments = null, materials = [], profile = getCabinetProfile(),
+  design = null, projectName = 'project', scope = 'project',
+}) {
+  const bom = purchaseBom(entries, {
+    assignments, materials, profile, design: migrateDesign(design),
+  });
+  const csv = buildPurchaseBomCsvText(bom, { scope });
+  download(
+    exportFilename('purchase-bom', 'csv', new Date(), projectName),
     new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
   );
   return csv;

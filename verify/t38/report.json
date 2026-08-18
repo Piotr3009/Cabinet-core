@@ -1,0 +1,410 @@
+{
+ "steps": [
+  {
+   "label": "the scene: a wardrobe, and a board with holes to draw on",
+   "ok": true,
+   "detail": "{\"id\":\"BACK\",\"part\":\"BACK\",\"w\":1200,\"h\":1800,\"ratio\":0.6666666666666666,\"holes\":34}"
+  },
+  {
+   "label": "F2 — the window covers the whole viewport",
+   "ok": true,
+   "detail": "{\"w\":1600,\"h\":1000,\"left\":0,\"top\":0}"
+  },
+  {
+   "label": "F2 — the toolbar is draw · modify · measure",
+   "ok": true,
+   "detail": "17 tools"
+  },
+  {
+   "label": "F2 — the canvas takes the rest of it",
+   "ok": true,
+   "detail": "0.88 of the window"
+  },
+  {
+   "label": "F2 — and there is a status bar",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F3 — the layer is the project’s, sanitised, with its own ACI",
+   "ok": true,
+   "detail": "[{\"name\":\"SHOP_JIG\",\"aci\":30,\"screen\":\"#ff922b\"}]"
+  },
+  {
+   "label": "F3 — and it becomes the layer this session draws on",
+   "ok": true,
+   "detail": "SHOP_JIG"
+  },
+  {
+   "label": "F4 — eight kinds in a dropdown, with all/none under them",
+   "ok": true,
+   "detail": "{\"dropdown\":true,\"kinds\":8,\"all\":true,\"none\":true,\"status\":\"snap — (8/8)\"}"
+  },
+  {
+   "label": "F4 — and the status bar summarises them",
+   "ok": true,
+   "detail": "snap — (8/8)"
+  },
+  {
+   "label": "F5 — the dimension box is open, with width and height, TAB on the second",
+   "ok": true,
+   "detail": "{\"tool\":\"rect\",\"fields\":[[\"width\",\"180\"],[\"height\",\"120\"]],\"active\":\"height\"}"
+  },
+  {
+   "label": "F5 — Enter commits the rectangle the numbers asked for",
+   "ok": true,
+   "detail": "180 × 120"
+  },
+  {
+   "label": "F5 — the polyline ran until Enter, and the arc took three points",
+   "ok": true,
+   "detail": "rect,polyline,arc"
+  },
+  {
+   "label": "F6 — a click on a shape selects it",
+   "ok": true,
+   "detail": "1 lit"
+  },
+  {
+   "label": "F6 — the menu is the owner’s five, and it is on screen",
+   "ok": true,
+   "detail": "{\"verbs\":[\"move\",\"copy\",\"rotate\",\"delete\"],\"onScreen\":true}"
+  },
+  {
+   "label": "F6 — a marquee takes what is wholly inside it",
+   "ok": true,
+   "detail": "3 held"
+  },
+  {
+   "label": "F6 — Group gives them one id",
+   "ok": true,
+   "detail": "3 in a group"
+  },
+  {
+   "label": "F6 — and the group moves as one",
+   "ok": true,
+   "detail": "3 moved together"
+  },
+  {
+   "label": "F7 — the measurement is drawn and read out",
+   "ok": true,
+   "detail": "measure 49 (dx 0 · dy 49)"
+  },
+  {
+   "label": "F7 — and it wrote NOTHING to the print (iron rule 7)",
+   "ok": true,
+   "detail": "3 ops"
+  },
+  {
+   "label": "F8 — it starts small, docked over the canvas",
+   "ok": true,
+   "detail": "180 px"
+  },
+  {
+   "label": "F8 — a double-click grows it",
+   "ok": true,
+   "detail": "small 180 → large 460"
+  },
+  {
+   "label": "F8 — and the drawing area never moved",
+   "ok": true,
+   "detail": "1598 px"
+  },
+  {
+   "label": "F8 — small → medium → large → small",
+   "ok": true,
+   "detail": "small"
+  },
+  {
+   "label": "F11 — a circle is drawn",
+   "ok": true,
+   "detail": "circle"
+  },
+  {
+   "label": "F11 — Delete takes it off",
+   "ok": true,
+   "detail": "0 left"
+  },
+  {
+   "label": "F11 — and Ctrl+Z puts it back",
+   "ok": true,
+   "detail": "1 ops"
+  },
+  {
+   "label": "F12 — two lines that cross, drawn by hand",
+   "ok": true,
+   "detail": "[[[120.7208,630.2171],[1079.2792,630.2171]],[[660.2867,181.0812],[660.2867,1115.5249]]]"
+  },
+  {
+   "label": "F12 — the shape to offset is in hand",
+   "ok": true,
+   "detail": "1 held"
+  },
+  {
+   "label": "F12 — Offset put a parallel copy on the side that was clicked",
+   "ok": true,
+   "detail": "3 objects · Undone."
+  },
+  {
+   "label": "F12 — Trim took out the piece the click fell in",
+   "ok": true,
+   "detail": "3 objects · Undone."
+  },
+  {
+   "label": "F12 — two lines meeting at a corner",
+   "ok": true,
+   "detail": "line,line"
+  },
+  {
+   "label": "F12 — a corner arc, and the two lines shortened to its tangents",
+   "ok": true,
+   "detail": "R7.9998"
+  },
+  {
+   "label": "F12 — 4 × 3 places twelve, and one of them was already there",
+   "ok": true,
+   "detail": "12 objects"
+  },
+  {
+   "label": "F10 — the user layer is declared under its own name and ACI",
+   "ok": true,
+   "detail": "{\"name\":\"SHOP_JIG\",\"color\":30}"
+  },
+  {
+   "label": "F10 — the drawn shapes are in the file as geometry",
+   "ok": true,
+   "detail": "poly,circle,arc"
+  },
+  {
+   "label": "F10 — and there is no MTEXT and no STYLE table (iron rule 7)",
+   "ok": true,
+   "detail": "7097 bytes"
+  },
+  {
+   "label": "F10 — the sheet draws them too, so the preview and the file agree",
+   "ok": true,
+   "detail": "{\"paths\":1,\"curves\":2,\"legend\":true}"
+  },
+  {
+   "label": "F9 — a line is drawn on OUTLINE",
+   "ok": true,
+   "detail": "SHOP_JIG,SHOP_JIG,SHOP_JIG,OUTLINE"
+  },
+  {
+   "label": "F9 — GUARD B: the Check says OUTLINE is the cut boundary",
+   "ok": true,
+   "detail": "#17 · Manual geometry on OUTLINEW01 BACK: line o4 is on OUTLINE — OUTLINE is the cut bound"
+  },
+  {
+   "label": "F9 — custom geometry DIES with a panel resize",
+   "ok": true,
+   "detail": "4 → 0"
+  },
+  {
+   "label": "F9 — and the app says so, naming the panel",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "shots": [
+  {
+   "name": "f2-fullscreen-shell-canvas-maximised",
+   "subject": {
+    "all": [
+     "[data-modal-fullscreen=\"1\"]",
+     "[data-editor-toolbar=\"1\"]",
+     "[data-editor-canvas=\"1\"]",
+     "[data-editor-status=\"1\"]",
+     "[data-part-canvas=\"1\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f3-user-layer-created-name-and-colour",
+   "subject": {
+    "all": [
+     "[data-new-layer=\"1\"]",
+     "[data-new-layer-name=\"1\"]",
+     "[data-new-layer-colours=\"1\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f3-user-layer-in-the-overlay",
+   "subject": {
+    "all": [
+     "[data-layer-overlay=\"1\"]"
+    ],
+    "text": "SHOP_JIG"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  },
+  {
+   "name": "f4-snap-dropdown-open",
+   "subject": {
+    "all": [
+     "[data-snap-dropdown=\"1\"]",
+     "[data-snap-all=\"1\"]",
+     "[data-snap-none=\"1\"]"
+    ],
+    "count": {
+     "[data-snap-kind]": 8
+    }
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"count\":true}"
+  },
+  {
+   "name": "f5a-rect-dragged-with-tab-dimensions",
+   "subject": {
+    "all": [
+     "[data-dim-entry=\"rect\"]",
+     "[data-dim-field=\"width\"]",
+     "[data-dim-field=\"height\"]",
+     "[data-ghost=\"rect\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f5b-polyline-and-arc-drawn",
+   "subject": {
+    "count": {
+     "[data-object-id]": 3
+    },
+    "all": [
+     "[data-layer-overlay=\"1\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"count\":true}"
+  },
+  {
+   "name": "f6a-context-menu-on-selection",
+   "subject": {
+    "all": [
+     "[data-object-menu=\"1\"]",
+     "[data-object-verb=\"move\"]",
+     "[data-object-verb=\"delete\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f6b-group-moved-as-one",
+   "subject": {
+    "count": {
+     "[data-object-id]": 3
+    }
+   },
+   "present": true,
+   "detail": "{\"count\":true}"
+  },
+  {
+   "name": "f7-measure-between-two-holes",
+   "subject": {
+    "count": {
+     "[data-measure]": 1
+    },
+    "all": [
+     "[data-status-measure]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"count\":true}"
+  },
+  {
+   "name": "f8-3d-thumbnail-small",
+   "subject": {
+    "all": [
+     "[data-thumb-size=\"small\"]",
+     "[data-editor-canvas=\"1\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f8-3d-thumbnail-two-sizes",
+   "subject": {
+    "all": [
+     "[data-thumb-size=\"large\"]",
+     "[data-editor-canvas=\"1\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f11-undo-restores-deleted-circle",
+   "subject": {
+    "count": {
+     "[data-object-id]": 1
+    }
+   },
+   "present": true,
+   "detail": "{\"count\":true}"
+  },
+  {
+   "name": "f12a-offset-and-trim",
+   "subject": {
+    "count": {
+     "[data-object-id]": 3
+    }
+   },
+   "present": true,
+   "detail": "{\"count\":true}"
+  },
+  {
+   "name": "f12b-fillet-radius-8",
+   "subject": {
+    "count": {
+     "[data-object-id]": 3
+    }
+   },
+   "present": true,
+   "detail": "{\"count\":true}"
+  },
+  {
+   "name": "f12c-array-4x3",
+   "subject": {
+    "count": {
+     "[data-object-id]": 12
+    }
+   },
+   "present": true,
+   "detail": "{\"count\":true}"
+  },
+  {
+   "name": "f10-dxf-with-user-layer-opened-in-viewer",
+   "subject": {
+    "text": "SHOP_JIG",
+    "count": {
+     "[data-cnc-feature^=\"curve-\"]": 2
+    }
+   },
+   "present": true,
+   "detail": "{\"text\":true,\"count\":true}"
+  },
+  {
+   "name": "f9-resize-dropped-note-and-outline-warning",
+   "subject": {
+    "text": "Custom geometry dropped",
+    "all": [
+     "[data-check-panel]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  }
+ ],
+ "failed": 0,
+ "emptyFrames": 0
+}

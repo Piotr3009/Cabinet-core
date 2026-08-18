@@ -1,9 +1,16 @@
-import { useMemo } from 'react';
-import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { CHECKS, checkSummary } from '../engine/checks.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
+// ─── TURN 38 (CLAUDE.md F1a): AND IT IS READ FRESH ─────────────────────────
+// The list used to be memoised here on `[units, design, runChecks]`, which
+// left every rule that reads the PROFILE (the hinge ladders themselves), the
+// ROOM or the MATERIAL assignments printing an answer that no longer existed
+// until something else touched `units` — the owner's "reports a collision
+// where no hinge is any more, and a reload clears it". `lib/checkFindings.js`
+// owns the dependency list now, and the canvas toolbar's badge reads the same
+// one, so the two surfaces cannot disagree about what the job's faults are.
+import { useCheckFindings } from '../lib/checkFindings.js';
 
 // ─── CHECK v1's PANEL (turn 31, CLAUDE.md F6) ───────────────────────────────
 //
@@ -33,15 +40,12 @@ const TONE = {
 };
 
 export default function CheckPanel() {
-  const runChecks = useProjectStore((s) => s.runChecks);
-  const units = useProjectStore((s) => s.units);
-  const design = useProjectStore((s) => s.project.design);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const selectElement = useUiStore((s) => s.selectElement);
   const openModal = useUiStore((s) => s.openModal);
   const setCheckOpen = useUiStore((s) => s.setCheckOpen);
 
-  const findings = useMemo(() => runChecks(), [units, design, runChecks]);
+  const findings = useCheckFindings();
   const summary = checkSummary(findings);
 
   /** The F7/T30 mechanism: select the piece — which is what flies the camera —

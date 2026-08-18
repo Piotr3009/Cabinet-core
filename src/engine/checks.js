@@ -51,6 +51,8 @@ import { takesPlinth } from './autoparts.js';
 // Turn 36 (CLAUDE.md F7): is this top box standing on anything?
 import { riderIsOrphaned, riderOverlapMm } from './topBox.js';
 import { panelWeight } from './lifts.js';
+// Turn 38 (CLAUDE.md F9): the two guards on what a hand has drawn on a print.
+import { manualGeometryFaults } from './partEdits.js';
 import { resolvePanelMaterial } from './materials.js';
 import HINGE_COUNT from '../../reference/hardware/cliptop-hinge-count.json' with { type: 'json' };
 
@@ -92,6 +94,21 @@ export const CHECKS = Object.freeze([
   // a clamp nobody finds out has stopped working, and #14's own sentence
   // applies: report, never fix. The house grammar.
   { n: 15, level: 'red', label: 'Top box overlapping its main' },
+  // ─── TURN 38 (CLAUDE.md F9): THE TWO GUARDS ON HAND-DRAWN GEOMETRY ───────
+  //
+  // The editor lets a joiner draw anything on a print, which is the whole
+  // point of it — and two of the things he can draw are mistakes a machine
+  // would carry out without comment. Both are WARNINGS and neither is a gate:
+  // "Both are warnings, not gates" is CLAUDE.md's own line, and it is the
+  // house grammar besides (report, never fix).
+  //
+  //   #16 A shape that runs off the board. The cutter would leave the work
+  //       and come back onto it, or cut air.
+  //   #17 A shape on OUTLINE. That layer is the part's own cut boundary — a
+  //       line drawn there is machined as the edge of the piece, and a joiner
+  //       who meant a pencil mark gets a board cut in half.
+  { n: 16, level: 'yellow', label: 'Manual geometry off the panel' },
+  { n: 17, level: 'yellow', label: 'Manual geometry on OUTLINE' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -481,6 +498,20 @@ export function runChecks({
             + 'infill? (dust collection)',
         })));
       }
+    }
+
+    // ── #16 / #17 the two guards on hand-drawn geometry (T38 F9) ──────────
+    //
+    // Read off the unit's OWN override list rather than off the applied
+    // result, so the message can name the OBJECT — "circle o3" — and not just
+    // the panel it landed on. `engine/partEdits.js` owns the arithmetic; this
+    // is where it is asked.
+    for (const f of manualGeometryFaults(unit.params?.part_edits, result.panels || [])) {
+      out.push(finding(f.check, 'yellow', at(f.panelId, {
+        message: `${unitNum} ${f.panelId}: ${f.message}`,
+        subject: { unitId, panelId: f.panelId, editor: 'part-detail' },
+        objectId: f.objectId,
+      })));
     }
 
     // ── #6 a base run standing with no plinth ─────────────────────────────

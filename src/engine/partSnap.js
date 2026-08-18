@@ -41,6 +41,11 @@
 // Pure functions and pure data. No React, no store, no SVG, no three.js — the
 // component projects and picks, this decides WHAT there is to pick.
 
+// Turn 38 (F5): an arc is snapped on its own chord run for the segment kinds
+// and as a real circle for CEN/QUAD — `engine/partObjects.js` owns the sweep
+// arithmetic, so there is one answer to "where is this arc" in the app.
+import { arcPoints } from './partObjects.js';
+
 /** The eight kinds, in the order the checkbox panel lists them (F2.3). */
 export const SNAP_KINDS = [
   { id: 'END', label: 'Endpoint', marker: 'square' },
@@ -105,6 +110,36 @@ export function snapGeometry(drawing) {
     }
     if (m.kind === 'mark') {
       segments.push([[m.from[0], m.from[1]], [m.to[0], m.to[1]]]);
+      continue;
+    }
+    // ─── TURN 38 (CLAUDE.md F5): AND WHAT A HAND HAS DRAWN ──────────────────
+    //
+    // "Every placement snaps through `snapAt()` as today." A drawn polyline is
+    // a run of SEGMENTS — so it brings ENDs, MIDs, INTs, PERs and NEAs with it
+    // exactly as the outline does — and a drawn circle or arc is a CIRCLE, so
+    // it brings its centre and its quadrants. Neither needs a new snap KIND:
+    // the eight are the eight, and this only says what geometry they are taken
+    // on.
+    //
+    // An ARC is approximated for the segment kinds (its own chord run) and is
+    // a real circle for CEN/QUAD, which is the same split AutoCAD makes.
+    if (m.kind === 'path') {
+      const pts = m.pts || [];
+      for (let i = 0; i + 1 < pts.length; i += 1) segments.push([[pts[i][0], pts[i][1]], [pts[i + 1][0], pts[i + 1][1]]]);
+      if (m.closed && pts.length > 2) {
+        const last = pts[pts.length - 1];
+        segments.push([[last[0], last[1]], [pts[0][0], pts[0][1]]]);
+      }
+      continue;
+    }
+    if (m.kind === 'circle' || m.kind === 'arc') {
+      circles.push({
+        x: m.cx, y: m.cy, r: Math.max(Number(m.r) || 0, 0), id: m.id,
+      });
+      if (m.kind === 'arc') {
+        const pts = arcPoints(m, 24);
+        for (let i = 0; i + 1 < pts.length; i += 1) segments.push([pts[i], pts[i + 1]]);
+      }
       continue;
     }
     circles.push({

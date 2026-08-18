@@ -4,8 +4,15 @@ import {
   minDrawerFrontHeight, SHELF_VARIANTS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
-  applyPartEdits, partSignature, withPartEdit, withoutLastPartEdit, withoutPartEdits,
+  applyPartEdits, partSignature, withPartEdit, withPartOps, withoutLastPartEdit, withoutPartEdits,
+  withoutResizedPartEdits, resizeDropMessage, partOpsOf,
 } from '../engine/partEdits.js';
+// ─── TURN 38 (CLAUDE.md F3): THE PROJECT'S OWN CNC LAYERS ──────────────────
+// A layer is a NAME and a COLOUR and nothing more — the toolpath is VCarve's
+// problem (the owner's own ruling, 17.08.2026). They live WITH the project,
+// beside the design, so they survive save and load by the same code that saves
+// everything else about a job.
+import { layerNameFault, makeUserLayer, normaliseUserLayers } from '../engine/partLayers.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
 import { doorBays } from '../engine/doors.js';
@@ -482,6 +489,20 @@ function paramsForEngine(unit, design = null) {
     // product and not just a length (turn 4, BACKLOG #14).
     rail_material_id: items.find((i) => i.kind === 'hanger')?.material_id ?? null,
     rail_material_label: items.find((i) => i.kind === 'hanger')?.material_label ?? null,
+  };
+}
+
+/**
+ * A panel's CUT RECTANGLE, in the frame the editor draws it in (turn 38, F5).
+ *
+ * The drawn frame where there is one, the cut size otherwise — the same pair
+ * `partSize` and `partSignature` read, so the size the editor stamps and the
+ * size the resize rule compares against can never be two different numbers.
+ */
+export function panelSizeOf(panel) {
+  return {
+    w: Number(panel?.cnc?.drawn_w) || Number(panel?.w) || 0,
+    h: Number(panel?.cnc?.drawn_h) || Number(panel?.h) || 0,
   };
 }
 
@@ -2667,6 +2688,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (applied.width != null) get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
     if (patch.height != null || applied.width != null) get().reclampShelves(unitId);
     notices.push(...get().refreshAutoParts());
+    // ─── TURN 38 (CLAUDE.md F9): THE RESIZE RULE ─────────────────────────
+    // Asked ONLY where a cut size could have moved. A patch that is nothing
+    // but `part_edits` is the editor writing its own list and must not be
+    // followed by a rule that reads it — and every ordinary recompute (a shelf
+    // moving, an LED toggling, a colour changing) never reaches this line at
+    // all, which is the "must NOT clear anything" half of the rule.
+    const onlyEdits = Object.keys(patch).length === 1 && patch.part_edits !== undefined;
+    if (!onlyEdits) get().dropResizedPartEdits();
     return { applied, notices };
   },
 
@@ -5259,9 +5288,92 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const result = get().unitResult(unitId);
     const panel = result?.panels.find((p) => p.id === panelId);
     if (!panel) return null;
-    const next = withPartEdit(unit.params.part_edits || {}, panelId, op, partSignature(panel));
+    // Turn 38 (F5): the board's own SIZE is stamped on the set the first time
+    // anything is drawn on it — the number F9's rule compares against.
+    const next = withPartEdit(unit.params.part_edits || {}, panelId, op, partSignature(panel), panelSizeOf(panel));
     get().updateUnitParams(unitId, { part_edits: next });
     return next[panelId];
+  },
+
+  // ─── TURN 38 (CLAUDE.md F6/F11): THE VERBS REWRITE THE LIST ──────────────
+  //
+  // Move, copy, rotate, group, ungroup, delete and undo do not APPEND an op —
+  // they hand back the list they want. `withPartEdit` above is still the door
+  // every DRAWING gesture goes through; this is the door every gesture that
+  // acts on what is already drawn goes through, and the two share the same
+  // entry, the same signature and the same size stamp.
+
+  /** Replace one part's whole op list. An empty list is "back to computed". */
+  setPartOps: (unitId, panelId, ops) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const result = get().unitResult(unitId);
+    const panel = result?.panels.find((p) => p.id === panelId);
+    if (!panel) return null;
+    const next = withPartOps(
+      unit.params.part_edits || {}, panelId, ops, partSignature(panel), panelSizeOf(panel),
+    );
+    get().updateUnitParams(unitId, { part_edits: next });
+    return next[panelId] || null;
+  },
+
+  /** This part's ops as they stand — the editor's own working copy. */
+  partOpsOf: (unitId, panelId) => partOpsOf(
+    get().units.find((u) => u.id === unitId)?.params?.part_edits, panelId,
+  ),
+
+  // ─── TURN 38 (CLAUDE.md F9): CUSTOM GEOMETRY DIES WITH A PANEL RESIZE ────
+  //
+  // The owner's word, and it is a RULE and not an edit. `engine/partEdits.js`
+  // owns the arithmetic — same size, ride along; different size, drop — and
+  // this is the one place it is applied, on the paths that can change a
+  // panel's cut size. It writes `units` DIRECTLY rather than going back
+  // through `updateUnitParams`, which is what calls it: a rule that re-entered
+  // the setter would recurse.
+  //
+  // The note is dismissible because every message in this app is (F2's own
+  // grammar), and it NAMES the panels, because "some geometry went" is not
+  // something a joiner can act on.
+  dropResizedPartEdits: () => {
+    const dropped = [];
+    let touched = false;
+    const units = get().units.map((u) => {
+      if (!u.params?.part_edits) return u;
+      const result = get().unitResult(u.id);
+      const { next, dropped: rows } = withoutResizedPartEdits(u.params.part_edits, result?.panels || []);
+      if (!rows.length) return u;
+      touched = true;
+      dropped.push(...rows.map((r) => ({ ...r, unitId: u.id, unitNum: u.params.unit_num })));
+      return { ...u, params: { ...u.params, part_edits: Object.keys(next).length ? next : null } };
+    });
+    if (!touched) return [];
+    set({ units });
+    useUiStore.getState().notify(resizeDropMessage(dropped), 'warn');
+    return dropped;
+  },
+
+  // ─── TURN 38 (CLAUDE.md F3): THE PROJECT'S OWN LAYERS ────────────────────
+
+  /** This project's user layers, normalised — a stored blob cannot invent one. */
+  projectLayers: () => normaliseUserLayers(get().project.cncLayers),
+
+  /**
+   * Add one. Returns `{ layer, error }` — the fault is a SENTENCE the panel
+   * prints, because "that name is already a CNC layer" is the one thing a
+   * joiner has to hear before he draws forty holes on a layer that would have
+   * merged with the hinge cups.
+   */
+  addProjectLayer: ({ name, aci }) => {
+    const existing = get().projectLayers();
+    const error = layerNameFault(name, existing);
+    if (error) return { layer: null, error };
+    const layer = makeUserLayer({ name, aci });
+    if (!layer) return { layer: null, error: 'A layer needs a name.' };
+    // No hand-written `dirty` flag: turn 31's gate wraps this store and is the
+    // ONLY writer of it (`stores/dirtyGate.js`). A layer added here marks the
+    // project changed through the same door every other write goes through.
+    set((s) => ({ project: { ...s.project, cncLayers: [...existing, layer] } }));
+    return { layer, error: null };
   },
 
   /** "Back to computed" — this part's edits, all of them, gone (F9.3). */

@@ -47,7 +47,20 @@ test('F7 — it is a WARDROBE in everything the cut list cares about', () => {
   const main = getUnitType('WARDROBE');
   assert.equal(top.family, 'wardrobe');
   assert.equal(top.lisp, main.lisp, 'the same kit');
-  assert.equal(top.hingeRule, main.hingeRule);
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F1b) ────────────────────────
+  //
+  // This line read `assert.equal(top.hingeRule, main.hingeRule)` and it was
+  // the belief the owner overturned on the T37 eye test: *"a top box door 500
+  // mm tall gets 5 hinges."* It did, and this assertion is why — the box was
+  // filed under the wardrobe's own `tall` ladder, which does not scale down:
+  // its arithmetic is `endOffset`, four inner hinges spread evenly, `H −
+  // endOffset`, which is six on a 2150 carcass and five on a 500 one.
+  //
+  // Everything the CUT LIST cares about is still the wardrobe's — the same
+  // kit, the same carcass, the same doors — and the HINGE COUNT turned out not
+  // to be one of those things. It is a question about the DOOR, so it is asked
+  // of the door's own height by the ladder that scales with it.
+  assert.equal(top.hingeRule, 'low', 'its doors run the ladder their own height asks for (T38-F1b)');
   assert.deepEqual(top.carcass, main.carcass);
   assert.equal(top.supports.doors, true);
   // …and two things differ, both about where it STANDS.

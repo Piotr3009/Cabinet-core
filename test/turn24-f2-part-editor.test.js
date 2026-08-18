@@ -302,13 +302,17 @@ test('the foot of a perpendicular says whether it landed on the segment', () => 
 
 test('F2.1 — the toolbar is Select · Drill · Line · Dowel line, plus a layer', () => {
   const detail = src('components/PartDetailModal.jsx');
+  // ─── RE-PINNED 17.08.2026 (TURN 38, CLAUDE.md F2/F3) ────────────────────
+  // The four are still there and still named the same; the toolbar around them
+  // is a TOOLS table now, in AutoCAD's three groups, because F2 put seventeen
+  // tools on it. And custom layers are no longer parked — the owner asked for
+  // them on 17.08 and F3 is them.
+  const tools = src('lib/partTools.js');
   for (const [id, label] of [['select', 'Select'], ['drill', 'Drill'], ['line', 'Line'], ['dowels', 'Dowel line']]) {
-    assert.match(detail, new RegExp(`\\['${id}', '${label}'\\]`), `${label} is in the toolbar`);
+    assert.match(tools, new RegExp(`id: '${id}', label: '${label}'`), `${label} is in the toolbar`);
   }
-  assert.match(detail, /CNC_LAYERS\.map/, 'the layer picker offers the EXISTING layers');
-  // …and no custom layers, which are parked by the owner with three questions
-  // on file.
-  assert.doesNotMatch(detail, /addLayer|customLayer|newLayer/i);
+  assert.match(detail, /layerList\.map/, 'the layer picker offers one list');
+  assert.match(detail, /USER_LAYER_COLOURS/, '…and a project may add to it (F3)');
 });
 
 test('F2.1 — Esc returns to Select, and it does not unwind the Back stack', () => {

@@ -48,7 +48,8 @@ import { UNIT_TYPES } from './types.js';
 // once, here, rather than twice per part.
 export const VARIANT_ORDER = ['wardrobe', 'base', 'wall', 'tall', 'pantry'];
 
-export const VARIANT_LABELS = {
+// Exported the moment something shows them — the Assign Materials modal (F3).
+const VARIANT_LABELS = {
   wardrobe: 'Wardrobe',
   base: 'Base',
   wall: 'Wall',
@@ -59,6 +60,11 @@ export const VARIANT_LABELS = {
 /**
  * Which family a unit type belongs to.
  *
+ * `cabinetFamilyOf`, not `familyOf`: `UNIT_TYPES[].family` already means
+ * something else in this app (kitchen | wardrobe — which LIBRARY a kit is in),
+ * and `engine/library.js` takes a `familyOf` of its own as a parameter. Two
+ * different questions must not share one name.
+ *
  * Read off the type's OWN fields rather than off a second list that could drift
  * from `types.js`: `family: 'wardrobe'` answers first (a top box is a wardrobe
  * even though it hangs), the PANTRY names itself because the owner's list names
@@ -68,7 +74,7 @@ export const VARIANT_LABELS = {
  * A type this app has never heard of is 'base', because a base unit is what a
  * cabinet is when nothing else is known about it.
  */
-export function familyOf(typeId) {
+export function cabinetFamilyOf(typeId) {
   const t = UNIT_TYPES[typeId];
   if (!t) return 'base';
   if (t.id === 'PANTRY') return 'pantry';
@@ -346,6 +352,11 @@ export const PART_REGISTRY = {
  */
 export const ALL_PARTS = Object.values(PART_REGISTRY);
 
+/** What a cabinet family is called on screen. */
+export function familyLabel(family) {
+  return VARIANT_LABELS[family] || String(family || '');
+}
+
 /** The parts of one group, in registry order. */
 export function partsInGroup(groupId) {
   return ALL_PARTS.filter((p) => p.group === groupId);
@@ -449,7 +460,7 @@ export const ELEMENT_TO_PART_ID = {
  * @param {string} partName  `panel.part` as the engine wrote it
  * @param {object} [ctx]     { typeId } — the unit the panel came off
  */
-export const TOP_BOX_CARCASE_PARTS = new Set(['carcase_side', 'carcase_horizontal', 'back']);
+const TOP_BOX_CARCASE_PARTS = new Set(['carcase_side', 'carcase_horizontal', 'back']);
 
 export function partIdForElement(partName, { typeId = null } = {}) {
   const base = ELEMENT_TO_PART_ID[partName] || null;
@@ -715,6 +726,21 @@ export function expandAssignments(data) {
       const id = `${key}@${variant}`;
       if (!flat[id]) flat[id] = { ...val };
     }
+  }
+  // ─── THE LEGACY ALIASES, AND WHY THEY ARE NOT OPTIONAL ────────────────────
+  //
+  // `engine/bom.js materialDemand()` has looked up `assignments[role.role]`
+  // since turn 3 — `side`, `top`, `front`, `drawer_box` — and `hardwareDemand`
+  // looks up the engine's hardware role. Both are shipping code with shipping
+  // callers, and iron rule 3 says zero removals.
+  //
+  // So the flat view answers to BOTH vocabularies. This is Production Core's
+  // own move: its `expandAssignments` writes every legacy id (`head_slim`,
+  // `jambs_triple`) into the same flat map beside the canonical key, so the
+  // consumers it already had keep working while the new ones read part ids.
+  for (const [legacyId, partId] of Object.entries(LEGACY_ID_MAP)) {
+    if (flat[legacyId]) continue;              // a real part id of that name wins
+    if (flat[partId]) flat[legacyId] = { ...flat[partId] };
   }
   return flat;
 }

@@ -27,7 +27,7 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor, UNIT_TYPES } from '../src/engine/types.js';
 import {
   PART_REGISTRY, ALL_PARTS, PART_GROUPS, ELEMENT_TO_PART_ID, HARDWARE_TO_PART_ID,
-  LIGHTING_TO_PART_ID, INVOICE_TO_PART_ID, partIdForElement, familyOf, edgePartFor,
+  LIGHTING_TO_PART_ID, INVOICE_TO_PART_ID, partIdForElement, cabinetFamilyOf, familyLabel, edgePartFor,
   partsInGroup, VARIANT_ORDER,
 } from '../src/engine/partRegistry.js';
 
@@ -403,16 +403,23 @@ test('the units are the units CLAUDE.md names', () => {
 
 // ─── The variant key: a cabinet family ──────────────────────────────────────
 
+test('every family has a name a joiner would recognise', () => {
+  assert.equal(familyLabel('wardrobe'), 'Wardrobe');
+  assert.equal(familyLabel('pantry'), 'Pantry');
+  assert.equal(familyLabel('nothing'), 'nothing');
+  for (const f of VARIANT_ORDER) assert.ok(familyLabel(f).length > 0, f);
+});
+
 test('every unit type lands in one of the five families', () => {
   for (const typeId of Object.keys(UNIT_TYPES)) {
-    assert.ok(VARIANT_ORDER.includes(familyOf(typeId)), `${typeId} → ${familyOf(typeId)}`);
+    assert.ok(VARIANT_ORDER.includes(cabinetFamilyOf(typeId)), `${typeId} → ${cabinetFamilyOf(typeId)}`);
   }
-  assert.equal(familyOf('WARDROBE'), 'wardrobe');
-  assert.equal(familyOf('WARDROBE_TOP'), 'wardrobe');   // it hangs, but it is a wardrobe
-  assert.equal(familyOf('BUD'), 'base');
-  assert.equal(familyOf('WUD'), 'wall');
-  assert.equal(familyOf('BUDTALL'), 'tall');
-  assert.equal(familyOf('PANTRY'), 'pantry');           // named in the owner's own list
-  assert.equal(familyOf('LOW_CABINET'), 'base');        // no height group, stands on the floor
-  assert.equal(familyOf('NOT-A-TYPE'), 'base');
+  assert.equal(cabinetFamilyOf('WARDROBE'), 'wardrobe');
+  assert.equal(cabinetFamilyOf('WARDROBE_TOP'), 'wardrobe');   // it hangs, but it is a wardrobe
+  assert.equal(cabinetFamilyOf('BUD'), 'base');
+  assert.equal(cabinetFamilyOf('WUD'), 'wall');
+  assert.equal(cabinetFamilyOf('BUDTALL'), 'tall');
+  assert.equal(cabinetFamilyOf('PANTRY'), 'pantry');           // named in the owner's own list
+  assert.equal(cabinetFamilyOf('LOW_CABINET'), 'base');        // no height group, stands on the floor
+  assert.equal(cabinetFamilyOf('NOT-A-TYPE'), 'base');
 });

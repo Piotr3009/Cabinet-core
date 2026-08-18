@@ -609,6 +609,28 @@ function loadCache() {
   }
 }
 
+/**
+ * ─── TURN 39 (CLAUDE.md F2): THE PROJECT'S OWN ASSIGNED MATERIALS ───────────
+ *
+ * The owner: *"każdy jeden projekt powinien mieć Assign materials"*. So the
+ * blob hangs on the PROJECT — `project.assignments` — which puts it on the
+ * local shelf and in the cache for free, and the cloud row (sql/006_tura39.sql)
+ * is asked for on top of that.
+ *
+ * Never awaited and never able to throw: a project must open whether or not the
+ * migration has been run (iron rule 6).
+ */
+function openAssignmentsFor(project) {
+  try {
+    const store = useMaterialAssignmentStore.getState();
+    const defaults = getCabinetProfile()?.materials?.defaults || null;
+    store.setProject(project?.id || null, { blob: project?.assignments || null, defaults });
+    Promise.resolve(store.openProject(project?.id || null, {
+      blob: project?.assignments || null, defaults,
+    })).catch(() => { /* the local blob is the blob */ });
+  } catch { /* a store that is not ready must never stop a project opening */ }
+}
+
 // Throttled: a shelf drag updates the store on every pointer frame, and
 // serialising the whole project 60 times a second is pure jank.
 let cacheTimer = null;
@@ -730,6 +752,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: migrateUnits(units),
       dirty: false,
     });
+    // ─── TURN 39 (CLAUDE.md F2): AND ITS OWN ASSIGNED MATERIALS ─────────────
+    // They ride `project.assignments`, so the local shelf carries them with the
+    // job for free; the cloud row is asked for as well and wins when it answers.
+    openAssignmentsFor(project);
     // ─── TURN 33 (CLAUDE.md F5): A LOADED SCENE IS HEALED TOO ───────────────
     // The consumer sweep's biggest miss: every other path that shapes a front
     // reaches healFrontGaps, but a project OPENED with yesterday's 1.5/1.5
@@ -5411,6 +5437,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   }),
 
   markSaved: (project) => set((s) => ({ project: project || s.project, dirty: false })),
+
+  /**
+   * The project as it should be WRITTEN — the live assignment blob folded in
+   * (turn 39, CLAUDE.md F2).
+   *
+   * The store is the live editor of the assignments; the project object is what
+   * gets saved. This is the ONE place the two meet, so a save can never write a
+   * stale set and no screen has to remember to copy them across.
+   */
+  projectForSave: () => {
+    const s = get();
+    try {
+      return { ...s.project, assignments: useMaterialAssignmentStore.getState().data };
+    } catch {
+      return s.project;
+    }
+  },
 })));
 
 // Cache to localStorage on every change (fallback only — the DB stays primary)

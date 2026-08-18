@@ -227,6 +227,10 @@ export const useMaterialAssignmentStore = create((set, get) => ({
     const local = blob ? normalize(blob) : readLocal(projectId);
     let d = local;
     const cloud = await cloudLoad(projectId).catch(() => null);
+    // A joiner who opens job A and then job B before the network answers must
+    // not get A's boards written over B's. The awaited answer is only allowed
+    // to land if this is still the project it was asked about.
+    if (get().projectId !== (projectId || null)) return get().data;
     if (cloud) d = normalize(cloud);
     if (defaults) d = seedFromDefaults(d, defaults);
     set({ projectId: projectId || null, ...project(d, projectId) });

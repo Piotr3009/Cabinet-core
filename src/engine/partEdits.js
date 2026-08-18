@@ -43,14 +43,25 @@
 //
 // Pure functions and pure data. No React, no store, no three.js.
 
+import { rectCorners } from './partObjects.js';
+
 /** Round to the micrometre — the same 4 places `addDrill` stores at. */
 const q = (v) => {
   const n = Math.round((Number(v) || 0) * 1e4) / 1e4;
   return Object.is(n, -0) ? 0 : n;
 };
 
-/** The kinds an override may name. */
-const EDIT_OPS = ['hide', 'drill', 'line', 'dowels'];
+/**
+ * The kinds an override may name.
+ *
+ * ─── TURN 38 (CLAUDE.md F5): FIVE MORE, AND NOT ONE FEWER ──────────────────
+ * CLAUDE.md's word is *"Ops already carry `op`, `layer`, and coordinates;
+ * extend, do not replace."* So the four turn 23 and turn 24 wrote are
+ * untouched and the drawing board's own shapes join them on the same list, in
+ * the same structure, saved and loaded by the same code that has carried the
+ * pencil since turn 23. `engine/partObjects.js` is their arithmetic.
+ */
+const EDIT_OPS = ['hide', 'drill', 'line', 'dowels', 'polyline', 'rect', 'circle', 'arc'];
 
 /**
  * The STABLE id of one feature on one part.
@@ -189,6 +200,9 @@ export function applyPartEdits(result, partEdits = null) {
     const drop = new Set();
     const drills = [];
     const marks = [];
+    // Turn 38 (F5): the two new channels, beside the two turn 24 wrote.
+    const paths = [];
+    const curves = [];
     for (const op of entry.ops) {
       if (op?.op === 'hide' && op.feature) { drop.add(op.feature); continue; }
       if (op?.op === 'drill') {
@@ -200,6 +214,7 @@ export function applyPartEdits(result, partEdits = null) {
           y: q(op.y),
           d: Number(op.d) || 0,
           ...(Number(op.depth) > 0 ? { depth: Number(op.depth) } : {}),
+          ...(op.id ? { opId: op.id } : {}),
         });
         continue;
       }
@@ -208,6 +223,7 @@ export function applyPartEdits(result, partEdits = null) {
           layer: op.layer,
           from: [q(op.from?.[0]), q(op.from?.[1])],
           to: [q(op.to?.[0]), q(op.to?.[1])],
+          ...(op.id ? { opId: op.id } : {}),
         });
         continue;
       }
@@ -221,12 +237,61 @@ export function applyPartEdits(result, partEdits = null) {
             y: q(at.y),
             d: Number(op.d) || 0,
             ...(Number(op.depth) > 0 ? { depth: Number(op.depth) } : {}),
+            ...(op.id ? { opId: op.id } : {}),
           });
         }
+        continue;
+      }
+      // ─── TURN 38 (CLAUDE.md F5): THE DRAWN SHAPES ────────────────────────
+      //
+      // TWO NEW CHANNELS on `panel.cnc`, and no more than two:
+      //
+      //   `paths`   open and closed runs of points — a polyline, a rectangle.
+      //             `marks` above already carries the two-point case and keeps
+      //             it, so every project saved since turn 24 reads back byte
+      //             for byte.
+      //   `curves`  circles and arcs, which are the two entities R12 writes
+      //             round rather than straight and are therefore the two a
+      //             list of points would throw away.
+      //
+      // Both are ABSENT on a panel that has none, exactly as `marks` is, so a
+      // part with no drawn shape is the part it was before the channels
+      // existed. Every record carries `opId` — WHICH op drew it — because the
+      // editor's verbs (F6) name objects and the canvas has to be able to walk
+      // back from a rendered shape to the op it came from.
+      if (op?.op === 'polyline') {
+        paths.push({
+          layer: op.layer, pts: (op.pts || []).map(([x, y]) => [q(x), q(y)]), closed: Boolean(op.closed), ...(op.id ? { opId: op.id } : {}),
+        });
+        continue;
+      }
+      if (op?.op === 'rect') {
+        paths.push({
+          layer: op.layer, pts: rectCorners(op), closed: true, ...(op.id ? { opId: op.id } : {}),
+        });
+        continue;
+      }
+      if (op?.op === 'circle') {
+        curves.push({
+          kind: 'circle', layer: op.layer, cx: q(op.at?.[0]), cy: q(op.at?.[1]), r: q(op.r), ...(op.id ? { opId: op.id } : {}),
+        });
+        continue;
+      }
+      if (op?.op === 'arc') {
+        curves.push({
+          kind: 'arc',
+          layer: op.layer,
+          cx: q(op.cx),
+          cy: q(op.cy),
+          r: q(op.r),
+          start: q(op.start),
+          end: q(op.end),
+          ...(op.id ? { opId: op.id } : {}),
+        });
       }
     }
     hidden.set(panelId, drop);
-    added.set(panelId, { drills, marks });
+    added.set(panelId, { drills, marks, paths, curves });
   }
 
   if (!edited.length) {
@@ -271,6 +336,10 @@ export function applyPartEdits(result, partEdits = null) {
     // A panel that has lost its last mark loses the key with it, so a part with
     // no marks is byte-for-byte the part it was before the channel existed.
     if (cnc.marks && !cnc.marks.length) delete cnc.marks;
+    // Turn 38 (F5): and the same rule for the two new channels — absent unless
+    // something has been drawn, so a part that carries none is unchanged.
+    if (grow?.paths.length) cnc.paths = [...(cnc.paths || []), ...grow.paths];
+    if (grow?.curves.length) cnc.curves = [...(cnc.curves || []), ...grow.curves];
     return { ...panel, cnc };
   });
 
@@ -294,13 +363,236 @@ export function applyPartEdits(result, partEdits = null) {
  * Pure: it takes the whole map and returns a new one, so the store's action is
  * one line and the arithmetic is testable without a browser.
  */
-export function withPartEdit(partEdits, panelId, op, signature) {
+export function withPartEdit(partEdits, panelId, op, signature, panelSize = null) {
   if (!panelId || !op?.op || !EDIT_OPS.includes(op.op)) return partEdits || {};
   const before = (partEdits || {})[panelId];
   const entry = before && before.signature === signature
     ? before
     : { signature, ops: [] };
-  return { ...(partEdits || {}), [panelId]: { ...entry, ops: [...entry.ops, op] } };
+  return {
+    ...(partEdits || {}),
+    [panelId]: { ...entry, ...sizeStamp(entry, panelSize), ops: [...entry.ops, op] },
+  };
+}
+
+/**
+ * ─── TURN 38 (CLAUDE.md F5/F9): THE BOARD'S OWN SIZE, STAMPED ONCE ──────────
+ *
+ * *"Store `panelSize: {w, h}` on the override set the first time a manual op is
+ * added (needed by F9)."*
+ *
+ * It is stamped ONCE and never re-stamped, which is the whole point: F9 asks
+ * whether the panel is the size it was WHEN THE GEOMETRY WAS DRAWN, and a
+ * stamp that refreshed itself on every op would answer "yes" forever.
+ *
+ * The `signature` beside it stays exactly what it is — it carries the
+ * THICKNESS too and it is what turn 23's stale-edit machinery reads. This is
+ * the size said in the two numbers F9's message has to print, and saying it
+ * twice in two shapes is cheaper than a message that has to parse a string.
+ */
+function sizeStamp(entry, panelSize) {
+  if (entry.panelSize) return {};
+  const w = Number(panelSize?.w);
+  const h = Number(panelSize?.h);
+  if (!Number.isFinite(w) || !Number.isFinite(h)) return {};
+  return { panelSize: { w: q(w), h: q(h) } };
+}
+
+/**
+ * REPLACE a part's whole op list — the door every VERB goes through (F6/F11).
+ *
+ * Move, copy, rotate, group, delete and undo all rewrite the list rather than
+ * appending to it, because a move written as an extra op would make the list
+ * grow without bound and would make `applyPartEdits` a replayer instead of a
+ * reader. An empty list is the same as no edits at all, which is what "Back to
+ * computed" already means.
+ */
+export function withPartOps(partEdits, panelId, ops, signature, panelSize = null) {
+  if (!panelId) return partEdits || {};
+  const clean = (ops || []).filter((o) => o?.op && EDIT_OPS.includes(o.op));
+  if (!clean.length) return withoutPartEdits(partEdits, panelId);
+  const before = (partEdits || {})[panelId];
+  const entry = before && before.signature === signature ? before : { signature, ops: [] };
+  return {
+    ...(partEdits || {}),
+    [panelId]: { ...entry, ...sizeStamp(entry, panelSize), ops: clean },
+  };
+}
+
+/** One part's ops, or an empty list — so no caller has to guess the shape. */
+export function partOpsOf(partEdits, panelId) {
+  const entry = (partEdits || {})[panelId];
+  return Array.isArray(entry?.ops) ? entry.ops : [];
+}
+
+// ─── TURN 38 (CLAUDE.md F9): CUSTOM GEOMETRY DIES WITH A PANEL RESIZE ───────
+//
+// The owner's word, 17.08.2026, and it is a RULE and not an edit: *custom
+// geometry DIES with a panel resize.*
+//
+// So on every recompute the engine's panel w×h is compared with the size
+// stamped on that panel's override set:
+//
+//   THE SAME    the overrides ride along untouched. This is the common case
+//               by a mile — a shelf moving, an LED toggling, a colour changing
+//               all recompute the cabinet — and it must not clear anything,
+//               which is why the comparison is against the SIZE and not
+//               against "did anything happen".
+//   DIFFERENT   that panel's manual objects are dropped, and the app says so
+//               in a dismissible note naming the panel.
+//
+// It is deliberately NOT undoable (F11 says so in its own words): a rule is
+// not an edit, and a Ctrl+Z that put back geometry the board no longer has
+// room for would be the app arguing with the tape measure.
+//
+// A set with NO stamp — every part edited before tonight — is left exactly
+// alone. Turn 23's `signature` still guards those: they simply do not apply
+// while the board is a different board, which is the conservative answer this
+// rule replaces for anything drawn from tonight on.
+
+/** Two millimetres are the same millimetre within this much. */
+const SAME_MM = 0.01;
+
+/**
+ * Which panels' manual geometry a recompute has invalidated.
+ *
+ * @param {object} partEdits  the unit's whole map
+ * @param {Array} panels      `result.panels` as the engine has just computed them
+ * @returns {Array<{panelId:string, was:{w,h}, now:{w,h}, count:number}>}
+ */
+export function resizedPanels(partEdits, panels = []) {
+  const out = [];
+  for (const [panelId, entry] of Object.entries(partEdits || {})) {
+    if (!editCount(entry) || !entry.panelSize) continue;
+    const panel = (panels || []).find((p) => p.id === panelId);
+    if (!panel) continue;
+    const now = { w: q(Number(panel.cnc?.drawn_w) || Number(panel.w) || 0), h: q(Number(panel.cnc?.drawn_h) || Number(panel.h) || 0) };
+    const was = { w: q(entry.panelSize.w), h: q(entry.panelSize.h) };
+    if (Math.abs(was.w - now.w) <= SAME_MM && Math.abs(was.h - now.h) <= SAME_MM) continue;
+    out.push({
+      panelId, was, now, count: editCount(entry),
+    });
+  }
+  return out;
+}
+
+/**
+ * The map with those panels' geometry gone — and the SAME map back, identity
+ * and all, when nothing was invalidated.
+ *
+ * Returning the same object matters: this runs on every recompute, and a new
+ * object every time would write the project on every render.
+ */
+export function withoutResizedPartEdits(partEdits, panels = []) {
+  const rows = resizedPanels(partEdits, panels);
+  if (!rows.length) return { next: partEdits || {}, dropped: [] };
+  let next = partEdits;
+  for (const row of rows) next = withoutPartEdits(next, row.panelId);
+  return { next, dropped: rows };
+}
+
+// ─── TURN 38 (CLAUDE.md F9): THE TWO GUARDS ────────────────────────────────
+//
+//   GUARD A  "any manual object extending beyond the panel outline → warning
+//            (name the panel and the object)"
+//   GUARD B  "any manual object on layer OUTLINE → warning (OUTLINE is the cut
+//            boundary — manual geometry there will be cut as the part's edge)"
+//
+// Both are WARNINGS and neither is a gate. They are asked of the OVERRIDE LIST
+// rather than of the applied result, because a warning that cannot name the
+// object — "circle o3" — leaves a joiner hunting for which of forty shapes it
+// means.
+
+/** The layer that IS the cut boundary. One name, said once. */
+const OUTLINE_LAYER = 'OUTLINE';
+
+/** A drawn op's own extent, in the panel's CNC millimetres. */
+function opBounds(op) {
+  const box = (xs, ys) => ({
+    x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys),
+  });
+  if (op.op === 'line' || op.op === 'rect' || op.op === 'dowels') {
+    return box([op.from?.[0], op.to?.[0]], [op.from?.[1], op.to?.[1]]);
+  }
+  if (op.op === 'polyline') {
+    const pts = op.pts || [];
+    if (!pts.length) return null;
+    return box(pts.map((p) => p[0]), pts.map((p) => p[1]));
+  }
+  if (op.op === 'circle') {
+    return {
+      x: op.at[0] - op.r, y: op.at[1] - op.r, w: op.r * 2, h: op.r * 2,
+    };
+  }
+  if (op.op === 'arc') {
+    // The whole circle, deliberately: an arc's true box needs its quadrant
+    // crossings, and a guard that under-reports is worse than one that asks
+    // a joiner to look at a shape that turned out to be inside after all.
+    return {
+      x: op.cx - op.r, y: op.cy - op.r, w: op.r * 2, h: op.r * 2,
+    };
+  }
+  if (op.op === 'drill') {
+    const r = (Number(op.d) || 0) / 2;
+    return {
+      x: op.x - r, y: op.y - r, w: r * 2, h: r * 2,
+    };
+  }
+  return null;
+}
+
+/** How a joiner names one op out loud. */
+function opLabel(op) {
+  return `${op.op}${op.id ? ` ${op.id}` : ''}`;
+}
+
+/**
+ * Guards A and B over one unit's whole override map.
+ *
+ * @returns {Array<{check:16|17, panelId:string, objectId:string|null, message:string}>}
+ */
+export function manualGeometryFaults(partEdits, panels = []) {
+  const out = [];
+  for (const [panelId, entry] of Object.entries(partEdits || {})) {
+    if (!editCount(entry)) continue;
+    const panel = (panels || []).find((p) => p.id === panelId);
+    if (!panel) continue;
+    const w = q(Number(panel.cnc?.drawn_w) || Number(panel.w) || 0);
+    const h = q(Number(panel.cnc?.drawn_h) || Number(panel.h) || 0);
+    for (const op of entry.ops) {
+      if (op?.op === 'hide') continue;
+      if (op?.layer === OUTLINE_LAYER) {
+        out.push({
+          check: 17,
+          panelId,
+          objectId: op.id || null,
+          message: `${opLabel(op)} is on OUTLINE — OUTLINE is the cut boundary, `
+            + 'so manual geometry there will be cut as the part’s edge.',
+        });
+      }
+      const b = opBounds(op);
+      if (!b) continue;
+      const over = b.x < -SAME_MM || b.y < -SAME_MM
+        || b.x + b.w > w + SAME_MM || b.y + b.h > h + SAME_MM;
+      if (!over) continue;
+      out.push({
+        check: 16,
+        panelId,
+        objectId: op.id || null,
+        message: `${opLabel(op)} runs off the panel — it reaches `
+          + `${q(b.x)}…${q(b.x + b.w)} × ${q(b.y)}…${q(b.y + b.h)} on a ${w} × ${h} board.`,
+      });
+    }
+  }
+  return out;
+}
+
+/** The note F9 puts on screen, in the owner's own words. */
+export function resizeDropMessage(dropped = []) {
+  const names = dropped.map((d) => d.panelId);
+  if (!names.length) return '';
+  if (names.length === 1) return `Custom geometry dropped — ${names[0]} was resized.`;
+  return `Custom geometry dropped — ${names.join(', ')} were resized.`;
 }
 
 /** "Back to computed" — this part's edits, gone (F9.3). */

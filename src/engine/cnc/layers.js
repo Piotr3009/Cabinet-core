@@ -128,13 +128,34 @@ export function hingePlateLayer(d, fallback = 'HINGES_5MM') {
  * The layer rows a DXF file must declare, given the layers its entities use.
  * Order follows CNC_LAYERS so two files never disagree about layer order.
  */
-export function layerTableFor(usedNames) {
+export function layerTableFor(usedNames, userLayers = []) {
   const used = new Set(usedNames);
   const rows = CNC_LAYERS.filter((l) => used.has(l.name)).map((l) => ({ name: l.name, color: l.aci }));
+  // ─── TURN 38 (CLAUDE.md F3/F10): THE PROJECT'S OWN LAYERS ────────────────
+  //
+  // "User layers … export to DXF under their given name and colour." A user
+  // layer is a NAME and an ACI (`engine/partLayers.js` says why the colour is
+  // an index rather than a hex: an R12 LAYER row has group code 62 and nowhere
+  // to put an RGB), so it declares exactly like a built-in one and the only
+  // thing that changes is where the row came from.
+  //
+  // They go AFTER the built-ins, in the order the project made them, so two
+  // files of the same job never disagree about layer order — the same reason
+  // the built-in block follows `CNC_LAYERS` rather than the used-set's
+  // iteration order.
+  const own = new Map();
+  for (const l of userLayers || []) {
+    const name = String(l?.name || '');
+    if (!name || BY_NAME.has(name) || own.has(name)) continue;
+    own.set(name, Number(l.aci) || UNKNOWN.aci);
+  }
+  for (const [name, color] of own) {
+    if (used.has(name)) rows.push({ name, color });
+  }
   // Anything the engine invented that the table does not know still has to be
   // declared, or the DXF references an undefined layer.
   for (const name of used) {
-    if (!BY_NAME.has(name)) rows.push({ name, color: UNKNOWN.aci });
+    if (!BY_NAME.has(name) && !own.has(name)) rows.push({ name, color: UNKNOWN.aci });
   }
   return rows;
 }

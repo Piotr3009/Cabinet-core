@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# ─── TURN 38 (CLAUDE.md F10): a DXF proof keeps the line endings it was written
+# with. `cnc/dxf.js` emits CRLF because that is what AutoCAD itself emits and
+# what VCarve is known to import; a proof artefact normalised to LF would be a
+# picture of a file the app never wrote.
+*.dxf -text

@@ -108,6 +108,17 @@ export default function Modal({
   // other modal in the app and for every nested editor's Back. Removing it
   // wholesale would be one window's law imposed on fourteen.
   escapeCloses = true,
+  // ─── TURN 38 (CLAUDE.md F2): FULL SCREEN, FOR A DRAWING BOARD ────────────
+  // The owner's editor shell: *"The editor covers the whole viewport. No page
+  // chrome visible behind it."* It is `maximised` taken to its limit — the
+  // same one sanctioned exception to rule 15, with the margin at zero and the
+  // body's own padding gone, because a canvas that is the window cannot have a
+  // 16 px frame round it.
+  //
+  // Opt-in per window exactly as `maximised` and `dock` are, so every side
+  // dialog in the app opens beside the piece it is about, which is the rule
+  // the owner marked "na zawsze".
+  fullscreen = false,
 }) {
   const box = useRef(null);
   // ─── TURN 31 (CLAUDE.md F1): ONE CLOSE PATH ────────────────────────────────
@@ -235,7 +246,9 @@ export default function Modal({
   // Worked out by `maximiseInViewport`, which is arithmetic and testable, and
   // applied as inline geometry so the panel's own width class is simply
   // overridden rather than swapped for a second set of classes.
-  const full = big ? maximiseInViewport({ viewport: screen, margin: maximiseMarginPx }) : null;
+  const full = big
+    ? maximiseInViewport({ viewport: screen, margin: fullscreen ? 0 : maximiseMarginPx })
+    : null;
 
   // Restoring is not just "stop being big": the window has never been placed,
   // so it has to find its object the way it would have on the way in.
@@ -325,6 +338,7 @@ export default function Modal({
         data-modal-dock={dock || undefined}
         data-modal-side={big ? 'maximised' : (at?.side || '')}
         data-modal-maximised={big ? '1' : '0'}
+        data-modal-fullscreen={fullscreen && big ? '1' : undefined}
         className={`fixed cc-panel pointer-events-auto ${big ? '' : `${width} ${dock ? '' : 'max-h-[90vh]'}`} flex flex-col shadow-xl ${className}`}
         style={full ? {
           left: full.left, top: full.top, width: full.width, height: full.height, visibility: 'visible',
@@ -338,7 +352,7 @@ export default function Modal({
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div
-          className={`flex items-center px-4 py-2.5 border-b border-shell-600 select-none ${big ? '' : 'cursor-move'}`}
+          className={`flex items-center ${fullscreen && big ? 'px-3 py-1.5' : 'px-4 py-2.5'} border-b border-shell-600 select-none ${big ? '' : 'cursor-move'}`}
           title={big ? undefined : 'Drag to move this window'}
           data-modal-handle="1"
           onPointerDown={startDrag}
@@ -415,7 +429,7 @@ export default function Modal({
             ×
           </button>
         </div>
-        <div className="p-4 overflow-y-auto flex-1 min-h-0">{children}</div>
+        <div className={`${fullscreen && big ? 'p-0 overflow-hidden' : 'p-4 overflow-y-auto'} flex-1 min-h-0`}>{children}</div>
         {footer && <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2">{footer}</div>}
       </div>
     </div>

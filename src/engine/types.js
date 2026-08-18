@@ -102,7 +102,27 @@ export const UNIT_TYPES = {
     label: 'Top box',
     family: 'wardrobe',
     lisp: 'KIT_WARDROBE_FULL.lsp',
-    hingeRule: 'tall',
+    // ─── TURN 38 (CLAUDE.md F1b): ITS OWN DOOR, ITS OWN COUNT ──────────────
+    //
+    // The owner, walking T37: *a top box door 500 mm tall gets 5 hinges.* It
+    // did, and it read as "it inherits the count from the host" because the
+    // host's count is what it matched. The cause is one word on this line: a
+    // top box was filed under the WARDROBE's own `tall` ladder, and `tall`
+    // does not scale DOWN. Its arithmetic is `endOffset`, four inner hinges
+    // spread evenly, `H − endOffset` — six on a 2150 carcass and, unchanged,
+    // FIVE on a 500 one, at 75 mm centres. Nobody hangs a 500 mm door on five
+    // hinges.
+    //
+    // `low` is the ladder that asks the question the owner asks — *how tall is
+    // THIS door* — and it is not a new law: it is `KIT_LOW_CABINET`'s own,
+    // already in `profile.hinges.rules`, two under 800 and three under 1200.
+    // A 500 box takes 2; a 900 box takes 3; whatever the box is, the law that
+    // answers is the law that answers for a door of that height anywhere else
+    // in this app.
+    //
+    // No fixture and no classifier bucket moves with it: `WARDROBE_TOP` is not
+    // one of the six standard configs and no golden fixture cuts one.
+    hingeRule: 'low',
     cupRule: 'hingeCentres',
     legs: false,
     hangers: false,

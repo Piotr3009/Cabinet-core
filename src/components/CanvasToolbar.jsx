@@ -3,6 +3,12 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
+// ─── TURN 38 (CLAUDE.md F1a): THE BADGE READS THE PANEL'S OWN LIST ─────────
+// This counted with its own `useMemo(..., [units, design, runChecks])`, the
+// same incomplete dependency list `CheckPanel` carried — so the number on the
+// button could be stale for exactly the reasons F1a names (the profile's hinge
+// ladders, the room, the material assignments). One reader now, shared.
+import { useCheckFindings } from '../lib/checkFindings.js';
 
 // ─── Canvas toolbar ───
 // The controls that act on the DRAWING, sitting on the drawing (CLAUDE.md turn
@@ -25,7 +31,6 @@ export default function CanvasToolbar() {
   const bomOpen = useUiStore((s) => s.bomOpen);
   const checkOpen = useUiStore((s) => s.checkOpen);
   const toggleCheck = useUiStore((s) => s.toggleCheck);
-  const runChecks = useProjectStore((s) => s.runChecks);
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const toggleOutlines = useUiStore((s) => s.toggleOutlines);
@@ -51,8 +56,7 @@ export default function CanvasToolbar() {
   // Recomputed when the job changes, not per frame: this walks every cabinet
   // through eleven rules, and doing that sixty times a second is a frame rate
   // spent on a question nobody has asked.
-  const design = useProjectStore((s) => s.project.design);
-  const checkFindings = useMemo(() => runChecks(), [units, design, runChecks]);
+  const checkFindings = useCheckFindings();
   const checkCount = checkFindings.length;
   const checkReds = checkFindings.some((f) => f.level === 'red');
   // ─── TURN 27 (CLAUDE.md F2.1): EVERY FRONT ANSWERS ───────────────────────

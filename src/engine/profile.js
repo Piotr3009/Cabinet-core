@@ -4588,6 +4588,34 @@ export function migrateCabinetProfile(profile) {
       hinge: {
         ...D.hardware.hinge,
         ...profile.hardware?.hinge,
+        // ─── TURN 40 (CLAUDE.md F7): plateBiteMm — THE CODE WINS ───────────
+        //
+        // The owner, 18.08.2026: he changed the number in T37-F3 (5 → 10) and
+        // *reports seeing no change*. Nothing is wrong with the number: this is
+        // the localStorage FREEZE this project has now hit three times — the
+        // LED kelvins ("nie zmienia się jak zmienię 3, 4 lub 6 k") and the
+        // design migration before it. `cc.profile.v1` is written whole on every
+        // `setProfile`, so a browser that has ever saved a profile carries a
+        // `hardware.hinge` block with the SUPERSEDED 5 in it, and the plain
+        // spread two lines above lets that stale block outvote the code for
+        // ever. A user would have to rebuild his workshop profile to see a
+        // number he never chose.
+        //
+        // So the code wins, unconditionally — which is the same law three
+        // things in this very block already follow (`plates`, `rig.memberA/B`,
+        // `bucketLocation`) and for the same reason: HOW FAR THE PLATE MODEL
+        // SINKS INTO THE SIDE is a fact about the file and the fitting, not a
+        // workshop preference. Nothing in Settings edits it and nothing ever
+        // has.
+        //
+        // IDEMPOTENT BY CONSTRUCTION, and deliberately not a guarded fill. The
+        // T-round lesson is `null !== 0`: a guard written `if (!stored)` or
+        // `stored || D.…` treats a stored 0 as "nothing said", and 0 is a legal
+        // bite (a plate that does not sink at all). An unconditional
+        // assignment has no such branch to get wrong, and running the
+        // migration twice — which every load does, through `setProfile` —
+        // cannot produce a different answer the second time.
+        plateBiteMm: D.hardware.hinge.plateBiteMm,
         // Turn 19 (CLAUDE.md F1): the CLIP top block, merged key by key so a
         // profile saved before it existed comes back with it and one that
         // renames a finish keeps the plates.

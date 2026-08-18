@@ -4,6 +4,7 @@ import RoomModal from './RoomModal.jsx';
 import WizardSettings from './WizardSettings.jsx';
 import WizardHardware from './WizardHardware.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
+import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
@@ -131,9 +132,14 @@ export default function NewProjectFlow({
   // Start. All decided by one pure engine function, so a node test can hold
   // the button to its word.
   const roomHeight = useProjectStore((s) => Number(s.project.room?.height) || 0);
+  // Turn 39 (CLAUDE.md F7): the gate ASKS THE ASSIGNMENT STORE. A joiner who
+  // named his boards in Assign materials has named them; the wizard's own
+  // select is now one of two places that answer, not the only one. Nothing is
+  // loosened — say it in neither place and it still blocks.
+  const assignmentData = useMaterialAssignmentStore((s) => s.data);
   const { blockers } = useMemo(() => wizardStartBlockers({
-    design, heights: projectHeights(design, profile), roomHeight, profile,
-  }), [design, profile, roomHeight]);
+    design, heights: projectHeights(design, profile), roomHeight, profile, assignments: assignmentData,
+  }), [design, profile, roomHeight, assignmentData]);
   const blocked = step === 'settings' && blockers.length > 0;
 
   // The room step IS the room editor, shown in place.

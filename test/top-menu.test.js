@@ -46,17 +46,38 @@ test('ordering is stable and does not clone the menus', () => {
   assert.notEqual(shown, built, '…in a new array, so the caller’s is untouched');
 });
 
-test('Database is a dropdown of four', () => {
+test('Database is a dropdown of five', () => {
   const menu = buildDatabaseMenu({});
   assert.equal(menu.label, 'Database');
   // Turn 22 (CLAUDE.md F2b.2) adds "Company defaults…" — the storey between the
   // code and the project — beside Materials, where a workshop looks for what it
   // buys. It is an ADDITION and not a reorder: the other three keep their
   // places and their behaviour.
+  //
+  // Turn 39 (CLAUDE.md F3) adds "Assign materials…" directly under Materials,
+  // and for the same reason: the workshop's stock list, then which part of a
+  // cabinet is cut from which row of it. Also an ADDITION — Company defaults,
+  // Clients and Projects keep their order and their behaviour, and Materials
+  // is still first.
   assert.deepEqual(
     menu.items.map((i) => i.label),
-    ['Materials…', 'Company defaults…', 'Clients…', 'Projects…'],
+    ['Materials…', 'Assign materials…', 'Company defaults…', 'Clients…', 'Projects…'],
   );
+});
+
+test('…and Assign materials is wired the same way every other entry is', () => {
+  const off = buildDatabaseMenu({}).items.find((i) => i.label === 'Assign materials…');
+  assert.equal(off.disabled, true);
+  assert.equal(off.soon, true, 'an entry with nothing behind it says "not yet" rather than opening a half-answer');
+
+  let opened = 0;
+  const entry = buildDatabaseMenu({ onAssignMaterials: () => { opened += 1; } })
+    .items.find((i) => i.label === 'Assign materials…');
+  assert.equal(entry.disabled, false);
+  assert.equal(entry.soon, false);
+  assert.ok(entry.hint.length > 0);
+  entry.run();
+  assert.equal(opened, 1);
 });
 
 test('…and Company defaults is wired the same way every other entry is', () => {

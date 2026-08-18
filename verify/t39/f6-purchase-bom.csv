@@ -1,0 +1,31 @@
+SCOPE,project
+
+GROUP,MATERIAL,ASSIGNED,QTY,UNIT,SHEETS,UNIT_COST,LINE_COST,PARTS
+BOARD,Plinth,NO,0.180,m²,1,,,plinth
+BOARD,HDF backing 6 mm,yes,3.042,m²,1,4.60,13.99,back
+BOARD,MFC White W980 18 mm,yes,8.992,m²,2,11.40,102.51,carcase_side + carcase_horizontal + partition + shelf
+,BOARD subtotal,,,,,,116.50,
+FRONT,Drawer fronts,NO,0.422,m²,1,,,drawer_front
+FRONT,MDF Shaker blank 25 mm,yes,3.027,m²,1,27.00,81.72,door
+,FRONT subtotal,,,,,,81.72,
+DRAWER BOX,Drawer bottoms,NO,0.911,m²,1,,,drawer_bottom
+DRAWER BOX,Drawer box sides,NO,0.820,m²,1,,,drawer_box_side
+,DRAWER BOX subtotal,,,,,,0.00,
+EDGING,Carcase edging,NO,12.896,m,,,,edge_carcase
+EDGING,Front edging,NO,18.764,m,,,,edge_front
+EDGING,Shelf edging,NO,4.040,m,,,,edge_shelf
+,EDGING subtotal,,,,,,0.00,
+HARDWARE,Drawer runners,NO,2.000,pairs,,,,runner
+HARDWARE,Hinge plates,NO,15.000,pcs,,,,hinge_plate
+HARDWARE,Hinges,NO,15.000,pcs,,,,hinge
+HARDWARE,Legs,NO,9.000,pcs,,,,leg
+HARDWARE,Runner sync rods,NO,2.000,pcs,,,,runner_sync_rod
+HARDWARE,Shelf pins,NO,16.000,pcs,,,,shelf_pin
+,HARDWARE subtotal,,,,,,0.00,
+CONSUMABLE,Confirmat screws,NO,103.000,pcs,,,,screw_confirmat
+CONSUMABLE,Puzzle screws,NO,72.000,pcs,,,,puzzle_screw
+,CONSUMABLE subtotal,,,,,,0.00,
+
+,TOTAL (INCOMPLETE),,,,8,,198.22,
+
+WARNING,15 line(s) have no material assigned — this total is not the price of the job

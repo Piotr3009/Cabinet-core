@@ -3767,6 +3767,78 @@ export const DEFAULT_CABINET_PROFILE = {
     sheet: { width: 2800, height: 2070 },
   },
 
+  // ─── TURN 39 (CLAUDE.md F2/F4): THE WORKSHOP'S OWN MATERIAL ANSWERS ───────
+  //
+  // The owner: *"każdy jeden projekt powinien mieć Assign materials"* — so an
+  // ASSIGNMENT belongs to a project, not to the workshop. What belongs to the
+  // workshop is the STARTING POINT: the Egger boards already chosen elsewhere,
+  // and the rules that pick a leg or a hinge without anybody being asked.
+  //
+  // *"A project that has never been assigned opens with the defaults already in
+  // place, not empty."*
+  materials: {
+    // partId → material id (a `cc_materials` row), or { material_id, yield }.
+    // Keys are `engine/partRegistry.js` ids; `seedFromDefaults()` ignores any
+    // key the registry does not know, so a stale profile cannot inject a row.
+    //
+    // EMPTY BY DEFAULT, and that is not an oversight. A material id is a
+    // WORKSHOP NUMBER — it names a row in this workshop's own stock list — and
+    // this app does not invent workshop numbers (the `enabled: false` pattern,
+    // `twoBelowMm: null`, `sheetCarcass: null`). A shop that has never opened
+    // the panel gets an honestly empty set of defaults and an Assign Materials
+    // modal that says so, rather than a board somebody in Warsaw made up.
+    defaults: {},
+
+    // ─── THE LEG LADDER (F4) ────────────────────────────────────────────────
+    //
+    // *"nóżki też automatycznie w zależności od wysokości"*. A plinth height
+    // picks a leg, and a leg has an ADJUSTMENT RANGE — a 100 mm leg that winds
+    // from 95 to 120 covers a 110 mm toe kick and does not cover a 150 one.
+    //
+    // Shape of one rule:
+    //   { material_id, label, nominal_mm, min_mm, max_mm }
+    // `legProductFor(height, rules)` takes the rule whose [min_mm, max_mm]
+    // contains the height and, among those, the one whose `nominal_mm` is
+    // nearest. Nothing in range → NOTHING is assigned, and the modal says why.
+    //
+    // Empty for the same reason `defaults` is: every field in a rule but the
+    // millimetres is a product this workshop buys, and nobody here knows it.
+    legRules: [],
+
+    // ─── THE HINGE LADDER (F4) ──────────────────────────────────────────────
+    //
+    // *"zawiasy automatycznie po wyborze koloru"*. The colour is
+    // `design.hardware.shelfSleeve` (gold | silver | chrome | onyx); the app
+    // already turns it into a HINGE finish through
+    // `appearance.metalHingeFinish` — chrome and silver are nickel, onyx is
+    // onyx, and GOLD IS NULL because Blum publishes no gold cup hinge and this
+    // app does not invent one.
+    //
+    // One rule: { material_id, label, finish, system?, angle?, softClose? }.
+    // `finish` is the hinge finish, not the metal, so one entry covers both the
+    // colours that resolve to it. The best match wins: a rule that names the
+    // system and the angle beats one that names only the finish.
+    hingeRules: [],
+    hingePlateRules: [],
+
+    // ─── THE RUNNER LADDER (F4) ─────────────────────────────────────────────
+    //
+    // Keyed on the SNAPPED nominal length the engine already chose
+    // (`result.hardware[runner_pairs].spec.nl`) — CLAUDE.md F4 is explicit:
+    // *"Do NOT re-derive lengths here; read what the engine already decided."*
+    // One rule: { material_id, label, nl_mm, variant? }.
+    runnerRules: [],
+
+    // ─── LIGHTING (F4) ──────────────────────────────────────────────────────
+    // Straight ids: the strip, the channel it sits in, the driver, the switch
+    // and the spots. The QUANTITY is already the design's own (F5 reads the
+    // metres off the strips the job actually carries); this is only which
+    // product those metres are bought as.
+    ledRules: {
+      strip: null, profile: null, driver: null, switch: null, spot: null,
+    },
+  },
+
   // ─── TURN 33 (CLAUDE.md F11): THE INSERT CATALOGUE — specs, never articles ─
   //
   // Label + NOMINAL WIDTHS per insert kind, profile-listed. The BOM's insert
@@ -4677,6 +4749,28 @@ export function migrateCabinetProfile(profile) {
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     // Turn 32 (CLAUDE.md F5): key by key, like every other nested block.
     bom: { ...D.bom, ...profile.bom, sheet: { ...D.bom.sheet, ...profile.bom?.sheet } },
+    // Turn 39 (F2): the workshop's own answers survive a migration key by key,
+    // the same merge every nested block above gets. `defaults` and `legRules`
+    // are WORKSHOP VALUES, not app shape, so unlike `sheetOptions` they are NOT
+    // rebuilt from code — a shop that named its boards keeps them.
+    materials: {
+      ...D.materials,
+      ...profile.materials,
+      defaults: { ...D.materials.defaults, ...profile.materials?.defaults },
+      legRules: Array.isArray(profile.materials?.legRules)
+        ? profile.materials.legRules
+        : D.materials.legRules,
+      hingeRules: Array.isArray(profile.materials?.hingeRules)
+        ? profile.materials.hingeRules
+        : D.materials.hingeRules,
+      hingePlateRules: Array.isArray(profile.materials?.hingePlateRules)
+        ? profile.materials.hingePlateRules
+        : D.materials.hingePlateRules,
+      runnerRules: Array.isArray(profile.materials?.runnerRules)
+        ? profile.materials.runnerRules
+        : D.materials.runnerRules,
+      ledRules: { ...D.materials.ledRules, ...profile.materials?.ledRules },
+    },
     editor: {
       ...D.editor,
       ...profile.editor,

@@ -59,6 +59,7 @@ export function orderMenus(menus = []) {
  */
 export function buildDatabaseMenu({
   onMaterials = null, onClients = null, onProjects = null, onCompanyDefaults = null,
+  onAssignMaterials = null,
 } = {}) {
   return {
     label: 'Database',
@@ -69,6 +70,17 @@ export function buildDatabaseMenu({
         disabled: !onMaterials,
         soon: !onMaterials,
         run: (e) => onMaterials?.(e),
+      },
+      // ─── Turn 39 (CLAUDE.md F3) ───
+      // The owner: *"musi być Assign materials i później BOM"*. Reachable from
+      // the project ALWAYS, not only at creation — which is why it is a menu
+      // entry and not a step in the new-project wizard.
+      {
+        label: 'Assign materials…',
+        hint: 'Which board, which hinge, which runner — per part, per project. What the BOM is built from',
+        disabled: !onAssignMaterials,
+        soon: !onAssignMaterials,
+        run: (e) => onAssignMaterials?.(e),
       },
       // ─── Turn 22 (CLAUDE.md F2b.2 / F3) ───
       // The storey between the code and the project: what this workshop fits

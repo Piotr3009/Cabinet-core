@@ -125,6 +125,10 @@ export const MODAL_KINDS = Object.freeze({
   // Turn 33 F1: the LED system — a project window opened beside its own
   // menu button, working the SCENE's selection for placements.
   lighting: { about: 'project', label: 'Lighting' },
+  // Turn 39 F3: the layer between the engine's part names and the things a
+  // joiner buys. A PROJECT window — it is about the whole job, so a centred
+  // dialog is honest when the gesture that opened it had no anchor.
+  'assign-materials': { about: 'project', label: 'Assign materials' },
 });
 
 /** Every modal name the app knows, as a list. */

@@ -75,6 +75,50 @@ export async function deleteProject(projectId) {
   return withDb((db) => db.from('cc_projects').delete().eq('id', projectId), null);
 }
 
+// ─── MATERIAL ASSIGNMENTS, PER PROJECT (turn 39, CLAUDE.md F2) ──────────────
+//
+// The owner: *"każdy jeden projekt powinien mieć Assign materials"*. One row
+// per project in `cc_material_assignments` (sql/006_tura39.sql), holding the
+// schema-2 blob `engine/partRegistry.js` normalises.
+//
+// GRACEFUL DEGRADATION IS THE POINT (iron rule 6). The migration has not been
+// run when the owner first opens this build, and both calls below have to be
+// fine with that: `withDb` turns a missing table, a dead network and mock mode
+// into the same `null`, the store falls back to the project's own local blob,
+// and the BOM shows `part:` lines with no price instead of an empty screen.
+// Neither function throws, and neither reports failure as an error the user has
+// to read — a save that could not reach the database still happened locally.
+
+/** This project's assignment blob, or null when there is nothing to read. */
+export async function loadAssignments(projectId) {
+  if (!projectId || isMockMode || !supabase) return null;
+  const { data } = await withDb(
+    (db) => db.from('cc_material_assignments').select('data').eq('project_id', projectId).limit(1),
+    null,
+  );
+  const row = Array.isArray(data) ? data[0] : data;
+  return row?.data || null;
+}
+
+/**
+ * Write this project's assignment blob. Upsert on the primary key, so the
+ * second save of a project overwrites the first rather than colliding.
+ *
+ * @returns {Promise<{saved:boolean, mock:boolean, error:object|null}>}
+ *          `saved: false` is not an exception — it is "the local copy is the
+ *          only copy for now", which is exactly the state before the migration
+ *          has been applied.
+ */
+export async function saveAssignments(projectId, data) {
+  if (!projectId || isMockMode || !supabase) return { saved: false, mock: true, error: null };
+  const res = await withDb(
+    (db) => db.from('cc_material_assignments')
+      .upsert({ project_id: projectId, data: data || {} }, { onConflict: 'project_id' }),
+    null,
+  );
+  return { saved: !res.error, mock: Boolean(res.mock), error: res.error || null };
+}
+
 // ─── COMPANY DEFAULTS (turn 22, CLAUDE.md F2b) ──────────────────────────────
 //
 // One row per owner in `cc_company_defaults` (sql/004_tura22.sql). Both calls

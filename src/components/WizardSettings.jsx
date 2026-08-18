@@ -161,6 +161,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
   // F8/F15 are WORKSHOP numbers — the profile's, not the project's.
   const setProfile = useCabinetProfileStore((s) => s.setProfile);
   const materials = useMaterialAssignmentStore((s) => s.materials);
+  const assignmentData = useMaterialAssignmentStore((s) => s.data);
   const sets = useSettingsSetsStore((s) => s.sets);
   const applyTo = useSettingsSetsStore((s) => s.applyTo);
   const saveSet = useSettingsSetsStore((s) => s.save);
@@ -215,7 +216,9 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
     id: 'f1', label: 'Front 1', style: null, material_id: null, finish_id: null, colour: design.colour.front,
   }];
   const carcassTypes = design.carcass.types;
-  const assignment = materialsAssigned(design, profile);
+  // Turn 39 (CLAUDE.md F7): the same third argument the Start button's gate
+  // takes, so this panel and that button can never disagree about a board.
+  const assignment = materialsAssigned(design, profile, assignmentData);
   const boardMaterials = materials.filter((m) => m.category === 'board' || m.category === 'front');
 
   // ─── TURN 36 (CLAUDE.md F1): THE OLD PANEL'S HARD GATES, CARRIED WHOLE ────

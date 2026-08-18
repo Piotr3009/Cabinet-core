@@ -474,6 +474,84 @@ async function main() {
     });
   });
 
+  // ═════════════════════════════════════════════════════════════════════════
+  // F7 — THE GATE
+  // ═════════════════════════════════════════════════════════════════════════
+  await phase('f7', 'The gate blocks as it always did; Export CNC warns and does not', async () => {
+    await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+    await page.sleep(200);
+
+    // R4 — the gate is a pure function; ask the APP for its answer under three
+    // states, rather than inferring one from a disabled button.
+    const gate = await page.evaluate(`
+      const S = ${P}.project.getState();
+      const profile = ${P}.profile.getState().profile;
+      const ps = window.__ccT39.settings;
+      const design = { projectType: 'kitchen' };
+      const args = (assignments) => ({
+        design, heights: window.__ccT39.heights(design, profile), roomHeight: 2500, profile, assignments });
+      const codes = (a) => ps.wizardStartBlockers(args(a)).blockers.map((b) => b.code);
+      return {
+        nothing: codes(null),
+        emptyStore: codes({ schema: 2, base: {}, overrides: {} }),
+        assignedInTheNewPlace: codes({ base: { carcase_side: { material_id: 'x' }, door: { material_id: 'y' } } }),
+        halfAnswered: codes({ base: { carcase_side: { material_id: 'x' } } }),
+      };
+    `);
+    check('a project with no board anywhere is still BLOCKED',
+      gate.nothing.includes('materials') && gate.emptyStore.includes('materials'), JSON.stringify(gate));
+    check('a board named in Assign materials OPENS it — one system, not two',
+      !gate.assignedInTheNewPlace.includes('materials'), gate.assignedInTheNewPlace.join(',') || 'no blockers');
+    check('half an answer is still a block', gate.halfAnswered.includes('materials'),
+      gate.halfAnswered.join(','));
+
+    // ── EXPORT CNC WARNS, AND THE EXPORT STILL HAPPENS ─────────────────────
+    // Clear the boards this walk assigned so there is something to warn about.
+    await page.evaluate(`
+      const m = ${P}.materials.getState();
+      for (const id of Object.keys(m.data.base)) ${P}.materials.getState().removeAssignment(id);
+      return Object.keys(${P}.materials.getState().data.base).length;
+    `);
+    await page.sleep(300);
+
+    const warned = await page.evaluate(`
+      const S = ${P}.project.getState();
+      const profile = ${P}.profile.getState().profile;
+      return window.__ccT39.bom.cncAssignmentWarning(S.allResults(), {
+        assignments: ${P}.materials.getState().data, profile, design: S.project.design });
+    `);
+    check('the CNC export warning fires when nothing has a board',
+      Boolean(warned) && /nobody has said what from/.test(warned), String(warned).slice(0, 90));
+
+    // ── THE EXPORT ITSELF, pressed with a real pointer ─────────────────────
+    // Output ▸ CNC / DXF is the menu entry a joiner uses. It goes through
+    // `checkBeforeExport()`, which is where the warning was added.
+    await page.click('button', 'Output');
+    await page.sleep(250);
+    await page.click('button', 'CNC / DXF');
+    await page.sleep(900);
+
+    const said = await page.evaluate(`
+      const notes = [...document.querySelectorAll('[data-message]')].map((n) => ({
+        level: n.getAttribute('data-message-level'), text: n.innerText }));
+      return {
+        notes,
+        warned: notes.some((n) => /nobody has said what from/.test(n.text)),
+        blockedLevel: notes.filter((n) => n.level === 'red').length,
+        alive: Boolean(window.__cc && window.__cc.project.getState().units.length),
+      };
+    `);
+    check('the warning is SAID on the glass when the export is pressed', said.warned,
+      said.notes.map((n) => `${n.level}:${n.text.slice(0, 44)}`).join(' | ') || 'no banner');
+    check('…and it is a WARNING, not a refusal — the export went ahead', said.alive,
+      `${said.notes.length} message(s), ${said.blockedLevel} red`);
+
+    await shot('f7-cnc-warns-and-does-not-block', {
+      all: ['[data-message]'],
+      text: 'nobody has said what from',
+    });
+  });
+
   // ─── REPORT ───────────────────────────────────────────────────────────────
   const failed = steps.filter((s) => !s.ok);
   const empty = shots.filter((s) => !s.present);

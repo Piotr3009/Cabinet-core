@@ -687,3 +687,35 @@ export function unassignedInUse(entries = [], {
   }
   return out.sort((a, b) => a.part.name.localeCompare(b.part.name));
 }
+
+/**
+ * ─── THE CNC WARNING (turn 39, CLAUDE.md F7) ────────────────────────────────
+ *
+ * *"Export CNC warns (warns, not blocks) when the project has unassigned parts,
+ * because a cut file for a board nobody has chosen is a cut file for the wrong
+ * board."*
+ *
+ * WARNS. It returns a sentence or null; the caller says it and carries on. This
+ * is the same grammar the Check pre-export hook already uses — it informs, it
+ * never fixes and it never holds anything back. The one thing in this app that
+ * holds a board back is the export gate, which is a different mechanism with
+ * its own "Export anyway".
+ *
+ * It counts only the parts a BOARD is cut from: a missing hinge product is a
+ * purchasing problem, and a DXF does not care what a hinge is made of.
+ *
+ * @returns {string|null}
+ */
+export function cncAssignmentWarning(entries = [], {
+  assignments = null, assignmentsData = null, profile = null, design = null,
+} = {}) {
+  const missing = unassignedInUse(entries, {
+    assignments, assignmentsData, profile, design,
+  }).filter((m) => PART_REGISTRY[m.partId]?.unit === 'm²');
+  if (!missing.length) return null;
+  const names = missing.slice(0, 4).map((m) => m.part.name);
+  const rest = missing.length - names.length;
+  return `${missing.length} cut part${missing.length === 1 ? ' has' : 's have'} no board assigned `
+    + `(${names.join(', ')}${rest > 0 ? ` and ${rest} more` : ''}) — `
+    + 'the file will be cut, but nobody has said what from.';
+}

@@ -13,6 +13,7 @@ import * as frontClearance from './engine/frontClearance.js';
 import * as bomInvoice from './engine/bomInvoice.js';
 import * as bomCore from './engine/bom.js';
 import * as exporters from './lib/exporters.js';
+import * as autoAssign from './engine/autoAssign.js';
 import * as partRegistry from './engine/partRegistry.js';
 // Turn 32 (CLAUDE.md F6): the register, drivable from the walk — mock mode's
 // null answers and a seeded row's overrule are both claims about the APP.
@@ -226,7 +227,16 @@ if (typeof window !== 'undefined') {
   // things by the turn that added them so a reader of the walk can find them.
   // `csv` is the purchase list's own writer, so the walk can prove the FILE
   // and the SCREEN carry the same numbers off the same call.
-  window.__ccT39 = { partRegistry, bom: bomCore, csv: exporters.buildPurchaseBomCsvText };
+  window.__ccT39 = {
+    partRegistry,
+    bom: bomCore,
+    csv: exporters.buildPurchaseBomCsvText,
+    autoAssign,
+    // F7: the gate is a pure function, so the walk asks IT rather than guessing
+    // from a disabled button.
+    settings: projectSettings,
+    heights: design.projectHeights,
+  };
 }
 
 // ─── Undo / redo (turn 12, CLAUDE.md F9) ───

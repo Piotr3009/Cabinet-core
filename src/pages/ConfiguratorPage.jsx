@@ -38,6 +38,9 @@ import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js
 import { exportBomCsv, exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
 import { exportUnitDxfZip } from '../lib/cncExport.js';
 import { persistProject } from '../lib/persist.js';
+// Turn 39 (CLAUDE.md F7): the warning the CNC export carries when nobody has
+// said what a part is cut from.
+import { cncAssignmentWarning } from '../engine/bom.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
 import { exportBookletPdf, exportDrawingPdf, exportDrawingSvg } from '../lib/drawingExport.js';
@@ -250,6 +253,16 @@ export default function ConfiguratorPage() {
   // the export goes ahead. The one thing that holds a board back is the gate,
   // which is a different mechanism with its own "Export anyway".
   const checkBeforeExport = useCallback(() => {
+    // ─── TURN 39 (CLAUDE.md F7): …AND WHAT NOBODY HAS CHOSEN A BOARD FOR ───
+    // A cut file for a board nobody has chosen is a cut file for the WRONG
+    // board. It WARNS — same grammar as the line below it, and for the same
+    // reason: nothing here blocks, and the export goes ahead either way.
+    const unassigned = cncAssignmentWarning(allResults(), {
+      assignments: useMaterialAssignmentStore.getState().data,
+      profile,
+      design: project.design,
+    });
+    if (unassigned) notify(unassigned, 'warn');
     const found = runChecks();
     if (!found.length) return found;
     const reds = found.filter((f) => f.level === 'red').length;
@@ -261,7 +274,7 @@ export default function ConfiguratorPage() {
     );
     return found;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runChecks, setCheckOpen, notify]);
+  }, [runChecks, setCheckOpen, notify, allResults, profile, project.design]);
 
   const onExportCsv = useCallback(() => {
     if (!guard()) return;

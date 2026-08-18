@@ -1,11 +1,106 @@
 {
  "turn": 39,
- "when": "2026-08-18T08:52:29.018Z",
+ "when": "2026-08-18T09:02:43.868Z",
  "steps": [
   {
    "label": "the scene is seeded — a wardrobe and a base unit",
    "ok": true,
    "detail": "{\"units\":2,\"parts\":30,\"kinds\":\"BACK,BOTTOM,BUL,BUR,DP,DRAWER-BOTTOM,DRAWER-BOX-BACK,DRAWER-BOX-FRONT,DRAWER-FRONT,DRAWER-SIDE,FILLER,FRONT,PARTITION,PLINTH,SHELF,TOP\"}"
+  },
+  {
+   "label": "the modal opens with the seven registry groups",
+   "ok": true,
+   "detail": "{\"counter\":\"21\",\"groups\":7,\"rows\":6}"
+  },
+  {
+   "label": "…and a running counter of what is unassigned",
+   "ok": true,
+   "detail": "counter=21"
+  },
+  {
+   "label": "the counter IS the engine’s own answer",
+   "ok": true,
+   "detail": "screen=21 engine=21"
+  },
+  {
+   "label": "every unassigned row is UNDERLINED and coloured",
+   "ok": true,
+   "detail": "{\"rows\":6,\"missing\":6,\"underlined\":6,\"groupsWithDots\":6}"
+  },
+  {
+   "label": "…and the group list carries a dot for each group with something missing",
+   "ok": true,
+   "detail": "6 groups dotted"
+  },
+  {
+   "label": "a pointer-made assignment reaches the store",
+   "ok": true,
+   "detail": "stored=generic-18 picked=generic-18"
+  },
+  {
+   "label": "…the row stops being marked",
+   "ok": true,
+   "detail": "marked=0"
+  },
+  {
+   "label": "…and the counter drops by exactly one",
+   "ok": true,
+   "detail": "21 → 20"
+  },
+  {
+   "label": "BUL and BUR are ONE assignable row — the owner’s question, on the glass",
+   "ok": true,
+   "detail": "{\"bul\":\"carcase_side\",\"bur\":\"carcase_side\",\"rowsForSides\":1}"
+  },
+  {
+   "label": "the override row offers all five families",
+   "ok": true,
+   "detail": "five families"
+  },
+  {
+   "label": "six parts assigned, four of them to ONE board",
+   "ok": true,
+   "detail": "carcase_side,carcase_horizontal,shelf,partition,back,door"
+  },
+  {
+   "label": "the unassigned lines sit at the TOP",
+   "ok": true,
+   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
+  },
+  {
+   "label": "…each with a button that opens Assign Materials on that exact part",
+   "ok": true,
+   "detail": "15 buttons"
+  },
+  {
+   "label": "the total is marked INCOMPLETE while anything is unassigned",
+   "ok": true,
+   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
+  },
+  {
+   "label": "the assigned lines are grouped, each group with a subtotal",
+   "ok": true,
+   "detail": "{\"lines\":18,\"firstAssigned\":15,\"lastUnassigned\":14,\"incomplete\":\"15\",\"total\":\"incomplete\",\"groups\":2,\"subtotals\":2,\"assignButtons\":15}"
+  },
+  {
+   "label": "four parts on one board are ONE line with the summed area — the owner’s sentence",
+   "ok": true,
+   "detail": "1 line, parts=carcase_horizontal+carcase_side+partition+shelf, qty=8.992192000000001"
+  },
+  {
+   "label": "the project BOM IS the sum of its cabinets’ BOMs",
+   "ok": true,
+   "detail": "project=198.22 sum=198.23"
+  },
+  {
+   "label": "the level switch is on \"this cabinet\"",
+   "ok": true,
+   "detail": "NOT ASSIGNED — NOTHING CAN BE ORDERED FO"
+  },
+  {
+   "label": "the purchase CSV carries the unassigned lines and says INCOMPLETE",
+   "ok": true,
+   "detail": "32 rows"
   },
   {
    "label": "the chosen metal assigned the hinge without being asked",
@@ -46,9 +141,143 @@
    "label": "…while the parts the rule still owns are untouched",
    "ok": true,
    "detail": "hinge=hw_hinge_soft"
+  },
+  {
+   "label": "a project with no board anywhere is still BLOCKED",
+   "ok": true,
+   "detail": "{\"nothing\":[\"materials\"],\"emptyStore\":[\"materials\"],\"assignedInTheNewPlace\":[],\"halfAnswered\":[\"materials\"]}"
+  },
+  {
+   "label": "a board named in Assign materials OPENS it — one system, not two",
+   "ok": true,
+   "detail": "no blockers"
+  },
+  {
+   "label": "half an answer is still a block",
+   "ok": true,
+   "detail": "materials"
+  },
+  {
+   "label": "the CNC export warning fires when nothing has a board",
+   "ok": true,
+   "detail": "10 cut parts have no board assigned (Backs, Carcase sides, Carcase top / bottom, Doors and"
+  },
+  {
+   "label": "the warning is SAID on the glass when the export is pressed",
+   "ok": true,
+   "detail": "grey:30 DXF files exported as Turn-39-walk-cnc-W0 | red:Check: 2 faults before this goes to the mach | yellow:10 cut parts have no board assigned (Backs, "
+  },
+  {
+   "label": "…and it is a WARNING, not a refusal — the export went ahead",
+   "ok": true,
+   "detail": "3 message(s), 1 red"
   }
  ],
  "shots": [
+  {
+   "name": "f3a-database-menu-carries-assign-materials",
+   "subject": {
+    "text": "Assign materials"
+   },
+   "present": true,
+   "detail": "{\"text\":true}"
+  },
+  {
+   "name": "f3-assign-materials-unassigned-marked",
+   "subject": {
+    "all": [
+     "[data-assign-materials=\"1\"]",
+     "[data-assign-counter]",
+     "[data-assign-group=\"board\"]"
+    ],
+    "text": "parts unassigned",
+    "count": {
+     "[data-assign-part]": 4,
+     "[data-assign-missing=\"1\"]": 3
+    }
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true,\"count\":true}"
+  },
+  {
+   "name": "f3b-material-picker-open-on-carcase-sides",
+   "subject": {
+    "all": [
+     "[data-material-picker-panel=\"1\"]",
+     "[data-material-search=\"1\"]"
+    ],
+    "count": {
+     "[data-material-option]": 3
+    }
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"count\":true}"
+  },
+  {
+   "name": "f3c-carcase-sides-assigned-counter-drops",
+   "subject": {
+    "all": [
+     "[data-assign-part=\"carcase_side\"][data-assign-missing=\"0\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f3d-per-family-override-open",
+   "subject": {
+    "all": [
+     "[data-material-picker=\"carcase_side@wardrobe\"]",
+     "[data-material-picker=\"carcase_side@base\"]"
+    ],
+    "text": "PER CABINET FAMILY",
+    "count": {
+     "[data-material-picker^=\"carcase_side@\"]": 5
+    }
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true,\"count\":true}"
+  },
+  {
+   "name": "f6-bom-project-with-unassigned-on-top",
+   "subject": {
+    "all": [
+     "[data-bom-purchase=\"1\"]",
+     "[data-bom-total=\"incomplete\"]",
+     "[data-bom-scope=\"project\"]"
+    ],
+    "text": "NOT ASSIGNED",
+    "count": {
+     "[data-bom-line]": 6,
+     "[data-bom-assign]": 1
+    }
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true,\"count\":true}"
+  },
+  {
+   "name": "f6c-bom-total-marked-incomplete",
+   "subject": {
+    "all": [
+     "[data-bom-total=\"incomplete\"]",
+     "[data-bom-subtotal=\"board\"]"
+    ],
+    "text": "INCOMPLETE"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  },
+  {
+   "name": "f6b-bom-this-cabinet-level",
+   "subject": {
+    "all": [
+     "[data-bom-purchase=\"1\"]"
+    ],
+    "text": "CABINET TOTAL"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  },
   {
    "name": "f4-automatics-hinge-and-leg-tagged",
    "subject": {
@@ -72,6 +301,17 @@
    },
    "present": true,
    "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f7-cnc-warns-and-does-not-block",
+   "subject": {
+    "all": [
+     "[data-message]"
+    ],
+    "text": "nobody has said what from"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
   }
  ],
  "failed": 0,

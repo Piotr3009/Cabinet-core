@@ -317,12 +317,25 @@ test('the result is a PANEL, not toasts', () => {
   // delivered four seconds at a time is F2's bug with more steps.
   assert.ok(!/\bnotify\(/.test(panel));
   // A ROW IS A DOOR: the F7/T30 mechanism, one implementation for all eleven.
-  assert.match(panel, /const goTo = \(subject, e\) =>/);
-  assert.match(panel, /selectElement\(subject\.unitId, subject\.panelId\)/);
-  assert.match(panel, /openModal\(editor/);
+  //
+  // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F4c) ────────────────────────────
+  //
+  // The owner: *"super, teraz tak robi, ale nie bierze nas dokładnie do tego
+  // miejsca."* The mechanism did two of the four things — it selected the piece
+  // and opened the editor — and did not FLY, and did not open a door standing
+  // in front of the piece. All four moved into ONE hook, `useGoToSubject`, so
+  // the cabinet modal's own list cannot behave differently; the claim this test
+  // makes is unchanged and is asserted where the gesture now lives.
+  assert.match(panel, /const goTo = useGoToSubject\(\)/);
+  const gesture = readFileSync(new URL('../src/lib/checkFindings.js', import.meta.url), 'utf8');
+  assert.match(gesture, /selectElement\(unitId, panelId\)/, 'it rings the piece');
+  assert.match(gesture, /focusOnPanel\(unitId, panelId/, '…flies to it');
+  assert.match(gesture, /openFrontsFor\(unitId, fronts\)/, '…opening the doors in front of it first');
+  assert.match(gesture, /openModal\(subject\.editor/, '…and opens the window the finding names');
   // …and a finding that names two ways out shows both, as turn 30's own prompt
   // did for the shelf/hinge clash.
   assert.match(panel, /data-check-alternative/);
+  assert.match(panel, /data-check-action/);
 });
 
 test('the Check button sits beside BOM, and carries the count', () => {

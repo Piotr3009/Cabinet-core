@@ -656,6 +656,8 @@ export default function UnitView({
   unit, result, wall, walls = null, roomCentre, selected, snapStep, onSelect, onMove, onMoveToWall,
   onMoveShelf, onShelfDragState,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
+  // TURN 40 (CLAUDE.md F4c): { panelId, atMm } — fly to THAT piece.
+  focusPanel = null, onFocusPanelDone = null,
   frontColour = null, design = null, onSetTopInfill, onFillToCeiling, groupRef = null,
   onSetEndPanelTop, onEndPanelToCeiling, onSetSideInfillTop, onSideInfillToCeiling,
   profile, finishes, outlines = true, contour = false, xray = false, sheen = null,
@@ -1318,6 +1320,38 @@ export default function UnitView({
     local.applyAxisAngle(new THREE.Vector3(0, 1, 0), wall.angle + rotationRad);
     return local.add(origin);
   }, [origin, wall.angle, rotationRad]);
+
+  /**
+   * ─── TURN 40 (CLAUDE.md F4c): TAKE ME TO THAT PIECE ───────────────────────
+   *
+   * The owner: *"jeśli to ta półka, powinno nas wziąć do tej półki, jakby
+   * najechać kamerą na nią, lub na zawias który jest problemem."*
+   *
+   * A Check finding names a PANEL and, where the fault is at a height on that
+   * panel, the height itself. Only this component knows where a piece actually
+   * is — the unit's origin, its wall's angle and its own rotation are all here
+   * — so the request is resolved here and handed to `onFocus`, which is the
+   * very same smooth flight a double-click on a piece has used since turn 5
+   * (`3d/Scene.jsx FocusRig`). One flight, one easing, one place.
+   *
+   * The piece is also SELECTED by the caller before the request is raised, so
+   * it arrives centred AND ringed — `SelectionOutline` is what highlights it,
+   * and asking for a second highlight here would be a second answer.
+   */
+  useEffect(() => {
+    if (!focusPanel?.panelId || !onFocus) return;
+    const piece = result.panels.find((p) => p.id === focusPanel.panelId && p.box);
+    if (!piece) { onFocusPanelDone?.(); return; }
+    // `atMm` centres on a HEIGHT up the piece rather than on its middle, which
+    // is what makes "or on the hinge that is the problem" literally true.
+    const at = Number(focusPanel.atMm);
+    const centre = panelWorldCentre(Number.isFinite(at)
+      ? { ...piece, box: { ...piece.box, y: at - piece.box.h / 2 } }
+      : piece);
+    onFocus(centre, Math.max(piece.box.w, piece.box.h, piece.box.d));
+    onFocusPanelDone?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusPanel, result.panels, panelWorldCentre]);
 
   /**
    * ─── Grab a shelf and pull it out (turn 9, CLAUDE.md F4.2) ───

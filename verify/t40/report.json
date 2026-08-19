@@ -1,0 +1,100 @@
+{
+ "turn": 40,
+ "when": "2026-08-19T01:37:07.097Z",
+ "steps": [
+  {
+   "label": "#3 TALL CABINET WITH NO FIXED SHELF appears EXACTLY ONCE",
+   "ok": true,
+   "detail": "list 1, on the glass 1"
+  },
+  {
+   "label": "two cabinets never wear one name, so two faults are two LINES",
+   "ok": true,
+   "detail": "W02, W03 — 2 findings, 2 distinct"
+  },
+  {
+   "label": "a shelf really is level with a hinge on this cabinet",
+   "ok": true,
+   "detail": "rows [100,470,670], 1 clash(es)"
+  },
+  {
+   "label": "the shelf × hinge fault carries BOTH buttons, as data",
+   "ok": true,
+   "detail": "Remove sleeves at this shelf | Move the hinge"
+  },
+  {
+   "label": "THE SAME TWO BUTTONS, in BOTH places, both on the glass",
+   "ok": true,
+   "detail": "panel [\"Remove sleeves at this shelf\",\"Move the hinge\"] · modal [\"Remove sleeves at this shelf\",\"Move the hinge\"]"
+  },
+  {
+   "label": "the doors start SHUT, which is the case the owner described",
+   "ok": true,
+   "detail": "0 open"
+  },
+  {
+   "label": "IT OPENS THE DOORS FIRST, then rings the shelf and flies to it",
+   "ok": true,
+   "detail": "{\"doorsOpened\":1,\"selected\":\"SHELF-2\",\"flewTo\":\"arrived\"}"
+  },
+  {
+   "label": "…and the doors it opened STAY open — no fighting the user",
+   "ok": true,
+   "detail": "{\"doorsStillOpen\":1,\"selected\":\"01-F\",\"modal\":\"element\",\"hingeIndex\":1}"
+  },
+  {
+   "label": "…rings the door and opens its window at that hinge row",
+   "ok": true,
+   "detail": "{\"doorsStillOpen\":1,\"selected\":\"01-F\",\"modal\":\"element\",\"hingeIndex\":1}"
+  }
+ ],
+ "shots": [
+  {
+   "name": "f4b-tall-cabinet-fault-appears-once",
+   "subject": {
+    "all": [
+     "[data-check-panel]",
+     "[data-check-finding=\"3\"]"
+    ],
+    "count": {
+     "[data-check-finding=\"3\"]": 1
+    },
+    "text": "TALL CABINET WITH NO FIXED SHELF"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true,\"count\":true}"
+  },
+  {
+   "name": "f4a-same-fault-same-buttons-both-places",
+   "subject": {
+    "all": [
+     "[data-check-panel]",
+     "[data-editor-properties] [data-shelf-hinge-clash]",
+     "[data-check-panel] [data-check-action=\"move-hinge\"]",
+     "[data-editor-properties] [data-shelf-hinge-clash] [data-check-action=\"move-hinge\"]"
+    ],
+    "texts": [
+     "Remove sleeves at this shelf",
+     "Move the hinge"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"texts\":true}"
+  },
+  {
+   "name": "f4c-camera-at-the-hinge-doors-opened",
+   "subject": {
+    "all": [
+     "canvas",
+     "[data-hinge-modal-rows=\"1\"]",
+     "[data-hinge-row-current=\"1\"]"
+    ],
+    "text": "Hinges"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  }
+ ],
+ "failed": 0,
+ "emptyFrames": 0
+}

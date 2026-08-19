@@ -40,6 +40,9 @@
 //
 // Pure functions — no React, no store, no three.js.
 
+// TURN 40 (CLAUDE.md F1): the ONE post-split hinge reader.
+import { drilledHingeRows } from '../hingeLadder.js';
+
 /** How close two holes must be to be the same hole, in mm. */
 export const DRILL_TOLERANCE = 0.01;
 
@@ -198,7 +201,12 @@ export function drillFindings(result, { profile = null, unitId = null, unitNum =
     });
   }
 
-  const rows = result?.drillSummary?.hinge_centers || [];
+  // TURN 40 (CLAUDE.md F1): the rows the side is ACTUALLY bored at. On a
+  // cabinet with no split this IS `hinge_centers`; on a split one it is the
+  // union of the segments' own ladders, which is exactly what
+  // `engine/cabinet.js platedRowsFor` drills — so the guard and the machine
+  // measure one column.
+  const rows = drilledHingeRows(result);
   for (const clash of hingeRowClashes(rows, {
     minSpacingMm: hingeMinSpacingMm(profile), unitNum: num,
   })) {

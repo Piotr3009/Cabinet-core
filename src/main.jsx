@@ -48,6 +48,14 @@ import * as dimensionArrows from './engine/dimensionArrows.js';
 import * as bevel from './3d/bevel.js';
 import * as hardwareFinish from './3d/hardwareFinish.js';
 import * as decors from './engine/decors.js';
+// TURN 40: the modules the walk asks about (see `window.__ccT40` below).
+import * as hingeLadder from './engine/hingeLadder.js';
+import * as grain from './engine/grain.js';
+import * as wallElevation from './engine/drawings/wallElevation.js';
+import * as wallSheets from './engine/drawings/wallSheets.js';
+import * as drawingsDxf from './engine/drawings/dxf.js';
+import * as overlayDrawers from './engine/overlayDrawers.js';
+import * as checks from './engine/checks.js';
 import * as dimensions from './engine/dimensions.js';
 import * as frontDimensions from './engine/frontDimensions.js';
 // Turn 34 (CLAUDE.md F1/F4/F7/F8): the four readers the acceptance walk asks.
@@ -227,6 +235,24 @@ if (typeof window !== 'undefined') {
   // things by the turn that added them so a reader of the walk can find them.
   // `csv` is the purchase list's own writer, so the walk can prove the FILE
   // and the SCREEN carry the same numbers off the same call.
+  // ─── TURN 40 ───────────────────────────────────────────────────────────
+  // What the acceptance walk has to be able to ASK rather than guess: the one
+  // post-split hinge ladder (F1), the single grain source and its reader (F2),
+  // the wall drawing set and its DXF (F5), the overlay stack's law (F3b), the
+  // rail's mount (F6) and the check definition both surfaces render (F4a).
+  // All pure, all already reachable from the page.
+  window.__ccT40 = {
+    hingeLadder,
+    layout,
+    decors,
+    grain,
+    wallElevation,
+    wallSheets,
+    drawingsDxf,
+    overlayDrawers,
+    railAssembly,
+    checks,
+  };
   window.__ccT39 = {
     partRegistry,
     bom: bomCore,

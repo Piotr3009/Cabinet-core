@@ -7,7 +7,9 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { grainRun } from '../src/engine/decors.js';
 import { sheetTurn } from '../src/engine/cnc/layout.js';
-import { GRAIN_AXIS_BY_PART, applyGrainAxis, grainLocked } from '../src/engine/grain.js';
+import {
+  CUT_GRAIN_AXIS_BY_PART, GRAIN_AXIS_BY_PART, applyGrainAxis, grainLocked,
+} from '../src/engine/grain.js';
 
 // ─── TURN 36 (CLAUDE.md F5): CNC GRAIN — THE OWNER'S LAW, PER ROLE ──────────
 //
@@ -94,7 +96,17 @@ test('F5 — a BUDR stack answers the same way, out of a different ladder', () =
   assert.ok(df.w > df.h, 'wide and short — the saw would have said `w`');
   assert.equal(df.cnc.grain, 'h', 'fronty szuflad też');
   assert.equal(grainRun(df).axis, 'h');
-  assert.equal(grainRun({ ...df, cnc: {} }).axis, 'w', 'which is what it used to be');
+  // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F2: ONE GRAIN TRUTH) ────────────
+  //
+  // This asserted that stripping the stamp gave the saw's old answer, `w`. Under
+  // F2 the OWNER'S ROLE LIST is what the cut reads, so a drawer front cannot
+  // lose its lay by losing a field — which is a strictly better property and
+  // the reason the table is an input to the cut rather than a stamp somebody
+  // has to remember to apply. To see the saw's old answer you now have to strip
+  // the PART as well, because the part IS the decision.
+  assert.equal(grainRun({ ...df, cnc: {} }).axis, 'h', 'the ROLE decides, stamp or no stamp');
+  assert.equal(grainRun({ w: df.w, h: df.h, cnc: {} }).axis, 'h',
+    'and a nameless board that wide is laid as drawn, so its figure runs its height');
 });
 
 test('F5 — the PLINTH stands along the grain, long and shallow though it is', () => {
@@ -145,38 +157,40 @@ test('F5 — the layout turns NOTHING on this list, so nothing lands off-grain'
   // stated part with its grain running UP the page. That is turn 0 for a part
   // that states 'h' and turn 90 for one that states 'w' — so the standing roles
   // are byte-identical and the flat one turns, which is F7a's whole delta.
+  // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F2: ONE GRAIN TRUTH) ────────────
+  //
+  // The owner, 18.08: *"Jeżeli cięte jest w pionie, słój w pionie… Jak tniemy,
+  // tak słoje się pokazują. Nie będzie wyjątków."*
+  //
+  // T37-F7a's form of this test read `cnc.grain` — a statement in the DRAWN
+  // frame — and asked the sheet to honour that letter. On a role whose kit
+  // draws it TURNED, that letter and the ROLE's own intent are 90° apart, which
+  // is how one role ended up cut two ways in two kits. F2 makes the OWNER'S
+  // TABLE the input to the cut, so the law is now: the axis of the PIECE'S OWN
+  // `w × h` record that the table names is the one standing up the sheet. Said
+  // in millimetres of board, which is the honest form and the one that cannot
+  // be weakened into agreement.
   const r = unit('BUDR');
   const plinth = unit('BUD', { plinth: true }).panels.find((p) => p.part === 'PLINTH');
   let turned = 0;
   for (const p of [...r.panels, plinth]) {
     if (!grainLocked(p.part)) continue;
-    const stated = p.cnc?.grain;
-    assert.ok(stated === 'w' || stated === 'h', `${p.part} states its axis`);
-    const want = stated === 'w' ? 90 : 0;
-    if (want) turned += 1;
-    assert.equal(sheetTurn(p), want,
-      `${p.part} states '${stated}' — the sheet stands that axis up the page`);
+    const wanted = CUT_GRAIN_AXIS_BY_PART[p.part];
+    assert.ok(wanted === 'w' || wanted === 'h', `${p.part} is on the owner's list`);
+    const dw = Number(p.cnc?.drawn_w) > 0 ? Number(p.cnc.drawn_w) : p.w;
+    const dh = Number(p.cnc?.drawn_h) > 0 ? Number(p.cnc.drawn_h) : p.h;
+    const alongMm = wanted === 'w' ? p.w : p.h;
+    const acrossMm = wanted === 'w' ? p.h : p.w;
+    const upMm = sheetTurn(p) === 90 ? dw : dh;
+    if (sheetTurn(p) === 90) turned += 1;
+    assert.equal(upMm, alongMm,
+      `${p.part}: the owner's axis runs UP the sheet (${alongMm} up, ${acrossMm} across)`);
+    // …and the 3-D DERIVES from that rather than from a table of its own.
+    assert.equal(grainRun(p).lengthMm, upMm, `${p.part}: and the picture shows what was cut`);
   }
   // …and the two halves are really both present in this cabinet, so neither
   // branch is asserted against an empty set.
-  assert.ok(turned > 0, 'the flat one — DRAWER-BOTTOM — is the half that turns');
-
-  // The same law said the other way round — which is what "nothing lands
-  // off-grain" was always reaching for, and what it did not actually check.
-  // Measured in millimetres of board rather than in the letter of the turn: the
-  // extent that ends up UP THE PAGE is the one the piece states its grain along.
-  for (const p of [...r.panels, plinth]) {
-    if (!grainLocked(p.part)) continue;
-    const dw = Number(p.cnc?.drawn_w) > 0 ? Number(p.cnc.drawn_w) : p.w;
-    const dh = Number(p.cnc?.drawn_h) > 0 ? Number(p.cnc.drawn_h) : p.h;
-    const alongMm = p.cnc.grain === 'w' ? dw : dh;
-    const acrossMm = p.cnc.grain === 'w' ? dh : dw;
-    // Turn 90 exchanges the drawn axes, so the sheet's own "up" is the drawn w
-    // after a turn and the drawn h without one.
-    const upMm = sheetTurn(p) === 90 ? dw : dh;
-    assert.equal(upMm, alongMm,
-      `${p.part}: the stated grain runs UP the sheet (${alongMm} up, ${acrossMm} across)`);
-  }
+  assert.ok(turned > 0, 'the boards drawn turned — the drawer box — are the half that turns');
 });
 
 test('F5 — and the nester still does not read the statement (turn 28\'s rule)'
@@ -194,7 +208,8 @@ test('F5 — and the nester still does not read the statement (turn 28\'s rule)'
   // undone: the statement is read, and the old size rule over the old set is
   // still exactly what answers a part that states nothing.
   assert.match(code, /grain/, 'the nester reads the statement (T37-F7a)');
-  assert.match(code, /return w > h \? 90 : 0;/, '…and turn 17 F3\'s size rule is still there');
+  // RE-PINNED 18.08.2026 (T40-F2): same rule, drawn-frame variable names.
+  assert.match(code, /return dw > dh \? 90 : 0;/, '…and turn 17 F3\'s size rule is still there');
   assert.match(code, /SHELF_BOARD_PARTS\.has/, '…still asked of exactly the old set');
   // And as behaviour rather than as source: a part that states nothing is
   // answered by the size rule, on both of its branches.

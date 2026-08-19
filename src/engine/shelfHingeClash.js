@@ -32,6 +32,11 @@
 //
 // Pure functions and pure data. No React, no store, no three.js.
 
+// TURN 40 (CLAUDE.md F1): the ONE post-split reader. See its own header for the
+// walk of the whole chain and for the measurement that told the two fault
+// classes apart.
+import { drilledHingeRows, hingeRowOwner } from './hingeLadder.js';
+
 /** The numbers, defensively read, so a partial profile cannot produce NaN. */
 function settings(profile) {
   const H = profile?.hardware?.hinge || {};
@@ -60,8 +65,20 @@ export function shelfHingeClashWindowMm(profile) {
 /**
  * The pairs that foul each other, on one cabinet.
  *
- * Read off the ENGINE's own published answers — `drillSummary.hinge_centers`
- * (the rows the machine actually drills) and the PIN rows, which is
+ * ─── TURN 40 (CLAUDE.md F1): AND POST-SPLIT, WHICH IS THE WHOLE FAULT ──────
+ *
+ * This read `drillSummary.hinge_centers` — the cabinet's WHOLE-DOOR ladder,
+ * which T36-F6 deliberately left where it was when a split leaf started boring
+ * its own rows. So on a split wardrobe the rule measured shelves against six
+ * hinges that no longer exist and never against the five that do: the owner's
+ * *"widzą clash… jakby w starym miejscu przed podzieleniem na top i bottom"*.
+ * It now reads `engine/hingeLadder.js`, the one post-split answer, so the y it
+ * reports is the y the scene draws and the machine bores. A cabinet with no
+ * split reads exactly what it read yesterday — `drilledHingeRows` IS
+ * `hinge_centers` there.
+ *
+ * Read off the ENGINE's own published answers — the rows the machine actually
+ * drills (post-split) and the PIN rows, which is
  * deliberately not every shelf: a FIX shelf has no sleeve cluster at all
  * (turn 24 F7, "jak fix, to nie ma 3 poziomów 7,5") and therefore nothing to
  * foul a cup with. That is not an exception, it is the fix a joiner would make.
@@ -75,7 +92,9 @@ export function shelfHingeClashWindowMm(profile) {
  */
 export function shelfHingeClashes({ result, profile }) {
   const windowMm = shelfHingeClashWindowMm(profile);
-  const centres = result?.drillSummary?.hinge_centers || [];
+  // TURN 40 (F1): the rows the machine ACTUALLY bores — a split leaf's own two
+  // sets where there is one, `hinge_centers` where there is not.
+  const centres = drilledHingeRows(result);
   const rows = result?.drillSummary?.shelf_pin_row_y || [];
   if (!centres.length || !rows.length) return [];
 
@@ -91,11 +110,15 @@ export function shelfHingeClashes({ result, profile }) {
       const hingeY = Number(centres[i]);
       const gap = Math.abs(hingeY - shelfY);
       if (!(gap < windowMm)) continue;
-      // WHICH DOOR. A hinge row belongs to the cabinet — both leaves are
-      // drilled as a set — so the clash is reported against the leaf whose own
-      // span contains the row, and against the first leaf where a cabinet has
-      // only one answer.
-      const door = doors.find((p) => hingeY >= p.box.y - 1e-6 && hingeY <= p.box.y + p.box.h + 1e-6)
+      // WHICH DOOR, AND WHICH OF ITS OWN HINGES. A whole door's rows belong to
+      // the cabinet — both leaves are drilled as a set — so the clash is
+      // reported against the leaf whose own span contains the row, exactly as
+      // it always was. A SPLIT leaf's rows belong to ONE SEGMENT, and the
+      // index is that segment's own, so "Move the hinge" opens the window the
+      // hinge is actually in.
+      const owner = hingeRowOwner(result, hingeY);
+      const door = (owner && doors.find((p) => p.id === owner.panelId))
+        || doors.find((p) => hingeY >= p.box.y - 1e-6 && hingeY <= p.box.y + p.box.h + 1e-6)
         || doors[0] || null;
       out.push({
         shelfY,
@@ -104,8 +127,13 @@ export function shelfHingeClashes({ result, profile }) {
         windowMm,
         shelfPanelId: shelf?.id || null,
         shelfItemId: shelf?.meta?.itemId || null,
-        hingeIndex: i,
+        hingeIndex: owner ? owner.hingeIndex : i,
         doorPanelId: door?.id || null,
+        // Which leaf of a split this is. ABSENT on a whole door, which is the
+        // house rule for a key that would otherwise say nothing on every
+        // cabinet in the app — and is what keeps a clash record on an
+        // unsplit cabinet byte-for-byte the record it was.
+        ...(owner?.split ? { splitSegment: owner.split } : {}),
         message: `A shelf at ${Math.round(shelfY)} mm and a hinge at ${Math.round(hingeY)} mm are `
           + `${Math.round(gap)} mm apart — closer than the ${Math.round(windowMm * 100) / 100} mm `
           + 'the cup and the shelf’s own sleeves need between them.',

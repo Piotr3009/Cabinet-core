@@ -1,5 +1,13 @@
 // ─── Manufacturer decors (BACKLOG #19, picker v1) ───
 //
+// TURN 40 (CLAUDE.md F2): ONE GRAIN TRUTH. `grainRun` below asks the CUT how a
+// board was laid instead of applying a rule of its own — the single source is
+// `engine/cnc/layout.js sheetLay()`, and this is the only edge from the decor
+// layer to it. The CNC layout is a consumer of the engine's answer, the scene
+// is a consumer of the same answer, and neither is consumed by
+// `computeCabinet()`, so no cycle is created and no engine byte moves.
+import { sheetLay } from './cnc/layout.js';
+//
 // The Skylon decor pack: 85 EGGER decors, collected by Piotr, shipped in the
 // repo as `public/decors/egger-decors.json` plus 256 px thumbnails. This module
 // is the DATA side of it — parsing, filtering, naming, and turning a chosen
@@ -311,6 +319,16 @@ export function decorFinish(finishId) {
  * The stated grain axis, translated out of the CNC DRAWN frame into the
  * PANEL's own frame — or null when the piece states nothing.
  *
+ * ─── TURN 40 (CLAUDE.md F2): NO LONGER THE ANSWER, STILL THE QUESTION ───────
+ *
+ * `grainRun` below does not call this any more: under the one-grain-truth law
+ * the answer comes from the CUT and nothing else. It is kept, exported and
+ * unchanged because the QUESTION it asks is still a real one — "what does this
+ * piece SAY, read in its own frame" — and the cross-frame tests F2 makes
+ * mandatory use it to prove the statement and the cut agree wherever the piece
+ * makes one. Deleting it would have removed the only independent witness this
+ * feature can be checked against (iron rule 3).
+ *
  * The drawn frame is `drawn_w × drawn_h`; the panel frame is `w × h`. When the
  * two agree the translation is the identity. When the drawing is TURNED — a
  * shelf drawn `depth × width`, a BUDR drawer side drawn `height × depth` — the
@@ -322,7 +340,7 @@ export function decorFinish(finishId) {
  * Where the two dimensions are equal — a square panel — the swap cannot be
  * detected and cannot matter.
  */
-function statedPanelAxis(panel) {
+export function statedPanelAxis(panel) {
   const stated = panel?.cnc?.grain;
   if (stated !== 'w' && stated !== 'h') return null;
   const dw = Math.abs(Number(panel?.cnc?.drawn_w) || 0);
@@ -357,16 +375,57 @@ function statedPanelAxis(panel) {
  */
 const UPRIGHT_ROLES = new Set(['side']);
 
+/**
+ * ─── TURN 40 (CLAUDE.md F2): THE 3-D SHOWS WHAT WAS CUT ─────────────────────
+ *
+ * The owner, 18.08.2026: *"Jeżeli cięte jest w pionie, słój w pionie, to i tak
+ * samo powinien być pokazany element na wizualizacji. Jak tniemy, tak słoje się
+ * pokazują. Czyli jak tniemy w pionie a układamy w szafie w poziomie, to i
+ * słoje w poziomie. Proste. Nie będzie wyjątków."*
+ *
+ * So this function no longer has a rule of its own. It asks `engine/cnc/layout
+ * .js sheetLay()` — the ONE source — how the board was laid, and reports the
+ * grain of the part AS CUT. The mounting orientation carries it the rest of the
+ * way on its own: `decorMapping` below lays that grain LENGTH on the panel's
+ * biggest face in the cabinet, so a part cut standing and mounted lying shows
+ * its grain lying, with nothing here to say so.
+ *
+ * ─── WHAT WENT, AND WHAT DID NOT ────────────────────────────────────────────
+ *
+ * The three-branch cascade this had — the stated field, then `UPRIGHT_ROLES`,
+ * then the saw's "longer side wins" — was the SECOND source of truth F2 exists
+ * to remove, and every one of its answers is now produced by the cut instead:
+ *
+ *   the STATEMENT   `sheetTurn` step 2 reads the very same field, in the frame
+ *                   it is written in.
+ *   UPRIGHT_ROLES   a side is drawn `depth × height`, so the sheet lays its
+ *                   height up the page and the derived axis is `h` — including
+ *                   on the short top-box side T37-F5d was written for. The set
+ *                   is kept below as the record of that finding; it is an input
+ *                   the cut already satisfies, not a rule beside it.
+ *   the SAW's rule  `panelAxisOf` still falls back on it, in one place, for the
+ *                   square board where nothing else can decide.
+ */
 export function grainRun(panel) {
   const w = Math.abs(Number(panel?.w) || 0);
   const h = Math.abs(Number(panel?.h) || 0);
-  const upright = UPRIGHT_ROLES.has(panel?.role) ? 'h' : null;
-  const axis = statedPanelAxis(panel) || upright || (w >= h ? 'w' : 'h');
+  const { axis } = sheetLay(panel);
   return {
     axis,
     lengthMm: axis === 'w' ? w : h,
     acrossMm: axis === 'w' ? h : w,
   };
+}
+
+/**
+ * T37-F5d's finding, kept as the record it is: a SIDE stands up however short
+ * it is. Under F2's law the cut already answers it — a side is drawn
+ * `depth × height` and the sheet lays that height up the page — so this is the
+ * sentence the derivation is checked against and not a second rule applied
+ * beside it. `test/turn40-f2-one-grain-truth.test.js` asserts the equality.
+ */
+export function uprightRole(role) {
+  return UPRIGHT_ROLES.has(role);
 }
 
 // ─── WHICH WAY THE FIGURE RUNS IN THE IMAGE ITSELF (turn 29, CLAUDE.md F1) ──

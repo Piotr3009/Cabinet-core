@@ -40,6 +40,9 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const setAddItemKind = useUiStore((s) => s.setAddItemKind);
 
   const addDrawers = useProjectStore((s) => s.addDrawers);
+  // TURN 40 (CLAUDE.md F3b): the OVERLAY stack — fronts on the wardrobe, doors
+  // above them, and never a 30 mm hinge strip.
+  const addOverlayDrawers = useProjectStore((s) => s.addOverlayDrawers);
   const addShelves = useProjectStore((s) => s.addShelves);
   const addPartition = useProjectStore((s) => s.addPartition);
   const addHangerRail = useProjectStore((s) => s.addHangerRail);
@@ -60,10 +63,17 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
 
   const DR = profile.wardrobe.drawers;
   const existingDrawers = items.filter((i) => i.kind === 'drawer').length;
+  const existingOverlay = items.filter((i) => i.kind === 'overlay_drawer').length;
   const ratioDrawers = type.drawerStyle === 'budr';
 
   const [drawerCount, setDrawerCount] = useState(existingDrawers || 2);
   const [drawerHeight, setDrawerHeight] = useState(DR.frontHeight);
+  // TURN 40 (F3b): the overlay stack's own two numbers. Its heights DEFAULT TO
+  // EQUAL — one number for the whole stack — which is the owner's own rule and
+  // is why there is one field here and not a ladder of them; the per-drawer
+  // slider then edits any of them exactly as it does an internal drawer's.
+  const [overlayCount, setOverlayCount] = useState(existingOverlay || 3);
+  const [overlayHeight, setOverlayHeight] = useState(DR.frontHeight);
   // ─── TURN 32 (CLAUDE.md F4): overlay or INTERNAL, per stack — the owner
   // set "internal" and nothing listened; the click listens now. And WHICH
   // COLUMN, when the cabinet is divided — same grammar as the shelves.
@@ -82,6 +92,10 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // the box is cut unchanged. null = the plain drawer, as ever.
   const [drawerVariant, setDrawerVariant] = useState(null);
   const [railZone, setRailZone] = useState(null);
+  // TURN 40 (CLAUDE.md F6): with a shelf, or on its own. The DEFAULT is the
+  // assembly — that was the owner's own verdict in T37 and nothing here
+  // overturns it; this is the alternative he asked for on 18.08.
+  const [railWithShelf, setRailWithShelf] = useState(true);
   const [shelfCount, setShelfCount] = useState(1);
   const [shelfZone, setShelfZone] = useState(null);
   // Turn 33 (F3): which column a bought mechanism goes in.
@@ -94,6 +108,27 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const [showAll, setShowAll] = useState(false);
 
   const done = () => { setAddItemKind(null); onZoneHover?.(null); onDone?.(); };
+
+  /**
+   * ─── TURN 40 (CLAUDE.md F3b): ADD AN OVERLAY STACK ───────────────────────
+   *
+   * The owner: *"fronty na szafie, drzwi powyżej szuflad."* Everything the
+   * stack implies is the ENGINE's and not this handler's — the stack sits at
+   * the bottom, a FIXED shelf is cut above it, and the doors above are
+   * shortened with their hinges re-laddered — so the click asks for a count
+   * and a height and nothing else.
+   */
+  const onAddOverlayDrawers = (count, height) => {
+    const res = addOverlayDrawers(unit.id, count, height);
+    if (res && res.ok === false) {
+      notify(res.error || 'The drawers were not added.', 'warn');
+      return;
+    }
+    notify(`${count} × ${height} mm overlay drawer${count === 1 ? '' : 's'} added — a fixed shelf above `
+      + 'them and the doors shortened to start on it. No 30 mm hinge strip: an overlay front is outside '
+      + 'the carcass, so nothing swings past it.', 'ok');
+    done();
+  };
 
   const onAddDrawers = (count, height) => {
     const before = items.filter((i) => i.kind === 'drawer').length;
@@ -155,6 +190,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       materialId: material?.id || null,
       materialLabel: material?.name || null,
       zone,
+      // TURN 40 (F6): the choice the joiner just made, and the default is T37's.
+      withShelf: railWithShelf,
     });
     if (!id) {
       notify(zones.length > 1
@@ -162,6 +199,12 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
         : 'This unit already has a hanging rail.', 'warn');
       return;
     }
+    // TURN 40 (F6): say which of the two was made, because the difference is
+    // a board — and a joiner who gets a shelf he did not ask for, or does not
+    // get one he did, has been surprised by his own tool.
+    notify(railWithShelf
+      ? 'Rail added WITH a fix shelf — drag the shelf and the rod rides with it.'
+      : 'Rail added ON ITS OWN — its own partitioner above it, and a height you can type.', 'ok');
     // ─── TURN 33 (CLAUDE.md F3): THE PULL-DOWN SUGGESTION ───────────────────
     // The owner's rule: a rail above 2000 mm FROM THE FLOOR gets a grey HINT
     // suggesting the pull-down — never a block. Measured off the computed
@@ -190,9 +233,19 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const kinds = [
     {
       id: 'drawers',
-      label: 'Drawers',
+      // TURN 40 (F3b): named for what it IS, now that there are two kinds.
+      label: 'Drawers (internal)',
       disabled: !type.supports.drawers || ratioDrawers,
       why: ratioDrawers ? 'this kit IS its drawers' : 'not for this type',
+    },
+    // ─── TURN 40 (CLAUDE.md F3b): OVERLAY, BESIDE THE INTERNAL ONES ────────
+    // "clearly distinguished (internal vs overlay)" — so the two sit next to
+    // each other and each says which it is in its own label.
+    {
+      id: 'overlay_drawers',
+      label: 'Drawers (overlay)',
+      disabled: !type.supports.drawers || ratioDrawers || type.family !== 'wardrobe',
+      why: ratioDrawers ? 'this kit IS its drawers' : 'a wardrobe thing',
     },
     { id: 'shelves', label: 'Shelves', disabled: !type.supports.shelves, why: 'not for this type' },
     // ─── TURN 34 (CLAUDE.md F4) + CHAT-FIX 16.08 (owner): THE SHOE BOX ──────
@@ -389,6 +442,50 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                   <p className="text-[11px] text-ink-400">
                     Stacked from the bottom, {DR.minFrontHeight}–{DR.maxFrontHeight} mm each. A partition closes the
                     stack automatically (SPEC 4.7), and the doors open so you can see them.
+                  </p>
+                </>
+              )}
+
+              {/* ─── TURN 40 (CLAUDE.md F3b): THE OVERLAY STACK ───────────
+                  Two numbers and nothing else. Everything the stack implies —
+                  the bottom position, the fixed shelf over it, the shortened
+                  doors and their re-laddered hinges — is the engine's law and
+                  not a question a joiner should have to answer twice. */}
+              {kind.id === 'overlay_drawers' && (
+                <>
+                  <div className="flex items-end gap-2">
+                    <div className="w-16">
+                      <span className="cc-label">Count</span>
+                      <NumberField
+                        min={1} max={DR.maxCount} value={overlayCount}
+                        data-overlay-drawer-count="1"
+                        onCommit={setOverlayCount}
+                      />
+                    </div>
+                    <div className="w-20">
+                      <span className="cc-label">Height</span>
+                      <NumberField
+                        min={DR.minFrontHeight} max={DR.maxFrontHeight}
+                        value={overlayHeight}
+                        data-overlay-drawer-height="1"
+                        onCommit={setOverlayHeight}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="cc-btn-gold"
+                      data-add-overlay-drawers="1"
+                      onClick={() => onAddOverlayDrawers(overlayCount, overlayHeight)}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-ink-400">
+                    Fronts ON the wardrobe, at the bottom, {DR.gap} mm apart. A FIXED shelf is cut above the
+                    stack and the doors start on it — shortened, with their hinges re-laddered for the
+                    height they actually are. Heights default to EQUAL, and each one is still editable on
+                    its own drawer. There is never a 30 mm hinge strip: an overlay front stands outside the
+                    carcass, so no door swings past it.
                   </p>
                 </>
               )}
@@ -606,6 +703,33 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       <option value="" disabled>— Connect JoineryCore for live stock (soon) —</option>
                     </select>
                   </div>
+                  {/* ─── TURN 40 (CLAUDE.md F6): THE CHOICE ────────────────
+                      *"następnie dodawanie drążka raz i z półką proszę —
+                      wybór w drążek modal, to ważne."* Two buttons, the
+                      assembly pre-selected, so the joiner who wants what T37
+                      gave him presses Add and gets it. */}
+                  <div className="flex gap-1" data-rail-mode={railWithShelf ? 'with-shelf' : 'alone'}>
+                    <button
+                      type="button"
+                      data-rail-with-shelf="1"
+                      aria-pressed={railWithShelf}
+                      className={`cc-btn flex-1 ${railWithShelf ? 'border-gold text-gold' : ''}`}
+                      title="A FIX shelf with the rod hung under it — drag the shelf and the rod rides with it"
+                      onClick={() => setRailWithShelf(true)}
+                    >
+                      With a shelf
+                    </button>
+                    <button
+                      type="button"
+                      data-rail-alone="1"
+                      aria-pressed={!railWithShelf}
+                      className={`cc-btn flex-1 ${railWithShelf ? '' : 'border-gold text-gold'}`}
+                      title="The rod on its own, with its own partitioner above it — the way this app hung one before T37"
+                      onClick={() => setRailWithShelf(false)}
+                    >
+                      Rail alone
+                    </button>
+                  </div>
                   <button
                     type="button" className="cc-btn-gold w-full"
                     onClick={() => onAddRail(hardware.find((m) => m.id === railMaterial) || null)}
@@ -619,9 +743,13 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       shelf he did not ask for has been surprised by his own
                       tool. The rod still lands where it always landed. */}
                   <p className="text-[11px] text-ink-400" data-rail-assembly-hint="1">
-                    Adds a FIX SHELF with the rail hung under it. The shelf is an ordinary shelf — drag it
-                    and the rod rides with it. Hung as high as it can go under the lowest shelf, above the
-                    drawer partition. The rail you pick is the line that appears in the BOM hardware.
+                    {railWithShelf
+                      ? 'Adds a FIX SHELF with the rail hung under it. The shelf is an ordinary shelf — drag it '
+                        + 'and the rod rides with it. Hung as high as it can go under the lowest shelf, above the '
+                        + 'drawer partition. The rail you pick is the line that appears in the BOM hardware.'
+                      : 'Adds the ROD ON ITS OWN, with its own partitioner above it — the way this app hung one '
+                        + 'before the shelf assembly. Its height is a number you type, measured from the nearest '
+                        + 'thing below it. The rail you pick is the line that appears in the BOM hardware.'}
                   </p>
                 </>
               )}

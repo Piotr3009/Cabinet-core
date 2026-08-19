@@ -1205,7 +1205,11 @@ export const DEFAULT_CABINET_PROFILE = {
     // CHAT-FIX 16.08 (owner): the shoe BOX takes the shelf's slot in the
     // wardrobe's own offer — "modal plusika ma zwinięte menu i trzeba
     // rozwijać, żeby zobaczyć, że jest shoe box; niech będzie [widoczny]".
-    wardrobe: ['shelves', 'shoe_box', 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
+    // TURN 40 (CLAUDE.md F3b): …and the OVERLAY stack, *"beside the existing
+    // internal drawers, clearly distinguished"*. It sits next to them in the
+    // list because that is where a joiner looks for it — the question is
+    // "drawers", and the answer is which kind.
+    wardrobe: ['shelves', 'shoe_box', 'hanger', 'drawers', 'overlay_drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
     // Anything whose family is not listed. Deliberately the plain furniture
     // answer rather than a union of the two.
     default: ['shelves', 'drawers', 'partition'],
@@ -3582,6 +3586,46 @@ export const DEFAULT_CABINET_PROFILE = {
       noteHeight: 55,
     },
 
+    // ─── THE WALL DRAWING (turn 40, CLAUDE.md F5) ───────────────────────
+    //
+    // A sheet is a WALL, and the numbers below are what makes a composition of
+    // per-unit views read as one drawing rather than as several. Everything is
+    // in DRAWING millimetres (it travels with the geometry through the scale)
+    // unless it says otherwise.
+    wallDrawing: {
+      // A whole kitchen wall is four metres of drawing on 420 mm of paper, so
+      // the text is set smaller than a card's — at 1:20 a 55 mm figure is
+      // 2.75 mm on paper, which is what a drawing office sets a dimension at.
+      // The floor is still `minTextHeight`.
+      textHeight: 55,
+      unitNumberHeight: 90,
+      // THE TWO CHAINS. `chainFirst` is the inner one — the detailed run above
+      // and the front heights on the right; `chainStep` is how much further
+      // out the grouped one sits. Wide enough that two chains never read as
+      // one, which is the fault the whole feature exists to avoid.
+      chainFirst: 190,
+      chainStep: 230,
+      // How far the floor and ceiling lines run past the end cabinet, so the
+      // building fabric reads as continuing rather than as stopping there.
+      fabricOverhang: 250,
+      // A handle's screw centre, marked with a short cross.
+      handleTick: 14,
+      // The plan: the cabinet number in green, the wall's own name beside it.
+      planNumberHeight: 90,
+      planLabelHeight: 110,
+      wallLabelOffset: 320,
+      noteHeight: 55,
+      // His title block: Client Name, Client Address, Project, Drawing name,
+      // Date, Job No, Scale, Rev — read straight off the set he supplied.
+      titleRows: ['CABINET CORE', 'Client', 'Address', 'Project', 'Drawing', 'Job No', 'Scale', 'Rev', 'Date'],
+      titleWidth: 112,
+      // *"Scale reads 'No Scale' — he does not print to a scale, he trusts the
+      // dimensions. Do not invent a scale label."* The sheet still has to be
+      // laid out at SOME ratio to fit the paper; what the title block says is
+      // his.
+      scaleLabel: 'No Scale',
+    },
+
     // ─── The project booklet (turn 7, CLAUDE.md F1) ───
     booklet: {
       // The cover: a list of the units in the project, so the first page
@@ -4588,6 +4632,34 @@ export function migrateCabinetProfile(profile) {
       hinge: {
         ...D.hardware.hinge,
         ...profile.hardware?.hinge,
+        // ─── TURN 40 (CLAUDE.md F7): plateBiteMm — THE CODE WINS ───────────
+        //
+        // The owner, 18.08.2026: he changed the number in T37-F3 (5 → 10) and
+        // *reports seeing no change*. Nothing is wrong with the number: this is
+        // the localStorage FREEZE this project has now hit three times — the
+        // LED kelvins ("nie zmienia się jak zmienię 3, 4 lub 6 k") and the
+        // design migration before it. `cc.profile.v1` is written whole on every
+        // `setProfile`, so a browser that has ever saved a profile carries a
+        // `hardware.hinge` block with the SUPERSEDED 5 in it, and the plain
+        // spread two lines above lets that stale block outvote the code for
+        // ever. A user would have to rebuild his workshop profile to see a
+        // number he never chose.
+        //
+        // So the code wins, unconditionally — which is the same law three
+        // things in this very block already follow (`plates`, `rig.memberA/B`,
+        // `bucketLocation`) and for the same reason: HOW FAR THE PLATE MODEL
+        // SINKS INTO THE SIDE is a fact about the file and the fitting, not a
+        // workshop preference. Nothing in Settings edits it and nothing ever
+        // has.
+        //
+        // IDEMPOTENT BY CONSTRUCTION, and deliberately not a guarded fill. The
+        // T-round lesson is `null !== 0`: a guard written `if (!stored)` or
+        // `stored || D.…` treats a stored 0 as "nothing said", and 0 is a legal
+        // bite (a plate that does not sink at all). An unconditional
+        // assignment has no such branch to get wrong, and running the
+        // migration twice — which every load does, through `setProfile` —
+        // cannot produce a different answer the second time.
+        plateBiteMm: D.hardware.hinge.plateBiteMm,
         // Turn 19 (CLAUDE.md F1): the CLIP top block, merged key by key so a
         // profile saved before it existed comes back with it and one that
         // renames a finish keeps the plates.
@@ -4697,6 +4769,17 @@ export function migrateCabinetProfile(profile) {
           : D.drawings.unitCard.titleRows,
       },
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
+      // TURN 40 (CLAUDE.md F5): the wall drawing's own metrics, key by key so a
+      // profile saved before tonight comes back with every one of them rather
+      // than with `undefined` millimetres — the same merge every block above
+      // gets, for the same reason.
+      wallDrawing: {
+        ...D.drawings.wallDrawing, ...profile.drawings?.wallDrawing,
+        titleRows: Array.isArray(profile.drawings?.wallDrawing?.titleRows)
+          && profile.drawings.wallDrawing.titleRows.length
+          ? profile.drawings.wallDrawing.titleRows
+          : D.drawings.wallDrawing.titleRows,
+      },
     },
     room: { ...D.room, ...profile.room },
     // Turn 31 (CLAUDE.md F6): key by key, so a profile saved before Check v1

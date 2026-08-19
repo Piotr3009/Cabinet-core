@@ -33,6 +33,8 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
 import { shelfHingeClashWindowMm, shelfHingeClashes } from '../src/engine/shelfHingeClash.js';
+// TURN 40 (F4a): the ONE definition both surfaces render.
+import { shelfHingeFindings } from '../src/engine/checks.js';
 
 const PROMPT = readFileSync(new URL('../src/components/ShelfHingeClash.jsx', import.meta.url), 'utf8');
 
@@ -166,34 +168,59 @@ test('F7 `clashes` is always an ARRAY, so nobody has to ask which kind of empty 
 
 // ─── THE PROMPT, AND WHERE EACH BUTTON GOES ────────────────────────────────
 
-test('F7 the prompt offers the OWNER’S OWN two choices, by name', () => {
-  assert.match(PROMPT, />\s*Remove sleeves at this shelf\s*</);
-  assert.match(PROMPT, />\s*Move the hinge\s*</);
+test('F7 the prompt offers the OWNER’S OWN two choices, by name'
+  + ' — RE-PINNED 18.08.2026 (T40-F4a): the names live in the DEFINITION now', () => {
+  // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F4a) ────────────────────────────
+  //
+  // The owner, with the Check panel and the cabinet modal side by side:
+  // *"raczej powinny się pokazywać i tu i tu"* — the same fault, the same
+  // wording, the SAME BUTTONS, in both places. There were two definitions and
+  // two sets of labels; there is ONE now, in `engine/checks.js`, and both
+  // surfaces render it. So the names are asserted where they live, and the
+  // component is asserted to own none of its own.
+  const CHECKS_SRC = readFileSync(new URL('../src/engine/checks.js', import.meta.url), 'utf8');
+  assert.match(CHECKS_SRC, /label: 'Remove sleeves at this shelf'/);
+  assert.match(CHECKS_SRC, /label: 'Move the hinge'/);
+  assert.match(PROMPT, /f\.actions\.map/, 'the component draws the definition’s list');
+  assert.match(PROMPT, /shelfHingeFindings/, '…and reads the definition itself');
   assert.match(PROMPT, /data-shelf-hinge-clash=\{rows\.length\}/);
   // …and it says the number, because a warning that will not say how near is
   // too near is a warning nobody can argue with.
-  assert.match(PROMPT, /\{c\.message\}/);
+  assert.match(PROMPT, /\{f\.message\}/);
 });
 
-test('F7 "Remove sleeves" opens the SHELF’s own window, at that shelf', () => {
-  const at = PROMPT.indexOf('data-clash-remove-sleeves');
-  assert.ok(at > 0);
-  const body = PROMPT.slice(at, at + 600);
-  assert.match(body, /openModal\('element', \{\s*unitId, panelId: c\.shelfPanelId,/);
+test('F7 "Remove sleeves" opens the SHELF’s own window, at that shelf'
+  + ' — RE-PINNED 18.08.2026 (T40-F4a): from the one definition', () => {
+  // The data hook turn 30 shipped is still on the button, so every gesture
+  // that worked yesterday still finds it.
+  assert.ok(PROMPT.indexOf('data-clash-remove-sleeves') > 0);
+  // WHERE IT GOES is the definition's, and it is asserted as BEHAVIOUR rather
+  // than as a source string — which is stronger than what this pinned before.
+  const r = bud({ shelves: 2 });
+  const found = shelfHingeFindings({ unitId: 'u1', unitNum: '01', result: r, profile: P });
+  assert.ok(found.length, 'this fixture really does clash');
+  const remove = found[0].actions.find((a) => a.id === 'remove-sleeves');
+  assert.equal(remove.subject.editor, 'element');
+  assert.equal(remove.subject.panelId, found[0].panelId, 'that shelf');
   // It does NOT change the shelf — the joiner does, in the window that opens.
-  assert.doesNotMatch(body, /setElement|updateItem|removeItem|setShelf/);
+  assert.doesNotMatch(PROMPT, /setElement\(|updateItem\(|removeItem\(|setShelf/);
 });
 
-test('F7 "Move the hinge" opens F2’s DOOR window at section B, that row ringed', () => {
-  const at = PROMPT.indexOf('data-clash-move-hinge');
-  assert.ok(at > 0);
-  const body = PROMPT.slice(at, at + 700);
-  assert.match(body, /panelId: c\.doorPanelId,/);
-  assert.match(body, /hingeIndex: c\.hingeIndex,/);
-  assert.match(body, /section: 'hinges',/);
+test('F7 "Move the hinge" opens F2’s DOOR window at section B, that row ringed'
+  + ' — RE-PINNED 18.08.2026 (T40-F4a): from the one definition', () => {
+  assert.ok(PROMPT.indexOf('data-clash-move-hinge') > 0);
+  const r = bud({ shelves: 2 });
+  const found = shelfHingeFindings({ unitId: 'u1', unitNum: '01', result: r, profile: P });
+  const move = found[0].actions.find((a) => a.id === 'move-hinge');
+  assert.equal(move.subject.editor, 'element');
+  assert.equal(move.subject.section, 'hinges');
+  assert.equal(typeof move.subject.hingeIndex, 'number');
+  assert.ok(move.subject.panelId, 'the door');
+  // TURN 40 (F4c): …and the camera goes to the HINGE's own row on that door.
+  assert.equal(move.subject.atMm, found[0].hingeY);
   // …and no store action at all: NO SILENT AUTO-FIX, as code rather than as a
   // promise.
-  assert.doesNotMatch(body, /setHingePos|removeHinge|addHinge|resetHinges/);
+  assert.doesNotMatch(PROMPT, /setHingePos\(|removeHinge\(|addHinge\(|resetHinges\(/);
 });
 
 test('F7 the prompt reaches a person: it is mounted where a cabinet is read', () => {

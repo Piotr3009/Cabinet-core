@@ -51,6 +51,12 @@ import {
 import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
 // Turn 36 (CLAUDE.md F5): the owner's grain law, per ROLE, in one table.
 import { applyGrainAxis } from './grain.js';
+// ─── TURN 40 (CLAUDE.md F3b): OVERLAY DRAWERS IN A WARDROBE ────────────────
+// Where the stack STOPS, where the fixed shelf goes and where the shortened
+// door starts. It computes no runner row and no box side: the BUDR ladder
+// below does all of that, which is CLAUDE.md's own "read the BUDR law, do not
+// re-derive it".
+import { overlayDrawerItems, overlayPlan } from './overlayDrawers.js';
 // ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS ────────────────────────────────────
 // The arithmetic is the ALREADY-MERGED `SPLIT DOORS (T35)` section of
 // KIT_WARDROBE_FULL.lsp, mirrored in engine/splitDoors.js. This file cuts what
@@ -553,6 +559,14 @@ function normalizeParams(raw, profile) {
     && i.zone != null && Number.isFinite(Number(i.zone)));
   // …and so may a hanging rail: a `zone` puts one rail in one column. The
   // unit-wide rail is every hanger that says nothing, exactly as before.
+  // ─── TURN 40 (CLAUDE.md F3b): AND A STACK MAY BE ON THE OUTSIDE ─────────
+  // A DISTINCT KIND, not a flag on the existing one. `mount: 'internal'` has
+  // meant something else since T32-F4 (which column drawers take a front), and
+  // every wardrobe stack in every saved project already carries
+  // `mount: 'overlay'` from `addDrawers`' own default — so reusing it would
+  // have turned every internal stack in the app inside out on load. A new kind
+  // cannot do that to anybody: a project that has never asked for one has none.
+  const overlayItems = overlayDrawerItems(items);
   const hangerFromItems = items.find((i) => i.kind === 'hanger'
     && (i.zone == null || !Number.isFinite(Number(i.zone))));
   const columnRailItems = items.filter((i) => i.kind === 'hanger'
@@ -819,6 +833,9 @@ function normalizeParams(raw, profile) {
     // here rather than living as a second rule further down.
     internalDrawers: internalDrawerSet(p, type, drawers, drawerItems),
     drawerHeights,
+    // TURN 40 (F3b): the overlay stack's own items, carried through so the
+    // geometry pass can ask `overlayPlan` for the one line it needs.
+    overlayDrawers: overlayItems,
     rail,
     railOffset: Number(p.rail_offset ?? railDefault),
     // T35-F1: WHICH board the rail's number is measured from. Nothing said —
@@ -1425,7 +1442,32 @@ export function computeCabinet(params, profileOverride) {
   // finishes flush with its own carcass top. `doors.js topDemandMm` is the
   // whole rule, and it is in doors.js because cabinet.js may not import
   // frontClearance.js (the layering law, pinned by turn31-f4).
-  const frontH = H - topDemandMm(params, P) + cfg.doorExtend - hoodApertureMm;
+  // ─── TURN 40 (CLAUDE.md F3b): OVERLAY DRAWERS, AND THE DOOR ABOVE THEM ───
+  //
+  // The owner: *"fronty na szafie, drzwi powyżej szuflad."* The plan is worked
+  // out ONCE, here, before anything is cut, because three things downstream
+  // depend on the same line: where the door starts, where its hinges are, and
+  // where the fixed shelf goes.
+  //
+  // Null for every cabinet that has not asked — which is every cabinet in every
+  // project before tonight and all six standard configs, so nothing below this
+  // line runs for them and `computeCabinet()` is byte-identical.
+  const overlay = type.drawerStyle === 'wardrobe'
+    ? overlayPlan({
+      items: cfg.overlayDrawers,
+      height: H,
+      boardT: G,
+      gap: P.baseDrawerUnit.gap,
+      minFrontMm: minDrawerFrontHeight(P),
+      defaultHeightMm: P.wardrobe.drawers.frontHeight,
+      warnings,
+    })
+    : null;
+  // THE DOOR IS SHORTENED, and by exactly the line the plan drew: it starts
+  // above the top drawer front plus the gap, and runs to the top edge the
+  // cabinet already demands (`doors.js topDemandMm`, untouched).
+  const overlayBase = overlay ? overlay.doorBase : 0;
+  const frontH = H - topDemandMm(params, P) + cfg.doorExtend - hoodApertureMm - overlayBase;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
     : W - P.doors.gap;
@@ -1444,8 +1486,15 @@ export function computeCabinet(params, profileOverride) {
   // has said about THIS cabinet. A bare `computeCabinet()` — every golden
   // fixture — passes neither of the last two and gets `hingeCentres` unchanged,
   // which is what keeps the AutoLISP's drilling exactly where it is.
-  const centres = hingeRows({
-    height: H,
+  const saidRows = Array.isArray(cfg.hingeRows) && cfg.hingeRows.length;
+  const centresRaw = hingeRows({
+    // TURN 40 (F3b): *"their hinges follow the standard law for that shortened
+    // height."* A door standing on an overlay stack is a SHORT door, so the
+    // ladder is run over its own height and then carried into the carcass's
+    // frame — which is exactly what T39-F1b did for the top box's door and
+    // what T36-F6 does for a split leaf. Every other cabinet passes the carcass
+    // height, as it always has.
+    height: overlay ? frontH : H,
     rule: hingeRule,
     standard: cfg.hingeStandard,
     own: cfg.hingeRows,
@@ -1455,6 +1504,12 @@ export function computeCabinet(params, profileOverride) {
     doorHeight: frontH,
     twoBelowMm: cfg.hingeTwoBelowMm,
   }, P);
+  // A hand-written list is already stated in the CARCASS's frame (that is the
+  // frame the Doors modal shows and `setHingePos` writes), so it is NOT lifted
+  // a second time. Only the rule's own answer is.
+  const centres = overlay && !saidRows
+    ? centresRaw.map((c) => roundTo(c + overlayBase, 4))
+    : centresRaw;
   // ─── THE CUPS FOLLOW THE HINGES (turn 17, CLAUDE.md F7.3) ────────────────
   //
   // A cup is the hole the hinge's own body sits in, so it is at the HEIGHT of
@@ -1475,7 +1530,10 @@ export function computeCabinet(params, profileOverride) {
   // profile.hinges.cups are left where they are as the traced record of the
   // three LISP kits they came from (test/slots-and-hinge.test.js checks them
   // against this).
-  const cupY = centres.map((c) => c + cfg.doorExtend);
+  // The cup is bored from the DOOR's own bottom edge, so a door that starts
+  // part-way up the carcass takes its own base off first. `overlayBase` is 0
+  // for every other cabinet, which is why this is one expression and not two.
+  const cupY = centres.map((c) => c - overlayBase + cfg.doorExtend);
 
   // ── Wardrobe drawers (internal, behind the doors) ──────────────────────────
   const DR = P.wardrobe.drawers;
@@ -1520,13 +1578,46 @@ export function computeCabinet(params, profileOverride) {
   // it ("nie wstawiają automatycznie 30 mm infila — patrz szafy bez
   // dividera"). ONE source now; the full-width zone and every column stack
   // read this same object — one law, two readers, zero divergence.
+  //
+  // ─── TURN 40 (CLAUDE.md F3a): NO DOOR, NO STRIP ──────────────────────────
+  //
+  // The owner, 18.08.2026: *"jak nie ma drzwi w ogóle, to nie powinno robić
+  // 30 mm odstępu infill na zawiasy — dopiero po wstawieniu drzwi (ważne)."*
+  //
+  // He is right, and the sentence directly above says why: the band exists
+  // BECAUSE THE DOOR HINGED ON THAT SIDE SWINGS THROUGH IT. With no door
+  // nothing swings, and a wardrobe with its doors taken off was still losing
+  // 30 mm of drawer front to a hinge that is not there.
+  //
+  // The old expression read `doorCount === 2 || cfg.hinge === 'L'`, and
+  // `cfg.hinge` is never absent — it falls back to the profile's default hand
+  // — so a cabinet with NO doors still answered "left". It now reads
+  // `hingedSides`, which is the engine's own published answer to "which
+  // carcass sides is a door actually hung on" and is the very list the plate
+  // pattern is drilled from twenty lines below. ONE source: the strip and the
+  // plate holes can no longer disagree about whether a side carries a door.
+  //
+  // WHOSE DECISION IT IS has not moved. Whether this cabinet has doors is the
+  // DESIGN layer's answer and arrives as `params.doors` exactly as it always
+  // did (`removeDoors` writes `doors: false`); the engine gained no rulebook
+  // and no new input. What it stopped doing is inventing a hinged side where
+  // the design layer said there is none.
+  //
+  // It also answers the appliance face for free: `dropsForward` empties
+  // `hingedSides`, so a face screwed to a machine's own door — which hangs on
+  // nothing — no longer reserves a hinge band either.
   const dpSideLaw = {
-    left: doorCount === 2 || cfg.hinge === 'L',
-    right: doorCount === 2 || cfg.hinge === 'R',
+    left: hingedSides.includes('BUL'),
+    right: hingedSides.includes('BUR'),
   };
 
   if (hasDrawers) {
-    numDrPanels = doorCount === 2 ? 2 : 1;
+    // TURN 40 (F3a): as many standoffs as there are HINGED SIDES — which on
+    // every cabinet that has doors is the number it always was (two leaves →
+    // two, one leaf → one), and on a cabinet with none is zero. The BOX and
+    // the FRONT widen by exactly the band that is no longer reserved, which is
+    // the owner's *"dopiero po wstawieniu drzwi"* said in millimetres.
+    numDrPanels = (dpSideLaw.left ? 1 : 0) + (dpSideLaw.right ? 1 : 0);
     dpLeft = dpSideLaw.left;
     dpRight = dpSideLaw.right;
     drawerReduction = numDrPanels * (DP.inset + G);
@@ -1632,10 +1723,19 @@ export function computeCabinet(params, profileOverride) {
 
   // ── BUDR drawers (three fronts covering the whole face) ────────────────────
   const B = P.baseDrawerUnit;
-  const budrDrawers = type.drawerStyle === 'budr';
+  // ─── TURN 40 (CLAUDE.md F3b): "SAME LOGIC AS BUDR, BUT INSIDE A WARDROBE" ─
+  //
+  // The owner's first point, and it is honoured by RUNNING THE BUDR LADDER
+  // rather than by writing a second one. An overlay stack sits at the BOTTOM of
+  // the wardrobe, so its frame IS this ladder's frame — measured up from the
+  // carcass floor, exactly as a drawer bank's is — and every runner row, box
+  // side, box front, bottom and drilling below comes out of the kit's own law
+  // with nothing re-derived. "Runner rows match BUDR at the same drawer
+  // height" is therefore true by construction, and the test says so anyway.
+  const budrDrawers = type.drawerStyle === 'budr' || Boolean(overlay);
   let budr = null;
   if (budrDrawers) {
-    const heights = cfg.drawerHeights;
+    const heights = overlay ? overlay.heights : cfg.drawerHeights;
     const maxDl = D - G - B.depthAllowance;
     const depth = snapDrawerDepth(maxDl, DR.depthSteps) ?? DR.depthSteps[0];
     if (maxDl < DR.depthSteps[0]) {
@@ -1707,7 +1807,10 @@ export function computeCabinet(params, profileOverride) {
     // Read off `runnerBottomY`, which is where a box actually stands, rather
     // than off the screw row: turn 21 named those two apart precisely because
     // one had been used for the other.
-    const topOfBox = hasTopPanel ? H - G : H;
+    // TURN 40 (F3b): under an overlay stack's own FIXED SHELF, which is what
+    // separates it from the section above. Every other kit reads the top panel,
+    // as it always has.
+    const topOfBox = overlay ? overlay.shelfY : (hasTopPanel ? H - G : H);
     const ceilingAbove = (i) => (i + 1 < runnerBottomY.length
       ? runnerBottomY[i + 1]
       : (boxCeiling == null ? topOfBox : Math.min(topOfBox, boxCeiling)));
@@ -1788,7 +1891,11 @@ export function computeCabinet(params, profileOverride) {
     // ─── TURN 25 (CLAUDE.md F10): SHORT / OVER ──────────────────────────────
     // Not a block and not a clamp: the app SAYS what it found and cuts what it
     // was asked for. The owner wants to see it in practice first.
-    const stackSays = frontStackWarning({ heights, gap: B.gap, available: H });
+    // A BUDR stack is measured against the whole carcass because its fronts ARE
+    // the face. An OVERLAY stack is as tall as the drawers asked for and
+    // `overlayPlan` has already said whether a door still fits above it, so it
+    // is not measured against a face it was never cut to fill.
+    const stackSays = overlay ? null : frontStackWarning({ heights, gap: B.gap, available: H });
     if (stackSays) warnings.push(stackSays);
     budr = {
       heights, frontY, runnerRows, runnerBottomY, sideHs, boxFrontH,
@@ -1796,6 +1903,10 @@ export function computeCabinet(params, profileOverride) {
       bottomW: boxLen + B.bottomOversize,
       count: heights.length,
       stackTop: acc - B.gap,
+      // TURN 40 (F3b): which offer this stack came from, so every reader below
+      // — the fixed shelf, the published record, the BOM — asks the stack
+      // rather than asking what kind of cabinet it is on.
+      overlay: Boolean(overlay),
     };
     numDrawers = heights.length;
   }
@@ -3675,7 +3786,11 @@ export function computeCabinet(params, profileOverride) {
           box: { x, y: boxY, z: boxZFront - budr.depth, w: GB, h: sh, d: budr.depth },
           // Drawn rotated: the LISP lays the side out running along the height.
           cnc: { rotated: true, drawn_w: sh, drawn_h: budr.depth, ...pocketedRect(sh, budr.depth, sidePockets(budr.depth)) },
-          meta: { drawer: i, side: suffix === 'SL' ? 'L' : 'R' },
+          meta: {
+            drawer: i,
+            side: suffix === 'SL' ? 'L' : 'R',
+            ...(budr.overlay && overlay.ids[i - 1] ? { itemId: overlay.ids[i - 1] } : {}),
+          },
         }));
       }
     }
@@ -3758,7 +3873,58 @@ export function computeCabinet(params, profileOverride) {
         id: `${unitNum}-F${i}`, part: 'DRAWER-FRONT', role: 'front', w: budr.frontWidth, h: fh, thickness: frontT,
         edgeCode: codes.all, edgeLen: metres(2 * budr.frontWidth + 2 * fh),
         box: { x: B.frontWidthDeduction / 2, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
-        cnc: geom, meta: { drawer: i, frontType: cfg.frontType },
+        cnc: geom,
+        meta: {
+          drawer: i,
+          frontType: cfg.frontType,
+          // TURN 40 (F3b): an overlay drawer IS an item, so its front carries
+          // the item's id and the per-drawer height slider reaches it through
+          // exactly the path every other wardrobe drawer's does
+          // (`setDrawerHeight` → `updateItem` → `height_mm`). A BUDR's fronts
+          // are the kit's own ratio and carry none, as before.
+          ...(budr.overlay && overlay.ids[i - 1] ? { itemId: overlay.ids[i - 1] } : {}),
+          ...(budr.overlay ? { overlay: true } : {}),
+        },
+      }));
+    }
+
+    // ─── TURN 40 (CLAUDE.md F3b): THE FIXED SHELF OVER AN OVERLAY STACK ────
+    //
+    // The owner: *"A FIXED SHELF sits above the stack, separating it from the
+    // section above."* It is a FIX shelf and it is not optional — it is what
+    // the section above stands on and what the drawer boxes run under — so it
+    // is cut here, with the stack, rather than offered as an item a joiner
+    // could forget.
+    //
+    // Full width between the sides and set back like any interior board, so a
+    // door closing on it meets a face rather than a front edge. `locked` says
+    // it is not a shelf somebody drags: it belongs to the stack, and deleting
+    // the stack is what removes it.
+    if (budr.overlay) {
+      const shelfW = internalWidth;
+      // Cut and PLACED exactly as every other shelf in this file is: the same
+      // `shelfDepthBoards` and the same setback, and anchored by its FRONT
+      // edge, which is where a joiner measures a shelf from (T11-F5.5).
+      const shelfBack = setbackOf(null, C.shelfDepthClearance);
+      const shelfD = D - C.shelfDepthBoards * G - shelfBack;
+      panels.push(panel({
+        id: 'OVERLAY-FIX', part: 'SHELF', role: 'shelf', w: shelfW, h: shelfD, thickness: G,
+        edgeCode: codes.right, edgeLen: metres(shelfW),
+        box: {
+          x: G, y: overlay.shelfY, z: D - shelfBack - shelfD, w: shelfW, h: G, d: shelfD,
+        },
+        // A shelf's own drawn frame (T26-F8 / T28-F7): depth up the page, the
+        // grain with it, the banded front edge across.
+        cnc: {
+          rotated: true, drawn_w: shelfD, drawn_h: shelfW, grain: 'h', ...rectGeometry(shelfD, shelfW),
+        },
+        meta: {
+          variant: 'fixed',
+          locked: true,
+          overlayStack: true,
+          front_mm: shelfBack,
+          run: { from: G, to: G + shelfW },
+        },
       }));
     }
   }
@@ -4240,7 +4406,8 @@ export function computeCabinet(params, profileOverride) {
   const doorZ = D + P.doors.gap;
   // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
   // aperture, which is the same one line seen from the other end (F9).
-  const doorY = -cfg.doorExtend + hoodApertureMm;
+  // TURN 40 (F3b): …and it STANDS on the overlay stack when there is one.
+  const doorY = -cfg.doorExtend + hoodApertureMm + overlayBase;
   // ─── TURN 21 (CLAUDE.md F12): DOORS ON THE PARTITION ─────────────────────
   //
   // Owner's case: partitions at 600 and 800, three bays, two proper doors and
@@ -4399,6 +4566,23 @@ export function computeCabinet(params, profileOverride) {
   // 0 is every door in every project before this turn, which is why the
   // named-deltas classifier expects the six standard configs not to move.
   const splitSaid = { unit: params?.split_top_mm, bays: params?.bay_doors };
+  // ─── TURN 40 (CLAUDE.md F1): AND A SEGMENT'S HINGES ARE MOVABLE ──────────
+  //
+  // The owner: *"w modalu doors nie można ich przesuwać"*. A whole door's
+  // ladder has been editable since T17-F7.2 (`params.hinge_rows`, an explicit
+  // list that REPLACES the rule), and a split segment had no such channel at
+  // all — so the modal offered the cabinet's pre-split six, and moving one
+  // wrote a list the split pass never read. Nothing moved.
+  //
+  // This is that channel, keyed by the SEGMENT's own panel id and stated in
+  // the CARCASS's frame — the same frame `hinge_rows` is stated in and the
+  // same frame the modal shows, so a joiner typing 772 gets a hinge at 772.
+  // It arrives exactly as `hinge_rows`, `front_edge_trim` and
+  // `hinge_plate_pilot_d` do: an INPUT on the override channel, never a
+  // formula. A bare `computeCabinet()` — every golden fixture, all six of the
+  // classifier's configs — is handed none, this reads `undefined` at every
+  // segment, and the kit's own ladder answers exactly as it did in T36.
+  const splitRowsSaid = params?.split_hinge_rows || null;
   const splitDividers = [];
   const splitLeaves = [];
   // How many MORE (or fewer) hinges this cabinet buys because of its splits.
@@ -4422,13 +4606,30 @@ export function computeCabinet(params, profileOverride) {
   }
   for (const { panel: leaf, topH, segments } of splitLeaves) {
     const at = panels.indexOf(leaf);
-    splitHingeDelta += segments.reduce((n, s) => n + s.hinges, 0) - centres.length;
     const made = segments.map((seg) => {
       // Each segment's own hinge ladder, from its OWN height — "a split is two
       // doors, not one door with a line drawn on it, and it is never the
       // full-height count halved".
-      const local = splitSegmentHingeRows(seg.h, seg.hinges, P.hinges.endOffset)
-        .map((v) => roundTo(v, 4));
+      //
+      // TURN 40 (F1): unless a joiner has said otherwise for THIS segment, in
+      // which case his list replaces the rule — the same sentence T17 wrote
+      // for a whole door, said for a leaf of a split. The list is stated in
+      // the CARCASS's frame and the segment's own frame is what the sheet
+      // drills, so it is translated once, here, and both ladders below come
+      // out of the one number.
+      const base = leaf.box.y + seg.y;
+      const said = splitRowsSaid ? splitRowsSaid[`${leaf.id}-${seg.id}`] : null;
+      const own = Array.isArray(said)
+        ? said.map(Number).filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
+        : null;
+      const local = own && own.length
+        ? own.map((v) => roundTo(v - base, 4))
+        : splitSegmentHingeRows(seg.h, seg.hinges, P.hinges.endOffset).map((v) => roundTo(v, 4));
+      // What this segment is ACTUALLY drilled for, which is what the BOM buys
+      // and what `assemblies.splitDoors` publishes. Identical to the kit's own
+      // count wherever nobody has said anything, which is every cabinet that
+      // has not been edited by hand.
+      seg.hinges = local.length;
       return panel({
         id: `${leaf.id}-${seg.id}`,
         part: 'FRONT',
@@ -4457,6 +4658,11 @@ export function computeCabinet(params, profileOverride) {
       });
     });
     panels.splice(at, 1, ...made);
+    // The delta is counted from what was MADE, so a hand-edited segment adds
+    // the hinges it actually has. With nothing said this is
+    // `segments.reduce((n, s) => n + s.hinges, 0) − centres.length` to the
+    // number, which is what T36 wrote here.
+    splitHingeDelta += made.reduce((n, p) => n + p.meta.cupY.length, 0) - centres.length;
 
     // The DIVIDER: a FIX shelf on the split line, cut to the PARTITION's law
     // and NOT the shelf's — full width between the sides, FULL DEPTH to the
@@ -6293,6 +6499,27 @@ export function computeCabinet(params, profileOverride) {
       boxFrontX: e.plan.boxFrontX,
       axisY: e.plan.axisY,
     })) } : {}),
+    // ─── TURN 40 (CLAUDE.md F3b): THE OVERLAY STACK, AS THE KIT MEASURED IT ─
+    //
+    // The key appears ONLY where a wardrobe actually carries one — the same
+    // rule the shoe boxes and the splits follow, and for the same reason: iron
+    // rule 2 says the six standard configs may not move, and an empty record
+    // published on every cabinet in the app would be a delta on all six that
+    // says nothing. Readers use `?? null`.
+    ...(overlay ? {
+      overlayDrawers: {
+        count: overlay.count,
+        heights: [...overlay.heights],
+        gapMm: overlay.gap,
+        stackTop: roundTo(overlay.stackTop, 4),
+        // The FIXED shelf that separates the stack from the section above.
+        shelf: { id: 'OVERLAY-FIX', y: roundTo(overlay.shelfY, 4), thickness: G },
+        // …and the door that starts on it.
+        doorBase: roundTo(overlay.doorBase, 4),
+        doorHeight: roundTo(frontH, 4),
+        fits: overlay.fits,
+      },
+    } : {}),
     // ─── TURN 36 (CLAUDE.md F6): the SPLITS, as the kit measured them ───────
     //
     // The key appears ONLY where a door is actually split — the same rule the

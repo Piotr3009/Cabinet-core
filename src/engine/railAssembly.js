@@ -54,8 +54,39 @@
 //
 // A LEGACY rail keeps its partitioner, because a legacy rail keeps everything.
 
-/** How a rail is hung. Nothing said is LEGACY — every rail before T37. */
-export const RAIL_MOUNT = Object.freeze({ LEGACY: 'legacy', SHELF: 'shelf' });
+// ─── TURN 40 (CLAUDE.md F6): WITH A SHELF, OR ON ITS OWN ────────────────────
+//
+// The owner, 18.08.2026: *"następnie dodawanie drążka raz i z półką proszę —
+// wybór w drążek modal, to ważne."*
+//
+// T37 made adding a rail ALWAYS an assembly, and that was his own verdict at
+// the time; nothing here overturns it, so THE DEFAULT STAYS THE ASSEMBLY. What
+// is added is the alternative he now wants: a rod on its own, chosen when it is
+// added.
+//
+// AND "ON ITS OWN" IS NOT A NEW CONSTRUCTION. This app has had a complete,
+// tested law for a rail with no shelf since turn 1 — the LEGACY one, which
+// hangs the rod above the nearest thing below it and cuts its own RAIL-PART
+// partitioner over it. CLAUDE.md's *"legacy rails are untouched, as T37 left
+// them"* is therefore satisfied by construction: a rail alone IS read by that
+// law, and not one line of it moved.
+//
+// The one thing that had to be said is WHY a given rod has no shelf, because
+// the two reasons are different and the modal owes the joiner the difference:
+// an OLD rail should be told it can be re-added to get the shelf, and a rail
+// somebody deliberately asked to be alone should not. `mount: 'alone'` records
+// the choice. It reads as LEGACY geometry — `railMountOf` returns SHELF only
+// for `mount: 'shelf'` WITH a shelf named — so the rod hangs exactly where a
+// rail on its own has always hung.
+
+/**
+ * How a rail is hung.
+ *
+ *   LEGACY  nothing said — every rail before T37, read by `railDatum.js`
+ *   SHELF   T37's assembly: a FIX shelf with the rod under it
+ *   ALONE   T40's choice: a rod on its own, read by the LEGACY law on purpose
+ */
+export const RAIL_MOUNT = Object.freeze({ LEGACY: 'legacy', SHELF: 'shelf', ALONE: 'alone' });
 
 /**
  * Which law this rail is read by.
@@ -82,6 +113,18 @@ export function railShelfIdOf(item) {
 /** Is this the old thing? Asked in the modal, which owes the joiner the note. */
 export function isLegacyRail(item) {
   return railMountOf(item) === RAIL_MOUNT.LEGACY;
+}
+
+/**
+ * TURN 40 (F6): was this rod asked to be ALONE, or is it simply old?
+ *
+ * Both are read by the legacy geometry law and both therefore answer true to
+ * `isLegacyRail`. They are not the same thing to a person: one is a decision
+ * somebody made this afternoon and the other is a rod from a job cut last
+ * month. Only the second is offered the "re-add it" note.
+ */
+export function railChosenAlone(item) {
+  return String(item?.mount ?? '').toLowerCase() === RAIL_MOUNT.ALONE;
 }
 
 /**
@@ -156,3 +199,6 @@ export function assemblyShelfPos({ railAxis = 0, drop = 0 }) {
 
 /** The grey note a legacy rail's modal owes the joiner (CLAUDE.md F2). */
 export const LEGACY_RAIL_NOTE = 'old-style rail — re-add to get the shelf-mounted one';
+
+/** …and the note a rod that was ASKED to be alone owes him instead (T40-F6). */
+export const RAIL_ALONE_NOTE = 'rail on its own — no shelf, by choice. Its own partitioner sits above it.';

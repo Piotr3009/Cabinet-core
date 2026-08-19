@@ -15,7 +15,9 @@ import { formatMm, formatMmPair } from '../engine/format.js';
 import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
 import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
 // T37-F2: a rail is a fix shelf with a rod under it. The modal edits the SHELF.
-import { hangerDropMm, isLegacyRail, LEGACY_RAIL_NOTE } from '../engine/railAssembly.js';
+import {
+  hangerDropMm, isLegacyRail, railChosenAlone, LEGACY_RAIL_NOTE, RAIL_ALONE_NOTE,
+} from '../engine/railAssembly.js';
 import { chainFromX, xFromChain } from '../engine/partitionPositions.js';
 // Turn 24 (CLAUDE.md F3.3): which carcass board a partition is cut from.
 import { CARCASS_SLOTS, partitionSlot, slotById } from '../engine/thickness.js';
@@ -292,7 +294,15 @@ export default function ElementProperties({
                 onCommit={(v) => railItem && setRailHeight(unit.id, railItem.id, v)}
               />
             </Field>
-            <p className="text-[11px] text-ink-400" data-legacy-rail-note="1">{LEGACY_RAIL_NOTE}</p>
+            {/* ─── TURN 40 (CLAUDE.md F6) ─────────────────────────────────
+                Two rods have no shelf and they are not the same thing: one is
+                OLD and should be told it can be re-added to get the shelf, the
+                other was ASKED to be alone this afternoon and should not be
+                nagged about a decision somebody just made. Same geometry, two
+                sentences. */}
+            {railChosenAlone(railItem)
+              ? <p className="text-[11px] text-ink-400" data-rail-alone-note="1">{RAIL_ALONE_NOTE}</p>
+              : <p className="text-[11px] text-ink-400" data-legacy-rail-note="1">{LEGACY_RAIL_NOTE}</p>}
           </div>
         );
       }

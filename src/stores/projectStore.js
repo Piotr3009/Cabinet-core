@@ -3441,7 +3441,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * @returns {string|null} the RAIL's item id, as it always has — the shelf is
    *   reachable from it through `shelf_id`, and `railAssemblyOf` reads the pair.
    */
-  addHangerRail: (unitId, { materialId = null, materialLabel = null, zone = null } = {}) => {
+  addHangerRail: (unitId, {
+    materialId = null, materialLabel = null, zone = null,
+    // ─── TURN 40 (CLAUDE.md F6): WITH A SHELF, OR ON ITS OWN ───────────────
+    // The owner: *"następnie dodawanie drążka raz i z półką proszę — wybór w
+    // drążek modal, to ważne."* T37's assembly stays the DEFAULT — that was
+    // his own verdict and nothing here overturns it — and this is the
+    // alternative, chosen when the rod is added.
+    withShelf = true,
+  } = {}) => {
     const profile = getCabinetProfile();
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
@@ -3482,12 +3490,34 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }),
       axis: (Number(zoneBase) || 0) + bornAt,
     });
-    // ─── T37-F2: THE ASSEMBLY ────────────────────────────────────────────────
     // One undo step for two items: a joiner who presses Ctrl+Z after "Add
     // hanger rail" expects the rail to be gone, not half of it.
     const drop = hangerDropMm(profile);
     const railAxis = (Number(zoneBase) || 0) + bornAt;
     let railId = null;
+
+    // ─── TURN 40 (F6): A ROD ON ITS OWN ──────────────────────────────────────
+    //
+    // And it is not a new construction. The LEGACY law — `engine/railDatum.js`,
+    // untouched since T35 — is the complete, tested answer for a rail with no
+    // shelf: it hangs the rod above the nearest thing below it and cuts its own
+    // RAIL-PART partitioner over it. So this writes exactly the item the app
+    // wrote before T37, plus one field that records WHY it has no shelf —
+    // because "somebody asked for it alone" and "it is from an old job" look
+    // identical to the geometry and are not the same thing to a person.
+    if (!withShelf) {
+      return get().addItem(unitId, {
+        kind: 'hanger',
+        mount: RAIL_MOUNT.ALONE,
+        pos_mm: snapTo(born.offset, profile.editor.mmStep),
+        datum: born.datum,
+        ...(wantZone == null ? {} : { zone: wantZone }),
+        material_id: materialId,
+        material_label: materialLabel,
+      });
+    }
+
+    // ─── T37-F2: THE ASSEMBLY ────────────────────────────────────────────────
     runBatch(() => {
       const shelfId = get().addItem(unitId, {
         kind: 'shelf',

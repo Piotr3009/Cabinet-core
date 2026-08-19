@@ -92,6 +92,10 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // the box is cut unchanged. null = the plain drawer, as ever.
   const [drawerVariant, setDrawerVariant] = useState(null);
   const [railZone, setRailZone] = useState(null);
+  // TURN 40 (CLAUDE.md F6): with a shelf, or on its own. The DEFAULT is the
+  // assembly — that was the owner's own verdict in T37 and nothing here
+  // overturns it; this is the alternative he asked for on 18.08.
+  const [railWithShelf, setRailWithShelf] = useState(true);
   const [shelfCount, setShelfCount] = useState(1);
   const [shelfZone, setShelfZone] = useState(null);
   // Turn 33 (F3): which column a bought mechanism goes in.
@@ -186,6 +190,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       materialId: material?.id || null,
       materialLabel: material?.name || null,
       zone,
+      // TURN 40 (F6): the choice the joiner just made, and the default is T37's.
+      withShelf: railWithShelf,
     });
     if (!id) {
       notify(zones.length > 1
@@ -193,6 +199,12 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
         : 'This unit already has a hanging rail.', 'warn');
       return;
     }
+    // TURN 40 (F6): say which of the two was made, because the difference is
+    // a board — and a joiner who gets a shelf he did not ask for, or does not
+    // get one he did, has been surprised by his own tool.
+    notify(railWithShelf
+      ? 'Rail added WITH a fix shelf — drag the shelf and the rod rides with it.'
+      : 'Rail added ON ITS OWN — its own partitioner above it, and a height you can type.', 'ok');
     // ─── TURN 33 (CLAUDE.md F3): THE PULL-DOWN SUGGESTION ───────────────────
     // The owner's rule: a rail above 2000 mm FROM THE FLOOR gets a grey HINT
     // suggesting the pull-down — never a block. Measured off the computed
@@ -691,6 +703,33 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       <option value="" disabled>— Connect JoineryCore for live stock (soon) —</option>
                     </select>
                   </div>
+                  {/* ─── TURN 40 (CLAUDE.md F6): THE CHOICE ────────────────
+                      *"następnie dodawanie drążka raz i z półką proszę —
+                      wybór w drążek modal, to ważne."* Two buttons, the
+                      assembly pre-selected, so the joiner who wants what T37
+                      gave him presses Add and gets it. */}
+                  <div className="flex gap-1" data-rail-mode={railWithShelf ? 'with-shelf' : 'alone'}>
+                    <button
+                      type="button"
+                      data-rail-with-shelf="1"
+                      aria-pressed={railWithShelf}
+                      className={`cc-btn flex-1 ${railWithShelf ? 'border-gold text-gold' : ''}`}
+                      title="A FIX shelf with the rod hung under it — drag the shelf and the rod rides with it"
+                      onClick={() => setRailWithShelf(true)}
+                    >
+                      With a shelf
+                    </button>
+                    <button
+                      type="button"
+                      data-rail-alone="1"
+                      aria-pressed={!railWithShelf}
+                      className={`cc-btn flex-1 ${railWithShelf ? '' : 'border-gold text-gold'}`}
+                      title="The rod on its own, with its own partitioner above it — the way this app hung one before T37"
+                      onClick={() => setRailWithShelf(false)}
+                    >
+                      Rail alone
+                    </button>
+                  </div>
                   <button
                     type="button" className="cc-btn-gold w-full"
                     onClick={() => onAddRail(hardware.find((m) => m.id === railMaterial) || null)}
@@ -704,9 +743,13 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       shelf he did not ask for has been surprised by his own
                       tool. The rod still lands where it always landed. */}
                   <p className="text-[11px] text-ink-400" data-rail-assembly-hint="1">
-                    Adds a FIX SHELF with the rail hung under it. The shelf is an ordinary shelf — drag it
-                    and the rod rides with it. Hung as high as it can go under the lowest shelf, above the
-                    drawer partition. The rail you pick is the line that appears in the BOM hardware.
+                    {railWithShelf
+                      ? 'Adds a FIX SHELF with the rail hung under it. The shelf is an ordinary shelf — drag it '
+                        + 'and the rod rides with it. Hung as high as it can go under the lowest shelf, above the '
+                        + 'drawer partition. The rail you pick is the line that appears in the BOM hardware.'
+                      : 'Adds the ROD ON ITS OWN, with its own partitioner above it — the way this app hung one '
+                        + 'before the shelf assembly. Its height is a number you type, measured from the nearest '
+                        + 'thing below it. The rail you pick is the line that appears in the BOM hardware.'}
                   </p>
                 </>
               )}

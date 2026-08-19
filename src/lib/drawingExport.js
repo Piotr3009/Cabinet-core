@@ -3,7 +3,7 @@ import jsPDFDefault from 'jspdf';
 // turn 3) and it lives in src/lib/ for the same reason jsPDF does: the drawing
 // ENGINE stays dependency-free and testable in node (CLAUDE.md rule 2).
 import JSZip from 'jszip';
-import { drawingLayer } from '../engine/drawings/layers.js';
+import { drawingLayer, penWidth } from '../engine/drawings/layers.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
 // TURN 40 (CLAUDE.md F5): the wall set's DXF, which is the ONE drawing path in
 // this app that ships text — see engine/drawings/dxf.js for why it is a
@@ -141,7 +141,9 @@ function drawSheet(doc, sheet) {
     const [r, g, b] = hexToRgb(L.colour);
     doc.setDrawColor(r, g, b);
     doc.setTextColor(r, g, b);
-    doc.setLineWidth(L.width);
+    // T41-F5a: the same single resolver the SVG uses, so the PDF and the
+    // screen cannot disagree about how heavy a line is.
+    doc.setLineWidth(penWidth(e));
     const dash = !e.solid && (e.hidden || L.dash) ? (L.dash || [5, 3]) : null;
     // setLineDashPattern is jsPDF 2.x; guarded because a dashed line that
     // throws would cost the whole document.

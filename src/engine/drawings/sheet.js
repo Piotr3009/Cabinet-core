@@ -37,6 +37,34 @@ export function pageFormat(id, orientation = 'landscape') {
  * @param {number[]} steps                e.g. [5, 10, 20, 25, 50]
  * @returns {number}  the denominator: 10 means 1:10
  */
+/**
+ * ─── TURN 41 (F5c/F5d): THE BEST FIT, FOR A SHEET THAT PRINTS "No Scale" ────
+ *
+ * MEASURED FAULT. The wall sheets snap to the standard ladder [5,10,20,25,50]
+ * even though their title block deliberately says "No Scale" — the owner does
+ * not print to a scale, he trusts the dimensions (CLAUDE.md F5). Reproducing
+ * T40's own proof sheet: a 3265 × 2957 mm wall laid at 1:20 on A3 landscape is
+ * 163.3 × 147.8 mm of drawing inside a usable area of 392 × 204.5 mm.
+ *
+ *     AREA FILL: 30.1 %
+ *
+ * A small drawing floating in a large empty sheet, which is the first thing the
+ * owner sees when he opens the PDF. The best fit for that wall is 1:14.46 — not
+ * on the ladder, and there is no reason it should be, because nothing on this
+ * sheet claims a scale.
+ *
+ * So a sheet may ask for the EXACT fit instead. The ladder is untouched and is
+ * still what the Unit Card uses, because a Unit Card DOES print its scale and a
+ * scale a joiner cannot put a rule against is worse than an empty margin.
+ */
+export function exactScale(drawing, area) {
+  const w = Number(drawing?.w) || 0;
+  const h = Number(drawing?.h) || 0;
+  if (w <= 0 || h <= 0) return 1;
+  // The denominator, so it reads the same way round as the ladder's numbers.
+  return Math.max(w / area.w, h / area.h, 1e-6);
+}
+
 export function chooseScale(drawing, area, steps) {
   const list = [...steps].sort((a, b) => a - b);
   for (const step of list) {
@@ -105,7 +133,12 @@ function layoutOne({ drawing, format, orientation, title, profile, titleRows, bl
     h: frame.h - D.padding * 2 - block.h - D.padding,
   };
 
-  const scale = chooseScale(drawing.bounds, area, D.scales);
+  // T41-F5d: a sheet whose title block says "No Scale" fills the paper; one
+  // that prints a scale keeps the ladder. `fit` is opt-in per drawing, so the
+  // Unit Card is laid exactly where it was laid yesterday.
+  const scale = drawing.fit === true
+    ? exactScale(drawing.bounds, area)
+    : chooseScale(drawing.bounds, area, D.scales);
   const scaled = { w: drawing.bounds.w / scale, h: drawing.bounds.h / scale };
 
   // Centred in what is left, sitting on the bottom of the drawing area — an

@@ -1,315 +1,292 @@
-# CLAUDE.md — TURN 41 · THE SHEET STANDS UP, THE RAIL GETS ONE CHAIN, AND THE DRAWINGS LEARN TO DRAW
+# CLAUDE.md — TURN 42 · THE WALL PDF SPEAKS, THE OLD RAIL PATH DIES, AND OVERLAY RUNNERS GO GLB
 
-Dictated by the owner, 19.08.2026, from his eye-test of T40 on build
-`ccdc401`. Three of these are faults in work that shipped last night and
-passed a green audit — read F1 and F3 carefully, because both are cases
-where the plumbing was rebuilt correctly around a wrong value or a second
-path that still wins.
+Dictated by the owner, 19.08.2026, late, after the fourth broken rail:
+*"mamy w dupie stare rzeczy — to nie jest online, to jest w fazie
+budowania. Nie patrzymy na przeszłość w ogóle."* That sentence is this
+turn's law. **The app is pre-launch. There are no users to protect. No
+compatibility layers, no legacy branches, no "kept for old projects".**
+Where an old project's stored rail is read, it is read by ONE simple rule
+and nothing else.
+
+## Why this turn exists (the trace, so you do not re-discover it)
+
+The rail has had four turns (T37-F2, T40-F6, T41-F2, and tonight's
+finding) and still adds a shelf when asked not to, and cannot be edited.
+Tonight's chat traced it to the end:
+
+- The store is honest: `addHangerRail` honours `withShelf:false` and
+  writes an item with `mount: RAIL_MOUNT.ALONE` (T41-F2 did that).
+- **The engine has no ALONE branch.** `cabinet.js` has (A) the pre-T37
+  path — `else if (hasRail)` at ~2001–2032, computing `railY` +
+  `railPartY` via `resolveShelfMountedRail`, and then at ~3054 building a
+  **`RAIL-PART` panel — a shelf** — whenever `railPartY != null`; and (B)
+  the T37 assembly path (`railRides`). An ALONE item falls through to
+  (A), which builds it the shelf the owner refused.
+- Editing is dead for ALONE because the tube↔shelf pairing goes through
+  the item's `shelf_id`; ALONE has none, so `rail.panelId` is null and
+  `Hardware.jsx:1196` disables both the double-click and the aura.
+- T41's probe asserted the ITEM list (no shelf item — true) instead of
+  the PANEL list (RAIL-PART present — the lie). It proved the field, not
+  the thing. Do not repeat that.
+
+Separately: **overlay drawers render hand-coded runners.**
+`engine/runners.js` — the GLB channel (runnerLadder → Hardware →
+runnerModel, the Blum models) — contains no overlay path at all, so the
+overlay stack draws parametric L-profiles instead of the GLB every other
+drawer gets.
+
+And separately again: **the wall PDF does not come out** — F0 below
+carries its own trace, because the fault has a different shape: it is
+not a wrong answer, it is an answer that hides.
 
 ## Iron rules (binding)
 
-1. **Zero-stop overnight run.** Never halt, never ask. Skip-and-note,
-   sacrifice whole features from the LOWEST priority upward. PR opens
-   before morning regardless.
-2. **Engine contract: BYTE-IDENTITY.** `scripts/t41-classify.mjs`
-   (sibling of t40's), no named buckets, UNNAMED=0. Every feature here is
-   downstream of `computeCabinet()` — sheet layout, drawings, checks, UI,
-   design layer. **If something looks like it needs an engine change, it
-   does not. Skip and note rather than move a byte.**
-3. **Sanctity, with one narrow licence this turn.** No function is
-   DELETED. F3 licenses **commenting OUT** the superseded rail path — the
-   owner's own words, 19.08: *"nie kasuj, tylko zakomentuj, żeby nie
-   działał, a później się będziemy zastanawiać nad usunięciem."* Every
-   commented block keeps a header: what it was, when it was disabled,
-   which turn, and what replaced it. Nothing is removed from any file.
-4. **LISP untouched.** `reference/lisp/**` does not change this turn.
-5. **No new dependencies.**
-6. **PROVE THE THING, NOT THE FIELD.** This is the turn's discipline and
-   it comes from last night's miss. A test that asserts a stored value
-   equals what was stored proves nothing. Assert the OBSERVABLE FACT: the
-   part's laid dimensions on the sheet, the front's width in millimetres,
-   the rail's y after a drag. Where a probe can print the answer, ship the
-   probe under `verify/t41/`.
-7. **Proofs:** `verify/t41/` screenshot per visible feature, real pointer
-   input, named subject asserted. No screenshot = not done.
-8. Tests first. Fixtures untouched. Suite never `--silent`. One commit
-   per feature, F-number in the message.
-9. After the PR is open, END THE SESSION. Do not schedule check-ins.
+1. **Zero-stop overnight run.** Skip-and-note, sacrifice from the lowest
+   priority upward, PR before morning regardless.
+2. **Engine contract: BYTE-IDENTITY** — and it HOLDS this turn despite
+   the engine surgery, because none of the six configs carries a rail
+   (t41-classify's own header records it; verify it again in t42's).
+   `scripts/t42-classify.mjs`, empty bucket list, UNNAMED=0. If any of
+   the six moves a byte, the surgery cut something it should not have —
+   stop that cut and note it. F0 lives entirely DOWNSTREAM of
+   `computeCabinet()` — the modal, the page handler and the drawings
+   modules — and must not move a byte of it either.
+3. **Sanctity — with THIS TURN'S NAMED LICENCE TO DELETE.** The owner's
+   explicit instruction, twice, 19.08: *"usuń całkowicie ten kod"* /
+   *"nie patrzymy na przeszłość."* The licence covers, BY NAME:
+   - `cabinet.js`: the pre-T37 rail positioning branch
+     (`else if (hasRail)` body, ~2001–2032): `railSupportTops` call for
+     it, `resolveShelfMountedRail` call, `railPartY` /
+     `railPartCentreY` assignments, the `RAIL_TOO_HIGH` clamp inside it.
+   - `cabinet.js` ~3054–3062: the `RAIL-PART` panel block.
+   - Every read of `railPartY` / `railPartCentreY` downstream, and the
+     variables themselves.
+   - `engine/elements.js`: the `case 'RAIL-PART'` mapping.
+   - `RightPanel.jsx:655` — the block T41 commented out: now DELETE it.
+   - The hand-coded overlay runner drawing (F2 below), once found.
+   - `resolveShelfMountedRail` and `RL.partitionAbove` /
+     `RL.topClearance` profile keys — **only if** nothing else calls
+     them after the cut; if the assembly path uses any, that one stays.
+   - `DrawingModal.jsx:87` — the silent `catch { return [] }` in the
+     wallSet memo: REPLACED (not deleted) by a reporting catch (F0).
+   - `ConfiguratorPage.jsx:398` and `DrawingModal.jsx:141–142` — the
+     `err.message || 'Nothing to draw yet.'` fallbacks on the wall
+     paths: REPLACED so an error is never relabelled as emptiness (F0).
+   Anything beyond this list follows the normal rule: not deleted.
+   Every deletion is listed in the PR body with file and name.
+4. **LISP is law — and it changes this turn.** Check
+   `KIT_WARDROBE_FULL.lsp` (section `B2. RAIL BLOCK` and anywhere else
+   `rail` appears): if the OLD path's shelf (`RAIL-PART` as a cut board)
+   exists in the kit, remove it there FIRST or simultaneously; the side
+   flange drilling (the rail block itself) STAYS — an ALONE rod still
+   mounts to the sides. Paren balance 0/0, counted by script. If the kit
+   never cut RAIL-PART, say so in the PR and touch nothing there.
+5. **No new dependencies. Suite never --silent. One commit per feature.**
+6. **PROVE THE THING, NOT THE FIELD** — the T41 lesson, now permanent.
+   Every rail test in this turn asserts the ENGINE'S PANEL LIST or the
+   drawn scene, never the item list alone. F0's version of the same law:
+   assert the EXPORTED BYTES and the words ON SCREEN, never the array's
+   length alone. Probes ship under `verify/t42/`.
+7. Proofs: screenshot per visible feature, real pointer input, named
+   subjects. After the PR is open, END THE SESSION — no check-ins.
 
 ---
 
-## F1 [CRITICAL] — the sheet must actually STAND these parts up
+## F0 [CRITICAL] — the wall PDF: the gag comes off, the fault gets found, the fault gets fixed
 
-### What the owner sees, on build `ccdc401`
+Owner, 19/20.08, on the current build: *"pdf w ogóle nie zadziałał —
+coś się znowu zablokowało."* An F5 and a brand-new project changed
+nothing. This is the only feature in the app whose output is PAPER the
+workshop hands to a client, and it is dark.
 
-His CNC sheet, photographed 19.08: `W03 D1-BF 672×230`, `D1-BB 672×230`,
-`D1-SL 440×264`, `D1-SR 440×264`, `DF1 712×297`, `PLINTH 2550×100` — all
-drawn wider than tall. Lying down. He asks: *"czy to zamierzone, czy się
-nie dowierzyło?"* It deployed. It is wrong.
+### What tonight's dry probes already ruled OUT (do not re-walk these)
 
-### The measured fact
+- The export chain is healthy end to end on a seeded set: `jspdf 2.5.2`
+  installed, `exportWallDrawingsPdf` present
+  (`lib/drawingExport.js:200`), the modal's imports complete,
+  `layoutSheet` and `sheetToSvg` render the sheets.
+- The frozen-profile hypothesis is DEAD: `migrateCabinetProfile`
+  key-merges `drawings.wallDrawing` back into any stored profile
+  (`engine/profile.js:4754–4781`); a probe on a profile stripped of the
+  block came back whole, `scaleLabel` reading "No Scale". Do not spend
+  the night here.
 
-A probe on `sheetTurn`/`sheetLay` at `ccdc401`:
+### What remains — the mutes in the chain
 
-```
-PLINTH            2550x100   turn=0   sheet 2550x100   LYING
-DRAWER-FRONT       712x297   turn=0   sheet  712x297   LYING
-DRAWER-SIDE        440x264   turn=0   sheet  440x264   LYING
-DRAWER-BOX-FRONT   672x230   turn=0   sheet  672x230   LYING
-END-PANEL         560x2460   turn=0   sheet 560x2460   standing (by its own proportion, not by rule)
-```
+There are TWO ways to ask for this PDF, and each hides differently:
 
-### The cause, traced
+- **The modal** (`DrawingModal.jsx`): the `wallSet` memo (:75–91) ends
+  in `catch { return [] }` (:87). A crash anywhere under
+  `wallDrawingSheets()` — which includes `allResults()`, so ONE unit
+  whose `computeCabinet` throws kills the whole set — produces the SAME
+  empty array as "no cabinet stands against a wall": the same disabled
+  buttons (:193, :203) and the same footer sentence (:286). An outage
+  that pretends to be emptiness is the worst kind of outage, and it is
+  how four green probes and a grey button coexist.
+- **The Output menu** (`ConfiguratorPage.jsx:377–400`): this path DOES
+  catch and notify — but with `err.message || 'Nothing to draw yet.'`,
+  so an error whose message is empty is RELABELLED as emptiness, and
+  `guard()` can return false silently before any of it runs.
 
-`CUT_GRAIN_AXIS_BY_PART` names `'h'` for these parts. `sheetTurn` puts the
-NAMED axis up the page. For every one of them `'h'` is the SHORTER
-dimension, so the part is laid down — the opposite of the instruction.
+### Work
 
-The `'h'` is inherited from T36-F5, which read the owner's *"szuflady w
-pionie, wzdłuż słojów; fronty szuflad też; plinth też"* as **"the grain
-runs up the piece AS IT STANDS IN THE CABINET"** — for a drawer side,
-its 264 mm height. The owner was talking about **THE SHEET**. His 18.08
-restatement removes the doubt: *"plinth zawsze w pionie, zawsze na CNC, od
-góry do dołu"*, and the reason: *"jak będzie się oklejać, to nie chcesz
-oklejać w poprzek słoja, tylko wzdłuż"* — banding runs the long edge, so
-the grain runs the LENGTH.
+1. **The gags come off, permanently.** In the modal: `catch (e)` —
+   `console.error` the full error AND surface it: the footer (:286)
+   shows *"Wall drawings failed: {message}"* in the error style while
+   the buttons stay disabled. The two states must be distinguishable on
+   screen forever after: builder CRASHED (message shown) vs genuinely
+   EMPTY (the existing honest sentence). On BOTH paths, kill the
+   `|| 'Nothing to draw yet.'` relabelling: if `err.message` is empty,
+   show the error's name — never the emptiness sentence. If `guard()`
+   refuses, it must say so, not return in silence.
+2. **Reproduce both states in Playwright**, seeded project:
+   a. cabinets standing on a wall at rotation 0 → set non-empty, button
+      enabled, click → a REAL file lands. Assert the bytes start `%PDF`
+      and the page count equals the sheet count; open it on page 1
+      (Wall … /1) for the shot.
+   b. all units turned away (or none) → buttons disabled and the footer
+      says the honest sentence, NOT an error.
+3. **Find the fault the owner hits.** With the gags off, drive his path
+   — a project with cabinets at a wall → Output → Wall drawings (PDF),
+   and the same through the modal — and read the console. If a crash
+   reproduces: fix the ROOT CAUSE and name it in the commit body. If no
+   crash reproduces and the set is genuinely empty on a healthy-looking
+   project: make the footer name WHY per wall — `wallGroups` already
+   returns `skipped` with the reason in hand (turned away / no result)
+   — so the screen stops lying by silence. If neither reproduces, say
+   so plainly in the PR and ship the instrumentation anyway: it is the
+   tool tomorrow's diagnosis needs, and the turn still counts.
+4. **Blast radius**: `DrawingModal.jsx`, `ConfiguratorPage.jsx` (the
+   walls branch only), plus whichever file the root cause names
+   (`engine/drawings/wallSheets.js`, `wallElevation.js`,
+   `lib/drawingExport.js`). `computeCabinet` is NOT in this feature's
+   radius — if the trail leads there, stop, note it, leave it for the
+   morning.
 
-T40-F2 rebuilt the plumbing correctly — one source instead of two — and
-inherited the wrong value through it. **The single source is right; the
-number in it is wrong.**
+### Tests (the thing, not the field)
 
-### What to do
+- A builder that THROWS must surface: assert the message reaches the
+  screen — not merely that the array is empty.
+- The exported bytes start `%PDF` and the page count equals the sheet
+  count (a jsPDF output probe, not a filename check).
+- The genuinely-empty state still refuses politely, with the honest
+  sentence and no error styling.
 
-- Correct the cut axis for the owner's named parts so each is **laid
-  STANDING on the sheet, its length running up the page**: drawer box
-  back **BB**, drawer box front **BF**, drawer sides **SL** / **SR**,
-  drawer fronts, **PLINTH**, **END PANEL**.
-- `DRAWER-BOTTOM` is NOT in his list and does NOT change. Its across-the-
-  width answer is the shoe-box rule he gave on 16.08. Leave it.
-- Do not add a second rule beside the table — T40-F2's single source
-  stands. This is a value correction inside it.
-- **The test is the probe, not the field.** For each named part, assert
-  the dimensions AS LAID ON THE SHEET (`sheetLay().upMm` / `acrossMm`),
-  and assert `upMm > acrossMm` for every one of them at realistic sizes.
-  Ship `verify/t41/f1-sheet-lay-probe.txt` printing the table above with
-  the new answers.
-- Re-check the 3-D reader after the change: the grain must still be what
-  the cut says, which is T40-F2's law and must not regress.
-
-CNC fingerprints WILL move here. Engine hashes must NOT. Name both in the
-PR body.
-
-Proof: `f1-drawer-parts-and-plinth-stand-on-the-sheet.png`.
-
----
-
-## F2 [CRITICAL] — the rail: trace the chain, disable the old one, leave ONE
-
-Owner, 19.08: *"drążek nadal nie działa — nie można go przesuwać, nie
-można go edytować, i pojawia się sam z półką, nigdy sam. Myślę, że masz 2
-kody i stary, który jest do dupy, wymusza włączanie się. Sprawdź dokładnie
-i usuń stary kod z drążkiem, bo nie można z nim nic zrobić — i to nie
-pierwszy raz."*
-
-T40-F6 shipped "rail alone, or rail with shelf" and the choice does not
-take. The owner's diagnosis — two paths, the old one winning — is the
-same shape as T40-F1's split-door fault, where the engine was right and a
-stale reader won. Treat it as an INVESTIGATION first.
-
-### The investigation, written into the commit body
-
-1. Every path that ADDS a rail. `railAssembly.js`, the rail modal, the
-   ADD ITEMS offer, any legacy path from T35 or earlier.
-2. Which one runs when the user adds a rail today, and why the other one
-   still fires.
-3. Where the `alone / with shelf` choice from T40-F6 is written, and who
-   reads it — and where it is dropped.
-4. Why the rail cannot be DRAGGED: which store holds its y, whether the
-   drag writes a field nothing reads (the T40-F1 pattern exactly).
-5. Why it cannot be EDITED: does the double-click reach a modal, and does
-   that modal write back to the path that actually builds the rail?
-
-### Then, at the cause
-
-- **ONE path builds a rail.** The superseded path is **COMMENTED OUT, not
-  deleted** (iron rule 3), with a header block naming what it was, the
-  date, T41, and what replaced it.
-- The choice is honoured: **alone** produces a rail with no shelf;
-  **with shelf** produces the T37 assembly. Default stays *with shelf*.
-- The rail is **draggable** and its position persists.
-- Double-click opens the rail modal and edits take effect.
-- **Legacy rails in existing projects keep working** — that is why the old
-  code is disabled rather than removed. If disabling it would break a
-  legacy project, say so in the PR and disable only the part that can be
-  disabled safely.
-
-### The test that stops turn five
-
-Assert the OBSERVABLE: add a rail with *alone* → the unit's panel list
-contains a rail and NO shelf from that assembly. Add with *with shelf* →
-both. Drag the rail 100 mm → its y in the built result moved 100 mm. Then
-a test asserting exactly ONE code path answers "build me a rail".
-
-Proofs: `f2a-rail-alone-no-shelf.png`, `f2b-rail-dragged-and-edited.png`.
+Proofs: `f0a-wall-pdf-downloaded-and-opened.png` (the file open on
+Wall … /1), `f0b-crash-speaks-or-empty-is-honest.png` (whichever state
+the reproduction found), `verify/t42/f0-wall-pdf-probe.mjs` + its
+printed output.
 
 ---
 
-## F3 [HIGH] — drawers: one place to choose, and a choice that works
+## F1 [CRITICAL] — the rail, finished: ALONE is a first-class branch, the old path is gone
 
-Owner, 19.08: *"w modalu szafy drawers pierwsze mają nadal wybór internal
-czy overlay, a pod spodem następna opcja overlay — to się miesza. Albo usuń
-2 opcje i zostaw wybór w drawers… ale ten wybór teraz nie działa, więc
-upewnij się, że będzie działał."*
+**The model, after this turn — exactly two kinds, no third:**
 
-**Order matters — do these in this sequence:**
+- **ALONE** (`mount: RAIL_MOUNT.ALONE`): a rod mounted to the carcass
+  sides. Position from the item's own `pos_mm` + datum, exactly the
+  grammar a shelf uses. **No RAIL-PART. No shelf. No bracket board.**
+  The side flange drilling from the kit's rail block applies — the rod
+  has to hang on something, and it hangs on the sides.
+- **ASSEMBLY** (T37, `mount: SHELF`): the FIX shelf with the rod beneath
+  it. Untouched.
 
-1. **FIRST: find why the internal/overlay switch does not take.** Same
-   discipline as F2: trace from the modal control to the geometry that is
-   built, and name where the choice is lost. Write it in the commit body.
-2. **THEN fix it**, so the two modes genuinely differ.
-3. **ONLY THEN tidy the menu**: ADD ITEMS carries **one** entry,
-   `Drawers`; the internal/overlay choice lives inside the drawers modal.
-   The second `Overlay` entry is **removed from the offer** — the FEATURE
-   stays, only its duplicate menu entry goes. (This is a menu entry, not
-   a function: iron rule 3 is not engaged. If removing it requires
-   deleting a function, comment it out instead and say so.)
-4. Default in the modal: **internal** — the pre-T40 behaviour, so no
-   existing project is surprised.
+**The legacy rule — one sentence, zero layers:** a stored rail item with
+no `mount` (or any value that is not `SHELF`) **is read as ALONE.** No
+migration table, no compatibility branch, no warning. Old projects are
+pre-launch tests; the owner said so.
 
-The owner's reason for the tidy is worth recording because it will apply
-again: *"i tak już się zwija, a będzie więcej."* Every future feature adds
-its option INSIDE its own modal, not as another line in ADD ITEMS.
+**Engine work:**
+- Give ALONE its own branch: `railY` from the item's `pos_mm`/datum
+  (snap + clamp inside the carcass as a shelf would), rod length =
+  internal width (per column when zoned, as today), NO `railPartY`, NO
+  RAIL-PART panel, and the rail's fingerprint carries `mount` so
+  downstream readers can tell.
+- Execute the licence: delete the old branch and the RAIL-PART block
+  (iron rule 3's list).
+- After the cut, `grep -rn "RAIL-PART" src/` must return ONLY history
+  comments, and a suite-level test asserts **no combination of rail
+  inputs ever emits a panel named RAIL-PART.**
 
-### The test that would have caught this last night
+**Scene and editing work:**
+- The rails handed to `<Rail>` carry a `panelId` for BOTH kinds: the
+  RAIL-PART id is gone, so give ALONE the rail ITEM's own id and route
+  `onEdit` for that id to the **rail modal** (the hanger editor), not
+  the shelf modal. Double-click on the tube: works for both kinds.
+- **Drag**: dragging the ALONE rod writes the item's `pos_mm` (the same
+  store path a shelf drag uses), and the engine's next answer moves the
+  rod. The assembly keeps T37's behaviour (drag the shelf, the rod
+  follows).
+- The ADD ITEMS control from T40-F6 (with shelf / alone) stays exactly
+  as it is — it was always honest; the engine was not.
 
-The same wardrobe built twice, internal vs overlay, asserting the
-OBSERVABLE DIFFERENCE: overlay fronts are wider (no 30 mm hinge strip)
-and sit in a different plane. A test that only checks the stored mode
-string is exactly the test that passed while the feature did not work.
+**Tests (the thing, not the field):**
+- `computeCabinet` with an ALONE rail item → panel list contains NO
+  RAIL-PART, and the rod's y equals the item's `pos_mm` resolution.
+- With `mount: SHELF` → the shelf panel exists, the rod hangs `drop`
+  below it, as T37 wrote.
+- A stored item with `mount: undefined` → identical output to ALONE.
+- Drag probe: set `pos_mm` 100 mm higher → the drawn rod's y moves
+  100 mm (scene-level probe, printed to `verify/t42/f1-rail-probe.txt`).
+- The six configs: byte-identical (classifier).
 
-Proofs: `f3a-one-drawers-entry-in-add-items.png`,
-`f3b-internal-vs-overlay-different-fronts.png`.
-
----
-
-## F4 [HIGH] — Checks: take me to the PROBLEM, and show me which one
-
-T40-F4c shipped camera travel and it goes to the wrong place. Four
-faults, from the owner, 19.08:
-
-**F4a — it takes me to the cabinet, not to the fault.** *"zabiera mnie do
-szafy, na dół, a nie dokładnie do problemu, czyli do danego zawiasu."*
-The camera must land on the OBJECT the fault names — that hinge, that
-shelf — not on the unit that contains it. Where a fault names two objects
-(a shelf AND a hinge, 55 mm apart), frame BOTH.
-
-**F4b — the red one takes me to EDIT.** *"czerwone zabiera mnie do edycji
-zamiast do problemu."* A fault and a warning behave the SAME on click:
-both travel to the object. Editing is a separate, deliberate action —
-never the click's default.
-
-**F4c — mark it in the scene.** *"jakoś zaznaczyć, nie wiem, czerwonym
-kółkiem czy coś."* Arriving is not enough if the user cannot see what he
-arrived at. Outline/highlight the offending object in the fault's own
-colour — red for a fault, amber for a warning, matching the panel. The
-mark clears when the fault clears or another is selected.
-
-**F4d — "Remove sleeves at this shelf" does nothing.** *"jeśli naciśniesz
-'tak', to i tak nie usuwa"*, and when it does work it must remove **ONE
-ROW — the colliding row — not every sleeve in the cabinet.** Find why the
-action does not reach the design, fix it, and scope it to the single row
-the fault is about.
-
-Proofs: `f4a-camera-on-the-hinge-not-the-cabinet.png`,
-`f4b-fault-and-warning-behave-alike.png`,
-`f4c-offending-object-outlined.png`,
-`f4d-one-sleeve-row-removed.png`.
+Proofs: `f1a-rail-alone-no-shelf-in-panels.png` (the 3-D and the panel
+list side by side), `f1b-rail-alone-dragged-and-edited.png`.
 
 ---
 
-## F5 [HIGH] — the drawings: line weight, dimension placement, and the
-title block
+## F2 [HIGH] — overlay drawer runners join the GLB channel
 
-The full drawing plan is a separate document and is NOT all in scope
-tonight. These are the items the owner named on 19.08, and only these.
+Owner: *"w nowych szufladach zamiast się podstawić ładne GLB, to znowu
+się pojawiają te gówna kodowane."*
 
-**F5a — LINE WEIGHT IS A PAPER PROPERTY, NOT AN OBJECT PROPERTY.** Owner:
-*"jak zbliżam rysunek, to zaczyna wyglądać bardzo gruba linia."* That is
-the signature of a width expressed in drawing units: it scales with the
-zoom. Line width must be set in POINTS ON THE SHEET, so it prints and
-zooms as a constant. Three weights, from one table, applied everywhere:
+- Find where the overlay stack draws its runners today. The trail:
+  `engine/runners.js` has no overlay path, so the drawing is NOT coming
+  through `runnerLadder` — someone draws L-profiles by hand. Name the
+  place in the commit body.
+- Route the overlay stack through the SAME channel as every BUDR drawer:
+  `runnerLadder` → `Hardware` → `runnerModel` (GLB), including
+  `runnerVariants` resolution and the X-ray behaviour every other runner
+  obeys.
+- **Delete the hand-coded overlay runner drawing** (licensed, iron rule
+  3) once the GLB channel carries it.
+- If the engine must EMIT runner rows for the overlay stack for the
+  channel to work (runners.js knowing the stack), that is a read of
+  `overlayPlan` it already receives — extend the reader, not the
+  engine's answer, and keep the six configs byte-identical (none has an
+  overlay stack; t41's classifier header says so).
 
-- heavy ≈ 0.50 pt — outer outline, cut edges in section
-- medium ≈ 0.35 pt — visible internal edges
-- thin ≈ 0.18 pt — hidden lines, dimensions, extension lines, hatching
+Test: an overlay drawer at depth D resolves the SAME runner entry and
+the same GLB source as a BUDR drawer at depth D; the parametric path is
+unreachable (no code path draws hand-made runners for overlay).
 
-Verify by zooming the produced PDF: at 100 % and at 400 % the line must
-measure the same on screen relative to the page.
-
-**F5b — dimensions belong to the view that owns them.** Detailed internal
-dimensions — shelf spacings, internal heights, everything about what is
-inside — appear on the **CARCASS** view only. Front dimensions — front
-widths, front heights, gaps — appear on the **FRONTS** view only. Neither
-view carries the other's chains. Overall size stays on both.
-
-**F5c — the shaker profile is drawn at its real size.** If the shaker rail
-is 20 mm, draw 20 mm. No nominal, no symbol.
-
-**F5d — glass.** A glazed front draws as transparent with the standard
-glass mark: **three diagonal strokes, descending from longer to shorter,
-in light blue.**
-
-**F5e — the title block, flat, like his.** A flat table, his layout, with
-fields for **company name, project number, date**, plus the drawing name
-and revision that already exist. Room for the company name is required —
-this is the sheet a client receives.
-
-**F5f — sheets number themselves.** Automatic drawing numbers so a reader
-knows what each sheet is: the owner's own scheme is `001`, `002`, `003`
-with a name (`Wall A - /1`, `Wall A - /2`, `Horizontal section - 1`).
-Numbers follow the sheet order and renumber when sheets are added.
-
-**F5g — the mark.** At the end of the set, placed well: **"Created by
-Cabinet Core"** with an originality mark. Make it look deliberate and
-quiet, not like a watermark. The exact form of the mark is open — do the
-tasteful thing and the owner will veto if it is wrong.
-
-Proofs: `f5a-line-weight-constant-at-400-percent.png`,
-`f5b-dimensions-split-between-views.png`, `f5c-shaker-20mm-drawn.png`,
-`f5d-glass-mark.png`, `f5e-title-block-flat.png`,
-`f5f-sheets-numbered.png`, `f5g-created-by-cabinet-core.png`.
+Proof: `f2-overlay-runners-are-glb.png` (fronts off, GLB runners
+visible under the overlay boxes).
 
 ---
 
 ## Execution order
 
-F1 → F2 → F3 → F4 → F5.
-
-F1 first: it is the machine, the boards, and a value that has been wrong
-since T36 — the longest-standing fault on the list. F2 and F3 next
-because both are features the owner was told had shipped and had not. F4
-next. F5 last and internally in its own order (F5a first — line weight
-touches every view, so it lands before anything else is drawn).
-
-A short night therefore cuts F5 from the bottom of its own list, then F4.
-Never cut F1.
+F0 → F1 → F2. If the night is short, F2 falls first, then F1.
+**F0 never falls** — it is the only thing that blocks the workshop's
+paper output today.
 
 ## What this turn does NOT touch
 
-`computeCabinet()` output. `reference/lisp/**`. `SettingsPanel.jsx`.
-Golden fixtures. The CNC export path's no-text rule. The T39
-materials/BOM system. The vertical SECTION view, drawer boxes in the
-carcass elevation, legs drawn as legs, and the plan-view side panels — all
-four are in the drawing plan and wait for the owner's answers on where the
-section cuts and what sheet size he prints. Parked as before: Cabineo, the
-drilling-pattern library, pull-down rail, L-shape, nesting, kitchens,
-shaker 20-vs-60, internal metal Gold→Silver.
+The six configs' bytes. `SettingsPanel.jsx`. Golden fixtures. The
+materials/BOM system. The drawings system beyond F0's named files. The
+CNC editor. Everything parked stays parked. The AddItems chat-fix from
+19.08 (the always-expanded list) may or may not be on main when you
+start — do not undo it either way.
 
 ## Morning audit will run
 
-Fresh clone → branch → clean-room install → full suite (never --silent) →
-vite build → t41-classify borrowed onto main → BYTE-IDENTITY, UNNAMED=0
-→ sanctity diff-audit: **zero deletions; commented-out blocks present and
-headed** → `reference/lisp/` untouched → **F1's probe re-run in the
-audit, not trusted from the PR** → verify/t41 complete → verdict → the
-owner's numbered eye-test list.
+Fresh clone → branch → clean-room install → full suite → build →
+t42-classify borrowed onto main → BYTE-IDENTITY, UNNAMED=0 → deletion
+audit: every removal matched against iron rule 3's list, anything
+outside it fails the turn → `reference/lisp/` diff limited to the rail
+block change (or untouched, with the PR saying why) → paren balance 0/0
+→ **the F0 PDF probe re-run by the auditor** (a real file, `%PDF`
+header, page count = sheet count) → **the F1 rail probe re-run by the
+auditor** → verify/t42 complete → verdict → the owner's numbered
+eye-test list.

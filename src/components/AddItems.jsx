@@ -308,7 +308,12 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // What this FAMILY of cabinet offers by default (profile.itemsByContext) —
   // structure as data, so a workshop reorders its own list in profile.js.
   const offered = profile.itemsByContext[type.family] || profile.itemsByContext.default || [];
-  const shown = showAll ? kinds : kinds.filter((k) => offered.includes(k.id));
+  // ─── DISABLED 19.08.2026 (chat-fix after T41) — COMMENTED OUT, NOT DELETED.
+  // The owner: the list must be ALWAYS fully expanded — "Show all (3 more)"
+  // hid three kinds behind a click. The per-family filter below is kept for
+  // the day he wants it back:
+  // const shown = showAll ? kinds : kinds.filter((k) => offered.includes(k.id));
+  const shown = kinds;
 
   return (
     <div className="space-y-1" data-add-items="1">
@@ -388,23 +393,47 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       The mechanism T30 F20 built for the pantry, wired to the
                       question at last: an INTERNAL drawer is given no face and
                       lives behind the doors, revealed when a front opens. */}
+                  {/* ─── TURN 41 (F3): AND THE WORDS SAY WHAT THEY DO ─────────
+                      The brief: *"in F3 do not tidy the menu before the switch
+                      works."* The switch works now — choosing one drawer kind
+                      clears the other — so the menu is tidied last, here.
+
+                      WHAT WAS WRONG. This pair sat inside the panel labelled
+                      "Drawers (internal)" and its buttons read Overlay and
+                      Internal — the third unrelated meaning of those two words
+                      in one menu, and the one pair in the app that CANNOT make
+                      an overlay drawer. `mount` decides exactly one thing in
+                      the engine: whether a drawer gets a FACE. Measured, with
+                      the panel's own default 'overlay' lit gold: clicking it
+                      changed nothing, and clicking "Internal" deleted the
+                      fronts. Meanwhile the real overlay drawer — fronts on the
+                      face, doors shortened above — is the OTHER entry in this
+                      same offer.
+
+                      So the buttons keep their behaviour to the byte and are
+                      renamed to the question they actually answer: does this
+                      drawer have a front of its own, or does it live bare
+                      behind the doors? `drawerMount` and the `data-` hooks are
+                      untouched, so every existing test and every saved item
+                      reads exactly as it did. */}
                   <div className="flex gap-1">
                     <button
                       type="button"
                       data-drawer-mount="overlay"
                       className={`cc-btn flex-1 ${drawerMount === 'overlay' ? 'border-gold text-gold' : ''}`}
+                      title="Each drawer gets a front of its own, behind the doors"
                       onClick={() => setDrawerMount('overlay')}
                     >
-                      Overlay
+                      With fronts
                     </button>
                     <button
                       type="button"
                       data-drawer-mount="internal"
                       className={`cc-btn flex-1 ${drawerMount === 'internal' ? 'border-gold text-gold' : ''}`}
-                      title="No front of its own — the drawer lives behind the doors"
+                      title="No front of its own — the bare box lives behind the doors"
                       onClick={() => setDrawerMount('internal')}
                     >
-                      Internal
+                      Bare boxes
                     </button>
                     <button
                       type="button" className="cc-btn flex-1" disabled
@@ -802,18 +831,19 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
         </div>
       ))}
 
-      {/* The escape hatch, under the list, exactly where CLAUDE.md F4.4 puts
-          it. A filter you cannot see past is a block, and the owner asked for a
-          filter. */}
+      {/* ─── DISABLED 19.08.2026 (chat-fix after T41) — COMMENTED OUT, NOT
+          DELETED. The list is always fully expanded now, so the "Show all"
+          escape hatch has nothing to escape. Kept with its filter above for
+          the day the owner wants the per-family default back.
       <button
         type="button"
         className="w-full text-left px-2 py-1 text-[11px] text-ink-400 hover:text-gold transition-colors"
         onClick={() => setShowAll((v) => !v)}
       >
         {showAll
-          ? `▴ Show what a ${type.family} unit usually takes`
-          : `▾ Show all (${kinds.length - shown.length} more)`}
-      </button>
+          ? `▴ Show what a ${'$'}{type.family} unit usually takes`
+          : `▾ Show all (${'$'}{kinds.length - shown.length} more)`}
+      </button> ─── */}
     </div>
   );
 }

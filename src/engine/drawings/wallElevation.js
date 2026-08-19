@@ -183,11 +183,96 @@ export function widthChains(members, profile) {
   };
 }
 
+// ─── TURN 41 (F5c): A CHAIN MEASURES ONE RUN, NOT ONE WALL ──────────────────
+//
+// MEASURED FAULT. Both chains above take EVERY cabinet on the wall, whatever
+// height it is hung at. Put a wall unit over a base run — which is what a
+// kitchen IS — and its edges are injected into the base run's chain:
+//
+//     BUD 600 @0 · BUD 500 @640 · WUD 600 @40 mounted 1500
+//     detailed edges [0, 40, 600, 640, 1140]  ->  chain 40 · 560 · 40 · 500
+//
+// Not one of those four numbers is a cabinet and not one is a gap. And the
+// grouped chain fails the other way in the same case: the wall unit spans the
+// 40 mm gap between the two base units, so `widthGroups` merges all three into
+// one group and the whole bottom chain becomes the single figure 1140.
+//
+// On a wall with no overlap the two chains come out BYTE-IDENTICAL — measured,
+// [600, 40, 500] above and [600, 40, 500] below — so the sheet printed the same
+// three numbers twice. Two chains that always agree are not the two chains
+// CLAUDE.md calls "the single most important detail of the whole feature".
+//
+// THE CAUSE is that "which cabinets belong on one chain" was never asked. A
+// dimension chain measures a RUN: cabinets standing at the same height, in a
+// line. So the members are banded by their mounting level first — the same key
+// the store already uses to decide who shares a run — and every chain is a
+// chain of ONE band.
+
+/** The mounting bands on this wall, floor first, each with its own members. */
+export function mountingBands(members) {
+  const byBase = new Map();
+  for (const m of members) {
+    // Half a millimetre, the workshop grid — two cabinets hung at 1500 and
+    // 1500.2 are one run and not two.
+    const key = Math.round((Number(m.base) || 0) * 2) / 2;
+    if (!byBase.has(key)) byBase.set(key, []);
+    byBase.get(key).push(m);
+  }
+  return [...byBase.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([base, list]) => ({
+      base,
+      members: [...list].sort((a, b) => a.x - b.x),
+    }));
+}
+
+/**
+ * The chains for ONE band, and whether the two of them actually say different
+ * things.
+ *
+ * `same` is what stops the sheet printing one run of numbers twice: where every
+ * cabinet in a band is separated from its neighbour, the detailed chain and the
+ * grouped chain are the same chain, and ONE honest chain beats two identical
+ * ones.
+ */
+export function bandChains(band, profile) {
+  const chains = widthChains(band.members, profile);
+  const same = chains.detailed.length === chains.grouped.length
+    && chains.detailed.every((v, i) => Math.abs(v - chains.grouped[i]) < SAME);
+  return { ...chains, same, base: band.base };
+}
+
 /** THE TWO VERTICAL CHAINS, AS NUMBERS — every front's own height, and the bands. */
-export function heightChains(members) {
-  const frontEdges = uniqueSorted(members.flatMap((m) => m.result.panels
+export function heightChains(members, { floorMm = 0 } = {}) {
+  const rawFrontEdges = uniqueSorted(members.flatMap((m) => m.result.panels
     .filter((p) => p.box && (p.part === 'FRONT' || p.part === 'DRAWER-FRONT'))
     .flatMap((p) => [m.base + p.box.y, m.base + p.box.y + p.box.h])));
+  // ─── TURN 41 (F5c): A 3 mm GAP IS NOT A DIMENSION ────────────────────────
+  //
+  // MEASURED. A BUDR4 over a BUD with two wall units gave the front chain
+  //
+  //     190 · 3 · 190 · 3 · 190 · 3 · 188 · 633 · 717
+  //
+  // — nine segments, three of them the 3 mm air between one front and the next.
+  // At the sheet's 1:10 that is a 0.3 mm arrow carrying a 5.5 mm-tall "3". The
+  // owner's own chain is 140.3 · 100.3 · 40.0 · 221.0 · 22.0: front heights,
+  // and no gaps.
+  //
+  // So an edge that would make a segment shorter than the legibility floor is
+  // DROPPED rather than dimensioned. The floor is the front gap itself, passed
+  // in by the caller from the profile, so the rule is "do not dimension the
+  // air between two fronts" and not a magic number. `chainValues` is untouched
+  // and still total — the filter is at the drawing step, which is where the
+  // legibility question belongs.
+  const frontEdges = [];
+  for (const e of rawFrontEdges) {
+    if (!frontEdges.length || e - frontEdges[frontEdges.length - 1] > floorMm + SAME) frontEdges.push(e);
+  }
+  // …and never drop the last edge: the chain has to reach the top of the run.
+  const lastRaw = rawFrontEdges[rawFrontEdges.length - 1];
+  if (lastRaw != null && frontEdges[frontEdges.length - 1] !== lastRaw) {
+    frontEdges[frontEdges.length - 1] = lastRaw;
+  }
   const bandEdges = uniqueSorted([0, ...members.flatMap((m) => [m.base, m.top])]);
   return {
     frontEdges,
@@ -199,18 +284,38 @@ export function heightChains(members) {
 
 export function horizontalChains(members, { profile, y, textHeight }) {
   const W = profile.drawings.wallDrawing;
-  const { detailedEdges: detailed, groupedEdges: grouped } = widthChains(members, profile);
-  return [
-    // Above the drawing: the detailed chain, cabinet by cabinet.
-    ...chainDimensions({
-      edges: detailed, at: y.top, direction: 'h', offset: -W.chainFirst, textHeight,
-    }),
-    // Below it: the grouped one. Further out than the overall run so the two
-    // never draw on top of each other.
-    ...chainDimensions({
-      edges: grouped, at: y.bottom, direction: 'h', offset: W.chainFirst, textHeight,
-    }),
-  ];
+  // ─── TURN 41 (F5c): ONE PAIR OF CHAINS PER RUN ───────────────────────────
+  //
+  // The detailed chains stack ABOVE the drawing, one row per mounting band,
+  // the highest band outermost — so a wall run is measured over the wall units
+  // and the base run over the base units, and neither injects an edge into the
+  // other's chain. The grouped chain goes BELOW, and it is the FLOOR run's:
+  // that is the set-out a joiner works to on site, and it is the chain the
+  // owner's own bottom row carries.
+  const bands = mountingBands(members);
+  const out = [];
+  bands.forEach((band, i) => {
+    const chains = bandChains(band, profile);
+    out.push(...chainDimensions({
+      edges: chains.detailedEdges,
+      at: y.top,
+      direction: 'h',
+      offset: -W.chainFirst * (i + 1),
+      textHeight,
+    }));
+  });
+  // The floor band's grouped totals, below — and only when they SAY something
+  // the detailed chain above does not.
+  const floor = bands[0];
+  if (floor) {
+    const chains = bandChains(floor, profile);
+    if (!chains.same) {
+      out.push(...chainDimensions({
+        edges: chains.groupedEdges, at: y.bottom, direction: 'h', offset: W.chainFirst, textHeight,
+      }));
+    }
+  }
+  return out;
 }
 
 /**
@@ -232,7 +337,11 @@ export function verticalChains(members, { profile, x, textHeight, fronts = true 
   const out = [];
   const top = Math.max(...members.map((m) => m.top));
 
-  const { frontEdges, bandEdges: bands } = heightChains(members);
+  // T41-F5c: the legibility floor is the front GAP itself — the air between one
+  // front and the next is not a part and is not dimensioned.
+  const { frontEdges, bandEdges: bands } = heightChains(members, {
+    floorMm: Number(profile?.doors?.gap) || 0,
+  });
   if (fronts && frontEdges.length > 1) {
     out.push(...chainDimensions({
       edges: frontEdges, at: x.right, direction: 'v', offset: W.chainFirst, textHeight,
@@ -384,8 +493,15 @@ export function buildHorizontalSection(entries = [], { room = null, profile }) {
   const entities = [];
 
   // ── the room itself, in red: it is building fabric ──
+  //
+  // ─── TURN 41 (F5a): AND IT IS CUT, SO IT IS THE HEAVIEST LINE HERE ───────
+  // A horizontal section is a cut through the room at worktop height, and the
+  // room's own walls are what the cut passes through. T40 drew them at the
+  // BUILDING layer's 0.25 — LIGHTER than an uncut cabinet footprint at 0.35 —
+  // so the section's cut line was the thinnest thing on the sheet, which is
+  // the exact inversion of what a section is for.
   for (const wall of walls) {
-    entities.push(line('BUILDING', wall.start.x, wall.start.y, wall.end.x, wall.end.y));
+    entities.push({ ...line('BUILDING', wall.start.x, wall.start.y, wall.end.x, wall.end.y), pen: 'CUT' });
   }
 
   /** A point in one wall's frame — `u` along it, `v` in from it — in the room's. */
@@ -393,11 +509,15 @@ export function buildHorizontalSection(entries = [], { room = null, profile }) {
     wall.start.x + wall.along.x * u + wall.inward.x * v,
     wall.start.y + wall.along.y * u + wall.inward.y * v,
   ];
-  const quad = (layer, wall, u0, u1, v0, v1) => {
+  // T41-F5a: `pen` names the role these four lines play on THIS sheet. A
+  // cabinet's footprint on a plan is cut through; its fronts, which stand
+  // beyond the cut, are seen rather than cut.
+  const quad = (layer, wall, u0, u1, v0, v1, pen = null) => {
     const pts = [at(wall, u0, v0), at(wall, u1, v0), at(wall, u1, v1), at(wall, u0, v1)];
     return pts.map((p, i) => {
       const q = pts[(i + 1) % pts.length];
-      return line(layer, p[0], p[1], q[0], q[1]);
+      const ent = line(layer, p[0], p[1], q[0], q[1]);
+      return pen ? { ...ent, pen } : ent;
     });
   };
 
@@ -409,7 +529,7 @@ export function buildHorizontalSection(entries = [], { room = null, profile }) {
     const u0 = Number(e.unit.position?.x_mm) || 0;
     const u1 = u0 + (Number(e.result.params.width) || 0);
     const depth = Number(e.result.params.depth) || 0;
-    entities.push(...quad('CARCASE', wall, u0, u1, 0, depth));
+    entities.push(...quad('CARCASE', wall, u0, u1, 0, depth, 'CUT'));
 
     // The fronts, magenta, standing off the carcass by the front gap — the
     // same relationship `views.js planBox` draws inside one unit's card.
@@ -417,7 +537,7 @@ export function buildHorizontalSection(entries = [], { room = null, profile }) {
       .filter((p) => p.box && p.material_role === 'front' && p.box.z >= depth)
       .map((p) => p.box.d), 0);
     if (frontT > 0) {
-      entities.push(...quad('DOORS', wall, u0, u1, depth + gap, depth + gap + frontT));
+      entities.push(...quad('DOORS', wall, u0, u1, depth + gap, depth + gap + frontT, 'VISIBLE'));
     }
 
     // ── the cabinet NUMBER, green, in the plan — his own convention ──

@@ -41,7 +41,7 @@
 // Pure functions — no React, no store, no three.js.
 
 // TURN 40 (CLAUDE.md F1): the ONE post-split hinge reader.
-import { drilledHingeRows } from '../hingeLadder.js';
+import { drilledHingeRows, drilledHingeRowsBySide } from '../hingeLadder.js';
 
 /** How close two holes must be to be the same hole, in mm. */
 export const DRILL_TOLERANCE = 0.01;
@@ -206,10 +206,22 @@ export function drillFindings(result, { profile = null, unitId = null, unitNum =
   // union of the segments' own ladders, which is exactly what
   // `engine/cabinet.js platedRowsFor` drills — so the guard and the machine
   // measure one column.
-  const rows = drilledHingeRows(result);
-  for (const clash of hingeRowClashes(rows, {
+  // ─── TURN 41 (F4): PER SIDE, BECAUSE A COLUMN OF HOLES IS ONE BOARD ──────
+  // The union across sides put a BUL row and a BUR row 10 mm apart and called
+  // it a clash, holding both boards out of the export on an out-of-the-box
+  // cabinet. See `engine/hingeLadder.js drilledHingeRowsBySide` for the
+  // measurement. `drilledHingeRows` is untouched and still answers the sweep.
+  const bySide = drilledHingeRowsBySide(result);
+  const clashes = [...bySide.values()].flatMap((rows) => hingeRowClashes(rows, {
     minSpacingMm: hingeMinSpacingMm(profile), unitNum: num,
-  })) {
+  }));
+  const seenClash = new Set();
+  for (const clash of clashes) {
+    // One cabinet, one message: two sides bored the same way would otherwise
+    // report the same fault twice.
+    const key = clash.message || JSON.stringify(clash);
+    if (seenClash.has(key)) continue;
+    seenClash.add(key);
     out.push({
       check: 10,
       level: 'red',

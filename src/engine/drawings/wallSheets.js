@@ -65,8 +65,12 @@ export function wallDrawingSheets({
   const groups = wallGroups(entries, profile);
   const rows = profile.drawings.wallDrawing.titleRows;
   const blockWidth = profile.drawings.wallDrawing.titleWidth;
+  // T41-F5d: these sheets print "No Scale" in their own title block, so they
+  // fill the paper instead of snapping to the ladder. Measured on T40's own
+  // proof wall: 30.1 % of the usable area used, at a snapped 1:20, when the
+  // exact fit was 1:14.46.
   const lay = (drawing, name) => layoutSheet({
-    drawing,
+    drawing: { ...drawing, fit: true },
     format: format === 'auto' ? 'A3' : format,
     profile,
     titleRows: rows,

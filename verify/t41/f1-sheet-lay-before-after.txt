@@ -1,0 +1,129 @@
+# T41-F1 — THE SHEET STANDS UP: the probe, before and after
+
+Run: node verify/t41/f1-sheet-lay-probe.mjs
+
+## BEFORE (T40 head, ccdc401) — exit 1
+
+```
+T41-F1 — HOW THE SHEET LAYS THE OWNER'S ROLES
+================================================================================================
+
+BUDR
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       490 × 237     237 × 490     h      90°   237 × 490           LYING  <<<<
+  D2-SL     DRAWER-SIDE       490 × 178     178 × 490     h      90°   178 × 490           LYING  <<<<
+  D3-SL     DRAWER-SIDE       490 × 118     118 × 490     h      90°   118 × 490           LYING  <<<<
+  D1-BF     DRAWER-BOX-FRONT  518 × 203     203 × 518     h      90°   203 × 518           LYING  <<<<
+  D1-BB     DRAWER-BOX-BACK   518 × 203     203 × 518     h      90°   203 × 518           LYING  <<<<
+  D2-BF     DRAWER-BOX-FRONT  518 × 144     144 × 518     h      90°   144 × 518           LYING  <<<<
+  D2-BB     DRAWER-BOX-BACK   518 × 144     144 × 518     h      90°   144 × 518           LYING  <<<<
+  D3-BF     DRAWER-BOX-FRONT  518 × 84      84 × 518      h      90°   84 × 518            LYING  <<<<
+  D3-BB     DRAWER-BOX-BACK   518 × 84      84 × 518      h      90°   84 × 518            LYING  <<<<
+  01-F1     DRAWER-FRONT      597 × 338     — × —         h      0°    338 × 597           LYING  <<<<
+  01-F2     DRAWER-FRONT      597 × 254     — × —         h      0°    254 × 597           LYING  <<<<
+  01-F3     DRAWER-FRONT      597 × 169     — × —         h      0°    169 × 597           LYING  <<<<
+
+BUDR2
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       490 × 267     267 × 490     h      90°   267 × 490           LYING  <<<<
+  D1-BF     DRAWER-BOX-FRONT  518 × 233     233 × 518     h      90°   233 × 518           LYING  <<<<
+  D1-BB     DRAWER-BOX-BACK   518 × 233     233 × 518     h      90°   233 × 518           LYING  <<<<
+  01-F1     DRAWER-FRONT      597 × 382     — × —         h      0°    382 × 597           LYING  <<<<
+
+BUDR4
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       490 × 133     133 × 490     h      90°   133 × 490           LYING  <<<<
+  D4-SL     DRAWER-SIDE       490 × 132     132 × 490     h      90°   132 × 490           LYING  <<<<
+  D1-BF     DRAWER-BOX-FRONT  518 × 99      99 × 518      h      90°   99 × 518            LYING  <<<<
+  D1-BB     DRAWER-BOX-BACK   518 × 99      99 × 518      h      90°   99 × 518            LYING  <<<<
+  D4-BF     DRAWER-BOX-FRONT  518 × 98      98 × 518      h      90°   98 × 518            LYING  <<<<
+  D4-BB     DRAWER-BOX-BACK   518 × 98      98 × 518      h      90°   98 × 518            LYING  <<<<
+  01-F1     DRAWER-FRONT      597 × 190     — × —         h      0°    190 × 597           LYING  <<<<
+  01-F4     DRAWER-FRONT      597 × 188     — × —         h      0°    188 × 597           LYING  <<<<
+
+WARDROBE
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       440 × 164     — × —         h      0°    164 × 440           LYING  <<<<
+  D1-BF     DRAWER-BOX-FRONT  470 × 130     — × —         h      0°    130 × 470           LYING  <<<<
+  D1-BB     DRAWER-BOX-BACK   470 × 130     — × —         h      0°    130 × 470           LYING  <<<<
+  01-DF1    DRAWER-FRONT      510 × 197     — × —         h      0°    197 × 510           LYING  <<<<
+  01-DF2    DRAWER-FRONT      510 × 200     — × —         h      0°    200 × 510           LYING  <<<<
+
+PANTRY
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       440 × 164     — × —         h      0°    164 × 440           LYING  <<<<
+  D1-BF     DRAWER-BOX-FRONT  470 × 130     — × —         h      0°    130 × 470           LYING  <<<<
+  D1-BB     DRAWER-BOX-BACK   470 × 130     — × —         h      0°    130 × 470           LYING  <<<<
+
+BUD
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  PLINTH    PLINTH            600 × 100     — × —         h      0°    100 × 600           LYING  <<<<
+  END-L     END-PANEL         596 × 870     — × —         h      0°    870 × 596           STANDING
+
+================================================================================================
+STANDING: 1   LYING: 33
+Boards are being laid across their own grain. T41-F1 does NOT hold.
+```
+
+## AFTER (T41-F1) — exit 0
+
+```
+T41-F1 — HOW THE SHEET LAYS THE OWNER'S ROLES
+================================================================================================
+
+BUDR
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       490 × 237     237 × 490     h      0°    490 × 237           STANDING
+  D2-SL     DRAWER-SIDE       490 × 178     178 × 490     h      0°    490 × 178           STANDING
+  D3-SL     DRAWER-SIDE       490 × 118     118 × 490     h      0°    490 × 118           STANDING
+  D1-BF     DRAWER-BOX-FRONT  518 × 203     203 × 518     h      0°    518 × 203           STANDING
+  D1-BB     DRAWER-BOX-BACK   518 × 203     203 × 518     h      0°    518 × 203           STANDING
+  D2-BF     DRAWER-BOX-FRONT  518 × 144     144 × 518     h      0°    518 × 144           STANDING
+  D2-BB     DRAWER-BOX-BACK   518 × 144     144 × 518     h      0°    518 × 144           STANDING
+  D3-BF     DRAWER-BOX-FRONT  518 × 84      84 × 518      h      0°    518 × 84            STANDING
+  D3-BB     DRAWER-BOX-BACK   518 × 84      84 × 518      h      0°    518 × 84            STANDING
+  01-F1     DRAWER-FRONT      597 × 338     — × —         h      90°   597 × 338           STANDING
+  01-F2     DRAWER-FRONT      597 × 254     — × —         h      90°   597 × 254           STANDING
+  01-F3     DRAWER-FRONT      597 × 169     — × —         h      90°   597 × 169           STANDING
+
+BUDR2
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       490 × 267     267 × 490     h      0°    490 × 267           STANDING
+  D1-BF     DRAWER-BOX-FRONT  518 × 233     233 × 518     h      0°    518 × 233           STANDING
+  D1-BB     DRAWER-BOX-BACK   518 × 233     233 × 518     h      0°    518 × 233           STANDING
+  01-F1     DRAWER-FRONT      597 × 382     — × —         h      90°   597 × 382           STANDING
+
+BUDR4
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       490 × 133     133 × 490     h      0°    490 × 133           STANDING
+  D4-SL     DRAWER-SIDE       490 × 132     132 × 490     h      0°    490 × 132           STANDING
+  D1-BF     DRAWER-BOX-FRONT  518 × 99      99 × 518      h      0°    518 × 99            STANDING
+  D1-BB     DRAWER-BOX-BACK   518 × 99      99 × 518      h      0°    518 × 99            STANDING
+  D4-BF     DRAWER-BOX-FRONT  518 × 98      98 × 518      h      0°    518 × 98            STANDING
+  D4-BB     DRAWER-BOX-BACK   518 × 98      98 × 518      h      0°    518 × 98            STANDING
+  01-F1     DRAWER-FRONT      597 × 190     — × —         h      90°   597 × 190           STANDING
+  01-F4     DRAWER-FRONT      597 × 188     — × —         h      90°   597 × 188           STANDING
+
+WARDROBE
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       440 × 164     — × —         h      90°   440 × 164           STANDING
+  D1-BF     DRAWER-BOX-FRONT  470 × 130     — × —         h      90°   470 × 130           STANDING
+  D1-BB     DRAWER-BOX-BACK   470 × 130     — × —         h      90°   470 × 130           STANDING
+  01-DF1    DRAWER-FRONT      510 × 197     — × —         h      90°   510 × 197           STANDING
+  01-DF2    DRAWER-FRONT      510 × 200     — × —         h      90°   510 × 200           STANDING
+
+PANTRY
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  D1-SL     DRAWER-SIDE       440 × 164     — × —         h      90°   440 × 164           STANDING
+  D1-BF     DRAWER-BOX-FRONT  470 × 130     — × —         h      90°   470 × 130           STANDING
+  D1-BB     DRAWER-BOX-BACK   470 × 130     — × —         h      90°   470 × 130           STANDING
+
+BUD
+  id        part              w × h         drawn         table  turn  laid up × across    verdict
+  PLINTH    PLINTH            600 × 100     — × —         h      90°   600 × 100           STANDING
+  END-L     END-PANEL         596 × 870     — × —         h      0°    870 × 596           STANDING
+
+================================================================================================
+STANDING: 34   LYING: 0
+The sheet stands the board up. T41-F1 holds.
+```

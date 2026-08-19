@@ -61,12 +61,49 @@ export function writeDxf(entities, layers, extents) {
   // ── TABLES (layers only, R12 style) ──
   put(0, 'SECTION'); put(2, 'TABLES');
   put(0, 'TABLE'); put(2, 'LAYER'); put(70, layers.length + 1);
-  const layerRow = (name, color) => {
-    put(0, 'LAYER'); put(2, name); put(70, 0); put(62, color); put(6, 'CONTINUOUS');
+  // ─── TURN 41 (F5b): A LAYER MAY CARRY A PEN AND A LINETYPE ────────────────
+  //
+  // ADDITIVELY, and that word is the whole design. The CNC path passes neither
+  // `lw` nor `ltype`, so its layer rows are emitted by exactly the three `put`s
+  // they were emitted by yesterday and every CNC fingerprint is byte-identical.
+  // Only the DRAWINGS path asks for them.
+  //
+  // 370 is the lineweight group code, in 1/100 mm, and R12 readers that predate
+  // it ignore an unknown group — which is the same bargain every other optional
+  // code in this dialect makes. 6 is the linetype name, and it is written
+  // instead of the hard-coded CONTINUOUS only when one is asked for.
+  const layerRow = (name, color, lw = null, ltype = null) => {
+    put(0, 'LAYER'); put(2, name); put(70, 0); put(62, color);
+    put(6, ltype || 'CONTINUOUS');
+    if (lw != null) put(370, Math.round(Number(lw)));
   };
   layerRow('0', 7);
-  for (const l of layers) layerRow(l.name, l.color);
+  for (const l of layers) layerRow(l.name, l.color, l.lw ?? null, l.ltype ?? null);
   put(0, 'ENDTAB');
+
+  // ─── THE LINETYPE TABLE, WHEN AND ONLY WHEN SOMETHING ASKS FOR ONE ────────
+  //
+  // T40's drawings DXF wrote every layer CONTINUOUS, so a hidden shelf — dashed
+  // in the SVG and dashed in the PDF — plotted SOLID in the one output that is
+  // meant to be opened in CAD. An R12 LTYPE record is 72 = 65 ('A' alignment),
+  // 73 = element count, 40 = total pattern length, then one 49 per element:
+  // positive is a dash, negative is a gap.
+  //
+  // Emitted only when a layer names a linetype, so a file that asks for none —
+  // every CNC file — has no LTYPE table at all and is the file it was.
+  const dashed = layers.filter((l) => l.ltype && Array.isArray(l.dash) && l.dash.length);
+  if (dashed.length) {
+    const seen = new Map();
+    for (const l of dashed) if (!seen.has(l.ltype)) seen.set(l.ltype, l.dash);
+    put(0, 'TABLE'); put(2, 'LTYPE'); put(70, seen.size);
+    for (const [name, pattern] of seen) {
+      const total = pattern.reduce((sum, v) => sum + Math.abs(Number(v) || 0), 0);
+      put(0, 'LTYPE'); put(2, name); put(70, 0);
+      put(3, name); put(72, 65); put(73, pattern.length); put(40, fmt(total));
+      pattern.forEach((v, i) => put(49, fmt(i % 2 === 0 ? Math.abs(v) : -Math.abs(v))));
+    }
+    put(0, 'ENDTAB');
+  }
   put(0, 'ENDSEC');
 
   // ── ENTITIES ──

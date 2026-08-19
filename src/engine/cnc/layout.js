@@ -13,7 +13,7 @@
 // It is not a second answer — nothing reads it to decide what the 3-D shows;
 // the 3-D asks `sheetLay()` below. See engine/grain.js for the law and for why
 // the list is a superset of the stamped table rather than an edit to it.
-import { CUT_GRAIN_AXIS_BY_PART, panelAxisOf } from '../grain.js';
+import { CUT_GRAIN_AXIS_BY_PART, cutStanding, panelAxisOf } from '../grain.js';
 
 // ─── HOW A PART IS TURNED ON THE SHEET (turn 17, CLAUDE.md F3) ──────────────
 //
@@ -148,15 +148,41 @@ export function sheetTurn(panel) {
   const dw = Number(panel?.cnc?.drawn_w) > 0 ? Number(panel.cnc.drawn_w) : w;
   const dh = Number(panel?.cnc?.drawn_h) > 0 ? Number(panel.cnc.drawn_h) : h;
 
-  // 1. THE OWNER'S OWN LIST — the axis he named runs up the sheet.
-  const wanted = CUT_GRAIN_AXIS_BY_PART[panel?.part];
-  if (wanted === 'w' || wanted === 'h') {
-    const want = wanted === 'w' ? w : h;
-    // Turn 0 leaves the drawn HEIGHT up the page; 90 puts the drawn WIDTH up
-    // it. Whichever of the two IS the dimension he asked for wins, and a tie —
-    // a square board — leaves the drawing exactly as it is.
-    return Math.abs(dh - want) <= Math.abs(dw - want) ? 0 : 90;
-  }
+  // 1. THE OWNER'S OWN LIST — these roles are CUT STANDING.
+  //
+  // Standing is a SHAPE ON THE SHEET and not a letter: the long side runs up
+  // the page, so the grain runs along the length and the banded edge is banded
+  // along the grain. Asked of the DRAWN frame, because the drawn frame is what
+  // is put down on the board — the outline, the pockets and the holes are all
+  // in it, and `panelBounds` turns all three by this same answer.
+  //
+  // Turn 0 leaves the drawn HEIGHT up the page; 90 puts the drawn WIDTH up it.
+  // A tie — a square board — leaves the drawing exactly as it is, which is the
+  // same tie-break the superseded rule took and is why no square board moves.
+  if (cutStanding(panel?.part)) return dh >= dw ? 0 : 90;
+
+  // ─── SUPERSEDED BY T41-F1, 19.08.2026 — KEPT, NOT DELETED ─────────────────
+  //
+  // WHAT IT WAS: T40-F2's rule 1, which read `CUT_GRAIN_AXIS_BY_PART`'s letter
+  // as the axis to stand up the sheet and laid the board so the named
+  // dimension went up the page.
+  //
+  // WHY IT WAS REPLACED: for five of the owner's six roles the letter names the
+  // SHORT dimension — a drawer side's `'h'` is its 133 mm height, not its
+  // 490 mm length — so obeying it laid the board FLAT and banded its long edge
+  // across the grain. Measured on a real BUDR4 bank and a real wardrobe, every
+  // role but the end panel came off the saw lying down. See engine/grain.js for
+  // the full measurement and for why the letters never meant this.
+  //
+  // WHAT REPLACED IT: the one line above. `CUT_GRAIN_AXIS_BY_PART` is not
+  // deleted and not edited; the cut now asks it WHICH ROLES (via
+  // `cutStanding`), not WHICH WAY.
+  //
+  //   const wanted = CUT_GRAIN_AXIS_BY_PART[panel?.part];
+  //   if (wanted === 'w' || wanted === 'h') {
+  //     const want = wanted === 'w' ? w : h;
+  //     return Math.abs(dh - want) <= Math.abs(dw - want) ? 0 : 90;
+  //   }
 
   // 2. THE PIECE'S OWN STATEMENT (T37-F7a), in the DRAWN frame.
   const stated = panel?.cnc?.grain;

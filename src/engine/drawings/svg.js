@@ -11,7 +11,7 @@
 // Pure functions — no React, no DOM, no store imports. Which is what lets a
 // node test parse the output.
 
-import { drawingLayer } from './layers.js';
+import { drawingLayer, penWidth } from './layers.js';
 
 const esc = (s) => String(s)
   .replace(/&/g, '&amp;')
@@ -39,7 +39,10 @@ export function sheetToSvg(sheet, { background = '#ffffff', kind = 'front-elevat
   const parts = [];
   for (const e of sheet.entities) {
     const L = drawingLayer(e.layer);
-    const stroke = `stroke="${L.colour}" stroke-width="${n(L.width)}"`;
+    // T41-F5a: the WEIGHT comes from the entity's drawing ROLE, resolved in one
+    // place (`penWidth`), not from the layer's own `width`. Colour still comes
+    // from the layer, which is the owner's convention and is right.
+    const stroke = `stroke="${L.colour}" stroke-width="${n(penWidth(e))}"`;
     // A hidden line is dashed whatever layer it is on; a layer may also be
     // dashed in its own right. `solid` overrides both — the carcass-only view
     // draws a shelf you are LOOKING AT, and a shelf you are looking at is a

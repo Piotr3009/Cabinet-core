@@ -1,0 +1,50 @@
+T41-F5 — THE DRAWINGS: the probe
+
+Run: node verify/t41/f5-drawings-probe.mjs
+
+```
+T41-F5 — THE DRAWINGS LEARN TO DRAW
+========================================================================================
+
+F5a — THE SPREAD OF PEN WEIGHTS ON EACH SHEET
+  Wall A /1             109 strokes  4 weights {"0.5":17,"0.35":8,"0.13":14,"0.18":70}  ratio 3.85:1
+  OK    Wall A /1: more than T40's 2.50:1 spread           true
+  Wall A /2              82 strokes  3 weights {"0.5":19,"0.18":55,"0.13":8}  ratio 3.85:1
+  OK    Wall A /2: more than T40's 2.50:1 spread           true
+  Horizontal section     38 strokes  4 weights {"0.7":16,"0.35":12,"0.5":2,"0.13":8}  ratio 5.38:1
+  OK    Horizontal section: more than T40's 2.50:1 spread  true
+  OK    the section's heaviest stroke is the CUT weight    0.7
+  OK    …and there is more than one cut line               true
+
+F5b — WHAT THE DXF TELLS AutoCAD
+  Wall A /1            370 codes:   9 [13,18,35,50]  LTYPE: false
+  OK    Wall A /1: carries lineweights                     true
+  Wall A /2            370 codes:   7 [13,18,50]  LTYPE: false
+  OK    Wall A /2: carries lineweights                     true
+  Horizontal section   370 codes:   7 [13,18,35,50,70]  LTYPE: false
+  OK    Horizontal section: carries lineweights            true
+  …and the CNC path, which must carry NONE of it:
+  OK    CNC files carrying a 370 code                      0
+  OK    CNC files carrying an LTYPE table                  0
+
+F5c — DO THE DIMENSION CHAINS NAME REAL CABINETS?
+  the whole wall at once (what T40 drew):  detailed [40,560,40,500]  grouped [1140]
+  the cabinets on this wall are           [600,600,500]
+  of T40's 4 segments, 1 name a cabinet on this wall
+  (that is the EVIDENCE, not a check — the whole-wall chain is the fault, and 500 matching is luck: it is the second base unit)
+  band at   100:  detailed [600,40,500]  grouped [600,40,500]   (identical — one chain drawn)
+  OK    band 100: every segment is a cabinet or a gap      true
+  band at  1500:  detailed [600]  grouped [600]   (identical — one chain drawn)
+  OK    band 1500: every segment is a cabinet or a gap     true
+
+F5d — HOW MUCH OF THE PAPER THE DRAWING USES
+  Wall A /1            1:8.99  on 297 × 420
+  OK    Wall A /1: not snapped to a ladder it does not print true
+  Wall A /2            1:8.99  on 297 × 420
+  OK    Wall A /2: not snapped to a ladder it does not print true
+  Horizontal section   1:18.88  on 420 × 297
+  OK    Horizontal section: not snapped to a ladder it does not print true
+
+========================================================================================
+Weights, pens, honest chains, and a full sheet. T41-F5 holds.
+```

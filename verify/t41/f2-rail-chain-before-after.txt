@@ -1,0 +1,107 @@
+T41-F2 — ONE RAIL CHAIN: the probe, before and after
+
+Run: node verify/t41/f2-rail-chain-probe.mjs
+
+## BEFORE (T40 head, ccdc401)
+
+```
+T41-F2 — ONE RAIL CHAIN
+==============================================================================
+
+1. THE ROD'S Y AFTER A DRAG — the shelf moves 1458 → 900
+
+  shelf at 1458 → the rod must be at 1418
+  OK    engine assemblies.rail.y                       1418
+  OK    derived.rail_y                                 1418
+  OK    rail_bracket drills, count                     2
+  OK    rail_bracket on BUL                            1418
+  OK    rail_bracket on BUR                            1418
+  OK    the fix shelf panel is where it was put        1458
+  OK    RAIL-PART boards (an assembly cuts none)       0
+  OK    rail_partition_screw holes (likewise none)     0
+
+  shelf at 900 → the rod must be at 860
+  OK    engine assemblies.rail.y                       860
+  OK    derived.rail_y                                 860
+  OK    rail_bracket drills, count                     2
+  OK    rail_bracket on BUL                            860
+  OK    rail_bracket on BUR                            860
+  OK    the fix shelf panel is where it was put        900
+  OK    RAIL-PART boards (an assembly cuts none)       0
+  OK    rail_partition_screw holes (likewise none)     0
+
+2. NO HOLE OFF ITS BOARD, AND NO PARTITIONER SCREW WITHOUT A PARTITIONER
+  OK    unit-wide, legacy (params): holes at a NEGATIVE coordinate 0
+  OK    unit-wide, legacy (params): rail_partition_screw holes 9
+  OK    unit-wide, alone (item): holes at a NEGATIVE coordinate 0
+  OK    unit-wide, alone (item): rail_partition_screw holes 9
+  OK    unit-wide, the assembly: holes at a NEGATIVE coordinate 0
+  OK    unit-wide, the assembly: rail_partition_screw holes 0
+  FAIL  COLUMN rail, with its shelf: holes at a NEGATIVE coordinate 3 — VPART-1 rail_partition_screw (50, -9); VPART-1 rail_partition_screw (275, -9); VPART-1 rail_partition_screw (500, -9)   (expected 0)
+  FAIL  COLUMN rail, with its shelf: rail_partition_screw holes 9   (expected 0)
+
+3. THE EXPORT ACCEPTS THE CABINET
+  OK    unit-wide, legacy (params): duplicate/red drill findings 0
+  OK    unit-wide, legacy (params): export gate        accepts
+  OK    unit-wide, alone (item): duplicate/red drill findings 0
+  OK    unit-wide, alone (item): export gate           accepts
+  OK    unit-wide, the assembly: duplicate/red drill findings 0
+  OK    unit-wide, the assembly: export gate           accepts
+  FAIL  COLUMN rail, with its shelf: duplicate/red drill findings 4 — BACK: SCREWS_3MM ⌀3 at (68, 9) is drilled 2 times — the bit goes back into a hole it has already made.; BUL: SCREWS_3MM ⌀3 at (50, 9) is drilled 2 times — the bit goes back into a hole it has already made.   (expected 0)
+  FAIL  COLUMN rail, with its shelf: export gate       HELD — 2 parts held out of this export — 01 BACK, 01 BUL. Fix the fault, or export anyway.   (expected accepts)
+
+==============================================================================
+4 disagreement(s). T41-F2 does NOT hold.
+```
+
+## AFTER (T41-F2)
+
+```
+T41-F2 — ONE RAIL CHAIN
+==============================================================================
+
+1. THE ROD'S Y AFTER A DRAG — the shelf moves 1458 → 900
+
+  shelf at 1458 → the rod must be at 1418
+  OK    engine assemblies.rail.y                       1418
+  OK    derived.rail_y                                 1418
+  OK    rail_bracket drills, count                     2
+  OK    rail_bracket on BUL                            1418
+  OK    rail_bracket on BUR                            1418
+  OK    the fix shelf panel is where it was put        1458
+  OK    RAIL-PART boards (an assembly cuts none)       0
+  OK    rail_partition_screw holes (likewise none)     0
+
+  shelf at 900 → the rod must be at 860
+  OK    engine assemblies.rail.y                       860
+  OK    derived.rail_y                                 860
+  OK    rail_bracket drills, count                     2
+  OK    rail_bracket on BUL                            860
+  OK    rail_bracket on BUR                            860
+  OK    the fix shelf panel is where it was put        900
+  OK    RAIL-PART boards (an assembly cuts none)       0
+  OK    rail_partition_screw holes (likewise none)     0
+
+2. NO HOLE OFF ITS BOARD, AND NO PARTITIONER SCREW WITHOUT A PARTITIONER
+  OK    unit-wide, legacy (params): holes at a NEGATIVE coordinate 0
+  OK    unit-wide, legacy (params): rail_partition_screw holes 9
+  OK    unit-wide, alone (item): holes at a NEGATIVE coordinate 0
+  OK    unit-wide, alone (item): rail_partition_screw holes 9
+  OK    unit-wide, the assembly: holes at a NEGATIVE coordinate 0
+  OK    unit-wide, the assembly: rail_partition_screw holes 0
+  OK    COLUMN rail, with its shelf: holes at a NEGATIVE coordinate 0
+  OK    COLUMN rail, with its shelf: rail_partition_screw holes 0
+
+3. THE EXPORT ACCEPTS THE CABINET
+  OK    unit-wide, legacy (params): duplicate/red drill findings 0
+  OK    unit-wide, legacy (params): export gate        accepts
+  OK    unit-wide, alone (item): duplicate/red drill findings 0
+  OK    unit-wide, alone (item): export gate           accepts
+  OK    unit-wide, the assembly: duplicate/red drill findings 0
+  OK    unit-wide, the assembly: export gate           accepts
+  OK    COLUMN rail, with its shelf: duplicate/red drill findings 0
+  OK    COLUMN rail, with its shelf: export gate       accepts
+
+==============================================================================
+One chain, one millimetre, no hole off the board. T41-F2 holds.
+```

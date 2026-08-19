@@ -734,6 +734,11 @@ function normalizeParams(raw, profile) {
     frontHandles: p.front_handles && typeof p.front_handles === 'object' ? p.front_handles : null,
     hingeStandard: p.hinge_standard,
     hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
+    // T41-F3: which CARCASS sides actually carry a hinged door, as answered by
+    // the design layer, which is the only reader that holds `doors`,
+    // `bay_doors` and the appliance rule together. Absent on every fixture and
+    // on a bare call, where the engine's own `doorCount` rule still answers.
+    hingedCarcassSides: Array.isArray(p.hinged_carcass_sides) ? p.hinged_carcass_sides : null,
     // Turn 30 (CLAUDE.md F11): the owner's "any door under 600 takes two". An
     // INPUT, exactly like the standard above it — null is the LISP's ladders,
     // which is what every golden fixture passes.
@@ -1606,10 +1611,40 @@ export function computeCabinet(params, profileOverride) {
   // It also answers the appliance face for free: `dropsForward` empties
   // `hingedSides`, so a face screwed to a machine's own door — which hangs on
   // nothing — no longer reserves a hinge band either.
-  const dpSideLaw = {
-    left: hingedSides.includes('BUL'),
-    right: hingedSides.includes('BUR'),
-  };
+  //
+  // ─── TURN 41 (F3), 19.08.2026: …AND A BAY DOOR IS A DOOR TOO ─────────────
+  //
+  // MEASURED REGRESSION. `hingedSides` above is derived from `doorCount`, and a
+  // cabinet with PER-BAY doors sets `doors: false` by construction (turn 25
+  // wrote that down for the BOM's sake and it is still true). So T40-F3a read a
+  // wardrobe with three bay leaves as a wardrobe with NO doors, took both
+  // standoffs and all four fillers off it, and widened its drawer fronts by
+  // 96 mm — into two carcass sides that still carry a hinge plate. Measured on
+  // a 1400 wardrobe with one partition and two drawers: face doors give
+  // DP = 2, FILLER = 4, front 1262 mm; the same cabinet with bay doors gave
+  // DP = 0, FILLER = 0, front 1358 mm, with `hinged_sides` reporting
+  // ['BUL', 'VPART-1'].
+  //
+  // CLAUDE.md F3a said where this belongs, in as many words: *"This is a
+  // design-layer decision, so it belongs in `paramsForEngine()`/the design
+  // layer, NOT in the engine."* T40 built it here instead, and the bay-door
+  // case is exactly the fault that instruction was protecting against — the
+  // design layer is the only place that holds `doors`, `bay_doors` and the
+  // appliance rule together, and the engine's `doorCount` is a FACE rule that
+  // has never known about the other two.
+  //
+  // So the engine stops inventing the answer when it is given one. The
+  // parameter is additive and optional in the way every override channel in
+  // this file is: a bare `computeCabinet()` is handed none and every fixture,
+  // every golden and all six standard configs are answered by exactly the
+  // expression that answered them yesterday.
+  const statedHinged = Array.isArray(cfg.hingedCarcassSides) ? cfg.hingedCarcassSides : null;
+  const dpSideLaw = statedHinged
+    ? { left: statedHinged.includes('BUL'), right: statedHinged.includes('BUR') }
+    : {
+      left: hingedSides.includes('BUL'),
+      right: hingedSides.includes('BUR'),
+    };
 
   if (hasDrawers) {
     // TURN 40 (F3a): as many standoffs as there are HINGED SIDES — which on
@@ -4929,10 +4964,36 @@ export function computeCabinet(params, profileOverride) {
   // ladder. The rows travel on the panels (`meta.plateY`, the carcass frame),
   // so there is one derivation and the sheet, the side and the 3-D all read
   // it. No split leaf → `centres`, which is every cabinet before this turn.
+  //
+  // ─── TURN 41 (F4), 19.08.2026: …AND ONLY THE SIDE IT HANGS ON ────────────
+  //
+  // MEASURED REGRESSION. The filter above fell through to `true` for any leaf
+  // with no `meta.hingeOn` — which is EVERY FACE DOOR. While both leaves of a
+  // split carried the same ladder that was invisible: the two sides got the
+  // same rows and the same rows were right. T40-F1 then made the two ladders
+  // divergible (`split_hinge_rows`, per leaf, which is what the owner asked
+  // for) and the fall-through became a hole in a board.
+  //
+  // Measured on a 900 × 2150 split wardrobe: 20 hinge plate holes before, 24
+  // after moving ONE hinge on ONE leaf — and BUL and BUR were bored at the
+  // IDENTICAL list, so two of the four new holes are in the side whose door was
+  // never touched. Four bored holes with no hinge in them.
+  //
+  // A face leaf says which side it hangs on: `meta.hinge` is 'L' or 'R', and it
+  // has been on the panel since the split was built. A bay leaf keeps saying it
+  // with `meta.hingeOn`, exactly as before. A leaf that says NEITHER still
+  // falls through, which is what keeps a kit nobody has taught this to reading
+  // as it read yesterday.
+  const plateBearerOf = (p) => {
+    if (p.meta?.hingeOn) return p.meta.hingeOn;
+    if (p.meta?.hinge === 'R') return 'BUR';
+    if (p.meta?.hinge === 'L') return 'BUL';
+    return null;
+  };
   const platedRowsFor = (bearerId) => {
     const rows = panels
       .filter((p) => p.part === 'FRONT' && p.meta?.split && Array.isArray(p.meta.plateY)
-        && (p.meta.hingeOn ? p.meta.hingeOn === bearerId : true))
+        && (plateBearerOf(p) ? plateBearerOf(p) === bearerId : true))
       .flatMap((p) => p.meta.plateY);
     return rows.length ? [...new Set(rows)].sort((a, b) => a - b) : null;
   };
@@ -5574,24 +5635,49 @@ export function computeCabinet(params, profileOverride) {
   // column's bounding boards — a carcass side in its own frame, a VPART in
   // the frame the bay-door hinges established (depth first, then height
   // above its own bottom).
+  //
+  // ─── TURN 41 (F2), 19.08.2026: THE GUARD ITS TWIN ALREADY HAD ────────────
+  //
+  // This block is a hand-copy of the one eighteen lines above it, and the copy
+  // lost one line: `if (railPartCentreY == null) continue`. A SHELF-MOUNTED
+  // rail has no partitioner — its board is a fix shelf — so `set.railPartY` is
+  // null, and `null + G / 2` is not an error in JavaScript. It is 9.
+  //
+  // MEASURED, on a 1400 wardrobe with a partition and a column rail added WITH
+  // its shelf: three `rail_partition_screw` holes at y = 9 on BUL and three on
+  // BACK, landing exactly on the bottom panel's own screw row — the CNC layer's
+  // duplicate-hole check turns four of them red and the export refuses to ship
+  // two parts. And three more at y = −9 on VPART-1, whose panel is 2114 × 520:
+  // OFF THE BOARD, caught by nothing, written straight into the DXF.
+  //
+  // (The guard names are deliberately not written here: turn 31 F3 pins that
+  // this file mentions no guard module at all, which is how the layering law
+  // is kept honest. See test/turn41-f2-one-rail-chain.test.js for the numbers
+  // with the modules named.)
+  //
+  // The fix is the missing line and not a filter downstream, because the guard
+  // belongs where the partitioner screws are DECIDED. The bracket screw is the
+  // rail's own and is drilled in either case, exactly as its twin does it.
   for (const set of columnRailSets) {
-    const centre = set.railPartY + G / 2;
+    const centre = set.railPartY == null ? null : set.railPartY + G / 2;
     for (const bound of [set.bounds.left, set.bounds.right]) {
       const carcass = bound === 'BUL' || bound === 'BUR';
       if (!carcass && !panels.some((x) => x.id === bound)) continue;
       if (carcass) {
         addDrill(bound, 'rail_bracket', pz.layers.screw, sideW / 2, set.railY, RL.bracketScrewDiameter);
+        if (centre == null) continue;
         for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
           addDrill(bound, 'rail_partition_screw', pz.layers.screw, x, centre, RL.bracketScrewDiameter);
         }
       } else {
         addDrill(bound, 'rail_bracket', pz.layers.screw, partitionDepth / 2, set.railY - G, RL.bracketScrewDiameter);
+        if (centre == null) continue;
         for (const v of [pz.screwFromEnd, partitionDepth / 2, partitionDepth - pz.screwFromEnd]) {
           addDrill(bound, 'rail_partition_screw', pz.layers.screw, v, centre - G, RL.bracketScrewDiameter);
         }
       }
     }
-    if (backStyle === 'full') {
+    if (backStyle === 'full' && centre != null) {
       for (const x of [set.bay.from + pz.screwFromEnd, set.bay.centre, set.bay.to - pz.screwFromEnd]) {
         addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, centre, RL.bracketScrewDiameter);
       }

@@ -1,0 +1,63 @@
+T41-F4 — A HINGE COLUMN IS ONE BOARD: the probe, before and after
+
+Run: node verify/t41/f4-hinge-columns-probe.mjs
+
+## BEFORE (T40 head, ccdc401)
+
+```
+T41-F4 — A HINGE COLUMN IS ONE BOARD
+====================================================================================
+
+1. MOVE ONE HINGE ON ONE LEAF — how many holes, and in which board?
+  before:  20 plate holes, 10 cups
+           BUL [84,116,756,788,1428,1460,1631,1663,2031,2063]
+           BUR [84,116,756,788,1428,1460,1631,1663,2031,2063]
+  after:   24 plate holes, 10 cups
+           BUL [84,116,756,788,1428,1460,1631,1663,1684,1716,2031,2063]
+           BUR [84,116,756,788,1428,1460,1631,1663,1684,1716,2031,2063]
+  FAIL  every plate hole has a hinge in it                 24   (expected 20)
+  FAIL  the UNTOUCHED side is bored where it was           [84,116,756,788,1428,1460,1631,1663,1684,1716,2031,2063]   (expected [84,116,756,788,1428,1460,1631,1663,2031,2063])
+  OK    …and the moved side really did move                true
+  OK    the cups did not change                            10
+
+2. A PARTITIONED WARDROBE WITH BAY DOORS AND ONE BAY SPLIT
+   (no hand editing at all — this is what the app builds)
+  BUL plate rows [84,116,756,788,1428,1460,1631,1663,2031,2063]
+  BUR plate rows [84,116,474,506,864,896,1254,1286,1644,1676,2034,2066]
+  RED: W01: hinge rows at 1647 and 1660 mm are 13 mm apart — under the 60 mm minimum, so both hinges cannot be fitted.
+  RED: W01: hinge rows at 2047 and 2050 mm are 3 mm apart — under the 60 mm minimum, so both hinges cannot be fitted.
+  FAIL  red drill findings                                 2 — W01: hinge rows at 1647 and 1660 mm are 13 mm apart — under the 60 mm minimum, so both hinges cannot be fitted.   (expected 0)
+  FAIL  the export gate                                    HELD — 2 parts held out of this export — W01 BUL, W01 BUR. Fix the fault, or export anyway.   (expected accepts)
+
+====================================================================================
+4 disagreement(s). T41-F4 does NOT hold.
+```
+
+## AFTER (T41-F4)
+
+```
+T41-F4 — A HINGE COLUMN IS ONE BOARD
+====================================================================================
+
+1. MOVE ONE HINGE ON ONE LEAF — how many holes, and in which board?
+  before:  20 plate holes, 10 cups
+           BUL [84,116,756,788,1428,1460,1631,1663,2031,2063]
+           BUR [84,116,756,788,1428,1460,1631,1663,2031,2063]
+  after:   20 plate holes, 10 cups
+           BUL [84,116,756,788,1428,1460,1684,1716,2031,2063]
+           BUR [84,116,756,788,1428,1460,1631,1663,2031,2063]
+  OK    every plate hole has a hinge in it                 20
+  OK    the UNTOUCHED side is bored where it was           [84,116,756,788,1428,1460,1631,1663,2031,2063]
+  OK    …and the moved side really did move                true
+  OK    the cups did not change                            10
+
+2. A PARTITIONED WARDROBE WITH BAY DOORS AND ONE BAY SPLIT
+   (no hand editing at all — this is what the app builds)
+  BUL plate rows [84,116,756,788,1428,1460,1631,1663,2031,2063]
+  BUR plate rows [84,116,474,506,864,896,1254,1286,1644,1676,2034,2066]
+  OK    red drill findings                                 0
+  OK    the export gate                                    accepts
+
+====================================================================================
+One column, one board, and the job exports. T41-F4 holds.
+```

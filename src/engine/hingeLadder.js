@@ -102,6 +102,69 @@ export function hingedDoorLadders(result) {
  * split every door's ladder IS `hinge_centers`, so this returns that list
  * unchanged and every reader that swaps to it keeps yesterday's answer.
  */
+// ─── TURN 41 (F4): THE ROWS OF ONE SIDE, WHICH IS WHAT A COLUMN IS ──────────
+//
+// MEASURED FAULT. `drilledHingeRows` below flattens EVERY door's ladder into a
+// single list, and `cnc/drillGuard.js` runs the 60 mm minimum-spacing rule over
+// it. A minimum spacing is a fact about ONE COLUMN OF HOLES IN ONE BOARD — two
+// rows 10 mm apart on opposite sides of a carcass are two different boards and
+// no hinge conflicts with anything.
+//
+// Out of the box, with no hand editing at all — an 1800 wardrobe, one partition,
+// per-bay doors, one bay split:
+//
+//     BUL plate rows [100, 773.5, 1447, 1650, 2050]
+//     BUR plate rows [100, 490,   880,  1270, 1660, 2050]
+//     the union      [100, 490, 773.5, 880, 1270, 1447, 1650, 1660, 2050]
+//
+// 1650 is on BUL and 1660 is on BUR. The guard compared them, called them 10 mm
+// apart, raised a RED #10 — and `exportGate` held BOTH carcass sides out of the
+// CNC export: *"2 parts held out of this export — W01 BUL, W01 BUR."* Before
+// T40 the guard read `hinge_centers`, whose rows are 390 apart, and said
+// nothing.
+//
+// So the rows are grouped BY THE BOARD THEY ARE BORED IN. `drilledHingeRows`
+// itself is not deleted and not changed — it is still the honest answer to
+// "every row this cabinet is bored at", which is what the shelf × hinge sweep
+// wants — and the guard asks this one instead.
+
+/** The column a leaf that names no carcass side goes in — the whole cabinet. */
+const UNNAMED_BEARER = '(cabinet)';
+
+/**
+ * The plate rows this cabinet is bored at, PER CARCASS SIDE.
+ *
+ * @returns {Map<string, number[]>} bearer id -> its own sorted rows
+ */
+export function drilledHingeRowsBySide(result) {
+  const ladders = hingedDoorLadders(result);
+  // NO LEAF CARRIES ITS OWN LADDER — which is every cabinet in this app that
+  // nobody has hand-edited. The answer is exactly what it was before this
+  // function existed: `hinge_centers`, VERBATIM, as one column. Verbatim
+  // matters — turn 31's regression is two rows BOTH AT 100, and de-duplicating
+  // them would hide the very fault the guard is there to catch.
+  if (!ladders.some((l) => hasOwnHingeRows(result, l.panelId))) {
+    return new Map([[UNNAMED_BEARER, (result?.drillSummary?.hinge_centers || []).map(Number)]]);
+  }
+  const out = new Map();
+  const add = (bearer, y) => {
+    if (!out.has(bearer)) out.set(bearer, []);
+    const rows = out.get(bearer);
+    if (!rows.some((v) => near(v, y))) rows.push(Number(y));
+  };
+  for (const l of ladders) {
+    // The side this leaf hangs on, said the same way `engine/cabinet.js` says
+    // it: a bay leaf names its bearer, a face leaf names L or R. A leaf that
+    // names NEITHER goes in the cabinet-wide column, which is the old answer.
+    const m = l.panel?.meta || {};
+    const bearer = m.hingeOn
+      || (m.hinge === 'R' ? 'BUR' : (m.hinge === 'L' ? 'BUL' : UNNAMED_BEARER));
+    for (const y of l.rows) add(bearer, y);
+  }
+  for (const rows of out.values()) rows.sort((a, b) => a - b);
+  return out;
+}
+
 export function drilledHingeRows(result) {
   const ladders = hingedDoorLadders(result);
   if (!ladders.some((l) => hasOwnHingeRows(result, l.panelId))) {

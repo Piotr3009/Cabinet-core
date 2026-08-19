@@ -27,7 +27,7 @@
 // Pure functions — no React, no store imports, no jsPDF.
 
 import { writeDxf } from '../cnc/dxf.js';
-import { DRAWING_LAYERS, drawingLayer } from './layers.js';
+import { DRAWING_LAYERS, drawingLayer, PEN, penWidth } from './layers.js';
 
 /**
  * The label CLAUDE.md requires, verbatim, and it goes ON THE DRAWING.
@@ -49,28 +49,39 @@ export const DXF_AUTOCAD_ONLY = 'AutoCAD only - do NOT open in VCarve';
 export function sheetToDxf(sheet, { note = DXF_AUTOCAD_ONLY } = {}) {
   const entities = [];
   const used = new Set();
-  const use = (layer) => { used.add(layer); return layer; };
+  /**
+   * The DXF layer this entity belongs on: its own layer where it is drawn at
+   * that layer's default role, and a suffixed sibling where it is not (T41-F5b).
+   */
+  const use = (e) => {
+    const base = e.layer;
+    const L = DRAWING_LAYERS[base] || drawingLayer(base);
+    const role = e.pen || null;
+    const name = role && role !== L.pen ? `${base}-${role}` : base;
+    used.add(name);
+    return name;
+  };
 
   for (const e of sheet.entities || []) {
     if (e.kind === 'line') {
       entities.push({
-        type: 'poly', layer: use(e.layer), closed: false, pts: [[e.x1, e.y1], [e.x2, e.y2]],
+        type: 'poly', layer: use(e), closed: false, pts: [[e.x1, e.y1], [e.x2, e.y2]],
       });
     } else if (e.kind === 'rect') {
       entities.push({
         type: 'poly',
-        layer: use(e.layer),
+        layer: use(e),
         closed: true,
         pts: [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]],
       });
     } else if (e.kind === 'circle') {
       entities.push({
-        type: 'circle', layer: use(e.layer), cx: e.cx, cy: e.cy, r: e.r,
+        type: 'circle', layer: use(e), cx: e.cx, cy: e.cy, r: e.r,
       });
     } else if (e.kind === 'text') {
       entities.push({
         type: 'text',
-        layer: use(e.layer),
+        layer: use(e),
         x: e.x,
         y: e.y,
         h: e.height,
@@ -90,7 +101,7 @@ export function sheetToDxf(sheet, { note = DXF_AUTOCAD_ONLY } = {}) {
   if (note) {
     entities.push({
       type: 'text',
-      layer: use('FRAME_LIGHT'),
+      layer: use({ layer: 'FRAME_LIGHT' }),
       x: 2,
       y: 2,
       h: 3,
@@ -101,10 +112,32 @@ export function sheetToDxf(sheet, { note = DXF_AUTOCAD_ONLY } = {}) {
     });
   }
 
-  const layers = [...used].map((name) => ({
-    name,
-    color: (DRAWING_LAYERS[name] || drawingLayer(name)).aci,
-  }));
+  // ─── TURN 41 (F5b): THE SHEET'S PENS REACH THE FILE ───────────────────────
+  //
+  // A DXF layer carries ONE weight, and after F5a our entities carry several —
+  // a CARCASE line may be an OUTLINE on an elevation and a CUT on a section. So
+  // an entity drawn at anything other than its layer's default role goes onto a
+  // SUFFIXED SIBLING layer (`CARCASE-CUT`), same colour, same name stem, with
+  // its own 370. The drawing still reads as the owner's set — the colour
+  // convention is untouched — and every line plots at the weight it was drawn
+  // at instead of all of them plotting the same.
+  //
+  // And the hidden layers get a real DASHED linetype, so a shelf behind a door
+  // is dashed in AutoCAD as it already is on screen and in the PDF.
+  const DASHED = 'CC_DASHED';
+  const layers = [...used].map((name) => {
+    const stem = name.replace(/-(CUT|OUTLINE|VISIBLE|HIDDEN|THIN|ANNOTATION|FINE)$/, '');
+    const L = DRAWING_LAYERS[stem] || drawingLayer(stem);
+    const role = name === stem ? (L.pen || null) : name.slice(stem.length + 1);
+    const lw = Number.isFinite(PEN[role]) ? Math.round(PEN[role] * 100) : Math.round((L.width ?? 0.25) * 100);
+    const dash = L.dash && (role === 'HIDDEN' || (name === stem && L.dash)) ? L.dash : null;
+    return {
+      name,
+      color: L.aci,
+      lw,
+      ...(dash ? { ltype: DASHED, dash } : {}),
+    };
+  });
   return writeDxf(entities, layers, {
     min: [0, 0],
     max: [Number(sheet.width) || 0, Number(sheet.height) || 0],

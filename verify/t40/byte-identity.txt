@@ -7,3 +7,6 @@ PANTRY  IDENTICAL  4df94682e4f80424aa770ffad3e5e143eb8e14902372ec2193fd4acb9e452
 
 EXPECTED BUCKETS: none — T40 is a byte-identity turn.
 UNNAMED:          0
+
+Base dump: verify/t40/engine-base.json, taken at the branch point and verified
+IDENTICAL to main's own dump at 50980d0 before a line of this turn was written.

@@ -5,6 +5,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Modal from './Modal.jsx';
 import ElementProperties from './ElementProperties.jsx';
+// TURN 40 (CLAUDE.md F4a): the shelf × hinge fault, said here as well.
+import ShelfHingeClash from './ShelfHingeClash.jsx';
 import { MovingPanel, frontKind as frontOf } from '../3d/UnitView.jsx';
 import Hardware, { DoorHinges, hingeSpecsFor } from '../3d/Hardware.jsx';
 import { hardwareInstances } from '../engine/hardware3d.js';
@@ -388,6 +390,15 @@ export default function CabinetEditorModal() {
           className={`${big ? 'w-[340px] shrink-0 overflow-y-auto' : ''} space-y-2`}
           data-editor-properties="1"
         >
+          {/* ─── TURN 40 (CLAUDE.md F4a): THE SAME FAULT, IN THIS WINDOW TOO ─
+              The owner's screenshots put the shelf × hinge fault in two places
+              — the Check panel and the CABINET's own window — and asked for
+              *"i tu i tu"*: the same wording and the same buttons in both. The
+              component is the one renderer of the one definition
+              (`engine/checks.js shelfHingeFindings`), so mounting it here adds
+              a surface and not a second answer. `compact` is the one-line form
+              this modal's column is sized for. */}
+          <ShelfHingeClash unitId={unit.id} compact />
           {selected ? (
             <div className="border border-shell-600 rounded p-2 space-y-2">
               <div className="cc-row">

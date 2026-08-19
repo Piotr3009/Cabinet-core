@@ -1,0 +1,54 @@
+T40 — THE CNC FINGERPRINTS THAT MOVED, AND WHY (CLAUDE.md iron rule 8)
+
+Generated: node scripts/cnc-fingerprint.mjs, on the branch base (ed01f29) and on HEAD.
+Report size: 9452 fingerprints.
+Moved:       247.
+
+Iron rule 8: A CNC FINGERPRINT IS NOT AN ENGINE HASH. The engine's own answer
+for the six standard configs is IDENTICAL with UNNAMED=0 — verify/t40/byte-identity.txt.
+Two features moved the machine's picture, both of them deliberately, and they
+are separated below by the scenario that carries each.
+
+═══ 1. F2, ONE GRAIN TRUTH — the drawer box is stood up on the SHEET ═══════
+
+  190 fingerprints, all of them SHEET fingerprints (0 per-part: none).
+  Kits: BUDR, BUDR2, BUDR4, OVEN_BASE
+
+  The four boards the owner named as cut STANDING — the drawer sides SL and
+  SR, the box front BF and the box back BB — are DRAWN `height x depth` on a
+  BUDR-style bank, so the sheet turns them 90 degrees where it used to leave
+  them at 0. Everything after them on the page shifts with it, so the whole
+  sheet's fingerprint moves.
+
+  THE PART'S OWN CNC FRAME IS UNTOUCHED — same outline, same pockets, same
+  holes, same drawn size. Not one per-part DXF moved for this feature. Only
+  the PLACEMENT changed, which is what a nesting program turns.
+
+═══ 2. F3a, NO DOOR NO STRIP — a shoe box in a doorless cabinet ═══════════
+
+  57 fingerprints, on the shoe-box scenarios only.
+  Kits: BUDR, BUDR2, BUDR4, DW_PANEL, L_SHAPE, OVEN_BASE, WINE
+  Per-part files: 01-SHOE1-BATTEN.dxf, 01-SHOE1-BF.dxf, 01-SHOE1-BK.dxf, 01-SHOE1-BT.dxf, 01-SHOE1-DV.dxf
+
+  Every one of those kits has NO DOORS AT ALL — a drawer bank, a dishwasher
+  panel, a wine rack, an L-shape, an oven base. The old rule read
+  `cfg.hinge === 'L'`, which is never absent, so a shoe box inside them
+  reserved a 30 mm hinge band for a door that does not exist and cut a
+  30 x 70 BATTEN to carry it. Measured, on a BUDR with a drawer shoe box:
+
+      BEFORE   SHOE1-BK 472 x 80   SHOE1-BF 472 x 80   SHOE1-BATTEN 435 x 70
+      AFTER    SHOE1-BK 502 x 80   SHOE1-BF 502 x 80   (no batten)
+
+  The boards run the full width and the batten is not cut. That is the
+  owner's own sentence — "jak nie ma drzwi w ogole, to nie powinno robic
+  30 mm odstepu infill na zawiasy" — reaching the shoe box through the ONE
+  source (`hingedSides`) the plate drilling already reads. It is a BOM change
+  as well as a CNC one: one fewer part on a shoe box in a doorless cabinet.
+
+═══ WHAT DID NOT MOVE ═════════════════════════════════════════════════════
+
+  Every kit and every scenario outside the two lists above is byte-identical,
+  file for file and sheet for sheet — including every cabinet WITH doors,
+  whose 30 mm band is cut exactly where it always was.
+
+The full diff is beside this file: cnc-fingerprint-moves.diff

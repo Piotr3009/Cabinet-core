@@ -1,0 +1,79 @@
+T40 — THE SANCTITY DIFF-AUDIT (CLAUDE.md iron rule 3: ZERO LICENSED REMOVALS)
+
+Base: ed01f29 (the branch point). Head: 73b65e9.
+
+FILES DELETED:  0
+reference/lisp/ FILES TOUCHED: 0   (iron rule 4)
+reference/ FILES TOUCHED:      0
+package.json DEPENDENCIES:     0 lines changed (iron rule 5)
+
+THE THREE DECLARATION LINES THAT MOVED, AND WHAT HAPPENED TO EACH:
+
+  src/components/CheckPanel.jsx   const goTo = (subject, e) => { … }
+    NOT DELETED — it is the SAME gesture, moved into one hook so the
+    cabinet modal's list cannot behave differently (T40-F4c). The panel
+    still has a `goTo`; it is `useGoToSubject()` now, and the four steps
+    it takes are asserted in test/turn31-f6-check-v1.test.js where the
+    gesture lives.
+
+  src/engine/railAssembly.js      export const RAIL_MOUNT = …
+    NOT DELETED — a THIRD value was added to the frozen literal
+    (ALONE, T40-F6). Both existing keys are unchanged and asserted.
+
+  src/engine/decors.js            function statedPanelAxis(panel) { … }
+    NOT DELETED — it was EXPORTED (T40-F2). Its body is byte-for-byte
+    what it was; it is kept as the independent witness the cross-frame
+    tests check the new derivation against, exactly as iron rule 3 asks.
+
+NOTHING ELSE was removed. Every reader CLAUDE.md named — grainRun,
+GRAIN_AXIS_BY_PART, grainLocked, hinge_centers, railDatum.js, autoUnitNum,
+alternative on a check finding — is still present and still answers.
+
+FULL DECLARATION DIFF (added and removed `export`/`function` lines):
+      1 -function statedPanelAxis(panel) {
+      1 -export const RAIL_MOUNT = Object.freeze({ LEGACY: 'legacy', SHELF: 'shelf' });
+      1 +function uniqueSorted(values) {
+      1 +function titleFor({ project = {}, drawing, profile }) {
+      1 +function spans(panel, y) {
+      1 +function ascii(value) {
+      1 +export function widthGroups(members, profile) {
+      1 +export function widthChains(members, profile) {
+      1 +export function wallLabel(index) {
+      1 +export function wallGroups(entries = [], profile) {
+      1 +export function wallDrawingsFilename({ project, ext = 'pdf', now = new Date() }) {
+      1 +export function wallDrawingSheets({
+      1 +export function wallDrawingPages(args) {
+      1 +export function verticalChains(members, { profile, x, textHeight, fronts = true }) {
+      1 +export function useGoToSubject() {
+      1 +export function uprightRole(role) {
+      1 +export function turnedAway(unit) {
+      1 +export function statedPanelAxis(panel) {
+      1 +export function standsOnOverlayStack(plan, y) {
+      1 +export function shelfHingeFindings({
+      1 +export function sheetToDxf(sheet, { note = DXF_AUTOCAD_ONLY } = {}) {
+      1 +export function sheetLay(panel) {
+      1 +export function railChosenAlone(item) {
+      1 +export function panelAxisOf(w, h, upMm) {
+      1 +export function overlayStackTop(heights = [], gap = 0) {
+      1 +export function overlayPlan({
+      1 +export function overlayHeights(items, { defaultHeightMm = 200, minFrontMm = 0 } = {}) {
+      1 +export function overlayDrawerItems(items = []) {
+      1 +export function nextUnitNum(units, type, { except = null } = {}) {
+      1 +export function isHingedFront(panel) {
+      1 +export function horizontalChains(members, { profile, y, textHeight }) {
+      1 +export function hingedDoorLadders(result) {
+      1 +export function hingeRowOwner(result, y) {
+      1 +export function heightChains(members) {
+      1 +export function hasOwnHingeRows(result, panelId) {
+      1 +export function handleMarks(result, profile, { dx = 0, dy = 0 } = {}) {
+      1 +export function exportWallDrawingsPdf(sheets, { project }) {
+      1 +export function drilledHingeRows(result) {
+      1 +export function doorHingeRows(result, panelId) {
+      1 +export function chainValues(edges) {
+      1 +export function buildWallElevation(group, {
+      1 +export function buildHorizontalSection(entries = [], { room = null, profile }) {
+      1 +export const RAIL_MOUNT = Object.freeze({ LEGACY: 'legacy', SHELF: 'shelf', ALONE: 'alone' });
+      1 +export const RAIL_ALONE_NOTE = 'rail on its own — no shelf, by choice. Its own partitioner sits above it.';
+      1 +export const DXF_AUTOCAD_ONLY = 'AutoCAD only - do NOT open in VCarve';
+      1 +export const CUT_GRAIN_AXIS_BY_PART = Object.freeze({
+      1 +export async function exportWallDrawingsDxf(sheets, { project }) {

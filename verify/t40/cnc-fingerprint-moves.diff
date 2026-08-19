@@ -190,635 +190,736 @@
 < BUDR+shelves  sheet non-sprayed  c3f24d67
 ---
 > BUDR+shelves  sheet non-sprayed  2880b2a3
-1324c1324
+1315,1319c1315,1318
+< BUDR+shoe-box-drawer  file  01-SHOE1-BATTEN.dxf  48112475
+< BUDR+shoe-box-drawer  file  01-SHOE1-BF.dxf  55d86296
+< BUDR+shoe-box-drawer  file  01-SHOE1-BK.dxf  591bc431
+< BUDR+shoe-box-drawer  file  01-SHOE1-BT.dxf  540c7048
+< BUDR+shoe-box-drawer  file  01-SHOE1-DV.dxf  9dd8a6f7
+---
+> BUDR+shoe-box-drawer  file  01-SHOE1-BF.dxf  c72300d0
+> BUDR+shoe-box-drawer  file  01-SHOE1-BK.dxf  96704ef3
+> BUDR+shoe-box-drawer  file  01-SHOE1-BT.dxf  ae74c424
+> BUDR+shoe-box-drawer  file  01-SHOE1-DV.dxf  cf546576
+1324c1323
 < BUDR+shoe-box-drawer  sheet all  5b9e298d
 ---
-> BUDR+shoe-box-drawer  sheet all  1d33e934
-1326c1326
+> BUDR+shoe-box-drawer  sheet all  650853b7
+1326c1325
 < BUDR+shoe-box-drawer  sheet non-sprayed  4ec852f4
 ---
-> BUDR+shoe-box-drawer  sheet non-sprayed  b246ed62
-1358c1358
+> BUDR+shoe-box-drawer  sheet non-sprayed  99127eb9
+1358c1357
 < BUDR+shoe-box-fix  sheet all  e1ea505c
 ---
 > BUDR+shoe-box-fix  sheet all  9d81ad78
-1360c1360
+1360c1359
 < BUDR+shoe-box-fix  sheet non-sprayed  06bb72d7
 ---
 > BUDR+shoe-box-fix  sheet non-sprayed  47b6fd66
-1379c1379
+1379c1378
 < BUDR2  sheet all  df1344ab
 ---
 > BUDR2  sheet all  34e3d0c4
-1381c1381
+1381c1380
 < BUDR2  sheet non-sprayed  f545f44e
 ---
 > BUDR2  sheet non-sprayed  db705631
-1400c1400
+1400c1399
 < BUDR2+adjustable-shelves  sheet all  df1344ab
 ---
 > BUDR2+adjustable-shelves  sheet all  34e3d0c4
-1402c1402
+1402c1401
 < BUDR2+adjustable-shelves  sheet non-sprayed  f545f44e
 ---
 > BUDR2+adjustable-shelves  sheet non-sprayed  db705631
-1421c1421
+1421c1420
 < BUDR2+bottom-mask  sheet all  df1344ab
 ---
 > BUDR2+bottom-mask  sheet all  34e3d0c4
-1423c1423
+1423c1422
 < BUDR2+bottom-mask  sheet non-sprayed  f545f44e
 ---
 > BUDR2+bottom-mask  sheet non-sprayed  db705631
-1442c1442
+1442c1441
 < BUDR2+bottom-mask-run-owner  sheet all  df1344ab
 ---
 > BUDR2+bottom-mask-run-owner  sheet all  34e3d0c4
-1444c1444
+1444c1443
 < BUDR2+bottom-mask-run-owner  sheet non-sprayed  f545f44e
 ---
 > BUDR2+bottom-mask-run-owner  sheet non-sprayed  db705631
-1463c1463
+1463c1462
 < BUDR2+drawers-capped  sheet all  56a5bb60
 ---
 > BUDR2+drawers-capped  sheet all  f9dd506d
-1465c1465
+1465c1464
 < BUDR2+drawers-capped  sheet non-sprayed  4e2aa79a
 ---
 > BUDR2+drawers-capped  sheet non-sprayed  38bc2132
-1484c1484
+1484c1483
 < BUDR2+fix-shelf  sheet all  df1344ab
 ---
 > BUDR2+fix-shelf  sheet all  34e3d0c4
-1486c1486
+1486c1485
 < BUDR2+fix-shelf  sheet non-sprayed  f545f44e
 ---
 > BUDR2+fix-shelf  sheet non-sprayed  db705631
-1506c1506
+1506c1505
 < BUDR2+fix-shelf-in-bay  sheet all  998ea42c
 ---
 > BUDR2+fix-shelf-in-bay  sheet all  07697f03
-1508c1508
+1508c1507
 < BUDR2+fix-shelf-in-bay  sheet non-sprayed  a2c7c643
 ---
 > BUDR2+fix-shelf-in-bay  sheet non-sprayed  2a794072
-1527c1527
+1527c1526
 < BUDR2+handles-bar  sheet all  5018e38c
 ---
 > BUDR2+handles-bar  sheet all  ac86f398
-1529c1529
+1529c1528
 < BUDR2+handles-bar  sheet non-sprayed  f545f44e
 ---
 > BUDR2+handles-bar  sheet non-sprayed  db705631
-1548c1548
+1548c1547
 < BUDR2+handles-knob  sheet all  59744111
 ---
 > BUDR2+handles-knob  sheet all  f70a31aa
-1550c1550
+1550c1549
 < BUDR2+handles-knob  sheet non-sprayed  f545f44e
 ---
 > BUDR2+handles-knob  sheet non-sprayed  db705631
-1573c1573
+1573c1572
 < BUDR2+infill-mitre  sheet all  18a56b8f
 ---
 > BUDR2+infill-mitre  sheet all  228baf31
-1575c1575
+1575c1574
 < BUDR2+infill-mitre  sheet non-sprayed  f545f44e
 ---
 > BUDR2+infill-mitre  sheet non-sprayed  db705631
-1598c1598
+1598c1597
 < BUDR2+infill-mitre-narrow  sheet all  82233b4e
 ---
 > BUDR2+infill-mitre-narrow  sheet all  2ecc2d58
-1600c1600
+1600c1599
 < BUDR2+infill-mitre-narrow  sheet non-sprayed  f545f44e
 ---
 > BUDR2+infill-mitre-narrow  sheet non-sprayed  db705631
-1623c1623
+1623c1622
 < BUDR2+infills  sheet all  868ee28f
 ---
 > BUDR2+infills  sheet all  729f0f78
-1625c1625
+1625c1624
 < BUDR2+infills  sheet non-sprayed  f545f44e
 ---
 > BUDR2+infills  sheet non-sprayed  db705631
-1645c1645
+1645c1644
 < BUDR2+partition  sheet all  cf34d134
 ---
 > BUDR2+partition  sheet all  ab14f000
-1647c1647
+1647c1646
 < BUDR2+partition  sheet non-sprayed  40398dda
 ---
 > BUDR2+partition  sheet non-sprayed  12b75876
-1668c1668
+1668c1667
 < BUDR2+partition-doors  sheet all  a6f37c1f
 ---
 > BUDR2+partition-doors  sheet all  dbd6b8e2
-1670c1670
+1670c1669
 < BUDR2+partition-doors  sheet non-sprayed  e773d67f
 ---
 > BUDR2+partition-doors  sheet non-sprayed  57cd9a5b
-1690c1690
+1690c1689
 < BUDR2+partition-on-shelf  sheet all  cf34d134
 ---
 > BUDR2+partition-on-shelf  sheet all  ab14f000
-1692c1692
+1692c1691
 < BUDR2+partition-on-shelf  sheet non-sprayed  40398dda
 ---
 > BUDR2+partition-on-shelf  sheet non-sprayed  12b75876
-1712c1712
+1712c1711
 < BUDR2+plinth  sheet all  62b606a9
 ---
 > BUDR2+plinth  sheet all  2a6d8a05
-1714c1714
+1714c1713
 < BUDR2+plinth  sheet non-sprayed  f545f44e
 ---
 > BUDR2+plinth  sheet non-sprayed  db705631
-1733c1733
+1733c1732
 < BUDR2+plinth-run-member  sheet all  df1344ab
 ---
 > BUDR2+plinth-run-member  sheet all  34e3d0c4
-1735c1735
+1735c1734
 < BUDR2+plinth-run-member  sheet non-sprayed  f545f44e
 ---
 > BUDR2+plinth-run-member  sheet non-sprayed  db705631
-1755c1755
+1755c1754
 < BUDR2+plinth-run-owner  sheet all  df5fffc4
 ---
 > BUDR2+plinth-run-owner  sheet all  d34ffa90
-1757c1757
+1757c1756
 < BUDR2+plinth-run-owner  sheet non-sprayed  f545f44e
 ---
 > BUDR2+plinth-run-owner  sheet non-sprayed  db705631
-1776c1776
+1776c1775
 < BUDR2+shallow-200  sheet all  413377aa
 ---
 > BUDR2+shallow-200  sheet all  6cb0f8b3
-1778c1778
+1778c1777
 < BUDR2+shallow-200  sheet non-sprayed  5ed9f066
 ---
 > BUDR2+shallow-200  sheet non-sprayed  67d00d3d
-1797c1797
+1797c1796
 < BUDR2+shallow-301  sheet all  6d01cc98
 ---
 > BUDR2+shallow-301  sheet all  5f3f1813
-1799c1799
+1799c1798
 < BUDR2+shallow-301  sheet non-sprayed  34433508
 ---
 > BUDR2+shallow-301  sheet non-sprayed  31986a41
-1820c1820
+1820c1819
 < BUDR2+shelf-end-bay-2-parts  sheet all  74912918
 ---
 > BUDR2+shelf-end-bay-2-parts  sheet all  c64f8701
-1822c1822
+1822c1821
 < BUDR2+shelf-end-bay-2-parts  sheet non-sprayed  1339a724
 ---
 > BUDR2+shelf-end-bay-2-parts  sheet non-sprayed  be7bd152
-1842c1842
+1842c1841
 < BUDR2+shelf-in-right-bay  sheet all  998ea42c
 ---
 > BUDR2+shelf-in-right-bay  sheet all  07697f03
-1844c1844
+1844c1843
 < BUDR2+shelf-in-right-bay  sheet non-sprayed  a2c7c643
 ---
 > BUDR2+shelf-in-right-bay  sheet non-sprayed  2a794072
-1865c1865
+1865c1864
 < BUDR2+shelf-mid-bay-2-parts  sheet all  74912918
 ---
 > BUDR2+shelf-mid-bay-2-parts  sheet all  c64f8701
-1867c1867
+1867c1866
 < BUDR2+shelf-mid-bay-2-parts  sheet non-sprayed  1339a724
 ---
 > BUDR2+shelf-mid-bay-2-parts  sheet non-sprayed  be7bd152
-1886c1886
+1886c1885
 < BUDR2+shelves  sheet all  df1344ab
 ---
 > BUDR2+shelves  sheet all  34e3d0c4
-1888c1888
+1888c1887
 < BUDR2+shelves  sheet non-sprayed  f545f44e
 ---
 > BUDR2+shelves  sheet non-sprayed  db705631
-1915c1915
+1906,1910c1905,1908
+< BUDR2+shoe-box-drawer  file  01-SHOE1-BATTEN.dxf  48112475
+< BUDR2+shoe-box-drawer  file  01-SHOE1-BF.dxf  55d86296
+< BUDR2+shoe-box-drawer  file  01-SHOE1-BK.dxf  591bc431
+< BUDR2+shoe-box-drawer  file  01-SHOE1-BT.dxf  540c7048
+< BUDR2+shoe-box-drawer  file  01-SHOE1-DV.dxf  9dd8a6f7
+---
+> BUDR2+shoe-box-drawer  file  01-SHOE1-BF.dxf  c72300d0
+> BUDR2+shoe-box-drawer  file  01-SHOE1-BK.dxf  96704ef3
+> BUDR2+shoe-box-drawer  file  01-SHOE1-BT.dxf  ae74c424
+> BUDR2+shoe-box-drawer  file  01-SHOE1-DV.dxf  cf546576
+1915c1913
 < BUDR2+shoe-box-drawer  sheet all  c205b71c
 ---
-> BUDR2+shoe-box-drawer  sheet all  2957e833
-1917c1917
+> BUDR2+shoe-box-drawer  sheet all  2d01011f
+1917c1915
 < BUDR2+shoe-box-drawer  sheet non-sprayed  688ae7cf
 ---
-> BUDR2+shoe-box-drawer  sheet non-sprayed  21dc6eca
-1943c1943
+> BUDR2+shoe-box-drawer  sheet non-sprayed  a48f736c
+1943c1941
 < BUDR2+shoe-box-fix  sheet all  ac2d17e7
 ---
 > BUDR2+shoe-box-fix  sheet all  bbd9f045
-1945c1945
+1945c1943
 < BUDR2+shoe-box-fix  sheet non-sprayed  8493c3a9
 ---
 > BUDR2+shoe-box-fix  sheet non-sprayed  526b9b8e
-1976c1976
+1976c1974
 < BUDR4  sheet all  808ec57c
 ---
 > BUDR4  sheet all  070f956d
-1978c1978
+1978c1976
 < BUDR4  sheet non-sprayed  a9482bf0
 ---
 > BUDR4  sheet non-sprayed  cfa68333
-2009c2009
+2009c2007
 < BUDR4+adjustable-shelves  sheet all  808ec57c
 ---
 > BUDR4+adjustable-shelves  sheet all  070f956d
-2011c2011
+2011c2009
 < BUDR4+adjustable-shelves  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+adjustable-shelves  sheet non-sprayed  cfa68333
-2042c2042
+2042c2040
 < BUDR4+bottom-mask  sheet all  808ec57c
 ---
 > BUDR4+bottom-mask  sheet all  070f956d
-2044c2044
+2044c2042
 < BUDR4+bottom-mask  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+bottom-mask  sheet non-sprayed  cfa68333
-2075c2075
+2075c2073
 < BUDR4+bottom-mask-run-owner  sheet all  808ec57c
 ---
 > BUDR4+bottom-mask-run-owner  sheet all  070f956d
-2077c2077
+2077c2075
 < BUDR4+bottom-mask-run-owner  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+bottom-mask-run-owner  sheet non-sprayed  cfa68333
-2108c2108
+2108c2106
 < BUDR4+drawers-capped  sheet all  e9f347e3
 ---
 > BUDR4+drawers-capped  sheet all  7dfd1aef
-2110c2110
+2110c2108
 < BUDR4+drawers-capped  sheet non-sprayed  241f0bf3
 ---
 > BUDR4+drawers-capped  sheet non-sprayed  efba8ba8
-2141c2141
+2141c2139
 < BUDR4+fix-shelf  sheet all  808ec57c
 ---
 > BUDR4+fix-shelf  sheet all  070f956d
-2143c2143
+2143c2141
 < BUDR4+fix-shelf  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+fix-shelf  sheet non-sprayed  cfa68333
-2175c2175
+2175c2173
 < BUDR4+fix-shelf-in-bay  sheet all  3c7c2137
 ---
 > BUDR4+fix-shelf-in-bay  sheet all  c5e03555
-2177c2177
+2177c2175
 < BUDR4+fix-shelf-in-bay  sheet non-sprayed  9ea534f3
 ---
 > BUDR4+fix-shelf-in-bay  sheet non-sprayed  e8be59e4
-2208c2208
+2208c2206
 < BUDR4+handles-bar  sheet all  dd291629
 ---
 > BUDR4+handles-bar  sheet all  fed93786
-2210c2210
+2210c2208
 < BUDR4+handles-bar  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+handles-bar  sheet non-sprayed  cfa68333
-2241c2241
+2241c2239
 < BUDR4+handles-knob  sheet all  35186bac
 ---
 > BUDR4+handles-knob  sheet all  1ec2f95d
-2243c2243
+2243c2241
 < BUDR4+handles-knob  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+handles-knob  sheet non-sprayed  cfa68333
-2278c2278
+2278c2276
 < BUDR4+infill-mitre  sheet all  9ffdd3b9
 ---
 > BUDR4+infill-mitre  sheet all  be726886
-2280c2280
+2280c2278
 < BUDR4+infill-mitre  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+infill-mitre  sheet non-sprayed  cfa68333
-2315c2315
+2315c2313
 < BUDR4+infill-mitre-narrow  sheet all  6cf93a16
 ---
 > BUDR4+infill-mitre-narrow  sheet all  621cfb58
-2317c2317
+2317c2315
 < BUDR4+infill-mitre-narrow  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+infill-mitre-narrow  sheet non-sprayed  cfa68333
-2352c2352
+2352c2350
 < BUDR4+infills  sheet all  566023e2
 ---
 > BUDR4+infills  sheet all  5548aed4
-2354c2354
+2354c2352
 < BUDR4+infills  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+infills  sheet non-sprayed  cfa68333
-2386c2386
+2386c2384
 < BUDR4+partition  sheet all  c6ea14e4
 ---
 > BUDR4+partition  sheet all  af5fe8ad
-2388c2388
+2388c2386
 < BUDR4+partition  sheet non-sprayed  e3d4887d
 ---
 > BUDR4+partition  sheet non-sprayed  94a1ed18
-2421c2421
+2421c2419
 < BUDR4+partition-doors  sheet all  31fd10df
 ---
 > BUDR4+partition-doors  sheet all  5b6405f5
-2423c2423
+2423c2421
 < BUDR4+partition-doors  sheet non-sprayed  08d51245
 ---
 > BUDR4+partition-doors  sheet non-sprayed  8ad97585
-2455c2455
+2455c2453
 < BUDR4+partition-on-shelf  sheet all  c6ea14e4
 ---
 > BUDR4+partition-on-shelf  sheet all  af5fe8ad
-2457c2457
+2457c2455
 < BUDR4+partition-on-shelf  sheet non-sprayed  e3d4887d
 ---
 > BUDR4+partition-on-shelf  sheet non-sprayed  94a1ed18
-2489c2489
+2489c2487
 < BUDR4+plinth  sheet all  f67b4150
 ---
 > BUDR4+plinth  sheet all  bc6935d7
-2491c2491
+2491c2489
 < BUDR4+plinth  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+plinth  sheet non-sprayed  cfa68333
-2522c2522
+2522c2520
 < BUDR4+plinth-run-member  sheet all  808ec57c
 ---
 > BUDR4+plinth-run-member  sheet all  070f956d
-2524c2524
+2524c2522
 < BUDR4+plinth-run-member  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+plinth-run-member  sheet non-sprayed  cfa68333
-2556c2556
+2556c2554
 < BUDR4+plinth-run-owner  sheet all  0f6cf7bb
 ---
 > BUDR4+plinth-run-owner  sheet all  bcac4c24
-2558c2558
+2558c2556
 < BUDR4+plinth-run-owner  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+plinth-run-owner  sheet non-sprayed  cfa68333
-2589c2589
+2589c2587
 < BUDR4+shallow-200  sheet all  e74c433c
 ---
 > BUDR4+shallow-200  sheet all  cb158ae5
-2591c2591
+2591c2589
 < BUDR4+shallow-200  sheet non-sprayed  77c5822f
 ---
 > BUDR4+shallow-200  sheet non-sprayed  33fda336
-2622c2622
+2622c2620
 < BUDR4+shallow-301  sheet all  f884bb84
 ---
 > BUDR4+shallow-301  sheet all  0055a4b8
-2624c2624
+2624c2622
 < BUDR4+shallow-301  sheet non-sprayed  f11d0e00
 ---
 > BUDR4+shallow-301  sheet non-sprayed  07722147
-2657c2657
+2657c2655
 < BUDR4+shelf-end-bay-2-parts  sheet all  66e8d8ce
 ---
 > BUDR4+shelf-end-bay-2-parts  sheet all  4929760b
-2659c2659
+2659c2657
 < BUDR4+shelf-end-bay-2-parts  sheet non-sprayed  090f8242
 ---
 > BUDR4+shelf-end-bay-2-parts  sheet non-sprayed  be622581
-2691c2691
+2691c2689
 < BUDR4+shelf-in-right-bay  sheet all  3c7c2137
 ---
 > BUDR4+shelf-in-right-bay  sheet all  c5e03555
-2693c2693
+2693c2691
 < BUDR4+shelf-in-right-bay  sheet non-sprayed  9ea534f3
 ---
 > BUDR4+shelf-in-right-bay  sheet non-sprayed  e8be59e4
-2726c2726
+2726c2724
 < BUDR4+shelf-mid-bay-2-parts  sheet all  66e8d8ce
 ---
 > BUDR4+shelf-mid-bay-2-parts  sheet all  4929760b
-2728c2728
+2728c2726
 < BUDR4+shelf-mid-bay-2-parts  sheet non-sprayed  090f8242
 ---
 > BUDR4+shelf-mid-bay-2-parts  sheet non-sprayed  be622581
-2759c2759
+2759c2757
 < BUDR4+shelves  sheet all  808ec57c
 ---
 > BUDR4+shelves  sheet all  070f956d
-2761c2761
+2761c2759
 < BUDR4+shelves  sheet non-sprayed  a9482bf0
 ---
 > BUDR4+shelves  sheet non-sprayed  cfa68333
-2800c2800
+2791,2795c2789,2792
+< BUDR4+shoe-box-drawer  file  01-SHOE1-BATTEN.dxf  48112475
+< BUDR4+shoe-box-drawer  file  01-SHOE1-BF.dxf  55d86296
+< BUDR4+shoe-box-drawer  file  01-SHOE1-BK.dxf  591bc431
+< BUDR4+shoe-box-drawer  file  01-SHOE1-BT.dxf  540c7048
+< BUDR4+shoe-box-drawer  file  01-SHOE1-DV.dxf  9dd8a6f7
+---
+> BUDR4+shoe-box-drawer  file  01-SHOE1-BF.dxf  c72300d0
+> BUDR4+shoe-box-drawer  file  01-SHOE1-BK.dxf  96704ef3
+> BUDR4+shoe-box-drawer  file  01-SHOE1-BT.dxf  ae74c424
+> BUDR4+shoe-box-drawer  file  01-SHOE1-DV.dxf  cf546576
+2800c2797
 < BUDR4+shoe-box-drawer  sheet all  20b6b69f
 ---
-> BUDR4+shoe-box-drawer  sheet all  d83b2279
-2802c2802
+> BUDR4+shoe-box-drawer  sheet all  252d322b
+2802c2799
 < BUDR4+shoe-box-drawer  sheet non-sprayed  c508694a
 ---
-> BUDR4+shoe-box-drawer  sheet non-sprayed  a3514233
-2840c2840
+> BUDR4+shoe-box-drawer  sheet non-sprayed  5ea126ca
+2840c2837
 < BUDR4+shoe-box-fix  sheet all  2c7101df
 ---
 > BUDR4+shoe-box-fix  sheet all  38ddbd3f
-2842c2842
+2842c2839
 < BUDR4+shoe-box-fix  sheet non-sprayed  d21a102a
 ---
 > BUDR4+shoe-box-fix  sheet non-sprayed  8b120e2f
-5185c5185
+3645,3649c3642,3645
+< DW_PANEL+shoe-box-drawer  file  01-SHOE1-BATTEN.dxf  48112475
+< DW_PANEL+shoe-box-drawer  file  01-SHOE1-BF.dxf  55d86296
+< DW_PANEL+shoe-box-drawer  file  01-SHOE1-BK.dxf  591bc431
+< DW_PANEL+shoe-box-drawer  file  01-SHOE1-BT.dxf  540c7048
+< DW_PANEL+shoe-box-drawer  file  01-SHOE1-DV.dxf  9dd8a6f7
+---
+> DW_PANEL+shoe-box-drawer  file  01-SHOE1-BF.dxf  c72300d0
+> DW_PANEL+shoe-box-drawer  file  01-SHOE1-BK.dxf  96704ef3
+> DW_PANEL+shoe-box-drawer  file  01-SHOE1-BT.dxf  ae74c424
+> DW_PANEL+shoe-box-drawer  file  01-SHOE1-DV.dxf  cf546576
+3654c3650
+< DW_PANEL+shoe-box-drawer  sheet all  b9f9c19f
+---
+> DW_PANEL+shoe-box-drawer  sheet all  a7c9296d
+3656c3652
+< DW_PANEL+shoe-box-drawer  sheet non-sprayed  3f7a252f
+---
+> DW_PANEL+shoe-box-drawer  sheet non-sprayed  46bd8219
+5137,5141c5133,5136
+< L_SHAPE+shoe-box-drawer  file  01-SHOE1-BATTEN.dxf  9d4d1430
+< L_SHAPE+shoe-box-drawer  file  01-SHOE1-BF.dxf  687ab246
+< L_SHAPE+shoe-box-drawer  file  01-SHOE1-BK.dxf  ed8e3314
+< L_SHAPE+shoe-box-drawer  file  01-SHOE1-BT.dxf  14fde331
+< L_SHAPE+shoe-box-drawer  file  01-SHOE1-DV.dxf  9b9e39fc
+---
+> L_SHAPE+shoe-box-drawer  file  01-SHOE1-BF.dxf  e8106500
+> L_SHAPE+shoe-box-drawer  file  01-SHOE1-BK.dxf  291affba
+> L_SHAPE+shoe-box-drawer  file  01-SHOE1-BT.dxf  e7cdec11
+> L_SHAPE+shoe-box-drawer  file  01-SHOE1-DV.dxf  e3a3686a
+5149c5144
+< L_SHAPE+shoe-box-drawer  sheet all  a40c72b6
+---
+> L_SHAPE+shoe-box-drawer  sheet all  bcf2ef75
+5151c5146
+< L_SHAPE+shoe-box-drawer  sheet non-sprayed  edf8db86
+---
+> L_SHAPE+shoe-box-drawer  sheet non-sprayed  90f55d9e
+5185c5180
 < OVEN_BASE  sheet all  94f7e4d0
 ---
 > OVEN_BASE  sheet all  4a018e20
-5187c5187
+5187c5182
 < OVEN_BASE  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE  sheet non-sprayed  9303cec9
-5202c5202
+5202c5197
 < OVEN_BASE+adjustable-shelves  sheet all  94f7e4d0
 ---
 > OVEN_BASE+adjustable-shelves  sheet all  4a018e20
-5204c5204
+5204c5199
 < OVEN_BASE+adjustable-shelves  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+adjustable-shelves  sheet non-sprayed  9303cec9
-5219c5219
+5219c5214
 < OVEN_BASE+bottom-mask  sheet all  94f7e4d0
 ---
 > OVEN_BASE+bottom-mask  sheet all  4a018e20
-5221c5221
+5221c5216
 < OVEN_BASE+bottom-mask  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+bottom-mask  sheet non-sprayed  9303cec9
-5236c5236
+5236c5231
 < OVEN_BASE+bottom-mask-run-owner  sheet all  94f7e4d0
 ---
 > OVEN_BASE+bottom-mask-run-owner  sheet all  4a018e20
-5238c5238
+5238c5233
 < OVEN_BASE+bottom-mask-run-owner  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+bottom-mask-run-owner  sheet non-sprayed  9303cec9
-5264c5264
+5264c5259
 < OVEN_BASE+fix-shelf  sheet all  94f7e4d0
 ---
 > OVEN_BASE+fix-shelf  sheet all  4a018e20
-5266c5266
+5266c5261
 < OVEN_BASE+fix-shelf  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+fix-shelf  sheet non-sprayed  9303cec9
-5282c5282
+5282c5277
 < OVEN_BASE+fix-shelf-in-bay  sheet all  3a1acd2c
 ---
 > OVEN_BASE+fix-shelf-in-bay  sheet all  514fd190
-5284c5284
+5284c5279
 < OVEN_BASE+fix-shelf-in-bay  sheet non-sprayed  16963c8b
 ---
 > OVEN_BASE+fix-shelf-in-bay  sheet non-sprayed  0ea96c73
-5299c5299
+5299c5294
 < OVEN_BASE+handles-bar  sheet all  287d7551
 ---
 > OVEN_BASE+handles-bar  sheet all  d2ca10db
-5301c5301
+5301c5296
 < OVEN_BASE+handles-bar  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+handles-bar  sheet non-sprayed  9303cec9
-5316c5316
+5316c5311
 < OVEN_BASE+handles-knob  sheet all  8b79f024
 ---
 > OVEN_BASE+handles-knob  sheet all  d6fe5aad
-5318c5318
+5318c5313
 < OVEN_BASE+handles-knob  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+handles-knob  sheet non-sprayed  9303cec9
-5337c5337
+5337c5332
 < OVEN_BASE+infill-mitre  sheet all  abbfc5e1
 ---
 > OVEN_BASE+infill-mitre  sheet all  8e33548a
-5339c5339
+5339c5334
 < OVEN_BASE+infill-mitre  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+infill-mitre  sheet non-sprayed  9303cec9
-5358c5358
+5358c5353
 < OVEN_BASE+infill-mitre-narrow  sheet all  93de2fce
 ---
 > OVEN_BASE+infill-mitre-narrow  sheet all  538955a3
-5360c5360
+5360c5355
 < OVEN_BASE+infill-mitre-narrow  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+infill-mitre-narrow  sheet non-sprayed  9303cec9
-5379c5379
+5379c5374
 < OVEN_BASE+infills  sheet all  4d9fb1c9
 ---
 > OVEN_BASE+infills  sheet all  2393b8e9
-5381c5381
+5381c5376
 < OVEN_BASE+infills  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+infills  sheet non-sprayed  9303cec9
-5397c5397
+5397c5392
 < OVEN_BASE+partition  sheet all  5a19024f
 ---
 > OVEN_BASE+partition  sheet all  426f7bb3
-5399c5399
+5399c5394
 < OVEN_BASE+partition  sheet non-sprayed  b5d26157
 ---
 > OVEN_BASE+partition  sheet non-sprayed  4d2ff51d
-5416c5416
+5416c5411
 < OVEN_BASE+partition-doors  sheet all  a6b093fd
 ---
 > OVEN_BASE+partition-doors  sheet all  a6bf380b
-5418c5418
+5418c5413
 < OVEN_BASE+partition-doors  sheet non-sprayed  feba6556
 ---
 > OVEN_BASE+partition-doors  sheet non-sprayed  aa0cd33b
-5434c5434
+5434c5429
 < OVEN_BASE+partition-on-shelf  sheet all  5a19024f
 ---
 > OVEN_BASE+partition-on-shelf  sheet all  426f7bb3
-5436c5436
+5436c5431
 < OVEN_BASE+partition-on-shelf  sheet non-sprayed  b5d26157
 ---
 > OVEN_BASE+partition-on-shelf  sheet non-sprayed  4d2ff51d
-5452c5452
+5452c5447
 < OVEN_BASE+plinth  sheet all  3c762518
 ---
 > OVEN_BASE+plinth  sheet all  95ca3fe4
-5454c5454
+5454c5449
 < OVEN_BASE+plinth  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+plinth  sheet non-sprayed  9303cec9
-5469c5469
+5469c5464
 < OVEN_BASE+plinth-run-member  sheet all  94f7e4d0
 ---
 > OVEN_BASE+plinth-run-member  sheet all  4a018e20
-5471c5471
+5471c5466
 < OVEN_BASE+plinth-run-member  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+plinth-run-member  sheet non-sprayed  9303cec9
-5487c5487
+5487c5482
 < OVEN_BASE+plinth-run-owner  sheet all  2e516247
 ---
 > OVEN_BASE+plinth-run-owner  sheet all  17e77598
-5489c5489
+5489c5484
 < OVEN_BASE+plinth-run-owner  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+plinth-run-owner  sheet non-sprayed  9303cec9
-5504c5504
+5504c5499
 < OVEN_BASE+shallow-200  sheet all  1daccee1
 ---
 > OVEN_BASE+shallow-200  sheet all  25a5905f
-5506c5506
+5506c5501
 < OVEN_BASE+shallow-200  sheet non-sprayed  6a1bcbaa
 ---
 > OVEN_BASE+shallow-200  sheet non-sprayed  2981efa1
-5521c5521
+5521c5516
 < OVEN_BASE+shallow-301  sheet all  8cd453cb
 ---
 > OVEN_BASE+shallow-301  sheet all  945e7fa3
-5523c5523
+5523c5518
 < OVEN_BASE+shallow-301  sheet non-sprayed  ee164c96
 ---
 > OVEN_BASE+shallow-301  sheet non-sprayed  42d04637
-5540c5540
+5540c5535
 < OVEN_BASE+shelf-end-bay-2-parts  sheet all  6715a6c0
 ---
 > OVEN_BASE+shelf-end-bay-2-parts  sheet all  15e3eb28
-5542c5542
+5542c5537
 < OVEN_BASE+shelf-end-bay-2-parts  sheet non-sprayed  30e73c8c
 ---
 > OVEN_BASE+shelf-end-bay-2-parts  sheet non-sprayed  34f93099
-5558c5558
+5558c5553
 < OVEN_BASE+shelf-in-right-bay  sheet all  3a1acd2c
 ---
 > OVEN_BASE+shelf-in-right-bay  sheet all  514fd190
-5560c5560
+5560c5555
 < OVEN_BASE+shelf-in-right-bay  sheet non-sprayed  16963c8b
 ---
 > OVEN_BASE+shelf-in-right-bay  sheet non-sprayed  0ea96c73
-5577c5577
+5577c5572
 < OVEN_BASE+shelf-mid-bay-2-parts  sheet all  6715a6c0
 ---
 > OVEN_BASE+shelf-mid-bay-2-parts  sheet all  15e3eb28
-5579c5579
+5579c5574
 < OVEN_BASE+shelf-mid-bay-2-parts  sheet non-sprayed  30e73c8c
 ---
 > OVEN_BASE+shelf-mid-bay-2-parts  sheet non-sprayed  34f93099
-5594c5594
+5594c5589
 < OVEN_BASE+shelves  sheet all  94f7e4d0
 ---
 > OVEN_BASE+shelves  sheet all  4a018e20
-5596c5596
+5596c5591
 < OVEN_BASE+shelves  sheet non-sprayed  df11f7fc
 ---
 > OVEN_BASE+shelves  sheet non-sprayed  9303cec9
-5619c5619
+5611,5615c5606,5609
+< OVEN_BASE+shoe-box-drawer  file  01-SHOE1-BATTEN.dxf  48112475
+< OVEN_BASE+shoe-box-drawer  file  01-SHOE1-BF.dxf  55d86296
+< OVEN_BASE+shoe-box-drawer  file  01-SHOE1-BK.dxf  591bc431
+< OVEN_BASE+shoe-box-drawer  file  01-SHOE1-BT.dxf  540c7048
+< OVEN_BASE+shoe-box-drawer  file  01-SHOE1-DV.dxf  9dd8a6f7
+---
+> OVEN_BASE+shoe-box-drawer  file  01-SHOE1-BF.dxf  c72300d0
+> OVEN_BASE+shoe-box-drawer  file  01-SHOE1-BK.dxf  96704ef3
+> OVEN_BASE+shoe-box-drawer  file  01-SHOE1-BT.dxf  ae74c424
+> OVEN_BASE+shoe-box-drawer  file  01-SHOE1-DV.dxf  cf546576
+5619c5613
 < OVEN_BASE+shoe-box-drawer  sheet all  28b3c456
 ---
-> OVEN_BASE+shoe-box-drawer  sheet all  e65a4ef4
-5621c5621
+> OVEN_BASE+shoe-box-drawer  sheet all  7e1cc696
+5621c5615
 < OVEN_BASE+shoe-box-drawer  sheet non-sprayed  4c486ce1
 ---
-> OVEN_BASE+shoe-box-drawer  sheet non-sprayed  94a729db
-5643c5643
+> OVEN_BASE+shoe-box-drawer  sheet non-sprayed  f813fe3f
+5643c5637
 < OVEN_BASE+shoe-box-fix  sheet all  bd8db7f3
 ---
 > OVEN_BASE+shoe-box-fix  sheet all  42aeba29
-5645c5645
+5645c5639
 < OVEN_BASE+shoe-box-fix  sheet non-sprayed  7f32a090
 ---
 > OVEN_BASE+shoe-box-fix  sheet non-sprayed  8ed8ce3f
+8492,8496c8486,8489
+< WINE+shoe-box-drawer  file  01-SHOE1-BATTEN.dxf  48112475
+< WINE+shoe-box-drawer  file  01-SHOE1-BF.dxf  55d86296
+< WINE+shoe-box-drawer  file  01-SHOE1-BK.dxf  591bc431
+< WINE+shoe-box-drawer  file  01-SHOE1-BT.dxf  540c7048
+< WINE+shoe-box-drawer  file  01-SHOE1-DV.dxf  9dd8a6f7
+---
+> WINE+shoe-box-drawer  file  01-SHOE1-BF.dxf  c72300d0
+> WINE+shoe-box-drawer  file  01-SHOE1-BK.dxf  96704ef3
+> WINE+shoe-box-drawer  file  01-SHOE1-BT.dxf  ae74c424
+> WINE+shoe-box-drawer  file  01-SHOE1-DV.dxf  cf546576
+8501c8494
+< WINE+shoe-box-drawer  sheet all  257e4c38
+---
+> WINE+shoe-box-drawer  sheet all  5b815302
+8503c8496
+< WINE+shoe-box-drawer  sheet non-sprayed  aca3787b
+---
+> WINE+shoe-box-drawer  sheet non-sprayed  06ba294a

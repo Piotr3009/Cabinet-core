@@ -3104,6 +3104,61 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── TURN 40 (CLAUDE.md F3b): OVERLAY DRAWERS IN A WARDROBE ───────────────
+   *
+   * The owner: *"nadal nie mamy szuflad nawierzchniowych — w sensie żeby były
+   * na wierzchu, czyli bez infilla, fronty na szafie, drzwi powyżej szuflad."*
+   *
+   * A DISTINCT KIND, `overlay_drawer`, beside the internal ones rather than a
+   * flag on them. `mount: 'internal'` has meant something else since T32-F4
+   * (which of a COLUMN's drawers takes a front) and every wardrobe stack in
+   * every saved project already carries `mount: 'overlay'` from `addDrawers`'
+   * own default — so reusing that flag would have turned every internal stack
+   * in the app inside out on load. This cannot do that to anybody.
+   *
+   * HEIGHTS DEFAULT TO EQUAL: every drawer gets the same number, which is the
+   * workshop's own front height unless the caller says otherwise, and a stack
+   * that is re-added keeps whatever each drawer was given. The per-drawer
+   * slider is `setDrawerHeight`, unchanged — an overlay drawer is an item and
+   * takes the item route like every other wardrobe drawer.
+   *
+   * The 30 mm hinge strip never applies (CLAUDE.md F3b, unconditionally): an
+   * overlay front stands OUTSIDE the carcass, so no door ever swings past it.
+   * It falls out of the construction — the strip belongs to the INTERNAL stack
+   * — rather than being switched off anywhere.
+   */
+  addOverlayDrawers: (unitId, count, heightMm) => {
+    if (count > 0) {
+      const gate = drawerBoxGate(get().project.design);
+      if (gate.blocked) return { ok: false, error: gate.message };
+    }
+    const fallback = Number(heightMm) > 0
+      ? Number(heightMm)
+      : getCabinetProfile().wardrobe.drawers.frontHeight;
+    set((s) => ({
+      units: s.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
+        const kept = section.items.filter((i) => i.kind !== 'overlay_drawer');
+        const previous = section.items
+          .filter((i) => i.kind === 'overlay_drawer')
+          .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
+        const drawers = Array.from({ length: count }, (_, i) => ({
+          id: previous[i]?.id || uid('overlay-drawer'),
+          kind: 'overlay_drawer',
+          index: i + 1,
+          height_mm: Number(previous[i]?.height_mm) > 0 ? Number(previous[i].height_mm) : fallback,
+        }));
+        return { ...u, params: { ...u.params, sections: [{ ...section, items: [...drawers, ...kept] }] } };
+      }),
+    }));
+    // The stack raises the floor the shelves stand on, exactly as an internal
+    // one does — and the FIXED shelf above it is the engine's, not an item.
+    get().reclampShelves(unitId);
+    return { ok: true, error: null };
+  },
+
+  /**
    * ─── TURN 32 (CLAUDE.md F4): MAY THIS COLUMN TAKE DRAWERS? ────────────────
    *
    * The owner's law, 15.08: drawers in a column require that column's walls

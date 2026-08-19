@@ -1205,7 +1205,11 @@ export const DEFAULT_CABINET_PROFILE = {
     // CHAT-FIX 16.08 (owner): the shoe BOX takes the shelf's slot in the
     // wardrobe's own offer — "modal plusika ma zwinięte menu i trzeba
     // rozwijać, żeby zobaczyć, że jest shoe box; niech będzie [widoczny]".
-    wardrobe: ['shelves', 'shoe_box', 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
+    // TURN 40 (CLAUDE.md F3b): …and the OVERLAY stack, *"beside the existing
+    // internal drawers, clearly distinguished"*. It sits next to them in the
+    // list because that is where a joiner looks for it — the question is
+    // "drawers", and the answer is which kind.
+    wardrobe: ['shelves', 'shoe_box', 'hanger', 'drawers', 'overlay_drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
     // Anything whose family is not listed. Deliberately the plain furniture
     // answer rather than a union of the two.
     default: ['shelves', 'drawers', 'partition'],

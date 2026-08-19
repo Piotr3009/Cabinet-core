@@ -40,6 +40,9 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const setAddItemKind = useUiStore((s) => s.setAddItemKind);
 
   const addDrawers = useProjectStore((s) => s.addDrawers);
+  // TURN 40 (CLAUDE.md F3b): the OVERLAY stack — fronts on the wardrobe, doors
+  // above them, and never a 30 mm hinge strip.
+  const addOverlayDrawers = useProjectStore((s) => s.addOverlayDrawers);
   const addShelves = useProjectStore((s) => s.addShelves);
   const addPartition = useProjectStore((s) => s.addPartition);
   const addHangerRail = useProjectStore((s) => s.addHangerRail);
@@ -60,10 +63,17 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
 
   const DR = profile.wardrobe.drawers;
   const existingDrawers = items.filter((i) => i.kind === 'drawer').length;
+  const existingOverlay = items.filter((i) => i.kind === 'overlay_drawer').length;
   const ratioDrawers = type.drawerStyle === 'budr';
 
   const [drawerCount, setDrawerCount] = useState(existingDrawers || 2);
   const [drawerHeight, setDrawerHeight] = useState(DR.frontHeight);
+  // TURN 40 (F3b): the overlay stack's own two numbers. Its heights DEFAULT TO
+  // EQUAL — one number for the whole stack — which is the owner's own rule and
+  // is why there is one field here and not a ladder of them; the per-drawer
+  // slider then edits any of them exactly as it does an internal drawer's.
+  const [overlayCount, setOverlayCount] = useState(existingOverlay || 3);
+  const [overlayHeight, setOverlayHeight] = useState(DR.frontHeight);
   // ─── TURN 32 (CLAUDE.md F4): overlay or INTERNAL, per stack — the owner
   // set "internal" and nothing listened; the click listens now. And WHICH
   // COLUMN, when the cabinet is divided — same grammar as the shelves.
@@ -94,6 +104,27 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const [showAll, setShowAll] = useState(false);
 
   const done = () => { setAddItemKind(null); onZoneHover?.(null); onDone?.(); };
+
+  /**
+   * ─── TURN 40 (CLAUDE.md F3b): ADD AN OVERLAY STACK ───────────────────────
+   *
+   * The owner: *"fronty na szafie, drzwi powyżej szuflad."* Everything the
+   * stack implies is the ENGINE's and not this handler's — the stack sits at
+   * the bottom, a FIXED shelf is cut above it, and the doors above are
+   * shortened with their hinges re-laddered — so the click asks for a count
+   * and a height and nothing else.
+   */
+  const onAddOverlayDrawers = (count, height) => {
+    const res = addOverlayDrawers(unit.id, count, height);
+    if (res && res.ok === false) {
+      notify(res.error || 'The drawers were not added.', 'warn');
+      return;
+    }
+    notify(`${count} × ${height} mm overlay drawer${count === 1 ? '' : 's'} added — a fixed shelf above `
+      + 'them and the doors shortened to start on it. No 30 mm hinge strip: an overlay front is outside '
+      + 'the carcass, so nothing swings past it.', 'ok');
+    done();
+  };
 
   const onAddDrawers = (count, height) => {
     const before = items.filter((i) => i.kind === 'drawer').length;
@@ -190,9 +221,19 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const kinds = [
     {
       id: 'drawers',
-      label: 'Drawers',
+      // TURN 40 (F3b): named for what it IS, now that there are two kinds.
+      label: 'Drawers (internal)',
       disabled: !type.supports.drawers || ratioDrawers,
       why: ratioDrawers ? 'this kit IS its drawers' : 'not for this type',
+    },
+    // ─── TURN 40 (CLAUDE.md F3b): OVERLAY, BESIDE THE INTERNAL ONES ────────
+    // "clearly distinguished (internal vs overlay)" — so the two sit next to
+    // each other and each says which it is in its own label.
+    {
+      id: 'overlay_drawers',
+      label: 'Drawers (overlay)',
+      disabled: !type.supports.drawers || ratioDrawers || type.family !== 'wardrobe',
+      why: ratioDrawers ? 'this kit IS its drawers' : 'a wardrobe thing',
     },
     { id: 'shelves', label: 'Shelves', disabled: !type.supports.shelves, why: 'not for this type' },
     // ─── TURN 34 (CLAUDE.md F4) + CHAT-FIX 16.08 (owner): THE SHOE BOX ──────
@@ -389,6 +430,50 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                   <p className="text-[11px] text-ink-400">
                     Stacked from the bottom, {DR.minFrontHeight}–{DR.maxFrontHeight} mm each. A partition closes the
                     stack automatically (SPEC 4.7), and the doors open so you can see them.
+                  </p>
+                </>
+              )}
+
+              {/* ─── TURN 40 (CLAUDE.md F3b): THE OVERLAY STACK ───────────
+                  Two numbers and nothing else. Everything the stack implies —
+                  the bottom position, the fixed shelf over it, the shortened
+                  doors and their re-laddered hinges — is the engine's law and
+                  not a question a joiner should have to answer twice. */}
+              {kind.id === 'overlay_drawers' && (
+                <>
+                  <div className="flex items-end gap-2">
+                    <div className="w-16">
+                      <span className="cc-label">Count</span>
+                      <NumberField
+                        min={1} max={DR.maxCount} value={overlayCount}
+                        data-overlay-drawer-count="1"
+                        onCommit={setOverlayCount}
+                      />
+                    </div>
+                    <div className="w-20">
+                      <span className="cc-label">Height</span>
+                      <NumberField
+                        min={DR.minFrontHeight} max={DR.maxFrontHeight}
+                        value={overlayHeight}
+                        data-overlay-drawer-height="1"
+                        onCommit={setOverlayHeight}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="cc-btn-gold"
+                      data-add-overlay-drawers="1"
+                      onClick={() => onAddOverlayDrawers(overlayCount, overlayHeight)}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-ink-400">
+                    Fronts ON the wardrobe, at the bottom, {DR.gap} mm apart. A FIXED shelf is cut above the
+                    stack and the doors start on it — shortened, with their hinges re-laddered for the
+                    height they actually are. Heights default to EQUAL, and each one is still editable on
+                    its own drawer. There is never a 30 mm hinge strip: an overlay front stands outside the
+                    carcass, so no door swings past it.
                   </p>
                 </>
               )}

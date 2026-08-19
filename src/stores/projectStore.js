@@ -241,6 +241,49 @@ function autoUnitNum(type, index) {
 }
 
 /**
+ * ─── TURN 40 (CLAUDE.md F4b): THE NEXT FREE NUMBER, NOT THE NEXT INDEX ──────
+ *
+ * The owner's screenshot: `#3 TALL CABINET WITH NO FIXED SHELF` printed TWICE,
+ * word for word, apparently for one cabinet. CLAUDE.md guessed a per-shelf loop
+ * where a per-cabinet answer belongs; the investigation says otherwise, and the
+ * measurement is in `test/turn40-f4-checks.test.js`:
+ *
+ *   · Rule #3 emits exactly ONCE per cabinet. Driven from node, a single 2460
+ *     tall wardrobe with one non-fixed shelf produces one finding. It always
+ *     did.
+ *   · What produces two IDENTICAL lines is TWO CABINETS WEARING ONE NAME.
+ *     `addUnit` numbered a new cabinet from `units.length`, so deleting one and
+ *     adding another handed the newcomer a number somebody else already had:
+ *     add W01 and W02, delete W01, add a wardrobe → the new one is W02 as well.
+ *     Two real faults on two real cabinets, printed as two lines a person
+ *     cannot tell apart. He was right that something was wrong and right that
+ *     it looked like one cabinet.
+ *
+ * So the fault is fixed where it is MADE. A new cabinet takes the next number
+ * NOBODY IS WEARING for its prefix, which is what a workshop means by "the next
+ * one". Nothing renames an existing cabinet — a number a joiner has written on
+ * a cut list is his — and a project that has never had a deletion numbers
+ * exactly as it always did, which is why no fixture and no saved job moves.
+ *
+ * The prefix is matched by its own head rather than by `startsWith`, because
+ * the base unit's prefix is the EMPTY string: `'W01'.startsWith('')` is true,
+ * and a wardrobe must not be able to bump a base unit's number.
+ */
+export function nextUnitNum(units, type, { except = null } = {}) {
+  const prefix = UNIT_NUM_PREFIX[type?.id] ?? '';
+  let highest = 0;
+  for (const u of units || []) {
+    if (except && u?.id === except) continue;
+    const num = String(u?.params?.unit_num ?? '');
+    const digits = num.match(/\d+$/);
+    if (!digits) continue;
+    if (num.slice(0, num.length - digits[0].length) !== prefix) continue;
+    highest = Math.max(highest, Number(digits[0]));
+  }
+  return `${prefix}${String(highest + 1).padStart(2, '0')}`;
+}
+
+/**
  * The height parameters a unit of this type INHERITS from the project: its
  * carcass height (when its kind has a project height at all), the toe kick it
  * stands on, and — for a wall unit — how high it hangs.
@@ -2411,7 +2454,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const index = get().units.findIndex((u) => u.id === unitId);
     if (index === -1) return '';
     const unit = get().units[index];
-    const fallback = autoUnitNum(getUnitType(unit.type), index);
+    // TURN 40 (F4b): clearing a name hands the cabinet the next number NOBODY
+    // ELSE is wearing, for the same reason adding one does — a cleared name
+    // that collided would print two lines a person cannot tell apart, which is
+    // exactly the fault the owner photographed. `autoUnitNum` is kept and is
+    // still what `nextUnitNum` formats with.
+    const fallback = nextUnitNum(get().units, getUnitType(unit.type), { except: unitId })
+      || autoUnitNum(getUnitType(unit.type), index);
     const next = clean || fallback;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId
@@ -2467,6 +2516,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (gate.blocked) return { id: null, error: gate.message };
     }
     const unit = newUnit(typeId, profile, state.units.length, state.project.design);
+    // TURN 40 (F4b): …and it takes the next number NOBODY IS WEARING. See
+    // `nextUnitNum` for the measurement that says why this is the twin's cause.
+    unit.params.unit_num = nextUnitNum(state.units, getUnitType(typeId));
     if (params) applyTemplateParams(unit, params);
     // ─── Turn 8 (CLAUDE.md F2.1) ───
     // Which unit the joiner is working beside. When there is one, the new

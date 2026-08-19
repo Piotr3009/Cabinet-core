@@ -266,6 +266,83 @@ function finding(n, level, {
 }
 
 /**
+ * ─── TURN 40 (CLAUDE.md F4a): THE SHELF × HINGE FAULT, DEFINED ONCE ─────────
+ *
+ * The owner, 18.08.2026, with two screenshots side by side: the Check panel
+ * shows `#1 SHELF × HINGE COLLISION` with ONE button (*Move the hinge*) and the
+ * cabinet modal shows the same fault with TWO (*Remove sleeves at this shelf*,
+ * *Move the hinge*). His verdict: *"raczej powinny się pokazywać i tu i tu"* —
+ * the same fault, the same wording, the SAME BUTTONS, in both places.
+ *
+ * The cause was two definitions. `runChecks` built a finding with a main click
+ * and one `alternative`; `components/ShelfHingeClash.jsx` read the ENGINE's own
+ * `result.clashes` and wrote its own two buttons with its own two labels. Two
+ * places to add a third button, and two places for the wording to drift.
+ *
+ * So the fault is defined HERE, once, and it carries its own ACTIONS —
+ * `{ id, label, title, subject }` — as data. Both surfaces render that list and
+ * neither owns a label. A third surface gets the same buttons for free, and a
+ * fourth action is one entry in this array rather than an edit in two files.
+ *
+ * `alternative` is KEPT and derived from the same list (iron rule 3: nothing is
+ * deleted), so any reader written before tonight still finds exactly what it
+ * looked for.
+ *
+ * @returns {Array} findings, ready for `runChecks` or for one unit's panel
+ */
+export function shelfHingeFindings({
+  unitId, unitNum = '', result, profile,
+}) {
+  const out = [];
+  for (const c of shelfHingeClashes({ result, profile })) {
+    // THE TWO WAYS OUT, in the owner's own words from turn 30's prompt:
+    // "Remove sleeves at this shelf" / "Move the hinge". Neither button fixes
+    // anything — each opens the window where the decision belongs, on the very
+    // row that is in conflict. No silent auto-fix (the house grammar).
+    const actions = [
+      c.shelfPanelId ? {
+        id: 'remove-sleeves',
+        label: 'Remove sleeves at this shelf',
+        title: 'Open this shelf — a FIX shelf takes no sleeves at all, which is the joint that clears the hinge',
+        subject: { unitId, panelId: c.shelfPanelId, editor: 'element' },
+      } : null,
+      c.doorPanelId ? {
+        id: 'move-hinge',
+        label: 'Move the hinge',
+        title: 'Open the door’s own window at its hinges, on this row',
+        subject: {
+          unitId,
+          panelId: c.doorPanelId,
+          editor: 'element',
+          section: 'hinges',
+          hingeIndex: c.hingeIndex,
+          // TURN 40 (F4c): the camera flies to the HINGE's own height on that
+          // door, not to the middle of it — *"lub na zawias który jest
+          // problemem"*.
+          atMm: c.hingeY,
+        },
+      } : null,
+    ].filter(Boolean);
+    out.push(finding(1, 'red', {
+      unitId,
+      unitNum,
+      panelId: c.shelfPanelId,
+      message: `${unitNum}: ${c.message}`,
+      subject: { unitId, panelId: c.shelfPanelId, editor: 'element', atMm: c.shelfY },
+      actions,
+      // Kept, and DERIVED from the list above so the two can never disagree.
+      alternative: actions.find((a) => a.id === 'move-hinge')
+        ? { ...actions.find((a) => a.id === 'move-hinge').subject, label: 'Move the hinge' }
+        : null,
+      shelfY: c.shelfY,
+      hingeY: c.hingeY,
+      ...(c.splitSegment ? { splitSegment: c.splitSegment } : {}),
+    }));
+  }
+  return out;
+}
+
+/**
  * Check v1, whole.
  *
  * @param {object} args
@@ -302,19 +379,10 @@ export function runChecks({
     const at = (panelId, extra = {}) => ({ unitId, unitNum, panelId, ...extra });
 
     // ── #1 shelf × hinge collision (turn 30, at last asked of every unit) ──
-    for (const c of shelfHingeClashes({ result, profile })) {
-      out.push(finding(1, 'red', at(c.shelfPanelId, {
-        message: `${unitNum}: ${c.message}`,
-        // Turn 30's own repair opens the DOOR at the offending hinge row; the
-        // panel offers both, exactly as `ShelfHingeClash` does.
-        subject: { unitId, panelId: c.shelfPanelId, editor: 'element' },
-        alternative: c.doorPanelId
-          ? {
-            unitId, panelId: c.doorPanelId, editor: 'element', section: 'hinges', hingeIndex: c.hingeIndex, label: 'Move the hinge',
-          }
-          : null,
-      })));
-    }
+    // TURN 40 (F4a): ONE DEFINITION, TWO RENDERERS. See `shelfHingeFindings`.
+    out.push(...shelfHingeFindings({
+      unitId, unitNum, result, profile,
+    }));
 
     // ── #13 the rail, and what stands over it (T35-F1) ───────────────────
     {
@@ -586,10 +654,28 @@ export function runChecks({
     }));
   }
 
+  // ─── TURN 40 (CLAUDE.md F4b): NO TWINS, WHATEVER PRODUCED THEM ───────────
+  //
+  // The owner's twin turned out to be TWO CABINETS WEARING ONE NAME, and that
+  // is fixed where it was made (`projectStore.nextUnitNum`). This is the second
+  // line of defence and it is worth having: a finding is identified by the
+  // rule, the CABINET (by id, which is unique whatever it is called), the piece
+  // and the sentence — so no rule in this file, present or future, can print
+  // one fault twice into a list a joiner works down. Two REAL faults on two
+  // cabinets differ by `unitId` and both survive, which is the whole point of
+  // keying on the id rather than on the message alone.
+  const seen = new Set();
+  const once = out.filter((f) => {
+    const key = `${f.check}|${f.unitId}|${f.panelId ?? ''}|${f.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   // Reds first, then yellows, then the checks in their own order — which is the
   // order a joiner works down a list in.
   const rank = { red: 0, yellow: 1 };
-  return out.sort((a, b) => (rank[a.level] - rank[b.level]) || (a.check - b.check)
+  return once.sort((a, b) => (rank[a.level] - rank[b.level]) || (a.check - b.check)
     || String(a.unitNum).localeCompare(String(b.unitNum)));
 }
 

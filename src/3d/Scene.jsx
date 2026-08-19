@@ -883,6 +883,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const openFronts = useUiStore((s) => s.openFronts);
   const toggleFront = useUiStore((s) => s.toggleFront);
   const focusRequest = useUiStore((s) => s.focusRequest);
+  // TURN 40 (F4c): the "take me to THAT piece" request, resolved by the view
+  // that owns the placement frame.
+  const focusPanel = useUiStore((s) => s.focusPanel);
+  const clearFocusPanel = useUiStore((s) => s.clearFocusPanel);
   const focusOn = useUiStore((s) => s.focusOn);
   const clearFocus = useUiStore((s) => s.clearFocus);
   const openModal = useUiStore((s) => s.openModal);
@@ -1194,6 +1198,11 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           openFronts={openFronts[unit.id]}
           onToggleFront={(panelId) => toggleFront(unit.id, panelId)}
           onFocus={(point, sizeMm) => focusOn([point.x, point.y, point.z], sizeMm)}
+          // TURN 40 (CLAUDE.md F4c): a fault says WHICH PIECE, and the scene —
+          // which is the only place that knows where a piece actually is —
+          // works out the point and flies there.
+          focusPanel={focusPanel && focusPanel.unitId === unit.id ? focusPanel : null}
+          onFocusPanelDone={clearFocusPanel}
           onContextMenu={(menu) => openContextMenu({ ...menu, unitId: unit.id })}
           frontColour={resolveUnitDesign(unit, design).colour?.hex || null}
           // Turn 16 (CLAUDE.md F1.4): the design itself, so a piece with a

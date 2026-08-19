@@ -51,6 +51,8 @@ import * as decors from './engine/decors.js';
 // TURN 40: the modules the walk asks about (see `window.__ccT40` below).
 import * as hingeLadder from './engine/hingeLadder.js';
 import * as grain from './engine/grain.js';
+import * as drawerRef from './engine/drawerRef.js';
+import * as drawingLayers from './engine/drawings/layers.js';
 import * as wallElevation from './engine/drawings/wallElevation.js';
 import * as wallSheets from './engine/drawings/wallSheets.js';
 import * as drawingsDxf from './engine/drawings/dxf.js';
@@ -253,6 +255,13 @@ if (typeof window !== 'undefined') {
     railAssembly,
     checks,
   };
+  // ─── TURN 41 ───────────────────────────────────────────────────────────
+  // Two pure decisions the walk has to be able to ask about, for the same
+  // reason every reader above is here: a claim that "the height field moves
+  // the board" has to be read off the SAME lookup the properties panel uses,
+  // and a claim about line weight has to be read off the single resolver both
+  // renderers call. `layout`, `decors` and `grain` are already on __ccT40.
+  window.__ccT41 = { drawerRef, drawingLayers };
   window.__ccT39 = {
     partRegistry,
     bom: bomCore,

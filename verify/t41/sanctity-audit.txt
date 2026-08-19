@@ -1,0 +1,39 @@
+T41 — SANCTITY AUDIT
+====================
+
+Lines removed per file across the whole turn (ccdc401..HEAD, src/ only):
+
+     20  src/engine/drawings/wallElevation.js
+     14  src/engine/drawings/layers.js
+     11  src/engine/drawings/dxf.js
+     10  src/engine/cnc/layout.js
+      9  src/components/ElementProperties.jsx
+      7  src/engine/cabinet.js
+      4  src/engine/cnc/drillGuard.js
+      4  src/components/RightPanel.jsx
+      3  src/stores/projectStore.js
+      3  src/engine/cnc/dxf.js
+      3  src/components/AddItems.jsx
+      2  src/lib/drawingExport.js
+      2  src/engine/drawings/svg.js
+      1  src/engine/drawings/wallSheets.js
+      1  src/engine/drawings/sheet.js
+
+Every one of these is a line REPLACED in place, not a capability removed:
+  · engine/cnc/layout.js      T40-F2's rule-1 arithmetic, COMMENTED OUT under a
+                              header naming what it was and what replaced it
+  · components/RightPanel.jsx the superseded rail height field, COMMENTED OUT
+                              under the same kind of header (the turn's one licence)
+  · everything else           a call site re-pointed at a single source, with the
+                              old function KEPT and still exported
+
+Functions deleted this turn: NONE. Named survivors that a reader might expect
+to have gone:
+  CUT_GRAIN_AXIS_BY_PART     src/engine/grain.js
+  GRAIN_AXIS_BY_PART         src/engine/grain.js
+  grainLocked                src/engine/grain.js
+  drilledHingeRows           src/engine/hingeLadder.js
+  internalDrawerRef          src/engine/drawerRef.js
+  chooseScale                src/engine/drawings/sheet.js
+  widthChains                src/engine/drawings/wallElevation.js
+  railDatumFor               src/engine/railDatum.js

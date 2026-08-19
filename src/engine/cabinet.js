@@ -734,6 +734,11 @@ function normalizeParams(raw, profile) {
     frontHandles: p.front_handles && typeof p.front_handles === 'object' ? p.front_handles : null,
     hingeStandard: p.hinge_standard,
     hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
+    // T41-F3: which CARCASS sides actually carry a hinged door, as answered by
+    // the design layer, which is the only reader that holds `doors`,
+    // `bay_doors` and the appliance rule together. Absent on every fixture and
+    // on a bare call, where the engine's own `doorCount` rule still answers.
+    hingedCarcassSides: Array.isArray(p.hinged_carcass_sides) ? p.hinged_carcass_sides : null,
     // Turn 30 (CLAUDE.md F11): the owner's "any door under 600 takes two". An
     // INPUT, exactly like the standard above it — null is the LISP's ladders,
     // which is what every golden fixture passes.
@@ -1606,10 +1611,40 @@ export function computeCabinet(params, profileOverride) {
   // It also answers the appliance face for free: `dropsForward` empties
   // `hingedSides`, so a face screwed to a machine's own door — which hangs on
   // nothing — no longer reserves a hinge band either.
-  const dpSideLaw = {
-    left: hingedSides.includes('BUL'),
-    right: hingedSides.includes('BUR'),
-  };
+  //
+  // ─── TURN 41 (F3), 19.08.2026: …AND A BAY DOOR IS A DOOR TOO ─────────────
+  //
+  // MEASURED REGRESSION. `hingedSides` above is derived from `doorCount`, and a
+  // cabinet with PER-BAY doors sets `doors: false` by construction (turn 25
+  // wrote that down for the BOM's sake and it is still true). So T40-F3a read a
+  // wardrobe with three bay leaves as a wardrobe with NO doors, took both
+  // standoffs and all four fillers off it, and widened its drawer fronts by
+  // 96 mm — into two carcass sides that still carry a hinge plate. Measured on
+  // a 1400 wardrobe with one partition and two drawers: face doors give
+  // DP = 2, FILLER = 4, front 1262 mm; the same cabinet with bay doors gave
+  // DP = 0, FILLER = 0, front 1358 mm, with `hinged_sides` reporting
+  // ['BUL', 'VPART-1'].
+  //
+  // CLAUDE.md F3a said where this belongs, in as many words: *"This is a
+  // design-layer decision, so it belongs in `paramsForEngine()`/the design
+  // layer, NOT in the engine."* T40 built it here instead, and the bay-door
+  // case is exactly the fault that instruction was protecting against — the
+  // design layer is the only place that holds `doors`, `bay_doors` and the
+  // appliance rule together, and the engine's `doorCount` is a FACE rule that
+  // has never known about the other two.
+  //
+  // So the engine stops inventing the answer when it is given one. The
+  // parameter is additive and optional in the way every override channel in
+  // this file is: a bare `computeCabinet()` is handed none and every fixture,
+  // every golden and all six standard configs are answered by exactly the
+  // expression that answered them yesterday.
+  const statedHinged = Array.isArray(cfg.hingedCarcassSides) ? cfg.hingedCarcassSides : null;
+  const dpSideLaw = statedHinged
+    ? { left: statedHinged.includes('BUL'), right: statedHinged.includes('BUR') }
+    : {
+      left: hingedSides.includes('BUL'),
+      right: hingedSides.includes('BUR'),
+    };
 
   if (hasDrawers) {
     // TURN 40 (F3a): as many standoffs as there are HINGED SIDES — which on

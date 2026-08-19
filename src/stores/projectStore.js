@@ -406,6 +406,26 @@ function budrDrawerIndex(unit, ref) {
 }
 
 /** Interior items -> the count/flag shape the engine consumes. */
+/**
+ * Which CARCASS sides carry a hinged door — the design layer's own answer.
+ *
+ * Returns null when the unit has no per-bay doors, which leaves the engine's
+ * `doorCount` rule exactly where it was for every cabinet in the app but this
+ * one shape.
+ */
+function hingedCarcassSides(p) {
+  const bays = Array.isArray(p?.bay_doors) ? p.bay_doors : null;
+  if (!bays || !bays.length) return undefined;
+  const on = (m) => String(m?.door ?? 'none').toLowerCase() !== 'none';
+  const hinge = (m) => (String(m?.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L');
+  const first = bays[0];
+  const last = bays[bays.length - 1];
+  const sides = [];
+  if (on(first) && hinge(first) === 'L') sides.push('BUL');
+  if (on(last) && hinge(last) === 'R') sides.push('BUR');
+  return sides;
+}
+
 function paramsForEngine(unit, design = null) {
   const p = unit.params;
   const items = p.sections?.[0]?.items || [];
@@ -556,6 +576,22 @@ function paramsForEngine(unit, design = null) {
     // compute, so every path that adds or removes the neighbour above — and
     // every reload — re-derives the number with nothing to remember.
     front_top_gap_mm: topNeighbourDemand(p, profile),
+    // ─── TURN 41 (F3): THE DESIGN LAYER ANSWERS "IS A DOOR HUNG ON THIS SIDE"
+    //
+    // CLAUDE.md F3a put this here in as many words and T40 built it in the
+    // engine instead, where `doorCount` is a FACE rule that has never heard of
+    // per-bay doors — so a wardrobe with bay leaves read as a wardrobe with no
+    // doors at all and lost the hinge strip its plates still needed.
+    //
+    // The outer boundaries are the only ones the drawer strip cares about, and
+    // they are fixed whatever the bays turn out to be: the FIRST bay's left
+    // boundary is always BUL and the LAST bay's right boundary is always BUR.
+    // A middle bay's leaf hangs on partitions and reserves nothing on the
+    // carcass, which is the same answer `bayDoorPlan` gives the plate pattern.
+    //
+    // Stated only when there ARE bay doors, so every other cabinet in the app
+    // is answered by exactly the engine expression that answered it yesterday.
+    hinged_carcass_sides: hingedCarcassSides(p),
     rail_offset: items.find((i) => i.kind === 'hanger')?.pos_mm ?? p.rail_offset,
     // T35-F1: and WHICH board that number is measured from. Absent on every
     // project saved before this turn, which is exactly what makes those
@@ -3183,7 +3219,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           ? null : Math.trunc(Number(i.zone)));
         // Turn 32 (CLAUDE.md F4): only THIS zone's stack is replaced — the
         // other columns' drawers are somebody else's answer.
-        const kept = section.items.filter((i) => i.kind !== 'drawer' || zoneOf(i) !== wantZone);
+        // ─── TURN 41 (F3): …and the OVERLAY stack it replaces goes with it ───
+        // The other half of the switch. An overlay stack stands on the
+        // carcass floor and runs the full width, so it collides with a bottom
+        // stack in any column; choosing internal clears it, exactly as choosing
+        // overlay clears the internal one. Removing the last drawer (count 0)
+        // clears nothing else — that is a removal, not a choice.
+        const kept = section.items.filter((i) => (i.kind !== 'drawer' || zoneOf(i) !== wantZone)
+          && !(count > 0 && i.kind === 'overlay_drawer'));
         const previous = section.items
           .filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone)
           .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
@@ -3230,6 +3273,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * It falls out of the construction — the strip belongs to the INTERNAL stack
    * — rather than being switched off anywhere.
    */
+  // ─── TURN 41 (F3): AND IT IS A SWITCH, NOT A SECOND BUTTON ────────────────
+  //
+  // MEASURED FAULT. T40 shipped "Drawers (internal)" and "Drawers (overlay)"
+  // side by side in the wardrobe's ADD ITEMS offer, and neither one clears the
+  // other: `addOverlayDrawers` keeps every non-overlay item and `addDrawers`
+  // keeps every overlay item. So a joiner who added internal drawers and then
+  // decided he wanted overlay got BOTH — measured on one 900 wardrobe, six
+  // DRAWER-FRONT panels at y 0 / 21 / 203 / 221 / 406 / 424, widths alternating
+  // 897 and 762, thirty drawer-box boards, two physical stacks interpenetrating
+  // in the same 0–624 mm band, and `warnings` empty.
+  //
+  // THE LAW. A wardrobe has ONE drawer stack and it stands on its floor.
+  // Internal and overlay are two ways of BUILDING that stack — behind doors, or
+  // fronts on the face — not two stacks. So choosing one clears the other, in
+  // the same batch, and the offer becomes the switch the brief asks for.
+  //
+  // The count is what says which: adding 0 of either kind is a removal and
+  // clears nothing else, so "take the overlay drawers off" does not silently
+  // delete an internal stack that was never there.
   addOverlayDrawers: (unitId, count, heightMm) => {
     if (count > 0) {
       const gate = drawerBoxGate(get().project.design);
@@ -3242,7 +3304,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
-        const kept = section.items.filter((i) => i.kind !== 'overlay_drawer');
+        // T41-F3: choosing overlay clears the internal stack it replaces.
+        const kept = section.items.filter((i) => i.kind !== 'overlay_drawer'
+          && !(count > 0 && i.kind === 'drawer'));
         const previous = section.items
           .filter((i) => i.kind === 'overlay_drawer')
           .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));

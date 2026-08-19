@@ -1,356 +1,315 @@
-# CLAUDE.md — TURN 40 · ONE GRAIN TRUTH, THE SPLIT-DOOR CHAIN, OVERLAY DRAWERS, AND THE WALL DRAWINGS
+# CLAUDE.md — TURN 41 · THE SHEET STANDS UP, THE RAIL GETS ONE CHAIN, AND THE DRAWINGS LEARN TO DRAW
 
-Dictated by the owner, 18.08.2026, after T39 landed. Read F2 first even if
-you execute it second — its principle ("one source, no exceptions") is the
-reason three previous turns kept re-touching the same code.
+Dictated by the owner, 19.08.2026, from his eye-test of T40 on build
+`ccdc401`. Three of these are faults in work that shipped last night and
+passed a green audit — read F1 and F3 carefully, because both are cases
+where the plumbing was rebuilt correctly around a wrong value or a second
+path that still wins.
 
 ## Iron rules (binding)
 
 1. **Zero-stop overnight run.** Never halt, never ask. Skip-and-note,
    sacrifice whole features from the LOWEST priority upward. PR opens
    before morning regardless.
-2. **Engine contract: BYTE-IDENTITY.** `scripts/t40-classify.mjs`
-   (sibling of t39's), no named buckets, UNNAMED=0. Every feature here is
-   downstream of `computeCabinet()`, in the drawing layer, in the check
-   layer, or in UI. **If a feature appears to need an engine change,
-   it does not — it needs a better read. Skip it and note it rather than
-   move a byte.** The one exception the owner has NOT granted is the
-   engine; he has said plainly he does not want it touched.
-3. **Sanctity.** Zero licensed removals. Delete no function. If F2's
-   consolidation seems to require deleting a reader, do NOT delete it —
-   make it delegate to the single source and note it for the owner.
+2. **Engine contract: BYTE-IDENTITY.** `scripts/t41-classify.mjs`
+   (sibling of t40's), no named buckets, UNNAMED=0. Every feature here is
+   downstream of `computeCabinet()` — sheet layout, drawings, checks, UI,
+   design layer. **If something looks like it needs an engine change, it
+   does not. Skip and note rather than move a byte.**
+3. **Sanctity, with one narrow licence this turn.** No function is
+   DELETED. F3 licenses **commenting OUT** the superseded rail path — the
+   owner's own words, 19.08: *"nie kasuj, tylko zakomentuj, żeby nie
+   działał, a później się będziemy zastanawiać nad usunięciem."* Every
+   commented block keeps a header: what it was, when it was disabled,
+   which turn, and what replaced it. Nothing is removed from any file.
 4. **LISP untouched.** `reference/lisp/**` does not change this turn.
 5. **No new dependencies.**
-6. **Proofs:** `verify/t40/` screenshot per visible feature, real pointer
+6. **PROVE THE THING, NOT THE FIELD.** This is the turn's discipline and
+   it comes from last night's miss. A test that asserts a stored value
+   equals what was stored proves nothing. Assert the OBSERVABLE FACT: the
+   part's laid dimensions on the sheet, the front's width in millimetres,
+   the rail's y after a drag. Where a probe can print the answer, ship the
+   probe under `verify/t41/`.
+7. **Proofs:** `verify/t41/` screenshot per visible feature, real pointer
    input, named subject asserted. No screenshot = not done.
-7. Tests first for every pure function. Fixtures untouched. Suite never
-   `--silent`. One commit per feature, F-number in the message.
-8. **CNC fingerprints WILL move in F2.** That is the point of F2 and is
-   expected. Engine hashes must NOT move. Keep the two apart in your head
-   and say which is which in the PR body.
+8. Tests first. Fixtures untouched. Suite never `--silent`. One commit
+   per feature, F-number in the message.
 9. After the PR is open, END THE SESSION. Do not schedule check-ins.
 
 ---
 
-## F1 [CRITICAL] — the split-door hinge chain
+## F1 [CRITICAL] — the sheet must actually STAND these parts up
 
-Owner, verbatim: *"jak wstawiam split doors, to zawiasy chyba nie mają
-żadnej logiki… w modalu doors nie można ich przesuwać, nie widzą półek,
-nie są podzielone na top i bottom"* and *"te zawiasy widzą clash ale nie
-w tym miejscu w którym się pokazują, tylko jakby w starym miejscu przed
-podzieleniem na top i bottom. Cały ten łańcuch trzeba prześledzić i
-dokładnie zbadać co jest nie tak."*
+### What the owner sees, on build `ccdc401`
 
-This is an INVESTIGATION first and a fix second. Do not patch the symptom.
-Trace the whole chain and write what you found in the commit body:
+His CNC sheet, photographed 19.08: `W03 D1-BF 672×230`, `D1-BB 672×230`,
+`D1-SL 440×264`, `D1-SR 440×264`, `DF1 712×297`, `PLINTH 2550×100` — all
+drawn wider than tall. Lying down. He asks: *"czy to zamierzone, czy się
+nie dowierzyło?"* It deployed. It is wrong.
 
-1. Where split doors are produced (`splitDoors.js`, T37-F6; the
-   `SPLIT DOORS (T35)` section in `KIT_WARDROBE_FULL`).
-2. Where the hinge list for a door is computed, and whether the split
-   produces TWO door records with their own hinge lists or one record the
-   rest of the app still reads as undivided.
-3. Which reader the Doors modal uses when it offers hinge positions —
-   and why it offers none that can be moved for a split door.
-4. Which reader the collision check uses — the T37 stale-hinge fault was
-   an in-memory cache that a reload cleared; establish whether THIS is
-   the same class of fault (test it: does a reload move the reported
-   collision to the right place?) or a genuinely different reader looking
-   at pre-split geometry.
+### The measured fact
 
-Then fix the CAUSE, once:
-- Split doors get hinges as **two independent sets, top leaf and bottom
-  leaf**, each run through the standard hinge law for ITS OWN leaf
-  height — exactly as T39-F1b did for the top box door.
-- Those hinges are **movable in the Doors modal**, like any other door's.
-- The collision check reads the SAME post-split positions the scene
-  draws, so a reported clash is always where the hinge actually is.
-- Hinges see shelves: the shelf × hinge rule applies to split-door leaves
-  as it does to whole doors.
+A probe on `sheetTurn`/`sheetLay` at `ccdc401`:
 
-Tests: a split wardrobe door at a given height produces the leaf-correct
-hinge counts; moving a top-leaf hinge does not move a bottom-leaf hinge;
-the check's reported y equals the drawn y for both leaves.
+```
+PLINTH            2550x100   turn=0   sheet 2550x100   LYING
+DRAWER-FRONT       712x297   turn=0   sheet  712x297   LYING
+DRAWER-SIDE        440x264   turn=0   sheet  440x264   LYING
+DRAWER-BOX-FRONT   672x230   turn=0   sheet  672x230   LYING
+END-PANEL         560x2460   turn=0   sheet 560x2460   standing (by its own proportion, not by rule)
+```
 
-Proof: `f1-split-door-hinges-two-sets-movable.png`.
+### The cause, traced
 
----
+`CUT_GRAIN_AXIS_BY_PART` names `'h'` for these parts. `sheetTurn` puts the
+NAMED axis up the page. For every one of them `'h'` is the SHORTER
+dimension, so the part is laid down — the opposite of the instruction.
 
-## F2 [HIGH] — ONE GRAIN TRUTH: the cut decides, and 3D shows what was cut
+The `'h'` is inherited from T36-F5, which read the owner's *"szuflady w
+pionie, wzdłuż słojów; fronty szuflad też; plinth też"* as **"the grain
+runs up the piece AS IT STANDS IN THE CABINET"** — for a drawer side,
+its 264 mm height. The owner was talking about **THE SHEET**. His 18.08
+restatement removes the doubt: *"plinth zawsze w pionie, zawsze na CNC, od
+góry do dołu"*, and the reason: *"jak będzie się oklejać, to nie chcesz
+oklejać w poprzek słoja, tylko wzdłuż"* — banding runs the long edge, so
+the grain runs the LENGTH.
 
-Owner, verbatim and decisive, 18.08.2026:
+T40-F2 rebuilt the plumbing correctly — one source instead of two — and
+inherited the wrong value through it. **The single source is right; the
+number in it is wrong.**
 
-> *"Jeżeli cięte jest w pionie, słój w pionie, to i tak samo powinien być
-> pokazany element na wizualizacji. Jak tniemy, tak słoje się pokazują.
-> Czyli jak tniemy w pionie a układamy w szafie w poziomie, to i słoje w
-> poziomie. Proste. Nie będzie wyjątków, będzie logicznie i składnie i
-> prościej."*
+### What to do
 
-### Why this feature exists
+- Correct the cut axis for the owner's named parts so each is **laid
+  STANDING on the sheet, its length running up the page**: drawer box
+  back **BB**, drawer box front **BF**, drawer sides **SL** / **SR**,
+  drawer fronts, **PLINTH**, **END PANEL**.
+- `DRAWER-BOTTOM` is NOT in his list and does NOT change. Its across-the-
+  width answer is the shoe-box rule he gave on 16.08. Leave it.
+- Do not add a second rule beside the table — T40-F2's single source
+  stands. This is a value correction inside it.
+- **The test is the probe, not the field.** For each named part, assert
+  the dimensions AS LAID ON THE SHEET (`sheetLay().upMm` / `acrossMm`),
+  and assert `upMm > acrossMm` for every one of them at realistic sizes.
+  Ship `verify/t41/f1-sheet-lay-probe.txt` printing the table above with
+  the new answers.
+- Re-check the 3-D reader after the change: the grain must still be what
+  the cut says, which is T40-F2's law and must not regress.
 
-Today there are TWO independent statements about grain and they can
-disagree:
+CNC fingerprints WILL move here. Engine hashes must NOT. Name both in the
+PR body.
 
-- `src/engine/grain.js` (`GRAIN_AXIS_BY_PART`, T36-F5) states an axis per
-  ROLE — read by `engine/decors.js grainRun()` for the 3D texture.
-- `src/engine/cnc/layout.js sheetTurn()` decides how the part is laid on
-  the sheet. T36-F5's own comment records the split deliberately: *"The
-  DRAWN FRAME is deliberately not touched… nothing turns them today."*
-  T37-F7 then taught `sheetTurn` to read the stated field, where `'h'`
-  maps to 0° — no turn.
-
-So a part can be STATED to run one way and CUT another way, and the 3D
-shows the statement while the workshop gets the cut. T35-F6, T36-F5 and
-T37-F7 all touched this same seam. Three turns, one unfixed cause: two
-sources of truth.
-
-### The law, from now on
-
-**THE CUT IS THE ONLY SOURCE.** How a part is laid on the sheet decides
-which way its grain runs. The 3D renders the grain of the part AS CUT,
-carried through the part's mounting orientation in the cabinet. A part
-cut standing and mounted lying shows its grain lying. There is no second
-table, no per-role visual override, no exception list.
-
-### What to build
-
-1. **One function** — the single source: given a part, return how it is
-   laid on the sheet (the turn) and therefore which way its grain runs.
-   `sheetTurn()` is the natural home; it may keep its name.
-2. **`grainRun()` in `decors.js` reads THAT** — the cut result carried
-   into the panel's mounting frame — instead of applying its own rule.
-   Do NOT delete `grainRun` or `GRAIN_AXIS_BY_PART` (iron rule 3): make
-   the reader delegate, and if the role table becomes input to the single
-   source rather than a second answer, say so in the commit.
-3. **These roles are cut STANDING, grain top-to-bottom on the sheet**
-   (the owner's list, 18.08): drawer box back **BB**, drawer box front
-   **BF**, drawer sides **SL** and **SR**, drawer fronts, **PLINTH**, and
-   the left/right **END PANEL**. His reason, recorded because it is the
-   test of whether the answer is right: *"jak będzie się oklejać, to nie
-   chcesz oklejać w poprzek słoja, tylko wzdłuż."*
-4. **Cross-frame tests are mandatory** — the T37-F7 lesson. For each role
-   above: assert the sheet turn, and assert the 3D grain direction
-   DERIVES from it rather than from a separate table. A test that only
-   checks one side of the seam is the bug this feature removes.
-
-### The boundary
-
-`computeCabinet()` output does NOT change. The statements it writes stay
-byte-identical; what changes is who reads them and whether the sheet
-honours them. CNC layout fingerprints WILL move — name them in the PR.
-
-Proofs: `f2a-drawer-parts-and-plinth-stand-on-sheet.png`,
-`f2b-3d-grain-matches-the-cut.png`.
+Proof: `f1-drawer-parts-and-plinth-stand-on-the-sheet.png`.
 
 ---
 
-## F3 [HIGH] — drawers: the 30 mm strip, and OVERLAY drawers in a wardrobe
+## F2 [CRITICAL] — the rail: trace the chain, disable the old one, leave ONE
 
-### F3a — the strip only exists when a door does
+Owner, 19.08: *"drążek nadal nie działa — nie można go przesuwać, nie
+można go edytować, i pojawia się sam z półką, nigdy sam. Myślę, że masz 2
+kody i stary, który jest do dupy, wymusza włączanie się. Sprawdź dokładnie
+i usuń stary kod z drążkiem, bo nie można z nim nic zrobić — i to nie
+pierwszy raz."*
 
-Owner: *"jak nie ma drzwi w ogóle, to nie powinno robić 30 mm odstępu
-infill na zawiasy — dopiero po wstawieniu drzwi (ważne)."*
+T40-F6 shipped "rail alone, or rail with shelf" and the choice does not
+take. The owner's diagnosis — two paths, the old one winning — is the
+same shape as T40-F1's split-door fault, where the engine was right and a
+stale reader won. Treat it as an INVESTIGATION first.
 
-INTERNAL drawers (behind doors) reserve a 30 mm strip for the hinge. That
-reservation must be conditional on a door actually existing on that side.
-No door → no strip → fronts run the full carcass width. Add a door → the
-strip returns and the fronts narrow. This is a design-layer decision, so
-it belongs in `paramsForEngine()`/the design layer, NOT in the engine.
+### The investigation, written into the commit body
 
-Test: same cabinet, doors off → front width grows by the strip; doors on →
-back to today's number.
+1. Every path that ADDS a rail. `railAssembly.js`, the rail modal, the
+   ADD ITEMS offer, any legacy path from T35 or earlier.
+2. Which one runs when the user adds a rail today, and why the other one
+   still fires.
+3. Where the `alone / with shelf` choice from T40-F6 is written, and who
+   reads it — and where it is dropped.
+4. Why the rail cannot be DRAGGED: which store holds its y, whether the
+   drag writes a field nothing reads (the T40-F1 pattern exactly).
+5. Why it cannot be EDITED: does the double-click reach a modal, and does
+   that modal write back to the path that actually builds the rail?
 
-### F3b — OVERLAY drawers in a wardrobe (new)
+### Then, at the cause
 
-Owner: *"nadal nie mamy szuflad nawierzchniowych — w sensie żeby były na
-wierzchu, czyli bez infilla, fronty na szafie, drzwi powyżej szuflad."*
-Confirmed by him, point by point:
+- **ONE path builds a rail.** The superseded path is **COMMENTED OUT, not
+  deleted** (iron rule 3), with a header block naming what it was, the
+  date, T41, and what replaced it.
+- The choice is honoured: **alone** produces a rail with no shelf;
+  **with shelf** produces the T37 assembly. Default stays *with shelf*.
+- The rail is **draggable** and its position persists.
+- Double-click opens the rail modal and edits take effect.
+- **Legacy rails in existing projects keep working** — that is why the old
+  code is disabled rather than removed. If disabling it would break a
+  legacy project, say so in the PR and disable only the part that can be
+  disabled safely.
 
-- **Same logic as BUDR**, but inside a wardrobe. Runner drilling and
-  geometry follow the BUDR law — read it, do not re-derive it.
-- **The stack always sits at the bottom** of the wardrobe.
-- **A FIXED SHELF sits above the stack**, separating it from the section
-  above.
-- **The doors above are shortened** — they start above the stack and run
-  to the top; their hinges follow the standard law for that shortened
-  height.
-- **3 mm gap** — the owner said explicitly not to forget it.
-- **Overlay drawers NEVER have the 30 mm infill**, unconditionally. This
-  is not the same rule as F3a: internal drawers have a conditional strip,
-  overlay drawers have none, ever.
-- **Heights default to EQUAL**, not the 3/2/1 progression a kitchen bank
-  uses — with the per-drawer height slider working as it does elsewhere.
+### The test that stops turn five
 
-Where it lives: the wardrobe's ADD ITEMS offer, beside the existing
-internal drawers, clearly distinguished (internal vs overlay).
+Assert the OBSERVABLE: add a rail with *alone* → the unit's panel list
+contains a rail and NO shelf from that assembly. Add with *with shelf* →
+both. Drag the rail 100 mm → its y in the built result moved 100 mm. Then
+a test asserting exactly ONE code path answers "build me a rail".
 
-Tests: stack at the bottom; fixed shelf above it; door height = carcass
-minus stack minus gap; equal default heights; no 30 mm strip under any
-combination of doors on/off; runner rows match BUDR at the same drawer
-height.
-
-Proofs: `f3a-no-door-no-strip.png`, `f3b-overlay-drawers-in-wardrobe.png`.
-
----
-
-## F4 [HIGH] — Checks: one message, no twins, and take me there
-
-Three faults, from the owner's screenshots of 18.08.
-
-**F4a — the same fault, said twice, differently.** The Check panel shows
-`#1 SHELF × HINGE COLLISION` with one button (*Move the hinge*); the
-cabinet modal shows the same fault with two (*Remove sleeves at this
-shelf*, *Move the hinge*). Owner: *"raczej powinny się pokazywać i tu i
-tu"* — the same fault, the same wording, the SAME buttons, in both
-places. One definition, two renderers.
-
-**F4b — the duplicate.** `#3 TALL CABINET WITH NO FIXED SHELF` appears
-TWICE, identically, for one cabinet. Find why the rule emits twice (a
-per-shelf loop where a per-cabinet answer belongs, most likely) and make
-it emit once. Test with the exact configuration in the screenshot: a 2460
-tall wardrobe with one non-fixed shelf → exactly one instance.
-
-**F4c — clicking a fault must TAKE ME THERE.** Owner: *"super, teraz tak
-robi, ale nie bierze nas dokładnie do tego miejsca… jeśli to ta półka,
-powinno nas wziąć do tej półki, jakby najechać kamerą na nią, lub na
-zawias który jest problemem. Jeśli drzwi zamknięte, to otwiera program
-drzwi i nas tam zabiera."*
-
-- Every fault carries the ID of the OBJECT it is about (that shelf, that
-  hinge), not just the cabinet.
-- Clicking flies the camera to that object: smooth travel (not a jump),
-  object centred and highlighted.
-- **If the object is behind closed doors, the app opens the doors first**,
-  then travels. Doors it opened for this reason may stay open — do not
-  fight the user by closing them again.
-- If a fault genuinely has no single object, fall back to today's
-  behaviour rather than inventing a target.
-
-Proofs: `f4a-same-fault-same-buttons-both-places.png`,
-`f4b-tall-cabinet-fault-appears-once.png`,
-`f4c-camera-at-the-hinge-doors-opened.png`.
+Proofs: `f2a-rail-alone-no-shelf.png`, `f2b-rail-dragged-and-edited.png`.
 
 ---
 
-## F5 [CRITICAL] — WALL DRAWINGS: the whole run, not one cabinet
+## F3 [HIGH] — drawers: one place to choose, and a choice that works
 
-Owner: *"nie mamy drawingu całościowego — pokazuje nam tylko pojedyncze
-szafki, a ja bym chciał drawing całości profesjonalny jak z AutoCada."*
-He supplied his own AutoCAD set (Anderson Kitchen rev B) as the standard.
-This is **PDF in Output — not CNC.**
+Owner, 19.08: *"w modalu szafy drawers pierwsze mają nadal wybór internal
+czy overlay, a pod spodem następna opcja overlay — to się miesza. Albo usuń
+2 opcje i zostaw wybór w drawers… ale ten wybór teraz nie działa, więc
+upewnij się, że będzie działał."*
 
-### What his own drawings do (read this as the spec's真 source)
+**Order matters — do these in this sequence:**
 
-- **A sheet is a WALL.** His set: `Wall A /1`, `Wall A /2`, `Wall B /1`,
-  `Wall B /2`, plus `Horizontal section`. Confirmed by him: **/1 is WITH
-  FRONTS, /2 is the CARCASS view without fronts** — the same split the
-  Unit Card already makes per cabinet, applied to a whole wall.
-- **TWO dimension chains per axis, not one.** Top:每 cabinet's own width
-  with the gaps between them (597.0 · 37 · 501.0 · 501.0 · 37 · 513.0 …).
-  Bottom: the grouped totals (599.5 · 37 · 1011.0 · 36.0 · 1571.0 · 40.0).
-  Right: every front's own height (140.3 · 100.3 · 40.0 · 221.0 · 22.0 …)
-  AND the grouped bands (1550.0 · 770.0 · 100.0 · 30.0). Left: the
-  overall height.
-- **Colour convention:** fronts in magenta, hinge side shown by the grey
-  diagonal X across each door, handles in green, existing building fabric
-  (architrave, walls) in red.
-- **Scale reads "No Scale"** — he does not print to a scale, he trusts the
-  dimensions. Do not invent a scale label.
-- **Cabinet numbers** appear in the plan view, in green.
-- **Title block:** Client Name, Client Address, Project, Drawing name,
-  Date, Job No, Scale, Rev.
+1. **FIRST: find why the internal/overlay switch does not take.** Same
+   discipline as F2: trace from the modal control to the geometry that is
+   built, and name where the choice is lost. Write it in the commit body.
+2. **THEN fix it**, so the two modes genuinely differ.
+3. **ONLY THEN tidy the menu**: ADD ITEMS carries **one** entry,
+   `Drawers`; the internal/overlay choice lives inside the drawers modal.
+   The second `Overlay` entry is **removed from the offer** — the FEATURE
+   stays, only its duplicate menu entry goes. (This is a menu entry, not
+   a function: iron rule 3 is not engaged. If removing it requires
+   deleting a function, comment it out instead and say so.)
+4. Default in the modal: **internal** — the pre-T40 behaviour, so no
+   existing project is surprised.
 
-### What to build
+The owner's reason for the tidy is worth recording because it will apply
+again: *"i tak już się zwija, a będzie więcej."* Every future feature adds
+its option INSIDE its own modal, not as another line in ADD ITEMS.
 
-The project already knows walls: every unit carries
-`position: { wall, x_mm, rotation_deg }` and `projectStore` already groups
-neighbours by wall. Use it. Do not invent a second notion of a run.
+### The test that would have caught this last night
 
-Reuse, do not rewrite: `drawings/views.js` (`buildCarcassElevation`,
-`buildTopView`, `planBox`), `drawings/frontElevation.js`,
-`drawings/sheet.js` (`layoutSheet`, `pageFormat`, title block),
-`drawings/primitives.js`, `drawings/svg.js`. A wall drawing is those
-per-unit views composed side by side at their `x_mm` positions, with
-chains drawn across the composition.
+The same wardrobe built twice, internal vs overlay, asserting the
+OBSERVABLE DIFFERENCE: overlay fronts are wider (no 30 mm hinge strip)
+and sit in a different plane. A test that only checks the stored mode
+string is exactly the test that passed while the feature did not work.
 
-- **Per wall, two sheets**: `/1` elevation with fronts, `/2` carcass
-  without fronts.
-- **One horizontal section** per project: the plan, all walls, cabinet
-  numbers.
-- **Both dimension chains** on each axis, as above. This is the single
-  most important detail of the whole feature — one chain is not his
-  drawing.
-- **Output as PDF**, in the Output menu beside the existing Unit Card.
-- **DXF 2D as a SEPARATE output**, same geometry, with text (dimensions,
-  labels, title block). It carries a clear label: **"AutoCAD only — do
-  NOT open in VCarve"**, because DXF text styles crash VCarve's parser
-  (02.08.2026). The CNC export path is untouched by this feature and
-  still ships no text of any kind.
-
-Tests: a two-cabinet wall composes both cabinets at their x positions;
-the detailed chain sums to the grouped chain; a wall with no cabinets
-produces no sheet rather than an empty one; the DXF writer emits text
-only on this path.
-
-Proofs: `f5a-wall-elevation-with-fronts.png`,
-`f5b-wall-carcass-no-fronts.png`, `f5c-horizontal-section.png`,
-`f5d-dxf-drawings-labelled-autocad-only.png`.
+Proofs: `f3a-one-drawers-entry-in-add-items.png`,
+`f3b-internal-vs-overlay-different-fronts.png`.
 
 ---
 
-## F6 [MEDIUM] — the rail: with a shelf, or on its own
+## F4 [HIGH] — Checks: take me to the PROBLEM, and show me which one
 
-Owner: *"następnie dodawanie drążka raz i z półką proszę — wybór w drążek
-modal, to ważne."*
+T40-F4c shipped camera travel and it goes to the wrong place. Four
+faults, from the owner, 19.08:
 
-T37-F2 made adding a rail ALWAYS an assembly (a FIX shelf with the rail
-beneath it). The owner now wants the choice: **rail alone**, or **rail
-with shelf**, chosen in the rail modal. Default stays the assembly (that
-was his own verdict in T37 and nothing here overturns it); the modal adds
-the alternative. Legacy rails are untouched, as T37 left them.
+**F4a — it takes me to the cabinet, not to the fault.** *"zabiera mnie do
+szafy, na dół, a nie dokładnie do problemu, czyli do danego zawiasu."*
+The camera must land on the OBJECT the fault names — that hinge, that
+shelf — not on the unit that contains it. Where a fault names two objects
+(a shelf AND a hinge, 55 mm apart), frame BOTH.
 
-Proof: `f6-rail-modal-alone-or-with-shelf.png`.
+**F4b — the red one takes me to EDIT.** *"czerwone zabiera mnie do edycji
+zamiast do problemu."* A fault and a warning behave the SAME on click:
+both travel to the object. Editing is a separate, deliberate action —
+never the click's default.
+
+**F4c — mark it in the scene.** *"jakoś zaznaczyć, nie wiem, czerwonym
+kółkiem czy coś."* Arriving is not enough if the user cannot see what he
+arrived at. Outline/highlight the offending object in the fault's own
+colour — red for a fault, amber for a warning, matching the panel. The
+mark clears when the fault clears or another is selected.
+
+**F4d — "Remove sleeves at this shelf" does nothing.** *"jeśli naciśniesz
+'tak', to i tak nie usuwa"*, and when it does work it must remove **ONE
+ROW — the colliding row — not every sleeve in the cabinet.** Find why the
+action does not reach the design, fix it, and scope it to the single row
+the fault is about.
+
+Proofs: `f4a-camera-on-the-hinge-not-the-cabinet.png`,
+`f4b-fault-and-warning-behave-alike.png`,
+`f4c-offending-object-outlined.png`,
+`f4d-one-sleeve-row-removed.png`.
 
 ---
 
-## F7 [LOW] — plateBiteMm: the frozen value
+## F5 [HIGH] — the drawings: line weight, dimension placement, and the
+title block
 
-`profile.js` carries `plateBiteMm: 10` (T37-F3, was 5). The owner reports
-seeing no change — the localStorage freeze pattern this project has hit
-repeatedly (LED kelvins, the design migration). Add an explicit
-"code wins" migration for this key, idempotent (`null !== 0` — the T-round
-lesson), so an existing profile picks up 10 without the user rebuilding
-anything. Verify with a stored profile carrying 5.
+The full drawing plan is a separate document and is NOT all in scope
+tonight. These are the items the owner named on 19.08, and only these.
 
-Proof: `f7-existing-project-picks-up-plate-bite-10.png`.
+**F5a — LINE WEIGHT IS A PAPER PROPERTY, NOT AN OBJECT PROPERTY.** Owner:
+*"jak zbliżam rysunek, to zaczyna wyglądać bardzo gruba linia."* That is
+the signature of a width expressed in drawing units: it scales with the
+zoom. Line width must be set in POINTS ON THE SHEET, so it prints and
+zooms as a constant. Three weights, from one table, applied everywhere:
+
+- heavy ≈ 0.50 pt — outer outline, cut edges in section
+- medium ≈ 0.35 pt — visible internal edges
+- thin ≈ 0.18 pt — hidden lines, dimensions, extension lines, hatching
+
+Verify by zooming the produced PDF: at 100 % and at 400 % the line must
+measure the same on screen relative to the page.
+
+**F5b — dimensions belong to the view that owns them.** Detailed internal
+dimensions — shelf spacings, internal heights, everything about what is
+inside — appear on the **CARCASS** view only. Front dimensions — front
+widths, front heights, gaps — appear on the **FRONTS** view only. Neither
+view carries the other's chains. Overall size stays on both.
+
+**F5c — the shaker profile is drawn at its real size.** If the shaker rail
+is 20 mm, draw 20 mm. No nominal, no symbol.
+
+**F5d — glass.** A glazed front draws as transparent with the standard
+glass mark: **three diagonal strokes, descending from longer to shorter,
+in light blue.**
+
+**F5e — the title block, flat, like his.** A flat table, his layout, with
+fields for **company name, project number, date**, plus the drawing name
+and revision that already exist. Room for the company name is required —
+this is the sheet a client receives.
+
+**F5f — sheets number themselves.** Automatic drawing numbers so a reader
+knows what each sheet is: the owner's own scheme is `001`, `002`, `003`
+with a name (`Wall A - /1`, `Wall A - /2`, `Horizontal section - 1`).
+Numbers follow the sheet order and renumber when sheets are added.
+
+**F5g — the mark.** At the end of the set, placed well: **"Created by
+Cabinet Core"** with an originality mark. Make it look deliberate and
+quiet, not like a watermark. The exact form of the mark is open — do the
+tasteful thing and the owner will veto if it is wrong.
+
+Proofs: `f5a-line-weight-constant-at-400-percent.png`,
+`f5b-dimensions-split-between-views.png`, `f5c-shaker-20mm-drawn.png`,
+`f5d-glass-mark.png`, `f5e-title-block-flat.png`,
+`f5f-sheets-numbered.png`, `f5g-created-by-cabinet-core.png`.
 
 ---
 
 ## Execution order
 
-F1 → F2 → F7 → F5 → F3 → F4 → F6.
+F1 → F2 → F3 → F4 → F5.
 
-F1 and F2 first: both are correctness at the machine, and F2's single
-source is what stops this seam coming back a fourth turn. F7 is ten lines
-and rides along. F5 gets the bulk of the night because the owner called
-the drawings the most important thing on the list. A short night therefore
-cuts F6 first, then F4, then F3 — each skip named in the PR body.
+F1 first: it is the machine, the boards, and a value that has been wrong
+since T36 — the longest-standing fault on the list. F2 and F3 next
+because both are features the owner was told had shipped and had not. F4
+next. F5 last and internally in its own order (F5a first — line weight
+touches every view, so it lands before anything else is drawn).
+
+A short night therefore cuts F5 from the bottom of its own list, then F4.
+Never cut F1.
 
 ## What this turn does NOT touch
 
 `computeCabinet()` output. `reference/lisp/**`. `SettingsPanel.jsx`.
-Golden fixtures. `depthSteps`. The CNC export path's no-text rule. The
-materials/BOM system from T39. Parked and not to be started: Cabineo and
-other joinery systems, the drilling-pattern library (the owner has not
-supplied the hole figures), pull-down rail, L-shape, nesting, kitchens
-and kitchen patterns, the shaker 20-vs-60 question, and the internal
-metal Gold→Silver default — the owner said "nie teraz" to the last two on
-18.08.
+Golden fixtures. The CNC export path's no-text rule. The T39
+materials/BOM system. The vertical SECTION view, drawer boxes in the
+carcass elevation, legs drawn as legs, and the plan-view side panels — all
+four are in the drawing plan and wait for the owner's answers on where the
+section cuts and what sheet size he prints. Parked as before: Cabineo, the
+drilling-pattern library, pull-down rail, L-shape, nesting, kitchens,
+shaker 20-vs-60, internal metal Gold→Silver.
 
 ## Morning audit will run
 
 Fresh clone → branch → clean-room install → full suite (never --silent) →
-vite build → t40-classify borrowed onto main → BYTE-IDENTITY, UNNAMED=0
-→ sanctity diff-audit (zero removals) → `reference/lisp/` untouched →
-CNC-fingerprint moves present and NAMED (F2) while engine hashes are
-IDENTICAL → verify/t40 complete → verdict → the owner's numbered eye-test
-list.
+vite build → t41-classify borrowed onto main → BYTE-IDENTITY, UNNAMED=0
+→ sanctity diff-audit: **zero deletions; commented-out blocks present and
+headed** → `reference/lisp/` untouched → **F1's probe re-run in the
+audit, not trusted from the PR** → verify/t41 complete → verdict → the
+owner's numbered eye-test list.

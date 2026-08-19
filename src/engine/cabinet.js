@@ -5574,24 +5574,49 @@ export function computeCabinet(params, profileOverride) {
   // column's bounding boards — a carcass side in its own frame, a VPART in
   // the frame the bay-door hinges established (depth first, then height
   // above its own bottom).
+  //
+  // ─── TURN 41 (F2), 19.08.2026: THE GUARD ITS TWIN ALREADY HAD ────────────
+  //
+  // This block is a hand-copy of the one eighteen lines above it, and the copy
+  // lost one line: `if (railPartCentreY == null) continue`. A SHELF-MOUNTED
+  // rail has no partitioner — its board is a fix shelf — so `set.railPartY` is
+  // null, and `null + G / 2` is not an error in JavaScript. It is 9.
+  //
+  // MEASURED, on a 1400 wardrobe with a partition and a column rail added WITH
+  // its shelf: three `rail_partition_screw` holes at y = 9 on BUL and three on
+  // BACK, landing exactly on the bottom panel's own screw row — the CNC layer's
+  // duplicate-hole check turns four of them red and the export refuses to ship
+  // two parts. And three more at y = −9 on VPART-1, whose panel is 2114 × 520:
+  // OFF THE BOARD, caught by nothing, written straight into the DXF.
+  //
+  // (The guard names are deliberately not written here: turn 31 F3 pins that
+  // this file mentions no guard module at all, which is how the layering law
+  // is kept honest. See test/turn41-f2-one-rail-chain.test.js for the numbers
+  // with the modules named.)
+  //
+  // The fix is the missing line and not a filter downstream, because the guard
+  // belongs where the partitioner screws are DECIDED. The bracket screw is the
+  // rail's own and is drilled in either case, exactly as its twin does it.
   for (const set of columnRailSets) {
-    const centre = set.railPartY + G / 2;
+    const centre = set.railPartY == null ? null : set.railPartY + G / 2;
     for (const bound of [set.bounds.left, set.bounds.right]) {
       const carcass = bound === 'BUL' || bound === 'BUR';
       if (!carcass && !panels.some((x) => x.id === bound)) continue;
       if (carcass) {
         addDrill(bound, 'rail_bracket', pz.layers.screw, sideW / 2, set.railY, RL.bracketScrewDiameter);
+        if (centre == null) continue;
         for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
           addDrill(bound, 'rail_partition_screw', pz.layers.screw, x, centre, RL.bracketScrewDiameter);
         }
       } else {
         addDrill(bound, 'rail_bracket', pz.layers.screw, partitionDepth / 2, set.railY - G, RL.bracketScrewDiameter);
+        if (centre == null) continue;
         for (const v of [pz.screwFromEnd, partitionDepth / 2, partitionDepth - pz.screwFromEnd]) {
           addDrill(bound, 'rail_partition_screw', pz.layers.screw, v, centre - G, RL.bracketScrewDiameter);
         }
       }
     }
-    if (backStyle === 'full') {
+    if (backStyle === 'full' && centre != null) {
       for (const x of [set.bay.from + pz.screwFromEnd, set.bay.centre, set.bay.to - pz.screwFromEnd]) {
         addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, centre, RL.bracketScrewDiameter);
       }

@@ -341,9 +341,37 @@ function projectHeightParams(type, design, profile) {
  */
 function applyTemplateParams(unit, params) {
   const saved = JSON.parse(JSON.stringify(params));
+  // ─── TURN 41 (F2): AND THE CROSS-REFERENCES COME WITH THEM ────────────────
+  //
+  // MEASURED FAULT. Every item is given a fresh id here, and T37's rail
+  // assembly is TWO items joined by one: the hanger carries `shelf_id`, naming
+  // the fix shelf it hangs under. Re-id the shelf without re-pointing the
+  // hanger and the copy's hanger names a shelf in the SOURCE unit. The engine's
+  // orphan rule is then perfectly correct and perfectly silent: a rail whose
+  // shelf is gone is not there. Measured on a copied wardrobe —
+  // `assemblies.rail` null, rail hardware 0 (source 1), RAIL-PART 0, rail
+  // drills 0 — while the right panel still listed "Hanger rail" with a number.
+  // A joiner copies a wardrobe and the copy quietly has no rod in it.
+  //
+  // So the id map is built FIRST and every cross-reference is remapped through
+  // it. `shelf_id` is the only one today; the map is the place the next one is
+  // added, which is why it is a loop over a named list rather than one line.
+  const CROSS_REFS = ['shelf_id'];
+  const idMap = new Map();
+  for (const section of saved.sections || []) {
+    for (const item of section.items || []) {
+      if (item?.id != null) idMap.set(item.id, uid(item.kind || 'item'));
+    }
+  }
   const sections = (saved.sections || []).map((section) => ({
     ...section,
-    items: (section.items || []).map((item) => ({ ...item, id: uid(item.kind || 'item') })),
+    items: (section.items || []).map((item) => {
+      const next = { ...item, id: idMap.get(item.id) ?? uid(item.kind || 'item') };
+      for (const key of CROSS_REFS) {
+        if (next[key] != null && idMap.has(next[key])) next[key] = idMap.get(next[key]);
+      }
+      return next;
+    }),
   }));
   unit.params = {
     ...unit.params,
@@ -568,9 +596,32 @@ const SHELF_SCHEMA = 2;
 
 export function migrateUnitShelves(unit) {
   if (!unit?.params || unit.params.shelf_schema === SHELF_SCHEMA) return unit;
+  // ─── TURN 41 (F2): A BOARD CARRYING A ROD IS NOT A LEGACY SHELF ───────────
+  //
+  // MEASURED FAULT. This migration reads every `variant: 'fixed'` as "a shelf
+  // saved before turn 8, when fixed meant nothing", and demotes it to pins.
+  // That was right for turn 8. It is wrong for T37's rail assembly, whose shelf
+  // is fixed for a reason that has nothing to do with the old meaning: it
+  // CARRIES A CLOTHES RAIL, and T37 made it fixed precisely so it could.
+  //
+  // Measured on a reload of a wardrobe created in this version: the assembly's
+  // shelf came back 864 → 860 mm wide, `meta.locked` true → false, its eleven
+  // screw holes replaced by twelve pin holes. A board with a full rail of
+  // clothes on it, sitting on four pins.
+  //
+  // A shelf NAMED BY A HANGER is exempt. It is not a guess about intent — the
+  // foreign key is the intent, written down by the code that made the pair.
+  const railShelfIds = new Set(
+    (unit.params.sections || [])
+      .flatMap((section) => section.items || [])
+      .filter((i) => i?.kind === 'hanger')
+      .map((i) => railShelfIdOf(i))
+      .filter((id) => id != null),
+  );
   const sections = (unit.params.sections || []).map((section) => ({
     ...section,
     items: (section.items || []).map((item) => (item.kind === 'shelf' && item.variant === 'fixed'
+      && !railShelfIds.has(item.id)
       ? { ...item, variant: 'adjustable' }
       : item)),
   }));
@@ -5198,6 +5249,44 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       band: shelfBandFor(unit, profile, null, null, item?.pos_mm ?? posRaw),
     }, profile);
     get().updateItem(unitId, itemId, { pos_mm: state.pos });
+    // ─── TURN 41 (F2): ONE DRAG, ONE TRUTH ──────────────────────────────────
+    //
+    // MEASURED FAULT. Drag the assembly's shelf from 1458 to 900 and the rod
+    // follows correctly everywhere it is DRAWN or DRILLED: the engine's
+    // `assemblies.rail.y`, the 3-D instance and both `rail_bracket` holes all
+    // read 860. But the hanger item's own `pos_mm` is still 1400 — its BIRTH
+    // height — and `paramsForEngine` harvests that stale number into
+    // `rail_offset`. So the millimetre a saved project, a template and the
+    // right panel read back is 540 mm above where the rod actually is, and the
+    // right-panel field sat there displaying it after every drag.
+    //
+    // The rod's position is not a second fact to be maintained: it is the
+    // shelf's, minus the bracket's drop. So it is RE-DERIVED here, in the same
+    // batch as the move, from the number that just changed. One drag, one
+    // truth, and a project that later loses the `mount` link still puts the rod
+    // where the joiner last saw it.
+    if (carriesRail) {
+      const railAxis = Number(state.pos) - hangerDropMm(profile);
+      const riders = (unit.params.sections?.[0]?.items || [])
+        .filter((i) => i.kind === 'hanger' && railShelfIdOf(i) === itemId);
+      for (const rider of riders) {
+        const re = railDatumFor({
+          supports: railSupportTops({
+            floor: profile.board.thickness,
+            stackTop: null,
+            shelves: (unit.params.sections?.[0]?.items || [])
+              .filter((i) => i.kind === 'shelf' && i.id !== itemId)
+              .map((i) => ({
+                id: i.id,
+                top: (Number(i.pos_mm) || 0) + (Number(i.thickness_mm) || profile.board.thickness),
+              })),
+            ceiling: (Number(unit.params?.height) || 0) - profile.board.thickness,
+          }),
+          axis: railAxis,
+        });
+        get().updateItem(unitId, rider.id, { pos_mm: re.offset, datum: re.datum });
+      }
+    }
     return state;
   },
 

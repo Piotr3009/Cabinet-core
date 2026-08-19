@@ -1,0 +1,12 @@
+T41 — CNC FINGERPRINT MOVES, NAMED
+==================================
+
+F1 (the sheet stands up) moves CNC SHEET layouts and nothing else.
+
+Lines in the fingerprint report : 9445
+Lines that MOVED                : 536
+…of which per-part .dxf files   : 0
+…of which sheet layouts         : 536
+
+A part's own CNC frame is untouched: F1 changes only how the SHEET puts a
+board down. That is why every per-panel DXF is byte-for-byte what it was.

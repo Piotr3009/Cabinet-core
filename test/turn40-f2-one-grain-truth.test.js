@@ -36,7 +36,8 @@ import { defaultParamsFor } from '../src/engine/types.js';
 import { sheetLay, sheetTurn } from '../src/engine/cnc/layout.js';
 import { decorMapping, grainRun, statedPanelAxis } from '../src/engine/decors.js';
 import {
-  CUT_GRAIN_AXIS_BY_PART, GRAIN_AXIS_BY_PART, applyGrainAxis, grainLocked, panelAxisOf,
+  CUT_GRAIN_AXIS_BY_PART, CUT_STANDING_PARTS, GRAIN_AXIS_BY_PART, applyGrainAxis, cutStanding,
+  grainLocked, panelAxisOf,
 } from '../src/engine/grain.js';
 
 const unit = (type, over = {}) => computeCabinet({
@@ -64,6 +65,35 @@ function upTheSheetMm(panel) {
   return sheetTurn(panel) === 90 ? dw : dh;
 }
 
+// ─── RE-PINNED 19.08.2026 (TURN 41, F1): PROVE THE THING, NOT THE FIELD ─────
+//
+// This file passed green on the night it was written and the feature it guards
+// did not work. Every role below came off the saw LYING DOWN — a 490 × 133
+// drawer side laid 133 mm up the page, its figure running ACROSS its own
+// length, its long banded edge banded across the grain — which is the one thing
+// the owner's own test forbids. The suite did not notice because of the
+// assertion three lines further down:
+//
+//     assert.equal(upTheSheetMm(panel), panel.h)      // T40
+//
+// which is not a statement about the board at all. It is a statement about the
+// LETTER in `GRAIN_AXIS_BY_PART`, restated as a number: "whatever the table
+// says is the height, put that up the page." A board laid flat satisfies it
+// perfectly. The test and the bug agreed with each other, so the test could
+// never see the bug.
+//
+// What the assertion has to be is the OBSERVABLE FACT — the shape on the sheet:
+//
+//     assert.ok(upMm >= acrossMm)                     // T41: it STANDS
+//     assert.equal(upMm, Math.max(dw, dh))            // …on its long side
+//
+// That is what "cut standing" means to the joiner holding the board, it is what
+// the owner can see in the CNC view, and it cannot be satisfied by a board lying
+// down no matter what any table says. Every assertion in section 1 is now made
+// this way. The letters are still checked — in section 3, where they belong, as
+// the roll of roles whose lay is the owner's decision — but they are no longer
+// mistaken for the answer.
+
 // ═══ 1. THE OWNER'S SEVEN ROLES, BOTH SIDES OF THE SEAM ═════════════════════
 
 /** The owner's list, 18.08, with a real cabinet that cuts each one. */
@@ -85,11 +115,16 @@ function standingSubjects() {
 test('F2 — THE CUT: every role the owner named is cut STANDING', () => {
   for (const [name, panel] of standingSubjects()) {
     assert.ok(panel, `${name} is in a real cabinet`);
-    // "Cut standing" said as a number: the board's OWN HEIGHT is the extent
-    // that ends up running up the sheet, whatever frame the kit draws it in.
-    assert.equal(upTheSheetMm(panel), panel.h,
-      `${name}: ${panel.w} × ${panel.h}, drawn ${drawn(panel).dw} × ${drawn(panel).dh}, `
-      + `turn ${sheetTurn(panel)} — its own height has to stand up the sheet`);
+    const { dw, dh } = drawn(panel);
+    const up = upTheSheetMm(panel);
+    const across = sheetTurn(panel) === 90 ? dh : dw;
+    const where = `${name}: ${panel.w} × ${panel.h}, drawn ${dw} × ${dh}, `
+      + `turn ${sheetTurn(panel)} → laid ${up} up × ${across} across`;
+    // THE OBSERVABLE FACT, and it is a shape and not a letter: the board's LONG
+    // side runs up the page. A board that fails this is lying on the sheet with
+    // its figure across its own length, which is what T41-F1 was called to fix.
+    assert.ok(up >= across, `${where} — it is LYING, and it must STAND`);
+    assert.equal(up, Math.max(dw, dh), `${where} — and it is the LONG side that stands`);
   }
 });
 
@@ -103,8 +138,12 @@ test('F2 — THE PICTURE: and the 3D grain DERIVES from that, not from a table',
     assert.equal(run.lengthMm, upTheSheetMm(panel),
       `${name}: the sheet stands ${upTheSheetMm(panel)} mm up the page and the 3D runs `
       + `${run.lengthMm} mm along the figure`);
-    assert.equal(run.axis, 'h', `${name}: which is the piece's own height`);
-    assert.equal(run.acrossMm, panel.w);
+    // …and that number is the board's LONG side, because that is how it was
+    // cut. T40 asserted `axis === 'h'` here, which pinned the letter and let a
+    // board laid flat through; the fact is that the figure runs the LENGTH.
+    assert.equal(run.lengthMm, Math.max(panel.w, panel.h),
+      `${name}: the figure runs the board's length, not across it`);
+    assert.equal(run.acrossMm, Math.min(panel.w, panel.h));
   }
 });
 
@@ -115,12 +154,17 @@ test('F2 — ONE ROLE, ONE ANSWER, WHICHEVER KIT CUT IT', () => {
   const budr = partOf(unit('BUDR'), 'DRAWER-SIDE');
   const wardrobe = partOf(unit('WARDROBE', { drawers: 3 }), 'DRAWER-SIDE');
   assert.notEqual(drawn(budr).dw, drawn(wardrobe).dw, 'two genuinely different frames');
-  assert.equal(sheetTurn(budr), 90, 'drawn lying — the sheet stands it up');
-  assert.equal(sheetTurn(wardrobe), 0, 'drawn standing already — nothing to turn');
+  // The two frames are opposite, so the two TURNS must be opposite too — and
+  // that is the point: the turn is whatever it takes to stand the board up, and
+  // it is not the same number in the two kits because the drawings are not the
+  // same drawing. What must match is the RESULT.
+  assert.equal(sheetTurn(budr), 0, 'drawn standing already — nothing to turn');
+  assert.equal(sheetTurn(wardrobe), 90, 'drawn lying — the sheet stands it up');
+  assert.equal(upTheSheetMm(budr), Math.max(budr.w, budr.h), 'BUDR: laid on its long side');
+  assert.equal(upTheSheetMm(wardrobe), Math.max(wardrobe.w, wardrobe.h), 'wardrobe: the same');
   assert.equal(grainRun(budr).axis, grainRun(wardrobe).axis, 'ONE answer');
-  assert.equal(grainRun(budr).axis, 'h');
-  assert.equal(grainRun(budr).lengthMm, budr.h);
-  assert.equal(grainRun(wardrobe).lengthMm, wardrobe.h);
+  assert.equal(grainRun(budr).lengthMm, Math.max(budr.w, budr.h));
+  assert.equal(grainRun(wardrobe).lengthMm, Math.max(wardrobe.w, wardrobe.h));
 });
 
 // ═══ 2. THE SEAM ITSELF: ONE SOURCE, AND THE READER DELEGATES ═══════════════
@@ -252,13 +296,15 @@ test('F2 — "cut standing, mounted lying" shows its grain lying', () => {
   // the cut answer the rest of the way on its own.
   const budr = unit('BUDR');
   const side = partOf(budr, 'DRAWER-SIDE');
-  // Cut standing — its 237 mm height up the sheet.
-  assert.equal(upTheSheetMm(side), side.h);
-  // Mounted UPRIGHT in the cabinet (a drawer side is a vertical board), so the
-  // figure stands: the big face is h × d and the grain is its V.
+  // Cut standing — its LONG side, the 490 mm depth, up the sheet (T41-F1; T40
+  // put the 237 mm height up it and called that standing).
+  assert.equal(upTheSheetMm(side), Math.max(side.w, side.h));
+  // Mounted UPRIGHT in the cabinet — a drawer side is a vertical board — and
+  // now the owner's own sentence is visible in the numbers: cut with the figure
+  // along its LENGTH and stood on edge in the drawer, the figure runs
+  // front-to-back along the box, which is the U of the mounting face.
   const map = decorMapping(side.box, grainRun(side).lengthMm);
-  assert.equal(map.grainAxis, 'v');
-  assert.equal(map.heightMm, side.box.h);
+  assert.equal(map.grainAxis, 'u');
 
   // The same board, mounted LYING — the drawer BOTTOM, which is the one role
   // the owner cuts flat ("dno — słoje w poprzek"). Its cut answer is its width
@@ -266,6 +312,9 @@ test('F2 — "cut standing, mounted lying" shows its grain lying', () => {
   const bottom = partOf(budr, 'DRAWER-BOTTOM');
   assert.equal(sheetTurn(bottom), 90, 'the flat one is the half that turns');
   assert.equal(upTheSheetMm(bottom), bottom.w);
+  // The drawer bottom is NOT on the standing list and did not move this turn:
+  // it is laid exactly where T40 laid it, by its own stated grain.
+  assert.equal(cutStanding('DRAWER-BOTTOM'), false, 'the flat one is not on the list');
   assert.equal(grainRun(bottom).axis, 'w');
   assert.equal(decorMapping(bottom.box, grainRun(bottom).lengthMm).grainAxis, 'u');
 });

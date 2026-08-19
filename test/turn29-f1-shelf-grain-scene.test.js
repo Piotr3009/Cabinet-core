@@ -346,9 +346,27 @@ test('F1 …and the same rule puts every other board where the owner has already
   // `engine/decors.js grainRun` names as "the only statement that could ever
   // beat the saw". The assertion flips rather than disappearing, so the record
   // of what the saw used to answer stays beside the law that overruled it.
+  // ─── RE-PINNED 19.08.2026 (T41-F1): 'y' → 'x', AND THE SAW WAS RIGHT ────
+  //
+  // T36 flipped this to 'y' off the ROLE TABLE's letter, and T40 kept it by
+  // feeding that letter to the cut. T41 measured what the cut actually does: a
+  // 597 × 338 drawer front is laid STANDING on its 597 — its long side up the
+  // page, its figure along the length, so the banded edge is banded along the
+  // grain, which is the owner's own test of whether the answer is right.
+  //
+  // So the figure runs ACROSS the front, and the saw's original answer is the
+  // one the owner's law arrives back at from the other direction. That is not a
+  // reversal of T36: T36's sentence was about the drawer BOX standing in the
+  // cabinet, and this is about how the board goes on the board. The two were
+  // never the same statement — see engine/grain.js for the whole of it.
+  //
+  // It is also exactly what he asked for: *"jak tniemy, tak słoje się
+  // pokazują"* — as we cut, so the grain shows. It is cut lengthways, so it
+  // shows lengthways. The assertion flips rather than disappearing, so the
+  // record of every answer this row has carried stays beside the law.
   const df = rd.panels.find((p) => p.part === 'DRAWER-FRONT');
-  assert.equal(grainInTheRoom(df, rd, SCAN).axis, 'y', 'a drawer front runs its figure up the front');
-  assert.equal(grainInTheRoom(df, rd, TILE).axis, 'y', '…on the fallback image too');
+  assert.equal(grainInTheRoom(df, rd, SCAN).axis, 'x', 'a drawer front shows the grain it was cut with');
+  assert.equal(grainInTheRoom(df, rd, TILE).axis, 'x', '…on the fallback image too');
 });
 
 test('F1 the shelf and the wieniec above it disagree, and that is the whole point'

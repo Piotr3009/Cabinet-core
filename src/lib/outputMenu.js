@@ -46,6 +46,26 @@ export const DRAWING_KINDS = [
     label: 'All units (PDF)',
     hint: 'A cover and a page per unit — the whole project',
   },
+  // ─── TURN 40 (CLAUDE.md F5): THE WALL DRAWINGS ──────────────────────────
+  //
+  // The owner, 18.08.2026: *"nie mamy drawingu całościowego — pokazuje nam
+  // tylko pojedyncze szafki, a ja bym chciał drawing całości profesjonalny jak
+  // z AutoCada."* A sheet is a WALL: /1 with the fronts on, /2 the carcass
+  // without them, and one horizontal section for the whole job. They sit HERE,
+  // beside the Unit Card, which is where CLAUDE.md puts them.
+  {
+    id: 'walls',
+    label: 'Wall drawings (PDF)',
+    hint: 'Every wall: /1 with fronts, /2 carcass, plus the horizontal section',
+  },
+  {
+    id: 'walls-dxf',
+    label: 'Wall drawings (DXF)',
+    // The warning is in the MENU as well as on every sheet and in the ZIP: a
+    // DXF with text in it crashes VCarve's parser (02.08.2026), and the CNC
+    // export — which is a different path entirely — still ships none.
+    hint: 'AutoCAD only — do NOT open in VCarve',
+  },
 ];
 
 /**

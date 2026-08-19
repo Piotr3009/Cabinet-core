@@ -3582,6 +3582,46 @@ export const DEFAULT_CABINET_PROFILE = {
       noteHeight: 55,
     },
 
+    // ─── THE WALL DRAWING (turn 40, CLAUDE.md F5) ───────────────────────
+    //
+    // A sheet is a WALL, and the numbers below are what makes a composition of
+    // per-unit views read as one drawing rather than as several. Everything is
+    // in DRAWING millimetres (it travels with the geometry through the scale)
+    // unless it says otherwise.
+    wallDrawing: {
+      // A whole kitchen wall is four metres of drawing on 420 mm of paper, so
+      // the text is set smaller than a card's — at 1:20 a 55 mm figure is
+      // 2.75 mm on paper, which is what a drawing office sets a dimension at.
+      // The floor is still `minTextHeight`.
+      textHeight: 55,
+      unitNumberHeight: 90,
+      // THE TWO CHAINS. `chainFirst` is the inner one — the detailed run above
+      // and the front heights on the right; `chainStep` is how much further
+      // out the grouped one sits. Wide enough that two chains never read as
+      // one, which is the fault the whole feature exists to avoid.
+      chainFirst: 190,
+      chainStep: 230,
+      // How far the floor and ceiling lines run past the end cabinet, so the
+      // building fabric reads as continuing rather than as stopping there.
+      fabricOverhang: 250,
+      // A handle's screw centre, marked with a short cross.
+      handleTick: 14,
+      // The plan: the cabinet number in green, the wall's own name beside it.
+      planNumberHeight: 90,
+      planLabelHeight: 110,
+      wallLabelOffset: 320,
+      noteHeight: 55,
+      // His title block: Client Name, Client Address, Project, Drawing name,
+      // Date, Job No, Scale, Rev — read straight off the set he supplied.
+      titleRows: ['CABINET CORE', 'Client', 'Address', 'Project', 'Drawing', 'Job No', 'Scale', 'Rev', 'Date'],
+      titleWidth: 112,
+      // *"Scale reads 'No Scale' — he does not print to a scale, he trusts the
+      // dimensions. Do not invent a scale label."* The sheet still has to be
+      // laid out at SOME ratio to fit the paper; what the title block says is
+      // his.
+      scaleLabel: 'No Scale',
+    },
+
     // ─── The project booklet (turn 7, CLAUDE.md F1) ───
     booklet: {
       // The cover: a list of the units in the project, so the first page
@@ -4725,6 +4765,17 @@ export function migrateCabinetProfile(profile) {
           : D.drawings.unitCard.titleRows,
       },
       booklet: { ...D.drawings.booklet, ...profile.drawings?.booklet },
+      // TURN 40 (CLAUDE.md F5): the wall drawing's own metrics, key by key so a
+      // profile saved before tonight comes back with every one of them rather
+      // than with `undefined` millimetres — the same merge every block above
+      // gets, for the same reason.
+      wallDrawing: {
+        ...D.drawings.wallDrawing, ...profile.drawings?.wallDrawing,
+        titleRows: Array.isArray(profile.drawings?.wallDrawing?.titleRows)
+          && profile.drawings.wallDrawing.titleRows.length
+          ? profile.drawings.wallDrawing.titleRows
+          : D.drawings.wallDrawing.titleRows,
+      },
     },
     room: { ...D.room, ...profile.room },
     // Turn 31 (CLAUDE.md F6): key by key, so a profile saved before Check v1

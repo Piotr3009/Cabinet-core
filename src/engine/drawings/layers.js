@@ -50,6 +50,24 @@ export const DRAWING_LAYERS = {
   // AutoLISP put its three views in one drawing and let the draughtsman know
   // which was which; a printed card has to say so.
   VIEW_TITLE: { aci: 7, colour: '#111111', width: 0.3 },
+  // ─── TURN 40 (CLAUDE.md F5): THE OWNER'S OWN SET ADDS TWO INKS ──────────
+  //
+  // His AutoCAD drawings (Anderson Kitchen rev B) carry a colour convention
+  // this app had no layer for, and CLAUDE.md reads that set as the spec:
+  // *"fronts in magenta, hinge side shown by the grey diagonal X across each
+  // door, handles in GREEN, existing building fabric (architrave, walls) in
+  // RED."* The first two the app already draws — DOORS is magenta and
+  // DOOR_SWING is the grey diagonal from the hinge side. These are the other
+  // two.
+  //
+  // HANDLES takes the same green as UNIT_NUMBER rather than a second one: a
+  // drawing with two greens on it is a drawing where neither means anything,
+  // and both of these are "what the workshop is fitting" rather than "what the
+  // workshop is building".
+  HANDLES: { aci: 94, colour: '#009A3D', width: 0.35 },
+  // Everything that is ALREADY THERE: the floor, the ceiling, the room's own
+  // walls on the plan. Red, and thin — it is context, not subject.
+  BUILDING: { aci: 1, colour: '#C0392B', width: 0.25 },
   // Not a LISP layer: the sheet itself. A drawing frame and a title block are
   // what make a printout read as a drawing rather than a screenshot, and the
   // AutoLISP never had to draw them because AutoCAD's template already did.

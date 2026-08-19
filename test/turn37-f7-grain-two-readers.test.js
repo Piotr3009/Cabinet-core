@@ -50,6 +50,8 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { decorMapping, grainRun } from '../src/engine/decors.js';
 import { sheetTurn } from '../src/engine/cnc/layout.js';
+// T40-F2: the owner's role list, which is the input the cut reads.
+import { CUT_GRAIN_AXIS_BY_PART } from '../src/engine/grain.js';
 
 const unit = (type, over = {}) => computeCabinet({
   ...defaultParamsFor(type, P), unit_num: '01', ...over,
@@ -97,21 +99,32 @@ function subjects() {
 
 // ═══ 1. THE SHEET ═══════════════════════════════════════════════════════════
 
-test('F7a THE SHEET — a stated grain is laid running UP the page', () => {
+test('F7a THE SHEET — a stated grain is laid running UP the page'
+  + ' — RE-PINNED 18.08.2026 (T40-F2): and on the owner’s roles the TABLE states it', () => {
+  // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F2: ONE GRAIN TRUTH) ────────────
+  //
+  // The owner: *"Jak tniemy, tak słoje się pokazują… Nie będzie wyjątków,
+  // będzie logicznie i składnie i prościej."*
+  //
+  // F7a's law — a stated grain runs UP the sheet — is intact and is still what
+  // carries the shelf, the short back and the shoe box. What F2 changes is
+  // WHOSE STATEMENT is read for the seven roles the owner has decided the lay
+  // of: their axis is named in the PIECE's own `w × h` frame by the role table,
+  // not in the drawn frame by a stamp, so a kit that happens to draw the board
+  // turned can no longer turn the owner's answer with it. Both branches are
+  // asserted below, each on the subjects it owns.
   for (const [name, panel, why] of subjects()) {
     assert.ok(panel, `${name} is in the cabinet`);
     const stated = panel.cnc?.grain;
     assert.ok(stated === 'w' || stated === 'h', `${name} states an axis (${why})`);
     const { dw, dh } = drawnFrame(panel);
-    // `cnc.grain` names an axis of the DRAWN frame. At turn 0 the drawn h is up
-    // the page, so 'h' is already standing and 'w' is lying down and wants 90.
     const turn = sheetTurn(panel);
-    assert.equal(turn, stated === 'w' ? 90 : 0,
-      `${name}: drawn ${dw} × ${dh}, states '${stated}' — the drawn `
-      + `${stated === 'w' ? 'WIDTH' : 'HEIGHT'} has to end up the page, so turn ${stated === 'w' ? 90 : 0}`);
-    // …said as millimetres rather than as a letter: after the turn, the extent
-    // standing up the page IS the one the piece states its grain along.
-    const alongMm = stated === 'w' ? dw : dh;
+    const owners = CUT_GRAIN_AXIS_BY_PART[panel.part];
+    // THE OWNER'S OWN ROLES: the axis of the PIECE that has to end up the page.
+    // EVERY OTHER BOARD: the drawn axis the piece states, exactly as F7a wrote.
+    const alongMm = owners
+      ? (owners === 'w' ? panel.w : panel.h)
+      : (stated === 'w' ? dw : dh);
     const upTheSheetMm = turn === 90 ? dw : dh;
     assert.equal(upTheSheetMm, alongMm,
       `${name}: ${alongMm} mm of grain up the sheet`);
@@ -120,20 +133,27 @@ test('F7a THE SHEET — a stated grain is laid running UP the page', () => {
 
 // ═══ 2. THE 3D ══════════════════════════════════════════════════════════════
 
-test('F7b THE 3D — the stated axis is translated out of the DRAWN frame first', () => {
+test('F7b THE 3D — the stated axis is translated out of the DRAWN frame first'
+  + ' — RE-PINNED 18.08.2026 (T40-F2): the 3D DERIVES from the cut, and the frame walk is how', () => {
+  // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F2: ONE GRAIN TRUTH) ────────────
+  //
+  // The translation this test spells out is EXACTLY the one `sheetLay` performs
+  // and is unchanged. What changed is where the axis being translated comes
+  // from: it is no longer read off `cnc.grain` by a second reader, it is what
+  // went UP THE SHEET after the cut. The walk below is written out
+  // independently — the drawn frame is the panel frame or its turn, and a turn
+  // trades the axes — so the test still does not agree with the implementation
+  // by importing it.
   for (const [name, panel, why] of subjects()) {
-    const stated = panel.cnc.grain;
     const { dw, dh } = drawnFrame(panel);
     const relation = frameRelation(panel);
     assert.notEqual(relation, 'other', `${name}: the drawn frame is the panel frame or its turn (${why})`);
-    // THE TRANSLATION, spelled out: the drawn frame is either the panel frame
-    // or the panel frame turned, and when it is turned the two axes trade
-    // places along with it.
-    const wantAxis = relation === 'turned' ? (stated === 'w' ? 'h' : 'w') : stated;
+    const upDrawn = sheetTurn(panel) === 90 ? 'w' : 'h';
+    const wantAxis = relation === 'turned' ? (upDrawn === 'w' ? 'h' : 'w') : upDrawn;
     const run = grainRun(panel);
     assert.equal(run.axis, wantAxis,
       `${name}: drawn ${dw} × ${dh} is the panel frame ${relation === 'turned' ? 'TURNED' : 'ITSELF'} `
-      + `(${panel.w} × ${panel.h}), so the stated '${stated}' is the panel's '${wantAxis}'`);
+      + `(${panel.w} × ${panel.h}), and the sheet stood its '${upDrawn}' up the page`);
     assert.equal(run.lengthMm, wantAxis === 'w' ? panel.w : panel.h, `${name}: along the grain`);
     assert.equal(run.acrossMm, wantAxis === 'w' ? panel.h : panel.w, `${name}: across it`);
   }
@@ -256,7 +276,8 @@ test('F7 the ONE case where the fold is not a no-op: a cabinet deeper than it is
 
 // ═══ 4b. THE DIVERGENCE THIS FEATURE EXPOSES, PINNED AND REPORTED ═══════════
 
-test('F7 THE DIVERGENCE — two ladders cut one role and the drawn frame decides its figure', () => {
+test('F7 THE DIVERGENCE — two ladders cut one role and the drawn frame decides its figure'
+  + ' — CLOSED 18.08.2026 (T40-F2): the owner answered it, and it is gone', () => {
   // ─── PINNED, NOT ENDORSED — reported in the PR body ──────────────────────
   //
   // F7b's ruling is that `cnc.grain` is written in the CNC DRAWN frame. It is
@@ -283,23 +304,42 @@ test('F7 THE DIVERGENCE — two ladders cut one role and the drawn frame decides
   //                      (its 490), which is the saw's own answer for that
   //                      board and NOT "szuflady w pionie, wzdłuż słojów".
   //
-  // One role, two kits, two directions. It is pinned here as a number so that
-  // it is on the record and cannot drift further while a decision is pending;
-  // the fix, if the owner wants one, is a WRITER question (which frame
-  // `grain.js` states in), not a reader question — and iron rule 4 forbids
-  // touching either without his word.
+  // One role, two kits, two directions. It was pinned here as a number so that
+  // it was on the record and could not drift further while a decision was
+  // pending, and it named where the answer would have to come from: a WRITER
+  // question, not a reader question.
+  //
+  // ─── CLOSED 18.08.2026 (CLAUDE.md T40-F2: ONE GRAIN TRUTH) ───────────────
+  //
+  // The owner answered it, in the words this whole feature is built on:
+  //
+  //     "Jeżeli cięte jest w pionie, słój w pionie, to i tak samo powinien być
+  //      pokazany element na wizualizacji. Jak tniemy, tak słoje się pokazują…
+  //      Nie będzie wyjątków, będzie logicznie i składnie i prościej."
+  //
+  // and he named the drawer sides SL/SR, the box front BF and back BB among the
+  // roles that are CUT STANDING. So the answer was neither reader: it was that
+  // there were two sources at all. The CUT is the only one now, the role table
+  // is its input, and the two kits give one answer. The assertions below are the
+  // same measurements, inverted — which is the honest way to record a question
+  // being answered, rather than deleting the evidence it was ever asked.
   const wardrobeSide = partOf(unit('WARDROBE', { drawers: 3 }), 'DRAWER-SIDE');
   const budrSide = partOf(unit('BUDR'), 'DRAWER-SIDE');
   assert.equal(wardrobeSide.cnc.grain, 'h', 'the same statement…');
   assert.equal(budrSide.cnc.grain, 'h', '…on both ladders');
   assert.equal(frameRelation(wardrobeSide), 'same', 'the wardrobe box declares no drawn frame');
   assert.equal(frameRelation(budrSide), 'turned', 'the BUDR box is drawn `height × depth`');
-  assert.equal(grainRun(wardrobeSide).axis, 'h', 'so the figure runs UP the wardrobe’s side');
+  // ONE ROLE, ONE ANSWER — which is the whole of F2 in two lines.
+  assert.equal(grainRun(wardrobeSide).axis, 'h', 'the figure runs UP the wardrobe’s side…');
+  assert.equal(grainRun(budrSide).axis, 'h', '…and UP the BUDR’s. The divergence is gone.');
   assert.equal(grainRun(wardrobeSide).lengthMm, wardrobeSide.h);
-  assert.equal(grainRun(budrSide).axis, 'w', '…and along the BUDR’s — the divergence');
-  assert.equal(grainRun(budrSide).lengthMm, budrSide.w);
-  // Both readers still agree WITH EACH OTHER on both boards, which is what says
-  // this is a writer's question and not a drift between the two readers.
+  assert.equal(grainRun(budrSide).lengthMm, budrSide.h);
+  // …and the SHEET is what says so: the BUDR board, drawn turned, is turned
+  // back on the page so that the side's own height stands up it.
+  assert.equal(sheetTurn(wardrobeSide), 0, 'drawn standing already');
+  assert.equal(sheetTurn(budrSide), 90, 'drawn lying — the sheet stands it up');
+  // Both readers still agree WITH EACH OTHER on both boards, and now they agree
+  // with the owner as well.
   for (const side of [wardrobeSide, budrSide]) {
     const { dw, dh } = drawnFrame(side);
     assert.equal(grainRun(side).lengthMm, sheetTurn(side) === 90 ? dw : dh,

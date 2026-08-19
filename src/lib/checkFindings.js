@@ -41,6 +41,8 @@
 
 import { useMemo } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
+import { useUiStore } from '../stores/uiStore.js';
+import { anchorOfEvent } from './modalAnchor.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 
@@ -85,4 +87,74 @@ export function useCheckFindings() {
   });
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the list IS `deps`, named once above
   return useMemo(() => runChecks(), [runChecks, ...deps]);
+}
+
+
+// ─── TURN 40 (CLAUDE.md F4c): "TAKE ME THERE", AS ONE GESTURE ───────────────
+//
+// The owner: *"super, teraz tak robi, ale nie bierze nas dokładnie do tego
+// miejsca… jeśli to ta półka, powinno nas wziąć do tej półki, jakby najechać
+// kamerą na nią, lub na zawias który jest problemem. Jeśli drzwi zamknięte, to
+// otwiera program drzwi i nas tam zabiera."*
+//
+// Four things in one order, and the order matters:
+//
+//   1. OPEN THE DOORS, if the piece is behind them. A camera that flies into a
+//      shut wardrobe shows a door. Doors opened for this reason STAY OPEN —
+//      *"do not fight the user by closing them again"* is CLAUDE.md's own line
+//      and nothing here ever closes one.
+//   2. SELECT the piece, which is what rings it (`3d/SelectionOutline.jsx`).
+//   3. FLY to it — `focusOnPanel`, resolved by the view that owns the frame.
+//   4. OPEN the editor the finding names.
+//
+// It is a hook rather than four calls copied into two components, because two
+// copies of this order is how one surface ends up flying before it opens.
+
+/**
+ * The one "take me there" gesture, for any surface that lists findings.
+ *
+ * @returns {(subject:object|null, e:object|null) => void}
+ */
+export function useGoToSubject() {
+  const selectUnit = useUiStore((s) => s.selectUnit);
+  const selectElement = useUiStore((s) => s.selectElement);
+  const openModal = useUiStore((s) => s.openModal);
+  const focusOnPanel = useUiStore((s) => s.focusOnPanel);
+  const openFrontsFor = useUiStore((s) => s.openFrontsFor);
+  const unitResult = useProjectStore((s) => s.unitResult);
+
+  return (subject, e = null) => {
+    if (!subject?.unitId) return;
+    const { unitId, panelId } = subject;
+    if (panelId) {
+      // 1 — IS IT BEHIND A CLOSED DOOR? A piece is, unless it IS one: a front
+      // stands outside the carcass and swings, and flying at an opening door
+      // is a way to see nothing (`3d/UnitView.jsx` has refused to focus a front
+      // since turn 5, for the same reason).
+      const result = unitResult(unitId);
+      const piece = result?.panels?.find((p) => p.id === panelId) || null;
+      const isFront = piece?.role === 'front' || piece?.part === 'FRONT' || piece?.part === 'DRAWER-FRONT';
+      if (piece && !isFront) {
+        const fronts = (result.panels || [])
+          .filter((p) => p.part === 'FRONT' && p.role === 'front' && !p.meta?.appliance)
+          .map((p) => p.id);
+        if (fronts.length) openFrontsFor(unitId, fronts);
+      }
+      // 2 — select it, which rings it.
+      selectElement(unitId, panelId);
+      // 3 — and fly. `atMm` centres on the hinge's own row where the finding
+      // named one.
+      focusOnPanel(unitId, panelId, { atMm: subject.atMm ?? null });
+    } else {
+      selectUnit(unitId);
+    }
+    // 4 — the window the finding names.
+    openModal(subject.editor || 'cabinet', {
+      unitId,
+      panelId: panelId || undefined,
+      ...(subject.section ? { section: subject.section } : {}),
+      ...(subject.hingeIndex != null ? { hingeIndex: subject.hingeIndex } : {}),
+      anchor: anchorOfEvent(e),
+    });
+  };
 }

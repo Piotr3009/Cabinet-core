@@ -9,6 +9,12 @@
 //
 // Pure JavaScript — no React, no store imports, no DOM (engine rule).
 
+// ─── TURN 40 (CLAUDE.md F2): the owner's role list, as an INPUT to the cut.
+// It is not a second answer — nothing reads it to decide what the 3-D shows;
+// the 3-D asks `sheetLay()` below. See engine/grain.js for the law and for why
+// the list is a superset of the stamped table rather than an edit to it.
+import { CUT_GRAIN_AXIS_BY_PART, panelAxisOf } from '../grain.js';
+
 // ─── HOW A PART IS TURNED ON THE SHEET (turn 17, CLAUDE.md F3) ──────────────
 //
 // Owner: "odwróć wszystkie półki o 90 stopni w CNC — zobacz, w 3D orientacja
@@ -86,13 +92,123 @@ const SHELF_BOARD_PARTS = new Set(['SHELF', 'PARTITION', 'RAIL-PART', 'FIXED']);
  * about, and the stated field wins — recorded here because it is the one place
  * the fold is not a no-op.
  */
+/**
+ * ─── TURN 40 (CLAUDE.md F2): ONE GRAIN TRUTH, AND THIS IS IT ────────────────
+ *
+ * The owner, 18.08.2026: *"Jak tniemy, tak słoje się pokazują… Nie będzie
+ * wyjątków, będzie logicznie i składnie i prościej."*
+ *
+ * THE CUT IS THE ONLY SOURCE. This function is where a part's lay is decided,
+ * `sheetLay()` below turns that decision into "which way does the grain run",
+ * and `engine/decors.js grainRun` — the 3-D's reader — asks it rather than
+ * answering for itself. There is no second table and no per-role visual
+ * override any more.
+ *
+ * ─── WHY THIS TURN EXISTS, MEASURED ─────────────────────────────────────────
+ *
+ * T35-F6, T36-F5 and T37-F7 all touched this seam and it kept coming back,
+ * because there were two statements about one thing:
+ *
+ *   engine/grain.js       an axis per ROLE, in the PIECE's own `w × h` frame
+ *   this file             a turn per part, read off `cnc.grain` in the DRAWN
+ *                         frame (T37-F7a)
+ *
+ * and those two frames are not the same frame. `applyGrainAxis` stamps a
+ * drawer side with `grain: 'h'` MEANING its own height; a BUDR drawer side is
+ * drawn `height × depth`, so the sheet read that same `h` as the DRAWN height —
+ * the depth — and laid the board with its LENGTH up the page. The same role in
+ * a wardrobe, whose drawer side carries no drawn frame at all, was laid with
+ * its HEIGHT up the page. One role, two answers, decided by which kit the
+ * drawer came out of. That is the exception list the owner is abolishing.
+ *
+ * ─── THE CASCADE, IN ORDER ──────────────────────────────────────────────────
+ *
+ *   1. THE OWNER'S ROLE LIST (`CUT_GRAIN_AXIS_BY_PART`). The seven parts he has
+ *      decided the lay of are laid so the axis he named runs UP the sheet,
+ *      whatever frame they happen to be drawn in. This is first because it is
+ *      the owner's decision about the PIECE and everything below it is a rule
+ *      about a drawing.
+ *   2. THE PIECE'S OWN STATEMENT (T37-F7a). `cnc.grain` is stated in the DRAWN
+ *      frame, so at turn 0 the drawn HEIGHT is up the page: `'h'` is already
+ *      standing and `'w'` is lying down and wants 90. Unchanged, and it is
+ *      still what carries the shelf, the short back and the shoe box.
+ *   3. THE SHELF FAMILY, BY THE DRAWING (T17-F3). Unchanged.
+ *   4. As drawn.
+ *
+ * WHAT MOVES. Rules 2–4 are byte-for-byte what they were, so every board
+ * outside the owner's list is laid exactly where it was laid yesterday. Inside
+ * it, the four drawer-box boards that carry a TURNED drawn frame — SL, SR, BF
+ * and BB on a BUDR-style bank — turn 90 where they used to lie at 0. Those are
+ * the CNC layout fingerprints CLAUDE.md says will move, and they are the point
+ * of the feature rather than a side effect of it.
+ */
 export function sheetTurn(panel) {
+  const w = Number(panel?.w) || 0;
+  const h = Number(panel?.h) || 0;
+  const dw = Number(panel?.cnc?.drawn_w) > 0 ? Number(panel.cnc.drawn_w) : w;
+  const dh = Number(panel?.cnc?.drawn_h) > 0 ? Number(panel.cnc.drawn_h) : h;
+
+  // 1. THE OWNER'S OWN LIST — the axis he named runs up the sheet.
+  const wanted = CUT_GRAIN_AXIS_BY_PART[panel?.part];
+  if (wanted === 'w' || wanted === 'h') {
+    const want = wanted === 'w' ? w : h;
+    // Turn 0 leaves the drawn HEIGHT up the page; 90 puts the drawn WIDTH up
+    // it. Whichever of the two IS the dimension he asked for wins, and a tie —
+    // a square board — leaves the drawing exactly as it is.
+    return Math.abs(dh - want) <= Math.abs(dw - want) ? 0 : 90;
+  }
+
+  // 2. THE PIECE'S OWN STATEMENT (T37-F7a), in the DRAWN frame.
   const stated = panel?.cnc?.grain;
   if (stated === 'w' || stated === 'h') return stated === 'w' ? 90 : 0;
+
+  // 3. THE SHELF FAMILY, ASKED OF THE DRAWING (T17-F3).
   if (!SHELF_BOARD_PARTS.has(panel?.part)) return 0;
-  const w = Number(panel.cnc?.drawn_w) > 0 ? Number(panel.cnc.drawn_w) : Number(panel.w) || 0;
-  const h = Number(panel.cnc?.drawn_h) > 0 ? Number(panel.cnc.drawn_h) : Number(panel.h) || 0;
-  return w > h ? 90 : 0;
+  return dw > dh ? 90 : 0;
+}
+
+/**
+ * HOW THIS PART IS LAID, AND THEREFORE WHICH WAY ITS GRAIN RUNS.
+ *
+ * The single source CLAUDE.md F2 asks for, in one object:
+ *
+ *   turn      what `sheetTurn` decided, in degrees
+ *   upMm      what the board measures UP THE PAGE after that turn — which is
+ *             the length along the grain, because every board in this app is
+ *             nested with the grain running up the drawing
+ *   acrossMm  what it measures across it
+ *   axis      which of the PANEL's own two dimensions `upMm` is — the answer
+ *             the 3-D needs, carried out of the sheet's frame into the piece's
+ *             own by `engine/grain.js panelAxisOf`, the one translation
+ *
+ * A part with no CNC record at all is answered too: its own `w × h` IS its
+ * drawn frame, which is what a board with nothing said about it is cut to.
+ */
+export function sheetLay(panel) {
+  const w = Math.abs(Number(panel?.w) || 0);
+  const h = Math.abs(Number(panel?.h) || 0);
+  const dw = Number(panel?.cnc?.drawn_w) > 0 ? Math.abs(Number(panel.cnc.drawn_w)) : w;
+  const dh = Number(panel?.cnc?.drawn_h) > 0 ? Math.abs(Number(panel.cnc.drawn_h)) : h;
+  const turn = sheetTurn(panel);
+  const sideways = turn === 90 || turn === 270;
+  const upMm = sideways ? dw : dh;
+  const acrossMm = sideways ? dh : dw;
+  // WHICH AXIS OF THE DRAWING went up the page, and then which axis of the
+  // PIECE that is. The translation is by the FRAME RELATIONSHIP first and by
+  // size only where there is no relationship to read — T37-F7b's own rule,
+  // and the reason it matters is the square board: a 600 × 600 back is drawn
+  // in its own frame, so "the drawn height went up" IS "the panel's height
+  // went up", and a size match alone could not tell the two 600s apart.
+  const upDrawn = sideways ? 'w' : 'h';
+  const same = Math.abs(dw - w) < 0.5 && Math.abs(dh - h) < 0.5;
+  const turned = Math.abs(dw - h) < 0.5 && Math.abs(dh - w) < 0.5;
+  let axis;
+  if (same) axis = upDrawn;
+  else if (turned) axis = upDrawn === 'w' ? 'h' : 'w';
+  else axis = panelAxisOf(w, h, upMm);
+  return {
+    turn, upMm, acrossMm, axis,
+  };
 }
 
 /**

@@ -245,7 +245,10 @@ test('F7 the one thing it does NOT settle is asked, in BLOCKERS, as a question'
   assert.match(entry, /Co Piotr ma zdecydować/);
   // …and the layout really is untouched, which is what makes it a question.
   const layout = readFileSync(new URL('../src/engine/cnc/layout.js', import.meta.url), 'utf8');
-  assert.match(layout, /return w > h \? 90 : 0;/, 'nested by the drawn size, as turn 17 shipped it');
+  // RE-PINNED 18.08.2026 (T40-F2): the size rule is untouched in substance and
+  // is still the fall-through for the shelf family; `sheetLay` hoisted the drawn
+  // frame to the top of the function, so its two variables are named `dw`/`dh`.
+  assert.match(layout, /return dw > dh \? 90 : 0;/, 'nested by the drawn size, as turn 17 shipped it');
   const code = layout.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
   // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F7a): THE QUESTION IS ANSWERED ──
   //

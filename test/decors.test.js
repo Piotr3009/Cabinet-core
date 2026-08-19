@@ -159,10 +159,28 @@ test('the fallback grain is a real file, and it is ours', () => {
 
 // ─── which way the grain runs (turn 8, CLAUDE.md F1) ───
 
-test('the grain runs along the piece — the LONGER cut dimension', () => {
+test('the grain runs the way the board was CUT'
+  + ' — RE-PINNED 18.08.2026 (T40-F2): the cut decides, not the longer side', () => {
+  // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F2: ONE GRAIN TRUTH) ────────────
+  //
+  // The owner: *"Jeżeli cięte jest w pionie, słój w pionie… Jak tniemy, tak
+  // słoje się pokazują. Nie będzie wyjątków."*
+  //
+  // Turn 8's rule — "the grain runs the LONGER cut dimension" — was a rule
+  // `grainRun` applied on its own, beside the one the sheet applied. That is
+  // the second source of truth F2 abolishes. A board with nothing said is laid
+  // AS DRAWN (its own `w × h` where it declares no drawn frame), so the grain
+  // runs its drawn HEIGHT, whichever of the two that is. The saw's rule
+  // survives exactly where it can still be needed and nowhere else: inside
+  // `engine/grain.js panelAxisOf`, for a square board where no other fact can
+  // decide.
   assert.deepEqual(grainRun({ w: 560, h: 600 }), { axis: 'h', lengthMm: 600, acrossMm: 560 });
-  assert.deepEqual(grainRun({ w: 1164, h: 540 }), { axis: 'w', lengthMm: 1164, acrossMm: 540 });
-  // …unless the piece says otherwise, which is the only thing that beats a saw.
+  // The one that moved: 1164 × 540 is laid 1164 across and 540 up the page, so
+  // the figure runs the 540. The sheet always laid it that way; only the
+  // picture used to disagree.
+  assert.deepEqual(grainRun({ w: 1164, h: 540 }), { axis: 'h', lengthMm: 540, acrossMm: 1164 });
+  // …unless the piece says otherwise, which still beats the drawing: a stated
+  // 'w' turns the board 90° on the sheet and the figure turns with it.
   assert.equal(grainRun({ w: 560, h: 600, cnc: { grain: 'w' } }).axis, 'w');
 });
 

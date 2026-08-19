@@ -54,6 +54,18 @@ test('every piece of a cabinet is a selectable element — not just the shelves'
 test('the drawer PANEL and its fillers are mechanism — they follow the stack', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
+  // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F3a: NO DOOR, NO STRIP) ─────────
+  //
+  // The owner: *"jak nie ma drzwi w ogóle, to nie powinno robić 30 mm odstępu
+  // infill na zawiasy — dopiero po wstawieniu drzwi (ważne)."* The DP panel and
+  // its fillers exist because a door hinged on that side swings through that
+  // band, so a wardrobe with no doors — which is what `addUnit('WARDROBE')`
+  // makes — no longer cuts them at all.
+  //
+  // The test's POINT is unchanged and is still exactly what it asserts below:
+  // when there IS a mechanism, it is mechanism and not a piece a joiner edits.
+  // What moved is that the fixture now has the doors the mechanism is for.
+  store().updateUnitParams(id, { doors: { count: 2 } });
   confirmDrawerBox();
   store().addDrawers(id, 3);
   const panels = resultOf(id).panels.filter((p) => p.box);
@@ -363,9 +375,13 @@ test('what a unit offers is decided by its FAMILY, as data', () => {
   assert.deepEqual(P.itemsByContext.kitchen, ['shelves', 'drawers', 'partition', 'cargo', 'bins']);
   // Turn 33 (CLAUDE.md F3): the wardrobe's list grew its accessories — the
   // shoe shelf and the two bought mechanisms beside the pull-down.
+  // TURN 40 (CLAUDE.md F3b): …and the OVERLAY stack, beside the internal
+  // drawers — *"nadal nie mamy szuflad nawierzchniowych"*. Two kinds of drawer
+  // and the list says which is which, which is what "clearly distinguished"
+  // asks for.
   assert.deepEqual(
     P.itemsByContext.wardrobe,
-    ['shelves', 'shoe_box' /* CHAT-FIX 16.08: the box took the shelf's slot in the offer */, 'hanger', 'drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
+    ['shelves', 'shoe_box' /* CHAT-FIX 16.08: the box took the shelf's slot in the offer */, 'hanger', 'drawers', 'overlay_drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
   );
   // A kitchen unit is not offered a hanging rail first, and a wardrobe is.
   assert.ok(!P.itemsByContext.kitchen.includes('hanger'));

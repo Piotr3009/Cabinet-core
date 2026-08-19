@@ -30,7 +30,7 @@ import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import FrontGapWarnings from '../components/FrontGapWarnings.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { getProjectType } from '../engine/projectTypes.js';
-import { migrateDesign } from '../engine/design.js';
+import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
 import { elementLabel } from '../engine/elements.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -43,7 +43,12 @@ import { persistProject } from '../lib/persist.js';
 import { cncAssignmentWarning } from '../engine/bom.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
-import { exportBookletPdf, exportDrawingPdf, exportDrawingSvg } from '../lib/drawingExport.js';
+// TURN 40 (CLAUDE.md F5): a sheet is a WALL — the whole run, not one cabinet.
+import { wallDrawingSheets } from '../engine/drawings/wallSheets.js';
+import {
+  exportBookletPdf, exportDrawingPdf, exportDrawingSvg,
+  exportWallDrawingsDxf, exportWallDrawingsPdf,
+} from '../lib/drawingExport.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 // Turn 34 (CLAUDE.md F8): when Delete is the delete key, and not a character.
 import { isDeleteKey } from '../lib/deleteKey.js';
@@ -355,6 +360,43 @@ export default function ConfiguratorPage() {
         notify(`Saved ${filename} — ${pages} pages.`, 'ok');
       } catch (e) {
         notify(e.message || 'Nothing to draw yet.', 'warn');
+      }
+      return;
+    }
+
+    // ─── TURN 40 (CLAUDE.md F5): THE WALL SET ──────────────────────────────
+    //
+    // Not "of one unit": a wall drawing is of a WALL, so it needs no selection
+    // and it refuses only when the job is empty. The SHEETS are built once by
+    // the engine and bound twice — PDF here, DXF below — which is what "same
+    // geometry" means and is what stops the two files disagreeing about a wall
+    // after a correction.
+    if (kind === 'walls' || kind === 'walls-dxf') {
+      if (!guard()) return;
+      try {
+        const sheets = wallDrawingSheets({
+          entries: allResults(),
+          project,
+          room: project.room,
+          frontTypeOf: (u) => resolveUnitDesign(u, project.design).frontType,
+          profile,
+          date,
+        });
+        if (!sheets.length) { notify('No cabinet is standing against a wall yet.', 'warn'); return; }
+        if (kind === 'walls') {
+          const { filename, pages } = exportWallDrawingsPdf(sheets.map((x) => x.sheet), {
+            project: project.name,
+          });
+          notify(`Saved ${filename} — ${pages} sheets: ${sheets.map((x) => x.name).join(', ')}.`, 'ok');
+          return;
+        }
+        exportWallDrawingsDxf(sheets, { project: project.name })
+          .then(({ filename, files }) => notify(
+            `Saved ${filename} — ${files.length} DXF. AutoCAD only: do NOT open these in VCarve.`, 'ok',
+          ))
+          .catch((err) => notify(err.message || 'Nothing to draw yet.', 'warn'));
+      } catch (err) {
+        notify(err.message || 'Nothing to draw yet.', 'warn');
       }
       return;
     }

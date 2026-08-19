@@ -1,7 +1,6 @@
 import { useUiStore } from '../stores/uiStore.js';
 import { CHECKS, checkSummary } from '../engine/checks.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
-import { anchorOfEvent } from '../lib/modalAnchor.js';
 // ─── TURN 38 (CLAUDE.md F1a): AND IT IS READ FRESH ─────────────────────────
 // The list used to be memoised here on `[units, design, runChecks]`, which
 // left every rule that reads the PROFILE (the hinge ladders themselves), the
@@ -10,7 +9,10 @@ import { anchorOfEvent } from '../lib/modalAnchor.js';
 // where no hinge is any more, and a reload clears it". `lib/checkFindings.js`
 // owns the dependency list now, and the canvas toolbar's badge reads the same
 // one, so the two surfaces cannot disagree about what the job's faults are.
-import { useCheckFindings } from '../lib/checkFindings.js';
+// ─── TURN 40 (CLAUDE.md F4a/F4c) ───────────────────────────────────────────
+// The findings, and the ONE "take me there" gesture both surfaces use — open
+// the doors if the piece is behind them, ring it, fly to it, open its editor.
+import { useCheckFindings, useGoToSubject } from '../lib/checkFindings.js';
 
 // ─── CHECK v1's PANEL (turn 31, CLAUDE.md F6) ───────────────────────────────
 //
@@ -40,29 +42,22 @@ const TONE = {
 };
 
 export default function CheckPanel() {
-  const selectUnit = useUiStore((s) => s.selectUnit);
-  const selectElement = useUiStore((s) => s.selectElement);
-  const openModal = useUiStore((s) => s.openModal);
   const setCheckOpen = useUiStore((s) => s.setCheckOpen);
 
   const findings = useCheckFindings();
   const summary = checkSummary(findings);
 
-  /** The F7/T30 mechanism: select the piece — which is what flies the camera —
-   *  and open the editor the finding names. */
-  const goTo = (subject, e) => {
-    if (!subject?.unitId) return;
-    if (subject.panelId) selectElement(subject.unitId, subject.panelId);
-    else selectUnit(subject.unitId);
-    const editor = subject.editor || 'cabinet';
-    openModal(editor, {
-      unitId: subject.unitId,
-      panelId: subject.panelId || undefined,
-      ...(subject.section ? { section: subject.section } : {}),
-      ...(subject.hingeIndex != null ? { hingeIndex: subject.hingeIndex } : {}),
-      anchor: anchorOfEvent(e),
-    });
-  };
+  /**
+   * ─── TURN 40 (CLAUDE.md F4c): AND IT TAKES YOU THERE ─────────────────────
+   *
+   * The F7/T30 mechanism did two of the four things: it selected the piece and
+   * opened the editor. It did not FLY (selection alone does not move a camera)
+   * and it did not open a door in front of the piece, which is why the owner
+   * said *"nie bierze nas dokładnie do tego miejsca"*. All four live in
+   * `lib/checkFindings.js useGoToSubject`, in one order, so the cabinet modal's
+   * own list behaves identically.
+   */
+  const goTo = useGoToSubject();
 
   return (
     <aside
@@ -104,16 +99,32 @@ export default function CheckPanel() {
                 </span>
                 <span className="block text-[11px] leading-snug text-ink-100">{f.message}</span>
               </button>
-              {f.alternative && (
-                <div className="px-2 pb-1.5">
-                  <button
-                    type="button"
-                    className="cc-btn px-2 text-[11px]"
-                    data-check-alternative={f.check}
-                    onClick={(e) => goTo(f.alternative, e)}
-                  >
-                    {f.alternative.label || 'The other side of it'}
-                  </button>
+              {/* ─── TURN 40 (CLAUDE.md F4a): THE FAULT'S OWN BUTTONS ──────
+                  The owner, with two screenshots: *"raczej powinny się
+                  pokazywać i tu i tu"* — the same fault, the same wording, the
+                  SAME BUTTONS, in both places. The list is the FINDING's
+                  (`engine/checks.js`), so this renders it and owns no label;
+                  `ShelfHingeClash` renders the very same array. A fault with no
+                  actions of its own still carries `alternative`, which is every
+                  rule written before tonight. */}
+              {(f.actions?.length || f.alternative) && (
+                <div className="px-2 pb-1.5 flex flex-wrap gap-1">
+                  {(f.actions?.length
+                    ? f.actions
+                    : [{ id: 'alternative', label: f.alternative.label || 'The other side of it', subject: f.alternative }]
+                  ).map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      className="cc-btn px-2 text-[11px]"
+                      data-check-action={a.id}
+                      data-check-alternative={a.id === 'move-hinge' || a.id === 'alternative' ? f.check : undefined}
+                      title={a.title || ''}
+                      onClick={(e) => goTo(a.subject, e)}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
                 </div>
               )}
             </li>

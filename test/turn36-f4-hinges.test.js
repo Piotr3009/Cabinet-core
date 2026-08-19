@@ -120,11 +120,19 @@ test('F4c — the modal renders THAT order, and passes the engine index on', () 
   assert.match(modal, /import \{ hingeRows \} from '\.\.\/engine\/items\.js'/);
   assert.match(modal, /\{hingeRows\(rows\)\.map\(\(hr\) => \(/);
   // Every control that WRITES takes `hr.index` — never the display position.
+  //
+  // RE-PINNED 18.08.2026 (TURN 40, CLAUDE.md F1). The sentence that overturned
+  // the old shape: *"w modalu doors nie można ich przesuwać"* — a split leaf's
+  // segment is its own door with its own ladder, so every setter now carries
+  // the PANEL it is about as a last argument (`null` for a whole door, which
+  // is every door in the app before a split). The load-bearing half of this
+  // test is unchanged and still asserted: what is passed is `hr.index`, the
+  // ENGINE's index, and never the display position.
   for (const call of [
     /setHingePos\(unit\.id, hr\.index, hr\.mm \+ /,
     /setHingePos\(unit\.id, hr\.index, hr\.mm - /,
-    /setHingePos\(unit\.id, hr\.index, v\)/,
-    /removeHinge\(unit\.id, hr\.index\)/,
+    /setHingePos\(unit\.id, hr\.index, v, /,
+    /removeHinge\(unit\.id, hr\.index, /,
   ]) assert.match(modal, call);
   // …and the gold ring from a 3-D pick reads the same index, because the pick
   // counts bottom-up.

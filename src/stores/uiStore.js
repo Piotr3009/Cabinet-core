@@ -733,6 +733,32 @@ export const useUiStore = create((set, get) => ({
   focusOn: (target, radius) => set({ focusRequest: { target, radius, at: Date.now() } }),
   clearFocus: () => set({ focusRequest: null }),
 
+  // ─── TURN 40 (CLAUDE.md F4c): "TAKE ME THERE" ─────────────────────────────
+  //
+  // The owner, on clicking a Check finding: *"super, teraz tak robi, ale nie
+  // bierze nas dokładnie do tego miejsca… jeśli to ta półka, powinno nas wziąć
+  // do tej półki, jakby najechać kamerą na nią, lub na zawias który jest
+  // problemem."*
+  //
+  // `focusOn` above takes a WORLD POINT, and the Check panel does not have one:
+  // a panel's world centre needs the unit's origin, its wall's angle and its
+  // own rotation, all of which live in `3d/UnitView.jsx` where the frame is
+  // (`panelWorldCentre`). Asking the panel to work that out would be a second
+  // copy of the placement maths, which is how a camera ends up flying at the
+  // wrong cabinet on wall 3 of an L-shaped room.
+  //
+  // So the request names the PIECE and the scene resolves it. `atMm` is the
+  // height up that piece to centre on, which is what makes *"lub na zawias
+  // który jest problemem"* literally true: a hinge fault flies to the hinge's
+  // own row on the door rather than to the middle of it.
+  focusPanel: null,                  // { unitId, panelId, atMm, at }
+  focusOnPanel: (unitId, panelId, { atMm = null } = {}) => set(
+    unitId && panelId
+      ? { focusPanel: { unitId, panelId, atMm, at: Date.now() } }
+      : {},
+  ),
+  clearFocusPanel: () => set({ focusPanel: null }),
+
   // Which fronts are open, and how far (0 = shut, 1 = fully open). Purely
   // visual: nothing here reaches the engine, the BOM or the CNC sheet.
   openFronts: {},                    // { [unitId]: { [panelId]: 0..1 } }

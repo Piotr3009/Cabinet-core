@@ -1,0 +1,138 @@
+{
+ "turn": 41,
+ "when": "2026-08-19T10:01:56.408Z",
+ "steps": [
+  {
+   "label": "EVERY board the owner named has its LONG (banded) edge up the sheet",
+   "ok": true,
+   "detail": "16/16 — [{\"part\":\"DRAWER-SIDE\",\"w\":490,\"h\":237,\"up\":490,\"across\":237,\"stands\":true},{\"part\":\"DRAWER-SIDE\",\"w\":490,\"h\":237,\"up\":490,\"across\":237,\"stands\":true},{\"part\":\"DRAWER-SIDE\",\"w\":490,\"h\":178,\"up\":490,\"across\":178,\"stands\":true}]"
+  },
+  {
+   "label": "…and the 3-D runs the figure the way the saw cut it",
+   "ok": true,
+   "detail": "{\"axis\":\"w\",\"length\":490,\"up\":490,\"w\":490,\"h\":237}"
+  },
+  {
+   "label": "THE ROD'S Y AFTER A DRAG: engine, machine and the SAVED number agree",
+   "ok": true,
+   "detail": "{\"before\":{\"rod\":1418,\"drills\":[1418],\"stored\":1400},\"after\":{\"rod\":860,\"drills\":[860],\"stored\":842}}"
+  },
+  {
+   "label": "…and the stored millimetre describes where the rod IS",
+   "ok": true,
+   "detail": "stored 1400 -> 842, rod 1418 -> 860"
+  },
+  {
+   "label": "THE SWITCH: choosing overlay leaves ONE stack, not two",
+   "ok": true,
+   "detail": "internal 3 fronts -> overlay 3 fronts"
+  },
+  {
+   "label": "…and the FRONT WIDTH IN MM changed with it",
+   "ok": true,
+   "detail": "858 mm -> 897 mm"
+  },
+  {
+   "label": "THE HEIGHT SLIDER MOVES THE BOARD on an overlay drawer",
+   "ok": true,
+   "detail": "200,200,200 -> 200,300,200 (ref string)"
+  },
+  {
+   "label": "MOVE ONE HINGE ON ONE LEAF: no new hole appears anywhere",
+   "ok": true,
+   "detail": "20 -> 20 plate holes"
+  },
+  {
+   "label": "…and the UNTOUCHED side is bored exactly where it was",
+   "ok": true,
+   "detail": "BUR [84,116,758,790,1431,1463,1634,1666,2034,2066] -> [84,116,758,790,1431,1463,1634,1666,2034,2066]"
+  },
+  {
+   "label": "…while the moved side followed its own leaf",
+   "ok": true,
+   "detail": "BUL [84,116,758,790,1431,1463,1634,1666,2034,2066] -> [84,116,758,790,1431,1463,1684,1716,2031,2063]"
+  },
+  {
+   "label": "F5a — the pen ladder is a real hierarchy, and a dimension is the lightest",
+   "ok": true,
+   "detail": "{\"cut\":0.7,\"outline\":0.5,\"visible\":0.35,\"hidden\":0.25,\"annotation\":0.18,\"fine\":0.13,\"dimLighter\":true,\"range\":5.384615384615384}"
+  },
+  {
+   "label": "F5a — the SECTION on the glass carries the CUT weight, and it is the heaviest",
+   "ok": true,
+   "detail": "{\"0.7\":16,\"0.5\":2,\"0.13\":8}"
+  }
+ ],
+ "shots": [
+  {
+   "name": "f1-the-sheet-stands-up",
+   "subject": {
+    "text": "DRAWER"
+   },
+   "present": true,
+   "detail": "{\"text\":true}",
+   "frame": "dab3931d553c"
+  },
+  {
+   "name": "f2-one-rail-chain-after-the-drag",
+   "subject": {
+    "all": [
+     "[data-testid=\"rail-height\"]"
+    ],
+    "text": "Hanger rail"
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}",
+   "frame": "53270a2111e1"
+  },
+  {
+   "name": "f3-the-drawer-switch",
+   "subject": {
+    "text": "drawer"
+   },
+   "present": true,
+   "detail": "{\"text\":true}",
+   "frame": "081154fdbf34"
+  },
+  {
+   "name": "f4-a-hinge-column-is-one-board",
+   "subject": {
+    "text": "wardrobe"
+   },
+   "present": true,
+   "detail": "{\"text\":true}",
+   "frame": "f317ca68d621"
+  },
+  {
+   "name": "f5a-line-weight-on-the-elevation",
+   "subject": {
+    "all": [
+     "[data-cc-drawing]"
+    ],
+    "texts": [
+     "Wall A /1",
+     "No Scale"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"texts\":true}",
+   "frame": "d28bb375d756"
+  },
+  {
+   "name": "f5b-the-section-cut-lines-are-heaviest",
+   "subject": {
+    "all": [
+     "[data-cc-drawing]"
+    ],
+    "texts": [
+     "Horizontal section"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"texts\":true}",
+   "frame": "285ba12ebe87"
+  }
+ ],
+ "failed": 0,
+ "emptyFrames": 0
+}

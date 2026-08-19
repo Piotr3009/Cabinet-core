@@ -29,6 +29,7 @@ import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import {
   buildHorizontalSection, buildWallElevation, chainValues, handleMarks, heightChains,
   horizontalChains, turnedAway, verticalChains, wallGroups, wallLabel, widthChains, widthGroups,
+  mountingBands, bandChains,
 } from '../src/engine/drawings/wallElevation.js';
 import { wallDrawingsFilename } from '../src/lib/drawingExport.js';
 import { wallDrawingPages, wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
@@ -151,18 +152,44 @@ test('F5 — THE DETAILED CHAIN SUMS TO THE GROUPED CHAIN', () => {
   assert.equal(sum(grouped), group.to - group.from);
 });
 
-test('F5 — BOTH chains are actually DRAWN, above and below', () => {
-  // A chain that exists as an array and not as arrowheads is not a drawing.
+test('F5 — BOTH chains are actually DRAWN, above and below'
+  + ' — RE-PINNED 19.08.2026 (T41-F5c): one detailed chain PER RUN', () => {
+  // ─── RE-PINNED 19.08.2026 (T41-F5c) ──────────────────────────────────────
+  //
+  // This asserted the whole-wall chain, and the whole-wall chain is the fault.
+  // `kitchen()` is a base run with a WALL UNIT OVER IT, and taking every
+  // cabinet's edges regardless of mounting height gave
+  //
+  //     detailed [40, 560, 40, 500]     grouped [1140]
+  //
+  // — four numbers that are neither a cabinet nor a gap, and a bottom chain
+  // collapsed to one figure because the wall unit bridges the gap between the
+  // two base units. A dimension chain measures a RUN, so there is now one
+  // detailed chain per mounting band, and the grouped chain below belongs to
+  // the FLOOR run and is drawn only when it says something the detailed chain
+  // does not.
   const group = wallGroups(kitchen(), P)[0];
   const el = buildWallElevation(group, { withFronts: true, room: ROOM, profile: P });
   const dims = el.entities.filter((e) => e.kind === 'text' && e.layer === 'DIMENSIONS');
   const above = dims.filter((e) => !e.rotate && e.y > group.top);
   const below = dims.filter((e) => !e.rotate && e.y < 0);
-  assert.ok(above.length >= 2, `the detailed chain is above the cabinets: ${above.length}`);
-  assert.ok(below.length >= 1, `the grouped chain is below them: ${below.length}`);
-  const { detailed, grouped } = widthChains(group.members, P);
-  assert.equal(above.length, detailed.length, 'one number per detailed segment');
-  assert.equal(below.length, grouped.length, 'one number per grouped segment');
+
+  const bands = mountingBands(group.members);
+  assert.ok(bands.length >= 2, `this wall really has two runs on it: ${bands.length}`);
+  const perBand = bands.map((b) => bandChains(b, P));
+  const expectedAbove = perBand.reduce((n, c) => n + c.detailed.length, 0);
+  assert.equal(above.length, expectedAbove, 'one number per segment, per run');
+
+  // Every number above is a real cabinet width or a real gap — which is the
+  // thing the whole-wall chain could not say.
+  const realWidths = new Set(group.members.map((m) => Math.round(m.width)));
+  const aboveNums = above.map((e) => Math.round(Number(e.text)));
+  assert.ok(aboveNums.some((v) => realWidths.has(v)),
+    `the chain names actual cabinets: ${JSON.stringify(aboveNums)} against ${[...realWidths]}`);
+
+  const floor = perBand[0];
+  assert.equal(below.length, floor.same ? 0 : floor.grouped.length,
+    'the floor run\'s grouped totals, and only when they differ');
 });
 
 test('F5 — the VERTICAL pair: every front’s own height, and the grouped bands', () => {
@@ -189,11 +216,13 @@ test('F5 — /2 drops the FRONT chain and keeps the bands, because it has no fro
   const vertical = two.entities.filter((e) => e.kind === 'text' && e.layer === 'DIMENSIONS' && e.rotate === -90);
   assert.equal(vertical.length, bands.length + 1, 'the bands and the overall, and not the fronts');
   assert.ok(fronts.length > 0, 'the fronts chain really does exist on /1');
-  // Both horizontal chains are still there: a carcass sheet is still set out
-  // along the wall.
+  // The horizontal chains are still there: a carcass sheet is still set out
+  // along the wall. T41-F5c: counted per RUN — see the re-pin above.
   const horizontal = two.entities.filter((e) => e.kind === 'text' && e.layer === 'DIMENSIONS' && !e.rotate);
-  const { detailed, grouped } = widthChains(group.members, P);
-  assert.equal(horizontal.length, detailed.length + grouped.length);
+  const perBand = mountingBands(group.members).map((b) => bandChains(b, P));
+  const expected = perBand.reduce((n, c) => n + c.detailed.length, 0)
+    + (perBand[0].same ? 0 : perBand[0].grouped.length);
+  assert.equal(horizontal.length, expected);
 });
 
 test('F5 — the grouping law is `engine/runs.js`’s, not a second one', () => {
@@ -401,14 +430,17 @@ test('F5 — the chain builders draw exactly the two runs they are named for', (
   // Called directly, so the pair is pinned without a whole wall around it —
   // which is what stops a future refactor quietly dropping one of the two.
   const group = wallGroups(kitchen(), P)[0];
-  const { detailed, grouped } = widthChains(group.members, P);
+  // T41-F5c: per RUN. `widthChains` is untouched and still answers for whatever
+  // members it is handed — what changed is who it is handed.
+  const perBand = mountingBands(group.members).map((b) => bandChains(b, P));
   const h = horizontalChains(group.members, {
     profile: P, textHeight: 55, y: { top: group.top, bottom: 0 },
   });
   const hTexts = h.filter((e) => e.kind === 'text');
-  assert.equal(hTexts.length, detailed.length + grouped.length, 'two runs, not one');
-  assert.ok(hTexts.some((e) => e.y > group.top), 'one above');
-  assert.ok(hTexts.some((e) => e.y < 0), 'and one below');
+  const expected = perBand.reduce((n, c) => n + c.detailed.length, 0)
+    + (perBand[0].same ? 0 : perBand[0].grouped.length);
+  assert.equal(hTexts.length, expected, 'one chain per run');
+  assert.ok(hTexts.some((e) => e.y > group.top), 'above the cabinets');
 
   const { fronts, bands } = heightChains(group.members);
   const v = verticalChains(group.members, {

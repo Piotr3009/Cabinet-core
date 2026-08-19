@@ -317,18 +317,38 @@ test('F3b — the store adds a stack of EQUAL drawers, and the engine reads it',
   assert.deepEqual(r.panels.filter((p) => p.part === 'DP' || p.part === 'FILLER'), []);
 });
 
-test('F3b — and it does NOT disturb the internal stack’s own items', () => {
+test('F3b — and it does NOT disturb the internal stack’s own items'
+  + ' — RE-PINNED 19.08.2026 (T41-F3): it REPLACES it, because it is a switch', () => {
+  // ─── RE-PINNED 19.08.2026 (CLAUDE.md T41-F3) ──────────────────────────────
+  //
+  // This test asserted the fault. "Adding an overlay stack leaves the internal
+  // stack alone" sounds like tidiness and is, in a wardrobe, two physical
+  // drawer stacks in the same volume: measured on one 900 wardrobe, six
+  // DRAWER-FRONT panels at y 0 / 21 / 203 / 221 / 406 / 424, widths alternating
+  // 897 and 762, thirty drawer-box boards, and `warnings` empty. A joiner who
+  // changed his mind about how his drawers were mounted got both answers, and
+  // nothing in the app said so.
+  //
+  // A wardrobe has ONE drawer stack and it stands on its floor. Internal and
+  // overlay are two ways of BUILDING it, not two stacks — so the offer is a
+  // SWITCH, and this assertion is inverted. Was:
+  //
+  //     assert.equal(items.filter(i => i.kind === 'drawer').length, 2)
+  //
+  // The second half of the test is untouched and is the reason the test is
+  // re-pinned rather than replaced: a height somebody typed must still survive
+  // a re-add, and it does.
   const id = project();
   store().addDrawers(id, 2);
   store().addOverlayDrawers(id, 3);
   const items = store().units.find((u) => u.id === id).params.sections[0].items;
-  assert.equal(items.filter((i) => i.kind === 'drawer').length, 2, 'the internal ones are still there');
+  assert.equal(items.filter((i) => i.kind === 'drawer').length, 0,
+    'choosing overlay clears the internal stack it replaces');
   assert.equal(items.filter((i) => i.kind === 'overlay_drawer').length, 3);
   // Re-adding an overlay stack replaces only its own kind, and keeps heights.
   store().setDrawerHeight(id, items.find((i) => i.kind === 'overlay_drawer').id, 250);
   store().addOverlayDrawers(id, 3);
   const after = store().units.find((u) => u.id === id).params.sections[0].items;
-  assert.equal(after.filter((i) => i.kind === 'drawer').length, 2);
   assert.ok(after.filter((i) => i.kind === 'overlay_drawer').some((i) => i.height_mm === 250),
     'a height somebody typed survives a re-add');
 });

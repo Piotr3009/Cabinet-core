@@ -1,0 +1,76 @@
+T41-F3 — THE DRAWER SWITCH: the probe, before and after
+
+Run: node verify/t41/f3-drawer-switch-probe.mjs
+
+## BEFORE (T40 head, ccdc401) — note section 3 needs engine/drawerRef.js, which T41 adds
+
+```
+T41-F3 — THE DRAWER SWITCH
+====================================================================================
+
+1. THE FRONT WIDTH IN MM — a 900 wardrobe, four combinations
+   (F3a: the 30 mm hinge strip exists only when a door does. The app
+    reserves 48 mm a side — the owner's 30 mm inset plus one board.)
+  internal/doors ON        front w =   762 mm    DP = 2
+  internal/doors OFF       front w =   858 mm    DP = 0
+  overlay/doors ON         front w =   897 mm    DP = 0
+  overlay/doors OFF        front w =   897 mm    DP = 0
+
+  OK    internal: doors OFF is wider than doors ON           true
+  OK    overlay: NEVER the strip, under any door state       true
+
+2. IT IS A SWITCH — one stack at a time, whichever order they are chosen
+  OK    internal only: fronts                                3
+  FAIL  then overlay: fronts (NOT six)                       6   (expected 3)
+  OK    …and it is the overlay stack                         true
+  FAIL  then internal again: fronts                          6   (expected 3)
+  FAIL  …and the overlay stack is gone                       true   (expected false)
+
+3. THE PER-DRAWER HEIGHT MOVES THE BOARD — on BOTH kinds
+  overlay    ref = string  200,200,200  ->  200,300,200
+  OK    overlay: drawer 2 is 300 mm                          300
+  OK    overlay: the others did not move                     200,200
+  internal   ref = string  197,200,200  ->  197,300,200
+  OK    internal: drawer 2 is 300 mm                         300
+  OK    internal: the others did not move                    197,200
+
+====================================================================================
+```
+
+## AFTER (T41-F3)
+
+```
+T41-F3 — THE DRAWER SWITCH
+====================================================================================
+
+1. THE FRONT WIDTH IN MM — a 900 wardrobe, four combinations
+   (F3a: the 30 mm hinge strip exists only when a door does. The app
+    reserves 48 mm a side — the owner's 30 mm inset plus one board.)
+  internal/doors ON        front w =   762 mm    DP = 2
+  internal/doors OFF       front w =   858 mm    DP = 0
+  overlay/doors ON         front w =   897 mm    DP = 0
+  overlay/doors OFF        front w =   897 mm    DP = 0
+
+  OK    internal: doors OFF is wider than doors ON           true
+  OK    overlay: NEVER the strip, under any door state       true
+
+2. IT IS A SWITCH — one stack at a time, whichever order they are chosen
+  OK    internal only: fronts                                3
+  OK    then overlay: fronts (NOT six)                       3
+  OK    …and it is the overlay stack                         true
+  OK    then internal again: fronts                          3
+  OK    …and the overlay stack is gone                       false
+
+3. THE PER-DRAWER HEIGHT MOVES THE BOARD — on BOTH kinds
+  overlay    ref = string  200,200,200  ->  200,300,200   field shows 300
+  OK    overlay: drawer 2 is 300 mm                          300
+  OK    overlay: the others did not move                     200,200
+  OK    overlay: and the field shows what the board is       300
+  internal   ref = string  197,200,200  ->  197,300,200   field shows 300
+  OK    internal: drawer 2 is 300 mm                         300
+  OK    internal: the others did not move                    197,200
+  OK    internal: and the field shows what the board is      300
+
+====================================================================================
+One stack, the right width, and a slider that moves the board. T41-F3 holds.
+```

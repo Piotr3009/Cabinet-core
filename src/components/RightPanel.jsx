@@ -651,6 +651,41 @@ export default function RightPanel() {
             </div>
           )}
 
+          {/* ─── TURN 41 (F2): THE ROD'S HEIGHT IS READ, NOT TYPED, HERE ──────
+              SUPERSEDED 19.08.2026 (T41-F2) — COMMENTED OUT, NOT DELETED.
+
+              WHAT IT WAS: an editable height field bound to the hanger item's
+              own `pos_mm`, committing through a raw `updateItem`.
+
+              WHY IT WAS REPLACED: it was the THIRD writer of one number and the
+              only one with no clamp, no snap and no datum — and for a T37
+              assembly the engine reads `pos_mm` for nothing at all, so the
+              field reported success and moved no rod. Measured: with the rod
+              actually at 860 mm this field displayed 1400, and typing 500 into
+              it left the rod at 860, the bracket holes at 860 and the drawn
+              shelf at 900 while the SAVED project quietly became 500.
+
+              WHAT REPLACED IT: the resolved axis, read straight off the
+              engine's own `assemblies.rail.y` — the same millimetre the 3-D
+              draws and the machine drills. The height is EDITED where it is
+              owned: drag the fix shelf (an assembly), or the height field in
+              Element properties (a legacy or an alone rod). One number, one
+              writer, one truth.
+
+              <div className="cc-row text-sm">
+                <div className="flex flex-col">
+                  <span className="text-ink-100">Hanger rail</span>
+                  {rail.material_label && <span className="text-[11px] text-ink-400">{rail.material_label}</span>}
+                </div>
+                <div className="flex items-center gap-1">
+                  <NumberField
+                    className="cc-input w-20 text-right" value={rail.pos_mm}
+                    onCommit={(v) => updateItem(unit.id, rail.id, { pos_mm: v })}
+                  />
+                  <button type="button" className="cc-btn-ghost" onClick={() => removeItem(unit.id, rail.id)}>×</button>
+                </div>
+              </div>
+          ─────────────────────────────────────────────────────────────────── */}
           {rail && (
             <div className="cc-row text-sm">
               <div className="flex flex-col">
@@ -658,10 +693,11 @@ export default function RightPanel() {
                 {rail.material_label && <span className="text-[11px] text-ink-400">{rail.material_label}</span>}
               </div>
               <div className="flex items-center gap-1">
-                <NumberField
-                  className="cc-input w-20 text-right" value={rail.pos_mm}
-                  onCommit={(v) => updateItem(unit.id, rail.id, { pos_mm: v })}
-                />
+                <span className="text-ink-100 tabular-nums" data-testid="rail-height">
+                  {result.assemblies?.rail?.y != null
+                    ? formatMm(result.assemblies.rail.y, { unit: true })
+                    : '—'}
+                </span>
                 <button type="button" className="cc-btn-ghost" onClick={() => removeItem(unit.id, rail.id)}>×</button>
               </div>
             </div>

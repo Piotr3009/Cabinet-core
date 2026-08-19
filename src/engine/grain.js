@@ -148,6 +148,88 @@ export const CUT_GRAIN_AXIS_BY_PART = Object.freeze({
   'END-PANEL': 'h',
 });
 
+// ─── TURN 41 (F1): THE SHEET STANDS UP ──────────────────────────────────────
+//
+// T40 read the table above as though its letters named the axis to stand up
+// the sheet. They do not, and the measurement says so. Laid by that reading, on
+// a real BUDR4 bank and a real wardrobe, EVERY role on the owner's list came
+// off the saw LYING DOWN:
+//
+//     DRAWER-SIDE       490 × 133   laid 133 up × 490 across    LYING
+//     DRAWER-BOX-FRONT  518 ×  99   laid  99 up × 518 across    LYING
+//     DRAWER-BOX-BACK   518 ×  99   laid  99 up × 518 across    LYING
+//     DRAWER-FRONT      597 × 190   laid 190 up × 597 across    LYING
+//     PLINTH            600 × 100   laid 100 up × 600 across    LYING
+//     END-PANEL         606 × 2250  laid 2250 up × 606 across   standing
+//
+// The end panel stood only by accident: it is the one role whose own HEIGHT is
+// also its LONG side, so obeying the letter and standing the board up happen to
+// be the same instruction. For the other five they are opposite instructions,
+// and T40 followed the letter.
+//
+// ─── WHY THE LETTERS COULD NOT MEAN WHAT T40 READ THEM TO MEAN ──────────────
+//
+// `GRAIN_AXIS_BY_PART` was dictated in T36 as *"szuflady w pionie"* — a
+// statement about how the drawer BOX stands IN THE CABINET, which is why a
+// drawer side's entry is `'h'`, its 133 mm height. It was never a statement
+// about which way the board goes on the board. T40 fed it straight into the cut
+// and the sheet obeyed: a 490 × 133 side laid 133 up the page has its figure
+// running ACROSS its own 490 mm length — so the long banded edge is banded
+// ACROSS the grain, which is the precise thing the owner's own test forbids:
+//
+//     *"jak będzie się oklejać, to nie chcesz oklejać w poprzek słoja, tylko
+//      wzdłuż."*
+//
+// ─── THE LAW, SAID AS A FACT ABOUT THE LAY ──────────────────────────────────
+//
+// "Cut STANDING" is not a letter, it is a shape on the sheet: a board STANDS
+// when its LONG side runs up the page. Every board in this app is nested with
+// the grain running up the drawing, so standing the long side up is the same
+// act as running the grain along the length — along the edge that gets banded.
+// One sentence, no per-kit exception, and it is observable: after the lay,
+// `upMm >= acrossMm`. That is what T41's tests assert, because that is the
+// thing, and `CUT_GRAIN_AXIS_BY_PART`'s letters were the field.
+//
+// The table above is NOT deleted and NOT edited (sanctity). It stays exactly
+// what T36 stamped and T40 extended, it is still the roll of roles whose lay is
+// the owner's decision rather than the drawing's, and `grainLocked()` still
+// reads it. What changed is that the cut asks it WHICH ROLES, not WHICH WAY —
+// the way is the shape of the board.
+
+/**
+ * The roles the owner has decided are CUT STANDING — the long side up the
+ * sheet, the grain along the length, the banded edge banded along the grain.
+ *
+ * His list of 18.08.2026, verbatim: *"drawer box back BB, drawer box front BF,
+ * drawer sides SL and SR, drawer fronts, PLINTH, and the left/right END
+ * PANEL."* Seven items, six part names — SL and SR are both `DRAWER-SIDE`.
+ *
+ * The DRAWER BOTTOM is deliberately NOT here. It is the one board in the box
+ * that lies flat — *"dno — słoje w poprzek"* — so it keeps its own stated
+ * answer and is laid exactly where it was laid yesterday.
+ */
+export const CUT_STANDING_PARTS = Object.freeze([
+  'DRAWER-SIDE',
+  'DRAWER-BOX-FRONT',
+  'DRAWER-BOX-BACK',
+  'DRAWER-FRONT',
+  'PLINTH',
+  'END-PANEL',
+]);
+
+const CUT_STANDING_SET = new Set(CUT_STANDING_PARTS);
+
+/**
+ * Is this role cut standing?
+ *
+ * A function rather than a bare `Set.has` at the call site so the sheet asks a
+ * question in the vocabulary of the law, and so the seventh role the owner adds
+ * next is added in one place.
+ */
+export function cutStanding(part) {
+  return CUT_STANDING_SET.has(part);
+}
+
 /**
  * WHICH OF A PANEL'S OWN TWO DIMENSIONS RAN UP THE SHEET.
  *

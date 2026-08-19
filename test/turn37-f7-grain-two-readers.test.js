@@ -51,7 +51,7 @@ import { defaultParamsFor } from '../src/engine/types.js';
 import { decorMapping, grainRun } from '../src/engine/decors.js';
 import { sheetTurn } from '../src/engine/cnc/layout.js';
 // T40-F2: the owner's role list, which is the input the cut reads.
-import { CUT_GRAIN_AXIS_BY_PART } from '../src/engine/grain.js';
+import { CUT_GRAIN_AXIS_BY_PART, cutStanding } from '../src/engine/grain.js';
 
 const unit = (type, over = {}) => computeCabinet({
   ...defaultParamsFor(type, P), unit_num: '01', ...over,
@@ -122,9 +122,18 @@ test('F7a THE SHEET — a stated grain is laid running UP the page'
     const owners = CUT_GRAIN_AXIS_BY_PART[panel.part];
     // THE OWNER'S OWN ROLES: the axis of the PIECE that has to end up the page.
     // EVERY OTHER BOARD: the drawn axis the piece states, exactly as F7a wrote.
-    const alongMm = owners
-      ? (owners === 'w' ? panel.w : panel.h)
-      : (stated === 'w' ? dw : dh);
+    // ─── RE-PINNED 19.08.2026 (T41-F1): THE SHEET STANDS UP ───────────────
+    //
+    // T40's branch read the table's LETTER as the axis to stand up the page.
+    // For five of the six roles that letter names the SHORT side, so this
+    // assertion demanded the board be laid FLAT — and the sheet obliged. The
+    // branch is now the shape: a role that is CUT STANDING is laid on its LONG
+    // side, and every other board keeps F7a's law exactly as written.
+    const alongMm = cutStanding(panel.part)
+      ? Math.max(panel.w, panel.h)
+      : (owners
+        ? (owners === 'w' ? panel.w : panel.h)
+        : (stated === 'w' ? dw : dh));
     const upTheSheetMm = turn === 90 ? dw : dh;
     assert.equal(upTheSheetMm, alongMm,
       `${name}: ${alongMm} mm of grain up the sheet`);
@@ -329,15 +338,26 @@ test('F7 THE DIVERGENCE — two ladders cut one role and the drawn frame decides
   assert.equal(budrSide.cnc.grain, 'h', '…on both ladders');
   assert.equal(frameRelation(wardrobeSide), 'same', 'the wardrobe box declares no drawn frame');
   assert.equal(frameRelation(budrSide), 'turned', 'the BUDR box is drawn `height × depth`');
-  // ONE ROLE, ONE ANSWER — which is the whole of F2 in two lines.
-  assert.equal(grainRun(wardrobeSide).axis, 'h', 'the figure runs UP the wardrobe’s side…');
-  assert.equal(grainRun(budrSide).axis, 'h', '…and UP the BUDR’s. The divergence is gone.');
-  assert.equal(grainRun(wardrobeSide).lengthMm, wardrobeSide.h);
-  assert.equal(grainRun(budrSide).lengthMm, budrSide.h);
-  // …and the SHEET is what says so: the BUDR board, drawn turned, is turned
-  // back on the page so that the side's own height stands up it.
-  assert.equal(sheetTurn(wardrobeSide), 0, 'drawn standing already');
-  assert.equal(sheetTurn(budrSide), 90, 'drawn lying — the sheet stands it up');
+  // ─── RE-PINNED 19.08.2026 (T41-F1) ──────────────────────────────────────
+  //
+  // T40 closed the divergence on the WRONG answer and this file recorded it as
+  // closed. One role, one answer was true — both kits agreed — but the answer
+  // they agreed on laid the board flat and banded it across its own grain. The
+  // divergence stays closed; the answer is corrected. That is why the
+  // assertions below still come in pairs: the pair is the property, and the
+  // property survived. What changed is the number both halves report.
+  //
+  // ONE ROLE, ONE ANSWER — which is the whole of it in two lines.
+  assert.equal(grainRun(wardrobeSide).axis, grainRun(budrSide).axis,
+    'the two ladders give ONE answer');
+  assert.equal(grainRun(wardrobeSide).lengthMm, Math.max(wardrobeSide.w, wardrobeSide.h),
+    'the figure runs the LENGTH of the wardrobe’s side…');
+  assert.equal(grainRun(budrSide).lengthMm, Math.max(budrSide.w, budrSide.h),
+    '…and the length of the BUDR’s. The divergence is gone.');
+  // …and the SHEET is what says so. The two turns are OPPOSITE, because the two
+  // drawings are opposite; the lay they produce is the same lay.
+  assert.equal(sheetTurn(wardrobeSide), 90, 'drawn lying — the sheet stands it up');
+  assert.equal(sheetTurn(budrSide), 0, 'drawn standing already');
   // Both readers still agree WITH EACH OTHER on both boards, and now they agree
   // with the owner as well.
   for (const side of [wardrobeSide, budrSide]) {

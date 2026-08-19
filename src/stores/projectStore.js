@@ -341,9 +341,37 @@ function projectHeightParams(type, design, profile) {
  */
 function applyTemplateParams(unit, params) {
   const saved = JSON.parse(JSON.stringify(params));
+  // ─── TURN 41 (F2): AND THE CROSS-REFERENCES COME WITH THEM ────────────────
+  //
+  // MEASURED FAULT. Every item is given a fresh id here, and T37's rail
+  // assembly is TWO items joined by one: the hanger carries `shelf_id`, naming
+  // the fix shelf it hangs under. Re-id the shelf without re-pointing the
+  // hanger and the copy's hanger names a shelf in the SOURCE unit. The engine's
+  // orphan rule is then perfectly correct and perfectly silent: a rail whose
+  // shelf is gone is not there. Measured on a copied wardrobe —
+  // `assemblies.rail` null, rail hardware 0 (source 1), RAIL-PART 0, rail
+  // drills 0 — while the right panel still listed "Hanger rail" with a number.
+  // A joiner copies a wardrobe and the copy quietly has no rod in it.
+  //
+  // So the id map is built FIRST and every cross-reference is remapped through
+  // it. `shelf_id` is the only one today; the map is the place the next one is
+  // added, which is why it is a loop over a named list rather than one line.
+  const CROSS_REFS = ['shelf_id'];
+  const idMap = new Map();
+  for (const section of saved.sections || []) {
+    for (const item of section.items || []) {
+      if (item?.id != null) idMap.set(item.id, uid(item.kind || 'item'));
+    }
+  }
   const sections = (saved.sections || []).map((section) => ({
     ...section,
-    items: (section.items || []).map((item) => ({ ...item, id: uid(item.kind || 'item') })),
+    items: (section.items || []).map((item) => {
+      const next = { ...item, id: idMap.get(item.id) ?? uid(item.kind || 'item') };
+      for (const key of CROSS_REFS) {
+        if (next[key] != null && idMap.has(next[key])) next[key] = idMap.get(next[key]);
+      }
+      return next;
+    }),
   }));
   unit.params = {
     ...unit.params,
@@ -378,6 +406,26 @@ function budrDrawerIndex(unit, ref) {
 }
 
 /** Interior items -> the count/flag shape the engine consumes. */
+/**
+ * Which CARCASS sides carry a hinged door — the design layer's own answer.
+ *
+ * Returns null when the unit has no per-bay doors, which leaves the engine's
+ * `doorCount` rule exactly where it was for every cabinet in the app but this
+ * one shape.
+ */
+function hingedCarcassSides(p) {
+  const bays = Array.isArray(p?.bay_doors) ? p.bay_doors : null;
+  if (!bays || !bays.length) return undefined;
+  const on = (m) => String(m?.door ?? 'none').toLowerCase() !== 'none';
+  const hinge = (m) => (String(m?.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L');
+  const first = bays[0];
+  const last = bays[bays.length - 1];
+  const sides = [];
+  if (on(first) && hinge(first) === 'L') sides.push('BUL');
+  if (on(last) && hinge(last) === 'R') sides.push('BUR');
+  return sides;
+}
+
 function paramsForEngine(unit, design = null) {
   const p = unit.params;
   const items = p.sections?.[0]?.items || [];
@@ -528,6 +576,22 @@ function paramsForEngine(unit, design = null) {
     // compute, so every path that adds or removes the neighbour above — and
     // every reload — re-derives the number with nothing to remember.
     front_top_gap_mm: topNeighbourDemand(p, profile),
+    // ─── TURN 41 (F3): THE DESIGN LAYER ANSWERS "IS A DOOR HUNG ON THIS SIDE"
+    //
+    // CLAUDE.md F3a put this here in as many words and T40 built it in the
+    // engine instead, where `doorCount` is a FACE rule that has never heard of
+    // per-bay doors — so a wardrobe with bay leaves read as a wardrobe with no
+    // doors at all and lost the hinge strip its plates still needed.
+    //
+    // The outer boundaries are the only ones the drawer strip cares about, and
+    // they are fixed whatever the bays turn out to be: the FIRST bay's left
+    // boundary is always BUL and the LAST bay's right boundary is always BUR.
+    // A middle bay's leaf hangs on partitions and reserves nothing on the
+    // carcass, which is the same answer `bayDoorPlan` gives the plate pattern.
+    //
+    // Stated only when there ARE bay doors, so every other cabinet in the app
+    // is answered by exactly the engine expression that answered it yesterday.
+    hinged_carcass_sides: hingedCarcassSides(p),
     rail_offset: items.find((i) => i.kind === 'hanger')?.pos_mm ?? p.rail_offset,
     // T35-F1: and WHICH board that number is measured from. Absent on every
     // project saved before this turn, which is exactly what makes those
@@ -568,9 +632,32 @@ const SHELF_SCHEMA = 2;
 
 export function migrateUnitShelves(unit) {
   if (!unit?.params || unit.params.shelf_schema === SHELF_SCHEMA) return unit;
+  // ─── TURN 41 (F2): A BOARD CARRYING A ROD IS NOT A LEGACY SHELF ───────────
+  //
+  // MEASURED FAULT. This migration reads every `variant: 'fixed'` as "a shelf
+  // saved before turn 8, when fixed meant nothing", and demotes it to pins.
+  // That was right for turn 8. It is wrong for T37's rail assembly, whose shelf
+  // is fixed for a reason that has nothing to do with the old meaning: it
+  // CARRIES A CLOTHES RAIL, and T37 made it fixed precisely so it could.
+  //
+  // Measured on a reload of a wardrobe created in this version: the assembly's
+  // shelf came back 864 → 860 mm wide, `meta.locked` true → false, its eleven
+  // screw holes replaced by twelve pin holes. A board with a full rail of
+  // clothes on it, sitting on four pins.
+  //
+  // A shelf NAMED BY A HANGER is exempt. It is not a guess about intent — the
+  // foreign key is the intent, written down by the code that made the pair.
+  const railShelfIds = new Set(
+    (unit.params.sections || [])
+      .flatMap((section) => section.items || [])
+      .filter((i) => i?.kind === 'hanger')
+      .map((i) => railShelfIdOf(i))
+      .filter((id) => id != null),
+  );
   const sections = (unit.params.sections || []).map((section) => ({
     ...section,
     items: (section.items || []).map((item) => (item.kind === 'shelf' && item.variant === 'fixed'
+      && !railShelfIds.has(item.id)
       ? { ...item, variant: 'adjustable' }
       : item)),
   }));
@@ -3132,7 +3219,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           ? null : Math.trunc(Number(i.zone)));
         // Turn 32 (CLAUDE.md F4): only THIS zone's stack is replaced — the
         // other columns' drawers are somebody else's answer.
-        const kept = section.items.filter((i) => i.kind !== 'drawer' || zoneOf(i) !== wantZone);
+        // ─── TURN 41 (F3): …and the OVERLAY stack it replaces goes with it ───
+        // The other half of the switch. An overlay stack stands on the
+        // carcass floor and runs the full width, so it collides with a bottom
+        // stack in any column; choosing internal clears it, exactly as choosing
+        // overlay clears the internal one. Removing the last drawer (count 0)
+        // clears nothing else — that is a removal, not a choice.
+        const kept = section.items.filter((i) => (i.kind !== 'drawer' || zoneOf(i) !== wantZone)
+          && !(count > 0 && i.kind === 'overlay_drawer'));
         const previous = section.items
           .filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone)
           .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
@@ -3179,6 +3273,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * It falls out of the construction — the strip belongs to the INTERNAL stack
    * — rather than being switched off anywhere.
    */
+  // ─── TURN 41 (F3): AND IT IS A SWITCH, NOT A SECOND BUTTON ────────────────
+  //
+  // MEASURED FAULT. T40 shipped "Drawers (internal)" and "Drawers (overlay)"
+  // side by side in the wardrobe's ADD ITEMS offer, and neither one clears the
+  // other: `addOverlayDrawers` keeps every non-overlay item and `addDrawers`
+  // keeps every overlay item. So a joiner who added internal drawers and then
+  // decided he wanted overlay got BOTH — measured on one 900 wardrobe, six
+  // DRAWER-FRONT panels at y 0 / 21 / 203 / 221 / 406 / 424, widths alternating
+  // 897 and 762, thirty drawer-box boards, two physical stacks interpenetrating
+  // in the same 0–624 mm band, and `warnings` empty.
+  //
+  // THE LAW. A wardrobe has ONE drawer stack and it stands on its floor.
+  // Internal and overlay are two ways of BUILDING that stack — behind doors, or
+  // fronts on the face — not two stacks. So choosing one clears the other, in
+  // the same batch, and the offer becomes the switch the brief asks for.
+  //
+  // The count is what says which: adding 0 of either kind is a removal and
+  // clears nothing else, so "take the overlay drawers off" does not silently
+  // delete an internal stack that was never there.
   addOverlayDrawers: (unitId, count, heightMm) => {
     if (count > 0) {
       const gate = drawerBoxGate(get().project.design);
@@ -3191,7 +3304,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
-        const kept = section.items.filter((i) => i.kind !== 'overlay_drawer');
+        // T41-F3: choosing overlay clears the internal stack it replaces.
+        const kept = section.items.filter((i) => i.kind !== 'overlay_drawer'
+          && !(count > 0 && i.kind === 'drawer'));
         const previous = section.items
           .filter((i) => i.kind === 'overlay_drawer')
           .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
@@ -5198,6 +5313,44 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       band: shelfBandFor(unit, profile, null, null, item?.pos_mm ?? posRaw),
     }, profile);
     get().updateItem(unitId, itemId, { pos_mm: state.pos });
+    // ─── TURN 41 (F2): ONE DRAG, ONE TRUTH ──────────────────────────────────
+    //
+    // MEASURED FAULT. Drag the assembly's shelf from 1458 to 900 and the rod
+    // follows correctly everywhere it is DRAWN or DRILLED: the engine's
+    // `assemblies.rail.y`, the 3-D instance and both `rail_bracket` holes all
+    // read 860. But the hanger item's own `pos_mm` is still 1400 — its BIRTH
+    // height — and `paramsForEngine` harvests that stale number into
+    // `rail_offset`. So the millimetre a saved project, a template and the
+    // right panel read back is 540 mm above where the rod actually is, and the
+    // right-panel field sat there displaying it after every drag.
+    //
+    // The rod's position is not a second fact to be maintained: it is the
+    // shelf's, minus the bracket's drop. So it is RE-DERIVED here, in the same
+    // batch as the move, from the number that just changed. One drag, one
+    // truth, and a project that later loses the `mount` link still puts the rod
+    // where the joiner last saw it.
+    if (carriesRail) {
+      const railAxis = Number(state.pos) - hangerDropMm(profile);
+      const riders = (unit.params.sections?.[0]?.items || [])
+        .filter((i) => i.kind === 'hanger' && railShelfIdOf(i) === itemId);
+      for (const rider of riders) {
+        const re = railDatumFor({
+          supports: railSupportTops({
+            floor: profile.board.thickness,
+            stackTop: null,
+            shelves: (unit.params.sections?.[0]?.items || [])
+              .filter((i) => i.kind === 'shelf' && i.id !== itemId)
+              .map((i) => ({
+                id: i.id,
+                top: (Number(i.pos_mm) || 0) + (Number(i.thickness_mm) || profile.board.thickness),
+              })),
+            ceiling: (Number(unit.params?.height) || 0) - profile.board.thickness,
+          }),
+          axis: railAxis,
+        });
+        get().updateItem(unitId, rider.id, { pos_mm: re.offset, datum: re.datum });
+      }
+    }
     return state;
   },
 

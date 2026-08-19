@@ -9,6 +9,7 @@ import {
 import { getUnitType } from '../engine/types.js';
 import { doorExtendMm, doorHeightOf } from '../engine/doors.js';
 import { minDrawerFrontHeight } from '../engine/cabinet.js';
+import { drawerHeightValue, drawerRefOf } from '../engine/drawerRef.js';
 import { elementMaterialChoices, migrateDesign } from '../engine/design.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
@@ -892,8 +893,10 @@ export default function ElementProperties({
           );
         }
         const own = Array.isArray(unit.params.drawer_heights) && unit.params.drawer_heights.length;
-        const heights = unit.params.drawer_heights || [];
-        const value = Number(heights[n - 1]);
+        // T41-F3: asked of the piece under the pointer, so an overlay drawer's
+        // field shows the height its own item carries rather than a slot in an
+        // array it never reads.
+        const value = drawerHeightValue(unit, panel, n);
         return (
           <div key={key} className="col-span-2 space-y-1" data-drawer-height={n}>
             <Field label={`Drawer ${n} height`}>
@@ -904,7 +907,7 @@ export default function ElementProperties({
                   min={minDrawerFrontHeight(profile)}
                   value={Number.isFinite(value) && value > 0 ? value : panel.h}
                   title={`No shorter than ${formatMm(minDrawerFrontHeight(profile))} mm — the runner screws plus the air under them.`}
-                  onCommit={(v) => setDrawerHeight(unit.id, drawerRef(unit, n), v)}
+                  onCommit={(v) => setDrawerHeight(unit.id, drawerRefOf(unit, panel, n), v)}
                 />
                 {own && (
                   <button
@@ -1124,12 +1127,11 @@ function ElementActions({ unit, panel, onRemove, onMove }) {
  * (turn 17, CLAUDE.md F8.2) — this is the one place that has to know which kit
  * it is looking at, and it decides it from the data rather than from the type.
  */
-function drawerRef(unit, n) {
-  const item = (unit.params.sections?.[0]?.items || [])
-    .filter((i) => i.kind === 'drawer')
-    .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))[n - 1];
-  return item?.id ?? n - 1;
-}
+// ─── TURN 41 (F3): THE LOOKUP MOVED SO IT COULD BE TESTED ───────────────────
+// `drawerRefOf` / `drawerHeightValue` / `internalDrawerRef` now live in
+// `engine/drawerRef.js`. Nothing about them changed in the move; what changed
+// is that a test can import them, which is why the fault they fix survived a
+// green suite. See that file for the measurement.
 
 function Field({ label, children }) {
   return (

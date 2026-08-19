@@ -8,7 +8,7 @@ import { defaultParamsFor } from '../src/engine/types.js';
 import { grainRun } from '../src/engine/decors.js';
 import { sheetTurn } from '../src/engine/cnc/layout.js';
 import {
-  CUT_GRAIN_AXIS_BY_PART, GRAIN_AXIS_BY_PART, applyGrainAxis, grainLocked,
+  CUT_GRAIN_AXIS_BY_PART, GRAIN_AXIS_BY_PART, applyGrainAxis, cutStanding, grainLocked,
 } from '../src/engine/grain.js';
 
 // ─── TURN 36 (CLAUDE.md F5): CNC GRAIN — THE OWNER'S LAW, PER ROLE ──────────
@@ -78,7 +78,16 @@ test('F5 — a wardrobe\'s drawer box stands along the grain, its bottom across'
     const p = partOf(r, part);
     assert.ok(p, `${part} is in the cabinet`);
     assert.equal(p.cnc.grain, 'h', `${part}: w pionie, wzdłuż słojów`);
-    assert.equal(grainRun(p).axis, 'h', `${part}: and the reader agrees`);
+    // ─── RE-PINNED 19.08.2026 (T41-F1) ────────────────────────────────────
+    // The STAMP above is an engine fact and has not moved a byte this turn —
+    // that assertion is left exactly as T36 wrote it, and it is now one of the
+    // things proving the engine stood still. What moved is the READER: under
+    // F1 the 3-D shows the board AS CUT, and the cut stands these boards on
+    // their LONG side, so the figure runs the length. Asserted as the length in
+    // millimetres rather than as a letter, because the letter is the field and
+    // the millimetres are the thing.
+    assert.equal(grainRun(p).lengthMm, Math.max(p.w, p.h),
+      `${part}: the figure runs the board's length, as it was cut`);
   }
   const bottom = partOf(r, 'DRAWER-BOTTOM');
   assert.equal(bottom.cnc.grain, 'w', 'dno — słoje w poprzek');
@@ -95,7 +104,8 @@ test('F5 — a BUDR stack answers the same way, out of a different ladder', () =
   const df = partOf(r, 'DRAWER-FRONT');
   assert.ok(df.w > df.h, 'wide and short — the saw would have said `w`');
   assert.equal(df.cnc.grain, 'h', 'fronty szuflad też');
-  assert.equal(grainRun(df).axis, 'h');
+  // T41-F1: the cut stands it on its long side, so the figure runs that way.
+  assert.equal(grainRun(df).lengthMm, Math.max(df.w, df.h));
   // ─── RE-PINNED 18.08.2026 (CLAUDE.md T40-F2: ONE GRAIN TRUTH) ────────────
   //
   // This asserted that stripping the stamp gave the saw's old answer, `w`. Under
@@ -104,7 +114,8 @@ test('F5 — a BUDR stack answers the same way, out of a different ladder', () =
   // the reason the table is an input to the cut rather than a stamp somebody
   // has to remember to apply. To see the saw's old answer you now have to strip
   // the PART as well, because the part IS the decision.
-  assert.equal(grainRun({ ...df, cnc: {} }).axis, 'h', 'the ROLE decides, stamp or no stamp');
+  assert.equal(grainRun({ ...df, cnc: {} }).lengthMm, Math.max(df.w, df.h),
+    'the ROLE decides, stamp or no stamp');
   assert.equal(grainRun({ w: df.w, h: df.h, cnc: {} }).axis, 'h',
     'and a nameless board that wide is laid as drawn, so its figure runs its height');
 });
@@ -115,7 +126,9 @@ test('F5 — the PLINTH stands along the grain, long and shallow though it is', 
   assert.ok(plinth, 'the run cuts one');
   assert.ok(plinth.w > plinth.h, 'long and shallow — the saw would have said `w`');
   assert.equal(plinth.cnc.grain, 'h', 'plinth też');
-  assert.equal(grainRun(plinth).axis, 'h');
+  // T41-F1: 600 long and 100 deep, and it is cut standing on the 600 — which is
+  // the edge that gets banded, and the reason the owner named it.
+  assert.equal(grainRun(plinth).lengthMm, Math.max(plinth.w, plinth.h));
 });
 
 test('F5 — every drawer part of every kit is answered, and none is missed', () => {
@@ -179,18 +192,35 @@ test('F5 — the layout turns NOTHING on this list, so nothing lands off-grain'
     assert.ok(wanted === 'w' || wanted === 'h', `${p.part} is on the owner's list`);
     const dw = Number(p.cnc?.drawn_w) > 0 ? Number(p.cnc.drawn_w) : p.w;
     const dh = Number(p.cnc?.drawn_h) > 0 ? Number(p.cnc.drawn_h) : p.h;
-    const alongMm = wanted === 'w' ? p.w : p.h;
-    const acrossMm = wanted === 'w' ? p.h : p.w;
+    // ─── RE-PINNED 19.08.2026 (T41-F1) ────────────────────────────────────
+    //
+    // T40's form of this asserted `upMm === alongMm` — the millimetres the
+    // TABLE's letter names. It is millimetres, so it read as the honest form,
+    // and it was not: for five of the six roles the letter names the SHORT
+    // side, so the assertion demanded the board be laid FLAT and the sheet
+    // obliged. Measured on this very cabinet, a drawer side went down 237 up ×
+    // 490 across — banded across its own grain.
+    //
+    // The honest form is the SHAPE: the long side up the page. It cannot be
+    // satisfied by a board lying down, whatever any table says.
+    const alongMm = Math.max(p.w, p.h);
+    const acrossMm = Math.min(p.w, p.h);
     const upMm = sheetTurn(p) === 90 ? dw : dh;
     if (sheetTurn(p) === 90) turned += 1;
+    if (!cutStanding(p.part)) continue;
     assert.equal(upMm, alongMm,
-      `${p.part}: the owner's axis runs UP the sheet (${alongMm} up, ${acrossMm} across)`);
+      `${p.part}: it is cut STANDING (${alongMm} up, ${acrossMm} across)`);
     // …and the 3-D DERIVES from that rather than from a table of its own.
     assert.equal(grainRun(p).lengthMm, upMm, `${p.part}: and the picture shows what was cut`);
   }
   // …and the two halves are really both present in this cabinet, so neither
   // branch is asserted against an empty set.
   assert.ok(turned > 0, 'the boards drawn turned — the drawer box — are the half that turns');
+  // …and the DRAWER BOTTOM, the one role on the table that is NOT cut standing,
+  // is still laid by its own stated grain and did not move this turn.
+  assert.equal(cutStanding('DRAWER-BOTTOM'), false);
+  const bottom = r.panels.find((p) => p.part === 'DRAWER-BOTTOM');
+  assert.equal(sheetTurn(bottom), 90, 'flat, and turned exactly as T37-F7a left it');
 });
 
 test('F5 — and the nester still does not read the statement (turn 28\'s rule)'

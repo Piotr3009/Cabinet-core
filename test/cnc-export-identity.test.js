@@ -64,6 +64,7 @@ import {
   buildUnitDxfFiles, materialSheetDxf, panelLabel, parseDxf, sheetDxf, sheetDxfFileName,
 } from '../src/engine/cnc/dxf.js';
 import { layoutPanels, sheetTurn } from '../src/engine/cnc/layout.js';
+import { cutStanding } from '../src/engine/grain.js';
 import { partLabelText } from '../src/engine/cnc/partLabel.js';
 import { MONO_ADVANCE } from '../src/engine/cnc/annotation.js';
 import { exportablePanels, panelIdsForPreset, presetOfSelection } from '../src/engine/cnc/groups.js';
@@ -252,7 +253,19 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   //
   // verify/t37/cnc-export-identity.md carries the before/after and the
   // entity-level evidence.
-  assert.equal(fingerprint(sheetOf(result, all)), '0987fb40', 'the whole-unit sheet has changed');
+  // ─── TURN 41 (F1), 19.08.2026: 0987fb40 → 5c5629f0 ──────────────────────
+  // THE SHEET STANDS UP, and the census says so. T40 read the owner's role
+  // table as naming the axis to stand up the sheet; for five of its six roles
+  // that letter is the SHORT side, so every drawer board and every drawer front
+  // came off the saw LYING — banded across its own grain. F1 lays them by the
+  // SHAPE instead: the long side up the page. On this unit that is fifteen
+  // boards and no others — twelve drawer-box boards (3 × SL, SR, BF, BB) and
+  // three drawer FRONTS — so for the first time in this file's history the
+  // delta reaches BOTH families at once and all four presets move. The proof it
+  // lands where its cause is, is the pair that does NOT move: the per-panel
+  // `01-BUL.dxf` above is byte-for-byte 21d5d6dc, because a part's own CNC
+  // frame is not what F1 touches. Only how the sheet PUTS IT DOWN.
+  assert.equal(fingerprint(sheetOf(result, all)), '5c5629f0', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -302,11 +315,18 @@ test('…and so is each preset’s', () => {
   // carry a drawer box move and the two that are doors and drawer faces do not,
   // to the character. `sprayed` and `fronts` standing still is again the proof
   // the delta lands where its own cause is.
+  // ─── TURN 41 (F1), 19.08.2026: AND THE CENSUS LOGIC INVERTS BOTH WAYS ───
+  // Every delta above this line landed on ONE family and stood still on the
+  // other, and that split was the evidence. F1 is the first that is honestly
+  // both: the fifteen boards it stands up are twelve drawer-box boards — which
+  // are carcass-side parts — and three drawer FRONTS, which are faces. So no
+  // preset stands still, and the evidence has to come from somewhere else: it
+  // comes from the per-panel file, which does not move at all.
   const expected = {
-    all: '0987fb40',           // was 49b23ea5 — F7a: three drawer bottoms turn 90°
-    'non-sprayed': '9294e301', // was f5aa169e — the same three, on the carcass sheet
-    sprayed: '5637b58d',       // UNCHANGED — no drawer bottom is a face
-    fronts: '5637b58d',        // the same fronts, and the same nothing
+    all: '5c5629f0',           // was 0987fb40 — F1: 12 box boards + 3 fronts stand up
+    'non-sprayed': '0bfd72e9', // was 9294e301 — the twelve, on the carcass sheet
+    sprayed: '106a8227',       // was 5637b58d — the three fronts, which ARE faces
+    fronts: '106a8227',        // the same three, and the same move
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -505,10 +525,22 @@ test('DELTA 3: a shelf stands its long side up the page — and turn 26 does it 
     //
     // Both halves are pinned in the one predicate, so neither can be dropped
     // without this going red. Was: `turned === (shelfBoard && w > h)`.
+    //
+    // ─── RE-PINNED 19.08.2026 (T41-F1) ─────────────────────────────────────
+    //
+    // A THIRD half, and it goes FIRST because the cut's own cascade puts it
+    // first: a role the owner has decided is CUT STANDING is laid by the SHAPE
+    // of its drawing and not by any letter — long side up the page, so it is
+    // turned exactly when its drawn frame lies down. That is why the drawer
+    // boards and the drawer fronts move this turn while everything else on this
+    // unit is laid where it was laid yesterday. All THREE halves are pinned in
+    // the one predicate, so none can be dropped without this going red.
     const stated = panel.cnc?.grain;
-    const want = stated === 'w' || stated === 'h'
-      ? stated === 'w'          // the statement, read in the frame it is written in
-      : shelfBoard && w > h;    // turn 17 F3's size rule, untouched, for the rest
+    const want = cutStanding(panel.part)
+      ? w > h                   // T41-F1: the long side up the page, by shape
+      : (stated === 'w' || stated === 'h'
+        ? stated === 'w'        // the statement, read in the frame it is written in
+        : shelfBoard && w > h); // turn 17 F3's size rule, untouched, for the rest
     assert.equal(turned, want, `${panel.id} (${panel.part}) is laid down ${turned ? 'turned' : 'square'}`);
     if (panel.part !== 'SHELF') continue;
     // …and a SHELF's drawing no longer lies down: F8.
@@ -606,5 +638,6 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   // three drawer bottoms — which is exactly what this test is for: unticking
   // the fronts in the tree gives the "non-sprayed" file to the byte, whatever
   // that file happens to be this turn.
-  assert.equal(fingerprint(sheetOf(result, ids)), '9294e301');
+  // T41-F1: was 9294e301 — the twelve drawer-box boards now stand up.
+  assert.equal(fingerprint(sheetOf(result, ids)), '0bfd72e9');
 });

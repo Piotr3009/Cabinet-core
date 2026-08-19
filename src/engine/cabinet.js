@@ -4964,10 +4964,36 @@ export function computeCabinet(params, profileOverride) {
   // ladder. The rows travel on the panels (`meta.plateY`, the carcass frame),
   // so there is one derivation and the sheet, the side and the 3-D all read
   // it. No split leaf → `centres`, which is every cabinet before this turn.
+  //
+  // ─── TURN 41 (F4), 19.08.2026: …AND ONLY THE SIDE IT HANGS ON ────────────
+  //
+  // MEASURED REGRESSION. The filter above fell through to `true` for any leaf
+  // with no `meta.hingeOn` — which is EVERY FACE DOOR. While both leaves of a
+  // split carried the same ladder that was invisible: the two sides got the
+  // same rows and the same rows were right. T40-F1 then made the two ladders
+  // divergible (`split_hinge_rows`, per leaf, which is what the owner asked
+  // for) and the fall-through became a hole in a board.
+  //
+  // Measured on a 900 × 2150 split wardrobe: 20 hinge plate holes before, 24
+  // after moving ONE hinge on ONE leaf — and BUL and BUR were bored at the
+  // IDENTICAL list, so two of the four new holes are in the side whose door was
+  // never touched. Four bored holes with no hinge in them.
+  //
+  // A face leaf says which side it hangs on: `meta.hinge` is 'L' or 'R', and it
+  // has been on the panel since the split was built. A bay leaf keeps saying it
+  // with `meta.hingeOn`, exactly as before. A leaf that says NEITHER still
+  // falls through, which is what keeps a kit nobody has taught this to reading
+  // as it read yesterday.
+  const plateBearerOf = (p) => {
+    if (p.meta?.hingeOn) return p.meta.hingeOn;
+    if (p.meta?.hinge === 'R') return 'BUR';
+    if (p.meta?.hinge === 'L') return 'BUL';
+    return null;
+  };
   const platedRowsFor = (bearerId) => {
     const rows = panels
       .filter((p) => p.part === 'FRONT' && p.meta?.split && Array.isArray(p.meta.plateY)
-        && (p.meta.hingeOn ? p.meta.hingeOn === bearerId : true))
+        && (plateBearerOf(p) ? plateBearerOf(p) === bearerId : true))
       .flatMap((p) => p.meta.plateY);
     return rows.length ? [...new Set(rows)].sort((a, b) => a - b) : null;
   };

@@ -42,6 +42,16 @@ function cabinet(typeId, extra = {}) {
 }
 
 const WARDROBE = cabinet('WARDROBE', { doors: true, plinth: true, shelves: 3, rail: true });
+// ─── TURN 42 (CLAUDE.md F1) ─────────────────────────────────────────────────
+// A wardrobe WITH A DRAWER STACK, for the one test whose sentence names
+// partitions. The fixture above has no partition any more: its only one was the
+// RAIL-PART board — the rail's partitioner, which the engine does not cut. The
+// real partition is the horizontal board over a drawer stack, which is what
+// that sentence has always meant, so the test gets a cabinet that has one
+// rather than the shared fixture being changed under every other test here.
+const WARDROBE_WITH_PARTITION = cabinet('WARDROBE', {
+  doors: true, plinth: true, shelves: 3, rail: true, drawers: 2,
+});
 const BUD = cabinet('BUD', { doors: true, plinth: true, shelves: 1 });
 
 const ctx = (assignments) => ({ assignments, materials: MATS, profile: P });
@@ -71,11 +81,12 @@ test('two parts on ONE material merge into ONE line with the summed area', () =>
 });
 
 test('the owner’s sentence, whole: sides + top + bottom + partitions + shelves, one line', () => {
-  const q = buildCabinetPartQtys(WARDROBE.result, WARDROBE.unit, { profile: P });
+  const cab = WARDROBE_WITH_PARTITION;   // T42-F1: see the note beside it
+  const q = buildCabinetPartQtys(cab.result, cab.unit, { profile: P });
   const want = ['carcase_side', 'carcase_horizontal', 'partition', 'shelf'];
   const base = {};
   for (const id of want) base[id] = { material_id: 'egger_white' };
-  const rows = mergeUnitMaterials([WARDROBE], ctx({ base }));
+  const rows = mergeUnitMaterials([cab], ctx({ base }));
   const line = rowFor(rows, 'mat:egger_white');
   const expected = want.reduce((s, id) => s + (q[id]?.m2 || 0), 0);
   assert.equal(line.qty, expected);

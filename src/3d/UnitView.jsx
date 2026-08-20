@@ -687,6 +687,11 @@ export default function UnitView({
   // second identity to keep in step with it.
   selectedElement = null, selectedElements = [],
   onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
+  // ─── TURN 42 (CLAUDE.md F1): THE ALONE ROD'S OWN TWO VERBS ───────────────
+  // `onEditRail(itemId, at)` opens the hanging-rail window; `onMoveRail(itemId,
+  // offsetMm)` writes the item's `pos_mm`. Both are the rod's, and neither is
+  // a panel's — after this turn there is no board to borrow one from.
+  onEditRail = null, onMoveRail = null,
   // Turn 31 (CLAUDE.md F8): double-click the width or height FIGURE.
   onEditSize = null,
   // Turn 19 (CLAUDE.md F1.3): double-click a hinge and its modal opens.
@@ -1440,6 +1445,43 @@ export default function UnitView({
     window.addEventListener('pointercancel', up);
   }, [onMoveShelf, onSelect, pointerToPlane, originY, orbitRef, snapStep, onShelfDragState, unit.id]);
 
+  // ─── TURN 42 (CLAUDE.md F1): AND THE ROD IS DRAGGED THE SAME WAY ─────────
+  //
+  // *"Dragging the ALONE rod writes the item's `pos_mm` (the same store path a
+  // shelf drag uses), and the engine's next answer moves the rod."*
+  //
+  // It is `startShelfDrag` with one conversion in it. A shelf's `pos_mm` IS its
+  // height above the interior floor; a rod's is its height above its own
+  // SUPPORT — the board or the floor `railDatum.js` resolved — so the pointer's
+  // world Y becomes an OFFSET by subtracting the support the engine published.
+  // The clamp and the snap live in the store, exactly where a shelf's do.
+  const startRailDrag = useCallback((e, itemId, currentAxisMm) => {
+    if (!itemId || !onMoveRail) return;
+    e.stopPropagation();
+    onSelect();
+    const hit = pointerToPlane(e.clientX, e.clientY);
+    if (!hit) return;
+    const support = Number(result.assemblies?.rail?.support) || 0;
+    const grabDelta = currentAxisMm - (hit.y - originY) / MM;
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+
+    const move = (ev) => {
+      const p = pointerToPlane(ev.clientX, ev.clientY);
+      if (!p) return;
+      const axisMm = (p.y - originY) / MM + grabDelta;
+      onMoveRail(itemId, axisMm - support);
+    };
+    const up = () => {
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onMoveRail, onSelect, pointerToPlane, originY, orbitRef, result]);
+
   // Which joint system this project is cut with, as its LAYER NAMES — the same
   // indirection engine/joinery.js has used since turn 8, so a second system
   // arrives as a block of numbers rather than as a rewrite of the 3D view
@@ -1979,6 +2021,10 @@ export default function UnitView({
         // and it opens the SAME modal the shelves open — the grammar is the
         // one this component already hands its panels.
         onEditElement={onEditElement}
+        // T42-F1: …unless it is ALONE, in which case it is its own subject and
+        // opens its own window, and it is dragged.
+        onEditRail={onEditRail}
+        onDragRail={startRailDrag}
         xray={xray && !contour}
         hinges={showHinges && !contour}
         // ─── Turn 18 (CLAUDE.md F6.7) ───

@@ -56,7 +56,9 @@ test('the named parts land on the side CLAUDE.md puts them on', () => {
   }, P);
 
   // IN the non-sprayed sheet
-  for (const id of ['BUL', 'BUR', 'TOP', 'BOTTOM', 'BACK', 'SHELF-1', 'PARTITION', 'RAIL-PART',
+  // T42-F1: `RAIL-PART` leaves this list because the kit stopped cutting it —
+  // not because the flag changed. Every other board is where it was.
+  for (const id of ['BUL', 'BUR', 'TOP', 'BOTTOM', 'BACK', 'SHELF-1', 'PARTITION',
     'DP-L', 'DP-R', 'FILLER-1', 'D1-SL', 'D1-SR', 'D1-BF', 'D1-BB', 'D1-DNO']) {
     const p = at(r, id);
     assert.ok(p, `${id} is missing from this unit — the test is wrong, not the flag`);

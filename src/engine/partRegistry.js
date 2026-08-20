@@ -410,7 +410,10 @@ export const ELEMENT_TO_PART_ID = {
   // Partitions — horizontal, vertical, and the one that carries a rail.
   PARTITION: 'partition',
   VPART: 'partition',
-  'RAIL-PART': 'partition',
+  // T42-F1: `'RAIL-PART': 'partition'` DELETED. The engine cannot emit that
+  // panel any more — the owner's rail partitioner is gone — and this file's own
+  // invariant (`test/t39-part-registry.test.js`, "the registry maps nothing the
+  // engine cannot emit") is what says an orphan row may not stand here.
 
   PLINTH: 'plinth',
 

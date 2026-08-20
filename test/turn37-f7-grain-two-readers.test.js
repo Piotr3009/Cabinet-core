@@ -227,6 +227,10 @@ test('F7 a part that states nothing is answered exactly as it was yesterday', ()
     // THE SHEET: turn 17 F3's size rule over the old SHELF_BOARD_PARTS set, and
     // nothing else is ever turned.
     const { dw, dh } = drawnFrame(panel);
+    // T42-F1: `RAIL-PART` is no longer emitted, so it can no longer reach this
+    // loop; the SET in `engine/cnc/layout.js` still names it and is untouched
+    // (iron rule 3 does not license that line), which is why the name stays
+    // here too — the question is what the set answers, not what the engine cuts.
     const shelfBoard = ['SHELF', 'PARTITION', 'RAIL-PART', 'FIXED'].includes(name);
     assert.equal(sheetTurn(panel), shelfBoard && dw > dh ? 90 : 0, `${name}: laid as turn 17 laid it`);
   }
@@ -236,8 +240,12 @@ test('F7 the old SHELF_BOARD_PARTS set folds in — it is not bolted beside the 
   // The four names turn 17 F3 asked its question of. Of them only SHELF carries
   // a stated grain, so the other three are byte-identical: the same rule, the
   // same code, the same answer.
+  // T42-F1: `RAIL-PART` was one of the four and is not cut any more, so the
+  // loop asks the three that are. The claim is unchanged: of the old
+  // SHELF_BOARD_PARTS set, only SHELF carries a stated grain, and the rest
+  // answer by the size rule, byte for byte.
   const r = unit('WARDROBE', { shelves: 2, drawers: 3, rail: true });
-  for (const name of ['PARTITION', 'RAIL-PART']) {
+  for (const name of ['PARTITION']) {
     const panel = partOf(r, name);
     assert.ok(panel, `${name} is in this wardrobe`);
     assert.equal(panel.cnc?.grain, undefined, `${name} states nothing, so the size rule answers`);

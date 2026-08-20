@@ -93,6 +93,17 @@ export default function Hardware({
   // Turn 36 (CLAUDE.md F8): the shelves' own edit grammar, handed to the rod
   // so a double-click on the tube opens the hanger modal beside it.
   onEditElement = null,
+  // ─── TURN 42 (CLAUDE.md F1): AN ALONE ROD IS ITS OWN SUBJECT ─────────────
+  // Two kinds of rail, two windows. An ASSEMBLY's rod opens the fix shelf it
+  // rides — the thing a joiner actually edits, T37's own answer — and it goes
+  // through `onEditElement` with the shelf's PANEL id, exactly as before. An
+  // ALONE rod has no board and opens its OWN window, addressed by its ITEM id;
+  // that is this second callback, and the two are kept apart here rather than
+  // downstream because the scene is where the rod's kind is known.
+  onEditRail = null,
+  // …and dragging it writes that item's `pos_mm`, the same way dragging a
+  // shelf writes the shelf's. `(itemId, currentAxisMm, supportMm)`.
+  onDragRail = null,
   // ─── TURN 28 (CLAUDE.md F5): ONE COLOUR SOURCE FOR THE WHOLE FAMILY ──────
   // Turn 25 handed this component the chosen METAL ID and let it resolve the
   // numbers; `3d/DrillRings.jsx` resolved its own, off its own table, with its
@@ -147,6 +158,8 @@ export default function Hardware({
           metal={shelfMetal}
           profile={profile}
           onEdit={onEditElement}
+          onEditRail={onEditRail}
+          onDragRail={onDragRail}
         />
       ))}
       {/* ─── Turn 11 (CLAUDE.md F3.5): the hinges are furniture ───
@@ -1189,15 +1202,34 @@ function Legs({ items, profile, colour }) {
  */
 function Rail({
   rail, colour, metal = null, profile = null, pivot = [0, 0, 0], onEdit = null,
+  onEditRail = null, onDragRail = null,
 }) {
   // The family metal when the profile carries one (gold/silver, the same pair
   // the shelf sleeves wear); the old neutral grey where it does not.
   const tone = metal?.colour || colour;
-  const open = onEdit && rail.panelId
+  // ─── TURN 42 (CLAUDE.md F1): WHICH WINDOW THIS ROD OPENS ─────────────────
+  //
+  // `mount` is the ENGINE's published answer (`assemblies.rail.mount`), not a
+  // guess from whether an id happens to look like a panel. ALONE opens the
+  // hanging-rail window on its own item; an ASSEMBLY opens the fix shelf's,
+  // which is T37's answer and is untouched.
+  //
+  // `panelId` is the ADDRESS either way — the shelf's panel id, or the rod
+  // item's own id — so the aura, `userData.ccRailPanelId` and every walk that
+  // finds the tube by it keep working through the change.
+  const alone = rail.mount === 'alone';
+  const to = alone ? onEditRail : onEdit;
+  const open = to && rail.panelId
     ? (e) => {
       e.stopPropagation();
-      onEdit(rail.panelId, { x: e.clientX, y: e.clientY });
+      to(rail.panelId, { x: e.clientX, y: e.clientY });
     }
+    : null;
+  // …and an ALONE rod is DRAGGED, which is the other half of "exactly the
+  // grammar a shelf uses". An assembly's rod is not: its shelf is dragged and
+  // the rod follows, which is the whole point of an assembly.
+  const grab = alone && onDragRail && rail.itemId
+    ? (e) => onDragRail(e, rail.itemId, rail.y)
     : null;
   return (
     <>
@@ -1216,8 +1248,16 @@ function Rail({
     <mesh
       position={[mm(rail.x), mm(rail.y), mm(rail.z)]}
       rotation={[0, 0, Math.PI / 2]}
-      userData={{ ccNoBounds: true, ccRailPanelId: rail.panelId || null }}
+      userData={{
+        ccNoBounds: true,
+        ccRailPanelId: rail.panelId || null,
+        // T42-F1: what a walk needs to tell the two kinds apart without
+        // reaching into the store.
+        ccRailMount: rail.mount || null,
+        ccRailItemId: rail.itemId || null,
+      }}
       onDoubleClick={open || undefined}
+      onPointerDown={grab || undefined}
     >
       <cylinderGeometry args={[mm(rail.diameter / 2), mm(rail.diameter / 2), mm(rail.length), 14]} />
       <meshStandardMaterial

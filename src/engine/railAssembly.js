@@ -26,12 +26,14 @@
 // numbers — no store, no React, no geometry beyond one Y, exactly as
 // `railDatum.js` was.
 //
-// It is NOT a replacement for `railDatum.js`. That module is the LEGACY law
-// and it stays, whole and un-deleted (iron rule 4 — the owner licensed five
-// removals today and none of them is here). Every rail saved before this turn
-// keeps rendering exactly as it was saved, resolved by exactly the code that
-// resolved it yesterday. There is no migration and no surprise shelf in an old
-// BOM; what an old project reads back is what the workshop already built.
+// It is NOT a replacement for `railDatum.js`. That module answers "how far
+// above the nearest thing below it does this rod hang", and it still does —
+// T42-F1 keeps it whole, because that IS the ALONE rod's `pos_mm` + datum.
+//
+// (T37 wrote here that every rail saved before it "keeps rendering exactly as
+// it was saved". T42 ends that sentence deliberately: the app is pre-launch,
+// the owner said *"nie patrzymy na przeszłość w ogóle"*, and an old rod now
+// renders as what it always should have been — a rod, with nothing over it.)
 //
 // ─── THE DROP, AND WHY IT IS FORTY ──────────────────────────────────────────
 //
@@ -52,7 +54,8 @@
 // rod's axis; the partitioner's own three screws go where the shelf's fixing
 // goes, which is the fix shelf's business and not the rail's.
 //
-// A LEGACY rail keeps its partitioner, because a legacy rail keeps everything.
+// T42-F1: and NEITHER KIND emits one now. `RAIL-PART` is gone from the engine,
+// from the kit and from the cut list — the ALONE rod hangs on the sides.
 
 // ─── TURN 40 (CLAUDE.md F6): WITH A SHELF, OR ON ITS OWN ────────────────────
 //
@@ -64,42 +67,59 @@
 // is added is the alternative he now wants: a rod on its own, chosen when it is
 // added.
 //
-// AND "ON ITS OWN" IS NOT A NEW CONSTRUCTION. This app has had a complete,
-// tested law for a rail with no shelf since turn 1 — the LEGACY one, which
-// hangs the rod above the nearest thing below it and cuts its own RAIL-PART
-// partitioner over it. CLAUDE.md's *"legacy rails are untouched, as T37 left
-// them"* is therefore satisfied by construction: a rail alone IS read by that
-// law, and not one line of it moved.
+// ─── TURN 42 (CLAUDE.md F1): AND "ON ITS OWN" IS A ROD, NOT A SHELF ─────────
 //
-// The one thing that had to be said is WHY a given rod has no shelf, because
-// the two reasons are different and the modal owes the joiner the difference:
-// an OLD rail should be told it can be re-added to get the shelf, and a rail
-// somebody deliberately asked to be alone should not. `mount: 'alone'` records
-// the choice. It reads as LEGACY geometry — `railMountOf` returns SHELF only
-// for `mount: 'shelf'` WITH a shelf named — so the rod hangs exactly where a
-// rail on its own has always hung.
+// T40 satisfied "a rod on its own" by pointing it at the LEGACY law — which
+// hangs the rod and CUTS A BOARD 40 mm over it. The owner spent four turns
+// saying he did not want that board, and got it every time. The owner,
+// 19.08.2026: *"mamy w dupie stare rzeczy … nie patrzymy na przeszłość w
+// ogóle."*
+//
+// So there are EXACTLY TWO KINDS from tonight, and no third:
+//
+//   ALONE     a rod mounted to the carcass sides. Its height is its own
+//             `pos_mm` over its own datum. NO partitioner, NO shelf, NO
+//             bracket board. The side flange drilling stays — the rod has to
+//             hang on something, and it hangs on the sides.
+//   ASSEMBLY  T37's: a FIX shelf with the rod `drop` beneath it. Untouched.
+//
+// THE LEGACY RULE, IN ONE SENTENCE, WITH ZERO LAYERS: a stored rail item with
+// no `mount` — or any value that is not `shelf` — IS READ AS ALONE. There is no
+// migration table here, no compatibility branch and no warning, because the app
+// is pre-launch and the owner said so twice in one evening.
+//
+// What survives from T40 is the only thing that was ever about a PERSON rather
+// than about geometry: an OLD rod should be told it can be re-added to get the
+// shelf, and a rod somebody deliberately asked to be alone should not be nagged
+// about a decision made this afternoon. Same geometry now, two sentences.
 
 /**
- * How a rail is hung.
+ * How a rail is hung. TWO KINDS, no third (T42-F1).
  *
- *   LEGACY  nothing said — every rail before T37, read by `railDatum.js`
  *   SHELF   T37's assembly: a FIX shelf with the rod under it
- *   ALONE   T40's choice: a rod on its own, read by the LEGACY law on purpose
+ *   ALONE   a rod on its own, on the carcass sides — and the answer for every
+ *           stored rail that does not say SHELF, whatever it says instead
  */
-export const RAIL_MOUNT = Object.freeze({ LEGACY: 'legacy', SHELF: 'shelf', ALONE: 'alone' });
+export const RAIL_MOUNT = Object.freeze({ SHELF: 'shelf', ALONE: 'alone' });
 
 /**
- * Which law this rail is read by.
+ * Which of the two this rail is.
  *
  * The test is deliberately narrow: `mount === 'shelf'` AND a shelf actually
- * named. A rail that says "shelf" and names nothing is not half a new rail, it
- * is a legacy rail with a stray field — and reading it the new way would put a
- * rod at `0 − 40` on somebody's saved project.
+ * named. A rail that says "shelf" and names nothing is not half an assembly —
+ * reading it the assembly way would put a rod at `0 − 40` on somebody's saved
+ * project — so it is a rod on its own, like everything else that is not an
+ * assembly.
+ *
+ * T42-F1: the third answer is gone. There is no `LEGACY` any more, because
+ * there is no legacy geometry any more: an old rod and a chosen-alone rod are
+ * the same rod, drawn by the same branch, cut into the same nothing.
  */
 export function railMountOf(item) {
   const said = String(item?.mount ?? '').toLowerCase();
-  if (said === RAIL_MOUNT.SHELF && railShelfIdOf(item) != null) return RAIL_MOUNT.SHELF;
-  return RAIL_MOUNT.LEGACY;
+  return said === RAIL_MOUNT.SHELF && railShelfIdOf(item) != null
+    ? RAIL_MOUNT.SHELF
+    : RAIL_MOUNT.ALONE;
 }
 
 /** The shelf this rail hangs under, by item id — or null. */
@@ -110,18 +130,28 @@ export function railShelfIdOf(item) {
   return text.length ? text : null;
 }
 
-/** Is this the old thing? Asked in the modal, which owes the joiner the note. */
+/**
+ * Is this rod on its own — i.e. NOT an assembly? Asked in the modal, which owes
+ * the joiner the note.
+ *
+ * T42-F1: the answer for every input is exactly what it was before this turn;
+ * only the name of the constant on the right changed, because `LEGACY` is not
+ * a kind of rail any more. The function keeps its name because the question it
+ * answers is the one the modal still asks: is this the old thing, the one with
+ * no shelf over it?
+ */
 export function isLegacyRail(item) {
-  return railMountOf(item) === RAIL_MOUNT.LEGACY;
+  return railMountOf(item) !== RAIL_MOUNT.SHELF;
 }
 
 /**
  * TURN 40 (F6): was this rod asked to be ALONE, or is it simply old?
  *
- * Both are read by the legacy geometry law and both therefore answer true to
- * `isLegacyRail`. They are not the same thing to a person: one is a decision
- * somebody made this afternoon and the other is a rod from a job cut last
- * month. Only the second is offered the "re-add it" note.
+ * T42-F1: both are ALONE now — the same branch, the same geometry, the same
+ * absence of a board. They are still not the same thing to a PERSON: one is a
+ * decision somebody made this afternoon and the other is a rod from a job cut
+ * last month. Only the second is offered the "re-add it" note, and this is the
+ * only place in the app where the difference still means anything.
  */
 export function railChosenAlone(item) {
   return String(item?.mount ?? '').toLowerCase() === RAIL_MOUNT.ALONE;
@@ -201,4 +231,33 @@ export function assemblyShelfPos({ railAxis = 0, drop = 0 }) {
 export const LEGACY_RAIL_NOTE = 'old-style rail — re-add to get the shelf-mounted one';
 
 /** …and the note a rod that was ASKED to be alone owes him instead (T40-F6). */
-export const RAIL_ALONE_NOTE = 'rail on its own — no shelf, by choice. Its own partitioner sits above it.';
+// T42-F1: the sentence was a promise the engine broke — there IS no partitioner
+// any more, and there never should have been one. It now says what the rod is.
+export const RAIL_ALONE_NOTE = 'rail on its own — no shelf and no board above it, by choice. It mounts to the carcass sides.';
+
+/**
+ * ─── TURN 42 (CLAUDE.md F1): THE ROD STAYS INSIDE THE CARCASS ───────────────
+ *
+ * A shelf's height is snapped and clamped before it is drawn; an ALONE rod's is
+ * the same kind of number and gets the same treatment. What it is clamped
+ * BETWEEN is the only thing that differs, and it differs because a rod is a
+ * rod: it has a radius, and nothing stands on it.
+ *
+ * The old law clamped the PARTITIONER under the top (`railPartY + G > H − G −
+ * topClearance`) and let the rod follow 40 mm below. There is no partitioner,
+ * so the rod itself takes the clearance — the same `wardrobe.rail.topClearance`
+ * millimetres, now measured to the thing that is actually there.
+ *
+ * @returns {{axis:number, lowered:boolean, raised:boolean}}
+ */
+export function clampRailAxis({
+  axis = 0, floor = 0, ceiling = 0, clearance = 0, radius = 0,
+}) {
+  const low = Number(floor) + Number(radius);
+  const high = Number(ceiling) - Number(clearance) - Number(radius);
+  const wanted = Number(axis) || 0;
+  if (high < low) return { axis: (low + high) / 2, lowered: wanted > high, raised: wanted < low };
+  if (wanted > high) return { axis: high, lowered: true, raised: false };
+  if (wanted < low) return { axis: low, lowered: false, raised: true };
+  return { axis: wanted, lowered: false, raised: false };
+}

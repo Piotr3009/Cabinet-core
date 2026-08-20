@@ -17,6 +17,7 @@ import Messages from '../components/Messages.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import HandEditsModal from '../components/HandEditsModal.jsx';
 import DoorModal from '../components/DoorModal.jsx';
+import RailModal from '../components/RailModal.jsx';
 import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
 import PartDetailModal from '../components/PartDetailModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
@@ -516,6 +517,9 @@ export default function ConfiguratorPage() {
             section B rather than a second modal of its own, so there is one
             component, one open/close path and one registry of what is open. */}
         {modal === 'element' && <DoorModal />}
+      {/* TURN 42 (CLAUDE.md F1): an ALONE rod is its own subject and opens its
+          own window — there is no board over it to borrow one from. */}
+      {modal === 'rail' && <RailModal />}
         {/* Turn 12 (CLAUDE.md F4): one cabinet, its own canvas, mounted only
             while the window is open.
             ─── TURN 35 (CLAUDE.md F4): LOOKED AT, AND LEFT ────────────────

@@ -17,7 +17,9 @@ import { dirname, join } from 'node:path';
 
 import { computeCabinet, budrFrontHeights, hingeCentres } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE } from '../src/engine/profile.js';
-import { UNIT_TYPES, UNIT_TYPE_ORDER, defaultParamsFor } from '../src/engine/types.js';
+import {
+  UNIT_TYPES, UNIT_TYPE_ORDER, defaultParamsFor, getUnitType,
+} from '../src/engine/types.js';
 import { legCount, legLayout } from '../src/engine/legs.js';
 import { roundTo } from '../src/engine/format.js';
 
@@ -71,7 +73,56 @@ function paramsFrom(inputs) {
 // Drill summary keys whose shape is a list of pairs / a plain list of numbers.
 const PAIR_KEYS = new Set(['side_hinge_holes_y', 'hanger_holes_bul', 'hanger_holes_bur']);
 
-async function verifyCase(t, fixtureCase) {
+// ─── TURN 42 (CLAUDE.md F1 + iron rule 4): THE FIXTURES ARE NOT TOUCHED ────
+//
+// `golden-low-cabinet.json` case LC-B carries a rail, and a rail used to bring
+// a `RAIL-PART` board with it. The kit stopped cutting that board tonight
+// (`KIT_WARDROBE_FULL.lsp`, iron rule 4) and so did the engine. CLAUDE.md keeps
+// `fixtures/` untouched, so — exactly as `test/engine.test.js` does, for the
+// same reason and with the same arithmetic — the FIXTURE's expectations lose
+// the one named board here rather than in the file:
+//
+//   · the `RAIL-PART` row leaves the cut list and the panel ORDER
+//   · `panels_lisp` loses 1 (KIT_LOW_CABINET counted it — L464-465 — which is
+//     the kit-by-kit disagreement `countsRailPartInPanels` was written for)
+//   · `board_area_m2` / `area_m2` lose the row's own quoted area
+//   · `derived.rail_partition_y` and the `rail_partition_screw_*` drill rows go
+//     with the board they located
+//
+// `rail_y`, the bracket screw and the rod are untouched on both sides.
+const isRailPartRow = (row) => String(row?.id || '').toUpperCase().includes('RAIL-PART');
+
+function withoutRailPart(fixtureCase) {
+  const rows = fixtureCase.panels || [];
+  const gone = rows.filter(isRailPartRow);
+  if (!gone.length) return fixtureCase;
+  const pieces = gone.reduce((n, r) => n + (r.qty ?? 1), 0);
+  const area = gone.reduce((a, r) => a + (r.area_m2 ?? 0) * (r.qty ?? 1), 0);
+  const counted = Boolean(getUnitType(fixtureCase.inputs.type)?.countsRailPartInPanels);
+
+  const totals = { ...(fixtureCase.totals || {}) };
+  const less = (key, by) => {
+    if (typeof totals[key] === 'number') totals[key] = roundTo(totals[key] - by, decimalsOf(totals[key]));
+  };
+  less('panels_true_incl_railpart', pieces);
+  if (counted) less('panels_lisp', pieces);
+  less('pieces_total', pieces);
+  less('board_area_m2', area);
+  less('area_m2', area);
+
+  const derived = { ...(fixtureCase.derived || {}) };
+  delete derived.rail_partition_y;
+  const drills = { ...(fixtureCase.drills || {}) };
+  for (const k of ['rail_partition_screw_y', 'rail_partition_screw_x_sides', 'rail_partition_screw_x_back']) {
+    delete drills[k];
+  }
+  return {
+    ...fixtureCase, panels: rows.filter((r) => !isRailPartRow(r)), derived, drills, totals,
+  };
+}
+
+async function verifyCase(t, rawCase) {
+  const fixtureCase = withoutRailPart(rawCase);   // T42-F1, see the note above
   const result = computeCabinet(paramsFrom(fixtureCase.inputs), P);
   const id = fixtureCase.id;
 
@@ -338,13 +389,20 @@ test('BUDTALL and LOW_CABINET differ from BUD only in the hinge rule (and the ra
     type: 'LOW_CABINET', width: 600, height: 900, depth: 578, shelves: 1, rail: true, rail_offset: 200, hinge: 'L', unit_num: 'LC02',
   }, P);
   assert.equal(railed.drillSummary.hinge_centers.length, 3);
-  assert.equal(railed.derived.rail_y, 218);
-  assert.equal(railed.derived.rail_partition_y, 258);
-  assert.ok(railed.panels.some((p) => p.id === 'RAIL-PART'));
-  // This kit counts the rail partition among its panels; the wardrobe does not.
+  assert.equal(railed.derived.rail_y, 218, 'the ROD is exactly where it was — 200 above the floor board');
+  // ─── TURN 42 (CLAUDE.md F1) ─────────────────────────────────────────────
+  // The rod stands still; the BOARD over it is gone. Both kits used to cut a
+  // `RAIL-PART` and disagree about whether to count it, which is what
+  // `countsRailPartInPanels` was for; neither cuts one now, so the two totals
+  // are equal on both — and equal for the honest reason rather than by
+  // arithmetic that cancels.
+  assert.equal(railed.derived.rail_partition_y, undefined, 'no partitioner is published');
+  assert.ok(!railed.panels.some((p) => p.part === 'RAIL-PART'), 'and none is cut');
+  assert.equal(railed.drills.filter((d) => d.kind === 'rail_partition_screw').length, 0);
+  assert.ok(railed.drills.some((d) => d.kind === 'rail_bracket'), 'the side flange stays — the rod hangs on it');
   assert.equal(railed.totals.panels_lisp, railed.totals.panels_true_incl_railpart);
   const wardrobe = computeCabinet({ type: 'WARDROBE', width: 600, height: 2150, depth: 578, rail: true, unit_num: 'W01' }, P);
-  assert.equal(wardrobe.totals.panels_true_incl_railpart - wardrobe.totals.panels_lisp, 1);
+  assert.equal(wardrobe.totals.panels_true_incl_railpart - wardrobe.totals.panels_lisp, 0);
 });
 
 test('a height below the type minimum is raised, with a warning', () => {

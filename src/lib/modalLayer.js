@@ -114,6 +114,11 @@ export const MODAL_KINDS = Object.freeze({
   'hand-edits': { about: 'project', label: 'This part carries manual edits' },
   'save-template': { about: 'object', label: 'Save as template' },
   element: { about: 'object', label: 'Element' },
+  // TURN 42 F1: the hanging rod's own window. It is about a thing on the
+  // screen — the tube — and it opens beside it, which is what 'object' means.
+  // Its own name and not `element` because its subject is an ITEM and not a
+  // panel: after F1 there is no board over the rod to address it by.
+  rail: { about: 'object', label: 'Hanging rail' },
   cabinet: { about: 'object', label: 'Cabinet editor' },
   'part-detail': { about: 'object', label: 'Part detail' },
   'add-items': { about: 'object', label: 'Add items' },

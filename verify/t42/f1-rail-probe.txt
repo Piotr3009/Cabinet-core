@@ -1,0 +1,45 @@
+─── T42 · F1 — the rail, finished ─────────────────────────────────────
+app: http://127.0.0.1:4173/
+
+1 — ADD ITEMS ▸ hanger rail, ON ITS OWN
+      items:        [{"id":"hanger_trjgy9r","kind":"hanger","mount":"alone","pos_mm":1400}]
+      RAIL-PART:    []
+      SHELF panels: []
+      rail:         y=1418  mount=alone  itemId=hanger_trjgy9r  support=18
+      drills:       bracket [["BUL",1418],["BUR",1418]]  ·  partitioner screws 0
+  ok   THE PANEL LIST carries NO RAIL-PART — not the item list, the PANEL list   []
+  ok   …and no shelf was added behind his back either   []
+  ok   the engine says it is ALONE, and names the item it belongs to   "alone"
+  ok   the SIDE FLANGE is drilled — one bracket screw per side, at the axis   [["BUL",1418],["BUR",1418]]
+      on the glass: {"x":832.6021356014305,"y":380.14001221570317,"panelId":"hanger_trjgy9r","mount":"alone","itemId":"hanger_trjgy9r","worldY":1.518}
+  ok   and the SCENE draws a rod that knows its own address   "hanger_trjgy9r"
+  ok   the INTERIOR LIST on screen shows the rail and nothing under it   {"hanger":true,"pieces":"7"}
+      shot: f1a-rail-alone-no-shelf-in-panels.png
+
+2 — drag the rod by hand
+      pos_mm 1400 → 1811.5    rod y 1418 → 1829.5
+  ok   the DRAG wrote the item’s pos_mm and the rod moved UP with it   Δpos 411.5 · Δy 411.5
+  ok   …and STILL no RAIL-PART after the drag   []
+
+3 — double-click the tube
+      rod now at y=1930 mm, on the glass at 833,290
+      window: {"modal":"rail","railItemId":"hanger_trjgy9r","onGlass":true,"subject":"hanger_trjgy9r","title":true,"height":"yes","drawn":"1829.5 mm"}
+  ok   the HANGING RAIL window opened, on the rod’s OWN item — not a shelf modal   "rail"
+  ok   …and it reads the rod’s height back off the engine, not off the field   1829.5 mm
+      shot: f1b-rail-alone-dragged-and-edited.png
+
+2b — the drag, as arithmetic: +100 mm in, +100 mm out
+      pos_mm 900 → drawn 918 mm ;  pos_mm 1000 → drawn 1018 mm ;  Δ 100
+  ok   SET pos_mm 100 mm HIGHER → THE DRAWN ROD MOVES 100 mm   918 → 1018
+
+4 — and the ASSEMBLY is exactly what T37 left
+      RAIL-PART: []   SHELF: ["SHELF-1"]
+      rail: y=1418 mount=shelf shelfItemId=shelf_ut3my82
+  ok   the FIX SHELF is cut, and the rod hangs the bracket drop below it   shelf 1458 · rod 1418
+  ok   and it cuts no RAIL-PART either — neither kind does, ever   []
+  ok   an ASSEMBLY’s rod still names the SHELF it rides (T37, untouched)   "SHELF-1"
+      window: {"modal":"element","panelId":"SHELF-1","rider":true}
+  ok   …and double-clicking it opens the SHELF’s window, which says it carries a rail   {"modal":"element","panelId":"SHELF-1","rider":true}
+
+─── VERDICT ───────────────────────────────────────────────────────────
+15 / 15 checks passed

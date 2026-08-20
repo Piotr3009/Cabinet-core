@@ -93,13 +93,24 @@ test('F2 — a shelf-mounted rail cuts NO partitioner screws, unit-wide or per c
   }
 });
 
-test('F2 — a rail on its own KEEPS its partitioner and its nine screws', () => {
-  // The other half of the same law, so the fix cannot be "drill nothing".
-  // T40-F6's "alone" is read by the LEGACY law on purpose and is untouched.
+// ─── RE-PINNED, TURN 42 (CLAUDE.md F1) ─────────────────────────────────────
+// T41 wrote *"T40-F6's 'alone' is read by the LEGACY law on purpose and is
+// untouched"* and pinned the nine screws to prove the fix was not "drill
+// nothing". It was the right guard against the wrong law: the owner had asked
+// for a rod ON ITS OWN and the engine was giving him the board he refused.
+//
+// The half that still matters — THE FIX IS NOT "DRILL NOTHING" — is pinned
+// here on the fixings that are actually the rod's: the side flange, one screw
+// per side, which CLAUDE.md keeps by name.
+test('F2 — a rail on its own keeps its SIDE FLANGE, and cuts no board at all', () => {
   const alone = withItems([{ id: 'h1', kind: 'hanger', mount: 'alone', pos_mm: 1400 }]);
-  assert.equal((alone.panels || []).filter((p) => p.part === 'RAIL-PART').length, 1, 'it cuts its own partitioner');
-  assert.equal((alone.drills || []).filter((d) => d.kind === 'rail_partition_screw').length, 9);
-  assert.equal((alone.drills || []).filter((d) => d.kind === 'rail_bracket').length, 2);
+  assert.equal((alone.panels || []).filter((p) => p.part === 'RAIL-PART').length, 0, 'no partitioner');
+  assert.equal((alone.drills || []).filter((d) => d.kind === 'rail_partition_screw').length, 0);
+  // NOT "drill nothing": the rod hangs on the sides, and the sides are drilled.
+  const brackets = (alone.drills || []).filter((d) => d.kind === 'rail_bracket');
+  assert.equal(brackets.length, 2);
+  assert.deepEqual([...new Set(brackets.map((d) => d.panel))].sort(), ['BUL', 'BUR']);
+  for (const b of brackets) assert.equal(b.y, alone.assemblies.rail.y, 'at the rod’s own axis');
 });
 
 test('F2 — no drill lands at a negative coordinate, in any rail configuration', () => {

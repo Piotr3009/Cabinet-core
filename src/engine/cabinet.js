@@ -73,7 +73,9 @@ import { railSupportTops, resolveRailAxis } from './railDatum.js';
 // shelf's underside and needs no partitioner, because the shelf IS the board
 // above the rod. A rail that names nothing is every rail saved before tonight,
 // and it is read by the module above, unchanged.
-import { hangerDropMm, railMountOf, railShelfIdOf, RAIL_MOUNT, resolveShelfMountedRail } from './railAssembly.js';
+import {
+  clampRailAxis, hangerDropMm, railMountOf, railShelfIdOf, RAIL_MOUNT, resolveShelfMountedRail,
+} from './railAssembly.js';
 // Turn 33 (CLAUDE.md F11): the insert catalogue — specs with nominals, never
 // articles; the BOM line names the nominal that drops into the box.
 import { insertFor } from './drawerInserts.js';
@@ -842,7 +844,22 @@ function normalizeParams(raw, profile) {
     // geometry pass can ask `overlayPlan` for the one line it needs.
     overlayDrawers: overlayItems,
     rail,
-    railOffset: Number(p.rail_offset ?? railDefault),
+    // ─── TURN 42 (CLAUDE.md F1): THE ROD'S HEIGHT IS THE ITEM'S OWN ─────────
+    //
+    // *"Position from the item's own `pos_mm` + datum, exactly the grammar a
+    // shelf uses."* A shelf item's `pos_mm` reaches the engine on the item; the
+    // rod's reached it only after `paramsForEngine()` had copied it into
+    // `rail_offset`, so a bare `computeCabinet()` handed the item and nothing
+    // else drew the rod at the profile's default and ignored what the item
+    // said. Two roads to one number, and the shorter one was not connected.
+    //
+    // The ITEM wins where there is one. `rail_offset` stays, for the kit calls
+    // and the fixtures that carry no items at all — including all six standard
+    // configs, which is why this cannot move a byte of them.
+    railOffset: Number.isFinite(Number(hangerFromItems?.pos_mm))
+      && Number(hangerFromItems.pos_mm) >= 0
+      ? Number(hangerFromItems.pos_mm)
+      : Number(p.rail_offset ?? railDefault),
     // T35-F1: WHICH board the rail's number is measured from. Nothing said —
     // every project before this turn, every bare kit call — reads the old way.
     railDatum: hangerFromItems?.datum || p.rail_datum || null,
@@ -1985,7 +2002,30 @@ export function computeCabinet(params, profileOverride) {
   // no rod, no bracket screw, no BOM line. The assembly is one thing.
   const railOrphaned = cfg.railMount === RAIL_MOUNT.SHELF && !railRides;
   const hasRail = type.supports.rail && cfg.rail && !railOrphaned;
-  let railY = null; let railPartY = null; let railPartCentreY = null;
+  // ─── TURN 42 (CLAUDE.md F1): TWO BRANCHES, AND NEITHER CUTS A BOARD ──────
+  //
+  // The rail has had four turns — T37-F2, T40-F6, T41-F2 and tonight — and
+  // until tonight it still added a shelf when it was asked not to, because the
+  // engine had no ALONE branch at all: an item carrying `mount: 'alone'` fell
+  // through to the pre-T37 path, which computed a `railPartY` and cut a
+  // `RAIL-PART` board over the rod. The owner refused that board four times.
+  //
+  // So the pre-T37 branch is GONE (iron rule 3's licence, by name) and ALONE
+  // is a first-class branch of its own. What survives inside it is the DATUM
+  // RESOLUTION — `railSupportTops` + `resolveRailAxis` — and it survives
+  // because that IS F1's *"position from the item's own `pos_mm` + datum"*:
+  // the support is the datum, the offset is the `pos_mm`, and the sum is where
+  // the rod hangs. What does NOT survive is everything the board needed:
+  // `railPartY`, `railPartCentreY`, the partitioner's own too-high clamp, its
+  // nine screws and its cut line.
+  //
+  // SNAP AND CLAMP, split the way a shelf splits them. A shelf is SNAPPED by
+  // the editor (`profile.editor.mmStep`, in the store, on the drag) and
+  // CLAMPED by whoever knows the carcass. So the clamp is here — a rod outside
+  // the box is a drawing that lies, whoever wrote the number — and the snap is
+  // in `moveRail`, beside every other snap in this app. The engine takes
+  // millimetres; it does not read editor preferences.
+  let railY = null;
   let railSupportY = null; let railFits = true; let railWanted = null;
   if (hasRail && railRides) {
     // THE ASSEMBLY. No datum to resolve, no number to type, no partitioner to
@@ -1999,6 +2039,7 @@ export function computeCabinet(params, profileOverride) {
     // which is the workshop's own bracket and not this engine's business.
     railFits = true;
   } else if (hasRail) {
+    // ALONE — a rod on the carcass sides, and nothing else.
     const railCeiling = H - G;
     const railSupports = railSupportTops({
       floor: G,
@@ -2017,16 +2058,22 @@ export function computeCabinet(params, profileOverride) {
       ceiling: railCeiling,
     });
     railSupportY = resolved.support;
-    railFits = resolved.fits;
     railWanted = resolved.axis;
-    railY = resolved.axis;
-    railPartY = railY + RL.partitionAbove;
-    if (railPartY + G > H - G - RL.topClearance) {
+    // The ROD takes the top clearance now, because the rod is what is up
+    // there. Same `wardrobe.rail.topClearance` millimetres, measured to the
+    // thing that is actually in the carcass.
+    const held = clampRailAxis({
+      axis: resolved.axis,
+      floor: G,
+      ceiling: railCeiling,
+      clearance: RL.topClearance,
+      radius: P.hardware.rail.diameter / 2,
+    });
+    railY = held.axis;
+    railFits = resolved.fits && !held.lowered && !held.raised;
+    if (held.lowered) {
       warnings.push({ code: 'RAIL_TOO_HIGH', message: 'Rail too high for the carcass — lowered to fit under the top.' });
-      railY = H - G - RL.topClearance - G - RL.partitionAbove;
-      railPartY = railY + RL.partitionAbove;
     }
-    railPartCentreY = railPartY + G / 2;
   }
   // T37-F2: shelf item id → the rail item riding it. Read off the config
   // rather than off `columnRailSets`, which is built further down the file —
@@ -2168,9 +2215,14 @@ export function computeCabinet(params, profileOverride) {
   } else if (numShelves > 0) {
     // spanMode 'fullHeight' replicates KIT_WARDROBE_FULL v1: the row spacing
     // ignores the drawer zone (golden-wardrobe.json → shelf_holes_quirk).
+    // T42-F1: the rail's partitioner used to raise this floor, because a board
+    // 40 mm over the rod really was the bottom of the shelf zone. There is no
+    // board, so the zone is the drawer stack or the carcass floor — exactly
+    // what a wardrobe with no rail has always had, and exactly what
+    // KIT_WARDROBE_FULL's own `shelfZoneBottom` now says.
     const zoneBottom = SH.spanMode === 'fullHeight'
       ? G
-      : (railPartY != null ? railPartY + G : (hasDrawers ? partitionY + G : G));
+      : (hasDrawers ? partitionY + G : G);
     const zoneTop = H - G;
     const spacing = (zoneTop - zoneBottom) / (numShelves + 1);
     for (let i = 1; i <= numShelves; i += 1) shelfRows.push(zoneBottom + spacing * i);
@@ -3047,19 +3099,13 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
-  // T37-F2: `railPartY == null` is a SHELF-MOUNTED rail, and it cuts no
-  // partitioner — the fix shelf of its own assembly is already the board above
-  // the rod, standing exactly where this one would have stood. Two boards in
-  // the same 40 mm of air is not a rail, it is a bug with a cut list.
-  if (hasRail && railPartY != null) {
-    panels.push(panel({
-      id: 'RAIL-PART', part: 'RAIL-PART', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
-      edgeCode: codes.none, edgeLen: 0,
-      box: { x: G, y: railPartY, z: G, w: internalWidth, h: G, d: partitionDepth },
-      cnc: rectGeometry(internalWidth, partitionDepth),
-      meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth },
-    }));
-  }
+  // ─── THE RAIL PARTITIONER — DELETED, TURN 42 (CLAUDE.md F1) ──────────────
+  // A `RAIL-PART` panel stood here whenever `railPartY != null`, which was
+  // every rail that was not a T37 assembly — including every rod the ADD ITEMS
+  // control had explicitly been asked to leave ALONE. It was the shelf the
+  // owner refused, cut and listed and screwed to both sides. It is gone from
+  // the engine, from `KIT_WARDROBE_FULL.lsp` and from the cut-list CSV.
+  // Nothing replaces it: an alone rod mounts to the carcass sides.
 
   if (hasDrawers) {
     if (dpLeft) {
@@ -3543,16 +3589,23 @@ export function computeCabinet(params, profileOverride) {
       // The orphan rule, said in the column's frame: a rail whose shelf is
       // gone is not there, and this bay simply has no rod.
       if (spec.mount === RAIL_MOUNT.SHELF && !colRides) continue;
+      // ─── TURN 42 (CLAUDE.md F1): ONE LAW, BOTH SCALES ────────────────────
+      //
+      // The column's rail is the unit-wide rail measured across a bay, and it
+      // always has been — including the copy of the partitioner it kept.
+      // F1's acceptance test is *"NO combination of rail inputs ever emits a
+      // panel named RAIL-PART"*, and a zoned hanger item is a rail input, so
+      // `Z<n>-RAIL-PART` goes with its twin. `colRailPartY` and the whole
+      // partitioner clamp go with it; the rod, its bay-wide length and its
+      // bracket screws stay exactly as they were.
       let colRailY;
-      let colRailPartY;
       let colSupport;
       if (colRides) {
         colRailY = colRides.axis;
         colSupport = colRides.shelfBottom;
-        colRailPartY = null;              // the fix shelf IS the partitioner
       } else {
-        // T35-F1: the same datum law as the unit-wide rail, asked of THIS bay —
-        // its own drawer stack, its own shelves, its own floor.
+        // ALONE, in a bay: the same datum law as the unit-wide rod, asked of
+        // THIS bay — its own drawer stack, its own shelves, its own floor.
         const colCeiling = H - G;
         const colSupports = railSupportTops({
           floor: G,
@@ -3567,16 +3620,20 @@ export function computeCabinet(params, profileOverride) {
           offset: Number(spec.offset) > 0 ? Number(spec.offset) : cfg.railOffset,
           ceiling: colCeiling,
         });
-        colRailY = colResolved.axis;
         colSupport = colResolved.support;
-        colRailPartY = colRailY + RL.partitionAbove;
-        if (colRailPartY + G > H - G - RL.topClearance) {
+        const colHeld = clampRailAxis({
+          axis: colResolved.axis,
+          floor: G,
+          ceiling: colCeiling,
+          clearance: RL.topClearance,
+          radius: P.hardware.rail.diameter / 2,
+        });
+        colRailY = colHeld.axis;
+        if (colHeld.lowered) {
           warnings.push({
             code: 'RAIL_TOO_HIGH',
             message: `Column ${k + 1}: rail too high for the carcass — lowered to fit under the top.`,
           });
-          colRailY = H - G - RL.topClearance - G - RL.partitionAbove;
-          colRailPartY = colRailY + RL.partitionAbove;
         }
       }
       columnRailSets.push({
@@ -3588,23 +3645,12 @@ export function computeCabinet(params, profileOverride) {
         },
         railY: colRailY,
         support: colSupport,
-        railPartY: colRailPartY,
+        mount: colRides ? RAIL_MOUNT.SHELF : RAIL_MOUNT.ALONE,
+        itemId: spec.itemId ?? null,
         shelfItemId: colRides ? colRides.shelfId : null,
         material_id: spec.material_id ?? null,
         material_label: spec.material_label ?? null,
       });
-      if (colRailPartY == null) continue;
-      panels.push(panel({
-        id: `Z${k + 1}-RAIL-PART`, part: 'RAIL-PART', role: 'shelf', w: bay.size, h: partitionDepth, thickness: G,
-        edgeCode: codes.none, edgeLen: 0,
-        box: {
-          x: bay.from, y: colRailPartY, z: G, w: bay.size, h: G, d: partitionDepth,
-        },
-        cnc: rectGeometry(bay.size, partitionDepth),
-        meta: {
-          variant: 'fixed', locked: true, zone: k, front_mm: internalDepth - partitionDepth,
-        },
-      }));
     }
   }
 
@@ -5608,25 +5654,19 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
-  // Rail bracket + rail partitioner fixings
+  // ─── THE RAIL'S SIDE FLANGE — and nothing else (T42-F1) ──────────────────
   //
-  // T37-F2: the BRACKET screw is the rail's own and goes in whichever law hung
-  // it. The three PARTITIONER screws belong to the partitioner, so a
-  // shelf-mounted rail (`railPartCentreY == null`) does not drill them — its
-  // board is a fix shelf and takes the fix shelf's own screws, from the shelf
-  // pass, at the shelf's own line.
+  // ONE bracket screw per side, at the rod's axis: the flange the rod hangs
+  // on, which CLAUDE.md keeps by name — *"the side flange drilling (the rail
+  // block itself) STAYS — an ALONE rod still mounts to the sides"* — and which
+  // `KIT_WARDROBE_FULL.lsp drawWardrobeRailHolesBUL/BUR` still drills.
+  //
+  // The three PARTITIONER screws per side, and the three in the back, are
+  // DELETED with the board they held: `railPartCentreY` does not exist any
+  // more, and neither does the panel it was the centre line of.
   if (hasRail) {
     for (const sideId of ['BUL', 'BUR']) {
       addDrill(sideId, 'rail_bracket', pz.layers.screw, sideW / 2, railY, RL.bracketScrewDiameter);
-      if (railPartCentreY == null) continue;
-      for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
-        addDrill(sideId, 'rail_partition_screw', pz.layers.screw, x, railPartCentreY, RL.bracketScrewDiameter);
-      }
-    }
-    if (backStyle === 'full' && railPartCentreY != null) {
-      for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
-        addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, railPartCentreY, RL.bracketScrewDiameter);
-      }
     }
   }
 
@@ -5658,28 +5698,21 @@ export function computeCabinet(params, profileOverride) {
   // The fix is the missing line and not a filter downstream, because the guard
   // belongs where the partitioner screws are DECIDED. The bracket screw is the
   // rail's own and is drilled in either case, exactly as its twin does it.
+  //
+  // ─── TURN 42 (CLAUDE.md F1): AND THE GUARD IS NOT NEEDED ANY MORE ────────
+  //
+  // T41's missing `if (railPartCentreY == null) continue` is moot: there are
+  // no partitioner screws left to guard. What stays is the bracket screw, into
+  // the column's own bounding boards — a carcass side in its own frame, a
+  // VPART in the frame the bay-door hinges established.
   for (const set of columnRailSets) {
-    const centre = set.railPartY == null ? null : set.railPartY + G / 2;
     for (const bound of [set.bounds.left, set.bounds.right]) {
       const carcass = bound === 'BUL' || bound === 'BUR';
       if (!carcass && !panels.some((x) => x.id === bound)) continue;
       if (carcass) {
         addDrill(bound, 'rail_bracket', pz.layers.screw, sideW / 2, set.railY, RL.bracketScrewDiameter);
-        if (centre == null) continue;
-        for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
-          addDrill(bound, 'rail_partition_screw', pz.layers.screw, x, centre, RL.bracketScrewDiameter);
-        }
       } else {
         addDrill(bound, 'rail_bracket', pz.layers.screw, partitionDepth / 2, set.railY - G, RL.bracketScrewDiameter);
-        if (centre == null) continue;
-        for (const v of [pz.screwFromEnd, partitionDepth / 2, partitionDepth - pz.screwFromEnd]) {
-          addDrill(bound, 'rail_partition_screw', pz.layers.screw, v, centre - G, RL.bracketScrewDiameter);
-        }
-      }
-    }
-    if (backStyle === 'full' && centre != null) {
-      for (const x of [set.bay.from + pz.screwFromEnd, set.bay.centre, set.bay.to - pz.screwFromEnd]) {
-        addDrill('BACK', 'rail_partition_screw', pz.layers.screw, x, centre, RL.bracketScrewDiameter);
       }
     }
   }
@@ -5798,9 +5831,11 @@ export function computeCabinet(params, profileOverride) {
   const frontPanels = panels.filter((x) => x.material_role === 'front');
   const drawerFrontCount = panels.filter((x) => x.part === 'DRAWER-FRONT').length;
   const doorFrontCount = panels.filter((x) => x.part === 'FRONT').length;
-  // The wardrobe kit leaves RAIL-PART out of its panel count; KIT_LOW_CABINET
-  // counts it (L464-465). Per-type, because the kits genuinely disagree.
-  const railPartCount = hasRail && !type.countsRailPartInPanels ? 1 : 0;
+  // T42-F1: `railPartCount` is DELETED. It subtracted the RAIL-PART board from
+  // the LISP's own panel count, and there is no RAIL-PART board — leaving it
+  // would have reported every railed wardrobe one panel short. The two totals
+  // below are therefore equal on every kit, which is the arithmetic saying the
+  // same thing the cut list says.
 
   const boardArea = boardPanels.reduce((s, x) => s + x.area_m2, 0);
   const frontArea = frontPanels.reduce((s, x) => s + x.area_m2, 0);
@@ -5827,9 +5862,12 @@ export function computeCabinet(params, profileOverride) {
   const drawerFrontsInPanels = type.countsDrawerFrontsInPanels === false ? 0 : drawerFrontCount;
 
   const totals = {
-    // LISP totalPanels convention: carcass + interior + drawer fronts,
-    // door fronts counted separately, RAIL-PART not counted at all.
-    panels_lisp: boardPanels.length - railPartCount + drawerFrontsInPanels,
+    // LISP totalPanels convention: carcass + interior + drawer fronts, door
+    // fronts counted separately. T42-F1: and no RAIL-PART to leave out of it.
+    panels_lisp: boardPanels.length + drawerFrontsInPanels,
+    // Kept under its old name — it is a PUBLISHED key and iron rule 3 does not
+    // license renaming one. It now equals `panels_lisp`, because there is no
+    // railpart to include.
     panels_true_incl_railpart: boardPanels.length + drawerFrontsInPanels,
     pieces_total: panels.length,
     fronts: doorFrontCount + (drawerFrontCount - drawerFrontsInPanels),
@@ -6395,7 +6433,8 @@ export function computeCabinet(params, profileOverride) {
       drawer_front_y: [...budr.frontY],
       drawer_heights: [...budr.heights],
     } : {}),
-    ...(hasRail ? { rail_y: railY, rail_partition_y: railPartY, rail_support_y: railSupportY } : {}),
+    // T42-F1: `rail_partition_y` is deleted with the board it located.
+    ...(hasRail ? { rail_y: railY, rail_support_y: railSupportY } : {}),
     ...(sinkBack ? { back_w: sinkBack.w, back_h: sinkBack.h, holder_w: internalWidth, holder_h: SK.railHeight } : {}),
     ...(fridge ? {
       fixed_panel_y: fridge.fixedPanelY,
@@ -6496,11 +6535,11 @@ export function computeCabinet(params, profileOverride) {
       fixed_screw_x: [FR.fixedScrewFromEnd, sideW - FR.fixedScrewFromEnd],
       fixed_screw_y: fridge.fixedPanelY + G / 2,
     } : {}),
+    // T42-F1: the three partitioner screw rows are deleted with the
+    // partitioner. The bracket screw — the side flange the rod hangs on —
+    // stays, and stays published.
     ...(hasRail ? {
       rail_bracket_y: railY,
-      rail_partition_screw_y: railPartCentreY,
-      rail_partition_screw_x_sides: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
-      rail_partition_screw_x_back: [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd],
     } : {}),
   };
 
@@ -6535,8 +6574,18 @@ export function computeCabinet(params, profileOverride) {
         // auto-fix" means he has to be TOLD, not quietly obeyed.
         fits: railFits,
         wanted: railWanted,
+        // ─── TURN 42 (CLAUDE.md F1): THE FINGERPRINT CARRIES THE MOUNT ─────
+        // *"the rail's fingerprint carries `mount` so downstream readers can
+        // tell."* Two kinds, and the scene has to route a double-click to a
+        // different window for each — so it is published rather than guessed
+        // from the presence of `shelfItemId`, which is the kind of inference
+        // that goes wrong the first time a key moves.
+        mount: railRides ? RAIL_MOUNT.SHELF : RAIL_MOUNT.ALONE,
+        // …and WHICH ITEM it is, so an ALONE rod has an address of its own.
+        // It is the rod's editing handle now that there is no board to name.
+        itemId: cfg.railItemId ?? null,
         // T37-F2: WHICH SHELF this rod rides, when it rides one. The key is
-        // ABSENT on a legacy rail — and that absence is iron rule 2 doing its
+        // ABSENT on an alone rail — and that absence is iron rule 2 doing its
         // work: a `shelfItemId: null` published on all six standard configs
         // would be a byte-identity delta that says nothing, the same reason
         // `drawerZone` and `shoeBoxes` come and go rather than sit there empty.
@@ -6550,6 +6599,10 @@ export function computeCabinet(params, profileOverride) {
       x1: set.bay.from,
       x2: set.bay.to,
       z: (D + G) / 2,
+      // T42-F1: the same two facts the unit-wide rod publishes, for the same
+      // reason — one law, both scales.
+      mount: set.mount,
+      itemId: set.itemId,
       ...(set.shelfItemId ? { shelfItemId: set.shelfItemId } : {}),
     })),
     drawerZone: hasDrawers ? { top: partitionY, count: numDrawers, heights: [...drawerHeights] } : null,

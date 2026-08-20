@@ -137,13 +137,13 @@ export function elementKind(panel) {
   switch (part) {
     case 'SHELF': return 'shelf';
     case 'VPART': return 'partition';
-    // ─── TURN 35 (CLAUDE.md F1): the rail gets a modal at last ────────────
-    // Owner: *"nie mogę ustawić wysokości raila … jak edytuję dwuklikiem, to
-    // nie ma opcji ustawienia wysokości."* The rod itself is not a panel and
-    // is not pickable; the board standing 40 mm over it IS, and double-clicking
-    // it has opened a modal since turn 12. So that modal becomes the rail's:
-    // it keeps every field a fixed shelf had and gains the height.
-    case 'RAIL-PART': return 'hanger-rail';
+    // ─── TURN 42 (CLAUDE.md F1): `case 'RAIL-PART': return 'hanger-rail'` ──
+    // DELETED, by name, under iron rule 3's licence. T35 gave the rail a modal
+    // by keying it on the BOARD 40 mm over the rod, because the rod was not a
+    // panel and could not be picked. The owner refused that board; it is not
+    // cut any more, so there is nothing here to map. The rod is now picked as
+    // ITSELF — `assemblies.rail.itemId` — and opens the hanging-rail window
+    // (components/RailModal.jsx) rather than a board's.
     case 'PARTITION': case 'FIXED': return 'fixed-shelf';
     case 'BUL': case 'BUR': return 'side';
     case 'TOP': return 'top';

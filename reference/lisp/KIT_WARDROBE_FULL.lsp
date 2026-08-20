@@ -428,23 +428,14 @@
 (defun drawWardrobeRailHolesBUR (x0 y0 szer railAbsY /)
   (drawCircle "SCREWS_3MM" (+ x0 (/ szer 2.0)) (+ y0 railAbsY) 1.5))
 
-;;; Rail partitioner screws on BUL (3 holes along depth, like drawer partitioner)
-(defun drawWardrobeRailPartHolesBUL (x0 y0 szer railPartCenterY / hY)
-  (setq hY (+ y0 railPartCenterY))
-  (drawCircle "SCREWS_3MM" (+ x0 50.0) hY 1.5)
-  (drawCircle "SCREWS_3MM" (+ x0 (/ szer 2.0)) hY 1.5)
-  (drawCircle "SCREWS_3MM" (+ x0 szer -50.0) hY 1.5))
-
-;;; Rail partitioner screws on BUR (same pattern)
-(defun drawWardrobeRailPartHolesBUR (x0 y0 szer railPartCenterY / hY)
-  (drawWardrobeRailPartHolesBUL x0 y0 szer railPartCenterY))
-
-;;; Rail partitioner screws on BACK (3 holes along width)
-(defun drawWardrobeRailPartHolesBACK (x0 y0 szer G railPartCenterY / hY)
-  (setq hY (+ y0 railPartCenterY))
-  (drawCircle "SCREWS_3MM" (+ x0 G 50.0) hY 1.5)
-  (drawCircle "SCREWS_3MM" (+ x0 (/ szer 2.0)) hY 1.5)
-  (drawCircle "SCREWS_3MM" (+ x0 szer (- G) -50.0) hY 1.5))
+;;; ─── TURN 42 (CLAUDE.md F1 / iron rule 4): THE PARTITIONER IS GONE ───────
+;;; The owner, 19.08.2026: a hanging rod is a ROD. The board that stood 40 mm
+;;; over it — cut here as RAIL-PART, screwed to both sides and to the back —
+;;; is the shelf he refused, so it is not cut, not screwed and not listed.
+;;; What STAYS is the rod itself (block B2, and the FRONT and TOP views) and
+;;; the SIDE FLANGE DRILLING above: an alone rod still has to hang on
+;;; something, and it hangs on the sides.
+;;;   deleted: drawWardrobeRailPartHolesBUL / -BUR / -BACK
 
 ;;;========================================
 ;;; E. MAIN WARDROBE COMMAND
@@ -455,8 +446,7 @@
                     wewSzer wewGl doorWidth numDoors doorGap
                     hingeX hingeY hingePositions hingeCupList hingeFrontYList
                     wysSzafki frontY1 frontY2 numHinges legHeight
-                    hasRail railOffset railAbsY railPartY railPartCenterY railLen railBlkName
-                    szerRAILPART wysRAILPART
+                    hasRail railOffset railAbsY railLen railBlkName
                     hasDrawers numDrawers
                     drawerSetback drawerSideH drawerFrontH drawerGap drFirstAdj
                     szufBok szufSzer szufMaxDl szufDl szufX szufY drawerTotalH
@@ -659,32 +649,30 @@
       (princ (strcat "\n  Drawer width: " (rtos szufSzer 2 0) "mm (reduced by " (rtos drawerReduction 2 0) "mm)"))))
   
   ;; === RAIL POSITION CALCULATION ===
-  (setq railAbsY nil railPartY nil)
+  ;; TURN 42 (CLAUDE.md F1): the rod, and nothing above it. `railPartY`,
+  ;; `railPartCenterY`, `szerRAILPART` and `wysRAILPART` are gone with the
+  ;; board they measured.
+  (setq railAbsY nil)
   (if (= hasRail "Y")
     (progn
       ;; Rail absolute Y: offset above drawer partitioner or bottom panel
       (if (= hasDrawers "Y")
         (setq railAbsY (+ wieniecY gruboscPlyty railOffset))
         (setq railAbsY (+ gruboscPlyty railOffset)))
-      ;; Rail partitioner: 40mm above rail
-      (setq railPartY (+ railAbsY 40.0))
-      ;; Validate
-      (if (> (+ railPartY gruboscPlyty) (- wysSzafki gruboscPlyty 50.0))
+      ;; Validate — the ROD is what must clear the top now, by the same 50 mm
+      ;; the partitioner used to be given.
+      (if (> (+ railAbsY 50.0) (- wysSzafki gruboscPlyty))
         (progn
           (princ "\nWARNING: Rail too high! Adjusting...")
-          (setq railAbsY (- wysSzafki gruboscPlyty 50.0 gruboscPlyty 40.0))
-          (setq railPartY (+ railAbsY 40.0))))
-      ;; Rail partitioner CNC dimensions (same as drawer partition)
-      (setq railPartCenterY (+ railPartY (/ gruboscPlyty 2.0)))
-      (setq szerRAILPART (- szerSzafki (* 2.0 gruboscPlyty)))
-      (setq wysRAILPART (- glSzafki gruboscPlyty))
-      (princ (strcat "\n  Rail at: " (rtos railAbsY 2 0) "mm"))
-      (princ (strcat "\n  Rail partitioner at: " (rtos railPartY 2 0) "mm"))))
+          (setq railAbsY (- wysSzafki gruboscPlyty 50.0))))
+      (princ (strcat "\n  Rail at: " (rtos railAbsY 2 0) "mm"))))
   
   ;; === SHELF ZONE (unified) ===
+  ;; TURN 42 (CLAUDE.md F1): a rod is not a shelf support and never was — what
+  ;; held the shelves up was the partitioner BOARD, and there is no board. So
+  ;; the zone is the drawer stack or the floor, exactly as it is in a wardrobe
+  ;; with no rail at all.
   (cond
-    (railPartY
-      (setq shelfZoneBottom (+ railPartY gruboscPlyty)))
     ((= hasDrawers "Y")
       (setq shelfZoneBottom (+ wieniecY gruboscPlyty)))
     (T
@@ -812,7 +800,7 @@
   (if (> numShelves 0)
     (drawWardrobeShelvesFront x0 frontY1 szerSzafki gruboscPlyty numShelves shelfZoneBottom shelfZoneTop))
   
-  ;; RAIL in FRONT VIEW (block on HINGES layer + rail partitioner)
+  ;; RAIL in FRONT VIEW — the ROD, on the HINGES layer. T42: nothing above it.
   (if (= hasRail "Y")
     (progn
       (setq railLen (- szerSzafki (* 2.0 gruboscPlyty)))
@@ -823,11 +811,7 @@
       (entmakex (list '(0 . "INSERT") (cons 2 railBlkName)
         (cons 10 (list (+ x0 gruboscPlyty) (+ frontY1 railAbsY (- 33.0)) 0.0))
         '(41 . 1.0) '(42 . 1.0) '(43 . 1.0) '(50 . 0.0)))
-      (setvar "CLAYER" oldLay)
-      ;; Rail partitioner (full width shelf, 40mm above rail)
-      (drawRect "CARCASE"
-        (+ x0 gruboscPlyty) (+ frontY1 railPartY)
-        (- (+ x0 szerSzafki) gruboscPlyty) (+ frontY1 railPartY gruboscPlyty))))
+      (setvar "CLAYER" oldLay)))
   
   (drawText "UNIT_NUMBER" (+ x0 (/ szerSzafki 2.0)) (+ frontY1 (/ wysSzafki 2.0)) 30.0 unitNum)
   (drawDimHFront x0 (+ x0 szerSzafki) frontY1)
@@ -894,11 +878,9 @@
           ;; Drawer panel attachment holes
           (if dpLeft
             (drawWardrobeDPHolesBUL curX cncY dpScrewDepth dpBottomY dpTopY))))
-      ;; Rail bracket + partitioner screws on BUL
+      ;; Rail bracket screw on BUL — the side flange the rod hangs on (T42).
       (if (= hasRail "Y")
-        (progn
-          (drawWardrobeRailHolesBUL curX cncY szerBUL railAbsY)
-          (drawWardrobeRailPartHolesBUL curX cncY szerBUL railPartCenterY)))
+        (drawWardrobeRailHolesBUL curX cncY szerBUL railAbsY))
       (setq curX (+ curX szerBUL odstep))
       
       ;; === BUR ===
@@ -917,11 +899,9 @@
           (drawWardrobeShelfHolesBUR curX cncY szerBUL numShelves shelfZoneBottom shelfZoneTop)
           (if dpRight
             (drawWardrobeDPHolesBUR curX cncY szerBUL dpScrewDepth dpBottomY dpTopY))))
-      ;; Rail bracket + partitioner screws on BUR
+      ;; Rail bracket screw on BUR — the side flange the rod hangs on (T42).
       (if (= hasRail "Y")
-        (progn
-          (drawWardrobeRailHolesBUR curX cncY szerBUL railAbsY)
-          (drawWardrobeRailPartHolesBUR curX cncY szerBUL railPartCenterY)))
+        (drawWardrobeRailHolesBUR curX cncY szerBUL railAbsY))
       (setq curX (+ curX szerBUL odstep))
       
       ;; === TOP / BOTTOM ===
@@ -940,8 +920,6 @@
         (progn
           (drawWardrobePartitionHolesBACK curX cncY szerBACK gruboscPlyty wieniecCenterY)
           (drawWardrobeDPHolesBACK curX cncY szerBACK gruboscPlyty dpLeft dpRight dpInset dpBottomY dpTopY)))
-      (if (= hasRail "Y")
-        (drawWardrobeRailPartHolesBACK curX cncY szerBACK gruboscPlyty railPartCenterY))
       (setq curX (+ curX szerBACK odstep))
       
       ;; === SHELVES (rotated 90) ===
@@ -958,13 +936,11 @@
           (drawWDR_PARTITION_PANEL curX cncY wysPART szerPART unitNum)
           (setq curX (+ curX wysPART odstep))))
       
-      ;; === RAIL PARTITIONER PANEL (rotated 90) ===
-      (if (= hasRail "Y")
-        (progn
-          (setq curX (+ curX 50.0))
-          (drawRect "OUTLINE" curX cncY (+ curX wysRAILPART) (+ cncY szerRAILPART))
-          (drawText "UNIT_NUMBER" (+ curX (/ wysRAILPART 2.0)) (+ cncY (/ szerRAILPART 2.0)) 40.0 (strcat unitNum "-RAIL PARTITION"))
-          (setq curX (+ curX wysRAILPART odstep))))
+      ;; === RAIL PARTITIONER PANEL — DELETED, TURN 42 (CLAUDE.md F1) ===
+      ;; It was a cut board: `(drawRect "OUTLINE" …)` laid on the sheet and a
+      ;; `RAIL-PART` row in the cut list below. The owner refused the shelf, so
+      ;; the kit stops cutting it. The rod's own drawing and its side flange
+      ;; drilling are untouched.
       
       ;; === DRAWER PANEL(S) - L and/or R (mirrored) ===
       (if (= hasDrawers "Y")
@@ -1204,10 +1180,8 @@
           (if (= hasDrawers "Y")
             (write-line (strcat unitNum ",PARTITION," (rtos szerPART 2 0) "," (rtos wysPART 2 0) ",,0,"
               (rtos (/ (* szerPART wysPART) 1000000.0) 2 3)) csvFile))
-          ;; Rail partition
-          (if (= hasRail "Y")
-            (write-line (strcat unitNum ",RAIL-PART," (rtos szerRAILPART 2 0) "," (rtos wysRAILPART 2 0) ",,0,"
-              (rtos (/ (* szerRAILPART wysRAILPART) 1000000.0) 2 3)) csvFile))
+          ;; Rail partition — DELETED, TURN 42 (CLAUDE.md F1). The RAIL-PART
+          ;; row was this cut list's own name for the shelf the owner refused.
           ;; Drawer panels (L/R)
           (if (= hasDrawers "Y")
             (progn

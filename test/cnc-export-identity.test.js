@@ -55,6 +55,30 @@
 // verify/t18/cnc-export-identity.md carries the before/after of every one, and
 // `scripts/cnc-delta-probe.mjs` is the entity-by-entity evidence behind it.
 
+// ─── TURN 42 (CLAUDE.md F1): ONE NAMED DELTA, AND ITS ARITHMETIC ───────────
+//
+// The hanging rod's partitioner — `RAIL-PART`, a board cut 40 mm over the rod —
+// is gone from the engine and from `KIT_WARDROBE_FULL.lsp`. The unit this file
+// is about carries a rail, so every fingerprint here that includes a carcass
+// moves, and the LAYER CENSUS says exactly why in three numbers:
+//
+//     OUTLINE     31 → 30   one cut board fewer: the partitioner itself
+//     SCREWS_3MM  52 → 43   its NINE fixing screws — 3 in BUL, 3 in BUR,
+//                           3 in the BACK. The rod's own bracket screw, one
+//                           per side at the axis, is untouched: that is the
+//                           side flange CLAUDE.md keeps by name.
+//     UNIT_NUMBER 72 → 69   the three centred label lines that were on it
+//
+// Nothing else on the census moves — not a hinge, not a shelf pin, not a
+// runner, not a dog bone — which is the proof this delta is what it says it
+// is. `01-BUL.dxf` DOES move this time, and that is the same evidence read the
+// other way: the three partitioner screws were drilled into that very board.
+//
+// The four preset sheets: the two that carry a carcass move, the two that are
+// doors and drawer faces stand still — the census logic every delta in this
+// file has been read by since turn 24, and the pair that stands still is the
+// proof once more.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -117,7 +141,8 @@ function sheetOf(result, ids) {
 
 test('the per-panel files are the same files, named the same way', () => {
   const files = buildUnitDxfFiles(unit(), P);
-  assert.equal(files.length, 31, 'one DXF per cut part of this wardrobe');
+  // T42-F1: 31 → 30. The rail partitioner is not cut any more.
+  assert.equal(files.length, 30, 'one DXF per cut part of this wardrobe');
   // The naming convention, which is what a workshop's folder is sorted by.
   for (const f of files) {
     assert.match(f.name, /^01-[A-Z0-9-]+\.dxf$/, `${f.name} is not the convention`);
@@ -152,7 +177,13 @@ test('a per-panel DXF is byte-for-byte what it was', () => {
   // classifier over all probe scenarios counted 18 248 vertex moves, every
   // one ±2.5 on one axis, zero pocket/hole/count changes outside the sink
   // mirror below. Both of the owner's LISPs change the same day.
-  assert.equal(fingerprint(bul.dxf), '21d5d6dc', 'the side panel’s DXF has changed');
+  // ─── TURN 42 (CLAUDE.md F1), 20.08.2026: 21d5d6dc → 26bec93d ───────────
+  // The FIRST time this per-panel print has moved for a reason that is not
+  // about the board itself: BUL carried the rail partitioner's three fixing
+  // screws, and there is no partitioner. The board's own outline, its
+  // hinges, its shelf pins, its runner rows and its label are untouched —
+  // three holes left it and nothing else did.
+  assert.equal(fingerprint(bul.dxf), '26bec93d', 'the side panel’s DXF has changed');
 });
 
 // ─── the sheet ──────────────────────────────────────────────────────────────
@@ -265,7 +296,11 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // lands where its cause is, is the pair that does NOT move: the per-panel
   // `01-BUL.dxf` above is byte-for-byte 21d5d6dc, because a part's own CNC
   // frame is not what F1 touches. Only how the sheet PUTS IT DOWN.
-  assert.equal(fingerprint(sheetOf(result, all)), '5c5629f0', 'the whole-unit sheet has changed');
+  // ─── TURN 42 (CLAUDE.md F1), 20.08.2026: 5c5629f0 → 666789ea ───────────
+  // One board off the sheet, nine screws off two of the boards that stay,
+  // and every remaining part re-laid because the sheet packs what it is
+  // given. See this file's header for the layer census that names it.
+  assert.equal(fingerprint(sheetOf(result, all)), '666789ea', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -322,11 +357,16 @@ test('…and so is each preset’s', () => {
   // are carcass-side parts — and three drawer FRONTS, which are faces. So no
   // preset stands still, and the evidence has to come from somewhere else: it
   // comes from the per-panel file, which does not move at all.
+  // ─── TURN 42 (CLAUDE.md F1), 20.08.2026: AND THE CENSUS LOGIC IS BACK ───
+  // T41 was the one delta that reached both families at once. This one does
+  // not: the rail partitioner is a carcass board with carcass screws, so the
+  // two sheets that carry a carcass move and the two that are doors and drawer
+  // faces are byte-for-byte what they were.
   const expected = {
-    all: '5c5629f0',           // was 0987fb40 — F1: 12 box boards + 3 fronts stand up
-    'non-sprayed': '0bfd72e9', // was 9294e301 — the twelve, on the carcass sheet
-    sprayed: '106a8227',       // was 5637b58d — the three fronts, which ARE faces
-    fronts: '106a8227',        // the same three, and the same move
+    all: '666789ea',           // was 5c5629f0 — one board and nine screws leave
+    'non-sprayed': '0224886a', // was 0bfd72e9 — the same, on the carcass sheet
+    sprayed: '106a8227',       // UNCHANGED — a door never carried a partitioner
+    fronts: '106a8227',        // UNCHANGED — the same three faces, the same file
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -360,7 +400,8 @@ test('the entities are grouped by layer exactly as before', () => {
     FRONT_HINGES_35MM: 6,
     FRONT_HINGES_3MM: 12,
     HINGES_5MM: 12,
-    OUTLINE: 31,
+    // T42-F1: 31 → 30. The rail partitioner is not cut any more.
+    OUTLINE: 30,
     PUZZLE_DOG_BONES: 18,
     PUZZLE_HOLES_7_5MM: 36,
     PUZZLE_SOCKET: 18,
@@ -371,7 +412,9 @@ test('the entities are grouped by layer exactly as before', () => {
     // bottom board, two ⌀3 per divider. This wardrobe has ONE drawer panel.
     // Every other line on this census is to the digit what it was, which is
     // what says the restoration reached the BOTTOM board and nothing else.
-    SCREWS_3MM: 52,
+    // T42-F1: 52 → 43. The partitioner's nine screws — 3 BUL, 3 BUR, 3 BACK.
+    // The rod's own bracket screw, one per side at the axis, stays.
+    SCREWS_3MM: 43,
     SHELVES_7_5MM: 24,
     // ─── TURN 25 (CLAUDE.md F3.4): ONE NEW LINE, AND ONLY ONE ──────────────
     // The shaker panel pocket. THREE, not four: this wardrobe carries a door
@@ -387,7 +430,8 @@ test('the entities are grouped by layer exactly as before', () => {
     SHAKER_PANEL_POCKET: 4,
     // DELTA 1 — one label per part still, but written as a BLOCK: 31 parts,
     // 72 lines between them. Nothing else on this list moves by one.
-    UNIT_NUMBER: 72,
+    // T42-F1: 72 → 69. The partitioner's own three centred label lines.
+    UNIT_NUMBER: 69,
   }, 'the layer census of the exported sheet has changed');
 });
 
@@ -639,5 +683,7 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   // the fronts in the tree gives the "non-sprayed" file to the byte, whatever
   // that file happens to be this turn.
   // T41-F1: was 9294e301 — the twelve drawer-box boards now stand up.
-  assert.equal(fingerprint(sheetOf(result, ids)), '0bfd72e9');
+  // T42-F1: was 0bfd72e9 — the rail partitioner and its nine screws leave
+  // the carcass sheet, and this file is that sheet to the byte.
+  assert.equal(fingerprint(sheetOf(result, ids)), '0224886a');
 });

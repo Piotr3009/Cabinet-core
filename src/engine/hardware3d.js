@@ -32,6 +32,9 @@ import { panelPlacement } from './joinery.js';
 import { cupBoreOf, doorHingeDatum } from './doors.js';
 import { machiningFor } from './machining.js';
 import { getUnitType } from './types.js';
+// T42-F1: two kinds of rail, and the scene routes on which. One law, imported
+// rather than re-spelled here.
+import { RAIL_MOUNT } from './railAssembly.js';
 
 export function hardwareInstances(result, profile) {
   return {
@@ -474,21 +477,35 @@ function railInstances(result, profile) {
   // engine publishes which one (`assemblies.rail.shelfItemId`) and the tube
   // names that shelf's panel. Legacy rails still name `RAIL-PART`, because a
   // legacy rail still HAS one. One handler, two boards, no second modal.
+  //
+  // ─── TURN 42 (CLAUDE.md F1): …AND AN ALONE ROD NAMES ITSELF ──────────────
+  //
+  // The `RAIL-PART` board is gone. Falling back to it — as this did for every
+  // rod that was not an assembly — would leave `panelId` null, and
+  // `Hardware.jsx`'s one gate (`onEdit && rail.panelId`) would take the
+  // double-click AND the hover aura away from the rod with it. So an ALONE rod
+  // is addressed by the only thing it has and the only thing it needs: its own
+  // ITEM's id, published by the engine as `assemblies.rail.itemId`.
+  //
+  // TWO KINDS, TWO WINDOWS, ONE ADDRESS EACH:
+  //   SHELF  → the fix shelf's PANEL id  → the element window, on the board
+  //            the joiner actually edits (T37's own answer, unchanged)
+  //   ALONE  → the rail ITEM's id        → the hanging-rail window
+  // `mount` travels beside it so the scene routes on a published fact rather
+  // than on whether a lookup happened to find something.
   const railPanelFor = (rail) => {
     if (rail.shelfItemId) {
       const mine = (result.panels || [])
         .find((p) => p.part === 'SHELF' && p.meta?.itemId === rail.shelfItemId);
       if (mine) return mine.id;
     }
-    const zone = rail.zone;
-    const want = zone == null || !Number.isFinite(Number(zone))
-      ? 'RAIL-PART'
-      : `Z${Math.trunc(Number(zone)) + 1}-RAIL-PART`;
-    return (result.panels || []).find((p) => p.id === want)?.id || null;
+    return rail.itemId ?? null;
   };
   return all.map((rail) => ({
     kind: 'rail',
     panelId: railPanelFor(rail),
+    mount: rail.mount || (rail.shelfItemId ? RAIL_MOUNT.SHELF : RAIL_MOUNT.ALONE),
+    itemId: rail.itemId ?? null,
     zone: rail.zone ?? null,
     x: (rail.x1 + rail.x2) / 2,
     y: rail.y,

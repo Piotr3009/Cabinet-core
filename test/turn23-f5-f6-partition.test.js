@@ -219,14 +219,24 @@ test('F6.3 — the DP-partition back line keeps its own law', () => {
   for (const d of own) assert.equal(d.layer, 'SCREWS_3MM');
 });
 
-test('F6.3 — the rail partitioner keeps its own law', () => {
+// ─── RE-PINNED, TURN 42 (CLAUDE.md F1) ─────────────────────────────────────
+// This test pinned the RAIL PARTITIONER's nine screws and the fact that F6's
+// own class did not reach them. There is no partitioner: the owner refused the
+// board and the engine, the kit and the cut list have all stopped making it.
+// What the test is FOR survives whole — the rail's fixings are the rail's, and
+// F6's class does not leak into them — so it is asked of the fixings that are
+// actually there: the side flange the rod hangs on.
+test('F6.3 — the rail keeps its own law: the side flange, and nothing of F6', () => {
   const base = defaultParamsFor('WARDROBE', P);
   const result = computeCabinet({ ...base, rail: true }, P);
-  const rail = result.drills.filter((d) => d.kind === 'rail_partition_screw');
-  assert.ok(rail.length > 0, 'the wardrobe still drills its rail partitioner');
-  for (const d of rail) assert.equal(d.layer, 'SCREWS_3MM');
-  // One row, on the rail partitioner's own centre line — not this turn's class.
-  assert.equal([...new Set(rail.map((d) => d.y))].length, 1);
+  assert.equal(result.drills.filter((d) => d.kind === 'rail_partition_screw').length, 0,
+    'there is no partitioner to screw to anything');
+  const bracket = result.drills.filter((d) => d.kind === 'rail_bracket');
+  assert.equal(bracket.length, 2, 'one bracket screw per carcass side — CLAUDE.md keeps it by name');
+  for (const d of bracket) assert.equal(d.layer, 'SCREWS_3MM');
+  assert.deepEqual([...new Set(bracket.map((d) => d.panel))].sort(), ['BUL', 'BUR']);
+  // One row, on the ROD's own axis — not this turn's class.
+  assert.equal([...new Set(bracket.map((d) => d.y))].length, 1);
   assert.equal(result.drills.some((d) => d.kind === 'partition_back_screw'), false,
     'a cabinet with no vertical partition takes none of F6');
 });

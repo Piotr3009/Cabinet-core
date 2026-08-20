@@ -858,6 +858,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const moveShelf = useProjectStore((s) => s.moveShelf);
   // T37-F1: …and the whole ticked set, across cabinets, in one drag.
   const moveShelfSet = useProjectStore((s) => s.moveShelfSet);
+  // T42-F1: the ALONE rod's own writer — the same shape as a shelf's, and
+  // the same one setter behind it.
+  const moveRail = useProjectStore((s) => s.moveRail);
   const setElementDepth = useProjectStore((s) => s.setElementDepth);
   const setTopInfill = useProjectStore((s) => s.setTopInfill);
   const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
@@ -1275,6 +1278,15 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           onEditElement={(panelId, at) => openModal('element', {
             unitId: unit.id, panelId, at,
           })}
+          // ─── TURN 42 (CLAUDE.md F1) ───────────────────────────────────
+          // The same gesture on an ALONE rod, which is not a panel and has
+          // no board over it any more: its own window, addressed by its own
+          // item. An ASSEMBLY's rod still goes through the line above, onto
+          // the fix shelf it rides.
+          onEditRail={(railItemId, at) => openModal('rail', {
+            unitId: unit.id, railItemId, at,
+          })}
+          onMoveRail={(itemId, offsetMm) => moveRail(unit.id, itemId, offsetMm)}
           // ─── Turn 20 (CLAUDE.md F11.1) ───
           // A double-click on a drawer's BOX — a side, the back, the bottom —
           // opens the drawer's own window. Same modal as "Edit cabinet",

@@ -45,7 +45,11 @@ test('every cut part lands in exactly one group, decided on part and role', () =
   for (const id of PART_GROUPS.map((g) => g.id)) assert.ok(groups.has(id));
 
   // The ones a substring match would get wrong.
-  assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'RAIL-PART')), 'shelves');
+  // T42-F1: `RAIL-PART` used to head this list — a panel called "…-PART"
+  // that is a SHELF, which is exactly what a substring match gets wrong. The
+  // rail's partitioner is not cut any more, so the trap is now the PARTITION
+  // over the drawer stack: same trap, same board, still a shelf.
+  assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'PARTITION')), 'shelves');
   assert.equal(groupOfPanel(r.panels.find((p) => p.part === 'FRONT')), 'fronts');
   assert.equal(groupOfPanel(r.panels.find((p) => p.part === 'DRAWER-FRONT')), 'fronts');
   assert.equal(groupOfPanel(r.panels.find((p) => p.id === 'BACK')), 'carcasses');
@@ -85,7 +89,9 @@ test('the four presets select what their names say', () => {
   const bare = ids('non-sprayed');
   assert.ok(bare.includes('BUL') && bare.includes('BACK'), 'the carcass is in');
   assert.ok(bare.includes('SHELF-1'), 'so are the shelves');
-  assert.ok(bare.includes('RAIL-PART'), 'and the rail partition');
+  // T42-F1: the rail partition is not cut any more; the drawer stack's
+  // PARTITION is the horizontal fixed board this line was really about.
+  assert.ok(bare.includes('PARTITION'), 'and the drawer partition');
   assert.ok(bare.includes('DP-L') && bare.some((id) => id.startsWith('FILLER-')),
     'and the drawer panel with its fillers');
   assert.ok(bare.includes('D1-SL') && bare.includes('D1-DNO'), 'and the drawer boxes');

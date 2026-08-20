@@ -1,0 +1,22 @@
+─── T42 · F2 — overlay drawer runners are GLB ─────────────────────────
+app:      http://127.0.0.1:4173/
+showroom: http://127.0.0.1:4184
+
+      overlay stack: {"count":3,"heights":[200,200,200],"gapMm":3,"stackTop":606,"shelf":{"id":"OVERLAY-FIX","y":609,"thickness":18},"doorBase":609,"doorHeight":1541,"fits":true}
+      runner rows:   [56,241,444]
+      box sides:     ["D1-SL","D1-SR","D2-SL","D2-SR","D3-SL","D3-SR"]
+      box depth:     490 mm      BOM orders: NL500 {"L":"3000500T","R":"3000500T"}
+  ok   an OVERLAY stack is standing, with runner rows and box sides of its own   {"count":3,"rows":3,"sides":6}
+      mounted:       {"count":6,"modelled":6,"reasons":[null],"urls":["760H500T_3000500.glb"],"parents":["drawer"]}
+  ok   EVERY overlay runner on the glass is a GLB MODEL — none is the stand-in   6/6 modelled, reasons [null]
+  ok   …and the file it fetched is the article the BOM orders   ["760H500T_3000500.glb"] vs NL500
+  ok   …hanging off the drawer, like every other runner in the app   ["drawer"]
+      overlay: {"depth":490,"file":"hardware/runners/blum/movento/760H500T_3000500.glb","nl":500,"article":"3000500T"}
+      budr:    {"depth":490,"file":"hardware/runners/blum/movento/760H500T_3000500.glb","nl":500,"article":"3000500T"}
+  ok   AN OVERLAY DRAWER AT DEPTH D RESOLVES THE SAME ENTRY AND GLB AS A BUDR AT D   ["hardware/runners/blum/movento/760H500T_3000500.glb","hardware/runners/blum/movento/760H500T_3000500.glb"]
+  ok   …and they are STILL models with the drawers pulled out, travelling with them   {"modelled":6,"count":6}
+      shot: f2-overlay-runners-are-glb.png  (close-up on the stack: {"x":693.2250599391263,"y":527.4301968293951,"width":301.0317647865679,"height":232.76091445281634})
+  ok   and no console error while it loaded them   []
+
+─── VERDICT ───────────────────────────────────────────────────────────
+7 / 7 checks passed

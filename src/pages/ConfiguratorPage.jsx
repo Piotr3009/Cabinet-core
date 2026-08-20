@@ -17,6 +17,7 @@ import Messages from '../components/Messages.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import HandEditsModal from '../components/HandEditsModal.jsx';
 import DoorModal from '../components/DoorModal.jsx';
+import RailModal from '../components/RailModal.jsx';
 import CabinetEditorModal from '../components/CabinetEditorModal.jsx';
 import PartDetailModal from '../components/PartDetailModal.jsx';
 import AddItemsModal from '../components/AddItemsModal.jsx';
@@ -45,7 +46,10 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
 // TURN 40 (CLAUDE.md F5): a sheet is a WALL — the whole run, not one cabinet.
 import { wallDrawingSheets } from '../engine/drawings/wallSheets.js';
+// TURN 42 (CLAUDE.md F0): `drawingErrorText` is the one sentence that is never
+// allowed to become the emptiness sentence — see drawingExport.js for why.
 import {
+  drawingErrorText,
   exportBookletPdf, exportDrawingPdf, exportDrawingSvg,
   exportWallDrawingsDxf, exportWallDrawingsPdf,
 } from '../lib/drawingExport.js';
@@ -242,8 +246,22 @@ export default function ConfiguratorPage() {
   const [renderRig, setRenderRig] = useState(null);
   const onRenderReady = useCallback((rig) => setRenderRig(rig), []);
 
-  const guard = () => {
-    if (units.length === 0) { notify('Nothing to export yet — add a unit first.', 'warn'); return false; }
+  // ─── TURN 42 (CLAUDE.md F0): A REFUSAL SAYS SO ────────────────────────────
+  //
+  // CLAUDE.md warned that this *"can return false silently before any of it
+  // runs"*. Read on the branch point, 19.08.2026, it does not: the one refusal
+  // it has already notifies. So this turn does not rewrite it — it PINS it, in
+  // `test/turn42-f0-wall-pdf-speaks.test.js`, so the day somebody adds a second
+  // reason to refuse, the test is what stops that reason being a silent one.
+  //
+  // The `subject` is the only thing added: "Nothing to export yet" is the right
+  // sentence for a CSV and the wrong one for a drawing, and a joiner who asked
+  // for a wall drawing should be told about wall drawings.
+  const guard = (subject = 'export') => {
+    if (units.length === 0) {
+      notify(`Nothing to ${subject} yet — add a unit first.`, 'warn');
+      return false;
+    }
     return true;
   };
 
@@ -353,13 +371,16 @@ export default function ConfiguratorPage() {
     const date = new Date().toLocaleDateString();
 
     if (kind === 'booklet') {
-      if (!guard()) return;
+      if (!guard('draw')) return;
       try {
         const sheets = projectBookletSheets({ entries: allResults(), project, profile, date });
         const { filename, pages } = exportBookletPdf(sheets, { project: project.name });
         notify(`Saved ${filename} — ${pages} pages.`, 'ok');
       } catch (e) {
-        notify(e.message || 'Nothing to draw yet.', 'warn');
+        // T42-F0: an error is an error on every drawing path in this file.
+        // eslint-disable-next-line no-console
+        console.error('[booklet] export', e);
+        notify(drawingErrorText(e), 'warn');
       }
       return;
     }
@@ -371,8 +392,15 @@ export default function ConfiguratorPage() {
     // the engine and bound twice — PDF here, DXF below — which is what "same
     // geometry" means and is what stops the two files disagreeing about a wall
     // after a correction.
+    // ─── TURN 42 (CLAUDE.md F0): AND THIS PATH STOPS RELABELLING TOO ───────
+    //
+    // The menu path DID catch and notify — but with `err.message || 'Nothing to
+    // draw yet.'`, so an error whose message is empty was reported to the
+    // joiner as an empty job. `drawingErrorText` has no such fallback: an error
+    // with no message is reported by its NAME, and the console carries the
+    // whole thing with its stack.
     if (kind === 'walls' || kind === 'walls-dxf') {
-      if (!guard()) return;
+      if (!guard('draw')) return;
       try {
         const sheets = wallDrawingSheets({
           entries: allResults(),
@@ -394,9 +422,12 @@ export default function ConfiguratorPage() {
           .then(({ filename, files }) => notify(
             `Saved ${filename} — ${files.length} DXF. AutoCAD only: do NOT open these in VCarve.`, 'ok',
           ))
-          .catch((err) => notify(err.message || 'Nothing to draw yet.', 'warn'));
+          // eslint-disable-next-line no-console
+          .catch((err) => { console.error('[wall drawings] DXF', err); notify(drawingErrorText(err), 'warn'); });
       } catch (err) {
-        notify(err.message || 'Nothing to draw yet.', 'warn');
+        // eslint-disable-next-line no-console
+        console.error('[wall drawings] export', err);
+        notify(drawingErrorText(err), 'warn');
       }
       return;
     }
@@ -486,6 +517,9 @@ export default function ConfiguratorPage() {
             section B rather than a second modal of its own, so there is one
             component, one open/close path and one registry of what is open. */}
         {modal === 'element' && <DoorModal />}
+      {/* TURN 42 (CLAUDE.md F1): an ALONE rod is its own subject and opens its
+          own window — there is no board over it to borrow one from. */}
+      {modal === 'rail' && <RailModal />}
         {/* Turn 12 (CLAUDE.md F4): one cabinet, its own canvas, mounted only
             while the window is open.
             ─── TURN 35 (CLAUDE.md F4): LOOKED AT, AND LEFT ────────────────

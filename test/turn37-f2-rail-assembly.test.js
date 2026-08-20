@@ -210,20 +210,32 @@ test('F2 — resolveShelfMountedRail is the one law, and it answers null honestl
 
 // ─── 4. legacy, untouched ───────────────────────────────────────────────────
 
-test('F2 — a LEGACY rail resolves exactly as it did, and keeps its partitioner', () => {
-  const legacy = computeCabinet({
+// ─── RE-PINNED, TURN 42 (CLAUDE.md F1) ─────────────────────────────────────
+// T37 wrote "a LEGACY rail keeps everything" and meant it: the rod, and the
+// board 40 mm over it. The owner refused that board for the fourth time on
+// 19.08.2026 — *"nie patrzymy na przeszłość w ogóle"* — so there is no legacy
+// geometry left to keep. A stored rail that does not say SHELF is ALONE, and
+// an alone rod is a rod: no partitioner, no nine screws, no cut list row.
+//
+// The ROD ITSELF does not move by a millimetre, which is the half of T37's
+// sentence that survives and the half worth pinning.
+test('F2 — a rail that is not an assembly is ALONE: the rod stands, the board is gone', () => {
+  const alone = computeCabinet({
     ...defaultParamsFor('WARDROBE', P), unit_num: '01', rail: true, rail_offset: 1400,
   }, P);
-  assert.ok(legacy.assemblies.rail, 'the rod is there');
-  assert.equal(legacy.assemblies.rail.y, G + 1400, 'the T35 law, over the bay floor');
-  const part = legacy.panels.find((p) => p.id === 'RAIL-PART');
-  assert.ok(part, 'and its partitioner is still cut');
-  assert.equal(part.box.y, legacy.assemblies.rail.y + P.wardrobe.rail.partitionAbove);
-  // The partitioner's own three screws are still drilled, into both sides.
-  const screws = legacy.drills.filter((d) => d.kind === 'rail_partition_screw');
-  assert.ok(screws.length >= 6, `${screws.length} partitioner screws`);
+  assert.ok(alone.assemblies.rail, 'the rod is there');
+  assert.equal(alone.assemblies.rail.y, G + 1400, 'the T35 law, over the bay floor — unmoved');
+  assert.equal(alone.assemblies.rail.mount, RAIL_MOUNT.ALONE, 'and it says which of the two it is');
+  assert.ok(!alone.panels.some((p) => p.part === 'RAIL-PART'), 'no partitioner is cut');
+  assert.equal(alone.drills.filter((d) => d.kind === 'rail_partition_screw').length, 0,
+    'and none of its nine screws is drilled');
+  // The SIDE FLANGE stays — CLAUDE.md keeps it by name: an alone rod still has
+  // to hang on something, and it hangs on the sides.
+  const brackets = alone.drills.filter((d) => d.kind === 'rail_bracket');
+  assert.equal(brackets.length, 2);
+  for (const b of brackets) assert.equal(b.y, G + 1400);
   // And the key that names a shelf is ABSENT, not null (iron rule 2).
-  assert.ok(!('shelfItemId' in legacy.assemblies.rail));
+  assert.ok(!('shelfItemId' in alone.assemblies.rail));
 });
 
 test('F2 — a shelf-mounted rail cuts NO partitioner and drills no partitioner screws', () => {
@@ -263,13 +275,28 @@ test('F2 — double-clicking the rod opens the SHELF, and the T36 clickability s
   assert.ok(fields.includes('position-y'), 'and the shelf\'s own height is the rail\'s height');
 });
 
-test('F2 — a LEGACY rod still names its partitioner', () => {
-  const legacy = computeCabinet({
+test('F2 — an ALONE rod names ITSELF, because there is no board to name', () => {
+  // T42-F1. A rail on a bare kit call carries no item at all, so there is no
+  // item id either — and a rod nobody can address is a rod nobody can edit,
+  // which is exactly the gate `Hardware.jsx` closes on a null `panelId`.
+  const bare = computeCabinet({
     ...defaultParamsFor('WARDROBE', P), unit_num: '01', rail: true,
   }, P);
-  const { rails } = hardwareInstances(legacy, P);
-  assert.equal(rails[0].panelId, 'RAIL-PART');
-  assert.equal(elementKind(legacy.panels.find((p) => p.id === 'RAIL-PART')), 'hanger-rail');
+  assert.equal(hardwareInstances(bare, P).rails[0].mount, RAIL_MOUNT.ALONE);
+  assert.ok(!bare.panels.some((p) => p.part === 'RAIL-PART'));
+
+  // With an ITEM — which is every rail a joiner adds in the app — the rod is
+  // addressed by it.
+  const withItem = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: '01',
+    sections: [{ items: [{ id: 'h1', kind: 'hanger', mount: 'alone', pos_mm: 1400 }] }],
+  }, P);
+  const rod = hardwareInstances(withItem, P).rails[0];
+  assert.equal(rod.mount, RAIL_MOUNT.ALONE);
+  assert.equal(rod.panelId, 'h1');
+  assert.equal(rod.itemId, 'h1');
+  assert.equal(elementKind({ part: 'RAIL-PART', role: 'shelf' }), null, 'the board is not a kind any more');
 });
 
 // ─── the column's rail rides its own bay's shelf ────────────────────────────

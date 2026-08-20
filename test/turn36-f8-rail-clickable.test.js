@@ -22,15 +22,43 @@ const wardrobe = (over = {}) => computeCabinet({
   ...defaultParamsFor('WARDROBE', P), unit_num: '01', rail: true, ...over,
 }, P);
 
-test('F8 — the rail instance carries the PANEL the modal is keyed on', () => {
-  const r = wardrobe({ width: 900 });
+// ─── RE-PINNED, TURN 42 (CLAUDE.md F1) ─────────────────────────────────────
+// T36's fault and T36's fix are both intact: the tube has a handler, the aura
+// says so, and the scene hands one down. What changed underneath is the
+// ADDRESS. The board the rod used to be keyed on — `RAIL-PART`, 40 mm above
+// it — is the shelf the owner refused, and it is not cut any more. So an ALONE
+// rod is addressed by its OWN ITEM, and an ASSEMBLY's by the fix shelf it
+// rides. Either way `panelId` is populated, which is what T36 was defending:
+// `Hardware.jsx`'s one gate is `onEdit && rail.panelId`, and a null there takes
+// the double-click AND the aura away.
+test('F8 — the rail instance carries the ADDRESS its window is keyed on', () => {
+  const r = wardrobe({
+    width: 900,
+    sections: [{ items: [{ id: 'h1', kind: 'hanger', mount: 'alone', pos_mm: 1400 }] }],
+  });
   const { rails } = hardwareInstances(r, P);
   assert.equal(rails.length, 1, 'one rod');
-  assert.equal(rails[0].panelId, 'RAIL-PART');
-  // …and that panel really is the one the app answers as a hanger rail.
-  const board = r.panels.find((p) => p.id === 'RAIL-PART');
-  assert.ok(board, 'the board 40 mm over the rod is cut');
-  assert.equal(elementKind(board), 'hanger-rail');
+  assert.equal(rails[0].mount, 'alone', 'and it is a rod on its own');
+  assert.equal(rails[0].panelId, 'h1', 'addressed by its own item, because there is no board');
+  assert.equal(rails[0].itemId, 'h1');
+  assert.ok(!r.panels.some((p) => p.part === 'RAIL-PART'), 'and no board is cut for it');
+
+  // An ASSEMBLY still names the FIX SHELF it rides — T37's own answer, which
+  // this turn does not touch.
+  const assembly = wardrobe({
+    width: 900,
+    sections: [{
+      items: [
+        { id: 's1', kind: 'shelf', variant: 'fixed', pos_mm: 1440 },
+        { id: 'h1', kind: 'hanger', mount: 'shelf', shelf_id: 's1' },
+      ],
+    }],
+  });
+  const rod = hardwareInstances(assembly, P).rails[0];
+  assert.equal(rod.mount, 'shelf');
+  const board = assembly.panels.find((p) => p.id === rod.panelId);
+  assert.ok(board && board.part === 'SHELF', 'the fix shelf, and it is a shelf');
+  assert.equal(elementKind(board), 'shelf');
 });
 
 test('F8 — a COLUMN rail names its own column\'s board', () => {
@@ -49,11 +77,16 @@ test('F8 — a COLUMN rail names its own column\'s board', () => {
   const { rails } = hardwareInstances(r, P);
   assert.ok(rails.length >= 2, `two columns, two rods (${rails.length})`);
   for (const rod of rails) {
-    assert.ok(rod.panelId, 'every rod names a board');
-    assert.ok(r.panels.some((p) => p.id === rod.panelId), `${rod.panelId} is a real panel`);
-    assert.equal(elementKind(r.panels.find((p) => p.id === rod.panelId)), 'hanger-rail');
+    // T42-F1: every rod still has an ADDRESS — its own item, in a bay with no
+    // board over it. A null here is what takes the double-click and the aura
+    // away, which is the whole of T36's finding.
+    assert.ok(rod.panelId, 'every rod is addressable');
+    assert.equal(rod.mount, 'alone', 'a bay rod with no shelf named is on its own');
+    assert.equal(rod.panelId, rod.itemId, 'and it answers to its own item');
+    assert.ok(!r.panels.some((p) => p.id === rod.panelId), 'which is NOT a panel — there is no board');
   }
   assert.equal(new Set(rails.map((x) => x.panelId)).size, rails.length, 'and no two share one');
+  assert.ok(!r.panels.some((p) => p.part === 'RAIL-PART'), 'no column cuts a partitioner either');
 });
 
 test('F8 — the TUBE has the handler, and it is the shelves\' own grammar', () => {
@@ -61,14 +94,18 @@ test('F8 — the TUBE has the handler, and it is the shelves\' own grammar', () 
   const at = hw.indexOf('function Rail({');
   assert.notEqual(at, -1);
   const rail = hw.slice(at, hw.indexOf('\nexport function FrontHandle', at));
-  // The gesture: `onEditElement(panelId, { x, y })` — the click point travels
-  // with the request, so the modal lands where the eye already is (turn 11).
-  assert.match(rail, /onEdit\(rail\.panelId, \{ x: e\.clientX, y: e\.clientY \}\)/);
+  // The gesture: `to(panelId, { x, y })` — the click point travels with the
+  // request, so the window lands where the eye already is (turn 11).
+  // T42-F1: `to` is `onEditRail` for a rod on its own and `onEditElement` for
+  // an assembly, chosen on the ENGINE's published `mount`.
+  assert.match(rail, /to\(rail\.panelId, \{ x: e\.clientX, y: e\.clientY \}\)/);
+  assert.match(rail, /const alone = rail\.mount === 'alone';/);
+  assert.match(rail, /const to = alone \? onEditRail : onEdit;/);
   assert.match(rail, /onDoubleClick=\{open \|\| undefined\}/);
   // …and it does not also drag the cabinet behind it.
   assert.match(rail, /e\.stopPropagation\(\);/);
-  // A rod with no board named is not clickable — no handler is invented for it.
-  assert.match(rail, /const open = onEdit && rail\.panelId/);
+  // A rod with no address is not clickable — no handler is invented for it.
+  assert.match(rail, /const open = to && rail\.panelId/);
 });
 
 test('F8 — the HOVER AURA says the rod is live before the hand commits', () => {
@@ -87,6 +124,9 @@ test('F8 — the HOVER AURA says the rod is live before the hand commits', () =>
 test('F8 — the handler is WIRED: the scene actually hands one down', () => {
   assert.match(src('3d/Hardware.jsx'), /onEditElement = null,/);
   assert.match(src('3d/Hardware.jsx'), /onEdit=\{onEditElement\}/);
+  // T42-F1: …and the rod's own two verbs travel the same road.
+  assert.match(src('3d/Hardware.jsx'), /onEditRail=\{onEditRail\}/);
+  assert.match(src('3d/Hardware.jsx'), /onDragRail=\{onDragRail\}/);
   // UnitView hands `Hardware` the same callback it hands its own panels — the
   // T35 hole was exactly this: the modal existed and nothing reached it.
   const view = src('3d/UnitView.jsx');
@@ -95,12 +135,18 @@ test('F8 — the handler is WIRED: the scene actually hands one down', () => {
   assert.match(view.slice(at, at + 900), /onEditElement=\{onEditElement\}/);
 });
 
-test('F8 — the modal it opens is the one that already exists', () => {
-  // No second window: `RAIL-PART` has answered `hanger-rail` since T35, the
-  // field list for that kind carries the height, and Scene turns the callback
-  // into `openModal('element', …)`.
-  assert.match(src('engine/elements.js'), /case 'RAIL-PART': return 'hanger-rail';/);
-  assert.match(src('engine/elements.js'), /'hanger-rail': \['rail-height'/);
-  assert.match(src('components/ElementProperties.jsx'), /label="Height above support"/);
+test('F8 — the window it opens is a real one, and it is the right one of the two', () => {
+  // T42-F1: TWO kinds, two windows, and the scene routes on the engine's own
+  // published `mount`. An ASSEMBLY opens the fix shelf's element window — T37's
+  // answer, untouched. An ALONE rod opens its own, because there is no board
+  // over it to borrow one from.
   assert.match(src('3d/Scene.jsx'), /onEditElement=\{\(panelId, at\) => openModal\('element', \{/);
+  assert.match(src('3d/Scene.jsx'), /onEditRail=\{\(railItemId, at\) => openModal\('rail', \{/);
+  // …and `rail` is a window the shell actually knows about, placed beside its
+  // subject like every other 'object' modal (rule 15).
+  assert.match(src('lib/modalLayer.js'), /rail: \{ about: 'object', label: 'Hanging rail' \}/);
+  assert.match(src('pages/ConfiguratorPage.jsx'), /modal === 'rail' && <RailModal \/>/);
+  // The height is in it, and it commits through the ONE store action.
+  assert.match(src('components/RailModal.jsx'), /Height above support/);
+  assert.match(src('components/RailModal.jsx'), /setRailHeight\(unit\.id, item\.id, v\)/);
 });

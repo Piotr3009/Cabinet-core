@@ -13,7 +13,9 @@
 //
 // Pure functions — no React, no store imports, no jsPDF.
 
-import { buildHorizontalSection, buildWallElevation, wallGroups } from './wallElevation.js';
+import {
+  buildHorizontalSection, buildWallElevation, turnedAway, wallGroups, wallLabel,
+} from './wallElevation.js';
 import { layoutSheet } from './sheet.js';
 
 /**
@@ -116,6 +118,63 @@ export function wallDrawingSheets({
     });
   }
   return out;
+}
+
+/**
+ * ─── TURN 42 (CLAUDE.md F0): THE SET STOPS LYING BY SILENCE ─────────────────
+ *
+ * *"make the footer name WHY per wall — `wallGroups` already returns `skipped`
+ * with the reason in hand (turned away / no result) — so the screen stops lying
+ * by silence."*
+ *
+ * `wallGroups` cannot answer it on its own, and that is the whole finding:
+ * a wall whose EVERY cabinet is turned away has no members, so the loop drops
+ * the wall — `skipped` and all — and the set that comes back has no record
+ * that the wall was ever considered. A joiner looking at a sheet list with no
+ * `Wall B` on it is told nothing about why.
+ *
+ * So the census is taken here, over the ENTRIES, and it is a pure reader: it
+ * builds nothing, changes nothing, and `wallDrawingSheets` above is byte for
+ * byte the function it was before this turn. What it produces is the sentence
+ * the modal prints under the sheet list.
+ *
+ * @returns {{units:number, drawn:number, walls:Array<{wall:number, label:string,
+ *            drawn:number, skipped:Array<{unit:string, reason:string}>}>}}
+ */
+export function wallSetReport({ entries = [], profile } = {}) {
+  const walls = new Map();
+  const row = (wall) => {
+    if (!walls.has(wall)) walls.set(wall, { wall, label: wallLabel(wall), drawn: 0, skipped: [] });
+    return walls.get(wall);
+  };
+  const nameOf = (e, i) => String(e?.unit?.params?.unit_num ?? e?.result?.unitNum ?? `unit ${i + 1}`);
+
+  let drawn = 0;
+  entries.forEach((e, i) => {
+    if (!e?.unit) return;
+    const at = row(Math.max(0, Math.trunc(Number(e.unit.position?.wall ?? 0))));
+    // The two reasons `wallGroups` has, said in words rather than dropped. A
+    // unit with no result is a unit the engine could not answer for; a turned
+    // one cannot be drawn on an elevation of the wall it stands against.
+    if (!e.result) { at.skipped.push({ unit: nameOf(e, i), reason: 'has nothing to draw yet' }); return; }
+    if (turnedAway(e.unit)) {
+      at.skipped.push({ unit: nameOf(e, i), reason: 'is turned away from the wall — see the horizontal section' });
+      return;
+    }
+    at.drawn += 1;
+    drawn += 1;
+  });
+
+  // Asked, so the census and the sheet list cannot drift: every wall that got
+  // an elevation is a wall this reader counted a drawn member on.
+  const grouped = new Set(wallGroups(entries, profile).map((g) => g.wall));
+  for (const at of walls.values()) at.elevation = grouped.has(at.wall);
+
+  return {
+    units: entries.length,
+    drawn,
+    walls: [...walls.values()].sort((a, b) => a.wall - b.wall),
+  };
 }
 
 /** Just the sheets, for a caller that only wants to bind them. */

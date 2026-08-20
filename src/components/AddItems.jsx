@@ -204,7 +204,10 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // get one he did, has been surprised by his own tool.
     notify(railWithShelf
       ? 'Rail added WITH a fix shelf — drag the shelf and the rod rides with it.'
-      : 'Rail added ON ITS OWN — its own partitioner above it, and a height you can type.', 'ok');
+      // T42-F1: the sentence used to promise "its own partitioner above it",
+      // which is the board the owner had already refused twice by the time it
+      // was written — and the engine really did cut it. There is no board now.
+      : 'Rail added ON ITS OWN — no shelf and no board above it. Drag it, or type its height.', 'ok');
     // ─── TURN 33 (CLAUDE.md F3): THE PULL-DOWN SUGGESTION ───────────────────
     // The owner's rule: a rail above 2000 mm FROM THE FLOOR gets a grey HINT
     // suggesting the pull-down — never a block. Measured off the computed

@@ -220,15 +220,27 @@ test('F1 the red fires on a rail pushed into the top — and CLEARS when it come
 
 // ─── the modal that did not exist ──────────────────────────────────────────
 
-test('F1 the rail’s board is its OWN element kind, and the height is its first field', () => {
-  assert.equal(elementKind({ part: 'RAIL-PART', role: 'shelf' }), 'hanger-rail');
-  assert.equal(elementLabel({ part: 'RAIL-PART', role: 'shelf' }), 'Hanging rail');
-  const fields = elementFields({ part: 'RAIL-PART', role: 'shelf' });
-  assert.equal(fields[0], 'rail-height', 'the question he came to ask, first');
-  // NOTHING a fixed shelf offered was taken away — rule 4.
-  for (const kept of elementFields({ part: 'PARTITION', role: 'shelf' })) {
-    assert.ok(fields.includes(kept), `the rail board lost ${kept}`);
-  }
+// ─── RE-PINNED, TURN 42 (CLAUDE.md F1) ─────────────────────────────────────
+// T35 gave the rail a modal by keying it on the BOARD 40 mm over the rod,
+// because the rod was not a panel and could not be picked. The owner refused
+// that board; `case 'RAIL-PART': return 'hanger-rail'` is deleted by name under
+// iron rule 3, and the rod is picked as ITSELF now.
+//
+// What T35 was really after — *"nie mogę ustawić wysokości raila"*, a window
+// with the height in it — is unchanged and is asserted where it now lives.
+test('F1 the rail’s BOARD is not an element any more, because there is no board', () => {
+  assert.equal(elementKind({ part: 'RAIL-PART', role: 'shelf' }), null,
+    'nothing maps that part name — the engine cannot emit it');
+  // The KIND itself survives, and so does its field list: it is the ROD's kind
+  // now rather than a board's, and `rail-height` is still its first question.
+  assert.equal(elementLabel({ part: 'SHELF', role: 'shelf' }), 'Shelf', 'the label table still answers');
+  assert.ok(elementFields({ part: 'SHELF', role: 'shelf' }).length > 0, 'and the field table with it');
+
+  // And the height is where a joiner reaches it: the rod's own window, opened
+  // by a double-click on the tube (`3d/Hardware.jsx` → `openModal('rail')`).
+  const modal = readFileSync(new URL('../src/components/RailModal.jsx', import.meta.url), 'utf8');
+  assert.match(modal, /Height above support/, 'the question he came to ask, first');
+  assert.match(modal, /setRailHeight\(unit\.id, item\.id, v\)/, 'through the one store action');
 });
 
 test('F1 the field is wired to the store and names the DATUM, not a floor', () => {

@@ -115,7 +115,13 @@ test('a BARE kit call still cuts exactly what the AutoLISP cuts', () => {
   }, P);
   const internalDepth = 578 - G;
   assert.equal(r.panels.find((p) => p.id === 'PARTITION').h, internalDepth);
-  assert.equal(r.panels.find((p) => p.id === 'RAIL-PART').h, internalDepth);
+  // ─── TURN 42 (CLAUDE.md F1 / iron rule 4) ────────────────────────────────
+  // `RAIL-PART` stood on this line, cut to the same internal depth as the
+  // drawer partition. It is not cut any more — not by the engine and not by
+  // `KIT_WARDROBE_FULL.lsp`, whose `(drawRect "OUTLINE" …)` and whose
+  // `RAIL-PART` CSV row both went tonight — so "exactly what the AutoLISP
+  // cuts" now means: no board over the rod at all.
+  assert.ok(!r.panels.some((p) => p.part === 'RAIL-PART'), 'the kit cuts no partitioner');
   assert.equal(r.panels.find((p) => p.id === 'SHELF-1').h, 578 - G - P.carcass.shelfDepthClearance);
 });
 

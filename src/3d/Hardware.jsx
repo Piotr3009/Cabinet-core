@@ -4,7 +4,9 @@ import {
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { mm } from './constants.js';
-import { runnerEntry, runnerLadder, runnerModelSrc } from '../engine/runners.js';
+import {
+  runnerAskFor, runnerEntry, runnerLadder, runnerModelSrc,
+} from '../engine/runners.js';
 import { hingeModelSrc } from '../engine/hinges.js';
 import { clearHardwareSurface, reportHardware } from './hardwareRegistry.js';
 import {
@@ -93,6 +95,17 @@ export default function Hardware({
   // Turn 36 (CLAUDE.md F8): the shelves' own edit grammar, handed to the rod
   // so a double-click on the tube opens the hanger modal beside it.
   onEditElement = null,
+  // ─── TURN 42 (CLAUDE.md F1): AN ALONE ROD IS ITS OWN SUBJECT ─────────────
+  // Two kinds of rail, two windows. An ASSEMBLY's rod opens the fix shelf it
+  // rides — the thing a joiner actually edits, T37's own answer — and it goes
+  // through `onEditElement` with the shelf's PANEL id, exactly as before. An
+  // ALONE rod has no board and opens its OWN window, addressed by its ITEM id;
+  // that is this second callback, and the two are kept apart here rather than
+  // downstream because the scene is where the rod's kind is known.
+  onEditRail = null,
+  // …and dragging it writes that item's `pos_mm`, the same way dragging a
+  // shelf writes the shelf's. `(itemId, currentAxisMm, supportMm)`.
+  onDragRail = null,
   // ─── TURN 28 (CLAUDE.md F5): ONE COLOUR SOURCE FOR THE WHOLE FAMILY ──────
   // Turn 25 handed this component the chosen METAL ID and let it resolve the
   // numbers; `3d/DrillRings.jsx` resolved its own, off its own table, with its
@@ -147,6 +160,8 @@ export default function Hardware({
           metal={shelfMetal}
           profile={profile}
           onEdit={onEditElement}
+          onEditRail={onEditRail}
+          onDragRail={onDragRail}
         />
       ))}
       {/* ─── Turn 11 (CLAUDE.md F3.5): the hinges are furniture ───
@@ -846,11 +861,38 @@ function Runners({
   // mode) — then every url is null and every row is drawn plain.
   const wanted = useMemo(() => items.map((r) => {
     const variant = variants?.[r.drawer] || M.defaultVariant;
+    // ─── TURN 42 (CLAUDE.md F2): THE VIEW ASKS THE QUESTION THE BOM ASKS ────
+    //
+    // The owner: *"w nowych szufladach zamiast się podstawić ładne GLB, to
+    // znowu się pojawiają te gówna kodowane."*
+    //
+    // THE FAULT, and it was never about overlay drawers at all. `r.length` is
+    // the drawer BOX's own cut depth. `engine/runners.js runnerAskFor` says,
+    // in as many words: *"This is the ONE place the +10 is applied. EVERY
+    // CALLER THAT HAS A BOX DEPTH IN ITS HAND and wants a nominal asks here;
+    // nobody adds ten of their own."* One caller in the whole app had a box
+    // depth in its hand and did not ask — this one — so the picture and the
+    // order form asked the ladder two different questions:
+    //
+    //     box 490  →  view asked NL490 → rung 450   BOM asked NL500 → rung 500
+    //     box 440  →  view asked NL440 → rung 400   BOM asked NL450 → rung 450
+    //
+    // A bucket that carries the article the BOM orders and nothing at the rung
+    // BELOW it therefore answered the view with `null` — and null is the grey
+    // hand-made L-profile. It hit the deepest boxes first, which is why it
+    // arrived with the overlay stack (490 mm) while the wardrobe's own
+    // internal stack (440 mm) went on looking right.
+    //
+    // One question now: the model drawn IS the article the BOM orders.
     const entry = runnerEntry({
       // Turn 33 (CLAUDE.md F9): the owner's ladder rules the snap — the model
       // drawn is the article the BOM orders, or the grey box where a rung has
       // no article. One law, the view and the order alike.
-      system: M.system, nl: r.length, variant, side: r.side, ladder: runnerLadder(profile),
+      system: M.system,
+      nl: runnerAskFor(r.length, profile) ?? r.length,
+      variant,
+      side: r.side,
+      ladder: runnerLadder(profile),
     });
     return {
       row: r,
@@ -1189,15 +1231,34 @@ function Legs({ items, profile, colour }) {
  */
 function Rail({
   rail, colour, metal = null, profile = null, pivot = [0, 0, 0], onEdit = null,
+  onEditRail = null, onDragRail = null,
 }) {
   // The family metal when the profile carries one (gold/silver, the same pair
   // the shelf sleeves wear); the old neutral grey where it does not.
   const tone = metal?.colour || colour;
-  const open = onEdit && rail.panelId
+  // ─── TURN 42 (CLAUDE.md F1): WHICH WINDOW THIS ROD OPENS ─────────────────
+  //
+  // `mount` is the ENGINE's published answer (`assemblies.rail.mount`), not a
+  // guess from whether an id happens to look like a panel. ALONE opens the
+  // hanging-rail window on its own item; an ASSEMBLY opens the fix shelf's,
+  // which is T37's answer and is untouched.
+  //
+  // `panelId` is the ADDRESS either way — the shelf's panel id, or the rod
+  // item's own id — so the aura, `userData.ccRailPanelId` and every walk that
+  // finds the tube by it keep working through the change.
+  const alone = rail.mount === 'alone';
+  const to = alone ? onEditRail : onEdit;
+  const open = to && rail.panelId
     ? (e) => {
       e.stopPropagation();
-      onEdit(rail.panelId, { x: e.clientX, y: e.clientY });
+      to(rail.panelId, { x: e.clientX, y: e.clientY });
     }
+    : null;
+  // …and an ALONE rod is DRAGGED, which is the other half of "exactly the
+  // grammar a shelf uses". An assembly's rod is not: its shelf is dragged and
+  // the rod follows, which is the whole point of an assembly.
+  const grab = alone && onDragRail && rail.itemId
+    ? (e) => onDragRail(e, rail.itemId, rail.y)
     : null;
   return (
     <>
@@ -1216,8 +1277,16 @@ function Rail({
     <mesh
       position={[mm(rail.x), mm(rail.y), mm(rail.z)]}
       rotation={[0, 0, Math.PI / 2]}
-      userData={{ ccNoBounds: true, ccRailPanelId: rail.panelId || null }}
+      userData={{
+        ccNoBounds: true,
+        ccRailPanelId: rail.panelId || null,
+        // T42-F1: what a walk needs to tell the two kinds apart without
+        // reaching into the store.
+        ccRailMount: rail.mount || null,
+        ccRailItemId: rail.itemId || null,
+      }}
       onDoubleClick={open || undefined}
+      onPointerDown={grab || undefined}
     >
       <cylinderGeometry args={[mm(rail.diameter / 2), mm(rail.diameter / 2), mm(rail.length), 14]} />
       <meshStandardMaterial

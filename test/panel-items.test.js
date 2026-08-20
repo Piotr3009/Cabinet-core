@@ -145,7 +145,14 @@ test('the hanger rail lands between the drawers and the shelves', () => {
   const shelf = shelvesInEngineOrder(itemsOf(id))[0].pos_mm;
 
   assert.ok(railY > partitionTop, `rail at ${railY} must clear the drawer partition at ${partitionTop}`);
-  assert.ok(result.derived.rail_partition_y < shelf, 'and its partitioner must stay under the shelf above it');
+  // ─── TURN 42 (CLAUDE.md F1) ─────────────────────────────────────────────
+  // The rod HAS no partitioner any more, so `rail_partition_y` is not
+  // published and there is nothing to keep under the shelf. What the test was
+  // really pinning — the rail lands BETWEEN the drawers and the shelves — is
+  // now asked of the rod itself, which is the only thing up there.
+  assert.equal(result.derived.rail_partition_y, undefined, 'no partitioner is published any more');
+  assert.ok(railY < shelf, `the rod at ${railY} stays under the shelf at ${shelf}`);
+  assert.ok(!result.panels.some((p) => p.part === 'RAIL-PART'), 'and no board is cut for it');
 
   // A second rail is refused rather than stacked on the first.
   assert.equal(store().addHangerRail(id, {}), null);

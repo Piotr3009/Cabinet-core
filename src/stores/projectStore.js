@@ -4217,6 +4217,40 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{ok:boolean, mm:number}|{ok:false, error:string}}
    */
+  /**
+   * ─── TURN 42 (CLAUDE.md F1): DRAG THE ROD ─────────────────────────────────
+   *
+   * *"Dragging the ALONE rod writes the item's `pos_mm` (the same store path a
+   * shelf drag uses), and the engine's next answer moves the rod."*
+   *
+   * It IS the shelf's path, said for a rod: SNAP here (the editor's grid, the
+   * same `profile.editor.mmStep` `moveShelf` uses), CLAMP in the engine (which
+   * is the only thing that knows the carcass — `clampRailAxis`), and write the
+   * one number through the one setter. There is no second copy of the height
+   * anywhere: `setRailHeight` — the modal's field — is the same write, and the
+   * rod's position comes back off `assemblies.rail.y` either way.
+   *
+   * `offsetMm` is the rod's height ABOVE ITS OWN SUPPORT, which is what
+   * `pos_mm` has meant on a hanger item since T35. The view subtracts the
+   * support the engine published; nothing here has to resolve a datum again.
+   */
+  moveRail: (unitId, itemId, offsetMm) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const item = (unit.params.sections?.[0]?.items || [])
+      .find((i) => i.id === itemId && i.kind === 'hanger');
+    if (!item) return null;
+    // An ASSEMBLY's rod is not dragged — its shelf is, and the rod follows
+    // (`setShelfPos` re-derives every rider). Refusing here as well as in the
+    // view is the belt to the braces: one rod, one owner of its height.
+    if (railMountOf(item) === RAIL_MOUNT.SHELF) return null;
+    const profile = getCabinetProfile();
+    const pos = snapTo(Math.max(0, Number(offsetMm) || 0), profile.editor.mmStep);
+    if (pos === item.pos_mm) return { pos };
+    get().updateItem(unitId, itemId, { pos_mm: pos });
+    return { pos };
+  },
+
   setRailHeight: (unitId, itemId, mmRaw) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return { ok: false, error: 'No such cabinet.' };

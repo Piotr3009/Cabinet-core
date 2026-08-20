@@ -223,9 +223,13 @@ function partNamesInSource() {
   return names;
 }
 
-test('the source scan finds the whole vocabulary — 37 names, not the 36 a walk reaches', () => {
+test('the source scan finds the whole vocabulary — 36 names, not the 35 a walk reaches', () => {
+  // T42-F1: 37 → 36. `RAIL-PART` is not a part name any more — the rail's
+  // partitioner is not cut, in the engine or in KIT_WARDROBE_FULL.lsp — and its
+  // registry row went with it. One name left the vocabulary; the scan's own
+  // three canaries below say the regexes did not drift.
   const names = partNamesInSource();
-  assert.ok(names.size >= 37, `the scan found only ${names.size} part names — its regexes have drifted from cabinet.js`);
+  assert.ok(names.size >= 36, `the scan found only ${names.size} part names — its regexes have drifted from cabinet.js`);
   // Three canaries: one plain literal, one board() helper name, one shoe box
   // suffix. If any of the three stops being found the scan is broken, not the
   // registry, and this test says which.

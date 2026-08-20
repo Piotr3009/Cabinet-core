@@ -1,0 +1,45 @@
+─── T42 · F0 — the wall PDF speaks ────────────────────────────────────
+app:       http://127.0.0.1:4173/
+downloads: /home/user/Cabinet-core/verify/t42/downloads
+
+1 — a kitchen standing at a wall
+  ok   three cabinets on wall A, every one of them at rotation 0   {"units":3,"rotations":[0,0,0],"walls":[0]}
+  ok   the set is on screen and the PDF button is ENABLED   {"sheets":3,"names":["Wall A /1","Wall A /2","Horizontal section"],"pdfDisabled":false,"failed":false,"empty":false}
+  ok   a REAL FILE landed on disk   ["Anderson-Kitchen-wall-drawings-2008-0008.pdf"]
+      file:  Anderson-Kitchen-wall-drawings-2008-0008.pdf
+      head:  "%PDF-1.3"
+      bytes: 47813
+      pages: /Count 3  ·  3 page objects
+  ok   THE BYTES START %PDF   "%PDF"
+  ok   THE PAGE COUNT EQUALS THE SHEET COUNT   3 pages · 3 sheets on screen
+  ok   and the SHEETS IN THE FILE are the sheets on the screen, by name   ["Wall A /1","Wall A /2","Horizontal section"] — title block reads "No Scale": true
+  ok   and the app SAID so, naming the file and the sheet count   Saved Anderson-Kitchen-wall-drawings-2008-0008.pdf — 3 sheets.
+      shot:  f0a-wall-pdf-downloaded-and-opened.png
+
+1b — the same wall PDF through Output ▸ Drawings ▸ Wall drawings (PDF)
+  ok   the MENU path writes a real file too   ["Anderson-Kitchen-wall-drawings-2008-0008.pdf","Menu-path-wall-drawings-2008-0008.pdf"]
+      file:  Menu-path-wall-drawings-2008-0008.pdf
+      head:  "%PDF-1.3"   bytes: 39172   /Count 3
+  ok   %PDF, and three pages for its three sheets   ["Wall A /1","Wall A /2","Horizontal section"]
+  ok   and the menu path names every sheet it bound   Saved Menu-path-wall-drawings-2008-0008.pdf — 3 sheets: Wall A /1, Wall A /2, Horizontal section.
+
+2 — the builder crashes: an outage that no longer pretends to be empty
+  ok   the window SAYS the set failed, with the message on it   "Wall drawings failed: Cannot read properties of null (reading 'titleRows')This is a FAULT, not an empty job — the whole error is in the browser console."
+  ok   it is NOT wearing the emptiness sentence   false
+  ok   in the error style, and both buttons stay disabled   "rgb(201, 82, 75)"
+  ok   and the WHOLE error went to the console, where a diagnosis can reach it   [wall drawings] the set could not be built TypeError: Cannot read properties of null (reading 'titleRows')
+    at wy (ht
+      shot:  f0b-crash-speaks-or-empty-is-honest.png
+
+3 — a genuinely empty job: the honest sentence, and no error styling
+  ok   the honest sentence, the buttons disabled, and NO error styling   {"honest":"No cabinet is standing against a wall yet — a wall drawing is of a wall.","failed":false,"colour":"rgb(122, 122, 116)","pdfDisabled":true}
+
+4 — a turned cabinet: the window names it and its wall
+  ok   the census is on the glass, naming the cabinet and the reason   "Wall A — drawn, but 02 is turned away from the wall — see the horizontal section."
+
+─── VERDICT ───────────────────────────────────────────────────────────
+16 / 16 checks passed
+
+THE FAULT THE OWNER HIT DID NOT REPRODUCE on this build: every one of the
+five drawing exports wrote a real file, and the wall PDF came out %PDF with
+a page per sheet. What ships is the INSTRUMENTATION — see the PR body.

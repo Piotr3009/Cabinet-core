@@ -71,22 +71,32 @@ test('F6 — RAIL ALONE: no shelf, and the rod still hangs', () => {
   assert.ok(Number(r.assemblies.rail.y) > 0);
 });
 
-test('F6 — a rail alone is read by the LEGACY law, which is why nothing moved', () => {
+// ─── RE-PINNED, TURN 42 (CLAUDE.md F1) ─────────────────────────────────────
+// T40 satisfied "a rod on its own" by pointing it at the LEGACY law — and the
+// legacy law cuts a board. The owner had already refused that board twice when
+// this test was written, and it asserted the board was THERE. T41's lesson,
+// made permanent this turn: PROVE THE THING, NOT THE FIELD — the item said
+// `alone` and the PANEL LIST said otherwise, and only the item was ever asked.
+//
+// There is no legacy law now. A rod that is not an assembly is ALONE, and an
+// alone rod cuts nothing.
+test('F6 — a rail alone is ALONE: its own item, its own height, and NO board', () => {
   const id = wardrobe();
   const railId = store().addHangerRail(id, { withShelf: false });
   const rail = itemsOf(id).find((i) => i.id === railId);
-  // It is READ as legacy geometry…
-  assert.equal(railMountOf(rail), RAIL_MOUNT.LEGACY);
-  assert.equal(isLegacyRail(rail), true);
-  // …and it carries the same two fields a pre-T37 rail carried, so the rod
-  // lands where a rail on its own has always landed.
+  // T42-F1: LEGACY is not one of the kinds any more — there are two.
+  assert.equal(railMountOf(rail), RAIL_MOUNT.ALONE);
+  assert.equal(isLegacyRail(rail), true, 'it is still "the one with no shelf over it"');
+  // It carries the two fields a rod needs: a number, and the board it is
+  // measured from.
   assert.equal(typeof rail.pos_mm, 'number');
   assert.ok(rail.datum);
-  // …including its own PARTITIONER, which is what a rail with no shelf above
-  // it has always been given.
+  // THE PANEL LIST, not the item: no partitioner, and none of its nine screws.
   const r = resultOf(id);
-  assert.ok(r.panels.some((p) => p.part === 'RAIL-PART'), 'the partitioner is cut');
-  // The assembly does NOT cut one — the fix shelf is that board.
+  assert.ok(!r.panels.some((p) => p.part === 'RAIL-PART'), 'no partitioner is cut');
+  assert.equal(r.drills.filter((d) => d.kind === 'rail_partition_screw').length, 0);
+  assert.equal(r.drills.filter((d) => d.kind === 'rail_bracket').length, 2, 'but the side flange is drilled');
+  // The assembly does not cut one either — the fix shelf is that board.
   const other = wardrobe();
   store().addHangerRail(other);
   assert.equal(resultOf(other).panels.some((p) => p.part === 'RAIL-PART'), false);
@@ -150,15 +160,25 @@ test('F6 — the choice is IN THE RAIL MODAL, with the assembly pre-selected', (
   assert.match(add, /Adds a FIX SHELF with the rail hung under it/);
 });
 
-test('F6 — LEGACY RAILS ARE UNTOUCHED, as T37 left them', () => {
-  // A rod saved before T37 — no `mount`, no `shelf_id`, just a number and a
-  // datum — resolves through exactly the code that resolved it yesterday.
+test('F6 — A STORED RAIL WITH NO MOUNT READS AS ALONE — one sentence, zero layers', () => {
+  // T42-F1's legacy rule, verbatim: *"a stored rail item with no `mount` (or
+  // any value that is not SHELF) IS READ AS ALONE. No migration table, no
+  // compatibility branch, no warning."* The app is pre-launch and the owner
+  // said so twice in one evening.
   const bare = computeCabinet({
     type: 'WARDROBE', width: 900, height: 2150, depth: 578, unit_num: '01',
     items: [{ id: 'h1', kind: 'hanger', pos_mm: 900 }],
   }, P);
   assert.ok(bare.assemblies.rail);
-  assert.ok(bare.panels.some((p) => p.part === 'RAIL-PART'));
+  assert.equal(bare.assemblies.rail.mount, RAIL_MOUNT.ALONE);
+  assert.ok(!bare.panels.some((p) => p.part === 'RAIL-PART'), 'and it cuts nothing');
+  // Byte-identical to one that SAYS alone: that is what "zero layers" means.
+  const said = computeCabinet({
+    type: 'WARDROBE', width: 900, height: 2150, depth: 578, unit_num: '01',
+    items: [{ id: 'h1', kind: 'hanger', mount: 'alone', pos_mm: 900 }],
+  }, P);
+  assert.deepEqual(said.assemblies.rail, bare.assemblies.rail);
+  assert.deepEqual(said.panels.map((p) => p.id), bare.panels.map((p) => p.id));
   // And the legacy module itself is where it was: this feature added a value
   // to an enum and a predicate beside it, and moved no law.
   const legacy = src('engine/railDatum.js');

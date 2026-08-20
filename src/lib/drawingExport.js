@@ -194,14 +194,87 @@ export function wallDrawingsFilename({ project, ext = 'pdf', now = new Date() })
 }
 
 /**
+ * ─── TURN 42 (CLAUDE.md F0): "SAVED" IS A MEASUREMENT, NOT A CLAIM ──────────
+ *
+ * The owner, 19/20.08.2026: *"pdf w ogóle nie zadziałał — coś się znowu
+ * zablokowało."* This is the only feature in the app whose output is PAPER a
+ * workshop hands to a client, and everything about the path before tonight was
+ * a claim: the modal caught a crash and showed an empty set, the menu path
+ * relabelled an error as emptiness, and THIS function announced `Saved …` on
+ * the strength of having called `doc.save()`.
+ *
+ * F0's own law, applied to the product and not only to its test: *"assert the
+ * EXPORTED BYTES … never the array's length alone."* So the document is
+ * serialised and LOOKED AT before the toast is allowed to say the word saved —
+ * the header really is `%PDF`, and the page count really is the sheet count.
+ * Anything else THROWS, into a catch that now speaks (DrawingModal.jsx,
+ * ConfiguratorPage.jsx), and the joiner is told rather than reassured.
+ *
+ * It costs one extra serialisation of a document that is tens of kilobytes.
+ * That is the price of never again printing "Saved" over a file that is not
+ * a PDF.
+ */
+export const PDF_MAGIC = '%PDF';
+
+/** The document as bytes, which is the only form worth asserting anything about. */
+export function pdfBytes(doc) {
+  return new Uint8Array(doc.output('arraybuffer'));
+}
+
+/**
+ * The two questions F0 asks of an exported PDF, asked of the BYTES.
+ *
+ * @throws {Error} named, so the reporting catches downstream have something to
+ *                 put on the screen that a person can act on.
+ */
+export function assertPdfBytes(bytes, { pages, sheets, what = 'The PDF' }) {
+  const head = String.fromCharCode(...(bytes || []).slice(0, PDF_MAGIC.length));
+  if (head !== PDF_MAGIC) {
+    throw new Error(`${what} did not come out as a PDF — it starts "${head}", not "${PDF_MAGIC}".`);
+  }
+  if (sheets != null && pages !== sheets) {
+    throw new Error(`${what} came out ${pages} page${pages === 1 ? '' : 's'} long for ${sheets} sheet${sheets === 1 ? '' : 's'}.`);
+  }
+  return { bytes: bytes.length, pages };
+}
+
+/**
  * The wall set as one PDF: a page per sheet, in the order they were built —
  * Wall A /1, Wall A /2, Wall B /1, …, then the horizontal section.
  */
 export function exportWallDrawingsPdf(sheets, { project }) {
-  const doc = bookletDoc(sheets);
+  const pages = (sheets || []).filter(Boolean);
+  const doc = bookletDoc(pages);
+  // T42-F0: looked at, not assumed. See the note above.
+  const measured = assertPdfBytes(pdfBytes(doc), {
+    pages: doc.getNumberOfPages(), sheets: pages.length, what: 'The wall drawings PDF',
+  });
   const filename = wallDrawingsFilename({ project });
   doc.save(filename);
-  return { filename, doc, pages: doc.getNumberOfPages() };
+  return { filename, doc, pages: doc.getNumberOfPages(), bytes: measured.bytes };
+}
+
+/**
+ * ─── TURN 42 (CLAUDE.md F0): AN ERROR IS NEVER RELABELLED AS EMPTINESS ──────
+ *
+ * Both wall paths ended in `err.message || 'Nothing to draw yet.'`, so an error
+ * whose message happens to be empty — a `TypeError` thrown by a minified frame,
+ * a rejected promise carrying a string, an `AbortError` — was reported to the
+ * joiner as "there is nothing here", which is the one thing it definitely was
+ * not. CLAUDE.md: *"if `err.message` is empty, show the error's NAME — never
+ * the emptiness sentence."*
+ *
+ * There is deliberately no fallback to any sentence about emptiness in this
+ * function. The last resort is the word `unknown`, which is at least true.
+ */
+export function drawingErrorText(err) {
+  const message = String(err?.message ?? '').trim();
+  if (message) return message;
+  const name = String(err?.name ?? '').trim();
+  if (name) return `${name} (no message)`;
+  const text = String(err ?? '').trim();
+  if (text && text !== '[object Object]') return text;
+  return 'an unknown error (the browser gave no message — see the console)';
 }
 
 /**

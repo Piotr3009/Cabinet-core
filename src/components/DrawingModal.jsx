@@ -12,10 +12,15 @@ import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js'
 // carcass, and one horizontal section — and it is previewed HERE, in the same
 // window and by the same code that writes the files, so the screen and the
 // paper cannot drift apart.
-import { wallDrawingSheets } from '../engine/drawings/wallSheets.js';
+// ─── TURN 42 (CLAUDE.md F0): …AND IT SAYS WHY WHEN IT CANNOT ──────────────
+// `wallSetReport` is the census of what went on the sheets and what did not,
+// so the window can name a turned-away cabinet instead of leaving a wall off
+// the list without a word.
+import { wallDrawingSheets, wallSetReport } from '../engine/drawings/wallSheets.js';
 import { PAGE_FORMATS, layoutSheet, scaleLabel } from '../engine/drawings/sheet.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
 import {
+  drawingErrorText,
   exportBookletPdf, exportDrawingPdf, exportDrawingSvg,
   exportWallDrawingsDxf, exportWallDrawingsPdf,
 } from '../lib/drawingExport.js';
@@ -72,10 +77,28 @@ export default function DrawingModal() {
 
   // ─── THE WALL SET ─────────────────────────────────────────────────────────
   // Built by the ENGINE, once, and used for the preview, the PDF and the DXF.
+  //
+  // ─── TURN 42 (CLAUDE.md F0): THE GAG COMES OFF, PERMANENTLY ───────────────
+  //
+  // The owner, 19/20.08.2026: *"pdf w ogóle nie zadziałał — coś się znowu
+  // zablokowało."* This memo ended in `catch { return [] }`, and that one line
+  // is how an OUTAGE and an EMPTY JOB became the same picture: the same grey
+  // buttons, the same footer sentence, the same four green probes beside a
+  // dead feature. A crash anywhere under `wallDrawingSheets()` — which includes
+  // `allResults()`, so ONE unit whose `computeCabinet` throws kills the whole
+  // set — was reported to the joiner as "there is nothing here".
+  //
+  // So the memo answers with BOTH facts and the window shows the difference:
+  //
+  //   { sheets: [...], error: null }   the set, however long
+  //   { sheets: [],    error: Error }  the builder CRASHED, and it says so
+  //
+  // The two states must stay distinguishable on screen forever after. That is
+  // F0's whole demand, and `test/turn42-f0-wall-pdf-speaks.test.js` holds it.
   const wallSet = useMemo(() => {
-    if (kind !== 'walls') return [];
+    if (kind !== 'walls') return { sheets: [], error: null, report: null };
     try {
-      return wallDrawingSheets({
+      const sheets = wallDrawingSheets({
         entries: allResults(),
         project,
         room: project?.room,
@@ -84,12 +107,25 @@ export default function DrawingModal() {
         format,
         date,
       });
-    } catch {
-      return [];
+      // The census is built in the same try: a reader that threw would be one
+      // more silent failure, and it is exactly what this turn is about.
+      return { sheets, error: null, report: wallSetReport({ entries: allResults(), profile }) };
+    } catch (e) {
+      // BOTH: the console gets the whole error with its stack, because that is
+      // what a diagnosis needs; the screen gets the sentence, because that is
+      // what a joiner needs.
+      // eslint-disable-next-line no-console
+      console.error('[wall drawings] the set could not be built', e);
+      return { sheets: [], error: e, report: null };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, units, project, profile, format, date, allResults]);
-  const wallAt = wallSet.length ? wallSet[Math.min(wallPage, wallSet.length - 1)] : null;
+  const wallSheetList = wallSet.sheets;
+  const wallError = wallSet.error;
+  const wallReport = wallSet.report;
+  const wallAt = wallSheetList.length
+    ? wallSheetList[Math.min(wallPage, wallSheetList.length - 1)]
+    : null;
 
   const sheet = useMemo(() => {
     if (kind === 'walls') return wallAt?.sheet || null;
@@ -125,22 +161,33 @@ export default function DrawingModal() {
   const save = (target) => {
     // TURN 40 (F5): the wall set binds as a whole — every sheet, in order.
     if (target === 'walls-pdf' || target === 'walls-dxf') {
-      if (!wallSet.length) { notify('No cabinet is standing against a wall yet.', 'warn'); return; }
+      // T42-F0: a CRASH is not an empty job, and it never again borrows that
+      // sentence. The button is disabled in both states, so this is the belt to
+      // the braces — and it still says which of the two it is.
+      if (wallError) { notify(`Wall drawings failed: ${drawingErrorText(wallError)}`, 'warn'); return; }
+      if (!wallSheetList.length) { notify('No cabinet is standing against a wall yet.', 'warn'); return; }
       try {
         if (target === 'walls-pdf') {
-          const { filename, pages } = exportWallDrawingsPdf(wallSet.map((x) => x.sheet), {
+          // T42-F0: `exportWallDrawingsPdf` now LOOKS at the bytes it produced
+          // — `%PDF`, and a page per sheet — so the word "Saved" is a
+          // measurement rather than a claim. Anything else lands in the catch
+          // below, which speaks.
+          const { filename, pages } = exportWallDrawingsPdf(wallSheetList.map((x) => x.sheet), {
             project: project?.name,
           });
           notify(`Saved ${filename} — ${pages} sheets.`, 'ok');
           return;
         }
-        exportWallDrawingsDxf(wallSet, { project: project?.name })
+        exportWallDrawingsDxf(wallSheetList, { project: project?.name })
           .then(({ filename, files }) => notify(
             `Saved ${filename} — ${files.length} DXF. AutoCAD only: do NOT open these in VCarve.`, 'ok',
           ))
-          .catch((err) => notify(err.message || 'Nothing to draw yet.', 'warn'));
+          // eslint-disable-next-line no-console
+          .catch((err) => { console.error('[wall drawings] DXF', err); notify(drawingErrorText(err), 'warn'); });
       } catch (err) {
-        notify(err.message || 'Nothing to draw yet.', 'warn');
+        // eslint-disable-next-line no-console
+        console.error('[wall drawings] export', err);
+        notify(drawingErrorText(err), 'warn');
       }
       return;
     }
@@ -152,7 +199,11 @@ export default function DrawingModal() {
         const { filename, pages } = exportBookletPdf(sheets, { project: project?.name });
         notify(`Saved ${filename} — ${pages} pages.`, 'ok');
       } catch (e) {
-        notify(e.message || 'Nothing to draw yet.', 'warn');
+        // T42-F0: the same law on the booklet path — an error is reported as an
+        // error, never relabelled as emptiness.
+        // eslint-disable-next-line no-console
+        console.error('[booklet] export', e);
+        notify(drawingErrorText(e), 'warn');
       }
       return;
     }
@@ -190,7 +241,7 @@ export default function DrawingModal() {
             type="button"
             className="cc-btn"
             data-wall-drawings-pdf="1"
-            disabled={!wallSet.length}
+            disabled={!wallSheetList.length}
             title="Every wall: /1 with fronts, /2 carcass, plus the horizontal section"
             onClick={() => save('walls-pdf')}
           >
@@ -200,7 +251,7 @@ export default function DrawingModal() {
             type="button"
             className="cc-btn"
             data-wall-drawings-dxf="1"
-            disabled={!wallSet.length}
+            disabled={!wallSheetList.length}
             title="AutoCAD only — do NOT open in VCarve"
             onClick={() => save('walls-dxf')}
           >
@@ -218,7 +269,13 @@ export default function DrawingModal() {
           <div className="cc-row">
             <div className="flex flex-col">
               <span className="text-sm text-ink-100">
-                {kind === 'walls' ? (wallAt?.name || 'No wall has a cabinet on it') : unit.params.unit_num}
+                {/* T42-F0: and the HEADING stops lying too. "No wall has a
+                    cabinet on it" over a red failure box is the same untruth
+                    the footer used to tell, said one line higher up. */}
+                {kind === 'walls'
+                  ? (wallAt?.name
+                    || (wallError ? 'The wall set could not be built' : 'No wall has a cabinet on it'))
+                  : unit.params.unit_num}
               </span>
               <span className="text-[11px] text-ink-400">
                 {kind === 'walls'
@@ -267,15 +324,15 @@ export default function DrawingModal() {
               A wall set is `Wall A /1`, `Wall A /2`, `Wall B /1`, … and one
               `Horizontal section`. The window walks them; showing only the
               first would be a preview of a set nobody can see. */}
-          {kind === 'walls' && wallSet.length ? (
-            <div className="flex gap-1 flex-wrap" data-wall-sheets={wallSet.length}>
-              {wallSet.map((page, i) => (
+          {kind === 'walls' && wallSheetList.length ? (
+            <div className="flex gap-1 flex-wrap" data-wall-sheets={wallSheetList.length}>
+              {wallSheetList.map((page, i) => (
                 <button
                   key={page.name}
                   type="button"
                   data-wall-sheet={page.name}
-                  aria-pressed={i === Math.min(wallPage, wallSet.length - 1)}
-                  className={`cc-btn px-2 text-[11px] ${i === Math.min(wallPage, wallSet.length - 1) ? 'border-gold text-gold' : ''}`}
+                  aria-pressed={i === Math.min(wallPage, wallSheetList.length - 1)}
+                  className={`cc-btn px-2 text-[11px] ${i === Math.min(wallPage, wallSheetList.length - 1) ? 'border-gold text-gold' : ''}`}
                   onClick={() => setWallPage(i)}
                 >
                   {page.name}
@@ -283,10 +340,44 @@ export default function DrawingModal() {
               ))}
             </div>
           ) : null}
-          {kind === 'walls' && !wallSet.length ? (
-            <p className="text-sm text-ink-400" data-wall-sheets="0">
+
+          {/* ─── TURN 42 (CLAUDE.md F0): CRASHED, OR GENUINELY EMPTY ───────
+              THREE STATES, and they are three different sentences on the
+              glass. Before tonight the first two were one sentence, which is
+              how a dead feature and an empty job looked identical to the man
+              holding the mouse. */}
+          {kind === 'walls' && wallError ? (
+            <p
+              className="text-sm text-status-danger border border-status-danger/60 bg-status-danger/10 rounded px-2 py-1"
+              data-wall-failed="1"
+              data-wall-sheets="0"
+            >
+              Wall drawings failed: {drawingErrorText(wallError)}
+              <span className="block text-[11px] text-status-danger/80">
+                This is a FAULT, not an empty job — the whole error is in the browser console.
+              </span>
+            </p>
+          ) : null}
+          {kind === 'walls' && !wallError && !wallSheetList.length ? (
+            <p className="text-sm text-ink-400" data-wall-sheets="0" data-wall-empty="1">
               No cabinet is standing against a wall yet — a wall drawing is of a wall.
             </p>
+          ) : null}
+
+          {/* …and when a cabinet was LEFT OFF a sheet, the window says which
+              one and why, rather than dropping a wall out of the list without
+              a word. `wallGroups` had the reason all along; nothing asked. */}
+          {kind === 'walls' && wallReport?.walls?.some((w) => w.skipped.length) ? (
+            <div className="text-[11px] text-status-warn" data-wall-skips="1">
+              {wallReport.walls.filter((w) => w.skipped.length).map((w) => (
+                <p key={w.wall}>
+                  <b>{`Wall ${w.label}`}</b>
+                  {w.elevation ? ' — drawn, but ' : ' — no elevation: '}
+                  {w.skipped.map((sk) => `${sk.unit} ${sk.reason}`).join('; ')}
+                  .
+                </p>
+              ))}
+            </div>
           ) : null}
 
           {/* The preview IS the export: the same SVG string, so what is on

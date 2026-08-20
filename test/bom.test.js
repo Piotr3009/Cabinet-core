@@ -38,14 +38,34 @@ test('BOM totals match the golden fixture totals', async (t) => {
   const bom = buildBom([entryFor(wa)]);
 
   await t.test('areas and edging carry through unchanged', () => {
-    assert.equal(roundTo(bom.totals.board_area_m2, 3), wa.totals.board_area_m2);
+    // ─── TURN 42 (CLAUDE.md F1 / iron rule 4) ───────────────────────────────
+    // The fixture is a record of the kit BEFORE the rail partitioner was cut
+    // out of it, and CLAUDE.md keeps `fixtures/` untouched. So the one board
+    // the kit stopped cutting is subtracted from the fixture's own figure,
+    // using the fixture's own quoted area — see the long note in
+    // `test/engine.test.js`, which does the same arithmetic for the same
+    // reason. Nothing else about this BOM changed.
+    const railPart = (wa.panels || []).find((r) => String(r.id).toUpperCase().includes('RAIL-PART'));
+    const boardArea = roundTo(wa.totals.board_area_m2 - (railPart?.area_m2 || 0), 3);
+    assert.equal(roundTo(bom.totals.board_area_m2, 3), boardArea);
     assert.equal(roundTo(bom.totals.front_area_m2, 3), wa.totals.front_area_m2);
     assert.equal(roundTo(bom.totals.edging_m, 2), wa.totals.edging_m);
   });
 
   await t.test('per-role totals add back up to the project totals', () => {
     const roleArea = bom.roles.reduce((s, r) => s + r.area_m2, 0);
-    assert.ok(Math.abs(roleArea - bom.totals.area_m2) < 1e-6, 'role areas sum to the project area');
+    // ─── TURN 42: THE TOLERANCE IS THE ROUNDING, NOT A GUESS ────────────────
+    // Every role's area is published rounded to 4 dp (`engine/bom.js:144`) and
+    // the project total is rounded to 4 dp SEPARATELY (`:157`), so the sum of
+    // the parts can differ from the whole by up to half a unit in the last
+    // place per row. `1e-6` was tighter than the numbers it compared and held
+    // only by luck — removing ONE board (the rail partitioner, T42-F1) was
+    // enough to expose it at 1e-4 on this very fixture. The invariant is that
+    // the roles ACCOUNT FOR THE WHOLE PROJECT, and it holds to the precision
+    // the roles are quoted at.
+    const slack = (bom.roles.length + 1) * 0.00005;
+    assert.ok(Math.abs(roleArea - bom.totals.area_m2) <= slack,
+      `role areas sum to the project area (${roleArea} vs ${bom.totals.area_m2}, slack ${slack})`);
     const rolePieces = bom.roles.reduce((s, r) => s + r.pieces, 0);
     assert.equal(rolePieces, bom.totals.pieces);
   });

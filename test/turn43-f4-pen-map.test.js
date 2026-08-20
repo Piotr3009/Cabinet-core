@@ -28,6 +28,14 @@ import {
 /** The sheet's own furniture, which is not the drawing. */
 const SHEET_LAYERS = new Set(['FRAME', 'FRAME_LIGHT']);
 
+/**
+ * A SECTION is the one sheet allowed the heaviest ink, and T43-F5 gives the set
+ * three kinds of them: the horizontal plan, each wall's own `/3`, and the
+ * chosen `Section A-A`. The elevation census below excludes all three by
+ * NAME rather than by hoping none of them turns up.
+ */
+const SECTIONS = new Set(['section', 'section-v', 'section-aa']);
+
 const setOf = () => wallDrawingSheets({
   entries: t43Entries(P),
   project: T43_PROJECT,
@@ -53,11 +61,8 @@ export function strokeCensus(svg) {
 }
 
 /** How many cabinets this sheet actually drew — one silhouette each. */
-const drawnUnitsOf = (name) => {
-  const wall = name.startsWith('Wall A') ? 0 : 1;
-  return t43Entries(P).filter((e) => e.unit.position.wall === wall
-    && e.unit.position.rotation_deg === 0).length;
-};
+const drawnUnitsOf = (sheet) => t43Entries(P).filter((e) => e.unit.position.wall === sheet.wall
+  && e.unit.position.rotation_deg === 0).length;
 
 test('F4 — every weight on every sheet is a rung of the ISO ladder', () => {
   const ladder = new Set(Object.values(PEN));
@@ -69,17 +74,17 @@ test('F4 — every weight on every sheet is a rung of the ISO ladder', () => {
 
 test('F4 — the 0.50 GEOMETRY rects on an elevation are the unit silhouettes, and nothing else', () => {
   for (const s of setOf()) {
-    if (s.variant === 'section') continue;
+    if (SECTIONS.has(s.variant)) continue;
     const heavy = strokeCensus(sheetToSvg(s.sheet, { kind: 'wall' }))
       .filter((e) => e.kind === 'rect' && !SHEET_LAYERS.has(e.layer) && e.width === PEN.OUTLINE);
-    assert.equal(heavy.length, drawnUnitsOf(s.name),
+    assert.equal(heavy.length, drawnUnitsOf(s),
       `${s.name}: one outline per cabinet drawn — ${heavy.length} rects at 0.50`);
   }
 });
 
 test('F4 — no geometry on an elevation is heavier than an outline', () => {
   for (const s of setOf()) {
-    if (s.variant === 'section') continue;
+    if (SECTIONS.has(s.variant)) continue;
     const over = strokeCensus(sheetToSvg(s.sheet, { kind: 'wall' }))
       .filter((e) => !SHEET_LAYERS.has(e.layer) && e.width > PEN.OUTLINE);
     assert.deepEqual(over, [], `${s.name}: PEN.CUT belongs to a section and to nothing else`);
@@ -108,7 +113,7 @@ test('F4 — the panel edge stopped being an outline, and the hierarchy is real'
 
 test('F4 — a real elevation carries a real spread, and most of it is NOT heavy', () => {
   for (const s of setOf()) {
-    if (s.variant === 'section') continue;
+    if (SECTIONS.has(s.variant)) continue;
     const geo = strokeCensus(sheetToSvg(s.sheet, { kind: 'wall' }))
       .filter((e) => !SHEET_LAYERS.has(e.layer));
     const heavy = geo.filter((e) => e.width >= PEN.OUTLINE).length;

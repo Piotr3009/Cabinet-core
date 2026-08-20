@@ -69,18 +69,29 @@ const textsOf = (sheet) => sheet.entities.filter((e) => e.kind === 'text').map((
 // ═══ 1. A SHEET IS A WALL ══════════════════════════════════════════════════
 
 test('F5 — the sheet list is HIS: /1, /2 per wall, and one horizontal section', () => {
+  // ─── RE-PINNED 20.08.2026 (TURN 43, CLAUDE.md F5a) ──────────────────────
+  // The owner: *"nie widzę przekroju w pionie ani w poziomie."* A third sheet
+  // joins each wall — `/3`, the wall cut in section at the centreline of its
+  // leftmost floor-band cabinet — and it is bound after `/2`, which is where a
+  // drawing office bins a section. Everything T40 pinned about /1 and /2 and
+  // about the horizontal section is untouched, which is what the list is for.
   const sheets = sheetsOf(kitchen());
   assert.deepEqual(sheets.map((s) => s.name), [
-    'Wall A /1', 'Wall A /2', 'Wall B /1', 'Wall B /2', 'Horizontal section',
+    'Wall A /1', 'Wall A /2', 'Wall A /3',
+    'Wall B /1', 'Wall B /2', 'Wall B /3',
+    'Horizontal section',
   ]);
-  assert.deepEqual(sheets.map((s) => s.variant), ['fronts', 'carcass', 'fronts', 'carcass', 'section']);
+  assert.deepEqual(sheets.map((s) => s.variant), [
+    'fronts', 'carcass', 'section-v', 'fronts', 'carcass', 'section-v', 'section',
+  ]);
   assert.equal(wallLabel(0), 'A');
   assert.equal(wallLabel(1), 'B');
   assert.equal(wallLabel(25), 'Z');
 });
 
 test('F5 — /1 HAS the fronts and /2 does NOT, which is the whole split', () => {
-  const [one, two] = sheetsOf(kitchen());
+  const one = sheetsOf(kitchen()).find((s) => s.name === 'Wall A /1');
+  const two = sheetsOf(kitchen()).find((s) => s.name === 'Wall A /2');
   const doors = (s) => s.sheet.entities.filter((e) => e.layer === 'DOORS').length;
   assert.ok(doors(one) > 0, 'the fronts sheet has fronts on it');
   assert.equal(doors(two), 0, 'the carcass sheet has none');
@@ -121,14 +132,15 @@ test('F5 — a WALL WITH NO CABINETS produces NO SHEET rather than an empty one'
   // CLAUDE.md's third named test. The room has four walls; only two carry a
   // cabinet, so only those two get sheets.
   const sheets = sheetsOf(kitchen());
-  assert.equal(sheets.filter((s) => s.variant !== 'section').length, 4, 'two walls, two sheets each');
+  // T43-F5a: THREE sheets per wall now — /1, /2 and the section /3.
+  assert.equal(sheets.filter((s) => s.variant !== 'section').length, 6, 'two walls, three sheets each');
   assert.equal(new Set(sheets.filter((s) => s.wall != null).map((s) => s.wall)).size, 2);
   // Nothing at all: no elevation, and the section is the only thing left.
   assert.deepEqual(wallGroups([], P), []);
   assert.deepEqual(sheetsOf([]).map((s) => s.name), []);
   // …and one cabinet on wall 3 alone gets wall D and nothing else.
   const lonely = sheetsOf([entry('BUD', { unit_num: '09', width: 600 }, { wall: 3, x_mm: 100, rotation_deg: 0 })]);
-  assert.deepEqual(lonely.map((s) => s.name), ['Wall D /1', 'Wall D /2', 'Horizontal section']);
+  assert.deepEqual(lonely.map((s) => s.name), ['Wall D /1', 'Wall D /2', 'Wall D /3', 'Horizontal section']);
 });
 
 // ═══ 2. TWO DIMENSION CHAINS PER AXIS ══════════════════════════════════════

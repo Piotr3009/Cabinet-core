@@ -17,7 +17,11 @@ import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js'
 // `wallSetReport` is the census of what went on the sheets and what did not,
 // so the window can name a turned-away cabinet instead of leaving a wall off
 // the list without a word.
-import { wallDrawingSheets, wallSetReport } from '../engine/drawings/wallSheets.js';
+// ─── TURN 43 (CLAUDE.md F5b): `Section A-A through:` ───────────────────────
+// The list of cabinets a section may be taken through is the ENGINE's own
+// census (`wallSectionUnits`), so the dropdown on screen and the sheet the set
+// builds cannot offer two different answers.
+import { wallDrawingSheets, wallSectionUnits, wallSetReport } from '../engine/drawings/wallSheets.js';
 import { PAGE_FORMATS, layoutSheet, scaleLabel } from '../engine/drawings/sheet.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
 import {
@@ -67,6 +71,12 @@ export default function DrawingModal() {
   // sheets as the job has walls, twice, plus the section — so the window walks
   // them rather than showing the first one and calling that a preview.
   const [wallPage, setWallPage] = useState(0);
+  // T43-F5b: which cabinet `Section A-A` is taken through, or `— none —`. It is
+  // deliberately NOT stored in the project: a drawing option, not a design
+  // decision. It lives here for as long as the window is open, and the sheet
+  // it produces is part of the SET — so the PDF, the DXF and the preview all
+  // carry it.
+  const [sectionUnitId, setSectionUnitId] = useState('');
   // 'auto' is the default and it is not laziness: a card chooses between two
   // arrangements AND two paper sizes to draw the cabinet as big as it will go
   // (engine/drawings/card.js). Forcing A4 here would throw that away and hand a
@@ -112,6 +122,7 @@ export default function DrawingModal() {
         // tonight, so every shaker on every sheet was drawn at the profile's
         // default whatever the owner had typed.
         design: project?.design,
+        sectionUnitId: sectionUnitId || null,
         profile,
         format,
         date,
@@ -128,7 +139,25 @@ export default function DrawingModal() {
       return { sheets: [], error: e, report: null };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, units, project, profile, format, date, allResults]);
+  }, [kind, units, project, profile, format, date, allResults, sectionUnitId]);
+
+  // The cabinets the dropdown may offer — the same census the set uses, asked
+  // once, and never a second list of its own.
+  const sectionChoices = useMemo(() => {
+    if (kind !== 'walls') return [];
+    try {
+      return wallSectionUnits({ entries: allResults(), profile });
+    } catch (e) {
+      // T42-F0's law, which this turn does not get to break: a catch REPORTS.
+      // The whole error goes to the console; the sentence a joiner reads is
+      // already on the glass, because whatever took this census down took the
+      // wall-set memo above down with it and that one speaks.
+      // eslint-disable-next-line no-console
+      console.error('[wall drawings] the Section A-A census could not be built', e);
+      return [];
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind, units, project, profile, allResults]);
   const wallSheetList = wallSet.sheets;
   const wallError = wallSet.error;
   const wallReport = wallSet.report;
@@ -353,6 +382,30 @@ export default function DrawingModal() {
             </div>
           ) : null}
 
+          {/* ─── TURN 43 (CLAUDE.md F5b): SECTION A-A THROUGH: ─────────────
+              The owner has asked for BOTH sections, twice. `/3` is the wall's
+              own and needs no choosing; A-A is *"through the cabinet the owner
+              points at"*, so this is where he points. Choosing appends a sheet
+              to the SET — not a second preview — which is what makes it land
+              in the PDF and in the DXF zip as well as on the glass. */}
+          {kind === 'walls' && sectionChoices.length ? (
+            <label className="flex items-center gap-2 text-[11px] text-ink-400" htmlFor="cc-section-aa">
+              <span>Section A-A through:</span>
+              <select
+                id="cc-section-aa"
+                data-section-aa="1"
+                className="cc-input px-1 py-0.5 text-[11px]"
+                value={sectionUnitId}
+                onChange={(e) => { setSectionUnitId(e.target.value); setWallPage(0); }}
+              >
+                <option value="">— none —</option>
+                {sectionChoices.map((u) => (
+                  <option key={u.id} value={u.id}>{`${u.unitNum} (Wall ${u.wallLabel})`}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
           {/* ─── TURN 42 (CLAUDE.md F0): CRASHED, OR GENUINELY EMPTY ───────
               THREE STATES, and they are three different sentences on the
               glass. Before tonight the first two were one sentence, which is
@@ -407,8 +460,9 @@ export default function DrawingModal() {
           </p>
           {kind === 'walls' ? (
             <p className="text-[11px] text-ink-400" data-wall-note="1">
-              A sheet is a WALL: <b>/1</b> with the fronts on, <b>/2</b> the carcass without them, and one
-              horizontal section for the whole job. Two dimension chains on every axis — each cabinet with
+              A sheet is a WALL: <b>/1</b> with the fronts on, <b>/2</b> the carcass without them, <b>/3</b> the
+              wall cut in section at its first cabinet, and one horizontal section for the whole job — plus
+              <b> Section A-A</b> through any cabinet you choose above. Two dimension chains on every axis — each cabinet with
               the gaps between them, and the grouped totals under it; every front’s own height, and the
               grouped bands beside it. Handles are green and the building fabric is red. The DXF carries
               text and is <b>AutoCAD only — do NOT open it in VCarve</b>; the CNC export is a separate path

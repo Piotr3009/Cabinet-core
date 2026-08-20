@@ -17,6 +17,14 @@ import {
   buildHorizontalSection, buildWallElevation, turnedAway, wallGroups, wallLabel,
 } from './wallElevation.js';
 import { layoutSheet } from './sheet.js';
+// ─── TURN 43 (CLAUDE.md F2): THE PROJECT'S OWN MILLIMETRES ──────────────────
+// The owner: *"shaker prawdziwy — ile mam mm, tyle powinno być pokazane."*
+// MEASURED on the real engine before a line was written: project frame 80 mm →
+// DRAWN 60 mm, because `frontDetail` was called with no frame and `design`
+// never reached this module at all, so `shakerFrameMm(null, profile)` answered
+// with the profile default every single time. The function already knew how to
+// read the project's number; nobody handed it the project.
+import { shakerFrameMm } from '../shaker.js';
 
 /**
  * The title block his set carries: Client Name, Client Address, Project,
@@ -53,6 +61,10 @@ function titleFor({ project = {}, drawing, profile }) {
  *   project  { name, client, address, number, rev, room }
  *   room     the project's room (the ceiling line and the plan's own walls)
  *   frontTypeOf  (unit) => front style; the design layer's answer, passed in
+ *   design   the project design — T43-F2, the one thing that carries the
+ *            shaker frame width the job was quoted and cut at. Falls back to
+ *            `project.design`, so a caller that already hands the whole
+ *            project over needs no second argument.
  *   profile
  *   format   'auto' | 'A4' | 'A3'
  *   date     already formatted by the caller — the engine owns no clock
@@ -62,9 +74,14 @@ function titleFor({ project = {}, drawing, profile }) {
  */
 export function wallDrawingSheets({
   entries = [], project = {}, room = null, frontTypeOf = null, profile,
-  format = 'auto', date = '',
+  format = 'auto', date = '', design = null,
 }) {
   const groups = wallGroups(entries, profile);
+  // ONE resolution for the whole set, threaded down: sheet → elevation →
+  // `frontDetail`. `shakerFits` still decides PER FRONT whether the frame goes
+  // on — a 100 mm drawer front that cannot carry an 85 mm frame stays plain,
+  // exactly as the saw would leave it — but the NUMBER is asked once.
+  const shakerFrame = shakerFrameMm(design ?? project?.design ?? null, profile);
   const rows = profile.drawings.wallDrawing.titleRows;
   const blockWidth = profile.drawings.wallDrawing.titleWidth;
   // T41-F5d: these sheets print "No Scale" in their own title block, so they
@@ -91,7 +108,7 @@ export function wallDrawingSheets({
       wall: group.wall,
       variant: 'fronts',
       sheet: lay(buildWallElevation(group, {
-        withFronts: true, room, frontTypeOf, profile,
+        withFronts: true, room, frontTypeOf, profile, shakerFrame,
       }), one),
     });
     out.push({
@@ -99,7 +116,7 @@ export function wallDrawingSheets({
       wall: group.wall,
       variant: 'carcass',
       sheet: lay(buildWallElevation(group, {
-        withFronts: false, room, frontTypeOf, profile,
+        withFronts: false, room, frontTypeOf, profile, shakerFrame,
       }), two),
     });
   }

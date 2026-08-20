@@ -5,6 +5,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { resolveUnitDesign } from '../engine/design.js';
 import { buildFrontElevation } from '../engine/drawings/frontElevation.js';
+import { shakerFrameMm } from '../engine/shaker.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
 // ─── TURN 40 (CLAUDE.md F5): A SHEET IS A WALL ─────────────────────────────
 // The owner: *"nie mamy drawingu całościowego — pokazuje nam tylko pojedyncze
@@ -103,6 +104,14 @@ export default function DrawingModal() {
         project,
         room: project?.room,
         frontTypeOf: (u) => resolveUnitDesign(u, project?.design).frontType,
+        // ─── TURN 43 (CLAUDE.md F2) ─────────────────────────────────────
+        // *"Shaker prawdziwy — ile mam mm, tyle powinno być pokazane."* The
+        // design is the only thing that carries the frame width this job was
+        // quoted and cut at (`design.fronts.shakerFrame`, pinned per saved
+        // job by projectStore.js). It never reached the drawings before
+        // tonight, so every shaker on every sheet was drawn at the profile's
+        // default whatever the owner had typed.
+        design: project?.design,
         profile,
         format,
         date,
@@ -137,6 +146,9 @@ export default function DrawingModal() {
         unitNum: unit.params.unit_num,
         frontType: resolveUnitDesign(unit, project?.design).frontType,
         profile,
+        // T43-F2: the third drawing path in the app, and it told the same lie
+        // as the other two. One resolution, from the same module.
+        shakerFrame: shakerFrameMm(project?.design, profile),
       });
       return layoutSheet({
         drawing,

@@ -402,11 +402,15 @@ export function handleMarks(result, profile, { dx = 0, dy = 0 } = {}) {
  *   frontTypeOf  (unit) => 'S' | 'H' | 'F' — the design layer's answer, passed
  *                in rather than resolved here (the engine takes millimetres,
  *                not rulebooks)
+ *   shakerFrame  T43-F2: the PROJECT's frame width in millimetres, resolved
+ *                ONCE at the sheet level by `shakerFrameMm(design, profile)`.
+ *                `null` is the profile default, which is what every caller
+ *                that has not been taught to ask still gets.
  *   profile
  * @returns {{entities:Array, bounds:object, members:number, skipped:number}}
  */
 export function buildWallElevation(group, {
-  withFronts = true, room = null, frontTypeOf = null, profile,
+  withFronts = true, room = null, frontTypeOf = null, profile, shakerFrame = null,
 } = {}) {
   const W = profile.drawings.wallDrawing;
   const T = W.textHeight;
@@ -425,6 +429,12 @@ export function buildWallElevation(group, {
         // hidden lines, no insides, no legs — and NOTHING ELSE in the app
         // changes behaviour, because the option defaults off.
         frontsOnly: true,
+        // ─── TURN 43 (CLAUDE.md F2) ─────────────────────────────────────
+        // ONE resolved number, handed down from the sheet. Never re-resolved
+        // per panel: a kitchen whose doors wear three different frames is a
+        // kitchen nobody meant to build, and a drawing that resolves the
+        // frame twice is how the second one appears.
+        shakerFrame,
       })
       : buildCarcassElevation(m.result, {
         unitNum: m.unit.params?.unit_num, profile, unitNumberHeight: W.unitNumberHeight,

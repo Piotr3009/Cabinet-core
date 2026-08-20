@@ -150,7 +150,9 @@ export function planBox(box, depth) {
  * something is over it. Fronts are always solid — they stand outside the
  * carcass and nothing covers them.
  */
-export function buildTopView(result, { unitNum, frontType, profile, unitNumberHeight = null } = {}) {
+export function buildTopView(result, {
+  unitNum, frontType, profile, unitNumberHeight = null, shakerFrame = null,
+} = {}) {
   const DR = profile.drawings;
   const entities = [];
   const W = result.params.width;
@@ -202,7 +204,10 @@ export function buildTopView(result, { unitNum, frontType, profile, unitNumberHe
   for (const p of result.panels) {
     if (!p.box || !isFront(p)) continue;
     const plan = planBox(p.box, D);
-    entities.push(...frontDetail(plan, p.meta?.frontType || style, profile));
+    // T43-F2: the PROJECT's own millimetres, threaded from the sheet. The plan
+    // told the same lie the elevation did — `frontDetail` with no frame
+    // resolves the profile default, whatever the job was quoted at.
+    entities.push(...frontDetail(plan, p.meta?.frontType || style, profile, shakerFrame));
   }
 
   // ── hinges, on the side the door is hung from (LISP drawHinge) ──

@@ -65,8 +65,15 @@ test('the rules, each with the owner’s colour', () => {
   // cut boundary. Both YELLOW, because "Both are warnings, not gates" is
   // CLAUDE.md's own line. The fifteen before them are untouched, which is what
   // the deep-equal below is for.
-  assert.equal(CHECKS.length, 17);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
+  // ─── RE-PINNED 20.08.2026 (TURN 43, CLAUDE.md F7) ────────────────────────
+  // And #18, "Runner rung with no article" — the sentence that stands where the
+  // grey L-profile used to. It is RED per drawer when the catalogue is loaded
+  // and the rung the ladder lands on carries no article; a catalogue that could
+  // not be reached at all is ONE amber project note instead, because a dead
+  // network is not thirty faults. The seventeen before it are untouched, which
+  // is what the deep-equal below is for.
+  assert.equal(CHECKS.length, 18);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -88,6 +95,7 @@ test('the rules, each with the owner’s colour', () => {
     // T38-F9: yellow, because both are warnings and neither is a gate.
     16: 'yellow',
     17: 'yellow',
+    18: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

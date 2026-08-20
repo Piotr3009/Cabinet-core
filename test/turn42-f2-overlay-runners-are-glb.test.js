@@ -42,6 +42,25 @@
 // arrived with the overlay stack (490 mm box) while the wardrobe's own internal
 // stack (440 mm) went on looking right.
 
+// ─── AMENDED BY TURN 43 (CLAUDE.md iron rule 8 and F7) ──────────────────────
+//
+// Four of the tests below were GREEN FOR THE WRONG REASON, and CLAUDE.md T43
+// names it: *"T42-F2's probe was green because its showroom INVENTED rung 500
+// (`760H500T_3000500.glb`, article `3000500T` — no such file, no such article
+// exists in the shop)."* The showroom is pinned to the committed snapshot now
+// (`reference/hardware/movento.json`, NL 250–450), so the arithmetic this file
+// measured is unchanged and the ANSWERS are the shop's:
+//
+//     box 490 → ask NL 500 → rung 500 → the snapshot stops at 450 → no article
+//     box 440 → ask NL 450 → rung 450 → article 46204387, but VARIANT S only
+//
+// The LAWS T42 wrote all stand and are all still asserted — the overlay stack
+// is on the same channel as any BUDR drawer, it asks the same question, and the
+// model drawn is the article the BOM orders. What changed is that a rung the
+// owner cannot buy now answers `null` here exactly as it answers `null` in his
+// workshop, and T43-F7 makes that `null` draw NOTHING and speak in the Check
+// panel instead of quietly becoming a grey L-profile.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -70,6 +89,14 @@ const overlayUnit = (over = {}) => computeCabinet({
 const budrUnit = (over = {}) => computeCabinet({
   ...defaultParamsFor('BUDR', P), unit_num: '02', ...over,
 }, P);
+
+/**
+ * T43: the variant the snapshot actually stocks at the rung a 440 box asks for.
+ * NL450 exists in the shop in `S` and in `S` only — which is a fact about the
+ * owner's bucket and not about this test, and is exactly the kind of fact an
+ * invented showroom hid.
+ */
+const STOCKED = { nl: 450, variant: 'S' };
 
 /** The question the VIEW asks — the same expression `3d/Hardware.jsx` uses. */
 const viewEntry = (row, variant = M.defaultVariant) => runnerEntry({
@@ -118,15 +145,24 @@ test('F2 — nothing under src/3d/ knows what an overlay drawer is', () => {
 // ═══ 2. THE ROOT CAUSE, AND THE FIX ════════════════════════════════════════
 
 test('F2 — an OVERLAY drawer at depth D resolves the SAME entry as a BUDR drawer at D', () => {
-  // CLAUDE.md's own named test.
+  // CLAUDE.md's own named test. THE LAW IS THE EQUALITY, and it holds at every
+  // depth — including the one the shop cannot answer.
   const overlay = hardwareInstances(overlayUnit(), P).runners[0];
   const budr = hardwareInstances(budrUnit(), P).runners[0];
   assert.equal(overlay.length, budr.length, 'the same box depth');
+  assert.deepEqual(viewEntry(overlay), viewEntry(budr), 'the same entry, article for article');
 
-  const a = viewEntry(overlay);
-  const b = viewEntry(budr);
-  assert.ok(a, 'the overlay drawer resolves an entry at all — this is the whole feature');
-  assert.deepEqual(a, b, 'and it is the same entry, article for article');
+  // T43: at 490 the honest answer is `null` — the ladder asks NL 500 and the
+  // owner's bucket tops out at 450. Both families agree on the nothing.
+  assert.equal(viewEntry(overlay), null, 'a 490 box asks NL 500, which the shop does not stock');
+
+  // …and at a depth the shop DOES stock, both resolve the same real file.
+  const shallow = hardwareInstances(overlayUnit({ depth: 508 }), P).runners[0];
+  const shallowBudr = hardwareInstances(budrUnit({ depth: 508 }), P).runners[0];
+  const a = viewEntry(shallow, STOCKED.variant);
+  const b = viewEntry(shallowBudr, STOCKED.variant);
+  assert.ok(a, `NL${STOCKED.nl} ${STOCKED.variant} is in the snapshot and resolves`);
+  assert.deepEqual(a, b, 'and the two families resolve it identically');
   assert.equal(
     runnerModelSrc(a, P, 'https://x/'),
     runnerModelSrc(b, P, 'https://x/'),
@@ -136,13 +172,31 @@ test('F2 — an OVERLAY drawer at depth D resolves the SAME entry as a BUDR draw
 });
 
 test('F2 — THE MODEL DRAWN IS THE ARTICLE THE BOM ORDERS — one question, one answer', () => {
-  for (const [label, result] of [['overlay', overlayUnit()], ['budr', budrUnit()]]) {
-    const row = hardwareInstances(result, P).runners[0];
-    const spec = result.hardware.find((h) => h.role === 'runner_pairs').spec;
-    const drawn = viewEntry(row);
-    assert.ok(drawn, `${label}: a model to draw`);
-    assert.equal(drawn.nl, spec.nl, `${label}: the drawn NL is the ordered NL`);
-    assert.equal(drawn.article, spec.articles.L, `${label}: and the drawn article is the ordered article`);
+  // The law, stated so it is true of BOTH answers: where the BOM has an
+  // article the view draws THAT article, and where the BOM has none the view
+  // draws nothing. Two questions with one answer, which is the whole feature.
+  const CASES = [
+    ['overlay', overlayUnit()],
+    ['budr', budrUnit()],
+    ['overlay, a rung the shop stocks', overlayUnit({ depth: 508 })],
+    ['budr, a rung the shop stocks', budrUnit({ depth: 508 })],
+  ];
+  for (const [label, result] of CASES) {
+    for (const variant of ['T', STOCKED.variant]) {
+      const row = hardwareInstances(result, P).runners[0];
+      const spec = result.hardware.find((h) => h.role === 'runner_pairs').spec;
+      const ordered = runnerEntry({
+        system: M.system, nl: spec.asked_nl, variant, side: row.side, ladder: runnerLadder(P),
+      });
+      const drawn = viewEntry(row, variant);
+      if (!ordered) {
+        assert.equal(drawn, null, `${label} ${variant}: nothing ordered, nothing drawn`);
+        continue;
+      }
+      assert.ok(drawn, `${label} ${variant}: a model to draw`);
+      assert.equal(drawn.nl, ordered.nl, `${label} ${variant}: the drawn NL is the ordered NL`);
+      assert.equal(drawn.article, ordered.article, `${label} ${variant}: and the drawn article is the ordered one`);
+    }
   }
 });
 
@@ -161,9 +215,16 @@ test('F2 — the view ASKS `runnerAskFor`, which is the law it was breaking', ()
   assert.equal(ladderRungFor(runnerAskFor(box, P), P), 500, '…and the rung it lands on now');
 });
 
-test('F2 — every drawer family the app draws now resolves a model, not a stand-in', () => {
+test('F2 — every drawer family the app draws asks the ONE question, and gets one answer', () => {
   // The fault was never overlay-specific and the fix is not either: it reaches
   // every stack whose box depth sat one rung below the article being ordered.
+  //
+  // ─── AMENDED BY T43 ─────────────────────────────────────────────────────
+  // T42 asserted a MODEL for every family, which was only ever true because the
+  // showroom stocked rungs the shop does not. What is asserted now is the fix
+  // itself — the view and the BOM ask the same ladder the same question — plus
+  // the census of which families the owner's own bucket can answer TODAY,
+  // printed rather than assumed. That census is what F7's red check speaks.
   const CASES = [
     ['overlay stack', overlayUnit()],
     ['BUDR base unit', budrUnit()],
@@ -173,37 +234,54 @@ test('F2 — every drawer family the app draws now resolves a model, not a stand
     }, P)],
     ['PANTRY', computeCabinet({ ...defaultParamsFor('PANTRY', P), unit_num: '05' }, P)],
   ];
+  const census = [];
   for (const [label, result] of CASES) {
     const rows = hardwareInstances(result, P).runners;
     assert.ok(rows.length > 0, `${label}: has runners at all`);
+    const spec = result.hardware.find((h) => h.role === 'runner_pairs').spec;
     for (const row of rows) {
-      assert.ok(viewEntry(row), `${label}: box ${row.length} → no model, still a stand-in`);
+      // ONE question: the nominal the view asks IS the nominal the BOM asked.
+      assert.equal(runnerAskFor(row.length, P), spec.asked_nl,
+        `${label}: box ${row.length} asks the same nominal the order form asked`);
     }
+    census.push(`${label}: box ${rows[0].length} → NL${spec.asked_nl} → ${viewEntry(rows[0]) ? 'stocked' : 'NO ARTICLE'}`);
   }
+  // eslint-disable-next-line no-console
+  console.log(`      ${census.join('\n      ')}`);
 });
 
 // ═══ 3. THE STAND-IN STAYS — IT IS NOT THE FAULT, IT IS THE SAFETY NET ═════
 
-test('F2 — the parametric profile is UNREACHABLE for the overlay stack, and only for that reason', () => {
-  // CLAUDE.md licensed deleting "the hand-coded overlay runner drawing … once
-  // found". It does not exist: the two `<Pieces>` in `<Runners>` are the SHARED
-  // stand-in every runner in the app falls back to when the bucket has no
-  // model, and taking it out would leave a drawer with NOTHING on its sides in
-  // mock mode, offline, or on a hardware family nobody has uploaded yet. So it
-  // stays, and what is asserted instead is that the overlay stack never reaches
-  // it while the bucket has the article.
-  const rows = hardwareInstances(overlayUnit(), P).runners;
-  for (const row of rows) assert.ok(viewEntry(row), 'a model, so `plain` never gets this row');
-
-  // …and with NO catalogue at all it IS reached, which is the safety net doing
-  // its job rather than a fault.
-  clearRunnerCatalogue();
-  for (const row of rows) assert.equal(viewEntry(row), null, 'no bucket, no model — the stand-in is drawn');
-  setRunnerCatalogue(SHOWROOM);
-
+test('F2 — the parametric profile is GONE, by the owner\'s own order (T43-F7)', () => {
+  // ─── AMENDED BY T43 (CLAUDE.md F7) ──────────────────────────────────────
+  //
+  // T42 wrote: *"taking it out would leave a drawer with NOTHING on its sides
+  // in mock mode, offline, or on a hardware family nobody has uploaded yet. So
+  // it stays."* The owner's answer, 20.08.2026, after the fourth grey overlay:
+  // *"jak kod nadpisuje to go usuń."* Nothing was overriding anything — the
+  // fallback won by SILENCE — and NOTHING on the sides is precisely what he
+  // wants, because an empty groove asks a question and a fake answers one.
+  //
+  // So what T42 asserted is inverted, deliberately, and named as such.
   const hw = read('src/3d/Hardware.jsx');
-  assert.match(hw, /const plain = useMemo\(\(\) => items\.filter\(\(_, i\) => !models\[i\]\), \[items, models\]\)/,
-    'the stand-in is chosen per ROW, on whether that row got a model');
+  const at = hw.indexOf('function Runners({');
+  const block = hw.slice(at, hw.indexOf('\nfunction ', at + 10));
+  assert.ok(!/const plain = useMemo/.test(block), 'the `plain` list is deleted');
+  assert.ok(!/placeFace|placeFlange/.test(block), 'and so are its two placers');
+  assert.ok(!/<Pieces/.test(block), 'and both <Pieces> blocks with them');
+  assert.match(block, /<primitive/, 'what is left is the manufacturer\'s own model, and only that');
+
+  // `reportHardware` stays byte for byte: the walk still tells a model from a
+  // hole, and its two reasons still read exactly as they did.
+  assert.match(block, /reportHardware\(surface, 'runner'/);
+  assert.match(block, /reason: models\[i\] \? null : \(w\.url \? 'no-model' : 'no-url'\)/);
+
+  // …and with NO catalogue at all every row is still a `null` entry, which is
+  // now an empty groove and a red check rather than grey plastic.
+  const rows = hardwareInstances(overlayUnit(), P).runners;
+  clearRunnerCatalogue();
+  for (const row of rows) assert.equal(viewEntry(row), null, 'no bucket, no model — and now, nothing drawn');
+  setRunnerCatalogue(SHOWROOM);
 });
 
 test('F2 — X-RAY: the overlay runners obey the one gate every other runner obeys', () => {

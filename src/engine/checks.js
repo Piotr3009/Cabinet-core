@@ -54,6 +54,13 @@ import { panelWeight } from './lifts.js';
 // Turn 38 (CLAUDE.md F9): the two guards on what a hand has drawn on a print.
 import { manualGeometryFaults } from './partEdits.js';
 import { resolvePanelMaterial } from './materials.js';
+// ─── TURN 43 (CLAUDE.md F7): AND A MISSING ARTICLE SPEAKS ───────────────────
+// The registry is the engine's own (turn 18): a catalogue is HANDED to it or it
+// is not, and this rule reads exactly what the 3-D view and the BOM read. No
+// fetch, no network, no second opinion about which runner a drawer takes.
+import {
+  ladderRungFor, resolveRunnerVariant, runnerAskFor, runnerCatalogue, runnerEntry, runnerLadder,
+} from './runners.js';
 import HINGE_COUNT from '../../reference/hardware/cliptop-hinge-count.json' with { type: 'json' };
 
 /** The eleven rules, in the owner's own order, with what each is FOR. */
@@ -109,6 +116,22 @@ export const CHECKS = Object.freeze([
   //       who meant a pencil mark gets a board cut in half.
   { n: 16, level: 'yellow', label: 'Manual geometry off the panel' },
   { n: 17, level: 'yellow', label: 'Manual geometry on OUTLINE' },
+  // ─── TURN 43 (CLAUDE.md F7): THE RUNNER STAND-IN DIES, AND THIS SPEAKS ───
+  //
+  // The owner, 20.08.2026, after the fourth grey overlay: *"jak kod nadpisuje
+  // to go usuń."* The trace: overlay box 490 → ask NL 500 (`runnerAskFor`) →
+  // ladder rung 500 → the live bucket tops out at 450 → `runnerEntry` null →
+  // the grey L-profile. NOTHING OVERRIDES ANYTHING; the fallback wins by
+  // SILENCE. With the fallback deleted (`3d/Hardware.jsx`) the groove is empty,
+  // and an empty groove needs a sentence beside it or it is just a new silence.
+  //
+  // TWO VERDICTS, and the difference between them matters more than either:
+  //   RED, per drawer   the catalogue IS loaded and this rung has no article —
+  //                     a real, actionable fact about the owner's own bucket.
+  //   AMBER, once       there is no catalogue at all (offline, mock, a dead
+  //                     network). NEVER a red wall per drawer for a dead
+  //                     network: that is how a check panel becomes wallpaper.
+  { n: 18, level: 'red', label: 'Runner rung with no article' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -371,6 +394,14 @@ export function runChecks({
   const tallH = tallNoFixHeightMm(profile);
   const window = openGapWindowMm(profile);
   const wide = wideFrontMm(profile);
+  // T43-F7: hoisted once each, exactly as every other threshold above is. The
+  // catalogue is whatever `lib/runnerCatalogue.js` last handed the registry —
+  // `null` means nothing was ever loaded, which is a different fact from "a
+  // rung has no article" and is reported differently below.
+  const catalogue = runnerCatalogue();
+  const runnerSystem = profile?.hardware?.runner?.movento?.system || null;
+  const ladder = runnerLadder(profile);
+  let runnerRows = 0;
 
   for (const { unit, result } of entries) {
     if (!unit || !result) continue;
@@ -404,7 +435,10 @@ export function runChecks({
         // fit, and this rule exists to say so.
         const axis = Number.isFinite(Number(r.wanted)) ? Number(r.wanted) : Number(r.y);
         const boards = (result.panels || [])
-          .filter((p) => p.role === 'shelf' && p.box && p.part !== 'VPART' && p.part !== 'RAIL-PART')
+          // T43 (iron rule 3): the `p.part !== 'RAIL-PART'` exclusion beside
+          // VPART is a T42 leftover — that part no longer exists anywhere in
+          // the engine — and is deleted by name.
+          .filter((p) => p.role === 'shelf' && p.box && p.part !== 'VPART')
           .map((p) => Number(p.box.y))
           .filter((y) => Number.isFinite(y) && y > axis + 1e-6);
         const above = boards.length ? Math.min(...boards, ceiling) : ceiling;
@@ -589,6 +623,55 @@ export function runChecks({
         message: `${unitNum}: standing on legs with no plinth.`,
       })));
     }
+
+    // ── #18 a runner rung the catalogue has no article for (T43 F7) ───────
+    //
+    // Asked EXACTLY as the 3-D view and the BOM ask it — `runnerAskFor` for the
+    // nominal (the ONE place the +10 lives), the owner's own ladder for the
+    // rung, `runnerEntry` for the article — so the sentence in the Check panel
+    // and the empty groove in the picture are two readings of one fact.
+    for (const row of runnerRowsOf(result)) {
+      runnerRows += 1;
+      if (!catalogue || !runnerSystem) continue;      // the amber note says it once, below
+      const variant = resolveRunnerVariant({
+        drawer: row.drawer, unit, design, profile,
+      });
+      const nl = runnerAskFor(row.depth, profile) ?? row.depth;
+      const entry = runnerEntry({
+        system: runnerSystem, nl, variant, side: null, ladder,
+      });
+      if (entry) continue;
+      // The RUNG, because that is what a workshop orders and what an upload
+      // has to fill. Where the ask falls below the whole ladder there is no
+      // rung, and the ask itself is the honest number to print.
+      const rung = ladderRungFor(nl, profile);
+      out.push(finding(18, 'red', at(null, {
+        message: `${unitNum} D${row.drawer}: Runner NL${Math.round(rung ?? nl)} (${variant}): `
+          + 'no article in catalogue — upload the model or adjust the ladder.',
+        subject: { unitId, editor: 'cabinet' },
+        runnerNl: rung ?? nl,
+        runnerAskedNl: nl,
+        runnerVariant: variant,
+        drawer: row.drawer,
+      })));
+    }
+  }
+
+  // ── #18, the other verdict: no catalogue at all ─────────────────────────
+  //
+  // ONE amber note for the whole project. *"Never a red wall per drawer for a
+  // dead network"* — a joiner working offline has not made a mistake, and a
+  // check panel that says he has thirty times is a check panel he stops
+  // reading.
+  if (!catalogue && runnerRows > 0) {
+    out.push(finding(18, 'yellow', {
+      unitId: null,
+      unitNum: '',
+      panelId: null,
+      message: 'hardware catalogue unreachable — runners not verified',
+      subject: null,
+      catalogueUnreachable: true,
+    }));
   }
 
   // ── #2 front gaps, under F4's neighbour measure ─────────────────────────
@@ -677,6 +760,24 @@ export function runChecks({
   const rank = { red: 0, yellow: 1 };
   return once.sort((a, b) => (rank[a.level] - rank[b.level]) || (a.check - b.check)
     || String(a.unitNum).localeCompare(String(b.unitNum)));
+}
+
+/**
+ * ─── TURN 43 (CLAUDE.md F7): THE DRAWERS THIS UNIT RUNS ON ──────────────────
+ *
+ * One row per BOX, off the engine's own published `DRAWER-SIDE` panels — the
+ * same reading `3d/hardware3d.js runnerInstances` and `drawerBoxRects` take, so
+ * the check, the picture and the drawing cannot disagree about how deep a box
+ * is or how many there are. Nothing here re-derives a depth.
+ */
+export function runnerRowsOf(result) {
+  const sides = (result?.panels || []).filter((p) => p.part === 'DRAWER-SIDE' && p.box);
+  const rows = new Map();
+  for (const p of sides) {
+    const drawer = p.meta?.drawer ?? rows.size + 1;
+    if (!rows.has(drawer)) rows.set(drawer, { drawer, depth: p.box.d, y: p.box.y });
+  }
+  return [...rows.values()].sort((a, b) => a.drawer - b.drawer);
 }
 
 /** How the panel's header reads: what was found, in one sentence. */

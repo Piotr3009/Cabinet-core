@@ -1,115 +1,247 @@
 {
- "system": "760H",
+ "system": "movento",
  "profile": "760H",
- "generator": "cabinet-core scripts/make-fixture-hardware.mjs — synthetic, no Blum bytes",
+ "generator": "cabinet-core scripts/make-fixture-hardware.mjs — synthetic, no Blum bytes — rows pinned to reference/hardware/movento.json (T43 iron rule 8)",
  "files": [
   {
-   "file": "hardware/runners/blum/movento/760H270T_3000270.glb",
+   "file": "hardware/runners/blum/movento/760H2500S_44182964.glb",
+   "nl": 250,
+   "variant": "S",
+   "article": "44182964"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H2500S_44449735.glb",
+   "nl": 250,
+   "variant": "S",
+   "article": "44449735"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H2500T_44139775.glb",
+   "nl": 250,
+   "variant": "T",
+   "article": "44139775"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H2500T_44557397.glb",
+   "nl": 250,
+   "variant": "T",
+   "article": "44557397"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H2700S_40079932.glb",
+   "nl": 270,
+   "variant": "S",
+   "article": "40079932"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H2700S_40285942.glb",
+   "nl": 270,
+   "variant": "S",
+   "article": "40285942"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H2700T_42159483.glb",
    "nl": 270,
    "variant": "T",
-   "article": "3000270T"
+   "article": "42159483"
   },
   {
-   "file": "hardware/runners/blum/movento/760H270S_3000270.glb",
+   "file": "hardware/runners/blum/movento/760H2700T_42520058.glb",
    "nl": 270,
-   "variant": "S",
-   "article": "3000270S"
+   "variant": "T",
+   "article": "42520058"
   },
   {
-   "file": "hardware/runners/blum/movento/760H300T_3000300.glb",
+   "file": "hardware/runners/blum/movento/760H3000SU_43039957.glb",
+   "nl": 300,
+   "variant": "SU",
+   "article": "43039957"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3000SU_43739256.glb",
+   "nl": 300,
+   "variant": "SU",
+   "article": "43739256"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3000S_46137056.glb",
+   "nl": 300,
+   "variant": "S",
+   "article": "46137056"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3000S_47420760.glb",
+   "nl": 300,
+   "variant": "S",
+   "article": "47420760"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3000T_40098135.glb",
    "nl": 300,
    "variant": "T",
-   "article": "3000300T"
+   "article": "40098135"
   },
   {
-   "file": "hardware/runners/blum/movento/760H300S_3000300.glb",
+   "file": "hardware/runners/blum/movento/760H3000T_49241279.glb",
    "nl": 300,
-   "variant": "S",
-   "article": "3000300S"
+   "variant": "T",
+   "article": "49241279"
   },
   {
-   "file": "hardware/runners/blum/movento/760H350T_3000350.glb",
+   "file": "hardware/runners/blum/movento/760H3200S_40166254.glb",
+   "nl": 320,
+   "variant": "S",
+   "article": "40166254"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3200S_45383148.glb",
+   "nl": 320,
+   "variant": "S",
+   "article": "45383148"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3200T_43377273.glb",
+   "nl": 320,
+   "variant": "T",
+   "article": "43377273"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3200T_45169803.glb",
+   "nl": 320,
+   "variant": "T",
+   "article": "45169803"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3500SU_45024229.glb",
+   "nl": 350,
+   "variant": "SU",
+   "article": "45024229"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3500SU_45271335.glb",
+   "nl": 350,
+   "variant": "SU",
+   "article": "45271335"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3500S_47558526.glb",
+   "nl": 350,
+   "variant": "S",
+   "article": "47558526"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3500S_48228093.glb",
+   "nl": 350,
+   "variant": "S",
+   "article": "48228093"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3500T_40215596.glb",
    "nl": 350,
    "variant": "T",
-   "article": "3000350T"
+   "article": "40215596"
   },
   {
-   "file": "hardware/runners/blum/movento/760H350S_3000350.glb",
+   "file": "hardware/runners/blum/movento/760H3500T_40533421.glb",
    "nl": 350,
-   "variant": "S",
-   "article": "3000350S"
+   "variant": "T",
+   "article": "40533421"
   },
   {
-   "file": "hardware/runners/blum/movento/760H400T_3000400.glb",
+   "file": "hardware/runners/blum/movento/760H3800S_45134399.glb",
+   "nl": 380,
+   "variant": "S",
+   "article": "45134399"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3800S_45359220.glb",
+   "nl": 380,
+   "variant": "S",
+   "article": "45359220"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3800T_43570166.glb",
+   "nl": 380,
+   "variant": "T",
+   "article": "43570166"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H3800T_44284259.glb",
+   "nl": 380,
+   "variant": "T",
+   "article": "44284259"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4000SU_43561728.glb",
+   "nl": 400,
+   "variant": "SU",
+   "article": "43561728"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4000SU_44278016.glb",
+   "nl": 400,
+   "variant": "SU",
+   "article": "44278016"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4000S_45431782.glb",
+   "nl": 400,
+   "variant": "S",
+   "article": "45431782"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4000S_46103240.glb",
+   "nl": 400,
+   "variant": "S",
+   "article": "46103240"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4000T_43049000.glb",
    "nl": 400,
    "variant": "T",
-   "article": "3000400T"
+   "article": "43049000"
   },
   {
-   "file": "hardware/runners/blum/movento/760H400S_3000400.glb",
+   "file": "hardware/runners/blum/movento/760H4000T_43330609.glb",
    "nl": 400,
-   "variant": "S",
-   "article": "3000400S"
+   "variant": "T",
+   "article": "43330609"
   },
   {
-   "file": "hardware/runners/blum/movento/760H450T_3000450.glb",
+   "file": "hardware/runners/blum/movento/760H4200S_41524174.glb",
+   "nl": 420,
+   "variant": "S",
+   "article": "41524174"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4200S_42183110.glb",
+   "nl": 420,
+   "variant": "S",
+   "article": "42183110"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4200T_47267422.glb",
+   "nl": 420,
+   "variant": "T",
+   "article": "47267422"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4200T_47527623.glb",
+   "nl": 420,
+   "variant": "T",
+   "article": "47527623"
+  },
+  {
+   "file": "hardware/runners/blum/movento/760H4500S_46204387.glb",
    "nl": 450,
-   "variant": "T",
-   "article": "3000450T"
+   "variant": "S",
+   "article": "46204387"
   },
   {
-   "file": "hardware/runners/blum/movento/760H450S_3000450.glb",
+   "file": "hardware/runners/blum/movento/760H4500S_46581677.glb",
    "nl": 450,
    "variant": "S",
-   "article": "3000450S"
-  },
-  {
-   "file": "hardware/runners/blum/movento/760H500T_3000500.glb",
-   "nl": 500,
-   "variant": "T",
-   "article": "3000500T"
-  },
-  {
-   "file": "hardware/runners/blum/movento/760H500S_3000500.glb",
-   "nl": 500,
-   "variant": "S",
-   "article": "3000500S"
-  },
-  {
-   "file": "hardware/runners/blum/movento/760H550T_3000550.glb",
-   "nl": 550,
-   "variant": "T",
-   "article": "3000550T"
-  },
-  {
-   "file": "hardware/runners/blum/movento/760H550S_3000550.glb",
-   "nl": 550,
-   "variant": "S",
-   "article": "3000550S"
-  },
-  {
-   "file": "hardware/runners/blum/movento/760H600T_3000600.glb",
-   "nl": 600,
-   "variant": "T",
-   "article": "3000600T"
-  },
-  {
-   "file": "hardware/runners/blum/movento/760H600S_3000600.glb",
-   "nl": 600,
-   "variant": "S",
-   "article": "3000600S"
-  },
-  {
-   "file": "hardware/runners/blum/movento/760H650T_3000650.glb",
-   "nl": 650,
-   "variant": "T",
-   "article": "3000650T"
-  },
-  {
-   "file": "hardware/runners/blum/movento/760H650S_3000650.glb",
-   "nl": 650,
-   "variant": "S",
-   "article": "3000650S"
+   "article": "46581677"
   }
  ]
 }

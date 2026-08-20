@@ -124,7 +124,8 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   assert.match(row.label, /overlapping/i);
   // RE-PINNED 17.08.2026 (T38-F9): two guards on hand-drawn geometry joined
   // the list. Rule 15 is still the fifteenth and still says what it said.
-  assert.equal(CHECKS.length, 17);
+  // RE-PINNED 20.08.2026 (T43-F7): and #18, the runner rung with no article.
+  assert.equal(CHECKS.length, 18);
   assert.equal(CHECKS[14].n, 15);
 });
 

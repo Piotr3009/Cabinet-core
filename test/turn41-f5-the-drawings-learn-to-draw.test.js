@@ -38,6 +38,9 @@ import { wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
 import { sheetToSvg } from '../src/engine/drawings/svg.js';
 import { sheetToDxf } from '../src/engine/drawings/dxf.js';
 import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
+// T43-F1: the hidden-line law moved to the sheet that still carries hidden
+// lines — the unit card (T43 iron rule 4 pins it for exactly that reason).
+import { unitCardSheet } from '../src/engine/drawings/card.js';
 
 const ROOM = { height: 2500, corners: [{ x: 0, y: 0 }, { x: 5000, y: 0 }, { x: 5000, y: 3000 }, { x: 0, y: 3000 }] };
 const unit = (type, over, pos) => ({
@@ -136,8 +139,30 @@ test('F5b — the drawings DXF carries a lineweight on every layer', () => {
 });
 
 test('F5b — …and a hidden line is DASHED in CAD, as it already is on screen', () => {
-  // A wall with SHELVES on it, because a hidden line is what a shelf behind a
-  // door is — the kitchen fixture above is all doors and drawer fronts.
+  // ─── AMENDED BY TURN 43 (CLAUDE.md F1) ───────────────────────────────────
+  //
+  // T41 asked this of the wall set's `/1` sheet, because that was where a
+  // shelf behind a door was drawn as a hidden line. T43-F1 is the owner's
+  // instruction that it must NOT be — *"fronty same bez kresek"* — so `/1`
+  // carries no hidden geometry at all any more and there is nothing on it for
+  // this law to be true of.
+  //
+  // THE LAW ITSELF IS UNCHANGED and is still worth holding, so it is asked of
+  // the sheet where hidden lines now live and are meant to: the UNIT CARD,
+  // which T43 iron rule 4 pins precisely BECAUSE *"its hidden lines are its
+  // value"*. Same wardrobe, same three shelves, same two assertions.
+  const u = {
+    id: 'u-card', type: 'WARDROBE', params: { ...defaultParamsFor('WARDROBE', P), unit_num: '01', width: 900, shelves: 3 },
+  };
+  const card = unitCardSheet({
+    result: computeCabinet({ ...u.params }, P), unit: u, project: { name: 'T41' }, profile: P, date: '19/08/2026',
+  });
+  const dxf = sheetToDxf(card);
+  assert.match(dxf, /[\r\n]+2[\r\n]+LTYPE[\r\n]/, 'an LTYPE table is written');
+  assert.ok(dxf.includes('CC_DASHED'), 'and a hidden layer names it');
+
+  // …and the fronts sheet of a shelved wall now carries NOT ONE dashed
+  // entity, which is F1 in one line.
   const shelved = wallDrawingSheets({
     entries: [
       entry(unit('WARDROBE', { unit_num: '01', width: 900, shelves: 3 }, { wall: 0, x_mm: 0 })),
@@ -147,9 +172,7 @@ test('F5b — …and a hidden line is DASHED in CAD, as it already is on screen'
   });
   const el = shelved.find((s) => s.variant === 'fronts');
   assert.ok(el, 'there is an elevation sheet');
-  const dxf = sheetToDxf(sheetOf(el));
-  assert.match(dxf, /[\r\n]+2[\r\n]+LTYPE[\r\n]/, 'an LTYPE table is written');
-  assert.ok(dxf.includes('CC_DASHED'), 'and a hidden layer names it');
+  assert.equal(sheetOf(el).entities.filter((e) => e.hidden).length, 0, 'T43-F1: /1 is fronts');
 });
 
 test('F5b — THE CNC PATH IS UNTOUCHED: no lineweight, no linetype table', () => {

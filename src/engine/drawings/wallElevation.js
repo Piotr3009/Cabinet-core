@@ -420,6 +420,11 @@ export function buildWallElevation(group, {
         profile,
         overallDims: false,
         unitNumberHeight: W.unitNumberHeight,
+        // ─── TURN 43 (CLAUDE.md F1): /1 IS FRONTS ──────────────────────────
+        // The whole reason the option exists. `/1` gets the clean view — no
+        // hidden lines, no insides, no legs — and NOTHING ELSE in the app
+        // changes behaviour, because the option defaults off.
+        frontsOnly: true,
       })
       : buildCarcassElevation(m.result, {
         unitNum: m.unit.params?.unit_num, profile, unitNumberHeight: W.unitNumberHeight,

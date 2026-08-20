@@ -75,6 +75,36 @@ function isDrawn(panel) {
   return true;
 }
 
+/**
+ * ─── TURN 43 (CLAUDE.md F1): /1 IS FRONTS, AND NOTHING THAT HIDES BEHIND THEM
+ *
+ * The owner, 20.08.2026, on the first real print of the wall set: *"nadal
+ * pokazuje fronty z carcasami, nie pokazuje jak ja chciałem, czyli fronty same
+ * bez kresek."*
+ *
+ * MEASURED, and it is `isDrawn` above together with `panelStyle`: every panel
+ * that does not touch an edge goes to SHELVES as a dashed hidden line, so on a
+ * real kitchen the fronts sheet is full of green dashes — his "kreski". His
+ * standard (the Anderson set) is plain: **fronts, end panels, infills, the
+ * plinth line, the unit silhouette, handles, swings, unit numbers.** Nothing
+ * else.
+ *
+ * So the fronts sheet asks a DIFFERENT question of a panel, and it is a
+ * whitelist rather than a restyle: the entities are not drawn at all, which is
+ * what makes "ZERO dashed geometry on /1" a fact about the list rather than a
+ * fact about a stroke.
+ *
+ * Deliberately no `material_role === 'front'` clause: CLAUDE.md names the four
+ * and says *"and no other panel"*. Every FRONT and DRAWER-FRONT this engine
+ * cuts carries `part` (measured on all six configs), so nothing a joiner looks
+ * for on /1 is lost by asking the part rather than the material.
+ */
+export function isFrontsSheetPanel(panel) {
+  if (!panel?.box) return false;
+  if (isFront(panel)) return true;
+  return panel.role === 'end_panel' || panel.role === 'infill' || panel.role === 'plinth';
+}
+
 /** Is this piece a FRONT — a door or a drawer front? */
 export function isFront(panel) {
   return panel.part === 'FRONT' || panel.part === 'DRAWER-FRONT';
@@ -273,10 +303,13 @@ export function chainDimensions({ edges, at, direction, offset, textHeight, labe
  */
 export function buildFrontElevation(result, {
   unitNum, frontType, profile, overallDims = true, unitNumberHeight = null,
+  frontsOnly = false, shakerFrame = null,
 } = {}) {
   const D = profile.drawings;
   const entities = [];
-  const panels = result.panels.filter(isDrawn);
+  // T43-F1: the fronts sheet asks the whitelist; every other caller asks the
+  // question this file has asked since turn 6, and gets the same answer it got.
+  const panels = result.panels.filter(frontsOnly ? isFrontsSheetPanel : isDrawn);
   const W = result.params.width;
   const H = result.params.height;
 
@@ -294,13 +327,24 @@ export function buildFrontElevation(result, {
   const style = frontType || profile.front.defaultType;
   for (const p of panels) {
     if (p.part !== 'FRONT' && p.part !== 'DRAWER-FRONT') continue;
-    entities.push(...frontDetail(p.box, p.meta?.frontType || style, profile));
+    // T43-F2: THE PROJECT'S OWN MILLIMETRES. `shakerFrame` is resolved ONCE at
+    // the sheet level and threaded down; `null` keeps the pre-T43 answer (the
+    // profile default), which is what every caller that has not been taught to
+    // ask still gets.
+    entities.push(...frontDetail(p.box, p.meta?.frontType || style, profile, shakerFrame));
     // A drawer does not swing. A door does, and the diagonals say which way.
     if (p.part === 'FRONT') entities.push(...doorSwing(p.box, p.meta?.hinge));
   }
 
   // ── legs, from the engine's own layout ──
-  const legs = result.assemblies.legs;
+  //
+  // ─── TURN 43 (CLAUDE.md F1, iron rule 3): NOT ON THE FRONTS SHEET ────────
+  // The owner: *"nóżki to jakieś klocki zamiast ładnej nóżki, poza tym jak
+  // widać fronty, to nie powinno być widać nóżek."* In the built kitchen the
+  // plinth hides them, so on /1 they have no business existing at all — and
+  // the entity is not drawn rather than being drawn and hidden. Every other
+  // caller (the unit card) is untouched: the option defaults off.
+  const legs = frontsOnly ? null : result.assemblies.legs;
   const legHeight = result.assemblies.carcass.legHeight || 0;
   if (legs && legHeight > 0) {
     for (const leg of legs.positions) {

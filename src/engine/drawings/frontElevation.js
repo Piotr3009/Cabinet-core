@@ -29,6 +29,24 @@ import {
 } from './primitives.js';
 import { shakerFits, shakerFrameMm } from '../shaker.js';
 
+// ─── TURN 43 (CLAUDE.md F4): A SILHOUETTE IS HEAVY, A PANEL EDGE IS NOT ─────
+//
+// The owner, 20.08.2026: *"Linie nadal są mega grube."*
+//
+// MEASURED, and it is not the ladder — T41-F5a built the ladder and it is
+// right. It is WHO ASKS FOR WHICH RUNG. Every carcass panel is its own rect on
+// the `CARCASE` layer, and that layer's default role is `OUTLINE` (0.50), so a
+// composed wall printed panel-edge on panel-edge on unit-outline, ALL AT THE
+// HEAVIEST VISIBLE WEIGHT. At 1:15 on A3 that reads as a marker, not a pen.
+//
+// The fix is one word per entity and nothing else: the layer table
+// (`layers.js`) is untouched, the ISO ladder is untouched, and the entity's own
+// role — which T41-F5a built the mechanism for — now says what it actually is.
+// A PANEL EDGE is a visible edge inside an outline (0.35). THE SILHOUETTE is
+// the outline (0.50). A HIDDEN line stays hidden (0.25). The one user of
+// `PEN.CUT` (0.70) is a section, which is exactly what the table already says.
+
+
 /**
  * Which layer a panel is drawn on, and whether it is a hidden line.
  *
@@ -73,6 +91,36 @@ function isDrawn(panel) {
   if (panel.role === 'back') return false;         // behind everything, full face
   if (panel.role === 'drawer_box') return false;
   return true;
+}
+
+/**
+ * ─── TURN 43 (CLAUDE.md F1): /1 IS FRONTS, AND NOTHING THAT HIDES BEHIND THEM
+ *
+ * The owner, 20.08.2026, on the first real print of the wall set: *"nadal
+ * pokazuje fronty z carcasami, nie pokazuje jak ja chciałem, czyli fronty same
+ * bez kresek."*
+ *
+ * MEASURED, and it is `isDrawn` above together with `panelStyle`: every panel
+ * that does not touch an edge goes to SHELVES as a dashed hidden line, so on a
+ * real kitchen the fronts sheet is full of green dashes — his "kreski". His
+ * standard (the Anderson set) is plain: **fronts, end panels, infills, the
+ * plinth line, the unit silhouette, handles, swings, unit numbers.** Nothing
+ * else.
+ *
+ * So the fronts sheet asks a DIFFERENT question of a panel, and it is a
+ * whitelist rather than a restyle: the entities are not drawn at all, which is
+ * what makes "ZERO dashed geometry on /1" a fact about the list rather than a
+ * fact about a stroke.
+ *
+ * Deliberately no `material_role === 'front'` clause: CLAUDE.md names the four
+ * and says *"and no other panel"*. Every FRONT and DRAWER-FRONT this engine
+ * cuts carries `part` (measured on all six configs), so nothing a joiner looks
+ * for on /1 is lost by asking the part rather than the material.
+ */
+export function isFrontsSheetPanel(panel) {
+  if (!panel?.box) return false;
+  if (isFront(panel)) return true;
+  return panel.role === 'end_panel' || panel.role === 'infill' || panel.role === 'plinth';
 }
 
 /** Is this piece a FRONT — a door or a drawer front? */
@@ -273,34 +321,59 @@ export function chainDimensions({ edges, at, direction, offset, textHeight, labe
  */
 export function buildFrontElevation(result, {
   unitNum, frontType, profile, overallDims = true, unitNumberHeight = null,
+  frontsOnly = false, shakerFrame = null,
 } = {}) {
   const D = profile.drawings;
   const entities = [];
-  const panels = result.panels.filter(isDrawn);
+  // T43-F1: the fronts sheet asks the whitelist; every other caller asks the
+  // question this file has asked since turn 6, and gets the same answer it got.
+  const panels = result.panels.filter(frontsOnly ? isFrontsSheetPanel : isDrawn);
   const W = result.params.width;
   const H = result.params.height;
 
   // ── the pieces, straight from the engine's boxes ──
+  //
+  // T43-F4: and each one says what it IS. A panel edge is a visible edge
+  // (0.35); what stands behind a front is hidden (0.25). Neither is an
+  // outline, and drawing both at the CARCASE layer's 0.50 is what made a
+  // composed wall print as a marker.
   for (const p of panels) {
     const style = panelStyle(p, { width: W, height: H });
-    entities.push({ ...rect(style.layer, p.box.x, p.box.y, p.box.w, p.box.h), hidden: style.hidden });
+    entities.push({
+      ...rect(style.layer, p.box.x, p.box.y, p.box.w, p.box.h),
+      hidden: style.hidden,
+      pen: style.hidden ? 'HIDDEN' : 'VISIBLE',
+    });
   }
 
   // ── the outline of the whole carcass, over the panels (LISP
-  //    drawFrontCarcaseOutline) — it is what the eye reads first ──
-  entities.push(rect('CARCASE', 0, 0, W, H));
+  //    drawFrontCarcaseOutline) — it is what the eye reads first, and T43-F4
+  //    is what finally makes that true on paper: THIS is the outline, and it
+  //    is now the only 0.50 on the sheet. ──
+  entities.push({ ...rect('CARCASE', 0, 0, W, H), pen: 'OUTLINE' });
 
   // ── the fronts: face detail, and the direction they open ──
   const style = frontType || profile.front.defaultType;
   for (const p of panels) {
     if (p.part !== 'FRONT' && p.part !== 'DRAWER-FRONT') continue;
-    entities.push(...frontDetail(p.box, p.meta?.frontType || style, profile));
+    // T43-F2: THE PROJECT'S OWN MILLIMETRES. `shakerFrame` is resolved ONCE at
+    // the sheet level and threaded down; `null` keeps the pre-T43 answer (the
+    // profile default), which is what every caller that has not been taught to
+    // ask still gets.
+    entities.push(...frontDetail(p.box, p.meta?.frontType || style, profile, shakerFrame));
     // A drawer does not swing. A door does, and the diagonals say which way.
     if (p.part === 'FRONT') entities.push(...doorSwing(p.box, p.meta?.hinge));
   }
 
   // ── legs, from the engine's own layout ──
-  const legs = result.assemblies.legs;
+  //
+  // ─── TURN 43 (CLAUDE.md F1, iron rule 3): NOT ON THE FRONTS SHEET ────────
+  // The owner: *"nóżki to jakieś klocki zamiast ładnej nóżki, poza tym jak
+  // widać fronty, to nie powinno być widać nóżek."* In the built kitchen the
+  // plinth hides them, so on /1 they have no business existing at all — and
+  // the entity is not drawn rather than being drawn and hidden. Every other
+  // caller (the unit card) is untouched: the option defaults off.
+  const legs = frontsOnly ? null : result.assemblies.legs;
   const legHeight = result.assemblies.carcass.legHeight || 0;
   if (legs && legHeight > 0) {
     for (const leg of legs.positions) {

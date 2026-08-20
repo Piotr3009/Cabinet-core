@@ -78,17 +78,24 @@ test('F0 — the exported bytes START %PDF, read off the document and not off a 
   assert.equal(head, PDF_MAGIC, 'the first four bytes of the file the joiner opens');
 });
 
-test('F0 — THE PAGE COUNT EQUALS THE SHEET COUNT, on a five-sheet set', () => {
+test('F0 — THE PAGE COUNT EQUALS THE SHEET COUNT, on a seven-sheet set', () => {
+  // ─── RE-PINNED 20.08.2026 (TURN 43, CLAUDE.md F5a) ──────────────────────
+  // Five became seven: each wall gained its own `/3` section. The LAW is
+  // untouched and is the only thing this test was ever about — a page per
+  // sheet, measured off the bytes — so the number moves with the set and the
+  // assertion is still `sheets.length`.
   const sheets = sheetsOf(kitchen());
   assert.deepEqual(sheets.map((s) => s.name), [
-    'Wall A /1', 'Wall A /2', 'Wall B /1', 'Wall B /2', 'Horizontal section',
+    'Wall A /1', 'Wall A /2', 'Wall A /3',
+    'Wall B /1', 'Wall B /2', 'Wall B /3',
+    'Horizontal section',
   ]);
   const doc = bookletDoc(sheets.map((s) => s.sheet));
   assert.equal(doc.getNumberOfPages(), sheets.length, 'a page per sheet, in the order they were built');
   // …and the export itself asks the same question, which is what turns the word
   // "Saved" from a claim into a measurement.
   const measured = assertPdfBytes(pdfBytes(doc), { pages: doc.getNumberOfPages(), sheets: sheets.length });
-  assert.equal(measured.pages, 5);
+  assert.equal(measured.pages, 7);
   assert.ok(measured.bytes > 1000);
 });
 
@@ -254,9 +261,10 @@ test('F0 — `wallSetReport` is a READER: the sheet list is what it always was',
   // Byte-for-byte, on the same seed T40's own test uses. If the census had
   // changed the set, the whole claim "F0 moves no geometry" would be void.
   const sheets = sheetsOf(kitchen());
+  // T43-F5a: and the `/3` sections, which the census still does not touch.
   assert.deepEqual(sheets.map((s) => [s.name, s.variant, s.wall]), [
-    ['Wall A /1', 'fronts', 0], ['Wall A /2', 'carcass', 0],
-    ['Wall B /1', 'fronts', 1], ['Wall B /2', 'carcass', 1],
+    ['Wall A /1', 'fronts', 0], ['Wall A /2', 'carcass', 0], ['Wall A /3', 'section-v', 0],
+    ['Wall B /1', 'fronts', 1], ['Wall B /2', 'carcass', 1], ['Wall B /3', 'section-v', 1],
     ['Horizontal section', 'section', null],
   ]);
 });

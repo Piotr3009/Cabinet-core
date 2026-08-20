@@ -57,7 +57,7 @@
 // Zero dependencies: a GLB is a 12-byte header, a JSON chunk and a BIN chunk,
 // and glTF 2.0 needs nothing but positions, normals, indices and a material.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -665,23 +665,54 @@ function hingeManifest() {
   };
 }
 
-/** The depth ladder the engine snaps a drawer to, as pair files. */
-const RUNNER_LENGTHS = [270, 300, 350, 400, 450, 500, 550, 600, 650];
+// ─── TURN 43 (CLAUDE.md iron rule 8): THE SHOWROOM IS THE SHOP ──────────────
+//
+// *"Banned, permanently: a probe or test showroom may serve ONLY rows the
+// committed snapshot `reference/hardware/movento.json` names. It may fabricate
+// GLB BYTES for those rows; it may not invent a row, a rung, a variant or an
+// article the snapshot does not carry."*
+//
+// ─── WHY THE RULE EXISTS, MEASURED ──────────────────────────────────────────
+//
+// The ladder this file used to write was a list of its own: 270…650 every 50,
+// two variants each, articles made up as `3000` + the length. The live bucket
+// TOPS OUT AT NL 450. So the showroom carried `760H500T_3000500.glb`, article
+// `3000500T` — no such file and no such article exists in the shop — and
+// T42-F2's probe went green on a rung the owner cannot buy. The one fault the
+// owner has been staring at since 18.08 (an overlay box of 490 asks NL 500 and
+// gets nothing) was INVISIBLE to every automated check in this repository,
+// because every automated check shopped in a showroom that stocked it.
+//
+// So the manifest is now the snapshot, verbatim: same rows, same nominal
+// lengths, same variants, same eight-digit articles, same file names. What
+// this script still fabricates is the BYTES — a synthetic L-profile at each
+// row's nominal length — which is the whole and only thing a showroom is for
+// (no Blum bytes enter this repository; BLOCKERS #75 stands).
+//
+// A STALE SNAPSHOT MAKES PROBES CONSERVATIVE, NEVER OPTIMISTIC, which is the
+// correct direction of error. When the owner uploads the missing rungs,
+// refreshing `reference/hardware/movento.json` is one curl (the command is in
+// `runner-bucket-patch.md`) and re-running this script is the second line.
+const SNAPSHOT = JSON.parse(
+  readFileSync(join(HERE, '..', 'reference', 'hardware', 'movento.json'), 'utf8'),
+);
 
 function runnerManifest() {
-  const files = [];
-  for (const nl of RUNNER_LENGTHS) {
-    for (const variant of ['T', 'S']) {
-      files.push({
-        file: `hardware/runners/blum/movento/760H${nl}${variant}_3000${nl}.glb`,
-        nl,
-        variant,
-        article: `3000${nl}${variant}`,
-      });
-    }
-  }
+  const rows = Array.isArray(SNAPSHOT.items) ? SNAPSHOT.items : [];
+  const files = rows.map((row) => ({
+    file: row.file,
+    nl: row.nl,
+    variant: row.variant,
+    article: row.article,
+    ...(row.side ? { side: row.side } : {}),
+  }));
   return {
-    system: '760H', profile: '760H', generator: GEN, files,
+    // The snapshot's own header, not a second opinion about it: `system` is
+    // what `parseRunnerManifest` writes onto every row that does not say.
+    system: SNAPSHOT.system,
+    profile: SNAPSHOT.profile,
+    generator: `${GEN} — rows pinned to reference/hardware/movento.json (T43 iron rule 8)`,
+    files,
   };
 }
 

@@ -1,0 +1,33 @@
+─── T43 · F7 — the runner stand-in dies ───────────────────────────────
+app:      http://127.0.0.1:4173/
+showroom: http://127.0.0.1:4174   (pinned to reference/hardware/movento.json — iron rule 8)
+
+1 — the catalogue the app is shopping in
+      40 rows · NL 250, 270, 300, 320, 350, 380, 400, 420, 450
+  ok   the shop stops at NL450, exactly as the owner's bucket does   450
+
+2 — a BUDR: box 490, which asks NL500
+      {"unit":"u_xid78f4","boxDepth":490,"drawers":3}
+      box 490 → ask NL500 → rung 500 → entry null
+  ok   every row asks NL500 and the shop answers NOTHING   6 rows
+
+3 — the scene: no model, and NO STAND-IN EITHER
+      {"rows":6,"modelled":0,"reasons":["no-url"],"urls":["null"]}
+  ok   the walk sees runner rows, and NOT ONE of them is model-backed   0
+  ok   and the reason is `no-url` — the article does not exist, so no file was asked for   ["no-url"]
+
+4 — the Check panel: RED, per drawer, naming the NL and the variant
+      #18 · Runner rung with no articleDR01 D1: Runner NL500 (T): no article in catalogue — upload the model or adjust the ladder.
+      #18 · Runner rung with no articleDR01 D2: Runner NL500 (T): no article in catalogue — upload the model or adjust the ladder.
+      #18 · Runner rung with no articleDR01 D3: Runner NL500 (T): no article in catalogue — upload the model or adjust the ladder.
+  ok   one RED per drawer, and each names NL500 and the variant   3 findings · ["red"]
+      shot:  f7-empty-rung-speaks.png
+
+5 — no catalogue at all: ONE amber note, and never a red wall
+  ok   the registry really has no catalogue here   null
+      #18 · Runner rung with no articlehardware catalogue unreachable — runners not verified
+  ok   ONE amber, zero reds — a dead network is not thirty faults   {"reds":0,"ambers":1,"text":["#18 · Runner rung with no articlehardware catalogue unreachable — runners not verified"]}
+  ok   and still NOTHING is drawn in the groove — the deletion is global   {"rows":6,"modelled":0}
+
+─── VERDICT ───────────────────────────────────────────────────────────
+8 / 8 checks passed

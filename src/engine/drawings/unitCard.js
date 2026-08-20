@@ -56,13 +56,21 @@ export const CARD_ARRANGEMENTS = ['projection', 'row'];
  *   profile
  * @returns {{entities:Array, bounds:object, views:object}}
  */
-export function buildUnitCard(result, { unitNum, frontType, profile, arrangement = 'projection' } = {}) {
+export function buildUnitCard(result, {
+  unitNum, frontType, profile, arrangement = 'projection', shakerFrame = null,
+} = {}) {
   const C = profile.drawings.unitCard;
   const num = String(unitNum ?? result.unitNum ?? '');
 
   // ── the three views, each built at its own origin ──
   const front = buildFrontElevation(result, {
     unitNum: num, frontType, profile, overallDims: false, unitNumberHeight: C.unitNumberHeight,
+    // ─── TURN 43 (CLAUDE.md F2) ────────────────────────────────────────────
+    // The card told the same lie the wall sheet did: a project set to an 80 mm
+    // shaker frame was DRAWN at 60, because nobody handed `frontDetail` the
+    // project. `null` here is still the profile default, so a card built with
+    // no design behind it is byte-for-byte the card it was (iron rule 4).
+    shakerFrame,
   });
   front.entities.push(...frontDimensions(result, profile));
 
@@ -70,7 +78,7 @@ export function buildUnitCard(result, { unitNum, frontType, profile, arrangement
   carcass.entities.push(...carcassDimensions(result, profile));
 
   const top = buildTopView(result, {
-    unitNum: num, frontType, profile, unitNumberHeight: C.unitNumberHeight,
+    unitNum: num, frontType, profile, unitNumberHeight: C.unitNumberHeight, shakerFrame,
   });
   top.entities.push(...topDimensions(result, profile));
 

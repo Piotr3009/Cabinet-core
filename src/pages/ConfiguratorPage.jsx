@@ -407,6 +407,10 @@ export default function ConfiguratorPage() {
           project,
           room: project.room,
           frontTypeOf: (u) => resolveUnitDesign(u, project.design).frontType,
+          // T43-F2: the project's own shaker frame, on the menu path too — two
+          // callers, one number, or the PDF and the preview disagree about a
+          // door.
+          design: project.design,
           profile,
           date,
         });

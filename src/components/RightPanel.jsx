@@ -765,7 +765,10 @@ export default function RightPanel() {
               </ul>
               {/* The partition over a drawer stack is a fixed shelf too, and it
                   is set back with them (F4) — with the same way out. */}
-              {result.panels.some((p) => p.part === 'PARTITION' || p.part === 'RAIL-PART') && (
+              {/* T43 (iron rule 3): the `|| p.part === 'RAIL-PART'` half of this
+                  condition is a T42 leftover — the part no longer exists — and
+                  is deleted by name. */}
+              {result.panels.some((p) => p.part === 'PARTITION') && (
                 <div className="cc-row text-[11px] text-ink-400">
                   <span>Partition front edge</span>
                   <button

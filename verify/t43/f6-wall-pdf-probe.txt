@@ -1,0 +1,115 @@
+─── T43 · F6 — the wall set draws what the workshop sells ─────────────
+app:       http://127.0.0.1:4173/
+shots:     /home/user/Cabinet-core/verify/t43/f6-all-sheets-walked
+downloads: /home/user/Cabinet-core/verify/t43/downloads
+
+1 — a KITCHEN, built through the store's own actions
+      {"units":5,"walls":[0,0,0,1,1],"rotations":[0,0,0,0,90],"shakerFrame":85,"style":"S","ceiling":2400,"shelves":[2,0,1,0,0],"numbers":["01","DR01","WU01","02","03"],"drawers":[0,3,0,0,0]}
+  ok   five cabinets, on two walls, one of them TURNED AWAY   [0,0,0,1,1]
+  ok   shaker S at the PROJECT's 85 mm, ceiling 2400, shelves on the BUD and the WUD   shelves [2,0,1,0,0] · shaker 85
+  ok   …and a REAL DRAWER STACK on the BUDR — the thing T42's proof had none of   [0,3,0,0,0]
+
+2 — every sheet of the set, clicked and photographed
+      sheets: Wall A /1 | Wall A /2 | Wall A /3 | Wall B /1 | Wall B /2 | Wall B /3 | Horizontal section
+  ok   the sheet list is /1 /2 /3 per wall, plus the horizontal section (F5a)   ["Wall A /1","Wall A /2","Wall A /3","Wall B /1","Wall B /2","Wall B /3","Horizontal section"]
+      Wall A /1             118 strokes   → wall-a-1.png
+      Wall A /2             109 strokes   → wall-a-2.png
+      Wall A /3              57 strokes   → wall-a-3.png
+      Wall B /1              48 strokes   → wall-b-1.png
+      Wall B /2              50 strokes   → wall-b-2.png
+      Wall B /3              39 strokes   → wall-b-3.png
+      Horizontal section     54 strokes   → horizontal-section.png
+  ok   every sheet in the set was walked and photographed   7 files
+
+3 — F1: /1 is FRONTS, and nothing that hides behind them
+  ok   Wall A /1: zero dashed, zero LEG_BLOCK, zero SHELVES — on the glass   dashed 0 · legs 0 · shelves 0
+  ok   Wall B /1: zero dashed, zero LEG_BLOCK, zero SHELVES — on the glass   dashed 0 · legs 0 · shelves 0
+      shot:  f1-wall-1-fronts-clean.png
+
+4 — F2: the shaker frame, measured off the SVG on screen
+      laid out at 1:9.30381679389313
+      shaker insets on paper: 9.136, 9.136, 9.136, 9.136 mm
+      × the scale            : 85, 85, 85, 85 mm
+  ok   every shaker inset on /1 measures 85 mm, not the profile's 60   [85,85,85,85]
+      shot:  f2-shaker-85-not-60.png   (measured inset 85 mm at 1:9.30381679389313)
+
+5 — F3: /2 shows the drawers it is for, and the legs are legs
+  ok   the legs are SYMBOLS (three lines each) and not one brick between them   24 lines · 0 rects
+  ok   and the drawer boxes are on it — the BUDR's three, plus the shelves   6 rects on SHELVES
+      shot:  f3-wall-2-drawers-and-legs.png
+
+6 — F4: the stroke-weight census, off the sheets that were on the glass
+      THE PEN CENSUS — T43 F4, read off the previewed SVG of every sheet
+      
+      Wall A /1
+         widths: 0.13×4  0.18×72  0.35×29  0.5×3
+         0.50 geometry rects (silhouettes): 3
+         heavier than 0.50 (CUT): 0  — an elevation may not
+      
+      Wall A /2
+         widths: 0.18×77  0.35×19  0.5×3
+         0.50 geometry rects (silhouettes): 3
+         heavier than 0.50 (CUT): 0  — an elevation may not
+      
+      Wall A /3
+         widths: 0.18×33  0.7×14
+         0.50 geometry rects (silhouettes): 0
+         heavier than 0.50 (CUT): 14  — a section may
+      
+      Wall B /1
+         widths: 0.13×2  0.18×27  0.35×8  0.5×1
+         0.50 geometry rects (silhouettes): 1
+         heavier than 0.50 (CUT): 0  — an elevation may not
+      
+      Wall B /2
+         widths: 0.18×34  0.35×5  0.5×1
+         0.50 geometry rects (silhouettes): 1
+         heavier than 0.50 (CUT): 0  — an elevation may not
+      
+      Wall B /3
+         widths: 0.18×23  0.7×6
+         0.50 geometry rects (silhouettes): 0
+         heavier than 0.50 (CUT): 6  — a section may
+      
+      Horizontal section
+         widths: 0.35×20  0.7×24
+         0.50 geometry rects (silhouettes): 0
+         heavier than 0.50 (CUT): 24  — a section may
+      
+  ok   every weight is on the ISO ladder, and no elevation carries a cut weight
+      shot:  f4-line-weights.png
+
+7 — F5a: `Wall A /3`, the wall cut at its first cabinet
+  ok   the section carries the heaviest ink on any sheet (0.70)   14 cut strokes
+  ok   and it says where the knife went   section at unit 01
+      shot:  f5a-wall-3-section.png
+
+8 — F5b: `Section A-A through:` — the BUDR
+      dropdown: — none — | 01 (Wall A) | 02 (Wall B) | DR01 (Wall A) | WU01 (Wall A)
+  ok   the dropdown offers every DRAWABLE cabinet and not the turned one   ["— none —","01 (Wall A)","02 (Wall B)","DR01 (Wall A)","WU01 (Wall A)"]
+  ok   choosing one APPENDS `Section A-A — unit DR01` to the set   ["Section A-A — unit DR01"]
+  ok   and the A-A sheet is a real section, with cut ink on it
+      shot:  f5b-section-aa-through-budr.png
+
+9 — F6: the PDF and the DXF zip, on disk, looked at
+  ok   a real PDF landed on disk   ["T43-kitchen-wall-drawings-2008-0904.pdf"]
+      file:  T43-kitchen-wall-drawings-2008-0904.pdf   bytes 107475   /Count 8   page objects 8
+  ok   THE BYTES START %PDF   "%PDF"
+  ok   THE PAGE COUNT EQUALS THE SHEET COUNT (8, with the A-A)   8 pages · 8 sheets on screen
+  ok   and every sheet name in the set is IN the file   ["Wall A /1","Wall A /2","Wall A /3","Wall B /1","Wall B /2","Wall B /3","Horizontal section"]
+  ok   a real DXF zip landed on disk   ["T43-kitchen-wall-drawings-2008-0904.zip"]
+      file:  T43-kitchen-wall-drawings-2008-0904.zip   bytes 17013   entries 9
+  ok   ONE FILE PER SHEET in the zip, plus the READ-ME   9 entries for 8 sheets
+  ok   and the A-A is one of them   ["wall-a-1-autocad-only.dxf","wall-a-2-autocad-only.dxf","wall-a-3-autocad-only.dxf","wall-b-1-autocad-only.dxf","wall-b-2-autocad-only.dxf","wall-b-3-autocad-only.dxf","horizontal-section-autocad-only.dxf","section-a-a-unit-dr01-autocad-only.dxf","READ-ME-FIRST.txt"]
+
+10 — the turned cabinet is NAMED, not silently dropped
+  ok   the census sentence is under the sheet list, naming the wall and the reason   Wall B — drawn, but 03 is turned away from the wall — see the horizontal section.
+      NOTE: 3 request(s) refused by the container's egress policy —
+            Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runne
+            This is R2's recorded refusal, not a fault in the app: with no
+            bucket the runner catalogue is simply absent, which after T43-F7
+            is an empty groove and ONE amber note rather than a grey fake.
+  ok   and the browser console is clean of APP errors through the whole walk
+
+─── VERDICT ───────────────────────────────────────────────────────────
+25 / 25 checks passed

@@ -15,6 +15,10 @@ import { CARD_ARRANGEMENTS, buildUnitCard } from './unitCard.js';
 import { buildCoverSheet } from './cover.js';
 import { layoutSheet } from './sheet.js';
 import { resolveFinishes, resolveUnitDesign } from '../design.js';
+// T43-F2: the ONE law about how wide a shaker frame is (turn 25's own module).
+// The card asks it here, once, and threads the number down — never re-resolved
+// per panel and never re-derived from the profile by a drawing.
+import { shakerFrameMm } from '../shaker.js';
 import { getUnitType } from '../types.js';
 import { formatMm } from '../format.js';
 
@@ -70,7 +74,9 @@ export function unitCardSheet({ result, unit, project = {}, profile, format = 'a
   for (const paper of papers) {
     for (const arrangement of CARD_ARRANGEMENTS) {
       laid.push(layoutSheet({
-        drawing: buildUnitCard(result, { unitNum, frontType: resolved.frontType, profile, arrangement }),
+        drawing: buildUnitCard(result, {
+          unitNum, frontType: resolved.frontType, profile, arrangement, shakerFrame: shakerFrameMm(design, profile),
+        }),
         format: paper,
         profile,
         titleRows: profile.drawings.unitCard.titleRows,

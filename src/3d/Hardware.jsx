@@ -198,11 +198,13 @@ export default function Hardware({
           component was written to avoid. */}
       {(xray || runners) && (
         <>
+          {/* T43-F7: no `colour` — the grey stand-in it dressed is gone, and a
+              runner is now either the manufacturer's own model or nothing at
+              all. */}
           <Runners
             slide={drawerSlide}
             items={instances.runners}
             profile={profile}
-            colour={colours.bracket}
             variants={runnerVariants}
             storageBase={storageBase}
             surface={surface}
@@ -831,15 +833,26 @@ export function DoorHinges({
  * exception the owner asked for: he has the whole MOVENTO 760H ladder as GLB,
  * and a Blum runner drawn from three boxes is a Blum runner nobody recognises.
  *
- * Two lists, and they are disjoint so nothing is ever drawn twice:
+ * ─── TURN 43 (CLAUDE.md F7): THE STAND-IN DIES ─────────────────────────────
  *
- *   • rows whose model has ARRIVED are drawn with it, one clone per row —
- *     which is what makes a drawer's two runners two objects at two heights;
- *   • every other row — the file still on its way, a bucket that is down, mock
- *     mode, a model that measures the wrong length — falls through to the
- *     INSTANCED PROFILE this function has drawn since turn 7: the same grey
- *     shape, at the runner's true size, in the same place (F6.6). Never a
- *     hole, never a blocked scene.
+ * The owner, 20.08.2026, after the fourth grey overlay: *"jak kod nadpisuje to
+ * go usuń."*
+ *
+ * THE TRACE, measured: overlay box 490 → ask NL 500 (`runnerAskFor`) → ladder
+ * rung 500 → the LIVE bucket manifest tops out at 450 → `runnerEntry` null →
+ * the grey L-profile. NOTHING OVERRIDES ANYTHING. The fallback wins by
+ * SILENCE — a row with no article got a picture of a runner anyway, so the one
+ * screen that could have said "this article does not exist" said nothing and
+ * drew ironmongery instead.
+ *
+ * So there is ONE list now: rows whose model has arrived are drawn with it, one
+ * clone per row, and a row with no model DRAWS NOTHING. An empty groove and a
+ * spoken warning (`engine/checks.js` #18), never a fake. This is GLOBAL by his
+ * order — offline, mock and showroom modes lose the grey runner too.
+ *
+ * `reportHardware` is untouched, byte for byte: the walk still tells a model
+ * from a hole and its `reason` strings still read `no-url` / `no-model`. What
+ * is gone is the thing that made a hole look like a runner.
  *
  * THE MODEL IS A COSTUME ON THE SCREWS (F6.2). Every position is the engine's —
  * `hardwareInstances` reads `drillSummary.runner_rows_carcass_y`, the row the
@@ -847,7 +860,7 @@ export function DoorHinges({
  * downloaded file is allowed to move a hole.
  */
 function Runners({
-  items, profile, colour, variants = null, storageBase = '', slide = null,
+  items, profile, variants = null, storageBase = '', slide = null,
   surface = 'room', scope = '',
 }) {
   const R = profile.hardware.runner;
@@ -858,7 +871,8 @@ function Runners({
   const [arrived, setArrived] = useState(0);
 
   // Which FILE each row wants. The catalogue may know nothing (no bucket, mock
-  // mode) — then every url is null and every row is drawn plain.
+  // mode) — then every url is null and (T43-F7) every row draws NOTHING, and
+  // `engine/checks.js` says so in words rather than in grey plastic.
   const wanted = useMemo(() => items.map((r) => {
     const variant = variants?.[r.drawer] || M.defaultVariant;
     // ─── TURN 42 (CLAUDE.md F2): THE VIEW ASKS THE QUESTION THE BOM ASKS ────
@@ -946,8 +960,6 @@ function Runners({
     })), scope);
   }, [surface, scope, wanted, models]);
 
-  const plain = useMemo(() => items.filter((_, i) => !models[i]), [items, models]);
-
   // ─── TURN 20 (CLAUDE.md F3.1/F3.2): THE RUNNER RIDES OUT WITH ITS DRAWER ──
   //
   // "The runner's fixed profile (cabinet-side) stays put; only the moving
@@ -955,12 +967,12 @@ function Runners({
   // model with the box — a note in the code says why, and splitting the model
   // is the owner's future call, not this turn's guess."
   //
-  // Both of this app's runners ARE single bodies: the manufacturer's GLB is one
-  // mesh of the whole assembly, and the grey stand-in is one L-profile drawn
-  // from three numbers. So the whole runner travels with the drawer it carries,
-  // and there is no fixed member drawn separately to leave behind. Splitting
-  // the cabinet profile from the carriage needs the model split, which is the
-  // owner's call on his own files.
+  // The runner this app draws IS a single body: the manufacturer's GLB is one
+  // mesh of the whole assembly. So the whole runner travels with the drawer it
+  // carries, and there is no fixed member drawn separately to leave behind.
+  // Splitting the cabinet profile from the carriage needs the model split,
+  // which is the owner's call on his own files. (T43-F7: the grey L-profile
+  // that used to be the second single body is gone.)
   //
   // The offset is an OFFSET and never an absolute position — the model is
   // placed on the drilled row by `hardwareInstances` and this adds to it, so a
@@ -980,80 +992,27 @@ function Runners({
     .map((value, i) => ({ value, i }))
     .filter(({ i }) => (items[i]?.drawer ?? 0) === drawer);
 
-  const placeFace = useMemo(() => (i, m) => {
-    const r = plain[i];
-    const dir = r.side === 'L' ? -1 : 1;
-    put(
-      m,
-      new THREE.Vector3(mm(r.x + dir * (r.thickness / 2)), mm(r.y + R.profileHeight / 2), mm(r.z + r.length / 2)),
-      null,
-      new THREE.Vector3(1, 1, mm(r.length)),
-    );
-  }, [plain, R.profileHeight]);
-
-  const placeFlange = useMemo(() => (i, m) => {
-    const r = plain[i];
-    const dir = r.side === 'L' ? -1 : 1;
-    put(
-      m,
-      new THREE.Vector3(mm(r.x + dir * (R.flangeDepth / 2)), mm(r.y), mm(r.z + r.length / 2)),
-      null,
-      new THREE.Vector3(1, 1, mm(r.length)),
-    );
-  }, [plain, R.flangeDepth]);
-
-  // The plain rows keep their own indices into `plain`, and the models theirs
-  // into `items`; both are filtered per drawer so a group holds exactly its own
-  // runner and the instanced geometry is still shared across the unit.
-  const plainOfDrawer = useMemo(() => {
-    const out = new Map();
-    plain.forEach((r, i) => {
-      const key = r.drawer ?? 0;
-      if (!out.has(key)) out.set(key, []);
-      out.get(key).push(i);
-    });
-    return out;
-  }, [plain]);
-
   return (
     <>
-      {drawers.map((drawer) => {
-        const mine = plainOfDrawer.get(drawer) || [];
-        return (
-          <SlideOut key={`d${drawer}`} distance={slideOf(drawer)}>
-            {/* The model, standing on the drilled row: x is the face of the
-                panel it is screwed to, y is the row itself, z is the back of
-                the box. */}
-            {inDrawer(models, drawer).map(({ value: model, i }) => (model ? (
-              <primitive
-                // eslint-disable-next-line react/no-array-index-key -- the row IS the identity
-                key={`m${i}`}
-                object={model}
-                position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]}
-              />
-            ) : null))}
+      {drawers.map((drawer) => (
+        <SlideOut key={`d${drawer}`} distance={slideOf(drawer)}>
+          {/* The model, standing on the drilled row: x is the face of the
+              panel it is screwed to, y is the row itself, z is the back of
+              the box.
 
-            {/* The upright face. Its LENGTH is a per-instance scale, so one
-                geometry serves a 390 mm runner and a 690 mm one. */}
-            <Pieces
-              count={mine.length}
-              place={(n, m) => placeFace(mine[n], m)}
-              colour={colour}
-              metalness={0.7}
-            >
-              <boxGeometry args={[mm(R.profileThickness), mm(R.profileHeight), 1]} />
-            </Pieces>
-            <Pieces
-              count={mine.length}
-              place={(n, m) => placeFlange(mine[n], m)}
-              colour={colour}
-              metalness={0.7}
-            >
-              <boxGeometry args={[mm(R.flangeDepth), mm(R.profileThickness), 1]} />
-            </Pieces>
-          </SlideOut>
-        );
-      })}
+              T43-F7: and that is ALL. A row with no model draws nothing —
+              the grey L-profile that used to fill the groove is deleted, by
+              the owner's own order, on every mode this app has. */}
+          {inDrawer(models, drawer).map(({ value: model, i }) => (model ? (
+            <primitive
+              // eslint-disable-next-line react/no-array-index-key -- the row IS the identity
+              key={`m${i}`}
+              object={model}
+              position={[mm(items[i].x), mm(items[i].y), mm(items[i].z)]}
+            />
+          ) : null))}
+        </SlideOut>
+      ))}
     </>
   );
 }

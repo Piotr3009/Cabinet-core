@@ -55,6 +55,8 @@ import * as drawerRef from './engine/drawerRef.js';
 import * as drawingLayers from './engine/drawings/layers.js';
 import * as wallElevation from './engine/drawings/wallElevation.js';
 import * as wallSheets from './engine/drawings/wallSheets.js';
+// TURN 42 (CLAUDE.md F0): the export's own byte assertions, asked by the walk.
+import * as drawingExport from './lib/drawingExport.js';
 import * as drawingsDxf from './engine/drawings/dxf.js';
 import * as overlayDrawers from './engine/overlayDrawers.js';
 import * as checks from './engine/checks.js';
@@ -262,6 +264,19 @@ if (typeof window !== 'undefined') {
   // and a claim about line weight has to be read off the single resolver both
   // renderers call. `layout`, `decors` and `grain` are already on __ccT40.
   window.__ccT41 = { drawerRef, drawingLayers };
+  // ─── TURN 42 ───────────────────────────────────────────────────────────
+  // What THIS turn's walk has to be able to ask rather than infer:
+  //   F0  the wall set's own census (which cabinet was left off which wall and
+  //       why) and the export's byte assertions, so a claim about the PAPER is
+  //       read off the bytes and a claim about the SCREEN off the same reader
+  //       the window renders from.
+  //   F1  the rail's mount law — `railAssembly` is already on `__ccT40`; what
+  //       is new is that an ALONE rod is a first-class branch, and the walk
+  //       asks the PANEL LIST for that (rule 6: prove the thing, not the field).
+  //   F2  the runner channel — already `window.__ccRunners` and
+  //       `window.__ccHardware3d`, which is exactly the point: the overlay
+  //       stack goes through the same two.
+  window.__ccT42 = { wallSheets, drawingExport };
   window.__ccT39 = {
     partRegistry,
     bom: bomCore,

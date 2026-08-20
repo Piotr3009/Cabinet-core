@@ -4,7 +4,9 @@ import {
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { mm } from './constants.js';
-import { runnerEntry, runnerLadder, runnerModelSrc } from '../engine/runners.js';
+import {
+  runnerAskFor, runnerEntry, runnerLadder, runnerModelSrc,
+} from '../engine/runners.js';
 import { hingeModelSrc } from '../engine/hinges.js';
 import { clearHardwareSurface, reportHardware } from './hardwareRegistry.js';
 import {
@@ -859,11 +861,38 @@ function Runners({
   // mode) — then every url is null and every row is drawn plain.
   const wanted = useMemo(() => items.map((r) => {
     const variant = variants?.[r.drawer] || M.defaultVariant;
+    // ─── TURN 42 (CLAUDE.md F2): THE VIEW ASKS THE QUESTION THE BOM ASKS ────
+    //
+    // The owner: *"w nowych szufladach zamiast się podstawić ładne GLB, to
+    // znowu się pojawiają te gówna kodowane."*
+    //
+    // THE FAULT, and it was never about overlay drawers at all. `r.length` is
+    // the drawer BOX's own cut depth. `engine/runners.js runnerAskFor` says,
+    // in as many words: *"This is the ONE place the +10 is applied. EVERY
+    // CALLER THAT HAS A BOX DEPTH IN ITS HAND and wants a nominal asks here;
+    // nobody adds ten of their own."* One caller in the whole app had a box
+    // depth in its hand and did not ask — this one — so the picture and the
+    // order form asked the ladder two different questions:
+    //
+    //     box 490  →  view asked NL490 → rung 450   BOM asked NL500 → rung 500
+    //     box 440  →  view asked NL440 → rung 400   BOM asked NL450 → rung 450
+    //
+    // A bucket that carries the article the BOM orders and nothing at the rung
+    // BELOW it therefore answered the view with `null` — and null is the grey
+    // hand-made L-profile. It hit the deepest boxes first, which is why it
+    // arrived with the overlay stack (490 mm) while the wardrobe's own
+    // internal stack (440 mm) went on looking right.
+    //
+    // One question now: the model drawn IS the article the BOM orders.
     const entry = runnerEntry({
       // Turn 33 (CLAUDE.md F9): the owner's ladder rules the snap — the model
       // drawn is the article the BOM orders, or the grey box where a rung has
       // no article. One law, the view and the order alike.
-      system: M.system, nl: r.length, variant, side: r.side, ladder: runnerLadder(profile),
+      system: M.system,
+      nl: runnerAskFor(r.length, profile) ?? r.length,
+      variant,
+      side: r.side,
+      ladder: runnerLadder(profile),
     });
     return {
       row: r,

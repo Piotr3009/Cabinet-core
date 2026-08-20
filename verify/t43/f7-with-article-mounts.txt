@@ -1,0 +1,48 @@
+─── T43 · F7 — the test-local injection, printed ──────────────────────
+
+profile ladder          [250,300,350,400,450,500,550,600,650,700]
+snapshot rungs          [250,270,300,320,350,380,400,420,450]
+showroom rungs          [250,270,300,320,350,380,400,420,450]
+showroom ⊆ snapshot     true
+
+the cabinet             BUDR 600 · box depth 490 mm · 3 drawers
+runnerAskFor            NL500  (the box + 10, the ONE place it lives)
+ladder rung             500
+
+── THE SHOP AS IT IS TODAY (the snapshot, NL 250–450) ────────────────
+   runner rows           6
+   models mounted        0
+   reasons               ["no-url"]
+   article drawn         [null]
+   url                   [null]
+   check #18 red         3
+   check #18 amber       0
+      RED    DR01 D1: Runner NL500 (T): no article in catalogue — upload the model or adjust the ladder.
+      RED    DR01 D2: Runner NL500 (T): no article in catalogue — upload the model or adjust the ladder.
+      RED    DR01 D3: Runner NL500 (T): no article in catalogue — upload the model or adjust the ladder.
+
+── ONE ROW INJECTED — 500/T, article 99999999 (test scope only) ──────
+   runner rows           6
+   models mounted        6
+   reasons               [null]
+   article drawn         ["99999999"]
+   url                   ["https://showroom/hardware/runners/blum/movento/760H5000T_99999999.glb"]
+   check #18 red         0
+   check #18 amber       0
+
+── NO CATALOGUE AT ALL (offline, mock, a dead network) ───────────────
+   runner rows           6
+   models mounted        0
+   reasons               ["no-url"]
+   article drawn         [null]
+   url                   [null]
+   check #18 red         0
+   check #18 amber       1
+      YELLOW hardware catalogue unreachable — runners not verified
+
+─── WHAT THIS SAYS ────────────────────────────────────────────────────
+The red check is not a bug report about this app. It is a report about the
+owner's own BUCKET: every drawer this program makes runs a 490 mm box, which
+orders NL500, and the shop tops out at 450. One uploaded article clears it,
+and nothing in the code has to change for that to happen — which is exactly
+what the middle block above measures.

@@ -1,0 +1,37 @@
+THE PEN CENSUS — T43 F4, read off the previewed SVG of every sheet
+
+Wall A /1
+   widths: 0.13×4  0.18×72  0.35×29  0.5×3
+   0.50 geometry rects (silhouettes): 3
+   heavier than 0.50 (CUT): 0  — an elevation may not
+
+Wall A /2
+   widths: 0.18×77  0.35×19  0.5×3
+   0.50 geometry rects (silhouettes): 3
+   heavier than 0.50 (CUT): 0  — an elevation may not
+
+Wall A /3
+   widths: 0.18×33  0.7×14
+   0.50 geometry rects (silhouettes): 0
+   heavier than 0.50 (CUT): 14  — a section may
+
+Wall B /1
+   widths: 0.13×2  0.18×27  0.35×8  0.5×1
+   0.50 geometry rects (silhouettes): 1
+   heavier than 0.50 (CUT): 0  — an elevation may not
+
+Wall B /2
+   widths: 0.18×34  0.35×5  0.5×1
+   0.50 geometry rects (silhouettes): 1
+   heavier than 0.50 (CUT): 0  — an elevation may not
+
+Wall B /3
+   widths: 0.18×23  0.7×6
+   0.50 geometry rects (silhouettes): 0
+   heavier than 0.50 (CUT): 6  — a section may
+
+Horizontal section
+   widths: 0.35×20  0.7×24
+   0.50 geometry rects (silhouettes): 0
+   heavier than 0.50 (CUT): 24  — a section may
+

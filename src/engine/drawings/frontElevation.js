@@ -29,6 +29,24 @@ import {
 } from './primitives.js';
 import { shakerFits, shakerFrameMm } from '../shaker.js';
 
+// ─── TURN 43 (CLAUDE.md F4): A SILHOUETTE IS HEAVY, A PANEL EDGE IS NOT ─────
+//
+// The owner, 20.08.2026: *"Linie nadal są mega grube."*
+//
+// MEASURED, and it is not the ladder — T41-F5a built the ladder and it is
+// right. It is WHO ASKS FOR WHICH RUNG. Every carcass panel is its own rect on
+// the `CARCASE` layer, and that layer's default role is `OUTLINE` (0.50), so a
+// composed wall printed panel-edge on panel-edge on unit-outline, ALL AT THE
+// HEAVIEST VISIBLE WEIGHT. At 1:15 on A3 that reads as a marker, not a pen.
+//
+// The fix is one word per entity and nothing else: the layer table
+// (`layers.js`) is untouched, the ISO ladder is untouched, and the entity's own
+// role — which T41-F5a built the mechanism for — now says what it actually is.
+// A PANEL EDGE is a visible edge inside an outline (0.35). THE SILHOUETTE is
+// the outline (0.50). A HIDDEN line stays hidden (0.25). The one user of
+// `PEN.CUT` (0.70) is a section, which is exactly what the table already says.
+
+
 /**
  * Which layer a panel is drawn on, and whether it is a hidden line.
  *
@@ -314,14 +332,25 @@ export function buildFrontElevation(result, {
   const H = result.params.height;
 
   // ── the pieces, straight from the engine's boxes ──
+  //
+  // T43-F4: and each one says what it IS. A panel edge is a visible edge
+  // (0.35); what stands behind a front is hidden (0.25). Neither is an
+  // outline, and drawing both at the CARCASE layer's 0.50 is what made a
+  // composed wall print as a marker.
   for (const p of panels) {
     const style = panelStyle(p, { width: W, height: H });
-    entities.push({ ...rect(style.layer, p.box.x, p.box.y, p.box.w, p.box.h), hidden: style.hidden });
+    entities.push({
+      ...rect(style.layer, p.box.x, p.box.y, p.box.w, p.box.h),
+      hidden: style.hidden,
+      pen: style.hidden ? 'HIDDEN' : 'VISIBLE',
+    });
   }
 
   // ── the outline of the whole carcass, over the panels (LISP
-  //    drawFrontCarcaseOutline) — it is what the eye reads first ──
-  entities.push(rect('CARCASE', 0, 0, W, H));
+  //    drawFrontCarcaseOutline) — it is what the eye reads first, and T43-F4
+  //    is what finally makes that true on paper: THIS is the outline, and it
+  //    is now the only 0.50 on the sheet. ──
+  entities.push({ ...rect('CARCASE', 0, 0, W, H), pen: 'OUTLINE' });
 
   // ── the fronts: face detail, and the direction they open ──
   const style = frontType || profile.front.defaultType;

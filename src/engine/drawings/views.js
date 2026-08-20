@@ -69,10 +69,13 @@ export function buildCarcassElevation(result, {
     entities.push({
       ...rect(style.layer === 'DOORS' ? 'CARCASE' : style.layer, p.box.x, p.box.y, p.box.w, p.box.h),
       solid: true,
+      // T43-F4: with the fronts off every one of these is an edge you are
+      // LOOKING AT — a visible edge inside the outline, never the outline.
+      pen: 'VISIBLE',
     });
   }
 
-  entities.push(rect('CARCASE', 0, 0, W, H));
+  entities.push({ ...rect('CARCASE', 0, 0, W, H), pen: 'OUTLINE' });
 
   // ── THE DRAWERS THIS VIEW IS FOR (turn 43, CLAUDE.md F3) ──────────────────
   if (drawerBoxes) entities.push(...drawerBoxRects(result));
@@ -255,7 +258,10 @@ export function buildTopView(result, {
     const key = `${layer}|${hidden ? 'h' : 's'}|${box.x.toFixed(3)}|${box.y.toFixed(3)}|${box.w.toFixed(3)}|${box.h.toFixed(3)}`;
     if (seen.has(key)) return;
     seen.add(key);
-    entities.push({ ...rect(layer, box.x, box.y, box.w, box.h), hidden });
+    // T43-F4: a panel in plan is a panel edge, exactly as it is in elevation.
+    entities.push({
+      ...rect(layer, box.x, box.y, box.w, box.h), hidden, pen: hidden ? 'HIDDEN' : 'VISIBLE',
+    });
   };
 
   for (const p of result.panels) {
@@ -271,8 +277,8 @@ export function buildTopView(result, {
   }
 
   // The footprint, over everything — the same job drawFrontCarcaseOutline does
-  // on the elevation.
-  entities.push(rect('CARCASE', 0, 0, W, D));
+  // on the elevation, and (T43-F4) the same weight.
+  entities.push({ ...rect('CARCASE', 0, 0, W, D), pen: 'OUTLINE' });
 
   // ─── The wall, and the gap to it (turn 8, CLAUDE.md F3) ───
   // Every unit stands `room.wallBackClearance` off the wall behind it, and a

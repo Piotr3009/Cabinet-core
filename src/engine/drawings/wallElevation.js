@@ -437,7 +437,15 @@ export function buildWallElevation(group, {
         shakerFrame,
       })
       : buildCarcassElevation(m.result, {
-        unitNum: m.unit.params?.unit_num, profile, unitNumberHeight: W.unitNumberHeight,
+        unitNum: m.unit.params?.unit_num,
+        profile,
+        unitNumberHeight: W.unitNumberHeight,
+        // ─── TURN 43 (CLAUDE.md F3) ───────────────────────────────────────
+        // *"Szuflady nie są narysowane"*, and *"nóżki to jakieś klocki"*. Both
+        // are asked for HERE and nowhere else: the unit card keeps exactly the
+        // carcass view it has drawn since turn 7 (iron rule 4).
+        drawerBoxes: true,
+        legSymbol: true,
       });
     entities.push(...translate(view.entities, m.x, m.base));
     if (withFronts) entities.push(...handleMarks(m.result, profile, { dx: m.x, dy: m.base }));

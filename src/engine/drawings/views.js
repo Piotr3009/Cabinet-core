@@ -42,7 +42,9 @@ import {
  * @param {object} result   computeCabinet() output
  * @returns {{entities:Array, bounds:object, solid:object}}
  */
-export function buildCarcassElevation(result, { unitNum, profile, unitNumberHeight = null } = {}) {
+export function buildCarcassElevation(result, {
+  unitNum, profile, unitNumberHeight = null, drawerBoxes = false, legSymbol = false,
+} = {}) {
   const D = profile.drawings;
   const entities = [];
   const W = result.params.width;
@@ -72,6 +74,9 @@ export function buildCarcassElevation(result, { unitNum, profile, unitNumberHeig
 
   entities.push(rect('CARCASE', 0, 0, W, H));
 
+  // ── THE DRAWERS THIS VIEW IS FOR (turn 43, CLAUDE.md F3) ──────────────────
+  if (drawerBoxes) entities.push(...drawerBoxRects(result));
+
   // ── runners, at the rows the engine drills them ──
   entities.push(...runnerRuns(result, { width: W, boardT: G }));
 
@@ -79,7 +84,17 @@ export function buildCarcassElevation(result, { unitNum, profile, unitNumberHeig
   const legs = result.assemblies.legs;
   const legHeight = result.assemblies.carcass.legHeight || 0;
   if (legs && legHeight > 0) {
-    for (const leg of legs.positions) entities.push(rect('LEG_BLOCK', leg.x, -legHeight, legs.width, legHeight));
+    // ─── TURN 43 (CLAUDE.md F3): A LEG IS A LEG, NOT A BRICK ───────────────
+    // The owner: *"nóżki to jakieś klocki zamiast ładnej nóżki."* An
+    // adjustable leg is a top plate, a stem and a foot; the bare rectangle
+    // said none of that and printed as a solid block under every cabinet. The
+    // symbol is asked for by the wall's /2 sheet; the unit card keeps the
+    // rectangle it has drawn since turn 7 (iron rule 4 pins the card).
+    for (const leg of legs.positions) {
+      entities.push(...(legSymbol
+        ? legMark(leg, { width: legs.width, height: legHeight })
+        : [rect('LEG_BLOCK', leg.x, -legHeight, legs.width, legHeight)]));
+    }
   }
 
   entities.push(text('UNIT_NUMBER', W / 2, H / 2, String(unitNum ?? result.unitNum ?? ''),
@@ -120,6 +135,76 @@ function runnerRuns(result, { width, boardT }) {
     }
   }
   return out;
+}
+
+/**
+ * ─── TURN 43 (CLAUDE.md F3): /2 SHOWS THE DRAWERS IT IS FOR ─────────────────
+ *
+ * The owner, 20.08.2026: *"szuflady nie są narysowane."*
+ *
+ * MEASURED: `buildCarcassElevation` filtered `role !== 'drawer_box'`, so a
+ * BUDR's FIFTEEN drawer-box panels produced ZERO entities and six runner lines
+ * floated in an empty box. The carcass view's whole job is "what is inside",
+ * and the thing inside a drawer unit is the drawers.
+ *
+ * One SOLID rect per BOX — the stack's x-extent by that box's own side height
+ * at its own y — because with the fronts off you are looking straight into the
+ * opening. It is drawn on SHELVES (a box is furniture inside the carcass, and
+ * that is the ink this app gives it) and `solid: true` overrides the layer's
+ * dash for the same reason a shelf is solid here: nothing is in front of it.
+ *
+ * THE GEOMETRY IS THE ENGINE'S. The boxes are grouped the way
+ * `3d/hardware3d.js runnerInstances` already groups them — off the published
+ * DRAWER-SIDE panels — and not one height is re-derived. A drawing that
+ * disagreed with the cut list about a box side would be worse than no drawing.
+ */
+export function drawerBoxRects(result) {
+  const sides = (result.panels || []).filter((p) => p.part === 'DRAWER-SIDE' && p.box);
+  if (!sides.length) return [];
+  // The stack's own x-extent: the outside faces of the pair, which is exactly
+  // what the runner reads. A wardrobe whose drawer panel makes the two sides
+  // asymmetric still comes out right, because both faces are measured.
+  const left = Math.min(...sides.map((p) => p.box.x));
+  const right = Math.max(...sides.map((p) => p.box.x + p.box.w));
+
+  const boxes = new Map();
+  for (const p of sides) {
+    const key = p.meta?.drawer ?? p.id;
+    // A box is one y and one height whichever of its two sides is asked; the
+    // lower/taller of the pair is taken so an asymmetric pair still encloses
+    // the real opening rather than half of it.
+    const at = boxes.get(key);
+    if (!at) { boxes.set(key, { y: p.box.y, top: p.box.y + p.box.h }); continue; }
+    at.y = Math.min(at.y, p.box.y);
+    at.top = Math.max(at.top, p.box.y + p.box.h);
+  }
+
+  return [...boxes.entries()]
+    .sort((a, b) => a[1].y - b[1].y)
+    .map(([, box]) => ({
+      ...rect('SHELVES', left, box.y, right - left, box.top - box.y),
+      solid: true,
+      pen: 'VISIBLE',
+    }));
+}
+
+/**
+ * ─── TURN 43 (CLAUDE.md F3): THE LEG SYMBOL ─────────────────────────────────
+ *
+ * Three THIN lines, at the engine's own `legs.positions` and `legs.width`: the
+ * top plate under the carcass bottom, the stem down the middle, and the foot on
+ * the floor. That is what an adjustable leg IS, and it is what tells a fitter
+ * he has a threaded foot to turn rather than a solid block to pack.
+ */
+export function legMark(leg, { width, height }) {
+  const x0 = leg.x;
+  const x1 = leg.x + width;
+  const mid = (x0 + x1) / 2;
+  return [
+    line('LEG_BLOCK', x0, 0, x1, 0),                     // the top plate
+    line('LEG_BLOCK', mid, 0, mid, -height),             // the stem
+    line('LEG_BLOCK', x0, -height, x1, -height),         // the foot
+  ];
 }
 
 // ─── Top view ───────────────────────────────────────────────────────────────

@@ -1,180 +1,166 @@
-# CLAUDE.md — TURN 45 · THE WIZARD LEARNS MANNERS: T44'S ELEVEN EYE-TEST VERDICTS
+# CLAUDE.md — TURN 46 · THE SLOPE BECOMES REAL: WALLS CLOSE, UNITS ARRIVE, AND THE CABINET IS CUT ON THE SLOPE
 
-The owner walked T44 screen by screen, 23.08.2026, screenshots marked in
-red. Eleven verdicts. His two loudest: the picker — *"okno w oknie,
-roll w dół, wkurw na maxa"* — and the validation that took him hostage:
-*"musiałem wszystko od nowa przechodzić — to jest chore."* And the law
-we broke ourselves: UI copy is ENGLISH; T44 shipped "Ustawienia /
-Produkcja / Podsumowanie / Zapisać te ustawienia…". He laughed at us.
-Rightly.
+The owner, 24.08.2026, screenshot in hand: *"sufit się ścina, ale
+ściana już nie — nie łączy się. I mebel pozwala się na dojechanie do
+skosu. Przecież to nie ma sensu."* And his four decisions, same night,
+verbatim law: **option A — "tniemy po skosie"** (the door itself is cut
+on the slope, and there is NO hinge-side choice: *"brak wyboru
+otwierania, musi być od skosu"*); **minimum 400 mm**; interior rules as
+proposed; **scribe gap = the project's infill** (*"jak ustawimy infill
+40 to 40"*). One night, the whole thing — his order.
+
+## The slope, in numbers (one definition, used everywhere)
+
+A slope on wall `i`: `{ side: 'L'|'R', startHeight, run }` from
+`project.wallSlopes` (T44-F1 schema, normalised by
+`lib/wallElements.js`). The ceiling line over the wall's x axis:
+full `room.height` until the run begins, then linear down to
+`startHeight` at the wall's end. `ceilingAt(x)` is THAT function — write
+it ONCE (`lib/slopeLine.js` or beside `wallElements`), and every
+consumer below imports it. Two independent lerps in two files is the
+two-chain disease and fails the turn.
 
 ## Iron rules (binding)
 
-1. **Zero-stop overnight.** PR before morning. Sacrifice, first to
-   fall: F9-CNC (the groove cutting), then F1b (top view), then F8
-   (copy sweep may ship partial with a named list). **F2, F3, F4, F5,
-   F6, F7 never fall.**
-2. **BYTE-IDENTITY.** Engine untouched EXCEPT F9-CNC, which is additive
-   and gated on LED lines existing — none of the six configs carries
-   one, so `t45-classify`: six IDENTICAL, UNNAMED=0. If a config moves,
-   F9-CNC cut wrong — stop it, note it.
-3. **LISP is law** (F9-CNC only): the LED groove is born in
-   `reference/lisp/` first, application follows. Paren balance 0/0 by
-   script. No other kit is touched.
-4. **Sanctity — named removals, nothing else dies:** the
-   Factory/Retail header toggle; Number+Client fields from tab 5.1;
-   the DUPLICATE CNC-corner block in Carcases (one stays); the
-   duplicate front-type tail in Fronts (the per-front gallery stays);
-   wizard step "6. Hardware" (its fields already live in tab 5.4); the
-   sheet-size picker inside Produkcja (chosen earlier, per material);
-   the "Save as set & start" button. Each listed in the PR body.
-5. **Modals: draggable, open beside.** Visited tabs are ALWAYS
-   clickable; state NEVER resets. UI copy: English, everywhere.
-6. **No new deps. Suite never --silent. One commit per feature. Probe
-   walks the wizard, screenshots under `verify/t45/`.**
+1. **Zero-stop overnight.** PR before morning regardless. Sacrifice,
+   first to fall: F6b (the A-A drawing proof of a cut unit — the
+   drawings already draw panels, this is only its screenshot), then
+   F5-polish (drag ghost line). **F1–F5 core never fall.**
+2. **BYTE-IDENTITY.** All engine work is GATED on a `slopeCut` input no
+   config carries: `t46-classify` — six IDENTICAL, UNNAMED=0. If one
+   moves, the gate leaks: stop, note.
+3. **LISP IS LAW — FIRST.** The slope edge cut is born in
+   `reference/lisp/`: one shared routine (SKYLON_COMMON) that trims a
+   side panel's top corner on a diagonal, called from
+   `KIT_WARDROBE_FULL` and `KIT_BUDTALL_FULL`. Other kits untouched —
+   say so in the PR. Paren balance 0/0 by script. The application
+   follows the LISP, never the reverse.
+4. **Sanctity.** Nothing deleted. My own chat-fix error is REPAIRED by
+   name: `Room.jsx` gave stubs `slopes=[]` (23.08) — that line changes,
+   nothing else about it.
+5. **Modals draggable, beside. English copy. No new deps. Suite never
+   --silent. One commit per feature. Probes `verify/t46/`, real pointer
+   input.**
 
 ---
 
-## F1 [CRITICAL] — the wall elevation gets dimensions, and a plan view
+## F1 [CRITICAL] — the wall closes: the stub honours the slope
 
-- **F1a** Live dimension chains exactly as his red pen: top = wall
-  width + the slope's run segment; right edge = slope drop + the wall
-  stub under it; left = full height; bottom = width. They follow every
-  drag live.
-- **F1b** A `Front / Top` switch in the wall modal. Top = the wall seen
-  from above: wall line, depth zone, and two NEW draggable elements —
-  `Recess` and `Chimney` (rectangles with width + depth, double-click
-  for numbers). Stored on the same wall model. Engine ignores them this
-  turn — they are geometry for the eye and for future unit clamping.
+The return stub at the slope's low end is `startHeight` tall, not
+`room.height` — `Room.jsx` passes the wall's slopes to stubs and the
+stub's own outline is cut by the SAME `ceilingAt` (a stub is a fragment
+of its wall; it inherits the wall's line over its x range). The gap in
+the owner's screenshot dies.
 
-Proofs: `f1a-elevation-dimensions.png`, `f1b-top-view.png`.
+Proof: `f1-wall-and-stub-meet.png` (the exact camera of his shot).
 
-## F2 [CRITICAL] — settings 5.1 cleaned, and the toggle dies
+## F2 [CRITICAL] — arrival law: clamp + minimum 400
 
-- Number + Client: REMOVED from 5.1 (step 1 owns them). Type stays,
-  read-only.
-- The Factory/Retail toggle: REMOVED. One codebase, TWO entries: the
-  workshop app hardwires `factory`; a separate route `/client` (the
-  future retail site mounts it) hardwires `retail`. The audience tree
-  from T44 stays as the single filter.
+- Dragging a unit along a sloped wall: the unit MAY enter the slope
+  zone (that is the point of this turn) **down to the station where
+  `ceilingAt(far edge) − infill ≥ 400 + legs`**. Past that: hard stop.
+- A unit standing where its FULL height no longer fits is not an
+  error — it is a CUT unit (F3). A unit pushed past the 400 floor is
+  refused with a red Check: `Unit under slope minimum (400 mm)`.
+- The scribe gap to the sloped ceiling is **the project's infill
+  value** — one number, the one the owner already sets.
 
-Proof: `f2-no-toggle-no-duplicates.png`.
+Tests: clamp station computed and asserted for the fixture slope;
+the Check fires and clears. Proof: `f2-clamp-and-check.png`.
 
-## F3 [CRITICAL] — the decor picker becomes a modal, as mocked
+## F3 [CRITICAL] — the engine cuts the carcass (gated, LISP-shaped)
 
-Approved mockup, 23.08:
-- The tab shows ONE slot: `Choose decor…`. Click → a SEPARATE modal
-  (backdrop, own single scrolling grid — **no scroll-in-scroll, no
-  window-over-window, ever**): search on top, a FAMILY filter bar
-  (Oak, Walnut, Ash… — Egger's own taxonomy, supplier-agnostic for the
-  future), large tiles. Click a tile = chosen + modal closes.
-- The tab then shows exactly ONE tile (swatch + code + name + ST) with
-  `Change`. The SAME single tile is what the Summary shows.
-- Spraying: picked from the list, but once picked it renders as the
-  SAME large tile (colour swatch + name) — one chosen-decor format
-  across laminate / veneer / spraying.
+`paramsForEngine` hands the unit a `slopeCut` — the ceiling line in
+UNIT-LOCAL x (two points), already minus infill — only when the unit
+stands in a slope zone. In the engine, gated on it:
 
-Tests: DOM — after choice the tab contains one tile and zero grid;
-the modal contains the only scrollable region. Proofs:
-`f3-picker-modal.png`, `f3-chosen-tile.png`.
+- **Sides**: the side whose x sits under the diagonal becomes a
+  PENTAGON — vertical front edge full? No: vertical edge at the LOW
+  end equals the cut height there, the top edge is the diagonal, the
+  tall edge keeps full height. Emit the shape the way the CNC editor
+  already understands cut paths (the LISP routine of rule 3 is the
+  mirror of this cut).
+- **Top board**: sits level at the LOW end's height minus nothing —
+  the top drops to the height of the lowest cut side, full depth; the
+  triangle above it is CLOSED by the sloped edges of the two sides
+  and the front (option A) — no extra roof board this turn.
+- **Back**: cut on the same diagonal.
+- **Fingerprints**: every cut panel's fingerprint carries the cut, so
+  T41's suite law keeps holding.
 
-## F4 [HIGH] — the duplicates die, and step 6 becomes the real summary
+Tests (the thing): a WARDROBE with a fixture `slopeCut` → the panel
+list holds pentagon sides with the asserted vertices, a lowered top,
+a cut back; WITHOUT `slopeCut` → byte-identical to today (the gate).
+Proofs: `f3-cut-carcass-panels.png` + `verify/t46/f3-vertices.txt`.
 
-- Carcases: ONE CNC-corner block (the repeated joinery table goes).
-- Fronts: ONE front-type choice (the tail repeat goes).
-- Wizard step `6. Hardware` REMOVED → replaced by **`6. Summary`**:
-  the whole project in miniatures — chosen decor tiles, base
-  dimensions, hardware — `Change` per section, and ONE button:
-  `Start designing`. (`Save as set & start` is gone; the standard was
-  already offered at the settings finale.)
+## F4 [CRITICAL] — option A: the front is cut on the slope
 
-Proof: `f4-step6-summary.png`.
+The owner's law, verbatim: *"tniemy po skosie, brak wyboru otwierania,
+musi być od skosu."*
 
-## F5 [HIGH] — push-to-open obeys the handles
+- The door over a cut opening is a PENTAGON — cut on the same
+  diagonal, minus the standard gaps along every edge including the
+  diagonal one.
+- **Hinge side is FORCED — no user choice**: hinges live on the
+  full-height edge, the door opens from the slope end. The hinge-side
+  control disappears for a cut door (grey with the one-line reason).
+  Hinge count comes from the tall edge's height through the EXISTING
+  chain (T41-F4's column law) — the diagonal edge never carries a
+  hinge.
+- Shaker on a pentagon: the frame follows all five edges (mitred at
+  the diagonal); `shakerFits` decides at the threaded frame as ever —
+  too small stays plain.
+- Drawer fronts: **forbidden in the slope zone** (interior law, F5) —
+  the engine refuses a drawer stack whose top would cross the line,
+  red Check names it.
 
-Any handles chosen (J-pull / bar / knobs / any hands) → push-to-open
-is forced OFF and LOCKED, with a one-line reason under it. Handleless →
-available as before. The BOM follows the lock.
+Tests: pentagon front vertices asserted; hinge drills only on the tall
+edge; the hinge-side control locked in the UI. Proofs:
+`f4-cut-door-3d.png`, `f4-hinge-forced.png`.
 
-Test: toggling handles flips the lock both ways. Proof:
-`f5-push-to-open-locked.png`.
+## F5 [HIGH] — the interior obeys the line, live
 
-## F6 [HIGH] — Produkcja speaks the material's name out loud
+- Shelves exist only where their FULL span sits below the cut line
+  (a shelf may not pierce the diagonal). The rail (ALONE or assembly)
+  shortens exactly as the bay law already cuts it at partitions —
+  here the boundary is the x where the line meets the rail's y; below
+  the meeting point the rod ends. Drawers: forbidden in the zone
+  (F4).
+- **Live**: drag end re-runs the engine (the same pos_mm path every
+  drag uses) — the cabinet re-cuts itself as it arrives under the
+  slope. During the drag, a ghost line shows the cut-to-be
+  (sacrificable polish, rule 1).
 
-- The assigned material name per block: FULL-SIZE text (it is the
-  information, not a footnote) — "Carcass 1 — MFC Halifax Oak 18 mm"
-  as the block's title line.
-- The sheet-size picker: REMOVED here (rule 4) — it lives at the
-  material step. Measured-thickness fields and infill: untouched,
-  the owner likes them.
+Tests: shelf beyond the line refused with the Check; rail length at a
+fixture station asserted. Proof: `f5-live-recut.gif-or-png`.
 
-Proof: `f6-produkcja-named.png`.
+## F6 [HIGH] — the paper and the eyes
 
-## F7 [CRITICAL] — validation stops taking hostages
+- **F6a** 3D: the room already tells the truth (F1); the cut cabinet
+  renders from the engine's own panels — no scene-side twin geometry.
+- **F6b** Drawings: nothing new to build — T43's sheets draw panels;
+  the proof is one A-A through a cut wardrobe showing the pentagon.
+  (First to fall, rule 1.)
 
-- A cross-tab conflict (wardrobe taller than the room) = a red note AT
-  THE FIELD naming the culprit + a one-click jump to it (Wall/Room).
-- Fixing it returns the user STRAIGHT to where they were (Summary
-  included). Every earlier choice survives — nothing resets, nothing
-  re-asks.
-- Next validates ONLY the current tab. Visited tabs stay clickable
-  through any error state.
-
-Test: seed the conflict, fix the room, assert every prior field value
-intact and Summary reachable in one click. Proof:
-`f7-conflict-jump-and-return.png`.
-
-## F8 [MEDIUM] — numbering and the English sweep
-
-- Sub-tabs numbered `5.1 … 5.6` in the strip.
-- Every Polish string shipped by T44 goes English, BY NAME:
-  `Ustawienia → Settings`, `Produkcja → Production`,
-  `Podsumowanie → Summary`, `Ile kolorów frontów? → How many front
-  colours?`, the save-set finale → `Save these as your standard?` —
-  and a grep for Polish diacritics in `src/components/` returns only
-  comments.
-
-Proof: `f8-english-everywhere.png`.
-
-## F9 [HIGH] — lighting grows up
-
-- **F9a** The Lighting menu is ALWAYS alive. ON/OFF is a PREVIEW
-  (room dim) only — at OFF you still place, see and edit LED lines on
-  carcasses.
-- **F9b** Settings gains sub-tab `5.6 Lighting` (Summary shifts to
-  5.7... no — the wizard summary is step 6; the SETTINGS strip becomes
-  `5.1–5.6` with Lighting as 5.6 and the settings summary folded into
-  wizard step 6 per F4): choice `LED flexi 4 mm` (a 4 mm groove) vs
-  `Channel` + channel width field (the router's slot width).
-- **F9c** Optional `W/m` field → the driver calculator: total W = W/m ×
-  metres of ALL placed lines (metres shown beside it). Drivers are
-  12 V; pick the set whose summed rating ≥ total, smallest unit 60 W.
-  Result lands in the BOM as `N × driver X W`.
-- **F9-CNC [falls first]** The groove under every placed line: born in
-  `reference/lisp/` (rule 3), then the app's CNC export cuts it —
-  width = 4 mm or the channel width, on the panel the line sits on.
-  Gated on lines existing; six configs untouched.
-
-Proofs: `f9-lighting-off-still-edits.png`, `f9-driver-calc.png`,
-`f9-cnc-groove.dxf` + screenshot.
+Proofs: `f6a-room-with-cut-unit.png`, `f6b-section-cut-unit.png`.
 
 ---
 
 ## Execution order
 
-F2 → F3 → F4 → F5 → F6 → F7 → F8 → F1 → F9. Sacrifice: F9-CNC, then
-F1b, then F8-partial. **F2, F3, F4, F5, F6, F7 never fall.**
+F1 → F2 → LISP(rule 3) → F3 → F4 → F5 → F6. One night, the whole
+thing — the owner's order. Sacrifice only per rule 1.
 
 ## What this turn does NOT touch
 
-`computeCabinet()` beyond F9-CNC's gated additive read. The drawings
-system. The rail. Runners. `cc_settings_sets` schema. Golden fixtures.
-The six configs' bytes.
+The six configs' bytes. Kits other than WARDROBE/BUDTALL. The wizard
+(T45). The drawings system's code. Runners' catalogue. The rail's T42
+model. `cc_*` schema — **no SQL this turn**.
 
 ## Morning audit will run
 
-Fresh clone → suite → build → t45-classify (six IDENTICAL) → removal
-audit against rule 4's list, nothing outside → the Polish-diacritics
-grep → LISP diff limited to the LED groove + paren 0/0 → the wizard
-probe re-run, screenshots LOOKED AT → verdict → the owner's numbered
-eye-test list.
+Fresh clone → suite → build → t46-classify (six IDENTICAL) → LISP diff
+limited to the shared routine + two kits, paren 0/0 → the gate audit
+(no `slopeCut`, no change — byte-proved) → vertex probes re-run → every
+screenshot LOOKED AT, the owner's own camera angle first → verdict →
+the numbered eye-test list.

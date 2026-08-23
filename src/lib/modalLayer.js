@@ -144,6 +144,13 @@ export const MODAL_KINDS = Object.freeze({
   // about an object — the shape that was double-clicked — so it opens beside
   // it and the guard holds it to that.
   'wall-element': { about: 'object', label: 'Wall element' },
+  // ─── TURN 45 (CLAUDE.md F3) ────────────────────────────────────────────
+  // The decor picker, as the approved mockup draws it: its own window with a
+  // backdrop and its own single scrolling grid. It is about an OBJECT — the
+  // material slot whose button was pressed — so it opens BESIDE that button and
+  // the guard holds it to that. *"no scroll-in-scroll, no window-over-window,
+  // ever"*: the tab behind it renders one slot and no grid at all.
+  'decor-picker': { about: 'object', label: 'Choose decor' },
   // ─── TURN 44 (CLAUDE.md F8) ────────────────────────────────────────────
   // "Zapisać te ustawienia jako Twój standard?" — the finale, asked once, at
   // the end of the step-4 sequence. About the PROJECT's settings as a whole,

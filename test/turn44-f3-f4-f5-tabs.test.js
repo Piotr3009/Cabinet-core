@@ -26,13 +26,16 @@ const PANEL = readFileSync(new URL('../src/components/MaterialChoicePanel.jsx', 
 
 // ══ F3 ═════════════════════════════════════════════════════════════════════
 
-test('F3 — Number, Client and Type are READ-ONLY in the wizard, editable from the menu', () => {
-  assert.match(WIZ, /readOnly=\{!editDoor\}/);
+// ─── T45 F2 SUPERSEDES THIS ONE ────────────────────────────────────────────
+// T44 made Number and Client read-only; T45's F2 removes them from 5.1
+// altogether (iron rule 4, by name) because a greyed copy of an answer step 1
+// already took is still two places one fact is written down. What survives is
+// the TYPE, and it survives as a label. See
+// test/turn45-f2-one-codebase-two-entries.test.js for the rest.
+test('F3 — the Type is a LABEL in the wizard, editable from the menu', () => {
   assert.match(WIZ, /data-wizard-type-label="1"/, 'the type is a label in the wizard');
-  assert.match(WIZ, /data-project-type="1"/, '…and a select from the edit door, which has no step 1');
-  assert.equal((WIZ.match(/readOnly=\{!editDoor\}/g) || []).length, 2, 'the number AND the client');
+  assert.match(WIZ, /data-project-type="1"/, '…and an editable select from the menu, which has no step 2 to go back to');
 });
-
 test('F3 — the saved settings set is a DROPDOWN, default “Default settings”', () => {
   assert.match(WIZ, /const DEFAULT_SET_LABEL = 'Default settings';/);
   assert.match(WIZ, /data-settings-set-select="1"/);
@@ -101,11 +104,21 @@ test('F4 — N types make N submodals, each with its own dot', () => {
   assert.match(WIZ, /const carcAt = carcStops\.includes\(carcStop\) \? carcStop : 'count';/);
 });
 
-test('F4 — the picker is a FULL-WIDTH PANEL, not a window over the wizard', () => {
-  assert.match(PANEL, /className="border border-shell-600 rounded-lg p-3 space-y-3 w-full"/);
-  assert.doesNotMatch(PANEL, /createPortal|position: 'fixed'|LAYER_CLASS/, 'nothing floats');
-  assert.doesNotMatch(PANEL, /import Modal from/, 'it is a panel, not a modal');
-});
+// ─── T45 F3 SUPERSEDES THE SIX ASSERTIONS THAT STOOD HERE ──────────────────
+//
+// T44 answered *"okno w oknie"* by making the picker a full-width PANEL inside
+// the step. On 23.08 the owner met the result and said the other half of the
+// same sentence — *"okno w oknie, roll w dół, wkurw na maxa"* — because a grid
+// inside a scrolling step inside a draggable window is three scrollbars deep.
+//
+// The approved mockup splits the two jobs: the TAB holds one slot and one
+// chosen tile and no grid at all, and the CATALOGUE has its own window with its
+// own single scrolling grid. What used to be asserted of `MaterialChoicePanel`
+// is therefore asserted of `DecorPickerModal` now, and it is asserted in
+// test/turn45-f3-the-picker-is-a-modal.test.js — including every clause of the
+// EGGER licence, which travels with the picture wherever the picture goes.
+//
+// The two rules below are T44's and still hold, so they stay here.
 
 test('F4 — the three categories are the three SOURCES, separated hard', () => {
   assert.match(PANEL, /data-material-categories="1"/);
@@ -116,41 +129,12 @@ test('F4 — the three categories are the three SOURCES, separated hard', () => 
   assert.match(WIZ, /FRONT_ORDER = \['spray', 'veneer', 'laminate'\]/);
 });
 
-test('F4 — Laminat: LARGE tiles, a live search, the SAME egger-decors.json', () => {
+test('F4 — the owner’s 96 px floor is still stated once and read', () => {
   assert.equal(TILE_SWATCH_PX, 96, 'the owner’s floor, stated once');
-  assert.match(PANEL, /style=\{\{ height: TILE_SWATCH_PX \}\}/);
-  assert.match(PANEL, /data-decor-search="1"/);
-  assert.match(PANEL, /onChange=\{\(e\) => setQuery\(e\.target\.value\)\}/, 'it filters AS YOU TYPE');
-  assert.match(PANEL, /filterDecors\(state\.decors, \{ category: null, query \}\)/);
-  assert.match(PANEL, /loadDecorCatalogue\(\)/, 'the same pack the 3D reads');
-  assert.match(PANEL, /data-egger-tile=\{decor\.id\}/);
-  // the name in type somebody can read, not 9 px
-  assert.match(PANEL, /text-\[13px\] text-ink-50 truncate/);
-});
-
-test('F4 — the EGGER licence travels with the picture', () => {
-  const tile = PANEL.slice(PANEL.indexOf('data-egger-tile'), PANEL.indexOf('</button>', PANEL.indexOf('data-egger-tile')));
-  assert.match(tile, /EGGER/, 'attribution inside the same control as the image');
-  assert.match(PANEL, /DECOR_DISCLAIMER/);
-  assert.match(PANEL, /object-cover/, 'the whole scan reduced — never a crop');
-});
-
-test('F4 — SPRAY IS A LIST AND DRAWS ZERO TILES', () => {
-  const spray = PANEL.slice(PANEL.indexOf('function SprayList'));
-  assert.match(spray, /data-spray-list="1"/);
-  assert.match(spray, /data-spray-select="1"/);
-  assert.doesNotMatch(spray, /<img/, 'no picture');
-  assert.doesNotMatch(spray, /data-egger-tile/, 'no tile');
-  assert.doesNotMatch(spray, /grid /, 'no swatch grid at all');
-  // the ONE colour it draws is the read-out of what is chosen, not a picker
-  assert.match(spray, /data-spray-current="1"/);
-});
-
-test('F4 — VENEER is a list too (no tile assets exist)', () => {
-  const ven = PANEL.slice(PANEL.indexOf('function VeneerList'), PANEL.indexOf('function SprayList'));
-  assert.match(ven, /data-veneer-select="1"/);
-  assert.doesNotMatch(ven, /<img/);
-  assert.doesNotMatch(ven, /data-egger-tile/);
+  const TILE = readFileSync(new URL('../src/components/ChosenDecorTile.jsx', import.meta.url), 'utf8');
+  const MODAL = readFileSync(new URL('../src/components/DecorPickerModal.jsx', import.meta.url), 'utf8');
+  assert.match(TILE, /TILE_SWATCH_PX/, 'the chosen tile reads the floor');
+  assert.match(MODAL, /TILE_SWATCH_PX/, '…and so does every tile in the grid');
 });
 
 test('F4 — the drawers question closes each submodal, and writes the BOM’s flag', () => {

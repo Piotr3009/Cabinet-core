@@ -1,0 +1,564 @@
+{
+  "turn": 44,
+  "base": "http://127.0.0.1:4173/",
+  "steps": [
+    {
+      "label": "F1 — One wall is the FIRST card",
+      "ok": true,
+      "detail": "[\"wall\",\"room\"]"
+    },
+    {
+      "label": "F1 — …and it is the default focus",
+      "ok": true,
+      "detail": "focus=wall"
+    },
+    {
+      "label": "F1 — choosing One wall opens the elevation at once",
+      "ok": true,
+      "detail": "wall-elevation is on screen"
+    },
+    {
+      "label": "F1 — the elevation redraws live off the room the app stores",
+      "ok": true,
+      "detail": "{\"h\":2500,\"w\":3600}"
+    },
+    {
+      "label": "F1 — a door, a window AND a slope are on the wall",
+      "ok": true,
+      "detail": "{\"openings\":2,\"slopes\":1,\"kinds\":[\"door\",\"window\"]}"
+    },
+    {
+      "label": "F1 — an element DRAGS along the wall, under a real pointer",
+      "ok": true,
+      "detail": "1200 → 1684 mm"
+    },
+    {
+      "label": "F1 — double-click opens the element’s own modal",
+      "ok": true,
+      "detail": "{\"kind\":\"door\",\"left\":1086.1875,\"right\":1406.1875,\"top\":399.375,\"bottom\":709.375,\"anchored\":\"1\",\"draggable\":true}"
+    },
+    {
+      "label": "F1 — …draggable, anchored, and NOT covering the element it is about (rule 4)",
+      "ok": true,
+      "detail": "{\"modal\":1086,\"door\":846,\"overlaps\":false}"
+    },
+    {
+      "label": "F1 — a slope’s own modal carries side · start height · run",
+      "ok": true,
+      "detail": "{\"open\":true,\"side\":true,\"start\":true,\"run\":true}"
+    },
+    {
+      "label": "F1 — …and the side really flips",
+      "ok": true,
+      "detail": "side=L"
+    },
+    {
+      "label": "F1 — Back keeps the wall",
+      "ok": true,
+      "detail": "{\"openings\":2,\"slopes\":1}"
+    },
+    {
+      "label": "F1 — the green Save goes on to Project settings",
+      "ok": true,
+      "detail": "step 4 is on screen"
+    },
+    {
+      "label": "F2 — six tabs, numbered, in the owner’s order",
+      "ok": true,
+      "detail": "1u 2c 3f 4h 5p 6p"
+    },
+    {
+      "label": "F2 — a tab ahead of the walk is not a place you can be",
+      "ok": true,
+      "detail": "five ahead, five disabled"
+    },
+    {
+      "label": "F3 — a wardrobe is NOT asked the three kitchen heights",
+      "ok": true,
+      "detail": "depth,tall,toeKick"
+    },
+    {
+      "label": "F3 — the wardrobe opens at 2100 / 100 (the owner’s baked-in defaults)",
+      "ok": true,
+      "detail": "{\"tall\":2100,\"toe\":100}"
+    },
+    {
+      "label": "F3 — Number and Client are read-only in the wizard",
+      "ok": true,
+      "detail": "readOnly=true"
+    },
+    {
+      "label": "F3 — the saved set is a dropdown, default “Default settings”",
+      "ok": true,
+      "detail": "{\"options\":1,\"first\":\"Default settings\"}"
+    },
+    {
+      "label": "F3 — the two licensed removals are gone from this screen",
+      "ok": true,
+      "detail": "{\"keepAs\":false,\"roomSetup\":false}"
+    },
+    {
+      "label": "F4 — “Ile typów materiału carcase?” · 2 → two types",
+      "ok": true,
+      "detail": "types=2"
+    },
+    {
+      "label": "F4 — the walk grows a dot per submodal",
+      "ok": true,
+      "detail": "dots=5 (count · 2 types · sheets · summary)"
+    },
+    {
+      "label": "F4 — the swatch is at least the owner’s 96 px",
+      "ok": true,
+      "detail": "96 px"
+    },
+    {
+      "label": "F4 — the panel is FULL WIDTH and does not float",
+      "ok": true,
+      "detail": "panel 700 of 700 available (tab body 726), position:static"
+    },
+    {
+      "label": "F4 — the search actually filters, as you type",
+      "ok": true,
+      "detail": "85 → 1 tiles for \"H1180\""
+    },
+    {
+      "label": "F4 — a tile is choosable",
+      "ok": true,
+      "detail": "clicked"
+    },
+    {
+      "label": "F4 — SPRAY IS A LIST AND RENDERS ZERO TILES",
+      "ok": true,
+      "detail": "{\"list\":true,\"select\":true,\"tiles\":0,\"images\":0}"
+    },
+    {
+      "label": "F4 — the drawers question closes the submodal and writes the BOM’s flag",
+      "ok": true,
+      "detail": "mode=ready"
+    },
+    {
+      "label": "F4 — two types carry two material rows the BOM can read",
+      "ok": true,
+      "detail": "[{\"id\":\"c1\",\"material\":\"generic-18\",\"finish\":null},{\"id\":\"c2\",\"material\":\"generic-18\",\"finish\":null}]"
+    },
+    {
+      "label": "F5 — “Ile kolorów frontów?” · 1 → one front type on the project",
+      "ok": true,
+      "detail": "types=1"
+    },
+    {
+      "label": "F5 — a colour picked from the spray LIST reaches the front",
+      "ok": true,
+      "detail": "{\"hex\":\"#ffffff\",\"name\":\"9010 Pure White\",\"system\":\"RAL\"}"
+    },
+    {
+      "label": "F5 — the opening options are exactly the owner’s four",
+      "ok": true,
+      "detail": "push,handles,knobs,jhandle"
+    },
+    {
+      "label": "F5 — Knobs writes the handle record the engine already fits",
+      "ok": true,
+      "detail": "{\"type\":\"knob\"}"
+    },
+    {
+      "label": "F5 — J-handle IS the shape, and takes the handle off",
+      "ok": true,
+      "detail": "{\"style\":\"HJ\",\"handle\":null}"
+    },
+    {
+      "label": "F5 — Push-to-open IS the MOVENTO TIP-ON variant, and the shape comes back",
+      "ok": true,
+      "detail": "{\"variant\":\"T\",\"style\":\"S\"}"
+    },
+    {
+      "label": "F5 — the shine REACHES the material: 5 % → 0.95, 100 % → 0.00 roughness",
+      "ok": true,
+      "detail": "5% → 0.95 · 100% → 0.00"
+    },
+    {
+      "label": "F5 — …and the two are different pictures, not the same one twice",
+      "ok": true,
+      "detail": "0.24 % of pixels differ"
+    },
+    {
+      "label": "F6 — the factory sees every hardware row",
+      "ok": true,
+      "detail": "hardware.colour hardware.choices hardware.hinge-standard hardware.hinge-system hardware.hinge-plate-pilot hardware.shelf-sleeve hardware.runners"
+    },
+    {
+      "label": "F7 — one block per chosen material, named, not a pile of six",
+      "ok": true,
+      "detail": "carcass1,carcass2,front1,box"
+    },
+    {
+      "label": "F8 — the summary is grouped by tab",
+      "ok": true,
+      "detail": "ustawienia,carcases,fronts,hardware,produkcja"
+    },
+    {
+      "label": "F8 — the set is saved (locally, with no table — the named skip)",
+      "ok": true,
+      "detail": "T44 walk standard"
+    },
+    {
+      "label": "F2 — retail loses Produkcja and the rest renumber",
+      "ok": true,
+      "detail": "1ustawienia 2carcases 3fronts 4hardware 5podsumowanie"
+    },
+    {
+      "label": "F2 — RETAIL RENDERS ZERO FACTORY NODES (DOM audit, every tab)",
+      "ok": true,
+      "detail": "0 of 19 hidden ids on screen"
+    },
+    {
+      "label": "F2 — a tab returned to keeps its state",
+      "ok": true,
+      "detail": "{\"tab\":\"fronts\",\"sheen\":100,\"types\":2}"
+    },
+    {
+      "label": "F8 — after a RELOAD the set is in the dropdown",
+      "ok": true,
+      "detail": "Default settings | T44 walk standard"
+    },
+    {
+      "label": "F8 — …and re-applies the settings it was saved from",
+      "ok": true,
+      "detail": "{\"sheen\":100,\"mode\":\"ready\",\"types\":2}"
+    },
+    {
+      "label": "F3 — a KITCHEN is asked all three of them",
+      "ok": true,
+      "detail": "base,depth,tall,wall,toeKick,wallMount"
+    },
+    {
+      "label": "F3 — the two heads of tab 1 really are different pictures",
+      "ok": true,
+      "detail": "4.4 % of pixels differ"
+    },
+    {
+      "label": "RULE 4 — no modal opened without knowing what it is about",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "label": "RULE 3 — every screenshot contains its named subject",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "shots": [
+    {
+      "name": "f1-one-wall-first",
+      "subject": {
+        "dom": "[data-scope-first]",
+        "text": "One wall"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"text\":true}"
+    },
+    {
+      "name": "f1-element-modal-door",
+      "subject": {
+        "all": [
+          "[data-element-x]",
+          "[data-element-w]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f1-wall-elevation-editor",
+      "subject": {
+        "all": [
+          "[data-wall-elevation-svg]",
+          "[data-elevation-kind=\"door\"]",
+          "[data-elevation-kind=\"window\"]",
+          "[data-elevation-kind=\"slope\"]",
+          "[data-element-modal=\"slope\"]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f2-tab-1-ustawienia",
+      "subject": {
+        "dom": "[data-wizard-tab-body=\"ustawienia\"]",
+        "text": "Ustawienia"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"text\":true}"
+    },
+    {
+      "name": "f3-ustawienia-wardrobe",
+      "subject": {
+        "dom": "[data-wizard-node=\"ustawienia.dimensions\"]",
+        "none": [
+          "[data-dimension=\"base\"]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"none\":true}"
+    },
+    {
+      "name": "f4-carcases-count",
+      "subject": {
+        "dom": "[data-carcass-dots]",
+        "text": "Ile typów materiału carcase?"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"text\":true}"
+    },
+    {
+      "name": "f4-picker-large",
+      "subject": {
+        "count": [
+          "[data-egger-tile]",
+          8
+        ],
+        "dom": "[data-decor-search]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"count\":true}"
+    },
+    {
+      "name": "f4-picker-search",
+      "subject": {
+        "count": [
+          "[data-egger-tile]",
+          1
+        ],
+        "dom": "[data-decor-search]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"count\":true}"
+    },
+    {
+      "name": "f4-submodal-1-spray-is-a-list",
+      "subject": {
+        "all": [
+          "[data-spray-select]"
+        ],
+        "none": [
+          "[data-egger-tile]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true,\"none\":true}"
+    },
+    {
+      "name": "f4-submodal-1-carcass",
+      "subject": {
+        "all": [
+          "[data-material-panel]",
+          "[data-drawer-boxes]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f4-two-types-flow",
+      "subject": {
+        "all": [
+          "[data-carcass-submodal=\"c2\"]",
+          "[data-carcass-dot=\"c2\"]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f4-sheets-assignment",
+      "subject": {
+        "count": [
+          "[data-sheet-assign]",
+          2
+        ]
+      },
+      "present": true,
+      "detail": "{\"count\":true}"
+    },
+    {
+      "name": "f4-carcases-summary",
+      "subject": {
+        "all": [
+          "[data-carcass-chosen]",
+          "[data-save-carcasses]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f5-fronts-count",
+      "subject": {
+        "dom": "[data-wizard-fronts]",
+        "text": "Ile kolorów frontów?"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"text\":true}"
+    },
+    {
+      "name": "f5-submodal-front",
+      "subject": {
+        "all": [
+          "[data-material-panel]",
+          "[data-spray-select]"
+        ],
+        "none": [
+          "[data-egger-tile]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true,\"none\":true}"
+    },
+    {
+      "name": "f5-shine-matte",
+      "subject": {
+        "dom": "[data-front-shine]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f5-shine-gloss",
+      "subject": {
+        "dom": "[data-front-shine]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f5-fronts-and-shine",
+      "subject": "composed",
+      "present": true,
+      "detail": "matte | shine"
+    },
+    {
+      "name": "f5-fronts-tail",
+      "subject": {
+        "all": [
+          "[data-front-opening]",
+          "[data-front-shine]",
+          "[data-save-fronts]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f6-hardware-factory",
+      "subject": {
+        "all": [
+          "[data-hinge-standard]",
+          "[data-runner-variant]",
+          "[data-shelf-sleeve]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f7-produkcja-per-material",
+      "subject": {
+        "count": [
+          "[data-material-block]",
+          4
+        ],
+        "dom": "[data-infill-side-width]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"count\":true}"
+    },
+    {
+      "name": "f8-podsumowanie",
+      "subject": {
+        "count": [
+          "[data-summary-group]",
+          5
+        ]
+      },
+      "present": true,
+      "detail": "{\"count\":true}"
+    },
+    {
+      "name": "f8-save-set-modal",
+      "subject": {
+        "all": [
+          "[data-set-name]",
+          "[data-set-answer=\"yes\"]",
+          "[data-set-answer=\"no\"]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f2-retail-ustawienia",
+      "subject": {
+        "all": [
+          "[data-wizard-tabs]",
+          "[data-wizard-node=\"ustawienia.dimensions\"]"
+        ],
+        "none": [
+          "[data-wizard-tab=\"produkcja\"]",
+          "[data-settings-set-select]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"all\":true,\"none\":true}"
+    },
+    {
+      "name": "f2-tabs-and-retail",
+      "subject": "composed",
+      "present": true,
+      "detail": "factory | retail"
+    },
+    {
+      "name": "f6-hardware-retail",
+      "subject": {
+        "dom": "[data-wizard-node=\"hardware.colour\"]",
+        "none": [
+          "[data-hinge-standard]",
+          "[data-runner-variant]"
+        ]
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"none\":true}"
+    },
+    {
+      "name": "f6-hardware-factory-vs-retail",
+      "subject": "composed",
+      "present": true,
+      "detail": "factory | retail"
+    },
+    {
+      "name": "f8-save-set-roundtrip",
+      "subject": {
+        "dom": "[data-settings-set-select]",
+        "text": "T44 walk standard"
+      },
+      "present": true,
+      "detail": "{\"dom\":true,\"text\":true}"
+    },
+    {
+      "name": "f3-ustawienia-kitchen",
+      "subject": {
+        "dom": "[data-dimension=\"wallMount\"]"
+      },
+      "present": true,
+      "detail": "{\"dom\":true}"
+    },
+    {
+      "name": "f3-ustawienia-wardrobe-vs-kitchen",
+      "subject": "composed",
+      "present": true,
+      "detail": "wardrobe | kitchen"
+    }
+  ],
+  "ok": true
+}

@@ -27,7 +27,11 @@ test('the field stands in the front slot card, Shaker-only, and un-saves the fro
   assert.match(SRC, /Frame width \(all shaker fronts\)/, 'the owner-specified label, saying project-wide');
   // The rebuild's own law: any write inside the fronts container un-saves it.
   const field = SRC.slice(SRC.indexOf('data-shaker-frame-slot'));
-  assert.ok(field.slice(0, 600).includes('touchFronts()'), 'the gate is touched before the write');
+  // T44 F2 indented this card one level deeper (it is inside a tab now), so the
+  // window is measured in lines rather than in characters — the assertion is
+  // the same one: the gate is touched BEFORE the write, in this very field.
+  assert.ok(field.split('\n').slice(0, 22).join('\n').includes('touchFronts()'),
+    'the gate is touched before the write');
   assert.match(SRC, /\[OWNER — placement to confirm\]/, 'the placement marker travels in the code');
 });
 

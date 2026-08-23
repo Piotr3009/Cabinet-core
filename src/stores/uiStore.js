@@ -8,6 +8,9 @@ import {
   closeNav, openNav, popNav, pushNav,
 } from '../lib/editorStack.js';
 import { modalAnchorFault, withModalAnchor } from '../lib/modalLayer.js';
+// Turn 44 (CLAUDE.md iron rule 5): the vocabulary of the factory/retail mode
+// lives with the tree it filters, so this store stores a word it does not own.
+import { DEFAULT_AUDIENCE, normaliseAudience } from '../lib/wizardTabs.js';
 import {
   dismissedByClickAway, expired, greyMs, leaveWarning, makeMessage, pushMessage, queueMax,
   trimQueue,
@@ -64,6 +67,27 @@ function loadFlag(key, fallback) {
 /** Writes and returns the value, so a setter can be one expression. */
 function saveFlag(key, value) {
   try { localStorage.setItem(key, value ? '1' : '0'); } catch { /* private mode */ }
+  return value;
+}
+
+// ─── TURN 44 (CLAUDE.md iron rule 5): FACTORY OR RETAIL, REMEMBERED ─────────
+//
+// The same pair of helpers as the flags above, one storey up because the value
+// is a WORD rather than a bit. It is normalised on the way in through the one
+// function that owns the vocabulary (`lib/wizardTabs.js`), so a hand-edited key
+// saying "workshop" opens the app in factory mode rather than in neither.
+const AUDIENCE_KEY = 'cc.audience';
+
+function loadAudience() {
+  try {
+    return normaliseAudience(localStorage.getItem(AUDIENCE_KEY) || DEFAULT_AUDIENCE);
+  } catch {
+    return DEFAULT_AUDIENCE;
+  }
+}
+
+function saveAudience(value) {
+  try { localStorage.setItem(AUDIENCE_KEY, value); } catch { /* private mode */ }
   return value;
 }
 
@@ -351,6 +375,25 @@ export const useUiStore = create((set, get) => ({
   }),
   toggleFrontDimensions: () => set((s) => ({
     showFrontDimensions: saveFlag(FRONT_DIMS_KEY, !s.showFrontDimensions),
+  })),
+
+  // ─── TURN 44 (CLAUDE.md iron rule 5): WHICH HEAD IS READING ───────────────
+  //
+  // *"App-level mode (header toggle, default `factory`, persisted) filters the
+  // tree."* It is a MODE in exactly the sense X-ray above is one — the user has
+  // said how he wants to look at the job, and nothing but him saying otherwise
+  // should change it — so it is remembered through the same two helpers and
+  // survives a reload, a new project and a closed tab.
+  //
+  // It is deliberately APP-level and not project-level: a workshop showing a
+  // client the screen is a fact about the room the laptop is standing in, not
+  // about the kitchen on it. Nothing it does reaches the design, the BOM or the
+  // cut list — `lib/wizardTabs.js` is the only reader, and all it decides is
+  // what is DRAWN.
+  audience: loadAudience(),
+  setAudience: (v) => set({ audience: saveAudience(normaliseAudience(v)) }),
+  toggleAudience: () => set((s) => ({
+    audience: saveAudience(s.audience === 'retail' ? 'factory' : 'retail'),
   })),
 
   // ─── One cabinet's OWN dimensions (turn 8, CLAUDE.md F7) ───

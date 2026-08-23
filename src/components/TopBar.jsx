@@ -5,6 +5,8 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import MockModeBadge from './MockModeBadge.jsx';
+// Turn 44 (CLAUDE.md iron rule 5): which head is reading — factory or retail.
+import AudienceToggle from './AudienceToggle.jsx';
 import MenuBar from './MenuBar.jsx';
 import { UNIT_CATEGORIES } from '../engine/types.js';
 // Turn 35 (CLAUDE.md F10): the View item reads the project's ONE lighting state.
@@ -372,6 +374,12 @@ export default function TopBar({
       <MockModeBadge />
 
       <div className="flex-1" />
+
+      {/* ─── TURN 44 (CLAUDE.md iron rule 5): THE APP-LEVEL HEAD ────────────
+          In the header, on both screens a wizard opens from, default factory
+          and remembered. It filters ONE tree (lib/wizardTabs.js) and reaches
+          nothing else — no design field, no BOM line, no cut. */}
+      <AudienceToggle className="mr-1" />
 
       {/* ─── TURN 28 (CLAUDE.md F10): THE BRIGHTNESS, WHERE THE HAND IS ─────
           The View menu's slider gets a TWIN on the toolbar. Not a second

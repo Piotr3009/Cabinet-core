@@ -24,6 +24,13 @@ import { readFileSync } from 'node:fs';
 const read = (p) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8');
 
 const OLD = read('components/SettingsPanel.jsx');
+// ─── TURN 44 (CLAUDE.md F2/F3/F7/F8): THE SURFACE BECAME A SEQUENCE ─────────
+// T36's law — one settings modal, every control alive on it — is untouched.
+// What T44 did was RESTRUCTURE that one surface into six tabs and move two
+// named controls: `Keep as…` to F8's finale modal, `Room setup…` off the
+// screen it never belonged on. Where an assert below pointed at a line that
+// moved, it now points at where it moved TO; not one of them was weakened.
+const FINALE = read('components/SaveSettingsSetModal.jsx');
 const WIZ = read('components/WizardSettings.jsx');
 const DOOR = read('components/DesignSettingsModal.jsx');
 const FLOW = read('components/NewProjectFlow.jsx');
@@ -128,19 +135,24 @@ test('F1 — every named control of the old panel has a counterpart in the unifi
 test('F1 — thickness: the six measured slots and their hard gate', () => {
   assert.match(WIZ, /data-settings-section="thickness"/);
   assert.match(WIZ, /data-thickness-slots="1"/);
-  assert.match(WIZ, /data-slot-measured=\{row\.id\}/);
-  assert.match(WIZ, /data-slot-confirmed=\{row\.id\}/);
+  assert.match(WIZ, /data-slot-measured=\{b\.row\.id\}/);   // T44 F7: per material, not in one pile
+  assert.match(WIZ, /data-slot-confirmed=\{b\.row\.id\}/);
   assert.match(WIZ, /data-slot-thickness-gate="1"/);
   assert.match(WIZ, /thicknessSlotRows\(/);
   assert.match(WIZ, /drawerBoxGate\(/);
 });
 
 test('F1 — sheet sizes: both families, the T35 row itself', () => {
-  assert.match(WIZ, /data-settings-section="sheet"/);
+  // T44 F4/F7: the sheet rows stand with the material they are for.
+  assert.match(WIZ, /data-sheets-assignment="1"/);
+  // The CARCASS sheet is asked where the carcass boards are chosen (F4's
+  // "Sheets assignment"); the FRONT sheet stands in Produkcja beside the front
+  // material it is for (F7's per-material blocks). Both families, both setters.
   assert.match(WIZ, /family="carcasses"/);
-  assert.match(WIZ, /family="fronts"/);
+  assert.match(WIZ, /family: 'fronts'/);
   assert.match(WIZ, /sheetCarcass: size/);
-  assert.match(WIZ, /sheetFronts: size/);
+  assert.match(WIZ, /key: 'sheetFronts'/);
+  assert.match(WIZ, /\[b\.sheet\.key\]: size/);
 });
 
 test('F1 — door style: the gallery, + New style, the shaker number, the workshop styles', () => {
@@ -210,7 +222,7 @@ test('F1 — the wall mount height, the one dimension the wizard never had', () 
   assert.match(WIZ, /data-dimension="wallMount"/);
   assert.match(WIZ, /heights\.wallMount/);
   // and nothing is asked twice: the extra grid is rendered BY DIFFERENCE
-  assert.match(WIZ, /const rest = all\.filter\(\(d\) => !shown\.has\(d\.key\)\);/);
+  assert.match(WIZ, /const rest = all\s*\n?\s*\.filter\(\(d\) => !shown\.has\(d\.key\)\)/);
 });
 
 test('F1 — the run pieces (infills, plinths, end panels, masking) came across', () => {
@@ -220,8 +232,15 @@ test('F1 — the run pieces (infills, plinths, end panels, masking) came across'
   assert.match(WIZ, /data-run-material-stock=\{g\.id\}/);
 });
 
-test('F1 — saved settings sets can be MADE here, not only loaded', () => {
-  assert.match(WIZ, /data-set-save="1"/);
-  assert.match(WIZ, /data-set-remove=\{s\.id\}/);
-  assert.match(WIZ, /saveSet\(setName, design\)/);
+test('F1 — saved settings sets can still be MADE, not only loaded', () => {
+  // T44 iron rule 3, licensed removal 1 of 2: the `Keep as…` control left the
+  // settings screen for F8's finale, which asks it once and at the end. The
+  // capability is what T36 was protecting and the capability is still here —
+  // this assert follows it to its new window rather than mourning the old one.
+  assert.match(FINALE, /data-set-save="1"/);
+  assert.match(FINALE, /data-set-name="1"/);
+  assert.match(FINALE, /saveSet\(label, design\)/);
+  // …and the list is still a LOAD list on the settings screen, with its delete.
+  assert.match(WIZ, /data-set-load=\{s\.id\}/);
+  assert.match(WIZ, /data-set-remove=\{loadedSet\}/);
 });

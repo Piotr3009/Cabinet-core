@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
 import RoomModal from './RoomModal.jsx';
+import WallElevationModal from './WallElevationModal.jsx';
 import WizardSettings from './WizardSettings.jsx';
 import WizardHardware from './WizardHardware.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -12,6 +13,8 @@ import { PROJECT_TYPES, getProjectType, heightsForProjectType } from '../engine/
 import { migrateDesign, projectHeights } from '../engine/design.js';
 import { wizardStartBlockers } from '../engine/projectSettings.js';
 import { useHistoryStore } from '../stores/historyStore.js';
+import { WIZARD_STEPS, backStep, stepsInScope } from '../lib/wizardSteps.js';
+import { T44_DEFAULTS } from '../lib/wizardTabs.js';
 
 // ─── New project (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
 //
@@ -31,7 +34,18 @@ import { useHistoryStore } from '../stores/historyStore.js';
 // The ironmongery leaves the settings screen: the client-facing choices and
 // the workshop choices are two different heads, and a screen that scrolls
 // gets half-read. Step 5 is small and always fully pre-filled.
-const STEPS = ['info', 'type', 'scope', 'room', 'settings', 'hardware'];
+// ─── TURN 44 (CLAUDE.md F1): ONE WALL FIRST, AND THE WALL GETS A FACE ───────
+// The scope step gains a SIXTH stop that only a one-wall job ever sees: the
+// wall's own ELEVATION. It sits where the room editor sits for a whole-room
+// job — between Scope and Project settings — because it answers the same
+// question ("what am I building into?") for the other kind of job.
+//
+// The list and its Back arithmetic are `lib/wizardTabs.js`'s, so a node test
+// can ask them without importing a `.jsx`.
+const STEPS = WIZARD_STEPS;
+
+/** Which project types open on T44's wardrobe seed (CLAUDE.md F3). */
+const isWardrobeSeed = (id) => id === 'wardrobe';
 
 export default function NewProjectFlow({
   initialNumber = '', onCancel, onStart, anchor = null,
@@ -43,6 +57,8 @@ export default function NewProjectFlow({
   const storedDesign = useProjectStore((s) => s.project.design);
   const profile = useCabinetProfileStore((s) => s.profile);
   const notify = useUiStore((s) => s.notify);
+  // T44 iron rule 5: the app-level head, read once and passed down.
+  const audience = useUiStore((s) => s.audience);
 
   const [step, setStep] = useState('info');
   const [info, setInfo] = useState({ number: initialNumber, name: '', client: '' });
@@ -54,7 +70,10 @@ export default function NewProjectFlow({
   const type = getProjectType(typeId);
 
   const go = (next) => {
-    if (next === 'room' && scope === 'wall') { setStep('settings'); return; }
+    // T44 F1: a one-wall job goes to its ELEVATION where a whole-room job goes
+    // to the plan. Neither skips straight to the settings any more — the wall
+    // is the thing the owner said was missing.
+    if (next === 'room' && scope === 'wall') { setStep('wall'); return; }
     setStep(next);
   };
 
@@ -86,6 +105,20 @@ export default function NewProjectFlow({
     // placed after an edit in Design Settings would.
     setDesign({ projectType: type.id });
     setProjectHeights(heightsForProjectType(type.id, profile));
+    // ─── TURN 44 (CLAUDE.md F3): THE WARDROBE'S OWN TWO NUMBERS ────────────
+    //
+    // *"Dimensions: default height 2100, plinth 100 … depth 568."* The depth
+    // is already the profile's (T32 F1.3, and the spec keeps it: *"depth
+    // default stays 568"*); the height is not, and the plinth agrees.
+    //
+    // It is applied HERE, through the same setter, and NOT by editing the
+    // profile: iron rule 2 freezes `src/engine/**` byte-for-byte tonight, and
+    // a workshop default that moved would recut every wardrobe the six
+    // standard configs answer for. This is the SEED a new job starts on — one
+    // project's number, editable on tab 1, exactly like every other height.
+    if (isWardrobeSeed(type.id)) {
+      setProjectHeights({ tall: T44_DEFAULTS.height, toeKick: T44_DEFAULTS.plinth });
+    }
     if (!scopeTouched) setScope(type.scope);
     setStep('scope');
   };
@@ -114,11 +147,18 @@ export default function NewProjectFlow({
     setSetName(info.name.trim() || `${type.label} standard`);
   };
 
-  const keepAndStart = () => {
+  const keepAndStart = async () => {
     const name = setName.trim();
     if (name) {
-      const { replaced } = saveSet(name, design);
-      notify(replaced ? `Settings set "${name}" replaced.` : `Settings set "${name}" saved.`, 'ok');
+      // T44 F8: the shelf is written synchronously inside `save`; what is
+      // awaited is only the table's answer, and it decides the WORDS rather
+      // than whether the set exists.
+      const { replaced, source } = await saveSet(name, design);
+      notify(
+        `${replaced ? `Settings set "${name}" replaced` : `Settings set "${name}" saved`}`
+        + `${source === 'db' ? ' to your account.' : ' on this computer.'}`,
+        source === 'db' ? 'ok' : 'warn',
+      );
     }
     onStart();
   };
@@ -153,6 +193,21 @@ export default function NewProjectFlow({
     );
   }
 
+  // ─── T44 F1: …and the wall step IS the elevation editor, the same way ─────
+  // Back returns to the scope card WITHOUT losing the wall: everything the
+  // editor writes goes straight into the project's own room and slope lists,
+  // so there is no draft to throw away and nothing to re-type.
+  if (step === 'wall') {
+    return (
+      <WallElevationModal
+        anchor={anchor}
+        wallIndex={0}
+        onBack={() => setStep('scope')}
+        onSave={() => setStep('settings')}
+      />
+    );
+  }
+
   return (
     <Modal
       name="new-project"
@@ -167,7 +222,7 @@ export default function NewProjectFlow({
             <button
               type="button"
               className="cc-btn"
-              onClick={() => setStep(STEPS[Math.max(0, index - (step === 'settings' && scope === 'wall' ? 2 : 1))])}
+              onClick={() => setStep(backStep(step, scope))}
             >
               Back
             </button>
@@ -176,7 +231,7 @@ export default function NewProjectFlow({
           {step === 'type' && <button type="button" className="cc-btn-gold" onClick={commitType}>Next</button>}
           {step === 'scope' && (
             <button type="button" className="cc-btn-gold" onClick={commitScope}>
-              {scope === 'room' ? 'Next — room setup' : 'Next — settings'}
+              {scope === 'room' ? 'Next — room setup' : 'Next — the wall'}
             </button>
           )}
           {step === 'settings' && (
@@ -332,19 +387,42 @@ export default function NewProjectFlow({
         )}
 
         {step === 'scope' && (
+          /* ─── TURN 44 (CLAUDE.md F1): ONE WALL IS THE FIRST CARD ────────────
+              The owner, 23.08.2026, with the screenshots in his hand. One wall
+              is what most of the jobs he actually quotes are, so it is first
+              and it is where the keyboard lands. THE COPY IS UNCHANGED — F1
+              says so in as many words, and a card that had been re-argued
+              would have been a different card.
+
+              Choosing it opens the wall's own ELEVATION at once (the 'wall'
+              step above), because "one wall" with nothing to say about that
+              wall was the hole. Whole room is second and behaves exactly as it
+              always has. */
           <section className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               {[
-                ['room', 'Whole room', 'Four walls, a ceiling height, windows and doors'],
                 ['wall', 'One wall', 'Straight to the canvas — walls come later'],
-              ].map(([id, label, hint]) => (
+                ['room', 'Whole room', 'Four walls, a ceiling height, windows and doors'],
+              ].map(([id, label, hint], i) => (
                 <button
                   key={id}
                   type="button"
+                  // The first card takes the focus on the way in — "the default
+                  // focus" of F1, and the card a return key would press.
+                  autoFocus={i === 0}
+                  data-scope-card={id}
+                  data-scope-first={i === 0 ? '1' : undefined}
                   className={`border rounded p-3 text-left transition-colors ${scope === id
                     ? 'border-gold bg-shell-700'
                     : 'border-shell-600 hover:bg-shell-700'}`}
-                  onClick={() => { setScope(id); setScopeTouched(true); }}
+                  onClick={() => {
+                    setScope(id);
+                    setScopeTouched(true);
+                    // One wall goes STRAIGHT to the wall (F1). Whole room waits
+                    // for Next, exactly as it did, because the plan editor is a
+                    // bigger decision than a click on a card.
+                    if (id === 'wall') { setDesign({ scope: 'wall' }); setStep('wall'); }
+                  }}
                 >
                   <span className="block text-sm text-ink-50">{label}</span>
                   <span className="block text-[11px] text-ink-400 mt-0.5">{hint}</span>
@@ -385,7 +463,9 @@ export default function NewProjectFlow({
                 and this project keeps them to itself.
               </p>
             )}
-            <WizardHardware />
+            {/* T44 F6: the same component tab 4 renders, told the same head.
+                Two doors, one number — the wizard's last look before Start. */}
+            <WizardHardware audience={audience} />
           </>
         )}
       </div>
@@ -394,9 +474,9 @@ export default function NewProjectFlow({
 }
 
 function Steps({ current, scope }) {
-  const shown = STEPS.filter((s) => s !== 'room' || scope === 'room');
+  const shown = stepsInScope(scope);
   const labels = {
-    info: 'Project', type: 'Type', scope: 'Scope', room: 'Room', settings: 'Project settings', hardware: 'Hardware',
+    info: 'Project', type: 'Type', scope: 'Scope', room: 'Room', wall: 'Wall', settings: 'Project settings', hardware: 'Hardware',
   };
   return (
     <ol className="flex items-center gap-1.5 text-[11px]">

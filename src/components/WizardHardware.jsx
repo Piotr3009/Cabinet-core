@@ -33,7 +33,14 @@ import { registerLookup } from '../lib/hardwareRegister.js';
 const HINGE_FINISHES = [['nickel', 'Silver'], ['onyx', 'Onyx']];
 const INTERNAL_METALS = [['chrome', 'Silver'], ['gold', 'Gold']];
 
-export default function WizardHardware() {
+// ─── TURN 44 (CLAUDE.md F6): RETAIL SEES ONLY COLOUR ────────────────────────
+// *"All existing hardware choices, relocated; retail sees ONLY colour."* The
+// two COLOUR questions on this step are the hinge finish and the internal
+// metal; soft-close, push-to-open, the plinth line and the automat's verdict
+// are workshop facts. Nothing is disabled and nothing is greyed — a retail head
+// simply does not build them, which is iron rule 5's own wording.
+export default function WizardHardware({ audience = 'factory' }) {
+  const retail = audience === 'retail';
   const storedDesign = useProjectStore((s) => s.project.design);
   const setShelfSleeve = useProjectStore((s) => s.setShelfSleeve);
   const setDesign = useProjectStore((s) => s.setDesign);
@@ -64,7 +71,7 @@ export default function WizardHardware() {
     : (plinthBoard ? plinthBoard.name : 'Same as fronts (default)');
 
   return (
-    <div className="space-y-4" data-wizard-hardware="1">
+    <div className="space-y-4" data-wizard-hardware="1" data-hardware-audience={audience}>
       {/* ── hinges: the two finishes Blum actually makes ── */}
       <div>
         <span className="block text-[10px] uppercase tracking-wide text-ink-400 mb-1">Hinges (finish)</span>
@@ -116,6 +123,7 @@ export default function WizardHardware() {
       </div>
 
       {/* ── soft-close — ships YES; the owner confirms (PR question Q1) ── */}
+      {!retail && (
       <div>
         <span className="block text-[10px] uppercase tracking-wide text-ink-400 mb-1">Soft-close</span>
         <div className="flex gap-2">
@@ -132,8 +140,10 @@ export default function WizardHardware() {
           ))}
         </div>
       </div>
+      )}
 
       {/* ── push-to-open: the runner variant the design already carries ── */}
+      {!retail && (
       <div>
         <span className="block text-[10px] uppercase tracking-wide text-ink-400 mb-1">Push-to-open</span>
         <div className="flex gap-2" data-push-to-open="1">
@@ -155,8 +165,10 @@ export default function WizardHardware() {
             : ''}.
         </p>
       </div>
+      )}
 
       {/* ── plinth — read-only; the engine counts, this only says so ── */}
+      {!retail && (
       <div className="border border-shell-600 rounded px-2.5 py-2 space-y-0.5" data-plinth-summary="1">
         <span className="block text-[10px] uppercase tracking-wide text-ink-400">Plinth</span>
         <p className="text-[11px] text-ink-200">
@@ -166,8 +178,10 @@ export default function WizardHardware() {
           Clips + clip connectors are counted automatically from the FRONT legs only, per unit.
         </p>
       </div>
+      )}
 
       {/* ── what the automat just decided, for a standard door ── */}
+      {!retail && (
       <p className="text-[11px]" data-hinge-automat="1">
         {automat.resolved ? (
           <span className="text-ink-400">
@@ -181,6 +195,7 @@ export default function WizardHardware() {
           </span>
         )}
       </p>
+      )}
     </div>
   );
 }

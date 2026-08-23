@@ -134,6 +134,21 @@ export const MODAL_KINDS = Object.freeze({
   // joiner buys. A PROJECT window — it is about the whole job, so a centred
   // dialog is honest when the gesture that opened it had no anchor.
   'assign-materials': { about: 'project', label: 'Assign materials' },
+  // ─── TURN 44 (CLAUDE.md F1) ────────────────────────────────────────────
+  // The wall, seen from the front. It is a step of the new-project flow and
+  // it is about the PROJECT's own wall rather than about a thing already on
+  // the canvas, so it is honest as a project window: the flow hands it the
+  // anchor of the button that opened the flow, and it stands beside it.
+  'wall-elevation': { about: 'project', label: 'One wall — the elevation' },
+  // …and ONE element on that wall: a door, a window or a slope. This one IS
+  // about an object — the shape that was double-clicked — so it opens beside
+  // it and the guard holds it to that.
+  'wall-element': { about: 'object', label: 'Wall element' },
+  // ─── TURN 44 (CLAUDE.md F8) ────────────────────────────────────────────
+  // "Zapisać te ustawienia jako Twój standard?" — the finale, asked once, at
+  // the end of the step-4 sequence. About the PROJECT's settings as a whole,
+  // and opened beside the button that asks it.
+  'save-settings-set': { about: 'project', label: 'Save these settings as a set' },
 });
 
 /** Every modal name the app knows, as a list. */

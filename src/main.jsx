@@ -75,6 +75,11 @@ import * as contextGuard from './3d/contextGuard.jsx';
 import * as layout from './engine/cnc/layout.js';
 import * as railAssembly from './engine/railAssembly.js';
 import * as selection from './lib/selection.js';
+// ─── TURN 44 (CLAUDE.md F1/F2/F5/F8): the four readers THIS turn's walk asks ─
+import * as wizardTabs from './lib/wizardTabs.js';
+import * as wallElements from './lib/wallElements.js';
+import * as frontOpening from './lib/frontOpening.js';
+import * as settingsSetsDb from './lib/settingsSetsDb.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -277,6 +282,23 @@ if (typeof window !== 'undefined') {
   //       `window.__ccHardware3d`, which is exactly the point: the overlay
   //       stack goes through the same two.
   window.__ccT42 = { wallSheets, drawingExport };
+  // ─── TURN 44 ───────────────────────────────────────────────────────────
+  // The same reason every reader above is here, for this turn's four claims:
+  //
+  //   `tabs`      F2's whole rule. "Retail renders zero factory nodes" is a
+  //               claim about a TREE and a FILTER, so the DOM audit asks the
+  //               very table the surface draws from — a walk that listed the
+  //               hidden nodes itself would be a second copy of the map.
+  //   `wall`      F1's elevation arithmetic, so a claim about where a slope
+  //               cuts the wall is read off the function that draws it.
+  //   `opening`   F5's four buttons, and WHICH field each of them writes.
+  //   `sets`      F8's amber note — a claim that the app degraded gracefully
+  //               is read off the layer that decided it did.
+  //
+  // All four are pure and reach nothing the page could not already compute.
+  window.__ccT44 = {
+    tabs: wizardTabs, wall: wallElements, opening: frontOpening, sets: settingsSetsDb,
+  };
   window.__ccT39 = {
     partRegistry,
     bom: bomCore,

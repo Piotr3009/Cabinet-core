@@ -38,6 +38,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** The nine Polish letters that are not in the English alphabet, both cases. */
 export const POLISH_DIACRITICS = /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/;
@@ -123,18 +124,26 @@ export function polishInComments(dir) {
   return kept;
 }
 
-const argv = process.argv.slice(2);
-const dir = argv.find((a) => !a.startsWith('--')) || 'src/components';
-const bad = polishInCode(dir);
-const kept = polishInComments(dir);
+// ─── THE CLI, AND ONLY WHEN IT IS THE CLI ───────────────────────────────────
+// The exports above are imported by the suite; the block below is what a
+// terminal runs. Without this guard, `node --test` would import this file, hit
+// a `process.exit` at module scope and take the test runner down with it — a
+// script that kills its own proof is a script nobody runs twice.
+const IS_CLI = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (IS_CLI) {
+  const argv = process.argv.slice(2);
+  const dir = argv.find((a) => !a.startsWith('--')) || 'src/components';
+  const bad = polishInCode(dir);
+  const kept = polishInComments(dir);
 
-if (argv.includes('--list')) {
-  for (const h of kept) process.stdout.write(`  comment  ${h.file}:${h.line}  ${h.text.slice(0, 90)}\n`);
+  if (argv.includes('--list')) {
+    for (const h of kept) process.stdout.write(`  comment  ${h.file}:${h.line}  ${h.text.slice(0, 90)}\n`);
+  }
+  process.stdout.write(`${dir}: ${kept.length} comment line(s) in the owner's own words — they stay.\n`);
+  if (bad.length) {
+    process.stdout.write(`\n${bad.length} POLISH STRING(S) STILL SHIPPING:\n`);
+    for (const h of bad) process.stdout.write(`  ${h.file}:${h.line}  ${h.text.slice(0, 110)}\n`);
+    process.exit(1);
+  }
+  process.stdout.write('UI copy: English, everywhere. ✓\n');
 }
-process.stdout.write(`${dir}: ${kept.length} comment line(s) in the owner's own words — they stay.\n`);
-if (bad.length) {
-  process.stdout.write(`\n${bad.length} POLISH STRING(S) STILL SHIPPING:\n`);
-  for (const h of bad) process.stdout.write(`  ${h.file}:${h.line}  ${h.text.slice(0, 110)}\n`);
-  process.exit(1);
-}
-process.stdout.write('UI copy: English, everywhere. ✓\n');

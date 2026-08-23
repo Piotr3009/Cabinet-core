@@ -68,6 +68,7 @@
 
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
@@ -196,36 +197,44 @@ export function classify(base, head) {
   return { rows, counts };
 }
 
-const argv = process.argv.slice(2);
-if (argv.includes('--dump')) {
-  process.stdout.write(`${JSON.stringify(dump(), null, 1)}\n`);
-} else if (argv.includes('--census')) {
-  process.stdout.write('THE RAIL CENSUS — why byte-identity survives engine surgery\n\n');
-  process.stdout.write(`${'config'.padEnd(12)}${'params.rail'.padEnd(14)}${'RAIL-PART panels'.padEnd(20)}overlay stack\n`);
-  let clean = true;
-  for (const row of railCensus()) {
-    if (row.rail || row.railParts.length || row.overlay) clean = false;
-    process.stdout.write(
-      `${row.id.padEnd(12)}${String(row.rail).padEnd(14)}`
-      + `${(row.railParts.length ? row.railParts.join(',') : '[]').padEnd(20)}`
-      + `${row.overlay ? 'yes' : '(none)'}\n`,
-    );
-  }
-  process.stdout.write(`\n${clean
-    ? 'CLEAN — no rail, no RAIL-PART, no overlay stack in any of the six.'
-    : 'NOT CLEAN — a config carries one of them; the byte-identity claim above is void.'}\n`);
-  process.exit(clean ? 0 : 1);
-} else if (argv.length >= 2) {
-  const base = JSON.parse(readFileSync(argv[0], 'utf8'));
-  const head = JSON.parse(readFileSync(argv[1], 'utf8'));
-  const { rows, counts } = classify(base, head);
-  process.stdout.write(`${rows.join('\n')}\n\n`);
-  process.stdout.write('EXPECTED BUCKETS: none — T45 is a byte-identity turn; F9-CNC is gated on a placed LED line.\n');
-  process.stdout.write(`UNNAMED:          ${counts.UNNAMED}\n`);
-  process.exit(counts.UNNAMED === 0 ? 0 : 1);
-} else {
-  const d = dump();
-  for (const cfg of STANDARD_CONFIGS) {
-    process.stdout.write(`${cfg.id.padEnd(12)} drawers=${cfg.drawers ? 'yes' : 'no '}  ${d[cfg.id].sha256 || d[cfg.id].error}\n`);
+// ─── THE CLI, AND ONLY WHEN IT IS THE CLI ───────────────────────────────────
+// The exports above are imported by the suite; the block below is what a
+// terminal runs. Without this guard, `node --test` would import this file, hit
+// a `process.exit` at module scope and take the test runner down with it — a
+// script that kills its own proof is a script nobody runs twice.
+const IS_CLI = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (IS_CLI) {
+  const argv = process.argv.slice(2);
+  if (argv.includes('--dump')) {
+    process.stdout.write(`${JSON.stringify(dump(), null, 1)}\n`);
+  } else if (argv.includes('--census')) {
+    process.stdout.write('THE RAIL CENSUS — why byte-identity survives engine surgery\n\n');
+    process.stdout.write(`${'config'.padEnd(12)}${'params.rail'.padEnd(14)}${'RAIL-PART panels'.padEnd(20)}overlay stack\n`);
+    let clean = true;
+    for (const row of railCensus()) {
+      if (row.rail || row.railParts.length || row.overlay) clean = false;
+      process.stdout.write(
+        `${row.id.padEnd(12)}${String(row.rail).padEnd(14)}`
+        + `${(row.railParts.length ? row.railParts.join(',') : '[]').padEnd(20)}`
+        + `${row.overlay ? 'yes' : '(none)'}\n`,
+      );
+    }
+    process.stdout.write(`\n${clean
+      ? 'CLEAN — no rail, no RAIL-PART, no overlay stack in any of the six.'
+      : 'NOT CLEAN — a config carries one of them; the byte-identity claim above is void.'}\n`);
+    process.exit(clean ? 0 : 1);
+  } else if (argv.length >= 2) {
+    const base = JSON.parse(readFileSync(argv[0], 'utf8'));
+    const head = JSON.parse(readFileSync(argv[1], 'utf8'));
+    const { rows, counts } = classify(base, head);
+    process.stdout.write(`${rows.join('\n')}\n\n`);
+    process.stdout.write('EXPECTED BUCKETS: none — T45 is a byte-identity turn; F9-CNC is gated on a placed LED line.\n');
+    process.stdout.write(`UNNAMED:          ${counts.UNNAMED}\n`);
+    process.exit(counts.UNNAMED === 0 ? 0 : 1);
+  } else {
+    const d = dump();
+    for (const cfg of STANDARD_CONFIGS) {
+      process.stdout.write(`${cfg.id.padEnd(12)} drawers=${cfg.drawers ? 'yes' : 'no '}  ${d[cfg.id].sha256 || d[cfg.id].error}\n`);
+    }
   }
 }

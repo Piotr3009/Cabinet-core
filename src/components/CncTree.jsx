@@ -50,6 +50,9 @@ export default function CncTree() {
   const storedDesign = useProjectStore((s) => s.project.design);
   // Turn 31 (CLAUDE.md F5): every file this panel writes is named after the job.
   const projectName = useProjectStore((s) => s.project.name);
+  // T45 F9-CNC: the groove the LED lines are cut into — 4 mm flexi, or the
+  // channel width chosen on settings tab 5.6.
+  const ledSpec = useProjectStore((s) => s.project.ledSpec);
   const runChecks = useProjectStore((s) => s.runChecks);
   const setCheckOpen = useUiStore((s) => s.setCheckOpen);
 
@@ -175,7 +178,12 @@ export default function CncTree() {
     if (!ids.length) { notify('Nothing ticked on this unit.', 'warn'); return; }
     if (kind === 'zip') {
       setBusy(true);
-      exportUnitDxfZip(sheet.result, profile, { exportAnyway, project: projectName })
+      // T45 F9-CNC: the groove under every placed line, gated on there being
+      // one. `sheet.unit` is the cabinet this row is of, so the export can ask
+      // which lines were placed on it.
+      exportUnitDxfZip(sheet.result, profile, {
+        exportAnyway, project: projectName, unit: sheet.unit, design: storedDesign, ledSpec,
+      })
         .then((res) => {
           notify(`${res.filename} — ${res.files.length} DXF files.`, 'ok');
           sayGate(res, () => download(sheet, kind, true));

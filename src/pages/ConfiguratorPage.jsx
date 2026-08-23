@@ -349,7 +349,15 @@ export default function ConfiguratorPage() {
     try {
       // Turn 31 (CLAUDE.md F3): through the export gate, like the CNC tree's own
       // three buttons — the guard cannot be reached by one door and not another.
-      const res = await exportUnitDxfZip(unitResult(unit.id), undefined, { exportAnyway, project: project.name });
+      const res = await exportUnitDxfZip(unitResult(unit.id), undefined, {
+        exportAnyway,
+        project: project.name,
+        // T45 F9-CNC: the groove under every placed line. Gated — a unit with
+        // no LED line exports exactly the bytes it exported yesterday.
+        unit,
+        design: project.design,
+        ledSpec: project.ledSpec,
+      });
       notify(`${res.files.length} DXF files exported as ${res.filename}.`, 'ok');
       if (res.gateMessage) {
         notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: () => onExportDxfZip({ exportAnyway: true }) } });

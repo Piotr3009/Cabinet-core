@@ -41,10 +41,13 @@ export const DECOR_SPECIES = [
   'Chestnut', 'Hickory', 'Acacia', 'Eucalyptus', 'Willow', 'Elm', 'Teak',
 ];
 
-/** The two families that are not a timber: a plain colour, and a fineline. */
-export const UNI_FAMILY = { id: 'uni', label: 'Uni' };
-export const FINELINE_FAMILY = { id: 'fineline', label: 'Fineline' };
-export const OTHER_FAMILY = { id: 'other', label: 'Other' };
+// The three families that are not a timber: a plain colour, a fineline, and the
+// place a species nobody has classified lands in. Not exported — they exist to
+// BUILD `DECOR_FAMILIES` below and to be named by `decorFamily()`, and an export
+// nothing imports is a promise this house does not make (T31 F12's sweep).
+const UNI_FAMILY = { id: 'uni', label: 'Uni' };
+const FINELINE_FAMILY = { id: 'fineline', label: 'Fineline' };
+const OTHER_FAMILY = { id: 'other', label: 'Other' };
 
 /** Every family this module can name, in the order the bar draws them. */
 export const DECOR_FAMILIES = [

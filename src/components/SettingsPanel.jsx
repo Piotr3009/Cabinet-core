@@ -1088,6 +1088,11 @@ export default function SettingsPanel({ onRoomSetup = null }) {
               key={t.id}
               type="button"
               title={t.hint}
+              // T45 F4: the wizard's REPEAT of this table went (iron rule 4 —
+              // "the repeated joinery table goes"). This is the one that stays,
+              // so it takes the hook the audit follows the choice by.
+              data-joinery-option={t.id}
+              aria-pressed={joinery?.id === t.id}
               className={`border rounded px-3 py-2 text-left transition-colors ${joinery?.id === t.id
                 ? 'border-gold bg-shell-700'
                 : 'border-shell-600 hover:bg-shell-700'}`}

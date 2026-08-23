@@ -53,7 +53,7 @@ test('F3 — the two licensed removals, and NOTHING else', () => {
   assert.doesNotMatch(WIZ, /data-room-setup="1"/);
   assert.doesNotMatch(WIZ, /Room setup…<\/button>/);
   // …and the prop is still accepted, so no caller breaks.
-  assert.match(WIZ, /export default function WizardSettings\(\{ onRoomSetup/);
+  assert.match(WIZ, /export default function WizardSettings\(\{\n  onRoomSetup/);
 });
 
 test('F3 — the plinth says what it is, and the totals line stays', () => {
@@ -213,16 +213,21 @@ test('F5 — a handle’s CENTRES survive a round trip through the four', () => 
   assert.deepEqual(again.fronts.handle, { type: 'bar', centres: 160 });
 });
 
-test('F5 — the tail carries front type, opening and shine, in that order', () => {
+test('F5 — the tail carries the opening and the shine, in that order', () => {
+  // T45 F4 / iron rule 4: *"Fronts: ONE front-type choice (the tail repeat
+  // goes)."* The tail's second gallery is removed; the per-front gallery in the
+  // counting stop is the one that stays, and slot 1's shape is still the
+  // project's. What the tail still carries, in the owner's order, is the
+  // OPENING and the SHINE.
   const tail = WIZ.slice(WIZ.indexOf("frontAt === 'tail'"));
-  const style = tail.indexOf("data-wizard-node=\"fronts.style\"");
-  const opening = tail.indexOf('data-front-opening="1"');
-  const shine = tail.indexOf('data-front-shine="1"');
-  assert.ok(style > -1 && opening > -1 && shine > -1, 'all three are on the tail');
-  assert.ok(style < opening && opening < shine, 'in the owner’s order');
-  assert.match(WIZ, /data-front-opening-option=\{o\.id\}/);
+  const opening = tail.indexOf('fronts.opening');
+  const shine = tail.indexOf('fronts.shine');
+  assert.ok(opening > -1 && shine > -1, 'both are on the tail');
+  assert.ok(opening < shine, 'the opening comes before the shine');
+  // …and the shape is asked ONCE, in the slot card.
+  assert.match(WIZ, /data-style-slot=\{t\.id\}/);
+  assert.match(WIZ, /data-style-gallery-for=\{t\.id\}/);
 });
-
 test('F5 — the SHINE reaches the 3D material: the formula is the engine’s', () => {
   // The control is `SheenSlider`, which writes `design.sheen`; `3d/materials.js`
   // turns that into the sprayed surface's roughness through this one function,

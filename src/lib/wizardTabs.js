@@ -40,8 +40,10 @@ export function normaliseAudience(raw) {
 /**
  * The step-4 sequence, in the owner's own order and his own words:
  *
- *   1 Ustawienia → 2 Carcases → 3 Fronts → 4 Hardware → 5 Produkcja →
- *   6 Podsumowanie
+ *   1 Ustawienia → 2 Carcases → 3 Fronts → 4 Hardware → 5 Produkcja
+ *
+ * T45 F4: the sixth stop — the settings' own summary — folded into the
+ * WIZARD's step 6, which shows the whole project rather than one step of it.
  */
 export const WIZARD_TABS = [
   {
@@ -59,10 +61,23 @@ export const WIZARD_TABS = [
   {
     id: 'produkcja', n: 5, label: 'Produkcja', audience: 'factory', hint: 'The workshop’s own numbers — never the client’s',
   },
-  {
-    id: 'podsumowanie', n: 6, label: 'Podsumowanie', audience: 'both', hint: 'Everything chosen, in one place',
-  },
 ];
+
+// ─── TURN 45 (CLAUDE.md F4): THE SIXTH SUB-TAB FOLDED INTO STEP 6 ───────────
+//
+// T44's strip ended in a `Podsumowanie` sub-tab: a summary of the settings, one
+// click from the end of the settings sequence, and then the wizard walked on to
+// a SECOND ending — step 6, "Hardware" — before it would start the job.
+//
+// F4 removes step 6 by name (*"wizard step `6. Hardware` REMOVED → replaced by
+// `6. Summary`"*, iron rule 4) and puts the whole project's summary there, in
+// miniatures, with a `Change` per section and one button. Two endings became
+// one, and the one that survived is the one that shows the WHOLE job rather
+// than one step of it.
+//
+// So the settings' own summary tab is gone from this strip, and its rows are
+// step 6's. They are still filtered by the same tree — see the `summary.*`
+// nodes below, which is why they are nodes at all.
 
 /**
  * EVERY node the sequence renders, with the tab it lives in and who may see it.
@@ -86,15 +101,20 @@ export const WIZARD_NODES = [
   { id: 'carcases.drawers', tab: 'carcases', audience: 'both' },
   { id: 'carcases.stock-board', tab: 'carcases', audience: 'factory' },
   { id: 'carcases.sheets', tab: 'carcases', audience: 'factory' },
+  // T45 F4 / iron rule 4: ONE CNC-corner block. `carcases.joinery` was the
+  // repeated joinery table under it — the same joint, drawn twice, asked twice.
+  // The joinery TYPE still writes `design.joinery` from Settings ▸ Project
+  // settings, so the choice survives and only the repeat is gone.
   { id: 'carcases.cnc-corner', tab: 'carcases', audience: 'factory' },
-  { id: 'carcases.joinery', tab: 'carcases', audience: 'factory' },
   { id: 'carcases.thickness-note', tab: 'carcases', audience: 'factory' },
   { id: 'carcases.chosen', tab: 'carcases', audience: 'both' },
 
   // ── 3 · Fronts — shape, opening and shine are exactly what a client picks ──
   { id: 'fronts.count', tab: 'fronts', audience: 'both' },
   { id: 'fronts.picker', tab: 'fronts', audience: 'both' },
-  { id: 'fronts.style', tab: 'fronts', audience: 'both' },
+  // T45 F4 / iron rule 4: ONE front-type choice. `fronts.style` was the tail's
+  // second gallery; the PER-FRONT gallery in `fronts.count` stays, and slot 1's
+  // shape is still the project's shape.
   { id: 'fronts.opening', tab: 'fronts', audience: 'both' },
   { id: 'fronts.shine', tab: 'fronts', audience: 'both' },
   { id: 'fronts.shaker-frame', tab: 'fronts', audience: 'factory' },
@@ -116,9 +136,19 @@ export const WIZARD_NODES = [
   { id: 'produkcja.per-material', tab: 'produkcja', audience: 'factory' },
   { id: 'produkcja.box-gate', tab: 'produkcja', audience: 'factory' },
 
-  // ── 6 · Podsumowanie — the summary itself is both; it filters its own rows ──
-  { id: 'podsumowanie.summary', tab: 'podsumowanie', audience: 'both' },
-  { id: 'podsumowanie.save-set', tab: 'podsumowanie', audience: 'factory' },
+  // ─── TURN 45 (CLAUDE.md F4): STEP 6 — THE WIZARD'S OWN SUMMARY ───────────
+  //
+  // Not a sub-tab of step 5: the wizard's SIXTH STEP, which is why `tab` says
+  // `summary` and `WIZARD_TABS` above has no such row. They are nodes because
+  // the filter is the filter — a client's summary shows the decors, the
+  // dimensions and the hardware colour, and does not show him the workshop's
+  // measured thicknesses or its saved settings sets.
+  { id: 'summary.project', tab: 'summary', audience: 'both' },
+  { id: 'summary.decors', tab: 'summary', audience: 'both' },
+  { id: 'summary.dimensions', tab: 'summary', audience: 'both' },
+  { id: 'summary.hardware', tab: 'summary', audience: 'both' },
+  { id: 'summary.production', tab: 'summary', audience: 'factory' },
+  { id: 'summary.save-set', tab: 'summary', audience: 'factory' },
 ];
 
 const NODE_BY_ID = new Map(WIZARD_NODES.map((n) => [n.id, n]));

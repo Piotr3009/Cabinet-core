@@ -92,21 +92,27 @@ test('F7 — 2 carcass types → 2 carcass blocks, and the box gets its own', ()
 
 // ══ F8 ═════════════════════════════════════════════════════════════════════
 
-test('F8 — the summary is grouped by tab and filtered by head', () => {
-  assert.match(WIZ, /data-summary="1"/);
-  assert.match(WIZ, /data-summary-group=\{group\.tab\}/);
-  assert.match(WIZ, /data-summary-row=\{row\.label\}/);
-  assert.match(WIZ, /data-summary-goto=\{group\.tab\}/, 'a wrong line is one click from its tab');
-  // Every row is built through `show(node)`, so a row a client may not see is
-  // a row that is NOT BUILT — the same filter the tabs use.
-  assert.match(WIZ, /const summaryRow = \(node, label, value\) => \(show\(node\)/);
-  assert.match(WIZ, /const summary = tabs\s*\n\s*\.filter\(\(t\) => t\.id !== 'podsumowanie'\)/);
+// ─── T45 F4 MOVED THE SUMMARY TO THE WIZARD'S STEP 6 ───────────────────────
+// *"Wizard step `6. Hardware` REMOVED → replaced by `6. Summary`."* T44's
+// settings-summary sub-tab and T44's hardware step were two endings to one
+// walk; F4 keeps the one that shows the WHOLE project. The rules below are the
+// same rules, asked of the screen that now carries them.
+const SUMMARY = readFileSync(new URL('../src/components/WizardSummary.jsx', import.meta.url), 'utf8');
+
+test('F8 — the summary is grouped by section and filtered by head', () => {
+  assert.match(SUMMARY, /data-summary="1"/);
+  assert.match(SUMMARY, /data-summary-section=\{node\}/);
+  assert.match(SUMMARY, /data-summary-row=\{label\}/);
+  assert.match(SUMMARY, /data-summary-change=\{node\}/, 'a wrong line is one click from its tab');
+  // Every section is built through `nodeVisible(node)`, so a section a client
+  // may not see is one that is NOT BUILT — the same filter the tabs use.
+  assert.match(SUMMARY, /if \(!nodeVisible\(node, audience\)\) return null;/);
+  assert.match(SUMMARY, /nodeVisible\('summary\.save-set', audience\)/);
 });
 
 test('F8 — the finale is its own modal, with the big Y/N and the name field', () => {
-  assert.match(WIZ, /data-open-save-set="1"/);
-  assert.match(WIZ, /<SaveSettingsSetModal/);
-  assert.match(FINALE, /Zapisać te ustawienia jako Twój standard\?/);
+  assert.match(SUMMARY, /data-open-save-set="1"/);
+  assert.match(SUMMARY, /<SaveSettingsSetModal/);
   assert.match(FINALE, /data-set-answer="yes"/);
   assert.match(FINALE, /data-set-answer="no"/);
   assert.match(FINALE, /data-set-name="1"/);

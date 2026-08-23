@@ -39,7 +39,7 @@ const PINNED = [
   'data-fronts-chosen', 'data-fronts-container', 'data-fronts-locked', 'data-fronts-missing',
   'data-fronts-ok', 'data-hardware-choice', 'data-hardware-choice-option',
   'data-hinge-plate-pilot', 'data-hinge-plate-pilot-option', 'data-hinge-standard',
-  'data-hinge-standard-option', 'data-infill-side-width', 'data-joinery-option',
+  'data-hinge-standard-option', 'data-infill-side-width',
   'data-material-picker-for', 'data-material-slot', 'data-more-dimensions', 'data-new-style',
   'data-project-type', 'data-run-material', 'data-run-material-stock', 'data-run-materials',
   'data-runner-system', 'data-runner-variant', 'data-runner-variant-option',
@@ -55,17 +55,24 @@ const PINNED = [
   'data-wizard-fronts', 'data-wizard-sets', 'data-wizard-settings', 'data-wizard-type-label',
 ];
 
-/** The three that went, what they were, and where they are now. */
+/** The ones that went, what they were, and where they are now. */
 const LICENSED_REMOVALS = [
   ['data-set-name', 'the `Keep as…` name field', 'SaveSettingsSetModal.jsx (F8)'],
   ['data-set-save', 'the `Keep as…` Save set button', 'SaveSettingsSetModal.jsx (F8)'],
   ['data-room-setup', 'the `Room setup…` button', 'the Scope/Room step, and Settings ▸ Room setup…'],
+  // ─── TURN 45 (CLAUDE.md F4 / iron rule 4) ───────────────────────────────
+  // *"Carcases: ONE CNC-corner block (the repeated joinery table goes)."* The
+  // wizard drew the joint twice — the CNC-corner block, and then a second
+  // `Joinery type` table with the same preview under it. The CHOICE is not
+  // lost: it writes `design.joinery`, and Settings ▸ Project settings offers
+  // every type the profile carries, with the same preview.
+  ['data-joinery-option', 'the repeated joinery table', 'SettingsPanel.jsx (Settings ▸ Project settings)'],
 ];
 
 test('EVERY pre-existing settings field is alive in its new tab', () => {
   const missing = PINNED.filter((hook) => !WIZ.includes(hook));
   assert.deepEqual(missing, [], `${missing.length} field(s) were dropped, not relocated:\n${missing.join('\n')}`);
-  assert.equal(PINNED.length, 97, 'the inventory itself has not been trimmed');
+  assert.equal(PINNED.length, 96, 'the inventory itself has not been trimmed');
 });
 
 test('…and the ONLY things missing are the two named removals', () => {
@@ -136,8 +143,12 @@ test('the pickers that were replaced are still in the tree, and still reachable'
   assert.match(WIZ, /<ColourPicker/);
   assert.match(OLD, /import DecorPicker from '\.\/DecorPicker\.jsx'/);
   assert.match(OLD, /import VeneerPicker from '\.\/VeneerPicker\.jsx'/);
-  // …and the new one reads the SAME catalogues, so nothing forked.
+  // …and the new one reads the SAME catalogues, so nothing forked. T45 F3 split
+  // it in two — the tab holds one slot and one tile, the WINDOW holds the
+  // catalogue — and both halves still read the pack the 3D reads.
   assert.match(PANEL, /loadDecorCatalogue/);
-  assert.match(PANEL, /getVeneers\(\)/);
-  assert.match(PANEL, /COLOUR_SYSTEMS/);
+  const MODAL = readFileSync(new URL('../src/components/DecorPickerModal.jsx', import.meta.url), 'utf8');
+  assert.match(MODAL, /loadDecorCatalogue/);
+  assert.match(MODAL, /getVeneers\(\)/);
+  assert.match(MODAL, /COLOUR_SYSTEMS/);
 });

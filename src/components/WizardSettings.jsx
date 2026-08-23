@@ -48,8 +48,6 @@ import {
 import { FRONT_OPENINGS, frontOpening, frontOpeningPatch } from '../lib/frontOpening.js';
 // T44 F4: the picker that stops fighting you — full width, in the sequence.
 import MaterialChoicePanel from './MaterialChoicePanel.jsx';
-// T44 F8: the finale — "Zapisać te ustawienia jako Twój standard?"
-import SaveSettingsSetModal from './SaveSettingsSetModal.jsx';
 
 // ─── TURN 32 (CLAUDE.md F1), RE-SHAPED 15.08.2026 EVENING — THE MOCKUP ──────
 //
@@ -141,7 +139,9 @@ function ChosenRow({ who, hex, thumb, text }) {
   );
 }
 
-export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' }) {
+export default function WizardSettings({
+  onRoomSetup, onGate, door = 'wizard', walk = null, onWalk = null, onChangeStep = null,
+}) {
   // ─── TURN 36 (CLAUDE.md F1): TWO DOORS, ONE FORM ──────────────────────────
   //
   // The owner: "mamy new project i edit project — 2 różne setup modale, a
@@ -285,8 +285,45 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
   // decides who may see what.
   const audience = useUiStore((s) => s.audience);
   const tabs = useMemo(() => visibleTabs(audience), [audience]);
-  const [tab, setTab] = useState(() => firstTab(audience));
-  const [visited, setVisited] = useState(() => new Set([firstTab(audience)]));
+  // ─── TURN 45 (CLAUDE.md F7): THE WALK IS LIFTABLE ─────────────────────────
+  //
+  // *"Fixing it returns the user STRAIGHT to where they were … Every earlier
+  // choice survives — nothing resets, nothing re-asks."*
+  //
+  // WHERE THE USER WAS is four facts: the tab, the tabs already visited, and
+  // how far into each of the two submodal walks he had got. They used to be
+  // this component's own `useState`, which meant that leaving step 5 for the
+  // room editor — the very thing F7's one-click jump does — unmounted them and
+  // put him back at 5.1 with the strip forgotten.
+  //
+  // So the walk is a VALUE the caller may hold. Given `walk`/`onWalk`, this
+  // component is controlled and the flow owns the position across a detour;
+  // left out — the Settings ▸ Project settings door, which has no detour to
+  // survive — it keeps its own state and behaves exactly as it did.
+  const [ownWalk, setOwnWalk] = useState(() => ({
+    tab: firstTab(audience), visited: [firstTab(audience)], carcStop: 'count', frontStop: 'count',
+  }));
+  const walkState = useMemo(() => {
+    const raw = (walk && walk.tab) ? walk : ownWalk;
+    const at = raw?.tab || firstTab(audience);
+    return {
+      tab: at,
+      visited: Array.isArray(raw?.visited) && raw.visited.length ? raw.visited : [at],
+      carcStop: raw?.carcStop || 'count',
+      frontStop: raw?.frontStop || 'count',
+    };
+  }, [walk, ownWalk, audience]);
+  const patchWalk = (patch) => {
+    const next = { ...walkState, ...patch };
+    if (onWalk) onWalk(next); else setOwnWalk(next);
+  };
+  const tab = walkState.tab;
+  const visited = walkState.visited;
+  const carcStop = walkState.carcStop;
+  const frontStop = walkState.frontStop;
+  const setTab = (id) => patchWalk({ tab: id });
+  const setCarcStop = (stop) => patchWalk({ carcStop: stop });
+  const setFrontStop = (stop) => patchWalk({ frontStop: stop });
   const show = (id) => nodeVisible(id, audience);
   // The stock board is a workshop fact; the picker itself is the client's.
   const showBoard = audience !== 'retail';
@@ -298,17 +335,8 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
 
   const goTab = (id) => {
     if (!id) return;
-    setVisited((v) => new Set([...v, id]));
-    setTab(id);
+    patchWalk({ tab: id, visited: visited.includes(id) ? visited : [...visited, id] });
   };
-
-  // ── the submodal walk inside the two long tabs (F4, F5) ──
-  // 'count' → one stop per chosen type → the tail. Each stop gets its own dot.
-  const [carcStop, setCarcStop] = useState('count');
-  const [frontStop, setFrontStop] = useState('count');
-  const [saveSetOpen, setSaveSetOpen] = useState(false);
-
-  const [setName, setSetName] = useState('');
 
   const gateOrApply = (typeId, thickness, label, apply) => {
     if (unitCount > 0 && pinsThickness(typeId) && Number(thickness) > 0 && thickness !== drawnBoardT) {
@@ -729,74 +757,17 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
     },
   ];
 
-  // ─── T44 F8: THE SUMMARY, GROUPED BY TAB AND FILTERED BY HEAD ─────────────
+  // ─── TURN 45 (CLAUDE.md F4): THE SUMMARY LEFT THIS FILE ───────────────────
   //
-  // Every row names the NODE it came from, so the retail filter is the same one
-  // the tabs use — a row a client may not see is a row that is not built, not a
-  // row that is built and then hidden.
-  const summaryRow = (node, label, value) => (show(node) && value != null && value !== ''
-    ? { label, value: String(value) }
-    : null);
-  const chosenText = (t, kind) => chosenOf(t, kind)?.text || 'nothing chosen yet';
-  const summary = tabs
-    .filter((t) => t.id !== 'podsumowanie')
-    .map((t) => {
-      let rows = [];
-      if (t.id === 'ustawienia') {
-        rows = [
-          summaryRow('ustawienia.identity', 'Number', project.number || '—'),
-          summaryRow('ustawienia.identity', 'Client', project.client || '—'),
-          summaryRow('ustawienia.identity', 'Type', type.label),
-          summaryRow('ustawienia.dimensions', wardrobe ? 'Wardrobe height' : 'Tall unit height', `${heights.tall} mm`),
-          summaryRow('ustawienia.dimensions', 'Plinth height (toe kick)', `${heights.toeKick} mm`),
-          summaryRow('ustawienia.dimensions', 'Depth (all units)', `${projectDepth(design, profile)} mm`),
-          dimensionAsked('base', design.projectType)
-            ? summaryRow('ustawienia.kitchen-heights', 'Base unit height', `${heights.base} mm`) : null,
-          dimensionAsked('wall', design.projectType)
-            ? summaryRow('ustawienia.kitchen-heights', 'Wall unit height', `${heights.wall} mm`) : null,
-          dimensionAsked('wallMount', design.projectType)
-            ? summaryRow('ustawienia.kitchen-heights', 'Wall mount height', `${heights.wallMount} mm`) : null,
-          summaryRow('ustawienia.ceiling', 'To the ceiling', design.ceiling === 'flush' ? 'Yes — flush' : 'No — keep an infill'),
-        ];
-      }
-      if (t.id === 'carcases') {
-        rows = [
-          ...carcassTypes.map((ct) => summaryRow('carcases.chosen', ct.label, chosenText(ct, 'carcass'))),
-          summaryRow('carcases.drawers', 'Drawer boxes', (design.drawerBoxes.mode ?? 'same') === 'ready'
-            ? 'Ready-made system' : 'Same board as carcass'),
-          summaryRow('carcases.joinery', 'Joinery', joinery?.label || '—'),
-          summaryRow('carcases.cnc-corner', 'CNC corner', design.cncCorner === 'square' ? 'Square (hand-chisel)' : 'Dog-bone (CNC)'),
-          summaryRow('carcases.thickness-note', 'Board thickness', `${formatMm(drawnBoardT)} mm`),
-        ];
-      }
-      if (t.id === 'fronts') {
-        rows = [
-          ...frontTypes.map((ft) => summaryRow('fronts.chosen', ft.label, chosenText(ft, 'front'))),
-          summaryRow('fronts.style', 'Front type', FRONT_STYLE_OPTIONS.find((o) => o.id === design.fronts.style)?.label || '—'),
-          summaryRow('fronts.opening', 'Opening', FRONT_OPENINGS.find((o) => o.id === opening)?.label || '—'),
-          summaryRow('fronts.shine', 'Shine', `${design.sheen ?? profile.appearance.sheenScale.default} %`),
-          summaryRow('fronts.shaker-frame', 'Shaker frame', design.fronts.style === 'S' ? `${shakerFrameMm(design, profile)} mm` : null),
-        ];
-      }
-      if (t.id === 'hardware') {
-        rows = [
-          summaryRow('hardware.colour', 'Hinge finish', (design.hinges.finish || 'nickel') === 'onyx' ? 'Onyx' : 'Silver'),
-          summaryRow('hardware.colour', 'Internal metal', profile.appearance.metals[design.hardware.shelfSleeve || profile.appearance.metalDefault]?.label || '—'),
-          summaryRow('hardware.hinge-standard', 'Hinges per door', hingeStandard(design.hinges?.standard, profile)),
-          summaryRow('hardware.runners', 'Runner variant', projectRunnerVariant),
-          summaryRow('hardware.hinge-plate-pilot', 'Hinge plate pilot', `⌀${platePilot}`),
-        ];
-      }
-      if (t.id === 'produkcja') {
-        rows = [
-          summaryRow('produkcja.infill', 'Infill at the wall', `${design.infill.sideWidth} mm`),
-          ...materialBlocks.map((b) => (b.row
-            ? summaryRow('produkcja.per-material', b.label, `${formatMm(b.row.measured)} mm${b.row.confirmed ? ' · measured' : ''}`)
-            : null)),
-        ];
-      }
-      return { tab: t.id, n: t.n, label: t.label, rows: rows.filter(Boolean) };
-    });
+  // T44 built the settings' own summary here, grouped by tab and filtered by
+  // head, and the wizard then walked on to a SECOND ending. F4 folds it into the
+  // wizard's step 6 — *"the whole project in miniatures — chosen decor tiles,
+  // base dimensions, hardware — `Change` per section, and ONE button: `Start
+  // designing`"* — where it can show the job rather than one step of it.
+  //
+  // It is `components/WizardSummary.jsx` now, it reads the SAME stores through
+  // the same selectors, and every row it draws still names the node it came
+  // from, so the retail filter is the same filter.
 
   // ─── THE SEQUENCE'S NAVIGATION (F2: "Next validates only the current tab") ─
   const nextTab = tabAfter(tab, audience);
@@ -841,7 +812,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
     nextTarget = nextTab;
     nextLabel = `Next — ${labelOf(nextTab)}`;
   } else {
-    nextHint = 'Everything is answered — the wizard’s own footer starts the job.';
+    nextHint = 'Everything is answered — the wizard’s own footer goes on to the summary.';
   }
 
   return (
@@ -860,7 +831,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
           the renumbering, so retail's five read 1…5 rather than 1,2,3,4,6. */}
       <ol className="flex items-center gap-1 flex-wrap text-[11px]" data-wizard-tabs="1">
         {tabs.map((t, i) => {
-          const state = t.id === tab ? 'current' : (visited.has(t.id) ? 'visited' : 'ahead');
+          const state = t.id === tab ? 'current' : (visited.includes(t.id) ? 'visited' : 'ahead');
           return (
             <li key={t.id} className="flex items-center gap-1">
               <button
@@ -1376,43 +1347,19 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                           </div>
                 </div>
               )}
-              {show('carcases.joinery') && (
-                <div data-wizard-node="carcases.joinery">
-                        {/* ══ 8 · JOINERY TYPE — how the carcass is held together ══ */}
-                        <section className="space-y-2" data-settings-section="joinery">
-                          <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Joinery type</span>
-                          <div className="flex flex-wrap gap-2">
-                            {profile.joinery.types.map((t) => (
-                              <button
-                                key={t.id}
-                                type="button"
-                                title={t.hint}
-                                data-joinery-option={t.id}
-                                aria-pressed={joinery?.id === t.id}
-                                className={`border rounded px-3 py-2 text-left transition-colors ${joinery?.id === t.id
-                                  ? 'border-gold bg-shell-700'
-                                  : 'border-shell-600 hover:bg-shell-700'}`}
-                                onClick={() => {
-                                  touchCarcass();
-                                  setDesign({ joinery: t.id });
-                                  setJoineryOpen((v) => !v || joinery?.id !== t.id);
-                                }}
-                              >
-                                <span className="block text-sm text-ink-50">{t.label}</span>
-                                <span className="block text-[10px] text-ink-400">{t.hint}</span>
-                              </button>
-                            ))}
-                          </div>
-                          {joineryOpen && joinery ? (
-                            <div className="border border-shell-600 rounded p-2 bg-shell-800">
-                              <JoineryPreview profile={profile} joinery={joinery} />
-                            </div>
-                          ) : (
-                            <p className="text-[11px] text-ink-400">Click a joinery type again to see the joint.</p>
-                          )}
-                        </section>
-                </div>
-              )}
+              {/* ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE DUPLICATE GOES ────
+                  *"Carcases: ONE CNC-corner block (the repeated joinery table
+                  goes)."* This stop drew the corner TWICE: the CNC-corner block
+                  above, with `JoineryPreview` and the dog-bone / square choice,
+                  and then a second `Joinery type` table under it with the same
+                  drawing again. One question, asked twice, with two pictures of
+                  the same joint — which is what the owner's red pen circled.
+
+                  The joinery TYPE itself is not lost and was never this block's
+                  own: it writes `design.joinery`, and Settings ▸ Project
+                  settings (`SettingsPanel.jsx`, the panel T36 preserved whole)
+                  still offers every type the profile carries, with the same
+                  preview. What went is the repeat. */}
               {show('carcases.chosen') && (
                 <div data-wizard-node="carcases.chosen">
                           {/* the CHOSEN list — mini swatches, "jak przedtem" */}
@@ -1625,61 +1572,20 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
 
           {frontAt === 'tail' && (
             <>
-              {show('fronts.style') && (
-                <div data-wizard-node="fronts.style">
-                        {/* ══ 6 · DOOR STYLE — the gallery, the shaker number, and the workshop's
-                               own styles. The old panel's whole section, carried whole (T36 F1) ══ */}
-                        <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-settings-section="door-style">
-                          <div className="cc-row">
-                            <span className="text-[11px] uppercase tracking-[0.16em] text-gold">Door style</span>
-                            <span className="flex-1" />
-                            <button
-                              type="button"
-                              className="cc-btn px-2"
-                              data-new-style="1"
-                              onClick={() => {
-                                const id = addDoorStyle({
-                                  name: `Style ${design.doorStyles.length + 1}`,
-                                  frontType: design.fronts.style,
-                                  material_id: frontMaterials[0]?.id || null,
-                                  colour: design.colour.front,
-                                });
-                                setEditingStyle(id);
-                              }}
-                            >
-                              + New style
-                            </button>
-                          </div>
+              {/* ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE TAIL REPEAT GOES ──
+                  *"Fronts: ONE front-type choice (the tail repeat goes)."* The
+                  counting stop already gives every front slot its own shape
+                  gallery — the PER-FRONT gallery, which F4 says stays — and this
+                  tail then drew the eight styles AGAIN as a project-wide choice,
+                  with a second shaker-frame field beside it writing the same
+                  `fronts.shakerFrame` the slot card writes. Two galleries, one
+                  answer, and whichever the hand reached second won.
 
-                          {/* The gallery, not a dropdown (T15 F4) — a tile per shape with its own
-                              drawing, a filter box and a scroll. This one writes the PROJECT's
-                              shape; a front SLOT's own shape is picked in its card above. */}
-                          <FrontStyleGallery
-                            value={design.fronts.style}
-                            onPick={(id) => { touchFronts(); setDesign({ fronts: { ...design.fronts, style: id } }); }}
-                          />
-
-                          {/* T25 F3.1: shaker is equal on all four sides — ONE field, no rail/stile
-                              pair beside it, 10…200 mm. */}
-                          {design.fronts.style === 'S' && (
-                            <div className="flex items-center gap-2" data-shaker-frame="1">
-                              <span className="text-[11px] text-ink-400 w-28">Shaker frame</span>
-                              <NumberField
-                                className="cc-input w-24"
-                                value={shakerFrameMm(design, profile)}
-                                min={profile.front.types.S.frameMin}
-                                max={profile.front.types.S.frameMax}
-                                onCommit={(v) => { touchFronts(); setDesign({ fronts: { ...design.fronts, shakerFrame: v } }); }}
-                              />
-                              <span className="text-[11px] text-ink-400">
-                                mm, equal all round · {profile.front.types.S.frameMin}–{profile.front.types.S.frameMax} ·
-                                {' '}panel recessed {profile.front.types.S.recessDepth} mm
-                              </span>
-                            </div>
-                          )}
-                        </section>
-                </div>
-              )}
+                  Slot 1's shape IS the project's shape (`setProjectDefaults`
+                  in the per-front gallery's own handler, unchanged), so nothing
+                  a joiner could set has been taken away — only the second place
+                  to set it. `+ New style`, the workshop's own named styles, is
+                  untouched and stands in `fronts.door-styles` below. */}
               {show('fronts.opening') && (
                 <div data-wizard-node="fronts.opening" className="space-y-1.5" data-front-opening="1">
                   <span className="block text-[10px] uppercase tracking-wide text-ink-400">Opening</span>
@@ -1723,7 +1629,33 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
               {show('fronts.door-styles') && (
                 <div data-wizard-node="fronts.door-styles" className="border border-shell-600 rounded-lg p-3 space-y-2">
                           <div className="cc-divider" />
-                          <span className="text-[10px] uppercase tracking-wide text-ink-400">The workshop&apos;s own styles</span>
+                          {/* T45 F4: `+ New style` stood in the header of the tail
+                              gallery this turn removed. The gallery was the
+                              duplicate; the BUTTON was never part of it — it makes
+                              one of the workshop's own named styles, which is what
+                              this block is a list of. So it moves the ten lines up
+                              to the list it belongs to, and nothing is lost. */}
+                          <div className="cc-row">
+                            <span className="text-[10px] uppercase tracking-wide text-ink-400 flex-1">
+                              The workshop&apos;s own styles
+                            </span>
+                            <button
+                              type="button"
+                              className="cc-btn px-2"
+                              data-new-style="1"
+                              onClick={() => {
+                                const id = addDoorStyle({
+                                  name: `Style ${design.doorStyles.length + 1}`,
+                                  frontType: design.fronts.style,
+                                  material_id: frontMaterials[0]?.id || null,
+                                  colour: design.colour.front,
+                                });
+                                setEditingStyle(id);
+                              }}
+                            >
+                              + New style
+                            </button>
+                          </div>
 
                           {design.doorStyles.length === 0 && (
                             <p className="text-[11px] text-ink-400">
@@ -2201,57 +2133,6 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
         </>
       )}
 
-      {tab === 'podsumowanie' && (
-        <>
-          <div data-wizard-node="podsumowanie.summary" className="space-y-2" data-summary="1">
-            <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Podsumowanie</span>
-            <p className="text-[11px] text-ink-400">
-              Everything this job has been told, grouped the way it was asked. A tab is one click away if a
-              line is wrong.
-            </p>
-            {summary.map((group) => (
-              <div key={group.tab} className="border border-shell-600 rounded p-2 space-y-1" data-summary-group={group.tab}>
-                <div className="cc-row">
-                  <span className="text-[11px] text-ink-50 flex-1">{group.n}. {group.label}</span>
-                  <button
-                    type="button"
-                    className="cc-btn-ghost px-2"
-                    data-summary-goto={group.tab}
-                    onClick={() => goTab(group.tab)}
-                  >
-                    Change…
-                  </button>
-                </div>
-                {group.rows.map((row) => (
-                  <div key={row.label} className="flex items-baseline gap-2 text-[11px]" data-summary-row={row.label}>
-                    <span className="w-40 shrink-0 text-ink-400">{row.label}</span>
-                    <span className="text-ink-100">{row.value}</span>
-                  </div>
-                ))}
-                {group.rows.length === 0 && (
-                  <p className="text-[11px] text-ink-400">Nothing to show for this head.</p>
-                )}
-              </div>
-            ))}
-          </div>
-          {show('podsumowanie.save-set') && (
-            <div data-wizard-node="podsumowanie.save-set" className="border-t border-dashed border-shell-600 pt-2">
-              <button
-                type="button"
-                className="cc-btn-gold px-3"
-                data-open-save-set="1"
-                onClick={() => setSaveSetOpen(true)}
-              >
-                Zapisać te ustawienia jako Twój standard?
-              </button>
-              <p className="text-[10px] text-ink-400 mt-1">
-                The `Keep as…` control that used to sit in Ustawienia, asked once and at the end — which is
-                the only moment a workshop has actually finished deciding.
-              </p>
-            </div>
-          )}
-        </>
-      )}
       </div>
 
       {/* ══ THE SEQUENCE'S FEET ══════════════════════════════════════════════
@@ -2288,14 +2169,10 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
         )}
       </div>
 
-      {/* ── F8's finale, its own draggable window, opened BESIDE its button ── */}
-      {saveSetOpen && (
-        <SaveSettingsSetModal
-          design={design}
-          suggestion={project.name || `${type.label} standard`}
-          onClose={() => setSaveSetOpen(false)}
-        />
-      )}
+      {/* T45 F4: the finale — *"Save these as your standard?"* — went with the
+          summary it stood under, to the wizard's own step 6
+          (components/WizardSummary.jsx). Same modal, same payload, asked once
+          and at the one moment a workshop has actually finished deciding. */}
     </div>
   );
 }

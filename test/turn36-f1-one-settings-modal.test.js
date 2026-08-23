@@ -156,7 +156,13 @@ test('F1 — sheet sizes: both families, the T35 row itself', () => {
 });
 
 test('F1 — door style: the gallery, + New style, the shaker number, the workshop styles', () => {
-  assert.match(WIZ, /data-settings-section="door-style"/);
+  // ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE TAIL REPEAT WENT ──────────
+  // *"Fronts: ONE front-type choice (the tail repeat goes)."* The
+  // `door-style` SECTION was the second gallery — the per-front cards already
+  // carry one each, and F4 keeps those. Everything the section held that was
+  // not the repeat is still here: `+ New style`, the three door-style setters,
+  // the gallery itself (in the slot card) and the shaker number.
+  assert.doesNotMatch(WIZ, /data-settings-section="door-style"/);
   assert.match(WIZ, /data-new-style="1"/);
   assert.match(WIZ, /addDoorStyle\(/);
   assert.match(WIZ, /updateDoorStyle\(/);
